@@ -49,35 +49,32 @@ mod tests {
     use reqwest::header::HeaderValue;
 
     #[test]
-    fn parses_delta_and_http_date_with_bound() {
+    fn parses_delta_and_http_date_with_bound() -> Result<(), Box<dyn std::error::Error>> {
         let now = SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000);
         let mut headers = HeaderMap::new();
         headers.insert(RETRY_AFTER, HeaderValue::from_static("7"));
-        assert_eq!(
-            retry_after(&headers, now).expect("delta"),
-            Duration::from_secs(7)
-        );
+        check!(eq; retry_after(&headers, now), Ok(Duration::from_secs(7)));
         headers.insert(RETRY_AFTER, HeaderValue::from_static("86401"));
-        assert!(retry_after(&headers, now).is_err());
+        check!(retry_after(&headers, now).is_err());
         let date = httpdate::fmt_http_date(now + Duration::from_secs(11));
-        headers.insert(RETRY_AFTER, HeaderValue::from_str(&date).expect("date"));
-        assert_eq!(
-            retry_after(&headers, now).expect("date"),
-            Duration::from_secs(11)
-        );
+        headers.insert(RETRY_AFTER, HeaderValue::from_str(&date)?);
+        check!(eq; retry_after(&headers, now), Ok(Duration::from_secs(11)));
+        Ok(())
     }
 
     #[test]
-    fn absent_header_allows_retry_but_duplicate_or_signed_headers_fail_closed() {
+    fn absent_header_allows_retry_but_duplicate_or_signed_headers_fail_closed(
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let now = SystemTime::UNIX_EPOCH;
         let mut headers = HeaderMap::new();
-        assert_eq!(retry_after(&headers, now), Ok(Duration::ZERO));
+        check!(eq; retry_after(&headers, now), Ok(Duration::ZERO));
         headers.append(RETRY_AFTER, HeaderValue::from_static("7"));
         headers.append(RETRY_AFTER, HeaderValue::from_static("7"));
-        assert!(retry_after(&headers, now).is_err());
+        check!(retry_after(&headers, now).is_err());
         headers.insert(RETRY_AFTER, HeaderValue::from_static("+7"));
-        assert!(retry_after(&headers, now).is_err());
+        check!(retry_after(&headers, now).is_err());
         headers.insert(RETRY_AFTER, HeaderValue::from_static(" \t7\t "));
-        assert_eq!(retry_after(&headers, now), Ok(Duration::from_secs(7)));
+        check!(eq; retry_after(&headers, now), Ok(Duration::from_secs(7)));
+        Ok(())
     }
 }

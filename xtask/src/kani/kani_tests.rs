@@ -175,7 +175,7 @@ fn classifier_rejects_success_for_more_than_the_single_selected_harness() {
 #[cfg(unix)]
 fn a_nonzero_verifier_exit_cannot_certify_a_successful_summary() -> anyhow::Result<()> {
     let status = std::process::Command::new("/bin/false").status()?;
-    assert_eq!(
+    check!(eq;
         super::classify_kani_process(status, "", SUCCESS_TAIL_1),
         Outcome::BuildFail
     );

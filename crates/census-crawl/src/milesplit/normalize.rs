@@ -1,6 +1,6 @@
 use census_domain::model::{
-    normalize_name, CanonicalAthlete, CanonicalSchool, CanonicalTeam, Evidence, Gender, Grade,
-    ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
+    normalize_name, CanonicalAthlete, CanonicalSchool, CanonicalTeam, Evidence, Gender,
+    PublishedGraduation, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 
 use super::wire::{Roster, RosterAthlete, Site, TeamRef};
@@ -18,20 +18,6 @@ impl RosterAthlete {
             sports.push(Sport::CrossCountry);
         }
         sports
-    }
-
-    pub fn observed_grade(
-        &self,
-        school_year: SchoolYear,
-        source: SourceRef,
-    ) -> Option<ObservedGrade> {
-        let years_to_graduation = self.grad_year.get().checked_sub(school_year.get())?;
-        let grade_number = 13_i16.checked_sub(years_to_graduation)?;
-        Grade::new(u8::try_from(grade_number).ok()?).map(|grade| ObservedGrade {
-            grade,
-            school_year,
-            source,
-        })
     }
 }
 
@@ -56,7 +42,6 @@ pub fn roster_entities(
             entry,
             &school_id,
             &source,
-            school_year,
             observed_on,
             site,
         ));
@@ -100,7 +85,6 @@ fn roster_athlete_entity(
     entry: &RosterAthlete,
     school_id: &SchoolId,
     source: &SourceRef,
-    school_year: SchoolYear,
     observed_on: &str,
     site: &Site,
 ) -> CanonicalAthlete {
@@ -114,9 +98,10 @@ fn roster_athlete_entity(
     );
     athlete.known_names = vec![entry.name.clone(), entry.roster_name.clone()];
     athlete.sports = entry.sports();
-    if let Some(observation) = entry.observed_grade(school_year, source.clone()) {
-        athlete.observed_grades.push(observation);
-    }
+    athlete.published_graduations.push(PublishedGraduation {
+        grad_year: entry.grad_year,
+        source: source.clone(),
+    });
     athlete.public_profile_urls.push(entry.profile_url.clone());
     athlete.evidence.push(Evidence::parsed(
         SourceRef::new(site.source_id(), Some(entry.profile_url.clone())),

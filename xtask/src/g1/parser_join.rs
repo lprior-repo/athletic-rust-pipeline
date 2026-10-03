@@ -28,7 +28,12 @@ fn parsed_digests(entries: &[EvidenceEntry]) -> Vec<String> {
 fn totals(digests: &[String], parsed_files_map: &BTreeMap<String, Value>, view: &mut ParserView) {
     for pd in digests {
         if let Some(parser) = parsed_files_map.get(pd) {
-            view.count = Some(parser.get("count").and_then(|v| v.as_i64()).unwrap_or(0));
+            view.count = Some(
+                parser
+                    .get("count")
+                    .and_then(|v| v.as_i64())
+                    .map_or(0, core::convert::identity),
+            );
             view.next = parser.get("next_offset").and_then(|v| v.as_i64());
 
             if let Some(arr) = parser.get("issues").and_then(|v| v.as_array()) {
@@ -62,7 +67,10 @@ fn verdict_of(parser: &Value) -> String {
     if !issues_here.is_empty() {
         return "row_issues".to_string();
     }
-    let count = parser.get("count").and_then(|v| v.as_i64()).unwrap_or(0);
+    let count = parser
+        .get("count")
+        .and_then(|v| v.as_i64())
+        .map_or(0, core::convert::identity);
     let next = parser.get("next_offset").and_then(|v| v.as_i64());
     let candidates = parser
         .get("candidates")

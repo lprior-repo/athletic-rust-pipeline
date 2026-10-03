@@ -84,10 +84,10 @@ pub(super) async fn run_cycle(cli: &Cli, args: &RunArgs) -> Result<()> {
 }
 
 async fn run_offline(cli: &Cli, store: std::sync::Arc<Store>, args: &RunArgs) -> Result<()> {
-    let observed_on = args
-        .observed_on
-        .clone()
-        .unwrap_or_else(census_crawl::net::today_iso);
+    let observed_on = match args.observed_on.clone() {
+        Some(value) => value,
+        None => census_crawl::net::today_iso(),
+    };
     let grad_year = school_year(args.grad_year)?;
     let scope = scope_of(args.core);
 

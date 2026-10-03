@@ -5,6 +5,8 @@ use super::*;
 use census_domain::model::*;
 use census_domain::UsJurisdiction;
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
+
 fn school(name: &str) -> CanonicalSchool {
     CanonicalSchool::new(UsJurisdiction::Wisconsin, name, normalize_name(name)).0
 }
@@ -16,206 +18,167 @@ fn observed(name: &str, source: &str, at: &str) -> CanonicalSchool {
     row
 }
 
-fn mark(store: &Store, table: Table) -> Option<u64> {
-    let value = store.meta.get(mark_key(table)).unwrap()?;
-    Some(std::str::from_utf8(&value).unwrap().trim().parse().unwrap())
+fn mark(store: &Store, table: Table) -> TestResult<Option<u64>> {
+    let Some(value) = store.meta.get(mark_key(table))? else {
+        return Ok(None);
+    };
+    Ok(Some(std::str::from_utf8(&value)?.trim().parse()?))
 }
 
-fn counter(store: &Store, table: Table) -> u64 {
-    store
-        .stats()
-        .unwrap()
+fn counter(store: &Store, table: Table) -> TestResult<u64> {
+    Ok(store
+        .stats()?
         .appended
         .into_iter()
         .find(|(name, _)| name == table.file())
         .map(|(_, next)| next)
-        .unwrap()
+        .ok_or("table append counter")?)
 }
 
 #[test]
-fn a_batch_stores_the_mark_its_sequences_land_in() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
-    assert_eq!(
-        mark(&store, Table::Schools),
-        Some(0),
-        "an open leaves every table with a mark"
-    );
-
-    store
-        .append_many(
-            Table::Schools,
-            &[
-                observed("Abbotsford", "wiaa_schools", "2026-09-19"),
-                observed("Colby", "wiaa_schools", "2026-09-19"),
-            ],
-        )
-        .unwrap();
-    assert_eq!(mark(&store, Table::Schools), Some(2));
-    assert_eq!(counter(&store, Table::Schools), 2);
-
+fn a_batch_stores_the_mark_its_sequences_land_in() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    check!(eq; mark(&store, Table::Schools)?, Some(0), "an open leaves every table with a mark");
+    store.append_many(
+        Table::Schools,
+        &[
+            observed("Abbotsford", "wiaa_schools", "2026-09-19"),
+            observed("Colby", "wiaa_schools", "2026-09-19"),
+        ],
+    )?;
+    check!(eq; mark(&store, Table::Schools)?, Some(2));
+    check!(eq; counter(&store, Table::Schools)?, 2);
     let oversized = serde_json::json!({ "id": "s".repeat(MAX_ID_BYTES + 1) });
-    assert!(store.append(Table::Schools, &oversized).is_err());
-    assert_eq!(
-        mark(&store, Table::Schools),
-        Some(2),
-        "a refused batch may not move the mark"
-    );
-    assert_eq!(counter(&store, Table::Schools), 2);
+    check!(store.append(Table::Schools, &oversized).is_err());
+    check!(eq; mark(&store, Table::Schools)?, Some(2), "a refused batch may not move the mark");
+    check!(eq; counter(&store, Table::Schools)?, 2);
+    Ok(())
 }
 
 #[test]
-fn a_reopened_store_resumes_at_the_mark_its_last_batch_committed() {
-    let dir = tempfile::tempdir().unwrap();
+fn a_reopened_store_resumes_at_the_mark_its_last_batch_committed() -> TestResult {
+    let dir = tempfile::tempdir()?;
     {
-        let store = Store::open(dir.path()).unwrap();
-        store
-            .append(
-                Table::Schools,
-                &observed("Abbotsford", "wiaa_schools", "2026-09-19"),
-            )
-            .unwrap();
-        assert_eq!(mark(&store, Table::Schools), Some(1));
+        let store = Store::open(dir.path())?;
+        store.append(
+            Table::Schools,
+            &observed("Abbotsford", "wiaa_schools", "2026-09-19"),
+        )?;
+        check!(eq; mark(&store, Table::Schools)?, Some(1));
     }
-    let store = Store::open(dir.path()).unwrap();
-    assert_eq!(
-        mark(&store, Table::Schools),
-        Some(1),
-        "the mark survives the reopen"
-    );
-    assert_eq!(
-        counter(&store, Table::Schools),
-        1,
-        "the same next sequence the last batch left"
-    );
-
+    let store = Store::open(dir.path())?;
+    check!(eq; mark(&store, Table::Schools)?, Some(1), "the mark survives the reopen");
+    check!(eq; counter(&store, Table::Schools)?, 1, "the same next sequence the last batch left");
     let mut again = observed("Abbotsford", "mshsl_schools", "2026-09-20");
     again.city = Some("Abbotsford".into());
-    store.append(Table::Schools, &again).unwrap();
-    assert_eq!(mark(&store, Table::Schools), Some(2));
-    let rows = store.scan::<CanonicalSchool>(Table::Schools).unwrap();
-    let resumed = rows.iter().find(|row| row.id == again.id).unwrap();
-    assert_eq!(
-        resumed.evidence.len(),
-        2,
-        "the resumed append must not overwrite the first observation"
-    );
-    assert_eq!(resumed.city.as_deref(), Some("Abbotsford"));
+    store.append(Table::Schools, &again)?;
+    check!(eq; mark(&store, Table::Schools)?, Some(2));
+    let rows = store.scan::<CanonicalSchool>(Table::Schools)?;
+    let resumed = rows
+        .iter()
+        .find(|row| row.id == again.id)
+        .ok_or("resumed school")?;
+    check!(eq; resumed.evidence.len(), 2, "the resumed append must not overwrite the first observation");
+    check!(eq; resumed.city.as_deref(), Some("Abbotsford"));
+    Ok(())
 }
 
 #[test]
-fn a_store_written_without_marks_learns_them_from_one_scan() {
-    let dir = tempfile::tempdir().unwrap();
+fn a_store_written_without_marks_learns_them_from_one_scan() -> TestResult {
+    let dir = tempfile::tempdir()?;
     {
-        let store = Store::open(dir.path()).unwrap();
-        store
-            .append(
-                Table::Schools,
-                &observed("Abbotsford", "wiaa_schools", "2026-09-19"),
-            )
-            .unwrap();
-        store.meta.remove(mark_key(Table::Schools)).unwrap();
-        store.meta.remove(mark_key(Table::Athletes)).unwrap();
-        store.flush().unwrap();
+        let store = Store::open(dir.path())?;
+        store.append(
+            Table::Schools,
+            &observed("Abbotsford", "wiaa_schools", "2026-09-19"),
+        )?;
+        store.meta.remove(mark_key(Table::Schools))?;
+        store.meta.remove(mark_key(Table::Athletes))?;
+        store.flush()?;
     }
     {
-        let store = Store::open(dir.path()).unwrap();
-        assert_eq!(
-            mark(&store, Table::Schools),
-            Some(1),
-            "the open derived the mark it was missing"
-        );
-        assert_eq!(
-            mark(&store, Table::Athletes),
-            Some(0),
-            "an empty table is marked zero"
-        );
-        assert_eq!(counter(&store, Table::Schools), 1);
-
+        let store = Store::open(dir.path())?;
+        check!(eq; mark(&store, Table::Schools)?, Some(1), "the open derived the mark it was missing");
+        check!(eq; mark(&store, Table::Athletes)?, Some(0), "an empty table is marked zero");
+        check!(eq; counter(&store, Table::Schools)?, 1);
         let mut again = observed("Abbotsford", "mshsl_schools", "2026-09-20");
         again.city = Some("Abbotsford".into());
-        store.append(Table::Schools, &again).unwrap();
-        assert_eq!(mark(&store, Table::Schools), Some(2));
-        let rows = store.scan::<CanonicalSchool>(Table::Schools).unwrap();
-        let resumed = rows.iter().find(|row| row.id == again.id).unwrap();
-        assert_eq!(
-            resumed.evidence.len(),
-            2,
-            "the migration resumes at the sequence the scan found"
-        );
+        store.append(Table::Schools, &again)?;
+        check!(eq; mark(&store, Table::Schools)?, Some(2));
+        let rows = store.scan::<CanonicalSchool>(Table::Schools)?;
+        let resumed = rows
+            .iter()
+            .find(|row| row.id == again.id)
+            .ok_or("resumed school")?;
+        check!(eq; resumed.evidence.len(), 2, "the migration resumes at the sequence the scan found");
     }
-
-    let store = Store::open(dir.path()).unwrap();
-    assert_eq!(mark(&store, Table::Schools), Some(2));
-    assert_eq!(counter(&store, Table::Schools), 2);
+    let store = Store::open(dir.path())?;
+    check!(eq; mark(&store, Table::Schools)?, Some(2));
+    check!(eq; counter(&store, Table::Schools)?, 2);
+    Ok(())
 }
 
 #[test]
-fn an_open_with_a_mark_never_walks_the_table() {
-    let dir = tempfile::tempdir().unwrap();
+fn an_open_with_a_mark_never_walks_the_table() -> TestResult {
+    let dir = tempfile::tempdir()?;
     {
-        let store = Store::open(dir.path()).unwrap();
-        store
-            .append(
-                Table::Schools,
-                &observed("Abbotsford", "wiaa_schools", "2026-09-19"),
-            )
-            .unwrap();
+        let store = Store::open(dir.path())?;
+        store.append(
+            Table::Schools,
+            &observed("Abbotsford", "wiaa_schools", "2026-09-19"),
+        )?;
         store
             .entities
-            .insert(b"schools\0broken".as_slice(), b"{}".as_slice())
-            .unwrap();
+            .insert(b"schools\0broken".as_slice(), b"{}".as_slice())?;
     }
-    let store = Store::open(dir.path()).unwrap();
-    assert_eq!(counter(&store, Table::Schools), 1);
-
-    store.meta.remove(mark_key(Table::Schools)).unwrap();
-    store.flush().unwrap();
+    let store = Store::open(dir.path())?;
+    check!(eq; counter(&store, Table::Schools)?, 1);
+    store.meta.remove(mark_key(Table::Schools))?;
+    store.flush()?;
     drop(store);
-    match Store::open(dir.path()).map(|_| ()) {
-        Err(StoreError::Invariant { detail }) => {
-            assert!(
-                detail.contains("malformed observation key"),
-                "unexpected detail: {detail}"
-            )
-        }
-        other => panic!("expected the walk to refuse the unparseable key, got {other:?}"),
+    match Store::open(dir.path()) {
+        Err(StoreError::Invariant { detail }) => check!(
+            detail.contains("malformed observation key"),
+            "unexpected detail: {detail}"
+        ),
+        Err(error) => return Err(error.into()),
+        Ok(_) => return Err("expected the walk to refuse the unparseable key".into()),
     }
+    Ok(())
 }
 
 #[test]
-fn concurrent_appends_leave_a_mark_a_reopen_resumes_from() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Arc::new(Store::open(dir.path()).unwrap());
+fn concurrent_appends_leave_a_mark_a_reopen_resumes_from() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Arc::new(Store::open(dir.path())?);
     let writers = 4_usize;
     let per_writer = 25_usize;
     let mut threads = Vec::with_capacity(writers);
     for writer in 0..writers {
         let store = Arc::clone(&store);
-        threads.push(std::thread::spawn(move || {
+        threads.push(std::thread::spawn(move || -> TestResult {
             for index in 0..per_writer {
-                let row = school(&format!("School {writer} {index}"));
-                store.append(Table::Schools, &row).unwrap();
+                store.append(Table::Schools, &school(&format!("School {writer} {index}")))?;
             }
+            Ok(())
         }));
     }
+    let mut joined: TestResult = Ok(());
     for thread in threads {
-        thread.join().unwrap();
+        let outcome = match thread.join() {
+            Ok(outcome) => outcome,
+            Err(_) => Err("school writer panicked".into()),
+        };
+        joined = joined.and(outcome);
     }
-    let appended = u64::try_from(writers * per_writer).unwrap();
-    assert_eq!(mark(&store, Table::Schools), Some(appended));
+    joined?;
+    let appended = u64::try_from(writers * per_writer)?;
+    check!(eq; mark(&store, Table::Schools)?, Some(appended));
     drop(store);
-
-    let store = Store::open(dir.path()).unwrap();
-    assert_eq!(
-        mark(&store, Table::Schools),
-        Some(appended),
-        "the last commit left the table's high-water mark"
-    );
-    assert_eq!(counter(&store, Table::Schools), appended);
-    assert_eq!(
-        store.scan::<CanonicalSchool>(Table::Schools).unwrap().len(),
-        usize::try_from(appended).unwrap(),
-        "no append may overwrite another writer's observation"
-    );
+    let store = Store::open(dir.path())?;
+    check!(eq; mark(&store, Table::Schools)?, Some(appended), "the last commit left the table's high-water mark");
+    check!(eq; counter(&store, Table::Schools)?, appended);
+    check!(eq; store.scan::<CanonicalSchool>(Table::Schools)?.len(), usize::try_from(appended)?, "no append may overwrite another writer's observation");
+    Ok(())
 }

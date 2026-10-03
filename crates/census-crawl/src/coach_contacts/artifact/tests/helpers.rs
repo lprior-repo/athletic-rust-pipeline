@@ -4,6 +4,8 @@ use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use tempfile::TempDir;
 
+pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 pub fn sample_row() -> RawContactRow {
     RawContactRow {
         school: "Test High".to_owned(),
@@ -90,55 +92,53 @@ pub fn sample_claims(row: &RawContactRow) -> Vec<ContactClaimEvidence> {
     .collect()
 }
 
-pub fn write_raw_csv(dir: &TempDir, row: &RawContactRow) -> PathBuf {
+pub fn write_raw_csv(dir: &TempDir, row: &RawContactRow) -> TestResult<PathBuf> {
     let path = dir.path().join("contacts.csv");
-    let mut writer = csv::Writer::from_path(&path).unwrap();
-    writer.write_record(CONTACT_COLUMNS).unwrap();
-    writer
-        .write_record([
-            &row.school,
-            &row.city,
-            &row.state,
-            &row.sport,
-            &row.role,
-            &row.coach_name,
-            &row.public_professional_email,
-            &row.ad_name,
-            &row.ad_email,
-            &row.source_urls.join(" "),
-            &row.last_observed,
-        ])
-        .unwrap();
-    writer.flush().unwrap();
-    path
+    let mut writer = csv::Writer::from_path(&path)?;
+    writer.write_record(CONTACT_COLUMNS)?;
+    writer.write_record([
+        &row.school,
+        &row.city,
+        &row.state,
+        &row.sport,
+        &row.role,
+        &row.coach_name,
+        &row.public_professional_email,
+        &row.ad_name,
+        &row.ad_email,
+        &row.source_urls.join(" "),
+        &row.last_observed,
+    ])?;
+    writer.flush()?;
+    Ok(path)
 }
 
 pub fn write_staged(
     dir: &TempDir,
     row: &RawContactRow,
     claims: &[ContactClaimEvidence],
-) -> PathBuf {
-    stage_verified_contacts(&dir.path().join("stage"), [(row, claims)])
-        .unwrap()
-        .staging_dir
+) -> TestResult<PathBuf> {
+    Ok(stage_verified_contacts(&dir.path().join("stage"), [(row, claims)])?.staging_dir)
 }
 
-pub fn reseal(directory: &Path, rows: usize) {
+pub fn reseal(directory: &Path, rows: usize) -> TestResult {
     let manifest = Manifest {
         format_version: 1,
         verified_rows: rows,
         csv_sha256: format!(
             "{:x}",
-            Sha256::digest(std::fs::read(directory.join("contacts.csv")).unwrap())
+            Sha256::digest(std::fs::read(directory.join("contacts.csv"))?)
         ),
         evidence_sha256: format!(
             "{:x}",
-            Sha256::digest(std::fs::read(directory.join("contacts.csv.evidence.jsonl")).unwrap())
+            Sha256::digest(std::fs::read(
+                directory.join("contacts.csv.evidence.jsonl")
+            )?)
         ),
     };
     std::fs::write(
         directory.join("manifest.json"),
-        serde_json::to_vec(&manifest).unwrap(),
-    )
-    .unwrap();
+        serde_json::to_vec(&manifest)?,
+    )?;
+    Ok(())
 }

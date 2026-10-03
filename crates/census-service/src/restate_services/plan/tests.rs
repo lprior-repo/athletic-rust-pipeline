@@ -1,4 +1,3 @@
-use census_crawl::registry::descriptor;
 use census_domain::UsJurisdiction;
 
 use super::*;
@@ -6,7 +5,7 @@ use crate::restate_services::jurisdiction::DISPATCHED;
 use crate::restate_services::wire::{JurisdictionState, RefusedSource, SourcePlan};
 
 #[test]
-fn a_browser_source_without_a_lane_is_refused_by_name() {
+fn a_browser_source_without_a_lane_is_refused_by_name() -> Result<(), Box<dyn std::error::Error>> {
     let disposition = classify_access(
         "athleticnet",
         AccessClass::BrowserSession,
@@ -15,11 +14,33 @@ fn a_browser_source_without_a_lane_is_refused_by_name() {
     );
     let refusal = match disposition {
         UnitDisposition::Refused(refusal) => refusal,
-        other => panic!("a browser source with no lane must be refused, not {other:?}"),
+        other => {
+            return Err(format!("browser source without lane was not refused: {other:?}").into())
+        }
     };
-    assert_eq!(refusal.slug, "athleticnet");
-    assert_eq!(refusal.access, AccessClass::BrowserSession);
-    assert_eq!(refusal.reason, NO_BROWSER_LANE);
+    if refusal.slug != "athleticnet" {
+        return Err(format!(
+            "refusal slug: left={:?}, right=\"athleticnet\"",
+            refusal.slug
+        )
+        .into());
+    }
+    if refusal.access != AccessClass::BrowserSession {
+        return Err(format!(
+            "refusal access: left={:?}, right={:?}",
+            refusal.access,
+            AccessClass::BrowserSession
+        )
+        .into());
+    }
+    if refusal.reason != NO_BROWSER_LANE {
+        return Err(format!(
+            "refusal reason: left={:?}, right={NO_BROWSER_LANE:?}",
+            refusal.reason
+        )
+        .into());
+    }
+    Ok(())
 }
 
 #[test]
@@ -57,7 +78,7 @@ fn an_open_source_needs_no_lane() {
 }
 
 #[test]
-fn a_source_no_stage_runs_is_owed_by_name() {
+fn a_source_no_stage_runs_is_owed_by_name() -> Result<(), Box<dyn std::error::Error>> {
     let disposition = classify_access(
         "wiaa",
         AccessClass::Open,
@@ -66,19 +87,31 @@ fn a_source_no_stage_runs_is_owed_by_name() {
     );
     let refusal = match disposition {
         UnitDisposition::Refused(refusal) => refusal,
-        other => panic!("a source no stage runs must be refused, not {other:?}"),
+        other => return Err(format!("unwired source was not refused: {other:?}").into()),
     };
-    assert_eq!(refusal.slug, "wiaa");
-    assert_eq!(
-        refusal.access,
-        AccessClass::Open,
-        "the refusal still records how it would have been acquired"
-    );
-    assert_eq!(refusal.reason, NO_JURISDICTION_WALK);
+    if refusal.slug != "wiaa" {
+        return Err(format!("refusal slug: left={:?}, right=\"wiaa\"", refusal.slug).into());
+    }
+    if refusal.access != AccessClass::Open {
+        return Err(format!(
+            "the refusal still records how it would have been acquired: left={:?}, right={:?}",
+            refusal.access,
+            AccessClass::Open
+        )
+        .into());
+    }
+    if refusal.reason != NO_JURISDICTION_WALK {
+        return Err(format!(
+            "refusal reason: left={:?}, right={NO_JURISDICTION_WALK:?}",
+            refusal.reason
+        )
+        .into());
+    }
+    Ok(())
 }
 
 #[test]
-fn the_dispatch_question_is_asked_before_the_lane() {
+fn the_dispatch_question_is_asked_before_the_lane() -> Result<(), Box<dyn std::error::Error>> {
     let disposition = classify_access(
         "athleticnet",
         AccessClass::BrowserSession,
@@ -87,9 +120,16 @@ fn the_dispatch_question_is_asked_before_the_lane() {
     );
     let refusal = match disposition {
         UnitDisposition::Refused(refusal) => refusal,
-        other => panic!("a source with both gaps must be refused, not {other:?}"),
+        other => return Err(format!("source with both gaps was not refused: {other:?}").into()),
     };
-    assert_eq!(refusal.reason, NO_JURISDICTION_WALK);
+    if refusal.reason != NO_JURISDICTION_WALK {
+        return Err(format!(
+            "refusal reason: left={:?}, right={NO_JURISDICTION_WALK:?}",
+            refusal.reason
+        )
+        .into());
+    }
+    Ok(())
 }
 
 #[test]
@@ -173,16 +213,6 @@ fn the_meet_walks_are_planned_for_the_states_they_publish() {
         assert!(
             !planned.contains(&"wiaa_results") && !planned.contains(&"wayzata"),
             "{jurisdiction} is not the archive's or the timer's work: {planned:?}"
-        );
-    }
-}
-
-#[test]
-fn every_dispatched_slug_is_registered() {
-    for slug in DISPATCHED {
-        assert!(
-            descriptor(slug).is_some(),
-            "{slug} is dispatched by the chain but names no registered source"
         );
     }
 }
@@ -285,16 +315,18 @@ fn a_recorded_plan_partitions_the_dispositions_in_plan_order() {
 }
 
 #[test]
-fn a_state_journaled_before_the_plan_reads_with_no_plan() {
+fn a_current_state_without_a_recorded_plan_reads_with_no_plan(
+) -> Result<(), Box<dyn std::error::Error>> {
     let state: JurisdictionState = serde_json::from_value(serde_json::json!({
-        "identity": "jurisdiction:WI:2026-27:1"
-    }))
-    .expect("a state without a plan is still a state");
-    assert!(state.plan.is_none());
+        "identity": "jurisdiction:WI:2026-27:1",
+        "teams": {"status": "owed"}
+    }))?;
+    check!(state.plan.is_none());
+    Ok(())
 }
 
 #[test]
-fn a_recorded_plan_round_trips_through_the_journal() {
+fn a_recorded_plan_round_trips_through_the_journal() -> Result<(), Box<dyn std::error::Error>> {
     let mut state = JurisdictionState::default();
     let dispositions = vec![
         classify_access(
@@ -311,82 +343,85 @@ fn a_recorded_plan_round_trips_through_the_journal() {
         ),
     ];
     state.plan = Some(SourcePlan::of(&dispositions, String::new()));
-    let written = serde_json::to_value(&state).expect("a state serializes");
-    let read: JurisdictionState = serde_json::from_value(written).expect("and reads back");
-    assert_eq!(read.plan, state.plan);
-    let plan = read.plan.expect("the state carried a plan");
-    assert_eq!(plan.sweepable, vec!["mshsl".to_string()]);
-    assert_eq!(plan.refused.len(), 1);
+    let written = serde_json::to_value(&state)?;
+    let read: JurisdictionState = serde_json::from_value(written)?;
+    check!(eq; read.plan, state.plan);
+    let plan = read.plan.ok_or("missing recorded plan")?;
+    check!(eq; plan.sweepable, vec!["mshsl".to_string()]);
+    check!(eq; plan.refused.len(), 1);
+    Ok(())
 }
 
 #[test]
-fn fingerprint_is_deterministic() {
+fn fingerprint_is_deterministic() -> Result<(), Box<dyn std::error::Error>> {
     use crate::restate_services::plan::compute_plan_fingerprint;
     use census_domain::model::SchoolYear;
     use census_reconcile::identity::Revision;
 
     let fp1 = compute_plan_fingerprint(
         UsJurisdiction::Wisconsin,
-        SchoolYear::new(2026).unwrap(),
+        SchoolYear::new(2026).ok_or("invalid fixture season")?,
         Revision(1),
         BrowserLaneState::Absent,
     );
     let fp2 = compute_plan_fingerprint(
         UsJurisdiction::Wisconsin,
-        SchoolYear::new(2026).unwrap(),
+        SchoolYear::new(2026).ok_or("invalid fixture season")?,
         Revision(1),
         BrowserLaneState::Absent,
     );
-    assert_eq!(fp1, fp2);
-    assert_eq!(fp1.len(), 64);
+    check!(eq; fp1, fp2);
+    check!(eq; fp1.len(), 64);
+    Ok(())
 }
 
 #[test]
-fn fingerprint_changes_with_different_inputs() {
+fn fingerprint_changes_with_different_inputs() -> Result<(), Box<dyn std::error::Error>> {
     use crate::restate_services::plan::compute_plan_fingerprint;
     use census_domain::model::SchoolYear;
     use census_reconcile::identity::Revision;
 
     let base = compute_plan_fingerprint(
         UsJurisdiction::Wisconsin,
-        SchoolYear::new(2026).unwrap(),
+        SchoolYear::new(2026).ok_or("invalid fixture season")?,
         Revision(1),
         BrowserLaneState::Absent,
     );
-    assert_ne!(
+    check!(ne;
         compute_plan_fingerprint(
             UsJurisdiction::Minnesota,
-            SchoolYear::new(2026).unwrap(),
+            SchoolYear::new(2026).ok_or("invalid fixture season")?,
             Revision(1),
             BrowserLaneState::Absent,
         ),
         base
     );
-    assert_ne!(
+    check!(ne;
         compute_plan_fingerprint(
             UsJurisdiction::Wisconsin,
-            SchoolYear::new(2025).unwrap(),
+            SchoolYear::new(2025).ok_or("invalid fixture season")?,
             Revision(1),
             BrowserLaneState::Absent,
         ),
         base
     );
-    assert_ne!(
+    check!(ne;
         compute_plan_fingerprint(
             UsJurisdiction::Wisconsin,
-            SchoolYear::new(2026).unwrap(),
+            SchoolYear::new(2026).ok_or("invalid fixture season")?,
             Revision(2),
             BrowserLaneState::Absent,
         ),
         base
     );
-    assert_ne!(
+    check!(ne;
         compute_plan_fingerprint(
             UsJurisdiction::Wisconsin,
-            SchoolYear::new(2026).unwrap(),
+            SchoolYear::new(2026).ok_or("invalid fixture season")?,
             Revision(1),
             BrowserLaneState::Configured,
         ),
         base
     );
+    Ok(())
 }

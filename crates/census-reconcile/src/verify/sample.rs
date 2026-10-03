@@ -5,15 +5,17 @@ pub fn sample_indices(total_rows: usize, k: usize) -> Vec<usize> {
         return Vec::new();
     }
     let k = k.max(1);
-    let natural = total_rows.checked_div(k).unwrap_or(total_rows);
+    let natural = total_rows.checked_div(k).map_or(total_rows, |value| value);
     let count = natural.clamp(1, MAX_SAMPLES);
     let stride = if count > 1 {
-        total_rows.checked_div(count).unwrap_or(total_rows)
+        total_rows
+            .checked_div(count)
+            .map_or(total_rows, |value| value)
     } else {
         total_rows
     };
     (0..count)
-        .map(|i| checked_mul(i, stride).unwrap_or(usize::MAX))
+        .map(|i| checked_mul(i, stride).map_or(usize::MAX, |value| value))
         .collect()
 }
 

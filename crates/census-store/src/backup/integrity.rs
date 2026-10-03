@@ -53,10 +53,10 @@ impl Store {
                 continue;
             }
             if fs::File::open(&path).is_err() {
-                let name = path
-                    .file_name()
-                    .map(|n| n.to_string_lossy().to_string())
-                    .unwrap_or_else(|| path.display().to_string());
+                let name = match path.file_name().map(|n| n.to_string_lossy().to_string()) {
+                    Some(value) => value,
+                    None => path.display().to_string(),
+                };
                 unreadable.push(name);
             }
         }

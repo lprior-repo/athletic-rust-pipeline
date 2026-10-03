@@ -1,5 +1,10 @@
 #![forbid(unsafe_code)]
 
+#[cfg(test)]
+#[macro_use]
+#[path = "../../tools/fallible_checks.rs"]
+mod fallible_checks;
+
 mod baseline;
 mod census;
 mod cmd;
@@ -86,6 +91,13 @@ enum Command {
         about = "Reject comments and prose documentation attributes in project-owned Rust code"
     )]
     Comments,
+    #[command(
+        about = "Reject panic-producing extraction and its lint overrides in all project Rust"
+    )]
+    PanicExtraction {
+        #[arg(long)]
+        root: Option<PathBuf>,
+    },
     #[command(
         about = "Assert the architectural constants other work relies on: one line per check, non-zero exit when any of the eight is violated"
     )]
@@ -230,13 +242,11 @@ enum Command {
 }
 
 fn main() -> ExitCode {
-    match run() {
-        Ok(()) => ExitCode::SUCCESS,
-        Err(error) => {
-            eprintln!("xtask: {error:#}");
-            ExitCode::FAILURE
-        }
+    if let Err(error) = run() {
+        eprintln!("xtask: {error:#}");
+        return ExitCode::FAILURE;
     }
+    ExitCode::SUCCESS
 }
 
 fn run() -> Result<()> {
@@ -244,6 +254,10 @@ fn run() -> Result<()> {
         Command::Gate { args } => Cmd::new("bash").arg("tools/gate.sh").args(args).run(),
         Command::Scan => scan::run(),
         Command::Comments => comments::run(&paths::repo_root()),
+        Command::PanicExtraction { root } => root.map_or_else(
+            || comments::extraction::run(&paths::repo_root()),
+            |root| comments::extraction::run(&root),
+        ),
         Command::Contract => contract::run(),
         Command::Seams => seams::run(),
         Command::Integrity => integrity::run(),

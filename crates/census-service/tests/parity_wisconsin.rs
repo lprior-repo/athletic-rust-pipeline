@@ -1,4 +1,6 @@
 mod common;
+#[path = "common/golden.rs"]
+mod golden;
 
 use anyhow::{bail, ensure, Context, Result};
 use census_crawl::result_file::{ParsedEvent, ParsedMeet, ParsedRow, RelayLeg};
@@ -295,10 +297,10 @@ fn wiaa_corpus_matches_its_goldens() -> Result<()> {
                 !entries.is_empty(),
                 "{file} is a directory fixture that yielded no rows"
             );
-            common::assert_golden(&format!("wiaa__{}", stem_of(&file)), &entries)?;
+            golden::assert_golden(&format!("wiaa__{}", stem_of(&file)), &entries)?;
             files.push(CorpusEntry {
                 file,
-                digest: common::digest(&entries)?,
+                digest: golden::digest(&entries)?,
             });
             continue;
         }
@@ -310,17 +312,17 @@ fn wiaa_corpus_matches_its_goldens() -> Result<()> {
                 "{file} is a school fixture whose page carries no name"
             );
             let page_view = SchoolPageView::of(&page);
-            common::assert_golden(&format!("wiaa__{}", stem_of(&file)), &page_view)?;
+            golden::assert_golden(&format!("wiaa__{}", stem_of(&file)), &page_view)?;
 
             let entry = entry_for(org_id, &index);
             let extract = wiaa::school_entities(&entry, &page, OBSERVED_ON)
                 .with_context(|| format!("{file} yields no canonical school"))?;
             let extract_view = SchoolExtractView::of(&extract);
-            common::assert_golden(&format!("wiaa__{}__extract", stem_of(&file)), &extract_view)?;
+            golden::assert_golden(&format!("wiaa__{}__extract", stem_of(&file)), &extract_view)?;
 
             files.push(CorpusEntry {
                 file,
-                digest: common::digest(&(page_view, extract_view))?,
+                digest: golden::digest(&(page_view, extract_view))?,
             });
             schools = schools.saturating_add(1);
             continue;
@@ -331,7 +333,7 @@ fn wiaa_corpus_matches_its_goldens() -> Result<()> {
         schools > 0,
         "the wiaa corpus carries no school page, so nothing exercises the entity mapping"
     );
-    common::assert_golden(
+    golden::assert_golden(
         "wiaa__corpus",
         &Corpus {
             source: "wiaa",
@@ -353,21 +355,23 @@ fn index_entries() -> Result<Vec<wiaa::IndexEntry>> {
 }
 
 fn entry_for(org_id: &str, index: &[wiaa::IndexEntry]) -> wiaa::IndexEntry {
-    index
-        .iter()
-        .find(|entry| entry.org_id == org_id)
-        .cloned()
-        .unwrap_or_else(|| wiaa::IndexEntry {
+    match index.iter().find(|entry| entry.org_id == org_id).cloned() {
+        Some(value) => value,
+        None => wiaa::IndexEntry {
             org_id: org_id.to_string(),
             ..wiaa::IndexEntry::default()
-        })
+        },
+    }
 }
 
 fn org_id_of(file: &str) -> Result<&str> {
     let rest = file
         .strip_prefix("school_org")
         .with_context(|| format!("{file} does not follow school_org<orgID>_<name>.html"))?;
-    let org_id = rest.split('_').next().unwrap_or_default();
+    let org_id = rest
+        .split('_')
+        .next()
+        .map_or(Default::default(), core::convert::identity);
     ensure!(!org_id.is_empty(), "{file} carries no orgID");
     Ok(org_id)
 }
@@ -394,11 +398,11 @@ fn wiaa_results_corpus_matches_its_goldens() -> Result<()> {
             archive_year: year,
             meet: MeetView::of(&meet),
         };
-        common::assert_golden(&format!("wiaa_results__{file}"), &view)?;
+        golden::assert_golden(&format!("wiaa_results__{file}"), &view)?;
         formats.push(format.as_str().to_string());
         files.push(CorpusEntry {
             file,
-            digest: common::digest(&view)?,
+            digest: golden::digest(&view)?,
         });
     }
     for required in ["hytek_html", "hytek_text", "raceday"] {
@@ -407,7 +411,7 @@ fn wiaa_results_corpus_matches_its_goldens() -> Result<()> {
             "the corpus no longer covers the {required} reader: {formats:?}"
         );
     }
-    common::assert_golden(
+    golden::assert_golden(
         "wiaa_results__corpus",
         &Corpus {
             source: "wiaa_results",
@@ -431,7 +435,7 @@ fn raceday_finish_list_matches_its_golden() -> Result<()> {
         !meet.events.is_empty(),
         "{FILE} parsed without a single race"
     );
-    common::assert_golden(
+    golden::assert_golden(
         "wiaa_results__raceday__racinesectionalb-finish-list",
         &MeetView::of(&meet),
     )
@@ -450,7 +454,7 @@ fn xc_layouts_match_their_goldens() -> Result<()> {
             !meet.events.is_empty(),
             "the {name} capture parsed without a single race"
         );
-        common::assert_golden(&format!("wiaa_results__xc__{name}"), &MeetView::of(&meet))?;
+        golden::assert_golden(&format!("wiaa_results__xc__{name}"), &MeetView::of(&meet))?;
     }
     Ok(())
 }

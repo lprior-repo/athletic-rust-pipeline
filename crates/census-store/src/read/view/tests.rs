@@ -5,7 +5,7 @@ use census_domain::model::{
 };
 use census_domain::UsJurisdiction;
 
-type TestResult = Result<(), Box<dyn std::error::Error>>;
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn subject(school: &SchoolId, source: &str, name: &str) -> CanonicalAthlete {
     CanonicalAthlete::new(
@@ -27,15 +27,12 @@ fn captured_generation_excludes_later_subjects() -> TestResult {
     store.append(Table::Athletes, &first)?;
     let captured = store.snapshot();
     store.append(Table::Athletes, &second)?;
-    assert_eq!(
-        captured.scan::<CanonicalAthlete>(Table::Athletes)?,
-        vec![first.clone()]
-    );
+    check!(eq; captured.scan::<CanonicalAthlete>(Table::Athletes)?, vec![first.clone()]);
     let current = store.scan::<CanonicalAthlete>(Table::Athletes)?;
-    assert_eq!(current.len(), 2);
-    assert!(current.contains(&first));
-    assert!(current.contains(&second));
-    assert!(captured.sequence() < store.snapshot().sequence());
+    check!(eq; current.len(), 2);
+    check!(current.contains(&first));
+    check!(current.contains(&second));
+    check!(captured.sequence() < store.snapshot().sequence());
     Ok(())
 }
 
@@ -50,20 +47,13 @@ fn identity_projection_uses_the_captured_subject_generation() -> TestResult {
     let captured = store.snapshot();
     store.append(Table::Athletes, &second)?;
     let old = captured.athlete_identity_projection()?;
-    assert_eq!(old.status(first.id.as_str())?, IdentityStatus::Unverified);
-    assert!(matches!(
-        old.status(second.id.as_str()),
-        Err(census_domain::model::IdentityError::UnknownSubject(id)) if id == second.id.as_str()
-    ));
+    check!(eq; old.status(first.id.as_str())?, IdentityStatus::Unverified);
+    check!(
+        matches!(old.status(second.id.as_str()), Err(census_domain::model::IdentityError::UnknownSubject(id)) if id == second.id.as_str())
+    );
     let current = store.athlete_identity_projection()?;
-    assert_eq!(
-        current.status(first.id.as_str())?,
-        IdentityStatus::Unverified
-    );
-    assert_eq!(
-        current.status(second.id.as_str())?,
-        IdentityStatus::Unverified
-    );
+    check!(eq; current.status(first.id.as_str())?, IdentityStatus::Unverified);
+    check!(eq; current.status(second.id.as_str())?, IdentityStatus::Unverified);
     Ok(())
 }
 
@@ -78,11 +68,8 @@ fn consolidation_publishes_only_the_captured_generation() -> TestResult {
     store.append(Table::Athletes, &subject(&school, "3002", "Fran Example"))?;
     let path = dir.path().join("captured.jsonl");
     let result = captured.consolidate::<CanonicalAthlete>(Table::Athletes, &path)?;
-    assert_eq!(result.rows, 1);
-    assert_eq!(
-        crate::read::read_rows::<CanonicalAthlete>(&path)?,
-        vec![first]
-    );
+    check!(eq; result.rows, 1);
+    check!(eq; crate::read::read_rows::<CanonicalAthlete>(&path)?, vec![first]);
     Ok(())
 }
 
@@ -103,16 +90,10 @@ fn one_generation_keeps_school_and_athlete_tables_coherent() -> TestResult {
         Table::Athletes,
         &subject(&second_id, "4002", "Hope Example"),
     )?;
-    assert_eq!(
-        captured.scan::<CanonicalSchool>(Table::Schools)?,
-        vec![first_school]
-    );
-    assert_eq!(
-        captured.scan::<CanonicalAthlete>(Table::Athletes)?,
-        vec![first]
-    );
-    assert_eq!(store.scan::<CanonicalSchool>(Table::Schools)?.len(), 2);
-    assert_eq!(store.scan::<CanonicalAthlete>(Table::Athletes)?.len(), 2);
+    check!(eq; captured.scan::<CanonicalSchool>(Table::Schools)?, vec![first_school]);
+    check!(eq; captured.scan::<CanonicalAthlete>(Table::Athletes)?, vec![first]);
+    check!(eq; store.scan::<CanonicalSchool>(Table::Schools)?.len(), 2);
+    check!(eq; store.scan::<CanonicalAthlete>(Table::Athletes)?.len(), 2);
     Ok(())
 }
 
@@ -127,11 +108,11 @@ fn a_payload_cannot_impersonate_the_identity_in_its_storage_key() -> TestResult 
     );
     let key = crate::keys::observation_key(Table::Athletes, "another-subject", 1);
     store.entities.insert(key, serde_json::to_vec(&athlete)?)?;
-    assert!(matches!(
+    check!(matches!(
         store.scan::<CanonicalAthlete>(Table::Athletes),
         Err(StoreError::Invariant { .. })
     ));
-    assert!(matches!(
+    check!(matches!(
         store.snapshot().scan::<CanonicalAthlete>(Table::Athletes),
         Err(StoreError::Invariant { .. })
     ));
@@ -145,26 +126,27 @@ fn malformed_keys_inside_a_table_refuse_the_scan() -> TestResult {
     let mut key = crate::keys::table_prefix(Table::Athletes);
     key.extend_from_slice(b"bad");
     store.entities.insert(key, b"{}")?;
-    assert!(matches!(
+    check!(matches!(
         store.scan::<CanonicalAthlete>(Table::Athletes),
         Err(StoreError::Invariant { .. })
     ));
-    assert!(matches!(
+    check!(matches!(
         store.snapshot().scan::<CanonicalAthlete>(Table::Athletes),
         Err(StoreError::Invariant { .. })
     ));
     Ok(())
 }
 
-fn grade(year: i16, value: u8) -> census_domain::model::ObservedGrade {
-    census_domain::model::ObservedGrade {
-        grade: census_domain::model::Grade::new(value).unwrap(),
-        school_year: census_domain::model::SchoolYear::new(year).unwrap(),
+fn grade(year: i16, value: u8) -> TestResult<census_domain::model::ObservedGrade> {
+    Ok(census_domain::model::ObservedGrade {
+        grade: census_domain::model::Grade::new(value).ok_or("valid fixture grade")?,
+        school_year: census_domain::model::SchoolYear::new(year)
+            .ok_or("valid fixture school year")?,
         source: census_domain::model::SourceRef::new(
             "grade-fixture",
             Some("https://example.test/results".into()),
         ),
-    }
+    })
 }
 
 fn raw_grade(
@@ -191,37 +173,25 @@ fn later_unsupported_raw_grade_lowers_cohort_without_rewriting_canonical_or_froz
     let store = Store::open(directory.path())?;
     let school = SchoolId::mint("sch", &["raw-grade"]);
     let mut athlete = subject(&school, "1001", "Alice Example");
-    athlete.observed_grades.push(grade(2026, 12));
+    athlete.observed_grades.push(grade(2026, 12)?);
     store.append(Table::Athletes, &athlete)?;
     store.append(
         Table::SourceObservations,
-        &raw_grade("1001", grade(2026, 12)),
+        &raw_grade("1001", grade(2026, 12)?),
     )?;
     let before = store.snapshot();
     store.append(
         Table::SourceObservations,
-        &raw_grade("1001", grade(2040, 12)),
+        &raw_grade("1001", grade(2040, 12)?),
     )?;
     let current = store.snapshot().athletes()?;
-    assert_eq!(current.len(), 1);
-    assert_eq!(current[0].id, athlete.id);
-    assert_eq!(current[0].grad_year, GradYear::CO2027);
-    assert_eq!(
-        current[0].derived_cohort_confidence(),
-        Some(Confidence::LOW)
-    );
-    assert_eq!(
-        current[0].observed_grades,
-        vec![grade(2026, 12), grade(2040, 12)]
-    );
-    assert_eq!(
-        before.athletes()?[0].derived_cohort_confidence(),
-        Some(Confidence::HIGH)
-    );
-    assert_eq!(
-        store.scan::<CanonicalAthlete>(Table::Athletes)?,
-        vec![athlete]
-    );
+    check!(eq; current.len(), 1);
+    check!(eq; current[0].id, athlete.id);
+    check!(eq; current[0].grad_year, GradYear::CO2027);
+    check!(eq; current[0].derived_cohort_confidence(), Some(Confidence::LOW));
+    check!(eq; current[0].observed_grades, vec![grade(2026, 12)?, grade(2040, 12)?]);
+    check!(eq; before.athletes()?[0].derived_cohort_confidence(), Some(Confidence::HIGH));
+    check!(eq; store.scan::<CanonicalAthlete>(Table::Athletes)?, vec![athlete]);
     Ok(())
 }
 
@@ -235,13 +205,13 @@ fn raw_cohort_evidence_never_claims_advisory_aliases_or_mints_namesakes() -> Tes
         SourceNamespace::MilesplitAthlete,
         "1001",
     ));
-    athlete.observed_grades.push(grade(2026, 12));
+    athlete.observed_grades.push(grade(2026, 12)?);
     store.append(Table::Athletes, &athlete)?;
     store.append(
         Table::SourceObservations,
-        &raw_grade("1001", grade(2040, 12)),
+        &raw_grade("1001", grade(2040, 12)?),
     )?;
-    assert_eq!(store.snapshot().athletes()?, vec![athlete]);
+    check!(eq; store.snapshot().athletes()?, vec![athlete]);
     Ok(())
 }
 
@@ -255,13 +225,13 @@ fn contradictory_raw_grade_reaches_every_primary_owner_without_merging_them() ->
     store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
     store.append(
         Table::SourceObservations,
-        &raw_grade("1001", grade(2040, 12)),
+        &raw_grade("1001", grade(2040, 12)?),
     )?;
     let rows = store.snapshot().athletes()?;
-    assert_eq!(rows.len(), 2);
-    assert!(rows.iter().any(|row| row.id == first.id));
-    assert!(rows.iter().any(|row| row.id == second.id));
-    assert!(rows
+    check!(eq; rows.len(), 2);
+    check!(rows.iter().any(|row| row.id == first.id));
+    check!(rows.iter().any(|row| row.id == second.id));
+    check!(rows
         .iter()
         .all(|row| row.derived_cohort_confidence() == Some(Confidence::LOW)));
     Ok(())

@@ -158,14 +158,14 @@ fn process_files(csv_files: &[PathBuf]) -> Result<MergePass> {
         let state = path
             .file_stem()
             .and_then(|s| s.to_str())
-            .unwrap_or_default()
+            .map_or(Default::default(), core::convert::identity)
             .to_uppercase();
         let (rows, problem) = load_rows(path, &state);
         if let Some(problem) = problem {
             pass.broken.push((
                 path.file_name()
                     .map(|n| n.to_string_lossy().into_owned())
-                    .unwrap_or_default(),
+                    .map_or(Default::default(), core::convert::identity),
                 problem,
             ));
             continue;

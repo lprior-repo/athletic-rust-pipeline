@@ -9,35 +9,43 @@ use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use tempfile::TempDir;
 
-fn coverage_of(store: &Store, grad_year: Option<i16>) -> CoverageReport {
-    let dataset = crate::export::ExportDataset::load(store).unwrap();
-    coverage_report(&dataset, grad_year).unwrap()
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+mod counts;
+mod gaps;
+mod published_cohort;
+mod reconcile;
+mod scope;
+
+fn coverage_of(store: &Store, grad_year: Option<i16>) -> TestResult<CoverageReport> {
+    let dataset = crate::export::ExportDataset::load(store)?;
+    Ok(coverage_report(&dataset, grad_year)?)
 }
 
-fn census_of(store: &Store, scope: crate::report::Scope) -> crate::report::Census {
-    let dataset = crate::export::ExportDataset::load(store).unwrap();
-    crate::report::build_census(
+fn census_of(store: &Store, scope: crate::report::Scope) -> TestResult<crate::report::Census> {
+    let dataset = crate::export::ExportDataset::load(store)?;
+    Ok(crate::report::build_census(
         &crate::report::Derivation::of(&dataset, scope, None),
         &store.out_dir(),
-    )
+    ))
 }
 
-fn fixture_store() -> (TempDir, Store) {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+fn fixture_store() -> TestResult<(TempDir, Store)> {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
 
     let (school_a, school_a_id) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
-    store.append(Table::Schools, &school_a).unwrap();
+    store.append(Table::Schools, &school_a)?;
     let (school_b, school_b_id) =
         CanonicalSchool::new(UsJurisdiction::Minnesota, "Wayzata", "wayzata");
-    store.append(Table::Schools, &school_b).unwrap();
+    store.append(Table::Schools, &school_b)?;
     let (school_c, school_c_id) = CanonicalSchool::new(
         UsJurisdiction::Illinois,
         "Hinsdale Central",
         "hinsdale central",
     );
-    store.append(Table::Schools, &school_c).unwrap();
+    store.append(Table::Schools, &school_c)?;
     let (_school_d, school_d_id) =
         CanonicalSchool::new(UsJurisdiction::Ohio, "Never Stored", "never stored");
 
@@ -55,8 +63,8 @@ fn fixture_store() -> (TempDir, Store) {
     wi_core.sports.push(Sport::OutdoorTrack);
     wi_core
         .observed_grades
-        .push(observed_grade(11, 2025, "milesplit_roster"));
-    store.append(Table::Athletes, &wi_core).unwrap();
+        .push(observed_grade(11, 2025, "milesplit_roster")?);
+    store.append(Table::Athletes, &wi_core)?;
 
     let mut wi_mirror = CanonicalAthlete::new(
         &school_a_id,
@@ -66,7 +74,7 @@ fn fixture_store() -> (TempDir, Store) {
         fixture_source("wi-mirror"),
     );
     wi_mirror.evidence.push(evidence("athleticlive_athletes"));
-    store.append(Table::Athletes, &wi_mirror).unwrap();
+    store.append(Table::Athletes, &wi_mirror)?;
 
     let mut mn_athlete = CanonicalAthlete::new(
         &school_b_id,
@@ -76,29 +84,29 @@ fn fixture_store() -> (TempDir, Store) {
         fixture_source("mn-runner"),
     );
     mn_athlete.evidence.push(evidence("delphi_timing"));
-    store.append(Table::Athletes, &mn_athlete).unwrap();
+    store.append(Table::Athletes, &mn_athlete)?;
     let mut mn_off_cohort = CanonicalAthlete::new(
         &school_b_id,
         "Older Halvorsen",
-        GradYear::new(2028).unwrap(),
+        GradYear::new(2028).ok_or("invalid graduation year")?,
         Gender::Boys,
         fixture_source("mn-younger"),
     );
     mn_off_cohort.evidence.push(evidence("delphi_timing"));
-    store.append(Table::Athletes, &mn_off_cohort).unwrap();
+    store.append(Table::Athletes, &mn_off_cohort)?;
 
     let (school_k, school_k_id) =
         CanonicalSchool::new(UsJurisdiction::Kansas, "Olathe West", "olathe west");
-    store.append(Table::Schools, &school_k).unwrap();
+    store.append(Table::Schools, &school_k)?;
     let mut ks_off_cohort = CanonicalAthlete::new(
         &school_k_id,
         "Younger Kansan",
-        GradYear::new(2028).unwrap(),
+        GradYear::new(2028).ok_or("invalid graduation year")?,
         Gender::Girls,
         fixture_source("ks-younger"),
     );
     ks_off_cohort.evidence.push(evidence("kshsaa_results"));
-    store.append(Table::Athletes, &ks_off_cohort).unwrap();
+    store.append(Table::Athletes, &ks_off_cohort)?;
 
     let mut il_athlete = CanonicalAthlete::new(
         &school_c_id,
@@ -110,8 +118,8 @@ fn fixture_store() -> (TempDir, Store) {
     il_athlete.evidence.push(evidence("ihsa_results"));
     il_athlete
         .observed_grades
-        .push(observed_grade(11, 2024, "ihsa_results"));
-    store.append(Table::Athletes, &il_athlete).unwrap();
+        .push(observed_grade(11, 2024, "ihsa_results")?);
+    store.append(Table::Athletes, &il_athlete)?;
 
     let mut unplaced = CanonicalAthlete::new(
         &school_d_id,
@@ -121,7 +129,7 @@ fn fixture_store() -> (TempDir, Store) {
         fixture_source("unplaced"),
     );
     unplaced.evidence.push(evidence("ohsaa_results"));
-    store.append(Table::Athletes, &unplaced).unwrap();
+    store.append(Table::Athletes, &unplaced)?;
 
     let mut tf_coach = CanonicalCoach::new(
         &school_a_id,
@@ -131,7 +139,7 @@ fn fixture_store() -> (TempDir, Store) {
         CoachRole::HeadCoach,
     );
     tf_coach.professional_email = Some("coach@example.org".to_string());
-    store.append(Table::Coaches, &tf_coach).unwrap();
+    store.append(Table::Coaches, &tf_coach)?;
     let xc_coach = CanonicalCoach::new(
         &school_a_id,
         "Wren Coach",
@@ -139,7 +147,7 @@ fn fixture_store() -> (TempDir, Store) {
         Gender::Mixed,
         CoachRole::HeadCoach,
     );
-    store.append(Table::Coaches, &xc_coach).unwrap();
+    store.append(Table::Coaches, &xc_coach)?;
 
     let meet = CanonicalMeet::new(
         Some(UsJurisdiction::Wisconsin),
@@ -147,9 +155,9 @@ fn fixture_store() -> (TempDir, Store) {
         "2026-05-01",
         CompetitionLevel::Invitational,
     );
-    store.append(Table::Meets, &meet).unwrap();
+    store.append(Table::Meets, &meet)?;
     let event = CanonicalEvent::new(&meet.id, EventKind::Track100m, Gender::Boys, None, None);
-    store.append(Table::Events, &event).unwrap();
+    store.append(Table::Events, &event)?;
     let comparable = performance(
         &wi_core,
         &event.id,
@@ -158,8 +166,8 @@ fn fixture_store() -> (TempDir, Store) {
         Mark::TimeSeconds(CentiSeconds::new(1094)),
         "wiaa_results",
         "wi-1",
-    );
-    store.append(Table::Performances, &comparable).unwrap();
+    )?;
+    store.append(Table::Performances, &comparable)?;
 
     let missing_event =
         CanonicalEvent::new(&meet.id, EventKind::Track200m, Gender::Girls, None, None);
@@ -171,8 +179,8 @@ fn fixture_store() -> (TempDir, Store) {
         Mark::Raw("12.4h".to_string()),
         "athleticlive_athletes",
         "al-1",
-    );
-    store.append(Table::Performances, &unparsed).unwrap();
+    )?;
+    store.append(Table::Performances, &unparsed)?;
 
     let unmapped_event = CanonicalEvent::new(
         &meet.id,
@@ -183,7 +191,7 @@ fn fixture_store() -> (TempDir, Store) {
         None,
         None,
     );
-    store.append(Table::Events, &unmapped_event).unwrap();
+    store.append(Table::Events, &unmapped_event)?;
     let unmapped_row = performance(
         &wi_mirror,
         &unmapped_event.id,
@@ -194,8 +202,8 @@ fn fixture_store() -> (TempDir, Store) {
         Mark::Raw("27.1h".to_string()),
         "athleticlive_athletes",
         "al-2",
-    );
-    store.append(Table::Performances, &unmapped_row).unwrap();
+    )?;
+    store.append(Table::Performances, &unmapped_row)?;
 
     let never_stored = CanonicalAthlete::new(
         &school_d_id,
@@ -212,10 +220,10 @@ fn fixture_store() -> (TempDir, Store) {
         Mark::TimeSeconds(CentiSeconds::new(2410)),
         "ohsaa_results",
         "oh-orphan",
-    );
-    store.append(Table::Performances, &orphan).unwrap();
+    )?;
+    store.append(Table::Performances, &orphan)?;
 
-    (dir, store)
+    Ok((dir, store))
 }
 
 fn fixture_source(id: &str) -> SourceIdentity {
@@ -226,12 +234,12 @@ fn evidence(source: &str) -> Evidence {
     Evidence::parsed(SourceRef::new(source, None), "2026-09-20")
 }
 
-fn observed_grade(grade: u8, school_year: i16, source: &str) -> ObservedGrade {
-    ObservedGrade {
-        grade: Grade::new(grade).unwrap(),
-        school_year: SchoolYear::new(school_year).expect("the fixture's season is in range"),
+fn observed_grade(grade: u8, school_year: i16, source: &str) -> TestResult<ObservedGrade> {
+    Ok(ObservedGrade {
+        grade: Grade::new(grade).ok_or("invalid fixture grade")?,
+        school_year: SchoolYear::new(school_year).ok_or("invalid fixture season")?,
         source: SourceRef::new(source, None),
-    }
+    })
 }
 
 fn performance(
@@ -242,15 +250,15 @@ fn performance(
     mark: Mark,
     source: &str,
     source_key: &str,
-) -> CanonicalPerformance {
-    CanonicalPerformance {
+) -> TestResult<CanonicalPerformance> {
+    Ok(CanonicalPerformance {
         id: CanonicalPerformance::mint(&athlete.id, meet, &kind, "2026-05-01", source_key),
         athlete: athlete.id.clone(),
         team: CanonicalTeam::mint(
             &athlete.school,
             Sport::OutdoorTrack,
             Gender::Boys,
-            SchoolYear::new(2026).expect("2026 is a season"),
+            SchoolYear::new(2026).ok_or("invalid fixture season")?,
         ),
         event: event.clone(),
         meet: meet.clone(),
@@ -266,15 +274,15 @@ fn performance(
         source_key: source_key.to_string(),
         source_athlete: athlete.source.clone(),
         retained_conflicts: Vec::new(),
-    }
+    })
 }
 
-fn row<'a>(report: &'a CoverageReport, code: &str) -> &'a JurisdictionCoverage {
+fn row<'a>(report: &'a CoverageReport, code: &str) -> TestResult<&'a JurisdictionCoverage> {
     report
         .jurisdictions
         .iter()
         .find(|row| row.jurisdiction.code() == code)
-        .unwrap()
+        .ok_or_else(|| format!("missing jurisdiction {code}").into())
 }
 
 fn gap(report: &CoverageReport, code: &str, class: GapClass) -> Option<usize> {
@@ -283,388 +291,4 @@ fn gap(report: &CoverageReport, code: &str, class: GapClass) -> Option<usize> {
         .iter()
         .find(|gap| gap.jurisdiction.code() == code && gap.class == class)
         .map(|gap| gap.count)
-}
-
-#[test]
-fn an_empty_store_publishes_every_jurisdiction_with_a_gap() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
-
-    let report = coverage_of(&store, None);
-
-    assert_eq!(
-        report.jurisdictions.len(),
-        UsJurisdiction::CENSUS_SCOPE.len().saturating_add(1)
-    );
-    assert_eq!(
-        report.jurisdictions.last().unwrap().jurisdiction.code(),
-        "UNKNOWN"
-    );
-    assert!(report
-        .jurisdictions
-        .iter()
-        .all(|row| row.athletes == 0 && row.schools == 0 && row.core_share_pct == 0));
-    assert!(report
-        .jurisdictions
-        .iter()
-        .any(|row| row.jurisdiction.code() == "WI" && row.schools == 0));
-
-    assert_eq!(
-        report.gaps.len(),
-        UsJurisdiction::CENSUS_SCOPE.len().saturating_add(1)
-    );
-    assert!(report.gaps.iter().all(|gap| gap
-        .jurisdiction
-        .jurisdiction()
-        .is_none_or(|jurisdiction| jurisdiction.is_in_census_scope())));
-    assert!(report.gaps.iter().all(|gap| {
-        gap.class == GapClass::EmptyJurisdiction && gap.count == 0 && gap.unit == "schools"
-    }));
-
-    assert_eq!(report.read, CoverageTotals::default());
-    assert_eq!(report.off_cohort_athletes, 0);
-    assert!(report
-        .notes
-        .iter()
-        .all(|note| !note.contains("outside the census run scope")));
-    report.reconcile().unwrap();
-}
-
-#[test]
-fn jurisdiction_rows_sum_to_the_store_totals() {
-    let (_dir, store) = fixture_store();
-
-    let report = coverage_of(&store, Some(2027));
-    let published = report.published_totals();
-
-    let stored_athletes = store
-        .scan::<CanonicalAthlete>(Table::Athletes)
-        .unwrap()
-        .len();
-    assert_eq!(stored_athletes, 7);
-    assert_eq!(report.off_cohort_athletes, 2);
-    assert_eq!(
-        published
-            .athletes
-            .saturating_add(report.off_cohort_athletes),
-        stored_athletes
-    );
-    assert_eq!(
-        published.schools,
-        store.scan::<CanonicalSchool>(Table::Schools).unwrap().len()
-    );
-    assert_eq!(
-        published.coaches,
-        store.scan::<CanonicalCoach>(Table::Coaches).unwrap().len()
-    );
-    assert_eq!(
-        published.meets,
-        store.scan::<CanonicalMeet>(Table::Meets).unwrap().len()
-    );
-    assert_eq!(
-        published.performances,
-        store
-            .scan::<CanonicalPerformance>(Table::Performances)
-            .unwrap()
-            .len()
-    );
-
-    assert_eq!(published, report.read);
-    report.reconcile().unwrap();
-    let lines = report.reconciliation_lines();
-    assert_eq!(lines.len(), 4);
-    assert!(lines
-        .iter()
-        .any(|line| line.contains("coverage reconciliation: matches")));
-    assert!(
-        lines.iter().any(
-            |line| line.contains("read: schools=4 athletes=5 coaches=2 meets=1 performances=4")
-        ),
-        "{lines:?}"
-    );
-}
-
-#[test]
-fn a_jurisdiction_row_carries_the_counted_columns() {
-    let (_dir, store) = fixture_store();
-
-    let report = coverage_of(&store, Some(2027));
-
-    let wi = row(&report, "WI");
-    assert_eq!(wi.schools, 1);
-    assert_eq!(wi.schools_with_athletes, 1);
-    assert_eq!(wi.athletes, 2);
-    assert_eq!(wi.athletes_core, 1);
-    assert_eq!(wi.core_share_pct, 50);
-    assert_eq!(wi.boys, 1);
-    assert_eq!(wi.girls, 1);
-    assert_eq!(wi.grad_verified, 1);
-    assert_eq!(wi.grad_unresolved, 1);
-    assert_eq!(wi.outdoor_track, 1);
-    assert_eq!(wi.indoor_track, 0);
-    assert_eq!(wi.cross_country, 0);
-    assert_eq!(wi.with_performance, 2);
-    assert_eq!(wi.with_comparable_mark, 1);
-    assert_eq!(wi.multisource, 0);
-    assert_eq!(wi.with_profile_url, 1);
-    assert_eq!(wi.with_milesplit_url, 1);
-    assert_eq!(wi.with_athletic_net_url, 0);
-    assert_eq!(wi.coaches, 2);
-    assert_eq!(wi.coaches_with_email, 1);
-    assert_eq!(wi.schools_with_tf_coach, 1);
-    assert_eq!(wi.schools_with_xc_coach, 1);
-    assert_eq!(wi.schools_with_coach_email, 1);
-    assert_eq!(wi.meets, 1);
-    assert_eq!(wi.performances, 3);
-    assert_eq!(wi.sources.get("milesplit_roster"), Some(&1));
-    assert_eq!(wi.sources.get("athleticlive_athletes"), Some(&1));
-
-    let mn = row(&report, "MN");
-    assert_eq!(mn.schools, 1);
-    assert_eq!(mn.athletes, 1);
-    assert_eq!(mn.coaches, 0);
-
-    let ks = row(&report, "KS");
-    assert_eq!(ks.schools, 1);
-    assert_eq!(ks.athletes, 0);
-    assert_eq!(ks.core_share_pct, 0);
-
-    let unplaced = row(&report, "UNKNOWN");
-    assert_eq!(unplaced.schools, 0);
-    assert_eq!(unplaced.athletes, 1);
-    assert_eq!(unplaced.performances, 1);
-    assert_eq!(unplaced.with_performance, 0);
-    assert_eq!(unplaced.with_comparable_mark, 0);
-}
-
-#[test]
-fn gap_classes_carry_the_count_that_produced_them() {
-    let (_dir, store) = fixture_store();
-
-    let report = coverage_of(&store, Some(2027));
-
-    assert_eq!(
-        gap(&report, "WI", GapClass::MissingGraduationEvidence),
-        Some(1)
-    );
-    assert_eq!(gap(&report, "WI", GapClass::MissingProfile), Some(1));
-    assert_eq!(gap(&report, "WI", GapClass::MissingPrSupport), Some(1));
-    assert_eq!(gap(&report, "WI", GapClass::MissingEventContext), Some(1));
-    assert_eq!(gap(&report, "WI", GapClass::UnmappedEvent), Some(1));
-    let unmapped = report
-        .gaps
-        .iter()
-        .find(|gap| gap.class == GapClass::UnmappedEvent)
-        .unwrap();
-    assert_eq!(unmapped.unit, "performances");
-    assert_eq!(
-        gap(&report, "WI", GapClass::MissingPerformanceHistory),
-        None
-    );
-    let event_context = report
-        .gaps
-        .iter()
-        .find(|gap| gap.class == GapClass::MissingEventContext)
-        .unwrap();
-    assert_eq!(event_context.unit, "performances");
-
-    assert_eq!(row(&report, "IL").identity_conflicts, 1);
-    assert_eq!(gap(&report, "IL", GapClass::ConflictingIdentity), Some(1));
-    assert_eq!(
-        gap(&report, "IL", GapClass::MissingGraduationEvidence),
-        Some(1)
-    );
-
-    assert_eq!(gap(&report, "MN", GapClass::MissingCoach), Some(1));
-
-    assert_eq!(gap(&report, "UNKNOWN", GapClass::MissingSchool), Some(1));
-    assert_eq!(gap(&report, "UNKNOWN", GapClass::MissingCoach), Some(1));
-    assert_eq!(
-        gap(&report, "UNKNOWN", GapClass::UnknownJurisdiction),
-        Some(1)
-    );
-    assert_eq!(gap(&report, "UNKNOWN", GapClass::MissingProfile), Some(1));
-    assert_eq!(
-        gap(&report, "UNKNOWN", GapClass::MissingEventContext),
-        Some(1)
-    );
-
-    assert_eq!(gap(&report, "MN", GapClass::EmptyJurisdiction), None);
-    assert_eq!(gap(&report, "WY", GapClass::EmptyJurisdiction), Some(0));
-}
-
-#[test]
-fn a_mirror_result_plane_row_is_counted_but_never_core() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
-    let (school, school_id) =
-        CanonicalSchool::new(UsJurisdiction::Ohio, "Dublin Coffman", "dublin coffman");
-    store.append(Table::Schools, &school).unwrap();
-    let mut core_athlete = CanonicalAthlete::new(
-        &school_id,
-        "Core Runner",
-        GradYear::CO2027,
-        Gender::Boys,
-        fixture_source("oh-core"),
-    );
-    core_athlete.evidence.push(evidence("ohsaa_results"));
-    store.append(Table::Athletes, &core_athlete).unwrap();
-    let mut mirror_athlete = CanonicalAthlete::new(
-        &school_id,
-        "Mirror Runner",
-        GradYear::CO2027,
-        Gender::Girls,
-        fixture_source("oh-mirror"),
-    );
-    mirror_athlete
-        .evidence
-        .push(evidence("athleticlive_results"));
-    store.append(Table::Athletes, &mirror_athlete).unwrap();
-
-    let report = coverage_of(&store, Some(2027));
-    let ohio = row(&report, "OH");
-    assert_eq!(ohio.athletes, 2);
-    assert_eq!(ohio.athletes_core, 1);
-    assert_eq!(ohio.core_share_pct, 50);
-    assert_eq!(ohio.sources.get("athleticlive_results"), Some(&1));
-    assert_eq!(ohio.sources.get("ohsaa_results"), Some(&1));
-
-    let core = census_of(&store, crate::report::Scope::Core);
-    assert_eq!(core.totals.athletes, 1);
-}
-
-#[test]
-fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
-
-    let (school, school_id) =
-        CanonicalSchool::new(UsJurisdiction::Ohio, "Dublin Coffman", "dublin coffman");
-    store.append(Table::Schools, &school).unwrap();
-    let mut core_athlete = CanonicalAthlete::new(
-        &school_id,
-        "Core Runner",
-        GradYear::CO2027,
-        Gender::Boys,
-        fixture_source("oh-core"),
-    );
-    core_athlete.evidence.push(evidence("ohsaa_results"));
-    store.append(Table::Athletes, &core_athlete).unwrap();
-    let mut mirror_athlete = CanonicalAthlete::new(
-        &school_id,
-        "Mirror Runner",
-        GradYear::CO2027,
-        Gender::Girls,
-        fixture_source("oh-mirror"),
-    );
-    mirror_athlete
-        .evidence
-        .push(evidence("athleticlive_results"));
-    store.append(Table::Athletes, &mirror_athlete).unwrap();
-
-    let (ak_school, ak_school_id) =
-        CanonicalSchool::new(UsJurisdiction::Alaska, "Service High", "service high");
-    store.append(Table::Schools, &ak_school).unwrap();
-    let mut ak_athlete = CanonicalAthlete::new(
-        &ak_school_id,
-        "Denali Runner",
-        GradYear::CO2027,
-        Gender::Boys,
-        fixture_source("ak-runner"),
-    );
-    ak_athlete.evidence.push(evidence("athleticlive_athletes"));
-    store.append(Table::Athletes, &ak_athlete).unwrap();
-    let ak_coach = CanonicalCoach::new(
-        &ak_school_id,
-        "Aurora Coach",
-        Some(Sport::CrossCountry),
-        Gender::Mixed,
-        CoachRole::HeadCoach,
-    );
-    store.append(Table::Coaches, &ak_coach).unwrap();
-    let ak_meet = CanonicalMeet::new(
-        Some(UsJurisdiction::Alaska),
-        "Service Invite",
-        "2026-05-01",
-        CompetitionLevel::Invitational,
-    );
-    store.append(Table::Meets, &ak_meet).unwrap();
-    let ak_event = CanonicalEvent::new(&ak_meet.id, EventKind::Track100m, Gender::Boys, None, None);
-    store.append(Table::Events, &ak_event).unwrap();
-    let ak_result = performance(
-        &ak_athlete,
-        &ak_event.id,
-        &ak_meet.id,
-        EventKind::Track100m,
-        Mark::TimeSeconds(CentiSeconds::new(1142)),
-        "athleticlive_results",
-        "ak-1",
-    );
-    store.append(Table::Performances, &ak_result).unwrap();
-
-    let report = coverage_of(&store, Some(2027));
-
-    assert!(report
-        .jurisdictions
-        .iter()
-        .all(|published| published.jurisdiction.code() != "AK"));
-    let ohio = row(&report, "OH");
-    assert_eq!(ohio.athletes, 2);
-    assert_eq!(ohio.athletes_core, 1);
-
-    assert_eq!(report.off_cohort_athletes, 0);
-    assert_eq!(report.read, report.published_totals());
-    assert_eq!(report.read.schools, 1);
-    assert_eq!(report.read.athletes, 2);
-    assert_eq!(report.read.coaches, 0);
-    assert_eq!(report.read.meets, 0);
-    assert_eq!(report.read.performances, 0);
-    report.reconcile().unwrap();
-
-    let scope_note = report
-        .notes
-        .iter()
-        .find(|note| note.contains("outside the census run scope"));
-    let scope_note = scope_note.unwrap_or_else(|| panic!("no scope note in {:?}", report.notes));
-    assert!(
-        scope_note.contains("schools=1 athletes=1 coaches=1 meets=1 performances=1"),
-        "{scope_note}"
-    );
-}
-
-#[test]
-fn reconcile_refuses_a_report_whose_rows_lost_or_invented_a_row() {
-    let (_dir, store) = fixture_store();
-    let report = coverage_of(&store, Some(2027));
-
-    let mut lost = report.clone();
-    lost.jurisdictions.pop();
-    let error = lost.reconcile().unwrap_err().to_string();
-    assert!(error.contains("coverage reconciliation failed"), "{error}");
-    assert!(
-        error.contains("rows publish schools=4 athletes=4"),
-        "{error}"
-    );
-
-    let mut invented = report.clone();
-    invented.jurisdictions.push(row(&report, "UNKNOWN").clone());
-    let error = invented.reconcile().unwrap_err().to_string();
-    assert!(error.contains("coverage reconciliation failed"), "{error}");
-    assert!(
-        error.contains("rows publish schools=4 athletes=6"),
-        "{error}"
-    );
-}
-
-#[test]
-fn reconcile_refuses_a_read_count_the_rows_do_not_publish() {
-    let (_dir, store) = fixture_store();
-    let mut report = coverage_of(&store, Some(2027));
-
-    report.read.athletes = report.read.athletes.saturating_add(1);
-    let error = report.reconcile().unwrap_err();
-    let text = error.to_string();
-    assert!(text.contains("coverage reconciliation failed"), "{text}");
-    assert!(text.contains("read schools=4 athletes=6"), "{text}");
-    assert!(text.contains("rows publish schools=4 athletes=5"), "{text}");
 }

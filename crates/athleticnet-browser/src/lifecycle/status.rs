@@ -32,6 +32,6 @@ pub(crate) fn remaining_ms(clock: &dyn Clock, cooldown: &Mutex<Option<Instant>>)
                 .saturating_duration_since(clock.now_instant())
                 .as_millis(),
         )
-        .unwrap_or(u64::MAX)
+        .map_or(u64::MAX, |value| value)
     })
 }

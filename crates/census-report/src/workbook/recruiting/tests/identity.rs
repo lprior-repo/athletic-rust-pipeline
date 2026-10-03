@@ -4,31 +4,37 @@ use census_domain::model::{
     ReviewVerdictRecord, ATHLETE_IDENTITY_FAMILY,
 };
 
+mod published_cohort;
+
 fn member(school: &SchoolId, name: &str, gender: Gender, url: &str) -> CanonicalAthlete {
     let mut athlete = CanonicalAthlete::new(
         school,
         name,
         GradYear::CO2027,
         gender,
-        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169").with_url(url),
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "9001001").with_url(url),
     );
     athlete.public_profile_urls.push(url.to_owned());
     athlete.evidence = evidence("wiaa_results", Some(url));
     athlete
 }
 
-pub(super) fn accept(store: &Store, members: &[CanonicalAthlete]) {
-    let index = store.athlete_identity_index().unwrap();
+pub(super) fn accept(store: &Store, members: &[CanonicalAthlete]) -> TestResult {
+    let index = store.athlete_identity_index()?;
     let ids = members
         .iter()
         .map(|athlete| athlete.id.cast())
         .collect::<Vec<_>>();
     let subject = "Source-backed identity fixture";
     let detail = "One published provider identifier retained with alternate names";
-    let evidence = index.case_evidence(subject, detail, &ids).unwrap();
+    let evidence = index.case_evidence(subject, detail, &ids)?;
     let mut case = ReviewCase::pending_with_evidence(
         ATHLETE_IDENTITY_FAMILY,
-        members[0].id.as_str(),
+        members
+            .first()
+            .ok_or("identity fixture has no members")?
+            .id
+            .as_str(),
         subject,
         detail,
         evidence,
@@ -50,24 +56,32 @@ pub(super) fn accept(store: &Store, members: &[CanonicalAthlete]) {
         observed_at: DAY.into(),
         member_ids: case.member_ids.clone(),
     };
-    store.replace(Table::ReviewCases, &case).unwrap();
-    store.replace(Table::IdentityVerdicts, &verdict).unwrap();
+    store.replace(Table::ReviewCases, &case)?;
+    store.replace(Table::IdentityVerdicts, &verdict)?;
     let cases = [case];
     let verdicts = [verdict];
-    let builder = IdentityProjectionBuilder::new(index, &cases, &verdicts).unwrap();
+    let builder = IdentityProjectionBuilder::new(index, &cases, &verdicts)?;
     let decisions = builder
         .reviewed_applications(DAY)
-        .map(|(_, result)| match result.unwrap() {
-            IdentityApplication::Accepted(decision) => decision,
-            IdentityApplication::Retained(issue) => {
-                panic!("fixture acceptance rejected: {issue:?}")
+        .map(|(_, result)| -> TestResult<_> {
+            match result? {
+                IdentityApplication::Accepted(decision) => Ok(decision),
+                IdentityApplication::Retained(issue) => {
+                    Err(format!("fixture acceptance rejected: {issue:?}").into())
+                }
             }
         })
-        .collect::<Vec<_>>();
-    assert_eq!(store.apply_identity_decisions(&decisions).unwrap(), 1);
+        .collect::<TestResult<Vec<_>>>()?;
+    check!(eq; store.apply_identity_decisions(&decisions)?, 1);
+    Ok(())
 }
 
-fn add_result(store: &Store, athlete: &CanonicalAthlete, kind: EventKind, value: i32) {
+fn add_result(
+    store: &Store,
+    athlete: &CanonicalAthlete,
+    kind: EventKind,
+    value: i32,
+) -> TestResult {
     let meet = meet(
         store,
         UsJurisdiction::Wisconsin,
@@ -75,8 +89,8 @@ fn add_result(store: &Store, athlete: &CanonicalAthlete, kind: EventKind, value:
         "2026-05-01",
         CompetitionLevel::Invitational,
         Sport::OutdoorTrack,
-    );
-    let event = event(store, &meet, kind.clone());
+    )?;
+    let event = event(store, &meet, kind.clone())?;
     performance(
         store,
         &PerformanceRow {
@@ -90,49 +104,48 @@ fn add_result(store: &Store, athlete: &CanonicalAthlete, kind: EventKind, value:
         Mark::TimeSeconds(CentiSeconds::new(value)),
         "wiaa_results",
         "https://wiaa.test/union/results",
-    );
+    )
 }
 
 #[test]
-fn accepted_aliases_publish_one_person_with_all_events_profiles_and_supported_metadata() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
-    let school = school(&store, UsJurisdiction::Wisconsin, "Union High");
+fn accepted_aliases_publish_one_person_with_all_events_profiles_and_supported_metadata(
+) -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let school = school(&store, UsJurisdiction::Wisconsin, "Union High")?;
     let mut first = member(
         &school,
         "Synthetic Runner",
         Gender::Unknown,
-        "https://wi.milesplit.com/athletes/accepted-person",
+        "https://wi.milesplit.com/athletes/9001001",
     );
     let mut second = member(
         &school,
         "S. Runner",
         Gender::Boys,
-        "https://mn.milesplit.com/athletes/accepted-person",
+        "https://mn.milesplit.com/athletes/9001001",
     );
     first.public_profile_urls = vec!["https://profiles.test/first".into()];
     second.public_profile_urls = vec!["https://profiles.test/second".into()];
     first.sports = vec![Sport::OutdoorTrack];
     second.sports = vec![Sport::CrossCountry];
     first.observed_grades.push(ObservedGrade {
-        grade: Grade::new(11).unwrap(),
-        school_year: SchoolYear::new(2025).unwrap(),
+        grade: Grade::new(11).ok_or("invalid fixture grade")?,
+        school_year: SchoolYear::new(2025).ok_or("invalid fixture season")?,
         source: SourceRef::id("wiaa_results"),
     });
     second.observed_grades.push(ObservedGrade {
-        grade: Grade::new(12).unwrap(),
-        school_year: SchoolYear::new(2026).unwrap(),
+        grade: Grade::new(12).ok_or("invalid fixture grade")?,
+        school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
         source: SourceRef::id("wiaa_results"),
     });
     second.add_identity(
         SourceIdentity::new(SourceNamespace::athletic_net("athlete"), "union")
             .with_url("https://www.athletic.net/athlete/union"),
     );
-    store
-        .append_many(Table::Athletes, &[first.clone(), second.clone()])
-        .unwrap();
-    add_result(&store, &first, EventKind::Track400m, 5000);
-    add_result(&store, &second, EventKind::Track800m, 12000);
+    store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
+    add_result(&store, &first, EventKind::Track400m, 5000)?;
+    add_result(&store, &second, EventKind::Track800m, 12000)?;
     coach(
         &store,
         &school,
@@ -140,55 +153,53 @@ fn accepted_aliases_publish_one_person_with_all_events_profiles_and_supported_me
         Some(Sport::OutdoorTrack),
         CoachRole::HeadCoach,
         "coach@union.test",
-    );
-    accept(&store, &[first.clone(), second.clone()]);
-    let dataset = crate::export::ExportDataset::load(&store).unwrap();
+    )?;
+    accept(&store, &[first.clone(), second.clone()])?;
+    let dataset = crate::export::ExportDataset::load(&store)?;
     let canonical = dataset
         .identities()
         .canonical_id(first.id.as_str())
         .to_owned();
-    assert_eq!(
-        dataset.identities().canonical_id(second.id.as_str()),
-        canonical
-    );
+    check!(eq; dataset.identities().canonical_id(second.id.as_str()),
+    canonical);
     let derivation = crate::report::Derivation::of(&dataset, Scope::AllSources, Some(2027));
     let [athlete] = derivation.athletes() else {
-        panic!("one accepted identity required")
+        return Err("one accepted identity required".into());
     };
-    assert_eq!(athlete.id.as_str(), canonical);
-    assert_eq!(athlete.gender, Gender::Boys);
+    check!(eq; athlete.id.as_str(), canonical);
+    check!(eq; athlete.gender, Gender::Boys);
     for member in [&first, &second] {
-        assert!(athlete.known_names.contains(&member.canonical_name));
-        assert!(athlete
+        check!(athlete.known_names.contains(&member.canonical_name));
+        check!(athlete
             .public_profile_urls
             .contains(&member.public_profile_urls[0]));
-        assert!(athlete.evidence.contains(&member.evidence[0]));
-        assert!(athlete.observed_grades.contains(&member.observed_grades[0]));
+        check!(athlete.evidence.contains(&member.evidence[0]));
+        check!(athlete.observed_grades.contains(&member.observed_grades[0]));
     }
-    assert_eq!(dataset.athletes.len(), 2);
-    let coverage = crate::report::coverage_report(&dataset, Some(2027)).unwrap();
+    check!(eq; dataset.athletes.len(), 2);
+    let coverage = crate::report::coverage_report(&dataset, Some(2027))?;
     let census = crate::report::build_census(&derivation, &store.out_dir());
-    assert_eq!(coverage.read.athletes, 1);
-    assert_eq!(coverage.read.performances, 2);
-    assert_eq!(coverage.published_totals().athletes, census.totals.athletes);
+    check!(eq; coverage.read.athletes, 1);
+    check!(eq; coverage.read.performances, 2);
+    check!(eq; coverage.published_totals().athletes, census.totals.athletes);
     let jurisdiction = coverage
         .jurisdictions
         .iter()
         .find(|row| row.jurisdiction == UsJurisdiction::Wisconsin.into())
-        .unwrap();
-    assert_eq!(jurisdiction.with_performance, 1);
-    assert_eq!(jurisdiction.performances, 2);
-    assert_eq!(jurisdiction.athletes_core, 1);
-    let projection = recruiting(&store, Scope::AllSources, Some(2027));
+        .ok_or("missing Wisconsin coverage")?;
+    check!(eq; jurisdiction.with_performance, 1);
+    check!(eq; jurisdiction.performances, 2);
+    check!(eq; jurisdiction.athletes_core, 1);
+    let projection = recruiting(&store, Scope::AllSources, Some(2027))?;
     let path = dir.path().join("accepted.xlsx");
     let mut book = Workbook::new();
-    projection.write_athletes(&mut book, &path).unwrap();
-    projection.write_prs(&mut book, &path).unwrap();
-    book.save(&path).unwrap();
-    let mut book = open_workbook(&path).unwrap();
-    let range = sheet(&mut book, "Athletes");
-    assert_eq!(range.height(), 2);
-    let row = row_of(&range, &canonical);
+    projection.write_athletes(&mut book, &path)?;
+    projection.write_prs(&mut book, &path)?;
+    book.save(&path)?;
+    let mut book = open_workbook(&path)?;
+    let range = sheet(&mut book, "Athletes")?;
+    check!(eq; range.height(), 2);
+    let row = row_of(&range, &canonical)?;
     for (header, expected) in [
         ("TF", "yes"),
         ("XC", "yes"),
@@ -201,46 +212,44 @@ fn accepted_aliases_publish_one_person_with_all_events_profiles_and_supported_me
         ("School", "Union High"),
         ("Sources Count", "2"),
     ] {
-        assert_eq!(
-            text(&range, row, column_of(&range, header)),
-            expected,
-            "{header}"
-        );
+        check!(eq; text(&range, row, column_of(&range, header)?),
+        expected,
+        "{header}");
     }
-    let summary = text(&range, row, column_of(&range, "Headline PR summary"));
-    assert!(summary.contains("400m 50.00"));
-    assert!(summary.contains("800m 2:00.00"));
+    let summary = text(&range, row, column_of(&range, "Headline PR summary")?);
+    check!(summary.contains("400m 50.00"));
+    check!(summary.contains("800m 2:00.00"));
     let profiles = ["MileSplit URL", "Other profile URLs", "Athletic.net URL"]
-        .map(|header| text(&range, row, column_of(&range, header)))
+        .into_iter()
+        .map(|header| Ok(text(&range, row, column_of(&range, header)?)))
+        .collect::<TestResult<Vec<_>>>()?
         .join("; ");
-    assert!(profiles.contains(&first.public_profile_urls[0]));
-    assert!(profiles.contains(&second.public_profile_urls[0]));
-    assert!(profiles.contains("https://wi.milesplit.com/athletes/accepted-person"));
-    assert!(profiles.contains("https://mn.milesplit.com/athletes/accepted-person"));
-    assert!(profiles.contains("https://www.athletic.net/athlete/union"));
-    let prs = sheet(&mut book, "PRs");
-    assert_eq!(prs.height(), 3);
-    assert_eq!(
-        text(&prs, row_of_event(&prs, &canonical, "Track400m"), 9),
-        "50.00"
-    );
-    assert_eq!(
-        text(&prs, row_of_event(&prs, &canonical, "Track800m"), 9),
-        "2:00.00"
-    );
-    verified_publication(&store, 1);
+    check!(profiles.contains(&first.public_profile_urls[0]));
+    check!(profiles.contains(&second.public_profile_urls[0]));
+    check!(profiles.contains("https://wi.milesplit.com/athletes/9001001"));
+    check!(profiles.contains("https://mn.milesplit.com/athletes/9001001"));
+    check!(profiles.contains("https://www.athletic.net/athlete/union"));
+    let prs = sheet(&mut book, "PRs")?;
+    check!(eq; prs.height(), 3);
+    check!(eq; text(&prs, row_of_event(&prs, &canonical, "Track400m")?, 9),
+    "50.00");
+    check!(eq; text(&prs, row_of_event(&prs, &canonical, "Track800m")?, 9),
+    "2:00.00");
+    verified_publication(&store, 1)?;
+    Ok(())
 }
 
 #[test]
-fn same_name_provider_owned_people_remain_separate_and_unresolved_status_is_explicit() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
-    let school = school(&store, UsJurisdiction::Wisconsin, "Homonym High");
-    let first = member(
+fn same_name_provider_owned_people_remain_separate_and_unresolved_status_is_explicit() -> TestResult
+{
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let school = school(&store, UsJurisdiction::Wisconsin, "Homonym High")?;
+    let mut first = member(
         &school,
         "Synthetic Runner",
         Gender::Boys,
-        "https://wi.milesplit.com/athletes/accepted-person",
+        "https://wi.milesplit.com/athletes/9001001",
     );
     let mut second = CanonicalAthlete::new(
         &school,
@@ -250,47 +259,38 @@ fn same_name_provider_owned_people_remain_separate_and_unresolved_status_is_expl
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "other-person"),
     );
     second.evidence = evidence("wiaa_results", Some("https://wiaa.test/other/results"));
-    store
-        .append_many(Table::Athletes, &[first.clone(), second.clone()])
-        .unwrap();
-    store
-        .replace(
-            Table::ReviewCases,
-            &ReviewCase::pending(
-                ATHLETE_IDENTITY_FAMILY,
-                second.id.as_str(),
-                "Synthetic Runner",
-                "Unresolved source ownership",
-            ),
-        )
-        .unwrap();
-    let dataset = crate::export::ExportDataset::load(&store).unwrap();
-    assert!(dataset.canonical_aliases.is_empty());
-    assert_eq!(
-        dataset.identities().status(first.id.as_str()).unwrap(),
-        IdentityStatus::Unverified
-    );
-    assert_eq!(
-        dataset.identities().status(second.id.as_str()).unwrap(),
-        IdentityStatus::Pending
-    );
-    let projection = recruiting(&store, Scope::AllSources, Some(2027));
+    publish_fixture_cohort(&mut first, "wiaa_results", "provider-homonym-first", DAY);
+    publish_fixture_cohort(&mut second, "wiaa_results", "provider-homonym-second", DAY);
+    store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
+    store.replace(
+        Table::ReviewCases,
+        &ReviewCase::pending(
+            ATHLETE_IDENTITY_FAMILY,
+            second.id.as_str(),
+            "Synthetic Runner",
+            "Unresolved source ownership",
+        ),
+    )?;
+    let dataset = crate::export::ExportDataset::load(&store)?;
+    check!(dataset.canonical_aliases.is_empty());
+    check!(eq; dataset.identities().status(first.id.as_str())?,
+    IdentityStatus::Unverified);
+    check!(eq; dataset.identities().status(second.id.as_str())?,
+    IdentityStatus::Pending);
+    let projection = recruiting(&store, Scope::AllSources, Some(2027))?;
     let path = dir.path().join("homonyms.xlsx");
     let mut book = Workbook::new();
-    projection.write_athletes(&mut book, &path).unwrap();
-    book.save(&path).unwrap();
-    let mut book = open_workbook(&path).unwrap();
-    let range = sheet(&mut book, "Athletes");
-    assert_eq!(range.height(), 3);
+    projection.write_athletes(&mut book, &path)?;
+    book.save(&path)?;
+    let mut book = open_workbook(&path)?;
+    let range = sheet(&mut book, "Athletes")?;
+    check!(eq; range.height(), 3);
     for (athlete, status) in [(&first, "unverified"), (&second, "pending")] {
-        let row = row_of(&range, athlete.id.as_str());
-        assert_eq!(
-            text(&range, row, column_of(&range, "Identity Status")),
-            status
-        );
-        assert_eq!(
-            text(&range, row, column_of(&range, "Review Status")),
-            "review"
-        );
+        let row = row_of(&range, athlete.id.as_str())?;
+        check!(eq; text(&range, row, column_of(&range, "Identity Status")?),
+        status);
+        check!(eq; text(&range, row, column_of(&range, "Review Status")?),
+        "review");
     }
+    Ok(())
 }

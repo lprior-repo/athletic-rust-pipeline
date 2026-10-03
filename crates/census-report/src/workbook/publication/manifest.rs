@@ -278,9 +278,10 @@ pub(super) fn verify_directory(directory: &Path) -> ReportResult<Manifest> {
 }
 
 fn artifact_names(grad_year: Option<i16>) -> Vec<String> {
-    let cohort = grad_year
-        .map(|year| format!("co{year}"))
-        .unwrap_or_else(|| "all".to_string());
+    let cohort = match grad_year.map(|year| format!("co{year}")) {
+        Some(value) => value,
+        None => "all".to_string(),
+    };
     let mut names = vec![
         "audit.json".to_string(),
         format!("best-results-{cohort}.csv"),

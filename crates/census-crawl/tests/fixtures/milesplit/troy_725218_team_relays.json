@@ -1,0 +1,15 @@
+{
+  "provenance": {
+    "source_url": "https://al.milesplit.com/api/v1/meets/725218/performances?isMeetPro=0&fields=id,meetId,teamId,teamName,athleteId,firstName,lastName,gender,divisionId,divisionName,meetResultsId,meetResultsDivisionId,resultsDivisionId,gradYear,eventName,eventCode,eventDistance,round,roundName,heat,units,mark,place,windReading,profileUrl,statusCode",
+    "fetched_at": "2026-10-01T23:44:16Z",
+    "capture_sha256": "8db9804ebc2d36b6f7ec1e2a289b2b8ab28610e0063f0ee9f54245eb128071ed",
+    "projection": "Three unchanged public rows, original locators data[142], data[146], data[460]; array positions here are projection-local. No source total was published."
+  },
+  "_meta": {"status_code": 200},
+  "_embedded": {"meet": {"id": "725218"}},
+  "data": [
+    {"id":201782132,"athleteId":"1501","teamId":"4912","meetId":"725218","meetResultsId":"1266814","meetResultsDivisionId":null,"gender":"F","units":"49350","place":"1","heat":"1","windReading":null,"teamName":"Charles Henderson","firstName":null,"lastName":null,"gradYear":"0","divisionId":null,"divisionName":null,"eventCode":"4x100m","eventName":"4x100 Meter Relay","eventDistance":400,"roundName":"Finals","round":"f","mark":"49.35","profileUrl":"https://www.milesplit.com/athletes/1501"},
+    {"id":201782137,"athleteId":"1501","teamId":"38332","meetId":"725218","meetResultsId":"1266814","meetResultsDivisionId":null,"gender":"F","units":"53280","place":"5","heat":"1","windReading":null,"teamName":"Abbeville High School","firstName":null,"lastName":null,"gradYear":"0","divisionId":null,"divisionName":null,"eventCode":"4x100m","eventName":"4x100 Meter Relay","eventDistance":400,"roundName":"Finals","round":"f","mark":"53.28","profileUrl":"https://www.milesplit.com/athletes/1501"},
+    {"id":201782618,"athleteId":"1500","teamId":"38332","meetId":"725218","meetResultsId":"1266815","meetResultsDivisionId":null,"gender":"M","units":"43120","place":"3","heat":"1","windReading":null,"teamName":"Abbeville High School","firstName":null,"lastName":null,"gradYear":"0","divisionId":null,"divisionName":null,"eventCode":"4x100m","eventName":"4x100 Meter Relay","eventDistance":400,"roundName":"Finals","round":"f","mark":"43.12","profileUrl":"https://www.milesplit.com/athletes/1500"}
+  ]
+}

@@ -5,25 +5,28 @@ use census_crawl::CrawlError;
 use proptest::prelude::*;
 
 #[test]
-fn a_titled_page_with_no_result_table_is_refused() {
-    let error = parse_body(NO_GRID).expect_err("a page with no grid is not a meet");
-    assert!(
+fn a_titled_page_with_no_result_table_is_refused() -> Result<(), Box<dyn std::error::Error>> {
+    let error = match parse_body(NO_GRID) {
+        Err(error) => error,
+        Ok(_) => return Err("page without a grid accepted".into()),
+    };
+    check!(
         matches!(
             &error,
             CrawlError::Schema { detail, .. } if detail.contains("no events")
         ),
         "the refusal names what was missing: {error:?}"
     );
+    Ok(())
 }
 
 #[test]
-fn the_archived_season_is_the_meets_year() {
-    let parsed = parse_body(DECLINED_ROW).expect("the grid page is a meet");
-    assert_eq!(
-        parsed.date,
-        format!("{ARCHIVE_YEAR:04}"),
-        "the reader publishes the archived season at year precision"
-    );
+fn the_archived_season_is_the_meets_year() -> Result<(), Box<dyn std::error::Error>> {
+    let parsed = parse_body(DECLINED_ROW)?;
+    check!(eq; parsed.date,
+    format!("{ARCHIVE_YEAR:04}"),
+    "the reader publishes the archived season at year precision");
+    Ok(())
 }
 
 proptest! {

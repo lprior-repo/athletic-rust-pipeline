@@ -1,41 +1,51 @@
 use super::*;
 
 #[test]
-fn graduation_follows_grade_and_school_year() {
-    let of = |grade, year| GradYear::of(Grade::new(grade).unwrap(), SchoolYear::new(year).unwrap());
-    assert_eq!(of(11, 2025), Some(GradYear::CO2027));
-    assert_eq!(of(12, 2025), GradYear::new(2026));
-    assert_eq!(of(12, 2026), Some(GradYear::CO2027));
-    assert_eq!(of(11, 2025).map(GradYear::get), Some(2027));
+fn graduation_follows_grade_and_school_year() -> Result<(), Box<dyn std::error::Error>> {
+    let of = |grade, year| -> Result<_, Box<dyn std::error::Error>> {
+        Ok(GradYear::of(
+            Grade::new(grade).ok_or("invalid grade fixture")?,
+            SchoolYear::new(year).ok_or("invalid school year fixture")?,
+        ))
+    };
+    check!(eq; of(11, 2025)?, Some(GradYear::CO2027));
+    check!(eq; of(12, 2025)?, GradYear::new(2026));
+    check!(eq; of(12, 2026)?, Some(GradYear::CO2027));
+    check!(eq; of(11, 2025)?.map(GradYear::get), Some(2027));
     let observed = ObservedGrade {
-        grade: Grade::new(9).unwrap(),
-        school_year: SchoolYear::new(2026).unwrap(),
+        grade: Grade::new(9).ok_or("invalid grade fixture")?,
+        school_year: SchoolYear::new(2026).ok_or("invalid school year fixture")?,
         source: SourceRef::id("milesplit_roster"),
     };
-    assert_eq!(observed.grad_year(), GradYear::new(2030));
-    assert_eq!(observed.school_year.short(), "2026-27");
+    check!(eq; observed.grad_year(), GradYear::new(2030));
+    check!(eq; observed.school_year.short(), "2026-27");
+    Ok(())
 }
 
 #[test]
-fn inferred_graduation_years_reject_unsupported_cohorts_without_clamping() {
+fn inferred_graduation_years_reject_unsupported_cohorts_without_clamping(
+) -> Result<(), Box<dyn std::error::Error>> {
     for opening in SchoolYear::MIN_START_YEAR..=SchoolYear::MAX_START_YEAR {
         for raw_grade in 9..=12 {
-            let grade = Grade::new(raw_grade).unwrap();
-            let school_year = SchoolYear::new(opening).unwrap();
+            let grade = Grade::new(raw_grade).ok_or("invalid bounded grade fixture")?;
+            let school_year =
+                SchoolYear::new(opening).ok_or("invalid bounded school year fixture")?;
             let implied = opening + 13 - i16::from(raw_grade);
             let expected = GradYear::new(implied);
             let actual = GradYear::of(grade, school_year);
-            assert_eq!(actual, expected, "grade {raw_grade}, opening {opening}");
+            check!(eq; actual, expected, "grade {raw_grade}, opening {opening}");
             if let Some(year) = actual {
-                let encoded = serde_json::to_string(&year).unwrap();
-                assert_eq!(serde_json::from_str::<GradYear>(&encoded).unwrap(), year);
+                let encoded = serde_json::to_string(&year)?;
+                check!(eq; serde_json::from_str::<GradYear>(&encoded)?, year);
             }
         }
     }
+    Ok(())
 }
 
 #[test]
-fn unsupported_grade_evidence_never_certifies_a_canonical_cohort() {
+fn unsupported_grade_evidence_never_certifies_a_canonical_cohort(
+) -> Result<(), Box<dyn std::error::Error>> {
     let (_, school) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Boundary High", "boundary");
     let mut athlete = CanonicalAthlete::new(
         &school,
@@ -44,46 +54,37 @@ fn unsupported_grade_evidence_never_certifies_a_canonical_cohort() {
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "boundary-runner"),
     );
-    assert_eq!(athlete.derived_cohort_confidence(), None);
+    check!(eq; athlete.derived_cohort_confidence(), None);
     athlete.observed_grades.push(ObservedGrade {
-        grade: Grade::new(12).unwrap(),
-        school_year: SchoolYear::new(SchoolYear::MAX_START_YEAR).unwrap(),
+        grade: Grade::new(12).ok_or("invalid grade fixture")?,
+        school_year: SchoolYear::new(SchoolYear::MAX_START_YEAR)
+            .ok_or("invalid maximum school year fixture")?,
         source: SourceRef::id("milesplit_roster"),
     });
-    assert_eq!(athlete.derived_cohort_confidence(), Some(Confidence::LOW));
+    check!(eq; athlete.derived_cohort_confidence(), Some(Confidence::LOW));
     athlete.observed_grades.push(ObservedGrade {
-        grade: Grade::new(12).unwrap(),
-        school_year: SchoolYear::new(2026).unwrap(),
+        grade: Grade::new(12).ok_or("invalid grade fixture")?,
+        school_year: SchoolYear::new(2026).ok_or("invalid school year fixture")?,
         source: SourceRef::id("milesplit_roster"),
     });
-    assert_eq!(athlete.derived_cohort_confidence(), Some(Confidence::LOW));
+    check!(eq; athlete.derived_cohort_confidence(), Some(Confidence::LOW));
     athlete.observed_grades.remove(0);
-    assert_eq!(athlete.derived_cohort_confidence(), Some(Confidence::HIGH));
+    check!(eq; athlete.derived_cohort_confidence(), Some(Confidence::HIGH));
+    Ok(())
 }
 
 #[test]
-fn school_year_flips_at_august_first() {
-    assert_eq!(
-        SchoolYear::containing(2025, 1),
-        Some(SchoolYear::new(2024).unwrap())
-    );
-    assert_eq!(
-        SchoolYear::containing(2025, 7),
-        Some(SchoolYear::new(2024).unwrap())
-    );
-    assert_eq!(
-        SchoolYear::containing(2025, 8),
-        Some(SchoolYear::new(2025).unwrap())
-    );
-    assert_eq!(
-        SchoolYear::containing(2025, 12),
-        Some(SchoolYear::new(2025).unwrap())
-    );
-    assert_eq!(SchoolYear::containing(SchoolYear::MIN_START_YEAR, 1), None);
+fn school_year_flips_at_august_first() -> Result<(), Box<dyn std::error::Error>> {
+    check!(eq; SchoolYear::containing(2025, 1), SchoolYear::new(2024));
+    check!(eq; SchoolYear::containing(2025, 7), SchoolYear::new(2024));
+    check!(eq; SchoolYear::containing(2025, 8), SchoolYear::new(2025));
+    check!(eq; SchoolYear::containing(2025, 12), SchoolYear::new(2025));
+    check!(eq; SchoolYear::containing(SchoolYear::MIN_START_YEAR, 1), None);
+    Ok(())
 }
 
 #[test]
-fn meet_identity_is_date_and_name_scoped() {
+fn meet_identity_is_date_and_name_scoped() -> Result<(), Box<dyn std::error::Error>> {
     let a = CanonicalMeet::mint(
         Some(UsJurisdiction::Wisconsin),
         "2026-05-29",
@@ -102,8 +103,8 @@ fn meet_identity_is_date_and_name_scoped() {
         "D3 Sectional #3",
         None,
     );
-    assert_eq!(a, b);
-    assert_ne!(a, c);
+    check!(eq; a, b);
+    check!(ne; a, c);
     let venue = "La Crosse, WI";
     let d = CanonicalMeet::mint(
         Some(UsJurisdiction::Wisconsin),
@@ -111,7 +112,7 @@ fn meet_identity_is_date_and_name_scoped() {
         "D3 Sectional #3",
         Some(venue),
     );
-    assert_eq!(a, d, "venue spelling must not fork meet identity");
+    check!(eq; a, d, "venue spelling must not fork meet identity");
     let level = CompetitionLevel::Sectional;
     let built = CanonicalMeet::new(
         Some(UsJurisdiction::Wisconsin),
@@ -119,12 +120,14 @@ fn meet_identity_is_date_and_name_scoped() {
         "2026-05-29",
         level,
     );
-    assert_eq!(built.id, a, "constructor and mint must agree");
-    assert_eq!(built.state, Some(UsJurisdiction::Wisconsin));
+    check!(eq; built.id, a, "constructor and mint must agree");
+    check!(eq; built.state, Some(UsJurisdiction::Wisconsin));
+    Ok(())
 }
 
 #[test]
-fn an_unplaced_meet_remains_distinct_from_a_placed_meet() {
+fn an_unplaced_meet_remains_distinct_from_a_placed_meet() -> Result<(), Box<dyn std::error::Error>>
+{
     let unplaced = CanonicalMeet::mint(None, "2026-05-29", "D3 Sectional #3", None);
     let placed = CanonicalMeet::mint(
         Some(UsJurisdiction::Wisconsin),
@@ -132,35 +135,33 @@ fn an_unplaced_meet_remains_distinct_from_a_placed_meet() {
         "D3 Sectional #3",
         None,
     );
-    assert_ne!(
-        unplaced, placed,
-        "placing the venue is what separates a coverage gap from a known jurisdiction"
-    );
-    assert_eq!(
-        CanonicalMeet::new(
-            None,
-            "D3 Sectional #3",
-            "2026-05-29",
-            CompetitionLevel::Sectional
-        )
-        .state,
-        None
-    );
+    check!(ne; unplaced, placed,
+"placing the venue is what separates a coverage gap from a known jurisdiction");
+    check!(eq; CanonicalMeet::new(
+    None,
+    "D3 Sectional #3",
+    "2026-05-29",
+    CompetitionLevel::Sectional
+)
+.state,
+None);
+    Ok(())
 }
 
 #[test]
-fn a_legacy_unresolved_meet_state_decodes_to_none() {
+fn a_legacy_unresolved_meet_state_decodes_to_none() -> Result<(), Box<dyn std::error::Error>> {
     use serde::de::value::{Error, StrDeserializer};
     let decode =
         |raw: &str| super::meet::deserialize_meet_state(StrDeserializer::<Error>::new(raw));
-    assert_eq!(decode(MEET_STATE_UNRESOLVED), Ok(None));
-    assert_eq!(decode("WI"), Ok(Some(UsJurisdiction::Wisconsin)));
-    assert_eq!(decode("wi"), Ok(Some(UsJurisdiction::Wisconsin)));
-    assert!(decode("PR").is_err(), "a territory is not a jurisdiction");
+    check!(eq; decode(MEET_STATE_UNRESOLVED), Ok(None));
+    check!(eq; decode("WI"), Ok(Some(UsJurisdiction::Wisconsin)));
+    check!(eq; decode("wi"), Ok(Some(UsJurisdiction::Wisconsin)));
+    check!(decode("PR").is_err(), "a territory is not a jurisdiction");
+    Ok(())
 }
 
 #[test]
-fn school_jurisdiction_separates_identity() {
+fn school_jurisdiction_separates_identity() -> Result<(), Box<dyn std::error::Error>> {
     let a = CanonicalSchool::mint(
         UsJurisdiction::Wisconsin,
         "Abbotsford High School",
@@ -171,11 +172,15 @@ fn school_jurisdiction_separates_identity() {
         "Abbotsford High School",
         "abbotsford",
     );
-    assert_eq!(a, b);
+    check!(eq; a, b);
     let other = CanonicalSchool::mint(
         UsJurisdiction::Minnesota,
         "Abbotsford High School",
         "abbotsford",
     );
-    assert_ne!(a, other, "state participates in the natural key");
+    check!(ne; a, other, "state participates in the natural key");
+    Ok(())
 }
+
+#[path = "general_model/published_identity.rs"]
+mod published_identity;

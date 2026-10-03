@@ -17,7 +17,10 @@ pub(super) fn assemble(
     request: &SealRequest,
     workbook: WorkbookCheck,
 ) -> SealEvidence {
-    let journal = request.journal.clone().unwrap_or_default();
+    let journal = match request.journal.clone() {
+        Some(value) => value,
+        None => Default::default(),
+    };
     SealEvidence {
         open: open_work(cases, journal),
         counts: seal_counts(census, coverage),

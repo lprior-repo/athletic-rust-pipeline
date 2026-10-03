@@ -11,16 +11,39 @@ pub(super) struct Intake {
     pub(super) cursor: Option<String>,
 }
 
+#[derive(Clone, Copy)]
+enum Selection {
+    Advice,
+    Revocation,
+}
+
 pub(super) fn next(
     store: &Store,
     options: &ReviewOptions,
     after: Option<&str>,
 ) -> StoreResult<Intake> {
+    select(store, options, after, Selection::Advice)
+}
+
+pub(super) fn next_for_revocation(
+    store: &Store,
+    options: &ReviewOptions,
+    after: Option<&str>,
+) -> StoreResult<Intake> {
+    select(store, options, after, Selection::Revocation)
+}
+
+fn select(
+    store: &Store,
+    options: &ReviewOptions,
+    after: Option<&str>,
+    selection: Selection,
+) -> StoreResult<Intake> {
     let snapshot = store.snapshot();
     let mut rows = BTreeMap::new();
     let mut bytes = 0_usize;
     snapshot.for_each_merged(Table::ReviewCases, |case: ReviewCase| {
-        if actionable(&case, options) {
+        if actionable(&case, options, selection) {
             admit(&mut rows, &mut bytes, case, after)?;
         }
         Ok(())
@@ -32,7 +55,7 @@ pub(super) fn next(
             conflict.subject.as_str(),
             conflict.detail.as_str(),
         );
-        if actionable(&case, options) {
+        if actionable(&case, options, selection) {
             admit(&mut rows, &mut bytes, case, after)?;
         }
         Ok(())
@@ -40,7 +63,7 @@ pub(super) fn next(
     let cursor = rows.last_key_value().map(|(id, _)| id.clone());
     snapshot.for_each_merged(Table::ReviewCases, |case: ReviewCase| {
         if rows.contains_key(&case.id) {
-            if actionable(&case, options) {
+            if actionable(&case, options, selection) {
                 rows.insert(case.id.clone(), case);
             } else {
                 rows.remove(&case.id);
@@ -61,8 +84,12 @@ pub(super) fn next(
     Ok(Intake { cases, cursor })
 }
 
-fn actionable(case: &ReviewCase, options: &ReviewOptions) -> bool {
-    !matches!(case.state, ReviewState::Resolved | ReviewState::Superseded)
+fn actionable(case: &ReviewCase, options: &ReviewOptions, selection: Selection) -> bool {
+    let selected_state = match selection {
+        Selection::Advice => !matches!(case.state, ReviewState::Resolved | ReviewState::Superseded),
+        Selection::Revocation => case.state != ReviewState::Superseded,
+    };
+    selected_state
         && ReviewFamily::from_label(&case.family)
             .is_some_and(|family| options.families.contains(&family))
 }

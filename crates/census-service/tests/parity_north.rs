@@ -1,4 +1,6 @@
 mod common;
+#[path = "common/golden.rs"]
+mod golden;
 
 use census_domain::UsJurisdiction;
 use std::collections::HashMap;
@@ -87,10 +89,10 @@ fn mshsl_fixtures_match_golden() -> Result<()> {
         let value = mshsl_case(&name, &body, &rows)?;
         let golden = format!("mshsl__{}", stem(&name)?);
         claim_golden(&mut claimed, &golden)?;
-        common::assert_golden(&golden, &value)?;
-        corpus.push(json!({ "fixture": name, "digest": common::digest(&value)? }));
+        golden::assert_golden(&golden, &value)?;
+        corpus.push(json!({ "fixture": name, "digest": golden::digest(&value)? }));
     }
-    common::assert_golden("mshsl__corpus", &corpus)?;
+    golden::assert_golden("mshsl__corpus", &corpus)?;
     Ok(())
 }
 
@@ -152,7 +154,10 @@ fn row_for(slug: &str, detail: &SchoolDetail, rows: &[SchoolListRow]) -> SchoolL
         Some(row) => row.clone(),
         None => SchoolListRow {
             slug: slug.to_string(),
-            name: detail.name.clone().unwrap_or_default(),
+            name: detail
+                .name
+                .clone()
+                .map_or(Default::default(), core::convert::identity),
             city: None,
         },
     }
@@ -314,8 +319,12 @@ fn mshsl_coach_records(case: &str, body: &str, rows: &[SchoolListRow]) -> Result
     }))
 }
 
-#[tokio::test]
-async fn mshsl_collect_matches_golden() -> Result<()> {
+#[test]
+fn mshsl_collect_matches_golden() -> Result<()> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
     let dir = tempfile::tempdir().context("temp dir")?;
     let cache = dir.path().join("http");
     let listing_body = common::fixture(MSHSL, "schools_listing_first_page.html")?;
@@ -365,7 +374,7 @@ async fn mshsl_collect_matches_golden() -> Result<()> {
         fetcher: &fetcher,
         store: &store,
         refresh: false,
-        school_year: SchoolYear::new(2026).expect("2026 is a season"),
+        school_year: SchoolYear::DEFAULT,
         observed_on: OBSERVED_ON.to_string(),
         recording: None,
     };
@@ -384,10 +393,11 @@ async fn mshsl_collect_matches_golden() -> Result<()> {
         "the seeded cache serves every response, {} request(s) left the process",
         report.requests
     );
-    common::assert_golden(
+    golden::assert_golden(
         "mshsl__collect",
         &json!({ "report": &report, "schools": &schools, "coaches": &coaches }),
     )
+        })
 }
 
 #[test]
@@ -401,10 +411,10 @@ fn plain_names_fixtures_match_golden() -> Result<()> {
         let value = plain_names_case(&name, &body, &index)?;
         let golden = format!("plain_names__{}", stem(&name)?);
         claim_golden(&mut claimed, &golden)?;
-        common::assert_golden(&golden, &value)?;
-        corpus.push(json!({ "fixture": name, "digest": common::digest(&value)? }));
+        golden::assert_golden(&golden, &value)?;
+        corpus.push(json!({ "fixture": name, "digest": golden::digest(&value)? }));
     }
-    common::assert_golden("plain_names__corpus", &corpus)?;
+    golden::assert_golden("plain_names__corpus", &corpus)?;
     Ok(())
 }
 
@@ -546,81 +556,86 @@ fn plain_names_nsaa_directory(body: &str) -> Result<Value> {
     Ok(json!({ "schools": entries }))
 }
 
-#[tokio::test]
-async fn plain_names_collect_matches_golden() -> Result<()> {
-    let dir = tempfile::tempdir().context("temp dir")?;
-    let cache = dir.path().join("http");
-    let index = common::fixture(PLAIN_NAMES, "nd_schools_index.html")?;
-    let members = plain_names::parse_nd_school_refs(&index)?;
-    let sheyenne = members
-        .iter()
-        .find(|member| member.id == "1045")
-        .context("the index lists West Fargo Sheyenne")?;
-    seed_cache(&cache, plain_names::ND_SCHOOLS_URL, &index)?;
-    seed_cache(
-        &cache,
-        &sheyenne.url(),
-        &common::fixture(PLAIN_NAMES, "nd_school_page.html")?,
-    )?;
-    seed_cache(
-        &cache,
-        plain_names::NSAA_FORM_URL,
-        &common::fixture(PLAIN_NAMES, "nsaa_directory_form.html")?,
-    )?;
-    seed_cache(
-        &cache,
-        &plain_names::nsaa_school_url("Adams Central"),
-        &common::fixture(PLAIN_NAMES, "nsaa_school_get_adams_central.html")?,
-    )?;
+#[test]
+fn plain_names_collect_matches_golden() -> Result<()> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let dir = tempfile::tempdir().context("temp dir")?;
+            let cache = dir.path().join("http");
+            let index = common::fixture(PLAIN_NAMES, "nd_schools_index.html")?;
+            let members = plain_names::parse_nd_school_refs(&index)?;
+            let sheyenne = members
+                .iter()
+                .find(|member| member.id == "1045")
+                .context("the index lists West Fargo Sheyenne")?;
+            seed_cache(&cache, plain_names::ND_SCHOOLS_URL, &index)?;
+            seed_cache(
+                &cache,
+                &sheyenne.url(),
+                &common::fixture(PLAIN_NAMES, "nd_school_page.html")?,
+            )?;
+            seed_cache(
+                &cache,
+                plain_names::NSAA_FORM_URL,
+                &common::fixture(PLAIN_NAMES, "nsaa_directory_form.html")?,
+            )?;
+            seed_cache(
+                &cache,
+                &plain_names::nsaa_school_url("Adams Central"),
+                &common::fixture(PLAIN_NAMES, "nsaa_school_get_adams_central.html")?,
+            )?;
 
-    let store = Store::open(dir.path().join("store"))?;
-    let seeded = json!({ "seeded": true });
-    for member in members.iter().filter(|member| member.id != "1045") {
-        let key = format!("ND:{}", member.id);
-        store.journal_done("ndhsaa_schools", &key, &seeded)?;
-        store.journal_done("ndhsaa_coaches", &key, &seeded)?;
-    }
+            let store = Store::open(dir.path().join("store"))?;
+            let seeded = json!({ "seeded": true });
+            for member in members.iter().filter(|member| member.id != "1045") {
+                let key = format!("ND:{}", member.id);
+                store.journal_done("ndhsaa_schools", &key, &seeded)?;
+                store.journal_done("ndhsaa_coaches", &key, &seeded)?;
+            }
 
-    let fetcher = Fetcher::new(
-        &cache,
-        None,
-        Duration::from_millis(1),
-        HashMap::new(),
-        Vec::new(),
-    )?;
-    let ctx = AdapterContext {
-        fetcher: &fetcher,
-        store: &store,
-        refresh: false,
-        school_year: SchoolYear::new(2026).expect("2026 is a season"),
-        observed_on: OBSERVED_ON.to_string(),
-        recording: None,
-    };
-    let options = plain_names::Options {
-        limit: Some(1),
-        refresh: false,
-        observed_on: OBSERVED_ON.to_string(),
-        states: vec![UsJurisdiction::NorthDakota, UsJurisdiction::Nebraska],
-        school_names: Vec::new(),
-    };
-    let report = plain_names::collect(&ctx, &options).await?;
-    let schools = store.scan::<CanonicalSchool>(Table::Schools)?;
-    let coaches = store.scan::<CanonicalCoach>(Table::Coaches)?;
-    ensure!(
-        report.requests == 0,
-        "the seeded cache serves every response, {} request(s) left the process",
-        report.requests
-    );
-    ensure!(
-        report.errors == 0,
-        "both selected providers walked cleanly, {} error(s): {:?}",
-        report.errors,
-        report.notes
-    );
-    common::assert_golden(
-        "plain_names__collect",
-        &json!({ "report": &report, "schools": &schools, "coaches": &coaches }),
-    )
+            let fetcher = Fetcher::new(
+                &cache,
+                None,
+                Duration::from_millis(1),
+                HashMap::new(),
+                Vec::new(),
+            )?;
+            let ctx = AdapterContext {
+                fetcher: &fetcher,
+                store: &store,
+                refresh: false,
+                school_year: SchoolYear::DEFAULT,
+                observed_on: OBSERVED_ON.to_string(),
+                recording: None,
+            };
+            let options = plain_names::Options {
+                limit: Some(1),
+                refresh: false,
+                observed_on: OBSERVED_ON.to_string(),
+                states: vec![UsJurisdiction::NorthDakota, UsJurisdiction::Nebraska],
+                school_names: Vec::new(),
+            };
+            let report = plain_names::collect(&ctx, &options).await?;
+            let schools = store.scan::<CanonicalSchool>(Table::Schools)?;
+            let coaches = store.scan::<CanonicalCoach>(Table::Coaches)?;
+            ensure!(
+                report.requests == 0,
+                "the seeded cache serves every response, {} request(s) left the process",
+                report.requests
+            );
+            ensure!(
+                report.errors == 0,
+                "both selected providers walked cleanly, {} error(s): {:?}",
+                report.errors,
+                report.notes
+            );
+            golden::assert_golden(
+                "plain_names__collect",
+                &json!({ "report": &report, "schools": &schools, "coaches": &coaches }),
+            )
+        })
 }
 
 const HYTEK_FIXTURES: [(&str, &str); 5] = [
@@ -695,9 +710,9 @@ fn hytek_fixtures_match_golden() -> Result<()> {
         });
         let golden = format!("hytek__{file}");
         claim_golden(&mut claimed, &golden)?;
-        common::assert_golden(&golden, &value)?;
-        corpus.push(json!({ "fixture": file, "digest": common::digest(&value)? }));
+        golden::assert_golden(&golden, &value)?;
+        corpus.push(json!({ "fixture": file, "digest": golden::digest(&value)? }));
     }
-    common::assert_golden("hytek__corpus", &corpus)?;
+    golden::assert_golden("hytek__corpus", &corpus)?;
     Ok(())
 }

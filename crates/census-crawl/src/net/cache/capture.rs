@@ -15,6 +15,7 @@ impl Capture {
     pub(super) fn from_meta(meta: &CacheMeta, path: &Path) -> Result<Self, FetchError> {
         let fields = [
             meta.url.as_str(),
+            meta.response_url.as_deref().map_or("", |value| value),
             meta.method.as_str(),
             meta.content_digest.as_str(),
             meta.fetched_at.as_str(),

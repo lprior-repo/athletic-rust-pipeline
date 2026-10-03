@@ -14,13 +14,13 @@ pub(super) fn block_comment(rest: &str) -> (Kind, &str) {
                 depth = depth.saturating_sub(1);
                 index = index.saturating_add(2);
                 if depth == 0 {
-                    return (Kind::BlockComment, after(rest, index));
+                    return (Kind::BlockComment { terminated: true }, after(rest, index));
                 }
             }
             _ => index = index.saturating_add(1),
         }
     }
-    (Kind::BlockComment, "")
+    (Kind::BlockComment { terminated: false }, "")
 }
 
 pub(super) fn string(rest: &str, prefix: usize) -> (Kind, &str) {
@@ -47,7 +47,7 @@ pub(super) fn raw_string(rest: &str, before_r: usize, hashes: usize) -> (Kind, &
 
 pub(super) fn ident(rest: &str) -> (Kind, &str) {
     let end = take_while(rest, 0, is_ident_continue);
-    let name = rest.get(..end).unwrap_or_default();
+    let name = rest.get(..end).map_or(Default::default(), core::convert::identity);
     let tail = after(rest, end);
     match name {
         "b" | "c" if tail.starts_with('"') => string(rest, end),

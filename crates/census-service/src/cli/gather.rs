@@ -233,10 +233,10 @@ fn collect_options(args: &CollectArgs) -> Result<census::CollectOptions> {
         school_year: SchoolYear::new(args.school_year).ok_or_else(|| {
             anyhow::anyhow!("--school-year {} is not a school year", args.school_year)
         })?,
-        observed_on: args
-            .observed_on
-            .clone()
-            .unwrap_or_else(census_crawl::net::today_iso),
+        observed_on: match args.observed_on.clone() {
+            Some(value) => value,
+            None => census_crawl::net::today_iso(),
+        },
         revision: std::num::NonZeroU32::new(args.flags.revision)
             .ok_or_else(|| anyhow::anyhow!("--revision must be greater than zero"))?,
     })
@@ -284,9 +284,10 @@ pub(super) fn run_import_coaches(
     csv: &Path,
     observed_on: &Option<String>,
 ) -> Result<()> {
-    let observed_on = observed_on
-        .clone()
-        .unwrap_or_else(census_crawl::net::today_iso);
+    let observed_on = match observed_on.clone() {
+        Some(value) => value,
+        None => census_crawl::net::today_iso(),
+    };
     let report = census_crawl::coach_contacts::import_csv(store, csv, &observed_on)?;
     println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(())

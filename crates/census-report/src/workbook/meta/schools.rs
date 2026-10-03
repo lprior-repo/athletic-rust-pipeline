@@ -48,12 +48,37 @@ fn school_row(school: &CanonicalSchool) -> ReportResult<Vec<Cell>> {
         Cell::text(school.id.as_str()),
         Cell::text(school.name.clone()),
         Cell::text(state_code(school)),
-        Cell::text(school.city.clone().unwrap_or_default()),
-        Cell::text(school.association.clone().unwrap_or_default()),
-        Cell::text(school.classification.clone().unwrap_or_default()),
+        Cell::text(
+            school
+                .city
+                .clone()
+                .map_or(Default::default(), core::convert::identity)
+        ),
+        Cell::text(
+            school
+                .association
+                .clone()
+                .map_or(Default::default(), core::convert::identity)
+        ),
+        Cell::text(
+            school
+                .classification
+                .clone()
+                .map_or(Default::default(), core::convert::identity)
+        ),
         enrollment_cell(school)?,
-        Cell::text(school.athletics_website.clone().unwrap_or_default()),
-        Cell::text(school.school_website.clone().unwrap_or_default()),
+        Cell::text(
+            school
+                .athletics_website
+                .clone()
+                .map_or(Default::default(), core::convert::identity)
+        ),
+        Cell::text(
+            school
+                .school_website
+                .clone()
+                .map_or(Default::default(), core::convert::identity)
+        ),
         Cell::text(school.aliases.join(" | ")),
         Cell::number(school.source_identities.len())?,
         Cell::number(school.retained_conflicts.len())?,

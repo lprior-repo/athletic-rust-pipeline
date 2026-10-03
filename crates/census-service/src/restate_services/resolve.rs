@@ -36,7 +36,8 @@ pub(crate) fn resolve_scope(name: Option<&str>) -> Result<Scope, TerminalError> 
 }
 
 pub(crate) fn cohort_label(grad_year: Option<i16>) -> String {
-    grad_year
-        .map(|year| format!("co{year}"))
-        .unwrap_or_else(|| "all".to_string())
+    match grad_year.map(|year| format!("co{year}")) {
+        Some(value) => value,
+        None => "all".to_string(),
+    }
 }

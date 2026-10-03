@@ -6,6 +6,970 @@ fresh national census's release certificate. Current requirements live in
 [NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md); procedures live in [TESTING.md](../TESTING.md)
 and [OPERATIONS.md](OPERATIONS.md). Source audits and imported measurements are explicitly labelled.
 
+## Owned panic-extraction enforcement — 2026-10-03
+
+Bead `athletic-rust-pipeline-79l`; the full national census objective remains unchanged.
+This is source-safety maintenance, not national, recovery, release or workbook acceptance.
+The lexical gate covers owned tests, fixtures, examples, benches, cfg-disabled proof sources
+and rendered generator sources. Total helpers such as `unwrap_or` remain allowed.
+No owned extraction-lint waiver, panic replacement or fabricated success fallback was added.
+Fallible checks propagate a typed error, borrow evaluated operands once and format only failure.
+
+Main executed the following with
+`TMPDIR=/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/var/test-tmp-sol-20261002`,
+empty `RUSTC_WRAPPER`, and Cargo
+`-Zallow-features=portable_simd,try_blocks,proc_macro_span,error_generic_member_access`:
+
+```sh
+cargo test -p census-crawl -p census-service --all-targets
+cargo clippy -p census-crawl -p census-service --all-targets --all-features -- \
+  -D warnings -D clippy::unwrap_used -D clippy::expect_used
+cargo test --workspace --all-features
+cargo test -p xtask --all-targets
+cargo clippy -p xtask --all-targets --all-features -- \
+  -D warnings -D clippy::unwrap_used -D clippy::expect_used
+cargo build -p xtask --bin xtask
+cargo check --workspace --all-targets --all-features
+cargo clippy --workspace --all-targets --all-features -- \
+  -D warnings -D clippy::unwrap_used -D clippy::expect_used
+target/debug/xtask panic-extraction --root .
+```
+
+Observed results: crawl/service 1,604 tests passed after removing four incidental/wiring
+assertion tests; the full workspace run passed 2,357 tests across 60 suites with three ignored.
+That workspace test run preceded the final broad-warning-waiver regression; the subsequent
+xtask run passed all 139 tests. Latest integrated workspace check and all-target extraction
+Clippy both passed after the final regression and six proof-source repairs
+(`artifact://1750`, 54.92 seconds). The canonical 17-flag production safety Clippy passed again
+on the final integrated sources (`artifact://1765`, 12.79 seconds). No full release lane is inferred.
+The actual current lexical command exited zero: 1,538 Rust files and three rendered templates
+checked. The mapper render is empty; three render calls do not mean three nonempty generators.
+
+The independent scanner review `Audit79lScannerFinal` approved only this maintenance scope:
+seven historical defects closed, no surviving finding. Range/update and Unicode-distinct
+references now pass; malformed block-comment EOF, root/descendant links, selected FIFO source
+and unqualified `allow(warnings)` now fail closed. Main's actual FIFO CLI changed from a
+TERM deadline exit 124 to immediate refusal exit 1; the latter is not a universal clock bound.
+Admission-budget evidence uses real tiny-budget walker tests, not a fabricated million-entry
+CLI run. Static/quiescent tree, component/frame/file/entry and source-byte limits are documented
+in `xtask/README.md`; directory substitution, aggregate pathname bytes and filesystem clocks
+are not certified. Literal/corpus parity is not compiler-wide lexical equivalence.
+Execution records: `local://panic-extraction-cli-baseline-sol-20261003.json`,
+`local://panic-extraction-cli-after-sol-20261003.json`,
+`local://79l-final-lexical-and-native-discovery-smoke-sol-20261003.json`;
+independent terminal report:
+`local://79l-final-scanner-independent-review.json`. Runtime commands are Main's observations,
+not executions by the read-only reviewer.
+The seven actual successful incremental closure payloads are preserved in
+`local://79l-final-scanner-historical-closure-records.json`; current source/report hashes and
+actual `sha256sum` output are in `local://79l-final-scanner-raw-digests.json`.
+The final `target/debug/xtask comments` checked the same 1,538 files and found no comments.
+
+Six existing Kani extraction sites were repaired only after independent permission:
+`local://79l-existing-kani-maintenance-plan.json`
+SHA-256 `a2360bfea29cba1d5e87191f9e6a56cfd342f72152b7c2b9462ba6c2ec9ee5d2`;
+`local://79l-existing-kani-maintenance-bound-review.json`
+SHA-256 `c8a1ea07c175315a12cb8461c2943ff124ce585830a4ae596ae23869809391be`.
+The original source domains, real production calls, predicates and source unwind attributes
+remain unchanged. The one corrected cover compares a hexadecimal byte to ASCII `b'0'`,
+not impossible binary zero. Cover reachability is not a proof of correctness.
+Actual original source bytes were recovered from retained pre-edit review tool results and
+matched the frozen hashes; complete source comparison is preserved in
+`local://79l-original-source-recovery-provenance.json` and
+`local://79l-exact-original-to-applied-proof-diffs.json`.
+The ledger hash in the frozen plan is its historical pre-entry binding, not this updated ledger.
+Independent applied-source maintenance review
+`local://79l-applied-kani-maintenance-independent-review.json` (34,737 bytes,
+SHA-256 `25f73e199f0a5ea4c7329fa703aa6c7706810265bb86e87eab75b84adc2de2fd`)
+approved all six shapes and the cover correction only. Final theorem/bridge readiness remains
+unverified; production contact, key and table files match their frozen input hashes.
+
+Main ran both package codegen smokes successfully in 7.76 seconds, then the following retained
+key harnesses with Kani 0.67.0/CBMC 6.8.0, single-job execution, all checks enabled and individual
+systemd scopes (`MemoryHigh=4G`, `MemoryMax=6G`, `MemorySwapMax=0`):
+
+| Harness | Final checks | Reachability | Verification time |
+|---|---:|---:|---:|
+| `check_observation_key_round_trip` | 0 of 728 failed; 6 unreachable | 4 of 4 covers satisfied | 52.783497 s |
+| `check_observation_key_null_byte_id` | 0 of 690 failed; 6 unreachable | no cover claim | 31.333216 s |
+| `check_observation_key_zero_and_max_sequence` | 0 of 688 failed; 6 unreachable | no cover claim | 4.8440027 s |
+| `check_split_key_reads_fixed_width_tail` | 0 of 232 failed; 1 unreachable | 2 of 2 covers satisfied | 0.7418221 s |
+
+Each actual command selected its named harness using
+`cargo kani --manifest-path crates/census-store/Cargo.toml --harness <name> -j 1`.
+All four ended `VERIFICATION:- SUCCESSFUL`; raw combined output `artifact://1739`
+(95.46 seconds overall). The first mailbox consumer and the six-length JSON-boundary harness
+were still executing when this entry was written; the chained mailbox idempotence command had
+not started. The JSON-boundary harness uses only the independently accepted
+CLI `--unwind 514` candidate, derived in
+`local://79l-k5-source-bound-supplement.json`; its original source `#[kani::unwind(48)]` and
+lengths 0, 1, 2, 511, 512, 513 remain intact. No guessed bound escalation is permitted.
+Codegen warnings include inherited unused Display/dead CPUID proof helpers and unsupported
+construct/concurrency reports; codegen success does not dispose of reachability or certify
+unexecuted harnesses. Seven-harness proof closure and independent behavior bridges remain
+unverified. This selected maintenance lane does not replace the eight mandatory release kernels.
+
+Subsequent actual results: the first mailbox harness exceeded its 3,600-second deadline
+(`artifact://1740`, 3,600.29 seconds), so the chained idempotence command never started.
+K5 also exceeded 3,600 seconds (`artifact://1741`, 3,600.27 seconds); its retained diagnostic
+reports `memchr_naive` not unwound at iteration 514. Neither run reached a final verification
+verdict. Both actual systemd scopes were subsequently `not-found`, `inactive`, `dead`, with
+empty control groups. The separately exercised idempotence consumer then failed verification
+(`artifact://1770`, 47.09 seconds overall, 39.730568 seconds verification): unsupported
+`TerminatorKind::InlineAsm` is actually reachable in `std::arch::x86_64::__cpuid_count`.
+This is a failed proof, not a passing compile or a mailbox counterexample. Exact command:
+`cargo kani --manifest-path crates/census-domain/Cargo.toml --harness check_set_published_email_idempotent -j 1`,
+inside a scope with the same memory limits. No new stub or changed domain was authorized.
+The newly observed `memchr` cutoff requires exact source/model derivation and independent
+permission before any candidate changes; there is no guessed increase or disabled check.
+
+The later one-execution printable-mailbox experiment also timed out at its independently
+approved 600-second deadline (`artifact://1847`, 600.23 seconds). Its exact command is frozen
+in `local://79l-p1-observed-short-loop-execution-plan.json` (SHA-256
+`5f8cc02a68b8ce023a12d28af47c2f2151c4dbaa9953d2c17065b06629e39ff0`);
+read-only independent permission is recorded in
+`local://79l-p1-checked-loop-execution-independent-review.json` (SHA-256
+`88788a61aebbd5ed6e39b45b3e1970626e133bf5b1362493c1b9aac6764cd566`).
+The command applied only the three exact generated byte-fold/trim-loop bounds of 14.
+The 12-byte printable domain, source `#[kani::unwind(64)]`, all other loop bounds,
+real constructors, safety checks and unwinding assertions were unchanged. No final
+verification verdict was produced; no proof or trust obligation is closed.
+After the deadline, scope `run-p3718799-i7955360.scope` was actually observed
+`not-found`, `inactive`, `dead`, with an empty control group.
+Inspection-only GOTO dumps (`artifact://1805` and `artifact://1812`) and static dispatch
+analysis do not certify feasibility or turn these timeouts into passing proofs.
+
+An isolated runtime replay used a genuine original-run GET capture, not fabricated bytes:
+NC meet 716802's 299,072-byte performances response, body SHA-256
+`94c1b695d395fed85b5ac1122963fe8722763652dc83ad8e6daa56952a8b6cf3`,
+immutable manifest SHA-256
+`d5c25bd48a168c67788c4bf55cf36869ed931f073389d709bac6d39c27095837`.
+Actual command:
+`env TMPDIR=/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/var/test-tmp-sol-20261002 RUSTC_WRAPPER= cargo -Zallow-features=portable_simd,try_blocks,proc_macro_span,error_generic_member_access run -p census-crawl --example capture_replay_79l_smoke`.
+The complete-capture smoke exited zero in 0.77 seconds, proving two exact-body cache
+replays, two cache hits, zero physical requests, preserved observed response URL and
+unchanged acquisition date `2026-10-03T08:04:40Z`. Immutable body and manifest readback
+matched their originals in owned root `var/original-capture-replay-isolated-sol-20261003-02`.
+The original archive was not modified and no Fjall store was opened.
+The first attempt copied only the mutable cache pair and failed immutable-archive
+readback (`artifact://1850`, exit one, 18.13 seconds); ordinary cache hits did not
+create the missing archive. The passing attempt staged the complete preserved capture
+before replay; it is not evidence of repairing or migrating an incomplete archive.
+Both owned roots are retained. The throwaway example was removed after exercise.
+Scope is one GET capture, not all-source attribution, POST/representation-context
+binding, captured-result lineage, native fault qualification or fresh national acceptance.
+
+Current original-run inspection did not certify national success. The native admin query
+`SELECT target, status, COUNT(*) AS invocations FROM sys_invocation GROUP BY target, status ORDER BY target, status`
+returned 500 completed RPC invocations, including 49 distinct `JurisdictionCensus/run`
+targets (`artifact://1858`). RPC completion is not business completion.
+`target/debug/census-service national-report --ingress http://127.0.0.1:18095/ --season 2026 --revision 1 --json`
+actually exited one in 0.45 seconds: 48 jurisdictions failed. Forty-seven reported
+`Terminal error [500]: the invocation stream was closed after the 'abort timeout' (1h) fired.`;
+Wisconsin reported ``Terminal error [500]: no consolidated schools: run `collect` and `consolidate` before the wiaa_results provider``.
+Only South Carolina appeared in the success array, with 457 total rosters, 186 committed,
+271 remaining, 36,392 athletes and 9,041 reported Class-of-2027 subjects. These are partial
+report fields, not a validated national population, accepted cohort or workbook.
+`local://original-national-current-open-work-query-20261003.json` retains the observed
+report-field summary explicitly as a summary, not full raw output.
+
+The actual admin state query enumerated 41 `Ingest` keys: 39 MileSplit and two Wayzata
+(`artifact://1863`). Passing precisely those 41 keys to `open-work` exited zero in
+0.70 seconds (`artifact://1868`): 19 open jurisdiction sweeps; teams complete in 38
+jurisdictions, rosters in 40 and meets in 39. The response reported zero owed rosters,
+zero source objects within this supplied-key scope, and silent source `wayzata_mn`.
+This is not the all-role source denominator or proof that missing source objects owe
+no work. Subsequent raw shared-state inspection established a consumer defect: all
+40 retained roster-progress records had positive remaining counts but were represented
+as complete with zero owed rosters. No replacement logical identities, timeout increase,
+live Fjall opener, invocation purge, seal or workbook acceptance was introduced.
+
+The bounded, four-concurrent no-input shared-state transport read the original 49
+jurisdiction identities once: 49 HTTP 200 replies, identity matches and no transport
+errors. Its retained raw JSONL is
+`var/original-national-state-read-sol-20261003-01/main-raw-3cd1cc83-3602-49a7-b280-ad2c3bcf74e3.jsonl`,
+SHA-256 `ec949260fb405de746e412210a10b27c905cfa0f3e6a4d6ba96465287e7ad684`.
+The independently derived offline projection retained 15,023 total, 4,691 clean committed
+and **10,332 remaining rosters** across the 40 records. Nine records lacked roster
+progress; their roster totals remain unknown, not zero. The exact transport and offline
+projection inputs and raw-byte checks are retained beside the captures. These reads are
+not an atomic population snapshot, source qualification, accepted cohort or completed census.
+The all-role state query returned 91 distinct role/key pairs: 41 Ingest, 49 jurisdiction
+and one national. Those counts do not establish the original paired 50/49 implementation
+manifest or enumerate absent source obligations.
+
+Main corrected roster stage/owed accounting in `restate_services/open_work.rs` and
+the single roster obligation in `census/state/open.rs`, without changing stored shapes,
+logical identities or retry ceilings. The fallible
+`unfinished_rosters_keep_the_jurisdiction_nonterminal` regression failed before the fix
+(`artifact://1888`, left true versus right false); all 209 service-library tests passed
+after it (`artifact://1891`). The native binaries built (`artifact://1894`). The new
+owned-Rust lexical scan checked 1,538 files and three rendered templates, and workspace
+all-target/all-feature Clippy denied unwrap/expect extraction successfully
+(`artifact://1902`). No new Kani or native corrected-path verdict is implied by these checks.
+
+Before same-store verification, the original endpoint received TERM and exited zero.
+Its supervised drain certificate was
+`drained: accepted=45 completed=45 cancelled=0 timed_out=0 aborted=0 panicked=0`,
+retained in `var/original-national-state-read-sol-20261003-01/original-endpoint-drain.txt`;
+the conventional `serve.log` did not exist. Cold `store-integrity` returned `ok true`,
+with matching counts in every listed table: 1,764,089 athletes, 1,865,444 source observations
+and 18,533 source meets, but zero performances, identity decisions and review cases.
+Physical integrity is not semantic acceptance. Immutable verification binaries are
+under `var/releases/roster-accounting-sol-20261003-01/`; serve SHA-256 is
+`58dadeed68c61f51945e3ae221103761a4e693108e127057dfebb7522a8a95a3`.
+
+The required cold backup completed before handover:
+`var/releases/roster-accounting-sol-20261003-01/census-service --store var/national-sol-20261002-01 store-backup --to var/backups/original-national-before-roster-accounting-sol-20261003-01`.
+It retained 303,232 files and 25,587,117,323 bytes in 1,524.62 seconds, with all listed
+table counts matching. Backup manifest SHA-256 is
+`98ce2b9d2665650cafffe8f6b9655f8604a4b0f2f167f7f1d419a96dff818e63`.
+This is a cold original-store backup, not a restore/readback fault qualification or a backup
+of the separate native Restate journal directory.
+
+Main started immutable `census-serve` on the same original store at `127.0.0.1:19081`
+(PID 3808761). The initial tool readiness check timed out at 30 seconds; later genuine
+cleartext HTTP/2 `/discover` returned successfully (`artifact://1915`). Registration
+created `dp_16u7pThplPEHo40DluLAEPT` (`artifact://1916`), leaving the old registration
+intact. The exact original `open-work` inputs — season 2026, revision one and the same
+41 supplied Ingest keys — then exited zero in 0.47 seconds (`artifact://1919`).
+Readback verified all **49 unchanged jurisdiction identities remain owed**, all roster
+stages are nonterminal, and the 40 positive known counts sum to **10,332 owed rosters**.
+The nine absent/zero-count stages remain owed without invented roster totals. Raw reply
+and checked arithmetic are retained as `native-accounting-reply.json` and
+`native-accounting-readback.json` beside the original state captures.
+This exercises the corrected accounting path, not acquisition recovery, a completed
+national census, a workbook seal or an in-flight upgrade fault. These immutable binaries
+predate the subsequent complete unwrap-family syntax cutover; do not bind its later
+source or verification verdict to this canary.
+
+Two new advisory invocations used the actual local Qwen servers rather than treating
+an agent label as GPU evidence. `local://79l-k5-actual-5090-qwen-review.json` retains
+one RTX 5090 HTTP-backed response, ID `chatcmpl-e4677355bbbb9dc4`, model
+`qwen3.8-27b-uncensored`, endpoint `127.0.0.1:11000`; its recommendation was
+`APPROVE_STATIC_ONLY` for the exact proposed K5 byte-row construction.
+`local://79l-p1-actual-3090-qwen-model-advice.json` retains one RTX 3090 response,
+ID `chatcmpl-BvfrPrehEUS63uFDD2fKfz6FCnTlmyOq`, endpoint `127.0.0.1:11001`,
+same model: `sha2/force-soft` would be supplementary only, and two fixed-constructor
+runtime comparisons cannot certify default-production safety or general hashing
+equivalence. Artifacts `1872` and `1877` bind the existing server PIDs, ports and GPU
+UUIDs; no signed hardware/model attestation is claimed. Coordinators were distinct
+from these actual Qwen HTTP model calls. Both reports preserve their exact model
+input/output and limitations; neither grants source-edit/solver permission or closes
+any of the original 18 trust rows or six bridges. The earlier required-Luna review
+remains rejected for unattested model provenance. This is proof-maintenance advice,
+not genuine ambiguous-athlete census advice or national/release acceptance.
+
+Actual changed runtime surfaces were exercised, not just compiled. Main started an owned fresh
+debug endpoint on `127.0.0.1:38267` with store
+`var/no-unwrap-endpoint-smoke-sol-20261003-01` and fetched `/discover` using
+`curl --http2-prior-knowledge --fail-with-body --silent --show-error --max-time 10`
+with accept `application/vnd.restate.endpointmanifest.v4+json`. Ordinary HTTP/1 discovery was
+rejected; the correct cleartext HTTP/2 request returned protocol 5–7 and eleven services,
+including configured `BrowserSession` alongside the ten base services.
+Main sent TERM to owned PID 3676866; observed exit zero and preserved `serve.log`:
+
+```text
+drained: accepted=3 completed=3 cancelled=0 timed_out=0 aborted=0 panicked=0
+```
+
+No Restate node was registered for this smoke, and no workflow/fault/census credit is assigned.
+The actual Chromium profile `var/browser-rankings-no-unwrap-sol-20261003-01` and loopback CDP
+port 29226 were used with controlled fixture port 21045:
+
+```sh
+env TMPDIR=/tmp RUSTC_WRAPPER= \
+  ADLAW_LANE_FIXTURE=http://127.0.0.1:21045/ \
+  ADLAW_LANE_CDP=http://127.0.0.1:29226/ \
+  cargo -Zallow-features=portable_simd,try_blocks,proc_macro_span,error_generic_member_access \
+  test -p athleticnet-browser --lib lane_smoke -- --ignored --test-threads=1
+```
+
+Both tests passed; actual ranking POST requests, unchanged bodies, challenge 403 and normal 200
+were captured in `var/browser-rankings-no-unwrap-evidence-sol-20261003-01.json`.
+This is controlled browser evidence, not live-provider access or national fault05 acceptance.
+Owned Chrome PID 3676868 received TERM and exited zero; the fixture server was stopped.
+`ss -H -ltn 'sport = :38267 or sport = :29226 or sport = :21045'` returned no listeners.
+Fresh stores, browser profiles and evidence remain preserved; no unrelated run was stopped.
+Main removed only its completed throwaway CLI fixture graph and two standalone macro-probe
+source/binary pairs after the actual smokes and independent review; retained audit snapshots
+and all durable stores, captures, browser profiles and runtime evidence were preserved.
+
+## Direct cohort cutover and live coach claim readback — 2026-10-02
+
+The direct publisher graduation-year repair now retains typed `PublishedGraduation` claims,
+without fabricating reverse-calculated grades. Canonical merge, identity-evidence digests,
+cohort review, model packets and workbook conflicts consume those claims. Projection receipt:
+`milesplit_result_sets_v5` after the capture-bound replay repair recorded below; source
+interpretation remains `milesplit_owned_meet_v3`. Historical v4 receipts remain preserved.
+Publication policy is 5. Historical stores and policy-1/2/3/4 bundles remain preserved, not
+silently migrated or accepted under the current policy.
+
+Executed with the isolated `TMPDIR` and empty `RUSTC_WRAPPER` recorded below:
+
+```sh
+cargo fmt --all
+cargo check --offline --workspace --all-targets --all-features
+cargo test --offline -p census-domain
+cargo test --offline -p census-store published_graduations
+cargo test --offline -p census-crawl milesplit
+cargo test --offline -p census-review
+cargo test --offline -p census-report
+target/release/census-service --store var/qualification-bound-sol-20261002-06 index
+target/release/census-service --store var/qualification-bound-sol-20261002-06 workbook --out var/qualification-bound-sol-20261002-06/publication --grad-year 2027
+target/release/census-service verify --workbook var/qualification-bound-sol-20261002-06/publication/current/workbook.xlsx
+```
+
+Domain 250, published-claim store 3, MileSplit 118, review 126 and report 182 tests passed
+(`artifact://1152`, `artifact://1155`). The authentic four-capture qualification projection
+command and its eight unchanged body/metadata inputs are retained in `artifact://1157`.
+It made zero actual requests, retained 230 source observations, seven subjects and 13
+performances; identical third application kept sequence 13 unchanged. Index readback
+reported ten source identities, zero conflicts and zero review cases. A temporary typed
+physical `ReviewCases` reader independently returned `[]` and was removed after execution.
+Root 05's previously observed unsupported cohort case remains preserved as historical evidence.
+
+The real workbook command and independent verification passed. Frozen generation:
+`960fa368e9d37a9d73615b30f771e3b518d180aad5c36f117215915baf8e1883`.
+Its `recruiting.csv` retains Adelyn Spann, 2027, Girls, Alabama, Abbeville High School,
+source profile 14222592 and verified identity. This bounded retained-capture publication is
+not the fresh national census or the requested final Downloads workbook.
+
+After integration, workspace/all-target/all-feature check passed again; OHSAA 28, RIIL 12,
+TSSAA 16 and native VM 31 tests passed (`artifact://1185`). The release service binaries and
+native VM example built. Service parity then passed seven cases and failed two OHSAA
+serialized-fact goldens reflecting removed fabricated person identities and actual capture
+provenance (`artifact://1197`); this is not a full gate PASS. Subsequent review found OHSAA
+changed-content suppression and HTTP-200 refusal misclassification. Their integrated repair
+passed 38 OHSAA tests in 5.29 seconds (`artifact://1235`):
+`cargo fmt --package census-crawl && cargo test --offline -p census-crawl ohsaa`
+with the temporary directory/wrapper settings above. The 5090/SOL lane replaced the
+two obsolete consumer DTO snapshots with genuine source-backed behavior assertions.
+Integrated workspace/all-target/all-feature check and all ten service parity cases
+passed (`artifact://1241`, 3.62-second test execution). Source-text retry tests were removed rather than re-pinned;
+real native retry/exhaustion behavioral obligations remain required.
+
+Actual public acquisition and stopped-store readback:
+
+```sh
+target/release/census-service --store var/qualification-tssaa-live-sol-20261002-02 provider tssaa --states TN --school-names 'Page High School' --limit 1 --refresh --observed-on 2026-10-02
+target/release/census-service --store var/qualification-riil-live-sol-20261002-01 provider riil --states RI --limit 1 --refresh --observed-on 2026-10-02
+target/release/census-service --store var/qualification-ohsaa-live-sol-20261002-01 provider ohsaa --states OH --school-names 'Dublin Coffman High School' --limit 1 --refresh --observed-on 2026-10-02
+target/release/census-service --store var/qualification-tssaa-live-sol-20261002-02 export-data --data var/qualification-tssaa-live-sol-20261002-02/readback --school-year 2026
+target/release/census-service --store var/qualification-riil-live-sol-20261002-01 export-data --data var/qualification-riil-live-sol-20261002-01/readback --school-year 2026
+target/release/census-service --store var/qualification-tssaa-live-sol-20261002-02 consolidate
+target/release/census-service --store var/qualification-riil-live-sol-20261002-01 consolidate
+```
+
+TSSAA: one school, two requests, zero errors, eleven published appointments/mailboxes.
+RIIL: one directory request, zero errors, 55 schools and 258 appointments without invented
+mailboxes or current-tenure claims. Its current CLI arm did not apply the supplied school
+limit; observed output is 55, not one. OHSAA: search transport failed, zero facts and one
+explicit report error; successful publisher acquisition is unproven.
+
+Independent canonical JSON readback and recomputed body SHA256 found no foreign school
+link or capture URL/time/digest mismatch across the eleven TSSAA and 258 RIIL appointments.
+TSSAA's eleven persisted tenure claims explicitly retain school year 2026, the complete
+published 2026–2027 staff statement, URL `?id=157`, retrieval `2026-10-02T13:45:26Z` and
+digest `14482667d01a0d547a5aa0cb52d0d37c7e2312ddb90d9745b96c2b68c6a5c677`.
+Three separately labelled postal claims remain. RIIL's directory capture is 200852 bytes,
+retrieved `2026-10-02T13:45:25Z`, digest
+`a442de68b5d8bbb66309d40016b70f825e2edac3da86c0957f20082b162d8d92`.
+These genuine bounded source qualifications do not certify all jurisdictions/families.
+
+## Measured native VM journal refusal — 2026-10-02
+
+Fresh `var/vm-sol-20261002-05` booted the signed Arch image under real QEMU, registered the
+native deployment and accepted real captured-athlete ingestion. Its final bounded Admin
+bookends and complete v2 journal are retained in
+`sweep-reboot-start-9c655d22-0d67-460e-a81b-103096c6bfcc.stderr.log`.
+Original invocation `inv_1kEl3g4dVuTp052VbZTYDYqNJPrUsd9ChB` had protocol 7, the same
+deployment/key/handler and journal size four: Input, Run, Run completion, Sleep.
+Sleep completion ID was 2; wake time was 1790952376499 epoch milliseconds.
+Both independent invocation snapshots positively reported `running`, not `suspended`;
+the driver refused injection and exited 1. No hard reset or midnight fault passed.
+
+Pinned Restate 1.7 upstream source establishes that journal-v2 leaves the legacy `completed`
+column unset. Missing/null cannot mean unfinished. The corrected witness requires exact
+command/notification identity, a complete bounded journal, independent suspended-future
+evidence and guest-clock safety margin. The 5090/SOL repair now validates authentic
+`SignalIndex` and all bounded future/envelope/completion variants without early matching-leaf
+shortcuts. Main integrated the guest-only Admin configuration: positively measure deployment
+`BidiStream`/HTTP/2, set Sweep inactivity to one second before first acceptance, read back
+the same owner and unchanged abort timeout. Production defaults remain 3600 seconds.
+This does not qualify a fault by itself; the next fresh VM confirmed configuration but refused injection.
+
+Native host ownership repair rejects overlong Unix socket pathnames before preparing
+payloads/disks/children, checks the QEMU owner during boot probes, and preserves original
+scenario errors alongside all attempted cleanup failures. Known-dead QEMU cannot receive
+a fabricated guest drain certificate. These integrated changes passed 47 native VM example
+tests in 4.40 seconds; release example build passed in 59.52 seconds (`artifact://1237`):
+
+```sh
+rustfmt --edition 2024 crates/census-service/examples/qualification_native_vm.rs
+cargo test --offline -p census-service --example qualification_native_vm
+cargo build --offline --release -p census-service --example qualification_native_vm
+```
+
+All cargo commands used the recorded `TMPDIR` and empty `RUSTC_WRAPPER`. Independent reads of
+actual roots `vm-sol-20261002-{03,04,05}/cleanup.json` confirm each endpoint/node/QEMU was
+TERM-requested, reaped and exited zero; each endpoint drain counted accepted=4/completed=4
+with cancelled/timed_out/aborted/panicked all zero. Those cleanup results do not change the
+failed/refused fault verdicts. All disks, captures and logs remain retained.
+
+## Measured suspended SDK signal boundary — 2026-10-02
+
+Fresh `var/vm-sol-20261002-06` ran the repaired release VM example against real QEMU and
+Restate 1.7, exiting 1 after 183.03 seconds. `deployment.json` positively records
+`BidiStream`, `HTTP/2.0`, the same deployment owner, and the guest-only one-second
+Sweep inactivity override with unchanged one-hour abort timeout. No production binding
+default was modified.
+
+The full refusal is retained in
+`sweep-reboot-start-8e843daf-fec5-4b43-a083-6fbf948ae830.stderr.log`.
+Both independent bookends positively reported `suspended`, protocol 7 and journal size four.
+The complete journal retains Input, Run, Run completion and Sleep completion ID 2;
+the Sleep wake time is 1790954352791 epoch milliseconds. The actual durable suspended future is
+`FirstCompleted(Single(SignalIndex(1)), Single(SignalName("stop")))`, not an awaited
+`CompletionId(2)`. Parsing succeeded, but the Sleep correlation proof remained absent.
+The driver correctly refused injection; this is not a reboot or midnight PASS.
+
+The 5090/SOL lane traced exact SDK 0.12/shared-core 7.0.3 semantics: `SignalIndex(1)`
+is reserved cancellation, not the Sleep completion. Production `tokio::select!` polls durable
+branches separately; the recorded suspended future belongs only to the signal branch.
+Main cut over to the SDK's supported durable selection with explicit error/cancellation
+propagation. Five window/stop behavior tests and ten service parity cases passed
+(`artifact://1252`). The next actual VM reached the positively correlated Sleep described below;
+the witness still requires exact completion identity, not guessed signal offsets or an arbitrary
+uncompleted Sleep.
+
+Independent `cleanup.json` confirms endpoint/node/QEMU TERM, reap and exit zero;
+accepted=4/completed=4, every other drain outcome zero. All root artifacts remain preserved.
+
+## Measured durable Sleep reset and unresolved boot ownership — 2026-10-02
+
+Fresh `var/vm-sol-20261002-07` ran the integrated release endpoint and native VM driver,
+exiting 1 after 317.79 seconds. `host-active-before-reset.json` positively retains matching
+protocol-7 suspended invocation bookends, deployment `dp_13qUff8RpY7AadOKqSpzSc9`,
+the original Sweep key and complete four-entry v2 journal. Its future includes awaited
+`CompletionId(2)` alongside reserved cancellation `SignalIndex(1)` and named `stop`.
+The Sleep has wake time 1790955564922; guest witness time 1790951966545 with a 30000-ms
+safety margin. This is the reached native injection boundary absent in roots 05/06.
+
+Actual QMP hard reset occurred and SSH reached the changed boot. The reboot then failed:
+`qualification.service` did not expose a live owner within the unchanged bounded poll.
+Initialization already executes `systemctl enable --now`; the startup cause is not established
+by the serial log alone. `cleanup.json` preserves the primary and guest-drain errors:
+guest certificate absent, QEMU TERM requested, reaped and exit zero, `qemu_orderly=false`.
+No recovery, midnight, cleanup or full fault-suite PASS follows from the reached boundary.
+All root disks, source captures and logs remain preserved. Bead: `athletic-rust-pipeline-lel`.
+
+Integrated verification with the recorded isolated temporary directory and empty wrapper:
+
+```sh
+cargo test --offline -p census-service --test milesplit_roster_observations --test fjall_restate_e2e
+cargo fmt --all
+cargo check --offline --workspace --all-targets --all-features
+cargo test --offline -p census-service --example qualification_native_vm
+cargo test --offline -p census-service --test recovery
+cargo build --offline --release -p census-service --example qualification_native_vm
+```
+
+The two consumer suites passed seven tests (`artifact://1262`, 0.83 seconds).
+The VM example passed 56 tests, recovery passed eight real CLI/store/process tests in
+23.73 seconds, and release example build passed (`artifact://1266`).
+The recovery harness was mechanically split into bounded private modules after LSP reference
+checks; original fault assertions and fixture inputs remain. Graduation-only roster observations
+retain `observed_grade=None`; canonical typed published years and original capture ownership,
+digest and replay/readback stability are asserted instead of reverse-invented grades.
+
+The preceding full Nextest execution (`artifact://1257`) was not a PASS:
+1786 passed, three failed, three skipped, 395 unexecuted after fail-fast. Those three failures
+were obsolete discovery cardinality and reverse-grade consumers, repaired by the focused
+passing suites above. A subsequent full-suite result is still required. Post-reset readiness
+failure now records independent bounded systemd state/current-boot journal and preserves
+all primary/diagnostic/publication errors; unit tests do not prove actual guest startup.
+Actual diagnostic execution used a new root and the preserved authentic capture bundle:
+
+```sh
+target/release/examples/qualification_native_vm host --root var/vm-sol-20261002-09 --tools var/native-vm-tools-sol-20261002 --base-image var/native-vm-tools-sol-20261002/Arch-Linux-x86_64-cloudimg-20261001.604814.qcow2 --census-serve target/release/census-serve --restate var/native-runtime-restate-1.7.0-sol-20261002/restate-server-x86_64-unknown-linux-musl/restate-server --captures var/native-vm-captures-sol-20261002-root08.json
+```
+
+The external tool deadline was disabled; every driver/SSH/owner wait retained its internal
+bound. Root 09 exited 1 after 312.88 seconds. Its actual
+`recovered-supervisor-failure.json` records changed boot
+`fe63381d-027f-4374-809d-8dddeae75c9a` → `58a6d0f6-875c-4b8a-9f63-056d1c76baac`,
+live QEMU before capture, and successful independent systemd/journal commands.
+Systemd reported `LoadState=loaded`, the expected `/etc/systemd/system/qualification.service`,
+`UnitFileState=disabled`, `ActiveState=inactive`, `SubState=dead`, `MainPID=0`,
+`Result=success`, `ExecMainStatus=0`; current-boot journal had no unit entries.
+The unit file survived the actual reset, but boot enablement did not. A repair must persist
+the validated enablement link/directory before accepting work and prove survival on the next
+hard-reset run, not restart the unit or extend the deadline to disguise the failure.
+Root 09 cleanup retains the original owner failure, absent guest drain, QEMU TERM/reap/exit
+zero and `qemu_orderly=false`. It remains unqualified.
+
+Root 08 hit the external tool's default 300-second deadline before diagnostic/cleanup capture;
+it has no cleanup certificate or verdict. A post-timeout process query found no qualification,
+QEMU, Restate or endpoint process, but that is not an orderly drain/reap certificate.
+Its incomplete audit artifacts and disks are retained; no fault or cleanup PASS is claimed.
+
+
+The enablement repair passed 61 native example tests and release build
+(`artifact://1275`). Actual root `var/vm-sol-20261002-10` survived the witnessed
+QMP reset: its bounded `reboot-oracle.json` reports PASS for original Sweep
+`inv_1kEl3g4dVuTp052VbZTYDYqNJPrUsd9ChB`, unchanged key/deployment/machine,
+changed boot, acknowledged cursor `38332` and 18 physical observations.
+The original suspended invocation finished through its owned stop signal.
+Root 10 then exited 1 after 159.03 seconds because the host midnight consumer
+still expected legacy journal rows instead of the current validated v2 envelope.
+Main reuses the strict native witness parser against the measured baseline;
+the unchanged authentic root-10 capture supplies completion/date/boot regressions.
+All 63 VM tests and release build passed (`artifact://1279`).
+
+Actual root `var/vm-sol-20261002-11` then completed the bounded reboot, natural
+UTC-midnight, Ingest and reused-capture oracles in 463.58 seconds.
+Its `verdict.json` has no execution failure, but exits 1 with
+`BLOCKED_OR_UNPROVEN`: active Jurisdiction/source-stage recovery and successful
+production Fetcher acquisitions on both sides of midnight remain unproven.
+These bounded outcomes do not certify national completion or full fault scenarios.
+The subsequent read-only native review found the host baseline did not bind its
+internally valid Sleep observation to the acknowledged original invocation/key.
+Both identity rejection regressions failed before the repair (`artifact://1286`).
+The host now binds original ID/key, accepted invocation ID and the intended shared
+clock workflow identity before admitting the strict native Sleep witness.
+All 65 VM tests, 38 OHSAA tests and the release example build passed
+(`artifact://1288`). Actual `var/vm-sol-20261002-12` completed the same bounded
+reboot/midnight oracles in 460.59 seconds with no execution failure; it still exits
+1 for the two explicitly unproven source-stage/fresh-Fetcher obligations.
+Its recovered endpoint drain is accepted=6/completed=6, all other outcomes zero;
+endpoint, node and QEMU TERM/reap each exited zero, with QEMU `ORDERLY`.
+
+Root 10 ordered cleanup succeeded: recovered endpoint accepted=3/completed=3,
+all other outcomes zero; endpoint, node and QEMU each TERM-requested, reaped
+and exited zero, with `qemu_orderly=true` and `qemu_state=ORDERLY`.
+All run artifacts remain preserved.
+
+`cargo nextest run --offline --workspace --all-features`, with the recorded
+temporary-directory/wrapper settings, passed all 2184 tests with three skipped
+in 146.030 test seconds (`artifact://1282`, 148.44 command-wall seconds).
+Strict workspace Clippy subsequently failed on the redundant OHSAA synchronous
+large-error wrapper and an unnecessary optional-city identity closure
+(`artifact://1284`); its repair is not yet a passing release gate.
+
+The publication review identified four release blockers: completed result-set
+keys suppressed changed captured bodies/metadata; roster admission lacked final
+response/document-owner binding; accepted aliases lost published graduation
+claims; coverage ignored direct-year contradictions. All three report
+counterexamples failed before repair (`artifact://1299`). Coverage's two
+contradiction cases passed after using the domain cohort-conflict predicate,
+while the alias case exposed a further grade-only census evidence counter
+(`artifact://1304`); that counter now includes direct published graduation.
+All three changed-result counterexamples failed against compile-adapted legacy
+bare-key suppression (`artifact://1303`). The new v5 receipts bind capture and
+projection content and retain previous receipt identities. Focused verification
+passed 136 MileSplit and 133 network tests (`artifact://1310`), including changed
+year/new-result/raw-metadata replay and real loopback redirect/304 acquisition.
+Those owned HTTP and synthetic fixture checks are not fresh national acquisition
+or full native-fault acceptance. Native source-stage and fresh clock-acquisition
+helpers are being integrated and have not yet executed in a VM.
+
+
+
+## Current native source witnesses and VM consumer repairs — 2026-10-02
+
+Executed with `TMPDIR="$PWD/var/test-tmp-sol-20261002"` and `RUSTC_WRAPPER=` after actual
+`/tmp` quota failures affected Fjall test stores and sccache temporary files. Root filesystem free
+space did not eliminate the per-user temporary-file failure; no other run or temporary state was deleted.
+
+```sh
+cargo test --offline -p census-service --example qualification_native_vm
+cargo build --offline --release -p census-service --example qualification_native_vm
+cargo test --offline -p census-service --example qualification_native_teams
+cargo build --offline --release -p census-service --example qualification_native_teams
+```
+
+VM: 27 scenarios passed and the release driver built (`artifact://1136`). An LSP inline refactor
+had placed Result propagation inside an Option-returning readiness closure; its compile failure
+was repaired without suppressing process-health errors. Teams: 34 scenarios passed and the
+release driver built (`artifact://1145`). These are consumer/lifecycle regressions, not the 17
+required native release faults.
+
+The actual native driver ran under an owned user/network/mount namespace, using the built
+`qualification_native_teams`, `census-serve` and actual Restate 1.7.0 musl binary. Fresh root:
+`var/qualification-native-teams-sol-20261002-actual-07`; prior `actual-06` remains preserved.
+The launcher retained the pre-unshare namespace owner and passed its namespace descriptors;
+it did not manufacture publisher HTTP responses. Both executions exited 1 with a measured
+`BLOCKED_OR_UNPROVEN` verdict, not a complete-release PASS.
+
+`actual-07/qualification-oracles.json` now positively witnesses
+`permanent_source_first_attempt_refusal` and
+`native_interruption_witnessed_final_reservation_boundary`. Actual Admin SQL returns explicit
+`IS NULL` caller predicates and ingress identity; omitted JSON fields alone cannot satisfy these
+checks. The permanent refusal is the real fixed serving-owner source-parallelism policy refusal,
+not a publisher/network permanent response. The interrupted third reservation remains backed by
+its native invocation, physical TLS hold, ingress inspection and TERM/reap/restart chronology.
+Typed settlement/history consistency, three-attempt transient exhaustion, settled-source replay
+without a fourth admission, retained source failures and actual TLS refusal also passed.
+
+Independent meets/results, full machine reset and clock faults, fresh positive acquisition,
+publisher/network permanent refusal, final teams-failure reporting and whole-parent repeat with
+zero additional physical requests remain UNPROVEN in this isolated fault root. Actual parent
+execution failed in unfinished meet transport before results/final reporting; its repeat retried
+that unfinished meet work. These outcomes were not relabelled or waived.
+
+## Current direct cohort defect discovered by physical readback — 2026-10-02
+
+Executed the current owned interpretation against fresh
+`var/qualification-bound-sol-20261002-05` using the eight authentic input paths recorded below.
+The real collector qualification passed (`artifact://1119`): zero requests, 230 retained source
+observations, seven bound source subjects, 13 performances and byte-identical third replay with
+sequence 13 retained. This root used owned interpretation v3; it is historical capture replay,
+not fresh national discovery.
+
+Executed `target/release/census-service --store var/qualification-bound-sol-20261002-05/store index`.
+The command reported `source_identities=10 conflicts=0 reviews=1 superseded=0 coverage=54 snapshots=1`.
+A temporary typed physical snapshot readback independently observed Adelyn Spann's
+`AppliedAthleteIdentity`, kind `source_bound`, canonical/member ID
+`ath_subject_05b8ab961559e53e`, policy 1, with its retained member evidence digest
+(`artifact://1139`). This establishes source-bound identity acceptance in this qualification
+root, not consolidation of other providers or a national population.
+
+The separate typed ReviewCases readback reproduced
+`Class-of-2027 cohort unverified:ath_subject_05b8ab961559e53e:p2:6f8627acc2ff77e0`,
+with detail `no grade observation retained; 2 evidence row(s), 1 source(s)`.
+Authentic API `data[172]` and `data[181]` directly publish owner `14222592` and graduation year
+2027. The canonical row retained that claim only in evidence notes and had no observed grade.
+This is a cohort eligibility defect, not two-person ambiguity. Bead
+`athletic-rust-pipeline-4tt` tracks typed direct-cohort retention; this section does not claim its
+implementation or acceptance verified. No grade was fabricated from the published year.
+
+The temporary physical identity readback was removed after execution. Preserved root captures,
+original source acquisition dates, physical rows and immutable journals remain unchanged.
+
+## Qualified hurdle and score/reducer fixes — 2026-10-02
+
+Bead `athletic-rust-pipeline-ay4`. A temporary public-API smoke reproduced adapter rejection of
+`400m Hurdles` and `Boys Varsity 110 Meter Hurdles Finals`, domain misclassification of the former
+as flat `Track400m`, a synthetic owned Decathlon total of 3456 parsed as distance, and incorrect
+compatibility of time with Decathlon and points with Shot Put. Abbreviated `400H` already worked.
+These synthetic inputs establish parser/mark defects, not an authentic publisher occurrence.
+
+Executed `cargo fmt --all`, `cargo check --offline --workspace --all-targets --all-features`,
+`cargo test --offline -p census-crawl --lib hytek::tests::event_scores`,
+`cargo test --offline -p census-crawl --lib milesplit::owned::tests::event_scores`,
+`cargo test --offline -p census-report --lib bests::tests::`, and
+`cargo run --offline -p census-crawl --example qualification_event_alias_smoke`.
+Check passed; five HyTek, five owned-parser and 75 bests tests passed. After-smoke output classified
+both full hurdle labels correctly, emitted `Points(CentiPoints(345600))`, and rejected both
+incompatible families. The temporary smoke was removed after execution. Raw provider JSON and
+public serialized variants remain unchanged. Reducer regressions cover incompatible-only inputs,
+duplicate reports, distinct meet identities, date/round/heat separation and deterministic genuine
+contradictions. The observed unused reducer import was removed through the language-server fix;
+five existing per-binary service-test helper warnings remain. Raw execution: `artifact://1090`.
+Native faults, course/equipment qualification, history completeness and national release remain
+unproven by these checks.
+
+## Authentic empty-school retention, binding and byte-identical replay — 2026-10-02
+
+Bead `athletic-rust-pipeline-23u`. Actual execution first exposed a timeout constructed outside its
+Tokio runtime (`var/qualification-bound-sol-20261002-01`), then the production empty-school guard
+preventing source-owned retention (`...-02`). After removing that guard, `...-03` retained 230
+observations but exposed an identical-payload retained-journal rewrite: sequence 13 advanced to 14
+although table and journal contents matched. Suppressing unchanged projection/retained receipt
+writes fixed that observed transition; missing/invalid school-file decode errors are not hidden.
+
+Executed the real public collector with fresh exclusive output root
+`var/qualification-bound-sol-20261002-04`:
+
+```sh
+cargo run --offline -p census-crawl --example qualification_bound_projection -- \
+  var/qualification-bound-sol-20261002-04 \
+  var/retained-pr-correction-20261001/store/http/52e0b5d61b6c7de90be2a35dd5fc3f42.body \
+  var/retained-pr-correction-20261001/store/http/52e0b5d61b6c7de90be2a35dd5fc3f42.meta.json \
+  var/retained-pr-correction-20261001/store/http/c7791d114036f1a83166fcb81998032d.body \
+  var/retained-pr-correction-20261001/store/http/c7791d114036f1a83166fcb81998032d.meta.json \
+  var/retained-pr-correction-20261001/store/http/a361c173de86509e4dbe70cc8212cea8.body \
+  var/retained-pr-correction-20261001/store/http/a361c173de86509e4dbe70cc8212cea8.meta.json \
+  var/retained-pr-correction-20261001/store/http/b0baf6da6f1b721f0118c6d070a9ca2d.body \
+  var/retained-pr-correction-20261001/store/http/b0baf6da6f1b721f0118c6d070a9ca2d.meta.json
+```
+
+Overall generic qualification passed, with zero physical requests. Empty canonical-school input
+retained exactly 230 source observations and no canonical population. Genuine original Alabama
+index/roster evidence bound provider school 38332 to Abbeville High School, creating seven
+source-backed subjects and 13 performances without ingesting roster athletes as population.
+Physical readback contains one Adelyn Spann subject, `ath_subject_05b8ab961559e53e`, with direct
+published cohort 2027 and owner `milesplit_athlete:14222592`. This is not canonical identity
+acceptance or a proof about other duplicate captures.
+
+Flush/drop/reopen and unchanged third collection preserved all seven physical tables, all tracked
+capture/meet/projection/application journals, original bytes/metadata and school input. Replay
+sequence remained 13 to 13; source observation count remained 230. All prior failing roots and
+their evidence were preserved. Exact readback lives in the seven stage directories and
+`qualification.json`; raw execution is `artifact://1079`. The capture-scoped source remained
+partial; no fresh acquisition, lifetime PR, national completion or seal is claimed.
+
+Executed `cargo test --offline -p census-crawl --lib
+milesplit::results::run::owned_tests::partial_replay`: both consumer regressions passed, now
+checking snapshot sequence and empty-school-to-binding recovery. Executed `cargo run --offline
+-q -p xtask -- scan`: nine packages had zero forbidden constructs, zero oversized files and zero
+functions over 60 lines. This replay/scan preceded the subsequent hurdle/reducer changes above;
+results do not automatically transfer to later trees.
+
+## Integrated parity and review repair checks — 2026-10-02
+
+Executed `cargo fmt --all`, `cargo test --offline -p census-review --lib`,
+`cargo test --offline -p census-service --test parity_national milesplit_html_parity -- --exact`,
+`cargo test --offline -p census-service --test parity_pipeline`,
+`cargo test --offline -p census-service --test parity_national
+authentic_milesplit_projections_retain_owners_without_inventing_school_bindings -- --exact`, and
+`cargo test --offline -p census-crawl --lib net::execute::conditional_capture`.
+The integrated checks passed: 126 review tests, both named national parity tests, the pipeline
+parity test, and three conditional-capture regressions. Five existing unused service-test helper
+warnings remain.
+
+Integration first exposed missing explicit nested module paths, then an incorrect zero
+`projected_rows` receipt assumption. Fixed module resolution and removed that incidental receipt
+assumption; the regression still verifies exact retained public subjects, published marks/cohorts,
+stable receipts, and no invented canonical athletes or school bindings. The 19 ratcheted assertions
+were all in a parent-gated test-only file, not production. Renamed it to
+`conditional_capture_tests.rs` and migrated its sole module path to the existing scanner convention.
+No baseline increase or production exclusion was introduced. Function-budget helpers preserve
+review cache/revocation behavior.
+
+Executed `cargo run --offline -q -p xtask -- scan`: all forbidden construct counts were zero
+across all nine packages, no files exceeded 300 physical lines, and no functions exceeded 60.
+Executed the real `qualification_owned_projection` collector command above with fresh output root
+`var/qualification-owned-projection-sol-20261002-05`: execution succeeded, unchanged replay was PASS,
+physical source observations remained 230 to 230, table/journal digests matched, physical requests
+were zero, and original captures remained unchanged. This remains bounded offline replay evidence,
+not fresh national acquisition or native fault acceptance.
+
+## Owner removal of obsolete cargo-vet requirement — 2026-10-02
+
+Bead `athletic-rust-pipeline-o8z`. Owner explicitly removed cargo-vet from the required work.
+Removed its obsolete release-gate function/invocation and updated the current architecture,
+delivery-plan and tools references. Dependency advisory, provenance and security requirements
+remain. Historical cargo-vet failures below are preserved, but are no longer current blockers.
+`bash -n tools/gate.sh` passed. The entrypoint has no `--help` mode; invoking it returned
+`unknown argument: --help` with exit 2. Full revised gate execution remains pending.
+
+## Actual dual local model qualification — 2026-10-02
+
+Executed `cargo run --offline -p census-review --example qualification_dual --
+var/qualification-dual-sol-20261002-actual-01`. Both real local endpoints answered:
+`http://127.0.0.1:11000/v1/chat/completions` using `prompt_json`, and
+`http://127.0.0.1:11001/v1/chat/completions` using `json_schema`. Both reported
+`qwen3.8-27b-uncensored`; each request had a 512-token ceiling and 90,000-ms timeout.
+The retained `dual-audit.json` records distinct request digests and the common evidence digest
+`30a73b5568f0a5d85ba3963bcfce4e3a705b3b3a9411662ce138fb6de660667b`.
+Both adjudications were `Undecided`; the combined outcome was `insufficient_evidence`.
+The unchanged replay requested zero additional model calls and added no checkpoint.
+
+This packet explicitly used a synthetic qualification-only school with no source capture or
+jurisdictional evidence. Correct abstention proves bounded actual endpoint execution, not review
+of a discovered public athlete, identity acceptance, national coverage or a census seal.
+
+## Integrated release gate failure — 2026-10-02
+
+Executed `tools/gate.sh --release`; the result was `gate: FAIL`. Preserved execution log:
+`artifact://1013`. The integrated tree at execution preceded subsequent parity and function-budget
+repairs; this result does not certify those later changes.
+
+Observed blockers included the teams-stage inner `RunRetryPolicy` declaring three attempts against
+the one-attempt inner ceiling; two MileSplit parity dispatch failures for
+`troy_725218_raw_projection_provenance.json`; the crawl assert-family ratchet increasing from zero
+to 19; and seven newly oversized functions. Strict source Clippy reported zero diagnostics in
+this execution. Cargo-vet reported 345 unvetted dependencies. The mandatory Kani lane reported
+eight missing proof kernels: `check_census_scope`, `check_fixed_point_bounds`,
+`check_identity_contradiction`, `check_pr_comparison_laws`, `check_redirect_cycle`,
+`check_retry_limit`, `check_store_batch_arithmetic`, and `check_terminal_state_no_retry`.
+Mutation execution was blocked by the failing test suite. GNU time was absent, so this execution
+did not supply peak-RSS evidence. No gate, audit requirement, proof obligation or baseline was
+waived; the national deliverable remains uncertified.
+
+## Additional owner main pull — 2026-10-02
+
+Bead `athletic-rust-pipeline-0xl`. User requested another main pull during the census work.
+SOL writers finished before the snapshot. `git fetch origin main` advanced origin/main from
+`0b0e988d` to `e8f2d9ae`; `git merge --ff-only origin/main` fast-forwarded the local main.
+All tracked and untracked local work was preserved in stash
+`bb79304a6787e8521713dc2b26612db166c0a0e3` and reapplied successfully without conflicts.
+This stash and the earlier `c74970ad2e80ba3cc29bf9b6d553899300555e8c` recovery stash remain intact.
+No commit, push, historical artifact deletion or shared-process shutdown occurred.
+
+Executed on the merged tree with restored local work:
+
+```sh
+cargo fmt --all
+cargo check --offline --workspace --all-targets --all-features
+cargo test --offline --workspace --lib --all-features
+cargo run --offline -p census-crawl --example qualification_mpa -- var/qualification-mpa-sol-20261002-01
+```
+
+Compile passed; 1,684 library tests passed across eight suites, with two ignored.
+The actual offline MPA collector qualification exited 0 after two evaluations and flush/drop/reopen:
+four cache hits, zero physical requests, independently supplied directory/staff capture dates retained,
+and zero collector errors. These fixture dates are qualification inputs, not original acquisition dates;
+the replay does not certify current coaching tenure, national coverage or idempotent MPA physical writes.
+Five existing unused-helper warnings remain in the service integration-test common module
+(`athletic-rust-pipeline-p0n`). This integration evidence is not a clean release gate or census seal.
+
+## Owned partial projection replay — 2026-10-02
+
+Bead `athletic-rust-pipeline-23u`. The real public collector qualifier first exposed physical source
+observation duplication: preserved root `var/qualification-owned-projection-sol-20261002-01`
+grew from 230 to 460 rows after flush, owner drop, reopen and unchanged replay. Its execution flag
+was true, but the independent replay oracle was FAIL. No accepted athletes or network requests
+were produced; canonical absence was not treated as successful national coverage.
+
+The fix stages `milesplit_result_set_effects_v1` table/canonical-content-digest witnesses in the same
+atomic batch as physical rows and the partial/completed disposition. Each witness uses an indexed
+`Store::journal_contains` lookup; retained rows are filtered in place and written in one batch per
+table, not one batch per row or a scan of all accumulated witnesses. Partial school/cohort gaps
+remain unfinished. Exact newly available provider school bindings can resolve owed entities while
+unchanged observations remain physically stable. Older partial stores without these witnesses are
+preserved and are not retroactively certified replay-idempotent.
+
+Executed on the final indexed/batched implementation:
+
+```sh
+cargo fmt --all
+cargo test --offline -p census-crawl --lib milesplit::
+cargo run --offline -p census-crawl --example qualification_owned_projection -- var/qualification-owned-projection-sol-20261002-03 var/retained-pr-correction-20261001/store/http/52e0b5d61b6c7de90be2a35dd5fc3f42.body var/retained-pr-correction-20261001/store/http/52e0b5d61b6c7de90be2a35dd5fc3f42.meta.json var/retained-pr-correction-20261001/store/http/c7791d114036f1a83166fcb81998032d.body var/retained-pr-correction-20261001/store/http/c7791d114036f1a83166fcb81998032d.meta.json var/qualification-postal-sol-20261002-actual-02/collector-school-input.jsonl
+```
+
+All 104 focused tests passed. The real collector qualification passed unchanged replay: 230 to 230
+physical source observations, equal physical table digests and equal key/payload digests in all four
+journal phases, zero network/model requests, zero canonical athletes, and unchanged original captures.
+The source school input is the independently postal-qualified NC school with no invented MileSplit
+school identity, so the foreign Alabama result rows honestly remain unresolved.
+
+Two permanent consumer regressions exercise missing-cohort partial reopen and partial exact-school
+binding followed by truthful fixture binding completion, including physical table and journal equality.
+An older unresolved-row assertion now inspects physical observations rather than an aggregate subject
+scan, preserving the expected result row and no-inferred-grade checks. A provider subject can legitimately
+own observations from several events; repeated subject IDs alone do not prove duplicate physical rows.
+The qualifier retains actual API/raw capture dates independently, preserves input bytes, and snapshots
+its source. Roots 01–03 remain preserved. This bounded replay is not native crash/lost-ack proof,
+fresh national acquisition, source exhaustion, identity acceptance or a release seal. Integrated
+workspace and release gates remain pending.
+
+## Authentic owned results, postal dates and native teams boundary — 2026-10-02
+
+Scope: integrated SOL-authored source projection and bounded qualification drivers on main
+`0b0e988d` plus preserved local work. This is not fresh 49-jurisdiction acquisition or a release seal.
+
+Executed:
+
+```sh
+cargo fmt --all
+cargo build --offline -p census-service --bins --example qualification_native_teams --example qualification_postal
+cargo test --offline -p census-crawl --lib milesplit::
+target/debug/examples/qualification_postal var/qualification-postal-sol-20261002-actual-02 /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/target/debug/census-service 2026-10-02T12:00:00Z
+```
+
+Build passed. The focused suite passed 102 tests. Initial integration repaired an untyped empty-vector
+assertion and an unused import. SourceObservation IDs denote provider subjects, not result rows:
+three distinct result observations for two athletes legitimately share a subject ID. The regressions
+retain exact physical row counts and before/after physical-walk/content comparisons to detect replay
+appends rather than rejecting legitimate multi-event evidence.
+
+The authentic Troy raw projections preserve original inclusive lines 42–63, 208, and 712–719 plus
+only an explicit closing `</pre>` newline. Independent SHA256 and byte comparison initially exposed
+eight normalized CRLF endings in each projection; original endings were restored and exact comparison
+passed. Female original SHA256 `729850b479e5782aa3e4ade7740cd46b8ffd8f35db79a873abd4ed0b3fb0f6cf`;
+male `d9bcb109b52d5c54fddc1bede35a9ba6c4496d0c717d99bf8052113012165efd`. Published meet date remains
+2026-03-27, outdoor, school year 2025. Foreign metadata rejection, atomic projection/receipt visibility,
+interruption/reopen and completed-plus-new-set replay ran in the focused suite; these are deterministic
+consumer regressions, not native process-crash proof.
+
+Postal qualifier `var/qualification-postal-sol-20261002-actual-02/qualification.json` passed with one
+NC school, two same-provider address claims, 16 coach contexts and zero athletes/model calls.
+Evidence dates remain `2026-09-27T00:00:00Z`, separate from execution observation
+`2026-10-02T12:00:00Z`. The rebuilt CSV CLI exited 0 after store-owner drop; CSV postal cells equalled
+independently read XLSX cells. Policy 3 readback verified 213 rows over 11 sheets. The root and all six
+private helper sources are snapshotted with lengths and SHA256. This retained-fixture replay does not
+certify fresh source acquisition, eligible current coaching roles, athlete joins or national coverage.
+
+Installed native Restate measured 1.6.2. An isolated official 1.7.0 runtime was downloaded to
+`var/native-runtime-restate-1.7.0-sol-20261002`, leaving the installed binary untouched. The release
+archive SHA256 `323eff8d4f98658a009dba4c94343e37145c5f043f14ee2ff957be06c6535749` passed
+`sha256sum --check`; extracted binary SHA256
+`027181315dfde51cf82f75913a5878422fbf92b2407c2fe5216702a228a2183e`, actual `--version` 1.7.0.
+
+The actual native argv was `unshare --user --map-root-user --net --mount --fork --kill-child=TERM
+target/debug/examples/qualification_native_teams var/qualification-native-teams-sol-20261002-actual-05
+/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/target/debug/census-serve
+/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/var/native-runtime-restate-1.7.0-sol-20261002/restate-server-x86_64-unknown-linux-musl/restate-server`.
+The live host launcher supplied `QUALIFICATION_HOST_PID=1659045` and original kernel network/mount
+namespace descriptors at child fds 3/4. Earlier failed roots 01–04 remain preserved: proc namespace-link
+permissions, host NSS overriding private hosts, and v7 no-input call body rejection were measured and
+fixed. Namespace-only hosts/NSS bind mounts follow recursive-private verification; source destination
+guards and TLS validation remain unchanged. The proxy forced TLS EOF, never an HTTP 500 or source body.
+
+Native root 05 observed exactly three logical teams Run executions, completion ID 4, terminal code
+500 with the actual teams transport message, and equal retained Failed state through ingress/admin.
+Six first-invocation TLS admissions and one repeat admission are separately measured and cannot be
+attributed to source paths. Actual IDs: first `inv_17w2utFWtT0T3exsyQmx0zE2QglH3sulBN`, distinct
+same-object repeat `inv_17w2utFWtT0T7A49LayYRx2su0Mn5SLGIF`. Teams state was unchanged and no repeat
+teams-failure Run completion appeared. Rosters persisted an actual error and 977 remaining obligations;
+the genuine meets-index request failed independently, meets remained null and results were not reached.
+Overall `BLOCKED_OR_UNPROVEN`: final teams-report refusal and full same-key physical-request criterion
+were not proven. No synthetic later-stage state substituted. Exact oracles, journals/events and HTTP/
+physical observations remain under the root.
+
+Ordered cleanup passed: endpoint PID 2583752 then node PID 2583751 TERM/reaped with exit 0; all four
+ports rebound; proxy joined; no SIGKILL or upstream forwarding. Drain certificate:
+`accepted=3 completed=3 cancelled=0 timed_out=0 aborted=0 panicked=0`. All stores/artifacts preserved.
+This TLS boundary is not any of the required all-17 fault scenarios; isolated VM reboot/clock evidence
+and healthy independent-stage qualification remain outstanding.
+
+## Remote-main pull integration — 2026-10-02
+
+Scope: pull the owner's merged PR into this working tree without discarding the ongoing local
+slices. `git pull --ff-only origin main` advanced main to
+`0b0e988d805c2c122149ecbf90bb16458d99f2d3`. The complete pre-pull tracked/untracked snapshot remains
+in stash `c74970ad2e80ba3cc29bf9b6d553899300555e8c`; independent recovery archives remain at
+`/tmp/athletic-prepull-tracked-c74970ad.tar` and `/tmp/athletic-prepull-untracked-c74970ad.tar`.
+No commit, push, stash deletion, store opening, or native deployment occurred.
+
+Restoration exposed 22 tracked conflicts and 55 formerly-untracked paths now tracked upstream:
+15 byte-identical and 40 differing. All differing paths were compared across exclusive crawl,
+review, and Main ownership. Upstream bounded archive/replay, failed-stage preservation, directory
+fsync, postal validation, source-bound event refinement, individual-advice reuse, negative identity
+adjudication, and full-fit Excel cell handling were retained. Local acquisition dates, TeamRelay
+interpretation, unfinished owned-result projection, strict review shapes, revocation/sequence
+fences, advice archival, and positive provider-profile fixtures were preserved.
+
+Integrated verification:
+
+```sh
+cargo check --offline --workspace --all-targets
+cargo test --offline -p census-domain -p census-store -p census-review -p census-crawl -p census-report -p census-service --lib
+cargo test --offline -p census-review -p census-service -p census-store --lib
+cargo test --offline -p census-service -p census-store --lib
+cargo run --offline -q -p census-crawl --example qualification_owned -- var/retained-pr-correction-20261001/store/http/52e0b5d61b6c7de90be2a35dd5fc3f42.body /tmp/athletic-pull-owned-20261002.json
+cargo fmt --all -- --check
+git diff --check
+```
+
+The initial compile exposed nested-module path wiring, an ambiguous conversion, and a superseded
+private reexport; repaired. Initial tests exposed an incidental audit-reason assertion, the old
+JSON-versus-Decode error expectation, and a current state fixture lacking its required teams stage;
+reconciled without changing domain sanitization or adding a historical-state fallback. Final library
+results: crawl 733, domain 244, report 170, review 126, service 200, store 119 passed; 1,592 total.
+All-target compilation, formatting, and diff checks passed. Compilation reported five unused
+helpers in the existing `parity_pipeline` integration-test common module.
+
+The actual source CLI read 311,763 original bytes, SHA-256
+`8db9804ebc2d36b6f7ec1e2a289b2b8ab28610e0063f0ee9f54245eb128071ed`: 602 published rows,
+560 individual rows, and 42 explicitly classified TeamRelay rows; no malformed individual rows.
+Completeness remained Unknown and `ownership_complete=false`. Readback is
+`/tmp/athletic-pull-owned-20261002.json`. HEAD matched origin/main and the index contained no unmerged
+paths. This integration evidence is not a native-fault, fresh national census, or release certificate.
+
 ## Beads and branch planning reconciliation — 2026-10-01
 
 Scope: the owner's complete canonical-athlete/multi-event PR/contact/school-address target across
@@ -5515,3 +6479,709 @@ chain passed again after physical deletion (`artifact://352`): 1,207 comment-fre
 five responses replayed, four roster regressions and one consumer parity test passed.
 The complete 2,066-test gate above preceded this physical empty-file cleanup; no compiled
 behavior changed afterward.
+
+## Integrated qualification checks and actual VM stop — 2026-10-02
+
+The report alias/direct-cohort regressions initially exposed a snapshot mismatch in the new
+workbook test: the test built from a later store dataset while verifying the earlier frozen input.
+The test now builds and verifies the same frozen dataset. The three `published_cohort` tests passed
+(`bg_427`), including actual workbook readback. This is not a national workbook qualification.
+The final integrated `cargo test --offline -p census-report` passed all 185 tests
+(`artifact://1339`). The repaired native teams example's 34 tests also passed
+(`artifact://1340`), including bounded writer contention and retained cleanup failure outcomes.
+The service roster suite passed three tests and the browser library passed 34 with two ignored
+(`artifact://1312`). Synthetic canonical-owner wrappers are explicitly synthetic; the unchanged
+authentic ownerless fragment remains pure-parser evidence, not acquired school-owner qualification.
+
+The native VM example passed 78 tests and release builds of the VM example and `census-serve`
+passed (`artifact://1317`). Workspace all-target/all-feature offline check passed (`bg_431`).
+These checks do not certify actual reboot, midnight acquisition or all 17 native faults.
+Root13 rejected the conventional Restate binary because its observed version was 1.6.2 rather than
+the required 1.7.x. Root14 rejected an incorrectly nested tools path. Root15 used the verified
+1.7.0 binary and tools root, then stopped at `jurisdiction-reboot-start` after 99.36 seconds:
+`required pinned_deployment_id absent`. No reboot or midnight scenario was reached.
+Its retained `cleanup.json` records accepted=4, completed=4, cancelled=timed_out=aborted=panicked=0;
+endpoint, node and QEMU exited successfully after TERM and were reaped. Disks and logs remain
+under `var/vm-sol-20261002-15/`. Original invocation state observation is being repaired;
+no replacement job or successful recovery is claimed.
+
+Strict production Clippy remains failing. The first integrated run rejected the enlarged browser
+outcome enum (`artifact://1326`); the wire final-response URL now uses an owned boxed string,
+converted to the archive string without copying its bytes. The next run exposed actual native
+qualification example arithmetic, JSON indexing and simplification errors (`artifact://1332`).
+Those repairs are not yet a strict-lint pass or runtime qualification.
+
+`jq -e` independently checked the retained source-keyed inventory's registry, CLI, dispatch,
+team-arm, coach-family and jurisdiction cardinalities against their arrays/maps and confirmed
+the missing 50-minus-49 member remains unknown. Result: `true`, exit 0. The JSON is
+`var/source-keyed-inventory-sol-20261002.json`; this structural check does not authenticate capture
+bodies or supply the still-missing revision/run-bound 50/49 manifest pair.
+
+The integrated `cargo test --offline -p census-crawl` passed 819 tests
+(`artifact://1349`). The service's
+`jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_rosters`
+regression passed after the explicit synthetic owner-wrapper migration (`bg_443`).
+These parser/recovery tests do not certify authentic live roster ownership or native reboot recovery.
+
+Actual local model discovery returned `qwen3.8-27b-uncensored` from both `/v1/models`
+endpoints. `ss -ltnp` bound port 11000 to `ninfer-serve` PID 1661 and port 11001 to
+`llama-server` PID 1660. `nvidia-smi --query-compute-apps` bound those PIDs respectively to
+PCI buses `00000000:01:00.0` (RTX 5090) and `00000000:03:00.0` (RTX 3090).
+This verifies available lane identities, not successful advice on a genuine ambiguous case.
+
+After current release builds of both production binaries passed (`bg_444`), a new native
+Restate 1.7.0 node and sole store-owning endpoint started for
+`var/national-sol-20261002-01/`, with a new cluster/base directory and no imported population.
+Admin/ingress/endpoint are loopback 19095/18095/19080. Registration returned
+`dp_14y1ca6Uya97dbeoEPtstwZ`; `GET /deployments` showed all 11 current services.
+The unrestricted lower48+DC submission was:
+
+```sh
+target/release/census-service national --ingress http://127.0.0.1:18095/ --season 2026 --revision 1 --source-parallelism 1 --concurrency 4 --refresh --detach --json
+```
+
+It returned key `national:2026-27:51472a0f63b82f0d:1` and original invocation
+`inv_13LIoGM6LB600EGmJ5iU9yGQmEPr4dHTGp`. An actual admin query observed that invocation
+running and pinned to the registered deployment. `run-identity.json` retains the exact binding
+and command. Submission/running state is not completed acquisition, census acceptance, release
+qualification or a final workbook. Continue observing the same invocation; do not submit a new
+logical job to reset attempts.
+
+The native pin-observation repair passed all 89 VM example tests (`artifact://1361`), including
+pending/ready/running-before-first-journal and pending sibling first-pin transitions. Missing pins
+remain non-certifying; existing observed pins/protocols and the original witnessed child stay strict.
+Integrated strict production Clippy passed (`bg_447`) after the browser layout and native example
+safety repairs. The source scan (`bg_452`) measured zero forbidden constructs in all nine packages,
+no files over 300 lines and no functions over 60 logical lines. The separate lexical scan checked
+1,463 Rust files without comments; all eight architecture checks and the seam scan passed
+(`artifact://1377`). These static/test checks are not the full release gate.
+
+Actual authentic-capture projection readback initially failed in qualification roots 07 and 08
+(`artifact://1357`, `artifact://1364`): the qualification consumer still looked for bare completion
+keys, mixed newly archived raw metadata chunks with the owned API chunks, and expected API acquisition
+time on raw metadata evidence. Both qualification consumers now recognize content-bound receipts
+and select archive chunks by exact capture provenance; bound-performance checks use each capture's
+own actual timestamp. The unchanged historical bodies/metadata remain preserved.
+Root09 then passed the actual `qualification_bound_projection` command (`artifact://1369`,
+`artifact://1372`): zero requests, 230 retained source rows, 13 exact source-owned performances,
+ten original API chunks/readback, flush/drop/reopen equality, and identical third replay with
+sequence 14 unchanged. This is historical capture replay in an exclusive fresh qualification store,
+not fresh national acquisition, exhaustive histories or canonical identity acceptance.
+
+The final integrated workspace command
+`cargo nextest run --offline --workspace --all-features` passed 2,209 tests, with three skipped,
+in 142.071 test seconds (`artifact://1382`). The skipped tests are not executed browser/native fault
+qualification. Native VM root16 still stopped at source-boundary observation with
+`required pinned_deployment_id absent` after 121.00 seconds; its drain records accepted=completed=4
+and zero other outcomes. Disks/logs remain preserved. An actual independent admin observation of
+the fresh production run showed a running TeamsSource child with journal_size=1 and no deployment
+or protocol pin, while completed children had journal_size=2 and both pins (`artifact://1384`).
+Thus a positive journal count alone is not evidence that an active physical source attempt is pinned.
+The native qualification remains blocked; no reboot or midnight success is claimed for root16.
+
+Both changed browser URL producers were exercised through real owned headless Chromium and two
+bounded loopback fixture listeners. A temporary external Rust package called the production
+`BrowserManager` API; it did not fabricate CDP events, bindings, Response objects or source data.
+The first launch failed because the inherited long repository `TMPDIR` exceeded Chromium's Unix
+socket-path bound (`artifact://1380`). The already-built smoke binary then ran with `TMPDIR=/tmp`
+and a new, never-shared profile:
+
+```sh
+TMPDIR=/tmp target/debug/browser-url-smoke /usr/bin/chromium /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/var/browser-url-smoke-sol-20261002/profile-02
+```
+
+All six actual HTTP cases passed (`artifact://1381`): CDP direct capture retained its actual URL,
+not the semantic citation; CDP rejected a redirect without fetching its target; JS Navigation
+captured a direct response; a same-endpoint query redirect retained the actual final URL separately
+from the original request URL; wrong-endpoint and cross-origin final responses were rejected.
+Both redirect hops and the refused final 200 responses were observed in the fixture ledger.
+Browser shutdown had accepted=completed=1, remaining=aborted=cancelled=timed_out=panicked=0,
+no shutdown error, and both fixture tasks joined. The raw output is preserved in
+`var/browser-url-smoke-evidence-sol-20261002.jsonl`; the temporary harness and its two private
+profiles were removed after proof. This proves these producer/admission paths on owned loopback
+QA, not public Athletic.net access, authentic source acquisition or a national completion.
+
+### Reopened adversarial acquisition findings and integrated repairs — 2026-10-02
+
+Main reproduced the capture-review counterexamples before authorizing production changes:
+`cargo test --offline -p census-crawl acquisition_ -- --nocapture` ran 16 tests, 11 passed
+and all five new regressions failed (`artifact://1397`, raw `artifact://1396`). Identical
+partial replay restaged original rows/rejections, distinct acquisition metadata replaced an
+old partial interpretation, and a new-time manifest reference resolved the old timestamp.
+The earlier completed-order regression failed on reversed result URLs (`artifact://1393`):
+physical Meets increased 1→2, Teams 2→3 and Athletes 2→3 without changed performances.
+
+Main then integrated immutable acquisition manifests sharing original content chunks,
+content-bound partial/source receipts, exact indexed replay lookups, typed set-valued entity
+normalization, and both v5 projection/failure archive references. The targeted Nextest filter
+`test(acquisition_) | test(order_replay::) | test(transport_policy::)` passed all 20 tests
+(`artifact://1402`). No public acquisition, identity acceptance or national exhaustion is implied.
+
+The security regression filter `test(contextual::) | test(transport_policy::)` initially ran
+21 tests, six passed and 15 failed (`artifact://1400`, raw `artifact://1399`).
+Synthetic raw-text/quoted-attribute/template owner declarations and encoded selector
+contradictions bypassed admission. The isolated Fetcher redirect regression observed one direct
+HTTP request to the DNS-pinned owned loopback target representing a browser-only destination.
+No public Athletic.net request was made. Main replaced the partial regex scanner with
+`html5gum` 0.8.4 tokenization and a selective emitter that does not collect irrelevant text,
+comments, doctypes or attributes; decoded metadata, raw-text state, inert templates and foreign
+namespaces are accounted for. Direct HTTP now refuses a browser-only redirect before dispatch.
+The combined owner/acquisition/order/transport filter passed all 46 tests (`artifact://1406`).
+
+The complete census-crawl Nextest suite passed all 847 tests (`artifact://1413`).
+The native VM unit suite in the same command passed 88/89; its remaining failure compared
+literal error wording after Main added actual pin-status JSON to the diagnostic context.
+Main removed that wording-only assertion while retaining refusal of missing/foreign pins,
+wrong protocol and replacement invocation inputs. Its rerun and the clock-before-source
+scenario reorder remain unverified at this entry; neither creates a pin or relaxes certification.
+
+The actual captured public collector smoke ran in the new exclusive
+`var/qualification-bound-sol-20261002-10/` (`artifact://1411`, raw `artifact://1410`):
+original API/raw/index/roster bytes and metadata were unchanged, captured source rows and
+bound projections were retained, flush/drop/reopen succeeded, and the third identical replay
+left the physical tables, journals and store sequence unchanged (14→14). Actual requests were
+zero; this proves captured-path projection/replay, not a fresh public-source qualification.
+The original fresh NationalCensus invocation was independently inspected through the admin
+JSON query API: still running, journal size 99, pinned to `dp_14y1ca6Uya97dbeoEPtstwZ`,
+protocol 7. It has not been replaced or certified complete.
+
+The subsequent integrated gate command passed strict workspace/all-feature Clippy over
+libraries, binaries and examples, all nine production scans with zero forbidden constructs,
+zero files over 300 lines and zero functions over 60 logical lines, zero-comments across
+1,476 Rust files, all eight architecture checks, and module/crate seams with no violations.
+The complete all-feature workspace Nextest run passed 2,237 tests, three skipped
+(`artifact://1420`; 144.756 test seconds, 212.33 seconds for the combined command).
+
+The separate native VM example unit rerun passed all 89 tests. Its release build passed in
+87 seconds, then the actual reordered clock-first Root17 scenario failed:
+`natural guest midnight crossing exceeded 330-second injection budget`
+(`artifact://1424`; combined command 526.70 seconds). Original clock-set exit success did
+not establish injection: Root17 captured 19:56:54.892691734 UTC before and
+19:56:55.037242158 UTC after, not the requested 23:55 pre-midnight baseline.
+The final observation remained 20:02:24 on the same date. No natural next-day crossing,
+after-midnight acquisition, source-stage reset or complete fault verdict was proved.
+Endpoint drain accepted=completed=4, all other outcome counts zero; endpoint, native node
+and QEMU were terminated and reaped. Root17 disks, captures, logs and cleanup remain preserved.
+
+An independent throwaway executable exercised the public `fetch_roster` API after the HTML
+repair (`artifact://1422`): inert style text could not authorize unknown historical ownership,
+an encoded foreign owner contradicted the matching observed final URL and was refused,
+and an actual encoded matching declaration admitted the unchanged authentic 25-row verdict.
+All three used explicitly synthetic prefixes and zero physical HTTP requests.
+`var/roster-owner-smoke-evidence-sol-20261002.json` retains exact result/digests; the temporary
+package and its private cache were removed after proof.
+
+Actual Qwen execution is now distinct from earlier SOL workers carrying GPU names.
+Main registered direct OpenAI chat-completion tools for ports 11000 and 11001 and assigned
+independent source-registration and clock-qualification work. Saved completed HTTP responses
+report `qwen3.8-27b-uncensored` with model completion IDs and usage. The current listener/PID/GPU
+join was actually executed (`artifact://1429`): PID1661/ninfer on 11000 uses the RTX5090 at
+PCI01; PID1660/llama-server on 11001 uses the RTX3090 at PCI03.
+`var/actual-qwen-model-mapping-sol-20261002.json` preserves full delegated command output,
+both live model descriptors and sampled response metadata. Some actual 5090 generations
+emitted the wrong programming language and were rejected, not passed off as Rust or SOL work.
+This is coding-generation evidence, not genuine ambiguous-census-case review acceptance.
+
+The fresh ingress/admin observations are preserved in
+`var/national-sol-20261002-01/progress-evidence-qwen-wave.json` and its linked raw responses.
+At the observed snapshot, the original national invocation still ran with journal99/protocol7;
+run-handler counts showed 65 completed and 13 running TeamsSource invocations and 49 running
+JurisdictionCensus invocations. Census physical counts included 278,214 athlete rows, but zero
+review cases, conflicts and identity verdicts. These are not unique eligible accepted people.
+The ingress open-work command succeeded in 0.17 seconds: 49 jurisdiction rows, 48 unfinished
+sweeps, 30 completed teams stages, two roster stages and one meet stage, all readable.
+Its delivered JSON is preserved as an explicitly labeled semantic transcription because the
+completed tool stream expired before raw archival retrieval; separate stderr was not captured.
+Source-object obligations remained unmeasured/null, and the national report remained null.
+
+### Actual dual-Qwen registration and clock qualification — 2026-10-02
+
+Actual RTX5090 Qwen generated the immutable TeamsSource registration helper and replay
+regressions; Main integrated the existing blocking-region API and all admission callers.
+The registration performs real Fjall identity commitment, not a no-op journal marker.
+It consumes no physical reservation and the existing three-reservation acquisition ceiling
+is unchanged. Cached SDK identity is compared against persisted Fjall authority before admission.
+The first integrated command passed all 16 source-ledger tests and all 92 native VM tests
+(`artifact://1437`, 24.23 seconds including compilation/formatting). After splitting the
+regressions into bounded modules and adding native diagnostics, the same 16 and 92 passed again
+(`artifact://1443`; 1.02 and 2.99 seconds respectively). The release endpoint/VM example build
+passed in 68 seconds. These passes predate the later four cached-receipt and five clock-boundary
+tests and post-setup retained-window guard; those changes require another integrated check.
+
+That command then ran the actual fresh owned Root18 VM with native Restate 1.7.0 and failed
+`natural guest midnight crossing exceeded 330-second injection budget`; combined exit 1 and
+wall time 514.25 seconds (`artifact://1443`). Root18's
+`guest-clock-injection.json` retained actual GNU date stdout and confirmed initial guest
+realtime **23:55:00.047970997 UTC**, following 20:48:59.064843373 UTC before the command.
+However, the actual unfinished-Sleep witness already read **20:49:01.152634725 UTC**, and the
+captured baseline read **20:49:04.841784285 UTC**. Both retained the initial boot
+`6c7657a2-4db3-4d7d-a498-347ce2a53110` and machine
+`91d07d4ae517469c85ae4627df011777`. The clock reverted after successful initial injection;
+no synchronization-agent/root cause has been established. Bootstrap already specifies
+`systemctl mask --now` for its two synchronization units, so a missing `--now` is not the
+observed cause. Initial diagnostics were null because the first target check succeeded.
+Main now collects external UTC/running-service diagnostics on initial success too, and the
+actual 3090 worker authored retained-window validation for the post-setup baseline.
+Those are prerequisite checks and diagnostic changes, not demonstrated mechanism repair.
+
+Root18 retained only the before-midnight acquisition; no after acquisition or original
+source-stage reboot witness was reached. `cleanup.json` records accepted=completed=4,
+cancelled=timed_out=aborted=panicked=0, orderly endpoint/node termination and reaping, then
+orderly QEMU termination/reaping. All Root18 disks/logs/captures remain preserved.
+Neither Root18 nor earlier passing unit/build checks certify all 17 native scenarios.
+
+Actual 5090 generation `chatcmpl-ae866459ba47caa2` produced cached SDK digest/date mismatch
+regressions (1,134 prompt and 1,231 completion tokens; 5.347 seconds), preserved under
+`var/qwen-5090-evidence-sol-20261002/1790974485299-361ba183-1718-43cb-a9ef-0e35eb6806fe.response.json`.
+Actual 3090 generated the native target-window/UTC/identity tests and the retained baseline
+helper/tests; request, response and transport files remain under the corresponding
+`var/qwen-3090-evidence-sol-20261002/` tree. Wrong APIs, hardcoded windows and an invented
+shadow validator in model outputs were rejected or corrected against the real implementation.
+All resulting code still requires Main's integrated checks. This remains coding-generation
+evidence, not genuine ambiguous-census-case adjudication.
+
+The 5090 worker's source-backed SDK review found that `max_attempts(1)` uses
+`OnMaxAttempts::FailAsTerminal`: a local registration write/flush error can become a durable
+terminal run result before any physical reservation. Main removed that local one-attempt
+override, preserving ordinary resumable SDK storage retry and the separate physical ceiling.
+No native registration ENOSPC/replay experiment has yet validated that recovery path.
+
+### Integrated actual-Qwen repairs and kernel ENOSPC — 2026-10-02
+
+The first integration commands failed before tests or runtime: `cargo fmt --all` could
+not resolve the nested safety test module, then the ENOSPC example compiler rejected the
+borrow lifetime in the bounded `Error::source` traversal. Main added the explicit test
+module path and dereferenced the iterator's inner error reference. Neither failure was
+counted as a passing check.
+
+Main's subsequent exact command chain, recorded as `artifact://1455`, completed in
+53.76 seconds:
+
+```sh
+TMPDIR="$PWD/var/test-tmp-sol-20261002" RUSTC_WRAPPER= cargo test -p census-store --example enospc --all-features
+TMPDIR="$PWD/var/test-tmp-sol-20261002" RUSTC_WRAPPER= cargo test -p census-service --lib restate_services::jurisdiction::team_source::tests --all-features
+TMPDIR="$PWD/var/test-tmp-sol-20261002" RUSTC_WRAPPER= cargo test -p census-service --example qualification_native_vm --all-features
+bash -n tools/durability/scenario-09-disk-full-fjall.sh
+mkdir var/durability-fjall-sol-20261002-01
+TMPDIR="$PWD/var/test-tmp-sol-20261002" RUSTC_WRAPPER= SCRATCH_STORE="$PWD/var/durability-fjall-sol-20261002-01" bash tools/durability/scenario-09-disk-full-fjall.sh
+```
+
+Observed five safety tests, 20 source-ledger tests and 110 native-VM tests passing.
+The real private 64-MiB tmpfs probe received kernel errno 28 during `batch_26` at school
+836. It checked exact cold records and 28 acknowledged receipts, absence of the failed
+batch, unchanged replay with zero appends, and successful new atomic recovery writes
+across another cold reopen. The namespace exited zero and preserved `probe.out` and
+`preserved-store` in
+`var/durability-fjall-sol-20261002-01/enospc-09-Jmmqwn/`.
+This establishes the direct Fjall ENOSPC scenario, not Restate registration ENOSPC,
+power-loss/reboot recovery, or all 17 required native scenarios.
+
+The actual 5090 Qwen review used response IDs `chatcmpl-fccd174fc5966471`,
+`chatcmpl-cec286e16130ee13` and `chatcmpl-14c62cdf0ee5c27d` at loopback port
+11000, requested/reported model `qwen3.8-27b-uncensored`. The worker rejected
+unsupported APIs, invented timeout escalation and PID-namespace claims against actual
+source. The static review found no confirmed atomicity/false-PASS defect but identified
+unexercised inspection and cleanup liveness limitations: byte caps do not impose elapsed
+deadlines on direct `findmnt` pipe/wait, and TERM-only timeout cannot prove hard-bounded
+cleanup under unresponsive processes or IO. These remain explicit limits, not observed
+hangs. This is coding/review provenance, not genuine ambiguous-athlete adjudication.
+
+### Root19 clock refusal and actual-GPU review findings — 2026-10-02
+
+Main rebuilt the release endpoint and VM example with
+`TMPDIR="$PWD/var/test-tmp-sol-20261002" RUSTC_WRAPPER= cargo build -p census-service --release --bin census-serve --example qualification_native_vm --all-features`
+(68 seconds), then ran the same native host command with a fresh
+`--root var/vm-sol-20261002-19` and `TMPDIR=/tmp`. The combined command failed in
+179.23 seconds at actual clock injection; it did not wait another 330 seconds or reach
+source reboot recovery. `guest-clock-injection-validation.json` retained same-boot
+realtime before `22:01:36.702420079Z` and after `22:01:36.756577054Z` despite GNU
+date setter stdout claiming `23:55:00`. Independent GNU UTC observation also returned
+`22:01:36.766545405Z`.
+
+The running-service diagnostic explicitly showed
+`systemd-timesyncd.service masked active running`. Masking alone was therefore not
+proof of stopped synchronization. Main added an explicit bounded guest-only `systemctl
+stop` before injection and requires both masked load state and inactive/failed active
+state; active or transitioning units are refused. That correction and two new state
+regressions have not yet been exercised in another VM. The active service is established;
+causality for the observed realtime reversion awaits the corrected scenario.
+Root19 cleanup retained its disks/logs and reconciled accepted=completed=4 with all
+other counters zero, endpoint PID989 and node PID987 TERM-reaped.
+
+The actual 3090 Qwen review responses
+`chatcmpl-SGx5q4rmSEd0E1aMkBEQ6oEHcziteIY1`,
+`chatcmpl-oYS7l9qf6Z3RNMlXx3A47yPCw2dGcTHe` and
+`chatcmpl-yE4qdoyFHgn1sXNGnNFYbm5oXh5ptQ3m` identified two source-supported,
+unexecuted counterexamples: a cancelled registration caller releases its admission
+guard while an independently surviving blocking worker can overwrite first identity;
+calendar-only crossing checks can admit later backward/forward time steps without
+sufficient monotonic elapsed time. Main assigned independent actual-5090 guard-lifetime
+and actual-3090 consecutive-clock repairs. Neither static review is runtime proof.
+Source-contradicted flush claims, invented APIs and an insufficient one-second uptime
+floor were rejected rather than adopted.
+
+### Cancellation ownership, strict integration and Root20 clock — 2026-10-02
+
+Main integrated the actual-5090 registration ownership repair and actual-3090
+consecutive-clock validation repair. The supervised registration closure retains its
+source-key admission guard after caller cancellation. Its deterministic regression
+uses the real registration closure, real Fjall store and supervised blocking worker:
+the same key remains unavailable while that worker survives, the first identity/date
+remain authoritative after completion, and no second physical reservation appears.
+It does not inject cancellation at a literal post-lookup instruction or prove native
+Restate registration ENOSPC recovery.
+
+`TMPDIR="$PWD/var/test-tmp-sol-20261002" RUSTC_WRAPPER= cargo test -p census-service --lib restate_services::jurisdiction::team_source::tests --all-features`
+passed 21 tests. The integrated sequence also passed
+`cargo test -p census-service --example qualification_native_vm --all-features`
+(129 tests), `cargo test -p census-store --example enospc --all-features`
+(5 tests), and warnings-denied Clippy for the service/store source targets.
+Raw integrated output: `artifact://1468`; combined duration 17.64 seconds.
+`cargo xtask comments`, `contract`, `scan`, `integrity` and `domain-purity`
+all passed in the subsequent source-gate sequence: 1,493 Rust files, zero comments,
+eight architecture checks with zero deviations, nine scanned packages with no
+forbidden constructs or size-budget failures. That sequence also inspected the
+release archive and took 9.98 seconds; it is not isolated timing per gate.
+
+Main rebuilt the release endpoint and VM example and exercised
+`TMPDIR=/tmp target/release/examples/qualification_native_vm host --root var/vm-sol-20261002-20 --tools var/native-vm-tools-sol-20261002 --base-image var/native-vm-tools-sol-20261002/Arch-Linux-x86_64-cloudimg-20261001.604814.qcow2 --census-serve target/release/census-serve --restate var/native-runtime-restate-1.7.0-sol-20261002/restate-server-x86_64-unknown-linux-musl/restate-server --captures var/native-vm-captures-sol-20261002-root08.json`.
+The combined build/scenario took 503.09 seconds and failed at the later
+`jurisdiction-reboot-start`, not at clock injection or midnight.
+
+Root20 `guest-clock-injection.json` retained successful guest-only injection to
+`2026-10-02T23:55:00.039257771Z`. `clock-oracle.json` recorded PASS for its
+explicitly limited clock scenario: the same boot/machine crossed naturally to
+`2026-10-03T00:00:00.443522389Z`, with sampled realtime/uptime progress checked
+against both adjacent samples and the baseline. Real uncached acquisitions recorded
+`fetched_at=2026-10-02T23:55:05Z` and `2026-10-03T00:00:02Z`, each
+`from_cache=false`. The same original Sweep invocation
+`inv_19eq9TpwKCdY2GX3v3uUiTTslZxgUS791S` and deployment were retained.
+This is isolated guest/captured-source qualification on Restate 1.7.0, not national
+public freshness, release qualification on 1.7.10, or proof against unsampled,
+cancelling or sub-tolerance clock adjustments.
+
+The subsequent source probe refused reset with
+`source boundary does not retain owed teams stage`. Main preserved the QCOW2 and,
+without booting it or opening Fjall, converted its data image to a new sparse raw
+copy and selectively extracted JSON with read-only `btrfs restore`:
+
+```sh
+mkdir var/vm-sol-20261002-20/source-boundary-forensics
+mkdir var/vm-sol-20261002-20/source-boundary-forensics/files
+timeout --signal=TERM 60s env LD_LIBRARY_PATH="$PWD/var/native-vm-tools-sol-20261002/prefix/usr/lib" var/native-vm-tools-sol-20261002/prefix/usr/bin/qemu-img convert -f qcow2 -O raw var/vm-sol-20261002-20/data.qcow2 var/vm-sol-20261002-20/source-boundary-forensics/data.raw
+timeout --signal=TERM 30s btrfs restore --path-regex '^/(|jurisdiction-recovery-(invalid-boundary|original)\.json)$' var/vm-sol-20261002-20/source-boundary-forensics/data.raw var/vm-sol-20261002-20/source-boundary-forensics/files
+```
+
+Extraction passed in 0.43 seconds. The retained invalid-boundary observation at
+probe 3 showed both original TeamsSource children completed and settled on attempt
+1, no retained errors, parent teams Completed with 127 records, and the original
+parent running with 1 of 72 rosters committed. The requested unfinished teams
+boundary was missed; this is not an observed source-data-loss defect and not reboot
+acceptance. Do not relax the owed-stage check or manufacture an active child.
+Root20 cleanup reconciled accepted=completed=5, all other counters zero, and
+TERM-reaped endpoint PID2697, node PID2695 and QEMU PID3332141 with successful exits.
+All disks, extracted observations and logs remain preserved.
+
+`TMPDIR="$PWD/var/test-tmp-sol-20261002" RUSTC_WRAPPER= cargo nextest run --workspace --all-features`
+passed 2,250 tests, with 3 skipped, in 145.332 seconds runner time
+(163.09 seconds command wall time), raw output `artifact://1482`.
+Skipped tests remain a release-evidence limit.
+The full strict source lint command, using the owning `tools/gate.sh` feature
+allowlist and every `LINT_SET` denial, first failed on the new ENOSPC example's
+`Box<dyn Error>` `as` conversion (`artifact://1484`, exit 101, 6.72 seconds).
+Main replaced that conversion with `Box::<dyn Error>::from`, then reran the
+5 ENOSPC example tests and the full workspace strict source command:
+
+```sh
+TMPDIR="$PWD/var/test-tmp-sol-20261002" RUSTC_WRAPPER= cargo -Zallow-features=portable_simd,try_blocks,proc_macro_span,error_generic_member_access clippy --workspace --lib --bins --examples --all-features -- -D warnings -D unsafe_code -D clippy::unwrap_used -D clippy::expect_used -D clippy::panic -D clippy::panic_in_result_fn -D clippy::todo -D clippy::unimplemented -D clippy::dbg_macro -D clippy::indexing_slicing -D clippy::string_slice -D clippy::get_unwrap -D clippy::arithmetic_side_effects -D clippy::as_conversions -D clippy::let_underscore_must_use -D clippy::await_holding_lock
+mkdir var/durability-fjall-sol-20261002-02
+TMPDIR="$PWD/var/test-tmp-sol-20261002" SCRATCH_STORE="$PWD/var/durability-fjall-sol-20261002-02" RUSTC_WRAPPER= bash tools/durability/scenario-09-disk-full-fjall.sh
+```
+
+All three steps passed in 43.59 seconds combined. The second real-kernel fault
+again reached errno 28 at batch_26/school836, retained 28 exact acknowledged
+receipts, replayed with zero appends and verified a new atomic recovery batch after
+cold reopen. Evidence and the cold preserved store:
+`var/durability-fjall-sol-20261002-02/enospc-09-JIMh2V/`.
+The previously recorded inspection/cleanup liveness limits remain blockers to a
+universal hard-wall-clock bound; this successful run does not erase them.
+
+### Required runtime acquisition and live national progress — 2026-10-02
+
+Main downloaded the official Restate 1.7.10 MUSL archive, matched its published
+SHA-256 `870fdc42782800b2025338ceb3d56b666800187f1b4e30560b8f1c116c83355e`,
+inspected the five safe relative directory/regular-file entries, and extracted
+exclusively with `--keep-old-files --no-same-owner --no-same-permissions`.
+The actual bounded executable command printed `restate-server 1.7.10`; its
+SHA-256 was `cf117addd3000b3411b7b3a8f359a862674e69e4b7694fef559a0dfb87f423c2`.
+Exact commands, outcomes, source URLs and timing limits are retained in
+`var/native-runtime-restate-1.7.10-sol-20261002/acquisition-main.json`;
+independent primary-source metadata is in the adjacent `release-metadata.json`.
+No new node was started and no existing deployment was changed. The original
+national invocation and Root20 still used 1.7.0; version acquisition is a prerequisite,
+not completion of the seventeen required native scenarios.
+
+Main's bounded admin queries at host `2026-10-02T22:26:13.355Z` both returned
+HTTP 200. Original national invocation
+`inv_13LIoGM6LB600EGmJ5iU9yGQmEPr4dHTGp` remained suspended, journal size 99,
+on its original deployment and protocol 7; its 49 direct JurisdictionCensus children
+were 42 running and 7 suspended. Raw requests/responses/times:
+`var/national-sol-20261002-01/admin-progress-raw-native20-wave.json`.
+The real `open-work` CLI returned 49 jurisdiction rows with 39 unfinished sweeps.
+The adjacent `progress-native20-wave.json` records that CLI evidence and a
+read-only Census/status observation: 22,997 schools, 42,156 teams, 45,516 coaches,
+891,756 athlete rows, 1,919,878 observations and 599,928,201 on-disk bytes.
+Those physical rows are not unique accepted eligible people. The status observation
+has no captured exact HTTP status/time/raw response bytes; do not invent them.
+No second process opened the live store. Source-object denominators, paired
+50/49 manifests, genuine dual-lane review, final seals and workbook delivery remain
+unproved.
+
+### Native reservation seam integration and original source-unit classification — 2026-10-02
+
+Main integrated the explicit default-off `native-fault-injection` feature and the
+source-reservation marker/harness implementations. Both coding workers called the
+actual local Qwen servers, with raw responses retained under
+`var/qwen-5090-evidence-sol-20261002/` and
+`var/qwen-3090-evidence-sol-20261002/`; this was coding consultation, not genuine
+ambiguous census-case advice. The marker binds the actual registered request
+digest/date and reserved operation/attempt before acquisition. It does not prove
+an HTTP, response or parsing phase in flight.
+
+```sh
+cargo fmt --all
+TMPDIR="$PWD/var/test-tmp-sol-20261002" RUSTC_WRAPPER= cargo test --locked -p census-service --lib --features native-fault-injection restate_services::jurisdiction::team_source -- --nocapture
+TMPDIR="$PWD/var/test-tmp-sol-20261002" RUSTC_WRAPPER= cargo test --locked -p census-service --example qualification_native_vm --features native-fault-injection -- --nocapture
+```
+
+The source tests passed 40/40 and the VM example tests passed 153/153, combined
+wall time 25.33 seconds (`artifact://1498`). The subsequent comment gate checked
+1,514 Rust files with no comments; all eight architecture checks passed. The
+size scan exposed one 61-logical-line boundary assessor despite exit zero.
+Main extracted its existing source-plan validation without changing conditions;
+the focused jurisdiction-recovery tests then passed 41/41 and the new scan showed
+no files over 300 lines and no functions over 60 logical lines
+(`artifact://1506`, 72.91 seconds including the release build below).
+
+```sh
+SCRATCH_STORE="$PWD/var/durability-golden-sol-20261002-01" RUSTC_WRAPPER= bash tools/durability/scenario-16-golden-census-determinism.sh
+TMPDIR="$PWD/var/test-tmp-sol-20261002" RUSTC_WRAPPER= cargo test --locked -p census-service --example qualification_native_vm --features native-fault-injection native::jurisdiction_recovery -- --nocapture
+TMPDIR="$PWD/var/test-tmp-sol-20261002" RUSTC_WRAPPER= cargo xtask scan
+TMPDIR="$PWD/var/test-tmp-sol-20261002" RUSTC_WRAPPER= cargo build --locked --release -p census-service --features native-fault-injection --bin census-serve --example qualification_native_vm
+```
+
+The corrected scenario-16 wrapper executed its exact semantic-rebuild regression,
+1 passed, 0 ignored, and retained its log under
+`var/durability-golden-sol-20261002-01/test-2SB6Vn/`. This is not the full
+scenario-16 real-capture/advice/atomic-publication oracle. The full workspace
+strict source Clippy command recorded above also passed with the feature enabled
+in the preceding 21.64-second gate/wrapper run; it preceded the assessor
+extraction. The explicitly feature-enabled release build passed in 1 minute
+9 seconds. Fresh Root21 execution on verified Restate 1.7.10 was started with
+`var/vm-sol-20261002-21`; its runtime result was not yet observed when this entry
+was written.
+
+The original national run was inspected only through its existing ingress/admin
+APIs. The 49 original jurisdiction-state samples all returned HTTP 200, including
+an Illinois response retried with a larger bounded inspection-body cap after
+the first 64-KiB inspection cap was exceeded. The sampling was not atomic:
+36 teams stages completed, 8 failed and 5 were owed. Twenty parents had a measured
+roster remainder; 3,400 roster error entries are diagnostics, not 3,400 failed
+source units or accepted people. Raw state and exact identity evidence:
+`var/national-sol-20261002-01/source-unit-stage-inspections-wave01.json`,
+`source-unit-illinois-large-inspection-wave01.json` and
+`source-unit-stage-classifications-wave01.json`.
+
+An admin query restricted to those same 49 original parent invocation IDs
+returned 79 distinct original `TeamsSource/run` keys: 74 completed and 5 running.
+All 79 read-only shared `inspection` calls returned HTTP 200, with no inspection
+errors: 65 durable completed outcomes, 4 terminal, 5 exhausted and 5 unsettled.
+GA/TN/MS/SC coach-directory objects each retained Unknown attempts 1, 2 and 3;
+AL retained Unknown 1, transient 2 and Unknown 3. Four active admin rows reported
+an earlier one-hour abort timeout. These are retained incomplete outcomes, not
+proof of absence or permission for a fourth physical attempt or replacement job.
+Artifacts: `source-unit-teams-admin-wave01.json` and
+`source-unit-teams-inspections-wave01.json` in the same original run root.
+The 79-object count measures registered teams objects only, not all source-role
+obligations. The all-source denominator remains unknown.
+
+`source-unit-failure-digest-wave01.json` records the eight failed parent stages:
+IHSA rate-limit/cooldown exhaustion, ID/MT out-of-jurisdiction directory rows,
+four Arbiter terminal stale-bundle failures and CO/PA redirect-policy failures.
+Main's bounded public HTML-only GET of `https://live.arbiter.io/directory/`
+returned HTTP 200 at `2026-10-02T23:36:47.020Z`–`23:36:47.146Z`; 4,278 bytes,
+SHA-256 `2639ddc780ea00ff6d26dfd4070f4f3e5f5b96b17dabcf3c0e72c30ddafd184c`.
+The current entry declares `/directory/assets/index-DdctX9sz.js`, unlike the
+production pinned asset. `var/arbiter-directory-entry-main-sol-20261002-01.json`
+retains the HTML/status/times. No bundle credentials or token were retrieved,
+and this diagnostic request is not census acquisition.
+
+The source registry inventory in
+`var/source-count-reconciliation-sol-20261002-01.json` identifies 24 descriptors,
+not an authoritative 50-implementation/49-acquisition manifest pair.
+`var/skipped-workspace-gate-sol-20261002-01.json` finds three ignored source tests,
+but the retained Nextest output does not name its three skipped tests individually;
+source candidates do not prove the runner's exact skip identities. Main validated
+both evidence files as JSON. Fresh public coverage, genuine dual-lane advice,
+all seventeen native scenarios, sealing and workbook delivery remain open.
+
+### Root21 reached reservation/reset and blocked recovery — 2026-10-02
+
+```sh
+TMPDIR=/tmp target/release/examples/qualification_native_vm host --root var/vm-sol-20261002-21 --tools var/native-vm-tools-sol-20261002 --base-image var/native-vm-tools-sol-20261002/Arch-Linux-x86_64-cloudimg-20261001.604814.qcow2 --census-serve target/release/census-serve --restate var/native-runtime-restate-1.7.10-sol-20261002/restate-server-x86_64-unknown-linux-musl/restate-server --captures var/native-vm-tools-sol-20261002/census-captures.json
+```
+
+The actual command exited 1 after 612.76 seconds:
+`sweep-reboot-finish failed: exit status: 1`. The fresh manifest records native
+1.7.10 and the copied endpoint/qualification identities. The natural-midnight
+oracle completed, then `host-source-active-before-reset.json` recorded the
+original RI parent `inv_1j4peqPCiaI619bka7SjOV0DI0IpqZgOjE` awaiting original child
+`inv_1eaEVDJct3NR1gUMsa6ai5cjIgG9KRfMg9`, key
+`jurisdiction:RI:2026-27:1/teams/milesplit`, actual reserved attempt 1.
+Both retained deployment `dp_160A68Td1yDGXFFvsGdEwb7`, protocol 7. The complete
+marker matched journaled registration digest
+`58acd8c3b4597e407f9e607a596ccd89589d398cbaa65a64953b72d714dd100b`
+and original date `2026-10-03`. Its proof is reserved-before-acquisition, explicitly
+not an in-flight physical request.
+
+QMP acknowledged the owned `system_reset` at host
+`2026-10-02T23:46:12.637084027+00:00`. The guest boot changed from
+`6a1934bb-7ad2-40c3-8c7c-791fb3c4b14e` to
+`6f4e9b0d-45cf-4612-9023-9e27ea4aab31`, with the same machine
+`00c3767ed0e747c98beaeda5fdae2c1f`. The retained post-reset repeat returned
+`appended=0`, total observations 18. Its actual guest realtime was
+`2026-10-02T23:47:04.915206247+00:00`, earlier than the pre-reset injected
+`2026-10-03T00:00:13.545933346+00:00`. Sweep output remained HTTP 470/pending
+until the outer action ended; source recovery finish was not reached because
+the old host sequence returned at Sweep failure. A scheduler-delay cause from
+this clock rollback is an inference, not an observed internal diagnosis.
+
+Cleanup TERM-reaped endpoint PID366, node PID364 and QEMU PID3375880 successfully;
+the retained drain certificate reconciled accepted=completed=4, all other counts
+zero. All disks/logs remain preserved. Main converted only the stopped owned
+data image to a retained sparse raw copy and ran bounded `btrfs restore` for
+top-level JSON/log diagnostics under
+`var/vm-sol-20261002-21/recovery-forensics/`; extraction passed in 0.41 seconds.
+No guest was rebooted for diagnosis and no process opened the store.
+
+Exact cold extracted marker SHA-256 was
+`97a9464362902ddce9323c3475745ace7c9c57122d696a3f58ed412cfa44819e`;
+configuration SHA-256 was
+`44f480b2027dd71c5d606329f9c2c136b6ce3df05189292d95c37eacb72f0939`.
+Both equalled the reached witness's retained raw-byte arrays and declared hashes,
+verified with `jq -j ...bytes | implode` piped to `sha256sum` and direct file hashes.
+This proves marker/config byte retention, not completed invocation recovery or a
+cold ledger oracle. Main changed the host order to exercise reboot before any
+guest-only clock injection, and to retain both recovery outcomes before
+propagating failure. That repair was not yet compiled/exercised at this entry.
+Root21 is not full scenario-03 or scenario-12 acceptance.
+
+The retained 49 parent plans filtered through the current 14-arm teams dispatch
+produce 80 eligible key candidates, versus 79 original registered keys.
+The only unregistered candidate is `jurisdiction:TN:2026-27:1/teams/tssaa`;
+the current collector awaits arms sequentially and TN's preceding coach-directory
+object is unsettled. The candidate was not submitted or materialized.
+`source-unit-teams-declared-reconciliation-wave01.json` retains all 80 classified
+teams candidates and explicitly does not assert original-binary dispatch parity,
+an all-source-role denominator, or the missing historical 50/49 manifest pair.
+
+## Source repairs, public qualification and bounded reboot recovery — 2026-10-03
+
+Main integrated the actual local RTX5090 Arbiter entry-discovery implementation and RTX3090
+redirect-origin implementation. These are coding consultations, not genuine ambiguous-census
+case advice. Arbiter's independent review found unmatched foreign closing tags activating inert
+modules and self-closing foreign roots hiding the genuine module. Four focused regressions failed
+before Main's matched, bounded foreign-scope repair (two failed, two passed; exit 101).
+Post-fix Arbiter tests passed 71 cases. The redirect regression failed before restoring the
+same-origin post-response exemption; delivered transport-policy and destination-guard suites
+passed six and fourteen cases respectively. Full strict workspace source Clippy and the
+feature-enabled endpoint/native-VM release builds passed in the integrated waves. These checks
+are not the full release gate.
+
+Actual CLI qualifications, all exit 0:
+
+```sh
+TMPDIR=/tmp target/debug/census-service --store var/redirect-public-smoke-sol-20261002-01 fetch https://chsaanow.com/schools/ --refresh
+TMPDIR=/tmp target/debug/census-service --store var/arbiter-public-smoke-sol-20261002-01 provider arbiter_orgs --states NH --limit 1 --refresh
+TMPDIR=/tmp target/debug/census-service --store var/directory-public-smoke-sol-20261002-01 provider coach_directories --states NC --limit 1 --refresh
+```
+
+Colorado captured HTTP 200, requested `/schools/`, observed `/schools`, 373150 bytes; no redirect
+host grant was supplied. Arbiter discovered the declared `index-DdctX9sz.js` from the stable
+directory entry, acquired a fresh token and returned one NH school plus three coach rows,
+five reported acquisition requests, zero cache hits and zero errors. The NC directory smoke
+returned one school, sixteen coach rows with published email, two requests, zero cache hits
+and zero errors. Its summary now explicitly labels email addresses, not postal coverage.
+Directory admission remains strict; jurisdiction refusal diagnostics now retain capture
+URL/date/SHA and distinguish foreign, unrecognized and missing/unusable published states,
+without claiming association non-membership. The focused directory suite passed 77 tests.
+None of these limited qualifications completes an organisation/state or repairs old settled
+invocations. Original IDs, deployment pins, attempts and captures remain unchanged.
+
+`var/public-source-smoke-byte-verification-main-sol-20261002-01.json` records six immutable
+CO/Arbiter body/metadata links independently verified from exact bytes (996663 total body bytes).
+Token and credential bodies were not decoded or displayed. Main also independently verified
+all nine original ID/MT/AL directory body and metadata SHA-256/length pairs (5141624 body bytes),
+in `var/foreign-directory-original-byte-verification-main-sol-20261002-01.json`.
+The seven named rejected rows publish recognized foreign states; these are interpretation/
+jurisdiction refusals after HTTP 200, not failures to obtain a directory body. Association
+membership, real-world location and exact attempt-to-capture binding remain unproved.
+`var/foreign-directory-ownership-evidence-sol-20261002-01.json` retains the static trace and
+original field values. No foreign-row drop, source-value reassignment or ID exception was added.
+
+The original non-atomic 49-parent snapshot has teams36completed/8failed/5owed,
+roster reports20/absent29, meet reports17/absent32 and results reports0/absent49.
+The roster reports contain 3400 error entries: 2742 partial interpretations and 658 quarantines,
+with a reported sum of38994 rejected rows, not distinct athletes or failed physical fetches.
+`rosters_committed` counts clean journals, not every applied partial capture; `rosters_remaining`
+is not a pending-request count. See `var/roster-stage-disposition-evidence-sol-20261002-01.json`.
+The 80 teams candidates and missing 50/49 historical source manifests remain different,
+unresolved denominators.
+
+### Reboot before clock injection: Root22 and Root23
+
+Both native runs used the verified native Restate1.7.10 and the same host command recorded
+above, changing only the root to `var/vm-sol-20261002-22` or `-23`. Reboot precedes the
+independent guest-only midnight injection. Both Sweep and source recovery outcomes are retained
+before propagating either failure.
+
+Root22: Sweep recovery succeeded; source recovery failed at the unchanged 32 MiB append limit
+while repeatedly archiving full journals/inspections. Its cold `http.jsonl` has1068records/
+32200438bytes. Main changed bounded recovery polling to cheap original invocation statuses,
+with full initial/final or completion bookends, without increasing artifact, retry or clock limits.
+Focused native-VM tests passed153cases; source-size/forbidden scans were clean, strict source
+Clippy passed and feature-enabled release builds passed.
+
+Root23: Sweep recovery succeeded; source recovery failed honestly because its original parent
+remained unfinished after the bounded wait. Cold `http.jsonl` has363records/1165684bytes, with
+no artifact-cap failure. Original parent `inv_1j4peqPCiaI64jp4RgV9cB4cAbun3p8cWe` retained
+deployment `dp_115re8OsgqNJ6q1RYY0ftoR`, protocol7 and journal31, ending at results Run
+completion_id16. Its original MileSplit child completed72records on attempt2 after retained
+attempt1Unknown; RIIL completed55schools/258coachrows on attempt1. Teams completed127records,
+the qualification roster returned one clean journal and meet discovery returned115rows.
+Results remained owed; no replacement invocation was submitted.
+
+Root23 retained83HTTP200 captures, including80meet results pages. The latest immutable capture
+is00:43:25Z; final full observation is00:46:50.592974758Z. Captures do not prove that the last
+fetch/cache publication returned. Independent static tracing found no defensible deadlock cause;
+the coarse results Run lacks evidence of its internal pending phase. The completed scout trace
+is preserved by Main in `var/native-results-wait-investigation-sol-20261002-01.json`.
+Owned endpoint/node/QEMU cleanup completed; cold extraction did not boot the guest or open Fjall.
+Root22/23 are not full scenario03/12 acceptance or national census evidence.
+
+### Previously ignored browser ranking lane
+
+An isolated real headless Chromium with owned profile/CDP29223 and an owned synthetic loopback
+fixture21045 exercised both existing ignored ranking tests:
+
+```sh
+TMPDIR="$PWD/var/test-tmp-sol-20261002" RUSTC_WRAPPER= ADLAW_LANE_FIXTURE=http://127.0.0.1:21045/ ADLAW_LANE_CDP=http://127.0.0.1:29223 cargo -Zallow-features=portable_simd,try_blocks,proc_macro_span,error_generic_member_access test -p athleticnet-browser --lib lane_smoke -- --ignored --test-threads=1
+```
+
+Exit0, two passed/34filtered, test duration0.18s. The fixture recorded exactly two physical
+POSTs: one403challenge, which revoked the gate/stopped pagination, and one200normal response,
+with exact request body/capture and next-page assertions. Raw output `artifact://1552`;
+retained requests `var/browser-rankings-ignored-evidence-sol-20261002-01.json`.
+The fixture stopped; owned Chromium PID3401877 received TERM and exited0; both ports were
+confirmed unbound. This is real-browser fixture qualification, not live Athletic.net acquisition,
+census data, full fault05 acceptance or completion of the remaining corpus/release gates.

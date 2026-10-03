@@ -42,11 +42,9 @@ fn a_changed_input_reruns_the_index_stage() -> TestResult {
 
     store.replace_many::<SourceObjectIdentity>(Table::SourceIdentities, &[])?;
     let second = derive(&store, "index", "2026-09-23")?;
-    assert_eq!(
-        second.source_identities,
-        first.source_identities + 2,
-        "the rebuilt rows cover both schools' athletes"
-    );
+    check!(eq; second.source_identities,
+    first.source_identities + 2,
+    "the rebuilt rows cover both schools' athletes");
     Ok(())
 }
 
@@ -56,15 +54,13 @@ fn receipt_does_not_hide_missing_mutable_projection_rows() -> TestResult {
     let store = fixture(&directory)?;
     derive(&store, "index", "2026-09-22")?;
     let expected = store.scan::<SourceObjectIdentity>(Table::SourceIdentities)?;
-    assert!(expected
+    check!(expected
         .iter()
         .any(|row| row.namespace == SourceNamespace::MilesplitAthlete && row.source_id == "111"));
     store.replace_many::<SourceObjectIdentity>(Table::SourceIdentities, &[])?;
     derive(&store, "index", "2026-09-23")?;
-    assert_eq!(
-        store.scan::<SourceObjectIdentity>(Table::SourceIdentities)?,
-        expected
-    );
+    check!(eq; store.scan::<SourceObjectIdentity>(Table::SourceIdentities)?,
+    expected);
     Ok(())
 }
 
@@ -81,6 +77,6 @@ fn index_preserves_located_unsupported_cohort_review_without_a_canonical_subject
     store.append(Table::ReviewCases, &case)?;
     derive(&store, "index", "2026-09-30")?;
     let cases = store.scan::<ReviewCase>(Table::ReviewCases)?;
-    assert_eq!(cases.iter().find(|row| row.id == case.id), Some(&case));
+    check!(eq; cases.iter().find(|row| row.id == case.id), Some(&case));
     Ok(())
 }

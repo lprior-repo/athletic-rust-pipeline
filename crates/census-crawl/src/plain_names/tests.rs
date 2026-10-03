@@ -5,6 +5,8 @@ use census_domain::model::{
 use census_domain::UsJurisdiction;
 use std::collections::HashSet;
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 const ND_INDEX: &str = include_str!("../../tests/fixtures/plain_names/nd_schools_index.html");
 const ND_PAGE: &str = include_str!("../../tests/fixtures/plain_names/nd_school_page.html");
 const ND_PAGE_NO_AD: &str =
@@ -34,36 +36,37 @@ fn url_of(school: &NsaaSchool) -> String {
     nsaa_school_url(&school.name)
 }
 
-fn serialized<T: serde::Serialize>(value: &T) -> String {
-    serde_json::to_string(value).expect("entity serializes")
+fn serialized<T: serde::Serialize>(value: &T) -> TestResult<String> {
+    Ok(serde_json::to_string(value)?)
 }
 
 #[test]
-fn nd_index_lists_every_member_school() {
-    let members = parse_nd_school_refs(ND_INDEX).expect("the ndhsaa index parses");
-    assert_eq!(
+fn nd_index_lists_every_member_school() -> TestResult {
+    let members = parse_nd_school_refs(ND_INDEX)?;
+    check!(eq;
         members.len(),
         169,
         "the index carries all 169 member schools"
     );
 
     let ids: HashSet<&str> = members.iter().map(|member| member.id.as_str()).collect();
-    assert_eq!(ids.len(), members.len(), "ids are unique after dedupe");
-    assert!(ids.contains("1045"));
+    check!(eq; ids.len(), members.len(), "ids are unique after dedupe");
+    check!(ids.contains("1045"));
 
     let sheyenne = members
         .iter()
         .find(|member| member.id == "1045")
-        .expect("West Fargo Sheyenne is a member");
-    assert_eq!(sheyenne.slug, "west-fargo-sheyenne");
-    assert_eq!(
+        .ok_or("West Fargo Sheyenne is a member")?;
+    check!(eq; sheyenne.slug, "west-fargo-sheyenne");
+    check!(eq;
         sheyenne.url(),
         "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
     );
+    Ok(())
 }
 
 #[test]
-fn nd_index_dedupes_and_ignores_other_links() {
+fn nd_index_dedupes_and_ignores_other_links() -> TestResult {
     let html = r#"
             <a href="https://ndhsaa.com/schools/7/bismarck">Bismarck</a>
             <a href="/schools/7/bismarck-high">Bismarck again</a>
@@ -71,55 +74,55 @@ fn nd_index_dedupes_and_ignores_other_links() {
             <a href="https://ndhsaa.com/athletics/track-boys">Track</a>
             <a href="/schools/92/alexander">Alexander</a>
         "#;
-    let members = parse_nd_school_refs(html).expect("the ndhsaa index parses");
-    assert_eq!(members.len(), 2);
-    assert_eq!(members[0].slug, "bismarck", "first link per id wins");
-    assert_eq!(members[1].id, "92");
+    let members = parse_nd_school_refs(html)?;
+    check!(eq; members.len(), 2);
+    check!(eq; members[0].slug, "bismarck", "first link per id wins");
+    check!(eq; members[1].id, "92");
+    Ok(())
 }
 
 #[test]
-fn nd_school_page_parses_school_metadata() {
-    let (school, school_id) = parse_nd_school_page(ND_PAGE, &sheyenne(), OBSERVED_ON)
-        .expect("the ndhsaa page parses")
-        .expect("fixture has a heading");
+fn nd_school_page_parses_school_metadata() -> TestResult {
+    let (school, school_id) =
+        parse_nd_school_page(ND_PAGE, &sheyenne(), OBSERVED_ON)?.ok_or("fixture has a heading")?;
 
-    assert_eq!(school.name, "West Fargo Sheyenne High School");
-    assert_eq!(
+    check!(eq; school.name, "West Fargo Sheyenne High School");
+    check!(eq;
         school.normalized_name, "west fargo sheyenne",
         "normalize_name drops the `High School` suffix"
     );
-    assert_eq!(school.state, Some(UsJurisdiction::NorthDakota));
-    assert_eq!(school.association.as_deref(), Some("ndhsaa"));
-    assert_eq!(school.city.as_deref(), Some("West Fargo"));
-    assert_eq!(
+    check!(eq; school.state, Some(UsJurisdiction::NorthDakota));
+    check!(eq; school.association.as_deref(), Some("ndhsaa"));
+    check!(eq; school.city.as_deref(), Some("West Fargo"));
+    check!(eq;
         school.enrollment,
         Some(1399),
         "1,399 students enrolled in 2025"
     );
-    assert_eq!(
+    check!(eq;
         school.school_website.as_deref(),
         Some("https://www.west-fargo.k12.nd.us/shs/activities")
     );
-    assert_eq!(school.source_identities.len(), 1);
-    assert_eq!(
+    check!(eq; school.source_identities.len(), 1);
+    check!(eq;
         school.source_identities[0].namespace,
         SourceNamespace::AssociationSchool {
             association: "ndhsaa".to_string()
         }
     );
-    assert_eq!(school.source_identities[0].id, "1045");
-    assert_eq!(
+    check!(eq; school.source_identities[0].id, "1045");
+    check!(eq;
         school.source_identities[0].url.as_deref(),
         Some("https://ndhsaa.com/schools/1045/west-fargo-sheyenne")
     );
-    assert_eq!(school.evidence.len(), 1);
-    assert_eq!(school.evidence[0].observed_on, OBSERVED_ON);
-    assert_eq!(school.evidence[0].source.id, "ndhsaa");
-    assert_eq!(
+    check!(eq; school.evidence.len(), 1);
+    check!(eq; school.evidence[0].observed_on, OBSERVED_ON);
+    check!(eq; school.evidence[0].source.id, "ndhsaa");
+    check!(eq;
         school.evidence[0].source.url.as_deref(),
         Some("https://ndhsaa.com/schools/1045/west-fargo-sheyenne")
     );
-    assert_eq!(
+    check!(eq;
         school_id,
         CanonicalSchool::mint(
             UsJurisdiction::NorthDakota,
@@ -132,32 +135,31 @@ fn nd_school_page_parses_school_metadata() {
         "West Fargo Sheyenne HS",
         normalize_name("West Fargo Sheyenne HS"),
     );
-    assert_eq!(school_id, same_school);
+    check!(eq; school_id, same_school);
+    Ok(())
 }
 
 #[test]
-fn nd_school_page_never_stores_phone_fax_or_address() {
-    let (school, _) = parse_nd_school_page(ND_PAGE, &sheyenne(), OBSERVED_ON)
-        .expect("the ndhsaa page parses")
-        .expect("school");
-    let json = serialized(&school);
-    assert!(
+fn nd_school_page_never_stores_phone_fax_or_address() -> TestResult {
+    let (school, _) = parse_nd_school_page(ND_PAGE, &sheyenne(), OBSERVED_ON)?.ok_or("school")?;
+    let json = serialized(&school)?;
+    check!(
         !json.contains("356-2160"),
         "the school phone number is not stored"
     );
-    assert!(!json.contains("499-6687"), "the fax number is not stored");
-    assert!(
+    check!(!json.contains("499-6687"), "the fax number is not stored");
+    check!(
         !json.contains("800 40th Ave E."),
         "the street address is not stored"
     );
+    Ok(())
 }
 
 #[test]
-fn nd_ad_coaches_include_ad_and_activities_director_only() {
-    let (_, school_id) = parse_nd_school_page(ND_PAGE, &sheyenne(), OBSERVED_ON)
-        .expect("the ndhsaa page parses")
-        .expect("school");
-    let staff = parse_nd_staff(ND_PAGE).expect("the ndhsaa staff lines parse");
+fn nd_ad_coaches_include_ad_and_activities_director_only() -> TestResult {
+    let (_, school_id) =
+        parse_nd_school_page(ND_PAGE, &sheyenne(), OBSERVED_ON)?.ok_or("school")?;
+    let staff = parse_nd_staff(ND_PAGE)?;
     let coaches = nd_ad_coaches(
         &staff,
         &school_id,
@@ -166,19 +168,19 @@ fn nd_ad_coaches_include_ad_and_activities_director_only() {
     );
 
     let names: Vec<&str> = coaches.iter().map(|coach| coach.name.as_str()).collect();
-    assert_eq!(
+    check!(eq;
         names,
         vec!["Logan Midthun", "James Moe", "Corissa Kolesar"],
         "Athletic Director and Activities Director rows collapse to one entity per person"
     );
     for coach in &coaches {
-        assert_eq!(coach.role, CoachRole::AthleticDirector);
-        assert_eq!(coach.sport, None, "directors are school-wide roles");
-        assert_eq!(coach.gender, Gender::Mixed);
-        assert_eq!(coach.professional_email, None);
-        assert_eq!(coach.phone, None);
-        assert_eq!(coach.evidence.len(), 1);
-        assert_eq!(coach.evidence[0].observed_on, OBSERVED_ON);
+        check!(eq; coach.role, CoachRole::AthleticDirector);
+        check!(eq; coach.sport, None, "directors are school-wide roles");
+        check!(eq; coach.gender, Gender::Mixed);
+        check!(eq; coach.professional_email, None);
+        check!(eq; coach.phone, None);
+        check!(eq; coach.evidence.len(), 1);
+        check!(eq; coach.evidence[0].observed_on, OBSERVED_ON);
     }
 
     let labels: Vec<&str> = staff.iter().map(|role| role.label.as_str()).collect();
@@ -190,7 +192,7 @@ fn nd_ad_coaches_include_ad_and_activities_director_only() {
         "Business Manager",
         "Tech Director",
     ] {
-        assert!(
+        check!(
             labels.contains(&office),
             "{office} is a published staff line"
         );
@@ -203,34 +205,35 @@ fn nd_ad_coaches_include_ad_and_activities_director_only() {
         ("Business Manager", "Levi Bachmeier"),
         ("Tech Director", "Ed Mitchell"),
     ] {
-        assert!(
+        check!(
             !names.contains(&person),
             "{person} ({label}) must never be emitted as a coach or director"
         );
-        assert!(
+        check!(
             parse_nd_role(label).is_none(),
             "{label} is not a director role"
         );
     }
+    Ok(())
 }
 
 #[test]
-fn nd_page_without_ad_yields_no_director_rows() {
-    let (school, school_id) = parse_nd_school_page(ND_PAGE_NO_AD, &mandan_classical(), OBSERVED_ON)
-        .expect("the ndhsaa page parses")
-        .expect("the page still yields a school");
-    assert_eq!(school.name, "Mandan Classical Academy");
-    assert_eq!(school.city.as_deref(), Some("Mandan"));
-    assert_eq!(school.association.as_deref(), Some("ndhsaa"));
+fn nd_page_without_ad_yields_no_director_rows() -> TestResult {
+    let (school, school_id) =
+        parse_nd_school_page(ND_PAGE_NO_AD, &mandan_classical(), OBSERVED_ON)?
+            .ok_or("the page still yields a school")?;
+    check!(eq; school.name, "Mandan Classical Academy");
+    check!(eq; school.city.as_deref(), Some("Mandan"));
+    check!(eq; school.association.as_deref(), Some("ndhsaa"));
 
-    let staff = parse_nd_staff(ND_PAGE_NO_AD).expect("the ndhsaa staff lines parse");
-    assert!(
+    let staff = parse_nd_staff(ND_PAGE_NO_AD)?;
+    check!(
         !staff
             .iter()
             .any(|role| role.label.to_ascii_lowercase().contains("director")),
         "fixture really carries no director line"
     );
-    assert!(
+    check!(
         staff
             .iter()
             .any(|role| role.label == "Superintendent" && role.name == "Thomas Hoopes"),
@@ -243,29 +246,30 @@ fn nd_page_without_ad_yields_no_director_rows() {
         "https://ndhsaa.com/schools/1378/mandan-classical-academy",
         OBSERVED_ON,
     );
-    assert!(
+    check!(
         coaches.is_empty(),
         "a superintendent is not an athletic director, however senior"
     );
+    Ok(())
 }
 
 #[test]
-fn nd_offering_rows_and_coop_annotations_parse() {
-    let offerings = parse_nd_offerings(ND_PAGE).expect("the ndhsaa offering rows parse");
-    assert_eq!(offerings.len(), 28, "one row per published offering");
+fn nd_offering_rows_and_coop_annotations_parse() -> TestResult {
+    let offerings = parse_nd_offerings(ND_PAGE)?;
+    check!(eq; offerings.len(), 28, "one row per published offering");
 
     let cross_country = offerings
         .iter()
         .find(|offering| offering.label == "Boys' Cross Country")
-        .expect("Boys' Cross Country is offered");
-    assert_eq!(cross_country.coaches, vec!["Troy Thorson", "Jared Slinde"]);
-    assert_eq!(cross_country.co_op, None);
+        .ok_or("Boys' Cross Country is offered")?;
+    check!(eq; cross_country.coaches, vec!["Troy Thorson", "Jared Slinde"]);
+    check!(eq; cross_country.co_op, None);
 
     let hockey = offerings
         .iter()
         .find(|offering| offering.label == "Boys' Ice Hockey")
-        .expect("Boys' Ice Hockey is offered");
-    assert_eq!(
+        .ok_or("Boys' Ice Hockey is offered")?;
+    check!(eq;
         hockey.co_op.as_deref(),
         Some("West Fargo Sheyenne"),
         "the co-op annotation is recorded, not left inside the sport label"
@@ -274,11 +278,12 @@ fn nd_offering_rows_and_coop_annotations_parse() {
     let blank = offerings
         .iter()
         .find(|offering| offering.label == "Debate")
-        .expect("Debate is offered");
-    assert!(
+        .ok_or("Debate is offered")?;
+    check!(
         blank.coaches.is_empty(),
         "a blank coach cell yields no names"
     );
+    Ok(())
 }
 
 #[test]
@@ -319,11 +324,10 @@ fn nd_sport_labels_map_to_sport_and_gender() {
 }
 
 #[test]
-fn nd_sport_coaches_are_names_only() {
-    let (_, school_id) = parse_nd_school_page(ND_PAGE, &sheyenne(), OBSERVED_ON)
-        .expect("the ndhsaa page parses")
-        .expect("school");
-    let offerings = parse_nd_offerings(ND_PAGE).expect("the ndhsaa offering rows parse");
+fn nd_sport_coaches_are_names_only() -> TestResult {
+    let (_, school_id) =
+        parse_nd_school_page(ND_PAGE, &sheyenne(), OBSERVED_ON)?.ok_or("school")?;
+    let offerings = parse_nd_offerings(ND_PAGE)?;
     let coaches = nd_sport_coaches(
         &offerings,
         &school_id,
@@ -331,34 +335,35 @@ fn nd_sport_coaches_are_names_only() {
         OBSERVED_ON,
     );
 
-    assert_eq!(coaches.len(), 6);
+    check!(eq; coaches.len(), 6);
     for coach in &coaches {
-        assert_eq!(
+        check!(eq;
             coach.role,
             CoachRole::Unknown,
             "NDHSAA publishes no head/assistant split"
         );
-        assert!(coach.sport.is_some());
-        assert_eq!(coach.professional_email, None);
-        assert_eq!(coach.phone, None);
+        check!(coach.sport.is_some());
+        check!(eq; coach.professional_email, None);
+        check!(eq; coach.phone, None);
     }
     let girls_track = coaches
         .iter()
         .find(|coach| coach.sport == Some(Sport::OutdoorTrack) && coach.gender == Gender::Girls)
-        .expect("girls track coach");
-    assert_eq!(girls_track.name, "Jaime Watson");
-    assert!(
+        .ok_or("girls track coach")?;
+    check!(eq; girls_track.name, "Jaime Watson");
+    check!(
         coaches
             .iter()
             .all(|coach| { !coach.evidence.is_empty() && coach.evidence[0].source.id == "ndhsaa" }),
         "every coach cites the page it came from"
     );
-    assert!(!coaches.iter().any(|coach| coach.name == "Tim Brandt"));
+    check!(!coaches.iter().any(|coach| coach.name == "Tim Brandt"));
+    Ok(())
 }
 
 #[test]
-fn nd_fixture_reports_its_own_fill_rate() {
-    let offerings = parse_nd_offerings(ND_PAGE).expect("the ndhsaa offering rows parse");
+fn nd_fixture_reports_its_own_fill_rate() -> TestResult {
+    let offerings = parse_nd_offerings(ND_PAGE)?;
     let slots: Vec<&NdOffering> = offerings
         .iter()
         .filter(|offering| parse_nd_sport(&offering.label).is_some())
@@ -367,65 +372,55 @@ fn nd_fixture_reports_its_own_fill_rate() {
         .iter()
         .filter(|offering| !offering.coaches.is_empty())
         .count();
-    assert_eq!(
+    check!(eq;
         slots.len(),
         4,
         "the fixture page offers boys/girls XC and track"
     );
-    assert_eq!(
+    check!(eq;
         named, 4,
         "all four TF/XC coach slots are named on this page"
     );
+    Ok(())
 }
 
 #[test]
-fn nd_malformed_input_yields_no_rows() {
-    assert!(parse_nd_school_refs("<html>no links here</html>")
-        .expect("the ndhsaa index parses")
-        .is_empty());
-    assert!(parse_nd_school_refs("")
-        .expect("the ndhsaa index parses")
-        .is_empty());
-    assert!(parse_nd_school_page(
+fn nd_malformed_input_yields_no_rows() -> TestResult {
+    check!(parse_nd_school_refs("<html>no links here</html>")?.is_empty());
+    check!(parse_nd_school_refs("")?.is_empty());
+    check!(parse_nd_school_page(
         "<html><body>Nothing</body></html>",
         &sheyenne(),
         OBSERVED_ON
-    )
-    .expect("the ndhsaa page parses")
+    )?
     .is_none());
-    assert!(parse_nd_staff("not html at all")
-        .expect("the ndhsaa staff lines parse")
-        .is_empty());
-    assert!(
-        parse_nd_offerings("<table><tr><td>only one cell</td></tr></table>")
-            .expect("the ndhsaa offering rows parse")
-            .is_empty()
-    );
-    assert!(parse_nd_school_page(
+    check!(parse_nd_staff("not html at all")?.is_empty());
+    check!(parse_nd_offerings("<table><tr><td>only one cell</td></tr></table>")?.is_empty());
+    check!(parse_nd_school_page(
         "<h1>   </h1><p>Address: x, Fargo, ND 58102</p>",
         &sheyenne(),
         OBSERVED_ON
-    )
-    .expect("the ndhsaa page parses")
+    )?
     .is_none());
+    Ok(())
 }
 
 #[test]
-fn nsaa_form_option_list_yields_the_member_schools() {
-    let names = parse_nsaa_school_names(NSAA_FORM).expect("the nsaa option list parses");
-    assert_eq!(names.len(), 312, "the form lists every member school");
-    assert_eq!(names[0], "Adams Central");
-    assert_eq!(names[1], "Ainsworth");
-    assert_eq!(names[311], "Yutan");
-    assert!(
+fn nsaa_form_option_list_yields_the_member_schools() -> TestResult {
+    let names = parse_nsaa_school_names(NSAA_FORM)?;
+    check!(eq; names.len(), 312, "the form lists every member school");
+    check!(eq; names[0], "Adams Central");
+    check!(eq; names[1], "Ainsworth");
+    check!(eq; names[311], "Yutan");
+    check!(
         !names.iter().any(|name| name == NSAA_ALL_SCHOOLS),
         "the bulk sentinel is not a school"
     );
-    assert!(
+    check!(
         !names.iter().any(|name| name.contains("Select a school")),
         "the disabled placeholder is not a school"
     );
-    assert_eq!(
+    check!(eq;
         names
             .iter()
             .filter(|name| name.as_str() == "Adams Central")
@@ -434,99 +429,92 @@ fn nsaa_form_option_list_yields_the_member_schools() {
         "names are unique"
     );
 
-    let bulk: Vec<String> = parse_nsaa_directory(NSAA_PAGE)
-        .expect("the nsaa directory parses")
+    let bulk: Vec<String> = parse_nsaa_directory(NSAA_PAGE)?
         .into_iter()
         .map(|school| school.name)
         .collect();
     for name in &bulk {
-        assert!(
+        check!(
             names.contains(name),
             "{name} is an option and a block heading"
         );
     }
 
-    assert!(parse_nsaa_school_names("")
-        .expect("the nsaa option list parses")
-        .is_empty());
-    assert!(parse_nsaa_school_names("<select></select>")
-        .expect("the nsaa option list parses")
-        .is_empty());
-    assert!(parse_nsaa_school_names("<option></option>")
-        .expect("the nsaa option list parses")
-        .is_empty());
-    assert!(
-        parse_nsaa_school_names("<option disabled>Select a school to view...</option>")
-            .expect("the nsaa option list parses")
-            .is_empty()
+    check!(parse_nsaa_school_names("")?.is_empty());
+    check!(parse_nsaa_school_names("<select></select>")?.is_empty());
+    check!(parse_nsaa_school_names("<option></option>")?.is_empty());
+    check!(
+        parse_nsaa_school_names("<option disabled>Select a school to view...</option>")?.is_empty()
     );
+    Ok(())
 }
 
 #[test]
-fn nsaa_school_url_round_trips_the_published_name() {
-    assert_eq!(
-            nsaa_school_url("Adams Central"),
-            "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central",
-            "the `+` form is what `byte_serialize` emits; the server decoded it to the same 15,579-byte \
-             page as the `%20` form (live 2026-09-20T14:39:13Z, HTTP 200, byte-identical)"
-        );
-    assert_eq!(
+fn nsaa_school_url_round_trips_the_published_name() -> TestResult {
+    check!(eq;
+        nsaa_school_url("Adams Central"),
+        "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central",
+        "the `+` form is what `byte_serialize` emits; the server decoded it to the same 15,579-byte \
+         page as the `%20` form (live 2026-09-20T14:39:13Z, HTTP 200, byte-identical)"
+    );
+    check!(eq;
         nsaa_school_url("Anselmo-Merna"),
         "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Anselmo-Merna",
         "hyphens are safe and stay literal"
     );
 
-    for name in parse_nsaa_school_names(NSAA_FORM).expect("the nsaa option list parses") {
-        let url = url::Url::parse(&nsaa_school_url(&name)).expect("valid url");
+    for name in parse_nsaa_school_names(NSAA_FORM)? {
+        let url = url::Url::parse(&nsaa_school_url(&name))?;
         let decoded = url
             .query_pairs()
             .find(|(key, _)| key == "school")
             .map(|(_, value)| value.into_owned())
-            .expect("school query parameter");
-        assert_eq!(decoded, name, "round-trip for {name}");
+            .ok_or("school query parameter")?;
+        check!(eq; decoded, name, "round-trip for {name}");
     }
+    Ok(())
 }
 
 #[test]
-fn nsaa_single_school_page_matches_the_bulk_block() {
-    let single = parse_nsaa_directory(NSAA_SCHOOL_GET).expect("the nsaa directory parses");
-    assert_eq!(single.len(), 1, "one school per single-school response");
+fn nsaa_single_school_page_matches_the_bulk_block() -> TestResult {
+    let single = parse_nsaa_directory(NSAA_SCHOOL_GET)?;
+    check!(eq; single.len(), 1, "one school per single-school response");
     let entry = &single[0];
-    assert_eq!(entry.name, "Adams Central");
-    assert_eq!(entry.roles.len(), 34);
-    assert_eq!(entry.city.as_deref(), Some("Hastings"));
-    assert_eq!(entry.enrollment, Some(215));
-    assert_eq!(
+    check!(eq; entry.name, "Adams Central");
+    check!(eq; entry.roles.len(), 34);
+    check!(eq; entry.city.as_deref(), Some("Hastings"));
+    check!(eq; entry.enrollment, Some(215));
+    check!(eq;
         entry.homepage.as_deref(),
         Some("http://www.adamscentral.us/")
     );
 
-    let bulk = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
+    let bulk = parse_nsaa_directory(NSAA_PAGE)?;
     let bulk_adams = bulk
         .iter()
         .find(|school| school.name == "Adams Central")
-        .expect("Adams Central in the bulk slice");
-    assert_eq!(entry.roles, bulk_adams.roles);
+        .ok_or("Adams Central in the bulk slice")?;
+    check!(eq; entry.roles, bulk_adams.roles);
 
     let url = nsaa_school_url("Adams Central");
     let (school, school_id) = parse_nsaa_school(entry, &url, OBSERVED_ON);
-    let coaches =
-        nsaa_coaches(entry, &school_id, &url, OBSERVED_ON).expect("the nsaa coach rows parse");
+    let coaches = nsaa_coaches(entry, &school_id, &url, OBSERVED_ON)?;
     let (_, bulk_id) = parse_nsaa_school(bulk_adams, &url, OBSERVED_ON);
-    assert_eq!(school_id, bulk_id, "one canonical id either way");
-    assert_eq!(coaches.len(), 6);
-    assert_eq!(
+    check!(eq; school_id, bulk_id, "one canonical id either way");
+    check!(eq; coaches.len(), 6);
+    check!(eq;
         school.evidence[0].source.url.as_deref(),
         Some(nsaa_school_url("Adams Central").as_str()),
         "evidence cites the request URL that produced the row"
     );
+    Ok(())
 }
 
 #[test]
-fn nsaa_directory_parses_every_school_block() {
-    let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
+fn nsaa_directory_parses_every_school_block() -> TestResult {
+    let schools = parse_nsaa_directory(NSAA_PAGE)?;
     let names: Vec<&str> = schools.iter().map(|school| school.name.as_str()).collect();
-    assert_eq!(
+    check!(eq;
         names,
         vec![
             "Adams Central",
@@ -541,13 +529,13 @@ fn nsaa_directory_parses_every_school_block() {
     );
 
     let adams = &schools[0];
-    assert_eq!(adams.city.as_deref(), Some("Hastings"));
-    assert_eq!(adams.enrollment, Some(215));
-    assert_eq!(
+    check!(eq; adams.city.as_deref(), Some("Hastings"));
+    check!(eq; adams.enrollment, Some(215));
+    check!(eq;
         adams.homepage.as_deref(),
         Some("http://www.adamscentral.us/")
     );
-    assert_eq!(
+    check!(eq;
         adams.roles.len(),
         34,
         "one row per published staff/coach line"
@@ -558,11 +546,11 @@ fn nsaa_directory_parses_every_school_block() {
         .flat_map(|school| school.roles.iter())
         .filter(|role| role.co_op)
         .count();
-    assert_eq!(
+    check!(eq;
         coop_rows, 32,
         "rows the directory highlights as co-op-shared carry `class='table-info'`"
     );
-    assert_eq!(
+    check!(eq;
         adams.roles.iter().filter(|role| role.co_op).count(),
         3,
         "Adams Central's co-op rows: Softball and the two Swimming placeholders"
@@ -570,58 +558,58 @@ fn nsaa_directory_parses_every_school_block() {
     let allen = schools
         .iter()
         .find(|school| school.name == "Allen")
-        .expect("Allen in the fixture");
-    assert_eq!(allen.roles.iter().filter(|role| role.co_op).count(), 13);
+        .ok_or("Allen in the fixture")?;
+    check!(eq; allen.roles.iter().filter(|role| role.co_op).count(), 13);
     let ansley = schools
         .iter()
         .find(|school| school.name == "Ansley")
-        .expect("Ansley in the fixture");
-    assert_eq!(ansley.roles.iter().filter(|role| role.co_op).count(), 10);
+        .ok_or("Ansley in the fixture")?;
+    check!(eq; ansley.roles.iter().filter(|role| role.co_op).count(), 10);
+    Ok(())
 }
 
 #[test]
-fn nsaa_sport_rows_map_to_head_coach_sport_and_gender() {
-    let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
+fn nsaa_sport_rows_map_to_head_coach_sport_and_gender() -> TestResult {
+    let schools = parse_nsaa_directory(NSAA_PAGE)?;
     let adams = &schools[0];
-    assert_eq!(
+    check!(eq;
         parse_nsaa_row("Cross-Country (Boys)"),
         Some(NsaaRow::SportCoach {
             sport: Sport::CrossCountry,
             gender: Gender::Boys
         })
     );
-    assert_eq!(
+    check!(eq;
         parse_nsaa_row("Cross-Country (Girls)"),
         Some(NsaaRow::SportCoach {
             sport: Sport::CrossCountry,
             gender: Gender::Girls
         })
     );
-    assert_eq!(
+    check!(eq;
         parse_nsaa_row("Track & Field (Boys)"),
         Some(NsaaRow::SportCoach {
             sport: Sport::OutdoorTrack,
             gender: Gender::Boys
         })
     );
-    assert_eq!(
+    check!(eq;
         parse_nsaa_row("Track & Field (Girls)"),
         Some(NsaaRow::SportCoach {
             sport: Sport::OutdoorTrack,
             gender: Gender::Girls
         })
     );
-    assert_eq!(
+    check!(eq;
         parse_nsaa_row("Unified Track & Field"),
         None,
         "a distinct NSAA activity"
     );
-    assert_eq!(parse_nsaa_row("Strength Coach"), None);
-    assert_eq!(parse_nsaa_row("Volleyball"), None);
+    check!(eq; parse_nsaa_row("Strength Coach"), None);
+    check!(eq; parse_nsaa_row("Volleyball"), None);
 
     let (_, school_id) = parse_nsaa_school(adams, &url_of(adams), OBSERVED_ON);
-    let coaches = nsaa_coaches(adams, &school_id, &url_of(adams), OBSERVED_ON)
-        .expect("the nsaa coach rows parse");
+    let coaches = nsaa_coaches(adams, &school_id, &url_of(adams), OBSERVED_ON)?;
     let track_boys = coaches
         .iter()
         .find(|coach| {
@@ -629,34 +617,34 @@ fn nsaa_sport_rows_map_to_head_coach_sport_and_gender() {
                 && coach.gender == Gender::Boys
                 && coach.name != "Toni Fowler"
         })
-        .expect("boys track coach");
-    assert_eq!(track_boys.name, "Zeb Noyd");
-    assert_eq!(track_boys.role, CoachRole::HeadCoach);
+        .ok_or("boys track coach")?;
+    check!(eq; track_boys.name, "Zeb Noyd");
+    check!(eq; track_boys.role, CoachRole::HeadCoach);
     let xc_boys = coaches
         .iter()
         .find(|coach| coach.sport == Some(Sport::CrossCountry) && coach.gender == Gender::Boys)
-        .expect("boys XC coach");
-    assert_eq!(xc_boys.name, "Toni Fowler");
-    assert_eq!(xc_boys.role, CoachRole::HeadCoach);
+        .ok_or("boys XC coach")?;
+    check!(eq; xc_boys.name, "Toni Fowler");
+    check!(eq; xc_boys.role, CoachRole::HeadCoach);
+    Ok(())
 }
 
 #[test]
-fn nsaa_multi_name_cells_split_into_one_entity_per_person() {
-    let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
+fn nsaa_multi_name_cells_split_into_one_entity_per_person() -> TestResult {
+    let schools = parse_nsaa_directory(NSAA_PAGE)?;
     let ainsworth = schools
         .iter()
         .find(|school| school.name == "Ainsworth")
-        .expect("Ainsworth in the fixture");
+        .ok_or("Ainsworth in the fixture")?;
     let (_, school_id) = parse_nsaa_school(ainsworth, &url_of(ainsworth), OBSERVED_ON);
-    let coaches = nsaa_coaches(ainsworth, &school_id, &url_of(ainsworth), OBSERVED_ON)
-        .expect("the nsaa coach rows parse");
+    let coaches = nsaa_coaches(ainsworth, &school_id, &url_of(ainsworth), OBSERVED_ON)?;
 
     let xc: Vec<&str> = coaches
         .iter()
         .filter(|coach| coach.sport == Some(Sport::CrossCountry))
         .map(|coach| coach.name.as_str())
         .collect();
-    assert_eq!(
+    check!(eq;
         xc,
         vec![
             "Trey Schlueter",
@@ -666,38 +654,38 @@ fn nsaa_multi_name_cells_split_into_one_entity_per_person() {
         ],
         "`Trey Schlueter/Katie Winters` is two people, not one name field"
     );
-    assert!(!xc.iter().any(|name| name.contains('/')));
+    check!(!xc.iter().any(|name| name.contains('/')));
+    Ok(())
 }
 
 #[test]
-fn nsaa_director_rows_map_to_athletic_director() {
-    let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
+fn nsaa_director_rows_map_to_athletic_director() -> TestResult {
+    let schools = parse_nsaa_directory(NSAA_PAGE)?;
     let adams = &schools[0];
     let (school, school_id) = parse_nsaa_school(adams, &url_of(adams), OBSERVED_ON);
-    assert_eq!(school.state, Some(UsJurisdiction::Nebraska));
-    assert_eq!(school.association.as_deref(), Some("nsaa"));
-    assert_eq!(school.city.as_deref(), Some("Hastings"));
-    assert_eq!(school.enrollment, Some(215));
-    assert_eq!(school.source_identities.len(), 1);
-    assert_eq!(
+    check!(eq; school.state, Some(UsJurisdiction::Nebraska));
+    check!(eq; school.association.as_deref(), Some("nsaa"));
+    check!(eq; school.city.as_deref(), Some("Hastings"));
+    check!(eq; school.enrollment, Some(215));
+    check!(eq; school.source_identities.len(), 1);
+    check!(eq;
         school.source_identities[0].namespace,
         SourceNamespace::AssociationSchool {
             association: "nsaa".to_string()
         }
     );
-    assert_eq!(
+    check!(eq;
         school.source_identities[0].id, "Adams Central",
         "NSAA publishes no numeric id, so the published name is the provider key"
     );
 
-    let coaches = nsaa_coaches(adams, &school_id, &url_of(adams), OBSERVED_ON)
-        .expect("the nsaa coach rows parse");
+    let coaches = nsaa_coaches(adams, &school_id, &url_of(adams), OBSERVED_ON)?;
     let directors: Vec<&str> = coaches
         .iter()
         .filter(|coach| coach.role == CoachRole::AthleticDirector)
         .map(|coach| coach.name.as_str())
         .collect();
-    assert_eq!(
+    check!(eq;
         directors,
         vec!["Alan Frank", "Aub Boucher"],
         "Activities Director + Athletic Director collapse, the assistant director is an AD row"
@@ -706,14 +694,15 @@ fn nsaa_director_rows_map_to_athletic_director() {
         .iter()
         .filter(|coach| coach.role == CoachRole::AthleticDirector)
     {
-        assert_eq!(coach.sport, None);
-        assert_eq!(coach.gender, Gender::Mixed);
+        check!(eq; coach.sport, None);
+        check!(eq; coach.gender, Gender::Mixed);
     }
+    Ok(())
 }
 
 #[test]
-fn nsaa_office_roles_are_never_emitted() {
-    let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
+fn nsaa_office_roles_are_never_emitted() -> TestResult {
+    let schools = parse_nsaa_directory(NSAA_PAGE)?;
     let office_people = [
         "Shawn Scott",
         "Scott Harrington",
@@ -751,14 +740,13 @@ fn nsaa_office_roles_are_never_emitted() {
     for entry in &schools {
         let (_, school_id) = parse_nsaa_school(entry, &url_of(entry), OBSERVED_ON);
         produced.extend(
-            nsaa_coaches(entry, &school_id, &url_of(entry), OBSERVED_ON)
-                .expect("the nsaa coach rows parse")
+            nsaa_coaches(entry, &school_id, &url_of(entry), OBSERVED_ON)?
                 .into_iter()
                 .map(|coach| coach.name),
         );
     }
     for person in office_people {
-        assert!(
+        check!(
             !produced.contains(&person.to_string()),
             "{person} works in the office, not on the track"
         );
@@ -778,45 +766,45 @@ fn nsaa_office_roles_are_never_emitted() {
         "Guidance Counselor",
         "Student Council Sponsor",
     ] {
-        assert!(
+        check!(
             labels.contains(&office),
             "{office} is a published row label"
         );
-        assert!(
+        check!(
             parse_nsaa_row(office).is_none(),
             "{office} is not a coach/AD row"
         );
     }
-    assert!(parse_nsaa_row("Assistant Athletic Director").is_some());
-    assert_eq!(parse_nsaa_row("Athletic Director Secretary"), None);
+    check!(parse_nsaa_row("Assistant Athletic Director").is_some());
+    check!(eq; parse_nsaa_row("Athletic Director Secretary"), None);
+    Ok(())
 }
 
 #[test]
-fn nsaa_office_row_is_ignored_but_the_same_persons_coaching_row_is_kept() {
-    let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
+fn nsaa_office_row_is_ignored_but_the_same_persons_coaching_row_is_kept() -> TestResult {
+    let schools = parse_nsaa_directory(NSAA_PAGE)?;
 
     let alliance = schools
         .iter()
         .find(|school| school.name == "Alliance")
-        .expect("Alliance in the fixture");
-    assert!(alliance
+        .ok_or("Alliance in the fixture")?;
+    check!(alliance
         .roles
         .iter()
         .any(|role| role.label == "Guidance Counselor" && role.name == "Nate Lanik"));
     let (_, alliance_id) = parse_nsaa_school(alliance, &url_of(alliance), OBSERVED_ON);
-    let alliance_coaches = nsaa_coaches(alliance, &alliance_id, &url_of(alliance), OBSERVED_ON)
-        .expect("the nsaa coach rows parse");
-    assert_eq!(alliance_coaches.len(), 5, "Alliance: 1 AD + 2 XC + 2 track");
+    let alliance_coaches = nsaa_coaches(alliance, &alliance_id, &url_of(alliance), OBSERVED_ON)?;
+    check!(eq; alliance_coaches.len(), 5, "Alliance: 1 AD + 2 XC + 2 track");
     let lanik: Vec<&CanonicalCoach> = alliance_coaches
         .iter()
         .filter(|coach| coach.name == "Nate Lanik")
         .collect();
-    assert_eq!(lanik.len(), 2);
+    check!(eq; lanik.len(), 2);
     for coach in lanik {
-        assert_eq!(coach.role, CoachRole::HeadCoach);
-        assert_eq!(coach.sport, Some(Sport::OutdoorTrack));
+        check!(eq; coach.role, CoachRole::HeadCoach);
+        check!(eq; coach.sport, Some(Sport::OutdoorTrack));
     }
-    assert!(alliance
+    check!(alliance
         .roles
         .iter()
         .any(|role| role.label == "Unified Track & Field"));
@@ -824,12 +812,11 @@ fn nsaa_office_row_is_ignored_but_the_same_persons_coaching_row_is_kept() {
     let anselmo = schools
         .iter()
         .find(|school| school.name == "Anselmo-Merna")
-        .expect("Anselmo-Merna in the fixture");
+        .ok_or("Anselmo-Merna in the fixture")?;
     let (_, anselmo_id) = parse_nsaa_school(anselmo, &url_of(anselmo), OBSERVED_ON);
-    let anselmo_coaches = nsaa_coaches(anselmo, &anselmo_id, &url_of(anselmo), OBSERVED_ON)
-        .expect("the nsaa coach rows parse");
-    assert_eq!(anselmo_coaches.len(), 3, "1 AD + 2 track");
-    assert_eq!(
+    let anselmo_coaches = nsaa_coaches(anselmo, &anselmo_id, &url_of(anselmo), OBSERVED_ON)?;
+    check!(eq; anselmo_coaches.len(), 3, "1 AD + 2 track");
+    check!(eq;
         anselmo_coaches
             .iter()
             .filter(|coach| coach.name == "Chanc McIntosh")
@@ -840,16 +827,15 @@ fn nsaa_office_row_is_ignored_but_the_same_persons_coaching_row_is_kept() {
     let ansley = schools
         .iter()
         .find(|school| school.name == "Ansley")
-        .expect("Ansley in the fixture");
-    assert!(ansley
+        .ok_or("Ansley in the fixture")?;
+    check!(ansley
         .roles
         .iter()
         .any(|role| role.label == "Principal" && role.name == "Garrod Fernau"));
     let (_, ansley_id) = parse_nsaa_school(ansley, &url_of(ansley), OBSERVED_ON);
-    let ansley_coaches = nsaa_coaches(ansley, &ansley_id, &url_of(ansley), OBSERVED_ON)
-        .expect("the nsaa coach rows parse");
-    assert_eq!(ansley_coaches.len(), 6, "2 AD + 2 XC + 2 track");
-    assert_eq!(
+    let ansley_coaches = nsaa_coaches(ansley, &ansley_id, &url_of(ansley), OBSERVED_ON)?;
+    check!(eq; ansley_coaches.len(), 6, "2 AD + 2 XC + 2 track");
+    check!(eq;
         ansley_coaches
             .iter()
             .filter(|coach| coach.name == "Garrod Fernau")
@@ -857,16 +843,16 @@ fn nsaa_office_row_is_ignored_but_the_same_persons_coaching_row_is_kept() {
         1,
         "his Assistant Athletic Director row imports him; the Principal row does not"
     );
+    Ok(())
 }
 
 #[test]
-fn nsaa_fixture_yields_exactly_the_verified_entities() {
-    let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
+fn nsaa_fixture_yields_exactly_the_verified_entities() -> TestResult {
+    let schools = parse_nsaa_directory(NSAA_PAGE)?;
     let mut by_school: Vec<(String, Vec<String>)> = Vec::new();
     for entry in &schools {
         let (_, school_id) = parse_nsaa_school(entry, &url_of(entry), OBSERVED_ON);
-        let mut rows: Vec<String> = nsaa_coaches(entry, &school_id, &url_of(entry), OBSERVED_ON)
-            .expect("the nsaa coach rows parse")
+        let mut rows: Vec<String> = nsaa_coaches(entry, &school_id, &url_of(entry), OBSERVED_ON)?
             .into_iter()
             .map(|coach| {
                 format!(
@@ -880,8 +866,8 @@ fn nsaa_fixture_yields_exactly_the_verified_entities() {
     }
 
     let adams = &by_school[0];
-    assert_eq!(adams.0, "Adams Central");
-    assert_eq!(
+    check!(eq; adams.0, "Adams Central");
+    check!(eq;
         adams.1,
         vec![
             "Alan Frank|None|Mixed|AthleticDirector",
@@ -895,8 +881,8 @@ fn nsaa_fixture_yields_exactly_the_verified_entities() {
     let ansley = by_school
         .iter()
         .find(|(name, _)| name == "Ansley")
-        .expect("Ansley");
-    assert_eq!(
+        .ok_or("Ansley")?;
+    check!(eq;
         ansley.1,
         vec![
             "Aaron Wagner|None|Mixed|AthleticDirector",
@@ -908,17 +894,18 @@ fn nsaa_fixture_yields_exactly_the_verified_entities() {
         ]
     );
     let total: usize = by_school.iter().map(|(_, rows)| rows.len()).sum();
-    assert_eq!(total, 42);
+    check!(eq; total, 42);
+    Ok(())
 }
 
 #[test]
-fn nsaa_coop_annotations_are_stripped_from_names() {
-    let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
+fn nsaa_coop_annotations_are_stripped_from_names() -> TestResult {
+    let schools = parse_nsaa_directory(NSAA_PAGE)?;
     let ansley = schools
         .iter()
         .find(|school| school.name == "Ansley")
-        .expect("Ansley in the fixture");
-    assert!(
+        .ok_or("Ansley in the fixture")?;
+    check!(
         ansley
             .roles
             .iter()
@@ -927,168 +914,142 @@ fn nsaa_coop_annotations_are_stripped_from_names() {
     );
 
     let (_, school_id) = parse_nsaa_school(ansley, &url_of(ansley), OBSERVED_ON);
-    let names: Vec<String> = nsaa_coaches(ansley, &school_id, &url_of(ansley), OBSERVED_ON)
-        .expect("the nsaa coach rows parse")
+    let names: Vec<String> = nsaa_coaches(ansley, &school_id, &url_of(ansley), OBSERVED_ON)?
         .into_iter()
         .map(|coach| coach.name)
         .collect();
-    assert!(names.contains(&"Cayley Bailey".to_string()));
-    assert!(names.contains(&"Jamee Smith".to_string()));
-    assert!(!names.iter().any(|name| name.contains("Co-op")));
+    check!(names.contains(&"Cayley Bailey".to_string()));
+    check!(names.contains(&"Jamee Smith".to_string()));
+    check!(!names.iter().any(|name| name.contains("Co-op")));
 
-    assert_eq!(
-        split_person_names("Cayley Bailey (Co-op w/Litchfield)").expect("the name cell parses"),
+    check!(eq;
+        split_person_names("Cayley Bailey (Co-op w/Litchfield)")?,
         vec!["Cayley Bailey"]
     );
-    assert_eq!(
-        split_person_names("Derek Mahony Co-op w/Wheeler Central").expect("the name cell parses"),
+    check!(eq;
+        split_person_names("Derek Mahony Co-op w/Wheeler Central")?,
         vec!["Derek Mahony"]
     );
-    assert_eq!(
-        split_person_names("Jenna Landgren Co-op w/Wheeler Central").expect("the name cell parses"),
+    check!(eq;
+        split_person_names("Jenna Landgren Co-op w/Wheeler Central")?,
         vec!["Jenna Landgren"]
     );
-    assert_eq!(
-        split_person_names("Carrie Ourada (Co-oop w/ Loup County").expect("the name cell parses"),
+    check!(eq;
+        split_person_names("Carrie Ourada (Co-oop w/ Loup County")?,
         vec!["Carrie Ourada"]
     );
-    assert!(split_person_names("Co-op w/Loup CIty")
-        .expect("the name cell parses")
-        .is_empty());
-    assert!(split_person_names("   ")
-        .expect("the name cell parses")
-        .is_empty());
-    assert_eq!(
-        split_person_names("Betsy Rall & Amy Sokol").expect("the name cell parses"),
+    check!(split_person_names("Co-op w/Loup CIty")?.is_empty());
+    check!(split_person_names("   ")?.is_empty());
+    check!(eq;
+        split_person_names("Betsy Rall & Amy Sokol")?,
         vec!["Betsy Rall", "Amy Sokol"]
     );
-    assert_eq!(
-        split_person_names("Jeff Tescher, Jeff Tescher").expect("the name cell parses"),
+    check!(eq;
+        split_person_names("Jeff Tescher, Jeff Tescher")?,
         vec!["Jeff Tescher"]
     );
-    assert_eq!(
-        split_person_names("Dr. Dan Schinzel").expect("the name cell parses"),
+    check!(eq;
+        split_person_names("Dr. Dan Schinzel")?,
         vec!["Dan Schinzel"]
     );
+    Ok(())
 }
 
 #[test]
-fn nsaa_fixture_reports_its_own_fill_rate_and_entity_count() {
-    let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
+fn nsaa_fixture_reports_its_own_fill_rate_and_entity_count() -> TestResult {
+    let schools = parse_nsaa_directory(NSAA_PAGE)?;
     let mut slots = 0usize;
     let mut named = 0usize;
     let mut coaches = 0usize;
     for entry in &schools {
         let (_, school_id) = parse_nsaa_school(entry, &url_of(entry), OBSERVED_ON);
-        coaches += nsaa_coaches(entry, &school_id, &url_of(entry), OBSERVED_ON)
-            .expect("the nsaa coach rows parse")
-            .len();
+        coaches += nsaa_coaches(entry, &school_id, &url_of(entry), OBSERVED_ON)?.len();
         for role in &entry.roles {
             if matches!(
                 parse_nsaa_row(&role.label),
                 Some(NsaaRow::SportCoach { .. })
             ) {
                 slots += 1;
-                if !split_person_names(&role.name)
-                    .expect("the name cell parses")
-                    .is_empty()
-                {
+                if !split_person_names(&role.name)?.is_empty() {
                     named += 1;
                 }
             }
         }
     }
-    assert_eq!(
+    check!(eq;
         slots, 30,
         "8 schools × 4 TF/XC sides, minus Anselmo-Merna's two XC sides (it sponsors neither)"
     );
-    assert_eq!(
+    check!(eq;
         named, 30,
         "every published TF/XC coach slot is named: 30/30"
     );
-    assert_eq!(
+    check!(eq;
         coaches, 42,
         "unique coach entities across the 8 fixture schools"
     );
+    Ok(())
 }
 
 #[test]
-fn nsaa_entities_carry_no_emails_anywhere() {
-    let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
+fn nsaa_entities_carry_no_emails_anywhere() -> TestResult {
+    let schools = parse_nsaa_directory(NSAA_PAGE)?;
     for entry in &schools {
         let (school, school_id) = parse_nsaa_school(entry, &url_of(entry), OBSERVED_ON);
-        assert!(
-            !serialized(&school).contains('@'),
+        check!(
+            !serialized(&school)?.contains('@'),
             "no email in {}",
             school.name
         );
-        for coach in nsaa_coaches(entry, &school_id, &url_of(entry), OBSERVED_ON)
-            .expect("the nsaa coach rows parse")
-        {
-            assert_eq!(coach.professional_email, None);
-            assert_eq!(coach.phone, None);
-            assert!(
-                !serialized(&coach).contains('@'),
+        for coach in nsaa_coaches(entry, &school_id, &url_of(entry), OBSERVED_ON)? {
+            check!(eq; coach.professional_email, None);
+            check!(eq; coach.phone, None);
+            check!(
+                !serialized(&coach)?.contains('@'),
                 "no email or handle in coach {}",
                 coach.name
             );
-            assert_eq!(coach.evidence.len(), 1);
-            assert_eq!(coach.evidence[0].observed_on, OBSERVED_ON);
-            assert_eq!(coach.evidence[0].source.id, "nsaa");
+            check!(eq; coach.evidence.len(), 1);
+            check!(eq; coach.evidence[0].observed_on, OBSERVED_ON);
+            check!(eq; coach.evidence[0].source.id, "nsaa");
         }
     }
+    Ok(())
 }
 
 #[test]
-fn nd_entities_carry_no_emails_anywhere() {
-    let (school, school_id) = parse_nd_school_page(ND_PAGE, &sheyenne(), OBSERVED_ON)
-        .expect("the ndhsaa page parses")
-        .expect("school");
-    assert!(!serialized(&school).contains('@'));
-    let mut produced = nd_ad_coaches(
-        &parse_nd_staff(ND_PAGE).expect("the ndhsaa staff lines parse"),
-        &school_id,
-        "u",
-        OBSERVED_ON,
-    );
+fn nd_entities_carry_no_emails_anywhere() -> TestResult {
+    let (school, school_id) =
+        parse_nd_school_page(ND_PAGE, &sheyenne(), OBSERVED_ON)?.ok_or("school")?;
+    check!(!serialized(&school)?.contains('@'));
+    let mut produced = nd_ad_coaches(&parse_nd_staff(ND_PAGE)?, &school_id, "u", OBSERVED_ON);
     produced.extend(nd_sport_coaches(
-        &parse_nd_offerings(ND_PAGE).expect("the ndhsaa offering rows parse"),
+        &parse_nd_offerings(ND_PAGE)?,
         &school_id,
         "u",
         OBSERVED_ON,
     ));
-    assert!(!produced.is_empty());
+    check!(!produced.is_empty());
     for coach in &produced {
-        assert_eq!(coach.professional_email, None);
-        assert_eq!(coach.phone, None);
-        assert!(
-            !serialized(coach).contains('@'),
+        check!(eq; coach.professional_email, None);
+        check!(eq; coach.phone, None);
+        check!(
+            !serialized(coach)?.contains('@'),
             "no email in coach {}",
             coach.name
         );
     }
-    assert!(!email_regex()
-        .expect("the email probe regex compiles")
-        .is_match(ND_PAGE));
+    check!(!email_regex()?.is_match(ND_PAGE));
+    Ok(())
 }
 
 #[test]
-fn nsaa_malformed_input_yields_no_rows() {
-    assert!(parse_nsaa_directory("<!doctype html><html>nothing</html>")
-        .expect("the nsaa directory parses")
-        .is_empty());
-    assert!(parse_nsaa_directory("")
-        .expect("the nsaa directory parses")
-        .is_empty());
-    assert!(parse_nsaa_directory(r#"<h1 class="mt-3">Broken"#)
-        .expect("the nsaa directory parses")
-        .is_empty());
-    assert!(
-        parse_nsaa_directory(r#"<h1 class="mt-3">   </h1><table></table>"#)
-            .expect("the nsaa directory parses")
-            .is_empty()
-    );
-    assert_eq!(parse_nsaa_row(""), None);
+fn nsaa_malformed_input_yields_no_rows() -> TestResult {
+    check!(parse_nsaa_directory("<!doctype html><html>nothing</html>")?.is_empty());
+    check!(parse_nsaa_directory("")?.is_empty());
+    check!(parse_nsaa_directory(r#"<h1 class="mt-3">Broken"#)?.is_empty());
+    check!(parse_nsaa_directory(r#"<h1 class="mt-3">   </h1><table></table>"#)?.is_empty());
+    check!(eq; parse_nsaa_row(""), None);
     let school = NsaaSchool {
         name: String::new(),
         city: None,
@@ -1097,54 +1058,55 @@ fn nsaa_malformed_input_yields_no_rows() {
         roles: Vec::new(),
     };
     let (_, school_id) = parse_nsaa_school(&school, &url_of(&school), OBSERVED_ON);
-    assert!(
-        nsaa_coaches(&school, &school_id, &url_of(&school), OBSERVED_ON)
-            .expect("the nsaa coach rows parse")
-            .is_empty()
-    );
+    check!(nsaa_coaches(&school, &school_id, &url_of(&school), OBSERVED_ON)?.is_empty());
+    Ok(())
 }
 
-#[tokio::test]
-async fn collect_skips_providers_it_was_not_asked_for() {
-    let dir = tempfile::tempdir().expect("temp dir");
-    let store = census_store::Store::open(dir.path().join("store")).expect("store");
-    let fetcher = crate::net::Fetcher::new(
-        dir.path().join("http"),
-        None,
-        std::time::Duration::from_millis(1),
-        std::collections::HashMap::new(),
-        Vec::new(),
-    )
-    .expect("fetcher");
-    let ctx = AdapterContext {
-        fetcher: &fetcher,
-        store: &store,
-        refresh: false,
-        school_year: census_domain::model::SchoolYear::new(2026).expect("2026 is a season"),
-        observed_on: OBSERVED_ON.to_string(),
-        recording: None,
-    };
+#[test]
+fn collect_skips_providers_it_was_not_asked_for() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let dir = tempfile::tempdir()?;
+            let store = census_store::Store::open(dir.path().join("store"))?;
+            let fetcher = crate::net::Fetcher::new(
+                dir.path().join("http"),
+                None,
+                std::time::Duration::from_millis(1),
+                std::collections::HashMap::new(),
+                Vec::new(),
+            )?;
+            let ctx = AdapterContext {
+                fetcher: &fetcher,
+                store: &store,
+                refresh: false,
+                school_year: census_domain::model::SchoolYear::new(2026)
+                    .ok_or("2026 is a season")?,
+                observed_on: OBSERVED_ON.to_string(),
+                recording: None,
+            };
 
-    let options = Options {
-        states: vec![UsJurisdiction::Iowa],
-        observed_on: OBSERVED_ON.to_string(),
-        ..Options::default()
-    };
-    let report = collect(&ctx, &options)
-        .await
-        .expect("collect returns a report");
-    assert_eq!(report.rows, 0);
-    assert_eq!(report.with_email, 0);
-    assert_eq!(
-        report.requests, 0,
-        "no provider ran, so no request was sent"
-    );
-    assert!(
-        report
-            .notes
-            .iter()
-            .any(|note| note.contains("no provider selected")),
-        "the report says which states were asked for: {:?}",
-        report.notes
-    );
+            let options = Options {
+                states: vec![UsJurisdiction::Iowa],
+                observed_on: OBSERVED_ON.to_string(),
+                ..Options::default()
+            };
+            let report = collect(&ctx, &options).await?;
+            check!(eq; report.rows, 0);
+            check!(eq; report.with_email, 0);
+            check!(eq;
+                report.requests, 0,
+                "no provider ran, so no request was sent"
+            );
+            check!(
+                report
+                    .notes
+                    .iter()
+                    .any(|note| note.contains("no provider selected")),
+                "the report says which states were asked for: {:?}",
+                report.notes
+            );
+            Ok(())
+        })
 }

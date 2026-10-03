@@ -1,3 +1,5 @@
+pub(super) mod checked;
+
 use super::map::{CoachRow, SchoolTable};
 use census_domain::model::Sport;
 
@@ -51,28 +53,12 @@ fn collapse_whitespace(value: &str) -> String {
     result.trim().to_string()
 }
 
-fn extract_td_text(row: &str, index: usize) -> String {
-    let mut count = 0;
-    let mut rest = row;
-    while let Some(open) = rest.find("<td") {
-        let Some(from_td) = rest.get(open..) else {
-            break;
-        };
-        let Some((text, after)) = from_td.split_once("</td>") else {
-            break;
-        };
-        if count == index {
-            let content = text
-                .strip_prefix("<td")
-                .unwrap_or(text)
-                .strip_prefix(">")
-                .unwrap_or("");
-            return content.to_string();
-        }
-        rest = after;
-        count = count.saturating_add(1);
-    }
-    String::new()
+fn extract_td_text(row: &str, index: usize) -> &str {
+    row.split("</td>")
+        .filter_map(|cell| cell.split_once("<td"))
+        .nth(index)
+        .and_then(|(_, cell)| cell.split_once('>'))
+        .map_or("", |(_, content)| content)
 }
 
 pub fn parse_sport_label(label: &str) -> Option<Sport> {
@@ -99,79 +85,54 @@ fn parse_coach_name(cell: &str) -> String {
 }
 
 fn parse_table_rows(table_html: &str) -> Vec<CoachRow> {
-    let mut rows = Vec::new();
-    let table_rows: Vec<&str> = table_html
+    table_html
         .split("</tr>")
-        .filter(|r| r.contains("<tr"))
-        .collect();
+        .filter(|row| row.contains("<tr"))
+        .filter_map(parse_coach_row)
+        .collect()
+}
 
-    for table_row in table_rows {
-        let sport_raw = extract_td_text(table_row, 0);
-        let role_raw = extract_td_text(table_row, 1);
-        let name_raw = extract_td_text(table_row, 2);
-        let phone_raw = extract_td_text(table_row, 3);
-
-        let sport_label = collapse_whitespace(&decode_entities(&sport_raw));
-        let role = collapse_whitespace(&decode_entities(&role_raw));
-
-        if sport_label.is_empty() {
-            continue;
-        }
-
-        if !role.contains("Head Coach") {
-            continue;
-        }
-
-        let coach_name = parse_coach_name(&name_raw);
-        let phone = extract_phone_from_cell(&phone_raw);
-
-        if let Some(sport) = parse_sport_label(&sport_label) {
-            rows.push(CoachRow {
-                sport_label,
-                coach_name,
-                phone,
-                sport,
-            });
-        }
+fn parse_coach_row(table_row: &str) -> Option<CoachRow> {
+    let sport_label = parse_coach_name(extract_td_text(table_row, 0));
+    let role = parse_coach_name(extract_td_text(table_row, 1));
+    if !role.contains("Head Coach") {
+        return None;
     }
-
-    rows
+    let sport = parse_sport_label(&sport_label)?;
+    let coach_name = parse_coach_name(extract_td_text(table_row, 2));
+    if coach_name.is_empty() {
+        return None;
+    }
+    Some(CoachRow {
+        sport_label,
+        coach_name,
+        phone: extract_phone_from_cell(extract_td_text(table_row, 3)),
+        sport,
+    })
 }
 
 fn extract_phone_from_cell(cell: &str) -> Option<String> {
-    if let Some(after) = cell.split_once("href=\"tel:") {
-        let end = after.1.find('"').unwrap_or(after.1.len());
-        return after.1.get(..end).map(str::to_string);
-    }
-    if let Some(after) = cell.split_once("href='tel:") {
-        let end = after.1.find('\'').unwrap_or(after.1.len());
-        return after.1.get(..end).map(str::to_string);
-    }
-    None
+    [("href=\"tel:", '"'), ("href='tel:", '\'')]
+        .into_iter()
+        .find_map(|(opening, closing)| {
+            let (_, after) = cell.split_once(opening)?;
+            let (phone, _) = after.split_once(closing)?;
+            (!phone.trim().is_empty()).then(|| phone.to_string())
+        })
 }
 
 pub fn parse_directory(html: &str) -> Vec<SchoolTable> {
-    let mut schools = Vec::new();
-
-    let sections: Vec<&str> = html.split("</details>").collect();
-
-    for section in sections {
-        let school_name = extract_school_name(section);
-
-        if school_name.is_empty() {
-            continue;
-        }
-
-        let table_html = extract_table(section);
-        let coach_rows = parse_table_rows(table_html.as_str());
-
-        schools.push(SchoolTable {
-            name: school_name,
-            coach_rows,
-        });
-    }
-
-    schools
+    html.split("<details")
+        .skip(1)
+        .filter_map(|section| section.split_once("</details>"))
+        .filter_map(|(section, _)| {
+            let name = extract_school_name(section);
+            (!name.is_empty()).then(|| SchoolTable {
+                name,
+                coach_rows: parse_table_rows(extract_table(section)),
+            })
+        })
+        .collect()
 }
 
 fn extract_school_name(section: &str) -> String {
@@ -196,22 +157,10 @@ fn tagged_text(section: &str, opening: &str, closing: &str) -> Option<String> {
     }
 }
 
-fn extract_table(section: &str) -> String {
+fn extract_table(section: &str) -> &str {
     const CLOSING: &str = "</table>";
-
-    let Some(start) = section.find("<table") else {
-        return String::new();
-    };
-    let Some(from_table) = section.get(start..) else {
-        return String::new();
-    };
-    let Some(table) = from_table
-        .find(CLOSING)
-        .and_then(|close| close.checked_add(CLOSING.len()))
-        .and_then(|end| from_table.get(..end))
-    else {
-        return String::new();
-    };
-
-    table.to_string()
+    section
+        .split_once("<table")
+        .and_then(|(_, table)| table.split_once(CLOSING))
+        .map_or("", |(table, _)| table)
 }

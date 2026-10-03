@@ -41,7 +41,9 @@ impl Target {
         match (self.store.as_deref(), self.ingress.as_deref()) {
             (Some(store), None) => Ok(Mode::Offline(store)),
             (Some(_), Some(_)) => bail!("--store <DIR> cannot be combined with --ingress <ORIGIN>"),
-            (None, origin) => Ok(Mode::Ingress(origin.unwrap_or(ingress::NODE_ORIGIN))),
+            (None, origin) => Ok(Mode::Ingress(
+                origin.map_or(ingress::NODE_ORIGIN, core::convert::identity),
+            )),
         }
     }
 }

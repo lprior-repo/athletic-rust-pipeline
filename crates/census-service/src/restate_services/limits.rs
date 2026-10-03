@@ -8,6 +8,16 @@ pub const MAX_SWEEP_WINDOWS: u32 = 366;
 pub const MAX_SWEEP_ENDPOINTS: usize = 256;
 
 pub const MAX_LIMIT_PER_STATE: usize = 10_000;
+pub const MAX_SOURCE_PARALLELISM: usize = 64;
+
+pub(super) fn validate_source_parallelism(value: usize) -> Result<(), TerminalError> {
+    if !(1..=MAX_SOURCE_PARALLELISM).contains(&value) {
+        return Err(TerminalError::new(format!(
+            "source_parallelism {value} is outside 1..={MAX_SOURCE_PARALLELISM}"
+        )));
+    }
+    Ok(())
+}
 
 const CENSUS_INACTIVITY_TIMEOUT: Duration = Duration::from_secs(60 * 60);
 

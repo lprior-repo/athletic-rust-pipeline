@@ -1,5 +1,7 @@
 use super::{bare_runs_in, parse_attempts, violations, Grammars, RunGrammars, Site, Sites};
 
+type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
+
 fn sites(attribute: u64, builder: u64) -> Sites {
     Sites {
         attribute: vec![Site {
@@ -61,19 +63,20 @@ fn a_site_at_its_ceiling_holds_and_one_above_it_is_named() {
 }
 
 #[test]
-fn the_ceiling_action_option_is_not_an_attempt_site() {
-    let grammars = Grammars::compile().expect("the grammars compile");
+fn the_ceiling_action_option_is_not_an_attempt_site() -> TestResult {
+    let grammars = Grammars::compile()?;
     let action = "        on_max_attempts = \"pause\",";
     let mut declared = Sites::default();
-    assert_eq!(grammars.claim("pkg:src/a.rs:1", action, &mut declared), 0);
-    assert_eq!(grammars.mention.find_iter(action).count(), 0);
+    check!(eq; grammars.claim("pkg:src/a.rs:1", action, &mut declared), 0);
+    check!(eq; grammars.mention.find_iter(action).count(), 0);
     let attempts = "        max_attempts = 3,";
-    assert_eq!(grammars.claim("pkg:src/a.rs:2", attempts, &mut declared), 1);
-    assert_eq!(declared.attribute.len(), 1);
-    assert!(
+    check!(eq; grammars.claim("pkg:src/a.rs:2", attempts, &mut declared), 1);
+    check!(eq; declared.attribute.len(), 1);
+    check!(
         declared.builder.is_empty() && declared.unclaimed.is_empty(),
         "the attempt line is claimed as an attribute site and nothing else: {declared:?}"
     );
+    Ok(())
 }
 
 #[test]
@@ -91,32 +94,33 @@ fn an_unclaimed_mention_fails_closed() {
 }
 
 #[test]
-fn a_bare_ctx_run_is_named_and_a_chained_policy_holds() {
-    let grammars = RunGrammars::compile().expect("the run grammars compile");
+fn a_bare_ctx_run_is_named_and_a_chained_policy_holds() -> TestResult {
+    let grammars = RunGrammars::compile()?;
     let bare =
         masked_of("    ctx.run(move || jobs::flush_journal(store, entries))\n        .await?;\n");
     let found = bare_runs_in("pkg:src/a.rs", &bare, &grammars);
-    assert_eq!(found.len(), 1);
-    assert!(
+    check!(eq; found.len(), 1);
+    check!(
         found.first().is_some_and(|site| site == "pkg:src/a.rs:1"),
         "the failure names the site: {found:?}"
     );
     let covered = masked_of(
         "        let Json(journaled) = ctx\n                .run(move || jobs::flush_journal(store, entries))\n                .retry_policy(RunRetryPolicy::new().max_attempts(1))\n                .await?;\n",
     );
-    assert!(
+    check!(
         bare_runs_in("pkg:src/a.rs", &covered, &grammars).is_empty(),
         "a chained policy covers the split-chain spelling the tree uses"
     );
+    Ok(())
 }
 
 #[test]
-fn the_run_scan_leaves_clients_alone_and_never_covers_across_sites() {
-    let grammars = RunGrammars::compile().expect("the run grammars compile");
+fn the_run_scan_leaves_clients_alone_and_never_covers_across_sites() -> TestResult {
+    let grammars = RunGrammars::compile()?;
     let client = masked_of(
         "                client\n                    .run(Json(request.for_jurisdiction(*jurisdiction)))\n                    .call(),\n",
     );
-    assert!(
+    check!(
         bare_runs_in("pkg:src/a.rs", &client, &grammars).is_empty(),
         "the object client's run is not a ctx.run effect"
     );
@@ -124,11 +128,12 @@ fn the_run_scan_leaves_clients_alone_and_never_covers_across_sites() {
         "        let a = ctx\n            .run(move || step_a(store))\n            .await?;\n        let b = ctx\n            .run(move || step_b(store))\n            .retry_policy(RunRetryPolicy::new().max_attempts(1))\n            .await?;\n",
     );
     let found = bare_runs_in("pkg:src/a.rs", &two, &grammars);
-    assert_eq!(found.len(), 1);
-    assert!(
+    check!(eq; found.len(), 1);
+    check!(
         found.first().is_some_and(|site| site == "pkg:src/a.rs:1"),
         "one effect's policy never covers another's absence: {found:?}"
     );
+    Ok(())
 }
 
 #[test]

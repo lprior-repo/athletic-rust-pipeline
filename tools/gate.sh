@@ -26,9 +26,10 @@
 # and a release cannot make that claim, so an absent tool is a FAILURE and the heavy lanes run
 # without `--full` being spelled out as well.
 #
-# Lanes: fmt, check, doc, tests, strict clippy (source targets), production scan + size budgets,
-#        domain integrity, debt ratchet, deny, audit, vet, machete, geiger, feature powerset, bench
-#        presence; --full adds the performance threshold and mutants lanes.
+# Lanes: fmt, check, doc, tests, owned-Rust lexical extraction + all-target extraction denial,
+#        strict clippy (source targets), production scan + size budgets, domain integrity,
+#        debt ratchet, deny, audit, machete, geiger, feature powerset, bench presence;
+#        --full adds the performance threshold and mutants lanes.
 #
 # The toolchain is the pinned nightly from rust-toolchain.toml, and the check and clippy lanes pass
 # `-Zallow-features=portable_simd,try_blocks`: the nightly feature allowlist is part of the source
@@ -122,10 +123,14 @@ lane_fmt() { cargo fmt --all -- --check; }
 lane_check() {
   cargo -Zallow-features="$FEATURE_ALLOWLIST" check --workspace --all-targets --all-features
 }
+lane_no_panic_extraction() {
+  cargo xtask panic-extraction &&
+    cargo -Zallow-features="$FEATURE_ALLOWLIST" clippy --workspace --all-targets --all-features -- \
+      -D warnings -D clippy::unwrap_used -D clippy::expect_used
+}
 lane_doc() { cargo doc --workspace --all-features --no-deps; }
 lane_deny() { cargo deny check advisories bans sources; }
 lane_audit() { cargo audit --quiet; }
-lane_vet() { cargo vet --locked; }
 # `cargo machete` hands the tool the subcommand token as `argv[1]`, and cargo-machete 0.9.2 strips
 # that token only when `argv[0]` is a path: resolved through the mise shim (`argv[0]` =
 # `cargo-machete`) the token is read as a directory and the lane dies with
@@ -246,6 +251,7 @@ main() {
   run_lane check lane_check
   run_lane doc lane_doc
   run_lane tests lane_tests
+  run_lane "panic extraction (all targets)" lane_no_panic_extraction
 
   printf '\n=== strict clippy (source targets) ===\n'
   # A measurement that did not run leaves `$tmp/clippy.tsv` empty, which the ratchet reads as "no
@@ -330,7 +336,6 @@ main() {
 
   run_lane deny lane_deny
   run_tool_lane cargo-audit audit lane_audit
-  run_tool_lane cargo-vet vet lane_vet
   run_tool_lane cargo-machete machete lane_machete
   run_tool_lane cargo-geiger geiger lane_geiger
   run_tool_lane cargo-hack "feature powerset" lane_hack

@@ -198,7 +198,8 @@ async fn open_store(region: &Spawner, data_dir: PathBuf) -> Result<Arc<Store>, B
 
 pub fn init_tracing() {
     use tracing_subscriber::EnvFilter;
-    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+    let filter =
+        EnvFilter::try_from_default_env().map_or_else(|_| EnvFilter::new("info"), |value| value);
     let installed = tracing_subscriber::fmt()
         .with_env_filter(filter)
         .with_target(false)

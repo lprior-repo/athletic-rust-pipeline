@@ -74,21 +74,36 @@ fn row_for(dataset: &Dataset, coach: &CanonicalCoach) -> Vec<Cell> {
         Cell::text(coach.id.as_str()),
         Cell::text(coach.gender.stable_key()),
         Cell::text(role_label(coach)),
-        Cell::text(coach.professional_email.clone().unwrap_or_default()),
-        Cell::text(coach.personal_email.clone().unwrap_or_default()),
-        Cell::text(coach.phone.clone().unwrap_or_default()),
+        Cell::text(
+            coach
+                .professional_email
+                .clone()
+                .map_or(Default::default(), core::convert::identity)
+        ),
+        Cell::text(
+            coach
+                .personal_email
+                .clone()
+                .map_or(Default::default(), core::convert::identity)
+        ),
+        Cell::text(
+            coach
+                .phone
+                .clone()
+                .map_or(Default::default(), core::convert::identity)
+        ),
         Cell::text(
             director
                 .map(|director| director.name.clone())
-                .unwrap_or_default(),
+                .map_or(Default::default(), core::convert::identity)
         ),
         Cell::text(
             director
                 .and_then(|director| director.email.clone())
-                .unwrap_or_default(),
+                .map_or(Default::default(), core::convert::identity)
         ),
-        Cell::text(source_url.unwrap_or_default()),
-        Cell::text(observed_on.unwrap_or_default()),
+        Cell::text(source_url.map_or(Default::default(), core::convert::identity)),
+        Cell::text(observed_on.map_or(Default::default(), core::convert::identity)),
         Cell::text(tenure_label(coach, dataset.school_year)),
         Cell::text(dataset.school_year.short()),
     )

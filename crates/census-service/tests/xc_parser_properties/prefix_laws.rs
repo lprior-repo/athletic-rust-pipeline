@@ -2,7 +2,7 @@ use super::{lines, parse_body, parse_lines, rendered_rows, seam_config, ACCURACE
 use proptest::prelude::*;
 
 fn prefix_holds(name: &str, body: &str, cut: usize) -> Result<(), TestCaseError> {
-    let full = parse_body(body).expect("the whole body is a meet");
+    let full = parse_body(body).ok_or_else(|| TestCaseError::fail("whole body did not parse"))?;
     let full_rows = rendered_rows(&full);
 
     let all = lines(body);

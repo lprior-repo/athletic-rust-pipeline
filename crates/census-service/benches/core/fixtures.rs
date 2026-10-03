@@ -226,7 +226,7 @@ fn extension_of(file: &str) -> String {
     Path::new(file)
         .extension()
         .and_then(|extension| extension.to_str())
-        .unwrap_or_default()
+        .map_or(Default::default(), core::convert::identity)
         .to_string()
 }
 

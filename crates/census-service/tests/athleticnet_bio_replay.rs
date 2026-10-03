@@ -112,7 +112,7 @@ impl Harness {
             fetcher: &self.fetcher,
             store: &self.store,
             refresh: false,
-            school_year: SchoolYear::new(2026).expect("2026 is a season"),
+            school_year: SchoolYear::DEFAULT,
             observed_on: OBSERVED_ON.to_string(),
             recording: None,
         };
@@ -129,56 +129,62 @@ fn rows(store: &Store) -> Result<(Vec<CanonicalAthlete>, Vec<CanonicalPerformanc
     ))
 }
 
-#[tokio::test]
-async fn athleticnet_bio_route_absorbs_both_scopes_and_journals_each_url() -> Result<()> {
-    let harness = Harness::new()?;
-    let first = harness.run(&harness.options()).await?;
-    ensure!(
-        first.requests == 0 && first.from_cache == 2,
-        "both documents are served from the cache: {} requests, {} served",
-        first.requests,
-        first.from_cache
-    );
-    ensure!(
-        first.errors == 0,
-        "the payload decodes without a failure: {:?}",
-        first.notes
-    );
-    ensure!(
-        first.rows == 1 && first.unit == "athletes",
-        "one athlete is absorbed: {} {}",
-        first.rows,
-        first.unit
-    );
-    let (athletes, performances) = rows(&harness.store)?;
-    ensure!(
-        athletes.len() == 1,
-        "one athlete from the capture's registry line: {athletes:?}"
-    );
-    ensure!(
-        performances.len() == PERFORMANCES,
-        "the capture stores {PERFORMANCES} storable performances: {}",
-        performances.len()
-    );
+#[test]
+fn athleticnet_bio_route_absorbs_both_scopes_and_journals_each_url() -> Result<()> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let harness = Harness::new()?;
+            let first = harness.run(&harness.options()).await?;
+            ensure!(
+                first.requests == 0 && first.from_cache == 2,
+                "both documents are served from the cache: {} requests, {} served",
+                first.requests,
+                first.from_cache
+            );
+            ensure!(
+                first.errors == 0,
+                "the payload decodes without a failure: {:?}",
+                first.notes
+            );
+            ensure!(
+                first.rows == 1 && first.unit == "athletes",
+                "one athlete is absorbed: {} {}",
+                first.rows,
+                first.unit
+            );
+            let (athletes, performances) = rows(&harness.store)?;
+            ensure!(
+                athletes.len() == 1,
+                "one athlete from the capture's registry line: {athletes:?}"
+            );
+            ensure!(
+                performances.len() == PERFORMANCES,
+                "the capture stores {PERFORMANCES} storable performances: {}",
+                performances.len()
+            );
 
-    let second = harness.run(&harness.options()).await?;
-    ensure!(
-        second.requests == 0 && second.from_cache == 0,
-        "the journal short-circuits both URLs: {} requests, {} served",
-        second.requests,
-        second.from_cache
-    );
-    ensure!(
-        second.rows == 0,
-        "and nothing is walked twice: {} rows",
-        second.rows
-    );
-    let (athletes_after, performances_after) = rows(&harness.store)?;
-    ensure!(
-        (athletes_after.len(), performances_after.len()) == (athletes.len(), performances.len()),
-        "the store still holds one copy of every row: {} athletes, {} performances",
-        athletes_after.len(),
-        performances_after.len()
-    );
-    Ok(())
+            let second = harness.run(&harness.options()).await?;
+            ensure!(
+                second.requests == 0 && second.from_cache == 0,
+                "the journal short-circuits both URLs: {} requests, {} served",
+                second.requests,
+                second.from_cache
+            );
+            ensure!(
+                second.rows == 0,
+                "and nothing is walked twice: {} rows",
+                second.rows
+            );
+            let (athletes_after, performances_after) = rows(&harness.store)?;
+            ensure!(
+                (athletes_after.len(), performances_after.len())
+                    == (athletes.len(), performances.len()),
+                "the store still holds one copy of every row: {} athletes, {} performances",
+                athletes_after.len(),
+                performances_after.len()
+            );
+            Ok(())
+        })
 }

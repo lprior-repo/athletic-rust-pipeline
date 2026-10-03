@@ -12,7 +12,7 @@ pub fn map_directory_row(
     source_url: &str,
     observed_on: &str,
 ) -> Option<(CanonicalSchool, SchoolId)> {
-    let name = row.name.as_deref().unwrap_or("").trim();
+    let name = row.name.as_deref().map_or("", |value| value).trim();
     if name.is_empty() {
         return None;
     }
@@ -28,7 +28,7 @@ pub fn map_directory_row(
             row.school_code
                 .map(|code| code.to_string())
                 .as_deref()
-                .unwrap_or(""),
+                .map_or("", |value| value),
         )
         .with_url(source_url),
     );

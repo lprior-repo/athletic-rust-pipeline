@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use restate_sdk::prelude::*;
 
-use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 
 use crate::census::{CollectOptions, MeetCensus, StateProgress};
@@ -12,29 +11,8 @@ use census_crawl::net::Fetcher;
 use super::JurisdictionCensus;
 use crate::restate_services::ingest_post;
 use crate::restate_services::jobs;
-use crate::restate_services::wire::StageOutcome;
 
 impl JurisdictionCensus {
-    pub(super) async fn teams_stage(
-        &self,
-        ctx: &ObjectContext<'_>,
-        fetcher: Arc<Fetcher>,
-        jurisdiction: UsJurisdiction,
-        season: SchoolYear,
-        refresh: bool,
-        sweepable: Vec<String>,
-    ) -> Result<StageOutcome, HandlerError> {
-        let store = Arc::clone(&self.store);
-        let at = super::super::journaled_today(ctx, &self.clock).await?;
-        let Json(outcome) = ctx
-            .run(move || {
-                jobs::teams_stage(store, fetcher, jurisdiction, season, refresh, at, sweepable)
-            })
-            .retry_policy(RunRetryPolicy::new().max_attempts(1))
-            .await?;
-        Ok(outcome)
-    }
-
     pub(super) async fn rosters_stage(
         &self,
         ctx: &ObjectContext<'_>,

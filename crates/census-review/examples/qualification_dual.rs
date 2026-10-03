@@ -20,10 +20,10 @@ fn seed(store: &Store) -> Result<SchoolId> {
     }))?;
     store.append(Table::Schools, &school)?;
     let case = ReviewCase::pending(
-        "School jurisdiction unresolved",
+        ReviewFamily::SchoolJurisdiction.label(),
         school.id.as_str(),
-        &school.name,
-        "synthetic qualification contains no source-supported jurisdiction",
+        school.name.as_str(),
+        "SYNTHETIC QUALIFICATION ONLY; determine state from supplied evidence. No source capture or source ownership is asserted; city, association, athletics website and state are unknown.",
     );
     store.replace(Table::ReviewCases, &case)?;
     Ok(school.id)
@@ -119,33 +119,44 @@ fn validate_lane(lane: &Value, format: &str) -> Result<()> {
     Ok(())
 }
 
-#[tokio::main(flavor = "current_thread")]
-async fn main() -> Result<()> {
-    let root = std::env::args_os()
-        .nth(1)
-        .ok_or("pass fresh evidence directory")?;
-    let root = Path::new(&root);
-    std::fs::create_dir(root)?;
-    let store = Store::open(root.join("store"))?;
-    let school = seed(&store)?;
-    let clients = clients()?;
-    let options = ReviewOptions {
-        families: vec![ReviewFamily::SchoolJurisdiction],
-        limit: 1,
-        dry_run: false,
-    };
-    let report = run_lanes(&store, &clients, &options, "2026-10-01").await?;
-    println!("{}", report.summary());
-    inspect(&store, &school, root)?;
-    if report.requested != 1 || report.answered != 1 || report.accepted != 0 || report.failed != 0 {
-        return Err(
-            "dual endpoint qualification did not yield two validated unresolved replies".into(),
-        );
-    }
-    let replay = run_lanes(&store, &clients, &options, "2026-10-01").await?;
-    println!("replay={}", replay.summary());
-    if replay.requested != 0 || store.receipt_count()? != 1 {
-        return Err("unchanged audit replay reissued requests or mutated checkpoint".into());
-    }
-    Ok(())
+fn main() -> Result<()> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let root = std::env::args_os()
+                .nth(1)
+                .ok_or("pass fresh evidence directory")?;
+            let root = Path::new(&root);
+            std::fs::create_dir(root)?;
+            let store = Store::open(root.join("store"))?;
+            let school = seed(&store)?;
+            let clients = clients()?;
+            let options = ReviewOptions {
+                families: vec![ReviewFamily::SchoolJurisdiction],
+                limit: 1,
+                dry_run: false,
+            };
+            let report = run_lanes(&store, &clients, &options, "2026-10-01").await?;
+            println!("{}", report.summary());
+            inspect(&store, &school, root)?;
+            if report.requested != 1
+                || report.answered != 1
+                || report.accepted != 0
+                || report.failed != 0
+            {
+                return Err(
+                    "dual endpoint qualification did not yield two validated unresolved replies"
+                        .into(),
+                );
+            }
+            let replay = run_lanes(&store, &clients, &options, "2026-10-01").await?;
+            println!("replay={}", replay.summary());
+            if replay.requested != 0 || store.receipt_count()? != 1 {
+                return Err(
+                    "unchanged audit replay reissued requests or mutated checkpoint".into(),
+                );
+            }
+            Ok(())
+        })
 }

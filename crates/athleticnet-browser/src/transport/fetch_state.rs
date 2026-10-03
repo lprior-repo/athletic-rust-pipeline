@@ -227,6 +227,7 @@ pub(super) async fn complete_fetch(
     Ok(BrowserResponse {
         status: reqwest::StatusCode::from_u16(evidence.status)
             .map_err(|_| BrowserError::Protocol)?,
+        response_url: Some(evidence.response_url),
         headers: evidence.headers,
         body,
         rankings: None,

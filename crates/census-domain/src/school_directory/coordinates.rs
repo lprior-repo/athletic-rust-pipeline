@@ -141,11 +141,14 @@ fn scaled(raw: &str, field: &'static str, maximum: i64) -> Result<i32, Directory
 fn parse_scaled(trimmed: &str) -> Option<i64> {
     let (negative, body) = match trimmed.strip_prefix('-') {
         Some(rest) => (true, rest),
-        None => (false, trimmed.strip_prefix('+').unwrap_or(trimmed)),
+        None => (
+            false,
+            trimmed.strip_prefix('+').map_or(trimmed, |value| value),
+        ),
     };
     let mut segments = body.split('.');
-    let whole = segments.next().unwrap_or_default();
-    let fraction = segments.next().unwrap_or_default();
+    let whole = segments.next().map_or(Default::default(), core::convert::identity);
+    let fraction = segments.next().map_or(Default::default(), core::convert::identity);
     if segments.next().is_some() || (whole.is_empty() && fraction.is_empty()) {
         return None;
     }
@@ -159,7 +162,7 @@ fn parse_scaled(trimmed: &str) -> Option<i64> {
     let mut round_up = false;
     let mut kept = 0usize;
     for (index, ch) in fraction.chars().enumerate() {
-        let digit = i64::from(ch.to_digit(10).unwrap_or_default());
+        let digit = i64::from(ch.to_digit(10).map_or(Default::default(), core::convert::identity));
         if index < FRACTION_DIGITS {
             units = units
                 .checked_mul(10)

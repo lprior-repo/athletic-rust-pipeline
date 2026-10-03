@@ -7,9 +7,12 @@ coach page per school.
 
 ## Hosts and robots
 
-- `live.arbiter.io/directory/assets/index-<hash>.js` — the public SPA bundle. The client
-  credentials the embed mints its token with are published inside it as
-  `client_id:"…",client_secret:"…"`. `robots.txt` answers the SPA shell with no directives.
+- `https://live.arbiter.io/directory/` — the stable public SPA entry. The adapter GETs its
+  HTML through the existing Fetcher, selects exactly one distinct active external module,
+  then GETs that declared bundle through the same Fetcher. Build asset names are discovered,
+  never pinned, guessed, probed or used as fallbacks. The public client credential literals
+  consumed by the existing parser are in that bundle. Credential/token values are not logged.
+  The retained robots observation is a SPA shell with no directives.
 - `token.arbitersports.com/connect/token` — OpenID token endpoint, `POST` form
   `client_id`/`client_secret`/`grant_type=client_credentials`/`scope=Registration`, answers
   `{access_token, expires_in, token_type}`. `robots.txt` answers `404`, i.e. allow-all.
@@ -18,6 +21,42 @@ coach page per school.
 
 Association-hosted Arbiter sites such as `ossaa.arbitersports.com` refuse every user agent and are
 not read: the lane uses the API hosts only.
+
+### Entry discovery and ownership
+
+Discovery tokenizes at most 65,536 UTF-8 HTML bytes, with at most 8,192 emitted tag/comment/
+doctype tokens, 128 active script tags, 32 active base tags, 128 nested inert containers and
+4,096 decoded URL bytes per attribute or resolved URL. Those are adapter parsing limits; transport
+still uses the shared Fetcher's body, timeout, admission and redirect limits. No private HTTP client or
+additional retry is introduced.
+
+The html5gum emitter decodes attributes, honors their first occurrences and excludes comments,
+templates, foreign SVG/MathML markup and raw text (including noscript).
+
+Inert containers use matched bounded scopes: an unrelated foreign closing tag cannot activate
+an excluded declaration. Self-closing foreign elements do not retain a scope; HTML template
+and script self-closing slashes do not acquire XML closing semantics.
+
+Inline modules, preloads and classic scripts are not entry candidates. The first active `base[href]` is
+authoritative in document order; it affects later declarations only. Later bases cannot
+override it. Identical resolved module declarations are one candidate; distinct candidates
+fail before any bundle dispatch. Missing candidates, truncated tags/scripts, invalid UTF-8,
+oversized attributes and unsafe URLs are typed schema failures, not empty-directory success.
+
+Resolution uses the actual observed response URL when present. Historical captures without
+that metadata resolve against the requested URL while retaining `response_url: None`;
+discovery never invents an observed final URL. Document, base and module must remain on the
+stable entry's credential-free origin. Production's fixed authority is HTTPS
+`live.arbiter.io` with the default HTTPS port; HTTP downgrade, alternate hosts/ports and userinfo
+are refused. Modules must be direct nonempty `.js` assets under `/directory/assets/`, without
+encoded filename bytes, subdirectories, queries or fragments. Observed bundle response URLs
+are checked against the same ownership/path constraints before credentials are consumed.
+
+Both GETs preserve `options.refresh || ctx.refresh`. A cached shell can still name a deleted
+asset: that fetch failure stays explicit until an ordinary caller-requested refresh.
+The token POST always has `refresh = true`, so cached tokens are never replayed. Entry, bundle
+and token Fetch errors keep their original typed retry disposition; only Restate owns retries.
+No module graph traversal, import evaluation, source-map request or credential probing occurs.
 
 ## Endpoints
 
@@ -88,8 +127,10 @@ organisation, the state's two-letter code, the association id, the organisation'
 the coach-row count.
 
 A member page that fails or does not parse, and a coach page that fails, are recorded as failures
-and end only that walk — the remaining organisations in `--states` still run — while a failure to
-read the bundle or mint a token ends the run, because no organisation can be read without one.
+and end only that walk — the remaining organisations in `--states` still run — while entry
+discovery, bundle acquisition or token failure ends the run before an organisation is walked.
+Corrected code does not replay retained terminal failures, mutate old captures, or establish
+national completion.
 
 ## Fixtures
 
@@ -99,3 +140,26 @@ and records the prototype-run checks (`NH-arbiter.jsonl` schools and contacts ar
 the goldens after JSON decode). `tests/fixtures/arbiter/golden_alvirne_coaches.json` is the
 prototype's two-row Alvirne result, and `golden_nh_all_coaches_p11.json` is its empty result over
 the org-wide page that carries 137 eligible track rows — the divergence the fixtures pin.
+
+The cached-token regression uses a deterministic synthetic entry shell declaring
+`index-synthetic-redeploy-20261002.js` and seeds the existing redacted credential slice at that
+synthetic URL. This is test construction, not a public capture of that asset. Its requested
+URL is known and its historical-style final URL remains unknown. The original bundle capture,
+derived slice and `PROVENANCE.json` are unchanged and retain their historical asset URL.
+Owned-loopback discovery regressions serve only synthetic HTML and credential-free JavaScript,
+exercise redirect/final-URL resolution and a changed declared asset, and assert requested/final
+URLs, digests, bytes and immutable archived captures. They do not POST a token or use private
+inputs or an external network.
+
+Coding consultation (not census-case advice) used actual local RTX5090
+`qwen3.8-27b-uncensored`, response `chatcmpl-2a5f81c0fe4e7233`; raw response:
+`var/qwen-5090-evidence-sol-20261002/1790984920420-5c0769e5-5e67-47d2-ae3d-6285e933b516.response.json`.
+Its useful suggestions concerned sequential base handling, duplicate-vs-distinct declarations
+and truncation coverage. Suggestions to evaluate JavaScript, add browser mocks, change cache
+policy/probe source maps, make production authority configurable, accept zero modules, or ignore
+the required case/whitespace conventions for module type were rejected. The consultation is
+not execution evidence. Main's 2026-10-03 verification exercised 71 Arbiter tests and a fresh
+one-school NH provider CLI acquisition: five reported acquisition requests, one school, three
+coach rows and zero reported errors. That limited smoke does not qualify the whole organisation
+or repair already-settled source failures; exact commands and capture metadata are in
+[the evidence ledger](../../../../docs/VERIFICATION-EVIDENCE.md).

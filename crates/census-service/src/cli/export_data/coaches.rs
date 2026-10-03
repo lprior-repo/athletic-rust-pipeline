@@ -21,19 +21,29 @@ fn build_coach_row(c: &CanonicalCoach, by_school: &HashMap<&str, &CanonicalSchoo
         c.role.stable_key().to_string(),
         c.sport
             .map(|s| s.stable_key().to_string())
-            .unwrap_or_default(),
+            .map_or(Default::default(), core::convert::identity),
         c.gender.stable_key().to_string(),
         c.school.as_str().to_string(),
-        school.map(|school| school.name.clone()).unwrap_or_default(),
+        school
+            .map(|school| school.name.clone())
+            .map_or(Default::default(), core::convert::identity),
         school
             .and_then(|school| school.state)
             .map(|state| state.code().to_owned())
-            .unwrap_or_default(),
-        c.professional_email.clone().unwrap_or_default(),
-        c.personal_email.clone().unwrap_or_default(),
-        source_url.unwrap_or_default().to_owned(),
+            .map_or(Default::default(), core::convert::identity),
+        c.professional_email
+            .clone()
+            .map_or(Default::default(), core::convert::identity),
+        c.personal_email
+            .clone()
+            .map_or(Default::default(), core::convert::identity),
+        source_url
+            .map_or(Default::default(), core::convert::identity)
+            .to_owned(),
         evidence_src,
-        observed_on.unwrap_or_default().to_owned(),
+        observed_on
+            .map_or(Default::default(), core::convert::identity)
+            .to_owned(),
     ]
 }
 

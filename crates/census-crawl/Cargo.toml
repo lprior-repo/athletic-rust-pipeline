@@ -18,6 +18,7 @@ csv-core = "=0.1.13"
 # `RobotsRecord` stamps the crawl date it was fetched for, and the net layer ages a record by it.
 chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
 futures = "0.3"
+html5gum = { version = "=0.8.4", default-features = false }
 regex = "1.11"
 reqwest = { version = "=0.13.4", default-features = false, features = ["json", "rustls", "stream", "query"] }
 # The ingress client's request and response bodies are the SDK's own `http`/`bytes` types.

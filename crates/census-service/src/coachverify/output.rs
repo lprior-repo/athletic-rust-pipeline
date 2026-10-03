@@ -16,7 +16,13 @@ pub fn read_fragment(path: &Path) -> anyhow::Result<Vec<RawContactRow>> {
         if record.iter().next() == Some("school") && record.get(2) == Some("state") {
             continue;
         }
-        let cell = |index: usize| record.get(index).unwrap_or_default().trim().to_string();
+        let cell = |index: usize| {
+            record
+                .get(index)
+                .map_or(Default::default(), core::convert::identity)
+                .trim()
+                .to_string()
+        };
         let source_urls: Vec<String> = cell(9).split_whitespace().map(str::to_string).collect();
         rows.push(RawContactRow {
             school: cell(0),
@@ -107,19 +113,22 @@ pub fn read_fragment_evidence(
 }
 
 fn evidence_path(path: &Path) -> std::path::PathBuf {
-    let mut name = path
-        .file_name()
-        .map(std::ffi::OsStr::to_os_string)
-        .unwrap_or_else(|| std::ffi::OsString::from("contacts.csv"));
+    let mut name = match path.file_name().map(std::ffi::OsStr::to_os_string) {
+        Some(value) => value,
+        None => std::ffi::OsString::from("contacts.csv"),
+    };
     name.push(".evidence.jsonl");
     path.with_file_name(name)
 }
 
 pub fn fragment_file_name(path: &Path) -> String {
-    let file = path
+    let file = match path
         .file_name()
         .map(|name| name.to_string_lossy().into_owned())
-        .unwrap_or_else(|| "contacts.csv".to_string());
+    {
+        Some(value) => value,
+        None => "contacts.csv".to_string(),
+    };
     match path
         .parent()
         .and_then(Path::file_name)

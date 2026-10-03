@@ -188,7 +188,7 @@ fn verify(index: &SchoolIndex, cases: &[LabelCase]) -> Result<()> {
         *seen = seen.saturating_add(1);
     }
     for kind in KINDS.into_iter().chain([UNRESOLVED]) {
-        let seen = kinds.get(kind).copied().unwrap_or(0);
+        let seen = kinds.get(kind).copied().map_or(0, |value| value);
         ensure!(seen > 0, "the label corpus carries no {kind} case");
     }
     ensure!(

@@ -14,7 +14,7 @@ pub(super) fn element_text(html: &str, tag: &str, from: usize) -> Option<(String
     let text = html
         .get(open_end..close)
         .map(strip_tags)
-        .unwrap_or_default();
+        .map_or(Default::default(), core::convert::identity);
     let next = close.checked_add(close_marker.len())?;
     Some((text, next))
 }
@@ -80,11 +80,14 @@ pub(super) fn table_slice<'a>(html: &'a str, table_id: &str) -> Option<&'a str> 
 }
 
 pub(super) fn nth<'a>(cells: &[&'a str], index: usize) -> &'a str {
-    cells.get(index).copied().unwrap_or("")
+    cells.get(index).copied().map_or("", |value| value)
 }
 
 pub(super) fn nth_owned(values: &[String], index: usize) -> &str {
-    values.get(index).map(String::as_str).unwrap_or("")
+    values
+        .get(index)
+        .map(String::as_str)
+        .map_or("", |value| value)
 }
 
 pub(super) fn strip_tags(fragment: &str) -> String {
@@ -188,8 +191,8 @@ pub(super) fn valid_email(value: &str) -> Option<String> {
         return None;
     }
     let mut parts = trimmed.split('@');
-    let local = parts.next().unwrap_or("");
-    let domain = parts.next().unwrap_or("");
+    let local = parts.next().map_or("", |value| value);
+    let domain = parts.next().map_or("", |value| value);
     if parts.next().is_some() || local.is_empty() || !domain.contains('.') {
         return None;
     }
@@ -212,6 +215,8 @@ pub(super) fn cell_email(cell: &str) -> Option<String> {
     }
     let mailto = find_from(cell, "mailto:", 0).and_then(|at| at.checked_add("mailto:".len()))?;
     let rest = cell.get(mailto..)?;
-    let end = rest.find(['"', '\'', '<', '?']).unwrap_or(rest.len());
+    let end = rest
+        .find(['"', '\'', '<', '?'])
+        .map_or(rest.len(), |value| value);
     valid_email(rest.get(..end)?)
 }

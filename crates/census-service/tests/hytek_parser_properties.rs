@@ -5,6 +5,10 @@ use census_domain::model::Mark;
 use proptest::prelude::*;
 use proptest::test_runner::{RngAlgorithm, RngSeed};
 
+#[macro_use]
+#[path = "../../../tools/fallible_checks.rs"]
+mod fallible_checks;
+
 #[path = "hytek_parser_properties/marks.rs"]
 mod marks;
 #[path = "hytek_parser_properties/roundtrip.rs"]
@@ -46,10 +50,10 @@ fn shaped_token() -> impl Strategy<Value = String> {
     .prop_map(|parts| parts.concat())
 }
 
-fn metres_of(mark: &Mark) -> f64 {
+fn metres_of(mark: &Mark) -> Result<f64, String> {
     match mark {
-        Mark::FieldImperial { metres, .. } => metres.as_metres_f64(),
-        Mark::DistanceMetres(metres) => metres.as_metres_f64(),
-        other => panic!("{other:?} is not a distance mark"),
+        Mark::FieldImperial { metres, .. } => Ok(metres.as_metres_f64()),
+        Mark::DistanceMetres(metres) => Ok(metres.as_metres_f64()),
+        other => Err(format!("{other:?} is not a distance mark")),
     }
 }

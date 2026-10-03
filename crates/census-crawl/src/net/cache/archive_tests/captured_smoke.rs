@@ -1,8 +1,8 @@
 use super::*;
 
 #[test]
-fn captured_nc_directory_and_summary_fixtures_survive_synthetic_cache_refresh() {
-    let root = tempfile::tempdir().expect("cache directory");
+fn captured_nc_directory_and_summary_fixtures_survive_synthetic_cache_refresh() -> TestResult {
+    let root = tempfile::tempdir()?;
     let captures: [(&[u8], &str, &str); 2] = [
         (
             include_bytes!(concat!(
@@ -22,7 +22,7 @@ fn captured_nc_directory_and_summary_fixtures_survive_synthetic_cache_refresh() 
         ),
     ];
     for (raw, url, expected_digest) in captures {
-        assert_eq!(content_digest(raw), expected_digest);
+        check!(eq; content_digest(raw), expected_digest);
         let key = Fetcher::key_for("GET", url, "");
         let body_path = root.path().join(format!("{key}.body"));
         let meta_path = root.path().join(format!("{key}.meta.json"));
@@ -31,26 +31,24 @@ fn captured_nc_directory_and_summary_fixtures_survive_synthetic_cache_refresh() 
         original.fetched_at = "2026-09-27".to_owned();
         original.etag = None;
         original.last_modified = None;
-        write_cache(&body_path, &meta_path, raw, &original).expect("captured fixture bytes");
+        write_cache(&body_path, &meta_path, raw, &original)?;
         let mut refreshed_raw = raw.to_vec();
         refreshed_raw.push(b'\n');
         let mut refreshed = original.clone();
         refreshed.content_digest = content_digest(&refreshed_raw);
         refreshed.bytes = refreshed_raw.len();
         refreshed.fetched_at = "fixture-refresh-not-live-acquisition".to_owned();
-        write_cache(&body_path, &meta_path, &refreshed_raw, &refreshed).expect("synthetic refresh");
-        assert_capture(root.path(), raw, &original);
-        assert_capture(root.path(), &refreshed_raw, &refreshed);
-        let (served, body) = read_cache(&body_path, &meta_path)
-            .expect("read")
-            .expect("hit");
-        assert_eq!(body, refreshed_raw);
-        assert_eq!(served.url, url);
-        assert_eq!(served.fetched_at, refreshed.fetched_at);
-        assert_ne!(served.content_digest, expected_digest);
-        let original_json: serde_json::Value = serde_json::from_slice(raw).expect("captured JSON");
-        let refreshed_json: serde_json::Value =
-            serde_json::from_slice(&body).expect("refreshed JSON");
-        assert_eq!(original_json, refreshed_json);
+        write_cache(&body_path, &meta_path, &refreshed_raw, &refreshed)?;
+        assert_capture(root.path(), raw, &original)?;
+        assert_capture(root.path(), &refreshed_raw, &refreshed)?;
+        let (served, body) = read_cache(&body_path, &meta_path)?.ok_or("hit")?;
+        check!(eq; body, refreshed_raw);
+        check!(eq; served.url, url);
+        check!(eq; served.fetched_at, refreshed.fetched_at);
+        check!(ne; served.content_digest, expected_digest);
+        let original_json: serde_json::Value = serde_json::from_slice(raw)?;
+        let refreshed_json: serde_json::Value = serde_json::from_slice(&body)?;
+        check!(eq; original_json, refreshed_json);
     }
+    Ok(())
 }

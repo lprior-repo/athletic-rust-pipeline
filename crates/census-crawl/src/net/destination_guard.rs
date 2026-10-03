@@ -3,6 +3,8 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::sync::Arc;
 use url::{Host, Url};
 
+mod origin_policy;
+
 pub(super) struct DestinationGuard {
     authorized_hosts: Vec<String>,
 }
@@ -12,14 +14,13 @@ impl DestinationGuard {
         Self { authorized_hosts }
     }
 
+    #[cfg(test)]
     pub(super) fn is_authorized(&self, host: &str) -> bool {
-        let host = host.trim_matches(['[', ']']).to_ascii_lowercase();
-        self.authorized_hosts.iter().any(|allowed| {
-            host == *allowed
-                || host
-                    .strip_suffix(allowed)
-                    .is_some_and(|prefix| prefix.ends_with('.'))
-        })
+        origin_policy::host_granted(host, &self.authorized_hosts)
+    }
+
+    pub(super) fn permits_redirect(&self, original: &Url, destination: &Url) -> bool {
+        origin_policy::permits_redirect(original, destination, &self.authorized_hosts)
     }
 
     pub(super) fn validate_url(&self, raw: &str) -> Result<(), FetchError> {
@@ -73,10 +74,20 @@ impl DestinationGuard {
         if let Err(error) = self.validate_url(attempt.url().as_str()) {
             return attempt.error(error);
         }
-        let host = attempt.url().host_str().unwrap_or_default();
-        let same_host = attempt.previous().first().and_then(Url::host_str) == Some(host);
-        if !same_host && !self.is_authorized(host) {
+        let Some(original) = attempt.previous().first() else {
+            return attempt.error("source redirect has no original URL");
+        };
+        if !self.permits_redirect(original, attempt.url()) {
             return attempt.error("source redirect destination is not authorized");
+        }
+        let Some(host) = attempt.url().host_str() else {
+            return attempt.error("source redirect destination has no host");
+        };
+        if matches!(
+            crate::registry::transport_for_host(host),
+            Some(crate::registry::TransportKind::Browser)
+        ) {
+            return attempt.error("HTTP redirect destination requires browser transport");
         }
         attempt.follow()
     }

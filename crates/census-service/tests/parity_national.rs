@@ -1,4 +1,13 @@
+#[macro_use]
+#[path = "../../../tools/fallible_checks.rs"]
+mod fallible_checks;
+
 mod common;
+#[path = "common/golden.rs"]
+mod golden;
+
+#[path = "parity_pipeline_mod/milesplit_fixtures.rs"]
+mod milesplit_fixtures;
 
 use anyhow::{bail, Context, Result};
 use census_crawl::athleticlive_athletes::{self, AthleteHit, MeetTarget};
@@ -17,7 +26,7 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 const OBSERVED_ON: &str = "2026-09-20";
-const SCHOOL_YEAR: SchoolYear = SchoolYear::new(2026).expect("2026 is a season");
+const SCHOOL_YEAR: SchoolYear = SchoolYear::DEFAULT;
 
 struct Harness {
     store: Store,
@@ -52,14 +61,14 @@ impl Harness {
 }
 
 fn case(cases: &mut Vec<(String, String)>, name: &str, value: &Value) -> Result<()> {
-    common::assert_golden(name, value).with_context(|| format!("golden case `{name}`"))?;
-    let digest = common::digest(value).with_context(|| format!("digesting case `{name}`"))?;
+    golden::assert_golden(name, value).with_context(|| format!("golden case `{name}`"))?;
+    let digest = golden::digest(value).with_context(|| format!("digesting case `{name}`"))?;
     cases.push((name.to_string(), digest));
     Ok(())
 }
 
 fn digest_all(source: &str, cases: &[(String, String)]) -> Result<()> {
-    common::assert_golden(&format!("{source}__digest"), &serde_json::to_value(cases)?)
+    golden::assert_golden(&format!("{source}__digest"), &serde_json::to_value(cases)?)
         .with_context(|| format!("aggregate digest for {source}"))
 }
 
@@ -85,57 +94,63 @@ fn meet_row_json(row: &athleticlive::MeetRow) -> Value {
     })
 }
 
-#[tokio::test]
-async fn athleticlive_harvest_parity() -> Result<()> {
-    const SOURCE: &str = "athleticlive";
-    let mut cases: Vec<(String, String)> = Vec::new();
-    for path in common::fixtures(SOURCE)? {
-        let file = common::file_name(&path)?;
-        let stem = file_stem(&file)?;
-        let body = common::fixture(SOURCE, &file)?;
+#[test]
+fn athleticlive_harvest_parity() -> Result<()> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            const SOURCE: &str = "athleticlive";
+            let mut cases: Vec<(String, String)> = Vec::new();
+            for path in common::fixtures(SOURCE)? {
+                let file = common::file_name(&path)?;
+                let stem = file_stem(&file)?;
+                let body = common::fixture(SOURCE, &file)?;
 
-        let rows = athleticlive::parse_meets_csv(&body)
-            .with_context(|| format!("parsing {SOURCE}/{file}"))?;
-        case(
-            &mut cases,
-            &format!("{SOURCE}__{stem}-rows"),
-            &json!({
-                "file": file,
-                "rows": rows.iter().map(meet_row_json).collect::<Vec<Value>>(),
-            }),
-        )?;
-        let meets = athleticlive::build_meets(&rows, OBSERVED_ON, "athleticlive_meets_csv");
-        case(
-            &mut cases,
-            &format!("{SOURCE}__{stem}-meets"),
-            &serde_json::to_value(&meets)?,
-        )?;
+                let rows = athleticlive::parse_meets_csv(&body)
+                    .with_context(|| format!("parsing {SOURCE}/{file}"))?;
+                case(
+                    &mut cases,
+                    &format!("{SOURCE}__{stem}-rows"),
+                    &json!({
+                        "file": file,
+                        "rows": rows.iter().map(meet_row_json).collect::<Vec<Value>>(),
+                    }),
+                )?;
+                let meets = athleticlive::build_meets(&rows, OBSERVED_ON, "athleticlive_meets_csv");
+                case(
+                    &mut cases,
+                    &format!("{SOURCE}__{stem}-meets"),
+                    &serde_json::to_value(&meets)?,
+                )?;
 
-        let harness = Harness::new()?;
-        let options = athleticlive::Options::for_input(path.display().to_string(), OBSERVED_ON);
-        let report = athleticlive::collect(&harness.adapter_context(), &options)
-            .await
-            .with_context(|| format!("collecting {SOURCE}/{file}"))?;
-        let written: Vec<CanonicalMeet> = harness.store.scan(Table::Meets)?;
-        if written != meets {
-            bail!(
-                "`{SOURCE}::collect` wrote {} meets for {file}, the parse path produced {}",
-                written.len(),
-                meets.len()
-            );
-        }
-        case(
-            &mut cases,
-            &format!("{SOURCE}__{stem}-collect-report"),
-            &serde_json::to_value(&report)?,
-        )?;
-        case(
-            &mut cases,
-            &format!("{SOURCE}__{stem}-collect-meets"),
-            &serde_json::to_value(&written)?,
-        )?;
-    }
-    digest_all(SOURCE, &cases)
+                let harness = Harness::new()?;
+                let options =
+                    athleticlive::Options::for_input(path.display().to_string(), OBSERVED_ON);
+                let report = athleticlive::collect(&harness.adapter_context(), &options)
+                    .await
+                    .with_context(|| format!("collecting {SOURCE}/{file}"))?;
+                let written: Vec<CanonicalMeet> = harness.store.scan(Table::Meets)?;
+                if written != meets {
+                    bail!(
+                        "`{SOURCE}::collect` wrote {} meets for {file}, the parse path produced {}",
+                        written.len(),
+                        meets.len()
+                    );
+                }
+                case(
+                    &mut cases,
+                    &format!("{SOURCE}__{stem}-collect-report"),
+                    &serde_json::to_value(&report)?,
+                )?;
+                case(
+                    &mut cases,
+                    &format!("{SOURCE}__{stem}-collect-meets"),
+                    &serde_json::to_value(&written)?,
+                )?;
+            }
+            digest_all(SOURCE, &cases)
+        })
 }
 
 fn hits_from_response(body: &str) -> Result<Vec<AthleteHit>> {
@@ -146,7 +161,11 @@ fn hits_from_response(body: &str) -> Result<Vec<AthleteHit>> {
         .context("the response has hits.hits")?;
     let sources: Vec<Value> = hits
         .iter()
-        .map(|hit| hit.get("_source").cloned().unwrap_or(Value::Null))
+        .map(|hit| {
+            hit.get("_source")
+                .cloned()
+                .map_or(Value::Null, |value| value)
+        })
         .collect();
     serde_json::from_value(Value::Array(sources)).context("the hits decode as athlete rows")
 }
@@ -204,8 +223,12 @@ fn meet_target_json(target: &MeetTarget) -> Value {
     })
 }
 
-#[tokio::test]
-async fn athleticlive_athletes_fixture_corpus_parity() -> Result<()> {
+#[test]
+fn athleticlive_athletes_fixture_corpus_parity() -> Result<()> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
     const SOURCE: &str = "athleticlive_athletes";
     let mut cases: Vec<(String, String)> = Vec::new();
     for path in common::fixtures(SOURCE)? {
@@ -284,6 +307,7 @@ async fn athleticlive_athletes_fixture_corpus_parity() -> Result<()> {
         )?;
     }
     digest_all(SOURCE, &cases)
+        })
 }
 
 fn team_json(team: &milesplit::TeamRef) -> Value {
@@ -338,11 +362,14 @@ fn roster_fixture(name: &str) -> Option<(String, String)> {
     }
 }
 
+type MileSplitIndexes = HashMap<String, (String, Vec<milesplit::TeamRef>)>;
+type MileSplitRosters = Vec<(String, String, String, String, String)>;
+
 #[test]
 fn milesplit_html_parity() -> Result<()> {
     const SOURCE: &str = "milesplit";
-    let mut indexes: HashMap<String, (String, Vec<milesplit::TeamRef>)> = HashMap::new();
-    let mut rosters: Vec<(String, String, String, String, String)> = Vec::new();
+    let mut indexes = MileSplitIndexes::new();
+    let mut rosters = MileSplitRosters::new();
 
     for path in common::fixtures(SOURCE)? {
         let file = common::file_name(&path)?;
@@ -354,7 +381,7 @@ fn milesplit_html_parity() -> Result<()> {
             if teams.is_empty() {
                 bail!("{SOURCE}/{file} carries no teams to assert");
             }
-            common::assert_golden(
+            golden::assert_golden(
                 &format!("{SOURCE}__{stem}"),
                 &json!({
                     "file": file,
@@ -370,20 +397,25 @@ fn milesplit_html_parity() -> Result<()> {
             if meets.is_empty() {
                 bail!("{SOURCE}/{file} carries no meets to assert");
             }
-            common::assert_golden(
+            golden::assert_golden(
                 &format!("{SOURCE}__{stem}-decoded-labels"),
                 &json!({
                     "file": file,
                     "meets": meets.iter().map(meet_json).collect::<Vec<Value>>(),
                 }),
             )?;
-        } else if file.contains("_meet_") {
+        } else if milesplit_fixtures::validate_result_fixture(&file, &body)? {
             continue;
         } else {
             bail!("uncovered {SOURCE} fixture `{file}`: parity_national.rs has no case for it");
         }
     }
 
+    assert_milesplit_rosters(&indexes, rosters)
+}
+
+fn assert_milesplit_rosters(indexes: &MileSplitIndexes, rosters: MileSplitRosters) -> Result<()> {
+    const SOURCE: &str = "milesplit";
     for (file, stem, body, site_id, team_id) in rosters {
         let (index_file, index_teams) = indexes.get(&site_id).with_context(|| {
             format!("no `{site_id}_teams_index.html` capture to resolve {file}'s team with")
@@ -400,16 +432,28 @@ fn milesplit_html_parity() -> Result<()> {
         if roster.athletes.is_empty() {
             bail!("{SOURCE}/{file} carries no athletes to assert");
         }
-        common::assert_golden(
+        golden::assert_golden(
             &format!("{SOURCE}__{stem}-decoded-labels"),
-            &json!({ "file": file, "roster": roster_json(&roster) }),
+            &json!({ "file": file, "roster": roster_json(roster) }),
         )?;
     }
     Ok(())
 }
 
-#[tokio::test]
-async fn coach_contacts_csv_parity() -> Result<()> {
+#[test]
+fn authentic_milesplit_projections_retain_owners_without_inventing_school_bindings() -> Result<()> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async { milesplit_fixtures::replay_owned_captures().await })
+}
+
+#[test]
+fn coach_contacts_csv_parity() -> Result<()> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
     const SOURCE: &str = "coach_contacts";
     let mut cases: Vec<(String, String)> = Vec::new();
     let fixtures = common::fixtures_dir()?;
@@ -506,6 +550,7 @@ async fn coach_contacts_csv_parity() -> Result<()> {
         )?;
     }
     digest_all(SOURCE, &cases)
+        })
 }
 
 const REGISTRY: &str = "# season 2026\n28127170,AK\n\n26631105\n28127170,AK\n";
@@ -625,103 +670,108 @@ fn bio_json(bio: &athleticnet::Bio) -> Value {
     })
 }
 
-#[tokio::test]
-async fn athleticnet_inline_capture_parity() -> Result<()> {
-    const SOURCE: &str = "athleticnet";
-    let mut cases: Vec<(String, String)> = Vec::new();
+#[test]
+fn athleticnet_inline_capture_parity() -> Result<()> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            const SOURCE: &str = "athleticnet";
+            let mut cases: Vec<(String, String)> = Vec::new();
 
-    let targets = athleticnet::parse_targets(REGISTRY, &[UsJurisdiction::Wisconsin])?;
-    case(
-        &mut cases,
-        &format!("{SOURCE}__registry-targets"),
-        &json!({
-            "registry": REGISTRY,
-            "targets": targets.iter().map(|target| json!({
-                "athlete_id": target.athlete_id,
-                "state": target.state,
-            })).collect::<Vec<Value>>(),
-        }),
-    )?;
+            let targets = athleticnet::parse_targets(REGISTRY, &[UsJurisdiction::Wisconsin])?;
+            case(
+                &mut cases,
+                &format!("{SOURCE}__registry-targets"),
+                &json!({
+                    "registry": REGISTRY,
+                    "targets": targets.iter().map(|target| json!({
+                        "athlete_id": target.athlete_id,
+                        "state": target.state,
+                    })).collect::<Vec<Value>>(),
+                }),
+            )?;
 
-    let mut refusals: Vec<Value> = Vec::new();
-    for (registry, states) in REFUSED_REGISTRIES {
-        let states: Vec<UsJurisdiction> = states.to_vec();
-        match athleticnet::parse_targets(registry, &states) {
-            Ok(parsed) => bail!(
+            let mut refusals: Vec<Value> = Vec::new();
+            for (registry, states) in REFUSED_REGISTRIES {
+                let states: Vec<UsJurisdiction> = states.to_vec();
+                match athleticnet::parse_targets(registry, &states) {
+                    Ok(parsed) => bail!(
                 "registry `{registry}` was accepted with {} targets where the adapter refuses",
                 parsed.len()
             ),
-            Err(error) => refusals.push(json!({
-                "registry": registry,
-                "states": states,
-                "refusal": error.to_string(),
-            })),
-        }
-    }
-    case(
-        &mut cases,
-        &format!("{SOURCE}__registry-refusals"),
-        &json!({ "refusals": refusals }),
-    )?;
+                    Err(error) => refusals.push(json!({
+                        "registry": registry,
+                        "states": states,
+                        "refusal": error.to_string(),
+                    })),
+                }
+            }
+            case(
+                &mut cases,
+                &format!("{SOURCE}__registry-refusals"),
+                &json!({ "refusals": refusals }),
+            )?;
 
-    let marks: Vec<Value> = MARK_TOKENS
-        .iter()
-        .map(|(kind, published)| {
-            json!({
-                "event": format!("{kind:?}"),
-                "published": published,
-                "mark": athleticnet::parse_mark(kind, published),
-            })
+            let marks: Vec<Value> = MARK_TOKENS
+                .iter()
+                .map(|(kind, published)| {
+                    json!({
+                        "event": format!("{kind:?}"),
+                        "published": published,
+                        "mark": athleticnet::parse_mark(kind, published),
+                    })
+                })
+                .collect();
+            case(
+                &mut cases,
+                &format!("{SOURCE}__marks"),
+                &json!({ "marks": marks }),
+            )?;
+
+            let track: athleticnet::Bio =
+                serde_json::from_str(BIO_TRACK_FIELD).context("the track payload decodes")?;
+            let track_rows = track
+                .results_tf
+                .as_ref()
+                .context("the track payload carries resultsTF")?;
+            if track_rows.first().and_then(|row| row.place.as_deref()) != Some("3") {
+                bail!("a string place no longer reads as a place");
+            }
+            if track_rows
+                .get(1)
+                .and_then(|row| row.place.as_deref())
+                .is_some()
+            {
+                bail!("an empty place reads as a place again");
+            }
+            if track.results_xc.is_some() {
+                bail!("a null resultsXC no longer reads as no rows");
+            }
+            case(
+                &mut cases,
+                &format!("{SOURCE}__bio-track-field"),
+                &bio_json(&track),
+            )?;
+
+            let cross_country: athleticnet::Bio = serde_json::from_str(BIO_CROSS_COUNTRY)
+                .context("the cross-country payload decodes")?;
+            let xc_rows = cross_country
+                .results_xc
+                .as_ref()
+                .context("the cross-country payload carries resultsXC")?;
+            if xc_rows.first().and_then(|row| row.place.as_deref()) != Some("68") {
+                bail!("a numeric place no longer reads as a place");
+            }
+            if xc_rows.first().and_then(|row| row.distance) != Some(5000) {
+                bail!("the published course distance no longer reads");
+            }
+            case(
+                &mut cases,
+                &format!("{SOURCE}__bio-cross-country"),
+                &bio_json(&cross_country),
+            )?;
+
+            digest_all(SOURCE, &cases)
         })
-        .collect();
-    case(
-        &mut cases,
-        &format!("{SOURCE}__marks"),
-        &json!({ "marks": marks }),
-    )?;
-
-    let track: athleticnet::Bio =
-        serde_json::from_str(BIO_TRACK_FIELD).context("the track payload decodes")?;
-    let track_rows = track
-        .results_tf
-        .as_ref()
-        .context("the track payload carries resultsTF")?;
-    if track_rows.first().and_then(|row| row.place.as_deref()) != Some("3") {
-        bail!("a string place no longer reads as a place");
-    }
-    if track_rows
-        .get(1)
-        .and_then(|row| row.place.as_deref())
-        .is_some()
-    {
-        bail!("an empty place reads as a place again");
-    }
-    if track.results_xc.is_some() {
-        bail!("a null resultsXC no longer reads as no rows");
-    }
-    case(
-        &mut cases,
-        &format!("{SOURCE}__bio-track-field"),
-        &bio_json(&track),
-    )?;
-
-    let cross_country: athleticnet::Bio =
-        serde_json::from_str(BIO_CROSS_COUNTRY).context("the cross-country payload decodes")?;
-    let xc_rows = cross_country
-        .results_xc
-        .as_ref()
-        .context("the cross-country payload carries resultsXC")?;
-    if xc_rows.first().and_then(|row| row.place.as_deref()) != Some("68") {
-        bail!("a numeric place no longer reads as a place");
-    }
-    if xc_rows.first().and_then(|row| row.distance) != Some(5000) {
-        bail!("the published course distance no longer reads");
-    }
-    case(
-        &mut cases,
-        &format!("{SOURCE}__bio-cross-country"),
-        &bio_json(&cross_country),
-    )?;
-
-    digest_all(SOURCE, &cases)
 }

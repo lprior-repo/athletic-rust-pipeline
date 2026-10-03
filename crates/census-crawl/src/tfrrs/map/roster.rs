@@ -63,7 +63,7 @@ impl<'a> Absorb<'a> {
         };
         Some(PageSeason {
             sport,
-            gender: context.team.gender.unwrap_or(Gender::Unknown),
+            gender: context.team.gender.map_or(Gender::Unknown, |value| value),
             school_year,
         })
     }

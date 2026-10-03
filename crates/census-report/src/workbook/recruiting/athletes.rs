@@ -93,7 +93,7 @@ fn identity_cells(dataset: &Dataset, athlete: &CanonicalAthlete) -> Vec<Cell> {
         .schools
         .get(school)
         .map(|s| s.id.as_str())
-        .unwrap_or(school)
+        .map_or(school, |value| value)
         .to_string();
     row!(
         Cell::text(athlete.id.as_str()),

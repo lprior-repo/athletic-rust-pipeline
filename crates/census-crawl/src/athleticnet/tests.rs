@@ -6,35 +6,37 @@ use census_domain::model::CentiPoints;
 use census_domain::model::CentiSeconds;
 use census_domain::model::{EventKind, Mark, SourceNamespace};
 
-fn payload(body: &str) -> Bio {
-    serde_json::from_str(body).expect("a payload this adapter reads")
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+fn payload(body: &str) -> TestResult<Bio> {
+    Ok(serde_json::from_str(body)?)
 }
 
 #[test]
-fn every_acquisition_endpoint_is_browser_transported() {
+fn every_acquisition_endpoint_is_browser_transported() -> TestResult {
     let mut urls = vec![BIO_ENDPOINT.to_string()];
     urls.extend(meet::meet_requests(2_150_205));
     urls.push(meet::METADATA_ENDPOINT.to_string());
 
     for url in urls {
-        let parsed = url::Url::parse(&url).expect("the adapter's own URL parses");
-        let host = parsed.host_str().expect("a request URL names a host");
-        assert_eq!(
+        let parsed = url::Url::parse(&url)?;
+        let host = parsed.host_str().ok_or("a request URL names a host")?;
+        check!(eq;
             transport_for_host(host),
             Some(TransportKind::Browser),
             "{url} is acquired through the browser lane"
         );
     }
+    Ok(())
 }
 
 #[test]
-fn a_registry_line_carries_an_id_and_optionally_a_state() {
+fn a_registry_line_carries_an_id_and_optionally_a_state() -> TestResult {
     let targets = parse_targets(
         "# season 2026\n28127170,AK\n\n26631105\n28127170,AK\n",
         &[UsJurisdiction::Wisconsin],
-    )
-    .expect("registry parses");
-    assert_eq!(
+    )?;
+    check!(eq;
         targets,
         vec![
             Target {
@@ -48,39 +50,43 @@ fn a_registry_line_carries_an_id_and_optionally_a_state() {
         ],
         "the per-line state wins, the default fills a bare id, and a repeat reads once"
     );
+    Ok(())
 }
 
 #[test]
-fn a_registry_is_refused_rather_than_guessed_between_states() {
-    let error = parse_targets(
+fn a_registry_is_refused_rather_than_guessed_between_states() -> TestResult {
+    let error = match parse_targets(
         "28127170\n",
         &[UsJurisdiction::Wisconsin, UsJurisdiction::Alaska],
-    )
-    .expect_err("two candidate states are ambiguous");
-    assert!(
+    ) {
+        Err(error) => error,
+        Ok(_) => return Err("two candidate states are ambiguous".into()),
+    };
+    check!(
         error.to_string().contains("exactly one --states"),
         "the refusal names the fix: {error}"
     );
-    assert!(parse_targets("28127170,Alaska\n", &[]).is_err());
-    assert!(parse_targets("natalia\n", &[]).is_err());
-    assert!(parse_targets("28127170,AK,extra\n", &[]).is_err());
+    check!(parse_targets("28127170,Alaska\n", &[]).is_err());
+    check!(parse_targets("natalia\n", &[]).is_err());
+    check!(parse_targets("28127170,AK,extra\n", &[]).is_err());
+    Ok(())
 }
 
 #[test]
-fn marks_are_read_in_the_form_athleticnet_publishes() {
-    let time = parse_mark(&EventKind::Track800m, "1:17.80a").expect("an auto-timed time");
-    assert_eq!(time, (Mark::TimeSeconds(CentiSeconds::new(7780)), true));
-    assert_eq!(
+fn marks_are_read_in_the_form_athleticnet_publishes() -> TestResult {
+    let time = parse_mark(&EventKind::Track800m, "1:17.80a").ok_or("an auto-timed time")?;
+    check!(eq; time, (Mark::TimeSeconds(CentiSeconds::new(7780)), true));
+    check!(eq;
         parse_mark(&EventKind::Track3200m, "9:41.23"),
         Some((Mark::TimeSeconds(CentiSeconds::new(58123)), false)),
         "a bare mark is hand-timed"
     );
-    assert_eq!(
+    check!(eq;
         parse_mark(&EventKind::Track100m, "11.32q"),
         Some((Mark::TimeSeconds(CentiSeconds::new(1132)), false)),
         "a qualifier suffix is not part of the mark"
     );
-    assert_eq!(
+    check!(eq;
         parse_mark(&EventKind::LongJump, "5-04.25"),
         Some((
             Mark::FieldImperial {
@@ -90,15 +96,16 @@ fn marks_are_read_in_the_form_athleticnet_publishes() {
             false
         ))
     );
-    assert_eq!(
+    check!(eq;
         parse_mark(&EventKind::ShotPut, "12.34m"),
         Some((Mark::DistanceMetres(CentiMetres::new(1234)), false)),
         "a metric field mark is metres, not a time"
     );
-    assert_eq!(
+    check!(eq;
         parse_mark(&EventKind::Decathlon, "3,456"),
         Some((Mark::Points(CentiPoints::new(345600)), false))
     );
+    Ok(())
 }
 
 #[test]
@@ -113,7 +120,7 @@ fn a_no_mark_row_yields_no_performance() {
 }
 
 #[test]
-fn cross_country_and_track_rows_deserialize_from_their_published_shapes() {
+fn cross_country_and_track_rows_deserialize_from_their_published_shapes() -> TestResult {
     let bio = payload(
         r#"{
               "athlete": {"IDAthlete": 28127170, "FirstName": "Natalia", "LastName": "Casillas",
@@ -136,13 +143,13 @@ fn cross_country_and_track_rows_deserialize_from_their_published_shapes() {
               ],
               "resultsXC": null
             }"#,
-    );
-    let rows = bio.results_tf.as_ref().expect("track rows");
-    assert_eq!(rows[0].place.as_deref(), Some("3"));
-    assert_eq!(rows[0].date().as_deref(), Some("2025-05-02"));
-    assert_eq!(rows[1].place, None, "an empty place is no place");
-    assert!(bio.results_xc.is_none(), "a null payload is no rows");
-    assert_eq!(
+    )?;
+    let rows = bio.results_tf.as_ref().ok_or("track rows")?;
+    check!(eq; rows[0].place.as_deref(), Some("3"));
+    check!(eq; rows[0].date().as_deref(), Some("2025-05-02"));
+    check!(eq; rows[1].place, None, "an empty place is no place");
+    check!(bio.results_xc.is_none(), "a null payload is no rows");
+    check!(eq;
         bio.athlete.name(),
         "Natalia Casillas",
         "the canonical name is the published one"
@@ -161,10 +168,11 @@ fn cross_country_and_track_rows_deserialize_from_their_published_shapes() {
                  "SchoolID": 13850, "MeetID": 223703, "SeasonID": 2025, "Distance": 5000}
               ]
             }"#,
-    );
-    let xc_rows = xc.results_xc.as_ref().expect("cross-country rows");
-    assert_eq!(xc_rows[0].place.as_deref(), Some("68"));
-    assert_eq!(xc_rows[0].distance, Some(5000));
+    )?;
+    let xc_rows = xc.results_xc.as_ref().ok_or("cross-country rows")?;
+    check!(eq; xc_rows[0].place.as_deref(), Some("68"));
+    check!(eq; xc_rows[0].distance, Some(5000));
+    Ok(())
 }
 
 #[test]

@@ -99,7 +99,11 @@ impl BioMeet {
 }
 
 pub(super) fn published_date(raw: &str) -> Option<&str> {
-    let date = raw.split('T').next().unwrap_or_default().trim();
+    let date = raw
+        .split('T')
+        .next()
+        .map_or(Default::default(), core::convert::identity)
+        .trim();
     (date.len() == 10 && date.as_bytes().get(4) == Some(&b'-')).then_some(date)
 }
 

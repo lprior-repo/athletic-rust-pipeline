@@ -5,9 +5,16 @@ use census_domain::model::{
 };
 use census_domain::UsJurisdiction;
 
-fn census_of(store: &Store, scope: Scope) -> Census {
-    let dataset = crate::export::ExportDataset::load(store).unwrap();
-    build_census(&Derivation::of(&dataset, scope, None), &store.out_dir())
+mod cohort_admission;
+
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+fn census_of(store: &Store, scope: Scope) -> TestResult<Census> {
+    let dataset = crate::export::ExportDataset::load(store)?;
+    Ok(build_census(
+        &Derivation::of(&dataset, scope, None),
+        &store.out_dir(),
+    ))
 }
 
 fn fixture_source(id: &str) -> SourceIdentity {
@@ -15,12 +22,12 @@ fn fixture_source(id: &str) -> SourceIdentity {
 }
 
 #[test]
-fn core_scope_keeps_only_non_athletic_net_evidence() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+fn core_scope_keeps_only_non_athletic_net_evidence() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     let (school, school_id) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
-    store.append(Table::Schools, &school).unwrap();
+    store.append(Table::Schools, &school)?;
 
     let mut mirrored = CanonicalAthlete::new(
         &school_id,
@@ -59,23 +66,24 @@ fn core_scope_keeps_only_non_athletic_net_evidence() {
         census_domain::model::SourceRef::new("milesplit_roster", None),
         "2026-09-20",
     ));
-    store.append(Table::Athletes, &mirrored).unwrap();
-    store.append(Table::Athletes, &host).unwrap();
-    store.append(Table::Athletes, &core_athlete).unwrap();
+    store.append(Table::Athletes, &mirrored)?;
+    store.append(Table::Athletes, &host)?;
+    store.append(Table::Athletes, &core_athlete)?;
 
     let mut rows: Vec<CanonicalAthlete> = vec![mirrored, host, core_athlete];
-    assert_eq!(retain_core(&mut rows), 2);
-    assert_eq!(rows.len(), 1);
-    assert_eq!(rows[0].canonical_name, "Core Athlete");
+    check!(eq; retain_core(&mut rows), 2);
+    check!(eq; rows.len(), 1);
+    check!(eq; rows[0].canonical_name, "Core Athlete");
+    Ok(())
 }
 
 #[test]
-fn census_counts_class_of_2027_with_evidence() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+fn census_counts_class_of_2027_with_evidence() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     let (school, school_id) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
-    store.append(Table::Schools, &school).unwrap();
+    store.append(Table::Schools, &school)?;
     let mut athlete = CanonicalAthlete::new(
         &school_id,
         "Julian Aguilera",
@@ -87,7 +95,7 @@ fn census_counts_class_of_2027_with_evidence() {
         .public_profile_urls
         .push("https://wi.milesplit.com/athletes/14399169-julian-aguilera".to_string());
     athlete.sports.push(Sport::OutdoorTrack);
-    store.append(Table::Athletes, &athlete).unwrap();
+    store.append(Table::Athletes, &athlete)?;
     let mut coach = CanonicalCoach::new(
         &school_id,
         "Dana Coach",
@@ -96,34 +104,31 @@ fn census_counts_class_of_2027_with_evidence() {
         CoachRole::HeadCoach,
     );
     coach.professional_email = Some("coach@example.org".to_string());
-    store.append(Table::Coaches, &coach).unwrap();
+    store.append(Table::Coaches, &coach)?;
 
-    let census = census_of(&store, Scope::AllSources);
-    assert_eq!(census.totals.class_of_2027, 1);
-    assert_eq!(census.totals.class_of_2027_boys, 1);
-    assert_eq!(census.totals.class_of_2027_with_profile_url, 1);
-    assert_eq!(census.totals.class_of_2027_with_coach, 1);
-    assert_eq!(census.totals.class_of_2027_with_coach_email, 1);
-    assert_eq!(
-        census.by_state[&JurisdictionBucket::from(UsJurisdiction::Wisconsin)].class_of_2027,
-        1
-    );
-    assert_eq!(census.class_of_2027_sports.outdoor_only, 1);
-    assert_eq!(
-        census.providers.namespaces.get("milesplit_athlete"),
-        Some(&1)
-    );
-    let (json_path, csv_path) = write_census(&store, &census, Scope::AllSources).unwrap();
-    assert!(json_path.exists() && csv_path.exists());
+    let census = census_of(&store, Scope::AllSources)?;
+    check!(eq; census.totals.class_of_2027, 1);
+    check!(eq; census.totals.class_of_2027_boys, 1);
+    check!(eq; census.totals.class_of_2027_with_profile_url, 1);
+    check!(eq; census.totals.class_of_2027_with_coach, 1);
+    check!(eq; census.totals.class_of_2027_with_coach_email, 1);
+    check!(eq; census.by_state[&JurisdictionBucket::from(UsJurisdiction::Wisconsin)].class_of_2027,
+    1);
+    check!(eq; census.class_of_2027_sports.outdoor_only, 1);
+    check!(eq; census.providers.namespaces.get("milesplit_athlete"),
+    Some(&1));
+    let (json_path, csv_path) = write_census(&store, &census, Scope::AllSources)?;
+    check!(json_path.exists() && csv_path.exists());
+    Ok(())
 }
 
 #[test]
-fn census_reads_merged_observations_without_consolidating() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+fn census_reads_merged_observations_without_consolidating() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     let (school, school_id) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
-    store.append(Table::Schools, &school).unwrap();
+    store.append(Table::Schools, &school)?;
     let athlete = CanonicalAthlete::new(
         &school_id,
         "Julian Aguilera",
@@ -131,61 +136,61 @@ fn census_reads_merged_observations_without_consolidating() {
         Gender::Boys,
         fixture_source("julian-aguilera"),
     );
-    store.append(Table::Athletes, &athlete).unwrap();
-    store.append(Table::Athletes, &athlete).unwrap();
+    store.append(Table::Athletes, &athlete)?;
+    store.append(Table::Athletes, &athlete)?;
 
-    let census = census_of(&store, Scope::AllSources);
-    assert_eq!(census.totals.athletes, 1);
-    assert_eq!(census.totals.class_of_2027, 1);
-    assert_eq!(census.totals.schools, 1);
-    assert_eq!(
-        census.by_state[&JurisdictionBucket::from(UsJurisdiction::Wisconsin)].schools,
-        1
-    );
-    assert!(!store.out_dir().join("athletes.jsonl").exists());
+    let census = census_of(&store, Scope::AllSources)?;
+    check!(eq; census.totals.athletes, 1);
+    check!(eq; census.totals.class_of_2027, 1);
+    check!(eq; census.totals.schools, 1);
+    check!(eq; census.by_state[&JurisdictionBucket::from(UsJurisdiction::Wisconsin)].schools,
+    1);
+    check!(!store.out_dir().join("athletes.jsonl").exists());
+    Ok(())
 }
 
 #[test]
-fn every_jurisdiction_publishes_a_by_state_row() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+fn every_jurisdiction_publishes_a_by_state_row() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
 
-    let empty = census_of(&store, Scope::AllSources);
+    let empty = census_of(&store, Scope::AllSources)?;
     let expected = UsJurisdiction::CENSUS_SCOPE.len().saturating_add(1);
-    assert_eq!(empty.by_state.len(), expected);
-    assert!(empty.by_state.contains_key(&JurisdictionBucket::Unplaced));
-    assert!(empty
+    check!(eq; empty.by_state.len(), expected);
+    check!(empty.by_state.contains_key(&JurisdictionBucket::Unplaced));
+    check!(empty
         .by_state
         .values()
         .all(|row| row.schools == 0 && row.athletes == 0));
 
     let (school, _school_id) = CanonicalSchool::new(UsJurisdiction::Wyoming, "Laramie", "laramie");
-    store.append(Table::Schools, &school).unwrap();
-    let census = census_of(&store, Scope::AllSources);
-    assert_eq!(census.by_state.len(), expected);
+    store.append(Table::Schools, &school)?;
+    let census = census_of(&store, Scope::AllSources)?;
+    check!(eq; census.by_state.len(), expected);
     let wyoming = &census.by_state[&JurisdictionBucket::from(UsJurisdiction::Wyoming)];
-    assert_eq!(wyoming.schools, 1);
-    assert_eq!(wyoming.athletes, 0);
-    assert_eq!(census.totals.schools, 1);
+    check!(eq; wyoming.schools, 1);
+    check!(eq; wyoming.athletes, 0);
+    check!(eq; census.totals.schools, 1);
 
-    let (_json_path, csv_path) = write_census(&store, &census, Scope::AllSources).unwrap();
-    let csv = std::fs::read_to_string(&csv_path).unwrap();
-    assert_eq!(csv.lines().count(), expected.saturating_add(2));
-    assert!(csv.contains("WY,1,0,"), "{csv}");
-    assert!(csv.contains("UNKNOWN,"), "{csv}");
+    let (_json_path, csv_path) = write_census(&store, &census, Scope::AllSources)?;
+    let csv = std::fs::read_to_string(&csv_path)?;
+    check!(eq; csv.lines().count(), expected.saturating_add(2));
+    check!(csv.contains("WY,1,0,"), "{csv}");
+    check!(csv.contains("UNKNOWN,"), "{csv}");
+    Ok(())
 }
 
 #[test]
-fn out_of_scope_jurisdiction_is_named_in_notes_not_counted() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+fn out_of_scope_jurisdiction_is_named_in_notes_not_counted() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
 
     let (in_scope, in_scope_id) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
     let (out_of_scope, out_of_scope_id) =
         CanonicalSchool::new(UsJurisdiction::Hawaii, "Honolulu Prep", "honolulu-prep");
-    store.append(Table::Schools, &in_scope).unwrap();
-    store.append(Table::Schools, &out_of_scope).unwrap();
+    store.append(Table::Schools, &in_scope)?;
+    store.append(Table::Schools, &out_of_scope)?;
     let in_scope_athlete = CanonicalAthlete::new(
         &in_scope_id,
         "In Scope",
@@ -200,45 +205,40 @@ fn out_of_scope_jurisdiction_is_named_in_notes_not_counted() {
         Gender::Boys,
         fixture_source("out-of-scope"),
     );
-    store.append(Table::Athletes, &in_scope_athlete).unwrap();
-    store
-        .append(Table::Athletes, &out_of_scope_athlete)
-        .unwrap();
+    store.append(Table::Athletes, &in_scope_athlete)?;
+    store.append(Table::Athletes, &out_of_scope_athlete)?;
 
-    let census = census_of(&store, Scope::AllSources);
+    let census = census_of(&store, Scope::AllSources)?;
 
-    assert_eq!(
-        census.by_state.len(),
-        UsJurisdiction::CENSUS_SCOPE.len().saturating_add(1)
-    );
-    assert!(!census
+    check!(eq; census.by_state.len(),
+    UsJurisdiction::CENSUS_SCOPE.len().saturating_add(1));
+    check!(!census
         .by_state
         .contains_key(&JurisdictionBucket::from(UsJurisdiction::Hawaii)));
-    assert_eq!(census.totals.schools, 1);
-    assert_eq!(census.totals.athletes, 1);
-    assert_eq!(census.totals.class_of_2027, 1);
+    check!(eq; census.totals.schools, 1);
+    check!(eq; census.totals.athletes, 1);
+    check!(eq; census.totals.class_of_2027, 1);
     let wisconsin = census
         .by_state
         .get(&JurisdictionBucket::from(UsJurisdiction::Wisconsin));
-    assert_eq!(wisconsin.map(|row| row.schools), Some(1));
-    assert_eq!(wisconsin.map(|row| row.class_of_2027), Some(1));
+    check!(eq; wisconsin.map(|row| row.schools), Some(1));
+    check!(eq; wisconsin.map(|row| row.class_of_2027), Some(1));
 
     let note = census
         .notes
         .iter()
         .find(|note| note.contains("Hawaii"))
-        .expect("a note names the jurisdiction the run scope leaves out");
-    assert!(
+        .ok_or("missing out-of-scope jurisdiction note")?;
+    check!(
         note.contains("Hawaii (HI) is outside the census run scope"),
         "{note}"
     );
-    assert!(note.contains("schools=1"), "{note}");
-    assert!(note.contains("athletes=1"), "{note}");
-    assert!(note.contains("class_of_2027=1"), "{note}");
+    check!(note.contains("schools=1"), "{note}");
+    check!(note.contains("athletes=1"), "{note}");
+    check!(note.contains("class_of_2027=1"), "{note}");
 
-    let core = census_of(&store, Scope::Core);
-    assert_eq!(
-        core.by_state.keys().collect::<Vec<_>>(),
-        census.by_state.keys().collect::<Vec<_>>()
-    );
+    let core = census_of(&store, Scope::Core)?;
+    check!(eq; core.by_state.keys().collect::<Vec<_>>(),
+    census.by_state.keys().collect::<Vec<_>>());
+    Ok(())
 }

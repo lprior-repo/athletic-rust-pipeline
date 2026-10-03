@@ -117,7 +117,11 @@ pub(super) fn read(
             if verdict.field.as_deref().map(str::trim) != Some(IDENTITY_FIELD) {
                 return Err(Refusal::WrongField);
             }
-            let value = verdict.value.as_deref().map(str::trim).unwrap_or_default();
+            let value = verdict
+                .value
+                .as_deref()
+                .map(str::trim)
+                .map_or(Default::default(), core::convert::identity);
             read_answer(value, packet)
         }
     }

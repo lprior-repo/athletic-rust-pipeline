@@ -40,14 +40,22 @@ fn row(meet: &CanonicalMeet) -> Vec<Expect> {
         Expect::text(meet.id.as_str()),
         Expect::text(meet.name.as_str()),
         Expect::text(meet.date.as_str()),
-        Expect::text(meet.end_date.as_deref().unwrap_or_default()),
+        Expect::text(
+            meet.end_date
+                .as_deref()
+                .map_or(Default::default(), core::convert::identity),
+        ),
         Expect::text(
             meet.state
                 .map_or(MEET_STATE_UNRESOLVED, UsJurisdiction::code),
         ),
         Expect::text(level_label(meet.level)),
         Expect::text(sport_list(&meet.sports)),
-        Expect::text(meet.location.as_deref().unwrap_or_default()),
+        Expect::text(
+            meet.location
+                .as_deref()
+                .map_or(Default::default(), core::convert::identity),
+        ),
         Expect::text(identities_text(&meet.source_identities)),
         Expect::text(meet.source_urls.first().map_or("", String::as_str)),
     ]

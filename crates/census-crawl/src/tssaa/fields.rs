@@ -4,13 +4,13 @@ pub const SCHOOL_ARRAY_START: &str = "source: [ ";
 
 pub const SCHOOL_ARRAY_END: &str = "],";
 
-pub const ARRAY_ENTRY: &str = r#"\{id: '([0-9]+)', name: '((?:[^'\\]|\\.)*)'\}"#;
+pub const ARRAY_ENTRY: &str = r#"\{id:\s*'([^']*)',\s*name:\s*'((?:[^'\\]|\\.)*)'\}"#;
 
 pub const H2: &str = r"(?s)<h2[^>]*>(.*?)</h2>";
 
-pub const CARD_HEADER: &str = r#"(?s)<div class="card-header[^"]*">\s*([^<]*?)\s*</div>"#;
+pub const CARD_HEADER: &str = r#"(?s)<div class="card-header[^"]*">(.*?)</div>"#;
 
-pub const STAFF_ROW: &str = r#"(?s)<tr[^>]*class="[^"]*staffPerson[^"]*"[^>]*>(.*?)</tr>"#;
+pub const STAFF_ROW: &str = r"(?s)<tr\b[^>]*>(.*?)</tr>";
 
 pub const CELL: &str = r"(?s)<td[^>]*>(.*?)</td>";
 
@@ -28,7 +28,20 @@ pub fn array_body(text: &str) -> Option<(usize, usize)> {
 }
 
 pub fn strip_tags(tag: &regex::Regex, raw: &str) -> String {
-    tag.replace_all(raw, " ").trim().to_string()
+    tag.replace_all(raw, " ")
+        .replace("&amp;", "&")
+        .replace("&#39;", "'")
+        .replace("&#039;", "'")
+        .replace("&apos;", "'")
+        .replace("&nbsp;", " ")
+        .split_whitespace()
+        .fold(String::new(), |mut text, word| {
+            if !text.is_empty() {
+                text.push(' ');
+            }
+            text.push_str(word);
+            text
+        })
 }
 
 pub fn unescape_js(raw: &str) -> String {
@@ -62,7 +75,7 @@ pub fn split_name_and_city(raw: &str) -> (String, Option<(String, String)>) {
     if city.is_empty() || state.len() != 2 {
         return (text.to_string(), None);
     }
-    let name = text.get(..open).unwrap_or("").trim().to_string();
+    let name = text.get(..open).map_or("", str::trim).to_string();
     (name, Some((city.to_string(), state.to_string())))
 }
 
@@ -83,7 +96,11 @@ pub fn classify(header: &str) -> Option<(Option<Sport>, Gender)> {
         return None;
     }
     let lower = text.to_ascii_lowercase();
-    let gender = if lower.starts_with("boys' and girls'") || lower.starts_with("girls' and boys'") {
+    let gender = if lower.starts_with("boys' and girls'")
+        || lower.starts_with("girls' and boys'")
+        || lower.starts_with("unified")
+        || lower.starts_with("coed")
+    {
         Gender::Mixed
     } else if lower.starts_with("boys'") {
         Gender::Boys
@@ -96,7 +113,12 @@ pub fn classify(header: &str) -> Option<(Option<Sport>, Gender)> {
         return Some((Some(Sport::CrossCountry), gender));
     }
     if lower.contains("track") {
-        return Some((Some(Sport::OutdoorTrack), gender));
+        let sport = if lower.contains("indoor") {
+            Sport::IndoorTrack
+        } else {
+            Sport::OutdoorTrack
+        };
+        return Some((Some(sport), gender));
     }
     if lower.contains("administration") {
         return Some((None, Gender::Unknown));
@@ -118,5 +140,5 @@ pub fn header_for(cards: &[(usize, String)], offset: usize) -> &str {
         .iter()
         .rfind(|entry| entry.0 < offset)
         .map(|(_, header)| header.as_str())
-        .unwrap_or("")
+        .map_or("", |header| header)
 }

@@ -6,6 +6,10 @@ use census_domain::model::SourceRef;
 use proptest::prelude::*;
 use proptest::test_runner::{RngAlgorithm, RngSeed};
 
+#[macro_use]
+#[path = "../../../tools/fallible_checks.rs"]
+mod fallible_checks;
+
 #[path = "compiled_parser_properties/accounting.rs"]
 mod accounting;
 #[path = "compiled_parser_properties/lines.rs"]

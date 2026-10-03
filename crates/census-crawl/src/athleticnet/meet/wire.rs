@@ -111,8 +111,16 @@ pub struct FlatRow {
 
 impl FlatRow {
     pub(super) fn name(&self) -> Option<String> {
-        let first = self.first_name.as_deref().unwrap_or_default().trim();
-        let last = self.last_name.as_deref().unwrap_or_default().trim();
+        let first = self
+            .first_name
+            .as_deref()
+            .map_or(Default::default(), core::convert::identity)
+            .trim();
+        let last = self
+            .last_name
+            .as_deref()
+            .map_or(Default::default(), core::convert::identity)
+            .trim();
         let name = format!("{first} {last}");
         let name = name.trim();
         (!name.is_empty()).then(|| name.to_string())

@@ -60,7 +60,7 @@ fn split_prefix(label: &str) -> (Gender, Option<String>) {
         let tail = label
             .rsplit_once(token)
             .map(|(_, tail)| tail)
-            .unwrap_or_default();
+            .map_or(Default::default(), core::convert::identity);
         let level = tail
             .split_whitespace()
             .take_while(|token| !token.starts_with(|ch: char| ch.is_numeric()))

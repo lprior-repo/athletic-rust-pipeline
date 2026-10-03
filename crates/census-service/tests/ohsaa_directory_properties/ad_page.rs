@@ -39,7 +39,10 @@ fn rows() -> impl Strategy<Value = Vec<Row>> {
 fn render_ad(rows: &[Row]) -> String {
     let mut body = String::from("<table><tbody>\n");
     for (index, row) in rows.iter().enumerate() {
-        let role = ROLES.get(row.role).copied().unwrap_or_default();
+        let role = ROLES
+            .get(row.role)
+            .copied()
+            .map_or(Default::default(), core::convert::identity);
         body.push_str(&format!(
             "<tr><td><span class=\"athleticDepartmentSubheader\">{role}</span></td>"
         ));
@@ -47,14 +50,17 @@ fn render_ad(rows: &[Row]) -> String {
             let value = VALUE_LABELS
                 .get(row.person % VALUE_LABELS.len())
                 .copied()
-                .unwrap_or_default();
+                .map_or(Default::default(), core::convert::identity);
             body.push_str(&format!(
                 "<td><span class=\"athleticDepartmentSubheader\">{value}</span></td></tr>\n"
             ));
         } else {
             body.push_str("<td></td></tr>\n");
         }
-        let person = PEOPLE.get(row.person).copied().unwrap_or_default();
+        let person = PEOPLE
+            .get(row.person)
+            .copied()
+            .map_or(Default::default(), core::convert::identity);
         let address = format!("coach{index}@example.org");
         body.push_str(&format!(
             "<tr><td><span class=\"fieldValue\">{person}</span></td>\
@@ -76,11 +82,14 @@ fn expectation(rows: &[Row]) -> Publication {
     let mut director: Option<Person> = None;
     let mut office: Vec<Office> = Vec::new();
     for (index, row) in rows.iter().enumerate() {
-        let role = CANONICAL.get(row.role).copied().unwrap_or_default();
+        let role = CANONICAL
+            .get(row.role)
+            .copied()
+            .map_or(Default::default(), core::convert::identity);
         let person = PEOPLE
             .get(row.person)
             .copied()
-            .unwrap_or_default()
+            .map_or(Default::default(), core::convert::identity)
             .to_string();
         let address = Some(format!("coach{index}@example.org"));
         if role == "athletic director" && director.is_none() {

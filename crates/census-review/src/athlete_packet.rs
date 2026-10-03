@@ -125,6 +125,21 @@ fn side_facts(side: Side, row: &CanonicalAthlete) -> StoreResult<Vec<ReviewEvide
             &observation_text(observation),
         ));
     }
+    for observation in graduations(row) {
+        facts.push(fact(
+            &field("grad_evidence"),
+            &format!(
+                "published graduation {} (from {} at {})",
+                observation.grad_year,
+                observation.source.id,
+                observation
+                    .source
+                    .url
+                    .as_deref()
+                    .map_or("no source URL", |value| value)
+            ),
+        ));
+    }
     for identity in identities(row) {
         facts.push(ReviewEvidenceFact::new(
             identity.namespace.to_string(),
@@ -156,6 +171,18 @@ fn observations(row: &CanonicalAthlete) -> Vec<&ObservedGrade> {
             .cmp(&b.grad_year().map(|gy| gy.get()))
             .then_with(|| a.grade.get().cmp(&b.grade.get()))
             .then_with(|| a.source.id.cmp(&b.source.id))
+    });
+    observations
+}
+
+fn graduations(row: &CanonicalAthlete) -> Vec<&census_domain::model::PublishedGraduation> {
+    let mut observations: Vec<_> = row.published_graduations.iter().collect();
+    observations.sort_by(|a, b| {
+        a.grad_year
+            .get()
+            .cmp(&b.grad_year.get())
+            .then_with(|| a.source.id.cmp(&b.source.id))
+            .then_with(|| a.source.url.cmp(&b.source.url))
     });
     observations
 }

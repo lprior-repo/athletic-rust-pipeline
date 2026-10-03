@@ -100,23 +100,27 @@ fn row(athlete: &CanonicalAthlete, school: Option<&CanonicalSchool>) -> Vec<Stri
         school
             .and_then(|school| school.state)
             .map(|state| state.code().to_owned())
-            .unwrap_or_default(),
+            .map_or(Default::default(), core::convert::identity),
         athlete.school.as_str().to_owned(),
-        school.map(|school| school.name.clone()).unwrap_or_default(),
+        school
+            .map(|school| school.name.clone())
+            .map_or(Default::default(), core::convert::identity),
         school
             .and_then(|school| school.city.clone())
-            .unwrap_or_default(),
+            .map_or(Default::default(), core::convert::identity),
         sports(athlete),
         athlete
             .derived_cohort_confidence()
             .map(|confidence| confidence.get().to_string())
-            .unwrap_or_default(),
-        an.map(|identity| identity.id.clone()).unwrap_or_default(),
+            .map_or(Default::default(), core::convert::identity),
+        an.map(|identity| identity.id.clone())
+            .map_or(Default::default(), core::convert::identity),
         an.and_then(|identity| identity.url.clone())
-            .unwrap_or_default(),
-        ms.map(|identity| identity.id.clone()).unwrap_or_default(),
+            .map_or(Default::default(), core::convert::identity),
+        ms.map(|identity| identity.id.clone())
+            .map_or(Default::default(), core::convert::identity),
         ms.and_then(|identity| identity.url.clone())
-            .unwrap_or_default(),
+            .map_or(Default::default(), core::convert::identity),
         athlete.public_profile_urls.join(";"),
         namespace_labels(athlete),
         sources(athlete),
@@ -136,29 +140,34 @@ fn seed_row(
 ) -> Vec<String> {
     vec![
         source.id.clone(),
-        source.url.clone().unwrap_or_default(),
+        source
+            .url
+            .clone()
+            .map_or(Default::default(), core::convert::identity),
         athlete.canonical_name.clone(),
         athlete.grad_year.get().to_string(),
         athlete.gender.stable_key().to_owned(),
         school
             .and_then(|school| school.state)
             .map(|state| state.code().to_owned())
-            .unwrap_or_default(),
-        school.map(|school| school.name.clone()).unwrap_or_default(),
+            .map_or(Default::default(), core::convert::identity),
+        school
+            .map(|school| school.name.clone())
+            .map_or(Default::default(), core::convert::identity),
         school
             .and_then(|school| school.city.clone())
-            .unwrap_or_default(),
+            .map_or(Default::default(), core::convert::identity),
         sports(athlete),
         namespace_labels(athlete),
         milesplit(athlete)
             .map(|identity| identity.id.clone())
-            .unwrap_or_default(),
+            .map_or(Default::default(), core::convert::identity),
         athlete
             .evidence
             .iter()
             .map(|evidence| evidence.observed_on.as_str())
             .max()
-            .unwrap_or_default()
+            .map_or(Default::default(), core::convert::identity)
             .to_owned(),
     ]
 }

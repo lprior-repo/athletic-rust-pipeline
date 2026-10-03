@@ -88,23 +88,28 @@ fn the_key_names_the_one_profile() {
     assert_eq!(SESSION_KEY, "profile-0");
 }
 
-#[tokio::test]
-async fn an_unstarted_lane_reads_as_not_running_and_refuses_fetches() -> anyhow::Result<()> {
-    let session = session()?;
-    let reading = session.reading(SESSION_KEY).await;
-    anyhow::ensure!(reading.key == SESSION_KEY, "the reading names another key");
-    anyhow::ensure!(!reading.running, "a fresh process has no live manager");
-    anyhow::ensure!(
-        reading.status.is_none(),
-        "no manager has no engine reading: {reading:?}"
-    );
-    anyhow::ensure!(
-        reading.error.is_none(),
-        "an unstarted lane is a state, not a failure: {reading:?}"
-    );
-    anyhow::ensure!(
-        session.live().await.is_err(),
-        "fetch must refuse an unstarted lane instead of launching a browser"
-    );
-    Ok(())
+#[test]
+fn an_unstarted_lane_reads_as_not_running_and_refuses_fetches() -> anyhow::Result<()> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let session = session()?;
+            let reading = session.reading(SESSION_KEY).await;
+            anyhow::ensure!(reading.key == SESSION_KEY, "the reading names another key");
+            anyhow::ensure!(!reading.running, "a fresh process has no live manager");
+            anyhow::ensure!(
+                reading.status.is_none(),
+                "no manager has no engine reading: {reading:?}"
+            );
+            anyhow::ensure!(
+                reading.error.is_none(),
+                "an unstarted lane is a state, not a failure: {reading:?}"
+            );
+            anyhow::ensure!(
+                session.live().await.is_err(),
+                "fetch must refuse an unstarted lane instead of launching a browser"
+            );
+            Ok(())
+        })
 }

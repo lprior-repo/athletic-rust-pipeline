@@ -141,7 +141,7 @@ fn fill_school_counts(
 ) {
     let counts = schools_by_state(schools);
     for (state, entry) in by_state.iter_mut() {
-        entry.schools = counts.get(state).copied().unwrap_or(0);
+        entry.schools = counts.get(state).copied().map_or(0, std::convert::identity);
     }
 }
 

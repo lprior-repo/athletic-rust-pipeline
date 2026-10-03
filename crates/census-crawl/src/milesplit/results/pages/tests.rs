@@ -3,23 +3,24 @@ use crate::net::{FetchOptions, Fetcher};
 use census_domain::UsJurisdiction;
 use std::collections::HashMap;
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 const OH_MEET_RESULTS: &str =
     include_str!("../../../../tests/fixtures/milesplit/oh_meet_770621_results.html");
 const OH_MEET_RESULTS_URL: &str =
     "https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026/results";
 const FOREIGN_PAGE: &str = "<html><body><h1>Schedule</h1><p>Not a results page.</p></body></html>";
 
-fn scratch() -> (tempfile::TempDir, Fetcher) {
-    let dir = tempfile::tempdir().expect("temp dir");
+fn scratch() -> TestResult<(tempfile::TempDir, Fetcher)> {
+    let dir = tempfile::tempdir()?;
     let fetcher = Fetcher::new(
         dir.path().join("http"),
         None,
         std::time::Duration::from_millis(1),
         HashMap::new(),
         vec!["127.0.0.1".to_string()],
-    )
-    .expect("fetcher");
-    (dir, fetcher)
+    )?;
+    Ok((dir, fetcher))
 }
 
 fn options() -> FetchOptions {
@@ -30,7 +31,7 @@ fn options() -> FetchOptions {
     }
 }
 
-fn seed_cache(cache_dir: &std::path::Path, url: &str, status: u16, body: &str) {
+fn seed_cache(cache_dir: &std::path::Path, url: &str, status: u16, body: &str) -> TestResult {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     hasher.update(b"GET");
@@ -49,13 +50,13 @@ fn seed_cache(cache_dir: &std::path::Path, url: &str, status: u16, body: &str) {
         "bytes": body.len(),
         "fetched_at": "2026-09-24T03:55:59Z",
     });
-    std::fs::create_dir_all(cache_dir).expect("cache dir");
+    std::fs::create_dir_all(cache_dir)?;
     std::fs::write(
         cache_dir.join(format!("{key}.meta.json")),
-        serde_json::to_string(&meta).expect("meta json"),
-    )
-    .expect("write meta");
-    std::fs::write(cache_dir.join(format!("{key}.body")), body).expect("write body");
+        serde_json::to_string(&meta)?,
+    )?;
+    std::fs::write(cache_dir.join(format!("{key}.body")), body)?;
+    Ok(())
 }
 
 fn page(url: &str) -> MeetPage {
@@ -65,49 +66,55 @@ fn page(url: &str) -> MeetPage {
     }
 }
 
-#[tokio::test]
-async fn an_unreadable_page_is_quarantined_and_the_walk_goes_on() {
-    let (dir, fetcher) = scratch();
-    let cache = dir.path().join("http");
-    seed_cache(&cache, OH_MEET_RESULTS_URL, 200, OH_MEET_RESULTS);
-    let foreign = "https://oh.milesplit.com/meets/999999-schedule/results";
-    seed_cache(&cache, foreign, 200, FOREIGN_PAGE);
+#[test]
+fn an_unreadable_page_is_quarantined_and_the_walk_goes_on() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (dir, fetcher) = scratch()?;
+            let cache = dir.path().join("http");
+            seed_cache(&cache, OH_MEET_RESULTS_URL, 200, OH_MEET_RESULTS)?;
+            let foreign = "https://oh.milesplit.com/meets/999999-schedule/results";
+            seed_cache(&cache, foreign, 200, FOREIGN_PAGE)?;
 
-    let pages = read_meet_pages(
-        &fetcher,
-        vec![page(foreign), page(OH_MEET_RESULTS_URL)],
-        &options(),
-    )
-    .await
-    .expect("a template mismatch is not an error the walk returns");
+            let pages = read_meet_pages(
+                &fetcher,
+                vec![page(foreign), page(OH_MEET_RESULTS_URL)],
+                &options(),
+            )
+            .await?;
 
-    assert_eq!(pages.quarantined.len(), 1, "{:?}", pages.quarantined);
-    assert_eq!(pages.quarantined[0].0, foreign);
-    assert!(
-        !pages.quarantined[0].1.is_empty(),
-        "the parser's own reason travels with the URL"
-    );
-    assert_eq!(pages.pages_read, 1);
-    assert!(
-        !pages.files.is_empty(),
-        "the readable page's files are still collected"
-    );
-    assert!(
-        !pages.stopped(),
-        "one junk page among readable ones is not a stop"
-    );
+            check!(eq; pages.quarantined.len(), 1, "{:?}", pages.quarantined);
+            check!(eq; pages.quarantined[0].0, foreign);
+            check!(
+                !pages.quarantined[0].1.is_empty(),
+                "the parser's own reason travels with the URL"
+            );
+            check!(eq; pages.pages_read, 1);
+            check!(
+                !pages.files.is_empty(),
+                "the readable page's files are still collected"
+            );
+            check!(
+                !pages.stopped(),
+                "one junk page among readable ones is not a stop"
+            );
+            Ok(())
+        })
 }
 
-#[tokio::test]
-async fn an_unreachable_page_is_not_read_as_a_meet_without_results() {
+#[test]
+fn an_unreachable_page_is_not_read_as_a_meet_without_results() -> TestResult {
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    let (_dir, fetcher) = scratch();
+    let (_dir, fetcher) = scratch()?;
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
         .await
-        .expect("loopback listener");
+        ?;
     let failing = format!(
         "http://{}/meets/888888-invite-2026/results",
-        listener.local_addr().expect("address")
+        listener.local_addr()?
     );
     let options = options();
     let serve = async {
@@ -115,20 +122,20 @@ async fn an_unreachable_page_is_not_read_as_a_meet_without_results() {
             ("200 OK", "User-agent: *\nAllow: /\n"),
             ("500 Internal Server Error", "server error"),
         ] {
-            let (mut stream, _) = listener.accept().await.expect("request connection");
+            let (mut stream, _) = listener.accept().await?;
             let mut request = [0_u8; 8192];
             let mut filled = 0;
             for _ in 0..request.len() {
                 let count = stream
                     .read(&mut request[filled..])
                     .await
-                    .expect("request headers");
+                    ?;
                 filled += count;
                 if count == 0 || request[..filled].ends_with(b"\r\n\r\n") {
                     break;
                 }
             }
-            assert!(
+            check!(
                 request[..filled].ends_with(b"\r\n\r\n"),
                 "bounded HTTP request headers"
             );
@@ -139,54 +146,66 @@ async fn an_unreachable_page_is_not_read_as_a_meet_without_results() {
             stream
                 .write_all(response.as_bytes())
                 .await
-                .expect("fixture response");
+                ?;
         }
+        Ok::<(), Box<dyn std::error::Error>>(())
     };
-    let (result, ()) = tokio::time::timeout(std::time::Duration::from_secs(5), async {
+    let (result, served) = tokio::time::timeout(std::time::Duration::from_secs(5), async {
         tokio::join!(
             read_meet_pages(&fetcher, vec![page(&failing)], &options),
             serve
         )
     })
     .await
-    .expect("bounded local fixture");
-    let error = result.expect_err("a fetch failure propagates");
-    assert!(
+    ?;
+    served?;
+    let error = match result {
+        Err(error) => error,
+        Ok(_) => return Err("a fetch failure propagates".into()),
+    };
+    check!(
         matches!(error, crate::CrawlError::Fetch(crate::net::FetchError::Http { status: 500, ref url }) if url == &failing),
         "expected the origin's HTTP failure, got {error:?}"
     );
+    Ok(())
+    })
 }
 
-#[tokio::test]
-async fn mismatches_without_readable_pages_stop_the_walk() {
-    let (dir, fetcher) = scratch();
-    let cache = dir.path().join("http");
-    let junk: Vec<String> = (0..MISMATCH_LIMIT)
-        .map(|n| {
-            format!(
-                "https://oh.milesplit.com/meets/{}-junk/results",
-                700_000 + n
-            )
+#[test]
+fn mismatches_without_readable_pages_stop_the_walk() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (dir, fetcher) = scratch()?;
+            let cache = dir.path().join("http");
+            let junk: Vec<String> = (0..MISMATCH_LIMIT)
+                .map(|n| {
+                    format!(
+                        "https://oh.milesplit.com/meets/{}-junk/results",
+                        700_000 + n
+                    )
+                })
+                .collect();
+            for url in &junk {
+                seed_cache(&cache, url, 200, FOREIGN_PAGE)?;
+            }
+            seed_cache(&cache, OH_MEET_RESULTS_URL, 200, OH_MEET_RESULTS)?;
+
+            let mut walked = junk.clone();
+            walked.push(OH_MEET_RESULTS_URL.to_string());
+            let pages =
+                read_meet_pages(&fetcher, walked.iter().map(|url| page(url)), &options()).await?;
+
+            check!(pages.stopped(), "a majority-mismatch run stops");
+            check!(eq; pages.pages_read, 0);
+            check!(eq; pages.quarantined.len(), MISMATCH_LIMIT);
+            check!(
+                pages.files.is_empty(),
+                "the walk stopped before reaching the readable page"
+            );
+            Ok(())
         })
-        .collect();
-    for url in &junk {
-        seed_cache(&cache, url, 200, FOREIGN_PAGE);
-    }
-    seed_cache(&cache, OH_MEET_RESULTS_URL, 200, OH_MEET_RESULTS);
-
-    let mut walked = junk.clone();
-    walked.push(OH_MEET_RESULTS_URL.to_string());
-    let pages = read_meet_pages(&fetcher, walked.iter().map(|url| page(url)), &options())
-        .await
-        .expect("mismatches are quarantined, not returned");
-
-    assert!(pages.stopped(), "a majority-mismatch run stops");
-    assert_eq!(pages.pages_read, 0);
-    assert_eq!(pages.quarantined.len(), MISMATCH_LIMIT);
-    assert!(
-        pages.files.is_empty(),
-        "the walk stopped before reaching the readable page"
-    );
 }
 
 #[test]

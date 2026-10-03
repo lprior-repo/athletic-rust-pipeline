@@ -8,10 +8,13 @@ pub(super) fn temporary_path(path: &Path) -> PathBuf {
     use std::sync::atomic::{AtomicU64, Ordering};
     static NEXT: AtomicU64 = AtomicU64::new(0);
     let sequence = NEXT.fetch_add(1, Ordering::Relaxed);
-    let name = path
+    let name = match path
         .file_name()
         .map(|name| name.to_string_lossy().into_owned())
-        .unwrap_or_else(|| "snapshot".to_string());
+    {
+        Some(value) => value,
+        None => "snapshot".to_string(),
+    };
     path.with_file_name(format!(".{name}.{}.{sequence}.part", std::process::id()))
 }
 

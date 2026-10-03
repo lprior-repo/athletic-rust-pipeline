@@ -3,10 +3,10 @@ use std::collections::HashMap;
 
 #[test]
 #[ignore = "operator instrument: needs WALK_ROOT naming a store root"]
-fn walk_derived_tables() {
-    let root = std::env::var("WALK_ROOT").expect("WALK_ROOT must name a store root");
-    let store = Store::open(std::path::Path::new(&root)).expect("opening the store root");
-    let stats = store.stats().expect("reading the store's own counts");
+fn walk_derived_tables() -> Result<(), Box<dyn std::error::Error>> {
+    let root = std::env::var("WALK_ROOT")?;
+    let store = Store::open(std::path::Path::new(&root))?;
+    let stats = store.stats()?;
     let ledger: HashMap<&str, u64> = stats
         .tables
         .iter()
@@ -18,7 +18,7 @@ fn walk_derived_tables() {
         } else {
             "derived"
         };
-        let walk = store.walk_table(table).expect("walking the table");
+        let walk = store.walk_table(table)?;
         println!(
             "WALK\t{}\tmode={mode}\trows={}\tforeign={}\trepeated={}\thighest={:?}\tledger={}",
             table.file(),
@@ -26,7 +26,8 @@ fn walk_derived_tables() {
             walk.foreign_sequences,
             walk.repeated_ids,
             walk.highest_sequence,
-            ledger.get(table.file()).copied().unwrap_or(0),
+            ledger.get(table.file()).copied().map_or(0, |value| value),
         );
     }
+    Ok(())
 }

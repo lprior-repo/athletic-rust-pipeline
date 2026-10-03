@@ -2,6 +2,8 @@ use super::{Action, BrowserError, BrowserOutcome, RequestSpec, Verdict};
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine as _;
 
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+
 const CENSUS_BIO_REQUEST: &str =
     include_str!("../../../../../fixtures/wire/athleticnet-browser-request.json");
 
@@ -12,8 +14,8 @@ const FAILURE_FIXTURE: &str =
     include_str!("../../../../../fixtures/wire/athleticnet-browser-failure.json");
 
 #[test]
-fn the_census_mirror_decodes_the_fixture() {
-    let spec: RequestSpec = serde_json::from_str(CENSUS_BIO_REQUEST).expect("fixture decodes");
+fn the_census_mirror_decodes_the_fixture() -> TestResult {
+    let spec: RequestSpec = serde_json::from_str(CENSUS_BIO_REQUEST)?;
     let value_of = |name: &str| -> Option<String> {
         let (_, query) = spec.url.split_once('?')?;
         query
@@ -22,40 +24,42 @@ fn the_census_mirror_decodes_the_fixture() {
             .find(|(key, _)| *key == name)
             .map(|(_, value)| value.to_string())
     };
-    assert_eq!(value_of("level").as_deref(), Some("4"));
-    assert_eq!(value_of("sport").as_deref(), Some("tf"));
-    assert!(
+    check!(eq; value_of("level").as_deref(), Some("4"));
+    check!(eq; value_of("sport").as_deref(), Some("tf"));
+    check!(
         value_of("athleteId").is_some(),
         "the census asks for one named athlete, never a listing"
     );
-    assert_eq!(
+    check!(eq;
         spec.semantic_url, spec.url,
         "the census cites the address it asked for"
     );
-    assert!(matches!(spec.action, Action::Fetch { body: None }));
+    check!(matches!(spec.action, Action::Fetch { body: None }));
+    Ok(())
 }
 
 #[test]
-fn the_census_mirror_re_encodes_the_fixture_byte_for_byte() {
-    let spec: RequestSpec = serde_json::from_str(CENSUS_BIO_REQUEST).expect("fixture decodes");
-    assert_eq!(
-        serde_json::to_string_pretty(&spec).expect("re-encode"),
+fn the_census_mirror_re_encodes_the_fixture_byte_for_byte() -> TestResult {
+    let spec: RequestSpec = serde_json::from_str(CENSUS_BIO_REQUEST)?;
+    check!(eq;
+        serde_json::to_string_pretty(&spec)?,
         CENSUS_BIO_REQUEST.trim_end(),
         "the mirror is the contract: a field added, renamed, reordered or dropped fails here"
     );
+    Ok(())
 }
 
 #[test]
-fn the_census_mirror_decodes_the_capture_fixture() {
-    let outcome: BrowserOutcome = serde_json::from_str(CAPTURE_FIXTURE).expect("fixture decodes");
+fn the_census_mirror_decodes_the_capture_fixture() -> TestResult {
+    let outcome: BrowserOutcome = serde_json::from_str(CAPTURE_FIXTURE)?;
     let BrowserOutcome::Captured(capture) = outcome else {
-        panic!("the capture fixture is a capture");
+        return Err("the capture fixture is a capture".into());
     };
-    assert!(capture.challenge, "the transport's own verdict on the page");
-    assert_eq!(capture.response.status, 403);
-    assert_eq!(capture.retry_after_ms, Some(30_000));
-    assert_eq!(capture.fetched_at_ms, Some(1_758_542_400_000));
-    assert!(capture.response.rankings.is_none());
+    check!(capture.challenge, "the transport's own verdict on the page");
+    check!(eq; capture.response.status, 403);
+    check!(eq; capture.retry_after_ms, Some(30_000));
+    check!(eq; capture.fetched_at_ms, Some(1_758_542_400_000));
+    check!(capture.response.rankings.is_none());
     let cookies: Vec<&str> = capture
         .response
         .headers
@@ -63,12 +67,12 @@ fn the_census_mirror_decodes_the_capture_fixture() {
         .filter(|(name, _)| name == "set-cookie")
         .map(|(_, value)| value.as_str())
         .collect();
-    assert_eq!(
+    check!(eq;
         cookies,
         vec!["session=abc; Path=/", "cf_clearance=def; Path=/"],
         "a repeated header name keeps every value it carried"
     );
-    assert_eq!(
+    check!(eq;
         capture
             .response
             .headers
@@ -77,24 +81,24 @@ fn the_census_mirror_decodes_the_capture_fixture() {
             .map(|(_, value)| value.as_str()),
         Some("30")
     );
-    let page = BASE64
-        .decode(capture.response.body.as_bytes())
-        .expect("the body arrives base64");
-    let page = String::from_utf8(page).expect("an HTML challenge page is UTF-8");
-    assert!(
+    let page = BASE64.decode(capture.response.body.as_bytes())?;
+    let page = String::from_utf8(page)?;
+    check!(
         page.contains("challenge-platform"),
         "the fixture's page is a challenge page: {page}"
     );
+    Ok(())
 }
 
 #[test]
-fn the_census_mirror_decodes_the_failure_fixture() {
-    let outcome: BrowserOutcome = serde_json::from_str(FAILURE_FIXTURE).expect("fixture decodes");
+fn the_census_mirror_decodes_the_failure_fixture() -> TestResult {
+    let outcome: BrowserOutcome = serde_json::from_str(FAILURE_FIXTURE)?;
     let BrowserOutcome::Failed(failure) = outcome else {
-        panic!("the failure fixture is a failure");
+        return Err("the failure fixture is a failure".into());
     };
-    assert_eq!(failure.error, BrowserError::HumanRequired);
-    assert_eq!(failure.verdict, Verdict::HumanRequired);
+    check!(eq; failure.error, BrowserError::HumanRequired);
+    check!(eq; failure.verdict, Verdict::HumanRequired);
+    Ok(())
 }
 
 #[test]
@@ -149,22 +153,25 @@ fn admitted_browser_origins_contains_athletic_net() {
 }
 
 #[test]
-fn a_non_admitted_origin_is_refused_with_policy_error() {
-    let err = crate::net::bridge::validate_origin("http://evil.example.com/page")
-        .expect_err("non-admitted origin must be refused");
+fn a_non_admitted_origin_is_refused_with_policy_error() -> TestResult {
+    let err = match crate::net::bridge::validate_origin("http://evil.example.com/page") {
+        Err(err) => err,
+        Ok(()) => return Err("non-admitted origin must be refused".into()),
+    };
     match err {
         crate::net::FetchError::Policy { ref detail } => {
-            assert!(
+            check!(
                 detail.contains("evil.example.com"),
                 "policy error names the offending origin: {detail}"
             );
-            assert!(
+            check!(
                 detail.contains("www.athletic.net"),
                 "policy error names the allowed origins: {detail}"
             );
         }
-        other => panic!("expected Policy error, got: {other:?}"),
+        other => return Err(format!("expected Policy error, got: {other:?}").into()),
     }
+    Ok(())
 }
 
 #[test]

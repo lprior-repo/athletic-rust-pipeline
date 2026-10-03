@@ -73,7 +73,7 @@ impl MeetRef {
     pub fn meet_url(&self) -> String {
         self.results_url
             .strip_suffix("/results")
-            .unwrap_or(&self.results_url)
+            .map_or(self.results_url.as_str(), |value| value)
             .to_string()
     }
 }

@@ -1,5 +1,29 @@
 use super::*;
-use census_domain::model::{CoachRole, Gender, Sport};
+use crate::net::FetchOutcome;
+use census_domain::model::Sport;
+
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+
+mod collect;
+mod mapping;
+
+const SPORTS_FETCHED: &str = "2026-09-01T10:00:00Z";
+const AD_FETCHED: &str = "2026-09-02T11:00:00Z";
+
+fn capture(url: String, body: &str, fetched_at: &str) -> FetchOutcome {
+    FetchOutcome {
+        url,
+        response_url: None,
+        method: "GET".to_string(),
+        status: 200,
+        content_digest: crate::net::cache::content_digest(body.as_bytes()),
+        bytes: body.len(),
+        fetched_at: fetched_at.to_string(),
+        from_cache: true,
+        content_type: Some("text/html".to_string()),
+        body: body.as_bytes().to_vec(),
+    }
+}
 
 fn fixture_search_dublin() -> &'static str {
     include_str!("../../tests/fixtures/ohsaa/search_dublin_coffman.html")
@@ -70,56 +94,59 @@ fn parse_search_empty_yields_empty_vec() {
 }
 
 #[test]
-fn parse_sports_table_extracts_xc_coaches() {
+fn parse_sports_table_extracts_xc_coaches() -> TestResult {
     let sections = parse_sports_table(fixture_sports_dublin());
     let xc = sections
         .iter()
         .find(|(label, _, _)| label == "Cross Country");
-    assert!(xc.is_some(), "should find Cross Country row");
-    let (_, boys, girls) = xc.unwrap();
-    let boys = boys.as_ref().unwrap();
-    assert_eq!(boys.name, "Joe DePalma");
-    assert_eq!(
+    check!(xc.is_some(), "should find Cross Country row");
+    let (_, boys, girls) = xc.ok_or("Cross Country row")?;
+    let boys = boys.as_ref().ok_or("boys Cross Country coach")?;
+    check!(eq; boys.name, "Joe DePalma");
+    check!(eq;
         boys.email,
         Some("depalma_joseph@dublinschools.net".to_string())
     );
-    let girls = girls.as_ref().unwrap();
-    assert_eq!(girls.name, "Greg King");
-    assert_eq!(girls.email, Some("king_greg@dublinschools.net".to_string()));
+    let girls = girls.as_ref().ok_or("girls Cross Country coach")?;
+    check!(eq; girls.name, "Greg King");
+    check!(eq; girls.email, Some("king_greg@dublinschools.net".to_string()));
+    Ok(())
 }
 
 #[test]
-fn parse_sports_table_extracts_track_field() {
+fn parse_sports_table_extracts_track_field() -> TestResult {
     let sections = parse_sports_table(fixture_sports_dublin());
     let tf = sections
         .iter()
         .find(|(label, _, _)| label == "Track & Field");
-    assert!(tf.is_some(), "should find Track & Field row");
-    let (_, boys, girls) = tf.unwrap();
-    let boys = boys.as_ref().unwrap();
-    assert_eq!(boys.name, "James Legins");
-    assert_eq!(boys.email, Some("j.legins106@gmail.com".to_string()));
-    let girls = girls.as_ref().unwrap();
-    assert_eq!(girls.name, "Greg King");
-    assert_eq!(girls.email, Some("king_greg@dublinschools.net".to_string()));
+    check!(tf.is_some(), "should find Track & Field row");
+    let (_, boys, girls) = tf.ok_or("Track & Field row")?;
+    let boys = boys.as_ref().ok_or("boys Track & Field coach")?;
+    check!(eq; boys.name, "James Legins");
+    check!(eq; boys.email, Some("j.legins106@gmail.com".to_string()));
+    let girls = girls.as_ref().ok_or("girls Track & Field coach")?;
+    check!(eq; girls.name, "Greg King");
+    check!(eq; girls.email, Some("king_greg@dublinschools.net".to_string()));
+    Ok(())
 }
 
 #[test]
-fn parse_sports_table_handles_tba() {
+fn parse_sports_table_handles_tba() -> TestResult {
     let sections = parse_sports_table(fixture_sports_centerville());
     let tf = sections
         .iter()
         .find(|(label, _, _)| label == "Track & Field");
-    assert!(tf.is_some(), "should find Track & Field row");
-    let (_, boys, girls) = tf.unwrap();
-    assert!(boys.is_some(), "boys coach should be present");
-    let boys = boys.as_ref().unwrap();
-    assert_eq!(boys.name, "Matt Somerlot");
-    assert_eq!(
+    check!(tf.is_some(), "should find Track & Field row");
+    let (_, boys, girls) = tf.ok_or("Track & Field row")?;
+    check!(boys.is_some(), "boys coach should be present");
+    let boys = boys.as_ref().ok_or("Centerville boys coach")?;
+    check!(eq; boys.name, "Matt Somerlot");
+    check!(eq;
         boys.email,
         Some("matt.somerlot@centerville.k12.oh.us".to_string())
     );
-    assert!(girls.is_none(), "girls coach TBA should parse as None");
+    check!(girls.is_none(), "girls coach TBA should parse as None");
+    Ok(())
 }
 
 #[test]
@@ -139,23 +166,25 @@ fn parse_coach_cell_skips_na() {
 }
 
 #[test]
-fn parse_coach_cell_parses_mailto() {
+fn parse_coach_cell_parses_mailto() -> TestResult {
     let cell = r#"<a href="mailto:depalma_joseph@dublinschools.net" class="fieldValue">Joe DePalma (Div-I)</a>"#;
-    let coach = parse_coach_cell(cell).expect("should parse");
-    assert_eq!(coach.name, "Joe DePalma");
-    assert_eq!(
+    let coach = parse_coach_cell(cell).ok_or("published mailto coach")?;
+    check!(eq; coach.name, "Joe DePalma");
+    check!(eq;
         coach.email,
         Some("depalma_joseph@dublinschools.net".to_string())
     );
+    Ok(())
 }
 
 #[test]
-fn parse_ad_page_extracts_director() {
+fn parse_ad_page_extracts_director() -> TestResult {
     let ad = parse_ad_page(fixture_ad_dublin());
-    assert!(ad.director.is_some(), "should find athletic director");
-    let (name, email) = ad.director.as_ref().unwrap();
-    assert_eq!(name, "Duane Sheldon");
-    assert_eq!(email, &Some("sheldon_duane@dublinschools.net".to_string()));
+    check!(ad.director.is_some(), "should find athletic director");
+    let (name, email) = ad.director.as_ref().ok_or("Dublin athletic director")?;
+    check!(eq; name, "Duane Sheldon");
+    check!(eq; email, &Some("sheldon_duane@dublinschools.net".to_string()));
+    Ok(())
 }
 
 #[test]
@@ -187,66 +216,6 @@ fn parse_ad_page_malformed_yields_empty() {
 }
 
 #[test]
-fn school_entities_includes_ad_and_xc_coaches() {
-    let sr = SearchResult {
-        name: "DUBLIN COFFMAN".to_string(),
-        city: "Dublin".to_string(),
-        ohsaa_id: "474".to_string(),
-    };
-    let extract = school_entities(
-        &sr,
-        fixture_sports_dublin(),
-        fixture_ad_dublin(),
-        "2026-09-19",
-    );
-
-    assert_eq!(extract.school.name, "DUBLIN COFFMAN");
-    assert_eq!(extract.school.city, Some("Dublin".to_string()));
-    assert_eq!(extract.school.association, Some("ohsaa".to_string()));
-
-    assert_eq!(extract.coaches.len(), 5, "should have AD + 4 coach rows");
-
-    let roles: Vec<String> = extract
-        .coaches
-        .iter()
-        .map(|c| format!("{:?}", c.role))
-        .collect();
-    assert!(roles.contains(&"AthleticDirector".to_string()));
-
-    let all_have_email = extract
-        .coaches
-        .iter()
-        .all(|c| c.professional_email.is_some() || c.personal_email.is_some());
-    assert!(
-        all_have_email,
-        "all 5 coaches should carry a published address"
-    );
-}
-
-#[test]
-fn school_entities_handles_tba_girls_coach() {
-    let sr = SearchResult {
-        name: "CENTERVILLE".to_string(),
-        city: "Centerville".to_string(),
-        ohsaa_id: "336".to_string(),
-    };
-    let extract = school_entities(
-        &sr,
-        fixture_sports_centerville(),
-        fixture_ad_centerville(),
-        "2026-09-19",
-    );
-
-    assert_eq!(extract.coaches.len(), 4);
-
-    let tf_girls = extract
-        .coaches
-        .iter()
-        .find(|c| matches!(c.sport, Some(Sport::OutdoorTrack)) && c.gender == Gender::Girls);
-    assert!(tf_girls.is_none(), "T&F girls should not be present (TBA)");
-}
-
-#[test]
 fn strip_honorific_removes_prefixes() {
     assert_eq!(strip_honorific("Coach Joe DePalma"), "Joe DePalma");
     assert_eq!(strip_honorific("Mr. Barry Mink"), "Barry Mink");
@@ -257,56 +226,6 @@ fn strip_honorific_removes_prefixes() {
         "Joe DePalma",
         "no-op when no honorific"
     );
-}
-
-#[test]
-fn office_roles_never_imported_as_coaches() {
-    let sr = SearchResult {
-        name: "DUBLIN COFFMAN".to_string(),
-        city: "Dublin".to_string(),
-        ohsaa_id: "474".to_string(),
-    };
-    let extract = school_entities(
-        &sr,
-        fixture_sports_dublin(),
-        fixture_ad_dublin(),
-        "2026-09-19",
-    );
-
-    let ad_names: Vec<&str> = extract
-        .coaches
-        .iter()
-        .filter(|c| c.role == CoachRole::AthleticDirector)
-        .map(|c| c.name.as_str())
-        .collect();
-
-    assert_eq!(ad_names, vec!["Duane Sheldon"]);
-    assert!(
-        !ad_names.contains(&"Scott Caster"),
-        "Assistant AD must not be imported as AD"
-    );
-    assert!(
-        !ad_names.contains(&"Andrea Guilliams"),
-        "Assistant Secretary must not be imported as AD"
-    );
-}
-
-#[test]
-fn malformed_search_does_not_panic() {
-    let results = parse_search("<html><body><p>No table here</p></body></html>");
-    assert!(results.is_empty());
-}
-
-#[test]
-fn malformed_sports_does_not_panic() {
-    let sections = parse_sports_table("<html><body><p>No table</p></body></html>");
-    assert!(sections.is_empty());
-}
-
-#[test]
-fn malformed_ad_does_not_panic() {
-    let ad = parse_ad_page("<html><body><p>No table</p></body></html>");
-    assert!(ad.director.is_none());
 }
 
 #[test]

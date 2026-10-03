@@ -253,7 +253,7 @@ fn performance_evidence(
             row.heat
                 .as_deref()
                 .map(|heat| format!(" squad {heat}"))
-                .unwrap_or_default()
+                .map_or(Default::default(), core::convert::identity)
         ));
     }
     evidence

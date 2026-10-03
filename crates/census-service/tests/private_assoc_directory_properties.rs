@@ -48,68 +48,118 @@ const NO_ASSOCIATION: &str = r#"<html>
 "#;
 
 #[test]
-fn private_assoc_listing_yields_one_weak_entry_per_row() {
-    let outcome = parse_listing(LISTING).expect("the listing reads");
-    assert_eq!(outcome.counts().entries, 2);
-    assert_eq!(outcome.counts().skipped, 0);
-    assert_eq!(outcome.counts().notes, 0);
+fn private_assoc_listing_yields_one_weak_entry_per_row() -> Result<(), Box<dyn std::error::Error>> {
+    let outcome = parse_listing(LISTING)?;
+    let left = [
+        outcome.counts().entries,
+        outcome.counts().skipped,
+        outcome.counts().notes,
+    ];
+    let right = [2, 0, 0];
+    if left != right {
+        return Err(format!("entries/skipped/notes: left={left:?}, right={right:?}").into());
+    }
 
-    let riverside = outcome.entries().first().expect("first entry");
-    assert!(matches!(riverside.key(), DirectoryKey::Weak(_)));
-    assert_eq!(
-        riverside.name().map(SchoolName::as_str),
-        Some("Riverside Academy")
-    );
-    assert_eq!(
-        riverside.key().label(),
-        "weak:riverside academy|springfield|IL"
-    );
-    assert_eq!(
-        riverside
-            .sources()
-            .iter()
-            .map(SourceLabel::label)
-            .collect::<Vec<_>>(),
-        vec!["association:NAIS".to_string()]
-    );
-    let address = riverside.address().expect("first address");
-    assert_eq!(address.state(), Some(UsJurisdiction::Illinois));
-    assert_eq!(
-        address.zip().map(|zip| zip.to_string()),
-        Some("62704".to_string())
-    );
+    let riverside = outcome.entries().first().ok_or("missing first entry")?;
+    if !matches!(riverside.key(), DirectoryKey::Weak(_)) {
+        return Err(format!("expected weak key, got {:?}", riverside.key()).into());
+    }
+    let name = riverside.name().map(SchoolName::as_str);
+    if name != Some("Riverside Academy") {
+        return Err(format!("name: left={name:?}, right={:?}", Some("Riverside Academy")).into());
+    }
+    let key = riverside.key().label();
+    if key != "weak:riverside academy|springfield|IL" {
+        return Err(
+            format!("key: left={key:?}, right=\"weak:riverside academy|springfield|IL\"").into(),
+        );
+    }
+    let sources = riverside
+        .sources()
+        .iter()
+        .map(SourceLabel::label)
+        .collect::<Vec<_>>();
+    let expected_sources = vec!["association:NAIS".to_string()];
+    if sources != expected_sources {
+        return Err(format!("sources: left={sources:?}, right={expected_sources:?}").into());
+    }
+    let address = riverside.address().ok_or("missing first address")?;
+    let state = address.state();
+    if state != Some(UsJurisdiction::Illinois) {
+        return Err(format!(
+            "state: left={state:?}, right={:?}",
+            Some(UsJurisdiction::Illinois)
+        )
+        .into());
+    }
+    let zip = address.zip().map(|zip| zip.to_string());
+    let expected_zip = Some("62704".to_string());
+    if zip != expected_zip {
+        return Err(format!("zip: left={zip:?}, right={expected_zip:?}").into());
+    }
 
-    let lakeside = outcome.entries().get(1).expect("second entry");
-    let address = lakeside.address().expect("second address");
-    assert_eq!(
-        address.zip().map(|zip| zip.to_string()),
-        Some("62704-1234".to_string())
-    );
+    let lakeside = outcome.entries().get(1).ok_or("missing second entry")?;
+    let address = lakeside.address().ok_or("missing second address")?;
+    let zip = address.zip().map(|zip| zip.to_string());
+    let expected_zip = Some("62704-1234".to_string());
+    if zip != expected_zip {
+        return Err(format!("zip: left={zip:?}, right={expected_zip:?}").into());
+    }
+    Ok(())
 }
 
 #[test]
-fn private_assoc_row_without_a_name_lands_in_the_ledger() {
-    let outcome = parse_listing(NAMELESS_ROW).expect("the listing reads");
-    assert_eq!(outcome.counts().entries, 1);
-    assert_eq!(outcome.counts().skipped, 1);
-    let issue = outcome.skipped().first().expect("one skip");
-    assert_eq!(issue.line, 8);
-    assert_eq!(issue.field, "name");
-    assert_eq!(issue.render(), "line 8: name school name is empty");
+fn private_assoc_row_without_a_name_lands_in_the_ledger() -> Result<(), Box<dyn std::error::Error>>
+{
+    let outcome = parse_listing(NAMELESS_ROW)?;
+    let left = [outcome.counts().entries, outcome.counts().skipped];
+    let right = [1, 1];
+    if left != right {
+        return Err(format!("entries/skipped: left={left:?}, right={right:?}").into());
+    }
+    let issue = outcome.skipped().first().ok_or("missing skipped row")?;
+    if issue.line != 8 {
+        return Err(format!("issue line: left={}, right=8", issue.line).into());
+    }
+    if issue.field != "name" {
+        return Err(format!("issue field: left={:?}, right=\"name\"", issue.field).into());
+    }
+    let rendered = issue.render();
+    if rendered != "line 8: name school name is empty" {
+        return Err(format!(
+            "issue rendering: left={rendered:?}, right=\"line 8: name school name is empty\""
+        )
+        .into());
+    }
+    Ok(())
 }
 
 #[test]
 fn private_assoc_body_without_a_listing_is_refused() {
-    let error = parse_listing(NO_LISTING).expect_err("the body carries no listing");
-    assert!(matches!(error, CrawlError::Invariant { .. }));
+    assert!(matches!(
+        parse_listing(NO_LISTING),
+        Err(CrawlError::Invariant { .. })
+    ));
 }
 
 #[test]
-fn private_assoc_body_with_no_association_is_refused() {
-    let error = parse_listing(NO_ASSOCIATION).expect_err("the body names no association");
-    assert!(matches!(&error, CrawlError::Invariant { .. }));
+fn private_assoc_body_with_no_association_is_refused() -> Result<(), Box<dyn std::error::Error>> {
+    let error = match parse_listing(NO_ASSOCIATION) {
+        Err(error) => error,
+        Ok(_) => return Err("body without an association accepted".into()),
+    };
+    if !matches!(&error, CrawlError::Invariant { .. }) {
+        return Err(format!("expected invariant refusal, got {error:?}").into());
+    }
     let rendered = error.to_string();
-    assert!(rendered.contains("NAIS"), "{rendered}");
-    assert!(rendered.contains("CAPE"), "{rendered}");
-    assert!(rendered.contains("NASSP"), "{rendered}");
+    if !rendered.contains("NAIS") {
+        return Err(format!("refusal omitted NAIS: {rendered}").into());
+    }
+    if !rendered.contains("CAPE") {
+        return Err(format!("refusal omitted CAPE: {rendered}").into());
+    }
+    if !rendered.contains("NASSP") {
+        return Err(format!("refusal omitted NASSP: {rendered}").into());
+    }
+    Ok(())
 }

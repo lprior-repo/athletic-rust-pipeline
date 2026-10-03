@@ -66,7 +66,7 @@ impl SourceSchoolObservation {
             Self::new(
                 namespace.clone(),
                 identity.id.clone(),
-                identity.url.clone().unwrap_or_default(),
+                identity.url.clone().map_or(Default::default(), core::convert::identity),
                 school.name.clone(),
                 observed_on,
             )
@@ -108,7 +108,7 @@ impl SourceAthleteObservation {
             Self::new(
                 namespace.clone(),
                 identity.id.clone(),
-                page.unwrap_or_default(),
+                page.map_or(Default::default(), core::convert::identity),
                 athlete.canonical_name.clone(),
                 observed_on,
             )

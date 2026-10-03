@@ -32,7 +32,7 @@ pub(crate) fn stream_copy(reader: &mut impl Read, writer: &mut impl Write) -> io
         };
         hasher.update(filled);
         writer.write_all(filled)?;
-        bytes = bytes.saturating_add(u64::try_from(read).unwrap_or(u64::MAX));
+        bytes = bytes.saturating_add(u64::try_from(read).map_or(u64::MAX, |value| value));
     }
     Ok(Streamed {
         bytes,

@@ -18,7 +18,7 @@ pub(super) fn cell<'a>(row: &'a str, label: &str) -> Option<&'a str> {
     let start = row.find(&marker)?.checked_add(marker.len())?;
     let after = row.get(start..)?;
     let body = after.get(after.find('>')?.checked_add(1)?..)?;
-    let end = body.find("<div").unwrap_or(body.len());
+    let end = body.find("<div").map_or(body.len(), |value| value);
     body.get(..end)
 }
 
@@ -33,7 +33,7 @@ pub(super) fn links(fragment: &str) -> Vec<(&str, String)> {
             .and_then(|open| piece.get(open.checked_add(1)?..))
             .and_then(|body| body.get(..body.find("</a>")?))
             .map(text_of)
-            .unwrap_or_default();
+            .map_or(Default::default(), core::convert::identity);
         found.push((href, text));
     }
     found

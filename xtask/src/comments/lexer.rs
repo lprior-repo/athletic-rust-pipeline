@@ -4,7 +4,7 @@ use super::literals;
 pub(super) enum Kind {
     Whitespace,
     LineComment,
-    BlockComment,
+    BlockComment { terminated: bool },
     Literal { terminated: bool },
     Pound,
     Bang,
@@ -46,7 +46,7 @@ impl Iterator for Tokenizer<'_> {
 }
 
 pub(super) fn after(rest: &str, bytes: usize) -> &str {
-    rest.get(bytes..).unwrap_or_default()
+    rest.get(bytes..).map_or(Default::default(), core::convert::identity)
 }
 
 pub(super) fn take_while(rest: &str, start: usize, predicate: impl Fn(char) -> bool) -> usize {
@@ -63,11 +63,11 @@ pub(super) fn take_while(rest: &str, start: usize, predicate: impl Fn(char) -> b
 }
 
 pub(super) fn is_ident_start(character: char) -> bool {
-    character == '_' || character.is_alphabetic()
+    character == '_' || unicode_ident::is_xid_start(character)
 }
 
 pub(super) fn is_ident_continue(character: char) -> bool {
-    character == '_' || character.is_alphanumeric()
+    unicode_ident::is_xid_continue(character)
 }
 
 pub(super) fn is_lexical_whitespace(character: char) -> bool {

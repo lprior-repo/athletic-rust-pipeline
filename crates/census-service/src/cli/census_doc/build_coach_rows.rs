@@ -5,7 +5,10 @@ pub(super) fn build(coaches: &[HashMap<String, String>]) -> Vec<Vec<String>> {
     let mut coach_email_by_state: BTreeMap<String, usize> = BTreeMap::new();
 
     for coach in coaches {
-        let st = coach.get("school_state").cloned().unwrap_or_default();
+        let st = coach
+            .get("school_state")
+            .cloned()
+            .map_or(Default::default(), core::convert::identity);
         let state_count = coach_by_state.entry(st.clone()).or_default();
         *state_count = state_count.saturating_add(1);
         if coach
@@ -21,7 +24,10 @@ pub(super) fn build(coaches: &[HashMap<String, String>]) -> Vec<Vec<String>> {
     coach_by_state
         .iter()
         .map(|(st, count)| {
-            let email = coach_email_by_state.get(st).copied().unwrap_or(0);
+            let email = coach_email_by_state
+                .get(st)
+                .copied()
+                .map_or(0, |value| value);
             vec![st.clone(), count.to_string(), email.to_string()]
         })
         .collect()

@@ -51,7 +51,7 @@ fn hidden_addresses() -> impl Strategy<Value = Vec<String>> {
 fn render_hrefs(addresses: &[String]) -> String {
     let mut body = String::from("<div class=\"grid__item\">\n");
     for (index, address) in addresses.iter().enumerate() {
-        let key = 0x40u8.wrapping_add(u8::try_from(index).unwrap_or(0).wrapping_mul(7));
+        let key = 0x40u8.wrapping_add(u8::try_from(index).map_or(0, |value| value).wrapping_mul(7));
         body.push_str(&format!(
             "<a href=\"mailto:?email-protection#{}\" class=\"fieldValue\">{}</a>\n",
             encode(address, key),
@@ -65,7 +65,7 @@ fn render_hrefs(addresses: &[String]) -> String {
 fn render_attrs(addresses: &[String]) -> String {
     let mut body = String::from("<div class=\"grid__item\">\n");
     for (index, address) in addresses.iter().enumerate() {
-        let key = 0x40u8.wrapping_add(u8::try_from(index).unwrap_or(0).wrapping_mul(7));
+        let key = 0x40u8.wrapping_add(u8::try_from(index).map_or(0, |value| value).wrapping_mul(7));
         body.push_str(&format!(
             "<span data-cfemail=\"{}\"></span>\n",
             encode(address, key)

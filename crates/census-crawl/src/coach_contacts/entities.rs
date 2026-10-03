@@ -18,8 +18,9 @@ pub fn row_entities(
     let (mut school, school_id) = school_with_city(state, &school_name, &row.city);
     let source = RowSource::of(row, default_observed_on, &school_name);
     school.source_identities.push(
-        SourceIdentity::new(source.namespace.clone(), source.key.clone())
-            .with_url(source.url.clone().unwrap_or_default()),
+        SourceIdentity::new(source.namespace.clone(), source.key.clone()).with_url(
+            source.url.clone().map_or(Default::default(), core::convert::identity),
+        ),
     );
     school.evidence.push(Evidence::parsed(
         SourceRef::new("coach_contacts_csv", source.url.clone()),
@@ -61,7 +62,7 @@ fn school_with_city(
 
 fn sport_of(row: &CoachContactRow) -> (Option<Sport>, Gender) {
     let sport_gender = parse_sport(&row.sport);
-    let (sport, gender) = sport_gender.unwrap_or((Sport::OutdoorTrack, Gender::Mixed));
+    let (sport, gender) = sport_gender.map_or((Sport::OutdoorTrack, Gender::Mixed), |value| value);
     (sport_gender.map(|_| sport), gender)
 }
 
@@ -81,8 +82,9 @@ fn attach_source(
         coach.set_published_email(email);
     }
     coach.source_identities.push(
-        SourceIdentity::new(source.namespace.clone(), identity)
-            .with_url(source.url.clone().unwrap_or_default()),
+        SourceIdentity::new(source.namespace.clone(), identity).with_url(
+            source.url.clone().map_or(Default::default(), core::convert::identity),
+        ),
     );
     coach.evidence.push(Evidence::parsed(
         source.source_ref.clone(),

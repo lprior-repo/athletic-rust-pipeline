@@ -48,15 +48,18 @@ fn check_ceilings(request: &SweepRequest) -> Result<(), HandlerError> {
 }
 
 trait WindowWaits {
-    async fn window(&self, seconds: u64) -> bool;
+    async fn window(&self, seconds: u64) -> Result<bool, HandlerError>;
 }
 
 impl WindowWaits for WorkflowContext<'_> {
-    async fn window(&self, seconds: u64) -> bool {
-        tokio::select! {
-            _ = self.sleep(Duration::from_secs(seconds)) => true,
-            _ = self.signal::<String>(STOP_SIGNAL) => false,
-        }
+    async fn window(&self, seconds: u64) -> Result<bool, HandlerError> {
+        let outcome: Result<bool, TerminalError> = restate_sdk::select! {
+            result = self.sleep(Duration::from_secs(seconds)) => result.map(|()| true),
+            result = self.signal::<String>(STOP_SIGNAL) => result.map(|_| false),
+            on_cancel => Err(TerminalError::new_with_code(409, "Sweep durable wait cancelled")),
+            else => Err(TerminalError::new("Sweep durable wait selected no branch")),
+        };
+        outcome.map_err(HandlerError::from)
     }
 }
 
@@ -152,22 +155,22 @@ impl Sweep {
         windows: u32,
         window_seconds: u64,
     ) -> Result<(u32, bool), HandlerError> {
-        Ok(Self::wait_windows_with(ctx, windows, window_seconds).await)
+        Self::wait_windows_with(ctx, windows, window_seconds).await
     }
 
     async fn wait_windows_with<W: WindowWaits>(
         waits: &W,
         windows: u32,
         window_seconds: u64,
-    ) -> (u32, bool) {
+    ) -> Result<(u32, bool), HandlerError> {
         let mut observed = 0_u32;
         for _ in 0..windows {
-            if !waits.window(window_seconds).await {
-                return (observed, true);
+            if !waits.window(window_seconds).await? {
+                return Ok((observed, true));
             }
             observed = observed.saturating_add(1);
         }
-        (observed, false)
+        Ok((observed, false))
     }
     async fn observe_endpoints(
         ctx: &WorkflowContext<'_>,

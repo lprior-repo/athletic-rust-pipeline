@@ -134,15 +134,17 @@ fn usable_total(
 }
 
 fn page_sources(parsed: &Value) -> Vec<Value> {
-    parsed
-        .pointer("/hits/hits")
-        .and_then(Value::as_array)
-        .map(|hits| {
-            hits.iter()
-                .map(|hit| hit.get("_source").cloned().unwrap_or(Value::Null))
-                .collect::<Vec<Value>>()
-        })
-        .unwrap_or_default()
+    match parsed.pointer("/hits/hits").and_then(Value::as_array) {
+        Some(hits) => hits
+            .iter()
+            .map(|hit| {
+                hit.get("_source")
+                    .cloned()
+                    .map_or(Value::Null, |value| value)
+            })
+            .collect::<Vec<Value>>(),
+        None => Default::default(),
+    }
 }
 
 fn split_batch<'t>(

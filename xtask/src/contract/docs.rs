@@ -4,15 +4,15 @@ pub(super) fn references(text: &str) -> Vec<String> {
     let mut found: Vec<String> = Vec::new();
     let mut rest = text;
     while let Some(open) = rest.find('`') {
-        let after = rest.get(open.saturating_add(1)..).unwrap_or_default();
+        let after = rest.get(open.saturating_add(1)..).map_or(Default::default(), core::convert::identity);
         let Some(close) = after.find('`') else {
             break;
         };
-        let token = after.get(..close).unwrap_or_default();
+        let token = after.get(..close).map_or(Default::default(), core::convert::identity);
         if names_document(token) {
             found.push(token.to_string());
         }
-        rest = after.get(close.saturating_add(1)..).unwrap_or_default();
+        rest = after.get(close.saturating_add(1)..).map_or(Default::default(), core::convert::identity);
     }
     found.sort();
     found.dedup();

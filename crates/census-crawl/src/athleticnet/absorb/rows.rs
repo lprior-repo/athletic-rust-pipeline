@@ -109,7 +109,11 @@ impl<'a> Ctx<'a> {
             self.stats.rows_unknown_meet = self.stats.rows_unknown_meet.saturating_add(1);
             return None;
         };
-        let school = self.canonical_school(&row.school_id.unwrap_or_default().to_string())?;
+        let school = self.canonical_school(
+            &row.school_id
+                .map_or(Default::default(), core::convert::identity)
+                .to_string(),
+        )?;
         let Some(school_year) = SchoolYear::containing(season_id, 5) else {
             self.stats.rows_no_season = self.stats.rows_no_season.saturating_add(1);
             return None;
@@ -151,7 +155,11 @@ impl<'a> Ctx<'a> {
             return None;
         };
         let date = meet.date.clone();
-        let school = self.canonical_school(&row.school_id.unwrap_or_default().to_string())?;
+        let school = self.canonical_school(
+            &row.school_id
+                .map_or(Default::default(), core::convert::identity)
+                .to_string(),
+        )?;
         let Some(school_year) = SchoolYear::containing(season_id, 9) else {
             self.stats.rows_no_season = self.stats.rows_no_season.saturating_add(1);
             return None;
@@ -177,7 +185,10 @@ impl<'a> Ctx<'a> {
         };
         let Some(sport) = self
             .seasons
-            .get(&(row.school_id.unwrap_or_default(), season_id))
+            .get(&(
+                row.school_id.map_or(Default::default(), core::convert::identity),
+                season_id,
+            ))
             .copied()
             .flatten()
         else {

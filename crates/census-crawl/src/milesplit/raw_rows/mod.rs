@@ -76,8 +76,8 @@ pub(super) fn read_block(
     };
     let mut offset = base_offset;
     for (index, raw_line) in block.split_inclusive('\n').enumerate() {
-        let line = raw_line.strip_suffix('\n').unwrap_or(raw_line);
-        let line = line.strip_suffix('\r').unwrap_or(line);
+        let line = raw_line.strip_suffix('\n').map_or(raw_line, |value| value);
+        let line = line.strip_suffix('\r').map_or(line, |value| value);
         let ordinal = u32::try_from(index)
             .ok()
             .and_then(|value| value.checked_add(1))
@@ -234,7 +234,7 @@ fn tag_pattern() -> CrawlResult<&'static Regex> {
 }
 
 fn decode_line(raw_line: &str, tags: &Regex) -> String {
-    let without_cr = raw_line.strip_suffix('\r').unwrap_or(raw_line);
+    let without_cr = raw_line.strip_suffix('\r').map_or(raw_line, |value| value);
     html_unescape(tags.replace_all(without_cr, "").as_ref())
 }
 

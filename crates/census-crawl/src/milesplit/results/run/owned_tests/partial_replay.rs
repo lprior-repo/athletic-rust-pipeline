@@ -1,0 +1,264 @@
+use super::*;
+use census_domain::model::CanonicalSchool;
+
+const TABLES: [Table; 6] = [
+    Table::Meets,
+    Table::Events,
+    Table::Teams,
+    Table::Athletes,
+    Table::Performances,
+    Table::SourceObservations,
+];
+
+fn state(store: &Store) -> TestResult<(u64, String, Vec<census_store::TableWalk>)> {
+    let snapshot = store.snapshot();
+    Ok((
+        snapshot.sequence(),
+        snapshot.tables_digest(&TABLES)?,
+        TABLES
+            .into_iter()
+            .map(|table| Ok(store.walk_table(table)?))
+            .collect::<TestResult<_>>()?,
+    ))
+}
+
+fn schools(store: &Store, schools: &[CanonicalSchool]) -> TestResult {
+    let rows =
+        schools
+            .iter()
+            .try_fold(String::new(), |mut rows, school| -> TestResult<String> {
+                rows.push_str(&serde_json::to_string(school)?);
+                rows.push('\n');
+                Ok(rows)
+            })?;
+    std::fs::write(store.out_dir().join("schools.jsonl"), rows)?;
+    Ok(())
+}
+
+fn partial(store: &Store) -> TestResult {
+    let receipts = store.journal_payloads(super::super::super::RESULT_SET_PHASE)?;
+    check!(receipts.iter().any(|row| row["disposition"] == "partial"
+        && row["meet"] == "725218"
+        && row["rsid"] == "1266814"));
+    check!(!receipts
+        .iter()
+        .any(|row| row["disposition"] == "projection_applied"));
+    Ok(())
+}
+
+async fn collect_report(
+    store: &Store,
+    fetcher: &Fetcher,
+    reference: &ResultSetRef,
+    errors: u64,
+) -> TestResult {
+    let report =
+        crate::milesplit::collect_result_sets(&context(store, fetcher)?, &options(reference))
+            .await?;
+    check!(eq; (report.rows, report.errors), (3, errors));
+    Ok(())
+}
+
+fn resolved(store: &Store) -> TestResult {
+    for (table, rows) in [
+        (Table::Meets, 1),
+        (Table::Events, 3),
+        (Table::Teams, 2),
+        (Table::Athletes, 2),
+        (Table::Performances, 3),
+        (Table::SourceObservations, 3),
+    ] {
+        check!(eq;
+            store.walk_table(table)?.rows,
+            rows,
+            "{table:?}"
+        );
+    }
+    let marks: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
+    check!(marks
+        .iter()
+        .any(|row| row.source_key == "milesplit_result:201782806"));
+    check!(store
+        .journal_payloads(super::super::super::RESULT_SET_PHASE)?
+        .iter()
+        .any(|row| row["disposition"] == "projection_applied"
+            && row["meet"] == "725218"
+            && row["rsid"] == "1266814"
+            && row["projected_rows"] == 3));
+    Ok(())
+}
+
+#[test]
+fn partial_cohort_projection_reopens_without_duplicating_retained_or_projected_rows() -> TestResult
+{
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (dir, store, fetcher, reference) = setup()?;
+            let mut given: serde_json::Value = serde_json::from_slice(TROY)?;
+            given["data"][0]["gradYear"] = serde_json::Value::Null;
+            seed_owned(&fetcher, &reference, &serde_json::to_vec(&given)?)?;
+            seed_metadata(&fetcher, &reference)?;
+            collect_report(&store, &fetcher, &reference, 1).await?;
+            check!(eq;
+                store
+                    .walk_table(Table::Performances)
+                    ?
+                    .rows,
+                2
+            );
+            check!(eq;
+                store
+                    .walk_table(Table::SourceObservations)
+                    ?
+                    .rows,
+                3
+            );
+            partial(&store)?;
+            let before = state(&store)?;
+            let receipts = store.journal_payloads(super::super::super::RESULT_SET_PHASE)?;
+            store.flush()?;
+            drop(store);
+            let store = Store::open(dir.path().join("store"))?;
+            collect_report(&store, &fetcher, &reference, 1).await?;
+            check!(eq; state(&store)?, before);
+            check!(eq;
+                store
+                    .journal_payloads(super::super::super::RESULT_SET_PHASE)
+                    ?,
+                receipts
+            );
+            partial(&store)?;
+            Ok(())
+        })
+}
+
+#[test]
+fn a_genuine_new_school_binding_resumes_partial_projection_without_reappending_prior_facts(
+) -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (dir, store, fetcher, reference) = setup()?;
+            schools(&store, &[])?;
+            seed_owned(&fetcher, &reference, TROY)?;
+            seed_metadata(&fetcher, &reference)?;
+            collect_report(&store, &fetcher, &reference, 1).await?;
+            check!(eq;
+                store
+                    .walk_table(Table::Performances)
+                    ?
+                    .rows,
+                0
+            );
+            partial(&store)?;
+            let before = state(&store)?;
+            let prior = store.journal_payloads(super::super::super::RESULT_SET_PHASE)?;
+            store.flush()?;
+            drop(store);
+            let store = Store::open(dir.path().join("store"))?;
+            collect_report(&store, &fetcher, &reference, 1).await?;
+            check!(eq; state(&store)?, before);
+            schools(
+                &store,
+                &[
+                    school("Spann provider school", "38332"),
+                    school("Charles", "4912"),
+                ],
+            )?;
+            collect_report(&store, &fetcher, &reference, 0).await?;
+            resolved(&store)?;
+            let after = store.journal_payloads(super::super::super::RESULT_SET_PHASE)?;
+            check!(prior.iter().all(|receipt| after.contains(receipt)));
+            let completed = state(&store)?;
+            collect_report(&store, &fetcher, &reference, 0).await?;
+            check!(eq; state(&store)?, completed);
+            Ok(())
+        })
+}
+
+#[test]
+fn changed_exact_school_binding_after_completion_preserves_old_and_new_source_owned_facts(
+) -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (_dir, store, fetcher, reference) = setup()?;
+            seed_owned(&fetcher, &reference, TROY)?;
+            seed_metadata(&fetcher, &reference)?;
+            collect_report(&store, &fetcher, &reference, 0).await?;
+            let prior_receipts = store.journal_payloads(super::super::super::RESULT_SET_PHASE)?;
+            let prior_marks: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
+            let original = prior_marks
+                .iter()
+                .find(|row| row.source_key == "milesplit_result:201782263")
+                .ok_or("original Spann result")?;
+            let changed_school = school("New exact canonical owner", "38332");
+            schools(&store, &[changed_school.clone(), school("Charles", "4912")])?;
+            collect_report(&store, &fetcher, &reference, 0).await?;
+            let marks: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
+            check!(marks.contains(original));
+            let changed = marks
+                .iter()
+                .find(|row| {
+                    row.source_key == original.source_key && row.athlete != original.athlete
+                })
+                .ok_or("new exact canonical school owner")?;
+            check!(eq; changed.source_athlete, original.source_athlete);
+            check!(eq; changed.mark, original.mark);
+            let athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes)?;
+            check!(eq;
+                athletes
+                    .iter()
+                    .find(|row| row.id == changed.athlete)
+                    .ok_or("new school athlete")?
+                    .school,
+                changed_school.id
+            );
+            check!(eq;
+                store
+                    .walk_table(Table::SourceObservations)
+                    ?
+                    .rows,
+                3
+            );
+            check!(eq;
+                store
+                    .walk_table(Table::Performances)
+                    ?
+                    .rows,
+                5
+            );
+            let after_receipts = store.journal_payloads(super::super::super::RESULT_SET_PHASE)?;
+            check!(prior_receipts
+                .iter()
+                .all(|receipt| after_receipts.contains(receipt)));
+            let applied: Vec<_> = after_receipts
+                .iter()
+                .filter(|row| row["disposition"] == "projection_applied")
+                .collect();
+            check!(eq; applied.len(), 2);
+            check!(eq; applied[0]["capture"], applied[1]["capture"]);
+            check!(eq;
+                applied[0]["raw_metadata_capture"],
+                applied[1]["raw_metadata_capture"]
+            );
+            check!(ne;
+                applied[0]["projection_context_digest"],
+                applied[1]["projection_context_digest"]
+            );
+            let before_replay = state(&store)?;
+            collect_report(&store, &fetcher, &reference, 0).await?;
+            check!(eq; state(&store)?, before_replay);
+            check!(eq;
+                store
+                    .journal_payloads(super::super::super::RESULT_SET_PHASE)
+                    ?,
+                after_receipts
+            );
+            Ok(())
+        })
+}

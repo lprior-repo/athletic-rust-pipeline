@@ -67,7 +67,7 @@ impl Block {
             .filter(|candidate| candidate.start > column.start)
             .map(|candidate| candidate.start)
             .min()
-            .unwrap_or(self.limit);
+            .map_or(self.limit, |value| value);
         let value = substring(line, column.start, end);
         (!value.is_empty()).then_some(value)
     }
@@ -83,11 +83,14 @@ pub(super) fn rebind_columns(blocks: &mut [Block], columns: &[Column]) {
                 .find(|column| column.start >= next.start && is_identity_column(&column.label))
                 .or_else(|| columns.iter().find(|column| column.start >= next.start))
                 .map(|column| column.start)
-                .unwrap_or(usize::MAX)
+                .map_or(usize::MAX, |value| value)
         })
         .chain(std::iter::once(usize::MAX))
         .collect();
-    let mut low = blocks.first().map(|block| block.start).unwrap_or(0);
+    let mut low = blocks
+        .first()
+        .map(|block| block.start)
+        .map_or(0, |value| value);
     for (block, high) in blocks.iter_mut().zip(bounds) {
         block.columns = columns
             .iter()

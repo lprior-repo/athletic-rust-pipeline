@@ -22,20 +22,7 @@ impl JurisdictionCensus {
             .into());
         };
         let sweepable = plan.sweepable.clone();
-        let fetcher = self
-            .fetcher(&request.authorized_hosts, request.source_parallelism)
-            .await?;
-        let outcome = self
-            .teams_stage(
-                ctx,
-                fetcher,
-                request.jurisdiction,
-                request.season,
-                request.refresh,
-                sweepable,
-            )
-            .await?;
-        state.teams = Some(outcome);
+        state.teams = super::team_collection::collect(ctx, request, &sweepable, today).await?;
         state.identity = identity.as_str().to_string();
         self.save(ctx, state, today);
         Ok(())

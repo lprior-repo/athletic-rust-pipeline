@@ -5,6 +5,10 @@ use census_crawl::CrawlResult;
 use proptest::prelude::*;
 use proptest::test_runner::{RngAlgorithm, RngSeed};
 
+#[macro_use]
+#[path = "../../../tools/fallible_checks.rs"]
+mod fallible_checks;
+
 #[path = "wayzata_schedule_properties/prefix_laws.rs"]
 mod prefix_laws;
 #[path = "wayzata_schedule_properties/shapes.rs"]

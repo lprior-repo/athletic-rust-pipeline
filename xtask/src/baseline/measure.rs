@@ -72,16 +72,13 @@ pub(super) fn direction(value: u64, was: u64) -> &'static str {
 }
 
 pub(super) fn strings(value: Option<&Value>) -> Vec<String> {
-    value
-        .and_then(Value::as_array)
-        .map(|items| {
-            items
-                .iter()
-                .filter_map(Value::as_str)
-                .map(str::to_string)
-                .collect()
-        })
-        .unwrap_or_default()
+    value.and_then(Value::as_array).map(|items| {
+        items
+            .iter()
+            .filter_map(Value::as_str)
+            .map(str::to_string)
+            .collect()
+    }).map_or(Default::default(), core::convert::identity)
 }
 
 fn parse_entry(display: &str) -> FileEntry {

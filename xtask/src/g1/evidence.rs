@@ -32,13 +32,19 @@ pub(crate) struct EvidenceIndex {
 
 fn failure_key(failure: &Value) -> String {
     if let Some(obj) = failure.as_object() {
-        let code = obj.get("code").and_then(|v| v.as_str()).unwrap_or("");
-        let message = obj.get("message").and_then(|v| v.as_str()).unwrap_or("");
+        let code = obj
+            .get("code")
+            .and_then(|v| v.as_str())
+            .map_or("", core::convert::identity);
+        let message = obj
+            .get("message")
+            .and_then(|v| v.as_str())
+            .map_or("", core::convert::identity);
         let empty_arr = Vec::<Value>::new();
         let evidence_arr = obj
             .get("evidence")
             .and_then(|v| v.as_array())
-            .unwrap_or(&empty_arr);
+            .map_or(&empty_arr, core::convert::identity);
         let status: Vec<String> = evidence_arr
             .iter()
             .filter_map(|e| e.get("http_status").and_then(|v| v.as_i64()))
@@ -56,38 +62,32 @@ fn failure_key(failure: &Value) -> String {
 }
 
 fn failure_messages(rec: &Value) -> Vec<String> {
-    rec.get("failures")
-        .and_then(|v| v.as_array())
-        .map(|arr| {
-            arr.iter()
-                .map(|f| {
-                    if let Some(obj) = f.as_object() {
-                        obj.get("message")
-                            .and_then(|v| v.as_str())
-                            .unwrap_or("")
-                            .to_string()
-                    } else {
-                        f.to_string()
-                    }
-                })
-                .collect()
-        })
-        .unwrap_or_default()
+    rec.get("failures").and_then(|v| v.as_array()).map(|arr| {
+        arr.iter()
+            .map(|f| {
+                if let Some(obj) = f.as_object() {
+                    obj.get("message")
+                        .and_then(|v| v.as_str())
+                        .map_or("", core::convert::identity)
+                        .to_string()
+                } else {
+                    f.to_string()
+                }
+            })
+            .collect()
+    }).map_or(Default::default(), core::convert::identity)
 }
 
 fn pages_with_parsed(rec: &Value) -> Vec<Option<String>> {
-    rec.get("pages")
-        .and_then(|v| v.as_array())
-        .map(|arr| {
-            arr.iter()
-                .map(|p| {
-                    p.get("parsed")
-                        .and_then(|v| v.as_str())
-                        .map(|s| s.to_string())
-                })
-                .collect()
-        })
-        .unwrap_or_default()
+    rec.get("pages").and_then(|v| v.as_array()).map(|arr| {
+        arr.iter()
+            .map(|p| {
+                p.get("parsed")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string())
+            })
+            .collect()
+    }).map_or(Default::default(), core::convert::identity)
 }
 
 impl EvidenceIndex {
@@ -133,7 +133,7 @@ impl EvidenceIndex {
                         let digest = response
                             .get("digest")
                             .and_then(|v| v.as_str())
-                            .unwrap_or("")
+                            .map_or("", core::convert::identity)
                             .to_string();
                         self.join.entry(digest).or_default().push(EvidenceEntry {
                             query: q_query.clone(),
@@ -157,7 +157,7 @@ impl EvidenceIndex {
         let complete = rec
             .get("complete")
             .and_then(|v| v.as_bool())
-            .unwrap_or(false);
+            .map_or(false, core::convert::identity);
         self.records.push(EvidenceRecord {
             name: name.to_string(),
             complete,

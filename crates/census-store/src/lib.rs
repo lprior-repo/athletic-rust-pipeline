@@ -1,5 +1,10 @@
 #![forbid(unsafe_code)]
 
+#[cfg(test)]
+#[macro_use]
+#[path = "../../../tools/fallible_checks.rs"]
+mod fallible_checks;
+
 use fjall::{Database, Keyspace, KeyspaceCreateOptions, PersistMode};
 use serde::Serialize;
 use std::path::{Path, PathBuf};
@@ -161,7 +166,12 @@ impl Store {
             .map_err(|source| StoreError::Flush { source })
     }
     pub fn snapshot(&self) -> StoreSnapshot<'_> {
-        StoreSnapshot::new(self.db.snapshot(), &self.entities, &self.root)
+        StoreSnapshot::new(
+            self.db.snapshot(),
+            &self.entities,
+            &self.journal,
+            &self.root,
+        )
     }
 }
 #[cfg(test)]

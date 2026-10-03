@@ -113,8 +113,9 @@ pub(super) fn process_team_coaches<'a>(
     index: &StaffIndex<'a>,
     book: &mut AdmissionBook<'a>,
 ) -> CrawlResult<()> {
-    let Some((sport, gender)) = super::map::team_sport(team.name.as_deref().unwrap_or_default())
-    else {
+    let Some((sport, gender)) = super::map::team_sport(
+        team.name.as_deref().map_or(Default::default(), core::convert::identity),
+    ) else {
         return Ok(());
     };
     for profile in &team.coach_profile_ids {
@@ -122,7 +123,9 @@ pub(super) fn process_team_coaches<'a>(
             continue;
         };
         for &member in candidates.members().iter().rev() {
-            let role = coach_role(member.title.as_deref().unwrap_or_default());
+            let role = coach_role(
+                member.title.as_deref().map_or(Default::default(), core::convert::identity),
+            );
             let row = Row::new(member, Some(sport), gender, role);
             match book.emit(row, team.level.as_deref())? {
                 RowAdmission::Admitted | RowAdmission::AlreadyRepresented => book.place(member),
@@ -141,12 +144,14 @@ pub(super) fn process_unplaced_coaches<'a>(
         if book.is_placed(member) {
             continue;
         }
-        let Some((sport, gender)) =
-            super::map::team_sport(member.team_name.as_deref().unwrap_or_default())
-        else {
+        let Some((sport, gender)) = super::map::team_sport(
+            member.team_name.as_deref().map_or(Default::default(), core::convert::identity),
+        ) else {
             continue;
         };
-        let role = coach_role(member.title.as_deref().unwrap_or_default());
+        let role = coach_role(
+            member.title.as_deref().map_or(Default::default(), core::convert::identity),
+        );
         let row = Row::new(member, Some(sport), gender, role);
         match book.emit(row, member.team_level.as_deref())? {
             RowAdmission::Admitted | RowAdmission::AlreadyRepresented => {}
@@ -161,7 +166,9 @@ pub(super) fn process_directors<'a>(
     book: &mut AdmissionBook<'a>,
 ) -> CrawlResult<()> {
     for member in staff.iter().rev() {
-        if !is_director(member.title.as_deref().unwrap_or_default()) {
+        if !is_director(
+            member.title.as_deref().map_or(Default::default(), core::convert::identity),
+        ) {
             continue;
         }
         let row = Row::new(member, None, Gender::Mixed, CoachRole::AthleticDirector);

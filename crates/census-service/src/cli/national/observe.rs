@@ -125,7 +125,7 @@ pub(crate) async fn print_progress(
             unreadable = unreadable.saturating_add(1);
             continue;
         };
-        if state.teams.is_some() {
+        if state.teams.is_completed() {
             teams_done = teams_done.saturating_add(1);
         }
         if let Some(progress) = &state.rosters {

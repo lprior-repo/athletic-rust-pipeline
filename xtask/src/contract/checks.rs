@@ -129,14 +129,14 @@ fn scope_mismatch(declared: &[UsJurisdiction], expected: &[UsJurisdiction]) -> O
         Some(index) => Some(format!(
             "CENSUS_SCOPE must match UsJurisdiction::ALL minus EXCLUDED_FROM_CENSUS name-for-name, in \
              order; first difference at index {index}: {} where {} was expected",
-            declared
-                .get(index)
-                .map(spell)
-                .unwrap_or_else(|| "<nothing>".to_string()),
-            expected
-                .get(index)
-                .map(spell)
-                .unwrap_or_else(|| "<nothing>".to_string()),
+            match declared.get(index) {
+                Some(jurisdiction) => spell(jurisdiction),
+                None => "<nothing>".to_string(),
+            },
+            match expected.get(index) {
+                Some(jurisdiction) => spell(jurisdiction),
+                None => "<nothing>".to_string(),
+            },
         )),
         None => Some(format!(
             "CENSUS_SCOPE must match UsJurisdiction::ALL minus EXCLUDED_FROM_CENSUS name-for-name, in \

@@ -1,0 +1,21 @@
+{
+  "role": "Bounded unchanged public raw metadata and result-text projections; not full raw captures or completeness evidence",
+  "preservation": "Original retained capture bytes remain untouched at the listed paths",
+  "selection": "Concatenate original inclusive line ranges 42-63, 208-208, 712-719, preserving their text and whitespace, then append a structural </pre> newline only",
+  "metadata_changes": "none",
+  "synthetic_structure": "Only the closing </pre> tag; no metadata, owners, results, cohorts or contacts invented",
+  "captures": [
+    {
+      "projection": "troy_725218_rs1266814_raw_projection.html",
+      "raw_path": "var/retained-pr-correction-20261001/store/http/c7791d114036f1a83166fcb81998032d.body",
+      "raw_sha256": "729850b479e5782aa3e4ade7740cd46b8ffd8f35db79a873abd4ed0b3fb0f6cf",
+      "published_url": "https://al.milesplit.com/meets/725218-troy-invitational-2-2026/results/1266814/raw"
+    },
+    {
+      "projection": "troy_725218_rs1266815_raw_projection.html",
+      "raw_path": "var/retained-pr-correction-20261001/store/http/f1273a7073688debd2ea7b3c0b12cb9c.body",
+      "raw_sha256": "d9bcb109b52d5c54fddc1bede35a9ba6c4496d0c717d99bf8052113012165efd",
+      "published_url": "https://al.milesplit.com/meets/725218-troy-invitational-2-2026/results/1266815/raw"
+    }
+  ]
+}

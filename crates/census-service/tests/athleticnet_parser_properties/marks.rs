@@ -2,6 +2,8 @@ use super::{number_of, parse_mark, seam_config};
 use census_domain::model::{CentiSeconds, EventKind, Mark};
 use proptest::prelude::*;
 
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+
 fn render_centis(centis: u64) -> (String, f64) {
     let total = centis as f64 / 100.0;
     let hours = centis / 360_000;
@@ -26,42 +28,43 @@ proptest! {
     fn a_published_time_reads_as_the_duration_it_prints(centis in 0u64..36_000_000) {
         let (text, expected) = render_centis(centis);
         let (mark, auto) = parse_mark(&RUN, &text)
-            .unwrap_or_else(|| panic!("{text} (from {centis}) was refused"));
+            .ok_or_else(|| TestCaseError::fail(format!("{text} (from {centis}) was refused")))?;
         prop_assert!(!auto, "a bare mark is not marked automatic: {text}");
-        prop_assert_eq!(mark, Mark::TimeSeconds(CentiSeconds::try_from_seconds_f64(expected).expect("fixture is in range")));
+        prop_assert_eq!(mark, Mark::TimeSeconds(CentiSeconds::try_from_seconds_f64(expected).ok_or_else(|| TestCaseError::fail(format!("invalid expected time: {expected}")))?));
     }
 
     #[test]
     fn an_automatic_suffix_marks_the_flag_not_the_mark(centis in 0u64..36_000_000) {
         let (text, expected) = render_centis(centis);
         let (mark, auto) = parse_mark(&RUN, &format!("{text}a"))
-            .unwrap_or_else(|| panic!("{text}a was refused"));
+            .ok_or_else(|| TestCaseError::fail(format!("{text}a was refused")))?;
         prop_assert!(auto, "the `a` suffix is the automatic flag: {text}a");
-        prop_assert_eq!(mark, Mark::TimeSeconds(CentiSeconds::try_from_seconds_f64(expected).expect("fixture is in range")));
+        prop_assert_eq!(mark, Mark::TimeSeconds(CentiSeconds::try_from_seconds_f64(expected).ok_or_else(|| TestCaseError::fail(format!("invalid expected time: {expected}")))?));
     }
 }
 
 #[test]
-fn the_notation_table_holds_and_defers_to_one_time_parser() {
+fn the_notation_table_holds_and_defers_to_one_time_parser() -> TestResult {
     for (text, expected) in [
         ("10.56", 10.56),
         ("1:54.32", 114.32),
         ("15:32.1", 932.1),
         ("1:05:12.34", 3912.34),
     ] {
-        let (mark, _) = parse_mark(&RUN, text).unwrap_or_else(|| panic!("{text} was refused"));
-        assert_eq!(
+        let (mark, _) = parse_mark(&RUN, text).ok_or_else(|| format!("{text} was refused"))?;
+        check!(eq;
             mark,
             Mark::TimeSeconds(
-                CentiSeconds::try_from_seconds_f64(expected).expect("fixture is in range")
+                CentiSeconds::try_from_seconds_f64(expected).ok_or("invalid expected time")?
             ),
             "{text}"
         );
     }
+    Ok(())
 }
 
 #[test]
-fn a_qualifier_is_stripped_rather_than_read_as_part_of_the_mark() {
+fn a_qualifier_is_stripped_rather_than_read_as_part_of_the_mark() -> TestResult {
     for (text, auto) in [
         ("12.34", false),
         ("12.34q", false),
@@ -71,16 +74,17 @@ fn a_qualifier_is_stripped_rather_than_read_as_part_of_the_mark() {
         ("12.34a", true),
         ("12.34A", true),
     ] {
-        let (mark, got_auto) = parse_mark(&RUN, text).unwrap_or_else(|| panic!("{text} refused"));
-        assert_eq!(
+        let (mark, got_auto) = parse_mark(&RUN, text).ok_or_else(|| format!("{text} refused"))?;
+        check!(eq;
             mark,
             Mark::TimeSeconds(
-                CentiSeconds::try_from_seconds_f64(12.34).expect("fixture is in range")
+                CentiSeconds::try_from_seconds_f64(12.34).ok_or("invalid expected time")?
             ),
             "{text}"
         );
-        assert_eq!(got_auto, auto, "{text}");
+        check!(eq; got_auto, auto, "{text}");
     }
+    Ok(())
 }
 
 #[test]
@@ -94,7 +98,7 @@ fn a_no_mark_word_is_not_a_mark() {
 }
 
 #[test]
-fn a_metric_field_mark_is_a_distance_and_never_a_time() {
+fn a_metric_field_mark_is_a_distance_and_never_a_time() -> TestResult {
     for kind in [
         EventKind::ShotPut,
         EventKind::Discus,
@@ -104,29 +108,31 @@ fn a_metric_field_mark_is_a_distance_and_never_a_time() {
         EventKind::HighJump,
         EventKind::PoleVault,
     ] {
-        assert!(kind.is_field(), "{kind:?} should be a field event");
+        check!(kind.is_field(), "{kind:?} should be a field event");
         let mark = parse_mark(&kind, "12.34m")
-            .unwrap_or_else(|| panic!("{kind:?} refused a metric mark"))
+            .ok_or_else(|| format!("{kind:?} refused a metric mark"))?
             .0;
         match mark {
             Mark::DistanceMetres(metres) => {
-                assert!(
+                check!(
                     (metres.as_metres_f64() - 12.34).abs() < 1e-9,
                     "{kind:?} read {metres}"
                 );
             }
-            other => panic!("{kind:?} read a metric field mark as {other:?}"),
+            other => return Err(format!("{kind:?} read a metric field mark as {other:?}").into()),
         }
     }
+    Ok(())
 }
 
 #[test]
-fn a_multi_event_total_is_whole_points() {
+fn a_multi_event_total_is_whole_points() -> TestResult {
     for (text, expected) in [("3456", 3456.0), ("3,456", 3456.0), ("1,234.5", 1234.5)] {
         let mark = parse_mark(&EventKind::Decathlon, text)
-            .unwrap_or_else(|| panic!("{text} was refused"))
+            .ok_or_else(|| format!("{text} was refused"))?
             .0;
-        let points = number_of(&mark).expect("points carry a number");
-        assert!((points - expected).abs() < 1e-9, "{text} read as {points}");
+        let points = number_of(&mark).ok_or("points carry no number")?;
+        check!((points - expected).abs() < 1e-9, "{text} read as {points}");
     }
+    Ok(())
 }

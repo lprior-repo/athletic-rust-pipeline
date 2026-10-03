@@ -145,7 +145,7 @@ fn decode_row<'a>(writer: &mut Writer<'_>, row: &'a DocRow) -> Option<RowIdentit
         gender: athlete
             .gender_token()
             .map(gender_from_token)
-            .unwrap_or(Gender::Unknown),
+            .map_or(Gender::Unknown, |value| value),
         an_athlete_id: athlete.an_athlete_id.as_ref().and_then(value_u64),
         timer_team_id: team
             .and_then(|team| team.timer_team_id.as_ref())
@@ -172,7 +172,7 @@ fn decode_standing<'a>(writer: &mut Writer<'_>, row: &'a StandingRow) -> Option<
             .gender
             .as_deref()
             .map(gender_from_token)
-            .unwrap_or(Gender::Unknown),
+            .map_or(Gender::Unknown, |value| value),
         an_athlete_id: row.an_athlete_id(),
         timer_team_id: None,
         an_team_id: None,

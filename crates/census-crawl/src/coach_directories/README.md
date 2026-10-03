@@ -36,6 +36,15 @@ A rejected row does not reserve an admitted context or mark the member placed. `
 the row's `SourceIdentity` under `association_school`, composed with sport family, role and gender.
 Contact extraction uses `emails[0]`, `tel[0].num`, and `amrId`.
 
+The requested association route is not a school's published geographic state. Directory
+admission still requires its parsed `stateCode` to equal the requested jurisdiction before
+school, postal or summary facts can be attached. Refusals distinguish recognized foreign
+state, unrecognized published state and missing/unusable state, retaining the requested and
+published jurisdiction, exact short code, capture URL/date and SHA-256. They do not establish
+association non-membership or authorize source-value corrections. Raw evidence remains archived.
+The collection summary's `with_email` count means published email addresses, not postal-address
+coverage; the separate survey `with_address` field retains its historical meaning.
+
 ## Census scope at emission
 
 Census emission runs the prototype's row hygiene (`row_hygiene`): names and

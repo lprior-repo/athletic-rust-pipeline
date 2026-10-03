@@ -75,10 +75,10 @@ impl Book {
             .map_err(|source| unreadable(&self.path, source))?;
         let dimensions = reader.dimensions();
         let rows = usize::try_from(dimensions.end.0)
-            .unwrap_or(usize::MAX)
+            .map_or(usize::MAX, |value| value)
             .saturating_add(1);
         let columns = usize::try_from(dimensions.end.1)
-            .unwrap_or(usize::MAX)
+            .map_or(usize::MAX, |value| value)
             .saturating_add(1);
         budget.validate(name, rows, columns)?;
         let mut held: Option<SparseRow> = None;
@@ -87,8 +87,8 @@ impl Book {
             .next_cell()
             .map_err(|source| unreadable(&self.path, source))?
         {
-            let row = usize::try_from(cell.get_position().0).unwrap_or(usize::MAX);
-            let column = usize::try_from(cell.get_position().1).unwrap_or(usize::MAX);
+            let row = usize::try_from(cell.get_position().0).map_or(usize::MAX, |value| value);
+            let column = usize::try_from(cell.get_position().1).map_or(usize::MAX, |value| value);
             if row >= budget.rows || column >= budget.columns {
                 return Err(ReportError::Invariant {
                     detail: format!(
@@ -173,11 +173,11 @@ pub(super) fn compare(
     findings: &mut Findings,
 ) {
     let found = row.get(column);
-    if found.unwrap_or(&Value::Empty) != expected {
+    if found.map_or(&Value::Empty, |value| value) != expected {
         findings.mismatch(
             &cell_at(sheet, row.index(), column),
             expected,
-            found.unwrap_or(&Value::Empty),
+            found.map_or(&Value::Empty, |value| value),
         );
     }
 }

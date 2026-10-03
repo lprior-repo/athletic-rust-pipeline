@@ -109,7 +109,9 @@ fn facts(rows: &[super::MeetRow]) -> Vec<(String, String, String, String)> {
                 row.date.clone(),
                 row.name.clone(),
                 row.location.clone(),
-                row.slug.clone().unwrap_or_default(),
+                row.slug
+                    .clone()
+                    .map_or(Default::default(), core::convert::identity),
             )
         })
         .collect()

@@ -5,6 +5,7 @@ use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
 use super::{ModelClient, ModelError, ModelOptions};
+use crate::consensus::tests::support::TestResult;
 
 #[path = "model_transport_tests/response_format.rs"]
 mod response_format;
@@ -18,48 +19,50 @@ enum Reply {
     ChunkOverflow,
 }
 
-async fn serve(stream: TcpStream, reply: Reply) {
-    let (stream, request) = read_request(stream).await;
-    send_reply(stream, reply, request).await;
+async fn serve(stream: TcpStream, reply: Reply) -> TestResult {
+    let (stream, request) = read_request(stream).await?;
+    send_reply(stream, reply, request).await
 }
 
-async fn read_request(stream: TcpStream) -> (tokio::io::BufReader<TcpStream>, serde_json::Value) {
+async fn read_request(
+    stream: TcpStream,
+) -> TestResult<(tokio::io::BufReader<TcpStream>, serde_json::Value)> {
     let mut stream = tokio::io::BufReader::new(stream);
     let mut length = 0;
     let mut content_type = None;
     loop {
         let mut line = String::new();
-        assert_ne!(stream.read_line(&mut line).await.unwrap(), 0);
+        check!(ne; stream.read_line(&mut line).await?, 0);
         if line == "\r\n" {
             break;
         }
         if let Some((name, value)) = line.split_once(':') {
             let name = name.trim().to_ascii_lowercase();
             if name == "content-length" {
-                length = value.trim().parse::<usize>().unwrap();
+                length = value.trim().parse::<usize>()?;
             }
             if name == "content-type" {
                 content_type = Some(value.trim().to_string());
             }
         }
     }
-    assert_eq!(content_type.as_deref(), Some("application/json"));
-    assert!(length <= super::REQUEST_CAP);
+    check!(eq; content_type.as_deref(), Some("application/json"));
+    check!(length <= super::REQUEST_CAP);
     let mut body = vec![0; length];
-    stream.read_exact(&mut body).await.unwrap();
-    let request = serde_json::from_slice(&body).expect("request JSON");
-    (stream, request)
+    stream.read_exact(&mut body).await?;
+    let request = serde_json::from_slice(&body)?;
+    Ok((stream, request))
 }
 
 async fn send_reply(
     mut stream: tokio::io::BufReader<TcpStream>,
     reply: Reply,
     request: serde_json::Value,
-) {
+) -> TestResult {
     match reply {
         Reply::StalledHeaders => std::future::pending::<()>().await,
         Reply::Complete(status, body_text) => {
-            send_complete(&mut stream, status, body_text).await;
+            send_complete(&mut stream, status, body_text).await?;
         }
         Reply::TextOnly(content) => {
             let (status, body) = if request["response_format"]["type"] == "text" {
@@ -78,136 +81,186 @@ async fn send_reply(
                     }),
                 )
             };
-            send_complete(&mut stream, status, &body.to_string()).await;
+            send_complete(&mut stream, status, &body.to_string()).await?;
         }
         Reply::Redirect(status, location) => {
             let headers = format!(
                 "HTTP/1.1 {status} Redirect\r\nLocation: {location}\r\nConnection: close\r\n\r\n"
             );
-            stream.write_all(headers.as_bytes()).await.unwrap();
+            stream.write_all(headers.as_bytes()).await?;
         }
         Reply::StalledBody => {
             let headers =
                 "HTTP/1.1 200 Fixture\r\nContent-Length: 1000\r\nConnection: close\r\n\r\n";
-            stream.write_all(headers.as_bytes()).await.unwrap();
+            stream.write_all(headers.as_bytes()).await?;
             std::future::pending::<()>().await;
         }
         Reply::ChunkOverflow => {
             let headers =
                 "HTTP/1.1 200 Fixture\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n";
-            stream.write_all(headers.as_bytes()).await.unwrap();
+            stream.write_all(headers.as_bytes()).await?;
             let chunk = "X".repeat(300_000);
             let chunk_line = format!("{:x}\r\n{}\r\n", chunk.len(), chunk);
-            stream.write_all(chunk_line.as_bytes()).await.unwrap();
-            stream.write_all(b"0\r\n\r\n").await.unwrap();
+            stream.write_all(chunk_line.as_bytes()).await?;
+            stream.write_all(b"0\r\n\r\n").await?;
         }
     }
-    stream.shutdown().await.unwrap();
+    stream.shutdown().await?;
+    Ok(())
 }
 
-async fn send_complete(stream: &mut tokio::io::BufReader<TcpStream>, status: u16, body: &str) {
+async fn send_complete(
+    stream: &mut tokio::io::BufReader<TcpStream>,
+    status: u16,
+    body: &str,
+) -> TestResult {
     let headers = format!(
         "HTTP/1.1 {status} Fixture\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
         body.len()
     );
-    stream.write_all(headers.as_bytes()).await.unwrap();
-    stream.write_all(body.as_bytes()).await.unwrap();
+    stream.write_all(headers.as_bytes()).await?;
+    stream.write_all(body.as_bytes()).await?;
+    Ok(())
 }
 
-async fn request(reply: Reply) -> Result<VerdictBatch, ModelError> {
+async fn request(reply: Reply) -> TestResult<Result<VerdictBatch, ModelError>> {
     let stalled = matches!(reply, Reply::StalledHeaders | Reply::StalledBody);
-    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let address = listener.local_addr().unwrap();
+    let listener = TcpListener::bind("127.0.0.1:0").await?;
+    let address = listener.local_addr()?;
     let server = tokio::spawn(async move {
         tokio::time::timeout(Duration::from_secs(5), async move {
-            let (stream, _) = listener.accept().await.unwrap();
-            serve(stream, reply).await;
+            let (stream, _) = listener.accept().await?;
+            serve(stream, reply).await
         })
-        .await
-        .expect("HTTP fixture exceeded its deadline");
+        .await?
     });
-    let mut options =
-        ModelOptions::local(&format!("http://{address}"), "fixture-model").expect("valid endpoint");
+    let mut options = ModelOptions::local(&format!("http://{address}"), "fixture-model")?;
     options = options.with_timeout(if stalled {
         Duration::from_millis(100)
     } else {
         Duration::from_secs(2)
     });
-    let client = ModelClient::new(options).expect("client builds");
+    let client = ModelClient::new(options)?;
     let packet = census_domain::model::ReviewPacket::new("school:test", "Test");
     let result = tokio::time::timeout(Duration::from_secs(5), client.adjudicate(&packet)).await;
     if stalled {
         server.abort();
-        assert!(server.await.unwrap_err().is_cancelled());
+        match server.await {
+            Err(error) => check!(error.is_cancelled()),
+            Ok(_) => return Err("HTTP fixture completed instead of being cancelled".into()),
+        }
     } else {
-        server.await.expect("HTTP fixture failed");
+        server.await??;
     }
-    result.expect("model request exceeded the outer deadline")
+    Ok(result?)
 }
 
-#[tokio::test]
-async fn http_503_returns_status_error() {
-    match request(Reply::Complete(503, "overloaded"))
-        .await
-        .unwrap_err()
-    {
-        ModelError::Status { status } => assert_eq!(status, 503),
-        other => panic!("expected HTTP status failure, got {other:?}"),
-    }
+#[test]
+fn http_503_returns_status_error() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            match request(Reply::Complete(503, "overloaded")).await? {
+                Err(ModelError::Status { status }) => check!(eq; status, 503),
+                other => return Err(format!("expected HTTP status failure, got {other:?}").into()),
+            }
+            Ok(())
+        })
 }
 
-#[tokio::test]
-async fn malformed_batch_returns_content_error() {
-    let body = r#"{"choices":[{"message":{"content":"PRIVATE_MODEL_SENTINEL_invalid_json"}}]}"#;
-    let error = request(Reply::Complete(200, body)).await.unwrap_err();
-    assert!(matches!(error, ModelError::Content { .. }));
-    assert!(!error.to_string().contains("PRIVATE_MODEL_SENTINEL"));
+#[test]
+fn malformed_batch_returns_content_error() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let body =
+                r#"{"choices":[{"message":{"content":"PRIVATE_MODEL_SENTINEL_invalid_json"}}]}"#;
+            let error = match request(Reply::Complete(200, body)).await? {
+                Err(error) => error,
+                Ok(_) => return Err("expected malformed model batch".into()),
+            };
+            check!(matches!(error, ModelError::Content { .. }));
+            check!(!error.to_string().contains("PRIVATE_MODEL_SENTINEL"));
+            Ok(())
+        })
 }
 
-#[tokio::test]
-async fn empty_message_returns_empty_error() {
-    let body = r#"{"choices":[{"message":{"content":""}}]}"#;
-    assert!(matches!(
-        request(Reply::Complete(200, body)).await,
-        Err(ModelError::Empty)
-    ));
+#[test]
+fn empty_message_returns_empty_error() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let body = r#"{"choices":[{"message":{"content":""}}]}"#;
+            check!(matches!(
+                request(Reply::Complete(200, body)).await?,
+                Err(ModelError::Empty)
+            ));
+            Ok(())
+        })
 }
 
-#[tokio::test]
-async fn header_stall_returns_timeout() {
-    match request(Reply::StalledHeaders).await.unwrap_err() {
-        ModelError::RequestTimeout => {}
-        other => panic!("expected timeout, got {other:?}"),
-    }
+#[test]
+fn header_stall_returns_timeout() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            match request(Reply::StalledHeaders).await? {
+                Err(ModelError::RequestTimeout) => {}
+                other => return Err(format!("expected timeout, got {other:?}").into()),
+            }
+            Ok(())
+        })
 }
 
-#[tokio::test]
-async fn body_stall_returns_timeout() {
-    match request(Reply::StalledBody).await.unwrap_err() {
-        ModelError::RequestTimeout => {}
-        other => panic!("expected timeout, got {other:?}"),
-    }
+#[test]
+fn body_stall_returns_timeout() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            match request(Reply::StalledBody).await? {
+                Err(ModelError::RequestTimeout) => {}
+                other => return Err(format!("expected timeout, got {other:?}").into()),
+            }
+            Ok(())
+        })
 }
 
-#[tokio::test]
-async fn redirect_is_not_followed() {
-    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let address = listener.local_addr().unwrap();
-    assert!(matches!(
-        request(Reply::Redirect(302, format!("http://{address}"))).await,
-        Err(ModelError::Status { status: 302 })
-    ));
-    assert!(
-        tokio::time::timeout(Duration::from_millis(50), listener.accept())
-            .await
-            .is_err()
-    );
+#[test]
+fn redirect_is_not_followed() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let listener = TcpListener::bind("127.0.0.1:0").await?;
+            let address = listener.local_addr()?;
+            check!(matches!(
+                request(Reply::Redirect(302, format!("http://{address}"))).await?,
+                Err(ModelError::Status { status: 302 })
+            ));
+            check!(
+                tokio::time::timeout(Duration::from_millis(50), listener.accept())
+                    .await
+                    .is_err()
+            );
+            Ok(())
+        })
 }
-#[tokio::test]
-async fn chunked_overflow_returns_response_error() {
-    let result = request(Reply::ChunkOverflow).await;
-    match result.unwrap_err() {
-        ModelError::ResponseTooLarge { bytes } => assert!(bytes > 256_000),
-        other => panic!("expected response overflow, got {other:?}"),
-    }
+#[test]
+fn chunked_overflow_returns_response_error() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let result = request(Reply::ChunkOverflow).await?;
+            match result {
+                Err(ModelError::ResponseTooLarge { bytes }) => check!(bytes > 256_000),
+                other => return Err(format!("expected response overflow, got {other:?}").into()),
+            }
+            Ok(())
+        })
 }

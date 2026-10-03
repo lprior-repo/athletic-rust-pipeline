@@ -53,46 +53,49 @@ fn record(entry: &SchoolDirectoryEntry) -> Vec<String> {
     vec![
         entry.key().label(),
         name(entry),
-        entry.kind().map(|kind| kind.label()).unwrap_or_default(),
+        entry
+            .kind()
+            .map(|kind| kind.label())
+            .map_or(Default::default(), core::convert::identity),
         street(entry, true),
         street(entry, false),
         entry
             .address()
             .and_then(|address| address.city())
             .map(|city| city.as_str().to_string())
-            .unwrap_or_default(),
+            .map_or(Default::default(), core::convert::identity),
         entry
             .address()
             .and_then(|address| address.state())
             .map(|state| state.code().to_string())
-            .unwrap_or_default(),
+            .map_or(Default::default(), core::convert::identity),
         entry
             .address()
             .and_then(|address| address.zip())
             .map(|zip| zip.to_string())
-            .unwrap_or_default(),
+            .map_or(Default::default(), core::convert::identity),
         entry
             .phone()
             .map(|phone| phone.as_str().to_string())
-            .unwrap_or_default(),
+            .map_or(Default::default(), core::convert::identity),
         entry
             .website()
             .map(|website| website.as_str().to_string())
-            .unwrap_or_default(),
+            .map_or(Default::default(), core::convert::identity),
         entry
             .grades()
             .map(|grades| grades.label())
-            .unwrap_or_default(),
+            .map_or(Default::default(), core::convert::identity),
         entry
             .enrollment()
             .map(|count| count.get().to_string())
-            .unwrap_or_default(),
+            .map_or(Default::default(), core::convert::identity),
         point
             .map(|point| point.latitude().to_string())
-            .unwrap_or_default(),
+            .map_or(Default::default(), core::convert::identity),
         point
             .map(|point| point.longitude().to_string())
-            .unwrap_or_default(),
+            .map_or(Default::default(), core::convert::identity),
         entry
             .sources()
             .iter()
@@ -106,7 +109,7 @@ fn name(entry: &SchoolDirectoryEntry) -> String {
     entry
         .name()
         .map(|name| name.as_str().to_string())
-        .unwrap_or_default()
+        .map_or(Default::default(), core::convert::identity)
 }
 
 fn street(entry: &SchoolDirectoryEntry, first: bool) -> String {
@@ -120,5 +123,5 @@ fn street(entry: &SchoolDirectoryEntry, first: bool) -> String {
             }
         })
         .map(|line| line.as_str().to_string())
-        .unwrap_or_default()
+        .map_or(Default::default(), core::convert::identity)
 }

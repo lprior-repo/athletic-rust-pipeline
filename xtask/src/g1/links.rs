@@ -17,8 +17,14 @@ pub(crate) fn path_of(href: &str) -> &str {
             break;
         }
     }
-    let value = value.split('?').next().unwrap_or(value);
-    value.split('#').next().unwrap_or(value)
+    let value = value
+        .split('?')
+        .next()
+        .map_or(value, core::convert::identity);
+    value
+        .split('#')
+        .next()
+        .map_or(value, core::convert::identity)
 }
 
 pub(crate) fn link_class(
@@ -33,10 +39,7 @@ pub(crate) fn link_class(
     }
     let path = path_of(href);
     if let Some(caps) = sported_re.captures(path) {
-        let sport = caps
-            .get(2)
-            .map(|g| g.as_str().to_lowercase())
-            .unwrap_or_default();
+        let sport = caps.get(2).map(|g| g.as_str().to_lowercase()).map_or(Default::default(), core::convert::identity);
         let token = if sport == "track-and-field" {
             "tf"
         } else {

@@ -169,3 +169,9 @@ impl ObservedGrade {
         GradYear::of(self.grade, self.school_year)
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PublishedGraduation {
+    pub grad_year: GradYear,
+    pub source: SourceRef,
+}

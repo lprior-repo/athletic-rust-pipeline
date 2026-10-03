@@ -107,7 +107,7 @@ pub(super) fn tally_co2027(
     if !athlete.public_profile_urls.is_empty() {
         bump(&mut entry.class_of_2027_with_profile_url);
     }
-    if !athlete.observed_grades.is_empty() {
+    if !athlete.observed_grades.is_empty() || !athlete.published_graduations.is_empty() {
         bump(&mut entry.class_of_2027_with_grad_year_evidence);
     }
     for observation in &athlete.observed_grades {
@@ -145,8 +145,8 @@ pub(super) fn tally_co2027(
 }
 
 pub(super) fn coach_sport(coach: &CanonicalCoach) -> String {
-    coach
-        .sport
-        .map(|sport| format!("{sport:?}").to_lowercase())
-        .unwrap_or_else(|| "school_wide".to_string())
+    match coach.sport.map(|sport| format!("{sport:?}").to_lowercase()) {
+        Some(value) => value,
+        None => "school_wide".to_string(),
+    }
 }

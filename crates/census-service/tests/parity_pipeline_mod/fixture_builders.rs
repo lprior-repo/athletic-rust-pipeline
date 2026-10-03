@@ -24,9 +24,12 @@ pub fn milesplit_roster(corpus: &mut Corpus) -> Result<()> {
             .and_then(|rest| rest.strip_suffix(".html"))
         {
             roster = Some((team_id.to_string(), body));
-        } else if name.contains("_meet_") {
-            continue;
-        } else if name.starts_with("oh_") {
+        } else if super::milesplit_fixtures::validate_result_fixture(&name, &body)?
+            || matches!(
+                name.as_str(),
+                "oh_teams_index.html" | "oh_results_index.html" | "oh_roster_10002_mason.html"
+            )
+        {
             continue;
         } else {
             bail!("{name} is not a known milesplit fixture");
@@ -50,7 +53,7 @@ pub fn milesplit_roster(corpus: &mut Corpus) -> Result<()> {
     );
     let site = milesplit::Site::for_jurisdiction(UsJurisdiction::Wisconsin);
     let (school, athletes, school_teams) = milesplit::roster_entities(
-        &parsed,
+        parsed,
         constants::SCHOOL_YEAR,
         constants::OBSERVED_ON,
         &site,
@@ -124,8 +127,10 @@ pub fn athleticlive_athletes(corpus: &mut Corpus) -> Result<()> {
             SourceRef::new(constants::SOURCE_ATHLETICLIVE_MEETS, None),
             constants::OBSERVED_ON,
         ));
-        let selection =
-            athleticlive_athletes::meet_targets(&[meet.clone()], &[UsJurisdiction::Kansas]);
+        let selection = athleticlive_athletes::meet_targets(
+            std::slice::from_ref(&meet),
+            &[UsJurisdiction::Kansas],
+        );
         let by_id: HashMap<u64, &athleticlive_athletes::MeetTarget> = selection
             .targets
             .iter()

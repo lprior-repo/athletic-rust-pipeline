@@ -198,8 +198,8 @@ fn event_of(
             input.meet.id.as_str(),
             input.kind,
             input.gender,
-            input.division.clone().unwrap_or_default(),
-            input.round.clone().unwrap_or_default()
+            input.division.clone().map_or(Default::default(), core::convert::identity),
+            input.round.clone().map_or(Default::default(), core::convert::identity)
         ))
         .or_insert_with(|| {
             let mut event = CanonicalEvent::new(

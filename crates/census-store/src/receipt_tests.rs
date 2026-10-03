@@ -5,6 +5,8 @@ use chrono::NaiveDate;
 
 use super::clock::{Clock, SystemClock};
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 fn school(name: &str) -> CanonicalSchool {
     CanonicalSchool::new(UsJurisdiction::Wisconsin, name, normalize_name(name)).0
 }
@@ -23,26 +25,24 @@ fn page() -> Vec<CanonicalSchool> {
     ]
 }
 
-fn rows(store: &Store, table: Table) -> u64 {
-    store
-        .stats()
-        .unwrap()
+fn rows(store: &Store, table: Table) -> TestResult<u64> {
+    Ok(store
+        .stats()?
         .tables
         .into_iter()
         .find(|(name, _)| name == table.file())
         .map(|(_, count)| count)
-        .unwrap()
+        .ok_or("table row count")?)
 }
 
-fn counter(store: &Store, table: Table) -> u64 {
-    store
-        .stats()
-        .unwrap()
+fn counter(store: &Store, table: Table) -> TestResult<u64> {
+    Ok(store
+        .stats()?
         .appended
         .into_iter()
         .find(|(name, _)| name == table.file())
         .map(|(_, next)| next)
-        .unwrap()
+        .ok_or("table append counter")?)
 }
 
 fn apply(
@@ -58,252 +58,221 @@ fn apply(
 }
 
 #[test]
-fn a_replay_of_one_operation_writes_nothing() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
-
+fn a_replay_of_one_operation_writes_nothing() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     let first = apply(
         &store,
         "wiaa_schools_wi:w39:schools:0",
         "digest-a",
         "unit-0",
-    )
-    .unwrap();
-    let Application::Written(receipt) = &first else {
-        panic!("the first application of an operation writes its receipt: {first:?}");
+    )?;
+    let receipt = match &first {
+        Application::Written(receipt) => receipt,
+        other => {
+            return Err(format!(
+                "the first application of an operation writes its receipt: {other:?}"
+            )
+            .into())
+        }
     };
-    assert_eq!(receipt.appended, 2);
-    assert_eq!(receipt.operation, "wiaa_schools_wi:w39:schools:0");
-    assert_eq!(rows(&store, Table::Schools), 2);
-
+    check!(eq; receipt.appended, 2);
+    check!(eq; receipt.operation, "wiaa_schools_wi:w39:schools:0");
+    check!(eq; rows(&store, Table::Schools)?, 2);
     let repeat = apply(
         &store,
         "wiaa_schools_wi:w39:schools:0",
         "digest-a",
         "unit-0",
-    )
-    .unwrap();
-    let Application::Repeated(standing) = &repeat else {
-        panic!("a repeat of an applied operation is not written again: {repeat:?}");
+    )?;
+    let standing = match &repeat {
+        Application::Repeated(standing) => standing,
+        other => {
+            return Err(
+                format!("a repeat of an applied operation is not written again: {other:?}").into(),
+            )
+        }
     };
-    assert_eq!(
-        repeat.appended(),
-        0,
-        "a replay appends nothing, so a caller summing replies cannot count the page twice"
-    );
-    assert_eq!(
-        standing, receipt,
-        "the replay answers with the receipt the first application left"
-    );
-    assert_eq!(rows(&store, Table::Schools), 2, "no row was written twice");
-    assert_eq!(
-        store.receipt_count().unwrap(),
-        1,
-        "one operation, one receipt — the replay did not add another"
-    );
+    check!(eq; repeat.appended(), 0, "a replay appends nothing, so a caller summing replies cannot count the page twice");
+    check!(eq; standing, receipt, "the replay answers with the receipt the first application left");
+    check!(eq; rows(&store, Table::Schools)?, 2, "no row was written twice");
+    check!(eq; store.receipt_count()?, 1, "one operation, one receipt — the replay did not add another");
+    Ok(())
 }
 
 #[test]
-fn one_operation_id_cannot_name_two_payloads() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+fn one_operation_id_cannot_name_two_payloads() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     apply(
         &store,
         "wiaa_schools_wi:w39:schools:0",
         "digest-a",
         "unit-0",
-    )
-    .unwrap();
-
-    let refused = apply(
+    )?;
+    let error = match apply(
         &store,
         "wiaa_schools_wi:w39:schools:0",
         "digest-b",
         "unit-0",
-    );
-    let Err(error) = refused else {
-        panic!("a changed payload under an applied id is refused: {refused:?}");
+    ) {
+        Err(error) => error,
+        Ok(outcome) => {
+            return Err(
+                format!("a changed payload under an applied id is refused: {outcome:?}").into(),
+            )
+        }
     };
-    assert!(
+    check!(
         matches!(error, StoreError::Invariant { .. }),
         "the refusal is an invariant violation, which is terminal: {error:?}"
     );
     let message = error.to_string();
-    assert!(
+    check!(
         message.contains("wiaa_schools_wi:w39:schools:0"),
         "the refusal names the operation: {message}"
     );
-    assert!(
+    check!(
         message.contains("digest-a") && message.contains("digest-b"),
         "the refusal names both digests: {message}"
     );
-
-    assert_eq!(
-        rows(&store, Table::Schools),
-        2,
-        "the refused page wrote no rows"
-    );
-    assert_eq!(
-        store.receipt_count().unwrap(),
-        1,
-        "the refused page wrote no receipt"
-    );
+    check!(eq; rows(&store, Table::Schools)?, 2, "the refused page wrote no rows");
+    check!(eq; store.receipt_count()?, 1, "the refused page wrote no receipt");
     let receipt = store
-        .receipt("wiaa_schools_wi:w39:schools:0")
-        .unwrap()
-        .unwrap();
-    assert_eq!(
-        receipt.digest, "digest-a",
-        "the standing receipt is the first one"
-    );
+        .receipt("wiaa_schools_wi:w39:schools:0")?
+        .ok_or("standing receipt")?;
+    check!(eq; receipt.digest, "digest-a", "the standing receipt is the first one");
+    Ok(())
 }
 
 #[test]
-fn the_receipt_outlives_the_process_that_wrote_it() {
-    let dir = tempfile::tempdir().unwrap();
+fn the_receipt_outlives_the_process_that_wrote_it() -> TestResult {
+    let dir = tempfile::tempdir()?;
     let operation = "wiaa_schools_wi:w39:schools:0";
     {
-        let store = Store::open(dir.path()).unwrap();
-        apply(&store, operation, "digest-a", "unit-0").unwrap();
+        let store = Store::open(dir.path())?;
+        apply(&store, operation, "digest-a", "unit-0")?;
     }
-
-    let store = Store::open(dir.path()).unwrap();
-    let receipt = store.receipt(operation).unwrap().unwrap();
-    assert_eq!(receipt.appended, 2);
-    let repeat = apply(&store, operation, "digest-a", "unit-0").unwrap();
-    assert!(matches!(repeat, Application::Repeated(_)), "{repeat:?}");
-    assert_eq!(rows(&store, Table::Schools), 2);
+    let store = Store::open(dir.path())?;
+    let receipt = store.receipt(operation)?.ok_or("persisted receipt")?;
+    check!(eq; receipt.appended, 2);
+    let repeat = apply(&store, operation, "digest-a", "unit-0")?;
+    check!(matches!(repeat, Application::Repeated(_)), "{repeat:?}");
+    check!(eq; rows(&store, Table::Schools)?, 2);
+    Ok(())
 }
 
 #[test]
-fn a_replay_moves_no_counter_and_writes_no_second_journal_entry() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+fn a_replay_moves_no_counter_and_writes_no_second_journal_entry() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     apply(
         &store,
         "wiaa_schools_wi:w39:schools:0",
         "digest-a",
         "unit-0",
-    )
-    .unwrap();
-    let rows_before = rows(&store, Table::Schools);
-    let counter_before = counter(&store, Table::Schools);
-    let journal = store.journal_keys("wiaa_schools").unwrap();
-    assert!(
+    )?;
+    let rows_before = rows(&store, Table::Schools)?;
+    let counter_before = counter(&store, Table::Schools)?;
+    let journal = store.journal_keys("wiaa_schools")?;
+    check!(
         journal.contains("unit-0"),
         "the operation's marker was written"
     );
-
     let repeat = apply(
         &store,
         "wiaa_schools_wi:w39:schools:0",
         "digest-a",
         "unit-0",
-    )
-    .unwrap();
-    assert!(matches!(repeat, Application::Repeated(_)), "{repeat:?}");
-
-    assert_eq!(counter(&store, Table::Schools), counter_before);
-    assert_eq!(rows(&store, Table::Schools), rows_before);
-    assert_eq!(
-        store.journal_keys("wiaa_schools").unwrap(),
-        journal,
-        "the marker a replay would rewrite is the one already standing"
-    );
+    )?;
+    check!(matches!(repeat, Application::Repeated(_)), "{repeat:?}");
+    check!(eq; counter(&store, Table::Schools)?, counter_before);
+    check!(eq; rows(&store, Table::Schools)?, rows_before);
+    check!(eq; store.journal_keys("wiaa_schools")?, journal, "the marker a replay would rewrite is the one already standing");
+    Ok(())
 }
 
 #[test]
-fn an_operation_with_no_rows_still_has_a_receipt() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+fn an_operation_with_no_rows_still_has_a_receipt() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     let mut batch = store.write_batch();
-    batch
-        .append_many(Table::Schools, &Vec::<CanonicalSchool>::new())
-        .unwrap();
-    assert!(batch.is_empty(), "an empty page buffers nothing");
-
-    let outcome = batch
-        .commit_once("wiaa_schools_wi:w39:schools:empty", "digest-e")
-        .unwrap();
-    assert_eq!(
-        outcome.appended(),
-        0,
-        "an operation with no rows appends none"
-    );
-    assert!(
+    batch.append_many(Table::Schools, &Vec::<CanonicalSchool>::new())?;
+    check!(batch.is_empty(), "an empty page buffers nothing");
+    let outcome = batch.commit_once("wiaa_schools_wi:w39:schools:empty", "digest-e")?;
+    check!(eq; outcome.appended(), 0, "an operation with no rows appends none");
+    check!(
         matches!(outcome, Application::Written(_)),
         "and is still applied"
     );
-    assert_eq!(store.receipt_count().unwrap(), 1);
-
+    check!(eq; store.receipt_count()?, 1);
     let mut batch = store.write_batch();
-    batch.append_many(Table::Schools, &page()).unwrap();
-    let repeat = batch
-        .commit_once("wiaa_schools_wi:w39:schools:empty", "digest-e")
-        .unwrap();
-    let Application::Repeated(receipt) = repeat else {
-        panic!("the empty operation is a repeat, so its page is not written: {repeat:?}");
+    batch.append_many(Table::Schools, &page())?;
+    let repeat = batch.commit_once("wiaa_schools_wi:w39:schools:empty", "digest-e")?;
+    let receipt = match repeat {
+        Application::Repeated(receipt) => receipt,
+        other => {
+            return Err(format!(
+                "the empty operation is a repeat, so its page is not written: {other:?}"
+            )
+            .into())
+        }
     };
-    assert_eq!(receipt.digest, "digest-e");
-    assert_eq!(rows(&store, Table::Schools), 0, "the repeat wrote no rows");
+    check!(eq; receipt.digest, "digest-e");
+    check!(eq; rows(&store, Table::Schools)?, 0, "the repeat wrote no rows");
+    Ok(())
 }
 
 #[test]
-fn receipts_older_than_the_policy_day_are_removed_and_newer_ones_kept() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+fn receipts_older_than_the_policy_day_are_removed_and_newer_ones_kept() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     let today = SystemClock.today();
     let yesterday =
-        (NaiveDate::parse_from_str(&today, "%Y-%m-%d").unwrap() - chrono::Days::new(1)).to_string();
-    apply(&store, "old-operation", "digest-old", "unit-old").unwrap();
-
-    let kept = store.prune_receipts(&yesterday).unwrap();
-    assert_eq!(kept, Pruned::default(), "nothing older than yesterday");
-    assert!(store.receipt("old-operation").unwrap().is_some());
-
+        (NaiveDate::parse_from_str(&today, "%Y-%m-%d")? - chrono::Days::new(1)).to_string();
+    apply(&store, "old-operation", "digest-old", "unit-old")?;
+    let kept = store.prune_receipts(&yesterday)?;
+    check!(eq; kept, Pruned::default(), "nothing older than yesterday");
+    check!(store.receipt("old-operation")?.is_some());
     let tomorrow =
-        (NaiveDate::parse_from_str(&today, "%Y-%m-%d").unwrap() + chrono::Days::new(1)).to_string();
-    let pruned = store.prune_receipts(&tomorrow).unwrap();
-    assert_eq!(pruned.removed, 1);
-    assert_eq!(pruned.undated, 0);
-    assert!(store.receipt("old-operation").unwrap().is_none());
-    assert_eq!(store.receipt_count().unwrap(), 0);
-
-    let reapplied = apply(&store, "old-operation", "digest-old", "unit-old").unwrap();
-    assert!(
+        (NaiveDate::parse_from_str(&today, "%Y-%m-%d")? + chrono::Days::new(1)).to_string();
+    let pruned = store.prune_receipts(&tomorrow)?;
+    check!(eq; pruned.removed, 1);
+    check!(eq; pruned.undated, 0);
+    check!(store.receipt("old-operation")?.is_none());
+    check!(eq; store.receipt_count()?, 0);
+    let reapplied = apply(&store, "old-operation", "digest-old", "unit-old")?;
+    check!(
         matches!(reapplied, Application::Written(_)),
         "{reapplied:?}"
     );
-    assert_eq!(rows(&store, Table::Schools), 4);
+    check!(eq; rows(&store, Table::Schools)?, 4);
+    Ok(())
 }
 
 #[test]
-fn a_boundary_that_is_not_a_day_is_refused() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+fn a_boundary_that_is_not_a_day_is_refused() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     apply(
         &store,
         "wiaa_schools_wi:w39:schools:0",
         "digest-a",
         "unit-0",
-    )
-    .unwrap();
+    )?;
     let refused = store.prune_receipts("last tuesday");
-    assert!(
+    check!(
         matches!(refused, Err(StoreError::Refused { .. })),
         "an unreadable boundary is refused rather than guessed at: {refused:?}"
     );
-    assert_eq!(
-        store.receipt_count().unwrap(),
-        1,
-        "a refused prune removed nothing"
-    );
+    check!(eq; store.receipt_count()?, 1, "a refused prune removed nothing");
+    Ok(())
 }
 
 #[test]
-fn an_id_or_digest_the_store_cannot_record_is_refused() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+fn an_id_or_digest_the_store_cannot_record_is_refused() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     let long_id = "o".repeat(MAX_OPERATION_BYTES + 1);
     let long_digest = "d".repeat(MAX_DIGEST_BYTES + 1);
     let cases = [
@@ -318,13 +287,14 @@ fn an_id_or_digest_the_store_cannot_record_is_refused() {
     ];
     for (operation, digest, why) in cases {
         let mut batch = store.write_batch();
-        batch.append_many(Table::Schools, &page()).unwrap();
+        batch.append_many(Table::Schools, &page())?;
         let refused = batch.commit_once(operation, digest);
-        assert!(
+        check!(
             matches!(refused, Err(StoreError::Refused { .. })),
             "{why} is refused before anything is written: {refused:?}"
         );
     }
-    assert_eq!(rows(&store, Table::Schools), 0);
-    assert_eq!(store.receipt_count().unwrap(), 0);
+    check!(eq; rows(&store, Table::Schools)?, 0);
+    check!(eq; store.receipt_count()?, 0);
+    Ok(())
 }

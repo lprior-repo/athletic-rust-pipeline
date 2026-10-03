@@ -1,3 +1,7 @@
+#[macro_use]
+#[path = "../../../tools/fallible_checks.rs"]
+mod fallible_checks;
+
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
     CanonicalPerformance, CanonicalSchool, CanonicalTeam, CentiSeconds, CoachRole,
@@ -14,6 +18,8 @@ use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
+
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 const SOURCE: &str = "wiaa_schools";
 const SECOND_SOURCE: &str = "mshsl_schools";
@@ -41,39 +47,26 @@ struct Corpus {
 }
 
 impl Corpus {
-    fn append(&self, store: &Store) {
-        store
-            .append_many(Table::Schools, &self.schools)
-            .expect("appending schools");
-        store
-            .append_many(Table::Teams, &self.teams)
-            .expect("appending teams");
-        store
-            .append_many(Table::Coaches, &self.coaches)
-            .expect("appending coaches");
-        store
-            .append_many(Table::Athletes, &self.athletes)
-            .expect("appending athletes");
-        store
-            .append_many(Table::Meets, &self.meets)
-            .expect("appending meets");
-        store
-            .append_many(Table::Events, &self.events)
-            .expect("appending events");
-        store
-            .append_many(Table::Performances, &self.performances)
-            .expect("appending performances");
+    fn append(&self, store: &Store) -> TestResult {
+        store.append_many(Table::Schools, &self.schools)?;
+        store.append_many(Table::Teams, &self.teams)?;
+        store.append_many(Table::Coaches, &self.coaches)?;
+        store.append_many(Table::Athletes, &self.athletes)?;
+        store.append_many(Table::Meets, &self.meets)?;
+        store.append_many(Table::Events, &self.events)?;
+        store.append_many(Table::Performances, &self.performances)?;
+        Ok(())
     }
 
-    fn history_row(&self) -> &CanonicalSchool {
+    fn history_row(&self) -> TestResult<&CanonicalSchool> {
         self.schools
             .iter()
             .find(|row| row.id == self.history_school)
-            .expect("the corpus holds the history school")
+            .ok_or_else(|| "corpus carries no history school".into())
     }
 }
 
-fn corpus() -> Corpus {
+fn corpus() -> TestResult<Corpus> {
     let mut corpus = Corpus {
         schools: Vec::new(),
         teams: Vec::new(),
@@ -94,21 +87,21 @@ fn corpus() -> Corpus {
         UsJurisdiction::Wisconsin,
         "Drill High School",
         0,
-    );
+    )?;
     corpus.history_school = history;
     add_school(
         &mut corpus,
         UsJurisdiction::Minnesota,
         "Drill North High School",
         1,
-    );
+    )?;
     add_school(
         &mut corpus,
         UsJurisdiction::Iowa,
         "Drill West High School",
         2,
-    );
-    corpus
+    )?;
+    Ok(corpus)
 }
 
 fn add_school(
@@ -116,7 +109,7 @@ fn add_school(
     jurisdiction: UsJurisdiction,
     name: &str,
     index: usize,
-) -> SchoolId {
+) -> TestResult<SchoolId> {
     let (mut school, school_id) = CanonicalSchool::new(jurisdiction, name, normalize_name(name));
     school.evidence.push(observation(SOURCE, FIRST_DATE));
     let team = CanonicalTeam {
@@ -124,7 +117,7 @@ fn add_school(
         school: school_id.clone(),
         sport: Sport::OutdoorTrack,
         gender: Gender::Mixed,
-        school_year: SchoolYear::new(2025).expect("2025 is a season"),
+        school_year: SchoolYear::new(2025).ok_or("invalid fixture season")?,
         level: None,
         source_identities: Vec::new(),
         evidence: vec![observation(SOURCE, FIRST_DATE)],
@@ -154,9 +147,9 @@ fn add_school(
     corpus.coaches.push(coach);
     corpus.meets.push(meet);
     for slot in 0..2 {
-        add_athlete(corpus, index, slot, &school_id, &team_id, &meet_id);
+        add_athlete(corpus, index, slot, &school_id, &team_id, &meet_id)?;
     }
-    school_id
+    Ok(school_id)
 }
 
 fn add_athlete(
@@ -166,7 +159,7 @@ fn add_athlete(
     school_id: &SchoolId,
     team_id: &TeamId,
     meet_id: &census_domain::model::MeetId,
-) {
+) -> TestResult {
     let gender = if (index + slot).is_multiple_of(2) {
         Gender::Boys
     } else {
@@ -185,8 +178,8 @@ fn add_athlete(
     );
     athlete.sports.push(Sport::OutdoorTrack);
     athlete.observed_grades.push(ObservedGrade {
-        grade: Grade::new(11).expect("grade 11 is a school grade"),
-        school_year: SchoolYear::new(2025).expect("2025 is a season"),
+        grade: Grade::new(11).ok_or("invalid fixture grade")?,
+        school_year: SchoolYear::new(2025).ok_or("invalid fixture season")?,
         source: SourceRef::id(SOURCE),
     });
     athlete.evidence.push(observation(SOURCE, MEET_DATE));
@@ -211,17 +204,17 @@ fn add_athlete(
             mark: Mark::TimeSeconds(
                 CentiSeconds::try_from_seconds_f64(
                     130.0
-                        + f64::from(u32::try_from(index + slot).expect("small"))
-                        + f64::from(u32::try_from(attempt).expect("small")),
+                        + f64::from(u32::try_from(index + slot)?)
+                        + f64::from(u32::try_from(attempt)?),
                 )
-                .expect("fixture is in range"),
+                .ok_or("invalid fixture time")?,
             ),
             wind_mps: None,
-            place: Some(u16::try_from(attempt + 1).expect("two attempts fit u16")),
-            heat: None,
+            place: Some(u16::try_from(attempt + 1)?),
+            heat: Some(format!("attempt-{}", attempt + 1)),
             round: None,
             timing: Some(TimingMethod::Fat),
-            observed_grade: Some(Grade::new(11).expect("grade 11 is a school grade")),
+            observed_grade: Some(Grade::new(11).ok_or("invalid fixture grade")?),
             evidence: vec![observation(SOURCE, MEET_DATE)],
             source_key,
             source_athlete: Some(source.clone()),
@@ -230,9 +223,10 @@ fn add_athlete(
     }
     corpus.events.push(event);
     corpus.athletes.push(athlete);
+    Ok(())
 }
 
-fn add_history(store: &Store, first: &CanonicalSchool) {
+fn add_history(store: &Store, first: &CanonicalSchool) -> TestResult {
     let mut second = first.clone();
     second.city = Some("Drill City".to_string());
     second.enrollment = Some(420);
@@ -240,12 +234,9 @@ fn add_history(store: &Store, first: &CanonicalSchool) {
     let mut third = first.clone();
     third.co_op = true;
     third.evidence = vec![observation(SOURCE, THIRD_DATE)];
-    store
-        .append(Table::Schools, &second)
-        .expect("appending the second history observation");
-    store
-        .append(Table::Schools, &third)
-        .expect("appending the third history observation");
+    store.append(Table::Schools, &second)?;
+    store.append(Table::Schools, &third)?;
+    Ok(())
 }
 
 struct ReadModel {
@@ -260,66 +251,58 @@ struct ReadModel {
     snapshots: Vec<(String, String)>,
 }
 
-fn drill(root: &Path) -> (Corpus, PathBuf) {
+fn drill(root: &Path) -> TestResult<(Corpus, PathBuf)> {
     let live = root.join("live");
     let backup = root.join("backup");
     let restored = root.join("restored");
-    let corpus = corpus();
+    let corpus = corpus()?;
 
     {
-        let store = Store::open(&live).expect("opening the live store");
-        corpus.append(&store);
-        add_history(&store, corpus.history_row());
-        store
-            .journal_done(
-                "drill_phase",
-                "wi:drill",
-                &serde_json::json!({"schools": 3}),
-            )
-            .expect("recording the finished unit of work");
-        store.flush().expect("flushing the live store");
+        let store = Store::open(&live)?;
+        corpus.append(&store)?;
+        add_history(&store, corpus.history_row()?)?;
+        store.journal_done(
+            "drill_phase",
+            "wi:drill",
+            &serde_json::json!({"schools": 3}),
+        )?;
+        store.flush()?;
     }
 
-    copy_tree(&live, &backup);
-    assert_eq!(
-        tree_digest(&live.join("fjall")),
-        tree_digest(&backup.join("fjall")),
-        "the backup must be a byte image of the stopped store's database"
-    );
+    copy_tree(&live, &backup)?;
+    check!(eq; tree_digest(&live.join("fjall"))?,
+    tree_digest(&backup.join("fjall"))?,
+    "the backup must be a byte image of the stopped store's database");
 
-    copy_tree(&backup.join("fjall"), &restored.join("fjall"));
-    assert_eq!(
-        tree_digest(&restored.join("fjall")),
-        tree_digest(&backup.join("fjall")),
-        "the restored database must be a byte image of the backup"
-    );
+    copy_tree(&backup.join("fjall"), &restored.join("fjall"))?;
+    check!(eq; tree_digest(&restored.join("fjall"))?,
+    tree_digest(&backup.join("fjall"))?,
+    "the restored database must be a byte image of the backup");
 
-    (corpus, restored)
+    Ok((corpus, restored))
 }
 
-fn capture(store: &Store, history_id: &SchoolId) -> ReadModel {
-    let stats = store.stats().expect("store stats");
-    let schools = store
-        .scan::<CanonicalSchool>(Table::Schools)
-        .expect("scanning schools");
+fn capture(store: &Store, history_id: &SchoolId) -> TestResult<ReadModel> {
+    let stats = store.stats()?;
+    let schools = store.scan::<CanonicalSchool>(Table::Schools)?;
     let history = schools
         .iter()
         .find(|row| &row.id == history_id)
-        .expect("the merged history school")
+        .ok_or("missing merged history school")?
         .clone();
-    let dataset = ExportDataset::load(store).expect("export dataset");
+    let dataset = ExportDataset::load(store)?;
     let core = Derivation::of(&dataset, Scope::Core, None);
     let all_sources = Derivation::of(&dataset, Scope::AllSources, None);
-    ReadModel {
+    Ok(ReadModel {
         tables: stats.tables,
         observations: stats.observations,
         merged_schools: schools.len(),
         history,
-        core: census_json(&report::build_census(&core, &store.out_dir()), store.root()),
+        core: census_json(&report::build_census(&core, &store.out_dir()), store.root())?,
         all_sources: census_json(
             &report::build_census(&all_sources, &store.out_dir()),
             store.root(),
-        ),
+        )?,
         bests: serde_json::to_string_pretty(&bests::build_from_dataset(
             &dataset,
             &bests::Options {
@@ -327,45 +310,42 @@ fn capture(store: &Store, history_id: &SchoolId) -> ReadModel {
                 grad_year: Some(2027),
                 limit: None,
             },
-        ))
-        .expect("best marks serialize"),
-        counts: census::consolidate(store).expect("consolidating the store"),
-        snapshots: snapshots(&store.out_dir()),
-    }
+        ))?,
+        counts: census::consolidate(store)?,
+        snapshots: snapshots(&store.out_dir())?,
+    })
 }
 
-fn snapshots(out: &Path) -> Vec<(String, String)> {
+fn snapshots(out: &Path) -> TestResult<Vec<(String, String)>> {
     ["schools", "coaches", "performances"]
         .iter()
-        .map(|name| {
+        .map(|name| -> TestResult<_> {
             let path = out.join(format!("{name}.jsonl"));
-            let body = fs::read_to_string(&path)
-                .unwrap_or_else(|error| panic!("snapshot {} is missing: {error}", path.display()));
-            ((*name).to_string(), body)
+            let body = fs::read_to_string(&path)?;
+            Ok(((*name).to_string(), body))
         })
         .collect()
 }
 
-fn census_json(census: &Census, root: &Path) -> String {
-    let mut value = serde_json::to_value(census).expect("a census serializes");
+fn census_json(census: &Census, root: &Path) -> TestResult<String> {
+    let mut value = serde_json::to_value(census)?;
     if let Some(object) = value.as_object_mut() {
         object.insert(
             "generated_on".to_string(),
             serde_json::Value::String("<drill>".to_string()),
         );
     }
-    let text = serde_json::to_string_pretty(&value).expect("a census value serializes");
-    text.replace(&root.display().to_string(), "<drill>")
+    let text = serde_json::to_string_pretty(&value)?;
+    Ok(text.replace(&root.display().to_string(), "<drill>"))
 }
 
-fn assert_same_json(label: &str, left: &str, right: &str) {
-    let left_value: serde_json::Value = serde_json::from_str(left)
-        .unwrap_or_else(|error| panic!("{label}: left is not JSON: {error}"));
-    let right_value: serde_json::Value = serde_json::from_str(right)
-        .unwrap_or_else(|error| panic!("{label}: right is not JSON: {error}"));
+fn assert_same_json(label: &str, left: &str, right: &str) -> TestResult {
+    let left_value: serde_json::Value = serde_json::from_str(left)?;
+    let right_value: serde_json::Value = serde_json::from_str(right)?;
     if let Some((path, left_at, right_at)) = first_difference(&left_value, &right_value, "") {
-        panic!("{label} differs at {path}: {left_at} != {right_at}");
+        return Err(format!("{label} differs at {path}: {left_at} != {right_at}").into());
     }
+    Ok(())
 }
 
 fn first_difference(
@@ -425,36 +405,35 @@ fn render(value: Option<&serde_json::Value>) -> String {
     out
 }
 
-fn census_field(census: &str, path: &[&str]) -> u64 {
-    let value: serde_json::Value =
-        serde_json::from_str(census).expect("a captured census is valid JSON");
+fn census_field(census: &str, path: &[&str]) -> TestResult<u64> {
+    let value: serde_json::Value = serde_json::from_str(census)?;
     let mut cursor = &value;
     for step in path {
         cursor = cursor
             .get(step)
-            .unwrap_or_else(|| panic!("census has no {} field", path.join(".")));
+            .ok_or_else(|| format!("census has no {} field", path.join(".")))?;
     }
     cursor
         .as_u64()
-        .unwrap_or_else(|| panic!("census field {} is not an integer", path.join(".")))
+        .ok_or_else(|| format!("census field {} is not an integer", path.join(".")).into())
 }
 
-fn expected_observations(corpus: &Corpus) -> Vec<(String, u64)> {
-    let row = |table: Table, rows: usize| {
-        let rows = u64::try_from(rows).expect("a corpus table holds fewer than 2^64 rows");
-        (table.file().to_string(), rows)
+fn expected_observations(corpus: &Corpus) -> TestResult<Vec<(String, u64)>> {
+    let row = |table: Table, rows: usize| -> TestResult<_> {
+        let rows = u64::try_from(rows)?;
+        Ok((table.file().to_string(), rows))
     };
     let evidence = [
         row(
             Table::Schools,
             corpus.schools.len() + HISTORY_EXTRA_OBSERVATIONS,
-        ),
-        row(Table::Teams, corpus.teams.len()),
-        row(Table::Coaches, corpus.coaches.len()),
-        row(Table::Athletes, corpus.athletes.len()),
-        row(Table::Meets, corpus.meets.len()),
-        row(Table::Events, corpus.distinct_events.len()),
-        row(Table::Performances, corpus.performances.len()),
+        )?,
+        row(Table::Teams, corpus.teams.len())?,
+        row(Table::Coaches, corpus.coaches.len())?,
+        row(Table::Athletes, corpus.athletes.len())?,
+        row(Table::Meets, corpus.meets.len())?,
+        row(Table::Events, corpus.distinct_events.len())?,
+        row(Table::Performances, corpus.performances.len())?,
     ];
     let derived = [
         Table::SourceIdentities,
@@ -469,165 +448,127 @@ fn expected_observations(corpus: &Corpus) -> Vec<(String, u64)> {
         Table::AthleteIdentityDecisions,
     ]
     .into_iter()
-    .map(|table| row(table, 0));
+    .map(|table| row(table, 0))
+    .collect::<TestResult<Vec<_>>>()?;
     let mut expected: Vec<(String, u64)> = evidence.to_vec();
     expected.extend(derived);
-    expected
+    Ok(expected)
 }
 
-fn assert_live_store_matches_corpus(before: &ReadModel, corpus: &Corpus) {
-    assert_eq!(
-        before.tables,
-        expected_observations(corpus),
-        "the live store's per-table observation counts"
-    );
-    assert_eq!(
-        before.merged_schools,
-        corpus.schools.len(),
-        "three observations of the history school merge into one row"
-    );
-    assert_eq!(
-        census_field(&before.core, &["totals", "schools"]),
-        u64::try_from(corpus.schools.len()).expect("small"),
-    );
-    assert_eq!(
-        census_field(&before.all_sources, &["totals", "athletes"]),
-        u64::try_from(corpus.athletes.len()).expect("small"),
-    );
-    assert_eq!(
-        census_field(&before.all_sources, &["totals", "class_of_2027"]),
-        u64::try_from(corpus.athletes.len()).expect("small"),
-    );
-    assert_eq!(
-        census_field(&before.all_sources, &["totals", "coaches"]),
-        u64::try_from(corpus.coaches.len()).expect("small"),
-    );
-    let bests: Vec<serde_json::Value> =
-        serde_json::from_str(&before.bests).expect("the best-mark reduction is a JSON array");
-    assert_eq!(
-        bests.len(),
-        corpus.athletes.len(),
-        "one best mark per athlete"
-    );
+fn assert_live_store_matches_corpus(before: &ReadModel, corpus: &Corpus) -> TestResult {
+    check!(eq; before.tables,
+    expected_observations(corpus)?,
+    "the live store's per-table observation counts");
+    check!(eq; before.merged_schools,
+    corpus.schools.len(),
+    "three observations of the history school merge into one row");
+    check!(eq; census_field(&before.core, &["totals", "schools"])?,
+    u64::try_from(corpus.schools.len())?,);
+    check!(eq; census_field(&before.all_sources, &["totals", "athletes"])?,
+    u64::try_from(corpus.athletes.len())?,);
+    check!(eq; census_field(&before.all_sources, &["totals", "class_of_2027"])?,
+    u64::try_from(corpus.athletes.len())?,);
+    check!(eq; census_field(&before.all_sources, &["totals", "coaches"])?,
+    u64::try_from(corpus.coaches.len())?,);
+    let bests: Vec<serde_json::Value> = serde_json::from_str(&before.bests)?;
+    check!(eq; bests.len(),
+    corpus.athletes.len(),
+    "one best mark per athlete");
+    Ok(())
 }
 
-fn assert_history(school: &CanonicalSchool) {
+fn assert_history(school: &CanonicalSchool) -> TestResult {
     let observed: Vec<(String, String)> = school
         .evidence
         .iter()
         .map(|row| (row.source.id.clone(), row.observed_on.clone()))
         .collect();
-    assert_eq!(
-        observed,
-        vec![
-            (SOURCE.to_string(), FIRST_DATE.to_string()),
-            (SECOND_SOURCE.to_string(), SECOND_DATE.to_string()),
-            (SOURCE.to_string(), THIRD_DATE.to_string()),
-        ],
-        "the merged history keeps all three observations in append order"
-    );
-    assert_eq!(school.city.as_deref(), Some("Drill City"));
-    assert_eq!(school.enrollment, Some(420));
-    assert!(school.co_op, "the third observation set co_op");
+    check!(eq; observed,
+    vec![
+        (SOURCE.to_string(), FIRST_DATE.to_string()),
+        (SECOND_SOURCE.to_string(), SECOND_DATE.to_string()),
+        (SOURCE.to_string(), THIRD_DATE.to_string()),
+    ],
+    "the merged history keeps all three observations in append order");
+    check!(eq; school.city.as_deref(), Some("Drill City"));
+    check!(eq; school.enrollment, Some(420));
+    check!(school.co_op, "the third observation set co_op");
+    Ok(())
 }
 
-fn copy_tree(from: &Path, to: &Path) {
-    fs::create_dir_all(to).unwrap_or_else(|error| {
-        panic!("creating {} failed: {error}", to.display());
-    });
-    let mut entries: Vec<PathBuf> = fs::read_dir(from)
-        .unwrap_or_else(|error| panic!("reading {} failed: {error}", from.display()))
-        .map(|entry| {
-            entry
-                .unwrap_or_else(|error| panic!("reading {} failed: {error}", from.display()))
-                .path()
-        })
-        .collect();
+fn copy_tree(from: &Path, to: &Path) -> TestResult {
+    fs::create_dir_all(to)?;
+    let mut entries: Vec<PathBuf> = fs::read_dir(from)?
+        .map(|entry| entry.map(|entry| entry.path()))
+        .collect::<std::io::Result<_>>()?;
     entries.sort();
     for path in entries {
         let name = path
             .file_name()
-            .unwrap_or_else(|| panic!("{} has no file name", path.display()));
+            .ok_or_else(|| format!("{} has no file name", path.display()))?;
         let target = to.join(name);
         if path.is_dir() {
-            copy_tree(&path, &target);
+            copy_tree(&path, &target)?;
         } else {
-            fs::copy(&path, &target).unwrap_or_else(|error| {
-                panic!(
-                    "copying {} to {} failed: {error}",
-                    path.display(),
-                    target.display()
-                )
-            });
+            fs::copy(&path, &target)?;
         }
     }
+    Ok(())
 }
 
-fn file_digests(root: &Path) -> Vec<(String, String)> {
-    fn walk(root: &Path, dir: &Path, out: &mut Vec<(String, String)>) {
-        let mut entries: Vec<PathBuf> = fs::read_dir(dir)
-            .unwrap_or_else(|error| panic!("reading {} failed: {error}", dir.display()))
-            .map(|entry| {
-                entry
-                    .unwrap_or_else(|error| panic!("reading {} failed: {error}", dir.display()))
-                    .path()
-            })
-            .collect();
+fn file_digests(root: &Path) -> TestResult<Vec<(String, String)>> {
+    fn walk(root: &Path, dir: &Path, out: &mut Vec<(String, String)>) -> TestResult {
+        let mut entries: Vec<PathBuf> = fs::read_dir(dir)?
+            .map(|entry| entry.map(|entry| entry.path()))
+            .collect::<std::io::Result<_>>()?;
         entries.sort();
         for path in entries {
             if path.is_dir() {
-                walk(root, &path, out);
+                walk(root, &path, out)?;
             } else {
-                let relative = path
-                    .strip_prefix(root)
-                    .unwrap_or_else(|_| {
-                        panic!("{} is not under {}", path.display(), root.display())
-                    })
-                    .display()
-                    .to_string();
-                out.push((relative, sha256_file(&path)));
+                let relative = path.strip_prefix(root)?.display().to_string();
+                out.push((relative, sha256_file(&path)?));
             }
         }
+        Ok(())
     }
     let mut out = Vec::new();
-    walk(root, root, &mut out);
+    walk(root, root, &mut out)?;
     out.sort();
-    out
+    Ok(out)
 }
 
-fn sha256_file(path: &Path) -> String {
-    let bytes =
-        fs::read(path).unwrap_or_else(|error| panic!("reading {} failed: {error}", path.display()));
-    format!("{:x}", Sha256::digest(&bytes))
+fn sha256_file(path: &Path) -> TestResult<String> {
+    let bytes = fs::read(path)?;
+    Ok(format!("{:x}", Sha256::digest(&bytes)))
 }
 
-fn tree_digest(root: &Path) -> String {
+fn tree_digest(root: &Path) -> TestResult<String> {
     let mut hasher = Sha256::new();
-    for (path, digest) in file_digests(root) {
+    for (path, digest) in file_digests(root)? {
         hasher.update(path.as_bytes());
         hasher.update([0_u8]);
         hasher.update(digest.as_bytes());
         hasher.update(*b"\n");
     }
-    format!("{:x}", hasher.finalize())
+    Ok(format!("{:x}", hasher.finalize()))
 }
 
-fn table_count(stats: &StoreStats, table: Table) -> u64 {
+fn table_count(stats: &StoreStats, table: Table) -> TestResult<u64> {
     stats
         .tables
         .iter()
         .find(|(name, _)| name == table.file())
         .map(|(_, count)| *count)
-        .unwrap_or_else(|| panic!("stats reported no count for {}", table.file()))
+        .ok_or_else(|| format!("stats reported no count for {}", table.file()).into())
 }
 
-fn merged_school(store: &Store, id: &SchoolId) -> CanonicalSchool {
+fn merged_school(store: &Store, id: &SchoolId) -> TestResult<CanonicalSchool> {
     store
-        .scan::<CanonicalSchool>(Table::Schools)
-        .expect("scanning schools")
+        .scan::<CanonicalSchool>(Table::Schools)?
         .into_iter()
         .find(|row| &row.id == id)
-        .expect("the merged history school")
+        .ok_or_else(|| "missing merged history school".into())
 }
 
 fn batch_row(batch: usize, slot: usize) -> CanonicalSchool {
@@ -647,291 +588,245 @@ fn batch_ids(count: usize) -> BTreeSet<String> {
         .collect()
 }
 
-fn append_batch(root: &Path, batch: usize) {
-    let store = Store::open(root).expect("opening the batch store");
+fn append_batch(root: &Path, batch: usize) -> TestResult {
+    let store = Store::open(root)?;
     let rows: Vec<CanonicalSchool> = (0..2).map(|slot| batch_row(batch, slot)).collect();
-    store
-        .append_many(Table::Schools, &rows)
-        .expect("appending a batch");
-    store.flush().expect("flushing the batch store");
+    store.append_many(Table::Schools, &rows)?;
+    store.flush()?;
+    Ok(())
 }
 
-fn batch_store(root: &Path, batches: usize) -> (u64, u64) {
+fn batch_store(root: &Path, batches: usize) -> TestResult<(u64, u64)> {
     let mut boundary = 0_u64;
     for batch in 0..batches {
         if batch == 1 {
-            drop(Store::open(root).expect("settling the batch store"));
-            boundary = journal_len(root);
+            drop(Store::open(root)?);
+            boundary = journal_len(root)?;
         }
-        append_batch(root, batch);
+        append_batch(root, batch)?;
     }
-    let store = Store::open(root).expect("reopening the batch store");
-    let rows = store.stats().expect("batch store stats").observations;
+    let store = Store::open(root)?;
+    let rows = store.stats()?.observations;
     drop(store);
-    (rows, boundary)
+    Ok((rows, boundary))
 }
 
-fn journal_len(root: &Path) -> u64 {
-    let journal = journal_file(root);
-    fs::metadata(&journal)
-        .unwrap_or_else(|error| panic!("reading {} failed: {error}", journal.display()))
-        .len()
+fn journal_len(root: &Path) -> TestResult<u64> {
+    let journal = journal_file(root)?;
+    Ok(fs::metadata(&journal)?.len())
 }
 
-fn cut_and_read(copy: &Path, full: &[u8], cut: usize) -> (u64, BTreeSet<String>) {
-    let journal = journal_file(copy);
-    fs::write(
-        &journal,
-        full.get(..cut).unwrap_or_else(|| {
-            panic!(
-                "cut {cut} is past the {} bytes of {}",
-                full.len(),
-                journal.display()
-            )
-        }),
-    )
-    .unwrap_or_else(|error| panic!("writing {} failed: {error}", journal.display()));
-    let store = Store::open(copy).expect("a cut journal must not stop the store opening");
-    let rows = store.stats().expect("copy stats").observations;
-    (rows, school_ids(&store))
+fn cut_and_read(copy: &Path, full: &[u8], cut: usize) -> TestResult<(u64, BTreeSet<String>)> {
+    let journal = journal_file(copy)?;
+    let prefix = full
+        .get(..cut)
+        .ok_or_else(|| format!("cut {cut} exceeds journal length {}", full.len()))?;
+    fs::write(&journal, prefix)?;
+    let store = Store::open(copy)?;
+    let rows = store.stats()?.observations;
+    Ok((rows, school_ids(&store)?))
 }
 
-fn journal_file(root: &Path) -> PathBuf {
+fn journal_file(root: &Path) -> TestResult<PathBuf> {
     let fjall = root.join("fjall");
-    let mut found: Vec<PathBuf> = fs::read_dir(&fjall)
-        .unwrap_or_else(|error| panic!("reading {} failed: {error}", fjall.display()))
-        .map(|entry| {
-            entry
-                .unwrap_or_else(|error| panic!("reading {} failed: {error}", fjall.display()))
-                .path()
-        })
+    let mut found: Vec<PathBuf> = fs::read_dir(&fjall)?
+        .map(|entry| entry.map(|entry| entry.path()))
+        .collect::<std::io::Result<Vec<_>>>()?
+        .into_iter()
         .filter(|path| path.extension().is_some_and(|extension| extension == "jnl"))
         .collect();
     found.sort();
     found
         .pop()
-        .unwrap_or_else(|| panic!("no journal file under {}", fjall.display()))
+        .ok_or_else(|| format!("no journal under {}", fjall.display()).into())
 }
 
-fn school_ids(store: &Store) -> BTreeSet<String> {
-    store
-        .scan::<CanonicalSchool>(Table::Schools)
-        .expect("scanning schools")
+fn school_ids(store: &Store) -> TestResult<BTreeSet<String>> {
+    Ok(store
+        .scan::<CanonicalSchool>(Table::Schools)?
         .into_iter()
         .map(|row| row.id.as_str().to_string())
-        .collect()
+        .collect())
 }
 
-fn school_rows(store: &Store) -> BTreeMap<String, String> {
+fn school_rows(store: &Store) -> TestResult<BTreeMap<String, String>> {
     store
-        .scan::<CanonicalSchool>(Table::Schools)
-        .expect("scanning schools")
+        .scan::<CanonicalSchool>(Table::Schools)?
         .into_iter()
-        .map(|row| {
-            (
-                row.id.as_str().to_string(),
-                serde_json::to_string(&row).expect("a school serializes"),
-            )
+        .map(|row| -> TestResult<_> {
+            Ok((row.id.as_str().to_string(), serde_json::to_string(&row)?))
         })
         .collect()
 }
 
 #[test]
-fn cold_copy_backup_restores_the_read_model_exactly() {
-    let dir = tempfile::tempdir().expect("a temporary drill directory");
+fn cold_copy_backup_restores_the_read_model_exactly() -> TestResult {
+    let dir = tempfile::tempdir()?;
 
-    let (corpus, restored_root) = drill(dir.path());
+    let (corpus, restored_root) = drill(dir.path())?;
     let before_root = dir.path().join("live");
 
     let before = {
-        let store = Store::open(&before_root).expect("reopening the stopped live store");
-        capture(&store, &corpus.history_school)
+        let store = Store::open(&before_root)?;
+        capture(&store, &corpus.history_school)?
     };
     let after = {
-        let store = Store::open(&restored_root).expect("opening the restored store");
-        capture(&store, &corpus.history_school)
+        let store = Store::open(&restored_root)?;
+        capture(&store, &corpus.history_school)?
     };
 
-    assert_live_store_matches_corpus(&before, &corpus);
-    assert_history(&before.history);
+    assert_live_store_matches_corpus(&before, &corpus)?;
+    assert_history(&before.history)?;
 
-    assert_eq!(
-        after.tables, before.tables,
-        "restored per-table observation counts"
-    );
-    assert_eq!(
-        after.observations, before.observations,
-        "restored observation total"
-    );
-    assert_eq!(
-        after.merged_schools, before.merged_schools,
-        "restored merged school count"
-    );
-    assert_eq!(
-        after.history, before.history,
-        "the history school's merged observation history"
-    );
-    assert_same_json("the core-scope census", &before.core, &after.core);
+    check!(eq; after.tables, before.tables,
+    "restored per-table observation counts");
+    check!(eq; after.observations, before.observations,
+    "restored observation total");
+    check!(eq; after.merged_schools, before.merged_schools,
+    "restored merged school count");
+    check!(eq; after.history, before.history,
+    "the history school's merged observation history");
+    assert_same_json("the core-scope census", &before.core, &after.core)?;
     assert_same_json(
         "the all-sources census",
         &before.all_sources,
         &after.all_sources,
-    );
-    assert_same_json("the best-mark reduction", &before.bests, &after.bests);
-    assert_eq!(after.counts, before.counts, "the consolidated row counts");
-    assert_eq!(
-        after.snapshots, before.snapshots,
-        "the consolidated snapshots"
-    );
+    )?;
+    assert_same_json("the best-mark reduction", &before.bests, &after.bests)?;
+    check!(eq; after.counts, before.counts, "the consolidated row counts");
+    check!(eq; after.snapshots, before.snapshots,
+    "the consolidated snapshots");
+    Ok(())
 }
 
 #[test]
-fn the_restored_store_reopens_and_appends_without_overwriting() {
-    let dir = tempfile::tempdir().expect("a temporary drill directory");
-    let (corpus, restored_root) = drill(dir.path());
+fn the_restored_store_reopens_and_appends_without_overwriting() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let (corpus, restored_root) = drill(dir.path())?;
 
-    let reopened = Store::open(&restored_root).expect("reopening the restored store");
-    let restored_history = merged_school(&reopened, &corpus.history_school);
-    assert_history(&restored_history);
-    let before = reopened.stats().expect("restored store stats");
+    let reopened = Store::open(&restored_root)?;
+    let restored_history = merged_school(&reopened, &corpus.history_school)?;
+    assert_history(&restored_history)?;
+    let before = reopened.stats()?;
 
     let mut fourth = restored_history.clone();
     fourth.evidence = vec![observation(SECOND_SOURCE, AFTER_RESTORE_DATE)];
-    reopened
-        .append(Table::Schools, &fourth)
-        .expect("appending after the restore");
-    reopened.flush().expect("flushing the append");
-    let after = reopened.stats().expect("stats after the append");
-    assert_eq!(
-        table_count(&after, Table::Schools),
-        table_count(&before, Table::Schools) + 1,
-        "the append is a new observation row"
-    );
-    let appended = merged_school(&reopened, &corpus.history_school);
-    assert_eq!(
-        appended.evidence.len(),
-        4,
-        "the appended observation joins the history instead of replacing it"
-    );
-    assert_eq!(
-        appended.evidence.last().map(|row| row.observed_on.as_str()),
-        Some(AFTER_RESTORE_DATE)
-    );
+    reopened.append(Table::Schools, &fourth)?;
+    reopened.flush()?;
+    let after = reopened.stats()?;
+    check!(eq; table_count(&after, Table::Schools)?,
+    table_count(&before, Table::Schools)? + 1,
+    "the append is a new observation row");
+    let appended = merged_school(&reopened, &corpus.history_school)?;
+    check!(eq; appended.evidence.len(),
+    4,
+    "the appended observation joins the history instead of replacing it");
+    check!(eq; appended.evidence.last().map(|row| row.observed_on.as_str()),
+    Some(AFTER_RESTORE_DATE));
     drop(reopened);
 
-    let again = Store::open(&restored_root).expect("reopening after the append");
-    let final_history = merged_school(&again, &corpus.history_school);
-    assert_eq!(final_history.evidence.len(), 4);
-    assert_eq!(
-        table_count(&again.stats().expect("final stats"), Table::Schools),
-        table_count(&before, Table::Schools) + 1
-    );
+    let again = Store::open(&restored_root)?;
+    let final_history = merged_school(&again, &corpus.history_school)?;
+    check!(eq; final_history.evidence.len(), 4);
+    check!(eq; table_count(&again.stats()?, Table::Schools)?,
+    table_count(&before, Table::Schools)? + 1);
+    Ok(())
 }
 
 #[test]
-fn a_copy_taken_while_the_store_handle_is_open_keeps_every_committed_batch() {
-    let dir = tempfile::tempdir().expect("a temporary drill directory");
+fn a_copy_taken_while_the_store_handle_is_open_keeps_every_committed_batch() -> TestResult {
+    let dir = tempfile::tempdir()?;
     let live = dir.path().join("live");
     let copy = dir.path().join("copy");
-    let corpus = corpus();
+    let corpus = corpus()?;
 
-    let store = Store::open(&live).expect("opening the live store");
-    corpus.append(&store);
-    add_history(&store, corpus.history_row());
-    let before = store.stats().expect("live store stats");
-    copy_tree(&live.join("fjall"), &copy.join("fjall"));
+    let store = Store::open(&live)?;
+    corpus.append(&store)?;
+    add_history(&store, corpus.history_row()?)?;
+    let before = store.stats()?;
+    copy_tree(&live.join("fjall"), &copy.join("fjall"))?;
 
-    let restored = Store::open(&copy).expect("opening the copy taken from the open store");
-    let after = restored.stats().expect("copy stats");
-    assert_eq!(after.observations, before.observations);
-    assert_eq!(after.tables, before.tables);
-    assert_history(&merged_school(&restored, &corpus.history_school));
+    let restored = Store::open(&copy)?;
+    let after = restored.stats()?;
+    check!(eq; after.observations, before.observations);
+    check!(eq; after.tables, before.tables);
+    assert_history(&merged_school(&restored, &corpus.history_school)?)?;
+    Ok(())
 }
 
 #[test]
-fn a_second_open_of_a_live_store_is_refused() {
-    let dir = tempfile::tempdir().expect("a temporary drill directory");
-    let live = Store::open(dir.path()).expect("opening the live store");
-    let error = Store::open(dir.path())
-        .err()
-        .expect("a second open of a live store must be refused");
-    assert!(
+fn a_second_open_of_a_live_store_is_refused() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let live = Store::open(dir.path())?;
+    let error = match Store::open(dir.path()) {
+        Err(error) => error,
+        Ok(_) => return Err("second open accepted while store is live".into()),
+    };
+    check!(
         matches!(error, StoreError::Open { .. }),
         "expected the typed open failure, got {error:?}"
     );
     drop(live);
-    Store::open(dir.path()).expect("the path is openable once the live store is dropped");
+    Store::open(dir.path())?;
+    Ok(())
 }
 
 #[test]
-fn a_copy_whose_journal_stops_mid_batch_keeps_the_complete_prefix() {
-    let dir = tempfile::tempdir().expect("a temporary drill directory");
+fn a_copy_whose_journal_stops_mid_batch_keeps_the_complete_prefix() -> TestResult {
+    let dir = tempfile::tempdir()?;
     let live = dir.path().join("live");
     let copy = dir.path().join("copy");
-    let (source_rows, after_first_batch) = batch_store(&live, 3);
-    assert_eq!(source_rows, 6, "three batches of two observations");
-    assert!(
+    let (source_rows, after_first_batch) = batch_store(&live, 3)?;
+    check!(eq; source_rows, 6, "three batches of two observations");
+    check!(
         after_first_batch > 0,
         "the first batch left no frames behind"
     );
 
-    copy_tree(&live, &copy);
-    let journal = journal_file(&copy);
-    let full = fs::read(&journal)
-        .unwrap_or_else(|error| panic!("reading {} failed: {error}", journal.display()));
-    let settled = u64::try_from(full.len()).expect("the journal fits u64");
-    assert!(
+    copy_tree(&live, &copy)?;
+    let journal = journal_file(&copy)?;
+    let full = fs::read(&journal)?;
+    let settled = u64::try_from(full.len())?;
+    check!(
         after_first_batch + 1 < settled,
         "the cut points must sit inside the {settled}-byte journal"
     );
 
-    let (rows, ids) = cut_and_read(
-        &copy,
-        &full,
-        usize::try_from(after_first_batch + 1).expect("fits"),
-    );
-    assert_eq!(
-        rows, 2,
-        "the copy keeps the batches that finished and drops everything from the cut on"
-    );
-    assert_eq!(
-        ids,
-        batch_ids(2),
-        "the survivors are exactly the first batch"
-    );
+    let (rows, ids) = cut_and_read(&copy, &full, usize::try_from(after_first_batch + 1)?)?;
+    check!(eq; rows, 2,
+    "the copy keeps the batches that finished and drops everything from the cut on");
+    check!(eq; ids,
+    batch_ids(2),
+    "the survivors are exactly the first batch");
 
-    let (rows, ids) = cut_and_read(&copy, &full, usize::try_from(settled - 1).expect("fits"));
-    assert_eq!(rows, 4, "the incomplete last batch is dropped");
-    assert_eq!(
-        ids,
-        batch_ids(4),
-        "the survivors are exactly the first two batches"
-    );
+    let (rows, ids) = cut_and_read(&copy, &full, usize::try_from(settled - 1)?)?;
+    check!(eq; rows, 4, "the incomplete last batch is dropped");
+    check!(eq; ids,
+    batch_ids(4),
+    "the survivors are exactly the first two batches");
 
-    let source = Store::open(&live).expect("the source store is untouched by the copy's damage");
-    assert_eq!(
-        source.stats().expect("source stats").observations,
-        source_rows
-    );
+    let source = Store::open(&live)?;
+    check!(eq; source.stats()?.observations,
+    source_rows);
+    Ok(())
 }
 
 #[test]
-fn a_copy_with_a_torn_byte_inside_a_row_never_yields_an_invented_row() {
-    let dir = tempfile::tempdir().expect("a temporary drill directory");
+fn a_copy_with_a_torn_byte_inside_a_row_never_yields_an_invented_row() -> TestResult {
+    let dir = tempfile::tempdir()?;
     let live = dir.path().join("live");
     let copy = dir.path().join("copy");
-    let (source_rows, _) = batch_store(&live, 3);
-    let source = school_rows(&Store::open(&live).expect("opening the source store"));
+    let (source_rows, _) = batch_store(&live, 3)?;
+    let source = school_rows(&Store::open(&live)?)?;
 
-    copy_tree(&live, &copy);
-    let journal = journal_file(&copy);
-    let full = fs::read(&journal)
-        .unwrap_or_else(|error| panic!("reading {} failed: {error}", journal.display()));
+    copy_tree(&live, &copy)?;
+    let journal = journal_file(&copy)?;
+    let full = fs::read(&journal)?;
     let needle = b"Batch School 2";
     let start = full
         .windows(needle.len())
         .position(|window| window == needle)
-        .unwrap_or_else(|| panic!("the second batch's name is not stored verbatim"));
+        .ok_or("second batch name not stored verbatim")?;
 
     let mut refused = 0_usize;
     let mut opened = 0_usize;
@@ -940,15 +835,14 @@ fn a_copy_with_a_torn_byte_inside_a_row_never_yields_an_invented_row() {
         let mut bytes = full.clone();
         let torn = bytes
             .get_mut(position)
-            .unwrap_or_else(|| panic!("{} is shorter than {position}", journal.display()));
+            .ok_or_else(|| format!("journal is shorter than {position}"))?;
         *torn ^= 0xff;
-        fs::write(&journal, &bytes)
-            .unwrap_or_else(|error| panic!("writing {} failed: {error}", journal.display()));
+        fs::write(&journal, &bytes)?;
         match Store::open(&copy) {
             Err(_) => refused = refused.saturating_add(1),
             Ok(store) => {
                 opened = opened.saturating_add(1);
-                for (id, row) in &school_rows(&store) {
+                for (id, row) in &school_rows(&store)? {
                     if source.get(id) != Some(row) {
                         changed.push((position, id.clone()));
                     }
@@ -960,18 +854,17 @@ fn a_copy_with_a_torn_byte_inside_a_row_never_yields_an_invented_row() {
         "row-tear sweep over {} bytes: {refused} refused the open, {opened} opened with every row intact",
         needle.len()
     );
-    assert_eq!(source_rows, 6, "three batches of two observations");
-    assert_eq!(
-        refused.saturating_add(opened),
-        needle.len(),
-        "every tear must be accounted for"
-    );
-    assert!(
+    check!(eq; source_rows, 6, "three batches of two observations");
+    check!(eq; refused.saturating_add(opened),
+    needle.len(),
+    "every tear must be accounted for");
+    check!(
         refused > 0,
         "a torn row value must be detected, not silently accepted"
     );
-    assert!(
+    check!(
         changed.is_empty(),
         "a torn byte must never change or invent a row: {changed:?}"
     );
+    Ok(())
 }

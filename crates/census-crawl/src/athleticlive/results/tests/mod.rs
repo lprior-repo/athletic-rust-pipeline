@@ -17,6 +17,8 @@ use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use std::collections::{BTreeMap, HashMap};
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 const XC_STATE: &str =
     include_str!("../../../../tests/fixtures/athleticlive_results/event-doc-2150205.json");
 const HJ_MITS: &str =
@@ -62,46 +64,46 @@ fn mits_meet() -> MeetTarget {
     )
 }
 
-fn scratch() -> (tempfile::TempDir, Store, Fetcher) {
-    let dir = tempfile::tempdir().expect("temp dir");
-    let store = Store::open(dir.path().join("store")).expect("store");
+fn scratch() -> TestResult<(tempfile::TempDir, Store, Fetcher)> {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path().join("store"))?;
     let fetcher = Fetcher::new(
         dir.path().join("http"),
         None,
         std::time::Duration::from_millis(1),
         std::collections::HashMap::new(),
         Vec::new(),
-    )
-    .expect("fetcher");
-    (dir, store, fetcher)
+    )?;
+    Ok((dir, store, fetcher))
 }
 
-fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> AdapterContext<'a> {
-    AdapterContext {
+fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> TestResult<AdapterContext<'a>> {
+    Ok(AdapterContext {
         fetcher,
         store,
         refresh: false,
-        school_year: SchoolYear::new(2026).expect("2026 is a season"),
+        school_year: SchoolYear::new(2026).ok_or("2026 is a season")?,
         observed_on: OBSERVED_ON.to_string(),
         recording: None,
-    }
+    })
 }
 
-fn stage_capture(dir: &tempfile::TempDir, name: &str, body: &str) -> String {
+fn stage_capture(dir: &tempfile::TempDir, name: &str, body: &str) -> TestResult<String> {
     let path = dir.path().join(name);
-    std::fs::write(&path, body).expect("capture staged");
-    path.to_string_lossy().into_owned()
+    std::fs::write(&path, body)?;
+    Ok(path.to_string_lossy().into_owned())
 }
 
-fn write_schools(store: &Store, schools: &[(UsJurisdiction, &str)]) {
+fn write_schools(store: &Store, schools: &[(UsJurisdiction, &str)]) -> TestResult {
     let mut lines = String::new();
     for (state, name) in schools {
         let (school, _) = CanonicalSchool::new(*state, *name, normalize_name(name));
-        lines.push_str(&serde_json::to_string(&school).expect("school serializes"));
+        lines.push_str(&serde_json::to_string(&school)?);
         lines.push('\n');
     }
-    std::fs::create_dir_all(store.out_dir()).expect("out dir");
-    std::fs::write(store.out_dir().join("schools.jsonl"), lines).expect("schools written");
+    std::fs::create_dir_all(store.out_dir())?;
+    std::fs::write(store.out_dir().join("schools.jsonl"), lines)?;
+    Ok(())
 }
 
 fn labelled_schools(doc: &EventDoc, state: UsJurisdiction) -> Vec<(UsJurisdiction, String)> {
@@ -128,8 +130,8 @@ fn joined(report: &AdapterReport) -> String {
     report.notes.join("\n")
 }
 
-fn journal(store: &Store) -> std::collections::HashSet<String> {
-    store.journal_keys(super::PHASE).expect("journal keys")
+fn journal(store: &Store) -> TestResult<std::collections::HashSet<String>> {
+    Ok(store.journal_keys(super::PHASE)?)
 }
 
 fn standings_payload(name: &str, grade: &str, team: &str) -> String {
@@ -157,40 +159,38 @@ fn standings_payload(name: &str, grade: &str, team: &str) -> String {
 }
 
 #[test]
-fn event_document_rows_carry_the_published_shapes() {
-    let xc = parse_event_document(&event_doc_url(2_150_205), XC_STATE)
-        .expect("the state-final document parses");
-    assert_eq!(xc.event_id(), Some(2_150_205));
-    assert_eq!(xc.meet_id(), Some(STATE_MEET));
-    assert_eq!(xc.rows.len(), 136);
-    assert_eq!(xc.label(), Some("Run"));
-    assert_eq!(xc.kind(), EventKind::CrossCountry);
-    assert_eq!(xc.gender_group.as_deref(), Some("Girls"));
-    assert_eq!(xc.run_id(), Some("1-1"));
-    assert_eq!(xc.division_name(), None, "`dv` is null on this capture");
-    assert_eq!(xc.rows[0].place(), Some(1));
-    assert_eq!(xc.rows[0].mark.as_deref(), Some("18:20.7"));
-    assert_eq!(
+fn event_document_rows_carry_the_published_shapes() -> TestResult {
+    let xc = parse_event_document(&event_doc_url(2_150_205), XC_STATE)?;
+    check!(eq; xc.event_id(), Some(2_150_205));
+    check!(eq; xc.meet_id(), Some(STATE_MEET));
+    check!(eq; xc.rows.len(), 136);
+    check!(eq; xc.label(), Some("Run"));
+    check!(eq; xc.kind(), EventKind::CrossCountry);
+    check!(eq; xc.gender_group.as_deref(), Some("Girls"));
+    check!(eq; xc.run_id(), Some("1-1"));
+    check!(eq; xc.division_name(), None, "`dv` is null on this capture");
+    check!(eq; xc.rows[0].place(), Some(1));
+    check!(eq; xc.rows[0].mark.as_deref(), Some("18:20.7"));
+    check!(eq;
         xc.rows[0].canonical_mark(&EventKind::CrossCountry),
         Some(Mark::TimeSeconds(CentiSeconds::new(110070)))
     );
-    assert_eq!(xc.rows[0].splits.len(), 3, "the cross-country split list");
+    check!(eq; xc.rows[0].splits.len(), 3, "the cross-country split list");
 
-    let hj = parse_event_document(&event_doc_url(2_254_280), HJ_MITS)
-        .expect("the high-jump document parses");
-    assert_eq!(hj.event_id(), Some(2_254_280));
-    assert_eq!(hj.meet_id(), Some(MITS_MEET));
-    assert_eq!(hj.rows.len(), 17);
-    assert_eq!(hj.label(), Some("HJ"));
-    assert_eq!(hj.kind(), EventKind::HighJump);
-    assert_eq!(hj.division_name(), Some("MITS"));
-    assert_eq!(hj.run_id(), Some("19-1"));
-    assert_eq!(
+    let hj = parse_event_document(&event_doc_url(2_254_280), HJ_MITS)?;
+    check!(eq; hj.event_id(), Some(2_254_280));
+    check!(eq; hj.meet_id(), Some(MITS_MEET));
+    check!(eq; hj.rows.len(), 17);
+    check!(eq; hj.label(), Some("HJ"));
+    check!(eq; hj.kind(), EventKind::HighJump);
+    check!(eq; hj.division_name(), Some("MITS"));
+    check!(eq; hj.run_id(), Some("19-1"));
+    check!(eq;
         hj.rows[0].splits.len(),
         0,
         "a field event publishes no splits"
     );
-    assert_eq!(
+    check!(eq;
         hj.rows[0].canonical_mark(&EventKind::HighJump),
         Some(Mark::FieldImperial {
             feet_mark: "5-02.00".to_string(),
@@ -198,12 +198,12 @@ fn event_document_rows_carry_the_published_shapes() {
         })
     );
     let no_height = &hj.rows[13];
-    assert_eq!(no_height.mark.as_deref(), Some("NH"));
-    assert_eq!(no_height.canonical_mark(&EventKind::HighJump), None);
-    assert_eq!(no_height.place(), None, "an unplaced row publishes `--`");
+    check!(eq; no_height.mark.as_deref(), Some("NH"));
+    check!(eq; no_height.canonical_mark(&EventKind::HighJump), None);
+    check!(eq; no_height.place(), None, "an unplaced row publishes `--`");
     let blank_grade = &hj.rows[10];
-    assert_eq!(blank_grade.mark.as_deref(), Some("4-06.00"));
-    assert_eq!(
+    check!(eq; blank_grade.mark.as_deref(), Some("4-06.00"));
+    check!(eq;
         blank_grade
             .athlete
             .as_ref()
@@ -211,52 +211,57 @@ fn event_document_rows_carry_the_published_shapes() {
             .and_then(|grade| grade.as_str()),
         Some("")
     );
+    Ok(())
 }
 
 #[test]
-fn both_mark_channels_agree_on_every_captured_row() {
-    let xc = parse_event_document(&event_doc_url(2_150_205), XC_STATE).expect("parses");
+fn both_mark_channels_agree_on_every_captured_row() -> TestResult {
+    let xc = parse_event_document(&event_doc_url(2_150_205), XC_STATE)?;
     let mut time_rows = 0usize;
     for row in &xc.rows {
-        let published = row.mark.as_deref().expect("every row publishes a mark");
-        let seconds = crate::hytek::parse_time(published).expect("the time parses");
+        let published = row.mark.as_deref().ok_or("every row publishes a mark")?;
+        let seconds = crate::hytek::parse_time(published).ok_or("the time parses")?;
         let Some(Mark::TimeSeconds(minted)) = row.canonical_mark(&EventKind::CrossCountry) else {
-            panic!("row {:?} mints no time mark", row.place());
+            return Err(format!("row {:?} mints no time mark", row.place()).into());
         };
-        assert!(
+        check!(
             (minted.value() - seconds.value()).abs() < 1,
             "{published} parsed {seconds} but the integer channel minted {minted}"
         );
         time_rows += 1;
     }
-    assert_eq!(time_rows, 136);
+    check!(eq; time_rows, 136);
 
-    let hj = parse_event_document(&event_doc_url(2_254_280), HJ_MITS).expect("parses");
+    let hj = parse_event_document(&event_doc_url(2_254_280), HJ_MITS)?;
     let mut field_rows = 0usize;
     for row in &hj.rows {
         let Some(Mark::FieldImperial { metres, .. }) = row.canonical_mark(&EventKind::HighJump)
         else {
-            assert_eq!(row.mark.as_deref(), Some("NH"), "only `NH` mints no mark");
+            check!(eq; row.mark.as_deref(), Some("NH"), "only `NH` mints no mark");
             continue;
         };
         let micros = row
             .mark_int
             .as_ref()
             .and_then(|value| value.as_f64())
-            .expect("im publishes");
-        assert!(
+            .ok_or("im publishes")?;
+        check!(
             (metres.value()
                 - CentiMetres::try_from_metres_f64(micros / 1_000_000.0)
-                    .expect("in range")
+                    .ok_or("in range")?
                     .value())
             .abs()
                 < 1,
             "{} published {metres} m against {micros} µm",
-            row.mark.as_deref().unwrap_or_default()
+            match row.mark.as_deref() {
+                Some(value) => value,
+                None => Default::default(),
+            }
         );
         field_rows += 1;
     }
-    assert_eq!(field_rows, 13, "four of the seventeen rows are `NH`");
+    check!(eq; field_rows, 13, "four of the seventeen rows are `NH`");
+    Ok(())
 }
 mod integration;
 mod integration2;

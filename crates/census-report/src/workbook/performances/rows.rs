@@ -61,21 +61,37 @@ impl PerformanceRow {
             Cell::text(self.school.clone()),
             self.grad_year
                 .map(|year| Cell::Number(f64::from(year)))
-                .unwrap_or(Cell::Empty),
+                .map_or(Cell::Empty, |value| value),
             Cell::text(self.meet_id.clone()),
             Cell::text(self.meet.clone()),
             Cell::text(self.date.clone()),
-            Cell::text(self.state.clone().unwrap_or_default()),
+            Cell::text(
+                self.state
+                    .clone()
+                    .map_or(Default::default(), core::convert::identity)
+            ),
             Cell::text(self.sport.clone()),
             Cell::text(self.event.clone()),
             Cell::text(self.mark.clone()),
-            self.normalized.map(Cell::Number).unwrap_or(Cell::Empty),
-            Cell::text(self.timing.clone().unwrap_or_default()),
-            self.wind_mps.map(Cell::Number).unwrap_or(Cell::Empty),
-            Cell::text(self.round.clone().unwrap_or_default()),
+            self.normalized
+                .map(Cell::Number)
+                .map_or(Cell::Empty, |value| value),
+            Cell::text(
+                self.timing
+                    .clone()
+                    .map_or(Default::default(), core::convert::identity)
+            ),
+            self.wind_mps
+                .map(Cell::Number)
+                .map_or(Cell::Empty, |value| value),
+            Cell::text(
+                self.round
+                    .clone()
+                    .map_or(Default::default(), core::convert::identity)
+            ),
             self.place
                 .map(|place| Cell::Number(f64::from(place)))
-                .unwrap_or(Cell::Empty),
+                .map_or(Cell::Empty, |value| value),
             Cell::text(self.source.clone()),
             Cell::text(self.source_result.clone()),
             Cell::text(self.source_url.clone()),

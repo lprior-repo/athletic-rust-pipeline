@@ -199,7 +199,7 @@ fn cell_text(cell: &Regex, row: &str) -> CrawlResult<String> {
     let inner = captures
         .get(1)
         .map(|cell| cell.as_str())
-        .unwrap_or_default();
+        .map_or(Default::default(), core::convert::identity);
     if let Some(title) = title()?.captures(inner).and_then(|title| title.get(1)) {
         return Ok(normalize_whitespace(title.as_str()));
     }

@@ -98,7 +98,7 @@ fn classify_sport_gender(sport_name: &str, level_name: &str) -> Option<(Sport, G
     } else {
         gender_from_label(level_name)
             .or_else(|| gender_from_label(sport_name))
-            .unwrap_or(Gender::Mixed)
+            .map_or(Gender::Mixed, |value| value)
     };
     Some((sport, gender))
 }

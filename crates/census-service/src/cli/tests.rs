@@ -1,41 +1,51 @@
 use super::{resolve_restriction, resolve_states};
 use census_domain::UsJurisdiction;
 
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+
 #[test]
-fn all_states_selects_the_census_run_scope() {
-    let states = resolve_states(true, &[]).expect("--all-states resolves");
-    assert_eq!(states, UsJurisdiction::CENSUS_SCOPE);
-    assert!(!states.contains(&UsJurisdiction::Alaska));
+fn all_states_selects_the_census_run_scope() -> TestResult {
+    let states = resolve_states(true, &[])?;
+    check!(eq; states, UsJurisdiction::CENSUS_SCOPE);
+    check!(!states.contains(&UsJurisdiction::Alaska));
+    Ok(())
 }
 
 #[test]
-fn no_flag_defaults_to_wisconsin() {
-    let states = resolve_states(false, &[]).expect("the default resolves");
-    assert_eq!(states, vec![UsJurisdiction::Wisconsin]);
+fn no_flag_defaults_to_wisconsin() -> TestResult {
+    let states = resolve_states(false, &[])?;
+    check!(eq; states, vec![UsJurisdiction::Wisconsin]);
+    Ok(())
 }
 
 #[test]
-fn an_explicit_list_is_kept_in_caller_order() {
+fn an_explicit_list_is_kept_in_caller_order() -> TestResult {
     let asked = vec![UsJurisdiction::Ohio, UsJurisdiction::Iowa];
-    let states = resolve_states(false, &asked).expect("the list resolves");
-    assert_eq!(states, asked);
+    let states = resolve_states(false, &asked)?;
+    check!(eq; states, asked);
+    Ok(())
 }
 
 #[test]
-fn combining_the_two_flags_is_refused() {
-    let error = resolve_states(true, &[UsJurisdiction::Ohio]).expect_err("both flags refused");
-    assert!(error.to_string().contains("--all-states"));
+fn combining_the_two_flags_is_refused() -> TestResult {
+    let error = match resolve_states(true, &[UsJurisdiction::Ohio]) {
+        Err(error) => error,
+        Ok(_) => return Err("both flags accepted".into()),
+    };
+    check!(error.to_string().contains("--all-states"));
+    Ok(())
 }
 
 #[test]
-fn a_restriction_with_no_flag_is_empty_not_wisconsin() {
-    let states = resolve_restriction(false, &[]).expect("no restriction");
-    assert!(states.is_empty());
-    let all = resolve_restriction(true, &[]).expect("--all-states resolves");
-    assert_eq!(all, UsJurisdiction::CENSUS_SCOPE);
-    let explicit = resolve_restriction(false, &[UsJurisdiction::Ohio]).expect("explicit");
-    assert_eq!(explicit, vec![UsJurisdiction::Ohio]);
-    assert!(resolve_restriction(true, &[UsJurisdiction::Ohio]).is_err());
+fn a_restriction_with_no_flag_is_empty_not_wisconsin() -> TestResult {
+    let states = resolve_restriction(false, &[])?;
+    check!(states.is_empty());
+    let all = resolve_restriction(true, &[])?;
+    check!(eq; all, UsJurisdiction::CENSUS_SCOPE);
+    let explicit = resolve_restriction(false, &[UsJurisdiction::Ohio])?;
+    check!(eq; explicit, vec![UsJurisdiction::Ohio]);
+    check!(resolve_restriction(true, &[UsJurisdiction::Ohio]).is_err());
+    Ok(())
 }
 
 use super::verify::{run_verify, VerifyArgs};
@@ -43,10 +53,10 @@ use census_domain::model::{CanonicalSchool, Evidence, SourceRef};
 use census_store::{Store, Table};
 
 #[test]
-fn verification_uses_the_frozen_generation_after_the_store_changes() {
-    let directory = tempfile::tempdir().expect("scratch directory");
-    let store = Store::open(directory.path().join("store")).expect("own store");
-    let workbook = census_report::workbook::build(&store, &Default::default()).expect("publish");
+fn verification_uses_the_frozen_generation_after_the_store_changes() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let store = Store::open(directory.path().join("store"))?;
+    let workbook = census_report::workbook::build(&store, &Default::default())?;
     let (mut school, _) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Later School", "later school");
     school.evidence.push(Evidence::parsed(
@@ -56,30 +66,31 @@ fn verification_uses_the_frozen_generation_after_the_store_changes() {
         ),
         "2026-06-01",
     ));
-    store
-        .append(Table::Schools, &school)
-        .expect("change live input");
+    store.append(Table::Schools, &school)?;
     run_verify(
         store.root(),
         &VerifyArgs {
             workbook: Some(workbook),
         },
-    )
-    .expect("verify captured generation");
+    )?;
+    Ok(())
 }
 
 #[test]
-fn verification_refuses_a_changed_artifact_in_the_published_bundle() {
-    let directory = tempfile::tempdir().expect("scratch directory");
-    let store = Store::open(directory.path().join("store")).expect("own store");
-    let workbook = census_report::workbook::build(&store, &Default::default()).expect("publish");
-    std::fs::write(&workbook, "damaged workbook").expect("inject corruption");
-    let error = run_verify(
+fn verification_refuses_a_changed_artifact_in_the_published_bundle() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let store = Store::open(directory.path().join("store"))?;
+    let workbook = census_report::workbook::build(&store, &Default::default())?;
+    std::fs::write(&workbook, "damaged workbook")?;
+    let error = match run_verify(
         store.root(),
         &VerifyArgs {
             workbook: Some(workbook),
         },
-    )
-    .expect_err("refuse corruption");
-    assert!(format!("{error:#}").contains("generation artifact mismatch: workbook.xlsx"));
+    ) {
+        Err(error) => error,
+        Ok(_) => return Err("corrupted workbook accepted".into()),
+    };
+    check!(format!("{error:#}").contains("generation artifact mismatch: workbook.xlsx"));
+    Ok(())
 }

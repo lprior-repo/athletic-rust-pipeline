@@ -19,14 +19,11 @@ impl JurisdictionStages {
         if !self.teams {
             owing.push("teams");
         }
-        if !self.rosters {
+        if !self.rosters || self.owed_rosters > 0 {
             owing.push("rosters");
         }
         if !self.meets {
             owing.push("meets");
-        }
-        if self.owed_rosters > 0 {
-            owing.push("blocked rosters");
         }
         owing
     }
@@ -84,5 +81,5 @@ pub fn owed_identity_candidates(cases: &[ReviewCase]) -> u64 {
 }
 
 fn count(value: usize) -> u64 {
-    u64::try_from(value).unwrap_or(u64::MAX)
+    u64::try_from(value).map_or(u64::MAX, core::convert::identity)
 }

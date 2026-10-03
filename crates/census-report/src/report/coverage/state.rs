@@ -1,7 +1,6 @@
 use super::gaps::GapCounters;
 use super::{CoverageGap, CoverageTotals, JurisdictionCoverage};
-use census_domain::model::CanonicalAthlete;
-use census_domain::model::CanonicalSchool;
+use census_domain::model::{CanonicalAthlete, CanonicalSchool};
 use census_domain::{JurisdictionBucket, UsJurisdiction};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
@@ -68,7 +67,7 @@ pub(crate) fn school_state_index<'a>(
         .collect()
 }
 
-pub(crate) fn in_cohort(athlete: &CanonicalAthlete, grad_year: Option<i16>) -> bool {
+pub(crate) fn in_requested_year(athlete: &CanonicalAthlete, grad_year: Option<i16>) -> bool {
     match grad_year {
         Some(year) => athlete.grad_year.get() == year,
         None => true,
@@ -76,10 +75,12 @@ pub(crate) fn in_cohort(athlete: &CanonicalAthlete, grad_year: Option<i16>) -> b
 }
 
 pub(super) fn share_pct(part: usize, whole: usize) -> u32 {
-    let part = u64::try_from(part).unwrap_or(u64::MAX);
-    let whole = u64::try_from(whole).unwrap_or(u64::MAX);
+    let part = u64::try_from(part).map_or(u64::MAX, std::convert::identity);
+    let whole = u64::try_from(whole).map_or(u64::MAX, std::convert::identity);
     let percent = part
         .checked_mul(100)
         .and_then(|scaled| scaled.checked_div(whole));
-    percent.map_or(0, |value| u32::try_from(value).unwrap_or(u32::MAX))
+    percent.map_or(0, |value| {
+        u32::try_from(value).map_or(u32::MAX, std::convert::identity)
+    })
 }

@@ -1,294 +1,197 @@
-use census_domain::model::normalize_name;
-use census_domain::model::{CanonicalSchool, Evidence, EvidenceMethod, SourceRef};
-use census_domain::UsJurisdiction;
-use census_store::{Application, Store, StoreError, Table};
-use sha2::{Digest, Sha256};
-use std::collections::HashSet;
+use census_store::{Application, Receipt, Store, StoreError, Table};
 use std::error::Error;
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::io;
+use std::path::PathBuf;
+
+#[path = "enospc/records.rs"]
+mod records;
+#[path = "enospc/reserve.rs"]
+mod reserve;
+#[path = "enospc/safety.rs"]
+mod safety;
+#[path = "enospc/verify.rs"]
+mod verify;
 
 const BASELINE_COUNT: usize = 4;
 const BATCH_COUNT: usize = 32;
-const ENOSPC_RETRIES: usize = 128;
+const MAX_ATTEMPTS: usize = 128;
 const NOTE_BYTES: usize = 64 * 1024;
+const RECOVERY_START: usize = BASELINE_COUNT + MAX_ATTEMPTS * BATCH_COUNT;
+const MAX_RECORDS: usize = RECOVERY_START + BATCH_COUNT;
+
 type ExampleResult<T> = Result<T, Box<dyn Error>>;
-type BatchReceipt = (String, u64);
-type Failure = (usize, String, bool);
-type WriteOutcome = (Vec<BatchReceipt>, Option<Failure>);
-fn parse_fs_size(value: &str) -> u64 {
-    let (digits, multiplier) = if let Some(value) = value.strip_suffix(['k', 'K']) {
-        (value, 1024_u64)
-    } else if let Some(value) = value.strip_suffix(['m', 'M']) {
-        (value, 1024_u64.saturating_mul(1024))
-    } else {
-        (value, 1)
-    };
-    digits
-        .parse::<u64>()
-        .map_or(0, |size| size.saturating_mul(multiplier))
-}
-fn check_bounded_fs(root: &Path) -> ExampleResult<()> {
-    let root_str = root.to_str().ok_or_else(|| {
-        std::io::Error::new(std::io::ErrorKind::InvalidInput, "tmpfs root is not UTF-8")
-    })?;
-    let output = Command::new("findmnt")
-        .args(["-n", "-o", "OPTIONS", "-T", root_str])
-        .output()
-        .map_err(|error| std::io::Error::other(format!("findmnt failed: {error}")))?;
-    let opts = String::from_utf8_lossy(&output.stdout);
-    let opts_str = opts.trim();
-    if opts_str.is_empty() {
-        return Ok(());
-    }
-    for part in opts_str.split(',') {
-        if let Some(value) = part.strip_prefix("size=") {
-            let size = parse_fs_size(value);
-            if size > 256_u64.saturating_mul(1024).saturating_mul(1024) {
-                return Err(std::io::Error::other(format!(
-                    "filesystem cap too large: {} bytes",
-                    size
-                ))
-                .into());
-            }
-        }
-    }
-    Ok(())
-}
-fn high_entropy_note(index: usize, size: usize) -> ExampleResult<String> {
-    let mut bytes = Vec::with_capacity(size);
-    for i in 0..size {
-        let value = index.saturating_mul(257).saturating_add(i);
-        let value = value
-            .checked_rem(95)
-            .ok_or_else(|| std::io::Error::other("entropy modulus was zero"))?
-            .saturating_add(32);
-        let byte = u8::try_from(value)?;
-        bytes.push(byte);
-    }
-    Ok(String::from_utf8(bytes)?)
+
+struct Acknowledged {
+    start: usize,
+    count: usize,
+    receipt: Receipt,
 }
 
-fn mk_school(index: usize) -> ExampleResult<CanonicalSchool> {
-    let name = format!("School_{:04}", index);
-    let (mut school, _id) =
-        CanonicalSchool::new(UsJurisdiction::Kansas, &name, normalize_name(&name));
-    school.evidence.push(Evidence {
-        source: SourceRef::id(format!("drill:{}", index)),
-        method: EvidenceMethod::Fetched,
-        observed_on: "2026-01-01".into(),
-        note: Some(high_entropy_note(index, NOTE_BYTES)?),
-    });
-    Ok(school)
+struct Failed {
+    start: usize,
+    operation: String,
 }
-fn digest_for(records: &[CanonicalSchool]) -> ExampleResult<String> {
-    let mut h = Sha256::new();
-    for record in records {
-        h.update(serde_json::to_vec(record)?);
-    }
-    Ok(h.finalize().iter().map(|b| format!("{:02x}", b)).collect())
+
+enum Attempt {
+    Written(Acknowledged),
+    Full(Failed),
 }
-fn is_enospc(err: &StoreError) -> bool {
-    let mut current: &dyn Error = err;
-    loop {
-        if let Some(io) = current.downcast_ref::<std::io::Error>() {
-            if io.raw_os_error() == Some(28) {
-                return true;
-            }
-        }
-        match current.source() {
-            Some(next) => current = next,
-            None => return false,
-        }
-    }
-}
-fn baseline(store: &Store) -> ExampleResult<()> {
-    let schools: Vec<CanonicalSchool> = (0..BASELINE_COUNT)
-        .map(mk_school)
-        .collect::<ExampleResult<_>>()?;
+
+fn commit_operation(
+    store: &Store,
+    operation: String,
+    start: usize,
+    count: usize,
+) -> ExampleResult<Attempt> {
+    let schools = records::schools(start, count)?;
+    let digest = records::digest(&schools)?;
     let mut batch = store.write_batch();
     batch.append_many(Table::Schools, &schools)?;
-    let op = "baseline";
-    let d = digest_for(&schools)?;
-    batch.commit_once(op, &d)?;
-    let count = store.scan::<CanonicalSchool>(Table::Schools)?.len();
-    if count != BASELINE_COUNT {
-        return Err(std::io::Error::other(format!(
-            "baseline count: got {} expected {}",
-            count, BASELINE_COUNT
-        ))
-        .into());
-    }
-    println!("PASS: baseline {} schools", BASELINE_COUNT);
-    Ok(())
-}
-fn drain_writes(store: &Store) -> ExampleResult<WriteOutcome> {
-    let mut committed: Vec<BatchReceipt> = Vec::new();
-    let mut first_failure: Option<Failure> = None;
-    for attempt in 0..ENOSPC_RETRIES {
-        let start = BASELINE_COUNT.saturating_add(attempt.saturating_mul(BATCH_COUNT));
-        let end =
-            BASELINE_COUNT.saturating_add(attempt.saturating_add(1).saturating_mul(BATCH_COUNT));
-        let schools: Vec<CanonicalSchool> =
-            (start..end).map(mk_school).collect::<ExampleResult<_>>()?;
-        let mut batch = store.write_batch();
-        batch.append_many(Table::Schools, &schools)?;
-        let op = format!("batch_{}", attempt);
-        let d = digest_for(&schools)?;
-        match batch.commit_once(&op, &d) {
-            Ok(Application::Written(receipt)) => {
-                committed.push((op, receipt.appended));
-                let completed = attempt.saturating_add(1);
-                if completed % 10 == 0 || attempt == ENOSPC_RETRIES.saturating_sub(1) {
-                    println!("committed {} batches so far", completed);
-                }
-            }
-            Ok(Application::Repeated(_)) => {}
-            Err(error) => {
-                if first_failure.is_none() {
-                    let has_enospc = is_enospc(&error);
-                    first_failure = Some((attempt, error.to_string(), has_enospc));
-                    break;
-                }
-            }
-        }
-    }
-
-    if first_failure.is_none() {
-        return Err(std::io::Error::other(format!(
-            "no failure after {} attempts, committed: {}",
-            ENOSPC_RETRIES,
-            committed.len()
-        ))
-        .into());
-    }
-    Ok((committed, first_failure))
-}
-fn reopen_rows(root: &Path) -> ExampleResult<Vec<CanonicalSchool>> {
-    drop(fs::remove_dir_all(root.join(".enospc_scratch")));
-    drop(Store::open(root)?);
-    let store = Store::open(root)?;
-    Ok(store.scan::<CanonicalSchool>(Table::Schools)?)
-}
-fn verify_count(all_rows: &[CanonicalSchool], committed: &[BatchReceipt]) -> ExampleResult<()> {
-    let baseline = u64::try_from(BASELINE_COUNT)?;
-    let total_expected = committed.iter().try_fold(baseline, |total, (_, count)| {
-        total
-            .checked_add(*count)
-            .ok_or_else(|| std::io::Error::other("reopen count exceeded u64"))
-    })?;
-    let actual = u64::try_from(all_rows.len())?;
-    if actual != total_expected {
-        return Err(std::io::Error::other(format!(
-            "reopen count: got {} expected {}",
-            all_rows.len(),
-            total_expected
-        ))
-        .into());
-    }
-    Ok(())
-}
-fn verify_baseline_ids(ids: &HashSet<String>) -> ExampleResult<()> {
-    for i in 0..BASELINE_COUNT {
-        let expected_id = mk_school(i)?.id.as_str().to_string();
-        if !ids.contains(&expected_id) {
-            return Err(std::io::Error::other(format!("baseline {} missing", i)).into());
-        }
-    }
-    Ok(())
-}
-fn verify_committed_ids(ids: &HashSet<String>, committed: &[BatchReceipt]) -> ExampleResult<()> {
-    let mut expected_start = BASELINE_COUNT;
-    for (_, count) in committed {
-        let count = usize::try_from(*count)?;
-        for j in 0..count {
-            let expected_id = mk_school(expected_start.saturating_add(j))?
-                .id
-                .as_str()
-                .to_string();
-            if !ids.contains(&expected_id) {
+    match batch.commit_once(&operation, &digest) {
+        Ok(Application::Written(receipt)) => {
+            if receipt.operation != operation
+                || receipt.digest != digest
+                || receipt.appended != u64::try_from(count)?
+                || receipt.at.is_empty()
+            {
                 return Err(
-                    std::io::Error::other(format!("committed {} missing", expected_id)).into(),
+                    io::Error::other("written receipt does not match the exact batch").into(),
                 );
             }
+            Ok(Attempt::Written(Acknowledged {
+                start,
+                count,
+                receipt,
+            }))
         }
-        expected_start = expected_start.saturating_add(count);
+        Ok(Application::Repeated(_)) => {
+            Err(io::Error::other("fresh operation replayed a preexisting receipt").into())
+        }
+        Err(error) if matches!(&error, StoreError::Write { .. }) && safety::is_enospc(&error) => {
+            eprintln!("ENOSPC: atomic commit refused {operation} at school {start}: {error}");
+            Ok(Attempt::Full(Failed { start, operation }))
+        }
+        Err(error) => Err(Box::new(error)),
     }
-    Ok(())
 }
 
-fn verify_failed_ids(ids: &HashSet<String>, failure: &Failure) -> ExampleResult<()> {
-    let (fail_idx, _, _) = failure;
-    let fail_start = BASELINE_COUNT.saturating_add(fail_idx.saturating_mul(BATCH_COUNT));
-    for j in 0..BATCH_COUNT {
-        let expected_id = mk_school(fail_start.saturating_add(j))?
-            .id
-            .as_str()
-            .to_string();
-        if ids.contains(&expected_id) {
-            return Err(std::io::Error::other(format!("failed {} leaked", j)).into());
-        }
+fn require_written(attempt: Attempt) -> ExampleResult<Acknowledged> {
+    match attempt {
+        Attempt::Written(ack) => Ok(ack),
+        Attempt::Full(failed) => Err(io::Error::other(format!(
+            "unexpected ENOSPC for required successful operation {}",
+            failed.operation
+        ))
+        .into()),
     }
-    Ok(())
 }
-fn print_verification(committed: &[BatchReceipt], failure: Option<&Failure>) {
-    if let Some((fail_idx, err_str, was_enospc)) = failure {
-        if *was_enospc {
-            println!(
-                "PASS: {} baseline, {} batches committed, {} refused (ENOSPC), no duplicates",
-                BASELINE_COUNT,
-                committed.len(),
-                fail_idx
-            );
-        } else {
-            println!(
-                "PASS: {} baseline, {} batches committed, {} refused (non-ENOSPC: {}), no duplicates",
-                BASELINE_COUNT,
-                committed.len(),
-                fail_idx,
-                err_str
-            );
+
+fn drain(store: &Store, acknowledged: &mut Vec<Acknowledged>) -> ExampleResult<Failed> {
+    let failure = (0..MAX_ATTEMPTS).find_map(|attempt| {
+        let start = attempt
+            .checked_mul(BATCH_COUNT)
+            .and_then(|offset| BASELINE_COUNT.checked_add(offset))
+            .ok_or_else(|| io::Error::other("drain record index overflow"));
+        let result = start.map_err(Box::<dyn Error>::from).and_then(|start| {
+            commit_operation(store, format!("batch_{attempt}"), start, BATCH_COUNT)
+        });
+        match result {
+            Ok(Attempt::Written(ack)) => {
+                acknowledged.push(ack);
+                None
+            }
+            Ok(Attempt::Full(failed)) => Some(Ok(failed)),
+            Err(error) => Some(Err(error)),
         }
-    } else {
-        println!(
-            "PASS: {} baseline, {} batches committed, no failure",
-            BASELINE_COUNT,
-            committed.len()
+    });
+    failure.ok_or_else(|| {
+        io::Error::other(format!(
+            "no kernel ENOSPC within {MAX_ATTEMPTS} bounded atomic batches"
+        ))
+    })?
+}
+
+fn replay(store: &Store, acknowledged: &[Acknowledged]) -> ExampleResult<()> {
+    let baseline = acknowledged
+        .first()
+        .ok_or_else(|| io::Error::other("no acknowledged operation to replay"))?;
+    let schools = records::schools(baseline.start, baseline.count)?;
+    let digest = records::digest(&schools)?;
+    if digest != baseline.receipt.digest {
+        return Err(io::Error::other("replay supporting payload digest changed").into());
+    }
+    let before_walk = store.walk_table(Table::Schools)?;
+    let before_sequence = store.snapshot().sequence();
+    let before_receipts = store.receipt_count()?;
+    let mut batch = store.write_batch();
+    batch.append_many(Table::Schools, &schools)?;
+    let application = batch.commit_once(&baseline.receipt.operation, &digest)?;
+    if application.appended() != 0
+        || !matches!(&application, Application::Repeated(receipt) if receipt == &baseline.receipt)
+    {
+        return Err(io::Error::other(
+            "acknowledged replay did not return the exact original receipt",
+        )
+        .into());
+    }
+    if store.walk_table(Table::Schools)? != before_walk
+        || store.snapshot().sequence() != before_sequence
+        || store.receipt_count()? != before_receipts
+    {
+        return Err(
+            io::Error::other("acknowledged replay appended or mutated durable state").into(),
         );
     }
-}
-fn verify_reopen(
-    root: &Path,
-    committed: &[BatchReceipt],
-    failure: Option<Failure>,
-) -> ExampleResult<()> {
-    let all_rows = reopen_rows(root)?;
-    verify_count(&all_rows, committed)?;
-    let ids: HashSet<String> = all_rows
-        .iter()
-        .map(|school| school.id.as_str().to_string())
-        .collect();
-    verify_baseline_ids(&ids)?;
-    verify_committed_ids(&ids, committed)?;
-    if let Some(failure) = &failure {
-        verify_failed_ids(&ids, failure)?;
-    }
-    print_verification(committed, failure.as_ref());
     Ok(())
 }
+
 fn main() -> ExampleResult<()> {
-    let root: PathBuf = std::env::args()
-        .nth(1)
-        .ok_or_else(|| std::io::Error::other("usage: enospc <tmpfs-root>"))?
-        .into();
-    let tmp_name = root.join(".enospc_scratch");
-    check_bounded_fs(&root)?;
-    fs::create_dir_all(&tmp_name)?;
+    let mut arguments = std::env::args_os().skip(1);
+    let root = PathBuf::from(
+        arguments
+            .next()
+            .ok_or_else(|| io::Error::other("usage: enospc <tmpfs-root>"))?,
+    );
+    if arguments.next().is_some() {
+        return Err(io::Error::other("usage: enospc <tmpfs-root>").into());
+    }
+    let root = safety::inspect(&root)?;
+    let reservation = reserve::Reservation::create(&root)?;
+    let store = Store::open(&root)?;
+    let mut acknowledged = Vec::new();
+    acknowledged.try_reserve_exact(MAX_ATTEMPTS.saturating_add(2))?;
+    acknowledged.push(require_written(commit_operation(
+        &store,
+        "baseline".to_string(),
+        0,
+        BASELINE_COUNT,
+    )?)?);
+    let failed = drain(&store, &mut acknowledged)?;
+    drop(store);
+    reservation.release()?;
 
     let store = Store::open(&root)?;
-    baseline(&store)?;
-    let (committed, fail) = drain_writes(&store)?;
+    verify::state(&store, &acknowledged, &failed)?;
+    replay(&store, &acknowledged)?;
+    verify::state(&store, &acknowledged, &failed)?;
+    if store.receipt("recovery")?.is_some() {
+        return Err(io::Error::other("new recovery operation already has a receipt").into());
+    }
+    acknowledged.push(require_written(commit_operation(
+        &store,
+        "recovery".to_string(),
+        RECOVERY_START,
+        BATCH_COUNT,
+    )?)?);
     drop(store);
-    verify_reopen(&root, &committed, fail)
+
+    let store = Store::open(&root)?;
+    verify::state(&store, &acknowledged, &failed)?;
+    println!(
+        "PASS: kernel ENOSPC refused {}; {} exact acknowledged receipts survived; \
+         replay appended zero; new atomic recovery batch survived cold reopen",
+        failed.operation,
+        acknowledged.len()
+    );
+    Ok(())
 }

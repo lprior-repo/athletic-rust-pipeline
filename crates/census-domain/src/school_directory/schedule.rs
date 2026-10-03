@@ -176,12 +176,12 @@ impl Cadence {
                 .iter()
                 .map(|month| window_of_month(*month, at))
                 .max()
-                .unwrap_or(at),
+                .map_or(at, |value| value),
             Self::Quarterly { months } => months
                 .iter()
                 .map(|month| window_of_month(*month, at))
                 .max()
-                .unwrap_or(at),
+                .map_or(at, |value| value),
         }
     }
 
@@ -196,12 +196,12 @@ impl Cadence {
                 .iter()
                 .map(|month| window_after_month(*month, at))
                 .min()
-                .unwrap_or(at),
+                .map_or(at, |value| value),
             Self::Quarterly { months } => months
                 .iter()
                 .map(|month| window_after_month(*month, at))
                 .min()
-                .unwrap_or(at),
+                .map_or(at, |value| value),
         }
     }
 }

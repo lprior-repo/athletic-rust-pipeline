@@ -26,18 +26,18 @@ fn verdict(case_id: &str, kind: ReviewVerdictKind, confidence: u8) -> ReviewVerd
 }
 
 #[test]
-fn a_packet_asks_about_exactly_the_cases_it_carries() {
+fn a_packet_asks_about_exactly_the_cases_it_carries() -> Result<(), Box<dyn std::error::Error>> {
     let packet = packet();
-    assert_eq!(
-        packet.case_ids(),
-        vec!["School jurisdiction unresolved:school:madison-west"]
-    );
-    assert_eq!(packet.evidence.len(), 1);
-    assert!(packet.evidence[0].value.contains("Madison West"));
+    check!(eq; packet.case_ids(),
+    vec!["School jurisdiction unresolved:school:madison-west"]);
+    check!(eq; packet.evidence.len(), 1);
+    check!(packet.evidence[0].value.contains("Madison West"));
+    Ok(())
 }
 
 #[test]
-fn verdicts_for_cases_the_packet_never_asked_about_are_dropped() {
+fn verdicts_for_cases_the_packet_never_asked_about_are_dropped(
+) -> Result<(), Box<dyn std::error::Error>> {
     let batch = VerdictBatch {
         subject_id: "school:madison-west".to_string(),
         verdicts: vec![
@@ -54,13 +54,15 @@ fn verdicts_for_cases_the_packet_never_asked_about_are_dropped() {
         ],
     };
     let (admitted, dropped) = batch.sanitize(&packet());
-    assert_eq!(dropped, 1, "a model may not invent work");
-    assert_eq!(admitted.len(), 1);
-    assert_eq!(admitted[0].value.as_deref(), Some("WI"));
+    check!(eq; dropped, 1, "a model may not invent work");
+    check!(eq; admitted.len(), 1);
+    check!(eq; admitted[0].value.as_deref(), Some("WI"));
+    Ok(())
 }
 
 #[test]
-fn one_verdict_per_case_is_kept_and_the_rest_are_counted_as_dropped() {
+fn one_verdict_per_case_is_kept_and_the_rest_are_counted_as_dropped(
+) -> Result<(), Box<dyn std::error::Error>> {
     let batch = VerdictBatch {
         subject_id: "school:madison-west".to_string(),
         verdicts: vec![
@@ -77,13 +79,15 @@ fn one_verdict_per_case_is_kept_and_the_rest_are_counted_as_dropped() {
         ],
     };
     let (admitted, dropped) = batch.sanitize(&packet());
-    assert_eq!(admitted.len(), 1);
-    assert_eq!(admitted[0].kind, ReviewVerdictKind::ValueProposed);
-    assert_eq!(dropped, 1);
+    check!(eq; admitted.len(), 1);
+    check!(eq; admitted[0].kind, ReviewVerdictKind::ValueProposed);
+    check!(eq; dropped, 1);
+    Ok(())
 }
 
 #[test]
-fn a_proposal_without_a_value_is_demoted_rather_than_applied() {
+fn a_proposal_without_a_value_is_demoted_rather_than_applied(
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut empty = verdict(
         "School jurisdiction unresolved:school:madison-west",
         ReviewVerdictKind::ValueProposed,
@@ -95,15 +99,17 @@ fn a_proposal_without_a_value_is_demoted_rather_than_applied() {
         verdicts: vec![empty],
     };
     let (admitted, dropped) = batch.sanitize(&packet());
-    assert_eq!(dropped, 0);
-    assert_eq!(admitted[0].kind, ReviewVerdictKind::InsufficientEvidence);
-    assert_eq!(admitted[0].value, None);
-    assert_eq!(admitted[0].field, None);
-    assert!(!admitted[0].proposes_a_value());
+    check!(eq; dropped, 0);
+    check!(eq; admitted[0].kind, ReviewVerdictKind::InsufficientEvidence);
+    check!(eq; admitted[0].value, None);
+    check!(eq; admitted[0].field, None);
+    check!(!admitted[0].proposes_a_value());
+    Ok(())
 }
 
 #[test]
-fn a_confidence_outside_the_field_range_is_clamped_not_trusted() {
+fn a_confidence_outside_the_field_range_is_clamped_not_trusted(
+) -> Result<(), Box<dyn std::error::Error>> {
     let batch = VerdictBatch {
         subject_id: "school:madison-west".to_string(),
         verdicts: vec![verdict(
@@ -113,13 +119,15 @@ fn a_confidence_outside_the_field_range_is_clamped_not_trusted() {
         )],
     };
     let (admitted, dropped) = batch.sanitize(&packet());
-    assert_eq!(dropped, 0);
-    assert_eq!(admitted[0].confidence, 100);
-    assert!(admitted[0].proposes_a_value());
+    check!(eq; dropped, 0);
+    check!(eq; admitted[0].confidence, 100);
+    check!(admitted[0].proposes_a_value());
+    Ok(())
 }
 
 #[test]
-fn another_subject_cannot_supply_a_verdict_for_a_requested_case() {
+fn another_subject_cannot_supply_a_verdict_for_a_requested_case(
+) -> Result<(), Box<dyn std::error::Error>> {
     for subject_id in ["", "school:another-school"] {
         let batch = VerdictBatch {
             subject_id: subject_id.to_string(),
@@ -130,13 +138,15 @@ fn another_subject_cannot_supply_a_verdict_for_a_requested_case() {
             )],
         };
         let (admitted, dropped) = batch.sanitize(&packet());
-        assert!(admitted.is_empty());
-        assert_eq!(dropped, 1);
+        check!(admitted.is_empty());
+        check!(eq; dropped, 1);
     }
+    Ok(())
 }
 
 #[test]
-fn model_reply_rejects_unknown_batch_and_verdict_fields() {
+fn model_reply_rejects_unknown_batch_and_verdict_fields() -> Result<(), Box<dyn std::error::Error>>
+{
     let batch = VerdictBatch {
         subject_id: "school:madison-west".to_string(),
         verdicts: vec![verdict(
@@ -145,7 +155,7 @@ fn model_reply_rejects_unknown_batch_and_verdict_fields() {
             80,
         )],
     };
-    let encoded = serde_json::to_value(&batch).expect("valid model reply");
+    let encoded = serde_json::to_value(&batch)?;
     for nested in [false, true] {
         let mut reply = encoded.clone();
         let object = if nested {
@@ -154,15 +164,13 @@ fn model_reply_rejects_unknown_batch_and_verdict_fields() {
             reply.as_object_mut()
         };
         object
-            .expect("model reply object")
+            .ok_or("missing model reply object fixture")?
             .insert("unexpected".into(), serde_json::json!("unsupported advice"));
-        assert!(
+        check!(
             serde_json::from_value::<VerdictBatch>(reply).is_err(),
             "unsupported fields must not become accepted advice"
         );
     }
-    assert_eq!(
-        serde_json::from_value::<VerdictBatch>(encoded).expect("supported model reply"),
-        batch
-    );
+    check!(eq; serde_json::from_value::<VerdictBatch>(encoded)?, batch);
+    Ok(())
 }

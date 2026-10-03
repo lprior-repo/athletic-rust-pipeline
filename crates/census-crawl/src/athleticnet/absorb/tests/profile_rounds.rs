@@ -1,7 +1,7 @@
 use super::*;
 
-fn published_rounds() -> Bio {
-    serde_json::from_value(serde_json::json!({
+fn published_rounds() -> TestResult<Bio> {
+    Ok(serde_json::from_value(serde_json::json!({
         "athlete": {"IDAthlete": 28127170, "FirstName": "Natalia", "LastName": "Casillas", "Gender": "F", "SchoolID": 13850},
         "grades": {"13850_2026": 11},
         "allTeams": {"13850": {"SchoolName": "Seton Catholic"}},
@@ -12,14 +12,14 @@ fn published_rounds() -> Bio {
             {"IDResult": 1, "Result": "26.10a", "FAT": 1, "Round": "F", "Division": "Varsity", "SchoolID": 13850, "EventID": 20, "MeetID": 589334, "SeasonID": 2026, "ResultDate": "2026-05-03"},
             {"IDResult": 2, "Result": "26.50a", "FAT": 1, "Round": "P", "Division": "Varsity", "SchoolID": 13850, "EventID": 20, "MeetID": 589334, "SeasonID": 2026, "ResultDate": "2026-05-03"}
         ]
-    })).expect("published prelim and final marks")
+    }))?)
 }
 
 #[test]
-fn profile_rounds_keep_distinct_event_identities_and_result_references() {
-    let (accumulated, outcome) = absorb_profile_for(&published_rounds(), 28127170);
-    assert_eq!(
-        outcome.expect("complete profile"),
+fn profile_rounds_keep_distinct_event_identities_and_result_references() -> TestResult {
+    let (accumulated, outcome) = absorb_profile_for(&published_rounds()?, 28127170);
+    check!(eq;
+        outcome?,
         AbsorbOutcome::Complete { rows: 2 }
     );
     let events: std::collections::BTreeSet<_> = accumulated
@@ -30,27 +30,28 @@ fn profile_rounds_keep_distinct_event_identities_and_result_references() {
                 .events
                 .values()
                 .find(|event| event.id == performance.event)
-                .expect("result event retained");
-            assert_eq!(event.round, performance.round);
-            (
-                event.round.as_deref().expect("published round"),
+                .ok_or("result event retained")?;
+            check!(eq; event.round, performance.round);
+            Ok((
+                event.round.as_deref().ok_or("published round")?,
                 event.id.as_str(),
-            )
+            ))
         })
-        .collect();
-    assert_eq!(
+        .collect::<TestResult<_>>()?;
+    check!(eq;
         events.iter().map(|(round, _)| *round).collect::<Vec<_>>(),
         ["final", "prelim"]
     );
-    assert_ne!(
-        events.first().expect("final").1,
-        events.last().expect("prelim").1
+    check!(ne;
+        events.first().ok_or("final")?.1,
+        events.last().ok_or("prelim")?.1
     );
+    Ok(())
 }
 
 #[test]
-fn an_unknown_profile_school_does_not_report_a_missing_target_state() {
-    let mut bio = published_rounds();
+fn an_unknown_profile_school_does_not_report_a_missing_target_state() -> TestResult {
+    let mut bio = published_rounds()?;
     bio.teams.clear();
     let mut accumulated = Accumulator::default();
     let mut stats = Stats::default();
@@ -74,18 +75,18 @@ fn an_unknown_profile_school_does_not_report_a_missing_target_state() {
             stats: &mut stats,
             accumulated: &mut accumulated,
         },
-    )
-    .expect("unresolved profile retained");
-    assert!(matches!(outcome, AbsorbOutcome::Withheld { .. }));
-    assert_eq!(stats.rows_unknown_school, 1);
-    assert_eq!(stats.rows_without_state, 0);
-    assert!(accumulated.performances.is_empty());
+    )?;
+    check!(matches!(outcome, AbsorbOutcome::Withheld { .. }));
+    check!(eq; stats.rows_unknown_school, 1);
+    check!(eq; stats.rows_without_state, 0);
+    check!(accumulated.performances.is_empty());
+    Ok(())
 }
 
 #[test]
-fn missing_target_state_counts_each_withheld_result_not_the_profile() {
+fn missing_target_state_counts_each_withheld_result_not_the_profile() -> TestResult {
     for expected in [2_u64, 0] {
-        let mut bio = published_rounds();
+        let mut bio = published_rounds()?;
         if expected == 0 {
             bio.results_tf = None;
         }
@@ -108,12 +109,12 @@ fn missing_target_state_counts_each_withheld_result_not_the_profile() {
                 stats: &mut stats,
                 accumulated: &mut accumulated,
             },
-        )
-        .expect("missing-state profile retained");
-        assert!(matches!(outcome, AbsorbOutcome::Withheld { .. }));
-        assert_eq!(stats.rows_without_state, expected);
-        assert_eq!(stats.rows_seen, expected);
-        assert_eq!(stats.rows_unknown_school, 0);
-        assert!(accumulated.performances.is_empty());
+        )?;
+        check!(matches!(outcome, AbsorbOutcome::Withheld { .. }));
+        check!(eq; stats.rows_without_state, expected);
+        check!(eq; stats.rows_seen, expected);
+        check!(eq; stats.rows_unknown_school, 0);
+        check!(accumulated.performances.is_empty());
     }
+    Ok(())
 }

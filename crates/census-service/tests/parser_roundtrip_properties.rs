@@ -6,6 +6,10 @@ use census_domain::model::{EventKind, SourceRef};
 use proptest::prelude::*;
 use proptest::test_runner::{RngAlgorithm, RngSeed};
 
+#[macro_use]
+#[path = "../../../tools/fallible_checks.rs"]
+mod fallible_checks;
+
 #[path = "parser_roundtrip_properties/edges.rs"]
 mod edges;
 #[path = "parser_roundtrip_properties/prefix_laws.rs"]
@@ -89,7 +93,10 @@ fn seam_config() -> ProptestConfig {
 }
 
 fn extension(fixture: &str) -> &str {
-    fixture.rsplit('.').next().unwrap_or_default()
+    fixture
+        .rsplit('.')
+        .next()
+        .map_or(Default::default(), core::convert::identity)
 }
 
 fn tail(max_len: usize) -> impl Strategy<Value = String> {
@@ -194,71 +201,71 @@ fn legs_grew(shorter: &ParsedRow, longer: &ParsedRow) -> bool {
 }
 
 #[test]
-fn every_fixture_dispatches_to_the_format_that_parses_it() {
+fn every_fixture_dispatches_to_the_format_that_parses_it() -> Result<(), Box<dyn std::error::Error>>
+{
     for (name, body, format) in FIXTURES {
-        assert_eq!(
-            artifact_format(extension(name), Some(body)),
-            format,
-            "{name} is sniffed into the format the archive publishes it as"
-        );
+        check!(eq; artifact_format(extension(name), Some(body)),
+        format,
+        "{name} is sniffed into the format the archive publishes it as");
         let meet = parse(body, format, ARCHIVE_YEAR)
-            .unwrap_or_else(|| panic!("{name} parses as {format:?}"));
-        assert!(!meet.name.is_empty(), "{name} publishes a meet name");
-        assert!(!meet.date.is_empty(), "{name} publishes a date");
-        assert!(!meet.events.is_empty(), "{name} publishes events");
+            .ok_or_else(|| format!("{name} did not parse as {format:?}"))?;
+        check!(!meet.name.is_empty(), "{name} publishes a meet name");
+        check!(!meet.date.is_empty(), "{name} publishes a date");
+        check!(!meet.events.is_empty(), "{name} publishes events");
         let rows: usize = meet.events.iter().map(|event| event.rows.len()).sum();
-        assert!(rows > 0, "{name} publishes result rows");
-        assert_eq!(meet.rows_parsed, rows, "{name} counts the rows it parsed");
+        check!(rows > 0, "{name} publishes result rows");
+        check!(eq; meet.rows_parsed, rows, "{name} counts the rows it parsed");
         for event in &meet.events {
             for row in &event.rows {
-                assert!(
+                check!(
                     !row.school.is_empty(),
                     "{name}: a result row names a school: {row:?}"
                 );
-                assert!(
+                check!(
                     row.place.is_none() || !row.name.is_empty() || !row.legs.is_empty(),
                     "{name}: a placed row names an athlete or lists relay legs: {row:?}"
                 );
             }
         }
     }
+    Ok(())
 }
 
 #[test]
-fn the_two_hytek_front_ends_agree_on_the_same_report() {
+fn the_two_hytek_front_ends_agree_on_the_same_report() -> Result<(), Box<dyn std::error::Error>> {
     let from_html = parse(DASH_HTML, ArtifactFormat::HytekHtml, ARCHIVE_YEAR);
     let from_text = parse(DASH_TEXT, ArtifactFormat::HytekText, ARCHIVE_YEAR);
-    assert_eq!(
-        from_html.expect("the HTML release parses"),
-        from_text.expect("the plain-text release parses"),
-        "one report, two releases: the parsed meets must be identical"
-    );
+    check!(eq; from_html.ok_or("HTML release did not parse")?,
+    from_text.ok_or("plain-text release did not parse")?,
+    "one report, two releases: the parsed meets must be identical");
+    Ok(())
 }
 
 #[test]
-fn the_prefix_predicate_rejects_an_edited_parse() {
-    let full =
-        parse(SECTIONS_HTML, ArtifactFormat::HytekHtml, ARCHIVE_YEAR).expect("sections parses");
+fn the_prefix_predicate_rejects_an_edited_parse() -> Result<(), Box<dyn std::error::Error>> {
+    let full = parse(SECTIONS_HTML, ArtifactFormat::HytekHtml, ARCHIVE_YEAR)
+        .ok_or("sections did not parse")?;
 
     let mut renamed = full.clone();
     renamed.name = "Some Other Meet".to_string();
-    assert!(prefix_survives(&full, &renamed).is_err(), "identity moved");
+    check!(prefix_survives(&full, &renamed).is_err(), "identity moved");
 
     let mut relabelled = full.clone();
     relabelled.events[1].kind = EventKind::Track200m;
-    assert!(
+    check!(
         prefix_survives(&full, &relabelled).is_err(),
         "an event's ontology changed"
     );
 
     let mut edited = full.clone();
     edited.events[2].rows[0].school = "Elsewhere".to_string();
-    assert!(
+    check!(
         prefix_survives(&full, &edited).is_err(),
         "a parsed row was rewritten"
     );
-    assert!(
+    check!(
         prefix_survives(&full, &full).is_ok(),
         "the predicate accepts an unchanged parse"
     );
+    Ok(())
 }

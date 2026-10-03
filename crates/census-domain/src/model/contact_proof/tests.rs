@@ -85,128 +85,138 @@ mod claims;
 mod director;
 
 #[test]
-fn valid_coach_ad_row_computes_proof() {
+fn valid_coach_ad_row_computes_proof() -> Result<(), Box<dyn std::error::Error>> {
     let row = make_valid_coach_row();
     let claims = make_valid_claims(&row, "2025-06-01T12:00:00+00:00");
-    let proof = compute_contact_proof(&row, &claims).expect("should compute proof");
-    assert_eq!(proof.len(), 64, "proof must be 64 hex chars");
+    let proof = compute_contact_proof(&row, &claims)?;
+    check!(eq; proof.len(), 64, "proof must be 64 hex chars");
 
-    let validated = verify_contact_proof(&row, &claims, &proof).expect("should verify");
-    assert_eq!(validated.as_str(), proof);
+    let validated = verify_contact_proof(&row, &claims, &proof)?;
+    check!(eq; validated.as_str(), proof);
+    Ok(())
 }
 
 #[test]
-fn missing_email_claim_for_populated_email_field() {
+fn missing_email_claim_for_populated_email_field() -> Result<(), Box<dyn std::error::Error>> {
     let row = make_valid_coach_row();
     let mut claims = make_valid_claims(&row, "2025-06-01T12:00:00+00:00");
     claims.retain(|c| c.field != ContactProofField::PublicProfessionalEmail);
     let result = compute_contact_proof(&row, &claims);
-    assert!(result.is_err());
-    match result.unwrap_err() {
+    check!(result.is_err());
+    match result.err().ok_or("expected contact-proof rejection")? {
         ContactProofError::ClaimFieldNotCovered(f) => {
-            assert_eq!(f, "public_professional_email");
+            check!(eq; f, "public_professional_email");
         }
-        other => panic!("expected ClaimFieldNotCovered, got {:?}", other),
+        other => return Err(format!("expected ClaimFieldNotCovered, got {:?}", other).into()),
     }
+    Ok(())
 }
 
 #[test]
-fn empty_claims_rejected() {
+fn empty_claims_rejected() -> Result<(), Box<dyn std::error::Error>> {
     let row = make_valid_coach_row();
     let claims: Vec<ContactClaimEvidence> = vec![];
     let result = compute_contact_proof(&row, &claims);
-    assert!(result.is_err());
-    match result.unwrap_err() {
+    check!(result.is_err());
+    match result.err().ok_or("expected contact-proof rejection")? {
         ContactProofError::UnverifiedClaim => {}
-        other => panic!("expected UnverifiedClaim, got {:?}", other),
+        other => return Err(format!("expected UnverifiedClaim, got {:?}", other).into()),
     }
+    Ok(())
 }
 
 #[test]
-fn wrong_digest_rejected() {
+fn wrong_digest_rejected() -> Result<(), Box<dyn std::error::Error>> {
     let row = make_valid_coach_row();
     let claims = make_valid_claims(&row, "2025-06-01T12:00:00+00:00");
     let wrong_digest = "0".repeat(64);
     let result = verify_contact_proof(&row, &claims, &wrong_digest);
-    assert!(result.is_err());
-    match result.unwrap_err() {
+    check!(result.is_err());
+    match result.err().ok_or("expected contact-proof rejection")? {
         ContactProofError::DigestMismatch => {}
-        other => panic!("expected DigestMismatch, got {:?}", other),
+        other => return Err(format!("expected DigestMismatch, got {:?}", other).into()),
     }
+    Ok(())
 }
 
 #[test]
-fn future_claimed_date_rejected() {
+fn future_claimed_date_rejected() -> Result<(), Box<dyn std::error::Error>> {
     let row = make_valid_coach_row();
     let fetched = "2025-06-01T12:00:00+00:00";
     let mut claims = make_valid_claims(&row, fetched);
     claims[0].claimed_observed_on = "2026-01-01".to_string();
     let result = compute_contact_proof(&row, &claims);
-    assert!(result.is_err());
-    match result.unwrap_err() {
+    check!(result.is_err());
+    match result.err().ok_or("expected contact-proof rejection")? {
         ContactProofError::ClaimedAfterFetched => {}
-        other => panic!("expected ClaimedAfterFetched, got {:?}", other),
+        other => return Err(format!("expected ClaimedAfterFetched, got {:?}", other).into()),
     }
+    Ok(())
 }
 
 #[test]
-fn invalid_date_format_rejected() {
+fn invalid_date_format_rejected() -> Result<(), Box<dyn std::error::Error>> {
     let row = make_valid_coach_row();
     let fetched = "2025-06-01T12:00:00+00:00";
     let mut claims = make_valid_claims(&row, fetched);
     claims[0].claimed_observed_on = "Jan 10, 2025".to_string();
     let result = compute_contact_proof(&row, &claims);
-    assert!(result.is_err());
-    match result.unwrap_err() {
+    check!(result.is_err());
+    match result.err().ok_or("expected contact-proof rejection")? {
         ContactProofError::ClaimedObservedOnInvalid => {}
-        other => panic!("expected ClaimedObservedOnInvalid, got {:?}", other),
+        other => return Err(format!("expected ClaimedObservedOnInvalid, got {:?}", other).into()),
     }
+    Ok(())
 }
 
 #[test]
-fn claimed_digest_rejects_unicode_fake_hex() {
+fn claimed_digest_rejects_unicode_fake_hex() -> Result<(), Box<dyn std::error::Error>> {
     let fake = "aaaa\u{03B1}".to_string() + &"a".repeat(60);
     let result = validate_claimed_digest(&fake);
-    assert!(result.is_err());
-    match result.unwrap_err() {
+    check!(result.is_err());
+    match result.err().ok_or("expected contact-proof rejection")? {
         ContactProofError::MalformedClaimedDigest => {}
-        other => panic!("expected MalformedClaimedDigest, got {:?}", other),
+        other => return Err(format!("expected MalformedClaimedDigest, got {:?}", other).into()),
     }
+    Ok(())
 }
 
 #[test]
-fn source_hash_rejects_short_hex() {
+fn source_hash_rejects_short_hex() -> Result<(), Box<dyn std::error::Error>> {
     let result = validate_claimed_digest(&"a".repeat(63));
-    assert!(result.is_err());
-    match result.unwrap_err() {
+    check!(result.is_err());
+    match result.err().ok_or("expected contact-proof rejection")? {
         ContactProofError::MalformedClaimedDigest => {}
-        other => panic!("expected MalformedClaimedDigest, got {:?}", other),
+        other => return Err(format!("expected MalformedClaimedDigest, got {:?}", other).into()),
     }
+    Ok(())
 }
 
 #[test]
-fn source_hash_in_claim_must_be_valid_hex() {
+fn source_hash_in_claim_must_be_valid_hex() -> Result<(), Box<dyn std::error::Error>> {
     let row = make_valid_coach_row();
     let fetched = "2025-06-01T12:00:00+00:00";
     let mut claims = make_valid_claims(&row, fetched);
     claims[0].source_sha256 = "g".repeat(64);
     let result = compute_contact_proof(&row, &claims);
-    assert!(result.is_err());
-    match result.unwrap_err() {
+    check!(result.is_err());
+    match result.err().ok_or("expected contact-proof rejection")? {
         ContactProofError::MalformedSourceHash => {}
-        other => panic!("expected MalformedSourceHash, got {:?}", other),
+        other => return Err(format!("expected MalformedSourceHash, got {:?}", other).into()),
     }
+    Ok(())
 }
 
 #[test]
-fn proof_from_another_school_cannot_verify_valid_claims() -> Result<(), ContactProofError> {
+fn proof_from_another_school_cannot_verify_valid_claims() -> Result<(), Box<dyn std::error::Error>>
+{
     let first = make_valid_coach_row();
     let claims = make_valid_claims(&first, "2025-06-01T12:00:00+00:00");
     let proof = compute_contact_proof(&first, &claims)?;
     let mut second = first;
     second.school = "BetaU".to_string();
     let claims = make_valid_claims(&second, "2025-06-01T12:00:00+00:00");
-    assert!(matches!(
+    check!(matches!(
         verify_contact_proof(&second, &claims, &proof),
         Err(ContactProofError::DigestMismatch)
     ));
@@ -214,57 +224,61 @@ fn proof_from_another_school_cannot_verify_valid_claims() -> Result<(), ContactP
 }
 
 #[test]
-fn email_case_mismatch_causes_failure() {
+fn email_case_mismatch_causes_failure() -> Result<(), Box<dyn std::error::Error>> {
     let row = make_valid_coach_row();
     let fetched = "2025-06-01T12:00:00+00:00";
     let mut claims = make_valid_claims(&row, fetched);
     claims[1].value = "coach@TESTU.EDU".to_string();
     let result = compute_contact_proof(&row, &claims);
-    assert!(result.is_err());
+    check!(result.is_err());
+    Ok(())
 }
 
 #[test]
-fn span_exceeds_limit() {
+fn span_exceeds_limit() -> Result<(), Box<dyn std::error::Error>> {
     let row = make_valid_coach_row();
     let fetched = "2025-06-01T12:00:00+00:00";
     let mut claims = make_valid_claims(&row, fetched);
     claims[0].span = "x".repeat(4097);
     let result = compute_contact_proof(&row, &claims);
-    assert!(result.is_err());
-    match result.unwrap_err() {
+    check!(result.is_err());
+    match result.err().ok_or("expected contact-proof rejection")? {
         ContactProofError::SpanTooLong(_) => {}
-        other => panic!("expected SpanTooLong, got {:?}", other),
+        other => return Err(format!("expected SpanTooLong, got {:?}", other).into()),
     }
+    Ok(())
 }
 
 #[test]
-fn fetched_at_invalid_format() {
+fn fetched_at_invalid_format() -> Result<(), Box<dyn std::error::Error>> {
     let row = make_valid_coach_row();
     let mut claims = make_valid_claims(&row, "not-rfc3339");
     claims[0].fetched_at = "not-rfc3339".to_string();
     let result = compute_contact_proof(&row, &claims);
-    assert!(result.is_err());
-    match result.unwrap_err() {
+    check!(result.is_err());
+    match result.err().ok_or("expected contact-proof rejection")? {
         ContactProofError::FetchedAtInvalid => {}
-        other => panic!("expected FetchedAtInvalid, got {:?}", other),
+        other => return Err(format!("expected FetchedAtInvalid, got {:?}", other).into()),
     }
+    Ok(())
 }
 
 #[test]
-fn last_observed_invalid_format() {
+fn last_observed_invalid_format() -> Result<(), Box<dyn std::error::Error>> {
     let mut row = make_valid_coach_row();
     row.last_observed = "not-a-date".to_string();
     let claims = make_valid_claims(&row, "2025-06-01T12:00:00+00:00");
     let result = compute_contact_proof(&row, &claims);
-    assert!(result.is_err());
-    match result.unwrap_err() {
+    check!(result.is_err());
+    match result.err().ok_or("expected contact-proof rejection")? {
         ContactProofError::LastObservedInvalid => {}
-        other => panic!("expected LastObservedInvalid, got {:?}", other),
+        other => return Err(format!("expected LastObservedInvalid, got {:?}", other).into()),
     }
+    Ok(())
 }
 
 #[test]
-fn too_many_claims_rejected() {
+fn too_many_claims_rejected() -> Result<(), Box<dyn std::error::Error>> {
     let row = make_valid_coach_row();
     let fetched = "2025-06-01T12:00:00+00:00";
     let base_claims = make_valid_claims(&row, fetched);
@@ -273,11 +287,12 @@ fn too_many_claims_rejected() {
         claims.push(base_claims[0].clone());
     }
     let result = compute_contact_proof(&row, &claims);
-    assert!(result.is_err());
-    match result.unwrap_err() {
+    check!(result.is_err());
+    match result.err().ok_or("expected contact-proof rejection")? {
         ContactProofError::TooManyClaims(count, _) => {
-            assert!(count > 256);
+            check!(count > 256);
         }
-        other => panic!("expected TooManyClaims, got {:?}", other),
+        other => return Err(format!("expected TooManyClaims, got {:?}", other).into()),
     }
+    Ok(())
 }

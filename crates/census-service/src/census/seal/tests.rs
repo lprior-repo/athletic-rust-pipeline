@@ -11,6 +11,8 @@ use census_report::report::Scope;
 use census_store::{Store, StoreStats, Table};
 use std::path::Path;
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 fn stats_with(snapshots: u64, review: u64, coverage: u64, observations: u64) -> StoreStats {
     StoreStats {
         tables: vec![
@@ -26,8 +28,8 @@ fn stats_with(snapshots: u64, review: u64, coverage: u64, observations: u64) -> 
 }
 
 #[test]
-fn the_ladder_stops_at_the_first_artifact_the_store_lacks() {
-    let dir = tempfile::tempdir().expect("a temp dir");
+fn the_ladder_stops_at_the_first_artifact_the_store_lacks() -> TestResult {
+    let dir = tempfile::tempdir()?;
     let absent = dir.path().join("no-workbook.xlsx");
     let phases = [
         (stats_with(0, 0, 0, 0), Phase::Discovering),
@@ -36,24 +38,25 @@ fn the_ladder_stops_at_the_first_artifact_the_store_lacks() {
         (stats_with(1, 2, 3, 9), Phase::ResolvingGaps),
     ];
     for (stats, expected) in phases {
-        let state = reached_phase(&stats, &absent).expect("walks");
-        assert_eq!(state.phase(), expected);
-        assert!(state.sealed().is_none(), "a walked ladder is not sealed");
+        let state = reached_phase(&stats, &absent)?;
+        check!(eq; state.phase(), expected);
+        check!(state.sealed().is_none(), "a walked ladder is not sealed");
     }
+    Ok(())
 }
 
 #[test]
-fn a_workbook_is_what_lifts_the_ladder_into_exporting() {
-    let dir = tempfile::tempdir().expect("a temp dir");
-    let store = Store::open(dir.path().join("store")).expect("own store");
-    let path = census_report::workbook::build(&store, &Default::default())
-        .expect("publish verified workbook");
-    let state = reached_phase(&stats_with(1, 2, 3, 9), &path).expect("walks");
-    assert_eq!(
+fn a_workbook_is_what_lifts_the_ladder_into_exporting() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path().join("store"))?;
+    let path = census_report::workbook::build(&store, &Default::default())?;
+    let state = reached_phase(&stats_with(1, 2, 3, 9), &path)?;
+    check!(eq;
         state.phase(),
         Phase::Exporting,
         "only the export lifts the last step"
     );
+    Ok(())
 }
 
 #[test]
@@ -91,8 +94,8 @@ fn condition(kind: AccessBlockKind, host: &str) -> SourceAccessCondition {
     )
 }
 
-fn populated_store(path: &Path) -> Store {
-    let store = Store::open(path).expect("own store");
+fn populated_store(path: &Path) -> TestResult<Store> {
+    let store = Store::open(path)?;
     let (mut school, id) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Test School", "test school");
     let evidence = Evidence::parsed(
@@ -110,72 +113,77 @@ fn populated_store(path: &Path) -> Store {
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1234"),
     );
+    athlete
+        .published_graduations
+        .push(census_domain::model::PublishedGraduation {
+            grad_year: GradYear::CO2027,
+            source: evidence.source.clone(),
+        });
     athlete.evidence.push(evidence);
-    store
-        .append(Table::Schools, &school)
-        .expect("persist school");
-    store
-        .append(Table::Athletes, &athlete)
-        .expect("persist athlete");
-    store
+    store.append(Table::Schools, &school)?;
+    store.append(Table::Athletes, &athlete)?;
+    Ok(store)
 }
 
 #[test]
-fn a_complete_frozen_bundle_is_the_seal_certificate() {
-    let directory = tempfile::tempdir().expect("scratch directory");
-    let store = populated_store(directory.path());
-    let path = census_report::workbook::build(&store, &Default::default()).expect("publish");
-    let current = ExportDataset::load(&store).expect("current source input");
-    let check =
-        inspect_workbook(&path, &current, 2027, Scope::AllSources).expect("certify publication");
-    assert_eq!(check.mapped_athletes, 1);
-    assert!(
+fn a_complete_frozen_bundle_is_the_seal_certificate() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let store = populated_store(directory.path())?;
+    let path = census_report::workbook::build(&store, &Default::default())?;
+    let current = ExportDataset::load(&store)?;
+    let check = inspect_workbook(&path, &current, 2027, Scope::AllSources)?;
+    check!(eq; check.mapped_athletes, 1);
+    check!(
         check.export_verified
             && check.counts_reconciled
             && check.coverage_reconciled
             && check.metrics_reconciled
     );
-    let manifest: serde_json::Value = serde_json::from_slice(
-        &std::fs::read(path.parent().expect("generation").join("manifest.json"))
-            .expect("read manifest"),
-    )
-    .expect("decode manifest");
-    assert_eq!(
+    let manifest: serde_json::Value = serde_json::from_slice(&std::fs::read(
+        path.parent()
+            .ok_or("missing generation directory")?
+            .join("manifest.json"),
+    )?)?;
+    check!(eq;
         check.digests,
         [manifest["generation_digest"]
             .as_str()
-            .expect("generation digest")]
+            .ok_or("missing generation digest")?]
     );
+    Ok(())
 }
 
 #[test]
-fn a_limited_bundle_cannot_certify_the_whole_cohort() {
-    let directory = tempfile::tempdir().expect("scratch directory");
-    let store = populated_store(directory.path());
+fn a_limited_bundle_cannot_certify_the_whole_cohort() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let store = populated_store(directory.path())?;
     let options = census_report::workbook::Options {
         limit: Some(0),
         ..Default::default()
     };
-    let path =
-        census_report::workbook::build(&store, &options).expect("publish qualification slice");
-    let current = ExportDataset::load(&store).expect("current input");
-    let error = inspect_workbook(&path, &current, 2027, Scope::AllSources)
-        .expect_err("limited seal refused");
-    assert!(format!("{error:#}").contains("complete publication of the requested scope and cohort"));
+    let path = census_report::workbook::build(&store, &options)?;
+    let current = ExportDataset::load(&store)?;
+    let error = match inspect_workbook(&path, &current, 2027, Scope::AllSources) {
+        Err(error) => error,
+        Ok(_) => return Err("limited bundle certified the whole cohort".into()),
+    };
+    check!(format!("{error:#}").contains("complete publication of the requested scope and cohort"));
+    Ok(())
 }
 
 #[test]
-fn new_source_evidence_invalidates_the_old_seal_candidate() {
-    let directory = tempfile::tempdir().expect("scratch directory");
-    let store = populated_store(directory.path());
-    let path = census_report::workbook::build(&store, &Default::default()).expect("publish");
+fn new_source_evidence_invalidates_the_old_seal_candidate() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let store = populated_store(directory.path())?;
+    let path = census_report::workbook::build(&store, &Default::default())?;
     let (school, _) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Later School", "later school");
-    store
-        .append(Table::Schools, &school)
-        .expect("append later source evidence");
-    let current = ExportDataset::load(&store).expect("current input");
-    let error =
-        inspect_workbook(&path, &current, 2027, Scope::AllSources).expect_err("stale seal refused");
-    assert!(format!("{error:#}").contains("publication is stale"));
+    store.append(Table::Schools, &school)?;
+    let current = ExportDataset::load(&store)?;
+    let error = match inspect_workbook(&path, &current, 2027, Scope::AllSources) {
+        Err(error) => error,
+        Ok(_) => return Err("stale bundle certified".into()),
+    };
+    check!(format!("{error:#}").contains("publication is stale"));
+    Ok(())
 }

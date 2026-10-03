@@ -5,8 +5,11 @@ use census_domain::model::SourceMeetRef;
 use census_domain::UsJurisdiction;
 
 use super::{arm_for, athleticnet_meet_ids, athleticnet_meets, meet_id_in, ResultsArm};
+use crate::restate_services::tests::sdk_error;
 use census_crawl::milesplit::is_results_page;
 use census_store::Store;
+
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn row(source: &str, id: &str, url: &str, jurisdiction: UsJurisdiction) -> SourceMeetRef {
     SourceMeetRef {
@@ -117,51 +120,56 @@ fn only_a_milesplit_results_page_is_read_by_the_result_set_arm() {
     assert!(!is_results_page("not a url"));
 }
 
-fn scratch() -> (tempfile::TempDir, Store, Fetcher) {
-    let dir = tempfile::tempdir().expect("temp dir");
-    let store = Store::open(dir.path().join("store")).expect("store");
+fn scratch() -> TestResult<(tempfile::TempDir, Store, Fetcher)> {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path().join("store"))?;
     let fetcher = Fetcher::new(
         dir.path().join("http"),
         None,
         std::time::Duration::from_millis(1),
         std::collections::HashMap::new(),
         Vec::new(),
-    )
-    .expect("fetcher");
-    (dir, store, fetcher)
+    )?;
+    Ok((dir, store, fetcher))
 }
 
-fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> AdapterContext<'a> {
-    AdapterContext {
+fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> TestResult<AdapterContext<'a>> {
+    Ok(AdapterContext {
         fetcher,
         store,
         refresh: false,
-        school_year: SchoolYear::new(2026).expect("2026 is a season"),
+        school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
         observed_on: "2026-09-24".to_string(),
         recording: None,
-    }
+    })
 }
 
-#[tokio::test]
-async fn a_selection_that_names_no_meet_is_not_a_pull() {
-    let (_dir, store, fetcher) = scratch();
-    let rows = vec![row(
-        "milesplit",
-        "770621",
-        "https://oh.milesplit.com/meets/770621/results",
-        UsJurisdiction::Alabama,
-    )];
-    let (meets, report) = athleticnet_meets(
-        &context(&store, &fetcher),
-        &rows,
-        UsJurisdiction::Alabama,
-        "2026-09-24",
-    )
-    .await
-    .expect("an empty selection is the run's coverage, not a failure");
-    assert_eq!(meets, 0);
-    assert_eq!(report.adapter, "athleticnet");
-    assert_eq!(report.unit, "performances");
-    assert_eq!(report.rows, 0);
-    assert_eq!(report.requests, 0, "nothing to pull means no request");
+#[test]
+fn a_selection_that_names_no_meet_is_not_a_pull() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (_dir, store, fetcher) = scratch()?;
+            let rows = vec![row(
+                "milesplit",
+                "770621",
+                "https://oh.milesplit.com/meets/770621/results",
+                UsJurisdiction::Alabama,
+            )];
+            let (meets, report) = athleticnet_meets(
+                &context(&store, &fetcher)?,
+                &rows,
+                UsJurisdiction::Alabama,
+                "2026-09-24",
+            )
+            .await
+            .map_err(sdk_error)?;
+            check!(eq; meets, 0);
+            check!(eq; report.adapter, "athleticnet");
+            check!(eq; report.unit, "performances");
+            check!(eq; report.rows, 0);
+            check!(eq; report.requests, 0, "nothing to pull means no request");
+            Ok(())
+        })
 }

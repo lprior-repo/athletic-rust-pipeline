@@ -38,7 +38,7 @@ pub use athlete::{AthleteCandidateKey, CanonicalAthlete};
 pub use canonical_json::{serialized_digest, CanonicalJsonError};
 pub use classification::{CanonicalTeam, CompetitionLevel, Gender, Sport};
 pub use coach::{CanonicalCoach, CoachRole};
-pub use cohort::{GradYear, Grade, ObservedGrade, SchoolYear};
+pub use cohort::{GradYear, Grade, ObservedGrade, PublishedGraduation, SchoolYear};
 pub use collision::{id_collision, CANONICAL_ID_COLLISION_FAMILY};
 pub use contact::{is_consumer_domain, published_email, MailboxKind};
 pub use contact_proof::{

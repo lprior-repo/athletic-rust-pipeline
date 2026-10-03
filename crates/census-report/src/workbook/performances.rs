@@ -109,7 +109,7 @@ fn sheet_name(index: usize) -> String {
 fn no_budget(row: Option<&PerformanceRow>) -> ReportError {
     let first = row
         .map(|row| row.id.as_str())
-        .unwrap_or("(no performance rows)");
+        .map_or("(no performance rows)", |value| value);
     ReportError::Invariant {
         detail: format!(
             "a sheet budget of 0 data rows cannot hold a performance; first row {first}"

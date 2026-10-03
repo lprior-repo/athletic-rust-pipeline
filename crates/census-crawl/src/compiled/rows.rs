@@ -64,8 +64,12 @@ pub(super) fn parse_row(
     let year = block
         .numeric(line_tokens, &["Yr", "Year"])
         .and_then(grade_from_token);
-    let school = block.text(line, &["Team", "School"]).unwrap_or_default();
-    let name = block.text(line, &["Athlete", "Name"]).unwrap_or_default();
+    let school = block
+        .text(line, &["Team", "School"])
+        .map_or(Default::default(), core::convert::identity);
+    let name = block
+        .text(line, &["Athlete", "Name"])
+        .map_or(Default::default(), core::convert::identity);
     let points = block
         .numeric(line_tokens, &["Points", "Pts"])
         .and_then(|token| token.parse::<f64>().ok());
@@ -103,7 +107,7 @@ pub(super) fn attach_legs(line: &str, block: &Block, event: &mut ParsedEvent) ->
         let name = captures
             .get(2)
             .map(|m| m.as_str().trim().trim_end_matches(','))
-            .unwrap_or_default()
+            .map_or(Default::default(), core::convert::identity)
             .to_string();
         if !looks_like_a_name(&name) {
             continue;
@@ -112,7 +116,7 @@ pub(super) fn attach_legs(line: &str, block: &Block, event: &mut ParsedEvent) ->
             .get(1)
             .map(|m| m.as_str().parse::<u8>())
             .and_then(|r| r.ok())
-            .unwrap_or(0);
+            .map_or(0, |value| value);
         row.legs.push(RelayLeg {
             position,
             name,

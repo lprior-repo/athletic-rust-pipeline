@@ -39,6 +39,7 @@ clap = { version = "4.5", features = ["derive"] }
 # `g1-audit` prints its per-class counts in document order, so the audit lane's tables are insertion
 # ordered; `sha2` recomputes each retained body's digest rather than trusting the store key.
 indexmap = "2"
+libc = "=0.2.189"
 # The census services, their generated ingress clients and the wire types they take and return: the
 # mutating half of the harness submits invocations instead of opening the store, and the definitions
 # belong to the crate that owns the handlers. Same pinned restate-sdk and reqwest as the workspace.
@@ -52,3 +53,4 @@ sha2 = "0.10"
 tokio = { version = "1", features = ["rt", "net", "time"] }
 tempfile = "3"
 url = "2.5"
+unicode-ident = "=1.0.24"

@@ -3,26 +3,24 @@ use census_domain::model::{CoachRole, Gender, SchoolId, Sport};
 use std::collections::BTreeSet;
 
 #[test]
-fn captured_summary_keeps_four_varsity_contexts_and_counts_four_jv_rejections() {
+fn captured_summary_keeps_four_varsity_contexts_and_counts_four_jv_rejections() -> TestResult {
     let summary = parse_summary(include_bytes!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/tests/fixtures/coach_directories/probe/WY/summary-SS28UB.json"
-    )))
-    .expect("captured school summary");
+    )))?;
     let emission = coach_entities(
         &summary,
         &SchoolId::mint("sch", &["arapaho-charter"]),
         "https://example.test/schools/SS28UB/summary",
         "2026-09-30",
         EmissionScope::Census,
-    )
-    .expect("captured coach emission");
+    )?;
     let contexts: BTreeSet<_> = emission
         .coaches
         .iter()
         .map(|coach| (coach.name.as_str(), coach.sport, coach.gender, coach.role))
         .collect();
-    assert_eq!(
+    check!(eq;
         contexts,
         BTreeSet::from([
             (
@@ -51,11 +49,12 @@ fn captured_summary_keeps_four_varsity_contexts_and_counts_four_jv_rejections() 
             ),
         ])
     );
-    assert_eq!(emission.coaches.len(), contexts.len());
-    assert_eq!(
+    check!(eq; emission.coaches.len(), contexts.len());
+    check!(eq;
         emission.counters.dropped_levels,
         std::collections::BTreeMap::from([("JV".to_string(), 4)])
     );
-    assert_eq!(emission.counters.dropped_person, 0);
-    assert_eq!(emission.counters.dropped_vendor, 0);
+    check!(eq; emission.counters.dropped_person, 0);
+    check!(eq; emission.counters.dropped_vendor, 0);
+    Ok(())
 }

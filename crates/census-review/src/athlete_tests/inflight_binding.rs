@@ -3,73 +3,119 @@ use census_store::Table;
 
 use super::binding_support::{assert_preserved, canonical_side, rows, Change, Fixture};
 use super::options;
-use crate::consensus::tests::support::{audit, batch, client, lane, lane_with, row, state};
+use crate::consensus::tests::support::{
+    audit, batch, client, lane, lane_with, row, state, TestResult,
+};
 use crate::run_lanes;
 
-#[tokio::test]
-async fn a_source_url_or_retained_conflict_arriving_during_advice_refuses_the_old_binding() {
-    for change in [Change::EvidenceUrl, Change::RetainedConflict] {
-        let original_rows = rows();
-        let fixture = Fixture::new(&original_rows);
-        let mut incoming = original_rows[0].clone();
-        change.apply(&mut incoming);
-        let store = fixture.store.clone();
-        let same = batch(&fixture.case, "value_proposed", "identity", "same_person");
-        let different = batch(
-            &fixture.case,
-            "value_proposed",
-            "identity",
-            "different_person",
-        );
-        let (first, server_a) =
-            lane_with(vec![same.clone(), different.clone()], move |index, _| {
-                if index == 0 {
-                    store
-                        .append_many(Table::Athletes, std::slice::from_ref(&incoming))
-                        .expect("new source evidence before reply");
-                }
-            });
-        let (second, server_b) = lane(vec![same, different]);
-        let clients = [client(&first), client(&second)];
-        let stale = run_lanes(&fixture.store, &clients, &options(), "inflight")
-            .await
-            .expect("stale advice retained");
-        assert_eq!(stale.accepted, 0, "material change: {change:?}");
-        assert_eq!(audit(&fixture.store)["outcome"], "evidence_changed");
-        assert_eq!(state(&fixture.store), ReviewState::Retained);
-        assert!(!row(&fixture.store).accepted);
-        let current = fixture
-            .store
-            .scan::<CanonicalAthlete>(Table::Athletes)
-            .expect("merged source evidence");
-        assert_ne!(current, original_rows);
-        assert!(current.iter().any(|row| row.id == original_rows[0].id
-            && row.observed_grades == original_rows[0].observed_grades
-            && row.source == original_rows[0].source));
-        let refreshed = run_lanes(&fixture.store, &clients, &options(), "refreshed")
-            .await
-            .expect("fresh evidence reviewed");
-        assert_eq!(refreshed.requested, 1);
-        assert_eq!(refreshed.accepted, 1);
-        assert_eq!(row(&fixture.store).value, "different_person");
-        assert_eq!(row(&fixture.store).case_id, fixture.case.id);
-        assert_eq!(row(&fixture.store).subject_id, fixture.case.subject_id);
-        assert_eq!(row(&fixture.store).member_ids, fixture.case.member_ids);
-        for requests in [
-            server_a.join().expect("first lane"),
-            server_b.join().expect("second lane"),
-        ] {
-            assert_eq!(requests.len(), 2);
-            assert_eq!(canonical_side(&requests[0], "side_a"), original_rows[0]);
-            let subject = current
-                .iter()
-                .find(|row| row.id == original_rows[0].id)
-                .expect("subject");
-            assert_eq!(canonical_side(&requests[1], "side_a"), *subject);
-            assert_eq!(canonical_side(&requests[1], "side_b"), original_rows[1]);
+#[test]
+fn a_source_url_or_retained_conflict_arriving_during_advice_refuses_the_old_binding() -> TestResult
+{
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async { for change in [Change::EvidenceUrl, Change::RetainedConflict] {
+    let original_rows = rows()?;
+    let fixture = Fixture::new(&original_rows)?;
+    let mut incoming = original_rows[0].clone();
+    change.apply(&mut incoming)?;
+    let store = fixture.store.clone();
+    let same = batch(&fixture.case, "value_proposed", "identity", "same_person");
+    let different = batch(&fixture.case, "value_proposed", "identity", "different_person");
+    let (first, server_a) = lane_with(vec![same.clone(), different.clone()], move |index, _| {
+        if index == 0 {
+            store.append_many(Table::Athletes, std::slice::from_ref(&incoming))?;
         }
-        assert_eq!(audit(&fixture.store)["outcome"], "agreement");
-        assert_eq!(state(&fixture.store), ReviewState::Resolved);
-        assert_preserved(&fixture.store, &current);
+        Ok(())
+    })?;
+    let (second, server_b) = lane(vec![same, different])?;
+    let clients = [client(&first)?, client(&second)?];
+    let stale = run_lanes(&fixture.store, &clients, &options(), "inflight").await?;
+    {
+        let left = stale.accepted;
+        if left != 0 { return Err(format!("material change: {change:?}; left={left:?} right=0").into()); }
     }
+    {
+        let left = &audit(&fixture.store)?["outcome"];
+        let right = "evidence_changed";
+        if left != right { return Err(format!("left={left:?} right={right:?}").into()); }
+    }
+    {
+        let left = state(&fixture.store)?;
+        let right = ReviewState::Retained;
+        if left != right { return Err(format!("left={left:?} right={right:?}").into()); }
+    }
+    if row(&fixture.store)?.accepted { return Err("stale advice must not be accepted".into()); }
+    let current = fixture.store.scan::<CanonicalAthlete>(Table::Athletes)?;
+    if current == original_rows {
+        return Err(format!("expected unequal: left={current:?} right={original_rows:?}").into());
+    }
+    if !current.iter().any(|row| row.id == original_rows[0].id
+        && row.observed_grades == original_rows[0].observed_grades
+        && row.source == original_rows[0].source) {
+        return Err(format!("merged row lost original grade or owner: current={current:?} original={original_rows:?}").into());
+    }
+    let refreshed = run_lanes(&fixture.store, &clients, &options(), "refreshed").await?;
+    {
+        let left = refreshed.requested;
+        if left != 1 { return Err(format!("left={left:?} right=1").into()); }
+    }
+    {
+        let left = refreshed.accepted;
+        if left != 1 { return Err(format!("left={left:?} right=1").into()); }
+    }
+    {
+        let left = &row(&fixture.store)?.value;
+        let right = "different_person";
+        if left != right { return Err(format!("left={left:?} right={right:?}").into()); }
+    }
+    {
+        let left = &row(&fixture.store)?.case_id;
+        let right = &fixture.case.id;
+        if left != right { return Err(format!("left={left:?} right={right:?}").into()); }
+    }
+    {
+        let left = &row(&fixture.store)?.subject_id;
+        let right = &fixture.case.subject_id;
+        if left != right { return Err(format!("left={left:?} right={right:?}").into()); }
+    }
+    {
+        let left = &row(&fixture.store)?.member_ids;
+        let right = &fixture.case.member_ids;
+        if left != right { return Err(format!("left={left:?} right={right:?}").into()); }
+    }
+    for requests in [
+        server_a.join().map_err(|_| "first lane panicked")??,
+        server_b.join().map_err(|_| "second lane panicked")??,
+    ] {
+        {
+            let left = requests.len();
+            if left != 2 { return Err(format!("left={left:?} right=2").into()); }
+        }
+        {
+            let left = canonical_side(&requests[0], "side_a")?;
+            let right = &original_rows[0];
+            if &left != right { return Err(format!("left={left:?} right={right:?}").into()); }
+        }
+        let subject = current.iter().find(|row| row.id == original_rows[0].id).ok_or("subject")?;
+        {
+            let left = canonical_side(&requests[1], "side_a")?;
+            if &left != subject { return Err(format!("left={left:?} right={subject:?}").into()); }
+        }
+        {
+            let left = canonical_side(&requests[1], "side_b")?;
+            let right = &original_rows[1];
+            if &left != right { return Err(format!("left={left:?} right={right:?}").into()); }
+        }
+    }
+    {
+        let left = &audit(&fixture.store)?["outcome"];
+        let right = "agreement";
+        if left != right { return Err(format!("left={left:?} right={right:?}").into()); }
+    }
+    {
+        let left = state(&fixture.store)?;
+        let right = ReviewState::Resolved;
+        if left != right { return Err(format!("left={left:?} right={right:?}").into()); }
+    }
+    assert_preserved(&fixture.store, &current)?;
+}
+Ok(()) })
 }

@@ -128,12 +128,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_table_serializes_as_its_wire_name() {
+    fn a_table_serializes_as_its_wire_name() -> Result<(), Box<dyn std::error::Error>> {
         for table in Table::ALL {
-            let encoded = serde_json::to_string(&table).expect("a table encodes");
-            assert_eq!(encoded, format!("\"{}\"", table.file()));
-            let decoded: Table = serde_json::from_str(&encoded).expect("a table decodes");
-            assert_eq!(decoded, table);
+            let encoded = serde_json::to_string(&table)?;
+            check!(eq; encoded, format!("\"{}\"", table.file()));
+            let decoded: Table = serde_json::from_str(&encoded)?;
+            check!(eq; decoded, table);
         }
+        Ok(())
     }
 }

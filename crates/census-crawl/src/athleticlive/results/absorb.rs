@@ -104,7 +104,7 @@ pub(super) fn absorb_document(
         .gender_group
         .as_deref()
         .map(gender_from_token)
-        .unwrap_or(Gender::Unknown);
+        .map_or(Gender::Unknown, |value| value);
     let event = mint_event(fold, &doc, capture_id, &url, &kind, gender);
     fold_rows(fold, &doc, &url, &event, &kind);
     fold.stats.documents_read = fold.stats.documents_read.saturating_add(1);
@@ -129,8 +129,11 @@ fn mint_event(
     let mut evidence = Evidence::parsed(source.clone(), fold.observed_on);
     evidence.note = Some(format!(
         "event {capture_id} `{}`: published label `{}` mapped to {kind:?}",
-        doc.name.as_deref().unwrap_or_default(),
-        doc.label().unwrap_or_default()
+        doc.name
+            .as_deref()
+            .map_or(Default::default(), core::convert::identity),
+        doc.label()
+            .map_or(Default::default(), core::convert::identity)
     ));
     let event = CanonicalEvent::new(
         &fold.meet.id,

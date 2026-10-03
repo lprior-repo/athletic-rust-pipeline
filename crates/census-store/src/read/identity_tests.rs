@@ -6,9 +6,9 @@ use census_domain::model::{
     ATHLETE_IDENTITY_FAMILY, ATHLETE_IDENTITY_POLICY,
 };
 
-type TestResult = Result<(), Box<dyn std::error::Error>>;
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-fn subject(school: &SchoolId, native_id: &str) -> CanonicalAthlete {
+fn subject(school: &SchoolId, native_id: &str) -> TestResult<CanonicalAthlete> {
     let mut athlete = CanonicalAthlete::new(
         school,
         "Synthetic Runner",
@@ -17,11 +17,11 @@ fn subject(school: &SchoolId, native_id: &str) -> CanonicalAthlete {
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, native_id),
     );
     athlete.observed_grades.push(ObservedGrade {
-        grade: Grade::new(11).expect("valid fixture grade"),
-        school_year: SchoolYear::new(2025).expect("valid fixture year"),
+        grade: Grade::new(11).ok_or("valid fixture grade")?,
+        school_year: SchoolYear::new(2025).ok_or("valid fixture year")?,
         source: SourceRef::id("synthetic:published-grade"),
     });
-    athlete
+    Ok(athlete)
 }
 
 fn assert_projection(
@@ -30,32 +30,66 @@ fn assert_projection(
     second: &CanonicalAthlete,
 ) -> TestResult {
     let projection = store.athlete_identity_projection()?;
-    assert_eq!(
-        projection.status(first.id.as_str())?,
-        IdentityStatus::Unverified
-    );
-    assert_eq!(
-        projection.status(second.id.as_str())?,
-        IdentityStatus::Pending
-    );
-    assert_eq!(
-        projection.canonical_id(first.id.as_str()),
-        first.id.as_str()
-    );
-    assert_eq!(
-        projection.canonical_id(second.id.as_str()),
-        second.id.as_str()
-    );
-    assert_eq!(
-        projection
-            .rejected_applications()
-            .get(&IdentityDecisionIssue::CompetingSourceClaims),
-        Some(&1)
-    );
+    {
+        let (left, right) = (
+            &projection.status(first.id.as_str())?,
+            &IdentityStatus::Unverified,
+        );
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    {
+        let (left, right) = (
+            &projection.status(second.id.as_str())?,
+            &IdentityStatus::Pending,
+        );
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    {
+        let (left, right) = (
+            &projection.canonical_id(first.id.as_str()),
+            &first.id.as_str(),
+        );
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    {
+        let (left, right) = (
+            &projection.canonical_id(second.id.as_str()),
+            &second.id.as_str(),
+        );
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    {
+        let (left, right) = (
+            &projection
+                .rejected_applications()
+                .get(&IdentityDecisionIssue::CompetingSourceClaims),
+            &Some(&1),
+        );
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
     let retained: Vec<CanonicalAthlete> = store.scan(Table::Athletes)?;
-    assert_eq!(retained.len(), 2);
-    assert!(retained.contains(first));
-    assert!(retained.contains(second));
+    {
+        let (left, right) = (&retained.len(), &2);
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    if !retained.contains(first) {
+        return Err(format!("missing first athlete {first:?} in {retained:?}").into());
+    }
+    if !retained.contains(second) {
+        return Err(format!("missing second athlete {second:?} in {retained:?}").into());
+    }
     Ok(())
 }
 
@@ -63,8 +97,8 @@ fn assert_projection(
 fn unsupported_application_cannot_verify_homonyms_or_block_projection_after_reopen() -> TestResult {
     let directory = tempfile::tempdir()?;
     let school = SchoolId::mint("sch", &["identity-projection-fixture"]);
-    let first = subject(&school, "1001");
-    let second = subject(&school, "1002");
+    let first = subject(&school, "1001")?;
+    let second = subject(&school, "1002")?;
     let application = AppliedAthleteIdentity {
         id: "unsupported-source-binding".to_owned(),
         policy: ATHLETE_IDENTITY_POLICY,

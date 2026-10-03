@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn athlete_ids_separate_gender_sides_and_ignore_spacing() {
     let school = CanonicalSchool::mint(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
-    let cohort = GradYear::new(2027).unwrap();
+    let cohort = GradYear::CO2027;
     let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
     let mint = |name: &str, gender| CanonicalAthlete::mint(&school, name, cohort, gender, &source);
     let boys = mint("Julian Aguilera", Gender::Boys);
@@ -23,7 +23,7 @@ fn candidate_key_equality_agrees_with_the_retained_athlete_key() {
         "Madison West High School",
         "madison-west",
     );
-    let class = GradYear::new(2027).expect("2027 is a class the census places");
+    let class = GradYear::CO2027;
     let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
     let raw = CanonicalAthlete::new(&school, "Jane Doe", class, Gender::Girls, source.clone());
     let respelled =

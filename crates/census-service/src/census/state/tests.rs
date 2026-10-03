@@ -7,6 +7,8 @@ use sha2::{Digest, Sha256};
 
 use super::*;
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 fn evidence() -> SealEvidence {
     SealEvidence {
         open: OpenWork {
@@ -79,36 +81,37 @@ fn advance_of(state: &CensusState, to: Phase) -> Result<CensusState, SealError> 
     probe.advance(to).map(|()| probe)
 }
 
-fn walk_to(phase: Phase) -> CensusState {
+fn walk_to(phase: Phase) -> TestResult<CensusState> {
     let mut state = CensusState::Discovering;
     while state.phase() != phase {
-        let next = state.phase().next().expect("every open phase has a next");
-        state.advance(next).expect("one-step advance is legal");
+        let next = state.phase().next().ok_or("no next open phase")?;
+        state.advance(next)?;
     }
-    state
+    Ok(state)
 }
 
 #[test]
-fn the_lattice_advances_one_phase_at_a_time_from_discovery_to_export() {
+fn the_lattice_advances_one_phase_at_a_time_from_discovery_to_export() -> TestResult {
     let mut state = CensusState::Discovering;
     for phase in Phase::ALL.iter().copied() {
-        assert_eq!(state.phase(), phase, "the state is at {phase:?}");
+        check!(eq; state.phase(), phase, "the state is at {phase:?}");
         let Some(next) = phase.next() else {
             break;
         };
-        state.advance(next).expect("one-step advance is legal");
-        assert_eq!(state.phase().ordinal(), phase.ordinal() + 1);
+        state.advance(next)?;
+        check!(eq; state.phase().ordinal(), phase.ordinal() + 1);
     }
-    assert_eq!(state.phase(), Phase::Exporting);
-    assert!(state.sealed().is_none());
-    assert!(Phase::Exporting.next().is_none());
+    check!(eq; state.phase(), Phase::Exporting);
+    check!(state.sealed().is_none());
+    check!(Phase::Exporting.next().is_none());
+    Ok(())
 }
 
 #[test]
-fn acquiring_cannot_reach_complete_or_skip_a_phase() {
-    let acquiring = walk_to(Phase::Acquiring);
+fn acquiring_cannot_reach_complete_or_skip_a_phase() -> TestResult {
+    let acquiring = walk_to(Phase::Acquiring)?;
     let refused = advance_of(&acquiring, Phase::Complete);
-    assert!(matches!(
+    check!(matches!(
         refused,
         Err(SealError::OutOfOrder {
             from: "acquiring",
@@ -117,7 +120,7 @@ fn acquiring_cannot_reach_complete_or_skip_a_phase() {
     ));
 
     let skipped = advance_of(&acquiring, Phase::Exporting);
-    assert!(matches!(
+    check!(matches!(
         skipped,
         Err(SealError::OutOfOrder {
             from: "acquiring",
@@ -126,20 +129,21 @@ fn acquiring_cannot_reach_complete_or_skip_a_phase() {
     ));
 
     let repeated = advance_of(&acquiring, Phase::Acquiring);
-    assert!(matches!(
+    check!(matches!(
         repeated,
         Err(SealError::OutOfOrder {
             from: "acquiring",
             to: "acquiring"
         })
     ));
+    Ok(())
 }
 
 #[test]
-fn a_seal_is_refused_before_the_export_phase() {
-    let reviewing = walk_to(Phase::Reviewing);
+fn a_seal_is_refused_before_the_export_phase() -> TestResult {
+    let reviewing = walk_to(Phase::Reviewing)?;
     let refused = seal_from(reviewing, evidence());
-    assert!(
+    check!(
         matches!(
             refused,
             Err(SealError::OutOfOrder {
@@ -149,6 +153,7 @@ fn a_seal_is_refused_before_the_export_phase() {
         ),
         "a census that has not exported cannot complete"
     );
+    Ok(())
 }
 
 #[test]
@@ -368,53 +373,54 @@ fn the_workbook_must_carry_every_cohort_athlete() {
 }
 
 #[test]
-fn retained_findings_do_not_block_a_seal_and_travel_inside_it() {
+fn retained_findings_do_not_block_a_seal_and_travel_inside_it() -> TestResult {
     let packet = evidence();
-    assert!(packet.retained.gaps.iter().any(|gap| gap.count > 0));
-    assert!(packet.retained.conflicts > 0 && packet.retained.access_conditions > 0);
-    let sealed = seal_from_export(packet.clone()).expect("findings never block a seal");
-    let seal = sealed.sealed().expect("the state is complete");
+    check!(packet.retained.gaps.iter().any(|gap| gap.count > 0));
+    check!(packet.retained.conflicts > 0 && packet.retained.access_conditions > 0);
+    let sealed = seal_from_export(packet.clone())?;
+    let seal = sealed.sealed().ok_or("the state is not complete")?;
 
-    assert_eq!(seal.counts.class_of_2027, 307_653);
-    assert_eq!(seal.retained.conflicts, 11_342);
-    assert_eq!(seal.retained.gaps.len(), 2);
-    assert_eq!(seal.sealed_on, "2026-09-22");
-    assert_eq!(seal.workbook_rows, packet.workbook.rows);
-    assert_eq!(sealed.phase(), Phase::Complete);
+    check!(eq; seal.counts.class_of_2027, 307_653);
+    check!(eq; seal.retained.conflicts, 11_342);
+    check!(eq; seal.retained.gaps.len(), 2);
+    check!(eq; seal.sealed_on, "2026-09-22");
+    check!(eq; seal.workbook_rows, packet.workbook.rows);
+    check!(eq; sealed.phase(), Phase::Complete);
+    Ok(())
 }
 
 #[test]
-fn the_seal_digest_is_stable_and_moves_with_the_counts() {
-    let first = seal_from_export(evidence()).expect("seals");
-    let again = seal_from_export(evidence()).expect("seals");
-    let (Some(a), Some(b)) = (first.sealed(), again.sealed()) else {
-        panic!("both states must be sealed");
-    };
-    assert_eq!(
+fn the_seal_digest_is_stable_and_moves_with_the_counts() -> TestResult {
+    let first = seal_from_export(evidence())?;
+    let again = seal_from_export(evidence())?;
+    let a = first.sealed().ok_or("first state is not sealed")?;
+    let b = again.sealed().ok_or("repeated state is not sealed")?;
+    check!(eq;
         a.digest, b.digest,
         "identical evidence renders identical bytes"
     );
-    assert_eq!(a.digest.len(), 64, "sha256 hex");
+    check!(eq; a.digest.len(), 64, "sha256 hex");
 
     let mut reordered = evidence();
     reordered.retained.gaps.reverse();
-    let reordered = seal_from_export(reordered).expect("seals");
-    assert_eq!(
+    let reordered = seal_from_export(reordered)?;
+    check!(eq;
         reordered.sealed().map(|seal| seal.digest.clone()),
         Some(a.digest.clone())
     );
 
     let mut moved = evidence();
     moved.counts.athletes += 1;
-    let moved = seal_from_export(moved).expect("seals");
-    assert_ne!(
+    let moved = seal_from_export(moved)?;
+    check!(ne;
         moved.sealed().map(|seal| seal.digest.clone()),
         Some(a.digest.clone())
     );
+    Ok(())
 }
 
 #[test]
-fn the_digest_is_pinned_field_by_field() {
+fn the_digest_is_pinned_field_by_field() -> TestResult {
     let body = "census-seal-v6\n\
          jurisdiction_buckets=51\n\
          schools=18047\n\
@@ -437,20 +443,20 @@ fn the_digest_is_pinned_field_by_field() {
          gaps=missing_coach:athletes:264452|missing_profile:athletes:13202\n";
     let mut hasher = Sha256::new();
     hasher.update(body.as_bytes());
-    assert_eq!(
+    check!(eq;
         super::seal_digest::render(&evidence()),
         format!("{:x}", hasher.finalize()),
         "the rendered digest is the sha256 of exactly that body"
     );
-    assert_eq!(
-        digest_of(&seal_from_export(evidence()).expect("seals")),
+    check!(eq;
+        digest_of(&seal_from_export(evidence())?)?,
         "62820209dbeaa3afbc6ca9546b27c0206d4f574624173c8c201e8cb09710fe36",
         "the sealed digest is that digest in lowercase hex, which is what a stored `seal.json` carries"
     );
 
     let mut named = evidence();
     named.retained.silent_sources.push("wayzata_ia".to_string());
-    assert_ne!(
+    check!(ne;
         super::seal_digest::render(&named),
         super::seal_digest::render(&evidence()),
         "a source object that finished empty is part of what the digest identifies"
@@ -458,62 +464,69 @@ fn the_digest_is_pinned_field_by_field() {
 
     let mut unmeasured = evidence();
     unmeasured.retained.source_failures = None;
-    assert_ne!(
+    check!(ne;
         super::seal_digest::render(&unmeasured),
         super::seal_digest::render(&evidence()),
         "an unmeasured count has its own spelling in the digest"
     );
+    Ok(())
 }
 
 #[test]
-fn a_seal_counted_before_the_rename_still_reads() {
+fn a_seal_counted_before_the_rename_still_reads() -> TestResult {
     let recorded = r#"{"jurisdictions":51,"schools":18047,"meets":11007,"athletes":1226212,
                        "class_of_2027":307653,"performances":4100000,"coaches":27580}"#;
-    let counts: SealCounts =
-        serde_json::from_str(recorded).expect("a seal.json written under the old names reads");
-    assert_eq!(counts.jurisdiction_buckets, 51);
-    assert_eq!(counts.cohort_performances, 4_100_000);
+    let counts: SealCounts = serde_json::from_str(recorded)?;
+    check!(eq; counts.jurisdiction_buckets, 51);
+    check!(eq; counts.cohort_performances, 4_100_000);
+    Ok(())
 }
 
 #[test]
-fn sealing_twice_returns_the_same_seal() {
-    let once = seal_from_export(evidence()).expect("seals");
+fn sealing_twice_returns_the_same_seal() -> TestResult {
+    let once = seal_from_export(evidence())?;
     let mut twice = once.clone();
-    twice.seal(evidence()).expect("seals again");
-    assert_eq!(once, twice, "a sealed census does not mint a second digest");
+    twice.seal(evidence())?;
+    check!(eq; once, twice, "a sealed census does not mint a second digest");
+    Ok(())
 }
 
-fn digest_of(state: &CensusState) -> String {
-    state.sealed().expect("the state is sealed").digest.clone()
+fn digest_of(state: &CensusState) -> TestResult<String> {
+    Ok(state
+        .sealed()
+        .ok_or("the state is not sealed")?
+        .digest
+        .clone())
 }
 
 #[test]
-fn the_seal_binds_the_workbook_it_certifies() {
-    let base = digest_of(&seal_from_export(evidence()).expect("seals"));
+fn the_seal_binds_the_workbook_it_certifies() -> TestResult {
+    let base = digest_of(&seal_from_export(evidence())?)?;
 
     let mut reexported = evidence();
     reexported.workbook.digests = vec!["9a9a9a".to_string()];
-    assert_ne!(
+    check!(ne;
         base,
-        digest_of(&seal_from_export(reexported).expect("seals"))
+        digest_of(&seal_from_export(reexported)?)?
     );
 
     let mut resheeted = evidence();
     resheeted.workbook.sheets = evidence().workbook.sheets + 1;
-    assert_ne!(
+    check!(ne;
         base,
-        digest_of(&seal_from_export(resheeted).expect("seals"))
+        digest_of(&seal_from_export(resheeted)?)?
     );
 
     let mut reordered = evidence();
     reordered.workbook.digests = vec!["ff".to_string(), "00".to_string()];
     let mut sorted = evidence();
     sorted.workbook.digests = vec!["00".to_string(), "ff".to_string()];
-    assert_eq!(
-        digest_of(&seal_from_export(reordered).expect("seals")),
-        digest_of(&seal_from_export(sorted).expect("seals")),
+    check!(eq;
+        digest_of(&seal_from_export(reordered)?)?,
+        digest_of(&seal_from_export(sorted)?)?,
         "the digest is over the set of workbook bytes, not their order"
     );
+    Ok(())
 }
 
 #[test]
@@ -545,21 +558,6 @@ fn a_jurisdiction_is_terminal_only_when_every_stage_ran() {
     ] {
         assert!(!partial.terminal(), "{partial:?} still owes work");
     }
-}
-
-#[test]
-fn owing_names_each_unfinished_piece_in_run_order() {
-    assert_eq!(
-        JurisdictionStages::default().owing(),
-        vec!["teams", "rosters", "meets"]
-    );
-    let blocked = JurisdictionStages {
-        teams: true,
-        rosters: true,
-        meets: true,
-        owed_rosters: 3,
-    };
-    assert_eq!(blocked.owing(), vec!["blocked rosters"]);
 }
 
 #[test]

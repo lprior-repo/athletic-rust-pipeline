@@ -103,14 +103,14 @@ impl<'a> Run<'a> {
                 self.absorb.absorb_list(&context, &parsed);
                 let rows =
                     u64::try_from(parsed.sections.iter().map(|s| s.rows.len()).sum::<usize>())
-                        .unwrap_or(u64::MAX);
+                        .map_or(u64::MAX, |value| value);
                 ("list", rows)
             }
             Route::Team(team) => {
                 let parsed = parse_team_page(&body);
                 let context = RosterContext { page, team: &team };
                 self.absorb.absorb_roster(&context, &parsed);
-                let rows = u64::try_from(parsed.athletes.len()).unwrap_or(u64::MAX);
+                let rows = u64::try_from(parsed.athletes.len()).map_or(u64::MAX, |value| value);
                 ("team", rows)
             }
         };

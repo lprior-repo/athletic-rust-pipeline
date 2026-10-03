@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::consensus::tests::support::TestResult;
 use census_domain::model::{
     CanonicalAthlete, CanonicalSchool, Evidence, Gender, GradYear, Grade, ObservedGrade,
     RetainedConflict, ReviewCase, SchoolYear, SourceIdentity, SourceNamespace, SourceRef,
@@ -15,31 +16,27 @@ pub(super) struct Fixture {
 }
 
 impl Fixture {
-    pub(super) fn new(rows: &[CanonicalAthlete]) -> Self {
-        let dir = tempfile::tempdir().expect("isolated identity store");
-        let store = Arc::new(Store::open(dir.path()).expect("store"));
-        store
-            .append_many(Table::Athletes, rows)
-            .expect("source rows");
+    pub(super) fn new(rows: &[CanonicalAthlete]) -> TestResult<Self> {
+        let dir = tempfile::tempdir()?;
+        let store = Arc::new(Store::open(dir.path())?);
+        store.append_many(Table::Athletes, rows)?;
         let mut case = ReviewCase::pending(
             ATHLETE_IDENTITY_FAMILY,
-            rows[0].id.as_str(),
+            rows.first().ok_or("source-backed candidate")?.id.as_str(),
             "Jordan Smith",
             "two named source-backed candidates",
         );
         case.member_ids = rows.iter().map(|row| row.id.cast()).collect();
-        store
-            .replace_many(Table::ReviewCases, std::slice::from_ref(&case))
-            .expect("identity case");
-        Self {
+        store.replace_many(Table::ReviewCases, std::slice::from_ref(&case))?;
+        Ok(Self {
             store,
             case,
             _dir: dir,
-        }
+        })
     }
 }
 
-pub(super) fn rows() -> Vec<CanonicalAthlete> {
+pub(super) fn rows() -> TestResult<Vec<CanonicalAthlete>> {
     let school = CanonicalSchool::new(
         census_domain::UsJurisdiction::Wisconsin,
         "Madison West",
@@ -49,7 +46,7 @@ pub(super) fn rows() -> Vec<CanonicalAthlete> {
     .id;
     ["1001", "1002"]
         .into_iter()
-        .map(|id| {
+        .map(|id| -> TestResult<CanonicalAthlete> {
             let mut row = CanonicalAthlete::new(
                 &school,
                 "Jordan Smith",
@@ -59,15 +56,15 @@ pub(super) fn rows() -> Vec<CanonicalAthlete> {
             );
             row.add_identity(SourceIdentity::new(SourceNamespace::TfrrsAthlete, "77"));
             row.observed_grades.push(ObservedGrade {
-                grade: Grade::new(11).expect("supported grade"),
-                school_year: SchoolYear::new(2025).expect("supported year"),
+                grade: Grade::new(11).ok_or("supported grade")?,
+                school_year: SchoolYear::new(2025).ok_or("supported year")?,
                 source: SourceRef::id("public-roster"),
             });
             row.evidence.push(Evidence::parsed(
                 SourceRef::id("public-roster"),
                 "2026-10-01",
             ));
-            row
+            Ok(row)
         })
         .collect()
 }
@@ -81,14 +78,14 @@ pub(super) enum Change {
 }
 
 impl Change {
-    pub(super) fn apply(self, row: &mut CanonicalAthlete) {
+    pub(super) fn apply(self, row: &mut CanonicalAthlete) -> TestResult {
         match self {
             Self::GradeUrl => {
                 row.observed_grades[0].source.url =
                     Some("https://source.example/grade".to_string());
             }
             Self::PrimaryOwnership => {
-                let primary = row.source.take().expect("primary owner");
+                let primary = row.source.take().ok_or("primary owner")?;
                 row.source = Some(row.source_links.remove(0));
                 row.source_links.push(primary);
             }
@@ -104,29 +101,39 @@ impl Change {
                 ));
             }
         }
+        Ok(())
     }
 }
 
-pub(super) fn canonical_side(request: &Value, side: &str) -> CanonicalAthlete {
+pub(super) fn canonical_side(request: &Value, side: &str) -> TestResult<CanonicalAthlete> {
     let content = request["messages"][1]["content"]
         .as_str()
-        .expect("request content");
+        .ok_or("request content")?;
     let prefix = format!("- census: {side}_canonical_athlete = ");
     let raw = content
         .lines()
         .find_map(|line| line.strip_prefix(&prefix))
-        .expect("complete source-attributed canonical row");
-    serde_json::from_str(raw).expect("canonical athlete evidence")
+        .ok_or("complete source-attributed canonical row")?;
+    Ok(serde_json::from_str(raw)?)
 }
 
-pub(super) fn assert_preserved(store: &Store, expected: &[CanonicalAthlete]) {
-    let actual = store
-        .scan::<CanonicalAthlete>(Table::Athletes)
-        .expect("source rows");
-    assert_eq!(actual.len(), expected.len());
-    assert!(expected.iter().all(|row| actual.contains(row)));
-    assert!(store
-        .scan::<census_domain::model::AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)
-        .expect("canonical aliases")
-        .is_empty());
+pub(super) fn assert_preserved(store: &Store, expected: &[CanonicalAthlete]) -> TestResult {
+    let actual = store.scan::<CanonicalAthlete>(Table::Athletes)?;
+    let actual_len = actual.len();
+    let expected_len = expected.len();
+    if actual_len != expected_len {
+        return Err(format!("source rows: left={actual_len:?} right={expected_len:?}").into());
+    }
+    if !expected.iter().all(|row| actual.contains(row)) {
+        return Err(format!(
+            "source rows were not preserved: actual={actual:?} expected={expected:?}"
+        )
+        .into());
+    }
+    let aliases = store
+        .scan::<census_domain::model::AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?;
+    if !aliases.is_empty() {
+        return Err(format!("canonical aliases must be empty: {aliases:?}").into());
+    }
+    Ok(())
 }

@@ -120,7 +120,6 @@ pub(super) fn write_sweep_report(
 
 pub(super) use super::meets_arms::meets_stage;
 pub(super) use super::results_arms::results_stage;
-pub(super) use super::teams_arms::teams_stage;
 
 pub(super) fn adapter_context<'a>(
     store: &'a Arc<Store>,
@@ -167,14 +166,17 @@ pub(super) fn rows_written(report: &AdapterReport) -> Result<usize, HandlerError
     })
 }
 
-pub(super) fn assert_some_stage_arms(slug: &str) -> Result<(), HandlerError> {
+pub(super) fn require_stage_arm(slug: &str) -> Result<(), JobError> {
     if super::jurisdiction::DISPATCHED.contains(&slug) {
         return Ok(());
     }
-    Err(TerminalError::new(format!(
-        "the plan calls {slug} sweepable and no stage in the chain arms it"
-    ))
-    .into())
+    Err(JobError::Terminal {
+        message: format!("the plan calls {slug} sweepable and no stage in the chain arms it"),
+    })
+}
+
+pub(super) fn assert_some_stage_arms(slug: &str) -> Result<(), HandlerError> {
+    require_stage_arm(slug).map_err(job_error)
 }
 
 pub(super) async fn rosters_stage(

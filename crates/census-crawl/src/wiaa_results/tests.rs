@@ -1,6 +1,8 @@
 use super::*;
 use census_domain::model::{CompetitionLevel, GradYear, Grade};
 
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+
 const ARCHIVE_HTML: &str = r#"
         <h3><strong>2025 Track &amp; Field State Results</strong></h3>
         <ul><li>Division 1 - <a href="/Portals/0/PDF/Results/Track/2025/d1boysstateresults.htm">Boys</a>
@@ -11,25 +13,26 @@ const ARCHIVE_HTML: &str = r#"
     "#;
 
 #[test]
-fn archive_links_carry_year_stem_label_and_extension() {
-    let artifacts = archive_artifacts(ARCHIVE_HTML).expect("the archive page parses");
-    assert_eq!(
+fn archive_links_carry_year_stem_label_and_extension() -> TestResult {
+    let artifacts = archive_artifacts(ARCHIVE_HTML)?;
+    check!(eq;
         artifacts.len(),
         3,
         "only result-file links are artifacts: {artifacts:?}"
     );
     let first = &artifacts[0];
-    assert_eq!(first.year, 2025);
-    assert_eq!(first.stem, "d1boysstateresults");
-    assert_eq!(first.extension, "htm");
-    assert_eq!(first.label, "Boys");
-    assert!(
+    check!(eq; first.year, 2025);
+    check!(eq; first.stem, "d1boysstateresults");
+    check!(eq; first.extension, "htm");
+    check!(eq; first.label, "Boys");
+    check!(
         artifacts
             .iter()
             .all(|artifact| artifact.url.starts_with("https://www.wiaawi.org/")),
         "relative hrefs are resolved against the archive host"
     );
-    assert!(artifacts.iter().any(|artifact| artifact.extension == "pdf"));
+    check!(artifacts.iter().any(|artifact| artifact.extension == "pdf"));
+    Ok(())
 }
 
 #[test]
@@ -48,7 +51,7 @@ fn formats_are_decided_by_extension_and_sniffed_body() {
 }
 
 #[test]
-fn current_season_files_are_found_under_the_dated_upload_path() {
+fn current_season_files_are_found_under_the_dated_upload_path() -> TestResult {
     let body = r#"
         <a href="/sites/default/files/2026-08/trb2026d1stateresults.pdf">Boys</a>
         <a href="/sites/default/files/2026-08/tr2026arrowheadregionalindiv.pdf">Arrowhead</a>
@@ -56,56 +59,58 @@ fn current_season_files_are_found_under_the_dated_upload_path() {
         <a href="/sites/default/files/2026-08/somethingelse.pdf">Unrelated upload</a>
         <a href="/sites/default/files/2025-11/xcstate.htm">XC state</a>
     "#;
-    let artifacts = archive_artifacts(body).expect("the archive page parses");
-    assert_eq!(
+    let artifacts = archive_artifacts(body)?;
+    check!(eq;
         artifacts.len(),
         5,
         "every dated upload is treated as a candidate result file: {artifacts:?}"
     );
-    assert!(artifacts
+    check!(artifacts
         .iter()
         .all(|artifact| artifact.year == 2026 || artifact.year == 2025));
     let state = artifacts
         .iter()
         .find(|artifact| artifact.stem == "trb2026d1stateresults")
-        .expect("the 2026 state file is discovered");
-    assert_eq!(state.year, 2026);
-    assert_eq!(state.extension, "pdf");
-    assert_eq!(state.label, "Boys");
+        .ok_or("the 2026 state file is discovered")?;
+    check!(eq; state.year, 2026);
+    check!(eq; state.extension, "pdf");
+    check!(eq; state.label, "Boys");
+    Ok(())
 }
 
 #[test]
-fn school_year_follows_the_sport_boundary() {
+fn school_year_follows_the_sport_boundary() -> TestResult {
     let spring =
-        school_year_for("2025-06-06", Sport::OutdoorTrack, 2025).expect("2025-06 is a season");
-    assert_eq!(spring.get(), 2024);
-    assert_eq!(
-        GradYear::of(Grade::new(11).unwrap(), spring)
-            .expect("11th grade in 2024 has valid grad year")
+        school_year_for("2025-06-06", Sport::OutdoorTrack, 2025).ok_or("2025-06 is a season")?;
+    check!(eq; spring.get(), 2024);
+    check!(eq;
+        GradYear::of(Grade::new(11).ok_or("junior grade")?, spring)
+            .ok_or("11th grade in 2024 has valid grad year")?
             .get(),
         2026
     );
     let fall =
-        school_year_for("2025-10-25", Sport::CrossCountry, 2025).expect("2025-10 is a season");
-    assert_eq!(fall.get(), 2025);
-    assert_eq!(
-        GradYear::of(Grade::new(11).unwrap(), fall)
-            .expect("11th grade in 2025 has valid grad year")
+        school_year_for("2025-10-25", Sport::CrossCountry, 2025).ok_or("2025-10 is a season")?;
+    check!(eq; fall.get(), 2025);
+    check!(eq;
+        GradYear::of(Grade::new(11).ok_or("junior grade")?, fall)
+            .ok_or("11th grade in 2025 has valid grad year")?
             .get(),
         2027
     );
-    assert_eq!(
+    check!(eq;
         school_year_for("2023", Sport::CrossCountry, 2023)
-            .expect("2023 is a season")
+            .ok_or("2023 is a season")?
             .get(),
         2023
     );
-    assert_eq!(
+    check!(eq;
         school_year_for("2023", Sport::OutdoorTrack, 2023)
-            .expect("2023 is a season")
+            .ok_or("2023 is a season")?
             .get(),
         2022
     );
+    Ok(())
 }
 
 #[test]
@@ -140,12 +145,13 @@ fn meet_levels_come_from_the_published_name() {
     assert_eq!(level_of("Dual Meet"), CompetitionLevel::Unknown);
 }
 
-fn seed_result_cache(fetcher: &crate::net::Fetcher, url: &str, body: &[u8]) {
+fn seed_result_cache(fetcher: &crate::net::Fetcher, url: &str, body: &[u8]) -> TestResult {
     use crate::net::cache::{content_digest, write_cache, CacheMeta};
     let key = crate::net::Fetcher::key_for("GET", url, "");
     let (body_path, meta_path) = fetcher.cache_paths(&key);
     let meta = CacheMeta {
         url: url.to_owned(),
+        response_url: None,
         method: "GET".to_owned(),
         status: 200,
         content_digest: content_digest(body),
@@ -155,16 +161,18 @@ fn seed_result_cache(fetcher: &crate::net::Fetcher, url: &str, body: &[u8]) {
         last_modified: None,
         content_type: Some("text/html".into()),
     };
-    write_cache(&body_path, &meta_path, body, &meta).unwrap();
+    write_cache(&body_path, &meta_path, body, &meta)?;
+    Ok(())
 }
 
-#[tokio::test]
-async fn overlapping_archives_process_one_logical_result_once() {
+#[test]
+fn overlapping_archives_process_one_logical_result_once() -> TestResult {
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
     use census_domain::model::{CanonicalSchool, SchoolYear};
     use census_store::Store;
     use std::time::Duration;
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     let fetcher = crate::net::Fetcher::new(
         store.http_cache_dir(),
         None,
@@ -172,30 +180,30 @@ async fn overlapping_archives_process_one_logical_result_once() {
         HashMap::new(),
         Vec::new(),
     )
-    .unwrap()
+    ?
     .with_source("wiaa_results")
     .with_offline(true);
     let (school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Middleton", "middleton");
     std::fs::write(
         store.out_dir().join("schools.jsonl"),
-        format!("{}\n", serde_json::to_string(&school).unwrap()),
+        format!("{}\n", serde_json::to_string(&school)?),
     )
-    .unwrap();
+    ?;
     let url = "https://www.wiaawi.org/Portals/0/PDF/Results/Track/2025/d1boysstateresults.htm";
     let archive = format!("<a href=\"{url}\">Boys</a>");
     for (archive_url, _) in ARCHIVES {
-        seed_result_cache(&fetcher, archive_url, archive.as_bytes());
+        seed_result_cache(&fetcher, archive_url, archive.as_bytes())?;
     }
     seed_result_cache(
         &fetcher,
         url,
         include_bytes!("../../tests/fixtures/wiaa_results/d1boysstateresults-dash.htm"),
-    );
+    )?;
     let context = AdapterContext {
         fetcher: &fetcher,
         store: &store,
         refresh: false,
-        school_year: SchoolYear::new(2026).unwrap(),
+        school_year: SchoolYear::new(2026).ok_or("2026 school year")?,
         observed_on: "2026-09-19".into(),
         recording: None,
     };
@@ -207,19 +215,21 @@ async fn overlapping_archives_process_one_logical_result_once() {
         states: vec![UsJurisdiction::Wisconsin],
         school_names: Vec::new(),
     };
-    let report = collect(&context, &options).await.unwrap();
-    assert_eq!(report.rows, 1);
-    assert_eq!(report.from_cache, 5);
-    assert_eq!(report.requests, 0);
-    let receipts = store.journal_payloads("wiaa_results").unwrap();
-    assert_eq!(
+    let report = collect(&context, &options).await?;
+    check!(eq; report.rows, 1);
+    check!(eq; report.from_cache, 5);
+    check!(eq; report.requests, 0);
+    let receipts = store.journal_payloads("wiaa_results")?;
+    check!(eq;
         receipts
             .iter()
             .filter(|entry| entry.get("url").and_then(serde_json::Value::as_str) == Some(url))
             .count(),
         1
     );
-    let replay = collect(&context, &options).await.unwrap();
-    assert_eq!(replay.rows, 0);
-    assert_eq!(replay.from_cache, 4);
+    let replay = collect(&context, &options).await?;
+    check!(eq; replay.rows, 0);
+    check!(eq; replay.from_cache, 4);
+    Ok(())
+    })
 }

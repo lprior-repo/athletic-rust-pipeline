@@ -141,8 +141,11 @@ fn schools(rows: &[census_domain::model::CanonicalSchool]) -> BTreeMap<String, S
                 state: school
                     .state
                     .map(|state| state.to_string())
-                    .unwrap_or_default(),
-                city: school.city.clone().unwrap_or_default(),
+                    .map_or(Default::default(), core::convert::identity),
+                city: school
+                    .city
+                    .clone()
+                    .map_or(Default::default(), core::convert::identity),
                 athletics_url: school.athletics_website.clone(),
             },
         );

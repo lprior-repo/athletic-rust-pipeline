@@ -114,4 +114,5 @@ fn looks_like_event(label: &str) -> bool {
 mod mark;
 
 pub(super) use mark::parse_marks;
+pub(crate) use mark::parse_points;
 pub use mark::{hytek_event_kind, parse_field_mark, parse_time, round_marker};

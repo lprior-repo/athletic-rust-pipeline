@@ -3,79 +3,165 @@ use census_store::Table;
 
 use super::binding_support::{assert_preserved, canonical_side, rows, Change, Fixture};
 use super::options;
-use crate::consensus::tests::support::{audit, batch, client, lane, row, state};
+use crate::consensus::tests::support::{audit, batch, client, lane, row, state, TestResult};
 use crate::run_lanes;
 
-#[tokio::test]
-async fn source_url_ownership_and_conflict_changes_cannot_reuse_another_snapshots_advice() {
-    for change in [
-        Change::GradeUrl,
-        Change::PrimaryOwnership,
-        Change::EvidenceUrl,
-        Change::RetainedConflict,
-    ] {
-        let original_rows = rows();
-        let original = Fixture::new(&original_rows);
-        let mut changed_rows = original_rows.clone();
-        change.apply(&mut changed_rows[0]);
-        let changed = Fixture::new(&changed_rows);
-        assert_eq!(original.case, changed.case);
-        let declined = batch(&original.case, "insufficient_evidence", "", "");
-        let decided = batch(
-            &changed.case,
-            "value_proposed",
-            "identity",
-            "different_person",
-        );
-        let (first, server_a) = lane(vec![declined.clone(), decided.clone()]);
-        let (second, server_b) = lane(vec![declined, decided]);
-        let clients = [client(&first), client(&second)];
-        let initial = run_lanes(&original.store, &clients, &options(), "original")
-            .await
-            .expect("original unresolved advice");
-        assert_eq!(initial.accepted, 0);
-        assert_eq!(state(&original.store), ReviewState::Retained);
-        let recorded = row(&original.store);
-        let old_digest = audit(&original.store)["evidence_digest"].clone();
-        changed
-            .store
-            .replace_many(Table::IdentityVerdicts, &[recorded.clone()])
-            .expect("previous exact-bound advice");
-        let mut retained = changed.case.clone();
-        retained.state = ReviewState::Retained;
-        changed
-            .store
-            .replace_many(Table::ReviewCases, &[retained])
-            .expect("unresolved case");
-        let report = run_lanes(&changed.store, &clients, &options(), "changed")
-            .await
-            .expect("changed identity evidence");
-        assert_eq!(report.requested, 1, "material change: {change:?}");
-        assert_eq!(
-            report.accepted, 1,
-            "fresh different-person decision: {change:?}"
-        );
-        assert_eq!(report.failed, 0);
-        let requests_a = server_a
-            .join()
-            .expect("first lane receives changed snapshot");
-        let requests_b = server_b
-            .join()
-            .expect("second lane receives changed snapshot");
-        for requests in [requests_a, requests_b] {
-            assert_eq!(requests.len(), 2);
-            assert_eq!(canonical_side(&requests[0], "side_a"), original_rows[0]);
-            assert_eq!(canonical_side(&requests[1], "side_a"), changed_rows[0]);
-            assert_eq!(canonical_side(&requests[1], "side_b"), changed_rows[1]);
-        }
-        assert_ne!(audit(&changed.store)["evidence_digest"], old_digest);
-        assert_eq!(audit(&changed.store)["outcome"], "agreement");
-        assert_eq!(row(&changed.store).case_id, changed.case.id);
-        assert_eq!(row(&changed.store).subject_id, changed.case.subject_id);
-        assert_eq!(row(&changed.store).member_ids, changed.case.member_ids);
-        assert_eq!(row(&changed.store).value, "different_person");
-        assert_eq!(state(&changed.store), ReviewState::Resolved);
-        assert_preserved(&original.store, &original_rows);
-        assert_preserved(&changed.store, &changed_rows);
-    }
+#[test]
+fn source_url_ownership_and_conflict_changes_cannot_reuse_another_snapshots_advice() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            for change in [
+                Change::GradeUrl,
+                Change::PrimaryOwnership,
+                Change::EvidenceUrl,
+                Change::RetainedConflict,
+            ] {
+                let original_rows = rows()?;
+                let original = Fixture::new(&original_rows)?;
+                let mut changed_rows = original_rows.clone();
+                change.apply(&mut changed_rows[0])?;
+                let changed = Fixture::new(&changed_rows)?;
+                {
+                    let left = &original.case;
+                    let right = &changed.case;
+                    if left != right {
+                        return Err(format!("left={left:?} right={right:?}").into());
+                    }
+                }
+                let declined = batch(&original.case, "insufficient_evidence", "", "");
+                let decided = batch(
+                    &changed.case,
+                    "value_proposed",
+                    "identity",
+                    "different_person",
+                );
+                let (first, server_a) = lane(vec![declined.clone(), decided.clone()])?;
+                let (second, server_b) = lane(vec![declined, decided])?;
+                let clients = [client(&first)?, client(&second)?];
+                let initial = run_lanes(&original.store, &clients, &options(), "original").await?;
+                {
+                    let left = initial.accepted;
+                    if left != 0 {
+                        return Err(format!("left={left:?} right=0").into());
+                    }
+                }
+                {
+                    let left = state(&original.store)?;
+                    let right = ReviewState::Retained;
+                    if left != right {
+                        return Err(format!("left={left:?} right={right:?}").into());
+                    }
+                }
+                let recorded = row(&original.store)?;
+                let old_digest = audit(&original.store)?["evidence_digest"].clone();
+                changed
+                    .store
+                    .replace_many(Table::IdentityVerdicts, std::slice::from_ref(&recorded))?;
+                let mut retained = changed.case.clone();
+                retained.state = ReviewState::Retained;
+                changed
+                    .store
+                    .replace_many(Table::ReviewCases, &[retained])?;
+                let report = run_lanes(&changed.store, &clients, &options(), "changed").await?;
+                {
+                    let left = report.requested;
+                    if left != 1 {
+                        return Err(
+                            format!("material change: {change:?}; left={left:?} right=1").into(),
+                        );
+                    }
+                }
+                {
+                    let left = report.accepted;
+                    if left != 1 {
+                        return Err(format!(
+                            "fresh different-person decision: {change:?}; left={left:?} right=1"
+                        )
+                        .into());
+                    }
+                }
+                {
+                    let left = report.failed;
+                    if left != 0 {
+                        return Err(format!("left={left:?} right=0").into());
+                    }
+                }
+                let requests_a = server_a.join().map_err(|_| "first lane panicked")??;
+                let requests_b = server_b.join().map_err(|_| "second lane panicked")??;
+                for requests in [requests_a, requests_b] {
+                    {
+                        let left = requests.len();
+                        if left != 2 {
+                            return Err(format!("left={left:?} right=2").into());
+                        }
+                    }
+                    for (request, side, expected) in [
+                        (&requests[0], "side_a", &original_rows[0]),
+                        (&requests[1], "side_a", &changed_rows[0]),
+                        (&requests[1], "side_b", &changed_rows[1]),
+                    ] {
+                        let actual = canonical_side(request, side)?;
+                        if &actual != expected {
+                            return Err(format!("left={actual:?} right={expected:?}").into());
+                        }
+                    }
+                }
+                {
+                    let left = &audit(&changed.store)?["evidence_digest"];
+                    let right = &old_digest;
+                    if left == right {
+                        return Err(
+                            format!("expected unequal: left={left:?} right={right:?}").into()
+                        );
+                    }
+                }
+                {
+                    let left = &audit(&changed.store)?["outcome"];
+                    let right = "agreement";
+                    if left != right {
+                        return Err(format!("left={left:?} right={right:?}").into());
+                    }
+                }
+                {
+                    let left = &row(&changed.store)?.case_id;
+                    let right = &changed.case.id;
+                    if left != right {
+                        return Err(format!("left={left:?} right={right:?}").into());
+                    }
+                }
+                {
+                    let left = &row(&changed.store)?.subject_id;
+                    let right = &changed.case.subject_id;
+                    if left != right {
+                        return Err(format!("left={left:?} right={right:?}").into());
+                    }
+                }
+                {
+                    let left = &row(&changed.store)?.member_ids;
+                    let right = &changed.case.member_ids;
+                    if left != right {
+                        return Err(format!("left={left:?} right={right:?}").into());
+                    }
+                }
+                {
+                    let left = &row(&changed.store)?.value;
+                    let right = "different_person";
+                    if left != right {
+                        return Err(format!("left={left:?} right={right:?}").into());
+                    }
+                }
+                {
+                    let left = state(&changed.store)?;
+                    let right = ReviewState::Resolved;
+                    if left != right {
+                        return Err(format!("left={left:?} right={right:?}").into());
+                    }
+                }
+                assert_preserved(&original.store, &original_rows)?;
+                assert_preserved(&changed.store, &changed_rows)?;
+            }
+            Ok(())
+        })
 }

@@ -15,9 +15,21 @@ pub(crate) fn read_dir(pattern_dirs: &[String]) -> Vec<(String, String)> {
         entries.sort_by_key(|e| e.path());
         for entry in entries {
             let path = entry.path();
-            if path.extension().map(|e| e == "body").unwrap_or(false) {
-                let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
-                out.push((stem.to_string(), path.to_str().unwrap_or("").to_string()));
+            if path
+                .extension()
+                .map(|e| e == "body")
+                .map_or(false, core::convert::identity)
+            {
+                let stem = path
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .map_or("", core::convert::identity);
+                out.push((
+                    stem.to_string(),
+                    path.to_str()
+                        .map_or("", core::convert::identity)
+                        .to_string(),
+                ));
             }
         }
     }

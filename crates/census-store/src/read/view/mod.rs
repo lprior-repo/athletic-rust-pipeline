@@ -1,5 +1,5 @@
 use crate::keys::table_prefix;
-use crate::{Entity, StoreError, StoreResult, Table, MAX_ROWS_PER_TABLE};
+use crate::{Entity, Store, StoreError, StoreResult, Table, MAX_ROWS_PER_TABLE};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CollectionSnapshot, CoverageRow, RetainedConflict, ReviewCase,
@@ -15,6 +15,7 @@ mod merge;
 pub struct StoreSnapshot<'s> {
     snapshot: Snapshot,
     entities: &'s fjall::Keyspace,
+    journal: &'s fjall::Keyspace,
     root: &'s std::path::Path,
 }
 
@@ -22,17 +23,32 @@ impl<'s> StoreSnapshot<'s> {
     pub(crate) fn new(
         snapshot: Snapshot,
         entities: &'s fjall::Keyspace,
+        journal: &'s fjall::Keyspace,
         root: &'s std::path::Path,
     ) -> Self {
         Self {
             snapshot,
             entities,
+            journal,
             root,
         }
     }
 
     pub fn sequence(&self) -> u64 {
         self.snapshot.seqno()
+    }
+
+    pub fn journal_payload(
+        &self,
+        phase: &str,
+        key: &str,
+    ) -> StoreResult<Option<serde_json::Value>> {
+        let raw = self
+            .snapshot
+            .get(self.journal, Store::journal_key(phase, key))
+            .map_err(|source| StoreError::Read { source })?;
+        raw.map(|raw| super::decode_journal_payload(phase, key, raw.as_ref()))
+            .transpose()
     }
 
     pub fn for_each_observation<T: Entity>(

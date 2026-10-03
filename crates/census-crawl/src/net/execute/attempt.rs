@@ -118,7 +118,8 @@ impl Fetcher {
         started: Instant,
         outcome: &Result<FetchOutcome, FetchError>,
     ) {
-        let elapsed_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
+        let elapsed_ms =
+            u64::try_from(started.elapsed().as_millis()).map_or(u64::MAX, |value| value);
         let mut stats = self.stats.lock().await;
         stats.record_latency(elapsed_ms);
         match outcome {
@@ -141,6 +142,7 @@ impl Fetcher {
                 }
                 return Ok(FetchOutcome {
                     url: plan.url.to_string(),
+                    response_url: meta.response_url.clone(),
                     method: plan.method.to_string(),
                     status: meta.status,
                     content_digest: meta.content_digest.clone(),
@@ -169,11 +171,14 @@ impl Fetcher {
         if final_url == original_url {
             return Ok(());
         }
-        let parsed = url::Url::parse(final_url).map_err(|source| FetchError::Policy {
-            detail: format!("cannot parse final URL after redirect: {source}"),
+        let original = url::Url::parse(original_url).map_err(|source| FetchError::Policy {
+            detail: format!("cannot parse original URL for redirect admission: {source}"),
         })?;
-        let final_host = parsed.host_str().unwrap_or_default().to_string();
-        if self.is_authorized_host(&final_host) {
+        let parsed = response.url();
+        let final_host = parsed.host_str().ok_or_else(|| FetchError::Policy {
+            detail: "final URL after redirect has no host".to_string(),
+        })?;
+        if self.destination.permits_redirect(&original, parsed) {
             return Ok(());
         }
         Err(FetchError::Policy {

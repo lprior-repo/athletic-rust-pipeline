@@ -11,7 +11,7 @@ fn any_address() -> String {
         kani::assume(byte >= 32);
         kani::assume(byte <= 126);
     }
-    String::from_utf8(bytes.to_vec()).expect("the modeled bytes are printable ASCII")
+    bytes.into_iter().map(char::from).collect()
 }
 
 #[kani::proof]

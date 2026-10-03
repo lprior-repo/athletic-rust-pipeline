@@ -57,7 +57,7 @@ fn build(origin: &str, timeout: Duration) -> Result<Ingress> {
 }
 
 pub fn origin(given: Option<&str>) -> &str {
-    given.unwrap_or(DEFAULT_ORIGIN)
+    given.map_or(DEFAULT_ORIGIN, |value| value)
 }
 
 fn is_loopback_origin(url: &Url) -> bool {
@@ -92,7 +92,7 @@ mod tests {
     fn loopback(value: &str) -> bool {
         Url::parse(value)
             .map(|url| is_loopback_origin(&url))
-            .unwrap_or(false)
+            .map_or(false, |value| value)
     }
 
     #[test]
@@ -108,15 +108,25 @@ mod tests {
     }
 
     #[test]
-    fn an_absent_origin_is_the_local_deployment_and_a_blank_one_is_refused() {
-        assert_eq!(origin(None), DEFAULT_ORIGIN);
-        assert_eq!(
-            origin(Some("http://127.0.0.1:19095/")),
-            "http://127.0.0.1:19095/"
-        );
+    fn an_absent_origin_is_the_local_deployment_and_a_blank_one_is_refused(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let absent = origin(None);
+        if absent != DEFAULT_ORIGIN {
+            return Err(format!("absent origin: left={absent:?}, right={DEFAULT_ORIGIN:?}").into());
+        }
+        let configured = origin(Some("http://127.0.0.1:19095/"));
+        if configured != "http://127.0.0.1:19095/" {
+            return Err(format!(
+                "configured origin: left={configured:?}, right=\"http://127.0.0.1:19095/\""
+            )
+            .into());
+        }
         let Err(error) = client("  ") else {
-            panic!("a blank origin must be refused by name");
+            return Err("blank origin accepted".into());
         };
-        assert!(error.to_string().contains("--ingress"), "{error}");
+        if !error.to_string().contains("--ingress") {
+            return Err(format!("blank origin refusal did not name --ingress: {error}").into());
+        }
+        Ok(())
     }
 }

@@ -54,13 +54,17 @@ impl Fetcher {
 
     fn configured_delay(&self, scope: &PaceScope) -> Duration {
         match scope {
-            PaceScope::Family(family) => self.family_delay(family).unwrap_or(self.default_delay),
+            PaceScope::Family(family) => self
+                .family_delay(family)
+                .map_or(self.default_delay, |value| value),
             PaceScope::Host(host) => {
                 let family_delay = self
                     .family_of(host)
                     .and_then(|family| self.family_delay(&family));
                 let host_delay = self.host_delays.get(host).copied();
-                family_delay.max(host_delay).unwrap_or(self.default_delay)
+                family_delay
+                    .max(host_delay)
+                    .map_or(self.default_delay, |value| value)
             }
         }
     }
@@ -139,7 +143,7 @@ impl Fetcher {
         let extra = body
             .as_ref()
             .map(|(key, _)| key.clone())
-            .unwrap_or_default();
+            .map_or(Default::default(), core::convert::identity);
         let key = Self::key_for(method, url, &extra);
         let (body_path, meta_path) = self.cache_paths(&key);
         let cached = read_cache(&body_path, &meta_path)?;
@@ -209,6 +213,7 @@ impl Fetcher {
         }
         Ok(Some(FetchOutcome {
             url: url.to_string(),
+            response_url: meta.response_url.clone(),
             method: method.to_string(),
             status: meta.status,
             content_digest: meta.content_digest.clone(),
@@ -226,17 +231,27 @@ fn request_target(url: &str) -> Result<(String, String), FetchError> {
         url: url.to_string(),
         source,
     })?;
-    let host = parsed.host_str().unwrap_or_default().to_string();
+    let host = parsed
+        .host_str()
+        .map_or(Default::default(), core::convert::identity)
+        .to_string();
     let origin = format!(
         "{}://{}",
         parsed.scheme(),
-        parsed
-            .port()
-            .map(|p| format!("{host}:{p}"))
-            .unwrap_or_else(|| host.clone())
+        match parsed.port().map(|p| format!("{host}:{p}")) {
+            Some(value) => value,
+            None => host.clone(),
+        }
     );
     Ok((host, origin))
 }
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+#[path = "execute/conditional_capture_tests.rs"]
+mod conditional_capture;
+
+#[cfg(test)]
+mod response_url_tests;

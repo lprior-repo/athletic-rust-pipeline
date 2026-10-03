@@ -95,7 +95,7 @@ impl<'a, 'd> Verifier<'a, 'd> {
             return;
         }
         let position = row.index().saturating_sub(1);
-        let id = row.text(0).unwrap_or("").to_string();
+        let id = row.text(0).map_or("", |value| value).to_string();
         let expected = self.ordered.get(position).copied();
         if row.blank() {
             if let Some(athlete) = expected {
@@ -257,7 +257,10 @@ impl<'a, 'd> Verifier<'a, 'd> {
             *count = count.saturating_add(1);
         }
         for (id, count) in &actual {
-            let held = expected.get(id).copied().unwrap_or_default();
+            let held = expected
+                .get(id)
+                .copied()
+                .map_or(Default::default(), core::convert::identity);
             if held < *count {
                 let message = if expected.contains_key(id) {
                     format!(
@@ -271,7 +274,10 @@ impl<'a, 'd> Verifier<'a, 'd> {
             }
         }
         for (id, count) in &expected {
-            let found = actual.get(id).copied().unwrap_or_default();
+            let found = actual
+                .get(id)
+                .copied()
+                .map_or(Default::default(), core::convert::identity);
             if found < *count {
                 self.findings.note(format!(
                     "athlete {id} holds {count} cohort row(s) in the frozen dataset but is printed \

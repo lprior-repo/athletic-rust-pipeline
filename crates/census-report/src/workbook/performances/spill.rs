@@ -88,7 +88,9 @@ impl RangeFiles<'_> {
         };
         let files = self.writers.len().max(1);
         let ranges = rank.saturating_mul(files).checked_div(self.names.max(1));
-        Ok(ranges.unwrap_or_default().min(files.saturating_sub(1)))
+        Ok(ranges
+            .map_or(Default::default(), core::convert::identity)
+            .min(files.saturating_sub(1)))
     }
 
     fn write(&mut self, row: &PerformanceRow) -> ReportResult<()> {

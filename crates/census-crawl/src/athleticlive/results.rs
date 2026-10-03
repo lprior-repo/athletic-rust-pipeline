@@ -128,8 +128,8 @@ fn append(
 
 fn finish(report: &mut AdapterReport, summary: RunSummary<'_>) {
     let counts = summary.counts;
-    report.rows = u64::try_from(summary.stats.rows_mapped).unwrap_or(u64::MAX);
-    report.errors = u64::try_from(summary.failures.len()).unwrap_or(u64::MAX);
+    report.rows = u64::try_from(summary.stats.rows_mapped).map_or(u64::MAX, |value| value);
+    report.errors = u64::try_from(summary.failures.len()).map_or(u64::MAX, |value| value);
     for line in summary.stats.note("") {
         report.note(line);
     }

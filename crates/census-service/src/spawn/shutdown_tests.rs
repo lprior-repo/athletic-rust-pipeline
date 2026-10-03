@@ -3,8 +3,12 @@ use std::time::Duration;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
-#[tokio::test]
-async fn cancelling_drain_keeps_started_effect_owned_for_the_next_drain() -> TestResult {
+#[test]
+fn cancelling_drain_keeps_started_effect_owned_for_the_next_drain() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
     let spawner = Spawner::new();
     let (started, began) = oneshot::channel();
     let (release, released) = std::sync::mpsc::channel();
@@ -14,30 +18,35 @@ async fn cancelling_drain_keeps_started_effect_owned_for_the_next_drain() -> Tes
     });
     tokio::pin!(caller);
     tokio::select! {
-        outcome = &mut caller => panic!("effect finished before release: {outcome:?}"),
+        outcome = &mut caller => return Err(format!("effect finished before release: {outcome:?}").into()),
         result = began => result?,
     }
     let cancelled =
         tokio::time::timeout(Duration::from_millis(20), spawner.drain(Duration::ZERO)).await;
-    assert!(cancelled.is_err());
-    assert!(matches!(
+    check!(cancelled.is_err());
+    check!(matches!(
         spawner.spawn(async {}),
         Err(SpawnError::RegionClosed)
     ));
     release.send(())?;
     let (outcome, report) = tokio::join!(caller, spawner.drain(Duration::from_secs(5)));
-    assert_eq!(outcome, Outcome::Ok(7));
+    check!(eq; outcome, Outcome::Ok(7));
     let report = report?;
-    assert_eq!(report.accepted, 1);
-    assert_eq!(report.completed, 1);
-    assert_eq!(report.remaining, 0);
-    assert_eq!(report.timed_out, 1);
-    assert_eq!(report.aborted, 0);
+    check!(eq; report.accepted, 1);
+    check!(eq; report.completed, 1);
+    check!(eq; report.remaining, 0);
+    check!(eq; report.timed_out, 1);
+    check!(eq; report.aborted, 0);
     Ok(())
+        })
 }
 
-#[tokio::test]
-async fn shutdown_wakes_waiting_admission_without_running_its_effect() -> TestResult {
+#[test]
+fn shutdown_wakes_waiting_admission_without_running_its_effect() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
     let spawner = Spawner::with_capacity(1);
     spawner.spawn(std::future::pending())?;
     let ran = Arc::new(std::sync::atomic::AtomicBool::new(false));
@@ -49,15 +58,16 @@ async fn shutdown_wakes_waiting_admission_without_running_its_effect() -> TestRe
     tokio::pin!(waiting);
     tokio::select! {
         biased;
-        outcome = &mut waiting => panic!("full region admitted effect: {outcome:?}"),
+        outcome = &mut waiting => return Err(format!("full region admitted effect: {outcome:?}").into()),
         () = std::future::ready(()) => {}
     }
     let (outcome, report) = tokio::join!(waiting, spawner.drain(Duration::ZERO));
-    assert_eq!(outcome, Outcome::Cancelled);
-    assert!(!ran.load(std::sync::atomic::Ordering::SeqCst));
+    check!(eq; outcome, Outcome::Cancelled);
+    check!(!ran.load(std::sync::atomic::Ordering::SeqCst));
     let report = report?;
-    assert_eq!(report.accepted, 1);
-    assert_eq!(report.aborted, 1);
-    assert_eq!(report.remaining, 0);
+    check!(eq; report.accepted, 1);
+    check!(eq; report.aborted, 1);
+    check!(eq; report.remaining, 0);
     Ok(())
+        })
 }

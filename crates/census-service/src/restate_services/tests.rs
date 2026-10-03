@@ -20,30 +20,66 @@ use crate::restate_services::results_arms::ResultsStageOutcome;
 use census_report::report::Scope;
 use census_store::Table;
 
-#[test]
-fn table_names_resolve_and_reject_typos() {
-    assert_eq!(resolve_table("schools").unwrap(), Table::Schools);
-    assert_eq!(resolve_table("performances").unwrap(), Table::Performances);
-    assert!(resolve_table("school").is_err());
-    assert!(resolve_table("").is_err());
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+#[derive(Debug)]
+struct FixtureSdkError(HandlerError);
+
+impl std::fmt::Display for FixtureSdkError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let error: &dyn std::error::Error = self.0.as_ref();
+        std::fmt::Display::fmt(error, formatter)
+    }
+}
+
+impl std::error::Error for FixtureSdkError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(self.0.as_ref())
+    }
+}
+
+pub(super) fn sdk_error(error: impl Into<HandlerError>) -> Box<dyn std::error::Error> {
+    Box::new(FixtureSdkError(error.into()))
+}
+
+fn panic_blocking_job_fault() -> ! {
+    panic!("boom");
+}
+
+fn invalid_json() -> TestResult<serde_json::Error> {
+    match serde_json::from_str::<serde_json::Value>("not json") {
+        Err(error) => Ok(error),
+        Ok(_) => Err("invalid JSON fixture parsed".into()),
+    }
 }
 
 #[test]
-fn empty_table_list_means_every_table_in_order() {
-    assert_eq!(resolve_tables(&[]).unwrap(), Table::ALL.to_vec());
+fn table_names_resolve_and_reject_typos() -> TestResult {
+    check!(eq; resolve_table("schools").map_err(sdk_error)?, Table::Schools);
+    check!(eq; resolve_table("performances").map_err(sdk_error)?, Table::Performances);
+    check!(resolve_table("school").is_err());
+    check!(resolve_table("").is_err());
+    Ok(())
+}
+
+#[test]
+fn empty_table_list_means_every_table_in_order() -> TestResult {
+    check!(eq; resolve_tables(&[]).map_err(sdk_error)?, Table::ALL.to_vec());
     let requested = vec!["meets".to_string(), "meets".to_string()];
-    assert_eq!(resolve_tables(&requested).unwrap(), vec![Table::Meets]);
+    check!(eq; resolve_tables(&requested).map_err(sdk_error)?, vec![Table::Meets]);
+    Ok(())
 }
 
 #[test]
-fn an_omitted_scope_matches_the_cli_default_and_unknown_scopes_are_rejected() {
-    assert_eq!(resolve_scope(None).unwrap(), Scope::AllSources);
-    assert_eq!(resolve_scope(Some("core")).unwrap(), Scope::Core);
-    assert_eq!(
-        resolve_scope(Some("all_sources")).unwrap(),
+fn an_omitted_scope_matches_the_cli_default_and_unknown_scopes_are_rejected() -> TestResult {
+    check!(eq; resolve_scope(None).map_err(sdk_error)?, Scope::AllSources);
+    check!(eq; resolve_scope(Some("core")).map_err(sdk_error)?, Scope::Core);
+    check!(eq;
+        resolve_scope(Some("all_sources")).map_err(sdk_error)?,
         Scope::AllSources
     );
-    assert!(resolve_scope(Some("all")).is_err());
+    check!(resolve_scope(Some("all")).is_err());
+    Ok(())
 }
 
 #[test]
@@ -52,127 +88,128 @@ fn cohort_label_names_the_reduction() {
     assert_eq!(cohort_label(None), "all");
 }
 
-fn physical(store: &Store, table: Table) -> (u64, u64) {
-    (
-        store.walk_table(table).unwrap().rows,
-        store.receipt_count().unwrap(),
-    )
+fn physical(store: &Store, table: Table) -> TestResult<(u64, u64)> {
+    Ok((store.walk_table(table)?.rows, store.receipt_count()?))
 }
 
 #[test]
-fn three_attempts_at_one_operation_append_it_once_and_leave_one_receipt() {
-    let dir = tempfile::tempdir().unwrap();
+fn three_attempts_at_one_operation_append_it_once_and_leave_one_receipt() -> TestResult {
+    let dir = tempfile::tempdir()?;
     let operation = "wiaa_results_wi:inv-1:2026-W39:performances:0:0";
     let rows = vec![
         serde_json::json!({"id": "perf:wi:1", "mark": "10.94"}),
         serde_json::json!({"id": "perf:wi:2", "mark": "11.02"}),
     ];
-    let digest = payload_digest(Table::Performances, &rows).unwrap();
+    let digest = payload_digest(Table::Performances, &rows).map_err(sdk_error)?;
 
-    let store = Store::open(dir.path()).unwrap();
-    let first = apply_observations(&store, Table::Performances, &rows, operation, &digest).unwrap();
-    assert_eq!(
+    let store = Store::open(dir.path())?;
+    let first = apply_observations(&store, Table::Performances, &rows, operation, &digest)?;
+    check!(eq;
         first.appended(),
         rows.len() as u64,
         "the first attempt appends the page: {first:?}"
     );
-    let after_first = physical(&store, Table::Performances);
-    assert_eq!(after_first, (2, 1), "two rows, one receipt");
+    let after_first = physical(&store, Table::Performances)?;
+    check!(eq; after_first, (2, 1), "two rows, one receipt");
     drop(store);
 
-    let store = Store::open(dir.path()).unwrap();
+    let store = Store::open(dir.path())?;
     for attempt in 2..=3 {
-        let again = apply_observations(&store, Table::Performances, &rows, operation, &digest)
-            .unwrap()
-            .appended();
-        assert_eq!(again, 0, "attempt {attempt} appended nothing");
-        assert_eq!(
-            physical(&store, Table::Performances),
+        let again =
+            apply_observations(&store, Table::Performances, &rows, operation, &digest)?.appended();
+        check!(eq; again, 0, "attempt {attempt} appended nothing");
+        check!(eq;
+            physical(&store, Table::Performances)?,
             after_first,
             "attempt {attempt} left the store exactly as attempt 1 did"
         );
     }
 
-    let receipt = store.receipt(operation).unwrap().unwrap();
-    assert_eq!(
+    let receipt = store
+        .receipt(operation)?
+        .ok_or("missing operation receipt")?;
+    check!(eq;
         receipt.appended, 2,
         "the receipt describes the one application"
     );
-    assert_eq!(receipt.digest, digest);
+    check!(eq; receipt.digest, digest);
+    Ok(())
 }
 
 #[test]
-fn a_second_operation_with_different_rows_is_not_mistaken_for_a_replay() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+fn a_second_operation_with_different_rows_is_not_mistaken_for_a_replay() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     let rows = vec![serde_json::json!({"id": "perf:wi:1", "mark": "10.94"})];
-    let digest = payload_digest(Table::Performances, &rows).unwrap();
+    let digest = payload_digest(Table::Performances, &rows).map_err(sdk_error)?;
 
-    let first = apply_observations(&store, Table::Performances, &rows, "op-1", &digest).unwrap();
-    assert_eq!(first.appended(), 1);
-    let second = apply_observations(&store, Table::Performances, &rows, "op-2", &digest).unwrap();
-    assert_eq!(
+    let first = apply_observations(&store, Table::Performances, &rows, "op-1", &digest)?;
+    check!(eq; first.appended(), 1);
+    let second = apply_observations(&store, Table::Performances, &rows, "op-2", &digest)?;
+    check!(eq;
         second.appended(),
         1,
         "a different operation appends its own page, overlapping rows and all"
     );
-    assert_eq!(physical(&store, Table::Performances), (2, 2));
+    check!(eq; physical(&store, Table::Performances)?, (2, 2));
+    Ok(())
 }
 
 #[test]
-fn rows_without_an_id_are_rejected_by_the_store_and_nothing_is_written() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+fn rows_without_an_id_are_rejected_by_the_store_and_nothing_is_written() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     let rows = vec![serde_json::json!({"name": "no id here"})];
-    assert!(apply_observations(&store, Table::Schools, &rows, "op-1", "digest-1").is_err());
-    assert_eq!(store.stats().unwrap().observations, 0);
-    assert_eq!(
-        store.receipt_count().unwrap(),
+    check!(apply_observations(&store, Table::Schools, &rows, "op-1", "digest-1").is_err());
+    check!(eq; store.stats()?.observations, 0);
+    check!(eq;
+        store.receipt_count()?,
         0,
         "a rejected page leaves no receipt behind"
     );
 
     let good = vec![serde_json::json!({"id": "school:wi:test", "name": "Test"})];
-    assert_eq!(
-        apply_observations(&store, Table::Schools, &good, "op-2", "digest-2")
-            .unwrap()
-            .appended(),
+    check!(eq;
+        apply_observations(&store, Table::Schools, &good, "op-2", "digest-2")?.appended(),
         1
     );
-    assert_eq!(store.stats().unwrap().observations, 1);
-    assert_eq!(
-        apply_observations(&store, Table::Schools, &good, "op-2", "digest-2")
-            .unwrap()
-            .appended(),
+    check!(eq; store.stats()?.observations, 1);
+    check!(eq;
+        apply_observations(&store, Table::Schools, &good, "op-2", "digest-2")?.appended(),
         0,
         "the same operation twice appends its page once"
     );
-    assert_eq!(store.stats().unwrap().observations, 1);
+    check!(eq; store.stats()?.observations, 1);
+    Ok(())
 }
 
 #[test]
-fn oversized_batches_are_refused_without_touching_the_store() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+fn oversized_batches_are_refused_without_touching_the_store() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     let rows = vec![serde_json::json!({"id": "x"}); MAX_ROWS_PER_REQUEST + 1];
-    let refused = apply_observations(&store, Table::Schools, &rows, "op-1", "digest-1")
+    let refused = match apply_observations(&store, Table::Schools, &rows, "op-1", "digest-1")
         .map_err(JobError::from)
-        .expect_err("a batch over the ceiling is refused");
-    assert!(matches!(refused, JobError::Terminal { .. }));
-    assert_eq!(store.stats().unwrap().observations, 0);
-    assert_eq!(
-        store.receipt_count().unwrap(),
+    {
+        Err(error) => error,
+        Ok(_) => return Err("oversized batch accepted".into()),
+    };
+    check!(matches!(refused, JobError::Terminal { .. }));
+    check!(eq; store.stats()?.observations, 0);
+    check!(eq;
+        store.receipt_count()?,
         0,
         "the refusal happens before the commit, so no receipt is written"
     );
+    Ok(())
 }
 
 #[test]
-fn job_failures_classify_for_retry_but_a_violated_invariant_and_a_panic_never_retry() {
+fn job_failures_classify_for_retry_but_a_violated_invariant_and_a_panic_never_retry() -> TestResult
+{
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
-        .build()
-        .unwrap();
+        .build()?;
     let region = Arc::new(Spawner::new());
 
     let refused = runtime.block_on(blocking(Arc::clone(&region), || {
@@ -180,7 +217,7 @@ fn job_failures_classify_for_retry_but_a_violated_invariant_and_a_panic_never_re
             detail: "50001 rows exceeds the per-request ceiling of 50000".to_string(),
         })
     }));
-    assert!(matches!(refused, Err(JobError::Terminal { .. })));
+    check!(matches!(refused, Err(JobError::Terminal { .. })));
 
     let transient = runtime.block_on(blocking(Arc::clone(&region), || {
         Err::<u8, StoreError>(StoreError::Io {
@@ -188,21 +225,21 @@ fn job_failures_classify_for_retry_but_a_violated_invariant_and_a_panic_never_re
             source: std::io::Error::from(std::io::ErrorKind::PermissionDenied),
         })
     }));
-    assert!(matches!(transient, Err(JobError::Transient { .. })));
+    check!(matches!(transient, Err(JobError::Transient { .. })));
 
     let report = runtime.block_on(blocking(Arc::clone(&region), || {
         Err::<u8, ReportError>(ReportError::Store(StoreError::Invariant {
             detail: "table schools would exceed 20000000 rows in one scan".to_string(),
         }))
     }));
-    assert!(matches!(report, Err(JobError::Terminal { .. })));
+    check!(matches!(report, Err(JobError::Terminal { .. })));
 
     let report_invariant = runtime.block_on(blocking(Arc::clone(&region), || {
         Err::<u8, ReportError>(ReportError::Invariant {
             detail: "the core scope reports more than the all-sources scope".to_string(),
         })
     }));
-    assert!(matches!(report_invariant, Err(JobError::Terminal { .. })));
+    check!(matches!(report_invariant, Err(JobError::Terminal { .. })));
 
     let report_io = runtime.block_on(blocking(Arc::clone(&region), || {
         Err::<u8, ReportError>(ReportError::Io {
@@ -210,17 +247,18 @@ fn job_failures_classify_for_retry_but_a_violated_invariant_and_a_panic_never_re
             source: std::io::Error::from(std::io::ErrorKind::PermissionDenied),
         })
     }));
-    assert!(matches!(report_io, Err(JobError::Transient { .. })));
+    check!(matches!(report_io, Err(JobError::Transient { .. })));
 
     let panicked = runtime.block_on(blocking(Arc::clone(&region), || -> Result<u8, JobError> {
-        panic!("boom");
+        panic_blocking_job_fault()
     }));
-    assert!(matches!(panicked, Err(JobError::Terminal { .. })));
+    check!(matches!(panicked, Err(JobError::Terminal { .. })));
+    Ok(())
 }
 
-fn national_request(jurisdictions: Vec<UsJurisdiction>) -> NationalRequest {
-    NationalRequest {
-        season: SchoolYear::new(2026).expect("2026 is a season"),
+fn national_request(jurisdictions: Vec<UsJurisdiction>) -> TestResult<NationalRequest> {
+    Ok(NationalRequest {
+        season: SchoolYear::new(2026).ok_or("invalid fixture season")?,
         revision: Revision(1),
         jurisdictions,
         refresh: false,
@@ -229,126 +267,139 @@ fn national_request(jurisdictions: Vec<UsJurisdiction>) -> NationalRequest {
         observed_on: None,
         authorized_hosts: Vec::new(),
         source_parallelism: census_crawl::net::DEFAULT_FAMILY_PARALLELISM,
-    }
+    })
 }
 
 #[test]
-fn an_empty_jurisdiction_list_covers_the_census_scope_in_declaration_order() {
-    let targets = national::targets(&national_request(Vec::new())).unwrap();
-    assert_eq!(targets.len(), UsJurisdiction::CENSUS_SCOPE.len());
+fn an_empty_jurisdiction_list_covers_the_census_scope_in_declaration_order() -> TestResult {
+    let targets = national::targets(&national_request(Vec::new())?).map_err(sdk_error)?;
+    check!(eq; targets.len(), UsJurisdiction::CENSUS_SCOPE.len());
     let jurisdictions: Vec<UsJurisdiction> = targets.iter().map(|row| row.0).collect();
-    assert_eq!(jurisdictions, UsJurisdiction::CENSUS_SCOPE.to_vec());
+    check!(eq; jurisdictions, UsJurisdiction::CENSUS_SCOPE.to_vec());
     for (jurisdiction, key) in &targets {
-        assert_eq!(
+        check!(eq;
             key.as_str(),
             WorkflowIdentity::jurisdiction(
                 *jurisdiction,
-                SchoolYear::new(2026).expect("2026 is a season"),
+                SchoolYear::new(2026).ok_or("invalid fixture season")?,
                 Revision(1),
             )
             .as_str()
         );
     }
+    Ok(())
 }
 
 #[test]
-fn a_named_jurisdiction_set_keeps_the_callers_order() {
+fn a_named_jurisdiction_set_keeps_the_callers_order() -> TestResult {
     let targets = national::targets(&national_request(vec![
         UsJurisdiction::Iowa,
         UsJurisdiction::Wisconsin,
-    ]))
-    .unwrap();
-    assert_eq!(targets.len(), 2);
-    assert_eq!(targets[0].0, UsJurisdiction::Iowa);
-    assert_eq!(targets[0].1, "jurisdiction:IA:2026-27:1");
-    assert_eq!(targets[1].0, UsJurisdiction::Wisconsin);
-    assert_eq!(targets[1].1, "jurisdiction:WI:2026-27:1");
+    ])?)
+    .map_err(sdk_error)?;
+    check!(eq; targets.len(), 2);
+    check!(eq; targets[0].0, UsJurisdiction::Iowa);
+    check!(eq; targets[0].1, "jurisdiction:IA:2026-27:1");
+    check!(eq; targets[1].0, UsJurisdiction::Wisconsin);
+    check!(eq; targets[1].1, "jurisdiction:WI:2026-27:1");
+    Ok(())
 }
 
 #[test]
-fn a_state_named_twice_is_refused_instead_of_walked_twice() {
-    let error = national::targets(&national_request(vec![
+fn a_state_named_twice_is_refused_instead_of_walked_twice() -> TestResult {
+    let error = match national::targets(&national_request(vec![
         UsJurisdiction::Wisconsin,
         UsJurisdiction::Iowa,
         UsJurisdiction::Wisconsin,
-    ]))
-    .unwrap_err();
-    assert!(
+    ])?) {
+        Err(error) => error,
+        Ok(_) => return Err("duplicate jurisdiction accepted".into()),
+    };
+    check!(
         format!("{error:?}").contains("WI"),
         "the refusal must name the repeated state: {error:?}"
     );
+    Ok(())
 }
 
 #[test]
-fn the_walk_options_carry_the_runs_shared_knobs() {
-    let mut request = national_request(vec![UsJurisdiction::Iowa]);
+fn the_walk_options_carry_the_runs_shared_knobs() -> TestResult {
+    let mut request = national_request(vec![UsJurisdiction::Iowa])?;
     request.limit_per_state = Some(17);
     request.concurrency = 3;
     request.refresh = true;
     let projected = request.for_jurisdiction(UsJurisdiction::Iowa);
-    let options = super::options_for_request(&projected, "2026-09-21").unwrap();
-    assert_eq!(options.jurisdictions, vec![UsJurisdiction::Iowa]);
-    assert_eq!(options.limit_per_state, Some(17));
-    assert_eq!(options.concurrency, 3);
-    assert_eq!(options.state_concurrency, 1);
-    assert!(options.refresh);
-    assert_eq!(
+    let options = super::options_for_request(&projected, "2026-09-21").map_err(sdk_error)?;
+    check!(eq; options.jurisdictions, vec![UsJurisdiction::Iowa]);
+    check!(eq; options.limit_per_state, Some(17));
+    check!(eq; options.concurrency, 3);
+    check!(eq; options.state_concurrency, 1);
+    check!(options.refresh);
+    check!(eq;
         options.school_year,
-        SchoolYear::new(2026).expect("2026 is a season")
+        SchoolYear::new(2026).ok_or("invalid fixture season")?
     );
-    assert_eq!(options.observed_on, "2026-09-21");
+    check!(eq; options.observed_on, "2026-09-21");
+    Ok(())
 }
 
 #[test]
-fn the_collection_date_is_the_days_today_unless_the_request_names_one() {
-    let request = national_request(vec![UsJurisdiction::Iowa]);
+fn the_collection_date_is_the_days_today_unless_the_request_names_one() -> TestResult {
+    let request = national_request(vec![UsJurisdiction::Iowa])?;
     let today = super::options_for_request(
         &request.for_jurisdiction(UsJurisdiction::Iowa),
         "2026-09-21",
     )
-    .unwrap();
-    assert_eq!(today.observed_on, "2026-09-21");
+    .map_err(sdk_error)?;
+    check!(eq; today.observed_on, "2026-09-21");
 
     let mut dated = request;
     dated.observed_on = Some("2026-09-01".to_string());
     let named =
         super::options_for_request(&dated.for_jurisdiction(UsJurisdiction::Iowa), "2026-09-21")
-            .unwrap();
-    assert_eq!(named.observed_on, "2026-09-01");
+            .map_err(sdk_error)?;
+    check!(eq; named.observed_on, "2026-09-01");
+    Ok(())
 }
 
 #[test]
-fn the_roster_ceiling_admits_its_boundary_and_refuses_one_past_it() {
-    let mut request = national_request(vec![UsJurisdiction::Iowa]);
+fn the_roster_ceiling_admits_its_boundary_and_refuses_one_past_it() -> TestResult {
+    let mut request = national_request(vec![UsJurisdiction::Iowa])?;
     request.limit_per_state = Some(MAX_LIMIT_PER_STATE);
     let projected = request.for_jurisdiction(UsJurisdiction::Iowa);
-    assert_eq!(
-        super::options_for_request(&projected, "2026-09-21")
-            .unwrap()
-            .limit_per_state,
+    check!(eq;
+        super::options_for_request(&projected, "2026-09-21").map_err(sdk_error)?.limit_per_state,
         Some(MAX_LIMIT_PER_STATE)
     );
 
-    let mut over = national_request(vec![UsJurisdiction::Iowa]);
+    let mut over = national_request(vec![UsJurisdiction::Iowa])?;
     over.limit_per_state = Some(MAX_LIMIT_PER_STATE.saturating_add(1));
     let projected = over.for_jurisdiction(UsJurisdiction::Iowa);
-    let error = super::options_for_request(&projected, "2026-09-21").unwrap_err();
-    assert!(
+    let error = match super::options_for_request(&projected, "2026-09-21") {
+        Err(error) => error,
+        Ok(_) => return Err("excessive roster ceiling accepted".into()),
+    };
+    check!(
         format!("{error:?}").contains("limit_per_state"),
         "the refusal must name the knob: {error:?}"
     );
+    Ok(())
 }
 
 #[test]
-fn a_walk_with_no_concurrency_is_refused() {
-    let mut request = national_request(vec![UsJurisdiction::Iowa]);
+fn a_walk_with_no_concurrency_is_refused() -> TestResult {
+    let mut request = national_request(vec![UsJurisdiction::Iowa])?;
     request.concurrency = 0;
     let projected = request.for_jurisdiction(UsJurisdiction::Iowa);
-    let error = super::options_for_request(&projected, "2026-09-21").unwrap_err();
-    assert!(
+    let error = match super::options_for_request(&projected, "2026-09-21") {
+        Err(error) => error,
+        Ok(_) => return Err("zero concurrency accepted".into()),
+    };
+    check!(
         format!("{error:?}").contains("concurrency"),
         "the refusal must name the knob: {error:?}"
     );
+    Ok(())
 }
 
 fn answered_report() -> JurisdictionReport {
@@ -384,7 +435,8 @@ fn answered_report() -> JurisdictionReport {
 }
 
 #[test]
-fn a_state_that_did_not_answer_becomes_a_failure_row_and_the_run_keeps_its_summaries() {
+fn a_state_that_did_not_answer_becomes_a_failure_row_and_the_run_keeps_its_summaries() -> TestResult
+{
     let key = "jurisdiction:IA:2026-27:1";
     let failed = national::classify(
         UsJurisdiction::Iowa,
@@ -392,14 +444,14 @@ fn a_state_that_did_not_answer_becomes_a_failure_row_and_the_run_keeps_its_summa
         Err(TerminalError::new("index host refused the walk")),
     );
     let national::Completion::Unanswered(failure) = failed else {
-        panic!("a failed call must classify as a failure row, not a summary");
+        return Err("failed call classified as a summary".into());
     };
-    assert_eq!(failure.jurisdiction, UsJurisdiction::Iowa);
-    assert_eq!(
+    check!(eq; failure.jurisdiction, UsJurisdiction::Iowa);
+    check!(eq;
         failure.identity, key,
         "the row must name the identity the run addressed"
     );
-    assert!(
+    check!(
         failure.error.contains("index host refused the walk"),
         "the row must say why the state is missing: {}",
         failure.error
@@ -411,20 +463,21 @@ fn a_state_that_did_not_answer_becomes_a_failure_row_and_the_run_keeps_its_summa
         Ok(Json(answered_report())),
     );
     let national::Completion::Answered(summary) = answered else {
-        panic!("a returned report must classify as a summary");
+        return Err("returned report classified as a failure".into());
     };
-    assert_eq!(summary.jurisdiction, UsJurisdiction::Wisconsin);
-    assert_eq!(summary.identity, "jurisdiction:WI:2026-27:1");
-    assert_eq!(summary.rosters_total, 7);
-    assert_eq!(summary.rosters_committed, 5);
-    assert_eq!(summary.rosters_skipped, 0);
-    assert_eq!(summary.class_of_2027, 3);
-    assert_eq!(
+    check!(eq; summary.jurisdiction, UsJurisdiction::Wisconsin);
+    check!(eq; summary.identity, "jurisdiction:WI:2026-27:1");
+    check!(eq; summary.rosters_total, 7);
+    check!(eq; summary.rosters_committed, 5);
+    check!(eq; summary.rosters_skipped, 0);
+    check!(eq; summary.class_of_2027, 3);
+    check!(eq;
         summary.rosters_remaining, 2,
         "seven teams with five rosters walked leave two remaining"
     );
-    assert_eq!(summary.athletes, 11);
-    assert!(!summary.blocked, "a completed walk is not a blocked one");
+    check!(eq; summary.athletes, 11);
+    check!(!summary.blocked, "a completed walk is not a blocked one");
+    Ok(())
 }
 
 static BROWSER_ONLY: SourceDescriptor = SourceDescriptor {
@@ -587,13 +640,13 @@ fn fetch_error_retryable_variants_become_transient() {
 }
 
 #[test]
-fn fetch_error_nonretryable_variants_become_terminal() {
+fn fetch_error_nonretryable_variants_become_terminal() -> TestResult {
     use census_crawl::net::FetchError;
 
     let too_large = collect_error(CrawlError::Fetch(FetchError::TooLarge {
         url: "https://example.com".to_string(),
     }));
-    assert!(
+    check!(
         matches!(too_large, JobError::Terminal { .. }),
         "TooLarge must be terminal"
     );
@@ -603,96 +656,101 @@ fn fetch_error_nonretryable_variants_become_terminal() {
         detail: "human_required".to_string(),
         retryable: false,
     }));
-    assert!(
+    check!(
         matches!(browser_not_retryable, JobError::Terminal { .. }),
         "BrowserLane {{ retryable: false }} must be terminal (the defect was it became Transient)"
     );
 
     let invalid_url = collect_error(CrawlError::Fetch(FetchError::InvalidUrl {
         url: "not a url".to_string(),
-        source: url::Url::parse("not a url").unwrap_err(),
+        source: match url::Url::parse("not a url") {
+            Err(error) => error,
+            Ok(_) => return Err("invalid URL fixture parsed".into()),
+        },
     }));
-    assert!(matches!(invalid_url, JobError::Terminal { .. }));
+    check!(matches!(invalid_url, JobError::Terminal { .. }));
 
     let http_404 = collect_error(CrawlError::Fetch(FetchError::Http {
         status: 404,
         url: "https://example.com".to_string(),
     }));
-    assert!(matches!(http_404, JobError::Terminal { .. }));
+    check!(matches!(http_404, JobError::Terminal { .. }));
 
     let http_403 = collect_error(CrawlError::Fetch(FetchError::Http {
         status: 403,
         url: "https://example.com".to_string(),
     }));
-    assert!(matches!(http_403, JobError::Terminal { .. }));
+    check!(matches!(http_403, JobError::Terminal { .. }));
+    Ok(())
 }
 
 #[test]
-fn non_fetch_crawl_errors_are_terminal() {
+fn non_fetch_crawl_errors_are_terminal() -> TestResult {
     let schema = collect_error(CrawlError::Schema {
         url: "https://example.com".to_string(),
         detail: "missing field".to_string(),
     });
-    assert!(matches!(schema, JobError::Terminal { .. }));
+    check!(matches!(schema, JobError::Terminal { .. }));
 
     let decode = collect_error(CrawlError::Decode {
         url: "https://example.com".to_string(),
-        source: serde_json::from_str::<serde_json::Value>("not json").unwrap_err(),
+        source: invalid_json()?,
     });
-    assert!(matches!(decode, JobError::Terminal { .. }));
+    check!(matches!(decode, JobError::Terminal { .. }));
 
     let domain = collect_error(CrawlError::Domain(census_domain::DomainError::OutOfRange {
         field: "grad_year",
     }));
-    assert!(matches!(domain, JobError::Terminal { .. }));
+    check!(matches!(domain, JobError::Terminal { .. }));
 
     let arithmetic = collect_error(CrawlError::Arithmetic {
         detail: "overflow".to_string(),
     });
-    assert!(matches!(arithmetic, JobError::Terminal { .. }));
+    check!(matches!(arithmetic, JobError::Terminal { .. }));
 
     let io_err = collect_error(CrawlError::Io {
         path: std::path::PathBuf::from("/dev/null/nowhere"),
         source: std::io::Error::from(std::io::ErrorKind::PermissionDenied),
     });
-    assert!(matches!(io_err, JobError::Terminal { .. }));
+    check!(matches!(io_err, JobError::Terminal { .. }));
 
     let encode = collect_error(CrawlError::Encode {
         table: "schools".to_string(),
         source: serde_json::Error::io(std::io::Error::from(std::io::ErrorKind::Other)),
     });
-    assert!(matches!(encode, JobError::Terminal { .. }));
+    check!(matches!(encode, JobError::Terminal { .. }));
+    Ok(())
 }
 
 #[test]
-fn deterministic_store_errors_classify_terminal() {
+fn deterministic_store_errors_classify_terminal() -> TestResult {
     let error = JobError::from(StoreError::CounterOverflow);
-    assert!(matches!(error, JobError::Terminal { .. }));
+    check!(matches!(error, JobError::Terminal { .. }));
 
     let error = JobError::from(StoreError::Decode {
         key: "schools:1".to_string(),
-        source: serde_json::from_str::<serde_json::Value>("not json").unwrap_err(),
+        source: invalid_json()?,
     });
-    assert!(matches!(error, JobError::Terminal { .. }));
+    check!(matches!(error, JobError::Terminal { .. }));
 
     let error = JobError::from(StoreError::Json {
         detail: "raw row".to_string(),
-        source: serde_json::from_str::<serde_json::Value>("not json").unwrap_err(),
+        source: invalid_json()?,
     });
-    assert!(matches!(error, JobError::Terminal { .. }));
+    check!(matches!(error, JobError::Terminal { .. }));
 
     let error = JobError::from(StoreError::SnapshotRow {
         path: PathBuf::from("/tmp/out/schools.jsonl"),
         line: 42,
-        source: serde_json::from_str::<serde_json::Value>("not json").unwrap_err(),
+        source: invalid_json()?,
     });
-    assert!(matches!(error, JobError::Terminal { .. }));
+    check!(matches!(error, JobError::Terminal { .. }));
 
     let error = JobError::from(StoreError::TooManyRows {
         table: "schools".to_string(),
         max: 20_000_000,
     });
-    assert!(matches!(error, JobError::Terminal { .. }));
+    check!(matches!(error, JobError::Terminal { .. }));
 
     let error = JobError::from(StoreError::JournalTooLarge {
         what: "value",
@@ -701,17 +759,18 @@ fn deterministic_store_errors_classify_terminal() {
         bytes: 1_000_000,
         max: 500_000,
     });
-    assert!(matches!(error, JobError::Terminal { .. }));
+    check!(matches!(error, JobError::Terminal { .. }));
 
     let error = JobError::from(StoreError::Refused {
         detail: "destination busy".to_string(),
     });
-    assert!(matches!(error, JobError::Terminal { .. }));
+    check!(matches!(error, JobError::Terminal { .. }));
 
     let error = JobError::from(StoreError::Invariant {
         detail: "row id missing".to_string(),
     });
-    assert!(matches!(error, JobError::Terminal { .. }));
+    check!(matches!(error, JobError::Terminal { .. }));
+    Ok(())
 }
 
 #[test]

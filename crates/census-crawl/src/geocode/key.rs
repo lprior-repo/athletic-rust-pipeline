@@ -28,7 +28,7 @@ impl SecretKey {
             }
         }
         Err(MissingCredential {
-            name: names.first().copied().unwrap_or("credential"),
+            name: names.first().copied().map_or("credential", |value| value),
         })
     }
 

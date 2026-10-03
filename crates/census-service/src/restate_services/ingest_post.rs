@@ -85,6 +85,7 @@ fn units_of(batch: &RecordedBatch) -> impl Iterator<Item = &[Value]> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::restate_services::tests::sdk_error;
 
     #[test]
     fn an_endpoint_is_the_slugs_own_name_with_the_state() {
@@ -96,10 +97,18 @@ mod tests {
     }
 
     #[test]
-    fn a_window_is_the_iso_week_of_the_run_day() {
-        assert_eq!(window_of("2026-09-23").expect("a calendar day"), "2026-W39");
-        assert_eq!(window_of("2027-01-01").expect("a calendar day"), "2026-W53");
-        assert_eq!(window_of("2026-01-01").expect("a calendar day"), "2026-W01");
+    fn a_window_is_the_iso_week_of_the_run_day() -> Result<(), Box<dyn std::error::Error>> {
+        for (day, expected) in [
+            ("2026-09-23", "2026-W39"),
+            ("2027-01-01", "2026-W53"),
+            ("2026-01-01", "2026-W01"),
+        ] {
+            let window = window_of(day).map_err(sdk_error)?;
+            if window != expected {
+                return Err(format!("{day} ISO week: left={window:?}, right={expected:?}").into());
+            }
+        }
+        Ok(())
     }
 
     #[test]

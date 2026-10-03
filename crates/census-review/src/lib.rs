@@ -1,5 +1,10 @@
 #![forbid(unsafe_code)]
 
+#[cfg(test)]
+#[macro_use]
+#[path = "../../../tools/fallible_checks.rs"]
+mod fallible_checks;
+
 mod ask;
 mod athlete_cluster_findings;
 mod athlete_clusters;
@@ -17,6 +22,7 @@ mod review_checkpoint;
 mod review_intake;
 mod review_process;
 mod review_subjects;
+mod revocation;
 mod verdicts;
 
 use census_domain::model::{ReviewCase, ReviewVerdictRecord};
@@ -57,6 +63,11 @@ pub async fn run_lanes(
     observed_at: &str,
 ) -> StoreResult<ReviewReport> {
     let clients = independent(clients)?;
+    let original_snapshot = store.snapshot();
+    let cache_snapshot = &original_snapshot;
+    if !options.dry_run {
+        revocation::invalidate(store, options, clients, observed_at).await?;
+    }
     if options.limit == 0 {
         return Ok(ReviewReport::default());
     }
@@ -75,9 +86,9 @@ pub async fn run_lanes(
                     store,
                     &intake.cases,
                     clients,
+                    cache_snapshot,
                     options,
-                    observed_at,
-                    index,
+                    review_process::Checkpoint { observed_at, index },
                     &mut report,
                 )
                 .await?;

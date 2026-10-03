@@ -2,7 +2,9 @@ fn split_feet_inches(feet_mark: &str) -> Option<(&str, &str)> {
     let trimmed = feet_mark.trim();
     let (feet, inches) = match trimmed.split_once('\'') {
         Some((feet, rest)) => (feet, rest),
-        None => trimmed.split_once('-').unwrap_or((trimmed, "")),
+        None => trimmed
+            .split_once('-')
+            .map_or((trimmed, ""), std::convert::identity),
     };
     let inches = inches.trim().trim_end_matches('"').trim();
     Some((feet, inches))

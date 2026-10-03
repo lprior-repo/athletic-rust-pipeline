@@ -143,7 +143,7 @@ fn table_rows(stats: &StoreStats, table: Table) -> u64 {
         .iter()
         .find(|(name, _)| name == table.file())
         .map(|(_, rows)| *rows)
-        .unwrap_or(0)
+        .map_or(0, |value| value)
 }
 
 fn recorded_seal(store: &Store) -> Result<Option<SealedCensus>, SealWorkflowError> {
@@ -173,7 +173,7 @@ fn write_seal(store: &Store, state: &CensusState) -> Result<PathBuf, SealWorkflo
 }
 
 pub(crate) fn count(value: usize) -> u64 {
-    u64::try_from(value).unwrap_or(u64::MAX)
+    u64::try_from(value).map_or(u64::MAX, |value| value)
 }
 
 #[cfg(test)]

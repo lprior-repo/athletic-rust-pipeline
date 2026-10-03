@@ -106,7 +106,7 @@ impl<'a, 'd> Reader<'a, 'd> {
                 None => self.findings.note(format!(
                     "{} carries an unexpected result row whose id reads {:?}",
                     cell_at(name, row.index(), 0),
-                    row.text(0).unwrap_or("")
+                    row.text(0).map_or("", |value| value)
                 )),
             }
         };
@@ -164,7 +164,7 @@ impl<'a, 'd> Reader<'a, 'd> {
             .performances()
             .get(index)
             .map(|performance| performance.id.as_str().to_string())
-            .unwrap_or_default()
+            .map_or(Default::default(), core::convert::identity)
     }
 
     fn report_sheet_counts(
@@ -181,7 +181,7 @@ impl<'a, 'd> Reader<'a, 'd> {
                 .ordered
                 .get(offset.saturating_add(written))
                 .map(|entry| self.id_at(entry.index))
-                .unwrap_or_default();
+                .map_or(Default::default(), core::convert::identity);
             self.findings.note(format!(
                 "sheet {name} holds {written} result rows where the frozen dataset requires \
                  {expected_here}; the first unread result is {first}"

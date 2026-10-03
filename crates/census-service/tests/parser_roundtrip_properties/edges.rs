@@ -24,9 +24,9 @@ proptest! {
         let attempt = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             parse_result_body(&body, format, source(), ARCHIVE_YEAR)
         }));
-        let parsed = attempt.unwrap_or_else(|_| {
-            panic!("{} bytes of arbitrary input panicked {format:?}", body.len())
-        });
+        let parsed = attempt.map_err(|_| TestCaseError::fail(format!(
+            "{} bytes of arbitrary input panicked {format:?}", body.len()
+        )))?;
         prop_assert_eq!(
             &parsed,
             &parse_result_body(&body, format, source(), ARCHIVE_YEAR),

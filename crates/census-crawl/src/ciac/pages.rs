@@ -118,7 +118,7 @@ pub fn parse_directory(html: &str) -> Vec<(String, SchoolTable)> {
             .and_then(|after_open| after_open.find(CLOSING))
             .and_then(|close| OPENING.len().checked_add(close))
             .and_then(|close| close.checked_add(CLOSING.len()))
-            .unwrap_or(from_table.len());
+            .map_or(from_table.len(), |value| value);
 
         let Some(table_html) = from_table.get(..end) else {
             continue;
@@ -132,7 +132,7 @@ pub fn parse_directory(html: &str) -> Vec<(String, SchoolTable)> {
 }
 
 fn find_school_name(html: &str, table_pos: usize) -> String {
-    name_before(html, table_pos).unwrap_or_default()
+    name_before(html, table_pos).map_or(Default::default(), core::convert::identity)
 }
 
 fn name_before(html: &str, table_pos: usize) -> Option<String> {

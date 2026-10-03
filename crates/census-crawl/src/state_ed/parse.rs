@@ -30,14 +30,14 @@ fn matched_line(pattern: &Regex, text: &str) -> usize {
         .captures(text)
         .and_then(|captures| captures.get(0))
         .map(|matched| line_of(text, matched.start()))
-        .unwrap_or(1)
+        .map_or(1, |value| value)
 }
 
 fn capture_value(pattern: &Regex, text: &str) -> String {
     pattern
         .captures(text)
         .map(|captures| group(&captures, 1))
-        .unwrap_or("")
+        .map_or("", |value| value)
         .to_string()
 }
 
@@ -49,7 +49,7 @@ pub fn parse_index(text: &str) -> CrawlResult<ReadOutcome> {
         let line = captures
             .get(0)
             .map(|matched| line_of(text, matched.start()))
-            .unwrap_or(1);
+            .map_or(1, |value| value);
         let id = directory::skip_row(
             &mut outcome,
             line,

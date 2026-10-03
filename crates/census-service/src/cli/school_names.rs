@@ -48,7 +48,10 @@ fn collect_school_names(schools_path: &Path, wanted: &str) -> Result<BTreeSet<St
         }
         let record: Value = serde_json::from_str(&line)
             .with_context(|| format!("parsing school record from {p}"))?;
-        let state = record.get("state").and_then(|v| v.as_str()).unwrap_or("");
+        let state = record
+            .get("state")
+            .and_then(|v| v.as_str())
+            .map_or("", |value| value);
         if state.to_uppercase() == wanted {
             if let Some(name_val) = record.get("name") {
                 if let Some(name) = name_val.as_str() {

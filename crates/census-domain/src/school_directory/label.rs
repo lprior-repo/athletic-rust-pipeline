@@ -57,7 +57,7 @@ impl Priority {
             .iter()
             .map(SourceLabel::rank)
             .min()
-            .unwrap_or(u8::MAX);
+            .map_or(u8::MAX, |value| value);
         Self::new(rank)
     }
 }

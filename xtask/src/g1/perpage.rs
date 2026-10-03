@@ -13,7 +13,12 @@ fn queries_field(queries: &[String]) -> String {
 
 fn print_page(page: &PageAnalysis) {
     let digest = &page.digest;
-    let sport_fmt = format!("{:3}", page.sport.as_deref().unwrap_or("None"));
+    let sport_fmt = format!(
+        "{:3}",
+        page.sport
+            .as_deref()
+            .map_or("None", core::convert::identity)
+    );
 
     let count_str = match page.count {
         Some(n) => n.to_string(),
@@ -36,7 +41,7 @@ fn print_page(page: &PageAnalysis) {
         .map(|(k, v)| format!("{}:{}", k, v))
         .collect();
 
-    let parser_cand = page.parser_candidates.unwrap_or(0);
+    let parser_cand = page.parser_candidates.map_or(0, core::convert::identity);
     let queries_trunc = queries_field(&page.queries);
     println!(
         "  {} {} count={} rows={:3} tf={:3} xc={:3} noncanon={:2} next={} pred_issues=[{}] cand={} parser_cand={} parser_issues=[{}] q={}",

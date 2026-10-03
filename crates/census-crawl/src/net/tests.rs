@@ -1,35 +1,38 @@
 use super::*;
 
-fn fetcher_with(authorized: Vec<String>) -> (Fetcher, tempfile::TempDir) {
-    let dir = tempfile::tempdir().expect("tempdir");
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+fn fetcher_with(authorized: Vec<String>) -> TestResult<(Fetcher, tempfile::TempDir)> {
+    let dir = tempfile::tempdir()?;
     let fetcher = Fetcher::new(
         dir.path().join("http"),
         None,
         Duration::from_millis(1),
         HashMap::new(),
         authorized,
-    )
-    .expect("fetcher");
-    (fetcher, dir)
+    )?;
+    Ok((fetcher, dir))
 }
 
 #[test]
-fn a_bare_domain_authorizes_its_subdomains_but_not_lookalikes() {
-    let (fetcher, _dir) = fetcher_with(vec!["athletic.net".to_string()]);
-    assert!(fetcher.is_authorized_host("athletic.net"));
-    assert!(fetcher.is_authorized_host("www.athletic.net"));
-    assert!(fetcher.is_authorized_host("WWW.Athletic.NET"));
-    assert!(!fetcher.is_authorized_host("notathletic.net"));
-    assert!(!fetcher.is_authorized_host("athletic.net.evil.com"));
+fn a_bare_domain_authorizes_its_subdomains_but_not_lookalikes() -> TestResult {
+    let (fetcher, _dir) = fetcher_with(vec!["athletic.net".to_string()])?;
+    check!(fetcher.is_authorized_host("athletic.net"));
+    check!(fetcher.is_authorized_host("www.athletic.net"));
+    check!(fetcher.is_authorized_host("WWW.Athletic.NET"));
+    check!(!fetcher.is_authorized_host("notathletic.net"));
+    check!(!fetcher.is_authorized_host("athletic.net.evil.com"));
+    Ok(())
 }
 
 #[test]
-fn an_exact_host_never_widens_into_its_parent_domain() {
-    let (fetcher, _dir) = fetcher_with(vec!["www.example.com".to_string()]);
-    assert!(fetcher.is_authorized_host("www.example.com"));
-    assert!(fetcher.is_authorized_host("cdn.www.example.com"));
-    assert!(!fetcher.is_authorized_host("example.com"));
-    assert!(!fetcher.is_authorized_host("other.example.com"));
+fn an_exact_host_never_widens_into_its_parent_domain() -> TestResult {
+    let (fetcher, _dir) = fetcher_with(vec!["www.example.com".to_string()])?;
+    check!(fetcher.is_authorized_host("www.example.com"));
+    check!(fetcher.is_authorized_host("cdn.www.example.com"));
+    check!(!fetcher.is_authorized_host("example.com"));
+    check!(!fetcher.is_authorized_host("other.example.com"));
+    Ok(())
 }
 
 #[test]
@@ -48,46 +51,51 @@ fn cache_key_pins_the_on_disk_cache_layout() {
     );
 }
 
-#[tokio::test]
-async fn a_corrupted_cache_body_is_rejected_not_served() {
-    let dir = tempfile::tempdir().expect("temp dir");
-    let fetcher = Fetcher::new(
-        dir.path().join("http"),
-        None,
-        Duration::from_millis(1),
-        HashMap::new(),
-        Vec::new(),
-    )
-    .expect("fetcher");
-    let key = Fetcher::key_for("GET", "https://example.com/teams", "");
-    let (body_path, meta_path) = fetcher.cache_paths(&key);
+#[test]
+fn a_corrupted_cache_body_is_rejected_not_served() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let dir = tempfile::tempdir()?;
+            let fetcher = Fetcher::new(
+                dir.path().join("http"),
+                None,
+                Duration::from_millis(1),
+                HashMap::new(),
+                Vec::new(),
+            )?;
+            let key = Fetcher::key_for("GET", "https://example.com/teams", "");
+            let (body_path, meta_path) = fetcher.cache_paths(&key);
 
-    let body = b"valid body";
-    use super::cache::{content_digest, write_cache};
-    let meta = super::cache::CacheMeta {
-        url: "https://example.com/teams".to_string(),
-        method: "GET".to_string(),
-        status: 200,
-        content_digest: content_digest(body),
-        bytes: body.len(),
-        fetched_at: "2025-01-01T00:00:00Z".to_string(),
-        etag: None,
-        last_modified: None,
-        content_type: None,
-    };
-    write_cache(&body_path, &meta_path, body, &meta).expect("write");
+            let body = b"valid body";
+            use super::cache::{content_digest, write_cache};
+            let meta = super::cache::CacheMeta {
+                url: "https://example.com/teams".to_string(),
+                response_url: None,
+                method: "GET".to_string(),
+                status: 200,
+                content_digest: content_digest(body),
+                bytes: body.len(),
+                fetched_at: "2025-01-01T00:00:00Z".to_string(),
+                etag: None,
+                last_modified: None,
+                content_type: None,
+            };
+            write_cache(&body_path, &meta_path, body, &meta)?;
 
-    let (cached_meta, cached_body) = super::cache::read_cache(&body_path, &meta_path)
-        .expect("read")
-        .expect("cache hit");
-    assert_eq!(cached_body, body);
-    assert_eq!(cached_meta.bytes, body.len());
+            let (cached_meta, cached_body) =
+                super::cache::read_cache(&body_path, &meta_path)?.ok_or("cache hit")?;
+            check!(eq; cached_body, body);
+            check!(eq; cached_meta.bytes, body.len());
 
-    std::fs::remove_file(&body_path).expect("detach cache from immutable capture");
-    std::fs::write(&body_path, b"corrupted body!!!").expect("corrupt");
+            std::fs::remove_file(&body_path)?;
+            std::fs::write(&body_path, b"corrupted body!!!")?;
 
-    let result = super::cache::read_cache(&body_path, &meta_path).expect("read");
-    assert!(result.is_none(), "corrupted body must be a cache miss");
+            let result = super::cache::read_cache(&body_path, &meta_path)?;
+            check!(result.is_none(), "corrupted body must be a cache miss");
+            Ok(())
+        })
 }
 
 #[test]
@@ -146,35 +154,41 @@ fn a_source_row_is_the_origin_not_the_page() {
     assert_eq!(host_of("not-a-url"), "not-a-url");
 }
 
-#[tokio::test]
-async fn a_human_required_condition_is_counted_as_a_challenge() {
-    let (fetcher, _dir) = fetcher_with(Vec::new());
-    fetcher
-        .record_access_condition(
-            "athletic.net",
-            AccessBlockKind::HumanRequired,
-            403,
-            None,
-            "challenge page",
-        )
-        .await;
-    fetcher
-        .record_access_condition(
-            "athletic.net",
-            AccessBlockKind::RateLimited,
-            429,
-            Some(30),
-            "slow down",
-        )
-        .await;
+#[test]
+fn a_human_required_condition_is_counted_as_a_challenge() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (fetcher, _dir) = fetcher_with(Vec::new())?;
+            fetcher
+                .record_access_condition(
+                    "athletic.net",
+                    AccessBlockKind::HumanRequired,
+                    403,
+                    None,
+                    "challenge page",
+                )
+                .await;
+            fetcher
+                .record_access_condition(
+                    "athletic.net",
+                    AccessBlockKind::RateLimited,
+                    429,
+                    Some(30),
+                    "slow down",
+                )
+                .await;
 
-    let stats = fetcher.stats().await;
-    assert_eq!(
-        stats.challenges, 1,
-        "the challenge is counted, the rate limit is not"
-    );
-    assert_eq!(
-        stats.rate_limited, 0,
-        "a 429 is counted where the fetch saw it, not where the condition was recorded"
-    );
+            let stats = fetcher.stats().await;
+            check!(eq;
+                stats.challenges, 1,
+                "the challenge is counted, the rate limit is not"
+            );
+            check!(eq;
+                stats.rate_limited, 0,
+                "a 429 is counted where the fetch saw it, not where the condition was recorded"
+            );
+            Ok(())
+        })
 }

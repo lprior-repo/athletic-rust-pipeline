@@ -51,12 +51,12 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     let stats_after = ctx.fetcher.stats().await;
     let mut tally = run.tally;
     let mut report = AdapterReport::new(super::SOURCE_ID, "org_schools");
-    report.rows = u64::try_from(tally.schools).unwrap_or(u64::MAX);
+    report.rows = u64::try_from(tally.schools).map_or(u64::MAX, |value| value);
     report.requests = stats_after.requests.saturating_sub(stats_before.requests);
     report.from_cache = stats_after
         .cache_hits
         .saturating_sub(stats_before.cache_hits);
-    report.errors = u64::try_from(tally.errors).unwrap_or(u64::MAX);
+    report.errors = u64::try_from(tally.errors).map_or(u64::MAX, |value| value);
     report.notes = std::mem::take(&mut tally.notes);
     if tally.skipped > 0 {
         report.note(format!(

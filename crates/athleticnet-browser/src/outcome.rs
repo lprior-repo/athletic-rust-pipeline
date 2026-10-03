@@ -7,6 +7,8 @@ use thiserror::Error;
 pub struct BrowserResponse {
     #[serde(with = "crate::response_wire::status")]
     pub status: StatusCode,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub response_url: Option<String>,
     #[serde(with = "crate::response_wire::headers")]
     pub headers: HeaderMap,
     #[serde(with = "crate::response_wire::body")]

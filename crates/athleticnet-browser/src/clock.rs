@@ -62,9 +62,10 @@ impl TestClock {
 impl Clock for TestClock {
     fn now_instant(&self) -> tokio::time::Instant {
         let offset = Duration::from_millis(self.monotonic_offset_ms.load(Ordering::SeqCst));
-        tokio::time::Instant::now()
-            .checked_add(offset)
-            .unwrap_or_else(tokio::time::Instant::now)
+        match tokio::time::Instant::now().checked_add(offset) {
+            Some(value) => value,
+            None => tokio::time::Instant::now(),
+        }
     }
 
     fn now_unix_ms(&self) -> Result<u64, ClockError> {
@@ -81,38 +82,45 @@ mod tests {
     use super::*;
 
     #[test]
-    fn system_clock_reports_a_plausible_epoch() {
+    fn system_clock_reports_a_plausible_epoch() -> Result<(), Box<dyn std::error::Error>> {
         let clock = SystemClock;
-        let ms = clock.now_unix_ms().expect("system clock is representable");
-        assert!(
+        let ms = clock.now_unix_ms()?;
+        check!(
             (1_577_836_800_000..4_102_444_800_000).contains(&ms),
             "unix ms {ms} is outside the plausible range"
         );
+        Ok(())
     }
 
-    #[tokio::test]
-    async fn system_clock_instant_is_monotonic() {
-        let clock = SystemClock;
-        let first = clock.now_instant();
-        let second = clock.now_instant();
-        assert!(second >= first, "monotonic instant went backwards");
+    #[test]
+    fn system_clock_instant_is_monotonic() -> Result<(), Box<dyn std::error::Error>> {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
+                let clock = SystemClock;
+                let first = clock.now_instant();
+                let second = clock.now_instant();
+                check!(second >= first, "monotonic instant went backwards");
+                Ok(())
+            })
     }
 
-    #[tokio::test]
-    async fn test_clock_holds_still_until_advanced() {
-        let clock = TestClock::at(1_700_000_000_000);
-        let first = clock.now_unix_ms().expect("test clock is infallible");
-        let first_instant = clock.now_instant();
-        assert_eq!(first, 1_700_000_000_000);
-        assert_eq!(
-            clock.now_unix_ms().expect("test clock is infallible"),
-            first
-        );
-        clock.advance_ms(1_500);
-        assert_eq!(
-            clock.now_unix_ms().expect("test clock is infallible"),
-            first + 1_500
-        );
-        assert!(clock.now_instant() - first_instant >= Duration::from_millis(1_500));
+    #[test]
+    fn test_clock_holds_still_until_advanced() -> Result<(), Box<dyn std::error::Error>> {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
+                let clock = TestClock::at(1_700_000_000_000);
+                let first = clock.now_unix_ms()?;
+                let first_instant = clock.now_instant();
+                check!(eq; first, 1_700_000_000_000);
+                check!(eq; clock.now_unix_ms()?, first);
+                clock.advance_ms(1_500);
+                check!(eq; clock.now_unix_ms()?, first + 1_500);
+                check!(clock.now_instant() - first_instant >= Duration::from_millis(1_500));
+                Ok(())
+            })
     }
 }

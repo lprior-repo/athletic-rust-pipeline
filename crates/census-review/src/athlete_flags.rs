@@ -83,14 +83,11 @@ pub fn flags(a: &CanonicalAthlete, b: &CanonicalAthlete) -> Vec<Flag> {
         });
     }
     flags.extend(retained_source_conflicts(a, b));
-    let (implied_a, implied_b) = (
-        CohortEvidence::of(&a.observed_grades),
-        CohortEvidence::of(&b.observed_grades),
-    );
+    let (implied_a, implied_b) = (CohortEvidence::of(a), CohortEvidence::of(b));
     if a.has_cohort_conflict() || b.has_cohort_conflict() || implied_a.conflicts_with(&implied_b) {
         flags.push(Flag {
             kind: FlagKind::GradYearEvidenceDiffers,
-            detail: format!("grade observations imply {implied_a} vs {implied_b}"),
+            detail: format!("cohort observations support {implied_a} vs {implied_b}"),
         });
     }
     if a.gender != b.gender {

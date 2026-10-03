@@ -1,7 +1,8 @@
-use anyhow::{Context, Result};
-use std::ffi::OsStr;
-use std::fs;
+use anyhow::Result;
 use std::path::{Path, PathBuf};
+
+#[path = "paths/walk.rs"]
+mod walk;
 
 pub fn repo_root() -> PathBuf {
     let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
@@ -34,38 +35,13 @@ pub fn relative(path: &Path) -> String {
 }
 
 pub fn rust_files(dir: &Path) -> Result<Vec<PathBuf>> {
-    Ok(files(dir, &[])?
-        .into_iter()
-        .filter(|path| path.extension() == Some(OsStr::new("rs")))
-        .collect())
+    rust_files_excluding(dir, &[])
+}
+
+pub fn rust_files_excluding(dir: &Path, skip: &[&str]) -> Result<Vec<PathBuf>> {
+    walk::run(dir, skip, walk::Selection::Rust)
 }
 
 pub fn files(dir: &Path, skip: &[&str]) -> Result<Vec<PathBuf>> {
-    let mut files = Vec::new();
-    collect_files(dir, skip, &mut files)?;
-    files.sort();
-    Ok(files)
-}
-
-fn collect_files(dir: &Path, skip: &[&str], files: &mut Vec<PathBuf>) -> Result<()> {
-    let entries = fs::read_dir(dir).with_context(|| format!("listing {}", relative(dir)))?;
-    for entry in entries {
-        let entry = entry.with_context(|| format!("listing {}", relative(dir)))?;
-        let path = entry.path();
-        let kind = entry
-            .file_type()
-            .with_context(|| format!("reading the type of {}", relative(&path)))?;
-        if !kind.is_dir() {
-            files.push(path);
-        } else if !skipped(&path, skip) {
-            collect_files(&path, skip, files)?;
-        }
-    }
-    Ok(())
-}
-
-fn skipped(dir: &Path, skip: &[&str]) -> bool {
-    dir.file_name()
-        .and_then(OsStr::to_str)
-        .is_some_and(|name| skip.contains(&name))
+    walk::run(dir, skip, walk::Selection::All)
 }

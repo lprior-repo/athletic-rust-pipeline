@@ -160,7 +160,12 @@ fn append_claim(
         namespace.as_str(),
         claim.owner().id.as_str(),
         source.as_str(),
-        claim.evidence().source.url.as_deref().unwrap_or_default(),
+        claim
+            .evidence()
+            .source
+            .url
+            .as_deref()
+            .map_or(Default::default(), core::convert::identity),
         claim.evidence().observed_on.as_str(),
         claim.capture_sha256(),
     ];

@@ -63,24 +63,29 @@ pub(super) fn extract_report_data(
         .get("totals")
         .and_then(|v| v.as_object())
         .cloned()
-        .unwrap_or_default();
+        .map_or(Default::default(), core::convert::identity);
     let by_state = report
         .get("by_state")
         .and_then(|v| v.as_object())
         .cloned()
-        .unwrap_or_default();
+        .map_or(Default::default(), core::convert::identity);
     let schools_by_state = report
         .get("schools_by_state")
         .and_then(|v| v.as_object())
         .cloned()
-        .unwrap_or_default();
+        .map_or(Default::default(), core::convert::identity);
     let meets = report
         .get("meets")
         .and_then(|v| v.as_object())
         .cloned()
-        .unwrap_or_default();
+        .map_or(Default::default(), core::convert::identity);
 
-    let t = |key: &str| -> u64 { totals_obj.get(key).and_then(|v| v.as_u64()).unwrap_or(0) };
+    let t = |key: &str| -> u64 {
+        totals_obj
+            .get(key)
+            .and_then(|v| v.as_u64())
+            .map_or(0, |value| value)
+    };
     let totals = Totals {
         total_schools: t("schools"),
         total_athletes: t("athletes"),
@@ -92,11 +97,14 @@ pub(super) fn extract_report_data(
         total_co2027_multi: t("class_of_2027_multisource"),
         total_coaches: t("coaches"),
         total_coaches_email: t("coaches_with_email"),
-        meets_total: meets.get("total").and_then(|v| v.as_u64()).unwrap_or(0),
+        meets_total: meets
+            .get("total")
+            .and_then(|v| v.as_u64())
+            .map_or(0, |value| value),
         meets_an: meets
             .get("with_athletic_net_id")
             .and_then(|v| v.as_u64())
-            .unwrap_or(0),
+            .map_or(0, |value| value),
     };
 
     (totals, by_state, schools_by_state, meets)

@@ -78,7 +78,6 @@ struct Run<'a> {
 
 impl<'a> Run<'a> {
     async fn walk_state(&mut self, state: UsJurisdiction, association: &str) -> CrawlResult<()> {
-        let ctx = self.ctx;
         let mut page = 1usize;
         let mut total_pages = 1usize;
         let mut rows_read = 0usize;
@@ -103,7 +102,7 @@ impl<'a> Run<'a> {
             declared_rows = declared_rows.max(parsed.total_results);
             let capture = Capture {
                 url: &outcome.url,
-                observed_on: &ctx.observed_on,
+                observed_on: &outcome.fetched_at,
                 sha256: &outcome.content_digest,
             };
             for row in &parsed.results {
@@ -255,7 +254,7 @@ impl<'a> Run<'a> {
         self.report.rows = u64::try_from(self.processed).map_or(u64::MAX, |value| value);
         self.report.with_email = self.with_email;
         self.report.note(format!(
-            "{} school(s) processed ({} already journalled): {} coach row(s), {} with a published address",
+            "{} school(s) processed ({} already journalled): {} coach row(s), {} with a published email address",
             self.processed, self.skipped, self.coach_rows, self.with_email
         ));
         let breakdown = self.counters.breakdown();

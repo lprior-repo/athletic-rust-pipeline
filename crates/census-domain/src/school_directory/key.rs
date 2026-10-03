@@ -54,8 +54,15 @@ impl WeakKey {
     }
 
     pub fn label(&self) -> String {
-        let city = self.city.as_ref().map(MatchForm::as_str).unwrap_or("");
-        let state = self.state.map(UsJurisdiction::code).unwrap_or("");
+        let city = self
+            .city
+            .as_ref()
+            .map(MatchForm::as_str)
+            .map_or("", |value| value);
+        let state = self
+            .state
+            .map(UsJurisdiction::code)
+            .map_or("", |value| value);
         format!("{}|{city}|{state}", self.name.as_str())
     }
 }

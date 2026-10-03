@@ -4,7 +4,8 @@ use super::{
 use proptest::prelude::*;
 
 fn prefix_holds(name: &str, body: &str, cut: usize) -> Result<(), TestCaseError> {
-    let full = parse_body(body).expect("the whole body is a meet");
+    let full =
+        parse_body(body).ok_or_else(|| TestCaseError::fail("the whole body is not a meet"))?;
 
     let all = lines(body);
     let cut = cut % (all.len() + 1);

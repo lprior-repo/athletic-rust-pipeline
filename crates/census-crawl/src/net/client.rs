@@ -47,7 +47,10 @@ impl Fetcher {
             path: cache_dir.clone(),
             source,
         })?;
-        let user_agent = user_agent.unwrap_or_else(|| DEFAULT_USER_AGENT.to_string());
+        let user_agent = match user_agent {
+            Some(value) => value,
+            None => DEFAULT_USER_AGENT.to_string(),
+        };
         let authorized_hosts: Vec<String> = authorized_hosts
             .into_iter()
             .map(|host| host.trim().to_ascii_lowercase())

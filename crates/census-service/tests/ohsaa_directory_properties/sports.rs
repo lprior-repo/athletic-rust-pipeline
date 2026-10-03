@@ -44,7 +44,10 @@ fn sports_rows() -> impl Strategy<Value = Vec<SportsRow>> {
 fn cell_markup(cell: &Cell, side: &str, row: usize) -> String {
     match cell {
         Cell::Named(index) => {
-            let printed = NAMES.get(*index).copied().unwrap_or_default();
+            let printed = NAMES
+                .get(*index)
+                .copied()
+                .map_or(Default::default(), core::convert::identity);
             format!(
                 "<a href=\"mailto:coach{row}-{side}@example.org\" class=\"fieldValue\">\
                  {printed} (Div-I)</a>"
@@ -60,7 +63,10 @@ fn render_sports(rows: &[SportsRow]) -> String {
          <th>Head Boys Coach</th><th>Head Girls Coach</th></tr></thead><tbody>\n",
     );
     for (index, row) in rows.iter().enumerate() {
-        let sport = SPORTS.get(row.sport).copied().unwrap_or_default();
+        let sport = SPORTS
+            .get(row.sport)
+            .copied()
+            .map_or(Default::default(), core::convert::identity);
         let boys = cell_markup(&row.boys, "boys", index);
         let girls = cell_markup(&row.girls, "girls", index);
         body.push_str(&format!(
@@ -86,8 +92,14 @@ proptest! {
         name in 0usize..4,
         suffixed in any::<bool>(),
     ) {
-        let printed = NAMES.get(name).copied().unwrap_or_default();
-        let expected = PUBLISHED.get(name).copied().unwrap_or_default();
+        let printed = NAMES
+            .get(name)
+            .copied()
+            .map_or(Default::default(), core::convert::identity);
+        let expected = PUBLISHED
+            .get(name)
+            .copied()
+            .map_or(Default::default(), core::convert::identity);
         let suffix = if suffixed { " (Div-I)" } else { "" };
         let cell = format!(
             "<a href=\"mailto:coach@example.org\" class=\"fieldValue\">{printed}{suffix}</a>"
@@ -119,7 +131,10 @@ proptest! {
         let published = parse_sports_table(&render_sports(&rows));
         let mut expected: Vec<(String, Option<usize>, Option<usize>)> = Vec::new();
         for row in rows.iter() {
-            let label = LABELS.get(row.sport).copied().unwrap_or_default();
+            let label = LABELS
+                .get(row.sport)
+                .copied()
+                .map_or(Default::default(), core::convert::identity);
             if parse_sport_label(label).is_none() {
                 continue;
             }

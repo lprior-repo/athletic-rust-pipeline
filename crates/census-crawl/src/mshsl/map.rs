@@ -33,7 +33,10 @@ pub fn ad_role(label: &str) -> Option<CoachRole> {
 }
 
 pub fn provider_key(row: &SchoolListRow, detail: &SchoolDetail) -> String {
-    detail.school_id.clone().unwrap_or_else(|| row.slug.clone())
+    match detail.school_id.clone() {
+        Some(value) => value,
+        None => row.slug.clone(),
+    }
 }
 
 pub fn school_entities(
@@ -147,7 +150,7 @@ fn email_domain(address: &str) -> Option<String> {
 }
 
 fn host_domain(url: &str) -> Option<String> {
-    let authority = url.split("://").nth(1).unwrap_or(url);
+    let authority = url.split("://").nth(1).map_or(url, |value| value);
     let host = authority
         .split('/')
         .next()?

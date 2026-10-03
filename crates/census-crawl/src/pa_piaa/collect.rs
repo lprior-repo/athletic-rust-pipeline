@@ -267,7 +267,7 @@ impl<'a> Run<'a> {
         self.director_rows = self.director_rows.saturating_add(coaches.len());
         self.with_email = self
             .with_email
-            .saturating_add(u64::try_from(with_email).unwrap_or(u64::MAX));
+            .saturating_add(u64::try_from(with_email).map_or(u64::MAX, |value| value));
         Ok(())
     }
 
@@ -277,7 +277,7 @@ impl<'a> Run<'a> {
         self.report.from_cache = stats_after
             .cache_hits
             .saturating_sub(stats_before.cache_hits);
-        self.report.rows = u64::try_from(self.processed).unwrap_or(u64::MAX);
+        self.report.rows = u64::try_from(self.processed).map_or(u64::MAX, |value| value);
         self.report.with_email = self.with_email;
         self.report.note(format!(
             "{} school(s) processed ({} already journalled): {} athletic-director row(s), {} with a published address",

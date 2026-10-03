@@ -29,7 +29,7 @@ proptest! {
     #[test]
     fn an_accepted_mark_is_finite_and_positive(token in shaped_token()) {
         if let Some(mark) = parse_field_mark(&token) {
-            let metres = metres_of(&mark);
+            let metres = metres_of(&mark).map_err(TestCaseError::fail)?;
             prop_assert!(
                 metres.is_finite() && metres > 0.0,
                 "{token:?} was accepted as {metres} m"

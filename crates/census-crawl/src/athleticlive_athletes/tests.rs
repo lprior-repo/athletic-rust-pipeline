@@ -1,6 +1,8 @@
 use super::*;
 use census_domain::model::{GradYear, Grade, SchoolYear, SourceIdentity, SourceNamespace};
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 const SAMPLE: &str =
     include_str!("../../tests/fixtures/athleticlive_athletes/athlete-list-sample.json");
 
@@ -21,15 +23,15 @@ fn targets_for() -> Vec<MeetTarget> {
     meet_targets(&meets, &[UsJurisdiction::Kansas]).targets
 }
 
-fn parsed_hits() -> Vec<AthleteHit> {
-    let value: Value = serde_json::from_str(SAMPLE).expect("fixture is JSON");
+fn parsed_hits() -> TestResult<Vec<AthleteHit>> {
+    let value: Value = serde_json::from_str(SAMPLE)?;
     let sources: Vec<Value> = value["hits"]["hits"]
         .as_array()
-        .expect("fixture has hits")
+        .ok_or("fixture has hits")?
         .iter()
         .map(|hit| hit["_source"].clone())
         .collect();
-    serde_json::from_value(Value::Array(sources)).expect("hits decode")
+    Ok(serde_json::from_value(Value::Array(sources))?)
 }
 
 #[test]
@@ -49,38 +51,39 @@ fn grade_tokens_cover_numeric_and_letter_encodings() {
 }
 
 #[test]
-fn grade_is_interpreted_against_the_meet_school_year() {
-    let fallback = SchoolYear::new(2026).expect("2026 is a season");
+fn grade_is_interpreted_against_the_meet_school_year() -> TestResult {
+    let fallback = SchoolYear::new(2026).ok_or("2026 is a season")?;
     let spring_2026 = school_year_for_date("2026-04-25", fallback);
-    assert_eq!(
-        GradYear::of(Grade::new(11).unwrap(), spring_2026)
-            .expect("11th grade in 2026 has valid grad year")
+    check!(eq;
+        GradYear::of(Grade::new(11).ok_or("junior grade")?, spring_2026)
+            .ok_or("11th grade in 2026 has valid grad year")?
             .get(),
         2027
     );
     let fall_2026 = school_year_for_date("2026-09-12", fallback);
-    assert_eq!(
-        GradYear::of(Grade::new(12).unwrap(), fall_2026)
-            .expect("12th grade in 2026 has valid grad year")
+    check!(eq;
+        GradYear::of(Grade::new(12).ok_or("senior grade")?, fall_2026)
+            .ok_or("12th grade in 2026 has valid grad year")?
             .get(),
         2027
     );
     let fall_2025 = school_year_for_date("2025-10-04", fallback);
-    assert_eq!(
-        GradYear::of(Grade::new(11).unwrap(), fall_2025)
-            .expect("11th grade in 2025 has valid grad year")
+    check!(eq;
+        GradYear::of(Grade::new(11).ok_or("junior grade")?, fall_2025)
+            .ok_or("11th grade in 2025 has valid grad year")?
             .get(),
         2027
     );
-    assert_eq!(school_year_for_date("", fallback).get(), 2026);
-    assert_eq!(school_year_for_date("garbage", fallback).get(), 2026);
-    assert_eq!(school_year_for_date("1801-06-06", fallback).get(), 2026);
+    check!(eq; school_year_for_date("", fallback).get(), 2026);
+    check!(eq; school_year_for_date("garbage", fallback).get(), 2026);
+    check!(eq; school_year_for_date("1801-06-06", fallback).get(), 2026);
+    Ok(())
 }
 
 #[test]
-fn rows_become_canonical_entities_with_athletic_net_seeds() {
-    let hits = parsed_hits();
-    assert!(!hits.is_empty(), "fixture must contain rows");
+fn rows_become_canonical_entities_with_athletic_net_seeds() -> TestResult {
+    let hits = parsed_hits()?;
+    check!(!hits.is_empty(), "fixture must contain rows");
     let targets = targets_for();
     let by_id: HashMap<u64, &MeetTarget> = targets
         .iter()
@@ -90,30 +93,30 @@ fn rows_become_canonical_entities_with_athletic_net_seeds() {
         &hits,
         &by_id,
         "2026-09-20",
-        SchoolYear::new(2026).expect("2026 is a season"),
+        SchoolYear::new(2026).ok_or("2026 is a season")?,
     );
 
-    assert_eq!(entities.rows, hits.len());
-    assert!(
+    check!(eq; entities.rows, hits.len());
+    check!(
         entities.rows_with_grade > 0,
         "the fixture carries graded rows for this meet"
     );
-    assert!(!entities.athletes.is_empty(), "graded rows mint athletes");
+    check!(!entities.athletes.is_empty(), "graded rows mint athletes");
     for athlete in &entities.athletes {
-        assert!(
+        check!(
             (2024..=2031).contains(&athlete.grad_year.get()),
             "grad year {} is outside the plausible window for this meet",
             athlete.grad_year.get()
         );
-        assert!(
+        check!(
             !athlete.public_profile_urls.is_empty(),
             "rows carrying an Athletic.net athlete id must expose the deterministic profile URL"
         );
         for url in &athlete.public_profile_urls {
-            assert!(url.starts_with("https://www.athletic.net/athlete/"));
-            assert!(url.ends_with("/track-and-field"));
+            check!(url.starts_with("https://www.athletic.net/athlete/"));
+            check!(url.ends_with("/track-and-field"));
         }
-        assert!(
+        check!(
             athlete
                 .observed_grades
                 .iter()
@@ -121,17 +124,16 @@ fn rows_become_canonical_entities_with_athletic_net_seeds() {
             "grade observations keep their own source"
         );
     }
+    Ok(())
 }
 
 #[test]
-fn one_athlete_seen_at_two_meets_stays_one_athlete() {
-    let base = parsed_hits();
-    let Some(first) = base.first().cloned() else {
-        return;
-    };
+fn one_athlete_seen_at_two_meets_stays_one_athlete() -> TestResult {
+    let base = parsed_hits()?;
+    let first = base.first().cloned().ok_or("fixture athlete")?;
     let mut second = first.clone();
     second.mi = Some(json!(999_999));
-    let first_meet_id = first.meet_id().unwrap();
+    let first_meet_id = first.meet_id().ok_or("fixture meet id")?;
     let hits = vec![first, second];
     let meet_a = MeetTarget {
         athleticlive_meet_id: first_meet_id,
@@ -157,15 +159,16 @@ fn one_athlete_seen_at_two_meets_stays_one_athlete() {
         &hits,
         &by_id,
         "2026-09-20",
-        SchoolYear::new(2026).expect("2026 is a season"),
+        SchoolYear::new(2026).ok_or("2026 is a season")?,
     );
-    assert_eq!(entities.rows, 2);
-    assert_eq!(
+    check!(eq; entities.rows, 2);
+    check!(eq;
         entities.athletes.len(),
         1,
         "same school+name+grade+gender across meets is one canonical athlete"
     );
-    assert_eq!(entities.teams.len(), 1, "and one canonical team");
+    check!(eq; entities.teams.len(), 1, "and one canonical team");
+    Ok(())
 }
 
 #[test]
@@ -251,18 +254,19 @@ fn implausible_meet_dates_are_skipped_and_counted() {
 }
 
 #[test]
-fn query_filters_grades_server_side() {
+fn query_filters_grades_server_side() -> TestResult {
     let query = batch_query(&[73566, 75742], 2000);
-    assert_eq!(query["from"], 2000);
+    check!(eq; query["from"], 2000);
     let filters = &query["query"]["bool"]["filter"];
-    assert_eq!(filters[0]["terms"]["mi"][0], 73566);
-    let grades = filters[1]["terms"]["y"].as_array().expect("grade terms");
-    assert!(grades.iter().any(|v| v == "11"));
-    assert!(grades.iter().any(|v| v == "JR"));
+    check!(eq; filters[0]["terms"]["mi"][0], 73566);
+    let grades = filters[1]["terms"]["y"].as_array().ok_or("grade terms")?;
+    check!(grades.iter().any(|v| v == "11"));
+    check!(grades.iter().any(|v| v == "JR"));
+    Ok(())
 }
 
 #[test]
-fn empty_and_malformed_hits_yield_nothing_instead_of_panicking() {
+fn empty_and_malformed_hits_yield_nothing_instead_of_panicking() -> TestResult {
     let targets = targets_for();
     let by_id: HashMap<u64, &MeetTarget> = targets
         .iter()
@@ -272,10 +276,10 @@ fn empty_and_malformed_hits_yield_nothing_instead_of_panicking() {
         &[],
         &by_id,
         "2026-09-20",
-        SchoolYear::new(2026).expect("2026 is a season"),
+        SchoolYear::new(2026).ok_or("2026 is a season")?,
     );
-    assert_eq!(entities.rows, 0);
-    assert!(entities.athletes.is_empty());
+    check!(eq; entities.rows, 0);
+    check!(entities.athletes.is_empty());
 
     let nameless = AthleteHit {
         y: Some(Value::String("11".into())),
@@ -285,22 +289,23 @@ fn empty_and_malformed_hits_yield_nothing_instead_of_panicking() {
         &[nameless],
         &by_id,
         "2026-09-20",
-        SchoolYear::new(2026).expect("2026 is a season"),
+        SchoolYear::new(2026).ok_or("2026 is a season")?,
     );
-    assert_eq!(entities.rows, 1);
-    assert!(
+    check!(eq; entities.rows, 1);
+    check!(
         entities.athletes.is_empty(),
         "a row without a name mints nothing"
     );
 
-    let mut missing_school = parsed_hits().into_iter().next().unwrap();
+    let mut missing_school = parsed_hits()?.into_iter().next().ok_or("fixture athlete")?;
     missing_school.t = None;
     let entities = build_entities(
         &[missing_school],
         &by_id,
         "2026-09-20",
-        SchoolYear::new(2026).expect("2026 is a season"),
+        SchoolYear::new(2026).ok_or("2026 is a season")?,
     );
-    assert_eq!(entities.rows_without_school, 1);
-    assert!(entities.athletes.is_empty());
+    check!(eq; entities.rows_without_school, 1);
+    check!(entities.athletes.is_empty());
+    Ok(())
 }

@@ -7,6 +7,8 @@ use census_domain::model::{
     CANONICAL_ID_COLLISION_FAMILY,
 };
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 fn school() -> SchoolId {
     CanonicalSchool::mint(
         UsJurisdiction::Wisconsin,
@@ -14,7 +16,6 @@ fn school() -> SchoolId {
         "abbotsford",
     )
 }
-
 fn second_school() -> SchoolId {
     CanonicalSchool::mint(
         UsJurisdiction::Minnesota,
@@ -65,9 +66,7 @@ fn two_observations_of_one_athlete_merge_as_before() {
         "333",
     ));
     assert_eq!(seen_again.id, id, "the same material mints the same id");
-
     kept.merge(seen_again);
-
     assert!(
         kept.retained_conflicts.is_empty(),
         "one subject observed twice is not a collision"
@@ -80,7 +79,7 @@ fn two_observations_of_one_athlete_merge_as_before() {
 }
 
 #[test]
-fn one_id_from_two_natural_keys_keeps_the_row_and_retains_the_collision() {
+fn one_id_from_two_natural_keys_keeps_the_row_and_retains_the_collision() -> TestResult {
     let id = CanonicalAthlete::mint(
         &school(),
         "Julian Aguilera",
@@ -105,38 +104,36 @@ fn one_id_from_two_natural_keys_keeps_the_row_and_retains_the_collision() {
     other
         .public_profile_urls
         .push("https://tfrrs.org/athletes/222".to_string());
-
     kept.merge(other.clone());
-
-    assert_eq!(kept.known_names, vec!["Julian Aguilera".to_string()]);
-    assert_eq!(kept.gender, Gender::Boys);
-    assert!(kept.public_profile_urls.is_empty());
-    assert_eq!(kept.identities().count(), 1);
-
-    let Some(conflict) = kept.retained_conflicts.first() else {
-        panic!("an id two subjects were keyed under has to retain a finding");
-    };
-    assert_eq!(conflict.family, CANONICAL_ID_COLLISION_FAMILY);
-    assert_eq!(conflict.id, format!("{CANONICAL_ID_COLLISION_FAMILY}:{id}"));
-    assert_eq!(conflict.subject_id, id.as_str());
+    check!(eq; kept.known_names, vec!["Julian Aguilera".to_string()]);
+    check!(eq; kept.gender, Gender::Boys);
+    check!(kept.public_profile_urls.is_empty());
+    check!(eq; kept.identities().count(), 1);
+    let conflict = kept
+        .retained_conflicts
+        .first()
+        .ok_or("an id two subjects were keyed under has to retain a finding")?;
+    check!(eq; conflict.family, CANONICAL_ID_COLLISION_FAMILY);
+    check!(eq; conflict.id, format!("{CANONICAL_ID_COLLISION_FAMILY}:{id}"));
+    check!(eq; conflict.subject_id, id.as_str());
     let detail = conflict.detail.to_lowercase();
-    assert!(
+    check!(
         detail.contains(id.as_str()),
         "the finding names the id: {detail}"
     );
-    assert!(detail.contains("julian"), "the kept subject: {detail}");
-    assert!(detail.contains("jordan"), "the dropped subject: {detail}");
-    assert!(
+    check!(detail.contains("julian"), "the kept subject: {detail}");
+    check!(detail.contains("jordan"), "the dropped subject: {detail}");
+    check!(
         detail.contains("milesplit_athlete:111"),
         "the kept side's source identity: {detail}"
     );
-    assert!(
+    check!(
         detail.contains("tfrrs_athlete:222"),
         "the dropped side's source identity: {detail}"
     );
-
     kept.merge(other);
-    assert_eq!(kept.retained_conflicts.len(), 1);
+    check!(eq; kept.retained_conflicts.len(), 1);
+    Ok(())
 }
 
 #[test]
@@ -163,7 +160,7 @@ fn merging_a_repeated_subject_preserves_incoming_conflicts_once() {
 }
 
 #[test]
-fn published_mailboxes_route_by_domain_not_arrival_field() {
+fn published_mailboxes_route_by_domain_not_arrival_field() -> TestResult {
     let mut coach = CanonicalCoach::new(
         &school(),
         "Dana Reed",
@@ -173,35 +170,21 @@ fn published_mailboxes_route_by_domain_not_arrival_field() {
     );
     coach.professional_email = Some("  dana.reed@gmail.com  ".to_string());
     coach.personal_email = Some("dana.reed@abbotsford.k12.wi.us".to_string());
-
     coach.publish();
-
-    assert_eq!(
-        coach.professional_email.as_deref(),
-        Some("dana.reed@abbotsford.k12.wi.us"),
-        "an organisation address belongs in the professional field"
-    );
-    assert_eq!(
-        coach.personal_email.as_deref(),
-        Some("dana.reed@gmail.com"),
-        "a consumer address belongs in the personal field"
-    );
+    check!(eq; coach.professional_email.as_deref(), Some("dana.reed@abbotsford.k12.wi.us"), "an organisation address belongs in the professional field");
+    check!(eq; coach.personal_email.as_deref(), Some("dana.reed@gmail.com"), "a consumer address belongs in the personal field");
     let once = coach.clone();
     coach.publish();
-    assert_eq!(coach, once, "publishing twice must be idempotent");
-
-    let Ok(json) = serde_json::to_string(&coach) else {
-        panic!("a coach row has to serialize");
-    };
+    check!(eq; coach, once, "publishing twice must be idempotent");
+    let json = serde_json::to_string(&coach)?;
     let legacy_marker = ["email_", "with", "held"].concat();
-    assert!(
+    check!(
         !json.contains(&legacy_marker),
         "the removed marker must not appear on the wire: {json}"
     );
-    let Ok(decoded) = serde_json::from_str::<CanonicalCoach>(&json) else {
-        panic!("a published coach row has to decode");
-    };
-    assert_eq!(decoded, coach, "the two published addresses round-trip");
+    let decoded = serde_json::from_str::<CanonicalCoach>(&json)?;
+    check!(eq; decoded, coach, "the two published addresses round-trip");
+    Ok(())
 }
 
 #[test]
@@ -215,23 +198,22 @@ fn malformed_mailboxes_are_refused_from_either_field() {
     );
     coach.professional_email = Some("no-at-sign".to_string());
     coach.personal_email = Some("@".to_string());
-
     coach.publish();
-
     assert_eq!(coach.professional_email, None);
     assert_eq!(coach.personal_email, None);
 }
 
-fn observing(row: &mut CanonicalAthlete, grade: u8, season: i16) {
+fn observing(row: &mut CanonicalAthlete, grade: u8, season: i16) -> TestResult {
     row.observed_grades.push(ObservedGrade {
-        grade: Grade::new(grade).expect("9..=12 is a grade"),
-        school_year: SchoolYear::new(season).expect("a season"),
+        grade: Grade::new(grade).ok_or("9..=12 is a grade")?,
+        school_year: SchoolYear::new(season).ok_or("a season")?,
         source: SourceRef::new("milesplit_athlete", None),
     });
+    Ok(())
 }
 
 #[test]
-fn one_agreeing_observation_derives_high_cohort_confidence() {
+fn one_agreeing_observation_derives_high_cohort_confidence() -> TestResult {
     let id = CanonicalAthlete::mint(
         &school(),
         "Diego Ramos",
@@ -246,16 +228,13 @@ fn one_agreeing_observation_derives_high_cohort_confidence() {
         SourceNamespace::MilesplitAthlete,
         "111",
     );
-    observing(&mut row, 11, 2025);
-    assert_eq!(
-        row.derived_cohort_confidence(),
-        Some(Confidence::HIGH),
-        "a grade level that agrees with the cohort derives HIGH immediately"
-    );
+    observing(&mut row, 11, 2025)?;
+    check!(eq; row.derived_cohort_confidence(), Some(Confidence::HIGH), "a grade level that agrees with the cohort derives HIGH immediately");
+    Ok(())
 }
 
 #[test]
-fn an_observation_that_disagrees_derives_low_cohort_confidence() {
+fn an_observation_that_disagrees_derives_low_cohort_confidence() -> TestResult {
     let id = CanonicalAthlete::mint(
         &school(),
         "Diego Ramos",
@@ -270,19 +249,16 @@ fn an_observation_that_disagrees_derives_low_cohort_confidence() {
         SourceNamespace::MilesplitAthlete,
         "111",
     );
-    observing(&mut row, 11, 2024);
-
+    observing(&mut row, 11, 2024)?;
     row.publish();
-
-    assert_eq!(row.grad_year, GradYear::CO2027);
-    assert_eq!(
-        row.derived_cohort_confidence(),
-        Some(Confidence::LOW),
-        "a disagreeing observation lowers the bar but does not rewrite the cohort"
-    );
+    check!(eq; row.grad_year, GradYear::CO2027);
+    check!(eq; row.derived_cohort_confidence(), Some(Confidence::LOW), "a disagreeing observation lowers the bar but does not rewrite the cohort");
+    Ok(())
 }
 
 #[path = "canonical_tests/coach_tests.rs"]
 mod coach_tests;
+#[path = "canonical_tests/published_graduations.rs"]
+mod published_graduations;
 #[path = "canonical_tests/store_tests.rs"]
 mod store_tests;

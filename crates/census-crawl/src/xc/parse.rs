@@ -6,7 +6,10 @@ use super::scan::XcScan;
 
 pub fn parse(lines: &[String], source: SourceRef, archive_year: i16) -> Option<ParsedMeet> {
     let (name, date) = header(lines)?;
-    let date = date.unwrap_or_else(|| archive_year.to_string());
+    let date = match date {
+        Some(value) => value,
+        None => archive_year.to_string(),
+    };
     let mut scan = XcScan::new();
     for line in lines {
         scan.read_line(line)?;

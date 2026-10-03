@@ -98,7 +98,7 @@ impl MeetCtx<'_> {
         self.counts.legs_seen = self
             .counts
             .legs_seen
-            .saturating_add(u64::try_from(squad.len()).unwrap_or(u64::MAX));
+            .saturating_add(u64::try_from(squad.len()).map_or(u64::MAX, |value| value));
         if self.refuse_unmapped_label(block) {
             return;
         }

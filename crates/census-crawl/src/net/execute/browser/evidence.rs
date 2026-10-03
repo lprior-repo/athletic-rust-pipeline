@@ -47,12 +47,13 @@ impl Fetcher {
         let content_hex = content_digest(&body);
         let bytes = body.len();
         let content_type = content_type(&capture.response.headers);
-        let fetched_at = capture
-            .fetched_at_ms
-            .and_then(instant_iso8601)
-            .unwrap_or_else(now_iso8601);
+        let fetched_at = match capture.fetched_at_ms.and_then(instant_iso8601) {
+            Some(value) => value,
+            None => now_iso8601(),
+        };
         let meta = CacheMeta {
             url: plan.url.to_string(),
+            response_url: capture.response.response_url.map(|url| url.into_string()),
             method: plan.method.to_string(),
             status,
             content_digest: content_hex,
@@ -66,6 +67,7 @@ impl Fetcher {
         self.count_capture(plan, status, bytes).await;
         Ok(FetchOutcome {
             url: meta.url,
+            response_url: meta.response_url,
             method: meta.method,
             status,
             content_digest: meta.content_digest,
@@ -87,12 +89,13 @@ impl Fetcher {
         let content_hex = content_digest(&body);
         let bytes = body.len();
         let content_type = content_type(&capture.response.headers);
-        let fetched_at = capture
-            .fetched_at_ms
-            .and_then(instant_iso8601)
-            .unwrap_or_else(now_iso8601);
+        let fetched_at = match capture.fetched_at_ms.and_then(instant_iso8601) {
+            Some(value) => value,
+            None => now_iso8601(),
+        };
         let meta = CacheMeta {
             url: plan.url.to_string(),
+            response_url: capture.response.response_url.map(|url| url.into_string()),
             method: plan.method.to_string(),
             status,
             content_digest: content_hex,
@@ -102,10 +105,12 @@ impl Fetcher {
             last_modified: None,
             content_type,
         };
+        crate::net::cache::write_archive(plan.body_path, plan.meta_path, &body, &meta)?;
         self.count_capture(plan, status, bytes).await;
         if plan.options.allow_not_found {
             Ok(FetchOutcome {
                 url: meta.url,
+                response_url: meta.response_url,
                 method: meta.method,
                 status,
                 content_digest: meta.content_digest,
@@ -124,7 +129,7 @@ impl Fetcher {
     }
 
     async fn count_capture(&self, plan: &FetchPlan<'_>, status: u16, bytes: usize) {
-        let downloaded = u64::try_from(bytes).unwrap_or(u64::MAX);
+        let downloaded = u64::try_from(bytes).map_or(u64::MAX, |value| value);
         let failed = status >= 400 && !(status == 404 && plan.options.allow_not_found);
         {
             let mut stats = self.stats.lock().await;

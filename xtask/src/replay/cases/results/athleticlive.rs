@@ -20,11 +20,10 @@ pub(super) fn athlete_hits(capture: &Capture<'_>) -> Result<String> {
                 .map(|hit| {
                     hit.get("_source")
                         .cloned()
-                        .unwrap_or(serde_json::Value::Null)
+                        .map_or(serde_json::Value::Null, core::convert::identity)
                 })
                 .collect()
-        })
-        .unwrap_or_default();
+        }).map_or(Default::default(), core::convert::identity);
     let hits: Vec<AthleteHit> = serde_json::from_value(serde_json::Value::Array(sources))
         .with_context(|| format!("{file}: the recorded hits do not decode"))?;
     ensure_rows(file, hits.len(), "athlete rows")?;

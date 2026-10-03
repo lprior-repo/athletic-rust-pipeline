@@ -1,5 +1,10 @@
 #![forbid(unsafe_code)]
 
+#[cfg(test)]
+#[macro_use]
+#[path = "../../../tools/fallible_checks.rs"]
+mod fallible_checks;
+
 pub mod bootstrap;
 pub mod census;
 pub mod coachverify;

@@ -5,6 +5,8 @@ use census_domain::model::{
 use serde::Deserialize;
 use serde_json::Value;
 
+mod relay;
+
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum Scalar<'a> {
@@ -50,7 +52,6 @@ struct WirePerformance<'a> {
     gender: &'a str,
     #[serde(borrow)]
     grad_year: Option<Scalar<'a>>,
-    event_name: &'a str,
     mark: &'a str,
     profile_url: Option<&'a str>,
 }
@@ -60,20 +61,25 @@ pub(super) fn parse_row(
     meet_id: u64,
     locator: String,
 ) -> Result<OwnedPerformance, (OwnedRejectionKind, String)> {
+    let event_kind = value
+        .get("eventName")
+        .and_then(Value::as_str)
+        .map(crate::hytek::hytek_event_kind);
+    if let Some(kind) = event_kind.as_ref().filter(|kind| kind.is_relay()) {
+        return relay::reject(&value, meet_id, kind);
+    }
     let row: WirePerformance<'_> = WirePerformance::deserialize(&value)
         .map_err(|error| (OwnedRejectionKind::MalformedRow, error.to_string()))?;
+    let event_kind = event_kind.ok_or_else(|| {
+        (
+            OwnedRejectionKind::MalformedRow,
+            "missing or nontext published eventName".to_string(),
+        )
+    })?;
     let source_athlete = owner(&row)?;
     super::context::validate_context(&value)?;
     validate_name(&row)?;
-    let id = |value: &Scalar<'_>| {
-        value.id().ok_or_else(|| {
-            (
-                OwnedRejectionKind::InvalidIdentity,
-                "missing or noncanonical positive provider ID".to_string(),
-            )
-        })
-    };
-    let published_meet = id(&row.meet_id)?;
+    let published_meet = provider_id(&row.meet_id)?;
     if published_meet != meet_id {
         return Err((
             OwnedRejectionKind::ForeignMeet,
@@ -81,7 +87,6 @@ pub(super) fn parse_row(
         ));
     }
     let gender = Gender::parse_milesplit(row.gender);
-    let event_kind = crate::hytek::hytek_event_kind(row.event_name);
     if gender == Gender::Unknown || matches!(event_kind, EventKind::Unmapped { .. }) {
         return Err((
             OwnedRejectionKind::InvalidContext,
@@ -92,11 +97,11 @@ pub(super) fn parse_row(
     let (grad_year, cohort) = cohort(row.grad_year.as_ref());
     Ok(OwnedPerformance {
         locator,
-        result_id: id(&row.id)?,
+        result_id: provider_id(&row.id)?,
         meet_id: published_meet,
-        result_set_id: id(&row.meet_results_id)?,
+        result_set_id: provider_id(&row.meet_results_id)?,
         source_athlete,
-        team_id: id(&row.team_id)?,
+        team_id: provider_id(&row.team_id)?,
         first_name: row.first_name.to_string(),
         last_name: row.last_name.to_string(),
         gender,
@@ -106,6 +111,15 @@ pub(super) fn parse_row(
         mark,
         timing,
         provider: value,
+    })
+}
+
+fn provider_id(value: &Scalar<'_>) -> Result<u64, (OwnedRejectionKind, String)> {
+    value.id().ok_or_else(|| {
+        (
+            OwnedRejectionKind::InvalidIdentity,
+            "missing or noncanonical positive provider ID".to_string(),
+        )
     })
 }
 
@@ -189,25 +203,30 @@ fn cohort(raw: Option<&Scalar<'_>>) -> (Option<GradYear>, OwnedCohort) {
     }
 }
 
+fn no_mark(raw: &str) -> bool {
+    crate::hytek::NO_MARK
+        .iter()
+        .any(|token| raw.eq_ignore_ascii_case(token))
+        || raw.eq_ignore_ascii_case("NT")
+}
+
 fn parsed_mark(
     kind: &EventKind,
     raw: &str,
 ) -> Result<(Mark, Option<census_domain::model::TimingMethod>), (OwnedRejectionKind, String)> {
-    if crate::hytek::NO_MARK
-        .iter()
-        .any(|token| raw.eq_ignore_ascii_case(token))
-        || raw.eq_ignore_ascii_case("NT")
-    {
+    if no_mark(raw) {
         return Ok((Mark::Raw(raw.to_string()), None));
     }
-    let parsed = if kind.is_field() {
-        crate::milesplit::mark::parse_published_metric_distance(raw)
+    let parsed = match kind {
+        EventKind::Decathlon | EventKind::Pentathlon | EventKind::Heptathlon => {
+            crate::hytek::parse_points(raw).map(|mark| (mark, None))
+        }
+        kind if kind.is_field() => crate::milesplit::mark::parse_published_metric_distance(raw)
             .map(Mark::DistanceMetres)
             .or_else(|| crate::hytek::parse_field_mark(raw))
-            .map(|mark| (mark, None))
-    } else {
-        crate::milesplit::mark::parse_published_time(raw)
-            .map(|(time, timing)| (Mark::TimeSeconds(time), timing))
+            .map(|mark| (mark, None)),
+        _ => crate::milesplit::mark::parse_published_time(raw)
+            .map(|(time, timing)| (Mark::TimeSeconds(time), timing)),
     };
     parsed.ok_or_else(|| {
         (

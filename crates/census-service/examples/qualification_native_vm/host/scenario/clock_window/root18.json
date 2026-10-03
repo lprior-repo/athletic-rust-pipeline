@@ -1,0 +1,33 @@
+{
+  "injection": {
+    "after": {
+      "boot_id": "6c7657a2-4db3-4d7d-a498-347ce2a53110",
+      "date": "2026-10-02",
+      "machine_id": "91d07d4ae517469c85ae4627df011777",
+      "monotonic_uptime": "95.62 72.19",
+      "realtime": "2026-10-02T23:55:00.047970997+00:00"
+    },
+    "before": {
+      "boot_id": "6c7657a2-4db3-4d7d-a498-347ce2a53110",
+      "date": "2026-10-02",
+      "machine_id": "91d07d4ae517469c85ae4627df011777",
+      "monotonic_uptime": "95.56 72.14",
+      "realtime": "2026-10-02T20:48:59.064843373+00:00"
+    },
+    "command_stdout": "Fri Oct  2 23:55:00 UTC 2026\n",
+    "crossing_budget_seconds": 330,
+    "diagnostics": null,
+    "injection": "owned guest CLOCK_REALTIME only; natural midnight passage",
+    "pre_midnight_lead_seconds": 300,
+    "public_freshness_claim": false,
+    "target_utc": "2026-10-02T23:55:00Z",
+    "validation_error": null
+  },
+  "baseline": {
+    "boot_id": "6c7657a2-4db3-4d7d-a498-347ce2a53110",
+    "date": "2026-10-02",
+    "machine_id": "91d07d4ae517469c85ae4627df011777",
+    "monotonic_uptime": "101.34 80.95",
+    "realtime": "2026-10-02T20:49:04.841784285+00:00"
+  }
+}

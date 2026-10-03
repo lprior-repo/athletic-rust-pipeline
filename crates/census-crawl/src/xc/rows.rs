@@ -10,11 +10,14 @@ pub(super) fn section_heading(trimmed: &str) -> Option<(Gender, String)> {
         "boys" | "men" => Gender::Boys,
         _ => Gender::Girls,
     };
-    let label = captures
+    let label = match captures
         .get(2)
         .map(|label| label.as_str().trim().to_string())
         .filter(|label| !label.is_empty())
-        .unwrap_or_else(|| "Varsity".to_string());
+    {
+        Some(value) => value,
+        None => "Varsity".to_string(),
+    };
     Some((gender, label))
 }
 

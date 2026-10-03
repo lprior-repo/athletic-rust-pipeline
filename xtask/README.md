@@ -11,6 +11,7 @@ failure. Measurement commands emit their own reports. Run `cargo xtask --help` f
 | `gate [-- <args>]` | Invokes `tools/gate.sh`; gate policy and lane details live in [tools/gate.sh](../tools/gate.sh) |
 | `scan` | Production forbidden-construct and size measurements for workspace members, discovered with Cargo metadata; JSON |
 | `comments` | Lexical no-comments check over project Rust, including tests/examples/benches/fuzz; strings are data |
+| `panic-extraction [--root <dir>]` | Fatal owned-Rust lexical extraction and suppression check, including cfg-disabled proofs and three rendered source templates; captured literals are data |
 | `contract` | Eight architecture checks, including scope, transports, retry ceilings, Python artifacts, admission, scan parity, front-door documents and adapter registration |
 | `seams` | Checks both module and sibling-crate allowed-edge tables; JSON and failing status on violation |
 | `integrity` | Domain type-integrity review candidates; JSON, not proof that types enforce their contracts |
@@ -61,11 +62,35 @@ lifecycle, complete frozen-bundle verification and current certification limits.
 recognized test files are excluded from production measurements. `seams` is a separate structural
 check; a clean scan is not acceptance of identity, durability or coverage.
 
-`comments` uses the in-repository Rust lexical scanner, rejects prose `doc = ...` attributes, and
-permits non-prose attributes such as `doc(hidden)`. Captured corpus parity is finite evidence, not
-compiler-wide lexical equivalence. Ordinary/raw/byte/C strings and captured comment-shaped bytes are
-not code comments. Unreadable/invalid source, unterminated literals, excessive source counts and an
-empty tree fail closed; the current per-file limit is 4 MiB.
+`comments` and `panic-extraction` share the in-repository Rust lexer and bounded source walker.
+`comments` rejects prose `doc = ...` attributes and permits non-prose attributes such as
+`doc(hidden)`. Ordinary/raw/byte/C strings and captured comment-shaped bytes are data. Identifier
+boundaries use Unicode XID rules. Captured corpus parity is finite evidence, not compiler-wide
+lexical equivalence.
+
+`panic-extraction` rejects calls and method/associated references to `unwrap`, `unwrap_err`,
+`unwrap_unchecked`, `unwrap_or`, `unwrap_or_else`, `unwrap_or_default`, `expect` and `expect_err`,
+including raw identifiers, spacing, comments and cfg-disabled code. Non-panicking default helpers
+are included in the source prohibition; use explicit matches or equivalent map combinators while
+preserving the existing eager/lazy missing-value policy. It rejects owned lint suppressions for
+the Clippy extraction checks and broad `warnings`, `clippy::all` or `clippy::restriction`
+suppression. The generator check renders the adapter, parser and mapper
+templates rather than treating captured string contents as source. The gate also runs
+all-target/all-feature Clippy with extraction checks and warnings denied. Workspace lint levels
+use `deny`, not `forbid`: external Clap derives emit their own blanket restriction attributes;
+this does not permit project-owned suppression or exclude owned tests from the lexical gate.
+
+Both commands exclude `.git`, `.jj`, `target`, `var`, `vendor` and `node_modules` below the chosen
+root. Admission limits are 1,000,000 visited entries (including excluded and non-Rust entries),
+100,000 selected Rust files, 128 simultaneous directory frames and 128 root path components.
+Selected paths are admitted before collection growth and sorted only after bounded traversal.
+Unreadable/invalid source, unterminated literals or block comments, exhausted budgets and an
+empty source tree fail closed. Static root/ancestor/file/directory symlinks are refused outside
+excluded subtrees; selected `.rs` files must be regular files. Reads recheck regular-file metadata,
+use Linux no-follow/nonblocking open flags and a reused fallibly reserved 4-MiB-plus-one buffer.
+The per-file source limit remains 4 MiB. Pathname-based filesystem operations do not provide a
+snapshot against concurrent directory substitution, wall-clock filesystem bounds or a bound on
+aggregate pathname bytes.
 
 `replay` does not fetch, open a store or consult the live source clock. It needs the committed fixture
 bytes and associated format/year metadata. A successful replay establishes those captures only;

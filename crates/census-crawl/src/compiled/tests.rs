@@ -3,6 +3,8 @@ use super::*;
 use census_domain::model::CentiSeconds;
 use census_domain::model::{Gender, Mark, SourceRef};
 
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+
 fn source() -> SourceRef {
     SourceRef::new("wiaa_results", None)
 }
@@ -26,12 +28,12 @@ Girls' 4x800 Relay Division 1                     Finals                    Girl
 "#;
 
 #[test]
-fn regional_export_parses_both_blocks_of_a_page() {
+fn regional_export_parses_both_blocks_of_a_page() -> TestResult {
     let lines = crate::hytek::lines_from_pdf_text(REGIONAL);
-    let meet = parse(&lines, source(), 2026).expect("the compiled export has a meet header");
-    assert_eq!(meet.name, "D1 Regional 8B - Appleton North");
-    assert_eq!(meet.date, "2026-05-26");
-    assert_eq!(
+    let meet = parse(&lines, source(), 2026).ok_or("the compiled export has a meet header")?;
+    check!(eq; meet.name, "D1 Regional 8B - Appleton North");
+    check!(eq; meet.date, "2026-05-26");
+    check!(eq;
         meet.events.len(),
         2,
         "one event per block: {:?}",
@@ -39,15 +41,15 @@ fn regional_export_parses_both_blocks_of_a_page() {
     );
 
     let relay = &meet.events[0];
-    assert_eq!(relay.label, "4x800 Relay");
-    assert_eq!(relay.gender, Gender::Girls);
-    assert_eq!(relay.division.as_deref(), Some("Division 1"));
-    assert_eq!(relay.round.as_deref(), Some("finals"));
+    check!(eq; relay.label, "4x800 Relay");
+    check!(eq; relay.gender, Gender::Girls);
+    check!(eq; relay.division.as_deref(), Some("Division 1"));
+    check!(eq; relay.round.as_deref(), Some("finals"));
     let winner = &relay.rows[0];
-    assert_eq!(winner.school, "HORTONVILLE");
-    assert_eq!(winner.mark, Mark::TimeSeconds(CentiSeconds::new(59511)));
-    assert_eq!(winner.points, Some(10.0));
-    assert_eq!(
+    check!(eq; winner.school, "HORTONVILLE");
+    check!(eq; winner.mark, Mark::TimeSeconds(CentiSeconds::new(59511)));
+    check!(eq; winner.points, Some(10.0));
+    check!(eq;
         winner.legs,
         vec![
             RelayLeg {
@@ -73,52 +75,54 @@ fn regional_export_parses_both_blocks_of_a_page() {
         ],
         "both leg lines belong to the relay row above them"
     );
-    assert_eq!(
+    check!(eq;
         relay.rows.len(),
         3,
         "every relay team on the page is read: {:?}",
         relay.rows
     );
-    assert_eq!(relay.rows[1].school, "APPLETON NORTH");
-    assert_eq!(
+    check!(eq; relay.rows[1].school, "APPLETON NORTH");
+    check!(eq;
         relay.rows[2].mark,
         Mark::TimeSeconds(CentiSeconds::new(60338))
     );
-    assert_eq!(
+    check!(eq;
         relay.rows[2].legs,
         Vec::new(),
         "a team whose legs are printed outside the excerpt keeps no invented legs"
     );
 
     let dash = &meet.events[1];
-    assert_eq!(dash.label, "100 Meters");
-    assert_eq!(dash.round.as_deref(), Some("preliminaries"));
-    assert_eq!(
+    check!(eq; dash.label, "100 Meters");
+    check!(eq; dash.round.as_deref(), Some("preliminaries"));
+    check!(eq;
         dash.rows.len(),
         8,
         "every prelim row is read: {:?}",
         dash.rows
     );
     let leader = &dash.rows[0];
-    assert_eq!(leader.name, "Parrish, Ashley");
-    assert_eq!(leader.grade, census_domain::model::Grade::new(11));
-    assert_eq!(leader.place, Some(1));
-    assert_eq!(leader.school, "APPLETON NOR\u{2026}");
-    assert_eq!(leader.mark, Mark::TimeSeconds(CentiSeconds::new(1230)));
-    assert_eq!(leader.points, None);
+    check!(eq; leader.name, "Parrish, Ashley");
+    check!(eq; leader.grade, census_domain::model::Grade::new(11));
+    check!(eq; leader.place, Some(1));
+    check!(eq; leader.school, "APPLETON NOR\u{2026}");
+    check!(eq; leader.mark, Mark::TimeSeconds(CentiSeconds::new(1230)));
+    check!(eq; leader.points, None);
+    Ok(())
 }
 
 #[test]
-fn print_artifacts_do_not_become_part_of_the_meet_name() {
+fn print_artifacts_do_not_become_part_of_the_meet_name() -> TestResult {
     let lines = crate::hytek::lines_from_pdf_text(
             "5/27/25, 8:35 PM                                              Manage D3 Regional 4B - Deerfield\n\
                           D3 Regional 4B - Deerfield\n\
                      Deerfield HS Track   Tue, May 27, 2025\n\
                                   Results\n",
         );
-    let (name, date) = header(&lines).expect("the page stamp still carries the name");
-    assert_eq!(name, "D3 Regional 4B - Deerfield");
-    assert_eq!(date.as_deref(), Some("2025-05-27"));
+    let (name, date) = header(&lines).ok_or("the page stamp still carries the name")?;
+    check!(eq; name, "D3 Regional 4B - Deerfield");
+    check!(eq; date.as_deref(), Some("2025-05-27"));
+    Ok(())
 }
 
 #[test]

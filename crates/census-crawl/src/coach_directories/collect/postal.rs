@@ -25,15 +25,22 @@ impl Run<'_> {
             self.dropped_school_rows = self.dropped_school_rows.saturating_add(1);
             return None;
         };
-        if row.state_code.as_deref().and_then(UsJurisdiction::parse) != Some(state) {
-            self.fail(format!(
-                "directory row {}: school {short_code} does not belong to {}",
-                capture.url,
-                state.code()
-            ));
-            return None;
-        }
-        Some(short_code)
+        let (published, disposition) =
+            match row.state_code.as_deref().and_then(UsJurisdiction::parse) {
+                Some(published) if published == state => return Some(short_code),
+                Some(published) => (Some(published), "foreign_published_state"),
+                None if row.state_code.is_some() => (None, "unrecognized_published_state"),
+                None => (None, "missing_or_unusable_published_state"),
+            };
+        self.fail(format!(
+            "directory jurisdiction rejection {}: school {short_code}; disposition={disposition}; requested={}; published={}; observed_on={}; capture_sha256={}",
+            capture.url,
+            state.code(),
+            published.map_or("unknown", |published| published.code()),
+            capture.observed_on,
+            capture.sha256
+        ));
+        None
     }
 
     pub(super) fn directory_page_matches(
@@ -122,7 +129,7 @@ impl Run<'_> {
         };
         let capture = Capture {
             url: &outcome.url,
-            observed_on: &self.ctx.observed_on,
+            observed_on: &outcome.fetched_at,
             sha256: &outcome.content_digest,
         };
         match process_owned_summary(school, row, &summary, school_id, capture) {

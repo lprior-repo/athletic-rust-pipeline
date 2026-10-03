@@ -201,7 +201,7 @@ fn classify_observation(
     gate: &ProfileGate,
     clock: &dyn Clock,
 ) -> Result<NavigationOutcome, BrowserError> {
-    if observation.status.is_some() && observation.status.unwrap_or(0) == 429 {
+    if observation.status == Some(429) {
         let cooldown = retry_after(clock, &observation.headers)?;
         if observation.challenged || observation.body_challenged {
             gate.revoke();

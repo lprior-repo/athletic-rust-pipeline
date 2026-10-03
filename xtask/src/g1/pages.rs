@@ -146,9 +146,15 @@ fn envelope_parts<'a>(
     }
     let d = d?;
 
-    let results = d.get("results").and_then(|v| v.as_str()).unwrap_or("");
+    let results = d
+        .get("results")
+        .and_then(|v| v.as_str())
+        .map_or("", core::convert::identity);
     let count = d.get("count").and_then(|v| v.as_i64());
-    let pager = d.get("pager").and_then(|v| v.as_str()).unwrap_or("");
+    let pager = d
+        .get("pager")
+        .and_then(|v| v.as_str())
+        .map_or("", core::convert::identity);
     Some((results, count, pager))
 }
 
@@ -175,17 +181,16 @@ pub(crate) fn scan(
         let blob = fs::read(path)?;
         record_digest_mismatch(digest, &blob, &mut out.digest_mismatch);
 
-        let entries = join.get(digest).cloned().unwrap_or_default();
+        let entries = join.get(digest).cloned().map_or(Default::default(), core::convert::identity);
         record_byte_mismatch(digest, &entries, blob.len(), &mut out.byte_mismatch);
 
         let sport = sport_of(&entries);
         let slot = out
             .filter_totals
-            .entry(
-                sport
-                    .clone()
-                    .unwrap_or_else(|| "unknown/ambiguous".to_string()),
-            )
+            .entry(match sport.clone() {
+                Some(sport) => sport,
+                None => "unknown/ambiguous".to_string(),
+            })
             .or_insert(0);
         bump(slot, 1);
 

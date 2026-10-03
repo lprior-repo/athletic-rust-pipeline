@@ -7,6 +7,8 @@ use census_domain::model::{
 };
 use census_store::{Store, Table};
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 const FIXTURE_MEETS: &str =
     include_str!("../../../../tests/fixtures/ihsa_tournament/track_field_meets.json");
 const FIXTURE_EVENTS: &str =
@@ -31,13 +33,12 @@ const FIXTURE_ARCHIVE_ERROR: &str =
 const OBSERVED_ON: &str = "2026-09-20";
 const API: &str = "https://api.ihsa.org";
 
-fn trimmed_events() -> String {
-    let mut document: serde_json::Value =
-        serde_json::from_str(FIXTURE_EVENTS).expect("fixture is JSON");
+fn trimmed_events() -> TestResult<String> {
+    let mut document: serde_json::Value = serde_json::from_str(FIXTURE_EVENTS)?;
     let rows = document
         .get_mut("data")
         .and_then(serde_json::Value::as_array_mut)
-        .expect("the events index is an array");
+        .ok_or("the events index is an array")?;
     rows.retain(|row| {
         matches!(
             row.get("eventId").and_then(serde_json::Value::as_str),
@@ -50,7 +51,7 @@ fn trimmed_events() -> String {
         }
     }
     document["count"] = serde_json::Value::from(rows.len());
-    serde_json::to_string(&document).expect("trimmed index serializes")
+    Ok(serde_json::to_string(&document)?)
 }
 
 struct Harness {
@@ -59,8 +60,8 @@ struct Harness {
 }
 
 impl Harness {
-    fn new() -> Self {
-        let dir = tempfile::tempdir().expect("temp dir");
+    fn new() -> TestResult<Self> {
+        let dir = tempfile::tempdir()?;
         let cache = dir.path().join("http");
         let list = |id: u32| format!("{API}/v1/2025-26/statefinal/cc-qualifiers?tournamentId={id}");
         seed(
@@ -69,7 +70,7 @@ impl Harness {
                 (format!("{API}/v1/track-field/meets"), FIXTURE_MEETS),
                 (
                     format!("{API}/v1/track-field/meets/2026/events?gender=Boys"),
-                    &trimmed_events(),
+                    &trimmed_events()?,
                 ),
                 (
                     format!("{API}/v1/track-field/events/2790204/summary"),
@@ -87,12 +88,12 @@ impl Harness {
                 (list(692), FIXTURE_ARCHIVE_ERROR),
                 (list(693), FIXTURE_ARCHIVE_ERROR),
             ],
-        );
-        let store = Store::open(dir.path().join("store")).expect("store");
-        Self { dir, store }
+        )?;
+        let store = Store::open(dir.path().join("store"))?;
+        Ok(Self { dir, store })
     }
 
-    async fn run(&self, options: &Options) -> AdapterReport {
+    async fn run(&self, options: &Options) -> TestResult<AdapterReport> {
         let cache = self.dir.path().join("http");
         let fetcher = crate::net::Fetcher::new(
             &cache,
@@ -100,23 +101,20 @@ impl Harness {
             std::time::Duration::from_millis(1),
             std::collections::HashMap::new(),
             Vec::new(),
-        )
-        .expect("fetcher");
+        )?;
         let ctx = AdapterContext {
             fetcher: &fetcher,
             store: &self.store,
             refresh: false,
-            school_year: SchoolYear::new(2025).expect("2025 is a season"),
+            school_year: SchoolYear::new(2025).ok_or("2025 is a season")?,
             observed_on: OBSERVED_ON.to_string(),
             recording: None,
         };
-        collect(&ctx, options)
-            .await
-            .expect("the walk returns a report")
+        Ok(collect(&ctx, options).await?)
     }
 
-    fn scan<T: census_store::Entity>(&self, table: Table) -> Vec<T> {
-        self.store.scan(table).expect("scan")
+    fn scan<T: census_store::Entity>(&self, table: Table) -> TestResult<Vec<T>> {
+        Ok(self.store.scan(table)?)
     }
 }
 
@@ -130,7 +128,7 @@ fn options() -> Options {
     }
 }
 
-fn seed(cache: &std::path::Path, bodies: &[(String, &str)]) {
+fn seed(cache: &std::path::Path, bodies: &[(String, &str)]) -> TestResult {
     use sha2::{Digest, Sha256};
     for (url, body) in bodies {
         let mut hasher = Sha256::new();
@@ -150,94 +148,100 @@ fn seed(cache: &std::path::Path, bodies: &[(String, &str)]) {
             "bytes": body.len(),
             "fetched_at": "2026-09-20T14:39:00Z",
         });
-        std::fs::create_dir_all(cache).expect("cache dir");
-        std::fs::write(cache.join(format!("{key}.body")), body).expect("cache body");
+        std::fs::create_dir_all(cache)?;
+        std::fs::write(cache.join(format!("{key}.body")), body)?;
         std::fs::write(
             cache.join(format!("{key}.meta.json")),
-            serde_json::to_vec(&meta).expect("cache meta"),
-        )
-        .expect("cache meta written");
+            serde_json::to_vec(&meta)?,
+        )?;
     }
+    Ok(())
 }
 
-#[tokio::test]
-async fn walk_reads_the_captured_meet_and_the_six_lists() {
-    let harness = Harness::new();
-    let report = harness.run(&options()).await;
+#[test]
+fn walk_reads_the_captured_meet_and_the_six_lists() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let harness = Harness::new()?;
+            let report = harness.run(&options()).await?;
 
-    assert_eq!(report.errors, 0, "notes: {:?}", report.notes);
-    assert_eq!(
-        report.requests, 0,
-        "every request is answered from the seeded cache"
-    );
-    assert_eq!(
-        report.from_cache, 11,
-        "index, events, 2 summaries, terms, 6 lists"
-    );
-    assert_eq!(
-        report.rows, 20,
-        "the 20 individual finishers become performances"
-    );
-    assert_eq!(report.unit, "performances");
+            check!(eq; report.errors, 0, "notes: {:?}", report.notes);
+            check!(eq;
+                report.requests, 0,
+                "every request is answered from the seeded cache"
+            );
+            check!(eq;
+                report.from_cache, 11,
+                "index, events, 2 summaries, terms, 6 lists"
+            );
+            check!(eq;
+                report.rows, 20,
+                "the 20 individual finishers become performances"
+            );
+            check!(eq; report.unit, "performances");
 
-    assert_eq!(harness.scan::<CanonicalMeet>(Table::Meets).len(), 1);
-    assert_eq!(
-        harness
-            .scan::<CanonicalPerformance>(Table::Performances)
-            .len(),
-        20
-    );
-    assert_eq!(harness.scan::<CanonicalSchool>(Table::Schools).len(), 240);
-    let athletes = harness.scan::<CanonicalAthlete>(Table::Athletes);
-    assert_eq!(
-        athletes.len(),
-        1637,
-        "source-owned athletes are not merged by candidate name"
-    );
-    assert_eq!(
-        athletes
-            .iter()
-            .filter(|athlete| {
-                athlete.source.as_ref().is_some_and(|source| {
-                    source.namespace == SourceNamespace::athletic_net("athlete")
+            check!(eq; harness.scan::<CanonicalMeet>(Table::Meets)?.len(), 1);
+            check!(eq;
+                harness
+                    .scan::<CanonicalPerformance>(Table::Performances)?
+                    .len(),
+                20
+            );
+            check!(eq; harness.scan::<CanonicalSchool>(Table::Schools)?.len(), 240);
+            let athletes = harness.scan::<CanonicalAthlete>(Table::Athletes)?;
+            check!(eq;
+                athletes.len(),
+                1637,
+                "source-owned athletes are not merged by candidate name"
+            );
+            check!(eq;
+                athletes
+                    .iter()
+                    .filter(|athlete| {
+                        athlete.source.as_ref().is_some_and(|source| {
+                            source.namespace == SourceNamespace::athletic_net("athlete")
+                        })
+                    })
+                    .count(),
+                68
+            );
+            check!(eq;
+                athletes
+                    .iter()
+                    .filter(|athlete| {
+                        athlete.source.as_ref().is_some_and(|source| {
+                            source.namespace
+                                == SourceNamespace::AssociationAthlete {
+                                    association: "ihsa".to_owned(),
+                                }
+                        })
+                    })
+                    .count(),
+                1569
+            );
+            let dual = athletes
+                .iter()
+                .filter(|athlete| {
+                    let has = |wanted: SourceNamespace| {
+                        athlete
+                            .identities()
+                            .any(|identity| identity.namespace == wanted)
+                    };
+                    has(SourceNamespace::AthleticNet {
+                        kind: "athlete".to_string(),
+                    }) && has(SourceNamespace::AssociationAthlete {
+                        association: "ihsa".to_string(),
+                    })
                 })
-            })
-            .count(),
-        68
-    );
-    assert_eq!(
-        athletes
-            .iter()
-            .filter(|athlete| {
-                athlete.source.as_ref().is_some_and(|source| {
-                    source.namespace
-                        == SourceNamespace::AssociationAthlete {
-                            association: "ihsa".to_owned(),
-                        }
-                })
-            })
-            .count(),
-        1569
-    );
-    let dual = athletes
-        .iter()
-        .filter(|athlete| {
-            let has = |wanted: SourceNamespace| {
-                athlete
-                    .identities()
-                    .any(|identity| identity.namespace == wanted)
-            };
-            has(SourceNamespace::AthleticNet {
-                kind: "athlete".to_string(),
-            }) && has(SourceNamespace::AssociationAthlete {
-                association: "ihsa".to_string(),
-            })
+                .count();
+            check!(eq;
+                dual, 0,
+                "an unreviewed name match cannot combine independent source owners"
+            );
+            Ok(())
         })
-        .count();
-    assert_eq!(
-        dual, 0,
-        "an unreviewed name match cannot combine independent source owners"
-    );
 }
 
 mod identity;

@@ -8,8 +8,10 @@ use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
 use std::collections::{BTreeSet, HashMap};
 
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+
 #[test]
-fn shared_names_keep_row_owners_separate_and_reuse_only_the_same_native_owner() {
+fn shared_names_keep_row_owners_separate_and_reuse_only_the_same_native_owner() -> TestResult {
     let state = UsJurisdiction::Iowa;
     let school = CanonicalSchool::new(state, "Example School", "example school").0;
     let meet = CanonicalMeet::new(
@@ -47,7 +49,7 @@ fn shared_names_keep_row_owners_separate_and_reuse_only_the_same_native_owner() 
             gender: Gender::Boys,
             round: None,
             sport: Sport::OutdoorTrack,
-            school_year: SchoolYear::new(2026).expect("year"),
+            school_year: SchoolYear::new(2026).ok_or("2026 school year")?,
             event_key: "event:7".to_owned(),
             provider,
             jurisdiction: state,
@@ -55,7 +57,7 @@ fn shared_names_keep_row_owners_separate_and_reuse_only_the_same_native_owner() 
         let identity = RowIdentity {
             name: "Alex Rivera",
             school_name: "Example School",
-            grade: Grade::new(11).expect("grade"),
+            grade: Grade::new(11).ok_or("junior grade")?,
             gender: Gender::Boys,
             an_athlete_id: native_id,
             timer_team_id: None,
@@ -69,33 +71,34 @@ fn shared_names_keep_row_owners_separate_and_reuse_only_the_same_native_owner() 
         };
         owners.push(
             map_identity(&mut writer, &context, &school.id, &identity, row)
-                .unwrap()
+                .ok_or("mapped row owner")?
                 .athlete,
         );
     }
-    assert_eq!(owners[3], owners[5]);
-    assert_eq!(owners.iter().collect::<BTreeSet<_>>().len(), 5);
-    assert_eq!(accumulator.athletes.len(), 5);
+    check!(eq; owners[3], owners[5]);
+    check!(eq; owners.iter().collect::<BTreeSet<_>>().len(), 5);
+    check!(eq; accumulator.athletes.len(), 5);
     let candidate_keys: BTreeSet<_> = accumulator
         .athletes
         .values()
         .map(CanonicalAthlete::candidate_key)
         .collect();
-    assert_eq!(candidate_keys.len(), 1);
+    check!(eq; candidate_keys.len(), 1);
     let retained = accumulator
         .athletes
         .get(owners[3].as_str())
-        .expect("native subject");
+        .ok_or("native subject")?;
     let evidence_urls: BTreeSet<_> = retained
         .evidence
         .iter()
         .filter_map(|evidence| evidence.source.url.as_deref())
         .collect();
-    assert_eq!(
+    check!(eq;
         evidence_urls,
         BTreeSet::from([
             "https://example.test/timer-a/event/7",
             "https://example.test/timer-b/event/7",
         ])
     );
+    Ok(())
 }

@@ -54,12 +54,13 @@ impl<'a> Mapper<'a> {
         };
         let mut identities =
             athlete_identities(row.net_id, row.live_id, row.entry.as_deref()).into_iter();
-        let source = identities.next().unwrap_or_else(|| {
-            SourceIdentity::new(
+        let source = match identities.next() {
+            Some(value) => value,
+            None => SourceIdentity::new(
                 SourceNamespace::Other("ihsa_result_row".to_string()),
                 &row.source_key,
-            )
-        });
+            ),
+        };
         let (grad_year, observation, source) =
             self.accumulated
                 .unsupported

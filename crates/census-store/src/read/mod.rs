@@ -7,6 +7,8 @@ use super::{Consolidated, Entity, Store, StoreError, StoreResult, StoreStats, Ta
 
 mod directory;
 mod identity;
+#[cfg(test)]
+mod journal_snapshot_tests;
 mod snapshot;
 mod view;
 
@@ -82,6 +84,27 @@ impl Store {
         })
     }
 
+    pub fn journal_contains(&self, phase: &str, key: &str) -> StoreResult<bool> {
+        self.journal
+            .contains_key(Self::journal_key(phase, key))
+            .map_err(|source| StoreError::Read { source })
+    }
+
+    pub fn journal_payload(
+        &self,
+        phase: &str,
+        key: &str,
+    ) -> StoreResult<Option<serde_json::Value>> {
+        let Some(raw) = self
+            .journal
+            .get(Self::journal_key(phase, key))
+            .map_err(|source| StoreError::Read { source })?
+        else {
+            return Ok(None);
+        };
+        decode_journal_payload(phase, key, raw.as_ref()).map(Some)
+    }
+
     pub fn journal_keys(&self, phase: &str) -> StoreResult<HashSet<String>> {
         let prefix = Self::journal_key(phase, "");
         let mut keys = HashSet::new();
@@ -130,4 +153,22 @@ impl Store {
         }
         Ok(out)
     }
+}
+
+pub(crate) fn decode_journal_payload(
+    phase: &str,
+    key: &str,
+    raw: &[u8],
+) -> StoreResult<serde_json::Value> {
+    let value: serde_json::Value =
+        serde_json::from_slice(raw).map_err(|source| StoreError::Decode {
+            key: format!("{phase}/{key}"),
+            source,
+        })?;
+    value
+        .get("payload")
+        .cloned()
+        .ok_or_else(|| StoreError::Invariant {
+            detail: format!("journal entry {phase}/{key} has no payload"),
+        })
 }

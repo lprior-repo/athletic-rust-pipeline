@@ -11,8 +11,13 @@ pub fn audit_table(outcomes: &[FragmentOutcome]) -> String {
     let mut totals: BTreeMap<&'static str, usize> = BTreeMap::new();
     let mut rows_total = 0usize;
     for outcome in outcomes {
-        let count =
-            |verdict: super::verdict::Verdict| outcome.counts.get(&verdict).copied().unwrap_or(0);
+        let count = |verdict: super::verdict::Verdict| {
+            outcome
+                .counts
+                .get(&verdict)
+                .copied()
+                .map_or(0, |value| value)
+        };
         let total = outcome.rows.len();
         let shipped = count(super::verdict::Verdict::Ok);
         rows_total = rows_total.saturating_add(total);
@@ -41,13 +46,13 @@ pub fn audit_table(outcomes: &[FragmentOutcome]) -> String {
         "| **total ({})** | **{}** | **{}** | **{}** | **{}** | **{}** | **{}** | **{}** | **{}** | **{:.1} %** |\n",
         outcomes.len(),
         rows_total,
-        totals.get("ok").copied().unwrap_or(0),
-        totals.get("ok_role_context").copied().unwrap_or(0),
-        totals.get("role_contradicted").copied().unwrap_or(0),
-        totals.get("render_required").copied().unwrap_or(0),
-        totals.get("mismatch").copied().unwrap_or(0),
-        totals.get("empty").copied().unwrap_or(0),
-        totals.get("fetch_failed").copied().unwrap_or(0),
+        totals.get("ok").copied().map_or(0, |value| value),
+        totals.get("ok_role_context").copied().map_or(0, |value| value),
+        totals.get("role_contradicted").copied().map_or(0, |value| value),
+        totals.get("render_required").copied().map_or(0, |value| value),
+        totals.get("mismatch").copied().map_or(0, |value| value),
+        totals.get("empty").copied().map_or(0, |value| value),
+        totals.get("fetch_failed").copied().map_or(0, |value| value),
         share
     ));
     table
@@ -275,10 +280,13 @@ pub fn cited_hosts(files: &[PathBuf]) -> anyhow::Result<Vec<String>> {
 }
 
 pub fn fragment_file_name(path: &Path) -> String {
-    let file = path
+    let file = match path
         .file_name()
         .map(|name| name.to_string_lossy().into_owned())
-        .unwrap_or_else(|| "fragment.csv".to_string());
+    {
+        Some(value) => value,
+        None => "fragment.csv".to_string(),
+    };
     match path
         .parent()
         .and_then(Path::file_name)

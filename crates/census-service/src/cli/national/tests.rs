@@ -46,17 +46,21 @@ fn a_national_run_without_failures_exits_successfully() {
 }
 
 #[test]
-fn a_national_run_with_a_failed_jurisdiction_exits_non_zero() {
+fn a_national_run_with_a_failed_jurisdiction_exits_non_zero(
+) -> Result<(), Box<dyn std::error::Error>> {
     let failures = vec![NationalFailure {
         jurisdiction: UsJurisdiction::SouthDakota,
         identity: "jurisdiction:SD:2026-27:1".to_string(),
         error: "terminal: source refused every roster".to_string(),
     }];
-    let error = failure_exit(&report(failures)).expect_err("a failure must be an error exit");
-    assert!(
-        error.to_string().contains("1 jurisdiction(s) failed"),
-        "unexpected message: {error}"
-    );
+    let error = match failure_exit(&report(failures)) {
+        Err(error) => error,
+        Ok(_) => return Err("failed jurisdiction returned success".into()),
+    };
+    if !error.to_string().contains("1 jurisdiction(s) failed") {
+        return Err(format!("unexpected message: {error}").into());
+    }
+    Ok(())
 }
 
 #[test]

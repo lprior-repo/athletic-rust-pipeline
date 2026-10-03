@@ -1,3 +1,7 @@
+#[macro_use]
+#[path = "../../../tools/fallible_checks.rs"]
+mod fallible_checks;
+
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CentiSeconds, CompetitionLevel, EventKind, Evidence, Gender,
@@ -18,7 +22,11 @@ use std::time::{Duration, Instant};
 const SERVER_ENV: &str = "RESTATE_SERVER_BIN";
 const SOURCE_ID: &str = "mshsl_results";
 const MEET_DATE: &str = "2026-05-02";
-const SEASON: SchoolYear = SchoolYear::new(2025).expect("2025 is a season");
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+fn season() -> TestResult<SchoolYear> {
+    SchoolYear::new(2025).ok_or_else(|| "invalid fixture season".into())
+}
 const REVISION: Revision = Revision(1);
 
 const SCHOOLS: usize = 300;
@@ -55,22 +63,20 @@ fn server_binary() -> Option<PathBuf> {
 
 static HANDED_OUT: LazyLock<Mutex<HashSet<u16>>> = LazyLock::new(|| Mutex::new(HashSet::new()));
 
-fn free_port() -> u16 {
-    loop {
-        let listener = TcpListener::bind("127.0.0.1:0").expect("bind an ephemeral port");
-        let port = listener
-            .local_addr()
-            .expect("read the bound address")
-            .port();
+fn free_port() -> TestResult<u16> {
+    for _ in 0..128 {
+        let listener = TcpListener::bind("127.0.0.1:0")?;
+        let port = listener.local_addr()?.port();
         drop(listener);
         let first_time = HANDED_OUT
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .map_or_else(std::sync::PoisonError::into_inner, |value| value)
             .insert(port);
         if first_time {
-            return port;
+            return Ok(port);
         }
     }
+    Err("no distinct ephemeral port after 128 attempts".into())
 }
 
 struct ChildGuard {
@@ -78,10 +84,11 @@ struct ChildGuard {
 }
 
 impl ChildGuard {
-    fn kill_hard(&mut self) {
-        self.child.kill().expect("send SIGKILL to the owned child");
-        let status = self.child.wait().expect("reap the killed child");
-        assert_eq!(status.signal(), Some(9), "the child must die from SIGKILL");
+    fn kill_hard(&mut self) -> TestResult {
+        self.child.kill()?;
+        let status = self.child.wait()?;
+        check!(eq; status.signal(), Some(9), "the child must die from SIGKILL");
+        Ok(())
     }
 
     fn stop_gracefully(&mut self) {
@@ -120,18 +127,15 @@ struct Node {
 }
 
 impl Node {
-    fn start(root: &Path) -> Node {
-        let binary = server_binary().unwrap_or_else(|| {
-            panic!(
-                "no restate-server found: set {SERVER_ENV} or install one; \
-                 this test must not silently pass without a server"
-            )
-        });
-        let node_port = free_port();
-        let ingress_port = free_port();
-        let admin_port = free_port();
+    fn start(root: &Path) -> TestResult<Node> {
+        let binary = server_binary().ok_or_else(|| format!(
+            "no restate-server found: set {SERVER_ENV} or install one; test cannot run without a server"
+        ))?;
+        let node_port = free_port()?;
+        let ingress_port = free_port()?;
+        let admin_port = free_port()?;
         let base = root.join("node");
-        std::fs::create_dir_all(&base).expect("create the node base-dir");
+        std::fs::create_dir_all(&base)?;
         let config = root.join("restate.toml");
         std::fs::write(
             &config,
@@ -167,45 +171,46 @@ impl Node {
                  bind-port = {ingress_port}\n",
                 base = base.display(),
             ),
-        )
-        .expect("write the node config");
+        )?;
         let log_path = root.join("restate-server.log");
-        let log = std::fs::File::create(&log_path).expect("create the node log");
+        let log = std::fs::File::create(&log_path)?;
         let child = Command::new(&binary)
             .arg("--no-logo")
             .arg("--config-file")
             .arg(&config)
-            .stdout(Stdio::from(log.try_clone().expect("clone the node log")))
+            .stdout(Stdio::from(log.try_clone()?))
             .stderr(Stdio::from(log))
-            .spawn()
-            .expect("spawn restate-server");
-        Node {
+            .spawn()?;
+        Ok(Node {
             _guard: ChildGuard { child },
             ingress: format!("http://127.0.0.1:{ingress_port}/"),
             admin: format!("http://127.0.0.1:{admin_port}/"),
             log_path,
-        }
+        })
     }
 
-    fn restart(&mut self) {
-        self._guard.kill_hard();
-        let config_path = self.log_path.parent().unwrap().join("restate.toml");
+    fn restart(&mut self) -> TestResult {
+        self._guard.kill_hard()?;
+        let config_path = self
+            .log_path
+            .parent()
+            .ok_or("node log carries no parent")?
+            .join("restate.toml");
         let log_path = self.log_path.clone();
-        let binary = server_binary().unwrap();
+        let binary = server_binary().ok_or("restate-server unavailable for restart")?;
         let log = std::fs::OpenOptions::new()
             .create(true)
             .append(true)
-            .open(&log_path)
-            .expect("open the restart log");
+            .open(&log_path)?;
         let child = Command::new(&binary)
             .arg("--no-logo")
             .arg("--config-file")
             .arg(&config_path)
-            .stdout(Stdio::from(log.try_clone().expect("clone the restart log")))
+            .stdout(Stdio::from(log.try_clone()?))
             .stderr(Stdio::from(log))
-            .spawn()
-            .expect("spawn the restarted server");
+            .spawn()?;
         self._guard = ChildGuard { child };
+        Ok(())
     }
 }
 
@@ -216,31 +221,28 @@ struct Endpoint {
 }
 
 impl Endpoint {
-    fn start(data_dir: &Path, port: u16) -> Endpoint {
+    fn start(data_dir: &Path, port: u16) -> TestResult<Endpoint> {
         let binary = env!("CARGO_BIN_EXE_census-serve");
         let listen = SocketAddr::from(([127, 0, 0, 1], port));
         let log_path = data_dir.join(format!("census-serve-{port}.log"));
-        let log = std::fs::File::create(&log_path).expect("create the endpoint log");
+        let log = std::fs::File::create(&log_path)?;
         let child = Command::new(binary)
             .arg("--listen")
             .arg(listen.to_string())
             .arg("--data-dir")
             .arg(data_dir)
-            .stdout(Stdio::from(
-                log.try_clone().expect("clone the endpoint log"),
-            ))
+            .stdout(Stdio::from(log.try_clone()?))
             .stderr(Stdio::from(log))
-            .spawn()
-            .expect("spawn census-serve");
-        Endpoint {
+            .spawn()?;
+        Ok(Endpoint {
             guard: ChildGuard { child },
             listen,
             log_path,
-        }
+        })
     }
 
     fn log(&self) -> String {
-        std::fs::read_to_string(&self.log_path).unwrap_or_default()
+        std::fs::read_to_string(&self.log_path).map_or_else(|_| Default::default(), |value| value)
     }
 }
 
@@ -298,7 +300,10 @@ async fn paused_invocation(client: &reqwest::Client, node: &Node) -> Result<Stri
         .await
         .map_err(|error| error.to_string())?;
     let status = response.status();
-    let text = response.text().await.unwrap_or_default();
+    let text = response
+        .text()
+        .await
+        .map_or_else(|_| Default::default(), |value| value);
     if !status.is_success() {
         return Err(format!("the admin query answered {status}: {text}"));
     }
@@ -328,7 +333,10 @@ async fn resume(client: &reqwest::Client, node: &Node, invocation: &str) -> Resu
     if status.is_success() {
         return Ok(());
     }
-    let text = response.text().await.unwrap_or_default();
+    let text = response
+        .text()
+        .await
+        .map_or_else(|_| Default::default(), |value| value);
     Err(format!("the admin answered {status} to the resume: {text}"))
 }
 
@@ -345,7 +353,10 @@ async fn invoke(
     }
     .map_err(|error| error.to_string())?;
     let status = response.status();
-    let text = response.text().await.unwrap_or_default();
+    let text = response
+        .text()
+        .await
+        .map_or_else(|_| Default::default(), |value| value);
     if status.is_success() {
         serde_json::from_str(&text).map_err(|error| format!("{error}: {text}"))
     } else {
@@ -363,15 +374,14 @@ struct Corpus {
 }
 
 impl Corpus {
-    fn append(&self, store: &Store) {
-        store.append_many(Table::Schools, &self.schools).unwrap();
-        store.append_many(Table::Teams, &self.teams).unwrap();
-        store.append_many(Table::Athletes, &self.athletes).unwrap();
-        store.append_many(Table::Meets, &self.meets).unwrap();
-        store.append_many(Table::Events, &self.events).unwrap();
-        store
-            .append_many(Table::Performances, &self.performances)
-            .unwrap();
+    fn append(&self, store: &Store) -> TestResult {
+        store.append_many(Table::Schools, &self.schools)?;
+        store.append_many(Table::Teams, &self.teams)?;
+        store.append_many(Table::Athletes, &self.athletes)?;
+        store.append_many(Table::Meets, &self.meets)?;
+        store.append_many(Table::Events, &self.events)?;
+        store.append_many(Table::Performances, &self.performances)?;
+        Ok(())
     }
 
     fn appended_rows(&self) -> usize {
@@ -384,7 +394,7 @@ impl Corpus {
     }
 }
 
-fn synthetic_corpus(school_count: usize, athletes_per_school: usize) -> Corpus {
+fn synthetic_corpus(school_count: usize, athletes_per_school: usize) -> TestResult<Corpus> {
     let mut corpus = Corpus {
         schools: Vec::new(),
         teams: Vec::new(),
@@ -394,12 +404,12 @@ fn synthetic_corpus(school_count: usize, athletes_per_school: usize) -> Corpus {
         performances: Vec::new(),
     };
     for index in 0..school_count {
-        add_school(&mut corpus, index, athletes_per_school);
+        add_school(&mut corpus, index, athletes_per_school)?;
     }
-    corpus
+    Ok(corpus)
 }
 
-fn add_school(corpus: &mut Corpus, index: usize, athletes_per_school: usize) {
+fn add_school(corpus: &mut Corpus, index: usize, athletes_per_school: usize) -> TestResult {
     let name = format!("Kill Test School {index}");
     let (mut school, school_id) = CanonicalSchool::new(
         UsJurisdiction::Wisconsin,
@@ -412,7 +422,7 @@ fn add_school(corpus: &mut Corpus, index: usize, athletes_per_school: usize) {
         school: school_id.clone(),
         sport: Sport::OutdoorTrack,
         gender: Gender::Mixed,
-        school_year: SEASON,
+        school_year: season()?,
         level: None,
         source_identities: Vec::new(),
         evidence: vec![evidence()],
@@ -431,8 +441,9 @@ fn add_school(corpus: &mut Corpus, index: usize, athletes_per_school: usize) {
     corpus.teams.push(team);
     corpus.meets.push(meet);
     for slot in 0..athletes_per_school {
-        add_athlete(corpus, index, slot, &school_id, &team_id, &meet_id);
+        add_athlete(corpus, index, slot, &school_id, &team_id, &meet_id)?;
     }
+    Ok(())
 }
 
 fn add_athlete(
@@ -442,7 +453,7 @@ fn add_athlete(
     school_id: &SchoolId,
     team_id: &census_domain::model::TeamId,
     meet_id: &census_domain::model::MeetId,
-) {
+) -> TestResult {
     let gender = if (index + slot).is_multiple_of(2) {
         Gender::Boys
     } else {
@@ -461,8 +472,8 @@ fn add_athlete(
     );
     athlete.sports.push(Sport::OutdoorTrack);
     athlete.observed_grades.push(ObservedGrade {
-        grade: Grade::new(11).unwrap(),
-        school_year: SEASON,
+        grade: Grade::new(11).ok_or("invalid fixture grade")?,
+        school_year: season()?,
         source: SourceRef::id(SOURCE_ID),
     });
     let athlete_id = athlete.id.clone();
@@ -486,224 +497,207 @@ fn add_athlete(
             date: MEET_DATE.to_string(),
             mark: Mark::TimeSeconds(
                 CentiSeconds::try_from_seconds_f64(
-                    11.5 + f64::from(u32::try_from(attempt).unwrap()) / 10.0,
+                    11.5 + f64::from(u32::try_from(attempt)?) / 10.0,
                 )
-                .expect("fixture is in range"),
+                .ok_or("invalid fixture time")?,
             ),
             wind_mps: None,
-            place: Some(u16::try_from(attempt + 1).unwrap()),
+            place: Some(u16::try_from(attempt + 1)?),
             heat: None,
             round: None,
             timing: Some(TimingMethod::Fat),
-            observed_grade: Some(Grade::new(11).unwrap()),
+            observed_grade: Some(Grade::new(11).ok_or("invalid fixture grade")?),
             evidence: vec![evidence()],
             source_key,
             source_athlete: Some(source.clone()),
             retained_conflicts: Vec::new(),
         });
     }
+    Ok(())
 }
 
-#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-async fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() {
-    if server_binary().is_none() {
-        panic!(
-            "no restate-server found: set {SERVER_ENV} or install one. Refusing to pass without \
-             the server this test exists to prove against."
-        );
-    }
+#[test]
+fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() -> TestResult {
+    tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(4)
+        .enable_all()
+        .build()?
+        .block_on(async {
+            server_binary().ok_or_else(|| {
+                format!("no restate-server found: set {SERVER_ENV} or install one")
+            })?;
 
-    let root = std::env::temp_dir().join(format!("midwest-kill-restart-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    std::fs::create_dir_all(&root).expect("create the test root");
-    let data_dir = root.join("census");
-    std::fs::create_dir_all(&data_dir).expect("create the census data-dir");
+            let root =
+                std::env::temp_dir().join(format!("midwest-kill-restart-{}", std::process::id()));
+            let _ = std::fs::remove_dir_all(&root);
+            std::fs::create_dir_all(&root)?;
+            let data_dir = root.join("census");
+            std::fs::create_dir_all(&data_dir)?;
 
-    let corpus = synthetic_corpus(SCHOOLS, ATHLETES_PER_SCHOOL);
-    let expected_observations = corpus.appended_rows();
-    {
-        let store = Store::open(&data_dir).expect("open the store to seed the corpus");
-        corpus.append(&store);
-    }
+            let corpus = synthetic_corpus(SCHOOLS, ATHLETES_PER_SCHOOL)?;
+            let expected_observations = corpus.appended_rows();
+            {
+                let store = Store::open(&data_dir)?;
+                corpus.append(&store)?;
+            }
 
-    let node_guard = Node::start(&root);
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(120))
-        .build()
-        .expect("build the HTTP client");
-    wait_for_node(&client, &node_guard)
-        .await
-        .expect("the node's admin API answers");
+            let node_guard = Node::start(&root)?;
+            let client = reqwest::Client::builder()
+                .timeout(Duration::from_secs(120))
+                .build()?;
+            wait_for_node(&client, &node_guard).await?;
 
-    let endpoint_port = free_port();
-    let mut endpoint = Endpoint::start(&data_dir, endpoint_port);
-    register(&client, &node_guard, &endpoint)
-        .await
-        .expect("the endpoint registers");
+            let endpoint_port = free_port()?;
+            let mut endpoint = Endpoint::start(&data_dir, endpoint_port)?;
+            register(&client, &node_guard, &endpoint).await?;
 
-    let key = WorkflowIdentity::national(
-        SEASON,
-        REVISION,
-        &census_domain::UsJurisdiction::CENSUS_SCOPE,
-    );
-    let key = key.as_str().to_string();
-    let path_run = format!("Consolidate/{key}/run");
-    let request = serde_json::json!({ "tables": [] });
+            let key = WorkflowIdentity::national(
+                season()?,
+                REVISION,
+                &census_domain::UsJurisdiction::CENSUS_SCOPE,
+            );
+            let key = key.as_str().to_string();
+            let path_run = format!("Consolidate/{key}/run");
+            let request = serde_json::json!({ "tables": [] });
 
-    let submission = {
-        let client = client.clone();
-        let ingress = node_guard.ingress.clone();
-        let path = path_run.clone();
-        let body = request.clone();
-        tokio::spawn(async move {
-            client
-                .post(format!("{ingress}{path}"))
-                .json(&body)
-                .send()
-                .await
-                .map(|response| response.status().as_u16())
-                .map_err(|error| error.to_string())
+            let submission = {
+                let client = client.clone();
+                let ingress = node_guard.ingress.clone();
+                let path = path_run.clone();
+                let body = request.clone();
+                tokio::spawn(async move {
+                    client
+                        .post(format!("{ingress}{path}"))
+                        .json(&body)
+                        .send()
+                        .await
+                        .map(|response| response.status().as_u16())
+                        .map_err(|error| error.to_string())
+                })
+            };
+            tokio::time::sleep(KILL_DELAY).await;
+            endpoint.guard.kill_hard()?;
+            let killed = submission.await;
+            match &killed {
+                Ok(Ok(status)) => {
+                    eprintln!("note: submission answered {status} before the kill landed")
+                }
+                Ok(Err(error)) => eprintln!("note: submission failed as expected: {error}"),
+                Err(error) => eprintln!("note: submission task panicked: {error}"),
+            }
+
+            let snapshot_dir = data_dir.join("out");
+            let snapshots_written = || {
+                Table::ALL
+                    .into_iter()
+                    .filter(|table| {
+                        snapshot_dir
+                            .join(format!("{}.jsonl", table.file()))
+                            .is_file()
+                    })
+                    .count()
+            };
+            let at_kill = snapshots_written();
+            check!(at_kill < Table::ALL.len(),
+    "the merge had already written every one of its {} snapshots before the kill landed, so \
+     this run never had to resume",
+    Table::ALL.len());
+
+            let mut endpoint = Endpoint::start(&data_dir, endpoint_port)?;
+            register(&client, &node_guard, &endpoint).await?;
+
+            let attaching = reqwest::Client::builder().build()?;
+            let repeat = tokio::time::timeout(
+                RUN_BUDGET,
+                invoke(&attaching, &node_guard, &path_run, Some(request.clone())),
+            )
+            .await;
+            match repeat {
+                Ok(Err(error)) => check!(
+                    error.contains("409") && error.contains("already invoked"),
+                    "the repeat was not refused as an existing invocation: {error}"
+                ),
+                Ok(Ok(reply)) => {
+                    return Err(format!("repeat answered a second execution: {reply}").into())
+                }
+                Err(error) => return Err(format!("repeat never answered: {error}").into()),
+            }
+            eprintln!("note: the repeat was refused as an existing invocation, so nothing forked");
+
+            let invocation = paused_invocation(&client, &node_guard).await?;
+            resume(&client, &node_guard, &invocation).await?;
+            eprintln!("note: the paused invocation {invocation} was resumed");
+
+            let deadline = Instant::now() + RUN_BUDGET;
+            let mut written = at_kill;
+            while Instant::now() < deadline && written < Table::ALL.len() {
+                tokio::time::sleep(POLL_INTERVAL).await;
+                written = snapshots_written();
+            }
+            check!(written == Table::ALL.len(),
+    "the run never finished its merge after the endpoint restarted: {written} of {} snapshots \
+     landed (at the kill: {at_kill})\n\
+     --- endpoint log ({}):\n{}\n--- node log ({}):\n{}",
+    Table::ALL.len(),
+    endpoint.log_path.display(),
+    endpoint.log(),
+    node_guard.log_path.display(),
+    std::fs::read_to_string(&node_guard.log_path).map_or_else(|_| Default::default(), |value| value),);
+
+            endpoint.guard.stop_gracefully();
+            let store = Store::open(&data_dir)?;
+            let stats = store.stats()?;
+            check!(eq; stats.observations, expected_observations as u64,
+    "a resumed run replayed a durable write: expected {expected_observations} observations, \
+     found {}",
+    stats.observations);
+
+            let athletes_snapshot = data_dir.join("out").join("athletes.jsonl");
+            let rows = std::fs::read_to_string(&athletes_snapshot)?
+                .lines()
+                .filter(|line| !line.trim().is_empty())
+                .count();
+            check!(eq; rows,
+    corpus.athletes.len(),
+    "the athletes snapshot holds {rows} rows, not the corpus's {}",
+    corpus.athletes.len());
+
+            drop(node_guard);
+            let _ = std::fs::remove_dir_all(&root);
+            Ok(())
         })
-    };
-    tokio::time::sleep(KILL_DELAY).await;
-    endpoint.guard.kill_hard();
-    let killed = submission.await;
-    match &killed {
-        Ok(Ok(status)) => eprintln!("note: submission answered {status} before the kill landed"),
-        Ok(Err(error)) => eprintln!("note: submission failed as expected: {error}"),
-        Err(error) => eprintln!("note: submission task panicked: {error}"),
-    }
-
-    let snapshot_dir = data_dir.join("out");
-    let snapshots_written = || {
-        Table::ALL
-            .into_iter()
-            .filter(|table| {
-                snapshot_dir
-                    .join(format!("{}.jsonl", table.file()))
-                    .is_file()
-            })
-            .count()
-    };
-    let at_kill = snapshots_written();
-    assert!(
-        at_kill < Table::ALL.len(),
-        "the merge had already written every one of its {} snapshots before the kill landed, so \
-         this run never had to resume",
-        Table::ALL.len()
-    );
-
-    let mut endpoint = Endpoint::start(&data_dir, endpoint_port);
-    register(&client, &node_guard, &endpoint)
-        .await
-        .expect("the restarted endpoint registers");
-
-    let attaching = reqwest::Client::builder()
-        .build()
-        .expect("build the attaching client");
-    let repeat = tokio::time::timeout(
-        RUN_BUDGET,
-        invoke(&attaching, &node_guard, &path_run, Some(request.clone())),
-    )
-    .await;
-    match repeat {
-        Ok(Err(error)) => assert!(
-            error.contains("409") && error.contains("already invoked"),
-            "the repeat was not refused as an existing invocation: {error}"
-        ),
-        Ok(Ok(reply)) => panic!("the repeat started or answered a second execution: {reply}"),
-        Err(_) => panic!("the repeat never answered"),
-    }
-    eprintln!("note: the repeat was refused as an existing invocation, so nothing forked");
-
-    let invocation = paused_invocation(&client, &node_guard)
-        .await
-        .expect("the admin names the paused invocation");
-    resume(&client, &node_guard, &invocation)
-        .await
-        .expect("the paused invocation resumes");
-    eprintln!("note: the paused invocation {invocation} was resumed");
-
-    let deadline = Instant::now() + RUN_BUDGET;
-    let mut written = at_kill;
-    while Instant::now() < deadline && written < Table::ALL.len() {
-        tokio::time::sleep(POLL_INTERVAL).await;
-        written = snapshots_written();
-    }
-    assert!(
-        written == Table::ALL.len(),
-        "the run never finished its merge after the endpoint restarted: {written} of {} snapshots \
-         landed (at the kill: {at_kill})\n\
-         --- endpoint log ({}):\n{}\n--- node log ({}):\n{}",
-        Table::ALL.len(),
-        endpoint.log_path.display(),
-        endpoint.log(),
-        node_guard.log_path.display(),
-        std::fs::read_to_string(&node_guard.log_path).unwrap_or_default(),
-    );
-
-    endpoint.guard.stop_gracefully();
-    let store = Store::open(&data_dir).expect("reopen the store after the endpoint drained");
-    let stats = store.stats().expect("read store stats");
-    assert_eq!(
-        stats.observations, expected_observations as u64,
-        "a resumed run replayed a durable write: expected {expected_observations} observations, \
-         found {}",
-        stats.observations
-    );
-
-    let athletes_snapshot = data_dir.join("out").join("athletes.jsonl");
-    let rows = std::fs::read_to_string(&athletes_snapshot)
-        .expect("the consolidate snapshot for athletes")
-        .lines()
-        .filter(|line| !line.trim().is_empty())
-        .count();
-    assert_eq!(
-        rows,
-        corpus.athletes.len(),
-        "the athletes snapshot holds {rows} rows, not the corpus's {}",
-        corpus.athletes.len()
-    );
-
-    drop(node_guard);
-    let _ = std::fs::remove_dir_all(&root);
 }
-#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-async fn b_restate_server_sigkill_resumes_workflow() {
-    if server_binary().is_none() {
-        panic!(
-            "no restate-server found: set {SERVER_ENV} or install one. Refusing to pass without \
-             the server this test exists to prove against."
-        );
-    }
+#[test]
+fn b_restate_server_sigkill_resumes_workflow() -> TestResult {
+    tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(4)
+        .enable_all()
+        .build()?
+        .block_on(async {
+    server_binary().ok_or_else(|| format!("no restate-server found: set {SERVER_ENV} or install one"))?;
 
-    let root = tempfile::TempDir::new().expect("create temp dir");
+    let root = tempfile::TempDir::new()?;
     let data_dir = root.path().join("census");
-    std::fs::create_dir_all(&data_dir).expect("create the census data-dir");
+    std::fs::create_dir_all(&data_dir)?;
 
-    let corpus = synthetic_corpus(SCHOOLS, ATHLETES_PER_SCHOOL);
+    let corpus = synthetic_corpus(SCHOOLS, ATHLETES_PER_SCHOOL)?;
     let expected_observations = corpus.appended_rows();
     {
-        let store = Store::open(&data_dir).expect("open store to seed corpus");
-        corpus.append(&store);
+        let store = Store::open(&data_dir)?;
+        corpus.append(&store)?;
     }
 
-    let mut node = Node::start(root.path());
+    let mut node = Node::start(root.path())?;
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(5))
-        .build()
-        .expect("build the HTTP client");
-    wait_for_node(&client, &node)
-        .await
-        .expect("the node's admin API answers");
+        .build()?;
+    wait_for_node(&client, &node).await?;
 
-    let endpoint_port = free_port();
-    let mut endpoint = Endpoint::start(&data_dir, endpoint_port);
-    register(&client, &node, &endpoint)
-        .await
-        .expect("the endpoint registers");
+    let endpoint_port = free_port()?;
+    let mut endpoint = Endpoint::start(&data_dir, endpoint_port)?;
+    register(&client, &node, &endpoint).await?;
 
-    let key = WorkflowIdentity::national(SEASON, REVISION, &UsJurisdiction::CENSUS_SCOPE);
+    let key = WorkflowIdentity::national(season()?, REVISION, &UsJurisdiction::CENSUS_SCOPE);
     let path_run = format!("Consolidate/{key}/run");
     let request = serde_json::json!({ "tables": [] });
 
@@ -741,21 +735,15 @@ async fn b_restate_server_sigkill_resumes_workflow() {
         tokio::time::sleep(POLL_INTERVAL).await;
         written = snapshots_written();
     }
-    assert!(
-        written >= 1,
-        "no snapshots written after submitting the run -- the merge did not start"
-    );
-    assert!(
-        written < Table::ALL.len(),
-        "the merge completed before we could kill: all {} snapshots written",
-        Table::ALL.len()
-    );
+    check!(written >= 1,
+    "no snapshots written after submitting the run -- the merge did not start");
+    check!(written < Table::ALL.len(),
+    "the merge completed before we could kill: all {} snapshots written",
+    Table::ALL.len());
 
-    endpoint.guard.kill_hard();
-    assert!(
-        snapshots_written() < Table::ALL.len(),
-        "the kill landed after completion"
-    );
+    endpoint.guard.kill_hard()?;
+    check!(snapshots_written() < Table::ALL.len(),
+    "the kill landed after completion");
     submission.abort();
     let _ = submission.await;
 
@@ -769,13 +757,11 @@ async fn b_restate_server_sigkill_resumes_workflow() {
         }
     }
     let original_invocation = invocation_id
-        .expect("no paused invocation after killing the endpoint -- the workflow did not pause");
+        .ok_or("workflow did not pause after endpoint kill")?;
 
-    node.restart();
+    node.restart()?;
 
-    wait_for_node(&client, &node)
-        .await
-        .expect("the restarted node's admin API answers");
+    wait_for_node(&client, &node).await?;
 
     let deadline = Instant::now() + Duration::from_secs(15);
     let mut post_restart_invocation: Option<String> = None;
@@ -786,21 +772,13 @@ async fn b_restate_server_sigkill_resumes_workflow() {
             tokio::time::sleep(Duration::from_millis(500)).await;
         }
     }
-    let resumed_invocation = post_restart_invocation.expect(
-        "invocation was lost after server restart -- the journal did not survive the crash",
-    );
-    assert_eq!(
-        original_invocation, resumed_invocation,
-        "the invocation ID changed after restart: expected {original_invocation}, found {resumed_invocation}"
-    );
+    let resumed_invocation = post_restart_invocation.ok_or("invocation lost after server restart")?;
+    check!(eq; original_invocation, resumed_invocation,
+    "the invocation ID changed after restart: expected {original_invocation}, found {resumed_invocation}");
 
-    endpoint = Endpoint::start(&data_dir, endpoint_port);
-    register(&client, &node, &endpoint)
-        .await
-        .expect("the restarted endpoint re-registers");
-    resume(&client, &node, &resumed_invocation)
-        .await
-        .expect("the paused invocation resumes after restart");
+    endpoint = Endpoint::start(&data_dir, endpoint_port)?;
+    register(&client, &node, &endpoint).await?;
+    resume(&client, &node, &resumed_invocation).await?;
 
     let deadline = Instant::now() + RUN_BUDGET;
     let mut written = snapshots_written();
@@ -808,33 +786,28 @@ async fn b_restate_server_sigkill_resumes_workflow() {
         tokio::time::sleep(POLL_INTERVAL).await;
         written = snapshots_written();
     }
-    assert!(
-        written == Table::ALL.len(),
-        "the merge never finished after server restart: {written} of {} snapshots landed",
-        Table::ALL.len()
-    );
+    check!(written == Table::ALL.len(),
+    "the merge never finished after server restart: {written} of {} snapshots landed",
+    Table::ALL.len());
 
     drop(node);
     endpoint.guard.stop_gracefully();
-    let store = Store::open(&data_dir).expect("reopen the store after the endpoint drained");
-    let stats = store.stats().expect("read store stats");
-    assert_eq!(
-        stats.observations, expected_observations as u64,
-        "a resumed run replayed a durable write: expected {expected_observations} observations, \
-         found {}",
-        stats.observations
-    );
+    let store = Store::open(&data_dir)?;
+    let stats = store.stats()?;
+    check!(eq; stats.observations, expected_observations as u64,
+    "a resumed run replayed a durable write: expected {expected_observations} observations, \
+     found {}",
+    stats.observations);
 
     let athletes_snapshot = data_dir.join("out").join("athletes.jsonl");
-    let rows = std::fs::read_to_string(&athletes_snapshot)
-        .expect("the consolidate snapshot for athletes")
+    let rows = std::fs::read_to_string(&athletes_snapshot)?
         .lines()
         .filter(|line| !line.trim().is_empty())
         .count();
-    assert_eq!(
-        rows,
-        corpus.athletes.len(),
-        "the athletes snapshot holds {rows} rows, not the corpus's {}",
-        corpus.athletes.len()
-    );
+    check!(eq; rows,
+    corpus.athletes.len(),
+    "the athletes snapshot holds {rows} rows, not the corpus's {}",
+    corpus.athletes.len());
+    Ok(())
+        })
 }

@@ -22,10 +22,6 @@ lto = "thin"
 codegen-units = 1
 strip = true
 
-# Workspace lints apply to every target, including tests, so they stay at the severity that is
-# safe repo-wide. The stricter production-only surface (no unwrap/expect/panic/indexing, no
-# unchecked arithmetic or casts, no `let _ =` on a must-use value) is enforced by
-# tools/gate.sh on --lib/--bins/--examples, which is where production reachability is measured.
 [workspace.lints.rust]
 # `forbid` rather than `deny`: §56's rule is that no crate may buy throughput by reaching for
 # `unsafe`, and only `forbid` makes that un-suppressible — a narrower `allow` on a hot path would
@@ -41,6 +37,8 @@ dbg_macro = "deny"
 todo = "deny"
 unimplemented = "deny"
 panic_in_result_fn = "deny"
+unwrap_used = "deny"
+expect_used = "deny"
 
 # Chromium 151 replaced Network.ClientSecurityState.privateNetworkRequestPolicy with
 # localNetworkAccessRequestPolicy, so the pinned generated model rejects every

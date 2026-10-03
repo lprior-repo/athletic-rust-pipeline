@@ -34,14 +34,14 @@ fn own_parse_has_row_issues(
 ) -> bool {
     rec.pages_with_parsed.iter().any(|parsed| {
         let is_issue = parsed_records
-            .get(parsed.as_deref().unwrap_or(""))
+            .get(parsed.as_deref().map_or("", core::convert::identity))
             .map(|p| {
                 p.get("issues")
                     .and_then(|v| v.as_array())
                     .map(|a| !a.is_empty())
-                    .unwrap_or(false)
+                    .map_or(false, core::convert::identity)
             })
-            .unwrap_or(false);
+            .map_or(false, core::convert::identity);
         is_issue
     })
 }

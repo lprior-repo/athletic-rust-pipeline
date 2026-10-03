@@ -4,8 +4,18 @@ use std::process::ExitCode;
 
 use census_service::bootstrap::{serve, ServeOptions};
 
-#[tokio::main]
-async fn main() -> ExitCode {
+fn main() -> ExitCode {
+    let runtime = match tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+    {
+        Ok(runtime) => runtime,
+        Err(error) => {
+            eprintln!("census-serve: runtime startup failed: {error}");
+            return ExitCode::FAILURE;
+        }
+    };
+    runtime.block_on(async {
     let options = match ServeOptions::from_env(std::env::args().skip(1)) {
         Ok(options) => options,
         Err(error) => {
@@ -31,4 +41,5 @@ async fn main() -> ExitCode {
             ExitCode::FAILURE
         }
     }
+    })
 }

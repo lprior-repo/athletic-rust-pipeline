@@ -165,8 +165,10 @@ impl NaturalKey for CanonicalEvent {
         self.meet == other.meet
             && self.kind == other.kind
             && self.gender == other.gender
-            && self.division.as_deref().unwrap_or("") == other.division.as_deref().unwrap_or("")
-            && self.round.as_deref().unwrap_or("") == other.round.as_deref().unwrap_or("")
+            && self.division.as_deref().map_or("", |value| value)
+                == other.division.as_deref().map_or("", |value| value)
+            && self.round.as_deref().map_or("", |value| value)
+                == other.round.as_deref().map_or("", |value| value)
     }
 
     fn natural_key(&self) -> String {
@@ -175,8 +177,8 @@ impl NaturalKey for CanonicalEvent {
             self.kind,
             self.meet,
             self.gender,
-            self.division.as_deref().unwrap_or(""),
-            self.round.as_deref().unwrap_or("")
+            self.division.as_deref().map_or("", |value| value),
+            self.round.as_deref().map_or("", |value| value)
         )
     }
 

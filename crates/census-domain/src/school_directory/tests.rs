@@ -1,3 +1,5 @@
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+
 #[path = "tests/address_tests.rs"]
 mod address_tests;
 

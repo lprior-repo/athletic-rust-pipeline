@@ -66,7 +66,7 @@ fn nd_city(html: &str) -> CrawlResult<Option<String>> {
         return Ok(None);
     };
     let address = clean_text(raw.as_str())?;
-    let cut = address.rfind(", ND").unwrap_or(address.len());
+    let cut = address.rfind(", ND").map_or(address.len(), |value| value);
     let city = address
         .get(..cut)
         .and_then(|before| before.rsplit(',').next());

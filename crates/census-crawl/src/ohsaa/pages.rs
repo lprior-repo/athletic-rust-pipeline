@@ -13,9 +13,13 @@ pub fn parse_sport_label(label: &str) -> Option<Sport> {
     }
 }
 
+pub(super) fn published_absence(value: &str) -> bool {
+    value == "N/A" || value.starts_with("TBA")
+}
+
 pub fn parse_coach_cell(cell_html: &str) -> Option<CoachEntry> {
     let cleaned = collapse_whitespace(&decode_entities(&strip_tags(cell_html)));
-    if cleaned == "N/A" || cleaned.starts_with("TBA") || cleaned.is_empty() {
+    if published_absence(&cleaned) || cleaned.is_empty() {
         return None;
     }
 
@@ -29,10 +33,10 @@ pub fn parse_coach_cell(cell_html: &str) -> Option<CoachEntry> {
     }
 
     let email = if let Some((_, after)) = cell_html.split_once("href=\"mailto:") {
-        let end = after.find('"').unwrap_or(after.len());
+        let end = after.find('"').map_or(after.len(), |value| value);
         after.get(..end).and_then(valid_email)
     } else if let Some((_, after)) = cell_html.split_once("href='mailto:") {
-        let end = after.find('\'').unwrap_or(after.len());
+        let end = after.find('\'').map_or(after.len(), |value| value);
         after.get(..end).and_then(valid_email)
     } else {
         None
@@ -216,10 +220,10 @@ fn extract_field_name(row: &str) -> String {
 
 fn extract_field_email(row: &str) -> Option<String> {
     if let Some((_, after)) = row.split_once("href=\"mailto:") {
-        let end = after.find('"').unwrap_or(after.len());
+        let end = after.find('"').map_or(after.len(), |value| value);
         after.get(..end).and_then(valid_email)
     } else if let Some((_, after)) = row.split_once("href='mailto:") {
-        let end = after.find('\'').unwrap_or(after.len());
+        let end = after.find('\'').map_or(after.len(), |value| value);
         after.get(..end).and_then(valid_email)
     } else {
         None

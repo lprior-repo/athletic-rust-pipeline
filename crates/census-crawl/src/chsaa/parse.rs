@@ -17,18 +17,13 @@ pub fn parse_directory(body: &str) -> CrawlResult<Vec<MemberSchool>> {
     let start = body.find(anchor).ok_or(CrawlError::Invariant {
         detail: "directory array marker not found".to_string(),
     })?;
-    let from_anchor = body.get(start..).unwrap_or_default();
+    let from_anchor = body.get(start..).map_or(Default::default(), core::convert::identity);
     let plain = from_anchor.replace("\\\"", "\"");
     let array = extract_balanced_array(&plain)?;
     let schools = parse_school_json(&array)?;
     let schools: Vec<MemberSchool> = schools
         .into_iter()
-        .filter(|s| {
-            s.name
-                .as_deref()
-                .map(|n| !n.trim().is_empty())
-                .unwrap_or(false)
-        })
+        .filter(|s| s.name.as_deref().is_some_and(|n| !n.trim().is_empty()))
         .collect();
     Ok(schools)
 }
@@ -59,7 +54,7 @@ fn extract_school_name(body: &str) -> String {
     let Some(title) = rest.get(..close) else {
         return String::new();
     };
-    let name = title.split('|').next().unwrap_or(title);
+    let name = title.split('|').next().map_or(title, |value| value);
     let name = html_unescape(name);
     name.split_whitespace().collect::<Vec<&str>>().join(" ")
 }
@@ -141,7 +136,7 @@ fn extract_coach_rows(text: &str, school_name: &str) -> CrawlResult<Vec<SchoolCo
             .get("activityName")
             .and_then(|v| v.as_str())
             .map(|s| s.to_string())
-            .unwrap_or_default();
+            .map_or(Default::default(), core::convert::identity);
         let members = obj.get("members").and_then(|v| v.as_array());
         if let Some(members) = members {
             for member in members {
@@ -149,7 +144,7 @@ fn extract_coach_rows(text: &str, school_name: &str) -> CrawlResult<Vec<SchoolCo
                     .get("name")
                     .and_then(|v| v.as_str())
                     .map(|s| s.trim().to_string())
-                    .unwrap_or_default();
+                    .map_or(Default::default(), core::convert::identity);
                 if person.is_empty() {
                     continue;
                 }
@@ -160,7 +155,7 @@ fn extract_coach_rows(text: &str, school_name: &str) -> CrawlResult<Vec<SchoolCo
                             .get("title")
                             .and_then(|v| v.as_str())
                             .map(|s| s.trim().to_string())
-                            .unwrap_or_default();
+                            .map_or(Default::default(), core::convert::identity);
                         result.push(SchoolCoachRow {
                             school_name: school_name.to_string(),
                             person: person.clone(),

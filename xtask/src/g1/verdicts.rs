@@ -36,17 +36,16 @@ pub(crate) fn print_recount(per_page: &[PageAnalysis]) {
         .iter()
         .filter(|p| {
             p.count
-                .map(|c| count_len(c) > p.rows && !p.has_next)
-                .unwrap_or(false)
+                .is_some_and(|c| count_len(c) > p.rows && !p.has_next)
         })
         .count();
     let count_lt_rows: usize = per_page
         .iter()
-        .filter(|p| p.count.map(|c| count_len(c) < p.rows).unwrap_or(false))
+        .filter(|p| p.count.is_some_and(|c| count_len(c) < p.rows))
         .count();
     let clean_full: usize = per_page
         .iter()
-        .filter(|p| p.count.map(|c| count_len(c) == p.rows).unwrap_or(false) && !has_row_issues(p))
+        .filter(|p| p.count.is_some_and(|c| count_len(c) == p.rows) && !has_row_issues(p))
         .count();
 
     println!("  recount (bytes only):");
@@ -85,11 +84,13 @@ pub(crate) fn print_parser(per_page: &[PageAnalysis]) {
         .count();
     let parser_cand_pages: usize = per_page
         .iter()
-        .filter(|p| (p.parser_candidates.unwrap_or(0)) > 0)
+        .filter(|p| p.parser_candidates.is_some_and(|count| count > 0))
         .count();
     let parser_salvageable: usize = per_page
         .iter()
-        .filter(|p| (p.parser_candidates.unwrap_or(0)) > 0 && !p.parser_issues.is_empty())
+        .filter(|p| {
+            p.parser_candidates.is_some_and(|count| count > 0) && !p.parser_issues.is_empty()
+        })
         .count();
     let no_parsed_record: usize = per_page
         .iter()
@@ -111,8 +112,9 @@ pub(crate) fn print_parser(per_page: &[PageAnalysis]) {
         parser_salvageable,
         per_page
             .iter()
-            .filter(|p| (p.parser_candidates.unwrap_or(0)) > 0 && !p.parser_issues.is_empty())
-            .map(|p| p.parser_candidates.unwrap_or(0))
+            .filter(|p| p.parser_candidates.is_some_and(|count| count > 0)
+                && !p.parser_issues.is_empty())
+            .map(|p| p.parser_candidates.map_or(0, core::convert::identity))
             .sum::<usize>()
     );
 }
@@ -219,7 +221,8 @@ pub(crate) fn print_pagination(per_page: &[PageAnalysis]) {
         .filter(|p| {
             !p.parser_issues.is_empty()
                 && p.parser_next.is_none()
-                && (p.parser_count.unwrap_or(0)) > len_count(p.parser_candidates.unwrap_or(0))
+                && p.parser_count.map_or(0, core::convert::identity)
+                    > len_count(p.parser_candidates.map_or(0, core::convert::identity))
         })
         .count();
     println!("  if other-sport rows became skips instead of issues:");

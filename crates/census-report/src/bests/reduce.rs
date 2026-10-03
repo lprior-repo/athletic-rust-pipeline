@@ -1,12 +1,16 @@
+mod reports;
+
+use reports::{CompetitionContext, ReportGroup};
+
 use super::key::{should_replace, MarkOrdering, PrKey};
-use super::selection::{Conflict, Population, SharedSelection};
-use super::{is_relay, mark_text, Measure, Options, Parents};
+use super::selection::{Population, SharedSelection};
+use super::{is_relay, Measure, Options, Parents};
 use crate::report::{Derivation, Scope};
 use census_domain::model::{
-    AthleteId, CanonicalAthlete, CanonicalMeet, CanonicalPerformance, Mark, SourceIdentity,
+    AthleteId, CanonicalAthlete, CanonicalMeet, CanonicalPerformance, SourceIdentity,
 };
 use census_domain::{JurisdictionBucket, MeetState};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 pub fn build_from_dataset(
     dataset: &crate::export::ExportDataset,
@@ -19,33 +23,28 @@ pub fn build_from_dataset(
         let athlete_id = parents
             .athlete(performance.athlete.as_str())
             .map_or_else(|| performance.athlete.clone(), |athlete| athlete.id.clone());
-        fold(
-            &mut slots,
-            performance,
-            &parents,
-            derivation.scope(),
-            athlete_id,
-        );
+        fold(&mut slots, performance, &parents, athlete_id);
     }
     super::selection::publish(
-        slots.into_values().filter_map(close).collect(),
+        slots
+            .into_values()
+            .filter_map(|slot| close(slot, &parents, derivation.scope()))
+            .collect(),
         options.limit,
     )
 }
 
-pub(crate) struct PrSlot {
-    winner: Option<SharedSelection>,
+struct PrSlot<'a> {
     sources: Vec<SourceIdentity>,
-    reports: Vec<(String, String)>,
+    reports: BTreeMap<CompetitionContext<'a>, ReportGroup<'a>>,
     marks: usize,
 }
 
-impl PrSlot {
+impl PrSlot<'_> {
     fn empty() -> Self {
         Self {
-            winner: None,
             sources: Vec::new(),
-            reports: Vec::new(),
+            reports: BTreeMap::new(),
             marks: 0,
         }
     }
@@ -68,7 +67,7 @@ impl<'a> Candidate<'a> {
     ) -> Option<Self> {
         let athlete = parents.athlete(athlete_id.as_str())?;
         let kind = parents.event(performance.event.as_str())?;
-        if is_relay(kind) {
+        if is_relay(kind) || !performance.mark_compatible(kind) {
             return None;
         }
         let measure = Measure::of(&performance.mark)?;
@@ -86,52 +85,47 @@ impl<'a> Candidate<'a> {
         })
     }
 
-    fn record(&self, entry: &mut PrSlot, parents: &Parents<'_>, scope: Scope) {
+    fn record(self, entry: &mut PrSlot<'a>) {
         entry.marks = entry.marks.saturating_add(1);
         if let Some(owner) = owner_of(self.performance, self.athlete) {
             if !entry.sources.contains(owner) {
                 entry.sources.push(owner.clone());
             }
         }
-        let meet_name = self.meet.map(|meet| meet.name.clone()).unwrap_or_default();
-        entry
-            .reports
-            .push((meet_name, format_mark(&self.performance.mark)));
-        if self.wins_over(entry) {
-            entry.winner = Some(make_row(self, parents, scope));
+        let context = CompetitionContext::of(self.performance);
+        match entry.reports.entry(context) {
+            std::collections::btree_map::Entry::Vacant(vacant) => {
+                vacant.insert(ReportGroup::new(self));
+            }
+            std::collections::btree_map::Entry::Occupied(mut occupied) => {
+                occupied.get_mut().record(self);
+            }
         }
     }
 
-    fn wins_over(&self, entry: &PrSlot) -> bool {
-        entry
-            .winner
-            .as_ref()
-            .map(|winner| {
-                should_replace(
-                    self.value,
-                    winner.value,
-                    MarkOrdering::new(
-                        &self.performance.date,
-                        self.performance.meet.as_str(),
-                        self.performance.id.as_str(),
-                    ),
-                    MarkOrdering::new(
-                        &winner.date,
-                        winner.meet_id.as_str(),
-                        winner.performance_id.as_str(),
-                    ),
-                    move |candidate, incumbent| self.measure.better(candidate, incumbent),
-                )
-            })
-            .unwrap_or(true)
+    fn wins_over(&self, incumbent: &Self) -> bool {
+        should_replace(
+            self.value,
+            incumbent.value,
+            self.ordering(),
+            incumbent.ordering(),
+            |candidate, incumbent| self.measure.better(candidate, incumbent),
+        )
+    }
+
+    fn ordering(&self) -> MarkOrdering<'_> {
+        MarkOrdering::new(
+            &self.performance.date,
+            self.performance.meet.as_str(),
+            self.performance.id.as_str(),
+        )
     }
 }
 
-fn fold(
-    slots: &mut HashMap<PrKey, PrSlot>,
-    performance: &CanonicalPerformance,
-    parents: &Parents<'_>,
-    scope: Scope,
+fn fold<'a>(
+    slots: &mut HashMap<PrKey, PrSlot<'a>>,
+    performance: &'a CanonicalPerformance,
+    parents: &Parents<'a>,
     athlete_id: AthleteId,
 ) {
     let Some(candidate) = Candidate::resolve(performance, parents, athlete_id) else {
@@ -140,32 +134,28 @@ fn fold(
     let entry = slots
         .entry(candidate.key.clone())
         .or_insert_with(PrSlot::empty);
-    candidate.record(entry, parents, scope);
+    candidate.record(entry);
 }
 
-fn close(slot: PrSlot) -> Option<SharedSelection> {
-    let mut winner = slot.winner?;
-    let sources_count = slot.sources.len();
-    let mut conflicts = Vec::new();
-
-    let mut meet_marks: HashMap<String, Vec<String>> = HashMap::new();
-    for (meet, mark) in &slot.reports {
-        meet_marks
-            .entry(meet.clone())
-            .or_default()
-            .push(mark.clone());
-    }
-    for (meet, marks) in meet_marks {
-        if marks.len() > 1 {
-            let unique: Vec<String> = marks.into_iter().collect();
-            if unique.len() > 1 {
-                conflicts.push(Conflict {
-                    meet,
-                    marks: unique,
-                });
+fn close(slot: PrSlot<'_>, parents: &Parents<'_>, scope: Scope) -> Option<SharedSelection> {
+    let candidate = slot
+        .reports
+        .values()
+        .filter_map(ReportGroup::eligible)
+        .reduce(|incumbent, candidate| {
+            if candidate.wins_over(incumbent) {
+                candidate
+            } else {
+                incumbent
             }
-        }
-    }
+        })?;
+    let mut winner = make_row(candidate, parents, scope);
+    let sources_count = slot.sources.len();
+    let conflicts = slot
+        .reports
+        .into_values()
+        .filter_map(ReportGroup::conflict)
+        .collect();
 
     winner.population = Population {
         marks: slot.marks,
@@ -173,10 +163,6 @@ fn close(slot: PrSlot) -> Option<SharedSelection> {
     };
     winner.conflicts = conflicts;
     Some(winner)
-}
-
-fn format_mark(mark: &Mark) -> String {
-    mark_text(mark)
 }
 
 fn make_row(candidate: &Candidate<'_>, parents: &Parents<'_>, scope: Scope) -> SharedSelection {
@@ -188,7 +174,7 @@ fn make_row(candidate: &Candidate<'_>, parents: &Parents<'_>, scope: Scope) -> S
     let result_url = scope
         .primary_evidence(performance)
         .and_then(|evidence| evidence.source.url.clone())
-        .unwrap_or_default();
+        .map_or(Default::default(), core::convert::identity);
 
     let normalized = candidate.measure.normalized_mark(&performance.mark);
 
@@ -198,7 +184,9 @@ fn make_row(candidate: &Candidate<'_>, parents: &Parents<'_>, scope: Scope) -> S
         normalized,
         mark: performance.mark.clone(),
         date: performance.date.clone(),
-        meet: meet.map(|m| m.name.clone()).unwrap_or_default(),
+        meet: meet
+            .map(|m| m.name.clone())
+            .map_or(Default::default(), core::convert::identity),
         meet_id: performance.meet.clone(),
         meet_state: MeetState::from(meet.and_then(|m| m.state)),
         place: performance.place,
@@ -208,7 +196,7 @@ fn make_row(candidate: &Candidate<'_>, parents: &Parents<'_>, scope: Scope) -> S
         performance_id: performance.id.clone(),
         source_athlete: owner_of(performance, athlete)
             .map(|identity| identity.id.clone())
-            .unwrap_or_default(),
+            .map_or(Default::default(), core::convert::identity),
         source_key: performance.source_key.clone(),
         athlete: athlete.canonical_name.clone(),
         gender: athlete.gender,

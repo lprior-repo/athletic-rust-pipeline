@@ -28,7 +28,7 @@ impl<'a> Row<'a> {
             school: schools
                 .get(&athlete.school)
                 .map_or(athlete.school.as_str(), String::as_str),
-            cohort: CohortEvidence::of(&athlete.observed_grades),
+            cohort: CohortEvidence::of(athlete),
         }
     }
 

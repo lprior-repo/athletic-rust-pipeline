@@ -128,19 +128,30 @@ fn single_state_adapters_are_planned_in_their_own_state_only() {
 }
 
 #[test]
-fn artifact_adapters_are_planned_where_the_platform_is_evidenced() {
+fn artifact_adapters_are_planned_where_the_platform_is_evidenced(
+) -> Result<(), Box<dyn std::error::Error>> {
     let planned = applicable_sources(UsJurisdiction::Wisconsin);
     let harvest = planned
         .iter()
         .find(|entry| entry.slug == "athleticlive")
-        .expect("Wisconsin plans the AthleticLIVE harvest");
-    assert_eq!(harvest.access_class(), AccessClass::Artifact);
-    assert!(
-        !applicable_sources(UsJurisdiction::SouthDakota)
-            .iter()
-            .any(|entry| entry.slug == "athleticlive"),
-        "South Dakota records no AthleticLIVE coverage, so the harvest is not planned"
-    );
+        .ok_or("Wisconsin plans the AthleticLIVE harvest")?;
+    let actual = harvest.access_class();
+    if actual != AccessClass::Artifact {
+        return Err(format!(
+            "access class: left: {actual:?}, right: {:?}",
+            AccessClass::Artifact
+        )
+        .into());
+    }
+    if applicable_sources(UsJurisdiction::SouthDakota)
+        .iter()
+        .any(|entry| entry.slug == "athleticlive")
+    {
+        return Err(
+            "South Dakota records no AthleticLIVE coverage, so the harvest is not planned".into(),
+        );
+    }
+    Ok(())
 }
 
 #[test]

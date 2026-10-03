@@ -12,33 +12,39 @@ struct Args {
     fragments: Vec<PathBuf>,
 }
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    init_tracing();
-    let Args {
-        out_dir,
-        jobs,
-        fragments,
-    } = parse_args()?;
-    let fetcher = build_fetcher(&fragments)?;
-    let options = gate_options();
-    let outcomes = verify_fragments(&fetcher, &fragments, &out_dir, &options, jobs).await?;
-    emit_freeze_log(&outcomes)?;
-    for outcome in &outcomes {
-        println!("{}", log_line(outcome));
-    }
-    write_reports(&outcomes)?;
-    write_manifest(&fragments, &outcomes)?;
-    reconcile_published(&outcomes)?;
-    print_summary(&fetcher, &outcomes, &out_dir).await;
-    Ok(())
+fn main() -> anyhow::Result<()> {
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            init_tracing();
+            let Args {
+                out_dir,
+                jobs,
+                fragments,
+            } = parse_args()?;
+            let fetcher = build_fetcher(&fragments)?;
+            let options = gate_options();
+            let outcomes = verify_fragments(&fetcher, &fragments, &out_dir, &options, jobs).await?;
+            emit_freeze_log(&outcomes)?;
+            for outcome in &outcomes {
+                println!("{}", log_line(outcome));
+            }
+            write_reports(&outcomes)?;
+            write_manifest(&fragments, &outcomes)?;
+            reconcile_published(&outcomes)?;
+            print_summary(&fetcher, &outcomes, &out_dir).await;
+            Ok(())
+        })
 }
 
 fn init_tracing() {
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
+            tracing_subscriber::EnvFilter::try_from_default_env().map_or_else(
+                |_| tracing_subscriber::EnvFilter::new("info"),
+                |value| value,
+            ),
         )
         .with_target(false)
         .init();
@@ -46,11 +52,14 @@ fn init_tracing() {
 
 fn parse_args() -> anyhow::Result<Args> {
     let mut args = std::env::args().skip(1);
-    let out_dir = PathBuf::from(args.next().unwrap_or_else(|| "out/verified".to_string()));
+    let out_dir = PathBuf::from(match args.next() {
+        Some(value) => value,
+        None => "out/verified".to_string(),
+    });
     let jobs: usize = args
         .next()
         .and_then(|value| value.parse().ok())
-        .unwrap_or(8);
+        .map_or(8, |value| value);
     let fragments: Vec<PathBuf> = args.map(PathBuf::from).collect();
     if fragments.is_empty() {
         anyhow::bail!("usage: coach_gate <out_dir> <jobs> <fragment...>");
@@ -64,13 +73,14 @@ fn parse_args() -> anyhow::Result<Args> {
 
 fn build_fetcher(fragments: &[PathBuf]) -> anyhow::Result<Fetcher> {
     let cache_dir = PathBuf::from(
-        std::env::var("CACHE_DIR").unwrap_or_else(|_| "var/census-service/http".to_string()),
+        std::env::var("CACHE_DIR")
+            .map_or_else(|_| "var/census-service/http".to_string(), |value| value),
     );
     let authorized = authorized_hosts(fragments)?;
     let delay_ms: u64 = std::env::var("DELAY_MS")
         .ok()
         .and_then(|value| value.parse().ok())
-        .unwrap_or(1000);
+        .map_or(1000, |value| value);
     let fetcher = Fetcher::new(
         &cache_dir,
         None,
@@ -89,7 +99,7 @@ fn authorized_hosts(fragments: &[PathBuf]) -> anyhow::Result<Vec<String>> {
         return Ok(hosts);
     }
     Ok(std::env::var("AUTHORIZED_HOSTS")
-        .unwrap_or_default()
+        .map_or_else(|_| Default::default(), |value| value)
         .split(',')
         .map(str::trim)
         .filter(|host| !host.is_empty())

@@ -1,7 +1,7 @@
 use super::*;
 
 #[test]
-fn every_namespace_renders_and_classifies() {
+fn every_namespace_renders_and_classifies() -> Result<(), Box<dyn std::error::Error>> {
     use SourceNamespace::*;
     let school = |a: String| AssociationSchool { association: a };
     let athlete = |a: String| AssociationAthlete { association: a };
@@ -29,9 +29,10 @@ fn every_namespace_renders_and_classifies() {
         (Other("custom_provider".into()), "custom_provider", true),
     ];
     for (namespace, rendered, is_core) in cases {
-        assert_eq!(namespace.to_string(), *rendered);
-        assert_eq!(namespace.is_core(), *is_core, "{namespace}");
+        check!(eq; namespace.to_string(), *rendered);
+        check!(eq; namespace.is_core(), *is_core, "{namespace}");
     }
+    Ok(())
 }
 
 const EVENT_LABELS: &str = "\
@@ -57,17 +58,20 @@ const PLAIN_LABELS: &str = "100m 200m 400m 800m 1600m 3200m 1mile 3000m 5000m 11
                             300mh 400mh 2000msteeplechase 3000msteeplechase crosscountry 3,200m";
 
 #[test]
-fn every_event_label_maps_to_its_kind() {
+fn every_event_label_maps_to_its_kind() -> Result<(), Box<dyn std::error::Error>> {
     for pair in EVENT_LABELS.split(';') {
-        let (label, want) = pair.split_once('=').unwrap();
+        let (label, want) = pair
+            .split_once('=')
+            .ok_or("event fixture lacks label separator")?;
         let got = format!("{:?}", EventKind::from_source_label(label));
-        assert_eq!(got, want, "label {label:?}");
+        check!(eq; got, want, "label {label:?}");
     }
     let unmapped_label = |l: String| EventKind::Unmapped { label: l };
     let got = EventKind::from_source_label(" 3,200m ");
-    assert_eq!(got, EventKind::Track3200m);
+    check!(eq; got, EventKind::Track3200m);
     let got = EventKind::from_source_label("Flight 1 of 1");
-    assert_eq!(got, unmapped_label("Flight 1 of 1".into()));
+    check!(eq; got, unmapped_label("Flight 1 of 1".into()));
+    Ok(())
 }
 
 const WRAPPED_LABELS: &str = "\
@@ -82,50 +86,56 @@ Boys Varsity 4x400 Meter Relay Finals=Relay4x400;Girls' Javelin 6A=Javelin;\
 Girls Javelin=Javelin;Boys 6A Javelin=Javelin";
 
 #[test]
-fn wrapped_event_labels_map_to_their_kind() {
+fn wrapped_event_labels_map_to_their_kind() -> Result<(), Box<dyn std::error::Error>> {
     for pair in WRAPPED_LABELS.split(';') {
-        let (label, want) = pair.split_once('=').unwrap();
+        let (label, want) = pair
+            .split_once('=')
+            .ok_or("event fixture lacks label separator")?;
         let got = format!("{:?}", EventKind::from_source_label(label));
-        assert_eq!(got, want, "label {label:?}");
+        check!(eq; got, want, "label {label:?}");
     }
+    Ok(())
 }
 
 #[test]
-fn structural_labels_stay_unmapped() {
+fn structural_labels_stay_unmapped() -> Result<(), Box<dyn std::error::Error>> {
     for label in ["Flight 1 of 1", "Section 2 of 4", "Compiled", "Overall"] {
         let got = EventKind::from_source_label(label);
-        assert!(
+        check!(
             matches!(got, EventKind::Unmapped { .. }),
             "{label} unexpectedly mapped to {got:?}"
         );
     }
+    Ok(())
 }
 
 #[test]
-fn field_and_relay_flags_match_the_kind() {
+fn field_and_relay_flags_match_the_kind() -> Result<(), Box<dyn std::error::Error>> {
     for label in FIELD_LABELS.split_whitespace() {
         let kind = EventKind::from_source_label(label);
-        assert!(kind.is_field() && !kind.is_relay(), "{label}");
+        check!(kind.is_field() && !kind.is_relay(), "{label}");
     }
     for label in RELAY_LABELS.split_whitespace() {
         let kind = EventKind::from_source_label(label);
-        assert!(kind.is_relay() && !kind.is_field(), "{label}");
+        check!(kind.is_relay() && !kind.is_field(), "{label}");
     }
     for label in PLAIN_LABELS.split_whitespace() {
         let kind = EventKind::from_source_label(label);
-        assert!(!kind.is_field() && !kind.is_relay(), "{label}");
+        check!(!kind.is_field() && !kind.is_relay(), "{label}");
     }
+    Ok(())
 }
 
 #[test]
-fn milesplit_gender_aliases_parse() {
+fn milesplit_gender_aliases_parse() -> Result<(), Box<dyn std::error::Error>> {
     for (aliases, gender) in [
         ("m|male|boys|boy| BOYS |Male", Gender::Boys),
         ("f|female|girls|girl|Female", Gender::Girls),
         ("mixed|men|co-ed|", Gender::Unknown),
     ] {
         for alias in aliases.split('|') {
-            assert_eq!(Gender::parse_milesplit(alias), gender, "side {alias:?}");
+            check!(eq; Gender::parse_milesplit(alias), gender, "side {alias:?}");
         }
     }
+    Ok(())
 }

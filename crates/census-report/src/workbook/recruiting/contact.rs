@@ -108,7 +108,7 @@ pub(in crate::workbook) fn scoped<'a>(
         }
         school
             .map(|school| school.heads.resolve(Slot::of(sport), athlete.gender))
-            .unwrap_or(&Outcome::Unknown)
+            .map_or(&Outcome::Unknown, |value| value)
     };
     ScopedContacts {
         outdoor: resolve(Sport::OutdoorTrack),
@@ -116,10 +116,10 @@ pub(in crate::workbook) fn scoped<'a>(
         cross_country: resolve(Sport::CrossCountry),
         director: school
             .map(|school| school.heads.resolve(Slot::Director, Gender::Mixed))
-            .unwrap_or(&Outcome::Unknown),
+            .map_or(&Outcome::Unknown, |value| value),
         assistants: school
             .map(|school| school.assistants.as_slice())
-            .unwrap_or(&[]),
+            .map_or(&[][..], |value| value),
         athlete,
     }
 }
@@ -164,7 +164,7 @@ impl ScopedContacts<'_> {
         Preferred::unnamed(
             self.director
                 .blocker()
-                .unwrap_or(ContactState::ContactResearchUnknown),
+                .map_or(ContactState::ContactResearchUnknown, |value| value),
         )
     }
 

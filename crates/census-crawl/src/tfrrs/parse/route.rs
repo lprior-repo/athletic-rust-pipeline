@@ -39,7 +39,7 @@ pub fn parse_team_path(path: &str) -> Option<TeamPath> {
         .filter(|segment| !segment.is_empty());
     let route = segments.next()?.to_string();
     let file = segments.next()?;
-    let stem = file.strip_suffix(".html").unwrap_or(file);
+    let stem = file.strip_suffix(".html").map_or(file, |value| value);
     let (slug, gender) = match stem.rsplit_once('_') {
         Some((slug, "m")) => (slug.to_string(), Some(Gender::Boys)),
         Some((slug, "f")) => (slug.to_string(), Some(Gender::Girls)),
@@ -82,7 +82,7 @@ pub(super) fn href_name(href: &str) -> Option<String> {
     let file = segments.next()?;
     let stem = file
         .strip_suffix(".html")
-        .unwrap_or(file)
+        .map_or(file, |value| value)
         .trim_start_matches('_');
     let name = collapse_whitespace(&stem.replace('_', " "));
     (!name.is_empty()).then_some(name)
@@ -112,7 +112,7 @@ fn segment_after<'a>(href: &'a str, after: &str) -> Option<&'a str> {
 }
 
 fn route_path(path: &str) -> &str {
-    path.split(['?', '#']).next().unwrap_or(path)
+    path.split(['?', '#']).next().map_or(path, |value| value)
 }
 
 fn tail_after<'a>(path: &'a str, marker: &str) -> Option<&'a str> {

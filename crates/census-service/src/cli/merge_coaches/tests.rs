@@ -3,6 +3,8 @@ use super::*;
 use std::collections::BTreeSet;
 use tempfile::NamedTempFile;
 
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+
 fn make_row(fields: Vec<&str>) -> Row {
     let s: Vec<String> = fields.iter().map(|s| s.to_string()).collect();
     Row::from_fields(s)
@@ -85,7 +87,7 @@ fn director_with_empty_sport_passes() {
 }
 
 #[test]
-fn director_with_nonempty_sport_rejected() {
+fn director_with_nonempty_sport_rejected() -> TestResult {
     let row = make_row(vec![
         "School",
         "City",
@@ -99,8 +101,9 @@ fn director_with_nonempty_sport_rejected() {
         "https://school.edu",
         "2026-09-22",
     ]);
-    let reason = row.judge("OH").expect("expected rejection");
-    assert!(reason.contains("director row must leave sport empty"));
+    let reason = row.judge("OH").ok_or("expected rejection")?;
+    check!(reason.contains("director row must leave sport empty"));
+    Ok(())
 }
 
 #[test]
@@ -140,7 +143,7 @@ fn coach_with_indoor_sport_passes() {
 }
 
 #[test]
-fn coach_with_unrelated_sport_rejected() {
+fn coach_with_unrelated_sport_rejected() -> TestResult {
     let row = make_row(vec![
         "School",
         "City",
@@ -154,12 +157,13 @@ fn coach_with_unrelated_sport_rejected() {
         "https://school.edu",
         "2026-09-22",
     ]);
-    let reason = row.judge("OH").expect("expected rejection");
-    assert!(reason.contains("no sport resolvable"));
+    let reason = row.judge("OH").ok_or("expected rejection")?;
+    check!(reason.contains("no sport resolvable"));
+    Ok(())
 }
 
 #[test]
-fn coach_with_no_name_rejected() {
+fn coach_with_no_name_rejected() -> TestResult {
     let row = make_row(vec![
         "School",
         "City",
@@ -173,12 +177,13 @@ fn coach_with_no_name_rejected() {
         "https://school.edu",
         "2026-09-22",
     ]);
-    let reason = row.judge("OH").expect("expected rejection");
-    assert!(reason.contains("no coach name"));
+    let reason = row.judge("OH").ok_or("expected rejection")?;
+    check!(reason.contains("no coach name"));
+    Ok(())
 }
 
 #[test]
-fn role_neither_coach_nor_director_rejected() {
+fn role_neither_coach_nor_director_rejected() -> TestResult {
     let row = make_row(vec![
         "School",
         "City",
@@ -192,12 +197,13 @@ fn role_neither_coach_nor_director_rejected() {
         "https://school.edu",
         "2026-09-22",
     ]);
-    let reason = row.judge("OH").expect("expected rejection");
-    assert!(reason.contains("neither a coach nor a director"));
+    let reason = row.judge("OH").ok_or("expected rejection")?;
+    check!(reason.contains("neither a coach nor a director"));
+    Ok(())
 }
 
 #[test]
-fn role_both_coach_and_director_rejected() {
+fn role_both_coach_and_director_rejected() -> TestResult {
     let row = make_row(vec![
         "School",
         "City",
@@ -211,12 +217,13 @@ fn role_both_coach_and_director_rejected() {
         "https://school.edu",
         "2026-09-22",
     ]);
-    let reason = row.judge("OH").expect("expected rejection");
-    assert!(reason.contains("both a coach and a director"));
+    let reason = row.judge("OH").ok_or("expected rejection")?;
+    check!(reason.contains("both a coach and a director"));
+    Ok(())
 }
 
 #[test]
-fn placeholder_names_rejected() {
+fn placeholder_names_rejected() -> TestResult {
     for placeholder in &[
         "vacant", "TBA", "TBD", "NA", "n/a", "none", "unknown", "---",
     ] {
@@ -233,16 +240,17 @@ fn placeholder_names_rejected() {
             "https://school.edu",
             "2026-09-22",
         ]);
-        let reason = row.judge("OH").expect("expected rejection");
-        assert!(
+        let reason = row.judge("OH").ok_or("expected rejection")?;
+        check!(
             reason.contains("placeholder name"),
             "expected placeholder rejection for {placeholder}, got: {reason}"
         );
     }
+    Ok(())
 }
 
 #[test]
-fn phone_in_school_rejected() {
+fn phone_in_school_rejected() -> TestResult {
     let row = make_row(vec![
         "555-123-4567",
         "City",
@@ -256,12 +264,13 @@ fn phone_in_school_rejected() {
         "https://school.edu",
         "2026-09-22",
     ]);
-    let reason = row.judge("OH").expect("expected rejection");
-    assert!(reason.contains("phone-like value in school"));
+    let reason = row.judge("OH").ok_or("expected rejection")?;
+    check!(reason.contains("phone-like value in school"));
+    Ok(())
 }
 
 #[test]
-fn invalid_email_rejected() {
+fn invalid_email_rejected() -> TestResult {
     let row = make_row(vec![
         "School",
         "City",
@@ -275,12 +284,13 @@ fn invalid_email_rejected() {
         "https://school.edu",
         "2026-09-22",
     ]);
-    let reason = row.judge("OH").expect("expected rejection");
-    assert!(reason.contains("not an email"));
+    let reason = row.judge("OH").ok_or("expected rejection")?;
+    check!(reason.contains("not an email"));
+    Ok(())
 }
 
 #[test]
-fn personal_mail_domain_in_email_rejected() {
+fn personal_mail_domain_in_email_rejected() -> TestResult {
     let row = make_row(vec![
         "School",
         "City",
@@ -294,12 +304,13 @@ fn personal_mail_domain_in_email_rejected() {
         "https://school.edu",
         "2026-09-22",
     ]);
-    let reason = row.judge("OH").expect("expected rejection");
-    assert!(reason.contains("personal mail domain"));
+    let reason = row.judge("OH").ok_or("expected rejection")?;
+    check!(reason.contains("personal mail domain"));
+    Ok(())
 }
 
 #[test]
-fn missing_school_rejected() {
+fn missing_school_rejected() -> TestResult {
     let row = make_row(vec![
         "",
         "City",
@@ -313,12 +324,13 @@ fn missing_school_rejected() {
         "https://school.edu",
         "2026-09-22",
     ]);
-    let reason = row.judge("OH").expect("expected rejection");
-    assert!(reason.contains("missing school"));
+    let reason = row.judge("OH").ok_or("expected rejection")?;
+    check!(reason.contains("missing school"));
+    Ok(())
 }
 
 #[test]
-fn no_contact_published_rejected() {
+fn no_contact_published_rejected() -> TestResult {
     let row = make_row(vec![
         "School",
         "City",
@@ -332,12 +344,13 @@ fn no_contact_published_rejected() {
         "https://school.edu",
         "2026-09-22",
     ]);
-    let reason = row.judge("OH").expect("expected rejection");
-    assert!(reason.contains("no contact published"));
+    let reason = row.judge("OH").ok_or("expected rejection")?;
+    check!(reason.contains("no contact published"));
+    Ok(())
 }
 
 #[test]
-fn state_mismatch_rejected() {
+fn state_mismatch_rejected() -> TestResult {
     let row = make_row(vec![
         "School",
         "City",
@@ -351,8 +364,9 @@ fn state_mismatch_rejected() {
         "https://school.edu",
         "2026-09-22",
     ]);
-    let reason = row.judge("OH").expect("expected rejection");
-    assert!(reason.contains("does not match fragment"));
+    let reason = row.judge("OH").ok_or("expected rejection")?;
+    check!(reason.contains("does not match fragment"));
+    Ok(())
 }
 
 #[test]
@@ -374,7 +388,7 @@ fn valid_url_passes() {
 }
 
 #[test]
-fn invalid_url_rejected() {
+fn invalid_url_rejected() -> TestResult {
     let row = make_row(vec![
         "School",
         "City",
@@ -388,8 +402,9 @@ fn invalid_url_rejected() {
         "not-a-url",
         "2026-09-22",
     ]);
-    let reason = row.judge("OH").expect("expected rejection");
-    assert!(reason.contains("not a URL"));
+    let reason = row.judge("OH").ok_or("expected rejection")?;
+    check!(reason.contains("not a URL"));
+    Ok(())
 }
 
 #[test]
@@ -417,8 +432,8 @@ fn does_not_resolve_soccer() {
 }
 
 #[test]
-fn merge_round_trip_keeps_every_row_importable_and_distinct() {
-    let dir = tempfile::tempdir().expect("temp dir");
+fn merge_round_trip_keeps_every_row_importable_and_distinct() -> TestResult {
+    let dir = tempfile::tempdir()?;
     let header = "school,city,state,sport,role,coach_name,public_professional_email,ad_name,\
                   ad_email,source_url,last_observed,verified_proof_digest\n";
     let proof = "9f2c1d4b7a3e50618c9d2f4a6b8e0c1d3f5a7b9c1d3e5f70819a2b3c4d5e6f70";
@@ -435,8 +450,7 @@ fn merge_round_trip_keeps_every_row_importable_and_distinct() {
              sam.ellery@madisonwest.example.org,,,https://madisonwest.example.org/athletics,\
              2026-09-22,{proof}\n"
         ),
-    )
-    .expect("write WI fragment");
+    )?;
     std::fs::write(
         dir.path().join("MN.csv"),
         format!(
@@ -445,45 +459,44 @@ fn merge_round_trip_keeps_every_row_importable_and_distinct() {
              rae.lindqvist@washburn.example.org,,,https://washburn.example.org/athletics,\
              2026-09-22,{proof}\n"
         ),
-    )
-    .expect("write MN fragment");
+    )?;
 
-    let out = NamedTempFile::new().expect("temp file");
-    let report = NamedTempFile::new().expect("temp file");
+    let out = NamedTempFile::new()?;
+    let report = NamedTempFile::new()?;
     let args = MergeCoachesArgs {
         fragments: dir.path().to_path_buf(),
         out: out.path().to_path_buf(),
         report: report.path().to_path_buf(),
     };
-    run_merge_coaches(&args).expect("merge_coaches");
+    run_merge_coaches(&args)?;
 
     let mut reader = csv::ReaderBuilder::new()
         .has_headers(true)
-        .from_path(out.path())
-        .expect("from_path");
+        .from_path(out.path())?;
     let mut seen: BTreeSet<(String, String, String, String)> = BTreeSet::new();
     let mut data_rows = 0usize;
     for record in reader.records() {
-        let record = record.expect("record");
+        let record = record?;
         let fields: Vec<String> = record.iter().map(str::to_owned).collect();
         let mut row = Row::from_fields(fields);
         row.normalize();
         data_rows += 1;
-        assert!(
+        check!(
             super::judge::judge(&row, &row.state).is_none(),
             "merged row {data_rows} is not importable: {row:?}",
         );
-        assert!(
+        check!(
             seen.insert(row.dedupe_key()),
             "merged row {data_rows} duplicates an earlier row after round-trip: {row:?}",
         );
     }
-    assert_eq!(data_rows, 3, "two states, one deduped pair");
-    let report = std::fs::read_to_string(report.path()).expect("read report");
-    assert!(
+    check!(eq; data_rows, 3, "two states, one deduped pair");
+    let report = std::fs::read_to_string(report.path())?;
+    check!(
         report.contains("WI") && report.contains("MN"),
         "the report accounts for both states: {report}"
     );
+    Ok(())
 }
 
 #[test]

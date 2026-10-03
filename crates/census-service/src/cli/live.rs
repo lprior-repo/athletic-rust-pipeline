@@ -57,11 +57,11 @@ fn workbook_client(
     let year = request
         .grad_year
         .map_or_else(|| "all".to_string(), |year| year.to_string());
-    let scope = request.scope.as_deref().unwrap_or("all");
+    let scope = request.scope.as_deref().map_or("all", |value| value);
     let limit = request
         .limit
         .map_or_else(|| "all".to_string(), |l| l.to_string());
-    let out = request.out.as_deref().unwrap_or(".");
+    let out = request.out.as_deref().map_or(".", |value| value);
     Ok(WorkbookIngressClient::from_client(
         ingress::job_client(ingress::origin(origin))?,
         run_key("workbook", &[&year, scope, &limit, out], DEFAULT_GENERATION),

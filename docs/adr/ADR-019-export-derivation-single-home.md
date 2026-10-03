@@ -78,6 +78,20 @@ historical evidence and are refused by the current verifier; they are not rewrit
 reused under policy 3. Export schema revision 1 remains compatible with the additive, empty-default
 school postal representation.
 
+The 2026-10-02 integration advances publication policy to revision 4. PR candidates must have a
+mark compatible with their event; combined events accept scores, not times or distances. Result
+conflicts require contradictory marks in the same known meet/event/date/round/heat context, rather
+than matching meet names or collapsing separate rounds and heats. Policy-1/2/3 frozen inputs and
+published generations remain historical evidence and are refused by the current verifier. They are
+not rewritten or silently reused under policy 4; schema revision remains 1.
+
+The subsequent 2026-10-02 cohort cutover advances publication policy to revision 5. Directly
+published graduation-year claims participate in the same domain cohort confidence/conflict rules
+as supported grade/year observations, without manufacturing grades. Coverage, review, identity
+eligibility and recruiting publication consume that shared assessment. Policy-1/2/3/4 frozen
+inputs and published generations remain historical evidence and are refused by the current
+verifier; schema revision remains 1 for the additive empty-default canonical cohort field.
+
 ## Consequences
 
 Scope, cohort and evidence semantics are the derivation's, not each sheet's; a sheet that wants a

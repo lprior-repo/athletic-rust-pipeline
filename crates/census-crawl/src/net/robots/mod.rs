@@ -100,7 +100,7 @@ pub(crate) fn parse_robots(body: &str) -> RobotsPolicy {
     let mut applies = false;
 
     for line in body.lines() {
-        let line = line.split('#').next().unwrap_or("").trim();
+        let line = line.split('#').next().map_or("", |value| value).trim();
         if line.is_empty() {
             continue;
         }

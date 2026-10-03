@@ -23,7 +23,7 @@ pub fn run(workbook_path: &Path, sheet_names: &[String]) -> anyhow::Result<()> {
         if let Some(first_row) = row_iter.next() {
             let first_strs: Vec<String> = first_row
                 .iter()
-                .map(|c| c.as_string().unwrap_or_default())
+                .map(|c| c.as_string().map_or(Default::default(), core::convert::identity))
                 .collect();
 
             let is_header = !first_strs.iter().all(|s| s.is_empty());
@@ -46,7 +46,7 @@ pub fn run(workbook_path: &Path, sheet_names: &[String]) -> anyhow::Result<()> {
                     .iter()
                     .zip(row.iter())
                     .map(|(col, cell)| {
-                        let value = cell.as_string().unwrap_or_default();
+                        let value = cell.as_string().map_or(Default::default(), core::convert::identity);
                         let truncated = truncate(&value, MAX_CELL_LEN);
                         format!("{col}={truncated}")
                     })

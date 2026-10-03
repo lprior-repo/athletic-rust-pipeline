@@ -6,7 +6,6 @@ use super::gather;
 use super::provider;
 use super::publish;
 use super::qa_reports;
-use super::review;
 use super::school_names;
 use super::source;
 use super::store;
@@ -22,7 +21,6 @@ pub(super) async fn dispatch(cli: &Cli, store: &Store) -> Result<()> {
         }
         Command::Provider(args) => provider::run_provider(cli, store, args).await?,
         Command::Consolidate => publish::run_consolidate(store)?,
-        Command::Review(args) => review::run_review(store, args).await?,
         Command::Index => publish::run_index(store)?,
         Command::FjallStats => store::print_store_stats(store)?,
         Command::StoreRestore(args) => store::run_restore(args)?,

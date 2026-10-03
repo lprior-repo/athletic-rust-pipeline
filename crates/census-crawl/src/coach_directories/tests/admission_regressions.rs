@@ -50,7 +50,7 @@ fn rejected_team_placement_cannot_hide_an_eligible_staff_fallback() -> TestResul
             )
         })
         .collect();
-    assert_eq!(
+    check!(eq;
         rows,
         [(
             "Ada Lovelace",
@@ -60,16 +60,16 @@ fn rejected_team_placement_cannot_hide_an_eligible_staff_fallback() -> TestResul
             Some("ada@school.edu")
         )]
     );
-    assert_eq!(emission.counters.dropped_levels.get("JV"), Some(&1));
+    check!(eq; emission.counters.dropped_levels.get("JV"), Some(&1));
     for coach in &emission.coaches {
-        assert_eq!(
+        check!(eq;
             coach.source_identities,
             [
                 SourceIdentity::new(SourceNamespace::association_school(SOURCE_ID), "ada-owner")
                     .with_url("https://example.test/summary")
             ]
         );
-        assert_eq!(coach.evidence, [summary_evidence()]);
+        check!(eq; coach.evidence, [summary_evidence()]);
     }
     Ok(())
 }
@@ -94,7 +94,7 @@ fn absent_provider_ids_do_not_collapse_unrelated_published_people() -> TestResul
             )
         })
         .collect();
-    assert_eq!(
+    check!(eq;
         rows,
         HashSet::from([
             ("Ada Lovelace", Gender::Boys, Some("ada@school.edu")),
@@ -102,8 +102,8 @@ fn absent_provider_ids_do_not_collapse_unrelated_published_people() -> TestResul
         ])
     );
     for coach in &emission.coaches {
-        assert_eq!(coach.source_identities, []);
-        assert_eq!(coach.evidence, [summary_evidence()]);
+        check!(eq; coach.source_identities, []);
+        check!(eq; coach.evidence, [summary_evidence()]);
     }
     Ok(())
 }
@@ -127,7 +127,7 @@ fn indoor_and_outdoor_roles_survive_in_either_source_order() -> TestResult {
             serde_json::Value::Array(teams),
         )?;
         let sports: HashSet<_> = emission.coaches.iter().map(|coach| coach.sport).collect();
-        assert_eq!(
+        check!(eq;
             sports,
             HashSet::from([Some(Sport::IndoorTrack), Some(Sport::OutdoorTrack)])
         );
@@ -136,7 +136,7 @@ fn indoor_and_outdoor_roles_survive_in_either_source_order() -> TestResult {
             .iter()
             .map(|coach| (coach.name.as_str(), coach.sport, coach.gender, coach.role))
             .collect();
-        assert_eq!(
+        check!(eq;
             rows,
             HashSet::from([
                 (
@@ -154,7 +154,7 @@ fn indoor_and_outdoor_roles_survive_in_either_source_order() -> TestResult {
             ])
         );
         for coach in &emission.coaches {
-            assert_eq!(coach.evidence, [summary_evidence()]);
+            check!(eq; coach.evidence, [summary_evidence()]);
         }
     }
     Ok(())
@@ -196,7 +196,7 @@ fn admitted_team_placement_takes_priority_over_conflicting_staff_fallback() -> T
                 )
             })
             .collect();
-        assert_eq!(
+        check!(eq;
             rows,
             [(
                 "Ada Lovelace",
@@ -206,7 +206,7 @@ fn admitted_team_placement_takes_priority_over_conflicting_staff_fallback() -> T
                 Some("ada@school.edu")
             )]
         );
-        assert_eq!(emission.counters.dropped_levels.get("JV"), Some(&1));
+        check!(eq; emission.counters.dropped_levels.get("JV"), Some(&1));
     }
     Ok(())
 }
@@ -233,7 +233,7 @@ fn unidentified_same_name_staff_retain_their_separate_contacts_in_either_order()
             .iter()
             .map(|coach| (coach.name.as_str(), coach.professional_email.as_deref()))
             .collect();
-        assert_eq!(
+        check!(eq;
             contacts,
             HashSet::from([
                 ("Ada Lovelace", Some("ada@first.edu")),
@@ -241,8 +241,8 @@ fn unidentified_same_name_staff_retain_their_separate_contacts_in_either_order()
             ])
         );
         for coach in &emission.coaches {
-            assert_eq!(coach.source_identities, []);
-            assert_eq!(coach.evidence, [summary_evidence()]);
+            check!(eq; coach.source_identities, []);
+            check!(eq; coach.evidence, [summary_evidence()]);
         }
     }
     Ok(())
@@ -266,7 +266,7 @@ fn duplicate_provider_records_apply_admission_before_contact_precedence() -> Tes
             .iter()
             .map(|coach| (coach.name.as_str(), coach.professional_email.as_deref()))
             .collect();
-        assert_eq!(rows, [("Ada Lovelace", Some("ada@school.edu"))]);
+        check!(eq; rows, [("Ada Lovelace", Some("ada@school.edu"))]);
     }
     let emission = emit(
         serde_json::json!([
@@ -280,7 +280,7 @@ fn duplicate_provider_records_apply_admission_before_contact_precedence() -> Tes
         .iter()
         .map(|coach| coach.professional_email.as_deref())
         .collect();
-    assert_eq!(contacts, [Some("new@school.edu")]);
+    check!(eq; contacts, [Some("new@school.edu")]);
     Ok(())
 }
 

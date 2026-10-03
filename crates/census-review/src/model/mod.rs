@@ -37,14 +37,14 @@ impl ModelOptions {
     pub fn local(raw: &str, model: &str) -> Result<Self, ModelError> {
         let endpoint = endpoint::ValidatedEndpoint::new(raw)?;
 
-        if model.is_empty() {
-            return Err(ModelError::InvalidEndpoint {
-                reason: "model name must not be empty",
-            });
-        }
         if model.len() > MAX_MODEL_LEN {
             return Err(ModelError::InvalidEndpoint {
                 reason: "model name exceeds maximum length",
+            });
+        }
+        if model.trim().is_empty() {
+            return Err(ModelError::InvalidEndpoint {
+                reason: "model name must not be empty",
             });
         }
 
@@ -154,11 +154,11 @@ impl ModelClient {
             .send()
             .await?;
         let status = response.status().as_u16();
-        let content_length = response.content_length().unwrap_or(0);
-        let declared_cap = u64::try_from(RESPONSE_CAP).unwrap_or(u64::MAX);
+        let content_length = response.content_length().map_or(0, |value| value);
+        let declared_cap = u64::try_from(RESPONSE_CAP).map_or(u64::MAX, |value| value);
         if content_length > declared_cap {
             return Err(ModelError::ResponseTooLarge {
-                bytes: usize::try_from(content_length).unwrap_or(RESPONSE_CAP),
+                bytes: usize::try_from(content_length).map_or(RESPONSE_CAP, |value| value),
             });
         }
         let mut buf = Vec::new();

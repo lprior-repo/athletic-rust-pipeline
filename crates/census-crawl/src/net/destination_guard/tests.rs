@@ -34,19 +34,19 @@ fn literal_destinations_reject_special_use_addresses_and_credentials() {
 #[test]
 fn authorized_domains_do_not_authorize_private_dns_answers() -> TestResult {
     let guard = DestinationGuard::new(vec!["example.com".to_string()]);
-    assert!(guard.is_authorized("sub.example.com"));
-    assert!(guard
+    check!(guard.is_authorized("sub.example.com"));
+    check!(guard
         .validate_ip("sub.example.com", "127.0.0.1".parse()?)
         .is_err());
-    assert!(guard
+    check!(guard
         .validate_ip("example.com", "10.0.0.1".parse()?)
         .is_err());
-    assert!(guard
+    check!(guard
         .validate_ip("example.com", "93.184.216.34".parse()?)
         .is_ok());
     let local = DestinationGuard::new(vec!["127.0.0.1".to_string()]);
-    assert!(local.validate_url("http://127.0.0.1:8080/").is_ok());
-    assert!(local
+    check!(local.validate_url("http://127.0.0.1:8080/").is_ok());
+    check!(local
         .validate_ip("example.com", "127.0.0.1".parse()?)
         .is_err());
     Ok(())
@@ -62,7 +62,7 @@ fn public_ipv4_neighbors_are_not_reserved_networks() -> TestResult {
         "198.51.99.1",
         "203.0.112.1",
     ] {
-        assert!(
+        check!(
             guard.validate_ip("public.example", ip.parse()?).is_ok(),
             "{ip}"
         );
@@ -74,7 +74,7 @@ fn public_ipv4_neighbors_are_not_reserved_networks() -> TestResult {
         "198.51.100.1",
         "203.0.113.1",
     ] {
-        assert!(
+        check!(
             guard.validate_ip("public.example", ip.parse()?).is_err(),
             "{ip}"
         );
@@ -82,26 +82,31 @@ fn public_ipv4_neighbors_are_not_reserved_networks() -> TestResult {
     Ok(())
 }
 
-#[tokio::test]
-async fn denied_local_request_issues_neither_robots_nor_payload() -> TestResult {
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
-    let root = tempfile::tempdir()?;
-    let fetcher = crate::net::Fetcher::new(
-        root.path(),
-        None,
-        std::time::Duration::ZERO,
-        std::collections::HashMap::new(),
-        Vec::new(),
-    )?;
-    let url = format!("http://{}/evidence", listener.local_addr()?);
-    let result = fetcher
-        .get(&url, &crate::net::FetchOptions::default())
-        .await;
-    assert!(matches!(result, Err(FetchError::Policy { .. })));
-    assert!(
-        tokio::time::timeout(std::time::Duration::from_millis(20), listener.accept())
-            .await
-            .is_err()
-    );
-    Ok(())
+#[test]
+fn denied_local_request_issues_neither_robots_nor_payload() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+            let root = tempfile::tempdir()?;
+            let fetcher = crate::net::Fetcher::new(
+                root.path(),
+                None,
+                std::time::Duration::ZERO,
+                std::collections::HashMap::new(),
+                Vec::new(),
+            )?;
+            let url = format!("http://{}/evidence", listener.local_addr()?);
+            let result = fetcher
+                .get(&url, &crate::net::FetchOptions::default())
+                .await;
+            check!(matches!(result, Err(FetchError::Policy { .. })));
+            check!(
+                tokio::time::timeout(std::time::Duration::from_millis(20), listener.accept())
+                    .await
+                    .is_err()
+            );
+            Ok(())
+        })
 }

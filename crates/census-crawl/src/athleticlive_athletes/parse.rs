@@ -77,7 +77,7 @@ impl HitTeam {
 
     pub fn is_cross_country(&self) -> bool {
         match &self.xc {
-            Some(Value::Number(n)) => n.as_i64().map(|v| v != 0).unwrap_or(false),
+            Some(Value::Number(n)) => n.as_i64().is_some_and(|v| v != 0),
             Some(Value::Bool(b)) => *b,
             Some(Value::String(s)) => s.trim() != "0" && !s.trim().is_empty(),
             _ => false,

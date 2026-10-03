@@ -56,9 +56,17 @@ impl Recording {
 
     pub fn drain(&self) -> Recorded {
         Recorded {
-            rows: std::mem::take(&mut *self.batches.lock().unwrap_or_else(PoisonError::into_inner)),
+            rows: std::mem::take(
+                &mut *self
+                    .batches
+                    .lock()
+                    .map_or_else(PoisonError::into_inner, |value| value),
+            ),
             journal: std::mem::take(
-                &mut *self.journal.lock().unwrap_or_else(PoisonError::into_inner),
+                &mut *self
+                    .journal
+                    .lock()
+                    .map_or_else(PoisonError::into_inner, |value| value),
             ),
         }
     }
@@ -66,7 +74,7 @@ impl Recording {
     pub fn rows(&self) -> usize {
         self.batches
             .lock()
-            .unwrap_or_else(PoisonError::into_inner)
+            .map_or_else(PoisonError::into_inner, |value| value)
             .iter()
             .map(RecordedBatch::len)
             .sum()
@@ -77,21 +85,21 @@ impl Recording {
             && self
                 .journal
                 .lock()
-                .unwrap_or_else(PoisonError::into_inner)
+                .map_or_else(PoisonError::into_inner, |value| value)
                 .is_empty()
     }
 
     fn push(&self, batch: RecordedBatch) {
         self.batches
             .lock()
-            .unwrap_or_else(PoisonError::into_inner)
+            .map_or_else(PoisonError::into_inner, |value| value)
             .push(batch);
     }
 
     fn push_journal(&self, entry: RecordedJournal) {
         self.journal
             .lock()
-            .unwrap_or_else(PoisonError::into_inner)
+            .map_or_else(PoisonError::into_inner, |value| value)
             .push(entry);
     }
 }
@@ -102,59 +110,52 @@ mod tests {
     use census_store::Store;
     use serde_json::json;
 
-    fn scratch() -> (tempfile::TempDir, Store) {
-        let dir = tempfile::tempdir().expect("temp dir");
-        let store = Store::open(dir.path().join("store")).expect("store");
-        (dir, store)
+    type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+    fn scratch() -> TestResult<(tempfile::TempDir, Store)> {
+        let dir = tempfile::tempdir()?;
+        let store = Store::open(dir.path().join("store"))?;
+        Ok((dir, store))
     }
 
     #[test]
-    fn the_store_route_writes_on_commit() {
-        let (_dir, store) = scratch();
+    fn the_store_route_writes_on_commit() -> TestResult {
+        let (_dir, store) = scratch()?;
         let mut dropped = RowSink::Store(&store).write_batch();
-        dropped
-            .append_many(Table::Meets, &[json!({"id": "m1"})])
-            .expect("buffered");
+        dropped.append_many(Table::Meets, &[json!({"id": "m1"})])?;
         drop(dropped);
-        assert_eq!(store.walk_table(Table::Meets).expect("walk").rows, 0);
+        check!(eq; store.walk_table(Table::Meets)?.rows, 0);
 
         let mut batch = RowSink::Store(&store).write_batch();
-        batch
-            .append_many(Table::Meets, &[json!({"id": "m1"}), json!({"id": "m2"})])
-            .expect("buffered");
-        batch.commit().expect("committed");
-        assert_eq!(store.walk_table(Table::Meets).expect("walk").rows, 2);
+        batch.append_many(Table::Meets, &[json!({"id": "m1"}), json!({"id": "m2"})])?;
+        batch.commit()?;
+        check!(eq; store.walk_table(Table::Meets)?.rows, 2);
+        Ok(())
     }
 
     #[test]
-    fn the_recording_route_holds_rows_and_leaves_the_store_alone() {
-        let (_dir, store) = scratch();
+    fn the_recording_route_holds_rows_and_leaves_the_store_alone() -> TestResult {
+        let (_dir, store) = scratch()?;
         let recording = Recording::new();
         let mut batch = RowSink::Record(&recording).write_batch();
-        batch
-            .append_many(Table::Meets, &[json!({"id": "m1"})])
-            .expect("recorded");
-        batch
-            .append(Table::Performances, vec![json!({"id": "p1"})])
-            .expect("recorded");
-        batch
-            .journal_done("milesplit_results_v1", "set-1", &json!({"url": "u"}))
-            .expect("recorded");
-        assert!(
+        batch.append_many(Table::Meets, &[json!({"id": "m1"})])?;
+        batch.append(Table::Performances, vec![json!({"id": "p1"})])?;
+        batch.journal_done("milesplit_results_v1", "set-1", &json!({"url": "u"}))?;
+        check!(
             recording.is_empty(),
             "nothing is recorded before the commit"
         );
-        batch.commit().expect("committed");
+        batch.commit()?;
 
-        assert_eq!(store.walk_table(Table::Meets).expect("walk").rows, 0);
-        assert_eq!(store.walk_table(Table::Performances).expect("walk").rows, 0);
-        assert_eq!(recording.rows(), 2);
+        check!(eq; store.walk_table(Table::Meets)?.rows, 0);
+        check!(eq; store.walk_table(Table::Performances)?.rows, 0);
+        check!(eq; recording.rows(), 2);
         let drained = recording.drain();
-        assert_eq!(drained.rows.len(), 2);
-        assert_eq!(drained.rows[0].table, Table::Meets);
-        assert_eq!(drained.rows[0].rows, vec![json!({"id": "m1"})]);
-        assert_eq!(drained.rows[1].table, Table::Performances);
-        assert_eq!(
+        check!(eq; drained.rows.len(), 2);
+        check!(eq; drained.rows[0].table, Table::Meets);
+        check!(eq; drained.rows[0].rows, vec![json!({"id": "m1"})]);
+        check!(eq; drained.rows[1].table, Table::Performances);
+        check!(eq;
             drained.journal,
             vec![RecordedJournal {
                 phase: "milesplit_results_v1".to_string(),
@@ -163,30 +164,30 @@ mod tests {
             }],
             "the unit marker rides the recording, not the store"
         );
-        assert!(recording.is_empty(), "a drain takes what it returns");
+        check!(recording.is_empty(), "a drain takes what it returns");
+        Ok(())
     }
 
     #[test]
-    fn a_recorded_unit_is_not_journaled_until_it_is_written() {
-        let (_dir, store) = scratch();
+    fn a_recorded_unit_is_not_journaled_until_it_is_written() -> TestResult {
+        let (_dir, store) = scratch()?;
         let recording = Recording::new();
         let mut batch = RowSink::Record(&recording).write_batch();
-        batch
-            .journal_done(
-                "wayzata_schedule_v1",
-                "page-1",
-                &json!({"season": "2026-27"}),
-            )
-            .expect("recorded");
-        batch.commit().expect("committed");
-        assert_eq!(
+        batch.journal_done(
+            "wayzata_schedule_v1",
+            "page-1",
+            &json!({"season": "2026-27"}),
+        )?;
+        batch.commit()?;
+        check!(eq;
             store
                 .journal_keys("wayzata_schedule_v1")
-                .expect("read")
+                ?
                 .len(),
             0,
             "a marker the store cannot see is a marker no reader acts on"
         );
-        assert_eq!(recording.drain().journal.len(), 1);
+        check!(eq; recording.drain().journal.len(), 1);
+        Ok(())
     }
 }

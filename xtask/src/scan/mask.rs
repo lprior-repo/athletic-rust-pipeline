@@ -70,7 +70,7 @@ impl CodeMask {
     }
 
     fn end_raw_string(&mut self, line: &[char], masked: &mut [char], index: usize) -> usize {
-        let terminator = terminator(self.raw_hashes.unwrap_or(0));
+        let terminator = terminator(self.raw_hashes.map_or(0, core::convert::identity));
         match find_from(line, index, &terminator) {
             Some(end) => {
                 self.raw_hashes = None;
@@ -134,7 +134,9 @@ impl CodeMask {
         index: usize,
         char_literal: &Regex,
     ) -> usize {
-        let tail: String = line.get(index..).unwrap_or_default().iter().collect();
+        let tail: String = line.get(index..).map_or(Default::default(), core::convert::identity)
+        .iter()
+        .collect();
         let Some(literal) = char_literal.find(&tail) else {
             return index.saturating_add(1);
         };

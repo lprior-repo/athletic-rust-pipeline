@@ -59,9 +59,16 @@ pub(super) fn decode_entities(value: &str) -> String {
     let mut out = String::with_capacity(value.len());
     let mut rest = value;
     while let Some(index) = rest.find('&') {
-        out.push_str(rest.get(..index).unwrap_or_default());
-        let candidate = rest.get(index..).unwrap_or_default();
-        let tail = candidate.get(1..).unwrap_or_default();
+        out.push_str(
+            rest.get(..index)
+                .map_or(Default::default(), core::convert::identity),
+        );
+        let candidate = rest
+            .get(index..)
+            .map_or(Default::default(), core::convert::identity);
+        let tail = candidate
+            .get(1..)
+            .map_or(Default::default(), core::convert::identity);
         let Some(stop) = tail
             .get(..tail.len().min(64))
             .and_then(|head| head.find(';'))
@@ -70,11 +77,15 @@ pub(super) fn decode_entities(value: &str) -> String {
             rest = tail;
             continue;
         };
-        let body = tail.get(..stop).unwrap_or_default();
+        let body = tail
+            .get(..stop)
+            .map_or(Default::default(), core::convert::identity);
         match decode_entity(body) {
             Some(decoded) => {
                 out.push(decoded);
-                rest = tail.get(stop.saturating_add(1)..).unwrap_or_default();
+                rest = tail
+                    .get(stop.saturating_add(1)..)
+                    .map_or(Default::default(), core::convert::identity);
             }
             None => {
                 out.push('&');

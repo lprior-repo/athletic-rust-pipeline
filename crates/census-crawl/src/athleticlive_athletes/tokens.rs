@@ -20,7 +20,7 @@ pub fn school_year_for_date(date: &str, fallback: SchoolYear) -> SchoolYear {
     let month = date.get(5..7).and_then(|m| m.parse::<u8>().ok());
     match (year, month) {
         (Some(year), Some(month)) if (1..=12).contains(&month) => {
-            SchoolYear::containing(year, month).unwrap_or(fallback)
+            SchoolYear::containing(year, month).map_or(fallback, |value| value)
         }
         _ => fallback,
     }

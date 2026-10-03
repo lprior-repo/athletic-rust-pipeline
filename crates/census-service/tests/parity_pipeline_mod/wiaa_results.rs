@@ -209,7 +209,7 @@ fn expected_ids_for(
                     continue;
                 };
                 graded = graded.saturating_add(1);
-                let round = event.round.as_deref().unwrap_or("<none>");
+                let round = event.round.as_deref().map_or("<none>", |value| value);
                 let source_key = match leg_position {
                     Some(position) => {
                         format!("{url}:{}:{round}:{row_index}:leg{position}", event.label)

@@ -100,7 +100,9 @@ fn read_captures(source: &str, dir: &Path) -> Result<Captures> {
 
 fn golden_dir() -> PathBuf {
     let fixtures = paths::fixtures_dir();
-    let tests = fixtures.parent().unwrap_or(&fixtures);
+    let tests = fixtures
+        .parent()
+        .map_or(fixtures.as_path(), core::convert::identity);
     tests.join(GOLDEN_DIR)
 }
 

@@ -35,8 +35,8 @@ impl CanonicalEvent {
                     Gender::Girls => "f",
                     _ => "u",
                 },
-                division.unwrap_or(""),
-                round.unwrap_or(""),
+                division.map_or("", |value| value),
+                round.map_or("", |value| value),
             ],
         );
         Self {
@@ -161,13 +161,12 @@ impl TimingMethod {
 fn mark_kind_compatible(kind: &EventKind, mark: &Mark) -> bool {
     let is_time_event = !kind.is_field() && !kind.is_relay();
     let is_time_mark = matches!(mark, Mark::TimeSeconds(_));
-    let is_field_mark = matches!(
-        mark,
-        Mark::DistanceMetres(_) | Mark::FieldImperial { .. } | Mark::Points(_)
-    );
+    let is_field_mark = matches!(mark, Mark::DistanceMetres(_) | Mark::FieldImperial { .. });
     let is_raw = matches!(mark, Mark::Raw(_));
     match kind {
-        EventKind::Pentathlon | EventKind::Heptathlon | EventKind::Decathlon => true,
+        EventKind::Pentathlon | EventKind::Heptathlon | EventKind::Decathlon => {
+            matches!(mark, Mark::Points(_)) || is_raw
+        }
         EventKind::Relay4x100
         | EventKind::Relay4x200
         | EventKind::Relay4x400

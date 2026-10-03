@@ -93,7 +93,7 @@ pub fn parse_meet_result_files(url: &str, html: &str) -> CrawlResult<Vec<MeetRes
     let literal = captured
         .get(1)
         .map(|match_| match_.as_str())
-        .unwrap_or_default();
+        .map_or(Default::default(), core::convert::identity);
     serde_json::from_str(literal).map_err(|source| CrawlError::Decode {
         url: "meet results page".to_string(),
         source,
@@ -169,7 +169,7 @@ pub fn parse_meet_index(html: &str) -> CrawlResult<Vec<MeetRef>> {
             .captures(row)
             .and_then(|captures| captures.get(1))
             .map(|capture| capture.as_str().to_string())
-            .unwrap_or_default();
+            .map_or(Default::default(), core::convert::identity);
         meets.push(MeetRef {
             meet_id,
             name: html_unescape(name.as_str().trim()),
@@ -178,7 +178,7 @@ pub fn parse_meet_index(html: &str) -> CrawlResult<Vec<MeetRef>> {
                 .captures(row)
                 .and_then(|captures| captures.get(1))
                 .map(|capture| html_unescape(capture.as_str().trim()))
-                .unwrap_or_default(),
+                .map_or(Default::default(), core::convert::identity),
             results_url: url.as_str().to_string(),
         });
     }

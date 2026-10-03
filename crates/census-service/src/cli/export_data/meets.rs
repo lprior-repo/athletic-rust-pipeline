@@ -7,10 +7,10 @@ fn meet_identity_fields(m: &CanonicalMeet) -> (String, String, String, usize) {
     let identity = athletic_net_meet_identity(m);
     let an_meet = identity
         .map(|identity| identity.id.clone())
-        .unwrap_or_default();
+        .map_or(Default::default(), core::convert::identity);
     let an_url = identity
         .and_then(|identity| identity.url.clone())
-        .unwrap_or_default();
+        .map_or(Default::default(), core::convert::identity);
     let sports = m
         .sports
         .iter()
@@ -35,11 +35,17 @@ fn build_meet_row(m: &CanonicalMeet) -> Vec<String> {
 
     vec![
         m.id.as_str().to_string(),
-        m.state.map(|j| j.code().to_owned()).unwrap_or_default(),
+        m.state
+            .map(|j| j.code().to_owned())
+            .map_or(Default::default(), core::convert::identity),
         m.date.clone(),
-        m.end_date.clone().unwrap_or_default(),
+        m.end_date
+            .clone()
+            .map_or(Default::default(), core::convert::identity),
         m.name.clone(),
-        m.location.clone().unwrap_or_default(),
+        m.location
+            .clone()
+            .map_or(Default::default(), core::convert::identity),
         level_label(m.level).to_owned(),
         sports,
         an_meet,

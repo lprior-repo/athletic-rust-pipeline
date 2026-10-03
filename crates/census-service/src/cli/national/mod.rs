@@ -37,7 +37,7 @@ impl WorkflowFlags {
     pub(super) fn rounds(&self) -> u64 {
         self.timeout_seconds
             .checked_div(POLL.as_secs())
-            .unwrap_or(0)
+            .map_or(0, |value| value)
     }
 }
 

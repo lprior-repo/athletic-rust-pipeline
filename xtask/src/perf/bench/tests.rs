@@ -4,6 +4,8 @@ use anyhow::Result;
 use std::collections::BTreeMap;
 use std::path::Path;
 
+type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
+
 fn capture(root: &Path, directory: &str, json: &str) -> Result<()> {
     let directory = root.join(directory).join("new");
     std::fs::create_dir_all(&directory)?;
@@ -12,7 +14,7 @@ fn capture(root: &Path, directory: &str, json: &str) -> Result<()> {
 }
 
 #[test]
-fn criterion_full_ids_preserve_distinct_per_benchmark_throughputs() -> Result<()> {
+fn criterion_full_ids_preserve_distinct_per_benchmark_throughputs() -> TestResult {
     let root = tempfile::tempdir()?;
     capture(
         root.path(),
@@ -32,21 +34,30 @@ fn criterion_full_ids_preserve_distinct_per_benchmark_throughputs() -> Result<()
     let declarations = metadata::read(root.path())?;
     let output = "test group/first ... bench: 1 s/iter (+/- 0)\ntest group/second ... bench: 2 s/iter (+/- 0)\ntest group/timing ... bench: 500 ms/iter (+/- 0)";
     let result = parse_measurement(output, &declarations, None)?;
-    assert_eq!(
-        result["group/first"].throughput,
+    let first = result
+        .get("group/first")
+        .ok_or_else(|| anyhow::anyhow!("missing group/first measurement"))?;
+    let second = result
+        .get("group/second")
+        .ok_or_else(|| anyhow::anyhow!("missing group/second measurement"))?;
+    let timing = result
+        .get("group/timing")
+        .ok_or_else(|| anyhow::anyhow!("missing group/timing measurement"))?;
+    check!(eq;
+        first.throughput,
         Some(Throughput::Elements(42.0))
     );
-    assert_eq!(
-        result["group/second"].throughput,
+    check!(eq;
+        second.throughput,
         Some(Throughput::Bytes(512.0))
     );
-    assert_eq!(result["group/timing"].throughput, None);
-    assert_eq!(result["group/timing"].wall_time_seconds, 0.5);
+    check!(eq; timing.throughput, None);
+    check!(eq; timing.wall_time_seconds, 0.5);
     Ok(())
 }
 
 #[test]
-fn missing_duplicate_empty_and_malformed_metadata_refuse_collection() -> Result<()> {
+fn missing_duplicate_empty_and_malformed_metadata_refuse_collection() -> TestResult {
     for json in [
         "{",
         r#"{"full_id":"","throughput":null}"#,
@@ -54,10 +65,10 @@ fn missing_duplicate_empty_and_malformed_metadata_refuse_collection() -> Result<
     ] {
         let root = tempfile::tempdir()?;
         capture(root.path(), "group/first", json)?;
-        assert!(metadata::read(root.path()).is_err());
+        check!(metadata::read(root.path()).is_err());
     }
     let root = tempfile::tempdir()?;
-    assert!(metadata::read(root.path()).is_err());
+    check!(metadata::read(root.path()).is_err());
     capture(
         root.path(),
         "first",
@@ -68,7 +79,7 @@ fn missing_duplicate_empty_and_malformed_metadata_refuse_collection() -> Result<
         "second",
         r#"{"full_id":"g/f","throughput":null}"#,
     )?;
-    assert!(metadata::read(root.path()).is_err());
+    check!(metadata::read(root.path()).is_err());
     Ok(())
 }
 
@@ -90,7 +101,7 @@ fn metadata_and_output_must_describe_the_same_nonempty_results() {
 }
 
 #[test]
-fn time_units_and_thousands_separators_convert_exactly() -> Result<()> {
+fn time_units_and_thousands_separators_convert_exactly() -> TestResult {
     for (raw, nanos) in [
         ("12,345 ns", 12_345.0),
         ("3 µs", 3_000.0),
@@ -98,7 +109,7 @@ fn time_units_and_thousands_separators_convert_exactly() -> Result<()> {
         ("5 ms", 5_000_000.0),
         ("2.5 s", 2_500_000_000.0),
     ] {
-        assert_eq!(
+        check!(eq;
             parse_bencher_line(&format!("test g/f ... bench: {raw}/iter"))?,
             ("g/f".into(), nanos)
         );
@@ -122,8 +133,8 @@ fn invalid_time_and_extra_timing_fields_cannot_make_a_baseline() {
 }
 
 #[test]
-fn gnu_time_rss_parsing_accepts_indentation_and_rejects_missing_memory() -> Result<()> {
-    assert_eq!(
+fn gnu_time_rss_parsing_accepts_indentation_and_rejects_missing_memory() -> TestResult {
+    check!(eq;
         runtime::parse_rss("\tMaximum resident set size (kbytes): 128\n")?,
         128
     );
@@ -132,13 +143,13 @@ fn gnu_time_rss_parsing_accepts_indentation_and_rejects_missing_memory() -> Resu
         "Maximum resident set size (kbytes): 0",
         "Maximum resident set size (kbytes): unknown",
     ] {
-        assert!(runtime::parse_rss(raw).is_err());
+        check!(runtime::parse_rss(raw).is_err());
     }
     Ok(())
 }
 
 #[test]
-fn persisted_rate_cannot_compare_elements_with_bytes() -> Result<()> {
+fn persisted_rate_cannot_compare_elements_with_bytes() -> TestResult {
     let old = tempfile::tempdir()?;
     let current = tempfile::tempdir()?;
     capture(
@@ -166,18 +177,23 @@ fn persisted_rate_cannot_compare_elements_with_bytes() -> Result<()> {
     let baseline: super::super::PerfBaseline =
         serde_json::from_slice(&serde_json::to_vec(&baseline)?)?;
     let current = parse_measurement(output, &metadata::read(current.path())?, None)?;
-    assert!(super::super::compare::check_throughput(&baseline, &current, 0.05).is_err());
+    check!(super::super::compare::check_throughput(&baseline, &current, 0.05).is_err());
     Ok(())
 }
 
 #[test]
 #[cfg(unix)]
-fn absent_timer_keeps_rss_unavailable_and_nonzero_children_fail() -> Result<()> {
+fn absent_timer_keeps_rss_unavailable_and_nonzero_children_fail() -> TestResult {
     let directory = tempfile::tempdir()?;
     let (_, rss) = runtime::measure_with_time(Path::new("/bin/true"), directory.path(), None)?;
-    assert_eq!(rss, None);
-    let failure = runtime::measure_with_time(Path::new("/bin/false"), directory.path(), None)
-        .expect_err("benchmark process failure must be propagated");
-    assert!(failure.to_string().contains("exit status: 1"), "{failure}");
+    check!(eq; rss, None);
+    let failure = match runtime::measure_with_time(Path::new("/bin/false"), directory.path(), None)
+    {
+        Err(failure) => failure,
+        Ok(_) => {
+            return Err(anyhow::anyhow!("benchmark process failure must be propagated").into())
+        }
+    };
+    check!(failure.to_string().contains("exit status: 1"), "{failure}");
     Ok(())
 }

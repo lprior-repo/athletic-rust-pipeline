@@ -29,18 +29,25 @@ impl Scan {
         while let Some(offset) = text.get(pos..).and_then(|rest| rest.find('<')) {
             let tag = pos.saturating_add(offset);
             if tag > pos {
-                self.pending
-                    .push_str(text.get(pos..tag).unwrap_or_default());
+                self.pending.push_str(
+                    text.get(pos..tag)
+                        .map_or(Default::default(), core::convert::identity),
+                );
             }
             pos = self.token(text, tag);
         }
-        self.pending.push_str(text.get(pos..).unwrap_or_default());
+        self.pending.push_str(
+            text.get(pos..)
+                .map_or(Default::default(), core::convert::identity),
+        );
         self.flush();
         self.resolve_table_text();
     }
 
     fn raw_text(&mut self, text: &str, name: &str, content: usize) -> usize {
-        let rest = text.get(content..).unwrap_or_default();
+        let rest = text
+            .get(content..)
+            .map_or(Default::default(), core::convert::identity);
         let lower = rest.to_ascii_lowercase();
         let marker = format!("</{name}");
         let end = lower.find(&marker);
@@ -54,7 +61,8 @@ impl Scan {
                         index.saturating_add(1)
                     });
                 (
-                    text.get(content..after).unwrap_or_default(),
+                    text.get(content..after)
+                        .map_or(Default::default(), core::convert::identity),
                     after.saturating_add(skip),
                 )
             }
@@ -118,7 +126,7 @@ impl Scan {
     }
 
     fn push_text(&mut self, node: &str, foster: Option<usize>) {
-        let limit = foster.unwrap_or(self.stack.len());
+        let limit = foster.map_or(self.stack.len(), |value| value);
         for (index, open) in self.stack.iter_mut().enumerate() {
             if index < limit || open.fostered {
                 open.text.push(node.to_string());
@@ -141,7 +149,9 @@ impl Scan {
 
     fn token(&mut self, text: &str, tag: usize) -> usize {
         self.flush();
-        let rest = text.get(tag..).unwrap_or_default();
+        let rest = text
+            .get(tag..)
+            .map_or(Default::default(), core::convert::identity);
         if let Some(length) = self.skipped_token(rest) {
             return tag.saturating_add(length);
         }
@@ -197,7 +207,9 @@ impl Scan {
 
     fn start_tag_token(&mut self, text: &str, rest: &str, tag: usize) -> usize {
         self.resolve_table_text();
-        let body = rest.get(1..).unwrap_or_default();
+        let body = rest
+            .get(1..)
+            .map_or(Default::default(), core::convert::identity);
         let Some((closing, name, class)) = scan_tag(body) else {
             return text.len();
         };

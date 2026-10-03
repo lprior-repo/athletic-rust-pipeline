@@ -55,22 +55,55 @@ fn source_change_rejects_checkpoint_without_partial_state_verdict_journal_or_rec
     .0;
     store.append(Table::Schools, &school)?;
     let current = store.snapshot().sequence();
-    assert!(matches!(
-        batch.commit_once_at_sequence("review:one", "payload-one", observed),
-        Err(StoreError::Invariant { .. })
-    ));
-    assert_eq!(store.snapshot().sequence(), current);
-    assert_eq!(store.scan::<ReviewCase>(Table::ReviewCases)?, Vec::new());
-    assert_eq!(
-        store.scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)?,
-        Vec::new()
-    );
-    assert_eq!(
-        store.journal_payloads("review-checkpoint")?,
-        Vec::<serde_json::Value>::new()
-    );
-    assert_eq!(store.receipt("review:one")?, None);
-    assert_eq!(store.scan::<CanonicalSchool>(Table::Schools)?, vec![school]);
+    let outcome = batch.commit_once_at_sequence("review:one", "payload-one", observed);
+    if !matches!(outcome, Err(StoreError::Invariant { .. })) {
+        return Err(format!("expected invariant refusal: {outcome:?}").into());
+    }
+    {
+        let (left, right) = (&store.snapshot().sequence(), &current);
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    {
+        let (left, right) = (&store.scan::<ReviewCase>(Table::ReviewCases)?, &Vec::new());
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    {
+        let (left, right) = (
+            &store.scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)?,
+            &Vec::new(),
+        );
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    {
+        let (left, right) = (
+            &store.journal_payloads("review-checkpoint")?,
+            &Vec::<serde_json::Value>::new(),
+        );
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    {
+        let (left, right) = (&store.receipt("review:one")?, &None);
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    {
+        let (left, right) = (
+            &store.scan::<CanonicalSchool>(Table::Schools)?,
+            &vec![school],
+        );
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
     Ok(())
 }
 
@@ -85,35 +118,85 @@ fn fresh_checkpoint_is_atomic_durable_and_exact_replay_does_not_require_the_old_
         let (batch, expected_case, expected_verdict) = checkpoint(&store)?;
         let applied =
             batch.commit_once_at_sequence("review:one", "payload-one", original_sequence)?;
-        assert!(matches!(applied, Application::Written(_)));
+        if !matches!(applied, Application::Written(_)) {
+            return Err(format!("expected written checkpoint: {applied:?}").into());
+        }
         receipt = applied.receipt().clone();
         case = expected_case;
         verdict = expected_verdict;
-        assert_eq!(
-            store.scan::<ReviewCase>(Table::ReviewCases)?,
-            vec![case.clone()]
-        );
-        assert_eq!(
-            store.scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)?,
-            vec![verdict.clone()]
-        );
+        {
+            let (left, right) = (
+                &store.scan::<ReviewCase>(Table::ReviewCases)?,
+                &vec![case.clone()],
+            );
+            if left != right {
+                return Err(format!("left={left:?} right={right:?}").into());
+            }
+        }
+        {
+            let (left, right) = (
+                &store.scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)?,
+                &vec![verdict.clone()],
+            );
+            if left != right {
+                return Err(format!("left={left:?} right={right:?}").into());
+            }
+        }
     }
     let store = Store::open(root.path())?;
     let current = store.snapshot().sequence();
     let before_journal = store.journal_payloads("review-checkpoint")?;
     let (batch, _, _) = checkpoint(&store)?;
-    assert_eq!(
-        batch.commit_once_at_sequence("review:one", "payload-one", original_sequence)?,
-        Application::Repeated(receipt.clone())
-    );
-    assert_eq!(store.snapshot().sequence(), current);
-    assert_eq!(store.scan::<ReviewCase>(Table::ReviewCases)?, vec![case]);
-    assert_eq!(
-        store.scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)?,
-        vec![verdict]
-    );
-    assert_eq!(store.journal_payloads("review-checkpoint")?, before_journal);
-    assert_eq!(store.receipt("review:one")?, Some(receipt));
-    assert_eq!(store.receipt_count()?, 1);
+    {
+        let (left, right) = (
+            &batch.commit_once_at_sequence("review:one", "payload-one", original_sequence)?,
+            &Application::Repeated(receipt.clone()),
+        );
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    {
+        let (left, right) = (&store.snapshot().sequence(), &current);
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    {
+        let (left, right) = (&store.scan::<ReviewCase>(Table::ReviewCases)?, &vec![case]);
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    {
+        let (left, right) = (
+            &store.scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)?,
+            &vec![verdict],
+        );
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    {
+        let (left, right) = (
+            &store.journal_payloads("review-checkpoint")?,
+            &before_journal,
+        );
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    {
+        let (left, right) = (&store.receipt("review:one")?, &Some(receipt));
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    {
+        let (left, right) = (&store.receipt_count()?, &1);
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
     Ok(())
 }

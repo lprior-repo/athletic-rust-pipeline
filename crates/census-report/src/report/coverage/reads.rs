@@ -1,4 +1,4 @@
-use super::state::{in_cohort, jurisdiction_of};
+use super::state::{in_requested_year, jurisdiction_of};
 use super::CoverageTotals;
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
@@ -157,7 +157,7 @@ fn athletes(
 ) -> ScopeSplit {
     let mut split = ScopeSplit::default();
     for athlete in athletes {
-        if !in_cohort(athlete, grad_year) {
+        if !in_requested_year(athlete, grad_year) {
             continue;
         }
         split.add(universe.contains(jurisdiction_of(school_state, athlete.school.as_str())));
@@ -178,7 +178,7 @@ fn performances(
         let subject = performance.athlete.as_str();
         let canonical = aliases.get(subject).map_or(subject, String::as_str);
         let bucket = match athlete_by_id.get(canonical) {
-            Some(athlete) if in_cohort(athlete, grad_year) => {
+            Some(athlete) if in_requested_year(athlete, grad_year) => {
                 jurisdiction_of(school_state, athlete.school.as_str())
             }
             Some(_) => continue,

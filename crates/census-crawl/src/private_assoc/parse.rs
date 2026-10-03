@@ -75,8 +75,8 @@ pub fn parse_listing(text: &str) -> CrawlResult<ReadOutcome> {
         let end = items
             .get(index.saturating_add(1))
             .map_or(text.len(), |(next, _)| *next);
-        let chunk = text.get(open_end..end).unwrap_or_default();
-        let prefix = text.get(..start).unwrap_or_default();
+        let chunk = text.get(open_end..end).map_or(Default::default(), core::convert::identity);
+        let prefix = text.get(..start).map_or(Default::default(), core::convert::identity);
         let line = prefix.matches('\n').count().saturating_add(1);
         read_row(line, chunk, patterns, &label, &mut outcome);
     }

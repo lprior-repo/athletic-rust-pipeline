@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use census_domain::model::{ReviewCase, ReviewVerdictRecord};
 use census_store::{Store, StoreResult, Table};
 use futures::stream::{self, TryStreamExt};
@@ -8,13 +10,18 @@ use crate::review_budget::Budget;
 use crate::review_checkpoint::{charge_asked, commit, matches_case, needs_advice, process_answers};
 use crate::{ModelClient, ReviewFamily, ReviewOptions, ReviewReport};
 
+pub(super) struct Checkpoint<'a> {
+    pub(super) observed_at: &'a str,
+    pub(super) index: usize,
+}
+
 pub(super) async fn process(
     store: &Store,
     chunk: &[(ReviewCase, ReviewFamily)],
     clients: [&ModelClient; 2],
+    cache_snapshot: &census_store::StoreSnapshot<'_>,
     options: &ReviewOptions,
-    observed_at: &str,
-    checkpoint: usize,
+    checkpoint: Checkpoint<'_>,
     report: &mut ReviewReport,
 ) -> StoreResult<()> {
     let mut budget = Budget::default();
@@ -22,6 +29,7 @@ pub(super) async fn process(
         store,
         chunk,
         clients,
+        cache_snapshot,
         options.limit.saturating_sub(report.requested),
         &mut budget,
     )
@@ -38,7 +46,7 @@ pub(super) async fn process(
         asked,
         &current,
         &current_cases,
-        observed_at,
+        checkpoint.observed_at,
         report,
         &mut budget,
     )?;
@@ -49,8 +57,8 @@ pub(super) async fn process(
             store,
             &verdicts,
             &states,
-            observed_at,
-            checkpoint,
+            checkpoint.observed_at,
+            checkpoint.index,
             snapshot.sequence(),
         )?;
     }
@@ -61,6 +69,7 @@ async fn ask_checkpoint(
     store: &Store,
     chunk: &[(ReviewCase, ReviewFamily)],
     clients: [&ModelClient; 2],
+    cache_snapshot: &census_store::StoreSnapshot<'_>,
     remaining: usize,
     budget: &mut Budget,
 ) -> StoreResult<Vec<(usize, Asked)>> {
@@ -75,6 +84,8 @@ async fn ask_checkpoint(
         &ids,
         budget,
     )?;
+    let previous_rows = read_cached_verdicts(cache_snapshot, snapshot.sequence(), &ids, budget)?;
+    let previous = previous_rows.as_ref().map_or(&standing, |rows| rows);
     let subjects = SubjectIndex::read(&snapshot, chunk, budget)?;
     drop(snapshot);
     let intake = chunk
@@ -91,9 +102,8 @@ async fn ask_checkpoint(
     stream::iter(intake)
         .and_then(|(index, case, family)| {
             let subjects = &subjects;
-            let standing = &standing;
             async move {
-                let previous = standing.get(&case.id).filter(|row| matches_case(row, case));
+                let previous = previous.get(&case.id).filter(|row| matches_case(row, case));
                 ask_lanes(case, family, subjects, clients, previous)
                     .await
                     .map(|asked| (index, asked))
@@ -107,4 +117,16 @@ async fn ask_checkpoint(
             futures::future::ready(result)
         })
         .await
+}
+
+fn read_cached_verdicts(
+    snapshot: &census_store::StoreSnapshot<'_>,
+    current_sequence: u64,
+    ids: &HashSet<&str>,
+    budget: &mut Budget,
+) -> StoreResult<Option<HashMap<String, ReviewVerdictRecord>>> {
+    if snapshot.sequence() == current_sequence {
+        return Ok(None);
+    }
+    crate::review_subjects::selected(snapshot, Table::IdentityVerdicts, ids, budget).map(Some)
 }

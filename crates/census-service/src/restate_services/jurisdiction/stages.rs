@@ -32,15 +32,22 @@ impl JurisdictionCensus {
         authorized_hosts: &[String],
         source_parallelism: usize,
     ) -> Result<Arc<Fetcher>, HandlerError> {
-        let normalized = normalize_hosts(authorized_hosts);
+        crate::restate_services::limits::validate_source_parallelism(source_parallelism)?;
         let source_parallelism =
             source_parallelism.max(census_crawl::net::DEFAULT_FAMILY_PARALLELISM);
-        {
-            let slot = self.fetcher.lock().await;
-            if let Some((cached, lanes, fetcher)) = slot.as_ref() {
-                if *cached == normalized && *lanes == source_parallelism {
-                    return Ok(Arc::clone(fetcher));
-                }
+        let normalized = normalize_hosts(authorized_hosts);
+        let mut slot = self.fetcher.lock().await;
+        let owner_parallelism = *self.source_parallelism.get_or_init(|| source_parallelism);
+        if owner_parallelism != source_parallelism {
+            return Err(TerminalError::new(format!(
+                "source parallelism mismatch: this serving owner is fixed at \
+                 {owner_parallelism}, but the request requires {source_parallelism}"
+            ))
+            .into());
+        }
+        if let Some((cached, lanes, fetcher)) = slot.as_ref() {
+            if *cached == normalized && *lanes == source_parallelism {
+                return Ok(Arc::clone(fetcher));
             }
         }
         let built = Fetcher::new(
@@ -56,13 +63,14 @@ impl JurisdictionCensus {
             )))
         })?
         .with_family_budgets(default_family_delays())
-        .with_family_parallelism(source_parallelism);
+        .with_family_parallelism(source_parallelism)
+        .with_shared_pacing(Arc::clone(&self.pacing));
         let built = match &self.lane {
             Some(lane) => built.with_browser_lane(lane.clone()),
             None => built,
         };
         let shared = Arc::new(built);
-        *self.fetcher.lock().await = Some((normalized, source_parallelism, Arc::clone(&shared)));
+        *slot = Some((normalized, source_parallelism, Arc::clone(&shared)));
         Ok(shared)
     }
 
@@ -79,14 +87,22 @@ impl JurisdictionCensus {
         ctx: &ObjectContext<'_>,
     ) -> Result<JurisdictionState, HandlerError> {
         let identity = ctx.key().to_string();
-        Ok(ctx
-            .get::<Json<JurisdictionState>>(KEY_STATE)
-            .await?
-            .map(|state| state.0)
-            .unwrap_or_else(|| JurisdictionState {
-                identity,
-                ..JurisdictionState::default()
-            }))
+        Ok(
+            match ctx
+                .get::<Json<JurisdictionState>>(KEY_STATE)
+                .await?
+                .map(|state| state.0)
+            {
+                Some(value) => {
+                    drop(identity);
+                    value
+                }
+                None => JurisdictionState {
+                    identity,
+                    ..JurisdictionState::default()
+                },
+            },
+        )
     }
 
     pub(super) async fn load_shared(
@@ -94,14 +110,22 @@ impl JurisdictionCensus {
         ctx: &SharedObjectContext<'_>,
     ) -> Result<JurisdictionState, HandlerError> {
         let identity = ctx.key().to_string();
-        Ok(ctx
-            .get::<Json<JurisdictionState>>(KEY_STATE)
-            .await?
-            .map(|state| state.0)
-            .unwrap_or_else(|| JurisdictionState {
-                identity,
-                ..JurisdictionState::default()
-            }))
+        Ok(
+            match ctx
+                .get::<Json<JurisdictionState>>(KEY_STATE)
+                .await?
+                .map(|state| state.0)
+            {
+                Some(value) => {
+                    drop(identity);
+                    value
+                }
+                None => JurisdictionState {
+                    identity,
+                    ..JurisdictionState::default()
+                },
+            },
+        )
     }
 
     pub(super) fn save(&self, ctx: &ObjectContext<'_>, state: &JurisdictionState, today: &str) {
@@ -149,7 +173,3 @@ impl JurisdictionCensus {
         Ok(())
     }
 }
-
-#[cfg(test)]
-#[path = "stages_tests.rs"]
-mod tests;

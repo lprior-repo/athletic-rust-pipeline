@@ -1,3 +1,4 @@
+use crate::net::FetchOutcome;
 use census_domain::model::{
     CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SchoolId, SourceIdentity,
     SourceNamespace, SourceRef,
@@ -27,32 +28,26 @@ pub struct SchoolExtract {
     pub coaches: Vec<CanonicalCoach>,
 }
 
-pub fn school_entities(table: &SchoolTable, observed_on: &str) -> SchoolExtract {
-    let (school, school_id) = school_from_table(table, observed_on);
-    let mut coaches = Vec::new();
-
-    for row in &table.coach_rows {
-        let coach = coach_from_row(&school_id, row, observed_on);
-        coaches.push(coach);
-    }
-
+pub fn school_entities(table: &SchoolTable, capture: &FetchOutcome) -> SchoolExtract {
+    let (school, school_id) = school_from_table(table, capture);
+    let coaches = table
+        .coach_rows
+        .iter()
+        .map(|row| coach_from_row(&school_id, row, capture))
+        .collect();
     SchoolExtract { school, coaches }
 }
 
-fn school_from_table(table: &SchoolTable, observed_on: &str) -> (CanonicalSchool, SchoolId) {
+fn school_from_table(table: &SchoolTable, capture: &FetchOutcome) -> (CanonicalSchool, SchoolId) {
     let name = table.name.clone();
     let normalized = normalize_name(&name);
     let (school, id) = CanonicalSchool::new(super::STATE, name, normalized);
-    let url = format!("{}/Directory.aspx", super::HOST);
-    let evidence = Evidence::parsed(
-        SourceRef::new(super::SOURCE_ID, Some(url.clone())),
-        observed_on.to_string(),
-    );
+    let evidence = capture_evidence(capture);
     let identity = SourceIdentity::new(
         SourceNamespace::association_school(ASSOCIATION),
         format!("school:{}", id),
     )
-    .with_url(url);
+    .with_url(capture.url.clone());
 
     let mut school = school;
     school.evidence.push(evidence);
@@ -61,7 +56,7 @@ fn school_from_table(table: &SchoolTable, observed_on: &str) -> (CanonicalSchool
     (school, id)
 }
 
-fn coach_from_row(school_id: &SchoolId, row: &CoachRow, observed_on: &str) -> CanonicalCoach {
+fn coach_from_row(school_id: &SchoolId, row: &CoachRow, capture: &FetchOutcome) -> CanonicalCoach {
     let gender = gender_from_label(&row.sport_label);
     let mut coach = CanonicalCoach::new(
         school_id,
@@ -75,31 +70,26 @@ fn coach_from_row(school_id: &SchoolId, row: &CoachRow, observed_on: &str) -> Ca
         coach.phone = Some(phone.clone());
     }
 
-    let url = format!("{}/Directory.aspx", super::HOST);
-    coach.source_identities.push(
-        SourceIdentity::new(
-            SourceNamespace::AssociationSchool {
-                association: ASSOCIATION.to_string(),
-            },
-            format!(
-                "coach:{}:{}:{}:{}",
-                school_id,
-                row.sport.stable_key(),
-                gender.stable_key(),
-                "HeadCoach"
-            ),
-        )
-        .with_url(url),
-    );
-    coach.evidence.push(Evidence::parsed(
-        SourceRef::new(
-            super::SOURCE_ID,
-            Some(format!("{}/Directory.aspx", super::HOST)),
-        ),
-        observed_on.to_string(),
-    ));
+    coach.evidence.push(capture_evidence(capture));
 
     coach
+}
+
+pub(super) fn capture_note(capture: &FetchOutcome) -> serde_json::Value {
+    serde_json::json!({
+        "capture_url": capture.url,
+        "sha256": capture.content_digest,
+        "acquired_at": capture.fetched_at,
+    })
+}
+
+fn capture_evidence(capture: &FetchOutcome) -> Evidence {
+    let mut evidence = Evidence::parsed(
+        SourceRef::new(super::SOURCE_ID, Some(capture.url.clone())),
+        &capture.fetched_at,
+    );
+    evidence.note = Some(capture_note(capture).to_string());
+    evidence
 }
 
 fn gender_from_label(sport_label: &str) -> Gender {

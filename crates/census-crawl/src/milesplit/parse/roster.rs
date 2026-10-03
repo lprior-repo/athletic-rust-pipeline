@@ -11,7 +11,23 @@ use super::{
 };
 use crate::{CrawlError, CrawlResult};
 
+mod owner;
+
+pub(in crate::milesplit) fn parse_captured_roster(
+    html: &str,
+    team: TeamRef,
+    capture: &crate::net::FetchOutcome,
+) -> CrawlResult<RosterVerdict> {
+    owner::validate_capture(html, &team, capture)?;
+    parse_rows(html, team)
+}
+
 pub fn parse_roster(html: &str, team: TeamRef) -> CrawlResult<RosterVerdict> {
+    owner::validate_published(html, &team)?;
+    parse_rows(html, team)
+}
+
+fn parse_rows(html: &str, team: TeamRef) -> CrawlResult<RosterVerdict> {
     let row_regex = athlete_row_regex()?;
     let fields = Fields {
         link: athlete_link_regex()?,
@@ -133,3 +149,6 @@ fn active_seasons(regex: &Regex, html: &str) -> [bool; 3] {
         });
     seasons
 }
+
+#[cfg(test)]
+mod ownership_tests;

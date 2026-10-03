@@ -22,7 +22,7 @@ struct Stats {
 }
 
 fn count(value: usize) -> u64 {
-    u64::try_from(value).unwrap_or(u64::MAX)
+    u64::try_from(value).map_or(u64::MAX, |value| value)
 }
 
 pub(super) fn completed_pages(ctx: &AdapterContext<'_>) -> CrawlResult<HashSet<String>> {
@@ -170,9 +170,10 @@ impl Walk {
             SourceNamespace::TimerMeet {
                 provider: PROVIDER.to_string(),
             },
-            row.slug
-                .clone()
-                .unwrap_or_else(|| format!("{}|{}", row.date, meet.normalized_name)),
+            match row.slug.clone() {
+                Some(value) => value,
+                None => format!("{}|{}", row.date, meet.normalized_name),
+            },
         ));
         let mut evidence = Evidence::parsed(
             SourceRef::new(ADAPTER_ID, Some(url.to_string())),
@@ -220,7 +221,7 @@ impl Walk {
 fn month_of(date: &str) -> u8 {
     date.get(5..7)
         .and_then(|month| month.parse::<u8>().ok())
-        .unwrap_or(0)
+        .map_or(0, |value| value)
 }
 
 fn note_summary(report: &mut AdapterReport, stats: &Stats, meets: usize) {

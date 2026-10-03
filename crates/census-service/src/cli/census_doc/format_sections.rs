@@ -139,8 +139,8 @@ pub(super) fn measured_answers(
     seeds: &crate::cli::census_doc::counted_seeds::Seeds,
     counts: &MeasuredCounts,
 ) -> String {
-    let co2027_usize = usize::try_from(counts.total_co2027).unwrap_or(usize::MAX);
-    let athletes_usize = usize::try_from(counts.total_athletes).unwrap_or(usize::MAX);
+    let co2027_usize = usize::try_from(counts.total_co2027).map_or(usize::MAX, |value| value);
+    let athletes_usize = usize::try_from(counts.total_athletes).map_or(usize::MAX, |value| value);
 
     [
         answer_row(

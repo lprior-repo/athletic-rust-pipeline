@@ -7,6 +7,10 @@ use census_crawl::milesplit::{
 use proptest::prelude::*;
 use proptest::test_runner::{RngAlgorithm, RngSeed};
 
+#[macro_use]
+#[path = "../../../tools/fallible_checks.rs"]
+mod fallible_checks;
+
 #[path = "milesplit_parser_properties/accounting.rs"]
 mod accounting;
 #[path = "milesplit_parser_properties/index_laws.rs"]

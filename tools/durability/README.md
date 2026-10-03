@@ -50,19 +50,56 @@ this directory. A narrower invoked test does not discharge the broader same-numb
 | 06 | `no-duplicate-evidence` | Explicit skip: reached production commit/lost-ack injection missing |
 | 07 | `domain-dedup` | Explicit skip: concurrent cross-workflow source-unit scenario missing |
 | 08 | `global-budget` | Explicit skip: multi-endpoint physical origin-budget scenario missing |
-| 09 | `disk-full-fjall` | Builds `census-store` ENOSPC probe in private 64-MiB tmpfs; conditional namespace/tool skips |
+| 09 | `disk-full-fjall` | Private 64-MiB tmpfs with fail-closed cap/private-mount inspection; actual commit ENOSPC, exact acknowledged records/receipts, unchanged replay and new recovered writes; conditional namespace/tool skips |
 | 10 | `disk-full-restate` | Owned processes/private bounded mount; demands an actual OS disk-full log and acknowledged-work recovery |
 | 11 | `parent-exit` | Explicit skip: `ATHLETIC_FAULT_HTTP_EXIT` seam missing |
 | 12 | `cross-midnight` | Explicit skip: isolated clock fault missing |
 | 13 | `ai-review-failures` | Runs `census-review` HTTP transport tests; does not prove advice-checkpoint crash recovery |
 | 14 | `seal-refuses` | Empty-store CLI refusal; does not exercise every unmet acceptance item |
 | 15 | `full-backup-restore` | Runs service `backup_restore` integration tests; not Restate recovery |
-| 16 | `golden-census-determinism` | Runs selected `parity_pipeline` fixture test; not full frozen real-capture/advice replay |
+| 16 | `golden-census-determinism` | Runs exact `rebuilding_the_fixture_store_reproduces_semantics_not_publication_identity` regression and retains its log; not full frozen real-capture/advice replay |
 | 17 | `recovery-tests` | Runs service `recovery` suite; verify the actual reached batch window against the catalog |
 
 Scenario 10 also uses `restate-enospc-probe.sh`; its current helper prerequisites include Python.
 That existing harness implementation is not permission to implement census pipeline logic in Python.
 Do not convert a missing tool or inaccessible fault seam into simulated success.
+
+Scenario 09 creates a fresh store child within its private capped mount. The probe rejects
+preexisting stores, inherited host mounts, missing size/isolation evidence and non-ENOSPC
+failures. It reserves 8 MiB before the fault and releases only that owned file afterward,
+then verifies exact cold readback, unchanged receipted replay and a new atomic write across
+another reopen. The wrapper uses a 300-second TERM-only deadline and retains `probe.out`
+and a cold `preserved-store` under its printed `EVIDENCE:` directory before namespace exit.
+Set `SCRATCH_STORE` to an existing owned local-disk parent to preserve this evidence; no
+scratch cleanup deletes it. These tmpfs results do not establish power-loss/reboot recovery.
+
+The separate `qualification_native_vm` example's source-reservation reboot lane
+requires an explicitly feature-enabled endpoint:
+
+```sh
+cargo build --locked --release -p census-service --features native-fault-injection \
+  --bin census-serve --example qualification_native_vm
+```
+
+The feature is disabled by default. The owned guest supervisor sets
+`CENSUS_NATIVE_SOURCE_BOUNDARY` only on its endpoint, with private configuration
+under `/srv/qualification`. A matching original operation and reserved attempt
+publishes a complete, no-overwrite, identity-bound marker before acquisition and
+holds for at most 60 seconds; expiry fails the injection rather than continuing
+normally. The host must still prove the original parent is owed, its original
+child is active and awaited, its deployment pin and journaled registration match,
+and its actual durable reservation exists. Configuration and marker are verified
+byte-exact after reboot. This reached seam proves reserved pre-acquisition work,
+not an HTTP request, response or parse in flight, and does not certify all
+scenario-03 phase boundaries or a full national census.
+
+The host exercises reboot before the independent natural-midnight lane, so a guest-only clock
+injection cannot roll back on reboot and confound that fault. It retains both original Sweep
+and source recovery outcomes before propagating either error. Recovery polls original invocation
+status and captures full bookended journals/inspections on completion or the final bounded check,
+instead of duplicating them at every poll. The 32 MiB artifact limit, 300 checks and one-second
+interval are unchanged. A still-unfinished parent remains a failure with its exact obligations,
+not source acquisition or national PASS.
 
 ## Verdicts and evidence
 

@@ -2,7 +2,7 @@ use super::super::is_core_evidenced;
 use super::gaps;
 use super::reads::{self, Published, Tables};
 use super::state::{
-    bucket_mut, in_cohort, jurisdiction_of, school_state_index, Bucket, BucketMap, Outcome,
+    bucket_mut, in_requested_year, jurisdiction_of, school_state_index, Bucket, BucketMap, Outcome,
     SchoolSets,
 };
 use super::{athletes, CoverageGap, JurisdictionCoverage};
@@ -202,7 +202,7 @@ fn count_core(
     buckets: &mut BucketMap,
 ) {
     for athlete in athletes {
-        if !in_cohort(athlete, grad_year) || !is_core_evidenced(athlete) {
+        if !in_requested_year(athlete, grad_year) || !is_core_evidenced(athlete) {
             continue;
         }
         let bucket = jurisdiction_of(school_state, athlete.school.as_str());
@@ -215,7 +215,11 @@ fn publish(mut buckets: BucketMap) -> (Vec<JurisdictionCoverage>, Vec<CoverageGa
         Vec::with_capacity(UsJurisdiction::CENSUS_SCOPE.len().saturating_add(1));
     let mut gap_rows = Vec::new();
     for bucket in jurisdiction_buckets() {
-        let (row, counters) = buckets.remove(&bucket).unwrap_or_default().finish(bucket);
+        let (row, counters) = match buckets.remove(&bucket) {
+            Some(value) => value,
+            None => Default::default(),
+        }
+        .finish(bucket);
         gap_rows.extend(gaps::rows(&row, &counters));
         jurisdictions.push(row);
     }

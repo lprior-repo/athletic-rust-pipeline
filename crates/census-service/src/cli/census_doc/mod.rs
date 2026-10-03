@@ -67,7 +67,7 @@ fn fmt_pct(numerator: f64, denominator: f64) -> String {
 }
 
 fn usize_from_u64(v: u64) -> usize {
-    usize::try_from(v).unwrap_or(usize::MAX)
+    usize::try_from(v).map_or(usize::MAX, |value| value)
 }
 
 fn build_sports_map(report: &serde_json::Value) -> std::collections::BTreeMap<String, usize> {
@@ -83,7 +83,7 @@ fn build_sports_map(report: &serde_json::Value) -> std::collections::BTreeMap<St
             }
             map
         })
-        .unwrap_or_default()
+        .map_or(Default::default(), core::convert::identity)
 }
 
 pub(super) fn run_census_doc(args: &CensusDocArgs) -> Result<()> {
@@ -141,7 +141,10 @@ fn make_summary(
     co2027: &[std::collections::HashMap<String, String>],
     recruiting: &[std::collections::HashMap<String, String>],
 ) -> Result<String> {
-    let totals_obj = report.get("totals").cloned().unwrap_or_default();
+    let totals_obj = match report.get("totals").cloned() {
+        Some(value) => value,
+        None => Default::default(),
+    };
     let summary = serde_json::json!({
         "wrote": out_path.to_string_lossy().to_string(),
         "totals": totals_obj,

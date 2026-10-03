@@ -47,7 +47,7 @@ fn sport_gender(label: &str) -> Gender {
     let label = decode_entities(label);
     let label = collapse_whitespace(&label);
     match label {
-        l if l.starts_with("Boys") || l.starts_with("Coed") => Gender::Boys,
+        l if l.starts_with("Boys") => Gender::Boys,
         l if l.starts_with("Girls") => Gender::Girls,
         _ => Gender::Mixed,
     }
@@ -133,6 +133,40 @@ pub fn school_entities(
         source_school_id: entry.school_id.clone(),
         coaches,
     }
+}
+
+pub(super) fn captured_school_entities(
+    entry: &ParsedSchool,
+    staff_rows: &[CoachRow],
+    directory: &crate::net::FetchOutcome,
+    staff: &crate::net::FetchOutcome,
+) -> SchoolExtract {
+    let mut extract = school_entities(entry, staff_rows, &directory.fetched_at);
+    extract
+        .school
+        .evidence
+        .iter_mut()
+        .for_each(|evidence| bind_capture(evidence, directory));
+    extract.coaches.iter_mut().for_each(|coach| {
+        coach
+            .evidence
+            .iter_mut()
+            .for_each(|evidence| bind_capture(evidence, staff));
+    });
+    extract
+}
+
+fn bind_capture(evidence: &mut Evidence, capture: &crate::net::FetchOutcome) {
+    evidence.source.url = Some(capture.url.clone());
+    evidence.observed_on.clone_from(&capture.fetched_at);
+    evidence.note = Some(
+        serde_json::json!({
+            "capture_url": capture.url,
+            "sha256": capture.content_digest,
+            "acquired_at": capture.fetched_at,
+        })
+        .to_string(),
+    );
 }
 
 fn school_entity(

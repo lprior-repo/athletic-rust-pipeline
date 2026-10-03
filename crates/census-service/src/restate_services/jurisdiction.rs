@@ -1,20 +1,27 @@
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use restate_sdk::prelude::*;
 use tokio::sync::Mutex;
 
 use census_crawl::net::bridge::BrowserLane;
-use census_crawl::net::Fetcher;
+use census_crawl::net::{Fetcher, PacingState};
 use census_reconcile::identity::WorkflowIdentity;
 use census_store::clock::Clock;
 use census_store::Store;
 
 use super::jobs;
-use super::wire::{JurisdictionReport, JurisdictionRequest, JurisdictionState};
+use super::wire::{
+    JurisdictionReport, JurisdictionRequest, JurisdictionState, TeamsFailure, TeamsStage,
+};
 
 mod pipeline;
 mod stage_runs;
 mod stages;
+mod team_collection;
+#[cfg(test)]
+mod team_collection_tests;
+mod team_source;
+pub use team_source::{TeamsSource, TeamsSourceClient, TeamsSourceIngressClient};
 
 type CachedFetcher = Option<(Vec<String>, usize, Arc<Fetcher>)>;
 
@@ -24,6 +31,8 @@ pub struct JurisdictionCensus {
     clock: Arc<dyn Clock>,
     lane: Option<BrowserLane>,
     fetcher: Arc<Mutex<CachedFetcher>>,
+    pacing: Arc<PacingState>,
+    source_parallelism: Arc<OnceLock<usize>>,
 }
 
 impl JurisdictionCensus {
@@ -33,6 +42,8 @@ impl JurisdictionCensus {
             clock,
             lane,
             fetcher: Arc::new(Mutex::new(None)),
+            pacing: Arc::new(PacingState::new()),
+            source_parallelism: Arc::new(OnceLock::new()),
         }
     }
 
@@ -50,7 +61,7 @@ impl JurisdictionCensus {
         self.record_plan(ctx, request, identity, state, &today)
             .await?;
 
-        if state.teams.is_none() {
+        if state.teams.is_owed() {
             self.teams_owed(ctx, request, identity, state, &today)
                 .await?;
             stages_run.push("teams".to_string());
@@ -85,6 +96,12 @@ pub(super) const DISPATCHED: &[&str] = &[
     "ks",
     "coach_directories",
     "arbiter_orgs",
+    "ohsaa",
+    "mpa",
+    "riil",
+    "pa_piaa",
+    "chsaa",
+    "tssaa",
     "wiaa_results",
     "wayzata",
     "milesplit",
@@ -102,15 +119,23 @@ fn report(
         .plan
         .clone()
         .ok_or_else(|| jobs::invariant("no source plan recorded before the stages ran"))?;
-    let teams = state
-        .teams
-        .as_ref()
-        .ok_or_else(|| jobs::invariant("no team count recorded after the teams stage"))?;
+    let teams = match &state.teams {
+        TeamsStage::Completed(completed) => completed.outcome(),
+        TeamsStage::Failed(failure) => return Err(teams_failure(failure)),
+        TeamsStage::Owed => {
+            return Err(jobs::invariant(
+                "teams work remains owed after the stages ran",
+            ));
+        }
+    };
     let rosters = state
         .rosters
         .clone()
         .ok_or_else(|| jobs::invariant("no walk outcome recorded after the rosters stage"))?;
-    let consolidated = state.consolidated.clone().unwrap_or_default();
+    let consolidated = state
+        .consolidated
+        .clone()
+        .map_or(Default::default(), core::convert::identity);
     let meets = state
         .meets
         .clone()
@@ -131,6 +156,23 @@ fn report(
         results,
         completed_at,
     })
+}
+
+fn teams_failure(failure: &TeamsFailure) -> HandlerError {
+    match failure {
+        TeamsFailure::ActionTerminal { at, code, message } => TerminalError::new_with_code(
+            *code,
+            format!("teams stage remains incomplete after terminal action at {at}: {message}"),
+        )
+        .into(),
+        TeamsFailure::IncompleteOutcome { at, outcome }
+        | TeamsFailure::SourceFailures { at, outcome, .. } => TerminalError::new(format!(
+            "teams stage remains incomplete at {at}: retained {} records with source errors: {}",
+            outcome.records,
+            outcome.errors.join("; ")
+        ))
+        .into(),
+    }
 }
 
 #[object(

@@ -50,7 +50,7 @@ proptest! {
         let url = format!(
             "https://oh.milesplit.com/meets/{meet}-a-meet-2026/results/{rsid}/raw"
         );
-        let parsed = ResultSetRef::parse(&url).expect("a well-formed results URL is accepted");
+        let parsed = ResultSetRef::parse(&url).ok_or_else(|| TestCaseError::fail("a well-formed results URL was refused"))?;
         prop_assert_eq!(parsed.meet_id, meet.to_string());
         prop_assert_eq!(parsed.rsid, rsid.to_string());
     }

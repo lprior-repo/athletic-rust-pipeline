@@ -225,7 +225,7 @@ staff/school={staff:>5} coach/school={coaches:>5} {sports}",
         state = record.state,
         ruleset = record.ruleset,
         status = record.status,
-        rows = record.schools.unwrap_or(0),
+        rows = record.schools.map_or(0, |value| value),
         pages = record
             .pages
             .map_or_else(|| "?".to_string(), |value| value.to_string()),

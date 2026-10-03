@@ -1,8 +1,9 @@
 use super::lexical::first_violation;
-use anyhow::Result;
+
+type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
 
 #[test]
-fn every_comment_form_is_rejected() -> Result<()> {
+fn every_comment_form_is_rejected() -> TestResult {
     for source in [
         "// ordinary\nfn f() {}",
         "/// documentation\nfn f() {}",
@@ -14,14 +15,14 @@ fn every_comment_form_is_rejected() -> Result<()> {
         "/* unterminated",
     ] {
         let finding = first_violation(source)?.ok_or_else(|| anyhow::anyhow!("missed comment"))?;
-        assert_eq!(finding.offset, 0);
-        assert_eq!(finding.reason, "code comments are forbidden");
+        check!(eq; finding.offset, 0);
+        check!(eq; finding.reason, "code comments are forbidden");
     }
     Ok(())
 }
 
 #[test]
-fn literal_contents_are_not_comments() -> Result<()> {
+fn literal_contents_are_not_comments() -> TestResult {
     for source in [
         "const URL: &str = \"https://example.org/a/*/b\";",
         "const TEXT: &str = \"escaped \\\" // still a string\";",
@@ -37,30 +38,30 @@ fn literal_contents_are_not_comments() -> Result<()> {
         "#[path = \"//not-a-comment.rs\"] mod fixture;",
         "#[doc(hidden)] fn private() {}",
     ] {
-        assert_eq!(first_violation(source)?, None, "{source}");
+        check!(eq; first_violation(source)?, None, "{source}");
     }
     Ok(())
 }
 
 #[test]
-fn comment_after_a_multiline_raw_literal_is_found() -> Result<()> {
+fn comment_after_a_multiline_raw_literal_is_found() -> TestResult {
     let prefix = "const TEXT: &str = br###\"first\n\" // fixture\nlast\"###; ";
     let source = format!("{prefix}// actual comment");
     let finding = first_violation(&source)?.ok_or_else(|| anyhow::anyhow!("missed comment"))?;
-    assert_eq!(finding.offset, prefix.len());
+    check!(eq; finding.offset, prefix.len());
     Ok(())
 }
 
 #[test]
-fn unicode_before_comment_preserves_byte_position() -> Result<()> {
+fn unicode_before_comment_preserves_byte_position() -> TestResult {
     let finding = first_violation("let café = 0; // actual")?
         .ok_or_else(|| anyhow::anyhow!("missed comment"))?;
-    assert_eq!(finding.offset, 15);
+    check!(eq; finding.offset, 15);
     Ok(())
 }
 
 #[test]
-fn documentation_attributes_cannot_replace_doc_comments() -> Result<()> {
+fn documentation_attributes_cannot_replace_doc_comments() -> TestResult {
     for source in [
         "#[doc = \"text\"] fn f() {}",
         "#![doc = include_str!(\"rationale.md\")]",
@@ -70,7 +71,7 @@ fn documentation_attributes_cannot_replace_doc_comments() -> Result<()> {
     ] {
         let finding =
             first_violation(source)?.ok_or_else(|| anyhow::anyhow!("missed documentation"))?;
-        assert_eq!(finding.reason, "documentation attributes are forbidden");
+        check!(eq; finding.reason, "documentation attributes are forbidden");
     }
     Ok(())
 }
@@ -88,13 +89,13 @@ fn unterminated_literals_fail_closed() {
 }
 
 #[test]
-fn generated_adapter_code_obeys_the_comment_policy() -> Result<()> {
+fn generated_adapter_code_obeys_the_comment_policy() -> TestResult {
     for source in [
         crate::templates::adapter_module("policy_fixture"),
         crate::templates::parse_module("policy_fixture"),
         crate::templates::map_module(),
     ] {
-        assert!(
+        check!(
             first_violation(&source)?.is_none(),
             "generated adapter violates code policy"
         );

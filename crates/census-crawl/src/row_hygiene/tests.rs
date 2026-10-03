@@ -3,8 +3,10 @@ use super::{
     level_label, sanitize_person, sanitize_school, UNSTATED_LEVEL, VARSITY_LEVEL,
 };
 
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+
 #[test]
-fn the_executed_person_table_survives_the_port() {
+fn the_executed_person_table_survives_the_port() -> TestResult {
     let cases: [(&str, Option<&str>); 23] = [
         ("Ann Greenfield (Athletic Director)", Some("Ann Greenfield")),
         ("Athletic Director", None),
@@ -31,13 +33,20 @@ fn the_executed_person_table_survives_the_port() {
         ("Dean", None),
     ];
     for (input, expected) in cases {
-        let actual = sanitize_person(input).expect("role regexes compile");
-        assert_eq!(actual.as_deref(), expected, "sanitize_person({input:?})");
+        let actual = sanitize_person(input)?;
+        if actual.as_deref() != expected {
+            return Err(format!(
+                "sanitize_person({input:?}): left: {:?}, right: {expected:?}",
+                actual.as_deref()
+            )
+            .into());
+        }
     }
+    Ok(())
 }
 
 #[test]
-fn the_executed_vendor_table_survives_the_port() {
+fn the_executed_vendor_table_survives_the_port() -> TestResult {
     let cases: [(&str, &str, bool); 8] = [
         ("NC Test School 1", "", true),
         ("DF Test School 1", "", true),
@@ -53,16 +62,27 @@ fn the_executed_vendor_table_survives_the_port() {
         ("Test  School 2", "", true),
     ];
     for (school, email, expected) in cases {
-        assert_eq!(
-            is_vendor_fixture(school, email).expect("vendor regex compiles"),
-            expected,
-            "is_vendor_fixture({school:?}, {email:?})"
-        );
+        let actual = is_vendor_fixture(school, email)?;
+        if actual != expected {
+            return Err(format!(
+                "is_vendor_fixture({school:?}, {email:?}): left: {actual:?}, right: {expected:?}"
+            )
+            .into());
+        }
     }
-    assert!(is_vendor_contact("ad@dragonflyathletics.com"));
-    assert!(!is_vendor_contact("ad@school.org"));
-    assert!(is_vendor_school("Megan's Test School").expect("vendor regex compiles"));
-    assert!(!is_vendor_school("Test Schoolhouse").expect("vendor regex compiles"));
+    if !is_vendor_contact("ad@dragonflyathletics.com") {
+        return Err("is_vendor_contact(\"ad@dragonflyathletics.com\") must be true".into());
+    }
+    if is_vendor_contact("ad@school.org") {
+        return Err("is_vendor_contact(\"ad@school.org\") must be false".into());
+    }
+    if !is_vendor_school("Megan's Test School")? {
+        return Err("is_vendor_school(\"Megan's Test School\") must be true".into());
+    }
+    if is_vendor_school("Test Schoolhouse")? {
+        return Err("is_vendor_school(\"Test Schoolhouse\") must be false".into());
+    }
+    Ok(())
 }
 
 #[test]
@@ -77,22 +97,23 @@ fn cleaning_collapses_every_whitespace_run_the_prototype_collapsed() {
 }
 
 #[test]
-fn a_school_name_is_dropped_when_it_is_empty_or_a_vendor_fixture() {
-    assert_eq!(sanitize_school("").expect("vendor regex compiles"), None);
-    assert_eq!(sanitize_school("   ").expect("vendor regex compiles"), None);
-    assert_eq!(
-        sanitize_school("\u{a0}\u{a0}").expect("vendor regex compiles"),
+fn a_school_name_is_dropped_when_it_is_empty_or_a_vendor_fixture() -> TestResult {
+    check!(eq; sanitize_school("")?, None);
+    check!(eq; sanitize_school("   ")?, None);
+    check!(eq;
+        sanitize_school("\u{a0}\u{a0}")?,
         None
     );
-    assert_eq!(
-        sanitize_school("NC Test School 1").expect("vendor regex compiles"),
+    check!(eq;
+        sanitize_school("NC Test School 1")?,
         None
     );
-    assert_eq!(
-        sanitize_school("  Madison  West High School ").expect("vendor regex compiles"),
+    check!(eq;
+        sanitize_school("  Madison  West High School ")?,
         Some("Madison West High School".to_string())
     );
-    assert_eq!(sanitize_person("  ").expect("role regexes compile"), None);
+    check!(eq; sanitize_person("  ")?, None);
+    Ok(())
 }
 
 #[test]

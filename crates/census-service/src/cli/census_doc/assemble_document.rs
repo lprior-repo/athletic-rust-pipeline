@@ -10,7 +10,7 @@ fn header(report: &serde_json::Value, store_out: &std::path::Path) -> String {
     let generated_on = report
         .get("generated_on")
         .and_then(|v| v.as_str())
-        .unwrap_or("unknown date");
+        .map_or("unknown date", |value| value);
     let store_out_str = store_out.to_string_lossy();
     doc.push_str(&format!(
         "Generated from `{}` on {}. Every figure below is read ",

@@ -61,7 +61,7 @@ pub(crate) fn tokens(line: &str) -> Vec<Token<'_>> {
                 out.push(Token {
                     start: from,
                     end: index,
-                    text: line.get(from..index).unwrap_or_default(),
+                    text: line.get(from..index).map_or(Default::default(), core::convert::identity),
                 });
             }
         } else if start.is_none() {
@@ -72,7 +72,7 @@ pub(crate) fn tokens(line: &str) -> Vec<Token<'_>> {
         out.push(Token {
             start: from,
             end: line.len(),
-            text: line.get(from..).unwrap_or_default(),
+            text: line.get(from..).map_or(Default::default(), core::convert::identity),
         });
     }
     out
@@ -90,7 +90,10 @@ pub(crate) fn substring(line: &str, start: usize, end: usize) -> String {
     if from >= to {
         return String::new();
     }
-    line.get(from..to).unwrap_or_default().trim().to_string()
+    line.get(from..to)
+        .map_or(Default::default(), core::convert::identity)
+        .trim()
+        .to_string()
 }
 
 pub(crate) fn columns_from_header(header: &str) -> Vec<Column> {

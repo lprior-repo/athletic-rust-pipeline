@@ -52,12 +52,37 @@ fn row(school: &CanonicalSchool) -> ReportResult<Vec<Expect>> {
         Expect::text(school.id.as_str()),
         Expect::text(school.name.as_str()),
         Expect::text(state_code(school)),
-        Expect::text(school.city.as_deref().unwrap_or_default()),
-        Expect::text(school.association.as_deref().unwrap_or_default()),
-        Expect::text(school.classification.as_deref().unwrap_or_default()),
+        Expect::text(
+            school
+                .city
+                .as_deref()
+                .map_or(Default::default(), core::convert::identity),
+        ),
+        Expect::text(
+            school
+                .association
+                .as_deref()
+                .map_or(Default::default(), core::convert::identity),
+        ),
+        Expect::text(
+            school
+                .classification
+                .as_deref()
+                .map_or(Default::default(), core::convert::identity),
+        ),
         enrollment(school),
-        Expect::text(school.athletics_website.as_deref().unwrap_or_default()),
-        Expect::text(school.school_website.as_deref().unwrap_or_default()),
+        Expect::text(
+            school
+                .athletics_website
+                .as_deref()
+                .map_or(Default::default(), core::convert::identity),
+        ),
+        Expect::text(
+            school
+                .school_website
+                .as_deref()
+                .map_or(Default::default(), core::convert::identity),
+        ),
         Expect::text(school.aliases.join(" | ")),
         Expect::count(school.source_identities.len())?,
         Expect::count(school.retained_conflicts.len())?,

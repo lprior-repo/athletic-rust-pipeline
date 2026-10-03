@@ -3,8 +3,9 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 type TestResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
-#[tokio::test]
-async fn same_host_redirect_reaches_payload_but_unlisted_host_is_never_contacted() -> TestResult {
+#[test]
+fn same_host_redirect_reaches_payload_but_unlisted_host_is_never_contacted() -> TestResult {
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
     let address = listener.local_addr()?;
     let server = async move {
@@ -24,7 +25,7 @@ async fn same_host_redirect_reaches_payload_but_unlisted_host_is_never_contacted
             };
             socket.write_all(response.as_bytes()).await?;
         }
-        assert!(
+        check!(
             tokio::time::timeout(std::time::Duration::from_millis(30), listener.accept())
                 .await
                 .is_err()
@@ -42,7 +43,7 @@ async fn same_host_redirect_reaches_payload_but_unlisted_host_is_never_contacted
         .build()?;
     let requests = async {
         let url = format!("http://source.example:{}/start", address.port());
-        assert_eq!(client.get(url).send().await?.text().await?, "evidence");
+        check!(eq; client.get(url).send().await?.text().await?, "evidence");
         let url = format!("http://source.example:{}/cross", address.port());
         let error = client
             .get(url)
@@ -50,13 +51,14 @@ async fn same_host_redirect_reaches_payload_but_unlisted_host_is_never_contacted
             .await
             .err()
             .ok_or("unlisted redirect followed")?;
-        assert!(error.is_redirect());
+        check!(error.is_redirect());
         Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
     };
     let (paths, ()) = tokio::time::timeout(std::time::Duration::from_secs(5), async {
         tokio::try_join!(server, requests)
     })
     .await??;
-    assert_eq!(paths, ["/start", "/finish", "/cross"]);
+    check!(eq; paths, ["/start", "/finish", "/cross"]);
     Ok(())
+    })
 }

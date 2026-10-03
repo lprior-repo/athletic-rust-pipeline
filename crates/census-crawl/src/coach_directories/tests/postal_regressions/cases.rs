@@ -1,7 +1,8 @@
 use super::*;
 
-#[tokio::test]
-async fn summary_short_code_and_jurisdiction_mismatches_refuse_all_foreign_facts() {
+#[test]
+fn summary_short_code_and_jurisdiction_mismatches_refuse_all_foreign_facts() -> TestResult {
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
     let changes = [
         ("shortCode", "FOREIGN"),
         ("stateCode", "SC"),
@@ -15,84 +16,103 @@ async fn summary_short_code_and_jurisdiction_mismatches_refuse_all_foreign_facts
                 summary[field] = value.into();
             }
             summary["name"] = "Unrelated Alias".into();
-        });
-        let run = FixtureRun::new(DIRECTORY, &body);
-        let report = run.collect().await;
-        assert_eq!((report.rows, report.errors), (0, 1), "{field}");
-        let school = run.school();
-        assert_eq!(school.aliases, Vec::<String>::new(), "{field}");
-        assert_eq!(school.evidence.len(), 1, "{field}");
-        assert_eq!(school.postal_addresses.len(), 1, "{field}");
-        assert_eq!(
-            school.postal_addresses[0].capture_sha256(),
+        })?;
+        let run = FixtureRun::new(DIRECTORY, &body)?;
+        let report = run.collect().await?;
+        check!(eq; (report.rows, report.errors), (0, 1), "{field}");
+        let school = run.school()?;
+        check!(eq; school.aliases, Vec::<String>::new(), "{field}");
+        check!(eq; school.evidence.len(), 1, "{field}");
+        check!(eq; school.postal_addresses.len(), 1, "{field}");
+        check!(eq;
+            school.postal_addresses.first().ok_or("retained directory claim")?.capture_sha256(),
             content_digest(DIRECTORY),
             "{field}"
         );
-        assert_eq!(run.coaches(), Vec::<CanonicalCoach>::new(), "{field}");
+        check!(eq; run.coaches()?, Vec::<CanonicalCoach>::new(), "{field}");
     }
+    Ok(())
+    })
 }
 
-#[tokio::test]
-async fn missing_or_blank_directory_organization_id_cannot_attach_a_summary() {
+#[test]
+fn missing_or_blank_directory_organization_id_cannot_attach_a_summary() -> TestResult {
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
     for value in [serde_json::Value::Null, " ".into()] {
-        let body = changed_directory(|row| row["orgId"] = value);
-        let run = FixtureRun::new(&body, SUMMARY);
-        let report = run.collect().await;
-        assert_eq!((report.rows, report.errors), (0, 1));
-        let school = run.school();
-        assert_eq!(school.name, SCHOOL_NAME);
-        assert_eq!(school.postal_addresses.len(), 1);
-        assert_eq!(school.postal_addresses[0].owner().id, "ZCUM49");
-        assert_eq!(run.coaches(), Vec::<CanonicalCoach>::new());
+        let body = changed_directory(|row| row["orgId"] = value)?;
+        let run = FixtureRun::new(&body, SUMMARY)?;
+        let report = run.collect().await?;
+        check!(eq; (report.rows, report.errors), (0, 1));
+        let school = run.school()?;
+        check!(eq; school.name, SCHOOL_NAME);
+        check!(eq; school.postal_addresses.len(), 1);
+        check!(eq; school.postal_addresses.first().ok_or("retained directory claim")?.owner().id, "ZCUM49");
+        check!(eq; run.coaches()?, Vec::<CanonicalCoach>::new());
     }
+    Ok(())
+    })
 }
 
-#[tokio::test]
-async fn blank_or_missing_streets_never_become_addresses_from_city_state_or_zip() {
-    for street in [serde_json::Value::Null, " ".into()] {
-        let directory = changed_directory(|row| row["address"] = street.clone());
-        let summary = changed_summary(|summary| summary["address"]["address1"] = street);
-        let run = FixtureRun::new(&directory, &summary);
-        let report = run.collect().await;
-        assert_eq!((report.rows, report.errors), (1, 0));
-        let school = run.school();
-        assert_eq!(
-            school.postal_addresses,
-            Vec::<census_domain::model::SchoolPostalAddress>::new()
-        );
-        assert_eq!(school.city.as_deref(), Some("Asheville"));
-        assert_eq!(run.coaches().len(), 16);
-    }
+#[test]
+fn blank_or_missing_streets_never_become_addresses_from_city_state_or_zip() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            for street in [serde_json::Value::Null, " ".into()] {
+                let directory = changed_directory(|row| row["address"] = street.clone())?;
+                let summary = changed_summary(|summary| summary["address"]["address1"] = street)?;
+                let run = FixtureRun::new(&directory, &summary)?;
+                let report = run.collect().await?;
+                check!(eq; (report.rows, report.errors), (1, 0));
+                let school = run.school()?;
+                check!(eq;
+                    school.postal_addresses,
+                    Vec::<census_domain::model::SchoolPostalAddress>::new()
+                );
+                check!(eq; school.city.as_deref(), Some("Asheville"));
+                check!(eq; run.coaches()?.len(), 16);
+            }
+            Ok(())
+        })
 }
 
-#[tokio::test]
-async fn partial_street_claims_never_borrow_missing_components_from_another_capture() {
-    let body = changed_summary(|summary| {
-        summary["address"]["city"] = serde_json::Value::Null;
-        summary["address"]["state"] = serde_json::Value::Null;
-        summary["address"]["zip"] = "".into();
-    });
-    let run = FixtureRun::new(DIRECTORY, &body);
-    let report = run.collect().await;
-    assert_eq!((report.rows, report.errors), (1, 0));
-    let school = run.school();
-    let claim = school
-        .postal_addresses
-        .iter()
-        .find(|claim| claim.capture_sha256() == content_digest(&body))
-        .expect("summary street survives as a partial claim");
-    assert_eq!(
-        claim.address().line1().map(|line| line.as_str()),
-        Some("1 Rocket Drive")
-    );
-    assert_eq!(claim.address().city(), None);
-    assert_eq!(claim.address().state(), None);
-    assert_eq!(claim.address().zip(), None);
-    assert_eq!(school.city.as_deref(), Some("Asheville"));
+#[test]
+fn partial_street_claims_never_borrow_missing_components_from_another_capture() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let body = changed_summary(|summary| {
+                summary["address"]["city"] = serde_json::Value::Null;
+                summary["address"]["state"] = serde_json::Value::Null;
+                summary["address"]["zip"] = "".into();
+            })?;
+            let run = FixtureRun::new(DIRECTORY, &body)?;
+            let report = run.collect().await?;
+            check!(eq; (report.rows, report.errors), (1, 0));
+            let school = run.school()?;
+            let claim = school
+                .postal_addresses
+                .iter()
+                .find(|claim| claim.capture_sha256() == content_digest(&body))
+                .ok_or("summary street survives as a partial claim")?;
+            check!(eq;
+                claim.address().line1().map(|line| line.as_str()),
+                Some("1 Rocket Drive")
+            );
+            check!(eq; claim.address().city(), None);
+            check!(eq; claim.address().state(), None);
+            check!(eq; claim.address().zip(), None);
+            check!(eq; school.city.as_deref(), Some("Asheville"));
+            Ok(())
+        })
 }
 
-#[tokio::test]
-async fn malformed_summary_postal_components_keep_coaches_and_directory_facts_with_review() {
+#[test]
+fn malformed_summary_postal_components_keep_coaches_and_directory_facts_with_review() -> TestResult
+{
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
     let changes = [
         ("address1", serde_json::json!(42)),
         ("address1", "street\u{0001}control".into()),
@@ -106,21 +126,21 @@ async fn malformed_summary_postal_components_keep_coaches_and_directory_facts_wi
     ];
     for (field, value) in changes {
         let description = format!("{field}={value}");
-        let body = changed_summary(|summary| summary["address"][field] = value);
-        let run = FixtureRun::new(DIRECTORY, &body);
-        let report = run.collect().await;
-        assert_eq!((report.rows, report.errors), (1, 1), "{description}");
-        let school = run.school();
-        assert_eq!(school.name, SCHOOL_NAME, "{field}");
-        assert_eq!(school.classification.as_deref(), Some("6A"), "{field}");
-        assert_eq!(school.postal_addresses.len(), 1, "{field}");
-        assert_eq!(
-            school.postal_addresses[0].capture_sha256(),
+        let body = changed_summary(|summary| summary["address"][field] = value)?;
+        let run = FixtureRun::new(DIRECTORY, &body)?;
+        let report = run.collect().await?;
+        check!(eq; (report.rows, report.errors), (1, 1), "{description}");
+        let school = run.school()?;
+        check!(eq; school.name, SCHOOL_NAME, "{field}");
+        check!(eq; school.classification.as_deref(), Some("6A"), "{field}");
+        check!(eq; school.postal_addresses.len(), 1, "{field}");
+        check!(eq;
+            school.postal_addresses.first().ok_or("retained directory claim")?.capture_sha256(),
             content_digest(DIRECTORY),
             "{field}"
         );
-        assert_eq!(run.coaches().len(), 16, "{field}");
-        assert!(
+        check!(eq; run.coaches()?.len(), 16, "{field}");
+        check!(
             school
                 .evidence
                 .iter()
@@ -128,122 +148,147 @@ async fn malformed_summary_postal_components_keep_coaches_and_directory_facts_wi
                     == Some(summary_url("ZCUM49").as_str())),
             "{field}"
         );
-        assert_eq!(
-            run.store
-                .journal_keys("coach_directories_schools_v3")
-                .expect("unfinished postal review"),
+        check!(eq;
+            run.store.journal_keys("coach_directories_schools_v3")?,
             std::collections::HashSet::new(),
             "{field}"
         );
     }
+    Ok(())
+    })
 }
 
-#[tokio::test]
-async fn malformed_directory_street_does_not_discard_valid_summary_coaches_or_address() {
-    let body = changed_directory(|row| row["address"] = serde_json::json!({"not": "street text"}));
-    let run = FixtureRun::new(&body, SUMMARY);
-    let report = run.collect().await;
-    assert_eq!((report.rows, report.errors), (1, 1));
-    let school = run.school();
-    assert_eq!(school.name, SCHOOL_NAME);
-    assert_eq!(school.postal_addresses.len(), 1);
-    assert_eq!(
-        school.postal_addresses[0].capture_sha256(),
-        content_digest(SUMMARY)
-    );
-    assert_eq!(
-        school.postal_addresses[0]
-            .address()
-            .line1()
-            .map(|line| line.as_str()),
-        Some("1 Rocket Drive")
-    );
-    assert_eq!(run.coaches().len(), 16);
-    assert_eq!(
-        run.store
-            .journal_keys("coach_directories_schools_v3")
-            .expect("unfinished postal review"),
-        std::collections::HashSet::new()
-    );
-    seed(&run.fetcher, &directory_page_url("NCHSAA", 1), DIRECTORY);
-    let recovered = run.collect().await;
-    assert_eq!((recovered.rows, recovered.errors), (1, 0));
-    assert_eq!(run.school().postal_addresses.len(), 2);
-    assert_eq!(
-        run.store
-            .journal_keys("coach_directories_schools_v3")
-            .expect("completed corrected capture"),
-        std::collections::HashSet::from(["NC:ZCUM49".to_string()])
-    );
+#[test]
+fn malformed_directory_street_does_not_discard_valid_summary_coaches_or_address() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let body = changed_directory(|row| {
+                row["address"] = serde_json::json!({"not": "street text"})
+            })?;
+            let run = FixtureRun::new(&body, SUMMARY)?;
+            let report = run.collect().await?;
+            check!(eq; (report.rows, report.errors), (1, 1));
+            let school = run.school()?;
+            check!(eq; school.name, SCHOOL_NAME);
+            check!(eq; school.postal_addresses.len(), 1);
+            check!(eq;
+                school.postal_addresses.first().ok_or("retained summary claim")?.capture_sha256(),
+                content_digest(SUMMARY)
+            );
+            check!(eq;
+                school.postal_addresses.first().ok_or("retained summary claim")?
+                    .address()
+                    .line1()
+                    .map(|line| line.as_str()),
+                Some("1 Rocket Drive")
+            );
+            check!(eq; run.coaches()?.len(), 16);
+            check!(eq;
+                run.store.journal_keys("coach_directories_schools_v3")?,
+                std::collections::HashSet::new()
+            );
+            seed(&run.fetcher, &directory_page_url("NCHSAA", 1), DIRECTORY)?;
+            let recovered = run.collect().await?;
+            check!(eq; (recovered.rows, recovered.errors), (1, 0));
+            check!(eq; run.school()?.postal_addresses.len(), 2);
+            check!(eq;
+                run.store.journal_keys("coach_directories_schools_v3")?,
+                std::collections::HashSet::from(["NC:ZCUM49".to_string()])
+            );
+            Ok(())
+        })
 }
 
-#[tokio::test]
-async fn a_nonobject_summary_address_is_reviewed_without_losing_legitimate_coaches() {
+#[test]
+fn a_nonobject_summary_address_is_reviewed_without_losing_legitimate_coaches() -> TestResult {
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
     for address in [
         serde_json::json!(true),
         serde_json::json!(["1 Rocket Drive", "", "Asheville", "NC", "28803"]),
     ] {
-        let body = changed_summary(|summary| summary["address"] = address);
-        let run = FixtureRun::new(DIRECTORY, &body);
-        let report = run.collect().await;
-        assert_eq!((report.rows, report.errors), (1, 1));
-        assert_eq!(run.coaches().len(), 16);
-        let school = run.school();
-        assert_eq!(school.postal_addresses.len(), 1);
-        assert_eq!(
-            school.postal_addresses[0].capture_sha256(),
+        let body = changed_summary(|summary| summary["address"] = address)?;
+        let run = FixtureRun::new(DIRECTORY, &body)?;
+        let report = run.collect().await?;
+        check!(eq; (report.rows, report.errors), (1, 1));
+        check!(eq; run.coaches()?.len(), 16);
+        let school = run.school()?;
+        check!(eq; school.postal_addresses.len(), 1);
+        check!(eq;
+            school.postal_addresses.first().ok_or("retained directory claim")?.capture_sha256(),
             content_digest(DIRECTORY)
         );
     }
+    Ok(())
+    })
 }
 
-#[tokio::test]
-async fn a_null_summary_address_is_absence_not_a_fabricated_claim_or_source_failure() {
-    let body = changed_summary(|summary| summary["address"] = serde_json::Value::Null);
-    let run = FixtureRun::new(DIRECTORY, &body);
-    let report = run.collect().await;
-    assert_eq!((report.rows, report.errors), (1, 0));
-    assert_eq!(run.coaches().len(), 16);
-    assert_eq!(run.school().postal_addresses.len(), 1);
+#[test]
+fn a_null_summary_address_is_absence_not_a_fabricated_claim_or_source_failure() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let body = changed_summary(|summary| summary["address"] = serde_json::Value::Null)?;
+            let run = FixtureRun::new(DIRECTORY, &body)?;
+            let report = run.collect().await?;
+            check!(eq; (report.rows, report.errors), (1, 0));
+            check!(eq; run.coaches()?.len(), 16);
+            check!(eq; run.school()?.postal_addresses.len(), 1);
+            Ok(())
+        })
 }
 
-#[tokio::test]
-async fn malformed_zip_without_a_street_is_still_an_explicit_retained_review() {
-    let body = changed_summary(|summary| {
-        summary["address"]["address1"] = serde_json::Value::Null;
-        summary["address"]["zip"] = "2803".into();
-    });
-    let run = FixtureRun::new(DIRECTORY, &body);
-    let report = run.collect().await;
-    assert_eq!((report.rows, report.errors), (1, 1));
-    assert_eq!(run.coaches().len(), 16);
-    assert_eq!(run.school().postal_addresses.len(), 1);
+#[test]
+fn malformed_zip_without_a_street_is_still_an_explicit_retained_review() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let body = changed_summary(|summary| {
+                summary["address"]["address1"] = serde_json::Value::Null;
+                summary["address"]["zip"] = "2803".into();
+            })?;
+            let run = FixtureRun::new(DIRECTORY, &body)?;
+            let report = run.collect().await?;
+            check!(eq; (report.rows, report.errors), (1, 1));
+            check!(eq; run.coaches()?.len(), 16);
+            check!(eq; run.school()?.postal_addresses.len(), 1);
+            Ok(())
+        })
 }
 
-#[tokio::test]
-async fn published_directory_second_line_and_leading_zero_zip_survive_as_their_own_claim() {
-    let body = changed_directory(|row| {
-        row["address2"] = "Building 3".into();
-        row["zip"] = "02803".into();
-    });
-    let run = FixtureRun::new(&body, SUMMARY);
-    let report = run.collect().await;
-    assert_eq!((report.rows, report.errors), (1, 0));
-    let school = run.school();
-    let claim = school
-        .postal_addresses
-        .iter()
-        .find(|claim| claim.capture_sha256() == content_digest(&body))
-        .expect("directory-owned published postal components");
-    assert_eq!(
-        claim.address().line2().map(|line| line.as_str()),
-        Some("Building 3")
-    );
-    assert_eq!(claim.address().zip().map(|zip| zip.code()), Some("02803"));
-    let summary = school
-        .postal_addresses
-        .iter()
-        .find(|claim| claim.capture_sha256() == content_digest(SUMMARY))
-        .expect("contradictory summary ZIP retained independently");
-    assert_eq!(summary.address().zip().map(|zip| zip.code()), Some("28803"));
+#[test]
+fn published_directory_second_line_and_leading_zero_zip_survive_as_their_own_claim() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let body = changed_directory(|row| {
+                row["address2"] = "Building 3".into();
+                row["zip"] = "02803".into();
+            })?;
+            let run = FixtureRun::new(&body, SUMMARY)?;
+            let report = run.collect().await?;
+            check!(eq; (report.rows, report.errors), (1, 0));
+            let school = run.school()?;
+            let claim = school
+                .postal_addresses
+                .iter()
+                .find(|claim| claim.capture_sha256() == content_digest(&body))
+                .ok_or("directory-owned published postal components")?;
+            check!(eq;
+                claim.address().line2().map(|line| line.as_str()),
+                Some("Building 3")
+            );
+            check!(eq; claim.address().zip().map(|zip| zip.code()), Some("02803"));
+            let summary = school
+                .postal_addresses
+                .iter()
+                .find(|claim| claim.capture_sha256() == content_digest(SUMMARY))
+                .ok_or("contradictory summary ZIP retained independently")?;
+            check!(eq; summary.address().zip().map(|zip| zip.code()), Some("28803"));
+            Ok(())
+        })
 }

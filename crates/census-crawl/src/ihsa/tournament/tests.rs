@@ -9,6 +9,8 @@ use census_domain::model::CentiMetres;
 use census_domain::model::CentiSeconds;
 use census_domain::model::{Grade, Mark, SchoolYear};
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 const FIXTURE_MEETS: &str =
     include_str!("../../../tests/fixtures/ihsa_tournament/track_field_meets.json");
 
@@ -42,33 +44,34 @@ const FIXTURE_XC_ERROR: &str =
 const FIXTURE_TERMS: &str = include_str!("../../../tests/fixtures/ihsa_tournament/terms.json");
 
 #[test]
-fn meets_index_pins_both_state_finals_and_their_athletic_net_live_ids() {
-    let meets = parse_meets(FIXTURE_MEETS).expect("fixture must parse");
+fn meets_index_pins_both_state_finals_and_their_athletic_net_live_ids() -> TestResult {
+    let meets = parse_meets(FIXTURE_MEETS)?;
 
-    assert_eq!(meets.len(), 2, "the T&F API holds exactly two meets");
+    check!(eq; meets.len(), 2, "the T&F API holds exactly two meets");
     let boys = &meets[0];
-    assert_eq!(boys.meet_id, 74003, "= live.athletic.net/meets/74003");
-    assert_eq!(boys.year, "2026");
-    assert_eq!(boys.title, "2026 IHSA Boys State Track & Field");
-    assert_eq!(boys.gender, "Boys");
-    assert_eq!(
+    check!(eq; boys.meet_id, 74003, "= live.athletic.net/meets/74003");
+    check!(eq; boys.year, "2026");
+    check!(eq; boys.title, "2026 IHSA Boys State Track & Field");
+    check!(eq; boys.gender, "Boys");
+    check!(eq;
         boys.last_refreshed_at.as_deref(),
         Some("2026-05-31T17:51:14.655Z"),
         "the coarse change signal the journal keys on"
     );
 
     let girls = &meets[1];
-    assert_eq!(girls.meet_id, 74002, "= live.athletic.net/meets/74002");
-    assert_eq!(girls.gender, "Girls");
-    assert_eq!(girls.title, "2026 IHSA Girls State Track & Field");
+    check!(eq; girls.meet_id, 74002, "= live.athletic.net/meets/74002");
+    check!(eq; girls.gender, "Girls");
+    check!(eq; girls.title, "2026 IHSA Girls State Track & Field");
+    Ok(())
 }
 
 #[test]
-fn events_index_pins_97_event_rows_with_round_and_class_splits() {
-    let envelope = parse_events(FIXTURE_EVENTS).expect("fixture must parse");
-    assert_eq!(envelope.meet_id, 74003);
-    assert_eq!(envelope.count, 97);
-    assert_eq!(envelope.data.len(), 97);
+fn events_index_pins_97_event_rows_with_round_and_class_splits() -> TestResult {
+    let envelope = parse_events(FIXTURE_EVENTS)?;
+    check!(eq; envelope.meet_id, 74003);
+    check!(eq; envelope.count, 97);
+    check!(eq; envelope.data.len(), 97);
 
     let mut ids = std::collections::BTreeSet::new();
     let mut prelims = 0;
@@ -77,11 +80,11 @@ fn events_index_pins_97_event_rows_with_round_and_class_splits() {
     let mut classes = std::collections::BTreeMap::new();
     let mut relays = 0;
     for row in &envelope.data {
-        assert!(ids.insert(row.event_id.clone()), "event ids are unique");
-        assert_eq!(row.gender, "M", "the boys index publishes only M rows");
-        assert_eq!(row.status.as_deref(), Some("final"));
-        assert!(row.has_results, "every captured event has results");
-        assert!(row.metadata_fetched_at.is_some());
+        check!(ids.insert(row.event_id.clone()), "event ids are unique");
+        check!(eq; row.gender, "M", "the boys index publishes only M rows");
+        check!(eq; row.status.as_deref(), Some("final"));
+        check!(row.has_results, "every captured event has results");
+        check!(row.metadata_fetched_at.is_some());
         *classes.entry(row.class_division.clone()).or_insert(0usize) += 1;
         if row.event_type == "RelayEvent" {
             relays += 1;
@@ -92,19 +95,20 @@ fn events_index_pins_97_event_rows_with_round_and_class_splits() {
             _ => unsuffixed += 1,
         }
     }
-    assert_eq!(ids.len(), 97);
-    assert_eq!((prelims, finals, unsuffixed), (39, 39, 19));
-    assert_eq!(classes.get("1A"), Some(&31));
-    assert_eq!(classes.get("2A"), Some(&31));
-    assert_eq!(classes.get("3A"), Some(&31));
-    assert_eq!(classes.get("WD"), Some(&4));
-    assert_eq!(relays, 24, "8 relay events per class");
+    check!(eq; ids.len(), 97);
+    check!(eq; (prelims, finals, unsuffixed), (39, 39, 19));
+    check!(eq; classes.get("1A"), Some(&31));
+    check!(eq; classes.get("2A"), Some(&31));
+    check!(eq; classes.get("3A"), Some(&31));
+    check!(eq; classes.get("WD"), Some(&4));
+    check!(eq; relays, 24, "8 relay events per class");
 
     let range = event_date_range(&envelope.data);
-    assert_eq!(
+    check!(eq;
         (range.0.as_deref(), range.1.as_deref()),
         (Some("2026-05-28"), Some("2026-05-30"))
     );
+    Ok(())
 }
 
 fn hj_grade_counts(finishers: &[super::wire::FinisherRow]) -> Vec<(u8, usize)> {
@@ -118,114 +122,117 @@ fn hj_grade_counts(finishers: &[super::wire::FinisherRow]) -> Vec<(u8, usize)> {
 }
 
 #[test]
-fn hj_summary_pins_net_and_live_ids_on_every_finisher() {
-    let summary = parse_summary(FIXTURE_HJ).expect("fixture must parse");
-    assert_eq!(summary.event_id, "2790204");
-    assert_eq!(summary.meet_id, 74003);
-    assert_eq!(summary.class_division, "1A");
-    assert_eq!(summary.event_type, "IndividualEvent");
-    assert_eq!(summary.finishers.len(), 20);
+fn hj_summary_pins_net_and_live_ids_on_every_finisher() -> TestResult {
+    let summary = parse_summary(FIXTURE_HJ)?;
+    check!(eq; summary.event_id, "2790204");
+    check!(eq; summary.meet_id, 74003);
+    check!(eq; summary.class_division, "1A");
+    check!(eq; summary.event_type, "IndividualEvent");
+    check!(eq; summary.finishers.len(), 20);
 
     for row in &summary.finishers {
         let athlete = row
             .athlete
             .as_ref()
-            .expect("individual rows publish athlete");
-        assert!(athlete.athletic_net_id.is_some(), "Athletic.net AthleteID");
-        assert!(athlete.athletic_live_id.is_some(), "Athletic.net Live id");
-        assert!(
+            .ok_or("individual rows publish athlete")?;
+        check!(athlete.athletic_net_id.is_some(), "Athletic.net AthleteID");
+        check!(athlete.athletic_live_id.is_some(), "Athletic.net Live id");
+        check!(
             row.ihsa_school_id.is_some(),
             "the school resolution channel"
         );
-        assert!(row
+        check!(row
             .team
             .as_ref()
             .is_some_and(|team| team.athletic_net_id.is_some()));
-        assert!(row.mark.is_some());
-        assert!(finisher_grade(row).is_some());
-        assert_eq!(
+        check!(row.mark.is_some());
+        check!(finisher_grade(row).is_some());
+        check!(eq;
             row.year, athlete.year,
             "the row grade and the nested athlete grade agree"
         );
     }
 
     let winner = &summary.finishers[0];
-    assert_eq!(winner.place, Some(1));
-    assert_eq!(winner.athlete_name.as_deref(), Some("Kehlin Crawford"));
-    assert_eq!(winner.ihsa_school_id.as_deref(), Some("0611"));
-    assert_eq!(
+    check!(eq; winner.place, Some(1));
+    check!(eq; winner.athlete_name.as_deref(), Some("Kehlin Crawford"));
+    check!(eq; winner.ihsa_school_id.as_deref(), Some("0611"));
+    check!(eq;
         winner.mark.as_deref().and_then(parse_mark),
         Some(Mark::DistanceMetres(CentiMetres::new(202)))
     );
-    let athlete = winner.athlete.as_ref().expect("checked above");
-    assert_eq!(athlete.athletic_net_id, Some(27_740_691));
-    assert_eq!(athlete.athletic_live_id, Some(49_752_378));
-    assert_eq!(athlete.year.as_deref(), Some("11"));
-    assert_eq!(
+    let athlete = winner.athlete.as_ref().ok_or("winner athlete")?;
+    check!(eq; athlete.athletic_net_id, Some(27_740_691));
+    check!(eq; athlete.athletic_live_id, Some(49_752_378));
+    check!(eq; athlete.year.as_deref(), Some("11"));
+    check!(eq;
         winner.team.as_ref().and_then(|t| t.athletic_net_id),
         Some(16_352)
     );
 
-    assert_eq!(
+    check!(eq;
         hj_grade_counts(&summary.finishers),
         vec![(9, 1), (10, 5), (11, 10), (12, 4)],
         "the measured grade distribution of the captured final"
     );
+    Ok(())
 }
 
 #[test]
-fn summary_round_label_is_derived_from_the_published_code() {
-    let hj = parse_summary(FIXTURE_HJ).expect("fixture must parse");
-    assert_eq!(hj.round.as_deref(), Some("F"));
-    assert_eq!(hj.round_label.as_deref(), Some("Finals"));
-    assert_eq!(
+fn summary_round_label_is_derived_from_the_published_code() -> TestResult {
+    let hj = parse_summary(FIXTURE_HJ)?;
+    check!(eq; hj.round.as_deref(), Some("F"));
+    check!(eq; hj.round_label.as_deref(), Some("Finals"));
+    check!(eq;
         super::parse::round_label(hj.round.as_deref()),
         Some("Finals")
     );
-    assert_eq!(
+    check!(eq;
         hj.round_label.as_deref(),
         super::parse::round_label(hj.round.as_deref()),
         "the derivation and the published label agree, so the index path needs no label"
     );
+    Ok(())
 }
 
 #[test]
-fn relay_summary_pins_four_legs_per_team_with_ids_and_grades() {
-    let summary = parse_summary(FIXTURE_RELAY).expect("fixture must parse");
-    assert_eq!(summary.event_id, "500937");
-    assert_eq!(summary.event_type, "RelayEvent");
-    assert_eq!(summary.finishers.len(), 12, "12 teams in the 1A final");
+fn relay_summary_pins_four_legs_per_team_with_ids_and_grades() -> TestResult {
+    let summary = parse_summary(FIXTURE_RELAY)?;
+    check!(eq; summary.event_id, "500937");
+    check!(eq; summary.event_type, "RelayEvent");
+    check!(eq; summary.finishers.len(), 12, "12 teams in the 1A final");
 
     let mut legs = 0;
     for row in &summary.finishers {
-        assert!(row.athlete.is_none(), "relay rows carry no single athlete");
-        assert!(row.year.is_none(), "relay rows carry no row-level grade");
-        assert_eq!(row.members.len(), 4, "a 4x800m team fields four legs");
+        check!(row.athlete.is_none(), "relay rows carry no single athlete");
+        check!(row.year.is_none(), "relay rows carry no row-level grade");
+        check!(eq; row.members.len(), 4, "a 4x800m team fields four legs");
         for member in &row.members {
-            let athlete = member.athlete.as_ref().expect("legs publish athlete");
-            assert!(athlete.athletic_net_id.is_some());
-            assert!(athlete.athletic_live_id.is_some());
-            assert!(member_grade(member).is_some());
+            let athlete = member.athlete.as_ref().ok_or("legs publish athlete")?;
+            check!(athlete.athletic_net_id.is_some());
+            check!(athlete.athletic_live_id.is_some());
+            check!(member_grade(member).is_some());
             legs += 1;
         }
     }
-    assert_eq!(legs, 48, "12 teams x 4 legs");
+    check!(eq; legs, 48, "12 teams x 4 legs");
 
     let winner = &summary.finishers[0];
-    assert_eq!(winner.ihsa_school_id.as_deref(), Some("1835"));
-    assert_eq!(
+    check!(eq; winner.ihsa_school_id.as_deref(), Some("1835"));
+    check!(eq;
         winner.mark.as_deref().and_then(parse_mark),
         Some(Mark::TimeSeconds(CentiSeconds::new(47137))),
         "7:51.37 in seconds"
     );
-    assert_eq!(
+    check!(eq;
         winner.team.as_ref().and_then(|t| t.athletic_net_id),
         Some(16_665)
     );
-    let lead = winner.members[0].athlete.as_ref().expect("leg 1");
-    assert_eq!(lead.name.as_deref(), Some("Joel White"));
-    assert_eq!(lead.athletic_net_id, Some(20_992_451));
-    assert_eq!(lead.year.as_deref(), Some("12"));
+    let lead = winner.members[0].athlete.as_ref().ok_or("leg 1")?;
+    check!(eq; lead.name.as_deref(), Some("Joel White"));
+    check!(eq; lead.athletic_net_id, Some(20_992_451));
+    check!(eq; lead.year.as_deref(), Some("12"));
+    Ok(())
 }
 
 fn athletes(envelope: &QualifiersEnvelope) -> Vec<&QualifierAthlete> {
@@ -252,12 +259,12 @@ fn graded(envelope: &QualifiersEnvelope) -> usize {
 }
 
 #[test]
-fn xc_boys_1a_pins_ids_grades_and_sector_equality() {
-    let envelope = parse_qualifiers(FIXTURE_XC_BOYS_1A).expect("fixture must parse");
-    assert_eq!(envelope.tournament_id, "688");
-    assert_eq!(envelope.box_assignments.len(), 398);
-    assert_eq!(envelope.team_qualifiers.len(), 30);
-    assert_eq!(envelope.individual_qualifiers.len(), 42);
+fn xc_boys_1a_pins_ids_grades_and_sector_equality() -> TestResult {
+    let envelope = parse_qualifiers(FIXTURE_XC_BOYS_1A)?;
+    check!(eq; envelope.tournament_id, "688");
+    check!(eq; envelope.box_assignments.len(), 398);
+    check!(eq; envelope.team_qualifiers.len(), 30);
+    check!(eq; envelope.individual_qualifiers.len(), 42);
 
     let team_legs: usize = envelope
         .team_qualifiers
@@ -269,10 +276,10 @@ fn xc_boys_1a_pins_ids_grades_and_sector_equality() {
         .iter()
         .map(|t| t.athletes.len())
         .sum();
-    assert_eq!((team_legs, individual_legs), (348, 50));
+    check!(eq; (team_legs, individual_legs), (348, 50));
 
     let sectors: usize = envelope.box_assignments.len();
-    assert_eq!(
+    check!(eq;
         sectors,
         team_legs + individual_legs,
         "no athlete is lost by skipping boxes"
@@ -284,39 +291,40 @@ fn xc_boys_1a_pins_ids_grades_and_sector_equality() {
             .filter(|row| row.entry_type.as_deref() == Some(kind))
             .count()
     };
-    assert_eq!(typed("T"), team_legs);
-    assert_eq!(typed("I"), individual_legs);
+    check!(eq; typed("T"), team_legs);
+    check!(eq; typed("I"), individual_legs);
 
     for team in envelope
         .team_qualifiers
         .iter()
         .chain(envelope.individual_qualifiers.iter())
     {
-        assert!(
+        check!(
             team.ihsa_school_id.is_some(),
             "every qualifier school publishes its own id"
         );
-        assert!(team
+        check!(team
             .school_name
             .as_ref()
             .is_some_and(|name| !name.is_empty()));
     }
 
-    assert_eq!(athletes(&envelope).len(), 398);
-    assert_eq!(
+    check!(eq; athletes(&envelope).len(), 398);
+    check!(eq;
         graded(&envelope),
         397,
         "one captured row publishes no grade"
     );
-    assert_eq!(grade_eleven(&envelope), 104);
+    check!(eq; grade_eleven(&envelope), 104);
+    Ok(())
 }
 
 #[test]
-fn xc_boys_three_classes_total_the_measured_1214_athletes_and_358_juniors() {
-    let one_a = parse_qualifiers(FIXTURE_XC_BOYS_1A).expect("fixture must parse");
-    let two_a = parse_qualifiers(FIXTURE_XC_BOYS_2A).expect("fixture must parse");
-    let three_a = parse_qualifiers(FIXTURE_XC_BOYS_3A).expect("fixture must parse");
-    assert_eq!(
+fn xc_boys_three_classes_total_the_measured_1214_athletes_and_358_juniors() -> TestResult {
+    let one_a = parse_qualifiers(FIXTURE_XC_BOYS_1A)?;
+    let two_a = parse_qualifiers(FIXTURE_XC_BOYS_2A)?;
+    let three_a = parse_qualifiers(FIXTURE_XC_BOYS_3A)?;
+    check!(eq;
         (
             one_a.tournament_id.as_str(),
             two_a.tournament_id.as_str(),
@@ -325,42 +333,45 @@ fn xc_boys_three_classes_total_the_measured_1214_athletes_and_358_juniors() {
         ("688", "689", "690")
     );
 
-    assert_eq!(athletes(&two_a).len(), 396);
-    assert_eq!(athletes(&three_a).len(), 420);
-    assert_eq!(
+    check!(eq; athletes(&two_a).len(), 396);
+    check!(eq; athletes(&three_a).len(), 420);
+    check!(eq;
         athletes(&one_a).len() + athletes(&two_a).len() + athletes(&three_a).len(),
         1_214,
         "the report's measured boys qualifier total"
     );
-    assert_eq!(
+    check!(eq;
         grade_eleven(&one_a) + grade_eleven(&two_a) + grade_eleven(&three_a),
         358,
         "the report's measured grade-11 slice of the boys qualifiers"
     );
+    Ok(())
 }
 
 #[test]
-fn xc_girls_list_publishes_the_same_shape() {
-    let envelope = parse_qualifiers(FIXTURE_XC_GIRLS_1A).expect("fixture must parse");
-    assert_eq!(envelope.tournament_id, "691");
-    assert_eq!(athletes(&envelope).len(), 357);
-    assert_eq!(
+fn xc_girls_list_publishes_the_same_shape() -> TestResult {
+    let envelope = parse_qualifiers(FIXTURE_XC_GIRLS_1A)?;
+    check!(eq; envelope.tournament_id, "691");
+    check!(eq; athletes(&envelope).len(), 357);
+    check!(eq;
         graded(&envelope),
         356,
         "one captured row publishes no grade"
     );
-    assert_eq!(grade_eleven(&envelope), 97);
-    assert_eq!(envelope.box_assignments.len(), 357);
+    check!(eq; grade_eleven(&envelope), 97);
+    check!(eq; envelope.box_assignments.len(), 357);
+    Ok(())
 }
 
 #[test]
-fn xc_empty_archive_decodes_to_an_empty_envelope() {
-    let envelope = parse_qualifiers(FIXTURE_XC_EMPTY).expect("fixture must parse");
-    assert_eq!(envelope.tournament_id, "688");
-    assert!(envelope.box_assignments.is_empty());
-    assert!(envelope.team_qualifiers.is_empty());
-    assert!(envelope.individual_qualifiers.is_empty());
-    assert_eq!(athletes(&envelope).len(), 0);
+fn xc_empty_archive_decodes_to_an_empty_envelope() -> TestResult {
+    let envelope = parse_qualifiers(FIXTURE_XC_EMPTY)?;
+    check!(eq; envelope.tournament_id, "688");
+    check!(envelope.box_assignments.is_empty());
+    check!(envelope.team_qualifiers.is_empty());
+    check!(envelope.individual_qualifiers.is_empty());
+    check!(eq; athletes(&envelope).len(), 0);
+    Ok(())
 }
 
 #[test]
@@ -376,16 +387,17 @@ fn xc_missing_archive_is_an_error_envelope_not_a_qualifier_payload() {
 }
 
 #[test]
-fn terms_pin_the_newest_completed_school_year() {
-    let envelope = super::parse::parse_terms(FIXTURE_TERMS).expect("fixture must parse");
-    assert_eq!(envelope.current_term, "2026-27");
-    assert_eq!(envelope.terms.len(), 3);
-    assert_eq!(
+fn terms_pin_the_newest_completed_school_year() -> TestResult {
+    let envelope = super::parse::parse_terms(FIXTURE_TERMS)?;
+    check!(eq; envelope.current_term, "2026-27");
+    check!(eq; envelope.terms.len(), 3);
+    check!(eq;
         newest_term(FIXTURE_TERMS)
-            .expect("fixture must parse")
+            ?
             .as_deref(),
         Some("2025-26")
     );
+    Ok(())
 }
 
 #[test]
@@ -422,7 +434,12 @@ fn mark_forms_seen_in_the_corpus_parse_to_canonical_marks() {
     assert_eq!(parse_mark("DNF"), None);
 }
 
-fn assert_mark_corpus(name: &str, body: &str, minimum: usize, expects_no_mark_token: bool) {
+fn assert_mark_corpus(
+    name: &str,
+    body: &str,
+    minimum: usize,
+    expects_no_mark_token: bool,
+) -> TestResult {
     fn walk(value: &serde_json::Value, out: &mut Vec<String>) {
         match value {
             serde_json::Value::Object(map) => {
@@ -444,10 +461,10 @@ fn assert_mark_corpus(name: &str, body: &str, minimum: usize, expects_no_mark_to
         }
     }
 
-    let document: serde_json::Value = serde_json::from_str(body).expect("fixture must parse");
+    let document: serde_json::Value = serde_json::from_str(body)?;
     let mut marks = Vec::new();
     walk(&document, &mut marks);
-    assert!(
+    check!(
         marks.len() >= minimum,
         "{name}: expected at least {minimum} marks, saw {}",
         marks.len()
@@ -459,23 +476,25 @@ fn assert_mark_corpus(name: &str, body: &str, minimum: usize, expects_no_mark_to
             Some(_) => {}
             None => {
                 refused += 1;
-                assert!(
+                check!(
                     mark.is_empty() || mark.chars().all(|c| c.is_ascii_alphabetic()),
                     "{name}: unhandled mark form {mark:?}"
                 );
             }
         }
     }
-    assert!(
+    check!(
         refused > 0 || !expects_no_mark_token,
         "{name}: the corpus publishes no-mark tokens (NH/NM) in its unread prelim rounds"
     );
+    Ok(())
 }
 
 #[test]
-fn summaries_contain_no_unhandled_mark_form() {
-    assert_mark_corpus("high jump 1A final", FIXTURE_HJ, 20, true);
-    assert_mark_corpus("4x800m relay 1A final", FIXTURE_RELAY, 12, false);
+fn summaries_contain_no_unhandled_mark_form() -> TestResult {
+    assert_mark_corpus("high jump 1A final", FIXTURE_HJ, 20, true)?;
+    assert_mark_corpus("4x800m relay 1A final", FIXTURE_RELAY, 12, false)?;
+    Ok(())
 }
 
 #[test]
@@ -504,19 +523,21 @@ fn grade_parser_rejects_what_is_not_a_high_school_grade() {
 }
 
 #[test]
-fn captain_summaries_are_distinct_events() {
-    let hj: EventSummary = parse_summary(FIXTURE_HJ).expect("fixture must parse");
-    let relay: EventSummary = parse_summary(FIXTURE_RELAY).expect("fixture must parse");
-    assert_ne!(hj.event_id, relay.event_id);
-    assert!(hj.event_name.contains("High Jump"));
-    assert!(relay.event_name.contains("4x800m Relay"));
+fn captain_summaries_are_distinct_events() -> TestResult {
+    let hj: EventSummary = parse_summary(FIXTURE_HJ)?;
+    let relay: EventSummary = parse_summary(FIXTURE_RELAY)?;
+    check!(ne; hj.event_id, relay.event_id);
+    check!(hj.event_name.contains("High Jump"));
+    check!(relay.event_name.contains("4x800m Relay"));
+    Ok(())
 }
 
 #[test]
-fn unplaceable_dates_fall_back_to_the_runs_school_year() {
-    let fallback = SchoolYear::new(2025).expect("2025 is a season");
-    assert_eq!(school_year_of("2025-05-30", fallback).get(), 2024);
-    assert_eq!(school_year_of("2025-09-12", fallback).get(), 2025);
-    assert_eq!(school_year_of("1801-06-06", fallback), fallback);
-    assert_eq!(school_year_of("", fallback), fallback);
+fn unplaceable_dates_fall_back_to_the_runs_school_year() -> TestResult {
+    let fallback = SchoolYear::new(2025).ok_or("2025 is a season")?;
+    check!(eq; school_year_of("2025-05-30", fallback).get(), 2024);
+    check!(eq; school_year_of("2025-09-12", fallback).get(), 2025);
+    check!(eq; school_year_of("1801-06-06", fallback), fallback);
+    check!(eq; school_year_of("", fallback), fallback);
+    Ok(())
 }

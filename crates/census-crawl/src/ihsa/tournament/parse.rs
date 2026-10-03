@@ -49,7 +49,7 @@ pub fn parse_mark(published: &str) -> Option<Mark> {
     let stripped = trimmed
         .strip_suffix('q')
         .or_else(|| trimmed.strip_suffix('Q'))
-        .unwrap_or(trimmed)
+        .map_or(trimmed, |value| value)
         .trim();
     if stripped.is_empty() {
         return None;
@@ -112,7 +112,7 @@ pub fn event_label<'a>(event_name: &'a str, class_division: &str) -> Option<&'a 
     let without_gender = ["Boys ", "Girls "]
         .into_iter()
         .find_map(|prefix| published.strip_prefix(prefix))
-        .unwrap_or(published);
+        .map_or(published, |value| value);
     let without_round = without_gender
         .split_once(" - ")
         .map_or(without_gender, |(head, _)| head);

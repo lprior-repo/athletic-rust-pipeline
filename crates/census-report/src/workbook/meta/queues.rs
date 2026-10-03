@@ -179,9 +179,7 @@ pub(in crate::workbook) fn cohort_of(
     dataset: &crate::export::ExportDataset,
     scope: Scope,
 ) -> Vec<CanonicalAthlete> {
-    crate::report::Derivation::of(dataset, scope, Some(GradYear::CO2027.get()))
-        .athletes()
-        .to_vec()
+    crate::report::cohort_candidates(dataset, scope, Some(GradYear::CO2027.get()))
 }
 
 fn queue_row(id: &str, subject: String, detail: String) -> QueueRow {

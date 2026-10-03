@@ -13,7 +13,7 @@ fn newest_observation(athlete: &CanonicalAthlete) -> Option<&ObservedGrade> {
 pub(super) fn observed_school_year(athlete: &CanonicalAthlete) -> Cell {
     newest_observation(athlete)
         .map(|o| Cell::text(o.school_year.short()))
-        .unwrap_or(Cell::Empty)
+        .map_or(Cell::Empty, |value| value)
 }
 
 pub(super) fn source_count(athlete: &CanonicalAthlete) -> usize {
@@ -33,7 +33,7 @@ pub(super) fn coverage_state(has_performance: bool, has_pr: bool) -> &'static st
 }
 
 pub(super) fn published(value: Option<String>) -> Cell {
-    Cell::text(value.unwrap_or_default())
+    Cell::text(value.map_or(Default::default(), core::convert::identity))
 }
 
 pub(super) fn flag(recorded: bool) -> Cell {

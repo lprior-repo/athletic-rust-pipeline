@@ -5,7 +5,8 @@ use crate::model::{
 };
 
 #[test]
-fn an_athlete_observation_keeps_what_its_source_published() {
+fn an_athlete_observation_keeps_what_its_source_published() -> Result<(), Box<dyn std::error::Error>>
+{
     let observation = SourceAthleteObservation::new(
         SourceNamespace::MilesplitAthlete,
         "14399169",
@@ -15,8 +16,8 @@ fn an_athlete_observation_keeps_what_its_source_published() {
     )
     .with_school(Some("Madison West".to_string()))
     .with_grade(Some(ObservedGrade {
-        grade: Grade::new(10).expect("a grade in 9..=12"),
-        school_year: SchoolYear::new(2025).expect("a season"),
+        grade: Grade::new(10).ok_or("invalid grade fixture")?,
+        school_year: SchoolYear::new(2025).ok_or("invalid season fixture")?,
         source: SourceRef::new("milesplit_roster", None),
     }))
     .with_gender(Gender::Girls)
@@ -24,45 +25,41 @@ fn an_athlete_observation_keeps_what_its_source_published() {
         "https://wi.milesplit.com/athletes/14399169".to_string(),
     ));
 
-    assert_eq!(observation.id, "milesplit_athlete:14399169");
-    assert_eq!(
-        observation
-            .observed_grade
-            .as_ref()
-            .and_then(ObservedGrade::grad_year),
-        GradYear::new(2028),
-    );
-    assert_eq!(observation.gender, Gender::Girls);
-    assert_eq!(
-        SourceAthleteObservation::new(
-            SourceNamespace::MilesplitAthlete,
-            "14399169",
-            "results:invite-2026",
-            "J. Smith",
-            "2026-09-22",
-        )
-        .id,
-        observation.id,
-        "one provider object is one observation row, whatever page it was read from"
-    );
-    assert_eq!(
-        SourceAthleteObservation::new(
-            SourceNamespace::MilesplitAthlete,
-            "14399170",
-            "roster:madison-west:2025-26",
-            "Jordan Smith",
-            "2026-09-22",
-        )
-        .gender,
-        Gender::Unknown,
-        "a source that published no gender states none rather than guessing one"
-    );
+    check!(eq; observation.id, "milesplit_athlete:14399169");
+    check!(eq; observation
+    .observed_grade
+    .as_ref()
+    .and_then(ObservedGrade::grad_year),
+GradYear::new(2028),);
+    check!(eq; observation.gender, Gender::Girls);
+    check!(eq; SourceAthleteObservation::new(
+    SourceNamespace::MilesplitAthlete,
+    "14399169",
+    "results:invite-2026",
+    "J. Smith",
+    "2026-09-22",
+)
+.id,
+observation.id,
+"one provider object is one observation row, whatever page it was read from");
+    check!(eq; SourceAthleteObservation::new(
+    SourceNamespace::MilesplitAthlete,
+    "14399170",
+    "roster:madison-west:2025-26",
+    "Jordan Smith",
+    "2026-09-22",
+)
+.gender,
+Gender::Unknown,
+"a source that published no gender states none rather than guessing one");
+    Ok(())
 }
 
 #[test]
-fn of_athlete_reads_the_providers_own_id_and_files_nothing_without_one() {
+fn of_athlete_reads_the_providers_own_id_and_files_nothing_without_one(
+) -> Result<(), Box<dyn std::error::Error>> {
     let school = SchoolId::mint("sch", &["WI", "Madison West"]);
-    let grad_year = GradYear::new(2028).expect("a class");
+    let grad_year = GradYear::new(2028).ok_or("invalid class fixture")?;
     let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
     let mut athlete = CanonicalAthlete::new(
         &school,
@@ -72,8 +69,8 @@ fn of_athlete_reads_the_providers_own_id_and_files_nothing_without_one() {
         source.clone(),
     );
     athlete.observed_grades.push(ObservedGrade {
-        grade: Grade::new(10).expect("a grade in 9..=12"),
-        school_year: SchoolYear::new(2025).expect("a season"),
+        grade: Grade::new(10).ok_or("invalid grade fixture")?,
+        school_year: SchoolYear::new(2025).ok_or("invalid season fixture")?,
         source: SourceRef::new("milesplit_roster", None),
     });
     athlete
@@ -86,24 +83,20 @@ fn of_athlete_reads_the_providers_own_id_and_files_nothing_without_one() {
         Some("Madison West".to_string()),
         "2026-09-22",
     )
-    .expect("the row carries the provider's own athlete id");
-    assert_eq!(observation.id, "milesplit_athlete:14399169");
-    assert_eq!(observation.source_athlete_id, "14399169");
-    assert_eq!(observation.observed_name, "Jordan Smith");
-    assert_eq!(observation.observed_school.as_deref(), Some("Madison West"));
-    assert_eq!(
-        observation.profile_url.as_deref(),
-        Some("https://wi.milesplit.com/athletes/14399169-jordan-smith")
-    );
-    assert_eq!(observation.gender, Gender::Girls);
-    assert_eq!(
-        observation
-            .observed_grade
-            .as_ref()
-            .and_then(ObservedGrade::grad_year),
-        Some(grad_year),
-    );
-    assert_eq!(observation.observed_on, "2026-09-22");
+    .ok_or("the fixture is missing the provider's own athlete id")?;
+    check!(eq; observation.id, "milesplit_athlete:14399169");
+    check!(eq; observation.source_athlete_id, "14399169");
+    check!(eq; observation.observed_name, "Jordan Smith");
+    check!(eq; observation.observed_school.as_deref(), Some("Madison West"));
+    check!(eq; observation.profile_url.as_deref(),
+Some("https://wi.milesplit.com/athletes/14399169-jordan-smith"));
+    check!(eq; observation.gender, Gender::Girls);
+    check!(eq; observation
+    .observed_grade
+    .as_ref()
+    .and_then(ObservedGrade::grad_year),
+Some(grad_year),);
+    check!(eq; observation.observed_on, "2026-09-22");
     let no_match = CanonicalAthlete::new(
         &school,
         "Jordan Smith",
@@ -111,30 +104,28 @@ fn of_athlete_reads_the_providers_own_id_and_files_nothing_without_one() {
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::TfrrsAthlete, "tfrrs-999"),
     );
-    assert_eq!(
-        SourceAthleteObservation::of_athlete(
-            &SourceNamespace::MilesplitAthlete,
-            &no_match,
-            None,
-            "2026-09-22",
-        ),
-        None,
-        "an identity for another source is not this source's sighting of the athlete"
-    );
-    assert_eq!(
-        SourceAthleteObservation::of_athlete(
-            &SourceNamespace::TfrrsAthlete,
-            &athlete,
-            Some("Madison West".to_string()),
-            "2026-09-22",
-        ),
-        None,
-        "an identity for another source is not this source's sighting of the athlete"
-    );
+    check!(eq; SourceAthleteObservation::of_athlete(
+    &SourceNamespace::MilesplitAthlete,
+    &no_match,
+    None,
+    "2026-09-22",
+),
+None,
+"an identity for another source is not this source's sighting of the athlete");
+    check!(eq; SourceAthleteObservation::of_athlete(
+    &SourceNamespace::TfrrsAthlete,
+    &athlete,
+    Some("Madison West".to_string()),
+    "2026-09-22",
+),
+None,
+"an identity for another source is not this source's sighting of the athlete");
+    Ok(())
 }
 
 #[test]
-fn a_school_observation_keeps_the_sources_own_words_and_the_provider_ids() {
+fn a_school_observation_keeps_the_sources_own_words_and_the_provider_ids(
+) -> Result<(), Box<dyn std::error::Error>> {
     let observation = SourceSchoolObservation::new(
         SourceNamespace::MilesplitSchool,
         "wi-madison-west",
@@ -151,26 +142,23 @@ fn a_school_observation_keeps_the_sources_own_words_and_the_provider_ids() {
         Some("998877".to_string()),
     );
 
-    assert_eq!(observation.id, "milesplit_school:wi-madison-west");
-    assert_eq!(observation.state, Some(crate::UsJurisdiction::Wisconsin));
-    assert_eq!(observation.association_id.as_deref(), Some("WIAA-1234"));
-    assert_eq!(observation.athletics_net_team_id.as_deref(), Some("998877"));
-    assert_eq!(
-        observation.observed_name, "Madison West High School",
-        "the name is kept as the source spelled it: the canonical natural key is derived, not stored"
-    );
-    assert_eq!(
-        SourceSchoolObservation::new(
-            SourceNamespace::AssociationSchool {
-                association: "wiaa".to_string(),
-            },
-            "1234",
-            "schools/1234",
-            "Madison West HS",
-            "2026-09-22",
-        )
-        .id,
-        "association_school:wiaa:1234",
-        "the same school seen by another provider is another observation, not a rewrite of this one"
-    );
+    check!(eq; observation.id, "milesplit_school:wi-madison-west");
+    check!(eq; observation.state, Some(crate::UsJurisdiction::Wisconsin));
+    check!(eq; observation.association_id.as_deref(), Some("WIAA-1234"));
+    check!(eq; observation.athletics_net_team_id.as_deref(), Some("998877"));
+    check!(eq; observation.observed_name, "Madison West High School",
+"the name is kept as the source spelled it: the canonical natural key is derived, not stored");
+    check!(eq; SourceSchoolObservation::new(
+    SourceNamespace::AssociationSchool {
+        association: "wiaa".to_string(),
+    },
+    "1234",
+    "schools/1234",
+    "Madison West HS",
+    "2026-09-22",
+)
+.id,
+"association_school:wiaa:1234",
+"the same school seen by another provider is another observation, not a rewrite of this one");
+    Ok(())
 }

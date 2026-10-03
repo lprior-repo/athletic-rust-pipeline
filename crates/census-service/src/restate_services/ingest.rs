@@ -55,14 +55,22 @@ impl Ingest {
 
     async fn load_object(&self, ctx: &ObjectContext<'_>) -> Result<IngestState, HandlerError> {
         let endpoint = ctx.key().to_string();
-        Ok(ctx
-            .get::<Json<IngestState>>(KEY_STATE)
-            .await?
-            .map(|state| state.0)
-            .unwrap_or_else(|| IngestState {
-                endpoint,
-                ..IngestState::default()
-            }))
+        Ok(
+            match ctx
+                .get::<Json<IngestState>>(KEY_STATE)
+                .await?
+                .map(|state| state.0)
+            {
+                Some(value) => {
+                    drop(endpoint);
+                    value
+                }
+                None => IngestState {
+                    endpoint,
+                    ..IngestState::default()
+                },
+            },
+        )
     }
 
     async fn load_shared(
@@ -70,14 +78,22 @@ impl Ingest {
         ctx: &SharedObjectContext<'_>,
     ) -> Result<IngestState, HandlerError> {
         let endpoint = ctx.key().to_string();
-        Ok(ctx
-            .get::<Json<IngestState>>(KEY_STATE)
-            .await?
-            .map(|state| state.0)
-            .unwrap_or_else(|| IngestState {
-                endpoint,
-                ..IngestState::default()
-            }))
+        Ok(
+            match ctx
+                .get::<Json<IngestState>>(KEY_STATE)
+                .await?
+                .map(|state| state.0)
+            {
+                Some(value) => {
+                    drop(endpoint);
+                    value
+                }
+                None => IngestState {
+                    endpoint,
+                    ..IngestState::default()
+                },
+            },
+        )
     }
 }
 

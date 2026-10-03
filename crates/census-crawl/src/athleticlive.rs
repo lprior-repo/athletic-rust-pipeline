@@ -130,7 +130,7 @@ fn note_coverage(
     ));
     let min_date = filtered.iter().map(|r| r.start.as_str()).min();
     let max_date = filtered.iter().map(|r| r.start.as_str()).max();
-    report.rows = u64::try_from(written).unwrap_or(u64::MAX);
+    report.rows = u64::try_from(written).map_or(u64::MAX, |value| value);
     report.note(format!("distinct tenants: {}", tenants.len()));
     report.note(format!(
         "rows with an Athletic.net meet id: {with_an}/{}",

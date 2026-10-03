@@ -61,7 +61,7 @@ pub fn parse_directory_letter(html: &str) -> Vec<IndexEntry> {
                     .map(|(text, _)| text)
                     .and_then(|text| meaningful(&text))
             })
-            .unwrap_or_default();
+            .map_or(Default::default(), core::convert::identity);
         let labels = labelled_texts(row, "gridTextDataTables");
         out.push(IndexEntry {
             org_id,
@@ -124,10 +124,13 @@ fn anchor_href_before(html: &str, marker: &str) -> Option<String> {
 }
 
 fn cell_person(cell: &str) -> String {
-    element_text(cell, "b", 0)
+    match element_text(cell, "b", 0)
         .map(|(text, _)| text)
         .filter(|text| !text.is_empty())
-        .unwrap_or_else(|| strip_tags(cell))
+    {
+        Some(value) => value,
+        None => strip_tags(cell),
+    }
 }
 
 pub fn parse_school_page(html: &str) -> SchoolPage {
@@ -168,7 +171,7 @@ pub fn parse_school_page(html: &str) -> SchoolPage {
     }
 
     SchoolPage {
-        name: label_text(html, "JumboMain").unwrap_or_default(),
+        name: label_text(html, "JumboMain").map_or(Default::default(), core::convert::identity),
         level: labeled_value(html, "Level"),
         city: labeled_value(html, "City"),
         conference: labeled_value(html, "Conference (Default)"),

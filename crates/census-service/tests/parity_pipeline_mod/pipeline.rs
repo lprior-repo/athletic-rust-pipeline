@@ -5,9 +5,6 @@ use std::time::Duration;
 use anyhow::{ensure, Context, Result};
 use census_crawl::net::Fetcher;
 use census_crawl::{wiaa_results, AdapterContext, AdapterReport};
-use census_report::bests;
-use census_report::export::ExportDataset;
-use census_report::report::{self, Derivation, Scope};
 use census_report::workbook;
 use census_service::census;
 use census_store::Store;
@@ -55,6 +52,7 @@ pub async fn run_pipeline(root: &Path) -> Result<Run> {
     };
 
     let corpus = Corpus::build()?;
+    super::milesplit_fixtures::replay_owned_captures().await?;
     corpus.append(&store)?;
 
     let first_counts = census::consolidate(&store)?;
@@ -69,39 +67,7 @@ pub async fn run_pipeline(root: &Path) -> Result<Run> {
         counts
     };
 
-    let dataset = ExportDataset::load(&store)?;
-    let core = report::build_census(
-        &Derivation::of(&dataset, Scope::Core, None),
-        &store.out_dir(),
-    );
-    let all_sources = report::build_census(
-        &Derivation::of(&dataset, Scope::AllSources, None),
-        &store.out_dir(),
-    );
-    assertions::assert_scope_split(&store, &core, &all_sources)?;
-
-    let rows = bests::build_from_dataset(
-        &dataset,
-        &bests::Options {
-            scope: Scope::Core,
-            grad_year: Some(constants::COHORT),
-            limit: None,
-        },
-    );
-    assertions::assert_best_reduction(&rows, &store, Scope::Core)?;
-
-    let publication_root = root.join("publication");
-    let written = workbook::build(
-        &store,
-        &workbook::Options {
-            grad_year: Some(constants::COHORT),
-            out: Some(publication_root),
-            limit: None,
-            scope: Scope::Core,
-            school_year: Some(constants::SCHOOL_YEAR),
-        },
-    )?;
-    let publication = workbook::publication::verify_published(&written)?;
+    let publication = super::workbook::build_publication(&store, root)?;
 
     Ok(Run {
         counts,

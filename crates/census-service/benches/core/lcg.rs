@@ -16,17 +16,22 @@ impl Lcg {
     }
 
     pub fn below(&mut self, bound: usize) -> usize {
-        let bound = u64::try_from(bound).unwrap_or(u64::MAX);
+        let bound = u64::try_from(bound).map_or(u64::MAX, |value| value);
         if bound == 0 {
             return 0;
         }
-        usize::try_from(self.next_state().checked_rem(bound).unwrap_or(0)).unwrap_or(0)
+        usize::try_from(
+            self.next_state()
+                .checked_rem(bound)
+                .map_or(0, |value| value),
+        )
+        .map_or(0, |value| value)
     }
 
     pub fn pick<T: Copy>(&mut self, items: &[T], fallback: T) -> T {
         items
             .get(self.below(items.len()))
             .copied()
-            .unwrap_or(fallback)
+            .map_or(fallback, |value| value)
     }
 }

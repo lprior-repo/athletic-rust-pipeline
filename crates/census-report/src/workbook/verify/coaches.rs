@@ -31,7 +31,7 @@ pub(super) fn verify(
             return;
         }
         let position = row.index().saturating_sub(1);
-        let id = row.text(6).unwrap_or("").to_string();
+        let id = row.text(6).map_or("", |value| value).to_string();
         let expected = ordered.get(position);
         if row.blank() {
             if let Some((coach, _)) = expected {
@@ -149,7 +149,10 @@ fn membership(ordered: &[(&CanonicalCoach, SortKey)], printed: &[String], findin
         *count = count.saturating_add(1);
     }
     for (id, count) in &actual {
-        let held = expected.get(id).copied().unwrap_or_default();
+        let held = expected
+            .get(id)
+            .copied()
+            .map_or(Default::default(), core::convert::identity);
         if held < *count {
             let message = if expected.contains_key(id) {
                 format!(
@@ -163,7 +166,10 @@ fn membership(ordered: &[(&CanonicalCoach, SortKey)], printed: &[String], findin
         }
     }
     for (id, count) in &expected {
-        let found = actual.get(id).copied().unwrap_or_default();
+        let found = actual
+            .get(id)
+            .copied()
+            .map_or(Default::default(), core::convert::identity);
         if found < *count {
             findings.note(format!(
                 "coach {id} holds {count} observation(s) in the frozen dataset but is printed \

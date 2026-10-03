@@ -4,6 +4,8 @@ use census_domain::model::{EventKind, Gender, Mark};
 use super::super::raw::parse_raw;
 use super::super::{RawGradeIssueKind, SourceRowLocator};
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 const URL: &str = "https://www.milesplit.com/meets/498412/results/1283641/raw";
 
 fn document(block: &str) -> String {
@@ -12,8 +14,8 @@ fn document(block: &str) -> String {
     )
 }
 
-fn page(block: &str) -> super::super::raw::RawPage {
-    parse_raw(&document(block), URL).expect("qualified raw document")
+fn page(block: &str) -> TestResult<super::super::raw::RawPage> {
+    Ok(parse_raw(&document(block), URL)?)
 }
 
 fn header(name_width: usize, team_width: usize) -> String {
@@ -37,40 +39,48 @@ fn row(
     )
 }
 
-fn assert_locator(locator: &SourceRowLocator, block: &str, ordinal: u32, offset: usize, row: &str) {
+fn assert_locator(
+    locator: &SourceRowLocator,
+    block: &str,
+    ordinal: u32,
+    offset: usize,
+    row: &str,
+) -> TestResult {
     let html = document(block);
-    let document_offset = html.find(row).expect("original published row");
-    assert_eq!(block.find(row), Some(offset));
-    assert_eq!(locator.ordinal, ordinal);
-    assert_eq!(locator.byte_offset, document_offset);
-    assert_eq!(locator.byte_length, row.len());
+    let document_offset = html.find(row).ok_or("original published row")?;
+    check!(eq; block.find(row), Some(offset));
+    check!(eq; locator.ordinal, ordinal);
+    check!(eq; locator.byte_offset, document_offset);
+    check!(eq; locator.byte_length, row.len());
     let end = document_offset
         .checked_add(locator.byte_length)
-        .expect("row end");
-    assert_eq!(html.get(document_offset..end), Some(row));
+        .ok_or("row end")?;
+    check!(eq; html.get(document_offset..end), Some(row));
+    Ok(())
 }
 
 #[test]
-fn published_metric_field_row_keeps_event_grade_and_numeric_distance() {
+fn published_metric_field_row_keeps_event_grade_and_numeric_distance() -> TestResult {
     let result = row(20, 20, "Captured, Jumper", "11", "Captured School", "9.47m");
     let block = format!(
         "Girls Varsity Triple Jump Finals\n{}\n{result}\n",
         header(20, 20).replace("Time", "Mark")
     );
-    let parsed = page(&block);
-    let event = parsed.meet.events.first().expect("published event");
-    assert_eq!(event.kind, EventKind::TripleJump);
-    let result = event.rows.first().expect("published result");
-    assert_eq!(
+    let parsed = page(&block)?;
+    let event = parsed.meet.events.first().ok_or("published event")?;
+    check!(eq; event.kind, EventKind::TripleJump);
+    let result = event.rows.first().ok_or("published result")?;
+    check!(eq;
         result.mark,
         Mark::DistanceMetres(census_domain::model::CentiMetres::new(947))
     );
-    assert_eq!(result.grade.map(|grade| grade.get()), Some(11));
-    assert_eq!(result.timing, None);
+    check!(eq; result.grade.map(|grade| grade.get()), Some(11));
+    check!(eq; result.timing, None);
+    Ok(())
 }
 
 #[test]
-fn a_wrapped_round_does_not_relabel_the_earlier_results() {
+fn a_wrapped_round_does_not_relabel_the_earlier_results() -> TestResult {
     let first = row(20, 20, "MÜLLER, Émile", "JR", "North Buncombe", "9:01.03");
     let second = row(20, 20, "Other, Kid", "SR", "Asheville", "9:02.04");
     let block = format!(
@@ -78,202 +88,226 @@ fn a_wrapped_round_does_not_relabel_the_earlier_results() {
         header(20, 20),
         header(20, 20)
     );
-    let parsed = page(&block);
-    assert_eq!(parsed.meet.events.len(), 2);
-    assert_eq!(parsed.meet.events[0].label, "Boys 3200M");
-    assert_eq!(parsed.meet.events[1].label, "Boys 3200M Finals");
-    assert_eq!(parsed.meet.events[1].round.as_deref(), Some("Finals"));
-    assert_eq!(parsed.meet.events[0].rows[0].name, "MÜLLER, Émile");
-    assert_eq!(
+    let parsed = page(&block)?;
+    check!(eq; parsed.meet.events.len(), 2);
+    check!(eq; parsed.meet.events[0].label, "Boys 3200M");
+    check!(eq; parsed.meet.events[1].label, "Boys 3200M Finals");
+    check!(eq; parsed.meet.events[1].round.as_deref(), Some("Finals"));
+    check!(eq; parsed.meet.events[0].rows[0].name, "MÜLLER, Émile");
+    check!(eq;
         parsed.meet.events[0].rows[0].grade.map(|grade| grade.get()),
         Some(11)
     );
-    assert_eq!(parsed.meet.events[1].rows[0].name, "Other, Kid");
-    assert_eq!(
+    check!(eq; parsed.meet.events[1].rows[0].name, "Other, Kid");
+    check!(eq;
         parsed.meet.events[1].rows[0].grade.map(|grade| grade.get()),
         Some(12)
     );
-    assert_eq!(
+    check!(eq;
         parsed.meet.events[0].rows[0].mark,
-        Mark::TimeSeconds(crate::hytek::parse_time("9:01.03").unwrap())
+        Mark::TimeSeconds(crate::hytek::parse_time("9:01.03").ok_or("published mark")?)
     );
-    assert_eq!(parsed.skipped, Vec::<String>::new());
-    assert_eq!(parsed.grade_issues, Vec::new());
-    assert_eq!(parsed.meet.rows_parsed, 2);
-    assert_eq!(parsed.meet.rows_skipped, 0);
+    check!(eq; parsed.skipped, Vec::<String>::new());
+    check!(eq; parsed.grade_issues, Vec::new());
+    check!(eq; parsed.meet.rows_parsed, 2);
+    check!(eq; parsed.meet.rows_skipped, 0);
+    Ok(())
 }
 
 #[test]
-fn a_header_derived_mark_column_does_not_hide_a_named_row() {
+fn a_header_derived_mark_column_does_not_hide_a_named_row() -> TestResult {
     let name = "Cadet, Morgan Alexander";
     let line = row(24, 20, name, "JR", "Mountain View", "11.02");
     let block = format!("Boys 100M\n{}\n{line}\n", header(24, 20));
-    let parsed = page(&block);
-    assert_eq!(parsed.skipped, Vec::<String>::new());
-    assert_eq!(parsed.grade_issues, Vec::new());
-    assert_eq!(parsed.meet.rows_parsed, 1);
-    assert_eq!(parsed.meet.rows_skipped, 0);
+    let parsed = page(&block)?;
+    check!(eq; parsed.skipped, Vec::<String>::new());
+    check!(eq; parsed.grade_issues, Vec::new());
+    check!(eq; parsed.meet.rows_parsed, 1);
+    check!(eq; parsed.meet.rows_skipped, 0);
     let result = &parsed.meet.events[0].rows[0];
-    assert_eq!(result.name, name);
-    assert_eq!(result.school, "Mountain View");
-    assert_eq!(result.grade.map(|grade| grade.get()), Some(11));
-    assert_eq!(
+    check!(eq; result.name, name);
+    check!(eq; result.school, "Mountain View");
+    check!(eq; result.grade.map(|grade| grade.get()), Some(11));
+    check!(eq;
         result.mark,
-        Mark::TimeSeconds(crate::hytek::parse_time("11.02").unwrap())
+        Mark::TimeSeconds(crate::hytek::parse_time("11.02").ok_or("published mark")?)
     );
-    assert_eq!(result.heat.as_deref(), Some("8"));
+    check!(eq; result.heat.as_deref(), Some("8"));
+    Ok(())
 }
 
 #[test]
-fn a_located_grade_eight_row_is_preserved_not_skipped() {
+fn a_located_grade_eight_row_is_preserved_not_skipped() -> TestResult {
     const SCHOOL: &str = "North Buncombe";
     let line = row(20, 20, "SURFACE, Luke", "8", SCHOOL, "10:31.14");
     let block = format!("Boys 3200M\n{}\n{line}\n", header(20, 20));
-    let parsed = page(&block);
-    assert_eq!(parsed.skipped, Vec::<String>::new());
-    assert_eq!(parsed.meet.rows_parsed, 1);
-    assert_eq!(parsed.meet.rows_skipped, 0);
+    let parsed = page(&block)?;
+    check!(eq; parsed.skipped, Vec::<String>::new());
+    check!(eq; parsed.meet.rows_parsed, 1);
+    check!(eq; parsed.meet.rows_skipped, 0);
     let issue = parsed
         .grade_issues
         .first()
-        .expect("the eighth-grade token is located");
-    assert_eq!(issue.kind, RawGradeIssueKind::OutsideHighSchool);
-    assert_eq!(issue.raw_token, "8");
-    assert_locator(&issue.row, &block, 3, block.find(&line).unwrap(), &line);
+        .ok_or("the eighth-grade token is located")?;
+    check!(eq; issue.kind, RawGradeIssueKind::OutsideHighSchool);
+    check!(eq; issue.raw_token, "8");
+    assert_locator(
+        &issue.row,
+        &block,
+        3,
+        block.find(&line).ok_or("published row")?,
+        &line,
+    )?;
     let result = &parsed.meet.events[0].rows[0];
-    assert_eq!(result.name, "SURFACE, Luke");
-    assert_eq!(result.school, SCHOOL);
-    assert_eq!(result.grade, None);
-    assert_eq!(
+    check!(eq; result.name, "SURFACE, Luke");
+    check!(eq; result.school, SCHOOL);
+    check!(eq; result.grade, None);
+    check!(eq;
         result.mark,
-        Mark::TimeSeconds(crate::hytek::parse_time("10:31.14").unwrap())
+        Mark::TimeSeconds(crate::hytek::parse_time("10:31.14").ok_or("published mark")?)
     );
-    assert_eq!(result.heat.as_deref(), Some("8"));
+    check!(eq; result.heat.as_deref(), Some("8"));
+    Ok(())
 }
 
 #[test]
-fn a_college_grade_token_is_a_located_field_exclusion() {
+fn a_college_grade_token_is_a_located_field_exclusion() -> TestResult {
     let line = row(20, 20, "SURFACE, Luke", "13", "North Buncombe", "10:31.14");
     let block = format!("Boys 3200M\n{}\n{line}\n", header(20, 20));
-    let parsed = page(&block);
-    assert_eq!(parsed.skipped, Vec::<String>::new());
-    assert_eq!(parsed.meet.rows_parsed, 1);
-    assert_eq!(parsed.meet.rows_skipped, 0);
+    let parsed = page(&block)?;
+    check!(eq; parsed.skipped, Vec::<String>::new());
+    check!(eq; parsed.meet.rows_parsed, 1);
+    check!(eq; parsed.meet.rows_skipped, 0);
     let issue = parsed
         .grade_issues
         .first()
-        .expect("the college-grade token is located");
-    assert_eq!(issue.kind, RawGradeIssueKind::OutsideHighSchool);
-    assert_eq!(issue.raw_token, "13");
-    assert_eq!(issue.row.ordinal, 3);
+        .ok_or("the college-grade token is located")?;
+    check!(eq; issue.kind, RawGradeIssueKind::OutsideHighSchool);
+    check!(eq; issue.raw_token, "13");
+    check!(eq; issue.row.ordinal, 3);
     let result = &parsed.meet.events[0].rows[0];
-    assert_eq!(result.name, "SURFACE, Luke");
-    assert_eq!(result.grade, None);
-    assert_eq!(
+    check!(eq; result.name, "SURFACE, Luke");
+    check!(eq; result.grade, None);
+    check!(eq;
         result.mark,
-        Mark::TimeSeconds(crate::hytek::parse_time("10:31.14").unwrap())
+        Mark::TimeSeconds(crate::hytek::parse_time("10:31.14").ok_or("published mark")?)
     );
+    Ok(())
 }
 
 #[test]
-fn a_missing_grade_is_not_a_located_issue() {
+fn a_missing_grade_is_not_a_located_issue() -> TestResult {
     let line = row(20, 20, "SURFACE, Luke", "-", "North Buncombe", "10:31.14");
     let block = format!("Boys 3200M\n{}\n{line}\n", header(20, 20));
-    let parsed = page(&block);
-    assert_eq!(parsed.skipped, Vec::<String>::new());
-    assert_eq!(parsed.grade_issues, Vec::new());
-    assert_eq!(parsed.meet.rows_parsed, 1);
-    assert_eq!(parsed.meet.rows_skipped, 0);
+    let parsed = page(&block)?;
+    check!(eq; parsed.skipped, Vec::<String>::new());
+    check!(eq; parsed.grade_issues, Vec::new());
+    check!(eq; parsed.meet.rows_parsed, 1);
+    check!(eq; parsed.meet.rows_skipped, 0);
     let result = &parsed.meet.events[0].rows[0];
-    assert_eq!(result.grade, None);
-    assert_eq!(
+    check!(eq; result.grade, None);
+    check!(eq;
         result.mark,
-        Mark::TimeSeconds(crate::hytek::parse_time("10:31.14").unwrap())
+        Mark::TimeSeconds(crate::hytek::parse_time("10:31.14").ok_or("published mark")?)
     );
+    Ok(())
 }
 
 #[test]
-fn a_malformed_grade_token_owes_a_partial_result_set() {
+fn a_malformed_grade_token_owes_a_partial_result_set() -> TestResult {
     let line = row(20, 20, "SURFACE, Luke", "--", "North Buncombe", "9:00.11");
     let block = format!("Boys 3200M\n{}\n{line}\n", header(20, 20));
-    let parsed = page(&block);
-    assert_eq!(parsed.skipped, Vec::<String>::new());
-    assert_eq!(parsed.meet.rows_parsed, 1);
-    assert_eq!(parsed.meet.rows_skipped, 0);
-    assert_eq!(parsed.grade_issues.len(), 1);
+    let parsed = page(&block)?;
+    check!(eq; parsed.skipped, Vec::<String>::new());
+    check!(eq; parsed.meet.rows_parsed, 1);
+    check!(eq; parsed.meet.rows_skipped, 0);
+    check!(eq; parsed.grade_issues.len(), 1);
     let issue = &parsed.grade_issues[0];
-    assert_eq!(issue.kind, RawGradeIssueKind::Unrecognized);
-    assert_eq!(issue.raw_token, "--");
-    assert_locator(&issue.row, &block, 3, block.find(&line).unwrap(), &line);
+    check!(eq; issue.kind, RawGradeIssueKind::Unrecognized);
+    check!(eq; issue.raw_token, "--");
+    assert_locator(
+        &issue.row,
+        &block,
+        3,
+        block.find(&line).ok_or("published row")?,
+        &line,
+    )?;
     let result = &parsed.meet.events[0].rows[0];
-    assert_eq!(result.name, "SURFACE, Luke");
-    assert_eq!(result.school, "North Buncombe");
-    assert_eq!(result.grade, None);
-    assert_eq!(
+    check!(eq; result.name, "SURFACE, Luke");
+    check!(eq; result.school, "North Buncombe");
+    check!(eq; result.grade, None);
+    check!(eq;
         result.mark,
-        Mark::TimeSeconds(crate::hytek::parse_time("9:00.11").unwrap())
+        Mark::TimeSeconds(crate::hytek::parse_time("9:00.11").ok_or("published mark")?)
     );
+    Ok(())
 }
 
 #[test]
-fn numeric_school_labels_keep_the_published_mark() {
+fn numeric_school_labels_keep_the_published_mark() -> TestResult {
     const SCHOOL: &str = "District 5-12 Academy";
     let located = row(20, 24, "MÜLLER, Émile", "JR", SCHOOL, "8:44.73");
-    let parsed = page(&format!("Boys 3200M\n{}\n{located}\n", header(20, 24)));
-    assert_eq!(parsed.skipped, Vec::<String>::new());
-    assert_eq!(parsed.grade_issues, Vec::new());
-    assert_eq!(parsed.meet.rows_parsed, 1);
-    assert_eq!(parsed.meet.rows_skipped, 0);
+    let parsed = page(&format!("Boys 3200M\n{}\n{located}\n", header(20, 24)))?;
+    check!(eq; parsed.skipped, Vec::<String>::new());
+    check!(eq; parsed.grade_issues, Vec::new());
+    check!(eq; parsed.meet.rows_parsed, 1);
+    check!(eq; parsed.meet.rows_skipped, 0);
     let result = &parsed.meet.events[0].rows[0];
-    assert_eq!(result.name, "MÜLLER, Émile");
-    assert_eq!(result.school, SCHOOL);
-    assert_eq!(result.grade.map(|grade| grade.get()), Some(11));
-    assert_eq!(
+    check!(eq; result.name, "MÜLLER, Émile");
+    check!(eq; result.school, SCHOOL);
+    check!(eq; result.grade.map(|grade| grade.get()), Some(11));
+    check!(eq;
         result.mark,
-        Mark::TimeSeconds(crate::hytek::parse_time("8:44.73").unwrap())
+        Mark::TimeSeconds(crate::hytek::parse_time("8:44.73").ok_or("published mark")?)
     );
-    assert_eq!(result.heat.as_deref(), Some("8"));
+    check!(eq; result.heat.as_deref(), Some("8"));
+    Ok(())
 }
 
 #[test]
-fn located_byte_offsets_resolve_the_original_document() {
+fn located_byte_offsets_resolve_the_original_document() -> TestResult {
     let line = row(20, 20, "SURFACE, Luke", "8", "North Buncombe", "10:31.14");
     for ending in ["\n", "\r\n"] {
         let html = format!(
             "Captured π document<script type=\"application/ld+json\">{{\"name\":\"Camp\",\"startDate\":\"2025-03-08\",\"sport\":\"Track\"}}</script><pre>Boys 3200M{ending}{}{ending}{line}{ending}</pre>",
             header(20, 20)
         );
-        let parsed = parse_raw(&html, URL).expect("qualified raw document");
+        let parsed = parse_raw(&html, URL)?;
         let issue = parsed
             .grade_issues
             .first()
-            .expect("the grade issue is reported");
-        let start = html.find(&line).expect("the raw row sits in the document");
-        assert_eq!(issue.row.byte_offset, start);
-        assert_eq!(
+            .ok_or("the grade issue is reported")?;
+        let start = html.find(&line).ok_or("the raw row sits in the document")?;
+        check!(eq; issue.row.byte_offset, start);
+        check!(eq;
             html.get(
                 issue.row.byte_offset
                     ..issue
                         .row
                         .byte_offset
                         .checked_add(issue.row.byte_length)
-                        .expect("located range")
+                        .ok_or("located range")?
             ),
             Some(line.as_str()),
             "line ending {ending:?}"
         );
     }
+    Ok(())
 }
 
 #[test]
-fn a_row_without_a_column_map_is_rejected_with_its_bytes() {
+fn a_row_without_a_column_map_is_rejected_with_its_bytes() -> TestResult {
     let html = "<script type=\"application/ld+json\">{\"name\":\"Camp\",\"startDate\":\"2025-03-08\",\"sport\":\"Track\"}</script><pre>Boys 3200M\n1 No Header, Kid SR North Buncombe 9:01.03 8</pre>";
-    let error = parse_raw(html, URL).expect_err("a row without a column map is rejected");
-    let CrawlError::Schema { detail, .. } = error else {
-        panic!("expected a schema rejection, got {error:?}");
+    let error = match parse_raw(html, URL) {
+        Err(error) => error,
+        Ok(_) => return Err("a row without a column map is rejected".into()),
     };
-    assert!(detail.contains("no qualified column header"), "{detail}");
-    assert!(detail.contains("No Header, Kid"), "{detail}");
+    let CrawlError::Schema { detail, .. } = error else {
+        return Err(format!("expected a schema rejection, got {error:?}").into());
+    };
+    check!(detail.contains("no qualified column header"), "{detail}");
+    check!(detail.contains("No Header, Kid"), "{detail}");
+    Ok(())
 }
 
 #[test]
@@ -290,32 +324,33 @@ fn an_unqualified_document_is_not_a_successful_empty_result_set() {
 }
 
 #[test]
-fn a_mark_wider_than_the_published_cell_keeps_its_school() {
+fn a_mark_wider_than_the_published_cell_keeps_its_school() -> TestResult {
     const MARK: &str = "1:02:03.45";
     let line = format!(
         "   1 {:<20} {:<3} {:<19}{:>10} 8 (1)",
         "SURFACE, Luke", "JR", "District 5-12", MARK
     );
     let block = format!("Boys 3200M\n{}\n{line}\n", header(20, 20));
-    let parsed = page(&block);
-    assert_eq!(parsed.skipped, Vec::<String>::new());
-    assert_eq!(parsed.grade_issues, Vec::new());
-    assert_eq!(parsed.meet.rows_parsed, 1);
-    assert_eq!(parsed.meet.rows_skipped, 0);
+    let parsed = page(&block)?;
+    check!(eq; parsed.skipped, Vec::<String>::new());
+    check!(eq; parsed.grade_issues, Vec::new());
+    check!(eq; parsed.meet.rows_parsed, 1);
+    check!(eq; parsed.meet.rows_skipped, 0);
     let result = &parsed.meet.events[0].rows[0];
-    assert_eq!(result.place, Some(1));
-    assert_eq!(result.name, "SURFACE, Luke");
-    assert_eq!(result.school, "District 5-12");
-    assert_eq!(result.grade.map(|grade| grade.get()), Some(11));
-    assert_eq!(
+    check!(eq; result.place, Some(1));
+    check!(eq; result.name, "SURFACE, Luke");
+    check!(eq; result.school, "District 5-12");
+    check!(eq; result.grade.map(|grade| grade.get()), Some(11));
+    check!(eq;
         result.mark,
-        Mark::TimeSeconds(crate::hytek::parse_time(MARK).unwrap())
+        Mark::TimeSeconds(crate::hytek::parse_time(MARK).ok_or("published mark")?)
     );
-    assert_eq!(result.heat.as_deref(), Some("8"));
+    check!(eq; result.heat.as_deref(), Some("8"));
+    Ok(())
 }
 
 #[test]
-fn a_blank_declared_mark_cell_never_promotes_school_digits() {
+fn a_blank_declared_mark_cell_never_promotes_school_digits() -> TestResult {
     const SCHOOL: &str = "District 5-12 Academy";
     const SPILLED: &str = "District 5-12 Academy 2024";
     let blank = format!(
@@ -323,12 +358,12 @@ fn a_blank_declared_mark_cell_never_promotes_school_digits() {
         "SURFACE, Luke", "JR", SCHOOL, ""
     );
     let blank_block = format!("Boys 3200M\n{}\n{blank}\n", header(20, 24));
-    let parsed = page(&blank_block);
-    assert_eq!(parsed.meet.events[0].rows.len(), 0);
-    assert_eq!(parsed.meet.rows_parsed, 0);
-    assert_eq!(parsed.meet.rows_skipped, 1);
-    assert_eq!(parsed.skipped.len(), 1);
-    assert!(
+    let parsed = page(&blank_block)?;
+    check!(eq; parsed.meet.events[0].rows.len(), 0);
+    check!(eq; parsed.meet.rows_parsed, 0);
+    check!(eq; parsed.meet.rows_skipped, 1);
+    check!(eq; parsed.skipped.len(), 1);
+    check!(
         parsed.skipped[0].contains("missing or malformed mark"),
         "skipped: {:?}",
         parsed.skipped
@@ -338,32 +373,34 @@ fn a_blank_declared_mark_cell_never_promotes_school_digits() {
         "SURFACE, Luke", "JR", SPILLED, ""
     );
     let spilled_block = format!("Boys 3200M\n{}\n{spilled}\n", header(20, 24));
-    let spilled_page = page(&spilled_block);
-    assert_eq!(spilled_page.meet.events[0].rows.len(), 0);
-    assert_eq!(spilled_page.meet.rows_parsed, 0);
-    assert_eq!(spilled_page.skipped.len(), 1);
-    assert!(
+    let spilled_page = page(&spilled_block)?;
+    check!(eq; spilled_page.meet.events[0].rows.len(), 0);
+    check!(eq; spilled_page.meet.rows_parsed, 0);
+    check!(eq; spilled_page.skipped.len(), 1);
+    check!(
         spilled_page.skipped[0].contains("row did not fit the column map"),
         "skipped: {:?}",
         spilled_page.skipped
     );
+    Ok(())
 }
 
 #[test]
-fn escaped_section_labels_decode_before_publication() {
+fn escaped_section_labels_decode_before_publication() -> TestResult {
     let line = row(20, 20, "SURFACE, Luke", "JR", "North Buncombe", "44.73");
     let block = format!("Girls&#039; Javelin\n{}\n{line}\n", header(20, 20));
-    let parsed = page(&block);
-    assert_eq!(parsed.skipped, Vec::<String>::new());
-    assert_eq!(parsed.grade_issues, Vec::new());
-    assert_eq!(parsed.meet.rows_parsed, 1);
-    assert_eq!(parsed.meet.rows_skipped, 0);
+    let parsed = page(&block)?;
+    check!(eq; parsed.skipped, Vec::<String>::new());
+    check!(eq; parsed.grade_issues, Vec::new());
+    check!(eq; parsed.meet.rows_parsed, 1);
+    check!(eq; parsed.meet.rows_skipped, 0);
     let event = &parsed.meet.events[0];
-    assert_eq!(event.label, "Girls' Javelin");
-    assert_eq!(event.gender, Gender::Girls);
-    assert_eq!(event.kind, EventKind::Javelin);
-    assert_eq!(event.rows.len(), 1);
-    assert_eq!(event.rows[0].school, "North Buncombe");
-    assert!(matches!(event.rows[0].mark, Mark::DistanceMetres(_)));
-    assert_eq!(event.rows[0].heat.as_deref(), Some("8"));
+    check!(eq; event.label, "Girls' Javelin");
+    check!(eq; event.gender, Gender::Girls);
+    check!(eq; event.kind, EventKind::Javelin);
+    check!(eq; event.rows.len(), 1);
+    check!(eq; event.rows[0].school, "North Buncombe");
+    check!(matches!(event.rows[0].mark, Mark::DistanceMetres(_)));
+    check!(eq; event.rows[0].heat.as_deref(), Some("8"));
+    Ok(())
 }

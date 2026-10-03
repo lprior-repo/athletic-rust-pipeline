@@ -5,6 +5,8 @@ use crate::bests::{
 use census_domain::model::{CentiSeconds, EventKind, Gender, Id, Mark, TimingMethod};
 use census_domain::{JurisdictionBucket, MeetState, UsJurisdiction};
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 const FORMULA_MARK: &str = "=cmd|' /C calc'!A0";
 const FORMULA_NAME: &str = "=SUM(1+1)";
 const FORMULA_SCHOOL: &str = "@SUM(1)";
@@ -57,16 +59,16 @@ fn selection(
     }
 }
 
-fn column(header: &csv::StringRecord, name: &str) -> usize {
+fn column(header: &csv::StringRecord, name: &str) -> TestResult<usize> {
     header
         .iter()
         .position(|field| field == name)
-        .expect("published column")
+        .ok_or_else(|| format!("missing published column {name}").into())
 }
 
 #[test]
-fn csv_text_is_literalized_while_the_raw_jsonl_is_preserved() {
-    let directory = tempfile::tempdir().expect("temporary directory");
+fn csv_text_is_literalized_while_the_raw_jsonl_is_preserved() -> TestResult {
+    let directory = tempfile::tempdir()?;
     let rows = [selection(
         FORMULA_NAME,
         FORMULA_SCHOOL,
@@ -74,43 +76,38 @@ fn csv_text_is_literalized_while_the_raw_jsonl_is_preserved() {
         Mark::Raw(FORMULA_MARK.to_string()),
         Some(-1.4),
     )];
-    let (jsonl, csv) = write(directory.path(), &rows, "co2027").expect("snapshot publishes");
+    let (jsonl, csv) = write(directory.path(), &rows, "co2027")?;
 
-    let mut reader = csv::Reader::from_path(&csv).expect("published CSV reads");
-    let header = reader.headers().expect("header row").clone();
-    let row = reader
-        .records()
-        .next()
-        .expect("one data row")
-        .expect("data row decodes");
+    let mut reader = csv::Reader::from_path(&csv)?;
+    let header = reader.headers()?.clone();
+    let row = reader.records().next().ok_or("missing CSV data row")??;
     for (name, value) in [
         ("name", FORMULA_NAME),
         ("school", FORMULA_SCHOOL),
         ("meet", FORMULA_MEET),
         ("best_mark", FORMULA_MARK),
     ] {
-        assert_eq!(
-            row.get(column(&header, name)),
-            Some(format!("'{value}").as_str()),
-            "{name}"
-        );
+        check!(eq; row.get(column(&header, name)?),
+        Some(format!("'{value}").as_str()),
+        "{name}");
     }
-    assert_eq!(row.get(column(&header, "wind_mps")), Some("-1.4"));
-    assert_eq!(row.get(column(&header, "place")), Some("3"));
+    check!(eq; row.get(column(&header, "wind_mps")?), Some("-1.4"));
+    check!(eq; row.get(column(&header, "place")?), Some("3"));
 
-    let jsonl_text = std::fs::read_to_string(&jsonl).expect("JSONL reads");
+    let jsonl_text = std::fs::read_to_string(&jsonl)?;
     for value in [FORMULA_NAME, FORMULA_SCHOOL, FORMULA_MEET, FORMULA_MARK] {
-        assert!(jsonl_text.contains(value), "the JSONL keeps {value}");
-        assert!(
+        check!(jsonl_text.contains(value), "the JSONL keeps {value}");
+        check!(
             !jsonl_text.contains(&format!("'{value}")),
             "the JSONL is not literalized"
         );
     }
+    Ok(())
 }
 
 #[test]
-fn ordinary_text_and_negative_numerics_publish_unchanged() {
-    let directory = tempfile::tempdir().expect("temporary directory");
+fn ordinary_text_and_negative_numerics_publish_unchanged() -> TestResult {
+    let directory = tempfile::tempdir()?;
     let rows = [selection(
         ORDINARY_NAME,
         "Ordinary School",
@@ -118,23 +115,20 @@ fn ordinary_text_and_negative_numerics_publish_unchanged() {
         Mark::TimeSeconds(CentiSeconds::new(1094)),
         Some(-2.3),
     )];
-    let (_, csv) = write(directory.path(), &rows, "co2027").expect("snapshot publishes");
+    let (_, csv) = write(directory.path(), &rows, "co2027")?;
 
-    let text = std::fs::read_to_string(&csv).expect("published CSV reads");
-    assert!(text.contains("Ordinary Runner,Ordinary School"));
-    assert!(text.contains(",-2.3,"));
-    assert!(!text.contains("'-2.3"));
+    let text = std::fs::read_to_string(&csv)?;
+    check!(text.contains("Ordinary Runner,Ordinary School"));
+    check!(text.contains(",-2.3,"));
+    check!(!text.contains("'-2.3"));
 
-    let mut reader = csv::Reader::from_path(&csv).expect("published CSV reads");
-    let header = reader.headers().expect("header row").clone();
-    let row = reader
-        .records()
-        .next()
-        .expect("one data row")
-        .expect("data row decodes");
-    assert_eq!(row.get(column(&header, "name")), Some(ORDINARY_NAME));
-    assert_eq!(row.get(column(&header, "wind_mps")), Some("-2.3"));
-    assert_eq!(row.get(column(&header, "best_mark")), Some("10.94"));
-    assert_eq!(row.get(column(&header, "best_value")), Some("1094"));
-    assert_eq!(row.get(column(&header, "grad_year")), Some("2027"));
+    let mut reader = csv::Reader::from_path(&csv)?;
+    let header = reader.headers()?.clone();
+    let row = reader.records().next().ok_or("missing CSV data row")??;
+    check!(eq; row.get(column(&header, "name")?), Some(ORDINARY_NAME));
+    check!(eq; row.get(column(&header, "wind_mps")?), Some("-2.3"));
+    check!(eq; row.get(column(&header, "best_mark")?), Some("10.94"));
+    check!(eq; row.get(column(&header, "best_value")?), Some("1094"));
+    check!(eq; row.get(column(&header, "grad_year")?), Some("2027"));
+    Ok(())
 }

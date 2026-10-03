@@ -193,7 +193,7 @@ fn school_city(school: Option<&CanonicalSchool>) -> Cell {
     Cell::text(
         school
             .and_then(|school| school.city.clone())
-            .unwrap_or_default(),
+            .map_or(Default::default(), core::convert::identity),
     )
 }
 

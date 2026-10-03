@@ -73,7 +73,7 @@ fn bench_result_file(criterion: &mut Criterion) -> Result<()> {
     let meet = parse(&body).with_context(|| format!("{RESULT_FILE} parsed to no meet"))?;
     let parsed = format == ArtifactFormat::HytekHtml && meet.rows_parsed > 0;
     ensure!(parsed, "{RESULT_FILE} is not a parsed Hy-Tek release");
-    let rows = u64::try_from(meet.rows_parsed).unwrap_or(u64::MAX);
+    let rows = u64::try_from(meet.rows_parsed).map_or(u64::MAX, |value| value);
 
     let mut group = criterion.benchmark_group(RESULT_FILE_GROUP);
     group.throughput(Throughput::Elements(rows));
@@ -123,7 +123,7 @@ fn bench_school_labels(criterion: &mut Criterion) -> Result<()> {
 
     let mut group = criterion.benchmark_group(LABEL_GROUP);
     group.throughput(Throughput::Elements(
-        u64::try_from(labels.len()).unwrap_or(u64::MAX),
+        u64::try_from(labels.len()).map_or(u64::MAX, |value| value),
     ));
     group.bench_function("resolve", |bencher| {
         bencher.iter(|| {
@@ -171,7 +171,7 @@ fn bench_merge(criterion: &mut Criterion) -> Result<()> {
 
     let mut group = criterion.benchmark_group(MERGE_GROUP);
     group.throughput(Throughput::Elements(
-        u64::try_from(observations).unwrap_or(u64::MAX),
+        u64::try_from(observations).map_or(u64::MAX, |value| value),
     ));
     group.bench_function("scan", |bencher| {
         bencher.iter(|| {

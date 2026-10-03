@@ -33,16 +33,14 @@ pub(super) fn table_labels(
     row_pattern: &Regex,
     cell_pattern: &Regex,
 ) -> Vec<String> {
-    head_pattern
-        .find(table)
-        .map(|head| {
-            row_pattern
-                .find_iter(head.as_str())
-                .last()
-                .map(|row| table_cells(row.as_str(), tags, cell_pattern))
-                .unwrap_or_default()
-        })
-        .unwrap_or_default()
+    match head_pattern.find(table) {
+        Some(head) => row_pattern
+            .find_iter(head.as_str())
+            .last()
+            .map(|row| table_cells(row.as_str(), tags, cell_pattern))
+            .map_or(Default::default(), core::convert::identity),
+        None => Default::default(),
+    }
 }
 
 pub(super) fn table_rows(
@@ -90,7 +88,7 @@ pub(super) fn table_rows(
             grade: cell(grade_column)
                 .and_then(|value| value.parse::<u8>().ok())
                 .and_then(Grade::new),
-            school: cell(school_column).unwrap_or_default(),
+            school: cell(school_column).map_or(Default::default(), core::convert::identity),
             mark,
             timing: None,
             wind_mps: None,
@@ -122,7 +120,10 @@ fn table_cells(row_html: &str, tags: &Regex, cell_pattern: &Regex) -> Vec<String
         .map(|captures| {
             text_of(
                 tags,
-                captures.get(1).map(|m| m.as_str()).unwrap_or_default(),
+                captures
+                    .get(1)
+                    .map(|m| m.as_str())
+                    .map_or(Default::default(), core::convert::identity),
             )
         })
         .collect()

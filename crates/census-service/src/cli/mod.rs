@@ -53,7 +53,7 @@ pub(super) struct Cli {
     #[arg(long, global = true)]
     user_agent: Option<String>,
     #[arg(
-        help = "Operator-authorized host (repeatable). A redirect that lands on it is admitted, and it is paced no faster than the 2 rps per-host ceiling. A bare domain authorizes its subdomains. Default: a redirect to a host outside the registry is refused"
+        help = "Explicit redirect destination host (repeatable). Same-origin redirects need no grant; origin changes require an exact host or dot-bounded subdomain grant. Granted hosts remain paced at no more than 2 rps; private-address and browser-lane checks remain binding"
     )]
     #[arg(long = "authorized-host", global = true, value_name = "HOST")]
     authorized_hosts: Vec<String>,
@@ -73,9 +73,10 @@ pub(super) enum Route<'a> {
 
 impl Cli {
     pub(super) fn store_root(&self) -> PathBuf {
-        self.store
-            .clone()
-            .unwrap_or_else(|| PathBuf::from(DEFAULT_STORE_ROOT))
+        match self.store.clone() {
+            Some(value) => value,
+            None => PathBuf::from(DEFAULT_STORE_ROOT),
+        }
     }
 
     pub(super) fn route<'a>(&'a self, ingress: Option<&'a str>) -> Result<Route<'a>> {
@@ -135,6 +136,11 @@ pub(super) async fn run() -> Result<()> {
         args.validate_configuration()?;
     }
     match &cli.command {
+        Command::Review(args) => {
+            let prepared = args.prepare()?;
+            let store = Store::open(cli.store_root())?;
+            review::run_review(&store, &prepared).await
+        }
         Command::National(args) => national::run_national(&cli, args).await,
         Command::Jurisdiction(args) => national::run_jurisdiction(&cli, args).await,
         Command::NationalReport(args) => national::run_national_report(&cli, args).await,
@@ -169,8 +175,10 @@ pub(super) async fn run() -> Result<()> {
 fn init_tracing() {
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
+            tracing_subscriber::EnvFilter::try_from_default_env().map_or_else(
+                |_| tracing_subscriber::EnvFilter::new("info"),
+                |value| value,
+            ),
         )
         .with_target(false)
         .init();

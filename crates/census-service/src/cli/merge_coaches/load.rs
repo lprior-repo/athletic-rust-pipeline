@@ -6,7 +6,10 @@ pub(super) fn from_fields(fields: Vec<String>) -> Row {
     let mut rest = fields
         .into_iter()
         .chain(std::iter::repeat_with(String::new));
-    let mut next = move || rest.next().unwrap_or_default();
+    let mut next = move || {
+        rest.next()
+            .map_or(Default::default(), core::convert::identity)
+    };
     Row {
         school: next(),
         city: next(),

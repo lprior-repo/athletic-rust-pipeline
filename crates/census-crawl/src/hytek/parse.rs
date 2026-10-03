@@ -126,7 +126,7 @@ pub(super) fn parse_row(line: &str, kind: &EventKind, section: &Section) -> Opti
         let Some(token) = section.numeric_token(&tokens, label) else {
             continue;
         };
-        let tail = line.get(token.end..).unwrap_or_default();
+        let tail = line.get(token.end..).map_or(Default::default(), core::convert::identity);
         if let Some(parsed) = parse_marks(kind, token.text, tail) {
             marks = Some(parsed);
             break;
@@ -179,7 +179,7 @@ fn row_identity(
         Some(start) => {
             let end = section
                 .next_numeric_start(tokens, start)
-                .unwrap_or(school_start);
+                .map_or(school_start, |value| value);
             substring(line, start, end)
         }
         None => String::new(),
@@ -211,16 +211,16 @@ pub(super) fn parse_legs(trimmed: &str, filled: usize) -> Vec<RelayLeg> {
     };
     let mut legs = Vec::new();
     for captures in relay_leg.captures_iter(trimmed) {
-        let fallback =
-            u8::try_from(filled.saturating_add(legs.len()).saturating_add(1)).unwrap_or(u8::MAX);
+        let fallback = u8::try_from(filled.saturating_add(legs.len()).saturating_add(1))
+            .map_or(u8::MAX, |value| value);
         let position: u8 = captures
             .get(1)
             .and_then(|m| m.as_str().parse().ok())
-            .unwrap_or(fallback);
+            .map_or(fallback, |value| value);
         let name = captures
             .get(2)
             .map(|m| m.as_str().trim().to_string())
-            .unwrap_or_default();
+            .map_or(Default::default(), core::convert::identity);
         let grade = captures
             .get(3)
             .and_then(|m| m.as_str().parse::<u8>().ok())

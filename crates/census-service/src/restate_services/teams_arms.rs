@@ -1,16 +1,14 @@
-use crate::restate_services::job_error;
 use std::sync::Arc;
 
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
-use restate_sdk::prelude::{HandlerError, Json, TerminalError};
 
 use crate::census;
 use census_crawl::{net::Fetcher, AdapterReport};
 use census_store::Store;
 
-use super::jobs::{adapter_context, assert_some_stage_arms, collect_error, rows_written};
-use super::wire::StageOutcome;
+use super::jobs::{adapter_context, collect_error};
+mod associations;
 
 pub(super) const TEAMS_ARMS: &[(&str, TeamsArm)] = &[
     (census::SOURCE, TeamsArm::MilesplitIndex),
@@ -21,6 +19,12 @@ pub(super) const TEAMS_ARMS: &[(&str, TeamsArm)] = &[
     ("ks", TeamsArm::KsDirectory),
     ("coach_directories", TeamsArm::CoachDirectories),
     ("arbiter_orgs", TeamsArm::ArbiterOrgs),
+    ("ohsaa", TeamsArm::OhsaaSchools),
+    ("mpa", TeamsArm::MpaSchools),
+    ("riil", TeamsArm::RiilSchools),
+    ("pa_piaa", TeamsArm::PiaaSchools),
+    ("chsaa", TeamsArm::ChsaaSchools),
+    ("tssaa", TeamsArm::TssaaSchools),
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -33,6 +37,12 @@ pub(super) enum TeamsArm {
     KsDirectory,
     CoachDirectories,
     ArbiterOrgs,
+    OhsaaSchools,
+    MpaSchools,
+    RiilSchools,
+    PiaaSchools,
+    ChsaaSchools,
+    TssaaSchools,
 }
 
 pub(super) fn arm_for(slug: &str) -> Option<TeamsArm> {
@@ -42,7 +52,7 @@ pub(super) fn arm_for(slug: &str) -> Option<TeamsArm> {
         .map(|(_, arm)| *arm)
 }
 
-async fn sweep_team_source(
+pub(super) async fn team_source(
     store: &Arc<Store>,
     fetcher: &Arc<Fetcher>,
     jurisdiction: UsJurisdiction,
@@ -50,44 +60,65 @@ async fn sweep_team_source(
     refresh: bool,
     at: &str,
     slug: &str,
-) -> Result<Option<AdapterReport>, HandlerError> {
+) -> Result<Option<AdapterReport>, super::JobError> {
     let Some(arm) = arm_for(slug) else {
-        assert_some_stage_arms(slug)?;
+        super::jobs::require_stage_arm(slug)?;
         return Ok(None);
     };
-    match arm {
-        TeamsArm::MilesplitIndex => {
-            let teams = census::collect_state_teams(fetcher, store, jurisdiction, refresh)
-                .await
-                .map_err(|error| job_error(collect_error(error)))?;
-            let mut report = AdapterReport::new(census::SOURCE, "teams");
-            report.rows = u64::try_from(teams.len()).map_err(|_| {
-                TerminalError::new(format!("milesplit team count {} exceeds u64", teams.len()))
-            })?;
-            Ok(Some(report))
+    let context = || adapter_context(store, fetcher, season, refresh, at, None);
+    let report = match arm {
+        TeamsArm::MilesplitIndex => walk_milesplit(store, fetcher, jurisdiction, refresh).await,
+        TeamsArm::WiaaDirectory => {
+            walk_wiaa(store, fetcher, jurisdiction, season, refresh, at).await
         }
-        TeamsArm::WiaaDirectory => Ok(Some(
-            walk_wiaa(store, fetcher, jurisdiction, season, refresh, at).await?,
-        )),
-        TeamsArm::MshslSchools => Ok(Some(
-            walk_mshsl(store, fetcher, jurisdiction, season, refresh, at).await?,
-        )),
-        TeamsArm::PlainNamesDirectories => Ok(Some(
-            walk_plain_names(store, fetcher, jurisdiction, season, refresh, at).await?,
-        )),
-        TeamsArm::IhsaSchools => Ok(Some(
-            walk_ihsa(store, fetcher, jurisdiction, season, refresh, at).await?,
-        )),
-        TeamsArm::KsDirectory => Ok(Some(
-            walk_ks(store, fetcher, jurisdiction, season, refresh, at).await?,
-        )),
-        TeamsArm::CoachDirectories => Ok(Some(
-            walk_coach_directories(store, fetcher, jurisdiction, season, refresh, at).await?,
-        )),
-        TeamsArm::ArbiterOrgs => Ok(Some(
-            walk_arbiter_orgs(store, fetcher, jurisdiction, season, refresh, at).await?,
-        )),
-    }
+        TeamsArm::MshslSchools => {
+            walk_mshsl(store, fetcher, jurisdiction, season, refresh, at).await
+        }
+        TeamsArm::PlainNamesDirectories => {
+            walk_plain_names(store, fetcher, jurisdiction, season, refresh, at).await
+        }
+        TeamsArm::IhsaSchools => walk_ihsa(store, fetcher, jurisdiction, season, refresh, at).await,
+        TeamsArm::KsDirectory => walk_ks(store, fetcher, jurisdiction, season, refresh, at).await,
+        TeamsArm::CoachDirectories => {
+            walk_coach_directories(store, fetcher, jurisdiction, season, refresh, at).await
+        }
+        TeamsArm::ArbiterOrgs => {
+            walk_arbiter_orgs(store, fetcher, jurisdiction, season, refresh, at).await
+        }
+        TeamsArm::OhsaaSchools => associations::ohsaa(&context(), jurisdiction)
+            .await
+            .map_err(collect_error),
+        TeamsArm::MpaSchools => associations::mpa(&context(), jurisdiction)
+            .await
+            .map_err(collect_error),
+        TeamsArm::RiilSchools => associations::riil(&context()).await.map_err(collect_error),
+        TeamsArm::PiaaSchools => associations::piaa(&context(), jurisdiction)
+            .await
+            .map_err(collect_error),
+        TeamsArm::ChsaaSchools => associations::chsaa(&context(), jurisdiction)
+            .await
+            .map_err(collect_error),
+        TeamsArm::TssaaSchools => associations::tssaa(&context(), jurisdiction)
+            .await
+            .map_err(collect_error),
+    }?;
+    Ok(Some(report))
+}
+
+async fn walk_milesplit(
+    store: &Arc<Store>,
+    fetcher: &Arc<Fetcher>,
+    jurisdiction: UsJurisdiction,
+    refresh: bool,
+) -> Result<AdapterReport, super::JobError> {
+    let teams = census::collect_state_teams(fetcher, store, jurisdiction, refresh)
+        .await
+        .map_err(collect_error)?;
+    let mut report = AdapterReport::new(census::SOURCE, "teams");
+    report.rows = u64::try_from(teams.len()).map_err(|_| super::JobError::Terminal {
+        message: format!("milesplit team count {} exceeds u64", teams.len()),
+    })?;
+    Ok(report)
 }
 
 async fn walk_wiaa(
@@ -97,7 +128,7 @@ async fn walk_wiaa(
     season: SchoolYear,
     refresh: bool,
     at: &str,
-) -> Result<AdapterReport, HandlerError> {
+) -> Result<AdapterReport, super::JobError> {
     let options = census_crawl::wiaa::Options {
         limit: None,
         refresh,
@@ -108,7 +139,7 @@ async fn walk_wiaa(
     let context = adapter_context(store, fetcher, season, refresh, at, None);
     let report = census_crawl::wiaa::collect(&context, &options)
         .await
-        .map_err(|error| job_error(collect_error(error)))?;
+        .map_err(collect_error)?;
     Ok(report)
 }
 
@@ -119,7 +150,7 @@ async fn walk_mshsl(
     season: SchoolYear,
     refresh: bool,
     at: &str,
-) -> Result<AdapterReport, HandlerError> {
+) -> Result<AdapterReport, super::JobError> {
     let options = census_crawl::mshsl::Options {
         limit: None,
         refresh,
@@ -130,7 +161,7 @@ async fn walk_mshsl(
     let context = adapter_context(store, fetcher, season, refresh, at, None);
     let report = census_crawl::mshsl::collect(&context, &options)
         .await
-        .map_err(|error| job_error(collect_error(error)))?;
+        .map_err(collect_error)?;
     Ok(report)
 }
 
@@ -141,7 +172,7 @@ async fn walk_plain_names(
     season: SchoolYear,
     refresh: bool,
     at: &str,
-) -> Result<AdapterReport, HandlerError> {
+) -> Result<AdapterReport, super::JobError> {
     let options = census_crawl::plain_names::Options {
         limit: None,
         refresh,
@@ -152,7 +183,7 @@ async fn walk_plain_names(
     let context = adapter_context(store, fetcher, season, refresh, at, None);
     let report = census_crawl::plain_names::collect(&context, &options)
         .await
-        .map_err(|error| job_error(collect_error(error)))?;
+        .map_err(collect_error)?;
     Ok(report)
 }
 
@@ -163,7 +194,7 @@ async fn walk_ihsa(
     season: SchoolYear,
     refresh: bool,
     at: &str,
-) -> Result<AdapterReport, HandlerError> {
+) -> Result<AdapterReport, super::JobError> {
     let options = census_crawl::ihsa::Options {
         limit: None,
         refresh,
@@ -174,7 +205,7 @@ async fn walk_ihsa(
     let context = adapter_context(store, fetcher, season, refresh, at, None);
     let report = census_crawl::ihsa::collect(&context, &options)
         .await
-        .map_err(|error| job_error(collect_error(error)))?;
+        .map_err(collect_error)?;
     Ok(report)
 }
 
@@ -185,7 +216,7 @@ async fn walk_ks(
     season: SchoolYear,
     refresh: bool,
     at: &str,
-) -> Result<AdapterReport, HandlerError> {
+) -> Result<AdapterReport, super::JobError> {
     let options = census_crawl::ks::Options {
         limit: None,
         refresh,
@@ -196,7 +227,7 @@ async fn walk_ks(
     let context = adapter_context(store, fetcher, season, refresh, at, None);
     let report = census_crawl::ks::collect(&context, &options)
         .await
-        .map_err(|error| job_error(collect_error(error)))?;
+        .map_err(collect_error)?;
     Ok(report)
 }
 
@@ -207,7 +238,7 @@ async fn walk_coach_directories(
     season: SchoolYear,
     refresh: bool,
     at: &str,
-) -> Result<AdapterReport, HandlerError> {
+) -> Result<AdapterReport, super::JobError> {
     let options = census_crawl::coach_directories::Options {
         limit: None,
         refresh,
@@ -218,7 +249,7 @@ async fn walk_coach_directories(
     let context = adapter_context(store, fetcher, season, refresh, at, None);
     let report = census_crawl::coach_directories::collect(&context, &options)
         .await
-        .map_err(|error| job_error(collect_error(error)))?;
+        .map_err(collect_error)?;
     Ok(report)
 }
 
@@ -229,7 +260,7 @@ async fn walk_arbiter_orgs(
     season: SchoolYear,
     refresh: bool,
     at: &str,
-) -> Result<AdapterReport, HandlerError> {
+) -> Result<AdapterReport, super::JobError> {
     let options = census_crawl::arbiter::Options {
         limit: None,
         refresh,
@@ -239,47 +270,6 @@ async fn walk_arbiter_orgs(
     let context = adapter_context(store, fetcher, season, refresh, at, None);
     let report = census_crawl::arbiter::collect(&context, &options)
         .await
-        .map_err(|error| job_error(collect_error(error)))?;
+        .map_err(collect_error)?;
     Ok(report)
-}
-
-pub(super) async fn teams_stage(
-    store: Arc<Store>,
-    fetcher: Arc<Fetcher>,
-    jurisdiction: UsJurisdiction,
-    season: SchoolYear,
-    refresh: bool,
-    at: String,
-    sweepable: Vec<String>,
-) -> Result<Json<StageOutcome>, HandlerError> {
-    let mut records: usize = 0;
-    let mut errors: Vec<String> = Vec::new();
-    let mut notes: Vec<String> = Vec::new();
-    for slug in &sweepable {
-        let Some(report) =
-            sweep_team_source(&store, &fetcher, jurisdiction, season, refresh, &at, slug).await?
-        else {
-            continue;
-        };
-        let written = rows_written(&report)?;
-        records = records.saturating_add(written);
-        if report.errors > 0 {
-            errors.push(format!("{}: {} errors", slug, report.errors));
-        }
-        notes.extend(report.notes.iter().map(|n| format!("{}: {}", slug, n)));
-    }
-    if !errors.is_empty() {
-        return Err(job_error(super::JobError::Transient {
-            message: format!(
-                "incomplete teams acquisition retained {records} records: {}",
-                errors.join("; ")
-            ),
-        }));
-    }
-    Ok(Json(StageOutcome {
-        records,
-        at,
-        errors,
-        notes,
-    }))
 }

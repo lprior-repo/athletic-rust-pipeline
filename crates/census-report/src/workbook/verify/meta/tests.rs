@@ -9,6 +9,8 @@ use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use rust_xlsxwriter::Workbook;
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 const CORRUPTIONS: [(&str, usize, usize, &str); 7] = [
     ("Schools", 1, 1, "Corrupted School"),
     ("Meets", 0, 0, "Corrupted Meets"),
@@ -20,47 +22,51 @@ const CORRUPTIONS: [(&str, usize, usize, &str); 7] = [
 ];
 
 #[test]
-fn altered_metadata_cells_are_rejected() {
-    let dir = tempfile::tempdir().expect("a temp dir");
-    let store = Store::open(dir.path()).expect("a store");
+fn altered_metadata_cells_are_rejected() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     let (school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
-    store.append(Table::Schools, &school).expect("a school row");
+    store.append(Table::Schools, &school)?;
 
     let options = Options::default();
-    let good = crate::workbook::build(&store, &options).expect("the untampered workbook builds");
+    let good = crate::workbook::build(&store, &options)?;
     let frozen = good
         .parent()
-        .expect("the published generation directory")
+        .ok_or("missing published generation directory")?
         .join("frozen-input.json");
-    let dataset = ExportDataset::reopen_frozen(&frozen).expect("the published frozen input");
-    verify_frozen(&good, &dataset, &options).expect("the untampered workbook verifies");
+    let dataset = ExportDataset::reopen_frozen(&frozen)?;
+    verify_frozen(&good, &dataset, &options)?;
 
-    let expectations = Expectations::of(&dataset, &options).expect("the frozen expectations");
-    let sheets = expected_sheets(&expectations).expect("expected rows");
+    let expectations = Expectations::of(&dataset, &options)?;
+    let sheets = expected_sheets(&expectations)?;
     let target = dir.path().join("corrupt.xlsx");
     let mut book = Workbook::new();
     let mut applied = 0_usize;
     for (name, mut rows) in sheets {
         applied = applied.saturating_add(tamper(name, &mut rows));
-        write_rows(&mut book, name, &rows);
+        write_rows(&mut book, name, &rows)?;
     }
-    assert!(
+    check!(
         applied == CORRUPTIONS.len(),
         "only {applied} of {} metadata corruptions landed on a projected row",
         CORRUPTIONS.len()
     );
-    book.save(&target).expect("the corrupt workbook saves");
+    book.save(&target)?;
 
-    let error = verify_frozen(&target, &dataset, &options).expect_err("tampering is rejected");
+    let error = match verify_frozen(&target, &dataset, &options) {
+        Err(error) => error,
+        Ok(_) => return Err("tampered metadata accepted".into()),
+    };
     let detail = error.to_string();
     for (sheet, row, column, text) in CORRUPTIONS {
         let location = cell_at(sheet, row, column);
-        assert!(
+        check!(
             detail.contains(&location),
             "{location} is missing from: {detail}"
         );
-        assert!(detail.contains(text), "{text} is missing from: {detail}");
+        check!(detail.contains(text), "{text} is missing from: {detail}");
     }
+    Ok(())
 }
 
 fn tamper(name: &str, rows: &mut [Vec<Expect>]) -> usize {
@@ -77,24 +83,23 @@ fn tamper(name: &str, rows: &mut [Vec<Expect>]) -> usize {
     applied
 }
 
-fn write_rows(book: &mut Workbook, name: &str, rows: &[Vec<Expect>]) {
+fn write_rows(book: &mut Workbook, name: &str, rows: &[Vec<Expect>]) -> TestResult {
     let sheet = book.add_worksheet();
-    sheet.set_name(name).expect("a sheet name");
+    sheet.set_name(name)?;
     for (r, row) in rows.iter().enumerate() {
-        let r = u32::try_from(r).expect("a row index");
+        let r = u32::try_from(r)?;
         for (c, value) in row.iter().enumerate() {
-            let c = u16::try_from(c).expect("a column index");
+            let c = u16::try_from(c)?;
             match value {
                 Expect::Text(text) => {
-                    sheet
-                        .write_string(r, c, text.as_str())
-                        .expect("a text cell");
+                    sheet.write_string(r, c, text.as_str())?;
                 }
                 Expect::Number(number) => {
-                    sheet.write_number(r, c, *number).expect("a number cell");
+                    sheet.write_number(r, c, *number)?;
                 }
                 Expect::Empty => {}
             }
         }
     }
+    Ok(())
 }

@@ -61,8 +61,8 @@ pub fn archive_artifacts(body: &str) -> CrawlResult<Vec<ArchiveArtifact>> {
         else {
             continue;
         };
-        let path = href.split('?').next().unwrap_or(href);
-        let file = path.rsplit('/').next().unwrap_or(path);
+        let path = href.split('?').next().map_or(href, |value| value);
+        let file = path.rsplit('/').next().map_or(path, |value| value);
         let (stem, extension) = match file.rsplit_once('.') {
             Some((stem, extension)) => (stem.to_string(), extension.to_ascii_lowercase()),
             None => (file.to_string(), String::new()),
@@ -75,7 +75,7 @@ pub fn archive_artifacts(body: &str) -> CrawlResult<Vec<ArchiveArtifact>> {
                     .collect::<Vec<_>>()
                     .join(" ")
             })
-            .unwrap_or_default();
+            .map_or(Default::default(), core::convert::identity);
         let url = if href.starts_with("http") {
             href.to_string()
         } else {

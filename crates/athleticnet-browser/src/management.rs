@@ -86,8 +86,7 @@ impl Actor {
             .status
             .read()
             .ok()
-            .map(|s| s.state == BrowserState::CoolingDown)
-            .unwrap_or(false);
+            .is_some_and(|s| s.state == BrowserState::CoolingDown);
         if !is_cooling {
             self.set_state(BrowserState::Challenged);
         }
@@ -116,8 +115,7 @@ impl Actor {
                     .status
                     .read()
                     .ok()
-                    .map(|s| s.state == BrowserState::Ready)
-                    .unwrap_or(false)
+                    .is_some_and(|s| s.state == BrowserState::Ready)
                 {
                     self.set_state(BrowserState::Restarting);
                 }
@@ -138,7 +136,7 @@ impl Actor {
                         .to_str()
                         .ok()
                         .and_then(|v| v.parse::<u64>().ok())
-                        .unwrap_or(30),
+                        .map_or(30, |value| value),
                     None => 30,
                 };
                 self.apply_cooldown_duration(Duration::from_secs(delay));
@@ -153,7 +151,9 @@ impl Actor {
         let now = self.clock.now_instant();
         let until = match now.checked_add(delay) {
             Some(value) => value,
-            None => now.checked_add(Duration::from_secs(86_400)).unwrap_or(now),
+            None => now
+                .checked_add(Duration::from_secs(86_400))
+                .map_or(now, |value| value),
         };
         let current = match self.cooldown_until.lock() {
             Ok(value) => *value,

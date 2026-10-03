@@ -115,7 +115,17 @@ fn resolve_binding(
     context: &CaptureContext<'_>,
 ) -> Result<Option<CapturedRanking>, BrowserError> {
     match parse_binding(package, context.action.capture.clone()) {
-        Ok(value) => Ok(Some(value)),
+        Ok(value)
+            if validate_route(
+                &value.response_url,
+                context.origin,
+                context.action.capture.clone(),
+                &value.method,
+            ) =>
+        {
+            Ok(Some(value))
+        }
+        Ok(_) => Err(BrowserError::Redirect),
         Err(BrowserError::PayloadLimit) => {
             context.gate.revoke();
             Err(BrowserError::PayloadLimit)

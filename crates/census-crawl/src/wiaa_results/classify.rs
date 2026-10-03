@@ -24,7 +24,7 @@ impl ArtifactFormat {
 pub fn artifact_format(extension: &str, body: Option<&str>) -> ArtifactFormat {
     match extension {
         "htm" | "html" => {
-            let body = body.unwrap_or_default();
+            let body = body.map_or(Default::default(), core::convert::identity);
             if body.contains("RaceDay Scoring") || body.contains("data-display") {
                 ArtifactFormat::RaceDay
             } else {
@@ -41,7 +41,7 @@ pub fn school_year_for(date: &str, sport: Sport, archive_year: i16) -> Option<Sc
     let year = date
         .get(..4)
         .and_then(|value| value.parse::<i16>().ok())
-        .unwrap_or(archive_year);
+        .map_or(archive_year, |value| value);
     let month = date.get(5..7).and_then(|value| value.parse::<u8>().ok());
     match (month, sport) {
         (Some(month), _) => SchoolYear::containing(year, month),

@@ -1,4 +1,4 @@
-use super::coverage::{in_cohort, jurisdiction_of, school_state_index};
+use super::coverage::{in_requested_year, jurisdiction_of, school_state_index};
 use super::{is_core_evidenced, retain_core, Scope};
 use crate::export::ExportDataset;
 use census_domain::model::{
@@ -7,6 +7,9 @@ use census_domain::model::{
 };
 use census_domain::{JurisdictionBucket, UsJurisdiction};
 use std::collections::{BTreeMap, HashMap, HashSet};
+
+mod cohort;
+pub(crate) use cohort::candidates as cohort_candidates;
 
 pub(crate) fn in_run_scope(bucket: JurisdictionBucket) -> bool {
     bucket
@@ -73,9 +76,9 @@ impl<'a> Derivation<'a> {
             0
         };
         let scoped_athletes = athletes.len();
-        athletes.retain(|athlete| in_cohort(athlete, grad_year));
+        athletes.retain(|athlete| cohort::publishable(athlete, grad_year));
         let cohort: HashSet<&str> = athletes.iter().map(|athlete| athlete.id.as_str()).collect();
-        let performances = cohort_performances(dataset, scope, &cohort, athlete_aliases);
+        let performances = cohort_performances(dataset, scope, grad_year, &cohort, athlete_aliases);
         Self {
             dataset,
             scope,
@@ -174,14 +177,17 @@ impl<'a> Derivation<'a> {
 fn cohort_performances<'d>(
     dataset: &'d ExportDataset,
     scope: Scope,
+    grad_year: Option<i16>,
     cohort: &HashSet<&str>,
     aliases: &HashMap<String, String>,
 ) -> Vec<&'d CanonicalPerformance> {
-    let known_athletes: HashSet<&str> = dataset
-        .athletes
-        .iter()
-        .map(|athlete| athlete.id.as_str())
-        .collect();
+    let known_athletes = grad_year.is_none().then(|| {
+        dataset
+            .athletes
+            .iter()
+            .map(|athlete| athlete.id.as_str())
+            .collect::<HashSet<_>>()
+    });
     dataset
         .performances
         .iter()
@@ -189,7 +195,10 @@ fn cohort_performances<'d>(
         .filter(|performance| {
             let subject = performance.athlete.as_str();
             let canonical = aliases.get(subject).map_or(subject, String::as_str);
-            cohort.contains(canonical) || !known_athletes.contains(subject)
+            cohort.contains(canonical)
+                || known_athletes
+                    .as_ref()
+                    .is_some_and(|known| !known.contains(subject))
         })
         .collect()
 }
@@ -258,6 +267,10 @@ fn union_accepted_members(
             union_values(&mut row.sports, &member.sports);
             union_values(&mut row.public_profile_urls, &member.public_profile_urls);
             union_values(&mut row.observed_grades, &member.observed_grades);
+            union_values(
+                &mut row.published_graduations,
+                &member.published_graduations,
+            );
             union_values(&mut row.evidence, &member.evidence);
             union_values(&mut row.retained_conflicts, &member.retained_conflicts);
             member.identities().for_each(|identity| {

@@ -47,7 +47,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
 
     let after = ctx.fetcher.stats().await;
     let delta_requests = after.requests.saturating_sub(before.requests);
-    report.rows = u64::try_from(tally.processed).unwrap_or(u64::MAX);
+    report.rows = u64::try_from(tally.processed).map_or(u64::MAX, |value| value);
     report.requests = delta_requests;
     report.note(format!(
         "fetched {} schools from KSHSAA; {} already done; {} skipped (no AD name)",

@@ -69,6 +69,7 @@ pub use coverage::{
     coverage_report, CoverageGap, CoverageReport, CoverageTotals, GapClass, JurisdictionCoverage,
     UNKNOWN_JURISDICTION,
 };
+pub(crate) use derivation::cohort_candidates;
 pub use derivation::Derivation;
 pub use projection::build_census;
 pub use writer::write_census;

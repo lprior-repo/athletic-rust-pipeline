@@ -89,10 +89,13 @@ fn decode_row<'a>(
         .g
         .as_deref()
         .map(gender_from_token)
-        .unwrap_or(Gender::Unknown);
+        .map_or(Gender::Unknown, |value| value);
     Some(RowFacts {
         name,
-        school_name: team.school_name().unwrap_or_default().trim(),
+        school_name: team
+            .school_name()
+            .map_or(Default::default(), core::convert::identity)
+            .trim(),
         target,
         team,
         source,

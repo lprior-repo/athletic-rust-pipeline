@@ -35,7 +35,7 @@ fn count_athletes(rows: &[serde_json::Value]) -> (usize, usize, usize) {
             for identity in idents {
                 let ns_val = identity
                     .get("namespace")
-                    .unwrap_or(&serde_json::Value::Null);
+                    .map_or(&serde_json::Value::Null, |value| value);
                 let key = ns_key(ns_val);
                 namespaces.insert(key.clone());
                 if key.starts_with("legacy_athletic_net") {
@@ -60,7 +60,7 @@ fn count_meet_ids(rows: &[serde_json::Value]) -> usize {
             for identity in idents {
                 let ns_val = identity
                     .get("namespace")
-                    .unwrap_or(&serde_json::Value::Null);
+                    .map_or(&serde_json::Value::Null, |value| value);
                 let key = ns_key(ns_val);
                 if key.starts_with("legacy_athletic_net") {
                     if let Some(id) = identity.get("id").and_then(|v| v.as_str()) {

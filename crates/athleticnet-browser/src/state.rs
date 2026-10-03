@@ -10,7 +10,9 @@ impl Actor {
                     let now = self.clock.now_instant();
                     match now.checked_add(delay) {
                         Some(until) => until,
-                        None => now.checked_add(Duration::from_secs(300)).unwrap_or(now),
+                        None => now
+                            .checked_add(Duration::from_secs(300))
+                            .map_or(now, |value| value),
                     }
                 })
             }

@@ -12,6 +12,7 @@ pub(crate) fn parse_binding(
 
     let status = binding_status(data)?;
     let request_url = required_str(data, "requestUrl")?.to_string();
+    let response_url = required_str(data, "responseUrl")?.to_string();
     let method = required_str(data, "method")?.to_string();
     let request_body = data.get("requestBody").and_then(|value| value.as_str());
     if request_body.is_some_and(|body| body.len() > 64 * 1024) {
@@ -29,6 +30,7 @@ pub(crate) fn parse_binding(
         body_bytes,
         method,
         request_url,
+        response_url,
         request_body: request_body.map(str::to_owned),
         challenge,
         headers,
@@ -105,6 +107,7 @@ pub(crate) struct CapturedRanking {
     pub(crate) body_bytes: usize,
     pub(crate) method: String,
     pub(crate) request_url: String,
+    pub(crate) response_url: String,
     pub(crate) request_body: Option<String>,
     pub(crate) challenge: bool,
     pub(crate) headers: HeaderMap,
@@ -135,6 +138,7 @@ pub(crate) fn build_response(captured: CapturedRanking) -> Result<BrowserRespons
     Ok(BrowserResponse {
         status: reqwest::StatusCode::from_u16(captured.status)
             .map_err(|_| BrowserError::Protocol)?,
+        response_url: Some(captured.response_url),
         headers: captured.headers,
         body,
         rankings: Some(RankingPageObservation {

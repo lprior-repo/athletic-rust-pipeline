@@ -29,31 +29,45 @@ fn build_school_row(s: &CanonicalSchool) -> anyhow::Result<Vec<String>> {
         .iter()
         .find(|i| matches!(&i.namespace, SourceNamespace::LegacyAthleticNet { kind } | SourceNamespace::AthleticNet { kind } if kind == "team"))
         .map(|i| i.id.clone())
-        .unwrap_or_default();
+        .map_or(Default::default(), core::convert::identity);
     let ms_school = s
         .source_identities
         .iter()
         .find(|i| matches!(i.namespace, SourceNamespace::MilesplitSchool))
         .map(|i| i.id.clone())
-        .unwrap_or_default();
+        .map_or(Default::default(), core::convert::identity);
     let aliases = s.aliases.join(";");
     let (source_ns, evidence_src, ident_count) = identity_fields(s);
 
     let mut row = vec![
         s.id.as_str().to_string(),
         s.name.clone(),
-        s.state.map(|j| j.code().to_owned()).unwrap_or_default(),
-        s.city.clone().unwrap_or_default(),
-        s.association.clone().unwrap_or_default(),
-        s.classification.clone().unwrap_or_default(),
-        s.enrollment.map(|e| e.to_string()).unwrap_or_default(),
+        s.state
+            .map(|j| j.code().to_owned())
+            .map_or(Default::default(), core::convert::identity),
+        s.city
+            .clone()
+            .map_or(Default::default(), core::convert::identity),
+        s.association
+            .clone()
+            .map_or(Default::default(), core::convert::identity),
+        s.classification
+            .clone()
+            .map_or(Default::default(), core::convert::identity),
+        s.enrollment
+            .map(|e| e.to_string())
+            .map_or(Default::default(), core::convert::identity),
         if s.co_op {
             "true".to_string()
         } else {
             "false".to_string()
         },
-        s.athletics_website.clone().unwrap_or_default(),
-        s.school_website.clone().unwrap_or_default(),
+        s.athletics_website
+            .clone()
+            .map_or(Default::default(), core::convert::identity),
+        s.school_website
+            .clone()
+            .map_or(Default::default(), core::convert::identity),
         an_team,
         ms_school,
         aliases,
@@ -73,8 +87,12 @@ pub fn write_canonical_schools(
     sorted.sort_by(|a, b| {
         a.state
             .map(|j| j.code())
-            .unwrap_or_default()
-            .cmp(b.state.map(|j| j.code()).unwrap_or_default())
+            .map_or(Default::default(), core::convert::identity)
+            .cmp(
+                b.state
+                    .map(|j| j.code())
+                    .map_or(Default::default(), core::convert::identity),
+            )
             .then_with(|| a.name.cmp(&b.name))
     });
     let rows = sorted

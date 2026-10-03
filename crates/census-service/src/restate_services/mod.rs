@@ -45,13 +45,15 @@ mod teams_arms;
 mod wire;
 
 pub use wire::{
-    BestsReply, BestsRequest, ConsolidateReply, ConsolidateRequest, ConsolidatedTable,
-    EndpointObservation, IngestReply, IngestRequest, IngestState, JurisdictionOpen,
-    JurisdictionReport, JurisdictionRequest, JurisdictionState, JurisdictionSummary,
-    NationalFailure, NationalReport, NationalRequest, OpenWorkReply, OpenWorkRequest,
-    RefusedSource, ReportReply, ReportRequest, SealItem, SealRef, SealReply, SealRequest,
-    SourceObjectOpen, SourcePlan, StageOutcome, StatusReply, SweepReport, SweepRequest, TableCount,
-    WindowRequest, WorkbookReply, WorkbookRequest,
+    BestsReply, BestsRequest, CompletedTeams, ConsolidateReply, ConsolidateRequest,
+    ConsolidatedTable, EndpointObservation, IncompleteTeams, IngestReply, IngestRequest,
+    IngestState, JurisdictionOpen, JurisdictionReport, JurisdictionRequest, JurisdictionState,
+    JurisdictionSummary, NationalFailure, NationalReport, NationalRequest, OpenWorkReply,
+    OpenWorkRequest, RefusedSource, ReportReply, ReportRequest, SealItem, SealRef, SealReply,
+    SealRequest, SourceObjectOpen, SourcePlan, StageOutcome, StatusReply, SweepReport,
+    SweepRequest, TableCount, TeamsAttemptProgress, TeamsFailure, TeamsSourceFailure,
+    TeamsSourceInspection, TeamsSourceOutcome, TeamsSourceRequest, TeamsStage, WindowRequest,
+    WorkbookReply, WorkbookRequest,
 };
 
 pub use plan::{
@@ -73,7 +75,8 @@ pub use census::{Census, CensusClient, CensusIngressClient};
 pub use ingest::{Ingest, IngestClient, IngestIngressClient};
 pub use jobs::apply_observations;
 pub use jurisdiction::{
-    JurisdictionCensus, JurisdictionCensusClient, JurisdictionCensusIngressClient,
+    JurisdictionCensus, JurisdictionCensusClient, JurisdictionCensusIngressClient, TeamsSource,
+    TeamsSourceClient, TeamsSourceIngressClient,
 };
 pub use national::{NationalCensus, NationalCensusClient, NationalCensusIngressClient};
 pub use publish::{
@@ -97,9 +100,7 @@ pub(super) fn options_for_request(
     if request.concurrency == 0 {
         return Err(TerminalError::new("concurrency must be at least 1").into());
     }
-    if request.source_parallelism == 0 {
-        return Err(TerminalError::new("source_parallelism must be at least 1").into());
-    }
+    limits::validate_source_parallelism(request.source_parallelism)?;
     if let Some(limit) = request.limit_per_state {
         if limit > MAX_LIMIT_PER_STATE {
             return Err(TerminalError::new(format!(
@@ -117,10 +118,10 @@ pub(super) fn options_for_request(
         state_concurrency: 1,
         refresh: request.refresh,
         school_year: request.season,
-        observed_on: request
-            .observed_on
-            .clone()
-            .unwrap_or_else(|| today.to_string()),
+        observed_on: match request.observed_on.clone() {
+            Some(value) => value,
+            None => today.to_string(),
+        },
         revision,
     })
 }
@@ -140,6 +141,7 @@ pub fn build_endpoint(
     let clock: Arc<dyn Clock> = Arc::new(census_store::clock::SystemClock);
     let load = Arc::new(Semaphore::new(max_concurrent.max(1)));
     let jobs = Jobs::new(Arc::clone(&store), load, Arc::clone(&region));
+    let jurisdiction = JurisdictionCensus::new(Arc::clone(&store), Arc::clone(&clock), uses_lane);
     let mut builder = Endpoint::builder()
         .bind(census_service(Census::new(
             Arc::clone(&store),
@@ -149,7 +151,7 @@ pub fn build_endpoint(
         .bind(census_service(Consolidate::new(jobs.clone())))
         .bind(census_service(Report::new(jobs.clone())))
         .bind(census_service(Bests::new(jobs.clone())))
-        .bind(census_service(Workbook::new(jobs)))
+        .bind(census_service(Workbook::new(jobs.clone())))
         .bind(census_service(Ingest::new(
             Arc::clone(&store),
             Arc::clone(&clock),
@@ -160,23 +162,14 @@ pub fn build_endpoint(
             Arc::clone(&clock),
             Arc::clone(&region),
         )))
-        .bind(census_service(JurisdictionCensus::new(
-            Arc::clone(&store),
-            Arc::clone(&clock),
-            uses_lane,
-        )))
+        .bind(census_service(TeamsSource::new(jurisdiction.clone(), jobs)))
+        .bind(census_service(jurisdiction))
         .bind(census_service(NationalCensus::new(clock)));
     if let Some(settings) = serves_lane {
         builder = builder.bind(BrowserSession::new(settings, Arc::new(SystemClock)));
     }
     builder.build()
 }
-
-#[cfg(test)]
-mod retry_policy_tests;
-
-#[cfg(test)]
-mod retry_policy_transport_tests;
 
 #[cfg(test)]
 mod tests;

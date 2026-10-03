@@ -32,8 +32,8 @@ pub fn parse_directory(html: &str) -> Vec<SchoolEntry> {
             .get(SCHOOL_LIST_WRAPPER.len()..)
             .and_then(|after| after.find(SCHOOL_LIST_WRAPPER))
             .and_then(|next| SCHOOL_LIST_WRAPPER.len().checked_add(next))
-            .unwrap_or(wrapper.len());
-        let wrapper = wrapper.get(..span).unwrap_or_default();
+            .map_or(wrapper.len(), |value| value);
+        let wrapper = wrapper.get(..span).map_or(Default::default(), core::convert::identity);
 
         let school_id = html
             .get(..wrapper_start)
@@ -84,7 +84,7 @@ pub fn parse_staff_table(html: &str) -> Vec<CoachRow> {
     let Some(table_start) = html.find(SCHOOL_STAFF_TABLE) else {
         return Vec::new();
     };
-    let mut rest = html.get(table_start..).unwrap_or_default();
+    let mut rest = html.get(table_start..).map_or(Default::default(), core::convert::identity);
 
     let mut rows = Vec::new();
     while let Some(tr_start) = rest.find("<tr>") {

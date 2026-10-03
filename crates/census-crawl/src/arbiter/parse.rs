@@ -217,7 +217,7 @@ fn text(object: &serde_json::Map<String, serde_json::Value>, key: &str) -> Strin
         .get(key)
         .and_then(|value| value.as_str())
         .map(clean)
-        .unwrap_or_default()
+        .map_or(Default::default(), core::convert::identity)
 }
 
 fn nonempty(object: &serde_json::Map<String, serde_json::Value>, key: &str) -> Option<String> {

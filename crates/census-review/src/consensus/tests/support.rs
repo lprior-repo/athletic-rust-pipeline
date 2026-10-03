@@ -10,27 +10,29 @@ use serde_json::Value;
 
 use crate::{ModelClient, ModelOptions, ReviewFamily, ReviewOptions};
 
+pub(crate) type TestResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
+
 pub(crate) struct Fixture {
     pub(crate) store: std::sync::Arc<Store>,
     _dir: tempfile::TempDir,
 }
 
 impl Fixture {
-    pub(crate) fn school() -> (Self, ReviewCase) {
-        let dir = tempfile::tempdir().expect("temporary store");
-        let store = Store::open(dir.path()).expect("store opens");
-        let case = add_school(&store, "Madison West");
-        (
+    pub(crate) fn school() -> TestResult<(Self, ReviewCase)> {
+        let dir = tempfile::tempdir()?;
+        let store = Store::open(dir.path())?;
+        let case = add_school(&store, "Madison West")?;
+        Ok((
             Self {
                 store: std::sync::Arc::new(store),
                 _dir: dir,
             },
             case,
-        )
+        ))
     }
 }
 
-pub(crate) fn add_school(store: &Store, name: &str) -> ReviewCase {
+pub(crate) fn add_school(store: &Store, name: &str) -> TestResult<ReviewCase> {
     let (mut school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, name, name);
     school.state = None;
     school.city = Some("Madison".to_string());
@@ -41,13 +43,9 @@ pub(crate) fn add_school(store: &Store, name: &str) -> ReviewCase {
         name,
         "no jurisdiction from any source",
     );
-    store
-        .append_many(Table::Schools, &[school])
-        .expect("school written");
-    store
-        .replace_many(Table::ReviewCases, std::slice::from_ref(&case))
-        .expect("case written");
-    case
+    store.append_many(Table::Schools, &[school])?;
+    store.replace_many(Table::ReviewCases, std::slice::from_ref(&case))?;
+    Ok(case)
 }
 
 pub(crate) fn options() -> ReviewOptions {
@@ -58,13 +56,10 @@ pub(crate) fn options() -> ReviewOptions {
     }
 }
 
-pub(crate) fn client(endpoint: &str) -> ModelClient {
-    ModelClient::new(
-        ModelOptions::local(endpoint, "same-model-name")
-            .expect("local endpoint")
-            .with_timeout(Duration::from_secs(3)),
-    )
-    .expect("model client")
+pub(crate) fn client(endpoint: &str) -> TestResult<ModelClient> {
+    Ok(ModelClient::new(
+        ModelOptions::local(endpoint, "same-model-name")?.with_timeout(Duration::from_secs(3)),
+    )?)
 }
 
 pub(crate) fn batch(case: &ReviewCase, kind: &str, field: &str, value: &str) -> String {
@@ -76,70 +71,70 @@ pub(crate) fn batch(case: &ReviewCase, kind: &str, field: &str, value: &str) -> 
     .to_string()
 }
 
-pub(crate) fn lane(contents: Vec<String>) -> (String, JoinHandle<Vec<Value>>) {
-    lane_with(contents, |_, _| {})
+pub(crate) fn lane(
+    contents: Vec<String>,
+) -> TestResult<(String, JoinHandle<TestResult<Vec<Value>>>)> {
+    lane_with(contents, |_, _| Ok(()))
 }
 
 pub(crate) fn lane_with(
     contents: Vec<String>,
-    after_request: impl Fn(usize, &Value) + Send + 'static,
-) -> (String, JoinHandle<Vec<Value>>) {
-    let listener = TcpListener::bind("127.0.0.1:0").expect("ephemeral port");
-    let address = listener.local_addr().expect("bound address");
-    listener.set_nonblocking(true).expect("bounded accept");
+    after_request: impl Fn(usize, &Value) -> TestResult + Send + 'static,
+) -> TestResult<(String, JoinHandle<TestResult<Vec<Value>>>)> {
+    let listener = TcpListener::bind("127.0.0.1:0")?;
+    let address = listener.local_addr()?;
+    listener.set_nonblocking(true)?;
     let handle = std::thread::spawn(move || {
         contents
             .into_iter()
             .enumerate()
-            .map(|(index, content)| {
+            .map(|(index, content)| -> TestResult<Value> {
                 let deadline = std::time::Instant::now() + Duration::from_secs(5);
                 let mut stream = loop {
                     match listener.accept() {
                         Ok((stream, _)) => break stream,
                         Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-                            assert!(
-                                std::time::Instant::now() < deadline,
-                                "review request never arrived"
-                            );
+                            if std::time::Instant::now() >= deadline {
+                                return Err("review request never arrived".into());
+                            }
                             std::thread::yield_now();
                         }
-                        Err(error) => panic!("local accept: {error}"),
+                        Err(error) => return Err(error.into()),
                     }
                 };
-                stream
-                    .set_read_timeout(Some(Duration::from_secs(3)))
-                    .expect("read timeout");
-                stream
-                    .set_write_timeout(Some(Duration::from_secs(3)))
-                    .expect("write timeout");
-                let request = read_request(&mut stream);
-                after_request(index, &request);
-                write_reply(&mut stream, &content);
-                request
+                stream.set_read_timeout(Some(Duration::from_secs(3)))?;
+                stream.set_write_timeout(Some(Duration::from_secs(3)))?;
+                let request = read_request(&mut stream)?;
+                after_request(index, &request)?;
+                write_reply(&mut stream, &content)?;
+                Ok(request)
             })
             .collect()
     });
-    (format!("http://{address}"), handle)
+    Ok((format!("http://{address}"), handle))
 }
 
-pub(crate) fn write_reply(stream: &mut TcpStream, content: &str) {
+pub(crate) fn write_reply(stream: &mut TcpStream, content: &str) -> TestResult {
     let body =
         serde_json::json!({ "choices": [{ "message": { "content": content } }] }).to_string();
     let response = format!("HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{body}", body.len());
-    stream
-        .write_all(response.as_bytes())
-        .expect("response written");
-    stream.flush().expect("response flushed");
+    stream.write_all(response.as_bytes())?;
+    stream.flush()?;
+    Ok(())
 }
 
-pub(crate) fn read_request(stream: &mut TcpStream) -> Value {
+pub(crate) fn read_request(stream: &mut TcpStream) -> TestResult<Value> {
     let mut request = Vec::new();
     let mut buffer = [0_u8; 1024];
     loop {
-        let count = stream.read(&mut buffer).expect("request bytes");
-        assert_ne!(count, 0, "request ended early");
+        let count = stream.read(&mut buffer)?;
+        if count == 0 {
+            return Err("request ended early".into());
+        }
         request.extend_from_slice(&buffer[..count]);
-        assert!(request.len() <= 1_100_000, "bounded request");
+        if request.len() > 1_100_000 {
+            return Err("bounded request".into());
+        }
         let Some(head) = request.windows(4).position(|bytes| bytes == b"\r\n\r\n") else {
             continue;
         };
@@ -149,31 +144,28 @@ pub(crate) fn read_request(stream: &mut TcpStream) -> Value {
             .find_map(|line| {
                 let (name, value) = line.split_once(':')?;
                 name.eq_ignore_ascii_case("content-length")
-                    .then(|| value.trim().parse::<usize>().expect("content length"))
+                    .then(|| value.trim().parse::<usize>())
             })
-            .expect("known body length");
-        if request.len() >= body + length {
-            return serde_json::from_slice(&request[body..body + length]).expect("request JSON");
+            .ok_or("known body length")??;
+        let end = body.checked_add(length).ok_or("request length overflow")?;
+        if request.len() >= end {
+            return Ok(serde_json::from_slice(&request[body..end])?);
         }
     }
 }
 
-pub(crate) fn row(store: &Store) -> ReviewVerdictRecord {
-    let rows = store
-        .scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)
-        .expect("verdict rows");
-    assert_eq!(rows.len(), 1);
-    rows.into_iter().next().expect("consensus row")
+pub(crate) fn row(store: &Store) -> TestResult<ReviewVerdictRecord> {
+    let rows = store.scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)?;
+    check!(eq; rows.len(), 1);
+    Ok(rows.into_iter().next().ok_or("consensus row")?)
 }
 
-pub(crate) fn audit(store: &Store) -> Value {
-    serde_json::from_str(&row(store).rationale).expect("durable advice envelope")
+pub(crate) fn audit(store: &Store) -> TestResult<Value> {
+    Ok(serde_json::from_str(&row(store)?.rationale)?)
 }
 
-pub(crate) fn state(store: &Store) -> census_domain::model::ReviewState {
-    let rows = store
-        .scan::<ReviewCase>(Table::ReviewCases)
-        .expect("case rows");
-    assert_eq!(rows.len(), 1);
-    rows[0].state
+pub(crate) fn state(store: &Store) -> TestResult<census_domain::model::ReviewState> {
+    let rows = store.scan::<ReviewCase>(Table::ReviewCases)?;
+    check!(eq; rows.len(), 1);
+    Ok(rows.first().ok_or("case row")?.state)
 }

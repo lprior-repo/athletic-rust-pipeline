@@ -31,6 +31,17 @@ pub(super) mod national;
 
 pub use national::{JurisdictionSummary, NationalFailure, NationalReport, NationalRequest};
 
+mod teams;
+pub use teams::{CompletedTeams, IncompleteTeams, TeamsFailure, TeamsStage};
+mod teams_sources;
+pub use teams_sources::{
+    TeamsAttemptProgress, TeamsSourceFailure, TeamsSourceInspection, TeamsSourceOutcome,
+    TeamsSourceRequest,
+};
+
+#[cfg(test)]
+mod teams_tests;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TableCount {
     pub table: String,
@@ -172,8 +183,7 @@ pub struct JurisdictionState {
     pub identity: String,
     #[serde(default)]
     pub plan: Option<SourcePlan>,
-    #[serde(default)]
-    pub teams: Option<StageOutcome>,
+    pub teams: TeamsStage,
     #[serde(default)]
     pub rosters: Option<StateProgress>,
     #[serde(default)]

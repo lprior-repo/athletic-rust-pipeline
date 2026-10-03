@@ -67,7 +67,7 @@ pub(super) async fn drive_capture(
     let evaluation = capture.page.evaluate_function(call);
     tokio::pin!(evaluation);
     let now = clock.now_instant();
-    let deadline = now.checked_add(request_timeout).unwrap_or(now);
+    let deadline = now.checked_add(request_timeout).map_or(now, |value| value);
     let FetchListeners {
         mut requests,
         mut responses,

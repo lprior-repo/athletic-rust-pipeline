@@ -22,7 +22,7 @@ pub fn parse(body: &str, source: SourceRef, year: i16) -> CrawlResult<ParsedMeet
     let tables = read_tables(body, tags, &patterns, gender, division);
     if tables.events.is_empty() {
         return Err(CrawlError::Schema {
-            url: source.url.unwrap_or(source.id),
+            url: source.url.map_or(source.id, |value| value),
             detail: "no events parsed from RaceDay export".to_string(),
         });
     }

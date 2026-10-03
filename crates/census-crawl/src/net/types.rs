@@ -96,6 +96,8 @@ pub struct FetchOptions {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FetchOutcome {
     pub url: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub response_url: Option<String>,
     pub method: String,
     pub status: u16,
     pub content_digest: String,
@@ -169,10 +171,10 @@ impl FetchStats {
 
 pub(crate) fn host_of(url: &str) -> String {
     match reqwest::Url::parse(url) {
-        Ok(parsed) => parsed
-            .host_str()
-            .map(str::to_string)
-            .unwrap_or_else(|| url.to_string()),
+        Ok(parsed) => match parsed.host_str().map(str::to_string) {
+            Some(value) => value,
+            None => url.to_string(),
+        },
         Err(_) => url.to_string(),
     }
 }

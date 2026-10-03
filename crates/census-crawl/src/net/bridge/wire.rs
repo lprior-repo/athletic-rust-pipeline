@@ -26,6 +26,8 @@ pub struct SearchBody {
 #[serde(deny_unknown_fields)]
 pub struct BrowserResponse {
     pub status: u16,
+    #[serde(default)]
+    pub response_url: Option<Box<str>>,
     pub headers: Vec<(String, String)>,
     pub body: String,
     pub rankings: Option<RankingPageObservation>,

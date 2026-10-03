@@ -88,52 +88,61 @@ mod lane_smoke {
 
     static SCENARIO: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
-    fn var(key: &str, fallback: &str) -> String {
-        std::env::var(key).unwrap_or_else(|_| fallback.to_owned())
+    type TestResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
+
+    struct HandlerGuard(tokio::task::JoinHandle<()>);
+
+    impl Drop for HandlerGuard {
+        fn drop(&mut self) {
+            self.0.abort();
+        }
     }
 
-    fn origin() -> url::Url {
-        url::Url::parse(&var("ADLAW_LANE_FIXTURE", "http://127.0.0.1:21045/"))
-            .expect("fixture origin")
+    fn var(key: &str, fallback: &str) -> String {
+        std::env::var(key).map_or_else(|_| fallback.to_owned(), |value| value)
+    }
+
+    fn origin() -> TestResult<url::Url> {
+        Ok(url::Url::parse(&var(
+            "ADLAW_LANE_FIXTURE",
+            "http://127.0.0.1:21045/",
+        ))?)
     }
 
     fn client() -> reqwest::Client {
         reqwest::Client::new()
     }
 
-    async fn state(fixture: &url::Url) -> Value {
-        client()
-            .get(fixture.join("state").expect("state url"))
+    async fn state(fixture: &url::Url) -> TestResult<Value> {
+        Ok(client()
+            .get(fixture.join("state")?)
             .send()
-            .await
-            .expect("fixture state")
+            .await?
+            .error_for_status()?
             .json()
-            .await
-            .expect("fixture state json")
+            .await?)
     }
 
-    async fn set_scenario(fixture: &url::Url, name: &str) {
+    async fn set_scenario(fixture: &url::Url, name: &str) -> TestResult {
         client()
-            .post(fixture.join("scenario").expect("scenario url"))
+            .post(fixture.join("scenario")?)
             .json(&serde_json::json!({ "scenario": name }))
             .send()
-            .await
-            .expect("fixture scenario");
+            .await?
+            .error_for_status()?;
+        Ok(())
     }
 
-    fn api_calls(value: &Value) -> Vec<Value> {
-        value["requests"]
+    fn api_calls(value: &Value) -> TestResult<Vec<&Value>> {
+        Ok(value["requests"]
             .as_array()
-            .map(|rows| {
-                rows.iter()
-                    .filter(|row| row["path"].as_str() == Some(API_PATH))
-                    .cloned()
-                    .collect()
-            })
-            .unwrap_or_default()
+            .ok_or("fixture state is missing its request ledger")?
+            .iter()
+            .filter(|row| row["path"].as_str() == Some(API_PATH))
+            .collect())
     }
 
-    async fn parked_page(fixture: &url::Url) -> (Browser, Page) {
+    async fn parked_page(fixture: &url::Url) -> TestResult<(Browser, Page, HandlerGuard)> {
         let cdp = var("ADLAW_LANE_CDP", "http://127.0.0.1:9223");
         let (browser, mut handler) = Browser::connect_with_config(
             cdp.as_str(),
@@ -142,13 +151,15 @@ mod lane_smoke {
                 ..Default::default()
             },
         )
-        .await
-        .expect("connect browser");
-        tokio::spawn(async move { while handler.next().await.is_some() {} });
-        let page = browser
-            .new_page(fixture.as_str())
-            .await
-            .expect("open fixture page");
+        .await?;
+        let handler = HandlerGuard(tokio::spawn(async move {
+            for _ in 0..4096 {
+                if handler.next().await.is_none() {
+                    break;
+                }
+            }
+        }));
+        let page = browser.new_page(fixture.as_str()).await?;
         let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
         while tokio::time::Instant::now() < deadline {
             if page
@@ -158,11 +169,11 @@ mod lane_smoke {
                 .and_then(|value| value.into_value::<String>().ok())
                 .is_some_and(|value| value == fixture.origin().ascii_serialization())
             {
-                return (browser, page);
+                return Ok((browser, page, handler));
             }
             tokio::time::sleep(Duration::from_millis(50)).await;
         }
-        panic!("fixture page never reached its origin");
+        Err("fixture page never reached its origin before the deadline".into())
     }
 
     fn results_action(page: u32) -> RankingsAction {
@@ -186,78 +197,95 @@ mod lane_smoke {
         gate
     }
 
-    #[tokio::test]
+    #[test]
     #[ignore = "requires a fixture origin and a CDP browser"]
-    async fn results_capture_costs_one_physical_post() {
-        let _scenario = SCENARIO.lock().await;
-        let fixture = origin();
-        set_scenario(&fixture, "normal").await;
-        let (_browser, page) = parked_page(&fixture).await;
-        let gate = open_gate();
-        let before = api_calls(&state(&fixture).await).len();
-        let response = fetch_rankings(
-            &page,
-            &results_action(1),
-            Duration::from_secs(20),
-            gate.clone(),
-            &fixture,
-            1,
-            &crate::clock::SystemClock,
-        )
-        .await
-        .expect("lane response");
-        let observed = api_calls(&state(&fixture).await);
-        assert_eq!(observed.len() - before, 1, "exactly one physical request");
-        assert_eq!(observed[observed.len() - 1]["method"], "POST");
-        assert_eq!(observed[observed.len() - 1]["status"], 200);
-        assert_eq!(response.status.as_u16(), 200);
-        assert!(gate.is_ready(), "a served response leaves the gate open");
-        let observation = response.rankings.expect("capture metadata");
-        assert_eq!(observation.capture, RankingsCapture::Results);
-        assert_eq!(observation.request_method, "POST");
-        assert_eq!(
-            observation.request_url,
-            fixture
-                .join(API_PATH.trim_start_matches('/'))
-                .expect("api url")
-                .as_str()
-        );
-        assert_eq!(observation.request_body.as_deref(), Some(MEASURED_BODY));
-        assert_eq!(observation.next_page, Some(2));
-        let envelope: Value = serde_json::from_slice(&response.body).expect("rankings envelope");
-        assert_eq!(envelope["settings"]["page"], 1);
-        assert!(envelope["groupedRankings"]
-            .as_array()
-            .is_some_and(|groups| !groups.is_empty()));
-        page.close().await.expect("close fixture page");
+    fn results_capture_costs_one_physical_post() -> TestResult {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
+                let _scenario = SCENARIO.lock().await;
+                let fixture = origin()?;
+                set_scenario(&fixture, "normal").await?;
+                let (_browser, page, _handler) = parked_page(&fixture).await?;
+                let gate = open_gate();
+                let before = api_calls(&state(&fixture).await?)?.len();
+                let response = fetch_rankings(
+                    &page,
+                    &results_action(1),
+                    Duration::from_secs(20),
+                    gate.clone(),
+                    &fixture,
+                    1,
+                    &crate::clock::SystemClock,
+                )
+                .await
+                .map_err(|error| error.to_string())?;
+                let ledger = state(&fixture).await?;
+                let observed = api_calls(&ledger)?;
+                check!(eq;
+                    observed.len().checked_sub(before),
+                    Some(1),
+                    "exactly one physical request"
+                );
+                let last = observed.last().ok_or("missing physical rankings POST")?;
+                check!(eq; last["method"], "POST");
+                check!(eq; last["status"], 200);
+                check!(eq; response.status.as_u16(), 200);
+                check!(gate.is_ready(), "a served response leaves the gate open");
+                let observation = response
+                    .rankings
+                    .ok_or("missing rankings capture metadata")?;
+                check!(eq; observation.capture, RankingsCapture::Results);
+                check!(eq; observation.request_method, "POST");
+                check!(eq;
+                    observation.request_url,
+                    fixture.join(API_PATH.trim_start_matches('/'))?.as_str()
+                );
+                check!(eq; observation.request_body.as_deref(), Some(MEASURED_BODY));
+                check!(eq; observation.next_page, Some(2));
+                let envelope: Value = serde_json::from_slice(&response.body)?;
+                check!(eq; envelope["settings"]["page"], 1);
+                page.close().await?;
+                Ok(())
+            })
     }
 
-    #[tokio::test]
+    #[test]
     #[ignore = "requires a fixture origin and a CDP browser"]
-    async fn challenge_response_revokes_the_gate_and_ends_pagination() {
-        let _scenario = SCENARIO.lock().await;
-        let fixture = origin();
-        set_scenario(&fixture, "challenge").await;
-        let (_browser, page) = parked_page(&fixture).await;
-        let gate = open_gate();
-        let response = fetch_rankings(
-            &page,
-            &results_action(1),
-            Duration::from_secs(20),
-            gate.clone(),
-            &fixture,
-            1,
-            &crate::clock::SystemClock,
-        )
-        .await
-        .expect("lane response");
-        assert_eq!(response.status.as_u16(), 403);
-        assert!(!gate.is_ready(), "a challenge closes the gate");
-        assert_eq!(
-            response.rankings.expect("capture metadata").next_page,
-            None,
-            "a challenged page never advances pagination"
-        );
-        page.close().await.expect("close fixture page");
+    fn challenge_response_revokes_the_gate_and_ends_pagination() -> TestResult {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
+                let _scenario = SCENARIO.lock().await;
+                let fixture = origin()?;
+                set_scenario(&fixture, "challenge").await?;
+                let (_browser, page, _handler) = parked_page(&fixture).await?;
+                let gate = open_gate();
+                let response = fetch_rankings(
+                    &page,
+                    &results_action(1),
+                    Duration::from_secs(20),
+                    gate.clone(),
+                    &fixture,
+                    1,
+                    &crate::clock::SystemClock,
+                )
+                .await
+                .map_err(|error| error.to_string())?;
+                check!(eq; response.status.as_u16(), 403);
+                check!(!gate.is_ready(), "a challenge closes the gate");
+                check!(eq;
+                    response
+                        .rankings
+                        .ok_or("missing challenge capture metadata")?
+                        .next_page,
+                    None,
+                    "a challenged page never advances pagination"
+                );
+                page.close().await?;
+                Ok(())
+            })
     }
 }

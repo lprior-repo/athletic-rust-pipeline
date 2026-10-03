@@ -9,10 +9,10 @@ mod row;
 #[cfg(test)]
 mod tests;
 
-pub(crate) use effect::read_owned_meet;
+pub(crate) use effect::{acquisition_manifest_key, read_owned_meet};
 pub use parse::parse_owned_meet;
 
-pub const OWNED_MEET_PHASE: &str = "milesplit_owned_meet_v1";
+pub const OWNED_MEET_PHASE: &str = "milesplit_owned_meet_v3";
 pub const OWNED_CAPTURE_PHASE: &str = "milesplit_owned_capture_v1";
 pub const OWNED_FIELDS: &str = "id,meetId,teamId,teamName,athleteId,firstName,lastName,gender,divisionId,divisionName,meetResultsId,meetResultsDivisionId,resultsDivisionId,gradYear,eventName,eventCode,eventDistance,round,roundName,heat,units,mark,place,windReading,profileUrl,statusCode";
 pub const MAX_OWNED_BODY_BYTES: usize = 32 * 1024 * 1024;
@@ -91,12 +91,19 @@ pub enum OwnedRejectionKind {
     ProfileMismatch,
     InvalidContext,
     DuplicateResult,
+    TeamRelay,
 }
 
 impl OwnedMeetPage {
+    pub fn individual_parse_complete(&self) -> bool {
+        self.rejected
+            .iter()
+            .all(|row| row.kind == OwnedRejectionKind::TeamRelay)
+            && self.rows.len().checked_add(self.rejected.len()) == Some(self.published_rows)
+    }
+
     pub fn ownership_complete(&self) -> bool {
-        self.rejected.is_empty()
-            && self.rows.len() == self.published_rows
+        self.individual_parse_complete()
             && matches!(self.completeness, OwnedCompleteness::ExplicitTotal { total } if total == self.published_rows)
     }
 }

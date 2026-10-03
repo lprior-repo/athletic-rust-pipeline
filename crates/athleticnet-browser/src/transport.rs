@@ -61,6 +61,7 @@ struct FetchResult {
 #[derive(Debug, Clone)]
 struct ResponseEvidence {
     status: u16,
+    response_url: String,
     headers: HeaderMap,
 }
 
@@ -128,6 +129,10 @@ fn record_response(
         *challenge_seen = true;
         gate.revoke();
     }
-    *response = Some(ResponseEvidence { status, headers });
+    *response = Some(ResponseEvidence {
+        status,
+        response_url: event.response.url.clone(),
+        headers,
+    });
     Ok(())
 }

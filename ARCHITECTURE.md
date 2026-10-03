@@ -113,7 +113,12 @@ completion boundaries. A queue is a bounded accelerator, never the authority for
 Admission is per remote origin and counts physical requests. Share budgets across endpoints,
 workflows and tabs, including related Athletic.net surfaces. Concurrency does not multiply a source
 budget. Bound payloads, redirects, pages, tasks and queued work; revalidate redirect destinations
-and protect local/private network boundaries.
+and protect local/private network boundaries. An authorized redirect still cannot cross from
+direct HTTP into a browser-only provider; refuse it before dispatch rather than changing lanes.
+Pre-follow and post-response admission use the same redirect decision: a destination may remain
+on the original request's scheme, parsed hostname and effective port, or match an existing explicit
+hostname grant. A same-host scheme or port change is not implicitly authorized. DNS/private-address
+and browser-lane validation remain independent checks before dispatch.
 
 Robots.txt is read for pacing only: a `Crawl-delay` published for `User-agent: *` paces that host,
 while an absent, unreadable or non-200 robots.txt publishes no policy and never blocks a request. No
@@ -171,9 +176,28 @@ defines adapter integration and [source reports](research/sources/) retain quali
 Every material claim must resolve to durable captured bytes
 and a source locator. A URL, digest or parse count alone is not an archive. Partial parses retain
 valid rows, rejected locators and the unfinished obligation.
+Acquisition retains the original request URL separately from the optional observed final response
+URL. Historical absence means unknown, never an inferred redirect destination. Roster acquisition
+requires consistent requested, observed and authoritative published-document team ownership;
+foreign or ownerless captures remain archived without entering the accepted roster population.
+Published owner declarations are decoded HTML tokens, not tag-shaped bytes in attributes,
+comments, raw text, templates or embedded foreign namespaces. Ignore inert markup without
+discarding contradictory authoritative declarations.
+Result completion binds immutable owned/raw captures and the projected context. A changed capture
+or projection cannot be suppressed by a bare meet/result-set identifier; identical row effects
+remain idempotent and old captures and receipts remain preserved.
+Acquisition manifests bind stable observed metadata separately from content-addressed byte
+chunks. Identical bytes acquired at a different actual time or final URL retain separate manifests
+sharing the same original chunks; cache replay alone does not create a new acquisition.
+Partial interpretations and rejected locators are immutable and identical replay is a no-op.
+Normalize typed set-valued entity evidence before hashing physical application witnesses;
+do not reorder semantically ordered marks, rounds, heats or provider arrays.
+
 
 Canonical schools may retain validated `SchoolPostalAddress` claims: published street/address,
 exact association-school owner, source label, parsed capture URL/date and capture SHA256.
+Parsed claim evidence uses the capture's actual `fetched_at`, not the adapter evaluation instant.
+Replaying the same bytes does not advance address, school or coach evidence freshness.
 `add_postal_address` checks that owner and jurisdiction against the school; publication refuses
 foreign claims rather than joining by school text. The additive `postal_addresses` field defaults
 to an empty vector for historical records and omits an empty vector on serialization. Absence is
@@ -192,14 +216,37 @@ Owned structured results preserve published person, team, meet, result-set and e
 Reject malformed, foreign, duplicate or mismatched ownership rather than replacing it with a name
 lookup. Explicit complete counts, retained valid rows, rejected locators and refused/partial
 captures remain distinct; successfully parsing some rows cannot certify a complete meet.
+The MileSplit result-set bridge resolves schools only through unique positive `MilesplitSchool`
+provider team IDs. Structured owner-bound rows supply names, cohort and marks; the raw document
+supplies published meet date, sport and school year, with requested/captured/published/canonical
+URLs bound to the same meet and result set. Raw names or grades never replace structured ownership.
+Directly published graduation years are retained as typed `PublishedGraduation` claims with their
+publisher source reference, separately from grade/year observations. No collector season is used
+to invent a grade. Canonical cohort confidence considers both forms and retains contradictions;
+historical missing typed claims remain unknown rather than being reconstructed from notes.
+Accepted-alias publication unions both grade and published-graduation claims before cohort
+derivation. Direct-year contradictions remain coverage conflicts even without grade observations;
+published-year evidence contributes to cohort evidence counts without manufacturing grade rows.
+Projection receipts are distinct from source-interpretation receipts and census acceptance.
+Completed projection replay rebuilds the current accumulator without reappending committed effects.
+Partial projection writes use `milesplit_result_set_effects_v1` table/content-digest application
+witnesses, atomically committed with rows and disposition receipts. Unchanged partial replay retains
+its unfinished obligation without duplicating physical facts; newly available exact school bindings
+can add previously unresolved entities without rewriting unchanged source observations.
+Partial mappings remain unfinished; source completeness may remain Unknown after projection.
 
 All reports, workbook sheets and audit outputs use one immutable export dataset derived from one
 input generation. Do not rebuild identity, cohort, contact, coverage or PR rules in writers. Keep
 candidate statuses and accepted aliases distinct; athletes without performances remain in the
 population, and unresolved joins remain explicit coverage outcomes. Core evidence scope is not
 interchangeable with geographic scope or cohort eligibility.
-Publication policy revision 3 fences accepted-alias, postal-field and full-cell summary changes;
-older policy-1/2 frozen inputs are retained but refused, never reinterpreted or overwritten.
+Publication policy revision 6 requires typed direct graduation-year or compatible dated-grade
+support for requested cohort membership after accepted-alias evidence union; unsupported or
+contradictory members and unresolved result subjects are excluded from requested-cohort projections.
+Same-context numeric conflicts disqualify that context from PR selection; a clean compatible
+context may still supply the best. All-contested slots have no published best. Unfiltered archives
+retain original observations. Older policy-1/2/3/4/5 frozen inputs are retained but refused, never
+reinterpreted or overwritten; accepted-alias, postal-field and full-cell summary rules remain in force.
 Independent readback compares every represented athlete row with its expected immutable position,
 including displaced rows; population membership alone cannot certify cell/provenance equality.
 
@@ -232,8 +279,14 @@ is not multi-artifact atomic publication. XLSX byte equality alone is not semant
   exhaustive enums and explicit state transitions. Separate raw observations, validated evidence,
   candidates and accepted decisions; make illegal states unrepresentable where practical.
 - **Safety (§37, §56):** workspace-wide `forbid(unsafe_code)` and `deny(unused_must_use)`; no
-  input-triggered panic, careless `unwrap`/`expect`, unchecked arithmetic, ignored outcome,
-  production recursion or silent fallback. Handle resource and counter exhaustion explicitly.
+  input-triggered panic, unchecked arithmetic, ignored outcome, production recursion or silent
+  fallback. The complete `unwrap` family (`unwrap`, `unwrap_err`, `unwrap_unchecked`,
+  `unwrap_or`, `unwrap_or_else`, `unwrap_or_default`) and `expect`/`expect_err` calls or
+  references are forbidden in all project-owned Rust, including tests, fixtures, examples,
+  benchmarks, proofs and generated project code. Return complete typed outcomes; do not replace
+  extraction with panics, assertions, waivers or fabricated defaults. Preserve domain-defined
+  missing-value behavior with explicit matches or map combinators. Handle resource and counter
+  exhaustion explicitly. The fatal owned-source lexical gate complements all-target Clippy.
 - **Size (§38):** files within 300 lines; production functions within 60 logical lines and hot
   paths within 25. Decompose named stages rather than suppressing checks. Dated evidence ledgers
   may retain longer command records; they are not production source.
@@ -261,11 +314,11 @@ fixture rules and measurement procedures.
 passing build, skipped lane or old run is not acceptance evidence for a new delivery.
 
 The release contract requires strict format/check/Clippy/tests, architectural and comment gates,
-dependency advisories/provenance/cargo-vet, security and async review, adversarial identity/contact/
+dependency advisories/provenance, security and async review, adversarial identity/contact/
 result fixtures, property tests, parser fuzzing, mutation of critical logic, concurrency/cancellation,
 duplicate delivery, fault injection, crash recovery, retry exhaustion, malformed model replies,
 representative load/resource measurements, and actual CLI/Restate/export execution. License
-**enforcement is excluded by owner direction**; security checks are not waived.
+**enforcement and cargo-vet are excluded by owner direction**; security checks are not waived.
 
 The delivery plan retains every F01–F15 correction, named regression and all 17 native fault
 scenarios. Unresolved accuracy, data-loss or recovery failures block release. Report exact commands,

@@ -61,36 +61,61 @@ pub(super) struct ReviewArgs {
     observed_on: Option<String>,
 }
 
-pub(super) async fn run_review(store: &Store, args: &ReviewArgs) -> Result<()> {
-    let model_options = args.lane_options()?;
-    let families = families_of(&args.family)?;
-    let observed_on = args
-        .observed_on
-        .clone()
-        .unwrap_or_else(census_crawl::net::today_iso);
-    let athlete_identity = families.contains(&ReviewFamily::AthleteIdentity);
-    let options = ReviewOptions {
-        families,
-        limit: args.limit,
-        dry_run: args.dry_run,
-    };
-    let clients = model_options
-        .into_iter()
-        .map(ModelClient::new)
-        .collect::<Result<Vec<_>, _>>()
-        .context("building the independent model clients")?;
-    census_review::validate_lanes(&clients).context("validating independent review lanes")?;
-    if athlete_identity {
-        let reconciliation = reconcile_athletes(store, &observed_on, args.dry_run)
-            .context("reconciling the athlete rows the merge retained")?;
+pub(super) struct PreparedReview {
+    clients: [ModelClient; 2],
+    options: ReviewOptions,
+    observed_on: String,
+}
+
+pub(super) async fn run_review(store: &Store, prepared: &PreparedReview) -> Result<()> {
+    if prepared
+        .options
+        .families
+        .contains(&ReviewFamily::AthleteIdentity)
+    {
+        let reconciliation =
+            reconcile_athletes(store, &prepared.observed_on, prepared.options.dry_run)
+                .context("reconciling the athlete rows the merge retained")?;
         println!("{}", reconciliation.summary());
     }
-    let report = run_lanes(store, &clients, &options, &observed_on).await?;
+    let report = run_lanes(
+        store,
+        &prepared.clients,
+        &prepared.options,
+        &prepared.observed_on,
+    )
+    .await?;
     println!("{}", report.summary());
     Ok(())
 }
 
 impl ReviewArgs {
+    pub(super) fn prepare(&self) -> Result<PreparedReview> {
+        let families = families_of(&self.family)?;
+        let clients = self
+            .lane_options()?
+            .into_iter()
+            .map(ModelClient::new)
+            .collect::<Result<Vec<_>, _>>()
+            .context("building the independent model clients")?;
+        let clients: [ModelClient; 2] = clients.try_into().map_err(|_| {
+            anyhow::anyhow!("configure exactly two independent local model endpoints")
+        })?;
+        census_review::validate_lanes(&clients).context("validating independent review lanes")?;
+        Ok(PreparedReview {
+            clients,
+            options: ReviewOptions {
+                families,
+                limit: self.limit,
+                dry_run: self.dry_run,
+            },
+            observed_on: match &self.observed_on {
+                Some(date) => date.clone(),
+                None => census_crawl::net::today_iso(),
+            },
+        })
+    }
+
     pub(super) fn validate_configuration(&self) -> Result<()> {
         if self.endpoint.is_empty() {
             bail!("no model endpoint configured; pass --endpoint <URL>");

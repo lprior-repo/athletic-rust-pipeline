@@ -98,11 +98,13 @@ impl Joins<'_, '_> {
     fn athlete_name(&self) -> String {
         self.athlete
             .map(|row| row.canonical_name.clone())
-            .unwrap_or_default()
+            .map_or(Default::default(), core::convert::identity)
     }
 
     fn school_name(&self) -> String {
-        self.school.map(|row| row.name.clone()).unwrap_or_default()
+        self.school
+            .map(|row| row.name.clone())
+            .map_or(Default::default(), core::convert::identity)
     }
 
     fn grad_year(&self) -> Option<i16> {
@@ -119,19 +121,21 @@ impl Joins<'_, '_> {
     }
 
     fn meet_name(&self) -> String {
-        self.meet.map(|row| row.name.clone()).unwrap_or_default()
+        self.meet
+            .map(|row| row.name.clone())
+            .map_or(Default::default(), core::convert::identity)
     }
 
     fn sport(&self) -> String {
         self.event
             .map(|row| sport_of(&row.kind).to_string())
-            .unwrap_or_default()
+            .map_or(Default::default(), core::convert::identity)
     }
 
     fn event_label(&self) -> String {
         self.event
             .map(|row| row.kind.stable_key().into_owned())
-            .unwrap_or_default()
+            .map_or(Default::default(), core::convert::identity)
     }
 
     fn round_of(&self, performance: &CanonicalPerformance) -> Option<String> {
@@ -144,13 +148,13 @@ impl Joins<'_, '_> {
     fn source_id(&self) -> String {
         self.source
             .map(|row| row.source.id.clone())
-            .unwrap_or_default()
+            .map_or(Default::default(), core::convert::identity)
     }
 
     fn source_url(&self) -> String {
         self.source
             .and_then(|row| row.source.url.clone())
-            .unwrap_or_default()
+            .map_or(Default::default(), core::convert::identity)
     }
 }
 

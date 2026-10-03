@@ -1,87 +1,156 @@
 use super::*;
 
 #[test]
-fn journal_roundtrips_resume_keys() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
-    store
-        .journal_done(
-            "milesplit_rosters",
-            "wi:52649",
-            &serde_json::json!({"athletes": 59}),
-        )
-        .unwrap();
-    store
-        .journal_done(
-            "milesplit_rosters",
-            "wi:26848",
-            &serde_json::json!({"athletes": 0}),
-        )
-        .unwrap();
-    let keys = store.journal_keys("milesplit_rosters").unwrap();
-    assert!(keys.contains("wi:52649"));
-    assert_eq!(keys.len(), 2);
-    assert_eq!(
-        store.journal_payloads("milesplit_rosters").unwrap().len(),
-        2
-    );
-    store
-        .journal_done("other_phase", "wi:1", &serde_json::json!({}))
-        .unwrap();
-    assert_eq!(store.journal_keys("milesplit_rosters").unwrap().len(), 2);
+fn journal_roundtrips_resume_keys() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    store.journal_done(
+        "milesplit_rosters",
+        "wi:52649",
+        &serde_json::json!({"athletes": 59}),
+    )?;
+    store.journal_done(
+        "milesplit_rosters",
+        "wi:52650",
+        &serde_json::json!({"athletes": 10}),
+    )?;
+    let keys = store.journal_keys("milesplit_rosters")?;
+    if !keys.contains("wi:52649") {
+        return Err(format!("missing first resume key: {keys:?}").into());
+    }
+    if !keys.contains("wi:52650") {
+        return Err(format!("missing second resume key: {keys:?}").into());
+    }
+    {
+        let (left, right) = (&store.journal_payloads("milesplit_rosters")?.len(), &2);
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    store.journal_done(
+        "other_phase",
+        "wi:52649",
+        &serde_json::json!({"athletes": 1}),
+    )?;
+    {
+        let (left, right) = (&store.journal_keys("milesplit_rosters")?, &keys);
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    Ok(())
 }
 
 #[test]
-fn a_journal_key_past_its_ceiling_is_refused_and_writes_nothing() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+fn a_journal_key_past_its_ceiling_is_refused_and_writes_nothing() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     let key = "k".repeat(MAX_JOURNAL_KEY_BYTES + 1);
-
-    match store.journal_done("ihsa_schools", &key, &serde_json::json!({"rows": 1})) {
+    match store.journal_done("wiaa_schools", &key, &serde_json::json!({"rows": 1})) {
         Err(StoreError::JournalTooLarge {
             what,
             phase,
-            bytes,
             max,
+            bytes,
             ..
         }) => {
-            assert_eq!(what, "key");
-            assert_eq!(phase, "ihsa_schools");
-            assert_eq!(max, MAX_JOURNAL_KEY_BYTES);
-            assert!(bytes > max, "the refusal names what it measured: {bytes}");
+            {
+                let (left, right) = (&what, &"key");
+                if left != right {
+                    return Err(format!("left={left:?} right={right:?}").into());
+                }
+            }
+            {
+                let (left, right) = (&phase, &"wiaa_schools");
+                if left != right {
+                    return Err(format!("left={left:?} right={right:?}").into());
+                }
+            }
+            {
+                let (left, right) = (&max, &MAX_JOURNAL_KEY_BYTES);
+                if left != right {
+                    return Err(format!("left={left:?} right={right:?}").into());
+                }
+            }
+            if bytes <= max {
+                return Err(
+                    format!("oversize key must exceed bound: bytes={bytes} max={max}").into(),
+                );
+            }
         }
-        other => panic!("expected the journal key ceiling to refuse the entry, got {other:?}"),
+        Err(error) => return Err(error.into()),
+        Ok(_) => return Err("expected the journal key ceiling to refuse the entry".into()),
     }
-    assert!(store.journal_keys("ihsa_schools").unwrap().is_empty());
-    assert!(store.journal_payloads("ihsa_schools").unwrap().is_empty());
+    let keys = store.journal_keys("wiaa_schools")?;
+    if !keys.is_empty() {
+        return Err(format!("expected empty keys: {keys:?}").into());
+    }
+    let payloads = store.journal_payloads("wiaa_schools")?;
+    if !payloads.is_empty() {
+        return Err(format!("expected empty payloads: {payloads:?}").into());
+    }
+    Ok(())
 }
 
 #[test]
-fn a_journal_value_past_its_ceiling_leaves_the_phase_as_it_was() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
-    store
-        .journal_done("ihsa_schools", "kept", &serde_json::json!({"rows": 1}))
-        .unwrap();
-
-    let payload = "v".repeat(MAX_JOURNAL_VALUE_BYTES + 1);
-    match store.journal_done("ihsa_schools", "refused", &serde_json::json!(payload)) {
+fn a_journal_value_past_its_ceiling_leaves_the_phase_as_it_was() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    store.journal_done("ihsa_schools", "kept", &serde_json::json!({"rows": 1}))?;
+    let oversized = "v".repeat(MAX_JOURNAL_VALUE_BYTES + 1);
+    match store.journal_done("ihsa_schools", "refused", &oversized) {
         Err(StoreError::JournalTooLarge {
             what,
+            phase,
             key,
-            bytes,
             max,
-            ..
+            bytes,
         }) => {
-            assert_eq!(what, "value");
-            assert_eq!(key, "refused");
-            assert_eq!(max, MAX_JOURNAL_VALUE_BYTES);
-            assert!(bytes > max, "the refusal names what it measured: {bytes}");
+            {
+                let (left, right) = (&what, &"value");
+                if left != right {
+                    return Err(format!("left={left:?} right={right:?}").into());
+                }
+            }
+            {
+                let (left, right) = (&phase, &"ihsa_schools");
+                if left != right {
+                    return Err(format!("left={left:?} right={right:?}").into());
+                }
+            }
+            {
+                let (left, right) = (&key, &"refused");
+                if left != right {
+                    return Err(format!("left={left:?} right={right:?}").into());
+                }
+            }
+            {
+                let (left, right) = (&max, &MAX_JOURNAL_VALUE_BYTES);
+                if left != right {
+                    return Err(format!("left={left:?} right={right:?}").into());
+                }
+            }
+            if bytes <= max {
+                return Err(
+                    format!("oversize value must exceed bound: bytes={bytes} max={max}").into(),
+                );
+            }
         }
-        other => panic!("expected the journal value ceiling to refuse the entry, got {other:?}"),
+        Err(error) => return Err(error.into()),
+        Ok(_) => return Err("expected the journal value ceiling to refuse the entry".into()),
     }
-    let keys = store.journal_keys("ihsa_schools").unwrap();
-    assert!(keys.contains("kept"));
-    assert!(!keys.contains("refused"));
-    assert_eq!(store.journal_payloads("ihsa_schools").unwrap().len(), 1);
+    let keys = store.journal_keys("ihsa_schools")?;
+    if !keys.contains("kept") {
+        return Err(format!("kept receipt missing: {keys:?}").into());
+    }
+    if keys.contains("refused") {
+        return Err(format!("refused receipt was written: {keys:?}").into());
+    }
+    {
+        let (left, right) = (&store.journal_payloads("ihsa_schools")?.len(), &1);
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    Ok(())
 }

@@ -52,8 +52,8 @@ mod tests {
     use super::write_csv;
 
     #[test]
-    fn csv_fields_are_safe_for_spreadsheets() {
-        let directory = tempfile::tempdir().expect("temporary directory");
+    fn csv_fields_are_safe_for_spreadsheets() -> Result<(), Box<dyn std::error::Error>> {
+        let directory = tempfile::tempdir()?;
         let path = directory.path().join("export.csv");
         let rows = [
             "=cmd|' /C calc'!A0",
@@ -68,12 +68,13 @@ mod tests {
         .map(|value| vec![value])
         .collect::<Vec<_>>();
 
-        write_csv(&path, &["=header"], &rows).expect("CSV publishes");
+        write_csv(&path, &["=header"], &rows)?;
 
-        let bytes = std::fs::read(&path).expect("published CSV reads");
-        assert_eq!(
-            bytes,
-            b"=header\r\n'=cmd|' /C calc'!A0\r\n'+1+1\r\n'@SUM(1)\r\n-2.5\r\n'-dash-leading\r\nPlain Name\r\n"
-        );
+        let bytes = std::fs::read(&path)?;
+        let expected = b"=header\r\n'=cmd|' /C calc'!A0\r\n'+1+1\r\n'@SUM(1)\r\n-2.5\r\n'-dash-leading\r\nPlain Name\r\n";
+        if bytes != expected {
+            return Err(format!("spreadsheet-safe CSV: left={bytes:?}, right={expected:?}").into());
+        }
+        Ok(())
     }
 }

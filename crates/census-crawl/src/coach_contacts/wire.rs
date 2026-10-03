@@ -39,10 +39,10 @@ fn namespace_for_url(url: &str) -> SourceNamespace {
     let host = url
         .split("://")
         .nth(1)
-        .unwrap_or(url)
+        .map_or(url, |value| value)
         .split('/')
         .next()
-        .unwrap_or("")
+        .map_or("", |value| value)
         .to_ascii_lowercase();
     let association = if host.contains("wiaawi") {
         "wiaa"
@@ -74,7 +74,13 @@ fn identity_key(url: &str) -> Option<String> {
     let query_key = |name: &str| -> Option<String> {
         url.split(['?', '&'])
             .find_map(|part| part.strip_prefix(&format!("{name}=")))
-            .map(|value| value.split(['&', '#']).next().unwrap_or(value).to_string())
+            .map(|value| {
+                value
+                    .split(['&', '#'])
+                    .next()
+                    .map_or(value, |value| value)
+                    .to_string()
+            })
     };
     if let Some(value) = query_key("orgID") {
         return Some(value);
@@ -112,14 +118,14 @@ impl RowSource {
             clean(&row.last_observed)
         };
         let url = nonempty(&row.source_url);
-        let namespace = url
-            .as_deref()
-            .map(namespace_for_url)
-            .unwrap_or_else(|| SourceNamespace::Other("coach_contacts_csv".to_string()));
-        let key = url
-            .as_deref()
-            .and_then(identity_key)
-            .unwrap_or_else(|| normalize_name(school_name));
+        let namespace = match url.as_deref().map(namespace_for_url) {
+            Some(value) => value,
+            None => SourceNamespace::Other("coach_contacts_csv".to_string()),
+        };
+        let key = match url.as_deref().and_then(identity_key) {
+            Some(value) => value,
+            None => normalize_name(school_name),
+        };
         Self {
             source_ref: SourceRef::new("coach_contacts_csv", url.clone()),
             observed_on,

@@ -24,11 +24,15 @@ impl Value {
     }
 
     pub(super) fn integer(value: i64) -> Self {
-        Self::Number(f64::from(i32::try_from(value).unwrap_or(i32::MAX)))
+        Self::Number(f64::from(
+            i32::try_from(value).map_or(i32::MAX, |value| value),
+        ))
     }
 
     pub(super) fn count(value: usize) -> Self {
-        Self::Number(f64::from(u32::try_from(value).unwrap_or(u32::MAX)))
+        Self::Number(f64::from(
+            u32::try_from(value).map_or(u32::MAX, |value| value),
+        ))
     }
 
     pub(super) fn decimal(value: f64) -> Self {
@@ -93,7 +97,9 @@ pub(super) fn column_label(index: usize) -> String {
     let mut value = index.saturating_add(1);
     while value > 0 {
         let remainder = value.saturating_sub(1) % 26;
-        let letter = u8::try_from(remainder).unwrap_or(0).saturating_add(b'A');
+        let letter = u8::try_from(remainder)
+            .map_or(0, |value| value)
+            .saturating_add(b'A');
         label.insert(0, char::from(letter));
         value = value.saturating_sub(1) / 26;
     }

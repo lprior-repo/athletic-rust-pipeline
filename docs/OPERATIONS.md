@@ -59,6 +59,14 @@ identity already exists is deduplicated, not restarted: reattaching returns the 
 and starting a different run needs a revision bump, which remains the documented way to invalidate
 completed work and must not be used merely to reset an exhausted attempt budget.
 
+Roster progress is not roster completion. A recorded roster stage remains owed while
+`rosters_remaining` or `blocked_skipped` is positive, or the stage is blocked. The exposed
+`owed_rosters` is the greater of remaining and blocked-skipped counts, not their sum: blocked skips
+are normally included in remaining work. Previously journalled/skipped rosters are not subtracted
+again from remaining work. An absent progress record leaves the stage owed without inventing a
+roster count. These accounting rules also feed census sealing; they do not reset retry budgets,
+restart terminal invocations or prove the supplied source-object list is complete.
+
 `teams`, `meets` and `collect` without `--states`/`--all-states` default to Wisconsin qualification.
 `--all-states` selects the 49-jurisdiction `CENSUS_SCOPE`, not all 51 modeled locations. Provider
 restriction defaults differ; consult that command's help. `collect --school-year` is the academic
@@ -80,6 +88,21 @@ An index rebuild and review application can change review-case populations. Reta
 unresolved candidates must reconcile; never choose a smaller intermediate case table to obtain a
 seal. Reusing cached bytes does not advance the actual acquisition timestamp or establish freshness.
 
+MileSplit result projection uses `milesplit_result_sets_v5`, with completion identities bound to
+owned/raw capture provenance and projected context. Historical phases remain retained, not
+completion authority for changed captures. Reapplication can commit new evidence without
+duplicating identical content-bound row effects. Inspect the immutable capture archive and receipt,
+not a bare meet/result-set key, when distinguishing a resumed projection from changed source bytes.
+Owned acquisition manifests use `acquisition/<meet>/<stable-capture-sha256>/manifest` within
+`milesplit_owned_capture_v1`. The digest binds observed requested/final URLs, method, status,
+content digest, byte count, actual `fetched_at` and content type, excluding transient `from_cache`.
+The manifest references the preserved `<meet>/<body-sha256>/manifest` and chunk prefix.
+Interpretations use `parsed|partial/acquisition/<meet>/<stable-capture-sha256>`; rows and
+rejections retain content-bound payload identities. Existing captures and interpretations are
+not overwritten. Exact receipt lookups replace whole historical-phase key scans on replay.
+Result URL order alone cannot create additional physical entity effects; application witnesses
+and persisted rows share the same typed set normalization.
+
 An explicit index rebuild rederives mutable projections even when its input receipt already exists.
 The receipt prevents duplicate durable input commitment, not repair of missing derived rows.
 Unsupported graduation evidence remains a pending `Unsupported graduation inference` review family;
@@ -91,6 +114,9 @@ eligibility ordering. Old receipts are preserved, but do not skip the corrected 
 summary retains valid directory facts without a completion receipt; a successful summary commits
 school facts, public coach rows and its receipt through the same row sink. Recollecting cached
 bytes changes neither acquisition freshness nor immutable Restate run identity/attempt budgets.
+School, coach and postal evidence retains the actual capture `fetched_at`; the adapter observation
+instant remains a separate execution input. CSV/XLSX postal evidence dates must agree with stored
+claims, not with a later replay date.
 
 Request pacing has two independent dials, and both default to the polite setting:
 
@@ -98,18 +124,19 @@ Request pacing has two independent dials, and both default to the polite setting
   its configured delay between turns. `--delay-ms` overrides the default host delay; a source's own
   robots `crawl-delay` raises it, an authorized host never drops below 500 ms, and a family budget in
   `default_family_delays` holds across that family's hosts. Raising concurrency never shortens this.
-- `--source-parallelism <N>`. Above the default of 1, a source family admits N requests in flight and
-  each of its hosts carries its own spacing slot, so a state whose work spans several subdomains of
-  one family no longer serializes them behind a single family turn. At 1 the family keeps one slot and
-  one turn at a time, which is the historic behavior. Hosts outside a registered family always keep
-  their own slot. Use it to raise a family's ceiling, not its rate: it cannot make any single host
-  faster than its spacing, and it never overrides robots or an access condition.
+- `--source-parallelism <N>` accepts 1–64. Above the default of 1, a source family admits N requests
+  in flight and each host retains its own spacing slot. At 1 the family keeps one slot and one turn.
+  Hosts outside a registered family retain their own slot. This raises a family's ceiling, not its
+  rate; it never overrides robots or an access condition. A serving owner fixes the normalized
+  budget on its first fetcher request. A different budget for later acquisition is a terminal policy
+  refusal, not another independent family budget. Settled logical operations remain replayable
+  without resetting their acquisition authority.
 
-Aggregate throughput also follows the endpoint's `--max-concurrent` (handlers executing at once) and
-the per-request `--concurrency` (in-state tasks). Every jurisdiction paces its own hosts, so raising
-them parallelizes different hosts rather than shortening any one host's spacing. Measure the result:
-count cache entries written per minute under the store's `http/` directory, since a cache hit adds no
-file.
+Aggregate throughput also follows the endpoint's `--max-concurrent` and per-request `--concurrency`.
+TeamsSource acquisition shares the endpoint's Jobs admission budget and serializes active work for
+the same source key. All jurisdiction fetchers share one serving-owner pacing state, including
+fetchers with different authorized-host sets; a new cache key cannot create another family budget.
+Count actual physical admissions separately from cache hits and retained entity populations.
 
 ## Browser lane
 
@@ -238,10 +265,68 @@ Arbiter incomplete-response recovery uses `arbiter_coaches_incomplete_v2:<state>
 with version-2 owner-bound payloads. An unchanged incomplete cached response triggers an ordinary
 admitted refresh; partial valid facts survive and only a complete owned acquisition receives its
 completion receipt. Historical v1 markers are preserved, not adopted as another owner's authority.
-The native teams stage retains partial records but raises a transient failure when acquisition
-errors remain. Inner effects keep the architecture's one-attempt ceiling; bounded handler retry
-policy owns workflow retries, never a new logical source job.
+Native teams acquisition uses mandatory TeamsSource virtual objects, keyed by the parent
+`WorkflowIdentity::jurisdiction(jurisdiction, season, revision)` plus `/teams/<source>`. A failed
+attempt never receives a fresh source key. Each object retains immutable identity, reservation and
+outcome slots in `teams_source_attempts_v1`, with at most three reservations. Before admission,
+an SDK run journals the real immutable Fjall identity registration. Registration commits with
+`SyncData` and completes the store flush before returning; it does not reserve a physical attempt.
+Local storage errors use the SDK's resumable run retry policy, not a one-attempt terminal override.
+Admission compares the cached SDK identity against authoritative Fjall identity; missing, corrupt
+or contradictory authority is refused rather than recreated from the cached result.
+The endpoint retains its source-key admission guard in the supervised blocking registration
+worker as well as the caller. Cancelling the caller cannot reopen that key while queued or running
+registration still owns the guard. A subsequent registration must retain the first committed
+identity and observation date; process-local admission is not proof of a multi-endpoint budget.
+No SDK run encloses the physical source operation; the child handler owns its bounded physical
+retries. Completed, terminal, three known transient failures and unacknowledged acquisition are
+distinct outcomes.
+An abandoned third reservation is Interrupted, not three proven failures and not permission for a
+fourth attempt. The parent retains structured SourceFailures and continues independent stages.
+
+TeamsSource `state` inspects settlement; `progress` inspects the coherent reservation/outcome
+history, including Unknown reservations. An active third reservation is not itself a settlement.
+`inspection` is the atomic parent-recovery surface: either Settled with its supported outcome and
+history, or Unsettled with the coherent history. If the native child call fails, the parent prefers
+that authoritative settlement; otherwise it retains the actual reservations/reports as Interrupted.
+An unavailable inspection is explicit, not a fabricated empty known-failure history. Do not combine
+independent `state` and `progress` calls into a supposed atomic recovery snapshot.
+Attempt progress preserves actual adapter reports and failure reasons separately. Reported row
+counts are adapter processing counts for that attempt, not cumulative or unique school/contact
+populations; missing reports remain unknown. Never sum overlapping retry reports to certify census
+coverage. Unique retained populations and relationships require entity/source receipt reconciliation.
 These mechanisms do not authorize robots, access-refusal or challenge bypasses.
+
+MileSplit whole-meet evidence uses `milesplit_owned_capture_v1` for original byte chunks and
+`milesplit_owned_meet_v3` for owner-bound interpretation with qualified hurdle labels and combined
+scores. The v2 interpretation remains historical evidence; the current parser records a new
+interpretation without changing original capture bytes. TeamRelay rows are explicitly retained
+as recognized team observations rather than treated as malformed individual owners.
+`milesplit_result_sets_v5` is the separate canonical projection receipt, exported as
+`RESULT_SET_PHASE`: it requires exact provider school binding, published cohort and matching
+raw-document meet/season metadata, and binds owned/raw capture provenance and projected context.
+It retains direct published graduation years as typed claims rather than invented grades.
+Historical v2/v3/v4 projection receipts remain preserved and do not suppress changed v5 captures.
+The row sink commits projected entities, observations and the content-bound v5 receipt together.
+A completed receipt suppresses duplicate physical
+effects while replay rebuilds the current accumulator; it is not a meet-exhaustion, accepted
+identity, lifetime-PR or census seal certificate. Inspect partial receipts and unresolved bindings
+rather than replacing missing owners with name matches.
+An empty canonical-school input does not block source-owned retention. Unresolved provider rows
+and their partial obligations survive until a genuine exact school binding permits projection;
+no placeholder school, imported population or name-only binding is introduced.
+New partial projections pair physical contents with `milesplit_result_set_effects_v1` application
+witnesses in the same row-sink commit. Witness lookup is indexed by table/canonical-content digest;
+the collector does not load an ever-growing witness set or emit one recording batch per row.
+An unchanged partial replay stays partial, produces no duplicate physical rows and does not rewrite
+identical retained/projection receipt payloads. A new exact provider school binding still permits
+the unresolved projection to proceed.
+This interpretation revision does not migrate completed historical canonical projections. A fresh
+census uses a fresh store; existing projected stores still require an explicit source-bound
+correction/migration before they can claim the new parser semantics. Do not append newly minted
+event IDs beside stale typed canonical rows or present a historical receipt as current acceptance.
+Older partial stores without these witnesses are preserved historical evidence, not retroactively
+certified idempotent.
 
 ## Export, verification and sealing
 
@@ -290,12 +375,13 @@ side of a merge. Corrections append in batches of at most 100; event identity, m
 division, round, original labels and observations survive. The final dry-run reports no eligible
 corrections. Unsupported labels remain unresolved rather than becoming guessed PR categories.
 
-Export schema revision remains 1; policy revision 3 adds accepted-alias projection, source-owned
-postal fields and complete summary-cell admission to revision 2's declared timing normalization
-and exact omitted-zero imperial-inch notation (`19-.25`). Revision-1 and revision-2 frozen bundles
-remain preserved historical evidence but are refused by the revision-3 verifier rather than
-silently reusing a generation under new rules. Existing logical export inputs remain immutable;
-publish an explicitly new logical export/root for the changed projection policy.
+Export schema revision remains 1. Policy revision 4 requires event-compatible PR marks, combined-event
+scores and same-context conflict detection. It retains revision 3's accepted-alias projection,
+source-owned postal fields and complete summary-cell admission, and revision 2's declared timing
+normalization and exact omitted-zero imperial-inch notation (`19-.25`). Revision-1/2/3 frozen bundles
+remain preserved historical evidence but are refused by the revision-4 verifier. Existing logical
+export inputs remain immutable. Publish an explicitly new logical export/root for the changed
+projection policy; a completed Restate workbook identity must not replay an old reply as new output.
 
 `--out` names a publication **directory**, not an XLSX file. A writer holds its publication lock,
 renders into owned staging, hashes the exact artifact inventory, independently reconciles every

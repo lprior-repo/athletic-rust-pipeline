@@ -115,7 +115,7 @@ impl Harness {
             fetcher: &self.fetcher,
             store: &self.store,
             refresh: false,
-            school_year: SchoolYear::new(2026).expect("2026 is a season"),
+            school_year: SchoolYear::DEFAULT,
             observed_on: OBSERVED_ON.to_string(),
             recording: None,
         };
@@ -125,194 +125,209 @@ impl Harness {
     }
 }
 
-#[tokio::test]
-async fn athleticnet_whole_meet_route_pulls_two_requests_and_stores_every_storable_row(
-) -> Result<()> {
-    let harness = Harness::new(false)?;
-    let report = harness.run(&harness.options(false)).await?;
-    ensure!(
-        report.adapter == SOURCE,
-        "the report names the adapter: {}",
-        report.adapter
-    );
-    ensure!(
-        report.unit == "performances",
-        "the whole-meet route counts performances, not athletes: {}",
-        report.unit
-    );
-    ensure!(
-        report.requests == 0,
-        "no socket was opened: {} requests went to the network",
-        report.requests
-    );
-    ensure!(
-        report.from_cache == 2,
-        "one meet is two requests, both served from the seeded cache: {}",
-        report.from_cache
-    );
-    ensure!(report.errors == 0, "no request failed: {}", report.errors);
-    ensure!(
-        report.rows == 903,
-        "623 individual results plus 280 relay legs: {}",
-        report.rows
-    );
-    ensure!(
-        report
-            .notes
-            .iter()
-            .any(|note| note.contains("758 seen") && note.contains("288 legs seen")),
-        "the run report carries the walk's own counters: {:?}",
-        report.notes
-    );
-    ensure!(
-        report
-            .notes
-            .iter()
-            .any(|note| note.contains("the third request is off by default")),
-        "the run says the third request was not spent: {:?}",
-        report.notes
-    );
+#[test]
+fn athleticnet_whole_meet_route_pulls_two_requests_and_stores_every_storable_row() -> Result<()> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let harness = Harness::new(false)?;
+            let report = harness.run(&harness.options(false)).await?;
+            ensure!(
+                report.adapter == SOURCE,
+                "the report names the adapter: {}",
+                report.adapter
+            );
+            ensure!(
+                report.unit == "performances",
+                "the whole-meet route counts performances, not athletes: {}",
+                report.unit
+            );
+            ensure!(
+                report.requests == 0,
+                "no socket was opened: {} requests went to the network",
+                report.requests
+            );
+            ensure!(
+                report.from_cache == 2,
+                "one meet is two requests, both served from the seeded cache: {}",
+                report.from_cache
+            );
+            ensure!(report.errors == 0, "no request failed: {}", report.errors);
+            ensure!(
+                report.rows == 903,
+                "623 individual results plus 280 relay legs: {}",
+                report.rows
+            );
+            ensure!(
+                report
+                    .notes
+                    .iter()
+                    .any(|note| note.contains("758 seen") && note.contains("288 legs seen")),
+                "the run report carries the walk's own counters: {:?}",
+                report.notes
+            );
+            ensure!(
+                report
+                    .notes
+                    .iter()
+                    .any(|note| note.contains("the third request is off by default")),
+                "the run says the third request was not spent: {:?}",
+                report.notes
+            );
 
-    let meets: Vec<CanonicalMeet> = harness.store.scan(Table::Meets)?;
-    ensure!(meets.len() == 1, "one meet row: {}", meets.len());
-    ensure!(
-        meets[0].state == Some(UsJurisdiction::Wisconsin),
-        "the published venue is WI: {:?}",
-        meets[0].state
-    );
-    ensure!(
-        meets[0].name == "Big 8 Conference",
-        "the published name: {}",
-        meets[0].name
-    );
-    let athletes: Vec<CanonicalAthlete> = harness.store.scan(Table::Athletes)?;
-    ensure!(
-        athletes.len() == 490,
-        "490 athletes keyed by (athlete id, school): {}",
-        athletes.len()
-    );
-    let performances: Vec<CanonicalPerformance> = harness.store.scan(Table::Performances)?;
-    ensure!(
-        performances.len() == 903,
-        "903 performances: {}",
-        performances.len()
-    );
-    let legs: Vec<&CanonicalPerformance> = performances
-        .iter()
-        .filter(|row| row.source_key.contains(":leg"))
-        .collect();
-    ensure!(
-        legs.len() == 280,
-        "280 relay legs, each its own row: {}",
-        legs.len()
-    );
-    ensure!(
-        legs.iter().all(|row| row
-            .evidence
-            .first()
-            .and_then(|evidence| evidence.note.as_deref())
-            .is_some_and(|note| note.starts_with("relay leg "))),
-        "every leg says so in its own evidence"
-    );
-    ensure!(
-        performances.iter().all(|row| row
-            .observed_grade
-            .is_some_and(|grade| (9..=12).contains(&grade.get()))),
-        "no stored performance carries a placeholder grade"
-    );
-    ensure!(
-        athletes
-            .iter()
-            .all(|athlete| !athlete.canonical_name.contains("<BR>")),
-        "no squad's padded name became a person"
-    );
-    ensure!(
-        performances.iter().all(|row| row
-            .evidence
-            .first()
-            .is_some_and(
-                |evidence| evidence.observed_on == OBSERVED_ON && evidence.source.id == SOURCE
-            )),
-        "every row carries this run's evidence"
-    );
-    Ok(())
+            let meets: Vec<CanonicalMeet> = harness.store.scan(Table::Meets)?;
+            ensure!(meets.len() == 1, "one meet row: {}", meets.len());
+            ensure!(
+                meets[0].state == Some(UsJurisdiction::Wisconsin),
+                "the published venue is WI: {:?}",
+                meets[0].state
+            );
+            ensure!(
+                meets[0].name == "Big 8 Conference",
+                "the published name: {}",
+                meets[0].name
+            );
+            let athletes: Vec<CanonicalAthlete> = harness.store.scan(Table::Athletes)?;
+            ensure!(
+                athletes.len() == 490,
+                "490 athletes keyed by (athlete id, school): {}",
+                athletes.len()
+            );
+            let performances: Vec<CanonicalPerformance> =
+                harness.store.scan(Table::Performances)?;
+            ensure!(
+                performances.len() == 903,
+                "903 performances: {}",
+                performances.len()
+            );
+            let legs: Vec<&CanonicalPerformance> = performances
+                .iter()
+                .filter(|row| row.source_key.contains(":leg"))
+                .collect();
+            ensure!(
+                legs.len() == 280,
+                "280 relay legs, each its own row: {}",
+                legs.len()
+            );
+            ensure!(
+                legs.iter().all(|row| row
+                    .evidence
+                    .first()
+                    .and_then(|evidence| evidence.note.as_deref())
+                    .is_some_and(|note| note.starts_with("relay leg "))),
+                "every leg says so in its own evidence"
+            );
+            ensure!(
+                performances.iter().all(|row| row
+                    .observed_grade
+                    .is_some_and(|grade| (9..=12).contains(&grade.get()))),
+                "no stored performance carries a placeholder grade"
+            );
+            ensure!(
+                athletes
+                    .iter()
+                    .all(|athlete| !athlete.canonical_name.contains("<BR>")),
+                "no squad's padded name became a person"
+            );
+            ensure!(
+                performances.iter().all(|row| row
+                    .evidence
+                    .first()
+                    .is_some_and(|evidence| evidence.observed_on == OBSERVED_ON
+                        && evidence.source.id == SOURCE)),
+                "every row carries this run's evidence"
+            );
+            Ok(())
+        })
 }
 
-#[tokio::test]
-async fn athleticnet_third_request_is_spent_only_when_asked_and_changes_no_row() -> Result<()> {
-    let harness = Harness::new(true)?;
-    let report = harness.run(&harness.options(true)).await?;
-    ensure!(
-        report.from_cache == 3,
-        "the metadata document is a third request: {} served",
-        report.from_cache
-    );
-    ensure!(
-        report.requests == 0,
-        "still no socket: {} went to the network",
-        report.requests
-    );
-    ensure!(
-        report.rows == 903,
-        "and it changes no row: {} stored",
-        report.rows
-    );
-    ensure!(
-        report.notes.iter().any(
-            |note| note.contains("36 events declared, 12 of them field events, 4 hurdle races")
-        ),
-        "the run reports what the metadata document declared: {:?}",
-        report.notes
-    );
-    let performances: Vec<CanonicalPerformance> = harness.store.scan(Table::Performances)?;
-    ensure!(
-        performances.len() == 903,
-        "903 performances with the third request spent: {}",
-        performances.len()
-    );
-    Ok(())
+#[test]
+fn athleticnet_third_request_is_spent_only_when_asked_and_changes_no_row() -> Result<()> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let harness = Harness::new(true)?;
+            let report = harness.run(&harness.options(true)).await?;
+            ensure!(
+                report.from_cache == 3,
+                "the metadata document is a third request: {} served",
+                report.from_cache
+            );
+            ensure!(
+                report.requests == 0,
+                "still no socket: {} went to the network",
+                report.requests
+            );
+            ensure!(
+                report.rows == 903,
+                "and it changes no row: {} stored",
+                report.rows
+            );
+            ensure!(
+                report.notes.iter().any(|note| note
+                    .contains("36 events declared, 12 of them field events, 4 hurdle races")),
+                "the run reports what the metadata document declared: {:?}",
+                report.notes
+            );
+            let performances: Vec<CanonicalPerformance> =
+                harness.store.scan(Table::Performances)?;
+            ensure!(
+                performances.len() == 903,
+                "903 performances with the third request spent: {}",
+                performances.len()
+            );
+            Ok(())
+        })
 }
 
-#[tokio::test]
-async fn athleticnet_second_run_resumes_from_the_journal_and_spends_nothing() -> Result<()> {
-    let harness = Harness::new(false)?;
-    let first = harness.run(&harness.options(false)).await?;
-    ensure!(first.rows == 903, "the first run stores: {}", first.rows);
-    let second = harness.run(&harness.options(false)).await?;
-    ensure!(
-        second.requests == 0 && second.from_cache == 0,
-        "the journal short-circuits the pair: {} requests, {} served",
-        second.requests,
-        second.from_cache
-    );
-    ensure!(
-        second.rows == 0,
-        "and nothing is walked twice: {} rows",
-        second.rows
-    );
-    ensure!(
-        second
-            .notes
-            .iter()
-            .any(|note| note.contains("meets: 0 pulled")),
-        "the run says the meet was already journaled: {:?}",
-        second.notes
-    );
-    let performances: Vec<CanonicalPerformance> = harness.store.scan(Table::Performances)?;
-    ensure!(
-        performances.len() == 903,
-        "the store still holds exactly one copy of every row: {}",
-        performances.len()
-    );
-    let sports: Vec<Sport> = harness
-        .store
-        .scan::<CanonicalMeet>(Table::Meets)?
-        .into_iter()
-        .flat_map(|meet| meet.sports)
-        .collect();
-    ensure!(
-        sports == vec![Sport::OutdoorTrack],
-        "the meet's sport comes from the payload's `sport2`: {sports:?}"
-    );
-    Ok(())
+#[test]
+fn athleticnet_second_run_resumes_from_the_journal_and_spends_nothing() -> Result<()> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let harness = Harness::new(false)?;
+            let first = harness.run(&harness.options(false)).await?;
+            ensure!(first.rows == 903, "the first run stores: {}", first.rows);
+            let second = harness.run(&harness.options(false)).await?;
+            ensure!(
+                second.requests == 0 && second.from_cache == 0,
+                "the journal short-circuits the pair: {} requests, {} served",
+                second.requests,
+                second.from_cache
+            );
+            ensure!(
+                second.rows == 0,
+                "and nothing is walked twice: {} rows",
+                second.rows
+            );
+            ensure!(
+                second
+                    .notes
+                    .iter()
+                    .any(|note| note.contains("meets: 0 pulled")),
+                "the run says the meet was already journaled: {:?}",
+                second.notes
+            );
+            let performances: Vec<CanonicalPerformance> =
+                harness.store.scan(Table::Performances)?;
+            ensure!(
+                performances.len() == 903,
+                "the store still holds exactly one copy of every row: {}",
+                performances.len()
+            );
+            let sports: Vec<Sport> = harness
+                .store
+                .scan::<CanonicalMeet>(Table::Meets)?
+                .into_iter()
+                .flat_map(|meet| meet.sports)
+                .collect();
+            ensure!(
+                sports == vec![Sport::OutdoorTrack],
+                "the meet's sport comes from the payload's `sport2`: {sports:?}"
+            );
+            Ok(())
+        })
 }

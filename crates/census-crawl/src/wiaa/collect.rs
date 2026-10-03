@@ -99,7 +99,10 @@ async fn scan_index(
             detail: format!(
                 "returned no usable letter fragment ({} request(s) attempted): {}",
                 letters.len(),
-                first_problem.unwrap_or_else(|| "no response".to_string())
+                match first_problem {
+                    Some(value) => value,
+                    None => "no response".to_string(),
+                }
             ),
         });
     }
@@ -156,7 +159,10 @@ fn absorb_letters(
 fn summarize_levels(index: &[IndexEntry]) -> String {
     let mut levels: BTreeMap<String, u64> = BTreeMap::new();
     for entry in index {
-        let level = meaningful(&entry.level).unwrap_or_else(|| "unstated".to_string());
+        let level = match meaningful(&entry.level) {
+            Some(value) => value,
+            None => "unstated".to_string(),
+        };
         let slot = levels.entry(level).or_insert(0);
         *slot = slot.saturating_add(1);
     }
@@ -189,7 +195,7 @@ fn note_written(report: &mut AdapterReport, tally: &SchoolTally) {
         let percent = with_email
             .checked_mul(100)
             .and_then(|scaled| scaled.checked_div(count(coach_rows)))
-            .unwrap_or(0);
+            .map_or(0, |value| value);
         format!("published coach/AD email fill rate: {with_email}/{coach_rows} rows ({percent}%)")
     });
 }

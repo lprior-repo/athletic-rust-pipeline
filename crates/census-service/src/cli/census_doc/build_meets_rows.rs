@@ -5,7 +5,7 @@ pub(super) fn build(meets: &Map<String, Value>) -> (Vec<Vec<String>>, Vec<Vec<St
         .get("by_state")
         .and_then(|v| v.as_object())
         .cloned()
-        .unwrap_or_default();
+        .map_or(Default::default(), core::convert::identity);
     let meets_by_state_rows: Vec<Vec<String>> = {
         let mut entries: Vec<(String, u64)> = meets_by_state
             .iter()
@@ -22,7 +22,7 @@ pub(super) fn build(meets: &Map<String, Value>) -> (Vec<Vec<String>>, Vec<Vec<St
         .get("by_provider")
         .and_then(|v| v.as_object())
         .cloned()
-        .unwrap_or_default();
+        .map_or(Default::default(), core::convert::identity);
     let provider_count = providers.len();
     let mut provider_entries: Vec<(String, u64)> = providers
         .iter()

@@ -1,20 +1,16 @@
-use super::map::{school_entities, ParsedSchool, SchoolExtract};
+use super::map::{captured_school_entities, ParsedSchool, SchoolExtract};
 use super::pages::parse_directory;
 use super::{Options, ASSOCIATION, HOST_WWW};
-use crate::net::{FetchOptions, FetchStats};
+use crate::net::{FetchOptions, FetchOutcome, FetchStats};
 use crate::{AdapterContext, AdapterReport, CrawlResult};
-use census_domain::model::normalize_name;
-use census_domain::model::SourceNamespace;
+use census_domain::model::{
+    normalize_name, SourceNamespace, SourceObservation, SourceSchoolObservation,
+};
 use census_domain::UsJurisdiction;
 use census_store::Table;
 
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new("mpa", "schools");
-    let observed_on = if options.observed_on.trim().is_empty() {
-        ctx.observed_on.clone()
-    } else {
-        options.observed_on.clone()
-    };
     let before = ctx.fetcher.stats().await;
 
     if !options.states.is_empty() && !options.states.contains(&UsJurisdiction::Maine) {
@@ -27,8 +23,8 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     }
 
     let dir_url = format!("{HOST_WWW}/SchoolPages/School.aspx");
-    let dir_html = match ctx.fetcher.get(&dir_url, &ctx.fetch_options()).await {
-        Ok(outcome) if outcome.status == 200 => outcome.text(),
+    let directory = match ctx.fetcher.get(&dir_url, &ctx.fetch_options()).await {
+        Ok(outcome) if outcome.status == 200 => outcome,
         Ok(outcome) => {
             report.errors = report.errors.saturating_add(1);
             report.note(format!("directory returned HTTP {}", outcome.status));
@@ -43,12 +39,12 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         }
     };
 
-    let entries = parse_directory(&dir_html);
+    let entries = parse_directory(&directory.text());
     let to_process = resolve_schools(&entries, options);
     let mut tally = Tally::default();
 
     for entry in &to_process {
-        process_school(ctx, entry, &observed_on, &mut report, &mut tally).await?;
+        process_school(ctx, entry, &directory, &mut report, &mut tally).await?;
     }
 
     record_spend(ctx, &mut report, &before).await;
@@ -103,14 +99,14 @@ fn resolve_schools(entries: &[super::pages::SchoolEntry], options: &Options) -> 
                 school_id: e.school_id.clone(),
             })
         })
-        .take(options.limit.unwrap_or(usize::MAX))
+        .take(options.limit.map_or(usize::MAX, |limit| limit))
         .collect()
 }
 
 async fn process_school(
     ctx: &AdapterContext<'_>,
     entry: &ParsedSchool,
-    observed_on: &str,
+    directory: &FetchOutcome,
     report: &mut AdapterReport,
     tally: &mut Tally,
 ) -> CrawlResult<()> {
@@ -118,7 +114,7 @@ async fn process_school(
         "{HOST_WWW}/SchoolPages/School.aspx?SchoolID={}&tab=staff",
         entry.school_id
     );
-    let staff_html = match ctx
+    let staff = match ctx
         .fetcher
         .get(
             &staff_url,
@@ -129,7 +125,7 @@ async fn process_school(
         )
         .await
     {
-        Ok(outcome) if outcome.status == 200 => outcome.text(),
+        Ok(outcome) if outcome.status == 200 => outcome,
         Ok(outcome) => {
             report.note(format!(
                 "school {} (ID {}) returned HTTP {}",
@@ -144,10 +140,10 @@ async fn process_school(
         }
     };
 
-    let staff_rows = super::pages::parse_staff_table(&staff_html);
-    let extract = school_entities(entry, &staff_rows, observed_on);
+    let staff_rows = super::pages::parse_staff_table(&staff.text());
+    let extract = captured_school_entities(entry, &staff_rows, directory, &staff);
 
-    emit_school(ctx, report, &extract, tally)?;
+    emit_school(ctx, report, &extract, &directory.fetched_at, tally)?;
     tally.processed = tally.processed.saturating_add(1);
     Ok(())
 }
@@ -156,6 +152,7 @@ fn emit_school(
     ctx: &AdapterContext<'_>,
     report: &mut AdapterReport,
     extract: &SchoolExtract,
+    acquired_at: &str,
     tally: &mut Tally,
 ) -> CrawlResult<()> {
     let key = &extract.source_school_id;
@@ -163,10 +160,12 @@ fn emit_school(
     batch.append_many(Table::Schools, std::slice::from_ref(&extract.school))?;
     batch.append_many(
         Table::SourceObservations,
-        ctx.school_observation(
+        SourceSchoolObservation::of_school(
             &SourceNamespace::association_school(ASSOCIATION),
             &extract.school,
+            acquired_at,
         )
+        .map(SourceObservation::School)
         .as_slice(),
     )?;
     report.rows = report.rows.saturating_add(1);

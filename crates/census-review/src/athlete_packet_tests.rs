@@ -1,3 +1,4 @@
+use crate::consensus::tests::support::TestResult;
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalSchool, Gender, GradYear, Grade, ObservedGrade,
     ReviewCase, ReviewPacket, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef,
@@ -25,13 +26,14 @@ fn athlete(name: &str, gender: Gender, grad_year: GradYear) -> CanonicalAthlete 
     CanonicalAthlete::new(&school(), name, grad_year, gender, source)
 }
 
-fn observed(athlete: &mut CanonicalAthlete, grade: u8, school_year: i16) {
+fn observed(athlete: &mut CanonicalAthlete, grade: u8, school_year: i16) -> TestResult {
     athlete.observed_grades.push(ObservedGrade {
-        grade: Grade::new(grade).expect("a grade in 9..=12"),
+        grade: Grade::new(grade).ok_or("a grade in 9..=12")?,
         school_year: SchoolYear::new(school_year)
-            .expect("a school year inside the accepted window"),
+            .ok_or("a school year inside the accepted window")?,
         source: SourceRef::new("milesplit_roster", None),
     });
+    Ok(())
 }
 
 fn known_as(
@@ -47,9 +49,9 @@ fn known_as(
     });
 }
 
-fn rows() -> (CanonicalAthlete, CanonicalAthlete, CanonicalAthlete) {
+fn rows() -> TestResult<(CanonicalAthlete, CanonicalAthlete, CanonicalAthlete)> {
     let mut boys = athlete("Jordan Smith", Gender::Boys, GradYear::CO2027);
-    observed(&mut boys, 11, 2025);
+    observed(&mut boys, 11, 2025)?;
     known_as(
         &mut boys,
         SourceNamespace::MilesplitAthlete,
@@ -57,9 +59,8 @@ fn rows() -> (CanonicalAthlete, CanonicalAthlete, CanonicalAthlete) {
         Some("https://wi.milesplit.com/athletes/14399169/jordan-smith"),
     );
     known_as(&mut boys, SourceNamespace::TfrrsAthlete, "77", None);
-
     let mut girls = athlete("Jordan Smith", Gender::Girls, GradYear::CO2027);
-    observed(&mut girls, 10, 2025);
+    observed(&mut girls, 10, 2025)?;
     known_as(
         &mut girls,
         SourceNamespace::MilesplitAthlete,
@@ -74,10 +75,9 @@ fn rows() -> (CanonicalAthlete, CanonicalAthlete, CanonicalAthlete) {
         "998877",
         Some("https://www.athletic.net/athlete/998877/track-and-field"),
     );
-
     let mut other = athlete("Sam Rivers", Gender::Girls, GradYear::CO2027);
-    observed(&mut other, 11, 2025);
-    (boys, girls, other)
+    observed(&mut other, 11, 2025)?;
+    Ok((boys, girls, other))
 }
 
 fn case_for(row: &CanonicalAthlete) -> ReviewCase {

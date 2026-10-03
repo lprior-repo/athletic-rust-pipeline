@@ -7,6 +7,10 @@ use census_domain::model::{Gender, SourceRef};
 use proptest::prelude::*;
 use proptest::test_runner::{RngAlgorithm, RngSeed};
 
+#[macro_use]
+#[path = "../../../tools/fallible_checks.rs"]
+mod fallible_checks;
+
 #[path = "xc_parser_properties/accounting.rs"]
 mod accounting;
 #[path = "xc_parser_properties/lines.rs"]

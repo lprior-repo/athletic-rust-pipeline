@@ -101,10 +101,10 @@ fn write_artifacts(
         ms = millis(started),
         "workbook build step: bests"
     );
-    let cohort = options
-        .grad_year
-        .map(|year| format!("co{year}"))
-        .unwrap_or_else(|| "all".to_string());
+    let cohort = match options.grad_year.map(|year| format!("co{year}")) {
+        Some(value) => value,
+        None => "all".to_string(),
+    };
     bests::write(directory, &bests, &cohort)?;
     dataset.save_frozen(&directory.join("frozen-input.json"))?;
     let path = directory.join("workbook.xlsx");
@@ -201,5 +201,5 @@ fn write_objective_sheets(book: &mut Workbook, path: &Path, views: Views<'_>) ->
 }
 
 pub(super) fn millis(started: Instant) -> u64 {
-    u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX)
+    u64::try_from(started.elapsed().as_millis()).map_or(u64::MAX, |value| value)
 }

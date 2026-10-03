@@ -1,9 +1,11 @@
 use anyhow::{bail, ensure, Context, Result};
-use std::ffi::OsStr;
-use std::fs::File;
+use std::fs::{self, OpenOptions};
 use std::io::Read;
+use std::os::unix::fs::OpenOptionsExt;
 use std::path::Path;
 
+#[path = "comments/extraction.rs"]
+pub(crate) mod extraction;
 #[path = "comments/lexer.rs"]
 mod lexer;
 #[path = "comments/lexical.rs"]
@@ -18,24 +20,13 @@ mod parity_tests;
 mod tests;
 
 const MAX_SOURCE_BYTES: u64 = 4 * 1024 * 1024;
-const MAX_SOURCE_FILES: usize = 100_000;
 
 pub(crate) fn run(root: &Path) -> Result<()> {
-    let files = crate::paths::files(
-        root,
-        &[".git", ".jj", "target", "var", "vendor", "node_modules"],
-    )?;
+    let files = source_files(root)?;
     let mut source = String::new();
     let mut checked = 0usize;
     let mut violations = 0usize;
-    for path in files
-        .iter()
-        .filter(|path| path.extension() == Some(OsStr::new("rs")))
-    {
-        ensure!(
-            checked < MAX_SOURCE_FILES,
-            "Rust source file limit exceeded"
-        );
+    for path in &files {
         checked = checked
             .checked_add(1)
             .context("source file count overflow")?;
@@ -68,15 +59,32 @@ pub(crate) fn run(root: &Path) -> Result<()> {
 }
 
 fn read_source(path: &Path, source: &mut String) -> Result<()> {
-    let file = File::open(path).with_context(|| format!("opening {}", path.display()))?;
-    let size = file.metadata()?.len();
+    let metadata = fs::symlink_metadata(path)
+        .with_context(|| format!("reading the type of {}", path.display()))?;
+    ensure!(
+        metadata.is_file(),
+        "source is not a regular file: {}",
+        path.display()
+    );
+    let file = OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+        .open(path)
+        .with_context(|| format!("opening {}", path.display()))?;
+    let metadata = file.metadata()?;
+    ensure!(
+        metadata.is_file(),
+        "opened source is not a regular file: {}",
+        path.display()
+    );
+    let size = metadata.len();
     ensure!(
         size <= MAX_SOURCE_BYTES,
         "source exceeds byte limit: {}",
         path.display()
     );
     source.clear();
-    source.try_reserve(usize::try_from(size)?)?;
+    source.try_reserve(usize::try_from(MAX_SOURCE_BYTES + 1)?)?;
     file.take(MAX_SOURCE_BYTES + 1)
         .read_to_string(source)
         .with_context(|| format!("reading {}", path.display()))?;
@@ -86,4 +94,16 @@ fn read_source(path: &Path, source: &mut String) -> Result<()> {
         path.display()
     );
     Ok(())
+}
+
+fn source_files(root: &Path) -> Result<Vec<std::path::PathBuf>> {
+    let files = crate::paths::rust_files_excluding(
+        root,
+        &[".git", ".jj", "target", "var", "vendor", "node_modules"],
+    )?;
+    ensure!(
+        !files.is_empty(),
+        "no project-owned Rust source files found"
+    );
+    Ok(files)
 }

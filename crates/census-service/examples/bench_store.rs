@@ -221,7 +221,7 @@ fn expect_observations(store: &Store, expected: u64, phase: &str) -> Result<()> 
         .iter()
         .find(|(table, _)| table == TABLE.file())
         .map(|(_, count)| *count)
-        .unwrap_or(0);
+        .map_or(0, |value| value);
     anyhow::ensure!(
         found == expected,
         "{phase}: store holds {found} {} observations, expected {expected}",

@@ -2,6 +2,10 @@ use super::*;
 use census_domain::model::CentiSeconds;
 use census_domain::model::{EventKind, Gender, Grade, Mark, SourceRef};
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+mod event_scores;
+
 const DASH: &str = include_str!("../../tests/fixtures/wiaa_results/d1boysstateresults-dash.htm");
 const SECTIONS: &str =
     include_str!("../../tests/fixtures/wiaa_results/d1boysstateresults-sections.htm");
@@ -10,60 +14,61 @@ fn source() -> SourceRef {
     SourceRef::new("wiaa_results", None)
 }
 
-fn parse_html(body: &str) -> ParsedMeet {
+fn parse_html(body: &str) -> TestResult<ParsedMeet> {
     let lines = lines_from_html(body);
-    super::parse(&lines, source()).expect("fixture has a meet header")
+    super::parse(&lines, source()).ok_or_else(|| "fixture has a meet header".into())
 }
 
 #[test]
-fn the_trackside_template_parses_place_grade_school_and_field_marks() {
+fn the_trackside_template_parses_place_grade_school_and_field_marks() -> TestResult {
     let body = include_str!("../../tests/fixtures/wiaa_results/trackside-regional.htm");
-    let parsed = parse(&lines_from_html(body), source()).expect("fixture has a meet header");
-    assert_eq!(parsed.name, "WIAA Division 1 Badger Regional");
-    assert_eq!(parsed.date, "2025-05-27");
+    let parsed = parse(&lines_from_html(body), source()).ok_or("fixture has a meet header")?;
+    check!(eq; parsed.name, "WIAA Division 1 Badger Regional");
+    check!(eq; parsed.date, "2025-05-27");
     let discus = parsed
         .events
         .iter()
         .find(|event| event.kind == EventKind::Discus && event.gender == Gender::Girls)
-        .unwrap_or_else(|| panic!("the girls discus event survives: {:?}", parsed.events));
-    assert_eq!(discus.rows.len(), 17, "every placed thrower is a row");
+        .ok_or("the girls discus event survives")?;
+    check!(eq; discus.rows.len(), 17, "every placed thrower is a row");
     let winner = &discus.rows[0];
-    assert_eq!(winner.name, "Ashlin Nottestad");
-    assert_eq!(winner.grade.map(Grade::get), Some(12));
-    assert_eq!(winner.school, "Badger");
-    assert_eq!(winner.place, Some(1));
-    assert!(
+    check!(eq; winner.name, "Ashlin Nottestad");
+    check!(eq; winner.grade.map(Grade::get), Some(12));
+    check!(eq; winner.school, "Badger");
+    check!(eq; winner.place, Some(1));
+    check!(
         matches!(&winner.mark, Mark::FieldImperial { feet_mark, .. } if feet_mark.starts_with("115")),
         "the discus mark keeps its published notation: {:?}",
         winner.mark
     );
+    Ok(())
 }
 
 #[test]
-fn a_seed_column_does_not_bleed_into_the_school_label_or_the_mark() {
+fn a_seed_column_does_not_bleed_into_the_school_label_or_the_mark() -> TestResult {
     let body = include_str!("../../tests/fixtures/wiaa_results/seed-column-regional.htm");
-    let parsed = parse(&lines_from_html(body), source()).expect("fixture has a meet header");
+    let parsed = parse(&lines_from_html(body), source()).ok_or("fixture has a meet header")?;
     let shot = parsed
         .events
         .iter()
         .find(|event| event.kind == EventKind::ShotPut && event.gender == Gender::Girls)
-        .expect("the girls shot put survives");
-    assert_eq!(shot.rows.len(), 22, "every placed thrower is a row");
+        .ok_or("the girls shot put survives")?;
+    check!(eq; shot.rows.len(), 22, "every placed thrower is a row");
     let winner = &shot.rows[0];
-    assert_eq!(winner.name, "Roehl, Reese");
-    assert_eq!(
+    check!(eq; winner.name, "Roehl, Reese");
+    check!(eq;
         winner.school, "Flambeau",
         "the seed mark stays out of the label"
     );
-    assert_eq!(winner.place, Some(1));
-    assert_eq!(winner.grade.map(Grade::get), Some(11));
-    assert!(
+    check!(eq; winner.place, Some(1));
+    check!(eq; winner.grade.map(Grade::get), Some(11));
+    check!(
         matches!(&winner.mark, Mark::FieldImperial { feet_mark, .. } if feet_mark == "35-09.00"),
         "the mark is the published result, not the seed: {:?}",
         winner.mark
     );
-    assert_eq!(winner.points, Some(10.0));
-    assert!(
+    check!(eq; winner.points, Some(10.0));
+    check!(
         shot.rows
             .iter()
             .all(|row| !row.school.chars().any(|ch| ch.is_ascii_digit())),
@@ -73,6 +78,7 @@ fn a_seed_column_does_not_bleed_into_the_school_label_or_the_mark() {
             .map(|row| row.school.as_str())
             .collect::<Vec<_>>()
     );
+    Ok(())
 }
 
 #[test]
@@ -155,104 +161,109 @@ fn marks_parse_from_published_notation() {
 }
 
 #[test]
-fn header_lines_yield_the_meet_name_date_and_timer() {
-    let meet = parse_html(DASH);
-    assert_eq!(meet.name, "WIAA Track & Field State Championships");
-    assert_eq!(meet.date, "2025-06-06");
-    assert_eq!(meet.timer.as_deref(), Some("PrimeTime Timing"));
+fn header_lines_yield_the_meet_name_date_and_timer() -> TestResult {
+    let meet = parse_html(DASH)?;
+    check!(eq; meet.name, "WIAA Track & Field State Championships");
+    check!(eq; meet.date, "2025-06-06");
+    check!(eq; meet.timer.as_deref(), Some("PrimeTime Timing"));
+    Ok(())
 }
 
 #[test]
-fn individual_rows_carry_place_grade_school_mark_and_wind() {
-    let meet = parse_html(DASH);
+fn individual_rows_carry_place_grade_school_mark_and_wind() -> TestResult {
+    let meet = parse_html(DASH)?;
     let event = meet
         .events
         .iter()
         .find(|event| event.kind == EventKind::Track100m)
-        .expect("the fixture publishes the 100 m dash");
-    assert_eq!(event.gender, Gender::Boys);
-    assert_eq!(event.division.as_deref(), Some("Division 1"));
-    assert_eq!(event.round.as_deref(), Some("preliminaries"));
+        .ok_or("the fixture publishes the 100 m dash")?;
+    check!(eq; event.gender, Gender::Boys);
+    check!(eq; event.division.as_deref(), Some("Division 1"));
+    check!(eq; event.round.as_deref(), Some("preliminaries"));
     let winner = event
         .rows
         .iter()
         .find(|row| row.place == Some(1))
-        .expect("a first place row exists");
-    assert_eq!(winner.name, "Ben Lemirand");
-    assert_eq!(winner.grade.map(Grade::get), Some(12));
-    assert_eq!(winner.school, "West De Pere");
-    assert_eq!(winner.mark, Mark::TimeSeconds(CentiSeconds::new(1056)));
-    assert_eq!(winner.wind_mps, Some(0.4));
-    assert!(event.rows.iter().all(|row| row.grade.is_some()));
-    assert!(event.rows.len() >= 20, "got {} rows", event.rows.len());
+        .ok_or("a first place row exists")?;
+    check!(eq; winner.name, "Ben Lemirand");
+    check!(eq; winner.grade.map(Grade::get), Some(12));
+    check!(eq; winner.school, "West De Pere");
+    check!(eq; winner.mark, Mark::TimeSeconds(CentiSeconds::new(1056)));
+    check!(eq; winner.wind_mps, Some(0.4));
+    check!(event.rows.iter().all(|row| row.grade.is_some()));
+    check!(event.rows.len() >= 20, "got {} rows", event.rows.len());
+    Ok(())
 }
 
 #[test]
-fn field_rows_keep_the_imperial_mark_and_the_flight() {
-    let meet = parse_html(SECTIONS);
+fn field_rows_keep_the_imperial_mark_and_the_flight() -> TestResult {
+    let meet = parse_html(SECTIONS)?;
     let event = meet
         .events
         .iter()
         .find(|event| event.kind == EventKind::ShotPut)
-        .expect("the fixture publishes the shot put");
-    assert_eq!(event.round.as_deref(), Some("finals"));
+        .ok_or("the fixture publishes the shot put")?;
+    check!(eq; event.round.as_deref(), Some("finals"));
     let winner = event
         .rows
         .iter()
         .find(|row| row.place == Some(1))
-        .expect("a first place row exists");
-    assert_eq!(winner.name, "Hunter Sprangers");
-    assert_eq!(winner.school, "Kimberly");
+        .ok_or("a first place row exists")?;
+    check!(eq; winner.name, "Hunter Sprangers");
+    check!(eq; winner.school, "Kimberly");
     match &winner.mark {
-        Mark::FieldImperial { feet_mark, .. } => assert_eq!(feet_mark, "61-03.50"),
-        other => panic!("expected an imperial mark, got {other:?}"),
+        Mark::FieldImperial { feet_mark, .. } => check!(eq; feet_mark, "61-03.50"),
+        other => return Err(format!("expected an imperial mark, got {other:?}").into()),
     }
-    assert_eq!(winner.points, Some(10.0));
+    check!(eq; winner.points, Some(10.0));
+    Ok(())
 }
 
 #[test]
-fn relay_rows_name_the_school_and_list_their_legs_with_grades() {
-    let meet = parse_html(SECTIONS);
+fn relay_rows_name_the_school_and_list_their_legs_with_grades() -> TestResult {
+    let meet = parse_html(SECTIONS)?;
     let event = meet
         .events
         .iter()
         .find(|event| event.kind == EventKind::Relay4x100)
-        .expect("the fixture publishes the 4x100 relay");
+        .ok_or("the fixture publishes the 4x100 relay")?;
     let winner = event
         .rows
         .iter()
         .find(|row| row.school == "Homestead")
-        .expect("Homestead ran the relay");
-    assert!(
+        .ok_or("Homestead ran the relay")?;
+    check!(
         winner.name.is_empty(),
         "relay rows name a school, not an athlete"
     );
-    assert!(
+    check!(
         winner.legs.len() >= 4,
         "at least the four legs are listed, got {:?}",
         winner.legs
     );
-    assert_eq!(winner.legs[0].name, "Jamir Erving");
-    assert_eq!(winner.legs[0].position, 1);
-    assert_eq!(winner.legs[0].grade.map(Grade::get), Some(11));
-    assert_eq!(winner.legs[1].name, "Sean O'Byrne");
-    assert_eq!(winner.legs[1].grade.map(Grade::get), Some(12));
-    assert_eq!(winner.legs[2].name, "Jackson Montgomery");
-    assert_eq!(winner.legs[3].name, "Lucas Mersky");
+    check!(eq; winner.legs[0].name, "Jamir Erving");
+    check!(eq; winner.legs[0].position, 1);
+    check!(eq; winner.legs[0].grade.map(Grade::get), Some(11));
+    check!(eq; winner.legs[1].name, "Sean O'Byrne");
+    check!(eq; winner.legs[1].grade.map(Grade::get), Some(12));
+    check!(eq; winner.legs[2].name, "Jackson Montgomery");
+    check!(eq; winner.legs[3].name, "Lucas Mersky");
+    Ok(())
 }
 
 #[test]
-fn team_score_lines_are_not_mistaken_for_results() {
-    let meet = parse_html(DASH);
+fn team_score_lines_are_not_mistaken_for_results() -> TestResult {
+    let meet = parse_html(DASH)?;
     for event in &meet.events {
         for row in &event.rows {
-            assert!(
+            check!(
                 !row.school.contains(')'),
                 "team score lines must not become results: {row:?}"
             );
-            assert!(row.place.is_some());
+            check!(row.place.is_some());
         }
     }
+    Ok(())
 }
 
 #[test]
@@ -265,13 +276,14 @@ const DASH_TEXT: &str =
     include_str!("../../tests/fixtures/wiaa_results/d1boysstateresults-dash.txt");
 
 #[test]
-fn plain_text_reports_parse_the_same_way_as_html_ones() {
-    let from_html = parse_html(DASH);
+fn plain_text_reports_parse_the_same_way_as_html_ones() -> TestResult {
+    let from_html = parse_html(DASH)?;
     let lines = lines_from_text(DASH_TEXT);
-    let from_text = super::parse(&lines, source()).expect("text reports carry the same header");
-    assert_eq!(from_text.name, from_html.name);
-    assert_eq!(from_text.date, from_html.date);
-    assert_eq!(from_text.rows_parsed, from_html.rows_parsed);
-    assert_eq!(from_text.events.len(), from_html.events.len());
-    assert_eq!(from_text.events[0].rows[0], from_html.events[0].rows[0]);
+    let from_text = super::parse(&lines, source()).ok_or("text reports carry the same header")?;
+    check!(eq; from_text.name, from_html.name);
+    check!(eq; from_text.date, from_html.date);
+    check!(eq; from_text.rows_parsed, from_html.rows_parsed);
+    check!(eq; from_text.events.len(), from_html.events.len());
+    check!(eq; from_text.events[0].rows[0], from_html.events[0].rows[0]);
+    Ok(())
 }

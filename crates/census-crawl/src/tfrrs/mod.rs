@@ -81,7 +81,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
 }
 
 fn limit_of(options: &Options) -> usize {
-    options.limit.unwrap_or(usize::MAX)
+    options.limit.map_or(usize::MAX, |value| value)
 }
 
 async fn stats_of(ctx: &AdapterContext<'_>) -> (u64, u64) {

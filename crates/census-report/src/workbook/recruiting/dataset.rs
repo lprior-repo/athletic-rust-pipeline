@@ -88,21 +88,21 @@ impl Dataset {
         self.schools
             .get(school)
             .map(|s| s.name.clone())
-            .unwrap_or_default()
+            .map_or(Default::default(), core::convert::identity)
     }
 
     pub(super) fn school_state(&self, school: &str) -> String {
         self.schools
             .get(school)
             .and_then(|s| s.state.map(|st| st.to_string()))
-            .unwrap_or_default()
+            .map_or(Default::default(), core::convert::identity)
     }
 
     pub(super) fn school_city(&self, school: &str) -> String {
         self.schools
             .get(school)
             .and_then(|s| s.city.clone())
-            .unwrap_or_default()
+            .map_or(Default::default(), core::convert::identity)
     }
 
     pub(super) fn prs_of(&self, athlete: &str) -> Box<dyn Iterator<Item = &SharedSelection> + '_> {

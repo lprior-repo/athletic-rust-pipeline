@@ -28,7 +28,7 @@ pub(super) fn verify(
             findings.note(format!(
                 "{} carries an unexpected PR row whose athlete reads {:?}",
                 coordinate(labels::PRS, row.index(), 0),
-                row.text(0).unwrap_or("")
+                row.text(0).map_or("", |value| value)
             ));
             return;
         };
@@ -130,7 +130,7 @@ fn report_prs_read_result(
                     prs.len(),
                     prs.get(written)
                         .map(|pr| pr.athlete_id().as_str())
-                        .unwrap_or("(none)")
+                        .map_or("(none)", |value| value)
                 ));
             }
         }

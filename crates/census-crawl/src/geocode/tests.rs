@@ -9,6 +9,10 @@ use super::key::SecretKey;
 use super::transport::{Transport, TransportFailure};
 use super::usps::{UspsValidator, ValidationOutcome, ValidationQuery};
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+type RecordedRequest = (String, Option<String>);
+type RecordedRequests = Arc<Mutex<Vec<RecordedRequest>>>;
+
 const GOOGLE_OK: &str = r#"{
   "status": "OK",
   "results": [
@@ -37,7 +41,7 @@ const USPS_ADDRESS: &str = r#"{
 #[derive(Clone)]
 struct StubTransport {
     reply: Reply,
-    requests: Arc<Mutex<Vec<(String, Option<String>)>>>,
+    requests: RecordedRequests,
 }
 
 #[derive(Clone)]
@@ -61,9 +65,12 @@ impl StubTransport {
         }
     }
 
-    fn request(&self) -> (String, Option<String>) {
-        let requests = self.requests.lock().expect("stub requests");
-        requests.first().cloned().expect("one request")
+    fn request(&self) -> TestResult<RecordedRequest> {
+        let requests = self
+            .requests
+            .lock()
+            .map_err(|error| format!("stub requests poisoned: {error}"))?;
+        Ok(requests.first().cloned().ok_or("one request")?)
     }
 }
 
@@ -75,7 +82,9 @@ impl Transport for StubTransport {
     ) -> Result<String, TransportFailure> {
         self.requests
             .lock()
-            .expect("stub requests")
+            .map_err(|error| TransportFailure {
+                detail: format!("stub requests poisoned: {error}"),
+            })?
             .push((url.to_string(), authorization.map(str::to_string)));
         match &self.reply {
             Reply::Body(body) => Ok(body.clone()),
@@ -86,12 +95,11 @@ impl Transport for StubTransport {
     }
 }
 
-fn run<F: Future>(future: F) -> F::Output {
-    tokio::runtime::Builder::new_current_thread()
+fn run<F: Future>(future: F) -> TestResult<F::Output> {
+    Ok(tokio::runtime::Builder::new_current_thread()
         .enable_all()
-        .build()
-        .expect("runtime")
-        .block_on(future)
+        .build()?
+        .block_on(future))
 }
 
 fn springfield_query() -> GeocodeQuery {
@@ -136,59 +144,64 @@ fn secret_key_debug_is_redacted() {
 }
 
 #[test]
-fn missing_credential_refusal_names_the_variable_once() {
-    let missing =
-        SecretKey::from_env_first(&["SCHOOL_ADDRESS_TEST_ABSENT_KEY"]).expect_err("absent key");
-    assert_eq!(missing.name, "SCHOOL_ADDRESS_TEST_ABSENT_KEY");
-    assert!(missing
+fn missing_credential_refusal_names_the_variable_once() -> TestResult {
+    let missing = match SecretKey::from_env_first(&["SCHOOL_ADDRESS_TEST_ABSENT_KEY"]) {
+        Err(error) => error,
+        Ok(_) => return Err("absent key unexpectedly present".into()),
+    };
+    check!(eq; missing.name, "SCHOOL_ADDRESS_TEST_ABSENT_KEY");
+    check!(missing
         .to_string()
         .contains("SCHOOL_ADDRESS_TEST_ABSENT_KEY"));
+    Ok(())
 }
 
 #[test]
-fn google_request_carries_the_composed_address_and_the_key() {
+fn google_request_carries_the_composed_address_and_the_key() -> TestResult {
     let (geocoder, stub) = geocoder_replying(GOOGLE_OK);
-    let outcome = run(geocoder.geocode(&springfield_query()));
-    assert!(matches!(outcome, GeocodeOutcome::Found { .. }));
+    let outcome = run(geocoder.geocode(&springfield_query()))?;
+    check!(matches!(outcome, GeocodeOutcome::Found { .. }));
 
-    let (url, authorization) = stub.request();
-    assert!(authorization.is_none());
-    let parsed = reqwest::Url::parse(url.as_str()).expect("absolute url");
-    assert_eq!(parsed.host_str(), Some("maps.googleapis.com"));
+    let (url, authorization) = stub.request()?;
+    check!(authorization.is_none());
+    let parsed = reqwest::Url::parse(url.as_str())?;
+    check!(eq; parsed.host_str(), Some("maps.googleapis.com"));
     let params: std::collections::BTreeMap<String, String> =
         parsed.query_pairs().into_owned().collect();
-    assert_eq!(
+    check!(eq;
         params.get("address").map(String::as_str),
         Some("100 Main St, Springfield, IL 62704")
     );
-    assert_eq!(params.get("key").map(String::as_str), Some("alpha-key"));
+    check!(eq; params.get("key").map(String::as_str), Some("alpha-key"));
+    Ok(())
 }
 
 #[test]
-fn documented_ok_status_yields_typed_coordinates() {
+fn documented_ok_status_yields_typed_coordinates() -> TestResult {
     let (geocoder, _stub) = geocoder_replying(GOOGLE_OK);
-    let outcome = run(geocoder.geocode(&springfield_query()));
+    let outcome = run(geocoder.geocode(&springfield_query()))?;
     let GeocodeOutcome::Found {
         coordinates,
         formatted_address,
         location_type,
     } = outcome
     else {
-        panic!("expected a found coordinate");
+        return Err("expected a found coordinate".into());
     };
-    assert_eq!(
+    check!(eq;
         coordinates,
-        Coordinates::parse("39.7817210", "-89.6501480").expect("documented coordinate")
+        Coordinates::parse("39.7817210", "-89.6501480")?
     );
-    assert_eq!(
+    check!(eq;
         formatted_address.as_deref(),
         Some("100 Main St, Springfield, IL 62704, USA")
     );
-    assert_eq!(location_type.as_deref(), Some("ROOFTOP"));
+    check!(eq; location_type.as_deref(), Some("ROOFTOP"));
+    Ok(())
 }
 
 #[test]
-fn documented_google_statuses_map_to_distinct_outcomes() {
+fn documented_google_statuses_map_to_distinct_outcomes() -> TestResult {
     let cases = [
         ("ZERO_RESULTS", GeocodeOutcome::ZeroResults),
         ("REQUEST_DENIED", GeocodeOutcome::Denied),
@@ -199,70 +212,75 @@ fn documented_google_statuses_map_to_distinct_outcomes() {
     for (status, expected) in cases {
         let (geocoder, _stub) =
             geocoder_replying(format!(r#"{{"status": "{status}", "results": []}}"#).as_str());
-        let outcome = run(geocoder.geocode(&springfield_query()));
-        assert_eq!(outcome, expected, "status {status}");
+        let outcome = run(geocoder.geocode(&springfield_query()))?;
+        check!(eq; outcome, expected, "status {status}");
     }
+    Ok(())
 }
 
 #[test]
-fn unrecognized_google_status_is_reported_not_fabricated() {
+fn unrecognized_google_status_is_reported_not_fabricated() -> TestResult {
     let (geocoder, _stub) = geocoder_replying(r#"{"status": "SOMETHING_NEW", "results": []}"#);
-    let outcome = run(geocoder.geocode(&springfield_query()));
-    assert_eq!(
+    let outcome = run(geocoder.geocode(&springfield_query()))?;
+    check!(eq;
         outcome,
         GeocodeOutcome::UnknownStatus {
             status: "SOMETHING_NEW".to_string()
         }
     );
+    Ok(())
 }
 
 #[test]
-fn ok_without_a_geometry_location_is_unusable() {
+fn ok_without_a_geometry_location_is_unusable() -> TestResult {
     let (geocoder, _stub) =
         geocoder_replying(r#"{"status": "OK", "results": [{"formatted_address": "somewhere"}]}"#);
-    let outcome = run(geocoder.geocode(&springfield_query()));
-    assert!(matches!(outcome, GeocodeOutcome::Unusable { .. }));
+    let outcome = run(geocoder.geocode(&springfield_query()))?;
+    check!(matches!(outcome, GeocodeOutcome::Unusable { .. }));
+    Ok(())
 }
 
 #[test]
-fn google_transport_failure_never_echoes_the_key() {
+fn google_transport_failure_never_echoes_the_key() -> TestResult {
     let stub =
         StubTransport::failing("request to https://maps.googleapis.com?key=alpha-key failed");
     let geocoder = GoogleGeocoder::new(SecretKey::new("alpha-key"), stub);
-    let outcome = run(geocoder.geocode(&springfield_query()));
+    let outcome = run(geocoder.geocode(&springfield_query()))?;
     let GeocodeOutcome::Transport { detail } = outcome else {
-        panic!("expected a transport failure");
+        return Err("expected a transport failure".into());
     };
-    assert!(!detail.contains("alpha-key"));
-    assert!(detail.contains("<redacted>"));
+    check!(!detail.contains("alpha-key"));
+    check!(detail.contains("<redacted>"));
+    Ok(())
 }
 
 #[test]
-fn usps_request_carries_the_bearer_token_and_the_address_query() {
+fn usps_request_carries_the_bearer_token_and_the_address_query() -> TestResult {
     let (validator, stub) = validator_replying(USPS_ADDRESS);
-    let outcome = run(validator.validate(&validation_query()));
-    assert!(matches!(outcome, ValidationOutcome::Validated { .. }));
+    let outcome = run(validator.validate(&validation_query()))?;
+    check!(matches!(outcome, ValidationOutcome::Validated { .. }));
 
-    let (url, authorization) = stub.request();
-    assert_eq!(authorization.as_deref(), Some("Bearer beta-token"));
-    let parsed = reqwest::Url::parse(url.as_str()).expect("absolute url");
-    assert_eq!(parsed.host_str(), Some("apis.usps.com"));
+    let (url, authorization) = stub.request()?;
+    check!(eq; authorization.as_deref(), Some("Bearer beta-token"));
+    let parsed = reqwest::Url::parse(url.as_str())?;
+    check!(eq; parsed.host_str(), Some("apis.usps.com"));
     let params: std::collections::BTreeMap<String, String> =
         parsed.query_pairs().into_owned().collect();
-    assert_eq!(
+    check!(eq;
         params.get("streetAddress").map(String::as_str),
         Some("100 Main St")
     );
-    assert_eq!(params.get("city").map(String::as_str), Some("Springfield"));
-    assert_eq!(params.get("state").map(String::as_str), Some("IL"));
-    assert_eq!(params.get("zip").map(String::as_str), Some("62704"));
-    assert!(!url.contains("beta-token"));
+    check!(eq; params.get("city").map(String::as_str), Some("Springfield"));
+    check!(eq; params.get("state").map(String::as_str), Some("IL"));
+    check!(eq; params.get("zip").map(String::as_str), Some("62704"));
+    check!(!url.contains("beta-token"));
+    Ok(())
 }
 
 #[test]
-fn documented_usps_address_body_yields_typed_fields() {
+fn documented_usps_address_body_yields_typed_fields() -> TestResult {
     let (validator, _stub) = validator_replying(USPS_ADDRESS);
-    let outcome = run(validator.validate(&validation_query()));
+    let outcome = run(validator.validate(&validation_query()))?;
     let ValidationOutcome::Validated {
         street,
         city,
@@ -272,63 +290,68 @@ fn documented_usps_address_body_yields_typed_fields() {
         confirmation,
     } = outcome
     else {
-        panic!("expected a validated address");
+        return Err("expected a validated address".into());
     };
-    assert_eq!(
+    check!(eq;
         street.map(|street| street.as_str().to_string()).as_deref(),
         Some("100 Main St")
     );
-    assert_eq!(
+    check!(eq;
         city.map(|city| city.as_str().to_string()).as_deref(),
         Some("Springfield")
     );
-    assert_eq!(state, Some(UsJurisdiction::Illinois));
-    assert_eq!(
+    check!(eq; state, Some(UsJurisdiction::Illinois));
+    check!(eq;
         zip,
-        Some(ZipCode::of("62704", Some("1234")).expect("documented zip"))
+        Some(ZipCode::of("62704", Some("1234"))?)
     );
-    assert_eq!(delivery_point.as_deref(), Some("123456789"));
-    assert_eq!(confirmation.as_deref(), Some("Y"));
+    check!(eq; delivery_point.as_deref(), Some("123456789"));
+    check!(eq; confirmation.as_deref(), Some("Y"));
+    Ok(())
 }
 
 #[test]
-fn documented_usps_error_body_yields_a_rejection() {
+fn documented_usps_error_body_yields_a_rejection() -> TestResult {
     let (validator, _stub) =
         validator_replying(r#"{"error": {"code": "400", "message": "Invalid address"}}"#);
-    let outcome = run(validator.validate(&validation_query()));
-    assert_eq!(
+    let outcome = run(validator.validate(&validation_query()))?;
+    check!(eq;
         outcome,
         ValidationOutcome::Rejected {
             code: Some("400".to_string()),
             message: Some("Invalid address".to_string())
         }
     );
+    Ok(())
 }
 
 #[test]
-fn usps_body_without_address_or_error_is_unparsed() {
+fn usps_body_without_address_or_error_is_unparsed() -> TestResult {
     let (validator, _stub) = validator_replying(r#"{"unexpected": true}"#);
-    let outcome = run(validator.validate(&validation_query()));
-    assert!(matches!(outcome, ValidationOutcome::Unparsed { .. }));
+    let outcome = run(validator.validate(&validation_query()))?;
+    check!(matches!(outcome, ValidationOutcome::Unparsed { .. }));
+    Ok(())
 }
 
 #[test]
-fn usps_transport_failure_never_echoes_the_token() {
+fn usps_transport_failure_never_echoes_the_token() -> TestResult {
     let stub = StubTransport::failing("request rejected: Bearer beta-token was refused");
     let validator = UspsValidator::new(SecretKey::new("beta-token"), stub);
-    let outcome = run(validator.validate(&validation_query()));
+    let outcome = run(validator.validate(&validation_query()))?;
     let ValidationOutcome::Transport { detail } = outcome else {
-        panic!("expected a transport failure");
+        return Err("expected a transport failure".into());
     };
-    assert!(!detail.contains("beta-token"));
-    assert!(detail.contains("<redacted>"));
+    check!(!detail.contains("beta-token"));
+    check!(detail.contains("<redacted>"));
+    Ok(())
 }
 
 #[test]
-fn empty_usps_address_fields_are_unparsed_not_validated() {
+fn empty_usps_address_fields_are_unparsed_not_validated() -> TestResult {
     let (validator, _stub) = validator_replying(
         r#"{"address": {"streetAddress": "", "city": "", "state": "", "ZIPCode": ""}}"#,
     );
-    let outcome = run(validator.validate(&validation_query()));
-    assert!(matches!(outcome, ValidationOutcome::Unparsed { .. }));
+    let outcome = run(validator.validate(&validation_query()))?;
+    check!(matches!(outcome, ValidationOutcome::Unparsed { .. }));
+    Ok(())
 }

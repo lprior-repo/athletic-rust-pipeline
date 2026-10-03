@@ -34,8 +34,12 @@ pub(super) async fn bootstrap_events(page: &Page) -> Result<BootstrapEvents, Bro
 }
 
 pub(super) fn navigation_deadline(now: Instant, timeout: Duration) -> Instant {
-    now.checked_add(timeout)
-        .unwrap_or_else(|| now.checked_add(Duration::from_secs(300)).unwrap_or(now))
+    match now.checked_add(timeout) {
+        Some(value) => value,
+        None => now
+            .checked_add(Duration::from_secs(300))
+            .map_or(now, |value| value),
+    }
 }
 
 pub(super) struct DocumentState {

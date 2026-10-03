@@ -91,7 +91,8 @@ impl SchoolIndex {
                 if raw.to_ascii_lowercase().contains(pattern) {
                     let expanded =
                         normalize_name(&raw.to_ascii_lowercase().replace(pattern, replacement));
-                    let key = without_squad_letter(&expanded).unwrap_or(&expanded);
+                    let key =
+                        without_squad_letter(&expanded).map_or(expanded.as_str(), |value| value);
                     if let Some(id) = self.exact.get(&(state, key.to_string())) {
                         return Some((id.clone(), SchoolMatch::Abbreviation));
                     }

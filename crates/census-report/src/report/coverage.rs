@@ -10,7 +10,7 @@ mod gaps;
 mod reads;
 mod state;
 
-pub(crate) use state::{in_cohort, jurisdiction_of, school_state_index};
+pub(crate) use state::{in_requested_year, jurisdiction_of, school_state_index};
 
 pub use gaps::{CoverageGap, GapClass};
 

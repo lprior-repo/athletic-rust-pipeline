@@ -1,3 +1,7 @@
+#[macro_use]
+#[path = "../../../tools/fallible_checks.rs"]
+mod fallible_checks;
+
 use calamine::Reader;
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
@@ -15,7 +19,7 @@ use std::time::{Duration, Instant};
 use tempfile::TempDir;
 
 const MEET_DATE: &str = "2026-05-02";
-const SEASON: SchoolYear = SchoolYear::new(2025).expect("2025 is a season");
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 fn evidence() -> Evidence {
     Evidence::parsed(SourceRef::id("mshsl_results"), MEET_DATE)
 }
@@ -31,15 +35,14 @@ struct Corpus {
 }
 
 impl Corpus {
-    fn append(&self, store: &Store) {
-        store.append_many(Table::Schools, &self.schools).unwrap();
-        store.append_many(Table::Teams, &self.teams).unwrap();
-        store.append_many(Table::Athletes, &self.athletes).unwrap();
-        store.append_many(Table::Meets, &self.meets).unwrap();
-        store.append_many(Table::Events, &self.events).unwrap();
-        store
-            .append_many(Table::Performances, &self.performances)
-            .unwrap();
+    fn append(&self, store: &Store) -> TestResult {
+        store.append_many(Table::Schools, &self.schools)?;
+        store.append_many(Table::Teams, &self.teams)?;
+        store.append_many(Table::Athletes, &self.athletes)?;
+        store.append_many(Table::Meets, &self.meets)?;
+        store.append_many(Table::Events, &self.events)?;
+        store.append_many(Table::Performances, &self.performances)?;
+        Ok(())
     }
     fn count(&self) -> usize {
         self.schools.len()
@@ -51,7 +54,8 @@ impl Corpus {
     }
 }
 
-fn build_corpus(n: usize) -> Corpus {
+fn build_corpus(n: usize) -> TestResult<Corpus> {
+    let season = SchoolYear::new(2025).ok_or("invalid fixture season")?;
     let mut c = Corpus {
         schools: Vec::new(),
         teams: Vec::new(),
@@ -63,7 +67,7 @@ fn build_corpus(n: usize) -> Corpus {
     for i in 0..n {
         let name = format!("KillRestart School {i}");
         let (mut school, sid) =
-            CanonicalSchool::new(UsJurisdiction::Wisconsin, &name, &normalize_name(&name));
+            CanonicalSchool::new(UsJurisdiction::Wisconsin, &name, normalize_name(&name));
         school.evidence.push(evidence());
         let tid = Id::mint("team", &[sid.as_str(), "track", "m", "2025"]);
         c.teams.push(CanonicalTeam {
@@ -71,7 +75,7 @@ fn build_corpus(n: usize) -> Corpus {
             school: sid.clone(),
             sport: Sport::OutdoorTrack,
             gender: Gender::Boys,
-            school_year: SEASON,
+            school_year: season,
             level: None,
             source_identities: Vec::new(),
             evidence: vec![evidence()],
@@ -91,13 +95,18 @@ fn build_corpus(n: usize) -> Corpus {
                 SourceNamespace::Other("fixture".to_string()),
                 format!("athlete-{i}-{s}"),
             );
-            let a = CanonicalAthlete::new(
+            let mut a = CanonicalAthlete::new(
                 &sid,
                 format!("Killer {i}-{s}"),
                 GradYear::CO2027,
                 Gender::Boys,
                 source.clone(),
             );
+            a.published_graduations
+                .push(census_domain::model::PublishedGraduation {
+                    grad_year: GradYear::CO2027,
+                    source: SourceRef::id("mshsl_results"),
+                });
             let aid = a.id.clone();
             let ev = CanonicalEvent::new(&mid, EventKind::Track100m, Gender::Boys, None, None);
             let eid = ev.id.clone();
@@ -118,14 +127,14 @@ fn build_corpus(n: usize) -> Corpus {
                 meet: mid.clone(),
                 date: MEET_DATE.to_string(),
                 mark: Mark::TimeSeconds(
-                    CentiSeconds::try_from_seconds_f64(12.0).expect("in range"),
+                    CentiSeconds::try_from_seconds_f64(12.0).ok_or("invalid fixture time")?,
                 ),
                 wind_mps: None,
                 place: Some(1),
                 heat: None,
                 round: None,
                 timing: Some(TimingMethod::Fat),
-                observed_grade: Some(Grade::new(11).unwrap()),
+                observed_grade: Some(Grade::new(11).ok_or("invalid fixture grade")?),
                 evidence: vec![evidence()],
                 source_key: format!("kill-{i}-{s}"),
                 source_athlete: Some(source),
@@ -133,7 +142,7 @@ fn build_corpus(n: usize) -> Corpus {
             });
         }
     }
-    c
+    Ok(c)
 }
 
 struct ChildGuard {
@@ -141,15 +150,14 @@ struct ChildGuard {
 }
 
 impl ChildGuard {
-    fn kill_and_reap(&mut self) {
-        self.child.kill().expect("SIGKILL child");
-        let status = self.child.wait().expect("reap killed child");
-        assert_eq!(
-            status.signal(),
-            Some(9),
-            "child must die from SIGKILL, got {:?}",
-            status
-        );
+    fn kill_and_reap(&mut self) -> TestResult {
+        self.child.kill()?;
+        let status = self.child.wait()?;
+        check!(eq; status.signal(),
+        Some(9),
+        "child must die from SIGKILL, got {:?}",
+        status);
+        Ok(())
     }
 }
 
@@ -160,7 +168,7 @@ impl Drop for ChildGuard {
     }
 }
 
-fn spawn_workbook(data_dir: &Path, out_path: &Path) -> ChildGuard {
+fn spawn_workbook(data_dir: &Path, out_path: &Path) -> TestResult<ChildGuard> {
     let binary = env!("CARGO_BIN_EXE_census-service");
     let child = Command::new(binary)
         .arg("workbook")
@@ -172,39 +180,35 @@ fn spawn_workbook(data_dir: &Path, out_path: &Path) -> ChildGuard {
         .arg(data_dir)
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        .spawn()
-        .expect("spawn census-service workbook");
-    ChildGuard { child }
+        .spawn()?;
+    Ok(ChildGuard { child })
 }
 
-fn xlsx_rows(path: &Path, sheet: &str) -> Option<usize> {
-    let mut book = calamine::open_workbook_auto(path).ok()?;
-    let range = book.worksheet_range(sheet).ok()?;
-    Some(
-        range
-            .rows()
-            .filter(|r| r.iter().any(|c| !matches!(c, calamine::Data::Empty)))
-            .count(),
-    )
+fn xlsx_rows(path: &Path, sheet: &str) -> TestResult<usize> {
+    let mut book = calamine::open_workbook_auto(path)?;
+    let range = book.worksheet_range(sheet)?;
+    Ok(range
+        .rows()
+        .filter(|r| r.iter().any(|c| !matches!(c, calamine::Data::Empty)))
+        .count())
 }
 
-fn unique_athlete_ids(path: &Path) -> Option<HashSet<String>> {
-    let mut book = calamine::open_workbook_auto(path).ok()?;
-    let range = book.worksheet_range("Athletes").ok()?;
+fn unique_athlete_ids(path: &Path) -> TestResult<HashSet<String>> {
+    let mut book = calamine::open_workbook_auto(path)?;
+    let range = book.worksheet_range("Athletes")?;
     let mut ids = HashSet::new();
     for row in range.rows().skip(1) {
-        if let Some(cell) = row.first() {
-            if let calamine::Data::String(ref s) = cell {
-                if !s.is_empty() {
-                    ids.insert(s.clone());
-                }
+        match row.first() {
+            Some(calamine::Data::String(s)) if !s.is_empty() => {
+                ids.insert(s.clone());
             }
+            _ => {}
         }
     }
-    Some(ids)
+    Ok(ids)
 }
 
-fn verify_cli(store: &Path, xlsx: &Path) {
+fn verify_cli(store: &Path, xlsx: &Path) -> TestResult {
     let binary = env!("CARGO_BIN_EXE_census-service");
     let status = Command::new(binary)
         .arg("verify")
@@ -214,110 +218,114 @@ fn verify_cli(store: &Path, xlsx: &Path) {
         .arg(xlsx)
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        .status()
-        .expect("spawn verify");
-    assert!(status.success(), "verify must exit 0, got {:?}", status);
+        .status()?;
+    check!(status.success(), "verify must exit 0, got {:?}", status);
+    Ok(())
 }
 
-#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-async fn a_workbook_export_interrupted_by_sigkill_rebuilds_completely_on_restart() {
-    let tmpdir = TempDir::new().expect("create temp dir");
-    let data_dir = tmpdir.path().join("store");
-    std::fs::create_dir_all(&data_dir).expect("create store dir");
+#[test]
+fn a_workbook_export_interrupted_by_sigkill_rebuilds_completely_on_restart() -> TestResult {
+    tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(4)
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let tmpdir = TempDir::new()?;
+            let data_dir = tmpdir.path().join("store");
+            std::fs::create_dir_all(&data_dir)?;
 
-    let corpus = build_corpus(200);
-    let expected = corpus.count();
-    {
-        let store = Store::open(&data_dir).expect("open store");
-        corpus.append(&store);
-    }
-
-    let output_path = tmpdir.path().join("publication");
-    let mut child = spawn_workbook(&data_dir, &output_path);
-
-    let deadline = Instant::now() + Duration::from_secs(120);
-    let mut killed = false;
-    while Instant::now() < deadline {
-        std::thread::sleep(Duration::from_millis(200));
-        if let Ok(entries) = std::fs::read_dir(&output_path) {
-            let rendering = entries.filter_map(Result::ok).any(|entry| {
-                entry.file_name().to_string_lossy().starts_with(".staging.")
-                    && entry.path().join("frozen-input.json").is_file()
-            });
-            if rendering {
-                child.kill_and_reap();
-                killed = true;
-                break;
+            let corpus = build_corpus(200)?;
+            let expected = corpus.count();
+            {
+                let store = Store::open(&data_dir)?;
+                corpus.append(&store)?;
             }
-        }
-    }
-    assert!(
-        killed,
-        "an uncommitted frozen input never appeared before deadline"
-    );
 
-    assert!(
-        !output_path.join("current").exists(),
-        "interrupted generation must not become public"
-    );
+            let output_path = tmpdir.path().join("publication");
+            let mut child = spawn_workbook(&data_dir, &output_path)?;
 
-    {
-        let s = Store::open(&data_dir).expect("reopen store");
-        let _ = s.stats().expect("stats");
-    }
+            let deadline = Instant::now() + Duration::from_secs(120);
+            let mut killed = false;
+            while Instant::now() < deadline {
+                std::thread::sleep(Duration::from_millis(200));
+                if let Ok(entries) = std::fs::read_dir(&output_path) {
+                    let rendering = entries.filter_map(Result::ok).any(|entry| {
+                        entry.file_name().to_string_lossy().starts_with(".staging.")
+                            && entry.path().join("frozen-input.json").is_file()
+                    });
+                    if rendering {
+                        child.kill_and_reap()?;
+                        killed = true;
+                        break;
+                    }
+                }
+            }
+            check!(
+                killed,
+                "an uncommitted frozen input never appeared before deadline"
+            );
 
-    let mut restart = spawn_workbook(&data_dir, &output_path);
-    let st = restart.child.wait().expect("wait restart");
-    assert!(st.success(), "restarted workbook must exit 0, got {:?}", st);
+            check!(
+                !output_path.join("current").exists(),
+                "interrupted generation must not become public"
+            );
 
-    let published = census_report::workbook::publication::current_workbook(&output_path)
-        .expect("restart publishes a complete generation");
-    assert_eq!(
-        xlsx_rows(&published, "Athletes"),
-        Some(corpus.athletes.len() + 1)
-    );
-    let expected_ids: HashSet<_> = corpus
-        .athletes
-        .iter()
-        .map(|athlete| athlete.id.to_string())
-        .collect();
-    assert_eq!(
-        unique_athlete_ids(&published).expect("published athlete IDs"),
-        expected_ids
-    );
-    verify_cli(&data_dir, &published);
+            {
+                let s = Store::open(&data_dir)?;
+                let _ = s.stats()?;
+            }
 
-    let store_after = Store::open(&data_dir).expect("reopen store after restart");
-    let stats = store_after.stats().expect("final stats");
-    assert_eq!(
-        stats.observations,
-        u64::try_from(expected).expect("fixture count fits u64"),
-        "store must hold all observations: expected={}, found={}",
-        expected,
-        stats.observations
-    );
+            let mut restart = spawn_workbook(&data_dir, &output_path)?;
+            let st = restart.child.wait()?;
+            check!(st.success(), "restarted workbook must exit 0, got {:?}", st);
+
+            let published = census_report::workbook::publication::current_workbook(&output_path)?;
+            check!(eq; xlsx_rows(&published, "Athletes")?,
+    corpus.athletes.len() + 1);
+            let expected_ids: HashSet<_> = corpus
+                .athletes
+                .iter()
+                .map(|athlete| athlete.id.to_string())
+                .collect();
+            check!(eq; unique_athlete_ids(&published)?,
+    expected_ids);
+            verify_cli(&data_dir, &published)?;
+
+            let store_after = Store::open(&data_dir)?;
+            let stats = store_after.stats()?;
+            check!(eq; stats.observations,
+    u64::try_from(expected)?,
+    "store must hold all observations: expected={}, found={}",
+    expected,
+    stats.observations);
+            Ok(())
+        })
 }
 
-#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-async fn b_workbook_without_interrupt_exits_cleanly() {
-    let tmpdir = TempDir::new().expect("create temp dir");
-    let data_dir = tmpdir.path().join("store");
-    std::fs::create_dir_all(&data_dir).expect("create store dir");
+#[test]
+fn b_workbook_without_interrupt_exits_cleanly() -> TestResult {
+    tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(4)
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let tmpdir = TempDir::new()?;
+            let data_dir = tmpdir.path().join("store");
+            std::fs::create_dir_all(&data_dir)?;
 
-    let corpus = build_corpus(20);
-    {
-        let store = Store::open(&data_dir).expect("open");
-        corpus.append(&store);
-    }
-    let output_path = tmpdir.path().join("publication");
-    let mut child = spawn_workbook(&data_dir, &output_path);
-    let status = child.child.wait().expect("wait clean");
-    assert!(status.success(), "must exit 0, got {:?}", status);
-    let published = census_report::workbook::publication::current_workbook(&output_path)
-        .expect("clean export publishes a complete generation");
-    assert_eq!(
-        xlsx_rows(&published, "Athletes"),
-        Some(corpus.athletes.len() + 1)
-    );
-    verify_cli(&data_dir, &published);
+            let corpus = build_corpus(20)?;
+            {
+                let store = Store::open(&data_dir)?;
+                corpus.append(&store)?;
+            }
+            let output_path = tmpdir.path().join("publication");
+            let mut child = spawn_workbook(&data_dir, &output_path)?;
+            let status = child.child.wait()?;
+            check!(status.success(), "must exit 0, got {:?}", status);
+            let published = census_report::workbook::publication::current_workbook(&output_path)?;
+            check!(eq; xlsx_rows(&published, "Athletes")?,
+    corpus.athletes.len() + 1);
+            verify_cli(&data_dir, &published)?;
+            Ok(())
+        })
 }

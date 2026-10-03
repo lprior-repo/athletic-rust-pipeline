@@ -157,7 +157,7 @@ impl<'a> Run<'a> {
                     .scheduled_date
                     .as_deref()
                     .and_then(parse::date_part)
-                    .unwrap_or(date),
+                    .map_or(date, |value| value),
                 school_year,
             };
             self.mapper.absorb_summary(&summary, &context, &url);

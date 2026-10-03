@@ -32,10 +32,10 @@ pub struct Options {
 }
 
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
-    let observed_on = options
-        .observed_on
-        .clone()
-        .unwrap_or_else(|| ctx.observed_on.clone());
+    let observed_on = match options.observed_on.clone() {
+        Some(value) => value,
+        None => ctx.observed_on.clone(),
+    };
     let (requests_before, cache_before) = stats_of(ctx).await;
     let done = completed_pages(ctx)?;
     let years = if options.years.is_empty() {
@@ -58,7 +58,7 @@ fn default_years(observed_on: &str) -> Vec<i16> {
         .split('-')
         .next()
         .and_then(|year| year.parse::<i16>().ok())
-        .unwrap_or(2026);
+        .map_or(2026, |value| value);
     vec![year, year.saturating_sub(1)]
 }
 

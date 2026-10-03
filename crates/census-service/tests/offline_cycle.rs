@@ -1,3 +1,7 @@
+#[macro_use]
+#[path = "../../../tools/fallible_checks.rs"]
+mod fallible_checks;
+
 use calamine::Reader;
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
@@ -13,7 +17,7 @@ use std::process::{Command, Stdio};
 use tempfile::TempDir;
 
 const MEET_DATE: &str = "2026-05-02";
-const SEASON: SchoolYear = SchoolYear::new(2025).expect("2025 is a season");
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 const ATHLETES_PER_SCHOOL: usize = 5;
 
 fn evidence() -> Evidence {
@@ -30,19 +34,19 @@ struct Corpus {
 }
 
 impl Corpus {
-    fn append(&self, store: &Store) {
-        store.append_many(Table::Schools, &self.schools).unwrap();
-        store.append_many(Table::Teams, &self.teams).unwrap();
-        store.append_many(Table::Athletes, &self.athletes).unwrap();
-        store.append_many(Table::Meets, &self.meets).unwrap();
-        store.append_many(Table::Events, &self.events).unwrap();
-        store
-            .append_many(Table::Performances, &self.performances)
-            .unwrap();
+    fn append(&self, store: &Store) -> TestResult {
+        store.append_many(Table::Schools, &self.schools)?;
+        store.append_many(Table::Teams, &self.teams)?;
+        store.append_many(Table::Athletes, &self.athletes)?;
+        store.append_many(Table::Meets, &self.meets)?;
+        store.append_many(Table::Events, &self.events)?;
+        store.append_many(Table::Performances, &self.performances)?;
+        Ok(())
     }
 }
 
-fn build_corpus(schools: usize) -> Corpus {
+fn build_corpus(schools: usize) -> TestResult<Corpus> {
+    let season = SchoolYear::new(2025).ok_or("invalid fixture season")?;
     let mut corpus = Corpus {
         schools: Vec::new(),
         teams: Vec::new(),
@@ -54,7 +58,7 @@ fn build_corpus(schools: usize) -> Corpus {
     for index in 0..schools {
         let name = format!("Offline Cycle School {index}");
         let (mut school, school_id) =
-            CanonicalSchool::new(UsJurisdiction::Wisconsin, &name, &normalize_name(&name));
+            CanonicalSchool::new(UsJurisdiction::Wisconsin, &name, normalize_name(&name));
         school.evidence.push(evidence());
         let team_id = Id::mint("team", &[school_id.as_str(), "track", "m", "2025"]);
         corpus.teams.push(CanonicalTeam {
@@ -62,7 +66,7 @@ fn build_corpus(schools: usize) -> Corpus {
             school: school_id.clone(),
             sport: Sport::OutdoorTrack,
             gender: Gender::Boys,
-            school_year: SEASON,
+            school_year: season,
             level: None,
             source_identities: Vec::new(),
             evidence: vec![evidence()],
@@ -82,13 +86,19 @@ fn build_corpus(schools: usize) -> Corpus {
                 SourceNamespace::Other("offline_cycle_fixture".to_string()),
                 format!("athlete-{index}-{slot}"),
             );
-            let athlete = CanonicalAthlete::new(
+            let mut athlete = CanonicalAthlete::new(
                 &school_id,
                 format!("Cycle Runner {index}-{slot}"),
                 GradYear::CO2027,
                 Gender::Boys,
                 source.clone(),
             );
+            athlete
+                .published_graduations
+                .push(census_domain::model::PublishedGraduation {
+                    grad_year: GradYear::CO2027,
+                    source: SourceRef::id("mshsl_results"),
+                });
             let athlete_id = athlete.id.clone();
             let event =
                 CanonicalEvent::new(&meet_id, EventKind::Track100m, Gender::Boys, None, None);
@@ -109,7 +119,7 @@ fn build_corpus(schools: usize) -> Corpus {
                 meet: meet_id.clone(),
                 date: MEET_DATE.to_string(),
                 mark: Mark::TimeSeconds(
-                    CentiSeconds::try_from_seconds_f64(12.0).expect("in range"),
+                    CentiSeconds::try_from_seconds_f64(12.0).ok_or("invalid fixture time")?,
                 ),
                 wind_mps: None,
                 place: Some(1),
@@ -124,26 +134,24 @@ fn build_corpus(schools: usize) -> Corpus {
             });
         }
     }
-    corpus
+    Ok(corpus)
 }
 
-fn xlsx_rows(path: &Path, sheet: &str) -> Option<usize> {
-    let mut book = calamine::open_workbook_auto(path).ok()?;
-    let range = book.worksheet_range(sheet).ok()?;
-    Some(
-        range
-            .rows()
-            .filter(|row| {
-                row.iter()
-                    .any(|cell| !matches!(cell, calamine::Data::Empty))
-            })
-            .count(),
-    )
+fn xlsx_rows(path: &Path, sheet: &str) -> TestResult<usize> {
+    let mut book = calamine::open_workbook_auto(path)?;
+    let range = book.worksheet_range(sheet)?;
+    Ok(range
+        .rows()
+        .filter(|row| {
+            row.iter()
+                .any(|cell| !matches!(cell, calamine::Data::Empty))
+        })
+        .count())
 }
 
-fn unique_athlete_ids(path: &Path) -> Option<HashSet<String>> {
-    let mut book = calamine::open_workbook_auto(path).ok()?;
-    let range = book.worksheet_range("Athletes").ok()?;
+fn unique_athlete_ids(path: &Path) -> TestResult<HashSet<String>> {
+    let mut book = calamine::open_workbook_auto(path)?;
+    let range = book.worksheet_range("Athletes")?;
     let mut ids = HashSet::new();
     for row in range.rows().skip(1) {
         if let Some(calamine::Data::String(id)) = row.first() {
@@ -152,10 +160,10 @@ fn unique_athlete_ids(path: &Path) -> Option<HashSet<String>> {
             }
         }
     }
-    Some(ids)
+    Ok(ids)
 }
 
-fn run_cycle(store: &Path, out: &Path) -> std::process::Output {
+fn run_cycle(store: &Path, out: &Path) -> std::io::Result<std::process::Output> {
     Command::new(env!("CARGO_BIN_EXE_census-service"))
         .arg("run")
         .arg("--grad-year")
@@ -167,10 +175,9 @@ fn run_cycle(store: &Path, out: &Path) -> std::process::Output {
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
         .output()
-        .expect("run the offline cycle")
 }
 
-fn verify(store: &Path, out: &Path) -> std::process::ExitStatus {
+fn verify(store: &Path, out: &Path) -> std::io::Result<std::process::ExitStatus> {
     Command::new(env!("CARGO_BIN_EXE_census-service"))
         .arg("verify")
         .arg("--store")
@@ -180,54 +187,49 @@ fn verify(store: &Path, out: &Path) -> std::process::ExitStatus {
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status()
-        .expect("run complete publication verification")
 }
 
 #[test]
-fn the_offline_cycle_publishes_each_cohort_athlete_once_in_a_verified_bundle() {
-    let tmpdir = TempDir::new().expect("create temp dir");
+fn the_offline_cycle_publishes_each_cohort_athlete_once_in_a_verified_bundle() -> TestResult {
+    let tmpdir = TempDir::new()?;
     let data_dir = tmpdir.path().join("store");
-    std::fs::create_dir_all(&data_dir).expect("create store dir");
+    std::fs::create_dir_all(&data_dir)?;
 
-    let corpus = build_corpus(2);
+    let corpus = build_corpus(2)?;
     let expected = corpus.athletes.len();
     {
-        let store = Store::open(&data_dir).expect("open store");
-        corpus.append(&store);
+        let store = Store::open(&data_dir)?;
+        corpus.append(&store)?;
     }
 
     let output_path = tmpdir.path().join("publication");
-    let output = run_cycle(&data_dir, &output_path);
-    assert!(
+    let output = run_cycle(&data_dir, &output_path)?;
+    check!(
         output.status.success(),
         "the offline cycle must exit 0, got {:?}",
         output.status
     );
 
-    let published = census_report::workbook::publication::current_workbook(&output_path)
-        .expect("complete cycle publication");
+    let published = census_report::workbook::publication::current_workbook(&output_path)?;
 
-    let athlete_rows = xlsx_rows(&published, "Athletes").expect("read the Athletes sheet");
-    assert_eq!(
-        athlete_rows,
-        expected + 1,
-        "the Athletes sheet carries a header row plus one row per athlete"
-    );
+    let athlete_rows = xlsx_rows(&published, "Athletes")?;
+    check!(eq; athlete_rows,
+    expected + 1,
+    "the Athletes sheet carries a header row plus one row per athlete");
 
-    let ids = unique_athlete_ids(&published).expect("read the athlete ids");
+    let ids = unique_athlete_ids(&published)?;
     let expected_ids: HashSet<_> = corpus
         .athletes
         .iter()
         .map(|athlete| athlete.id.to_string())
         .collect();
-    assert_eq!(
-        ids, expected_ids,
-        "each source-backed cohort subject appears exactly once"
-    );
+    check!(eq; ids, expected_ids,
+    "each source-backed cohort subject appears exactly once");
 
-    let status = verify(&data_dir, &published);
-    assert!(
+    let status = verify(&data_dir, &published)?;
+    check!(
         status.success(),
         "complete publication verification must exit 0, got {status:?}"
     );
+    Ok(())
 }

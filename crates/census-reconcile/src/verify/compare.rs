@@ -24,7 +24,7 @@ pub(super) fn field<'a>(
         .get(name)
         .and_then(|&i| row.get(i))
         .map(|s| s.trim())
-        .unwrap_or("")
+        .map_or("", |value| value)
 }
 
 pub fn verify_athletes(

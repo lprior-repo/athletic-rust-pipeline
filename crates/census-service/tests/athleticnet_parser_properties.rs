@@ -5,6 +5,10 @@ use census_domain::model::Mark;
 use proptest::prelude::*;
 use proptest::test_runner::{RngAlgorithm, RngSeed};
 
+#[macro_use]
+#[path = "../../../tools/fallible_checks.rs"]
+mod fallible_checks;
+
 #[path = "athleticnet_parser_properties/marks.rs"]
 mod marks;
 #[path = "athleticnet_parser_properties/requests.rs"]

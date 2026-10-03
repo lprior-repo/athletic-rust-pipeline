@@ -161,7 +161,9 @@ impl EventKind {
             "300mh" | "300h" | "300mhurdles" | "300mhhurdles" | "300hurdles" => {
                 EventKind::Track300mHurdles
             }
-            "400mh" | "400h" => EventKind::Track400mHurdles,
+            "400mh" | "400h" | "400mhurdles" | "400mhhurdles" | "400hurdles" => {
+                EventKind::Track400mHurdles
+            }
             "2000msteeplechase" | "2ksteeplechase" | "2000msteeple" => {
                 EventKind::Track2000mSteeplechase
             }

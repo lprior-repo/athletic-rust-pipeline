@@ -111,7 +111,7 @@ fn absorb_admitted(
                 Scope::TrackField => published.bio.results_tf.as_ref().map_or(0, Vec::len),
                 Scope::CrossCountry => published.bio.results_xc.as_ref().map_or(0, Vec::len),
             };
-            let count = u64::try_from(count).unwrap_or(u64::MAX);
+            let count = u64::try_from(count).map_or(u64::MAX, |value| value);
             ctx.stats.rows_without_state = ctx.stats.rows_without_state.saturating_add(count);
             ctx.stats.rows_seen = ctx.stats.rows_seen.saturating_add(count);
         }

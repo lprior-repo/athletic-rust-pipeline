@@ -9,6 +9,8 @@ use census_store::Table;
 use serde_json::json;
 use std::collections::HashSet;
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 const LISTING: &str = include_str!("../../tests/fixtures/mshsl/schools_listing.html");
 const AITKIN: &str =
     include_str!("../../tests/fixtures/mshsl/school_detail_aitkin-high-school.html");
@@ -30,7 +32,7 @@ const AITKIN_TF_GIRLS: &str =
 
 const OBSERVED_ON: &str = "2026-09-20";
 
-fn seed_cache(cache_dir: &std::path::Path, url: &str, body: &str) {
+fn seed_cache(cache_dir: &std::path::Path, url: &str, body: &str) -> TestResult {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     hasher.update(b"GET");
@@ -49,50 +51,55 @@ fn seed_cache(cache_dir: &std::path::Path, url: &str, body: &str) {
         "bytes": body.len(),
         "fetched_at": "2026-09-20T14:39:00Z",
     });
-    std::fs::create_dir_all(cache_dir).expect("cache dir");
-    std::fs::write(cache_dir.join(format!("{key}.body")), body).expect("cache body");
+    std::fs::create_dir_all(cache_dir)?;
+    std::fs::write(cache_dir.join(format!("{key}.body")), body)?;
     std::fs::write(
         cache_dir.join(format!("{key}.meta.json")),
-        serde_json::to_vec(&meta).expect("cache meta"),
-    )
-    .expect("cache meta written");
+        serde_json::to_vec(&meta)?,
+    )?;
+    Ok(())
 }
 
-fn listing_row<'a>(rows: &'a [SchoolListRow], slug: &str) -> &'a SchoolListRow {
-    rows.iter()
+fn listing_row<'a>(rows: &'a [SchoolListRow], slug: &str) -> TestResult<&'a SchoolListRow> {
+    Ok(rows
+        .iter()
         .find(|row| row.slug == slug)
-        .expect("fixture row")
+        .ok_or("fixture row")?)
 }
 
 fn detail_row(slug: &str, detail: &SchoolDetail) -> SchoolListRow {
     SchoolListRow {
         slug: slug.to_string(),
-        name: detail.name.clone().unwrap_or_default(),
+        name: match detail.name.clone() {
+            Some(value) => value,
+            None => Default::default(),
+        },
         city: None,
     }
 }
 
 fn row_for(rows: &[SchoolListRow], slug: &str, detail: &SchoolDetail) -> SchoolListRow {
-    rows.iter()
-        .find(|row| row.slug == slug)
-        .cloned()
-        .unwrap_or_else(|| detail_row(slug, detail))
+    match rows.iter().find(|row| row.slug == slug).cloned() {
+        Some(value) => value,
+        None => detail_row(slug, detail),
+    }
 }
 
 #[test]
-fn listing_rows_carry_slug_name_and_city() {
+fn listing_rows_carry_slug_name_and_city() -> TestResult {
     let rows = parse_school_list(LISTING);
-    assert_eq!(rows.len(), 8, "listing fixture holds eight school rows");
+    check!(eq; rows.len(), 8, "listing fixture holds eight school rows");
     let first = &rows[0];
-    assert_eq!(first.slug, "aasen-home-school");
-    assert_eq!(first.name, "Aasen Home School");
-    assert_eq!(first.city.as_deref(), Some("Clearwater"));
-    let aitkin = listing_row(&rows, "aitkin-high-school");
-    assert_eq!(aitkin.name, "Aitkin High School");
-    assert_eq!(aitkin.city.as_deref(), Some("Aitkin"));
-    assert!(rows
+    check!(eq; first.slug, "aasen-home-school");
+    check!(eq; first.name, "Aasen Home School");
+    check!(eq; first.city.as_deref(), Some("Clearwater"));
+    let aitkin = listing_row(&rows, "aitkin-high-school")?;
+    check!(eq; aitkin.name, "Aitkin High School");
+    check!(eq; aitkin.city.as_deref(), Some("Aitkin"));
+    check!(rows
         .iter()
         .all(|row| !row.slug.contains('/') && !row.name.is_empty()));
+    Ok(())
 }
 
 #[test]
@@ -153,29 +160,29 @@ fn cfemail_decodes_to_the_published_addresses() {
 }
 
 #[test]
-fn school_page_yields_canonical_school_with_identity_and_evidence() {
+fn school_page_yields_canonical_school_with_identity_and_evidence() -> TestResult {
     let rows = parse_school_list(LISTING);
     let detail = parse_school_detail(AITKIN);
-    assert_eq!(detail.name.as_deref(), Some("Aitkin High School"));
-    assert_eq!(detail.school_id.as_deref(), Some("7"));
-    assert_eq!(detail.enrollment, Some(291));
-    assert_eq!(
+    check!(eq; detail.name.as_deref(), Some("Aitkin High School"));
+    check!(eq; detail.school_id.as_deref(), Some("7"));
+    check!(eq; detail.enrollment, Some(291));
+    check!(eq;
         detail.website.as_deref(),
         Some("https://isd1.rschoolteams.com/")
     );
-    let row = listing_row(&rows, "aitkin-high-school");
+    let row = listing_row(&rows, "aitkin-high-school")?;
     let url = school_page_url(&row.slug);
-    let (school, school_id) = school_entities(row, &detail, &url, OBSERVED_ON).expect("school");
-    assert_eq!(school.name, "Aitkin High School");
-    assert_eq!(school.state, Some(UsJurisdiction::Minnesota));
-    assert_eq!(school.city.as_deref(), Some("Aitkin"));
-    assert_eq!(school.association.as_deref(), Some("mshsl"));
-    assert_eq!(school.enrollment, Some(291));
-    assert_eq!(
+    let (school, school_id) = school_entities(row, &detail, &url, OBSERVED_ON).ok_or("school")?;
+    check!(eq; school.name, "Aitkin High School");
+    check!(eq; school.state, Some(UsJurisdiction::Minnesota));
+    check!(eq; school.city.as_deref(), Some("Aitkin"));
+    check!(eq; school.association.as_deref(), Some("mshsl"));
+    check!(eq; school.enrollment, Some(291));
+    check!(eq;
         school.school_website.as_deref(),
         Some("https://isd1.rschoolteams.com/")
     );
-    assert_eq!(
+    check!(eq;
         school.id,
         CanonicalSchool::mint(
             UsJurisdiction::Minnesota,
@@ -183,33 +190,34 @@ fn school_page_yields_canonical_school_with_identity_and_evidence() {
             &normalize_name("Aitkin High School")
         )
     );
-    assert_eq!(school_id, school.id);
-    let identity = school.source_identities.first().expect("identity");
-    assert_eq!(
+    check!(eq; school_id, school.id);
+    let identity = school.source_identities.first().ok_or("identity")?;
+    check!(eq;
         identity.namespace,
         SourceNamespace::AssociationSchool {
             association: "mshsl".to_string()
         }
     );
-    assert_eq!(identity.id, "7");
-    assert_eq!(identity.url.as_deref(), Some(url.as_str()));
-    let evidence = school.evidence.first().expect("evidence");
-    assert_eq!(evidence.source.url.as_deref(), Some(url.as_str()));
-    assert_eq!(evidence.observed_on, OBSERVED_ON);
+    check!(eq; identity.id, "7");
+    check!(eq; identity.url.as_deref(), Some(url.as_str()));
+    let evidence = school.evidence.first().ok_or("evidence")?;
+    check!(eq; evidence.source.url.as_deref(), Some(url.as_str()));
+    check!(eq; evidence.observed_on, OBSERVED_ON);
     let nameless = SchoolListRow {
         slug: "nameless".to_string(),
         name: String::new(),
         city: None,
     };
-    assert!(school_entities(&nameless, &SchoolDetail::default(), &url, OBSERVED_ON).is_none());
+    check!(school_entities(&nameless, &SchoolDetail::default(), &url, OBSERVED_ON).is_none());
     let (from_row, _) =
-        school_entities(row, &SchoolDetail::default(), &url, OBSERVED_ON).expect("school");
-    assert_eq!(from_row.name, "Aitkin High School");
-    assert!(from_row.enrollment.is_none());
+        school_entities(row, &SchoolDetail::default(), &url, OBSERVED_ON).ok_or("school")?;
+    check!(eq; from_row.name, "Aitkin High School");
+    check!(from_row.enrollment.is_none());
+    Ok(())
 }
 
 #[test]
-fn athletic_directors_are_the_only_admin_rows_emitted() {
+fn athletic_directors_are_the_only_admin_rows_emitted() -> TestResult {
     let cases = [
         (
             AITKIN,
@@ -232,7 +240,7 @@ fn athletic_directors_are_the_only_admin_rows_emitted() {
         let detail = parse_school_detail(html);
         let row = row_for(&rows, slug, &detail);
         let (_, school_id) =
-            school_entities(&row, &detail, &school_page_url(slug), OBSERVED_ON).expect("school");
+            school_entities(&row, &detail, &school_page_url(slug), OBSERVED_ON).ok_or("school")?;
         let coaches = ad_coaches(
             &detail,
             &school_id,
@@ -240,18 +248,18 @@ fn athletic_directors_are_the_only_admin_rows_emitted() {
             &school_page_url(slug),
             OBSERVED_ON,
         );
-        assert_eq!(coaches.len(), emails.len(), "{slug}: one row per AD entry");
+        check!(eq; coaches.len(), emails.len(), "{slug}: one row per AD entry");
         for (coach, email) in coaches.iter().zip(emails) {
-            assert_eq!(coach.role, CoachRole::AthleticDirector, "{slug}");
-            assert_eq!(coach.sport, None, "athletic directors are school-wide");
-            assert_eq!(coach.gender, Gender::Mixed);
-            assert_eq!(
-                coach.professional_email.as_deref().unwrap_or(""),
+            check!(eq; coach.role, CoachRole::AthleticDirector, "{slug}");
+            check!(eq; coach.sport, None, "athletic directors are school-wide");
+            check!(eq; coach.gender, Gender::Mixed);
+            check!(eq;
+                coach.professional_email.as_deref().map_or("", |value| value),
                 email,
                 "{slug}"
             );
-            assert_eq!(coach.evidence.len(), 1);
-            assert_eq!(coach.source_identities.len(), 1);
+            check!(eq; coach.evidence.len(), 1);
+            check!(eq; coach.source_identities.len(), 1);
         }
     }
     let foley = parse_school_detail(FOLEY);
@@ -259,17 +267,18 @@ fn athletic_directors_are_the_only_admin_rows_emitted() {
         .admin
         .iter()
         .find(|entry| entry.role.contains("Assistant"))
-        .expect("assistant director entry");
-    assert_eq!(assistant.name, "Alyssa Stewart");
-    assert!(assistant.email().is_none());
+        .ok_or("assistant director entry")?;
+    check!(eq; assistant.name, "Alyssa Stewart");
+    check!(assistant.email().is_none());
+    Ok(())
 }
 
 #[test]
-fn office_roles_never_become_coaches_or_athletic_directors() {
+fn office_roles_never_become_coaches_or_athletic_directors() -> TestResult {
     let detail = parse_school_detail(WAYZATA);
-    assert_eq!(detail.admin.len(), 15);
+    check!(eq; detail.admin.len(), 15);
     let foley = parse_school_detail(FOLEY);
-    assert!(foley
+    check!(foley
         .admin
         .iter()
         .any(|entry| entry.role.contains("Administrative Assistant") && entry.email().is_some()));
@@ -277,7 +286,7 @@ fn office_roles_never_become_coaches_or_athletic_directors() {
     let rows = parse_school_list(LISTING);
     let row = row_for(&rows, "wayzata-high-school", &detail);
     let (school, school_id) =
-        school_entities(&row, &detail, &school_page_url(&row.slug), OBSERVED_ON).expect("school");
+        school_entities(&row, &detail, &school_page_url(&row.slug), OBSERVED_ON).ok_or("school")?;
     let coaches = ad_coaches(
         &detail,
         &school_id,
@@ -285,8 +294,8 @@ fn office_roles_never_become_coaches_or_athletic_directors() {
         &school_page_url(&row.slug),
         OBSERVED_ON,
     );
-    assert_eq!(coaches.len(), 2, "only the AD and the assistant AD");
-    let emitted = serde_json::to_string(&(school, coaches)).expect("json");
+    check!(eq; coaches.len(), 2, "only the AD and the assistant AD");
+    let emitted = serde_json::to_string(&(school, coaches))?;
     for office in [
         "chris.easton@wayzataschools.org",
         "kari.rohrich@wayzataschools.org",
@@ -297,27 +306,26 @@ fn office_roles_never_become_coaches_or_athletic_directors() {
         "Robb Virgin",
         "Donald Krubsack",
     ] {
-        assert!(!emitted.contains(office), "{office} must not be emitted");
+        check!(!emitted.contains(office), "{office} must not be emitted");
     }
-    assert!(emitted.contains("meghan.potter@wayzataschools.org"));
-    assert!(emitted.contains("sydney.helmbrecht@wayzataschools.org"));
+    check!(emitted.contains("meghan.potter@wayzataschools.org"));
+    check!(emitted.contains("sydney.helmbrecht@wayzataschools.org"));
     let foley = parse_school_detail(FOLEY);
     let foley_row = row_for(&rows, "foley-high-school", &foley);
     let foley_url = school_page_url(&foley_row.slug);
     let (foley_school, foley_id) =
-        school_entities(&foley_row, &foley, &foley_url, OBSERVED_ON).expect("school");
+        school_entities(&foley_row, &foley, &foley_url, OBSERVED_ON).ok_or("school")?;
     let foley_emitted = serde_json::to_string(&(
         foley_school,
         ad_coaches(&foley, &foley_id, "175", &foley_url, OBSERVED_ON),
-    ))
-    .expect("json");
+    ))?;
     for office in [
         "cogross@apps.isd51.org",
         "Corri Gross",
         "Joel Foss",
         "Daniel Posthumus",
     ] {
-        assert!(
+        check!(
             !foley_emitted.contains(office),
             "{office} must not be emitted"
         );
@@ -339,23 +347,24 @@ fn office_roles_never_become_coaches_or_athletic_directors() {
         "Girls Sports Representative",
         "Business Manager",
     ] {
-        assert_eq!(ad_role(label), None, "{label} is not an AD role");
+        check!(eq; ad_role(label), None, "{label} is not an AD role");
     }
-    assert_eq!(
+    check!(eq;
         ad_role("Activities Director:"),
         Some(CoachRole::AthleticDirector)
     );
-    assert_eq!(
+    check!(eq;
         ad_role("Assistant Activities Director"),
         Some(CoachRole::AthleticDirector)
     );
+    Ok(())
 }
 
 #[test]
-fn published_phones_are_withheld_and_consumer_mailboxes_land_personal() {
+fn published_phones_are_withheld_and_consumer_mailboxes_land_personal() -> TestResult {
     let detail = parse_school_detail(WAYZATA);
     let domains = school_domains(&detail);
-    assert_eq!(
+    check!(eq;
         domains,
         vec![
             "wayzataschools.org".to_string(),
@@ -366,24 +375,24 @@ fn published_phones_are_withheld_and_consumer_mailboxes_land_personal() {
     let team = nodes
         .iter()
         .find(|node| node.alias.contains("track-and-field-boys"))
-        .expect("track and field node");
+        .ok_or("track and field node")?;
     let html_url = school_page_url("wayzata-high-school");
     let rows = parse_school_list(LISTING);
     let row = row_for(&rows, "wayzata-high-school", &detail);
     let (school, school_id) =
-        school_entities(&row, &detail, &html_url, OBSERVED_ON).expect("school");
+        school_entities(&row, &detail, &html_url, OBSERVED_ON).ok_or("school")?;
     let teams = vec![TeamCoaches {
         node: team.clone(),
         api_url: format!("{COACH_API_PREFIX}{}", team.nid),
         records: parse_coach_records(WAYZATA_TF_COACHES),
     }];
     let coaches = coach_entities(&teams, &school_id, &domains, OBSERVED_ON);
-    assert_eq!(
+    check!(eq;
         coaches.len(),
         10,
         "ten real records, all of them MSHSL levels"
     );
-    let serialized = serde_json::to_string(&(school, coaches.clone())).expect("json");
+    let serialized = serde_json::to_string(&(school, coaches.clone()))?;
     for withheld in [
         "763-745-6995",
         "763-745-6889",
@@ -392,19 +401,19 @@ fn published_phones_are_withheld_and_consumer_mailboxes_land_personal() {
         "tel:",
         "field_work_phone",
     ] {
-        assert!(
+        check!(
             !serialized.contains(withheld),
             "{withheld} must not be emitted"
         );
     }
-    assert!(coaches.iter().all(|coach| coach.phone.is_none()));
+    check!(coaches.iter().all(|coach| coach.phone.is_none()));
     let personal: Vec<&str> = coaches
         .iter()
         .filter_map(|coach| coach.personal_email.as_deref())
         .collect();
-    assert!(personal.contains(&"giesen21@hotmail.com"));
-    assert!(personal.contains(&"mike95asmith@gmail.com"));
-    assert!(
+    check!(personal.contains(&"giesen21@hotmail.com"));
+    check!(personal.contains(&"mike95asmith@gmail.com"));
+    check!(
         coaches
             .iter()
             .filter_map(|coach| coach.professional_email.as_deref())
@@ -414,19 +423,20 @@ fn published_phones_are_withheld_and_consumer_mailboxes_land_personal() {
     let head = coaches
         .iter()
         .find(|coach| coach.role == CoachRole::HeadCoach)
-        .expect("head coach");
-    assert_eq!(head.name, "Aaron Berndt");
-    assert_eq!(head.sport, Some(Sport::OutdoorTrack));
-    assert_eq!(head.gender, Gender::Boys);
-    assert_eq!(
+        .ok_or("head coach")?;
+    check!(eq; head.name, "Aaron Berndt");
+    check!(eq; head.sport, Some(Sport::OutdoorTrack));
+    check!(eq; head.gender, Gender::Boys);
+    check!(eq;
         head.professional_email.as_deref(),
         Some("aaron.berndt@wayzataschools.org")
     );
-    assert_eq!(
+    check!(eq;
         head.evidence.len(),
         2,
         "the coach payload and the team page"
     );
+    Ok(())
 }
 
 #[test]
@@ -550,7 +560,7 @@ fn coach_levels_map_to_roles_and_published_addresses_survive() {
 }
 
 #[test]
-fn ad_email_fill_rate_on_the_fixtures() {
+fn ad_email_fill_rate_on_the_fixtures() -> TestResult {
     let mut rows_total = 0usize;
     let mut with_email = 0usize;
     let school_rows = parse_school_list(LISTING);
@@ -563,7 +573,7 @@ fn ad_email_fill_rate_on_the_fixtures() {
         let detail = parse_school_detail(html);
         let row = row_for(&school_rows, slug, &detail);
         let (_, school_id) =
-            school_entities(&row, &detail, &school_page_url(slug), OBSERVED_ON).expect("school");
+            school_entities(&row, &detail, &school_page_url(slug), OBSERVED_ON).ok_or("school")?;
         let coaches = ad_coaches(
             &detail,
             &school_id,
@@ -577,8 +587,9 @@ fn ad_email_fill_rate_on_the_fixtures() {
             .filter(|coach| coach.professional_email.is_some())
             .count();
     }
-    assert_eq!(rows_total, 7, "seven AD rows across the four captures");
-    assert_eq!(with_email, 6, "six of them publish an address (85.7%)");
+    check!(eq; rows_total, 7, "seven AD rows across the four captures");
+    check!(eq; with_email, 6, "six of them publish an address (85.7%)");
+    Ok(())
 }
 
 #[test]
@@ -617,24 +628,25 @@ fn honorifics_are_stripped_before_minting() {
     assert_eq!(strip_honorific("   "), "");
 }
 
-#[tokio::test]
-async fn collect_fetches_parses_appends_journals_and_reports_from_a_warm_cache() {
-    let dir = tempfile::tempdir().expect("temp dir");
+#[test]
+fn collect_fetches_parses_appends_journals_and_reports_from_a_warm_cache() -> TestResult {
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+    let dir = tempfile::tempdir()?;
     let cache = dir.path().join("http");
     let teams_url = format!(
         "{TEAMS_VIEW_URL}?views-argument%5B%5D=7&fields%5Bnode--participant%5D=title,path,drupal_internal__nid"
     );
-    seed_cache(&cache, &listing_page_url(0), LISTING_FIRST_PAGE);
-    seed_cache(&cache, &school_page_url("aitkin-high-school"), AITKIN);
-    seed_cache(&cache, &teams_url, AITKIN_TEAMS);
-    seed_cache(&cache, &format!("{COACH_API_PREFIX}593477"), AITKIN_TF_BOYS);
+    seed_cache(&cache, &listing_page_url(0), LISTING_FIRST_PAGE)?;
+    seed_cache(&cache, &school_page_url("aitkin-high-school"), AITKIN)?;
+    seed_cache(&cache, &teams_url, AITKIN_TEAMS)?;
+    seed_cache(&cache, &format!("{COACH_API_PREFIX}593477"), AITKIN_TF_BOYS)?;
     seed_cache(
         &cache,
         &format!("{COACH_API_PREFIX}593478"),
         AITKIN_TF_GIRLS,
-    );
+    )?;
 
-    let store = census_store::Store::open(dir.path().join("store")).expect("store");
+    let store = census_store::Store::open(dir.path().join("store"))?;
     let fetcher = crate::net::Fetcher::new(
         &cache,
         None,
@@ -642,12 +654,12 @@ async fn collect_fetches_parses_appends_journals_and_reports_from_a_warm_cache()
         std::collections::HashMap::new(),
         Vec::new(),
     )
-    .expect("fetcher");
+    ?;
     let ctx = AdapterContext {
         fetcher: &fetcher,
         store: &store,
         refresh: false,
-        school_year: census_domain::model::SchoolYear::new(2026).expect("2026 is a season"),
+        school_year: census_domain::model::SchoolYear::new(2026).ok_or("2026 is a season")?,
         observed_on: OBSERVED_ON.to_string(),
         recording: None,
     };
@@ -660,26 +672,26 @@ async fn collect_fetches_parses_appends_journals_and_reports_from_a_warm_cache()
     };
     let report = collect(&ctx, &options)
         .await
-        .expect("collect returns a report");
+        ?;
 
-    assert_eq!(
+    check!(eq;
         report.rows, 1,
         "one school processed, the other seven rows filtered out"
     );
-    assert_eq!(report.errors, 0);
-    assert_eq!(
+    check!(eq; report.errors, 0);
+    check!(eq;
         report.requests, 0,
         "every response came from the seeded cache"
     );
-    assert_eq!(
+    check!(eq;
         report.from_cache, 5,
         "listing page, school page, team list and the two track coach payloads"
     );
-    assert_eq!(
+    check!(eq;
         report.with_email, 4,
         "two ADs and the two head coaches carry an address"
     );
-    assert!(
+    check!(
         report
             .notes
             .iter()
@@ -690,43 +702,43 @@ async fn collect_fetches_parses_appends_journals_and_reports_from_a_warm_cache()
 
     let schools = store
         .scan::<CanonicalSchool>(Table::Schools)
-        .expect("schools log");
-    assert_eq!(schools.len(), 1);
-    assert_eq!(schools[0].name, "Aitkin High School");
-    assert_eq!(schools[0].state, Some(UsJurisdiction::Minnesota));
-    assert_eq!(schools[0].city.as_deref(), Some("Aitkin"));
-    assert_eq!(schools[0].association.as_deref(), Some("mshsl"));
-    assert_eq!(schools[0].enrollment, Some(291));
+        ?;
+    check!(eq; schools.len(), 1);
+    check!(eq; schools[0].name, "Aitkin High School");
+    check!(eq; schools[0].state, Some(UsJurisdiction::Minnesota));
+    check!(eq; schools[0].city.as_deref(), Some("Aitkin"));
+    check!(eq; schools[0].association.as_deref(), Some("mshsl"));
+    check!(eq; schools[0].enrollment, Some(291));
 
     let observations = store
         .scan::<SourceObservation>(Table::SourceObservations)
-        .expect("observation log");
-    assert_eq!(
+        ?;
+    check!(eq;
         observations.len(),
         1,
         "the walk files the sighting beside the row it minted"
     );
     let SourceObservation::School(seen) = &observations[0] else {
-        panic!("a school page files a school observation");
+        return Err("a school page files a school observation".into());
     };
-    assert_eq!(
+    check!(eq;
         seen.id, "association_school:mshsl:7",
         "keyed by the MSHSL's own numeric school id, not the canonical one"
     );
-    assert_eq!(seen.observed_name, "Aitkin High School");
-    assert_eq!(seen.city.as_deref(), Some("Aitkin"));
-    assert_eq!(seen.observed_on, OBSERVED_ON);
-    assert!(
+    check!(eq; seen.observed_name, "Aitkin High School");
+    check!(eq; seen.city.as_deref(), Some("Aitkin"));
+    check!(eq; seen.observed_on, OBSERVED_ON);
+    check!(
         seen.source_row_key.contains("aitkin-high-school"),
         "the row states the page it was read from: {}",
         seen.source_row_key
     );
-    assert!(!seen.id.contains(schools[0].id.as_str()));
+    check!(!seen.id.contains(schools[0].id.as_str()));
 
     let coaches = store
         .scan::<CanonicalCoach>(Table::Coaches)
-        .expect("coaches log");
-    assert_eq!(
+        ?;
+    check!(eq;
         coaches.len(),
         4,
         "two AD rows plus one head coach per track team"
@@ -735,11 +747,11 @@ async fn collect_fetches_parses_appends_journals_and_reports_from_a_warm_cache()
         .iter()
         .filter_map(|coach| coach.professional_email.as_deref())
         .collect();
-    assert!(emails.contains(&"jhenrickson@isd1.org"));
-    assert!(emails.contains(&"ahills@isd1.org"));
-    assert!(emails.contains(&"acarlson@isd1.org"));
-    assert!(emails.contains(&"avacarlson@isd1.org"));
-    assert!(
+    check!(emails.contains(&"jhenrickson@isd1.org"));
+    check!(emails.contains(&"ahills@isd1.org"));
+    check!(emails.contains(&"acarlson@isd1.org"));
+    check!(emails.contains(&"avacarlson@isd1.org"));
+    check!(
         !emails
             .iter()
             .any(|address| address.contains("jforbord") || address.contains("jlong")),
@@ -749,25 +761,25 @@ async fn collect_fetches_parses_appends_journals_and_reports_from_a_warm_cache()
         .iter()
         .filter(|coach| coach.role == CoachRole::AthleticDirector)
         .collect();
-    assert_eq!(ads.len(), 2);
-    assert!(ads
+    check!(eq; ads.len(), 2);
+    check!(ads
         .iter()
         .all(|coach| coach.sport.is_none() && coach.gender == Gender::Mixed));
     let heads: Vec<&CanonicalCoach> = coaches
         .iter()
         .filter(|coach| coach.role == CoachRole::HeadCoach)
         .collect();
-    assert_eq!(heads.len(), 2);
-    assert!(heads
+    check!(eq; heads.len(), 2);
+    check!(heads
         .iter()
         .all(|coach| coach.sport == Some(Sport::OutdoorTrack)));
-    assert!(heads
+    check!(heads
         .iter()
         .any(|coach| coach.name == "Adam Carlson" && coach.gender == Gender::Boys));
-    assert!(heads
+    check!(heads
         .iter()
         .any(|coach| coach.name == "Ava Carlson" && coach.gender == Gender::Girls));
-    let stored = serde_json::to_string(&coaches).expect("json");
+    let stored = serde_json::to_string(&coaches)?;
     for office in [
         "Lisa DeMars",
         "Dan Stifter",
@@ -777,40 +789,42 @@ async fn collect_fetches_parses_appends_journals_and_reports_from_a_warm_cache()
         "Jason Henke",
         "Marc Carley",
     ] {
-        assert!(
+        check!(
             !stored.contains(office),
             "{office} is an office role and must not be stored"
         );
     }
-    assert!(
+    check!(
         coaches.iter().all(|coach| coach.phone.is_none()),
         "no phone column is parsed"
     );
 
-    assert_eq!(
-        store.journal_keys("mshsl_schools").expect("journal"),
+    check!(eq;
+        store.journal_keys("mshsl_schools")?,
         HashSet::from([String::from("MN:aitkin-high-school")])
     );
-    assert_eq!(
-        store.journal_keys("mshsl_coaches").expect("journal"),
+    check!(eq;
+        store.journal_keys("mshsl_coaches")?,
         HashSet::from([String::from("MN:aitkin-high-school")])
     );
 
-    let second = collect(&ctx, &options).await.expect("second collect");
-    assert_eq!(second.rows, 0, "the school was already journalled");
-    assert_eq!(second.requests, 0);
-    assert_eq!(
+    let second = collect(&ctx, &options).await?;
+    check!(eq; second.rows, 0, "the school was already journalled");
+    check!(eq; second.requests, 0);
+    check!(eq;
         store
             .scan::<CanonicalSchool>(Table::Schools)
-            .expect("schools log")
+            ?
             .len(),
         1
     );
-    assert_eq!(
+    check!(eq;
         store
             .scan::<CanonicalCoach>(Table::Coaches)
-            .expect("coaches log")
+            ?
             .len(),
         4
     );
+    Ok(())
+    })
 }

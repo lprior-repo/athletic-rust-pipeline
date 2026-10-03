@@ -1,4 +1,5 @@
 use census_domain::model::CentiMetres;
+use census_domain::model::CentiPoints;
 use census_domain::model::CentiSeconds;
 use census_domain::model::{EventKind, Mark};
 
@@ -6,6 +7,10 @@ use super::super::NO_MARK;
 use super::mark_token_regex;
 
 pub fn hytek_event_kind(label: &str) -> EventKind {
+    let direct = EventKind::from_source_label(label);
+    if !matches!(direct, EventKind::Unmapped { .. }) {
+        return direct;
+    }
     let compact: String = label
         .chars()
         .filter(|ch| !ch.is_whitespace() && *ch != '-' && *ch != '_')
@@ -77,6 +82,14 @@ pub fn parse_time(token: &str) -> Option<CentiSeconds> {
     }
 }
 
+pub(crate) fn parse_points(token: &str) -> Option<Mark> {
+    let points: f64 = token.trim().parse().ok()?;
+    if !points.is_finite() || points < 0.0 {
+        return None;
+    }
+    CentiPoints::try_from_points_f64(points).map(Mark::Points)
+}
+
 pub fn parse_field_mark(token: &str) -> Option<Mark> {
     let token = token.trim().trim_start_matches(['J', 'j']).trim();
     if token.is_empty() {
@@ -131,18 +144,19 @@ pub(in crate::hytek) fn parse_marks(
     } else {
         let numeric = mark_token
             .trim_end_matches(['Q', 'q', 'P', 'p'])
-            .trim_start_matches(['J', 'j'])
-            .to_string();
+            .trim_start_matches(['J', 'j']);
         let Ok(mark_pattern) = mark_token_regex() else {
             return None;
         };
-        if !mark_pattern.is_match(&numeric) {
+        if !mark_pattern.is_match(numeric) {
             return None;
         }
-        if kind.is_field() {
-            parse_field_mark(&numeric)?
-        } else {
-            Mark::TimeSeconds(parse_time(&numeric)?)
+        match kind {
+            EventKind::Decathlon | EventKind::Pentathlon | EventKind::Heptathlon => {
+                parse_points(numeric)?
+            }
+            kind if kind.is_field() => parse_field_mark(numeric)?,
+            _ => Mark::TimeSeconds(parse_time(numeric)?),
         }
     };
 

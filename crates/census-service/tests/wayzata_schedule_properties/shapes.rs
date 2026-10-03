@@ -30,13 +30,14 @@ fn is_text(label: &str) -> bool {
 }
 
 #[test]
-fn every_row_carries_a_well_formed_date_of_the_season_it_was_read_for() {
+fn every_row_carries_a_well_formed_date_of_the_season_it_was_read_for(
+) -> Result<(), Box<dyn std::error::Error>> {
     for (name, body) in PAGES {
         for season in [SEASON, 2019] {
-            let parsed = rows(body, season).unwrap_or_else(|error| panic!("{name}: {error:?}"));
-            assert!(!parsed.is_empty(), "{name}: the capture publishes rows");
+            let parsed = rows(body, season)?;
+            check!(!parsed.is_empty(), "{name}: the capture publishes rows");
             for row in &parsed {
-                assert!(
+                check!(
                     date_is_well_formed(&row.date, season),
                     "{name}: {} is the season {season} plus a published month and day",
                     row.date
@@ -44,39 +45,41 @@ fn every_row_carries_a_well_formed_date_of_the_season_it_was_read_for() {
             }
         }
     }
+    Ok(())
 }
 
 #[test]
-fn every_row_carries_a_label_and_a_venue_and_only_real_keys() {
+fn every_row_carries_a_label_and_a_venue_and_only_real_keys(
+) -> Result<(), Box<dyn std::error::Error>> {
     for (name, body) in PAGES {
-        let parsed = rows(body, SEASON).unwrap_or_else(|error| panic!("{name}: {error:?}"));
+        let parsed = rows(body, SEASON)?;
         for row in &parsed {
-            assert!(is_text(&row.name), "{name}: the name is text: {row:?}");
-            assert!(is_text(&row.location), "{name}: the venue is text: {row:?}");
+            check!(is_text(&row.name), "{name}: the name is text: {row:?}");
+            check!(is_text(&row.location), "{name}: the venue is text: {row:?}");
             if let Some(slug) = &row.slug {
-                assert!(
+                check!(
                     !slug.is_empty() && !slug.contains(['/', '?', '#', '"']),
                     "{name}: the provider key is one path segment: {row:?}"
                 );
             }
             if let Some(label) = &row.aria_label {
-                assert!(is_text(label), "{name}: the link label is text: {row:?}");
+                check!(is_text(label), "{name}: the link label is text: {row:?}");
             }
         }
     }
+    Ok(())
 }
 
 #[test]
-fn the_captures_publish_a_key_on_every_row() {
+fn the_captures_publish_a_key_on_every_row() -> Result<(), Box<dyn std::error::Error>> {
     for (name, body) in PAGES {
-        let parsed = rows(body, SEASON).unwrap_or_else(|error| panic!("{name}: {error:?}"));
+        let parsed = rows(body, SEASON)?;
         let with_keys = parsed.iter().filter(|row| row.slug.is_some()).count();
-        assert_eq!(
-            with_keys,
-            parsed.len(),
-            "{name}: every published row carries its `/links/<slug>` key"
-        );
+        check!(eq; with_keys,
+        parsed.len(),
+        "{name}: every published row carries its `/links/<slug>` key");
     }
+    Ok(())
 }
 
 fn shape_holds(body: &str) -> Result<(), TestCaseError> {

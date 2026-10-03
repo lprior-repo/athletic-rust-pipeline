@@ -161,7 +161,11 @@ pub(super) fn published_gender(code: &str) -> Gender {
 }
 
 pub(super) fn joined_name(first: Option<&str>, last: Option<&str>) -> Option<String> {
-    let joined = format!("{} {}", first.unwrap_or_default(), last.unwrap_or_default());
+    let joined = format!(
+        "{} {}",
+        first.map_or(Default::default(), core::convert::identity),
+        last.map_or(Default::default(), core::convert::identity)
+    );
     let trimmed = joined.trim();
     (!trimmed.is_empty()).then(|| trimmed.to_string())
 }
@@ -171,7 +175,7 @@ pub(super) fn school_year_of(date: &str, fallback: SchoolYear) -> SchoolYear {
     let month = date.get(5..7).and_then(|part| part.parse::<u8>().ok());
     match (year, month) {
         (Some(year), Some(month)) if (1..=12).contains(&month) => {
-            SchoolYear::containing(year, month).unwrap_or(fallback)
+            SchoolYear::containing(year, month).map_or(fallback, |value| value)
         }
         _ => fallback,
     }

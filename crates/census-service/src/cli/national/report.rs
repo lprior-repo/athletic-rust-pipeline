@@ -126,25 +126,30 @@ mod tests {
     use super::*;
 
     #[test]
-    fn owed_sources_are_the_plans_refusals_in_order() {
+    fn owed_sources_are_the_plans_refusals_in_order() -> Result<()> {
         let plan: SourcePlan = serde_json::from_value(serde_json::json!({
             "sweepable": ["milesplit"],
             "refused": [
                 {"slug": "athleticnet", "reason": "no run stage sweeps this source per jurisdiction"},
                 {"slug": "wiaa", "reason": "no run stage sweeps this source per jurisdiction"}
             ]
-        }))
-        .expect("a plan recorded by a run reads back");
-        assert_eq!(owed_sources(&plan), "athleticnet,wiaa");
+        }))?;
+        let owed = owed_sources(&plan);
+        anyhow::ensure!(
+            owed == "athleticnet,wiaa",
+            "owed sources: left={owed:?}, right=\"athleticnet,wiaa\""
+        );
+        Ok(())
     }
 
     #[test]
-    fn nothing_owed_is_an_empty_segment() {
+    fn nothing_owed_is_an_empty_segment() -> Result<()> {
         let plan: SourcePlan = serde_json::from_value(serde_json::json!({
             "sweepable": ["milesplit"],
             "refused": []
-        }))
-        .expect("a plan recorded by a run reads back");
-        assert!(owed_sources(&plan).is_empty());
+        }))?;
+        let owed = owed_sources(&plan);
+        anyhow::ensure!(owed.is_empty(), "expected no owed sources, got {owed:?}");
+        Ok(())
     }
 }

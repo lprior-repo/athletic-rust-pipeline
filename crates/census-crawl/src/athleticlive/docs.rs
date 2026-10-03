@@ -17,7 +17,7 @@ pub(super) fn value_u64(value: &Value) -> Option<u64> {
 
 pub(super) fn value_flag(value: &Value) -> bool {
     match value {
-        Value::Number(n) => n.as_i64().map(|v| v != 0).unwrap_or(false),
+        Value::Number(n) => n.as_i64().is_some_and(|v| v != 0),
         Value::Bool(b) => *b,
         Value::String(s) => s.trim() != "0" && !s.trim().is_empty(),
         _ => false,

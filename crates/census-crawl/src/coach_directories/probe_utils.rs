@@ -17,10 +17,10 @@ pub fn round_half_even(numerator: usize, denominator: usize, scale: usize) -> f6
         return 0.0;
     }
     let scaled = numerator.saturating_mul(scale);
-    let quotient = scaled.checked_div(denominator).unwrap_or(0);
-    let remainder = scaled.checked_rem(denominator).unwrap_or(0);
+    let quotient = scaled.checked_div(denominator).map_or(0, |value| value);
+    let remainder = scaled.checked_rem(denominator).map_or(0, |value| value);
     let doubled = remainder.saturating_mul(2);
-    let tie = doubled == denominator && quotient.checked_rem(2).unwrap_or(0) == 1;
+    let tie = doubled == denominator && quotient.checked_rem(2).map_or(0, |value| value) == 1;
     let adjusted = if doubled > denominator || tie {
         quotient.saturating_add(1)
     } else {

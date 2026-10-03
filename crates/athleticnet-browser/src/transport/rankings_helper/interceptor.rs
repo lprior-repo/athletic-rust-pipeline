@@ -82,7 +82,7 @@ const INTERCEPTOR_TEMPLATE: &str = r#"(() => {
         const value = response.headers.get(name);
         if (value !== null) headers[name] = value;
       }
-      const metadata = { status: response.status, headers };
+      const metadata = { status: response.status, responseUrl: response.url, headers };
       try {
         const retained = response.clone();
         const body = await requestBody(description);

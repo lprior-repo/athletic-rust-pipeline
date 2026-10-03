@@ -51,7 +51,7 @@ fn expect_observations(store: &Store, corpus: &Corpus) -> Result<()> {
             .iter()
             .find(|(name, _)| name == table.file())
             .map(|(_, count)| *count)
-            .unwrap_or(0);
+            .map_or(0, |value| value);
         let rows = u64::try_from(rows).context("row count does not fit u64")?;
         anyhow::ensure!(
             found == rows,

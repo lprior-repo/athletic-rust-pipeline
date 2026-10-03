@@ -31,7 +31,11 @@ impl Store {
             files: copied.files,
             bytes: copied.bytes,
             tables,
-            elapsed_ms: start.elapsed().as_millis().try_into().unwrap_or(u64::MAX),
+            elapsed_ms: start
+                .elapsed()
+                .as_millis()
+                .try_into()
+                .map_or(u64::MAX, |value| value),
         })
     }
 }

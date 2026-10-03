@@ -1,9 +1,7 @@
 use crate::net::{FetchError, FetchOptions, Fetcher};
 use crate::{CrawlError, CrawlResult};
 
-use super::parse::{
-    has_next_page, parse_meet_index, parse_meet_result_files, parse_roster, parse_team_index,
-};
+use super::parse::{has_next_page, parse_meet_index, parse_meet_result_files, parse_team_index};
 use super::raw::{parse_raw, RawPage};
 use super::roster::{RosterOutcome, RosterQuarantine, RosterVerdict};
 use super::wire::{MeetRef, MeetResultFile, ResultSetRef, Season, Site, TeamRef};
@@ -44,7 +42,7 @@ pub async fn fetch_roster(
             rejected: Vec::new(),
         },
         200 => match std::str::from_utf8(&outcome.body) {
-            Ok(body) => parse_roster(body, team.clone())?,
+            Ok(body) => super::parse::roster::parse_captured_roster(body, team.clone(), &outcome)?,
             Err(_) => RosterVerdict::Quarantined {
                 reason: RosterQuarantine::InvalidEncoding,
                 rejected: Vec::new(),

@@ -132,8 +132,8 @@ fn strip_test_cut(lines: &[String]) -> &[String] {
     let cut = lines
         .iter()
         .position(|line| line.trim() == "#[cfg(test)]")
-        .unwrap_or(lines.len());
-    lines.get(..cut).unwrap_or(lines)
+        .map_or(lines.len(), core::convert::identity);
+    lines.get(..cut).map_or(lines, core::convert::identity)
 }
 
 fn domain_files(root: &Path) -> Result<Vec<PathBuf>> {

@@ -60,27 +60,27 @@ fn reported_hurdles_refine_without_changing_identity_context_or_source_labels() 
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     let original = retained("Boys 2A 110m Hurdles Preliminaries", "Captured Meet");
-    store.append_many(Table::Events, &[original.clone()])?;
+    store.append_many(Table::Events, std::slice::from_ref(&original))?;
     let report = process_retained_events(&store, RepairMode::Apply)?;
-    assert_eq!(report_counts(report), (1, 1, 1, 1, 0));
+    check!(eq; report_counts(report), (1, 1, 1, 1, 0));
     let rows = store.scan::<CanonicalEvent>(Table::Events)?;
     let corrected = rows.first().context("corrected event")?;
-    assert_eq!(corrected.kind, EventKind::Track110mHurdles);
+    check!(eq; corrected.kind, EventKind::Track110mHurdles);
     let derived = corrected.evidence.last().context("derived evidence")?;
     let parsed = original.evidence.first().context("parsed evidence")?;
-    assert_eq!(derived.method, EvidenceMethod::Derived);
-    assert_eq!(derived.source, parsed.source);
-    assert_eq!(derived.observed_on, parsed.observed_on);
+    check!(eq; derived.method, EvidenceMethod::Derived);
+    check!(eq; derived.source, parsed.source);
+    check!(eq; derived.observed_on, parsed.observed_on);
     let mut preserved = corrected.clone();
     preserved.kind = original.kind.clone();
     preserved.evidence = original.evidence.clone();
-    assert_eq!(preserved, original);
-    assert_eq!(corrected.evidence.len(), original.evidence.len() + 1);
-    assert_eq!(corrected.evidence.first(), original.evidence.first());
+    check!(eq; preserved, original);
+    check!(eq; corrected.evidence.len(), original.evidence.len() + 1);
+    check!(eq; corrected.evidence.first(), original.evidence.first());
     let history = observations(&store)?;
-    assert_eq!(history.len(), 2);
-    assert!(history.contains(&original));
-    assert!(history.contains(corrected));
+    check!(eq; history.len(), 2);
+    check!(history.contains(&original));
+    check!(history.contains(corrected));
     Ok(())
 }
 
@@ -89,16 +89,16 @@ fn dry_run_preserves_every_observation_and_table_digest() -> Result<()> {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     let original = retained("Boys Varsity Shot Put Finals", "Captured Meet");
-    store.append_many(Table::Events, &[original.clone()])?;
+    store.append_many(Table::Events, std::slice::from_ref(&original))?;
     let before = store.snapshot().tables_digest(&[Table::Events])?;
     let dry = process_retained_events(&store, RepairMode::DryRun)?;
-    assert_eq!(report_counts(dry), (1, 1, 1, 0, 0));
-    assert_eq!(store.snapshot().tables_digest(&[Table::Events])?, before);
-    assert_eq!(
-        store.scan::<CanonicalEvent>(Table::Events)?,
-        [original.clone()]
+    check!(eq; report_counts(dry), (1, 1, 1, 0, 0));
+    check!(eq; store.snapshot().tables_digest(&[Table::Events])?, before);
+    check!(eq;
+        store.scan::<CanonicalEvent>(Table::Events)?.as_slice(),
+        std::slice::from_ref(&original)
     );
-    assert_eq!(observations(&store)?, [original]);
+    check!(eq; observations(&store)?, [original]);
     Ok(())
 }
 
@@ -135,17 +135,17 @@ fn field_and_relay_labels_with_multiple_agreeing_sources_are_refined() -> Result
         original
             .evidence
             .insert(0, Evidence::parsed(alternate, "2026-09-27"));
-        store.append_many(Table::Events, &[original.clone()])?;
+        store.append_many(Table::Events, std::slice::from_ref(&original))?;
         let report = process_retained_events(&store, RepairMode::Apply)?;
-        assert_eq!(report_counts(report), (1, 1, 1, 1, 0), "{label}");
+        check!(eq; report_counts(report), (1, 1, 1, 1, 0), "{label}");
         let rows = store.scan::<CanonicalEvent>(Table::Events)?;
         let corrected = rows.first().context("corrected event")?;
-        assert_eq!(corrected.kind, kind);
-        assert_eq!(
+        check!(eq; corrected.kind, kind);
+        check!(eq;
             corrected.evidence.last().map(|row| &row.source),
             original.evidence.get(1).map(|row| &row.source)
         );
-        assert_eq!(
+        check!(eq;
             corrected
                 .evidence
                 .last()
@@ -155,7 +155,7 @@ fn field_and_relay_labels_with_multiple_agreeing_sources_are_refined() -> Result
         let mut preserved = corrected.clone();
         preserved.kind = original.kind.clone();
         preserved.evidence = original.evidence.clone();
-        assert_eq!(preserved, original);
+        check!(eq; preserved, original);
     }
     Ok(())
 }
@@ -209,18 +209,18 @@ fn unsupported_contradictory_and_unbound_events_remain_retained() -> Result<()> 
                 .iter_mut()
                 .for_each(|row| row.source.id = "different_capture".into()),
         }
-        store.append_many(Table::Events, &[original.clone()])?;
+        store.append_many(Table::Events, std::slice::from_ref(&original))?;
         let report = process_retained_events(&store, RepairMode::Apply)?;
-        assert_eq!(
+        check!(eq;
             report_counts(report),
             (1, 1, 0, 0, 1),
             "scenario {scenario}"
         );
-        assert_eq!(
-            store.scan::<CanonicalEvent>(Table::Events)?,
-            [original.clone()]
+        check!(eq;
+            store.scan::<CanonicalEvent>(Table::Events)?.as_slice(),
+            std::slice::from_ref(&original)
         );
-        assert_eq!(observations(&store)?, [original]);
+        check!(eq; observations(&store)?, [original]);
     }
     Ok(())
 }
@@ -230,19 +230,19 @@ fn applied_corrections_remain_idempotent_after_store_reopen() -> Result<()> {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     let original = retained("110m Hurdles", "Captured Meet");
-    store.append_many(Table::Events, &[original.clone()])?;
-    assert_eq!(applied_counts(&store)?, (1, 1, 1, 1, 0));
+    store.append_many(Table::Events, std::slice::from_ref(&original))?;
+    check!(eq; applied_counts(&store)?, (1, 1, 1, 1, 0));
     let before = observations(&store)?;
     drop(store);
     let reopened = Store::open(dir.path())?;
-    assert_eq!(applied_counts(&reopened)?, (1, 0, 0, 0, 0));
-    assert_eq!(observations(&reopened)?, before);
+    check!(eq; applied_counts(&reopened)?, (1, 0, 0, 0, 0));
+    check!(eq; observations(&reopened)?, before);
     let rows = reopened.scan::<CanonicalEvent>(Table::Events)?;
-    assert_eq!(
+    check!(eq;
         rows.first().map(|row| &row.kind),
         Some(&EventKind::Track110mHurdles)
     );
-    assert!(observations(&reopened)?.contains(&original));
+    check!(observations(&reopened)?.contains(&original));
     Ok(())
 }
 
@@ -256,10 +256,10 @@ fn full_and_partial_batches_preserve_every_original_and_skip_known_events() -> R
     store.append_many(Table::Events, &originals)?;
     let mut known = retained("shotput", "Already Mapped Meet");
     known.kind = EventKind::ShotPut;
-    store.append_many(Table::Events, &[known.clone()])?;
-    assert_eq!(applied_counts(&store)?, (102, 101, 101, 101, 0));
+    store.append_many(Table::Events, std::slice::from_ref(&known))?;
+    check!(eq; applied_counts(&store)?, (102, 101, 101, 101, 0));
     let rows = store.scan::<CanonicalEvent>(Table::Events)?;
-    assert_eq!(rows.len(), 102);
+    check!(eq; rows.len(), 102);
     for original in &originals {
         let corrected = rows
             .iter()
@@ -268,15 +268,15 @@ fn full_and_partial_batches_preserve_every_original_and_skip_known_events() -> R
         let mut preserved = corrected.clone();
         preserved.kind = original.kind.clone();
         preserved.evidence = original.evidence.clone();
-        assert_eq!(preserved, *original);
-        assert_eq!(corrected.kind, EventKind::Track110mHurdles);
+        check!(eq; preserved, *original);
+        check!(eq; corrected.kind, EventKind::Track110mHurdles);
     }
-    assert!(rows.contains(&known));
+    check!(rows.contains(&known));
     let history = observations(&store)?;
-    assert_eq!(history.len(), 203);
-    assert!(originals.iter().all(|row| history.contains(row)));
-    assert_eq!(applied_counts(&store)?, (102, 0, 0, 0, 0));
-    assert_eq!(observations(&store)?, history);
+    check!(eq; history.len(), 203);
+    check!(originals.iter().all(|row| history.contains(row)));
+    check!(eq; applied_counts(&store)?, (102, 0, 0, 0, 0));
+    check!(eq; observations(&store)?, history);
     Ok(())
 }
 
@@ -284,7 +284,7 @@ fn full_and_partial_batches_preserve_every_original_and_skip_known_events() -> R
 fn checked_counters_fail_without_wrapping() -> Result<()> {
     let mut count = u64::MAX;
     let error = bump(&mut count).err().context("overflow must fail")?;
-    assert!(matches!(error, StoreError::CounterOverflow));
-    assert_eq!(count, u64::MAX);
+    check!(matches!(error, StoreError::CounterOverflow));
+    check!(eq; count, u64::MAX);
     Ok(())
 }

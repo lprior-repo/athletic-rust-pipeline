@@ -120,13 +120,13 @@ fn write_entities(
     store.append_many(Table::Schools, &school_records)?;
     store.append_many(Table::Coaches, &coach_records)?;
 
-    report.rows = u64::try_from(coach_records.len()).unwrap_or(u64::MAX);
+    report.rows = u64::try_from(coach_records.len()).map_or(u64::MAX, |value| value);
     report.with_email = coach_records
         .iter()
         .filter(|coach| coach.professional_email.is_some() || coach.personal_email.is_some())
         .count()
         .try_into()
-        .unwrap_or(u64::MAX);
+        .map_or(u64::MAX, |value| value);
     report.note(format!("schools={}", school_records.len()));
     report.note(format!("rows_without_coach_role={skipped_roles}"));
     Ok(())

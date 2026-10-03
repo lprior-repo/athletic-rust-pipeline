@@ -19,7 +19,7 @@ pub fn parse_published_time(value: &str) -> Option<(CentiSeconds, Option<TimingM
 
 pub fn parse_published_metric_distance(value: &str) -> Option<CentiMetres> {
     let metres = value.trim().strip_suffix(['m', 'M'])?.trim();
-    let (whole, fraction) = metres.split_once('.').unwrap_or((metres, ""));
+    let (whole, fraction) = metres.split_once('.').map_or((metres, ""), |value| value);
     let fraction = fraction.trim_end_matches('0');
     if (whole.is_empty() && fraction.is_empty())
         || !whole.bytes().all(|byte| byte.is_ascii_digit())
@@ -38,6 +38,8 @@ pub fn parse_published_metric_distance(value: &str) -> Option<CentiMetres> {
 mod tests {
     use super::*;
 
+    type TestResult = Result<(), Box<dyn std::error::Error>>;
+
     #[test]
     fn source_declared_metric_marks_preserve_exact_centimetres() {
         for (raw, expected) in [("3.05m", 305), ("9.47m", 947), (" 1.350M ", 135)] {
@@ -54,44 +56,47 @@ mod tests {
     }
 
     #[test]
-    fn parse_published_fat_timing() {
-        let (time, method) = parse_published_time("24.95a").unwrap();
-        assert_eq!(time, CentiSeconds::new(2495));
-        assert_eq!(method, Some(TimingMethod::Fat));
+    fn parse_published_fat_timing() -> TestResult {
+        let (time, method) = parse_published_time("24.95a").ok_or("24.95a FAT time")?;
+        check!(eq; time, CentiSeconds::new(2495));
+        check!(eq; method, Some(TimingMethod::Fat));
 
-        let (time, method) = parse_published_time("11.52a").unwrap();
-        assert_eq!(time, CentiSeconds::new(1152));
-        assert_eq!(method, Some(TimingMethod::Fat));
+        let (time, method) = parse_published_time("11.52a").ok_or("11.52a FAT time")?;
+        check!(eq; time, CentiSeconds::new(1152));
+        check!(eq; method, Some(TimingMethod::Fat));
 
-        let (time, method) = parse_published_time("3:00.64a").unwrap();
-        assert_eq!(time, CentiSeconds::new(18064));
-        assert_eq!(method, Some(TimingMethod::Fat));
+        let (time, method) = parse_published_time("3:00.64a").ok_or("3:00.64a FAT time")?;
+        check!(eq; time, CentiSeconds::new(18064));
+        check!(eq; method, Some(TimingMethod::Fat));
 
-        let (time, method) = parse_published_time("24.95A").unwrap();
-        assert_eq!(time, CentiSeconds::new(2495));
-        assert_eq!(method, Some(TimingMethod::Fat));
+        let (time, method) = parse_published_time("24.95A").ok_or("24.95A FAT time")?;
+        check!(eq; time, CentiSeconds::new(2495));
+        check!(eq; method, Some(TimingMethod::Fat));
+        Ok(())
     }
 
     #[test]
-    fn parse_published_hand_timing() {
-        let (time, method) = parse_published_time("11.32h").unwrap();
-        assert_eq!(time, CentiSeconds::new(1132));
-        assert_eq!(method, Some(TimingMethod::Hand));
+    fn parse_published_hand_timing() -> TestResult {
+        let (time, method) = parse_published_time("11.32h").ok_or("11.32h hand time")?;
+        check!(eq; time, CentiSeconds::new(1132));
+        check!(eq; method, Some(TimingMethod::Hand));
 
-        let (time, method) = parse_published_time("11.32H").unwrap();
-        assert_eq!(time, CentiSeconds::new(1132));
-        assert_eq!(method, Some(TimingMethod::Hand));
+        let (time, method) = parse_published_time("11.32H").ok_or("11.32H hand time")?;
+        check!(eq; time, CentiSeconds::new(1132));
+        check!(eq; method, Some(TimingMethod::Hand));
+        Ok(())
     }
 
     #[test]
-    fn parse_published_plain_numeric() {
-        let (time, method) = parse_published_time("11.32").unwrap();
-        assert_eq!(time, CentiSeconds::new(1132));
-        assert_eq!(method, None);
+    fn parse_published_plain_numeric() -> TestResult {
+        let (time, method) = parse_published_time("11.32").ok_or("11.32 numeric time")?;
+        check!(eq; time, CentiSeconds::new(1132));
+        check!(eq; method, None);
 
-        let (time, method) = parse_published_time("3:00.64").unwrap();
-        assert_eq!(time, CentiSeconds::new(18064));
-        assert_eq!(method, None);
+        let (time, method) = parse_published_time("3:00.64").ok_or("3:00.64 numeric time")?;
+        check!(eq; time, CentiSeconds::new(18064));
+        check!(eq; method, None);
+        Ok(())
     }
 
     #[test]
@@ -130,14 +135,15 @@ mod tests {
     }
 
     #[test]
-    fn parse_published_trims_whitespace() {
-        let (time, method) = parse_published_time(" 11.32 ").unwrap();
-        assert_eq!(time, CentiSeconds::new(1132));
-        assert_eq!(method, None);
+    fn parse_published_trims_whitespace() -> TestResult {
+        let (time, method) = parse_published_time(" 11.32 ").ok_or("spaced numeric time")?;
+        check!(eq; time, CentiSeconds::new(1132));
+        check!(eq; method, None);
 
-        let (time, method) = parse_published_time(" 24.95a ").unwrap();
-        assert_eq!(time, CentiSeconds::new(2495));
-        assert_eq!(method, Some(TimingMethod::Fat));
+        let (time, method) = parse_published_time(" 24.95a ").ok_or("spaced FAT time")?;
+        check!(eq; time, CentiSeconds::new(2495));
+        check!(eq; method, Some(TimingMethod::Fat));
+        Ok(())
     }
 
     #[test]
@@ -147,12 +153,11 @@ mod tests {
     }
 
     #[test]
-    fn captured_class_of_2027_result_keeps_its_numeric_mark_and_timing() {
+    fn captured_class_of_2027_result_keeps_its_numeric_mark_and_timing() -> TestResult {
         let html =
             include_str!("../../tests/fixtures/milesplit/dc_meet_735841_results_legacy.html");
         let page =
-            crate::milesplit::parse_raw(html, "https://dc.milesplit.com/meets/735841/results")
-                .expect("captured public results");
+            crate::milesplit::parse_raw(html, "https://dc.milesplit.com/meets/735841/results")?;
         let row = page
             .meet
             .events
@@ -160,11 +165,12 @@ mod tests {
             .filter(|event| event.kind == census_domain::model::EventKind::Track100m)
             .flat_map(|event| &event.rows)
             .find(|row| row.name == "Brett Paukstis")
-            .expect("published grade-11 100m result");
-        assert_eq!(
+            .ok_or("published grade-11 100m result")?;
+        check!(eq;
             row.mark,
             census_domain::model::Mark::TimeSeconds(CentiSeconds::new(1267))
         );
-        assert_eq!(row.timing, Some(TimingMethod::Fat));
+        check!(eq; row.timing, Some(TimingMethod::Fat));
+        Ok(())
     }
 }

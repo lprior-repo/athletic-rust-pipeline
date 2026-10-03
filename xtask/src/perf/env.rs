@@ -14,7 +14,8 @@ pub fn build_meta() -> Result<Meta> {
 }
 
 pub fn cpu_model() -> Result<String> {
-    let content = std::fs::read_to_string("/proc/cpuinfo").unwrap_or_default();
+    let content = std::fs::read_to_string("/proc/cpuinfo")
+        .map_or(String::new(), core::convert::identity);
     for line in content.lines() {
         if let Some(model) = line.strip_prefix("model name\t: ") {
             return Ok(model.to_string());
@@ -35,21 +36,25 @@ pub fn physical_cores() -> Result<u32> {
 }
 
 pub fn git_sha() -> String {
-    super::Cmd::new("bash")
+    match super::Cmd::new("bash")
         .arg("-c")
         .arg("git rev-parse HEAD 2>/dev/null || echo unknown")
         .output()
-        .map(|o| o.trim().to_string())
-        .unwrap_or_else(|_| "unknown".to_string())
+    {
+        Ok(output) => output.trim().to_string(),
+        Err(_) => "unknown".to_string(),
+    }
 }
 
 pub fn rustc_version() -> String {
-    super::Cmd::new("bash")
+    match super::Cmd::new("bash")
         .arg("-c")
         .arg("rustc --version 2>/dev/null || echo unknown")
         .output()
-        .map(|o| o.trim().to_string())
-        .unwrap_or_else(|_| "unknown".to_string())
+    {
+        Ok(output) => output.trim().to_string(),
+        Err(_) => "unknown".to_string(),
+    }
 }
 
 pub fn corpus_size() -> u64 {
@@ -63,8 +68,11 @@ pub fn corpus_size() -> u64 {
                         if ext == "txt" || ext == "htm" || ext == "html" {
                             let lines = std::fs::read_to_string(&path)
                                 .ok()
-                                .map(|s| u64::try_from(s.lines().count()).unwrap_or(u64::MAX))
-                                .unwrap_or(0);
+                                .map(|s| {
+                                    u64::try_from(s.lines().count())
+                                        .map_or(u64::MAX, core::convert::identity)
+                                })
+                                .map_or(0, core::convert::identity);
                             total = total.saturating_add(lines);
                         }
                     }

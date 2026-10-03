@@ -1,3 +1,7 @@
+mod entities;
+
+use entities::unescape;
+
 use regex::Regex;
 use std::sync::LazyLock;
 
@@ -110,7 +114,10 @@ fn parse_school_block(
         }
         match split.captures(line.as_str()) {
             Some(parts) => {
-                let head = parts.get(1).map(|part| part.as_str()).unwrap_or("");
+                let head = parts
+                    .get(1)
+                    .map(|part| part.as_str())
+                    .map_or("", |value| value);
                 let (street, city) = match head.rsplit_once(',') {
                     Some((street, city)) => (street.trim(), city.trim()),
                     None => (head.trim(), ""),
@@ -149,11 +156,11 @@ fn extract_school_name(title: &Regex, body: &str) -> CrawlResult<String> {
         .map(|found| clean(found.as_str()))
         .map(|name| {
             name.strip_suffix("- PIAA")
-                .unwrap_or(name.as_str())
+                .map_or(name.as_str(), |value| value)
                 .trim()
                 .to_string()
         })
-        .unwrap_or_default();
+        .map_or(Default::default(), core::convert::identity);
     if name.is_empty() {
         return Err(CrawlError::Invariant {
             detail: "details page carries no title naming the school".to_string(),
@@ -184,7 +191,7 @@ fn parse_contact_block(
             let end = starts
                 .get(index.saturating_add(1))
                 .copied()
-                .unwrap_or(block_body.len());
+                .map_or(block_body.len(), |value| value);
             let Some(card) = block_body.get(*start..end) else {
                 continue;
             };
@@ -249,52 +256,4 @@ fn clean(value: &str) -> String {
         .split_whitespace()
         .collect::<Vec<&str>>()
         .join(" ")
-}
-
-fn unescape(value: &str) -> String {
-    let mut out = String::with_capacity(value.len());
-    let mut rest = value;
-    while let Some((head, tail)) = rest.split_once('&') {
-        out.push_str(head);
-        match tail.split_once(';') {
-            Some((entity, after)) if entity.len() <= 10 && !entity.is_empty() => {
-                match decode(entity) {
-                    Some(character) => out.push(character),
-                    None => {
-                        out.push('&');
-                        out.push_str(entity);
-                        out.push(';');
-                    }
-                }
-                rest = after;
-            }
-            _ => {
-                out.push('&');
-                rest = tail;
-            }
-        }
-    }
-    out.push_str(rest);
-    out
-}
-
-fn decode(entity: &str) -> Option<char> {
-    match entity {
-        "amp" => Some('&'),
-        "lt" => Some('<'),
-        "gt" => Some('>'),
-        "quot" => Some('"'),
-        "apos" | "#39" | "#x27" | "#X27" => Some('\''),
-        "nbsp" => Some('\u{a0}'),
-        _ => {
-            let digits = entity.strip_prefix('#')?;
-            let (radix, digits) = match digits.strip_prefix(['x', 'X']) {
-                Some(hex) => (16, hex),
-                None => (10, digits),
-            };
-            u32::from_str_radix(digits, radix)
-                .ok()
-                .and_then(char::from_u32)
-        }
-    }
 }

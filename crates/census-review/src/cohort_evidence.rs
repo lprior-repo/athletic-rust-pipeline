@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 use std::fmt::{self, Display, Formatter};
 
-use census_domain::model::{GradYear, ObservedGrade};
+use census_domain::model::{CanonicalAthlete, GradYear, ObservedGrade};
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub(crate) struct CohortEvidence<'a> {
@@ -10,18 +10,27 @@ pub(crate) struct CohortEvidence<'a> {
 }
 
 impl<'a> CohortEvidence<'a> {
-    pub(crate) fn of(observations: &'a [ObservedGrade]) -> Self {
-        observations
-            .iter()
-            .fold(Self::default(), |mut evidence, observation| {
-                match observation.grad_year() {
-                    Some(year) => {
-                        evidence.supported.insert(year);
+    pub(crate) fn of(athlete: &'a CanonicalAthlete) -> Self {
+        let mut evidence =
+            athlete
+                .observed_grades
+                .iter()
+                .fold(Self::default(), |mut evidence, observation| {
+                    match observation.grad_year() {
+                        Some(year) => {
+                            evidence.supported.insert(year);
+                        }
+                        None => evidence.unsupported.push(observation),
                     }
-                    None => evidence.unsupported.push(observation),
-                }
-                evidence
-            })
+                    evidence
+                });
+        evidence.supported.extend(
+            athlete
+                .published_graduations
+                .iter()
+                .map(|observation| observation.grad_year),
+        );
+        evidence
     }
 
     pub(crate) fn is_empty(&self) -> bool {

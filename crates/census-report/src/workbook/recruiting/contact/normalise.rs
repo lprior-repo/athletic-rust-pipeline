@@ -82,7 +82,14 @@ fn differs(left: Option<&str>, right: Option<&str>) -> bool {
 
 fn provenance(coach: &CanonicalCoach) -> Option<(String, String)> {
     let (url, observed_on) = crate::export::coach_source(coach);
-    url.map(|url| (url.to_owned(), observed_on.unwrap_or_default().to_owned()))
+    url.map(|url| {
+        (
+            url.to_owned(),
+            observed_on
+                .map_or(Default::default(), core::convert::identity)
+                .to_owned(),
+        )
+    })
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -99,13 +106,16 @@ impl Preferred {
         Self {
             name: contact.name.clone(),
             role: role_label(slot, contact.side),
-            email: contact.address().unwrap_or_default().to_owned(),
+            email: contact
+                .address()
+                .map_or(Default::default(), core::convert::identity)
+                .to_owned(),
             state: contact.state(slot),
             source_url: contact
                 .source
                 .as_ref()
                 .map(|source| source.0.clone())
-                .unwrap_or_default(),
+                .map_or(Default::default(), core::convert::identity),
         }
     }
 

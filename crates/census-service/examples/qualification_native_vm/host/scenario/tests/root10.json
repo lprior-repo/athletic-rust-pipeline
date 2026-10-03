@@ -1,0 +1,133 @@
+{
+  "baseline": {
+    "boot_id": "228838dc-3688-41e0-a478-fee2911b8e78",
+    "date": "2026-10-02",
+    "machine_id": "cce5aa177d3d49df815892a983fe520c",
+    "monotonic_uptime": "50.86 44.61",
+    "realtime": "2026-10-02T23:55:02.218815469+00:00"
+  },
+  "host_at": "2026-10-02T15:35:58.344373584+00:00",
+  "injection": {
+    "after": {
+      "boot_id": "228838dc-3688-41e0-a478-fee2911b8e78",
+      "date": "2026-10-02",
+      "machine_id": "cce5aa177d3d49df815892a983fe520c",
+      "monotonic_uptime": "48.68 40.97",
+      "realtime": "2026-10-02T23:55:00.033781638+00:00"
+    },
+    "before": {
+      "boot_id": "228838dc-3688-41e0-a478-fee2911b8e78",
+      "date": "2026-10-02",
+      "machine_id": "cce5aa177d3d49df815892a983fe520c",
+      "monotonic_uptime": "48.63 40.93",
+      "realtime": "2026-10-02T15:35:56.089498904+00:00"
+    },
+    "crossing_budget_seconds": 330,
+    "injection": "owned guest CLOCK_REALTIME only; natural midnight passage",
+    "pre_midnight_lead_seconds": 300,
+    "public_freshness_claim": false
+  },
+  "unfinished_sleep_witness": {
+    "boundary": {
+      "attempt": 1,
+      "clock": {
+        "boot_id": "228838dc-3688-41e0-a478-fee2911b8e78",
+        "date": "2026-10-02",
+        "machine_id": "cce5aa177d3d49df815892a983fe520c",
+        "monotonic_uptime": "50.43 44.06",
+        "realtime": "2026-10-02T23:55:01.780744125+00:00"
+      },
+      "observation": {
+        "after": {
+          "rows": [
+            {
+              "id": "inv_19eq9TpwKCdY2GX3v3uUiTTslZxgUS791S",
+              "journal_size": 4,
+              "modified_at": "2026-10-02T23:55:01.505Z",
+              "pinned_deployment_id": "dp_10K1aQbBHR7rSSYOItXq3vP",
+              "pinned_service_protocol_version": 7,
+              "status": "suspended",
+              "suspended_waiting_future_json": "{\"FirstCompleted\":[{\"Single\":{\"SignalIndex\":1}},{\"FirstCompleted\":[{\"Single\":{\"CompletionId\":2}},{\"Single\":{\"SignalName\":\"stop\"}}]}]}",
+              "target_handler_name": "run",
+              "target_service_key": "vm_fixture_replay_2026_r1_clock",
+              "target_service_name": "Sweep"
+            }
+          ]
+        },
+        "before": {
+          "rows": [
+            {
+              "id": "inv_19eq9TpwKCdY2GX3v3uUiTTslZxgUS791S",
+              "journal_size": 4,
+              "modified_at": "2026-10-02T23:55:01.505Z",
+              "pinned_deployment_id": "dp_10K1aQbBHR7rSSYOItXq3vP",
+              "pinned_service_protocol_version": 7,
+              "status": "suspended",
+              "suspended_waiting_future_json": "{\"FirstCompleted\":[{\"Single\":{\"SignalIndex\":1}},{\"FirstCompleted\":[{\"Single\":{\"CompletionId\":2}},{\"Single\":{\"SignalName\":\"stop\"}}]}]}",
+              "target_handler_name": "run",
+              "target_service_key": "vm_fixture_replay_2026_r1_clock",
+              "target_service_name": "Sweep"
+            }
+          ]
+        },
+        "id": "inv_19eq9TpwKCdY2GX3v3uUiTTslZxgUS791S",
+        "journal": {
+          "rows": [
+            {
+              "entry_json": "{\"Command\":{\"Input\":{\"headers\":[{\"name\":\"x-restate-ingress-path\",\"value\":\"/restate/send/Sweep/vm_fixture_replay_2026_r1_clock/run\"},{\"name\":\"accept\",\"value\":\"application/json\"},{\"name\":\"content-type\",\"value\":\"application/json\"},{\"name\":\"content-length\",\"value\":\"77\"}],\"payload\":[123,34,101,110,100,112,111,105,110,116,115,34,58,91,34,118,109,95,102,105,120,116,117,114,101,95,114,101,112,108,97,121,95,50,48,50,54,95,114,49,34,93,44,34,119,105,110,100,111,119,95,115,101,99,111,110,100,115,34,58,51,54,48,48,44,34,119,105,110,100,111,119,115,34,58,49,125],\"name\":\"\"}}}",
+              "entry_type": "Command: Input",
+              "id": "inv_19eq9TpwKCdY2GX3v3uUiTTslZxgUS791S",
+              "index": 0,
+              "version": 2
+            },
+            {
+              "entry_json": "{\"Command\":{\"Run\":{\"completion_id\":1,\"name\":\"\"}}}",
+              "entry_type": "Command: Run",
+              "id": "inv_19eq9TpwKCdY2GX3v3uUiTTslZxgUS791S",
+              "index": 1,
+              "version": 2
+            },
+            {
+              "entry_json": "{\"Notification\":{\"Completion\":{\"Run\":{\"completion_id\":1,\"result\":{\"Success\":[34,50,48,50,54,45,49,48,45,48,50,34]}}}}}",
+              "entry_type": "Notification: Run",
+              "id": "inv_19eq9TpwKCdY2GX3v3uUiTTslZxgUS791S",
+              "index": 2,
+              "version": 2
+            },
+            {
+              "entry_json": "{\"Command\":{\"Sleep\":{\"wake_up_time\":1790988900497,\"completion_id\":2,\"name\":\"\"}}}",
+              "entry_type": "Command: Sleep",
+              "id": "inv_19eq9TpwKCdY2GX3v3uUiTTslZxgUS791S",
+              "index": 3,
+              "version": 2
+            }
+          ]
+        },
+        "key": "vm_fixture_replay_2026_r1_clock"
+      },
+      "parser_error": null,
+      "proof": {
+        "completion_id": 2,
+        "guest_now": 1790985301780,
+        "safety_margin_ms": 30000,
+        "wake_up_time": 1790988900497
+      }
+    },
+    "invocation": {
+      "accepted": {
+        "invocationId": "inv_19eq9TpwKCdY2GX3v3uUiTTslZxgUS791S",
+        "status": "Accepted"
+      },
+      "id": "inv_19eq9TpwKCdY2GX3v3uUiTTslZxgUS791S",
+      "key": "vm_fixture_replay_2026_r1_clock",
+      "starting_clock": {
+        "boot_id": "228838dc-3688-41e0-a478-fee2911b8e78",
+        "date": "2026-10-02",
+        "machine_id": "cce5aa177d3d49df815892a983fe520c",
+        "monotonic_uptime": "49.10 41.49",
+        "realtime": "2026-10-02T23:55:00.457584003+00:00"
+      }
+    },
+    "unfinished_obligation": "one durable Sweep Sleep window"
+  }
+}

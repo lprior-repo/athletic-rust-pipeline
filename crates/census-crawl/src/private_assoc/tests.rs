@@ -7,6 +7,8 @@ use census_domain::school_directory::{
 };
 use census_domain::UsJurisdiction;
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 const NAIS_LISTING: &str = r#"<!doctype html>
 <html>
 <head><title>NAIS Member School Directory</title></head>
@@ -102,201 +104,217 @@ const NAIS_LISTING_IN_HAWAII: &str = r#"<body>
 </body>
 "#;
 
-fn first(outcome: &ReadOutcome) -> &SchoolDirectoryEntry {
-    outcome.entries().first().expect("one entry")
+fn first(outcome: &ReadOutcome) -> TestResult<&SchoolDirectoryEntry> {
+    Ok(outcome.entries().first().ok_or("one entry")?)
 }
 
 fn source_label(entry: &SchoolDirectoryEntry) -> Vec<String> {
     entry.sources().iter().map(SourceLabel::label).collect()
 }
 
-fn nais_label() -> SourceLabel {
-    SourceLabel::PrivateAssociation {
-        label: AssociationLabel::parse("NAIS").expect("NAIS label"),
-    }
+fn nais_label() -> TestResult<SourceLabel> {
+    Ok(SourceLabel::PrivateAssociation {
+        label: AssociationLabel::parse("NAIS")?,
+    })
 }
 
 #[test]
-fn a_listing_yields_one_weak_entry_per_item() {
-    let outcome = parse_listing(NAIS_LISTING).expect("the NAIS listing reads");
-    assert_eq!(outcome.counts().entries, 2);
-    assert_eq!(outcome.counts().skipped, 0);
-    assert_eq!(outcome.counts().notes, 0);
+fn a_listing_yields_one_weak_entry_per_item() -> TestResult {
+    let outcome = parse_listing(NAIS_LISTING)?;
+    check!(eq; outcome.counts().entries, 2);
+    check!(eq; outcome.counts().skipped, 0);
+    check!(eq; outcome.counts().notes, 0);
 
-    let riverside = first(&outcome);
-    assert_eq!(
+    let riverside = first(&outcome)?;
+    check!(eq;
         riverside.name().map(SchoolName::as_str),
         Some("Riverside Academy")
     );
-    assert!(matches!(riverside.key(), DirectoryKey::Weak(_)));
-    assert_eq!(
+    check!(matches!(riverside.key(), DirectoryKey::Weak(_)));
+    check!(eq;
         riverside.key().label(),
         "weak:riverside academy|springfield|IL"
     );
-    assert_eq!(
+    check!(eq;
         source_label(riverside),
         vec!["association:NAIS".to_string()]
     );
-    assert_eq!(
+    check!(eq;
         riverside.sources(),
-        &std::collections::BTreeSet::from([nais_label()])
+        &std::collections::BTreeSet::from([nais_label()?])
     );
-    let address = riverside.address().expect("street address");
-    assert_eq!(
+    let address = riverside.address().ok_or("street address")?;
+    check!(eq;
         address.line1().map(StreetLine::as_str),
         Some("100 River Road")
     );
-    assert_eq!(address.city().map(CityName::as_str), Some("Springfield"));
-    assert_eq!(address.state(), Some(UsJurisdiction::Illinois));
-    assert_eq!(
+    check!(eq; address.city().map(CityName::as_str), Some("Springfield"));
+    check!(eq; address.state(), Some(UsJurisdiction::Illinois));
+    check!(eq;
         address.zip().map(|zip| zip.to_string()),
         Some("62704".to_string())
     );
 
-    let lakeside = outcome.entries().get(1).expect("second entry");
-    assert_eq!(
+    let lakeside = outcome.entries().get(1).ok_or("second entry")?;
+    check!(eq;
         lakeside.name().map(SchoolName::as_str),
         Some("Lakeside Country Day & School")
     );
-    let address = lakeside.address().expect("second address");
-    assert_eq!(
+    let address = lakeside.address().ok_or("second address")?;
+    check!(eq;
         address.line1().map(StreetLine::as_str),
         Some("55 Lake Street")
     );
-    assert_eq!(address.city().map(CityName::as_str), Some("Springfield"));
-    assert_eq!(
+    check!(eq; address.city().map(CityName::as_str), Some("Springfield"));
+    check!(eq;
         address.zip().map(|zip| zip.to_string()),
         Some("62704-1234".to_string())
     );
+    Ok(())
 }
 
 #[test]
-fn a_row_without_a_usable_name_lands_in_the_ledger() {
-    let outcome = parse_listing(NAIS_LISTING_WITH_NAMELESS_ROW).expect("the listing reads");
-    assert_eq!(outcome.counts().entries, 1);
-    assert_eq!(outcome.counts().skipped, 1);
-    let issue = outcome.skipped().first().expect("one skip");
-    assert_eq!(issue.line, 8);
-    assert_eq!(issue.field, "name");
-    assert_eq!(issue.render(), "line 8: name school name is empty");
-    assert_eq!(
-        first(&outcome).name().map(SchoolName::as_str),
+fn a_row_without_a_usable_name_lands_in_the_ledger() -> TestResult {
+    let outcome = parse_listing(NAIS_LISTING_WITH_NAMELESS_ROW)?;
+    check!(eq; outcome.counts().entries, 1);
+    check!(eq; outcome.counts().skipped, 1);
+    let issue = outcome.skipped().first().ok_or("one skip")?;
+    check!(eq; issue.line, 8);
+    check!(eq; issue.field, "name");
+    check!(eq; issue.render(), "line 8: name school name is empty");
+    check!(eq;
+        first(&outcome)?.name().map(SchoolName::as_str),
         Some("Riverside Academy")
     );
+    Ok(())
 }
 
 #[test]
-fn a_name_that_leaves_no_matching_form_lands_in_the_ledger() {
+fn a_name_that_leaves_no_matching_form_lands_in_the_ledger() -> TestResult {
     let body = NAIS_LISTING.replace("Riverside Academy", "---");
-    let outcome = parse_listing(&body).expect("the listing reads");
-    assert_eq!(outcome.counts().entries, 1);
-    assert_eq!(outcome.counts().skipped, 1);
-    let issue = outcome.skipped().first().expect("one skip");
-    assert_eq!(issue.field, "name");
-    assert_eq!(issue.detail, "matching name is empty");
+    let outcome = parse_listing(&body)?;
+    check!(eq; outcome.counts().entries, 1);
+    check!(eq; outcome.counts().skipped, 1);
+    let issue = outcome.skipped().first().ok_or("one skip")?;
+    check!(eq; issue.field, "name");
+    check!(eq; issue.detail, "matching name is empty");
+    Ok(())
 }
 
 #[test]
-fn a_body_with_no_listing_is_refused() {
-    let error = parse_listing(NAIS_PAGE_WITHOUT_LISTING).expect_err("there is no listing");
-    assert!(matches!(error, CrawlError::Invariant { .. }));
+fn a_body_with_no_listing_is_refused() -> TestResult {
+    let error = match parse_listing(NAIS_PAGE_WITHOUT_LISTING) {
+        Err(error) => error,
+        Ok(_) => return Err("there is no listing".into()),
+    };
+    check!(matches!(error, CrawlError::Invariant { .. }));
+    Ok(())
 }
 
 #[test]
-fn a_body_that_names_no_association_is_refused() {
-    let error = parse_listing(RENAISSANCE_LISTING).expect_err("no association is named");
-    assert!(matches!(&error, CrawlError::Invariant { .. }));
+fn a_body_that_names_no_association_is_refused() -> TestResult {
+    let error = match parse_listing(RENAISSANCE_LISTING) {
+        Err(error) => error,
+        Ok(_) => return Err("no association is named".into()),
+    };
+    check!(matches!(&error, CrawlError::Invariant { .. }));
     let rendered = error.to_string();
-    assert!(rendered.contains("NAIS"), "{rendered}");
-    assert!(rendered.contains("CAPE"), "{rendered}");
-    assert!(rendered.contains("NASSP"), "{rendered}");
+    check!(rendered.contains("NAIS"), "{rendered}");
+    check!(rendered.contains("CAPE"), "{rendered}");
+    check!(rendered.contains("NASSP"), "{rendered}");
+    Ok(())
 }
 
 #[test]
-fn the_association_name_comes_from_the_body() {
-    let nais = parse_listing(NAIS_LISTING).expect("the NAIS listing reads");
-    assert_eq!(
-        source_label(first(&nais)),
+fn the_association_name_comes_from_the_body() -> TestResult {
+    let nais = parse_listing(NAIS_LISTING)?;
+    check!(eq;
+        source_label(first(&nais)?),
         vec!["association:NAIS".to_string()]
     );
 
-    let cape = parse_listing(CAPE_LISTING).expect("the CAPE listing reads");
-    assert_eq!(
-        source_label(first(&cape)),
+    let cape = parse_listing(CAPE_LISTING)?;
+    check!(eq;
+        source_label(first(&cape)?),
         vec!["association:CAPE".to_string()]
     );
-    let harbor = first(&cape);
-    assert_eq!(
+    let harbor = first(&cape)?;
+    check!(eq;
         harbor.key().label(),
         "weak:harbor day school|springfield|IL"
     );
-    let address = harbor.address().expect("city and state");
-    assert_eq!(address.line1(), None);
-    assert_eq!(address.city().map(CityName::as_str), Some("Springfield"));
-    assert_eq!(address.zip(), None);
+    let address = harbor.address().ok_or("city and state")?;
+    check!(eq; address.line1(), None);
+    check!(eq; address.city().map(CityName::as_str), Some("Springfield"));
+    check!(eq; address.zip(), None);
 
-    let nassp = parse_listing(NASSP_LISTING).expect("the NASSP listing reads");
-    assert_eq!(
-        source_label(first(&nassp)),
+    let nassp = parse_listing(NASSP_LISTING)?;
+    check!(eq;
+        source_label(first(&nassp)?),
         vec!["association:NASSP".to_string()]
     );
+    Ok(())
 }
 
 #[test]
-fn a_published_zip_that_is_not_a_zip_is_a_note_and_the_row_survives() {
-    let outcome = parse_listing(NAIS_LISTING_WITH_BAD_ZIP).expect("the listing reads");
-    assert_eq!(outcome.counts().entries, 1);
-    assert_eq!(outcome.counts().skipped, 0);
-    let note = outcome.notes().first().expect("one note");
-    assert_eq!(note.field, "zip");
-    assert!(note.detail.contains("6270"), "{}", note.detail);
-    let entry = first(&outcome);
-    let address = entry.address().expect("street address");
-    assert_eq!(
+fn a_published_zip_that_is_not_a_zip_is_a_note_and_the_row_survives() -> TestResult {
+    let outcome = parse_listing(NAIS_LISTING_WITH_BAD_ZIP)?;
+    check!(eq; outcome.counts().entries, 1);
+    check!(eq; outcome.counts().skipped, 0);
+    let note = outcome.notes().first().ok_or("one note")?;
+    check!(eq; note.field, "zip");
+    check!(note.detail.contains("6270"), "{}", note.detail);
+    let entry = first(&outcome)?;
+    let address = entry.address().ok_or("street address")?;
+    check!(eq;
         address.line1().map(StreetLine::as_str),
         Some("100 River Road")
     );
-    assert_eq!(address.city().map(CityName::as_str), Some("Springfield"));
-    assert_eq!(address.state(), Some(UsJurisdiction::Illinois));
-    assert_eq!(address.zip(), None);
+    check!(eq; address.city().map(CityName::as_str), Some("Springfield"));
+    check!(eq; address.state(), Some(UsJurisdiction::Illinois));
+    check!(eq; address.zip(), None);
+    Ok(())
 }
 
 #[test]
-fn a_city_too_long_for_the_domain_is_a_note_and_the_row_survives() {
-    let outcome = parse_listing(NAIS_LISTING_WITH_LONG_CITY).expect("the listing reads");
-    assert_eq!(outcome.counts().entries, 1);
-    assert_eq!(outcome.counts().skipped, 0);
-    let note = outcome.notes().first().expect("one note");
-    assert_eq!(note.field, "city");
-    let address = first(&outcome).address().expect("street address");
-    assert_eq!(address.city(), None);
-    assert_eq!(address.state(), Some(UsJurisdiction::Illinois));
-    assert_eq!(
+fn a_city_too_long_for_the_domain_is_a_note_and_the_row_survives() -> TestResult {
+    let outcome = parse_listing(NAIS_LISTING_WITH_LONG_CITY)?;
+    check!(eq; outcome.counts().entries, 1);
+    check!(eq; outcome.counts().skipped, 0);
+    let note = outcome.notes().first().ok_or("one note")?;
+    check!(eq; note.field, "city");
+    let address = first(&outcome)?.address().ok_or("street address")?;
+    check!(eq; address.city(), None);
+    check!(eq; address.state(), Some(UsJurisdiction::Illinois));
+    check!(eq;
         address.zip().map(|zip| zip.to_string()),
         Some("62704".to_string())
     );
+    Ok(())
 }
 
 #[test]
-fn a_state_outside_the_census_scope_is_not_claimed() {
-    let outcome = parse_listing(NAIS_LISTING_IN_HAWAII).expect("the listing reads");
-    let entry = first(&outcome);
-    assert_eq!(entry.key().label(), "weak:pacific academy|springfield|");
-    let address = entry.address().expect("city and zip");
-    assert_eq!(address.state(), None);
-    assert_eq!(address.city().map(CityName::as_str), Some("Springfield"));
-    assert_eq!(
+fn a_state_outside_the_census_scope_is_not_claimed() -> TestResult {
+    let outcome = parse_listing(NAIS_LISTING_IN_HAWAII)?;
+    let entry = first(&outcome)?;
+    check!(eq; entry.key().label(), "weak:pacific academy|springfield|");
+    let address = entry.address().ok_or("city and zip")?;
+    check!(eq; address.state(), None);
+    check!(eq; address.city().map(CityName::as_str), Some("Springfield"));
+    check!(eq;
         address.zip().map(|zip| zip.to_string()),
         Some("96813".to_string())
     );
+    Ok(())
 }
 
 #[test]
-fn an_item_without_an_address_still_makes_a_weak_entry() {
+fn an_item_without_an_address_still_makes_a_weak_entry() -> TestResult {
     let body = NAIS_LISTING.replace("100 River Road<br>Springfield, IL 62704", "");
-    let outcome = parse_listing(&body).expect("the listing reads");
-    assert_eq!(outcome.counts().entries, 2);
-    let entry = first(&outcome);
-    assert_eq!(entry.key().label(), "weak:riverside academy||");
-    assert_eq!(entry.address(), None);
+    let outcome = parse_listing(&body)?;
+    check!(eq; outcome.counts().entries, 2);
+    let entry = first(&outcome)?;
+    check!(eq; entry.key().label(), "weak:riverside academy||");
+    check!(eq; entry.address(), None);
+    Ok(())
 }

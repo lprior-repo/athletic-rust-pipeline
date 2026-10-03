@@ -12,9 +12,9 @@ use std::sync::LazyLock;
 pub(crate) use columns::{
     columns_from_header, grade_from_token, looks_like_a_name, substring, tokens, Column, Token,
 };
-pub(crate) use map::NO_MARK;
 use map::{event_header, header_meet};
 pub use map::{hytek_event_kind, parse_field_mark, parse_time, round_marker};
+pub(crate) use map::{parse_points, NO_MARK};
 use parse::{parse_legs, parse_row, place_prefix_regex, starts_like_a_row, Section};
 
 static PRE: LazyLock<Result<Regex, regex::Error>> =
@@ -56,8 +56,13 @@ fn tag_regex() -> CrawlResult<&'static Regex> {
 pub fn parse(lines: &[String], source: SourceRef) -> Option<ParsedMeet> {
     let (name, date, end_date) = header_meet(lines)?;
     let timer = lines.iter().find_map(|line| {
-        line.strip_prefix("Licensed to ")
-            .map(|rest| rest.split(" - ").next().unwrap_or(rest).trim().to_string())
+        line.strip_prefix("Licensed to ").map(|rest| {
+            rest.split(" - ")
+                .next()
+                .map_or(rest, |value| value)
+                .trim()
+                .to_string()
+        })
     });
 
     let mut events: Vec<ParsedEvent> = Vec::new();
@@ -156,7 +161,10 @@ pub fn lines_from_html(body: &str) -> Vec<String> {
     let pre = pre_regex().ok();
     let breaks = break_regex().ok();
     if let Some(capture) = pre.and_then(|pattern| pattern.captures(body)) {
-        let inner = capture.get(1).map(|m| m.as_str()).unwrap_or_default();
+        let inner = capture
+            .get(1)
+            .map(|m| m.as_str())
+            .map_or(Default::default(), core::convert::identity);
         let spaced = match breaks {
             Some(pattern) => pattern.replace_all(inner, "\n"),
             None => std::borrow::Cow::Borrowed(inner),
@@ -169,7 +177,10 @@ pub fn lines_from_html(body: &str) -> Vec<String> {
     paragraph
         .captures_iter(body)
         .map(|capture| {
-            let inner = capture.get(1).map(|m| m.as_str()).unwrap_or_default();
+            let inner = capture
+                .get(1)
+                .map(|m| m.as_str())
+                .map_or(Default::default(), core::convert::identity);
             clean_line(&strip_tags(inner))
         })
         .collect()

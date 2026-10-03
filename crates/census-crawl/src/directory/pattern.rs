@@ -13,11 +13,11 @@ pub fn group<'a>(captures: &Captures<'a>, index: usize) -> &'a str {
     captures
         .get(index)
         .map(|matched| matched.as_str().trim())
-        .unwrap_or("")
+        .map_or("", |value| value)
 }
 
 pub fn line_of(text: &str, offset: usize) -> usize {
     text.get(..offset)
         .map(|prefix| prefix.matches('\n').count().saturating_add(1))
-        .unwrap_or(1)
+        .map_or(1, |value| value)
 }

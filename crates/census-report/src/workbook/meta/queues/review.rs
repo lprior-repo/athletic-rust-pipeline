@@ -18,16 +18,19 @@ pub(super) fn cohort_unverified(
             &athlete.canonical_name,
             school_of(names, athlete.school.as_str()),
         );
-        let detail = if athlete.observed_grades.is_empty() {
+        let detail = if athlete.observed_grades.is_empty()
+            && athlete.published_graduations.is_empty()
+        {
             format!(
-                "no grade observation retained; {} evidence row(s), {} source(s)",
+                "no cohort observation retained; {} evidence row(s), {} source(s)",
                 athlete.evidence.len(),
                 source_count(athlete)
             )
         } else {
             format!(
-                "grade observations do not confirm canonical year {}; {} observation(s), {} evidence row(s), {} source(s)",
+                "cohort observations do not confirm canonical year {}; {} published graduation observation(s), {} grade observation(s), {} evidence row(s), {} source(s)",
                 athlete.grad_year,
+                athlete.published_graduations.len(),
                 athlete.observed_grades.len(),
                 athlete.evidence.len(),
                 source_count(athlete)
@@ -106,8 +109,74 @@ fn source_count(athlete: &CanonicalAthlete) -> usize {
         .evidence
         .iter()
         .map(|evidence| evidence.source.id.as_str())
+        .chain(
+            athlete
+                .published_graduations
+                .iter()
+                .map(|claim| claim.source.id.as_str()),
+        )
+        .chain(
+            athlete
+                .observed_grades
+                .iter()
+                .map(|grade| grade.source.id.as_str()),
+        )
         .collect();
     sources.sort_unstable();
     sources.dedup();
     sources.len()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use census_domain::model::{
+        GradYear, PublishedGraduation, SchoolId, SourceIdentity, SourceNamespace, SourceRef,
+    };
+
+    type TestResult = Result<(), Box<dyn std::error::Error>>;
+
+    fn athlete(id: &str) -> CanonicalAthlete {
+        CanonicalAthlete::new(
+            &SchoolId::mint("sch", &["cohort-review-fixture"]),
+            "Published Cohort Runner",
+            GradYear::CO2027,
+            census_domain::model::Gender::Girls,
+            SourceIdentity::new(SourceNamespace::MilesplitAthlete, id),
+        )
+    }
+
+    #[test]
+    fn only_unknown_and_contradictory_cohorts_remain_in_review_when_direct_claims_are_retained(
+    ) -> TestResult {
+        let unknown = athlete("1001");
+        let mut confirmed = athlete("1002");
+        confirmed.published_graduations.push(PublishedGraduation {
+            grad_year: GradYear::CO2027,
+            source: SourceRef::id("owned-api"),
+        });
+        let mut conflicted = athlete("1003");
+        conflicted.published_graduations = vec![
+            PublishedGraduation {
+                grad_year: GradYear::CO2027,
+                source: SourceRef::id("owned-api"),
+            },
+            PublishedGraduation {
+                grad_year: GradYear::new(2028).ok_or("invalid fixture graduation year")?,
+                source: SourceRef::id("other-api"),
+            },
+        ];
+        let expected = vec![unknown.id.to_string(), conflicted.id.to_string()];
+        let family = cohort_unverified(&[unknown, confirmed, conflicted], &HashMap::new());
+        check!(eq;
+            family
+                .rows
+                .iter()
+                .map(|row| row.subject_id.clone())
+                .collect::<Vec<_>>(),
+            expected,
+        );
+        check!(eq; family.findings, 2);
+        Ok(())
+    }
 }

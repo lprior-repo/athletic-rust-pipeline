@@ -98,7 +98,7 @@ pub(super) struct Cells<'a> {
 }
 
 pub(super) fn row_cells(line: &str, columns: Columns) -> Cells<'_> {
-    let grade_end = columns.grade.unwrap_or(columns.team);
+    let grade_end = columns.grade.map_or(columns.team, |value| value);
     let ends = [
         columns.name,
         grade_end,
@@ -110,12 +110,20 @@ pub(super) fn row_cells(line: &str, columns: Columns) -> Cells<'_> {
     let token = mark_token(line, mark_end);
     let team_end = token.map_or(mark_start, |(start, _)| start.min(mark_start).max(team));
     let mark = token.and_then(|(_, token)| mark_shaped(token).then_some(token));
-    let tail = line.get(mark_end..).unwrap_or_default();
+    let tail = line.get(mark_end..).map_or(Default::default(), core::convert::identity);
     Cells {
-        place: line.get(..name).unwrap_or_default().trim(),
-        name: line.get(name..grade).unwrap_or_default().trim(),
-        grade: line.get(grade..team).unwrap_or_default().trim(),
-        team: line.get(team..team_end).unwrap_or_default().trim(),
+        place: line.get(..name)
+            .map_or(Default::default(), core::convert::identity)
+            .trim(),
+        name: line.get(name..grade)
+            .map_or(Default::default(), core::convert::identity)
+            .trim(),
+        grade: line.get(grade..team)
+            .map_or(Default::default(), core::convert::identity)
+            .trim(),
+        team: line.get(team..team_end)
+            .map_or(Default::default(), core::convert::identity)
+            .trim(),
         heat: mark.and_then(|_| heat_token(tail)),
         overflowed: layout_overflows(line, mark_start, mark_end, token),
         mark,
@@ -126,7 +134,7 @@ fn boundary_bytes(line: &str, ends: [usize; BOUNDS]) -> [usize; BOUNDS] {
     if line.is_ascii() {
         return ends.map(|offset| offset.min(line.len()));
     }
-    let limit = ends.last().copied().unwrap_or(usize::MAX);
+    let limit = ends.last().copied().map_or(usize::MAX, |value| value);
     let mut bytes = [line.len(); BOUNDS];
     for (column, (byte, _)) in line.char_indices().enumerate() {
         for (end, boundary) in ends.iter().zip(bytes.iter_mut()) {
@@ -153,7 +161,7 @@ fn mark_token(line: &str, mark_end: usize) -> Option<(usize, &str)> {
             ch.is_whitespace()
                 .then_some(byte.saturating_add(ch.len_utf8()))
         })
-        .unwrap_or(0);
+        .map_or(0, |value| value);
     line.get(start..mark_end).map(|token| (start, token))
 }
 
@@ -169,7 +177,7 @@ fn layout_overflows(
         .is_some_and(|ch| !ch.is_whitespace());
     let scattered = line
         .get(mark_start..mark_end)
-        .unwrap_or_default()
+        .map_or(Default::default(), core::convert::identity)
         .split_whitespace()
         .nth(1)
         .is_some();
@@ -249,5 +257,8 @@ fn mark_of(value: &str, kind: &EventKind) -> (Mark, Option<TimingMethod>) {
     } else {
         time().or_else(field)
     };
-    parsed.unwrap_or_else(|| (Mark::Raw(value.to_string()), None))
+    match parsed {
+        Some(parsed_mark) => parsed_mark,
+        None => (Mark::Raw(value.to_string()), None),
+    }
 }

@@ -18,6 +18,9 @@ pub(super) fn needs_advice(
     let Some(row) = standing.get(&case.id).filter(|row| matches_case(row, case)) else {
         return Ok(true);
     };
+    if case.state == ReviewState::Resolved && row.accepted && row.reviewer == crate::RULE_REVIEWER {
+        return Ok(false);
+    }
     let packet = subjects.packet(case, family)?;
     let [first, second] = clients;
     let lanes = [
@@ -110,7 +113,12 @@ pub(super) fn commit(
 ) -> StoreResult<Application> {
     let mut batch = store.write_batch();
     let digest = crate::compute_digest(verdicts, cases)?;
-    let operation = format!("review:{observed_at}:{checkpoint}:{digest}");
+    let operation = format!("review:{observed_at}:{checkpoint}:{sequence}:{digest}");
+    verdicts.iter().try_for_each(|row| {
+        let key = census_domain::model::serialized_digest(row)
+            .map_err(|error| crate::consensus::invariant(error.to_string()))?;
+        batch.journal_done("review_advice_v1", &key, row)
+    })?;
     batch.replace_many(Table::IdentityVerdicts, verdicts)?;
     batch.replace_many(Table::ReviewCases, cases)?;
     let application = batch.commit_once_at_sequence(&operation, &digest, sequence)?;

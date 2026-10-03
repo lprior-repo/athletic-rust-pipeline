@@ -54,7 +54,7 @@ impl Header {
 pub fn cell(record: &csv::StringRecord, index: Option<usize>) -> &str {
     index
         .and_then(|index| record.get(index))
-        .unwrap_or_default()
+        .map_or(Default::default(), core::convert::identity)
 }
 
 pub fn first<'a>(record: &'a csv::StringRecord, header: &Header, names: &[&str]) -> &'a str {
@@ -101,8 +101,8 @@ where
         let record = record.map_err(refusal)?;
         let line = record
             .position()
-            .map(|position| usize::try_from(position.line()).unwrap_or(usize::MAX))
-            .unwrap_or_default();
+            .map(|position| usize::try_from(position.line()).map_or(usize::MAX, |value| value))
+            .map_or(Default::default(), core::convert::identity);
         if record.len() < header.width() {
             outcome.note(
                 line,

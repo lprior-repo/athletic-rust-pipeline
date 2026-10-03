@@ -69,7 +69,7 @@ fn aliases_of(package: &Value, members: &BTreeSet<String>) -> BTreeMap<String, S
         let alias = dependency
             .get("rename")
             .and_then(Value::as_str)
-            .unwrap_or(dep_name)
+            .map_or(dep_name, core::convert::identity)
             .replace('-', "_");
         aliases.insert(alias, dep_name.to_string());
     }

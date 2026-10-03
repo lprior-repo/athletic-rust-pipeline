@@ -23,7 +23,7 @@ pub(super) fn first_violation_over(
             .context("Rust token position overflow")?;
         let text = source.get(offset..end).context("invalid Rust token span")?;
         match token.kind {
-            Kind::LineComment | Kind::BlockComment => {
+            Kind::LineComment | Kind::BlockComment { .. } => {
                 return Ok(Some(Violation {
                     offset,
                     reason: "code comments are forbidden",

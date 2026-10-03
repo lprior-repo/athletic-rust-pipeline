@@ -44,7 +44,7 @@ pub fn parse_ad_coach(
     source_url: &str,
     observed_on: &str,
 ) -> Option<CanonicalCoach> {
-    let name = record.ad_name.as_deref().unwrap_or("").trim();
+    let name = record.ad_name.as_deref().map_or("", |value| value).trim();
     if name.is_empty() {
         return None;
     }

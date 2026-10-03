@@ -19,13 +19,13 @@ fn varsity_output_survives_rejected_duplicates_in_either_order() -> TestResult {
             "teams": teams
         }))?;
         let (_, school_id) = minted(UsJurisdiction::Wyoming, "Test High School");
-        let emission = emitted(&summary, &school_id, "https://example.test/summary");
+        let emission = emitted(&summary, &school_id, "https://example.test/summary")?;
         let rows: Vec<_> = emission
             .coaches
             .iter()
             .map(|coach| (coach.name.as_str(), coach.sport, coach.gender, coach.role))
             .collect();
-        assert_eq!(
+        check!(eq;
             rows,
             [(
                 "Ada Lovelace",
@@ -34,7 +34,7 @@ fn varsity_output_survives_rejected_duplicates_in_either_order() -> TestResult {
                 CoachRole::HeadCoach
             )]
         );
-        assert_eq!(emission.counters.dropped_levels.get("JV"), Some(&1));
+        check!(eq; emission.counters.dropped_levels.get("JV"), Some(&1));
     }
     Ok(())
 }
@@ -50,13 +50,13 @@ fn rejected_vendor_contact_cannot_claim_a_valid_persons_row() -> TestResult {
         "teams": [{"name": "Boys' Cross Country", "level": "Varsity", "coachProfileIds": ["vendor", "real"]}]
     }))?;
     let (_, school_id) = minted(UsJurisdiction::Wyoming, "Test High School");
-    let emission = emitted(&summary, &school_id, "https://example.test/summary");
+    let emission = emitted(&summary, &school_id, "https://example.test/summary")?;
     let rows: Vec<_> = emission
         .coaches
         .iter()
         .map(|coach| (coach.name.as_str(), coach.professional_email.as_deref()))
         .collect();
-    assert_eq!(rows, [("Ada Lovelace", Some("ada@school.edu"))]);
-    assert_eq!(emission.counters.dropped_vendor, 1);
+    check!(eq; rows, [("Ada Lovelace", Some("ada@school.edu"))]);
+    check!(eq; emission.counters.dropped_vendor, 1);
     Ok(())
 }

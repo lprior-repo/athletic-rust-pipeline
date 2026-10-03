@@ -23,7 +23,7 @@ impl ZipCode {
     pub fn parse(raw: &str) -> Result<Self, DirectoryError> {
         let trimmed = raw.trim();
         let mut segments = trimmed.split('-');
-        let first = segments.next().unwrap_or_default();
+        let first = segments.next().map_or(Default::default(), core::convert::identity);
         let second = segments.next();
         if segments.next().is_some() {
             return Err(malformed(raw));

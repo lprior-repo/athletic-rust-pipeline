@@ -5,6 +5,8 @@ use census_domain::model::{
 };
 use census_domain::UsJurisdiction;
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 fn wiaa() -> SourceNamespace {
     SourceNamespace::AssociationSchool {
         association: "wiaa".to_string(),
@@ -23,11 +25,11 @@ fn school_row(org_id: &str, name: &str) -> CanonicalSchool {
     school
 }
 
-fn observed(school: &CanonicalSchool, observed_on: &str) -> SourceSchoolObservation {
-    let Some(row) = SourceSchoolObservation::of_school(&wiaa(), school, observed_on) else {
-        panic!("a row carrying the source's identity has to mint an observation");
-    };
-    row
+fn observed(school: &CanonicalSchool, observed_on: &str) -> TestResult<SourceSchoolObservation> {
+    Ok(
+        SourceSchoolObservation::of_school(&wiaa(), school, observed_on)
+            .ok_or("a row carrying the source's identity has to mint an observation")?,
+    )
 }
 
 fn athlete_row() -> SourceObservation {
@@ -41,33 +43,25 @@ fn athlete_row() -> SourceObservation {
 }
 
 #[test]
-fn an_observation_is_keyed_by_the_providers_own_id() {
+fn an_observation_is_keyed_by_the_providers_own_id() -> TestResult {
     let school = school_row("5151", "Abbotsford High School");
     let canonical = school.id.as_str().to_string();
-    let row = observed(&school, "2026-09-23");
-
-    assert!(
+    let row = observed(&school, "2026-09-23")?;
+    check!(
         row.id.contains("5151"),
         "the provider's own object id is what the row is filed under: {}",
         row.id
     );
-    assert!(
+    check!(
         !row.id.contains(&canonical),
         "the canonical id must not appear in the key, or the row cannot outlive the merge: {}",
         row.id
     );
-    assert_eq!(row.observed_name, "Abbotsford High School");
-    assert_eq!(row.city.as_deref(), Some("Abbotsford"));
-    assert_eq!(
-        row.association_id.as_deref(),
-        Some("5151"),
-        "an association namespace carries the association's own id for the school"
-    );
-    assert_eq!(
-        row.source_row_key,
-        "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=5151",
-        "the row keeps the page it was read from"
-    );
+    check!(eq; row.observed_name, "Abbotsford High School");
+    check!(eq; row.city.as_deref(), Some("Abbotsford"));
+    check!(eq; row.association_id.as_deref(), Some("5151"), "an association namespace carries the association's own id for the school");
+    check!(eq; row.source_row_key, "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=5151", "the row keeps the page it was read from");
+    Ok(())
 }
 
 #[test]
@@ -76,7 +70,6 @@ fn a_row_without_the_sources_identity_mints_nothing() {
     let elsewhere = SourceNamespace::AssociationSchool {
         association: "mshsl".to_string(),
     };
-
     assert!(
         SourceSchoolObservation::of_school(&elsewhere, &school, "2026-09-23").is_none(),
         "a namespace the row does not carry must not mint an observation"
@@ -84,96 +77,63 @@ fn a_row_without_the_sources_identity_mints_nothing() {
 }
 
 #[test]
-fn two_sightings_of_one_school_share_one_row_and_keep_both_sequences() {
-    let Ok(dir) = tempfile::tempdir() else {
-        panic!("a temporary directory has to be creatable");
-    };
-    let Ok(store) = Store::open(dir.path()) else {
-        panic!("a store has to open on a fresh directory");
-    };
-
+fn two_sightings_of_one_school_share_one_row_and_keep_both_sequences() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     let mut older = school_row("5151", "Abbotsford High School");
     older.school_website = None;
     let mut newer = school_row("5151", "Abbotsford HS");
     newer.school_website = Some("https://abbotsford.k12.wi.us".to_string());
-
     let rows = [
-        SourceObservation::School(observed(&older, "2026-09-22")),
-        SourceObservation::School(observed(&newer, "2026-09-23")),
+        SourceObservation::School(observed(&older, "2026-09-22")?),
+        SourceObservation::School(observed(&newer, "2026-09-23")?),
     ];
-    let Ok(()) = store.append_many(Table::SourceObservations, &rows) else {
-        panic!("two sightings of one object have to append");
+    store.append_many(Table::SourceObservations, &rows)?;
+    let held = store.count(Table::SourceObservations)?;
+    check!(eq; held, 2, "both sightings are evidence and both are kept");
+    let scanned = store.scan::<SourceObservation>(Table::SourceObservations)?;
+    check!(eq; scanned.len(), 1, "one provider object reads back as one row, however often it was seen");
+    let row = match &scanned[0] {
+        SourceObservation::School(row) => row,
+        other => {
+            return Err(format!("a school observation has to read back as one: {other:?}").into())
+        }
     };
-
-    let Ok(held) = store.count(Table::SourceObservations) else {
-        panic!("the table's ledger has to be readable");
-    };
-    assert_eq!(held, 2, "both sightings are evidence and both are kept");
-
-    let Ok(scanned) = store.scan::<SourceObservation>(Table::SourceObservations) else {
-        panic!("the observation table has to scan");
-    };
-    assert_eq!(
-        scanned.len(),
-        1,
-        "one provider object reads back as one row, however often it was seen"
-    );
-    let SourceObservation::School(row) = &scanned[0] else {
-        panic!("a school observation has to read back as one");
-    };
-    assert_eq!(
-        row.observed_name, "Abbotsford High School",
-        "the first sighting keeps its identity: an upstream rename cannot move a stored result"
-    );
-    assert_eq!(
-        row.observed_on, "2026-09-22",
-        "the earliest day the object was seen is the one the row holds"
-    );
-    assert_eq!(
-        row.official_url.as_deref(),
-        Some("https://abbotsford.k12.wi.us"),
-        "a field the later page publishes and the earlier one left blank is filled in"
-    );
+    check!(eq; row.observed_name, "Abbotsford High School", "the first sighting keeps its identity: an upstream rename cannot move a stored result");
+    check!(eq; row.observed_on, "2026-09-22", "the earliest day the object was seen is the one the row holds");
+    check!(eq; row.official_url.as_deref(), Some("https://abbotsford.k12.wi.us"), "a field the later page publishes and the earlier one left blank is filled in");
+    Ok(())
 }
 
 #[test]
-fn both_object_kinds_live_in_one_table() {
-    let Ok(dir) = tempfile::tempdir() else {
-        panic!("a temporary directory has to be creatable");
-    };
-    let Ok(store) = Store::open(dir.path()) else {
-        panic!("a store has to open on a fresh directory");
-    };
-
+fn both_object_kinds_live_in_one_table() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     let school = school_row("5151", "Abbotsford High School");
     let rows = [
-        SourceObservation::School(observed(&school, "2026-09-23")),
+        SourceObservation::School(observed(&school, "2026-09-23")?),
         athlete_row(),
     ];
-    let Ok(()) = store.append_many(Table::SourceObservations, &rows) else {
-        panic!("both kinds have to be storable in the one table");
-    };
-    let Ok(scanned) = store.scan::<SourceObservation>(Table::SourceObservations) else {
-        panic!("the observation table has to scan");
-    };
-
-    assert_eq!(scanned.len(), 2);
-    assert!(
+    store.append_many(Table::SourceObservations, &rows)?;
+    let scanned = store.scan::<SourceObservation>(Table::SourceObservations)?;
+    check!(eq; scanned.len(), 2);
+    check!(
         scanned
             .iter()
             .any(|row| row.object() == "school" && row.namespace() == &wiaa()),
         "the school row reads back under the source that published it"
     );
-    assert!(
+    check!(
         scanned.iter().any(|row| row.object() == "athlete"
             && row.id().contains("14399169")
             && row.observed_on() == "2026-09-23"),
         "the athlete row reads back keyed by its own provider id"
     );
+    Ok(())
 }
 
 #[test]
-fn an_athlete_observation_keeps_the_cohort_evidence_it_was_minted_with() {
+fn an_athlete_observation_keeps_the_cohort_evidence_it_was_minted_with() -> TestResult {
     let athlete = SourceAthleteObservation::new(
         SourceNamespace::MilesplitAthlete,
         "14399169",
@@ -183,13 +143,11 @@ fn an_athlete_observation_keeps_the_cohort_evidence_it_was_minted_with() {
     )
     .with_school(Some("Abbotsford High School".to_string()));
     let row = SourceObservation::Athlete(athlete);
-
-    let Ok(encoded) = serde_json::to_string(&row) else {
-        panic!("an observation has to serialize");
-    };
-    assert!(
+    let encoded = serde_json::to_string(&row)?;
+    check!(
         encoded.contains("\"id\":\"milesplit_athlete:14399169\""),
         "the id stays at the top level where the key encoder reads it: {encoded}"
     );
-    assert!(encoded.contains("\"observed_school\":\"Abbotsford High School\""));
+    check!(encoded.contains("\"observed_school\":\"Abbotsford High School\""));
+    Ok(())
 }

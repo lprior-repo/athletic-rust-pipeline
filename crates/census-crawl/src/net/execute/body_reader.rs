@@ -12,12 +12,12 @@ pub(super) async fn read_checked_body(
         .get(reqwest::header::CONTENT_LENGTH)
         .and_then(|v| v.to_str().ok())
         .and_then(|v| v.parse::<usize>().ok());
-    if declared.map(|len| len > MAX_BODY_BYTES).unwrap_or(false) {
+    if declared.is_some_and(|len| len > MAX_BODY_BYTES) {
         return Err(FetchError::TooLarge {
             url: url.to_string(),
         });
     }
-    let mut body = Vec::with_capacity(declared.unwrap_or(8 * 1024));
+    let mut body = Vec::with_capacity(declared.map_or(8 * 1024, |value| value));
     let mut hasher = Sha256::new();
     let mut stream = response.bytes_stream();
     while let Some(chunk) =

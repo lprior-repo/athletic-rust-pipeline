@@ -1,25 +1,27 @@
 use super::super::parse::{credentials_in_bundle, parse_token};
-use super::super::{BUNDLE_URL, TOKEN_SCOPE, TOKEN_URL};
-use crate::net::FetchOptions;
+use super::super::{DIRECTORY_URL, TOKEN_SCOPE, TOKEN_URL};
+use crate::net::{FetchOptions, FetchOutcome, Fetcher};
 use crate::{AdapterContext, CrawlError, CrawlResult};
+use url::Url;
+
+mod discovery;
+
+#[cfg(test)]
+mod tests;
 
 pub(in crate::arbiter) async fn mint_token(
     ctx: &AdapterContext<'_>,
     options: &super::Options,
 ) -> CrawlResult<String> {
-    let bundle = ctx
-        .fetcher
-        .get(BUNDLE_URL, &fetch_options(ctx, options, Vec::new()))
-        .await
-        .map_err(|error| CrawlError::Invariant {
-            detail: format!(
-                "the Arbiter directory bundle {BUNDLE_URL} could not be read: {error}; the asset \
-                 name is pinned and changes when Arbiter redeploys"
-            ),
-        })?;
+    let bundle = acquire_bundle(
+        ctx.fetcher,
+        DIRECTORY_URL,
+        &super::fetch_options(ctx, options, Vec::new()),
+    )
+    .await?;
     let Some((client_id, client_secret)) = credentials_in_bundle(&bundle.text()) else {
         return Err(CrawlError::Schema {
-            url: BUNDLE_URL.to_string(),
+            url: bundle.url.clone(),
             detail: "no client_id/client_secret pair in the published bundle".to_string(),
         });
     };
@@ -38,13 +40,16 @@ pub(in crate::arbiter) async fn mint_token(
     parse_token(&body.text(), TOKEN_URL)
 }
 
-fn fetch_options(
-    ctx: &AdapterContext<'_>,
-    options: &super::Options,
-    headers: Vec<(String, String)>,
-) -> FetchOptions {
-    let mut fetch = ctx.fetch_options();
-    fetch.refresh = options.refresh || ctx.refresh;
-    fetch.headers = headers;
-    fetch
+async fn acquire_bundle(
+    fetcher: &Fetcher,
+    entry_url: &str,
+    fetch: &FetchOptions,
+) -> CrawlResult<FetchOutcome> {
+    let authority = Url::parse(entry_url)
+        .map_err(|_| discovery::refuse(entry_url, "invalid stable directory entry URL"))?;
+    let entry = fetcher.get(entry_url, fetch).await?;
+    let module = discovery::discover(&entry, &authority)?;
+    let bundle = fetcher.get(module.as_str(), fetch).await?;
+    discovery::validate_bundle(&bundle, &authority)?;
+    Ok(bundle)
 }

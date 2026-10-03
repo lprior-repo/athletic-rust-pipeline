@@ -15,17 +15,15 @@ impl serde::Serialize for Attempt<'_> {
 }
 
 #[test]
-fn a_store_batch_encode_failure_commits_nothing() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+fn a_store_batch_encode_failure_commits_nothing() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     let kept = school("Kept");
-    store.append(Table::Schools, &kept).unwrap();
-    let before_seq = sequence_pointer(&store, Table::Schools);
-    let before_rows = rows_held(&store, Table::Schools);
+    store.append(Table::Schools, &kept)?;
+    let before_seq = sequence_pointer(&store, Table::Schools)?;
+    let before_rows = rows_held(&store, Table::Schools)?;
     let mut batch = store.write_batch();
-    batch
-        .journal_done("unit", "fail-atomic", &serde_json::json!({"rows": 3}))
-        .unwrap();
+    batch.journal_done("unit", "fail-atomic", &serde_json::json!({"rows": 3}))?;
     let first = school("First Staged");
     let second = school("Second Staged");
     let refused = batch.append_many(
@@ -36,22 +34,44 @@ fn a_store_batch_encode_failure_commits_nothing() {
             Attempt::Fail,
         ],
     );
-    assert!(matches!(refused, Err(StoreError::Json { .. })));
+    if !matches!(refused, Err(StoreError::Json { .. })) {
+        return Err(format!("expected encode refusal: {refused:?}").into());
+    }
     drop(batch);
     drop(store);
-    let reopened = Store::open(dir.path()).unwrap();
-    assert_eq!(sequence_pointer(&reopened, Table::Schools), before_seq);
-    assert_eq!(rows_held(&reopened, Table::Schools), before_rows);
-    assert!(reopened.journal_keys("unit").unwrap().is_empty());
-    assert_eq!(
-        reopened.scan::<CanonicalSchool>(Table::Schools).unwrap(),
-        vec![kept]
-    );
+    let reopened = Store::open(dir.path())?;
+    {
+        let (left, right) = (&sequence_pointer(&reopened, Table::Schools)?, &before_seq);
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    {
+        let (left, right) = (&rows_held(&reopened, Table::Schools)?, &before_rows);
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    let journal = reopened.journal_keys("unit")?;
+    if !journal.is_empty() {
+        return Err(format!("expected empty journal: {journal:?}").into());
+    }
+    {
+        let (left, right) = (
+            &reopened.scan::<CanonicalSchool>(Table::Schools)?,
+            &vec![kept],
+        );
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    Ok(())
 }
+
 #[test]
-fn a_page_of_work_commits_rows_across_tables_and_the_journal_together() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+fn a_page_of_work_commits_rows_across_tables_and_the_journal_together() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     let meet = CanonicalMeet::new(
         None,
         "Batch Invitational",
@@ -59,62 +79,78 @@ fn a_page_of_work_commits_rows_across_tables_and_the_journal_together() {
         CompetitionLevel::Invitational,
     );
     let mut batch = store.write_batch();
-    batch
-        .append_many(Table::Schools, std::slice::from_ref(&school("Batch High")))
-        .unwrap();
-    batch
-        .append_many(Table::Meets, std::slice::from_ref(&meet))
-        .unwrap();
-    batch
-        .append_many(Table::Schools, &[school("Second High")])
-        .unwrap();
-    batch
-        .journal_done("unit", "batch-1", &serde_json::json!({ "rows": 3 }))
-        .unwrap();
-    assert!(!batch.is_empty(), "three rows and one entry are a page");
-    batch.commit().unwrap();
-
-    assert_eq!(rows_held(&store, Table::Schools), 2);
-    assert_eq!(rows_held(&store, Table::Meets), 1);
-    assert!(
-        store.journal_keys("unit").unwrap().contains("batch-1"),
-        "the entry the page named is in the journal"
-    );
+    batch.append_many(Table::Schools, std::slice::from_ref(&school("Batch High")))?;
+    batch.append_many(Table::Meets, std::slice::from_ref(&meet))?;
+    batch.append_many(Table::Schools, &[school("Second High")])?;
+    batch.journal_done("unit", "batch-1", &serde_json::json!({ "rows": 3 }))?;
+    if batch.is_empty() {
+        return Err("three rows and one entry are a page".into());
+    }
+    batch.commit()?;
+    {
+        let (left, right) = (&rows_held(&store, Table::Schools)?, &2);
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    {
+        let (left, right) = (&rows_held(&store, Table::Meets)?, &1);
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    let journal = store.journal_keys("unit")?;
+    if !journal.contains("batch-1") {
+        return Err(format!("the entry the page named is in the journal: {journal:?}").into());
+    }
     drop(store);
-
-    let reopened = Store::open(dir.path()).unwrap();
-    assert_eq!(
-        reopened
-            .scan::<CanonicalSchool>(Table::Schools)
-            .unwrap()
-            .len(),
-        2
-    );
-    assert_eq!(
-        reopened.scan::<CanonicalMeet>(Table::Meets).unwrap().len(),
-        1
-    );
-    assert!(reopened.journal_keys("unit").unwrap().contains("batch-1"));
+    let reopened = Store::open(dir.path())?;
+    {
+        let (left, right) = (&reopened.scan::<CanonicalSchool>(Table::Schools)?.len(), &2);
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    {
+        let (left, right) = (&reopened.scan::<CanonicalMeet>(Table::Meets)?.len(), &1);
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    let journal = reopened.journal_keys("unit")?;
+    if !journal.contains("batch-1") {
+        return Err(format!("missing committed entry: {journal:?}").into());
+    }
+    Ok(())
 }
 
 #[test]
-fn a_refused_entry_leaves_the_page_unwritten_and_every_counter_where_it_was() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
-    let before = sequence_pointer(&store, Table::Schools);
+fn a_refused_entry_leaves_the_page_unwritten_and_every_counter_where_it_was() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let before = sequence_pointer(&store, Table::Schools)?;
     let mut batch = store.write_batch();
-    batch
-        .append_many(Table::Schools, &[school("Never Landed")])
-        .unwrap();
+    batch.append_many(Table::Schools, &[school("Never Landed")])?;
     let refused = batch.journal_done("unit", "too-big", &"x".repeat(MAX_JOURNAL_VALUE_BYTES + 1));
-    assert!(refused.is_err(), "an entry past its ceiling is refused");
+    if refused.is_ok() {
+        return Err(format!("an entry past its ceiling is refused: {refused:?}").into());
+    }
     drop(batch);
-
-    assert_eq!(
-        sequence_pointer(&store, Table::Schools),
-        before,
-        "no reservation moved"
-    );
-    assert_eq!(rows_held(&store, Table::Schools), 0);
-    assert!(store.journal_keys("unit").unwrap().is_empty());
+    {
+        let (left, right) = (&sequence_pointer(&store, Table::Schools)?, &before);
+        if left != right {
+            return Err(format!("no reservation moved — left={left:?} right={right:?}").into());
+        }
+    }
+    {
+        let (left, right) = (&rows_held(&store, Table::Schools)?, &0);
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    let journal = store.journal_keys("unit")?;
+    if !journal.is_empty() {
+        return Err(format!("expected empty journal: {journal:?}").into());
+    }
+    Ok(())
 }

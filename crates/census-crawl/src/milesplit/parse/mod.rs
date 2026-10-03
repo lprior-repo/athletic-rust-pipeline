@@ -101,11 +101,11 @@ pub fn parse_team_index(html: &str) -> CrawlResult<Vec<TeamRef>> {
         let name = capture
             .get(4)
             .map(|m| m.as_str().trim().to_string())
-            .unwrap_or_default();
+            .map_or(Default::default(), core::convert::identity);
         let city_state = capture
             .get(5)
             .map(|m| m.as_str().trim().to_string())
-            .unwrap_or_default();
+            .map_or(Default::default(), core::convert::identity);
         if name.is_empty() {
             continue;
         }
@@ -126,7 +126,7 @@ pub fn parse_team_index(html: &str) -> CrawlResult<Vec<TeamRef>> {
     Ok(teams)
 }
 
-mod roster;
+pub(in crate::milesplit) mod roster;
 pub use roster::parse_roster;
 
 pub(super) static MEET_INDEX_MARKER_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(

@@ -23,7 +23,7 @@ fn bump(counter: &mut u64, by: u64) -> u64 {
 }
 
 pub fn count(len: usize) -> u64 {
-    u64::try_from(len).unwrap_or(u64::MAX)
+    u64::try_from(len).map_or(u64::MAX, |value| value)
 }
 
 impl DrainReport {
@@ -141,38 +141,54 @@ mod tests {
     use super::*;
     use tokio::task::JoinSet;
 
-    #[tokio::test]
-    async fn a_join_failure_classifies_as_panicked_or_cancelled() {
-        let mut set = JoinSet::new();
-        set.spawn(async { panic!("boom") });
-        let panicked = set.join_next().await.expect("a task");
-        set.spawn(async { std::future::pending::<()>().await });
-        set.abort_all();
-        let cancelled = set.join_next().await.expect("a task");
-
-        assert_eq!(DrainState::from_join(panicked), DrainState::Panicked);
-        assert_eq!(DrainState::from_join(cancelled), DrainState::Cancelled);
-        assert_eq!(DrainState::from_join(Ok(())), DrainState::Completed);
-        assert_eq!(Outcome::from_join(Ok(Ok::<u8, u8>(7))), Outcome::Ok(7));
-        assert_eq!(Outcome::from_join(Ok(Err::<u8, u8>(9))), Outcome::Err(9));
+    fn panic_task_fault() {
+        panic!("boom");
     }
 
     #[test]
-    fn an_inner_error_is_completed_while_a_deadline_leaves_units_remaining() {
+    fn a_join_failure_classifies_as_panicked_or_cancelled() -> Result<(), Box<dyn std::error::Error>>
+    {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
+                let mut set = JoinSet::new();
+                set.spawn(async { panic_task_fault() });
+                let panicked = set
+                    .join_next()
+                    .await
+                    .ok_or("missing panicked task outcome")?;
+                set.spawn(async { std::future::pending::<()>().await });
+                set.abort_all();
+                let cancelled = set
+                    .join_next()
+                    .await
+                    .ok_or("missing cancelled task outcome")?;
+
+                check!(eq; DrainState::from_join(panicked), DrainState::Panicked);
+                check!(eq; DrainState::from_join(cancelled), DrainState::Cancelled);
+                check!(eq; DrainState::from_join(Ok(())), DrainState::Completed);
+                check!(eq; Outcome::from_join(Ok(Ok::<u8, u8>(7))), Outcome::Ok(7));
+                check!(eq; Outcome::from_join(Ok(Err::<u8, u8>(9))), Outcome::Err(9));
+                Ok(())
+            })
+    }
+
+    #[test]
+    fn an_inner_error_is_completed_while_a_deadline_leaves_units_remaining(
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let mut report = DrainReport::default();
         report.accept(3);
         report.record(&Outcome::<(), &str>::Ok(()));
         report.record(&Outcome::<(), &str>::Err("observer failed"));
         report.abort(1);
-        assert_eq!(
-            report,
-            DrainReport {
-                accepted: 3,
-                completed: 2,
-                aborted: 1,
-                ..DrainReport::default()
-            }
-        );
+        check!(eq; report,
+        DrainReport {
+            accepted: 3,
+            completed: 2,
+            aborted: 1,
+            ..DrainReport::default()
+        });
 
         let mut nested = DrainReport {
             accepted: 2,
@@ -180,12 +196,13 @@ mod tests {
             ..DrainReport::default()
         };
         nested.time_out(nested.remaining);
-        assert_eq!(nested.timed_out, 2);
+        check!(eq; nested.timed_out, 2);
         report.merge(&nested);
-        assert_eq!(report.accepted, 5);
-        assert_eq!(report.completed, 2);
-        assert_eq!(report.aborted, 1);
-        assert_eq!(report.timed_out, 2);
-        assert_eq!(report.remaining, 2);
+        check!(eq; report.accepted, 5);
+        check!(eq; report.completed, 2);
+        check!(eq; report.aborted, 1);
+        check!(eq; report.timed_out, 2);
+        check!(eq; report.remaining, 2);
+        Ok(())
     }
 }

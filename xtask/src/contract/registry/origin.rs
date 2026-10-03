@@ -10,7 +10,9 @@ pub(super) fn is_host(origin: &str) -> bool {
                 .chars()
                 .all(|ch| ch.is_ascii_hexdigit() || ch == ':' || ch == '.');
     }
-    let name = origin.strip_suffix('.').unwrap_or(origin);
+    let name = origin
+        .strip_suffix('.')
+        .map_or(origin, core::convert::identity);
     !name.is_empty() && name.split('.').all(is_label)
 }
 

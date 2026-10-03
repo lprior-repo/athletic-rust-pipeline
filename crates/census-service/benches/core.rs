@@ -16,13 +16,18 @@ const INDEX_GROUP: &str = "census/school_index";
 const MERGE_GROUP: &str = "census/merge";
 
 fn main() {
-    let parse = fixtures::Corpus::build()
-        .unwrap_or_else(|error| refuse(format!("the parse corpus is not usable: {error:#}")));
-    let labels = labels::Corpus::build().unwrap_or_else(|error| {
-        refuse(format!("the school-index corpus is not usable: {error:#}"))
-    });
-    let batch = merge::Dataset::build()
-        .unwrap_or_else(|error| refuse(format!("the merge batch is not usable: {error:#}")));
+    let parse = fixtures::Corpus::build().map_or_else(
+        |error| refuse(format!("the parse corpus is not usable: {error:#}")),
+        |value| value,
+    );
+    let labels = labels::Corpus::build().map_or_else(
+        |error| refuse(format!("the school-index corpus is not usable: {error:#}")),
+        |value| value,
+    );
+    let batch = merge::Dataset::build().map_or_else(
+        |error| refuse(format!("the merge batch is not usable: {error:#}")),
+        |value| value,
+    );
 
     let mut criterion = Criterion::default().configure_from_args();
     bench_parse(&mut criterion, &parse);
@@ -37,12 +42,15 @@ fn bench_parse(criterion: &mut Criterion, corpus: &fixtures::Corpus) {
         group.throughput(Throughput::Elements(elements(case.rows())));
         group.bench_function(case.id(), |bencher| {
             bencher.iter(|| {
-                let rows = case.parse().unwrap_or_else(|error| {
-                    refuse(format!(
-                        "the {} fixture failed to parse: {error:#}",
-                        case.file()
-                    ))
-                });
+                let rows = case.parse().map_or_else(
+                    |error| {
+                        refuse(format!(
+                            "the {} fixture failed to parse: {error:#}",
+                            case.file()
+                        ))
+                    },
+                    |value| value,
+                );
                 std::hint::black_box(rows);
             })
         });
@@ -99,18 +107,20 @@ fn bench_merge(criterion: &mut Criterion, dataset: &merge::Dataset) {
     )));
     group.bench_function("schools_scan", |bencher| {
         bencher.iter(|| {
-            let rows = dataset.scan_schools().unwrap_or_else(|error| {
-                refuse(format!("scanning the school batch failed: {error:#}"))
-            });
+            let rows = dataset.scan_schools().map_or_else(
+                |error| refuse(format!("scanning the school batch failed: {error:#}")),
+                |value| value,
+            );
             std::hint::black_box(rows.len());
         })
     });
     group.throughput(Throughput::Elements(elements(dataset.coach_observations())));
     group.bench_function("coaches_scan", |bencher| {
         bencher.iter(|| {
-            let rows = dataset.scan_coaches().unwrap_or_else(|error| {
-                refuse(format!("scanning the coach batch failed: {error:#}"))
-            });
+            let rows = dataset.scan_coaches().map_or_else(
+                |error| refuse(format!("scanning the coach batch failed: {error:#}")),
+                |value| value,
+            );
             std::hint::black_box(rows.len());
         })
     });
@@ -123,5 +133,5 @@ fn refuse(message: String) -> ! {
 }
 
 fn elements(count: usize) -> u64 {
-    u64::try_from(count).unwrap_or(u64::MAX)
+    u64::try_from(count).map_or(u64::MAX, |value| value)
 }

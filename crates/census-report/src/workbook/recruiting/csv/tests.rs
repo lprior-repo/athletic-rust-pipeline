@@ -3,11 +3,13 @@ use crate::export::ExportDataset;
 use crate::report::{Derivation, Scope};
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalCoach, CanonicalSchool, CoachRole, CoachTenure,
-    CoachTenureEvidence, Evidence, Gender, GradYear, SchoolYear, SourceIdentity, SourceNamespace,
-    SourceRef, Sport,
+    CoachTenureEvidence, Evidence, Gender, GradYear, PublishedGraduation, SchoolYear,
+    SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
+
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 const FORMULA_ATHLETE: &str = "=cmd|' /C calc'!A0";
 const FORMULA_SCHOOL: &str = "\t+1+1";
@@ -17,29 +19,29 @@ const FORMULA_EMAIL: &str = "=2+2@contacts.test";
 const WEBSITE: &str = "https://schools.test/athletics";
 const SOURCE_URL: &str = "https://contacts.test/schools";
 
-fn tenure() -> CoachTenureEvidence {
-    CoachTenureEvidence {
+fn tenure() -> TestResult<CoachTenureEvidence> {
+    Ok(CoachTenureEvidence {
         tenure: CoachTenure::Current {
-            school_year: SchoolYear::new(2026).expect("2026 is a season"),
+            school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
         },
         source: SourceRef::new("fixture", Some(SOURCE_URL.to_string())),
         source_sha256: "a".repeat(64),
         retrieved_at: "2026-09-20T00:00:00Z".to_string(),
         statement: "Synthetic academic-year appointment".to_string(),
-    }
+    })
 }
 
-fn column(header: &csv::StringRecord, name: &str) -> usize {
+fn column(header: &csv::StringRecord, name: &str) -> TestResult<usize> {
     header
         .iter()
         .position(|field| field == name)
-        .expect("published column")
+        .ok_or_else(|| format!("missing published column {name}").into())
 }
 
 #[test]
-fn published_recruiting_csv_literalizes_source_text_without_rewriting_it() {
-    let directory = tempfile::tempdir().expect("temporary directory");
-    let store = Store::open(directory.path()).expect("store opens");
+fn published_recruiting_csv_literalizes_source_text_without_rewriting_it() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let store = Store::open(directory.path())?;
     let (mut school, school_id) = CanonicalSchool::new(
         UsJurisdiction::Wisconsin,
         FORMULA_SCHOOL,
@@ -47,9 +49,7 @@ fn published_recruiting_csv_literalizes_source_text_without_rewriting_it() {
     );
     school.city = Some(FORMULA_CITY.to_string());
     school.athletics_website = Some(WEBSITE.to_string());
-    store
-        .append(Table::Schools, &school)
-        .expect("school appends");
+    store.append(Table::Schools, &school)?;
 
     let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "csv-safety");
     let mut athlete = CanonicalAthlete::new(
@@ -60,13 +60,18 @@ fn published_recruiting_csv_literalizes_source_text_without_rewriting_it() {
         source,
     );
     athlete.sports = vec![Sport::OutdoorTrack];
-    athlete.evidence = vec![Evidence::parsed(
-        SourceRef::new("wiaa_results", None),
-        "2026-09-20",
-    )];
-    store
-        .append(Table::Athletes, &athlete)
-        .expect("athlete appends");
+    let claim = PublishedGraduation {
+        grad_year: GradYear::CO2027,
+        source: SourceRef::new(
+            "wiaa_results",
+            Some("https://fixtures.test/recruiting/csv-safety/2027".to_owned()),
+        ),
+    };
+    let mut claim_evidence = Evidence::parsed(claim.source.clone(), "2026-09-20");
+    claim_evidence.note = Some("Synthetic public class-of-2027 fixture claim".to_owned());
+    athlete.evidence = vec![claim_evidence];
+    athlete.published_graduations.push(claim);
+    store.append(Table::Athletes, &athlete)?;
 
     let mut coach = CanonicalCoach::new(
         &school_id,
@@ -80,22 +85,21 @@ fn published_recruiting_csv_literalizes_source_text_without_rewriting_it() {
         SourceRef::new("coach_contacts_csv", Some(SOURCE_URL.to_string())),
         "2026-09-20",
     )];
-    coach.tenure_evidence = vec![tenure()];
-    store.append(Table::Coaches, &coach).expect("coach appends");
+    coach.tenure_evidence = vec![tenure()?];
+    store.append(Table::Coaches, &coach)?;
 
-    let dataset = ExportDataset::load(&store).expect("frozen export loads");
+    let dataset = ExportDataset::load(&store)?;
     let derivation = Derivation::of(&dataset, Scope::AllSources, Some(2027));
     let path = directory.path().join("recruiting.csv");
     let counts = write_recruiting_csv(
         &derivation,
-        SchoolYear::new(2026).expect("2026 is a season"),
+        SchoolYear::new(2026).ok_or("invalid fixture season")?,
         &path,
-    )
-    .expect("recruiting CSV publishes");
-    assert_eq!(counts.with_school_coach, 1);
-    assert_eq!(counts.with_coach_email, 1);
+    )?;
+    check!(eq; counts.with_school_coach, 1);
+    check!(eq; counts.with_coach_email, 1);
 
-    let text = std::fs::read_to_string(&path).expect("published CSV reads");
+    let text = std::fs::read_to_string(&path)?;
     for formula in [
         FORMULA_ATHLETE,
         FORMULA_SCHOOL,
@@ -103,23 +107,19 @@ fn published_recruiting_csv_literalizes_source_text_without_rewriting_it() {
         FORMULA_COACH,
         FORMULA_EMAIL,
     ] {
-        assert!(
+        check!(
             !text.contains(&format!(",{formula}")),
             "{formula:?} must not begin a cell"
         );
-        assert!(
+        check!(
             text.contains(&format!("'{formula}")),
             "{formula:?} must keep its literal spelling"
         );
     }
 
-    let mut reader = csv::Reader::from_path(&path).expect("published CSV reads");
-    let header = reader.headers().expect("header row").clone();
-    let row = reader
-        .records()
-        .next()
-        .expect("one data row")
-        .expect("data row decodes");
+    let mut reader = csv::Reader::from_path(&path)?;
+    let header = reader.headers()?.clone();
+    let row = reader.records().next().ok_or("missing CSV data row")??;
     for (name, value) in [
         ("name", FORMULA_ATHLETE),
         ("school", FORMULA_SCHOOL),
@@ -127,25 +127,19 @@ fn published_recruiting_csv_literalizes_source_text_without_rewriting_it() {
         ("head_track_coach", FORMULA_COACH),
         ("head_track_coach_email", FORMULA_EMAIL),
     ] {
-        assert_eq!(
-            row.get(column(&header, name)),
-            Some(format!("'{value}").as_str()),
-            "{name}"
-        );
+        check!(eq; row.get(column(&header, name)?),
+        Some(format!("'{value}").as_str()),
+        "{name}");
     }
-    assert_eq!(row.get(column(&header, "grad_year")), Some("2027"));
-    assert_eq!(row.get(column(&header, "state")), Some("WI"));
-    assert_eq!(
-        row.get(column(&header, "sports")),
-        Some(Sport::OutdoorTrack.stable_key())
-    );
-    assert_eq!(row.get(column(&header, "athletics_website")), Some(WEBSITE));
-    assert_eq!(
-        row.get(column(&header, "coach_source_url")),
-        Some(SOURCE_URL)
-    );
-    assert_eq!(
-        row.get(column(&header, "evidence_sources")),
-        Some("wiaa_results")
-    );
+    check!(eq; row.get(column(&header, "grad_year")?), Some("2027"));
+    check!(eq; row.get(column(&header, "state")?), Some("WI"));
+    check!(eq; row.get(column(&header, "sports")?),
+    Some(Sport::OutdoorTrack.stable_key()));
+    check!(eq; row.get(column(&header, "athletics_website")?),
+    Some(WEBSITE));
+    check!(eq; row.get(column(&header, "coach_source_url")?),
+    Some(SOURCE_URL));
+    check!(eq; row.get(column(&header, "evidence_sources")?),
+    Some("wiaa_results"));
+    Ok(())
 }

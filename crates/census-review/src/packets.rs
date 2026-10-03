@@ -122,7 +122,9 @@ impl SubjectIndex {
                     .with_evidence(fact("date", &meet.date))
                     .with_evidence(fact(
                         "location",
-                        meet.location.as_deref().unwrap_or_default(),
+                        meet.location
+                            .as_deref()
+                            .map_or(Default::default(), core::convert::identity),
                     ));
                 if let Some(state) = meet.state {
                     packet = packet.with_evidence(fact("state", state.code()));
@@ -160,14 +162,26 @@ fn school_packet(case: &ReviewCase, subject_id: String, school: &CanonicalSchool
     let mut packet = ReviewPacket::new(subject_id, school.name.clone())
         .with_case(case_fact(case))
         .with_evidence(fact("name", &school.name))
-        .with_evidence(fact("city", school.city.as_deref().unwrap_or_default()))
+        .with_evidence(fact(
+            "city",
+            school
+                .city
+                .as_deref()
+                .map_or(Default::default(), core::convert::identity),
+        ))
         .with_evidence(fact(
             "association",
-            school.association.as_deref().unwrap_or_default(),
+            school
+                .association
+                .as_deref()
+                .map_or(Default::default(), core::convert::identity),
         ))
         .with_evidence(fact(
             "athletics_website",
-            school.athletics_website.as_deref().unwrap_or_default(),
+            school
+                .athletics_website
+                .as_deref()
+                .map_or(Default::default(), core::convert::identity),
         ));
     if let Some(state) = school.state {
         packet = packet.with_evidence(fact("state", state.code()));

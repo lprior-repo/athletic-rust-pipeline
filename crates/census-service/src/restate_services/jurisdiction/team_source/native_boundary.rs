@@ -1,0 +1,113 @@
+use std::path::PathBuf;
+use std::sync::Arc;
+use std::time::Duration;
+
+use restate_sdk::prelude::HandlerError;
+
+use super::{admission, ledger};
+use crate::restate_services::{blocking, job_error, JobError, Jobs};
+
+mod config;
+mod error;
+mod files;
+mod marker;
+#[cfg(test)]
+mod tests;
+
+use config::{Config, Selection};
+use error::BoundaryError;
+use files::Directory;
+use marker::Marker;
+
+const ENVIRONMENT: &str = "CENSUS_NATIVE_SOURCE_BOUNDARY";
+
+struct Armed {
+    config: Config,
+    directory: Directory,
+}
+
+#[tracing::instrument(skip_all)]
+pub(super) async fn wait(
+    jobs: &Jobs,
+    admission: Arc<admission::WorkAdmission>,
+    operation: &str,
+    attempt: u8,
+    identity: &ledger::Identity,
+) -> Result<(), HandlerError> {
+    let Some(path) = std::env::var_os(ENVIRONMENT) else {
+        return Ok(());
+    };
+    wait_configured(
+        jobs,
+        admission,
+        PathBuf::from(path),
+        operation,
+        attempt,
+        identity,
+    )
+    .await
+    .map_err(job_error)
+}
+
+#[tracing::instrument(skip_all)]
+async fn wait_configured(
+    jobs: &Jobs,
+    admission: Arc<admission::WorkAdmission>,
+    path: PathBuf,
+    operation: &str,
+    attempt: u8,
+    identity: &ledger::Identity,
+) -> Result<(), JobError> {
+    let config_admission = Arc::clone(&admission);
+    let armed = blocking(Arc::clone(jobs.region()), move || {
+        let _admission = config_admission;
+        read_armed(&path)
+    })
+    .await?;
+    let Selection::Hold(timeout) = armed.config.select(operation, attempt) else {
+        return Ok(());
+    };
+    let marker = Marker::new(operation, attempt, identity)?;
+    blocking(
+        Arc::clone(jobs.region()),
+        marker_worker(Arc::clone(&admission), armed.directory, marker),
+    )
+    .await?;
+    let _admission = admission;
+    hold(operation, attempt, timeout).await.map_err(Into::into)
+}
+
+fn read_armed(path: &std::path::Path) -> Result<Armed, BoundaryError> {
+    let directory = Directory::open(path)?;
+    let filename = path
+        .file_name()
+        .ok_or(BoundaryError::Path("missing filename"))?;
+    if filename == marker::BASENAME || filename == marker::PENDING {
+        return Err(BoundaryError::Path(
+            "configuration uses a reserved artifact name",
+        ));
+    }
+    let config = Config::read(&directory, &directory.child(filename))?;
+    Ok(Armed { config, directory })
+}
+
+fn marker_worker(
+    admission: Arc<admission::WorkAdmission>,
+    directory: Directory,
+    marker: Marker,
+) -> impl FnOnce() -> Result<(), BoundaryError> + Send + 'static {
+    move || {
+        let _admission = admission;
+        marker.publish(&directory)
+    }
+}
+
+#[tracing::instrument(skip_all, fields(operation, attempt, ?timeout))]
+async fn hold(operation: &str, attempt: u8, timeout: Duration) -> Result<(), BoundaryError> {
+    tokio::time::sleep(timeout).await;
+    Err(BoundaryError::HoldExpired {
+        operation: operation.to_string(),
+        attempt,
+        seconds: timeout.as_secs(),
+    })
+}

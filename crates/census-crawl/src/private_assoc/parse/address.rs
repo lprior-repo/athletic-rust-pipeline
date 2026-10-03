@@ -27,11 +27,11 @@ pub fn address_text(
     let Some(tag) = captures.get(0) else {
         return String::new();
     };
-    let rest = chunk.get(tag.end()..).unwrap_or_default();
+    let rest = chunk.get(tag.end()..).map_or(Default::default(), core::convert::identity);
     let inner = close_div_pattern
         .find(rest)
         .and_then(|close| rest.get(..close.start()))
-        .unwrap_or(rest);
+        .map_or(rest, |value| value);
     tag_text(inner, br_pattern, tag_pattern)
 }
 
@@ -138,8 +138,8 @@ fn decode_entities(value: &str) -> String {
     let mut out = String::with_capacity(value.len());
     let mut rest = value;
     while let Some(index) = rest.find('&') {
-        out.push_str(rest.get(..index).unwrap_or_default());
-        let tail = rest.get(index..).unwrap_or_default();
+        out.push_str(rest.get(..index).map_or(Default::default(), core::convert::identity));
+        let tail = rest.get(index..).map_or(Default::default(), core::convert::identity);
         let entity = tail.find(';').filter(|end| *end <= 12).and_then(|end| {
             let name = tail.get(1..end)?;
             let decoded = match name {
@@ -159,11 +159,11 @@ fn decode_entities(value: &str) -> String {
         match entity {
             Some((ch, consumed)) => {
                 out.push(ch);
-                rest = tail.get(consumed..).unwrap_or_default();
+                rest = tail.get(consumed..).map_or(Default::default(), core::convert::identity);
             }
             None => {
                 out.push('&');
-                rest = tail.get(1..).unwrap_or_default();
+                rest = tail.get(1..).map_or(Default::default(), core::convert::identity);
             }
         }
     }

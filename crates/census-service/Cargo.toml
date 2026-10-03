@@ -22,6 +22,7 @@ path = "src/bin/census-serve.rs"
 # compiles the dependency nor the models; run them with `cargo test -p census-service --features
 # loom --lib` (the models bound their own exploration, so the all-features gate lane stays quick).
 loom = ["dep:loom"]
+native-fault-injection = []
 
 [dependencies]
 # The headed browser lane's engine: the endpoint serves it as `BrowserSession`, and the census

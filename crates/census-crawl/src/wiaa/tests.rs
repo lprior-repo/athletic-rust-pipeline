@@ -5,6 +5,8 @@ use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Gender, SourceNamespace, Sport,
 };
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 const INDEX_A: &str = include_str!("../../tests/fixtures/wiaa/directory_letter_a.html");
 
 const SCHOOL_ABBOTSFORD: &str =
@@ -19,42 +21,46 @@ const SCHOOL_SAILS: &str =
 const OBSERVED_ON: &str = "2026-09-20";
 
 fn entry_for(org_id: &str) -> IndexEntry {
-    parse_directory_letter(INDEX_A)
+    match parse_directory_letter(INDEX_A)
         .into_iter()
         .find(|entry| entry.org_id == org_id)
-        .unwrap_or_else(|| IndexEntry {
+    {
+        Some(value) => value,
+        None => IndexEntry {
             org_id: org_id.to_string(),
             ..IndexEntry::default()
-        })
+        },
+    }
 }
 
-fn extract_for(org_id: &str, fixture: &str) -> SchoolExtract {
+fn extract_for(org_id: &str, fixture: &str) -> TestResult<SchoolExtract> {
     let entry = entry_for(org_id);
     let page = parse_school_page(fixture);
-    school_entities(&entry, &page, OBSERVED_ON).expect("fixture page yields entities")
+    school_entities(&entry, &page, OBSERVED_ON).ok_or_else(|| "fixture page yields entities".into())
 }
 
 #[test]
-fn index_parsing_yields_org_ids_level_and_city() {
+fn index_parsing_yields_org_ids_level_and_city() -> TestResult {
     let entries = parse_directory_letter(INDEX_A);
-    assert_eq!(entries.len(), 6, "fixture keeps six real index rows");
-    assert_eq!(entries[0].org_id, "1");
-    assert_eq!(entries[0].name, "ABBOTSFORD");
-    assert_eq!(entries[0].level, "High School");
-    assert_eq!(entries[0].city, "Abbotsford");
-    assert_eq!(
+    check!(eq; entries.len(), 6, "fixture keeps six real index rows");
+    check!(eq; entries[0].org_id, "1");
+    check!(eq; entries[0].name, "ABBOTSFORD");
+    check!(eq; entries[0].level, "High School");
+    check!(eq; entries[0].city, "Abbotsford");
+    check!(eq;
         entries[0].page_url(),
         format!("{HOST}{SCHOOL_PATH}?orgID=1")
     );
-    let last = entries.last().expect("six entries");
-    assert_eq!(last.name, "ADVANCED LEARNING ACADEMY OF WISCONSIN CHARTER");
-    assert_eq!(last.level, "High School");
-    assert!(entries.iter().any(|entry| entry.level == "Middle School"));
+    let last = entries.last().ok_or("six entries")?;
+    check!(eq; last.name, "ADVANCED LEARNING ACADEMY OF WISCONSIN CHARTER");
+    check!(eq; last.level, "High School");
+    check!(entries.iter().any(|entry| entry.level == "Middle School"));
     let mut ids: Vec<&str> = entries.iter().map(|entry| entry.org_id.as_str()).collect();
     ids.sort_unstable();
     ids.dedup();
-    assert_eq!(ids.len(), entries.len(), "orgIDs are unique");
-    assert!(entries.iter().all(|entry| !entry.org_id.is_empty()));
+    check!(eq; ids.len(), entries.len(), "orgIDs are unique");
+    check!(entries.iter().all(|entry| !entry.org_id.is_empty()));
+    Ok(())
 }
 
 #[test]
@@ -65,30 +71,30 @@ fn empty_index_fragment_yields_no_rows() {
 }
 
 #[test]
-fn school_page_yields_name_city_conference_ad_and_identity() {
+fn school_page_yields_name_city_conference_ad_and_identity() -> TestResult {
     let page = parse_school_page(SCHOOL_ABBOTSFORD);
-    assert_eq!(page.name, "Abbotsford");
-    assert_eq!(page.city.as_deref(), Some("Abbotsford"));
-    assert_eq!(page.conference.as_deref(), Some("Marawood"));
-    assert_eq!(page.level.as_deref(), Some("High School"));
-    assert_eq!(page.enrollment, Some(214));
-    assert_eq!(
+    check!(eq; page.name, "Abbotsford");
+    check!(eq; page.city.as_deref(), Some("Abbotsford"));
+    check!(eq; page.conference.as_deref(), Some("Marawood"));
+    check!(eq; page.level.as_deref(), Some("High School"));
+    check!(eq; page.enrollment, Some(214));
+    check!(eq;
         page.website.as_deref(),
         Some("http://www.abbotsford.k12.wi.us")
     );
 
-    let extract = extract_for("1", SCHOOL_ABBOTSFORD);
-    assert_eq!(extract.school.name, "Abbotsford");
-    assert_eq!(extract.school.state, Some(UsJurisdiction::Wisconsin));
-    assert_eq!(extract.school.city.as_deref(), Some("Abbotsford"));
-    assert_eq!(extract.school.association.as_deref(), Some("wiaa"));
-    assert_eq!(extract.school.classification.as_deref(), Some("Marawood"));
-    assert_eq!(extract.school.enrollment, Some(214));
-    assert_eq!(
+    let extract = extract_for("1", SCHOOL_ABBOTSFORD)?;
+    check!(eq; extract.school.name, "Abbotsford");
+    check!(eq; extract.school.state, Some(UsJurisdiction::Wisconsin));
+    check!(eq; extract.school.city.as_deref(), Some("Abbotsford"));
+    check!(eq; extract.school.association.as_deref(), Some("wiaa"));
+    check!(eq; extract.school.classification.as_deref(), Some("Marawood"));
+    check!(eq; extract.school.enrollment, Some(214));
+    check!(eq;
         extract.school.school_website.as_deref(),
         Some("http://www.abbotsford.k12.wi.us")
     );
-    assert_eq!(
+    check!(eq;
         extract.school.id,
         CanonicalSchool::new(
             UsJurisdiction::Wisconsin,
@@ -101,37 +107,37 @@ fn school_page_yields_name_city_conference_ad_and_identity() {
         .school
         .source_identities
         .first()
-        .expect("one provider identity");
-    assert_eq!(
+        .ok_or("one provider identity")?;
+    check!(eq;
         identity.namespace,
         SourceNamespace::AssociationSchool {
             association: "wiaa".to_string()
         }
     );
-    assert_eq!(identity.id, "1");
-    assert_eq!(
+    check!(eq; identity.id, "1");
+    check!(eq;
         identity.url.as_deref(),
         Some("https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1")
     );
-    assert_eq!(extract.school.evidence.len(), 1);
-    assert_eq!(extract.school.evidence[0].observed_on, OBSERVED_ON);
-    assert_eq!(extract.school.evidence[0].source.id, SOURCE_ID);
-    assert!(extract.school.evidence[0]
+    check!(eq; extract.school.evidence.len(), 1);
+    check!(eq; extract.school.evidence[0].observed_on, OBSERVED_ON);
+    check!(eq; extract.school.evidence[0].source.id, SOURCE_ID);
+    check!(extract.school.evidence[0]
         .source
         .url
         .as_deref()
         .is_some_and(|url| url.contains("orgID=1")));
 
-    assert!(!page.admins.is_empty(), "Abbotsford publishes office rows");
+    check!(!page.admins.is_empty(), "Abbotsford publishes office rows");
     for admin in &page.admins {
-        assert!(
+        check!(
             !admin.role.contains('<') && !admin.role.contains('>'),
             "markup in admin role {:?}",
             admin.role
         );
     }
     for coach in &page.coaches {
-        assert!(
+        check!(
             !coach.sport.contains('<') && !coach.role.contains('<'),
             "markup in coach row {:?} {:?}",
             coach.sport,
@@ -143,21 +149,22 @@ fn school_page_yields_name_city_conference_ad_and_identity() {
         .coaches
         .iter()
         .find(|coach| coach.role == CoachRole::AthleticDirector)
-        .expect("Abbotsford publishes an athletic director");
-    assert_eq!(ad.name, "Alex Larson");
-    assert_eq!(ad.sport, None, "an AD is school-wide, never sport-bound");
-    assert_eq!(ad.gender, Gender::Mixed);
-    assert_eq!(
+        .ok_or("Abbotsford publishes an athletic director")?;
+    check!(eq; ad.name, "Alex Larson");
+    check!(eq; ad.sport, None, "an AD is school-wide, never sport-bound");
+    check!(eq; ad.gender, Gender::Mixed);
+    check!(eq;
         ad.professional_email.as_deref(),
         Some("alarson@abbotsford.k12.wi.us")
     );
-    assert_eq!(ad.evidence.len(), 1);
-    assert_eq!(ad.evidence[0].observed_on, OBSERVED_ON);
+    check!(eq; ad.evidence.len(), 1);
+    check!(eq; ad.evidence[0].observed_on, OBSERVED_ON);
+    Ok(())
 }
 
 #[test]
-fn coach_rows_map_to_sport_and_gender() {
-    let extract = extract_for("1", SCHOOL_ABBOTSFORD);
+fn coach_rows_map_to_sport_and_gender() -> TestResult {
+    let extract = extract_for("1", SCHOOL_ABBOTSFORD)?;
     let find = |name: &str| -> Vec<&CanonicalCoach> {
         extract
             .coaches
@@ -167,53 +174,53 @@ fn coach_rows_map_to_sport_and_gender() {
     };
 
     let knapmiller = find("JACOB KNAPMILLER");
-    assert_eq!(knapmiller.len(), 2, "same person, two sport-gender rows");
+    check!(eq; knapmiller.len(), 2, "same person, two sport-gender rows");
     let mut pairs: Vec<(Sport, Gender)> = knapmiller
         .iter()
-        .map(|coach| (coach.sport.expect("sport-bound"), coach.gender))
-        .collect();
+        .map(|coach| Ok((coach.sport.ok_or("sport-bound")?, coach.gender)))
+        .collect::<TestResult<_>>()?;
     pairs.sort_unstable();
-    assert_eq!(
+    check!(eq;
         pairs,
         vec![
             (Sport::OutdoorTrack, Gender::Boys),
             (Sport::OutdoorTrack, Gender::Girls)
         ]
     );
-    assert!(knapmiller
+    check!(knapmiller
         .iter()
         .all(|coach| coach.role == CoachRole::HeadCoach));
-    assert!(knapmiller.iter().all(|coach| {
+    check!(knapmiller.iter().all(|coach| {
         coach.professional_email.as_deref() == Some("jknapmiller@abbotsford.k12.wi.us")
     }));
 
     let novak = find("Dillon Novak");
-    assert_eq!(novak.len(), 1);
-    assert_eq!(novak[0].sport, Some(Sport::CrossCountry));
-    assert_eq!(novak[0].gender, Gender::Girls);
-    assert_eq!(novak[0].role, CoachRole::HeadCoach);
-    assert_eq!(
+    check!(eq; novak.len(), 1);
+    check!(eq; novak[0].sport, Some(Sport::CrossCountry));
+    check!(eq; novak[0].gender, Gender::Girls);
+    check!(eq; novak[0].role, CoachRole::HeadCoach);
+    check!(eq;
         novak[0].professional_email.as_deref(),
         Some("dnovak@abbotsford.k12.wi.us")
     );
 
-    assert_eq!(
+    check!(eq;
         extract.coaches.len(),
         4,
         "one AD + three TF/XC head coaches"
     );
-    assert_eq!(extract.skipped_coach_rows, 11);
+    check!(eq; extract.skipped_coach_rows, 11);
     for coach in &extract.coaches {
         if coach.role == CoachRole::AthleticDirector {
             continue;
         }
-        assert!(matches!(
+        check!(matches!(
             coach.sport,
             Some(Sport::OutdoorTrack | Sport::CrossCountry)
         ));
     }
 
-    let gets = extract_for("135", SCHOOL_GET);
+    let gets = extract_for("135", SCHOOL_GET)?;
     let gold: Vec<&CanonicalCoach> = gets
         .coaches
         .iter()
@@ -221,13 +228,13 @@ fn coach_rows_map_to_sport_and_gender() {
         .collect();
     let mut gold_pairs: Vec<(String, Gender)> = gold
         .iter()
-        .map(|coach| {
-            let sport = coach.sport.expect("sport-bound");
-            (format!("{sport:?}"), coach.gender)
+        .map(|coach| -> TestResult<_> {
+            let sport = coach.sport.ok_or("sport-bound")?;
+            Ok((format!("{sport:?}"), coach.gender))
         })
-        .collect();
+        .collect::<TestResult<_>>()?;
     gold_pairs.sort();
-    assert_eq!(
+    check!(eq;
         gold_pairs,
         vec![
             ("CrossCountry".to_string(), Gender::Boys),
@@ -235,8 +242,9 @@ fn coach_rows_map_to_sport_and_gender() {
             ("OutdoorTrack".to_string(), Gender::Girls),
         ]
     );
-    assert_eq!(gets.coaches.len(), 5, "one AD + four TF/XC head coaches");
-    assert_eq!(gets.skipped_coach_rows, 19);
+    check!(eq; gets.coaches.len(), 5, "one AD + four TF/XC head coaches");
+    check!(eq; gets.skipped_coach_rows, 19);
+    Ok(())
 }
 
 #[test]
@@ -300,28 +308,28 @@ fn sport_and_role_labels_are_mapped_strictly() {
 }
 
 #[test]
-fn office_staff_are_never_imported_as_coaches_or_directors() {
-    let gets = extract_for("135", SCHOOL_GET);
+fn office_staff_are_never_imported_as_coaches_or_directors() -> TestResult {
+    let gets = extract_for("135", SCHOOL_GET)?;
     let names: Vec<&str> = gets
         .coaches
         .iter()
         .map(|coach| coach.name.as_str())
         .collect();
     for dropped in ["Sheryl Byom", "Michele Butler", "Jamie Oliver"] {
-        assert!(
+        check!(
             !names.contains(&dropped),
             "non-director office row imported as a coach or AD: {dropped} in {names:?}"
         );
     }
-    assert!(gets
+    check!(gets
         .skipped_admin_roles
         .iter()
         .any(|role| role == "AD Admin Assistant"));
-    assert!(gets
+    check!(gets
         .skipped_admin_roles
         .iter()
         .any(|role| role == "Superintendent"));
-    assert!(gets
+    check!(gets
         .skipped_admin_roles
         .iter()
         .any(|role| role == "Principal"));
@@ -331,33 +339,35 @@ fn office_staff_are_never_imported_as_coaches_or_directors() {
         .iter()
         .filter(|coach| coach.role == CoachRole::AthleticDirector)
         .collect();
-    assert_eq!(directors.len(), 1, "exactly one AD row");
-    assert_eq!(directors[0].name, "Jake Perner");
-    assert_eq!(
+    check!(eq; directors.len(), 1, "exactly one AD row");
+    check!(eq; directors[0].name, "Jake Perner");
+    check!(eq;
         directors[0].professional_email.as_deref(),
         Some("jakeperner@getschools.k12.wi.us")
     );
+    Ok(())
 }
 
 #[test]
-fn school_without_coach_rows_yields_no_coaching_rows() {
-    let extract = extract_for("5151", SCHOOL_SAILS);
-    assert_eq!(extract.school.name, "S.A.I.L.S. CHARTER");
-    assert_eq!(extract.school.city.as_deref(), Some("Sparta"));
-    assert_eq!(extract.school.source_identities[0].id, "5151");
-    assert_eq!(extract.school.classification, None);
-    assert_eq!(extract.coaches.len(), 2, "two directors, zero coach rows");
-    assert!(extract
+fn school_without_coach_rows_yields_no_coaching_rows() -> TestResult {
+    let extract = extract_for("5151", SCHOOL_SAILS)?;
+    check!(eq; extract.school.name, "S.A.I.L.S. CHARTER");
+    check!(eq; extract.school.city.as_deref(), Some("Sparta"));
+    check!(eq; extract.school.source_identities[0].id, "5151");
+    check!(eq; extract.school.classification, None);
+    check!(eq; extract.coaches.len(), 2, "two directors, zero coach rows");
+    check!(extract
         .coaches
         .iter()
         .all(|coach| coach.role == CoachRole::AthleticDirector));
-    assert_eq!(extract.skipped_coach_rows, 0);
+    check!(eq; extract.skipped_coach_rows, 0);
     let names: Vec<&str> = extract
         .coaches
         .iter()
         .map(|coach| coach.name.as_str())
         .collect();
-    assert_eq!(names, vec!["John Blaha", "Adam Dow"]);
+    check!(eq; names, vec!["John Blaha", "Adam Dow"]);
+    Ok(())
 }
 
 #[test]
@@ -417,7 +427,7 @@ fn honorifics_are_stripped_from_person_names() {
 }
 
 #[test]
-fn measured_email_fill_rate_on_captured_pages() {
+fn measured_email_fill_rate_on_captured_pages() -> TestResult {
     let mut rows = 0usize;
     let mut with_email = 0usize;
     for (org_id, fixture) in [
@@ -425,7 +435,7 @@ fn measured_email_fill_rate_on_captured_pages() {
         ("135", SCHOOL_GET),
         ("5151", SCHOOL_SAILS),
     ] {
-        let extract = extract_for(org_id, fixture);
+        let extract = extract_for(org_id, fixture)?;
         rows = rows.saturating_add(extract.coaches.len());
         with_email = with_email.saturating_add(
             extract
@@ -437,13 +447,14 @@ fn measured_email_fill_rate_on_captured_pages() {
                 .count(),
         );
     }
-    assert_eq!(
+    check!(eq;
         (with_email, rows),
         (11, 11),
         "captured pages publish an address for every emitted AD/coach row"
     );
-    assert!(
+    check!(
         with_email > 0,
         "the WIAA directory does publish coach addresses"
     );
+    Ok(())
 }

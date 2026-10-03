@@ -15,6 +15,8 @@ const MAX_META_BYTES: usize = 64 * 1024;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub(crate) struct CacheMeta {
     pub(crate) url: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) response_url: Option<String>,
     pub(crate) method: String,
     pub(crate) status: u16,
     pub(crate) content_digest: String,
@@ -69,7 +71,7 @@ fn is_valid_hex64(s: &str) -> bool {
             .all(|byte| byte.is_ascii_digit() || matches!(byte, b'a'..=b'f'))
 }
 
-fn read_cache_file(
+pub(super) fn read_cache_file(
     path: &Path,
     limit: usize,
     expected: Option<usize>,

@@ -4,6 +4,8 @@ use census_domain::model::{
 };
 use census_domain::UsJurisdiction;
 
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+
 fn retained(label: &str) -> CanonicalEvent {
     let meet = CanonicalMeet::mint(
         Some(UsJurisdiction::Alabama),
@@ -33,25 +35,26 @@ fn retained(label: &str) -> CanonicalEvent {
 }
 
 #[test]
-fn source_proven_refinement_preserves_event_references_in_both_orders() {
+fn source_proven_refinement_preserves_event_references_in_both_orders() -> TestResult {
     let historical = retained("Boys 2A 110m Hurdles Preliminaries");
     let mut corrected = historical.clone();
     corrected.kind = historical
         .resolved_source_kind()
-        .expect("published hurdles event");
-    assert_eq!(corrected.kind, EventKind::Track110mHurdles);
+        .ok_or("published hurdles event")?;
+    check!(eq; corrected.kind, EventKind::Track110mHurdles);
     let mut forward = historical.clone();
     forward.merge(corrected.clone());
     let mut reverse = corrected.clone();
     reverse.merge(historical.clone());
-    assert_eq!(forward, corrected);
-    assert_eq!(reverse, corrected);
-    assert_eq!(forward.id, historical.id);
-    assert_eq!(forward.meet, historical.meet);
-    assert_eq!(forward.division, historical.division);
-    assert_eq!(forward.round, historical.round);
-    assert_eq!(forward.source_labels, historical.source_labels);
-    assert_eq!(forward.evidence, historical.evidence);
+    check!(eq; forward, corrected);
+    check!(eq; reverse, corrected);
+    check!(eq; forward.id, historical.id);
+    check!(eq; forward.meet, historical.meet);
+    check!(eq; forward.division, historical.division);
+    check!(eq; forward.round, historical.round);
+    check!(eq; forward.source_labels, historical.source_labels);
+    check!(eq; forward.evidence, historical.evidence);
+    Ok(())
 }
 
 #[test]
@@ -97,37 +100,33 @@ fn refinement_cannot_change_context_or_override_known_kind() {
 }
 
 #[test]
-fn retained_observations_survive_refinement_and_store_reopen() {
-    let root = tempfile::tempdir().expect("temporary store root");
+fn retained_observations_survive_refinement_and_store_reopen() -> TestResult {
+    let root = tempfile::tempdir()?;
     let historical = retained("Girls Long Jump Finals");
     let mut corrected = historical.clone();
     corrected.kind = historical
         .resolved_source_kind()
-        .expect("published field event");
-    assert_eq!(corrected.kind, EventKind::LongJump);
+        .ok_or("published field event")?;
+    check!(eq; corrected.kind, EventKind::LongJump);
     {
-        let store = Store::open(root.path()).expect("open store");
-        store
-            .append(Table::Events, &historical)
-            .expect("historical observation");
-        store
-            .append(Table::Events, &corrected)
-            .expect("refinement observation");
-        store.flush().expect("persist observations");
+        let store = Store::open(root.path())?;
+        store.append(Table::Events, &historical)?;
+        store.append(Table::Events, &corrected)?;
+        store.flush()?;
     }
-    let store = Store::open(root.path()).expect("reopen store");
+    let store = Store::open(root.path())?;
     let mut observations = Vec::new();
     store
         .snapshot()
         .for_each_observation(Table::Events, |event: CanonicalEvent| {
             observations.push(event);
             Ok(())
-        })
-        .expect("history");
-    assert!(observations.contains(&historical));
-    assert!(observations.contains(&corrected));
-    let merged: Vec<CanonicalEvent> = store.scan(Table::Events).expect("merged events");
-    assert_eq!(merged, vec![corrected]);
+        })?;
+    check!(observations.contains(&historical));
+    check!(observations.contains(&corrected));
+    let merged: Vec<CanonicalEvent> = store.scan(Table::Events)?;
+    check!(eq; merged, vec![corrected]);
+    Ok(())
 }
 
 #[test]

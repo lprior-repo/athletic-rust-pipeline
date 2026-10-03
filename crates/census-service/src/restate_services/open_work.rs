@@ -112,13 +112,14 @@ async fn read_jurisdictions(
 
 fn stages_of(state: &JurisdictionState) -> JurisdictionStages {
     JurisdictionStages {
-        teams: state.teams.is_some(),
-        rosters: state.rosters.is_some(),
+        teams: state.teams.is_completed(),
+        rosters: state.rosters.as_ref().is_some_and(|progress| {
+            progress.rosters_remaining == 0 && progress.blocked_skipped == 0 && !progress.blocked
+        }),
         meets: state.meets.is_some(),
-        owed_rosters: state
-            .rosters
-            .as_ref()
-            .map_or(0, |progress| count(progress.blocked_skipped)),
+        owed_rosters: state.rosters.as_ref().map_or(0, |progress| {
+            count(progress.rosters_remaining.max(progress.blocked_skipped))
+        }),
     }
 }
 
@@ -149,5 +150,118 @@ async fn read_source_objects(ctx: &Context<'_>, endpoints: &[String]) -> Vec<Sou
 }
 
 fn count(value: usize) -> u64 {
-    u64::try_from(value).unwrap_or(u64::MAX)
+    u64::try_from(value).map_or(u64::MAX, core::convert::identity)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::error::Error;
+
+    use super::{owed_jurisdictions, stages_of, JurisdictionState};
+    use crate::census::{MeetCensus, StateProgress};
+    use crate::restate_services::wire::{StageOutcome, TeamsFailure, TeamsStage};
+    use census_domain::UsJurisdiction;
+
+    fn independent_stages_completed(teams: TeamsStage) -> JurisdictionState {
+        JurisdictionState {
+            teams,
+            rosters: Some(StateProgress {
+                jurisdiction: UsJurisdiction::Wisconsin,
+                rosters_total: 2,
+                rosters_committed: 2,
+                rosters_remaining: 0,
+                rosters_skipped: 0,
+                athletes: 11,
+                class_of_2027: 7,
+                class_of_2027_boys: 3,
+                class_of_2027_girls: 4,
+                errors: Vec::new(),
+                blocked: false,
+                blocked_skipped: 0,
+                teams: 2,
+            }),
+            meets: Some(MeetCensus::default()),
+            ..JurisdictionState::default()
+        }
+    }
+
+    #[test]
+    fn failed_teams_remain_owed_without_automatic_work() -> Result<(), Box<dyn Error>> {
+        let terminal = TeamsStage::Failed(TeamsFailure::ActionTerminal {
+            at: "2026-10-01".to_string(),
+            code: 503,
+            message: "coach source unavailable".to_string(),
+        });
+        let partial = TeamsStage::from_outcome(
+            StageOutcome {
+                records: 19,
+                at: "2026-10-01".to_string(),
+                errors: vec!["coach source incomplete".to_string()],
+                notes: Vec::new(),
+            },
+            "2026-10-01".to_string(),
+        );
+        [terminal, partial].into_iter().try_for_each(|teams| {
+            let state = independent_stages_completed(teams);
+            let restored: JurisdictionState = serde_json::from_value(serde_json::to_value(state)?)?;
+            let stages = stages_of(&restored);
+
+            check!(!restored.teams.is_owed());
+            check!(!stages.terminal());
+            check!(eq; stages.owing(), vec!["teams"]);
+            check!(eq; owed_jurisdictions(&[stages]), 1);
+            Ok::<(), Box<dyn Error>>(())
+        })
+    }
+
+    #[test]
+    fn completed_teams_allow_jurisdiction_completion() -> Result<(), Box<dyn Error>> {
+        let teams = TeamsStage::from_outcome(
+            StageOutcome {
+                records: 19,
+                at: "2026-10-01".to_string(),
+                errors: Vec::new(),
+                notes: Vec::new(),
+            },
+            "2026-10-01".to_string(),
+        );
+        let state = independent_stages_completed(teams);
+        let restored: JurisdictionState = serde_json::from_value(serde_json::to_value(state)?)?;
+        let stages = stages_of(&restored);
+
+        check!(stages.terminal());
+        check!(eq; stages.owing(), Vec::<&str>::new());
+        check!(eq; owed_jurisdictions(&[stages]), 0);
+        Ok(())
+    }
+
+    #[test]
+    fn unfinished_rosters_keep_the_jurisdiction_nonterminal() -> Result<(), Box<dyn Error>> {
+        let teams = TeamsStage::from_outcome(
+            StageOutcome {
+                records: 19,
+                at: "2026-10-03".to_string(),
+                errors: Vec::new(),
+                notes: Vec::new(),
+            },
+            "2026-10-03".to_string(),
+        );
+        for (remaining, blocked, blocked_skipped, expected_owed) in
+            [(2, false, 0, 2), (2, true, 2, 2), (0, true, 0, 0)]
+        {
+            let mut state = independent_stages_completed(teams.clone());
+            let progress = state.rosters.as_mut().ok_or("missing roster fixture")?;
+            progress.rosters_total = if remaining == 0 { 2 } else { 4 };
+            progress.rosters_remaining = remaining;
+            progress.blocked = blocked;
+            progress.blocked_skipped = blocked_skipped;
+            let stages = stages_of(&state);
+
+            check!(eq; stages.rosters, false);
+            check!(eq; stages.owed_rosters, expected_owed);
+            check!(!stages.terminal());
+            check!(eq; owed_jurisdictions(&[stages]), 1);
+        }
+        Ok(())
+    }
 }

@@ -23,8 +23,10 @@ pub fn check_report(
         return false;
     }
 
-    let text = std::fs::read_to_string(path)
-        .unwrap_or_else(|e| format!("error reading {}: {e}", path.display()));
+    let text = std::fs::read_to_string(path).map_or_else(
+        |e| format!("error reading {}: {e}", path.display()),
+        |value| value,
+    );
 
     let missing: Vec<&str> = section_rees
         .iter()

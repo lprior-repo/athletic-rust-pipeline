@@ -17,9 +17,10 @@ fn main() -> Result<()> {
     group.throughput(Throughput::Elements(u64::from(SUBJECTS)));
     group.bench_function("athlete_evidence", |bencher| {
         bencher.iter(|| {
-            let rows = snapshot
-                .athletes()
-                .unwrap_or_else(|error| refuse(format!("snapshot read failed: {error}")));
+            let rows = snapshot.athletes().map_or_else(
+                |error| refuse(format!("snapshot read failed: {error}")),
+                |value| value,
+            );
             std::hint::black_box(rows);
         });
     });

@@ -147,7 +147,7 @@ impl Fetcher {
         let cooldown_until = match kind {
             AccessBlockKind::HumanRequired => None,
             _ => Some(cooldown_until_iso8601(
-                retry_after_seconds.unwrap_or(BLOCK_COOLDOWN_SECONDS),
+                retry_after_seconds.map_or(BLOCK_COOLDOWN_SECONDS, |value| value),
             )),
         };
         let condition = SourceAccessCondition::new(

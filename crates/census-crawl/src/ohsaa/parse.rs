@@ -1,5 +1,5 @@
 use super::map::SearchResult;
-use census_domain::model::{normalize_name, Sport};
+use census_domain::model::normalize_name;
 use std::collections::{BTreeMap, HashSet};
 
 pub(super) fn collapse_whitespace(value: &str) -> String {
@@ -148,7 +148,7 @@ fn extract_ohsaa_id(row: &str) -> Option<String> {
     let (_, after) = row.split_once("ohsaaId=")?;
     let end = after
         .find(|c: char| !c.is_ascii_digit())
-        .unwrap_or(after.len());
+        .map_or(after.len(), |value| value);
     let id = after.get(..end)?;
     if !id.is_empty() {
         return Some(id.to_string());
@@ -221,7 +221,10 @@ pub fn strip_honorific(value: &str) -> String {
     let lower = trimmed.to_lowercase();
     for prefix in &["coach ", "mr. ", "mrs. ", "ms. ", "dr. ", "prof. "] {
         if lower.starts_with(*prefix) {
-            let rest = trimmed.get(prefix.len()..).unwrap_or(trimmed).trim();
+            let rest = trimmed
+                .get(prefix.len()..)
+                .map_or(trimmed, |value| value)
+                .trim();
             return if rest.is_empty() {
                 trimmed.to_string()
             } else {
@@ -230,12 +233,4 @@ pub fn strip_honorific(value: &str) -> String {
         }
     }
     trimmed.to_string()
-}
-
-pub(super) fn sport_key(sport: &Sport) -> &str {
-    match sport {
-        Sport::CrossCountry => "xc",
-        Sport::OutdoorTrack => "tf",
-        Sport::IndoorTrack => "itf",
-    }
 }

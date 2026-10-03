@@ -6,6 +6,8 @@ use crate::scan::rules::Rules;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
+type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
+
 #[test]
 fn top_modules_read_the_path_shape() {
     let src = Path::new("/crates/census-service/src");
@@ -40,8 +42,8 @@ fn references_resolve_to_top_level_modules() {
 }
 
 #[test]
-fn a_cfg_test_module_ends_the_production_region_and_a_gated_use_does_not() {
-    let rules = Rules::compile().expect("the scan's patterns compile");
+fn a_cfg_test_module_ends_the_production_region_and_a_gated_use_does_not() -> TestResult {
+    let rules = Rules::compile()?;
     let lines: Vec<String> = [
         "fn production() {}",
         "#[cfg(test)]",
@@ -52,7 +54,7 @@ fn a_cfg_test_module_ends_the_production_region_and_a_gated_use_does_not() {
     .iter()
     .map(|line| (*line).to_string())
     .collect();
-    assert_eq!(production_lines(&lines, &rules).len(), 1);
+    check!(eq; production_lines(&lines, &rules).len(), 1);
     let export_gate: Vec<String> = [
         "pub(crate) use cells::{A, B};",
         "#[cfg(test)]",
@@ -62,10 +64,11 @@ fn a_cfg_test_module_ends_the_production_region_and_a_gated_use_does_not() {
     .iter()
     .map(|line| (*line).to_string())
     .collect();
-    assert_eq!(
+    check!(eq;
         production_lines(&export_gate, &rules).len(),
         export_gate.len()
     );
+    Ok(())
 }
 
 #[test]

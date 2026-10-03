@@ -80,5 +80,5 @@ fn bump(metrics: &mut BTreeMap<String, u64>, metric: &str) {
 }
 
 fn count(value: usize) -> u64 {
-    u64::try_from(value).unwrap_or(u64::MAX)
+    u64::try_from(value).map_or(u64::MAX, |value| value)
 }

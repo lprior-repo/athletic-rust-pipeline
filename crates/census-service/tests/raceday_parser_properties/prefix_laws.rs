@@ -2,7 +2,7 @@ use super::{parse_body, rendered_rows, seam_config, CAPTURE, DECLINED_ROW};
 use proptest::prelude::*;
 
 fn prefix_holds(name: &str, body: &str, cut: usize) -> Result<(), TestCaseError> {
-    let full = parse_body(body).expect("the whole body is a meet");
+    let full = parse_body(body).map_err(|error| TestCaseError::fail(error.to_string()))?;
     let full_rows = rendered_rows(&full);
 
     let cut = cut % (body.chars().count() + 1);

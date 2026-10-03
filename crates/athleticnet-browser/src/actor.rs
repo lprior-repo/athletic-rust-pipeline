@@ -197,7 +197,7 @@ impl Actor {
                     !self.challenge_latched
                         && !self.shutdown.is_cancelled()
                         && !self.pages.is_empty()
-                        && self.status.read().ok().map(|s| s.state != BrowserState::CoolingDown).unwrap_or(true)
+                        && self.status.read().ok().map(|s| s.state != BrowserState::CoolingDown).map_or(true, |value| value)
                 } => {
                     self.latch_challenge(None);
                 }

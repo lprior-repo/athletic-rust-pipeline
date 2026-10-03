@@ -30,7 +30,7 @@ fn parse_section(chunk: &str) -> ParsedSection {
         .and_then(|start| chunk.get(start.checked_add("standard_event_hnd_".len())?..))
         .and_then(|rest| rest.split('"').next())
         .and_then(|digits| digits.parse::<u32>().ok());
-    let label = section_label(chunk).unwrap_or_default();
+    let label = section_label(chunk).map_or(Default::default(), core::convert::identity);
     let mut rows = Vec::new();
     for body in chunk.split("<div class=\"performance-list-row").skip(1) {
         rows.push(parse_row(body));
@@ -67,7 +67,11 @@ fn strip_gender_parenthetical(label: &str) -> String {
         "men" | "women" | "m" | "w" | "boys" | "girls" | "boy" | "girl"
     );
     if is_gender {
-        trimmed.get(..open).unwrap_or(trimmed).trim().to_string()
+        trimmed
+            .get(..open)
+            .map_or(trimmed, |value| value)
+            .trim()
+            .to_string()
     } else {
         trimmed.to_string()
     }

@@ -177,7 +177,7 @@ fn archive_page(url: &str, artifacts: &[&ResultArtifact]) -> String {
         let href = artifact
             .url
             .strip_prefix("https://www.wiaawi.org")
-            .unwrap_or(&artifact.url);
+            .map_or(artifact.url.as_str(), |value| value);
         let ResultArtifact { year, label, .. } = artifact;
         body.push_str(&format!(
             "  <li>{year} - <a href=\"{href}\">{label}</a></li>\n"

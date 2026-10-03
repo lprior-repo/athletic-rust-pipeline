@@ -9,9 +9,9 @@ pub(crate) fn tally(map: &mut IndexMap<String, usize>, key: &str, by: usize) {
 }
 
 pub(crate) fn count_len(count: i64) -> usize {
-    usize::try_from(count).unwrap_or(usize::MAX)
+    usize::try_from(count).map_or(usize::MAX, core::convert::identity)
 }
 
 pub(crate) fn len_count(len: usize) -> i64 {
-    i64::try_from(len).unwrap_or(i64::MAX)
+    i64::try_from(len).map_or(i64::MAX, core::convert::identity)
 }

@@ -1,7 +1,7 @@
 use census_domain::model::{ReviewCase, ReviewState, ReviewVerdictRecord};
 use census_store::{StoreError, Table};
 
-use super::support::{add_school, batch, client, lane, options, Fixture};
+use super::support::{add_school, batch, client, lane, options, Fixture, TestResult};
 use crate::run_lanes;
 
 fn historical(case: &ReviewCase, bytes: usize) -> ReviewVerdictRecord {
@@ -22,168 +22,153 @@ fn historical(case: &ReviewCase, bytes: usize) -> ReviewVerdictRecord {
     }
 }
 
-#[tokio::test]
-async fn zero_budget_validates_lanes_without_reading_census_or_advice() {
-    let (fixture, _) = Fixture::school();
-    fixture
-        .store
-        .replace_many(
-            Table::ReviewCases,
-            &[serde_json::json!({"id": "poison-case"})],
-        )
-        .expect("poison case");
-    fixture
-        .store
-        .replace_many(
-            Table::IdentityVerdicts,
-            &[serde_json::json!({"id": "poison-advice"})],
-        )
-        .expect("poison advice");
-    let mut options = options();
-    options.limit = 0;
-    let first = std::net::TcpListener::bind("127.0.0.1:0").expect("listener");
-    let second = std::net::TcpListener::bind("127.0.0.1:0").expect("listener");
-    first.set_nonblocking(true).expect("nonblocking");
-    second.set_nonblocking(true).expect("nonblocking");
-    let clients = [
-        client(&format!("http://{}", first.local_addr().expect("address"))),
-        client(&format!("http://{}", second.local_addr().expect("address"))),
-    ];
-    assert_eq!(
-        run_lanes(&fixture.store, &clients, &options, "zero")
+#[test]
+fn zero_budget_refuses_corrupt_revocation_inputs_without_model_requests() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (fixture, _) = Fixture::school()?;
+            fixture.store.replace_many(
+                Table::ReviewCases,
+                &[serde_json::json!({"id": "poison-case", "family": 42})],
+            )?;
+            fixture.store.replace_many(
+                Table::IdentityVerdicts,
+                &[serde_json::json!({"id": "poison-advice", "accepted": "not-a-boolean"})],
+            )?;
+            let mut options = options();
+            options.limit = 0;
+            let first = std::net::TcpListener::bind("127.0.0.1:0")?;
+            let second = std::net::TcpListener::bind("127.0.0.1:0")?;
+            first.set_nonblocking(true)?;
+            second.set_nonblocking(true)?;
+            let clients = [
+                client(&format!("http://{}", first.local_addr()?))?,
+                client(&format!("http://{}", second.local_addr()?))?,
+            ];
+            let result = run_lanes(&fixture.store, &clients, &options, "zero").await;
+            check!(
+                matches!(result, Err(StoreError::Decode { .. })),
+                "{result:?}"
+            );
+            check!(matches!(
+                run_lanes(&fixture.store, &clients[..1], &options, "invalid").await,
+                Err(StoreError::Invariant { .. })
+            ));
+            for listener in [first, second] {
+                let error = match listener.accept() {
+                    Err(error) => error,
+                    Ok(_) => return Err("no HTTP at zero budget".into()),
+                };
+                check!(eq; error.kind(), std::io::ErrorKind::WouldBlock);
+            }
+            check!(eq; fixture.store.receipt_count()?, 0);
+            Ok(())
+        })
+}
+
+#[test]
+fn irrelevant_large_advice_history_is_not_part_of_the_selected_checkpoint_budget() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (fixture, case) = Fixture::school()?;
+            let mut resolved = ReviewCase::pending(
+                "School jurisdiction unresolved",
+                "historical",
+                "Old school",
+                "old case",
+            );
+            resolved.state = ReviewState::Resolved;
+            let historical = historical(&resolved, 9 * 1024 * 1024);
+            fixture
+                .store
+                .replace_many(Table::ReviewCases, &[resolved])?;
+            fixture
+                .store
+                .replace_many(Table::IdentityVerdicts, std::slice::from_ref(&historical))?;
+            let good = batch(&case, "value_proposed", "state", "WI");
+            let (first, server_a) = lane(vec![good.clone()])?;
+            let (second, server_b) = lane(vec![good])?;
+            let mut options = options();
+            options.limit = 1;
+            let report = run_lanes(
+                &fixture.store,
+                &[client(&first)?, client(&second)?],
+                &options,
+                "selected",
+            )
+            .await?;
+            check!(eq; server_a.join().map_err(|_| "first lane panicked")??.len(), 1);
+            check!(eq; server_b.join().map_err(|_| "second lane panicked")??.len(), 1);
+            check!(eq; (report.requested, report.accepted, report.failed), (1, 1, 0));
+            let rows = fixture
+                .store
+                .scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)?;
+            check!(eq; rows.iter().find(|row| row.id == historical.id), Some(&historical));
+            let cases = fixture.store.scan::<ReviewCase>(Table::ReviewCases)?;
+            check!(eq; cases.iter().find(|row| row.id == case.id).ok_or("selected")?.state,
+ReviewState::Resolved);
+            check!(eq; fixture.store.receipt_count()?, 1);
+            Ok(())
+        })
+}
+
+#[test]
+fn aggregate_selected_advice_over_eight_mib_refuses_without_partial_checkpoint() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (fixture, first) = Fixture::school()?;
+            let cases = [
+                first,
+                add_school(&fixture.store, "Madison East")?,
+                add_school(&fixture.store, "Madison North")?,
+            ];
+            let history: Vec<_> = cases
+                .iter()
+                .map(|case| historical(case, 3 * 1024 * 1024))
+                .collect();
+            fixture
+                .store
+                .replace_many(Table::IdentityVerdicts, &history)?;
+            let mut options = options();
+            options.limit = 3;
+            let error = match run_lanes(
+                &fixture.store,
+                &[
+                    client("http://127.0.0.1:18081")?,
+                    client("http://127.0.0.1:18082")?,
+                ],
+                &options,
+                "bound",
+            )
             .await
-            .expect("zero intake"),
-        crate::ReviewReport::default()
-    );
-    assert!(matches!(
-        run_lanes(&fixture.store, &clients[..1], &options, "invalid").await,
-        Err(StoreError::Invariant { .. })
-    ));
-    for listener in [first, second] {
-        assert_eq!(
-            listener
-                .accept()
-                .expect_err("no HTTP at zero budget")
-                .kind(),
-            std::io::ErrorKind::WouldBlock
-        );
-    }
-    assert_eq!(fixture.store.receipt_count().expect("receipts"), 0);
-}
-
-#[tokio::test]
-async fn irrelevant_large_advice_history_is_not_part_of_the_selected_checkpoint_budget() {
-    let (fixture, case) = Fixture::school();
-    let mut resolved = ReviewCase::pending(
-        "School jurisdiction unresolved",
-        "historical",
-        "Old school",
-        "old case",
-    );
-    resolved.state = ReviewState::Resolved;
-    let historical = historical(&resolved, 9 * 1024 * 1024);
-    fixture
-        .store
-        .replace_many(Table::ReviewCases, &[resolved])
-        .expect("resolved history");
-    fixture
-        .store
-        .replace_many(Table::IdentityVerdicts, std::slice::from_ref(&historical))
-        .expect("large history");
-    let good = batch(&case, "value_proposed", "state", "WI");
-    let (first, server_a) = lane(vec![good.clone()]);
-    let (second, server_b) = lane(vec![good]);
-    let mut options = options();
-    options.limit = 1;
-    let report = run_lanes(
-        &fixture.store,
-        &[client(&first), client(&second)],
-        &options,
-        "selected",
-    )
-    .await
-    .expect("selected review");
-    assert_eq!(server_a.join().expect("first lane").len(), 1);
-    assert_eq!(server_b.join().expect("second lane").len(), 1);
-    assert_eq!(
-        (report.requested, report.accepted, report.failed),
-        (1, 1, 0)
-    );
-    let rows = fixture
-        .store
-        .scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)
-        .expect("rows");
-    assert_eq!(
-        rows.iter().find(|row| row.id == historical.id),
-        Some(&historical)
-    );
-    let cases = fixture
-        .store
-        .scan::<ReviewCase>(Table::ReviewCases)
-        .expect("states");
-    assert_eq!(
-        cases
-            .iter()
-            .find(|row| row.id == case.id)
-            .expect("selected")
-            .state,
-        ReviewState::Resolved
-    );
-    assert_eq!(fixture.store.receipt_count().expect("receipts"), 1);
-}
-
-#[tokio::test]
-async fn aggregate_selected_advice_over_eight_mib_refuses_without_partial_checkpoint() {
-    let (fixture, first) = Fixture::school();
-    let cases = vec![
-        first,
-        add_school(&fixture.store, "Madison East"),
-        add_school(&fixture.store, "Madison North"),
-    ];
-    let history: Vec<_> = cases
-        .iter()
-        .map(|case| historical(case, 3 * 1024 * 1024))
-        .collect();
-    fixture
-        .store
-        .replace_many(Table::IdentityVerdicts, &history)
-        .expect("selected historical advice");
-    let mut options = options();
-    options.limit = 3;
-    let error = run_lanes(
-        &fixture.store,
-        &[
-            client("http://127.0.0.1:18081"),
-            client("http://127.0.0.1:18082"),
-        ],
-        &options,
-        "bound",
-    )
-    .await
-    .expect_err("aggregate budget refusal");
-    match error {
-        StoreError::Invariant { detail } => assert!(
-            detail.starts_with("review checkpoint exceeds aggregate byte budget 8388608:"),
-            "{detail}"
-        ),
-        other => panic!("unexpected error: {other}"),
-    }
-    assert_eq!(
-        fixture
-            .store
-            .scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)
-            .expect("advice"),
-        {
-            let mut history = history;
-            history.sort_by(|a, b| a.id.cmp(&b.id));
-            history
-        }
-    );
-    assert!(fixture
-        .store
-        .scan::<ReviewCase>(Table::ReviewCases)
-        .expect("states")
-        .iter()
-        .all(|case| case.state == ReviewState::Pending));
-    assert_eq!(fixture.store.receipt_count().expect("receipts"), 0);
+            {
+                Err(error) => error,
+                Ok(_) => return Err("aggregate budget refusal".into()),
+            };
+            match error {
+                StoreError::Invariant { detail } => check!(
+                    detail.starts_with("review checkpoint exceeds aggregate byte budget 8388608:"),
+                    "{detail}"
+                ),
+                other => return Err(format!("unexpected error: {other}").into()),
+            }
+            check!(eq; fixture.store.scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)?, {
+                let mut history = history;
+                history.sort_by(|a, b| a.id.cmp(&b.id));
+                history
+            });
+            check!(fixture
+                .store
+                .scan::<ReviewCase>(Table::ReviewCases)?
+                .iter()
+                .all(|case| case.state == ReviewState::Pending));
+            check!(eq; fixture.store.receipt_count()?, 0);
+            Ok(())
+        })
 }

@@ -188,10 +188,13 @@ impl ArtifactWriter {
         file.sync_all()
             .map_err(|error| ContactArtifactError::io(&path, error))?;
         sync_directory(directory)?;
-        let parent = directory
+        let parent = match directory
             .parent()
             .filter(|path| !path.as_os_str().is_empty())
-            .unwrap_or_else(|| Path::new("."));
+        {
+            Some(value) => value,
+            None => Path::new("."),
+        };
         sync_directory(parent)?;
         Ok(StagedContactArtifact {
             staging_dir: directory.to_owned(),

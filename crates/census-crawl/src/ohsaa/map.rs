@@ -1,6 +1,7 @@
-use super::pages::{parse_ad_page, parse_sport_label, parse_sports_table};
-use super::parse::{nonempty, sport_key, strip_honorific};
+use super::pages::{parse_ad_page, parse_sport_label, parse_sports_table, published_absence};
+use super::parse::{nonempty, strip_honorific};
 use super::{AD_PATH, ASSOCIATION, HOST, SCHOOL_INFO_PATH, SOURCE_ID, SPORTS_PATH, STATE};
+use crate::net::FetchOutcome;
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SchoolId,
     SourceIdentity, SourceNamespace, SourceRef, Sport,
@@ -46,50 +47,21 @@ pub struct SchoolExtract {
 
 pub fn school_entities(
     result: &SearchResult,
-    sports_html: &str,
-    ad_html: &str,
-    observed_on: &str,
+    sports: &FetchOutcome,
+    ad: Option<&FetchOutcome>,
 ) -> SchoolExtract {
-    let (school, school_id) = school_from_result(result, observed_on);
-
-    let mut coaches: Vec<CanonicalCoach> = Vec::new();
-
-    coaches.extend(ad_coach(
-        parse_ad_page(ad_html).director,
-        result,
-        &school_id,
-        observed_on,
-    ));
-
-    for (sport_label, boys, girls) in parse_sports_table(sports_html) {
-        let Some(sport) = parse_sport_label(&sport_label) else {
-            continue;
-        };
-        if let Some(entry) = boys {
-            coaches.push(sport_coach(
-                result,
+    let (school, school_id) = school_from_result(result, sports);
+    let coaches = ad
+        .and_then(|capture| {
+            ad_coach(
+                parse_ad_page(&String::from_utf8_lossy(&capture.body)).director,
                 &school_id,
-                sport,
-                entry,
-                Gender::Boys,
-                "boys",
-                observed_on,
-            ));
-        }
-
-        if let Some(entry) = girls {
-            coaches.push(sport_coach(
-                result,
-                &school_id,
-                sport,
-                entry,
-                Gender::Girls,
-                "girls",
-                observed_on,
-            ));
-        }
-    }
-
+                capture,
+            )
+        })
+        .into_iter()
+        .chain(sports_coaches(&school_id, sports))
+        .collect();
     SchoolExtract {
         school,
         school_id,
@@ -97,7 +69,26 @@ pub fn school_entities(
     }
 }
 
-fn school_from_result(result: &SearchResult, observed_on: &str) -> (CanonicalSchool, SchoolId) {
+fn sports_coaches<'a>(
+    school_id: &'a SchoolId,
+    capture: &'a FetchOutcome,
+) -> impl Iterator<Item = CanonicalCoach> + 'a {
+    parse_sports_table(&String::from_utf8_lossy(&capture.body))
+        .into_iter()
+        .flat_map(move |(label, boys, girls)| {
+            let sport = parse_sport_label(&label);
+            [(boys, Gender::Boys), (girls, Gender::Girls)]
+                .into_iter()
+                .filter_map(move |(entry, gender)| {
+                    Some(sport_coach(school_id, sport?, entry?, gender, capture))
+                })
+        })
+}
+
+fn school_from_result(
+    result: &SearchResult,
+    capture: &FetchOutcome,
+) -> (CanonicalSchool, SchoolId) {
     let page_url = result.page_url();
     let (mut school, school_id) =
         CanonicalSchool::new(STATE, &result.name, normalize_name(&result.name));
@@ -110,23 +101,21 @@ fn school_from_result(result: &SearchResult, observed_on: &str) -> (CanonicalSch
             },
             &result.ohsaa_id,
         )
-        .with_url(page_url.clone()),
+        .with_url(page_url),
     );
-    school.evidence.push(Evidence::parsed(
-        SourceRef::new(SOURCE_ID, Some(page_url.clone())),
-        observed_on.to_string(),
-    ));
+    school.evidence.push(capture_evidence(capture));
     (school, school_id)
 }
 
 fn ad_coach(
     director: Option<(String, Option<String>)>,
-    result: &SearchResult,
     school_id: &SchoolId,
-    observed_on: &str,
+    capture: &FetchOutcome,
 ) -> Option<CanonicalCoach> {
     let (ad_name, ad_email) = director?;
-    let ad_url = result.ad_url();
+    if published_absence(&ad_name) {
+        return None;
+    }
     let mut coach = CanonicalCoach::new(
         school_id,
         strip_honorific(&ad_name),
@@ -137,32 +126,17 @@ fn ad_coach(
     if let Some(email) = ad_email.as_deref() {
         coach.set_published_email(email);
     }
-    coach.source_identities.push(
-        SourceIdentity::new(
-            SourceNamespace::AssociationSchool {
-                association: ASSOCIATION.to_string(),
-            },
-            format!("ad:{}", result.ohsaa_id),
-        )
-        .with_url(ad_url.clone()),
-    );
-    coach.evidence.push(Evidence::parsed(
-        SourceRef::new(SOURCE_ID, Some(ad_url)),
-        observed_on.to_string(),
-    ));
+    coach.evidence.push(capture_evidence(capture));
     Some(coach)
 }
 
 fn sport_coach(
-    result: &SearchResult,
     school_id: &SchoolId,
     sport: Sport,
     entry: CoachEntry,
     gender: Gender,
-    gender_key: &str,
-    observed_on: &str,
+    capture: &FetchOutcome,
 ) -> CanonicalCoach {
-    let sports_url = result.sports_url();
     let mut coach = CanonicalCoach::new(
         school_id,
         strip_honorific(&entry.name),
@@ -173,23 +147,23 @@ fn sport_coach(
     if let Some(email) = entry.email.as_deref() {
         coach.set_published_email(email);
     }
-    coach.source_identities.push(
-        SourceIdentity::new(
-            SourceNamespace::AssociationSchool {
-                association: ASSOCIATION.to_string(),
-            },
-            format!(
-                "coach:{}:{}:{}",
-                result.ohsaa_id,
-                sport_key(&sport),
-                gender_key
-            ),
-        )
-        .with_url(sports_url.clone()),
-    );
-    coach.evidence.push(Evidence::parsed(
-        SourceRef::new(SOURCE_ID, Some(sports_url)),
-        observed_on.to_string(),
-    ));
+    coach.evidence.push(capture_evidence(capture));
     coach
+}
+
+pub(super) fn capture_note(capture: &FetchOutcome) -> serde_json::Value {
+    serde_json::json!({
+        "capture_url": capture.url,
+        "sha256": capture.content_digest,
+        "acquired_at": capture.fetched_at,
+    })
+}
+
+fn capture_evidence(capture: &FetchOutcome) -> Evidence {
+    let mut evidence = Evidence::parsed(
+        SourceRef::new(SOURCE_ID, Some(capture.url.clone())),
+        &capture.fetched_at,
+    );
+    evidence.note = Some(capture_note(capture).to_string());
+    evidence
 }

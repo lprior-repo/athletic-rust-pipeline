@@ -26,7 +26,17 @@ fn cohort_conflict(athlete: &CanonicalAthlete) -> Option<String> {
     let canonical = athlete.grad_year;
     let mut implied: Vec<String> = Vec::new();
     let mut observations: Vec<String> = Vec::new();
-    let mut any_disagree = false;
+    let mut any_disagree = athlete.has_cohort_conflict();
+    for observation in &athlete.published_graduations {
+        let year = observation.grad_year.to_string();
+        if !implied.contains(&year) {
+            implied.push(year);
+        }
+        observations.push(format!(
+            "published graduation {} from {}",
+            observation.grad_year, observation.source.id
+        ));
+    }
     for observation in &athlete.observed_grades {
         match observation.grad_year() {
             Some(year) => {
@@ -66,7 +76,8 @@ pub(super) fn contact_conflicts(rows: &StoreRows, names: &HashMap<&str, &str>) -
     let mut family = Family::new(CONTACT_CONFLICT);
     for disagreement in disagreements(rows.coaches, rows.school_year) {
         let subject = subject_of(
-            school_of(names, disagreement.school.as_str()).unwrap_or(disagreement.school.as_str()),
+            school_of(names, disagreement.school.as_str())
+                .map_or(disagreement.school.as_str(), |value| value),
             None,
         );
         family.push(queue_row(

@@ -33,62 +33,44 @@ fn derive_applies_source_binding_once_and_preserves_history_after_reopen() -> Te
         let store = Store::open(directory.path())?;
         store.append(Table::Schools, &school)?;
         store.append(Table::Athletes, &athlete)?;
-        assert_eq!(
-            super::derive(&store, "fixture", "2026-09-26")?.identity_applications,
-            1
-        );
-        assert_eq!(
-            store
-                .athlete_identity_projection()?
-                .status(athlete.id.as_str())?,
-            IdentityStatus::Verified
-        );
+        check!(eq; super::derive(&store, "fixture", "2026-09-26")?.identity_applications,
+        1);
+        check!(eq; store
+            .athlete_identity_projection()?
+            .status(athlete.id.as_str())?,
+        IdentityStatus::Verified);
         original = store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?;
-        assert_eq!(
-            super::derive(&store, "fixture", "2026-09-27")?.identity_applications,
-            0
-        );
-        assert_eq!(
-            store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?,
-            original
-        );
+        check!(eq; super::derive(&store, "fixture", "2026-09-27")?.identity_applications,
+        0);
+        check!(eq; store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?,
+        original);
         athlete.evidence.push(Evidence::parsed(
             SourceRef::new("second", Some("https://example.test/second".to_owned())),
             "2026-09-27",
         ));
         store.append(Table::Athletes, &athlete)?;
-        assert_eq!(
-            store
-                .athlete_identity_projection()?
-                .status(athlete.id.as_str())?,
-            IdentityStatus::Unverified
-        );
-        assert_eq!(
-            super::derive(&store, "fixture", "2026-09-27")?.identity_applications,
-            1
-        );
+        check!(eq; store
+            .athlete_identity_projection()?
+            .status(athlete.id.as_str())?,
+        IdentityStatus::Unverified);
+        check!(eq; super::derive(&store, "fixture", "2026-09-27")?.identity_applications,
+        1);
         store.flush()?;
     }
     let store = Store::open(directory.path())?;
     let history = store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?;
-    assert_eq!(history.len(), 2);
+    check!(eq; history.len(), 2);
     for record in original {
-        assert!(history.contains(&record));
+        check!(history.contains(&record));
     }
-    assert_eq!(
-        store
-            .athlete_identity_projection()?
-            .status(athlete.id.as_str())?,
-        IdentityStatus::Verified
-    );
-    assert_eq!(
-        super::derive(&store, "fixture", "2026-09-28")?.identity_applications,
-        0
-    );
-    assert_eq!(
-        store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?,
-        history
-    );
+    check!(eq; store
+        .athlete_identity_projection()?
+        .status(athlete.id.as_str())?,
+    IdentityStatus::Verified);
+    check!(eq; super::derive(&store, "fixture", "2026-09-28")?.identity_applications,
+    0);
+    check!(eq; store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?,
+    history);
     Ok(())
 }
 
@@ -101,26 +83,20 @@ fn derive_does_not_promote_or_merge_provider_owned_homonyms() -> TestResult {
     let second = athlete(&school, "222");
     store.append(Table::Schools, &school)?;
     store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
-    assert_eq!(
-        super::derive(&store, "fixture", "2026-09-26")?.identity_applications,
-        0
-    );
+    check!(eq; super::derive(&store, "fixture", "2026-09-26")?.identity_applications,
+    0);
     let projection = store.athlete_identity_projection()?;
     for athlete in [&first, &second] {
-        assert_ne!(
-            projection.status(athlete.id.as_str())?,
-            IdentityStatus::Verified
-        );
-        assert_eq!(
-            projection.canonical_id(athlete.id.as_str()),
-            athlete.id.as_str()
-        );
+        check!(ne; projection.status(athlete.id.as_str())?,
+        IdentityStatus::Verified);
+        check!(eq; projection.canonical_id(athlete.id.as_str()),
+        athlete.id.as_str());
     }
     let subjects = store.scan::<CanonicalAthlete>(Table::Athletes)?;
-    assert_eq!(subjects.len(), 2);
-    assert!(subjects.contains(&first));
-    assert!(subjects.contains(&second));
-    assert!(store
+    check!(eq; subjects.len(), 2);
+    check!(subjects.contains(&first));
+    check!(subjects.contains(&second));
+    check!(store
         .scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?
         .is_empty());
     Ok(())
@@ -172,7 +148,7 @@ fn reviewed_membership_permutation_preserves_application_history() -> TestResult
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path())?;
     let mut case = resolved_transfer(&store)?;
-    assert_eq!(super::apply::apply_decisions(&store, "2026-09-26")?, 1);
+    check!(eq; super::apply::apply_decisions(&store, "2026-09-26")?, 1);
     let mut history = store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?;
     for decision in &mut history {
         decision
@@ -182,11 +158,9 @@ fn reviewed_membership_permutation_preserves_application_history() -> TestResult
     store.replace_many(Table::AthleteIdentityDecisions, &history)?;
     case.member_ids.sort_unstable();
     store.replace(Table::ReviewCases, &case)?;
-    assert_eq!(super::apply::apply_decisions(&store, "2026-09-27")?, 0);
-    assert_eq!(
-        store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?,
-        history
-    );
+    check!(eq; super::apply::apply_decisions(&store, "2026-09-27")?, 0);
+    check!(eq; store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?,
+    history);
     let projection = store.athlete_identity_projection()?;
     let canonical = case
         .member_ids
@@ -194,11 +168,9 @@ fn reviewed_membership_permutation_preserves_application_history() -> TestResult
         .min()
         .ok_or("missing fixture members")?;
     for member in &case.member_ids {
-        assert_eq!(
-            projection.status(member.as_str())?,
-            IdentityStatus::Verified
-        );
-        assert_eq!(projection.canonical_id(member.as_str()), canonical.as_str());
+        check!(eq; projection.status(member.as_str())?,
+        IdentityStatus::Verified);
+        check!(eq; projection.canonical_id(member.as_str()), canonical.as_str());
     }
     Ok(())
 }

@@ -31,16 +31,29 @@ pub(super) fn meets_sheet(meets: &[CanonicalMeet]) -> Vec<Vec<Cell>> {
             Cell::text(meet.id.as_str()),
             Cell::text(meet.name.clone()),
             Cell::text(meet.date.clone()),
-            Cell::text(meet.end_date.clone().unwrap_or_default()),
+            Cell::text(
+                meet.end_date
+                    .clone()
+                    .map_or(Default::default(), core::convert::identity)
+            ),
             Cell::text(
                 meet.state
                     .map_or(MEET_STATE_UNRESOLVED, UsJurisdiction::code)
             ),
             Cell::text(level_label(meet.level)),
             Cell::text(sport_list(&meet.sports)),
-            Cell::text(meet.location.clone().unwrap_or_default()),
+            Cell::text(
+                meet.location
+                    .clone()
+                    .map_or(Default::default(), core::convert::identity)
+            ),
             Cell::text(identities_text(&meet.source_identities)),
-            Cell::text(meet.source_urls.first().cloned().unwrap_or_default()),
+            Cell::text(
+                meet.source_urls
+                    .first()
+                    .cloned()
+                    .map_or(Default::default(), core::convert::identity)
+            ),
         ));
     }
     cells

@@ -20,16 +20,29 @@ fn restore_refuses_symlinked_manifest_and_payload_components() -> TestResult {
         Store::backup(&source, &backup)?;
         fs::rename(backup.join(relative), &external)?;
         symlink(&external, backup.join(relative))?;
-        assert!(Store::restore(&backup, &restored).is_err(), "{relative}");
-        assert!(!restored.exists());
+        let result = Store::restore(&backup, &restored);
+        if !result.is_err() {
+            return Err(format!("{relative}: expected refusal, got {result:?}").into());
+        }
+        if restored.exists() {
+            return Err(format!("restore destination exists: {restored:?}").into());
+        }
         fs::remove_file(backup.join(relative))?;
         fs::rename(&external, backup.join(relative))?;
         Store::restore(&backup, &restored)?;
-        assert_eq!(
-            fs::read(restored.join("http/capture"))?,
-            b"retained evidence"
-        );
-        assert!(Store::open(&restored)?.integrity()?.ok);
+        {
+            let (left, right) = (
+                &fs::read(restored.join("http/capture"))?,
+                &b"retained evidence",
+            );
+            if left != right {
+                return Err(format!("left={left:?} right={right:?}").into());
+            }
+        }
+        let report = Store::open(&restored)?.integrity()?;
+        if !report.ok {
+            return Err(format!("restored integrity: {report:?}").into());
+        }
     }
     Ok(())
 }
@@ -46,8 +59,13 @@ fn restore_refuses_a_symlinked_backup_root() -> TestResult {
     symlink(&backup, &alias)?;
     for suffix in ["", "/", "/."] {
         let input = std::path::PathBuf::from(format!("{}{suffix}", alias.display()));
-        assert!(Store::restore(&input, &restored).is_err(), "{input:?}");
-        assert!(!restored.exists());
+        let result = Store::restore(&input, &restored);
+        if !result.is_err() {
+            return Err(format!("{input:?}: expected refusal, got {result:?}").into());
+        }
+        if restored.exists() {
+            return Err(format!("restore destination exists: {restored:?}").into());
+        }
     }
     Ok(())
 }

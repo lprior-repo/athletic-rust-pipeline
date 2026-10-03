@@ -147,6 +147,10 @@ impl Entity for CanonicalAthlete {
             .chain(other.source_links)
             .for_each(|identity| self.add_identity(identity));
         union_vec(&mut self.evidence, &other.evidence);
+        union_vec(
+            &mut self.published_graduations,
+            &other.published_graduations,
+        );
         for observation in other.observed_grades {
             if !self.observed_grades.contains(&observation) {
                 self.observed_grades.push(observation);

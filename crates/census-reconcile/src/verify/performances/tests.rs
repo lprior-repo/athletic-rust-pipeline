@@ -8,17 +8,21 @@ use census_domain::UsJurisdiction;
 use census_report::workbook::ProjectedValue;
 use census_store::Table;
 
-fn fixture() -> (
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+type Fixture = (
     tempfile::TempDir,
     Store,
     Vec<Vec<String>>,
     HashMap<&'static str, usize>,
-) {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+);
+
+fn fixture() -> TestResult<Fixture> {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     let (school, school_id) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Synthetic High", "synthetichigh");
-    store.append(Table::Schools, &school).unwrap();
+    store.append(Table::Schools, &school)?;
     let athlete = CanonicalAthlete::new(
         &school_id,
         "Synthetic Runner",
@@ -26,7 +30,7 @@ fn fixture() -> (
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::athletic_net("athlete"), "101"),
     );
-    store.append(Table::Athletes, &athlete).unwrap();
+    store.append(Table::Athletes, &athlete)?;
     for date in ["2026-05-01", "2026-05-02"] {
         let meet = CanonicalMeet::new(
             Some(UsJurisdiction::Wisconsin),
@@ -34,7 +38,7 @@ fn fixture() -> (
             date,
             CompetitionLevel::Invitational,
         );
-        store.append(Table::Meets, &meet).unwrap();
+        store.append(Table::Meets, &meet)?;
         let event = CanonicalEvent::new(
             &meet.id,
             EventKind::Track100m,
@@ -42,7 +46,7 @@ fn fixture() -> (
             None,
             Some("Finals"),
         );
-        store.append(Table::Events, &event).unwrap();
+        store.append(Table::Events, &event)?;
         let source_key = format!("result:{date}:101");
         let performance = CanonicalPerformance {
             id: CanonicalPerformance::mint(
@@ -57,7 +61,7 @@ fn fixture() -> (
                 &school_id,
                 Sport::OutdoorTrack,
                 Gender::Boys,
-                SchoolYear::new(2025).unwrap(),
+                SchoolYear::new(2025).ok_or("supported school year")?,
             ),
             event: event.id,
             meet: meet.id,
@@ -80,9 +84,9 @@ fn fixture() -> (
             source_athlete: athlete.source.clone(),
             retained_conflicts: Vec::new(),
         };
-        store.append(Table::Performances, &performance).unwrap();
+        store.append(Table::Performances, &performance)?;
     }
-    let dataset = ExportDataset::load(&store).unwrap();
+    let dataset = ExportDataset::load(&store)?;
     let derivation = Derivation::of(&dataset, Scope::AllSources, None);
     let projection = PerformanceProjection::of(&derivation);
     let mut rows: Vec<Vec<String>> = derivation
@@ -108,30 +112,31 @@ fn fixture() -> (
         .enumerate()
         .map(|(index, &name)| (name, index))
         .collect();
-    (dir, store, rows, columns)
+    Ok((dir, store, rows, columns))
 }
 
 #[test]
-fn equal_marks_at_different_meets_cannot_be_substituted() {
-    let (_dir, store, mut rows, columns) = fixture();
-    let baseline =
-        verify_performances(&store, &rows, &[0, 1], &columns, Scope::AllSources).unwrap();
-    assert_eq!(baseline.passed, 2);
-    assert_eq!(
-        rows[0][columns["Athlete ID"]],
-        rows[1][columns["Athlete ID"]]
-    );
-    assert_eq!(rows[0][columns["Event"]], rows[1][columns["Event"]]);
-    assert_eq!(rows[0][columns["Mark"]], rows[1][columns["Mark"]]);
+fn equal_marks_at_different_meets_cannot_be_substituted() -> TestResult {
+    let (_dir, store, mut rows, columns) = fixture()?;
+    let baseline = verify_performances(&store, &rows, &[0, 1], &columns, Scope::AllSources)
+        .map_err(|error| error.message)?;
+    check!(eq; baseline.passed, 2);
+    check!(eq; rows[0][columns["Athlete ID"]], rows[1][columns["Athlete ID"]]);
+    check!(eq; rows[0][columns["Event"]], rows[1][columns["Event"]]);
+    check!(eq; rows[0][columns["Mark"]], rows[1][columns["Mark"]]);
     let wrong_meet = rows[1][columns["Meet ID"]].clone();
     rows[0][columns["Meet ID"]] = wrong_meet;
-    let error = verify_performances(&store, &rows, &[0], &columns, Scope::AllSources).unwrap_err();
-    assert!(error.message.contains("Meet ID"), "{}", error.message);
+    let error = match verify_performances(&store, &rows, &[0], &columns, Scope::AllSources) {
+        Err(error) => error,
+        Ok(_) => return Err("substituted meet accepted".into()),
+    };
+    check!(error.message.contains("Meet ID"), "{}", error.message);
+    Ok(())
 }
 
 #[test]
-fn altered_conditions_dates_and_source_references_are_rejected() {
-    let (_dir, store, rows, columns) = fixture();
+fn altered_conditions_dates_and_source_references_are_rejected() -> TestResult {
+    let (_dir, store, rows, columns) = fixture()?;
     for (name, changed) in [
         ("Date", "2026-05-03"),
         ("Timing", "Hand"),
@@ -148,35 +153,48 @@ fn altered_conditions_dates_and_source_references_are_rejected() {
     ] {
         let mut changed_rows = rows.clone();
         changed_rows[0][columns[name]] = changed.into();
-        let error = verify_performances(&store, &changed_rows, &[0], &columns, Scope::AllSources)
-            .unwrap_err();
-        assert!(error.message.contains(name), "{name}: {}", error.message);
+        let error =
+            match verify_performances(&store, &changed_rows, &[0], &columns, Scope::AllSources) {
+                Err(error) => error,
+                Ok(_) => return Err(format!("altered {name} accepted").into()),
+            };
+        check!(error.message.contains(name), "{name}: {}", error.message);
     }
+    Ok(())
 }
 
 #[test]
-fn duplicate_unsampled_result_cannot_hide_a_missing_result() {
-    let (_dir, store, mut rows, columns) = fixture();
+fn duplicate_unsampled_result_cannot_hide_a_missing_result() -> TestResult {
+    let (_dir, store, mut rows, columns) = fixture()?;
     rows[1] = rows[0].clone();
-    let error = verify_performances(&store, &rows, &[0], &columns, Scope::AllSources).unwrap_err();
-    assert!(
+    let error = match verify_performances(&store, &rows, &[0], &columns, Scope::AllSources) {
+        Err(error) => error,
+        Ok(_) => return Err("duplicate result accepted".into()),
+    };
+    check!(
         error.message.contains("duplicate result ID"),
         "{}",
         error.message
     );
+    Ok(())
 }
 
 #[test]
-fn unknown_result_id_and_missing_numeric_cell_are_rejected() {
-    let (_dir, store, rows, columns) = fixture();
+fn unknown_result_id_and_missing_numeric_cell_are_rejected() -> TestResult {
+    let (_dir, store, rows, columns) = fixture()?;
     let mut unknown = rows.clone();
     unknown[0][columns["Canonical Result ID"]] = "missing-result".into();
-    let error =
-        verify_performances(&store, &unknown, &[0], &columns, Scope::AllSources).unwrap_err();
-    assert!(error.message.contains("absent"), "{}", error.message);
+    let error = match verify_performances(&store, &unknown, &[0], &columns, Scope::AllSources) {
+        Err(error) => error,
+        Ok(_) => return Err("unknown result accepted".into()),
+    };
+    check!(error.message.contains("absent"), "{}", error.message);
     let mut truncated = rows;
     truncated[0].truncate(columns["Normalized Mark"]);
-    let error =
-        verify_performances(&store, &truncated, &[0], &columns, Scope::AllSources).unwrap_err();
-    assert!(error.message.contains("missing cell"), "{}", error.message);
+    let error = match verify_performances(&store, &truncated, &[0], &columns, Scope::AllSources) {
+        Err(error) => error,
+        Ok(_) => return Err("missing numeric cell accepted".into()),
+    };
+    check!(error.message.contains("missing cell"), "{}", error.message);
+    Ok(())
 }

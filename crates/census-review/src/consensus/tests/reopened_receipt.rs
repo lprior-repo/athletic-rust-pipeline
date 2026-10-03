@@ -1,152 +1,120 @@
 use census_domain::model::{ReviewCase, ReviewState};
-use census_store::{StoreError, Table};
+use census_store::Table;
 
-use super::support::{batch, client, options, read_request, row, state, write_reply, Fixture};
+use super::support::{
+    batch, client, options, read_request, row, state, write_reply, Fixture, TestResult,
+};
 use crate::run_lanes;
 
-fn once(content: String) -> (String, std::thread::JoinHandle<std::net::TcpListener>) {
-    let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("listener");
-    let endpoint = format!("http://{}", listener.local_addr().expect("address"));
-    listener
-        .set_nonblocking(true)
-        .expect("nonblocking listener");
-    let server = std::thread::spawn(move || {
+fn once(
+    content: String,
+) -> TestResult<(
+    String,
+    std::thread::JoinHandle<TestResult<std::net::TcpListener>>,
+)> {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
+    let endpoint = format!("http://{}", listener.local_addr()?);
+    listener.set_nonblocking(true)?;
+    let server = std::thread::spawn(move || -> TestResult<std::net::TcpListener> {
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
         let mut stream = loop {
             match listener.accept() {
                 Ok((stream, _)) => break stream,
                 Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-                    assert!(
-                        std::time::Instant::now() < deadline,
-                        "request did not arrive"
-                    );
+                    if std::time::Instant::now() >= deadline {
+                        return Err("request did not arrive".into());
+                    }
                     std::thread::yield_now();
                 }
-                Err(error) => panic!("accept failed: {error}"),
+                Err(error) => return Err(error.into()),
             }
         };
-        stream
-            .set_read_timeout(Some(std::time::Duration::from_secs(3)))
-            .expect("read deadline");
-        stream
-            .set_write_timeout(Some(std::time::Duration::from_secs(3)))
-            .expect("write deadline");
-        let _request = read_request(&mut stream);
-        write_reply(&mut stream, &content);
-        listener
+        stream.set_read_timeout(Some(std::time::Duration::from_secs(3)))?;
+        stream.set_write_timeout(Some(std::time::Duration::from_secs(3)))?;
+        let _request = read_request(&mut stream)?;
+        write_reply(&mut stream, &content)?;
+        Ok(listener)
     });
-    (endpoint, server)
+    Ok((endpoint, server))
 }
 
-#[tokio::test]
-async fn same_observed_at_reopening_refuses_false_success_and_preserves_original_receipt() {
-    let (fixture, mut case) = Fixture::school();
-    let good = batch(&case, "value_proposed", "state", "WI");
-    let (first, server_a) = once(good.clone());
-    let (second, server_b) = once(good);
-    let clients = [client(&first), client(&second)];
-    assert_eq!(
-        run_lanes(&fixture.store, &clients, &options(), "same")
-            .await
-            .expect("original")
-            .accepted,
-        1
-    );
-    let listeners = [
-        server_a.join().expect("first endpoint"),
-        server_b.join().expect("second endpoint"),
-    ];
-    let original = row(&fixture.store);
-    let original_case = fixture
-        .store
-        .scan::<ReviewCase>(Table::ReviewCases)
-        .expect("case");
-    let digest =
-        crate::compute_digest(std::slice::from_ref(&original), &original_case).expect("digest");
-    let operation = format!("review:same:0:{digest}");
-    let receipt = fixture
-        .store
-        .receipt(&operation)
-        .expect("receipt lookup")
-        .expect("receipt");
-    case.state = ReviewState::Pending;
-    fixture
-        .store
-        .replace_many(Table::ReviewCases, &[case])
-        .expect("explicit reopening");
-    let error = run_lanes(&fixture.store, &clients, &options(), "same")
-        .await
-        .expect_err("cannot acknowledge unpersisted transition");
-    match error {
-        StoreError::Invariant { detail } => assert_eq!(detail, "repeated review checkpoint differs from durable verdict or case state; explicit projection repair required"),
-        other => panic!("unexpected error: {other}"),
-    }
-    assert_eq!(row(&fixture.store), original);
-    assert_eq!(state(&fixture.store), ReviewState::Pending);
-    assert_eq!(
-        fixture.store.receipt(&operation).expect("receipt lookup"),
-        Some(receipt)
-    );
-    assert_eq!(fixture.store.receipt_count().expect("receipts"), 1);
-    for listener in listeners {
-        assert_eq!(
-            listener
-                .accept()
-                .expect_err("cached reopening performs no extra HTTP")
-                .kind(),
-            std::io::ErrorKind::WouldBlock
-        );
-    }
+#[test]
+fn same_observed_at_reopening_applies_a_fresh_transition_and_preserves_original_receipt(
+) -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (fixture, mut case) = Fixture::school()?;
+            let good = batch(&case, "value_proposed", "state", "WI");
+            let (first, server_a) = once(good.clone())?;
+            let (second, server_b) = once(good)?;
+            let clients = [client(&first)?, client(&second)?];
+            let sequence = fixture.store.snapshot().sequence();
+            check!(eq; run_lanes(&fixture.store, &clients, &options(), "same").await?.accepted, 1);
+            let listeners = [
+                server_a.join().map_err(|_| "first endpoint panicked")??,
+                server_b.join().map_err(|_| "second endpoint panicked")??,
+            ];
+            let original = row(&fixture.store)?;
+            let original_case = fixture.store.scan::<ReviewCase>(Table::ReviewCases)?;
+            let digest = crate::compute_digest(std::slice::from_ref(&original), &original_case)?;
+            let operation = format!("review:same:0:{sequence}:{digest}");
+            let receipt = fixture.store.receipt(&operation)?.ok_or("receipt")?;
+            case.state = ReviewState::Pending;
+            fixture.store.replace_many(Table::ReviewCases, &[case])?;
+            let report = run_lanes(&fixture.store, &clients, &options(), "same").await?;
+            check!(eq; report.accepted, 1);
+            check!(eq; row(&fixture.store)?, original);
+            check!(eq; state(&fixture.store)?, ReviewState::Resolved);
+            check!(eq; fixture.store.receipt(&operation)?, Some(receipt));
+            check!(eq; fixture.store.receipt_count()?, 2);
+            for listener in listeners {
+                let error = match listener.accept() {
+                    Err(error) => error,
+                    Ok(_) => return Err("cached reopening performs no extra HTTP".into()),
+                };
+                check!(eq; error.kind(), std::io::ErrorKind::WouldBlock);
+            }
+            Ok(())
+        })
 }
 
-#[tokio::test]
-async fn exactly_applied_checkpoint_repetition_preserves_rows_and_receipt() {
-    let (fixture, case) = Fixture::school();
-    let good = batch(&case, "value_proposed", "state", "WI");
-    let (first, server_a) = once(good.clone());
-    let (second, server_b) = once(good);
-    let clients = [client(&first), client(&second)];
-    assert_eq!(
-        run_lanes(&fixture.store, &clients, &options(), "same")
-            .await
-            .expect("original")
-            .accepted,
-        1
-    );
-    let _listeners = [
-        server_a.join().expect("first endpoint"),
-        server_b.join().expect("second endpoint"),
-    ];
-    let verdict = row(&fixture.store);
-    let cases = fixture
-        .store
-        .scan::<ReviewCase>(Table::ReviewCases)
-        .expect("case");
-    let digest = crate::compute_digest(std::slice::from_ref(&verdict), &cases).expect("digest");
-    let operation = format!("review:same:0:{digest}");
-    let receipt = fixture
-        .store
-        .receipt(&operation)
-        .expect("receipt lookup")
-        .expect("receipt");
-    let repeated = crate::review_checkpoint::commit(
-        &fixture.store,
-        std::slice::from_ref(&verdict),
-        &cases,
-        "same",
-        0,
-        fixture.store.snapshot().sequence(),
-    )
-    .expect("already applied checkpoint stays idempotent");
-    assert!(repeated.repeated());
-    assert_eq!(repeated.receipt(), &receipt);
-    assert_eq!(row(&fixture.store), verdict);
-    assert_eq!(
-        fixture
-            .store
-            .scan::<ReviewCase>(Table::ReviewCases)
-            .expect("case"),
-        cases
-    );
-    assert_eq!(fixture.store.receipt_count().expect("receipts"), 1);
+#[test]
+fn exactly_applied_checkpoint_repetition_preserves_rows_and_receipt() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (fixture, case) = Fixture::school()?;
+            let good = batch(&case, "value_proposed", "state", "WI");
+            let (first, server_a) = once(good.clone())?;
+            let (second, server_b) = once(good)?;
+            let clients = [client(&first)?, client(&second)?];
+            let sequence = fixture.store.snapshot().sequence();
+            check!(eq; run_lanes(&fixture.store, &clients, &options(), "same").await?.accepted, 1);
+            let _listeners = [
+                server_a.join().map_err(|_| "first endpoint panicked")??,
+                server_b.join().map_err(|_| "second endpoint panicked")??,
+            ];
+            let verdict = row(&fixture.store)?;
+            let cases = fixture.store.scan::<ReviewCase>(Table::ReviewCases)?;
+            let digest = crate::compute_digest(std::slice::from_ref(&verdict), &cases)?;
+            let operation = format!("review:same:0:{sequence}:{digest}");
+            let receipt = fixture.store.receipt(&operation)?.ok_or("receipt")?;
+            let repeated = crate::review_checkpoint::commit(
+                &fixture.store,
+                std::slice::from_ref(&verdict),
+                &cases,
+                "same",
+                0,
+                sequence,
+            )?;
+            check!(repeated.repeated());
+            check!(eq; repeated.receipt(), &receipt);
+            check!(eq; row(&fixture.store)?, verdict);
+            check!(eq; fixture.store.scan::<ReviewCase>(Table::ReviewCases)?, cases);
+            check!(eq; fixture.store.receipt_count()?, 1);
+            Ok(())
+        })
 }

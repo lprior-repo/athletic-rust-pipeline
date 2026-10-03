@@ -4,39 +4,39 @@ use crate::athlete_flags::{flags, FlagKind};
 use crate::athlete_packet::packet as athlete_packet;
 
 #[test]
-fn the_flags_state_what_the_store_already_knows_before_the_model_runs() {
-    let (boys, girls, _) = rows();
+fn the_flags_state_what_the_store_already_knows_before_the_model_runs() -> TestResult {
+    let (boys, girls, _) = rows()?;
     let case = case_for(&boys);
     let packet = athlete_packet(
         &case,
         &boys,
         &girls,
         &[boys.id.to_string(), girls.id.to_string()],
-    )
-    .expect("bound athlete packet");
+    )?;
     let stated_flags: Vec<&str> = packet
         .evidence
         .iter()
         .filter(|fact| fact.field == "flag")
         .map(|fact| fact.value.as_str())
         .collect();
-    assert!(
+    check!(
         stated_flags
             .iter()
             .any(|flag| flag.starts_with("shared_source_identity:") && flag.contains("14399169")),
         "the shared provider object is a flag the packet states, not something a model must notice"
     );
-    assert!(stated_flags
+    check!(stated_flags
         .iter()
         .any(|flag| flag.starts_with("gender_differs:")));
-    assert!(stated_flags
+    check!(stated_flags
         .iter()
         .any(|flag| flag.starts_with("grad_year_evidence_differs:")));
+    Ok(())
 }
 
 #[test]
-fn provider_objects_that_differ_are_stated_and_never_called_a_shared_one() {
-    let (boys, girls, _) = rows();
+fn provider_objects_that_differ_are_stated_and_never_called_a_shared_one() -> TestResult {
+    let (boys, girls, _) = rows()?;
     let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399170");
     let girls = CanonicalAthlete {
         id: CanonicalAthlete::mint(
@@ -49,7 +49,6 @@ fn provider_objects_that_differ_are_stated_and_never_called_a_shared_one() {
         source: Some(source),
         ..girls
     };
-
     let stated_flags: Vec<(FlagKind, String)> = flags(&boys, &girls)
         .into_iter()
         .map(|flag| (flag.kind, flag.detail))
@@ -58,64 +57,64 @@ fn provider_objects_that_differ_are_stated_and_never_called_a_shared_one() {
         .iter()
         .find(|(kind, _)| *kind == FlagKind::DistinctProviderObjects)
         .map(|(_, detail)| detail.clone())
-        .expect("the two objects a provider issued are a flag");
-    assert!(
+        .ok_or("the two objects a provider issued are a flag")?;
+    check!(
         distinct.contains("14399169") && distinct.contains("14399170"),
         "the flag names both objects: {distinct}"
     );
-    assert!(
+    check!(
         !stated_flags
             .iter()
             .any(|(kind, _)| *kind == FlagKind::SharedSourceIdentity),
         "the objects differ, so the provider is not saying the rows are one athlete"
     );
-
     let case = case_for(&boys);
     let packet = athlete_packet(
         &case,
         &boys,
         &girls,
         &[boys.id.to_string(), girls.id.to_string()],
-    )
-    .expect("bound athlete packet");
-    assert!(
+    )?;
+    check!(
         packet
             .evidence
             .iter()
             .any(|fact| fact.value.starts_with("distinct_provider_objects:")),
         "the flag reaches the packet, where the model reads it"
     );
+    Ok(())
 }
 
 #[test]
-fn rows_that_disagree_on_the_class_are_flagged_and_never_called_an_agreement() {
-    let (boys, _, _) = rows();
+fn rows_that_disagree_on_the_class_are_flagged_and_never_called_an_agreement() -> TestResult {
+    let (boys, _, _) = rows()?;
     let mut later = athlete(
         "Jordan Smith",
         Gender::Boys,
-        GradYear::new(2028).expect("2028"),
+        GradYear::new(2028).ok_or("2028")?,
     );
-    observed(&mut later, 10, 2025);
+    observed(&mut later, 10, 2025)?;
     let kinds: Vec<FlagKind> = flags(&boys, &later)
         .into_iter()
         .map(|flag| flag.kind)
         .collect();
-    assert!(kinds.contains(&FlagKind::GradYearDiffers));
-    assert!(
+    check!(kinds.contains(&FlagKind::GradYearDiffers));
+    check!(
         !kinds.contains(&FlagKind::NameSchoolCohortAgree),
         "the agreement flag is read off the rows, not assumed from the pairing"
     );
+    Ok(())
 }
 
 #[test]
-fn unsupported_inference_survives_the_model_packet() {
+fn unsupported_inference_survives_the_model_packet() -> TestResult {
     let mut first = athlete("Jordan Smith", Gender::Boys, GradYear::CO2027);
     let mut second = athlete("Jordan Smith", Gender::Boys, GradYear::CO2027);
-    observed(&mut first, 11, 2025);
-    observed(&mut second, 11, 2025);
+    observed(&mut first, 11, 2025)?;
+    observed(&mut second, 11, 2025)?;
     first.observed_grades.push(ObservedGrade {
-        grade: Grade::new(9).unwrap(),
-        school_year: SchoolYear::new(2040).unwrap(),
+        grade: Grade::new(9).ok_or("supported grade")?,
+        school_year: SchoolYear::new(2040).ok_or("supported year")?,
         source: SourceRef::new(
             "milesplit_roster",
             Some("https://fixture.example/unsupported-grade".to_string()),
@@ -126,15 +125,15 @@ fn unsupported_inference_survives_the_model_packet() {
         &first,
         &second,
         &[first.id.to_string(), second.id.to_string()],
-    )
-    .expect("bound athlete packet");
+    )?;
     let contradiction = packet
         .evidence
         .iter()
         .find(|fact| fact.field == "flag" && fact.value.starts_with("grad_year_evidence_differs:"))
-        .unwrap();
-    assert!(contradiction.value.contains("2040"));
-    assert!(contradiction
+        .ok_or("retained grade contradiction")?;
+    check!(contradiction.value.contains("2040"));
+    check!(contradiction
         .value
         .contains("https://fixture.example/unsupported-grade"));
+    Ok(())
 }

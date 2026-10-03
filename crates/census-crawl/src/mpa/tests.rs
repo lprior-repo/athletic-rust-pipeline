@@ -1,6 +1,9 @@
 use super::*;
 use census_domain::model::Sport;
 
+mod acquisition;
+mod sides;
+
 fn fixture_directory() -> &'static str {
     include_str!("../../tests/fixtures/mpa/directory.html")
 }

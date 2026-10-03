@@ -1,10 +1,17 @@
 #![forbid(unsafe_code)]
 
+#[cfg(test)]
+#[macro_use]
+#[path = "../../../tools/fallible_checks.rs"]
+mod fallible_checks;
+
 mod cli;
 
 use anyhow::Result;
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    cli::run().await
+fn main() -> Result<()> {
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?
+        .block_on(cli::run())
 }

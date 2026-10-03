@@ -135,7 +135,7 @@ fn administration_block(html: &str) -> Option<&str> {
         .iter()
         .filter_map(|marker| tail.find(marker))
         .min()
-        .unwrap_or(tail.len());
+        .map_or(tail.len(), |value| value);
     tail.get(..end)
 }
 
@@ -171,7 +171,7 @@ pub fn parse_admin_entries(html: &str) -> Vec<AdminEntry> {
                     .and_then(|capture| capture.get(1))
                     .map(|value| clean(value.as_str()))
             })
-            .unwrap_or_default();
+            .map_or(Default::default(), core::convert::identity);
         entries.push(AdminEntry {
             role,
             name,

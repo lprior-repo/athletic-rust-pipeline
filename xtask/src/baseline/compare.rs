@@ -18,7 +18,7 @@ pub(super) fn clippy(
         .and_then(Value::as_object)
         .context("the baseline has no `clippy` object")?;
     for key in union_keys(clippy, known_clippy) {
-        let value = clippy.get(&key).copied().unwrap_or(0);
+        let value = clippy.get(&key).copied().map_or(0, core::convert::identity);
         let was = number(known_clippy.get(&key));
         if value > was {
             failures.push(format!("clippy {key}: {was} -> {value}"));
@@ -54,7 +54,7 @@ pub(super) fn scan(scan: &Value, known: &Value, failures: &mut Vec<String>) -> R
                 .and_then(Value::as_object)
                 .and_then(|counts| counts.get(metric))
                 .and_then(Value::as_u64)
-                .unwrap_or(0);
+                .map_or(0, core::convert::identity);
             let debt = !CONTEXT_METRICS.contains(&metric.as_str());
             if debt && value > was {
                 failures.push(format!("scan {name}.{metric}: {was} -> {value}"));
@@ -154,7 +154,7 @@ fn raised_scan(scan: &Value, old: &Value, raised: &mut Vec<String>) -> Result<()
             let before = before_crate
                 .and_then(|counts| counts.get(metric))
                 .and_then(Value::as_u64)
-                .unwrap_or(0);
+                .map_or(0, core::convert::identity);
             if value > before {
                 raised.push(format!("scan {name}.{metric}: {before} -> {value}"));
             }

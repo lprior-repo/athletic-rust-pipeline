@@ -1,3 +1,7 @@
+#[macro_use]
+#[path = "../../../tools/fallible_checks.rs"]
+mod fallible_checks;
+
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CentiSeconds, CompetitionLevel, EventKind, Evidence, Gender,
@@ -7,6 +11,8 @@ use census_domain::model::{
 use census_domain::UsJurisdiction;
 use census_store::{Store, StoreStats, Table};
 use std::collections::HashSet;
+
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 const SOURCE_ID: &str = "mshsl_results";
 const MEET_DATE: &str = "2026-05-02";
@@ -26,19 +32,18 @@ struct Corpus {
 }
 
 impl Corpus {
-    fn append(&self, store: &Store) {
-        store.append_many(Table::Schools, &self.schools).unwrap();
-        store.append_many(Table::Teams, &self.teams).unwrap();
-        store.append_many(Table::Athletes, &self.athletes).unwrap();
-        store.append_many(Table::Meets, &self.meets).unwrap();
-        store.append_many(Table::Events, &self.events).unwrap();
-        store
-            .append_many(Table::Performances, &self.performances)
-            .unwrap();
+    fn append(&self, store: &Store) -> TestResult {
+        store.append_many(Table::Schools, &self.schools)?;
+        store.append_many(Table::Teams, &self.teams)?;
+        store.append_many(Table::Athletes, &self.athletes)?;
+        store.append_many(Table::Meets, &self.meets)?;
+        store.append_many(Table::Events, &self.events)?;
+        store.append_many(Table::Performances, &self.performances)?;
+        Ok(())
     }
 }
 
-fn synthetic_corpus(school_count: usize, athletes_per_school: usize) -> Corpus {
+fn synthetic_corpus(school_count: usize, athletes_per_school: usize) -> TestResult<Corpus> {
     let mut corpus = Corpus {
         schools: Vec::new(),
         teams: Vec::new(),
@@ -49,12 +54,13 @@ fn synthetic_corpus(school_count: usize, athletes_per_school: usize) -> Corpus {
         distinct_events: HashSet::new(),
     };
     for index in 0..school_count {
-        add_school(&mut corpus, index, athletes_per_school);
+        add_school(&mut corpus, index, athletes_per_school)?;
     }
-    corpus
+    Ok(corpus)
 }
 
-fn add_school(corpus: &mut Corpus, index: usize, athletes_per_school: usize) {
+fn add_school(corpus: &mut Corpus, index: usize, athletes_per_school: usize) -> TestResult {
+    let season = SchoolYear::new(2025).ok_or("invalid fixture season")?;
     let name = format!("E2E School {index}");
     let (mut school, school_id) = CanonicalSchool::new(
         UsJurisdiction::Wisconsin,
@@ -63,16 +69,11 @@ fn add_school(corpus: &mut Corpus, index: usize, athletes_per_school: usize) {
     );
     school.evidence.push(evidence());
     let team = CanonicalTeam {
-        id: CanonicalTeam::mint(
-            &school_id,
-            Sport::OutdoorTrack,
-            Gender::Mixed,
-            SchoolYear::new(2025).expect("2025 is a school year"),
-        ),
+        id: CanonicalTeam::mint(&school_id, Sport::OutdoorTrack, Gender::Mixed, season),
         school: school_id.clone(),
         sport: Sport::OutdoorTrack,
         gender: Gender::Mixed,
-        school_year: SchoolYear::new(2025).expect("2025 is a season"),
+        school_year: season,
         level: None,
         source_identities: Vec::new(),
         evidence: vec![evidence()],
@@ -92,8 +93,9 @@ fn add_school(corpus: &mut Corpus, index: usize, athletes_per_school: usize) {
     corpus.teams.push(team);
     corpus.meets.push(meet);
     for slot in 0..athletes_per_school {
-        add_athlete(corpus, index, slot, &school_id, &team_id, &meet_id);
+        add_athlete(corpus, index, slot, &school_id, &team_id, &meet_id)?;
     }
+    Ok(())
 }
 
 fn add_athlete(
@@ -103,7 +105,7 @@ fn add_athlete(
     school_id: &SchoolId,
     team_id: &census_domain::model::TeamId,
     meet_id: &census_domain::model::MeetId,
-) {
+) -> TestResult {
     let gender = if (index + slot).is_multiple_of(2) {
         Gender::Boys
     } else {
@@ -122,8 +124,8 @@ fn add_athlete(
     );
     athlete.sports.push(Sport::OutdoorTrack);
     athlete.observed_grades.push(ObservedGrade {
-        grade: Grade::new(11).unwrap(),
-        school_year: SchoolYear::new(2025).expect("2025 is a season"),
+        grade: Grade::new(11).ok_or("invalid fixture grade")?,
+        school_year: SchoolYear::new(2025).ok_or("invalid fixture season")?,
         source: SourceRef::id(SOURCE_ID),
     });
     athlete.evidence.push(evidence());
@@ -139,7 +141,7 @@ fn add_athlete(
     for attempt in 0..2 {
         let source_key = format!("e2e-{index}-{slot}-{attempt}");
         let id = CanonicalPerformance::mint(&athlete.id, meet_id, &kind, MEET_DATE, &source_key);
-        let seconds = 130.0 + f64::from(u32::try_from(index + slot).unwrap()) / 10.0;
+        let seconds = 130.0 + f64::from(u32::try_from(index + slot)?) / 10.0;
         corpus.performances.push(CanonicalPerformance {
             id,
             athlete: athlete.id.clone(),
@@ -148,14 +150,14 @@ fn add_athlete(
             meet: meet_id.clone(),
             date: MEET_DATE.to_string(),
             mark: Mark::TimeSeconds(
-                CentiSeconds::try_from_seconds_f64(seconds).expect("fixture is in range"),
+                CentiSeconds::try_from_seconds_f64(seconds).ok_or("invalid fixture time")?,
             ),
             wind_mps: None,
-            place: Some(u16::try_from(attempt + 1).unwrap()),
+            place: Some(u16::try_from(attempt + 1)?),
             heat: None,
             round: None,
             timing: Some(TimingMethod::Fat),
-            observed_grade: Some(Grade::new(11).unwrap()),
+            observed_grade: Some(Grade::new(11).ok_or("invalid fixture grade")?),
             evidence: vec![evidence()],
             source_key,
             source_athlete: Some(source.clone()),
@@ -164,38 +166,36 @@ fn add_athlete(
     }
     corpus.events.push(event);
     corpus.athletes.push(athlete);
+    Ok(())
 }
 
-fn count_of(counts: &[(String, usize)], table: &str) -> usize {
+fn count_of(counts: &[(String, usize)], table: &str) -> TestResult<usize> {
     counts
         .iter()
         .find(|(name, _)| name == table)
         .map(|(_, count)| *count)
-        .unwrap_or_else(|| panic!("consolidate reported no count for {table}"))
+        .ok_or_else(|| format!("consolidate reported no count for {table}").into())
 }
 
-fn assert_observation_counts(stats: &StoreStats) {
+fn assert_observation_counts(stats: &StoreStats) -> TestResult {
     let count = |table: &str| {
         stats
             .tables
             .iter()
             .find(|(name, _)| name == table)
             .map(|(_, count)| *count)
-            .unwrap_or(0)
+            .map_or(0, |value| value)
     };
-    assert_eq!(count("schools"), 2, "two school observations");
-    assert_eq!(count("athletes"), 1);
-    assert_eq!(
-        count("performances"),
-        0,
-        "a table with no writes counts zero"
-    );
-    assert_eq!(
-        stats.tables.len(),
-        Table::ALL.len(),
-        "every table is reported"
-    );
-    assert_eq!(stats.observations, 3);
+    check!(eq; count("schools"), 2, "two school observations");
+    check!(eq; count("athletes"), 1);
+    check!(eq; count("performances"),
+    0,
+    "a table with no writes counts zero");
+    check!(eq; stats.tables.len(),
+    Table::ALL.len(),
+    "every table is reported");
+    check!(eq; stats.observations, 3);
+    Ok(())
 }
 
 #[path = "fjall_restate_e2e/report_chain.rs"]

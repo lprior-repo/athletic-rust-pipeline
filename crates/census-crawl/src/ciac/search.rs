@@ -33,7 +33,7 @@ pub async fn resolve_schools(
         results.push(extract);
     }
 
-    let limit = options.limit.unwrap_or(usize::MAX);
+    let limit = options.limit.map_or(usize::MAX, |value| value);
     if results.len() > limit {
         results.truncate(limit);
     }

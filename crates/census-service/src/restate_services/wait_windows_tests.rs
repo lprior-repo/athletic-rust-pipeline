@@ -3,6 +3,8 @@ mod wait_windows_tests {
     use super::*;
     use std::cell::{Cell, RefCell};
 
+    type TestResult<E = Box<dyn std::error::Error>> = Result<(), E>;
+
     struct ScriptedWindows {
         cut_short_at: Option<u32>,
         calls: Cell<u32>,
@@ -32,64 +34,94 @@ mod wait_windows_tests {
         }
     }
 
-    #[tokio::test]
-    async fn a_zero_second_window_waits_once_per_window() {
+    #[test]
+    fn a_zero_second_window_waits_once_per_window() -> TestResult {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
         let waits = ScriptedWindows::new(None);
         let (observed, interrupted) = Sweep::wait_windows_with(&waits, 3, 0).await;
 
-        assert_eq!(observed, 3, "all three windows are observed");
-        assert!(
+        check!(eq; observed, 3, "all three windows are observed");
+        check!(
             !interrupted,
             "no signal arrived, so nothing was interrupted"
         );
-        assert_eq!(
+        check!(eq;
             waits.windows_waited(),
             vec![0, 0, 0],
             "every window is waited out, even at zero seconds"
         );
+        Ok(())
+            })
     }
 
-    #[tokio::test]
-    async fn an_arrived_signal_cuts_the_first_window_short() {
+    #[test]
+    fn an_arrived_signal_cuts_the_first_window_short() -> TestResult {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
         let waits = ScriptedWindows::new(Some(0));
         let (observed, interrupted) = Sweep::wait_windows_with(&waits, 5, 10).await;
 
-        assert_eq!(observed, 0);
-        assert!(interrupted);
-        assert_eq!(
+        check!(eq; observed, 0);
+        check!(interrupted);
+        check!(eq;
             waits.windows_waited().len(),
             1,
             "the sweep stops inside the first window"
         );
+        Ok(())
+            })
     }
 
-    #[tokio::test]
-    async fn a_signal_mid_sweep_keeps_the_windows_observed_so_far() {
+    #[test]
+    fn a_signal_mid_sweep_keeps_the_windows_observed_so_far() -> TestResult {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
         let waits = ScriptedWindows::new(Some(2));
         let (observed, interrupted) = Sweep::wait_windows_with(&waits, 5, 30).await;
 
-        assert_eq!(observed, 2);
-        assert!(interrupted);
-        assert_eq!(waits.windows_waited(), vec![30, 30, 30]);
+        check!(eq; observed, 2);
+        check!(interrupted);
+        check!(eq; waits.windows_waited(), vec![30, 30, 30]);
+        Ok(())
+            })
     }
 
-    #[tokio::test]
-    async fn all_windows_elapse_without_a_signal() {
+    #[test]
+    fn all_windows_elapse_without_a_signal() -> TestResult {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
         let waits = ScriptedWindows::new(None);
         let (observed, interrupted) = Sweep::wait_windows_with(&waits, 3, 42).await;
 
-        assert_eq!(observed, 3);
-        assert!(!interrupted);
-        assert_eq!(waits.windows_waited(), vec![42, 42, 42]);
+        check!(eq; observed, 3);
+        check!(!interrupted);
+        check!(eq; waits.windows_waited(), vec![42, 42, 42]);
+        Ok(())
+            })
     }
 
-    #[tokio::test]
-    async fn zero_windows_waits_for_nothing() {
+    #[test]
+    fn zero_windows_waits_for_nothing() -> TestResult {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
         let waits = ScriptedWindows::new(None);
         let (observed, interrupted) = Sweep::wait_windows_with(&waits, 0, 5).await;
 
-        assert_eq!(observed, 0);
-        assert!(!interrupted);
-        assert!(waits.windows_waited().is_empty());
+        check!(eq; observed, 0);
+        check!(!interrupted);
+        check!(waits.windows_waited().is_empty());
+        Ok(())
+            })
     }
 }

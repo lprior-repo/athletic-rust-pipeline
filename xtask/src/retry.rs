@@ -91,7 +91,7 @@ pub(crate) fn parse_attempts(token: &str) -> Option<u64> {
     let digits = SUFFIXES
         .iter()
         .find_map(|suffix| token.strip_suffix(suffix))
-        .unwrap_or(token);
+        .map_or(token, core::convert::identity);
     let normalised = digits.replace('_', "");
     let (radix, digits) = match normalised.get(..2) {
         Some("0x") | Some("0X") => (16, normalised.get(2..)?),

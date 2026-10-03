@@ -85,43 +85,55 @@ mod tests {
         assert!(resident_bytes().is_some_and(|bytes| bytes > 0));
     }
 
-    #[tokio::test(start_paused = true)]
-    async fn a_reading_over_budget_trips_the_watcher() {
-        let over_budget = Arc::new(Notify::new());
-        let reader = || Some(64 * 1024 * 1024 * 1024_u64);
-        let (_stop, stopping) = watch::channel(false);
-        let watcher = tokio::spawn(watch_memory_with(
-            reader,
-            48 * 1024 * 1024 * 1024,
-            Duration::from_millis(1),
-            Arc::clone(&over_budget),
-            stopping,
-        ));
-        tokio::time::timeout(Duration::from_secs(5), over_budget.notified())
-            .await
-            .expect("the guard trips when the reading passes the budget");
-        watcher.await.expect("the watcher joins after tripping");
+    #[test]
+    fn a_reading_over_budget_trips_the_watcher() -> Result<(), Box<dyn std::error::Error>> {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .start_paused(true)
+            .build()?
+            .block_on(async {
+                let over_budget = Arc::new(Notify::new());
+                let reader = || Some(64 * 1024 * 1024 * 1024_u64);
+                let (_stop, stopping) = watch::channel(false);
+                let watcher = tokio::spawn(watch_memory_with(
+                    reader,
+                    48 * 1024 * 1024 * 1024,
+                    Duration::from_millis(1),
+                    Arc::clone(&over_budget),
+                    stopping,
+                ));
+                tokio::time::timeout(Duration::from_secs(5), over_budget.notified()).await?;
+                watcher.await?;
+                Ok(())
+            })
     }
 
-    #[tokio::test(start_paused = true)]
-    async fn a_reading_within_budget_never_trips() {
-        let over_budget = Arc::new(Notify::new());
-        let reader = || Some(1024_u64);
-        let budget = 48 * 1024 * 1024 * 1024;
-        let (_stop, stopping) = watch::channel(false);
-        let watcher = tokio::spawn(watch_memory_with(
-            reader,
-            budget,
-            Duration::from_millis(1),
-            Arc::clone(&over_budget),
-            stopping,
-        ));
-        assert!(
-            tokio::time::timeout(Duration::from_secs(30), over_budget.notified())
-                .await
-                .is_err(),
-            "a process inside its budget is left alone"
-        );
-        watcher.abort();
+    #[test]
+    fn a_reading_within_budget_never_trips() -> Result<(), Box<dyn std::error::Error>> {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .start_paused(true)
+            .build()?
+            .block_on(async {
+                let over_budget = Arc::new(Notify::new());
+                let reader = || Some(1024_u64);
+                let budget = 48 * 1024 * 1024 * 1024;
+                let (_stop, stopping) = watch::channel(false);
+                let watcher = tokio::spawn(watch_memory_with(
+                    reader,
+                    budget,
+                    Duration::from_millis(1),
+                    Arc::clone(&over_budget),
+                    stopping,
+                ));
+                check!(
+                    tokio::time::timeout(Duration::from_secs(30), over_budget.notified())
+                        .await
+                        .is_err(),
+                    "a process inside its budget is left alone"
+                );
+                watcher.abort();
+                Ok(())
+            })
     }
 }

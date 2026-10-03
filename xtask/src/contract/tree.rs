@@ -91,7 +91,10 @@ pub(super) fn documentation() -> Result<Check> {
         let path = root.join(index);
         let text = fs::read_to_string(&path)
             .with_context(|| format!("reading {}", paths::relative(&path)))?;
-        let directory = path.parent().unwrap_or(root.as_path()).to_path_buf();
+        let directory = path
+            .parent()
+            .map_or(root.as_path(), core::convert::identity)
+            .to_path_buf();
         for reference in docs::references(&text) {
             checked = checked.saturating_add(1);
             if !directory.join(&reference).exists() {
@@ -136,22 +139,17 @@ fn object_keys(report: &Value, field: &str) -> BTreeSet<String> {
     report
         .get(field)
         .and_then(Value::as_object)
-        .map(|object| object.keys().cloned().collect())
-        .unwrap_or_default()
+        .map(|object| object.keys().cloned().collect()).map_or(Default::default(), core::convert::identity)
 }
 
 fn array_strings(report: &Value, field: &str) -> BTreeSet<String> {
-    report
-        .get(field)
-        .and_then(Value::as_array)
-        .map(|array| {
-            array
-                .iter()
-                .filter_map(Value::as_str)
-                .map(str::to_string)
-                .collect()
-        })
-        .unwrap_or_default()
+    report.get(field).and_then(Value::as_array).map(|array| {
+        array
+            .iter()
+            .filter_map(Value::as_str)
+            .map(str::to_string)
+            .collect()
+    }).map_or(Default::default(), core::convert::identity)
 }
 
 #[cfg(test)]

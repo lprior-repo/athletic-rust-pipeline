@@ -113,7 +113,11 @@ impl SummaryEvent {
     }
 
     pub fn is_relay(&self) -> bool {
-        let entry_class = self.entry_class.as_deref().unwrap_or_default().trim();
+        let entry_class = self
+            .entry_class
+            .as_deref()
+            .map_or(Default::default(), core::convert::identity)
+            .trim();
         entry_class.eq_ignore_ascii_case("relay")
             || self
                 .family

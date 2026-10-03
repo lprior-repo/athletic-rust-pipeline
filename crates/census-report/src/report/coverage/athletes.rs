@@ -1,4 +1,4 @@
-use super::state::{bucket_mut, in_cohort, jurisdiction_of, Bucket, BucketMap, PerfTally};
+use super::state::{bucket_mut, in_requested_year, jurisdiction_of, Bucket, BucketMap, PerfTally};
 use super::JurisdictionCoverage;
 use census_domain::model::{
     CanonicalAthlete, CanonicalPerformance, Confidence, Gender, Mark, Sport,
@@ -17,7 +17,7 @@ pub(super) fn classify<'a>(
 ) -> usize {
     let mut off_cohort = 0_usize;
     for athlete in athletes {
-        if !in_cohort(athlete, grad_year) {
+        if !in_requested_year(athlete, grad_year) {
             bump(&mut off_cohort);
             continue;
         }
@@ -48,7 +48,7 @@ fn tally(bucket: &mut Bucket, athlete: &CanonicalAthlete) {
     } else {
         bump(&mut row.grad_unresolved);
     }
-    if has_conflicting_grade(athlete) {
+    if athlete.has_cohort_conflict() {
         bump(&mut row.identity_conflicts);
     }
     for sport in [Sport::OutdoorTrack, Sport::IndoorTrack, Sport::CrossCountry] {
@@ -118,13 +118,6 @@ fn distinct_namespaces(athlete: &CanonicalAthlete) -> usize {
     namespaces.len()
 }
 
-fn has_conflicting_grade(athlete: &CanonicalAthlete) -> bool {
-    athlete
-        .observed_grades
-        .iter()
-        .any(|observation| observation.grad_year() != Some(athlete.grad_year))
-}
-
 pub(super) fn tally_performances<'a>(
     performances: &'a [CanonicalPerformance],
     athlete_ids: &HashSet<&str>,
@@ -177,7 +170,7 @@ pub(super) fn classify_performances(
             .saturating_add(orphan.unmapped_event);
     }
     for athlete in athletes {
-        if !in_cohort(athlete, grad_year) {
+        if !in_requested_year(athlete, grad_year) {
             continue;
         }
         let Some(tally) = tallies.get(athlete.id.as_str()) else {

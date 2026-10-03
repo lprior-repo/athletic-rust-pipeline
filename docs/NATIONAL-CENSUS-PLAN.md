@@ -338,8 +338,8 @@ PASS. The release requirement retains 12 mandatory proof kernels; the current
 [xtask](../xtask/README.md) wrapper enumerates eight names, so that narrower invocation does not
 establish the twelve-kernel requirement. [tools/gate.sh](../tools/gate.sh) and xtask own proof verdict
 taxonomy, property/fuzz/mutation/security/async gates and command procedures;
-`xtask`'s perf commands own measured benchmark baselines. License enforcement is excluded by owner
-direction, not advisory, security, provenance or cargo-vet checks.
+`xtask`'s perf commands own measured benchmark baselines. License enforcement and cargo-vet are
+excluded by owner direction; advisory, security and provenance checks remain required.
 
 The current blocking themes are end-to-end durable stage integration, evidence/receipt atomicity,
 identity/cohort/contact correctness, exact mark precision and affiliation, complete source obligations,

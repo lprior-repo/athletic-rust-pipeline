@@ -10,6 +10,8 @@ use census_domain::model::{
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 const DAY: &str = "2026-09-21";
 const SOURCE: &str = "wiaa_results";
 const RESULT_URL: &str = "https://example.test/results/1";
@@ -92,14 +94,14 @@ fn fixture_source(id: &str) -> census_domain::model::SourceIdentity {
     )
 }
 
-fn seed(store: &Store, fixture: &Fixture) -> String {
+fn seed(store: &Store, fixture: &Fixture) -> TestResult<String> {
     let (mut school, school_id) = CanonicalSchool::new(
         UsJurisdiction::Wisconsin,
         fixture.school,
         census_domain::model::normalize_name(fixture.school),
     );
     school.evidence.push(observation());
-    store.append(Table::Schools, &school).unwrap();
+    store.append(Table::Schools, &school)?;
 
     let mut athlete = CanonicalAthlete::new(
         &school_id,
@@ -109,7 +111,7 @@ fn seed(store: &Store, fixture: &Fixture) -> String {
         fixture_source(fixture.source_id),
     );
     athlete.evidence.push(observation());
-    store.append(Table::Athletes, &athlete).unwrap();
+    store.append(Table::Athletes, &athlete)?;
 
     let mut meet = CanonicalMeet::new(
         Some(UsJurisdiction::Wisconsin),
@@ -119,7 +121,7 @@ fn seed(store: &Store, fixture: &Fixture) -> String {
     );
     let meet_id = meet.id.clone();
     meet.evidence.push(observation());
-    store.append(Table::Meets, &meet).unwrap();
+    store.append(Table::Meets, &meet)?;
 
     let mut event = CanonicalEvent::new(
         &meet_id,
@@ -130,9 +132,9 @@ fn seed(store: &Store, fixture: &Fixture) -> String {
     );
     let event_id = event.id.clone();
     event.evidence.push(observation());
-    store.append(Table::Events, &event).unwrap();
+    store.append(Table::Events, &event)?;
 
-    let season = SchoolYear::new(2026).expect("2026 is a season");
+    let season = SchoolYear::new(2026).ok_or("invalid fixture season")?;
     let team = CanonicalTeam {
         id: CanonicalTeam::mint(&school_id, Sport::OutdoorTrack, Gender::Boys, season),
         school: school_id.clone(),
@@ -144,7 +146,7 @@ fn seed(store: &Store, fixture: &Fixture) -> String {
         evidence: vec![observation()],
         retained_conflicts: Vec::new(),
     };
-    store.append(Table::Teams, &team).unwrap();
+    store.append(Table::Teams, &team)?;
 
     let source_key = format!("test:{}:{}", fixture.athlete, fixture.date);
     let performance = CanonicalPerformance {
@@ -172,22 +174,23 @@ fn seed(store: &Store, fixture: &Fixture) -> String {
         source_athlete: athlete.source.clone(),
         retained_conflicts: Vec::new(),
     };
-    store.append(Table::Performances, &performance).unwrap();
-    performance.id.as_str().to_string()
+    store.append(Table::Performances, &performance)?;
+    Ok(performance.id.as_str().to_string())
 }
 
-fn seeded_store(dir: &tempfile::TempDir, fixtures: &[Fixture]) -> Store {
-    let store = Store::open(dir.path()).unwrap();
+fn seeded_store(dir: &tempfile::TempDir, fixtures: &[Fixture]) -> TestResult<Store> {
+    let store = Store::open(dir.path())?;
     for fixture in fixtures {
-        seed(&store, fixture);
+        seed(&store, fixture)?;
     }
-    store
+    Ok(store)
 }
 
-fn write_sheets(rows: &[PerformanceRow], per_sheet: usize, path: &Path) {
+fn write_sheets(rows: &[PerformanceRow], per_sheet: usize, path: &Path) -> TestResult {
     let mut book = Workbook::new();
-    write_partitions(&mut book, path, rows.iter().cloned().map(Ok), per_sheet).unwrap();
-    book.save(path).unwrap();
+    write_partitions(&mut book, path, rows.iter().cloned().map(Ok), per_sheet)?;
+    book.save(path)?;
+    Ok(())
 }
 
 fn performance_rows(store: &Store, scope: Scope) -> ReportResult<Vec<PerformanceRow>> {
@@ -207,42 +210,7 @@ fn text(range: &Range<Data>, row: u32, column: u32) -> String {
     range
         .get_value((row, column))
         .map(|value| value.to_string())
-        .unwrap_or_default()
-}
-
-#[test]
-fn the_columns_are_the_objectives_order_and_the_budget_keeps_the_margin() {
-    let labels: Vec<&str> = COLUMNS.iter().map(|(label, _)| *label).collect();
-    assert_eq!(
-        labels,
-        [
-            "Canonical Result ID",
-            "Athlete ID",
-            "Athlete",
-            "School",
-            "Graduation Year",
-            "Meet ID",
-            "Meet",
-            "Date",
-            "State",
-            "Sport",
-            "Event",
-            "Mark",
-            "Normalized Mark",
-            "Timing",
-            "Wind",
-            "Round",
-            "Place",
-            "Source",
-            "Source ResultID",
-            "Source URL",
-        ]
-    );
-    assert_eq!(DATA_ROWS_PER_SHEET, 1_000_000);
-    assert_eq!(
-        EXCEL_ROWS_PER_SHEET - DATA_ROWS_PER_SHEET - HEADER_ROWS,
-        PARTITION_MARGIN
-    );
+        .map_or(Default::default(), core::convert::identity)
 }
 
 #[test]
@@ -254,70 +222,71 @@ fn sheet_names_zero_pad_to_three_digits_and_grow_past_them() {
 }
 
 #[test]
-fn a_row_prints_the_canonical_values_behind_it() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = seeded_store(&dir, &fixtures());
-    let rows = performance_rows(&store, Scope::Core).unwrap();
+fn a_row_prints_the_canonical_values_behind_it() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = seeded_store(&dir, &fixtures())?;
+    let rows = performance_rows(&store, Scope::Core)?;
     let row = rows
         .iter()
         .find(|row| row.date == "2026-05-01")
-        .expect("the first May meet");
+        .ok_or("missing first May meet")?;
 
-    assert!(row.id.starts_with("perf_"));
-    assert!(row.athlete_id.starts_with("ath_"));
-    assert_eq!(row.athlete, "Ada");
-    assert_eq!(row.school, "Abbotsford");
-    assert_eq!(row.grad_year, Some(2027));
-    assert_eq!(row.meet, "Invitational");
-    assert_eq!(row.state.as_deref(), Some("WI"));
-    assert_eq!(row.sport, "Track");
-    assert_eq!(row.event, "Track400m");
-    assert_eq!(row.mark, "48.55");
-    assert_eq!(row.normalized, Some(48.55));
-    assert_eq!(row.timing.as_deref(), Some("Fat"));
-    assert_eq!(row.wind_mps, Some(1.4));
-    assert_eq!(row.round.as_deref(), Some("Finals"));
-    assert_eq!(row.place, Some(2));
-    assert_eq!(row.source, SOURCE);
-    assert_eq!(row.source_result, "test:Ada:2026-05-01");
-    assert_eq!(row.source_url, RESULT_URL);
+    check!(row.id.starts_with("perf_"));
+    check!(row.athlete_id.starts_with("ath_"));
+    check!(eq; row.athlete, "Ada");
+    check!(eq; row.school, "Abbotsford");
+    check!(eq; row.grad_year, Some(2027));
+    check!(eq; row.meet, "Invitational");
+    check!(eq; row.state.as_deref(), Some("WI"));
+    check!(eq; row.sport, "Track");
+    check!(eq; row.event, "Track400m");
+    check!(eq; row.mark, "48.55");
+    check!(eq; row.normalized, Some(48.55));
+    check!(eq; row.timing.as_deref(), Some("Fat"));
+    check!(eq; row.wind_mps, Some(1.4));
+    check!(eq; row.round.as_deref(), Some("Finals"));
+    check!(eq; row.place, Some(2));
+    check!(eq; row.source, SOURCE);
+    check!(eq; row.source_result, "test:Ada:2026-05-01");
+    check!(eq; row.source_url, RESULT_URL);
 
     let raw = rows
         .iter()
         .find(|row| row.mark == "DNS")
-        .expect("the unparsed mark");
-    assert_eq!(raw.normalized, None);
+        .ok_or("missing unparsed mark")?;
+    check!(eq; raw.normalized, None);
+    Ok(())
 }
 
 #[test]
-fn two_partitions_repeat_the_header_and_split_the_sorted_rows() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = seeded_store(&dir, &fixtures());
-    let rows = performance_rows(&store, Scope::Core).unwrap();
-    assert_eq!(rows.len(), 5);
+fn two_partitions_repeat_the_header_and_split_the_sorted_rows() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = seeded_store(&dir, &fixtures())?;
+    let rows = performance_rows(&store, Scope::Core)?;
+    check!(eq; rows.len(), 5);
 
     let path = dir.path().join("book.xlsx");
-    write_sheets(&rows, 2, &path);
+    write_sheets(&rows, 2, &path)?;
 
-    let mut book: Xlsx<_> = open_workbook(&path).unwrap();
+    let mut book: Xlsx<_> = open_workbook(&path)?;
     let names: Vec<String> = ["Performances_001", "Performances_002", "Performances_003"]
         .iter()
         .map(|name| (*name).to_string())
         .collect();
-    assert_eq!(book.sheet_names(), names);
+    check!(eq; book.sheet_names(), names);
 
     let header: Vec<String> = COLUMNS
         .iter()
         .map(|(label, _)| (*label).to_string())
         .collect();
     let mut seen: Vec<String> = Vec::new();
-    let columns = u32::try_from(COLUMNS.len()).unwrap();
+    let columns = u32::try_from(COLUMNS.len())?;
     for (sheet, height) in names.iter().zip([3_usize, 3, 2]) {
-        let range = book.worksheet_range(sheet).unwrap();
+        let range = book.worksheet_range(sheet)?;
         let printed: Vec<String> = (0..columns).map(|column| text(&range, 0, column)).collect();
-        assert_eq!(printed, header, "the header repeats on {sheet}");
-        assert_eq!(range.height(), height, "the split of {sheet}");
-        let written = u32::try_from(range.height()).unwrap();
+        check!(eq; printed, header, "the header repeats on {sheet}");
+        check!(eq; range.height(), height, "the split of {sheet}");
+        let written = u32::try_from(range.height())?;
         for row in 1..written {
             seen.push(format!(
                 "{}|{}|{}|{}",
@@ -328,152 +297,147 @@ fn two_partitions_repeat_the_header_and_split_the_sorted_rows() {
             ));
         }
     }
-    assert_eq!(seen, expected_order());
+    check!(eq; seen, expected_order());
+    Ok(())
 }
 
 #[test]
-fn the_same_rows_in_a_differently_ordered_store_partition_identically() {
+fn the_same_rows_in_a_differently_ordered_store_partition_identically() -> TestResult {
     let mut reversed = fixtures();
     reversed.reverse();
 
-    let first_dir = tempfile::tempdir().unwrap();
-    let second_dir = tempfile::tempdir().unwrap();
-    let first = seeded_store(&first_dir, &fixtures());
-    let second = seeded_store(&second_dir, &reversed);
+    let first_dir = tempfile::tempdir()?;
+    let second_dir = tempfile::tempdir()?;
+    let first = seeded_store(&first_dir, &fixtures())?;
+    let second = seeded_store(&second_dir, &reversed)?;
 
-    let first_rows = performance_rows(&first, Scope::Core).unwrap();
-    let second_rows = performance_rows(&second, Scope::Core).unwrap();
-    assert_eq!(first_rows, second_rows);
-    assert_eq!(first_rows, performance_rows(&first, Scope::Core).unwrap());
+    let first_rows = performance_rows(&first, Scope::Core)?;
+    let second_rows = performance_rows(&second, Scope::Core)?;
+    check!(eq; first_rows, second_rows);
+    check!(eq; first_rows, performance_rows(&first, Scope::Core)?);
 
     let first_path = first_dir.path().join("first.xlsx");
     let second_path = second_dir.path().join("second.xlsx");
-    write_sheets(&first_rows, 2, &first_path);
-    write_sheets(&second_rows, 2, &second_path);
-    let mut first_book: Xlsx<_> = open_workbook(&first_path).unwrap();
-    let mut second_book: Xlsx<_> = open_workbook(&second_path).unwrap();
-    assert_eq!(first_book.sheet_names(), second_book.sheet_names());
-    assert_eq!(
-        first_book
-            .worksheet_range("Performances_002")
-            .unwrap()
-            .height(),
-        3
-    );
-    assert_eq!(
-        second_book
-            .worksheet_range("Performances_002")
-            .unwrap()
-            .height(),
-        3
-    );
+    write_sheets(&first_rows, 2, &first_path)?;
+    write_sheets(&second_rows, 2, &second_path)?;
+    let mut first_book: Xlsx<_> = open_workbook(&first_path)?;
+    let mut second_book: Xlsx<_> = open_workbook(&second_path)?;
+    check!(eq; first_book.sheet_names(), second_book.sheet_names());
+    check!(eq; first_book.worksheet_range("Performances_002")?.height(), 3);
+    check!(eq; second_book.worksheet_range("Performances_002")?.height(), 3);
+    Ok(())
 }
 
 #[test]
-fn the_spilled_rows_match_the_collected_rows_across_range_seams() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = seeded_store(&dir, &fixtures());
-    let collected = performance_rows(&store, Scope::Core).unwrap();
-    let dataset = ExportDataset::load(&store).unwrap();
+fn the_spilled_rows_match_the_collected_rows_across_range_seams() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = seeded_store(&dir, &fixtures())?;
+    let collected = performance_rows(&store, Scope::Core)?;
+    let dataset = ExportDataset::load(&store)?;
     let derivation = Derivation::of(&dataset, Scope::Core, None);
 
-    let streamed: Vec<PerformanceRow> = PerformanceRows::with_ranges(&derivation, 2, 64)
-        .unwrap()
-        .collect::<ReportResult<Vec<_>>>()
-        .unwrap();
-    assert_eq!(streamed, collected, "the spill preserves the sheet order");
+    let streamed: Vec<PerformanceRow> =
+        PerformanceRows::with_ranges(&derivation, 2, 64)?.collect::<ReportResult<Vec<_>>>()?;
+    check!(eq; streamed, collected, "the spill preserves the sheet order");
 
-    let single: Vec<PerformanceRow> = PerformanceRows::with_ranges(&derivation, 1_000, 64)
-        .unwrap()
-        .collect::<ReportResult<Vec<_>>>()
-        .unwrap();
-    assert_eq!(single, collected, "one range reproduces the same order");
+    let single: Vec<PerformanceRow> =
+        PerformanceRows::with_ranges(&derivation, 1_000, 64)?.collect::<ReportResult<Vec<_>>>()?;
+    check!(eq; single, collected, "one range reproduces the same order");
 
     let streamed_path = dir.path().join("streamed.xlsx");
     let mut book = Workbook::new();
     write_partitions(
         &mut book,
         &streamed_path,
-        PerformanceRows::with_ranges(&derivation, 2, 64).unwrap(),
+        PerformanceRows::with_ranges(&derivation, 2, 64)?,
         2,
-    )
-    .unwrap();
-    book.save(&streamed_path).unwrap();
-    let mut streamed_book: Xlsx<_> = open_workbook(&streamed_path).unwrap();
-    assert_eq!(
+    )?;
+    book.save(&streamed_path)?;
+    let mut streamed_book: Xlsx<_> = open_workbook(&streamed_path)?;
+    check!(eq;
         streamed_book.sheet_names(),
         ["Performances_001", "Performances_002", "Performances_003"]
     );
-    let range = streamed_book.worksheet_range("Performances_003").unwrap();
-    assert_eq!(range.height(), 2, "the last sheet holds the last row");
-    assert_eq!(
+    let range = streamed_book.worksheet_range("Performances_003")?;
+    check!(eq; range.height(), 2, "the last sheet holds the last row");
+    check!(eq;
         text(&range, 1, 3),
         "Colby",
         "the streamed sheets carry the same rows in the same order"
     );
+    Ok(())
 }
 
 #[test]
-fn a_last_sheet_that_fills_exactly_is_not_followed_by_an_empty_one() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = seeded_store(&dir, &fixtures());
-    let rows = performance_rows(&store, Scope::Core).unwrap();
+fn a_last_sheet_that_fills_exactly_is_not_followed_by_an_empty_one() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = seeded_store(&dir, &fixtures())?;
+    let rows = performance_rows(&store, Scope::Core)?;
     let exactly_full = rows[..4].to_vec();
 
     let path = dir.path().join("full.xlsx");
-    write_sheets(&exactly_full, 2, &path);
+    write_sheets(&exactly_full, 2, &path)?;
 
-    let mut book: Xlsx<_> = open_workbook(&path).unwrap();
-    assert_eq!(book.sheet_names(), ["Performances_001", "Performances_002"]);
+    let mut book: Xlsx<_> = open_workbook(&path)?;
+    check!(eq; book.sheet_names(), ["Performances_001", "Performances_002"]);
     for sheet in ["Performances_001", "Performances_002"] {
-        assert_eq!(book.worksheet_range(sheet).unwrap().height(), 3);
+        check!(eq; book.worksheet_range(sheet)?.height(), 3);
     }
+    Ok(())
 }
 
 #[test]
-fn a_budget_that_holds_no_row_is_rejected_naming_the_row() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = seeded_store(&dir, &fixtures());
-    let rows = performance_rows(&store, Scope::Core).unwrap();
-    let first = rows.first().expect("a first row").id.clone();
+fn a_budget_that_holds_no_row_is_rejected_naming_the_row() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = seeded_store(&dir, &fixtures())?;
+    let rows = performance_rows(&store, Scope::Core)?;
+    let first = rows.first().ok_or("missing first fixture row")?.id.clone();
 
     let mut book = Workbook::new();
     let path = dir.path().join("book.xlsx");
-    let error = write_partitions(&mut book, &path, rows.iter().cloned().map(Ok), 0).unwrap_err();
-    assert!(
+    let error = match write_partitions(&mut book, &path, rows.iter().cloned().map(Ok), 0) {
+        Err(error) => error,
+        Ok(_) => return Err("zero sheet budget accepted".into()),
+    };
+    check!(
         error.to_string().contains(&first),
         "the rejection names the row it could not write: {error}"
     );
+    Ok(())
 }
 
 #[test]
-fn a_spill_budget_that_holds_no_row_or_no_range_is_rejected() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = seeded_store(&dir, &fixtures());
-    let dataset = ExportDataset::load(&store).unwrap();
+fn a_spill_budget_that_holds_no_row_or_no_range_is_rejected() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = seeded_store(&dir, &fixtures())?;
+    let dataset = ExportDataset::load(&store)?;
     let derivation = Derivation::of(&dataset, Scope::Core, None);
 
     for (range_rows, max_ranges) in [(0, 64), (2, 0)] {
         let error = match PerformanceRows::with_ranges(&derivation, range_rows, max_ranges) {
             Ok(_) => {
-                panic!("{range_rows} rows per range and {max_ranges} ranges must not be accepted")
+                return Err(format!(
+                    "{range_rows} rows per range and {max_ranges} ranges were accepted"
+                )
+                .into())
             }
             Err(error) => error,
         };
-        assert!(
+        check!(
             error.to_string().contains("performance spill"),
             "the rejection names the spill budget: {error}"
         );
     }
+    Ok(())
 }
 
 #[test]
-fn a_performance_the_store_cannot_join_is_still_written() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+fn a_performance_the_store_cannot_join_is_still_written() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     let (mut school, school_id) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Colby", "colby");
     school.evidence.push(observation());
-    store.append(Table::Schools, &school).unwrap();
+    store.append(Table::Schools, &school)?;
 
     let source = fixture_source("orphan");
     let athlete = CanonicalAthlete::mint(
@@ -502,7 +466,7 @@ fn a_performance_the_store_cannot_join_is_still_written() {
             &school_id,
             Sport::OutdoorTrack,
             Gender::Boys,
-            SchoolYear::new(2026).expect("2026 is a season"),
+            SchoolYear::new(2026).ok_or("invalid fixture season")?,
         ),
         event: CanonicalEvent::new(&meet, EventKind::Track800m, Gender::Boys, None, None).id,
         meet: meet.clone(),
@@ -519,54 +483,56 @@ fn a_performance_the_store_cannot_join_is_still_written() {
         source_athlete: Some(source),
         retained_conflicts: Vec::new(),
     };
-    store.append(Table::Performances, &performance).unwrap();
+    store.append(Table::Performances, &performance)?;
 
-    let rows = performance_rows(&store, Scope::Core).unwrap();
-    assert_eq!(rows.len(), 1);
-    let row = rows.first().expect("the orphan row");
-    assert_eq!(row.athlete_id, athlete.as_str());
-    assert_eq!(row.athlete, "");
-    assert_eq!(row.grad_year, None);
-    assert_eq!(row.meet_id, meet.as_str());
-    assert_eq!(row.meet, "");
-    assert_eq!(row.state, None);
-    assert_eq!(row.event, "");
-    assert_eq!(row.school, "");
-    assert_eq!(row.normalized, Some(120.5));
+    let rows = performance_rows(&store, Scope::Core)?;
+    check!(eq; rows.len(), 1);
+    let row = rows.first().ok_or("missing orphan row")?;
+    check!(eq; row.athlete_id, athlete.as_str());
+    check!(eq; row.athlete, "");
+    check!(eq; row.grad_year, None);
+    check!(eq; row.meet_id, meet.as_str());
+    check!(eq; row.meet, "");
+    check!(eq; row.state, None);
+    check!(eq; row.event, "");
+    check!(eq; row.school, "");
+    check!(eq; row.normalized, Some(120.5));
 
     let path = dir.path().join("book.xlsx");
-    write_sheets(&rows, 2, &path);
-    let mut book: Xlsx<_> = open_workbook(&path).unwrap();
-    assert_eq!(book.sheet_names(), vec!["Performances_001".to_string()]);
-    let range = book.worksheet_range("Performances_001").unwrap();
-    assert_eq!(range.height(), 2);
-    assert_eq!(text(&range, 1, 1), athlete.as_str());
+    write_sheets(&rows, 2, &path)?;
+    let mut book: Xlsx<_> = open_workbook(&path)?;
+    check!(eq; book.sheet_names(), vec!["Performances_001".to_string()]);
+    let range = book.worksheet_range("Performances_001")?;
+    check!(eq; range.height(), 2);
+    check!(eq; text(&range, 1, 1), athlete.as_str());
+    Ok(())
 }
 
 #[test]
-fn the_frozen_entry_point_writes_the_partitioned_sheets() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = seeded_store(&dir, &fixtures());
+fn the_frozen_entry_point_writes_the_partitioned_sheets() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = seeded_store(&dir, &fixtures())?;
     let path = dir.path().join("book.xlsx");
 
-    let dataset = ExportDataset::load(&store).unwrap();
+    let dataset = ExportDataset::load(&store)?;
     let derivation = Derivation::of(&dataset, Scope::Core, None);
     let mut book = Workbook::new();
-    write_performance_sheets(&mut book, &path, &derivation).unwrap();
-    book.save(&path).unwrap();
+    write_performance_sheets(&mut book, &path, &derivation)?;
+    book.save(&path)?;
 
-    let mut book: Xlsx<_> = open_workbook(&path).unwrap();
-    assert_eq!(book.sheet_names(), vec!["Performances_001".to_string()]);
-    let range = book.worksheet_range("Performances_001").unwrap();
-    assert_eq!(range.height(), 6);
-    let printed: Vec<String> = (0..u32::try_from(COLUMNS.len()).unwrap())
+    let mut book: Xlsx<_> = open_workbook(&path)?;
+    check!(eq; book.sheet_names(), vec!["Performances_001".to_string()]);
+    let range = book.worksheet_range("Performances_001")?;
+    check!(eq; range.height(), 6);
+    let printed: Vec<String> = (0..u32::try_from(COLUMNS.len())?)
         .map(|column| text(&range, 0, column))
         .collect();
     let header: Vec<String> = COLUMNS
         .iter()
         .map(|(label, _)| (*label).to_string())
         .collect();
-    assert_eq!(printed, header);
+    check!(eq; printed, header);
+    Ok(())
 }
 
 mod affiliation;

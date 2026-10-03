@@ -77,7 +77,9 @@ fn roster_rows(html: &str) -> Vec<&str> {
         return Vec::new();
     };
     let header = match (table.find("<thead"), table.find("</thead>")) {
-        (Some(open), Some(close)) if open < close => table.get(open..close).unwrap_or_default(),
+        (Some(open), Some(close)) if open < close => table
+            .get(open..close)
+            .map_or(Default::default(), core::convert::identity),
         _ => return Vec::new(),
     };
     let header_text = text_of(header).to_ascii_uppercase();
@@ -99,7 +101,7 @@ fn cell_texts(row: &str) -> Vec<String> {
             .and_then(|open| cell.get(open.checked_add(1)?..))
             .and_then(|body| body.get(..body.find("</td>")?))
             .map(text_of)
-            .unwrap_or_default();
+            .map_or(Default::default(), core::convert::identity);
         cells.push(text);
     }
     cells
@@ -111,7 +113,7 @@ fn selected_season(html: &str) -> Option<Season> {
     let select = after
         .find("</select>")
         .and_then(|end| after.get(..end))
-        .unwrap_or(after);
+        .map_or(after, |value| value);
     let selected = select
         .split("<option")
         .skip(1)

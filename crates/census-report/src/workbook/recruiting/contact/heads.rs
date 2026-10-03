@@ -92,7 +92,7 @@ impl Heads {
         }
         self.scopes
             .get(&(slot, Gender::Mixed))
-            .unwrap_or(&Outcome::Unknown)
+            .map_or(&Outcome::Unknown, |value| value)
     }
 
     pub(super) fn into_disagreements(self) -> Vec<Disagreement> {

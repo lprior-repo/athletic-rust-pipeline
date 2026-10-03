@@ -8,10 +8,11 @@ use crate::model::{
 use serde::{Serialize, Serializer};
 use std::collections::BTreeMap;
 
-fn assert_matches<T: Serialize + ?Sized>(value: &T) {
-    let canonical = serialized_bytes(value).expect("canonical json write");
-    let reference = serde_json::to_vec(value).expect("serde json write");
-    assert_eq!(canonical, reference);
+fn assert_matches<T: Serialize + ?Sized>(value: &T) -> Result<(), Box<dyn std::error::Error>> {
+    let canonical = serialized_bytes(value)?;
+    let reference = serde_json::to_vec(value)?;
+    check!(eq; canonical, reference);
+    Ok(())
 }
 
 #[derive(Serialize)]
@@ -122,87 +123,92 @@ fn case_fixture() -> ReviewCase {
 }
 
 #[test]
-fn scalars_match_serde_json() {
-    assert_matches(&());
-    assert_matches(&true);
-    assert_matches(&false);
-    assert_matches(&i8::MIN);
-    assert_matches(&i16::MIN);
-    assert_matches(&i32::MIN);
-    assert_matches(&i64::MIN);
-    assert_matches(&i128::MIN);
-    assert_matches(&u8::MAX);
-    assert_matches(&u16::MAX);
-    assert_matches(&u32::MAX);
-    assert_matches(&u64::MAX);
-    assert_matches(&u128::MAX);
-    assert_matches(&0_i64);
-    assert_matches(&1.0_f64);
-    assert_matches(&1.5_f64);
-    assert_matches(&-0.0_f64);
-    assert_matches(&f64::MAX);
-    assert_matches(&f32::MIN_POSITIVE);
-    assert_matches(&'q');
-    assert_matches(&'é');
-    assert_matches(&None::<u8>);
-    assert_matches(&Some(7_u8));
-    assert_matches(&UnitStruct);
+fn scalars_match_serde_json() -> Result<(), Box<dyn std::error::Error>> {
+    assert_matches(&())?;
+    assert_matches(&true)?;
+    assert_matches(&false)?;
+    assert_matches(&i8::MIN)?;
+    assert_matches(&i16::MIN)?;
+    assert_matches(&i32::MIN)?;
+    assert_matches(&i64::MIN)?;
+    assert_matches(&i128::MIN)?;
+    assert_matches(&u8::MAX)?;
+    assert_matches(&u16::MAX)?;
+    assert_matches(&u32::MAX)?;
+    assert_matches(&u64::MAX)?;
+    assert_matches(&u128::MAX)?;
+    assert_matches(&0_i64)?;
+    assert_matches(&1.0_f64)?;
+    assert_matches(&1.5_f64)?;
+    assert_matches(&-0.0_f64)?;
+    assert_matches(&f64::MAX)?;
+    assert_matches(&f32::MIN_POSITIVE)?;
+    assert_matches(&'q')?;
+    assert_matches(&'é')?;
+    assert_matches(&None::<u8>)?;
+    assert_matches(&Some(7_u8))?;
+    assert_matches(&UnitStruct)?;
+    Ok(())
 }
 
 #[test]
-fn non_finite_floats_match_serde_json_null() {
-    assert_matches(&f64::NAN);
-    assert_matches(&f64::INFINITY);
-    assert_matches(&f64::NEG_INFINITY);
-    assert_matches(&f32::NAN);
+fn non_finite_floats_match_serde_json_null() -> Result<(), Box<dyn std::error::Error>> {
+    assert_matches(&f64::NAN)?;
+    assert_matches(&f64::INFINITY)?;
+    assert_matches(&f64::NEG_INFINITY)?;
+    assert_matches(&f32::NAN)?;
+    Ok(())
 }
 
 #[test]
-fn strings_escape_like_serde_json() {
-    assert_matches("plain");
-    assert_matches("quote \" and backslash \\");
-    assert_matches("\u{0}\u{1}\u{1f}\u{7f}");
-    assert_matches("tab\t newline\n return\r backspace\u{8} form\u{c}");
-    assert_matches("emoji 🏃 and accent é");
-    assert_matches("");
+fn strings_escape_like_serde_json() -> Result<(), Box<dyn std::error::Error>> {
+    assert_matches("plain")?;
+    assert_matches("quote \" and backslash \\")?;
+    assert_matches("\u{0}\u{1}\u{1f}\u{7f}")?;
+    assert_matches("tab\t newline\n return\r backspace\u{8} form\u{c}")?;
+    assert_matches("emoji 🏃 and accent é")?;
+    assert_matches("")?;
+    Ok(())
 }
 
 #[test]
-fn sequences_match_serde_json() {
-    assert_matches(&Vec::<u8>::new());
-    assert_matches(&vec![1_i32, 2, 3]);
-    assert_matches(&(1_u8, "two", false));
-    assert_matches(&TupleStruct(true, 'x'));
-    assert_matches(&vec![vec![1_u8], vec![]]);
-    assert_matches(&vec![Shape::Unit, Shape::Newtype(3), Shape::Tuple(4, 5)]);
-    assert_matches(&RawHolder { payload: Raw });
+fn sequences_match_serde_json() -> Result<(), Box<dyn std::error::Error>> {
+    assert_matches(&Vec::<u8>::new())?;
+    assert_matches(&vec![1_i32, 2, 3])?;
+    assert_matches(&(1_u8, "two", false))?;
+    assert_matches(&TupleStruct(true, 'x'))?;
+    assert_matches(&vec![vec![1_u8], vec![]])?;
+    assert_matches(&vec![Shape::Unit, Shape::Newtype(3), Shape::Tuple(4, 5)])?;
+    assert_matches(&RawHolder { payload: Raw })?;
+    Ok(())
 }
 
 #[test]
-fn maps_and_structs_match_serde_json() {
+fn maps_and_structs_match_serde_json() -> Result<(), Box<dyn std::error::Error>> {
     let mut map = BTreeMap::new();
     map.insert("alpha".to_string(), 1_i64);
     map.insert("beta".to_string(), -2);
-    assert_matches(&map);
+    assert_matches(&map)?;
     assert_matches(&Inner {
         a: 9,
         b: Some("value".to_string()),
         c: vec![-1, 2],
-    });
-    assert_matches(&Newtype(u64::MAX));
+    })?;
+    assert_matches(&Newtype(u64::MAX))?;
     assert_matches(&Skipped {
         present: 1,
         absent: None,
-    });
-    assert_matches(&Flattened { id: 4, extra: map });
+    })?;
+    assert_matches(&Flattened { id: 4, extra: map })?;
     assert_matches(&Shape::Struct {
         x: -1,
         y: "s".to_string(),
-    });
+    })?;
+    Ok(())
 }
 
 #[test]
-fn nested_domain_shaped_payload_matches_serde_json() {
+fn nested_domain_shaped_payload_matches_serde_json() -> Result<(), Box<dyn std::error::Error>> {
     let payload = (
         Some(Shape::Tuple(1, 2)),
         vec![Inner {
@@ -212,37 +218,39 @@ fn nested_domain_shaped_payload_matches_serde_json() {
         }],
         "tail",
     );
-    assert_matches(&payload);
+    assert_matches(&payload)?;
+    Ok(())
 }
 
 #[test]
-fn production_payloads_match_serde_json() {
+fn production_payloads_match_serde_json() -> Result<(), Box<dyn std::error::Error>> {
     let verdicts = vec![verdict_fixture()];
     let cases = vec![case_fixture()];
-    assert_matches(&athlete_fixture());
-    assert_matches(&verdicts);
-    assert_matches(&cases);
-    assert_matches(&(&verdicts, &cases));
-    assert_matches(&observations_fixture());
+    assert_matches(&athlete_fixture())?;
+    assert_matches(&verdicts)?;
+    assert_matches(&cases)?;
+    assert_matches(&(&verdicts, &cases))?;
+    assert_matches(&observations_fixture())?;
+    Ok(())
 }
 
 #[test]
-fn production_payload_digests_are_pinned() {
+fn production_payload_digests_are_pinned() -> Result<(), Box<dyn std::error::Error>> {
     let athlete = athlete_fixture();
     let verdicts = vec![verdict_fixture()];
     let cases = vec![case_fixture()];
     let observations = observations_fixture();
     let observed = [
-        athlete_identity_digest(&athlete).expect("athlete digest"),
-        identity_verdict_digest(&verdicts[0]).expect("verdict digest"),
-        serialized_digest(&(&verdicts, &cases)).expect("checkpoint digest"),
-        serialized_digest(&observations).expect("observation digest"),
+        athlete_identity_digest(&athlete)?,
+        identity_verdict_digest(&verdicts[0])?,
+        serialized_digest(&(&verdicts, &cases))?,
+        serialized_digest(&observations)?,
     ];
     let reference = [
-        reference_digest(&athlete),
-        reference_digest(&verdicts[0]),
-        reference_digest(&(&verdicts, &cases)),
-        reference_digest(&observations),
+        reference_digest(&athlete)?,
+        reference_digest(&verdicts[0])?,
+        reference_digest(&(&verdicts, &cases))?,
+        reference_digest(&observations)?,
     ];
     let expected = [
         "49c7a2d4124542842ca8b5acc540e3062924f6c05e0d9974e135c8c3889ecd87",
@@ -250,34 +258,37 @@ fn production_payload_digests_are_pinned() {
         "a4ac19817ef38ce5f66fda073cdff45ebec129c4091c75e2d8c76ab0274a3eed",
         "f579424dec5f0bd09e2524b5bbc0bd4016e3ba865b4c26cc8dda419ec1385702",
     ];
-    assert_eq!(observed, reference);
-    assert_eq!(observed, expected.map(str::to_string));
+    check!(eq; observed, reference);
+    check!(eq; observed, expected.map(str::to_string));
+    Ok(())
 }
 
-fn reference_digest<T: Serialize + ?Sized>(value: &T) -> String {
+fn reference_digest<T: Serialize + ?Sized>(value: &T) -> Result<String, serde_json::Error> {
     use sha2::{Digest, Sha256};
-    let bytes = serde_json::to_vec(value).expect("serde json write");
-    format!("{:x}", Sha256::digest(&bytes))
+    let bytes = serde_json::to_vec(value)?;
+    Ok(format!("{:x}", Sha256::digest(&bytes)))
 }
 
 #[test]
-fn digest_is_sha256_of_canonical_bytes() {
+fn digest_is_sha256_of_canonical_bytes() -> Result<(), Box<dyn std::error::Error>> {
     use sha2::{Digest, Sha256};
     let value = Inner {
         a: 5,
         b: Some("name".to_string()),
         c: vec![1, 2, 3],
     };
-    let bytes = serialized_bytes(&value).expect("canonical json write");
-    let digest = serialized_digest(&value).expect("canonical json digest");
-    assert_eq!(digest, format!("{:x}", Sha256::digest(&bytes)));
-    assert_eq!(digest.len(), 64);
-    assert!(digest.bytes().all(|byte| byte.is_ascii_hexdigit()));
+    let bytes = serialized_bytes(&value)?;
+    let digest = serialized_digest(&value)?;
+    check!(eq; digest, format!("{:x}", Sha256::digest(&bytes)));
+    check!(eq; digest.len(), 64);
+    check!(digest.bytes().all(|byte| byte.is_ascii_hexdigit()));
+    Ok(())
 }
 
 #[test]
-fn unsupported_keys_are_refused() {
+fn unsupported_keys_are_refused() -> Result<(), Box<dyn std::error::Error>> {
     let nested = BTreeMap::from([(vec![1_u8, 2], 3_i64)]);
-    assert!(serialized_bytes(&nested).is_err());
-    assert!(serde_json::to_vec(&nested).is_err());
+    check!(serialized_bytes(&nested).is_err());
+    check!(serde_json::to_vec(&nested).is_err());
+    Ok(())
 }

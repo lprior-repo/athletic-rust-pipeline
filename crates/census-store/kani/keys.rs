@@ -33,17 +33,27 @@ fn check_observation_key_round_trip() {
 
     for table in Table::ALL {
         let key = build_key(table, &id_bytes, sequence);
-        let (table_back, id_back, sequence_back) =
-            split_observation_key(&key).expect("a key we built must split");
-
-        assert_eq!(table.file().as_bytes(), table_back, "table did not survive the round trip");
-        assert_eq!(id_back, id_bytes.as_slice(), "id did not survive the round trip");
-        assert_eq!(sequence_back, sequence, "sequence did not survive the round trip");
+        let parsed = split_observation_key(&key);
+        assert_eq!(
+            parsed.map(|(table, _, _)| table),
+            Some(table.file().as_bytes()),
+            "table did not survive the round trip"
+        );
+        assert_eq!(
+            parsed.map(|(_, id, _)| id),
+            Some(id_bytes.as_slice()),
+            "id did not survive the round trip"
+        );
+        assert_eq!(
+            parsed.map(|(_, _, sequence)| sequence),
+            Some(sequence),
+            "sequence did not survive the round trip"
+        );
     }
 
     kani::cover!(
-        id_bytes.iter().all(|&b| b == 0),
-        "all-zero id is reachable"
+        id_bytes.iter().all(|&byte| byte == b'0'),
+        "all-zero hexadecimal id is reachable"
     );
     kani::cover!(id_bytes.len() == ID_BYTES * 2, "max-length id is reachable");
     kani::cover!(sequence == 0, "zero sequence is reachable");
@@ -58,12 +68,13 @@ fn check_observation_key_null_byte_id() {
 
     for table in Table::ALL {
         let key = observation_key(table, id, sequence);
-        let (table_back, id_back, sequence_back) =
-            split_observation_key(&key).expect("a key we built must split");
-
-        assert_eq!(table.file().as_bytes(), table_back);
-        assert_eq!(id_back, id.as_bytes());
-        assert_eq!(sequence_back, sequence);
+        let parsed = split_observation_key(&key);
+        assert_eq!(
+            parsed.map(|(table, _, _)| table),
+            Some(table.file().as_bytes())
+        );
+        assert_eq!(parsed.map(|(_, id, _)| id), Some(id.as_bytes()));
+        assert_eq!(parsed.map(|(_, _, sequence)| sequence), Some(sequence));
     }
 }
 #[kani::proof]
@@ -73,12 +84,17 @@ fn check_observation_key_zero_and_max_sequence() {
 
     for sequence in [0_u64, 1, 0x100, 0xffff_ffff, u64::MAX - 1, u64::MAX] {
         let key = observation_key(Table::Schools, id, sequence);
-        let (table_back, id_back, sequence_back) =
-            split_observation_key(&key).expect("a key we built must split");
-
-        assert_eq!(Table::Schools.file().as_bytes(), table_back);
-        assert_eq!(id_back, id.as_bytes());
-        assert_eq!(sequence_back, sequence, "sequence was misparsed");
+        let parsed = split_observation_key(&key);
+        assert_eq!(
+            parsed.map(|(table, _, _)| table),
+            Some(Table::Schools.file().as_bytes())
+        );
+        assert_eq!(parsed.map(|(_, id, _)| id), Some(id.as_bytes()));
+        assert_eq!(
+            parsed.map(|(_, _, sequence)| sequence),
+            Some(sequence),
+            "sequence was misparsed"
+        );
     }
 }
 
@@ -93,12 +109,9 @@ fn check_split_key_reads_fixed_width_tail() {
             0,
             "split accepted a key with no separator before the tail"
         );
-        let tail: [u8; 8] = bytes[RAW_KEY_BYTES - 8..]
-            .try_into()
-            .expect("eight bytes remain after the separator");
         assert_eq!(
-            u64::from_be_bytes(tail),
-            sequence,
+            sequence.to_be_bytes().as_slice(),
+            &bytes[RAW_KEY_BYTES - 8..],
             "the sequence must be the fixed-width big-endian tail"
         );
         assert_eq!(
@@ -134,9 +147,8 @@ fn check_observation_id_bounds() {
         let parsed = observation_id(row.as_bytes());
 
         if (1..=MAX_ID_BYTES).contains(&len) {
-            assert_eq!(
-                parsed.expect("an in-bound id must parse"),
-                id.as_str(),
+            assert!(
+                matches!(parsed.as_deref(), Ok(value) if value == id.as_str()),
                 "an id of {len} bytes must be accepted verbatim"
             );
         } else {

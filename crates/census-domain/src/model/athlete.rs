@@ -74,6 +74,8 @@ pub struct CanonicalAthlete {
     pub gender: Gender,
     pub sports: Vec<Sport>,
     pub observed_grades: Vec<ObservedGrade>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub published_graduations: Vec<PublishedGraduation>,
     pub public_profile_urls: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source: Option<SourceIdentity>,
@@ -160,6 +162,7 @@ impl CanonicalAthlete {
             gender,
             sports: Vec::new(),
             observed_grades: Vec::new(),
+            published_graduations: Vec::new(),
             public_profile_urls: Vec::new(),
             source: Some(source),
             source_links: Vec::new(),
@@ -194,6 +197,7 @@ impl CanonicalAthlete {
             gender,
             sports: Vec::new(),
             observed_grades: Vec::new(),
+            published_graduations: Vec::new(),
             public_profile_urls: Vec::new(),
             source: Some(source),
             source_links: Vec::new(),
@@ -203,18 +207,26 @@ impl CanonicalAthlete {
     }
 
     pub fn has_cohort_conflict(&self) -> bool {
-        self.observed_grades
+        self.published_graduations
             .iter()
-            .any(|observation| observation.grad_year() != Some(self.grad_year))
+            .any(|observation| observation.grad_year != self.grad_year)
+            || self
+                .observed_grades
+                .iter()
+                .any(|observation| observation.grad_year() != Some(self.grad_year))
     }
 
     pub fn derived_cohort_confidence(&self) -> Option<Confidence> {
         if self.has_cohort_conflict() {
             Some(Confidence::LOW)
         } else if self
-            .observed_grades
+            .published_graduations
             .iter()
-            .any(|observation| observation.grad_year() == Some(self.grad_year))
+            .any(|observation| observation.grad_year == self.grad_year)
+            || self
+                .observed_grades
+                .iter()
+                .any(|observation| observation.grad_year() == Some(self.grad_year))
         {
             Some(Confidence::HIGH)
         } else {
@@ -233,6 +245,8 @@ struct PersistedAthlete {
     gender: Gender,
     sports: Vec<Sport>,
     observed_grades: Vec<ObservedGrade>,
+    #[serde(default)]
+    published_graduations: Vec<PublishedGraduation>,
     public_profile_urls: Vec<String>,
     #[serde(default)]
     source: Option<SourceIdentity>,
@@ -265,6 +279,7 @@ impl From<PersistedAthlete> for CanonicalAthlete {
             gender: persisted.gender,
             sports: persisted.sports,
             observed_grades: persisted.observed_grades,
+            published_graduations: persisted.published_graduations,
             public_profile_urls: persisted.public_profile_urls,
             source,
             source_links,

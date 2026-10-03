@@ -3,15 +3,6 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
 
-fn tests_dir() -> Result<PathBuf> {
-    let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let dir = manifest.join("tests");
-    if !dir.is_dir() {
-        bail!("missing test directory at {}", dir.display());
-    }
-    Ok(dir)
-}
-
 pub fn fixtures_dir() -> Result<PathBuf> {
     Ok(crawl_crate_dir()?.join("tests").join("fixtures"))
 }
@@ -23,10 +14,6 @@ fn crawl_crate_dir() -> Result<PathBuf> {
         bail!("missing crawl crate at {}", dir.display());
     }
     Ok(dir)
-}
-
-pub fn golden_dir() -> Result<PathBuf> {
-    Ok(tests_dir()?.join("golden"))
 }
 
 pub fn fixture(source: &str, file: &str) -> Result<String> {
@@ -57,50 +44,4 @@ pub fn fixtures(source: &str) -> Result<Vec<PathBuf>> {
 pub fn file_name(path: &Path) -> Result<String> {
     let name = path.file_name().context("fixture path has no file name")?;
     Ok(name.to_string_lossy().into_owned())
-}
-
-pub fn assert_golden<T: serde::Serialize>(name: &str, value: &T) -> Result<()> {
-    let json = serde_json::to_string_pretty(value)
-        .with_context(|| format!("serializing golden value {name}"))?;
-    assert_golden_json(name, &json)
-}
-
-pub fn assert_golden_json(name: &str, json: &str) -> Result<()> {
-    let dir = golden_dir()?;
-    let path = dir.join(format!("{name}.json"));
-    if std::env::var_os("GOLDEN_UPDATE").is_some() {
-        fs::create_dir_all(&dir).with_context(|| format!("creating {}", dir.display()))?;
-        fs::write(&path, json.as_bytes())
-            .with_context(|| format!("writing golden {}", path.display()))?;
-        return Ok(());
-    }
-    let expected = fs::read_to_string(&path).with_context(|| {
-        format!(
-            "missing golden {} — seed it once with GOLDEN_UPDATE=1 and review the diff",
-            path.display()
-        )
-    })?;
-    let expected_value: serde_json::Value = serde_json::from_str(&expected)
-        .with_context(|| format!("parsing expected source facts for {name}"))?;
-    let actual_value: serde_json::Value = serde_json::from_str(json)
-        .with_context(|| format!("parsing actual source facts for {name}"))?;
-    if expected_value != actual_value {
-        let expected_lines = expected.lines().count();
-        let actual_lines = json.lines().count();
-        let first_diff = expected
-            .lines()
-            .zip(json.lines())
-            .position(|(left, right)| left != right);
-        bail!(
-            "golden mismatch for {name}: expected {expected_lines} lines, got {actual_lines}, \
-             first difference at line {}",
-            first_diff.map_or(0, |index| index.saturating_add(1))
-        );
-    }
-    Ok(())
-}
-
-pub fn digest<T: serde::Serialize>(value: &T) -> Result<String> {
-    census_domain::model::serialized_digest(value)
-        .map_err(|error| anyhow::anyhow!("serializing a value for its digest: {error}"))
 }

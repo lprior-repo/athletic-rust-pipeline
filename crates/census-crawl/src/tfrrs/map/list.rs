@@ -86,7 +86,7 @@ impl<'a> Absorb<'a> {
             return false;
         }
         self.stats.rows_relay = self.stats.rows_relay.saturating_add(1);
-        let members = u64::try_from(row.relay_members.len()).unwrap_or(u64::MAX);
+        let members = u64::try_from(row.relay_members.len()).map_or(u64::MAX, |value| value);
         self.stats.relay_members = self.stats.relay_members.saturating_add(members);
         true
     }

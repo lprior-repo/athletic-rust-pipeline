@@ -70,7 +70,7 @@ fn print_entry(name: &str, value: &SampleEntry) {
         }
         SampleEntry::CountGtRows(digest, sport, count, rows, pager) => {
             let d = digest_head(digest);
-            let sport_str = sport.as_deref().unwrap_or("None");
+            let sport_str = sport.as_deref().map_or("None", core::convert::identity);
             let e1 = d;
             let e2 = sport_str;
             let e3 = count.to_string();

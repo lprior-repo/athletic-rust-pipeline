@@ -128,7 +128,7 @@ impl<'a> SheetWriter<'a> {
             .iter()
             .map(Vec::len)
             .max()
-            .unwrap_or(1)
+            .map_or(1, |value| value)
             .saturating_sub(1);
         for (index, cells) in rows.iter().enumerate() {
             self.write_row(index, cells)?;

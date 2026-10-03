@@ -3,14 +3,13 @@ use census_domain::model::{CanonicalCoach, CanonicalSchool, CoachRole, Gender, S
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 const CSV: &str = include_str!("../../tests/fixtures/coach_contacts_sample.csv");
 
-fn rows() -> Vec<CoachContactRow> {
+fn rows() -> TestResult<Vec<CoachContactRow>> {
     let mut reader = csv::Reader::from_reader(CSV.as_bytes());
-    reader
-        .deserialize::<CoachContactRow>()
-        .map(|row| row.unwrap())
-        .collect()
+    Ok(reader.deserialize::<CoachContactRow>().collect::<Result<_, _>>()?)
 }
 
 #[test]
@@ -51,26 +50,26 @@ fn non_coaching_roles_are_not_imported() {
 }
 
 #[test]
-fn coach_rows_become_canonical_entities_with_evidence() {
-    let rows = rows();
+fn coach_rows_become_canonical_entities_with_evidence() -> TestResult {
+    let rows = rows()?;
     let wiaa = rows
         .iter()
         .find(|row| row.school == "Abbotsford")
-        .expect("fixture row");
-    let entities = row_entities(wiaa, UsJurisdiction::Wisconsin, "2026-09-20").unwrap();
-    assert_eq!(entities.school.state, Some(UsJurisdiction::Wisconsin));
-    assert_eq!(entities.school.city.as_deref(), Some("Abbotsford"));
-    assert_eq!(entities.school.name, "Abbotsford");
-    assert_eq!(entities.coaches.len(), 2);
+        .ok_or("fixture row")?;
+    let entities = row_entities(wiaa, UsJurisdiction::Wisconsin, "2026-09-20")?;
+    check!(eq; entities.school.state, Some(UsJurisdiction::Wisconsin));
+    check!(eq; entities.school.city.as_deref(), Some("Abbotsford"));
+    check!(eq; entities.school.name, "Abbotsford");
+    check!(eq; entities.coaches.len(), 2);
     let coach = entities
         .coaches
         .iter()
         .find(|coach| coach.role == CoachRole::HeadCoach)
-        .unwrap();
-    assert_eq!(coach.name, "JACOB KNAPMILLER");
-    assert_eq!(coach.sport, Some(Sport::OutdoorTrack));
-    assert_eq!(coach.gender, Gender::Boys);
-    assert_eq!(
+        .ok_or("head coach")?;
+    check!(eq; coach.name, "JACOB KNAPMILLER");
+    check!(eq; coach.sport, Some(Sport::OutdoorTrack));
+    check!(eq; coach.gender, Gender::Boys);
+    check!(eq;
         coach.professional_email.as_deref(),
         Some("jknapmiller@abbotsford.k12.wi.us")
     );
@@ -78,67 +77,65 @@ fn coach_rows_become_canonical_entities_with_evidence() {
         .coaches
         .iter()
         .find(|coach| coach.role == CoachRole::AthleticDirector)
-        .unwrap();
-    assert_eq!(ad.sport, None);
-    assert_eq!(
+        .ok_or("athletic director")?;
+    check!(eq; ad.sport, None);
+    check!(eq;
         ad.professional_email.as_deref(),
         Some("alarson@abbotsford.k12.wi.us")
     );
-    assert!(coach.evidence.iter().all(|evidence| evidence
+    check!(coach.evidence.iter().all(|evidence| evidence
         .source
         .url
         .as_deref()
-        .unwrap()
-        .contains("orgID=1")));
+        .is_some_and(|url| url.contains("orgID=1"))));
+    Ok(())
 }
 
 #[test]
-fn import_dedupes_schools_and_ad_rows() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+fn import_dedupes_schools_and_ad_rows() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     let path = dir.path().join("coach-contacts.csv");
-    std::fs::write(&path, CSV).unwrap();
-    let report = import_csv(&store, &path, "2026-09-20").unwrap();
-    assert!(report.rows > 0, "coach rows imported: {}", report.rows);
+    std::fs::write(&path, CSV)?;
+    let report = import_csv(&store, &path, "2026-09-20")?;
+    check!(report.rows > 0, "coach rows imported: {}", report.rows);
 
-    let read_schools = || -> Vec<serde_json::Value> {
-        store
-            .scan::<CanonicalSchool>(Table::Schools)
-            .unwrap()
+    let read_schools = || -> TestResult<Vec<serde_json::Value>> {
+        Ok(store
+            .scan::<CanonicalSchool>(Table::Schools)?
             .into_iter()
-            .map(|v| serde_json::to_value(&v).unwrap())
-            .collect()
+            .map(|v| serde_json::to_value(&v))
+            .collect::<Result<_, _>>()?)
     };
-    let read_coaches = || -> Vec<serde_json::Value> {
-        store
-            .scan::<CanonicalCoach>(Table::Coaches)
-            .unwrap()
+    let read_coaches = || -> TestResult<Vec<serde_json::Value>> {
+        Ok(store
+            .scan::<CanonicalCoach>(Table::Coaches)?
             .into_iter()
-            .map(|v| serde_json::to_value(&v).unwrap())
-            .collect()
+            .map(|v| serde_json::to_value(&v))
+            .collect::<Result<_, _>>()?)
     };
-    let schools = read_schools();
-    let coaches = read_coaches();
+    let schools = read_schools()?;
+    let coaches = read_coaches()?;
 
     let abbotsford = schools
         .iter()
         .filter(|school| school["name"] == "Abbotsford")
         .count();
-    assert_eq!(
+    check!(eq;
         abbotsford, 1,
         "duplicate school rows collapse to one entity"
     );
     let school_names: Vec<String> = schools
         .iter()
-        .map(|school| school["name"].as_str().unwrap().to_string())
-        .collect();
+        .map(|school| Ok(school["name"].as_str().ok_or("school name")?.to_string()))
+        .collect::<TestResult<_>>()?;
     for expected in [
         "Abilene HS",
         "aberdeencentral",
         "Adams Central",
         "Abingdon-Avon High School",
     ] {
-        assert!(
+        check!(
             school_names.iter().any(|name| name == expected),
             "missing school {expected} in {school_names:?}"
         );
@@ -146,22 +143,23 @@ fn import_dedupes_schools_and_ad_rows() {
 
     let coach_names: Vec<String> = coaches
         .iter()
-        .map(|coach| coach["name"].as_str().unwrap().to_string())
-        .collect();
+        .map(|coach| Ok(coach["name"].as_str().ok_or("coach name")?.to_string()))
+        .collect::<TestResult<_>>()?;
     for dropped in ["Kevin Polston", "Omar Bakri", "Mindy Langlois"] {
-        assert!(
+        check!(
             !coach_names.iter().any(|name| name == dropped),
             "non-coaching office staff imported: {dropped}"
         );
     }
-    assert_eq!(
+    check!(eq;
         coach_names.iter().filter(|name| *name == "Bo Beck").count(),
         1,
         "duplicate AD rows collapse: {coach_names:?}"
     );
-    assert!(
+    check!(
         coach_names.iter().any(|name| name == "Barry Mink"),
         "{coach_names:?}"
     );
-    assert!(report.with_email > 0);
+    check!(report.with_email > 0);
+    Ok(())
 }

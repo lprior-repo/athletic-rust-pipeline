@@ -29,7 +29,7 @@ pub use raw::{parse_raw, RawPage};
 pub use raw_issue::{RawGradeIssue, RawGradeIssueKind};
 pub use results::{
     collect as collect_result_sets, is_results_page, read_meet_pages, ListedResultFile, MeetPage,
-    MeetPages, ResultSetOptions, ResultSetRequest, MISMATCH_LIMIT,
+    MeetPages, ResultSetOptions, ResultSetRequest, MISMATCH_LIMIT, RESULT_SET_PHASE,
 };
 pub use roster::{
     RosterOutcome, RosterQuarantine, RosterRejection, RosterRejectionKind, RosterVerdict,

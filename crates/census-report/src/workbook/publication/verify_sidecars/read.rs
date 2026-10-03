@@ -106,7 +106,9 @@ pub(super) fn headers(
         )));
     }
     for (column, name) in expected.iter().enumerate() {
-        let found = record.get(column).unwrap_or_default();
+        let found = record
+            .get(column)
+            .map_or(Default::default(), core::convert::identity);
         if found != *name {
             return Err(defect(format!(
                 "{} header column {column}: expected {name:?}, found {:?}",
@@ -133,7 +135,9 @@ pub(super) fn compare_record(
         )));
     }
     for (column, cell) in cells.iter().enumerate() {
-        let value = found.get(column).unwrap_or_default();
+        let value = found
+            .get(column)
+            .map_or(Default::default(), core::convert::identity);
         cell.compare(path, record, column, value)?;
     }
     Ok(())

@@ -26,10 +26,10 @@ impl<'s> Stage<'s> {
         options: &Options,
     ) -> ReportResult<Self> {
         dataset.ensure_current(store)?;
-        let root = options
-            .out
-            .clone()
-            .unwrap_or_else(|| store.out_dir().join("publication"));
+        let root = match options.out.clone() {
+            Some(value) => value,
+            None => store.out_dir().join("publication"),
+        };
         let lock = lock_publication(&root)?;
         fence(&root, dataset)?;
         lifecycle::sweep(&root, &dataset.lineage.store_identity)?;
