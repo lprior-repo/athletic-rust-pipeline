@@ -23,10 +23,10 @@ pub fn check_report(
         return false;
     }
 
-    let text = std::fs::read_to_string(path).map_or_else(
-        |e| format!("error reading {}: {e}", path.display()),
-        |value| value,
-    );
+    let text = match std::fs::read_to_string(path) {
+        Ok(value) => value,
+        Err(e) => format!("error reading {}: {e}", path.display()),
+    };
 
     let missing: Vec<&str> = section_rees
         .iter()

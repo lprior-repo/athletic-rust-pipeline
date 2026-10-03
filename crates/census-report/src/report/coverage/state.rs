@@ -68,10 +68,7 @@ pub(crate) fn school_state_index<'a>(
 }
 
 pub(crate) fn in_requested_year(athlete: &CanonicalAthlete, grad_year: Option<i16>) -> bool {
-    match grad_year {
-        Some(year) => athlete.grad_year.get() == year,
-        None => true,
-    }
+    grad_year.is_none_or(|year| athlete.grad_year.get() == year)
 }
 
 pub(super) fn share_pct(part: usize, whole: usize) -> u32 {

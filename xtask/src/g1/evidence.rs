@@ -62,32 +62,38 @@ fn failure_key(failure: &Value) -> String {
 }
 
 fn failure_messages(rec: &Value) -> Vec<String> {
-    rec.get("failures").and_then(|v| v.as_array()).map(|arr| {
-        arr.iter()
-            .map(|f| {
-                if let Some(obj) = f.as_object() {
-                    obj.get("message")
-                        .and_then(|v| v.as_str())
-                        .map_or("", core::convert::identity)
-                        .to_string()
-                } else {
-                    f.to_string()
-                }
-            })
-            .collect()
-    }).map_or(Default::default(), core::convert::identity)
+    rec.get("failures")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .map(|f| {
+                    if let Some(obj) = f.as_object() {
+                        obj.get("message")
+                            .and_then(|v| v.as_str())
+                            .map_or("", core::convert::identity)
+                            .to_string()
+                    } else {
+                        f.to_string()
+                    }
+                })
+                .collect()
+        })
+        .map_or(Default::default(), core::convert::identity)
 }
 
 fn pages_with_parsed(rec: &Value) -> Vec<Option<String>> {
-    rec.get("pages").and_then(|v| v.as_array()).map(|arr| {
-        arr.iter()
-            .map(|p| {
-                p.get("parsed")
-                    .and_then(|v| v.as_str())
-                    .map(|s| s.to_string())
-            })
-            .collect()
-    }).map_or(Default::default(), core::convert::identity)
+    rec.get("pages")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .map(|p| {
+                    p.get("parsed")
+                        .and_then(|v| v.as_str())
+                        .map(|s| s.to_string())
+                })
+                .collect()
+        })
+        .map_or(Default::default(), core::convert::identity)
 }
 
 impl EvidenceIndex {
@@ -157,7 +163,7 @@ impl EvidenceIndex {
         let complete = rec
             .get("complete")
             .and_then(|v| v.as_bool())
-            .map_or(false, core::convert::identity);
+            .is_some_and(core::convert::identity);
         self.records.push(EvidenceRecord {
             name: name.to_string(),
             complete,

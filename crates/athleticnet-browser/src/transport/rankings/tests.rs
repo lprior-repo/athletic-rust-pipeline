@@ -99,7 +99,10 @@ mod lane_smoke {
     }
 
     fn var(key: &str, fallback: &str) -> String {
-        std::env::var(key).map_or_else(|_| fallback.to_owned(), |value| value)
+        match std::env::var(key) {
+            Ok(value) => value,
+            Err(_) => fallback.to_owned(),
+        }
     }
 
     fn origin() -> TestResult<url::Url> {

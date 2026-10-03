@@ -24,7 +24,9 @@ impl BrowserLane {
         let parsed = Url::parse(&spec.url).map_err(|source| FetchError::Policy {
             detail: format!("cannot parse browser URL: {source}"),
         })?;
-        let host = parsed.host_str().map_or(Default::default(), core::convert::identity);
+        let host = parsed
+            .host_str()
+            .map_or(Default::default(), core::convert::identity);
         if !super::ADMITTED_BROWSER_ORIGINS.contains(&host) {
             return Err(FetchError::Policy {
                 detail: format!(
@@ -78,7 +80,9 @@ pub fn validate_origin(url: &str) -> Result<(), FetchError> {
     let parsed = url::Url::parse(url).map_err(|source| FetchError::Policy {
         detail: format!("cannot parse browser URL: {source}"),
     })?;
-    let host = parsed.host_str().map_or(Default::default(), core::convert::identity);
+    let host = parsed
+        .host_str()
+        .map_or(Default::default(), core::convert::identity);
     if super::ADMITTED_BROWSER_ORIGINS.contains(&host) {
         Ok(())
     } else {

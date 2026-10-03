@@ -48,7 +48,9 @@ fn existing_school(school: CanonicalSchool, report: &mut AdapterReport) -> Optio
     };
     Some(SearchResult {
         name: school.name,
-        city: school.city.map_or(Default::default(), core::convert::identity),
+        city: school
+            .city
+            .map_or(Default::default(), core::convert::identity),
         ohsaa_id: owner.id.clone(),
     })
 }

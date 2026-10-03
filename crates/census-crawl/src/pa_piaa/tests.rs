@@ -53,10 +53,7 @@ fn compare_with_golden(body: &str, golden_json: &str) -> TestResult {
     let expected = golden_schools(golden_json)?;
     check!(eq; schools.len(), expected.len());
     for (rust, prototype) in schools.iter().zip(&expected) {
-        check!(eq; rust.name, match field(prototype, "name") {
-            Some(value) => value,
-            None => Default::default(),
-        });
+        check!(eq; rust.name, field(prototype, "name").map_or(Default::default(), core::convert::identity));
         check!(eq; rust.street, field(prototype, "address"));
         check!(eq; rust.city, field(prototype, "city"));
         check!(eq; rust.state, field(prototype, "state"));
@@ -68,10 +65,7 @@ fn compare_with_golden(body: &str, golden_json: &str) -> TestResult {
         );
         check!(eq;
             rust.detail_url,
-            match field(prototype, "detail_url") {
-                Some(value) => value,
-                None => Default::default(),
-            },
+            field(prototype, "detail_url").map_or(Default::default(), core::convert::identity),
             "the id names the prototype's own details URL"
         );
     }
@@ -114,10 +108,7 @@ fn details_pages_keep_the_athletic_director_and_no_other_post() -> TestResult {
     );
     check!(eq; page.contacts.len(), expected.len());
     for (rust, prototype) in page.contacts.iter().zip(&expected) {
-        check!(eq; rust.person, match field(prototype, "person") {
-            Some(value) => value,
-            None => Default::default(),
-        });
+        check!(eq; rust.person, field(prototype, "person").map_or(Default::default(), core::convert::identity));
         check!(eq; rust.email, field(prototype, "email"));
     }
     Ok(())

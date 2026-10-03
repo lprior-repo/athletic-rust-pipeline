@@ -54,10 +54,10 @@ pub(super) fn run_qa_reports(args: &QaReportsArgs) -> Result<()> {
             &header_regex,
             &mut problems,
         ) {
-            let text = std::fs::read_to_string(&path).map_or_else(
-                |e| format!("error reading {}: {e}", path.display()),
-                |value| value,
-            );
+            let text = match std::fs::read_to_string(&path) {
+                Ok(value) => value,
+                Err(e) => format!("error reading {}: {e}", path.display()),
+            };
             ok_count = ok_count.saturating_add(1);
             println!("OK {:02} {:<55} {:>7} chars", num, fname, text.len());
         }

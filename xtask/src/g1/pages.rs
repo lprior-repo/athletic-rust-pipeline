@@ -181,7 +181,10 @@ pub(crate) fn scan(
         let blob = fs::read(path)?;
         record_digest_mismatch(digest, &blob, &mut out.digest_mismatch);
 
-        let entries = join.get(digest).cloned().map_or(Default::default(), core::convert::identity);
+        let entries = join
+            .get(digest)
+            .cloned()
+            .map_or(Default::default(), core::convert::identity);
         record_byte_mismatch(digest, &entries, blob.len(), &mut out.byte_mismatch);
 
         let sport = sport_of(&entries);

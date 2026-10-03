@@ -100,8 +100,11 @@ pub fn directory_school(
         return Ok(DirectoryAdmission::MissingShortCode);
     };
     let Some(name) = row_hygiene::sanitize_school(
-        row.name.as_deref().map_or(Default::default(), core::convert::identity),
-    )? else {
+        row.name
+            .as_deref()
+            .map_or(Default::default(), core::convert::identity),
+    )?
+    else {
         return Ok(DirectoryAdmission::DroppedName);
     };
     let (mut school, id) = CanonicalSchool::new(state, name.as_str(), normalize_name(&name));

@@ -29,11 +29,7 @@ pub fn wiaa_directory(corpus: &mut Corpus) -> Result<()> {
     let files = common::fixtures("wiaa")?;
     let letter = files
         .iter()
-        .find(|path| {
-            common::file_name(path)
-                .map(|name| name.starts_with("directory_"))
-                .map_or(false, |value| value)
-        })
+        .find(|path| common::file_name(path).is_ok_and(|name| name.starts_with("directory_")))
         .context("the wiaa corpus carries no directory letter")?;
     let index =
         wiaa::parse_directory_letter(&common::fixture("wiaa", &common::file_name(letter)?)?);

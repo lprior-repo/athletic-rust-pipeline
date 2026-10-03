@@ -126,7 +126,9 @@ pub(super) fn parse_row(line: &str, kind: &EventKind, section: &Section) -> Opti
         let Some(token) = section.numeric_token(&tokens, label) else {
             continue;
         };
-        let tail = line.get(token.end..).map_or(Default::default(), core::convert::identity);
+        let tail = line
+            .get(token.end..)
+            .map_or(Default::default(), core::convert::identity);
         if let Some(parsed) = parse_marks(kind, token.text, tail) {
             marks = Some(parsed);
             break;

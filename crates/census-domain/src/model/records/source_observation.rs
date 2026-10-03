@@ -66,7 +66,10 @@ impl SourceSchoolObservation {
             Self::new(
                 namespace.clone(),
                 identity.id.clone(),
-                identity.url.clone().map_or(Default::default(), core::convert::identity),
+                identity
+                    .url
+                    .clone()
+                    .map_or(Default::default(), core::convert::identity),
                 school.name.clone(),
                 observed_on,
             )

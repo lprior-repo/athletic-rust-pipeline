@@ -110,18 +110,24 @@ pub(super) fn row_cells(line: &str, columns: Columns) -> Cells<'_> {
     let token = mark_token(line, mark_end);
     let team_end = token.map_or(mark_start, |(start, _)| start.min(mark_start).max(team));
     let mark = token.and_then(|(_, token)| mark_shaped(token).then_some(token));
-    let tail = line.get(mark_end..).map_or(Default::default(), core::convert::identity);
+    let tail = line
+        .get(mark_end..)
+        .map_or(Default::default(), core::convert::identity);
     Cells {
-        place: line.get(..name)
+        place: line
+            .get(..name)
             .map_or(Default::default(), core::convert::identity)
             .trim(),
-        name: line.get(name..grade)
+        name: line
+            .get(name..grade)
             .map_or(Default::default(), core::convert::identity)
             .trim(),
-        grade: line.get(grade..team)
+        grade: line
+            .get(grade..team)
             .map_or(Default::default(), core::convert::identity)
             .trim(),
-        team: line.get(team..team_end)
+        team: line
+            .get(team..team_end)
             .map_or(Default::default(), core::convert::identity)
             .trim(),
         heat: mark.and_then(|_| heat_token(tail)),

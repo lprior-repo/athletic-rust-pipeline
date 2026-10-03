@@ -26,10 +26,10 @@ impl BrowserManager {
         {
             return BrowserOutcome::failed(BrowserError::Transport);
         }
-        result.await.map_or_else(
-            |_| BrowserOutcome::failed(BrowserError::Transport),
-            |value| value,
-        )
+        match result.await {
+            Ok(outcome) => outcome,
+            Err(_) => BrowserOutcome::failed(BrowserError::Transport),
+        }
     }
 
     pub fn status(&self) -> BrowserStatus {

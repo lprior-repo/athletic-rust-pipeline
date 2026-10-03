@@ -193,14 +193,8 @@ fn every_primary_contact_becomes_an_athletic_director_row() -> TestResult {
         .iter()
         .map(|row| {
             (
-                match field(row, "school") {
-                    Some(value) => value,
-                    None => Default::default(),
-                },
-                match field(row, "person") {
-                    Some(value) => value,
-                    None => Default::default(),
-                },
+                field(row, "school").map_or(Default::default(), core::convert::identity),
+                field(row, "person").map_or(Default::default(), core::convert::identity),
             )
         })
         .collect();
@@ -233,18 +227,9 @@ fn alvirne_coach_rows_match_the_prototype_on_person_sport_and_role() -> TestResu
         .iter()
         .map(|row| {
             (
-                match field(row, "person") {
-                    Some(value) => value,
-                    None => Default::default(),
-                },
-                match field(row, "sport") {
-                    Some(value) => value,
-                    None => Default::default(),
-                },
-                match field(row, "role") {
-                    Some(value) => value,
-                    None => Default::default(),
-                },
+                field(row, "person").map_or(Default::default(), core::convert::identity),
+                field(row, "sport").map_or(Default::default(), core::convert::identity),
+                field(row, "role").map_or(Default::default(), core::convert::identity),
             )
         })
         .collect();

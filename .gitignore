@@ -8,6 +8,8 @@
 # Build and run artifacts: the Rust target trees and the census store/export roots
 /target/
 /fuzz/target/
+/mutants.out/
+/mutants.out.old/
 /var/
 
 # Huge regenerable trees that must not enter the object store: the scraped external reference dump

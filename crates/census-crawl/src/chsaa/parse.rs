@@ -17,7 +17,9 @@ pub fn parse_directory(body: &str) -> CrawlResult<Vec<MemberSchool>> {
     let start = body.find(anchor).ok_or(CrawlError::Invariant {
         detail: "directory array marker not found".to_string(),
     })?;
-    let from_anchor = body.get(start..).map_or(Default::default(), core::convert::identity);
+    let from_anchor = body
+        .get(start..)
+        .map_or(Default::default(), core::convert::identity);
     let plain = from_anchor.replace("\\\"", "\"");
     let array = extract_balanced_array(&plain)?;
     let schools = parse_school_json(&array)?;

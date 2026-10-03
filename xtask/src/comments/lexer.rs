@@ -46,7 +46,8 @@ impl Iterator for Tokenizer<'_> {
 }
 
 pub(super) fn after(rest: &str, bytes: usize) -> &str {
-    rest.get(bytes..).map_or(Default::default(), core::convert::identity)
+    rest.get(bytes..)
+        .map_or(Default::default(), core::convert::identity)
 }
 
 pub(super) fn take_while(rest: &str, start: usize, predicate: impl Fn(char) -> bool) -> usize {

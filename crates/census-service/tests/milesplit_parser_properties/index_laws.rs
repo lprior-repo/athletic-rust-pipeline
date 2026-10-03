@@ -15,10 +15,10 @@ fn every_meet_of_the_index_names_its_own_numeric_id() -> TestResult {
         check!(
             meet.results_url.starts_with(&format!(
                 "https://{}/meets/{}-",
-                match meet.results_url.split('/').nth(2) {
-                    Some(value) => value,
-                    None => Default::default(),
-                },
+                meet.results_url
+                    .split('/')
+                    .nth(2)
+                    .map_or(Default::default(), core::convert::identity),
                 meet.meet_id
             )),
             "{} does not carry meet id {}",

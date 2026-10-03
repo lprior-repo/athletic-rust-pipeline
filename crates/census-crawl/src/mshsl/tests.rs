@@ -70,10 +70,10 @@ fn listing_row<'a>(rows: &'a [SchoolListRow], slug: &str) -> TestResult<&'a Scho
 fn detail_row(slug: &str, detail: &SchoolDetail) -> SchoolListRow {
     SchoolListRow {
         slug: slug.to_string(),
-        name: match detail.name.clone() {
-            Some(value) => value,
-            None => Default::default(),
-        },
+        name: detail
+            .name
+            .clone()
+            .map_or(Default::default(), core::convert::identity),
         city: None,
     }
 }

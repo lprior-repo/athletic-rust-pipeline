@@ -14,7 +14,9 @@ pub(super) fn refs_in_line(line: &str) -> Vec<String> {
         if inside_string(&chars, position) {
             continue;
         }
-        let rest = chars.get(cursor..).map_or(Default::default(), core::convert::identity);
+        let rest = chars
+            .get(cursor..)
+            .map_or(Default::default(), core::convert::identity);
         if rest.first() == Some(&'{') {
             group_targets(rest, &mut targets);
         } else if let Some(name) = leading_ident(rest) {

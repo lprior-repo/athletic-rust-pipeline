@@ -114,10 +114,7 @@ fn directory_rows_match_the_prototype_golden_field_for_field() -> TestResult {
         let slug = rust.slug.as_deref().ok_or("every golden row has a slug")?;
         check!(eq;
             school_page_url(slug),
-            match field(prototype, "detail_url") {
-                Some(value) => value,
-                None => Default::default(),
-            },
+            field(prototype, "detail_url").map_or(Default::default(), core::convert::identity),
             "the slug names the prototype's own school URL"
         );
     }
@@ -148,10 +145,12 @@ fn school_page_rows_match_the_prototype_golden_after_mapping() -> TestResult {
     let member = cherry_creek()?;
     let (_, school_id) =
         map_directory_row(&member, DIRECTORY_URL, OBSERVED_ON).ok_or("Cherry Creek is a school")?;
-    let url = school_page_url(match member.slug.as_deref() {
-        Some(value) => value,
-        None => Default::default(),
-    });
+    let url = school_page_url(
+        member
+            .slug
+            .as_deref()
+            .map_or(Default::default(), core::convert::identity),
+    );
     let rows = parse_school_page(SCHOOL_PAGE)?;
     let mut rust: BTreeMap<(String, String, String, String), usize> = BTreeMap::new();
     for row in &rows {
@@ -166,22 +165,10 @@ fn school_page_rows_match_the_prototype_golden_after_mapping() -> TestResult {
             || field(row, "sport").as_deref() == Some("CrossCountry")
         {
             let key = (
-                match field(row, "person") {
-                    Some(value) => value,
-                    None => Default::default(),
-                },
-                match field(row, "sport") {
-                    Some(value) => value,
-                    None => Default::default(),
-                },
-                match field(row, "role") {
-                    Some(value) => value,
-                    None => Default::default(),
-                },
-                match field(row, "gender") {
-                    Some(value) => value,
-                    None => Default::default(),
-                },
+                field(row, "person").map_or(Default::default(), core::convert::identity),
+                field(row, "sport").map_or(Default::default(), core::convert::identity),
+                field(row, "role").map_or(Default::default(), core::convert::identity),
+                field(row, "gender").map_or(Default::default(), core::convert::identity),
             );
             *expected.entry(key).or_insert(0) += 1;
         }

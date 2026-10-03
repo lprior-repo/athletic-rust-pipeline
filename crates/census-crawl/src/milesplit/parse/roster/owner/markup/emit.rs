@@ -6,7 +6,8 @@ impl Emitter for Markup {
 
     fn set_last_start_tag(&mut self, tag: Option<&[u8]>) {
         self.last_start_tag.clear();
-        self.last_start_tag.push(tag.map_or(Default::default(), core::convert::identity));
+        self.last_start_tag
+            .push(tag.map_or(Default::default(), core::convert::identity));
     }
 
     fn pop_token(&mut self) -> Option<Self::Token> {

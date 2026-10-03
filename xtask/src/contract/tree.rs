@@ -139,17 +139,22 @@ fn object_keys(report: &Value, field: &str) -> BTreeSet<String> {
     report
         .get(field)
         .and_then(Value::as_object)
-        .map(|object| object.keys().cloned().collect()).map_or(Default::default(), core::convert::identity)
+        .map(|object| object.keys().cloned().collect())
+        .map_or(Default::default(), core::convert::identity)
 }
 
 fn array_strings(report: &Value, field: &str) -> BTreeSet<String> {
-    report.get(field).and_then(Value::as_array).map(|array| {
-        array
-            .iter()
-            .filter_map(Value::as_str)
-            .map(str::to_string)
-            .collect()
-    }).map_or(Default::default(), core::convert::identity)
+    report
+        .get(field)
+        .and_then(Value::as_array)
+        .map(|array| {
+            array
+                .iter()
+                .filter_map(Value::as_str)
+                .map(str::to_string)
+                .collect()
+        })
+        .map_or(Default::default(), core::convert::identity)
 }
 
 #[cfg(test)]

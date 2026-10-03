@@ -14,8 +14,8 @@ pub fn build_meta() -> Result<Meta> {
 }
 
 pub fn cpu_model() -> Result<String> {
-    let content = std::fs::read_to_string("/proc/cpuinfo")
-        .map_or(String::new(), core::convert::identity);
+    let content =
+        std::fs::read_to_string("/proc/cpuinfo").map_or(String::new(), core::convert::identity);
     for line in content.lines() {
         if let Some(model) = line.strip_prefix("model name\t: ") {
             return Ok(model.to_string());

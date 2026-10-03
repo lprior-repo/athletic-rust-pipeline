@@ -186,7 +186,8 @@ impl<'a> Ctx<'a> {
         let Some(sport) = self
             .seasons
             .get(&(
-                row.school_id.map_or(Default::default(), core::convert::identity),
+                row.school_id
+                    .map_or(Default::default(), core::convert::identity),
                 season_id,
             ))
             .copied()

@@ -175,10 +175,10 @@ pub(super) async fn run() -> Result<()> {
 fn init_tracing() {
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env().map_or_else(
-                |_| tracing_subscriber::EnvFilter::new("info"),
-                |value| value,
-            ),
+            match tracing_subscriber::EnvFilter::try_from_default_env() {
+                Ok(value) => value,
+                Err(_) => tracing_subscriber::EnvFilter::new("info"),
+            },
         )
         .with_target(false)
         .init();

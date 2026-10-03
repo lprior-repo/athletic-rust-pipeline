@@ -47,7 +47,9 @@ pub(super) fn raw_string(rest: &str, before_r: usize, hashes: usize) -> (Kind, &
 
 pub(super) fn ident(rest: &str) -> (Kind, &str) {
     let end = take_while(rest, 0, is_ident_continue);
-    let name = rest.get(..end).map_or(Default::default(), core::convert::identity);
+    let name = rest
+        .get(..end)
+        .map_or(Default::default(), core::convert::identity);
     let tail = after(rest, end);
     match name {
         "b" | "c" if tail.starts_with('"') => string(rest, end),

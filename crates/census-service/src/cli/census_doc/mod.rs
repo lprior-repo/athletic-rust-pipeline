@@ -141,10 +141,10 @@ fn make_summary(
     co2027: &[std::collections::HashMap<String, String>],
     recruiting: &[std::collections::HashMap<String, String>],
 ) -> Result<String> {
-    let totals_obj = match report.get("totals").cloned() {
-        Some(value) => value,
-        None => Default::default(),
-    };
+    let totals_obj = report
+        .get("totals")
+        .cloned()
+        .map_or(serde_json::Value::Null, core::convert::identity);
     let summary = serde_json::json!({
         "wrote": out_path.to_string_lossy().to_string(),
         "totals": totals_obj,

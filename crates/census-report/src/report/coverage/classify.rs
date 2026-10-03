@@ -215,11 +215,10 @@ fn publish(mut buckets: BucketMap) -> (Vec<JurisdictionCoverage>, Vec<CoverageGa
         Vec::with_capacity(UsJurisdiction::CENSUS_SCOPE.len().saturating_add(1));
     let mut gap_rows = Vec::new();
     for bucket in jurisdiction_buckets() {
-        let (row, counters) = match buckets.remove(&bucket) {
-            Some(value) => value,
-            None => Default::default(),
-        }
-        .finish(bucket);
+        let (row, counters) = buckets
+            .remove(&bucket)
+            .map_or(Default::default(), core::convert::identity)
+            .finish(bucket);
         gap_rows.extend(gaps::rows(&row, &counters));
         jurisdictions.push(row);
     }

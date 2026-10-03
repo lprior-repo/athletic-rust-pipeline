@@ -35,13 +35,11 @@ fn own_parse_has_row_issues(
     rec.pages_with_parsed.iter().any(|parsed| {
         let is_issue = parsed_records
             .get(parsed.as_deref().map_or("", core::convert::identity))
-            .map(|p| {
-                p.get("issues")
-                    .and_then(|v| v.as_array())
-                    .map(|a| !a.is_empty())
-                    .map_or(false, core::convert::identity)
-            })
-            .map_or(false, core::convert::identity);
+            .is_some_and(|page| {
+                page.get("issues")
+                    .and_then(|value| value.as_array())
+                    .is_some_and(|issues| !issues.is_empty())
+            });
         is_issue
     })
 }

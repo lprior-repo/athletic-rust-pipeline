@@ -5,7 +5,10 @@ use census_domain::model::SourceRef;
 
 pub(super) fn result_file(capture: &Capture<'_>) -> Result<String> {
     let (file, body) = (capture.file, capture.body);
-    let extension = file.rsplit('.').next().map_or(Default::default(), core::convert::identity);
+    let extension = file
+        .rsplit('.')
+        .next()
+        .map_or(Default::default(), core::convert::identity);
     let format = wiaa_results::artifact_format(extension, Some(body));
     let year: i16 = capture
         .recorded("archive_year")?

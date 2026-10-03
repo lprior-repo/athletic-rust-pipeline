@@ -114,7 +114,9 @@ pub(super) fn process_team_coaches<'a>(
     book: &mut AdmissionBook<'a>,
 ) -> CrawlResult<()> {
     let Some((sport, gender)) = super::map::team_sport(
-        team.name.as_deref().map_or(Default::default(), core::convert::identity),
+        team.name
+            .as_deref()
+            .map_or(Default::default(), core::convert::identity),
     ) else {
         return Ok(());
     };
@@ -124,7 +126,10 @@ pub(super) fn process_team_coaches<'a>(
         };
         for &member in candidates.members().iter().rev() {
             let role = coach_role(
-                member.title.as_deref().map_or(Default::default(), core::convert::identity),
+                member
+                    .title
+                    .as_deref()
+                    .map_or(Default::default(), core::convert::identity),
             );
             let row = Row::new(member, Some(sport), gender, role);
             match book.emit(row, team.level.as_deref())? {
@@ -145,12 +150,18 @@ pub(super) fn process_unplaced_coaches<'a>(
             continue;
         }
         let Some((sport, gender)) = super::map::team_sport(
-            member.team_name.as_deref().map_or(Default::default(), core::convert::identity),
+            member
+                .team_name
+                .as_deref()
+                .map_or(Default::default(), core::convert::identity),
         ) else {
             continue;
         };
         let role = coach_role(
-            member.title.as_deref().map_or(Default::default(), core::convert::identity),
+            member
+                .title
+                .as_deref()
+                .map_or(Default::default(), core::convert::identity),
         );
         let row = Row::new(member, Some(sport), gender, role);
         match book.emit(row, member.team_level.as_deref())? {
@@ -167,7 +178,10 @@ pub(super) fn process_directors<'a>(
 ) -> CrawlResult<()> {
     for member in staff.iter().rev() {
         if !is_director(
-            member.title.as_deref().map_or(Default::default(), core::convert::identity),
+            member
+                .title
+                .as_deref()
+                .map_or(Default::default(), core::convert::identity),
         ) {
             continue;
         }

@@ -19,7 +19,10 @@ pub fn row_entities(
     let source = RowSource::of(row, default_observed_on, &school_name);
     school.source_identities.push(
         SourceIdentity::new(source.namespace.clone(), source.key.clone()).with_url(
-            source.url.clone().map_or(Default::default(), core::convert::identity),
+            source
+                .url
+                .clone()
+                .map_or(Default::default(), core::convert::identity),
         ),
     );
     school.evidence.push(Evidence::parsed(
@@ -83,7 +86,10 @@ fn attach_source(
     }
     coach.source_identities.push(
         SourceIdentity::new(source.namespace.clone(), identity).with_url(
-            source.url.clone().map_or(Default::default(), core::convert::identity),
+            source
+                .url
+                .clone()
+                .map_or(Default::default(), core::convert::identity),
         ),
     );
     coach.evidence.push(Evidence::parsed(

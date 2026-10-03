@@ -90,9 +90,7 @@ mod tests {
     use url::Url;
 
     fn loopback(value: &str) -> bool {
-        Url::parse(value)
-            .map(|url| is_loopback_origin(&url))
-            .map_or(false, |value| value)
+        Url::parse(value).is_ok_and(|url| is_loopback_origin(&url))
     }
 
     #[test]

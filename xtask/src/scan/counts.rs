@@ -86,7 +86,9 @@ fn scan_functions(rules: &Rules, production: &[String], label: &str) -> (Vec<Str
             continue;
         }
         let span_end = body_end(&masked, index).saturating_add(1);
-        let body = production.get(index..span_end.min(production.len())).map_or(Default::default(), core::convert::identity);
+        let body = production
+            .get(index..span_end.min(production.len()))
+            .map_or(Default::default(), core::convert::identity);
         let span = span_end.saturating_sub(index);
         if span > FN_LINE_BUDGET {
             let name = rules

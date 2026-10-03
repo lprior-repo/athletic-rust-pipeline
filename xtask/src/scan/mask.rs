@@ -134,9 +134,11 @@ impl CodeMask {
         index: usize,
         char_literal: &Regex,
     ) -> usize {
-        let tail: String = line.get(index..).map_or(Default::default(), core::convert::identity)
-        .iter()
-        .collect();
+        let tail: String = line
+            .get(index..)
+            .map_or(Default::default(), core::convert::identity)
+            .iter()
+            .collect();
         let Some(literal) = char_literal.find(&tail) else {
             return index.saturating_add(1);
         };

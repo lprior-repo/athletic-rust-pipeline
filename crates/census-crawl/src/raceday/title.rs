@@ -35,7 +35,9 @@ pub(super) fn division_of(title: &str) -> Option<String> {
     let lowered = title.to_ascii_lowercase();
     if let Some(index) = lowered.find("division ") {
         let start = index.saturating_add("division ".len());
-        let rest = title.get(start..).map_or(Default::default(), core::convert::identity);
+        let rest = title
+            .get(start..)
+            .map_or(Default::default(), core::convert::identity);
         let token: String = rest
             .chars()
             .take_while(|ch| ch.is_ascii_alphanumeric())

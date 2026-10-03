@@ -68,10 +68,11 @@ fn free_port() -> TestResult<u16> {
         let listener = TcpListener::bind("127.0.0.1:0")?;
         let port = listener.local_addr()?.port();
         drop(listener);
-        let first_time = HANDED_OUT
-            .lock()
-            .map_or_else(std::sync::PoisonError::into_inner, |value| value)
-            .insert(port);
+        let first_time = match HANDED_OUT.lock() {
+            Ok(guard) => guard,
+            Err(poison) => poison.into_inner(),
+        }
+        .insert(port);
         if first_time {
             return Ok(port);
         }
@@ -242,7 +243,7 @@ impl Endpoint {
     }
 
     fn log(&self) -> String {
-        std::fs::read_to_string(&self.log_path).map_or_else(|_| Default::default(), |value| value)
+        std::fs::read_to_string(&self.log_path).map_or(Default::default(), core::convert::identity)
     }
 }
 
@@ -303,7 +304,7 @@ async fn paused_invocation(client: &reqwest::Client, node: &Node) -> Result<Stri
     let text = response
         .text()
         .await
-        .map_or_else(|_| Default::default(), |value| value);
+        .map_or(Default::default(), core::convert::identity);
     if !status.is_success() {
         return Err(format!("the admin query answered {status}: {text}"));
     }
@@ -336,7 +337,7 @@ async fn resume(client: &reqwest::Client, node: &Node, invocation: &str) -> Resu
     let text = response
         .text()
         .await
-        .map_or_else(|_| Default::default(), |value| value);
+        .map_or(Default::default(), core::convert::identity);
     Err(format!("the admin answered {status} to the resume: {text}"))
 }
 
@@ -356,7 +357,7 @@ async fn invoke(
     let text = response
         .text()
         .await
-        .map_or_else(|_| Default::default(), |value| value);
+        .map_or(Default::default(), core::convert::identity);
     if status.is_success() {
         serde_json::from_str(&text).map_err(|error| format!("{error}: {text}"))
     } else {
@@ -642,7 +643,7 @@ fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() -> TestResul
     endpoint.log_path.display(),
     endpoint.log(),
     node_guard.log_path.display(),
-    std::fs::read_to_string(&node_guard.log_path).map_or_else(|_| Default::default(), |value| value),);
+    std::fs::read_to_string(&node_guard.log_path).map_or(Default::default(), core::convert::identity),);
 
             endpoint.guard.stop_gracefully();
             let store = Store::open(&data_dir)?;

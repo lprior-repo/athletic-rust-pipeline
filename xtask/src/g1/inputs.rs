@@ -17,8 +17,7 @@ pub(crate) fn read_dir(pattern_dirs: &[String]) -> Vec<(String, String)> {
             let path = entry.path();
             if path
                 .extension()
-                .map(|e| e == "body")
-                .map_or(false, core::convert::identity)
+                .is_some_and(|extension| extension == "body")
             {
                 let stem = path
                     .file_stem()

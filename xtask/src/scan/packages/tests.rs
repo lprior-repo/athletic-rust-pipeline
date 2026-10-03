@@ -48,9 +48,12 @@ fn walked(roots: &[Root]) -> BTreeMap<String, bool> {
     roots
         .iter()
         .map(|root| {
-            let name = root.path.file_name().map_or(Default::default(), core::convert::identity)
-            .to_string_lossy()
-            .into_owned();
+            let name = root
+                .path
+                .file_name()
+                .map_or(Default::default(), core::convert::identity)
+                .to_string_lossy()
+                .into_owned();
             (name, root.harness)
         })
         .collect()

@@ -28,7 +28,9 @@ impl Name {
         if self.overflow {
             return &[];
         }
-        self.bytes.get(..self.len).map_or(Default::default(), core::convert::identity)
+        self.bytes
+            .get(..self.len)
+            .map_or(Default::default(), core::convert::identity)
     }
 }
 

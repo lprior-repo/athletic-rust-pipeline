@@ -61,7 +61,9 @@ pub(crate) fn tokens(line: &str) -> Vec<Token<'_>> {
                 out.push(Token {
                     start: from,
                     end: index,
-                    text: line.get(from..index).map_or(Default::default(), core::convert::identity),
+                    text: line
+                        .get(from..index)
+                        .map_or(Default::default(), core::convert::identity),
                 });
             }
         } else if start.is_none() {
@@ -72,7 +74,9 @@ pub(crate) fn tokens(line: &str) -> Vec<Token<'_>> {
         out.push(Token {
             start: from,
             end: line.len(),
-            text: line.get(from..).map_or(Default::default(), core::convert::identity),
+            text: line
+                .get(from..)
+                .map_or(Default::default(), core::convert::identity),
         });
     }
     out

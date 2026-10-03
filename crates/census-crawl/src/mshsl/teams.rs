@@ -115,11 +115,15 @@ pub fn parse_team_nodes(payload: &str) -> Vec<TeamNode> {
             let nid = row.attributes.nid?;
             Some(TeamNode {
                 nid: nid.to_string(),
-                title: row.attributes.title
+                title: row
+                    .attributes
+                    .title
                     .map_or(Default::default(), core::convert::identity)
                     .trim()
                     .to_string(),
-                alias: row.attributes.path
+                alias: row
+                    .attributes
+                    .path
                     .and_then(|path| path.alias)
                     .map_or(Default::default(), core::convert::identity),
             })

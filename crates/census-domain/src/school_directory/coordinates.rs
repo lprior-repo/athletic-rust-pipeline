@@ -147,8 +147,12 @@ fn parse_scaled(trimmed: &str) -> Option<i64> {
         ),
     };
     let mut segments = body.split('.');
-    let whole = segments.next().map_or(Default::default(), core::convert::identity);
-    let fraction = segments.next().map_or(Default::default(), core::convert::identity);
+    let whole = segments
+        .next()
+        .map_or(Default::default(), core::convert::identity);
+    let fraction = segments
+        .next()
+        .map_or(Default::default(), core::convert::identity);
     if segments.next().is_some() || (whole.is_empty() && fraction.is_empty()) {
         return None;
     }
@@ -162,7 +166,10 @@ fn parse_scaled(trimmed: &str) -> Option<i64> {
     let mut round_up = false;
     let mut kept = 0usize;
     for (index, ch) in fraction.chars().enumerate() {
-        let digit = i64::from(ch.to_digit(10).map_or(Default::default(), core::convert::identity));
+        let digit = i64::from(
+            ch.to_digit(10)
+                .map_or(Default::default(), core::convert::identity),
+        );
         if index < FRACTION_DIGITS {
             units = units
                 .checked_mul(10)

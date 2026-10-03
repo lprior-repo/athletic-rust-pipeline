@@ -102,10 +102,10 @@ fn export(store: &Store) -> super::TestResult<Export> {
             .pointer("/totals/schools")
             .cloned()
             .map_or(serde_json::Value::Null, |value| value),
-        match projected.pointer("/meets/total").cloned() {
-            Some(value) => value,
-            None => Default::default(),
-        },
+        projected
+            .pointer("/meets/total")
+            .cloned()
+            .map_or(serde_json::Value::Null, core::convert::identity),
     );
     Ok(Export {
         counts,

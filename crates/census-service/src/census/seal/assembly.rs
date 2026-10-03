@@ -17,10 +17,10 @@ pub(super) fn assemble(
     request: &SealRequest,
     workbook: WorkbookCheck,
 ) -> SealEvidence {
-    let journal = match request.journal.clone() {
-        Some(value) => value,
-        None => Default::default(),
-    };
+    let journal = request
+        .journal
+        .clone()
+        .map_or(Default::default(), core::convert::identity);
     SealEvidence {
         open: open_work(cases, journal),
         counts: seal_counts(census, coverage),
@@ -75,7 +75,7 @@ fn retained_findings(
         silent_sources: request
             .journal
             .as_ref()
-            .map_or_else(Vec::new, |journal| journal.silent_sources.clone()),
+            .map_or(Vec::new(), |journal| journal.silent_sources.clone()),
         source_failures: request.source_failures,
         observations: stats.observations,
         calculations: count(coverage.read.performances),

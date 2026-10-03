@@ -65,7 +65,9 @@ pub fn parse_targets(body: &str, default_states: &[UsJurisdiction]) -> CrawlResu
             continue;
         }
         let mut parts = line.split([',', '\t', ' ']).filter(|part| !part.is_empty());
-        let id_text = parts.next().map_or(Default::default(), core::convert::identity);
+        let id_text = parts
+            .next()
+            .map_or(Default::default(), core::convert::identity);
         let athlete_id: u64 = id_text.parse().map_err(|_| {
             registry_refusal(format!(
                 "registry line {}: `{id_text}` is not an athlete id",

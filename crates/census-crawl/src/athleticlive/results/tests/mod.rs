@@ -253,10 +253,9 @@ fn both_mark_channels_agree_on_every_captured_row() -> TestResult {
             .abs()
                 < 1,
             "{} published {metres} m against {micros} µm",
-            match row.mark.as_deref() {
-                Some(value) => value,
-                None => Default::default(),
-            }
+            row.mark
+                .as_deref()
+                .map_or(Default::default(), core::convert::identity)
         );
         field_rows += 1;
     }

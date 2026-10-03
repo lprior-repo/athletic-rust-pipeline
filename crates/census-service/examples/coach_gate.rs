@@ -41,10 +41,10 @@ fn main() -> anyhow::Result<()> {
 fn init_tracing() {
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env().map_or_else(
-                |_| tracing_subscriber::EnvFilter::new("info"),
-                |value| value,
-            ),
+            match tracing_subscriber::EnvFilter::try_from_default_env() {
+                Ok(value) => value,
+                Err(_) => tracing_subscriber::EnvFilter::new("info"),
+            },
         )
         .with_target(false)
         .init();
@@ -72,10 +72,10 @@ fn parse_args() -> anyhow::Result<Args> {
 }
 
 fn build_fetcher(fragments: &[PathBuf]) -> anyhow::Result<Fetcher> {
-    let cache_dir = PathBuf::from(
-        std::env::var("CACHE_DIR")
-            .map_or_else(|_| "var/census-service/http".to_string(), |value| value),
-    );
+    let cache_dir = PathBuf::from(match std::env::var("CACHE_DIR") {
+        Ok(value) => value,
+        Err(_) => "var/census-service/http".to_string(),
+    });
     let authorized = authorized_hosts(fragments)?;
     let delay_ms: u64 = std::env::var("DELAY_MS")
         .ok()
@@ -99,7 +99,7 @@ fn authorized_hosts(fragments: &[PathBuf]) -> anyhow::Result<Vec<String>> {
         return Ok(hosts);
     }
     Ok(std::env::var("AUTHORIZED_HOSTS")
-        .map_or_else(|_| Default::default(), |value| value)
+        .map_or(Default::default(), core::convert::identity)
         .split(',')
         .map(str::trim)
         .filter(|host| !host.is_empty())

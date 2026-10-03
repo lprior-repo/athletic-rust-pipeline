@@ -1,4 +1,4 @@
-use std::sync::{Mutex, PoisonError};
+use std::sync::Mutex;
 
 use census_store::Table;
 use serde::{Deserialize, Serialize};
@@ -56,51 +56,50 @@ impl Recording {
 
     pub fn drain(&self) -> Recorded {
         Recorded {
-            rows: std::mem::take(
-                &mut *self
-                    .batches
-                    .lock()
-                    .map_or_else(PoisonError::into_inner, |value| value),
-            ),
-            journal: std::mem::take(
-                &mut *self
-                    .journal
-                    .lock()
-                    .map_or_else(PoisonError::into_inner, |value| value),
-            ),
+            rows: std::mem::take(&mut *match self.batches.lock() {
+                Ok(guard) => guard,
+                Err(poison) => poison.into_inner(),
+            }),
+            journal: std::mem::take(&mut *match self.journal.lock() {
+                Ok(guard) => guard,
+                Err(poison) => poison.into_inner(),
+            }),
         }
     }
 
     pub fn rows(&self) -> usize {
-        self.batches
-            .lock()
-            .map_or_else(PoisonError::into_inner, |value| value)
-            .iter()
-            .map(RecordedBatch::len)
-            .sum()
+        match self.batches.lock() {
+            Ok(guard) => guard,
+            Err(poison) => poison.into_inner(),
+        }
+        .iter()
+        .map(RecordedBatch::len)
+        .sum()
     }
 
     pub fn is_empty(&self) -> bool {
         self.rows() == 0
-            && self
-                .journal
-                .lock()
-                .map_or_else(PoisonError::into_inner, |value| value)
-                .is_empty()
+            && match self.journal.lock() {
+                Ok(guard) => guard,
+                Err(poison) => poison.into_inner(),
+            }
+            .is_empty()
     }
 
     fn push(&self, batch: RecordedBatch) {
-        self.batches
-            .lock()
-            .map_or_else(PoisonError::into_inner, |value| value)
-            .push(batch);
+        match self.batches.lock() {
+            Ok(guard) => guard,
+            Err(poison) => poison.into_inner(),
+        }
+        .push(batch);
     }
 
     fn push_journal(&self, entry: RecordedJournal) {
-        self.journal
-            .lock()
-            .map_or_else(PoisonError::into_inner, |value| value)
-            .push(entry);
+        match self.journal.lock() {
+            Ok(guard) => guard,
+            Err(poison) => poison.into_inner(),
+        }
+        .push(entry);
     }
 }
 
