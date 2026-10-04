@@ -28,9 +28,7 @@ strip = true
 # compile under `deny` and error under `forbid`. Every crate root carries the same attribute.
 unsafe_code = "forbid"
 unused_must_use = "deny"
-# `kani` is the harness cfg the census crates switch on (`#[cfg(kani)] include!("../kani/...")`);
-# declaring it keeps the zero-warning doctrine instead of ignoring the lint per crate.
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)', 'cfg(tokio_unstable)'] }
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tokio_unstable)'] }
 
 [workspace.lints.clippy]
 dbg_macro = "deny"

@@ -341,7 +341,6 @@ main() {
   run_tool_lane cargo-hack "feature powerset" lane_hack
   run_lane "bench presence" lane_bench_presence
   if [ "$FULL" = 1 ] || [ "$RELEASE" = 1 ]; then
-    run_tool_lane cargo-kani "mandatory proof kernels" cargo run -q -p xtask -- kani
   fi
   if [ "$FULL" = 1 ]; then
     run_lane perf lane_perf

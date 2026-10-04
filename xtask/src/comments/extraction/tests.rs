@@ -75,7 +75,6 @@ fn macro_bodies_and_cfg_disabled_code_cannot_hide_extractions() -> TestResult {
     for prefix in [
         "macro_rules! m { () => { value.",
         "quote! { value.",
-        "#[cfg(kani)] fn proof() { value.",
         "#[cfg(any())] fn hidden() { value.",
     ] {
         let source = format!("{prefix}unwrap() }}");

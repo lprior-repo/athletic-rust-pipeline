@@ -204,7 +204,7 @@ fn collect_options() -> CollectOptions {
 }
 
 #[test]
-fn partial_and_quarantined_rosters_remain_incomplete_after_reopening() -> TestResult {
+fn partial_and_quarantined_rosters_retain_their_reasons_without_owing_a_refetch() -> TestResult {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
@@ -247,7 +247,12 @@ fn partial_and_quarantined_rosters_remain_incomplete_after_reopening() -> TestRe
                 )
                 .await?;
                 check!(eq; first.rosters_committed, 0);
-                check!(eq; first.rosters_remaining, 1);
+                check!(eq; first.rosters_skipped, 1);
+                check!(eq; first.rosters_remaining, 0);
+                check!(eq;
+                    first.rosters_committed + first.rosters_skipped + first.rosters_remaining,
+                    first.rosters_total,
+                    "a held roster is an attempted team, not an owed fetch");
                 check!(eq; first.athletes, accepted);
                 check!(eq; first.errors.len(), 1);
                 let athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes)?;
@@ -273,7 +278,7 @@ fn partial_and_quarantined_rosters_remain_incomplete_after_reopening() -> TestRe
                 .await?;
                 check!(eq; resumed.errors, first.errors);
                 check!(eq; resumed.rosters_committed, 0);
-                check!(eq; resumed.rosters_remaining, 1);
+                check!(eq; resumed.rosters_remaining, 0);
                 check!(eq; resumed.rosters_skipped, 1);
                 check!(eq; resumed.athletes, accepted);
                 let persisted: Vec<SourceObservation> = reopened.scan(Table::SourceObservations)?;
@@ -283,6 +288,84 @@ fn partial_and_quarantined_rosters_remain_incomplete_after_reopening() -> TestRe
                 check!(eq; stats.requests, 0);
                 check!(eq; stats.cache_hits, 1);
             }
+            Ok(())
+        })
+}
+
+#[test]
+fn a_refused_roster_is_retained_without_rows_or_a_refetch() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let dir = tempfile::tempdir()?;
+            let store = Store::open(dir.path())?;
+            let mut team = milesplit::parse_team_index(WI_TEAMS_FIXTURE)?
+                .into_iter()
+                .next()
+                .ok_or("index fixture lists no teams")?;
+            team.city_state = "Washington, DC".to_string();
+            let synthetic_body = synthetic_owned_roster_document(&team, WI_ROSTER_FIXTURE);
+            seed_cache(
+                &store.http_cache_dir(),
+                &format!("{}/roster", team.url),
+                &synthetic_body,
+            )?;
+            let fetcher = Fetcher::new(
+                store.http_cache_dir(),
+                None,
+                Duration::from_millis(1),
+                std::collections::HashMap::new(),
+                Vec::new(),
+            )?;
+            let options = collect_options();
+            let first = census::collect_state_rosters(
+                &fetcher,
+                &store,
+                std::slice::from_ref(&team),
+                &options,
+                UsJurisdiction::Wisconsin,
+            )
+            .await?;
+            check!(eq; first.rosters_committed, 0);
+            check!(eq; first.rosters_skipped, 1);
+            check!(eq; first.rosters_remaining, 0);
+            check!(eq;
+                first.rosters_committed + first.rosters_skipped + first.rosters_remaining,
+                first.rosters_total,
+                "a refused roster is an attempted team, not an owed fetch");
+            check!(eq; first.athletes, 0);
+            check!(eq; first.errors.len(), 1);
+            let report = first.errors.first().ok_or("the refusal is reported")?;
+            check!(
+                report.contains("refusal=schema mismatch"),
+                "the refusal keeps the source's own words"
+            );
+            check!(
+                report.contains("requested team location conflicts with its source jurisdiction"),
+                "the refusal names the conflicting jurisdiction"
+            );
+            let athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes)?;
+            check!(eq; athletes.len(), 0);
+            let before = replay::digest(&store)?;
+            drop(store);
+            let reopened = Store::open(dir.path())?;
+            let resumed = census::collect_state_rosters(
+                &fetcher,
+                &reopened,
+                std::slice::from_ref(&team),
+                &options,
+                UsJurisdiction::Wisconsin,
+            )
+            .await?;
+            check!(eq; resumed.errors, first.errors);
+            check!(eq; resumed.rosters_committed, 0);
+            check!(eq; resumed.rosters_skipped, 1);
+            check!(eq; resumed.rosters_remaining, 0);
+            check!(eq; replay::digest(&reopened)?, before);
+            let stats = fetcher.stats().await;
+            check!(eq; stats.requests, 0);
+            check!(eq; stats.cache_hits, 1);
             Ok(())
         })
 }

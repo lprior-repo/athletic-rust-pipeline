@@ -73,7 +73,7 @@ fn scanned(root: &Root) -> Result<Vec<String>> {
 #[test]
 fn every_root_the_walker_can_walk_is_walked() -> TestResult {
     let fixture = Fixture::new("roots")?;
-    for dir in ["src", "examples", "benches", "kani", "fuzz/fuzz_targets"] {
+    for dir in ["src", "examples", "benches", "fuzz/fuzz_targets"] {
         fixture.dir(dir)?;
     }
     fixture.file("build.rs")?;
@@ -85,7 +85,7 @@ fn every_root_the_walker_can_walk_is_walked() -> TestResult {
             ("build.rs".to_string(), false),
             ("examples".to_string(), true),
             ("fuzz_targets".to_string(), true),
-            ("kani".to_string(), true),
+            
             ("src".to_string(), false),
         ])
     );

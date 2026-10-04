@@ -61,13 +61,13 @@ impl JurisdictionCensus {
         self.record_plan(ctx, request, identity, state, &today)
             .await?;
 
-        if state.teams.is_owed() {
+        if state.teams.is_resumable() {
             self.teams_owed(ctx, request, identity, state, &today)
                 .await?;
             stages_run.push("teams".to_string());
         }
 
-        if state.rosters.is_none() {
+        if roster_stage_owed(state) {
             self.rosters_owed(ctx, request, options, state, &today)
                 .await?;
             stages_run.push("rosters".to_string());
@@ -84,6 +84,13 @@ impl JurisdictionCensus {
         }
 
         Ok(stages_run)
+    }
+}
+
+pub(super) fn roster_stage_owed(state: &JurisdictionState) -> bool {
+    match state.rosters.as_ref() {
+        None => true,
+        Some(progress) => !progress.is_terminal(),
     }
 }
 

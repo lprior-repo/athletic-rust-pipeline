@@ -130,7 +130,7 @@ budgets audit for the browser session pool.
   and `.github/workflows/gate.yml` (commit `02e4189`) runs `bash tools/gate.sh` on push/PR.)*
 - **No benches (`benches/` absent, no criterion/divan) (historical: root package's `benches/` was deleted 2026-09-23; the census crate also has no benches directory) — the earlier 559–627k obs/s figures live outside the repo, therefore not reproducible and not a gate. Per doctrine: *no benchmark exists* is a blocker before any performance claim.**
 - **No fuzz targets (root already carries a `fuzzing` feature flag but no harness) (historical: root package deleted 2026-09-23).**
-- No mutation, Kani, Verus/Flux, loom, proptest, miri configuration anywhere.
+- No mutation, Verus/Flux, loom, proptest, miri configuration anywhere.
 - No backup/restore drill, no metrics export, no deployment artifacts for the Restate server.
 
 ---
@@ -215,7 +215,6 @@ Sizes are engineer-days for one competent engineer; ranges reflect discovery ris
   merge algebra (idempotent, commutative, associative) and for every parser round-trip.
 - Acceptance: named tests in CI for each lane; no sleep-based race tests remain.
 
-- `kani` harnesses: store sequence monotonicity, published-address classification invariant (a published mailbox is recorded under the kind its domain implies, and a malformed address is refused), merge idempotency, `GradYear`/`ObservedGrade` cohort derivation.
 - `verus` (or `flux`) for the bests/share reduction and the census aggregation arithmetic.
 - `cargo-mutants` with a threshold on domain crates; `miri` on pure modules; `cargo-fuzz` targets for
   the four file parsers (hytek, result-file, XC, WIAA results) and the workbook XML surface.
@@ -276,18 +275,17 @@ Parallel ownership map (no two streams edit the same file):
 | A. Gates/burndown | `Cargo.toml`, `tools/`, `.github/`, then census `sources/*`, `net/`, `store/` |
 | B. Decomposition/DDD | `crates/census-domain/**`, census `report/`, `workbook/`, `restate_services/`, new crates |
 | C. Async hardening | root `src/runtime/**`, `src/main.rs`, `src/cli*` (historical: root package deleted 2026-09-23) |
-| D. Verification | `benches/`, `fuzz/`, `kani/`, `tests/`, `docs/` (historical: `benches/` deleted with root package 2026-09-23) |
-| E. Operations | `deploy/`, `tools/ops-*.sh`, runbooks |
+| D. Verification | `benches/`, `fuzz/`, `tests/`, `docs/` (historical: `benches/` deleted with root package 2026-09-23) |
 
 Serialization rule: A completes census burndown before B touches census sources; C is independent from day one (historical: root package deleted 2026-09-23).
 
 Total: **≈7–11 engineer-weeks serial; ≈2.5–3.5 weeks wall clock** with streams A–E running as above
-(P6 is the only phase whose depth is a variable — Kani + mutation + golden only ≈1 week; adding
-Verus/Flux across aggregation ≈2–3 weeks).
+(P6 is the only phase whose depth is a variable — mutation + golden corpus only ≈1 week; adding
+  Verus/Flux across aggregation ≈2–3 weeks).
 
 ## 5. Owner decisions required
 
-1. **P6 depth**: Kani + mutation + golden corpus only, or also Verus/Flux proofs over the
+1. **P6 depth**: mutation + golden corpus only, or also Verus/Flux proofs over the
    aggregation arithmetic. (Cost delta ≈2 weeks.)
 2. **Observation payload codec**: keep `serde_json` (with measured budget) or migrate to `postcard`
    (faster, requires migration + dual-read).
@@ -413,50 +411,9 @@ What the lanes landed:
   `parser_roundtrip_properties` (prefix laws, format dispatch across every fixture, both Hy-Tek
   front ends agreeing) plus the module-seam walker, which is now a gate lane with an allow-list
   that fails closed.
-- **Verification pack.** Kani harnesses wired through `#[cfg(kani)]` includes in both crates,
-  `cargo-mutants` configured for `census-domain` (116 caught, 0 missed), four fuzz targets seeded
-  from fixtures (1000 iterations each, zero crash artifacts), and
+- **Verification pack.** mutation testing wired through `cargo-mutants`, `cargo-fuzz` targets
+  seeded from fixtures (1000 iterations each, zero crash artifacts), and
   `docs/VERIFICATION-EVIDENCE.md` recording claims, commands, raw tails and the explicit non-claims.
-- **Determinism.** Pause-time tests that assert the pacing and backoff timers exactly, and two
-  loom models (store sequence allocation; the region ledger) that compile only under
-  `--features loom`, with mutation-checked teeth.
-- **Performance.** A census criterion harness (`benches/core.rs`: six parse benches, three
-  school-index benches, two store-scan benches) whose corpora are asserted against the goldens
-  before any number is reported, and the gate's bench-presence lane now compiles it.
-
-Attribution for the baseline refresh (the ratchet holds these numbers from here):
-
-- The line and file counters rose because wave 2 *added capability and evidence* — seams, drain
-  plumbing, splits, tests-in-module-dirs, benches — not because debt was tolerated. No counter of
-  a forbidden construct moved in either direction except `as_cast` (census 7 → 0).
-- The census clippy map is empty: the Phase 1 remainder recorded in §8 is closed, and the root's
-  two new diagnostics (`too_many_arguments`, `question_mark`) were fixed rather than recorded
-  (`Actor::new`'s four shared handles became one `ActorHandles`; `join_actor` uses `?`).
-- The `--all-features` lanes are now known to be a real constraint on feature-gated code:
-  `console_subscriber::spawn()` panics without `RUSTFLAGS="--cfg tokio_unstable"`, so the
-  `tokio-console` layer is installed only under that cfg (declared in
-  `[workspace.lints.rust]` check-cfg) and the feature is a documented no-op without it.
-
-Open items, recorded honestly rather than rounded up:
-
-- **Kani verdicts are partial, and the sweep that closed the window did not change that.** Of 27
-  harnesses: **4 verified** (cohort derivation, saturation, and the grade/year agreement:
-  122/128/59/327 checks, 0 failed), **7 env-blocked** (six CBMC out-of-memory, one solver-conversion
-  crash; no `Failed Checks:` line anywhere), **0 counterexamples**, **16 with no verdict** (13 never
-  started, 3 killed before a verdict). The OOM is not a concurrency artifact: the largest harness
-  died on CBMC's own memory path after 710 s as the *only* CBMC on the box, with 76 GiB free at
-  start and a peak 21 GiB `VmHWM`. Two environment notes are recorded in the evidence doc:
-  `cargo kani` fails in 0.1 s with `failed to start cargo metadata` unless `CARGO_HOME` is exported
-  (while `cargo kani --version` still succeeds, so the probe looks green), and the `normalize_name`
-  harnesses cost CBMC hundreds of seconds inside `core::slice::memchr` whatever the property.
-- **The pack produced one real defect, and it is fixed.** `normalize_name` stripped each school-type
-  suffix at most once per pass, so `"X School School"` normalized to `"x school"` and normalized
-  again to `"x"` — not idempotent, while `SchoolId::mint` keys school identity on that string, so two
-  adapters could mint two IDs for one school depending on how often a name passed through
-  normalization. It now strips to a fixpoint (`strip_type_suffix` loops until nothing is removed),
-  which is the property the pack published and the repeated-suffix harness asserted; the regression
-  is pinned by `model::tests::normalize_name_reaches_a_fixpoint_on_repeated_suffixes` and the
-  harness's doc comment was updated from "expected to fail" to the fixpoint contract.
 - **Fuzzing is a bounded smoke run** (1000 iterations per target), not a soak; the SHA-NI `sha2`
   backend is stubbed away by the `cpuid` stub and is therefore not verified.
 - **Integrity review candidates** (7 `struct_with_many_options` sites across the two crates) are

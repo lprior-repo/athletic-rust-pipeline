@@ -293,6 +293,7 @@
       "wrote 2 schools and 15 coach/AD rows",
       "names only: provider publishes no coach email"
     ],
+    "rejections": 0,
     "requests": 0,
     "rows": 2,
     "unit": "schools",

@@ -14,6 +14,8 @@ use std::collections::HashSet;
 use super::super::scope::{count_co2027, count_cohort};
 use super::{rosters_phase, units::RosterRun};
 
+pub(super) mod refusal;
+
 #[derive(Serialize)]
 struct Records {
     school: CanonicalSchool,
@@ -83,7 +85,8 @@ struct Journal<S = String, C = FetchOutcome, R = Vec<RosterRejection>> {
     school: Option<S>,
     year: i16,
     observed_on: S,
-    capture: C,
+    capture: Option<C>,
+    refusal: Option<S>,
     quarantine: Option<RosterQuarantine>,
     rejected: R,
     athletes: usize,
@@ -141,6 +144,8 @@ pub(super) async fn fetch_and_store(
     Ok(batch.commit_once(&operation, &digest)?)
 }
 
+pub(super) use refusal::retain_refusal;
+
 fn quarantine_of(verdict: &RosterVerdict) -> Option<RosterQuarantine> {
     match verdict {
         RosterVerdict::Quarantined { reason, .. } => Some(*reason),
@@ -161,7 +166,8 @@ fn roster_journal<'a>(
         school: records.map(|rows| rows.school.id.as_str()),
         year: school_year.get(),
         observed_on,
-        capture: &read.capture,
+        capture: Some(&read.capture),
+        refusal: None,
         quarantine: quarantine_of(&read.verdict),
         rejected: read.verdict.rejections(),
         athletes: roster.map_or(0, |rows| rows.athletes.len()),
@@ -213,6 +219,7 @@ fn roster_operation(
 #[derive(Default)]
 pub(super) struct Summary {
     pub(super) committed: usize,
+    pub(super) held: usize,
     pub(super) athletes: usize,
     pub(super) co2027: usize,
     pub(super) co2027_boys: usize,
@@ -222,34 +229,53 @@ pub(super) struct Summary {
 
 pub(super) fn summarize(store: &Store, phase: &str, teams: &[TeamRef]) -> CrawlResult<Summary> {
     let wanted: HashSet<&str> = teams.iter().map(|team| team.id.as_str()).collect();
-    store.journal_payloads(phase)?.into_iter().try_fold(
-        Summary::default(),
-        |mut summary, payload| {
-            let row: Journal =
-                serde_json::from_value(payload).map_err(|source| CrawlError::Decode {
-                    url: format!("journal:{phase}"),
-                    source,
-                })?;
-            if !wanted.contains(row.team_id.as_str()) {
-                return Ok(summary);
-            }
-            if row.quarantine.is_none() && row.rejected.is_empty() {
-                summary.committed = sum(summary.committed, 1)?;
-            } else {
-                summary.errors.push(format!(
+    let mut clean: HashSet<String> = HashSet::new();
+    let mut unclean: HashSet<String> = HashSet::new();
+    let mut summary = Summary::default();
+    for payload in store.journal_payloads(phase)? {
+        let row: Journal =
+            serde_json::from_value(payload).map_err(|source| CrawlError::Decode {
+                url: format!("journal:{phase}"),
+                source,
+            })?;
+        if !wanted.contains(row.team_id.as_str()) {
+            continue;
+        }
+        if row.refusal.is_none() && row.quarantine.is_none() && row.rejected.is_empty() {
+            clean.insert(row.team_id.clone());
+        } else {
+            unclean.insert(row.team_id.clone());
+            let source = row.capture.as_ref().map_or_else(
+                || format!("team {}", row.team_id),
+                |capture| capture.url.clone(),
+            );
+            match &row.refusal {
+                Some(reason) => summary.errors.push(format!("{source}: refusal={reason}")),
+                None => summary.errors.push(format!(
                     "{}: quarantine={:?}; rejected_rows={}",
-                    row.capture.url,
+                    source,
                     row.quarantine,
                     row.rejected.len()
-                ));
+                )),
             }
-            summary.athletes = sum(summary.athletes, row.athletes)?;
-            summary.co2027 = sum(summary.co2027, row.co2027)?;
-            summary.co2027_boys = sum(summary.co2027_boys, row.co2027_boys)?;
-            summary.co2027_girls = sum(summary.co2027_girls, row.co2027_girls)?;
-            Ok(summary)
-        },
-    )
+        }
+        summary.athletes = sum(summary.athletes, row.athletes)?;
+        summary.co2027 = sum(summary.co2027, row.co2027)?;
+        summary.co2027_boys = sum(summary.co2027_boys, row.co2027_boys)?;
+        summary.co2027_girls = sum(summary.co2027_girls, row.co2027_girls)?;
+    }
+    summary.committed = clean.len();
+    summary.held = unclean.difference(&clean).count();
+    Ok(summary)
+}
+
+pub(super) fn remaining(total: usize, committed: usize, held: usize) -> CrawlResult<usize> {
+    committed
+        .checked_add(held)
+        .and_then(|attempted| total.checked_sub(attempted))
+        .ok_or_else(|| CrawlError::Arithmetic {
+            detail: "roster attempts exceeded the indexed teams".to_string(),
+        })
 }
 
 fn sum(left: usize, right: usize) -> CrawlResult<usize> {

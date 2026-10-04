@@ -17,5 +17,4 @@ pub use error::DomainError;
 pub use jurisdiction::{JurisdictionBucket, MeetState, UsJurisdiction};
 pub use school_index::{SchoolIndex, SchoolMatch};
 
-#[cfg(kani)]
-include!("../kani/census_domain_wiring.rs");
+

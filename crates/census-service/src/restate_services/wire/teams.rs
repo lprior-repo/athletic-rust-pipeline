@@ -61,6 +61,19 @@ impl TeamsStage {
         matches!(self, Self::Owed)
     }
 
+    pub fn is_resumable(&self) -> bool {
+        match self {
+            Self::Owed => true,
+            Self::Completed(_) => false,
+            Self::Failed(failure) => match failure {
+                TeamsFailure::ActionTerminal { .. } => false,
+                TeamsFailure::IncompleteOutcome { .. } | TeamsFailure::SourceFailures { .. } => {
+                    true
+                }
+            },
+        }
+    }
+
     pub fn is_completed(&self) -> bool {
         matches!(self, Self::Completed(_))
     }

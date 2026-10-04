@@ -37,7 +37,11 @@ pub(super) async fn assert_reopened_replay(
     check!(eq; resumed.errors, Vec::<String>::new());
     check!(eq; resumed.rosters_committed, 1);
     check!(eq; resumed.rosters_remaining, 0);
-    check!(eq; resumed.rosters_skipped, 1);
+    check!(eq; resumed.rosters_skipped, 0);
+    check!(eq;
+        resumed.rosters_committed + resumed.rosters_skipped + resumed.rosters_remaining,
+        resumed.rosters_total,
+        "an admitted replay holds nothing back from the index");
     check!(eq; digest(&store)?, before);
     super::projection::assert_published(&store)?;
     super::projection::assert_capture(&store, options, synthetic_body)?;

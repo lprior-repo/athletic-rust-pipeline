@@ -187,5 +187,4 @@ mod receipt_tests;
 mod replace_tests;
 #[cfg(test)]
 mod tests;
-#[cfg(kani)]
-include!("../kani/store_wiring.rs");
+

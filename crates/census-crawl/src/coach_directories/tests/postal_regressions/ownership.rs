@@ -8,7 +8,8 @@ fn malformed_summary_postal_review_can_reacquire_corrected_captured_facts() -> T
         .block_on(async {
             let body = changed_summary(|summary| summary["address"]["zip"] = "2803".into())?;
             let run = FixtureRun::new(DIRECTORY, &body)?;
-            check!(eq; run.collect().await?.errors, 1);
+            let rejected = run.collect().await?;
+            check!(eq; (rejected.errors, rejected.rejections), (0, 1));
             check!(eq; run.coaches()?.len(), 16);
             check!(eq;
                 run.store.journal_keys("coach_directories_schools_v3")?,
@@ -37,7 +38,7 @@ fn a_foreign_directory_jurisdiction_cannot_attach_school_or_postal_claims() -> T
             let body = changed_directory(|row| row["stateCode"] = "SC".into())?;
             let run = FixtureRun::new(&body, SUMMARY)?;
             let report = run.collect().await?;
-            check!(eq; (report.rows, report.errors), (0, 1));
+            check!(eq; (report.rows, report.errors, report.rejections), (0, 0, 1));
             check!(eq;
                 run.store.scan::<CanonicalSchool>(Table::Schools)?,
                 Vec::new()
@@ -60,7 +61,7 @@ fn a_missing_directory_owner_is_reported_instead_of_disappearing() -> TestResult
             let body = changed_directory(|row| row["shortCode"] = serde_json::Value::Null)?;
             let run = FixtureRun::new(&body, SUMMARY)?;
             let report = run.collect().await?;
-            check!(eq; (report.rows, report.errors), (0, 1));
+            check!(eq; (report.rows, report.errors, report.rejections), (0, 0, 1));
             check!(eq;
                 run.store.scan::<CanonicalSchool>(Table::Schools)?,
                 Vec::new()

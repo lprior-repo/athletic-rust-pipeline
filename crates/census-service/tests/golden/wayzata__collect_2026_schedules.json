@@ -6,6 +6,7 @@
     "from_cache": 2,
     "errors": 0,
     "with_email": 0,
+    "rejections": 0,
     "unit": "meet-schedule rows",
     "notes": [
       "https://www.wayzataresults.com/sports/track/2026/schedule: 13 competition rows",

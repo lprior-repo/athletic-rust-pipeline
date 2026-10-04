@@ -79,6 +79,12 @@ fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_rosters(
         walk.teams.len(),
         "a clean pass walks every roster the index lists");
         check!(eq; walk.progress.rosters_skipped, 0);
+        check!(eq;
+            walk.progress.rosters_committed
+                + walk.progress.rosters_skipped
+                + walk.progress.rosters_remaining,
+            walk.progress.rosters_total,
+            "the three roster buckets reconstruct the indexed teams");
         check!(walk.progress.errors.is_empty(),
         "the seeded cache leaves no roster unfetched: {:?}",
         walk.progress.errors);
@@ -118,8 +124,8 @@ fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_rosters(
         );
         check!(eq; first.rosters_committed, 1);
         check!(eq; first.rosters_skipped, 0,
-        "skipped counts rosters an earlier pass journaled, and this pass is the first: the \
-         limit defers the rest instead");
+        "held counts rosters retained without clean admission, and this clean pass admits every \
+         walked row: the limit defers the rest to remaining instead");
         check!(eq; journal.len(), 1);
         journal
     };
@@ -174,9 +180,16 @@ fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_rosters(
     check!(eq; resumed.rosters_committed,
     teams.len(),
     "the restart reports the state's cumulative commit count, not this pass's");
-    check!(eq; resumed.rosters_skipped,
-    stopped_after.len(),
+    check!(eq; resumed.rosters_skipped, 0,
+    "a fully admitted state holds no roster back");
+    check!(eq;
+        resumed.rosters_committed + resumed.rosters_skipped + resumed.rosters_remaining,
+        resumed.rosters_total,
+        "the restarted buckets match the indexed teams");
+    check!(eq; stats.requests, 0,
     "every roster the first pass journaled is skipped unread");
+    check!(stopped_after.is_subset(&journal_keys(&store, &wi_rosters_phase())?),
+    "the restarted store keeps every roster the limited first pass journaled");
     check!(resumed.errors.is_empty(),
     "the resumed pass leaves no roster unfetched: {:?}",
     resumed.errors);

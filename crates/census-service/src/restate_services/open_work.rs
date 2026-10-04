@@ -113,9 +113,10 @@ async fn read_jurisdictions(
 fn stages_of(state: &JurisdictionState) -> JurisdictionStages {
     JurisdictionStages {
         teams: state.teams.is_completed(),
-        rosters: state.rosters.as_ref().is_some_and(|progress| {
-            progress.rosters_remaining == 0 && progress.blocked_skipped == 0 && !progress.blocked
-        }),
+        rosters: state
+            .rosters
+            .as_ref()
+            .is_some_and(|progress| progress.is_terminal()),
         meets: state.meets.is_some(),
         owed_rosters: state.rosters.as_ref().map_or(0, |progress| {
             count(progress.rosters_remaining.max(progress.blocked_skipped))
@@ -159,6 +160,7 @@ mod tests {
 
     use super::{owed_jurisdictions, stages_of, JurisdictionState};
     use crate::census::{MeetCensus, StateProgress};
+    use crate::restate_services::jurisdiction::roster_stage_owed;
     use crate::restate_services::wire::{StageOutcome, TeamsFailure, TeamsStage};
     use census_domain::UsJurisdiction;
 
@@ -183,6 +185,28 @@ mod tests {
             meets: Some(MeetCensus::default()),
             ..JurisdictionState::default()
         }
+    }
+
+    #[test]
+    fn roster_stage_owed_only_for_absent_or_nonterminal_progress() -> Result<(), Box<dyn Error>> {
+        let absent = JurisdictionState::default();
+        check!(roster_stage_owed(&absent));
+
+        for (remaining, blocked, blocked_skipped, expected_owed) in [
+            (2, false, 0, true),
+            (0, true, 0, true),
+            (0, false, 2, true),
+            (0, false, 0, false),
+        ] {
+            let mut state = independent_stages_completed(TeamsStage::Owed);
+            let progress = state.rosters.as_mut().ok_or("missing roster fixture")?;
+            progress.rosters_remaining = remaining;
+            progress.blocked = blocked;
+            progress.blocked_skipped = blocked_skipped;
+
+            check!(eq; roster_stage_owed(&state), expected_owed);
+        }
+        Ok(())
     }
 
     #[test]

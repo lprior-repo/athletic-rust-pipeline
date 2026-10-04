@@ -6,6 +6,7 @@
     "schools=6",
     "rows_without_coach_role=3"
   ],
+  "rejections": 0,
   "requests": 0,
   "rows": 13,
   "unit": "coaches",

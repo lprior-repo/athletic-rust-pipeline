@@ -27,7 +27,6 @@ failure. Measurement commands emit their own reports. Run `cargo xtask --help` f
 | `export` | Serving `Workbook/run`, or offline `workbook`; accepts `--out`, `--grad-year`, `--core`, `--limit` |
 | `bench [-- <args>]` | Forwards to `cargo bench -p census-service`; does not select every workspace benchmark |
 | `perf record`, `perf check`, `perf profile <group>` | Record/compare/profile configured benchmarks; each lane's own reports own interpretation and limits |
-| `kani [-- <harnesses>]` | No selection means all eight mandatory contract kernels and fails if any is absent; an explicit selection is a focused proof run, not the release gate |
 | `dump-sheet <workbook> <sheets>...` | Prints nonempty worksheet rows as `column=value` fields |
 | `new-source <name>` | Writes a source scaffold and module declaration; not a qualified or fully registered adapter |
 

@@ -32,6 +32,7 @@ fn terminal_failure_retains_details_without_completion_or_automatic_work() -> Te
     check!(eq; restored.identity, state.identity);
     check!(!restored.teams.is_completed());
     check!(!restored.teams.is_owed());
+    check!(!restored.teams.is_resumable());
     check!(eq;
         encoded.get("teams"),
         Some(&json!({
@@ -115,6 +116,32 @@ fn completed_wire_with_source_errors_is_rejected() -> TestResult {
         .ok_or("completed wire state accepted retained source errors")?;
 
     check!(eq; error.classify(), serde_json::error::Category::Data);
+    Ok(())
+}
+
+#[test]
+fn only_progress_bearing_teams_failures_resume_on_operator_redrive() -> TestResult {
+    let terminal = TeamsStage::Failed(TeamsFailure::ActionTerminal {
+        at: "2026-10-01".to_string(),
+        code: 429,
+        message: "coach directory admission exhausted".to_string(),
+    });
+    let incomplete = TeamsStage::from_outcome(
+        outcome(vec!["coach_directories: timed out".to_string()]),
+        "2026-10-02".to_string(),
+    );
+    let source_failures = TeamsStage::Failed(TeamsFailure::SourceFailures {
+        at: "2026-10-02".to_string(),
+        outcome: outcome(vec!["coach_directories: interrupted".to_string()]),
+        failures: Vec::new(),
+    });
+    let completed = TeamsStage::from_outcome(outcome(Vec::new()), "2026-10-02".to_string());
+
+    check!(TeamsStage::Owed.is_resumable());
+    check!(incomplete.is_resumable());
+    check!(source_failures.is_resumable());
+    check!(!terminal.is_resumable());
+    check!(!completed.is_resumable());
     Ok(())
 }
 

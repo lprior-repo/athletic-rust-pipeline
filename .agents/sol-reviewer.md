@@ -24,7 +24,7 @@ Patch only confirmed defects within explicitly assigned ownership. Main owns sha
 Fjall schema, serialized types, workflow interfaces, caller migration and final integration. No
 compatibility shims, duplicated business rules, source-specific identity exceptions, forbidden Rust
 constructs, Rust comments, lint suppression, quality-baseline relaxation or new Python pipeline logic.
-Do not expand Kani work.
+
 
 During concurrent implementation or review waves, skip compilation, tests, lint, formatting,
 services, live acquisition, benchmarks and gates. Main runs the integrated checks. Execute checks

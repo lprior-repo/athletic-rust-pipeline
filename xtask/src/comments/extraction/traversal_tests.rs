@@ -45,7 +45,7 @@ fn excluded_sources_and_non_rust_evidence_do_not_count_as_examined_sources() -> 
 }
 
 #[test]
-fn actual_fixture_graph_includes_tests_examples_benches_kani_and_tools() -> TestResult {
+fn actual_fixture_graph_includes_tests_examples_benches_and_tools() -> TestResult {
     let root = tempfile::tempdir()?;
     write_source(root.path(), "src/lib.rs", "fn safe() {}")?;
     for relative in [
@@ -53,7 +53,6 @@ fn actual_fixture_graph_includes_tests_examples_benches_kani_and_tools() -> Test
         "tests/fixtures/nested/input.rs",
         "examples/example.rs",
         "benches/bench.rs",
-        "kani/proof.rs",
         "tools/nested/helper.rs",
     ] {
         write_source(

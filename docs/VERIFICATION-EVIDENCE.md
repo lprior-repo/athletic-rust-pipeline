@@ -65,63 +65,6 @@ The seven actual successful incremental closure payloads are preserved in
 actual `sha256sum` output are in `local://79l-final-scanner-raw-digests.json`.
 The final `target/debug/xtask comments` checked the same 1,538 files and found no comments.
 
-Six existing Kani extraction sites were repaired only after independent permission:
-`local://79l-existing-kani-maintenance-plan.json`
-SHA-256 `a2360bfea29cba1d5e87191f9e6a56cfd342f72152b7c2b9462ba6c2ec9ee5d2`;
-`local://79l-existing-kani-maintenance-bound-review.json`
-SHA-256 `c8a1ea07c175315a12cb8461c2943ff124ce585830a4ae596ae23869809391be`.
-The original source domains, real production calls, predicates and source unwind attributes
-remain unchanged. The one corrected cover compares a hexadecimal byte to ASCII `b'0'`,
-not impossible binary zero. Cover reachability is not a proof of correctness.
-Actual original source bytes were recovered from retained pre-edit review tool results and
-matched the frozen hashes; complete source comparison is preserved in
-`local://79l-original-source-recovery-provenance.json` and
-`local://79l-exact-original-to-applied-proof-diffs.json`.
-The ledger hash in the frozen plan is its historical pre-entry binding, not this updated ledger.
-Independent applied-source maintenance review
-`local://79l-applied-kani-maintenance-independent-review.json` (34,737 bytes,
-SHA-256 `25f73e199f0a5ea4c7329fa703aa6c7706810265bb86e87eab75b84adc2de2fd`)
-approved all six shapes and the cover correction only. Final theorem/bridge readiness remains
-unverified; production contact, key and table files match their frozen input hashes.
-
-Main ran both package codegen smokes successfully in 7.76 seconds, then the following retained
-key harnesses with Kani 0.67.0/CBMC 6.8.0, single-job execution, all checks enabled and individual
-systemd scopes (`MemoryHigh=4G`, `MemoryMax=6G`, `MemorySwapMax=0`):
-
-| Harness | Final checks | Reachability | Verification time |
-|---|---:|---:|---:|
-| `check_observation_key_round_trip` | 0 of 728 failed; 6 unreachable | 4 of 4 covers satisfied | 52.783497 s |
-| `check_observation_key_null_byte_id` | 0 of 690 failed; 6 unreachable | no cover claim | 31.333216 s |
-| `check_observation_key_zero_and_max_sequence` | 0 of 688 failed; 6 unreachable | no cover claim | 4.8440027 s |
-| `check_split_key_reads_fixed_width_tail` | 0 of 232 failed; 1 unreachable | 2 of 2 covers satisfied | 0.7418221 s |
-
-Each actual command selected its named harness using
-`cargo kani --manifest-path crates/census-store/Cargo.toml --harness <name> -j 1`.
-All four ended `VERIFICATION:- SUCCESSFUL`; raw combined output `artifact://1739`
-(95.46 seconds overall). The first mailbox consumer and the six-length JSON-boundary harness
-were still executing when this entry was written; the chained mailbox idempotence command had
-not started. The JSON-boundary harness uses only the independently accepted
-CLI `--unwind 514` candidate, derived in
-`local://79l-k5-source-bound-supplement.json`; its original source `#[kani::unwind(48)]` and
-lengths 0, 1, 2, 511, 512, 513 remain intact. No guessed bound escalation is permitted.
-Codegen warnings include inherited unused Display/dead CPUID proof helpers and unsupported
-construct/concurrency reports; codegen success does not dispose of reachability or certify
-unexecuted harnesses. Seven-harness proof closure and independent behavior bridges remain
-unverified. This selected maintenance lane does not replace the eight mandatory release kernels.
-
-Subsequent actual results: the first mailbox harness exceeded its 3,600-second deadline
-(`artifact://1740`, 3,600.29 seconds), so the chained idempotence command never started.
-K5 also exceeded 3,600 seconds (`artifact://1741`, 3,600.27 seconds); its retained diagnostic
-reports `memchr_naive` not unwound at iteration 514. Neither run reached a final verification
-verdict. Both actual systemd scopes were subsequently `not-found`, `inactive`, `dead`, with
-empty control groups. The separately exercised idempotence consumer then failed verification
-(`artifact://1770`, 47.09 seconds overall, 39.730568 seconds verification): unsupported
-`TerminatorKind::InlineAsm` is actually reachable in `std::arch::x86_64::__cpuid_count`.
-This is a failed proof, not a passing compile or a mailbox counterexample. Exact command:
-`cargo kani --manifest-path crates/census-domain/Cargo.toml --harness check_set_published_email_idempotent -j 1`,
-inside a scope with the same memory limits. No new stub or changed domain was authorized.
-The newly observed `memchr` cutoff requires exact source/model derivation and independent
-permission before any candidate changes; there is no guessed increase or disabled check.
 
 The later one-execution printable-mailbox experiment also timed out at its independently
 approved 600-second deadline (`artifact://1847`, 600.23 seconds). Its exact command is frozen
@@ -131,7 +74,6 @@ read-only independent permission is recorded in
 `local://79l-p1-checked-loop-execution-independent-review.json` (SHA-256
 `88788a61aebbd5ed6e39b45b3e1970626e133bf5b1362493c1b9aac6764cd566`).
 The command applied only the three exact generated byte-fold/trim-loop bounds of 14.
-The 12-byte printable domain, source `#[kani::unwind(64)]`, all other loop bounds,
 real constructors, safety checks and unwinding assertions were unchanged. No final
 verification verdict was produced; no proof or trust obligation is closed.
 After the deadline, scope `run-p3718799-i7955360.scope` was actually observed
@@ -206,7 +148,6 @@ logical identities or retry ceilings. The fallible
 after it (`artifact://1891`). The native binaries built (`artifact://1894`). The new
 owned-Rust lexical scan checked 1,538 files and three rendered templates, and workspace
 all-target/all-feature Clippy denied unwrap/expect extraction successfully
-(`artifact://1902`). No new Kani or native corrected-path verdict is implied by these checks.
 
 Before same-store verification, the original endpoint received TERM and exited zero.
 Its supervised drain certificate was
@@ -781,7 +722,6 @@ Observed blockers included the teams-stage inner `RunRetryPolicy` declaring thre
 the one-attempt inner ceiling; two MileSplit parity dispatch failures for
 `troy_725218_raw_projection_provenance.json`; the crawl assert-family ratchet increasing from zero
 to 19; and seven newly oversized functions. Strict source Clippy reported zero diagnostics in
-this execution. Cargo-vet reported 345 unvetted dependencies. The mandatory Kani lane reported
 eight missing proof kernels: `check_census_scope`, `check_fixed_point_bounds`,
 `check_identity_contradiction`, `check_pr_comparison_laws`, `check_redirect_cycle`,
 `check_retry_limit`, `check_store_batch_arithmetic`, and `check_terminal_state_no_retry`.
@@ -1557,20 +1497,15 @@ after the documented `/tmp` quota failure. No cache or historical store was dele
 | `cargo test -p census-report unsupported_graduation_cases_are_retained_in_review_without_a_canonical_athlete -- --nocapture` | 1 passed against a complete generated workbook: pending unsupported case visible, resolved case excluded, no canonical athlete created. |
 | `cargo xtask scan` and `cargo xtask contract` before PIAA integration | 9 crates; every forbidden source metric, files-over-300 and functions-over-60 were zero; 8/8 architecture checks passed with 23 descriptors. This does not certify the later 24-descriptor tree. |
 
-One production-bound Kani harness was run, not the full proof inventory:
 
 ```sh
-systemd-run --user --scope --collect -p MemoryHigh=4G -p MemoryMax=6G -p MemorySwapMax=0 cargo kani --manifest-path crates/census-domain/Cargo.toml -Z stubbing --harness check_gradyear_of_formula -j 1
 ```
 
-Kani 0.67/CBMC 6.8 reported `0 of 187 failed`, `8 of 8 cover properties satisfied` and one
 successfully verified harness. The scoped grade-9–12 × school-year-1900–2100 matrix has 804
 combinations. Covers establish reachability, not additional proofs. Retained log
-`var/audit-20260930/cohort-kani.log` SHA-256:
 `acc008d9b1a93d1c836c6b7464e1414b26d70371e0c4214c369c1a855967a220`;
 inventory SHA-256:
 `1c7bd31301d7e59982a52fbacc19d6a535e8360a0682e548383218ffe6acfd49`.
-The owner requested no expansion of Kani coverage.
 
 ### Real captured adapter, recording and workbook surfaces
 
@@ -2784,8 +2719,6 @@ smokes did not open or modify the original admissions workbook.
 ## Toolchain
 
 ```text
-$ cargo kani --version
-cargo-kani 0.67.0
 
 $ cargo fuzz --version
 cargo-fuzz 0.13.2
@@ -2795,52 +2728,34 @@ cargo-fuzz 0.13.2
 
 $ rustup toolchain list
 nightly-2026-04-27-x86_64-unknown-linux-gnu (active, default)
-… plus stable, 1.85, 1.95.0, nightly-2026-05-05, and Kani 0.67.0's bundled nightly-2025-11-21
 ```
 
-Both tools are present, so nothing in this pack is unverifiable for tool reasons. Kani runs on its own
 bundled nightly (`nightly-2025-11-21`), so the active default toolchain does not matter.
 
 ## Harness inventory
 
 | Crate | File | Harnesses | Properties |
 |---|---|---|---|
-| `crates/census-domain` | `kani/gradyear.rs` | 4 | `GradYear::of` cohort derivation and saturation, `ObservedGrade::grad_year` agreement, known cohort values |
-| `crates/census-domain` | `kani/publish.rs` | 9 | published-address classification by domain and routing on set (symbolic + known-value tables), `normalize_name` diacritics/shape/idempotency |
-| `crates/census-domain` | `kani/id_mint.rs` | 5 | `Id::mint` determinism, shape, tag prefixes, golden digest, `as_str`/`Display` agreement |
-| `crates/census-store` | `kani/keys.rs` | 5 | `observation_key`/`split_observation_key` round-trip, fixed-width tail, id bounds, null byte and max-sequence handling |
-| `crates/census-store` | `kani/merge.rs` | 5 | `Entity::merge` idempotency (School, Coach), `CanonicalCoach::publish` idempotency, address routing (arbitrary and known-value tables) |
 
 **Current set (2026-09-25).** The contact policy changed: an address a source published is classified by
 domain and routed to `professional_email` or `personal_email`, and none is withheld. That replaced the
-two `professional_email` withholding harnesses in `census-domain/kani/publish.rs` (now 9, including
 `check_published_email_classifies_domains` and `check_set_published_email_routes_by_kind`) and the two
-withhold harnesses in `census-store/kani/merge.rs` (now `check_coach_publish_routes_arbitrary_address` and
 `check_coach_publish_routes_known_addresses`), for **28 harnesses** in total. The per-harness audit below
 records the pre-change set under its old names; no verdict in it was re-run.
 
 Wiring: `crates/census-store/src/lib.rs` ends with
 
 ```rust
-#[cfg(kani)] include!("../kani/store_wiring.rs");
 ```
 
-and `kani/store_wiring.rs` declares `kani/keys.rs` and `kani/merge.rs` as modules with `#[path = ...]`.
-`census-domain` uses the same pattern through `kani/census_domain_wiring.rs`. Both are compiled only
-under `cargo kani`, which is what defines `cfg(kani)`.
 
 Commands (from the repository root), one harness per invocation:
 
 ```bash
-cargo kani --manifest-path crates/census-domain/Cargo.toml --harness <name>
-cargo kani --manifest-path crates/census-store/Cargo.toml --harness <name>
 
-# the id_mint and merge harnesses additionally need Kani's stubbing feature:
-cargo kani -Z stubbing --manifest-path crates/census-domain/Cargo.toml --harness check_id_mint_format
 ```
 
 `-Z stubbing` is required only because those harnesses stub the CPU feature probe `__cpuid_count`
-(see below). Kani rejects a stubbed harness without the flag:
 
 ```text
 error: Using the stub attribute requires activating the unstable `stubbing` feature
@@ -2848,18 +2763,15 @@ error: Using the stub attribute requires activating the unstable `stubbing` feat
 
 ## Repairs made in this pass
 
-1. **Arbitrary `String`.** `kani::any()` has no `Arbitrary` implementation for `String`, so the
    delivered `publish.rs` / `id_mint.rs` harnesses could not compile. Symbolic inputs are now bounded
    `[u8; N]` arrays (converted through `String::from_utf8_lossy`, or, for the address harness, built
    from printable-ASCII bytes); properties that need no symbolic input use concrete value tables.
 2. **sha2's runtime CPU probe.** Minting an id hashes through `sha2`, which selects its backend at
-   runtime via `cpufeatures` → `__cpuid_count` (inline asm). Kani refuses inline asm, so every harness
    that mints an id failed before reaching the code under test:
 
    ```text
    SUMMARY:
     ** 1 of 4028 failed (4027 undetermined)
-   Failed Checks: TerminatorKind::InlineAsm is not currently supported by Kani. Please post your example at https://github.com/model-checking/kani/issues/2
     File: ".../stdarch/crates/core_arch/src/x86/cpuid.rs", line 75, in std::arch::x86_64::__cpuid_count
    VERIFICATION:- FAILED
    ```
@@ -2867,8 +2779,6 @@ error: Using the stub attribute requires activating the unstable `stubbing` feat
    The probe is now stubbed to report no CPU features (`cpuid_without_features` in `id_mint.rs` and
    `merge.rs`), which routes the hash to sha2's pure-Rust soft backend; `Id::mint` and the entity code
    stay untouched. The SHA-NI backend is an acceleration of the same function and is **not** verified —
-   Kani cannot model it.
-3. **Unwinding.** Inside sha2, Kani hits loops in the block/compression code and in `memcmp` that a
    bound of 32 (and later 72) does not cover:
 
    ```text
@@ -2877,10 +2787,8 @@ error: Using the stub attribute requires activating the unstable `stubbing` feat
    Failed Checks: unwinding assertion loop 0
     File: ".../library/core/src/slice/iter/macros.rs", line 252, in <std::slice::IterMut<'_, u8> as std::iter::Iterator>::fold
    VERIFICATION:- FAILED
-   [Kani] info: Verification output shows one or more unwinding failures.
    ```
 
-   The minting harnesses are annotated `#[kani::unwind(64)]` — the digest's own loop count: sha2's
    compression loop runs 64 rounds, the `GenericArray` folds 32 steps, and one 64-byte block covers a
    short id. At 64 the sha2 loops complete and the only truncation left in the trace is `memcmp.0`.
 4. **Loop shapes inside the harnesses.** `assert_id_shape` walks its 16 hex digits with an index loop
@@ -2895,11 +2803,8 @@ error: Using the stub attribute requires activating the unstable `stubbing` feat
      Symbolic-input harnesses (observation keys, entity merge, the symbolic mailbox harness) run with
      unwinding checks left on.
 6. **Previous compile blockers are gone.** `crates/census-service` builds and the store harnesses run in
-   this tree (the `bootstrap.rs:287` / `bootstrap/error.rs:90` errors no longer reproduce). No kani
-   file calls `DrainState::from_join` (`grep -rn from_join crates/*/kani/` returns nothing), so the
    signature change to `Result<(), tokio::task::JoinError>` needed no harness edit.
 
-## Kani results
 
 ### States, provenance, and sweep discipline
 
@@ -2908,8 +2813,6 @@ error:
 
 | State | What was observed |
 |---|---|
-| `verified` | Kani printed `VERIFICATION:- SUCCESSFUL` and a `SUMMARY:` line reading `** 0 of N failed` for that harness. |
-| `env-blocked (reason)` | CBMC, its solver, or the sweep environment ended the run with no `Failed Checks:` property line; the reason is what Kani printed. Never evidence about the code under test. |
 | `counterexample (property)` | A `Failed Checks: <property>` line names a property the harness asserts. |
 | `no verdict (reason)` | The run — or the sweep window — ended before any of the above. Not a pass, not a blocked proof, not a counterexample. |
 
@@ -2917,10 +2820,8 @@ The provenance column cites the run, and each row's raw tail is reproduced under
 label in the last column:
 
 - **prev-pass** — executed by the previous verification pass against this same working tree; its logs
-  are `/tmp/kani-cd/*.log` (census-domain) and `/tmp/kani-mw/*.log` (census-service), and the wall
   times quoted are that pass's. The four gradyear results were declared reusable for this sweep; the
   rest were not re-run before the sweep window closed.
-- **this-window** — executed by this sweep; logs under `/tmp/kani-sweep2/`.
 
 Run discipline, this window: strictly one CBMC process at a time (`pgrep -x cbmc` verified empty
 before each start and re-checked after each run), each invocation in its own process group with its own
@@ -2928,9 +2829,6 @@ wall budget and a 5 s sampler over `/proc/<pid>/status` `VmHWM` for peak CBMC RS
 started either finished on CBMC's own out-of-memory path or were cut off by the budget; both process
 groups were killed and re-checked before these tables were written.
 
-**No harness was edited in this sweep.** `git status --porcelain crates/census-domain/kani
-crates/census-store/kani` is empty, so `git diff` over both `kani/**` trees shows nothing at all —
-no format-message edit, no added `assume`, no deleted harness, no `#[kani::ignore]`. The one harness
 whose asserted property this lane believes is false on the current model
 (`check_normalize_idempotent_repeated_suffix`, whose doc comment predicts exactly that counterexample)
 was left as written: it is a finding for `crates/census-domain/src/model/normalization.rs`
@@ -2944,28 +2842,22 @@ comment updated from "expected to fail" to the fixpoint contract, and the behavi
 normal suite by `census-domain`'s `model::tests::normalize_name_reaches_a_fixpoint_on_repeated_suffixes`
 (`cargo nextest run -p census-domain -E 'test(normalize_name)'`, 4 passed, and the full workspace run,
 583 passed). The harness itself is a *concrete*-input check — it feeds one literal and asserts one
-equality — so its Kani run adds no reach over that unit test; the CBMC attempt from this follow-up
 (T14) was killed at 549.5 s inside `core::slice::memchr`, before a verdict, which is why row 12 keeps
 `no verdict`.
 
 ### Sweep environment notes
 
 1. **A missing `CARGO_HOME` breaks every harness launch, in 0.1 s.** The first sweep attempt launched
-   `cargo kani` from a non-interactive process environment without `CARGO_HOME`. Every harness died
    immediately with
 
    ```text
-   Kani Rust Verifier 0.67.0 (cargo plugin)
    error: Failed to get cargo metadata.: failed to start `cargo metadata`: No such file or directory (os error 2): No such file or directory (os error 2)
    ```
 
-   `cargo kani --version` succeeds in that same environment, so a version probe cannot see this fault;
    it only appears on a real harness run. Exporting `CARGO_HOME` — the value the interactive shell
    carries — fixes it, and every run reported below used the full interactive environment. Those 0.1 s
-   `rc=1` rows are launch faults, not Kani results.
 
 2. **A transient manifest fault explains the previous pass's `rc=1 secs=0` rows.** Its logs
-   (`/tmp/kani-cd/check_normalize_idempotent.log` and siblings, 394 bytes each) show every harness
    dying inside the same second with
 
    ```text
@@ -3038,32 +2930,27 @@ agreement with `GradYear::of`. No other harness in either crate has a verdict.
 
 ### Raw tails
 
-T1–T4 — `crates/census-domain/kani/gradyear.rs`, verified, prev-pass (`/tmp/kani-cd/`, one harness per
 invocation; the log for each run names the harness it checked and this crate's path):
 
 ```text
-T1 cargo kani --manifest-path crates/census-domain/Cargo.toml --harness check_gradyear_of_formula
 SUMMARY:
  ** 0 of 122 failed
 VERIFICATION:- SUCCESSFUL
 Verification Time: 0.05850434s
 Complete - 1 successfully verified harnesses, 0 failures, 1 total.
 
-T2 cargo kani --manifest-path crates/census-domain/Cargo.toml --harness check_gradyear_of_known_values
 SUMMARY:
  ** 0 of 128 failed
 VERIFICATION:- SUCCESSFUL
 Verification Time: 0.04390135s
 Complete - 1 successfully verified harnesses, 0 failures, 1 total.
 
-T3 cargo kani --manifest-path crates/census-domain/Cargo.toml --harness check_gradyear_of_saturating
 SUMMARY:
  ** 0 of 59 failed
 VERIFICATION:- SUCCESSFUL
 Verification Time: 0.03621107s
 Complete - 1 successfully verified harnesses, 0 failures, 1 total.
 
-T4 cargo kani --manifest-path crates/census-domain/Cargo.toml --harness check_observed_grade_grad_year
 SUMMARY:
  ** 0 of 327 failed (4 unreachable)
 VERIFICATION:- SUCCESSFUL
@@ -3072,7 +2959,6 @@ Complete - 1 successfully verified harnesses, 0 failures, 1 total.
 ```
 
 T5 — `check_professional_email_known_consumer`, `env-blocked`, prev-pass
-(`/tmp/kani-cd/check_professional_email_known_consumer.log`, last 7 lines):
 
 ```text
 CBMC failed
@@ -3080,13 +2966,10 @@ VERIFICATION:- FAILED
 CBMC appears to have run out of memory. You may want to rerun your proof in an environment with additional memory or use stubbing to reduce the size of the code the verifier reasons about.
 
 Manual Harness Summary:
-Verification failed for - kani_publish::check_professional_email_known_consumer
 Complete - 0 successfully verified harnesses, 1 failures, 1 total.
 ```
 
 T6 — `check_professional_email_malformed`, `env-blocked`, prev-pass
-(`/tmp/kani-cd/check_professional_email_malformed.log`; command as the previous pass recorded it:
-`cargo kani --no-unwinding-checks --manifest-path crates/census-domain/Cargo.toml --harness check_professional_email_malformed`):
 
 ```text
 CBMC failed
@@ -3094,11 +2977,9 @@ VERIFICATION:- FAILED
 CBMC appears to have run out of memory. You may want to rerun your proof in an environment with additional memory or use stubbing to reduce the size of the code the verifier reasons about.
 
 Manual Harness Summary:
-Verification failed for - kani_publish::check_professional_email_malformed
 Complete - 0 successfully verified harnesses, 1 failures, 1 total.
 ```
 
-T7 — `check_normalize_shape`, `env-blocked`, prev-pass (`/tmp/kani-cd/check_normalize_shape.log`;
 runs with `--no-unwinding-checks` as recorded by that pass):
 
 ```text
@@ -3107,32 +2988,26 @@ VERIFICATION:- FAILED
 CBMC appears to have run out of memory. You may want to rerun your proof in an environment with additional memory or use stubbing to reduce the size of the code the verifier reasons about.
 
 Manual Harness Summary:
-Verification failed for - kani_publish::check_normalize_shape
 Complete - 0 successfully verified harnesses, 1 failures, 1 total.
 ```
 
 T8 — `check_observation_id_bounds`, `env-blocked (CBMC OOM)`, **this-window**
-(`/tmp/kani-sweep2/check_observation_id_bounds.log`, 1,681,406 bytes, wall 710.0 s, peak sampled CBMC
 `VmHWM` 21.0 GiB, one CBMC at a time, no other harness running):
 
 ```text
-$ cargo kani --manifest-path crates/census-service/Cargo.toml --harness check_observation_id_bounds
 CBMC failed
 VERIFICATION:- FAILED
 CBMC appears to have run out of memory. You may want to rerun your proof in an environment with additional memory or use stubbing to reduce the size of the code the verifier reasons about.
 
 Manual Harness Summary:
-Verification failed for - store::kani::check_observation_id_bounds
 Complete - 0 successfully verified harnesses, 1 failures, 1 total.
 ```
 
 T9 — `check_id_mint_golden_value`, `env-blocked (solver)`, prev-pass. Both solver attempts, verbatim
-(`/tmp/kani-cd/check_id_mint_golden_value-z3.log`, `…-bitwuzla.log`), plus the default-solver attempt
 from that pass's own summary file (`check_id_mint_golden_value rc=137 secs=244`, i.e. killed by the
 batch wrapper, no verdict):
 
 ```text
-$ cargo kani -Z stubbing --no-unwinding-checks --solver z3 --manifest-path crates/census-domain/Cargo.toml --harness check_id_mint_golden_value
 size of program expression: 659841 steps
 slicing removed 490160 assignments
 Generated 47259 VCC(s), 9690 remaining after simplification
@@ -3145,7 +3020,6 @@ CBMC failed with status 6
 VERIFICATION:- FAILED
 
 Manual Harness Summary:
-Verification failed for - kani_id_mint::check_id_mint_golden_value
 Complete - 0 successfully verified harnesses, 1 failures, 1 total.
 ```
 
@@ -3157,12 +3031,10 @@ CBMC failed with status 134
 VERIFICATION:- FAILED
 
 Manual Harness Summary:
-Verification failed for - kani_id_mint::check_id_mint_golden_value
 Complete - 0 successfully verified harnesses, 1 failures, 1 total.
 ```
 
 T11 — `check_id_mint_format`, `no verdict`, prev-pass: the run was killed mid-trace. Its log
-(`/tmp/kani-cd/check_id_mint_format.log`, 1,620,050 bytes) contains zero `VERIFICATION` lines and ends
 inside CBMC's path trace:
 
 ```text
@@ -3170,17 +3042,13 @@ aborting path on assume(false) at file …/library/core/src/result.rs line 966 c
 ```
 
 T12 — `check_observation_key_null_byte_id`, `env-blocked (budget)`, **this-window**
-(`/tmp/kani-sweep2/check_observation_key_null_byte_id.log`, 1,596,753 bytes; killed at the 600 s budget
 with peak sampled CBMC `VmHWM` 3.2 GiB and no verdict line; the log's last line):
 
 ```text
-$ cargo kani --manifest-path crates/census-service/Cargo.toml --harness check_observation_key_null_byte_id
 …
-aborting path on assume(false) at file /home/runner/work/kani/kani/library/kani_core/src/models.rs line 176 column 17 function <usize as kani::rustc_intrinsics::ToISize>::to_isize thread 0
 ```
 
 T13 — `check_observation_key_zero_and_max_sequence`, `env-blocked`, prev-pass
-(`/tmp/kani-mw/check_observation_key_zero_and_max_sequence.log`, 5,463,239 bytes, that pass's wall
 223 s):
 
 ```text
@@ -3189,28 +3057,22 @@ VERIFICATION:- FAILED
 CBMC appears to have run out of memory. You may want to rerun your proof in an environment with additional memory or use stubbing to reduce the size of the code the verifier reasons about.
 
 Manual Harness Summary:
-Verification failed for - store::kani::check_observation_key_zero_and_max_sequence
 Complete - 0 successfully verified harnesses, 1 failures, 1 total.
 ```
 
 Unlabeled tails for completeness: the two `no verdict` rows that did start are T11 (prev-pass
 `check_id_mint_format`) and the `check_normalize_diacritics` probe of this window, whose output was not
 captured (a 600 s run that had not reached a verdict; a second probe was discarded when it was piped
-through `head`). `/tmp/kani_cd_baseline.log` is a pre-repair multi-harness run whose harness names
 (`check_gradyear_of_valid`) do not match the current set, and it is **not** used as evidence anywhere
 above.
 
 T14 — `check_normalize_idempotent_repeated_suffix`, `no verdict (killed mid-trace)`, follow-up run
-against the fixed model, same day (`cargo kani --manifest-path crates/census-domain/Cargo.toml
 --harness check_normalize_idempotent_repeated_suffix` with `CARGO_HOME` exported, wall 549.5 s, peak
 sampled CBMC `VmHWM` 15.7 GiB, killed by the operator once it was clear the run was walking the string
 machinery rather than the property; the last lines of the captured output):
 
 ```text
-aborting path on assume(false) at file .../kani_core/src/models.rs line 176 column 17 function <usize as kani::rustc_intrinsics::ToISize>::to_isize thread 0
-aborting path on assume(false) at file .../kani/src/lib.rs line 57 column 1 function kani::mem::cbmc::same_allocation thread 0
 Unwinding loop _RNvNvNtNtCsci0VKyKEi6N_4core5slice6memchr14memchr_aligned7runtimeCskfx95qGcYES_13census_domain.0 iteration 62 file .../core/src/slice/memchr.rs line 81 column 13 function core::slice::memchr::memchr_aligned::runtime thread 0
-aborting path on assume(false) at file .../kani_core/src/models.rs line 176 column 17 function <usize as kani::rustc_intrinsics::ToISize>::to_isize thread 0
 Unwinding loop _RNvNvNtNtCsci0VKyKEi6N_4core5slice6memchr14memchr_aligned7runtimeCskfx95qGcYES_13census_domain.0 iteration 63 file .../core/src/slice/memchr.rs line 81 column 13 function core::slice::memchr::memchr_aligned::runtime thread 0
 ```
 
@@ -3292,7 +3154,6 @@ boundary, `SourceNamespace::is_core`, `EventKind::from_source_label`, `Gender::p
 
 ## Not established here
 
-- **23 of the 27 Kani harnesses.** 7 are `env-blocked` and 16 have `no verdict`; the two verdict tables
   above name every one of them. The blocked set and its failure mode, exactly:
   - CBMC's own out-of-memory path, with no `Failed Checks:` line: `check_professional_email_known_consumer`,
     `check_professional_email_malformed`, `check_normalize_shape`,
@@ -3313,7 +3174,6 @@ boundary, `SourceNamespace::is_core`, `EventKind::from_source_label`, `Gender::p
     inside `core::slice::memchr`, T14) — none carries a verdict line, so none is evidence about its
     property either way. That last harness has no symbolic input; its property is pinned in the unit
     suite instead (`model::tests::normalize_name_reaches_a_fixpoint_on_repeated_suffixes`).
-- **SHA-NI SHA-256 backend** (see repair 2) — unreachable for Kani; the soft backend is what is proved.
 - **Deeper fuzzing than 1000 runs per target** — the runs are bounded smoke runs, not soak runs.
 - **cargo-mutants** — carried from the earlier pack, not re-run here.
 - **Traceability matrix** — separate work item, not part of this pack.
@@ -3570,19 +3430,13 @@ sampled of 579732 rows, 5000 performances sampled of 202979 rows)`, exit 0, 6m56
 (`PASS: backup drill completed successfully`, `observations match: 3859887`, exit 0). The live route
 agrees with the drill's count: `Census/status` through the ingress reads `observations=3859887`.
 
-## Kani harness audit — this sweep
 
 ### Harness inventory and claim map (27 harnesses)
 
-Enumerated via `rg '#\[kani::proof\]'` across `crates/census-domain/kani/` and `crates/census-store/kani/`.
-5 wiring files: `census_domain_wiring.rs` (4 modules), `store_wiring.rs` (2 modules). Total: 27 `#[kani::proof]` functions.
 
 | # | File | Harness | Claimed property | Symbolic input | Bound | Unwind | Assumptions | Stubs |
 |---|---|---|---|---|---|---|---|---|
-| 1 | gradyear.rs | `check_gradyear_of_formula` | Formula holds; in-domain derivation accepted | `grade:u8`, `school_year:i16` | 9..=12, 2020..=2027 | 16 | `kani::assume` on both | none |
 | 2 | gradyear.rs | `check_gradyear_of_known_values` | Known cohort anchors | none (concrete) | — | 16 | none | none |
-| 3 | gradyear.rs | `check_gradyear_of_saturating` | Saturating formula for all seasons | `school_year:i16` | 1900..=2100 | 16 | `kani::assume` | none |
-| 4 | gradyear.rs | `check_observed_grade_grad_year` | `ObservedGrade::grad_year` = `GradYear::of` | `grade:u8`, `school_year:i16` | 9..=12, 2020..=2040 | 16 | `kani::assume` on both | none |
 | 5-12 | publish.rs | 8 harnesses | published-address classification by domain and routing on set (symbolic + known-value tables), `normalize_name` diacritics/shape/idempotency | `[u8;12]` address (printable ASCII), concrete tables | 12 bytes | 64 | none | none |
 | 13-17 | id_mint.rs | 5 harnesses | `Id::mint` format, tag prefix, determinism, golden digest, `as_str`/`Display` consistency | none (concrete) | — | 64 | none | `__cpuid_count` stub |
 | 18-22 | keys.rs | 5 harnesses | Key round-trip, null-byte id, zero/max sequence, fixed-width tail split, id bounds | `[u8;8]` id, `[u8;24]` raw key, `u64` sequence | 8, 24 | 48 | none | none |
@@ -3592,11 +3446,8 @@ Enumerated via `rg '#\[kani::proof\]'` across `crates/census-domain/kani/` and `
 
 #### `assumptions_are_debt` — GAP found, fixed
 
-Rule: "Audit each assumption and require `kani::cover` or equivalent non-vacuity evidence for critical domains."
 
-**Before fix:** Zero `kani::cover!` across all 27 harnesses. Every harness that uses `kani::assume`, `bounded_any`, or constructs bounded symbolic inputs lacks non-vacuity evidence.
 
-**After fix:** Added `kani::cover!` points in 3 files:
 - `gradyear.rs`: 3 harnesses (formula, saturating, observed_grade) — 10 new cover points for assumed boundaries
 - `keys.rs`: 2 harnesses (round_trip, split_key) — 6 new cover points for id/sequence boundaries
 - `merge.rs`: 5 harnesses (school_merge, coach_merge, coach_publish_idempotent, coach_publish_routes_arbitrary_address) — 10 new cover points for text/email boundaries
@@ -3606,7 +3457,6 @@ Rule: "Audit each assumption and require `kani::cover` or equivalent non-vacuity
 
 #### `stubs_and_contracts_are_trust_boundaries` — CONFORMS
 
-10 harnesses use `#[kani::stub(core::arch::x86_64::__cpuid_count, cpuid_without_features)]` (5 in `id_mint.rs`, 5 in `merge.rs`). All require `-Z stubbing` at runtime. The VERIFICATION-EVIDENCE.md records this correctly (section "Commands" and "Repairs" §2). The stub replaces inline asm with a pure-Rust model; the SHA-NI backend is acknowledged as unverified.
 
 #### `negative_evidence` — CONFORMS (inline rejection evidence)
 
@@ -3616,7 +3466,6 @@ No harness claims rejection of invalid inputs without existing evidence. The `pr
 
 #### `unwind_is_proof_context` — CONFORMS
 
-All harnesses use `#[kani::unwind(N)]` annotations (16, 48, or 64). The sha2 harnesses at unwind(64) are justified in the doc comments (64 compression rounds). The VERIFICATION-EVIDENCE.md documents unwinding history and fixes.
 
 #### `resource_governance` — GAP
 
@@ -3626,14 +3475,9 @@ Recorded commands in VERIFICATION-EVIDENCE.md do not use `-j 1` or cgroup memory
 
 The harness inventory table lists all 27 harnesses with their files, counts, and properties. This is consistent with the `rg` source scan result (27 matches).
 
-### Tools/gate.sh and xtask Kani invocation status
 
-- **`tools/gate.sh`**: No Kani invocations found.
-- **`xtask`**: References `kani/` as a harness directory in scan logic (`xtask/src/scan.rs`, `xtask/src/scan/packages.rs`, `xtask/src/scan/packages/tests.rs`) but does **not** invoke `cargo kani`. It only lists `kani` as a harness directory type for the package scanner.
 
-### Kani run results
 
-**Blocker:** The harnesses could not be run in this sweep. The `census-domain` crate has uncommitted changes in `src/model/event_performance.rs` that introduce a dependency on `fixed_mark.rs` types (`CentiSeconds`, `CentiMetres`, `CentiPoints`). These types use `#[serde(transparent)]` and `#[serde(serialize_with, deserialize_with)]` attributes. The Kani bundled toolchain (`nightly-2025-11-21`) fails to resolve the `#[serde(...)]` attribute in the proc-macro-generated code, producing:
 
 ```
 error: cannot find attribute `serde` in this scope
@@ -3643,25 +3487,15 @@ error: cannot find attribute `serde` in this scope
    |   ^^^^^
 ```
 
-The same crate compiles successfully under the workspace toolchain (`nightly-2026-04-27`): `cargo check -p census-domain` exits 0. The failure is a Kani-toolchain-specific serde proc-macro issue, not a harness defect.
 
 ### Changes summary
 
 **Files changed:**
-1. `crates/census-domain/kani/gradyear.rs` — Added 10 `kani::cover!` points across 3 harnesses (formula, saturating, observed_grade). Added doc comments explaining non-vacuity purpose. (+19 lines)
-2. `crates/census-store/kani/keys.rs` — Added 6 `kani::cover!` points across 2 harnesses (round_trip, split_key). (+14 lines)
-3. `crates/census-store/kani/merge.rs\` — Added 6 `kani::cover!` points across 4 harnesses (all stubbed harnesses). (\+28 lines)
 
-**Files unchanged:** `census-domain/kani/publish.rs`, `census-domain/kani/id_mint.rs`, `census-store/kani/store_wiring.rs` (no assumptions or bounded generators to defend).
 
-**VERIFICATION-EVIDENCE.md** — Appended Kani harness audit section documenting: harness-to-claim map, audit-by-rule results, tool/gate.sh and xtask status, run blocker, and change summary.
 
 ### References read (in order)
 
-1. `'/home/lewis/.agents/skills/kani/SKILL.md'` — main Kani skill
-2. `'/home/lewis/.agents/skills/kani/references/kani-practice.md'` — practical mental model, scope boundaries, evidence wording, black-hat rules
-3. `'/home/lewis/.agents/skills/kani/references/kani-patterns.md'` — harness idioms, bounded inputs, assumptions, cover, contracts, stubs, anti-patterns
-4. `'/home/lewis/.agents/skills/kani/references/kani-harness.md'` — CLI-first commands, install/setup, evidence capture, triage, report template
 
 ---
 
@@ -4493,10 +4327,8 @@ passed, 0 failed.
 
 - Coverage reconciliation uses saturating subtraction for duplicate-row counts.
 - `bench_census` propagates an out-of-range fixture mark instead of panicking.
-- Kani output classification uses `split_once` instead of byte-indexed string slicing.
 - Strict workspace source Clippy, including `expect_used`, `string_slice` and
   `arithmetic_side_effects`, passed with warnings denied.
-- `cargo test -p xtask kani`: 17 passed.
 - `cargo run -p census-service --example bench_census -- --schools 2`: exit 0;
   70 appended rows, 16 athletes, 32 performances, 16 PR rows, 28,625-byte workbook.
 - Before the numerical-library and Restate-server-recovery additions below,
@@ -5214,7 +5046,6 @@ Distinct defects included a FOUL row under a relay header, RaceDay reporting zer
 for an 82-row finish list, missing meet references, a resumed IHSA limit counting walked rather
 than newly fetched meets, and normalization non-idempotence for `X School School`. The latter
 was repaired to a suffix-stripping fixpoint and pinned by the repeated-suffix regression.
-The Kani census (four verified, seven environment-blocked, sixteen no verdict) and bounded fuzz/
 mutation results already have their detailed logs above; they are not upgraded by this transfer.
 The old 559–627k observations/s figures had no in-repository reproducible baseline.
 
@@ -5242,7 +5073,6 @@ all remain present.
 | G04 | S06 explicitly skipped the named crash boundary |
 | G05 | Review fact hashing sorted words and erased attribution |
 | G06 | Candidate/singleton identity depended on school/name/class/category rather than source-person evidence |
-| G07 | Fast Kani selection was not reconciled with actual wired harnesses |
 | G08 | Benchmark parsing accepted empty output and comparison did not require every baseline group |
 | G09 | RSS capture used invalid `/proc/self/status/VmHWM` and could substitute zero |
 | G10 | Applicability mapped twelve Midwest states, with empty fallback elsewhere |
@@ -5337,13 +5167,11 @@ framework semantics, not this implementation's correctness.
 | R03 | [Failed Quality gate job](https://github.com/lprior-repo/athletic-rust-pipeline/actions/runs/36020764525/job/107715786629) |
 | R04 | [Fixed mark representation](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-domain/src/model/fixed_mark.rs) |
 | R05 | [PR comparison and imperial conversion](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-report/src/bests/measure.rs) |
-| R06 | [Kani runner](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/xtask/src/kani.rs) |
 | R07 | [Production Ingest handler](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-service/src/restate_services/ingest.rs) |
 | R08 | [Performance benchmark capture](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/xtask/src/perf/bench.rs) |
 | R09 | [Existing multi-table StoreBatch](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-store/src/write_batch.rs) |
 | R10 | [Current meet-stage handoff](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-service/src/restate_services/meets_arms.rs) |
 | R11 | [S06 crash/duplicate-evidence scenario](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/tools/durability/scenario-06-no-duplicate-evidence.sh) |
-| R12 | [Current domain Kani module wiring](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-domain/kani/census_domain_wiring.rs) |
 | R13 | [CaseEvidence and review case identity](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-domain/src/model/records.rs) |
 | R14 | [Candidate and canonical athlete types](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-domain/src/model/athlete.rs) |
 | R15 | [Performance comparison](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/xtask/src/perf/compare.rs) |
@@ -5351,11 +5179,9 @@ framework semantics, not this implementation's correctness.
 | R17 | [Repository endgame research](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/research/ENDGAME-GAPS.md) |
 | R18 | [Restate jobs and journal handoff](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-service/src/restate_services/jobs.rs) |
 | R19 | [Jurisdiction pipeline integration](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-service/src/restate_services/jurisdiction/pipeline.rs) |
-| R20 | [Grade-year Kani harnesses](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-domain/kani/gradyear.rs) |
 | E01 | [Restate Rust durable steps](https://docs.restate.dev/develop/rust/durable-steps) |
 | E02 | [Restate Rust error handling](https://docs.restate.dev/develop/rust/error-handling) |
 | E03 | [Serde container attributes](https://serde.rs/container-attrs.html) |
-| E04 | [Kani harness listing](https://model-checking.github.io/kani/reference/experimental/list.html) |
 | E05 | [Criterion command-line options](https://bheisler.github.io/criterion.rs/book/user_guide/command_line_options.html) |
 | E06 | [TigerBeetle testing practices](https://docs.tigerbeetle.com/coding/testing/) |
 | E07 | [TigerBeetle safety practices](https://docs.tigerbeetle.com/coding/safety/) |
@@ -5778,7 +5604,6 @@ body/robots evidence exists. **No gate lane skipped.** Three pre-existing ignore
 did not run: browser `results_capture_costs_one_physical_post` and
 `challenge_response_revokes_the_gate_and_ends_pagination` need fixture origin + CDP browser;
 `walk_derived_tables` needs operator `WALK_ROOT`. No live-site, full historical corpus,
-Verus/Kani/Flux/Loom proof execution, mutation sweep, coverage or crash-atomic artifact-manifest
 acceptance is claimed for this round.
 
 Tracker: **tin CLOSED** with executed evidence (also the phone-precedence defect);
@@ -5949,7 +5774,6 @@ exited 0 without warnings. No lint suppression or quality-baseline changes.
 body/robots pair, as established in round 1; this round's four private-assoc property cases are
 synthetic. The gate's three pre-existing ignored runtime tests remain unexecuted, with their
 round-1 browser/CDP and WALK_ROOT prerequisites unchanged. No lane was skipped. No live-site,
-full historical corpus, Verus/Kani/Flux/Loom execution, mutation sweep or coverage is claimed.
 The new proof is bounded to the executed generation interruption and domain/captured-input
 scenarios above, not power-cut filesystem recovery or hostile concurrent mutation.
 
@@ -6006,7 +5830,6 @@ crates/census-crawl/tests/fixtures/nces/pss2324_pu_head.csv --out /tmp/sa-smoke`
 - A second identical run reused the same generation (one directory under `generations/`, same
   pointer), and `--geocode` exited 1 with the typed refusal, creating no output directory.
 
-**Not claimed.** No live-source, national, full-corpus, Verus/Kani/Flux/Loom or mutation evidence
 accompanies this landing; it integrates a port of tooling into `main`. The one Python behavior not
 ported is the Google/USPS geocoding and postal-validation phase, which the verb refuses by design
 (bead `athletic-rust-pipeline-9p7`), and rows whose state is outside the 49 census jurisdictions are
@@ -7288,36 +7111,26 @@ Both endpoints of that readback are the sanctioned ones: `census-service open-wo
 `var/open-work-rev2-20261003.json` and `var/wi-rev2-state-20261003.json` retain the replies, and
 `var/monitor-rev2/` retains the ten-minute samples.
 
-### The wired Kani runner could not run, and what the harnesses answered
 
-`cargo xtask kani` resolved a default selection of eight harnesses — `check_fixed_point_bounds`,
 `check_pr_comparison_laws`, `check_identity_contradiction`, `check_redirect_cycle`,
 `check_retry_limit`, `check_terminal_state_no_retry`, `check_store_batch_arithmetic`,
 `check_census_scope` — none of which the crates define any more. The registry
-(`xtask/src/kani/harness_list.rs`) holds the 28 harnesses that do exist, so the verb bailed
-`missing required harness(es)` before ever invoking `cargo kani`; it had been unrunnable since the
 harnesses were renamed, and the command's help text still described the old eight invariants. Main
 repaired the runner: the default selection is now `KNOWN_HARNESS`, `resolve_targets` returns
 `Vec<&'static HarnessInfo>`, the help text names the harnesses that exist, and
-`xtask/src/kani/kani_tests.rs` gained `the_default_selection_is_every_harness_the_runner_knows` and
 `a_named_selection_resolves_only_the_names_it_was_given`, so a default list drifting away from the
-registry fails a test instead of a command. `cargo test -p xtask kani` reports 29 passed and
 `cargo clippy -p xtask --all-targets -- -D warnings -D clippy::unwrap_used -D clippy::expect_used` is
 clean.
 
-The owner override recorded in bead `athletic-rust-pipeline-79l` excludes Kani proofs from this
 delivery, so execution stopped after the eleven harnesses the repaired runner had already begun. Those
 eleven are retained as the tooling evidence: `check_gradyear_of_formula` verified (1 passed, 2 s) and
 `check_escaping_is_injective` verified (1 passed, 39 s); `check_confidence_bounds` answered
-`no harnesses matched the harness filter` because `census-domain/kani/confidence.rs` defines it while
 `census_domain_wiring.rs` wires only gradyear, publish, id_mint and framing; the five
 `check_id_mint_*` harnesses failed to compile with `Using the stub attribute requires activating the
 unstable stubbing feature`, which is the `-Z stubbing` the documented manual procedure passes and the
 runner does not; and `check_escaped_payload_carries_no_record_separator`,
 `check_published_email_printable_ascii_contract` and `check_published_email_classifies_domains`
 returned no verdict inside a 600 s bound. Verdicts and full outputs are retained in
-`var/kani-verdicts-20261003.log` and `var/kani-run-<harness>.log`. The registry/wiring drift and the
-missing `-Z stubbing` were deliberately left unrepaired: the override excludes Kani work, and these
 historical gaps stay unverified rather than becoming claims. A post-hoc attempt to pass `-Z stubbing`
 from the runner was reverted for the same reason.
 

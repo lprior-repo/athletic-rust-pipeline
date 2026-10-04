@@ -319,7 +319,6 @@ Historical mark-shape cases exercise explicit maintenance readers, not a fresh-r
 | 16 | Empty derived-snapshot rebuild | Stale materialized rows removed |
 | 17 | Benchmark parser returns no cases | Performance gate fails |
 | 18 | A baseline benchmark is missing | Performance gate fails |
-| 19 | Kani selects zero harnesses/wrong package | Proof gate fails |
 | 20 | S06 is skipped | Release gate fails |
 | 21 | Unreached jurisdiction has empty applicability | Unresearched, not verified empty |
 | 22 | 4×400 team names athlete without split | Not an individual 400 m PR |

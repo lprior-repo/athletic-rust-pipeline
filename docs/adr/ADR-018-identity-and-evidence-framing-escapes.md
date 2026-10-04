@@ -57,9 +57,7 @@ escaped payloads contain **neither framing delimiter**, not merely that record s
 5. **Proof claims are bounded and separate from hash collision resistance.**
    `check_escaping_is_injective` checks symbolic payload lengths zero through three;
    `check_escaped_payload_carries_no_record_separator` checks that neither delimiter survives
-   symbolic four-byte payloads. Both invoke production `write_escaped`. These Kani results and the
-   framed public-API regressions establish the exercised bounds, not an unbounded theorem or freedom
-   from collisions in the underlying finite hash. The encoder adds no heap allocation.
+   symbolic four-byte payloads. Both invoke production `write_escaped`. The framed public-API regressions establish the exercised bounds, not an unbounded theorem or freedom from collisions in the underlying finite hash. The encoder adds no heap allocation.
 
 ## Consequences
 

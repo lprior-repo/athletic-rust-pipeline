@@ -52,7 +52,8 @@ fn an_authentic_ownerless_fragment_remains_parseable_but_cannot_commit_an_acquir
             )
             .await?;
             check!(eq; progress.rosters_committed, 0);
-            check!(eq; progress.rosters_remaining, 1);
+            check!(eq; progress.rosters_skipped, 1);
+            check!(eq; progress.rosters_remaining, 0);
             check!(eq; progress.athletes, 0);
             check!(eq; progress.class_of_2027, 0);
             check!(eq; progress.errors.len(), 1);
@@ -64,8 +65,17 @@ fn an_authentic_ownerless_fragment_remains_parseable_but_cannot_commit_an_acquir
                 options.school_year,
                 options.revision,
             );
-            check!(eq; reopened.journal_keys(&phase)?,
-    std::collections::HashSet::<String>::new());
+            let journal_rows = reopened.journal_payloads(&phase)?;
+            check!(eq; journal_rows.len(), 1);
+            check!(
+                journal_rows
+                    .first()
+                    .and_then(|row| row.get("refusal"))
+                    .and_then(|reason| reason.as_str())
+                    .is_some_and(|reason| reason
+                        .contains("neither an observed final owner nor a published owner")),
+                "the phase keeps the refusal in the source's own words"
+            );
             check!(eq; reopened
         .scan::<CanonicalSchool>(Table::Schools)?,
     Vec::<CanonicalSchool>::new());

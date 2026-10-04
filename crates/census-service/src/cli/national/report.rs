@@ -32,7 +32,7 @@ pub(crate) fn print_national(report: &NationalReport, json: bool) -> Result<()> 
     );
     println!(
         "{:>3}  {:>9}  {:>9}  {:>7}  {:>9}  {:>7}  {:>9}  {:>8}  blocked",
-        "st", "rosters", "committed", "had", "remaining", "athletes", "co2027", ""
+        "st", "rosters", "committed", "held", "remaining", "athletes", "co2027", ""
     );
     for summary in &report.jurisdictions {
         println!(
@@ -95,7 +95,7 @@ pub(crate) fn print_jurisdiction(report: &JurisdictionReport, json: bool) -> Res
         }
     );
     println!(
-        "teams {} · rosters {}/{} skipped {} · athletes {} · co2027 {} (boys {} girls {}) · blocked {}",
+        "teams {} · rosters {}/{} held {} · athletes {} · co2027 {} (boys {} girls {}) · blocked {}",
         report.teams,
         report.rosters.rosters_committed,
         report.rosters.rosters_total,

@@ -4,11 +4,10 @@ use anyhow::{Context, Result};
 use serde_json::Value;
 use std::path::{Path, PathBuf};
 
-const ROOTS: [(&str, bool); 4] = [
+const ROOTS: [(&str, bool); 3] = [
     ("src", false),
     ("examples", true),
     ("benches", true),
-    ("kani", true),
 ];
 
 const FUZZ_TARGETS: [&str; 2] = ["fuzz", "fuzz_targets"];

@@ -18,7 +18,7 @@ impl Run<'_> {
         row: &DirectorySchool,
     ) -> Option<String> {
         let Some(short_code) = row.short_code.as_deref().and_then(super::super::nonempty) else {
-            self.fail(format!(
+            self.reject(format!(
                 "directory row {}: no short code to fetch a summary with",
                 capture.url
             ));
@@ -32,7 +32,7 @@ impl Run<'_> {
                 None if row.state_code.is_some() => (None, "unrecognized_published_state"),
                 None => (None, "missing_or_unusable_published_state"),
             };
-        self.fail(format!(
+        self.reject(format!(
             "directory jurisdiction rejection {}: school {short_code}; disposition={disposition}; requested={}; published={}; observed_on={}; capture_sha256={}",
             capture.url,
             state.code(),
@@ -77,7 +77,7 @@ impl Run<'_> {
         match directory_school(state, association, row, capture.url, capture.observed_on)? {
             DirectoryAdmission::School(school, id) => Ok(Some((school, id))),
             DirectoryAdmission::MissingShortCode => {
-                self.fail(format!(
+                self.reject(format!(
                     "directory row {}: no short code to fetch a summary with",
                     capture.url
                 ));
@@ -135,7 +135,7 @@ impl Run<'_> {
         match process_owned_summary(school, row, &summary, school_id, capture) {
             Ok(mapped) => {
                 if let Some(review) = &mapped.postal_review {
-                    self.fail(format!("summary postal review {url}: {review}"));
+                    self.reject(format!("summary postal review {url}: {review}"));
                 }
                 Some(mapped)
             }

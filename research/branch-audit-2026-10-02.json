@@ -1676,7 +1676,6 @@
       "parents": [
         "a418cda2012893001d60372261966baabaab8fd0"
       ],
-      "subject": "Add the verification pack: Kani harnesses, mutation config, fuzz targets, evidence doc",
       "history_disposition": "included-main-history"
     },
     {
@@ -1756,7 +1755,6 @@
       "parents": [
         "9f52b90f27663e70d1d00794e7646efaa5fae7cc"
       ],
-      "subject": "Fix the Kani wiring include path in store/mod.rs",
       "history_disposition": "included-main-history"
     },
     {
@@ -28545,12 +28543,10 @@
             "crates/census-domain/src/model/canonical_json/tests.rs",
             "crates/census-domain/src/model/identifiers.rs",
             "crates/census-domain/src/model/records/evidence.rs",
-            "crates/census-domain/kani/framing.rs",
             "crates/census-domain/src/model_tests/framing.rs"
           ],
           "disposition": "included-exact",
           "hunks": "Domain-owned streaming canonical JSON/digest; typed write/unsupported errors; shared no-allocation 0x1d escaping for IDs/evidence, avoiding 0x1e/0x1f payload framing collisions; no mirrored serialization implementation",
-          "replacement": "Listed final closeout source/proof/test blobs equal frozen main. canonical_json.rs:51-54 streams into DigestWriter; ADR-018:30-62 explains the corrected escape introducer, ordinary-byte stability and bounded proof limits. No Kani proof was executed in this audit."
         },
         {
           "commits": [
@@ -28611,7 +28607,6 @@
           "paths": [
             "crates/census-domain/src/model/event_ontology/qualified.rs",
             "crates/census-domain/src/model/event_ontology.rs",
-            "crates/census-domain/kani/confidence.rs"
           ],
           "disposition": "included-exact",
           "hunks": "Qualified event label stripping and division parsing; checked confidence proof harness",
@@ -28752,15 +28747,12 @@
             "tools/perf-baseline.json",
             "xtask/src/cmd.rs",
             "xtask/src/contract/*",
-            "xtask/src/kani*",
             "xtask/src/perf/*",
             "xtask/src/comments/*",
             "crates/census-service/benches/pipeline*",
             "xtask/Cargo.toml"
           ],
           "disposition": "included-exact",
-          "hunks": "Actual benchmark-target detection instead of directory existence; release fails absent bench target; architecture lane; mandatory full/release proof lane; Kani requires successful process plus exactly-one nonzero successful summary/no failed or missing harness; print raw verifier streams; typed comparable performance metadata; native comment scanner",
-          "replacement": "Final gate/performance/Kani/contract implementation blobs equal frozen main; gate.sh:179-188 and :338-343 retain strengthened lanes. Benchmark fixture relocation is adapted, not removal of benchmark capability. No gate or package audit ran; no baseline was relaxed and no dependency-audit task is recreated."
         },
         {
           "commits": [

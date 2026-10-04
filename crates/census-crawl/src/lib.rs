@@ -125,6 +125,8 @@ pub struct AdapterReport {
     pub errors: u64,
     #[serde(default)]
     pub with_email: u64,
+    #[serde(default)]
+    pub rejections: u64,
     pub unit: String,
     pub notes: Vec<String>,
 }
@@ -138,6 +140,7 @@ impl AdapterReport {
             from_cache: 0,
             errors: 0,
             with_email: 0,
+            rejections: 0,
             unit: unit.into(),
             notes: Vec::new(),
         }
@@ -145,6 +148,11 @@ impl AdapterReport {
 
     pub fn note(&mut self, message: impl Into<String>) {
         self.notes.push(message.into());
+    }
+
+    pub fn reject(&mut self, message: impl Into<String>) {
+        self.rejections = self.rejections.saturating_add(1);
+        self.note(message);
     }
 }
 

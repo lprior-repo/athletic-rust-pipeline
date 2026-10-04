@@ -60,18 +60,17 @@ struct Shared {
 fn progress_of(
     jurisdiction: UsJurisdiction,
     rosters_total: usize,
-    previously_journaled: usize,
     summary: roster::Summary,
     shared: &mut Shared,
-) -> StateProgress {
+) -> CrawlResult<StateProgress> {
     let mut errors = std::mem::take(&mut shared.errors);
     errors.extend(summary.errors);
-    StateProgress {
+    Ok(StateProgress {
         jurisdiction,
         rosters_total,
         rosters_committed: summary.committed,
-        rosters_remaining: rosters_total.saturating_sub(summary.committed),
-        rosters_skipped: previously_journaled,
+        rosters_remaining: roster::remaining(rosters_total, summary.committed, summary.held)?,
+        rosters_skipped: summary.held,
         athletes: summary.athletes,
         class_of_2027: summary.co2027,
         class_of_2027_boys: summary.co2027_boys,
@@ -80,7 +79,7 @@ fn progress_of(
         blocked: shared.blocked,
         blocked_skipped: shared.blocked_skipped,
         teams: rosters_total,
-    }
+    })
 }
 
 #[tracing::instrument(skip(fetcher, store, teams, options))]
@@ -91,7 +90,7 @@ pub async fn collect_state_rosters(
     options: &CollectOptions,
     jurisdiction: UsJurisdiction,
 ) -> CrawlResult<StateProgress> {
-    let (pending, skipped) = pending_rosters(
+    let pending = pending_rosters(
         store,
         teams,
         jurisdiction,
@@ -120,13 +119,7 @@ pub async fn collect_state_rosters(
     let phase = rosters_phase(jurisdiction, options.school_year, options.revision);
     let summary = roster::summarize(store, &phase, teams)?;
     let mut guard = shared.lock().await;
-    Ok(progress_of(
-        jurisdiction,
-        teams.len(),
-        skipped,
-        summary,
-        &mut guard,
-    ))
+    progress_of(jurisdiction, teams.len(), summary, &mut guard)
 }
 
 async fn walk_state(

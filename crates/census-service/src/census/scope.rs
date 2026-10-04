@@ -11,16 +11,14 @@ pub(super) fn pending_rosters(
     jurisdiction: UsJurisdiction,
     school_year: SchoolYear,
     revision: std::num::NonZeroU32,
-) -> StoreResult<(Vec<TeamRef>, usize)> {
+) -> StoreResult<Vec<TeamRef>> {
     let state = jurisdiction.code();
     let done = store.journal_keys(&rosters_phase(jurisdiction, school_year, revision))?;
-    let pending: Vec<TeamRef> = teams
+    Ok(teams
         .iter()
         .filter(|team| !done.contains(&format!("{}:{}", state, team.id)))
         .cloned()
-        .collect();
-    let skipped = teams.len().saturating_sub(pending.len());
-    Ok((pending, skipped))
+        .collect())
 }
 
 pub(super) fn count_co2027(roster: &Roster) -> usize {

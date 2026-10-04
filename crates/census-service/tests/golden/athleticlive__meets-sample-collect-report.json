@@ -11,6 +11,7 @@
     "date span: 2025-08-16..2025-10-07",
     "evidence method: Parsed"
   ],
+  "rejections": 0,
   "requests": 0,
   "rows": 3,
   "unit": "meets",

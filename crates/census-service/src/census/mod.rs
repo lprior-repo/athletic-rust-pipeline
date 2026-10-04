@@ -56,6 +56,12 @@ pub struct StateProgress {
     pub teams: usize,
 }
 
+impl StateProgress {
+    pub fn is_terminal(&self) -> bool {
+        self.rosters_remaining == 0 && self.blocked_skipped == 0 && !self.blocked
+    }
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct CollectReport {
     pub states: Vec<StateProgress>,

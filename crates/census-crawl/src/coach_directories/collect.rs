@@ -196,6 +196,10 @@ impl<'a> Run<'a> {
         self.report.note(message);
     }
 
+    fn reject(&mut self, message: String) {
+        self.report.reject(message);
+    }
+
     fn school_batch(
         &self,
         school: &CanonicalSchool,

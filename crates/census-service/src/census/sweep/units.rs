@@ -1,5 +1,6 @@
 use census_crawl::milesplit::{Site, TeamRef};
 use census_crawl::net::Fetcher;
+use census_crawl::CrawlError;
 use census_domain::model::SchoolYear;
 use census_store::Store;
 use tokio::sync::Mutex;
@@ -29,6 +30,9 @@ pub(super) async fn roster_unit(
             return;
         }
     }
-    let outcome = roster::fetch_and_store(fetcher, store, team, run).await;
+    let outcome = match roster::fetch_and_store(fetcher, store, team, run).await {
+        Err(error @ CrawlError::Schema { .. }) => roster::retain_refusal(store, team, run, &error),
+        outcome => outcome,
+    };
     record_roster(shared, outcome).await;
 }

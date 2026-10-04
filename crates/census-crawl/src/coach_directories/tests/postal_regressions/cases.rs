@@ -129,7 +129,7 @@ fn malformed_summary_postal_components_keep_coaches_and_directory_facts_with_rev
         let body = changed_summary(|summary| summary["address"][field] = value)?;
         let run = FixtureRun::new(DIRECTORY, &body)?;
         let report = run.collect().await?;
-        check!(eq; (report.rows, report.errors), (1, 1), "{description}");
+        check!(eq; (report.rows, report.errors, report.rejections), (1, 0, 1), "{description}");
         let school = run.school()?;
         check!(eq; school.name, SCHOOL_NAME, "{field}");
         check!(eq; school.classification.as_deref(), Some("6A"), "{field}");
@@ -211,7 +211,7 @@ fn a_nonobject_summary_address_is_reviewed_without_losing_legitimate_coaches() -
         let body = changed_summary(|summary| summary["address"] = address)?;
         let run = FixtureRun::new(DIRECTORY, &body)?;
         let report = run.collect().await?;
-        check!(eq; (report.rows, report.errors), (1, 1));
+        check!(eq; (report.rows, report.errors, report.rejections), (1, 0, 1));
         check!(eq; run.coaches()?.len(), 16);
         let school = run.school()?;
         check!(eq; school.postal_addresses.len(), 1);
@@ -252,7 +252,7 @@ fn malformed_zip_without_a_street_is_still_an_explicit_retained_review() -> Test
             })?;
             let run = FixtureRun::new(DIRECTORY, &body)?;
             let report = run.collect().await?;
-            check!(eq; (report.rows, report.errors), (1, 1));
+            check!(eq; (report.rows, report.errors, report.rejections), (1, 0, 1));
             check!(eq; run.coaches()?.len(), 16);
             check!(eq; run.school()?.postal_addresses.len(), 1);
             Ok(())
