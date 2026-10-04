@@ -5,7 +5,7 @@ use crate::directory::{
 use crate::CrawlResult;
 use census_domain::school_directory::{
     Enrollment, IdentifiedKey, NcesSchoolId, Phone, PssId, SchoolDirectoryEntry, SchoolKind,
-    SchoolName, SourceLabel,
+    SchoolName, SourceLabel, Website,
 };
 
 pub const CCD_REQUIRED: [&str; 11] = [
@@ -91,6 +91,12 @@ fn ccd_entry(
         "phone",
         Phone::parse(cell(record, header.index("PHONE"))),
     );
+    let website = skip_optional(
+        outcome,
+        line,
+        "website",
+        Website::parse(first(record, header, &["WEBSITE"])),
+    );
     let enrollment = skip_optional(
         outcome,
         line,
@@ -119,6 +125,7 @@ fn ccd_entry(
         .with_grades(grades)
         .with_enrollment(enrollment)
         .with_phone(phone)
+        .with_website(website)
 }
 
 pub fn parse_ccd(text: &str) -> CrawlResult<ReadOutcome> {

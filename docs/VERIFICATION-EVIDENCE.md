@@ -7447,3 +7447,103 @@ their owner rather than reformatted or patched from here.
 
 
 
+### The school-address join runs natively: real captures → durable service → workbook readback — 2026-10-04
+
+Scope: the corpus-to-census join of [ADR-021](adr/ADR-021-school-address-join-durable-stage.md) —
+the core, the `SchoolAddressJoin` workflow, the national stage and the workbook postal block. Not
+a national census: the store is a 207-school copy of `var/census-service`, and the corpus is the
+real 2026-10 NCES captures. Run directory: `var/school-address-join-20261004/` (preserved).
+
+**Corpus.** `target/debug/census-service school-address --ccd
+var/school-address-join-20261004/ccd/ccd_sch_029_2526_w_0a_050626.csv --pss
+/home/lewis/src/ad-law-scrape/data/nces/pss/pss2324_pu.csv --out
+var/school-address-join-20261004/corpus --now 2026-10` exited 0 in 14.6 s and reported 122 692
+entries (CCD 100 307, PSS 22 385) over 122 692 rows, 1 920 skipped rows and 386 notes, with lane
+digests `nces-ccd=d1473136285b5994b73a1a8b640757811eb81e0ae770953bcf915ee8c422386e` (equal to
+`sha256sum` of the extracted CSV) and `nces-pss=14a2f9e600a492940fd57646792b4b5163ea9d03b8015a7df1135066bcec3b8b`.
+Both published archives were verified live before being cited: `curl -sI` returned `HTTP/1.1 200`
+for `https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2526_w_0a_050626.zip` (12 718 258 bytes) and
+`https://nces.ed.gov/surveys/pss/zip/pss2324_pu_csv.zip` (3 970 317 bytes).
+
+**Reader mapping.** The same captures were read again after the NCES reader gained the CCD
+`WEBSITE` mapping (`crates/census-crawl/src/nces/parse.rs`): `corpus-web` reports the same 122 692
+entries over 122 692 rows and the same 1 920 skipped rows, with the lane digests unchanged
+(`nces-ccd=d1473136…`, `nces-pss=14a2f9e6…`) and generation digest
+`5578b3f3670fc9b658bcbdb3dac263956f77434a3238488dcba4fc06704d8edc` (the postal read's is
+`57edd0b2c3c88b25280bb90f1e4cb8a873d262a0ec5baa891ca857aa8ee6f0e2`). The only difference is notes:
+CCD 369 → 398, because 29 `WEBSITE` cells are not http(s) URLs (for example `website is not a
+supported value: "http://601 South Clinton Street"`); PSS stays at 17. The exported `website` column
+carries 70 223 URLs, and a field-by-field comparison of the two exported CSVs (Python `csv`, all
+122 692 rows) shows the key/street/city/state/ZIP/phone tuples are identical.
+
+**Native service.** Fresh node `var/school-address-join-20261004/restate.toml` (ingress 18195,
+admin 19195), `census-serve --listen 127.0.0.1:18196 --data-dir var/school-address-join-20261004/serve
+--max-concurrent 2 --drain-timeout 30 --browser-profile … --browser-executable /usr/bin/chromium
+--browser-headless` over a copy of the coach census store, registered with `POST /deployments`.
+`GET /deployments` reported **12 services**: BrowserSession, Report, JurisdictionCensus, Workbook,
+Sweep, NationalCensus, SchoolAddressJoin, Census, Ingest, Consolidate, Bests, TeamsSource.
+`POST http://127.0.0.1:18195/SchoolAddressJoin/smoke-20261004/run` with the generation and the two
+url/date overrides returned HTTP 200 and `{"scanned":207,"linked":158,"review":1,"no_match":48,
+"refused":0,"evidence_missing":0,"missing_state":0,"exact_name":153,"core_name":5,"ambiguous":1}`,
+writing `<store>/out/school-address-join/report.json` and `outcomes.jsonl`.
+
+**Durability and idempotency.** `kill -TERM` on the serve pid drained cleanly
+(`drained: accepted=4 completed=4 cancelled=0 timed_out=0 aborted=0 panicked=0`). After restarting
+the same binary on the same store, a second workflow key `smoke-20261004-b` returned
+`linked=0, already_linked=158` with the same review/no-match counts: claims survived the restart and
+a replay appended nothing.
+
+**Workbook readback.** After a second clean drain, `census-service --store
+var/school-address-join-20261004/serve workbook --out var/school-address-join-20261004/workbook`
+exited 0 and `census-service --store … verify --workbook …/current/workbook.xlsx` printed
+`verify: OK (complete frozen generation)`. The `Schools` sheet row for `sch_00209dac4fe40ec0` carries
+Postal Street `256 Main Street`, City `Paris`, State `ME`, ZIP `04271`, owner namespace
+`school_directory:nces-ccd:ME`, owner ID `231077000361`, source `nces-ccd`, the CCD archive URL,
+observed date `2026-10-04` and capture SHA `d1473136…`. The CCD row
+(`Oxford Hills Comprehensive H S, …, 256 Main Street, Paris, ME 04271, NCESSCH 231077000361`) is the
+ground truth, and the workbook's capture SHA is byte-equal to the corpus lane digest.
+
+**Website attach and the second readback.** So that the postal smoke above stays exactly as
+observed, the website-carrying generation was joined against a second copy of the same census store
+(`var/school-address-join-20261004/serve2`, same 12-service registration). The `SchoolAddressJoin`
+apply over `corpus-web` reported
+`{"scanned":207,"linked":0,"already_linked":158,"websites":93,"review":1,"no_match":48,
+"refused":0,"evidence_missing":0,"missing_state":0,"ambiguous":1}` — the postal claims were already
+present from the earlier apply and replayed as `already_linked`, and 93 schools gained the CCD
+website. `census-service --store …/serve2 workbook --out …/workbook2` and `census-service --store
+…/serve2 verify --workbook …/workbook2/current/workbook.xlsx` exited 0 and printed `verify: OK
+(complete frozen generation)`. Read back with Python's `zipfile` (no image and no Excel involved),
+the `Schools` sheet has 207 rows, 158 carrying a postal block and 93 carrying `School site`; the
+`sch_00209dac4fe40ec0` row carries `School site` `http://www.msad17.org/o/oxford-hills-high-school`
+— the CCD `WEBSITE` cell for Oxford Hills High School — beside the unchanged postal cells. Finally,
+the offline lane at the fixed revision was dry-run against `serve2`/`corpus-web`:
+`scanned=207, linked=0, already_linked=158, websites=0, review=1, no_match=48`, i.e. the replay
+appends nothing and rewrites no website.
+
+**Suites.** `cargo test -p census-service --lib --bins`: 222 + 71 passed (nine are the join core's
+own lane: link-with-evidence, idempotent second apply, evidence-missing refusal, dry run, override
+validation, lane evidence, ambiguity review, cross-state refusal, missing state), and the integration
+targets `nces_directory_properties` 8 (the CCD window now expects 15 website notes, all
+`field == "website"`), `school_address_corpus` 8 (15 notes; the Albertville export line carries
+`http://www.albertk12.org`), `school_address_publication` 3 and `workbook_shape` 1. `cargo test -p
+census-domain`: 270 passed. `cargo test -p census-crawl`: 873 passed (the CCD/PSS reader windows,
+including the mapped website). `cargo test -p census-report`: 195 passed. `cargo fmt --check -p
+census-crawl -p census-domain -p census-service` is clean, and `cargo clippy -p census-domain -p
+census-service -p census-crawl -p census-report --all-targets` emits no diagnostics: the
+`LinkDecision::Linked` variant was boxed rather than allowed to trip `large_enum_variant`, and 17
+`clippy::panic_in_result_fn` errors in `school_directory/tests/link_tests.rs` were replaced with the
+workspace `check!` macro, not allowed to stand.
+
+**Limits.** No 49-jurisdiction run was repeated here: the national stage is wired and journaled (the
+workflow invokes `SchoolAddressJoin` under `<run identity>:school-address-join` after consolidation
+and before workbook publication) but the fresh-run acceptance obligation is unchanged. `no_match=48`
+is the corpus's measured scope — association-only names such as `Chesterton Acad. HS` have no public
+directory entry — not a join defect. The 158 claims are smoke evidence over a copied store, not
+national completion. Two further limits belong to the reader revision: the postal acceptance
+workbook was published from the read taken before the `WEBSITE` mapping — its derivation is
+unaffected, because the postal tuples of the two reads are field-for-field identical (compared
+above), and the website-carrying generation is the one a fresh run would build. Separately, the
+workspace test suite carries a pre-existing failure unrelated to this work: `xtask`'s
+`traversal_tests::actual_fixture_graph_includes_tests_examples_benches_and_tools` expects `6 Rust
+files` at commit `344536e7` while the extractor reports 5, and the main checkout carries an
+uncommitted fix changing the expectation to 5. It is recorded here rather than silently adopted.

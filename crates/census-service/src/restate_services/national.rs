@@ -10,9 +10,10 @@ use census_store::clock::Clock;
 
 use super::jobs;
 use super::jurisdiction::JurisdictionCensusClient;
+use super::school_address_join::SchoolAddressJoinClient;
 use super::wire::{
     ConsolidateRequest, JurisdictionReport, JurisdictionSummary, NationalFailure, NationalReport,
-    NationalRequest,
+    NationalRequest, SchoolAddressJoinReply,
 };
 use super::{publish::ConsolidateClient, KEY_STATE};
 
@@ -110,6 +111,7 @@ fn assemble(
     revision: Revision,
     mut jurisdictions: Vec<JurisdictionSummary>,
     mut failures: Vec<NationalFailure>,
+    school_address: Option<SchoolAddressJoinReply>,
     today: String,
 ) -> NationalReport {
     jurisdictions.sort_by_key(|summary| summary.jurisdiction.code());
@@ -128,6 +130,7 @@ fn assemble(
             .sum(),
         jurisdictions,
         failures,
+        school_address,
         today,
     }
 }
@@ -176,6 +179,24 @@ impl NationalCensus {
         }
         let (jurisdictions, failures) = collect_outcomes(&mut in_flight, &targets).await?;
 
+        let Json(join) = ctx
+            .workflow_client::<SchoolAddressJoinClient>(format!(
+                "{}:school-address-join",
+                identity.as_str()
+            ))
+            .run(Json(request.school_address.clone().unwrap_or_default()))
+            .call()
+            .await?;
+        tracing::info!(
+            linked = join.counters.linked,
+            already_linked = join.counters.already_linked,
+            review = join.counters.review,
+            no_match = join.counters.no_match,
+            evidence_missing = join.counters.evidence_missing,
+            refused = join.counters.refused,
+            "joined school postal addresses for the run"
+        );
+
         let Json(consolidated) = ctx
             .workflow_client::<ConsolidateClient>(format!("{}:consolidate", identity.as_str()))
             .run(Json(ConsolidateRequest { tables: Vec::new() }))
@@ -192,6 +213,7 @@ impl NationalCensus {
             request.revision,
             jurisdictions,
             failures,
+            Some(join),
             today,
         );
         ctx.set(KEY_STATE, Json(report.clone()));

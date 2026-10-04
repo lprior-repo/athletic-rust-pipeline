@@ -9,6 +9,7 @@ mod ids;
 mod key;
 mod label;
 mod ledger;
+pub mod link;
 mod name;
 mod schedule;
 mod school;
@@ -25,6 +26,7 @@ pub use ids::{NcesSchoolId, PssId, StateRecordId};
 pub use key::{DirectoryKey, IdentifiedKey, WeakKey};
 pub use label::{Priority, SourceLabel};
 pub use ledger::{ScheduleLedger, ScheduleSource};
+pub use link::{CandidateRef, DirectoryIndex, LinkDecision, LinkMatch, LinkRule, ReviewReason};
 pub use name::{AssociationLabel, MatchForm, SchoolName};
 pub use schedule::{
     decide, next_due, Cadence, DueReason, Month, Parity, UpdateDecision, YearMonth,

@@ -267,6 +267,7 @@ fn national_request(jurisdictions: Vec<UsJurisdiction>) -> TestResult<NationalRe
         observed_on: None,
         authorized_hosts: Vec::new(),
         source_parallelism: census_crawl::net::DEFAULT_FAMILY_PARALLELISM,
+        school_address: None,
     })
 }
 

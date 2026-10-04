@@ -36,6 +36,7 @@ fn report(failures: Vec<NationalFailure>) -> NationalReport {
         rosters_total: 7,
         athletes_total: 14,
         class_of_2027_total: 7,
+        school_address: None,
         today: "2026-09-22".to_string(),
     }
 }

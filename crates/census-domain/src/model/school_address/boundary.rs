@@ -8,17 +8,9 @@ pub(super) fn provenance(
     label: &SourceLabel,
     evidence: &Evidence,
 ) -> Result<UsJurisdiction, SchoolAddressError> {
-    let SourceNamespace::AssociationSchool { association } = &owner.namespace else {
-        return Err(SchoolAddressError::MissingOwner);
-    };
-    if !single_line(&owner.id, 256)
-        || owner.id.chars().any(char::is_whitespace)
-        || !canonical_source(association)
-    {
-        return Err(SchoolAddressError::MissingOwner);
-    }
-    let state = source_state(label)?;
-    if evidence.source.id != *association {
+    let state = claim_state(owner, label)?;
+    let expected = owner_source(&owner.namespace).ok_or(SchoolAddressError::MissingOwner)?;
+    if evidence.source.id != expected {
         return Err(SchoolAddressError::SourceAuthorityMismatch);
     }
     if evidence.method != EvidenceMethod::Parsed || evidence.observed_on.is_empty() {
@@ -45,6 +37,30 @@ pub(super) fn provenance(
     Ok(state)
 }
 
+pub(super) fn claim_state(
+    owner: &SourceIdentity,
+    label: &SourceLabel,
+) -> Result<UsJurisdiction, SchoolAddressError> {
+    match &owner.namespace {
+        SourceNamespace::AssociationSchool { association } => {
+            if !owner_bounds(owner, association) {
+                return Err(SchoolAddressError::MissingOwner);
+            }
+            source_state(label)
+        }
+        SourceNamespace::SchoolDirectory { provider, state } => {
+            if !owner_bounds(owner, provider) {
+                return Err(SchoolAddressError::MissingOwner);
+            }
+            if directory_source(label) != Some(provider.as_str()) {
+                return Err(SchoolAddressError::UnsupportedAuthority);
+            }
+            Ok(*state)
+        }
+        _ => Err(SchoolAddressError::MissingOwner),
+    }
+}
+
 pub(super) fn source_state(label: &SourceLabel) -> Result<UsJurisdiction, SchoolAddressError> {
     match label {
         SourceLabel::AthleticAssociation { state } => Ok(*state),
@@ -54,6 +70,31 @@ pub(super) fn source_state(label: &SourceLabel) -> Result<UsJurisdiction, School
         | SourceLabel::PrivateAssociation { .. }
         | SourceLabel::Geocoder => Err(SchoolAddressError::UnsupportedAuthority),
     }
+}
+
+fn owner_source(namespace: &SourceNamespace) -> Option<&str> {
+    match namespace {
+        SourceNamespace::AssociationSchool { association } => Some(association),
+        SourceNamespace::SchoolDirectory { provider, .. } => Some(provider),
+        _ => None,
+    }
+}
+
+fn directory_source(label: &SourceLabel) -> Option<&'static str> {
+    match label {
+        SourceLabel::Ccd => Some("nces-ccd"),
+        SourceLabel::Pss => Some("nces-pss"),
+        SourceLabel::StateEducationAgency { .. }
+        | SourceLabel::PrivateAssociation { .. }
+        | SourceLabel::AthleticAssociation { .. }
+        | SourceLabel::Geocoder => None,
+    }
+}
+
+fn owner_bounds(owner: &SourceIdentity, token: &str) -> bool {
+    single_line(&owner.id, 256)
+        && !owner.id.chars().any(char::is_whitespace)
+        && canonical_source(token)
 }
 
 fn canonical_source(value: &str) -> bool {

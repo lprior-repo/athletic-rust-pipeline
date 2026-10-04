@@ -27,6 +27,7 @@ Accepted policy is not proof of implementation or successful execution.
 | [018](ADR-018-identity-and-evidence-framing-escapes.md) | Identity and evidence framing escapes its delimiter bytes | Accepted |
 | [019](ADR-019-export-derivation-single-home.md) | Export consumers share one dataset and derivation | Accepted; renumbered from duplicate 015 |
 | [020](ADR-020-school-address-corpus-port.md) | The address pipeline and the TSSAA reader port to Rust as a school-directory corpus | Accepted; ADR-008's admitted-reader amendment resolved |
+| [021](ADR-021-school-address-join-durable-stage.md) | The school-address join is one tested core, one durable stage | Accepted |
 
 Changes record explicit supersession rather than silently rewriting prior decisions. Source-specific
 research and dated command results belong in their evidence references, not additional ADR copies.

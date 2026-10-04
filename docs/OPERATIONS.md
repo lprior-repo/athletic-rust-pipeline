@@ -338,6 +338,80 @@ event IDs beside stale typed canonical rows or present a historical receipt as c
 Older partial stores without these witnesses are preserved historical evidence, not retroactively
 certified idempotent.
 
+## School-address corpus and join
+
+The school-directory corpus is one verified generation over operator-supplied directory artifacts;
+the join turns that corpus into owned postal claims on canonical schools. The generation has no
+store and no clock: `--now YYYY-MM` is the caller's month, and the lane digest it records is the
+capture digest every claim will carry. Nothing here invents a capture URL or an observation date —
+without both, a matching school stays unlinked and is reported `evidence_missing`.
+
+Build the corpus from the real captures (the CCD reader documents its own fetch because a `.zip`
+passed straight to the verb is refused):
+
+```sh
+curl -o var/<run>/ccd_sch_029_2526_w_0a_050626.zip \
+  https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2526_w_0a_050626.zip
+mkdir -p var/<run>/ccd && unzip -o var/<run>/ccd_sch_029_2526_w_0a_050626.zip -d var/<run>/ccd
+target/release/census-service school-address \
+  --ccd var/<run>/ccd/ccd_sch_029_2526_w_0a_050626.csv \
+  --pss /home/lewis/src/ad-law-scrape/data/nces/pss/pss2324_pu.csv \
+  --out var/<run>/corpus --now 2026-10
+```
+
+(The PSS public-use CSV is the local capture of the verified
+`https://nces.ed.gov/surveys/pss/zip/pss2324_pu_csv.zip` archive; the verb reads the CSV, not the
+archive.)
+
+The run above produced 122 692 entries (CCD 100 307, PSS 22 385) over 122 692 rows with 1 920
+skipped rows and 386 notes, a `current/` publication with `manifest.json`,
+`school_directory.json`, `school_directory.csv`, `pipeline_report.json`, `baseline.json` and
+`update_ledger.json`, and lane digests `nces-ccd=d1473136…`, `nces-pss=14a2f9e6…`.
+
+Re-reading the same captures with the CCD `WEBSITE` column mapped changes nothing about the
+entries — same 122 692 over 122 692 rows, same 1 920 skipped rows — and adds only website notes:
+the CCD lane goes from 369 to 398 notes because 29 `WEBSITE` cells are not http(s) URLs (for
+example `website is not a supported value: "http://601 South Clinton Street"`), and the exported
+`website` column then carries 70 223 URLs. The two reads' postal tuples (key, street, city, state,
+ZIP, phone) are field-for-field equal; a generation digest differs (`57edd0b2…` without the
+mapping, `5578b3f3…` with it), so a claim can never be mistaken for one built on the other.
+
+Join it offline against a stopped store owner (dry run first; `--apply` appends):
+
+```sh
+target/release/census-service --store var/<store> school-address-join \
+  --generation var/<run>/corpus \
+  --evidence-url nces-ccd=https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2526_w_0a_050626.zip \
+  --evidence-url nces-pss=https://nces.ed.gov/surveys/pss/zip/pss2324_pu_csv.zip \
+  --evidence-date nces-ccd=YYYY-MM-DD --evidence-date nces-pss=YYYY-MM-DD
+```
+
+The durable lane is the `SchoolAddressJoin` workflow (Restate service `SchoolAddressJoin`, key
+`<run identity>:school-address-join`). The national workflow invokes it after the jurisdiction
+census and consolidation and before workbook publication, carrying `--evidence-*` equivalents in
+its request; invoke it directly through the ingress only when repeating a failed stage:
+
+```sh
+curl -s -X POST "http://127.0.0.1:<ingress>/SchoolAddressJoin/<key>/run" \
+  -H 'content-type: application/json' \
+  -d '{"generation":"var/<run>/corpus","urls":{"nces-ccd":"…","nces-pss":"…"},"dates":{"nces-ccd":"YYYY-MM-DD","nces-pss":"YYYY-MM-DD"}}'
+```
+
+Both lanes write `<store>/out/school-address-join/report.json` (mode, generation path, manifest
+digest, per-lane evidence, and the counters `scanned`, `linked`, `already_linked`, `websites`,
+`review`, `no_match`, `refused`, `evidence_missing`, `missing_state` plus the per-rule counters) and
+`outcomes.jsonl` (one row per school: outcome, rule or reason, candidate labels). An already-owned
+identical claim is `already_linked` and appends nothing, so a replayed apply over the same
+generation is safe after a restart. A matched CCD entry whose website is an http(s) URL and whose
+school publishes none attaches it to `CanonicalSchool.school_website` (counted as `websites`,
+rendered by the workbook's `School site` column) with the same lane evidence note; a school that
+already publishes a website is not rewritten, and an unusable `WEBSITE` cell stays a corpus note.
+Two equally plausible schools are `review`, never a silent pick; a name matching only in another
+state is `no_match`. Read claims back through the workbook's `Schools` postal block and `School
+site` column plus `census-service verify --workbook`; the postal cells carry the owner namespace/id,
+source lane, capture URL, observed date and capture SHA, so a corpus rebuild with different bytes
+cannot masquerade as the same evidence.
+
 ## Export, verification and sealing
 
 Workbook publication captures one bounded, immutable input generation for its logical job.

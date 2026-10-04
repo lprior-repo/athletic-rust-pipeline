@@ -108,6 +108,24 @@ pub(super) struct NationalArgs {
     #[arg(help = "Submit and return. The run continues under Restate")]
     #[arg(long)]
     detach: bool,
+    #[arg(
+        long,
+        value_name = "DIR",
+        help = "School-directory generation root holding current/; absent means <data-dir>/school-address"
+    )]
+    school_directory: Option<String>,
+    #[arg(
+        long = "evidence-url",
+        value_name = "SOURCE=URL",
+        help = "Capture URL recorded on every postal claim from that source (`nces-ccd`/`nces-pss`), repeatable"
+    )]
+    evidence_urls: Vec<String>,
+    #[arg(
+        long = "evidence-date",
+        value_name = "SOURCE=YYYY-MM-DD",
+        help = "Observation date recorded on every postal claim from that source, repeatable"
+    )]
+    evidence_dates: Vec<String>,
 }
 
 #[derive(Args, Debug, Clone)]

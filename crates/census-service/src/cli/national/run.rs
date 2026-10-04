@@ -3,7 +3,7 @@ use census_crawl::ingress::{CurrentRoute, Ingress};
 use census_reconcile::identity::{admitted_scope, Revision, WorkflowIdentity};
 use census_service::restate_services::{
     JurisdictionCensusIngressClient, JurisdictionRequest, NationalCensusIngressClient,
-    NationalReport, NationalRequest,
+    NationalReport, NationalRequest, SchoolAddressJoinRequest,
 };
 use restate_sdk::ingress::{InvocationHandle, SendStatus};
 use restate_sdk::prelude::*;
@@ -13,6 +13,7 @@ use super::report::{failure_exit, print_jurisdiction, print_national};
 use super::{named_season, JurisdictionArgs, NationalArgs, NationalReportArgs};
 use crate::cli::Cli;
 use census_service::ingress;
+use census_service::school_address::{parse_source_pairs, Overrides};
 
 pub(crate) async fn attach_existing(
     ingestion: &Ingress,
@@ -55,6 +56,25 @@ pub(crate) async fn submit_national(
     Ok(handle)
 }
 
+fn school_address_request(args: &NationalArgs) -> Result<Option<SchoolAddressJoinRequest>> {
+    if args.school_directory.is_none()
+        && args.evidence_urls.is_empty()
+        && args.evidence_dates.is_empty()
+    {
+        return Ok(None);
+    }
+    let overrides = Overrides {
+        urls: parse_source_pairs(&args.evidence_urls)?,
+        dates: parse_source_pairs(&args.evidence_dates)?,
+    }
+    .validated()?;
+    Ok(Some(SchoolAddressJoinRequest {
+        generation: args.school_directory.clone(),
+        urls: overrides.urls,
+        dates: overrides.dates,
+    }))
+}
+
 #[tracing::instrument(skip_all, fields(command = "national"))]
 pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
     let (season, revision) = (args.flags.season()?, args.flags.revision());
@@ -72,6 +92,7 @@ pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
         observed_on: None,
         authorized_hosts: cli.authorized_hosts.clone(),
         source_parallelism: cli.source_parallelism,
+        school_address: school_address_request(args)?,
     };
     let handle = submit_national(&ingestion, &identity, request).await?;
     println!(

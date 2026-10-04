@@ -39,6 +39,7 @@ mod plan;
 mod publish;
 mod resolve;
 mod results_arms;
+mod school_address_join;
 mod support;
 mod sweep;
 mod teams_arms;
@@ -49,11 +50,12 @@ pub use wire::{
     ConsolidatedTable, EndpointObservation, IncompleteTeams, IngestReply, IngestRequest,
     IngestState, JurisdictionOpen, JurisdictionReport, JurisdictionRequest, JurisdictionState,
     JurisdictionSummary, NationalFailure, NationalReport, NationalRequest, OpenWorkReply,
-    OpenWorkRequest, RefusedSource, ReportReply, ReportRequest, SealItem, SealRef, SealReply,
-    SealRequest, SourceObjectOpen, SourcePlan, StageOutcome, StatusReply, SweepReport,
-    SweepRequest, TableCount, TeamsAttemptProgress, TeamsFailure, TeamsSourceFailure,
-    TeamsSourceInspection, TeamsSourceOutcome, TeamsSourceRequest, TeamsStage, WindowRequest,
-    WorkbookReply, WorkbookRequest,
+    OpenWorkRequest, RefusedSource, ReportReply, ReportRequest, SchoolAddressJoinReply,
+    SchoolAddressJoinRequest, SealItem, SealRef, SealReply, SealRequest, SourceObjectOpen,
+    SourcePlan, StageOutcome, StatusReply, SweepReport, SweepRequest, TableCount,
+    TeamsAttemptProgress, TeamsFailure, TeamsSourceFailure, TeamsSourceInspection,
+    TeamsSourceOutcome, TeamsSourceRequest, TeamsStage, WindowRequest, WorkbookReply,
+    WorkbookRequest,
 };
 
 pub use plan::{
@@ -83,6 +85,9 @@ pub use publish::{
     Bests, BestsClient, BestsIngressClient, Consolidate, ConsolidateClient,
     ConsolidateIngressClient, Jobs, Report, ReportClient, ReportIngressClient, Workbook,
     WorkbookClient, WorkbookIngressClient,
+};
+pub use school_address_join::{
+    SchoolAddressJoin, SchoolAddressJoinClient, SchoolAddressJoinIngressClient,
 };
 pub use sweep::{Sweep, SweepClient, SweepIngressClient};
 
@@ -152,6 +157,7 @@ pub fn build_endpoint(
         .bind(census_service(Report::new(jobs.clone())))
         .bind(census_service(Bests::new(jobs.clone())))
         .bind(census_service(Workbook::new(jobs.clone())))
+        .bind(census_service(SchoolAddressJoin::new(jobs.clone())))
         .bind(census_service(Ingest::new(
             Arc::clone(&store),
             Arc::clone(&clock),

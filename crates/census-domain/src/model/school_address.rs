@@ -104,7 +104,7 @@ impl SchoolPostalAddress {
         {
             return Err(SchoolAddressError::ForeignOwner);
         }
-        let source_state = boundary::source_state(&self.source_label)?;
+        let source_state = boundary::claim_state(&self.owner, &self.source_label)?;
         if school.state.is_some_and(|state| state != source_state) {
             return Err(SchoolAddressError::ForeignJurisdiction);
         }

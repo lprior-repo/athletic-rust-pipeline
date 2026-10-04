@@ -15,6 +15,9 @@ mod coordinates_tests;
 #[path = "tests/entry_tests.rs"]
 mod entry_tests;
 
+#[path = "tests/link_tests.rs"]
+mod link_tests;
+
 #[path = "tests/schedule_tests.rs"]
 mod schedule_tests;
 

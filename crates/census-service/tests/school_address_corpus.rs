@@ -55,7 +55,7 @@ fn school_address_reads_the_nces_fixtures_into_one_corpus() -> TestResult {
     check!(eq; report.corpus.rows, 1931);
     check!(eq; report.corpus.entries, 1931);
     check!(eq; report.corpus.skipped, 67);
-    check!(eq; report.corpus.notes, 0);
+    check!(eq; report.corpus.notes, 15);
     check!(eq; report.corpus.merges, 0);
     check!(eq; report.lanes.len(), 2);
     check!(eq; report.lanes[0].source, "nces-ccd");
@@ -84,7 +84,7 @@ fn school_address_reads_the_nces_fixtures_into_one_corpus() -> TestResult {
     check!(eq; lines.len(), 1932);
     check!(eq; lines[0],
     "key,name,kind,street1,street2,city,state,zip,phone,website,grades,enrollment,latitude,longitude,sources");
-    check!(lines.contains(&"nces:010000500870,Albertville Middle School,Public,600 E Alabama Ave,,Albertville,AL,35950-2336,(256)878-2341,,7-8,,,,nces-ccd"));
+    check!(lines.contains(&"nces:010000500870,Albertville Middle School,Public,600 E Alabama Ave,,Albertville,AL,35950-2336,(256)878-2341,http://www.albertk12.org,7-8,,,,nces-ccd"));
     check!(csv.contains("nces-pss"));
     Ok(())
 }

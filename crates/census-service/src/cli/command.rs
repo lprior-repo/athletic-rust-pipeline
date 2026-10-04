@@ -135,5 +135,9 @@ pub(super) enum Command {
     #[command(
         about = "Resolve source-proven retained Unmapped event kinds without acquisition. Default is dry-run; pass --apply to append corrections. Requires explicit --store and a stopped store owner"
     )]
+    #[command(
+        about = "Join a verified school-directory generation into the offline store as owned postal claims; explicit --store required"
+    )]
+    SchoolAddressJoin(super::school_address_join::SchoolAddressJoinArgs),
     RepairRetainedEvents(super::retained_events::RepairRetainedEventsArgs),
 }

@@ -67,7 +67,7 @@ Starting a fresh run:
    --max-concurrent <n> --drain-timeout <seconds> --browser-profile var/<run>/browser-profile
    --browser-executable /usr/bin/chromium --browser-headless`.
 3. Register it: `curl -X POST http://127.0.0.1:19095/deployments -H 'content-type: application/json'
-   -d '{"uri":"http://127.0.0.1:<port>/"}'`, then confirm all ten services appear in
+   -d '{"uri":"http://127.0.0.1:<port>/"}'`, then confirm all twelve services appear in
    `GET /deployments`.
 4. Submit the run with `census-service national --ingress http://127.0.0.1:18095/ --detach` and
    observe it through the admin query API and `census-service open-work`, never by opening the store
