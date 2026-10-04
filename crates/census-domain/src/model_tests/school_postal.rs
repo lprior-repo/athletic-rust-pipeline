@@ -1,5 +1,5 @@
 use super::*;
-use crate::school_directory::{PostalAddress, SourceLabel, StreetLine};
+use crate::school_directory::{CityName, PostalAddress, SourceLabel, StreetLine, ZipCode};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -153,5 +153,110 @@ fn complete_postal_claim_order_is_independent_of_arrival_and_deserialized_vector
     wire["postal_addresses"] = serde_json::json!([second, first.clone(), first]);
     let reopened: CanonicalSchool = serde_json::from_value(wire)?;
     check!(eq; reopened.postal_addresses, forward.postal_addresses);
+    Ok(())
+}
+
+fn directory_components(
+) -> TestResult<(PostalAddress, SourceIdentity, SourceLabel, Evidence, String)> {
+    Ok((
+        PostalAddress::line(StreetLine::parse("100 Directory Way")?)
+            .with_city(CityName::parse("Springfield")?)
+            .with_state(UsJurisdiction::Ohio)
+            .with_zip(ZipCode::parse("45501")?),
+        SourceIdentity::new(
+            SourceNamespace::school_directory("nces-ccd", UsJurisdiction::Ohio),
+            "390000000001",
+        ),
+        SourceLabel::Ccd,
+        Evidence::parsed(
+            SourceRef::new(
+                "nces-ccd",
+                Some("https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2526_w_0a_050626.zip".into()),
+            ),
+            "2026-10-04",
+        ),
+        "d1473136285b5994b73a1a8b640757811eb81e0ae770953bcf915ee8c422386e".into(),
+    ))
+}
+
+#[test]
+fn directory_provider_claims_attach_only_through_their_own_namespace() -> TestResult {
+    let (address, owner, label, evidence, hash) = directory_components()?;
+    let claim = SchoolPostalAddress::new(address, owner.clone(), label, evidence, hash)?;
+    let mut school = CanonicalSchool::new(
+        UsJurisdiction::Ohio,
+        "Springfield High School",
+        "springfield high school",
+    )
+    .0;
+    check!(eq; school.add_postal_address(claim.clone()),
+    Err(SchoolAddressError::ForeignOwner));
+    school.source_identities.push(owner);
+    check!(eq; school.add_postal_address(claim), Ok(()));
+    check!(eq; school.postal_addresses.len(), 1);
+    Ok(())
+}
+
+#[test]
+fn directory_claims_require_a_matching_provider_and_label() -> TestResult {
+    let (address, owner, label, evidence, hash) = directory_components()?;
+    let mut mismatched = owner.clone();
+    mismatched.namespace = SourceNamespace::school_directory("nces-pss", UsJurisdiction::Ohio);
+    assert_rejected(
+        (
+            address.clone(),
+            mismatched,
+            SourceLabel::Ccd,
+            evidence.clone(),
+            hash.clone(),
+        ),
+        SchoolAddressError::UnsupportedAuthority,
+    )?;
+    assert_rejected(
+        (
+            address.clone(),
+            owner.clone(),
+            SourceLabel::AthleticAssociation {
+                state: UsJurisdiction::Ohio,
+            },
+            evidence.clone(),
+            hash.clone(),
+        ),
+        SchoolAddressError::UnsupportedAuthority,
+    )?;
+    let mut foreign_evidence = evidence.clone();
+    foreign_evidence.source.id = "nces-pss".into();
+    assert_rejected(
+        (
+            address.clone(),
+            owner.clone(),
+            SourceLabel::Ccd,
+            foreign_evidence,
+            hash.clone(),
+        ),
+        SchoolAddressError::SourceAuthorityMismatch,
+    )?;
+    let claim = SchoolPostalAddress::new(address, owner, label, evidence, hash)?;
+    let mut school = CanonicalSchool::new(
+        UsJurisdiction::Indiana,
+        "Springfield High School",
+        "springfield high school",
+    )
+    .0;
+    school.source_identities.push(claim.owner().clone());
+    check!(eq; school.add_postal_address(claim),
+    Err(SchoolAddressError::ForeignJurisdiction));
+    Ok(())
+}
+
+#[test]
+fn directory_claims_survive_wire_round_trips_and_reject_tampered_providers() -> TestResult {
+    let (address, owner, label, evidence, hash) = directory_components()?;
+    let claim = SchoolPostalAddress::new(address, owner, label, evidence, hash)?;
+    let encoded = serde_json::to_value(&claim)?;
+    check!(eq; serde_json::from_value::<SchoolPostalAddress>(encoded.clone())?, claim);
+    let mut tampered = encoded;
+    tampered["source_label"] = serde_json::json!("pss");
+    check!(serde_json::from_value::<SchoolPostalAddress>(tampered).is_err());
     Ok(())
 }

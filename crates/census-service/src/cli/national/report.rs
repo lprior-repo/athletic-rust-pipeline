@@ -66,6 +66,18 @@ pub(crate) fn print_national(report: &NationalReport, json: bool) -> Result<()> 
             failure.error
         );
     }
+    if let Some(join) = &report.school_address {
+        println!(
+            "school addresses: {} linked · {} already linked · {} review · {} no match · {} evidence missing · {} refused · generations {}",
+            join.counters.linked,
+            join.counters.already_linked,
+            join.counters.review,
+            join.counters.no_match,
+            join.counters.evidence_missing,
+            join.counters.refused,
+            join.generation,
+        );
+    }
     Ok(())
 }
 

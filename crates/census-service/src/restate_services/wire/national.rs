@@ -3,6 +3,7 @@ use census_domain::UsJurisdiction;
 use census_reconcile::identity::Revision;
 use serde::{Deserialize, Serialize};
 
+use super::school_address_join::{SchoolAddressJoinReply, SchoolAddressJoinRequest};
 use super::{default_concurrency, default_source_parallelism};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -23,6 +24,8 @@ pub struct NationalRequest {
     pub authorized_hosts: Vec<String>,
     #[serde(default = "default_source_parallelism")]
     pub source_parallelism: usize,
+    #[serde(default)]
+    pub school_address: Option<SchoolAddressJoinRequest>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -54,5 +57,7 @@ pub struct NationalReport {
     pub rosters_total: usize,
     pub athletes_total: usize,
     pub class_of_2027_total: usize,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub school_address: Option<SchoolAddressJoinReply>,
     pub today: String,
 }

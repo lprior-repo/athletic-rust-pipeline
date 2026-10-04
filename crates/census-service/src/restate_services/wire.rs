@@ -27,6 +27,10 @@ pub(super) mod seal;
 
 pub use seal::{SealItem, SealRef, SealReply, SealRequest};
 
+pub(super) mod school_address_join;
+
+pub use school_address_join::{SchoolAddressJoinReply, SchoolAddressJoinRequest};
+
 pub(super) mod national;
 
 pub use national::{JurisdictionSummary, NationalFailure, NationalReport, NationalRequest};

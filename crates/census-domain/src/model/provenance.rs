@@ -1,4 +1,5 @@
 use super::*;
+use crate::UsJurisdiction;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct SourceRef {
@@ -82,13 +83,31 @@ pub enum SourceNamespace {
     TfrrsMeet,
     DirectAthleticsTeam,
     DirectAthleticsAthlete,
-    AssociationSchool { association: String },
-    AssociationAthlete { association: String },
-    TimerTeam { provider: String },
-    TimerAthlete { provider: String },
-    TimerMeet { provider: String },
-    LegacyAthleticNet { kind: String },
-    AthleticNet { kind: String },
+    AssociationSchool {
+        association: String,
+    },
+    SchoolDirectory {
+        provider: String,
+        state: UsJurisdiction,
+    },
+    AssociationAthlete {
+        association: String,
+    },
+    TimerTeam {
+        provider: String,
+    },
+    TimerAthlete {
+        provider: String,
+    },
+    TimerMeet {
+        provider: String,
+    },
+    LegacyAthleticNet {
+        kind: String,
+    },
+    AthleticNet {
+        kind: String,
+    },
     Other(String),
 }
 
@@ -103,6 +122,13 @@ impl SourceNamespace {
     pub fn association_school(association: &str) -> Self {
         Self::AssociationSchool {
             association: association.trim().to_ascii_lowercase(),
+        }
+    }
+
+    pub fn school_directory(provider: &str, state: UsJurisdiction) -> Self {
+        Self::SchoolDirectory {
+            provider: provider.trim().to_ascii_lowercase(),
+            state,
         }
     }
 
@@ -127,6 +153,9 @@ impl fmt::Display for SourceNamespace {
             SourceNamespace::DirectAthleticsAthlete => f.write_str("direct_athletics_athlete"),
             SourceNamespace::AssociationSchool { association } => {
                 write!(f, "association_school:{association}")
+            }
+            SourceNamespace::SchoolDirectory { provider, state } => {
+                write!(f, "school_directory:{provider}:{}", state.code())
             }
             SourceNamespace::AssociationAthlete { association } => {
                 write!(f, "association_athlete:{association}")

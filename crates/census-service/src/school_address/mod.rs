@@ -2,6 +2,7 @@ mod export;
 mod generation;
 mod generation_error;
 mod geocode;
+mod join;
 mod manifest;
 mod pipeline;
 mod preflight;
@@ -11,6 +12,10 @@ mod read;
 mod report;
 
 pub use generation_error::GenerationError;
+pub use join::{
+    build_lane_evidence, join_generation, parse_source_pairs, process, Counters, JoinError,
+    JoinReport, LaneEvidence, Mode, OutcomeRow, Overrides,
+};
 pub use manifest::{verify_current, VerifiedGeneration};
 pub use report::{
     ChangeReport, CorpusReport, LaneReport, LedgerRow, PhaseReport, Report, SourceDecision,

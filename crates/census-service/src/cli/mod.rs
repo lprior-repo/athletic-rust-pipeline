@@ -15,6 +15,7 @@ mod qa_reports;
 mod retained_events;
 mod retained_marks;
 mod review;
+mod school_address_join;
 mod school_names;
 mod seal;
 mod serve;
@@ -165,6 +166,7 @@ pub(super) async fn run() -> Result<()> {
         Command::RepairRetainedEvents(args) => {
             retained_events::run_repair_retained_events(&cli, args)
         }
+        Command::SchoolAddressJoin(args) => school_address_join::run(&cli, args),
         _ => {
             let store = Store::open(cli.store_root())?;
             dispatch::dispatch(&cli, &store).await

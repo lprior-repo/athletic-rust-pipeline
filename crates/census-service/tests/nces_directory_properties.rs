@@ -39,9 +39,13 @@ fn nces_every_alabama_row_becomes_an_entry_and_alaska_is_a_state_skip() -> TestR
         ReadCounts {
             entries: 1557,
             skipped: 42,
-            notes: 0
+            notes: 15
         }
     );
+    check!(outcome
+        .notes()
+        .iter()
+        .all(|issue| issue.field == "website"));
     check!(outcome
         .skipped()
         .iter()
@@ -81,6 +85,10 @@ fn nces_the_ccd_reader_maps_identity_address_grades_and_charter_status() -> Test
     check!(eq;
         middle.phone().map(|phone| phone.as_str()),
         Some("(256)878-2341")
+    );
+    check!(eq;
+        middle.website().map(|website| website.as_str()),
+        Some("http://www.albertk12.org")
     );
     check!(eq; middle.grades().ok_or("missing middle grades")?.label(), "7-8");
     check!(eq; middle.kind(), Some(&SchoolKind::public()));
