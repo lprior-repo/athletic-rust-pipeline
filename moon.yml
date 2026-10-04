@@ -1,0 +1,198 @@
+language: rust
+toolchains:
+  default: system
+fileGroups:
+  rustInputs:
+    - 'Cargo.toml'
+    - 'Cargo.lock'
+    - 'rust-toolchain.toml'
+    - '.cargo/*.toml'
+    - '.config/*.toml'
+    - 'crates/**/*'
+    - 'xtask/**/*'
+    - 'vendor/**/*'
+    - 'fixtures/**/*'
+    - 'tools/**/*.rs'
+    - 'tools/build-toolchain.json'
+    - 'tools/moon-*'
+    - 'research/sources/athleticnet/samples/**/*'
+tasks:
+  report-test:
+    command: 'tools/moon-cargo nextest run --config .cargo/fast-iteration.toml -p census-report --lib --all-features --locked --offline --no-fail-fast --test-threads=16'
+    toolchains: [system]
+    env: &iterationEnvironment
+      CARGO_TARGET_DIR: 'target/fast-iteration'
+      CARGO_BUILD_JOBS: '16'
+      RUSTC_WRAPPER: ''
+    inputs: &rustCacheInputs
+      - '@group(rustInputs)'
+      - '$MOON_RUST_*'
+      - '$RUSTFLAGS'
+      - '$RUSTC_WRAPPER'
+      - '$CARGO_*'
+      - '$RUSTUP_TOOLCHAIN'
+      - '$RUSTC'
+      - '$RUSTC_WORKSPACE_WRAPPER'
+      - '$RUSTUP_HOME'
+      - '$PATH'
+      - '$HOME'
+      - '$TMPDIR'
+      - '$CC*'
+      - '$CXX*'
+      - '$AR*'
+      - '$LD*'
+      - '$CFLAGS*'
+      - '$HOST_*'
+      - '$TARGET_*'
+      - '$NEXTEST_*'
+      - '$GOLDEN_UPDATE'
+      - '$LANG'
+      - '$CI*'
+      - '$AZURE_PIPELINES'
+      - '$TZ'
+    options:
+      shell: false
+      cache: true
+      runInCI: true
+      mutex: rust-build
+  tests:
+    command: 'tools/moon-cargo nextest run --config .cargo/fast-iteration.toml --workspace --all-features --locked --offline --no-fail-fast --test-threads=16'
+    toolchains: [system]
+    env: *iterationEnvironment
+    inputs: *rustCacheInputs
+    options:
+      shell: false
+      cache: false
+      runInCI: true
+      mutex: rust-build
+  check:
+    command: 'tools/moon-cargo --config .cargo/fast-iteration.toml check --workspace --all-targets --all-features --locked --offline'
+    toolchains: [system]
+    env: *iterationEnvironment
+    inputs: *rustCacheInputs
+    options:
+      shell: false
+      cache: false
+      runInCI: true
+      mutex: rust-build
+  lint-src:
+    command: 'tools/moon-cargo --config .cargo/fast-iteration.toml clippy --workspace --lib --bins --examples --all-features --locked --offline -- -D warnings -W clippy::all'
+    toolchains: [system]
+    env: *iterationEnvironment
+    inputs: *rustCacheInputs
+    options:
+      shell: false
+      cache: false
+      runInCI: true
+      mutex: rust-build
+  fmt:
+    command: 'tools/moon-cargo fmt --all -- --check'
+    toolchains: [system]
+    inputs: *rustCacheInputs
+    options:
+      shell: false
+      cache: false
+      runInCI: true
+      mutex: rust-build
+  build-portable:
+    command: 'tools/moon-cargo build --target x86_64-unknown-linux-gnu --release -p census-service --bins --locked --offline'
+    toolchains: [system]
+    env: &portableReleaseEnvironment
+      CARGO_TARGET_DIR: 'target/moon-portable'
+      CARGO_BUILD_JOBS: '16'
+      RUSTC_WRAPPER: ''
+      CARGO_ENCODED_RUSTFLAGS: ''
+      CARGO_PROFILE_RELEASE_OPT_LEVEL: '3'
+      CARGO_PROFILE_RELEASE_LTO: 'thin'
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '1'
+      CARGO_PROFILE_RELEASE_INCREMENTAL: 'false'
+    inputs: *rustCacheInputs
+    outputs:
+      - 'target/moon-portable/x86_64-unknown-linux-gnu/release/census-service'
+      - 'target/moon-portable/x86_64-unknown-linux-gnu/release/census-serve'
+    options:
+      shell: false
+      cache: true
+      runInCI: false
+      mutex: rust-build
+  build-native:
+    command: 'tools/moon-cargo build --target x86_64-unknown-linux-gnu --release -p census-service --bins --locked --offline'
+    toolchains: [system]
+    env:
+      <<: *portableReleaseEnvironment
+      CARGO_TARGET_DIR: 'target/moon-native'
+      CARGO_ENCODED_RUSTFLAGS: '-Ctarget-cpu=native'
+    inputs: *rustCacheInputs
+    outputs:
+      - 'target/moon-native/x86_64-unknown-linux-gnu/release/census-service'
+      - 'target/moon-native/x86_64-unknown-linux-gnu/release/census-serve'
+    options:
+      shell: false
+      cache: true
+      runInCI: false
+      mutex: rust-build
+  xtask:
+    command: 'tools/moon-cargo --config .cargo/fast-iteration.toml run -p xtask --bin xtask --locked --offline --'
+    toolchains: [system]
+    env: *iterationEnvironment
+    inputs: *rustCacheInputs
+    options: &manualRustTask
+      shell: false
+      cache: false
+      runInCI: false
+      mutex: rust-build
+  gate:
+    command: 'tools/moon-cargo --config .cargo/fast-iteration.toml run -p xtask --bin xtask --locked --offline -- gate --'
+    toolchains: [system]
+    env: *iterationEnvironment
+    inputs: *rustCacheInputs
+    options: *manualRustTask
+  bench:
+    command: 'tools/moon-cargo bench --target x86_64-unknown-linux-gnu -p census-service --all-features --locked --offline'
+    toolchains: [system]
+    env:
+      <<: *portableReleaseEnvironment
+      CARGO_PROFILE_BENCH_OPT_LEVEL: '3'
+      CARGO_PROFILE_BENCH_LTO: 'thin'
+      CARGO_PROFILE_BENCH_CODEGEN_UNITS: '1'
+      CARGO_PROFILE_BENCH_INCREMENTAL: 'false'
+    inputs: *rustCacheInputs
+    options: *manualRustTask
+  build:
+    command: 'tools/moon-cargo build --target x86_64-unknown-linux-gnu --locked --offline'
+    toolchains: [system]
+    env:
+      <<: *portableReleaseEnvironment
+      CARGO_TARGET_DIR: 'target/moon-build'
+    inputs: *rustCacheInputs
+    options: *manualRustTask
+  fetch:
+    command: 'tools/moon-cargo fetch --locked --target x86_64-unknown-linux-gnu'
+    toolchains: [system]
+    inputs: *rustCacheInputs
+    options: *manualRustTask
+  fmt-write:
+    command: 'tools/moon-cargo fmt --all'
+    toolchains: [system]
+    inputs: *rustCacheInputs
+    options: *manualRustTask
+  g1-audit:
+    command: 'tools/moon-cargo --config .cargo/fast-iteration.toml run -p xtask --bin g1-audit --locked --offline --'
+    toolchains: [system]
+    env: *iterationEnvironment
+    inputs: *rustCacheInputs
+    options: *manualRustTask
+  durability:
+    command: 'tools/durability/run.sh'
+    toolchains: [system]
+    env:
+      CARGO_TARGET_DIR: 'target/fast-iteration'
+      CARGO_BUILD_JOBS: '16'
+      RUSTC_WRAPPER: ''
+    inputs: *rustCacheInputs
+    options: *manualRustTask
+  backup-drill:
+    command: 'tools/ops-backup-drill.sh'
+    toolchains: [system]
+    inputs: *rustCacheInputs
+    options: *manualRustTask

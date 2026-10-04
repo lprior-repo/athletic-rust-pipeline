@@ -5,6 +5,276 @@ not transfer to a later revision, fresh store or new run identity. A historical 
 fresh national census's release certificate. Current requirements live in [NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md)
 and [OPERATIONS.md](OPERATIONS.md). Source audits and imported measurements are explicitly labelled.
 
+## Scoped Moon main landing — 2026-10-04
+
+The owner authorized committing and pushing the completed Moon workflow after the two earlier
+no-push entries below. The landing scope is the 22 Moon-owned files/hunks plus four already-staged
+gate prerequisites: three rustfmt-only fixes and the extraction fixture's correction from six
+examined files to five files carrying violations. No adapter, domain behavior, unrelated school-join
+documentation or another owner's evidence section is included.
+
+Verification used an isolated checkout of parent `4ec80539013b3637f7f423f1354b9058f288c0b1`
+plus that scope, with separate Cargo/Moon targets. The shared worktree and its incoming adapter edits
+were not the test input. Raw results remain under
+`/home/lewis/src/ad-law-scrape/athletic-build-bench-20261004-083946/logs/`:
+
+|Label|Command through the repository launcher|Observed result|
+|---|---|---|
+|`moon-landing-target-test`|`tools/moon-local run pipeline:tests -- -E 'test(actual_fixture_graph_includes_tests_examples_benches_and_tools)'`|exit 0 after the existing fixture-count fix|
+|`moon-landing-target-fmt`|`tools/moon-local run pipeline:fmt`|exit 0 after the three existing format fixes|
+|`moon-landing-xtask-help`|`env -u CI tools/moon-local run pipeline:xtask -- --help`|exit 0; actual CLI help executed|
+|`moon-landing-g1-help`|`env -u CI tools/moon-local run pipeline:g1-audit -- --help`|exit 0; actual retained-audit CLI executed|
+|`moon-landing-fetch`|`env -u CI tools/moon-local run pipeline:fetch -- --offline`|exit 0|
+|`moon-landing-ci-final`|`tools/moon-local ci --force --summary detailed`|exit 0; all five CI tasks passed; 69.072 s wall time|
+
+The final full suite ran **2,368 tests, all passed, three existing skipped**, in 37.155 s;
+scoped report tests ran 195, all passed, in 1.340 s. Native endpoint kill/restart passed in
+8.185 s; native Restate-node kill/restart passed in 8.177 s. Source Clippy, all-target/all-feature
+check and formatting passed. The first isolated CI recorded one fixture-count failure and three
+formatting defects at the parent; its logs/report are retained, not relabelled as success.
+
+These results certify the scoped committed-source iteration workflow, not the other agents'
+uncommitted tree, all seventeen native fault scenarios or a full release/national-census gate.
+`artifacts/moon-landing/` preserves the exact selected patches, source scope and CI reports;
+Bead `athletic-rust-pipeline-2v3` records the actual pushed commit and staged-work preservation.
+No Dolt remote sync, shared cache reset or durable census-store mutation was performed.
+
+## Moon-only developer command cutover — 2026-10-04, after the benchmark gate
+
+The owner explicitly required **only Moon** for repository developer commands, including agent
+instructions. `AGENTS.md`, root `README.md`, `ARCHITECTURE.md`, `xtask/README.md`,
+`tools/README.md`, the service README, operations, deployment, backup, fault-harness and national-plan
+references now agree: enter through `tools/moon-local` from the repository root; Cargo and gate/fault
+shell wrappers are internal implementations, not alternate workflows. Historical command evidence
+and external vendor documentation were not rewritten as if Moon had executed them.
+
+Current command examples:
+
+```sh
+tools/moon-local run pipeline:tests
+tools/moon-local run pipeline:tests -- -E 'binary(restate_kill_restart)'
+tools/moon-local run pipeline:check
+tools/moon-local run pipeline:lint-src
+tools/moon-local run pipeline:fmt
+tools/moon-local ci --force --summary detailed
+env -u CI tools/moon-local run pipeline:build-portable
+env -u CI tools/moon-local run pipeline:xtask -- --help
+env -u CI tools/moon-local run pipeline:gate -- --release
+env -u CI tools/moon-local run pipeline:bench -- --bench core -- --noplot
+```
+
+The five iteration CI tasks remain unchanged in purpose. Manual uncached tasks now also expose
+xtask verbs, the original full gate, benchmarks, general feature/example builds, dependency fetch,
+intentional source formatting, retained g1 audit, native fault wrappers and backup drills.
+`build-native` is a separate manual, cacheable O3/thin/CGU1/native build; portable remains the default.
+Manual tasks require `env -u CI` when `CI` is set, even to `false`, and do not run automatically in CI.
+Fault/backup wrappers now default to absolute portable Moon artifact paths rather than stale
+`target/release`/`target/debug` or PATH fallback. Registered deployment artifacts remain immutable.
+
+Actual main-repository cutover verification, active execution context:
+
+|Evidence label|Observed result|Scope|
+|---|---|---|
+|`moon-only-task-schema`|exit 0|Moon parsed/resolved the complete named task configuration|
+|`moon-only-fetch-offline`|exit 0|Locked offline dependency fetch through the new task|
+|`moon-only-backup-store-init`|exit 0|Real optimized CLI opened a new owned empty store and checked integrity|
+|`moon-only-backup-drill`|exit 0; manifest/count/integrity/reopen PASS|New Moon wrapper exercised actual backup, restore, consolidation and repeated CLI report readback of that empty store|
+|`moon-only-durability-seal-r2`|exit 0; one PASS, zero FAIL/SKIPPED|Moon fault wrapper executed real empty-store workbook/seal refusal with named unmet items|
+|`moon-only-backup-usage`|exit 1, expected|Missing store argument reports the Moon command syntax|
+|`moon-only-xtask-help`|exit 1, blocked|Task reached real Cargo compilation; incoming AIA source failed with 11 errors|
+|`moon-only-fmt`|exit 1, blocked|Incoming UHSAA source formatting drift; not a task-result replay|
+
+The first seal smoke used an invalid `env` option order and exited 127 before Moon ran; it is
+retained as `moon-only-durability-seal`, not counted as fault execution. Corrected `-u CI` before
+assignments produced the passing r2 above. `bash -n` passed for both Moon launchers and the two
+updated wrappers. Targeted search found no direct Cargo or standalone gate/fault/backup invocation
+in the current owning developer documents. Schema/fetch/empty-store wrapper checks are not proof
+of a complete native-fault or nonempty national backup lane.
+
+**Later-tree owner blockers:** the earlier 2,389-test all-green main run below preceded additional
+adapter edits. AIA compilation now reports duplicate `pub mod aia` in crawl `lib.rs`, missing
+`rest`, missing `AIA_EVIDENCE`/`AIA_REFUSAL`, obsolete `CanonicalSchool.address`, ambiguous JSON
+value type and `?` in a non-Result closure. Owner task `athletic-rust-pipeline-6ec.4` was notified
+with exact raw diagnostics; no AIA file was edited by this tooling slice.
+UHSAA formatting drift in `map.rs` and `parse.rs` belongs to `athletic-rust-pipeline-6ec.5`.
+No gate was weakened, adapter omitted, failure cached as success or latest-tree PASS claimed.
+Compile-dependent new-task execution and a fresh full CI require those owners' repairs.
+All reachable documentation, task registration, fetch and real CLI-wrapper checks are complete.
+
+Raw commands/stdout/stderr/exit/times are under the benchmark evidence root documented below.
+`artifacts/moon-only-cutover.json` records this later scope and blockers separately from the
+benchmark result. No commit, push or Dolt remote sync was performed.
+
+## Build/test acceleration and main Moon integration — 2026-10-04
+
+Beads `athletic-rust-pipeline-bwn` and `athletic-rust-pipeline-1ru`. Scope: isolated build,
+edit→test and optimized-runtime measurements, followed by explicitly authorized main-repository
+tooling integration. This is an iteration-workflow result, not a fresh national census or release
+certificate. Other agents remained active; their source edits and durable stores were preserved.
+
+### Measured environment and iteration results
+
+Evidence root: `/home/lewis/src/ad-law-scrape/athletic-build-bench-20261004-083946/`.
+Its `source/` snapshot, compiler targets, private sccache directory and captured public fixtures
+were separate from the main workspace. Host: Ryzen 9950X3D, 16 cores/32 threads, 123 GiB RAM,
+NVMe, performance governor. Pinned `nightly-2026-04-27`: rustc `1.97.0-nightly`
+(`ca9a134e0`, LLVM 22.1.2); Cargo `1.97.0-nightly` (`eb9b60f1f`). Moon 2.2.4,
+effective Cargo Nextest 0.9.133 and private sccache 0.18.0. The PATH-only Nextest 0.9.137 was not
+the executable selected by Cargo. Own timed jobs were serialized; external load was recorded.
+
+|Observed snapshot workflow|Baseline|Candidate|Speedup|
+|---|---:|---:|---:|
+|Clean Cargo target, workspace/all-feature test compilation, median of two runs|74.510 s|40.216 s|1.853×|
+|Actual CSV predicate body edit, workspace compilation plus report tests, median of three edits|14.164 s|7.386 s|1.918×|
+|Unfiltered full workspace Nextest, including owned native-test lifetime repair|130.158 s|33.916 s|3.838×|
+
+The clean-target compiler comparison uses frontend threads 4 / Cargo jobs 16 versus jobs 32;
+downloads and filesystem cache were warm, not OS-cache-flushed. Body edits executed 198 report
+tests. Both historical full-suite runs had the same 2,340-test inventory: 2,338 passed,
+two then-existing failures and three existing ignored tests. Those snapshot failures were the
+postal CSV schema and NCES fixture-count checks, not failures hidden by filtering or a new ignore.
+The main repository's later passing inventory is recorded separately below.
+
+The requested 2× threshold was exceeded by the full-suite workflow, not repeatably by clean
+compilation or body-edit rebuilds. A frontend self-profile located the principal bottleneck in
+`chromiumoxide_cdp`; baseline front-end time 38.64 s versus 18.94 s with four frontend threads.
+The default linker was already LLD. Private mold trials did not beat the selected workflow.
+Same-path warm sccache compilation took 31.056 s with 284 Rust hits; changing
+`CARGO_TARGET_DIR` changed sccache Rust keys and did not constitute equivalent reuse.
+No global compiler, cache service or shared Cargo target was reset.
+
+### Main wiring and actual current-tree gates
+
+Installed `.cargo/fast-iteration.toml`, `.moon/workspace.yml`, `moon.yml`, executable
+`tools/moon-local` and `tools/moon-cargo`, plus narrow ignores for generated Moon/toolchain
+state. [The xtask developer reference](../xtask/README.md) owns prerequisites, Moon commands
+and native/portable release selection. The fast profile is explicit;
+the existing default Cargo configuration and release profile were not replaced.
+Line-table project debug information, dependency debug suppression, incremental iteration,
+frontend threads 4 and jobs/test threads 16 are confined to the opt-in workflow.
+Debug assertions, checked-overflow policy and unwind behavior were not weakened.
+
+Main commands actually executed:
+
+```bash
+tools/moon-local run pipeline:fmt
+tools/moon-local ci --force --summary detailed
+env -u CI tools/moon-local run pipeline:build-portable
+env CC=/usr/bin/false tools/moon-local query tasks
+env -u MOON_RUST_CARGO tools/moon-cargo --version
+```
+
+Final labels `main-fmt-repair`, `main-moon-ci-land` and `main-portable-postfmt` exited 0:
+format 1.538 s; forced Moon CI 71.504 s; optimized portable build 117.602 s.
+CI executed all five configured tasks: all-target/all-feature check, source Clippy with
+`-D warnings -W clippy::all`, formatting, scoped report tests and uncached full tests.
+Report tests: 208 passed in 1.196 s. Full suite: 2,389 passed, three existing skipped,
+34.157 s test execution; its task also included compilation. Native endpoint kill/restart
+passed in 7.864 s and native Restate-node kill/restart in 8.370 s.
+The two negative launcher commands exited 1 as required: invalid CC fails before cache lookup,
+and direct `moon-cargo` use without a selected/fingerprinted Cargo is rejected.
+
+The earlier `main-moon-ci-r1` exposed a real node-startup race: `/deployments` was available before
+the admin SQL partition route, producing a 500 during the strict pause query. The native test's
+existing readiness helper now also requires successful `SELECT id FROM sys_invocation LIMIT 1`
+within its original 60 s readiness budget. Pause lookup still propagates malformed/non-success
+responses, retries only valid empty results and preserves callers' 15 s deadlines.
+Endpoint interruption now aborts and joins its obsolete HTTP submitter, observes durable PAUSED
+before restarting the endpoint, and retains same-key deduplication, resume and exact durable-table
+assertions. The 300-school × 40-athlete corpus was not reduced.
+
+The later `main-moon-ci-integrated` passed all 2,389 tests, check and source Clippy but failed
+one incoming NCES test's rustfmt expression. Only that expression's formatting was changed;
+the focused format lane and final forced CI above passed. Initial Nextest filter shell parsing
+also failed before execution; Moon tasks now pass literal arguments with `shell: false`.
+Failed attempts remain in raw logs; none are represented as passing test execution.
+
+### Existing remote cache, source invalidation and executable readback
+
+Moon uses the already-running bazel-remote gRPC service at `127.0.0.1:9092`, instance
+`athletic-rust-pipeline`, with integrity verification. No Bazel build migration or daemon
+reconfiguration was performed. The launcher captures selected tools and inherited configuration
+before lookup; source root is part of the key. Full tests, native recovery, check, source Clippy
+and format are uncached. Scoped report results and the two optimized final executables may be cached.
+Cached stdout is replay, not evidence that Cargo or tests executed again.
+
+Snapshot source-body invalidation and an empty own Moon-cache remote hit were exercised; the
+snapshot remote-hit command took 4.050 s. Main source changes from other agents changed 30
+fingerprinted inputs (`43f59aa5…` → `d5ed00c9…`), correctly rebuilding instead of restoring stale
+executables. A further change produced `a2615e96…`; the first two main restoration probes were
+therefore misses, not claimed cache hits.
+
+`main-portable-remote-hydrate-r3` exited 0 in **0.539 s** with exact key
+`a2615e968c35c5612746b4ca4376deb70d75968d30fa6ddd79be394764b8ea34`,
+`Cache hit in remote service` and `hydrate_from=RemoteCache`. Before that probe, only this task's
+local state, current archive and two final executables were moved to retained evidence directories;
+unrelated task entries, intermediate targets and shared caches were untouched.
+Restored `census-service` and `census-serve` matched pre-removal SHA-256, byte length and mode 0755.
+Full records: `artifacts/main-remote-hydration.json` and `artifacts/main-input-invalidation.json`.
+
+Both the restored CLI and the final freshly built CLI ran `school-address` with retained CCD/PSS
+fixtures, first publishing September output, then reading that generation's baseline and ledger
+for October output. Current executable labels `main-portable-current-cli-first` and
+`main-portable-current-cli-readback` exited 0 in 0.026 s and 0.043 s. Observed outcome:
+1,931 entries, 67 explicitly skipped rows, 15 notes, zero added/removed/modified records.
+All five manifest-declared artifacts were read back and their exact byte lengths and SHA-256s
+verified; `school_directory.json` contained exactly 1,931 entries. Generation digest:
+`ba17a00657f6a4b717e5dfc437c3bdfcd8958ea1ef27da01a4b7f42d224ac7b4`.
+See `artifacts/main-cli-readback.json` and `artifacts/main-current-cli-readback.json`.
+These fixture-only commands opened no census store and submitted no national run.
+
+### Optimized release runtime selection
+
+Five snapshot profiles × 16 workloads × three interleaved rounds produced 240 Criterion estimates.
+Workloads: 11 core, four pipeline and one snapshot. Each invocation used `--bench --noplot`,
+30 samples, 1 s warm-up, 2 s measurement and 1,000 bootstrap resamples; omitting `--bench`
+would run Criterion test mode and was not treated as a measurement.
+For each workload, compare the median of three mean-latency estimates; aggregate is the
+equal-weight geometric mean of the 16 portable/candidate ratios.
+
+|Profile|Optimization / LTO / codegen units / CPU|Aggregate throughput relative to portable|
+|---|---|---:|
+|Portable, selected default|O3 / thin / 1 / generic|1.000|
+|Native thin|O3 / thin / 1 / native|0.976|
+|Native fat|O3 / fat / 1 / native|0.993|
+|Portable CGU16|O3 / thin / 16 / generic|0.952|
+|Iteration-only release-fast, rejected for shipping|O2 / off / 256 / generic|0.778|
+
+Portable O3/thin/CGU1 was fastest in this measured aggregate, not necessarily every workload.
+Native fat improved some pipeline cases but did not win overall; both native variants regressed
+archive classification about 18%. O2/no-LTO lost about 22% aggregate throughput.
+Main therefore retains the fully optimized portable shipping profile. The authorized native
+opt-in command remains documented; no reduced-optimization shipping profile was installed.
+
+`perf stat` also executed the real pipeline consolidation profiler for portable and native-fat:
+portable 11,142,963,472 cycles / 41,786,827,706 instructions; native-fat
+11,162,548,852 cycles / 41,992,606,410 instructions. These were fixed-time approximately
+2 s runs including setup, not equal-operation samples; they do not prove a per-operation win.
+Raw Criterion intervals, throughput fields and profiler commands are retained.
+
+### Evidence limits and reproducibility
+
+`logs/<label>.command`, `.stdout`, `.stderr`, `.exit` and `.time.json` retain exact active-context
+commands/results; measurement records also retain load, toolchain and timing context.
+`artifacts/observed-results.json`, `runtime-matrix.json`, `main-final-measurements.json`,
+`main-moon-ci-land.json` and the cache/CLI records above contain machine-readable results.
+The owning benchmark scripts/configs and captured inputs remain under the evidence root.
+Only the private sccache socket was stopped at completion; its cache and all evidence were retained.
+
+Shared-machine variance, warm filesystem cache, small repeat counts and no peak-RSS measurement
+limit these results. Missing outside-snapshot target directories interrupted the runtime sweep;
+their disappearance's cause was not observed. Remaining builds were recovered under snapshot
+`source/target/`, with executable SHA-256s retained. Native-thin core round 1 used the original
+now-unavailable binary; rounds 2–3 used the same-profile recovered build, so its round-1 binary
+identity cannot be compared by hash. The other retained/runtime provenance is recorded explicitly.
+
+No production national-census throughput, end-to-end production runtime, p99, new-machine
+portability, relocatable cache, universal hermeticity or global optimality is claimed.
+`tools/gate.sh --release`, all 17 national fault scenarios, formal proofs, mutation, security,
+coverage and national publication certification were not executed by this tooling slice.
+The narrower Moon iteration gate above is passing; it does not replace those release obligations.
+No commit, push or Dolt remote sync was performed.
+
 ## Athlete-sheet republication (Class of 2027 workbook) — 2026-10-04
 
 Beads `athletic-rust-pipeline-dhp` (closed) and `athletic-rust-pipeline-vez`: two owner-reported

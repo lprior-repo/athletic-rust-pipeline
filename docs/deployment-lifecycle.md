@@ -5,6 +5,20 @@ handler policies are in [OPERATIONS.md](OPERATIONS.md); [durable execution](rest
 is vendor background. Required V1→V2 fault evidence is [scenario 4](NATIONAL-CENSUS-FAULTS.md#required-scenarios).
 An ordinary restart is not proof of an in-flight upgrade.
 
+## Build entrypoint
+
+Moon is the only repository build/test/gate entrypoint. From the repository root:
+
+```sh
+env -u CI tools/moon-local run pipeline:build-portable
+env -u CI tools/moon-local run pipeline:gate -- --release
+```
+
+The build produces `census-service` and `census-serve` under
+`target/moon-portable/x86_64-unknown-linux-gnu/release/`. Copy verified artifacts into a new immutable
+deployment directory; never rebuild over a running executable. [The developer reference](../xtask/README.md)
+owns Moon prerequisites, arguments and cache boundaries. A build is not release certification.
+
 ## Invariants
 
 - Registered binaries are immutable artifacts. Bind a release ID to the actual binary/lockfile/

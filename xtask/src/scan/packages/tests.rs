@@ -85,7 +85,7 @@ fn every_root_the_walker_can_walk_is_walked() -> TestResult {
             ("build.rs".to_string(), false),
             ("examples".to_string(), true),
             ("fuzz_targets".to_string(), true),
-            
+
             ("src".to_string(), false),
         ])
     );

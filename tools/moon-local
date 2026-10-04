@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root=$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")
+cd "$root"
+export MOON_SKIP_SYNC_WORKSPACE=true
+export RUSTC_WRAPPER=
+cargo_bin=$(rustup which cargo)
+rustc_bin=$(rustup which rustc)
+if [[ -n "${RUSTC:-}" ]]; then
+  rustc_bin=$(command -v "$RUSTC")
+fi
+export RUSTC="$rustc_bin"
+export MOON_RUST_CARGO="$cargo_bin"
+nextest_bin=${CARGO_HOME:-$HOME/.cargo}/bin/cargo-nextest
+if [[ ! -x "$nextest_bin" ]]; then
+  nextest_bin=$(command -v cargo-nextest)
+fi
+moon_bin=$(command -v moon)
+cc_bin=$(command -v "${CC:-cc}")
+cxx_bin=$(command -v "${CXX:-c++}")
+ar_bin=$(command -v "${AR:-ar}")
+export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$cc_bin"
+wrapper_hashes=
+for selected in "${RUSTC_WRAPPER:-}" "${RUSTC_WORKSPACE_WRAPPER:-}"; do
+  if [[ -n "$selected" ]]; then
+    resolved=$(command -v "$selected")
+    wrapper_hashes+="$(sha256sum "$resolved")"$'\n'
+  fi
+done
+build_config=$("$cargo_bin" -Z unstable-options config get build --format json 2>&1) || {
+  if [[ "$build_config" != *'is not set'* ]]; then
+    printf '%s\n' "$build_config" >&2
+    exit 1
+  fi
+}
+target_config=$("$cargo_bin" -Z unstable-options config get target --format json 2>&1) || {
+  if [[ "$target_config" != *'is not set'* ]]; then
+    printf '%s\n' "$target_config" >&2
+    exit 1
+  fi
+}
+profile_config=$("$cargo_bin" -Z unstable-options config get profile --format json 2>&1) || {
+  if [[ "$profile_config" != *'is not set'* ]]; then
+    printf '%s\n' "$profile_config" >&2
+    exit 1
+  fi
+}
+sysroot=$("$rustc_bin" --print sysroot)
+bundled_linker=$sysroot/lib/rustlib/x86_64-unknown-linux-gnu/bin/gcc-ld/ld.lld
+cargo_version=$("$cargo_bin" -vV)
+rustc_version=$("$rustc_bin" -vV)
+native_features=$("$rustc_bin" --print cfg -C target-cpu=native)
+nextest_version=$("$nextest_bin" --version)
+moon_version=$("$moon_bin" --version)
+cc_version=$("$cc_bin" --version)
+cxx_version=$("$cxx_bin" --version)
+ar_version=$("$ar_bin" --version)
+executable_hashes=$(sha256sum "$cargo_bin" "$rustc_bin" "$nextest_bin" "$moon_bin" "$cc_bin" "$cxx_bin" "$ar_bin" "$bundled_linker")
+fingerprint=$(jq -n \
+  --arg source_root "$root" \
+  --arg cargo "$cargo_version" \
+  --arg rustc "$rustc_version" \
+  --arg native_features "$native_features" \
+  --arg nextest "$nextest_version" \
+  --arg moon "$moon_version" \
+  --arg cc "$cc_version" \
+  --arg cxx "$cxx_version" \
+  --arg ar "$ar_version" \
+  --arg executables "$executable_hashes" \
+  --arg wrappers "$wrapper_hashes" \
+  --arg build_config "$build_config" \
+  --arg target_config "$target_config" \
+  --arg profile_config "$profile_config" \
+  '{source_root:$source_root,cargo:$cargo,rustc:$rustc,nextest:$nextest,moon:$moon,cc:$cc,cxx:$cxx,ar:$ar,executables:$executables,wrappers:$wrappers,host_native_features:$native_features,cargo_build_config:$build_config,cargo_target_config:$target_config,cargo_profile_config:$profile_config}')
+if [[ ! -f tools/build-toolchain.json ]] || [[ "$(<tools/build-toolchain.json)" != "$fingerprint" ]]; then
+  temporary=$(mktemp tools/.build-toolchain.XXXXXX)
+  trap 'rm -f "$temporary"' EXIT
+  printf '%s\n' "$fingerprint" > "$temporary"
+  mv "$temporary" tools/build-toolchain.json
+  trap - EXIT
+fi
+exec "$moon_bin" "$@"

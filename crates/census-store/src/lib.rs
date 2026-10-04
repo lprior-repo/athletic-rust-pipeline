@@ -187,4 +187,3 @@ mod receipt_tests;
 mod replace_tests;
 #[cfg(test)]
 mod tests;
-

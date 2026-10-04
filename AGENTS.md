@@ -38,6 +38,38 @@ document instead of creating a second architecture, handoff, status or execution
 why; references explain current APIs; evidence records what actually ran. Preserve unique source
 captures and audit evidence. Scraped Restate references are external material, not project policy.
 
+## Developer commands — Moon only
+
+Moon is the **only** repository build, test, check, lint, formatting, benchmark and gate entrypoint.
+Run from the repository root through `tools/moon-local`; never invoke bare `moon`, Cargo,
+`cargo xtask`, `tools/gate.sh` or fault/backup wrappers directly. Cargo and those wrappers are
+internal Moon task implementations. Translate skill/example commands into the tasks below.
+The installed Moon version is 2.2.4; the launcher selects/fingerprints the pinned Rust toolchain
+before cache lookup. [xtask/README.md](xtask/README.md) owns the complete command/task reference.
+
+```sh
+tools/moon-local run pipeline:tests
+tools/moon-local run pipeline:tests -- -E 'binary(restate_kill_restart)'
+tools/moon-local run pipeline:check
+tools/moon-local run pipeline:lint-src
+tools/moon-local run pipeline:fmt
+tools/moon-local ci --force --summary detailed
+env -u CI tools/moon-local run pipeline:build-portable
+env -u CI tools/moon-local run pipeline:xtask -- --help
+env -u CI tools/moon-local run pipeline:gate -- --release
+```
+
+Manual tasks (`build*`, `xtask`, `gate`, `bench`, `fetch`, `fmt-write`, `g1-audit`, `durability`
+and `backup-drill`) are excluded from automatic CI; unset `CI` even when its value is `false`.
+Use `pipeline:fetch` to populate locked dependencies, `pipeline:fmt-write` only when intentionally
+formatting owned source, and `pipeline:bench -- --bench <target> -- <Criterion-args>` for measurements.
+The optimized portable binaries live in `target/moon-portable/x86_64-unknown-linux-gnu/release/`.
+Runtime census/Restate/admin commands still execute the actual binaries; they are not Cargo builds.
+Historical evidence and external vendor references retain their original commands, not current policy.
+The passing Moon iteration CI is narrower than `pipeline:gate -- --release`; never substitute it
+for release, proof, mutation, security or all seventeen fault obligations.
+
+
 ## Local Restate deployment lifecycle
 
 No container runtime is used here. The node is the native binary at `/home/lewis/bin/restate-server`
@@ -63,7 +95,8 @@ Starting a fresh run:
 1. Write `var/<run>/restate.toml` from the previous run's config with new node/cluster names and a
    new `base-dir`, start `restate-server --no-logo -c` it, and wait for the `Admin:` and
    `HTTP Ingress:` banner lines.
-2. Start `target/release/census-serve --listen 127.0.0.1:<port> --data-dir var/<run>
+2. After `env -u CI tools/moon-local run pipeline:build-portable`, start
+   `target/moon-portable/x86_64-unknown-linux-gnu/release/census-serve --listen 127.0.0.1:<port> --data-dir var/<run>
    --max-concurrent <n> --drain-timeout <seconds> --browser-profile var/<run>/browser-profile
    --browser-executable /usr/bin/chromium --browser-headless`.
 3. Register it: `curl -X POST http://127.0.0.1:19095/deployments -H 'content-type: application/json'
@@ -139,7 +172,7 @@ certify unexercised behavior.
 
 ## Adding work
 
-- **Adapter:** use `cargo xtask new-source <name>`, captured fixtures under
+- **Adapter:** use `env -u CI tools/moon-local run pipeline:xtask -- new-source <name>`, captured fixtures under
   `crates/census-crawl/tests/fixtures/<name>/`, and
   `research/sources/<name>/SOURCE_REPORT.md`; follow `xtask/README.md`'s scaffolding and replay
   boundaries for qualification.

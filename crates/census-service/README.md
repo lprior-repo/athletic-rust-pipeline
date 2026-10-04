@@ -7,10 +7,15 @@ Do not interpret historical Midwest help text as the fresh census's run scope.
 
 ## Binaries
 
+Build through Moon from the repository root, then execute the real optimized binaries:
+
 ```sh
-cargo run --release -p census-service --bin census-service -- --help
-cargo run --release -p census-service --bin census-serve -- --help
+env -u CI tools/moon-local run pipeline:build-portable
+target/moon-portable/x86_64-unknown-linux-gnu/release/census-service --help
+target/moon-portable/x86_64-unknown-linux-gnu/release/census-serve --help
 ```
+
+Do not use Cargo or bare Moon as a second developer entrypoint.
 
 `census-service serve` prints an endpoint command; it does not start one.
 [Deployment lifecycle](../../docs/deployment-lifecycle.md) owns startup, registration and shutdown.
@@ -103,7 +108,8 @@ verification does not establish national completeness.
 ## Development and evidence
 
 Source qualification belongs in [xtask](../../xtask/README.md) and the registry's descriptor table,
-gates in [tools/gate.sh](../../tools/gate.sh), benchmarks in `cargo xtask perf`,
+gates through `env -u CI tools/moon-local run pipeline:gate`, benchmarks through
+`env -u CI tools/moon-local run pipeline:xtask -- perf <command>`,
 and dated ingestion/recovery results in [VERIFICATION-EVIDENCE.md](../../docs/VERIFICATION-EVIDENCE.md).
 The previous crate-local schema, workflow, adapter and measurement tables were consolidated into
 those owners; do not reintroduce duplicate inventories here.

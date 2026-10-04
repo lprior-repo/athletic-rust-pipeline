@@ -1,0 +1,9 @@
+[profile.test]
+debug = "line-tables-only"
+incremental = true
+
+[profile.test.package."*"]
+debug = false
+
+[target.x86_64-unknown-linux-gnu]
+rustflags = ["-Z", "threads=4"]

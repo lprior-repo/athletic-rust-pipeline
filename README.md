@@ -26,17 +26,25 @@ observed results from unverified requirements.
 | Run or inspect the census | [Operations](docs/OPERATIONS.md) |
 | Deploy, stop or recover services | [Lifecycle](docs/deployment-lifecycle.md) |
 | Back up or restore evidence | [Backup/restore](docs/FJALL_BACKUP.md) |
-| Run gates, fixtures and fault scenarios | [Gates](tools/gate.sh), [17 fault obligations](docs/NATIONAL-CENSUS-FAULTS.md) |
+| Run gates, fixtures and fault scenarios | [Moon tasks and gates](xtask/README.md), [17 fault obligations](docs/NATIONAL-CENSUS-FAULTS.md) |
 | Measure performance | [Perf commands](xtask/README.md) |
 | Use developer commands | [xtask](xtask/README.md) |
 | Use service binaries and CLI | [census-service](crates/census-service/README.md) |
 
 ## Safe starting points
 
+Moon is the **only** repository developer-command entrypoint. Use `tools/moon-local` from this
+directory, not bare Moon, Cargo or gate scripts. [The developer reference](xtask/README.md) owns
+prerequisites, task arguments, manual-task CI handling and cache boundaries.
+
+
 ```sh
-cargo xtask contract
-cargo xtask census-status
-cargo xtask coverage
+tools/moon-local run pipeline:tests
+tools/moon-local ci --force --summary detailed
+env -u CI tools/moon-local run pipeline:build-portable
+env -u CI tools/moon-local run pipeline:xtask -- contract
+env -u CI tools/moon-local run pipeline:xtask -- census-status
+env -u CI tools/moon-local run pipeline:xtask -- coverage
 ```
 
 Status/coverage/export developer commands default to the serving census through loopback ingress.

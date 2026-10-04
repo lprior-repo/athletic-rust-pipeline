@@ -335,8 +335,9 @@ phase-boundary subcases. Use owned isolated native non-Docker infrastructure, ac
 paths and reached injections. A skipped, unselected, simulated substitute or unmeasured lane is not
 PASS. The release requirement retains 12 mandatory proof kernels; the current
 [xtask](../xtask/README.md) wrapper enumerates eight names, so that narrower invocation does not
-establish the twelve-kernel requirement. [tools/gate.sh](../tools/gate.sh) and xtask own proof verdict
-taxonomy, property/fuzz/mutation/security/async gates and command procedures;
+establish the twelve-kernel requirement. Moon is the only repository developer entrypoint:
+`env -u CI tools/moon-local run pipeline:gate -- --release`. Its internal `tools/gate.sh` and xtask
+retain proof verdict taxonomy, property/fuzz/mutation/security/async gates and command procedures;
 `xtask`'s perf commands own measured benchmark baselines. License enforcement and cargo-vet are
 excluded by owner direction; advisory, security and provenance checks remain required.
 

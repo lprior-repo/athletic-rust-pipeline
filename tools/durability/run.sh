@@ -8,8 +8,6 @@
 #
 # Environment overrides:
 #   SCRATCH_STORE   — base directory for scenario stores (default /tmp/durability-scenario)
-#   BINARY          — census-service binary (default: look on PATH, then target/release)
-#   SERVE_BINARY    — census-serve binary (default: $BINARY)
 #   RESTATE_BINARY  — restate-server binary (default: look on PATH; optional)
 #   RESTATE_SERVER_BIN — pinned restate-server 1.7.10 (default: same as RESTATE_BINARY)
 #   CORPUS_FIXTURE  — corpus fixture directory (default: fixtures/alpha/)
@@ -30,20 +28,8 @@ SCRATCH_STORE="$(cd "$SCRATCH_STORE" && pwd)"
 TMPDIR="${TMPDIR:-$SCRATCH_STORE/tmp}"
 mkdir -p "$TMPDIR"
 TMPDIR="$(cd "$TMPDIR" && pwd)"
-BINARY_PATH=""
-if command -v census-service >/dev/null 2>&1; then
-    BINARY_PATH="$(command -v census-service)"
-elif test -x "$REPO_ROOT/target/release/census-service"; then
-    BINARY_PATH="$REPO_ROOT/target/release/census-service"
-elif test -x "$REPO_ROOT/target/debug/census-service"; then
-    BINARY_PATH="$REPO_ROOT/target/debug/census-service"
-fi
-BINARY="${BINARY:-$BINARY_PATH}"
+BINARY="${BINARY:-$REPO_ROOT/target/moon-portable/x86_64-unknown-linux-gnu/release/census-service}"
 SERVE_BINARY="${SERVE_BINARY:-$(dirname "$BINARY")/census-serve}"
-if [ -z "$BINARY" ]; then
-    echo "SKIP: no built endpoint binary (checked PATH, target/release/census-service, target/debug/census-service)"
-    # Still run all scenarios so they report their own reasons
-fi
 RESTATE_BINARY="${RESTATE_BINARY:-${RESTATE_SERVER_BIN:-$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10/restate-server}}"
 RESTATE_SERVER_BIN="${RESTATE_SERVER_BIN:-$RESTATE_BINARY}"
 CORPUS_FIXTURE="${CORPUS_FIXTURE:-$REPO_ROOT/fixtures/alpha}"

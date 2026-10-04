@@ -5,6 +5,11 @@ endpoint; `census-service` is the CLI. [Lifecycle](deployment-lifecycle.md) owns
 handoff. This runbook owns project handler/retry procedures; [durable execution](restate/durable-execution.md)
 is external vendor background. [CLI reference](../crates/census-service/README.md) owns command groups.
 
+Repository developer commands use only `tools/moon-local`; Cargo and shell gate/fault wrappers are
+internal implementations. Build with `env -u CI tools/moon-local run pipeline:build-portable`,
+then use the real binaries under `target/moon-portable/x86_64-unknown-linux-gnu/release/`.
+Runtime ingress/admin commands remain actual census/Restate operations.
+
 ## Run selection and inspection
 
 For a fresh census, bind a new named store to an unused durable namespace/revision under
@@ -17,8 +22,8 @@ The default store root is `var/census-service`; historical campaign evidence inc
 namespace, scope, season and revision before acquisition. Never expose private admissions data.
 
 ```sh
-cargo xtask census-status
-cargo xtask coverage
+env -u CI tools/moon-local run pipeline:xtask -- census-status
+env -u CI tools/moon-local run pipeline:xtask -- coverage
 census-service open-work
 census-service national-report --help
 ```
@@ -353,7 +358,7 @@ passed straight to the verb is refused):
 curl -o var/<run>/ccd_sch_029_2526_w_0a_050626.zip \
   https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2526_w_0a_050626.zip
 mkdir -p var/<run>/ccd && unzip -o var/<run>/ccd_sch_029_2526_w_0a_050626.zip -d var/<run>/ccd
-target/release/census-service school-address \
+target/moon-portable/x86_64-unknown-linux-gnu/release/census-service school-address \
   --ccd var/<run>/ccd/ccd_sch_029_2526_w_0a_050626.csv \
   --pss /home/lewis/src/ad-law-scrape/data/nces/pss/pss2324_pu.csv \
   --out var/<run>/corpus --now 2026-10
@@ -379,7 +384,7 @@ mapping, `5578b3f3…` with it), so a claim can never be mistaken for one built 
 Join it offline against a stopped store owner (dry run first; `--apply` appends):
 
 ```sh
-target/release/census-service --store var/<store> school-address-join \
+target/moon-portable/x86_64-unknown-linux-gnu/release/census-service --store var/<store> school-address-join \
   --generation var/<run>/corpus \
   --evidence-url nces-ccd=https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2526_w_0a_050626.zip \
   --evidence-url nces-pss=https://nces.ed.gov/surveys/pss/zip/pss2324_pu_csv.zip \
@@ -504,6 +509,6 @@ Use [cold backup/restore](FJALL_BACKUP.md); preserve referenced raw captures and
 Restate durable directory. No live directory copy, cache-only backup or removed `import-legacy`
 command can substitute. Deployment unit/config ownership is in [lifecycle](deployment-lifecycle.md).
 
-[tools/gate.sh](../tools/gate.sh) owns gates; [VERIFICATION-EVIDENCE.md](VERIFICATION-EVIDENCE.md) owns dated
+[Moon developer tasks](../xtask/README.md) are the only gate entrypoint; `tools/gate.sh` remains their internal gate implementation. [VERIFICATION-EVIDENCE.md](VERIFICATION-EVIDENCE.md) owns dated
 incidents and executed results. Report only the declared run/scope and observed verification, with
 terminal access gaps, unresolved review and unfinished discovery visible.

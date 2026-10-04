@@ -1,7 +1,9 @@
 # tools — gate and fault-harness entry points
 
-`tools/gate.sh` is the shell entry point behind `cargo xtask gate`. Rust measurement logic lives in
-`xtask`; the wrapper orchestrates real tools rather than implementing census business rules.
+Moon is the only developer entrypoint: `env -u CI tools/moon-local run pipeline:gate`, or
+`env -u CI tools/moon-local run pipeline:gate -- --release`. `tools/gate.sh` is an internal
+implementation, not a parallel entrypoint. Rust measurement logic lives in `xtask`; Moon and the
+gate wrapper orchestrate real tools rather than implementing census business rules.
 
 | Need | Canonical reference |
 |---|---|

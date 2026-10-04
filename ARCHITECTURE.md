@@ -308,8 +308,9 @@ is not multi-artifact atomic publication. XLSX byte equality alone is not semant
 
 ## 11. Quality gates (§55-§58)
 
-[tools/gate.sh](tools/gate.sh) and [xtask/README.md](xtask/README.md) own commands, gate semantics,
-fixture rules and measurement procedures.
+[Moon developer tasks](xtask/README.md) are the only repository command entrypoint;
+[tools/gate.sh](tools/gate.sh) is their internal gate implementation. The developer reference owns
+commands, gate semantics, fixture rules and measurement procedures.
 [VERIFICATION-EVIDENCE.md](docs/VERIFICATION-EVIDENCE.md) owns dated command results; a document,
 passing build, skipped lane or old run is not acceptance evidence for a new delivery.
 

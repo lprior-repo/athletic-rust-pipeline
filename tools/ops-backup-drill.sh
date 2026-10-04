@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-STORE="${1:?Usage: tools/ops-backup-drill.sh <store-dir>}"
+STORE="${1:?Usage: env -u CI tools/moon-local run pipeline:backup-drill -- <store-dir>}"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BINARY="${BINARY:-$REPO_ROOT/target/debug/census-service}"
+BINARY="${BINARY:-$REPO_ROOT/target/moon-portable/x86_64-unknown-linux-gnu/release/census-service}"
 command -v jq >/dev/null
 [[ -d "$STORE/fjall" ]] || { echo 'FAIL: source has no Fjall database' >&2; exit 1; }
 DRILL_DIR="$(mktemp -d "${TMPDIR:-/tmp}/athletic-backup-drill.XXXXXXXX")"

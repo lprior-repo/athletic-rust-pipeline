@@ -6,7 +6,8 @@ current wrappers to implementation; it is not a duplicate acceptance contract or
 
 ## Prerequisites and isolation
 
-Build the intended `census-service` and `census-serve` binaries and record their identities. Native
+Build the intended binaries through `env -u CI tools/moon-local run pipeline:build-portable`
+and record their identities. All repository build/test/fault invocations go through Moon.
 Restate tests use pinned server **1.7.10**, selected by `RESTATE_SERVER_BIN`, then the project install
 under `$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10/`, with test-specific fallback rules.
 Obtain it from the [official release](https://github.com/restatedev/restate/releases/tag/v1.7.10),
@@ -20,13 +21,13 @@ power-loss/reboot evidence. Tests/scripts may not edit project sources or manife
 ## Invocation and configuration
 
 ```sh
+env -u CI tools/moon-local run pipeline:build-portable
 mkdir -p var/durability-scratch
-SCRATCH_STORE="$PWD/var/durability-scratch" \
-BINARY="$PWD/target/release/census-service" \
-SERVE_BINARY="$PWD/target/release/census-serve" \
-RESTATE_SERVER_BIN=<verified-server-path> tools/durability/run.sh
+SCRATCH_STORE="$PWD/var/durability-scratch" RESTATE_SERVER_BIN=<verified-server-path> \
+  env -u CI tools/moon-local run pipeline:durability
 
-tools/durability/run.sh scenario-01-endpoint-kill
+SCRATCH_STORE="$PWD/var/durability-scratch" \
+  env -u CI tools/moon-local run pipeline:durability -- scenario-01-endpoint-kill
 ```
 
 Choose a fresh owned scratch root per evidence run. The runner exports `SCRATCH_STORE`, `TMPDIR`,
@@ -77,9 +78,12 @@ The separate `qualification_native_vm` example's source-reservation reboot lane
 requires an explicitly feature-enabled endpoint:
 
 ```sh
-cargo build --locked --release -p census-service --features native-fault-injection \
-  --bin census-serve --example qualification_native_vm
+env -u CI tools/moon-local run pipeline:build -- --release -p census-service \
+  --features native-fault-injection --bin census-serve --example qualification_native_vm
 ```
+
+Those feature-enabled artifacts are under `target/moon-build/x86_64-unknown-linux-gnu/release/`;
+stage them into the guest's documented deployment paths rather than assuming `target/release`.
 
 The feature is disabled by default. The owned guest supervisor sets
 `CENSUS_NATIVE_SOURCE_BOUNDARY` only on its endpoint, with private configuration

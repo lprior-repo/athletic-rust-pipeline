@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+: "${MOON_RUST_CARGO:?Run through tools/moon-local to select and fingerprint Cargo}"
+exec "$MOON_RUST_CARGO" "$@"

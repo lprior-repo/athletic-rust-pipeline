@@ -58,14 +58,15 @@ a truncated journal may open with only a complete prefix: “it opened” is not
 ## Existing automated drill
 
 ```sh
+env -u CI tools/moon-local run pipeline:build-portable
 mkdir -p var/restore-drill-tmp
-TMPDIR="$PWD/var/restore-drill-tmp" tools/ops-backup-drill.sh <stopped-source-store>
-cargo test -p census-service --test backup_restore
+TMPDIR="$PWD/var/restore-drill-tmp" env -u CI tools/moon-local run pipeline:backup-drill -- <stopped-source-store>
+tools/moon-local run pipeline:tests -- -E 'binary(backup_restore)'
 ```
 
 The operator script creates owned scratch state, performs backup/restore/integrity/count checks,
-consolidates and compares normalized report reads, then removes its scratch directory. `BINARY`
-selects the census CLI. Use local disk with capacity for backup, restored database and materialized
+consolidates and compares normalized report reads, then removes its scratch directory. The drill
+defaults to the optimized portable Moon CLI built above. Use local disk with capacity for backup, restored database and materialized
 outputs; do not point a destructive fault at the source. An empty-store pass proves little about a
 nonempty census. These commands are procedures, not evidence that they ran during this docs cleanup.
 

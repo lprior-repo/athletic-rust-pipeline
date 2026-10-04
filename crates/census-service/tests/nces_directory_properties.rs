@@ -42,10 +42,7 @@ fn nces_every_alabama_row_becomes_an_entry_and_alaska_is_a_state_skip() -> TestR
             notes: 15
         }
     );
-    check!(outcome
-        .notes()
-        .iter()
-        .all(|issue| issue.field == "website"));
+    check!(outcome.notes().iter().all(|issue| issue.field == "website"));
     check!(outcome
         .skipped()
         .iter()

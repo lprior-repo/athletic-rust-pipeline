@@ -64,7 +64,7 @@ fn actual_fixture_graph_includes_tests_examples_benches_and_tools() -> TestResul
     let error = run(root.path())
         .err()
         .ok_or("accepted extractions in the fixture graph")?;
-    check!(eq; error.to_string(), "panic-extraction policy: 6 Rust files and 0 rendered templates contain violations");
+    check!(eq; error.to_string(), "panic-extraction policy: 5 Rust files and 0 rendered templates contain violations");
     Ok(())
 }
 

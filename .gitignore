@@ -18,3 +18,7 @@
 /local/
 /fuzz/corpus/
 /fuzz/artifacts/
+
+/.moon/cache/
+/tools/build-toolchain.json
+/tools/.build-toolchain.*

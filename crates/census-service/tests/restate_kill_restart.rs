@@ -274,9 +274,18 @@ async fn register(
 async fn wait_for_node(client: &reqwest::Client, node: &Node) -> Result<(), String> {
     let deadline = Instant::now() + READY_BUDGET;
     let mut last = String::from("no attempt made");
-    while Instant::now() < deadline {
+    for _ in 0..240 {
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            break;
+        }
         match client
-            .get(format!("{}deployments", node.admin))
+            .post(format!("{}query", node.admin))
+            .header("accept", "application/json")
+            .json(&serde_json::json!({
+                "query": "SELECT id FROM sys_invocation LIMIT 1"
+            }))
+            .timeout(remaining)
             .send()
             .await
         {
@@ -284,44 +293,59 @@ async fn wait_for_node(client: &reqwest::Client, node: &Node) -> Result<(), Stri
             Ok(response) => last = format!("status {}", response.status()),
             Err(error) => last = error.to_string(),
         }
-        tokio::time::sleep(POLL_INTERVAL).await;
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        tokio::time::sleep(POLL_INTERVAL.min(remaining)).await;
     }
-    Err(format!("node admin API never came up: {last}"))
+    Err(format!("node invocation query never became ready: {last}"))
 }
 
-async fn paused_invocation(client: &reqwest::Client, node: &Node) -> Result<String, String> {
-    let response = client
-        .post(format!("{}query", node.admin))
-        .header("accept", "application/json")
-        .json(&serde_json::json!({
-            "query": "SELECT id, status FROM sys_invocation \
-                      WHERE target_service_name = 'Consolidate' AND status = 'paused' ORDER BY created_at DESC;"
-        }))
-        .send()
-        .await
-        .map_err(|error| error.to_string())?;
-    let status = response.status();
-    let text = response
-        .text()
-        .await
-        .map_or(Default::default(), core::convert::identity);
-    if !status.is_success() {
-        return Err(format!("the admin query answered {status}: {text}"));
+async fn paused_invocation(
+    client: &reqwest::Client,
+    node: &Node,
+    deadline: Instant,
+) -> Result<String, String> {
+    for _ in 0..1_200 {
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            break;
+        }
+        let response = client
+            .post(format!("{}query", node.admin))
+            .header("accept", "application/json")
+            .json(&serde_json::json!({
+                "query": "SELECT id, status FROM sys_invocation \
+                          WHERE target_service_name = 'Consolidate' AND status = 'paused' ORDER BY created_at DESC;"
+            }))
+            .timeout(remaining)
+            .send()
+            .await
+            .map_err(|error| error.to_string())?;
+        let status = response.status();
+        let text = response.text().await.map_err(|error| error.to_string())?;
+        if !status.is_success() {
+            return Err(format!("the admin query answered {status}: {text}"));
+        }
+        let body: serde_json::Value =
+            serde_json::from_str(&text).map_err(|error| format!("{error}: {text}"))?;
+        let rows = body
+            .get("rows")
+            .and_then(serde_json::Value::as_array)
+            .ok_or_else(|| format!("no rows in the admin's answer: {text}"))?;
+        if Instant::now() >= deadline {
+            break;
+        }
+        if let Some(row) = rows.first() {
+            let id = row
+                .get("id")
+                .and_then(serde_json::Value::as_str)
+                .filter(|id| !id.is_empty())
+                .ok_or_else(|| format!("no invocation id in the admin's answer: {text}"))?;
+            return Ok(id.to_string());
+        }
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        tokio::time::sleep(POLL_INTERVAL.min(remaining)).await;
     }
-    let body: serde_json::Value =
-        serde_json::from_str(&text).map_err(|error| format!("{error}: {text}"))?;
-    let id = find_key(&body, "id").and_then(|value| value.as_str().map(str::to_string));
-    id.ok_or_else(|| format!("no invocation id in the admin's answer: {text}"))
-}
-
-fn find_key<'a>(value: &'a serde_json::Value, key: &str) -> Option<&'a serde_json::Value> {
-    match value {
-        serde_json::Value::Object(map) => map
-            .get(key)
-            .or_else(|| map.values().find_map(|child| find_key(child, key))),
-        serde_json::Value::Array(items) => items.iter().find_map(|child| find_key(child, key)),
-        _ => None,
-    }
+    Err("the killed endpoint's invocation never entered its paused state".to_string())
 }
 
 async fn resume(client: &reqwest::Client, node: &Node, invocation: &str) -> Result<(), String> {
@@ -578,13 +602,17 @@ fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() -> TestResul
             };
             tokio::time::sleep(KILL_DELAY).await;
             endpoint.guard.kill_hard()?;
+            submission.abort();
             let killed = submission.await;
             match &killed {
                 Ok(Ok(status)) => {
                     eprintln!("note: submission answered {status} before the kill landed")
                 }
                 Ok(Err(error)) => eprintln!("note: submission failed as expected: {error}"),
-                Err(error) => eprintln!("note: submission task panicked: {error}"),
+                Err(error) if error.is_cancelled() => {
+                    eprintln!("note: original ingress caller cancelled after the endpoint kill")
+                }
+                Err(error) => return Err(format!("submission task panicked: {error}").into()),
             }
 
             let snapshot_dir = data_dir.join("out");
@@ -604,6 +632,8 @@ fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() -> TestResul
      this run never had to resume",
     Table::ALL.len());
 
+            let invocation =
+                paused_invocation(&client, &node_guard, Instant::now() + RUN_BUDGET).await?;
             let mut endpoint = Endpoint::start(&data_dir, endpoint_port)?;
             register(&client, &node_guard, &endpoint).await?;
 
@@ -625,7 +655,6 @@ fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() -> TestResul
             }
             eprintln!("note: the repeat was refused as an existing invocation, so nothing forked");
 
-            let invocation = paused_invocation(&client, &node_guard).await?;
             resume(&client, &node_guard, &invocation).await?;
             eprintln!("note: the paused invocation {invocation} was resumed");
 
@@ -746,34 +775,24 @@ fn b_restate_server_sigkill_resumes_workflow() -> TestResult {
     check!(snapshots_written() < Table::ALL.len(),
     "the kill landed after completion");
     submission.abort();
-    let _ = submission.await;
+    match submission.await {
+        Ok(Ok(status)) => eprintln!("note: submission answered {status} before the kill landed"),
+        Ok(Err(error)) => eprintln!("note: submission failed as expected: {error}"),
+        Err(error) if error.is_cancelled() => {
+            eprintln!("note: original ingress caller cancelled after the endpoint kill")
+        }
+        Err(error) => return Err(format!("submission task panicked: {error}").into()),
+    }
 
     let deadline = Instant::now() + Duration::from_secs(15);
-    let mut invocation_id: Option<String> = None;
-    while Instant::now() < deadline && invocation_id.is_none() {
-        if let Ok(id) = paused_invocation(&client, &node).await {
-            invocation_id = Some(id);
-        } else {
-            tokio::time::sleep(Duration::from_millis(500)).await;
-        }
-    }
-    let original_invocation = invocation_id
-        .ok_or("workflow did not pause after endpoint kill")?;
+    let original_invocation = paused_invocation(&client, &node, deadline).await?;
 
     node.restart()?;
 
     wait_for_node(&client, &node).await?;
 
     let deadline = Instant::now() + Duration::from_secs(15);
-    let mut post_restart_invocation: Option<String> = None;
-    while Instant::now() < deadline && post_restart_invocation.is_none() {
-        if let Ok(id) = paused_invocation(&client, &node).await {
-            post_restart_invocation = Some(id);
-        } else {
-            tokio::time::sleep(Duration::from_millis(500)).await;
-        }
-    }
-    let resumed_invocation = post_restart_invocation.ok_or("invocation lost after server restart")?;
+    let resumed_invocation = paused_invocation(&client, &node, deadline).await?;
     check!(eq; original_invocation, resumed_invocation,
     "the invocation ID changed after restart: expected {original_invocation}, found {resumed_invocation}");
 
