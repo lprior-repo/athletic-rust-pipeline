@@ -2,9 +2,79 @@
 
 Each section records its own historical tree, input generation and execution limits. Results do
 not transfer to a later revision, fresh store or new run identity. A historical seal is not the
-fresh national census's release certificate. Current requirements live in
-[NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md); procedures live in [TESTING.md](../TESTING.md)
+fresh national census's release certificate. Current requirements live in [NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md)
 and [OPERATIONS.md](OPERATIONS.md). Source audits and imported measurements are explicitly labelled.
+
+## Athlete-sheet republication (Class of 2027 workbook) — 2026-10-04
+
+Beads `athletic-rust-pipeline-dhp` (closed) and `athletic-rust-pipeline-vez`: two owner-reported
+defects on the delivered Class-of-2027 workbook, fixed, republished and re-verified in the
+export/recruiting presentation layer only. Census data, schools, results and school-level postal
+provenance are unchanged. The remaining per-event PR fill gap is the jurisdiction result-collection
+obligation `athletic-rust-pipeline-622`, not part of this fix; the post-fix column inventory is
+recorded on `athletic-rust-pipeline-c0d`.
+
+Main executed from a clean tree with the native pipeline target dir
+`/home/lewis/.cache/cargo-target-native-athletic` (`CARGO_TARGET_DIR` plus
+`RUSTFLAGS=-C target-cpu=native`; no throughput gain over the generic release build, so the native
+target is a measurement experiment only) and its already-built release binary:
+
+```sh
+bash var/rebuild-workbook-20261004-r2.sh
+cargo test -p census-report
+/home/lewis/.cache/cargo-target-native-athletic/release/census-service \
+  verify --workbook var/final-workbook-sol-20261004/current/workbook.xlsx
+bash var/republish-evidence-20261004.sh
+tools/gate.sh
+```
+
+Observed results: generation `3782cb1872b6c49891523439e323257e44535d2010171f26359b0fafaa0339f6`;
+`verify: OK (complete frozen generation)`, exit 0, 2m15.7s; census-report tests 198 passed, including
+the cross-country/track 5000 m separation and the School Address tamper oracles; the delivered
+workbook (69,141,755 bytes, sha256
+`75a850c8e84678ee49f57bd23b35d212924ebe2d01f8d439333ffea134d4df63`, `cmp`-equal to the generation
+artifact) and manifest (`c7ba0c69...`) carry the fix, while the census json (`a51e3bf6...`) and the
+best-results CSV (`cfca2e56...`) are hash-unchanged from the earlier delivery. The Athletes sheet
+holds 566,229 rows in 60 columns with a single School Address (69,278 fills, 12.2350%) and no postal
+columns; the 12-column postal block stays on the Schools sheet; recruiting.csv is 21 columns x
+566,229 rows; cross-country selections moved from `5000m (s)` (661 pre-fix fills) to `XC (s)` (661
+post-fix fills). Independent audit: var/republished-verification-flash-20261004.md (deepseek-flash, executing its own
+commands through the verify-shell service; `verdict: clean` - 8/8 manifest keys, both verifier
+invocations, OOXML header counts and 60/60 audit percentage rows reproduced; it did not scan
+worksheet-wide fills a second time or render the workbook). Limits: this is a republication of the
+verified-but-incomplete census snapshot, not a completed national census; the ten-item narrative is
+var/fresh-census-verification-sol-20261004.md, and the pre-fix hashes survive only inside the
+preserved generation `0d28e4a810f368fe9c4237d3183d349ba72dee4be698a284d69a6d6f3a499ef8`.
+
+Delivered report: fresh-census-verification-sol-20261004.md, 18,999 bytes, sha256
+`b044d53b5f25f31f74c95b90349283dbcedb4727cbcd7417494aedfae2836497`, `cmp`-equal to the in-repo
+copy under var/ (the report carries its own delivery note instead of a self-referential hash).
+
+Gate: `tools/gate.sh` PASS on the corrected tree (var/gate-r5-20261004.log; all lanes green, 2342
+run / 2342 passed / 3 skipped, rc=0). Earlier runs failed on an untracked exploratory example
+(var/gate-r3-20261004.log) and on a stale traversal-test count expectation
+(var/gate-r4-20261004.log), both corrected: the example was deleted and the xtask
+fixture-graph expectation now reads five violating files, matching the harness's violation count. The
+tree also carries the gate's own repair: an empty `FULL`/`RELEASE` conditional was removed from
+tools/gate.sh (dead block, no lane added or removed).
+
+Perf: `cargo xtask perf check` rc=0, no regression across all fifteen lanes, but the harness flags a
+corpus-size mismatch against the 2026-09-30 baseline (38,530 vs 58,421 elements, different workload
+hashes) and calls the comparison potentially invalid, so a matched-corpus `cargo xtask perf record` is
+still owed; verify of the real 3.6 GB frozen input peaks at 16.5 GiB RSS (91.0s wall), the standout
+resource risk. Evidence: var/perf-check-20261004.log, var/republish-evidence-raw-20261004.txt.
+
+Mutation coverage: scoped `cargo mutants` runs (the gate lane is whole-workspace and `--in-place` is
+serial, so no `--jobs`) measured the critical rules - athletes/cells.rs 48 mutants (29 caught, 2 missed,
+17 unviable), export/postal.rs 61 (14 caught, 1 missed, 46 unviable), recruiting/csv.rs 46 (18 caught,
+1 missed, 27 unviable), athletes/rules.rs 0 under the filters; the narrow
+`selection_matches_event|pr_mark_name` set was 12/12 caught. All four survivors are exact-budget
+boundaries (32_767 UTF-16/byte limits, `Cell::Empty` not distinguishable through the sheet-reader
+surface) or scoping-equivalent clauses, none a consumer-visible defect, each classified on
+athletic-rust-pipeline-nno. One previously unasserted consumer-visible counter path gained a
+regression - a_director_only_published_email_counts_as_a_cohort_contact_email asserts
+`totals.class_of_2027_with_coach_email` in the published census-all-sources.json - and the tree was
+re-gated: var/gate-r6-20261004.log, all lanes green, rc=0.
 
 ## Owned panic-extraction enforcement — 2026-10-03
 
@@ -7443,6 +7513,42 @@ only the `restate_kill_restart` case unproven inside its 60-second bound; that c
 after 129 seconds. The review-lane repair's own suite, `cargo nextest run -p census-review`, reports
 127 passed, and the repair's end-to-end evidence above is unaffected. The twelve failures are left to
 their owner rather than reformatted or patched from here.
+
+### The 2026-10-04 disk cleanup deleted the fresh run's store and every backup — 2026-10-04
+
+An operator-directed cleanup of `var/` removed, between 10:52 and 11:00, whole trees this session had
+been verifying against: `var/national-sol-20261002-01/` (29G — the fresh Class-of-2027 run's Fjall
+store, its `http/` captures and its `out/`), `var/backups/` (103G, including
+`live-post-redrive-sol-20261003` and both held originals), `var/retained-pr-correction-20261001/`
+(70G), `var/landing-20260930/` (48G), `var/pr-store-sol-20261003/` and
+`var/workbook-final-sol-20261004/` (42G each), `var/workbook-restore-sol-20261003/` and
+`var/run-2027-v2/` (25G each), `var/restore-check/`, `var/national-2027/` and the superseded
+roster-accounting backup. The fresh run's Restate node (pid 3215921, ingress 127.0.0.1:18095, admin
+127.0.0.1:19095) was still serving from the deleted directory through unlinked RocksDB files; asked
+to stop it exited 0 on SIGTERM and both ports are free. This session deleted only derived and dated
+leftovers — `var/midwest-census` (15G), `var/midwest-athletes` (1.1G),
+`var/vm-sol-20261002-{10,11,12,22,23}` (6.5G), `var/native-vm-tools-sol-20261002` (671M),
+`var/tmp-wb-xml` (551M), two unpacked restate 1.7.10 runtimes (526M),
+`var/browser-rankings-no-unwrap-*` (270M), then the 2.1G of release bundles and the 243M restate 1.7.0
+runtime that the two live processes had pinned — all recorded in `var/cleanup-20261004.log`. `var` is
+now 762M and `/home` has 732G free.
+
+Consequence: the fresh Class-of-2027 run is no longer re-verifiable locally. Its store, the original
+capture `74692fff592b4aeaada68771a4ac978a.body` (declared SHA-256
+`ea72fe9073c28af0ffc157e285e354416f62f5dd6d481d3ea29681f116ea7e40`) and every Fjall backup were
+removed; `find` over `~/src` and `~/Downloads` finds no copy of that body, and the run journal died
+with its node. What survives of that publication: `~/Downloads/class-of-2027-tfxc-census-20261004.xlsx`
+and `~/Downloads/class-of-2027-census-20261004.json`, which sha256-match the manifest's
+`workbook.xlsx` and `census-all-sources.json` entries; the manifest itself (schema_revision 1,
+generation_digest 3782cb1872b6c49891523439e323257e44535d2010171f26359b0fafaa0339f6, store_identity
+acb01c0cf195530b18ba565a3406b7eb7a6810014248c447421a6fbe3ad3f5c2); the two retained 2026-10-01
+workbooks; `var/fresh-census-verification-sol-2026100{3,4}.md`; the kani, mutant and gate logs; and
+the beads records. Five further artifacts of that generation went with the store directory and have
+no copy on disk: `audit.json` (250,148,182 bytes), `recruiting.csv`, `best-results-co2027.csv`,
+`best-results-co2027.jsonl` and `census-core.json`; `frozen-input.json` likewise. Older-run copies of
+some of those names under `var/anet-pilot/`, `var/audit-20260930/` and `var/qualification-postal-*`
+are different generations, not this one. Any further verification of that census, or regeneration of
+the missing five, requires a new run: new store root, new endpoint port and a fresh registration.
 
 
 
