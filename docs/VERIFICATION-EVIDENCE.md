@@ -7185,3 +7185,452 @@ retained requests `var/browser-rankings-ignored-evidence-sol-20261002-01.json`.
 The fixture stopped; owned Chromium PID3401877 received TERM and exited0; both ports were
 confirmed unbound. This is real-browser fixture qualification, not live Athletic.net acquisition,
 census data, full fault05 acceptance or completion of the remaining corpus/release gates.
+
+### Attempted-with-retained-reasons was being counted as owed acquisition
+
+The fresh run `national-sol-20261002-01` recorded `rosters_remaining` = 10,332 over 40
+jurisdiction-progress rows while every one of those rows' remaining count equalled the number of
+journaled teams the roster summary had retained with a quarantine reason or rejected row locators.
+`census/sweep.rs::progress_of` computed `rosters_remaining = rosters_total.saturating_sub(committed)`
+and `census/scope.rs::pending_rosters` skipped every journaled team, so an attempted roster that no
+later pass would ever re-attempt stayed in the owed count forever. The identity the CLI fixture
+asserts (`cli::national::tests::a_blocked_row_owes_the_index_it_did_not_walk`:
+`committed + skipped + remaining == rosters_total`) did not hold for the recorded rows — NC answered
+244 + 488 + 655 = 1387 against 899 indexed teams. A roster stage could therefore never become
+terminal, which blocks every downstream seal and workbook acceptance.
+
+Main repaired the accounting in `census/sweep/roster.rs`, `census/sweep.rs` and `census/scope.rs`:
+`roster::summarize` counts distinct clean teams (`committed`) and distinct retained teams (`held`),
+`roster::remaining` is a checked `total - (committed + held)`, `progress_of` returns
+`CrawlResult<StateProgress>` instead of silently saturating, and `pending_rosters` returns only teams
+with no journal row. `StateProgress.rosters_skipped` now carries the retained-attempt count, so CLI
+labels print `held` instead of `had`/`skipped`. No persisted shape, journal key, logical identity,
+retry ceiling or source-policy rule changed; retained reasons remain in `state.errors`.
+`docs/OPERATIONS.md` now states the bucket identity and why a re-fetch cannot change a retained
+row-admission verdict.
+
+Read-only admin projection over the recorded `JurisdictionCensus/<identity>/state` responses
+retained at `var/roster-accounting-projection-20261003.json` (40 rows with roster progress, raw
+`/usr/bin/curl`-equivalent `POST` bodies, not an atomic snapshot): 15,023 indexed teams, 4,691 clean
+commits, 10,325 attempted-with-retained-reasons, and 7 teams whose walk error left no journal row.
+The projection therefore reclassifies 10,325 of the previously reported 10,332 owed rosters as
+classified coverage gaps and leaves 7 genuinely un-attempted units plus the nine records without
+roster progress (unknown, not zero) as owed acquisition.
+
+Executed evidence:
+
+```sh
+TMPDIR="$PWD/var/test-tmp-sol-20261002" RUSTC_WRAPPER= cargo nextest run -p census-service \
+  -E 'not test(a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write)'   # 546 passed, 2 skipped
+```
+
+The focused roster set (`test(roster) or test(rosters) or test(jurisdiction_walk) or test(partial)
+or test(replay) or test(summar)`) ran 20/20 passed. The flipped regression
+`milesplit_roster_observations::partial_and_quarantined_rosters_retain_their_reasons_without_owing_a_refetch`
+now asserts `committed + held + remaining == rosters_total` for both a partial and a quarantined
+capture, and `recovery::jurisdiction_replay` asserts the same identity for a clean walk, a
+limit-deferred walk and a restarted walk.
+
+Immutable handover binaries are under `var/releases/roster-resume-sol-20261003-01/`: `census-serve`
+SHA-256 `fba827a6c79700afdb0affee32b3d8a1fa409fcdb65eb77f39c626159a4c500a`, `census-service`
+SHA-256 `9409fb4150f7575447315193d660058d28bc4dc12718a9746e7212ca2d2463c2`.
+
+The previous endpoint (`roster-accounting-sol-20261003-01/census-serve`, PID 3808761, listener
+`127.0.0.1:19081`) received SIGTERM, unbound its listener within 60 s and exited 0 after ~265 s of
+store finalize. Its service record retains the drain certificate
+`drained: accepted=3 completed=3 cancelled=0 timed_out=0 aborted=0 panicked=0`. Its stdout was
+attached to an operator terminal rather than a run log, so the certificate is retained as the
+supervisor's captured output, not as bytes appended to `var/<run>/serve.log`.
+
+### Revision 2 completes a jurisdiction that revision 1 could only abort
+
+The repair above shipped behind the release gate and then completed a whole jurisdiction. Before any
+further work, the store was captured with `census-service store-backup` into
+`var/backups/original-national-before-roster-held-accounting-sol-20261003-01`: 303,233 files,
+25,700,934,006 bytes, manifest `backup.json` SHA-256
+`fcb00291a66a0a62981599f5db3004f6d00ed421b6827187fc4d2060d13a38b5` (elapsed 1,852.8 s). The
+release gate then ran clean end to end: `TMPDIR="$PWD/var/test-tmp-sol-20261002" RUSTC_WRAPPER=
+cargo run -p xtask -- gate` printed `gate: PASS` with exit 0 in 633 s, log
+`var/gate-roster-held-20261003c.log`, every lane PASS (fmt, zero code comments, architecture
+contract, check, doc, tests 2,362, panic extraction, strict clippy, production scan, domain type
+integrity, domain purity, module seams, debt ratchet, deny, audit, machete, geiger, feature
+powerset, bench presence). Two defects the first post-repair gate run had caught were repaired
+rather than waived: the new replay assertion left `stopped_after` unused under `-D warnings`, and
+geiger failed on a stale unit whose source no longer exists. Both are integration artifacts of the
+repair, not of the shipped accounting.
+
+`national-report` names what revision 1 actually died of. Every one of the 48 unfinished
+jurisdictions carries `Terminal error [500]: the invocation stream was closed after the 'abort
+timeout' (1h) fired`; the roster stage that could never become terminal kept the jurisdiction
+invocation alive until Restate's one-hour abort timeout closed its stream. SC was the single
+jurisdiction the old accounting let finish (457 rosters, 186 committed, 271 remaining, 0 blocked).
+The 639 published rows, the 10,332 owed rosters and the empty publication evidence all follow from
+that one non-terminating stage, not from source or parser faults.
+
+A revision-2 slice then walked Wisconsin end to end against the running service:
+
+```sh
+var/releases/roster-resume-sol-20261003-01/census-service jurisdiction wisconsin \
+  --ingress http://127.0.0.1:18095/ --revision 2 --timeout-seconds 600 --json
+```
+
+`jurisdiction:WI:2026-27:2` answered with teams `completed` over 597 records; rosters
+`rosters_total` 597 = `rosters_committed` 263 + `rosters_skipped` 334 + `rosters_remaining` 0,
+`blocked` false, `blocked_skipped` 0, the 334 retained reasons kept in `errors`; 63,123 athletes,
+15,059 class-of-2027; meets 22 pages, 1,044 seen, 1,124 rows. The bucket identity
+`committed + held + remaining == total` therefore holds on a live jurisdiction, the rosters stage is
+terminal, and `open-work --revision 2` reports Wisconsin owing nothing while the other 48 sweeps owe
+their stages. The national fan-out was submitted as
+`national:2026-27:51472a0f63b82f0d:2` (invocation `inv_1jmRWtPPVo8241H2iNaMZTRLpnBU6Yj9tR`).
+
+Both endpoints of that readback are the sanctioned ones: `census-service open-work` and the
+`JurisdictionCensus/<identity>/state` shared handler, neither of which opens the store.
+`var/open-work-rev2-20261003.json` and `var/wi-rev2-state-20261003.json` retain the replies, and
+`var/monitor-rev2/` retains the ten-minute samples.
+
+### The wired Kani runner could not run, and what the harnesses answered
+
+`cargo xtask kani` resolved a default selection of eight harnesses — `check_fixed_point_bounds`,
+`check_pr_comparison_laws`, `check_identity_contradiction`, `check_redirect_cycle`,
+`check_retry_limit`, `check_terminal_state_no_retry`, `check_store_batch_arithmetic`,
+`check_census_scope` — none of which the crates define any more. The registry
+(`xtask/src/kani/harness_list.rs`) holds the 28 harnesses that do exist, so the verb bailed
+`missing required harness(es)` before ever invoking `cargo kani`; it had been unrunnable since the
+harnesses were renamed, and the command's help text still described the old eight invariants. Main
+repaired the runner: the default selection is now `KNOWN_HARNESS`, `resolve_targets` returns
+`Vec<&'static HarnessInfo>`, the help text names the harnesses that exist, and
+`xtask/src/kani/kani_tests.rs` gained `the_default_selection_is_every_harness_the_runner_knows` and
+`a_named_selection_resolves_only_the_names_it_was_given`, so a default list drifting away from the
+registry fails a test instead of a command. `cargo test -p xtask kani` reports 29 passed and
+`cargo clippy -p xtask --all-targets -- -D warnings -D clippy::unwrap_used -D clippy::expect_used` is
+clean.
+
+The owner override recorded in bead `athletic-rust-pipeline-79l` excludes Kani proofs from this
+delivery, so execution stopped after the eleven harnesses the repaired runner had already begun. Those
+eleven are retained as the tooling evidence: `check_gradyear_of_formula` verified (1 passed, 2 s) and
+`check_escaping_is_injective` verified (1 passed, 39 s); `check_confidence_bounds` answered
+`no harnesses matched the harness filter` because `census-domain/kani/confidence.rs` defines it while
+`census_domain_wiring.rs` wires only gradyear, publish, id_mint and framing; the five
+`check_id_mint_*` harnesses failed to compile with `Using the stub attribute requires activating the
+unstable stubbing feature`, which is the `-Z stubbing` the documented manual procedure passes and the
+runner does not; and `check_escaped_payload_carries_no_record_separator`,
+`check_published_email_printable_ascii_contract` and `check_published_email_classifies_domains`
+returned no verdict inside a 600 s bound. Verdicts and full outputs are retained in
+`var/kani-verdicts-20261003.log` and `var/kani-run-<harness>.log`. The registry/wiring drift and the
+missing `-Z stubbing` were deliberately left unrepaired: the override excludes Kani work, and these
+historical gaps stay unverified rather than becoming claims. A post-hoc attempt to pass `-Z stubbing`
+from the runner was reverted for the same reason.
+
+### Retained roster refusals, the drained endpoint, and the revision-3 repair runs
+
+Three jurisdictions could not terminate their rosters stage because a roster fetch that ends in a
+deterministic `CrawlError::Schema` refusal — the ownership check in
+`crates/census-crawl/src/milesplit/parse/roster/owner.rs` refusing "requested team location conflicts
+with its source jurisdiction" — propagated before `journal_done`, leaving the team neither committed
+nor held and therefore permanently owed. Live readings before the repair: `jurisdiction:MD` 46
+committed + 354 skipped + 1 remaining, `jurisdiction:MA` 31 + 433 + 1, `jurisdiction:MS` 241 + 217 + 5,
+with the refusal text retained in each state's `errors`. The sweep now records such an attempt as a
+retained refusal: `crates/census-service/src/census/sweep/roster.rs` stores `capture: Option<C>` and
+`refusal: Option<S>` in the journal row, `summarize` counts a refusal row as held and reports
+`refusal=<source's own words>`, and `crates/census-service/src/census/sweep/roster/refusal.rs` writes
+that row under the same `milesplit_roster:<state>:<year>:<revision>:<team>` operation key with a
+digest over the team, year, observed date and refusal text. Transient `FetchError`s still propagate.
+The regression `a_refused_roster_is_retained_without_rows_or_a_refetch` in
+`crates/census-service/tests/milesplit_roster_observations.rs` proves a refused roster writes no
+school, team or athlete rows, reports the refusal, reaches `remaining` 0 with `skipped` 1, reopens to
+the same table digest, and is not re-fetched; the pre-existing provenance test was updated from
+"remaining 1 with an empty journal" to "remaining 0 with one retained refusal row" and asserts the
+persisted reason's own words. `cargo nextest run -p census-service --test
+milesplit_roster_observations` reports 4 passed.
+
+The endpoint was replaced under the lifecycle: `kill -TERM 208145` returned the drain certificate
+`drained: accepted=126 completed=126 cancelled=0 timed_out=0 aborted=0 panicked=0`, the process exited
+0, and `var/releases/refusal-retain-sol-20261003-02/census-serve` was started on the same loopback
+port 19081 against the same store root and browser profile. The certificate was read from the
+harness's service log for that process, not from `var/<run>/serve.log`: that process had been started
+with its output on a terminal, so its stop line was captured there rather than in the run directory.
+The node still lists two deployments, `http://127.0.0.1:19080/` (stale, its endpoint gone) and
+`http://127.0.0.1:19081/`; `DELETE /deployments/<id>` answers 501 in this node build, and the live
+runs below progressed through the healthy deployment.
+
+Two repair runs re-drove the stages that the previous endpoint's exit had left un-terminated: run A
+`national:2026-27:e690714ac5e7fbbf:3` over AL, GA, ID, MS and PA with
+`--authorized-host www.piaa.org`, and run B `national:2026-27:9c35e761c7aea5b5:3` over CA, CO, FL, IL,
+KY, MD, MA, MI, MT, NH, NY, OH, OK, TX and WV. `JurisdictionCensus/<identity>:3/state` then reported
+teams `completed` and rosters terminal for AL (340 committed + 222 held of 562), GA (271 + 439 of
+710), ID (24 + 175 of 199), MS (241 + 222 of 463), MD (46 + 355 of 401), MA (31 + 434 of 465) and NH
+(34 + 74 of 108) — the three states that had owed a roster with no journal row now owe none — while
+their meets stages published 420, 931, 276, 313, 534, 1040 and 212 rows respectively. The remaining
+repair states were still mid-pass, and PA's teams stage still owed its 24 alpha-page fetches because
+`https://www.piaa.org/...` answers 302 to its own plain-HTTP URL, which the transport refuses as a
+downgrade even with the host granted.
+
+### The workbook's export-input gate refuses while sweeps are writing
+
+`census-service workbook` is a Restate workflow whose invocation key is
+`run_key("workbook", &[year, scope, limit, out], DEFAULT_GENERATION)`
+(`crates/census-service/src/cli/live.rs`), so its key includes `--out` and a completed invocation
+cannot be repeated with the same arguments — the ingress answers `409 Conflict: the workflow method
+was already invoked`. The build binds a frozen export input and then checks it against the live
+store: `crates/census-report/src/export/dataset/frozen.rs::ensure_snapshot` compares
+`snapshot.tables_digest(&INPUT_TABLES)` against the digest recorded at bind time, where
+`INPUT_TABLES` is the thirteen tables `Schools`, `Teams`, `Coaches`, `Athletes`, `Meets`, `Events`,
+`Performances`, `ReviewCases`, `SourceAccess`, `IdentityVerdicts`, `AthleteIdentityDecisions`,
+`SourceObservations` and `SourceMeets`. Two preview builds on 2026-10-03 at 19:05 and 19:08, with
+the revision-3 repair sweeps running, both failed with `ingress returned HTTP status 500 Internal
+Server Error: stale or foreign export input cannot publish changed source evidence` because those
+sweeps were still writing `SourceObservations` and `SourceMeets`. `index` and `consolidate` both
+succeeded against the live store during the same window (`index`: 750 source identities, 0
+conflicts, 0 review cases, 52 coverage rows, 1 snapshot; `consolidate`: 207 schools and 543 coaches
+merged into the existing snapshots, whose content digests were unchanged and therefore left their
+files in place), and `bests` reduced the class-of-2027 cohort to 3,366 best-mark rows in
+`out/best-results-co2027.jsonl`. Generation therefore has to run once the store is quiescent; a
+later build under the same `--out` needs a new output directory.
+
+### Published best marks re-derived from their own captures
+
+The class-of-2027 reduction in `out/best-results-co2027.jsonl` was spot-checked against the archived
+source bytes rather than the reduction alone. The row for `track800m` athlete `Koepke, Owen`
+(`value` 12191, place 3, date 2026-05-26, meet "D1 Regional 1A - Menomonie") re-derives from the
+cached body `var/national-sol-20261002-01/http/d81c22f095aa235a286e3db208ac623a.body` (1,204,549
+bytes, `https://www.wiaawi.org/sites/default/files/2026-08/tr2026menomonieregionalindiv.pdf`,
+fetched 2026-10-03T22:42:40Z), whose `pdftotext -layout` text carries `3 Koepke, Owen 11 RIVER FALLS
+2:01.91 6`. The rows for `track110m_hurdles` and `track300m_hurdles` athlete `Wyatt Langness`
+(20.44 at place 10 with `source_key` `...pdf:110m Hurdles:preliminaries:9`, and 52.63 at place 12)
+re-derive from `var/national-sol-20261002-01/http/9f2fcd523c8053cec02da3c3cf0c4f2f.body` (248,425
+bytes, `https://www.wiaawi.org/sites/default/files/2026-08/trb2026northwesternregional.pdf`), whose
+text carries `10 Wyatt Langness 11 AMERY 20.44` and `12 Wyatt Langness 11 AMERY 52.63`. Those source
+tables list placings, marks and points with no hurdle height, so the absent height is a property of
+the source rather than a normalization loss, and the round survives in the observation key.
+
+## The workbook rebuilt from the run's own cold backup, and the dual-GPU lane's phantom-ask defect — 2026-10-03
+
+The class-of-2027 workbook was regenerated from the run's own durable material rather than any
+earlier store. `census-serve` pid 408493 took `kill -TERM`, drained in about ten seconds with
+`drained: accepted=62 completed=62 cancelled=0 timed_out=0 aborted=0 panicked=0`, and
+`store-backup --store var/national-sol-20261002-01 --to var/backups/live-post-redrive-sol-20261003`
+wrote 40 GB in 14 m 31 s. The endpoint was restarted on the same loopback port 19081 against the same
+store root, and `open-work` then reported revision 3 with 31 of the 49 owed jurisdiction sweeps still
+outstanding — the sweep had resumed and progressed. `store-restore --from
+var/backups/live-post-redrive-sol-20261003 --to var/pr-store-sol-20261003` read back 365,186 files
+and 41,544,414,991 bytes in 10 m 44 s with `store-integrity: ok=true` and every table
+`expected=actual` (athletes 4,655,118; teams 214,406; coaches 78,463; schools 74,357; performances
+115,725; source_observations 4,856,062; source_meets 48,934; events 8,114; meets 1,010). Against that
+restored copy, `bests` reduced the class-of-2027 cohort to 10,431 rows in 52 s, `workbook` published
+generation `12af07020028b8402a295b43a150c67e530ac91b1b6acb05b1d618d6a9a43028` in 3 m 14 s and
+`verify` answered `OK (complete frozen generation)`. That generation's store identity is
+`acb01c0cf195530b18ba565a3406b7eb7a6810014248c447421a6fbe3ad3f5c2` at snapshot sequence 98,640. It
+replaces the earlier PR-less generation `8b30583e…`, whose PR sheet was header-only because the only
+snapshot then frozen predated the mark-bearing rows. The delivered file
+`/home/lewis/Downloads/fresh-census-co2027-sol-20261003.xlsx` is 91,399,879 bytes with SHA-256
+`245044129b986c51fd1fe7df5cf8b047dd23275dfb4fd85f0b480e370c6d6fcc`, equal to the generation copy,
+and the bundle beside it carries the manifest, both census JSON projections, `recruiting.csv`
+(185,287,977 bytes), the 11,448,808-byte `best-results-co2027.jsonl` sidecar (10,431 lines) and the
+audit projection. The live store's own `out/best-results-co2027.jsonl` is the earlier 3,366-row
+reduction written while the repair sweeps were still running; the two are different snapshots of the
+same run, not competing claims.
+
+A streaming readback of the delivered workbook scanned every sheet. Athletes holds 566,229 rows with
+a unique `Athlete ID` and graduation year 2027 on every row; PRs holds 10,431 rows whose `Athlete ID`
+repeats by design (4,971 repeated rows over 1,779 athletes, one PR per athlete and event, 5,460
+distinct athletes); Performances_001 holds 28,126 rows with a unique `Canonical Result ID`; Coaches
+holds 78,463 observation rows over 54,926 distinct coach identities with 40,079 professional emails,
+21,013 personal emails and 50,044 phones; Schools holds 32,809 unique ids with state on every row and
+city on 32,235; Meets holds 1,008 unique ids; Sources holds 36 rows and Coverage 208; Conflicts holds
+10,585 rows (10,522 athlete identity, 63 recruiting contact) over 10,575 subjects; Review holds
+566,456 rows (566,229 athlete identity unverified, 227 meet venue unresolved) with every subject
+unique; and Run Metrics holds 49 rows. The earlier generation, for contrast, carried 459,974
+athletes, no PRs or performances, 65,908 coach rows and 3,897 conflicts, so the re-drive enlarged
+every evidence sheet.
+
+The dual-GPU identity review ran on genuine local hardware against the restored copy, against the
+NInfer endpoint on `127.0.0.1:11000` and the llama.cpp endpoint on `127.0.0.1:11001`, both serving
+`qwen3.8-27b-uncensored`. The case projection filed 26,842 cases (26,542 decided, 300 pending) from
+2,145,989 athlete rows and 2,098,454 provider objects, with no row holding several objects of one
+provider. A bounded review over 25 cases reported `requested=25 answered=0 decided=0 accepted=0
+rejected=0 insufficient=0 unanswered=25 dropped=0 failed=0` in 98 seconds, and a retry at 8,192
+tokens with a 600-second per-request bound reported the same shape over five cases. Neither run's
+tallies are model replies: with both lanes routed through transparent logging proxies
+(`var/tmp-review-proxy.py`; 127.0.0.1:11098 to 11000 and 11099 to 11001), reviewing one
+athlete-identity case reported `requested=1 ... unanswered=1 ... failed=0` after 89.56 seconds while
+both proxy logs stayed at zero bytes, so no HTTP request left the client. The same command over
+`meet-jurisdiction` filed no case at all (`requested=0`). `packets::SubjectIndex::packet` for
+`AthleteIdentity` requires the two sides to share the canonical triple key `(school, normalized
+canonical_name, grad_year)` (`athlete_flags::key`), while the cases are filed by
+`athlete_clusters::bound_case` from the observation-level `AthleteIdentityIndex` keys, so a case
+bound by a shared provider object whose sides differ in school or grad-year attribution has no
+packet: `ask_lanes` posts nothing and `records::account` counts the case unanswered with `failed=0`
+because no transport error occurs. The defect is filed as `athletic-rust-pipeline-qw2` with the
+executing commands and a fix direction. Separately, both served models are reasoning models: at
+`max_tokens=24` each returns `finish_reason: length` with empty `content` and populated
+`reasoning_content`, and at 3,072 tokens each returns `finish_reason: stop` with `content: "pong"` in
+under a second, so a lane that does answer needs a budget above the default 1,536 (cap 8,192). No
+verdict has been validated or applied.
+
+In the same window `TMPDIR=/tmp cargo run -p xtask -- gate` reported 2,361 passed, 1 failed and 3
+skipped. The single non-passing test,
+`census-service::restate_kill_restart a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write`,
+was still running at the harness's 60-second slow mark when the outer 180-second `timeout` cancelled
+the run, so it is unproven within that bound rather than a product failure. The capture chain was
+re-verified independently: the body `var/national-sol-20261002-01/http/74692fff592b4aeaada68771a4ac978a.body`
+is 333,028 bytes with SHA-256 `ea72fe9073c28af0ffc157e285e354416f62f5dd6d481d3ea29681f116ea7e40`,
+and three separate archive copies hash-match it. No seal exists for this run and 31 jurisdiction
+sweeps remain owed, so nothing above certifies a national publication.
+
+### The phantom ask is repaired, and the workbook's store copy holds no marks — 2026-10-04
+
+Main repaired `athletic-rust-pipeline-qw2` in three places. `packets::SubjectIndex::read` now loads
+each case's `member_ids` as well as its `subject_id`, so the other side's row is in the packet index
+at all; `athlete_packet::AthleteIndex::compare_members` binds an explicitly filed pair — two distinct
+member ids naming the subject and one other row — without requiring a shared triple-key group, while
+the implicit path (empty `member_ids`) keeps the group requirement unchanged; and
+`records::ReviewReport` gained `unaskable`, incremented for a case whose packet cannot be built, so
+such a case is reported distinctly instead of as `unanswered` (the summary line now prints
+`unaskable=` after `requested=`). Regression tests:
+`athlete_packet_tests::group::an_explicitly_filed_pair_binds_across_two_schools` (two rows of one name
+and cohort at different schools, filed as a pair, yield a packet naming both ids), the `missing_subject`
+row of `membership_tests` and
+`consensus::tests::replay::missing_subjects_are_durable_unresolved_review_not_silent_success` now
+assert `unaskable=1` with `unanswered=0`. `cargo nextest run -p census-review` reports 127 passed.
+
+The repaired lane was then exercised on the store that produced the phantom asks
+(`var/pr-store-sol-20261003`, 2,145,989 athlete rows, 26,842 cases filed of which 275 pending), with
+both lanes proxied: `target/release/census-service --store var/pr-store-sol-20261003 review --family
+athlete-identity --limit 4 --endpoint http://127.0.0.1:11100 --endpoint http://127.0.0.1:11101`
+reported `requested=4 unaskable=0 answered=4 decided=0 accepted=0 rejected=4 insufficient=0
+unanswered=0 dropped=0 failed=0` in 117 s, and each proxy log holds one POST per case per lane (4 + 4
+over two runs) with HTTP 200 answers whose `content` is a verdict object naming the case id. Both
+lanes' `same_person` proposals were refused by the store's own evidence, so the four cases stay
+pending rather than merging, and the defect's tallies are no longer reproducible.
+`cargo run -p xtask -- comments` reports 1538 Rust files checked with no comments, and
+`cargo run -p xtask -- panic-extraction` is clean after the throwaway read-only probe
+(`crates/census-review/examples/case_probe.rs`, which prints the pending cases and their member rows)
+lost its `expect`.
+
+Reading those same cases then exposed a second, separate gap in the workbook. The generation published
+at 21:20 under `var/final-workbook-sol-20261003/current` was built offline from
+`var/workbook-restore-sol-20261003`, and that store copy holds no marks: `fjall-stats` on it reports
+`events 0` and `performances 0` with `out/best-results-co2027.jsonl` at zero bytes, so the workbook's
+`PRs` and `Performances_001` sheets carry only their headers (row counts read from the workbook's own
+worksheet XML: `Athletes` 459,971, `PRs` 1, `Performances_001` 1, `Coaches` 65,909, `Schools` 27,490,
+`Meets` 760, `Review` 460,199). The live deployment's own report
+(`var/national-sol-20261002-01/out/report.json`, 19:05) counts 471,386 class-of-2027 rows — 11,412
+more than that copy — and its `out/best-results-co2027.csv` is 1.4 MB, so the stale copy cannot
+produce the delivered workbook. The 21:46 backup `var/backups/live-post-redrive-sol-20261003` (40 GB:
+`fjall` 3.9 GB, `http` 25 GB, `out` 12 GB) is the live store's durable material at that point and was
+restored to `var/workbook-final-sol-20261004` for the rebuild. `census-service national-report` still
+shows 48 of 49 jurisdictions failed on that deployment (47 by the 1-hour invocation abort, WI by
+`no consolidated schools: run collect and consolidate before the wiaa_results provider`), and no seal
+exists, so any workbook built from it remains an incomplete national publication.
+
+### The verified workbook rebuilt from the live store's own cold backup — 2026-10-04
+
+`census-service store-restore --from var/backups/live-post-redrive-sol-20261003 --to
+var/workbook-final-sol-20261004` finished in 553 s and `fjall-stats` on the result reports
+`events 8114`, `performances 115725`, `athletes 2145989`, `schools 74357`, `teams 214406`,
+`coaches 78463`, `source_observations 4856062` — the marks the earlier restore lacked. The rebuild
+then followed the run's own order, one step per line in `var/rebuild-workbook-20261004.log`, each with
+`rc=0`: `index` (2,322,394 source identities, 19,321 retained conflicts, 24,770 review cases, 71
+coverage rows, one snapshot, 176 s), `consolidate`, `bests --grad-year 2027` (`cohort=co2027
+rows=10431`), `report --print` (`schools=32809 athletes=2145989 co2027=566229 boys=318197
+girls=247499 profile_url=560331 coaches=54926`), `workbook --out var/final-workbook-sol-20261004`
+(generation `0d28e4a810f368fe9c4237d3183d349ba72dee4be698a284d69a6d6f3a499ef8`, snapshot sequence
+100712) and `verify --workbook …/current/workbook.xlsx`, which reports
+`verify: OK (complete frozen generation)`.
+
+The generation was verified against its own material before delivery. The workbook's worksheet XML
+carries 566,229 `Athletes` data rows whose gender counts (Boys 318,197, Girls 247,499, Unknown 533)
+sum exactly to the report's cohort; 10,431 `PRs` rows; 28,125 `Performances_001` rows; 78,463
+`Coaches`, 32,809 `Schools`, 1,008 `Meets`, 10,585 `Conflicts`, 24,770 `Review` and 49 `Run Metrics`
+rows. `best-results-co2027.jsonl` holds 10,431 marks over 18 event kinds (5000m 1,616, 100m 1,209,
+200m 869, shot put 797, discus 781, 400m 674, long jump 664, 800m 603, 1600m 474, javelin 467, 300m
+hurdles 394, pole vault 386, triple jump 385, high jump 337, 3200m 333, 110m hurdles 222, 100m
+hurdles 219, weight throw 1) across Outdoor 8,585, Cross Country 1,616 and Indoor 230, every row
+citing `result_url`, `meet`, `meet_id`, `date`, `performance_id` and a source key, with the timing
+class retained (Fat 1,480, Unknown 5,133, NonTime 3,818) and no mark carrying a PR conflict. The 222
+boys' 110m hurdles marks are numeric times (for example 20.94 s from value 2094), so the
+normalization rules survive into the delivered artifact. The 19,944 distinct school ids referenced by
+athlete rows all resolve to one of the 32,809 `Schools` rows, and the 78,463 `Coaches` observations
+reduce to exactly 54,926 distinct `(school, coach, sport, role)` assignments, which is the number the
+census reports. The generation's manifest hashes were reproduced with `sha256sum` on the copies
+delivered to `/home/lewis/Downloads` (`class-of-2027-tfxc-census-20261004.xlsx`
+`1de295504835358d0e674c5fed0e52200f0eaea26e4d0e94ab0df8723beda67a`, `class-of-2027-best-results-20261004.csv`
+`cfca2e56aa39ae065c2c4d55ea1469d5be3233708177f114a28fd4331b11bbed`,
+`class-of-2027-census-20261004.json` `a51e3bf668136dbe13d4034b77c200e7da8514cfa754205a2344c5c0d65949eb`).
+
+Two limits belong with those numbers. The delivered generation is a snapshot, not the live store's
+last byte: `curl -X POST http://127.0.0.1:18095/Census/status` answered during the restore with
+4,655,118 athlete rows beside the same 115,725 performances, 8,114 events, 74,357 schools, 214,406
+teams and 78,463 coaches, so the sweep has kept adding athletes since the 21:46 backup (2,145,989
+athlete rows). No best-mark row carries a wind reading: all 10,431 rows are `wind_class`
+`NotApplicable` (6,943) or `Unknown` (3,488) with `wind_mps` null, so no sprint or hurdle mark states
+a wind value — filed as `athletic-rust-pipeline-j9a` to confirm whether the meet-performance payload
+publishes one before the absence is documented as a contract limit. And the cohort is single-provider
+(`class_of_2027_multisource` 0) with 24,770 review cases still pending, so the workbook is the
+verified census of what the completed sweeps discovered, not a sealed national publication: 48 of 49
+jurisdictions failed in the live run and no seal exists.
+
+### The genuine two-lane review on the two physical GPUs: advice journaled before the verdict, identical bindings replay — 2026-10-04
+
+Both physical lanes were run through the transparent byte logger so the exact request and response
+bodies exist outside the store as well. `python3 var/tmp-review-proxy.py 11100
+http://127.0.0.1:11000 var/proxy-5090-sol-20261004.log` fronts the RTX 5090's `ninfer-serve`
+(`prompt-json`) and `… 11101 http://127.0.0.1:11001 var/proxy-3090-sol-20261004.log` fronts the RTX
+3090's `llama-server` (`json-schema`); both serve `qwen3.8-27b-uncensored`, which
+`curl -s http://127.0.0.1:1100{0,1}/v1/models` reports.
+
+`target/release/census-service --store var/pr-store-sol-20261003 review --family athlete-identity
+--limit 8 --endpoint http://127.0.0.1:11100 --endpoint http://127.0.0.1:11101 --model
+qwen3.8-27b-uncensored --response-format prompt-json --response-format json-schema --timeout-secs
+600 --max-tokens 8192 --observed-on 2026-10-04` ran twice, identically.
+
+* Run one: `requested=8 unaskable=0 answered=8 decided=0 accepted=0 rejected=8 insufficient=0
+  unanswered=0 dropped=0 failed=0` in 127 s, with eight requests and eight responses logged on each
+  proxy (60,958 and 65,272 bytes). Run two gave the same counters in 137 s and did not re-ask the
+  first eight: the `review_advice_v1` journal grew 38 → 46 → 54 entries, each case carries exactly
+  one ask and one request digest for the 600 s/8192 s binding (16 cases, 16 asks), and every one of
+  the 54 journaled advice records has a durable row in `identity_verdicts`.
+* Each durable row's `rationale` is the audit: policy `dual-independent-review-v1`, the packet
+  digest, and per lane the endpoint, model, `response_format`, `status`, `request_digest`,
+  `timeout_ms`, `max_tokens`, the model's batch and the adjudications, plus the recomputed outcome
+  `hard_contradiction`. All 16 asked cases stay `retained`; no model-proposed value was applied
+  without the store's own evidence, which is what `rejected=8` records. The advice was journaled
+  before the verdict row and case state were written, so a crash between the two leaves the advice
+  readable and the retry accounted.
+* Changing a lane binding is not replayed. Eight cases answered under the earlier 180 s/1536-token
+  binding were asked again once the 600 s/8192-token binding was configured, and the store kept
+  both advice records with their distinct request digests. The same command with the same binding
+  then skipped them, so repeated runs advance through the pending cases instead of re-charging the
+  same ones.
+
+Counts before and after, from `Store::scan` and `Store::journal_payloads` (`cargo run --release -p
+census-review --example audit_dump`, a readback tool written for this evidence and removed
+afterwards): 26,567 verdict rows of which 26,542 are `deterministic:shared-provider-object` and 25
+are `dual-independent-consensus`; 26,842 cases of which 26,542 `resolved`, 25 `retained`, 275
+`pending`. The two audit files and the binding index are kept under
+`var/review-audit-sol-20261004/`.
+
+### The gate is red on another workstream's uncommitted collect change, not on the review repair — 2026-10-04
+
+`TMPDIR=/tmp cargo run -p xtask -- gate` reports `gate: FAIL -> tests` after `fmt` and
+`bench presence` pass, and `cargo nextest run --workspace --all-features --no-fail-fast` reports
+2365 tests run: 2353 passed, 12 failed, 3 skipped. None of the twelve is in a crate or file the
+review repair touched. Six are `census-crawl::coach_directories::map::postal_regressions::*`
+(`Error: CheckFailure("address1=42; left=(1, 0) right=(1, 1)")` and the ownership cases), and
+`cargo tree -p census-crawl | grep -c census-review` is 0, so census-crawl cannot observe the
+`census-review` change at all. The other six are collect-parity goldens —
+`Error: golden mismatch for mshsl__collect: expected 183 lines, got 184, first difference at line
+143` and `Error: golden case athleticlive__meets-sample-collect-report` beside the `wayzata`, `ks`,
+`plain_names` and `coach_contacts_csv` parities — i.e. production output ahead of the committed
+goldens. The working tree carries an uncommitted collect/coach-directory change
+(`crates/census-crawl/src/coach_directories/{collect.rs,collect/postal.rs,survey_tests/collect.rs,..}`,
+`crates/census-service/src/{census/*,cli/national/report.rs,restate_services/*}`) whose files are
+stamped 23:02:18, after this session's first gate run, which reported 2362 tests with 2361 passed and
+only the `restate_kill_restart` case unproven inside its 60-second bound; that case passed in this run
+after 129 seconds. The review-lane repair's own suite, `cargo nextest run -p census-review`, reports
+127 passed, and the repair's end-to-end evidence above is unaffected. The twelve failures are left to
+their owner rather than reformatted or patched from here.
+
+
+
+

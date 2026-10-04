@@ -62,21 +62,29 @@ impl AthleteIndex {
         &self,
         subject_id: &str,
         members: &[AthleteCandidateId],
-    ) -> Option<(&CanonicalAthlete, &CanonicalAthlete, &[String])> {
+    ) -> Option<(&CanonicalAthlete, &CanonicalAthlete, Vec<String>)> {
         let subject = self.rows.get(subject_id)?;
-        let idx = self.group_index.get(subject_id)?;
-        let group = self.groups.get(*idx)?;
-        let other_id = match members {
-            [] => group.iter().find(|id| id.as_str() != subject_id)?.as_str(),
-            [first, second] if first != second && first.as_str() == subject_id => second.as_str(),
-            [first, second] if first != second && second.as_str() == subject_id => first.as_str(),
+        let (other_id, candidates) = match members {
+            [] => {
+                let idx = self.group_index.get(subject_id)?;
+                let group = self.groups.get(*idx)?;
+                let other_id = group.iter().find(|id| id.as_str() != subject_id)?;
+                (other_id.as_str(), group.clone())
+            }
+            [first, second] if first != second => {
+                let other_id = match (first.as_str(), second.as_str()) {
+                    (first, second) if first == subject_id => second,
+                    (first, second) if second == subject_id => first,
+                    _ => return None,
+                };
+                let mut candidates = vec![first.as_str().to_string(), second.as_str().to_string()];
+                candidates.sort();
+                (other_id, candidates)
+            }
             _ => return None,
         };
-        if !group.iter().any(|id| id == other_id) {
-            return None;
-        }
         let other = self.rows.get(other_id)?;
-        Some((subject, other, group))
+        Some((subject, other, candidates))
     }
 }
 

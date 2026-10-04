@@ -82,7 +82,14 @@ impl SubjectIndex {
             &ids(ReviewFamily::MeetJurisdiction),
             budget,
         )?;
-        let athlete_ids = ids(ReviewFamily::AthleteIdentity);
+        let athlete_ids: HashSet<&str> = pending
+            .iter()
+            .filter(|(_, family)| *family == ReviewFamily::AthleteIdentity)
+            .flat_map(|(case, _)| {
+                std::iter::once(case.subject_id.as_str())
+                    .chain(case.member_ids.iter().map(|member| member.as_str()))
+            })
+            .collect();
         let athletes = if athlete_ids.is_empty() {
             AthleteIndex::default()
         } else {

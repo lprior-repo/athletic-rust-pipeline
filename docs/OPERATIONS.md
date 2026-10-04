@@ -59,11 +59,16 @@ identity already exists is deduplicated, not restarted: reattaching returns the 
 and starting a different run needs a revision bump, which remains the documented way to invalidate
 completed work and must not be used merely to reset an exhausted attempt budget.
 
-Roster progress is not roster completion. A recorded roster stage remains owed while
-`rosters_remaining` or `blocked_skipped` is positive, or the stage is blocked. The exposed
-`owed_rosters` is the greater of remaining and blocked-skipped counts, not their sum: blocked skips
-are normally included in remaining work. Previously journalled/skipped rosters are not subtracted
-again from remaining work. An absent progress record leaves the stage owed without inventing a
+Roster progress is not roster acquisition. Every indexed team is in exactly one roster bucket and
+`committed + skipped + remaining == rosters_total`. `committed` counts teams whose captured roster
+page admitted every published row; `skipped` counts teams whose row was attempted and retained with
+an explicit quarantine reason or rejected row locators (a coverage gap that a re-fetch cannot change,
+because row admission is a deterministic function of the retained capture); `remaining` counts teams
+with no journaled attempt. A recorded roster stage remains owed while `rosters_remaining` or
+`blocked_skipped` is positive, or the stage is blocked. The exposed `owed_rosters` is the greater of
+remaining and blocked-skipped counts, not their sum: blocked skips are normally included in remaining
+work. Previously journalled/skipped rosters are not subtracted again from remaining work, and their
+retained reasons stay in `errors`. An absent progress record leaves the stage owed without inventing a
 roster count. These accounting rules also feed census sealing; they do not reset retry budgets,
 restart terminal invocations or prove the supplied source-object list is complete.
 
@@ -227,7 +232,12 @@ Each case retains both endpoint/model/request bindings, structured answers or fa
 classifications, adjudications and the evidence digest. Both lanes must agree on an admissible
 value; unknown JSON fields, malformed/duplicate/ghost verdicts, unsupported values, incomplete
 membership, missing positive identity evidence and SamePerson contradictions cannot accept.
-DifferentPerson remains admissible when Rust's existing identity rules permit it.
+DifferentPerson remains admissible when Rust's existing identity rules permit it. A case filed with
+an explicit member pair is asked on that filed pair: both member rows are loaded and compared even
+when their canonical keys disagree, so a pair whose two rows differ in school still reaches both
+models. A case no packet can be built for — no filed pair of two distinct rows, or a member row the
+store does not hold — counts toward `requested`, issues no request, holds no advice and is reported
+as `unaskable`, never as `unanswered`.
 
 Unresolved retries reuse only independently valid advice with exact current bindings, including
 primary ownership, linked identities, profile/evidence/grade-source URLs and retained conflicts.

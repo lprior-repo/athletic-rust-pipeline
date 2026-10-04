@@ -214,7 +214,8 @@ fn missing_subjects_are_durable_unresolved_review_not_silent_success() -> TestRe
             server_b.join().map_err(|_| "second lane panicked")??;
             check!(eq; report.requested, 2);
             check!(eq; report.accepted, 1);
-            check!(eq; report.unanswered, 1);
+            check!(eq; report.unaskable, 1);
+            check!(eq; report.unanswered, 0);
             let rows = fixture
                 .store
                 .scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)?;

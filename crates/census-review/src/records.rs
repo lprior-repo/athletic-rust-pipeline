@@ -7,6 +7,7 @@ use super::consensus::{invariant, Asked, Audit, Consensus, POLICY};
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct ReviewReport {
     pub requested: usize,
+    pub unaskable: usize,
     pub accepted: usize,
     pub rejected: usize,
     pub insufficient: usize,
@@ -23,13 +24,17 @@ impl ReviewReport {
 
     pub fn summary(&self) -> String {
         format!(
-            "requested={} answered={} decided={} accepted={} rejected={} insufficient={} unanswered={} dropped={} failed={}",
-            self.requested, self.answered, self.accepted, self.accepted, self.rejected,
-            self.insufficient, self.unanswered, self.dropped, self.failed
+            "requested={} unaskable={} answered={} decided={} accepted={} rejected={} insufficient={} unanswered={} dropped={} failed={}",
+            self.requested, self.unaskable, self.answered, self.accepted, self.accepted,
+            self.rejected, self.insufficient, self.unanswered, self.dropped, self.failed
         )
     }
 
     fn account(&mut self, asked: &Asked, consensus: &Consensus) {
+        if asked.packet.is_none() {
+            self.unaskable = self.unaskable.saturating_add(1);
+            return;
+        }
         let Some(answers) = asked.answers.as_ref() else {
             self.unanswered = self.unanswered.saturating_add(1);
             return;

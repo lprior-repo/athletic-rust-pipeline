@@ -151,7 +151,8 @@ fn group_advice_is_not_requested_when_only_two_of_three_members_would_be_reviewe
                 check!(eq; report.requested, 1);
                 check!(eq; report.failed, 0);
                 check!(eq; report.accepted, 0);
-                check!(eq; report.unanswered, 1);
+                check!(eq; report.unaskable, 1);
+                check!(eq; report.unanswered, 0);
                 check!(eq; state(&store)?, ReviewState::Retained);
                 check!(eq; row(&store)?.member_ids, case.member_ids);
                 check!(eq; audit(&store)?["outcome"], "missing_subject");

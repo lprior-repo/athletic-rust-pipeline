@@ -22,6 +22,45 @@ fn a_group_is_every_row_the_merge_kept_apart_under_one_key() -> TestResult {
 }
 
 #[test]
+fn an_explicitly_filed_pair_binds_across_two_schools() -> TestResult {
+    let grad_year = GradYear::new(2030).ok_or("a grad year in range")?;
+    let west_school = CanonicalSchool::new(
+        UsJurisdiction::Montana,
+        "Ekalaka High School",
+        normalize_name("Ekalaka High School"),
+    )
+    .0
+    .id;
+    let source = || SourceIdentity::new(SourceNamespace::MilesplitAthlete, "16324342");
+    let east = CanonicalAthlete::new(&school(), "Vera Strub", grad_year, Gender::Girls, source());
+    let west = CanonicalAthlete::new(
+        &west_school,
+        "Vera Strub",
+        grad_year,
+        Gender::Girls,
+        source(),
+    );
+    let index = AthleteIndex::read(vec![east.clone(), west.clone()]);
+    let members: Vec<AthleteCandidateId> = vec![east.id.cast(), west.id.cast()];
+    let (subject, other, candidates) = index
+        .compare_members(east.id.as_str(), &members)
+        .ok_or("a filed pair binds even when the two schools differ")?;
+    check!(eq; subject.id, east.id);
+    check!(eq; other.id, west.id);
+    let mut expected: Vec<String> = members.iter().map(|id| id.as_str().to_string()).collect();
+    expected.sort();
+    check!(eq; candidates, expected, "the candidates are the two ids the case filed");
+    let mut case = case_for(&east);
+    case.member_ids = members;
+    let packet = athlete_packet(&case, subject, other, &candidates)?;
+    check!(eq; packet.subject_id, east.id.as_str());
+    check!(eq; stated(&packet, "census", "side_b_id"), Some(west.id.as_str().to_string()));
+    check!(eq; stated(&packet, "census", "side_b_school"), Some(west.school.as_str().to_string()));
+    check!(eq; stated(&packet, "census", "candidate_ids"), Some(candidates.join(", ")));
+    Ok(())
+}
+
+#[test]
 fn a_packet_carries_both_sides_source_identity_fields() -> TestResult {
     let (boys, girls, _) = rows()?;
     let case = case_for(&boys);
