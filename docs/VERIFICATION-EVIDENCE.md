@@ -11351,6 +11351,30 @@ integrity, domain purity, module seams, the debt ratchet (`ratchet: no metric gr
 machete, geiger, feature powerset and bench presence. The `--full`-only lanes (performance
 threshold, mutation testing) were not part of this run.
 
+Three follow-up repairs landed after that run, each re-verified:
+
+- `crates/census-crawl/src/net/bridge/mod.rs` carried the tree's only panic-extraction waiver:
+  `#[allow(clippy::panic)]` over a `const _: fn()` assertion that `SESSION_KEY` equals
+  `"profile-0"`. `net/bridge/tests.rs::session_key_is_profile_zero` already pins that value, so the
+  assertion, the waiver and the source-target `panic!` under the gate's `-D clippy::panic` are
+  gone; strict clippy over census-crawl (lib/bins/examples with the full `LINT_SET`) is clean and
+  the crate's 935 tests pass.
+- `xtask/src/comments.rs::source_files` walked `local/`, the gitignored 1.1 GB scrape dump, and the
+  dump holds two scraped `.rs` captures (`head-meta.rs`, `head-bests-parents.rs`). The lane's file
+  set therefore depended on dump contents — a scraped `unwrap(` would fail the panic-extraction
+  lane for no project reason. `local` is now skipped: the extraction scan and the zero-comments
+  lane report 1594 files, down from 1596.
+- `athletic-rust-pipeline-trs`'s under-load failure: the focused
+  `a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write` now passes both arms — quiet:
+  7.984 s in-test; with `cargo nextest run --workspace --all-features` running concurrently:
+  8.113 s (that lane passed 2522/2522 in 36.988 s). Both runs show the full expected sequence
+  (original caller cancelled at the kill, repeat refused as an existing invocation, paused
+  invocation resumed). The test's own budgets are 60 s ready and 300 s run, so the recorded
+  122.5 s and 85.6 s failures were the invoking wrapper's outer cap firing on a saturated host —
+  never a reached-and-failed durable-effect assertion (`observations == expected`, snapshot row
+  counts). The load-sensitive code path that could abort early — `paused_invocation` returning on
+  the first non-success admin response — is the one fixed in `cc23986c`.
+
 ## Coach-tap wave-2 chain verified end to end: gate → union → merge → reconcile — 2026-10-05
 
 The coach-contact chain was exercised on the 13 tap fragments
@@ -11414,3 +11438,27 @@ mismatch 13→17) while the chain structure and the shipped row held; `render_re
 verify until the gate's fetcher carries a browser lane; and `claims_for_row` compares `state`
 exactly, so a fragment row with a lowercase state cell would fail closed rather than publish
 (`athletic-rust-pipeline-dulh`).
+
+## Wave-0 tap verification consolidated across all five source families — 2026-10-05
+
+`6ec.1`'s per-source acceptance — a provider run report plus coach rows read back for the state, or a
+named refusal with exact command evidence — is now closed out from four retained stores and one
+manifest. The IL channel had no readback recorded when its children closed, so it was read back here
+alongside the others. Every readback is offline, run with no serving process and no second opener:
+`target/release/census-service --store <dir>/store fjall-stats` and
+`target/release/census-service --store <dir>/store school-names --state <ST> --out <dir>/<ST>-names.txt`.
+
+| Source | Run evidence | Readback (2026-10-05) |
+| --- | --- | --- |
+| CT `SRC-076` | `provider ciac` full run: 184 schools, 1033 TF-XC coach rows, 1 request, 0 errors (`6ec.1.1`; `probes/ciac-fpsports/`) | `var/ct-run-20261004`: schools 184, coaches 1033, observations 1217; `school-names` wrote 184 CT names |
+| IL `SRC-120–125` | `var/il-drain2-20261004` paced drain over 254 attempts; attempt-254 reads `fetched 0 Illinois schools from IHSA; 828 already done; 0 deferred after unreachable fetches; 0 left open by the api.ihsa.org cooldown` | `var/il-drain2-20261004`: schools 822, coaches 18091, observations 19735 |
+| PA `SRC-229` | `provider pa_piaa` full state: 1456 schools, 1529 athletic-director rows, 0 errors (`6ec.1.8`) | `var/pa-run-20261004`: schools 1456, coaches 1529, observations 4441; `school-names` wrote 1446 PA names |
+| KS `SRC-240/242` | `provider ks --states KS` single request: 526 schools, 526 AD emails, 0 errors (`6ec.1.9`/`.10`; `probes/ks-kshsaa/`) | `var/ks-run-20261004`: schools 526, coaches 526, observations 1578; `school-names` wrote 526 KS names |
+| OH `SRC-098/099` | named refusal: `officials.myohsaa.org` serves CBC-only TLS that the rustls AEAD-only client refuses, and the block is host-wide (`6ec.1.2`/`.3`; `probes/oh-ohsaa/manifest.json`); the acquisition remedy is `veob` | none applies |
+
+**Limits.** Store counts are what each adapter journalled, not statewide coverage claims: PA's
+directory is the association's own membership list and IL's is the IHSA school list. The IL drain's
+`828 already done` counts journalled schools, 822 of which produced a school observation.
+`school-names` refuses for the IL store because the drain ran `provider` only and never wrote the
+`out/schools.jsonl` snapshot the verb reads, so an IL name projection needs a `consolidate` pass
+first; CT/PA/KS names are byte counts of the written lists.

@@ -99,7 +99,15 @@ fn read_source(path: &Path, source: &mut String) -> Result<()> {
 fn source_files(root: &Path) -> Result<Vec<std::path::PathBuf>> {
     let files = crate::paths::rust_files_excluding(
         root,
-        &[".git", ".jj", "target", "var", "vendor", "node_modules"],
+        &[
+            ".git",
+            ".jj",
+            "target",
+            "var",
+            "vendor",
+            "node_modules",
+            "local",
+        ],
     )?;
     ensure!(
         !files.is_empty(),
