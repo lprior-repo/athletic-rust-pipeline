@@ -11561,3 +11561,32 @@ and appends to `FAILURES` whenever the lane command exits nonzero, and `summary`
 exits 0 only while that array is empty (otherwise `gate: FAIL` and exit 1). Gate runs 10 and 11 on
 this tree printed `gate: PASS` with exit 0, which is the surviving form of the bead's "explicit
 exit-status success" requirement.
+
+## source-test routes across the workspace and fails closed in both runners — 2026-10-05
+
+Bead `zi3`. `xtask source-test`/`source-check` had already been widened to `--workspace
+--all-features` with `--no-tests fail` and identifier-checked slugs, but two gaps remained from the
+adapter-extraction move: the owning reference still described service-only routing, and the lane had
+no Cargo fallback although the repo's convention (`source-tests`, `tools/gate.sh`) fails over to
+`cargo test` when nextest is absent.
+
+Reproduced through the built CLI: `cargo xtask source-test chsaa` executed 16
+`census-crawl chsaa::tests::*` tests with exit 0; `cargo xtask source-test 'chsaa; rm -rf /'` exited 1
+with "source name must be a literal identifier: chsaa; rm -rf /"; `cargo xtask source-test
+no_such_source_zzq` exited 1 through nextest's "no tests to run" (status 4) under `--no-tests fail`.
+
+Added the fallback: with `cargo-nextest` absent the lane lists the selection through `cargo test
+--workspace --all-features --quiet <slug> -- --list`, fails when the listing carries no test, then runs
+the same filter through `cargo test`. `lists_a_test` (unit-tested in `xtask/src/helpers_tests.rs`)
+requires a libtest `: test` line, so a benchmark-only or empty listing cannot read as qualification.
+Exercised with both installed `cargo-nextest` binaries moved aside for the duration of the run
+(`$CARGO_HOME/bin` is `/cache/cargo-shared/bin`, plus `~/.cargo/bin`; both restored and verified by
+`ls -l`): CHSAA ran 16 tests and exited 0, the unmatched slug exited 1 with "no test matches source
+no_such_source_zzq: cargo test selected an empty lane", and the malformed slug exited 1 before any
+runner started. `xtask/README.md` now documents workspace routing, the empty-selection failure and the
+Cargo fallback in the command table and in both prose passages that had claimed service-only routing.
+
+Limits: the fallback's zero-match rule is enforced by the listing step, and `--quiet` makes libtest
+print one character per test, so the fallback run's evidence is its summary line (`16 passed`, 921
+filtered out) rather than test names. Gate run 12 covers this tree: `tools/gate.sh` exits 0 with every
+lane PASS.

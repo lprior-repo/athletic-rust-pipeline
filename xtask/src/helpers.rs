@@ -17,20 +17,45 @@ fn normalize_source_slug(source: &str) -> Result<String> {
 
 pub(crate) fn source_test(source: &str) -> Result<()> {
     let slug = normalize_source_slug(source)?;
-    let filter = format!("test({slug})");
+    if nextest_installed() {
+        return Cmd::new("cargo")
+            .args([
+                "nextest",
+                "run",
+                "--workspace",
+                "--all-features",
+                "--no-tests",
+                "fail",
+                "-E",
+            ])
+            .arg(format!("test({slug})"))
+            .run();
+    }
+    println!("cargo-nextest absent: falling back to cargo test");
+    let (status, listing, stderr) = Cmd::new("cargo")
+        .args(["test", "--workspace", "--all-features", "--quiet"])
+        .arg(&slug)
+        .args(["--", "--list"])
+        .capture()?;
+    if !status.success() {
+        bail!("`cargo test --list` exited with status {status} for {slug}: {stderr}");
+    }
+    if !lists_a_test(&listing) {
+        bail!("no test matches source {slug}: cargo test selected an empty lane");
+    }
     Cmd::new("cargo")
-        .args([
-            "nextest",
-            "run",
-            "--workspace",
-            "--all-features",
-            "--no-tests",
-            "fail",
-            "-E",
-        ])
-        .arg(filter)
+        .args(["test", "--workspace", "--all-features", "--quiet"])
+        .arg(slug)
         .run()
 }
+
+fn lists_a_test(listing: &str) -> bool {
+    listing.lines().any(|line| line.ends_with(": test"))
+}
+
+#[cfg(test)]
+#[path = "helpers_tests.rs"]
+mod tests;
 
 pub(crate) fn source_tests() -> Result<()> {
     let targets = ["--lib", "--bins", "--examples"];

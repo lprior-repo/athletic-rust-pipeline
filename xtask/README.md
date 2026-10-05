@@ -20,7 +20,7 @@ Do not invoke Cargo, bare Moon, `tools/gate.sh` or fault/backup wrappers directl
 | `domain-purity` | Checks `census-domain` normal dependency tree for banned runtime/I/O dependencies |
 | `quality-baseline <baseline> <clippy.tsv> <scan.json> [--allow-increase]` | Updates debt measurements; increases require the explicit flag and owner-authorized policy change |
 | `ratchet <baseline> <clippy.tsv> <scan.json>` | Fails on growing measured debt; emits `[DOWN]`/`[UP]` changes |
-| `source-test <source>` / `source-check <source>` | Runs Nextest **only in `census-service`**, selecting `test(<source>)`; not all extracted adapter tests |
+| `source-test <source>` / `source-check <source>` | Runs the matching tests across the whole workspace with all features (`--workspace --all-features`), selecting `test(<source>)` in Nextest or the same substring in the Cargo fallback; an empty selection fails the lane |
 | `source-tests` | Colocated workspace source tests (`--lib --bins --examples`); Nextest, or Cargo test fallback; excludes integration binaries |
 | `source-fixture <source>` | Lists captured files beneath `crates/census-crawl/tests/fixtures/<source>/`; missing directory fails |
 | `replay <name>` | Offline supported fixture replay through published parse paths; unsupported/empty inputs fail |
@@ -272,10 +272,10 @@ snapshot against concurrent directory substitution, wall-clock filesystem bounds
 aggregate pathname bytes.
 
 `replay` does not fetch, open a store or consult the live source clock. It needs the committed fixture
-bytes and associated format/year metadata. A successful replay establishes those captures only;
-`source-test`'s current service-only routing does not establish the crawl crate's complete coverage.
-Use the owning crate's focused tests where necessary and retain this routing gap as implementation
-work, not a reason to claim the wrapper runs more than it does.
+bytes and associated format/year metadata. A successful replay establishes those captures only.
+`source-test` routes across the whole workspace with all features, so a source's crawl-crate adapter
+tests run beside any service tests; the lane fails when the selection is empty, which is what keeps an
+unmatched or misnamed source from reading as qualification.
 
 `replay coach_directories` qualifies exactly five required root response captures. Provenance,
 historical golden outputs and the separately qualified survey/probe subtree remain inventoried
@@ -286,7 +286,8 @@ Missing response/oracle files fail rather than silently reducing qualification. 
 certify the entire survey corpus, live accessibility, current tenure or a national census.
 
 `source-test`/`source-check` select test **function names**, not modules or files: the slug is passed
-to nextest's `test(<slug>)` predicate, which matches any test whose name contains it. Name the
+to nextest's `test(<slug>)` predicate, or to Cargo's substring filter when nextest is absent, and both
+match any test whose full name contains it. Name the
 functions after the source, hyphens as underscores — `nces_*`, `state_ed_*`, `tssaa_*`,
 `private_assoc_*` — and call the lane with the underscore spelling
 (`env -u CI tools/moon-local run pipeline:xtask -- source-test state_ed`).
