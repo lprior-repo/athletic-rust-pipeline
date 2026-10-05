@@ -11612,3 +11612,20 @@ and `Store::integrity()?.ok` holds before and after reopen. Production callers k
 `census-service` roster staging appends plus a journal entry, `census-crawl` collection pages append,
 `census-review` checkpoints replace — so the stricter invariant matches existing usage. Gate run 13
 covers this tree: `tools/gate.sh` exits 0 with every lane PASS.
+
+## Restore already refuses symlinked components at every depth (`06o` verification) — 2026-10-05
+
+Bead `06o` claimed `Store::restore` returned `Ok` when an intermediate backup directory was replaced by
+a symlink. Current main already refuses: `validate_source_path` walks every component of the manifest
+path, each entry's source path and the backup root with `symlink_metadata`, so the counterexample no
+longer reproduces. A throwaway probe (deleted after the run) backed up a nonempty store carrying
+`http/probe/nested/capture`, replaced `http/probe`, `http/probe/nested` and the leaf with symlinks to
+external paths in turn, and observed for each: `Store::restore` refused with a message naming the
+component as a symbolic link, the destination never materialised, and the external tree stayed byte
+identical. Restoring the unmodified backup then produced a byte-exact capture and
+`Store::integrity()?.ok`. Committed integration tests cover the same rule for a symlinked backup root, a
+symlinked manifest, a one-level intermediate directory and a leaf
+(`crates/census-store/tests/backup_paths.rs`). Retained cold-restore evidence on the real store is the
+earlier entry `§60 on the real store: backup, restore, integrity, and a full census read of the restored
+copy (2026-09-25)`; scenario 15's native interruption and corruption legs remain the operator obligation
+in `docs/NATIONAL-CENSUS-FAULTS.md`.
