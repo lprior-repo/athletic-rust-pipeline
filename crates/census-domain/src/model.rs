@@ -71,8 +71,8 @@ pub use meet::{CanonicalMeet, MEET_STATE_UNRESOLVED};
 pub use natural_key::NaturalKey;
 pub use normalization::{flip_last_first, normalize_name};
 pub use provenance::{
-    Confidence, Evidence, EvidenceMethod, IdentityStatus, SourceIdentity, SourceNamespace,
-    SourceRef,
+    Confidence, ConfidenceError, Evidence, EvidenceMethod, IdentityStatus, SourceIdentity,
+    SourceNamespace, SourceRef,
 };
 pub use records::{
     AccessBlockKind, CaseEvidence, CollectionSnapshot, CoverageRow, CoverageScope, EvidenceFact,

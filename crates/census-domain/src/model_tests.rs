@@ -10,6 +10,8 @@ mod framing;
 mod general_model;
 #[path = "model_tests/name_tests.rs"]
 mod name_tests;
+#[path = "model_tests/provenance.rs"]
+mod provenance;
 #[path = "model_tests/school_postal.rs"]
 mod school_postal;
 #[path = "model_tests/source_ownership.rs"]

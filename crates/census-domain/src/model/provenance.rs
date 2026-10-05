@@ -196,7 +196,7 @@ impl SourceIdentity {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-#[serde(transparent)]
+#[serde(try_from = "u8")]
 pub struct Confidence(u8);
 
 impl Confidence {
@@ -214,6 +214,20 @@ impl Confidence {
     pub const fn get(self) -> u8 {
         self.0
     }
+}
+
+impl TryFrom<u8> for Confidence {
+    type Error = ConfidenceError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        Self::new(value).ok_or(ConfidenceError::OutOfRange { value })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+pub enum ConfidenceError {
+    #[error("confidence {value} is outside the admitted 0..=100 range")]
+    OutOfRange { value: u8 },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]

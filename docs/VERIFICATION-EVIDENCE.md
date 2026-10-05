@@ -11462,3 +11462,26 @@ directory is the association's own membership list and IL's is the IHSA school l
 `school-names` refuses for the IL store because the drain ran `provider` only and never wrote the
 `out/schools.jsonl` snapshot the verb reads, so an IL name projection needs a `consolidate` pass
 first; CT/PA/KS names are byte counts of the written lists.
+
+## Confidence deserialization enforces its own range — 2026-10-05
+
+`census_domain::model::Confidence` had a rejecting smart constructor (`Confidence::new` returns
+`None` above 100) over a private `u8`, but its derived `Deserialize` was transparent, so 101..=255
+deserialized into a value the type claims cannot exist. It now follows the crate's checked-derive
+pattern (`#[serde(try_from = "u8")]`, as `school_directory`'s coordinate, name, address and id types
+do) through `TryFrom<u8>` and a typed `ConfidenceError::OutOfRange`, which is exported beside
+`Confidence`. Serialized bytes are unchanged: the newtype still emits a bare integer.
+
+The regression lives in `crates/census-domain/src/model_tests/provenance.rs` (declared in
+`model_tests.rs`): `Confidence::new` admits exactly 0..=100 across the whole `u8` domain;
+`TryFrom<u8>` refuses 101..=255 and reports the refused value; serde round-trips every accepted
+integer byte-for-byte (`"0"`..`"100"` back to the same text) and refuses 101..=255 plus `-1`, `256`,
+`65535`, `"50"`, `null` and `1.0`. Provenance: `cargo nextest run -p census-domain -E
+'test(confidence)'` — 6 passed, 3 of them new; the crate's 302 tests pass; no stored fixture carries
+an out-of-range confidence, so nothing persisted is invalidated. Gate run 9 covers this tree:
+`tools/gate.sh` exits 0 with every lane PASS.
+
+Limits: the proof is over the JSON/serde path this workspace writes and reads (JSONL/JSON) and over
+`u8` values; other serde formats are not exercised. The bead's bounded Kani harness is superseded —
+the repository removed Kani on 2026-10-04 — and the exhaustive `u8` test is wider than a bounded
+constructor harness for this property.
