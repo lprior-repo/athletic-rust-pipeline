@@ -11590,3 +11590,25 @@ Limits: the fallback's zero-match rule is enforced by the listing step, and `--q
 print one character per test, so the fallback run's evidence is its summary line (`16 passed`, 921
 filtered out) rather than test names. Gate run 12 covers this tree: `tools/gate.sh` exits 0 with every
 lane PASS.
+
+## One batch cannot append to a replaced table in either call order — 2026-10-05
+
+Bead `1ia`. `StoreBatch::replace_many` refused a table that already held an appended page, but
+`append_many` never consulted `self.replacements`, so `replace_many(T)` followed by `append_many(T)`
+staged both operations for one table under one receipt. Reproduced red-first through the public API: the
+replacement-then-append batch returned `Ok` from the append, and the new regression failed on the
+expectation of `StoreError::Invariant` while 130 census-store tests otherwise passed.
+
+**Fix.** `append_many` refuses before encoding or staging whenever the same table is held in
+`self.replacements`, through `refuse_append_and_replace_in_one_batch`, which is also the single home of
+the message `replace_many` previously built inline. Refusal precedes mutation, so the batch retains only
+the replacement. `replace_tests::one_table_cannot_be_appended_and_replaced_in_one_batch` covers append
+then replace; the new `a_refused_append_after_a_replacement_leaves_the_batch_committable` covers replace
+then append and asserts the refused call errors with `StoreError::Invariant` and stages nothing, the
+surviving replacement commits with `Application::Written`, `scan` and physical
+`walk_table(...).rows` report 1 row, the receipt round-trips exactly through reopen
+(`Store::receipt("review:2026-10-05:1")` equals the applied receipt, including digest and append count),
+and `Store::integrity()?.ok` holds before and after reopen. Production callers keep one kind per table —
+`census-service` roster staging appends plus a journal entry, `census-crawl` collection pages append,
+`census-review` checkpoints replace — so the stricter invariant matches existing usage. Gate run 13
+covers this tree: `tools/gate.sh` exits 0 with every lane PASS.

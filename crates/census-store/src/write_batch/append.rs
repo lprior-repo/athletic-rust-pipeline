@@ -7,10 +7,22 @@ use super::super::keys::observation_id;
 use super::super::{StorageMode, StoreError, StoreResult, Table};
 use super::{Page, Replacement, StoreBatch};
 
+fn refuse_append_and_replace_in_one_batch(table: Table) -> StoreError {
+    StoreError::Invariant {
+        detail: format!(
+            "table {} is appended and replaced in one batch",
+            table.file()
+        ),
+    }
+}
+
 impl StoreBatch<'_> {
     pub fn append_many<T: Serialize>(&mut self, table: Table, records: &[T]) -> StoreResult<()> {
         if records.is_empty() {
             return Ok(());
+        }
+        if self.replacements.iter().any(|held| held.table == table) {
+            return Err(refuse_append_and_replace_in_one_batch(table));
         }
         let mut encoded = Vec::with_capacity(records.len());
         for record in records {
@@ -36,12 +48,7 @@ impl StoreBatch<'_> {
             return Ok(());
         }
         if self.pages.iter().any(|page| page.table == table) {
-            return Err(StoreError::Invariant {
-                detail: format!(
-                    "table {} is appended and replaced in one batch",
-                    table.file()
-                ),
-            });
+            return Err(refuse_append_and_replace_in_one_batch(table));
         }
         if self.replacements.iter().any(|held| held.table == table) {
             return Err(StoreError::Invariant {

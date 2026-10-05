@@ -148,6 +148,31 @@ fn one_table_cannot_be_appended_and_replaced_in_one_batch() -> TestResult {
     Ok(())
 }
 
+#[test]
+fn a_refused_append_after_a_replacement_leaves_the_batch_committable() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let applied = {
+        let store = Store::open(dir.path())?;
+        let mut batch = store.write_batch();
+        batch.replace_many(Table::ReviewCases, &[row("case-1", "replaced")])?;
+        check!(matches!(
+            batch.append_many(Table::ReviewCases, &[row("case-2", "appended")]),
+            Err(StoreError::Invariant { .. })
+        ));
+        let applied = batch.commit_once("review:2026-10-05:1", "digest-1")?;
+        check!(applied.written(), "the replacement still commits alone");
+        check!(eq; rows_of(&store, Table::ReviewCases)?, vec![row("case-1", "replaced")]);
+        check!(eq; store.walk_table(Table::ReviewCases)?.rows, 1);
+        check!(store.integrity()?.ok);
+        applied.receipt().clone()
+    };
+    let reopened = Store::open(dir.path())?;
+    check!(eq; reopened.walk_table(Table::ReviewCases)?.rows, 1);
+    check!(eq; reopened.receipt("review:2026-10-05:1")?, Some(applied));
+    check!(reopened.integrity()?.ok);
+    Ok(())
+}
+
 const OBSERVATION_LOGS: [Table; 9] = [
     Table::Schools,
     Table::Teams,
