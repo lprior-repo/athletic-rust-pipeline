@@ -8,6 +8,7 @@ mod canonical;
 mod coaches;
 mod expectations;
 mod labels;
+pub(in crate::workbook) mod link;
 mod meta;
 mod performances;
 pub(in crate::workbook) mod postal;

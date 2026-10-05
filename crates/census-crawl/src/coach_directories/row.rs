@@ -109,7 +109,7 @@ impl<'a> AdmissionBook<'a> {
 }
 
 pub(super) fn process_team_coaches<'a>(
-    team: &TeamEntry,
+    team: &'a TeamEntry,
     index: &StaffIndex<'a>,
     book: &mut AdmissionBook<'a>,
 ) -> CrawlResult<()> {
@@ -131,7 +131,10 @@ pub(super) fn process_team_coaches<'a>(
                     .as_deref()
                     .map_or(Default::default(), core::convert::identity),
             );
-            let row = Row::new(member, Some(sport), gender, role);
+            let row = Row {
+                program: team.name.as_deref(),
+                ..Row::new(member, Some(sport), gender, role)
+            };
             match book.emit(row, team.level.as_deref())? {
                 RowAdmission::Admitted | RowAdmission::AlreadyRepresented => book.place(member),
                 RowAdmission::Rejected => {}
@@ -163,7 +166,10 @@ pub(super) fn process_unplaced_coaches<'a>(
                 .as_deref()
                 .map_or(Default::default(), core::convert::identity),
         );
-        let row = Row::new(member, Some(sport), gender, role);
+        let row = Row {
+            program: member.team_name.as_deref(),
+            ..Row::new(member, Some(sport), gender, role)
+        };
         match book.emit(row, member.team_level.as_deref())? {
             RowAdmission::Admitted | RowAdmission::AlreadyRepresented => {}
             RowAdmission::Rejected => continue,
@@ -174,6 +180,7 @@ pub(super) fn process_unplaced_coaches<'a>(
 
 pub(super) fn process_directors<'a>(
     staff: &'a [StaffMember],
+    school_name: &'a str,
     book: &mut AdmissionBook<'a>,
 ) -> CrawlResult<()> {
     for member in staff.iter().rev() {
@@ -185,7 +192,10 @@ pub(super) fn process_directors<'a>(
         ) {
             continue;
         }
-        let row = Row::new(member, None, Gender::Mixed, CoachRole::AthleticDirector);
+        let row = Row {
+            program: Some(school_name),
+            ..Row::new(member, None, Gender::Mixed, CoachRole::AthleticDirector)
+        };
         match book.emit(row, None)? {
             RowAdmission::Admitted | RowAdmission::AlreadyRepresented => {}
             RowAdmission::Rejected => continue,
@@ -235,6 +245,9 @@ pub(super) fn person_name(member: &StaffMember) -> String {
 
 pub(super) fn coach_role(title: &str) -> CoachRole {
     let lowered = title.to_ascii_lowercase();
+    if lowered.contains("former") {
+        return CoachRole::Unknown;
+    }
     if lowered.contains("head coach") {
         CoachRole::HeadCoach
     } else if lowered.contains("assistant coach") {
@@ -245,5 +258,6 @@ pub(super) fn coach_role(title: &str) -> CoachRole {
 }
 
 pub(super) fn is_director(title: &str) -> bool {
-    title.to_ascii_lowercase().contains("athletic director")
+    let lowered = title.to_ascii_lowercase();
+    !lowered.contains("former") && lowered.contains("athletic director")
 }

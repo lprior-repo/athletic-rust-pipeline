@@ -35,7 +35,7 @@ all commands have identical durable/recovery semantics.
 | Derivation | `consolidate`, `index`, `review`, `run` | Materialization, deterministic indexes, local advice and composed cycle |
 | Publication | `report`, `bests`, `workbook`, `verify`, `seal` | Reports, compatible bests, workbook, current verifier and seal/refusal |
 | Store maintenance | `fjall-stats`, `store-integrity`, `store-backup`, `store-restore`, `repair-retained-marks`, `repair-retained-events` | Inspect, safely back up/restore or append source-backed retained corrections |
-| Public coach research | `import-coaches`, `merge-coaches`, `verify-coaches` | Research CSV handling and source-backed contact verification |
+| Public coach research | `import-coaches`, `merge-coaches`, `verify-coaches`, `school-sites` | Research CSV handling, source-backed contact verification and the long-tail school-website crawl whose fragments feed the verifier |
 | Research artifacts | `qa-reports`, `export-data`, `school-names`, `census-doc`, `school-address`, `school-address-join` | Research report/CSV helpers, the school-directory corpus verb and the corpus-to-store join; not a second product workflow |
 
 Pipeline commands with serving/offline routing default to Restate ingress. An explicit `--store`
@@ -46,7 +46,9 @@ the collapsed school corpus and exports it
 ([ADR-020](../../docs/adr/ADR-020-school-address-corpus-port.md)). `school-address-join` requires an
 explicit `--store` and a stopped owner: it joins that verified corpus into owned postal claims and
 the matched CCD website on canonical schools, or reports each school's outcome without changing
-anything ([ADR-021](../../docs/adr/ADR-021-school-address-join-durable-stage.md)).
+anything ([ADR-021](../../docs/adr/ADR-021-school-address-join-durable-stage.md)); an ambiguous tie
+is filed under `--apply` as a pending `School identity` review case that the workbook's `Review`
+sheet surfaces ([ADR-023](../../docs/adr/ADR-023-school-link-mapping.md)).
 
 **One owning process per store:** stop `census-serve` before an offline command opens that database.
 Prefer [xtask](../../xtask/README.md)'s serving status/coverage/export wrappers while it runs.

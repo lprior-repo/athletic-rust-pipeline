@@ -3,7 +3,7 @@ use super::{classification, nonempty, SOURCE_ID};
 use crate::{row_hygiene, CrawlResult};
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SchoolId,
-    SourceIdentity, SourceNamespace, SourceRef, Sport,
+    SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 use std::collections::BTreeMap;
@@ -70,6 +70,7 @@ pub struct Row<'a> {
     pub sport: Option<Sport>,
     pub gender: Gender,
     pub role: CoachRole,
+    pub program: Option<&'a str>,
 }
 
 impl<'a> Row<'a> {
@@ -85,6 +86,7 @@ impl<'a> Row<'a> {
             sport,
             gender,
             role,
+            program: None,
         }
     }
 }
@@ -147,12 +149,39 @@ pub fn absorb_summary(
         observed_on,
     ));
 }
-
 pub fn coach_entities(
     summary: &SchoolSummary,
     school_id: &SchoolId,
     source_url: &str,
-    observed_on: &str,
+    retrieved_at: &str,
+    school_year: SchoolYear,
+    source_sha256: &str,
+) -> CrawlResult<CoachEmission> {
+    map_coaches(
+        summary,
+        school_id,
+        Capture {
+            url: source_url,
+            observed_on: retrieved_at,
+            sha256: source_sha256,
+        },
+        Some(school_year),
+        EmissionScope::Census,
+    )
+}
+pub(super) fn probe_coach_entities(
+    summary: &SchoolSummary,
+    school_id: &SchoolId,
+    capture: Capture<'_>,
+) -> CrawlResult<CoachEmission> {
+    map_coaches(summary, school_id, capture, None, EmissionScope::Probe)
+}
+
+fn map_coaches(
+    summary: &SchoolSummary,
+    school_id: &SchoolId,
+    capture: Capture<'_>,
+    school_year: Option<SchoolYear>,
     scope: EmissionScope,
 ) -> CrawlResult<CoachEmission> {
     let staff = &summary.staff;
@@ -162,18 +191,18 @@ pub fn coach_entities(
         super::row::process_team_coaches(team, &index, &mut book)?;
     }
     super::row::process_unplaced_coaches(staff, &mut book)?;
-    super::row::process_directors(staff, &mut book)?;
+    super::row::process_directors(staff, &summary.name, &mut book)?;
     let (rows, counters) = book.finish();
     let coaches = rows
         .into_iter()
-        .map(|row| super::staff::build_coach(row, school_id, source_url, observed_on))
-        .collect();
+        .map(|row| super::staff::build_coach(row, school_id, capture, school_year))
+        .collect::<CrawlResult<_>>()?;
     Ok(CoachEmission { coaches, counters })
 }
 
 pub(crate) fn team_sport(label: &str) -> Option<(Sport, Gender)> {
     let mut rest = label.trim();
-    let gender = if let Some(value) = rest
+    let mut gender = if let Some(value) = rest
         .strip_prefix("Boys'")
         .or_else(|| rest.strip_prefix("Boy's"))
     {
@@ -186,11 +215,12 @@ pub(crate) fn team_sport(label: &str) -> Option<(Sport, Gender)> {
         rest = value.trim_start();
         Gender::Girls
     } else {
-        Gender::Mixed
+        Gender::Unknown
     };
     for prefix in ["Unified ", "Mixed "] {
         if let Some(value) = rest.strip_prefix(prefix) {
             rest = value.trim_start();
+            gender = Gender::Mixed;
             break;
         }
     }
@@ -200,7 +230,7 @@ pub(crate) fn team_sport(label: &str) -> Option<(Sport, Gender)> {
     if rest.starts_with("Track, Indoor") {
         return Some((Sport::IndoorTrack, gender));
     }
-    if rest.starts_with("Track") {
+    if rest == "Track" || rest.starts_with("Track, ") {
         return Some((Sport::OutdoorTrack, gender));
     }
     None

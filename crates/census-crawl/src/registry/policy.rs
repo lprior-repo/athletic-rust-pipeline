@@ -4,7 +4,11 @@ use std::num::NonZeroUsize;
 
 pub(super) const FETCHER_RPS: f64 = 1.0;
 
+pub(super) const HOME_CAMPUS_RPS: f64 = 0.5;
+
 pub(super) const CRAWL_DELAY_TEN_RPS: f64 = 0.1;
+
+pub(super) const CRAWL_DELAY_THIRTY_RPS: f64 = 1.0 / 30.0;
 
 pub(super) const ARTIFACT_ORIGIN: &str = "local-artifact";
 

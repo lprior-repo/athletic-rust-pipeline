@@ -159,14 +159,15 @@ impl<'a, 'd> Verifier<'a, 'd> {
         cells.push(Value::text(profiles.other.join("; ")));
         cells.push(Value::count(cells::source_count(athlete)));
         cells.extend(self.status_cells(athlete));
-        match self.expectations.postal.get(athlete.id.as_str()) {
-            Some(fields) => cells.extend(fields.iter().map(Value::text)),
+        match self.expectations.school_address.get(athlete.id.as_str()) {
+            Some(address) if !address.is_empty() => cells.push(Value::text(address)),
+            Some(_) => cells.push(Value::Empty),
             None => {
                 self.findings.note(format!(
-                    "athlete {} has no frozen postal projection",
+                    "athlete {} has no frozen school address projection",
                     athlete.id
                 ));
-                cells.extend(std::iter::repeat_n(Value::Empty, 12));
+                cells.push(Value::Empty);
             }
         }
         cells

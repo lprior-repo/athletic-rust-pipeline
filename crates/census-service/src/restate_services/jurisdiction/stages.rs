@@ -64,7 +64,8 @@ impl JurisdictionCensus {
         })?
         .with_family_budgets(default_family_delays())
         .with_family_parallelism(source_parallelism)
-        .with_shared_pacing(Arc::clone(&self.pacing));
+        .with_shared_pacing(Arc::clone(&self.pacing))
+        .with_origin_locks(crate::census::DEFAULT_ORIGIN_LOCK_ROOT);
         let built = match &self.lane {
             Some(lane) => built.with_browser_lane(lane.clone()),
             None => built,

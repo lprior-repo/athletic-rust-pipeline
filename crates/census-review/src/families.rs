@@ -1,5 +1,6 @@
 use census_domain::model::{
-    ATHLETE_IDENTITY_FAMILY, UNRESOLVED_SCHOOL_FAMILY, UNRESOLVED_VENUE_FAMILY,
+    ATHLETE_IDENTITY_FAMILY, SCHOOL_IDENTITY_FAMILY, UNRESOLVED_SCHOOL_FAMILY,
+    UNRESOLVED_VENUE_FAMILY,
 };
 
 pub const IDENTITY_FIELD: &str = "identity";
@@ -9,6 +10,7 @@ pub enum ReviewFamily {
     SchoolJurisdiction,
     MeetJurisdiction,
     AthleteIdentity,
+    SchoolLink,
 }
 
 impl ReviewFamily {
@@ -17,13 +19,14 @@ impl ReviewFamily {
             Self::SchoolJurisdiction => UNRESOLVED_SCHOOL_FAMILY,
             Self::MeetJurisdiction => UNRESOLVED_VENUE_FAMILY,
             Self::AthleteIdentity => ATHLETE_IDENTITY_FAMILY,
+            Self::SchoolLink => SCHOOL_IDENTITY_FAMILY,
         }
     }
 
     pub const fn field(self) -> &'static str {
         match self {
             Self::SchoolJurisdiction | Self::MeetJurisdiction => "state",
-            Self::AthleteIdentity => IDENTITY_FIELD,
+            Self::AthleteIdentity | Self::SchoolLink => IDENTITY_FIELD,
         }
     }
 
@@ -34,16 +37,19 @@ impl ReviewFamily {
             Some(Self::MeetJurisdiction)
         } else if label == ATHLETE_IDENTITY_FAMILY {
             Some(Self::AthleteIdentity)
+        } else if label == SCHOOL_IDENTITY_FAMILY {
+            Some(Self::SchoolLink)
         } else {
             None
         }
     }
 
-    pub const fn askable() -> [Self; 3] {
+    pub const fn askable() -> [Self; 4] {
         [
             Self::SchoolJurisdiction,
             Self::MeetJurisdiction,
             Self::AthleteIdentity,
+            Self::SchoolLink,
         ]
     }
 
@@ -63,6 +69,7 @@ impl ReviewFamily {
                 Some(Self::MeetJurisdiction)
             }
             "athlete identity" | "athlete" | "identity" => Some(Self::AthleteIdentity),
+            "school identity" | "school link" => Some(Self::SchoolLink),
             _ => None,
         }
     }

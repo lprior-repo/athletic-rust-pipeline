@@ -1,3 +1,15 @@
+pub(super) const AIA_EVIDENCE: &str = "`aia` AZ: aiaonline.org answers an all-paths-allowed robots and serves two public surfaces - \
+                   `/schools/search.json?q=` (at most 10 rows per query; an empty query returned 20 of the ~287 members, so \
+                   discovery is a city/name sample, not the whole inventory) and server-rendered school profiles `/schools/<id>` \
+                   whose sport cards name one head coach per sport and school (e.g. `Cross Country - Boy's`, \
+                   `Track & Field - Girl's`). The 2026-10-04 captures under `crates/census-crawl/tests/fixtures/aia/` hold the \
+                   search JSON plus three profiles (Chandler 100, Seton 68, Hamilton 116), each with cross-country and track \
+                   cards and a street address. Coach emails are not published; the admin directory requires a login.";
+
+pub(super) const AIA_REFUSAL: &str = "One association's site: it lists Arizona member schools only, and no query returns the whole inventory, so a \
+                  school a query does not match is not thereby absent from membership. Every other jurisdiction's association \
+                  publishes on a different host.";
+
 pub(super) const ATHLETICLIVE_EVIDENCE: &str = "`athleticlive + timers` rows for the twelve target states, `verified` in eleven of them: MN 6 blob \
                    requests -> 959 rows (242/242 Juniors at 2025 state XC) [10], ND 4 state XC races plus RTDB standings \
                    carrying `y` [25], MO 10 HTML files -> 3,393 rows [22], WI PrimeTime API 319 meets 2025 [08], IA \
@@ -83,14 +95,49 @@ pub(super) const COACH_DIRECTORIES_REFUSAL: &str = "The 34 other continental ass
                   source on any page.";
 
 pub(super) const COACH_CONTACTS_EVIDENCE: &str = "`coach_contact_graph` [29], `verified (sampled; yields recorded per state)`: \
-                   `data/coach-contacts.csv` holds 6,215 rows for exactly the jurisdictions listed (WI 3,166, KS 556, MN \
-                   389, WI/IL 183 each, ...), each with the role, the published professional address where the provider \
-                   publishes one, and the page it was observed on.";
+                   the 2026-09-21 research-workspace artifact held 6,215 rows for exactly the jurisdictions listed (WI 3,166, \
+                   KS 556, MN 389, WI/IL 183 each, ...), each with the role, the published professional address where the \
+                   provider publishes one, and the page it was observed on.";
 
 pub(super) const COACH_CONTACTS_REFUSAL: &str = "`[coach-directories-national]` collected 22 tier-1 directories of 51: the rest are login-gated (MI \
                   `my.mhsaa.com`, MS 403 WAF), client-rendered (PA, NH, TX `/files/` robots-disallowed), or publish names \
                   with no address anywhere (ND 0 emails, SD 4 coach emails from a prior study), and a directory the \
                   adapter cannot read is not a planned source.";
+
+pub(super) const HOME_CAMPUS_EVIDENCE: &str = "Home Campus \
+                   (`www.cifsshome.org`) serves CA CIF sections 1-9 and 13 (1,727 school buttons across the ten sections in the \
+                   2026-10-04 probe), FL FHSAA section 10 (880 buttons, 230,370 B) and NJ NJSIAA section 12 (452 buttons, \
+                   133,880 B) from `widget/school/directory?section=<n>`; each button carries a numeric school id. \
+                   `widget/get-school-details/<id>/details` answers 200 application/json only with an XHR context \
+                   (`X-Requested-With: XMLHttpRequest` plus a same-origin `Referer`; 403 without) and publishes \
+                   `coaches[] = {firstname, lastname, sport, sport_id, level_name, aft_name, email}` plus \
+                   `athleticFaculties[] = {firstname, lastname, aft_name, email, work_phone}`; Arcadia (19) 24 coaches / \
+                   6 faculty, Bolles (1872) 26 / 8, Abraham Clark (3374) 0 / 0. Captures live under \
+                   `crates/census-crawl/tests/fixtures/home_campus/` and \
+                   `research/sources/coach-coverage-bundle-20261004/probes/home_campus/`; robots is the 24-byte \
+                   `Disallow:`-empty form and collection paces at 0.5 requests/second per host: a solo \
+                   2026-10-04 run passed 1,101 requests at 1 rps, two concurrent runs at roughly twice \
+                   that rate drew a `Human Verification` challenge, and the halved rate keeps two \
+                   uncoordinated runs at the rate the host tolerated.";
+
+pub(super) const HOME_CAMPUS_REFUSAL: &str = "One vendor portal: it covers only the sections it serves (CIF 1-9 and 13, \
+                  FHSAA 10, NJSIAA 12); no other association publishes here and other states need their own host. The \
+                  JSON carries one row per sport and level and often no role, so athlete-facing rosters, assistant \
+                  coverage beyond the listed rows and coach phone numbers are not established by this source.";
+
+pub(super) const SIDEARM_STAFF_EVIDENCE: &str = "The verified gomats.org SIDEARM staff directory \
+                   publishes Miramonte High School in window.client_title and article.sidearm-staff \
+                   with header-bound sport, level, title and name cells. Same-row firstHalf/secondHalf \
+                   literals yield Brian Henderson's Cross Country email, Robert Kennedy's Track & Field \
+                   email and Sean Hennessy's exact Athletic Director contact. The 2026-10-04 capture is \
+                   305,587 bytes; crates/census-crawl/tests/fixtures/sidearm_staff/SOURCE.md records its \
+                   digest and robots provenance. The registry admission enforces Crawl-delay: 30.";
+
+pub(super) const SIDEARM_STAFF_REFUSAL: &str = "Only gomats.org and its California school are verified; \
+                  SIDEARM platform membership is not a national host inventory. School state is contextual \
+                  CA from the published MaxPreps link, not a verified address; no city is inferred. Other \
+                  hosts, custom-column variants and email mechanisms are unverified. Only published XC/TF \
+                  coaches and the exact Athletic Director title become canonical contacts.";
 
 pub(super) const IHSAA_EVIDENCE: &str = "[13] IHSA API: 828 member schools (801 full + 26 approved + 1 associate), `/staff2` + \
                    `/staff/<pid>/email` per-row email reveal (49/49 sampled rows HasEmail), census 125/125 Co2027 with \
@@ -204,3 +251,14 @@ pub(super) const TSSAA_EVIDENCE: &str = "`portal.tssaa.org/common/directory/?typ
 
 pub(super) const TSSAA_REFUSAL: &str = "One association's directory: no other jurisdiction publishes on this host, and every path outside \
                   `/common` is robots-disallowed.";
+
+pub(super) const UHSAA_EVIDENCE: &str = "`uhsaa.org/school-directory-new/` lists the member schools (324 anchors over 162 distinct school ids in the 2026-10-04 capture; the adapter parses 162 links) and \
+                   `school-directory/?id=<Name>&Reg=<Region>&schoolID=<ID>` carries each school's published name, street address, \
+                   district, classification and region plus one head coach per sport with a `mailto:` address (e.g. Alta `schoolID=1`: \
+                   Rebecca Bennion, XC and track; Murray `schoolID=73`: Diana Stewart XC and JennaBree Tollestrup track; Herriman \
+                   `schoolID=43`: Josh Pugel XC and Corey Wales track). `uhsaa.org/robots.txt` answers 200 with no relevant \
+                   disallow, and the captures live under `crates/census-crawl/tests/fixtures/uhsaa/` plus \
+                   `research/sources/uhsaa/`. Schools publish one head coach per sport and no assistant coaches, and no coach phone.";
+
+pub(super) const UHSAA_REFUSAL: &str = "One association's site: it lists Utah member schools only, and every other jurisdiction's association \
+                  publishes on a different host. Directory and profile paths are the only coach-coverage surfaces the host serves.";

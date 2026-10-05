@@ -17,6 +17,7 @@ mod retained_marks;
 mod review;
 mod school_address_join;
 mod school_names;
+mod school_sites;
 mod seal;
 mod serve;
 mod source;
@@ -127,7 +128,8 @@ pub(super) fn build_fetcher_authorizing(
         census_crawl::default_host_delays(),
         hosts,
     )?
-    .with_family_budgets(census_crawl::default_family_delays()))
+    .with_family_budgets(census_crawl::default_family_delays())
+    .with_origin_locks(census_service::census::DEFAULT_ORIGIN_LOCK_ROOT))
 }
 
 pub(super) async fn run() -> Result<()> {
@@ -167,6 +169,7 @@ pub(super) async fn run() -> Result<()> {
             retained_events::run_repair_retained_events(&cli, args)
         }
         Command::SchoolAddressJoin(args) => school_address_join::run(&cli, args),
+        Command::SchoolSites(args) => school_sites::run(&cli, args).await,
         _ => {
             let store = Store::open(cli.store_root())?;
             dispatch::dispatch(&cli, &store).await

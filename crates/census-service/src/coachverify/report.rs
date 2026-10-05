@@ -1,4 +1,6 @@
+use crate::coachverify::evidence_path;
 use crate::coachverify::verdict::{FragmentOutcome, RowOutcome};
+use census_domain::model::ContactClaimEvidence;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
@@ -150,6 +152,9 @@ pub fn write_state_union(
             continue;
         }
         let path = dir.join(format!("{state}.csv"));
+        let claims: Vec<&ContactClaimEvidence> =
+            rows.iter().flat_map(|row| &row.evidence).collect();
+        census_store::read::write_snapshot_rows(&evidence_path(&path), &claims)?;
         census_store::read::publish_atomically(&path, |temporary| {
             write_state_file_body(temporary, &path, &rows)
         })?;
@@ -230,23 +235,16 @@ pub fn write_manifest(
     }
     manifest.push('\n');
     if let Some(union_dir) = union_dir {
-        let mut output_files: Vec<(String, String)> = Vec::new();
-        for outcome in outcomes {
-            let base = fragment_file_name(Path::new(&outcome.file));
-            let csv_path = format!("{}/{}", union_dir.display(), base);
-            let jsonl_path = format!("{csv_path}.evidence.jsonl");
-            output_files.push((csv_path.clone(), jsonl_path));
-        }
+        let mut output_files: Vec<PathBuf> = std::fs::read_dir(union_dir)
+            .with_context(|| format!("read union dir {union_dir:?}"))?
+            .filter_map(|entry| entry.ok().map(|entry| entry.path()))
+            .filter(|path| path.is_file())
+            .collect();
         output_files.sort();
-        for (csv_path, jsonl_path) in &output_files {
-            if let Ok(bytes) = std::fs::read(csv_path) {
-                let digest = Sha256::digest(&bytes);
-                manifest.push_str(&format!("{digest:x}  {}\n", csv_path));
-            }
-            if let Ok(bytes) = std::fs::read(jsonl_path) {
-                let digest = Sha256::digest(&bytes);
-                manifest.push_str(&format!("{digest:x}  {}\n", jsonl_path));
-            }
+        for path in &output_files {
+            let bytes = std::fs::read(path).with_context(|| format!("read union file {path:?}"))?;
+            let digest = Sha256::digest(&bytes);
+            manifest.push_str(&format!("{digest:x}  {}\n", path.display()));
         }
     }
     manifest.push('\n');
@@ -277,22 +275,4 @@ pub fn cited_hosts(files: &[PathBuf]) -> anyhow::Result<Vec<String>> {
         }
     }
     Ok(hosts.into_iter().collect())
-}
-
-pub fn fragment_file_name(path: &Path) -> String {
-    let file = match path
-        .file_name()
-        .map(|name| name.to_string_lossy().into_owned())
-    {
-        Some(value) => value,
-        None => "fragment.csv".to_string(),
-    };
-    match path
-        .parent()
-        .and_then(Path::file_name)
-        .map(|name| name.to_string_lossy().into_owned())
-    {
-        Some(directory) if !directory.is_empty() => format!("{directory}-{file}"),
-        _ => file,
-    }
 }

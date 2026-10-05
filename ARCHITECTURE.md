@@ -121,7 +121,10 @@ hostname grant. A same-host scheme or port change is not implicitly authorized. 
 and browser-lane validation remain independent checks before dispatch.
 
 Robots.txt is read for pacing only: a `Crawl-delay` published for `User-agent: *` paces that host,
-while an absent, unreadable or non-200 robots.txt publishes no policy and never blocks a request. No
+while an absent, unreadable or non-200 robots.txt publishes no policy and never blocks a request.
+Redirect admission is per origin, not per path: a same-origin hop is followed without a robots path
+check, so the caller that admits a URL also admits its redirect destinations and must refuse a hop
+into a login, authentication or otherwise disallowed path itself (record the chain and stop). No
 CAPTCHA, authentication or paywall circumvention, browser-identity spoofing, proxy evasion, cookie
 extraction/replay, or direct-HTTP fallback intended to bypass a challenge. Athletic.net uses the
 headed persistent-profile lane; the operator resolves challenges in that profile.
@@ -262,6 +265,15 @@ missing-result coverage, never invented PRs or inferred individual relay splits.
 automatic/hand timing qualifiers when normalizing numeric times. An append-only correction may
 refine a raw mark and unknown timing for the same natural identity, source owner, event and team;
 it must not downgrade measured marks, override known timing or delete original observations.
+
+A published recruiter contact requires one claim binding a school-scoped role and program to a
+public mailbox from the same retained capture, plus an eligible current-tenure statement whose
+school year equals the census run's season. Tenure evidence names the source URL, capture SHA256,
+RFC3339 retrieval time and a bounded statement asserting that role and program. A mailbox or
+listing that names no role, states a former role, or carries no season scope publishes `Unknown`
+and no contact; retrieval alone never makes an appointment current. Successful-empty, blocked or
+failed and never-attempted research remain distinct outcomes, and a published contact cell names
+the selected coach identity, source and observation date.
 
 Stage workbook, sidecars, audit and manifest as one generation. Bind lineage, input/policy/schema
 revisions, scope, cohort, as-of time, record IDs, counts, hashes and lengths. Independently reconcile

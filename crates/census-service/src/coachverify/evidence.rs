@@ -51,7 +51,9 @@ impl RowEvidence {
                     *slot = true;
                 }
             }
-            self.claims.push(claim);
+            if !self.claims.contains(&claim) {
+                self.claims.push(claim);
+            }
         });
         self.role_near = eligible_claim(row, fetched_at)
             && self.required > 0

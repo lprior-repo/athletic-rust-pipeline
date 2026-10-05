@@ -8,7 +8,7 @@ pub use collect::collect;
 pub use map::{school_entities, SchoolExtract, SchoolTable};
 pub use pages::{parse_directory, parse_gender, parse_sport_label};
 
-pub const HOST: &str = "https://ciacsports.com";
+pub const HOST: &str = "https://ciac.fpsports.org";
 pub const SOURCE_ID: &str = "ciac_directory";
 pub const ASSOCIATION: &str = "ciac";
 pub const STATE: UsJurisdiction = UsJurisdiction::Connecticut;

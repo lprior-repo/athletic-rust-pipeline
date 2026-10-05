@@ -106,6 +106,35 @@ async fn collect_outcomes(
     Ok((summaries, failures))
 }
 
+async fn join_addresses(
+    ctx: &WorkflowContext<'_>,
+    identity: &WorkflowIdentity,
+    request: &NationalRequest,
+) -> Result<SchoolAddressJoinReply, HandlerError> {
+    let mut school_address = Default::default();
+    if let Some(address) = request.school_address.clone() {
+        school_address = address;
+    }
+    let Json(join) = ctx
+        .workflow_client::<SchoolAddressJoinClient>(format!(
+            "{}:school-address-join",
+            identity.as_str()
+        ))
+        .run(Json(school_address))
+        .call()
+        .await?;
+    tracing::info!(
+        linked = join.counters.linked,
+        already_linked = join.counters.already_linked,
+        review = join.counters.review,
+        no_match = join.counters.no_match,
+        evidence_missing = join.counters.evidence_missing,
+        refused = join.counters.refused,
+        "joined school postal addresses for the run"
+    );
+    Ok(join)
+}
+
 fn assemble(
     season: SchoolYear,
     revision: Revision,
@@ -179,23 +208,7 @@ impl NationalCensus {
         }
         let (jurisdictions, failures) = collect_outcomes(&mut in_flight, &targets).await?;
 
-        let Json(join) = ctx
-            .workflow_client::<SchoolAddressJoinClient>(format!(
-                "{}:school-address-join",
-                identity.as_str()
-            ))
-            .run(Json(request.school_address.clone().unwrap_or_default()))
-            .call()
-            .await?;
-        tracing::info!(
-            linked = join.counters.linked,
-            already_linked = join.counters.already_linked,
-            review = join.counters.review,
-            no_match = join.counters.no_match,
-            evidence_missing = join.counters.evidence_missing,
-            refused = join.counters.refused,
-            "joined school postal addresses for the run"
-        );
+        let join = join_addresses(&ctx, &identity, &request).await?;
 
         let Json(consolidated) = ctx
             .workflow_client::<ConsolidateClient>(format!("{}:consolidate", identity.as_str()))

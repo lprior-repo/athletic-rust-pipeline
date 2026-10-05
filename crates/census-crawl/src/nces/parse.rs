@@ -4,8 +4,8 @@ use crate::directory::{
 };
 use crate::CrawlResult;
 use census_domain::school_directory::{
-    Enrollment, IdentifiedKey, NcesSchoolId, Phone, PssId, SchoolDirectoryEntry, SchoolKind,
-    SchoolName, SourceLabel, Website,
+    Enrollment, IdentifiedKey, NcesSchoolId, Phone, PostalAddress, PssId, SchoolDirectoryEntry,
+    SchoolKind, SchoolName, SourceLabel, Website,
 };
 
 pub const CCD_REQUIRED: [&str; 11] = [
@@ -64,16 +64,14 @@ fn ccd_identity<'a>(
     Some((id, name, state))
 }
 
-fn ccd_entry(
+fn ccd_address(
     header: &Header,
     record: &csv::StringRecord,
     line: usize,
     state: &str,
-    id: NcesSchoolId,
-    name: SchoolName,
     outcome: &mut ReadOutcome,
-) -> SchoolDirectoryEntry {
-    let address = skip_absent(
+) -> Option<PostalAddress> {
+    skip_absent(
         outcome,
         line,
         postal_address(AddressParts {
@@ -84,7 +82,19 @@ fn ccd_entry(
             zip: first(record, header, &["LZIP", "MZIP"]),
             plus4: first(record, header, &["LZIP4", "MZIP4"]),
         }),
-    );
+    )
+}
+
+fn ccd_entry(
+    header: &Header,
+    record: &csv::StringRecord,
+    line: usize,
+    state: &str,
+    id: NcesSchoolId,
+    name: SchoolName,
+    outcome: &mut ReadOutcome,
+) -> SchoolDirectoryEntry {
+    let address = ccd_address(header, record, line, state, outcome);
     let phone = skip_optional(
         outcome,
         line,

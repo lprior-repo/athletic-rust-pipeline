@@ -63,23 +63,23 @@ impl SubjectIndex {
         pending: &[(ReviewCase, ReviewFamily)],
         budget: &mut crate::review_budget::Budget,
     ) -> StoreResult<Self> {
-        let ids = |wanted| -> HashSet<&str> {
+        let ids = |wanted: &[ReviewFamily]| -> HashSet<&str> {
             pending
                 .iter()
-                .filter(|(_, family)| *family == wanted)
+                .filter(|(_, family)| wanted.contains(family))
                 .map(|(case, _)| case.subject_id.as_str())
                 .collect()
         };
         let schools = crate::review_subjects::selected(
             snapshot,
             Table::Schools,
-            &ids(ReviewFamily::SchoolJurisdiction),
+            &ids(&[ReviewFamily::SchoolJurisdiction, ReviewFamily::SchoolLink]),
             budget,
         )?;
         let meets = crate::review_subjects::selected(
             snapshot,
             Table::Meets,
-            &ids(ReviewFamily::MeetJurisdiction),
+            &ids(&[ReviewFamily::MeetJurisdiction]),
             budget,
         )?;
         let athlete_ids: HashSet<&str> = pending
@@ -113,7 +113,7 @@ impl SubjectIndex {
     ) -> StoreResult<Option<ReviewPacket>> {
         let subject_id = case.subject_id.clone();
         let packet = match family {
-            ReviewFamily::SchoolJurisdiction => {
+            ReviewFamily::SchoolJurisdiction | ReviewFamily::SchoolLink => {
                 let Some(school) = self.schools.get(&subject_id) else {
                     return Ok(None);
                 };

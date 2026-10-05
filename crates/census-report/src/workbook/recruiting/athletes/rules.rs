@@ -1,6 +1,6 @@
 pub(crate) const TITLE: &str = "Athletes";
 
-pub(crate) const HEADERS: [&str; 71] = [
+pub(crate) const HEADERS: [&str; 60] = [
     "Athlete ID",
     "Name",
     "Gender",
@@ -60,24 +60,13 @@ pub(crate) const HEADERS: [&str; 71] = [
     "Coverage State",
     "Conflict Flag",
     "Review Status",
-    "Postal School ID",
-    "Postal Street",
-    "Postal Second Line",
-    "Postal City",
-    "Postal State",
-    "Postal ZIP",
-    "Postal Owner Namespace",
-    "Postal Owner ID",
-    "Postal Source",
-    "Postal Source URL",
-    "Postal Observed Date",
-    "Postal Capture SHA256",
+    crate::export::postal::ATHLETE_ADDRESS_HEADER,
 ];
 
-pub(crate) const WIDTHS: [u16; 71] = [
+pub(crate) const WIDTHS: [u16; 60] = [
     20, 26, 10, 16, 14, 8, 30, 16, 20, 8, 8, 8, 8, 30, 30, 12, 12, 12, 12, 12, 12, 12, 18, 18, 18,
     16, 16, 16, 16, 16, 16, 16, 12, 16, 12, 24, 32, 24, 32, 24, 32, 24, 24, 24, 24, 48, 30, 24, 32,
-    28, 36, 36, 40, 14, 18, 18, 14, 14, 14, 20, 36, 28, 24, 12, 16, 28, 28, 28, 48, 20, 68,
+    28, 36, 36, 40, 14, 18, 18, 14, 14, 14, 56,
 ];
 
 pub(crate) const PR_EVENTS: [&str; 19] = [

@@ -1,4 +1,5 @@
-use super::{email_re, phone_re, url_re, vacant_re, Row, PERSONAL_MAIL};
+use super::patterns::{email_re, phone_re, url_re, vacant_re, PERSONAL_MAIL};
+use super::Row;
 
 pub(super) fn judge(row: &Row, state: &str) -> Option<String> {
     if let Some(r) = check_state(row, state) {

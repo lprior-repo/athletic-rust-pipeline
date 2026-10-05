@@ -1,6 +1,7 @@
 mod collect;
 mod map;
 mod parse;
+mod run;
 mod staff;
 pub mod tournament;
 
@@ -33,3 +34,6 @@ use census_domain::model::{
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod collect_tests;

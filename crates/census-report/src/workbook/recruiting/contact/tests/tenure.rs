@@ -9,6 +9,7 @@ fn only_the_queried_academic_year_qualifies_a_current_claim() -> TestResult {
         coach.tenure_evidence = vec![claim(CoachTenure::Current {
             school_year: SchoolYear::new(declared).ok_or("invalid declared fixture year")?,
         })];
+        bind(&mut coach);
         let contacts = contacts(&[coach], year()?);
         let athlete = athlete();
         let scope = scoped(contacts.get(school().as_str()), &athlete);

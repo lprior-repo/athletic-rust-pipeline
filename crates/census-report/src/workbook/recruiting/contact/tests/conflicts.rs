@@ -18,6 +18,8 @@ fn fetch_recency_and_mailboxes_do_not_resolve_distinct_current_coaches() -> Test
             older.professional_email = Some("older@example.invalid".into());
             newer.professional_email = Some("newer@example.invalid".into());
         }
+        bind(&mut older);
+        bind(&mut newer);
         for rows in [vec![older.clone(), newer.clone()], vec![newer, older]] {
             let contacts = contacts(&rows, year()?);
             let athlete = athlete();
@@ -47,6 +49,8 @@ fn contradictory_current_addresses_for_one_owner_are_not_ranked() -> TestResult 
     first.professional_email = Some("first@example.invalid".into());
     let mut second = first.clone();
     second.professional_email = Some("second@example.invalid".into());
+    bind(&mut first);
+    bind(&mut second);
     let result = selected(&[first, second], &athlete())?;
     check!(eq; result.state, ContactState::ContactConflict);
     check!(eq; result.email, "");
@@ -61,6 +65,8 @@ fn complementary_current_fields_of_one_owner_merge_without_reclassifying_persona
     let mut professional = personal.clone();
     professional.personal_email = None;
     professional.professional_email = Some("coach@example.invalid".into());
+    bind(&mut personal);
+    bind(&mut professional);
     let contacts = contacts(&[personal, professional], year()?);
     let athlete = athlete();
     let scope = scoped(contacts.get(school().as_str()), &athlete);
@@ -78,6 +84,7 @@ fn an_unresolved_head_coach_conflict_is_not_hidden_by_director_fallback() -> Tes
     let second = head("Second coach", Sport::OutdoorTrack, Gender::Boys)?;
     let mut ad = director()?;
     ad.professional_email = Some("director@example.invalid".into());
+    bind(&mut ad);
     let result = selected(&[first, second, ad], &athlete())?;
     check!(eq; result.state, ContactState::ContactConflict);
     check!(eq; result.name, "");
@@ -89,6 +96,7 @@ fn an_unresolved_head_coach_conflict_is_not_hidden_by_director_fallback() -> Tes
 fn an_unrelated_programme_conflict_does_not_poison_a_qualified_contact() -> TestResult {
     let mut relevant = head("Outdoor coach", Sport::OutdoorTrack, Gender::Boys)?;
     relevant.professional_email = Some("outdoor@example.invalid".into());
+    bind(&mut relevant);
     let first = head("First XC coach", Sport::CrossCountry, Gender::Boys)?;
     let second = head("Second XC coach", Sport::CrossCountry, Gender::Boys)?;
     let contacts = contacts(&[relevant, first, second], year()?);

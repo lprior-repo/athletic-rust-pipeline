@@ -14,6 +14,7 @@ mod client;
 mod destination_guard;
 mod execute;
 mod latency;
+mod origin_locks;
 mod request;
 mod robots;
 mod time;
@@ -25,6 +26,8 @@ pub use types::{FetchError, FetchOptions, FetchOutcome, FetchStats, HostTraffic}
 pub(crate) use types::host_of;
 
 pub use client::PacingState;
+pub use origin_locks::origin_lock_file_name;
+use origin_locks::OriginLocks;
 use robots::RobotsPolicy;
 
 pub const DEFAULT_USER_AGENT: &str =
@@ -58,6 +61,7 @@ pub struct Fetcher {
     blocks: Mutex<HashMap<String, SourceAccessCondition>>,
     lane: Option<bridge::BrowserLane>,
     offline: bool,
+    origin_locks: OriginLocks,
 }
 
 impl Fetcher {
@@ -128,6 +132,11 @@ impl Fetcher {
     }
     pub fn with_offline(mut self, offline: bool) -> Self {
         self.offline = offline;
+        self
+    }
+
+    pub fn with_origin_locks(mut self, root: impl Into<PathBuf>) -> Self {
+        self.origin_locks = OriginLocks::rooted(root.into());
         self
     }
 

@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 
+use super::published_email;
 use super::SchoolYear;
 use super::SourceRef;
+use super::{CoachId, CoachRole, Gender, SchoolId, Sport};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -30,12 +32,31 @@ impl CoachTenure {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CoachContactProgram {
+    Team { sport: Sport, gender: Gender },
+    SchoolAthletics,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CoachContactClaim {
+    pub coach: CoachId,
+    pub school: SchoolId,
+    pub role: CoachRole,
+    pub program: CoachContactProgram,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mailbox: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CoachTenureEvidence {
     pub tenure: CoachTenure,
     pub source: SourceRef,
     pub source_sha256: String,
     pub retrieved_at: String,
     pub statement: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub claim: Option<CoachContactClaim>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -134,6 +155,27 @@ pub fn validate_tenure_evidence(
             field: "statement",
             limit: 512,
         });
+    }
+    if let Some(claim) = &e.claim {
+        if let Some(mailbox) = &claim.mailbox {
+            if published_email(mailbox).is_none() {
+                return Err(TenureValidation::Malformed {
+                    field: "claim.mailbox",
+                });
+            }
+        }
+        match (&claim.program, &claim.role) {
+            (CoachContactProgram::SchoolAthletics, CoachRole::AthleticDirector) => {}
+            (
+                CoachContactProgram::Team { .. },
+                CoachRole::HeadCoach | CoachRole::AssistantCoach,
+            ) => {}
+            _ => {
+                return Err(TenureValidation::Malformed {
+                    field: "claim.program",
+                });
+            }
+        }
     }
     Ok(())
 }

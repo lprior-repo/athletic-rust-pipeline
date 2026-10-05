@@ -1,6 +1,6 @@
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use census_crawl::directory::{ReadOutcome, RowIssue};
-use census_crawl::{nces, private_assoc, state_ed, CrawlError, CrawlResult};
+use census_crawl::{nces, private_assoc, state_ed, tssaa, CrawlError, CrawlResult};
 use census_domain::school_directory::{
     Baseline, ScheduleLedger, ScheduleSource, SchoolDirectoryEntry,
 };
@@ -52,10 +52,16 @@ pub(super) fn lanes(args: &SchoolAddressArgs) -> Result<Vec<LaneRead>> {
             private_assoc::parse_listing,
         )?);
     }
+    args.association_directory
+        .iter()
+        .try_for_each(|pair| -> Result<()> {
+            lanes.push(read_association_directory(pair)?);
+            Ok(())
+        })?;
     if lanes.is_empty() {
         bail!(
             "no input artifact was named: pass at least one of --ccd, --pss, --state-ed-index, \
-             --state-ed-profile, --state-ed-tabular or --associations"
+             --state-ed-profile, --state-ed-tabular, --associations or --association-directory"
         );
     }
     Ok(lanes)
@@ -86,9 +92,44 @@ pub(super) fn read_ledger(path: &Path) -> Result<ScheduleLedger> {
         .with_context(|| format!("parsing the update ledger {}", path.display()))
 }
 
+fn read_association_directory(pair: &str) -> Result<LaneRead> {
+    let (slug, path) = pair.split_once('=').ok_or_else(|| {
+        anyhow!("--association-directory requires SLUG=PATH, got {pair:?}; admitted slugs: tssaa")
+    })?;
+    if slug.is_empty()
+        || slug.len() > 64
+        || !slug.bytes().all(|byte| {
+            byte.is_ascii_lowercase() || byte.is_ascii_digit() || matches!(byte, b'_' | b'-')
+        })
+    {
+        bail!(
+            "--association-directory slug {slug:?} must be 1–64 bytes of [a-z0-9_-]; admitted slugs: tssaa"
+        );
+    }
+    let reader = match slug {
+        "tssaa" => tssaa::parse_school_list,
+        _ => bail!("--association-directory unknown slug {slug:?}; admitted slugs: tssaa"),
+    };
+    read_lane_with_token(
+        Path::new(path),
+        ScheduleSource::AthleticAssociation,
+        &format!("association:{slug}"),
+        reader,
+    )
+}
+
 fn read_lane(
     path: &Path,
     source: ScheduleSource,
+    reader: fn(&str) -> CrawlResult<ReadOutcome>,
+) -> Result<LaneRead> {
+    read_lane_with_token(path, source, source.label(), reader)
+}
+
+fn read_lane_with_token(
+    path: &Path,
+    source: ScheduleSource,
+    token: &str,
     reader: fn(&str) -> CrawlResult<ReadOutcome>,
 ) -> Result<LaneRead> {
     let text = std::fs::read_to_string(path).map_err(|source| CrawlError::DirectoryArtifact {
@@ -105,7 +146,7 @@ fn read_lane(
     })?;
     let counts = outcome.counts();
     let report = LaneReport {
-        source: source.label().to_string(),
+        source: token.to_string(),
         path: path.display().to_string(),
         sha256,
         entries: counts.entries,

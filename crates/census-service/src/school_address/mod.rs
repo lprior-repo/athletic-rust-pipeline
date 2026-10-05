@@ -59,6 +59,13 @@ pub struct SchoolAddressArgs {
     pub associations: Vec<PathBuf>,
 
     #[arg(
+        long = "association-directory",
+        value_name = "SLUG=PATH",
+        help = "Athletic-association directory (admitted slugs: tssaa); repeat per file"
+    )]
+    pub association_directory: Vec<String>,
+
+    #[arg(
         long,
         help = "Generation root: stage and fsync artifacts, rename immutable generations/<digest>, fsync, then atomically swap current; legacy flat layouts are refused"
     )]

@@ -5,6 +5,7 @@ fn opposite_or_unspecified_sides_never_supply_athlete_contact_columns() -> TestR
     for side in [Gender::Girls, Gender::Unknown] {
         let mut coach = head("Not the boys coach", Sport::OutdoorTrack, side)?;
         coach.professional_email = Some("wrong-side@example.invalid".into());
+        bind(&mut coach);
         let contacts = contacts(&[coach], year()?);
         let athlete = athlete();
         let scope = scoped(contacts.get(school().as_str()), &athlete);
@@ -33,6 +34,7 @@ fn indoor_outdoor_and_cross_country_contacts_keep_their_programmes() -> TestResu
     .map(|(name, sport, email)| {
         let mut coach = head(name, sport, Gender::Mixed)?;
         coach.professional_email = Some(email.into());
+        bind(&mut coach);
         Ok(coach)
     })
     .collect::<TestResult<Vec<_>>>()?;
@@ -84,6 +86,7 @@ fn the_specific_team_coach_is_selected_before_mailbox_preference() -> TestResult
         Gender::Mixed,
     )?;
     mixed.professional_email = Some("general@example.invalid".into());
+    bind(&mut mixed);
     let contacts = contacts(&[boys, mixed], year()?);
     let athlete = athlete();
     let scope = scoped(contacts.get(school().as_str()), &athlete);
@@ -134,6 +137,7 @@ fn assistants_require_current_matching_programme_and_side_without_becoming_head_
                 school_year: SchoolYear::new(2025).ok_or("invalid fixture season")?,
             })];
         }
+        bind(&mut coach);
         rows.push(coach);
     }
     let contacts = contacts(&rows, year()?);

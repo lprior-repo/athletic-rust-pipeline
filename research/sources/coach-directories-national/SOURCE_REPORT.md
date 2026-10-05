@@ -271,7 +271,7 @@ Only public professional school/sport-role contacts are represented: school name
 
 ### CT - Connecticut Interscholastic Athletic Conference
 
-- **Source name**: Connecticut Interscholastic Athletic Conference (`https://ciacsports.com/`, HTTP 0)
+- **Source name**: Connecticut Interscholastic Athletic Conference (survey URL `https://ciacsports.com/`, HTTP 0; live FusionPoint host `https://ciac.fpsports.org/Directory.aspx?SchoolLevelID=1`, HTTP 200)
 - **Geographic coverage**: CT
 - **Sports**: all sports the school offers, each as its own row label (Boys/Girls Cross Country, Boys/Girls Indoor+Outdoor Track, plus every other sport) - the row set is the offering list
 - **Historical depth**: current year only; the directory is a live snapshot with no season history
@@ -288,11 +288,12 @@ Only public professional school/sport-role contacts are represented: school name
 - **Browser requirement**: no - fully server-rendered, fetched with curl
 - **Request cost**: 1 request per state (CT/ME); RI 1-2 requests
 - **Published rate limits**: no rate limit published in robots.txt for this host
-- **Known blocks**: unverified
+- **Known blocks**: none on the live host; `robots.txt` disallows only the Dashboard*/ScheduleByWeek/WebBot paths, and `/Directory.aspx` is allowed. The survey URL `ciacsports.com` presents a certificate that expired 2021-07-27
 - **Cross-source join keys**: school name (normalized) is the only join key; no id to join on
 - **Estimated marginal coverage**: 182 schools carry an XC/TF head-coach row (1043 rows)
 - **Implementation recommendation**: PRIMARY - tier 1 names TF/XC head coaches per side, which is exactly the target role
 - **Evidence**: FusionPoint directory, 190 school tables: 182 schools carry at least one XC/indoor+outdoor-track Head Coach row (1 043 such rows), 189 Athletic Director rows; the 4th column is a tel: phone (often the school main line, sometimes empty) and there is no email column (samples/dir/CT__directory.html; counted by tools/dir_coach_counts.py)
+- **Live verification (2026-10-04)**: the same markup is served by the live host; `provider ciac` parsed 184 school tables and emitted 184 schools with 1 033 TF/XC coach rows, 1 request, 0 errors (`var/ct-run-20261004`; `fjall-stats` schools 184, coaches 1033, observations 1217). The `ciac::HOST` constant, the directory URL's explicit `SchoolLevelID=1` and the registry admission host `ciacsports.com` → `ciac.fpsports.org` were the only changes; the parser was untouched. `cargo test -p census-crawl ciac` passes 18 tests. Details in docs/VERIFICATION-EVIDENCE.md
 
 ### DC - DC State Athletic Association
 
@@ -1425,6 +1426,10 @@ Two findings from running the landed association adapters the same day:
 
 - **CT** — `ciac` refuses: `https://ciacsports.com/Directory.aspx` presents a certificate that
   expired 2021-07-27, so the adapter cannot read the directory the earlier capture recorded.
+  *Correction (2026-10-04):* the adapter was pointed at the live FusionPoint host the survey had
+  already recorded, `https://ciac.fpsports.org/Directory.aspx?SchoolLevelID=1`, with no parser
+  change; a full run emitted 184 CT schools and 1 033 TF/XC coach rows with 1 request and 0 errors.
+  See the CT entry above and docs/VERIFICATION-EVIDENCE.md.
 - **ME, RI** — `mpa` and `riil` run; their fragments are the rows RI's FusionPoint directory serves
   (49 schools with an XC/indoor+outdoor-track Head Coach row). The 2026-09-24 re-run of both
   produced 543 `head_coach` rows (285 `mpa`, 258 `riil`, each citing its `School.aspx` or directory

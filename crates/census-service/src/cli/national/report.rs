@@ -19,6 +19,20 @@ pub(crate) fn blocked_count(rows: &[JurisdictionSummary]) -> usize {
     rows.iter().filter(|row| row.blocked).count()
 }
 
+fn print_national_row(summary: &JurisdictionSummary) {
+    println!(
+        "{:>3}  {:>9}  {:>9}  {:>7}  {:>9}  {:>7}  {:>8}  {}",
+        summary.jurisdiction.code(),
+        summary.rosters_total,
+        summary.rosters_committed,
+        summary.rosters_skipped,
+        summary.rosters_remaining,
+        summary.athletes,
+        summary.class_of_2027,
+        if summary.blocked { "refused" } else { "" },
+    );
+}
+
 pub(crate) fn print_national(report: &NationalReport, json: bool) -> Result<()> {
     if json {
         println!("{}", serde_json::to_string_pretty(report)?);
@@ -35,17 +49,7 @@ pub(crate) fn print_national(report: &NationalReport, json: bool) -> Result<()> 
         "st", "rosters", "committed", "held", "remaining", "athletes", "co2027", ""
     );
     for summary in &report.jurisdictions {
-        println!(
-            "{:>3}  {:>9}  {:>9}  {:>7}  {:>9}  {:>7}  {:>8}  {}",
-            summary.jurisdiction.code(),
-            summary.rosters_total,
-            summary.rosters_committed,
-            summary.rosters_skipped,
-            summary.rosters_remaining,
-            summary.athletes,
-            summary.class_of_2027,
-            if summary.blocked { "refused" } else { "" },
-        );
+        print_national_row(summary);
     }
     println!(
         "total: rosters {} · committed {} · athletes {} · co2027 {} · jurisdictions done {} · failed {} · remaining {} · blocked {}",

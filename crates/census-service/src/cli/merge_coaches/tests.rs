@@ -1,5 +1,6 @@
 use super::judge::resolves_sport;
 use super::*;
+use census_domain::model::{ContactClaimEvidence, ContactProofField};
 use std::collections::BTreeSet;
 use tempfile::NamedTempFile;
 
@@ -431,6 +432,64 @@ fn does_not_resolve_soccer() {
     assert!(!resolves_sport("Basketball"));
 }
 
+struct ClaimSpec<'a> {
+    field: ContactProofField,
+    value: &'a str,
+    person: &'a str,
+    sport: &'a str,
+    school: &'a str,
+    state: &'a str,
+    source_url: &'a str,
+}
+
+impl<'a> ClaimSpec<'a> {
+    fn new(
+        field: ContactProofField,
+        value: &'a str,
+        sport: &'a str,
+        school: &'a str,
+        state: &'a str,
+        source_url: &'a str,
+    ) -> Self {
+        ClaimSpec {
+            field,
+            value,
+            person: value,
+            sport,
+            school,
+            state,
+            source_url,
+        }
+    }
+}
+
+fn claim(spec: ClaimSpec<'_>) -> ContactClaimEvidence {
+    ContactClaimEvidence {
+        field: spec.field,
+        value: spec.value.to_string(),
+        person: spec.person.to_string(),
+        role: "Head Coach".to_string(),
+        sport: spec.sport.to_string(),
+        school: spec.school.to_string(),
+        state: spec.state.to_string(),
+        source_url: spec.source_url.to_string(),
+        claimed_observed_on: "2026-09-22".to_string(),
+        source_sha256: "a".repeat(64),
+        fetched_at: "2026-09-23T10:00:00Z".to_string(),
+        span: format!("<span>{}</span>", spec.value),
+    }
+}
+
+fn write_evidence(path: &std::path::Path, claims: &[ContactClaimEvidence]) -> TestResult {
+    let mut body = String::new();
+    for claim in claims {
+        body.push_str(&serde_json::to_string(claim)?);
+        body.push('\n');
+    }
+    std::fs::write(path, body)?;
+    Ok(())
+}
+
 #[test]
 fn merge_round_trip_keeps_every_row_importable_and_distinct() -> TestResult {
     let dir = tempfile::tempdir()?;
@@ -459,6 +518,64 @@ fn merge_round_trip_keeps_every_row_importable_and_distinct() -> TestResult {
              rae.lindqvist@washburn.example.org,,,https://washburn.example.org/athletics,\
              2026-09-22,{proof}\n"
         ),
+    )?;
+    write_evidence(
+        &dir.path().join("WI.csv.evidence.jsonl"),
+        &[
+            claim(ClaimSpec::new(
+                ContactProofField::CoachName,
+                "Dana Reed",
+                "Track & Field",
+                "Madison West High School",
+                "WI",
+                "https://madisonwest.example.org/athletics",
+            )),
+            claim(ClaimSpec::new(
+                ContactProofField::PublicProfessionalEmail,
+                "dana.reed@madisonwest.example.org",
+                "Track & Field",
+                "Madison West High School",
+                "WI",
+                "https://madisonwest.example.org/athletics",
+            )),
+            claim(ClaimSpec::new(
+                ContactProofField::CoachName,
+                "Sam Ellery",
+                "Cross Country",
+                "Madison West High School",
+                "WI",
+                "https://madisonwest.example.org/athletics",
+            )),
+            claim(ClaimSpec::new(
+                ContactProofField::PublicProfessionalEmail,
+                "sam.ellery@madisonwest.example.org",
+                "Cross Country",
+                "Madison West High School",
+                "WI",
+                "https://madisonwest.example.org/athletics",
+            )),
+        ],
+    )?;
+    write_evidence(
+        &dir.path().join("MN.csv.evidence.jsonl"),
+        &[
+            claim(ClaimSpec::new(
+                ContactProofField::CoachName,
+                "Rae Lindqvist",
+                "Track & Field",
+                "Washburn High School",
+                "MN",
+                "https://washburn.example.org/athletics",
+            )),
+            claim(ClaimSpec::new(
+                ContactProofField::PublicProfessionalEmail,
+                "rae.lindqvist@washburn.example.org",
+                "Track & Field",
+                "Washburn High School",
+                "MN",
+                "https://washburn.example.org/athletics",
+            )),
+        ],
     )?;
 
     let out = NamedTempFile::new()?;
@@ -593,4 +710,125 @@ fn dedupe_keeps_newer_row() {
         &row1
     };
     assert_eq!(kept.coach_name, "Coach B");
+}
+
+fn verified_director(state: &str, school: &str) -> census_service::coachverify::FragmentOutcome {
+    use census_domain::model::{ContactClaimEvidence, ContactProofField, RawContactRow};
+    use census_service::coachverify::{FragmentOutcome, RowOutcome, Verdict};
+    let row = RawContactRow {
+        school: school.to_string(),
+        city: "Alpha".to_string(),
+        state: state.to_string(),
+        sport: String::new(),
+        role: "Athletic Director".to_string(),
+        coach_name: String::new(),
+        public_professional_email: String::new(),
+        ad_name: "Dana Reid".to_string(),
+        ad_email: String::new(),
+        source_urls: vec!["https://example.org/staff".to_string()],
+        last_observed: "2026-09-21".to_string(),
+    };
+    let claims = vec![ContactClaimEvidence {
+        field: ContactProofField::AdName,
+        value: row.ad_name.clone(),
+        person: row.ad_name.clone(),
+        role: row.role.clone(),
+        sport: String::new(),
+        school: row.school.clone(),
+        state: row.state.clone(),
+        source_url: row.source_urls[0].clone(),
+        claimed_observed_on: row.last_observed.clone(),
+        source_sha256: "a".repeat(64),
+        fetched_at: "2026-09-22T10:00:00Z".to_string(),
+        span: "<span class=\"name\">Dana Reid</span>".to_string(),
+    }];
+    FragmentOutcome {
+        file: format!("{state}.csv"),
+        rows: vec![RowOutcome {
+            row,
+            verdict: Verdict::Ok,
+            evidence: claims,
+        }],
+        counts: Default::default(),
+    }
+}
+
+#[test]
+fn merged_product_carries_reconcilable_evidence() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let union = dir.path().join("union");
+    let verified = verified_director("OH", "Alpha High School");
+    census_service::coachverify::write_state_union(&union, std::slice::from_ref(&verified))?;
+    let out = dir.path().join("coach-contacts.csv");
+    run_merge_coaches(&MergeCoachesArgs {
+        fragments: union,
+        out: out.clone(),
+        report: dir.path().join("merge.md"),
+    })?;
+    check!(eq; std::fs::read_to_string(&out)?.lines().count(), 2);
+    let sidecar = census_service::coachverify::evidence_path(&out);
+    check!(
+        eq;
+        census_service::coachverify::read_evidence_jsonl(&sidecar)?,
+        verified.rows[0].evidence
+    );
+    let reconciliation =
+        census_service::coachverify::reconcile(&out, std::slice::from_ref(&verified))?;
+    check!(eq; reconciliation.published, 1);
+    check!(eq; reconciliation.unmatched_total(), 0);
+    check!(eq; reconciliation.tampered_total(), 0);
+    Ok(())
+}
+
+#[test]
+fn merged_product_preserves_repeated_claims_for_digest_fidelity() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let union = dir.path().join("union");
+    let mut verified = verified_director("OH", "Alpha High School");
+    let repeated = verified.rows[0].evidence[0].clone();
+    verified.rows[0].evidence.push(repeated);
+    census_service::coachverify::write_state_union(&union, std::slice::from_ref(&verified))?;
+    let out = dir.path().join("coach-contacts.csv");
+    run_merge_coaches(&MergeCoachesArgs {
+        fragments: union,
+        out: out.clone(),
+        report: dir.path().join("merge.md"),
+    })?;
+    check!(
+        eq;
+        census_service::coachverify::read_evidence_jsonl(
+            &census_service::coachverify::evidence_path(&out)
+        )?,
+        verified.rows[0].evidence,
+        "the merged sidecar must carry the row's claims verbatim, repeated claims included"
+    );
+    let reconciliation =
+        census_service::coachverify::reconcile(&out, std::slice::from_ref(&verified))?;
+    check!(eq; reconciliation.tampered_total(), 0);
+    Ok(())
+}
+
+#[test]
+fn merge_refuses_a_fragment_without_evidence() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let union = dir.path().join("union");
+    std::fs::create_dir_all(&union)?;
+    std::fs::write(
+        union.join("OH.csv"),
+        format!(
+            "school,city,state,sport,role,coach_name,public_professional_email,ad_name,ad_email,source_url,last_observed,verified_proof_digest\nAlpha High School,Alpha,OH,,Athletic Director,,,Dana Reid,,https://example.org/staff,2026-09-21,{}\n",
+            "a".repeat(64)
+        ),
+    )?;
+    let refused = run_merge_coaches(&MergeCoachesArgs {
+        fragments: union,
+        out: dir.path().join("coach-contacts.csv"),
+        report: dir.path().join("merge.md"),
+    });
+    check!(
+        refused.is_err(),
+        "a fragment without its evidence sidecar cannot be merged"
+    );
+    check!(!dir.path().join("coach-contacts.csv").exists());
+    Ok(())
 }

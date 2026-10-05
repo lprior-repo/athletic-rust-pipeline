@@ -784,3 +784,40 @@ additional fresh-run failures or completed jurisdictions.
   role/mailbox eligibility, canonical program joins and side/indoor distinctions remain the
   `athletic-rust-pipeline-rh3` / school-identity obligations, not claims from this inventory.
 
+### Delta — 2026-10-04: four added families, executed wave 0–2 acquisition, and the store boundary
+
+Static registry change plus recorded run reports; no new fetch or store read was performed for
+this subsection.
+
+**Registry surface.** Descriptors **24 → 28** (`registry/table/{through_milesplit,from_mshsl,directories}.rs`):
+new coach-capability slugs `aia` (SCHOOL_COACH_NAMES) and `home_campus`, `sidearm_staff`, `uhsaa`
+(SCHOOL_COACH_CONTACT); `nces` and `state_ed` remain SCHOOL_ADDRESS, `tfrrs` unchanged.
+Coach-advertising slugs **15 → 19**; under the same collapse rules (FusionPoint = `ciac` + `mpa` +
+`riil`; `plain_names` = NDHSAA + NSAA) the present provider-backed families are **17**, up from 13.
+Callers, statically: `census-crawl/src/aia/{mod,collect,map,parse,tests}.rs`,
+`census-crawl/src/uhsaa/{mod,map,parse,tests}.rs`, `census-crawl/src/home_campus/{mod,collect,
+entities,map,parse,tests}.rs`, `census-crawl/src/sidearm_staff/{mod,map,parse,tests}.rs`, each with
+a provider arm in `census-service/src/cli/provider.rs` (`arms::{aia,uhsaa,home_campus,
+sidearm_staff}_report`). Implementation and wiring remain neither qualification nor coverage.
+
+**Executed acquisition, wave 0–1 (per-source publishes, not a 49-run).** Wave 0: PA 1 456 schools /
+1 529 AD rows / 0 errors; CT repointed to the live FusionPoint host `ciac.fpsports.org`, 184 schools
+/ 1 033 TF/XC coach rows; KS 526 schools / 526 AD emails from one 489 KB API response; RI 55 / 258;
+OH named transport refusal (`officials.myohsaa.org` TLS 1.2-CBC vs the rustls AEAD-only client);
+IL partial by provider cooldown — its drain journalled 238 of 828 schools with 0 error rows at
+2026-10-04 20:xx and is in flight. Wave 1: Home Campus platform entries CA 1 727 / FL 881 / NJ 453;
+the FL run report is 880 schools / 3 677 coach rows / 0 errors (`6ec.2.2` closed) and NJ section 12
+is 452 schools / 0 coach rows on the same run; GoBound answered 403 with robots disallowing `/api/`
+(SRC-129/161/224 close as refusal); extract lanes MA/NY/SD/NV landed; AZ `aia` and UT `uhsaa`
+adapters landed with fixtures. Scratch-store readback for the Home Campus family
+(`fjall-stats`, `var/home-campus-CA-20261004/store`): schools 4 737 / coaches 17 655 / observations
+22 392 / store_bytes 56 390 780. Wave-2 qualifications for IA SRC-128, IN SRC-113, OK SRC-203 and
+NJ SRC-058 are staffed and in flight under their beads.
+
+**Boundary.** The counts above are per-source run evidence in scratch stores, not coach
+completeness and not a national run; no fresh 49-jurisdiction submission exists and no national
+census store survives the 2026-10-04 cleanup. The unexecuted-scope obligation above stands
+unchanged in kind: every N row still owes fresh-run submitted/attempted/captured/parsed/rejected/
+failed/completed/unknown outcomes with exact receipts, and school/program identity joins remain
+the `rh3` / school-identity obligations.
+

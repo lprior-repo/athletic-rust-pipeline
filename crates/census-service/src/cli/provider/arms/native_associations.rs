@@ -38,3 +38,57 @@ pub(crate) async fn tssaa_report(
     )
     .await?)
 }
+
+pub(crate) async fn uhsaa_report(
+    context: &AdapterContext<'_>,
+    args: &ProviderArgs,
+    observed_on: String,
+) -> Result<AdapterReport> {
+    Ok(providers::uhsaa::collect(
+        context,
+        &providers::uhsaa::Options {
+            limit: args.limit,
+            refresh: args.refresh,
+            observed_on,
+            states: args.jurisdictions()?,
+            school_names: args.school_names.clone(),
+        },
+    )
+    .await?)
+}
+
+pub(crate) async fn home_campus_report(
+    context: &AdapterContext<'_>,
+    args: &ProviderArgs,
+    observed_on: String,
+) -> Result<AdapterReport> {
+    Ok(providers::home_campus::collect(
+        context,
+        &providers::home_campus::Options {
+            limit: args.limit,
+            refresh: args.refresh,
+            observed_on,
+            states: args.jurisdictions()?,
+            school_names: args.school_names.clone(),
+        },
+    )
+    .await?)
+}
+
+pub(crate) async fn sidearm_staff_report(
+    context: &AdapterContext<'_>,
+    args: &ProviderArgs,
+    observed_on: String,
+) -> Result<AdapterReport> {
+    Ok(providers::sidearm_staff::collect(
+        context,
+        &providers::sidearm_staff::Options {
+            limit: args.limit,
+            refresh: args.refresh,
+            observed_on,
+            states: args.jurisdictions()?,
+            school_names: args.school_names.clone(),
+        },
+    )
+    .await?)
+}

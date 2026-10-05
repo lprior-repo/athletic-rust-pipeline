@@ -6,7 +6,7 @@ fn displaced_copy(source: &std::path::Path, target: &std::path::Path) -> TestRes
     for name in reader.sheet_names() {
         let range = reader.worksheet_range(&name)?;
         let owner = if name == "Athletes" {
-            Some(column_of(&range, "Postal Owner ID")?)
+            Some(column_of(&range, "School Address")?)
         } else {
             None
         };
@@ -26,7 +26,7 @@ fn displaced_copy(source: &std::path::Path, target: &std::path::Path) -> TestRes
                 let r = u32::try_from(destination)?;
                 let c = u16::try_from(column)?;
                 if destination == 1 && owner == Some(column) {
-                    sheet.write_string(r, c, "foreign-owner")?;
+                    sheet.write_string(r, c, "forged address")?;
                     continue;
                 }
                 match value {
@@ -52,7 +52,7 @@ fn displaced_copy(source: &std::path::Path, target: &std::path::Path) -> TestRes
 }
 
 #[test]
-fn displaced_athlete_rows_cannot_hide_forged_postal_ownership_from_full_verification() -> TestResult
+fn displaced_athlete_rows_cannot_hide_a_forged_school_address_from_full_verification() -> TestResult
 {
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path().join("store"))?;
@@ -77,8 +77,8 @@ fn displaced_athlete_rows_cannot_hide_forged_postal_ownership_from_full_verifica
     let mut expected = [first.id.to_string(), second.id.to_string()];
     expected.sort();
     check!(eq; ids, expected);
-    check!(eq; text(&rows, 1, column_of(&rows, "Postal Owner ID")?),
-    "foreign-owner");
+    check!(eq; text(&rows, 1, column_of(&rows, "School Address")?),
+    "forged address");
     check!(verify_frozen(&target, &dataset, &options).is_err());
     Ok(())
 }

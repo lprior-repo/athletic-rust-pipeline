@@ -509,8 +509,7 @@ fn a_summary_failure_records_only_the_failure_like_the_prototype() -> TestResult
 
 #[test]
 fn rejected_jv_claim_does_not_hide_later_varsity_contact() -> TestResult {
-    let summary = super::parse_summary(
-        br#"{
+    let body = br#"{
             "staff": [{
                 "id": "public", "firstName": "Alex", "lastName": "Rivera",
                 "title": "Head Coach", "emails": ["arivera@example.edu"]
@@ -520,15 +519,16 @@ fn rejected_jv_claim_does_not_hide_later_varsity_contact() -> TestResult {
                 {"name": "Boys' Track, Outdoor", "level": "Varsity", "coachProfileIds": ["public"]},
                 {"name": "Boys' Track, Outdoor", "level": "Varsity", "coachProfileIds": ["public"]}
             ]
-        }"#,
-    )?;
+        }"#;
+    let summary = super::parse_summary(body)?;
     let school = census_domain::model::SchoolId::mint("sch", &["admission-order"]);
     let result = super::coach_entities(
         &summary,
         &school,
         "https://example.test/school",
-        "2026-09-30",
-        super::EmissionScope::Census,
+        "2026-09-30T00:00:00Z",
+        census_domain::model::SchoolYear::new(2026).ok_or("valid test school year")?,
+        &crate::net::cache::content_digest(body),
     )?;
     let [coach] = result.coaches.as_slice() else {
         return Err(format!("expected one eligible coach, got {:?}", result.coaches).into());
@@ -544,8 +544,7 @@ fn rejected_jv_claim_does_not_hide_later_varsity_contact() -> TestResult {
 
 #[test]
 fn rejected_vendor_claim_does_not_hide_later_public_contact() -> TestResult {
-    let summary = super::parse_summary(
-        br#"{
+    let body = br#"{
             "staff": [
                 {"id": "vendor", "firstName": "Alex", "lastName": "Rivera",
                  "title": "Head Coach", "emails": ["arivera@dragonflyathletics.com"]},
@@ -556,15 +555,16 @@ fn rejected_vendor_claim_does_not_hide_later_public_contact() -> TestResult {
                 {"name": "Boys' Track, Outdoor", "level": "Varsity", "coachProfileIds": ["vendor"]},
                 {"name": "Boys' Track, Outdoor", "level": "Varsity", "coachProfileIds": ["public"]}
             ]
-        }"#,
-    )?;
+        }"#;
+    let summary = super::parse_summary(body)?;
     let school = census_domain::model::SchoolId::mint("sch", &["admission-order"]);
     let result = super::coach_entities(
         &summary,
         &school,
         "https://example.test/school",
-        "2026-09-30",
-        super::EmissionScope::Census,
+        "2026-09-30T00:00:00Z",
+        census_domain::model::SchoolYear::new(2026).ok_or("valid test school year")?,
+        &crate::net::cache::content_digest(body),
     )?;
     let [coach] = result.coaches.as_slice() else {
         return Err(format!("expected the public contact, got {:?}", result.coaches).into());
@@ -587,8 +587,11 @@ fn captured_varsity_cross_country_contact_survives_earlier_jv_team() -> TestResu
         &summary,
         &school,
         "https://example.test/schools/SS28UB/summary",
-        "2026-09-30",
-        super::EmissionScope::Census,
+        "2026-09-30T00:00:00Z",
+        census_domain::model::SchoolYear::new(2026).ok_or("valid test school year")?,
+        &crate::net::cache::content_digest(
+            fixture("coach_directories/probe/WY/summary-SS28UB.json")?.as_bytes(),
+        ),
     )?;
     let coaches: Vec<_> = result
         .coaches

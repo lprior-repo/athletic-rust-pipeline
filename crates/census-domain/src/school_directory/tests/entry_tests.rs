@@ -265,7 +265,7 @@ fn geocoded_coordinates_are_stamped_weakest_and_never_displace_a_published_sourc
     entry.set_coordinates_from(geocoded, SourceLabel::Geocoder);
     check!(eq; entry.coordinates(), Some(geocoded));
     check!(entry.sources().contains(&SourceLabel::Geocoder));
-    check!(eq; SourceLabel::Geocoder.rank(), 5);
+    check!(eq; SourceLabel::Geocoder.rank(), 6);
     check!(eq; SourceLabel::Geocoder.label(), "geocoder");
     check!(
         SourceLabel::Geocoder.rank()

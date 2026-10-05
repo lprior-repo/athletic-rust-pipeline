@@ -26,6 +26,7 @@ fn args(out: &Path) -> SchoolAddressArgs {
         state_ed_profile: Vec::new(),
         state_ed_tabular: Vec::new(),
         associations: Vec::new(),
+        association_directory: Vec::new(),
         out: out.to_path_buf(),
         baseline: None,
         ledger: None,

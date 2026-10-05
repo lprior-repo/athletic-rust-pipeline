@@ -1,0 +1,55 @@
+{
+  "head": {
+    "vars": ["item", "itemLabel", "website", "state", "city"]
+  },
+  "results": {
+    "bindings": [
+      {
+        "item": {"value": "http://www.wikidata.org/entity/Q12345"},
+        "itemLabel": {"value": "Lincoln High School"},
+        "website": {"value": "https://www.lincolnhs.edu"},
+        "state": {"value": "Missouri"},
+        "city": {"value": "Kansas City"}
+      },
+      {
+        "item": {"value": "http://www.wikidata.org/entity/Q12346"},
+        "itemLabel": {"value": "Jefferson Academy"},
+        "website": {"value": "https://www.jeffersonacademy.org"},
+        "state": {"value": "Missouri"},
+        "city": {"value": "St. Louis"}
+      },
+      {
+        "item": {"value": "http://www.wikidata.org/entity/Q12347"},
+        "itemLabel": {"value": "Roosevelt STEM"},
+        "website": {"value": "https://www.rooseveltstem.org"},
+        "state": {"value": "Illinois"},
+        "city": {"value": "Chicago"}
+      },
+      {
+        "item": {"value": "http://www.wikidata.org/entity/Q12347"},
+        "itemLabel": {"value": "Roosevelt STEM"},
+        "website": {"value": "https://www.rooseveltstem.org"},
+        "state": {"value": "Illinois"},
+        "city": {"value": "Chicago"}
+      },
+      {
+        "item": {"value": "http://www.wikidata.org/entity/Q99999"},
+        "itemLabel": {"value": "Missing Website School"},
+        "state": {"value": "Texas"},
+        "city": {"value": "Austin"}
+      },
+      {
+        "item": {"value": "http://www.wikidata.org/entity/Q12348"},
+        "itemLabel": {"value": "Bad Website School"},
+        "website": {"value": "not a url"},
+        "state": {"value": "Texas"},
+        "city": {"value": "Dallas"}
+      },
+      {
+        "item": {"value": "http://www.wikidata.org/entity/Q12349"},
+        "itemLabel": {"value": "No State School"},
+        "website": {"value": "https://www.nostate.edu"}
+      }
+    ]
+  }
+}

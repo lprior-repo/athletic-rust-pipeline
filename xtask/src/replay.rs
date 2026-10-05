@@ -88,7 +88,7 @@ fn read_captures(source: &str, dir: &Path) -> Result<Captures> {
         let name = path
             .file_name()
             .map_or_else(String::new, |name| name.to_string_lossy().into_owned());
-        if name.is_empty() || name == FIXTURE_CONTRACT {
+        if name.is_empty() || name == FIXTURE_CONTRACT || name == SOURCE_CONTRACT {
             continue;
         }
         let body = fs::read_to_string(&path)
@@ -107,5 +107,6 @@ fn golden_dir() -> PathBuf {
 }
 
 const FIXTURE_CONTRACT: &str = "README.md";
+const SOURCE_CONTRACT: &str = "SOURCE.md";
 
 const GOLDEN_DIR: &str = "golden";

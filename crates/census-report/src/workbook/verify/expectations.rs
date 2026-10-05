@@ -31,7 +31,7 @@ pub(super) struct Expectations<'a> {
     pub(super) derivation: Derivation<'a>,
     pub(super) bests: Vec<SharedSelection>,
     pub(super) contacts: BTreeMap<String, SchoolContacts>,
-    pub(super) postal: BTreeMap<String, [String; 12]>,
+    pub(super) school_address: BTreeMap<String, String>,
     schools: BTreeMap<String, School>,
     pr_index: BTreeMap<String, Vec<usize>>,
     tallies: BTreeMap<String, Tally>,
@@ -49,7 +49,7 @@ impl<'a> Expectations<'a> {
                 ),
             })?;
         let derivation = Derivation::of(dataset, options.scope, options.grad_year);
-        let postal = super::postal::athlete_index(dataset, derivation.athletes())?;
+        let school_address = super::postal::athlete_address_index(dataset, derivation.athletes())?;
         let bests = bests::build_from_dataset(
             dataset,
             &bests::Options {
@@ -68,7 +68,7 @@ impl<'a> Expectations<'a> {
             derivation,
             bests,
             contacts,
-            postal,
+            school_address,
             schools,
             pr_index,
             tallies,

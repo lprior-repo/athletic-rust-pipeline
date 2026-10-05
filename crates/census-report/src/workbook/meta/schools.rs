@@ -29,6 +29,11 @@ pub(super) fn schools_sheet(schools: &[CanonicalSchool]) -> ReportResult<Vec<Vec
                 .into_iter()
                 .map(Cell::text),
         );
+        header.extend(
+            crate::export::link::LINK_HEADERS
+                .into_iter()
+                .map(Cell::text),
+        );
     }
     let mut sorted: Vec<&CanonicalSchool> = schools.iter().collect();
     sorted.sort_by(|left, right| {
@@ -85,6 +90,11 @@ fn school_row(school: &CanonicalSchool) -> ReportResult<Vec<Cell>> {
     );
     cells.extend(
         crate::export::postal::postal_fields([school])?
+            .into_iter()
+            .map(Cell::text),
+    );
+    cells.extend(
+        crate::export::link::link_fields(school)
             .into_iter()
             .map(Cell::text),
     );

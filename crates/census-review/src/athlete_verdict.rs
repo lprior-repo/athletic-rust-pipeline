@@ -15,6 +15,7 @@ pub enum HardContradiction {
     GradYearEvidenceDiffers,
     GenderDiffers,
     RetainedSourceConflict,
+    DistinctProviderObjects,
 }
 
 impl HardContradiction {
@@ -23,6 +24,7 @@ impl HardContradiction {
             Self::GradYearEvidenceDiffers => "grad_year_evidence_differs",
             Self::GenderDiffers => "gender_differs",
             Self::RetainedSourceConflict => "retained_source_conflict",
+            Self::DistinctProviderObjects => "distinct_provider_objects",
         }
     }
 }
@@ -65,23 +67,34 @@ fn has_positive_evidence(packet: &ReviewPacket) -> bool {
         .evidence
         .iter()
         .filter(|fact| fact.field == "flag")
-        .any(|fact| fact.value.starts_with("shared_source_identity:"))
+        .any(|fact| fact.value.starts_with("identity_corroborated:"))
 }
 
 fn hard_contradiction(packet: &ReviewPacket) -> Option<HardContradiction> {
-    packet
+    const PRIORITY: [(&str, HardContradiction); 4] = [
+        (
+            "grad_year_evidence_differs",
+            HardContradiction::GradYearEvidenceDiffers,
+        ),
+        ("gender_differs", HardContradiction::GenderDiffers),
+        (
+            "retained_source_conflict",
+            HardContradiction::RetainedSourceConflict,
+        ),
+        (
+            "distinct_provider_objects",
+            HardContradiction::DistinctProviderObjects,
+        ),
+    ];
+    let flags: Vec<&str> = packet
         .evidence
         .iter()
         .filter(|fact| fact.field == "flag")
-        .find_map(|fact| {
-            let flag = fact.value.split_once(':')?.0.trim();
-            match flag {
-                "grad_year_evidence_differs" => Some(HardContradiction::GradYearEvidenceDiffers),
-                "gender_differs" => Some(HardContradiction::GenderDiffers),
-                "retained_source_conflict" => Some(HardContradiction::RetainedSourceConflict),
-                _ => None,
-            }
-        })
+        .filter_map(|fact| Some(fact.value.split_once(':')?.0.trim()))
+        .collect();
+    PRIORITY
+        .into_iter()
+        .find_map(|(slug, kind)| flags.contains(&slug).then_some(kind))
 }
 
 fn read_answer(value: &str, packet: &ReviewPacket) -> Result<AthleteVerdict, Refusal> {

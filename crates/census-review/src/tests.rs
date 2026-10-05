@@ -67,6 +67,61 @@ fn meet_proposal(field: &str, value: &str) -> ReviewVerdict {
     }
 }
 
+fn link_proposal(field: &str, value: &str) -> ReviewVerdict {
+    ReviewVerdict {
+        case_id: school_case().id,
+        kind: ReviewVerdictKind::ValueProposed,
+        field: Some(field.to_string()),
+        value: Some(value.to_string()),
+        confidence: 60,
+        rationale: "the directory names two schools with this name".to_string(),
+    }
+}
+
+#[test]
+fn a_school_link_answers_a_directory_label_and_refuses_anything_else() {
+    let packet = school_packet(None);
+    let admitted = validate(
+        ReviewFamily::SchoolLink,
+        &link_proposal("identity", "nces:390000000001"),
+        &packet,
+    );
+    assert_eq!(
+        admitted
+            .admitted()
+            .map(|answer| (answer.field.as_str(), answer.value.as_str())),
+        Some(("identity", "nces:390000000001"))
+    );
+    let pss = validate(
+        ReviewFamily::SchoolLink,
+        &link_proposal("identity", "pss:A2380006"),
+        &packet,
+    );
+    assert!(pss.admitted().is_some());
+    let wrong_field = validate(
+        ReviewFamily::SchoolLink,
+        &link_proposal("state", "nces:390000000001"),
+        &packet,
+    );
+    assert_eq!(wrong_field.admitted(), None);
+    let unknown_prefix = validate(
+        ReviewFamily::SchoolLink,
+        &link_proposal("identity", "springfield high school"),
+        &packet,
+    );
+    assert_eq!(unknown_prefix.admitted(), None);
+    assert!(matches!(
+        unknown_prefix,
+        Adjudication::Refused(Refusal::InvalidValue)
+    ));
+    let short_id = validate(
+        ReviewFamily::SchoolLink,
+        &link_proposal("identity", "nces:001"),
+        &packet,
+    );
+    assert_eq!(short_id.admitted(), None);
+}
+
 #[test]
 fn a_family_is_looked_up_by_the_label_the_store_retained() {
     assert_eq!(
@@ -119,8 +174,17 @@ fn a_family_parses_from_the_cli_spelling() {
         ReviewFamily::parse("athlete_identity"),
         Some(ReviewFamily::AthleteIdentity)
     );
+    assert_eq!(
+        ReviewFamily::parse("school-link"),
+        Some(ReviewFamily::SchoolLink)
+    );
+    assert_eq!(
+        ReviewFamily::from_label(census_domain::model::SCHOOL_IDENTITY_FAMILY),
+        Some(ReviewFamily::SchoolLink)
+    );
+    assert_eq!(ReviewFamily::SchoolLink.field(), "identity");
     assert_eq!(ReviewFamily::parse("cohort"), None);
-    assert_eq!(ReviewFamily::askable().len(), 3);
+    assert_eq!(ReviewFamily::askable().len(), 4);
     assert!(
         ReviewFamily::askable().contains(&ReviewFamily::AthleteIdentity),
         "the lane must offer the athlete family, or it is asked about by nobody"

@@ -173,6 +173,34 @@ fn exact_email_bytes_preserved_not_casefolded() -> TestResult {
 }
 
 #[test]
+fn a_repeated_pass_records_the_same_claim_once() -> TestResult {
+    let body = staff("<tr><td>Dana Reid Head XC Coach dana@example.org</td></tr>");
+    let row = fragment();
+    let mut evidence = evaluate(&row, &body)?;
+    check!(!evidence.claims.is_empty(), "the first pass records claims");
+    let first = evidence.claims.clone();
+    let sha256 = format!("{:x}", Sha256::digest(body.as_bytes()));
+    evidence.absorb(
+        &body,
+        &row,
+        &row.source_urls[0],
+        "2026-09-26T12:00:00Z",
+        &sha256,
+    )?;
+    check!(
+        eq;
+        evidence.claims,
+        first,
+        "absorbing the same page twice must not duplicate a claim"
+    );
+    check!(
+        evidence.role_near,
+        "the corroborating flag survives a repeat pass"
+    );
+    Ok(())
+}
+
+#[test]
 fn proof_digest_matches_evidence() -> TestResult {
     let body = staff("<tr><td>Dana Reid Head XC Coach dana@example.org</td></tr>");
     let row = fragment();
@@ -256,5 +284,52 @@ fn final_reconciliation_detects_email_or_citation_mutation() -> TestResult {
             .unmatched_total(),
         1
     );
+    Ok(())
+}
+
+#[test]
+fn freeze_manifest_covers_every_published_union_file() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let union = dir.path().join("union");
+    std::fs::create_dir_all(&union)?;
+    let state = union.join("WI.csv");
+    let sidecar = union.join("WI.csv.evidence.jsonl");
+    std::fs::write(&state, "school,city,state\n")?;
+    std::fs::write(&sidecar, "{}\n")?;
+    let listed = dir.path().join("manifest.txt");
+    write_manifest(&listed, &[], &[], Some(&union))?;
+    let manifest = std::fs::read_to_string(&listed)?;
+    check!(manifest.contains(&format!("{:x}", Sha256::digest(std::fs::read(&state)?))));
+    check!(manifest.contains(&format!("{:x}", Sha256::digest(std::fs::read(&sidecar)?))));
+    Ok(())
+}
+
+#[test]
+fn union_staging_publishes_reconcilable_evidence() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let row = fragment();
+    let evidence = evaluate(
+        &row,
+        &staff("<tr><td>Dana Reid Head XC Coach dana@example.org</td></tr>"),
+    )?;
+    let outcome = RowOutcome {
+        row,
+        verdict: evidence.verdict(),
+        evidence: evidence.claims.clone(),
+    };
+    let verified = FragmentOutcome {
+        file: "WI.csv".to_string(),
+        rows: vec![outcome.clone()],
+        counts: Default::default(),
+    };
+    let union = dir.path().join("union");
+    let staged = write_state_union(&union, std::slice::from_ref(&verified))?;
+    check!(eq; staged.get("WI").copied(), Some(1));
+    let sidecar = union.join("WI.csv.evidence.jsonl");
+    check!(sidecar.is_file());
+    check!(eq; read_evidence_jsonl(&sidecar)?, outcome.evidence);
+    let reconciliation = reconcile(&union.join("WI.csv"), std::slice::from_ref(&verified))?;
+    check!(eq; reconciliation.unmatched_total(), 0);
+    check!(eq; reconciliation.tampered_total(), 0);
     Ok(())
 }

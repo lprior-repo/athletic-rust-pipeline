@@ -4,7 +4,14 @@ use super::super::policy::{
 use super::super::SourceCapabilities as Caps;
 use super::super::{SourceDescriptor, TransportKind};
 
-pub(super) const THROUGH_MILESPLIT: [SourceDescriptor; 11] = [
+pub(super) const THROUGH_MILESPLIT: [SourceDescriptor; 12] = [
+    SourceDescriptor {
+        slug: "aia",
+        provider: "AIA school profiles and member search (Arizona)",
+        transport: TransportKind::Html,
+        capabilities: SCHOOL_COACH_NAMES,
+        admission: fetched("aiaonline.org", FETCHER_RPS),
+    },
     SourceDescriptor {
         slug: "athleticlive",
         provider: "AthleticLIVE meet harvest and result-plane captures (research artifacts)",
@@ -47,7 +54,7 @@ pub(super) const THROUGH_MILESPLIT: [SourceDescriptor; 11] = [
         provider: "CIAC sports directory (Connecticut)",
         transport: TransportKind::Html,
         capabilities: SCHOOL_COACH_NAMES,
-        admission: fetched("ciacsports.com", FETCHER_RPS),
+        admission: fetched("ciac.fpsports.org", FETCHER_RPS),
     },
     SourceDescriptor {
         slug: "chsaa",

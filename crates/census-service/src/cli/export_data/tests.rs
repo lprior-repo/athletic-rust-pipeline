@@ -1,13 +1,15 @@
 use super::*;
 use census_domain::model::{
-    CanonicalAthlete, CanonicalCoach, CanonicalSchool, CoachRole, CoachTenure, CoachTenureEvidence,
-    Gender, GradYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
+    CanonicalAthlete, CanonicalCoach, CanonicalSchool, CoachContactClaim, CoachContactProgram,
+    CoachRole, CoachTenure, CoachTenureEvidence, Gender, GradYear, SourceIdentity, SourceNamespace,
+    SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 use census_store::Table;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+mod link;
 mod postal;
 
 #[test]
@@ -37,6 +39,16 @@ fn recruiting_csv_selects_current_contacts_for_each_gender() -> TestResult {
             source_sha256: "a".repeat(64),
             retrieved_at: "2026-09-01T00:00:00Z".into(),
             statement: "Current 2026-27 head coach".into(),
+            claim: Some(CoachContactClaim {
+                coach: coach.id.clone(),
+                school: coach.school.clone(),
+                role: coach.role,
+                program: CoachContactProgram::Team {
+                    sport: Sport::OutdoorTrack,
+                    gender: side,
+                },
+                mailbox: Some(email.into()),
+            }),
         });
         store.append(Table::Coaches, &coach)?;
         let mut athlete = CanonicalAthlete::new(
@@ -74,6 +86,7 @@ fn recruiting_csv_selects_current_contacts_for_each_gender() -> TestResult {
         source_sha256: "b".repeat(64),
         retrieved_at: "2026-09-01T00:00:00Z".into(),
         statement: "Former head coach, last academic year 2025-26".into(),
+        claim: None,
     });
     store.append(Table::Coaches, &former)?;
     store.flush()?;

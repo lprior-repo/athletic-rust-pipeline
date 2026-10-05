@@ -161,7 +161,9 @@ pub fn reconcile(published: &Path, outcomes: &[FragmentOutcome]) -> anyhow::Resu
         files: outcomes.len(),
         ..Default::default()
     };
-    for row in super::read_fragment(published)? {
+    let published_rows = super::read_fragment(published)?;
+    report.published = published_rows.len();
+    for row in published_rows {
         let evidence = super::read_fragment_evidence(published, &row)?;
         match verified_map.get(&row_identity(&row)) {
             Some(stored_digest) => {

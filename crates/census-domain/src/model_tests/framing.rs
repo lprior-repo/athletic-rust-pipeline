@@ -23,13 +23,33 @@ fn separator_free_payloads_keep_their_digest_bytes() {
 }
 
 #[test]
+fn recorded_framed_tuple_collisions_are_distinguished() {
+    assert_ne!(
+        Id::<tag::School>::mint("sch", &["a\u{1e}b"]),
+        Id::<tag::School>::mint("sch", &["a", "\u{1}b"]),
+        "a record separator payload still framed the part boundary after it"
+    );
+    assert_ne!(
+        Id::<tag::School>::mint("sch", &["a\u{1f}b"]),
+        Id::<tag::School>::mint("sch", &["a", "\u{0}b"]),
+        "a field separator payload still framed the part boundary after it"
+    );
+    assert_ne!(
+        Id::<tag::School>::mint("a\u{1e}b", &["c"]),
+        Id::<tag::School>::mint("a", &["b", "c"]),
+        "a prefix joining its parts still minted the id of the split form"
+    );
+}
+
+#[test]
 fn delimiter_bytes_are_escaped_out_of_payloads() {
     let stream = escaped(b"a\x1eb\x1fc");
-    assert_eq!(stream, b"a\x1f\x01b\x1f\x00c");
+    assert_eq!(stream, b"a\x1d\x01b\x1d\x02c");
     assert!(
-        !stream.contains(&0x1e),
+        !stream.contains(&0x1e) && !stream.contains(&0x1f),
         "a payload delimiter reached the framing"
     );
+    assert_eq!(escaped(b"\x1d"), b"\x1d\x00");
 }
 
 #[test]

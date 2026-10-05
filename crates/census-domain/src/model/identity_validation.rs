@@ -1,3 +1,4 @@
+use super::identity_corroboration::{disjoint_provider_objects, member_facts, positive_identity};
 #[cfg(test)]
 use super::CaseEvidence;
 use super::{
@@ -23,6 +24,7 @@ pub enum IdentityDecisionIssue {
     MissingPositiveIdentityEvidence,
     UnresolvedReview,
     ConflictingApplications,
+    ConflictingProviderObjects,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -139,7 +141,11 @@ pub(super) fn validate(
     if let Some(issue) = review_issue(index, decision, reviews, &ids)? {
         return Ok(Some(issue));
     }
-    Ok((!positive_identity(index, decision.kind, &ids))
+    let facts = member_facts(index, &ids);
+    if disjoint_provider_objects(&facts) {
+        return Ok(Some(Issue::ConflictingProviderObjects));
+    }
+    Ok((!positive_identity(decision.kind, &facts))
         .then_some(Issue::MissingPositiveIdentityEvidence))
 }
 
@@ -222,51 +228,6 @@ fn review_issue(
     Ok(None)
 }
 
-fn positive_identity(
-    index: &AthleteIdentityIndex,
-    kind: AppliedIdentityKind,
-    ids: &BTreeSet<&AthleteCandidateId>,
-) -> bool {
-    let facts: Vec<_> = ids
-        .iter()
-        .filter_map(|id| index.facts.get(id.as_str()))
-        .collect();
-    if facts.len() != ids.len() {
-        return false;
-    }
-    let Some(first) = facts.first() else {
-        return false;
-    };
-    match kind {
-        AppliedIdentityKind::SourceBound => false,
-        AppliedIdentityKind::SamePerson => {
-            let mut all_parsed = true;
-            let mut all_same_grad_year = true;
-            let mut has_boys = false;
-            let mut has_girls = false;
-            for fact in &facts {
-                if !fact.parsed {
-                    all_parsed = false;
-                }
-                if fact.grad_year != first.grad_year {
-                    all_same_grad_year = false;
-                }
-                if fact.gender == super::Gender::Boys {
-                    has_boys = true;
-                }
-                if fact.gender == super::Gender::Girls {
-                    has_girls = true;
-                }
-            }
-            all_parsed
-                && all_same_grad_year
-                && !(has_boys && has_girls)
-                && facts.iter().all(|fact| first.shares_primary(fact))
-        }
-        AppliedIdentityKind::DifferentPerson => false,
-    }
-}
-
 impl AthleteIdentityIndex {
     pub fn supports_identity(
         &self,
@@ -274,19 +235,17 @@ impl AthleteIdentityIndex {
         members: &[AthleteCandidateId],
     ) -> bool {
         let ids: BTreeSet<_> = members.iter().collect();
+        let facts = member_facts(self, &ids);
         if ids.len() != members.len()
-            || ids.iter().any(|id| {
-                self.facts
-                    .get(id.as_str())
-                    .is_none_or(|fact| fact.conflicted)
-            })
+            || facts.len() != ids.len()
+            || facts.iter().any(|fact| fact.conflicted)
         {
             return false;
         }
         if kind == AppliedIdentityKind::SourceBound {
             ids.len() == 1 && ids.first().is_some_and(|id| self.isolated_source(id))
         } else {
-            ids.len() > 1 && positive_identity(self, kind, &ids)
+            ids.len() > 1 && positive_identity(kind, &facts)
         }
     }
 }

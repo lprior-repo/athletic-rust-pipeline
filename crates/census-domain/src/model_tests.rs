@@ -1,5 +1,7 @@
 #[path = "model_tests/athlete_id_tests.rs"]
 mod athlete_id_tests;
+#[path = "model_tests/corroboration.rs"]
+mod corroboration;
 #[path = "model_tests/event_tests.rs"]
 mod event_tests;
 #[path = "model_tests/framing.rs"]

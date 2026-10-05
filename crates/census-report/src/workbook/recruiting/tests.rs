@@ -4,10 +4,11 @@ use crate::report::Scope;
 use calamine::{open_workbook, Data, Range, Reader, Xlsx};
 use census_domain::model::{
     normalize_name, AthleteId, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
-    CanonicalPerformance, CanonicalSchool, CanonicalTeam, CentiMetres, CentiSeconds, CoachRole,
-    CoachTenure, CoachTenureEvidence, CompetitionLevel, EventId, EventKind, Evidence, Gender,
-    GradYear, Grade, Mark, MeetId, ObservedGrade, PublishedGraduation, SchoolId, SchoolYear,
-    SourceIdentity, SourceNamespace, SourceRef, Sport,
+    CanonicalPerformance, CanonicalSchool, CanonicalTeam, CentiMetres, CentiSeconds,
+    CoachContactClaim, CoachContactProgram, CoachRole, CoachTenure, CoachTenureEvidence,
+    CompetitionLevel, EventId, EventKind, Evidence, Gender, GradYear, Grade, Mark, MeetId,
+    ObservedGrade, PublishedGraduation, SchoolId, SchoolYear, SourceIdentity, SourceNamespace,
+    SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -237,7 +238,7 @@ fn coach(
     let mut coach = CanonicalCoach::new(school, name, sport, Gender::Mixed, role);
     coach.professional_email = Some(email.to_string());
     coach.evidence = evidence("coach_contacts_csv", Some("https://contacts.test/schools"));
-    coach.tenure_evidence = vec![current_tenure()?];
+    coach.tenure_evidence = vec![current_tenure(&coach, email)?];
     store.append(Table::Coaches, &coach)?;
     Ok(())
 }
@@ -252,12 +253,12 @@ fn personal_coach(store: &Store, school: &SchoolId) -> TestResult {
     );
     coach.personal_email = Some("morgan@gmail.com".to_string());
     coach.evidence = evidence("coach_contacts_csv", Some("https://contacts.test/schools"));
-    coach.tenure_evidence = vec![current_tenure()?];
+    coach.tenure_evidence = vec![current_tenure(&coach, "morgan@gmail.com")?];
     store.append(Table::Coaches, &coach)?;
     Ok(())
 }
 
-fn current_tenure() -> TestResult<CoachTenureEvidence> {
+fn current_tenure(coach: &CanonicalCoach, mailbox: &str) -> TestResult<CoachTenureEvidence> {
     Ok(CoachTenureEvidence {
         tenure: CoachTenure::Current {
             school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
@@ -269,6 +270,19 @@ fn current_tenure() -> TestResult<CoachTenureEvidence> {
         source_sha256: "a".repeat(64),
         retrieved_at: "2026-09-20T00:00:00Z".into(),
         statement: "Synthetic academic-year appointment".into(),
+        claim: Some(CoachContactClaim {
+            coach: coach.id.clone(),
+            school: coach.school.clone(),
+            role: coach.role,
+            program: match coach.role {
+                CoachRole::AthleticDirector => CoachContactProgram::SchoolAthletics,
+                _ => CoachContactProgram::Team {
+                    sport: coach.sport.ok_or("fixture coach has no program")?,
+                    gender: coach.gender,
+                },
+            },
+            mailbox: Some(mailbox.to_string()),
+        }),
     })
 }
 

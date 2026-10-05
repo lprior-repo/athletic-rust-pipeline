@@ -1,8 +1,8 @@
 use super::*;
-use crate::export::postal::tests::{captured_school, SUMMARY_URL};
+use crate::export::postal::tests::captured_school;
 
 #[test]
-fn source_backed_postal_sidecar_rejects_each_tampered_address_and_provenance_field() -> TestResult {
+fn source_backed_postal_sidecar_rejects_a_tampered_school_address() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path().join("store"))?;
     let school = captured_school()?;
@@ -38,22 +38,17 @@ fn source_backed_postal_sidecar_rejects_each_tampered_address_and_provenance_fie
     check!(eq; row.get(
         headers
             .iter()
-            .position(|value| value == "postal_source_url")
-            .ok_or("missing postal source URL column")?
+            .position(|value| value == "school_address")
+            .ok_or("missing school address column")?
     ),
-    Some(SUMMARY_URL));
-    for column in crate::export::postal::POSTAL_CSV_HEADERS {
-        std::fs::write(&path, &original)?;
-        rewrite_cell(&path, column, "forged postal provenance")?;
-        let error = match super::super::verify(generation, &dataset, &options) {
-            Err(error) => error.to_string(),
-            Ok(()) => return Err(format!("forged postal column {column} accepted").into()),
-        };
-        check!(error.contains("recruiting.csv"), "{column}: {error}");
-        check!(
-            error.contains("forged postal provenance"),
-            "{column}: {error}"
-        );
-    }
+    Some("1 Rocket Drive, Asheville, NC 28803"));
+    std::fs::write(&path, &original)?;
+    rewrite_cell(&path, "school_address", "forged postal provenance")?;
+    let error = match super::super::verify(generation, &dataset, &options) {
+        Err(error) => error.to_string(),
+        Ok(()) => return Err("forged school address column accepted".into()),
+    };
+    check!(error.contains("recruiting.csv"), "{error}");
+    check!(error.contains("forged postal provenance"), "{error}");
     Ok(())
 }

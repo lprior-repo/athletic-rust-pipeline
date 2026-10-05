@@ -10,7 +10,7 @@ pub async fn resolve_schools(
     options: &Options,
     report: &mut AdapterReport,
 ) -> CrawlResult<Vec<SchoolExtract>> {
-    let url = format!("{HOST}/Directory.aspx");
+    let url = format!("{HOST}/Directory.aspx?SchoolLevelID=1");
     let fetch_opts = FetchOptions {
         refresh: ctx.refresh || options.refresh,
         allow_not_found: false,

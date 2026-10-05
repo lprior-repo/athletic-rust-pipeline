@@ -76,8 +76,48 @@ fn build_school_row(s: &CanonicalSchool) -> anyhow::Result<Vec<String>> {
         ident_count.to_string(),
     ];
     row.extend(census_report::export::postal::postal_fields([s])?);
+    row.extend(census_report::export::link::link_fields(s));
     Ok(row)
 }
+
+const CANONICAL_SCHOOL_HEADERS: [&str; 36] = [
+    "school_id",
+    "name",
+    "state",
+    "city",
+    "association",
+    "classification",
+    "enrollment",
+    "co_op",
+    "athletics_website",
+    "school_website",
+    "athleticnet_team_id",
+    "milesplit_school_id",
+    "aliases",
+    "source_namespaces",
+    "evidence_sources",
+    "identity_count",
+    "postal_school_id",
+    "postal_street",
+    "postal_second_line",
+    "postal_city",
+    "postal_state",
+    "postal_zip",
+    "postal_owner_namespace",
+    "postal_owner_id",
+    "postal_source",
+    "postal_source_url",
+    "postal_observed_date",
+    "postal_capture_sha256",
+    "link_school_id",
+    "link_owner_namespace",
+    "link_owner_id",
+    "link_owner_url",
+    "link_source",
+    "link_source_url",
+    "link_observed_date",
+    "link_note",
+];
 
 pub fn write_canonical_schools(
     schools: &[CanonicalSchool],
@@ -102,36 +142,7 @@ pub fn write_canonical_schools(
 
     write_csv(
         &data.join("canonical-schools.csv"),
-        &[
-            "school_id",
-            "name",
-            "state",
-            "city",
-            "association",
-            "classification",
-            "enrollment",
-            "co_op",
-            "athletics_website",
-            "school_website",
-            "athleticnet_team_id",
-            "milesplit_school_id",
-            "aliases",
-            "source_namespaces",
-            "evidence_sources",
-            "identity_count",
-            "postal_school_id",
-            "postal_street",
-            "postal_second_line",
-            "postal_city",
-            "postal_state",
-            "postal_zip",
-            "postal_owner_namespace",
-            "postal_owner_id",
-            "postal_source",
-            "postal_source_url",
-            "postal_observed_date",
-            "postal_capture_sha256",
-        ],
+        &CANONICAL_SCHOOL_HEADERS,
         &rows,
     )?;
 

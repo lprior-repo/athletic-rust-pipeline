@@ -192,3 +192,49 @@ fn a_human_required_condition_is_counted_as_a_challenge() -> TestResult {
             Ok(())
         })
 }
+
+#[test]
+fn a_fetch_refuses_an_origin_held_by_another_run_before_any_request() -> TestResult {
+    use std::io::Write;
+    let cache = tempfile::tempdir()?;
+    let locks = tempfile::tempdir()?;
+    let lock_path = locks
+        .path()
+        .join(origin_lock_file_name("https://held.example"));
+    let mut holder = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(&lock_path)?;
+    holder.try_lock()?;
+    holder.write_all(br#"{"pid":424242,"origin":"https://held.example"}"#)?;
+    let fetcher = Fetcher::new(
+        cache.path().join("http"),
+        None,
+        Duration::from_millis(1),
+        HashMap::new(),
+        vec!["held.example".to_string()],
+    )?
+    .with_origin_locks(locks.path().to_path_buf());
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let error = match fetcher
+                .get("https://held.example/roster", &FetchOptions::default())
+                .await
+            {
+                Err(error) => error,
+                Ok(outcome) => return Err(format!("a held origin was fetched: {outcome:?}").into()),
+            };
+            match error {
+                FetchError::OriginHeld { origin, holder } => {
+                    check!(eq; origin, "https://held.example");
+                    check!(holder.contains("424242"));
+                }
+                other => return Err(format!("unexpected error {other:?}").into()),
+            }
+            Ok(())
+        })
+}

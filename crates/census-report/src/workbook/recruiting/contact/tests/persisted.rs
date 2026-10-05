@@ -63,6 +63,8 @@ fn conflicting_persisted_addresses_do_not_collapse_to_the_first_mailbox() -> Tes
     first.professional_email = Some("first@example.invalid".into());
     let mut second = first.clone();
     second.professional_email = Some("second@example.invalid".into());
+    bind(&mut first);
+    bind(&mut second);
     store.append(Table::Coaches, &first)?;
     store.append(Table::Coaches, &second)?;
     let after = coaches(&store)?;

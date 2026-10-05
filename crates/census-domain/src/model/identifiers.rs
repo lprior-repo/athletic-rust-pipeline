@@ -137,7 +137,7 @@ pub type MeetId = Id<tag::Meet>;
 pub type EventId = Id<tag::Event>;
 pub type PerformanceId = Id<tag::Performance>;
 
-const FRAMING_DELIMITERS: [u8; 2] = [0x1e, 0x1f];
+const FRAMING_DELIMITERS: [u8; 3] = [0x1d, 0x1e, 0x1f];
 
 pub(crate) fn write_escaped<W: FnMut(&[u8])>(bytes: &[u8], mut write: W) {
     if !bytes.iter().any(|byte| FRAMING_DELIMITERS.contains(byte)) {
@@ -146,8 +146,9 @@ pub(crate) fn write_escaped<W: FnMut(&[u8])>(bytes: &[u8], mut write: W) {
     }
     for byte in bytes {
         match byte {
-            0x1e => write(&[0x1f, 0x01]),
-            0x1f => write(&[0x1f, 0x00]),
+            0x1d => write(&[0x1d, 0x00]),
+            0x1e => write(&[0x1d, 0x01]),
+            0x1f => write(&[0x1d, 0x02]),
             other => write(&[*other]),
         }
     }

@@ -114,7 +114,15 @@ fn dual_same_person_agreement_cannot_override_a_gender_contradiction() -> TestRe
             check!(!verdict.accepted);
             check!(eq; verdict.kind, "insufficient_evidence");
             let audit = audit(&fixture.store)?;
-            check!(eq; audit["outcome"], "hard_contradiction");
+            check!(eq; audit["outcome"], "refused");
+            check!(!audit["packet"]["evidence"]
+                .as_array()
+                .ok_or("evidence")?
+                .iter()
+                .any(|fact| fact["field"] == "flag"
+                    && fact["value"]
+                        .as_str()
+                        .is_some_and(|value| value.starts_with("identity_corroborated:"))));
             let mut gender_differs = false;
             for fact in audit["packet"]["evidence"].as_array().ok_or("evidence")? {
                 if fact["field"] == "flag"

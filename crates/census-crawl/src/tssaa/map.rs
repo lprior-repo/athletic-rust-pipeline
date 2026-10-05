@@ -1,5 +1,6 @@
 use census_domain::model::{
-    normalize_name, CanonicalCoach, CanonicalSchool, CoachTenure, CoachTenureEvidence, Evidence,
+    normalize_name, published_email, CanonicalCoach, CanonicalSchool, CoachContactClaim,
+    CoachContactProgram, CoachRole, CoachTenure, CoachTenureEvidence, Evidence,
     SchoolPostalAddress, SourceIdentity, SourceNamespace, SourceRef,
 };
 use census_domain::school_directory::{DirectoryKey, SchoolDirectoryEntry, StateRecordId};
@@ -186,16 +187,49 @@ fn map_coach(
         .to_string(),
     );
     coach.evidence.push(evidence);
-    if let Some(claim) = staff_year {
-        coach.tenure_evidence.push(CoachTenureEvidence {
-            tenure: CoachTenure::Current {
-                school_year: claim.year,
-            },
-            source: SourceRef::new(SOURCE_ID, Some(capture.url.clone())),
-            source_sha256: capture.content_digest.clone(),
-            retrieved_at: capture.fetched_at.clone(),
-            statement: claim.statement.clone(),
-        });
+    if let Some(tenure) = published_tenure(&coach, row, capture, staff_year) {
+        coach.tenure_evidence.push(tenure);
     }
     coach
+}
+
+fn published_tenure(
+    coach: &CanonicalCoach,
+    row: &CoachRow,
+    capture: &FetchOutcome,
+    staff_year: Option<&super::staff_year::PublishedStaffYear>,
+) -> Option<CoachTenureEvidence> {
+    let published = staff_year?;
+    let program = match (&coach.role, &coach.sport) {
+        (CoachRole::AthleticDirector, _) => Some(CoachContactProgram::SchoolAthletics),
+        (CoachRole::HeadCoach | CoachRole::AssistantCoach, Some(sport)) => {
+            Some(CoachContactProgram::Team {
+                sport: *sport,
+                gender: coach.gender,
+            })
+        }
+        _ => None,
+    };
+    let program = program?;
+    let mailbox = row
+        .email
+        .as_deref()
+        .and_then(published_email)
+        .map(|(address, _)| address);
+    Some(CoachTenureEvidence {
+        tenure: CoachTenure::Current {
+            school_year: published.year,
+        },
+        source: SourceRef::new(SOURCE_ID, Some(capture.url.clone())),
+        source_sha256: capture.content_digest.clone(),
+        retrieved_at: capture.fetched_at.clone(),
+        statement: published.statement.clone(),
+        claim: Some(CoachContactClaim {
+            coach: coach.id.clone(),
+            school: coach.school.clone(),
+            role: coach.role,
+            program,
+            mailbox,
+        }),
+    })
 }

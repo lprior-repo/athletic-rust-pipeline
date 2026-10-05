@@ -6,7 +6,7 @@ use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CoachRole, CompetitionLevel, Evidence, Gender, GradYear,
     Grade, ObservedGrade, ReviewCase, ReviewState, ReviewVerdictRecord, SchoolYear, SourceIdentity,
     SourceNamespace, Sport, ATHLETE_IDENTITY_FAMILY, CONTACT_CONFLICT_FAMILY,
-    UNSUPPORTED_GRADUATION_FAMILY,
+    SCHOOL_IDENTITY_FAMILY, UNSUPPORTED_GRADUATION_FAMILY,
 };
 use census_domain::model::{CanonicalMeet, SourceRef};
 use census_domain::UsJurisdiction;
@@ -223,6 +223,16 @@ fn the_sheets_render_the_rows_the_store_retains() -> TestResult {
                 source_sha256: "a".repeat(64),
                 retrieved_at: "2026-09-20T00:00:00Z".into(),
                 statement: "Synthetic academic-year appointment".into(),
+                claim: Some(census_domain::model::CoachContactClaim {
+                    coach: conflicted_coach.id.clone(),
+                    school: conflicted_coach.school.clone(),
+                    role: conflicted_coach.role,
+                    program: census_domain::model::CoachContactProgram::Team {
+                        sport: Sport::OutdoorTrack,
+                        gender: conflicted_coach.gender,
+                    },
+                    mailbox: conflicted_coach.professional_email.clone(),
+                }),
             });
         store.append(Table::Coaches, &conflicted_coach)?;
     }
@@ -378,6 +388,67 @@ fn unsupported_graduation_cases_are_retained_in_review_without_a_canonical_athle
         .count();
     check!(eq; unplaced_athlete_rows, 0,
     "an unsupported graduation case does not create a canonical athlete: {athletes:?}");
+    Ok(())
+}
+
+#[test]
+fn school_link_cases_are_retained_in_review_until_a_verdict_answers_them() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+
+    let pending = ReviewCase::pending(
+        SCHOOL_IDENTITY_FAMILY,
+        "wi:madison west high school",
+        "Madison West High School",
+        "ambiguous between candidates nces:550000000001, nces:550000000002; providers nces-ccd",
+    );
+    store.append(Table::ReviewCases, &pending)?;
+
+    let resolved_case = {
+        let mut case = ReviewCase::pending(
+            SCHOOL_IDENTITY_FAMILY,
+            "wi:answered high school",
+            "Answered High School",
+            "This case was resolved and should not appear.",
+        );
+        case.state = ReviewState::Resolved;
+        case
+    };
+    store.append(Table::ReviewCases, &resolved_case)?;
+
+    let path = crate::workbook::build(
+        &store,
+        &crate::workbook::Options {
+            out: Some(dir.path().join("school-links.xlsx")),
+            school_year: SchoolYear::new(2026),
+            ..crate::workbook::Options::default()
+        },
+    )?;
+
+    let review = sheet(&path, "Review")?;
+    check!(
+        carries(&review, 0, SCHOOL_IDENTITY_FAMILY),
+        "the pending school link case is surfaced: {review:?}"
+    );
+    check!(
+        carries(&review, 3, "Madison West High School"),
+        "the case subject is visible: {review:?}"
+    );
+    let candidates_seen = review.iter().any(|row| {
+        row.get(6)
+            .is_some_and(|cell| cell.contains("nces:550000000002"))
+    });
+    check!(
+        candidates_seen,
+        "the candidate labels reach the reviewer: {review:?}"
+    );
+
+    let resolved_rows = review
+        .iter()
+        .filter(|row| row.iter().any(|cell| cell == "Answered High School"))
+        .count();
+    check!(eq; resolved_rows, 0,
+    "a resolved case is excluded from the review queue: {review:?}");
     Ok(())
 }
 

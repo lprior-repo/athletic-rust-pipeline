@@ -23,8 +23,9 @@ fn emit(
         &summary,
         &school,
         "https://example.test/summary",
-        "2026-09-30",
-        EmissionScope::Census,
+        "2026-09-30T00:00:00Z",
+        census_domain::model::SchoolYear::new(2026).ok_or("valid test school year")?,
+        &crate::net::cache::content_digest(&body),
     )?)
 }
 
@@ -287,6 +288,6 @@ fn duplicate_provider_records_apply_admission_before_contact_precedence() -> Tes
 fn summary_evidence() -> Evidence {
     Evidence::parsed(
         SourceRef::new(SOURCE_ID, Some("https://example.test/summary".to_string())),
-        "2026-09-30",
+        "2026-09-30T00:00:00Z",
     )
 }

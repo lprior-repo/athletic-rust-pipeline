@@ -2,11 +2,11 @@ use super::identity_decision::person_key;
 use super::{
     athlete_identity_digest, AthleteCandidateId, AthleteIndexId, CanonicalAthlete,
     CanonicalJsonError, CaseEvidence, EvidenceMethod, Gender, GradYear, IdentityMember,
-    IdentityStatus, ATHLETE_IDENTITY_POLICY, MEMBER_SET_LABEL,
+    IdentityStatus, SourceIdentity, ATHLETE_IDENTITY_POLICY, MEMBER_SET_LABEL,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
-type PersonKey = (&'static str, u64);
+pub(super) type PersonKey = (&'static str, u64);
 
 #[derive(Debug, thiserror::Error)]
 pub enum IdentityError {
@@ -33,13 +33,17 @@ pub(super) struct IdentityFact {
     pub(super) source_bound: bool,
     pub(super) status: IdentityStatus,
     pub(super) authorized: bool,
+    pub(super) attested: BTreeMap<PersonKey, String>,
     bucket: AthleteIndexId,
-    primary: Option<PersonKey>,
-    links: Vec<PersonKey>,
+    pub(super) primary: Option<PersonKey>,
+    pub(super) links: Vec<PersonKey>,
 }
 
 impl IdentityFact {
-    fn of(athlete: &CanonicalAthlete) -> Result<Self, IdentityError> {
+    fn of(
+        athlete: &CanonicalAthlete,
+        attested: &[(SourceIdentity, String)],
+    ) -> Result<Self, IdentityError> {
         let primary = athlete.source.as_ref().and_then(person_key);
         let mut links: Vec<_> = athlete
             .source_links
@@ -62,6 +66,8 @@ impl IdentityFact {
                     .as_ref()
                     .is_some_and(|url| !url.is_empty())
         });
+        let attested_documents =
+            super::identity_corroboration::attested_documents(athlete, primary, &links, attested);
         Ok(Self {
             digest: athlete_identity_digest(athlete)?,
             grad_year: athlete.grad_year,
@@ -73,6 +79,7 @@ impl IdentityFact {
             source_bound: primary.is_some() && parsed,
             status: IdentityStatus::Unverified,
             authorized: false,
+            attested: attested_documents,
             bucket: athlete.candidate_key().index_id(),
             primary,
             links,
@@ -91,6 +98,22 @@ impl IdentityFact {
     }
 }
 
+pub(super) fn primary_document(athlete: &CanonicalAthlete) -> Option<String> {
+    athlete
+        .source
+        .as_ref()
+        .and_then(|source| source.url.clone())
+        .filter(|url| !url.is_empty())
+        .or_else(|| {
+            athlete.evidence.iter().find_map(|evidence| {
+                (evidence.method == EvidenceMethod::Parsed)
+                    .then(|| evidence.source.url.clone())
+                    .flatten()
+                    .filter(|url| !url.is_empty())
+            })
+        })
+}
+
 #[derive(Default)]
 pub struct AthleteIdentityIndex {
     pub(super) facts: BTreeMap<AthleteCandidateId, IdentityFact>,
@@ -100,11 +123,19 @@ pub struct AthleteIdentityIndex {
 
 impl AthleteIdentityIndex {
     pub fn observe(&mut self, athlete: &CanonicalAthlete) -> Result<(), IdentityError> {
+        self.observe_attested(athlete, &[])
+    }
+
+    pub fn observe_attested(
+        &mut self,
+        athlete: &CanonicalAthlete,
+        attested: &[(SourceIdentity, String)],
+    ) -> Result<(), IdentityError> {
         let id: AthleteCandidateId = athlete.id.cast();
         if self.facts.contains_key(id.as_str()) {
             return Err(IdentityError::DuplicateSubject(id.to_string()));
         }
-        let fact = IdentityFact::of(athlete)?;
+        let fact = IdentityFact::of(athlete, attested)?;
         self.by_candidate
             .entry(fact.bucket.clone())
             .or_default()

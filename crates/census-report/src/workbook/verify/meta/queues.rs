@@ -147,7 +147,7 @@ fn verdict_row(verdict: &ReviewVerdictRecord, index: &Lookup<'_>) -> Vec<Expect>
 
 fn verdict_subject(verdict: &ReviewVerdictRecord, index: &Lookup<'_>) -> String {
     match ReviewFamily::parse(&verdict.family) {
-        Some(ReviewFamily::SchoolJurisdiction) => index
+        Some(ReviewFamily::SchoolJurisdiction | ReviewFamily::SchoolLink) => index
             .school(&verdict.subject_id)
             .map_or_else(|| verdict.subject_id.clone(), |school| school.name.clone()),
         Some(ReviewFamily::MeetJurisdiction) => index
@@ -160,7 +160,9 @@ fn verdict_subject(verdict: &ReviewVerdictRecord, index: &Lookup<'_>) -> String 
 
 fn family_state(family: &str, subject_id: &str, index: &Lookup<'_>) -> Expect {
     let state = match ReviewFamily::parse(family) {
-        Some(ReviewFamily::SchoolJurisdiction) => index.school_state(subject_id),
+        Some(ReviewFamily::SchoolJurisdiction | ReviewFamily::SchoolLink) => {
+            index.school_state(subject_id)
+        }
         Some(ReviewFamily::MeetJurisdiction) => index.meet_state(subject_id),
         Some(ReviewFamily::AthleteIdentity) => index.athlete_state(subject_id),
         None => None,

@@ -106,12 +106,14 @@ fn out_of_scope_jurisdictions_plan_nothing_and_every_jurisdiction_answers() {
 #[test]
 fn single_state_adapters_are_planned_in_their_own_state_only() {
     let homes = [
+        ("aia", UsJurisdiction::Arizona),
         ("ihsa", UsJurisdiction::Illinois),
         ("ks", UsJurisdiction::Kansas),
         ("mshsl", UsJurisdiction::Minnesota),
         ("ohsaa", UsJurisdiction::Ohio),
         ("wiaa", UsJurisdiction::Wisconsin),
         ("wiaa_results", UsJurisdiction::Wisconsin),
+        ("uhsaa", UsJurisdiction::Utah),
     ];
     for (slug, home) in homes {
         for jurisdiction in UsJurisdiction::CENSUS_SCOPE {

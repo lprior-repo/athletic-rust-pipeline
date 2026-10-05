@@ -1,7 +1,9 @@
 mod summary_parity;
+mod tenure;
 use super::collect::requested_states;
 use super::map::{absorb_summary, coach_entities, directory_school, team_sport};
 use super::parse::{parse_directory, parse_summary};
+use super::row::{coach_role, is_director};
 use super::*;
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Gender, Sport,
@@ -29,7 +31,7 @@ const WY_DIRECTORY: &str =
 const GOLDEN_DIRECTORY_ROWS: &str =
     include_str!("../../tests/fixtures/coach_directories/golden_directory_rows.json");
 
-const OBSERVED_ON: &str = "2026-09-29";
+const OBSERVED_ON: &str = "2026-09-29T12:00:00Z";
 
 fn current_contexts(file: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
     let mut contexts: std::collections::BTreeMap<String, Vec<String>> = serde_json::from_str(
@@ -64,7 +66,8 @@ fn emitted(
         school_id,
         url,
         OBSERVED_ON,
-        EmissionScope::Census,
+        census_domain::model::SchoolYear::new(2026).ok_or("valid test school year")?,
+        &crate::net::cache::content_digest(NC_SUMMARY.as_bytes()),
     )?)
 }
 
@@ -282,6 +285,20 @@ fn the_possessive_and_genderless_labels_all_map() {
         team_sport("Unified Track, Indoor"),
         Some((Sport::IndoorTrack, Gender::Mixed))
     );
+    assert_eq!(
+        team_sport("Track, Outdoor"),
+        Some((Sport::OutdoorTrack, Gender::Unknown)),
+        "an unqualified label must not claim both sides"
+    );
+    assert_eq!(
+        team_sport("Cross Country"),
+        Some((Sport::CrossCountry, Gender::Unknown))
+    );
+    assert_eq!(
+        team_sport("Track Cycling"),
+        None,
+        "cycling is not track and field"
+    );
     assert_eq!(team_sport("Girls' Lacrosse"), None);
     assert_eq!(team_sport(""), None);
     assert_eq!(
@@ -289,6 +306,16 @@ fn the_possessive_and_genderless_labels_all_map() {
         None,
         "the prototype strips one genderless prefix and then requires a sport"
     );
+}
+
+#[test]
+fn a_stated_former_role_never_classifies_as_a_current_one() {
+    assert_eq!(coach_role("Former Head Coach"), CoachRole::Unknown);
+    assert_eq!(coach_role("Former Assistant Coach"), CoachRole::Unknown);
+    assert_eq!(coach_role("Head Coach"), CoachRole::HeadCoach);
+    assert_eq!(coach_role("Assistant Coach"), CoachRole::AssistantCoach);
+    assert!(!is_director("Former Athletic Director"));
+    assert!(is_director("Athletic Director"));
 }
 
 #[test]
@@ -373,12 +400,14 @@ fn a_nameless_team_member_counts_for_the_probe_and_is_dropped_from_the_census() 
     ]}"#;
     let summary = parse_summary(body.as_bytes())?;
     let (_, school_id) = minted(UsJurisdiction::Georgia, "Example High School");
-    let probe = coach_entities(
+    let probe = super::map::probe_coach_entities(
         &summary,
         &school_id,
-        "https://example.test/schools/EX/summary",
-        OBSERVED_ON,
-        EmissionScope::Probe,
+        super::map::Capture {
+            url: "https://example.test/schools/EX/summary",
+            observed_on: OBSERVED_ON,
+            sha256: &crate::net::cache::content_digest(body.as_bytes()),
+        },
     )?;
     check!(eq;
         probe.coaches.len(),

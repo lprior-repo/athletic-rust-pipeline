@@ -1,4 +1,5 @@
 use super::destination_guard::{DestinationGuard, GuardedResolver};
+use super::origin_locks::OriginLocks;
 use super::{FetchError, FetchStats, Fetcher, DEFAULT_USER_AGENT, REQUEST_TIMEOUT_SECS};
 use std::collections::HashMap;
 use std::path::Path;
@@ -88,6 +89,7 @@ impl Fetcher {
             blocks: Mutex::new(HashMap::new()),
             lane: None,
             offline: false,
+            origin_locks: OriginLocks::disabled(),
         })
     }
 

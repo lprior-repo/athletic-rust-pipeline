@@ -2,9 +2,9 @@ use super::write_recruiting_csv;
 use crate::export::ExportDataset;
 use crate::report::{Derivation, Scope};
 use census_domain::model::{
-    normalize_name, CanonicalAthlete, CanonicalCoach, CanonicalSchool, CoachRole, CoachTenure,
-    CoachTenureEvidence, Evidence, Gender, GradYear, PublishedGraduation, SchoolYear,
-    SourceIdentity, SourceNamespace, SourceRef, Sport,
+    normalize_name, CanonicalAthlete, CanonicalCoach, CanonicalSchool, CoachContactClaim,
+    CoachContactProgram, CoachRole, CoachTenure, CoachTenureEvidence, Evidence, Gender, GradYear,
+    PublishedGraduation, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -19,7 +19,7 @@ const FORMULA_EMAIL: &str = "=2+2@contacts.test";
 const WEBSITE: &str = "https://schools.test/athletics";
 const SOURCE_URL: &str = "https://contacts.test/schools";
 
-fn tenure() -> TestResult<CoachTenureEvidence> {
+fn tenure(coach: &CanonicalCoach) -> TestResult<CoachTenureEvidence> {
     Ok(CoachTenureEvidence {
         tenure: CoachTenure::Current {
             school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
@@ -28,6 +28,16 @@ fn tenure() -> TestResult<CoachTenureEvidence> {
         source_sha256: "a".repeat(64),
         retrieved_at: "2026-09-20T00:00:00Z".to_string(),
         statement: "Synthetic academic-year appointment".to_string(),
+        claim: Some(CoachContactClaim {
+            coach: coach.id.clone(),
+            school: coach.school.clone(),
+            role: coach.role,
+            program: CoachContactProgram::Team {
+                sport: Sport::OutdoorTrack,
+                gender: coach.gender,
+            },
+            mailbox: coach.professional_email.clone(),
+        }),
     })
 }
 
@@ -85,7 +95,7 @@ fn published_recruiting_csv_literalizes_source_text_without_rewriting_it() -> Te
         SourceRef::new("coach_contacts_csv", Some(SOURCE_URL.to_string())),
         "2026-09-20",
     )];
-    coach.tenure_evidence = vec![tenure()?];
+    coach.tenure_evidence = vec![tenure(&coach)?];
     store.append(Table::Coaches, &coach)?;
 
     let dataset = ExportDataset::load(&store)?;

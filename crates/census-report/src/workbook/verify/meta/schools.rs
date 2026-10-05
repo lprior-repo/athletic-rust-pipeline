@@ -5,7 +5,7 @@ use crate::report::ReportResult;
 
 use super::{header, Expect, Sheet};
 
-const HEADERS: [&str; 24] = [
+const HEADERS: [&str; 32] = [
     "School ID",
     "School",
     "State",
@@ -30,6 +30,14 @@ const HEADERS: [&str; 24] = [
     "Postal Source URL",
     "Postal Observed Date",
     "Postal Capture SHA256",
+    "Link School ID",
+    "Link Owner Namespace",
+    "Link Owner ID",
+    "Link Owner URL",
+    "Link Source",
+    "Link Source URL",
+    "Link Observed Date",
+    "Link Note",
 ];
 
 pub(super) fn expected(schools: &[CanonicalSchool]) -> ReportResult<Sheet> {
@@ -89,6 +97,11 @@ fn row(school: &CanonicalSchool) -> ReportResult<Vec<Expect>> {
     ];
     cells.extend(
         crate::workbook::verify::postal::fields([school])?
+            .into_iter()
+            .map(Expect::text),
+    );
+    cells.extend(
+        crate::workbook::verify::link::fields(school)
             .into_iter()
             .map(Expect::text),
     );

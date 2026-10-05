@@ -139,5 +139,9 @@ pub(super) enum Command {
         about = "Join a verified school-directory generation into the offline store as owned postal claims; explicit --store required"
     )]
     SchoolAddressJoin(super::school_address_join::SchoolAddressJoinArgs),
+    #[command(
+        about = "Crawl school athletics sites from a school-website queue into per-site JSON evidence and fragment CSVs for verify-coaches; opens the store for its fetch cache"
+    )]
+    SchoolSites(census_service::school_sites::SchoolSitesArgs),
     RepairRetainedEvents(super::retained_events::RepairRetainedEventsArgs),
 }

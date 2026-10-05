@@ -68,6 +68,7 @@ pub(super) fn source_state(label: &SourceLabel) -> Result<UsJurisdiction, School
         | SourceLabel::Pss
         | SourceLabel::StateEducationAgency { .. }
         | SourceLabel::PrivateAssociation { .. }
+        | SourceLabel::Wikidata
         | SourceLabel::Geocoder => Err(SchoolAddressError::UnsupportedAuthority),
     }
 }
@@ -84,9 +85,10 @@ fn directory_source(label: &SourceLabel) -> Option<&'static str> {
     match label {
         SourceLabel::Ccd => Some("nces-ccd"),
         SourceLabel::Pss => Some("nces-pss"),
-        SourceLabel::StateEducationAgency { .. }
-        | SourceLabel::PrivateAssociation { .. }
+        SourceLabel::StateEducationAgency { .. } => Some("state-ed"),
+        SourceLabel::PrivateAssociation { .. }
         | SourceLabel::AthleticAssociation { .. }
+        | SourceLabel::Wikidata
         | SourceLabel::Geocoder => None,
     }
 }

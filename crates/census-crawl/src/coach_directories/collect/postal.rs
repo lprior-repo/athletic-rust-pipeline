@@ -132,7 +132,14 @@ impl Run<'_> {
             observed_on: &outcome.fetched_at,
             sha256: &outcome.content_digest,
         };
-        match process_owned_summary(school, row, &summary, school_id, capture) {
+        match process_owned_summary(
+            school,
+            row,
+            &summary,
+            school_id,
+            capture,
+            self.ctx.school_year,
+        ) {
             Ok(mapped) => {
                 if let Some(review) = &mapped.postal_review {
                     self.reject(format!("summary postal review {url}: {review}"));

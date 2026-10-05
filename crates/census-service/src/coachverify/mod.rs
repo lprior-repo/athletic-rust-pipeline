@@ -8,7 +8,8 @@ mod verdict;
 
 pub use fetch::{body_text, GateOptions};
 pub use output::{
-    fragment_file_name, read_fragment, read_fragment_evidence, verify_fragment, write_fragment,
+    claims_for_row, evidence_path, fragment_file_name, read_evidence_jsonl, read_fragment,
+    read_fragment_evidence, verify_fragment, write_fragment,
 };
 pub use report::{audit_table, cited_hosts, write_audit_csv, write_manifest, write_state_union};
 pub use verdict::{reconcile, FragmentOutcome, Reconcile, RowOutcome, Verdict};

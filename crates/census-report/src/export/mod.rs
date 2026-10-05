@@ -1,4 +1,5 @@
 mod dataset;
+pub mod link;
 pub mod postal;
 pub mod provenance;
 

@@ -34,10 +34,14 @@ pub const POSTAL_CSV_HEADERS: [&str; 12] = [
     "postal_capture_sha256",
 ];
 
-pub fn athlete_postal_index(
+pub const ATHLETE_ADDRESS_HEADER: &str = "School Address";
+
+pub const ATHLETE_ADDRESS_CSV_HEADER: &str = "school_address";
+
+pub fn athlete_address_index(
     dataset: &ExportDataset,
     athletes: &[CanonicalAthlete],
-) -> ReportResult<BTreeMap<String, [String; 12]>> {
+) -> ReportResult<BTreeMap<String, String>> {
     let selected = athletes
         .iter()
         .map(|athlete| athlete.id.as_str())
@@ -59,10 +63,55 @@ pub fn athlete_postal_index(
     affiliations
         .into_iter()
         .map(|(athlete, schools)| {
-            postal_fields(schools.into_iter().filter_map(|id| dataset.schools.get(id)))
-                .map(|fields| (athlete.to_owned(), fields))
+            address_line(schools.into_iter().filter_map(|id| dataset.schools.get(id)))
+                .map(|line| (athlete.to_owned(), line))
         })
         .collect()
+}
+
+fn address_line<'a>(
+    schools: impl IntoIterator<Item = &'a CanonicalSchool>,
+) -> ReportResult<String> {
+    let Some((_, claim)) = ordered_claims(schools)?.into_iter().flatten().next() else {
+        return Ok(String::new());
+    };
+    let address = claim.address();
+    let mut line = [
+        address.line1().map(|value| value.as_str()),
+        address.line2().map(|value| value.as_str()),
+        address.city().map(|value| value.as_str()),
+    ]
+    .into_iter()
+    .flatten()
+    .filter(|part| !part.is_empty())
+    .fold(String::new(), |mut line, part| {
+        if !line.is_empty() {
+            line.push_str(", ");
+        }
+        line.push_str(part);
+        line
+    });
+    let state = address.state().map(|state| state.code());
+    let zip = address.zip().map(|value| value.to_string());
+    let head = if line.is_empty() { "" } else { ", " };
+    match (state, zip.as_deref()) {
+        (Some(state), Some(zip)) => {
+            line.push_str(head);
+            line.push_str(state);
+            line.push(' ');
+            line.push_str(zip);
+        }
+        (Some(state), None) => {
+            line.push_str(head);
+            line.push_str(state);
+        }
+        (None, Some(zip)) => {
+            line.push_str(head);
+            line.push_str(zip);
+        }
+        (None, None) => {}
+    }
+    Ok(line)
 }
 
 pub fn postal_fields<'a>(

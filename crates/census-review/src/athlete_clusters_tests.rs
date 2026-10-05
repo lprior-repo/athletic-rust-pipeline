@@ -81,29 +81,7 @@ fn a_provider_object_on_two_schools_is_one_athlete() -> TestResult {
     let recorded = verdicts(&store)?;
     let verdict = recorded.first().ok_or("one verdict")?;
     check!(eq; verdict.reviewer, RULE_REVIEWER);
-    let index = store.athlete_identity_index()?;
-    let builder = census_domain::model::IdentityProjectionBuilder::new(index, &filed, &recorded)?;
-    let mut applications = Vec::new();
-    for (_, application) in builder.reviewed_applications("2026-09-23") {
-        match application? {
-            census_domain::model::IdentityApplication::Accepted(accepted) => {
-                applications.push(accepted)
-            }
-            census_domain::model::IdentityApplication::Retained(_) => {}
-        }
-    }
-    check!(eq; applications.len(), 1, "the generated case must pass actual identity admission");
-    store.apply_identity_decisions(&applications)?;
-    let projection = store.athlete_identity_projection()?;
-    let roots: std::collections::BTreeSet<_> = case
-        .member_ids
-        .iter()
-        .map(|member| projection.canonical_id(member.as_str()))
-        .collect();
-    check!(eq; roots.len(), 1);
-    for member in &case.member_ids {
-        check!(eq; projection.status(member.as_str())?, census_domain::model::IdentityStatus::Verified);
-    }
+    corroboration::admits_one_identity(&store, &filed, &recorded, case)?;
     Ok(())
 }
 
@@ -274,3 +252,6 @@ mod three_members;
 
 #[path = "athlete_clusters_tests/reopened_receipt.rs"]
 mod reopened_receipt;
+
+#[path = "athlete_clusters_tests/corroboration.rs"]
+mod corroboration;

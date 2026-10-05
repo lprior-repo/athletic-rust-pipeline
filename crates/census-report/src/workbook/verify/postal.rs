@@ -3,10 +3,10 @@ use crate::report::{ReportError, ReportResult};
 use census_domain::model::{CanonicalAthlete, CanonicalSchool, SchoolPostalAddress};
 use std::collections::{BTreeMap, BTreeSet};
 
-pub(in crate::workbook) fn athlete_index(
+pub(in crate::workbook) fn athlete_address_index(
     dataset: &ExportDataset,
     athletes: &[CanonicalAthlete],
-) -> ReportResult<BTreeMap<String, [String; 12]>> {
+) -> ReportResult<BTreeMap<String, String>> {
     let selected = athletes
         .iter()
         .map(|row| row.id.as_str())
@@ -24,10 +24,55 @@ pub(in crate::workbook) fn athlete_index(
     groups
         .into_iter()
         .map(|(canonical, schools)| {
-            fields(schools.into_iter().filter_map(|id| dataset.schools.get(id)))
-                .map(|columns| (canonical.to_owned(), columns))
+            address_line(schools.into_iter().filter_map(|id| dataset.schools.get(id)))
+                .map(|line| (canonical.to_owned(), line))
         })
         .collect()
+}
+
+fn address_line<'a>(
+    schools: impl IntoIterator<Item = &'a CanonicalSchool>,
+) -> ReportResult<String> {
+    let Some((_, claim)) = ordered_claims(schools)?.into_iter().flatten().next() else {
+        return Ok(String::new());
+    };
+    let address = claim.address();
+    let mut line = [
+        address.line1().map(|value| value.as_str()),
+        address.line2().map(|value| value.as_str()),
+        address.city().map(|value| value.as_str()),
+    ]
+    .into_iter()
+    .flatten()
+    .filter(|part| !part.is_empty())
+    .fold(String::new(), |mut line, part| {
+        if !line.is_empty() {
+            line.push_str(", ");
+        }
+        line.push_str(part);
+        line
+    });
+    let state = address.state().map(|state| state.code());
+    let zip = address.zip().map(|value| value.to_string());
+    let head = if line.is_empty() { "" } else { ", " };
+    match (state, zip.as_deref()) {
+        (Some(state), Some(zip)) => {
+            line.push_str(head);
+            line.push_str(state);
+            line.push(' ');
+            line.push_str(zip);
+        }
+        (Some(state), None) => {
+            line.push_str(head);
+            line.push_str(state);
+        }
+        (None, Some(zip)) => {
+            line.push_str(head);
+            line.push_str(zip);
+        }
+        (None, None) => {}
+    }
+    Ok(line)
 }
 
 pub(in crate::workbook) fn fields<'a>(

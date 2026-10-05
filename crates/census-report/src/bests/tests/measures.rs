@@ -146,3 +146,34 @@ fn measure_normalized_raw_is_none() {
     let mark = Mark::Raw("unparsed".to_string());
     assert_eq!(crate::bests::Measure::Time.normalized_mark(&mark), None);
 }
+
+#[test]
+fn canary_two_four_feet_beats_three_feet_and_three_quarters(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let lower = crate::bests::field_micrometres("3-0.75").ok_or("three feet and three quarters")?;
+    let higher = crate::bests::field_micrometres("4-0.00").ok_or("four feet")?;
+    check!(higher > lower);
+    check!(crate::bests::Measure::Distance.better(higher, lower));
+    check!(!crate::bests::Measure::Distance.better(lower, higher));
+    Ok(())
+}
+
+#[test]
+fn canary_three_quarter_inch_distinction_is_retained() -> Result<(), Box<dyn std::error::Error>> {
+    let four = crate::bests::field_micrometres("5-4.00").ok_or("five feet four")?;
+    let quarter =
+        crate::bests::field_micrometres("5-4.25").ok_or("five feet four and a quarter")?;
+    check!(eq; quarter.checked_sub(four), Some(6_350));
+    Ok(())
+}
+
+#[test]
+fn canary_four_half_inch_and_fifty_hundredths_are_exactly_equal(
+) -> Result<(), Box<dyn std::error::Error>> {
+    check!(
+        eq;
+        crate::bests::field_micrometres("0-0.5"),
+        crate::bests::field_micrometres("0-0.50")
+    );
+    Ok(())
+}

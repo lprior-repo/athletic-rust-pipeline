@@ -128,7 +128,8 @@ pub(super) async fn run_verify_coaches(args: &VerifyCoachesArgs) -> Result<()> {
         census_crawl::default_host_delays(),
         authorized,
     )?
-    .with_family_budgets(census_crawl::default_family_delays());
+    .with_family_budgets(census_crawl::default_family_delays())
+    .with_origin_locks(census_service::census::DEFAULT_ORIGIN_LOCK_ROOT);
     let out_dir = args.out.clone();
     let jobs = args.jobs.max(1);
     let results: Vec<Result<FragmentOutcome>> = stream::iter(files.iter().cloned())

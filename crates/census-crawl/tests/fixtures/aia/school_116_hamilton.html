@@ -1,0 +1,2576 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
+    
+    <title>AIAOnline</title>
+
+    <link href="/css/app.css?id=1db3542364560d9563f2b48d5db5204c" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Oswald:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="shortcut icon" href="./assets/img/favicon.ico" />
+    <link
+      rel="apple-touch-icon"
+      sizes="76x76"
+      href="./assets/img/apple-icon.png"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    />
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-10237991-1"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-10237991-1');
+    </script>
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9K6ZBL9HZC"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-9K6ZBL9HZC');
+    </script>
+
+
+    <!-- Google Tags for DFP -->
+    <script type='text/javascript'>
+        var googletag = googletag || {};
+        googletag.cmd = googletag.cmd || [];
+        (function() {
+            var gads = document.createElement('script');
+            gads.async = true;
+            gads.type = 'text/javascript';
+            gads.src = 'https://www.googletagservices.com/tag/js/gpt.js';
+            var node = document.getElementsByTagName('script')[0];
+            node.parentNode.insertBefore(gads, node);
+        })();
+    </script>
+
+    <script type='text/javascript'>
+        googletag.cmd.push(function() {
+
+            var leaderboard_mapping = googletag.sizeMapping()
+                .addSize([320, 400], [[320, 50]]) // Mobile
+                .addSize([740, 200], [[728, 90]]) // Tablet/Desktop
+                .build();
+
+            var mini_skyscraper_mapping = googletag.sizeMapping()
+                .addSize([320, 400], [[320, 50]]) // Mobile
+                .addSize([740, 200], [[106, 400]]) // Tablet/Desktop
+                .build();
+
+            var full_banner_mapping = googletag.sizeMapping()
+                .addSize([320, 400], [[320, 50]]) // Mobile
+                .addSize([740, 200], [[468, 60]]) // Tablet/Desktop
+                .build();
+
+            googletag.defineSlot('/12354668/ad-365-leaderboard-top', [[320, 50], [728, 90]], 'div-gpt-ad-1405984596671-0').defineSizeMapping(leaderboard_mapping).addService(googletag.pubads());
+            googletag.defineSlot('/12354668/ad-365-leaderboard-aside-top', [300, 90], 'div-gpt-ad-1470336570943-0').addService(googletag.pubads());
+            googletag.defineSlot('/12354668/ad-365-medium-rectangle-primary', [300, 250], 'div-gpt-ad-1405984537681-0').addService(googletag.pubads());
+            googletag.defineSlot('/12354668/ad-365-medium-rectangle-secondary', [300, 250], 'div-gpt-ad-1405984450804-0').addService(googletag.pubads());
+            googletag.defineSlot('/12354668/ad-365-full-banner-page-sponsor', [[320, 50], [468, 60]], 'div-gpt-ad-1534459494743-0').defineSizeMapping(full_banner_mapping).addService(googletag.pubads());
+            googletag.defineSlot('/12354668/ad-365-full-banner-mid-content', [[320, 50], [468, 60]], 'div-gpt-ad-1504292113027-0').defineSizeMapping(full_banner_mapping).addService(googletag.pubads());
+            googletag.defineSlot('/12354668/ad-365-full-banner-footer-left', [[320, 50], [468, 60]], 'div-gpt-ad-1405984706805-0').defineSizeMapping(full_banner_mapping).addService(googletag.pubads());
+            googletag.defineSlot('/12354668/ad-365-full-banner-footer-right', [[320, 50], [468, 60]], 'div-gpt-ad-1405984783793-0').defineSizeMapping(full_banner_mapping).addService(googletag.pubads());
+            googletag.defineSlot('/12354668/ad-365-mini-skyscraper-primary', [[320, 50], [106, 400]], 'div-gpt-ad-1405985488371-0').defineSizeMapping(mini_skyscraper_mapping).addService(googletag.pubads());
+            googletag.defineSlot('/12354668/ad-365-mini-skyscraper-secondary', [[320, 50], [106, 400]], 'div-gpt-ad-1405985546214-0').defineSizeMapping(mini_skyscraper_mapping).addService(googletag.pubads());
+            googletag.pubads().setTargeting("domain", "aiaonline.org");
+            googletag.pubads().setTargeting("controller", "generated::6xEkWwkdnAW92vcV");
+            googletag.pubads().setTargeting("route", "generated::6xEkWwkdnAW92vcV");
+            googletag.pubads().collapseEmptyDivs();
+            googletag.pubads().enableSingleRequest();
+            googletag.enableServices();
+        });
+    </script>
+</head>
+
+<body class="antialiased text-gray-800 dark:text-gray-100 dark:bg-slate-800">
+
+    <div id="app">
+
+        <!-- ====== Navbar Section Start -->
+<header class="sticky top-0 navbar-primary bg-aiared-medium lg:relative z-90">
+    <div  class="container mx-auto px-3 max-w-screen xl:max-w-[1024px] overflow:hidden z-10 m-auto bg-aiared-medium">
+    <div class="relative flex items-center justify-between">
+            <div class="navbar-logo">
+                <a href="/" class="block w-full py-3">
+                    <img src="/assets/images/aia.png" alt="Arizona Interscholastic Association" alt="logo"
+                        class="w-32 md:w-36 " />
+                </a>
+            </div>
+            <div class="flex items-center justify-between w-full">
+                <div class="hidden ml-9 md:ml-12 sm:flex">
+                    <a href="https://www.bannerhealth.com/services/sports-medicine" title="Banner Sports Medicine">
+                        <img class="w-32 mt-2 md:w-36"
+                            src="https://azpreps365.com/assets/images/partners/banner-sports-medicine-white.png"
+                            alt="Banner Sports Medicine"></a>
+                </div>
+                <div class="items-center justify-end hidden gap-1 md:flex md:pr-16 lg:pr-0">
+                    <a href="https://www.instagram.com/azpreps365/" class="nav-link
+                flex
+                no-underline hidden md:flex md:mr-1">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="w-5 h-5 text-white fill-white">
+    <!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. -->
+    <path
+        d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z" />
+</svg>
+</a>
+                    <a href="https://www.facebook.com/azpreps365/" class="nav-link
+                flex
+                no-underline hidden md:flex md:mr-1">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="w-5 h-5 text-white fill-white">
+    <!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. -->
+    <path
+        d="M504 256C504 119 393 8 256 8S8 119 8 256c0 123.78 90.69 226.38 209.25 245V327.69h-63V256h63v-54.64c0-62.15 37-96.48 93.67-96.48 27.14 0 55.52 4.84 55.52 4.84v61h-31.28c-30.8 0-40.41 19.12-40.41 38.73V256h68.78l-11 71.69h-57.78V501C413.31 482.38 504 379.78 504 256z" />
+</svg>
+</a>
+                    <a href="https://www.x.com/azpreps365" class="nav-link
+                flex
+                no-underline hidden md:flex md:mr-1">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="w-5 h-5 text-white fill-white">
+    <!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+    <path d="M357.2 48L427.8 48 273.6 224.2 455 464 313 464 201.7 318.6 74.5 464 3.8 464 168.7 275.5-5.2 48 140.4 48 240.9 180.9 357.2 48zM332.4 421.8l39.1 0-252.4-333.8-42 0 255.3 333.8z"/>
+</svg>
+</a>
+                    <a href="https://www.youtube.com/channel/UCLX8UvWWlsnwsHosRmd3sVg" class="nav-link
+                flex
+                no-underline hidden md:flex md:mr-1">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" class="w-5 h-5 text-white fill-white">>
+    <!--! Font Awesome Pro 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. -->
+    <path
+        d="M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.305-11.412 132.305s0 89.438 11.412 132.305c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.305 11.412-132.305s0-89.438-11.412-132.305zm-317.51 213.508V175.185l142.739 81.205-142.739 81.201z"/>
+</svg>
+</a>
+                    <a href="https://www.tiktok.com/@azpreps365" class="nav-link
+                flex
+                no-underline hidden md:flex md:mr-1" title="Follow us on TikTok">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="w-5 h-5 text-white fill-white">
+    <!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+    <path d="M448.5 209.9c-44 .1-87-13.6-122.8-39.2l0 178.7c0 33.1-10.1 65.4-29 92.6s-45.6 48-76.6 59.6-64.8 13.5-96.9 5.3-60.9-25.9-82.7-50.8-35.3-56-39-88.9 2.9-66.1 18.6-95.2 40-52.7 69.6-67.7 62.9-20.5 95.7-16l0 89.9c-15-4.7-31.1-4.6-46 .4s-27.9 14.6-37 27.3-14 28.1-13.9 43.9 5.2 31 14.5 43.7 22.4 22.1 37.4 26.9 31.1 4.8 46-.1 28-14.4 37.2-27.1 14.2-28.1 14.2-43.8l0-349.4 88 0c-.1 7.4 .6 14.9 1.9 22.2 3.1 16.3 9.4 31.9 18.7 45.7s21.3 25.6 35.2 34.6c19.9 13.1 43.2 20.1 67 20.1l0 87.4z"/>
+</svg>
+</a>
+                    <a href="/officials/become" class="nav-link
+                flex
+                no-underline hidden lg:flex">
+    Officials
+</a>
+                    <a href="/media" class="nav-link
+                flex
+                no-underline hidden lg:flex">
+    Media
+</a>
+
+                    <a href="https://admin.aiaonline.org" class="nav-link
+                flex
+                no-underline hidden sm:flex">
+    Login
+</a>
+
+
+                </div>
+                <button @click="nav.mobile = !nav.mobile"
+    id="nav-mobile-toggle"
+    class="lg:hidden relative  w-12  h-10 z-20 text-white focus:outline-none ml-auto mr-0 justify-self-end">
+    <div class="absolute w-12 -ml-3 transform -translate-x-1/2 -translate-y-1/2 left-1/2 top-1/2">
+        <span class="absolute h-0.5 w-6 bg-white transform transition duration-300 ease-in-out"
+            :class="(nav.mobile ? 'rotate-45 delay-200' : '-translate-y-1.5')"
+        ></span>
+        <span class="absolute h-0.5 bg-white transform transition-all duration-200 ease-in-out"
+            :class="(nav.mobile ? 'w-0 opacity-50' : 'w-6 delay-200 opacity-100')"
+        ></span>
+        <span class="absolute h-0.5 w-6 bg-white transform transition duration-300 ease-in-out"
+            :class="(nav.mobile ? '-rotate-45 delay-200' : 'translate-y-1.5')"
+        ></span>
+    </div>
+</button>
+            </div>
+        </div>
+</div>
+    <nav v-cloak :class="(nav.mobile ? 'h-screen opacity-100' : 'opacity-0 h-0')"
+    class="absolute top-0 flex justify-center w-screen overflow-y-scroll duration-700 nav-mobile bg-aiared-medium lg:hidden"
+    id="navbar-default">
+    <div class="px-6 mt-24">
+        <div class="flex justify-between w-full mb-6 sm:justify-center">
+            <a href="/officials/become" class="nav-link
+                flex
+                no-underline">
+    Officials
+</a>
+            <a href="/news/press-center" class="nav-link
+                flex
+                no-underline">
+    Media
+</a>
+
+            <a href="https://admin.aiaonline.org" class="nav-link
+                flex
+                no-underline sm:hidden">
+    Login
+</a>
+
+
+        </div>
+        <div class="grid grid-cols-1 gap-8 sm:gap-6 sm:grid-cols-2 md:grid-cols-3">
+
+            <ul >
+            <li>
+            <span class="text-base
+                text-white
+                text-xs
+                font-light
+                font-heading
+                decoration-1 underline underline-offset-4
+                uppercase
+                py-2
+                lg:inline-flex
+                flex
+                opacity-80">
+            About
+        </span>
+    </li>
+        <li>
+            <a href="/about/contact-us" class="nav-link
+                flex
+                no-underline">
+    Staff
+</a>
+    </li>
+                <li>
+            <a href="/about/board-members" class="nav-link
+                flex
+                no-underline">
+    Executive Board
+</a>
+    </li>
+                <li>
+            <a href="/about/council-members" class="nav-link
+                flex
+                no-underline">
+    Legislative Council
+</a>
+    </li>
+                <li>
+            <a href="/about/constitution-bylaws" class="nav-link
+                flex
+                no-underline">
+    Constitution &amp; Bylaws
+</a>
+    </li>
+                <li>
+            <a href="/awards" class="nav-link
+                flex
+                no-underline">
+    Awards
+</a>
+    </li>
+                <li>
+            <a href="/about" class="nav-link
+                flex
+                no-underline">
+    History
+</a>
+    </li>
+</ul>
+            <ul >
+            <li>
+            <span class="text-base
+                text-white
+                text-xs
+                font-light
+                font-heading
+                decoration-1 underline underline-offset-4
+                uppercase
+                py-2
+                lg:inline-flex
+                flex
+                opacity-80">
+            Schools
+        </span>
+    </li>
+        <li>
+            <a href="/schools" class="nav-link
+                flex
+                no-underline">
+    Member Directory
+</a>
+    </li>
+                <li>
+            <a href="/alignments" class="nav-link
+                flex
+                no-underline">
+    Conference Alignment
+</a>
+    </li>
+                <li>
+            <a href="/classifieds" class="nav-link
+                flex
+                no-underline">
+    Classifieds
+</a>
+    </li>
+                <li>
+            <a href="/schools/newsletter" class="nav-link
+                flex
+                no-underline">
+    Newsletter
+</a>
+    </li>
+                <li>
+            <a href="/files/17830/current-csiet-advisory-list.pdf" class="nav-link
+                flex
+                no-underline">
+    CSIET
+</a>
+    </li>
+</ul>
+            <ul >
+            <li>
+            <span class="text-base
+                text-white
+                text-xs
+                font-light
+                font-heading
+                decoration-1 underline underline-offset-4
+                uppercase
+                py-2
+                lg:inline-flex
+                flex
+                opacity-80">
+            Fall Sports
+        </span>
+    </li>
+        <li>
+            <a href="/sports/football" class="nav-link
+                flex
+                no-underline">
+    Football
+</a>
+    </li>
+                <li>
+            <a href="/sports/football-flag" class="nav-link
+                flex
+                no-underline">
+    Flag Football
+</a>
+    </li>
+                <li>
+            <a href="/sports/volleyball-girls" class="nav-link
+                flex
+                no-underline">
+    Volleyball
+</a>
+    </li>
+                <li>
+            <a href="/sports/badminton" class="nav-link
+                flex
+                no-underline">
+    Badminton
+</a>
+    </li>
+                <li>
+            <a href="/sports/soccer" class="nav-link
+                flex
+                no-underline">
+    Soccer
+</a>
+    </li>
+                <li>
+            <a href="/sports/crosscountry" class="nav-link
+                flex
+                no-underline">
+    Cross Country
+</a>
+    </li>
+                <li>
+            <a href="/sports/golf" class="nav-link
+                flex
+                no-underline">
+    Golf
+</a>
+    </li>
+                <li>
+            <a href="/sports/swimdive" class="nav-link
+                flex
+                no-underline">
+    Swim &amp; Dive
+</a>
+    </li>
+</ul>
+            <ul >
+            <li>
+            <span class="text-base
+                text-white
+                text-xs
+                font-light
+                font-heading
+                decoration-1 underline underline-offset-4
+                uppercase
+                py-2
+                lg:inline-flex
+                flex
+                opacity-80">
+            Winter Sports
+        </span>
+    </li>
+        <li>
+            <a href="/sports/basketball" class="nav-link
+                flex
+                no-underline">
+    Basketball
+</a>
+    </li>
+                <li>
+            <a href="/sports/soccer" class="nav-link
+                flex
+                no-underline">
+    Soccer
+</a>
+    </li>
+                <li>
+            <a href="/sports/wrestling" class="nav-link
+                flex
+                no-underline">
+    Wrestling
+</a>
+    </li>
+                <li>
+            <span class="text-base
+                text-white
+                text-xs
+                font-light
+                font-heading
+                decoration-1 underline underline-offset-4
+                uppercase
+                py-2
+                lg:inline-flex
+                flex
+                opacity-80 mt-8 sm:mt-6">
+            Unified
+        </span>
+    </li>
+                <li>
+            <a href="/sports/unified" class="nav-link
+                flex
+                no-underline">
+    Unified Sports
+</a>
+    </li>
+</ul>
+            <ul >
+            <li>
+            <span class="text-base
+                text-white
+                text-xs
+                font-light
+                font-heading
+                decoration-1 underline underline-offset-4
+                uppercase
+                py-2
+                lg:inline-flex
+                flex
+                opacity-80">
+            Spring Sports
+        </span>
+    </li>
+        <li>
+            <a href="/sports/baseball" class="nav-link
+                flex
+                no-underline">
+    Baseball
+</a>
+    </li>
+                <li>
+            <a href="/sports/softball" class="nav-link
+                flex
+                no-underline">
+    Softball
+</a>
+    </li>
+                <li>
+            <a href="/sports/golf" class="nav-link
+                flex
+                no-underline">
+    Golf
+</a>
+    </li>
+                <li>
+            <a href="/sports/tennis" class="nav-link
+                flex
+                no-underline">
+    Tennis
+</a>
+    </li>
+                <li>
+            <a href="/sports/trackfield" class="nav-link
+                flex
+                no-underline">
+    Track &amp; Field
+</a>
+    </li>
+                <li>
+            <a href="/sports/volleyball-boys" class="nav-link
+                flex
+                no-underline">
+    Boys Volleyball
+</a>
+    </li>
+                <li>
+            <a href="/sports/volleyball-beach" class="nav-link
+                flex
+                no-underline">
+    Beach Volleyball
+</a>
+    </li>
+</ul>
+            <ul >
+            <li>
+            <span class="text-base
+                text-white
+                text-xs
+                font-light
+                font-heading
+                decoration-1 underline underline-offset-4
+                uppercase
+                py-2
+                lg:inline-flex
+                flex
+                opacity-80">
+            Activities
+        </span>
+    </li>
+        <li>
+            <a href="/activities/chess" class="nav-link
+                flex
+                no-underline">
+    Chess
+</a>
+    </li>
+                <li>
+            <a href="/activities/esports" class="nav-link
+                flex
+                no-underline">
+    Esports
+</a>
+    </li>
+                <li>
+            <a href="/activities/jrotc" class="nav-link
+                flex
+                no-underline">
+    J.R.O.T.C.
+</a>
+    </li>
+                <li>
+            <a href="/activities/robotics" class="nav-link
+                flex
+                no-underline">
+    Robotics
+</a>
+    </li>
+                <li>
+            <a href="/activities/speech-debate" class="nav-link
+                flex
+                no-underline">
+    Speech &amp; Debate
+</a>
+    </li>
+                <li>
+            <a href="/activities/spirit-lines" class="nav-link
+                flex
+                no-underline">
+    Spiritlines
+</a>
+    </li>
+                <li>
+            <a href="/activities/theatre" class="nav-link
+                flex
+                no-underline">
+    Theatre
+</a>
+    </li>
+</ul>
+            <ul >
+            <li>
+            <span class="text-base
+                text-white
+                text-xs
+                font-light
+                font-heading
+                decoration-1 underline underline-offset-4
+                uppercase
+                py-2
+                lg:inline-flex
+                flex
+                opacity-80">
+            Administrators
+        </span>
+    </li>
+        <li>
+            <a href="/about/constitution-bylaws" class="nav-link
+                flex
+                no-underline">
+    Constitution &amp; Bylaws
+</a>
+    </li>
+                <li>
+            <a href="/about/procedures-manual" class="nav-link
+                flex
+                no-underline">
+    Policies &amp; Procedures
+</a>
+    </li>
+</ul>
+            <ul >
+            <li>
+            <span class="text-base
+                text-white
+                text-xs
+                font-light
+                font-heading
+                decoration-1 underline underline-offset-4
+                uppercase
+                py-2
+                lg:inline-flex
+                flex
+                opacity-80">
+            Students
+        </span>
+    </li>
+        <li>
+            <a href="/students/leadership" class="nav-link
+                flex
+                no-underline">
+    Student Leadership
+</a>
+    </li>
+                <li>
+            <a href="https://academy.azpreps365.com/" class="nav-link
+                flex
+                no-underline">
+    Academy
+</a>
+    </li>
+                <li>
+            <a href="https://aiaonline.org/students/transfers" class="nav-link
+                flex
+                no-underline">
+    Transfer Resources
+</a>
+    </li>
+                <li>
+            <a href="/students/physical-forms" class="nav-link
+                flex
+                no-underline">
+    Physical Forms
+</a>
+    </li>
+                <li>
+            <a href="https://aiaonline.org/students/nil" class="nav-link
+                flex
+                no-underline">
+    Name, Image, Likeness (NIL)
+</a>
+    </li>
+</ul>
+            <ul >
+            <li>
+            <span class="text-base
+                text-white
+                text-xs
+                font-light
+                font-heading
+                decoration-1 underline underline-offset-4
+                uppercase
+                py-2
+                lg:inline-flex
+                flex
+                opacity-80">
+            Health
+        </span>
+    </li>
+        <li>
+            <a href="/about/meetings-agendas/medicine" class="nav-link
+                flex
+                no-underline">
+    SMAC
+</a>
+    </li>
+                <li>
+            <a href="/files/17051/aia-recommended-guidelines-for-return-to-activity.pdf" class="nav-link
+                flex
+                no-underline">
+    Return to Activity
+</a>
+    </li>
+                <li>
+            <a href="/health" class="nav-link
+                flex
+                no-underline">
+    Health &amp; Safety
+</a>
+    </li>
+                <li>
+            <a href="/students/physical-forms" class="nav-link
+                flex
+                no-underline">
+    Physical Forms
+</a>
+    </li>
+</ul>
+            <ul >
+            <li>
+            <span class="text-base
+                text-white
+                text-xs
+                font-light
+                font-heading
+                decoration-1 underline underline-offset-4
+                uppercase
+                py-2
+                lg:inline-flex
+                flex
+                opacity-80">
+            Calendars
+        </span>
+    </li>
+        <li>
+            <a href="/calendar" class="nav-link
+                flex
+                no-underline">
+    AIA Office
+</a>
+    </li>
+                <li>
+            <a href="/files/14422/meeting-dates.pdf" class="nav-link
+                flex
+                no-underline">
+    Meeting Dates
+</a>
+    </li>
+                <li>
+            <a href="/files/13774/quick-glance-calendar.pdf" class="nav-link
+                flex
+                no-underline">
+    Quick Glance Calendar
+</a>
+    </li>
+                <li>
+            <a href="/calendar/tournaments" class="nav-link
+                flex
+                no-underline">
+    Sanctioned Events
+</a>
+    </li>
+                <li>
+            <a href="/calendar/standardized" class="nav-link
+                flex
+                no-underline">
+    Standardized
+</a>
+    </li>
+</ul>        </div>
+        <div class="flex justify-between w-full gap-1 pt-6 pb-24 md:hidden">
+            <a href="https://www.instagram.com/azpreps365/" class="nav-link
+                flex
+                no-underline" title="Follow us on Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="w-10 h-10 text-white fill-white">
+    <!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. -->
+    <path
+        d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z" />
+</svg>
+</a>
+            <a href="https://www.facebook.com/azpreps365/" class="nav-link
+                flex
+                no-underline" title="Follow us on Facebook">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="w-10 h-10 text-white fill-white">
+    <!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. -->
+    <path
+        d="M504 256C504 119 393 8 256 8S8 119 8 256c0 123.78 90.69 226.38 209.25 245V327.69h-63V256h63v-54.64c0-62.15 37-96.48 93.67-96.48 27.14 0 55.52 4.84 55.52 4.84v61h-31.28c-30.8 0-40.41 19.12-40.41 38.73V256h68.78l-11 71.69h-57.78V501C413.31 482.38 504 379.78 504 256z" />
+</svg>
+</a>
+            <a href="http://twitter.com/azpreps365" class="nav-link
+                flex
+                no-underline" title="Follow us on Twitter">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="w-10 h-10 text-white fill-white">
+    <!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+    <path d="M357.2 48L427.8 48 273.6 224.2 455 464 313 464 201.7 318.6 74.5 464 3.8 464 168.7 275.5-5.2 48 140.4 48 240.9 180.9 357.2 48zM332.4 421.8l39.1 0-252.4-333.8-42 0 255.3 333.8z"/>
+</svg>
+</a>
+            <a href="https://www.youtube.com/channel/UCLX8UvWWlsnwsHosRmd3sVg" class="nav-link
+                flex
+                no-underline" title="Follow us on Youtube">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" class="w-10 h-10 text-white fill-white">>
+    <!--! Font Awesome Pro 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. -->
+    <path
+        d="M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.305-11.412 132.305s0 89.438 11.412 132.305c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.305 11.412-132.305s0-89.438-11.412-132.305zm-317.51 213.508V175.185l142.739 81.205-142.739 81.201z"/>
+</svg>
+</a>
+            <a href="https://www.tiktok.com/@azpreps365" class="nav-link
+                flex
+                no-underline" title="Follow us on TikTok">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="w-10 h-10 text-white fill-white">
+    <!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+    <path d="M448.5 209.9c-44 .1-87-13.6-122.8-39.2l0 178.7c0 33.1-10.1 65.4-29 92.6s-45.6 48-76.6 59.6-64.8 13.5-96.9 5.3-60.9-25.9-82.7-50.8-35.3-56-39-88.9 2.9-66.1 18.6-95.2 40-52.7 69.6-67.7 62.9-20.5 95.7-16l0 89.9c-15-4.7-31.1-4.6-46 .4s-27.9 14.6-37 27.3-14 28.1-13.9 43.9 5.2 31 14.5 43.7 22.4 22.1 37.4 26.9 31.1 4.8 46-.1 28-14.4 37.2-27.1 14.2-28.1 14.2-43.8l0-349.4 88 0c-.1 7.4 .6 14.9 1.9 22.2 3.1 16.3 9.4 31.9 18.7 45.7s21.3 25.6 35.2 34.6c19.9 13.1 43.2 20.1 67 20.1l0 87.4z"/>
+</svg>
+</a>
+        </div>
+    </div>
+</nav>
+</header>
+<!-- ====== Navbar Section End -->
+<!-- ====== Navbar Section Start -->
+  <header class="items-center hidden w-full navbar-secondary lg:flex">
+      <div  class="container mx-auto px-3 max-w-screen xl:max-w-[1024px] overflow:hidden">
+    <div class="relative flex items-center justify-between -mx-4">
+              <div class="flex items-center justify-between w-full px-4">
+
+                  <nav :class="!nav.secondary && 'hidden'" id="navbarCollapse"
+                      class="
+                        absolute
+                        px-6
+                        shadow
+                        bg-aiablue-light
+                        lg:bg-aiablue-medium
+                        max-w-[250px]
+                        w-full
+                        left-4
+                        top-full
+                        lg:max-w-full lg:w-full
+                        lg:block lg:static lg:shadow-none
+                    ">
+                      <ul class="block lg:flex lg:justify-between">
+
+                          <nav-dropdown label="About" width="w-60" direction="left" v-cloak>
+    <li>
+            <a href="/about/contact-us" class="nav-link
+                flex
+                no-underline">
+    Staff
+</a>
+    </li>
+                              <li>
+            <a href="/about/board-members" class="nav-link
+                flex
+                no-underline">
+    Executive Board
+</a>
+    </li>
+                              <li>
+            <a href="/about/council-members" class="nav-link
+                flex
+                no-underline">
+    Legislative Council
+</a>
+    </li>
+                              <li>
+            <a href="/about/constitution-bylaws" class="nav-link
+                flex
+                no-underline">
+    Constitution &amp; Bylaws
+</a>
+    </li>
+                              <li>
+            <a href="/awards" class="nav-link
+                flex
+                no-underline">
+    Awards
+</a>
+    </li>
+                              <li>
+            <a href="/about" class="nav-link
+                flex
+                no-underline">
+    History
+</a>
+    </li>
+</nav-dropdown>
+                          <nav-dropdown label="Schools" width="w-60" direction="left" v-cloak>
+    <li>
+            <a href="/schools" class="nav-link
+                flex
+                no-underline">
+    Member Directory
+</a>
+    </li>
+                              <li>
+            <a href="/alignments" class="nav-link
+                flex
+                no-underline">
+    Conference Alignments
+</a>
+    </li>
+                              <li>
+            <a href="/classifieds" class="nav-link
+                flex
+                no-underline">
+    Classifieds
+</a>
+    </li>
+                              <li>
+            <a href="/schools/newsletter" class="nav-link
+                flex
+                no-underline">
+    Newsletter
+</a>
+    </li>
+                              <li>
+            <a href="/files/17830/current-csiet-advisory-list.pdf" class="nav-link
+                flex
+                no-underline">
+    CSIET
+</a>
+    </li>
+</nav-dropdown>                              <nav-dropdown label="Sports" width="w-[40rem]" direction="left" v-cloak>
+    <li class="grid grid-cols-3 gap-4">
+                                      <ul>
+                                          <li>
+            <span class="text-base
+                text-white
+                text-xs
+                font-light
+                font-heading
+                decoration-1 underline underline-offset-4
+                uppercase
+                py-2
+                lg:inline-flex
+                flex
+                opacity-80">
+            Fall
+        </span>
+    </li>
+                                          <li>
+            <a href="/sports/football" class="nav-link
+                flex
+                no-underline">
+    Football
+</a>
+    </li>
+                                          <li>
+            <a href="/sports/football-flag" class="nav-link
+                flex
+                no-underline">
+    Flag Football
+</a>
+    </li>
+                                          <li>
+            <a href="/sports/volleyball-girls" class="nav-link
+                flex
+                no-underline">
+    Volleyball
+</a>
+    </li>
+                                          <li>
+            <a href="/sports/badminton" class="nav-link
+                flex
+                no-underline">
+    Badminton
+</a>
+    </li>
+                                          <li>
+            <a href="/sports/soccer" class="nav-link
+                flex
+                no-underline">
+    Soccer
+</a>
+    </li>
+                                          <li>
+            <a href="/sports/crosscountry" class="nav-link
+                flex
+                no-underline">
+    Cross Country
+</a>
+    </li>
+                                          <li>
+            <a href="/sports/golf" class="nav-link
+                flex
+                no-underline">
+    Golf
+</a>
+    </li>
+                                          <li>
+            <a href="/sports/swimdive" class="nav-link
+                flex
+                no-underline">
+    Swim &amp; Dive
+</a>
+    </li>
+                                          <li>
+            <a href="/sports/volleyball-beach" class="nav-link
+                flex
+                no-underline">
+    Beach Volleyball
+</a>
+    </li>
+                                      </ul>
+                                      <ul>
+                                          <li>
+            <span class="text-base
+                text-white
+                text-xs
+                font-light
+                font-heading
+                decoration-1 underline underline-offset-4
+                uppercase
+                py-2
+                lg:inline-flex
+                flex
+                opacity-80">
+            Winter
+        </span>
+    </li>
+                                          <li>
+            <a href="/sports/basketball" class="nav-link
+                flex
+                no-underline">
+    Basketball
+</a>
+    </li>
+                                          <li>
+            <a href="/sports/soccer" class="nav-link
+                flex
+                no-underline">
+    Soccer
+</a>
+    </li>
+                                          <li>
+            <a href="/sports/wrestling-boys" class="nav-link
+                flex
+                no-underline">
+    Boys Wrestling
+</a>
+    </li>
+                                          <li>
+            <a href="/sports/wrestling-girls" class="nav-link
+                flex
+                no-underline">
+    Girls Wrestling
+</a>
+    </li>
+                                          <li>
+            <span class="text-base
+                text-white
+                text-xs
+                font-light
+                font-heading
+                decoration-1 underline underline-offset-4
+                uppercase
+                py-2
+                lg:inline-flex
+                flex
+                opacity-80 mt-8">
+            Unified
+        </span>
+    </li>
+                                          <li>
+            <a href="/sports/unified" class="nav-link
+                flex
+                no-underline">
+    Unified Sports
+</a>
+    </li>
+                                      </ul>
+                                      <ul>
+                                          <li>
+            <span class="text-base
+                text-white
+                text-xs
+                font-light
+                font-heading
+                decoration-1 underline underline-offset-4
+                uppercase
+                py-2
+                lg:inline-flex
+                flex
+                opacity-80">
+            Spring
+        </span>
+    </li>
+                                          <li>
+            <a href="/sports/baseball" class="nav-link
+                flex
+                no-underline">
+    Baseball
+</a>
+    </li>
+                                          <li>
+            <a href="/sports/softball" class="nav-link
+                flex
+                no-underline">
+    Softball
+</a>
+    </li>
+                                          <li>
+            <a href="/sports/golf" class="nav-link
+                flex
+                no-underline">
+    Golf
+</a>
+    </li>
+                                          <li>
+            <a href="/sports/tennis" class="nav-link
+                flex
+                no-underline">
+    Tennis
+</a>
+    </li>
+                                          <li>
+            <a href="/sports/trackfield" class="nav-link
+                flex
+                no-underline">
+    Track &amp; Field
+</a>
+    </li>
+                                          <li>
+            <a href="/sports/volleyball-boys" class="nav-link
+                flex
+                no-underline">
+    Boys Volleyball
+</a>
+    </li>
+                                          <li>
+            <a href="/sports/volleyball-beach" class="nav-link
+                flex
+                no-underline">
+    Beach Volleyball
+</a>
+    </li>
+                                      </ul>
+                                  </li>
+</nav-dropdown>                                  <nav-dropdown label="Activities" width="w-60" direction="left" v-cloak>
+    <li>
+            <a href="/activities/chess" class="nav-link
+                flex
+                no-underline">
+    Chess
+</a>
+    </li>
+                                      <li>
+            <a href="/activities/esports" class="nav-link
+                flex
+                no-underline">
+    Esports
+</a>
+    </li>
+                                      <li>
+            <a href="/activities/jrotc" class="nav-link
+                flex
+                no-underline">
+    J.R.O.T.C.
+</a>
+    </li>
+                                      <li>
+            <a href="/activities/robotics" class="nav-link
+                flex
+                no-underline">
+    Robotics
+</a>
+    </li>
+                                      <li>
+            <a href="/activities/speech-debate" class="nav-link
+                flex
+                no-underline">
+    Speech &amp; Debate
+</a>
+    </li>
+                                      <li>
+            <a href="/activities/spirit-lines" class="nav-link
+                flex
+                no-underline">
+    Spiritlines
+</a>
+    </li>
+                                      <li>
+            <a href="/activities/theatre" class="nav-link
+                flex
+                no-underline">
+    Theatre
+</a>
+    </li>
+</nav-dropdown>
+                                      <nav-dropdown label="Administrators" width="w-60" direction="left" v-cloak>
+    <li>
+            <a href="/about/constitution-bylaws" class="nav-link
+                flex
+                no-underline">
+    Constitution &amp; Bylaws
+</a>
+    </li>
+                                          <li>
+            <a href="/about/procedures-manual" class="nav-link
+                flex
+                no-underline">
+    Policies &amp; Procedures
+</a>
+    </li>
+</nav-dropdown>
+                                          <nav-dropdown label="Students" width="w-60" direction="left" v-cloak>
+    <li>
+            <a href="/students/leadership" class="nav-link
+                flex
+                no-underline">
+    Student Leadership
+</a>
+    </li>
+                                              <li>
+            <a href="https://academy.azpreps365.com" class="nav-link
+                flex
+                no-underline">
+    Academy
+</a>
+    </li>
+                                              <li>
+            <a href="/students/transfers" class="nav-link
+                flex
+                no-underline">
+    Transfer Resources
+</a>
+    </li>
+                                              <li>
+            <a href="/students/physical-forms" class="nav-link
+                flex
+                no-underline">
+    Physical Forms
+</a>
+    </li>
+                                              <li>
+            <a href="https://aiaonline.org/students/nil" class="nav-link
+                flex
+                no-underline">
+    Name, Image, Likeness (NIL)
+</a>
+    </li>
+</nav-dropdown>
+                                              <nav-dropdown label="Health" width="w-60" direction="left" v-cloak>
+    <li>
+            <a href="/about/meetings-agendas/medicine" class="nav-link
+                flex
+                no-underline">
+    SMAC
+</a>
+    </li>
+                                                  <li>
+            <a href="/health/" class="nav-link
+                flex
+                no-underline">
+    Health &amp; Safety
+</a>
+    </li>
+                                                  <li>
+            <a href="/files/17051/aia-recommended-guidelines-for-return-to-activity.pdf" class="nav-link
+                flex
+                no-underline">
+    Return to Activity
+</a>
+    </li>
+                                                  <li>
+            <a href="/students/physical-forms" class="nav-link
+                flex
+                no-underline">
+    Physical Forms
+</a>
+    </li>
+</nav-dropdown>
+                                                  <nav-dropdown label="Calendars" width="w-60" direction="right" v-cloak>
+    <li>
+            <a href="/calendar" class="nav-link
+                flex
+                no-underline justify-end">
+    AIA Office
+</a>
+    </li>
+                                                      <li>
+            <a href="/files/14422/meeting-dates.pdf" class="nav-link
+                flex
+                no-underline justify-end">
+    Meeting Dates
+</a>
+    </li>
+                                                      <li>
+            <a href="/files/13774/quick-glance-calendar.pdf" class="nav-link
+                flex
+                no-underline justify-end">
+    Quick Glance Calendar
+</a>
+    </li>
+                                                      <li>
+            <a href="/calendar/tournaments" class="nav-link
+                flex
+                no-underline justify-end">
+    Sanctioned Events
+</a>
+    </li>
+                                                      <li>
+            <a href="/calendar/standardized" class="nav-link
+                flex
+                no-underline justify-end">
+    Standardized
+</a>
+    </li>
+</nav-dropdown>
+
+                      </ul>
+                  </nav>
+              </div>
+          </div>
+</div>
+  </header>
+  <!-- ====== Navbar Section End -->
+
+                    <section class="flex justify-around items-center" name="billboard-ads-header">
+    <div class="w-[320x] h-[50px] md:w-[768px] md:h-[90px] mt-3 mb-3 flex justify-around items-center" id="div-gpt-ad-1405984596671-0">
+            </div>
+</section>
+        
+                    <div  class="container mx-auto px-3 max-w-screen xl:max-w-[1024px] overflow:hidden">
+    <h1>Member Schools Directory</h1>
+
+		<school-search query="">
+    <div class="p2 mt-6 bg-white dark:bg-slate-900">
+        <form name="school" action="/schools/" method="get" class="p-6">
+
+        </form>
+    </div>
+</school-search>
+</div>
+
+
+ 	<section class="bg-gray-200 dark:bg-slate-900 mt-6">
+        <div  class="container mx-auto px-3 max-w-screen xl:max-w-[1024px] overflow:hidden px-4 py-8 mx-auto lg:gap-8 lg:py-16">
+    <div class="flex items-center justify-start">
+				<div class="w-32 mr-8">
+					<img src="https://assets.azpreps365.com/program-operators/logos/512x512/hamilton-huskies-12917f.png" alt="Huskies Logo">
+				</div>
+				<div>
+											<p class="text-lg font-medium tracking-tight leading-none">
+							&mdash; Chandler Unified School District
+						</p>
+										<h2 class="max-w-2xl mb-4 text-4xl font-extrabold tracking-tight leading-none md:text-5xl xl:text-6xl">
+						Hamilton High School
+					</h2>
+
+											<h3 class="max-w-2xl mb-4 text-3xl font-semibold tracking-tight leading-none md:text-4xl xl:text-5xl">
+							Huskies
+						</h3>
+									</div>
+			</div>
+
+			<div class="flex flex-col md:flex-row items-center justify-around w-full md:mt-12 md:px-8">
+									<p class="max-w-2xl mb-4 text-xl font-extrabold text-aiablue-medium tracking-tight leading-none md:text-2xl xl:text-3xl">
+						6A
+													&ndash; Premier
+											</p>
+				
+
+									<p class="max-w-2xl mb-4 text-xl font-extrabold text-aiablue-medium tracking-tight leading-none md:text-2xl xl:text-3xl">
+						Chandler, AZ
+					</p>
+				
+									<p class="max-w-2xl mb-4 text-xl font-extrabold text-aiablue-medium tracking-tight leading-none md:text-2xl xl:text-3xl">
+						Maroon and Silver
+					</p>
+							</div>
+</div>
+	</div>
+
+	<section class="bg-gray-100 dark:bg-slate-700">
+        <div  class="container mx-auto px-3 max-w-screen xl:max-w-[1024px] overflow:hidden">
+    <div class="px-4 py-8 mx-auto md:flex lg:py-16">
+
+				<div class="md:w-1/2 md:mr-6">
+
+					<address class="mt-6 mb-6">
+						<div class="text-lg font-semibold">Hamilton High School</div>
+						3700 S. Arizona Avenue<br/>
+						Chandler, AZ 85248-0000
+					</address>
+
+					
+
+					<dl>
+													<dt class="mt-6 font-semibold">Phone</dt>
+							<dd class="font-semibold">
+								<a href="tel:480-883-5000" title="">
+									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="w-4 h-4 mr-2 inline-block fill-aiablue-light">
+    <!-- Font Awesome Pro 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) -->
+    <path d="M493.4 24.6l-104-24c-11.3-2.6-22.9 3.3-27.5 13.9l-48 112c-4.2 9.8-1.4 21.3 6.9 28l60.6 49.6c-36 76.7-98.9 140.5-177.2 177.2l-49.6-60.6c-6.8-8.3-18.2-11.1-28-6.9l-112 48C3.9 366.5-2 378.1.6 389.4l24 104C27.1 504.2 36.7 512 48 512c256.1 0 464-207.5 464-464 0-11.2-7.7-20.9-18.6-23.4z"/>
+</svg>
+									480-883-5000
+								</a>
+							</dd>
+																			<dt class="mt-6 font-semibold">Fax</dt>
+							<dd class="text-gray-600 dark:text-slate-300">
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="w-4 h-4 mr-2 inline-block fill-gray-400">
+    <!--! Font Awesome Pro 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. -->
+    <path d="M128 64v96h64V64H386.7L416 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L432 18.7C420 6.7 403.7 0 386.7 0H192c-35.3 0-64 28.7-64 64zM0 160V480c0 17.7 14.3 32 32 32H64c17.7 0 32-14.3 32-32V160c0-17.7-14.3-32-32-32H32c-17.7 0-32 14.3-32 32zm480 32H128V480c0 17.7 14.3 32 32 32H480c17.7 0 32-14.3 32-32V224c0-17.7-14.3-32-32-32zM256 320c-17.7 0-32-14.3-32-32s14.3-32 32-32s32 14.3 32 32s-14.3 32-32 32zm160-32c0 17.7-14.3 32-32 32s-32-14.3-32-32s14.3-32 32-32s32 14.3 32 32zM384 448c-17.7 0-32-14.3-32-32s14.3-32 32-32s32 14.3 32 32s-14.3 32-32 32zm-96-32c0 17.7-14.3 32-32 32s-32-14.3-32-32s14.3-32 32-32s32 14.3 32 32z"/>
+</svg>
+								480-883-5020
+							</dd>
+																			<dt class="mt-6 font-semibold">Web Site</dt>
+							<dd class="text-gray-600 dark:text-slate-300">
+								<a href="https://www.cusd80.com/Domain/2039" target="_blank">
+									https://www.cusd80.com/Domain/2039
+								</a>
+							</dd>
+												
+													<dt class="mt-6 font-semibold">Social Media</dt>
+																						<dd>
+									<a href="https://www.instagram.com/hhsathletics_1" target="_blank">
+										<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="w-4 h-4 mr-2 inline-block fill-inherit">
+    <!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. -->
+    <path
+        d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z" />
+</svg>
+										hhsathletics_1
+									</a>
+								</dd>
+																						<dd>
+									<a href="https://www.twitter.com/HHS_Athletics_1" target="_blank">
+										<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="w-4 h-4 mr-2 inline-block fill-inherit">
+    <!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. -->
+    <path
+        d="M400 32H48C21.5 32 0 53.5 0 80v352c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V80c0-26.5-21.5-48-48-48zm-48.9 158.8c.2 2.8.2 5.7.2 8.5 0 86.7-66 186.6-186.6 186.6-37.2 0-71.7-10.8-100.7-29.4 5.3.6 10.4.8 15.8.8 30.7 0 58.9-10.4 81.4-28-28.8-.6-53-19.5-61.3-45.5 10.1 1.5 19.2 1.5 29.6-1.2-30-6.1-52.5-32.5-52.5-64.4v-.8c8.7 4.9 18.9 7.9 29.6 8.3a65.447 65.447 0 0 1-29.2-54.6c0-12.2 3.2-23.4 8.9-33.1 32.3 39.8 80.8 65.8 135.2 68.6-9.3-44.5 24-80.6 64-80.6 18.9 0 35.9 7.9 47.9 20.7 14.8-2.8 29-8.3 41.6-15.8-4.9 15.2-15.2 28-28.8 36.1 13.2-1.4 26-5.1 37.8-10.2-8.9 13.1-20.1 24.7-32.9 34z" />
+</svg>
+										HHS_Athletics_1
+									</a>
+								</dd>
+																		</dl>
+				</div>
+
+
+				<div class="bg-gray-300 md:w-1/2 h-96 md:flex">
+					<iframe width="100%"
+						height="100%"
+						frameborder="0"
+						marginheight="0"
+						marginwidth="0"
+						title="map"
+						scrolling="no"
+						src="https://maps.google.com/maps?width=100%&height=600&hl=en&q=Hamilton+High+School,+3700+S.+Arizona+Avenue,+Chandler,+AZ+&ie=UTF8&t=&z=14&iwloc=B&output=embed" style=""></iframe>
+				</div>
+			</div>
+</div>
+	</section>
+	<section>
+		<div  class="container mx-auto px-3 max-w-screen xl:max-w-[1024px] overflow:hidden">
+    <div class="px-4 py-8 mx-auto lg:py-16">
+				<div>
+					<h3>Looking for email addresses? Our admin directory is available <a href="https://admin.aiaonline.org/directory"><b class="text-aiablue-light">here</b></a>.</h3>
+				</div>
+									<h3 class="text-xl mt-8 mb-4  md:text-2xl">Staff Directory</h3>
+					<div class="">
+													<div class="md:flex px-4 py-6 md:py-2 md:border-t dark:border-slate-700">
+								<div class="md:w-1/3">
+									<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Shawn Rustad</div>
+									<div class="text-gray-500 dark:text-slate-300 mb-2">District Athletic Director</div>
+
+								</div>
+								<div>
+
+									
+																	</div>
+							</div>
+													<div class="md:flex px-4 py-6 md:py-2 md:border-t dark:border-slate-700">
+								<div class="md:w-1/3">
+									<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Domonic Romero</div>
+									<div class="text-gray-500 dark:text-slate-300 mb-2">Principal</div>
+
+								</div>
+								<div>
+
+									
+																	</div>
+							</div>
+													<div class="md:flex px-4 py-6 md:py-2 md:border-t dark:border-slate-700">
+								<div class="md:w-1/3">
+									<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Ann Mclaughlin</div>
+									<div class="text-gray-500 dark:text-slate-300 mb-2">Principal Secretary</div>
+
+								</div>
+								<div>
+
+									
+																	</div>
+							</div>
+													<div class="md:flex px-4 py-6 md:py-2 md:border-t dark:border-slate-700">
+								<div class="md:w-1/3">
+									<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Richard Baniszewski</div>
+									<div class="text-gray-500 dark:text-slate-300 mb-2">Assistant Principal</div>
+
+								</div>
+								<div>
+
+									
+																	</div>
+							</div>
+													<div class="md:flex px-4 py-6 md:py-2 md:border-t dark:border-slate-700">
+								<div class="md:w-1/3">
+									<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Brett Palmer, CAA</div>
+									<div class="text-gray-500 dark:text-slate-300 mb-2">Athletic Director</div>
+
+								</div>
+								<div>
+
+									
+																	</div>
+							</div>
+													<div class="md:flex px-4 py-6 md:py-2 md:border-t dark:border-slate-700">
+								<div class="md:w-1/3">
+									<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Shelly Downs</div>
+									<div class="text-gray-500 dark:text-slate-300 mb-2">Athletic Secretary</div>
+
+								</div>
+								<div>
+
+									
+																	</div>
+							</div>
+													<div class="md:flex px-4 py-6 md:py-2 md:border-t dark:border-slate-700">
+								<div class="md:w-1/3">
+									<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Tanner Spoden</div>
+									<div class="text-gray-500 dark:text-slate-300 mb-2">Athletic Trainer</div>
+
+								</div>
+								<div>
+
+									
+																			<p class="mb-1">
+											<a href="tel:14808835057" class="text-aiablue-light ">
+												<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="w-4 h-4 mr-2 inline-block fill-aiablue-light">
+    <!-- Font Awesome Pro 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) -->
+    <path d="M493.4 24.6l-104-24c-11.3-2.6-22.9 3.3-27.5 13.9l-48 112c-4.2 9.8-1.4 21.3 6.9 28l60.6 49.6c-36 76.7-98.9 140.5-177.2 177.2l-49.6-60.6c-6.8-8.3-18.2-11.1-28-6.9l-112 48C3.9 366.5-2 378.1.6 389.4l24 104C27.1 504.2 36.7 512 48 512c256.1 0 464-207.5 464-464 0-11.2-7.7-20.9-18.6-23.4z"/>
+</svg>
+												(480) 883-5057
+											</a>
+										</p>
+																	</div>
+							</div>
+													<div class="md:flex px-4 py-6 md:py-2 md:border-t dark:border-slate-700">
+								<div class="md:w-1/3">
+									<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Tanner Spoden</div>
+									<div class="text-gray-500 dark:text-slate-300 mb-2">Wrestling Weight Certification Assessor</div>
+
+								</div>
+								<div>
+
+									
+																			<p class="mb-1">
+											<a href="tel:14808835057" class="text-aiablue-light ">
+												<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="w-4 h-4 mr-2 inline-block fill-aiablue-light">
+    <!-- Font Awesome Pro 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) -->
+    <path d="M493.4 24.6l-104-24c-11.3-2.6-22.9 3.3-27.5 13.9l-48 112c-4.2 9.8-1.4 21.3 6.9 28l60.6 49.6c-36 76.7-98.9 140.5-177.2 177.2l-49.6-60.6c-6.8-8.3-18.2-11.1-28-6.9l-112 48C3.9 366.5-2 378.1.6 389.4l24 104C27.1 504.2 36.7 512 48 512c256.1 0 464-207.5 464-464 0-11.2-7.7-20.9-18.6-23.4z"/>
+</svg>
+												(480) 883-5057
+											</a>
+										</p>
+																	</div>
+							</div>
+													<div class="md:flex px-4 py-6 md:py-2 md:border-t dark:border-slate-700">
+								<div class="md:w-1/3">
+									<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Jyoti Nair</div>
+									<div class="text-gray-500 dark:text-slate-300 mb-2">Chess</div>
+
+								</div>
+								<div>
+
+									
+																	</div>
+							</div>
+													<div class="md:flex px-4 py-6 md:py-2 md:border-t dark:border-slate-700">
+								<div class="md:w-1/3">
+									<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Fred Driver</div>
+									<div class="text-gray-500 dark:text-slate-300 mb-2">J.R.O.T.C.</div>
+
+								</div>
+								<div>
+
+									
+																	</div>
+							</div>
+													<div class="md:flex px-4 py-6 md:py-2 md:border-t dark:border-slate-700">
+								<div class="md:w-1/3">
+									<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Heather Hackett</div>
+									<div class="text-gray-500 dark:text-slate-300 mb-2">Yearbook Adviser</div>
+
+								</div>
+								<div>
+
+									
+																	</div>
+							</div>
+											</div>
+				
+																									<h3 class="text-xl mt-8 mb-4 md:text-2xl">
+							Fall
+							Sports
+						</h3>
+					
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Badminton
+								</div>
+							
+							<div>
+								Division I
+								Premier
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Lauren Rosales</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Beach Volleyball - Boys
+								</div>
+							
+							<div>
+								Division I
+								Premier
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Krista Sitek</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Cross Country - Boy&#039;s
+								</div>
+							
+							<div>
+								Division I
+								Southeast
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Mike Scannell</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Cross Country - Girl&#039;s
+								</div>
+							
+							<div>
+								Division I
+								Southeast
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Mike Scannell</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Football
+								</div>
+							
+							<div>
+								6A
+								Fiesta
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Travis Dixon</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Football - Flag
+								</div>
+							
+							<div>
+								6A
+								Premier
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Matt Stone</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Golf - Boys (F)
+								</div>
+							
+							<div>
+								Division I
+								Premier
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Brian Newman</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Golf - Girls (F)
+								</div>
+							
+							<div>
+								Division I
+								Premier
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Jackie Walker</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Swim/Dive - Boy&#039;s
+								</div>
+							
+							<div>
+								Division I
+								
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Brandon D&#039;Entremont</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Swim/Dive - Girl&#039;s
+								</div>
+							
+							<div>
+								Division I
+								
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Tracy Robertson</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Tennis - Boys (Freshman)
+								</div>
+							
+							<div>
+								Division I
+								
+							</div>
+						</div>
+						<div class="md:w-2/3">
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Tennis - Girls (Freshman)
+								</div>
+							
+							<div>
+								Division I
+								
+							</div>
+						</div>
+						<div class="md:w-2/3">
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Volleyball - Girl&#039;s
+								</div>
+							
+							<div>
+								6A
+								Premier
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Sharon Vanis</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+																					<h3 class="text-xl mt-8 mb-4 md:text-2xl">
+							Winter
+							Sports
+						</h3>
+					
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Basketball - Boy&#039;s
+								</div>
+							
+							<div>
+								6A
+								Premier
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Kendall Aldridge</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Basketball - Girl&#039;s
+								</div>
+							
+							<div>
+								6A
+								Premier
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Charles Wilson</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Soccer - Boy&#039;s (W)
+								</div>
+							
+							<div>
+								6A
+								Premier
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Tim Vance</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Soccer - Girl&#039;s (W)
+								</div>
+							
+							<div>
+								6A
+								Premier
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">David Belfort</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Wrestling - Boys
+								</div>
+							
+							<div>
+								Division I
+								Section IV
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Anthony Robles</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Wrestling - Girls
+								</div>
+							
+							<div>
+								Division I
+								Section III
+							</div>
+						</div>
+						<div class="md:w-2/3">
+													</div>
+					</div>
+
+																					<h3 class="text-xl mt-8 mb-4 md:text-2xl">
+							Spring
+							Sports
+						</h3>
+					
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Baseball
+								</div>
+							
+							<div>
+								6A
+								Premier
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Greg Bordes</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Beach Volleyball - Girl&#039;s
+								</div>
+							
+							<div>
+								Division I
+								Premier
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Krista Sitek</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Softball
+								</div>
+							
+							<div>
+								6A
+								Premier
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Lauren Rosales</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Tennis - Boy&#039;s
+								</div>
+							
+							<div>
+								Division I
+								Premier
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Jeremy Sweet</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Tennis - Girl&#039;s
+								</div>
+							
+							<div>
+								Division I
+								Premier
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Mark Zeller</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Track - Boy&#039;s
+								</div>
+							
+							<div>
+								Division I
+								
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">E.J. Martin</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Track - Girl&#039;s
+								</div>
+							
+							<div>
+								Division I
+								
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">E.J. Martin</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Volleyball - Boy&#039;s
+								</div>
+							
+							<div>
+								6A
+								Premier
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Brynja Thompson</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+																					<h3 class="text-xl mt-8 mb-4 md:text-2xl">
+							Activities
+							
+						</h3>
+					
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Chess
+								</div>
+							
+							<div>
+								N/A
+								
+							</div>
+						</div>
+						<div class="md:w-2/3">
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Esports
+								</div>
+							
+							<div>
+								N/A
+								
+							</div>
+						</div>
+						<div class="md:w-2/3">
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									JROTC
+								</div>
+							
+							<div>
+								N/A
+								
+							</div>
+						</div>
+						<div class="md:w-2/3">
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									VEX Robotics
+								</div>
+							
+							<div>
+								N/A
+								
+							</div>
+						</div>
+						<div class="md:w-2/3">
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Speech/Debate
+								</div>
+							
+							<div>
+								N/A
+								
+							</div>
+						</div>
+						<div class="md:w-2/3">
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Spiritline
+								</div>
+							
+							<div>
+								Division I
+								
+							</div>
+						</div>
+						<div class="md:w-2/3">
+															<div class="md:flex ">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Oi Schulz</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach (CHEER)</div>
+
+									</div>
+									
+								</div>
+															<div class="md:flex mt-4">
+									<div class="md:w-1/2">
+										<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">Isabelle &quot;Bella&quot; Wakeham</div>
+										<div class="text-slate-500 dark:text-slate-400 mb-2">Head Coach (POM)</div>
+
+									</div>
+									
+								</div>
+													</div>
+					</div>
+
+																					<h3 class="text-xl mt-8 mb-4 md:text-2xl">
+							Unified
+							Sports
+						</h3>
+					
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Unified Basketball
+								</div>
+							
+							<div>
+								N/A
+								
+							</div>
+						</div>
+						<div class="md:w-2/3">
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Unified Football
+								</div>
+							
+							<div>
+								N/A
+								
+							</div>
+						</div>
+						<div class="md:w-2/3">
+													</div>
+					</div>
+
+									
+					<div class="md:flex px-4 py-2 border-t dark:border-slate-700">
+						<div class="md:w-1/3">
+															<div class="text-slate-900 dark:text-slate-100 leading-none text-lg font-semibold mb-1">
+									Unified Soccer
+								</div>
+							
+							<div>
+								N/A
+								
+							</div>
+						</div>
+						<div class="md:w-2/3">
+													</div>
+					</div>
+
+							</div>
+</div>
+	</section>
+        
+                    <section name="billboard-ads-footer" class="mt-8">
+    <div  class="container mx-auto px-3 max-w-screen xl:max-w-[1024px] overflow:hidden flex flex-col lg:flex-row justify-around items-center">
+    <div class="text-center min-w-[320px] h-[50px] md:min-w-[468px] md:h-[60px] mt-3 mb-3 flex justify-around items-center" id='div-gpt-ad-1405984706805-0'>
+                    </div>
+        <div class="text-center min-w-[320px] h-[50px] md:min-w-[468px] md:h-[60px] mt-3 mb-3 flex justify-around items-center" id='div-gpt-ad-1405984783793-0'>
+                    </div>
+</div>
+</section>
+        
+        <footer class="relative mt-24 bg-slate-300 dark:bg-slate-900 text-white">
+            <div class="absolute top-0 left-0 right-0 bottom-auto w-full -mt-20 overflow-hidden pointer-events-none"
+            style="height: 80px;">
+            <svg class="absolute bottom-0 overflow-hidden" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"
+                version="1.1" viewBox="0 0 2560 100" x="0" y="0">
+                <polygon class="text-gray-300 fill-slate-300 dark:fill-slate-900" points="2560 0 2560 100 0 100">
+                </polygon>
+            </svg>
+        </div>
+        <div  class="container mx-auto px-3 max-w-screen xl:max-w-[1024px] overflow:hidden px-4 py-4">
+    <div class="flex flex-wrap">
+            <div class="w-full px-4 mt-4 mb-6 lg:w-6/12">
+                <h4 class="text-3xl font-semibold text-slate-800 dark:text-slate-100">Let's keep in touch!</h4>
+                <h5 class="mt-0 mb-2 text-lg text-slate-700 dark:text-gray-200">
+                    Find us on any of these platforms.
+                </h5>
+                <div class="flex mt-6">
+                    <!-- Instagram -->
+                    <a href="https://www.instagram.com/azpreps365"
+                        class="flex items-center justify-center w-10 h-10 p-2 mr-2 transition duration-500 bg-white rounded-full shadow-lg fill-aiablue-dark hover:fill-aiablue-light dark:bg-slate-700 hover:scale-105">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="w-5 h-5 block -ml-0.5">
+    <!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. -->
+    <path
+        d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z" />
+</svg>
+                    </a>
+
+                    <!-- Facebook -->
+                    <a href="https://www.facebook.com/azpreps365"
+                        class="flex items-center justify-center w-10 h-10 p-2 mr-2 transition duration-500 bg-white rounded-full shadow-lg fill-aiablue-dark hover:fill-aiablue-light dark:bg-slate-700 hover:scale-105">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="w-5 h-5 block -ml-0.5">
+    <!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. -->
+    <path
+        d="M504 256C504 119 393 8 256 8S8 119 8 256c0 123.78 90.69 226.38 209.25 245V327.69h-63V256h63v-54.64c0-62.15 37-96.48 93.67-96.48 27.14 0 55.52 4.84 55.52 4.84v61h-31.28c-30.8 0-40.41 19.12-40.41 38.73V256h68.78l-11 71.69h-57.78V501C413.31 482.38 504 379.78 504 256z" />
+</svg>
+                    </a>
+
+                    <!-- Twitter (X SVG) -->
+                    <a href="http://www.x.com/azpreps365"
+                        class="flex items-center justify-center w-10 h-10 p-2 mr-2 transition duration-500 bg-white rounded-full shadow-lg fill-aiablue-dark hover:fill-aiablue-light dark:bg-slate-700 hover:scale-105">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="w-5 h-5 block -ml-0.5">
+    <!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+    <path d="M357.2 48L427.8 48 273.6 224.2 455 464 313 464 201.7 318.6 74.5 464 3.8 464 168.7 275.5-5.2 48 140.4 48 240.9 180.9 357.2 48zM332.4 421.8l39.1 0-252.4-333.8-42 0 255.3 333.8z"/>
+</svg>
+                    </a>
+
+                    <!-- YouTube -->
+                    <a href="https://www.youtube.com/channel/UCLX8UvWWlsnwsHosRmd3sVg"
+                        class="flex items-center justify-center w-10 h-10 p-2 mr-2 transition duration-500 bg-white rounded-full shadow-lg fill-aiablue-dark hover:fill-aiablue-light dark:bg-slate-700 hover:scale-105">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" class="w-5 h-5 block -ml-0.5">>
+    <!--! Font Awesome Pro 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. -->
+    <path
+        d="M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.305-11.412 132.305s0 89.438 11.412 132.305c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.305 11.412-132.305s0-89.438-11.412-132.305zm-317.51 213.508V175.185l142.739 81.205-142.739 81.201z"/>
+</svg>
+                    </a>
+
+                    <!-- TikTok -->
+                    <a href="https://www.tiktok.com/@azpreps365"
+                        class="flex items-center justify-center w-10 h-10 p-2 mr-2 transition duration-500 bg-white rounded-full shadow-lg fill-aiablue-dark hover:fill-aiablue-light dark:bg-slate-700 hover:scale-105">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="w-5 h-5 block -ml-0.5">
+    <!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+    <path d="M448.5 209.9c-44 .1-87-13.6-122.8-39.2l0 178.7c0 33.1-10.1 65.4-29 92.6s-45.6 48-76.6 59.6-64.8 13.5-96.9 5.3-60.9-25.9-82.7-50.8-35.3-56-39-88.9 2.9-66.1 18.6-95.2 40-52.7 69.6-67.7 62.9-20.5 95.7-16l0 89.9c-15-4.7-31.1-4.6-46 .4s-27.9 14.6-37 27.3-14 28.1-13.9 43.9 5.2 31 14.5 43.7 22.4 22.1 37.4 26.9 31.1 4.8 46-.1 28-14.4 37.2-27.1 14.2-28.1 14.2-43.8l0-349.4 88 0c-.1 7.4 .6 14.9 1.9 22.2 3.1 16.3 9.4 31.9 18.7 45.7s21.3 25.6 35.2 34.6c19.9 13.1 43.2 20.1 67 20.1l0 87.4z"/>
+</svg>
+                    </a>
+                </div>
+
+            </div>
+            <div class="w-full px-4 lg:w-6/12">
+                <div class="flex flex-wrap mb-6 items-top">
+                    <div class="w-full px-4 ml-auto lg:w-4/12">
+                        <span
+                            class="block mb-2 text-sm font-semibold underline uppercase text-slate-700 dark:text-slate-300">Useful
+                            Links</span>
+                        <ul class="list-unstyled">
+                            <li>
+                                <a class="block pb-2 text-sm font-semibold text-gray-700 duration-500 dark:text-slate-300 hover:text-aiablue-light transition-color"
+                                    href="https://academy.azpreps365.com">Academy</a>
+                            </li>
+                            <li>
+                                <a class="block pb-2 text-sm font-semibold text-gray-700 duration-500 dark:text-slate-300 hover:text-aiablue-light transition-color"
+                                    href="https://azpreps365.com">AZPreps 365</a>
+                            </li>
+                            <li>
+                                <a class="block pb-2 text-sm font-semibold text-gray-700 duration-500 dark:text-slate-300 hover:text-aiablue-light transition-color"
+                                    href="http://azcoachhof.org/">AZ Coach HOF</a>
+                            </li>
+                            <li>
+                                <a class="block pb-2 text-sm font-semibold text-gray-700 duration-500 dark:text-slate-300 hover:text-aiablue-light transition-color"
+                                    href="https://azpreps365.com/partners">Partners</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="w-full px-4 lg:w-4/12">
+                        <span
+                            class="block mb-2 text-sm font-semibold underline uppercase text-slate-700 dark:text-slate-300">Resources</span>
+                        <ul class="list-unstyled">
+                            <li>
+                                <a class="block pb-2 text-sm font-semibold text-gray-700 duration-500 dark:text-slate-300 hover:text-aiablue-light transition-color"
+                                    href="/about">
+                                    About Us
+                                </a>
+                            </li>
+                            <li>
+                                <a class="block pb-2 text-sm font-semibold text-gray-700 duration-500 dark:text-slate-300 hover:text-aiablue-light transition-color"
+                                    href="/classifieds/">
+                                    Classifieds
+                                </a>
+                            </li>
+                            <li>
+                                <a class="block pb-2 text-sm font-semibold text-gray-700 duration-500 dark:text-slate-300 hover:text-aiablue-light transition-color"
+                                    href="https://azpreps365.com/privacy-policy">Privacy Policy</a>
+                            </li>
+                            <li>
+                                <a class="block pb-2 text-sm font-semibold text-gray-700 duration-500 dark:text-slate-300 hover:text-aiablue-light transition-color"
+                                    href="/about/contact-us">Contact Us</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <hr class="my-6 border-gray-400" />
+            <div class="flex flex-wrap items-center justify-center md:justify-between">
+                <div class="w-full px-4 mx-auto text-center ">
+                    <div class="py-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                        Copyright © 2022 Arizona Interscholastic Association, Inc. All Rights Reserved.
+                    </div>
+                </div>
+            </div>
+</div>
+
+</footer>
+
+    </div>
+
+</body>
+
+<script>
+	/* DFP AD Injection */
+	            googletag.cmd.push(function() { googletag.display('div-gpt-ad-1405984596671-0'); });
+                        googletag.cmd.push(function() { googletag.display('div-gpt-ad-1405984706805-0'); });
+                            googletag.cmd.push(function() { googletag.display('div-gpt-ad-1405984783793-0'); });
+            </script>
+
+<script src="/js/app.js?id=088e302cc3da966e445100a31e2810f5"></script>
+
+</html>

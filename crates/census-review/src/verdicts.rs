@@ -51,6 +51,44 @@ pub fn validate(
         ReviewFamily::SchoolJurisdiction | ReviewFamily::MeetJurisdiction => {
             jurisdiction(verdict, packet, family.field())
         }
+        ReviewFamily::SchoolLink => link(verdict),
+    }
+}
+
+fn link(verdict: &ReviewVerdict) -> Adjudication {
+    if named(&verdict.field) != Some(IDENTITY_FIELD) {
+        return Adjudication::Refused(Refusal::WrongField);
+    }
+    let Some(value) = named(&verdict.value) else {
+        return Adjudication::Refused(Refusal::InvalidValue);
+    };
+    match identity_label(value) {
+        Some(label) => Adjudication::Decided(Admitted {
+            field: IDENTITY_FIELD.to_string(),
+            value: label,
+        }),
+        None => Adjudication::Refused(Refusal::InvalidValue),
+    }
+}
+
+fn identity_label(value: &str) -> Option<String> {
+    use census_domain::school_directory::{NcesSchoolId, PssId, StateRecordId};
+    let (kind, rest) = value.split_once(':')?;
+    match kind {
+        "nces" => NcesSchoolId::parse(rest)
+            .ok()
+            .map(|id| format!("nces:{}", id.as_str())),
+        "pss" => PssId::parse(rest)
+            .ok()
+            .map(|id| format!("pss:{}", id.as_str())),
+        "state" => {
+            let (code, id) = rest.split_once(':')?;
+            let state = census_domain::UsJurisdiction::parse(code)?;
+            StateRecordId::parse(id)
+                .ok()
+                .map(|id| format!("state:{}:{}", state.code(), id.as_str()))
+        }
+        _ => None,
     }
 }
 

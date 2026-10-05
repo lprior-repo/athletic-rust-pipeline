@@ -25,6 +25,19 @@ fn the_flags_state_what_the_store_already_knows_before_the_model_runs() -> TestR
             .any(|flag| flag.starts_with("shared_source_identity:") && flag.contains("14399169")),
         "the shared provider object is a flag the packet states, not something a model must notice"
     );
+    check!(
+        stated_flags
+            .iter()
+            .any(|flag| flag.starts_with("shared_source_identity:")
+                && flag.contains("14399169 (primary, primary)")),
+        "the flag states whether the shared key is each row's primary or a link"
+    );
+    check!(
+        !stated_flags
+            .iter()
+            .any(|flag| flag.starts_with("identity_corroborated:")),
+        "a shared key with no parsed evidence is not positive evidence"
+    );
     check!(stated_flags
         .iter()
         .any(|flag| flag.starts_with("gender_differs:")));

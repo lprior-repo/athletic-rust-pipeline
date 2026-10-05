@@ -1,7 +1,7 @@
 use census_domain::model::{
-    CanonicalAthlete, CanonicalCoach, CanonicalSchool, CoachRole, CoachTenure, CoachTenureEvidence,
-    Evidence, Gender, GradYear, PublishedGraduation, SchoolYear, SourceIdentity, SourceNamespace,
-    SourceRef, Sport,
+    CanonicalAthlete, CanonicalCoach, CanonicalSchool, CoachContactClaim, CoachContactProgram,
+    CoachRole, CoachTenure, CoachTenureEvidence, Evidence, Gender, GradYear, PublishedGraduation,
+    SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -48,6 +48,16 @@ fn seed(store: &Store) -> TestResult {
         source_sha256: "a".repeat(64),
         retrieved_at: "2026-09-20T00:00:00Z".to_string(),
         statement: "Synthetic academic-year appointment".to_string(),
+        claim: Some(CoachContactClaim {
+            coach: coach.id.clone(),
+            school: coach.school.clone(),
+            role: coach.role,
+            program: CoachContactProgram::Team {
+                sport: Sport::OutdoorTrack,
+                gender: coach.gender,
+            },
+            mailbox: coach.professional_email.clone(),
+        }),
     }];
     store.append(Table::Coaches, &coach)?;
 

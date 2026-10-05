@@ -1,8 +1,8 @@
 use super::super::parse::{DirectorySchool, SchoolSummary};
-use super::{absorb_summary, coach_entities, CoachEmission, EmissionScope, SOURCE_ID};
+use super::{absorb_summary, coach_entities, CoachEmission, SOURCE_ID};
 use census_domain::model::{
-    CanonicalSchool, Evidence, SchoolAddressError, SchoolId, SchoolPostalAddress, SourceIdentity,
-    SourceNamespace, SourceRef,
+    CanonicalSchool, Evidence, SchoolAddressError, SchoolId, SchoolPostalAddress, SchoolYear,
+    SourceIdentity, SourceNamespace, SourceRef,
 };
 use census_domain::school_directory::{
     CityName, DirectoryError, PostalAddress, SourceLabel, StreetLine, ZipCode,
@@ -84,6 +84,7 @@ pub(in super::super) fn process_owned_summary(
     summary: &SchoolSummary,
     school_id: &SchoolId,
     capture: Capture<'_>,
+    school_year: SchoolYear,
 ) -> Result<SummaryEmission, SummaryError> {
     verify_association(school, row, summary)?;
     absorb_summary(school, summary, capture.url, capture.observed_on);
@@ -106,7 +107,8 @@ pub(in super::super) fn process_owned_summary(
         school_id,
         capture.url,
         capture.observed_on,
-        EmissionScope::Census,
+        school_year,
+        capture.sha256,
     )?;
     Ok(SummaryEmission {
         emission,

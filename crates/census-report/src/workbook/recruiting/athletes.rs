@@ -78,12 +78,15 @@ fn row_for(dataset: &Dataset, athlete: &CanonicalAthlete) -> ReportResult<Vec<Ce
     cells.extend(contact_cells(&contacts, preferred));
     cells.extend(profile_cells(profiles));
     cells.extend(audit_cells(dataset, athlete, tally, &prs)?);
-    let postal = dataset.postal.get(athlete.id.as_str()).ok_or_else(|| {
-        crate::report::ReportError::Invariant {
-            detail: format!("athlete {} has no postal projection", athlete.id),
+    match dataset.school_address.get(athlete.id.as_str()) {
+        Some(address) if address.is_empty() => cells.push(Cell::Empty),
+        Some(address) => cells.push(Cell::text(address.clone())),
+        None => {
+            return Err(crate::report::ReportError::Invariant {
+                detail: format!("athlete {} has no school address projection", athlete.id),
+            });
         }
-    })?;
-    cells.extend(postal.iter().cloned().map(Cell::text));
+    }
     Ok(cells)
 }
 

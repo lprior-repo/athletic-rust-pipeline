@@ -340,8 +340,6 @@ main() {
   run_tool_lane cargo-geiger geiger lane_geiger
   run_tool_lane cargo-hack "feature powerset" lane_hack
   run_lane "bench presence" lane_bench_presence
-  if [ "$FULL" = 1 ] || [ "$RELEASE" = 1 ]; then
-  fi
   if [ "$FULL" = 1 ]; then
     run_lane perf lane_perf
     run_tool_lane cargo-mutants mutants lane_mutants

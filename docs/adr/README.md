@@ -28,6 +28,9 @@ Accepted policy is not proof of implementation or successful execution.
 | [019](ADR-019-export-derivation-single-home.md) | Export consumers share one dataset and derivation | Accepted; renumbered from duplicate 015 |
 | [020](ADR-020-school-address-corpus-port.md) | The address pipeline and the TSSAA reader port to Rust as a school-directory corpus | Accepted; ADR-008's admitted-reader amendment resolved |
 | [021](ADR-021-school-address-join-durable-stage.md) | The school-address join is one tested core, one durable stage | Accepted |
+| [022](ADR-022-admissible-cross-source-corroboration.md) | Admissible cross-source identity corroboration: attested provider keys, independent documents, withholding reasons | Accepted; implemented 2026-10-04 (`46r`); link-document source qualification open under `b0f` |
+| [023](ADR-023-school-link-mapping.md) | School-link extension beyond the landed join core: provider/state-record keys, durable review cases, campus and co-op rules | Accepted; implemented and closed 2026-10-04 (`7vk`); no source publishes `co_op` or member aliases yet |
+| [024](ADR-024-coach-contact-tenure-admission.md) | Coach-contact tenure from a source-published staff listing: one claim binds role/program to mailbox; current tenures are the run's season; page-bound evidence | Accepted 2026-10-04; implementation open under `2b1`, `0hx`, `df2`, `jb2` |
 
 Changes record explicit supersession rather than silently rewriting prior decisions. Source-specific
 research and dated command results belong in their evidence references, not additional ADR copies.

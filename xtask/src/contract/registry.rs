@@ -114,7 +114,7 @@ pub(super) fn admissions() -> Result<Check> {
     Ok(Check::violated(5, NAME, detail, failures))
 }
 
-const NON_ADAPTERS: [(&str, &str); 18] = [
+const NON_ADAPTERS: [(&str, &str); 20] = [
     (
         "applicability",
         "the per-jurisdiction source table the planner reads: data, with no origin to admit",
@@ -173,6 +173,14 @@ const NON_ADAPTERS: [(&str, &str); 18] = [
     (
         "ingress",
         "the loopback client that submits pipeline work to the serving census through Restate instead of opening the store: it admits no origin of its own",
+    ),
+    (
+        "school_sites",
+        "the long-tail school-website crawl: its origins come from an operator-supplied queue rather than a registry descriptor, so it is reachable only through the `school-sites` verb",
+    ),
+    (
+        "wikidata",
+        "parses Wikidata Query Service SPARQL results into school-directory entries",
     ),
     (
         "lib",

@@ -28,6 +28,14 @@ pub enum FetchError {
         #[source]
         source: std::io::Error,
     },
+    #[error("origin {origin} is held by another census-service process (holder: {holder})")]
+    OriginHeld { origin: String, holder: String },
+    #[error("origin lock i/o for {path}: {source}")]
+    OriginLockIo {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
     #[error("request timed out for {url} after {timeout_secs}s")]
     Timeout { url: String, timeout_secs: u64 },
     #[error("browser lane refused {url}: {detail}")]
@@ -75,6 +83,8 @@ impl FetchError {
             Self::Http { status, .. } => *status >= 500 || *status == 429,
             Self::TooLarge { .. }
             | Self::Cache { .. }
+            | Self::OriginHeld { .. }
+            | Self::OriginLockIo { .. }
             | Self::InvalidUrl { .. }
             | Self::Decode { .. }
             | Self::Encode { .. }

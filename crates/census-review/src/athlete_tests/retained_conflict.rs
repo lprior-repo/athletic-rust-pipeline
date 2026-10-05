@@ -22,6 +22,10 @@ fn a_retained_source_conflict_refuses_same_person_but_preserves_different_person
             ] {
                 let mut source_rows = rows()?;
                 Change::RetainedConflict.apply(&mut source_rows[0])?;
+                for row in source_rows.iter_mut() {
+                    Change::PrimaryOwnership.apply(row)?;
+                    Change::EvidenceUrl.apply(row)?;
+                }
                 let fixture = Fixture::new(&source_rows)?;
                 let reply = batch(&fixture.case, "value_proposed", "identity", answer);
                 let (first, server_a) = lane(vec![reply.clone()])?;

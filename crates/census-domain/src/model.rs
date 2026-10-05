@@ -21,6 +21,7 @@ mod fixed_mark;
 mod identifiers;
 mod identity_aliases;
 mod identity_application;
+mod identity_corroboration;
 mod identity_decision;
 mod identity_index;
 mod identity_projection;
@@ -46,8 +47,8 @@ pub use contact_proof::{
     ContactProofField, RawContactRow, ValidatedContactProof, CONTACT_COLUMNS, CONTACT_PROOF_COLUMN,
 };
 pub use contact_tenure::{
-    assess_coach_tenure, validate_tenure_evidence, CoachTenure, CoachTenureEvidence,
-    TenureAssessmentError, TenureValidation,
+    assess_coach_tenure, validate_tenure_evidence, CoachContactClaim, CoachContactProgram,
+    CoachTenure, CoachTenureEvidence, TenureAssessmentError, TenureValidation,
 };
 pub use event_ontology::{EventKind, SourceEventLabel};
 pub use event_performance::{CanonicalEvent, CanonicalPerformance, Mark, TimingMethod};

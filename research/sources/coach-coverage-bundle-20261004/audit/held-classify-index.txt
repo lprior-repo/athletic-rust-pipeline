@@ -1,0 +1,202 @@
+CLASS COUNTS: {'HELD+ADAPTER': 30, 'DERIVED': 158, 'ADAPTER+DERIVED': 12, 'HELD': 73, 'ABSENT': 4, 'ADAPTER': 1}
+SKIPPED FIXES: []
+MISSING PATHS: 3
+MISSING SRC-114 /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/extract/SRC-114/captures/
+MISSING SRC-116 /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/extract/SRC-114/captures/www.ihsaa.org__schools.rendered.txt
+MISSING SRC-248 /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/extract/SRC-248/REPORT.md
+
+PER-STATE/CLASS COUNTS:
+  AZ DERIVED 8
+  AZ HELD 1
+  AZ HELD+ADAPTER 1
+  CA ADAPTER+DERIVED 1
+  CA DERIVED 5
+  CA HELD 2
+  CA HELD+ADAPTER 9
+  CT DERIVED 6
+  CT HELD+ADAPTER 2
+  FL DERIVED 12
+  FL HELD 1
+  FL HELD+ADAPTER 2
+  IA ADAPTER+DERIVED 1
+  IA DERIVED 2
+  IA HELD 4
+  IA HELD+ADAPTER 1
+  IL DERIVED 3
+  IL HELD 3
+  IL HELD+ADAPTER 2
+  IN DERIVED 5
+  IN HELD 2
+  KS ADAPTER+DERIVED 1
+  KS DERIVED 2
+  KS HELD 5
+  LA DERIVED 4
+  LA HELD 6
+  MA DERIVED 6
+  MA HELD 2
+  MA HELD+ADAPTER 2
+  MA,CT,VT,NY DERIVED 1
+  MI DERIVED 4
+  MI HELD 3
+  MO ADAPTER+DERIVED 1
+  MO DERIVED 5
+  MO HELD 1
+  MO HELD+ADAPTER 1
+  NATIONAL ABSENT 4
+  NATIONAL ADAPTER 1
+  NATIONAL DERIVED 9
+  NATIONAL HELD 18
+  NJ ADAPTER+DERIVED 1
+  NJ DERIVED 7
+  NJ HELD 2
+  NJ HELD+ADAPTER 2
+  NV DERIVED 5
+  NV HELD 3
+  NY DERIVED 9
+  NY HELD 1
+  NY HELD+ADAPTER 1
+  OH ADAPTER+DERIVED 3
+  OH DERIVED 5
+  OH HELD 1
+  OK ADAPTER+DERIVED 1
+  OK DERIVED 6
+  OK HELD 2
+  OR DERIVED 7
+  OR HELD+ADAPTER 2
+  PA DERIVED 4
+  PA HELD 5
+  PA HELD+ADAPTER 1
+  SD DERIVED 2
+  SD HELD 5
+  TX ADAPTER+DERIVED 1
+  TX DERIVED 13
+  TX HELD+ADAPTER 2
+  UT DERIVED 8
+  UT HELD 3
+  VA ADAPTER+DERIVED 1
+  VA DERIVED 7
+  VA HELD 3
+  VT DERIVED 4
+  VT HELD+ADAPTER 2
+  WA ADAPTER+DERIVED 1
+  WA DERIVED 9
+
+ABSENT ROWS:
+  SRC-262 NATIONAL NIAAA state athletic-administrator association directory
+    path=/home/lewis/src/ad-law-scrape/census-prototype/out/coverage.md note=no niaaa.org host entry or capture found; checked research/sources/** (all trees/probes/extract), census-prototype/{out,raw,store}, repo var/, fixtures, docs, data/, sibling trees under /home/lewis/sr
+  SRC-263 NATIONAL NASO state resource guide
+    path=/home/lewis/src/ad-law-scrape/census-prototype/out/coverage.md note=no naso.org capture found; checked research/sources/** , probes/, extract/, census-prototype/{out,raw,store}, var/, fixtures/, docs/, data/, sibling trees (filename sweep for *naso.org/*naso-* returne
+  SRC-264 NATIONAL NHSACA national coaches association
+    path=/home/lewis/src/ad-law-scrape/census-prototype/out/coverage.md note=no nhsaca.org capture found; checked same locations (filename sweep *nhsaca* returned nothing).
+  SRC-276 NATIONAL SchoolDigger documented school API
+    path=/home/lewis/src/ad-law-scrape/census-prototype/out/coverage.md note=no schooldigger capture or adapter found; checked research/sources/** (filename sweep *schooldigger* returned nothing), census-prototype/{out,raw,store}, var/, fixtures/, docs/, data/, sibling trees.
+
+HELD-CLASS ROWS (id | state | class | name | first_path | note_head):
+  SRC-001 | TX | HELD+ADAPTER | UIL sport alignments and school-code inventory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-southcentral/samples/tx-alignments.html | 65.8 KB dir listing; title reads 'Alignments — University Interscholastic League (UIL)' (r
+  SRC-013 | TX | HELD+ADAPTER | MileSplit Texas team directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/milesplit-national/samples/teams-tx.html | TX teams page captured in milesplit-national corpus (listed; size not shown in listing).
+  SRC-017 | CA | HELD+ADAPTER | CIF / Home Campus public school and coaches directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-westcoast/samples/cifss-directory.html | 211.6 KB dir listing; CIFSS directory capture.
+  SRC-019 | CA | HELD+ADAPTER | MileSplit California team directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/milesplit-national/samples/teams-ca.html | CA teams page captured (listed; size not shown).
+  SRC-021 | CA | HELD | CIF San Francisco high-school members | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-westcoast/samples/cifsf-high-schools.html | 252.1 KB dir listing; matches /schools/high-schools/ route.
+  SRC-022 | CA | HELD+ADAPTER | CIF Southern Section directory wrapper | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-westcoast/samples/cifss-directory.html | 211.6 KB dir listing; /directory capture.
+  SRC-023 | CA | HELD+ADAPTER | CIF Northern Section public Home Campus directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-westcoast/samples/cifns-directory.html | 242.8 KB dir listing; widget directory capture; cifncs-widget-directory.html 73.4 KB compa
+  SRC-024 | CA | HELD+ADAPTER | CIF San Diego Section public Home Campus directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-westcoast/samples/cifsds-school-directory.html | 180.1 KB dir listing; cifsds-info-directory.html 170.4 KB companion.
+  SRC-025 | CA | HELD+ADAPTER | CIF North Coast Section official source | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-westcoast/samples/cifncs-home.html | 234.8 KB dir listing; homepage target (www.cifncs.org/).
+  SRC-026 | CA | HELD | CIF Central Coast Section official source | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-westcoast/samples/cifccs-home.html | 89.7 KB dir listing; homepage target (www.cifccs.org/); cifccs-directory.html 30.5 KB comp
+  SRC-027 | CA | HELD+ADAPTER | CIF Central Section official source | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-westcoast/samples/cifcs-home.html | 337.5 KB dir listing; homepage target (www.cifcs.org/); cifcs-widget-directory.html 67.1 K
+  SRC-029 | CA | HELD+ADAPTER | CIF Los Angeles City Section | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-westcoast/samples/cif-la-home.html | 86.9 KB dir listing; cif-la-widget-directory.html 72.7 KB companion.
+  SRC-030 | CA | HELD+ADAPTER | CIF Sac-Joaquin member schools | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-westcoast/samples/cifsjs-member-schools.html | 47.2 KB dir listing; /schools/ capture; cifsjs-home.html 66.2 KB companion.
+  SRC-034 | FL | HELD+ADAPTER | FHSAA public Home Campus school and coach directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-southeast/samples/homecampus-school-directory.html | 225.0 KB dir listing; Home Campus school-directory capture; homecampus-school-details-2397
+  SRC-035 | FL | HELD+ADAPTER | MileSplit Florida / flrunners team directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/milesplit-national/samples/teams-fl.html | FL teams page captured (listed).
+  SRC-036 | FL | HELD | Florida DOE private-school contact export | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/extract/SRC-036/rows.csv | 552.0 KB extract listing; direct export rows.
+  SRC-054 | NY | HELD | PSAL Cross Country school/team listing | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-midatlantic/samples/psal-xc.html | 315.4 KB dir listing; PSAL XC page capture; psal-outdoor-track.html 381.6 KB and psal-home
+  SRC-058 | NJ | HELD+ADAPTER | NJSIAA Member Information | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-midatlantic/samples/njsiaa-member-info.html | 232.5 KB dir listing; exact target page name captured.
+  SRC-061 | NJ | HELD | New Jersey XC/TF Coaches Association resources | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/njxctfca/FINDINGS.md | 9.0 KB probe listing; manifest.json 8.2 KB and raw/ captures companion.
+  SRC-066 | NJ | HELD | Greater Middlesex Conference Track Coaches Association member schools | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/extract/SRC-066/REPORT.md | 7.2 KB extract listing; rows.csv 108 B companion (member-school list).
+  SRC-068 | MA | HELD | Massachusetts State Track Coaches Association current members | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/extract/SRC-068/REPORT.md | 15.5 KB extract listing; rows.csv 55.4 KB companion; census out/evidence/mstca artifacts a
+  SRC-069 | MA | HELD+ADAPTER | MIAA Schools Directory and school profiles | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-midatlantic/samples/miaa-member-schools.html | 67.3 KB dir listing; MIAA schools/member capture (also dir/ corpus MA__member-schools.html
+  SRC-075 | MA | HELD | MIAA Track & Cross Country | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-midatlantic/samples/miaa-track-xc.html | 109.5 KB dir listing; matches /track-cross-country route.
+  SRC-076 | CT | HELD+ADAPTER | CIAC high school coach directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/ciac-fpsports/directory.html | 657.3 KB probe listing; manifest.json 4.3 KB companion.
+  SRC-082 | VT | HELD+ADAPTER | Vermont Principals Association athletics | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-midatlantic/samples/vpa-divisional-alignments.html | 120.6 KB dir listing; vpaonline.org /athletics/ subpage capture; vpa-home.html 183.6 KB co
+  SRC-086 | NY | HELD+ADAPTER | MileSplit NY team directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-midatlantic/samples/ny-milesplit-teams.html | 409.9 KB dir listing; NY teams page captured.
+  SRC-087 | NJ | HELD+ADAPTER | MileSplit NJ team directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-midatlantic/samples/nj-milesplit-teams.html | 185.7 KB dir listing; NJ teams page captured.
+  SRC-088 | MA | HELD+ADAPTER | MileSplit MA team directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-midatlantic/samples/ma-milesplit-teams.html | 167.8 KB dir listing; MA teams page captured.
+  SRC-089 | CT | HELD+ADAPTER | MileSplit CT team directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-midatlantic/samples/ct-milesplit-teams.html | 102.4 KB dir listing; CT teams page captured.
+  SRC-090 | VT | HELD+ADAPTER | MileSplit VT team directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-midatlantic/samples/vt-milesplit-teams.html | 61.8 KB dir listing; VT teams page captured.
+  SRC-100 | OH | HELD | OATCCC current coach membership | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/extract/SRC-100/REPORT.md | 13.6 KB extract listing; rows.csv 143.7 KB and captures/oatccc-membership.html companions.
+  SRC-106 | MI | HELD | MHSAA public school directory and coach tabs | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/sources/SRC-106/FINDINGS.md | 6.8 KB probe listing; extract/SRC-106/REPORT.md 4.2 KB companion.
+  SRC-107 | MI | HELD | Michigan EEM public school data export | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/extract/107-mi-eem/rows.csv | 469.9 KB probe listing; extracted EEM rows.
+  SRC-108 | MI | HELD | MITCA track/XC coaches association | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/108-mitca/REPORT.md | 2.2 KB probe listing; extract/108-mitca/rows.csv 4.6 KB companion.
+  SRC-113 | IN | HELD | Indiana DOE downloadable school directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/sources/SRC-113/FINDINGS.md | 4.7 KB probe listing; extract/SRC-113-in-doe/rows.csv 192.1 KB and school-import.csv 305.7
+  SRC-114 | IN | HELD | Indiana IHSAA member school directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/sources/SRC-114/FINDINGS.md | 4.0 KB probe listing; extract/SRC-114/REPORT.md 3.2 KB and rows.csv 108 B companions.
+  SRC-120 | IL | HELD+ADAPTER | IHSA new public school directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/il-ihsa/manifest.json | 5.6 KB probe listing; IHSA school-directory probe.
+  SRC-121 | IL | HELD+ADAPTER | IHSA head-coach season-summary database | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/il_ihsa_records/FINDINGS.md | 12.3 KB probe listing; records/index.htm probe; fixtures ihsa/ihsa_tournament present.
+  SRC-122 | IL | HELD | ISBE nightly public/private school directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/122-il-isbe/candidate-25.body | 71.0 KB probe listing; ISBE candidate export captured.
+  SRC-124 | IL | HELD | IHSA public mobile school search | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/il-ihsa-mobile/FINDINGS.md | 2.3 KB probe listing; manifest.json 4.7 KB companion; center.ihsa.org mobile app probed.
+  SRC-125 | IL | HELD | IHSA conference directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/il-ihsa-conference/FINDINGS.md | 1.7 KB probe listing; manifest.json 2.6 KB companion; conf.htm probed.
+  SRC-128 | IA | HELD+ADAPTER | Iowa IHSAA member school list and detail pages | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/sources/SRC-128/FINDINGS.md | 6.3 KB probe listing; probes/ia-ihsaa/rows.csv 26.7 KB companion.
+  SRC-130 | IA | HELD | Iowa DOE public and nonpublic building directories | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/130-ia-doe/REPORT.md | 3.9 KB probe listing; extract/SRC-130/rows.csv 170.3 KB companion.
+  SRC-131 | IA | HELD | Iowa school buildings ArcGIS REST service | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/131-ia-arcgis/query-0-0.geojson | 600.7 KB probe listing; extract/SRC-131/schools_full.json 911.1 KB companion.
+  SRC-132 | IA | HELD | Iowa Association of Track Coaches | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/iatrackcoaches/FINDINGS.md | 7.8 KB probe listing; seeds.json 11.9 KB companion.
+  SRC-133 | IA | HELD | IATC track-and-field advisory board | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/sources/SRC-133/board.json | 1.2 KB probe listing; FINDINGS.md 5.4 KB companion.
+  SRC-146 | OR | HELD+ADAPTER | OSAA member-school profiles and coach directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-westcoast/samples/osaa-schools.html | 31.1 KB dir listing; OSAA /schools captures (osaa-schools-full-members.html 57.1 KB, osaa-
+  SRC-149 | OR | HELD+ADAPTER | OSAA statewide compact coaches directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-westcoast/samples/osaa-coaches.html | 101.0 KB dir listing; matches /coaches-directory route.
+  SRC-158 | AZ | HELD+ADAPTER | AIA school-search JSON endpoint | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-mountain/samples/aia-search-limit500.json | 7.5 KB dir listing; AIA search JSON captured; probes/158-aia-json/profile-2760.body 76.6 K
+  SRC-159 | AZ | HELD | AIA sport alignments | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-mountain/samples/aia-alignments.html | 277.8 KB dir listing; aia-alignments-activities.html 83.0 KB companion.
+  SRC-164 | UT | HELD | UHSAA school profiles and coaches | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-mountain/samples/uhsaa-school-directory.html | 472.3 KB dir listing; matches /school-directory-new/ route; research/sources/uhsaa/SOURCE_
+  SRC-169 | UT | HELD | UHSAA schools by district and private/charter category | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-mountain/samples/uhsaa-realignment-2025-27.pdf | 521.2 KB dir listing; UHSAA realignment/district capture (route-level match assumption sta
+  SRC-171 | UT | HELD | UHSAA school participation matrix | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-mountain/samples/uhsaa-participation-numbers.pdf | 304.8 KB dir listing; exact target artifact ParticipationNumbers.pdf.
+  SRC-175 | NV | HELD | Southern Nevada Track & Cross Country Coaches Association directories | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/extract/SRC-175/REPORT.md | 11.4 KB extract listing; rows.csv 58.8 KB companion.
+  SRC-178 | NV | HELD | Southern Nevada Track coaches CSV | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/extract/SRC-178/REPORT.md | 9.8 KB extract listing; rows.csv 30.7 KB companion (Google Sheets CSV export).
+  SRC-179 | NV | HELD | Southern Nevada XC coaches CSV | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/extract/SRC-179/rows.csv | 25.9 KB extract listing; Google Sheets CSV export rows.
+  SRC-184 | VA | HELD | Virginia Department of Education public-school alphabetical directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/extract/184-va-vdoe-directory/rows.csv | 304.2 KB extract listing; probes/184-va-vdoe-directory/REPORT.md 2.8 KB companion.
+  SRC-185 | VA | HELD | VISAA member-school directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/extract/185-va-visaa/rows.csv | 8.3 KB extract listing; probes/185-va-visaa/REPORT.md 2.3 KB companion.
+  SRC-186 | VA | HELD | VHSL alignment/classification hub | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/extract/186-va-vhsl/qualified.json | 401 B extract listing; probes/186-va-vhsl/REPORT.md 1.3 KB companion.
+  SRC-195 | MO | HELD+ADAPTER | MSHSAA member-school listing and coaching-roster route | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-plains/samples/mshsaa-school-listing-2026-09-22.html | 704.5 KB dir listing; exact SchoolListing capture.
+  SRC-198 | MO | HELD | MSHSAA boys cross-country coaches sample | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/sources/SRC-198/FINDINGS.md | 5.1 KB probe listing; MSHSAA coaches route probe (XC sample), sweep/ captures companion.
+  SRC-203 | OK | HELD | OSSAARankings school directory and sport schedules | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/sources/SRC-203/FINDINGS.md | 7.3 KB probe listing; probes/ok-ossaarankings/FINDINGS.md 4.7 KB and rows.csv 268 B compan
+  SRC-204 | OK | HELD | Oklahoma State School and District Directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/extract/204-ok-directory/schools_full.json | 1.5 MB extract listing; probes/204-ok-directory/REPORT.md 3.5 KB companion; southcentral o
+  SRC-212 | LA | HELD | LHSAA 2025–2026 Coaches Directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-southcentral/samples/la-coaches-directory-2025-26.pdf | 6.5 MB dir listing; exact target PDF; .txt companion 977.4 KB.
+  SRC-213 | LA | HELD | Louisiana BESE-approved nonpublic-school list 2026–2027 | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/extract/213-la-bese-nonpublic/rows.csv | 69.7 KB extract listing; BESE list extraction.
+  SRC-215 | LA | HELD | LHSAA registered XC coaches, September 22 2025 | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/extract/SRC-215/REPORT.md | 7.4 KB extract listing; rows.csv 98.7 KB companion.
+  SRC-216 | LA | HELD | LHSAA public school-directory search | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-southcentral/samples/la-school-directory.html | 62.1 KB dir listing; matches /school-directory route.
+  SRC-217 | LA | HELD | LHSAA XC classifications and alignments hub | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-southcentral/samples/la-cross-country.html | 65.2 KB dir listing; body class 'cross-country-body page-1046' confirmed by read; exact /h
+  SRC-218 | LA | HELD | LHSAA outdoor-track hub | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-southcentral/samples/la-outdoor-track-field.html | 64.1 KB dir listing; body class 'outdoor-track-and-field-body page-1217' confirmed by read
+  SRC-222 | SD | HELD | SDCCTFCA 2024–2025 membership roster | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/extract/SRC-222/REPORT.md | 9.9 KB extract listing; rows.csv 57.5 KB companion.
+  SRC-223 | SD | HELD | South Dakota Department of Education educational directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/extract/223-sd-edudir/rows.csv | 92.2 KB extract listing; probes/223-sd-edudir/REPORT.md 4.1 KB companion.
+  SRC-225 | SD | HELD | SDHSAA cross-country participation hub | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/state-assoc-plains/samples/sdhsaa-cross-country-2026-09-22.html | 498.0 KB dir listing; SDHSAA XC page capture; sdhsaa-cross-country-region-2026-09-22.html 
+  SRC-227 | SD | HELD | SDHSAA athletics cooperatives | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/227-sdhsaa-cooperatives/REPORT.md | 2.7 KB probe listing; captures/ page 484,091 B and extract qualified.json 1.2 KB companion
+  SRC-228 | SD | HELD | SDCCTFCA membership/area-alignment hub | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/228-sdhsca-membership/REPORT.md | 4.3 KB extract listing; rows.csv 59.5 KB companion; var import artifacts exist.
+  SRC-229 | PA | HELD+ADAPTER | PIAA school directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/tests/fixtures/pa_piaa/directory_alpha_a.html | 78.2 KB fixture listing; PROVENANCE.json 2.2 KB; alpha_b/z companions.
+  SRC-230 | PA | HELD | Pennsylvania EdNA output files | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/230-pa-edna/REPORT.md | 7.2 KB probe listing; raw/pnp-export-2.body 732.3 KB; extract/230-pa-edna/schools_full.jso
+  SRC-231 | PA | HELD | PAISAA independent-school member directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/231-paisaa-members/REPORT.md | 2.1 KB probe listing; extract/231-paisaa-members/rows.csv 2.9 KB companion.
+  SRC-233 | PA | HELD | EdNA private and nonpublic export form | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/230-pa-edna/pnp-export-2.body | 732.3 KB probe listing; PNP export artifact (private/nonpublic); exact wfPNP form submissi
+  SRC-234 | PA | HELD | Track and Field Coaches Association of Greater Philadelphia handbook | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/234-tfcaofgp-handbook/REPORT.md | 2.6 KB probe listing; extract/234-tfcaofgp-handbook/rows.csv 965 B companion.
+  SRC-235 | PA | HELD | Friends Schools League | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/235-fsl-athletics/REPORT.md | 1.6 KB probe listing; extract/235-fsl-athletics/qualified.json 497 B companion.
+  SRC-239 | KS | HELD | Kansas Educational Directory Reports | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/239-ks-directory/captures/ | 252.5 KB capture listing (KSDE directory page body); corpus coach-directories-national/api
+  SRC-240 | KS | HELD | KSHSAA school leagues directory | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/ks-kshsaa/raw/directory-search-name-a.json | 489,295 B raw listing; manifest.json companion; leagues search captured.
+  SRC-241 | KS | HELD | Kansas Cross Country and Track and Field Coaches Association | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/kcctfca/FINDINGS.md | 11.9 KB probe listing; manifest.json 7.4 KB companion.
+  SRC-242 | KS | HELD | KSHSAA approved schools | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/ks-kshsaa/manifest.json | probe listing; KSHSAA captures bundle includes approved-schools source ids; raw/ directory
+  SRC-244 | KS | HELD | KCCTFCA 2026 winter clinic | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/kcctfca/FINDINGS.md | 11.9 KB probe listing; KCCTFCA site probed (winter clinic content inside probe scope); man
+  SRC-247 | NATIONAL | HELD | NCES CCD downloadable files selector | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/247-nces-ccd-selector/REPORT.md | 3.0 KB probe listing; captures/ companion (files selector captured).
+  SRC-248 | NATIONAL | HELD | NCES CCD 2024–25 school directory CSV/SAS ZIP | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/var/school-address-join-20261004/ccd/ccd_sch_029_2526_w_0a_050626.csv | receipt: byte count 41,054,983 from in-repo receipt (Census/NCES import); 2026-27 CCD CSV 
+  SRC-249 | NATIONAL | HELD | NCES CCD 2024–25 school directory companion | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/249-nces-ccd-companion/raw/directory-companion.xlsx | 53.1 KB raw listing (read this session); ccd-files.html 31.0 KB, files-api.json 62.8 KB co
+  SRC-250 | NATIONAL | HELD | NCES EDGE public-school administrative REST layer | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/250-nces-edge-admin/manifest.json | 7.9 KB probe listing; FINDINGS.md 9.7 KB and raw/ layer captures (district.json etc.) comp
+  SRC-253 | NATIONAL | HELD | NCES PSS data and documentation index | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/253-nces-pss-index/raw/pssdata.html | 57.3 KB raw listing (read this session); manifest.json 7.3 KB; pss2324-csv.zip 3.8 MB, lay
+  SRC-254 | NATIONAL | HELD | NCES PSS 2023–24 public-use CSV ZIP | /home/lewis/src/ad-law-scrape/data/nces/pss/pss2324_pu.csv | 39,521,631 B from in-repo receipt (data/nces/pss import); probe raw pss2324-csv.zip 3.8 MB
+  SRC-255 | NATIONAL | HELD | NCES PSS 2023–24 record layout | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/253-nces-pss-index/raw/layout2023-24.pdf | 229.1 KB raw listing (234,597 B per probe manifest); exact target artifact.
+  SRC-257 | NATIONAL | HELD | NCES PSS 2023–24 methodological frame file | /home/lewis/src/ad-law-scrape/data/nces/pss/2023-24_PSS_Frame_Data.csv | 849,644 B from in-repo receipt; probe raw frame2023-24.csv 829.7 KB also captured.
+  SRC-261 | NATIONAL | HELD | NHSTFXCCA state track/XC associations | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/nhstfxcca/FINDINGS.md | 15.3 KB probe listing; manifest.json 5.0 KB companion; state-associations route probed.
+  SRC-266 | NATIONAL | HELD | SIDEARM public staff-directory pattern: Miramonte | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/sidearm_miramonte/FINDINGS.md | 13.3 KB probe listing; extract/SRC-266/REPORT.md 6.7 KB; fixtures sidearm_staff present; v
+  SRC-267 | NATIONAL | HELD | Mascot Media public staff-directory pattern: Richland Northeast | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/mascotmedia_rne/FINDINGS.md | 12.5 KB probe listing; extract/SRC-267/REPORT.md 8.1 KB companion.
+  SRC-268 | NATIONAL | HELD | Finalsite public school athletics staff pattern: Starr’s Mill | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/finalsite_starrsmill/FINDINGS.md | 24.2 KB probe listing; extract/SRC-268/REPORT.md 7.1 KB and rows.csv 515 B; var/tap-finals
+  SRC-269 | NATIONAL | HELD | Edlio public athletics staff pattern: Del Norte | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/edlio_delnorte/FINDINGS.md | 15.5 KB probe listing; extract/SRC-269/REPORT.md 7.2 KB companion.
+  SRC-270 | NATIONAL | HELD | School-owned directory pattern: Wellesley | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/schoolowned_wellesley/FINDINGS.md | 14.3 KB probe listing; extract/SRC-270/REPORT.md 8.3 KB companion.
+  SRC-271 | NATIONAL | HELD | School-owned Google Sites coaching directory: Hopatcong | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-coverage-bundle-20261004/probes/googlesites_hopatcong/FINDINGS.md | 13.7 KB probe listing; extract/SRC-271/REPORT.md 6.9 KB companion; census host sites.googl
+  SRC-273 | NATIONAL | HELD | DragonFly Public Directory documentation | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/tests/fixtures/coach_directories/PROVENANCE.json | 11.5 KB fixture listing; golden_directory_rows.json 437.1 KB, nchsaa_directory_p1.json 781
+  SRC-274 | NATIONAL | HELD | MaxPreps track & field school/team discovery | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/national-aggregators/samples/maxpreps/mp-track-field.html | trailing-slash capture for /track-field/ (mp-home.html, mp-state-tx-track.html, mp-aledo-s
+  SRC-275 | NATIONAL | HELD | MileSplit team search | /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/milesplit-national/samples/teams-count-sweep.tsv | teams search/enumeration captures present (teams-tx/pa/ny/il/fl/ca.html, search-v2-athlete
+
+MAIN PATH FIX (after report): 3 dangling evidence paths resolved.
+  extract/SRC-114/captures/ -> probes/sources/SRC-114/captures/ (2 occurrences: SRC-114 dir, SRC-116 file)
+  extract/SRC-248/REPORT.md -> probes/248-nces-ccd-zip/REPORT.md
+  MISSING PATHS now: 0

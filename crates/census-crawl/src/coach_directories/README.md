@@ -23,9 +23,10 @@ prefix matching: `Boys'`/`Boy's` → Boys, `Girls'`/`Girl's` → Girls, one
 `Unified ` or `Mixed ` prefix stripped (gender stays unset, and a second
 genderless prefix leaves no sport — the prototype breaks after the first match).
 Role from title: "head coach" → HeadCoach, "assistant coach" → AssistantCoach,
-otherwise Unknown. A published team assignment does not invent a head/assistant role.
-Directors (title contains "athletic director") become AthleticDirector rows with
-no sport or gender.
+otherwise Unknown. Any title containing "former" stays Unknown and cannot assert
+current tenure. A published team assignment does not invent a head/assistant role.
+Current directors (title contains "athletic director", but not "former") become
+AthleticDirector rows with no sport or gender.
 
 Three passes: team `coachProfileIds` first, then unplaced staff with a `teamName`, then directors.
 All published records for an ID reach admission; no earlier eligible record is overwritten before
@@ -58,6 +59,37 @@ by staff member, sport, gender, role and normalized level; repeat rejections
 count once per context without hiding a later eligible row. Probe scope runs
 neither hygiene nor level filtering. `collect` reports the dropped rows in its
 notes: per-level, vendor, person and directory-row counts.
+
+## Page-bound appointment evidence (ADR-024)
+
+Production `coach_entities` requires the census run's `SchoolYear` and the retained
+summary capture's SHA256 and RFC3339 retrieval time. The collector supplies
+`AdapterContext.school_year` and the summary `FetchOutcome` metadata, never a year
+inferred from the observation date or a digest manufactured by the mapper.
+
+A listed head/assistant coach with a named team emits `CoachTenure::Current` for
+that run season. Team-index placement keeps the source team's label; unplaced staff
+keeps its own `teamName`. A listed Athletic Director uses the source school's name
+and school athletics as its program. Unknown/former roles and coaching roles without
+a team emit no tenure evidence. Name-only appointments may have current tenure but
+have no mailbox claim.
+
+Each evidence record includes the capture URL/digest/time and a statement containing
+the source role and team/program labels verbatim. A `CoachContactClaim` binds the minted
+coach ID, school ID, role, sport/gender or SchoolAthletics, and only the mailbox this
+same listing emitted. Missing mailboxes remain `None`; other captures' addresses are
+never borrowed. Domain validation checks the constructed evidence; malformed capture
+metadata and statements exceeding 512 bytes are explicit mapping errors. Labels are
+never truncated to fit.
+
+The separately named `probe_coach_entities` has no census season and cannot emit
+tenure evidence. Its diagnostic counts retain their existing scope. Focused regressions
+exercise both pure mapping and the real offline collector/cache/store path, including a
+run season different from the retained timestamp.
+
+Run the focused suite with `cargo test -p census-crawl --lib coach_directories`.
+Recruiter contact publication is a separate report-layer acceptance (bead `0hx`);
+directory appointment emission alone does not prove that a mailbox publishes.
 
 ## Parity with the prototype
 

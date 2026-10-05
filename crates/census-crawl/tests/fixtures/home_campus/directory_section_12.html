@@ -1,0 +1,2007 @@
+<link rel="stylesheet" href="https://cifss-assets.homecampus.com/css/app.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js" integrity="sha512-U6K1YLIFUWcvuw5ucmMtT9HH4t0uz3M366qrF5y4vnyH6dgDzndlcGvH/Lz5k8NFh80SN95aJ5rqGZEdaQZ7ZQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.css" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+<script src="https://cifss-assets.homecampus.com/js/app.js"></script>
+<style>
+    @media (max-width: 768px)  {
+        .header-directory {
+            padding: 0px 20px 0px 20px !important
+        }
+    }
+    html, body {
+        background: #fff !important;
+    }
+    .directory-item {
+        width: 30.14% !important;
+    }
+</style>
+<div class="container mt-5">
+    <form name="search" method="GET" action="/widget/school/directory" >
+        <div class="row header-directory">
+            <div class="col-12 mt-2 col-md-4">
+                <h3 class="font-weight-bold mb-0 mr-2">School Directory</h3>
+            </div>
+            <div class="col-12 mt-2 col-md-4">
+                <select name="section" id="section" class="form-control">
+                                                                    <option value="4" >Central Coast Section</option>
+                                                                    <option value="9" >Central Section</option>
+                                                                    <option value="10" >FHSAA</option>
+                                                                    <option value="6" >Los Angeles City Section</option>
+                                                                    <option value="12" selected>New Jersey</option>
+                                                                    <option value="14" >No Section</option>
+                                                                    <option value="11" >North Carolina</option>
+                                                                    <option value="7" >North Coast Section</option>
+                                                                    <option value="8" >Northern Section</option>
+                                                                    <option value="2" >Oakland Section</option>
+                                                                    <option value="5" >SAC-Joaquin Section</option>
+                                                                    <option value="3" >San Diego Section</option>
+                                                                    <option value="13" >San Francisco Section</option>
+                                                                    <option value="1" >Southern Section</option>
+                     
+                </select>
+            </div>
+            <div class="col-12 mt-2 col-md-4">
+                <input type="text" name="school" value="" placeholder="Search School Name" autocomplete="off" class="typeahead form-control">
+            </div>
+        </div>
+        <input type="hidden" id="school-id"  value="">
+        <input type="hidden" id="section-id"  value="12">
+    </form>
+<div class="d-md-flex justify-content-between mt-3 school-directory">
+    <div class="col col-md-5 col-lg-4 pr-md-1 pl-md-0">
+        <div class="content-container border p-4 w-100 mr-md-2" style=" height: 650px;overflow: scroll;">
+                                        <button class="  school-btn btn text-left  px-2 w-100" id="school-button-3374" data-id="3374">
+                    Abraham Clark
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3375" data-id="3375">
+                    Absegami
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3376" data-id="3376">
+                    Academy Charter
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3377" data-id="3377">
+                    Academy for Urban Leadership Charter
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3378" data-id="3378">
+                    Academy of St. Elizabeth
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3379" data-id="3379">
+                    Academy of the Holy Angels
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3380" data-id="3380">
+                    Allentown
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3381" data-id="3381">
+                    American History
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3382" data-id="3382">
+                    Arthur L. Johnson
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3383" data-id="3383">
+                    Arthur P. Schalick
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3384" data-id="3384">
+                    Arts
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3385" data-id="3385">
+                    Asbury Park
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3386" data-id="3386">
+                    Atlantic City
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3387" data-id="3387">
+                    Atlantic County Institute of Technology
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3388" data-id="3388">
+                    Audubon
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3822" data-id="3822">
+                    Bard
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3389" data-id="3389">
+                    Barnegat
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3390" data-id="3390">
+                    Barringer
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3391" data-id="3391">
+                    Bayonne
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3392" data-id="3392">
+                    Belleville
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3820" data-id="3820">
+                    Beloved Community Charter
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3393" data-id="3393">
+                    Belvidere
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3394" data-id="3394">
+                    Benedictine Academy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3395" data-id="3395">
+                    Bergen Arts and Science Charter School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3396" data-id="3396">
+                    Bergen Catholic
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3397" data-id="3397">
+                    Bergen County Technical
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3398" data-id="3398">
+                    Bergenfield
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3399" data-id="3399">
+                    Bernards
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3401" data-id="3401">
+                    Bishop Eustace Preparatory
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3811" data-id="3811">
+                    Blair Academy (Fed)
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3402" data-id="3402">
+                    Bloomfield
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3403" data-id="3403">
+                    Bogota
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3404" data-id="3404">
+                    Boonton
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3405" data-id="3405">
+                    Bordentown Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3406" data-id="3406">
+                    Bound Brook
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3407" data-id="3407">
+                    Brick Memorial
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3408" data-id="3408">
+                    Brick Township
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3409" data-id="3409">
+                    Bridgeton
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3410" data-id="3410">
+                    Bridgewater-Raritan
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3411" data-id="3411">
+                    Buena Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3412" data-id="3412">
+                    Burlington City
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3413" data-id="3413">
+                    Burlington County Institute of Technology Medford
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3414" data-id="3414">
+                    Burlington County Institute of Technology Westampton
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3415" data-id="3415">
+                    Burlington Township
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3416" data-id="3416">
+                    Butler
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3806" data-id="3806">
+                    Bye
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3417" data-id="3417">
+                    Calvary Christian School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3421" data-id="3421">
+                    Camden
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3418" data-id="3418">
+                    Camden Catholic 
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3419" data-id="3419">
+                    Camden County Technical School at Pennsauken
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3420" data-id="3420">
+                    Camden County Technical School at Sicklerville
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3422" data-id="3422">
+                    Camden Promise Charter School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3423" data-id="3423">
+                    Cape May County Technical
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3424" data-id="3424">
+                    Carteret
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3425" data-id="3425">
+                    Cedar Creek
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3426" data-id="3426">
+                    Cedar Grove
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3427" data-id="3427">
+                    Central
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3428" data-id="3428">
+                    Central Jersey College Prep Charter School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3429" data-id="3429">
+                    Central Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3430" data-id="3430">
+                    Chatham
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3431" data-id="3431">
+                    Cherokee
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3432" data-id="3432">
+                    Cherry Hill East
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3433" data-id="3433">
+                    Cherry Hill West
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3434" data-id="3434">
+                    Christian Brothers Academy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3435" data-id="3435">
+                    Cinnaminson
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3436" data-id="3436">
+                    Clayton
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3437" data-id="3437">
+                    Clearview Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3438" data-id="3438">
+                    Cliffside Park
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3439" data-id="3439">
+                    Clifton
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3810" data-id="3810">
+                    College Achieve Central Charter
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3440" data-id="3440">
+                    Collingswood
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3441" data-id="3441">
+                    Colonia
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3442" data-id="3442">
+                    Colts Neck
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3443" data-id="3443">
+                    Columbia
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3444" data-id="3444">
+                    Cranford
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3445" data-id="3445">
+                    Cresskill
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3446" data-id="3446">
+                    Cristo Rey Newark
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3447" data-id="3447">
+                    Cumberland Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3448" data-id="3448">
+                    David Brearley
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3449" data-id="3449">
+                    Delaware Valley Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3450" data-id="3450">
+                    Delbarton School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3451" data-id="3451">
+                    Delran
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3452" data-id="3452">
+                    Delsea Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3453" data-id="3453">
+                    DePaul Catholic 
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3454" data-id="3454">
+                    Deptford Township
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3455" data-id="3455">
+                    Doane Academy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3456" data-id="3456">
+                    Don Bosco Prep
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3457" data-id="3457">
+                    Donovan Catholic
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3458" data-id="3458">
+                    Dover
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3459" data-id="3459">
+                    Dr. Ronald E. McNair Academic
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3460" data-id="3460">
+                    Dumont
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3461" data-id="3461">
+                    Dunellen
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3462" data-id="3462">
+                    Dwight Morrow
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3463" data-id="3463">
+                    Dwight-Englewood
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3464" data-id="3464">
+                    Eagle Academy Newark
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3465" data-id="3465">
+                    East Brunswick
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3466" data-id="3466">
+                    East Brunswick Vo-Tech
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3467" data-id="3467">
+                    East Orange Campus
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3468" data-id="3468">
+                    East Side
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3470" data-id="3470">
+                    Eastern
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3469" data-id="3469">
+                    Eastern Christian
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3471" data-id="3471">
+                    Eastside
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3473" data-id="3473">
+                    Edison
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3472" data-id="3472">
+                    Edison Academy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3474" data-id="3474">
+                    Egg Harbor Township
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3475" data-id="3475">
+                    Elizabeth
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3476" data-id="3476">
+                    Elmwood Park Memorial
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3477" data-id="3477">
+                    Emerson Jr.-Sr.
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3478" data-id="3478">
+                    Essex County Vocational - Donald Payne Tech
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3479" data-id="3479">
+                    Essex County Vocational-Technical Market St
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3480" data-id="3480">
+                    Essex County Vocational-Technical West Caldwell
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3481" data-id="3481">
+                    Ewing
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3482" data-id="3482">
+                    Fair Lawn
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3483" data-id="3483">
+                    Florence Township Memorial
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3484" data-id="3484">
+                    Fort Lee
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3825" data-id="3825">
+                    Foundation Academy Collegiate
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3485" data-id="3485">
+                    Franklin
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3486" data-id="3486">
+                    Freedom Prep Charter School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3487" data-id="3487">
+                    Freehold Boro
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3488" data-id="3488">
+                    Freehold Township
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3489" data-id="3489">
+                    Frisch School 
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3490" data-id="3490">
+                    Garfield
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3491" data-id="3491">
+                    Gateway Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3492" data-id="3492">
+                    Gill St. Bernard&#039;s School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3493" data-id="3493">
+                    Glassboro
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3494" data-id="3494">
+                    Glen Ridge
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3495" data-id="3495">
+                    Glen Rock
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3496" data-id="3496">
+                    Gloucester Catholic
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3497" data-id="3497">
+                    Gloucester City Jr-Sr
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3498" data-id="3498">
+                    Gloucester County Institute of Technology
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3499" data-id="3499">
+                    Golda Och Academy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3500" data-id="3500">
+                    Governor Livingston
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3501" data-id="3501">
+                    Hackensack
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3502" data-id="3502">
+                    Hackettstown
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3503" data-id="3503">
+                    Haddon Heights
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3504" data-id="3504">
+                    Haddon Township
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3505" data-id="3505">
+                    Haddonfield Memorial
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3506" data-id="3506">
+                    Hamilton East
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3507" data-id="3507">
+                    Hamilton North
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3508" data-id="3508">
+                    Hamilton West
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3509" data-id="3509">
+                    Hammonton
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3510" data-id="3510">
+                    Hanover Park
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3511" data-id="3511">
+                    Harrison
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3512" data-id="3512">
+                    Hasbrouck Heights
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3514" data-id="3514">
+                    Hawthorne
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3513" data-id="3513">
+                    Hawthorne Christian Academy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3515" data-id="3515">
+                    Henry Hudson Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3516" data-id="3516">
+                    Henry P. Becton Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3517" data-id="3517">
+                    Henry Snyder
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3518" data-id="3518">
+                    High Point Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3519" data-id="3519">
+                    Highland Park
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3520" data-id="3520">
+                    Highland Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3521" data-id="3521">
+                    Hightstown
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3522" data-id="3522">
+                    Hillsborough
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3523" data-id="3523">
+                    Hillside
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3525" data-id="3525">
+                    Hoboken
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3524" data-id="3524">
+                    Hoboken Charter
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3526" data-id="3526">
+                    Holmdel
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3527" data-id="3527">
+                    Holy Cross Prep Academy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3528" data-id="3528">
+                    Holy Spirit
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3529" data-id="3529">
+                    Hopatcong
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3530" data-id="3530">
+                    Hopewell Valley Central
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3531" data-id="3531">
+                    Howell
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3532" data-id="3532">
+                    Hudson Catholic Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3533" data-id="3533">
+                    Hunterdon Central Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3534" data-id="3534">
+                    Immaculata
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3535" data-id="3535">
+                    Immaculate Conception Lodi
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3536" data-id="3536">
+                    Immaculate Conception Montclair
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3537" data-id="3537">
+                    Immaculate Heart Academy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3538" data-id="3538">
+                    Indian Hills
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3539" data-id="3539">
+                    Irvington
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3540" data-id="3540">
+                    Jackson Liberty
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3541" data-id="3541">
+                    Jackson Memorial
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3542" data-id="3542">
+                    James Caldwell
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3543" data-id="3543">
+                    James J. Ferris
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3544" data-id="3544">
+                    Jefferson Township
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3545" data-id="3545">
+                    John F. Kennedy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3546" data-id="3546">
+                    John F. Kennedy Memorial
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3547" data-id="3547">
+                    John P. Stevens
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3548" data-id="3548">
+                    Jonathan Dayton
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3549" data-id="3549">
+                    Keansburg
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3550" data-id="3550">
+                    Kearny
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3551" data-id="3551">
+                    Kent Place School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3552" data-id="3552">
+                    Keyport
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3553" data-id="3553">
+                    Kingsway Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3554" data-id="3554">
+                    Kinnelon
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3819" data-id="3819">
+                    KIPP Cooper Norcross
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3555" data-id="3555">
+                    Kittatinny Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3556" data-id="3556">
+                    Koinonia Academy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3557" data-id="3557">
+                    Lacey Township
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3558" data-id="3558">
+                    Lakeland Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3559" data-id="3559">
+                    Lakewood
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3560" data-id="3560">
+                    Lawrence
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3813" data-id="3813">
+                    Lawrenceville School (Fed)
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3561" data-id="3561">
+                    LEAP Academy University Charter
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3562" data-id="3562">
+                    Lenape
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3563" data-id="3563">
+                    Lenape Valley Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3564" data-id="3564">
+                    Leonia
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3565" data-id="3565">
+                    Lincoln
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3566" data-id="3566">
+                    Linden
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3567" data-id="3567">
+                    Lindenwold
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3568" data-id="3568">
+                    Livingston
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3569" data-id="3569">
+                    Lodi
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3570" data-id="3570">
+                    Long Branch
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3571" data-id="3571">
+                    Lower Cape May Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3572" data-id="3572">
+                    Lyndhurst
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3573" data-id="3573">
+                    M.E.T.S. Charter School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3574" data-id="3574">
+                    Madison
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3575" data-id="3575">
+                    Mahwah
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3576" data-id="3576">
+                    Mainland Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3577" data-id="3577">
+                    Malcolm X Shabazz
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3578" data-id="3578">
+                    Manalapan
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3579" data-id="3579">
+                    Manasquan
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3580" data-id="3580">
+                    Manchester Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3581" data-id="3581">
+                    Manchester Township
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3582" data-id="3582">
+                    Manville
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3583" data-id="3583">
+                    Maple Shade
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3823" data-id="3823">
+                    Marion P. Thomas Charter
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3584" data-id="3584">
+                    Marist
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3585" data-id="3585">
+                    Marlboro
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3586" data-id="3586">
+                    Mary Help of Christians Academy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3587" data-id="3587">
+                    Mastery of Camden
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3588" data-id="3588">
+                    Matawan Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3589" data-id="3589">
+                    Mater Dei Prep
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3590" data-id="3590">
+                    Memorial
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3591" data-id="3591">
+                    Metuchen
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3592" data-id="3592">
+                    Middle Township
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3593" data-id="3593">
+                    Middlesex
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3594" data-id="3594">
+                    Middletown North
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3595" data-id="3595">
+                    Middletown South
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3596" data-id="3596">
+                    Midland Park
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3597" data-id="3597">
+                    Millburn
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3598" data-id="3598">
+                    Millville Senior
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3599" data-id="3599">
+                    Monmouth Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3600" data-id="3600">
+                    Monroe Township
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3601" data-id="3601">
+                    Montclair
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3602" data-id="3602">
+                    Montclair Kimberley Academy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3603" data-id="3603">
+                    Montgomery
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3604" data-id="3604">
+                    Montville Township
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3606" data-id="3606">
+                    Moorestown
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3605" data-id="3605">
+                    Moorestown Friends School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3607" data-id="3607">
+                    Morris Catholic
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3608" data-id="3608">
+                    Morris County School of Technology
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3609" data-id="3609">
+                    Morris Hills
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3610" data-id="3610">
+                    Morris Knolls
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3611" data-id="3611">
+                    Morristown
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3612" data-id="3612">
+                    Morristown-Beard School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3613" data-id="3613">
+                    Mother Seton Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3614" data-id="3614">
+                    Mount Olive
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3615" data-id="3615">
+                    Mount Saint Dominic Academy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3616" data-id="3616">
+                    Mount Saint Mary Academy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3617" data-id="3617">
+                    Mountain Lakes
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3618" data-id="3618">
+                    Neptune
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3619" data-id="3619">
+                    New Brunswick
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3620" data-id="3620">
+                    New Egypt
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3621" data-id="3621">
+                    New Milford
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3622" data-id="3622">
+                    New Providence
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3623" data-id="3623">
+                    Newark Academy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3624" data-id="3624">
+                    Newark Collegiate Charter
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3821" data-id="3821">
+                    Newark Lab
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3824" data-id="3824">
+                    Newark Vocational
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3625" data-id="3625">
+                    Newton
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3626" data-id="3626">
+                    North Arlington
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3627" data-id="3627">
+                    North Bergen
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3628" data-id="3628">
+                    North Brunswick Township
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3629" data-id="3629">
+                    North Hunterdon
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3630" data-id="3630">
+                    North Plainfield
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3631" data-id="3631">
+                    North Star Academy Charter
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3632" data-id="3632">
+                    North Warren Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3633" data-id="3633">
+                    Northern Burlington Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3634" data-id="3634">
+                    Northern Highlands Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3635" data-id="3635">
+                    Northern Valley Regional at Demarest
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3636" data-id="3636">
+                    Northern Valley Regional at Old Tappan
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3637" data-id="3637">
+                    Notre Dame
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3638" data-id="3638">
+                    Nutley
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3639" data-id="3639">
+                    Oak Knoll School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3640" data-id="3640">
+                    Oakcrest
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3641" data-id="3641">
+                    Ocean City
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3642" data-id="3642">
+                    Ocean Township
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3643" data-id="3643">
+                    Old Bridge
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3644" data-id="3644">
+                    Orange
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3645" data-id="3645">
+                    Oratory Catholic Prep School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3646" data-id="3646">
+                    Our Lady of Mercy Academy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3647" data-id="3647">
+                    Overbrook
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3648" data-id="3648">
+                    Palisades Park Jr-Sr
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3649" data-id="3649">
+                    Palmyra
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3651" data-id="3651">
+                    Paramus
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3650" data-id="3650">
+                    Paramus Catholic
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3652" data-id="3652">
+                    Park Ridge
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3653" data-id="3653">
+                    Parsippany
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3654" data-id="3654">
+                    Parsippany Hills
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3655" data-id="3655">
+                    Pascack Hills
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3656" data-id="3656">
+                    Pascack Valley
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3659" data-id="3659">
+                    Passaic
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3657" data-id="3657">
+                    Passaic Arts and Science Charter School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3658" data-id="3658">
+                    Passaic County Technical Institute
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3660" data-id="3660">
+                    Passaic Valley
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3661" data-id="3661">
+                    Paterson Charter School Science &amp; Technology
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3662" data-id="3662">
+                    Patrick School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3663" data-id="3663">
+                    Paul VI
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3664" data-id="3664">
+                    Paulsboro
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3814" data-id="3814">
+                    Peddie School (Fed)
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3665" data-id="3665">
+                    Pemberton Township
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3666" data-id="3666">
+                    Penns Grove
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3667" data-id="3667">
+                    Pennsauken
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3668" data-id="3668">
+                    Pennsville Memorial
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3669" data-id="3669">
+                    Peoples Prep Charter School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3670" data-id="3670">
+                    Pequannock Township
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3671" data-id="3671">
+                    Perth Amboy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3672" data-id="3672">
+                    Perth Amboy Technical
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3673" data-id="3673">
+                    Phillipsburg
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3674" data-id="3674">
+                    Pinelands Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3675" data-id="3675">
+                    Pingry School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3676" data-id="3676">
+                    Piscataway
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3677" data-id="3677">
+                    Piscataway Technical
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3678" data-id="3678">
+                    Pitman
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3679" data-id="3679">
+                    Plainfield
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3680" data-id="3680">
+                    Pleasantville
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3681" data-id="3681">
+                    Point Pleasant Beach
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3682" data-id="3682">
+                    Point Pleasant Borough
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3683" data-id="3683">
+                    Pompton Lakes
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3684" data-id="3684">
+                    Pope John XXIII
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3685" data-id="3685">
+                    Princeton
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3816" data-id="3816">
+                    Princeton Day School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3686" data-id="3686">
+                    Rahway
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3687" data-id="3687">
+                    Ramapo
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3688" data-id="3688">
+                    Ramsey
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3689" data-id="3689">
+                    Rancocas Valley Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3690" data-id="3690">
+                    Randolph
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3691" data-id="3691">
+                    Ranney School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3692" data-id="3692">
+                    Raritan
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3693" data-id="3693">
+                    Red Bank Catholic
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3694" data-id="3694">
+                    Red Bank Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3695" data-id="3695">
+                    Ridge
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3696" data-id="3696">
+                    Ridgefield Memorial
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3697" data-id="3697">
+                    Ridgefield Park Jr-Sr
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3698" data-id="3698">
+                    Ridgewood
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3699" data-id="3699">
+                    River Dell Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3700" data-id="3700">
+                    Riverside
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3701" data-id="3701">
+                    Robbinsville
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3702" data-id="3702">
+                    Roselle Catholic
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3703" data-id="3703">
+                    Roselle Park
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3704" data-id="3704">
+                    Roxbury
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3705" data-id="3705">
+                    Rumson-Fair Haven Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3706" data-id="3706">
+                    Rutgers Prep School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3707" data-id="3707">
+                    Rutherford
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3708" data-id="3708">
+                    Saddle Brook
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3709" data-id="3709">
+                    Saddle River Day School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3710" data-id="3710">
+                    Saint Augustine Prep School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3818" data-id="3818">
+                    Saint Benedict&#039;s Prep School (Fed)
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3711" data-id="3711">
+                    Saint Dominic Academy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3712" data-id="3712">
+                    Saint John Vianney
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3713" data-id="3713">
+                    Saint Joseph Academy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3714" data-id="3714">
+                    Saint Joseph Metuchen
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3715" data-id="3715">
+                    Saint Joseph Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3716" data-id="3716">
+                    Saint Mary of the Assumption
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3717" data-id="3717">
+                    Saint Mary&#039;s
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3718" data-id="3718">
+                    Saint Peter&#039;s Prep
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3719" data-id="3719">
+                    Saint Rose
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3400" data-id="3400">
+                    Saint Thomas Aquinas
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3720" data-id="3720">
+                    Saint Vincent Academy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3721" data-id="3721">
+                    Salem
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3722" data-id="3722">
+                    Sayreville War Memorial
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3723" data-id="3723">
+                    Science Park
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3724" data-id="3724">
+                    Scotch Plains-Fanwood
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3725" data-id="3725">
+                    Secaucus
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3726" data-id="3726">
+                    Seneca
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3727" data-id="3727">
+                    Seton Hall Preparatory School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3728" data-id="3728">
+                    Shawnee
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3729" data-id="3729">
+                    Shore Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3730" data-id="3730">
+                    Sinai Christian Academy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3731" data-id="3731">
+                    Somerset County Vo-Tech
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3732" data-id="3732">
+                    Somerville
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3733" data-id="3733">
+                    South Amboy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3734" data-id="3734">
+                    South Brunswick
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3735" data-id="3735">
+                    South Hunterdon Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3736" data-id="3736">
+                    South Plainfield
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3737" data-id="3737">
+                    South River
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3738" data-id="3738">
+                    Southern Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3739" data-id="3739">
+                    Sparta
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3740" data-id="3740">
+                    Spotswood
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3741" data-id="3741">
+                    STEMCivics Charter School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3742" data-id="3742">
+                    Sterling
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3817" data-id="3817">
+                    Stuart Country Day School (Fed)
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3743" data-id="3743">
+                    Summit
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3744" data-id="3744">
+                    Sussex County Technical
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3745" data-id="3745">
+                    Teaneck
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3746" data-id="3746">
+                    Technology
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3747" data-id="3747">
+                    Tenafly
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3807" data-id="3807">
+                    Test
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3808" data-id="3808">
+                    Test
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3812" data-id="3812">
+                    The Hun School of Princeton (Fed)
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3815" data-id="3815">
+                    The Pennington School (Fed)
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3748" data-id="3748">
+                    The Wilberforce School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3809" data-id="3809">
+                    Thomas Edison Charter
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3749" data-id="3749">
+                    Timber Creek
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3750" data-id="3750">
+                    Timothy Christian School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3751" data-id="3751">
+                    Toms River East
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3752" data-id="3752">
+                    Toms River North
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3753" data-id="3753">
+                    Toms River South
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3754" data-id="3754">
+                    Toms Rivers
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3755" data-id="3755">
+                    Trenton Catholic Academy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3756" data-id="3756">
+                    Trenton Central
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3757" data-id="3757">
+                    Trinity Hall
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3758" data-id="3758">
+                    Triton Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3761" data-id="3761">
+                    Union
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3759" data-id="3759">
+                    Union Catholic Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3760" data-id="3760">
+                    Union City
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3763" data-id="3763">
+                    University
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3762" data-id="3762">
+                    University Academy Charter
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3764" data-id="3764">
+                    Vernon Township
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3765" data-id="3765">
+                    Verona
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3766" data-id="3766">
+                    Villa Walsh Academy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3767" data-id="3767">
+                    Vineland
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3768" data-id="3768">
+                    Voorhees
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3769" data-id="3769">
+                    Waldwick
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3770" data-id="3770">
+                    Wall Township
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3771" data-id="3771">
+                    Wallington
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3772" data-id="3772">
+                    Wallkill Valley Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3773" data-id="3773">
+                    Wardlaw-Hartridge School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3774" data-id="3774">
+                    Warren County Technical School
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3775" data-id="3775">
+                    Warren Hills Regional
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3776" data-id="3776">
+                    Washington Township
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3777" data-id="3777">
+                    Watchung Hills Reg
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3778" data-id="3778">
+                    Wayne Hills
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3779" data-id="3779">
+                    Wayne Valley
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3780" data-id="3780">
+                    Weehawken
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3781" data-id="3781">
+                    Weequahic
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3782" data-id="3782">
+                    West Deptford Township
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3783" data-id="3783">
+                    West Essex
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3784" data-id="3784">
+                    West Milford Township
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3785" data-id="3785">
+                    West Morris Central
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3786" data-id="3786">
+                    West Morris Mendham
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3787" data-id="3787">
+                    West Orange
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3788" data-id="3788">
+                    West Side
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3789" data-id="3789">
+                    West Windsor-Plainsboro North
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3790" data-id="3790">
+                    West Windsor-Plainsboro South
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3791" data-id="3791">
+                    Westfield
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3792" data-id="3792">
+                    Westwood Regional Jr-Sr
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3793" data-id="3793">
+                    Whippany Park
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3795" data-id="3795">
+                    Wildwood
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3794" data-id="3794">
+                    Wildwood Catholic
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3796" data-id="3796">
+                    William L. Dickinson
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3797" data-id="3797">
+                    Williamstown
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3798" data-id="3798">
+                    Willingboro
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3799" data-id="3799">
+                    Winslow Township
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3803" data-id="3803">
+                    Wood-Ridge
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3801" data-id="3801">
+                    Woodbridge
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3800" data-id="3800">
+                    Woodbridge Academy
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3802" data-id="3802">
+                    Woodbury
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3804" data-id="3804">
+                    Woodrow Wilson
+                </button>
+                                            <button class="  school-btn btn text-left  border-top  px-2 w-100" id="school-button-3805" data-id="3805">
+                    Woodstown
+                </button>
+                                    </div>
+    </div>
+    <div class="col col-md-7 col-lg-8 pl-md-1 pr-md-0 mt-md-0 mt-4 mb-5" >
+        <div class="content-container border p-4 w-100 ml-md-2" id="school-info" >
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item mr-2 directory-item">
+                    <a class="nav-link active" id="school-information-tab" data-toggle="tab" href="#school-information" role="tab" aria-controls="home" aria-selected="true">School Information</a>
+                </li>
+                <li class="nav-item mr-2 directory-item">
+                    <a class="nav-link" id="athletic-faculty-tab" data-toggle="tab" href="#athletic-faculty" role="tab" aria-controls="athletic-faculty" aria-selected="false">Athletic Faculty</a>
+                </li>
+                <li class="nav-item mr-2 directory-item">
+                    <a class="nav-link" id="coaches-and-sports-tab" data-toggle="tab" href="#coaches-and-sports" role="tab"     aria-controls="coaches-and-sports" aria-selected="false">Coaches and Sports</a>
+                </li>
+            </ul>
+            <div class="tab-content py-3">
+                <div class="tab-pane fade show active" id="school-information" role="tabpanel" aria-labelledby="school-information-tab">
+                </div>
+                <div class="tab-pane fade" id="athletic-faculty" role="tabpanel" aria-labelledby="athletic-faculty-tab">
+                 
+                </div>
+                <div class="tab-pane fade" id="coaches-and-sports" role="tabpanel" aria-labelledby="coaches-and-sports-tab">
+                  
+                </div>
+            </div>
+        </div>
+        <div class="content-container border p-4 w-100 ml-md-2" style="display: none" id="school-info-is-hidden">
+            <div class="info-block">
+                <i class="fas fa-info-circle fa-lg mr-2"></i>
+                <p>Needs to be listed in school directory.</p>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<style>
+    .active-directory-link {
+        background: #162167 !important;
+        color: white !important;
+    }
+</style>
+<script>
+    $(document).ready(function(){
+        var $input = $(".typeahead");
+        var path = "/widget/schools/get"
+
+        var sectionId = $('#section-id').val();
+
+        var section_id = "12"
+
+        $('#school-info-is-hidden').hide();
+
+        $('#section').change(function(){
+            $('.typeahead').value = ''
+
+            setTimeout(() => {
+                document.forms['search'].submit();
+            }, 300);
+
+            sectionId = $(this).val();
+            $input.typeahead('val', '');
+            $(".typeahead").val("")
+            $(".typeahead").trigger('propertychange.typeahead');
+        });
+
+        $input.typeahead({
+        source: function (query, process) {
+                return $.get(path, {
+                    school: query,
+                    section_id: sectionId,
+                    status: 'active',
+                    hide_from_directory: 0
+                }, function (data) {
+                    return process(data);
+                });
+            },
+        });
+
+        $input.change(function() {
+            var current = $input.typeahead("getActive");
+            if (current) {
+                if (current.name == $input.val()) {
+                   $('#school-id').val(current.id);
+
+                   $('.school-btn').removeClass('active-directory-link')
+
+                   $('#school-button-' + current.id).addClass('active-directory-link')
+
+                   getDetails(current.id);
+                }
+            }
+            else
+            {
+                $('#school-id').val('');
+            }
+        });
+
+        
+        function getDetails(id) {
+            if (history.pushState) {
+                var newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?school_id=' + id + '&section_id=' + section_id;
+                window.history.pushState({path:newurl},'',newurl);
+            }
+
+            $.get('/widget/get-school-details/'+id+'/details').then(function(data)
+            {
+                if (data['school']['hide_from_directory'] == 1) {
+                    $('#school-info').hide();
+                    $('#school-info-is-hidden').show();
+                } else {
+                    $('#school-info').show();
+                    $('#school-info-is-hidden').hide();
+                }
+
+                let str = '',
+                facultyStr = '',
+                sportAndLevel = '',
+                coachStr = '';
+
+                if (data)
+                {
+                    str += '<h2 class="h2-smaller font-weight-bold">'+data['school']['name']+' - School Information</h2>'+
+                            '<div class="row">'+
+                                '<div class="col-lg-8">'+
+                                '<div class="d-flex justify-content-between pb-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>School Full Name:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+data['school']['full_name']+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>Common Name:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+data['school']['name']+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>School ID:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+ (parseInt(section_id) === 10 ? 
+                                            (data['school']['fhsaa_school_id'] !== null && data['school']['fhsaa_school_id'] !== undefined && data['school']['fhsaa_school_id'] !== '' ? 
+                                                data['school']['fhsaa_school_id'] : 
+                                                data['school']['id']) : 
+                                            data['school']['id'] 
+                                        )+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>Section:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+data['school']['section']+'</span>'+
+                                    '</div>'+
+                                '</div>';
+
+                                if (data['geoGroups'])
+                                {
+                                    for (let key in data['geoGroups'])
+                                    {
+                                        str += '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                                    '<div class="col-6 px-0">'+
+                                                        '<span>'+data['geoGroups'][key]['type']+':</span>'+
+                                                    '</div>'+
+                                                    '<div class="col-6 px-0">'+
+                                                        '<span>'+(data['geoGroups'][key]['value']!==null ? data['geoGroups'][key]['value']['name'] : '')+'</span>'+
+                                                    '</div>'+
+                                                '</div>';
+                                    }
+                                }
+
+                        str += '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>Street Address:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+data['school']['address_line_1']+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>City:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+data['school']['city']+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>State:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+data['school']['physical_state']+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>Zip:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+data['school']['physical_zip']+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>Mailing Address:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+(data['school']['mailing_address_line_1']!==null ? data['school']['mailing_address_line_1'] : '')+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>Mailing City:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+(data['school']['mailing_city']!==null ? data['school']['mailing_city'] : '')+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>Mailing State:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+(data['school']['mailing_state']!==null ? data['school']['mailing_state'] : '')+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>Mailing Zip:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+(data['school']['mailing_zip']!==null ? data['school']['mailing_zip'] : '')+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>School Enrollment:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+(data['school']['enrollment'] && data['school']['enrollment']!==null ? data['school']['enrollment'] : '')+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>Grades Served:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+data['grades']+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>Main Office Phone:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+(data['school']['phone']!==null ? data['school']['phone'] : '')+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>Ext:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+(data['school']['ext']!==null ? data['school']['ext'] : '')+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>Fax:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+(data['school']['fax']!==null ? data['school']['fax'] : '')+'</span>'+
+                                    '</div>'+
+                                '</div>'
+
+                                if (parseInt(section_id) === 10)
+                                {
+                                     str += '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                        '<div class="col-6 px-0">'+
+                                            '<span>School Category:</span>'+
+                                        '</div>'+
+                                        '<div class="col-6 px-0">'+
+                                            '<span>'+(data['school']['school_category_name']!==null ? data['school']['school_category_name'] : '')+'</span>'+
+                                        '</div>'+
+                                    '</div>'
+                                }
+                                
+                                str += '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>Public or Private School:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+(data['school']['is_private']===1 ? 'Private' : 'Public')+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>Boarding School:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+(data['school']['is_boarding']===1 ? 'Yes' : 'No')+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>School Color:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+(data['school']['color']!==null ? data['school']['color'] : '')+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>Hytek Code:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+(data['school']['hytek_code']!==null ? data['school']['hytek_code'] : '')+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>Year School Established:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+(data['school']['year_established']!==null ? data['school']['year_established'] : '')+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>School Mascot / Nickname:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+(data['school']['mascot']!==null ? data['school']['mascot'] : '')+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>School Website:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<a href=' + data['school']['website']  +' target="blank">'+(data['school']['website']!==null ? data['school']['website'] : '')+'</a>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>School Status:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+(data['school']['status'])+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>Coed:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>'+(data['school']['code']===1 ? 'Yes' : 'No')+'</span>'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>School Facebook:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'
+                                let facebook = data['school']['facebook']
+                                let fb = facebook
+
+                                if (facebook !== null) 
+                                {
+                                    if (facebook.includes('https://')) { }
+                                    else if (facebook.includes('@'))
+                                    {
+                                        fb = 'https://www.facebook.com/' + facebook.substring(1)
+                                    }
+                                    else
+                                    {
+                                        fb = 'https://www.facebook.com/' + facebook
+                                    }
+                                } else { facebook = '' }
+
+                                str += '<a href=' + fb  +' target="blank">'+ facebook +'</a>'
+                                str += '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>School Instagram:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'
+
+                                let mainInstagram = data['school']['instagram']
+                                let mainInsta = mainInstagram
+
+                                if (mainInstagram !== null) 
+                                {
+                                    if (mainInstagram.includes('https://')) { }
+                                    else if (mainInstagram.includes('@'))
+                                    {
+                                        mainInsta = 'https://www.instagram.com/' + mainInstagram.substring(1)
+                                    }
+                                    else
+                                    {
+                                        mainInsta = 'https://www.instagram.com/' + mainInstagram
+                                    }
+                                } else { mainInstagram = '' }
+
+                                str += '<a href=' + mainInsta +' target="blank">'+ mainInstagram +'</a>';
+                                str += '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>School Twitter:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'
+                                
+                                let mainTwitter = data['school']['twitter']
+                                let mainTw = mainTwitter
+
+                                if (mainTwitter !== null) 
+                                {
+                                    if (mainTwitter.includes('https://')) { }
+                                    else if (mainTwitter.includes('@'))
+                                    {
+                                        mainTw = 'https://www.twitter.com/' + mainTwitter.substring(1)
+                                    }
+                                    else
+                                    {
+                                        mainTw = 'https://www.twitter.com/' + mainTwitter
+                                    }
+                                } else { mainTwitter = '' }
+
+                                str += '<a href=' + mainTw  +' target="blank">'+ mainTwitter +'</a>'
+                                str += '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>Athletic Department Instagram:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'
+
+                                let instagram = data['school']['ad_instagram']
+                                let insta = data['school']['ad_instagram']
+
+                                    if (instagram !== null) 
+                                    {
+                                        if (instagram.includes('https://')) { }
+                                        else if (instagram.includes('@'))
+                                        {
+                                            insta = 'https://www.instagram.com/' + instagram.substring(1)
+                                        }
+                                        else
+                                        {
+                                            insta = 'https://www.instagram.com/' + instagram
+                                        }
+                                    } else { instagram = '' }
+
+                                str +=  '<a href=' + insta  +' target="blank">'+ instagram +'</a>';
+                                str +=  '</div>'+
+                                '</div>'+
+                                '<div class="border-top d-flex justify-content-between py-2 text-gray">'+
+                                    '<div class="col-6 px-0">'+
+                                        '<span>Athletic Department Twitter:</span>'+
+                                    '</div>'+
+                                    '<div class="col-6 px-0">'+
+                                        '<a href=' + data['school']['ad_twitter']  +' target="blank">'+(data['school']['ad_twitter']!==null ? data['school']['ad_twitter'] : '')+'</a>'+
+                                    '</div>'+
+                                '</div>'+
+                            '</div>'+ // end for col-lg-8
+                            '<div class="col-lg-4">'+
+                                '<span>'+(data['school']['logo_image'])+'</span>'+
+                            '</div>'+ //end for col-lg-4
+                        '</div>'; //end for row   
+
+                    if (data['athleticFaculties'])
+                    {
+                        let athleticFacultyOrder = [
+                            'Principal',
+                            'Vice Principal',
+                            'Athletic Director',
+                            'AD Assistant',
+                            'Activities Director',
+                            'Athletic Trainer',
+                            'Financial Contact',
+                            'Unified Contact',
+                        ]
+
+                        for (let aft in athleticFacultyOrder)
+                        {
+
+                            for (let key in data['athleticFaculties'])
+                            {
+                                if (data['athleticFaculties'][key]['aft_name'] == athleticFacultyOrder[aft])
+                                {
+                                    facultyStr += '<div class="border-bottom py-3">'+
+                                                        '<h3 class="h3-smaller font-weight-bold">'+data['athleticFaculties'][key]['aft_name']+'</h3>'+
+                                                        '<p class="mb-0">Name: '+data['athleticFaculties'][key]['firstname']+' '+data['athleticFaculties'][key]['lastname']+'</p>'+
+                                                        '<p class="mb-0">Email: ' + (data['athleticFaculties'][key]['email'] !== null ? data['athleticFaculties'][key]['email'] : '' )+'</p>'+
+                                                        '<p class="mb-0">Office Number: ' + (data['athleticFaculties'][key]['work_phone'] !==null  ? data['athleticFaculties'][key]['work_phone'] : '') +'</p>'+
+                                                        '<p class="mb-0">Ext.: '+  (data['athleticFaculties'][key]['work_extension']  !==null  ? data['athleticFaculties'][key]['work_extension'] : '') +'</p>'+
+                                                    '</div>';
+                                }
+                            }
+                        }
+                    }
+
+                    if (data['coaches'])
+                    {
+                        coachStr =  '<h2 class="h2-smaller font-weight-bold">'+data['school']['name']+' - Coaches & Sports</h2>';
+                        sport = '';
+                        sportAndLevel = '';
+                        headCoach = '';
+                        asstCoach = '';
+
+                        for (let key in data['coaches'])
+                        {
+                            var tmpSportAndLevel = data['coaches'][key]['sport_id']+'-'+data['coaches'][key]['level_id'];
+                            if (tmpSportAndLevel != sportAndLevel)
+                            {
+                                if (asstCoach == 'N/A')
+                                {
+                                    headCoach = '';
+                                }
+
+                                coachStr += '<h3 class="h3-smaller font-weight-bold mt-4">'+data['coaches'][key]['sport']+'</h3>';
+
+                                if (parseInt(section_id) === 8)
+                                {
+                                    coachStr += '<p class="mb-0 font-weight-bold">' + data['coaches'][key]['level_name'] + '</p>';
+                                }
+
+                                
+                                sport = data['coaches'][key]['sport'];
+                                sportAndLevel = data['coaches'][key]['sport_id']+'-'+data['coaches'][key]['level_id'];
+                            }
+
+                            if (data['coaches'][key]['na_coach'] == 1)
+                            {
+                                coachStr += "Position not filled";
+                                continue;
+                            }
+                            
+                            if (data['coaches'][key]['aft_name'] == 'Head Coach')
+                            {
+                                headCoach = '';
+                            }
+                            
+                            if (data['coaches'][key]['aft_name'] == 'Assistant Coach')
+                            {
+                                asstCoach = '';
+                            }
+
+                            if (data['coaches'][key]['aft_name'] == 'Assistant Coach' && headCoach == 'N/A')
+                            {
+                                headCoach = '';
+                            }
+
+                            coachStr +=   '<div class="mt-3">'+
+                                                '<b class="font-weight-bold">'+data['coaches'][key]['aft_name']+'</b>'+
+                                                '<p class="mb-0">Name: '+data['coaches'][key]['firstname']+' '+data['coaches'][key]['lastname']+'</p>'+
+                                                '<p class="mb-0">Email: '+data['coaches'][key]['email']+'</p>'+
+                                            '</div>';
+                        }
+
+                        if (headCoach == '' && asstCoach == 'N/A')
+                        {
+                            headCoach = '';
+                        }
+                    }
+                }
+
+
+                $('#school-information').html(str);
+                $('#athletic-faculty').html(facultyStr);
+                $('#coaches-and-sports').html(coachStr);
+            });
+        }
+
+        $('.school-btn').click(function(){
+            var id = $(this).data('id');
+
+            $('.school-btn').removeClass('active-directory-link')
+
+            $(this).addClass('active-directory-link')
+
+            getDetails(id)  
+        });
+
+            });
+</script>

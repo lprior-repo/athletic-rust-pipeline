@@ -112,12 +112,14 @@ async fn probe_sampled_schools(
 
         staff_count = staff_count.saturating_add(summary.staff.len());
 
-        let emission = map::coach_entities(
+        let emission = map::probe_coach_entities(
             &summary,
             &census_domain::model::SchoolId::mint("sch", &["survey", short_code.as_str()]),
-            &summary_url,
-            "2026-09-29",
-            map::EmissionScope::Probe,
+            map::Capture {
+                url: &summary_outcome.url,
+                observed_on: &summary_outcome.fetched_at,
+                sha256: &summary_outcome.content_digest,
+            },
         )?;
 
         for entity in emission.coaches {

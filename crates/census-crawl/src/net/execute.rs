@@ -162,6 +162,7 @@ impl Fetcher {
         }
 
         let (host, origin) = request_target(url)?;
+        self.origin_locks.ensure(&origin)?;
         if self.host_blocked(&host, &super::now_iso8601()).await {
             return Err(FetchError::Policy {
                 detail: format!("host {host} is inside a recorded access cooldown"),

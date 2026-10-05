@@ -12,7 +12,7 @@ use super::defect;
 use super::input::Inputs;
 use super::read::{self, Limits};
 
-const HEADERS: [&str; 32] = [
+const HEADERS: [&str; 21] = [
     "athlete_id",
     "name",
     "grad_year",
@@ -33,18 +33,7 @@ const HEADERS: [&str; 32] = [
     "coach_source_url",
     "identity_status",
     "evidence_sources",
-    "postal_school_id",
-    "postal_street",
-    "postal_second_line",
-    "postal_city",
-    "postal_state",
-    "postal_zip",
-    "postal_owner_namespace",
-    "postal_owner_id",
-    "postal_source",
-    "postal_source_url",
-    "postal_observed_date",
-    "postal_capture_sha256",
+    crate::export::postal::ATHLETE_ADDRESS_CSV_HEADER,
 ];
 
 const LIMITS: Limits = Limits {
@@ -61,7 +50,7 @@ pub(super) fn verify(directory: &Path, inputs: &Inputs<'_>) -> ReportResult<()> 
         .map(|school| (school.id.as_str(), school))
         .collect();
     let contacts = contact::contacts(inputs.derivation.coach_observations(), inputs.school_year);
-    let postal = crate::workbook::verify::postal::athlete_index(
+    let school_address = crate::workbook::verify::postal::athlete_address_index(
         inputs.dataset,
         inputs.derivation.athletes(),
     )?;
@@ -76,7 +65,7 @@ pub(super) fn verify(directory: &Path, inputs: &Inputs<'_>) -> ReportResult<()> 
                 path.display()
             )));
         };
-        let cells = cells(inputs, &schools, &contacts, &postal, athlete)?;
+        let cells = cells(inputs, &schools, &contacts, &school_address, athlete)?;
         read::compare_record(&path, index, record, &cells)?;
         position = position.saturating_add(1);
         Ok(())
@@ -103,20 +92,22 @@ fn cells(
     inputs: &Inputs<'_>,
     schools: &HashMap<&str, &CanonicalSchool>,
     contacts: &BTreeMap<String, SchoolContacts>,
-    postal: &BTreeMap<String, [String; 12]>,
+    school_address: &BTreeMap<String, String>,
     athlete: &CanonicalAthlete,
 ) -> ReportResult<Vec<Cell>> {
     let school = schools.get(athlete.school.as_str()).copied();
     let scoped = contact::scoped(contacts.get(athlete.school.as_str()), athlete);
     let status = identity_status(inputs, athlete)?;
     let mut cells = athletic_cells(athlete, school, &scoped, status);
-    let fields = postal.get(athlete.id.as_str()).ok_or_else(|| {
+    let address = school_address.get(athlete.id.as_str()).ok_or_else(|| {
         defect(format!(
-            "athlete {} has no frozen postal projection",
+            "athlete {} has no frozen school address projection",
             athlete.id
         ))
     })?;
-    cells.extend(fields.iter().cloned().map(Cell::text));
+    cells.push(Cell::optional(
+        (!address.is_empty()).then_some(address.as_str()),
+    ));
     Ok(cells)
 }
 

@@ -1,4 +1,4 @@
-use crate::bests::SharedSelection;
+use crate::bests::{SharedSelection, SurfaceClass};
 
 pub(super) const ATHLETES: &str = "Athletes";
 
@@ -39,7 +39,7 @@ pub(super) const PERFORMANCE_HEADERS: [&str; 20] = [
     "Source URL",
 ];
 
-pub(super) const ATHLETE_HEADERS: [&str; 71] = [
+pub(super) const ATHLETE_HEADERS: [&str; 60] = [
     "Athlete ID",
     "Name",
     "Gender",
@@ -99,18 +99,7 @@ pub(super) const ATHLETE_HEADERS: [&str; 71] = [
     "Coverage State",
     "Conflict Flag",
     "Review Status",
-    "Postal School ID",
-    "Postal Street",
-    "Postal Second Line",
-    "Postal City",
-    "Postal State",
-    "Postal ZIP",
-    "Postal Owner Namespace",
-    "Postal Owner ID",
-    "Postal Source",
-    "Postal Source URL",
-    "Postal Observed Date",
-    "Postal Capture SHA256",
+    crate::export::postal::ATHLETE_ADDRESS_HEADER,
 ];
 
 pub(super) const PR_HEADERS: [&str; 26] = [
@@ -210,9 +199,17 @@ pub(super) fn pr_event_name(key: &str) -> &str {
     }
 }
 
+pub(super) fn mark_name<'a>(pr: &SharedSelection, event: &'a str) -> &'a str {
+    if pr.key.surface == SurfaceClass::CrossCountry {
+        "XC"
+    } else {
+        pr_event_name(event)
+    }
+}
+
 pub(super) fn qualified_mark(pr: &SharedSelection) -> String {
     let mut text = String::new();
-    text.push_str(pr_event_name(&pr.key.event_kind.stable_key()));
+    text.push_str(mark_name(pr, &pr.key.event_kind.stable_key()));
     text.push(' ');
     text.push_str(&pr.mark_text());
     text.push_str(" [");

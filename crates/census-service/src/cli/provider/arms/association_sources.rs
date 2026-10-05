@@ -183,6 +183,24 @@ pub(crate) async fn plain_names_report(
     .await?)
 }
 
+pub(crate) async fn aia_report(
+    context: &AdapterContext<'_>,
+    args: &ProviderArgs,
+    observed_on: String,
+) -> Result<AdapterReport> {
+    Ok(providers::aia::collect(
+        context,
+        &providers::aia::Options {
+            limit: args.limit,
+            refresh: args.refresh,
+            observed_on,
+            states: args.jurisdictions()?,
+            school_names: args.school_names.clone(),
+        },
+    )
+    .await?)
+}
+
 pub(crate) async fn ciac_report(
     context: &AdapterContext<'_>,
     args: &ProviderArgs,

@@ -1,14 +1,17 @@
-use super::map::Row;
+mod tenure;
+
+use super::map::{Capture, Row};
+use crate::CrawlResult;
 use census_domain::model::{
-    CanonicalCoach, Evidence, SchoolId, SourceIdentity, SourceNamespace, SourceRef,
+    CanonicalCoach, Evidence, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef,
 };
 
 pub(super) fn build_coach(
     row: Row<'_>,
     school_id: &SchoolId,
-    source_url: &str,
-    observed_on: &str,
-) -> CanonicalCoach {
+    capture: Capture<'_>,
+    school_year: Option<SchoolYear>,
+) -> CrawlResult<CanonicalCoach> {
     let mut coach = CanonicalCoach::new(school_id, row.person, row.sport, row.gender, row.role);
     if let Some(email) = row.member.emails.first() {
         if let Some(address) = super::nonempty(email) {
@@ -30,12 +33,17 @@ pub(super) fn build_coach(
                 SourceNamespace::association_school(super::SOURCE_ID),
                 source_key,
             )
-            .with_url(source_url.to_string()),
+            .with_url(capture.url.to_string()),
         );
     }
     coach.evidence.push(Evidence::parsed(
-        SourceRef::new(super::SOURCE_ID, Some(source_url.to_string())),
-        observed_on,
+        SourceRef::new(super::SOURCE_ID, Some(capture.url.to_string())),
+        capture.observed_on,
     ));
-    coach
+    if let Some(evidence) =
+        tenure::appointment(&coach, row.member, row.program, capture, school_year)?
+    {
+        coach.tenure_evidence.push(evidence);
+    }
+    Ok(coach)
 }

@@ -1,4 +1,6 @@
-use census_domain::model::{ContactClaimEvidence, RawContactRow, CONTACT_COLUMNS};
+use census_domain::model::{
+    ContactClaimEvidence, ContactProofField, RawContactRow, CONTACT_COLUMNS,
+};
 use std::path::Path;
 
 use super::fetch::verify_one_fragment;
@@ -41,7 +43,7 @@ pub fn read_fragment(path: &Path) -> anyhow::Result<Vec<RawContactRow>> {
     Ok(rows)
 }
 
-fn read_evidence_jsonl(path: &Path) -> anyhow::Result<Vec<ContactClaimEvidence>> {
+pub fn read_evidence_jsonl(path: &Path) -> anyhow::Result<Vec<ContactClaimEvidence>> {
     use anyhow::Context;
     use std::io::BufRead;
     let file = std::fs::File::open(path).with_context(|| format!("open evidence {path:?}"))?;
@@ -106,13 +108,34 @@ pub fn read_fragment_evidence(
     row: &RawContactRow,
 ) -> anyhow::Result<Vec<ContactClaimEvidence>> {
     let claims = read_evidence_jsonl(&evidence_path(path))?;
-    Ok(claims
-        .into_iter()
-        .filter(|c| c.school == row.school && c.role == row.role && c.person == row.coach_name)
-        .collect())
+    Ok(claims_for_row(&claims, row))
 }
 
-fn evidence_path(path: &Path) -> std::path::PathBuf {
+pub fn claims_for_row(
+    claims: &[ContactClaimEvidence],
+    row: &RawContactRow,
+) -> Vec<ContactClaimEvidence> {
+    claims
+        .iter()
+        .filter(|claim| claim_matches_row(claim, row))
+        .cloned()
+        .collect()
+}
+
+fn claim_matches_row(claim: &ContactClaimEvidence, row: &RawContactRow) -> bool {
+    let person = match claim.field {
+        ContactProofField::CoachName | ContactProofField::PublicProfessionalEmail => {
+            &row.coach_name
+        }
+        ContactProofField::AdName | ContactProofField::AdEmail => &row.ad_name,
+    };
+    claim.school == row.school
+        && claim.state == row.state
+        && claim.role == row.role
+        && claim.person == *person
+}
+
+pub fn evidence_path(path: &Path) -> std::path::PathBuf {
     let mut name = match path.file_name().map(std::ffi::OsStr::to_os_string) {
         Some(value) => value,
         None => std::ffi::OsString::from("contacts.csv"),

@@ -1,7 +1,7 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
-use crate::bests::SharedSelection;
-use census_domain::model::{CanonicalAthlete, ObservedGrade};
+use crate::bests::{SharedSelection, SurfaceClass};
+use census_domain::model::{CanonicalAthlete, EventKind, ObservedGrade};
 
 use super::super::canonical::Value;
 use super::super::labels;
@@ -63,13 +63,20 @@ pub(super) fn event_list(prs: &[&SharedSelection]) -> Value {
     if prs.is_empty() {
         return Value::Empty;
     }
-    let events: BTreeSet<_> = prs
+    let events: BTreeMap<_, _> = prs
         .iter()
-        .map(|pr| pr.key.event_kind.stable_key())
+        .map(|pr| {
+            let event = if pr.key.surface == SurfaceClass::CrossCountry {
+                std::borrow::Cow::Borrowed("CrossCountry")
+            } else {
+                pr.key.event_kind.stable_key()
+            };
+            (event, *pr)
+        })
         .collect();
     let names: Vec<&str> = events
         .iter()
-        .map(|event| labels::pr_event_name(event))
+        .map(|(event, pr)| labels::mark_name(pr, event))
         .collect();
     Value::text(names.join("; "))
 }
@@ -89,8 +96,19 @@ pub(super) fn event_cell(prs: &[&SharedSelection], event: &str) -> Value {
     qualified_summary(
         prs.iter()
             .copied()
-            .filter(|pr| pr.key.event_kind.stable_key() == event),
+            .filter(|pr| selection_matches_event(pr, event)),
     )
+}
+
+fn selection_matches_event(pr: &SharedSelection, event: &str) -> bool {
+    match event {
+        "CrossCountry" => pr.key.surface == SurfaceClass::CrossCountry,
+        "Track5000m" => {
+            pr.key.surface != SurfaceClass::CrossCountry
+                && pr.key.event_kind == EventKind::Track5000m
+        }
+        _ => pr.key.event_kind.stable_key() == event,
+    }
 }
 
 fn qualified_summary<'a>(mut prs: impl Iterator<Item = &'a SharedSelection>) -> Value {

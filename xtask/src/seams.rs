@@ -23,6 +23,7 @@ const ALLOWED: &[(&str, &str)] = &[
     ("outcome", "restate_services"),
     ("restate_services", "census"),
     ("restate_services", "outcome"),
+    ("restate_services", "school_address"),
     ("restate_services", "spawn"),
     ("spawn", "outcome"),
 ];

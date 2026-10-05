@@ -6,6 +6,8 @@ use crate::export::ExportDataset;
 use crate::workbook::{verify::verify_frozen, Options};
 use sha2::{Digest, Sha256};
 
+const CAPTURED_ADDRESS: &str = "1 Rocket Drive, Asheville, NC 28803";
+
 fn seed(store: &Store) -> TestResult<(CanonicalSchool, CanonicalAthlete)> {
     let school = captured_school()?;
     store.append(Table::Schools, &school)?;
@@ -71,19 +73,20 @@ fn captured_zcum49_claim_reaches_school_athlete_and_csv_consumers_without_losing
     let (school, athlete) = seed(&store)?;
     let (path, _, _) = published(&store)?;
     let mut book = open_workbook(&path)?;
-    for (name, id) in [
-        ("Schools", school.id.as_str()),
-        ("Athletes", athlete.id.as_str()),
-    ] {
-        let range = sheet(&mut book, name)?;
-        let row = row_of(&range, id)?;
-        for (header, expected) in expected_postal(&school) {
-            check!(eq; text(&range, row, column_of(&range, header)?),
-            expected,
-            "{name} {header}");
-        }
+    let schools = sheet(&mut book, "Schools")?;
+    let school_row = row_of(&schools, school.id.as_str())?;
+    for (header, expected) in expected_postal(&school) {
+        check!(eq; text(&schools, school_row, column_of(&schools, header)?),
+        expected,
+        "Schools {header}");
     }
     let athletes = sheet(&mut book, "Athletes")?;
+    check!(eq; text(
+        &athletes,
+        row_of(&athletes, athlete.id.as_str())?,
+        column_of(&athletes, "School Address")?
+    ),
+    CAPTURED_ADDRESS);
     check!(eq; text(
         &athletes,
         row_of(&athletes, athlete.id.as_str())?,
@@ -98,18 +101,8 @@ fn captured_zcum49_claim_reaches_school_athlete_and_csv_consumers_without_losing
     let headers = reader.headers()?.clone();
     let record = reader.records().next().ok_or("missing recruiting row")??;
     for (name, expected) in [
-        ("postal_street", "1 Rocket Drive".to_owned()),
-        ("postal_city", "Asheville".into()),
-        ("postal_state", "NC".into()),
-        ("postal_zip", "28803".into()),
-        ("postal_owner_id", "ZCUM49".into()),
-        ("postal_source_url", SUMMARY_URL.into()),
-        ("postal_observed_date", CAPTURE_DAY.into()),
-        (
-            "postal_capture_sha256",
-            format!("{:x}", Sha256::digest(SUMMARY)),
-        ),
-        ("head_track_coach_email", "published@school.test".into()),
+        ("school_address", CAPTURED_ADDRESS),
+        ("head_track_coach_email", "published@school.test"),
     ] {
         check!(eq; record.get(
             headers
@@ -117,9 +110,52 @@ fn captured_zcum49_claim_reaches_school_athlete_and_csv_consumers_without_losing
                 .position(|field| field == name)
                 .ok_or_else(|| format!("missing CSV column {name}"))?
         ),
-        Some(expected.as_str()),
+        Some(expected),
         "{name}");
     }
+    Ok(())
+}
+
+#[test]
+fn a_director_only_published_email_counts_as_a_cohort_contact_email() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let school = captured_school()?;
+    store.append(Table::Schools, &school)?;
+    let mut athlete = CanonicalAthlete::new(
+        &school.id,
+        "Captured Director Contact Runner",
+        GradYear::CO2027,
+        Gender::Boys,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "director-contact-runner"),
+    );
+    athlete.sports = vec![Sport::OutdoorTrack];
+    athlete.evidence = evidence("nchsaa", Some(SUMMARY_URL));
+    publish_fixture_cohort(&mut athlete, "nchsaa", "captured-director", CAPTURE_DAY);
+    store.append(Table::Athletes, &athlete)?;
+    coach(
+        &store,
+        &school.id,
+        "Published Director",
+        Some(Sport::OutdoorTrack),
+        CoachRole::AthleticDirector,
+        "director@school.test",
+    )?;
+    let (path, _, _) = published(&store)?;
+    let summary: serde_json::Value = serde_json::from_reader(std::fs::File::open(
+        path.parent()
+            .ok_or("missing generation directory")?
+            .join("census-all-sources.json"),
+    )?)?;
+    let totals = summary.get("totals").ok_or("missing totals")?;
+    let counter = |name: &str| {
+        totals
+            .get(name)
+            .and_then(serde_json::Value::as_u64)
+            .map_or(u64::MAX, core::convert::identity)
+    };
+    check!(eq; counter("class_of_2027_with_coach"), 1);
+    check!(eq; counter("class_of_2027_with_coach_email"), 1);
     Ok(())
 }
 
@@ -175,18 +211,20 @@ fn tampering_any_published_postal_component_or_provenance_cell_fails_workbook_re
     let (school, _) = seed(&store)?;
     let (path, dataset, options) = published(&store)?;
     let target = dir.path().join("tampered.xlsx");
-    for name in ["Schools", "Athletes"] {
-        for (header, _) in expected_postal(&school) {
-            corrupt_workbook(&path, &target, name, header)?;
-            let error = match verify_frozen(&target, &dataset, &options) {
-                Err(error) => error.to_string(),
-                Ok(_) => return Err(format!("forged {name} {header} accepted").into()),
-            };
-            check!(
-                error.contains("forged postal claim"),
-                "{name} {header}: {error}"
-            );
-        }
+    for (name, header) in expected_postal(&school)
+        .into_iter()
+        .map(|(header, _)| ("Schools", header))
+        .chain([("Athletes", "School Address")])
+    {
+        corrupt_workbook(&path, &target, name, header)?;
+        let error = match verify_frozen(&target, &dataset, &options) {
+            Err(error) => error.to_string(),
+            Ok(_) => return Err(format!("forged {name} {header} accepted").into()),
+        };
+        check!(
+            error.contains("forged postal claim"),
+            "{name} {header}: {error}"
+        );
     }
     Ok(())
 }
@@ -249,33 +287,16 @@ fn accepted_alias_school_affiliations_preserve_their_source_owned_postal_claims(
     let [athlete] = canonical.athletes() else {
         return Err("one accepted athlete required".into());
     };
-    let alternate_fields = [
-        other.to_string(),
-        "2 Alias Way".into(),
-        "".into(),
-        "".into(),
-        "".into(),
-        "".into(),
-        "association_school:synthetic-alias".into(),
-        "alias-school".into(),
-        "athletic-association:NC".into(),
-        "https://fixture.test/alias".into(),
-        CAPTURE_DAY.into(),
-        "c".repeat(64),
-    ];
-    let captured_fields = expected_postal(&captured);
-    let expected: [String; 12] = std::array::from_fn(|column| {
-        let captured_value = &captured_fields[column].1;
-        let alternate_value = &alternate_fields[column];
-        if captured.id < other {
-            format!("{captured_value}\n{alternate_value}")
-        } else {
-            format!("{alternate_value}\n{captured_value}")
-        }
-    });
+    let primary = if captured.id < other {
+        CAPTURED_ADDRESS
+    } else {
+        "2 Alias Way"
+    };
     let mut book = open_workbook(&path)?;
     let range = sheet(&mut book, "Athletes")?;
     let row = row_of(&range, athlete.id.as_str())?;
+    check!(eq; text(&range, row, column_of(&range, "School Address")?),
+    primary);
     let mut reader = ::csv::Reader::from_path(
         path.parent()
             .ok_or("missing generation directory")?
@@ -285,19 +306,11 @@ fn accepted_alias_school_affiliations_preserve_their_source_owned_postal_claims(
     let records = reader.records().collect::<Result<Vec<_>, _>>()?;
     check!(eq; records.len(), 1);
     check!(eq; records[0].get(0), Some(athlete.id.as_str()));
-    for (column, (header, _)) in captured_fields.iter().enumerate() {
-        check!(eq; text(&range, row, column_of(&range, header)?),
-        expected[column],
-        "{header}");
-        let csv_header = crate::export::postal::POSTAL_CSV_HEADERS[column];
-        let csv_column = headers
-            .iter()
-            .position(|field| field == csv_header)
-            .ok_or_else(|| format!("missing CSV column {csv_header}"))?;
-        check!(eq; records[0].get(csv_column),
-        Some(expected[column].as_str()),
-        "{csv_header}");
-    }
+    let csv_column = headers
+        .iter()
+        .position(|field| field == "school_address")
+        .ok_or("missing CSV column school_address")?;
+    check!(eq; records[0].get(csv_column), Some(primary));
     Ok(())
 }
 
@@ -322,11 +335,7 @@ fn a_same_named_school_without_a_claim_does_not_inherit_another_schools_postal_a
     let mut book = open_workbook(&path)?;
     let range = sheet(&mut book, "Athletes")?;
     let row = row_of(&range, athlete.id.as_str())?;
-    for (header, _) in expected_postal(&captured) {
-        check!(eq; text(&range, row, column_of(&range, header)?),
-        "",
-        "{header}");
-    }
+    check!(eq; text(&range, row, column_of(&range, "School Address")?), "");
     Ok(())
 }
 
@@ -362,33 +371,35 @@ fn contradictory_postal_addresses_keep_aligned_provenance_on_both_workbook_sheet
     store.append(Table::Schools, &school)?;
     let (path, _, _) = published(&store)?;
     let mut book = open_workbook(&path)?;
-    for (name, id) in [
-        ("Schools", school.id.as_str()),
-        ("Athletes", athlete.id.as_str()),
+    let schools = sheet(&mut book, "Schools")?;
+    let school_row = row_of(&schools, school.id.as_str())?;
+    for (header, expected) in [
+        ("Postal Street", "1 Rocket Drive\n2 Review Road".to_owned()),
+        ("Postal City", "Asheville\n".into()),
+        ("Postal State", "NC\n".into()),
+        ("Postal ZIP", "28803\n".into()),
+        ("Postal Owner ID", "ZCUM49\nother-claim".into()),
+        (
+            "Postal Source URL",
+            format!("{SUMMARY_URL}\nhttps://fixture.test/conflict"),
+        ),
+        ("Postal Observed Date", "2026-09-27\n2026-09-28".into()),
+        (
+            "Postal Capture SHA256",
+            format!("{:x}\n{}", Sha256::digest(SUMMARY), "b".repeat(64)),
+        ),
     ] {
-        let range = sheet(&mut book, name)?;
-        let row = row_of(&range, id)?;
-        for (header, expected) in [
-            ("Postal Street", "1 Rocket Drive\n2 Review Road".to_owned()),
-            ("Postal City", "Asheville\n".into()),
-            ("Postal State", "NC\n".into()),
-            ("Postal ZIP", "28803\n".into()),
-            ("Postal Owner ID", "ZCUM49\nother-claim".into()),
-            (
-                "Postal Source URL",
-                format!("{SUMMARY_URL}\nhttps://fixture.test/conflict"),
-            ),
-            ("Postal Observed Date", "2026-09-27\n2026-09-28".into()),
-            (
-                "Postal Capture SHA256",
-                format!("{:x}\n{}", Sha256::digest(SUMMARY), "b".repeat(64)),
-            ),
-        ] {
-            check!(eq; text(&range, row, column_of(&range, header)?),
-            expected,
-            "{name} {header}");
-        }
+        check!(eq; text(&schools, school_row, column_of(&schools, header)?),
+        expected,
+        "Schools {header}");
     }
+    let athletes = sheet(&mut book, "Athletes")?;
+    check!(eq; text(
+        &athletes,
+        row_of(&athletes, athlete.id.as_str())?,
+        column_of(&athletes, "School Address")?
+    ),
+    CAPTURED_ADDRESS);
     let mut reader = ::csv::Reader::from_path(
         path.parent()
             .ok_or("missing generation directory")?
@@ -396,27 +407,11 @@ fn contradictory_postal_addresses_keep_aligned_provenance_on_both_workbook_sheet
     )?;
     let headers = reader.headers()?.clone();
     let record = reader.records().next().ok_or("missing recruiting row")??;
-    for (header, expected) in [
-        ("postal_street", "1 Rocket Drive\n2 Review Road".to_owned()),
-        ("postal_owner_id", "ZCUM49\nother-claim".into()),
-        (
-            "postal_source_url",
-            format!("{SUMMARY_URL}\nhttps://fixture.test/conflict"),
-        ),
-        ("postal_observed_date", "2026-09-27\n2026-09-28".into()),
-        (
-            "postal_capture_sha256",
-            format!("{:x}\n{}", Sha256::digest(SUMMARY), "b".repeat(64)),
-        ),
-    ] {
-        check!(eq; record.get(
-            headers
-                .iter()
-                .position(|value| value == header)
-                .ok_or_else(|| format!("missing CSV column {header}"))?
-        ),
-        Some(expected.as_str()));
-    }
+    let address_column = headers
+        .iter()
+        .position(|value| value == "school_address")
+        .ok_or("missing CSV column school_address")?;
+    check!(eq; record.get(address_column), Some(CAPTURED_ADDRESS));
     Ok(())
 }
 
@@ -455,20 +450,15 @@ fn unresolved_same_named_athletes_keep_postal_affiliations_distinct_in_workbook_
             .iter()
             .find(|record| record.get(0) == Some(athlete.id.as_str()))
             .ok_or("missing recruiting row for homonym")?;
-        for ((header, value), csv_header) in expected_postal(&captured)
-            .into_iter()
-            .zip(crate::export::postal::POSTAL_CSV_HEADERS)
-        {
-            let expected = if has_claim { value } else { String::new() };
-            check!(eq; text(&range, row, column_of(&range, header)?),
-            expected,
-            "{header}");
-            let column = headers
-                .iter()
-                .position(|field| field == csv_header)
-                .ok_or_else(|| format!("missing CSV column {csv_header}"))?;
-            check!(eq; record.get(column), Some(expected.as_str()), "{csv_header}");
-        }
+        let expected = if has_claim { CAPTURED_ADDRESS } else { "" };
+        check!(eq; text(&range, row, column_of(&range, "School Address")?),
+        expected,
+        "School Address");
+        let column = headers
+            .iter()
+            .position(|field| field == "school_address")
+            .ok_or("missing CSV column school_address")?;
+        check!(eq; record.get(column), Some(expected), "school_address");
     }
     Ok(())
 }

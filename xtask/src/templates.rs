@@ -1,6 +1,6 @@
 pub(crate) fn adapter_module(name: &str) -> String {
     format!(
-        r#"use census_crawl::{{AdapterContext, AdapterReport, CrawlError, CrawlResult}};
+        r#"use crate::{{AdapterContext, AdapterReport, CrawlError, CrawlResult}};
 
 pub mod map;
 pub mod parse;
@@ -23,15 +23,21 @@ pub async fn collect(_ctx: &AdapterContext<'_>, _options: &Options) -> CrawlResu
 
 pub(crate) fn parse_module(name: &str) -> String {
     format!(
-        r#"use anyhow::{{bail, Result}};
+        r#"use thiserror::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParsedRow {{
     pub label: String,
 }}
 
-pub fn parse_rows(_document: &str) -> Result<Vec<ParsedRow>> {{
-    bail!("{name} parsing not implemented")
+#[derive(Debug, Error)]
+pub enum ParseError {{
+    #[error("{name} parsing not implemented")]
+    NotImplemented,
+}}
+
+pub fn parse_rows(_document: &str) -> Result<Vec<ParsedRow>, ParseError> {{
+    Err(ParseError::NotImplemented)
 }}
 
 #[cfg(test)]

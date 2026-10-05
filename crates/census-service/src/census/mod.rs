@@ -26,6 +26,8 @@ pub use state::{
 };
 pub use sweep::{collect_milesplit, collect_state_rosters, collect_state_teams};
 
+pub const DEFAULT_ORIGIN_LOCK_ROOT: &str = "var/locks";
+
 #[derive(Debug, Clone)]
 pub struct CollectOptions {
     pub jurisdictions: Vec<UsJurisdiction>,

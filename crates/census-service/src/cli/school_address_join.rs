@@ -78,6 +78,10 @@ pub(super) fn run(cli: &Cli, args: &SchoolAddressJoinArgs) -> Result<()> {
         report.counters.parenthetical_inner, report.counters.alias
     );
     println!("review_ambiguous\t{}", report.counters.ambiguous);
+    println!(
+        "co_op_members\t{}\nco_op_declined\t{}",
+        report.counters.co_op_members, report.counters.co_op_declined
+    );
     println!("report\t{}", report.report);
     println!("outcomes\t{}", report.outcomes);
     Ok(())

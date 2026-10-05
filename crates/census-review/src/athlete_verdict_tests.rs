@@ -22,7 +22,22 @@ fn packet() -> ReviewPacket {
         .with_evidence(fact("answer_field", "identity"))
         .with_evidence(fact(
             "flag",
-            "shared_source_identity: one provider id is on both rows",
+            "shared_source_identity: milesplit:14399169 (primary, primary) on both ath_1a2b3c4d and ath_5e6f7a8b",
+        ))
+        .with_evidence(fact(
+            "flag",
+            "identity_corroborated: ath_1a2b3c4d and ath_5e6f7a8b corroborate on milesplit:14399169 (primary, primary)",
+        ))
+}
+
+fn linked_packet() -> ReviewPacket {
+    let case = case();
+    ReviewPacket::new(case.subject_id.clone(), case.subject.clone())
+        .with_case(case_fact(&case))
+        .with_evidence(fact("answer_field", "identity"))
+        .with_evidence(fact(
+            "flag",
+            "shared_source_identity: tfrrs:999 (link, primary) on both ath_1a2b3c4d and ath_5e6f7a8b",
         ))
 }
 
@@ -155,12 +170,38 @@ fn same_person_is_accepted_when_no_hard_contradiction_exists() {
         validate(
             ReviewFamily::AthleteIdentity,
             &proposal("same_person"),
-            &packet_with_flag("distinct_provider_objects"),
+            &packet(),
         ),
         Adjudication::Decided(Admitted {
             field: "identity".to_string(),
             value: "same_person".to_string(),
         })
+    );
+}
+
+#[test]
+fn same_person_is_rejected_when_provider_objects_are_disjoint() {
+    assert_eq!(
+        validate(
+            ReviewFamily::AthleteIdentity,
+            &proposal("same_person"),
+            &packet_with_flag("distinct_provider_objects"),
+        ),
+        Adjudication::Refused(Refusal::HardContradiction(
+            HardContradiction::DistinctProviderObjects
+        ))
+    );
+}
+
+#[test]
+fn a_shared_link_without_corroboration_is_not_positive_evidence() {
+    assert_eq!(
+        validate(
+            ReviewFamily::AthleteIdentity,
+            &proposal("same_person"),
+            &linked_packet(),
+        ),
+        Adjudication::Refused(Refusal::InvalidValue)
     );
 }
 

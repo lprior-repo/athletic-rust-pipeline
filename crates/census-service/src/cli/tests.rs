@@ -94,3 +94,51 @@ fn verification_refuses_a_changed_artifact_in_the_published_bundle() -> TestResu
     check!(format!("{error:#}").contains("generation artifact mismatch: workbook.xlsx"));
     Ok(())
 }
+
+#[test]
+fn a_cli_built_fetcher_refuses_an_origin_another_run_holds() -> TestResult {
+    use std::io::Write;
+    let directory = tempfile::tempdir()?;
+    let store = Store::open(directory.path().join("store"))?;
+    let cli =
+        <super::Cli as clap::Parser>::parse_from(["census-service", "provider", "home_campus"]);
+    let host = format!("origin-locks-{}.test", std::process::id());
+    let origin_url = format!("https://{host}");
+    let root = std::path::Path::new(census_service::census::DEFAULT_ORIGIN_LOCK_ROOT);
+    std::fs::create_dir_all(root)?;
+    let lock_path = root.join(census_crawl::net::origin_lock_file_name(&origin_url));
+    let mut holder = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(&lock_path)?;
+    holder.try_lock()?;
+    holder.write_all(b"{\"pid\":424242}")?;
+    let fetcher = super::build_fetcher_authorizing(&cli, &store, vec![host.clone()])?;
+    let outcome = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            fetcher
+                .get(&format!("{origin_url}/teams"), &Default::default())
+                .await
+        });
+    drop(holder);
+    std::fs::remove_file(&lock_path)?;
+    if let Some(parent) = root.parent() {
+        let _ = std::fs::remove_dir(root);
+        let _ = std::fs::remove_dir(parent);
+    }
+    match outcome {
+        Err(census_crawl::net::FetchError::OriginHeld {
+            origin,
+            holder: named,
+        }) => {
+            check!(eq; origin, origin_url);
+            check!(named.contains("424242"));
+        }
+        other => return Err(format!("unexpected outcome {other:?}").into()),
+    }
+    Ok(())
+}

@@ -33,6 +33,9 @@ fn contradictory_rows() -> TestResult<Vec<CanonicalAthlete>> {
                 .push(Evidence::parsed(source, "2026-10-01"));
         }
     }
+    for athlete in candidates.iter_mut() {
+        super::binding_support::Change::PrimaryOwnership.apply(athlete)?;
+    }
     Ok(candidates)
 }
 

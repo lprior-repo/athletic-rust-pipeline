@@ -11,7 +11,71 @@ fn evidence(tenure: CoachTenure) -> CoachTenureEvidence {
         source_sha256: "a".repeat(64),
         retrieved_at: "2026-09-01T00:00:00Z".into(),
         statement: "Synthetic tenure statement".into(),
+        claim: None,
     }
+}
+
+fn claimed(tenure: CoachTenure, mailbox: Option<&str>) -> CoachTenureEvidence {
+    let mut fact = evidence(tenure);
+    fact.claim = Some(CoachContactClaim {
+        coach: CoachId::mint("coa", &["claim-fixture"]),
+        school: SchoolId::mint("sch", &["claim-fixture"]),
+        role: CoachRole::HeadCoach,
+        program: CoachContactProgram::Team {
+            sport: Sport::OutdoorTrack,
+            gender: Gender::Boys,
+        },
+        mailbox: mailbox.map(str::to_string),
+    });
+    fact
+}
+
+#[test]
+fn a_bound_claim_round_trips_and_an_absent_claim_serializes_nothing(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let bare = evidence(CoachTenure::Unknown);
+    check!(eq; serde_json::to_string(&bare)?.contains("claim"), false);
+    let bound = claimed(
+        CoachTenure::Current {
+            school_year: year(2026)?,
+        },
+        Some("coach@example.edu"),
+    );
+    check!(eq; validate_tenure_evidence(&bound), Ok(()));
+    let round: CoachTenureEvidence = serde_json::from_str(&serde_json::to_string(&bound)?)?;
+    check!(eq; round, bound);
+    Ok(())
+}
+
+#[test]
+fn a_claim_binds_its_mailbox_and_program_or_stays_name_only(
+) -> Result<(), Box<dyn std::error::Error>> {
+    check!(eq; validate_tenure_evidence(&claimed(CoachTenure::Unknown, None)), Ok(()));
+    check!(
+        eq;
+        validate_tenure_evidence(&claimed(CoachTenure::Unknown, Some("not an address"))),
+        Err(TenureValidation::Malformed {
+            field: "claim.mailbox"
+        })
+    );
+    let mut school_athletics = claimed(CoachTenure::Unknown, None);
+    {
+        let claim = school_athletics.claim.as_mut().ok_or("a claim fixture")?;
+        claim.program = CoachContactProgram::SchoolAthletics;
+    }
+    check!(
+        eq;
+        validate_tenure_evidence(&school_athletics),
+        Err(TenureValidation::Malformed {
+            field: "claim.program"
+        })
+    );
+    {
+        let claim = school_athletics.claim.as_mut().ok_or("a claim fixture")?;
+        claim.role = CoachRole::AthleticDirector;
+    }
+    check!(eq; validate_tenure_evidence(&school_athletics), Ok(()));
+    Ok(())
 }
 
 #[test]

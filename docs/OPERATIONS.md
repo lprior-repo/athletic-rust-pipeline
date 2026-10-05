@@ -142,11 +142,70 @@ Request pacing has two independent dials, and both default to the polite setting
   refusal, not another independent family budget. Settled logical operations remain replayable
   without resetting their acquisition authority.
 
+Every fetching process also serializes per origin across processes. Before its first request to a
+host, a run takes an advisory `flock` on `<workspace>/var/locks/<origin>.lock` — the origin is
+scheme, host and any explicit port, sanitized to a file name by
+`census_crawl::net::origin_lock_file_name` — and holds it for
+the run's life; a second census-service process (CLI command or serving owner) that reaches a held
+origin is refused before that request with `origin <origin> is held by another census-service process
+(holder: {...})`, naming the holder's recorded pid, command and start time, and exits nonzero rather
+than doubling the origin's request rate. Cached responses need no lock, and one process re-entering
+an origin it already holds proceeds. A held origin is a refusal, not a queue: wait or stop the
+holder.
+
 Aggregate throughput also follows the endpoint's `--max-concurrent` and per-request `--concurrency`.
 TeamsSource acquisition shares the endpoint's Jobs admission budget and serializes active work for
 the same source key. All jurisdiction fetchers share one serving-owner pacing state, including
 fetchers with different authorized-host sets; a new cache key cannot create another family budget.
 Count actual physical admissions separately from cache hits and retained entity populations.
+
+## School athletics site crawl (long tail)
+
+`census-service school-sites <queue.jsonl>` crawls the school websites that the directories and
+association lanes do not cover. The queue is JSONL with `state`, `name` and `website` per school —
+the NCES-recovered website queues under `var/school-site-wave4-*` and the school-address corpus are
+its inputs — and `state` accepts a code or a full jurisdiction name.
+
+The verb opens the store for its HTTP cache only (no Fjall writes) and writes three artifacts under
+`<store>/out/school-sites`: one `<STATE>__<school-slug>.json` per site holding the raw signals plus
+an evidence record (`url`, content digest, `fetched_at`, status) for every fetched page, one
+`fragments/<STATE>.csv` in the twelve-column contact lane shape, and `report.json`. Existing site
+artifacts are resumed and skipped; `--refresh` refetches and rewrites them. `--sample` and `--limit`
+narrow the run, and `--state` supplies a jurisdiction for queue records that carry none.
+
+School sites redirect across origins constantly (`http` to `https`, apex to `www`, a school host to
+its district or platform host), so a run that intends to follow them passes
+`--authorize-queue-hosts`: it authorizes the base domain of every host in the queue for this
+collection, exactly as `verify-coaches --authorize-cited-hosts` does for cited hosts. Without the
+flag a cross-origin redirect is refused and the site is reported under `failed` with its fetch
+error. `--delay-ms`, robots and the per-host origin locks still bound every request.
+
+The crawl is a static read that executes no JavaScript. A staff page that builds its directory
+client-side therefore yields no coach rows, and the gate labels any candidate row from such a page
+`render-required` instead of shipping it.
+
+Fragments are candidates, not contacts: `verified_proof_digest` stays empty until `verify-coaches`
+re-fetches each row's `source_url` and writes the proof. Nothing the crawl writes is accepted into
+the census on its own. `--union <dir>` stages the verified rows as one `<ST>.csv` per state beside
+its `<ST>.csv.evidence.jsonl` claim sidecar; `merge-coaches --fragments <dir>` consumes exactly that
+staging shape and publishes `<out>` with `<out>.evidence.jsonl` for the rows it kept, carrying their
+claims verbatim (the proof digest covers the claim sequence, so a repeated claim is preserved rather
+than deduplicated). A fragment whose sidecar is missing is refused rather than merged, and
+`verify-coaches --reconcile <csv>` recomputes each published row's proof from that sidecar, so a
+merged product is only accepted when
+its digests still match the verified claims.
+
+```text
+target/debug/census-service --store var/<run> school-sites var/school-site-wave4-*/TN.jsonl \
+  --authorize-queue-hosts --out var/<run>/out/school-sites
+target/debug/census-service verify-coaches --fragments var/<run>/out/school-sites/fragments \
+  --cache-dir var/<run>/http --authorize-cited-hosts --out var/<run>/verify --union var/<run>/union
+target/debug/census-service merge-coaches --fragments var/<run>/union \
+  --out var/<run>/coach-contacts.csv --report var/<run>/merge.md
+target/debug/census-service verify-coaches --fragments var/<run>/union \
+  --cache-dir var/<run>/http --authorize-cited-hosts --out var/<run>/reconcile \
+  --reconcile var/<run>/coach-contacts.csv
+```
 
 ## Browser lane
 
@@ -404,18 +463,33 @@ curl -s -X POST "http://127.0.0.1:<ingress>/SchoolAddressJoin/<key>/run" \
 
 Both lanes write `<store>/out/school-address-join/report.json` (mode, generation path, manifest
 digest, per-lane evidence, and the counters `scanned`, `linked`, `already_linked`, `websites`,
-`review`, `no_match`, `refused`, `evidence_missing`, `missing_state` plus the per-rule counters) and
-`outcomes.jsonl` (one row per school: outcome, rule or reason, candidate labels). An already-owned
-identical claim is `already_linked` and appends nothing, so a replayed apply over the same
-generation is safe after a restart. A matched CCD entry whose website is an http(s) URL and whose
-school publishes none attaches it to `CanonicalSchool.school_website` (counted as `websites`,
-rendered by the workbook's `School site` column) with the same lane evidence note; a school that
-already publishes a website is not rewritten, and an unusable `WEBSITE` cell stays a corpus note.
+`review`, `no_match`, `refused`, `evidence_missing`, `missing_state`, `review_filed`,
+`review_present`, `co_op_members`, `co_op_declined` plus the per-rule counters) and
+`outcomes.jsonl` (one row per school: outcome, rule or reason, candidate labels). Under `--apply`
+an ambiguous tie files one `ReviewCase` under the `School identity` family carrying both candidate
+labels and the lane providers (`review_filed`); a
+replay that finds it already durable counts `review_present` and appends nothing, and a dry run
+files nothing. An already-owned identical claim is `already_linked` and appends nothing, so a
+replayed apply over the same generation is safe after a restart. A matched CCD entry whose website
+is an http(s) URL and whose school publishes none attaches it to `CanonicalSchool.school_website`
+(counted as `websites`, rendered by the workbook's `School site` column) with the same lane evidence
+note; a school that already publishes a website is not rewritten, and an unusable `WEBSITE` cell
+stays a corpus note.
 Two equally plausible schools are `review`, never a silent pick; a name matching only in another
-state is `no_match`. Read claims back through the workbook's `Schools` postal block and `School
-site` column plus `census-service verify --workbook`; the postal cells carry the owner namespace/id,
-source lane, capture URL, observed date and capture SHA, so a corpus rebuild with different bytes
-cannot masquerade as the same evidence.
+state is `no_match`. A school marked `co_op` links each published member name (`aliases`)
+independently: every member name runs the ladder and guards alone, an accepted member key stamps its
+own identity and evidence on the co-op school without creating or merging a member school, a member
+tie files its own case, and a member name with no qualifying key counts `co_op_declined` while the
+school-level `no_match` keeps its meaning. A trailing parenthetical that is only a campus designation
+(`East`, `West Campus`, `Main`) never falls back to the undesignated campus through the parenthetical
+head, so two campuses sharing one base name keep their own keys; the CSV's `identity_count` carries
+how many keys a school owns and the link block publishes the first in namespace/id order. Read claims
+back through the workbook's `Schools` postal block and `School
+site` column plus `census-service verify --workbook`; a pending ambiguous join is read back in the
+workbook's `Review` sheet under the `School identity` family, whose rows `verify` recomputes from
+the store alongside the verdict rows a reviewer has answered. The postal cells carry the owner
+namespace/id, source lane, capture URL, observed date and capture SHA, so a corpus rebuild with
+different bytes cannot masquerade as the same evidence.
 
 ## Export, verification and sealing
 

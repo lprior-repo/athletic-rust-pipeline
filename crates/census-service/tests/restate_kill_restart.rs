@@ -304,6 +304,7 @@ async fn paused_invocation(
     node: &Node,
     deadline: Instant,
 ) -> Result<String, String> {
+    let mut last = String::from("the admin query was never asked");
     for _ in 0..1_200 {
         let remaining = deadline.saturating_duration_since(Instant::now());
         if remaining.is_zero() {
@@ -323,7 +324,10 @@ async fn paused_invocation(
         let status = response.status();
         let text = response.text().await.map_err(|error| error.to_string())?;
         if !status.is_success() {
-            return Err(format!("the admin query answered {status}: {text}"));
+            last = format!("the admin query answered {status}: {text}");
+            let remaining = deadline.saturating_duration_since(Instant::now());
+            tokio::time::sleep(POLL_INTERVAL.min(remaining)).await;
+            continue;
         }
         let body: serde_json::Value =
             serde_json::from_str(&text).map_err(|error| format!("{error}: {text}"))?;
@@ -345,7 +349,9 @@ async fn paused_invocation(
         let remaining = deadline.saturating_duration_since(Instant::now());
         tokio::time::sleep(POLL_INTERVAL.min(remaining)).await;
     }
-    Err("the killed endpoint's invocation never entered its paused state".to_string())
+    Err(format!(
+        "the killed endpoint's invocation never entered its paused state: {last}"
+    ))
 }
 
 async fn resume(client: &reqwest::Client, node: &Node, invocation: &str) -> Result<(), String> {

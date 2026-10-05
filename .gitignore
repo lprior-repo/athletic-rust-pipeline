@@ -22,3 +22,12 @@
 /.moon/cache/
 /tools/build-toolchain.json
 /tools/.build-toolchain.*
+
+# Stray CARGO_TARGET_DIR trees under a crate (the root /target/ rule does not reach them).
+/crates/*/target/
+
+# Coach tap evidence: 2.1 GB of per-probe HTTP captures and 319 MB of derived extracts that
+# TAP-REGISTRY.json references by relative path. The plan, registry, matrices and datasets beside
+# them stay tracked; these two trees stay on disk and out of the object store.
+/research/sources/coach-coverage-bundle-20261004/probes/
+/research/sources/coach-coverage-bundle-20261004/extract/

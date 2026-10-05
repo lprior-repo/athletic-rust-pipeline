@@ -83,7 +83,7 @@ Girls' Long Jump 3A=LongJump;ASICS Boys 1 Mile Finals=Track1Mile;\
 HS Boys 1600m En Route Finals=Track1600m;Mens HS Discus Finals=Discus;\
 Boys 100 Meter Dash=Track100m;5,000 Meters=Track5000m;Womens HS Shot Put Finals=ShotPut;\
 Boys Varsity 4x400 Meter Relay Finals=Relay4x400;Girls' Javelin 6A=Javelin;\
-Girls Javelin=Javelin;Boys 6A Javelin=Javelin";
+Girls Javelin=Javelin;Boys 6A Javelin=Javelin;Boys 2A 110m Hurdles Preliminaries=Track110mHurdles";
 
 #[test]
 fn wrapped_event_labels_map_to_their_kind() -> Result<(), Box<dyn std::error::Error>> {

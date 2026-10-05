@@ -1,7 +1,7 @@
 use crate::{Store, StoreError, Table};
 use census_domain::model::{
-    CanonicalAthlete, CanonicalSchool, Gender, GradYear, IdentityStatus, SchoolId, SourceIdentity,
-    SourceNamespace,
+    CanonicalAthlete, CanonicalSchool, Gender, GradYear, IdentityStatus, RetainedConflict,
+    SchoolId, SourceIdentity, SourceNamespace, CANONICAL_ID_COLLISION_FAMILY,
 };
 use census_domain::UsJurisdiction;
 
@@ -234,5 +234,42 @@ fn contradictory_raw_grade_reaches_every_primary_owner_without_merging_them() ->
     check!(rows
         .iter()
         .all(|row| row.derived_cohort_confidence() == Some(Confidence::LOW)));
+    Ok(())
+}
+
+#[test]
+fn an_inherited_retained_conflict_survives_append_scan_and_identity_status() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let school = SchoolId::mint("sch", &["inherited-conflict"]);
+    let clean = subject(&school, "3001", "Alice Example");
+    let mut conflicting = clean.clone();
+    conflicting.retained_conflicts.push(RetainedConflict::new(
+        CANONICAL_ID_COLLISION_FAMILY,
+        clean.id.as_str(),
+        "Alice Example",
+        "A retained incompatible source subject",
+    ));
+    store.append(Table::Athletes, &clean)?;
+    store.append(Table::Athletes, &conflicting)?;
+    let rows = store.snapshot().athletes()?;
+    check!(eq; rows.len(), 1);
+    check!(eq; rows[0].retained_conflicts, conflicting.retained_conflicts);
+    check!(eq; store.scan::<CanonicalAthlete>(Table::Athletes)?, vec![conflicting.clone()]);
+
+    let reverse_dir = tempfile::tempdir()?;
+    let reverse = Store::open(reverse_dir.path())?;
+    reverse.append(Table::Athletes, &conflicting)?;
+    reverse.append(Table::Athletes, &clean)?;
+    check!(eq;
+        reverse.snapshot().athletes()?[0].retained_conflicts,
+        conflicting.retained_conflicts
+    );
+
+    let mut index = census_domain::model::AthleteIdentityIndex::default();
+    for row in &rows {
+        index.observe(row)?;
+    }
+    check!(!index.isolated_source(&clean.id.cast()));
     Ok(())
 }

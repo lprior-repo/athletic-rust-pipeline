@@ -12,8 +12,12 @@ fn captured_summary_keeps_four_varsity_contexts_and_counts_four_jv_rejections() 
         &summary,
         &SchoolId::mint("sch", &["arapaho-charter"]),
         "https://example.test/schools/SS28UB/summary",
-        "2026-09-30",
-        EmissionScope::Census,
+        "2026-09-30T00:00:00Z",
+        census_domain::model::SchoolYear::new(2026).ok_or("valid test school year")?,
+        &crate::net::cache::content_digest(include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/fixtures/coach_directories/probe/WY/summary-SS28UB.json"
+        ))),
     )?;
     let contexts: BTreeSet<_> = emission
         .coaches

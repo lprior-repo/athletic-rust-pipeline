@@ -5,6 +5,7 @@ use census_domain::model::{
     TenureAssessmentError,
 };
 
+use super::claims::current_row;
 use super::normalise::{role_label, Named};
 use super::{ContactState, Disagreement, Slot};
 
@@ -135,15 +136,18 @@ fn resolve_owner(rows: &[&CanonicalCoach], school_year: SchoolYear) -> Outcome {
         Ok(CoachTenure::Current { .. }) => {}
     }
     let mut named: Option<Named> = None;
-    for coach in rows.iter().filter(|coach| current_row(coach, school_year)) {
+    for (coach, mailboxes) in rows
+        .iter()
+        .filter_map(|coach| current_row(coach, school_year).map(|mailboxes| (*coach, mailboxes)))
+    {
         match named.as_mut() {
             Some(named) => {
-                if !named.merge(coach) {
+                if !named.merge(coach, mailboxes) {
                     return Outcome::Conflict;
                 }
             }
             None => {
-                let Some(current) = Named::of(coach) else {
+                let Some(current) = Named::of(coach, mailboxes) else {
                     return Outcome::InvalidEvidence;
                 };
                 named = Some(current);
@@ -152,14 +156,8 @@ fn resolve_owner(rows: &[&CanonicalCoach], school_year: SchoolYear) -> Outcome {
     }
     match named {
         Some(named) => Outcome::Current(named),
-        None => Outcome::InvalidEvidence,
+        None => Outcome::Unknown,
     }
-}
-
-fn current_row(coach: &CanonicalCoach, school_year: SchoolYear) -> bool {
-    coach.tenure_evidence.iter().any(|fact| {
-        matches!(fact.tenure, CoachTenure::Current { school_year: year } if year == school_year)
-    })
 }
 
 fn describe(rows: &[&CanonicalCoach], school_year: SchoolYear) -> Vec<String> {

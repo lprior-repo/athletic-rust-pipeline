@@ -2,7 +2,7 @@ use crate::CrawlError;
 use census_domain::model::{EventKind, Gender, Mark};
 
 use super::super::raw::parse_raw;
-use super::super::{RawGradeIssueKind, SourceRowLocator};
+use super::super::{RawGradeIssue, RawGradeIssueKind, SourceRowLocator};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -402,5 +402,61 @@ fn escaped_section_labels_decode_before_publication() -> TestResult {
     check!(eq; event.rows[0].school, "North Buncombe");
     check!(matches!(event.rows[0].mark, Mark::DistanceMetres(_)));
     check!(eq; event.rows[0].heat.as_deref(), Some("8"));
+    Ok(())
+}
+
+#[test]
+fn the_nc_wrapped_finals_capture_keeps_category_and_no_mark_rows() -> TestResult {
+    let capture =
+        include_str!("../../../tests/fixtures/milesplit/nc_meet_684812_rs1283641_raw.html");
+    let parsed = parse_raw(capture, URL)?;
+    check!(eq; parsed.skipped, Vec::<String>::new());
+    let outside_high_school = |ordinal: u32, byte_offset: usize| RawGradeIssue {
+        row: SourceRowLocator {
+            ordinal,
+            byte_offset,
+            byte_length: 70,
+        },
+        raw_token: "8".to_string(),
+        kind: RawGradeIssueKind::OutsideHighSchool,
+    };
+    check!(eq;
+        parsed.grade_issues,
+        vec![outside_high_school(25, 45385), outside_high_school(207, 58307)]
+    );
+    check!(eq; parsed.meet.rows_parsed, 214);
+    check!(eq; parsed.meet.rows_skipped, 0);
+    check!(eq; parsed.meet.events.len(), 1);
+    let event = &parsed.meet.events[0];
+    check!(event.label.ends_with("Boys 3200M Finals"));
+    check!(eq; event.round.as_deref(), Some("Finals"));
+    check!(eq; event.gender, Gender::Boys);
+    check!(eq; event.kind, EventKind::Track3200m);
+    check!(eq; event.rows.len(), 214);
+    let named = |name: &str| {
+        event
+            .rows
+            .iter()
+            .find(|row| row.name == name)
+            .ok_or("retained row")
+    };
+    let ferguson = named("FERGUSON, Michael")?;
+    check!(eq; ferguson.school, "North Buncombe");
+    check!(eq; ferguson.place, Some(1));
+    check!(eq; ferguson.heat.as_deref(), Some("8"));
+    check!(eq;
+        ferguson.mark,
+        Mark::TimeSeconds(crate::hytek::parse_time("8:44.73").ok_or("published mark")?)
+    );
+    for name in ["WHARTON, Elijah", "WILLCOX, Jack"] {
+        check!(eq; named(name)?.mark, Mark::Raw("DNF".to_string()));
+    }
+    for name in ["JENKINS, Grady", "TEMPLETON, John"] {
+        let row = named(name)?;
+        check!(eq; row.mark, Mark::Raw("NT".to_string()));
+        check!(eq; row.heat.as_deref(), Some("7"));
+        check!(eq; row.place, None);
+    }
+    check!(eq; event.rows.last().ok_or("last row")?.name, "TEMPLETON, John");
     Ok(())
 }

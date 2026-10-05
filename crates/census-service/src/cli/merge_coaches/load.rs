@@ -1,4 +1,5 @@
-use super::{url_find, Row};
+use super::patterns::url_find;
+use super::Row;
 use census_domain::model::{CONTACT_COLUMNS, CONTACT_PROOF_COLUMN};
 use std::path::Path;
 

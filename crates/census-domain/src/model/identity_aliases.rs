@@ -58,3 +58,7 @@ impl IdentityAliases {
         Ok(result)
     }
 }
+
+#[cfg(test)]
+#[path = "identity_aliases_tests.rs"]
+mod tests;

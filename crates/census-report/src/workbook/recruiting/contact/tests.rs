@@ -1,12 +1,14 @@
 use census_domain::model::{
-    CanonicalAthlete, CanonicalCoach, CoachRole, CoachTenure, CoachTenureEvidence, Gender,
-    GradYear, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
+    CanonicalAthlete, CanonicalCoach, CoachContactClaim, CoachContactProgram, CoachRole,
+    CoachTenure, CoachTenureEvidence, Evidence, Gender, GradYear, SchoolId, SchoolYear,
+    SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 
-use super::{contacts, scoped, ContactState, Preferred};
+use super::{contacts, normalise::role_label, scoped, ContactState, Preferred, Slot};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+mod claim_binding;
 mod conflicts;
 mod persisted;
 mod scopes;
@@ -30,7 +32,49 @@ fn claim(tenure: CoachTenure) -> CoachTenureEvidence {
         source_sha256: "a".repeat(64),
         retrieved_at: "2026-08-01T00:00:00Z".into(),
         statement: "Synthetic academic-year tenure statement".into(),
+        claim: None,
     }
+}
+
+fn bind(coach: &mut CanonicalCoach) {
+    let program = match (coach.role, coach.sport) {
+        (CoachRole::AthleticDirector, _) => CoachContactProgram::SchoolAthletics,
+        (CoachRole::HeadCoach | CoachRole::AssistantCoach, Some(sport)) => {
+            CoachContactProgram::Team {
+                sport,
+                gender: coach.gender,
+            }
+        }
+        _ => return,
+    };
+    let mailboxes: Vec<_> = coach
+        .professional_email
+        .iter()
+        .chain(&coach.personal_email)
+        .map(|mailbox| Some(mailbox.clone()))
+        .collect();
+    let mailboxes = if mailboxes.is_empty() {
+        vec![None]
+    } else {
+        mailboxes
+    };
+    coach.tenure_evidence = coach
+        .tenure_evidence
+        .iter()
+        .flat_map(|fact| {
+            mailboxes.iter().map(|mailbox| {
+                let mut fact = fact.clone();
+                fact.claim = Some(CoachContactClaim {
+                    coach: coach.id.clone(),
+                    school: coach.school.clone(),
+                    role: coach.role,
+                    program: program.clone(),
+                    mailbox: mailbox.clone(),
+                });
+                fact
+            })
+        })
+        .collect();
 }
 
 fn person(
@@ -43,6 +87,7 @@ fn person(
     coach.tenure_evidence.push(claim(CoachTenure::Current {
         school_year: year()?,
     }));
+    bind(&mut coach);
     Ok(coach)
 }
 
@@ -104,6 +149,8 @@ fn qualified_coach_mailboxes_outrank_director_without_becoming_professional() ->
             coach.professional_email = Some("coach@example.invalid".into());
             ContactState::ProfessionalCoachEmail
         };
+        bind(&mut coach);
+        bind(&mut ad);
         let contacts = contacts(&[coach, ad], year()?);
         let athlete = athlete();
         let scope = scoped(contacts.get(school().as_str()), &athlete);
@@ -121,6 +168,7 @@ fn qualified_director_is_an_explicit_address_fallback_not_a_head_coach() -> Test
     let coach = head("Named coach", Sport::OutdoorTrack, Gender::Boys)?;
     let mut ad = director()?;
     ad.professional_email = Some("director@example.invalid".into());
+    bind(&mut ad);
     let result = selected(&[coach.clone(), ad.clone()], &athlete())?;
     check!(eq; result.name, "Current director");
     check!(eq; result.email, "director@example.invalid");
@@ -139,6 +187,7 @@ fn qualified_director_is_an_explicit_address_fallback_not_a_head_coach() -> Test
 fn personal_director_address_never_enters_a_professional_coach_column() -> TestResult {
     let mut ad = director()?;
     ad.personal_email = Some("director@outlook.com".into());
+    bind(&mut ad);
     let contacts = contacts(&[ad], year()?);
     let athlete = athlete();
     let scope = scoped(contacts.get(school().as_str()), &athlete);
@@ -165,5 +214,50 @@ fn missing_coach_rows_do_not_invent_a_research_attempt_or_a_negative_finding() -
     check!(eq; result.state, ContactState::ContactResearchUnknown);
     check!(eq; result.name, "");
     check!(eq; result.email, "");
+    Ok(())
+}
+
+#[test]
+fn role_labels_name_the_slot_and_side_except_for_the_director() -> TestResult {
+    for (slot, side, expected) in [
+        (Slot::Director, Gender::Boys, "Athletic Director"),
+        (Slot::Director, Gender::Girls, "Athletic Director"),
+        (
+            Slot::OutdoorTrack,
+            Gender::Boys,
+            "Head Outdoor TF Coach (boys)",
+        ),
+        (
+            Slot::IndoorTrack,
+            Gender::Girls,
+            "Head Indoor TF Coach (girls)",
+        ),
+        (Slot::CrossCountry, Gender::Boys, "Head XC Coach (boys)"),
+        (Slot::CrossCountry, Gender::Girls, "Head XC Coach (girls)"),
+    ] {
+        check!(eq; role_label(slot, side).as_str(), expected);
+    }
+    Ok(())
+}
+
+#[test]
+fn merged_sources_take_the_newest_observation_and_larger_url_on_a_tied_date() -> TestResult {
+    for (first_date, second_date, expected) in [
+        ("2026-08-01", "2026-08-02", "https://example.invalid/second"),
+        ("2026-08-02", "2026-08-02", "https://example.invalid/second"),
+    ] {
+        let mut first = head("Same coach", Sport::OutdoorTrack, Gender::Boys)?;
+        first.evidence = vec![Evidence::parsed(
+            SourceRef::new("fixture", Some("https://example.invalid/first".into())),
+            first_date,
+        )];
+        let mut second = head("Same coach", Sport::OutdoorTrack, Gender::Boys)?;
+        second.evidence = vec![Evidence::parsed(
+            SourceRef::new("fixture", Some("https://example.invalid/second".into())),
+            second_date,
+        )];
+        let result = selected(&[first, second], &athlete())?;
+        check!(eq; result.source_url.as_str(), expected);
+    }
     Ok(())
 }

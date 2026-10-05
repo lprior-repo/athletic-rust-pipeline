@@ -1,10 +1,10 @@
 use super::super::super::cells::{row, Cell};
 use super::super::columns::{flag, published};
 use super::rules::PR_EVENTS;
-use crate::bests::SharedSelection;
+use crate::bests::{SharedSelection, SurfaceClass};
 use crate::workbook::recruiting::profiles::Profiles;
 use crate::workbook::ReportResult;
-use census_domain::model::{CanonicalAthlete, Sport};
+use census_domain::model::{CanonicalAthlete, EventKind, Sport};
 
 pub(super) fn participation_flags(athlete: &CanonicalAthlete) -> Vec<Cell> {
     row!(
@@ -24,11 +24,21 @@ pub(super) fn event_list(_athlete: &CanonicalAthlete, prs: &[&SharedSelection]) 
     if prs.is_empty() {
         return vec![Cell::Empty];
     }
-    let events: std::collections::BTreeSet<_> = prs
+    let events: std::collections::BTreeMap<_, _> = prs
         .iter()
-        .map(|pr| pr.key.event_kind.stable_key())
+        .map(|pr| {
+            let event = if pr.key.surface == SurfaceClass::CrossCountry {
+                std::borrow::Cow::Borrowed("CrossCountry")
+            } else {
+                pr.key.event_kind.stable_key()
+            };
+            (event, *pr)
+        })
         .collect();
-    let names: Vec<_> = events.iter().map(|event| pr_event_name(event)).collect();
+    let names: Vec<_> = events
+        .iter()
+        .map(|(event, pr)| pr_mark_name(pr, event))
+        .collect();
     vec![Cell::text(names.join("; "))]
 }
 
@@ -50,8 +60,27 @@ fn event_cell(prs: &[&SharedSelection], event: &str) -> Cell {
     qualified_summary(
         prs.iter()
             .copied()
-            .filter(|pr| pr.key.event_kind.stable_key() == event),
+            .filter(|pr| selection_matches_event(pr, event)),
     )
+}
+
+fn selection_matches_event(pr: &SharedSelection, event: &str) -> bool {
+    match event {
+        "CrossCountry" => pr.key.surface == SurfaceClass::CrossCountry,
+        "Track5000m" => {
+            pr.key.surface != SurfaceClass::CrossCountry
+                && pr.key.event_kind == EventKind::Track5000m
+        }
+        _ => pr.key.event_kind.stable_key() == event,
+    }
+}
+
+fn pr_mark_name<'a>(pr: &SharedSelection, event: &'a str) -> &'a str {
+    if pr.key.surface == SurfaceClass::CrossCountry {
+        "XC"
+    } else {
+        pr_event_name(event)
+    }
 }
 
 fn qualified_summary<'a>(mut prs: impl Iterator<Item = &'a SharedSelection>) -> Cell {
@@ -93,7 +122,7 @@ fn qualified_summary<'a>(mut prs: impl Iterator<Item = &'a SharedSelection>) -> 
 }
 
 fn append_qualified_mark(text: &mut String, pr: &SharedSelection) {
-    text.push_str(pr_event_name(&pr.key.event_kind.stable_key()));
+    text.push_str(pr_mark_name(pr, &pr.key.event_kind.stable_key()));
     text.push(' ');
     text.push_str(&pr.mark_text());
     text.push_str(" [");

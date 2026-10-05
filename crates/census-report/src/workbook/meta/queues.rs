@@ -104,7 +104,7 @@ fn verdict_review_row(verdict: &ReviewVerdictRecord, index: &SubjectIndex<'_>) -
 
 fn verdict_subject(verdict: &ReviewVerdictRecord, index: &SubjectIndex<'_>) -> String {
     match ReviewFamily::parse(&verdict.family) {
-        Some(ReviewFamily::SchoolJurisdiction) => index
+        Some(ReviewFamily::SchoolJurisdiction | ReviewFamily::SchoolLink) => index
             .school(&verdict.subject_id)
             .map_or_else(|| verdict.subject_id.clone(), |school| school.name.clone()),
         Some(ReviewFamily::MeetJurisdiction) => index
@@ -117,7 +117,9 @@ fn verdict_subject(verdict: &ReviewVerdictRecord, index: &SubjectIndex<'_>) -> S
 
 fn state_for_subject(family: &str, subject_id: &str, index: &SubjectIndex<'_>) -> Cell {
     let state = match ReviewFamily::parse(family) {
-        Some(ReviewFamily::SchoolJurisdiction) => index.school_state(subject_id),
+        Some(ReviewFamily::SchoolJurisdiction | ReviewFamily::SchoolLink) => {
+            index.school_state(subject_id)
+        }
         Some(ReviewFamily::MeetJurisdiction) => index.meet_state(subject_id),
         Some(ReviewFamily::AthleteIdentity) => index.athlete_state(subject_id),
         None => None,
@@ -157,8 +159,25 @@ pub(in crate::workbook) fn review_families(
         identity_unverified(rows, cohort, names)?,
         unresolved_venues(rows.meets),
         unresolved_schools(rows.schools),
+        school_links(rows),
         unsupported_graduation(rows),
     ])
+}
+
+fn school_links(rows: &StoreRows) -> Family {
+    let mut family = Family::new(SCHOOL_IDENTITY);
+    for case in rows
+        .review_cases
+        .iter()
+        .filter(|case| case.family == SCHOOL_IDENTITY_FAMILY && case.state == ReviewState::Pending)
+    {
+        family.push(queue_row(
+            &case.subject_id,
+            case.subject.clone(),
+            case.detail.clone(),
+        ));
+    }
+    family
 }
 
 fn unsupported_graduation(rows: &StoreRows) -> Family {

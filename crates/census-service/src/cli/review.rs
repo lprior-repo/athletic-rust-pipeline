@@ -25,7 +25,7 @@ impl From<ResponseFormatArg> for ModelResponseFormat {
 #[command(about = "What `review` was asked to do")]
 pub(super) struct ReviewArgs {
     #[arg(
-        help = "Family to ask about (repeatable): `school-jurisdiction`, `meet-jurisdiction`, `athlete-identity`. Default: every family the lane asks about"
+        help = "Family to ask about (repeatable): `school-jurisdiction`, `meet-jurisdiction`, `athlete-identity`, `school-link`. Default: every family the lane asks about"
     )]
     #[arg(long = "family", value_name = "FAMILY")]
     family: Vec<String>,
@@ -163,7 +163,7 @@ pub(super) fn families_of(names: &[String]) -> Result<Vec<ReviewFamily>> {
         let Some(family) = ReviewFamily::parse(name) else {
             bail!(
                 "unknown review family {name:?}; known: school-jurisdiction, meet-jurisdiction, \
-                 athlete-identity"
+                 athlete-identity, school-link"
             );
         };
         if !families.contains(&family) {

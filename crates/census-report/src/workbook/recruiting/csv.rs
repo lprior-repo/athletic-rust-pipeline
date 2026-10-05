@@ -8,7 +8,7 @@ use super::profiles::profiles_of;
 use crate::csv_safety::protect_owned;
 use crate::report::{Derivation, ReportError, ReportResult};
 
-const HEADERS: [&str; 32] = [
+const HEADERS: [&str; 21] = [
     "athlete_id",
     "name",
     "grad_year",
@@ -29,18 +29,7 @@ const HEADERS: [&str; 32] = [
     "coach_source_url",
     "identity_status",
     "evidence_sources",
-    "postal_school_id",
-    "postal_street",
-    "postal_second_line",
-    "postal_city",
-    "postal_state",
-    "postal_zip",
-    "postal_owner_namespace",
-    "postal_owner_id",
-    "postal_source",
-    "postal_source_url",
-    "postal_observed_date",
-    "postal_capture_sha256",
+    crate::export::postal::ATHLETE_ADDRESS_CSV_HEADER,
 ];
 
 pub struct RecruitingCsvCounts {
@@ -60,8 +49,8 @@ pub fn write_recruiting_csv(
         .collect();
     let contact_index = contacts(derivation.coach_observations(), school_year);
     let identities = derivation.dataset().identities();
-    let postal =
-        crate::export::postal::athlete_postal_index(derivation.dataset(), derivation.athletes())?;
+    let school_address =
+        crate::export::postal::athlete_address_index(derivation.dataset(), derivation.athletes())?;
     let mut writer = csv::Writer::from_path(path).map_err(|error| csv_error(path, error))?;
     writer
         .write_record(HEADERS)
@@ -81,12 +70,13 @@ pub fn write_recruiting_csv(
             &contact,
             status.as_str(),
         );
-        let fields = postal
-            .get(athlete.id.as_str())
-            .ok_or_else(|| ReportError::Invariant {
-                detail: format!("athlete {} has no postal projection", athlete.id),
-            })?;
-        write_row(&mut writer, row.chain(fields.iter().cloned()), path)?;
+        let address =
+            school_address
+                .get(athlete.id.as_str())
+                .ok_or_else(|| ReportError::Invariant {
+                    detail: format!("athlete {} has no school address projection", athlete.id),
+                })?;
+        write_row(&mut writer, row.chain([address.clone()]), path)?;
         counts.with_school_coach = increment(counts.with_school_coach, has_coach)?;
         counts.with_coach_email = increment(counts.with_coach_email, has_email)?;
     }

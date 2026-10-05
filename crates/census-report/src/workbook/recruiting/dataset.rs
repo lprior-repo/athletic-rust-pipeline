@@ -27,7 +27,7 @@ pub(super) struct Dataset {
     pub(super) contacts: BTreeMap<String, SchoolContacts>,
     pub(super) tallies: BTreeMap<String, AthleteTally>,
     pub(super) prs: Vec<SharedSelection>,
-    pub(super) postal: BTreeMap<String, [String; 12]>,
+    pub(super) school_address: BTreeMap<String, String>,
     pub(super) pr_index: BTreeMap<String, Vec<usize>>,
     audit: Reconciliation,
 }
@@ -39,7 +39,8 @@ impl Dataset {
         prs: Vec<SharedSelection>,
     ) -> ReportResult<Self> {
         let athletes = derivation.athletes().to_vec();
-        let postal = crate::export::postal::athlete_postal_index(derivation.dataset(), &athletes)?;
+        let school_address =
+            crate::export::postal::athlete_address_index(derivation.dataset(), &athletes)?;
         let identities = derivation.dataset().identities();
         let schools = school_index(derivation.schools());
         let coaches = derivation.coach_observations().to_vec();
@@ -74,7 +75,7 @@ impl Dataset {
             contacts,
             tallies,
             prs,
-            postal,
+            school_address,
             pr_index,
             audit,
         })

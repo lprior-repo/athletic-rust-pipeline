@@ -1,67 +1,16 @@
 mod judge;
 mod load;
+mod patterns;
 mod report;
 use anyhow::{bail, Context, Result};
-use census_domain::model::{CONTACT_COLUMNS, CONTACT_PROOF_COLUMN};
+use census_domain::model::{
+    ContactClaimEvidence, RawContactRow, CONTACT_COLUMNS, CONTACT_PROOF_COLUMN,
+};
 use clap::Args;
 use load::load_rows;
-use regex::Regex;
 use report::print_report;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
-use std::sync::LazyLock;
-
-const PERSONAL_MAIL: &[&str] = &[
-    "gmail.com",
-    "yahoo.com",
-    "hotmail.com",
-    "outlook.com",
-    "aol.com",
-    "icloud.com",
-    "me.com",
-    "live.com",
-    "msn.com",
-    "comcast.net",
-    "sbcglobal.net",
-    "att.net",
-    "verizon.net",
-    "protonmail.com",
-    "proton.me",
-    "ymail.com",
-    "mail.com",
-    "aim.com",
-    "earthlink.net",
-    "juno.com",
-    "rr.com",
-    "cox.net",
-    "windstream.net",
-    "centurytel.net",
-    "frontier.com",
-];
-static URL_RE: LazyLock<Option<Regex>> = LazyLock::new(|| Regex::new(r"^https?://[^\s]+$").ok());
-static URL_FIND: LazyLock<Option<Regex>> = LazyLock::new(|| Regex::new(r"https?://\S+").ok());
-static PHONE_RE: LazyLock<Option<Regex>> =
-    LazyLock::new(|| Regex::new(r"(\+?\d[\d\s().-]{7,}\d)").ok());
-static EMAIL_RE: LazyLock<Option<Regex>> =
-    LazyLock::new(|| Regex::new(r"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$").ok());
-static VACANT_RE: LazyLock<Option<Regex>> =
-    LazyLock::new(|| Regex::new(r"(?i)^(vacant|tba|tbd|n/?a|none|unknown|-+)$").ok());
-
-fn url_re() -> Option<&'static Regex> {
-    URL_RE.as_ref()
-}
-fn url_find() -> Option<&'static Regex> {
-    URL_FIND.as_ref()
-}
-fn phone_re() -> Option<&'static Regex> {
-    PHONE_RE.as_ref()
-}
-fn email_re() -> Option<&'static Regex> {
-    EMAIL_RE.as_ref()
-}
-fn vacant_re() -> Option<&'static Regex> {
-    VACANT_RE.as_ref()
-}
 
 #[derive(Debug, Clone)]
 pub(super) struct Row {
@@ -132,7 +81,12 @@ pub(super) fn run_merge_coaches(args: &MergeCoachesArgs) -> Result<()> {
     }
     let csv_files = collect_csv_files(&args.fragments)?;
     let pass = process_files(&csv_files)?;
+    let evidence = collect_merged_evidence(&pass.kept, &csv_files)?;
     write_merged_csv(&pass.kept, args)?;
+    census_store::read::write_snapshot_rows(
+        &census_service::coachverify::evidence_path(&args.out),
+        &evidence,
+    )?;
     print_report(
         &pass.kept,
         &pass.per_state,
@@ -271,6 +225,49 @@ fn write_merged_body(
             path: published.to_path_buf(),
             source,
         })
+}
+
+fn collect_merged_evidence(
+    kept: &KeptRows,
+    csv_files: &[PathBuf],
+) -> Result<Vec<ContactClaimEvidence>> {
+    let wanted: Vec<RawContactRow> = kept.values().map(raw_contact_row).collect();
+    let mut published: Vec<ContactClaimEvidence> = Vec::new();
+    for path in csv_files {
+        let sidecar = census_service::coachverify::evidence_path(path);
+        if !sidecar.is_file() {
+            bail!(
+                "fragment {} has no evidence sidecar {}",
+                path.display(),
+                sidecar.display()
+            );
+        }
+        let claims = census_service::coachverify::read_evidence_jsonl(&sidecar)?;
+        for row in &wanted {
+            published.extend(census_service::coachverify::claims_for_row(&claims, row));
+        }
+    }
+    Ok(published)
+}
+
+fn raw_contact_row(row: &Row) -> RawContactRow {
+    RawContactRow {
+        school: row.school.clone(),
+        city: row.city.clone(),
+        state: row.state.clone(),
+        sport: row.sport.clone(),
+        role: row.role.clone(),
+        coach_name: row.coach_name.clone(),
+        public_professional_email: row.public_professional_email.clone(),
+        ad_name: row.ad_name.clone(),
+        ad_email: row.ad_email.clone(),
+        source_urls: row
+            .source_url
+            .split_whitespace()
+            .map(str::to_string)
+            .collect(),
+        last_observed: row.last_observed.clone(),
+    }
 }
 
 #[cfg(test)]

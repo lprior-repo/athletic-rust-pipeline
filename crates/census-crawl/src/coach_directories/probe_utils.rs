@@ -41,11 +41,12 @@ pub fn classify_error(error: &CrawlError) -> (&'static str, String) {
             FetchError::Transport { .. } | FetchError::Client { .. } => "transport",
             FetchError::Timeout { .. } => "timeout",
             FetchError::Decode { .. } => "json",
-            FetchError::Policy { .. } => "policy",
+            FetchError::Policy { .. } | FetchError::OriginHeld { .. } => "policy",
             FetchError::Offline { .. } => "offline",
             FetchError::Cache { .. }
             | FetchError::InvalidUrl { .. }
             | FetchError::Encode { .. }
+            | FetchError::OriginLockIo { .. }
             | FetchError::Invariant { .. } => "invariant",
         },
         CrawlError::Decode { .. } => "json",

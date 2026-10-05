@@ -84,38 +84,53 @@ fn captured_zcum49_postal_claim_publishes_on_school_metadata_and_recruiting_csv(
             school_year: Some(2026),
         },
     )?;
-    for file in ["canonical-schools.csv", "recruiting-co2027.csv"] {
-        let mut reader = ::csv::Reader::from_path(data.join(file))?;
-        let headers = reader.headers()?.clone();
-        let record = reader.records().next().ok_or("missing exported row")??;
-        for (column, expected) in [
-            ("postal_school_id", school.id.to_string()),
-            ("postal_street", "1 Rocket Drive".into()),
-            ("postal_second_line", "".into()),
-            ("postal_city", "Asheville".into()),
-            ("postal_state", "NC".into()),
-            ("postal_zip", "28803".into()),
-            ("postal_owner_namespace", "association_school:nchsaa".into()),
-            ("postal_owner_id", "ZCUM49".into()),
-            ("postal_source", "athletic-association:NC".into()),
-            ("postal_source_url", URL.into()),
-            ("postal_observed_date", "2026-09-27".into()),
-            (
-                "postal_capture_sha256",
-                format!("{:x}", Sha256::digest(RAW)),
-            ),
-        ] {
-            let index = headers
-                .iter()
-                .position(|field| field == column)
-                .ok_or_else(|| format!("missing postal column {column}"))?;
-            check!(eq;
-                record.get(index),
-                Some(expected.as_str()),
-                "{file} {column}"
-            );
-        }
+    let mut reader = ::csv::Reader::from_path(data.join("canonical-schools.csv"))?;
+    let headers = reader.headers()?.clone();
+    let record = reader.records().next().ok_or("missing exported row")??;
+    for (column, expected) in [
+        ("postal_school_id", school.id.to_string()),
+        ("postal_street", "1 Rocket Drive".into()),
+        ("postal_second_line", "".into()),
+        ("postal_city", "Asheville".into()),
+        ("postal_state", "NC".into()),
+        ("postal_zip", "28803".into()),
+        ("postal_owner_namespace", "association_school:nchsaa".into()),
+        ("postal_owner_id", "ZCUM49".into()),
+        ("postal_source", "athletic-association:NC".into()),
+        ("postal_source_url", URL.into()),
+        ("postal_observed_date", "2026-09-27".into()),
+        (
+            "postal_capture_sha256",
+            format!("{:x}", Sha256::digest(RAW)),
+        ),
+    ] {
+        let index = headers
+            .iter()
+            .position(|field| field == column)
+            .ok_or_else(|| format!("missing postal column {column}"))?;
+        check!(eq;
+            record.get(index),
+            Some(expected.as_str()),
+            "canonical-schools.csv {column}"
+        );
     }
+    let mut reader = ::csv::Reader::from_path(data.join("recruiting-co2027.csv"))?;
+    let headers = reader.headers()?.clone();
+    let record = reader.records().next().ok_or("missing exported row")??;
+    check!(eq;
+        headers.iter().any(|field| field.starts_with("postal_")),
+        false,
+        "recruiting-co2027.csv keeps the school postal block"
+    );
+    let index = headers
+        .iter()
+        .position(|field| field == "school_address")
+        .ok_or("missing school_address column")?;
+    check!(eq;
+        record.get(index),
+        Some("1 Rocket Drive, Asheville, NC 28803"),
+        "recruiting-co2027.csv school_address"
+    );
     Ok(())
 }
 

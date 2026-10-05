@@ -1,7 +1,7 @@
 use crate::replay::{ensure_rows, unmapped, Capture};
 use anyhow::{bail, Result};
 use census_crawl::coach_directories;
-use census_domain::model::{normalize_name, CanonicalSchool, Sport};
+use census_domain::model::{normalize_name, CanonicalSchool, SchoolYear, Sport};
 use census_domain::UsJurisdiction;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -85,12 +85,17 @@ fn summary(capture: &Capture<'_>) -> Result<String> {
         )
     })?;
     let (_, school_id) = CanonicalSchool::new(state, &summary.name, normalize_name(&summary.name));
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(capture.body.as_bytes());
+    let digest = format!("{:x}", hasher.finalize());
     let mapped = coach_directories::coach_entities(
         &summary,
         &school_id,
         &coach_directories::summary_url(&summary.short_code),
-        "2026-09-29",
-        coach_directories::EmissionScope::Census,
+        "2026-09-29T00:00:00Z",
+        SchoolYear::DEFAULT,
+        &digest,
     )?;
     let expected = expected_contexts(capture)?;
     let mut contexts: Vec<String> = mapped

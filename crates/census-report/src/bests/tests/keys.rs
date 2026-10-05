@@ -175,3 +175,19 @@ fn imperial_boundaries_preserve_exact_units_or_refuse_the_mark() {
         assert_eq!(crate::bests::field_micrometres(input), expected, "{input}");
     }
 }
+
+#[test]
+fn canary_five_third_decimal_times_remain_distinct_and_strictly_ordered(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let faster = crate::bests::Measure::Time.value(&Mark::TimeSeconds(CentiSeconds::new(6001)));
+    let slower = crate::bests::Measure::Time.value(&Mark::TimeSeconds(CentiSeconds::new(6002)));
+    check!(faster != slower);
+    check!(crate::bests::key::should_replace(
+        6001,
+        6002,
+        crate::bests::key::MarkOrdering::new("2025-03-15", "meet_a", "perf_1"),
+        crate::bests::key::MarkOrdering::new("2025-03-15", "meet_a", "perf_1"),
+        move |candidate, incumbent| crate::bests::Measure::Time.better(candidate, incumbent),
+    ));
+    Ok(())
+}

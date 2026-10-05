@@ -1,5 +1,6 @@
 use census_domain::model::{CanonicalCoach, Gender, Sport};
 
+use super::claims::Mailboxes;
 use super::{ContactState, Slot};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -13,26 +14,25 @@ pub(in crate::workbook) struct Named {
 }
 
 impl Named {
-    pub(super) fn of(coach: &CanonicalCoach) -> Option<Self> {
+    pub(super) fn of(coach: &CanonicalCoach, mailboxes: Mailboxes<'_>) -> Option<Self> {
         if coach.name.trim().is_empty() {
             return None;
         }
         Some(Self {
             name: coach.name.clone(),
-            email: nonempty(&coach.professional_email).map(str::to_owned),
-            personal_email: nonempty(&coach.personal_email).map(str::to_owned),
+            email: mailboxes.professional.map(str::to_owned),
+            personal_email: mailboxes.personal.map(str::to_owned),
             sport: coach.sport,
             side: coach.gender,
             source: provenance(coach),
         })
     }
 
-    pub(super) fn merge(&mut self, coach: &CanonicalCoach) -> bool {
-        if differs(self.email.as_deref(), nonempty(&coach.professional_email))
-            || differs(
-                self.personal_email.as_deref(),
-                nonempty(&coach.personal_email),
-            )
+    pub(super) fn merge(&mut self, coach: &CanonicalCoach, mailboxes: Mailboxes<'_>) -> bool {
+        let email = mailboxes.professional;
+        let personal_email = mailboxes.personal;
+        if differs(self.email.as_deref(), email)
+            || differs(self.personal_email.as_deref(), personal_email)
         {
             return false;
         }
@@ -40,10 +40,10 @@ impl Named {
             self.name.clone_from(&coach.name);
         }
         if self.email.is_none() {
-            self.email = nonempty(&coach.professional_email).map(str::to_owned);
+            self.email = email.map(str::to_owned);
         }
         if self.personal_email.is_none() {
-            self.personal_email = nonempty(&coach.personal_email).map(str::to_owned);
+            self.personal_email = personal_email.map(str::to_owned);
         }
         let source = provenance(coach);
         if source.as_ref().is_some_and(|next| {
@@ -70,10 +70,6 @@ impl Named {
             (_, false, false) => ContactState::CoachNameOnly,
         }
     }
-}
-
-fn nonempty(value: &Option<String>) -> Option<&str> {
-    value.as_deref().filter(|value| !value.trim().is_empty())
 }
 
 fn differs(left: Option<&str>, right: Option<&str>) -> bool {

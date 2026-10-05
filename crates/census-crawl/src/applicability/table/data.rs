@@ -1,7 +1,13 @@
 use super::super::Applicability;
 use census_domain::UsJurisdiction;
 
-pub(crate) const TABLE: [Applicability; 24] = [
+pub(crate) const TABLE: [Applicability; 28] = [
+    Applicability {
+        slug: "aia",
+        jurisdictions: &[UsJurisdiction::Arizona],
+        evidence: super::prose::AIA_EVIDENCE,
+        refusal: super::prose::AIA_REFUSAL,
+    },
     Applicability {
         slug: "athleticlive",
         jurisdictions: &[
@@ -110,6 +116,22 @@ pub(crate) const TABLE: [Applicability; 24] = [
         refusal: super::prose::COACH_CONTACTS_REFUSAL,
     },
     Applicability {
+        slug: "home_campus",
+        jurisdictions: &[
+            UsJurisdiction::California,
+            UsJurisdiction::Florida,
+            UsJurisdiction::NewJersey,
+        ],
+        evidence: super::prose::HOME_CAMPUS_EVIDENCE,
+        refusal: super::prose::HOME_CAMPUS_REFUSAL,
+    },
+    Applicability {
+        slug: "sidearm_staff",
+        jurisdictions: &[UsJurisdiction::California],
+        evidence: super::prose::SIDEARM_STAFF_EVIDENCE,
+        refusal: super::prose::SIDEARM_STAFF_REFUSAL,
+    },
+    Applicability {
         slug: "ihsa",
         jurisdictions: &[UsJurisdiction::Illinois],
         evidence: super::prose::IHSAA_EVIDENCE,
@@ -212,6 +234,12 @@ pub(crate) const TABLE: [Applicability; 24] = [
         jurisdictions: &[UsJurisdiction::Tennessee],
         evidence: super::prose::TSSAA_EVIDENCE,
         refusal: super::prose::TSSAA_REFUSAL,
+    },
+    Applicability {
+        slug: "uhsaa",
+        jurisdictions: &[UsJurisdiction::Utah],
+        evidence: super::prose::UHSAA_EVIDENCE,
+        refusal: super::prose::UHSAA_REFUSAL,
     },
     super::ARBITER,
 ];
