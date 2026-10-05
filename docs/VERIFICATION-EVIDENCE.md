@@ -11544,3 +11544,20 @@ endpoint rule was exercised through the real CLI against a live node but with no
 navigation occurred in the smoke (by design: both refusals predate pages). The endpoint admits only
 the profile's own origin; reading a different public host through the lane would be a policy change,
 not a bypass. Gate run 11 covers this tree: `tools/gate.sh` exits 0 with every lane PASS.
+
+## The xtask Kani classifier is retired, superseding the psx defect — 2026-10-05
+
+Bead `psx` filed a classifier defect in the xtask Kani wrapper: it checked positive success before
+failure evidence, so mixed failed summaries, missing `verified=total` accounting or an ignored child
+exit status could report Pass. Commit `344536e7` ("Remove all Kani references from code, docs, tools,
+and beads", 2026-10-04) retired Kani as an acceptance gate and deleted the defect's subject: 13 Kani
+source files including 4 xtask files, the Kani CLI command and module, the `cargo-kani` lane in
+`tools/gate.sh`, the check-cfg entry, the Kani fixtures and tests, and the Kani mentions across
+HARDENING-PROGRAM, ADR-018, the national plan and the xtask README. `grep -rln kani xtask tools
+docs/adr` today finds only historical ledger sections in `docs/VERIFICATION-EVIDENCE.md`.
+
+Lane verdicts no longer pass through a summary classifier: `tools/gate.sh` records `--- <lane>: FAIL`
+and appends to `FAILURES` whenever the lane command exits nonzero, and `summary` prints PASS and
+exits 0 only while that array is empty (otherwise `gate: FAIL` and exit 1). Gate runs 10 and 11 on
+this tree printed `gate: PASS` with exit 0, which is the surviving form of the bead's "explicit
+exit-status success" requirement.
