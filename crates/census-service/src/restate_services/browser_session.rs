@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use athleticnet_browser::clock::Clock as EngineClock;
 use athleticnet_browser::drain::DrainReport;
-use athleticnet_browser::request::RequestSpec;
+use athleticnet_browser::request::{same_origin, RequestSpec};
 use athleticnet_browser::{BrowserManager, BrowserOutcome, BrowserSettings, BrowserStatus};
 use restate_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -27,6 +27,19 @@ impl BrowserSession {
             manager: Arc::new(AsyncMutex::new(None)),
             starting: Arc::new(AtomicBool::new(false)),
         }
+    }
+
+    fn foreign_origin_refusal(&self, request: &RequestSpec) -> Option<String> {
+        let origin = &self.settings.source_origin;
+        if same_origin(&request.url, origin) {
+            return None;
+        }
+        Some(format!(
+            "the browser lane is bound to {origin} and refuses {}: a request must share the \
+             configured source origin's scheme, host and port, so a foreign scheme or host never \
+             reaches a page, a capture or a receipt",
+            request.url
+        ))
     }
 
     async fn live(&self) -> Result<Arc<BrowserManager>, HandlerError> {
@@ -114,6 +127,9 @@ impl BrowserSession {
         ctx: SharedObjectContext<'_>,
         Json(request): Json<RequestSpec>,
     ) -> Result<Json<BrowserOutcome>, HandlerError> {
+        if let Some(refusal) = self.foreign_origin_refusal(&request) {
+            return Err(TerminalError::new(refusal).into());
+        }
         let manager = self.live().await?;
         let outcome = ctx
             .run(move || async move { Ok::<_, HandlerError>(Json(manager.fetch(request).await)) })

@@ -181,3 +181,57 @@ fn an_admitted_origin_passes_validation() {
     );
     assert!(result.is_ok(), "admitted origin must pass: {result:?}");
 }
+
+#[test]
+fn a_non_http_scheme_is_refused_even_when_the_host_is_admitted() -> TestResult {
+    for url in [
+        "file://www.athletic.net/etc/passwd",
+        "ftp://www.athletic.net/mirror",
+        "chrome://www.athletic.net/settings",
+    ] {
+        let err = match crate::net::bridge::validate_origin(url) {
+            Err(err) => err,
+            Ok(()) => return Err(format!("{url} must be refused before submission").into()),
+        };
+        match err {
+            crate::net::FetchError::Policy { detail } => check!(
+                detail.contains("scheme"),
+                "the refusal names the scheme, not only the host: {detail}"
+            ),
+            other => return Err(format!("expected Policy error for {url}, got: {other:?}").into()),
+        }
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn the_lane_refuses_a_non_http_scheme_before_any_ingress_call() -> TestResult {
+    let origin = "http://127.0.0.1:1/".parse()?;
+    let lane = crate::net::bridge::BrowserLane::over(crate::ingress::client(
+        origin,
+        reqwest::Client::new(),
+    )?);
+    for url in [
+        "file://www.athletic.net/etc/passwd",
+        "ftp://www.athletic.net/mirror",
+    ] {
+        let spec = RequestSpec {
+            url: url.to_string(),
+            semantic_url: url.to_string(),
+            action: Action::Fetch { body: None },
+        };
+        match lane.answer(&spec).await {
+            Err(crate::net::FetchError::Policy { detail }) => check!(
+                detail.contains("scheme"),
+                "the lane's refusal names the scheme: {detail}"
+            ),
+            other => {
+                return Err(format!(
+                    "{url} must be refused by policy before any ingress call, got: {other:?}"
+                )
+                .into())
+            }
+        }
+    }
+    Ok(())
+}

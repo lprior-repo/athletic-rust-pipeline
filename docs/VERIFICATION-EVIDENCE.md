@@ -11485,3 +11485,62 @@ Limits: the proof is over the JSON/serde path this workspace writes and reads (J
 `u8` values; other serde formats are not exercised. The bead's bounded Kani harness is superseded —
 the repository removed Kani on 2026-10-04 — and the exhaustive `u8` test is wider than a bounded
 constructor harness for this property.
+
+## Browser-lane admission holds scheme and host at both layers — 2026-10-05
+
+Bead `grl`: the crawl's `net::bridge` compared host only, so `validate_origin` and
+`BrowserLane::answer` accepted `file://www.athletic.net/etc/passwd`,
+`ftp://www.athletic.net/mirror` and `chrome://www.athletic.net/settings` because `www.athletic.net`
+is an admitted host; on the endpoint side only the rankings builder constrained URLs to the
+configured origin, so the generic fetch path navigated to whatever URL the wire carried.
+
+Crawl layer, rejected before Restate submission. `net/bridge/lane.rs` now routes both public entry
+points through one private `admitted(&Url)`: scheme must be `http` or `https` (checked first, so a
+refusal names the scheme) and then the host must be admitted. Reproduced before the fix — `cargo
+nextest run -p census-crawl -E 'test(a_non_http_scheme_is_refused_even_when_the_host_is_admitted) |
+test(the_lane_refuses_a_non_http_scheme_before_any_ingress_call)'` failed both, the lane case with
+`BrowserLane { url: "file://www.athletic.net/etc/passwd", detail: "ingress transport failed: …" }`,
+i.e. the submission had already been made. After the fix both pass, the second through the
+production dispatch at `net/execute/browser.rs:38`, and the crate's 937 lib tests pass.
+
+Endpoint layer, rejected before navigation. `athleticnet_browser::request::same_origin` is the
+extracted rule `endpoint()` already applied (scheme, host and port equality); the `BrowserSession`
+fetch handler refuses any request that does not share the profile's configured `source_origin`,
+with a terminal error naming the configured origin and the refused URL, before `live()` touches a
+profile and before any tab or navigation exists. Regression tests: the rule's matrix in
+`crates/athleticnet-browser/src/request/tests.rs` (default port, plain http, `file`, `chrome`,
+host-suffix, wrong port, foreign host) and the consumer test in
+`crates/census-service/src/restate_services/browser_session_tests.rs`, which refuses `file`,
+`chrome`, `ftp`, plain-http, wrong-port and `www.athletic.net.evil.example` URLs and admits the
+census's own bio request decoded from `fixtures/wire/athleticnet-browser-request.json`. No product
+code builds a plain-http source URL (`grep "http://www.athletic.net" crates/*/src` finds none), so
+exact-origin admission cannot narrow a live source path.
+
+CLI/linked smoke against native Restate, run `var/grl-origin-smoke-20261005/`. Node started from
+`var/grl-origin-smoke-20261005/restate.toml` (node 18160, ingress 18095, admin 19095),
+`target/debug/census-serve` on `127.0.0.1:18096` built from this tree, deployment registered with
+`curl -X POST http://127.0.0.1:19095/deployments -d '{"uri":"http://127.0.0.1:18096/"}'` (response
+listed 12 services). Each invocation: `target/debug/census-service browser-session --ingress
+http://127.0.0.1:18095 fetch --url <URL> --semantic-url
+https://www.athletic.net/qualification --json`.
+- `file://www.athletic.net/etc/passwd`, `chrome://www.athletic.net/settings`,
+  `ftp://www.athletic.net/mirror`, `https://www.athletic.net.evil.example/api/v1/x` — exit 1,
+  "the browser lane is bound to https://www.athletic.net/ and refuses <URL>: a request must share
+  the configured source origin's scheme, host and port, so a foreign scheme or host never reaches a
+  page, a capture or a receipt".
+- `https://www.athletic.net/api/v1/AthleteBio/GetAthleteBioData?athleteId=1&sport=tf` — exit 1,
+  "the browser lane is not started in this endpoint process; start it before fetching through it":
+  admitted past the origin rule per the existing http/https policy, stopped only by the unstarted
+  lane.
+
+Teardown in the documented order. `census-serve` SIGTERM drained with certificate
+`drained: accepted=3 completed=3 cancelled=0 timed_out=0 aborted=0 panicked=0` in
+`var/grl-origin-smoke-20261005/serve.log`; `restate-server` SIGTERM exited 0; ports 18095, 18096,
+18160 and 19095 confirmed free; no `census-serve` or `restate-server` process remained;
+`var/grl-origin-smoke-20261005/` preserved.
+
+Limits: the crawl layer's proof is the lane test at the production dispatch, not a national run. The
+endpoint rule was exercised through the real CLI against a live node but with no started lane, so no
+navigation occurred in the smoke (by design: both refusals predate pages). The endpoint admits only
+the profile's own origin; reading a different public host through the lane would be a policy change,
+not a bypass. Gate run 11 covers this tree: `tools/gate.sh` exits 0 with every lane PASS.

@@ -24,17 +24,7 @@ impl BrowserLane {
         let parsed = Url::parse(&spec.url).map_err(|source| FetchError::Policy {
             detail: format!("cannot parse browser URL: {source}"),
         })?;
-        let host = parsed
-            .host_str()
-            .map_or(Default::default(), core::convert::identity);
-        if !super::ADMITTED_BROWSER_ORIGINS.contains(&host) {
-            return Err(FetchError::Policy {
-                detail: format!(
-                    "host {host} not admitted to browser lane; allowed: {}",
-                    super::ADMITTED_BROWSER_ORIGINS.join(", ")
-                ),
-            });
-        }
+        admitted(&parsed)?;
         let response = self
             .client
             .request::<Json<RequestSpec>, Json<BrowserOutcome>>(
@@ -80,6 +70,18 @@ pub fn validate_origin(url: &str) -> Result<(), FetchError> {
     let parsed = url::Url::parse(url).map_err(|source| FetchError::Policy {
         detail: format!("cannot parse browser URL: {source}"),
     })?;
+    admitted(&parsed)
+}
+
+fn admitted(parsed: &Url) -> Result<(), FetchError> {
+    let scheme = parsed.scheme();
+    if scheme != "http" && scheme != "https" {
+        return Err(FetchError::Policy {
+            detail: format!(
+                "scheme {scheme} is not admitted to the browser lane; only http and https are"
+            ),
+        });
+    }
     let host = parsed
         .host_str()
         .map_or(Default::default(), core::convert::identity);

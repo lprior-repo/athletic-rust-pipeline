@@ -3,6 +3,7 @@ use std::time::Duration;
 
 use athleticnet_browser::clock::SystemClock;
 use athleticnet_browser::drain::DrainReport;
+use athleticnet_browser::request::RequestAction;
 use url::Url;
 
 use super::*;
@@ -86,6 +87,52 @@ fn operator_replies_round_trip() -> anyhow::Result<()> {
 #[test]
 fn the_key_names_the_one_profile() {
     assert_eq!(SESSION_KEY, "profile-0");
+}
+
+#[test]
+fn a_foreign_origin_is_refused_before_the_lane_is_reached() -> anyhow::Result<()> {
+    let session = session()?;
+    let spec = |url: &str| -> anyhow::Result<RequestSpec> {
+        Ok(RequestSpec {
+            url: Url::parse(url)?,
+            semantic_url: url.to_string(),
+            action: RequestAction::Fetch { body: None },
+        })
+    };
+    for url in [
+        "file://www.athletic.net/etc/passwd",
+        "ftp://www.athletic.net/mirror",
+        "chrome://www.athletic.net/settings",
+        "http://www.athletic.net/api/v1/x",
+        "https://www.athletic.net:8443/api/v1/x",
+        "https://www.athletic.net.evil.example/api/v1/x",
+    ] {
+        let Some(refusal) = session.foreign_origin_refusal(&spec(url)?) else {
+            anyhow::bail!("{url} must be refused before any navigation");
+        };
+        anyhow::ensure!(
+            refusal.contains("https://www.athletic.net/"),
+            "the refusal names the configured origin: {refusal}"
+        );
+        anyhow::ensure!(
+            refusal.contains(url),
+            "the refusal names the refused URL: {refusal}"
+        );
+    }
+    let census: RequestSpec = serde_json::from_str(include_str!(
+        "../../../../fixtures/wire/athleticnet-browser-request.json"
+    ))?;
+    anyhow::ensure!(
+        session.foreign_origin_refusal(&census).is_none(),
+        "the census's own source request must reach the lane"
+    );
+    anyhow::ensure!(
+        session
+            .foreign_origin_refusal(&spec("https://www.athletic.net/track-and-field/rankings")?)
+            .is_none(),
+        "a public source page must reach the lane"
+    );
+    Ok(())
 }
 
 #[test]

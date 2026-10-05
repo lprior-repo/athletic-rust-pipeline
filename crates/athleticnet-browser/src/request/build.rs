@@ -26,13 +26,16 @@ pub fn rankings_spec(origin: &Url, action: RankingsAction) -> Result<RequestSpec
     checked(url, semantic_url, RequestAction::Rankings(action))
 }
 
+pub fn same_origin(url: &Url, origin: &Url) -> bool {
+    url.scheme() == origin.scheme() && url.host() == origin.host() && url.port() == origin.port()
+}
+
 pub fn endpoint(origin: &Url, path: &str) -> Result<Url> {
     if !path.starts_with('/') || path.contains("..") || path.contains(['?', '#', '\\']) {
         bail!("source endpoint path is unsafe");
     }
     let url = origin.join(path)?;
-    if url.scheme() != origin.scheme() || url.host() != origin.host() || url.port() != origin.port()
-    {
+    if !same_origin(&url, origin) {
         bail!("source endpoint escaped configured origin");
     }
     Ok(url)
