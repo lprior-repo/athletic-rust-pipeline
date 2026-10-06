@@ -1,6 +1,4 @@
-use fjall::{
-    Database, Keyspace, KeyspaceCreateOptions, OwnedWriteBatch, PersistMode, Readable, Snapshot,
-};
+use fjall::{Database, Keyspace, KeyspaceCreateOptions, OwnedWriteBatch, PersistMode, Readable};
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -121,9 +119,8 @@ fn read_peak_rss_kb() -> u64 {
                 if line.starts_with("VmHWM:") {
                     let parts: Vec<&str> = line.split_whitespace().collect();
                     if parts.len() >= 2 {
-                        match parts[1].parse::<u64>() {
-                            Ok(val) => return val,
-                            Err(_) => {}
+                        if let Ok(val) = parts[1].parse::<u64>() {
+                            return val;
                         }
                     }
                 }
@@ -278,26 +275,18 @@ fn measure_point_reads(
 
 fn dir_size(path: &PathBuf) -> u64 {
     let mut total = 0u64;
-    match fs::read_dir(path) {
-        Ok(entries) => {
-            for entry in entries {
-                match entry {
-                    Ok(e) => {
-                        let meta = match e.metadata() {
-                            Ok(m) => m,
-                            Err(_) => continue,
-                        };
-                        if meta.is_file() {
-                            total += meta.len();
-                        } else {
-                            total += dir_size(&e.path());
-                        }
-                    }
-                    Err(_) => {}
-                }
+    if let Ok(entries) = fs::read_dir(path) {
+        for e in entries.flatten() {
+            let meta = match e.metadata() {
+                Ok(m) => m,
+                Err(_) => continue,
+            };
+            if meta.is_file() {
+                total += meta.len();
+            } else {
+                total += dir_size(&e.path());
             }
         }
-        Err(_) => {}
     }
     total
 }
@@ -318,25 +307,13 @@ fn run_arm(
         }
     };
 
-    let db = match open_db(&tmpdir.path().to_path_buf()) {
-        Ok(d) => d,
-        Err(e) => return Err(e),
-    };
+    let db = open_db(&tmpdir.path().to_path_buf())?;
 
-    let entities = match open_keyspace(&db, "entities") {
-        Ok(k) => k,
-        Err(e) => return Err(e),
-    };
+    let entities = open_keyspace(&db, "entities")?;
 
     let (evidence, derived) = if split {
-        let ev = match open_keyspace(&db, "evidence") {
-            Ok(k) => k,
-            Err(e) => return Err(e),
-        };
-        let dr = match open_keyspace(&db, "derived") {
-            Ok(k) => k,
-            Err(e) => return Err(e),
-        };
+        let ev = open_keyspace(&db, "evidence")?;
+        let dr = open_keyspace(&db, "derived")?;
         (ev, dr)
     } else {
         (entities.clone(), entities)
@@ -345,10 +322,7 @@ fn run_arm(
     let mut rng = lcg(seed);
 
     let (ev_insert_time, ev_bytes) =
-        match measure_evidence_insert(&db, &evidence, &mut rng, evidence_rows) {
-            Ok(v) => v,
-            Err(e) => return Err(e),
-        };
+        measure_evidence_insert(&db, &evidence, &mut rng, evidence_rows)?;
 
     let mut total_derive_write = Duration::from_nanos(0);
     let mut total_derive_delete = Duration::from_nanos(0);
@@ -373,22 +347,15 @@ fn run_arm(
     };
 
     let read_sample = 1000u64;
-    let ev_read_time =
-        match measure_point_reads(&db, &evidence, &mut rng, "schools", true, read_sample) {
-            Ok(t) => t,
-            Err(e) => return Err(e),
-        };
-    let dr_read_time = match measure_point_reads(
+    let ev_read_time = measure_point_reads(&db, &evidence, &mut rng, "schools", true, read_sample)?;
+    let dr_read_time = measure_point_reads(
         &db,
         &derived,
         &mut rng,
         "source_identities",
         false,
         read_sample,
-    ) {
-        Ok(t) => t,
-        Err(e) => return Err(e),
-    };
+    )?;
 
     let ev_read_per_1k = ev_read_time;
     let dr_read_per_1k = dr_read_time;
