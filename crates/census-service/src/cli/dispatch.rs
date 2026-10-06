@@ -9,6 +9,7 @@ use super::qa_reports;
 use super::school_names;
 use super::source;
 use super::store;
+use super::survey;
 use super::Cli;
 use super::Command;
 
@@ -20,6 +21,7 @@ pub(super) async fn dispatch(cli: &Cli, store: &Store) -> Result<()> {
             gather::run_import_coaches(store, csv, observed_on)?
         }
         Command::Provider(args) => provider::run_provider(cli, store, args).await?,
+        Command::Survey(args) => survey::run_survey(cli, store, args).await?,
         Command::Consolidate => publish::run_consolidate(store)?,
         Command::Index => publish::run_index(store)?,
         Command::FjallStats => store::print_store_stats(store)?,

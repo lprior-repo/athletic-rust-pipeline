@@ -478,6 +478,7 @@ fn only_the_measured_associations_are_selectable() {
     assert_eq!(ruleset(UsJurisdiction::DistrictOfColumbia), Some("DCSAA"));
     assert_eq!(ruleset(UsJurisdiction::California), None);
     assert_eq!(ruleset(UsJurisdiction::Indiana), None);
+    assert_eq!(ruleset(UsJurisdiction::Connecticut), None);
     assert_eq!(REGISTERED.len(), 15);
     assert_eq!(
         directory_page_url("NCHSAA", 1),

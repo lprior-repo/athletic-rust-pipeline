@@ -11791,3 +11791,50 @@ requests: 54, errors: 0, with_email: 57` and the note "53 school(s) processed (0
 `d3eaa867c643b85ee28c424ab8d532840b9ffd93f3e7c10f9862c8203772cb50`, rebuilt for this run with
 `pipeline:build-portable` (2 m 8 s, one task completed).
 
+## Coach-directory survey verb and the CIAC/CT refusal (`athletic-rust-pipeline-6ec.9`)
+
+ADR-015 and the adapter README froze a `census-service` verb —
+`survey --states <list> [--offline] --out <path>` — that was never wired ("wired
+with the first green build"). It now lives in `census-service/src/cli/survey.rs`, calls
+`coach_directories::{parse_state_filter, selected_associations, survey, table_line, report_json}`
+and paces through the same registry-bound fetcher as the provider arms.
+
+**Evidence — verb, live then replayed.** `census-service --store var/ciac-survey-20261005 survey
+--states CT --out var/ciac-survey-20261005/dragonfly_probe.json` exits 0 in 10.7 s and prints
+`CT  CIAC       ok               rows= 1000 pages=2 staff/school=  0.0 coach/school=  0.0 {}`; the
+`--offline` replay writes a byte-identical report (`sha256
+38c29166475128d3fea4bb7a29dc05e61942bb7da5b177417a826118d5c14b87` for both files). Binary
+`target/moon-build/x86_64-unknown-linux-gnu/debug/census-service`, built by `pipeline:build`.
+
+**Evidence — the refusal.** Same-day probes of the maxinfosite API: `/states/CIAC/directory/1`
+returns 1,302 directory rows over two pages with addresses on all 1,000 page-one rows, but `.staff`
+is empty and every team's `totalCoachCount` is 0 on CIAC schools — `A. I. Prince Technical High
+School` (130 teams, 0 staff), `Amity Regional High School`, `Ansonia High School`. Contrast on the
+same host that day: an `AHSAA` high school carries `.staff` with 17 entries (staff[0]
+`District Superintendent`). The adapter defines `VERIFIED` as the associations whose summaries
+publish staff, so CIAC/CT joins neither `REGISTERED` nor `VERIFIED`;
+`coach_directories::ruleset(Connecticut)` stays `None` and a unit assertion pins that. CT coach
+contacts remain with the `ciac` fpsports adapter verified by `6ec.1.1` (184 schools, 1,033 rows).
+
+## myOHSAA static-lane transport refusal (`athletic-rust-pipeline-6ec.8`)
+
+Intended tap: `provider ohsaa` over a real Ohio name index. A real index exists —
+`var/finalforms-fresh-20261005/ohsaa-schools.jsonl`, 1,405 rows of the OHSAA FinalForms
+member-school directory (robots-allowing, 1 request/s), derived to 1,351 distinct names at
+`var/oh-6ec8-20261005/oh-names-all.txt` (`sha256
+07d0f241d91d0dff70bf00f988235d037753bbf364a907a38a6244bea6d40c2e`; the five names consumed are in
+`oh-names-run.txt`, `sha256 7c92e86761b4933c63fe380ea94dad8537deff40477fd5d42d0ad701fc88b997`).
+The run consumed them and produced nothing: `provider ohsaa --school-names … --limit 2` exits 0
+with `rows: 0, requests: 0, errors: 5`, `fjall-stats` all zeros, and the crawler's own verb
+`census-service --store var/oh-6ec8-20261005/store fetch
+'https://officials.myohsaa.org/Outside/SearchSchool?Name=Ada%20High%20School' --refresh` exits 1
+with `error sending request … Caused by: 2: Connection reset by peer (os error 104)`.
+
+**Cause.** `officials.myohsaa.org` (Microsoft-IIS/8.5) completes only TLS 1.2 CBC suites
+(`openssl s_client`: `ECDHE-RSA-AES256-SHA384`) and resets TLS 1.3 and every AEAD TLS 1.2 set; the
+static rustls lane is AEAD-only. The identical signature is already retained for
+`www.ossaarankings.com` in `veob`, which measured the browser lane (headless Chromium, TLS 1.2 CBC
+`0xC014`) completing against both hosts. The OH tap gap is therefore blocked on `veob`'s lane
+decision and its registry `transport_for_host` entry, not on an adapter or index defect;
+`6ec.8` depends on `veob` and this section is its evidence.
+

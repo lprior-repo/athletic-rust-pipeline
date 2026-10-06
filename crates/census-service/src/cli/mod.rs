@@ -22,6 +22,7 @@ mod seal;
 mod serve;
 mod source;
 mod store;
+mod survey;
 mod verify;
 mod verify_coaches;
 use anyhow::{Context, Result};

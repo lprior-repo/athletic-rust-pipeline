@@ -15,6 +15,7 @@ use super::review::ReviewArgs;
 use super::school_names::SchoolNamesArgs;
 use super::seal::SealArgs;
 use super::store::{BackupArgs, RestoreArgs};
+use super::survey::SurveyArgs;
 use super::verify::VerifyArgs;
 use super::verify_coaches::VerifyCoachesArgs;
 use std::path::PathBuf;
@@ -50,6 +51,10 @@ pub(super) enum Command {
     },
     #[command(about = "Run one association contact adapter by name")]
     Provider(ProviderArgs),
+    #[command(
+        about = "Survey each association's directory availability over the maxinfosite API and write the prototype-shaped probe report"
+    )]
+    Survey(SurveyArgs),
     #[command(about = "Merge append observations into `out/*.jsonl` snapshots")]
     Consolidate,
     #[command(

@@ -144,17 +144,24 @@ the prototype record field-for-field through an offline fetcher, that all 51
 table lines and the report bytes match the prototype's, and that the state filter
 resolves as the prototype's `--states` does.
 
-**Verb (frozen name, unwired at this base).** Per ADR-015 the probe lands as a
+**Verb (frozen name, wired 2026-10-05).** Per ADR-015 the probe lands as a
 `census-service` verb rather than a second binary in this crate:
-`survey --states <list> --offline --out out/dragonfly_probe.json`, calling
+`survey --states <list> [--offline] --out out/dragonfly_probe.json`, calling
 `coach_directories::{parse_state_filter, selected_associations, survey,
-table_line, report_json}`. `census-service` does not compile at this base, so the
-verb is wired with the first green build.
+table_line, report_json}`. The verb lives in `census-service/src/cli/survey.rs`
+and paces through the same registry-bound fetcher as every provider arm; without
+`--offline` it probes live, with it a replayed run decides from retained bytes.
 
 ## Registered scope
 
 NC/NCHSAA, AL/AHSAA, AR/ArkAA, GA/GHSA, MT/MHSA, MS/MHSAA, SC/SCHSL, ID/IdHSAA,
 NM/NMAA, MD/MPSSAA, DC/DCSAA, DE/DIAA, TN/TSSAA, WY/WHSAA, ND/NDHSAA.
+
+CIAC/CT is refused: the directory publishes 1,302 rows with addresses, but every
+sampled summary carries an empty `staff` array and zero `totalCoachCount` per
+team (measured 2026-10-05, `docs/VERIFICATION-EVIDENCE.md`), so the association
+offers this adapter no contact material — CT coach contacts come from the
+separate `ciac` adapter over `ciac.fpsports.org`.
 
 Robots policy is not published (403 with API Gateway body). Pacing follows the
 registry's 1 request/s with one in-flight request, and the fetcher enforces it
