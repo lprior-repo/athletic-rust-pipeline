@@ -11760,3 +11760,34 @@ lines 0). The removals took the tree from 1591 to 1582 Rust files, exactly the n
 `/tmp` was reclaimed separately (48G → 70M) because the per-user quota had been failing Fjall writes;
 the Alacritty logs are held open by live processes, so they were truncated rather than unlinked.
 
+## pa_piaa directory scheme decision (`athletic-rust-pipeline-6ec.7`)
+
+The Wave-0 tap read `provider pa_piaa --limit 3` as 0 rows and 3 transport errors. The cause is the
+venue's own scheme behaviour, not broken TLS: measured 2026-10-05, `GET https://www.piaa.org/` and
+`GET https://www.piaa.org/robots.txt` answer 200 over https with a valid certificate, while
+`GET https://www.piaa.org/schools/directory/list.aspx?alpha=A` and `…/details.aspx?ID=12048` answer
+`302 → http://www.piaa.org/…`. The application downgrades its own directory URLs, so there is nothing
+to wait for and no refusal to document; the destination guard correctly refuses an unauthorized
+downgrade.
+
+**Decision — keep https, authorize the host per run.** The URL constants stay
+`https://www.piaa.org/…` and the operator passes `--authorized-host www.piaa.org`, which is the
+adapter README's documented requirement and the guard's explicit audited downgrade path. Moving the
+constants to plain http was rejected: it would carry every request and response of the run in
+plaintext while bypassing the guard that exists to catch exactly that hop. No code change; the
+README's stale "301" is corrected to the measured 302 and its scheme context.
+
+**Evidence — reproduction (unauthorized).** `census-service --store var/pa-6ec7-20261005a/store
+provider pa_piaa --limit 3 --observed-on 2026-10-05` exits 0 in 3.1 s with `rows: 0, requests: 0,
+errors: 3`, one `transport error for https://www.piaa.org/schools/directory/list.aspx?alpha={A,B,C}:
+error following redirect` per letter.
+
+**Evidence — authorized.** `census-service --store var/pa-6ec7-20261005c/store provider pa_piaa
+--limit 1 --observed-on 2026-10-05 --authorized-host www.piaa.org` exits 0 in 54.5 s with `rows: 53,
+requests: 54, errors: 0, with_email: 57` and the note "53 school(s) processed (0 already journalled):
+58 athletic-director row(s), 57 with a published address". `fjall-stats` on that store reads
+`schools 53, coaches 58, source_observations 53, observations 164`. Binary
+`target/moon-portable/x86_64-unknown-linux-gnu/release/census-service`
+`d3eaa867c643b85ee28c424ab8d532840b9ffd93f3e7c10f9862c8203772cb50`, rebuilt for this run with
+`pipeline:build-portable` (2 m 8 s, one task completed).
+

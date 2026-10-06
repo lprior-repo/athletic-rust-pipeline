@@ -8,8 +8,9 @@ Adapter for the Pennsylvania Interscholastic Athletic Association, ported from t
 - `GET https://www.piaa.org/schools/directory/list.aspx?alpha=<L>` renders one
   `<dl id="<PIAA id>" class="schoolBlock">` per member school: `<dt>` carries the name, the first
   non-empty `<dd>` the single printed address line `4773 NATIONAL PIKE, MARKLEYSBURG, PA  15459`,
-  and the link bar the school's own details URL. The host answers the https URL with a 301 to the
-  same path over plain http, so a supervised run carries operator authorization for
+  and the link bar the school's own details URL. The host serves `/` and `/robots.txt` over https
+  (200, certificate valid), but answers the `.aspx` directory URLs with a 302 to the same path over
+  plain http, so a supervised run carries operator authorization for
   `www.piaa.org` (`--authorized-host www.piaa.org`); the destination guard refuses the hop
   otherwise.
 - The linked letters are A..W plus Y. `X` and `Z` print no link, and the site answers `alpha=Z`
