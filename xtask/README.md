@@ -331,13 +331,17 @@ a compiled Criterion binary manually, pass `--bench` and set `CRITERION_HOME` to
 directory, as `xtask/src/perf/bench/runtime.rs` does; otherwise the invocation/output is not
 equivalent to the measured lane. `pipeline:bench -- --no-run` only compiles; it is not a runtime measurement.
 
-The historical `tools/perf-baseline.json` tags its fifteen throughput measurements `Elements`,
-as evidenced by the benchmark sources at its recorded commit. Its metadata, workload names and
-numbers are unchanged; the original untagged JSON is retained with the dated
-[verification evidence](../docs/VERIFICATION-EVIDENCE.md). Its four legacy pipeline entries do not
-describe the separate snapshot-readback workload. Match target, workload, corpus and revision before
-comparing current results: unit-format migration does not approve a replacement workload or a new
-acceptance baseline, and the preserved corpus/workload mismatch must not be hidden by resetting it.
+The historical `tools/perf-baseline.json` tagged its fifteen throughput measurements `Elements`, as
+evidenced by the benchmark sources at its recorded commit (sha `0be3cfa…`, 2026-09-30, corpus
+38,530 lines). Its metadata, workload names and numbers are unchanged; the original untagged JSON is
+retained with the dated [verification evidence](../docs/VERIFICATION-EVIDENCE.md), and the
+superseded tagged file is preserved byte-identical (md5 `f4181a9f0afb5abcf56937fbe71da2fc`) at
+`var/audit-20261006/perf-baseline-before-revision-matched-record.json`. Its four legacy pipeline
+entries do not describe the separate snapshot-readback workload. The current acceptance baseline was
+re-recorded on explicit owner approval (`6yj.7`) at sha `d285a548…` with the same workload IDs and
+an 88,338-line corpus; that is not a reset of the historical numbers, which stay readable in the
+preserved file. Match target, workload, corpus and revision before comparing current results, and
+treat a new acceptance baseline as requiring the same explicit approval.
 
 ## Source scaffolding
 

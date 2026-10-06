@@ -12891,3 +12891,38 @@ clear on the landed revision. A peer's concurrent gate run wrote its own summary
 file; the PASS quoted here is the exit status of the gate launched on `fb6483bf`, whose log holds
 the lane verdicts above.
 
+### Revision-matched perf acceptance baseline recorded (`6yj.7`) — 2026-10-06
+
+On explicit owner approval, the acceptance baseline was re-recorded against the current workload and
+corpus rather than leaving the perf lane to compare against the 2026-09-30 baseline (sha `0be3cfa…`,
+corpus 38,530 lines) whose own harness notice calls the comparison invalid. The superseded tagged
+file is preserved byte-identical — md5 `f4181a9f0afb5abcf56937fbe71da2fc` — at
+`var/audit-20261006/perf-baseline-before-revision-matched-record.json`, following the
+`var/audit-20260930/` precedent; nothing was deleted or silently reset.
+
+- Recorded: `env -u CI tools/moon-local run pipeline:xtask -- perf record` (2 m 37 s, log
+  `var/perf-record-20261006.log`) → `tools/perf-baseline.json` at sha `d285a548…`, cpu `AMD Ryzen 9
+  9950X3D 16-Core Processor`, 32 physical cores, rustc `1.97.0-nightly (ca9a134e0 2026-04-26)`,
+  corpus 88,338 fixture lines, and the same fifteen throughput groups with their `Elements` units as
+  the historical file — no workload renamed, added or dropped.
+- Checked: `perf check --reason 'revision-matched acceptance baseline (6yj.7)'` → `perf check: no
+  regression detected`, all fifteen groups within ±1.48 % (largest: `build_index` −1.48 %,
+  `milesplit_roster` −1.38 %, `coaches_scan` +1.10 %), against the ±5–11 % rotating failures the
+  stale baseline produced across gates d–h.
+- Threshold provenance is unchanged: the documented default 5 % `--tolerance`; no gate was weakened
+  and no comparison is fabricated.
+- Limit: `peak_rss_kib` is absent for every group because GNU time is not installed and this account
+  has no non-interactive root to install it (`GNU time is absent; peak RSS is unavailable, not
+  zero`). Installing `time` and re-recording completes that field without changing the workload.
+
+Acceptance on the recorded baseline: `env -u CI tools/moon-local run pipeline:gate -- --release` at
+sha `d285a548…` (9 m 58 s, `var/release-gate-20261006i.log`) → `gate: PASS (debt ratchet holds;
+counts above)`, all eighteen lanes PASS: `fmt`, `zero code comments`, `architecture contract`,
+`check`, `doc`, `tests` (2571 passed, 3 skipped), `panic extraction (all targets)`, `domain type
+integrity`, `domain purity`, `module seams`, `ratchet`, `deny`, `audit`, `machete`, `geiger`,
+`feature powerset`, `bench presence` and `perf`. The in-gate perf check reports `no regression
+detected`, largest delta 3.99 % (`resolve_label`), against 5–11 % rotating failures under the stale
+baseline. Together with the owner's own PASS on `fb6483bf` (575 s), the release acceptance is green
+on this revision; the only outstanding provenance field is `peak_rss_kib`, blocked because GNU time
+must sit at `/usr/bin/time` and this account has no non-interactive root.
+

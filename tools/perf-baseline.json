@@ -3,69 +3,99 @@
     "cpu": "AMD Ryzen 9 9950X3D 16-Core Processor",
     "cores": 32,
     "rustc": "rustc 1.97.0-nightly (ca9a134e0 2026-04-26)",
-    "sha": "0be3cfa7878ccfb21a28cb3d65a5546932e6ef83",
-    "corpus_lines": 38530
+    "sha": "d285a548316ae18609233e65102989f82c859ee8",
+    "corpus_lines": 88338
   },
   "groups": {
     "census/merge/coaches_scan": {
-      "throughput": { "Elements": 1699671.5738781726 },
-      "wall_time_seconds": 0.000451852
+      "throughput": {
+        "Elements": 1769279.50239014
+      },
+      "wall_time_seconds": 0.000434075
     },
     "census/merge/schools_scan": {
-      "throughput": { "Elements": 1340856.4458661946 },
-      "wall_time_seconds": 0.000763691
+      "throughput": {
+        "Elements": 1316146.3133122288
+      },
+      "wall_time_seconds": 0.000778029
     },
     "census/parse/archive_classification": {
-      "throughput": { "Elements": 4045853.0006743087 },
-      "wall_time_seconds": 1.483e-6
+      "throughput": {
+        "Elements": 4243281.471004244
+      },
+      "wall_time_seconds": 1.414e-6
     },
     "census/parse/hytek_html": {
-      "throughput": { "Elements": 88553.04327292048 },
-      "wall_time_seconds": 0.000237146
+      "throughput": {
+        "Elements": 92977.95094306207
+      },
+      "wall_time_seconds": 0.00022586
     },
     "census/parse/hytek_text": {
-      "throughput": { "Elements": 788876.8366038852 },
-      "wall_time_seconds": 0.000040564
+      "throughput": {
+        "Elements": 831147.242928755
+      },
+      "wall_time_seconds": 0.000038501
     },
     "census/parse/milesplit_roster": {
-      "throughput": { "Elements": 43303.69051372034 },
-      "wall_time_seconds": 0.000577318
+      "throughput": {
+        "Elements": 42758.79762261085
+      },
+      "wall_time_seconds": 0.000584675
     },
     "census/parse/nsaa_directory": {
-      "throughput": { "Elements": 22859.951365453468 },
-      "wall_time_seconds": 0.000349957
+      "throughput": {
+        "Elements": 23478.51862286749
+      },
+      "wall_time_seconds": 0.000340737
     },
     "census/parse/raceday_html": {
-      "throughput": { "Elements": 126789.15736235259 },
-      "wall_time_seconds": 0.000646743
+      "throughput": {
+        "Elements": 130145.92214734423
+      },
+      "wall_time_seconds": 0.000630062
     },
     "census/school_index/build_index": {
-      "throughput": { "Elements": 7916872.835230085 },
-      "wall_time_seconds": 2.021e-6
+      "throughput": {
+        "Elements": 8320332.813312532
+      },
+      "wall_time_seconds": 1.923e-6
     },
     "census/school_index/normalize_label": {
-      "throughput": { "Elements": 6082548.877624909 },
-      "wall_time_seconds": 0.00001381
+      "throughput": {
+        "Elements": 6333886.291660383
+      },
+      "wall_time_seconds": 0.000013262
     },
     "census/school_index/resolve_label": {
-      "throughput": { "Elements": 3512733.6595157445 },
-      "wall_time_seconds": 0.000023913
+      "throughput": {
+        "Elements": 3568849.0461826064
+      },
+      "wall_time_seconds": 0.000023537
     },
     "pipeline/merge/consolidate": {
-      "throughput": { "Elements": 922933.6127853255 },
-      "wall_time_seconds": 0.021670031
+      "throughput": {
+        "Elements": 968558.3677002057
+      },
+      "wall_time_seconds": 0.020649246
     },
     "pipeline/merge/scan": {
-      "throughput": { "Elements": 941214.340624058 },
-      "wall_time_seconds": 0.021249145
+      "throughput": {
+        "Elements": 972769.7902839655
+      },
+      "wall_time_seconds": 0.020559849
     },
     "pipeline/result_file/parse": {
-      "throughput": { "Elements": 127134.9736393578 },
-      "wall_time_seconds": 0.000251701
+      "throughput": {
+        "Elements": 133573.76611233552
+      },
+      "wall_time_seconds": 0.000239568
     },
     "pipeline/school_labels/resolve": {
-      "throughput": { "Elements": 4061875.189586575 },
-      "wall_time_seconds": 0.002726327
+      "throughput": {
+        "Elements": 4159273.8209882197
+      },
+      "wall_time_seconds": 0.002662484
     }
   }
 }
