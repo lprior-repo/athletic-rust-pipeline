@@ -11742,3 +11742,21 @@ quota is exhausted by other sessions' artifacts (Alacritty scrollback logs, `d8l
 tests and the exporter kill/restart test pass with `TMPDIR` redirected, and gate 18 ran with
 `TMPDIR=/home/lewis/.cache/gate-tmp`.
 
+**Follow-up — the check enforced itself before landing.** Adopting its first run exposed nine
+unreachable files in the working tree: the three census-store ones named above plus six of the same
+class in `census-crawl` and `census-service` — four committed empty and undeclared
+(`net/decode.rs`, `export_data/helpers.rs`, `export_data/recruiting.rs`,
+`parity_pipeline_mod/utils.rs`) and two husks of moves whose content already lives at its declared home
+(`coach_directories/sport.rs`, whose `team_sport` is live in `mshsl/teams.rs`, and
+`restate_services/wait_windows_tests.rs`, whose 127 lines moved to `sweep/wait_windows_tests.rs` under
+the declaration at `sweep/mod.rs:217`). All nine 0-byte files were removed; their content stays
+recoverable in git history.
+
+**Evidence — gate 19.** `tools/gate.sh` exits 0 with 17 of 17 lanes PASS: `architecture contract`
+reports `check 9 source reachability: PASS (71 target roots, 1582 Rust files across 9 member packages,
+1583 reached)`, `tests` reports 2539 run / 2539 passed / 3 skipped, `panic extraction` checks 1587 Rust
+files and 3 templates with no violation, and the debt ratchet reports `no metric grew` (files over 300
+lines 0). The removals took the tree from 1591 to 1582 Rust files, exactly the nine the check had named.
+`/tmp` was reclaimed separately (48G → 70M) because the per-user quota had been failing Fjall writes;
+the Alacritty logs are held open by live processes, so they were truncated rather than unlinked.
+
