@@ -11838,3 +11838,618 @@ static rustls lane is AEAD-only. The identical signature is already retained for
 decision and its registry `transport_for_host` entry, not on an adapter or index defect;
 `6ec.8` depends on `veob` and this section is its evidence.
 
+## Review packet fact canonicalization — canary 12 repair (`athletic-rust-pipeline-tqu`) — 2026-10-05
+
+Canary 12 ("reorder an unordered fact set → review evidence identity unchanged") failed against the
+packet builder for a real reason: `athlete_packet::side_facts` embedded the subject row with
+`serde_json::to_string(row)`, which preserves the push order of the row's unordered collections
+(`observed_grades`, `evidence`, `source_links`, `known_names`, `sports`, `published_graduations`,
+`public_profile_urls`, `retained_conflicts`). Two rows carrying the same facts in different insertion
+orders therefore produced different `side_a_canonical_athlete`/`side_b_canonical_athlete` facts, a
+different packet and a different evidence digest.
+
+**Fix.** `canonical_athlete` clones the row and orders those collections by their serialized form
+before `canonical_athlete_json` writes the embedded copy. Test-side comparisons of a packet side
+against a stored row canonicalize the expectation through `binding_support::canonical` instead of
+pinning insertion order.
+
+**Evidence — the canary.** `env -u CI tools/moon-local run pipeline:tests -- -E 'test(canary_1)'` →
+`2 tests run: 2 passed`. Canary 12 reorders only secondary facts (two observations and two identity
+links, primary source fixed), guards that `observed_grades` really are stored in different orders,
+then asserts equal `evidence` and equal `serialized_digest`. The same binary selection before the
+test-side change failed
+`athlete_tests::inflight_binding::a_source_url_or_retained_conflict_arriving_during_advice_refuses_the_old_binding`
+with the packet side reading back `evidence` `[url=Some, url=None]` against the stored row's
+`[url=None, url=Some]`.
+
+**Evidence — gates.** `env -u CI tools/moon-local run pipeline:tests -- -E 'binary(census_review)'` →
+`134 tests run: 134 passed`; `pipeline:check` clean; `pipeline:lint-src` clean (all 2026-10-05).
+
+**Consequence, intended.** Packet digests change with this ordering fix, so standing advice bound to
+pre-canonical packets no longer replays and is revoked by `revocation::invalidate` on the next
+non-dry `review` run. Canaries 11/12 hold together: a swapped ownership changes the evidence
+identity, an unordered reorder does not.
+
+## Delivered workbook bundle — byte reconciliation and verification limit — 2026-10-05
+
+`var/artifact-reconcile-evidence-final.md` was written 2026-10-04 08:16. Its §2 recorded the
+Downloads workbook as 71,924,802 bytes / `1de2955…` and the Downloads manifest as `075f2d93…`,
+byte-identical to `var/final-workbook-sol-20261004/current/manifest.json`. Neither that generation
+nor that manifest copy exists now.
+
+**Delivered set as of 2026-10-05** (`/home/lewis/Downloads`):
+
+| file | bytes | sha256 |
+|---|---:|---|
+| `class-of-2027-tfxc-census-20261004.xlsx` | 69,141,755 | `75a850c8e84678ee49f57bd23b35d212924ebe2d01f8d439333ffea134d4df63` |
+| `class-of-2027-census-20261004-manifest.json` | 1,636 | `c7ba0c69b6cd5ee96ad68834ea3a356adad67c0ff4db76a5a32f5881dde9da4b` |
+| `class-of-2027-census-20261004.json` | 20,664 | `a51e3bf668136dbe13d4034b77c200e7da8514cfa754205a2344c5c0d65949eb` |
+| `class-of-2027-best-results-20261004.csv` | 3,458,095 | `cfca2e56aa39ae065c2c4d55ea1469d5be3233708177f114a28fd4331b11bbed` |
+
+Also in `Downloads` from this delivery: `fresh-census-verification-sol-20261004.md` 18,999 /
+`b044d53b5f25f31f74c95b90349283dbcedb4727cbcd7417494aedfae2836497`, whose repository copy
+`var/fresh-census-verification-sol-20261004.md` is `58c6f0774ab450c5792a86b528eb0134547cf82acdf9a3e7b88606bf61211801`
+— the two differ, so the delivered report is not the repository record. The earlier
+`fresh-census-co2027-sol-20261003.xlsx` (91,399,879) and `fresh-census-workbook-sol-20261003/` are
+also present, and the 2026-09-28 census-class workbooks and the private intake workbook
+(`2027 New Slate Members - TF Matches (Admission Inquiries + Census).xlsx`, 2026-10-05) are unrelated
+intake material. The 2026-10-03 directory copy carries its manifest (`generation_digest
+12af07020028b8402a295b43a150c67e530ac91b1b6acb05b1d618d6a9a43028`, snapshot 98,640, workbook
+91,399,879, `recruiting.csv` 185,287,977) and seven of its eight manifest artifacts beside that
+manifest and the 03 report, but not its `frozen-input.json` (2,766,453,091) or a `current/` layout, so
+that delivery cannot be re-verified by the verb either.
+
+The delivered manifest is internally consistent with the delivered files:
+
+```text
+$ python3 -c "import hashlib,json;m=json.load(open('/home/lewis/Downloads/class-of-2027-census-20261004-manifest.json'))['artifacts'];p={'workbook.xlsx':'/home/lewis/Downloads/class-of-2027-tfxc-census-20261004.xlsx','census-all-sources.json':'/home/lewis/Downloads/class-of-2027-census-20261004.json','best-results-co2027.csv':'/home/lewis/Downloads/class-of-2027-best-results-20261004.csv'};[print(k, m[k]['bytes'], hashlib.sha256(open(v,'rb').read()).hexdigest()==m[k]['sha256']) for k,v in p.items()]"
+workbook.xlsx 69141755 True
+census-all-sources.json 20664 True
+best-results-co2027.csv 3458095 True
+```
+
+**Re-checked 2026-10-06:** the same three-way reconciliation still reports `workbook.xlsx 69141755
+True`, `census-all-sources.json 20664 True`, `best-results-co2027.csv 3458095 True` against the
+delivered manifest, so the sheet audit above and the delivered bytes are the same object.
+
+**Re-run 2026-10-06 by Main:** the pass's own reconciliation script (`var/csv-20261005/verify-json.py`)
+prints `Requirement 6: grad-year evidence 566229/566229 (True)`, fifty jurisdiction tokens — the 49
+`State` values above plus `UNKNOWN`; Alaska and Hawaii hold no rows — and `PR rows: 10431`,
+`PR columns: 24`, matching the Athletes and PRs rows of the table above.
+
+The manifest's `lineage` names `store_root var/workbook-final-sol-20261004`, `generated_on
+2026-10-04`, `snapshot_sequence 100712`, `policy_revision 6`; its `audit.json` (250,148,182 /
+`95489c76…`) and `best-results-co2027.jsonl` (11,448,808 / `6789b29e…`) rows match the 08:16 ledger,
+while its `workbook.xlsx` (69,141,755 / `75a850c8…`) and `recruiting.csv` (110,777,438 /
+`4d8c6e1e…`) rows differ from it — the delivered files were replaced at 2026-10-04 08:54 with a
+second build of the same store snapshot.
+
+**Verification limit.** `verify` needs a manifested generation and its `frozen-input.json`:
+
+```text
+$ target/moon-portable/x86_64-unknown-linux-gnu/release/census-service verify --workbook /home/lewis/Downloads/class-of-2027-tfxc-census-20261004.xlsx
+Error: verifying the complete frozen publication
+Caused by:
+    verification requires a manifested generation workbook
+exit=1
+$ cd /home/lewis/Downloads/fresh-census-workbook-sol-20261003 && census-service verify --workbook workbook.xlsx
+Error: verifying the complete frozen publication
+Caused by:
+    0: i/o failed for frozen-input.json: No such file or directory (os error 2)
+exit=1
+$ find /home/lewis -xdev -name 'frozen-input.json' -size +1G -printf '%s %TY-%Tm-%Td %p\n'
+(no output)
+```
+
+No generation-sidecar file at the manifest's recorded size survives (`frozen-input.json`
+3,601,088,018 / 2,766,453,091, `recruiting.csv` 184,204,605, `workbook.xlsx` 71,924,802). The
+delivered workbook therefore cannot be re-verified by the verb; the surviving verification is the
+internal audit below plus the 2026-10-03 directory delivery's own generation, which is complete
+except for its `frozen-input.json`.
+
+**Internal audit of the delivered workbook** (2026-10-05, streaming parse of
+`xl/worksheets/sheetN.xml`; data rows exclude the header):
+
+| sheet | data rows | distinct first-column values |
+|---|---:|---:|
+| Athletes | 566,229 | 566,229 athlete ids; one Graduation Year value (2027); 49 State values; 19,944 distinct School IDs; no empty id/state/school cell |
+| PRs | 10,431 | 5,460 |
+| Performances_001 | 28,126 | 28,126 canonical result ids |
+| Coaches | 78,463 | 9,029 |
+| Schools | 32,809 | 32,809 |
+| Meets | 1,008 | 1,008 |
+| Sources | 36 | 29 |
+| Coverage | 208 | |
+| Conflicts | 10,585 | |
+| Review | 24,770 | all pending: no `same_person`, `different_person` or `insufficient_evidence` string exists anywhere in the workbook's 2,007,429 shared strings |
+| Run Metrics | 49 | |
+
+**Provenance recovered 2026-10-05.** The delivered manifest records
+`generation_digest 3782cb1872b6c49891523439e323257e44535d2010171f26359b0fafaa0339f6` beside its
+lineage (`store_root var/workbook-final-sol-20261004`, `store_identity acb01c0c…`, `snapshot_sequence
+100712`, `policy_revision 6`, `input_generation 6bb98a99…`, `input_digest 8ec4b76c…`, `source_digest
+a83bc4bf…`, scope `all_sources`, grad year 2027) and eight artifact rows including
+`frozen-input.json` 3,601,088,018 / `0994eac2…` and `recruiting.csv` 110,777,438 / `4d8c6e1e…`. That
+generation was produced and verified before delivery:
+
+```text
+$ cat var/rebuild-workbook-20261004-r2.log
+### workbook 2026-10-04T08:48:33-05:00
+wrote var/final-workbook-sol-20261004/generations/3782cb1872b6c49891523439e323257e44535d2010171f26359b0fafaa0339f6/workbook.xlsx
+rc=0
+### verify 2026-10-04T08:52:19-05:00
+verify: OK (complete frozen generation)	var/final-workbook-sol-20261004/current/workbook.xlsx
+rc=0
+### done 2026-10-04T08:53:50-05:00
+chain rc=0
+```
+
+`var/republish-evidence-raw-20261004.txt` (08:55:27) holds the equality and verification record: the
+delivered sha256sums above; the generation path with
+`current -> generations/3782cb18…`; `workbook cmp ok` and `manifest cmp ok` against that generation;
+`OK` for all eight manifest artifact rows against `current/`; `verify rc=0` in generation
+(`real 2m15.655s`, and a second run `exit 0 wall_s 91.0 max_rss_kib 17275456`); and, for the
+standalone delivered workbook, the same two failures recorded below. The corrector script is
+`var/rebuild-workbook-20261004-r2.sh` (`workbook --out var/final-workbook-sol-20261004` then
+`verify --store var/workbook-final-sol-20261004 --workbook …/current/workbook.xlsx`). The pre-fix
+generation `0d28e4a8…` (workbook 71,924,802 / `1de29550…`) is the one the 08:16 reconcile evidence
+describes; the delivered files are the 08:48 rebuild, not that one. Unrelated: the small smoke rerun
+at `var/final-workbook-rerun-20261004/generations/acd37486…` (manifest `generated_on 2026-10-05`,
+workbook 23,460 bytes) is not the delivered build and must not be hashed against it.
+
+**Bound.** The delivered bytes were verified as the generated ones before delivery — byte-equal
+(`cmp ok`, all eight artifact hashes) to a generation that had just passed `verify: OK (complete
+frozen generation)`, and the transcripts and the delivered manifest's `generation_digest` survive. A
+*fresh* re-verification is not possible: the generation directory `var/final-workbook-sol-20261004`
+and the 3.6 GB `frozen-input.json` are deleted, and the store `var/workbook-final-sol-20261004` is
+emptied (`fjall` keyspaces hold no tables, `out/` empty, `fjall-stats` all zeros, `store_bytes 9872`).
+The checks below are therefore the only ones that can still be run against the delivered object; the
+missing verification basis is filed as `athletic-rust-pipeline-0ex1`.
+
+## Adversarial review lane, both local GPUs, real store — 2026-10-05
+
+Scope: exercise the `review` verb end to end — reconcile filing, dual-lane consultation with
+independent wire formats, adjudication, durable standing rows — against the no-jobs copy of the
+delivered run (`var/review-dual-gpu-20261005/store`, 30,526 athletes), replicating on a surviving
+store the two-lane behaviour recorded for `var/pr-store-sol-20261003` on 2026-10-04 above. Both runs
+below used the portable binary built 2026-10-05 21:37, which predates the fact-canonicalization
+repair (22:21); the packet-canonicalization behaviour of the repaired binary is exercised separately. The two local GPU boxes are
+reached over the logging proxies in `var/advice-lane-20261005/` (the lane captured in
+`proxy-5090.log` at `http://127.0.0.1:11100` speaking `prompt-json`, the lane captured in
+`proxy-3090.log` at `http://127.0.0.1:11101` speaking `json-schema`). Selection was
+`--family athlete-identity --limit 8`, model `qwen3.8-27b-uncensored`, `--timeout-secs 600
+--max-tokens 8192 --observed-on 2026-10-05`; the durable lane audits below are the evidence for those
+values (`timeout_ms` 600000, `max_tokens` 8192, endpoint, model, response format).
+
+```text
+$ cat var/review-dual-gpu-20261005/review-1.log
+… INFO Recovering database at …/var/review-dual-gpu-20261005/store/fjall
+30526 athlete rows, 30426 provider objects, 97 cases filed (97 decided, 0 pending), 0 rows holding several objects of one provider, 0 findings left to a standing decision
+2026-10-06T03:27:54.638680Z  INFO review pass finished summary=requested=8 unaskable=0 answered=8 decided=0 accepted=0 rejected=8 insufficient=0 unanswered=0 dropped=0 failed=0
+```
+
+Both runs of this verb are wall-clock bounded: 03:23:26Z start to 03:27:54Z pass finish, 4 min 28 s
+for sixteen cross-box model calls.
+
+**Durable rows.** `consolidate` on the copy exports `out/identity_verdicts.jsonl` (105 rows) and
+`out/review_cases.jsonl` (452 rows); the store counts are athletes 30,526, conflicts 61, review cases
+452, identity verdicts 105, and the case states are pending 239, retained 116, resolved 97.
+
+| standing rows | reviewer | outcome |
+|---:|---|---|
+| 97 | `deterministic:shared-provider-object` | accepted, `value_proposed`, `identity = same_person` |
+| 8 | `dual-independent-consensus` | not accepted, `insufficient_evidence`, empty value, confidence 0, `outcome: refused` |
+
+Every one of the eight model rows carries a rationale of the shape
+`{policy: dual-independent-review-v1, packet{subject_id, subject, cases, evidence}, evidence_digest,
+lanes, outcome}` with four lane audits — two response formats × two consultation attempts — each
+recording `endpoint`, `model`, `response_format`, `status`, `request_digest`, `timeout_ms`,
+`max_tokens`, `batch{subject_id, verdicts}`, `adjudications`, `dropped`, `error`. Across all sixteen
+lane entries: `status` answered, `dropped` 0, `error` null, per-lane request digests distinct.
+
+**Adjudication outcomes observed.** Fifteen lane verdicts were `Refused(InvalidValue)` — the
+corroboration rule refusing `same_person` with no `identity_corroborated` flag — and one was
+`Decided(Admitted { field: "identity", value: "different_person" })`. Two cases split the lanes and
+therefore refused as a consensus: `Athlete identity:ath_subject_0df93ec2def88255:p2:47dd942e6352200b`
+(Mya Rios, KIPP Nashville Collegiate) and
+`Athlete identity:ath_subject_161461b05b4775a5:p2:59688c10746bd01d` (Kyra Butler, Raleigh Egypt), both
+`prompt_json → different_person (admitted)` against `json_schema → same_person (refused)`. A refusal
+in either lane blocked acceptance in both cases.
+
+**Wire captures.** Each proxy log holds 8 `REQUEST` and 8 `RESPONSE` blocks, every response HTTP 200,
+every request and response body carrying `"model":"qwen3.8-27b-uncensored"`; every request in
+`proxy-5090.log` carries `"response_format":{"type":"text"}` and every request in `proxy-3090.log`
+carries `"response_format":{"json_schema":{"name":"review_verdicts"…`, so the two lanes were told the
+same question in the two different wire contracts.
+
+**Bound.** The eight packets reach the model without `identity_corroborated`, so no accepted model
+verdict — and hence no `Resolved` case and no reuse of model advice — appears in this run; the
+acceptance and replay paths are exercised by the following replay pass and by the canaries above.
+
+**Replay and acceptance pass (same store, same invocation, run 2).** Re-running the verb on the store
+the first run had written gave:
+
+```text
+$ tail -2 var/review-dual-gpu-20261005/review-2.log
+30526 athlete rows, 30426 provider objects, 0 cases filed (0 decided, 0 pending), 0 rows holding several objects of one provider, 97 findings left to a standing decision
+2026-10-06T03:34:14.507779Z  INFO review pass finished summary=requested=8 unaskable=0 answered=8 decided=1 accepted=1 rejected=7 insufficient=0 unanswered=0 dropped=0 failed=0
+```
+
+Reconcile filed no duplicate case for the 97 findings it had decided in run 1, and every one of the
+105 standing rows run 1 wrote is byte-identical afterwards (`verdicts-run1.jsonl` against the fresh
+export: 105 of 105 unchanged, 0 removed), so the eight answered cases were not re-asked and no
+standing advice was rewritten. The review pass filed and asked the next eight cases: store
+`review_cases` 452 → 460, `identity_verdicts` 105 → 113, case states pending 239, retained 123,
+resolved 98 (`retained` 116 + 7 and `resolved` 97 + 1 are exactly the eight new verdicts).
+
+One case reached agreement and was accepted — the only accepted model verdict on record outside the
+canaries:
+
+* `Athlete identity:ath_subject_23fa840c8a9683f9:p2:f3e198db1d1fb1dd`, subject Laykin Bennett
+  (Science Hill High School), both lanes `Decided(Admitted { identity: different_person })` at
+  confidence 95 (`prompt_json`) and 90 (`json_schema`), `outcome: agreement`; the accepted row is
+  `value_proposed`, value `different_person`, confidence 90 — the minimum of the two lanes — and its
+  case moved to `resolved`. The same pair asked from the other side
+  (`…:ath_subject_2d4d7c348d0aa4a4:p2:f3e198db1d1fb1dd`) split its lanes
+  (`different_person` admitted against `same_person` refused) and stayed `retained`, so the pair
+  carries one accepted "keep separate" verdict and no accepted merge.
+
+The other seven new rows were refused: three lane splits (one lane `different_person` admitted, the
+other `same_person` refused) and four cases where both lanes proposed `same_person` (confidence 75,
+90, 95) and both were refused by the corroboration rule.
+
+**Bound.** A `same_person` acceptance therefore remains unproven end to end: this store's packets
+carry no `identity_corroborated` flag, so every `same_person` proposal is refused by rule and the one
+agreement that got through was `different_person`. The packet-canonicalization canaries 11 and 12 pin
+the evidence-identity half; replay is observed above, and the pass below records where advice written
+before that repair stops replaying and is renewed.
+
+**Post-repair pass (rebuilt portable binary, same store, same invocation).** `pipeline:build-portable`
+(1 m 43 s) compiled `census-review` with the fact-canonicalization repair, and the same invocation then
+produced `var/review-dual-gpu-20261005/review-3.log`:
+
+```text
+30526 athlete rows, 30426 provider objects, 0 cases filed (0 decided, 0 pending), 0 rows holding several objects of one provider, 97 findings left to a standing decision
+2026-10-06T03:40:29.728598Z  INFO review pass finished summary=requested=8 unaskable=0 answered=8 decided=2 accepted=2 rejected=6 insufficient=0 unanswered=0 dropped=0 failed=0
+```
+
+(03:38:17Z → 03:40:29Z, 132 s.) Readback against the run-2 export: 113 rows before and after, none
+added or removed, and exactly eight rationales changed — the eight cases whose packets predate the
+repair. Those rows were renewed in place by the pass's own advice (no row was left carrying
+`standing_advice_invalidated`, and no case ended without a renewed verdict); two flipped to accepted
+and six stayed refused. The other eight model rows were byte-identical, so an already-canonical packet
+replays unchanged.
+
+The pair that had split across lanes before the repair now agrees in both directions:
+`…:ath_subject_23fa840c8a9683f9:p2:f3e198db1d1fb1dd` and
+`…:ath_subject_2d4d7c348d0aa4a4:p2:f3e198db1d1fb1dd` (Laykin Bennett, Science Hill) each returned
+`different_person` 95/90 from both lanes, both accepted at confidence 90; the verdict counter is 99
+accepted / 14 refused and the case states are 239 pending, 122 retained, 99 resolved.
+
+**Accepted verdicts are applied by the next derivation, with one asymmetry.** `index` on the same store
+reported `index source_identities=33041 conflicts=59 reviews=270 superseded=0 coverage=56 snapshots=1`
+and moved `athlete_identity_decisions` 30,244 → 30,341 (+97, exactly the deterministic `same_person`
+acceptances), `source_identities` 31,349 → 31,520, `conflicts` 61 → 59, and re-filed review cases
+(`fjall-stats` `review_cases` 460 → 714 keys; `consolidate` exports 476 live rows). All 113
+verdict-bearing case ids survive that pass, but the derivation returned both model-accepted
+`different_person` cases to `retained` (resolved 99 → 97) and wrote no decision for that pair, so an
+accepted "keep separate" verdict neither resolves its case nor reaches the identity decision table —
+filed as `athletic-rust-pipeline-bpe4`.
+
+## Release gate on the repaired worktree, part 1: completed lanes and the clippy touch list — 2026-10-06
+
+`env -u CI tools/moon-local run pipeline:gate -- --release` on the worktree at HEAD 649d2bb0 (the
+packet-fact-canonicalization repair, the orphaned `seal/workbook/` deletion, and this pass's ledger
+edits). The first attempt (`var/release-gate-20261006.log`) was stopped by the harness boundary after
+3600 s while the mutants lane was still working through `census-crawl`; every other lane had already
+reported:
+
+```text
+--- fmt: PASS
+--- zero code comments: PASS
+--- architecture contract: PASS
+--- check: PASS
+--- doc: PASS
+--- tests: PASS
+--- panic extraction (all targets): PASS
+strict clippy (source targets): total diagnostics: 0
+production scan: every crate expect=0 unwrap=0 unsafe=0 assert=0 panic=0 indexing=0 as=0;
+                 structure files>300=0 fns>60=0 fns>25logical=1204
+--- domain type integrity: PASS   --- domain purity: PASS   --- module seams: PASS
+--- ratchet: PASS   --- deny: PASS   --- audit: PASS   --- machete: PASS   --- geiger: PASS
+--- feature powerset: PASS   --- bench presence: PASS   --- perf: PASS
+```
+
+Two observations from that attempt:
+
+- The strict clippy lane's re-check list, `git ls-files -z '*.rs' | xargs -0 touch`, printed
+  `touch: cannot touch 'crates/census-service/src/census/seal/workbook/{checks,reconcile,result}.rs':
+  No such file or directory`: the three paths are still tracked at HEAD, already deleted in the
+  worktree, and their directory is orphaned because `seal/workbook.rs` shadows `seal/workbook/`, so no
+  unit exists to re-check. The lane still measured the tree (`total diagnostics: 0`), so the defect was
+  misleading error output in the evidence of a measurement, not a lane verdict. Fixed in `tools/gate.sh`
+  with `touch -c`, which neither creates a path nor diagnoses its absence; re-verified with the deletion
+  still in flight (`git ls-files -z '*.rs' | xargs -0 touch -c` returns 0 with no output, and the
+  second attempt's lane output carries no `cannot touch` line).
+- The mutants lane (`cargo mutants --workspace --in-place`; no allowlist file exists) had already
+  recorded surviving mutants in `census-crawl`, e.g. `directory.rs:220 grade_span || -> &&`,
+  `directory.rs:253 label -> String::new()` and `-> "xyzzy".into()`, `cohort.rs:76 len -> 0`,
+  `context.rs:31 fetch_options -> Default::default()`, `context.rs:43 school_observations -> vec![]`,
+  and `athleticnet/mod.rs:85` match-guard removals. That attempt did not reach the lane verdict.
+
+## Release gate on the repaired worktree, part 2: the mutants lane is the release blocker — 2026-10-06
+
+The second attempt (`var/release-gate-20261006b.log`, launched without a harness deadline) reproduced
+every earlier lane verdict — `fmt`, `zero code comments`, `architecture contract`, `check`, `doc`,
+`tests`, `panic extraction`, strict clippy (`total diagnostics: 0`, no `cannot touch` noise),
+production scan, `domain type integrity`, `domain purity`, `module seams`, `ratchet`, `deny`, `audit`,
+`machete`, `geiger`, `feature powerset`, `bench presence` and `--- perf: PASS` against
+`tools/perf-baseline.json` — and then reached the mutants lane, which reports:
+
+```text
+Found 19670 mutants to test
+```
+
+That census is far larger than the first attempt's partial slice. The lane ran from
+2026-10-06T04:53:51Z for about two hours and was stopped deliberately: an `--in-place` run must not be
+left mutating a shared worktree. Its recorded slice (`var/mutants-attempt2-20261006/outcomes.json`) is
+1732 outcomes — 699 `MissedMutant`, 461 `CaughtMutant`, 571 `Unviable`, 1 `Success`, 0 timeout — about
+4 s per mutant, which makes the full lane a 19–20 hour serial job that cannot finish inside a
+pre-release pass. Any single survivor already fails the lane (`cargo mutants` exits nonzero on a missed
+mutant and no root allowlist exists; `crates/census-domain/mutants.toml` is a per-package config that a
+root workspace invocation does not read), so this pass's verdict is `gate: FAIL -> mutants` with every
+other lane PASS. Filed as `athletic-rust-pipeline-5rtr` (P1) with the survivor concentration by crate,
+the structural finding, and two samples whose lane logs show the suites genuinely ran and passed with
+the mutation in place (`census-crawl` `directory.rs:220` after 937 tests; `athleticnet-browser`
+`actor.rs:152` after 34 + 5 + 1 tests with 2 ignored CDP lanes).
+
+Two boundaries on this record. The earlier `all lanes green` gate (`var/gate-r6-20261004.log`) is the
+default lane set: it contains neither `=== perf ===` nor `=== mutants ===`, so it is not a release
+pass. And both stops left the worktree restored — `git status --short` holds only the fourteen
+in-flight entries and no mutated source.
+
+## Named regression canaries §9 — executed coverage — 2026-10-05/06
+
+Every canary in [NATIONAL-CENSUS-PLAN.md §9](NATIONAL-CENSUS-PLAN.md) that has a carrier in this tree
+was executed from HEAD `649d2bb0` with the dirty worktree that carries the packet-fact repair, through
+`env -u CI tools/moon-local run pipeline:tests -- -E '<filter>'`, with canary 20 through
+`pipeline:durability`. Raw per-canary stdout is in `var/canary-coverage-20261005/logs/`
+(`a-canary-01…12.log` beside `a-summary.txt` and `a-runner.sh`; `canary13…24.log`,
+`canary21-supplement.log`, `canary24-supplement.log`, `suffix-fixpoint.log`), with the worker reports
+`var/canary-coverage-20261005/part-a.md` and `part-b.md`. Every selection matched at least one test
+and every matched test passed (canary 10's selection matches nearest tests only, as its row records);
+the `N skipped` in each nextest summary counts filter-excluded workspace tests (2541–2543), not
+selected ones.
+
+| # | carrier | observed |
+|---|---|---|
+| 1 | `integer_wire_form_is_the_stored_sub_unit`, `float_wire_form_is_whole_units_scaled_by_one_hundred` (`census-domain` `model/fixed_mark_tests.rs`) | 2 passed, plus the `fixed_mark` suite 33/33 |
+| 2 | `canary_two_four_feet_beats_three_feet_and_three_quarters` | 1 passed |
+| 3 | `canary_three_quarter_inch_distinction_is_retained` | 1 passed |
+| 4 | `canary_four_half_inch_and_fifty_hundredths_are_exactly_equal` | 1 passed |
+| 5 | `canary_five_third_decimal_times_remain_distinct_and_strictly_ordered` | 1 passed |
+| 6 | `derive_does_not_promote_or_merge_provider_owned_homonyms`, `shared_advisory_links_do_not_authorize_homonym_merges` | 2 passed, plus `roster_homonyms_keep_distinct_owners_and_missing_subjects_do_not_fall_back_to_names` (`census-crawl`) |
+| 7 | `the_same_primary_person_identifier_can_support_a_reviewed_transfer`, `a_transfer_keeps_the_result_school_of_the_history` | 2 passed (`census-domain` `source_ownership`, `census-report` `workbook::performances::tests::affiliation`) |
+| 8 | `the_same_roster_row_number_from_different_providers_does_not_merge`, `shared_bucket_does_not_merge_subjects` | 2 passed; the `census-crawl` carrier pins a same-local-row-number two-provider fixture, not only namespace-keyed semantics |
+| 9 | `a_smaller_candidate_joined_last_becomes_the_single_root` | 1 passed; alias-unit level only, per the recorded `athletic-rust-pipeline-61k` bound |
+| 10 | UNCOVERED — nearest selections `a_corrupt_parent_chain_is_refused_instead_of_merging`, `every_join_preserves_the_strictly_decreasing_parent_invariant`, `a_contradictory_third_member_withholds`, `first_empty_cohort_cannot_hide_contradictory_later_members_of_one_provider_object` | nearest selections all pass, but none drives A–B/B–C `conflicting_roots` to `IdentityStatus::RetainedConflict`; open on `athletic-rust-pipeline-61k` |
+| 11 | `canary_11_swapping_which_subject_owns_the_cohort_fact_changes_review_identity` (`crates/census-review/src/athlete_packet_tests/identity.rs:7`) | 1 passed |
+| 12 | `canary_12_reordering_an_unordered_fact_set_keeps_review_identity` (`identity.rs:72`) | 1 passed |
+| 13 | `three_attempts_at_one_operation_append_it_once_and_leave_one_receipt`, `the_receipt_outlives_the_process_that_wrote_it` | 2 passed |
+| 14 | `an_operation_with_no_rows_still_has_a_receipt` | 1 passed |
+| 15 | `one_operation_id_cannot_name_two_payloads` | 1 passed |
+| 16 | `an_empty_snapshot_write_empties_the_table` | 1 passed |
+| 17 | `metadata_and_output_must_describe_the_same_nonempty_results`, `missing_duplicate_empty_and_malformed_metadata_refuse_collection` | 2 passed at comparison level; no benchmark run |
+| 18 | `missing_extra_and_empty_benchmark_sets_are_rejected` | 1 passed at comparison level; the missing-baseline shell branch (`tools/gate.sh:159-169`) has no test |
+| 20 | `pipeline:durability -- scenario-06-no-duplicate-evidence.sh` | `SKIPPED  no crash-injected evidence replay assertion; unchanged observation counts alone do not prove evidence idempotency`, `Total: 0 PASS, 0 FAIL, 1 SKIPPED`, task exit 1; `grep durability tools/gate.sh` matches nothing, so the release gate never runs it |
+| 21 | `an_empty_store_publishes_every_jurisdiction_with_a_gap`, `a_jurisdiction_the_research_does_not_evidence_plans_nothing`, `a_current_state_without_a_recorded_plan_reads_with_no_plan` | 2 + 1 passed |
+| 22 | `captured_team_relays_are_accounted_without_individual_marks_or_total_claims`, `all_existing_relay_event_kinds_remain_team_results_for_published_time_or_no_mark`, `reduce_relay_excluded` | 3 passed |
+| 23 | `csv_fields_are_safe_for_spreadsheets`, `csv_text_is_literalized_while_the_raw_jsonl_is_preserved`, `published_recruiting_csv_literalizes_source_text_without_rewriting_it` | 3 passed for the CSV half (`=cmd|' /C calc'!A0`, `+1+1`, `=2+2@contacts.test`, `-2.5`, `'-dash-leading`); no test feeds a leading `=`/`+`/`-`/`@` through the XLSX writer, which sends text through `write_string` (`cells.rs:144-155`), so that half is code-path only |
+| 24 | `a_failed_generation_keeps_the_previous_publication`, `a_stale_exporter_cannot_replace_a_newer_generation`, `source_advance_during_render_cannot_switch_the_publication_pointer` | 2 + 1 passed |
+| — | `normalize_name_reaches_a_fixpoint_on_repeated_suffixes` | 1 passed |
+
+**Gaps, filed not claimed.** Canary 10 has no carrier: its transitive-contradiction outcome
+(A–B and B–C proposed, A contradicts C) is unpinned, tracked by `athletic-rust-pipeline-61k`, and
+canary 9 is pinned at alias-unit level only. Canary 20 has no assertion: the scenario declines and
+the release gate has no durability lane (`athletic-rust-pipeline-15fx`). Canary 18's shell branch and
+canary 23's XLSX half have no executable pin (`athletic-rust-pipeline-9lx0`). Canaries 17/18 were
+exercised at comparison level only, the benchmark runs were not executed, the other sixteen durability
+scenarios and `pipeline:gate -- --release` were not run in this pass.
+
+**Re-verified here, not taken on report.** The `Summary` line of every log named above, the selections
+in `a-runner.sh`, the existence of the canary-11 and canary-12 carriers at the cited lines, the
+canary-20 `SKIPPED` text and exit 1, and the absence of any `durability` reference in
+`tools/gate.sh`. After the fact-canonicalization repair (and the removal of three 0-byte unreferenced
+module files, `seal/workbook/{checks,reconcile,result}.rs`, which `git show HEAD:` sizes at 0 and no
+source references), `env -u CI tools/moon-local ci --force --summary detailed` passed every lane over
+that worktree: `var/ci-after-repair-20261006.log` records `pipeline:tests` 2541 run / 2541 passed /
+3 skipped, `pipeline:report-test` 223/223, and `pipeline:check`, `pipeline:lint-src` and
+`pipeline:fmt` all PASS (47 s).
+
+## Native fault scenario S01 — endpoint SIGKILL at a reached source-reservation boundary — 2026-10-06
+
+Evidence: `var/scenario-s01-20261006/EVIDENCE-S01.md` with its artifacts (`marker-before-kill.json`,
+`driver2.log`, `invocations-{before,after}.json`, `invocation-status-{before,after,final}.json`,
+`national-after.json`, `national-final-readback.json`, `targets-final.json`, consolidated `out/`).
+
+Lane: `census-serve --listen 127.0.0.1:18097 --data-dir var/scenario-s01-20261006 --max-concurrent 64
+--drain-timeout 30` against restate-server 1.7.10 on ingress 18096 / admin 19096; the TeamsSource seam
+was armed through `CENSUS_NATIVE_SOURCE_BOUNDARY` for `jurisdiction:VT:2026-27:2/teams/milesplit`;
+injection driver `bash var/scenario-s01-20261006/drive2.sh`.
+
+Observed: the boundary fired (`phase: teams_reserved_before_acquisition`, request_digest `4118e0e2…`)
+with 35 rev-2 teams sources already completed; the endpoint was SIGKILLed 30 s later and restarted on
+the same store (cold recovery ≈180 s); the held invocation completed with its journaled reservation
+reused (`journal_size` 3 against 4 for fresh siblings); **0 of 326 pre-kill invocation ids were
+missing and 0 of 239 completed-before rows grew a journal entry**; re-submission was deduplicated
+against the same run; and the parent invocation — paused by the kill — resumed through the admin API
+and completed (`journal_size` 148→152). Drain certificate of the restarted endpoint: `accepted=4
+completed=4 cancelled=0 timed_out=0 aborted=0 panicked=0`.
+
+Limits: only the pre-acquisition boundary is reachable today (bead `athletic-rust-pipeline-ekqb`); the
+store has no school-address generation, so the final `national report` returns HTTP 500 naming that
+missing prerequisite; rev-2 ended its fan-out with 8,503 roster rows still owed across ten
+jurisdictions, so recovery here means identity retention and effect idempotence, not census
+completion.
+
+## Durable-workflow wiring audit — 2026-10-06
+
+Read-only audit of the national path (`crates/census-service/src/restate_services/national.rs`
+:33-34, :89-136, :166-233; `jurisdiction.rs:44-80`) plus live invocation observation on the scenario
+store. Observed: the durable run fans out jurisdictions, runs the school-address join and calls
+`Consolidate`, but **reconciliation and accepted-identity application (`census-reconcile` `index::derive`,
+reached only from `cli/cycle.rs:144` and `cli/publish.rs:210`), review advice (`cli/review.rs:69-89`)
+and publication/sealing (`cli/seal.rs:61-88`) sit outside the workflow**; no identity, review, index
+or seal service is deployed and no invocation of one exists in the store. Filed:
+`athletic-rust-pipeline-b1ui`, `-u4al`, `-8r5l` (P2) and `-105t` (P3, run counters unobservable while
+the run is paused). Limits: the audit observes wiring and live invocations, not journal payloads;
+neither run completed.
+
+## Native fault scenarios 14/15/16 — publication, backup and determinism — 2026-10-06
+
+Evidence: `var/scenario-s01-20261006/EVIDENCE-S14-S15-S16.md`; harness run
+`var/durability-run-20261006.log` (all seventeen scripts under `tools/durability/`).
+
+Scenario 14 (seal refusals): `seal --store var/scenario-s01-20261006` refused first with `no workbook
+found; run census workbook before sealing`, then — after a fresh generation `7e8275a4…` was published —
+with `jurisdiction sweeps are terminal unmet … not measured - this seal does not read the workflow
+journal` and the same for source objects, both named as **not measured** rather than zero;
+`seal --store var/assoc-tn-20261004` refused with `workbook inspection failed`. Subcase (interrupt
+export before promotion): `workbook … --grad-year 2027` SIGKILLed while alive at 50/150/250 ms left
+`current` on the previous complete generation each time, with no staging residue in `generations/`;
+a planted newer partial generation was ignored by `verify --workbook …/current/…` (OK) and refused by
+name when addressed directly (missing `audit.json`); repeated builds reproduced the identical
+generation digest.
+
+Scenario 15 (cold backup/restore, nonempty corpus): `pipeline:backup-drill -- …/var/scenario-s01-20261006`
+→ `PASS: verified manifest digests, exact table counts, integrity, consolidation and census across
+reopen` (exit 0, 429 ms); restored counts schools 784 / teams 36 / coaches 1869 / athletes 641 and the
+identical `scope=all_sources` census line before and after restore.
+
+Verification of delivered generations: a fresh S01 generation returns `verify: OK`; the delivered Oct-3
+generation is 7/8 artifacts byte-exact with `frozen-input.json` absent, the Oct-4 delivery holds the
+manifest's `workbook.xlsx` (`75a850c8…`) and `census-all-sources.json` (`a51e3bf6…`) byte-exact with the
+other six artifacts absent, and the assoc-tn generation refuses with 20 exact cell defects across
+10 604 rows. Filed `athletic-rust-pipeline-jy3v` and `-ksnv`.
+
+Limits: export-kill timing is bounded by shell scheduling; no surviving store is large enough to
+reproduce a multi-minute export; the older-generation mismatches are observed as version skew without
+the verifier naming the revision that changed.
+
+## Native fault scenarios — fresh harness run and the S02 lane — 2026-10-06
+
+`SCRATCH_STORE=$PWD/var/durability-scratch-20261006 RESTATE_SERVER_BIN=<1.7.10> env -u CI tools/moon-local
+run pipeline:durability` → `Total: 7 PASS, 1 FAIL, 9 SKIPPED (17 scenarios)`, task exit 1, 2 m 10 s
+(log `var/durability-run-20261006.log`).
+
+| # | status | note |
+|---|---|---|
+| 01 | PASS | wrapper runs the `restate_kill_restart` integration tests |
+| 02 | SKIPPED | "no isolated NationalCensus mid-fanout crash scenario" — the lane below discharges it |
+| 03/04/05/06/07/08 | SKIPPED | no isolated machine reboot, no two-version upgrade, no browser HTTP fault server, no crash-injected replay assertion, no concurrent cross-workflow dedup, no multi-endpoint budget |
+| 09 | FAIL | `FAIL: probe binary not found`: the script requires `target/debug/examples/enospc` while the Moon runner builds the probe into `target/fast-iteration/debug/examples/` (present there, 76 417 152 bytes); rerun with the default target dir recorded in `var/durability-scenario-09-rerun-20261006.log` |
+| 10 | PASS | real OS ENOSPC in a private bounded mount; the acknowledged invocation survived, a duplicate was refused and the baseline was reproduced (log lines quoted in the run log) |
+| 11 | SKIPPED | `ATHLETIC_FAULT_HTTP_EXIT` seam missing (tracked by `ekqb`) |
+| 12 | SKIPPED | no clock-manipulation seam |
+| 13/14/15/16/17 | PASS | review HTTP transport, empty-store seal refusal, backup/restore service tests, golden determinism, recovery suite |
+
+`tools/durability/README.md` states that a narrower invoked test does not discharge the broader
+same-number acceptance item, so these are wrapper outcomes, not scenario discharges.
+
+S02 lane, which is the scenario the harness skips (evidence `var/scenario-s02-20261006/`): a fresh
+store ran `national --revision 2 --limit-per-state 1`; the TeamsSource boundary fired for
+`jurisdiction:VT:2026-27:2/teams/milesplit` at 06:13:25 with 99 in-flight invocations; the driver
+disarmed the boundary, held 30 s, then SIGKILLed **native Restate** while the endpoint stayed up;
+Restate restarted from the same base-dir 1 s later (new pid) with **before=99 after=100, missing=0,
+new=1** — the original invocation identities survived, re-submission was deduplicated against the same
+run, and the fan-out continued after recovery (`teams 16→24/49`, `rosters 26/49`, `athletes 1570`,
+`co2027 383`). VT's stage kept `journal_size` 3. Outstanding obligations at that point: 49/49 sweeps
+open, rosters owed in FL 1026 / IL 848 / NY 1357. The lane was then drained under the documented
+order (endpoint exit 0 after 9 s, node exit 0 after 2 s, no listeners left). Limits: retry counts were
+not captured in the snapshots; the run was not followed to completion.
+
+Beads commented with these outcomes: `ew2`, `8o5`, `ob8`, `3as`, `66h`, `5gn`, `9ir`, `lie`, `6gg`,
+`9j7`, `3ct`, `5oi`, `lwx`, `ahz`, `9bk`, `15fx`.
+
+## Verification wave — items 1/7/8/9/10/13 and the delivered artifacts — 2026-10-06
+
+Read-only evidence workers against the preserved generations and the S01/S02 stores.
+
+- **Item 1, owed work** (`var/verify-round2-20261006/w4/w4-owed-work-classification.md`): S01 `report`
+  totals; `open-work` owes 49 sweeps, rosters in 10 jurisdictions (8,503 rows), teams in 34, meets in
+  49; the S01 evidence surfaces `conflicts`/`coverage`/`source_access` are 0 bytes so no
+  acquisition-failure taxonomy is observable; source-object inventory is unmeasurable without
+  caller-supplied keys. Beads `wtpl`, `uh6y`, `zayj`.
+- **Item 7, coach evidence** (`w3/w3-coach-evidence.md`): 78,463 rows / 18 columns; 27,718 distinct
+  coach names (54,926 ids); 9,029 of 32,809 schools (27.52%) carry a coach row, 22 jurisdictions at
+  zero; of a 32-row sample, 51/58 contact values appear verbatim in source-owned captures, 3 are
+  decode-verified and 4 are untraceable. Beads `jv4k`, `yr1p`, `fcq7`, `al4b`, `sisz`, `hng4`,
+  `n1yh`, `5eu6`, `j0hr`.
+- **Item 8, school identity** (`w2/w2-school-evidence.md`): 32,809 schools all with distinct ids;
+  10,893 (33.2%) carry a full postal address, every sampled one from association coach directories
+  captured 2026-10-02/03; 21,916 across 30 states have none; the athlete→school join resolves
+  566,229/566,229. Beads `rddb`, `rcn1`.
+- **Item 9, identity predicates** (`w4/w4-identity-caller-evidence.md`): predicates require a
+  `(provider, id)` pair plus distinct non-empty document URLs (`identity_corroboration.rs:75-95`,
+  :115-129) and admit only four athlete providers (`identity_decision.rs:120-135`); all 566,229
+  subjects carry `sources_count = 1`, so **the merge path is never exercised end to end**; the review
+  store keeps 94 same-name school groups separate. Bead `st7m`.
+- **Item 10, durable reconciliation integration** (`w4/w4-durable-reconciliation-evidence.md`): the
+  national workflow fans out jurisdictions and calls `Consolidate`, but reconciliation, accepted
+  identity application, review advice and publication are CLI-only, and no identity/review/seal
+  service is deployed. Beads `b1ui`, `u4al`, `8r5l` (P2), `105t` (P3).
+- **Item 13, qualified caller coverage** (same file): 28 descriptors, 25 fixture directories, 5
+  strict-qualified; `ciac`, `riil` and `coach_contacts` have no fixture. Beads `00df`, `8d6d`, `7w6n`,
+  `oepl`.
+- **Delivered artifacts**: `class-of-2027-tfxc-census-20261004.xlsx` is the manifest's `workbook.xlsx`
+  byte-exact (69,141,755 bytes, sha256 `75a850c8e84678ee49f57bd2…`) and
+  `class-of-2027-census-20261004.json` is `census-all-sources.json` byte-exact (20,664 bytes,
+  `a51e3bf668136dbe…`); the other six artifacts, including `frozen-input.json` (3,601,088,018 bytes),
+  are absent, and the Oct-3 generation is likewise missing its `frozen-input.json`
+  (2,766,453,091 bytes), so `verify` refuses both — bead `jy3v` under `0ex1`.
+- **Live service surface** on the S01 store's deployment: `Census/open_work` reports 49 sweeps and
+  `source_objects: null`; `Census/seal` (write=false) refuses and names the sweeps as **not terminal
+  (journal-measured)** while source objects remain `not measured`, with counts
+  `jurisdiction_buckets 50, schools 784, athletes 159, class_of_2027 159, cohort_performances 0,
+  coaches 1869` and retained `missing_performance_history` 20 athletes.
+
+Limits: the wave is read-only; the delivered census remains incomplete (49/49 sweeps, 8,503 owed
+roster rows), the merge path is unexercised, and no worker opened a live store as a writer.
+
+## Mutation gate lane retired, and athlete-sheet duplicate measurement — 2026-10-06
+
+Owner decision (bead `athletic-rust-pipeline-5rtr`, closed 2026-10-06; `nno` closed with its
+dependency guard deliberately overridden) retired the whole-workspace `cargo mutants --workspace
+--in-place` lane: the 2026-10-06 attempts recorded 865 outcomes of 864 planned mutants (466 missed,
+204 caught, 194 unviable, 1 success) for one slice and 1732 outcomes of 19670 in about two hours
+(about 4 s per mutant, 19-20 h for the workspace), so the lane cannot finish inside a pre-release
+pass and repository mutation procedures are no longer required assurance. Raw evidence stays in
+`var/mutants-attempt1-20261006/`, `var/mutants-attempt2-20261006/` and
+`var/release-gate-20261006{,b}.log`.
+
+`tools/gate.sh` carries no mutants lane now: usage, lane list, the tool-lane note, the lane body and
+the `--full` wiring were edited, leaving one tombstone comment naming `5rtr`. Executed:
+`bash -n tools/gate.sh` -> exit 0; `grep -n -i mutant tools/gate.sh` -> the tombstone only (line 172);
+the `--full` block at `tools/gate.sh:343-345` runs the `perf` lane alone. A default gate run after the
+edit (`TMPDIR=/home/lewis/.cache/gate-tmp bash tools/gate.sh`) executed every lane on the same
+worktree in 541.94 s and reported `gate: PASS (debt ratchet holds; counts above)` with no mutants lane
+in its output. Owning docs updated with
+the same change: `xtask/README.md`, `docs/NATIONAL-CENSUS-PLAN.md` (stage-exit and Moon sections) and
+`AGENTS.md`. Scoped `cargo mutants` runs and `crates/census-domain/mutants.toml` are left in place as
+an unrequired procedure; its own lane config (0 missed) was never consulted by the workspace lane.
+
+Athlete-sheet measurement of the delivered workbook
+`/home/lewis/Downloads/class-of-2027-tfxc-census-20261004.xlsx` (69,141,755 bytes, sha256
+75a850c8e84678ee49f57bd23b35d212924ebe2d01f8d439333ffea134d4df63) with the read-only
+`var/audit-duplicate-names.py`: 566,229 Athletes rows and 566,229 distinct athlete ids; 43,336
+name-only duplicate groups covering 111,355 rows (19.67%, expected collisions in a national census);
+3,759 name+school+state groups covering 9,723 rows (1.72%), up to 11 rows for one name at one school
+(Bennett Nyquist @ Lodi WI, Bristol Coats @ Melrose-Mindoro WI, Cody Nesberg @ Peshtigo WI and Cedar
+Tomberlin @ Sturgeon Bay WI at x11; Brielle Fishnick @ Cassville/Potosi WI and Nathan Dobberstein @
+Luther WI at x10; Jaycee Michek @ Bangor WI and Kalani Williams @ Winton Woods OH at x9). The
+reported Adelyn Spann duplicate did not reproduce (one row, `ath_subject_05b8ab961559e53e`, Abbeville
+High School AL). Filed as `athletic-rust-pipeline-o8rm` (P2 bug, planner session
+`duplicate-athlete-rows`), which owns root cause and repair. Limits: workbook read only — no store
+inspection, regeneration, merge or census rerun; the x11/x10/x9 figures are single-read group
+maxima.
+

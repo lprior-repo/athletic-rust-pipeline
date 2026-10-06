@@ -169,7 +169,7 @@ engineering blocker. Never remove failed sources from the declared manifest to o
 | 5 — Breadth | Extend the same implementation across provider families/jurisdictions; record limitations |
 | 6 — Publication | Shared recoverable input generation, bounded derivation and fenced atomic bundle |
 | 7 — National result | All 49 obligations terminal; exact populations/coverage and retained findings reconcile |
-| 8 — Assurance | Required tests/proofs/faults/security/mutation/load/backup restoration have actual evidence |
+| 8 — Assurance | Required tests/proofs/faults/security/load/backup restoration have actual evidence |
 | 9 — Release | Validated seal binds tested build, run, artifacts and coverage limits; no unresolved blocker |
 
 ### 7.1. Beads execution graph — 2026-10-01
@@ -209,7 +209,7 @@ All IDs in the following tables have prefix `athletic-rust-pipeline-`.
 | Source breadth | `omk`: qualification/registry/durable-dispatch matrix; `loa`: MileSplit first vertical source; `afi`: headed Athletic.net; `3bo`: relevant TFRRS/DirectAthletics; `ead`: AthleticLIVE/Hy-Tek/RaceDay/linked files; `616`: regional associations; `9tq`: official school/contact/history links; `o8x`: existing Arbiter caller/applicability integration |
 | Frozen publication | Retain `6yj.10`: recoverable inputs and fenced atomic bundles; `45a`: one accepted athlete with joined details; `csv`: independent complete artifact readback; `mtg`: every-sheet limits/partitions and hostile text |
 | Fresh national result | `99o`: actual source-to-output vertical qualification with S01/S06 recovery before breadth; `ai4`: separate fresh 49-jurisdiction run binding; `usr`: execute all qualified source obligations; `7x8`: exact national coverage/history/contact denominators |
-| Assurance | `tqu`: all 24 canaries plus suffix fixpoint; `37q`: hostile parser/persisted-shape boundaries; `nno`: critical semantic mutation; `7w5`: reconcile twelve-kernel requirement with eight-kernel wrapper and prior no-expansion direction; `g42`: security/async ownership; `710`: representative phase/resource measurements |
+| Assurance | `tqu`: all 24 canaries plus suffix fixpoint; `37q`: hostile parser/persisted-shape boundaries; `nno` (closed 2026-10-06: mutation assurance retired with the gate lane); `7w5`: reconcile twelve-kernel requirement with eight-kernel wrapper and prior no-expansion direction; `g42`: security/async ownership; `710`: representative phase/resource measurements |
 | Existing defect exits | `cj6`: framed tuples; `98i`: checked confidence deserialization; `grl`: browser schemes; `psx`: proof verdicts; `8b7`: Criterion/fail-closed comparisons; `zi3`: actual adapter source-test selection; `2yq`: drain ownership; `06o`: symlinked restore parents; `1ia`: batch append/replace ordering; `trs`: full loaded native-recovery diagnostic; `c5g`: remaining owning-doc consistency |
 | Release and repository | `zr8`: isolated native fault resources; `6yj.11`: all-17 fault gate; `6yj.7`: comparable baseline blocker; `6yj.9`: final integrated independent review; `6yj`: consolidated assurance gate; `1qp`: national gate/seal/user bundle; `h0b`: preserve/extract qualified dirty work and owner-approved branch retirement |
 
@@ -298,6 +298,9 @@ These IDs denote corrections, not the separately dated source-audit findings in 
 
 All 24 canaries from the superseded delivery brief remain permanent behavior-test obligations.
 Historical mark-shape cases exercise explicit maintenance readers, not a fresh-run import path.
+Executed per-canary coverage from 2026-10-05/06 — each carrier, its observed result, and the
+canaries that still have no carrier — is recorded in the "Named regression canaries §9 — executed
+coverage" section of [VERIFICATION-EVIDENCE.md](VERIFICATION-EVIDENCE.md).
 
 | # | Input/fault | Required outcome |
 |---|---|---|
@@ -337,8 +340,10 @@ PASS. The release requirement retains 12 mandatory proof kernels; the current
 [xtask](../xtask/README.md) wrapper enumerates eight names, so that narrower invocation does not
 establish the twelve-kernel requirement. Moon is the only repository developer entrypoint:
 `env -u CI tools/moon-local run pipeline:gate -- --release`. Its internal `tools/gate.sh` and xtask
-retain proof verdict taxonomy, property/fuzz/mutation/security/async gates and command procedures;
-`xtask`'s perf commands own measured benchmark baselines. License enforcement and cargo-vet are
+retain proof verdict taxonomy, property/fuzz/security/async gates and command procedures;
+`xtask`'s perf commands own measured benchmark baselines. The whole-workspace mutation lane was
+retired by owner decision (`5rtr`), so mutation assurance is no longer required; scoped
+`cargo mutants` runs remain an unrequired procedure. License enforcement and cargo-vet are
 excluded by owner direction; advisory, security and provenance checks remain required.
 
 The current blocking themes are end-to-end durable stage integration, evidence/receipt atomicity,

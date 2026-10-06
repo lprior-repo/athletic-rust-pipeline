@@ -67,7 +67,7 @@ The optimized portable binaries live in `target/moon-portable/x86_64-unknown-lin
 Runtime census/Restate/admin commands still execute the actual binaries; they are not Cargo builds.
 Historical evidence and external vendor references retain their original commands, not current policy.
 The passing Moon iteration CI is narrower than `pipeline:gate -- --release`; never substitute it
-for release, proof, mutation, security or all seventeen fault obligations.
+for release, proof, security or all seventeen fault obligations.
 
 
 ## Local Restate deployment lifecycle

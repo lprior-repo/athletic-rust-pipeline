@@ -42,7 +42,8 @@ result. See the dated evidence for actually executed lanes and remaining blocker
 Run all developer commands through `tools/moon-local` from the repository root. Cargo is an internal
 implementation, not a second supported workflow. The opt-in iteration profile and Moon CI do not
 replace the full gate: `env -u CI tools/moon-local run pipeline:gate -- --release` is the release
-acceptance entrypoint, including proof, policy, performance and mutation obligations. A scoped report
+acceptance entrypoint, including proof, policy and performance obligations; the whole-workspace
+mutation lane was retired by owner decision (bead `5rtr`). A scoped report
 test, cached task result, successful build or benchmark scaffold is not national-census or
 native-recovery acceptance. Manual tasks are excluded from automatic CI; `env -u CI` is required
 when any `CI` value is present, including `CI=false`.

@@ -12,9 +12,9 @@
 # what it is. See `xtask/src/baseline.rs`.
 #
 #   tools/gate.sh                  run every lane, compare debt against the baseline
-#   tools/gate.sh --full           add the slow lanes (performance threshold and mutation testing) that
-#                                  a pre-release pass needs but a per-commit one cannot afford
-#   tools/gate.sh --release        the pre-release pass: every lane runs, `--full`'s heavy lanes
+#   tools/gate.sh --full           add the slow lane (performance threshold) that a pre-release pass
+#                                  needs but a per-commit one cannot afford
+#   tools/gate.sh --release        the pre-release pass: every lane runs, `--full`'s heavy lane
 #                                  included, and a missing tool is a FAILURE instead of a SKIP
 #   tools/gate.sh --update-baseline   rewrite the baseline from current measurements
 #                                     (refuses to raise a number unless --allow-increase)
@@ -23,13 +23,13 @@
 # not installed prints SKIP and returns, so the gate stays usable on a machine that has not
 # `cargo install`ed every tool, and the lanes that need no tool always run. `--release` is the pass
 # a release is signed off on: a SKIP there would be a claim that a lane's coverage was not needed,
-# and a release cannot make that claim, so an absent tool is a FAILURE and the heavy lanes run
+# and a release cannot make that claim, so an absent tool is a FAILURE and the heavy lane runs
 # without `--full` being spelled out as well.
 #
 # Lanes: fmt, check, doc, tests, owned-Rust lexical extraction + all-target extraction denial,
 #        strict clippy (source targets), production scan + size budgets, domain integrity,
 #        debt ratchet, deny, audit, machete, geiger, feature powerset, bench presence;
-#        --full adds the performance threshold and mutants lanes.
+#        --full adds the performance threshold lane.
 #
 # The toolchain is the pinned nightly from rust-toolchain.toml, and the check and clippy lanes pass
 # `-Zallow-features=portable_simd,try_blocks`: the nightly feature allowlist is part of the source
@@ -102,8 +102,7 @@ run_lane() {
 # Lanes that need a cargo subcommand: absent locally prints SKIP so the gate stays usable on any
 # machine; install the tools listed in the SKIP lines to make those lanes real. Under `--release` a
 # missing tool is a FAILURE: the release pass exists to prove every lane ran, and an uninstalled tool
-# proves the opposite. `lane_mutants` is reached through here too, so `--release` without `--full`
-# still fails on a missing cargo-mutants.
+# proves the opposite.
 run_tool_lane() {
   local tool="$1" name="$2"; shift 2
   if ! command -v "$tool" > /dev/null 2>&1; then
@@ -170,9 +169,8 @@ lane_perf() {
   fi
   cargo xtask perf check --reason 'pre-release gate (--full)'
 }
-# Mutation testing: the slowest lane by far and the only one that measures whether the tests can
-# fail. It is opt-in (`--full`) and belongs to the pre-release pass, not to every edit.
-lane_mutants() { cargo mutants --workspace --in-place; }
+# Mutation testing was retired on owner decision (beads athletic-rust-pipeline-5rtr): the
+# full-workspace mutants lane cannot finish within a release budget, so it is not a gate.
 lane_tests() {
   if command -v cargo-nextest > /dev/null 2>&1; then
     cargo nextest run --workspace --all-features
@@ -207,7 +205,9 @@ measure_clippy() {
   # a fresh one — CI, another machine, after `cargo clean` — would report more debt than the baseline
   # records and fail the ratchet for no code change. Touching every tracked source forces each
   # workspace unit to be re-checked, which is what makes the tally a measurement of the tree.
-  git ls-files -z '*.rs' | xargs -0 touch
+  # `-c` keeps that list honest while a deletion is in flight: a path that `git ls-files` still
+  # reports but the worktree no longer holds has no unit to re-check and must not fail the lane.
+  git ls-files -z '*.rs' | xargs -0 touch -c
   cargo -Zallow-features="$FEATURE_ALLOWLIST" clippy --workspace --lib --bins --examples --all-features \
     --message-format=json -- "${LINT_SET[@]}" 2>/dev/null > "$raw"
   if ! grep -q '"reason":"build-finished"' "$raw"; then
@@ -342,7 +342,6 @@ main() {
   run_lane "bench presence" lane_bench_presence
   if [ "$FULL" = 1 ]; then
     run_lane perf lane_perf
-    run_tool_lane cargo-mutants mutants lane_mutants
   fi
   summary
 }
