@@ -11439,8 +11439,16 @@ and `merge-coaches` plus `verify-coaches --reconcile` re-run with `d3eaa867…` 
 byte-for-byte on the frozen union (`var/tap-wave2-20261005/verify5.log`: `rows identical`,
 `sidecars identical`, `reconcile tree identical`, reconcile exit 0 with `requests=0 cache_hits=2`).
 Limitations: gate verdict counts drift between runs on live sources (NV render-required 304→300,
-mismatch 13→17) while the chain structure and the shipped row held; `render_required` rows cannot
-verify until the gate's fetcher carries a browser lane (`athletic-rust-pipeline-wff0`); and a
+mismatch 13→17) while the chain structure and the shipped row held; `render_required` rows are not a
+rendering gap: the browser lane admits only `www.athletic.net`
+(`census-crawl/src/net/bridge/mod.rs`, `ADMITTED_BROWSER_ORIGINS`), routing is registry-driven
+(`net/execute.rs` via `registry::transport_for_host`), a headless render of one recorded
+`render_required` host returned strictly less content than the fetch it was based on (0 tables vs 51
+rows), and 704 of the 720 `render_required` rows with a cached body already carried the row's school
+and the claimed person as text, 203 of them role-adjacent
+(`var/tap-wave2-20261005/render-probe/measurement.txt`, `measure-render-required.py`,
+`njsiaa-page7-headless-dump.html`) — the verdict's attribution rule, not rendering, is the lever
+(`athletic-rust-pipeline-bwjf`); and a
 fragment row's lowercase state cell used to be uppercased by `merge_coaches::load`, which left the
 published row's state out of step with its claims' verbatim state and made the proof digest
 unreconcilable (`athletic-rust-pipeline-dulh`) — the merge now preserves the cell and normalizes only
