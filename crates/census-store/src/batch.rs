@@ -1,9 +1,10 @@
-use fjall::{Keyspace, OwnedWriteBatch};
-use serde::Serialize;
 use std::collections::HashSet;
 
+use fjall::{Keyspace, OwnedWriteBatch};
+use serde::Serialize;
+
 use super::keys::{
-    observation_id, observation_key, split_observation_key, table_prefix, DERIVED_SEQUENCE,
+    derived_key, observation_id, observation_key, observation_prefix, DERIVED_SEQUENCE,
 };
 use super::{StorageMode, StoreError, StoreResult, Table, MAX_ROWS_PER_TABLE};
 
@@ -24,6 +25,15 @@ pub(super) fn refuse_observation_replacement(table: Table) -> StoreResult<()> {
         });
     }
     Ok(())
+}
+
+pub(super) fn refuse_derived_append(table: Table) -> StoreResult<()> {
+    if table.storage_mode() == StorageMode::ObservationLog {
+        return Ok(());
+    }
+    Err(StoreError::DerivedAppend {
+        table: table.file(),
+    })
 }
 
 const MAX_JOURNAL_LABEL_CHARS: usize = 64;
@@ -51,15 +61,23 @@ fn label(name: &str) -> String {
     name.chars().take(MAX_JOURNAL_LABEL_CHARS).collect()
 }
 
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(super) struct Staged {
     pub(super) named: HashSet<String>,
     pub(super) added: u64,
 }
 
-impl Staged {
-    pub(super) fn named_count(&self) -> StoreResult<u64> {
-        u64::try_from(self.named.len()).map_err(|_| StoreError::CounterOverflow)
-    }
+pub(super) fn generation_row<T: Serialize>(
+    table: Table,
+    record: &T,
+    generation: u64,
+) -> StoreResult<(Vec<u8>, Vec<u8>)> {
+    let value = serde_json::to_vec(record).map_err(|source| StoreError::Json {
+        detail: "serializing derived state".to_string(),
+        source,
+    })?;
+    let id = observation_id(&value)?;
+    Ok((derived_key(table, generation, id.as_bytes()), value))
 }
 
 pub(super) fn stage_derived<T: Serialize>(
@@ -67,16 +85,14 @@ pub(super) fn stage_derived<T: Serialize>(
     entities: &Keyspace,
     table: Table,
     records: &[T],
+    generation: u64,
 ) -> StoreResult<Staged> {
     let mut encoded = Vec::with_capacity(records.len());
     for record in records {
-        let value = serde_json::to_vec(record).map_err(|source| StoreError::Json {
-            detail: "serializing derived state".to_string(),
-            source,
-        })?;
+        let (_, value) = generation_row(table, record, generation)?;
         encoded.push(value);
     }
-    stage_derived_encoded(batch, entities, table, encoded)
+    stage_derived_encoded(batch, entities, table, encoded, generation)
 }
 
 pub(super) fn stage_derived_encoded(
@@ -84,8 +100,52 @@ pub(super) fn stage_derived_encoded(
     entities: &Keyspace,
     table: Table,
     records: Vec<Vec<u8>>,
+    generation: u64,
 ) -> StoreResult<Staged> {
-    let mode = table.storage_mode();
+    match table.storage_mode() {
+        StorageMode::DerivedGeneration => {
+            stage_generation(batch, entities, table, records, generation)
+        }
+        StorageMode::DerivedMap => stage_map(batch, entities, table, records),
+        StorageMode::ObservationLog => Err(StoreError::ObservationReplacement {
+            table: table.file(),
+        }),
+    }
+}
+
+fn stage_generation(
+    batch: &mut OwnedWriteBatch,
+    entities: &Keyspace,
+    table: Table,
+    records: Vec<Vec<u8>>,
+    generation: u64,
+) -> StoreResult<Staged> {
+    let mut staged = Staged {
+        named: HashSet::with_capacity(records.len()),
+        added: 0,
+    };
+    for value in records {
+        let id = observation_id(&value)?;
+        let key = derived_key(table, generation, id.as_bytes());
+        let held = entities
+            .get(&key)
+            .map_err(|source| StoreError::Read { source })?
+            .is_some();
+        let first_named = staged.named.insert(id);
+        if first_named && !held {
+            staged.added = staged.added.saturating_add(1);
+        }
+        batch.insert(entities, key, value);
+    }
+    Ok(staged)
+}
+
+fn stage_map(
+    batch: &mut OwnedWriteBatch,
+    entities: &Keyspace,
+    table: Table,
+    records: Vec<Vec<u8>>,
+) -> StoreResult<Staged> {
     let mut staged = Staged {
         named: HashSet::with_capacity(records.len()),
         added: 0,
@@ -93,27 +153,17 @@ pub(super) fn stage_derived_encoded(
     for value in records {
         let id = observation_id(&value)?;
         let key = observation_key(table, &id, DERIVED_SEQUENCE);
-        if mode == StorageMode::DerivedSnapshot {
-            staged.named.insert(id);
-        } else {
-            let held = entities
-                .get(&key)
-                .map_err(|source| StoreError::Read { source })?
-                .is_some();
-            let first_named = staged.named.insert(id);
-            if first_named && !held {
-                staged.added = staged.added.saturating_add(1);
-            }
+        let held = entities
+            .get(&key)
+            .map_err(|source| StoreError::Read { source })?
+            .is_some();
+        let first_named = staged.named.insert(id);
+        if first_named && !held {
+            staged.added = staged.added.saturating_add(1);
         }
         batch.insert(entities, key, value);
     }
-    match mode {
-        StorageMode::DerivedSnapshot => {
-            prune_derived_snapshot(entities, batch, table, &staged.named)?
-        }
-        StorageMode::DerivedMap => drop_foreign_batch(entities, batch, table, &staged.named)?,
-        StorageMode::ObservationLog => {}
-    }
+    drop_foreign_batch(entities, batch, table, &staged.named)?;
     Ok(staged)
 }
 
@@ -126,38 +176,20 @@ fn drop_foreign_batch(
     if named.is_empty() {
         return Ok(());
     }
-    let prefix = table_prefix(table);
-    for guard in entities.prefix(&prefix) {
+    let prefix = observation_prefix(table);
+    for guard in entities.prefix(prefix.as_slice()) {
         let key = guard.key().map_err(|source| StoreError::Read { source })?;
         let (_, id, sequence) =
-            split_observation_key(&key).ok_or_else(|| StoreError::Invariant {
+            super::keys::view_observation_key(&key).ok_or_else(|| StoreError::Invariant {
                 detail: format!("table {} holds a malformed observation key", table.file()),
             })?;
-        let id_str = String::from_utf8_lossy(id).into_owned();
-        if sequence != DERIVED_SEQUENCE && named.contains(&id_str) {
-            batch.remove(entities, key);
-        }
-    }
-    Ok(())
-}
-
-fn prune_derived_snapshot(
-    entities: &Keyspace,
-    batch: &mut OwnedWriteBatch,
-    table: Table,
-    named: &HashSet<String>,
-) -> StoreResult<()> {
-    let prefix = table_prefix(table);
-    for guard in entities.prefix(&prefix) {
-        let key = guard.key().map_err(|source| StoreError::Read { source })?;
-        let (_, id, sequence) =
-            split_observation_key(&key).ok_or_else(|| StoreError::Invariant {
-                detail: format!("table {} holds a malformed observation key", table.file()),
-            })?;
-        if sequence == DERIVED_SEQUENCE && named.contains(String::from_utf8_lossy(id).as_ref()) {
+        if sequence == DERIVED_SEQUENCE {
             continue;
         }
-        batch.remove(entities, key);
+        let id = String::from_utf8_lossy(id).into_owned();
+        if named.contains(&id) {
+            batch.remove(entities, key);
+        }
     }
     Ok(())
 }

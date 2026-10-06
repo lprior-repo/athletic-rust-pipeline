@@ -34,7 +34,7 @@ pub fn apply_observations(
         });
     }
     let mut batch = store.write_batch();
-    batch.append_many(table, rows)?;
+    batch.record_many(table, rows)?;
     batch.commit_once(operation, digest)
 }
 

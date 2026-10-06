@@ -50,7 +50,7 @@ fn same_observed_at_reopening_applies_a_fresh_transition_and_preserves_original_
             let (first, server_a) = once(good.clone())?;
             let (second, server_b) = once(good)?;
             let clients = [client(&first)?, client(&second)?];
-            let sequence = fixture.store.snapshot().sequence();
+            let generation = fixture.store.snapshot().evidence_generation();
             check!(eq; run_lanes(&fixture.store, &clients, &options(), "same").await?.accepted, 1);
             let listeners = [
                 server_a.join().map_err(|_| "first endpoint panicked")??,
@@ -59,7 +59,7 @@ fn same_observed_at_reopening_applies_a_fresh_transition_and_preserves_original_
             let original = row(&fixture.store)?;
             let original_case = fixture.store.scan::<ReviewCase>(Table::ReviewCases)?;
             let digest = crate::compute_digest(std::slice::from_ref(&original), &original_case)?;
-            let operation = format!("review:same:0:{sequence}:{digest}");
+            let operation = format!("review:same:0:{generation}:{digest}");
             let receipt = fixture.store.receipt(&operation)?.ok_or("receipt")?;
             case.state = ReviewState::Pending;
             fixture.store.replace_many(Table::ReviewCases, &[case])?;
@@ -91,7 +91,7 @@ fn exactly_applied_checkpoint_repetition_preserves_rows_and_receipt() -> TestRes
             let (first, server_a) = once(good.clone())?;
             let (second, server_b) = once(good)?;
             let clients = [client(&first)?, client(&second)?];
-            let sequence = fixture.store.snapshot().sequence();
+            let generation = fixture.store.snapshot().evidence_generation();
             check!(eq; run_lanes(&fixture.store, &clients, &options(), "same").await?.accepted, 1);
             let _listeners = [
                 server_a.join().map_err(|_| "first endpoint panicked")??,
@@ -100,7 +100,7 @@ fn exactly_applied_checkpoint_repetition_preserves_rows_and_receipt() -> TestRes
             let verdict = row(&fixture.store)?;
             let cases = fixture.store.scan::<ReviewCase>(Table::ReviewCases)?;
             let digest = crate::compute_digest(std::slice::from_ref(&verdict), &cases)?;
-            let operation = format!("review:same:0:{sequence}:{digest}");
+            let operation = format!("review:same:0:{generation}:{digest}");
             let receipt = fixture.store.receipt(&operation)?.ok_or("receipt")?;
             let repeated = crate::review_checkpoint::commit(
                 &fixture.store,
@@ -108,7 +108,7 @@ fn exactly_applied_checkpoint_repetition_preserves_rows_and_receipt() -> TestRes
                 &cases,
                 "same",
                 0,
-                sequence,
+                generation,
             )?;
             check!(repeated.repeated());
             check!(eq; repeated.receipt(), &receipt);

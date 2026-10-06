@@ -1,28 +1,17 @@
 use serde::Serialize;
 
-use crate::batch::refuse_observation_replacement;
+use crate::batch::{refuse_derived_append, refuse_observation_replacement};
 
 use super::super::batch::refuse_over_bound;
 use super::super::keys::observation_id;
 use super::super::{StorageMode, StoreError, StoreResult, Table};
 use super::{Page, Replacement, StoreBatch};
 
-fn refuse_append_and_replace_in_one_batch(table: Table) -> StoreError {
-    StoreError::Invariant {
-        detail: format!(
-            "table {} is appended and replaced in one batch",
-            table.file()
-        ),
-    }
-}
-
 impl StoreBatch<'_> {
     pub fn append_many<T: Serialize>(&mut self, table: Table, records: &[T]) -> StoreResult<()> {
+        refuse_derived_append(table)?;
         if records.is_empty() {
             return Ok(());
-        }
-        if self.replacements.iter().any(|held| held.table == table) {
-            return Err(refuse_append_and_replace_in_one_batch(table));
         }
         let mut encoded = Vec::with_capacity(records.len());
         for record in records {
@@ -42,13 +31,19 @@ impl StoreBatch<'_> {
         Ok(())
     }
 
+    pub fn record_many<T: Serialize>(&mut self, table: Table, records: &[T]) -> StoreResult<()> {
+        match table.storage_mode() {
+            StorageMode::ObservationLog => self.append_many(table, records),
+            StorageMode::DerivedGeneration | StorageMode::DerivedMap => {
+                self.replace_many(table, records)
+            }
+        }
+    }
+
     pub fn replace_many<T: Serialize>(&mut self, table: Table, records: &[T]) -> StoreResult<()> {
         refuse_observation_replacement(table)?;
-        if records.is_empty() && table.storage_mode() != StorageMode::DerivedSnapshot {
+        if records.is_empty() {
             return Ok(());
-        }
-        if self.pages.iter().any(|page| page.table == table) {
-            return Err(refuse_append_and_replace_in_one_batch(table));
         }
         if self.replacements.iter().any(|held| held.table == table) {
             return Err(StoreError::Invariant {

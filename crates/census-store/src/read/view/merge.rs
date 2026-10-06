@@ -1,4 +1,4 @@
-use crate::keys::{key_label, split_observation_key};
+use crate::keys::{key_label, view_derived_key, view_observation_key};
 use crate::{Entity, StoreError, StoreResult, Table};
 
 pub(super) fn check_limit(index: usize, max: usize, table: Table) -> StoreResult<()> {
@@ -12,29 +12,39 @@ pub(super) fn check_limit(index: usize, max: usize, table: Table) -> StoreResult
 }
 
 pub(super) fn decode<T: Entity>(table: Table, key: &[u8], raw: &[u8]) -> StoreResult<T> {
-    let (key_table, key_id, _) =
-        split_observation_key(key).ok_or_else(|| StoreError::Invariant {
-            detail: format!("malformed observation key {}", key_label(key)),
+    let id = if table.generation_partitioned() {
+        let (_, id) = view_derived_key(table, key).ok_or_else(|| StoreError::Invariant {
+            detail: format!("malformed derived key {}", key_label(key)),
         })?;
-    if key_table != table.file().as_bytes() || key_id.is_empty() {
+        id
+    } else {
+        let (key_table, key_id, _) =
+            view_observation_key(key).ok_or_else(|| StoreError::Invariant {
+                detail: format!("malformed observation key {}", key_label(key)),
+            })?;
+        if key_table != table.file().as_bytes() {
+            return Err(StoreError::Invariant {
+                detail: format!(
+                    "observation key {} does not identify a row of {}",
+                    key_label(key),
+                    table.file()
+                ),
+            });
+        }
+        key_id
+    };
+    if id.is_empty() {
         return Err(StoreError::Invariant {
-            detail: format!(
-                "observation key {} does not identify a row of {}",
-                key_label(key),
-                table.file()
-            ),
+            detail: format!("key {} identifies no row id", key_label(key)),
         });
     }
     let row: T = serde_json::from_slice(raw).map_err(|source| StoreError::Decode {
         key: key_label(key),
         source,
     })?;
-    if row.entity_id().as_bytes() != key_id {
+    if row.entity_id().as_bytes() != id {
         return Err(StoreError::Invariant {
-            detail: format!(
-                "observation key {} disagrees with its payload identity",
-                key_label(key)
-            ),
+            detail: format!("key {} disagrees with its payload identity", key_label(key)),
         });
     }
     Ok(row)

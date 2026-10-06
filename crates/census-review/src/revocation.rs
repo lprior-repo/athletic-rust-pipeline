@@ -134,7 +134,7 @@ fn invalidate_chunk(
         &states,
         observed_at,
         checkpoint,
-        snapshot.sequence(),
+        snapshot.evidence_generation(),
     )
 }
 
@@ -144,16 +144,16 @@ fn commit_revocations(
     states: &[ReviewCase],
     observed_at: &str,
     checkpoint: usize,
-    sequence: u64,
+    generation: u64,
 ) -> StoreResult<()> {
     if verdicts.is_empty() {
         return Ok(());
     }
     let digest = crate::compute_digest(verdicts, states)?;
-    let operation = format!("review-revoke:{observed_at}:{checkpoint}:{sequence}:{digest}");
+    let operation = format!("review-revoke:{observed_at}:{checkpoint}:{generation}:{digest}");
     batch.replace_many(Table::IdentityVerdicts, verdicts)?;
     batch.replace_many(Table::ReviewCases, states)?;
-    match batch.commit_once_at_sequence(&operation, &digest, sequence)? {
+    match batch.commit_once_at_evidence_generation(&operation, &digest, generation)? {
         Application::Written(_) => Ok(()),
         Application::Repeated(_) => Err(invariant(
             "fresh advice invalidation replayed a committed transition",

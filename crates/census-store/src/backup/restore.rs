@@ -159,16 +159,13 @@ fn materialise(from: &Path, to: &Path, manifest: &Manifest) -> StoreResult<(u64,
 }
 
 fn count_restored_generation(generation: &Path, to: &Path) -> StoreResult<BTreeMap<String, u64>> {
-    let store = Store::open(generation).map_err(|error| {
+    table_row_counts(generation).map_err(|error| {
         refused(format!(
-            "the restored copy at {} does not open as a store, so {} was left as it was: {error}",
+            "the restored copy at {} does not open as a database, so {} was left as it was: {error}",
             generation.display(),
             to.display()
         ))
-    })?;
-    let counts = table_row_counts(&store)?;
-    drop(store);
-    Ok(counts)
+    })
 }
 
 fn reconcile(

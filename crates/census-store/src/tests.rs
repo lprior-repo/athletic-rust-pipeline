@@ -4,9 +4,9 @@ use crate::read::{sweep_stale_temporaries, write_snapshot_rows};
 use census_domain::model::*;
 use census_domain::UsJurisdiction;
 
-type TestResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
+pub(crate) type TestResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
-fn school(name: &str) -> CanonicalSchool {
+pub(crate) fn school(name: &str) -> CanonicalSchool {
     CanonicalSchool::new(UsJurisdiction::Wisconsin, name, normalize_name(name)).0
 }
 
@@ -19,7 +19,7 @@ fn rows_held(store: &Store, table: Table) -> TestResult<u64> {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-struct DerivedRow {
+pub(crate) struct DerivedRow {
     id: String,
     note: u32,
 }
@@ -34,14 +34,25 @@ impl Entity for DerivedRow {
     }
 }
 
-fn derived(id: &str, note: u32) -> DerivedRow {
+pub(crate) fn derived(id: &str, note: u32) -> DerivedRow {
     DerivedRow {
         id: id.to_string(),
         note,
     }
 }
 
+pub(crate) fn generation_rows(store: &Store, table: Table, generation: u64) -> TestResult<u64> {
+    let prefix = crate::keys::derived_generation_prefix(table, generation);
+    let mut held = 0_u64;
+    for guard in store.entities.prefix(prefix.as_slice()) {
+        guard.key().map_err(|source| StoreError::Read { source })?;
+        held = held.checked_add(1).ok_or(StoreError::CounterOverflow)?;
+    }
+    Ok(held)
+}
+
 mod batch_atomicity;
+mod derived_publication;
 mod derived_rows;
 mod journal_limits;
 mod observation_laws;

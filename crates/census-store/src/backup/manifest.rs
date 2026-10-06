@@ -6,8 +6,8 @@ use std::path::Path;
 use super::errors::{io_err, object_kind, refused};
 use super::files::{digest_file, fsync_dir};
 use super::{Manifest, ManifestEntry, MANIFEST_PATH};
-use crate::rows::count_rows;
-use crate::{Store, StoreError, StoreResult, Table};
+use crate::keys;
+use crate::{StoreError, StoreResult, Table};
 
 pub(super) fn digest_tree(root: &Path) -> StoreResult<Vec<ManifestEntry>> {
     let mut entries = Vec::new();
@@ -47,15 +47,30 @@ fn collect_digests(root: &Path, dir: &Path, entries: &mut Vec<ManifestEntry>) ->
     Ok(())
 }
 
-pub(super) fn table_row_counts(store: &Store) -> StoreResult<BTreeMap<String, u64>> {
+pub(super) fn table_row_counts(root: &Path) -> StoreResult<BTreeMap<String, u64>> {
+    let (db, entities, _journal, _meta, _receipts) =
+        crate::open_keyspaces(root, crate::format::DEFAULT_CACHE_BYTES)?;
     let mut counts = BTreeMap::new();
     for table in Table::ALL {
-        counts.insert(
-            table.file().to_string(),
-            count_rows(&store.entities, table)?,
-        );
+        let mut rows = count_prefix(&entities, &keys::observation_prefix(table))?;
+        if table.generation_partitioned() {
+            rows =
+                rows.saturating_add(count_prefix(&entities, &keys::derived_table_prefix(table))?);
+        }
+        counts.insert(table.file().to_string(), rows);
     }
+    drop(entities);
+    drop(db);
     Ok(counts)
+}
+
+fn count_prefix(entities: &fjall::Keyspace, prefix: &[u8]) -> StoreResult<u64> {
+    let mut count = 0_u64;
+    for guard in entities.prefix(prefix) {
+        guard.key().map_err(|source| StoreError::Read { source })?;
+        count = count.checked_add(1).ok_or(StoreError::CounterOverflow)?;
+    }
+    Ok(count)
 }
 
 pub(super) fn write_manifest(generation: &Path, manifest: &Manifest) -> StoreResult<()> {

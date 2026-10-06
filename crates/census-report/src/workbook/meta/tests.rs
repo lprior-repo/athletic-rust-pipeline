@@ -178,7 +178,7 @@ fn the_sheets_render_the_rows_the_store_retains() -> TestResult {
     unverified.evidence.push(evidence.clone());
     let unverified_id = unverified.id.clone();
     store.append(Table::Athletes, &unverified)?;
-    store.append(
+    store.replace(
         Table::IdentityVerdicts,
         &ReviewVerdictRecord {
             id: "verdict-1".to_string(),
@@ -341,7 +341,7 @@ fn unsupported_graduation_cases_are_retained_in_review_without_a_canonical_athle
         "Unplaced Runner",
         "Published grade 12 in school year 2040. URL: https://example.test/results.",
     );
-    store.append(Table::ReviewCases, &pending)?;
+    store.replace(Table::ReviewCases, &pending)?;
 
     let resolved_case = {
         let mut case = ReviewCase::pending(
@@ -353,7 +353,7 @@ fn unsupported_graduation_cases_are_retained_in_review_without_a_canonical_athle
         case.state = ReviewState::Resolved;
         case
     };
-    store.append(Table::ReviewCases, &resolved_case)?;
+    store.replace(Table::ReviewCases, &resolved_case)?;
 
     let path = crate::workbook::build(
         &store,
@@ -402,7 +402,7 @@ fn school_link_cases_are_retained_in_review_until_a_verdict_answers_them() -> Te
         "Madison West High School",
         "ambiguous between candidates nces:550000000001, nces:550000000002; providers nces-ccd",
     );
-    store.append(Table::ReviewCases, &pending)?;
+    store.replace(Table::ReviewCases, &pending)?;
 
     let resolved_case = {
         let mut case = ReviewCase::pending(
@@ -414,7 +414,7 @@ fn school_link_cases_are_retained_in_review_until_a_verdict_answers_them() -> Te
         case.state = ReviewState::Resolved;
         case
     };
-    store.append(Table::ReviewCases, &resolved_case)?;
+    store.replace(Table::ReviewCases, &resolved_case)?;
 
     let path = crate::workbook::build(
         &store,

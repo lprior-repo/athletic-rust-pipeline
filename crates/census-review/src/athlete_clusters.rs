@@ -61,12 +61,39 @@ pub fn reconcile_athletes(
     observed_at: &str,
     dry_run: bool,
 ) -> StoreResult<ReconcileReport> {
-    let observed = Observed::read(store)?;
+    let snapshot = store.snapshot();
+    let generation = snapshot.evidence_generation();
+    let observed = Observed::read_from(&snapshot)?;
+    let standing = standing_cases(&snapshot)?;
     let mut identity_index = AthleteIdentityIndex::default();
     for athlete in &observed.rows {
         identity_index.observe(athlete)?;
     }
-    let standing = standing_cases(store)?;
+    let planned = plan_cases(&observed, &standing, &identity_index, observed_at)?;
+    if !dry_run && (!planned.cases.is_empty() || !planned.verdicts.is_empty()) {
+        commit_cases(
+            store,
+            &planned.cases,
+            &planned.verdicts,
+            observed_at,
+            generation,
+        )?;
+    }
+    Ok(planned.report)
+}
+
+struct Planned {
+    report: ReconcileReport,
+    cases: Vec<ReviewCase>,
+    verdicts: Vec<ReviewVerdictRecord>,
+}
+
+fn plan_cases(
+    observed: &Observed,
+    standing: &BTreeSet<String>,
+    identity_index: &AthleteIdentityIndex,
+    observed_at: &str,
+) -> StoreResult<Planned> {
     let findings = observed.findings();
     let mut report = ReconcileReport {
         rows: observed.rows.len(),
@@ -77,7 +104,7 @@ pub fn reconcile_athletes(
     let mut cases: Vec<ReviewCase> = Vec::new();
     let mut verdicts: Vec<ReviewVerdictRecord> = Vec::new();
     for span in findings.spans {
-        let Some(case) = bound_case(span.case(), &identity_index)? else {
+        let Some(case) = bound_case(span.case(), identity_index)? else {
             continue;
         };
         if standing.contains(&case.id) {
@@ -106,15 +133,16 @@ pub fn reconcile_athletes(
     }
     file_alias_cases(
         &findings.aliases,
-        &standing,
+        standing,
         &mut report,
-        &identity_index,
+        identity_index,
         &mut cases,
     )?;
-    if !dry_run && (!cases.is_empty() || !verdicts.is_empty()) {
-        commit_cases(store, &cases, &verdicts, observed_at)?;
-    }
-    Ok(report)
+    Ok(Planned {
+        report,
+        cases,
+        verdicts,
+    })
 }
 
 fn commit_cases(
@@ -122,22 +150,23 @@ fn commit_cases(
     cases: &[ReviewCase],
     verdicts: &[ReviewVerdictRecord],
     observed_at: &str,
+    generation: u64,
 ) -> StoreResult<()> {
     let mut batch = store.write_batch();
     batch.replace_many(Table::ReviewCases, cases)?;
     batch.replace_many(Table::IdentityVerdicts, verdicts)?;
     let digest = super::compute_digest(verdicts, cases)?;
     let operation = format!("reconcile:{observed_at}:{digest}");
-    let application = batch.commit_once(&operation, &digest)?;
+    let application = batch.commit_once_at_evidence_generation(&operation, &digest, generation)?;
     if matches!(application, Application::Repeated(_)) {
         crate::review_checkpoint::verify_repeated(store, verdicts, cases)?;
     }
     Ok(())
 }
 
-fn standing_cases(store: &Store) -> StoreResult<BTreeSet<String>> {
-    Ok(store
-        .scan::<ReviewCase>(Table::ReviewCases)?
+fn standing_cases(snapshot: &census_store::StoreSnapshot<'_>) -> StoreResult<BTreeSet<String>> {
+    let cases: Vec<ReviewCase> = snapshot.scan(Table::ReviewCases)?;
+    Ok(cases
         .into_iter()
         .filter(|case| case.state != ReviewState::Pending)
         .map(|case| case.id)

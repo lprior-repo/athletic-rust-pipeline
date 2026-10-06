@@ -108,68 +108,57 @@ fn a_derivation_that_never_commits_leaves_both_tables_as_they_were() -> TestResu
 }
 
 #[test]
-fn a_snapshot_table_replaced_by_nothing_comes_out_empty() -> TestResult {
+fn a_published_generation_replaces_the_rows_it_does_not_stage() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
-    let held = vec![row("wi", "covered"), row("mn", "covered")];
+    let held = vec![row("mn", "covered"), row("wi", "covered")];
     {
-        let mut batch = store.write_batch();
-        batch.replace_many(Table::Coverage, &held)?;
-        batch.commit()?;
+        let mut stage = store.stage_derived()?;
+        stage.replace_many(Table::Coverage, &held)?;
+        let publication = stage.publish("derive:coverage:1", "digest-1")?;
+        check!(
+            publication.application.written(),
+            "the first generation publishes"
+        );
     }
+    check!(eq; rows_of(&store, Table::Coverage)?, held);
     check!(eq; count(&store, Table::Coverage)?, 2);
-    let mut empty = store.write_batch();
-    empty.replace_many(Table::Coverage, &Vec::<Row>::new())?;
-    empty.commit()?;
+    {
+        let mut stage = store.stage_derived()?;
+        stage.replace_many(Table::Coverage, &[row("wi", "covered")])?;
+        check!(
+            eq;
+            rows_of(&store, Table::Coverage)?,
+            vec![row("mn", "covered"), row("wi", "covered")],
+            "a staged generation is invisible until it is published"
+        );
+        let publication = stage.publish("derive:coverage:2", "digest-2")?;
+        check!(
+            publication.application.written(),
+            "the second generation publishes"
+        );
+    }
+    check!(
+        eq;
+        rows_of(&store, Table::Coverage)?,
+        vec![row("wi", "covered")],
+        "publishing names the table's whole content, so an unnamed row is gone"
+    );
+    check!(eq; count(&store, Table::Coverage)?, 1);
+    {
+        let mut stage = store.stage_derived()?;
+        stage.replace_many(Table::Coverage, &Vec::<Row>::new())?;
+        let publication = stage.publish("derive:coverage:3", "digest-3")?;
+        check!(
+            publication.application.written(),
+            "an empty generation publishes"
+        );
+    }
     check!(
         rows_of(&store, Table::Coverage)?.is_empty(),
-        "a snapshot derivation names the table's whole content, so naming none empties it"
+        "a derivation that found nothing publishes an empty table"
     );
     check!(eq; count(&store, Table::Coverage)?, 0);
-    Ok(())
-}
-
-#[test]
-fn one_table_cannot_be_appended_and_replaced_in_one_batch() -> TestResult {
-    let dir = tempfile::tempdir()?;
-    let store = Store::open(dir.path())?;
-    let mut batch = store.write_batch();
-    batch.append_many(Table::ReviewCases, &[row("case-1", "appended")])?;
-    let refused = batch.replace_many(Table::ReviewCases, &[row("case-1", "replaced")]);
-    check!(
-        refused.is_err(),
-        "an append and a replacement disagree about what the table holds"
-    );
-    drop(batch);
-    check!(
-        store.scan::<Row>(Table::ReviewCases)?.is_empty(),
-        "and a refused call writes nothing"
-    );
-    Ok(())
-}
-
-#[test]
-fn a_refused_append_after_a_replacement_leaves_the_batch_committable() -> TestResult {
-    let dir = tempfile::tempdir()?;
-    let applied = {
-        let store = Store::open(dir.path())?;
-        let mut batch = store.write_batch();
-        batch.replace_many(Table::ReviewCases, &[row("case-1", "replaced")])?;
-        check!(matches!(
-            batch.append_many(Table::ReviewCases, &[row("case-2", "appended")]),
-            Err(StoreError::Invariant { .. })
-        ));
-        let applied = batch.commit_once("review:2026-10-05:1", "digest-1")?;
-        check!(applied.written(), "the replacement still commits alone");
-        check!(eq; rows_of(&store, Table::ReviewCases)?, vec![row("case-1", "replaced")]);
-        check!(eq; store.walk_table(Table::ReviewCases)?.rows, 1);
-        check!(store.integrity()?.ok);
-        applied.receipt().clone()
-    };
-    let reopened = Store::open(dir.path())?;
-    check!(eq; reopened.walk_table(Table::ReviewCases)?.rows, 1);
-    check!(eq; reopened.receipt("review:2026-10-05:1")?, Some(applied));
-    check!(reopened.integrity()?.ok);
     Ok(())
 }
 

@@ -123,7 +123,7 @@ fn a_payload_cannot_impersonate_the_identity_in_its_storage_key() -> TestResult 
 fn malformed_keys_inside_a_table_refuse_the_scan() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
-    let mut key = crate::keys::table_prefix(Table::Athletes);
+    let mut key = crate::keys::observation_prefix(Table::Athletes);
     key.extend_from_slice(b"bad");
     store.entities.insert(key, b"{}")?;
     check!(matches!(

@@ -2,7 +2,7 @@ use fjall::Keyspace;
 use std::collections::HashSet;
 use std::path::Path;
 
-use super::keys::{key_label, split_observation_key, table_prefix};
+use super::keys::{key_label, observation_prefix, view_observation_key};
 use super::{Consolidated, Entity, Store, StoreError, StoreResult, StoreStats, Table};
 
 mod directory;
@@ -20,12 +20,15 @@ pub use view::StoreSnapshot;
 
 impl Store {
     pub(super) fn last_sequence(entities: &Keyspace, table: Table) -> StoreResult<Option<u64>> {
-        let prefix = table_prefix(table);
+        if table.generation_partitioned() {
+            return Ok(None);
+        }
+        let prefix = observation_prefix(table);
         let mut highest: Option<u64> = None;
-        for guard in entities.prefix(&prefix) {
+        for guard in entities.prefix(prefix.as_slice()) {
             let key = guard.key().map_err(|source| StoreError::Read { source })?;
             let (_, _, sequence) =
-                split_observation_key(&key).ok_or_else(|| StoreError::Invariant {
+                view_observation_key(&key).ok_or_else(|| StoreError::Invariant {
                     detail: format!("table {} holds a malformed observation key", table.file()),
                 })?;
             highest = Some(match highest {
@@ -108,7 +111,7 @@ impl Store {
     pub fn journal_keys(&self, phase: &str) -> StoreResult<HashSet<String>> {
         let prefix = Self::journal_key(phase, "");
         let mut keys = HashSet::new();
-        for guard in self.journal.prefix(&prefix) {
+        for guard in self.journal.prefix(prefix.as_slice()) {
             let raw = guard.key().map_err(|source| StoreError::Read { source })?;
             let bytes: &[u8] = raw.as_ref();
             let suffix =
@@ -134,7 +137,7 @@ impl Store {
     pub fn journal_payloads(&self, phase: &str) -> StoreResult<Vec<serde_json::Value>> {
         let prefix = Self::journal_key(phase, "");
         let mut out = Vec::new();
-        for guard in self.journal.prefix(&prefix) {
+        for guard in self.journal.prefix(prefix.as_slice()) {
             let (key, raw) = guard
                 .into_inner()
                 .map_err(|source| StoreError::Read { source })?;

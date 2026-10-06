@@ -109,11 +109,11 @@ pub(super) fn commit(
     cases: &[ReviewCase],
     observed_at: &str,
     checkpoint: usize,
-    sequence: u64,
+    generation: u64,
 ) -> StoreResult<Application> {
     let mut batch = store.write_batch();
     let digest = crate::compute_digest(verdicts, cases)?;
-    let operation = format!("review:{observed_at}:{checkpoint}:{sequence}:{digest}");
+    let operation = format!("review:{observed_at}:{checkpoint}:{generation}:{digest}");
     verdicts.iter().try_for_each(|row| {
         let key = census_domain::model::serialized_digest(row)
             .map_err(|error| crate::consensus::invariant(error.to_string()))?;
@@ -121,7 +121,7 @@ pub(super) fn commit(
     })?;
     batch.replace_many(Table::IdentityVerdicts, verdicts)?;
     batch.replace_many(Table::ReviewCases, cases)?;
-    let application = batch.commit_once_at_sequence(&operation, &digest, sequence)?;
+    let application = batch.commit_once_at_evidence_generation(&operation, &digest, generation)?;
     if matches!(application, Application::Repeated(_)) {
         verify_repeated(store, verdicts, cases)?;
     }

@@ -1,11 +1,10 @@
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::MutexGuard;
 
 use fjall::{Database, Keyspace, OwnedWriteBatch, PersistMode};
 
 use super::batch::refuse_over_bound;
-use super::{Store, StoreError, StoreResult, Table};
+use super::{meta, Store, StoreError, StoreResult, Table};
 
 pub(super) trait SequenceValue: Send + Sync + 'static {
     fn starting_at(start: u64) -> Self;
@@ -103,23 +102,9 @@ impl Counters {
     }
 }
 
-fn stored_mark(meta: &Keyspace, table: Table) -> StoreResult<Option<u64>> {
+fn stored_mark(meta_keyspace: &Keyspace, table: Table) -> StoreResult<Option<u64>> {
     let key = mark_key(table);
-    let Some(value) = meta
-        .get(&key)
-        .map_err(|source| StoreError::Read { source })?
-    else {
-        return Ok(None);
-    };
-    match std::str::from_utf8(&value)
-        .ok()
-        .and_then(|text| text.trim().parse::<u64>().ok())
-    {
-        Some(mark) => Ok(Some(mark)),
-        None => Err(StoreError::Invariant {
-            detail: format!("{key} is not a sequence mark"),
-        }),
-    }
+    meta::get_u64(meta_keyspace, &key)
 }
 
 fn scanned_mark(entities: &Keyspace, table: Table) -> StoreResult<u64> {
@@ -144,13 +129,6 @@ fn write_marks(db: &Database, meta: &Keyspace, derived: &[(Table, u64)]) -> Stor
 }
 
 impl Store {
-    pub(super) fn lock_appends(&self) -> MutexGuard<'_, ()> {
-        match self.appends.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        }
-    }
-
     pub(super) fn put_mark(&self, batch: &mut OwnedWriteBatch, table: Table, mark: u64) {
         batch.insert(&self.meta, mark_key(table), mark.to_string().as_bytes());
     }

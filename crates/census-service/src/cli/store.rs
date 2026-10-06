@@ -5,13 +5,43 @@ use std::path::{Path, PathBuf};
 
 pub(super) fn print_store_stats(store: &Store) -> Result<()> {
     let stats = store.stats().context("reading the Fjall store stats")?;
+    let format = store.store_format().context("reading the store format")?;
     println!("store\t{}", store.root().display());
+    println!(
+        "schema_version\t{}",
+        format
+            .schema_version
+            .map_or_else(|| "unversioned".to_string(), |version| version.to_string())
+    );
+    println!(
+        "key_format\t{}",
+        format
+            .key_format
+            .map_or_else(|| "unversioned".to_string(), |version| version.to_string())
+    );
+    if let Some(target) = format.migration_target {
+        println!("migration_target\t{target}");
+    }
+    if let Some(created_by) = &format.created_by {
+        println!("created_by\t{created_by}");
+    }
+    if let Some(created_at) = &format.created_at {
+        println!("created_at\t{created_at}");
+    }
+    println!("evidence_generation\t{}", store.evidence_generation());
+    println!("derived_generation\t{}", store.derived_generation());
     for (table, observations) in &stats.tables {
         println!("{table}\t{observations}");
     }
     println!("observations\t{}", stats.observations);
     println!("bytes_on_disk\t{}", stats.bytes_on_disk);
     println!("store_bytes\t{}", stats.store_bytes);
+    Ok(())
+}
+
+pub(super) fn run_migrate(root: &Path) -> Result<()> {
+    let report = Store::migrate(root).context("migrating the store to the current schema")?;
+    println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(())
 }
 

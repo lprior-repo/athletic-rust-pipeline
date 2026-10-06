@@ -79,7 +79,15 @@ fn mode_details(store: &Store, table: Table, walk: TableWalk) -> StoreResult<Vec
                 ));
             }
         }
-        StorageMode::DerivedSnapshot | StorageMode::DerivedMap => {
+        StorageMode::DerivedGeneration => {
+            if walk.repeated_ids > 0 {
+                details.push(format!(
+                    "{} ids own more than one row of a generation table",
+                    walk.repeated_ids
+                ));
+            }
+        }
+        StorageMode::DerivedMap => {
             if walk.foreign_sequences > 0 {
                 details.push(format!(
                     "{} rows are keyed under a sequence other than zero",
