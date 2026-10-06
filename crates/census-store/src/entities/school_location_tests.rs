@@ -64,6 +64,26 @@ fn one_id_whose_rows_disagree_on_city_retains_the_conflict() -> TestResult {
 }
 
 #[test]
+fn city_spellings_that_key_alike_are_one_school() -> TestResult {
+    let (mut kept, id) = memorial(None);
+    kept.city = Some("Madison".to_string());
+    let (mut dropped, _) = memorial(None);
+    dropped.city = Some("madison".to_string());
+    dropped.aliases.push("Madison Memorial".to_string());
+    kept.merge(dropped);
+    check(
+        kept.retained_conflicts.is_empty(),
+        "spellings that key alike are not a collision",
+    )?;
+    check(
+        kept.aliases == vec!["Madison Memorial".to_string()],
+        "the alias survives because the rows are one school",
+    )?;
+    check(kept.id.as_str() == id, "the merged row keeps its id")?;
+    Ok(())
+}
+
+#[test]
 fn consolidation_keeps_same_name_schools_of_two_cities_apart() -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path().join("store"))?;

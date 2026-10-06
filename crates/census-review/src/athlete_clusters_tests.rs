@@ -145,6 +145,60 @@ fn a_row_naming_two_objects_of_one_provider_is_filed() -> TestResult {
 }
 
 #[test]
+fn a_decision_that_lands_mid_read_refuses_the_stale_write() -> TestResult {
+    let lakeland = school("Lakeland");
+    let west = school("Madison West");
+    let first = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169");
+    let second = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169");
+    let (_dir, store) = store_of(&[lakeland, west], &[first, second])?;
+
+    let snapshot = store.snapshot();
+    let generation = snapshot.evidence_generation();
+    let observed = crate::athlete_cluster_findings::Observed::read_from(&snapshot)?;
+    let standing = super::standing_cases(&snapshot)?;
+    let mut index = census_domain::model::AthleteIdentityIndex::default();
+    for row in &observed.rows {
+        index.observe(row)?;
+    }
+    let planned = super::plan_cases(&observed, &standing, &index, "2026-09-25")?;
+    let filed = planned
+        .cases
+        .first()
+        .ok_or("the shared object files a case")?
+        .clone();
+    check!(eq; filed.state, ReviewState::Resolved,
+        "the agreeing lane decides the pair it planned: {filed:?}");
+    check!(eq; planned.verdicts.len(), 1, "one verdict is planned");
+
+    let mut decided = filed.clone();
+    decided.state = ReviewState::Superseded;
+    decided.detail = "an operator closed this while the pass was reading".to_string();
+    store.replace(Table::ReviewCases, &decided)?;
+
+    let refused = super::commit_cases(
+        &store,
+        &planned.cases,
+        &planned.verdicts,
+        "2026-09-25",
+        generation,
+    );
+    check!(
+        matches!(refused, Err(census_store::StoreError::EvidenceMoved { .. })),
+        "a payload planned before the decision is refused: {refused:?}"
+    );
+    let after = cases(&store)?;
+    check!(eq; after.iter().find(|case| case.id == filed.id), Some(&decided),
+        "the operator's decision stands and is not overwritten");
+
+    let fresh = reconcile_athletes(&store, "2026-09-25", false)?;
+    check!(eq; fresh.held, 1, "a fresh pass honours the decision: {fresh:?}");
+    check!(eq; fresh.decided, 0, "the fresh pass decides nothing");
+    check!(eq; cases(&store)?, after, "a fresh pass writes nothing over it");
+    check!(eq; verdicts(&store)?.len(), 0, "the stale pass filed no verdict");
+    Ok(())
+}
+
+#[test]
 fn a_second_pass_leaves_a_decided_case_alone() -> TestResult {
     let lakeland = school("Lakeland");
     let west = school("Madison West");

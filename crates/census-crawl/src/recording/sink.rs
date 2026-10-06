@@ -43,7 +43,7 @@ impl RowBatch<'_> {
     pub fn append_many<T: Serialize>(&mut self, table: Table, records: &[T]) -> CrawlResult<()> {
         match &mut self.sink {
             Sink::Store(batch) => {
-                batch.append_many(table, records)?;
+                batch.record_many(table, records)?;
                 Ok(())
             }
             Sink::Record { rows, .. } => {
@@ -67,7 +67,7 @@ impl RowBatch<'_> {
     pub fn append(&mut self, table: Table, rows: Vec<Value>) -> CrawlResult<()> {
         match &mut self.sink {
             Sink::Store(batch) => {
-                batch.append_many(table, &rows)?;
+                batch.record_many(table, &rows)?;
                 Ok(())
             }
             Sink::Record { rows: held, .. } => {

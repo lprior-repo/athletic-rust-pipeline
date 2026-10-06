@@ -5,6 +5,107 @@ not transfer to a later revision, fresh store or new run identity. A historical 
 fresh national census's release certificate. Current requirements live in [NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md)
 and [OPERATIONS.md](OPERATIONS.md). Source audits and imported measurements are explicitly labelled.
 
+## Derived generations, the evidence fence and the store schema (ADR-026) — 2026-10-06
+
+Implements [ADR-026](adr/ADR-026-derived-generations-and-store-schema.md) in the `arh-storage-gen`
+worktree: the persisted store schema and its explicit migration, generation-partitioned derived
+tables with one atomic publication, the semantic evidence-generation fence for review decisions,
+byte-bounded staging with budgeted reclaim, and disjoint append/replace/map write kinds. Scope:
+`crates/census-store` (`format.rs`, `format/migrate.rs`, `derived.rs`, `derived/stage.rs`,
+`derived/reclaim.rs`, `derived/reclaim/tests.rs`, `generation.rs`, `keys.rs`, `rows.rs`,
+`write_batch/`, `error.rs`, `tests.rs`, `tests/derived_publication.rs`),
+`crates/census-reconcile/src/index.rs` (the pass now stages a generation and publishes once),
+`crates/census-review` (`review_checkpoint.rs`, `revocation.rs`, `athlete_clusters.rs` planning split
+from its fenced commit) and `crates/census-service` (`cli/store.rs` format/generation reporting and
+the `store-migrate` verb, `restate_services/support.rs` retry classification).
+
+|Lane|Command|Observed|
+|---|---|---|
+|workspace tests|`tools/moon-local run pipeline:tests`|2560 passed, 0 failed, 3 skipped|
+|reconciler and generations|`tools/moon-local run pipeline:tests -- --status-level fail -E 'binary(census_reconcile) + binary(derived_generations)'`|50 passed (41 reconciler, 9 generation integration)|
+|review lane|`tools/moon-local run pipeline:tests -- --status-level fail -E 'binary(census_review)'`|133 passed|
+|store unit and regression tests|`tools/moon-local run pipeline:tests -- --status-level fail -E 'binary(census_store)'`|137 passed (including the six new publication and reclaim tests)|
+|clippy|`tools/moon-local run pipeline:lint-src`|clean, warnings denied|
+|formatting|`tools/moon-local run pipeline:fmt`|clean after `env -u CI tools/moon-local run pipeline:fmt-write` over owned changes only|
+|zero comments|`env -u CI tools/moon-local run pipeline:xtask -- comments`|1601 Rust files, no comments|
+|portable binaries|`env -u CI tools/moon-local run pipeline:build-portable`|optimized `release` in 1m53s|
+|release gate|`env -u CI tools/moon-local run pipeline:gate -- --release`|17 of 18 lanes PASS on the frozen revision: fmt, zero code comments, architecture contract, check, doc, tests (2560), panic extraction (all targets), domain type integrity, domain purity, module seams, ratchet, deny, audit, machete, geiger, feature powerset, bench presence. `perf` is the exception, and it is a measurement of the workstation rather than of this change — see the row below|
+|perf lane, three gate passes plus three isolated runs|`env -u CI tools/moon-local run pipeline:xtask -- perf check --reason ...`|the same frozen revision both passed (`pipeline/merge/scan -7.89%`, `consolidate -5.19%`, "no regression detected") and failed (`consolidate +7.98%`, `scan +6.12%`, `school_labels/resolve +29.76%`) inside the gate, and failed in all three isolated re-runs with a different set each time: `consolidate` measured 450230, 796326, 849314, 865336 and 970826 elements/s against a fixed 922934 baseline, and untouched pure-function benches swung with it (`hytek_text +38.97%` in one run and `-6.42%` in another, `school_index/resolve_label +31.53%` then `+11.95%`). No baseline was re-recorded, no threshold changed and no optimization is claimed: the lane's noise floor on this workstation exceeds its threshold, which is filed as `athletic-rust-pipeline-cr71`|
+|store debt ratchet|gate lanes `strict clippy` and `production scan`|`census-store` `as_cast` 0, `indexing` 0, `unwrap`/`expect` 0, `clippy::arithmetic_side_effects` 0, `clippy::indexing_slicing` 0 and `functions_over_60_lines` 0 — the debt this change first introduced (4 casts, 3 slices, 2 arithmetic sites, 2 unwrap-family uses, 3 over-budget functions) is closed rather than ratcheted|
+
+Native smoke with the portable binary, on a fixture-fed store (no network, no Restate):
+
+```sh
+BIN=target/moon-portable/x86_64-unknown-linux-gnu/release/census-service
+S=var/smoke-frozen-20261006
+$BIN --store $S fjall-stats
+$BIN --store $S import-coaches crates/census-crawl/tests/fixtures/coach_contacts_sample.csv --observed-on 2026-10-06
+$BIN --store $S index
+$BIN --store $S index
+$BIN --store $S import-coaches var/smoke-second.csv --observed-on 2026-10-06
+$BIN --store $S index
+$BIN --store $S store-integrity
+$BIN --store $S store-migrate
+$BIN --store $S workbook --out $S/publication --grad-year 2027
+```
+
+Observed, in order: the fresh store reported `schema_version 1`, `key_format 1`,
+`created_by 0.1.0`, `created_at 2026-10-06T12:51:38Z` and generations `0/0`; 13 fixture coach rows
+imported; the first `index` printed `source_identities=19 conflicts=0 reviews=0 superseded=0
+coverage=56 snapshots=1` and left `evidence_generation 3`, `derived_generation 1`; a repeat `index`
+printed the same report and left both counters unchanged with no second receipt and its abandoned
+stage already reclaimed; a one-row import moved the evidence generation, the third `index` published
+`derived_generation 3` with `source_identities=16 coverage=57 snapshots=1` (21 minted identities,
+one row per id); `store-integrity` reported `ok true`; `store-migrate` reported
+`already_current: true` with `rewritten_rows 0` and `integrity_ok: true`; the workbook wrote under
+`publication/generations/<digest>/workbook.xlsx`, read back from the published generation.
+
+Re-run on the final revision, after the lint-debt pass reworked the derived key-label accessors and the
+prefix borrows, in a fresh store (`S=var/smoke-final4-20261006`): the same sequence reproduced the same
+numbers — format `1`/`1` and generations `0/0` on the fresh store, 13 rows imported, `index` at
+`source_identities=19 coverage=56 snapshots=1` leaving `evidence_generation 3` and `derived_generation 1`,
+a repeat `index` with the same report and both counters unchanged, one more row imported, then
+`source_identities=21 coverage=57` published as `derived_generation 3` with `evidence_generation 6` and
+`source_identities 16` held under the new pointer; `store-integrity` `ok true`, `store-migrate` `already_current: true` with
+`integrity_ok: true`, and the workbook written under
+`publication/generations/c14eb7558e7fd500c6e38e45463b0da87e67a2967b616c1f9a7c052de0814fea/workbook.xlsx`
+(the digest differs from the earlier run because it covers the store's own creation stamp).
+
+New behavior is pinned by name, not by counts alone: `derived_generations` covers invisibility
+before publish, durability across reopen, a refused publication when evidence moved, a repeat that
+discards and reclaims its stage, one row per id with the last write winning, carry-forward,
+reclaim budgets, a stage larger than one staging batch, and refusal of non-generation tables;
+`checkpoint_fence` names the `EvidenceMoved` refusal and proves no partial case, verdict, journal or
+receipt survives it; the store's own `derived_publication` tests pin that a staged generation is
+invisible until the pointer moves and that a refused publication leaves both the pointer and the
+appearance that moved it untouched, and `derived::reclaim`'s tests pin that a budget smaller than one
+chunk reports the prefix unfinished, leaves the rest for the next pass and is completed by it — a
+regression proven against the previous behaviour, which reported the prefix reclaimed after a
+truncated chunk and would have left those rows unreachable; `census_reconcile`'s `a_changed_input_publishes_a_new_generation_holding_the_whole_row_set`,
+`a_repeated_pass_publishes_nothing_and_leaves_reclaim_nothing` and
+`index_preserves_located_unsupported_cohort_review_without_a_canonical_subject` pin the pass's
+generation behaviour; `athlete_clusters::tests::a_decision_that_lands_mid_read_refuses_the_stale_write`
+plans from a captured snapshot, writes a decision, and proves the stale payload is refused while the
+decision stands and a fresh pass honours it; `census-store`'s `replace_tests` and
+`tests::derived_rows` pin the append/replace/map split including empty replacements naming no row.
+
+Limits, stated rather than implied: this smoke used fixture coach rows in a synthetic store, so it is
+not census or source acceptance; no process was killed while a generation was materializing — that
+native obligation is now written into [NATIONAL-CENSUS-FAULTS.md](NATIONAL-CENSUS-FAULTS.md) under
+scenarios 6 and 17 and filed as `athletic-rust-pipeline-t4oz`, while the store-level crash
+boundaries (never-committed derivation, invisibility before publish, refusal on moved evidence,
+reopen) are covered by the tests above; `store-migrate` ran natively only against an
+already-current store, because no pre-versioned store exists in this worktree — the
+unversioned-to-versioned rewrite and the newer/unknown refusals are covered by
+`crates/census-store/src/format/migrate/tests.rs` (`opening_a_legacy_store_refuses_and_names_the_migration`,
+`migrating_a_legacy_store_rewrites_derived_rows_and_collapses_maps`,
+`migrating_a_current_store_reports_it_as_current`, `migrating_an_empty_directory_initialises_it`,
+`a_newer_schema_is_refused_by_both_open_and_migrate`); and the review fence's concurrency case is
+pinned by a deterministic captured-snapshot test rather than by a native racing process. The pass
+now writes every derived row it keeps, including carried-forward rows, so a derivation writes more
+bytes than the in-place overwrite it replaced; reclaim and compaction recover them on the store's own
+schedule.
+
 ## Admissible cross-source corroboration (ADR-022) — 2026-10-04
 
 Implements the ADR-022 decision in the working tree: Class A/Class B positive identity evidence in

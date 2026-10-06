@@ -1,4 +1,4 @@
-use crate::keys::table_prefix;
+use crate::keys::Layout;
 use crate::{Entity, Store, StoreError, StoreResult, Table, MAX_ROWS_PER_TABLE};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
@@ -17,6 +17,8 @@ pub struct StoreSnapshot<'s> {
     entities: &'s fjall::Keyspace,
     journal: &'s fjall::Keyspace,
     root: &'s std::path::Path,
+    derived_generation: u64,
+    evidence_generation: u64,
 }
 
 impl<'s> StoreSnapshot<'s> {
@@ -25,17 +27,35 @@ impl<'s> StoreSnapshot<'s> {
         entities: &'s fjall::Keyspace,
         journal: &'s fjall::Keyspace,
         root: &'s std::path::Path,
+        derived_generation: u64,
+        evidence_generation: u64,
     ) -> Self {
         Self {
             snapshot,
             entities,
             journal,
             root,
+            derived_generation,
+            evidence_generation,
         }
     }
 
     pub fn sequence(&self) -> u64 {
         self.snapshot.seqno()
+    }
+
+    pub fn derived_generation(&self) -> u64 {
+        self.derived_generation
+    }
+
+    pub fn evidence_generation(&self) -> u64 {
+        self.evidence_generation
+    }
+
+    fn layout(&self) -> Layout {
+        Layout {
+            derived_generation: self.derived_generation,
+        }
     }
 
     pub fn journal_payload(
@@ -56,7 +76,7 @@ impl<'s> StoreSnapshot<'s> {
         table: Table,
         mut visit: impl FnMut(T) -> StoreResult<()>,
     ) -> StoreResult<()> {
-        let prefix = table_prefix(table);
+        let prefix = self.layout().prefix(table);
         let max = usize::try_from(MAX_ROWS_PER_TABLE).map_err(|_| StoreError::CounterOverflow)?;
         self.snapshot
             .prefix(self.entities, &prefix)
@@ -81,7 +101,7 @@ impl<'s> StoreSnapshot<'s> {
     }
 
     fn hash_table(&self, table: Table, hasher: &mut Sha256) -> StoreResult<()> {
-        let prefix = table_prefix(table);
+        let prefix = self.layout().prefix(table);
         let max = usize::try_from(MAX_ROWS_PER_TABLE).map_err(|_| StoreError::CounterOverflow)?;
         self.snapshot
             .prefix(self.entities, &prefix)
@@ -91,7 +111,20 @@ impl<'s> StoreSnapshot<'s> {
                 let (key, value) = guard
                     .into_inner()
                     .map_err(|source| StoreError::Read { source })?;
-                hasher.update(key.as_ref());
+                if table.generation_partitioned() {
+                    let (_, id) = crate::keys::view_derived_key(table, &key).ok_or_else(|| {
+                        StoreError::Invariant {
+                            detail: format!(
+                                "table {} holds a malformed derived key {}",
+                                table.file(),
+                                crate::keys::key_label(&key)
+                            ),
+                        }
+                    })?;
+                    hasher.update(id);
+                } else {
+                    hasher.update(key.as_ref());
+                }
                 hasher.update([0x1f]);
                 hasher.update(value.as_ref());
                 hasher.update([0x1e]);

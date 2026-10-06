@@ -49,10 +49,13 @@ impl Store {
             .ok_or(StoreError::CounterOverflow)?;
         refuse_over_bound(Table::AthleteIdentityDecisions, rows)?;
         self.put_row_mark(&mut batch, Table::AthleteIdentityDecisions, rows);
+        let generation = self.generations.next_entities()?;
+        crate::generation::write_entities(&mut batch, &self.meta, generation);
         batch
             .durability(Some(PersistMode::SyncData))
             .commit()
             .map_err(|source| StoreError::Write { source })?;
+        self.generations.publish_entities(generation);
         Ok(added)
     }
 

@@ -79,14 +79,10 @@ fn carried(stored: &HashMap<String, ReviewCase>, minted: ReviewCase) -> ReviewCa
     }
 }
 
-fn supersede(
-    store: &Store,
-    stored: &HashMap<String, ReviewCase>,
-    current: &[ReviewCase],
-) -> census_store::StoreResult<usize> {
+fn superseded(stored: &HashMap<String, ReviewCase>, current: &[ReviewCase]) -> Vec<ReviewCase> {
     let live: std::collections::HashSet<&str> =
         current.iter().map(|case| case.id.as_str()).collect();
-    let stale: Vec<ReviewCase> = stored
+    stored
         .values()
         .filter(|case| case.state == ReviewState::Pending && !live.contains(case.id.as_str()))
         .cloned()
@@ -94,10 +90,7 @@ fn supersede(
             case.state = ReviewState::Superseded;
             case
         })
-        .collect();
-    let closed = stale.len();
-    store.replace_many(Table::ReviewCases, &stale)?;
-    Ok(closed)
+        .collect()
 }
 
 pub fn derive(store: &Store, phase: &str, finished_at: &str) -> ReportResult<IndexReport> {
@@ -126,15 +119,22 @@ pub fn derive(store: &Store, phase: &str, finished_at: &str) -> ReportResult<Ind
             carried(&stored, minted)
         })
         .collect();
+    let closed = superseded(&stored, &reviews);
+    let snapshot = snapshot_row(store, phase, finished_at)?;
 
-    store.replace_many(Table::SourceIdentities, &pass.identities)?;
-    store.replace_many(Table::Conflicts, &conflicts)?;
-    store.replace_many(Table::ReviewCases, &reviews)?;
-    store.replace_many(Table::Coverage, &coverage)?;
-    let superseded = supersede(store, &stored, &reviews)?;
-
-    store.replace(Table::Snapshots, &snapshot_row(store, phase, finished_at)?)?;
-    store.write_batch().commit_once(&operation, &digest)?;
+    let mut stage = store.stage_derived()?;
+    for table in STAGE_OUTPUTS {
+        if table.generation_partitioned() {
+            stage.carry_forward(table)?;
+        }
+    }
+    stage.replace_many(Table::SourceIdentities, &pass.identities)?;
+    stage.replace_many(Table::Conflicts, &conflicts)?;
+    stage.replace_many(Table::ReviewCases, &closed)?;
+    stage.replace_many(Table::ReviewCases, &reviews)?;
+    stage.replace_many(Table::Coverage, &coverage)?;
+    stage.replace_many(Table::Snapshots, &[snapshot])?;
+    stage.publish(&operation, &digest)?;
 
     Ok(IndexReport {
         source_identities: pass.identities.len(),
@@ -142,7 +142,7 @@ pub fn derive(store: &Store, phase: &str, finished_at: &str) -> ReportResult<Ind
         reviews: reviews.len(),
         coverage: coverage.len(),
         snapshots: 1,
-        superseded,
+        superseded: closed.len(),
         identity_applications,
     })
 }

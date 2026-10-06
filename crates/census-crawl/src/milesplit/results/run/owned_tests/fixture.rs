@@ -119,7 +119,7 @@ pub(super) fn options(reference: &ResultSetRef) -> super::super::super::ResultSe
 pub(super) fn apply(store: &Store, recording: &crate::recording::Recorded) -> TestResult {
     let mut batch = store.write_batch();
     for rows in &recording.rows {
-        batch.append_many(rows.table, &rows.rows)?;
+        batch.record_many(rows.table, &rows.rows)?;
     }
     for entry in &recording.journal {
         batch.journal_done(&entry.phase, &entry.key, &entry.payload)?;

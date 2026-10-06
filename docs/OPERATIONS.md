@@ -583,6 +583,32 @@ Use [cold backup/restore](FJALL_BACKUP.md); preserve referenced raw captures and
 Restate durable directory. No live directory copy, cache-only backup or removed `import-legacy`
 command can substitute. Deployment unit/config ownership is in [lifecycle](deployment-lifecycle.md).
 
+A store records its own schema identity. `census-service --store <root> fjall-stats` prints
+`schema_version`, `key_format`, `created_by`, `created_at` and both generation counters:
+`evidence_generation` moves when canonical observations, entities or review inputs are written, and
+`derived_generation` names the derived generation readers currently see. Opening refuses a store it
+cannot interpret: `StoreError::FormatNewer` (written by a newer schema), `SchemaUnknown` (missing or
+inconsistent schema rows) and `MigrationRequired` (older, or a migration that did not finish), each
+naming the root and the detail rather than reinterpreting bytes.
+
+Bring an older store to the current schema with the store stopped, after a cold backup:
+
+```sh
+census-service --store var/<store> store-backup --to var/backups/<name>
+census-service --store var/<store> store-migrate
+census-service --store var/<store> store-integrity
+census-service --store var/<store> fjall-stats
+```
+
+`store-migrate` rewrites derived tables under generation partitions, collapses map tables to one row
+per id and leaves observation-log bytes unchanged; it writes its resume marker before rewriting, so
+an interrupted migration resumes on the next call, and a store already at the current schema is
+reported with `already_current` and not rewritten. The command reports `rewritten_rows`,
+`dropped_rows` and the migrated store's integrity, and it opens the store itself: the owner must be
+stopped, exactly as for cold backup. Derived generations are reclaimed with a budget on each
+publication; a repeat index pass reclaims the stage it abandons, and
+`Store::reclaim_derived_generations` exposes the same sweep to an offline caller.
+
 [Moon developer tasks](../xtask/README.md) are the only gate entrypoint; `tools/gate.sh` remains their internal gate implementation. [VERIFICATION-EVIDENCE.md](VERIFICATION-EVIDENCE.md) owns dated
 incidents and executed results. Report only the declared run/scope and observed verification, with
 terminal access gaps, unresolved review and unfinished discovery visible.

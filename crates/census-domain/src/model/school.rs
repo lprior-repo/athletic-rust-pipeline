@@ -7,6 +7,18 @@ pub(super) fn city_key(city: &str) -> String {
         .to_ascii_lowercase()
 }
 
+pub(super) fn same_city(left: &str, right: &str) -> bool {
+    left == right
+        || left
+            .chars()
+            .filter(char::is_ascii_alphanumeric)
+            .map(|letter| letter.to_ascii_lowercase())
+            .eq(right
+                .chars()
+                .filter(char::is_ascii_alphanumeric)
+                .map(|letter| letter.to_ascii_lowercase()))
+}
+
 pub(super) fn located_city(city: &str) -> Option<String> {
     let trimmed = city.trim();
     if trimmed.is_empty() {

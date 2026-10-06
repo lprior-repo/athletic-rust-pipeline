@@ -41,6 +41,14 @@ pub enum StoreError {
     },
     #[error("{detail}")]
     Invariant { detail: String },
+    #[error(
+        "operation {operation} was staged against evidence generation {expected}, but the store is          at {actual}"
+    )]
+    EvidenceMoved {
+        operation: String,
+        expected: u64,
+        actual: u64,
+    },
     #[error("identity projection failed: {0}")]
     Identity(#[from] census_domain::model::IdentityError),
     #[error("table {table} would exceed {max} rows in one scan")]
@@ -57,6 +65,8 @@ pub enum StoreError {
     CounterOverflow,
     #[error("observation log {table} is append-only; replacement is refused")]
     ObservationReplacement { table: &'static str },
+    #[error("table {table} is derived; replace its rows by id instead of appending")]
+    DerivedAppend { table: &'static str },
     #[error("i/o failed for {path}: {source}")]
     Io {
         path: std::path::PathBuf,
@@ -65,6 +75,22 @@ pub enum StoreError {
     },
     #[error("{detail}")]
     Refused { detail: String },
+    #[error(
+        "store {what} is version {found}, newer than this build's {supported}: refusing to open"
+    )]
+    FormatNewer {
+        what: &'static str,
+        found: u32,
+        supported: u32,
+    },
+    #[error("store at {root} needs an explicit migration before opening: {detail}")]
+    MigrationRequired { root: String, detail: String },
+    #[error("store schema metadata is unreadable: {detail}")]
+    SchemaUnknown { detail: String },
+    #[error("table {table} is not stored as derived generations")]
+    NotGenerationTable { table: &'static str },
+    #[error("derived publication refused: {detail}")]
+    PublicationRefused { detail: String },
 }
 
 pub type StoreResult<T> = std::result::Result<T, StoreError>;

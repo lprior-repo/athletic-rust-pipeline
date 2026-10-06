@@ -184,6 +184,67 @@ fn rows_without_an_id_are_rejected_by_the_store_and_nothing_is_written() -> Test
 }
 
 #[test]
+fn a_derived_page_is_written_by_id_and_a_replay_writes_nothing() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let operation = "athleticnet_wi:inv-2:2026-W39:review_cases:0:0";
+    let rows = vec![
+        serde_json::json!({
+            "id": "case:1",
+            "family": "Athlete identity",
+            "subject_id": "subject:1",
+            "subject": "A",
+            "detail": "shared name",
+            "state": "pending"
+        }),
+        serde_json::json!({
+            "id": "case:2",
+            "family": "Athlete identity",
+            "subject_id": "subject:2",
+            "subject": "B",
+            "detail": "shared name",
+            "state": "pending"
+        }),
+    ];
+    let digest = payload_digest(Table::ReviewCases, &rows).map_err(sdk_error)?;
+    let first = apply_observations(&store, Table::ReviewCases, &rows, operation, &digest)?;
+    check!(eq;
+        first.appended(),
+        0,
+        "a derived page appends no observation: {first:?}"
+    );
+    check!(eq;
+        store.scan::<census_domain::model::ReviewCase>(Table::ReviewCases)?.len(),
+        2
+    );
+    check!(eq;
+        store.walk_table(Table::ReviewCases)?.foreign_sequences,
+        0,
+        "the page lands under the table's own keys"
+    );
+    check!(eq; store.stats()?.observations, 0);
+    let replay = apply_observations(&store, Table::ReviewCases, &rows, operation, &digest)?;
+    check!(replay.repeated(), "the same operation repeats: {replay:?}");
+    check!(eq;
+        store.scan::<census_domain::model::ReviewCase>(Table::ReviewCases)?.len(),
+        2,
+        "a replay writes no duplicate row"
+    );
+    let overlapping = apply_observations(&store, Table::ReviewCases, &rows, "op-3", &digest)?;
+    check!(eq;
+        overlapping.appended(),
+        0,
+        "a second operation replaces the same ids in place: {overlapping:?}"
+    );
+    check!(eq;
+        store.scan::<census_domain::model::ReviewCase>(Table::ReviewCases)?.len(),
+        2
+    );
+    check!(store.integrity()?.ok);
+    Ok(())
+}
+
+#[test]
 fn oversized_batches_are_refused_without_touching_the_store() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;

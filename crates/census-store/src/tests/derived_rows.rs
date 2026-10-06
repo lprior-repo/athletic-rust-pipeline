@@ -155,7 +155,7 @@ fn a_derived_map_table_keys_one_row_per_id_under_sequence_zero() -> TestResult {
 }
 
 #[test]
-fn a_snapshot_write_replaces_the_rows_it_does_not_name() -> TestResult {
+fn an_in_place_derived_write_touches_only_the_rows_it_names() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     store.replace_many(Table::Coverage, &[derived("wi", 1), derived("oh", 1)])?;
@@ -166,35 +166,24 @@ fn a_snapshot_write_replaces_the_rows_it_does_not_name() -> TestResult {
         }
     }
     store.replace_many(Table::Coverage, &[derived("oh", 2)])?;
-    let ids: Vec<String> = store
+    let mut rows: Vec<(String, u32)> = store
         .scan::<DerivedRow>(Table::Coverage)?
         .into_iter()
-        .map(|row| row.id)
+        .map(|row| (row.id, row.note))
         .collect();
+    rows.sort();
     {
-        let (left, right) = (&ids, &vec!["oh".to_string()]);
-        if left != right {
-            return Err(format!("the row the batch does not name is gone, not merely unread — left={left:?} right={right:?}").into());
-        }
-    }
-    {
-        let (left, right) = (&rows_held(&store, Table::Coverage)?, &1);
-        if left != right {
-            return Err(format!("left={left:?} right={right:?}").into());
-        }
-    }
-    store.replace_many(Table::Coverage, &[derived("wi", 3)])?;
-    {
-        let (left, right) = (&store.scan::<DerivedRow>(Table::Coverage)?.len(), &1);
+        let (left, right) = (&rows, &vec![("oh".to_string(), 2), ("wi".to_string(), 1)]);
         if left != right {
             return Err(format!(
-                "and the next snapshot replaces what that one left — left={left:?} right={right:?}"
+                "an in-place write names the rows it replaces and leaves the rest — \
+                 left={left:?} right={right:?}"
             )
             .into());
         }
     }
     {
-        let (left, right) = (&rows_held(&store, Table::Coverage)?, &1);
+        let (left, right) = (&rows_held(&store, Table::Coverage)?, &2);
         if left != right {
             return Err(format!("left={left:?} right={right:?}").into());
         }
@@ -203,26 +192,23 @@ fn a_snapshot_write_replaces_the_rows_it_does_not_name() -> TestResult {
 }
 
 #[test]
-fn an_empty_snapshot_write_empties_the_table() -> TestResult {
+fn an_empty_in_place_write_leaves_every_row_it_does_not_name() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     store.replace_many(Table::Coverage, &[derived("wi", 1), derived("oh", 1)])?;
+    store.replace_many(Table::Coverage, &[] as &[DerivedRow])?;
     {
         let (left, right) = (&rows_held(&store, Table::Coverage)?, &2);
         if left != right {
-            return Err(format!("left={left:?} right={right:?}").into());
+            return Err(format!(
+                "a derived generation is replaced by publishing one, never by an empty write — \
+                 left={left:?} right={right:?}"
+            )
+            .into());
         }
     }
-    store.replace_many(Table::Coverage, &[] as &[DerivedRow])?;
-    let rows = store.scan::<DerivedRow>(Table::Coverage)?;
-    if !rows.is_empty() {
-        return Err(format!(
-            "a snapshot derivation that found nothing leaves no row behind: {rows:?}"
-        )
-        .into());
-    }
     {
-        let (left, right) = (&rows_held(&store, Table::Coverage)?, &0);
+        let (left, right) = (&store.scan::<DerivedRow>(Table::Coverage)?.len(), &2);
         if left != right {
             return Err(format!("left={left:?} right={right:?}").into());
         }
@@ -233,57 +219,6 @@ fn an_empty_snapshot_write_empties_the_table() -> TestResult {
         let (left, right) = (&rows_held(&store, Table::ReviewCases)?, &1);
         if left != right {
             return Err(format!("a map table keeps the row an empty batch does not name — left={left:?} right={right:?}").into());
-        }
-    }
-    Ok(())
-}
-
-#[test]
-fn a_derived_write_clears_the_foreign_sequences_of_the_ids_it_names() -> TestResult {
-    let dir = tempfile::tempdir()?;
-    let store = Store::open(dir.path())?;
-    let imported = derived("case:1", 7);
-    let mut batch = store.db.batch();
-    batch.insert(
-        &store.entities,
-        observation_key(Table::ReviewCases, "case:1", 7),
-        serde_json::to_vec(&imported)?,
-    );
-    batch.commit()?;
-    {
-        let (left, right) = (&store.walk_table(Table::ReviewCases)?.foreign_sequences, &1);
-        if left != right {
-            return Err(format!("the fixture is a row the store's own writer would never have keyed — left={left:?} right={right:?}").into());
-        }
-    }
-    store.replace_many(Table::ReviewCases, &[derived("case:1", 8)])?;
-    let walk = store.walk_table(Table::ReviewCases)?;
-    {
-        let (left, right) = (&walk.rows, &1);
-        if left != right {
-            return Err(format!(
-                "the copy is gone, not merely outranked — left={left:?} right={right:?}"
-            )
-            .into());
-        }
-    }
-    {
-        let (left, right) = (&walk.foreign_sequences, &0);
-        if left != right {
-            return Err(format!("left={left:?} right={right:?}").into());
-        }
-    }
-    let rows = store.scan::<DerivedRow>(Table::ReviewCases)?;
-    {
-        let (left, right) = (&rows.len(), &1);
-        if left != right {
-            return Err(format!("left={left:?} right={right:?}").into());
-        }
-    }
-    {
-        let (left, right) = (&rows[0].note, &8);
-        if left != right {
-            return Err(format!("the derivation, not the copy it replaced, is what reads — left={left:?} right={right:?}").into());
         }
     }
     Ok(())
@@ -322,6 +257,88 @@ fn an_over_bound_replace_batch_is_refused_before_a_single_row_is_encoded() -> Te
     }
     {
         let (left, right) = (&rows_held(&store, Table::Coverage)?, &0);
+        if left != right {
+            return Err(format!("left={left:?} right={right:?}").into());
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn an_append_to_a_derived_table_is_refused_and_record_routes_by_mode() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    for (table, outcome) in [
+        (
+            Table::ReviewCases,
+            store.append(Table::ReviewCases, &derived("case:1", 1)),
+        ),
+        (
+            Table::Coverage,
+            store.append_many(Table::Coverage, &[derived("wi", 1)]),
+        ),
+        (
+            Table::SourceAccess,
+            store.append(Table::SourceAccess, &derived("access:1", 1)),
+        ),
+    ] {
+        match outcome {
+            Err(StoreError::DerivedAppend { table: named }) => {
+                let (left, right) = (&named, &table.file());
+                if left != right {
+                    return Err(format!("left={left:?} right={right:?}").into());
+                }
+            }
+            other => {
+                return Err(format!("appending to {} must refuse: {other:?}", table.file()).into())
+            }
+        }
+    }
+    {
+        let (left, right) = (&rows_held(&store, Table::ReviewCases)?, &0);
+        if left != right {
+            return Err(
+                format!("a refused append writes nothing — left={left:?} right={right:?}").into(),
+            );
+        }
+    }
+    let mut batch = store.write_batch();
+    match batch.append_many(Table::IdentityVerdicts, &[derived("verdict:1", 1)]) {
+        Err(StoreError::DerivedAppend { table }) => {
+            let (left, right) = (&table, &"identity_verdicts");
+            if left != right {
+                return Err(format!("left={left:?} right={right:?}").into());
+            }
+        }
+        other => {
+            return Err(
+                format!("a batched append to a derived table must refuse: {other:?}").into(),
+            )
+        }
+    }
+    batch.record_many(Table::IdentityVerdicts, &[derived("verdict:1", 1)])?;
+    batch.record_many(Table::Schools, &[school("Recorded School")])?;
+    batch.commit()?;
+    {
+        let (left, right) = (&rows_held(&store, Table::IdentityVerdicts)?, &1);
+        if left != right {
+            return Err(
+                format!("a derived table records by id — left={left:?} right={right:?}").into(),
+            );
+        }
+    }
+    {
+        let (left, right) = (&rows_held(&store, Table::Schools)?, &1);
+        if left != right {
+            return Err(format!(
+                "an observation log records by append — left={left:?} right={right:?}"
+            )
+            .into());
+        }
+    }
+    let verdicts = store.scan::<DerivedRow>(Table::IdentityVerdicts)?;
+    {
+        let (left, right) = (&verdicts.len(), &1);
         if left != right {
             return Err(format!("left={left:?} right={right:?}").into());
         }

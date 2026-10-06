@@ -199,7 +199,7 @@ fn pending(store: &Store, row: &OrgSchool) -> TestResult<Value> {
 fn apply_recorded(store: &Store, recorded: &crate::recording::Recorded) -> TestResult {
     let mut batch = store.write_batch();
     for rows in &recorded.rows {
-        batch.append_many(rows.table, &rows.rows)?;
+        batch.record_many(rows.table, &rows.rows)?;
     }
     for entry in &recorded.journal {
         batch.journal_done(&entry.phase, &entry.key, &entry.payload)?;

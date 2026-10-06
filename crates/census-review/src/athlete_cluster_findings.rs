@@ -5,7 +5,7 @@ use census_domain::model::{
     ReviewVerdictKind, ReviewVerdictRecord, SchoolId, SourceNamespace, ATHLETE_IDENTITY_FAMILY,
     MEMBER_SET_LABEL,
 };
-use census_store::{Store, StoreResult, Table};
+use census_store::{StoreResult, StoreSnapshot, Table};
 
 use super::athlete_clusters::RULE_REVIEWER;
 use super::cohort_evidence::CohortEvidence;
@@ -64,8 +64,7 @@ pub(super) struct Findings<'a> {
 }
 
 impl Observed {
-    pub(super) fn read(store: &Store) -> StoreResult<Self> {
-        let snapshot = store.snapshot();
+    pub(super) fn read_from(snapshot: &StoreSnapshot) -> StoreResult<Self> {
         let mut observed = Self::default();
         snapshot.for_each_merged::<CanonicalSchool>(Table::Schools, |school| {
             observed.schools.insert(school.id, school.name);

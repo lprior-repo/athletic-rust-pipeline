@@ -59,7 +59,7 @@ pub(super) async fn process(
             &states,
             checkpoint.observed_at,
             checkpoint.index,
-            snapshot.sequence(),
+            snapshot.evidence_generation(),
         )?;
     }
     Ok(())

@@ -63,7 +63,7 @@ impl<'a> Job<'a> {
             let mut wrote = false;
             if !self.pending_cases.is_empty() {
                 self.store
-                    .append_many(Table::ReviewCases, &self.pending_cases)?;
+                    .replace_many(Table::ReviewCases, &self.pending_cases)?;
                 wrote = true;
             }
             if !self.pending.is_empty() {

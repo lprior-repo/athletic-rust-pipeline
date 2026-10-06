@@ -22,16 +22,23 @@ impl From<StoreError> for JobError {
             | StoreError::Flush { .. }
             | StoreError::Read { .. }
             | StoreError::Write { .. }
-            | StoreError::Io { .. } => Self::Transient { message },
+            | StoreError::Io { .. }
+            | StoreError::PublicationRefused { .. }
+            | StoreError::EvidenceMoved { .. } => Self::Transient { message },
             StoreError::Decode { .. }
             | StoreError::Json { .. }
             | StoreError::SnapshotRow { .. }
             | StoreError::ObservationReplacement { .. }
+            | StoreError::DerivedAppend { .. }
             | StoreError::TooManyRows { .. }
             | StoreError::JournalTooLarge { .. }
             | StoreError::CounterOverflow
             | StoreError::Refused { .. }
             | StoreError::Identity(_)
+            | StoreError::FormatNewer { .. }
+            | StoreError::MigrationRequired { .. }
+            | StoreError::SchemaUnknown { .. }
+            | StoreError::NotGenerationTable { .. }
             | StoreError::Invariant { .. } => Self::Terminal { message },
         }
     }

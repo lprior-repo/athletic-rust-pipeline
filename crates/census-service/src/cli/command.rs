@@ -85,6 +85,10 @@ pub(super) enum Command {
     StoreBackup(BackupArgs),
     #[command(about = "Restore a backup into a new directory")]
     StoreRestore(RestoreArgs),
+    #[command(
+        about = "Bring a stopped store left by an earlier schema to the current one: derived tables move under generation partitions, map rows collapse to one per id, and observation logs keep their bytes. Interrupted migrations resume; a store already at the current schema is reported and not rewritten"
+    )]
+    StoreMigrate,
     #[command(about = "Check the store's own integrity")]
     StoreIntegrity,
     #[command(about = "Print the command that runs the `census-serve` Restate endpoint")]

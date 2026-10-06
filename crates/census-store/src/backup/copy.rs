@@ -86,15 +86,12 @@ impl ClosedStore {
 fn count_published_generation(
     generation: &Path,
 ) -> StoreResult<std::collections::BTreeMap<String, u64>> {
-    let store = Store::open(generation).map_err(|error| {
+    table_row_counts(generation).map_err(|error| {
         refused(format!(
-            "the backup copy at {} does not open as a store, so it was not published: {error}",
+            "the backup copy at {} does not open as a database, so it was not published: {error}",
             generation.display()
         ))
-    })?;
-    let counts = table_row_counts(&store)?;
-    drop(store);
-    Ok(counts)
+    })
 }
 
 fn check_backup_destination(from: &Path, to: &Path) -> StoreResult<()> {

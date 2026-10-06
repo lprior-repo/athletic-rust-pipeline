@@ -59,6 +59,10 @@ delivery brief; passing a broad restart test does not discharge them:
   published, and a newer partial file is not selected by filename or timestamp.
 - **Scenario 15:** interrupt backup and restore. The original store and previous accepted backup
   remain recoverable; restore uses a new owned destination.
+- **Scenarios 6 and 17:** kill a worker while a derived generation is materializing. The previous
+  generation remains current and readable; the incomplete generation is invisible to every reader
+  and to the next pass, which either publishes a fresh generation or reclaims the abandoned one;
+  no reader observes two passes mixed across tables.
 
 Injection seams must signal the reached boundary and be gated behind explicit test/injection
 configuration, unreachable in normal release operation. Record exact failpoint, process IDs,

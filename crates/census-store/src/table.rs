@@ -11,7 +11,7 @@ pub const MAX_JOURNAL_VALUE_BYTES: usize = 1024 * 1024;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StorageMode {
     ObservationLog,
-    DerivedSnapshot,
+    DerivedGeneration,
     DerivedMap,
 }
 
@@ -19,8 +19,12 @@ impl StorageMode {
     pub const fn appended_observations(self, rows: u64) -> u64 {
         match self {
             StorageMode::ObservationLog => rows,
-            StorageMode::DerivedSnapshot | StorageMode::DerivedMap => 0,
+            StorageMode::DerivedGeneration | StorageMode::DerivedMap => 0,
         }
+    }
+
+    pub const fn generation_partitioned(self) -> bool {
+        matches!(self, StorageMode::DerivedGeneration)
     }
 }
 
@@ -104,15 +108,19 @@ impl Table {
             | Table::Performances
             | Table::SourceMeets
             | Table::SourceObservations => StorageMode::ObservationLog,
-            Table::SourceIdentities | Table::Conflicts | Table::Coverage => {
-                StorageMode::DerivedSnapshot
+            Table::SourceIdentities
+            | Table::Conflicts
+            | Table::Coverage
+            | Table::ReviewCases
+            | Table::Snapshots => StorageMode::DerivedGeneration,
+            Table::SourceAccess | Table::IdentityVerdicts | Table::AthleteIdentityDecisions => {
+                StorageMode::DerivedMap
             }
-            Table::ReviewCases
-            | Table::Snapshots
-            | Table::SourceAccess
-            | Table::IdentityVerdicts
-            | Table::AthleteIdentityDecisions => StorageMode::DerivedMap,
         }
+    }
+
+    pub const fn generation_partitioned(self) -> bool {
+        self.storage_mode().generation_partitioned()
     }
 }
 

@@ -10,8 +10,6 @@ use serde::Serialize;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-const CACHE_BYTES: u64 = 1024 * 1024 * 1024;
-
 const DB_DIR: &str = "fjall";
 const ENTITIES: &str = "entities";
 const JOURNAL: &str = "journal";
@@ -21,11 +19,16 @@ const RECEIPTS: &str = "receipts";
 mod backup;
 mod batch;
 pub mod clock;
+mod derived;
 mod entities;
 mod error;
 mod fence;
+mod format;
+mod generation;
 mod identity;
+mod inspect;
 mod keys;
+mod meta;
 pub mod read;
 mod receipt;
 mod rows;
@@ -35,9 +38,14 @@ mod write;
 mod write_batch;
 
 pub use backup::{BackupReport, IntegrityReport, IntegrityTable, RestoreReport};
+pub use derived::{DerivedStage, Publication, Reclaimed};
 pub use error::{StoreError, StoreResult};
 pub use fence::FencedSnapshot;
+pub use format::{
+    MigrationReport, StoreFormat, DEFAULT_CACHE_BYTES, KEY_FORMAT_VERSION, STORE_SCHEMA_VERSION,
+};
 pub use identity::MAX_IDENTITY_APPLICATION_BATCH;
+pub use inspect::StoreInspection;
 pub use read::{build_athlete_identity_projection, StoreSnapshot};
 pub use receipt::{Application, Pruned, Receipt, MAX_DIGEST_BYTES, MAX_OPERATION_BYTES};
 pub use rows::TableWalk;
@@ -69,31 +77,11 @@ pub struct Store {
     meta: Keyspace,
     receipts: Keyspace,
     sequences: sequences::Counters,
+    generations: generation::Generations,
     appends: Mutex<()>,
+    staging: Mutex<()>,
 }
 
-impl Store {
-    pub fn open(root: impl AsRef<Path>) -> StoreResult<Self> {
-        let root = root.as_ref().to_path_buf();
-        ensure_dirs(&root)?;
-        let (db, entities, journal, meta, receipts, sequences) = open_keyspaces(&root)?;
-
-        read::sweep_stale_temporaries(&root)?;
-
-        let store = Self {
-            root,
-            db,
-            entities,
-            journal,
-            meta,
-            receipts,
-            sequences,
-            appends: Mutex::new(()),
-        };
-        store.seed_row_marks()?;
-        Ok(store)
-    }
-}
 fn ensure_dirs(root: &Path) -> StoreResult<()> {
     for sub in ["http", "out"] {
         let dir = root.join(sub);
@@ -107,16 +95,10 @@ fn ensure_dirs(root: &Path) -> StoreResult<()> {
 
 fn open_keyspaces(
     root: &Path,
-) -> StoreResult<(
-    Database,
-    Keyspace,
-    Keyspace,
-    Keyspace,
-    Keyspace,
-    sequences::Counters,
-)> {
+    cache_bytes: u64,
+) -> StoreResult<(Database, Keyspace, Keyspace, Keyspace, Keyspace)> {
     let db = Database::builder(root.join(DB_DIR))
-        .cache_size(CACHE_BYTES)
+        .cache_size(cache_bytes)
         .open()
         .map_err(|source| StoreError::Open { source })?;
     let entities = db
@@ -137,13 +119,16 @@ fn open_keyspaces(
             KeyspaceCreateOptions::default().expect_point_read_hits(true)
         })
         .map_err(|source| StoreError::Open { source })?;
-    let sequences = sequences::Counters::seeded(&db, &entities, &meta)?;
-    Ok((db, entities, journal, meta, receipts, sequences))
+    Ok((db, entities, journal, meta, receipts))
 }
 
 impl Store {
     pub fn root(&self) -> &Path {
         &self.root
+    }
+
+    pub fn store_format(&self) -> StoreResult<StoreFormat> {
+        format::read_format(&self.meta)
     }
 
     pub fn http_cache_dir(&self) -> PathBuf {
@@ -165,15 +150,33 @@ impl Store {
             .persist(PersistMode::SyncAll)
             .map_err(|source| StoreError::Flush { source })
     }
+
     pub fn snapshot(&self) -> StoreSnapshot<'_> {
         StoreSnapshot::new(
             self.db.snapshot(),
             &self.entities,
             &self.journal,
             &self.root,
+            self.generations.derived_current(),
+            self.generations.entities(),
         )
     }
+
+    pub(crate) fn lock_appends(&self) -> std::sync::MutexGuard<'_, ()> {
+        match self.appends.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        }
+    }
+
+    pub(crate) fn lock_staging(&self) -> std::sync::MutexGuard<'_, ()> {
+        match self.staging.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        }
+    }
 }
+
 #[cfg(test)]
 #[path = "backup_tests.rs"]
 mod backup_tests;

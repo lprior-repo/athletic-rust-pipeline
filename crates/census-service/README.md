@@ -34,7 +34,7 @@ all commands have identical durable/recovery semantics.
 | Discovery/acquisition | `fetch`, `sites`, `teams`, `meets`, `collect`, `provider` | Source entry points; capability and route differ by command |
 | Derivation | `consolidate`, `index`, `review`, `run` | Materialization, deterministic indexes, local advice and composed cycle |
 | Publication | `report`, `bests`, `workbook`, `verify`, `seal` | Reports, compatible bests, workbook, current verifier and seal/refusal |
-| Store maintenance | `fjall-stats`, `store-integrity`, `store-backup`, `store-restore`, `repair-retained-marks`, `repair-retained-events` | Inspect, safely back up/restore or append source-backed retained corrections |
+| Store maintenance | `fjall-stats`, `store-integrity`, `store-backup`, `store-restore`, `store-migrate`, `repair-retained-marks`, `repair-retained-events` | Inspect, safely back up/restore or migrate a stopped store, or append source-backed retained corrections. `fjall-stats` reports the persisted schema/key format, creator, and both generation counters: `evidence_generation` moves with evidence-bearing writes, `derived_generation` names the derived generation readers see |
 | Public coach research | `import-coaches`, `merge-coaches`, `verify-coaches`, `school-sites` | Research CSV handling, source-backed contact verification and the long-tail school-website crawl whose fragments feed the verifier |
 | Research artifacts | `qa-reports`, `export-data`, `school-names`, `census-doc`, `school-address`, `school-address-join` | Research report/CSV helpers, the school-directory corpus verb and the corpus-to-store join; not a second product workflow |
 

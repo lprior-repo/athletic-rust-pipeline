@@ -150,6 +150,18 @@ observations, progress and effect receipts together; acknowledge only after dura
 schema changes require explicit versioned migration for affected stores, not silent reinterpretation.
 A fresh run does not authorize deletion of historical evidence.
 
+The store names the schema it holds (`format.rs`: schema and key-format versions, creator and
+creation date, and a migration resume marker) and refuses to open bytes it cannot interpret as
+current, older but migratable, newer, or unknown. Migration is one explicit offline operation with
+its own native verb, never a silent reinterpretation during open. Derived tables — source
+identities, conflicts, review cases, coverage and pass snapshots — are partitioned by generation:
+a pass materialises a whole generation in bounded row/byte batches and publishes it with one atomic
+pointer flip plus its receipt, and readers see the current generation only. Reclaim of superseded
+generations is budgeted and resumable. A review decision fences on the evidence generation rather
+than on the global store sequence, so journal, receipt and derived writes cannot invalidate it while
+a change to its inputs does; a staged generation whose evidence moved refuses to publish.
+[ADR-026](docs/adr/ADR-026-derived-generations-and-store-schema.md) owns the rationale.
+
 A live MVCC snapshot pins one read view, not a durable checkpoint that can be reopened from a bare
 sequence number. Multi-table operations must use one captured view. Input-generation identity must
 include store/run lineage and all semantically relevant revisions; writing derived output must not

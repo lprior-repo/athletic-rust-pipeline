@@ -1,5 +1,5 @@
 use super::collision::{evidence_list, source_list};
-use super::school::city_key;
+use super::school::{city_key, same_city};
 use super::{
     normalize_name, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
     CanonicalPerformance, CanonicalSchool, CanonicalTeam, RetainedConflict,
@@ -38,7 +38,7 @@ impl NaturalKey for CanonicalSchool {
             return false;
         }
         match (self.city.as_deref(), other.city.as_deref()) {
-            (Some(left), Some(right)) => city_key(left) == city_key(right),
+            (Some(left), Some(right)) => same_city(left, right),
             _ => true,
         }
     }

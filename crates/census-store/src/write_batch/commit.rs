@@ -4,7 +4,7 @@ use super::super::batch::stage_derived_encoded;
 use super::super::keys::observation_key;
 use super::super::receipt::{self, Application, Decision};
 use super::super::sequences::Reserved;
-use super::super::{StorageMode, Store, StoreError, StoreResult};
+use super::super::{generation, Store, StoreError, StoreResult};
 use super::{Page, Replacement, StoreBatch};
 
 impl StoreBatch<'_> {
@@ -22,14 +22,14 @@ impl StoreBatch<'_> {
             })
     }
 
-    pub fn commit_once_at_sequence(
+    pub fn commit_once_at_evidence_generation(
         self,
         operation: &str,
         digest: &str,
-        sequence: u64,
+        generation: u64,
     ) -> StoreResult<Application> {
         receipt::refuse_over_operation(operation, digest)?;
-        self.commit_inner(Some((operation, digest)), Some(sequence))?
+        self.commit_inner(Some((operation, digest)), Some(generation))?
             .ok_or_else(|| StoreError::Invariant {
                 detail: format!("fenced operation {operation} wrote neither rows nor a receipt"),
             })
@@ -38,7 +38,7 @@ impl StoreBatch<'_> {
     fn commit_inner(
         self,
         once: Option<(&str, &str)>,
-        sequence: Option<u64>,
+        evidence: Option<u64>,
     ) -> StoreResult<Option<Application>> {
         if self.is_empty() && once.is_none() {
             return Ok(None);
@@ -51,39 +51,74 @@ impl StoreBatch<'_> {
         if matches!(written, Some(Application::Repeated(_))) {
             return Ok(written);
         }
-        if let Some(expected) = sequence {
-            let actual = store.snapshot().sequence();
-            if actual != expected {
-                return Err(StoreError::Invariant {
-                    detail: format!(
-                        "checkpoint snapshot changed: expected {expected}, current {actual}"
-                    ),
-                });
-            }
-        }
-        let reservations: Vec<_> = pages
-            .iter()
-            .map(|page| {
-                let count =
-                    u64::try_from(page.records.len()).map_err(|_| StoreError::CounterOverflow)?;
-                store.sequences.plan(page.table, count)
-            })
-            .collect::<StoreResult<_>>()?;
+        refuse_moved_evidence(store, once, evidence)?;
+        let reservations = plan_reservations(&pages, store)?;
         write_pages_staged(&pages, &reservations, store, &mut batch)?;
         write_journal(journal, store, &mut batch);
+        let writes_entities = !pages.is_empty() || !replacements.is_empty();
         write_replacements(replacements, store, &mut batch)?;
+        let generation = if writes_entities {
+            let generation = store.generations.next_entities()?;
+            generation::write_entities(&mut batch, &store.meta, generation);
+            Some(generation)
+        } else {
+            None
+        };
         batch
             .durability(Some(PersistMode::SyncData))
             .commit()
             .map_err(|source| StoreError::Write { source })?;
-        pages
-            .iter()
-            .zip(&reservations)
-            .try_for_each(|(page, reservation)| {
-                store.sequences.publish(page.table, reservation.mark)
-            })?;
+        publish_marks(&pages, &reservations, generation, store)?;
         Ok(written)
     }
+}
+
+fn refuse_moved_evidence(
+    store: &Store,
+    once: Option<(&str, &str)>,
+    evidence: Option<u64>,
+) -> StoreResult<()> {
+    let Some(expected) = evidence else {
+        return Ok(());
+    };
+    let actual = store.evidence_generation();
+    if actual == expected {
+        return Ok(());
+    }
+    Err(StoreError::EvidenceMoved {
+        operation: once.map_or_else(String::new, |(operation, _)| operation.to_string()),
+        expected,
+        actual,
+    })
+}
+
+fn plan_reservations(pages: &[Page], store: &Store) -> StoreResult<Vec<Reserved>> {
+    pages
+        .iter()
+        .map(|page| {
+            let count =
+                u64::try_from(page.records.len()).map_err(|_| StoreError::CounterOverflow)?;
+            store.sequences.plan(page.table, count)
+        })
+        .collect()
+}
+
+fn publish_marks(
+    pages: &[Page],
+    reservations: &[Reserved],
+    generation: Option<u64>,
+    store: &Store,
+) -> StoreResult<()> {
+    pages
+        .iter()
+        .zip(reservations)
+        .try_for_each(|(page, reservation)| {
+            store.sequences.publish(page.table, reservation.mark)
+        })?;
+    if let Some(generation) = generation {
+        store.generations.publish_entities(generation);
+    }
+    Ok(())
 }
 
 fn prepare_receipt(
@@ -160,21 +195,17 @@ fn write_replacements(
     store: &Store,
     batch: &mut OwnedWriteBatch,
 ) -> StoreResult<()> {
+    let generation = store.derived_generation();
     for replacement in replacements {
         let staged = stage_derived_encoded(
             batch,
             &store.entities,
             replacement.table,
             replacement.records,
+            generation,
         )?;
         let held = store.count(replacement.table)?;
-        let rows = match replacement.table.storage_mode() {
-            StorageMode::DerivedSnapshot => staged.named_count()?,
-            StorageMode::DerivedMap | StorageMode::ObservationLog => {
-                held.saturating_add(staged.added)
-            }
-        };
-        store.put_row_mark(batch, replacement.table, rows);
+        store.put_row_mark(batch, replacement.table, held.saturating_add(staged.added));
     }
     Ok(())
 }

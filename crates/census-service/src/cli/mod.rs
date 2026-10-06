@@ -163,6 +163,7 @@ pub(super) async fn run() -> Result<()> {
         Command::CensusDoc(args) => census_doc::run_census_doc(args),
         Command::SchoolAddress(args) => census_service::school_address::run(args),
         Command::StoreBackup(args) => store::run_backup(&cli.store_root(), args),
+        Command::StoreMigrate => store::run_migrate(&cli.store_root()),
         Command::Verify(args) => verify::run_verify(&cli.store_root(), args),
         Command::Serve => serve::run_serve(&cli),
         Command::RepairRetainedMarks(args) => retained_marks::run_repair_retained_marks(&cli, args),
