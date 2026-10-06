@@ -12802,6 +12802,31 @@ tq18 work); five working-tree files remained mid-edit at 11:45 (`census-store` `
 repair, `src/format/migrate/tests.rs`, `tests/derived_generations.rs`). Gates d/e are therefore not
 a post-landing certificate for those residue files, which must be re-gated after the writers stop.
 
+Continuation, same session — the landing completed and was pushed: `82f90042` 11:46 (repair the
+`keyspace_ab` example), `f03f654a` 11:46 (tq18 integration residue, carrying the d/e append above),
+`6c0ec4d8` 12:03 ("Land the location-qualified school identity work with the derived-generation
+store", now `origin/main`) and `fb6483bf` 12:22 ("Clear the enforced lint and policy lanes for the
+storage-ab example"). Three further release-gate executions bracketed those commits, and their
+failing lanes moved with the writer's edits rather than staying fixed:
+
+- `var/release-gate-20261006f.log` (714 s, `current sha: f03f654a`) → `gate: FAIL -> ratchet perf`;
+  the ratchet debt was entirely the mid-repair example (`keyspace_ab.rs` at 428 lines, two functions
+  over 60 lines, clippy arithmetic/as/indexing 20/13/1).
+- `var/release-gate-20261006g.log` (903 s, `current sha: 6c0ec4d8`) → `gate: FAIL -> fmt panic
+  extraction (all targets) perf`; the panic finding was `keyspace_ab.rs:86` on the pre-`6c0ec4d8`
+  example, while g's later phase reported the landed 299-line example inside the debt budgets.
+- `var/release-gate-20261006h.log` (603 s, run between `6c0ec4d8` and `fb6483bf`) → `gate: FAIL ->
+  panic extraction (all targets) ratchet perf`; `fb6483bf` then cleared those two lanes for the
+  example (its claim; not re-gated here).
+
+The perf lane failed in every execution and never on the same group twice: `census/merge/schools_scan`
+6.57 %, 6.93 %, 8.78 %, 5.04 %, 7.07 %; `pipeline/merge/consolidate` 8.33 %; `pipeline/merge/scan`
+10.89 %; `census/parse/milesplit_roster` 7.85 % — while in the same runs many groups measured 3-8 %
+*faster* than the baseline. Every comparison printed the corpus and revision mismatch
+(`baseline=38530 current=88338`, baseline sha `0be3cfa…`). That comparison is `6yj.7`, not a
+per-commit regression. A final `pipeline:gate -- --release` at the settled revision remains owed once
+the example iteration stops.
+
 ### Location-qualified school identity (ADR-025, `tq18`) lands with the derived-generation store — 2026-10-06
 
 The `tq18` work was preserved out of the main checkout as `69293422` (11:25), merged with the landed
@@ -12823,4 +12848,44 @@ its `pub(crate)` visibility and passes the city argument, and the ADR register k
 - Debt measurement on this revision: the strict-clippy tally the ratchet consumes is empty and
   `xtask ratchet tools/quality-baseline.json` reports `ratchet: no metric grew`; `pipeline:fmt`,
   `pipeline:lint-src`, `pipeline:check` and the nine-check architecture contract pass.
+
+### Release gate on the landed tq18 revision, and the storage-ab example's policy lane — 2026-10-06
+
+`pipeline:gate -- --release` on `6c0ec4d8` (623 s) passed sixteen lanes: `fmt`, `zero code comments`,
+`architecture contract`, `check`, `doc`, `tests` (2571 passed, 3 skipped), `domain type integrity`,
+`domain purity`, `module seams`, `ratchet`, `deny`, `audit`, `machete`, `geiger`, `feature powerset`
+and `bench presence`. `panic extraction (all targets)` failed; a peer's concurrent gate run wrote to
+the same log and reported `fmt` and `perf` as its own failures, so that file carries two verdicts.
+`perf` remains the lane the blocked baseline in `6yj.7` explains.
+
+The failing lane is `cargo xtask panic-extraction && cargo clippy --workspace --all-targets
+--all-features -- -D warnings -D clippy::unwrap_used -D clippy::expect_used`. The extraction tool
+reports `unwrap-family or expect reference is forbidden` for any token containing `unwrap`, so the
+example's `unwrap_or` fallbacks failed the lane before clippy ran at all.
+
+`fb6483bf` clears that lane and the findings behind it. `Ord::max` and a variable divisor are
+`clippy::arithmetic_side_effects` errors in this toolchain, and the obvious `match` fallback for a
+fallible conversion is `clippy::manual_unwrap_or`, whose suggestion (`unwrap_or`) the token policy
+forbids. The example now takes value bytes by destructuring `u64::to_le_bytes`, carries one named
+length per arm (`EVIDENCE_VALUE_BYTES` 184, `DERIVED_VALUE_BYTES` 100), draws read ids from
+`ID_SPAN` 1_000, and rejects short row counts while parsing arguments.
+
+Checks on `fb6483bf`: `cargo fmt --all -- --check` clean; `cargo xtask panic-extraction` reports
+1606 Rust files and 3 rendered templates with no violations; the lane clippy exits 0; the
+`tools/gate.sh` debt lint set exits 0 on the example target; `xtask scan` reports no file over 300
+lines (298) and no function over 60 lines. `storage-ab -- --evidence-rows 2000 --derived-rows 4000
+--generations 2` completes both arms: A `insert=(1.518ms, 418000) write=(4.355ms, 1080000)
+remove=1.380ms reads=(162µs, 203µs) tree=67112421 rss_kb=8120`; B `insert=(954µs, 418000)
+write=(3.514ms, 1080000) remove=1.250ms reads=(151µs, 211µs) tree=67115332 rss_kb=8336`. Fixed
+lengths make the byte totals exact (209 bytes per evidence row, 135 per derived row).
+`--derived-rows 0` exits with `bad arguments: row counts and generations must be positive`.
+
+The full `pipeline:gate -- --release` on `fb6483bf` (575 s) passed every lane, `perf` included:
+`gate: PASS (debt ratchet holds)`, with `2571 tests run: 2571 passed, 3 skipped`. `fmt`, `zero code
+comments`, `architecture contract`, `check`, `doc`, `panic extraction (all targets)`, `domain type
+integrity`, `domain purity`, `module seams`, `ratchet`, `deny`, `audit`, `machete`, `geiger`,
+`feature powerset` and `bench presence` all report PASS, so the lane that failed on `6c0ec4d8` is
+clear on the landed revision. A peer's concurrent gate run wrote its own summary into the same log
+file; the PASS quoted here is the exit status of the gate launched on `fb6483bf`, whose log holds
+the lane verdicts above.
 
