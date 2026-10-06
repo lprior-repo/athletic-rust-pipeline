@@ -11629,3 +11629,47 @@ symlinked manifest, a one-level intermediate directory and a leaf
 earlier entry `§60 on the real store: backup, restore, integrity, and a full census read of the restored
 copy (2026-09-25)`; scenario 15's native interruption and corruption legs remain the operator obligation
 in `docs/NATIONAL-CENSUS-FAULTS.md`.
+
+## A drain closes admission for good, reaps started blocking effects and survives cancellation (`2yq`) — 2026-10-05
+
+Bead `2yq`. The production `Spawner` kept admitting work after a drain had started and detached started
+`spawn_blocking` closures at the grace deadline. The designed replacement and its regressions already
+existed on disk — `crates/census-service/src/spawn/drain.rs` and
+`crates/census-service/src/spawn/shutdown_tests.rs`, committed 2026-09-30 and 2026-10-03 — but
+`spawn.rs` declared neither module, so the crate compiled only the superseded inline drain and both
+regressions were invisible to every lane. `docs/OPERATIONS.md` already owns the intended semantics
+(async survivors are aborted and reaped; started blocking effects are awaited even beyond the deadline;
+cancelled drain callers retain the region for a subsequent drain; admission never reopens), which the
+inline implementation did not honour.
+
+**Fix.** `spawn.rs` now declares `mod drain;`, deletes the inline drain and the `take()` helper it used
+and carries what the module needs: `Region.closed`/`Region.aborting` plus a `tokio::sync::Mutex<()>`
+drain lock. `spawn` re-checks `closed` under the region lock after taking a permit, so a caller that won
+the race with a closing drain stages nothing; `push_blocking` reports that refusal, so `blocking(...)`
+returns `Outcome::Cancelled` without running the closure, while `admit` keeps the semaphore fast path
+and a closed region reports `SpawnError::RegionClosed`. `drain` closes permits and takes the region
+under one lock, holds the taken region in a drop guard that returns it when the caller is cancelled,
+aborts async survivors at the deadline and then joins every remaining task, so a started blocking
+closure is reaped — counted `timed_out`, not `completed` — before `drain` returns. Live tests that
+pinned the superseded semantics were corrected:
+`a_running_blocking_job_is_waited_for_and_counted_as_completed` now asserts `timed_out=1`,
+`remaining=0`, `completed=1`; `a_drain_closes_admission_for_good` replaces
+`a_task_started_after_a_drain_belongs_to_the_next_one`;
+`a_full_region_refuses_work_until_a_slot_frees` frees its slot by completion and folds in the former
+parking test (`a_full_region_parks_a_blocking_job_until_a_slot_frees`, deleted as duplicate).
+
+**Evidence.** Gate run 15 (`tools/gate.sh`, exit 0) covers this tree with every lane PASS: `tests`
+reports `2533 tests run: 2533 passed, 3 skipped` under `cargo nextest run --workspace --all-features`,
+which includes the two formerly orphaned regressions
+(`cancelling_drain_keeps_started_effect_owned_for_the_next_drain`,
+`shutdown_wakes_waiting_admission_without_running_its_effect`) and the `loom` region-ledger model that
+the all-features lane compiles.
+
+**Gate note.** Gate run 14 failed only on `geiger`: `cargo geiger` walks target `dep-info` and aborted
+with `Io(NotFound)` on `crates/census-store/tests/zz-probe-intermediate-symlinks.rs` — the throwaway
+probe deleted after the `06o` verification left `target/debug/deps/zz_probe_intermediate_symlinks-*` and
+`target/debug/incremental/zz_probe_intermediate_symlinks-*` behind. Removing those two path families
+restored the lane (`cargo geiger --all-features` exits 0); the `rand@0.10.2`/`valuable@0.1.1` "Failed to
+match" lines are non-fatal warnings and the `signal-hook-registry` parse warning is a geiger/syn
+limitation.
+

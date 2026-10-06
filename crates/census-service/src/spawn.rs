@@ -2,14 +2,13 @@ use std::future::Future;
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
-use std::time::Duration;
 
 use tokio::sync::{oneshot, watch, OwnedSemaphorePermit, Semaphore, TryAcquireError};
 use tokio::task::JoinSet;
 
 use crate::outcome::{DrainState, Outcome};
-use census_store::clock::{Clock, SystemClock};
 
+mod drain;
 mod ledger;
 use ledger::Ledger;
 
@@ -46,6 +45,8 @@ struct Region {
     tasks: JoinSet<()>,
     ledger: Ledger,
     blocking: Arc<AtomicUsize>,
+    closed: bool,
+    aborting: bool,
 }
 
 impl Region {
@@ -60,6 +61,7 @@ pub struct Spawner {
     capacity: usize,
     permits: Arc<Semaphore>,
     region: Mutex<Region>,
+    draining: tokio::sync::Mutex<()>,
     stopping: watch::Sender<bool>,
 }
 
@@ -80,6 +82,7 @@ impl Spawner {
             capacity: bound,
             permits: Arc::new(Semaphore::new(bound)),
             region: Mutex::new(Region::default()),
+            draining: tokio::sync::Mutex::new(()),
             stopping: watch::Sender::new(false),
         }
     }
@@ -94,7 +97,10 @@ impl Spawner {
                 tasks,
                 ledger: Ledger::holding(held),
                 blocking: Arc::new(AtomicUsize::new(0)),
+                closed: false,
+                aborting: false,
             }),
+            draining: tokio::sync::Mutex::new(()),
             stopping: watch::Sender::new(false),
         })
     }
@@ -110,6 +116,9 @@ impl Spawner {
     {
         let slot = self.admit()?;
         let mut region = self.lock();
+        if region.closed {
+            return Err(SpawnError::RegionClosed);
+        }
         region.reap_finished();
         region.tasks.spawn(holding_slot(slot, task));
         region.ledger.accept();
@@ -131,7 +140,7 @@ impl Spawner {
             return Outcome::Cancelled;
         };
         let (tx, rx) = oneshot::channel();
-        self.push_blocking(
+        if !self.push_blocking(
             move || match catch_unwind(AssertUnwindSafe(job)) {
                 Ok(result) => publish(tx, Completion::Returned(result)),
                 Err(payload) => {
@@ -140,53 +149,15 @@ impl Spawner {
                 }
             },
             slot,
-        );
+        ) {
+            return Outcome::Cancelled;
+        }
         match rx.await {
             Ok(Completion::Returned(Ok(value))) => Outcome::Ok(value),
             Ok(Completion::Returned(Err(error))) => Outcome::Err(error),
             Ok(Completion::Panicked) => Outcome::Panicked,
             Err(_) => Outcome::Cancelled,
         }
-    }
-
-    #[tracing::instrument(skip_all, fields(timeout = ?timeout))]
-    pub async fn drain(&self, timeout: Duration) -> Result<TaskReport, SpawnError> {
-        self.stopping.send_replace(true);
-        let mut region = self.take();
-        let deadline = SystemClock.now().checked_add(timeout);
-        while !region.tasks.is_empty() {
-            let joined = match deadline {
-                Some(deadline) => {
-                    match tokio::time::timeout_at(deadline, region.tasks.join_next()).await {
-                        Ok(joined) => joined,
-                        Err(_) => {
-                            let remaining = narrow(region.tasks.len())?;
-                            tracing::warn!(remaining, "drain deadline reached; aborting");
-                            region.ledger.note_deadline(remaining);
-                            region.tasks.abort_all();
-                            while region.tasks.len() > region.blocking.load(Ordering::Acquire) {
-                                match region.tasks.join_next().await {
-                                    Some(joined) => {
-                                        region
-                                            .ledger
-                                            .classify_reaped(DrainState::from_join(joined));
-                                    }
-                                    None => break,
-                                }
-                            }
-                            region.ledger.set_remaining(narrow(region.tasks.len())?);
-                            break;
-                        }
-                    }
-                }
-                None => region.tasks.join_next().await,
-            };
-            match joined {
-                Some(joined) => region.ledger.classify(DrainState::from_join(joined)),
-                None => break,
-            }
-        }
-        Ok(region.ledger.report())
     }
 
     fn admit(&self) -> Result<OwnedSemaphorePermit, SpawnError> {
@@ -206,11 +177,15 @@ impl Spawner {
         }
     }
 
-    fn push_blocking<F>(&self, job: F, slot: OwnedSemaphorePermit)
+    fn push_blocking<F>(&self, job: F, slot: OwnedSemaphorePermit) -> bool
     where
         F: FnOnce() + Send + 'static,
     {
         let mut region = self.lock();
+        if region.closed {
+            tracing::warn!("the task region is closed; the blocking job was not run");
+            return false;
+        }
         region.reap_finished();
         let blocking = Arc::clone(&region.blocking);
         blocking.fetch_add(1, Ordering::AcqRel);
@@ -220,15 +195,7 @@ impl Spawner {
             job();
         });
         region.ledger.accept();
-    }
-
-    fn take(&self) -> Region {
-        let mut region = self.lock();
-        Region {
-            tasks: std::mem::take(&mut region.tasks),
-            ledger: std::mem::take(&mut region.ledger),
-            blocking: Arc::clone(&region.blocking),
-        }
+        true
     }
 
     fn lock(&self) -> MutexGuard<'_, Region> {
@@ -267,5 +234,7 @@ fn publish<T, E>(tx: oneshot::Sender<Completion<T, E>>, completion: Completion<T
 
 #[cfg(all(feature = "loom", test))]
 mod loom_tests;
+#[cfg(test)]
+mod shutdown_tests;
 #[cfg(test)]
 mod tests;

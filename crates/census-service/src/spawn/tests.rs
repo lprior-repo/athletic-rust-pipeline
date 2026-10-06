@@ -1,4 +1,5 @@
 use std::future::pending;
+use std::time::Duration;
 
 use super::*;
 
@@ -103,14 +104,15 @@ fn a_running_blocking_job_is_waited_for_and_counted_as_completed() -> TestResult
             };
             let (outcome, counted) = tokio::join!(caller, draining);
             let counted = counted?;
+            check!(eq; counted.accepted, 1);
             check!(eq; counted.timed_out, 1, "the deadline found the job in flight");
             check!(eq;
-                counted.remaining, 1,
-                "a blocking job that ran past the deadline was never reaped"
+                counted.remaining, 0,
+                "the started blocking job was reaped before drain returned"
             );
             check!(eq;
-                counted.completed, 0,
-                "a job that did not finish inside the deadline is not counted as completed"
+                counted.completed, 1,
+                "a blocking job that started before the deadline runs to completion"
             );
             check!(eq; counted.aborted, 0);
             check!(eq; outcome, Outcome::Ok(1));
@@ -202,7 +204,7 @@ fn a_timeout_the_clock_cannot_represent_still_drains() -> TestResult {
 }
 
 #[test]
-fn a_task_started_after_a_drain_belongs_to_the_next_one() -> TestResult {
+fn a_drain_closes_admission_for_good() -> TestResult {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
@@ -210,10 +212,19 @@ fn a_task_started_after_a_drain_belongs_to_the_next_one() -> TestResult {
             let spawner = Spawner::new();
             let first = spawner.drain(Duration::from_secs(5)).await?;
             check!(eq; first.accepted, 0);
-            spawner.spawn(async {})?;
+            check!(matches!(
+                spawner.spawn(async {}),
+                Err(SpawnError::RegionClosed)
+            ));
+            check!(eq;
+                spawner.blocking(|| Ok::<u8, &'static str>(7)).await,
+                Outcome::Cancelled,
+                "a closed region runs no new blocking effect"
+            );
             let second = spawner.drain(Duration::from_secs(5)).await?;
-            check!(eq; second.accepted, 1);
-            check!(eq; second.completed, 1);
+            check!(eq; second.accepted, 0);
+            check!(eq; second.completed, 0);
+            check!(eq; second.timed_out, 0);
             Ok(())
         })
 }
@@ -248,17 +259,28 @@ fn a_full_region_refuses_work_until_a_slot_frees() -> TestResult {
         .build()?
         .block_on(async {
             let spawner = Spawner::with_capacity(1);
-            spawner.spawn(pending())?;
+            let (release, released) = oneshot::channel::<()>();
+            spawner.spawn(async move {
+                let _ = released.await;
+            })?;
             check!(matches!(
                 spawner.spawn(async {}),
                 Err(SpawnError::RegionFull { capacity: 1 })
             ));
-            let counted = spawner.drain(Duration::from_millis(1)).await?;
-            check!(eq; counted.timed_out, 1);
-            spawner.spawn(async {})?;
+            let mut parked = Box::pin(spawner.blocking(|| Ok::<u8, &'static str>(7)));
+            tokio::select! {
+                biased;
+                outcome = &mut parked => return Err(format!("a full region ran the job early: {outcome:?}").into()),
+                () = std::future::ready(()) => {}
+            }
+            let _ = release.send(());
+            let outcome = tokio::time::timeout(Duration::from_secs(5), &mut parked)
+                .await
+                .map_err(|_| "the freed slot did not admit the parked job")?;
+            check!(eq; outcome, Outcome::Ok(7));
             let counted = spawner.drain(Duration::from_secs(5)).await?;
-            check!(eq; counted.accepted, 1);
-            check!(eq; counted.completed, 1);
+            check!(eq; counted.accepted, 2);
+            check!(eq; counted.completed, 2);
             Ok(())
         })
 }
@@ -283,31 +305,6 @@ fn the_default_region_admits_its_capacity_and_refuses_the_next_task() -> TestRes
             check!(eq; counted.timed_out, capacity);
             check!(eq; counted.remaining, 0);
             check!(eq; counted.aborted, capacity);
-            Ok(())
-        })
-}
-
-#[test]
-fn a_full_region_parks_a_blocking_job_until_a_slot_frees() -> TestResult {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(async {
-            let spawner = Spawner::with_capacity(1);
-            spawner.spawn(pending())?;
-            let waited = tokio::time::timeout(
-                Duration::from_millis(50),
-                spawner.blocking(|| Ok::<u8, &'static str>(7)),
-            )
-            .await;
-            check!(
-                waited.is_err(),
-                "a full region parks a blocking job instead of running it early"
-            );
-            let counted = spawner.drain(Duration::from_millis(1)).await?;
-            check!(eq; counted.timed_out, 1);
-            let outcome = spawner.blocking(|| Ok::<u8, &'static str>(7)).await;
-            check!(eq; outcome, Outcome::Ok(7));
             Ok(())
         })
 }
