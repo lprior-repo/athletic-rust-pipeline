@@ -12802,3 +12802,25 @@ tq18 work); five working-tree files remained mid-edit at 11:45 (`census-store` `
 repair, `src/format/migrate/tests.rs`, `tests/derived_generations.rs`). Gates d/e are therefore not
 a post-landing certificate for those residue files, which must be re-gated after the writers stop.
 
+### Location-qualified school identity (ADR-025, `tq18`) lands with the derived-generation store — 2026-10-06
+
+The `tq18` work was preserved out of the main checkout as `69293422` (11:25), merged with the landed
+derived-generation storage `a2931062` as `9046ec16` (11:41), and completed by `82f90042` (example
+repair) and `f03f654a` (integration residue). Merge resolution: the census-store test helper keeps
+its `pub(crate)` visibility and passes the city argument, and the ADR register keeps 025 ahead of
+026.
+
+- Integration repair: three stranded `CanonicalSchool::new` call sites pass the city argument; the
+  `keyspace_ab` example is back inside the debt budgets — 428 → 299 lines, zero
+  `clippy::arithmetic_side_effects`/`as_conversions`/`indexing_slicing` findings, no function over
+  the one-page budget. Derived point reads now address the newest published generation instead of
+  generation 0, which never received rows, so the arm comparison measures hits.
+- `cargo xtask storage-ab -- --evidence-rows 2000 --derived-rows 4000 --generations 2` completes both
+  arms: `arm A insert=(1.202912ms, 367965) write=(4.186791ms, 1071606) remove=1.38529ms
+  reads=(167.589µs, 208.658µs) tree=67112421 rss_kb=7864`; `arm B insert=(1.041893ms, 367965)
+  write=(3.812983ms, 1071606) remove=1.321191ms reads=(155.149µs, 208.389µs) tree=67115332
+  rss_kb=8068`. These are smoke numbers at 5 % of the default row counts, not a layout verdict.
+- Debt measurement on this revision: the strict-clippy tally the ratchet consumes is empty and
+  `xtask ratchet tools/quality-baseline.json` reports `ratchet: no metric grew`; `pipeline:fmt`,
+  `pipeline:lint-src`, `pipeline:check` and the nine-check architecture contract pass.
+

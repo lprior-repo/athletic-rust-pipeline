@@ -1,6 +1,6 @@
 # ADR-025 — School identity is location-qualified; location disagreement is a retained conflict
 
-**Status:** Accepted (2026-10-06); implemented under `tq18`, gate green 2026-10-06, review and landing pending.
+**Status:** Accepted (2026-10-06); implemented under `tq18` and landed 2026-10-06 with the derived-generation storage integration (ADR-026).
 
 ## Context
 

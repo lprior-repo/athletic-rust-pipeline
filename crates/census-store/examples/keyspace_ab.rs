@@ -1,428 +1,299 @@
 use fjall::{Database, Keyspace, KeyspaceCreateOptions, OwnedWriteBatch, PersistMode, Readable};
 use std::env;
 use std::fs;
-use std::path::PathBuf;
+use std::path::Path;
 use std::process::ExitCode;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tempfile::tempdir;
 
-fn parse_args() -> Result<(u64, u64, u64, u64), String> {
-    let mut evidence_rows = 200000u64;
-    let mut derived_rows = 400000u64;
-    let mut generations = 4u64;
-    let mut seed = 1u64;
+const BATCH_ROWS: u64 = 25_000;
+const READ_SAMPLE: u64 = 1_000;
 
-    let mut args = env::args().skip(1);
-    while let Some(arg) = args.next() {
-        match arg.as_str() {
-            "--evidence-rows" => {
-                evidence_rows = match args.next().and_then(|s| s.parse().ok()) {
-                    Some(v) => v,
-                    None => return Err("bad --evidence-rows value".to_string()),
-                };
-            }
-            "--derived-rows" => {
-                derived_rows = match args.next().and_then(|s| s.parse().ok()) {
-                    Some(v) => v,
-                    None => return Err("bad --derived-rows value".to_string()),
-                };
-            }
-            "--generations" => {
-                generations = match args.next().and_then(|s| s.parse().ok()) {
-                    Some(v) => v,
-                    None => return Err("bad --generations value".to_string()),
-                };
-            }
-            "--seed" => {
-                seed = match args.next().and_then(|s| s.parse().ok()) {
-                    Some(v) => v,
-                    None => return Err("bad --seed value".to_string()),
-                };
-            }
-            _ => return Err(format!("unknown arg: {}", arg)),
+struct Args {
+    evidence_rows: u64,
+    derived_rows: u64,
+    generations: u64,
+    seed: u64,
+}
+
+#[derive(Clone, Copy)]
+struct Shape<'a> {
+    table: &'a str,
+    second: u64,
+    rows: u64,
+    base: u64,
+    span: u64,
+}
+
+impl Shape<'_> {
+    fn seeded(table: &str, rows: u64, base: u64, span: u64) -> Shape<'_> {
+        Shape {
+            table,
+            second: 0,
+            rows,
+            base,
+            span,
         }
     }
 
-    Ok((evidence_rows, derived_rows, generations, seed))
+    fn at(self, second: u64) -> Self {
+        Self { second, ..self }
+    }
+}
+
+fn fault(context: &str, error: impl std::fmt::Display) -> ExitCode {
+    eprintln!("{context}: {error}");
+    ExitCode::FAILURE
+}
+
+fn parse_args() -> Result<Args, String> {
+    let mut args = Args {
+        evidence_rows: 200_000,
+        derived_rows: 400_000,
+        generations: 4,
+        seed: 1,
+    };
+    let mut rest = env::args().skip(1);
+    while let Some(flag) = rest.next() {
+        match flag.as_str() {
+            "--evidence-rows" => args.evidence_rows = number(&mut rest, &flag)?,
+            "--derived-rows" => args.derived_rows = number(&mut rest, &flag)?,
+            "--generations" => args.generations = number(&mut rest, &flag)?,
+            "--seed" => args.seed = number(&mut rest, &flag)?,
+            other => return Err(format!("unknown arg: {other}")),
+        }
+    }
+    Ok(args)
+}
+
+fn number(rest: &mut impl Iterator<Item = String>, flag: &str) -> Result<u64, String> {
+    rest.next()
+        .and_then(|value| value.parse::<u64>().ok())
+        .ok_or_else(|| format!("bad value for {flag}"))
 }
 
 fn lcg(seed: u64) -> impl FnMut() -> u64 {
     let mut state = seed;
     move || {
         state = state
-            .wrapping_mul(6364136223846793005)
-            .wrapping_add(1442695040888963407);
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
         state
     }
 }
 
-fn make_evidence_value(rng: &mut impl FnMut() -> u64) -> Vec<u8> {
-    let len = 120 + (rng() % 80) as usize;
-    let mut buf = Vec::with_capacity(len);
-    for _ in 0..len {
-        buf.push((rng() % 90 + 33) as u8);
+fn body(rng: &mut impl FnMut() -> u64, base: u64, span: u64) -> Vec<u8> {
+    let length = rng().checked_rem(span).unwrap_or(0).saturating_add(base);
+    let mut value = Vec::new();
+    for _ in 0..length {
+        let code = rng().checked_rem(90).unwrap_or(0).saturating_add(33);
+        value.push(u8::try_from(code).unwrap_or(b'?'));
     }
-    buf
+    value
 }
 
-fn make_derived_value(rng: &mut impl FnMut() -> u64) -> Vec<u8> {
-    let len = 90 + (rng() % 20) as usize;
-    let mut buf = Vec::with_capacity(len);
-    for _ in 0..len {
-        buf.push((rng() % 90 + 33) as u8);
-    }
-    buf
-}
-
-fn build_evidence_key(table: &str, id: u64, seq: u64) -> Vec<u8> {
+fn keyed(table: &str, first: u64, second: u64) -> Vec<u8> {
     let mut key = table.as_bytes().to_vec();
     key.push(0);
-    key.extend_from_slice(&id.to_be_bytes());
+    key.extend_from_slice(&first.to_be_bytes());
     key.push(0);
-    key.extend_from_slice(&seq.to_be_bytes());
+    key.extend_from_slice(&second.to_be_bytes());
     key
 }
 
-fn build_derived_key(table: &str, gen: u64, id: u64) -> Vec<u8> {
-    let mut key = table.as_bytes().to_vec();
-    key.push(0);
-    key.extend_from_slice(&gen.to_be_bytes());
-    key.push(0);
-    key.extend_from_slice(&id.to_be_bytes());
-    key
-}
-
-fn open_db(path: &PathBuf) -> Result<Database, ExitCode> {
-    match Database::builder(path).open() {
-        Ok(db) => Ok(db),
-        Err(e) => {
-            eprintln!("open db error: {e}");
-            Err(ExitCode::FAILURE)
-        }
+fn open(path: &Path, names: &[&str]) -> Result<(Database, Vec<Keyspace>), ExitCode> {
+    let database = Database::builder(path)
+        .open()
+        .map_err(|error| fault("open db error", error))?;
+    let mut spaces = Vec::new();
+    for name in names {
+        let space = database
+            .keyspace(name, KeyspaceCreateOptions::default)
+            .map_err(|error| fault("open keyspace error", error))?;
+        spaces.push(space);
     }
+    Ok((database, spaces))
 }
 
-fn open_keyspace(db: &Database, name: &str) -> Result<Keyspace, ExitCode> {
-    match db.keyspace(name, KeyspaceCreateOptions::default) {
-        Ok(ks) => Ok(ks),
-        Err(e) => {
-            eprintln!("open keyspace error: {e}");
-            Err(ExitCode::FAILURE)
-        }
+fn persist(database: &Database) -> Result<(), ExitCode> {
+    database
+        .persist(PersistMode::SyncAll)
+        .map_err(|error| fault("persist error", error))
+}
+
+fn flush(
+    database: &Database,
+    batch: OwnedWriteBatch,
+    index: u64,
+    rows: u64,
+) -> Result<OwnedWriteBatch, ExitCode> {
+    let done = index.saturating_add(1);
+    if done.checked_rem(BATCH_ROWS).unwrap_or(1) != 0 && done < rows {
+        return Ok(batch);
     }
+    batch
+        .commit()
+        .map_err(|error| fault("batch commit error", error))?;
+    Ok(database.batch())
 }
 
-fn read_peak_rss_kb() -> u64 {
-    match fs::read_to_string("/proc/self/status") {
-        Ok(content) => {
-            for line in content.lines() {
-                if line.starts_with("VmHWM:") {
-                    let parts: Vec<&str> = line.split_whitespace().collect();
-                    if parts.len() >= 2 {
-                        if let Ok(val) = parts[1].parse::<u64>() {
-                            return val;
-                        }
-                    }
-                }
-            }
-            0
-        }
-        Err(_) => 0,
-    }
-}
-
-fn measure_evidence_insert(
-    db: &Database,
-    ks: &Keyspace,
+fn stream_rows(
+    database: &Database,
+    space: &Keyspace,
     rng: &mut impl FnMut() -> u64,
-    count: u64,
+    shape: Shape<'_>,
+    writing: bool,
 ) -> Result<(Duration, u64), ExitCode> {
-    let batch_size = 25000u64;
-    let mut total_bytes = 0u64;
-    let start = std::time::Instant::now();
-
-    let mut batch: OwnedWriteBatch = db.batch();
-    for i in 0..count {
-        let key = build_evidence_key("schools", i, 0);
-        let value = make_evidence_value(rng);
-        total_bytes += (key.len() + value.len()) as u64;
-        batch.insert(ks, key, value);
-        if (i + 1) % batch_size == 0 || i + 1 == count {
-            match batch.commit() {
-                Ok(()) => {}
-                Err(e) => {
-                    eprintln!("evidence batch commit error: {e}");
-                    return Err(ExitCode::FAILURE);
-                }
-            }
-            batch = db.batch();
-        }
-    }
-
-    match db.persist(PersistMode::SyncAll) {
-        Ok(()) => {}
-        Err(e) => {
-            eprintln!("persist error: {e}");
-            return Err(ExitCode::FAILURE);
-        }
-    }
-
-    Ok((start.elapsed(), total_bytes))
-}
-
-fn measure_derived_generation(
-    db: &Database,
-    ks: &Keyspace,
-    rng: &mut impl FnMut() -> u64,
-    gen: u64,
-    prev_gen: Option<u64>,
-    count: u64,
-) -> Result<(Duration, Duration, u64), ExitCode> {
-    let batch_size = 25000u64;
-    let mut write_bytes = 0u64;
-
-    let write_start = std::time::Instant::now();
-    let mut write_batch: OwnedWriteBatch = db.batch();
-    for i in 0..count {
-        let key = build_derived_key("source_identities", gen, i);
-        let value = make_derived_value(rng);
-        write_bytes += (key.len() + value.len()) as u64;
-        write_batch.insert(ks, key, value);
-        if (i + 1) % batch_size == 0 || i + 1 == count {
-            match write_batch.commit() {
-                Ok(()) => {}
-                Err(e) => {
-                    eprintln!("derived write batch error: {e}");
-                    return Err(ExitCode::FAILURE);
-                }
-            }
-            write_batch = db.batch();
-        }
-    }
-    let write_elapsed = write_start.elapsed();
-
-    match db.persist(PersistMode::SyncAll) {
-        Ok(()) => {}
-        Err(e) => {
-            eprintln!("persist error: {e}");
-            return Err(ExitCode::FAILURE);
-        }
-    }
-
-    let delete_elapsed = if let Some(prev) = prev_gen {
-        let del_start = std::time::Instant::now();
-        let mut del_batch: OwnedWriteBatch = db.batch();
-        for i in 0..count {
-            let key = build_derived_key("source_identities", prev, i);
-            del_batch.remove(ks, key);
-            if (i + 1) % batch_size == 0 || i + 1 == count {
-                match del_batch.commit() {
-                    Ok(()) => {}
-                    Err(e) => {
-                        eprintln!("derived delete batch error: {e}");
-                        return Err(ExitCode::FAILURE);
-                    }
-                }
-                del_batch = db.batch();
-            }
-        }
-        let elapsed = del_start.elapsed();
-        match db.persist(PersistMode::SyncAll) {
-            Ok(()) => {}
-            Err(e) => {
-                eprintln!("persist error: {e}");
-                return Err(ExitCode::FAILURE);
-            }
-        }
-        elapsed
-    } else {
-        Duration::from_nanos(0)
-    };
-
-    Ok((write_elapsed, delete_elapsed, write_bytes))
-}
-
-fn measure_point_reads(
-    db: &Database,
-    ks: &Keyspace,
-    rng: &mut impl FnMut() -> u64,
-    table: &str,
-    is_evidence: bool,
-    sample_size: u64,
-) -> Result<Duration, ExitCode> {
-    let snap = db.snapshot();
-
-    let start = std::time::Instant::now();
-    for _ in 0..sample_size {
-        let id = rng();
-        let key = if is_evidence {
-            build_evidence_key(table, id, 0)
+    let start = Instant::now();
+    let mut bytes = 0_u64;
+    let mut batch = database.batch();
+    for index in 0..shape.rows {
+        let held = if writing {
+            let key = keyed(shape.table, index, shape.second);
+            let value = body(rng, shape.base, shape.span);
+            let held = key.len().saturating_add(value.len());
+            batch.insert(space, key, value);
+            held
         } else {
-            build_derived_key(table, 0, id)
+            batch.remove(space, keyed(shape.table, shape.second, index));
+            0
         };
-        match snap.get(ks, key) {
-            Ok(_) => {}
-            Err(e) => {
-                eprintln!("read error: {e}");
-                return Err(ExitCode::FAILURE);
-            }
-        }
+        bytes = bytes.saturating_add(u64::try_from(held).unwrap_or(u64::MAX));
+        batch = flush(database, batch, index, shape.rows)?;
     }
-    drop(snap);
-
-    Ok(start.elapsed())
+    persist(database)?;
+    Ok((start.elapsed(), bytes))
 }
 
-fn dir_size(path: &PathBuf) -> u64 {
-    let mut total = 0u64;
+fn point_reads(
+    database: &Database,
+    space: &Keyspace,
+    rng: &mut impl FnMut() -> u64,
+    shape: Shape<'_>,
+) -> Result<Duration, ExitCode> {
+    let snapshot = database.snapshot();
+    let start = Instant::now();
+    for _ in 0..READ_SAMPLE {
+        let id = rng().checked_rem(shape.rows).unwrap_or(0);
+        if let Err(error) = snapshot.get(space, keyed(shape.table, shape.second, id)) {
+            return Err(fault("read error", error));
+        }
+    }
+    let elapsed = start.elapsed();
+    drop(snapshot);
+    Ok(elapsed)
+}
+
+fn tree_bytes(path: &Path) -> u64 {
+    let mut total = 0_u64;
     if let Ok(entries) = fs::read_dir(path) {
-        for e in entries.flatten() {
-            let meta = match e.metadata() {
-                Ok(m) => m,
-                Err(_) => continue,
+        for entry in entries.flatten() {
+            let Ok(metadata) = entry.metadata() else {
+                continue;
             };
-            if meta.is_file() {
-                total += meta.len();
+            let held = if metadata.is_file() {
+                metadata.len()
             } else {
-                total += dir_size(&e.path());
-            }
+                tree_bytes(&entry.path())
+            };
+            total = total.saturating_add(held);
         }
     }
     total
 }
 
-fn run_arm(
-    arm: &str,
-    split: bool,
-    evidence_rows: u64,
-    derived_rows: u64,
-    generations: u64,
-    seed: u64,
-) -> Result<ExitCode, ExitCode> {
-    let tmpdir = match tempdir() {
-        Ok(d) => d,
-        Err(e) => {
-            eprintln!("tempdir error: {e}");
-            return Err(ExitCode::FAILURE);
-        }
-    };
+fn peak_rss_kb() -> Option<u64> {
+    let text = fs::read_to_string("/proc/self/status").ok()?;
+    let line = text.lines().find(|line| line.starts_with("VmHWM:"))?;
+    line.split_whitespace().nth(1)?.parse::<u64>().ok()
+}
 
-    let db = open_db(&tmpdir.path().to_path_buf())?;
-
-    let entities = open_keyspace(&db, "entities")?;
-
-    let (evidence, derived) = if split {
-        let ev = open_keyspace(&db, "evidence")?;
-        let dr = open_keyspace(&db, "derived")?;
-        (ev, dr)
-    } else {
-        (entities.clone(), entities)
-    };
-
-    let mut rng = lcg(seed);
-
-    let (ev_insert_time, ev_bytes) =
-        measure_evidence_insert(&db, &evidence, &mut rng, evidence_rows)?;
-
-    let mut total_derive_write = Duration::from_nanos(0);
-    let mut total_derive_delete = Duration::from_nanos(0);
-    let mut total_derive_bytes = 0u64;
-    for gen in 1..=generations {
-        let prev = if gen > 1 { Some(gen - 1) } else { None };
-        match measure_derived_generation(&db, &derived, &mut rng, gen, prev, derived_rows) {
-            Ok((write_t, del_t, bytes)) => {
-                total_derive_write += write_t;
-                total_derive_delete += del_t;
-                total_derive_bytes += bytes;
-            }
-            Err(e) => return Err(e),
+fn arm_metrics(
+    name: &str,
+    database: &Database,
+    evidence: &Keyspace,
+    derived: &Keyspace,
+    rng: &mut impl FnMut() -> u64,
+    args: &Args,
+    path: &Path,
+) -> Result<(), ExitCode> {
+    let evidence_shape = Shape::seeded("schools", args.evidence_rows, 120, 80);
+    let derived_shape = Shape::seeded("source_identities", args.derived_rows, 90, 20);
+    let insert = stream_rows(database, evidence, rng, evidence_shape, true)?;
+    let mut write = (Duration::ZERO, 0_u64);
+    let mut remove = Duration::ZERO;
+    for generation in 1..=args.generations {
+        let (duration, bytes) =
+            stream_rows(database, derived, rng, derived_shape.at(generation), true)?;
+        write = (
+            write.0.saturating_add(duration),
+            write.1.saturating_add(bytes),
+        );
+        if generation > 1 {
+            let previous = derived_shape.at(generation.saturating_sub(1));
+            remove = remove.saturating_add(stream_rows(database, derived, rng, previous, false)?.0);
         }
     }
+    let reads = (
+        point_reads(database, evidence, rng, evidence_shape)?,
+        point_reads(database, derived, rng, derived_shape.at(args.generations))?,
+    );
+    println!(
+        "arm {name}: insert={:?} write={:?} remove={:?} reads={:?} tree={} rss_kb={:?}",
+        insert,
+        write,
+        remove,
+        reads,
+        tree_bytes(path),
+        peak_rss_kb()
+    );
+    Ok(())
+}
 
-    let avg_derive_write = total_derive_write / generations as u32;
-    let avg_derive_delete = if generations > 1 {
-        total_derive_delete / (generations as u32 - 1)
+fn run_arm(name: &str, split: bool, args: &Args) -> Result<(), ExitCode> {
+    let directory = tempdir().map_err(|error| fault("tempdir error", error))?;
+    let layout: &[&str] = if split {
+        &["evidence", "derived"]
     } else {
-        Duration::from_nanos(0)
+        &["entities"]
     };
-
-    let read_sample = 1000u64;
-    let ev_read_time = measure_point_reads(&db, &evidence, &mut rng, "schools", true, read_sample)?;
-    let dr_read_time = measure_point_reads(
-        &db,
+    let (database, mut spaces) = open(directory.path(), layout)?;
+    let derived = spaces.pop().ok_or(ExitCode::FAILURE)?;
+    let evidence = if split {
+        spaces.pop().ok_or(ExitCode::FAILURE)?
+    } else {
+        derived.clone()
+    };
+    let mut rng = lcg(args.seed);
+    arm_metrics(
+        name,
+        &database,
+        &evidence,
         &derived,
         &mut rng,
-        "source_identities",
-        false,
-        read_sample,
-    )?;
-
-    let ev_read_per_1k = ev_read_time;
-    let dr_read_per_1k = dr_read_time;
-
-    match db.persist(PersistMode::SyncAll) {
-        Ok(()) => {}
-        Err(e) => {
-            eprintln!("db persist error: {e}");
-            return Err(ExitCode::FAILURE);
-        }
-    }
-
-    let disk_bytes = dir_size(&tmpdir.path().to_path_buf());
-    let peak_rss = read_peak_rss_kb();
-
-    let ev_insert_ms = ev_insert_time.as_millis() as u64;
-    let dr_rebuild_ms = avg_derive_write.as_millis() as u64;
-    let dr_delete_ms = avg_derive_delete.as_millis() as u64;
-    let ev_read_us = ev_read_per_1k.as_micros() as u64;
-    let dr_read_us = dr_read_per_1k.as_micros() as u64;
-
-    println!("arm={arm}\tmetric=evidence_insert_ms\tvalue={ev_insert_ms}");
-    println!("arm={arm}\tmetric=derived_rebuild_ms_per_generation\tvalue={dr_rebuild_ms}");
-    println!("arm={arm}\tmetric=derive_delete_ms\tvalue={dr_delete_ms}");
-    println!("arm={arm}\tmetric=evidence_point_read_us_per_1k\tvalue={ev_read_us}");
-    println!("arm={arm}\tmetric=derived_point_read_us_per_1k\tvalue={dr_read_us}");
-    println!("arm={arm}\tmetric=evidence_bytes_on_disk\tvalue={ev_bytes}");
-    println!("arm={arm}\tmetric=derived_bytes_on_disk\tvalue={total_derive_bytes}");
-    println!("arm={arm}\tmetric=total_bytes_on_disk\tvalue={disk_bytes}");
-    println!("arm={arm}\tmetric=peak_rss_kb\tvalue={peak_rss}");
-
-    Ok(ExitCode::SUCCESS)
+        args,
+        directory.path(),
+    )
 }
 
 fn main() -> ExitCode {
-    let (evidence_rows, derived_rows, generations, seed) = match parse_args() {
-        Ok(v) => v,
-        Err(msg) => {
+    let args = match parse_args() {
+        Ok(args) => args,
+        Err(message) => {
             eprintln!("usage: keyspace_ab [--evidence-rows N] [--derived-rows N] [--generations N] [--seed N]");
-            eprintln!("error: {msg}");
+            eprintln!("error: {message}");
             return ExitCode::FAILURE;
         }
     };
-
-    println!("keyspace-ab benchmark");
-    println!("evidence_rows={evidence_rows}");
-    println!("derived_rows={derived_rows}");
-    println!("generations={generations}");
-    println!("seed={seed}");
-
-    let exit_a = match run_arm("A", false, evidence_rows, derived_rows, generations, seed) {
-        Ok(c) => c,
-        Err(c) => c,
-    };
-    if exit_a == ExitCode::FAILURE {
-        return ExitCode::FAILURE;
+    println!("keyspace-ab benchmark evidence_rows={}", args.evidence_rows);
+    println!("derived_rows={}", args.derived_rows);
+    println!("generations={}", args.generations);
+    println!("seed={}", args.seed);
+    for (name, split) in [("A", false), ("B", true)] {
+        if let Err(code) = run_arm(name, split, &args) {
+            return code;
+        }
     }
-
-    let exit_b = match run_arm("B", true, evidence_rows, derived_rows, generations, seed) {
-        Ok(c) => c,
-        Err(c) => c,
-    };
-    if exit_b == ExitCode::FAILURE {
-        return ExitCode::FAILURE;
-    }
-
     println!("verdict=comparison complete; inspect per-arm metrics above");
-
     ExitCode::SUCCESS
 }
