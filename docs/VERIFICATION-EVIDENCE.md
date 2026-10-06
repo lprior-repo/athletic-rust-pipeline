@@ -12774,3 +12774,31 @@ the tq18 slice; the merge bench's cross-city batch was replaced with one city pe
 [Location-qualified school identity](#location-qualified-school-identity-adr-025--tq18--2026-10-06)
 for the remaining baseline caveat.
 
+### Post-landing release gates — 2026-10-06 11:19–11:45
+
+Two further `env -u CI tools/moon-local run pipeline:gate -- --release` executions after those fixes:
+
+- `var/release-gate-20261006d.log` (671 s) → `gate: FAIL -> perf` only. Every other lane passes,
+  including the test lane (`Summary [38.602 s] 2549 tests run: 2549 passed, 3 skipped`), `fmt`,
+  panic extraction, ratchet, domain purity, deny/audit, machete, geiger and the feature powerset.
+  The run began on the pre-landing dirty tree and its perf lane read `current sha: 69293422`.
+- `var/release-gate-20261006e.log` (767 s) → `gate: FAIL -> perf` only, `current sha: 9046ec16`;
+  this run straddled the 11:41 "Merge main (derived generations, ADR-026) into the preserved tq18
+  work" commit.
+
+The single red lane is `perf`, and no one group owns it: the over-5 % verdict moves between
+executions — `census/merge/schools_scan` 6.57 % (d run 1), 6.93 % (d run 2), 8.78 % (the same day's
+standalone check), then `pipeline/merge/consolidate` 8.33 % (e) while `schools_scan` passed at
+3.82 %. Every comparison runs against `tools/perf-baseline.json` while the harness itself prints
+`Environment differences detected (comparison may be invalid): Corpus size mismatch: baseline=38530
+current=88338` with a different baseline sha, and the failing threshold is the documented default
+5 % tolerance. That baseline provenance is the blocked P1 `6yj.7` (approve a new comparable typed
+baseline with hardware, RSS, units, exact commands and threshold provenance), not an ADR-025
+regression. Both runs repeat `GNU time is absent; peak RSS is unavailable, not zero`.
+
+Landing during the same window: `a2931062` 11:15 (publish derived state by generation, ADR-026),
+`69293422` 11:25 (preserve unlanded main-checkout work), `9046ec16` 11:41 (merge into the preserved
+tq18 work); five working-tree files remained mid-edit at 11:45 (`census-store` `keyspace_ab` example
+repair, `src/format/migrate/tests.rs`, `tests/derived_generations.rs`). Gates d/e are therefore not
+a post-landing certificate for those residue files, which must be re-gated after the writers stop.
+

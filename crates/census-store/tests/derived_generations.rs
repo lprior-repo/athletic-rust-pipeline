@@ -247,6 +247,7 @@ fn a_generation_staged_against_moved_evidence_is_refused() -> TestResult {
         UsJurisdiction::Wisconsin,
         "Moved Evidence School",
         normalize_name("Moved Evidence School"),
+        None,
     )
     .0;
     let base_evidence = store.evidence_generation();
@@ -556,6 +557,7 @@ fn staging_refuses_tables_that_are_not_generation_partitioned() -> TestResult {
         UsJurisdiction::Wisconsin,
         "Unpartitioned School",
         normalize_name("Unpartitioned School"),
+        None,
     )
     .0;
     let mut stage = store.stage_derived()?;

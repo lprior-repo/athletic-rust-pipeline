@@ -18,6 +18,7 @@ fn school(name: &str) -> CanonicalSchool {
         UsJurisdiction::Wisconsin,
         name,
         census_domain::model::normalize_name(name),
+        None,
     )
     .0
 }
