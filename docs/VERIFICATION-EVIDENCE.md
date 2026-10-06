@@ -11673,3 +11673,52 @@ restored the lane (`cargo geiger --all-features` exits 0); the `rand@0.10.2`/`va
 match" lines are non-fatal warnings and the `signal-hook-registry` parse warning is a geiger/syn
 limitation.
 
+## Source reachability installed as architecture contract check 9 — 2026-10-05
+
+The spawn/drain entry above is the case this check exists for: `spawn/drain.rs` and its two
+regressions were committed, compiled by nothing and reported by no lane, because `spawn.rs` declared
+no module for them. The contract now proves the general property instead of relying on review: every
+Rust file under a workspace member is either a `cargo metadata` target root (library, binary, test,
+example, bench, `build.rs`) or is declared by a `mod` declaration that resolves to it.
+
+**Mechanics.** `xtask/src/contract/reach.rs` owns orchestration, declaration parsing and path
+resolution; `xtask/src/contract/reach/walk.rs` owns traversal; `xtask/src/contract/reach/tests.rs` and
+`xtask/src/scan/packages/tests.rs` cover them. Lines are masked with the shared `CodeMask`, so strings,
+comments and `format!` templates cannot declare modules. Declarations resolve as rustc resolves them
+(`dir/name.rs`, `dir/name/mod.rs`, the declaring file's own directory for `mod.rs` and non-root files),
+honour `#[path = "…"]`, and track inline `mod name { … }` braces so nested declarations resolve under
+the inline directory; the walk follows candidates to a fixpoint and reports every unreached file one
+per line. `scan::targets_in` reads target `src_path`s from `cargo metadata`, so untracked and
+gitignored targets are measured exactly as cargo sees them. The check fails closed when the walk reads
+no file at all, so a broken walk cannot pass as a clean tree.
+
+**Evidence — red/green.** Planting `crates/census-store/src/planted_orphan.rs` made
+`cargo xtask contract` exit non-zero with exactly
+`crates/census-store/src/planted_orphan.rs is not a target root and no module declares it`; deleting it
+restored `contract: PASS (0 known deviation(s))`. Unit tests cover masked declarations, `#[path]`
+across lines and blocks, root/`mod.rs` directory rules, relative `#[path]` escapes, inline-module
+nesting, and target-path dedup.
+
+**Evidence — live tree.** The check's first runs flagged real undeclared files being written right now
+(`crates/census-store/src/legacy.rs`, `legacy_tests.rs`, `tests/legacy_import.rs`) — the failure mode it
+was added to prevent, caught on a live writer rather than in a fixture. Those files belong to another
+writer and are not part of this change.
+
+**Evidence — gate.** Gate run 18 with `TMPDIR` on the root filesystem: every lane PASS except
+`architecture contract`, whose only violations are the three in-flight files above — `fmt`, zero code
+comments, `check`, `doc`, `tests` (2539 run, 2539 passed, 3 skipped, all features), `panic extraction`
+(1596 Rust files, 3 templates, no violation), strict clippy, production scan, domain type integrity,
+domain purity, module seams, debt ratchet (`no metric grew`; files over 300 lines 0, functions over 60
+lines 0), `deny`, `audit`, `machete`, `geiger`, `feature powerset`, `bench presence`.
+
+**Corrections the gate found, not review.** The first cut put `reach.rs` at 378 lines (over the
+300-line file budget), one 93-line `source_reachability` (over the 60-line function budget) and two
+`unwrap`-family tokens, which the panic-extraction lane rejects lexically (`unwrap_or_default` in the
+module-directory walk and in the declaration parser). The file is now split three ways, every function
+is within 60 logical lines, and both sites use `map_or`. Gate 17 failed `tests`, `panic extraction` and
+`ratchet` for exactly those reasons; it also showed the `/tmp` failures were not code — the per-user
+quota is exhausted by other sessions' artifacts (Alacritty scrollback logs, `d8l-backup`,
+`geiger-probe`, probe stores), so Fjall journal writes fail `QuotaExceeded`. The 15 census-store backup
+tests and the exporter kill/restart test pass with `TMPDIR` redirected, and gate 18 ran with
+`TMPDIR=/home/lewis/.cache/gate-tmp`.
+

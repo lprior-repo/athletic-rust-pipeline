@@ -160,3 +160,27 @@ fn files_that_name_themselves_tests_are_not_scanned() -> TestResult {
     fixture.close()?;
     Ok(())
 }
+
+#[test]
+fn every_declared_target_path_is_listed_once_and_nothing_else_is() -> TestResult {
+    let metadata = r#"{
+        "packages": [
+            {"name": "one", "manifest_path": "/repo/one/Cargo.toml", "targets": [
+                {"kind": ["lib"], "src_path": "/repo/one/src/lib.rs"},
+                {"kind": ["bin"], "src_path": "/repo/one/src/g1/main.rs"},
+                {"kind": ["bin"], "src_path": "/repo/one/src/g1/main.rs"},
+                {"kind": ["test"], "kind_note": 7}
+            ]},
+            {"name": "two", "manifest_path": "/repo/two/Cargo.toml", "targets": []},
+            {"name": "three", "manifest_path": "/repo/three/Cargo.toml"}
+        ]
+    }"#;
+    check!(eq;
+        targets_in(metadata)?,
+        vec![
+            PathBuf::from("/repo/one/src/g1/main.rs"),
+            PathBuf::from("/repo/one/src/lib.rs"),
+        ]
+    );
+    Ok(())
+}

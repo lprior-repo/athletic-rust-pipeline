@@ -14,7 +14,7 @@ Do not invoke Cargo, bare Moon, `tools/gate.sh` or fault/backup wrappers directl
 | `scan` | Production forbidden-construct and size measurements for workspace members, discovered with Cargo metadata; JSON |
 | `comments` | Lexical no-comments check over project Rust, including tests/examples/benches/fuzz; strings are data |
 | `panic-extraction [--root <dir>]` | Fatal owned-Rust lexical extraction and suppression check, including cfg-disabled proofs and three rendered source templates; captured literals are data |
-| `contract` | Eight architecture checks, including scope, transports, retry ceilings, Python artifacts, admission, scan parity, front-door documents and adapter registration |
+| `contract` | Nine architecture checks, including scope, transports, retry ceilings, Python artifacts, admission, scan parity, front-door documents, adapter registration and source reachability |
 | `seams` | Checks both module and sibling-crate allowed-edge tables; JSON and failing status on violation |
 | `integrity` | Domain type-integrity review candidates; JSON, not proof that types enforce their contracts |
 | `domain-purity` | Checks `census-domain` normal dependency tree for banned runtime/I/O dependencies |

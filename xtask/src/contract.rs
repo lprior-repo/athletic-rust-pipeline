@@ -2,6 +2,7 @@ use anyhow::Result;
 
 mod checks;
 mod docs;
+mod reach;
 mod registry;
 mod tree;
 

@@ -64,6 +64,30 @@ pub(crate) fn members_in(metadata: &str) -> Result<Vec<Member>> {
     Ok(members)
 }
 
+pub(crate) fn targets_in(metadata: &str) -> Result<Vec<PathBuf>> {
+    let document: Value =
+        serde_json::from_str(metadata).context("parsing `cargo metadata` output as JSON")?;
+    let listed = document
+        .get("packages")
+        .and_then(Value::as_array)
+        .context("`cargo metadata` output has no `packages` array")?;
+    let mut targets: Vec<PathBuf> = Vec::new();
+    for entry in listed {
+        let Some(declared) = entry.get("targets").and_then(Value::as_array) else {
+            continue;
+        };
+        for target in declared {
+            let Some(path) = target.get("src_path").and_then(Value::as_str) else {
+                continue;
+            };
+            targets.push(PathBuf::from(path));
+        }
+    }
+    targets.sort();
+    targets.dedup();
+    Ok(targets)
+}
+
 pub(crate) fn first_party(members: &[Member], root: &Path) -> Vec<Package> {
     members
         .iter()

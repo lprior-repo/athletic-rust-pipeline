@@ -1,5 +1,5 @@
 pub(crate) mod counts;
-mod mask;
+pub(crate) mod mask;
 mod packages;
 pub(crate) mod rules;
 
@@ -14,7 +14,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 pub(crate) use counts::is_test_file;
-pub(crate) use packages::members;
+pub(crate) use packages::{members, members_in, targets_in, Member};
 pub(crate) use rules::{compile, Rules};
 
 pub(crate) struct SourceFile {

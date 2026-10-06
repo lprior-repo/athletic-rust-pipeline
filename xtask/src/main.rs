@@ -98,7 +98,7 @@ enum Command {
         root: Option<PathBuf>,
     },
     #[command(
-        about = "Assert the architectural constants other work relies on: one line per check, non-zero exit when any of the eight is violated"
+        about = "Assert the architectural constants other work relies on: one line per check, non-zero exit when any check is violated"
     )]
     Contract,
     #[command(
