@@ -5,6 +5,9 @@
 .beads-credential-key
 .beads/proxieddb/
 
+# Planner-generated bead validation schemas: regenerated per bead from the planner session.
+.beads/schemas/
+
 # Build and run artifacts: the Rust target trees and the census store/export roots
 /target/
 /fuzz/target/
