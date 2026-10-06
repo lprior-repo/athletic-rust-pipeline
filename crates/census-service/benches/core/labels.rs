@@ -87,7 +87,7 @@ impl Corpus {
 fn snapshot() -> Vec<CanonicalSchool> {
     SCHOOLS
         .iter()
-        .map(|(state, name)| CanonicalSchool::new(*state, *name, normalize_name(name)).0)
+        .map(|(state, name)| CanonicalSchool::new(*state, *name, normalize_name(name), None).0)
         .collect()
 }
 
@@ -95,7 +95,7 @@ fn labels() -> Vec<LabelCase> {
     let mut lcg = Lcg::seeded(SEED);
     let mut cases = Vec::new();
     for (state, name) in SCHOOLS {
-        let (_, id) = CanonicalSchool::new(state, name, normalize_name(name));
+        let (_, id) = CanonicalSchool::new(state, name, normalize_name(name), None);
         for label in spellings(name) {
             resolved(&mut cases, state, label, &id, SchoolMatch::Exact);
         }

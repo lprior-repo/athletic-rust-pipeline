@@ -48,8 +48,8 @@ pub fn parse_nsaa_school(
         UsJurisdiction::Nebraska,
         &school.name,
         normalize_name(&school.name),
+        school.city.as_deref(),
     );
-    canonical.city = school.city.clone();
     canonical.enrollment = school.enrollment;
     canonical.school_website = school.homepage.clone();
     canonical.association = Some(NSAA_ADAPTER_ID.to_string());

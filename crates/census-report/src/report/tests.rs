@@ -26,7 +26,7 @@ fn core_scope_keeps_only_non_athletic_net_evidence() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     let (school, school_id) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford", None);
     store.append(Table::Schools, &school)?;
 
     let mut mirrored = CanonicalAthlete::new(
@@ -82,7 +82,7 @@ fn census_counts_class_of_2027_with_evidence() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     let (school, school_id) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford", None);
     store.append(Table::Schools, &school)?;
     let mut athlete = CanonicalAthlete::new(
         &school_id,
@@ -127,7 +127,7 @@ fn census_reads_merged_observations_without_consolidating() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     let (school, school_id) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford", None);
     store.append(Table::Schools, &school)?;
     let athlete = CanonicalAthlete::new(
         &school_id,
@@ -163,7 +163,8 @@ fn every_jurisdiction_publishes_a_by_state_row() -> TestResult {
         .values()
         .all(|row| row.schools == 0 && row.athletes == 0));
 
-    let (school, _school_id) = CanonicalSchool::new(UsJurisdiction::Wyoming, "Laramie", "laramie");
+    let (school, _school_id) =
+        CanonicalSchool::new(UsJurisdiction::Wyoming, "Laramie", "laramie", None);
     store.append(Table::Schools, &school)?;
     let census = census_of(&store, Scope::AllSources)?;
     check!(eq; census.by_state.len(), expected);
@@ -186,9 +187,13 @@ fn out_of_scope_jurisdiction_is_named_in_notes_not_counted() -> TestResult {
     let store = Store::open(dir.path())?;
 
     let (in_scope, in_scope_id) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
-    let (out_of_scope, out_of_scope_id) =
-        CanonicalSchool::new(UsJurisdiction::Hawaii, "Honolulu Prep", "honolulu-prep");
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford", None);
+    let (out_of_scope, out_of_scope_id) = CanonicalSchool::new(
+        UsJurisdiction::Hawaii,
+        "Honolulu Prep",
+        "honolulu-prep",
+        None,
+    );
     store.append(Table::Schools, &in_scope)?;
     store.append(Table::Schools, &out_of_scope)?;
     let in_scope_athlete = CanonicalAthlete::new(

@@ -83,15 +83,16 @@ fn map_school(
         .name()
         .ok_or_else(|| parse::artifact("detail has no school name"))?
         .as_str();
-    let (mut school, _) =
-        CanonicalSchool::new(UsJurisdiction::Tennessee, name, normalize_name(name));
+    let (mut school, _) = CanonicalSchool::new(
+        UsJurisdiction::Tennessee,
+        name,
+        normalize_name(name),
+        row.address()
+            .and_then(|address| address.city())
+            .map(|city| city.as_str()),
+    );
     let owner = SourceIdentity::new(SourceNamespace::association_school(SOURCE_ID), id.as_str())
         .with_url(capture.url.clone());
-    school.association = Some("TSSAA".to_string());
-    school.city = row
-        .address()
-        .and_then(|address| address.city())
-        .map(|city| city.as_str().to_string());
     school.source_identities.push(owner.clone());
     school.evidence.push(capture_evidence(capture));
     addresses.iter().try_for_each(|(label, address)| {

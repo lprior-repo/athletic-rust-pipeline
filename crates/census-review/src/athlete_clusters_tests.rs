@@ -10,7 +10,8 @@ use super::{reconcile_athletes, RULE_REVIEWER};
 
 fn school(name: &str) -> CanonicalSchool {
     let slug = name.to_ascii_lowercase().replace(' ', "-");
-    let (school, _) = CanonicalSchool::new(census_domain::UsJurisdiction::Wisconsin, name, &slug);
+    let (school, _) =
+        CanonicalSchool::new(census_domain::UsJurisdiction::Wisconsin, name, &slug, None);
     school
 }
 

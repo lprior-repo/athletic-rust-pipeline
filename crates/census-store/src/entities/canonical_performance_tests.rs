@@ -14,6 +14,7 @@ fn performance(source_key: &str, identity: SourceIdentity) -> TestResult<Canonic
         UsJurisdiction::Wisconsin,
         "Abbotsford High School",
         "abbotsford",
+        None,
     );
     let athlete = CanonicalAthlete::mint(
         &school,
@@ -163,7 +164,12 @@ fn a_refinement_under_another_team_keeps_original_mark_and_timing() -> TestResul
     raw.mark = Mark::Raw("24.95a".to_string());
     raw.timing = Some(TimingMethod::Unknown);
     let mut measured = raw.clone();
-    let school = CanonicalSchool::mint(UsJurisdiction::Wisconsin, "Another High School", "another");
+    let school = CanonicalSchool::mint(
+        UsJurisdiction::Wisconsin,
+        "Another High School",
+        "another",
+        None,
+    );
     measured.team = CanonicalTeam::mint(
         &school,
         Sport::OutdoorTrack,

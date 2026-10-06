@@ -26,7 +26,7 @@ fn valid_best_results_sidecars_pass_and_forgeries_fail() -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path().join("store"))?;
     let (school, school_id) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Ada High", "ada high");
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Ada High", "ada high", None);
     store.append(Table::Schools, &school)?;
     let mut athlete = CanonicalAthlete::new(
         &school_id,

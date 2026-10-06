@@ -1,7 +1,7 @@
 use super::map::{Accumulator, Stats};
 use super::{read_registry, Options, Target, BIO_ENDPOINT, PARSE_VERSION, SCHOOL_KIND};
 use crate::recording::RowBatch;
-use crate::{AdapterContext, AdapterReport, CrawlResult};
+use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
     CanonicalTeam, SchoolId, SourceNamespace,
@@ -26,7 +26,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     let (requests_before, cache_before) = stats_of(ctx).await;
 
     let targets = registry_targets(options, &mut report)?;
-    let index = consolidated_index(ctx)?;
+    let index = live_index(ctx)?;
     let done = journaled_urls(ctx)?;
     let mut run = RunState {
         resolved: HashMap::new(),
@@ -208,17 +208,14 @@ fn note_stats(report: &mut AdapterReport, stats: &Stats) {
         stats.rows_without_state
     ));
     report.note(format!(
-        "schools: {} resolved against the consolidated index, {} minted from this source",
+        "schools: {} resolved against the live school index, {} minted from this source",
         stats.schools_resolved, stats.schools_minted
     ));
 }
 
-pub(super) fn consolidated_index(ctx: &AdapterContext<'_>) -> CrawlResult<SchoolIndex> {
-    let path = ctx.store.out_dir().join("schools.jsonl");
-    if !path.exists() {
-        return Ok(SchoolIndex::from_schools(&[]));
-    }
-    let schools: Vec<CanonicalSchool> = census_store::read::read_rows(&path)?;
+pub(super) fn live_index(ctx: &AdapterContext<'_>) -> CrawlResult<SchoolIndex> {
+    let schools: Vec<CanonicalSchool> =
+        ctx.store.scan(Table::Schools).map_err(CrawlError::Store)?;
     Ok(SchoolIndex::from_schools(&schools))
 }
 

@@ -17,8 +17,12 @@ pub fn parse_school(
         return None;
     }
     let normalized = normalize_name(name);
-    let (mut school, id) = CanonicalSchool::new(UsJurisdiction::Illinois, name, &normalized);
-    school.city = nonempty(&record.city);
+    let (mut school, id) = CanonicalSchool::new(
+        UsJurisdiction::Illinois,
+        name,
+        &normalized,
+        nonempty(&record.city).as_deref(),
+    );
     school.association = Some(ASSOCIATION.to_string());
     school.school_website = record.url.as_ref().and_then(|v| nonempty(v));
     school.source_identities.push(

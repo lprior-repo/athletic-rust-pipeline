@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-PROBE_BIN="$REPO_ROOT/target/debug/examples/enospc"
+PROBE_BIN="${CARGO_TARGET_DIR:-$REPO_ROOT/target}/debug/examples/enospc"
 
 for tool in unshare mount findmnt timeout cp; do
     if ! command -v "$tool" >/dev/null 2>&1; then

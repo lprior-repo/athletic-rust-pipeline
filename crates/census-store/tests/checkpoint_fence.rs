@@ -51,6 +51,7 @@ fn source_change_rejects_checkpoint_without_partial_state_verdict_journal_or_rec
         UsJurisdiction::NorthCarolina,
         "New Source School",
         "new source school",
+        None,
     )
     .0;
     store.append(Table::Schools, &school)?;

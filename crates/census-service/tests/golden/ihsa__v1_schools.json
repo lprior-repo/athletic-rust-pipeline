@@ -43,7 +43,7 @@
   "schools": [
     {
       "school": {
-        "id": "sch_aae2f1a63267d711",
+        "id": "sch_7f088801c6a99414",
         "name": "Abingdon-Avon High School",
         "normalized_name": "abingdon avon",
         "city": "Abingdon",
@@ -73,11 +73,11 @@
           }
         ]
       },
-      "school_id": "sch_aae2f1a63267d711"
+      "school_id": "sch_7f088801c6a99414"
     },
     {
       "school": {
-        "id": "sch_91d9788688248efb",
+        "id": "sch_bad140566b6ec221",
         "name": "Addison Trail High School",
         "normalized_name": "addison trail",
         "city": "Addison",
@@ -107,11 +107,11 @@
           }
         ]
       },
-      "school_id": "sch_91d9788688248efb"
+      "school_id": "sch_bad140566b6ec221"
     },
     {
       "school": {
-        "id": "sch_7f98e150148fe7e3",
+        "id": "sch_3f77d9ed4abdbe4e",
         "name": "Edwards County High School",
         "normalized_name": "edwards county",
         "city": "Albion",
@@ -141,7 +141,7 @@
           }
         ]
       },
-      "school_id": "sch_7f98e150148fe7e3"
+      "school_id": "sch_3f77d9ed4abdbe4e"
     }
   ]
 }

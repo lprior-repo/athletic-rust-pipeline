@@ -44,7 +44,7 @@ this directory. A narrower invoked test does not discharge the broader same-numb
 | # | Name | Current implementation/limit |
 |---|---|---|
 | 01 | `endpoint-kill` | Runs service `restate_kill_restart` integration tests |
-| 02 | `restate-kill-during-fanout` | Explicit skip: native NationalCensus mid-fan-out fault missing |
+| 02 | `restate-kill-during-fanout` | Feature-enabled endpoint holds a reserved teams source (`jurisdiction:VT:2026-27:2/teams/milesplit`), SIGKILLs native Restate mid-fan-out, restarts from the same base-dir and requires every pre-kill invocation id to survive; the boundary directory must be a process-owned 0700 directory (the script chmods it) and the reservation marker appears within seconds of submission; skips without the feature-enabled endpoint, chromium, curl/python3/ss or free ports |
 | 03 | `reboot-with-full-census` | Explicit skip: isolated machine reboot missing |
 | 04 | `rolling-upgrade` | Explicit skip: distinct V1→V2 upgrade missing |
 | 05 | `http-error-taxonomy` | Explicit skip: real browser HTTP fault-server scenario missing |

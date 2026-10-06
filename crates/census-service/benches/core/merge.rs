@@ -7,12 +7,9 @@ use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use tempfile::TempDir;
 
-use super::lcg::Lcg;
-
 #[path = "checks.rs"]
 mod checks;
 
-const SEED: u64 = 0x4D57_4345_4E53_5553;
 const SCHOOL_PREFIX: &str = "Census Academy";
 
 const STATE: UsJurisdiction = UsJurisdiction::Wisconsin;
@@ -23,7 +20,6 @@ const OBSERVATIONS_PER_COACH: usize = 3;
 const ALIASES_PER_SCHOOL: usize = 3;
 const FIRST_ENROLLMENT: u32 = 312;
 const FIRST_CITY: &str = "Bench City";
-const LATER_CITIES: [&str; 3] = ["Later City", "Second City", "Third City"];
 const LONG_SUFFIX: &str = " North Campus";
 const SOURCE_ID: &str = "bench";
 const OBSERVED_ON: &str = "2026-09-21";
@@ -79,11 +75,10 @@ impl Dataset {
 }
 
 fn school_observations() -> Vec<CanonicalSchool> {
-    let mut lcg = Lcg::seeded(SEED);
     let mut batch = Vec::with_capacity(SCHOOLS.saturating_mul(OBSERVATIONS_PER_SCHOOL));
     for index in 0..SCHOOLS {
         let name = format!("{SCHOOL_PREFIX} {index:04}");
-        let (school, _) = CanonicalSchool::new(STATE, &name, normalize_name(&name));
+        let (school, _) = CanonicalSchool::new(STATE, &name, normalize_name(&name), None);
         for observation in 0..OBSERVATIONS_PER_SCHOOL {
             let mut row = school.clone();
             match observation {
@@ -99,7 +94,7 @@ fn school_observations() -> Vec<CanonicalSchool> {
                     ));
                 }
                 1 => {
-                    row.city = Some(lcg.pick(&LATER_CITIES, "Later City").to_string());
+                    row.city = Some(FIRST_CITY.to_string());
                     row.enrollment = Some(FIRST_ENROLLMENT.saturating_add(1));
                     row.association = Some("WIAA".to_string());
                     row.co_op = true;
@@ -126,7 +121,7 @@ fn coach_observations() -> Vec<CanonicalCoach> {
     let mut batch = Vec::with_capacity(COACHES.saturating_mul(OBSERVATIONS_PER_COACH));
     for index in 0..COACHES {
         let name = format!("{SCHOOL_PREFIX} {index:04}");
-        let (school, _) = CanonicalSchool::new(STATE, &name, normalize_name(&name));
+        let (school, _) = CanonicalSchool::new(STATE, &name, normalize_name(&name), None);
         let coach = CanonicalCoach::new(
             &school.id,
             format!("Bench Coach {index:04}"),

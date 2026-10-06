@@ -241,6 +241,7 @@ fn accepted_alias_school_affiliations_preserve_their_source_owned_postal_claims(
         UsJurisdiction::NorthCarolina,
         "Alternate Affiliation",
         "alternate affiliation",
+        None,
     );
     let owner = SourceIdentity::new(
         SourceNamespace::association_school("synthetic-alias"),

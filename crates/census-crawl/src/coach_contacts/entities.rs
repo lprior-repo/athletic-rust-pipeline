@@ -54,9 +54,12 @@ fn school_with_city(
     school_name: &str,
     city: &str,
 ) -> (CanonicalSchool, SchoolId) {
-    let (mut school, school_id) =
-        CanonicalSchool::new(state, school_name, normalize_name(school_name));
-    school.city = nonempty(city);
+    let (mut school, school_id) = CanonicalSchool::new(
+        state,
+        school_name,
+        normalize_name(school_name),
+        nonempty(city).as_deref(),
+    );
     if let Some(city) = school.city.clone() {
         school.aliases.push(format!("{city} {}", state.code()));
     }

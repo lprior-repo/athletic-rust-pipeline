@@ -127,13 +127,15 @@ fn nd_school_page_parses_school_metadata() -> TestResult {
         CanonicalSchool::mint(
             UsJurisdiction::NorthDakota,
             &school.name,
-            &school.normalized_name
+            &school.normalized_name,
+            Some("West Fargo"),
         )
     );
     let (_, same_school) = CanonicalSchool::new(
         UsJurisdiction::NorthDakota,
         "West Fargo Sheyenne HS",
         normalize_name("West Fargo Sheyenne HS"),
+        Some("West Fargo"),
     );
     check!(eq; school_id, same_school);
     Ok(())

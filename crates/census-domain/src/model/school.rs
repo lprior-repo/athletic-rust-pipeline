@@ -1,5 +1,21 @@
 use super::*;
 
+pub(super) fn city_key(city: &str) -> String {
+    city.chars()
+        .filter(char::is_ascii_alphanumeric)
+        .collect::<String>()
+        .to_ascii_lowercase()
+}
+
+pub(super) fn located_city(city: &str) -> Option<String> {
+    let trimmed = city.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CanonicalSchool {
     pub id: SchoolId,
@@ -34,29 +50,39 @@ pub struct CanonicalSchool {
 }
 
 impl CanonicalSchool {
-    pub fn mint(state: UsJurisdiction, name: &str, normalized_name: &str) -> SchoolId {
+    pub fn mint(
+        state: UsJurisdiction,
+        name: &str,
+        normalized_name: &str,
+        city: Option<&str>,
+    ) -> SchoolId {
         let _ = name;
         let compressed: String = normalized_name
             .chars()
             .filter(char::is_ascii_alphanumeric)
             .collect();
-        Id::mint("sch", &[state.code(), &compressed])
+        match city.map(city_key).filter(|key| !key.is_empty()) {
+            Some(city) => Id::mint("sch", &[state.code(), &compressed, &city]),
+            None => Id::mint("sch", &[state.code(), &compressed]),
+        }
     }
 
     pub fn new(
         state: UsJurisdiction,
         name: impl Into<String>,
         normalized_name: impl Into<String>,
+        city: Option<&str>,
     ) -> (Self, SchoolId) {
         let name = name.into();
         let normalized_name = normalized_name.into();
-        let id = CanonicalSchool::mint(state, &name, &normalized_name);
+        let city = city.and_then(located_city);
+        let id = CanonicalSchool::mint(state, &name, &normalized_name, city.as_deref());
         (
             Self {
                 id: id.clone(),
                 name,
                 normalized_name,
-                city: None,
+                city,
                 state: Some(state),
                 association: None,
                 classification: None,

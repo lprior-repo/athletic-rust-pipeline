@@ -20,12 +20,12 @@ pub fn school_entities(
     observed_on: &str,
 ) -> SchoolExtract {
     let normalized = normalize_name(school_name);
-    let (mut school, school_id) = CanonicalSchool::new(STATE, school_name, &normalized);
-
-    school.city = city
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .map(str::to_string);
+    let (mut school, school_id) = CanonicalSchool::new(
+        STATE,
+        school_name,
+        &normalized,
+        city.map(str::trim).filter(|value| !value.is_empty()),
+    );
     school.association = Some(ASSOCIATION.to_string());
 
     let school_url = format!("{HOST}/schools/{aia_id}");

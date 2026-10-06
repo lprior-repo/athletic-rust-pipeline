@@ -54,6 +54,7 @@ fn parses_school_into_canonical() -> TestResult {
         UsJurisdiction::Illinois,
         "Abingdon-Avon High School",
         &normalize_name("Abingdon-Avon High School"),
+        Some("Abingdon"),
     );
     check!(eq; id, expected_id);
     Ok(())

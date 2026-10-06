@@ -12416,6 +12416,66 @@ Read-only evidence workers against the preserved generations and the S01/S02 sto
 Limits: the wave is read-only; the delivered census remains incomplete (49/49 sweeps, 8,503 owed
 roster rows), the merge path is unexercised, and no worker opened a live store as a writer.
 
+## Fault-16 quarantine subcases and frozen-capture hostility — 2026-10-06
+
+Evidence: `var/verify-round2-20261006/w3/w3-s16-frozen-replay-evidence.md`
+(sha256 `3816baf3b91d4ce5a7b0f5d72a80a5d2a2506c562b0ef3ab0fa72026f387fcb2`), raw outputs under
+`var/verify-round2-20261006/w3/q16/` (about 75 files).
+
+Observed: a truncated capture body yields an offline miss that names the exact locator while the six
+survey records, the `out/` digest and `store-integrity ok: true` stay unchanged; a coherent 141-byte
+error body fails by name (`json decode failed … expected value at line 1 column 1`); a **JSON-valid
+shape-divergent body is accepted as `status=ok` with zero rows and is byte-identical to a legitimate
+empty page** (gap `nnuk`); one malformed team index aborts a whole multi-state walk with exit 1
+(`team index contained no team rows`) while the roster lane continues (gap `yhpt`); a poisoned roster
+body quarantines as `UnknownTemplate` with zero rows and is distinguishable from `NoReadableRows`,
+leaving the prior revision-2 journal record and archive body byte-preserved. Athlete/team/school
+consolidate digests are identical across no-replay, pristine-replay and poisoned copies, and survey
+replays leave the whole-store fjall+http tree digest unchanged. `store-backup` refuses a store whose
+`out/publication/current` symlink exists (gap `dtdq`; the S15 drill PASS at 06:14:53 predates that
+store's symlink at 06:15:10). Journal digests were re-extracted today with whole-record scope
+(`MI 37397073…/c6b97d88…`, `NY cdbb6597…/c83f9156…`), a different scope from the nested
+capture object recorded earlier; both scopes are now stated. Beads `dtdq`, `nnuk`, `yhpt`, `o6e8`.
+
+Limits: read-only replay against `/tmp` copies, not preserved stores; the multi-state walk was
+exercised with one malformed index only; the reported `<stdin>` shape checks are per-shape, not a
+fuzz campaign.
+
+Follow-up hostile-shape pass on copies of the S02 store (1348 schools / 5043 coaches / 1570
+athletes): `var/verify-round2-20261006/w2/w2-hostile-boundary-evidence.md` with raw outputs under
+`var/verify-round2-20261006/w2/hostile/`. Eight shapes were attempted; **all eight returned
+`store-integrity` ok**, because that tool validates Fjall row counts and table structure and never
+content: a 100-byte truncated body and a 193-byte 503 error HTML page each completed `consolidate`
+while silently reducing entity counts (1348→1347 schools, 5043→5019 coaches); a JSON rate-limit body
+where HTML is expected, a scalar `42` where HTML is expected and an absent `{hash}.meta.json` sidecar
+were accepted; duplicate observation rows, journal payload digest-vs-body agreement and JSONL
+encoding are not inspected at all (the last three were not injectable, as reported). Filed
+`athletic-rust-pipeline-dfzf` (P2). The same pass enumerated 38 proptest suites and ran none: test
+compilation in `census-store` and `census-review` fails on the unrelated in-flight
+`CanonicalSchool::new` signature change (`proptest_blocker.md`), so those suites are unverified at
+this revision rather than failing.
+
+## Fault-15 subcases — interrupted backup and restore, new destination, corrupted components — 2026-10-06
+
+Evidence: `var/verify-round2-20261006/w2/w2-backup-subcase-evidence.md`. Store: the S02 lane store
+(schools 1348, teams 96, coaches 5043, athletes 1570).
+
+Baseline: `store-backup` produced `var/verify-round2-20261006/w2/backup-s02-good` (5,550 files,
+323,764,759 bytes) in 22.172 s and a restore into a new destination reproduced identical
+`fjall-stats` counts. Backup SIGKILLed at 50 ms, 1 s, 2 s, 3 s, 5 s, 10 s, 15 s and 20 s: the
+destination directory never appears (atomic design), the original store is unchanged at every
+offset, and a restore addressed at a non-existent interrupted copy refuses
+(`i/o failed for …: No such file or directory`). Restore SIGKILLed at 1 s: the destination holds an
+empty store skeleton (all-zero table counts), the original store and the accepted backup stay
+intact, and a retry into a **new** destination restores all 5,550 files with matching counts. A
+one-byte corruption of `fjall/lock` and of `fjall/keyspaces/0/tables/3` is refused by name
+(`length mismatch for fjall/lock: expected 0 got 1`; `sha256 mismatch for
+fjall/keyspaces/0/tables/3: expected 87cfcea4… got 625308a9…`). No gaps filed.
+
+Limits: the interrupted-backup assertion holds vacuously under the atomic design (no partial
+destination exists to refuse); kill offsets are bounded by shell scheduling; the store used is a
+scratch lane store, not a preserved artifact.
+
 ## Mutation gate lane retired, and athlete-sheet duplicate measurement — 2026-10-06
 
 Owner decision (bead `athletic-rust-pipeline-5rtr`, closed 2026-10-06; `nno` closed with its
@@ -12452,4 +12512,164 @@ High School AL). Filed as `athletic-rust-pipeline-o8rm` (P2 bug, planner session
 `duplicate-athlete-rows`), which owns root cause and repair. Limits: workbook read only — no store
 inspection, regeneration, merge or census rerun; the x11/x10/x9 figures are single-read group
 maxima.
+
+Follow-up read-only athlete pass (`var/verify-round2-20261006/w1/w1-athlete-evidence.md`, 104 raw
+outputs in the same directory): of 566,229 Class-of-2027 rows only 7,992 (1.4%) carry any performance
+or meet — 558,237 rows are identity-roster entries; 541,686 subjects are accepted, 24,543 in review
+and 2,081 retained conflicts; preliminaries, finals and attempts are all retained (PRs computed from
+all attempts); 2,488 relay performances are retained but never promoted to individual PRs; a
+performance carries the school at the time of the performance while the athlete row tracks the
+current school. Adelyn Spann is a single identity-only row (`ath_subject_05b8ab961559e53e`, Abbeville
+High School AL, MileSplit 14222592, 0 performances, 0 meets, identity and review both `verified`).
+Her owner id and result 201782263 retain a Girls Class-of-2027 long-jump mark (13-9 / 419 cm) in the
+602-row owned-results captures, so the delivered generation carries her identity without that
+captured performance — a limit of the incomplete acquisition, not a merge error.
+
+## Native fault scenario 02 — implemented, root-caused and passing — 2026-10-06
+
+`tools/durability/scenario-02-restate-kill-during-fanout.sh` now realises the scenario the harness
+previously skipped. It arms the TeamsSource boundary for `jurisdiction:VT:2026-27:2/teams/milesplit`
+(attempt 1, 60 s), waits for the published marker, disarms the config, holds 30 s, SIGKILLs **native
+Restate** while the endpoint stays up, restarts the node from the same base-dir and inventories
+`sys_invocation`. `SCRATCH_STORE=$PWD/var/durability-scratch-20261006b bash
+tools/durability/run.sh scenario-02-restate-kill-during-fanout.sh` → `Total: 1 PASS`, 57.55 s:
+`REACHED: 99 invocations, 99 live before the kill`; `IDENTITIES: before=99 after=99 missing=0`; drain
+certificate `accepted=173 completed=173 cancelled=0 timed_out=0 aborted=0 panicked=0`. The scenario
+also passed in the next full run (`var/durability-run-20261006c.log`). Evidence:
+`var/durability-scratch-20261006b/scenario-02-4i42pz/`.
+
+Root cause of the earlier 30-minute waits: the seam refuses any boundary directory that is not a
+nonsymlink, process-owned, mode-0700 directory — `Directory::open` in
+`crates/census-service/src/restate_services/jurisdiction/team_source/native_boundary/files.rs`
+rejects 0755 with "directory must be nonsymlink, process-owned and mode 0700"; `validate_path`
+additionally requires an absolute path with no `.`/`..` components and `validate_file` only forbids
+group/world *write*. `mkdir -p` left the lane's `boundary/` at 0755, so every reservation read failed
+inside `wait()`, no marker was ever published and no hold happened — the endpoint simply completed
+the fan-out (which is why the ledger shows the reservation attempt as `unknown` and no hold). The
+lane now runs `chmod 700 "$BOUNDARY"` after `mkdir -p`; no product change was required.
+
+Full harness rerun after the scenario-09 probe-path fix (`var/durability-run-20261006b.log`):
+`Total: 8 PASS, 1 FAIL, 8 SKIPPED (17 scenarios)`, 1 m 28 s — scenario 09 changed FAIL→PASS ("kernel
+ENOSPC refused batch_26; 28 exact acknowledged receipts survived; replay appended zero; new atomic
+recovery batch survived cold reopen") and scenario 01 now runs both integration tests. With scenario
+02 passing, nine of the seventeen scenarios have been observed passing on 2026-10-06 and eight have
+no implementation.
+
+A later full run that afternoon (`var/durability-run-20261006c.log`) reported `3 PASS, 6 FAIL, 8
+SKIPPED` only because an unrelated in-flight working-tree change made `CanonicalSchool::new` take a
+fourth `Option<&str>` argument with 25 callers unmigrated (`error[E0061]` in `census-crawl`); every
+scenario that compiles the workspace failed as a cascade while scenarios 02/10/14 (prebuilt binaries)
+passed. That run is not evidence about the scenarios it could not run.
+
+Limits: the scenario exercises a single-revision national run at `--limit-per-state 1`; the marker is
+observed by polling; and `hold` ends with `HoldExpired` after its timeout, so the SIGKILL lands
+inside the hold window rather than on a released reservation.
+
+## Review/identity lane over the dual-GPU review store — 2026-10-06
+
+`var/review-dual-gpu-20261005/`. Run 1 (03:23:26-03:27:54, `review-1.log`): the lane opened
+`var/review-dual-gpu-20261005/store/fjall`, counted 30,526 athlete rows and 30,426 provider objects,
+filed and decided **97 cases** (all decided, 0 pending), found 0 rows holding several objects of one
+provider and 0 findings left to a standing decision; its review pass reported
+`requested=8 unaskable=0 answered=8 decided=0 accepted=0 rejected=8`. Run 4 (launched 05:48, 7,933.86 s
+later, `review-4.log`): the same counts of athlete rows and provider objects, but **0 cases filed,
+0 decided, 0 pending** and **97 findings left to a standing decision**, with
+`requested=128 unaskable=3 answered=125 decided=18 accepted=18 rejected=107 insufficient=0
+unanswered=0 dropped=0 failed=0`. The two runs' opposed case counts are unexplained: run 4's log
+records neither its invocation nor the store it read, and no other artifact under the directory was
+written by it. Both runs agree that no row holds several objects of one provider, which corroborates
+the item-9 finding that the merge path is unexercised. Bead `st7m` carries the review-queue note.
+
+## Durability harness after the compile breakage cleared — 2026-10-06
+
+`pipeline:check` green (all eleven crates, 13.1 s) once the in-flight `CanonicalSchool::new` migration
+landed; `find crates -newermt '-10 minutes'` showed no writer activity on the tree. Full harness on
+that tree: `SCRATCH_STORE=$PWD/var/durability-scratch-20261006d env -u CI tools/moon-local run
+pipeline:durability` → `Total: 9 PASS, 0 FAIL, 8 SKIPPED (17 scenarios)`, 3 m 9 s
+(`var/durability-run-20261006d.log`): scenario 02 passes inside a full run for the first time,
+alongside 01, 09, 10, 13, 14, 15, 16 and 17. The eight SKIPPED rows are the unimplemented scenarios
+with the harness's own detail strings. The task exits 1 while any scenario is SKIPPED, so exit 1 is
+runner policy, not a scenario failure. Scenario 17's recovery suite printed a real SIGKILL at a
+durable commit boundary (`partial_kill_landed=true`, `observations_delta=0`) and a clean operator
+drain (`accepted=3 completed=3 aborted=0 panicked=0`). `pipeline:gate -- --release` was launched on
+this tree after the run.
+
+## Location-qualified school identity (ADR-025 / `tq18`) — 2026-10-06
+
+`CanonicalSchool::mint`/`new` now take the observing row's city and include it in the minted id
+(`sch:<state>:<name>` plus `:<city_key>` when the row publishes one); `NaturalKey::same_natural_key`
+compares cities compatibly (one absent side does not contradict) and `natural_key()` names the city,
+so two same-name schools in different cities are two canonical schools, and a shared id whose rows
+disagree on city retains a `Canonical id collision` conflict instead of blending (ADR-025). Every
+constructor call site in the workspace was migrated to the 4-argument form (191
+`CanonicalSchool::new`/`mint` sites across `census-crawl`, `census-store`, `census-reconcile`,
+`census-review`, `census-service` and `xtask`, including benches, examples and test fixtures).
+
+Evidence on the current tree, from the workspace root:
+
+- `cargo nextest run --workspace --all-features --no-fail-fast` → `Summary [36.191s] 2549 tests run:
+  2549 passed, 3 skipped`, exit 0.
+- `tools/gate.sh` → exit 0; every lane PASS (fmt, zero code comments, architecture contract, check,
+  doc, tests, panic extraction, domain type integrity, domain purity, module seams, ratchet, deny,
+  audit, machete, geiger, feature powerset, bench presence), 493 s.
+- Nine corpus-parity tests disagreed with committed goldens after the mint change and were re-blessed
+  through the harness's documented path, `GOLDEN_UPDATE=1 cargo nextest run -p census-service
+  -E 'test(mshsl_fixtures_match_golden) | …'` → `9 tests run: 9 passed`: 27 golden files, 626
+  insertions / 626 deletions. The diff is identity-only — normalising every `sch_`/`ath_`/`coa_` id
+  leaves the removed and added line multisets differing only in 18 sha256 `digest` values, which
+  digest the id-bearing serialised values.
+- New behaviour tests: `census-store` `entities::school_location_tests` (one name in two cities mints
+  two ids; a legacy two-part id whose rows disagree on city keeps its own city, does not union the
+  dropped row's aliases, and retains exactly one `Canonical id collision` finding; both same-name
+  cities survive consolidation as two rows), `census-review`
+  `athlete_packet_tests/identity.rs` (canaries 11 and 12), and the merge-property law
+  `rows_sharing_an_id_with_disagreeing_cities_retain_the_conflict_and_do_not_blend` alongside the
+  extended first-writer law.
+
+The three failing lanes of the earlier release-gate entry are resolved on this tree: `fmt` is clean,
+the `ihsa` two-part expectation is fixed, and the service core merge bench now has every observation
+of a school publish one city — the merge-batch validity check rejects a cross-city batch under
+ADR-025 (`census/merge/schools_scan` previously aborted with `sch_… lost the union of a co-op flag`).
+`cargo xtask perf check --reason 'tq18 location-qualified school identity'` therefore runs to
+completion, reporting `census/merge/coaches_scan` 5.61% and `census/merge/schools_scan` 8.78% below
+`tools/perf-baseline.json` (198 s) while itself printing "Environment differences detected
+(comparison may be invalid): Corpus size mismatch: baseline=38530 current=88338" and a different
+baseline git sha — those two numbers compare against a stale baseline, not against this change.
+
+Not covered by this entry: `moon ci` / `pipeline:gate --release` (moon's release task graph, which
+includes the perf lane) and any live crawl — this change is verified at the identity, store,
+school-address join, parity-golden and bench-dataset levels, not by a fresh acquisition.
+
+Local state at verification: the untracked scratch example `crates/census-store/examples/keyspace_ab.rs`
+(nine compile errors against the current fjall API) was renamed to `keyspace_ab.rs.disabled` so the
+`--all-targets` lanes can compile the tree; the documented `cargo xtask storage-ab` verb therefore has
+no example target to run until that scratch example is repaired or removed.
+
+## Release gate attempt on the post-migration tree — 2026-10-06
+
+`env -u CI tools/moon-local run pipeline:gate -- --release` (log `var/release-gate-20261006c.log`,
+620 s) → `gate: FAIL -> fmt tests perf`. Every failing lane traces to the in-flight ADR-025
+school-identity implementation (`tq18`, in progress) and none to this session's files:
+
+- `fmt`: one diff in `xtask/src/replay/cases/coach_directories.rs:124` (an `ok_or_else` closure
+  rustfmt wants collapsed).
+- `tests`: one test of 2548 — `census-crawl ihsa::tests::parses_school_into_canonical` —
+  `CheckFailure(left=Id{sch_7f088801c6a99414} right=Id{sch_aae2f1a63267d711})`: a two-part id
+  expectation against the city-qualified mint of ADR-025 §1; its sibling
+  `parses_school_name_city_id` passes.
+- `perf`: the service `core` bench aborts with `the merge batch is not usable:
+  sch_045b4ccd9ea9e47c lost the union of a co-op flag` — the union semantics ADR-025 §3 replaces with
+  a retained conflict — and reports `GNU time is absent; peak RSS is unavailable, not zero`.
+
+A first run of the same tree also failed `panic extraction (all targets)` and `ratchet`; both passed
+on this rerun, so those were mid-edit artifacts. Everything else in the gate passed: zero code
+comments, architecture contract, check, doc, strict clippy (source targets), production scan, domain
+type integrity, domain purity, module seams, deny, audit, machete, geiger and the feature powerset.
+Bead `tq18` carries the three items.
+
+Follow-up, same day: all three are resolved. The `fmt` diff and the `ihsa` expectation were fixed in
+the tq18 slice; the merge bench's cross-city batch was replaced with one city per school
+(`crates/census-service/benches/core/merge.rs`), and `cargo xtask perf check` now completes — see
+[Location-qualified school identity](#location-qualified-school-identity-adr-025--tq18--2026-10-06)
+for the remaining baseline caveat.
 

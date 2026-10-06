@@ -90,9 +90,12 @@ fn school_from_result(
     capture: &FetchOutcome,
 ) -> (CanonicalSchool, SchoolId) {
     let page_url = result.page_url();
-    let (mut school, school_id) =
-        CanonicalSchool::new(STATE, &result.name, normalize_name(&result.name));
-    school.city = nonempty(&result.city);
+    let (mut school, school_id) = CanonicalSchool::new(
+        STATE,
+        &result.name,
+        normalize_name(&result.name),
+        nonempty(&result.city).as_deref(),
+    );
     school.association = Some(ASSOCIATION.to_string());
     school.source_identities.push(
         SourceIdentity::new(

@@ -14,9 +14,12 @@ fn wiaa() -> SourceNamespace {
 }
 
 fn school_row(org_id: &str, name: &str) -> CanonicalSchool {
-    let (mut school, _) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, name, normalize_name(name));
-    school.city = Some("Abbotsford".to_string());
+    let (mut school, _) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        name,
+        normalize_name(name),
+        Some("Abbotsford"),
+    );
     school
         .source_identities
         .push(SourceIdentity::new(wiaa(), org_id).with_url(format!(

@@ -344,9 +344,9 @@
   ],
   "coaches": [
     {
-      "id": "coa_f046251a16b017bd",
+      "id": "coa_efbe398bbb4af91e",
       "name": "Amanda Smith",
-      "school": "sch_aae2f1a63267d711",
+      "school": "sch_7f088801c6a99414",
       "gender": "mixed",
       "role": "unknown",
       "source_identities": [
@@ -372,9 +372,9 @@
       ]
     },
     {
-      "id": "coa_a28ffe1ce4e20daf",
+      "id": "coa_f0828446065cf8fc",
       "name": "Reid Kelso",
-      "school": "sch_aae2f1a63267d711",
+      "school": "sch_7f088801c6a99414",
       "gender": "mixed",
       "role": "athletic_director",
       "source_identities": [
@@ -400,9 +400,9 @@
       ]
     },
     {
-      "id": "coa_a28ffe1ce4e20daf",
+      "id": "coa_f0828446065cf8fc",
       "name": "Reid Kelso",
-      "school": "sch_aae2f1a63267d711",
+      "school": "sch_7f088801c6a99414",
       "gender": "mixed",
       "role": "athletic_director",
       "source_identities": [
@@ -428,9 +428,9 @@
       ]
     },
     {
-      "id": "coa_542d711658c8e27e",
+      "id": "coa_30094973b363ada2",
       "name": "Rodney Anderson",
-      "school": "sch_aae2f1a63267d711",
+      "school": "sch_7f088801c6a99414",
       "gender": "mixed",
       "role": "head_coach",
       "source_identities": [
@@ -456,9 +456,9 @@
       ]
     },
     {
-      "id": "coa_efaf200cd7e32be8",
+      "id": "coa_3771740e3c04a341",
       "name": "Cory Link",
-      "school": "sch_aae2f1a63267d711",
+      "school": "sch_7f088801c6a99414",
       "gender": "mixed",
       "role": "head_coach",
       "source_identities": [
@@ -484,9 +484,9 @@
       ]
     },
     {
-      "id": "coa_3e4c4bc72b6de2c6",
+      "id": "coa_1f6a176cf4e2c6e1",
       "name": "Cierra Snyder",
-      "school": "sch_aae2f1a63267d711",
+      "school": "sch_7f088801c6a99414",
       "gender": "mixed",
       "role": "head_coach",
       "source_identities": [
@@ -512,9 +512,9 @@
       ]
     },
     {
-      "id": "coa_22d92f82f872737d",
+      "id": "coa_2403db61a561ba8e",
       "name": "Barry Mink",
-      "school": "sch_aae2f1a63267d711",
+      "school": "sch_7f088801c6a99414",
       "sport": "cross_country",
       "gender": "boys",
       "role": "head_coach",
@@ -541,9 +541,9 @@
       ]
     },
     {
-      "id": "coa_9dacef2ad44ee5fd",
+      "id": "coa_29b5c04c5f8e4675",
       "name": "Rick Quinn",
-      "school": "sch_aae2f1a63267d711",
+      "school": "sch_7f088801c6a99414",
       "gender": "mixed",
       "role": "head_coach",
       "source_identities": [
@@ -569,9 +569,9 @@
       ]
     },
     {
-      "id": "coa_96875725f41b9184",
+      "id": "coa_7b7138ae90edeb66",
       "name": "Gary Cameron",
-      "school": "sch_aae2f1a63267d711",
+      "school": "sch_7f088801c6a99414",
       "gender": "mixed",
       "role": "head_coach",
       "source_identities": [
@@ -597,9 +597,9 @@
       ]
     },
     {
-      "id": "coa_954c23dcdd0ac10a",
+      "id": "coa_625868a01e14e50c",
       "name": "Sean Foster",
-      "school": "sch_aae2f1a63267d711",
+      "school": "sch_7f088801c6a99414",
       "gender": "mixed",
       "role": "head_coach",
       "source_identities": [
@@ -625,9 +625,9 @@
       ]
     },
     {
-      "id": "coa_31429b046ed36234",
+      "id": "coa_9bb08759992dd104",
       "name": "Justin Rakestraw",
-      "school": "sch_aae2f1a63267d711",
+      "school": "sch_7f088801c6a99414",
       "sport": "outdoor_track",
       "gender": "boys",
       "role": "head_coach",
@@ -654,9 +654,9 @@
       ]
     },
     {
-      "id": "coa_8d6f11c316805010",
+      "id": "coa_5a20877127c9cce7",
       "name": "Brian Holloway",
-      "school": "sch_aae2f1a63267d711",
+      "school": "sch_7f088801c6a99414",
       "gender": "mixed",
       "role": "head_coach",
       "source_identities": [
@@ -682,9 +682,9 @@
       ]
     },
     {
-      "id": "coa_f87d33337f12acc3",
+      "id": "coa_10ba28f8556d3a9f",
       "name": "Brent Dugan",
-      "school": "sch_aae2f1a63267d711",
+      "school": "sch_7f088801c6a99414",
       "gender": "mixed",
       "role": "head_coach",
       "source_identities": [
@@ -710,9 +710,9 @@
       ]
     },
     {
-      "id": "coa_3e4c4bc72b6de2c6",
+      "id": "coa_1f6a176cf4e2c6e1",
       "name": "Cierra Snyder",
-      "school": "sch_aae2f1a63267d711",
+      "school": "sch_7f088801c6a99414",
       "gender": "mixed",
       "role": "head_coach",
       "source_identities": [
@@ -738,9 +738,9 @@
       ]
     },
     {
-      "id": "coa_72da398b04e9f09e",
+      "id": "coa_f4cc498df6507cbf",
       "name": "Barry Mink",
-      "school": "sch_aae2f1a63267d711",
+      "school": "sch_7f088801c6a99414",
       "sport": "cross_country",
       "gender": "girls",
       "role": "head_coach",
@@ -767,9 +767,9 @@
       ]
     },
     {
-      "id": "coa_96875725f41b9184",
+      "id": "coa_7b7138ae90edeb66",
       "name": "Gary Cameron",
-      "school": "sch_aae2f1a63267d711",
+      "school": "sch_7f088801c6a99414",
       "gender": "mixed",
       "role": "head_coach",
       "source_identities": [
@@ -795,9 +795,9 @@
       ]
     },
     {
-      "id": "coa_49c4360702a542d7",
+      "id": "coa_9e76ba6987ffbb2f",
       "name": "Jay Stephens",
-      "school": "sch_aae2f1a63267d711",
+      "school": "sch_7f088801c6a99414",
       "gender": "mixed",
       "role": "head_coach",
       "source_identities": [
@@ -823,9 +823,9 @@
       ]
     },
     {
-      "id": "coa_1fd629d230644e3a",
+      "id": "coa_b74bfd54449ccd24",
       "name": "Justin Rakestraw",
-      "school": "sch_aae2f1a63267d711",
+      "school": "sch_7f088801c6a99414",
       "sport": "outdoor_track",
       "gender": "girls",
       "role": "head_coach",
@@ -852,9 +852,9 @@
       ]
     },
     {
-      "id": "coa_599bbba8e3d19954",
+      "id": "coa_d21450b28236e395",
       "name": "Ramona Tinkham",
-      "school": "sch_aae2f1a63267d711",
+      "school": "sch_7f088801c6a99414",
       "gender": "mixed",
       "role": "head_coach",
       "source_identities": [
@@ -880,9 +880,9 @@
       ]
     },
     {
-      "id": "coa_8d6f11c316805010",
+      "id": "coa_5a20877127c9cce7",
       "name": "Brian Holloway",
-      "school": "sch_aae2f1a63267d711",
+      "school": "sch_7f088801c6a99414",
       "gender": "mixed",
       "role": "head_coach",
       "source_identities": [
@@ -908,9 +908,9 @@
       ]
     },
     {
-      "id": "coa_0e19dac35e94e835",
+      "id": "coa_29be35552c3028fd",
       "name": "Maisey Link",
-      "school": "sch_aae2f1a63267d711",
+      "school": "sch_7f088801c6a99414",
       "gender": "mixed",
       "role": "unknown",
       "source_identities": [

@@ -99,6 +99,7 @@ fn seed(store: &Store, fixture: &Fixture) -> TestResult<String> {
         UsJurisdiction::Wisconsin,
         fixture.school,
         census_domain::model::normalize_name(fixture.school),
+        None,
     );
     school.evidence.push(observation());
     store.append(Table::Schools, &school)?;
@@ -435,7 +436,8 @@ fn a_spill_budget_that_holds_no_row_or_no_range_is_rejected() -> TestResult {
 fn a_performance_the_store_cannot_join_is_still_written() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
-    let (mut school, school_id) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Colby", "colby");
+    let (mut school, school_id) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Colby", "colby", None);
     school.evidence.push(observation());
     store.append(Table::Schools, &school)?;
 

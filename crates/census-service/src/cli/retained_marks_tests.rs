@@ -14,7 +14,12 @@ fn seed(
     kind: EventKind,
     locator: &str,
 ) -> TestResult<CanonicalPerformance> {
-    let school = CanonicalSchool::mint(UsJurisdiction::Wisconsin, "Captured School", "captured");
+    let school = CanonicalSchool::mint(
+        UsJurisdiction::Wisconsin,
+        "Captured School",
+        "captured",
+        None,
+    );
     let owner = SourceIdentity::new(
         SourceNamespace::Other("milesplit_result_row".into()),
         locator,

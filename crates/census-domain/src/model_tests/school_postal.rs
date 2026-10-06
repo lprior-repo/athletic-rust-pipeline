@@ -103,6 +103,7 @@ fn street_only_claim_still_cannot_attach_across_source_jurisdictions() -> TestRe
         UsJurisdiction::NorthCarolina,
         "Source School",
         "source school",
+        None,
     )
     .0;
     school.source_identities.push(owner);
@@ -137,6 +138,7 @@ fn complete_postal_claim_order_is_independent_of_arrival_and_deserialized_vector
         UsJurisdiction::NorthCarolina,
         "Source School",
         "source school",
+        None,
     )
     .0;
     forward.source_identities.push(owner);
@@ -187,6 +189,7 @@ fn directory_provider_claims_attach_only_through_their_own_namespace() -> TestRe
         UsJurisdiction::Ohio,
         "Springfield High School",
         "springfield high school",
+        Some("Springfield"),
     )
     .0;
     check!(eq; school.add_postal_address(claim.clone()),
@@ -241,6 +244,7 @@ fn directory_claims_require_a_matching_provider_and_label() -> TestResult {
         UsJurisdiction::Indiana,
         "Springfield High School",
         "springfield high school",
+        Some("Springfield"),
     )
     .0;
     school.source_identities.push(claim.owner().clone());

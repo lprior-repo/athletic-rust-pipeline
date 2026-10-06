@@ -187,7 +187,8 @@ fn school_page_yields_canonical_school_with_identity_and_evidence() -> TestResul
         CanonicalSchool::mint(
             UsJurisdiction::Minnesota,
             "Aitkin High School",
-            &normalize_name("Aitkin High School")
+            &normalize_name("Aitkin High School"),
+            Some("Aitkin"),
         )
     );
     check!(eq; school_id, school.id);
@@ -555,6 +556,7 @@ fn coach_levels_map_to_roles_and_published_addresses_survive() {
         UsJurisdiction::Minnesota,
         "Wayzata High School",
         &normalize_name("Wayzata High School"),
+        None,
     );
     assert!(coach_entities(&teams, &school_id, &domains, OBSERVED_ON).is_empty());
 }
@@ -609,7 +611,7 @@ fn malformed_payloads_yield_zero_rows_instead_of_panicking() {
     assert_eq!(empty, SchoolDetail::default());
     assert!(ad_coaches(
         &empty,
-        &CanonicalSchool::mint(UsJurisdiction::Minnesota, "Empty", "empty"),
+        &CanonicalSchool::mint(UsJurisdiction::Minnesota, "Empty", "empty", None),
         "x",
         "u",
         OBSERVED_ON

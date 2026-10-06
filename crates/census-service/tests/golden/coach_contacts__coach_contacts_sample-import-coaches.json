@@ -11,11 +11,11 @@
       }
     ],
     "gender": "boys",
-    "id": "coa_22d92f82f872737d",
+    "id": "coa_2403db61a561ba8e",
     "name": "Barry Mink",
     "professional_email": "bmink@atown276.net",
     "role": "head_coach",
-    "school": "sch_aae2f1a63267d711",
+    "school": "sch_7f088801c6a99414",
     "source_identities": [
       {
         "id": "0101:Some(HeadCoach)",
@@ -36,28 +36,27 @@
         "observed_on": "2026-09-19",
         "source": {
           "id": "coach_contacts_csv",
-          "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+          "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
         }
       }
     ],
-    "gender": "boys",
-    "id": "coa_31429b046ed36234",
-    "name": "Justin Rakestraw",
-    "professional_email": "jrakestraw@atown276.net",
-    "role": "head_coach",
-    "school": "sch_aae2f1a63267d711",
+    "gender": "mixed",
+    "id": "coa_2f85bdf7563ab641",
+    "name": "Alex Larson",
+    "professional_email": "alarson@abbotsford.k12.wi.us",
+    "role": "athletic_director",
+    "school": "sch_807f13a4c3307f66",
     "source_identities": [
       {
-        "id": "0101:Some(HeadCoach)",
+        "id": "1:ad",
         "namespace": {
           "association_school": {
-            "association": "ihsa"
+            "association": "wiaa"
           }
         },
-        "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+        "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
       }
-    ],
-    "sport": "outdoor_track"
+    ]
   },
   {
     "evidence": [
@@ -95,28 +94,27 @@
         "observed_on": "2026-09-19",
         "source": {
           "id": "coach_contacts_csv",
-          "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+          "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
         }
       }
     ],
-    "gender": "girls",
-    "id": "coa_5372f3ac1deccf5f",
-    "name": "JACOB KNAPMILLER",
-    "professional_email": "jknapmiller@abbotsford.k12.wi.us",
-    "role": "head_coach",
-    "school": "sch_b5ea31ddfcd999ba",
+    "gender": "mixed",
+    "id": "coa_4800e9af7f60b8f1",
+    "name": "Derek Berns",
+    "professional_email": "dberns@abileneschools.org",
+    "role": "athletic_director",
+    "school": "sch_e1a76946e007cade",
     "source_identities": [
       {
-        "id": "1:Some(HeadCoach)",
+        "id": "abilene:ad",
         "namespace": {
           "association_school": {
-            "association": "wiaa"
+            "association": "kshsaa"
           }
         },
-        "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+        "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
       }
-    ],
-    "sport": "outdoor_track"
+    ]
   },
   {
     "evidence": [
@@ -180,66 +178,6 @@
         "observed_on": "2026-09-19",
         "source": {
           "id": "coach_contacts_csv",
-          "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
-        }
-      }
-    ],
-    "gender": "boys",
-    "id": "coa_6475782dda0ce83d",
-    "name": "JACOB KNAPMILLER",
-    "professional_email": "jknapmiller@abbotsford.k12.wi.us",
-    "role": "head_coach",
-    "school": "sch_b5ea31ddfcd999ba",
-    "source_identities": [
-      {
-        "id": "1:Some(HeadCoach)",
-        "namespace": {
-          "association_school": {
-            "association": "wiaa"
-          }
-        },
-        "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
-      }
-    ],
-    "sport": "outdoor_track"
-  },
-  {
-    "evidence": [
-      {
-        "method": "parsed",
-        "observed_on": "2026-09-19",
-        "source": {
-          "id": "coach_contacts_csv",
-          "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
-        }
-      }
-    ],
-    "gender": "girls",
-    "id": "coa_7111b7979c9fb377",
-    "name": "Dillon Novak",
-    "professional_email": "dnovak@abbotsford.k12.wi.us",
-    "role": "head_coach",
-    "school": "sch_b5ea31ddfcd999ba",
-    "source_identities": [
-      {
-        "id": "1:Some(HeadCoach)",
-        "namespace": {
-          "association_school": {
-            "association": "wiaa"
-          }
-        },
-        "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
-      }
-    ],
-    "sport": "cross_country"
-  },
-  {
-    "evidence": [
-      {
-        "method": "parsed",
-        "observed_on": "2026-09-19",
-        "source": {
-          "id": "coach_contacts_csv",
           "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
         }
       }
@@ -268,19 +206,49 @@
         "observed_on": "2026-09-19",
         "source": {
           "id": "coach_contacts_csv",
+          "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+        }
+      }
+    ],
+    "gender": "boys",
+    "id": "coa_8242b6eefcd31497",
+    "name": "JACOB KNAPMILLER",
+    "professional_email": "jknapmiller@abbotsford.k12.wi.us",
+    "role": "head_coach",
+    "school": "sch_807f13a4c3307f66",
+    "source_identities": [
+      {
+        "id": "1:Some(HeadCoach)",
+        "namespace": {
+          "association_school": {
+            "association": "wiaa"
+          }
+        },
+        "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+      }
+    ],
+    "sport": "outdoor_track"
+  },
+  {
+    "evidence": [
+      {
+        "method": "parsed",
+        "observed_on": "2026-09-19",
+        "source": {
+          "id": "coach_contacts_csv",
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
         }
       }
     ],
-    "gender": "mixed",
-    "id": "coa_a28ffe1ce4e20daf",
-    "name": "Reid Kelso",
-    "professional_email": "rkelso@atown276.net",
-    "role": "athletic_director",
-    "school": "sch_aae2f1a63267d711",
+    "gender": "boys",
+    "id": "coa_9bb08759992dd104",
+    "name": "Justin Rakestraw",
+    "professional_email": "jrakestraw@atown276.net",
+    "role": "head_coach",
+    "school": "sch_7f088801c6a99414",
     "source_identities": [
       {
-        "id": "0101:ad",
+        "id": "0101:Some(HeadCoach)",
         "namespace": {
           "association_school": {
             "association": "ihsa"
@@ -288,7 +256,8 @@
         },
         "url": "https://api.ihsa.org/v1/schools/0101/staff2"
       }
-    ]
+    ],
+    "sport": "outdoor_track"
   },
   {
     "evidence": [
@@ -301,15 +270,15 @@
         }
       }
     ],
-    "gender": "mixed",
-    "id": "coa_ba340c94164e0578",
-    "name": "Alex Larson",
-    "professional_email": "alarson@abbotsford.k12.wi.us",
-    "role": "athletic_director",
-    "school": "sch_b5ea31ddfcd999ba",
+    "gender": "girls",
+    "id": "coa_c37401deaf007c3f",
+    "name": "Dillon Novak",
+    "professional_email": "dnovak@abbotsford.k12.wi.us",
+    "role": "head_coach",
+    "school": "sch_807f13a4c3307f66",
     "source_identities": [
       {
-        "id": "1:ad",
+        "id": "1:Some(HeadCoach)",
         "namespace": {
           "association_school": {
             "association": "wiaa"
@@ -317,7 +286,38 @@
         },
         "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
       }
-    ]
+    ],
+    "sport": "cross_country"
+  },
+  {
+    "evidence": [
+      {
+        "method": "parsed",
+        "observed_on": "2026-09-19",
+        "source": {
+          "id": "coach_contacts_csv",
+          "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+        }
+      }
+    ],
+    "gender": "girls",
+    "id": "coa_c5b0a75ff83089c8",
+    "name": "JACOB KNAPMILLER",
+    "professional_email": "jknapmiller@abbotsford.k12.wi.us",
+    "role": "head_coach",
+    "school": "sch_807f13a4c3307f66",
+    "source_identities": [
+      {
+        "id": "1:Some(HeadCoach)",
+        "namespace": {
+          "association_school": {
+            "association": "wiaa"
+          }
+        },
+        "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+      }
+    ],
+    "sport": "outdoor_track"
   },
   {
     "evidence": [
@@ -355,25 +355,25 @@
         "observed_on": "2026-09-19",
         "source": {
           "id": "coach_contacts_csv",
-          "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
+          "url": "https://api.ihsa.org/v1/schools/0101/staff2"
         }
       }
     ],
     "gender": "mixed",
-    "id": "coa_d678e6f05edf6def",
-    "name": "Derek Berns",
-    "professional_email": "dberns@abileneschools.org",
+    "id": "coa_f0828446065cf8fc",
+    "name": "Reid Kelso",
+    "professional_email": "rkelso@atown276.net",
     "role": "athletic_director",
-    "school": "sch_75152c829b97d64c",
+    "school": "sch_7f088801c6a99414",
     "source_identities": [
       {
-        "id": "abilene:ad",
+        "id": "0101:ad",
         "namespace": {
           "association_school": {
-            "association": "kshsaa"
+            "association": "ihsa"
           }
         },
-        "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
+        "url": "https://api.ihsa.org/v1/schools/0101/staff2"
       }
     ]
   }

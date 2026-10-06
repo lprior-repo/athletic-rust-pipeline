@@ -59,9 +59,8 @@ fn publish_fixture_cohort(
 }
 
 fn school(store: &Store, state: UsJurisdiction, name: &str) -> TestResult<SchoolId> {
-    let (mut school, id) = CanonicalSchool::new(state, name, normalize_name(name));
+    let (mut school, id) = CanonicalSchool::new(state, name, normalize_name(name), Some(name));
     school.athletics_website = Some(format!("https://{}.test/athletics", name.to_lowercase()));
-    school.city = Some(name.to_string());
     school.evidence = evidence("wiaa_results", Some("https://wiaa.test/schools"));
     store.append(Table::Schools, &school)?;
     Ok(id)

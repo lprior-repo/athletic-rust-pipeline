@@ -288,3 +288,7 @@ mod performance_tests;
 #[cfg(test)]
 #[path = "canonical_event_tests.rs"]
 mod event_tests;
+
+#[cfg(test)]
+#[path = "school_location_tests.rs"]
+mod school_location_tests;

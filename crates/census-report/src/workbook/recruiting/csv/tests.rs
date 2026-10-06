@@ -56,8 +56,8 @@ fn published_recruiting_csv_literalizes_source_text_without_rewriting_it() -> Te
         UsJurisdiction::Wisconsin,
         FORMULA_SCHOOL,
         normalize_name(FORMULA_SCHOOL),
+        Some(FORMULA_CITY),
     );
-    school.city = Some(FORMULA_CITY.to_string());
     school.athletics_website = Some(WEBSITE.to_string());
     store.append(Table::Schools, &school)?;
 

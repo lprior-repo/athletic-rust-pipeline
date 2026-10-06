@@ -12,11 +12,11 @@
         }
       ],
       "gender": "mixed",
-      "id": "coa_eb8d0b1041ca2af6",
+      "id": "coa_f43c35e245675d0a",
       "name": "Hannah Couch",
       "professional_email": "hannah.couch@academicarts.org",
       "role": "athletic_director",
-      "school": "sch_fab19d6e0dc4d28c",
+      "school": "sch_4360b0dd8e56375a",
       "source_identities": [
         {
           "id": "733:ad",
@@ -82,7 +82,7 @@
         }
       }
     ],
-    "id": "sch_fab19d6e0dc4d28c",
+    "id": "sch_4360b0dd8e56375a",
     "name": "Academic Arts High School",
     "normalized_name": "academic arts",
     "source_identities": [
@@ -98,6 +98,6 @@
     ],
     "state": "MN"
   },
-  "school_id": "sch_fab19d6e0dc4d28c",
+  "school_id": "sch_4360b0dd8e56375a",
   "school_key": "733"
 }

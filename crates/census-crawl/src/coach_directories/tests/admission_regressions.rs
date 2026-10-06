@@ -18,6 +18,7 @@ fn emit(
         UsJurisdiction::Wyoming,
         "Test High School",
         "test high school",
+        None,
     );
     Ok(coach_entities(
         &summary,

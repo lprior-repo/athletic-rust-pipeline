@@ -19,7 +19,7 @@ pub struct SchoolExtract {
 
 pub fn school_entities(school_name: &str, table: &SchoolTable, observed_on: &str) -> SchoolExtract {
     let normalized = normalize_name(school_name);
-    let (mut school, school_id) = CanonicalSchool::new(STATE, school_name, &normalized);
+    let (mut school, school_id) = CanonicalSchool::new(STATE, school_name, &normalized, None);
     school.association = Some(ASSOCIATION.to_string());
     school.evidence.push(Evidence::parsed(
         SourceRef::new(SOURCE_ID, Some(format!("{HOST}/Directory.aspx"))),

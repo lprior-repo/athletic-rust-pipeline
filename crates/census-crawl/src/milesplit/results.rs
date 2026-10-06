@@ -1,6 +1,6 @@
 use super::map::ProviderSchools;
 use super::wire::ResultSetRef;
-use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
+use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult, UnresolvedCounters};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
     CanonicalTeam, SourceObservation,
@@ -78,7 +78,7 @@ pub async fn collect(
         return Ok(report);
     }
     let mut run = Run {
-        schools: ProviderSchools::from_schools(&consolidated_schools(ctx)?),
+        schools: ProviderSchools::from_schools(&live_schools(ctx)?),
         owned: HashMap::new(),
         stats: Stats::default(),
         accumulated: Accumulator::default(),
@@ -121,6 +121,14 @@ async fn finish(
     report.errors = u64::try_from(stats.failures.len()).map_err(|_| CrawlError::Arithmetic {
         detail: "failure count does not fit in u64".to_string(),
     })?;
+    report.unresolved = Some(UnresolvedCounters {
+        rows: u64::try_from(stats.rows_without_school).map_err(|_| CrawlError::Arithmetic {
+            detail: "unresolved school row count does not fit in u64".to_string(),
+        })?,
+        labels: u64::try_from(stats.unresolved.len()).map_err(|_| CrawlError::Arithmetic {
+            detail: "unresolved school label count does not fit in u64".to_string(),
+        })?,
+    });
     report.requests = requests_after.saturating_sub(requests_before);
     report.from_cache = cache_after.saturating_sub(cache_before);
     report.note(format!(
@@ -164,10 +172,8 @@ pub(super) struct EntityCounts {
     pub(super) unsupported_cohorts: usize,
 }
 
-fn consolidated_schools(ctx: &AdapterContext<'_>) -> CrawlResult<Vec<CanonicalSchool>> {
-    let schools: Vec<CanonicalSchool> =
-        census_store::read::read_rows(&ctx.store.out_dir().join("schools.jsonl"))?;
-    Ok(schools)
+fn live_schools(ctx: &AdapterContext<'_>) -> CrawlResult<Vec<CanonicalSchool>> {
+    ctx.store.scan(Table::Schools).map_err(CrawlError::Store)
 }
 
 fn append(

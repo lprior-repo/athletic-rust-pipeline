@@ -66,8 +66,12 @@ fn build_corpus(n: usize) -> TestResult<Corpus> {
     };
     for i in 0..n {
         let name = format!("KillRestart School {i}");
-        let (mut school, sid) =
-            CanonicalSchool::new(UsJurisdiction::Wisconsin, &name, normalize_name(&name));
+        let (mut school, sid) = CanonicalSchool::new(
+            UsJurisdiction::Wisconsin,
+            &name,
+            normalize_name(&name),
+            None,
+        );
         school.evidence.push(evidence());
         let tid = Id::mint("team", &[sid.as_str(), "track", "m", "2025"]);
         c.teams.push(CanonicalTeam {
@@ -298,6 +302,7 @@ fn a_workbook_export_interrupted_by_sigkill_rebuilds_completely_on_restart() -> 
     "store must hold all observations: expected={}, found={}",
     expected,
     stats.observations);
+
             Ok(())
         })
 }

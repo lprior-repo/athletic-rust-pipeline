@@ -152,7 +152,7 @@ mod tests {
         let schools: Vec<CanonicalSchool> = names
             .iter()
             .map(|(name, normalized)| {
-                CanonicalSchool::new(UsJurisdiction::Wisconsin, *name, *normalized).0
+                CanonicalSchool::new(UsJurisdiction::Wisconsin, *name, *normalized, None).0
             })
             .collect();
         SchoolIndex::from_schools(&schools)
@@ -232,7 +232,7 @@ mod tests {
         let schools: Vec<CanonicalSchool> = ["Madison Memorial", "Milwaukee Memorial"]
             .iter()
             .map(|name| {
-                CanonicalSchool::new(UsJurisdiction::Wisconsin, *name, normalize_name(name)).0
+                CanonicalSchool::new(UsJurisdiction::Wisconsin, *name, normalize_name(name), None).0
             })
             .collect();
         let index = SchoolIndex::from_schools(&schools);

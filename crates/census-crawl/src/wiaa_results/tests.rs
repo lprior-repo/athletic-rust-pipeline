@@ -183,7 +183,7 @@ fn overlapping_archives_process_one_logical_result_once() -> TestResult {
     ?
     .with_source("wiaa_results")
     .with_offline(true);
-    let (school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Middleton", "middleton");
+    let (school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Middleton", "middleton", None);
     std::fs::write(
         store.out_dir().join("schools.jsonl"),
         format!("{}\n", serde_json::to_string(&school)?),

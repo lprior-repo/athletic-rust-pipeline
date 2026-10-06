@@ -25,11 +25,11 @@
         }
       ],
       "gender": "girls",
-      "id": "coa_1840bb47a12a1720",
+      "id": "coa_065d6f5da46fb545",
       "name": "Ava Carlson",
       "professional_email": "avacarlson@isd1.org",
       "role": "head_coach",
-      "school": "sch_49f3afc6e56effda",
+      "school": "sch_b4a56515c019fd77",
       "source_identities": [
         {
           "id": "593478:ava carlson",
@@ -74,6 +74,6 @@
       "role": null
     }
   ],
-  "school_id": "sch_49f3afc6e56effda",
+  "school_id": "sch_b4a56515c019fd77",
   "slug": "aitkin-high-school"
 }

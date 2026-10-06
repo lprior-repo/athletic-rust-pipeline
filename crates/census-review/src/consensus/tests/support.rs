@@ -33,9 +33,9 @@ impl Fixture {
 }
 
 pub(crate) fn add_school(store: &Store, name: &str) -> TestResult<ReviewCase> {
-    let (mut school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, name, name);
+    let (mut school, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, name, name, Some("Madison"));
     school.state = None;
-    school.city = Some("Madison".to_string());
     school.association = Some("WIAA".to_string());
     let case = ReviewCase::pending(
         "School jurisdiction unresolved",

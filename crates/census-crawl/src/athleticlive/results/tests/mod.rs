@@ -97,7 +97,7 @@ fn stage_capture(dir: &tempfile::TempDir, name: &str, body: &str) -> TestResult<
 fn write_schools(store: &Store, schools: &[(UsJurisdiction, &str)]) -> TestResult {
     let mut lines = String::new();
     for (state, name) in schools {
-        let (school, _) = CanonicalSchool::new(*state, *name, normalize_name(name));
+        let (school, _) = CanonicalSchool::new(*state, *name, normalize_name(name), None);
         lines.push_str(&serde_json::to_string(&school)?);
         lines.push('\n');
     }

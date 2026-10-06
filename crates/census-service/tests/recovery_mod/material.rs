@@ -100,8 +100,12 @@ pub(super) fn wi_options(limit_per_state: Option<usize>) -> CollectOptions {
 
 fn unit_school(key: &str, observed_on: &str) -> CanonicalSchool {
     let name = format!("Recovery Unit {key}");
-    let (mut school, _id) =
-        CanonicalSchool::new(UsJurisdiction::Kansas, name.clone(), normalize_name(&name));
+    let (mut school, _id) = CanonicalSchool::new(
+        UsJurisdiction::Kansas,
+        name.clone(),
+        normalize_name(&name),
+        None,
+    );
     school.evidence.push(Evidence::parsed(
         SourceRef::id("recovery_fixture"),
         observed_on,

@@ -12,10 +12,10 @@
         }
       ],
       "gender": "mixed",
-      "id": "coa_86efd97d4a5ae3da",
+      "id": "coa_990cf9ba433c1cff",
       "name": "Logan Midthun",
       "role": "athletic_director",
-      "school": "sch_1b752c954c9ada64",
+      "school": "sch_b863491e1cbf5c2e",
       "source_identities": []
     },
     {
@@ -30,10 +30,10 @@
         }
       ],
       "gender": "mixed",
-      "id": "coa_cb76fa91a095f95a",
+      "id": "coa_63c8976afa524298",
       "name": "James Moe",
       "role": "athletic_director",
-      "school": "sch_1b752c954c9ada64",
+      "school": "sch_b863491e1cbf5c2e",
       "source_identities": []
     },
     {
@@ -48,10 +48,10 @@
         }
       ],
       "gender": "mixed",
-      "id": "coa_c14232d9ecd2bc32",
+      "id": "coa_3684238c053e4ddc",
       "name": "Corissa Kolesar",
       "role": "athletic_director",
-      "school": "sch_1b752c954c9ada64",
+      "school": "sch_b863491e1cbf5c2e",
       "source_identities": []
     }
   ],
@@ -306,7 +306,7 @@
         }
       }
     ],
-    "id": "sch_1b752c954c9ada64",
+    "id": "sch_b863491e1cbf5c2e",
     "name": "West Fargo Sheyenne High School",
     "normalized_name": "west fargo sheyenne",
     "school_website": "https://www.west-fargo.k12.nd.us/shs/activities",
@@ -323,7 +323,7 @@
     ],
     "state": "ND"
   },
-  "school_id": "sch_1b752c954c9ada64",
+  "school_id": "sch_b863491e1cbf5c2e",
   "sport_coaches": [
     {
       "evidence": [
@@ -337,10 +337,10 @@
         }
       ],
       "gender": "boys",
-      "id": "coa_49d504fe3a01085a",
+      "id": "coa_edea6a48411299fe",
       "name": "Troy Thorson",
       "role": "unknown",
-      "school": "sch_1b752c954c9ada64",
+      "school": "sch_b863491e1cbf5c2e",
       "source_identities": [],
       "sport": "cross_country"
     },
@@ -356,10 +356,10 @@
         }
       ],
       "gender": "boys",
-      "id": "coa_457e24906815484b",
+      "id": "coa_ca7e5304c5d06cb2",
       "name": "Jared Slinde",
       "role": "unknown",
-      "school": "sch_1b752c954c9ada64",
+      "school": "sch_b863491e1cbf5c2e",
       "source_identities": [],
       "sport": "cross_country"
     },
@@ -375,10 +375,10 @@
         }
       ],
       "gender": "girls",
-      "id": "coa_e1878ddecef68c6e",
+      "id": "coa_4c6ca252fdcf3c01",
       "name": "Troy Thorson",
       "role": "unknown",
-      "school": "sch_1b752c954c9ada64",
+      "school": "sch_b863491e1cbf5c2e",
       "source_identities": [],
       "sport": "cross_country"
     },
@@ -394,10 +394,10 @@
         }
       ],
       "gender": "girls",
-      "id": "coa_3b322b071da552e9",
+      "id": "coa_f1a8fb0a3f496c5e",
       "name": "Jared Slinde",
       "role": "unknown",
-      "school": "sch_1b752c954c9ada64",
+      "school": "sch_b863491e1cbf5c2e",
       "source_identities": [],
       "sport": "cross_country"
     },
@@ -413,10 +413,10 @@
         }
       ],
       "gender": "boys",
-      "id": "coa_d4c078d336b91e8c",
+      "id": "coa_c97ca11b9850bd11",
       "name": "Jared Slinde",
       "role": "unknown",
-      "school": "sch_1b752c954c9ada64",
+      "school": "sch_b863491e1cbf5c2e",
       "source_identities": [],
       "sport": "outdoor_track"
     },
@@ -432,10 +432,10 @@
         }
       ],
       "gender": "girls",
-      "id": "coa_2171d4a22222c9ab",
+      "id": "coa_1fed78718790b00f",
       "name": "Jaime Watson",
       "role": "unknown",
-      "school": "sch_1b752c954c9ada64",
+      "school": "sch_b863491e1cbf5c2e",
       "source_identities": [],
       "sport": "outdoor_track"
     }

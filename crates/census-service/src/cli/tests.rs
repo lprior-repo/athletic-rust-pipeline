@@ -57,8 +57,12 @@ fn verification_uses_the_frozen_generation_after_the_store_changes() -> TestResu
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path().join("store"))?;
     let workbook = census_report::workbook::build(&store, &Default::default())?;
-    let (mut school, _) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Later School", "later school");
+    let (mut school, _) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Later School",
+        "later school",
+        None,
+    );
     school.evidence.push(Evidence::parsed(
         SourceRef::new(
             "wiaa_results",

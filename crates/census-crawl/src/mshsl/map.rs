@@ -50,9 +50,12 @@ pub fn school_entities(
     } else {
         row.name.clone()
     };
-    let (mut school, school_id) =
-        CanonicalSchool::new(UsJurisdiction::Minnesota, &name, normalize_name(&name));
-    school.city = row.city.clone();
+    let (mut school, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Minnesota,
+        &name,
+        normalize_name(&name),
+        row.city.as_deref(),
+    );
     school.association = Some(SOURCE_ID.to_string());
     school.enrollment = detail.enrollment;
     school.school_website = detail.website.clone();

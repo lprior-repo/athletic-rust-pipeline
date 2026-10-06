@@ -81,7 +81,7 @@ pub(super) fn school_for(
         resolved.insert(key, id.clone());
         return Some(id);
     }
-    let (mut school, id) = CanonicalSchool::new(state, name.clone(), name.to_lowercase());
+    let (mut school, id) = CanonicalSchool::new(state, name.clone(), name.to_lowercase(), None);
     school.source_identities.push(SourceIdentity {
         namespace: SourceNamespace::AthleticNet {
             kind: SCHOOL_KIND.to_string(),

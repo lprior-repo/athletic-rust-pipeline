@@ -16,8 +16,12 @@ pub fn parse_school(
         return None;
     }
     let normalized = normalize_name(name);
-    let (mut school, id) = CanonicalSchool::new(UsJurisdiction::Kansas, name, &normalized);
-    school.city = nonempty(&record.mailing_city);
+    let (mut school, id) = CanonicalSchool::new(
+        UsJurisdiction::Kansas,
+        name,
+        &normalized,
+        nonempty(&record.mailing_city).as_deref(),
+    );
     school.association = Some(super::ASSOCIATION.to_string());
     school.classification = record.class.as_ref().and_then(|v| nonempty(v));
     school.enrollment = record.enrollment;

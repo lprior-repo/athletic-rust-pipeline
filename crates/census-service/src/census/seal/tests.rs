@@ -96,8 +96,12 @@ fn condition(kind: AccessBlockKind, host: &str) -> SourceAccessCondition {
 
 fn populated_store(path: &Path) -> TestResult<Store> {
     let store = Store::open(path)?;
-    let (mut school, id) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Test School", "test school");
+    let (mut school, id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Test School",
+        "test school",
+        None,
+    );
     let evidence = Evidence::parsed(
         SourceRef::new(
             "milesplit",
@@ -176,8 +180,12 @@ fn new_source_evidence_invalidates_the_old_seal_candidate() -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = populated_store(directory.path())?;
     let path = census_report::workbook::build(&store, &Default::default())?;
-    let (school, _) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Later School", "later school");
+    let (school, _) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Later School",
+        "later school",
+        None,
+    );
     store.append(Table::Schools, &school)?;
     let current = ExportDataset::load(&store)?;
     let error = match inspect_workbook(&path, &current, 2027, Scope::AllSources) {

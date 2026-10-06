@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
 use census_crawl::net::Fetcher;
-use census_crawl::{AdapterContext, AdapterReport};
+use census_crawl::{AdapterContext, AdapterReport, UnresolvedCounters};
 use census_domain::model::SourceMeetRef;
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use restate_sdk::prelude::{HandlerError, Json};
 use serde::{Deserialize, Serialize};
 
-use super::jobs::{adapter_context, collect_error, rows_written};
+use super::jobs::{adapter_context, assert_some_stage_arms, collect_error, rows_written};
 use super::meets_arms::season_of;
 use super::{job_error, JobError};
 
@@ -46,6 +46,8 @@ pub struct ResultsSourceRows {
     pub slug: String,
     pub meets: usize,
     pub rows: usize,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unresolved: Option<UnresolvedCounters>,
 }
 
 pub(super) async fn results_stage(
@@ -70,6 +72,7 @@ pub(super) async fn results_stage(
     let mut outcome = ResultsStageOutcome::default();
     for slug in &sweepable {
         let Some(arm) = arm_for(slug) else {
+            assert_some_stage_arms(slug)?;
             continue;
         };
         let (meets, report) = match arm {
@@ -78,13 +81,22 @@ pub(super) async fn results_stage(
                 athleticnet_meets(&context, &selected, jurisdiction, &at).await?
             }
         };
-        outcome.per_source.push(ResultsSourceRows {
-            slug: slug.clone(),
-            meets,
-            rows: rows_written(&report)?,
-        });
+        outcome.per_source.push(source_rows(slug, meets, &report)?);
     }
     Ok(Json(outcome))
+}
+
+fn source_rows(
+    slug: &str,
+    meets: usize,
+    report: &AdapterReport,
+) -> Result<ResultsSourceRows, HandlerError> {
+    Ok(ResultsSourceRows {
+        slug: slug.to_string(),
+        meets,
+        rows: rows_written(report)?,
+        unresolved: report.unresolved,
+    })
 }
 
 async fn milesplit_results(

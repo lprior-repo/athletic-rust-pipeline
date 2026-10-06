@@ -175,7 +175,7 @@ fn school_entity(
     observed_on: &str,
 ) -> (CanonicalSchool, SchoolId) {
     let norm = normalize_name(&entry.name);
-    let (mut school, school_id) = CanonicalSchool::new(STATE, &entry.name, &norm);
+    let (mut school, school_id) = CanonicalSchool::new(STATE, &entry.name, &norm, None);
     school.association = Some(ASSOCIATION.to_string());
     school.source_identities.push(
         SourceIdentity::new(

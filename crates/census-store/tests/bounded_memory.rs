@@ -21,6 +21,7 @@ fn performance(index: usize, version: usize) -> TestResult<CanonicalPerformance>
         UsJurisdiction::Wisconsin,
         "Abbotsford High School",
         "abbotsford",
+        None,
     );
     let identity = SourceIdentity::new(
         SourceNamespace::MilesplitAthlete,

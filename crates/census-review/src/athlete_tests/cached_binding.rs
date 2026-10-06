@@ -1,7 +1,7 @@
 use census_domain::model::ReviewState;
 use census_store::Table;
 
-use super::binding_support::{assert_preserved, canonical_side, rows, Change, Fixture};
+use super::binding_support::{assert_preserved, canonical, canonical_side, rows, Change, Fixture};
 use super::options;
 use crate::consensus::tests::support::{audit, batch, client, lane, row, state, TestResult};
 use crate::run_lanes;
@@ -103,7 +103,8 @@ fn source_url_ownership_and_conflict_changes_cannot_reuse_another_snapshots_advi
                         (&requests[1], "side_b", &changed_rows[1]),
                     ] {
                         let actual = canonical_side(request, side)?;
-                        if &actual != expected {
+                        let expected = canonical(expected)?;
+                        if actual != expected {
                             return Err(format!("left={actual:?} right={expected:?}").into());
                         }
                     }

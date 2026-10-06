@@ -68,9 +68,12 @@ fn roster_school(
         Some(format!("{}/roster", roster.team.url)),
     );
     let owner = owner_name(&roster.team);
-    let (mut school, school_id) =
-        CanonicalSchool::new(site.jurisdiction(), &owner, normalize_name(&owner));
-    school.city = city_of(&roster.team.city_state);
+    let (mut school, school_id) = CanonicalSchool::new(
+        site.jurisdiction(),
+        &owner,
+        normalize_name(&owner),
+        city_of(&roster.team.city_state).as_deref(),
+    );
     school.source_identities.push(
         SourceIdentity::new(SourceNamespace::MilesplitSchool, roster.team.id.clone())
             .with_url(roster.team.url.clone()),

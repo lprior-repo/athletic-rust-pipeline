@@ -10,12 +10,15 @@ use census_domain::UsJurisdiction;
 mod flags;
 #[path = "athlete_packet_tests/group.rs"]
 mod group;
+#[path = "athlete_packet_tests/identity.rs"]
+mod identity;
 
 fn school() -> SchoolId {
     CanonicalSchool::new(
         UsJurisdiction::Wisconsin,
         "Madison West High School",
         normalize_name("Madison West High School"),
+        None,
     )
     .0
     .id

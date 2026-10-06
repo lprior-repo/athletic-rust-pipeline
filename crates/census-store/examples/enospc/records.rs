@@ -32,7 +32,7 @@ pub(super) fn school(index: usize) -> StoreResult<CanonicalSchool> {
     }
     let name = format!("School_{index:04}");
     let (mut school, _) =
-        CanonicalSchool::new(UsJurisdiction::Kansas, &name, normalize_name(&name));
+        CanonicalSchool::new(UsJurisdiction::Kansas, &name, normalize_name(&name), None);
     school.evidence.push(Evidence {
         source: SourceRef::id(format!("drill:{index}")),
         method: EvidenceMethod::Fetched,

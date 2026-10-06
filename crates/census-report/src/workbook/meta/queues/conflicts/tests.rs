@@ -8,7 +8,7 @@ use census_review::athlete_flags::key;
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn school(name: &str) -> CanonicalSchool {
-    CanonicalSchool::new(UsJurisdiction::Wisconsin, name, normalize_name(name)).0
+    CanonicalSchool::new(UsJurisdiction::Wisconsin, name, normalize_name(name), None).0
 }
 
 fn athlete(

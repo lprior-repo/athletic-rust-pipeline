@@ -85,8 +85,12 @@ pub fn wiaa_result_files(corpus: &mut Corpus) -> Result<()> {
     }
 
     for label in &labels {
-        let (school, id) =
-            CanonicalSchool::new(UsJurisdiction::Wisconsin, label, normalize_name(label));
+        let (school, id) = CanonicalSchool::new(
+            UsJurisdiction::Wisconsin,
+            label,
+            normalize_name(label),
+            None,
+        );
         schools.insert(id.as_str().to_string(), school);
     }
     let index = SchoolIndex::from_schools(&schools.values().cloned().collect::<Vec<_>>());

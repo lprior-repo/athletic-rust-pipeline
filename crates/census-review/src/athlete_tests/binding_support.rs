@@ -41,6 +41,7 @@ pub(super) fn rows() -> TestResult<Vec<CanonicalAthlete>> {
         census_domain::UsJurisdiction::Wisconsin,
         "Madison West",
         "madison west",
+        None,
     )
     .0
     .id;
@@ -103,6 +104,10 @@ impl Change {
         }
         Ok(())
     }
+}
+
+pub(super) fn canonical(row: &CanonicalAthlete) -> TestResult<CanonicalAthlete> {
+    Ok(crate::athlete_packet::canonical_athlete(row)?)
 }
 
 pub(super) fn canonical_side(request: &Value, side: &str) -> TestResult<CanonicalAthlete> {

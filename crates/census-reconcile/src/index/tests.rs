@@ -7,7 +7,8 @@ use census_store::Entity;
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn school() -> CanonicalSchool {
-    let mut school = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford").0;
+    let mut school =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford", None).0;
     school.source_identities.push(
         SourceIdentity::new(SourceNamespace::MilesplitSchool, "1234")
             .with_url("https://wi.milesplit.com/teams/1234"),

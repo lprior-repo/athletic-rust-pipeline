@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn athlete_ids_separate_gender_sides_and_ignore_spacing() {
-    let school = CanonicalSchool::mint(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
+    let school = CanonicalSchool::mint(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford", None);
     let cohort = GradYear::CO2027;
     let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
     let mint = |name: &str, gender| CanonicalAthlete::mint(&school, name, cohort, gender, &source);
@@ -22,6 +22,7 @@ fn candidate_key_equality_agrees_with_the_retained_athlete_key() {
         UsJurisdiction::Wisconsin,
         "Madison West High School",
         "madison-west",
+        None,
     );
     let class = GradYear::CO2027;
     let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
@@ -46,6 +47,7 @@ fn candidate_index_collisions_do_not_erase_distinct_categories() {
         UsJurisdiction::Wisconsin,
         "Madison West High School",
         "madison-west",
+        None,
     );
     let key = |gender| AthleteCandidateKey::new(&school, "Jane Doe", GradYear::CO2027, gender);
     let mixed = key(Gender::Mixed);

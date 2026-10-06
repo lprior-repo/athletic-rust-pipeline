@@ -176,7 +176,12 @@ pub(super) fn assert_published(store: &Store) -> super::TestResult {
     let schools: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
     check!(eq; schools.len(), 1);
     let school = &schools[0];
-    let school_id = CanonicalSchool::mint(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
+    let school_id = CanonicalSchool::mint(
+        UsJurisdiction::Wisconsin,
+        "Abbotsford",
+        "abbotsford",
+        Some("Abbotsford"),
+    );
     check!(eq; school.id, school_id);
     check!(eq; school.name, "Abbotsford");
     check!(eq; school.source_identities,
@@ -251,7 +256,12 @@ pub(super) fn assert_capture(
         .journal_payload(&phase, "WI:52649")?
         .ok_or("missing committed capture binding")?;
     check!(eq; journal["team_id"], "52649");
-    let school_id = CanonicalSchool::mint(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
+    let school_id = CanonicalSchool::mint(
+        UsJurisdiction::Wisconsin,
+        "Abbotsford",
+        "abbotsford",
+        Some("Abbotsford"),
+    );
     check!(eq; journal["school"], school_id.as_str());
     check!(eq; journal["observed_on"], OBSERVED_ON);
     check!(eq; journal["capture"]["url"], ROSTER_URL);

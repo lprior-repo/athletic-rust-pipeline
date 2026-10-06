@@ -26,7 +26,7 @@ fn athlete(school: &CanonicalSchool, native_id: &str) -> CanonicalAthlete {
 #[test]
 fn derive_applies_source_binding_once_and_preserves_history_after_reopen() -> TestResult {
     let directory = tempfile::tempdir()?;
-    let (school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "School", "school");
+    let (school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "School", "school", None);
     let mut athlete = athlete(&school, "111");
     let original;
     {
@@ -78,7 +78,7 @@ fn derive_applies_source_binding_once_and_preserves_history_after_reopen() -> Te
 fn derive_does_not_promote_or_merge_provider_owned_homonyms() -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path())?;
-    let (school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "School", "school");
+    let (school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "School", "school", None);
     let first = athlete(&school, "111");
     let second = athlete(&school, "222");
     store.append(Table::Schools, &school)?;
@@ -103,8 +103,10 @@ fn derive_does_not_promote_or_merge_provider_owned_homonyms() -> TestResult {
 }
 
 fn resolved_transfer(store: &Store) -> Result<ReviewCase, Box<dyn std::error::Error>> {
-    let (school_a, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "School A", "school a");
-    let (school_b, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "School B", "school b");
+    let (school_a, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "School A", "school a", None);
+    let (school_b, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "School B", "school b", None);
     let first = athlete(&school_a, "111");
     let second = athlete(&school_b, "111");
     store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;

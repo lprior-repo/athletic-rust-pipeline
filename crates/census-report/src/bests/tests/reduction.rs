@@ -12,6 +12,7 @@ fn reduction_selects_the_faster_result_without_inventing_a_team_school() -> Test
         UsJurisdiction::Wisconsin,
         "Synthetic school",
         "synthetic school",
+        None,
     );
     let mut athlete = CanonicalAthlete::new(
         &school_id,

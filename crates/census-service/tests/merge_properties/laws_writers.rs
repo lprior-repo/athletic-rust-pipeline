@@ -1,5 +1,5 @@
 use super::*;
-use census_domain::model::NaturalKey;
+use census_domain::model::{NaturalKey, CANONICAL_ID_COLLISION_FAMILY};
 
 proptest! {
     #![proptest_config(law_config())]
@@ -7,7 +7,6 @@ proptest! {
     #[test]
     fn school_scalar_fields_keep_the_first_observation(
         city in word(12),
-        other_city in word(12),
         association in word(8),
         other_association in word(8),
         enrollment in 0u32..4_000,
@@ -17,10 +16,12 @@ proptest! {
         co_op in any::<bool>(),
         other_co_op in any::<bool>(),
     ) {
-        let (mut first, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Madison", "madison");
-        let (mut second, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Madison", "madison");
+        let (mut first, _) =
+            CanonicalSchool::new(UsJurisdiction::Wisconsin, "Madison", "madison", None);
+        let (mut second, _) =
+            CanonicalSchool::new(UsJurisdiction::Wisconsin, "Madison", "madison", None);
         first.city = Some(city.clone());
-        second.city = Some(other_city.clone());
+        second.city = Some(city.clone());
         first.association = Some(association.clone());
         second.association = Some(other_association);
         first.enrollment = Some(enrollment);
@@ -33,7 +34,7 @@ proptest! {
 
         let mut merged = first.clone();
         merged.merge(second.clone());
-        prop_assert_eq!(&merged.city, &Some(city));
+        prop_assert_eq!(&merged.city, &Some(city.clone()));
         prop_assert_eq!(&merged.association, &Some(association));
         prop_assert_eq!(merged.enrollment, Some(enrollment));
         prop_assert_eq!(&merged.name, &name);
@@ -42,9 +43,47 @@ proptest! {
 
         let mut reversed = second;
         reversed.merge(first);
-        prop_assert_eq!(&reversed.city, &Some(other_city));
+        prop_assert_eq!(&reversed.city, &Some(city.clone()));
         prop_assert_eq!(reversed.enrollment, Some(other_enrollment));
         prop_assert_eq!(&reversed.co_op, &(co_op | other_co_op));
+    }
+
+    #[test]
+    fn rows_sharing_an_id_with_disagreeing_cities_retain_the_conflict_and_do_not_blend(
+        city in word(12),
+        other_city in word(12),
+        association in word(8),
+        other_association in word(8),
+        enrollment in 0u32..4_000,
+        other_enrollment in 0u32..4_000,
+        co_op in any::<bool>(),
+        other_co_op in any::<bool>(),
+    ) {
+        prop_assume!(city != other_city);
+        let (mut first, _) =
+            CanonicalSchool::new(UsJurisdiction::Wisconsin, "Madison", "madison", None);
+        let (mut second, _) =
+            CanonicalSchool::new(UsJurisdiction::Wisconsin, "Madison", "madison", None);
+        first.city = Some(city.clone());
+        second.city = Some(other_city.clone());
+        first.association = Some(association.clone());
+        second.association = Some(other_association);
+        first.enrollment = Some(enrollment);
+        second.enrollment = Some(other_enrollment);
+        first.co_op = co_op;
+        second.co_op = other_co_op;
+
+        let mut merged = first.clone();
+        merged.merge(second.clone());
+        prop_assert_eq!(&merged.city, &Some(city));
+        prop_assert_eq!(&merged.association, &Some(association));
+        prop_assert_eq!(merged.enrollment, Some(enrollment));
+        prop_assert_eq!(merged.co_op, co_op);
+        prop_assert_eq!(merged.retained_conflicts.len(), 1);
+        prop_assert_eq!(
+            merged.retained_conflicts[0].family.as_str(),
+            CANONICAL_ID_COLLISION_FAMILY
+        );
     }
 
     #[test]
@@ -53,8 +92,10 @@ proptest! {
         suffix in word(10),
     ) {
         let long_form = format!("{short} {suffix}");
-        let (mut first, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Madison", "madison");
-        let (mut second, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Madison", "madison");
+        let (mut first, _) =
+            CanonicalSchool::new(UsJurisdiction::Wisconsin, "Madison", "madison", None);
+        let (mut second, _) =
+            CanonicalSchool::new(UsJurisdiction::Wisconsin, "Madison", "madison", None);
         first.name = short.clone();
         second.name = long_form.clone();
 

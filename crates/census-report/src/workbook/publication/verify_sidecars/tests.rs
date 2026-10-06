@@ -15,9 +15,12 @@ mod bests;
 mod postal;
 
 fn seed(store: &Store) -> TestResult {
-    let (mut school, school_id) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Ada High", "ada high");
-    school.city = Some("Madison".to_string());
+    let (mut school, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Ada High",
+        "ada high",
+        Some("Madison"),
+    );
     school.athletics_website = Some("https://ada.test/athletics".to_string());
     school.evidence = vec![Evidence::parsed(
         SourceRef::new("wiaa_results", Some("https://wiaa.test/ada".to_string())),

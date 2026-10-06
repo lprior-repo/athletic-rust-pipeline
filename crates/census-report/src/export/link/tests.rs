@@ -8,6 +8,7 @@ fn school() -> TestResult<CanonicalSchool> {
         UsJurisdiction::Tennessee,
         "Page High School",
         census_domain::model::normalize_name("Page High School"),
+        None,
     );
     Ok(school)
 }
@@ -130,6 +131,7 @@ fn a_campus_pair_publishes_its_own_link_key() -> TestResult {
         UsJurisdiction::Tennessee,
         "Page High School (East)",
         census_domain::model::normalize_name("Page High School (East)"),
+        None,
     );
     east.source_identities.push(association("tssaa", "158"));
     east.evidence.push(lane(

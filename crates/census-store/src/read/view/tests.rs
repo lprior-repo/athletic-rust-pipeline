@@ -78,9 +78,9 @@ fn one_generation_keeps_school_and_athlete_tables_coherent() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     let (first_school, first_id) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "First Fixture", "first");
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "First Fixture", "first", None);
     let (second_school, second_id) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Second Fixture", "second");
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Second Fixture", "second", None);
     let first = subject(&first_id, "4001", "Gail Example");
     store.append(Table::Schools, &first_school)?;
     store.append(Table::Athletes, &first)?;

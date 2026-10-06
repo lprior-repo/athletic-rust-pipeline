@@ -25,7 +25,8 @@ const CORRUPTIONS: [(&str, usize, usize, &str); 7] = [
 fn altered_metadata_cells_are_rejected() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
-    let (school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
+    let (school, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford", None);
     store.append(Table::Schools, &school)?;
 
     let options = Options::default();

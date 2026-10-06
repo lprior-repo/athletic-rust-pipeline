@@ -15,10 +15,10 @@
             }
           ],
           "gender": "mixed",
-          "id": "coa_7c80ceebb3e112ea",
+          "id": "coa_1e58adbe6e1283da",
           "name": "Alan Frank",
           "role": "athletic_director",
-          "school": "sch_2c870270b29ff075",
+          "school": "sch_4849a07a96ead5ad",
           "source_identities": []
         },
         {
@@ -33,10 +33,10 @@
             }
           ],
           "gender": "mixed",
-          "id": "coa_93e762d58dfcf99e",
+          "id": "coa_041463d83c410d68",
           "name": "Aub Boucher",
           "role": "athletic_director",
-          "school": "sch_2c870270b29ff075",
+          "school": "sch_4849a07a96ead5ad",
           "source_identities": []
         },
         {
@@ -51,10 +51,10 @@
             }
           ],
           "gender": "boys",
-          "id": "coa_d1605b78f84e15e5",
+          "id": "coa_fa4e7862ab674b43",
           "name": "Toni Fowler",
           "role": "head_coach",
-          "school": "sch_2c870270b29ff075",
+          "school": "sch_4849a07a96ead5ad",
           "source_identities": [],
           "sport": "cross_country"
         },
@@ -70,10 +70,10 @@
             }
           ],
           "gender": "girls",
-          "id": "coa_5704a6574ab3b879",
+          "id": "coa_1984853a8bc9ce7e",
           "name": "Toni Fowler",
           "role": "head_coach",
-          "school": "sch_2c870270b29ff075",
+          "school": "sch_4849a07a96ead5ad",
           "source_identities": [],
           "sport": "cross_country"
         },
@@ -89,10 +89,10 @@
             }
           ],
           "gender": "boys",
-          "id": "coa_377e0fa38b43d3b8",
+          "id": "coa_007e7d664bc7338f",
           "name": "Zeb Noyd",
           "role": "head_coach",
-          "school": "sch_2c870270b29ff075",
+          "school": "sch_4849a07a96ead5ad",
           "source_identities": [],
           "sport": "outdoor_track"
         },
@@ -108,10 +108,10 @@
             }
           ],
           "gender": "girls",
-          "id": "coa_58b9c28453650590",
+          "id": "coa_0097edbd1f4355ec",
           "name": "Toni Fowler",
           "role": "head_coach",
-          "school": "sch_2c870270b29ff075",
+          "school": "sch_4849a07a96ead5ad",
           "source_identities": [],
           "sport": "outdoor_track"
         }
@@ -363,7 +363,7 @@
             }
           }
         ],
-        "id": "sch_2c870270b29ff075",
+        "id": "sch_4849a07a96ead5ad",
         "name": "Adams Central",
         "normalized_name": "adams central",
         "school_website": "http://www.adamscentral.us/",
@@ -380,7 +380,7 @@
         ],
         "state": "NE"
       },
-      "school_id": "sch_2c870270b29ff075",
+      "school_id": "sch_4849a07a96ead5ad",
       "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
     },
     {
@@ -398,10 +398,10 @@
             }
           ],
           "gender": "mixed",
-          "id": "coa_040610515f32d23d",
+          "id": "coa_4a00753ace4582a2",
           "name": "Luke Wroblewski",
           "role": "athletic_director",
-          "school": "sch_91cd09e4e8f1b845",
+          "school": "sch_4b2d87c92cdb1a87",
           "source_identities": []
         },
         {
@@ -416,10 +416,10 @@
             }
           ],
           "gender": "boys",
-          "id": "coa_a1fadc92218379d3",
+          "id": "coa_7e6f2bf604b41b10",
           "name": "Trey Schlueter",
           "role": "head_coach",
-          "school": "sch_91cd09e4e8f1b845",
+          "school": "sch_4b2d87c92cdb1a87",
           "source_identities": [],
           "sport": "cross_country"
         },
@@ -435,10 +435,10 @@
             }
           ],
           "gender": "boys",
-          "id": "coa_732083df44ec0961",
+          "id": "coa_09423075289504a5",
           "name": "Katie Winters",
           "role": "head_coach",
-          "school": "sch_91cd09e4e8f1b845",
+          "school": "sch_4b2d87c92cdb1a87",
           "source_identities": [],
           "sport": "cross_country"
         },
@@ -454,10 +454,10 @@
             }
           ],
           "gender": "girls",
-          "id": "coa_573bcf304b75e044",
+          "id": "coa_57128b18327112f0",
           "name": "Trey Schlueter",
           "role": "head_coach",
-          "school": "sch_91cd09e4e8f1b845",
+          "school": "sch_4b2d87c92cdb1a87",
           "source_identities": [],
           "sport": "cross_country"
         },
@@ -473,10 +473,10 @@
             }
           ],
           "gender": "girls",
-          "id": "coa_4e0aa511e0d0628b",
+          "id": "coa_8905b8320311ac4e",
           "name": "Katie Winters",
           "role": "head_coach",
-          "school": "sch_91cd09e4e8f1b845",
+          "school": "sch_4b2d87c92cdb1a87",
           "source_identities": [],
           "sport": "cross_country"
         },
@@ -492,10 +492,10 @@
             }
           ],
           "gender": "boys",
-          "id": "coa_0ff0da565087bc28",
+          "id": "coa_b4b45ddf93342ab5",
           "name": "Jake Nelson",
           "role": "head_coach",
-          "school": "sch_91cd09e4e8f1b845",
+          "school": "sch_4b2d87c92cdb1a87",
           "source_identities": [],
           "sport": "outdoor_track"
         },
@@ -511,10 +511,10 @@
             }
           ],
           "gender": "girls",
-          "id": "coa_89bdd37b11eb37d5",
+          "id": "coa_9674c9ba19729d28",
           "name": "Jake Nelson",
           "role": "head_coach",
-          "school": "sch_91cd09e4e8f1b845",
+          "school": "sch_4b2d87c92cdb1a87",
           "source_identities": [],
           "sport": "outdoor_track"
         }
@@ -690,7 +690,7 @@
             }
           }
         ],
-        "id": "sch_91cd09e4e8f1b845",
+        "id": "sch_4b2d87c92cdb1a87",
         "name": "Ainsworth",
         "normalized_name": "ainsworth",
         "school_website": "http://www.ainsworthschools.org",
@@ -707,7 +707,7 @@
         ],
         "state": "NE"
       },
-      "school_id": "sch_91cd09e4e8f1b845",
+      "school_id": "sch_4b2d87c92cdb1a87",
       "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Ainsworth"
     },
     {
@@ -725,10 +725,10 @@
             }
           ],
           "gender": "mixed",
-          "id": "coa_6838764dd8890372",
+          "id": "coa_30ef8dbcbd09d1e5",
           "name": "Casey Brentlinger",
           "role": "athletic_director",
-          "school": "sch_69b6f43d01121d2f",
+          "school": "sch_7fee7ab22707952c",
           "source_identities": []
         },
         {
@@ -743,10 +743,10 @@
             }
           ],
           "gender": "boys",
-          "id": "coa_511fb551d83cfcda",
+          "id": "coa_5a45967810171781",
           "name": "Casey Brentlinger",
           "role": "head_coach",
-          "school": "sch_69b6f43d01121d2f",
+          "school": "sch_7fee7ab22707952c",
           "source_identities": [],
           "sport": "cross_country"
         },
@@ -762,10 +762,10 @@
             }
           ],
           "gender": "girls",
-          "id": "coa_c76ad40425d7bce0",
+          "id": "coa_d6486f352fa81c3d",
           "name": "Casey Brentlinger",
           "role": "head_coach",
-          "school": "sch_69b6f43d01121d2f",
+          "school": "sch_7fee7ab22707952c",
           "source_identities": [],
           "sport": "cross_country"
         },
@@ -781,10 +781,10 @@
             }
           ],
           "gender": "boys",
-          "id": "coa_5f12f70c63c787ef",
+          "id": "coa_6b8eca80492aed18",
           "name": "Bri Ostrand",
           "role": "head_coach",
-          "school": "sch_69b6f43d01121d2f",
+          "school": "sch_7fee7ab22707952c",
           "source_identities": [],
           "sport": "outdoor_track"
         },
@@ -800,10 +800,10 @@
             }
           ],
           "gender": "girls",
-          "id": "coa_40aa2ee0ac6bd50c",
+          "id": "coa_3968b638da652879",
           "name": "Bri Ostrand",
           "role": "head_coach",
-          "school": "sch_69b6f43d01121d2f",
+          "school": "sch_7fee7ab22707952c",
           "source_identities": [],
           "sport": "outdoor_track"
         }
@@ -993,7 +993,7 @@
             }
           }
         ],
-        "id": "sch_69b6f43d01121d2f",
+        "id": "sch_7fee7ab22707952c",
         "name": "Allen",
         "normalized_name": "allen",
         "school_website": "https://www.allenschools.org/",
@@ -1010,7 +1010,7 @@
         ],
         "state": "NE"
       },
-      "school_id": "sch_69b6f43d01121d2f",
+      "school_id": "sch_7fee7ab22707952c",
       "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Allen"
     },
     {
@@ -1028,10 +1028,10 @@
             }
           ],
           "gender": "mixed",
-          "id": "coa_934b2547a58b56c5",
+          "id": "coa_aee2192d9468de4f",
           "name": "Chris Geary",
           "role": "athletic_director",
-          "school": "sch_e2c091cba000d40c",
+          "school": "sch_4ec5cbd443379a6f",
           "source_identities": []
         },
         {
@@ -1046,10 +1046,10 @@
             }
           ],
           "gender": "boys",
-          "id": "coa_04de3f5625690c96",
+          "id": "coa_04f5d7dbb4a0d74e",
           "name": "Kelly Erickson",
           "role": "head_coach",
-          "school": "sch_e2c091cba000d40c",
+          "school": "sch_4ec5cbd443379a6f",
           "source_identities": [],
           "sport": "cross_country"
         },
@@ -1065,10 +1065,10 @@
             }
           ],
           "gender": "girls",
-          "id": "coa_dd9063cf96ccd4a9",
+          "id": "coa_d743ce7f56861fd6",
           "name": "Kelly Erickson",
           "role": "head_coach",
-          "school": "sch_e2c091cba000d40c",
+          "school": "sch_4ec5cbd443379a6f",
           "source_identities": [],
           "sport": "cross_country"
         },
@@ -1084,10 +1084,10 @@
             }
           ],
           "gender": "boys",
-          "id": "coa_a4ade278aae57805",
+          "id": "coa_bd4de77ef3cb1df0",
           "name": "Nate Lanik",
           "role": "head_coach",
-          "school": "sch_e2c091cba000d40c",
+          "school": "sch_4ec5cbd443379a6f",
           "source_identities": [],
           "sport": "outdoor_track"
         },
@@ -1103,10 +1103,10 @@
             }
           ],
           "gender": "girls",
-          "id": "coa_7e8a59898ebab680",
+          "id": "coa_fb7aa315483a2e16",
           "name": "Nate Lanik",
           "role": "head_coach",
-          "school": "sch_e2c091cba000d40c",
+          "school": "sch_4ec5cbd443379a6f",
           "source_identities": [],
           "sport": "outdoor_track"
         }
@@ -1332,7 +1332,7 @@
             }
           }
         ],
-        "id": "sch_e2c091cba000d40c",
+        "id": "sch_4ec5cbd443379a6f",
         "name": "Alliance",
         "normalized_name": "alliance",
         "school_website": "http://www.alliancebulldogs.org",
@@ -1349,7 +1349,7 @@
         ],
         "state": "NE"
       },
-      "school_id": "sch_e2c091cba000d40c",
+      "school_id": "sch_4ec5cbd443379a6f",
       "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Alliance"
     },
     {
@@ -1367,10 +1367,10 @@
             }
           ],
           "gender": "mixed",
-          "id": "coa_a9f8d678b2a5cf06",
+          "id": "coa_0c9c7dbe26ccc69b",
           "name": "Isaac Frecks",
           "role": "athletic_director",
-          "school": "sch_eab0af6d00a86ef8",
+          "school": "sch_89f4678beb9afca0",
           "source_identities": []
         },
         {
@@ -1385,10 +1385,10 @@
             }
           ],
           "gender": "boys",
-          "id": "coa_a5441deabe755f25",
+          "id": "coa_bc207fe57744ab90",
           "name": "Laurie Kermmoade",
           "role": "head_coach",
-          "school": "sch_eab0af6d00a86ef8",
+          "school": "sch_89f4678beb9afca0",
           "source_identities": [],
           "sport": "cross_country"
         },
@@ -1404,10 +1404,10 @@
             }
           ],
           "gender": "girls",
-          "id": "coa_5ce095ff346c6c61",
+          "id": "coa_a7205ae119f2e63a",
           "name": "Laurie Kermmoade",
           "role": "head_coach",
-          "school": "sch_eab0af6d00a86ef8",
+          "school": "sch_89f4678beb9afca0",
           "source_identities": [],
           "sport": "cross_country"
         },
@@ -1423,10 +1423,10 @@
             }
           ],
           "gender": "boys",
-          "id": "coa_9ce8184deec77cec",
+          "id": "coa_e3956c05697338fe",
           "name": "Isaac Frecks",
           "role": "head_coach",
-          "school": "sch_eab0af6d00a86ef8",
+          "school": "sch_89f4678beb9afca0",
           "source_identities": [],
           "sport": "outdoor_track"
         },
@@ -1442,10 +1442,10 @@
             }
           ],
           "gender": "girls",
-          "id": "coa_7313696368d3a13e",
+          "id": "coa_fcfa16e593b1fa85",
           "name": "Isaac Frecks",
           "role": "head_coach",
-          "school": "sch_eab0af6d00a86ef8",
+          "school": "sch_89f4678beb9afca0",
           "source_identities": [],
           "sport": "outdoor_track"
         }
@@ -1641,7 +1641,7 @@
             }
           }
         ],
-        "id": "sch_eab0af6d00a86ef8",
+        "id": "sch_89f4678beb9afca0",
         "name": "Alma",
         "normalized_name": "alma",
         "school_website": "http://almacardinals.org/",
@@ -1658,7 +1658,7 @@
         ],
         "state": "NE"
       },
-      "school_id": "sch_eab0af6d00a86ef8",
+      "school_id": "sch_89f4678beb9afca0",
       "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Alma"
     },
     {
@@ -1676,10 +1676,10 @@
             }
           ],
           "gender": "mixed",
-          "id": "coa_c985bb5250f54dd8",
+          "id": "coa_25a2c8bb6d48ce47",
           "name": "Nathan Dietz",
           "role": "athletic_director",
-          "school": "sch_dfce92d8a3202e1d",
+          "school": "sch_bf4b47c157520542",
           "source_identities": []
         },
         {
@@ -1694,10 +1694,10 @@
             }
           ],
           "gender": "boys",
-          "id": "coa_ec24f02f4e99c98b",
+          "id": "coa_32787c569cc11f10",
           "name": "Dana Dietz",
           "role": "head_coach",
-          "school": "sch_dfce92d8a3202e1d",
+          "school": "sch_bf4b47c157520542",
           "source_identities": [],
           "sport": "cross_country"
         },
@@ -1713,10 +1713,10 @@
             }
           ],
           "gender": "girls",
-          "id": "coa_cccc8f6a00bae664",
+          "id": "coa_f37f0e0936d3dde2",
           "name": "Dana Dietz",
           "role": "head_coach",
-          "school": "sch_dfce92d8a3202e1d",
+          "school": "sch_bf4b47c157520542",
           "source_identities": [],
           "sport": "cross_country"
         },
@@ -1732,10 +1732,10 @@
             }
           ],
           "gender": "boys",
-          "id": "coa_cd48a3aff15cf809",
+          "id": "coa_b2854ba296e68da4",
           "name": "Faron Klingelhoefer",
           "role": "head_coach",
-          "school": "sch_dfce92d8a3202e1d",
+          "school": "sch_bf4b47c157520542",
           "source_identities": [],
           "sport": "outdoor_track"
         },
@@ -1751,10 +1751,10 @@
             }
           ],
           "gender": "girls",
-          "id": "coa_1378cbeb7798c5be",
+          "id": "coa_9c42ec6ecb5bb721",
           "name": "Faron Klingelhoefer",
           "role": "head_coach",
-          "school": "sch_dfce92d8a3202e1d",
+          "school": "sch_bf4b47c157520542",
           "source_identities": [],
           "sport": "outdoor_track"
         }
@@ -1968,7 +1968,7 @@
             }
           }
         ],
-        "id": "sch_dfce92d8a3202e1d",
+        "id": "sch_bf4b47c157520542",
         "name": "Amherst",
         "normalized_name": "amherst",
         "school_website": "http://www.amherstbroncos.org",
@@ -1985,7 +1985,7 @@
         ],
         "state": "NE"
       },
-      "school_id": "sch_dfce92d8a3202e1d",
+      "school_id": "sch_bf4b47c157520542",
       "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Amherst"
     },
     {
@@ -2003,10 +2003,10 @@
             }
           ],
           "gender": "mixed",
-          "id": "coa_0885b5ac75494e73",
+          "id": "coa_e89223e14937e8b3",
           "name": "Chanc McIntosh",
           "role": "athletic_director",
-          "school": "sch_cb7df8ad53bb8710",
+          "school": "sch_56a53e50c04974b5",
           "source_identities": []
         },
         {
@@ -2021,10 +2021,10 @@
             }
           ],
           "gender": "boys",
-          "id": "coa_2993a2d71016815d",
+          "id": "coa_bd492c31549f5470",
           "name": "Katie Hoblyn",
           "role": "head_coach",
-          "school": "sch_cb7df8ad53bb8710",
+          "school": "sch_56a53e50c04974b5",
           "source_identities": [],
           "sport": "outdoor_track"
         },
@@ -2040,10 +2040,10 @@
             }
           ],
           "gender": "girls",
-          "id": "coa_8d7d481c7f48087c",
+          "id": "coa_21e450eafdc3779f",
           "name": "Jason Reed",
           "role": "head_coach",
-          "school": "sch_cb7df8ad53bb8710",
+          "school": "sch_56a53e50c04974b5",
           "source_identities": [],
           "sport": "outdoor_track"
         }
@@ -2213,7 +2213,7 @@
             }
           }
         ],
-        "id": "sch_cb7df8ad53bb8710",
+        "id": "sch_56a53e50c04974b5",
         "name": "Anselmo-Merna",
         "normalized_name": "anselmo merna",
         "school_website": "https://www.a-mps.org",
@@ -2230,7 +2230,7 @@
         ],
         "state": "NE"
       },
-      "school_id": "sch_cb7df8ad53bb8710",
+      "school_id": "sch_56a53e50c04974b5",
       "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Anselmo-Merna"
     },
     {
@@ -2248,10 +2248,10 @@
             }
           ],
           "gender": "mixed",
-          "id": "coa_bac2472e376c18c4",
+          "id": "coa_63ba055b33c282bb",
           "name": "Aaron Wagner",
           "role": "athletic_director",
-          "school": "sch_72456408810bad4a",
+          "school": "sch_347ea1e26b24528b",
           "source_identities": []
         },
         {
@@ -2266,10 +2266,10 @@
             }
           ],
           "gender": "mixed",
-          "id": "coa_c4ae592cc2aa4b1a",
+          "id": "coa_ef18023f46f63a44",
           "name": "Garrod Fernau",
           "role": "athletic_director",
-          "school": "sch_72456408810bad4a",
+          "school": "sch_347ea1e26b24528b",
           "source_identities": []
         },
         {
@@ -2284,10 +2284,10 @@
             }
           ],
           "gender": "boys",
-          "id": "coa_1ad57e555cc03034",
+          "id": "coa_b9083ca19164d4bf",
           "name": "Cayley Bailey",
           "role": "head_coach",
-          "school": "sch_72456408810bad4a",
+          "school": "sch_347ea1e26b24528b",
           "source_identities": [],
           "sport": "cross_country"
         },
@@ -2303,10 +2303,10 @@
             }
           ],
           "gender": "girls",
-          "id": "coa_1bb6be67789f515c",
+          "id": "coa_0999edf7d08dab94",
           "name": "Cayley Bailey",
           "role": "head_coach",
-          "school": "sch_72456408810bad4a",
+          "school": "sch_347ea1e26b24528b",
           "source_identities": [],
           "sport": "cross_country"
         },
@@ -2322,10 +2322,10 @@
             }
           ],
           "gender": "boys",
-          "id": "coa_f8e41b99cbebc117",
+          "id": "coa_94a2e37ffc156d57",
           "name": "Jamee Smith",
           "role": "head_coach",
-          "school": "sch_72456408810bad4a",
+          "school": "sch_347ea1e26b24528b",
           "source_identities": [],
           "sport": "outdoor_track"
         },
@@ -2341,10 +2341,10 @@
             }
           ],
           "gender": "girls",
-          "id": "coa_893a3b65fd4eaacb",
+          "id": "coa_b6b496c421c127ed",
           "name": "Jamee Smith",
           "role": "head_coach",
-          "school": "sch_72456408810bad4a",
+          "school": "sch_347ea1e26b24528b",
           "source_identities": [],
           "sport": "outdoor_track"
         }
@@ -2530,7 +2530,7 @@
             }
           }
         ],
-        "id": "sch_72456408810bad4a",
+        "id": "sch_347ea1e26b24528b",
         "name": "Ansley",
         "normalized_name": "ansley",
         "school_website": "http://www.ansleypublicschool.org",
@@ -2547,7 +2547,7 @@
         ],
         "state": "NE"
       },
-      "school_id": "sch_72456408810bad4a",
+      "school_id": "sch_347ea1e26b24528b",
       "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Ansley"
     }
   ]

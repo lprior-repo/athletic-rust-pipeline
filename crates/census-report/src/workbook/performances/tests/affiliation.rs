@@ -16,8 +16,12 @@ fn season() -> TestResult<SchoolYear> {
 }
 
 fn school(store: &Store, state: UsJurisdiction, name: &str) -> TestResult<SchoolId> {
-    let (mut row, id) =
-        CanonicalSchool::new(state, name, census_domain::model::normalize_name(name));
+    let (mut row, id) = CanonicalSchool::new(
+        state,
+        name,
+        census_domain::model::normalize_name(name),
+        None,
+    );
     row.evidence.push(observation());
     store.append(Table::Schools, &row)?;
     Ok(id)

@@ -36,7 +36,7 @@ struct Fixture {
 impl Fixture {
     fn mint(jurisdiction: UsJurisdiction, index: usize) -> Result<Self> {
         let name = format!("{SCHOOL_PREFIX} {} 000", jurisdiction.code());
-        let school = CanonicalSchool::mint(jurisdiction, &name, &normalize_name(&name));
+        let school = CanonicalSchool::mint(jurisdiction, &name, &normalize_name(&name), None);
         let meet = CanonicalMeet::mint(Some(jurisdiction), MEET_DATE, MEET_NAME, None);
         let athlete_name = format!("Athlete {index:05}");
         let source = SourceIdentity::new(

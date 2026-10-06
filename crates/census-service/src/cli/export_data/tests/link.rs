@@ -6,8 +6,8 @@ fn linked_school() -> TestResult<CanonicalSchool> {
         UsJurisdiction::Tennessee,
         "Page High School",
         census_domain::model::normalize_name("Page High School"),
+        Some("Franklin"),
     );
-    school.city = Some("Franklin".into());
     school.source_identities.push(
         SourceIdentity::new(SourceNamespace::association_school("tssaa"), "157")
             .with_url("https://portal.tssaa.org/common/directory/?id=157".to_string()),
@@ -96,6 +96,7 @@ fn a_school_without_an_association_link_publishes_empty_link_columns() -> TestRe
         UsJurisdiction::Wisconsin,
         "Unlinked High",
         census_domain::model::normalize_name("Unlinked High"),
+        None,
     );
     store.append(Table::Schools, &school)?;
     store.flush()?;

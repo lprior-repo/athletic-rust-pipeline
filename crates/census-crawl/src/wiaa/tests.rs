@@ -99,7 +99,8 @@ fn school_page_yields_name_city_conference_ad_and_identity() -> TestResult {
         CanonicalSchool::new(
             UsJurisdiction::Wisconsin,
             "Abbotsford",
-            normalize_name("Abbotsford")
+            normalize_name("Abbotsford"),
+            Some("Abbotsford"),
         )
         .1
     );

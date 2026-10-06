@@ -64,6 +64,7 @@ fn alvirne_id() -> SchoolId {
         UsJurisdiction::NewHampshire,
         "Alvirne High School",
         &normalize_name("Alvirne High School"),
+        None,
     )
 }
 

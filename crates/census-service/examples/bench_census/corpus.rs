@@ -82,7 +82,8 @@ pub(super) fn append_school(corpus: &mut Corpus, rng: &mut Lcg, index: usize) ->
         _ => UsJurisdiction::Iowa,
     };
     let name = format!("Synthetic School {index}");
-    let (mut school, school_id) = CanonicalSchool::new(state, name.clone(), normalize_name(&name));
+    let (mut school, school_id) =
+        CanonicalSchool::new(state, name.clone(), normalize_name(&name), None);
     school.evidence.push(evidence());
     school.source_identities.push(SourceIdentity::new(
         SourceNamespace::AssociationSchool {

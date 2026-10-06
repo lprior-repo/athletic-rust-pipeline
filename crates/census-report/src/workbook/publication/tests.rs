@@ -10,7 +10,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn seed(store: &Store, name: &str) -> crate::report::ReportResult<()> {
     let (mut school, id) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, name, name.to_lowercase());
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, name, name.to_lowercase(), None);
     let evidence = Evidence::parsed(
         SourceRef::new(
             "wiaa_results",
@@ -122,7 +122,8 @@ fn a_changed_dataset_cannot_masquerade_as_the_captured_input() -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path().join("store"))?;
     let mut dataset = ExportDataset::load(&store)?;
-    let (school, id) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Injected", "injected");
+    let (school, id) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Injected", "injected", None);
     dataset.schools.insert(id, school);
     let error = match dataset.save_frozen(&directory.path().join("frozen.json")) {
         Err(error) => error,

@@ -326,6 +326,7 @@ fn a_school_venue_resolves_only_where_exactly_one_state_owns_it() {
             state,
             name,
             census_domain::model::normalize_name(name),
+            None,
         )
         .0
     };

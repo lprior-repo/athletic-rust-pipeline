@@ -136,7 +136,8 @@ fn build_rows(count: usize, observed_on: &str) -> Vec<CanonicalSchool> {
             _ => UsJurisdiction::Iowa,
         };
         let name = format!("Bench School {index}");
-        let (mut school, _) = CanonicalSchool::new(state, name.clone(), normalize_name(&name));
+        let (mut school, _) =
+            CanonicalSchool::new(state, name.clone(), normalize_name(&name), None);
         school
             .evidence
             .push(Evidence::parsed(SourceRef::id(SOURCE_ID), observed_on));

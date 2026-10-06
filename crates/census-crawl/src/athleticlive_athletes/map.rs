@@ -174,6 +174,7 @@ fn row_school(schools: &mut BTreeMap<String, CanonicalSchool>, row: &RowFacts<'_
         row.target.state,
         row.school_name,
         census_domain::model::normalize_name(row.school_name),
+        None,
     );
     if !school.evidence.iter().any(|e| e == &row.evidence) {
         school.evidence.push(row.evidence.clone());

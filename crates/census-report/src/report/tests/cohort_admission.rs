@@ -9,7 +9,7 @@ use census_domain::model::{
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn athlete(name: &str, year: GradYear) -> CanonicalAthlete {
-    let (_, school) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Fixture", "fixture");
+    let (_, school) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Fixture", "fixture", None);
     let mut row = CanonicalAthlete::new(&school, name, year, Gender::Girls, fixture_source(name));
     row.evidence.push(Evidence::parsed(
         SourceRef::new(
@@ -45,7 +45,7 @@ fn grade(value: u8, date: &str) -> TestResult<ObservedGrade> {
 fn dataset(athletes: &[CanonicalAthlete]) -> TestResult<ExportDataset> {
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path())?;
-    let (school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Fixture", "fixture");
+    let (school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Fixture", "fixture", None);
     store.append(Table::Schools, &school)?;
     for row in athletes {
         store.append(Table::Athletes, row)?;

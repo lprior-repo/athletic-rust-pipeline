@@ -92,8 +92,8 @@ fn bench_school_labels(criterion: &mut Criterion) -> Result<()> {
     for jurisdiction in UsJurisdiction::CENSUS_SCOPE {
         for slot in 0..SCHOOLS_PER_JURISDICTION {
             let name = format!("{SCHOOL_PREFIX} {} {slot:03}", jurisdiction.code());
-            let expected = CanonicalSchool::mint(jurisdiction, &name, &normalize_name(&name));
-            schools.push(CanonicalSchool::new(jurisdiction, &name, normalize_name(&name)).0);
+            let expected = CanonicalSchool::mint(jurisdiction, &name, &normalize_name(&name), None);
+            schools.push(CanonicalSchool::new(jurisdiction, &name, normalize_name(&name), None).0);
             labels.push((jurisdiction, name.clone(), Some(expected.clone())));
             labels.push((jurisdiction, name.to_uppercase(), Some(expected.clone())));
             if slot % SQUAD_LABEL_EVERY == 0 {

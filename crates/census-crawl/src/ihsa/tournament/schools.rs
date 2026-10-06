@@ -79,7 +79,8 @@ impl Schools {
         origin: Origin<'_>,
         accumulated: &mut Accumulator,
     ) -> SchoolId {
-        let (mut school, id) = CanonicalSchool::new(UsJurisdiction::Illinois, name, normalized);
+        let (mut school, id) =
+            CanonicalSchool::new(UsJurisdiction::Illinois, name, normalized, None);
         school.association = Some(ASSOCIATION.to_string());
         if let Some(key) = published {
             school.source_identities.push(SourceIdentity::new(

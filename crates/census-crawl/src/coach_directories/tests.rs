@@ -41,7 +41,7 @@ fn current_contexts(file: &str) -> Result<Vec<String>, Box<dyn std::error::Error
 }
 
 fn minted(state: UsJurisdiction, name: &str) -> (CanonicalSchool, census_domain::model::SchoolId) {
-    CanonicalSchool::new(state, name, normalize_name(name))
+    CanonicalSchool::new(state, name, normalize_name(name), None)
 }
 
 fn admitted(
@@ -143,7 +143,8 @@ fn the_directory_row_mints_the_school_with_its_association_and_level() -> TestRe
         CanonicalSchool::mint(
             UsJurisdiction::NorthCarolina,
             "A.C. Reynolds High School",
-            &normalize_name("A.C. Reynolds High School")
+            &normalize_name("A.C. Reynolds High School"),
+            Some("Asheville"),
         )
         .as_str()
     );

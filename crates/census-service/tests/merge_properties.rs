@@ -103,7 +103,7 @@ fn mailbox() -> impl Strategy<Value = String> {
 
 fn school() -> impl Strategy<Value = CanonicalSchool> {
     (state(), word(20), word(20))
-        .prop_map(|(state, name, normalized)| CanonicalSchool::new(state, name, normalized).0)
+        .prop_map(|(state, name, normalized)| CanonicalSchool::new(state, name, normalized, None).0)
 }
 
 fn team() -> impl Strategy<Value = CanonicalTeam> {
@@ -159,7 +159,7 @@ fn merged_slots(
 }
 
 fn coach_with_email(address: String) -> CanonicalCoach {
-    let (school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Madison", "madison");
+    let (school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Madison", "madison", None);
     let mut coach = CanonicalCoach::new(
         &school.id,
         "Coach Smith",

@@ -112,13 +112,44 @@ pub(super) fn packet(
     Ok(packet)
 }
 
+pub(super) fn canonical_athlete(row: &CanonicalAthlete) -> StoreResult<CanonicalAthlete> {
+    let mut canonical = row.clone();
+    ordered(&mut canonical.known_names)?;
+    ordered(&mut canonical.sports)?;
+    ordered(&mut canonical.observed_grades)?;
+    ordered(&mut canonical.published_graduations)?;
+    ordered(&mut canonical.public_profile_urls)?;
+    ordered(&mut canonical.source_links)?;
+    ordered(&mut canonical.evidence)?;
+    ordered(&mut canonical.retained_conflicts)?;
+    Ok(canonical)
+}
+
+fn canonical_athlete_json(row: &CanonicalAthlete) -> StoreResult<String> {
+    serde_json::to_string(&canonical_athlete(row)?).map_err(|source| StoreError::Json {
+        detail: format!("serializing canonical athlete {}", row.id),
+        source,
+    })
+}
+
+fn ordered<T: serde::Serialize>(values: &mut Vec<T>) -> StoreResult<()> {
+    let mut keyed = Vec::with_capacity(values.len());
+    for value in values.drain(..) {
+        let key = serde_json::to_string(&value).map_err(|source| StoreError::Json {
+            detail: "ordering a packet fact set".to_string(),
+            source,
+        })?;
+        keyed.push((key, value));
+    }
+    keyed.sort_by(|left, right| left.0.cmp(&right.0));
+    values.extend(keyed.into_iter().map(|(_, value)| value));
+    Ok(())
+}
+
 fn side_facts(side: Side, row: &CanonicalAthlete) -> StoreResult<Vec<ReviewEvidenceFact>> {
     let prefix = side.prefix();
     let field = |name: &str| format!("{prefix}_{name}");
-    let canonical = serde_json::to_string(row).map_err(|source| StoreError::Json {
-        detail: format!("serializing {prefix} canonical athlete {}", row.id),
-        source,
-    })?;
+    let canonical = canonical_athlete_json(row)?;
     let mut facts = vec![
         fact(&field("id"), row.id.as_str()),
         fact(&field("name"), &row.canonical_name),

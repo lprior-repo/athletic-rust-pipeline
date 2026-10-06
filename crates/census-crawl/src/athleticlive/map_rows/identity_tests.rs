@@ -13,7 +13,7 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 #[test]
 fn shared_names_keep_row_owners_separate_and_reuse_only_the_same_native_owner() -> TestResult {
     let state = UsJurisdiction::Iowa;
-    let school = CanonicalSchool::new(state, "Example School", "example school").0;
+    let school = CanonicalSchool::new(state, "Example School", "example school", None).0;
     let meet = CanonicalMeet::new(
         Some(state),
         "Example Meet",

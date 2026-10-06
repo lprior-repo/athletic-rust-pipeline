@@ -14,6 +14,7 @@ fn school() -> SchoolId {
         UsJurisdiction::Wisconsin,
         "Abbotsford High School",
         "abbotsford",
+        None,
     )
 }
 fn second_school() -> SchoolId {
@@ -21,6 +22,7 @@ fn second_school() -> SchoolId {
         UsJurisdiction::Minnesota,
         "Marshall High School",
         "marshall",
+        None,
     )
 }
 

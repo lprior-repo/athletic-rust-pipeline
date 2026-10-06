@@ -46,7 +46,8 @@ fn inferred_graduation_years_reject_unsupported_cohorts_without_clamping(
 #[test]
 fn unsupported_grade_evidence_never_certifies_a_canonical_cohort(
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let (_, school) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Boundary High", "boundary");
+    let (_, school) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Boundary High", "boundary", None);
     let mut athlete = CanonicalAthlete::new(
         &school,
         "Boundary Runner",
@@ -166,19 +167,36 @@ fn school_jurisdiction_separates_identity() -> Result<(), Box<dyn std::error::Er
         UsJurisdiction::Wisconsin,
         "Abbotsford High School",
         "abbotsford",
+        None,
     );
     let b = CanonicalSchool::mint(
         UsJurisdiction::Wisconsin,
         "Abbotsford High School",
         "abbotsford",
+        None,
     );
     check!(eq; a, b);
     let other = CanonicalSchool::mint(
         UsJurisdiction::Minnesota,
         "Abbotsford High School",
         "abbotsford",
+        None,
     );
     check!(ne; a, other, "state participates in the natural key");
+    let located = CanonicalSchool::mint(
+        UsJurisdiction::Wisconsin,
+        "Abbotsford High School",
+        "abbotsford",
+        Some("Abbotsford"),
+    );
+    check!(ne; a, located, "city participates in the natural key");
+    let same_city = CanonicalSchool::mint(
+        UsJurisdiction::Wisconsin,
+        "Abbotsford High School",
+        "abbotsford",
+        Some("abbotsford"),
+    );
+    check!(eq; located, same_city);
     Ok(())
 }
 

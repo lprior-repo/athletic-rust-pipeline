@@ -119,8 +119,14 @@ pub use athlete_observations::athlete_observations_of;
 pub use context::{school_observations_of, AdapterContext};
 pub use recording::{Recorded, RecordedBatch, RecordedJournal, Recording};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UnresolvedCounters {
+    pub rows: u64,
+    pub labels: u64,
+}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct AdapterReport {
@@ -133,6 +139,8 @@ pub struct AdapterReport {
     pub with_email: u64,
     #[serde(default)]
     pub rejections: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unresolved: Option<UnresolvedCounters>,
     pub unit: String,
     pub notes: Vec<String>,
 }
@@ -147,6 +155,7 @@ impl AdapterReport {
             errors: 0,
             with_email: 0,
             rejections: 0,
+            unresolved: None,
             unit: unit.into(),
             notes: Vec::new(),
         }

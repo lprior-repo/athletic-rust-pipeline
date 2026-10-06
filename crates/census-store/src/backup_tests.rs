@@ -12,7 +12,7 @@ const TEMPORARY_PREFIXES: [&str; 4] =
     ["backup.tmp.", "backup.old.", "restore.tmp.", "restore.old."];
 
 fn school(name: &str) -> CanonicalSchool {
-    CanonicalSchool::new(UsJurisdiction::Wisconsin, name, normalize_name(name)).0
+    CanonicalSchool::new(UsJurisdiction::Wisconsin, name, normalize_name(name), None).0
 }
 
 fn store_with(root: &Path, names: &[&str]) -> TestResult {

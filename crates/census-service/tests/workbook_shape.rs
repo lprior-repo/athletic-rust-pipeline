@@ -24,7 +24,7 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory(
     let day = "2026-09-21";
 
     let (school, school_id) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford", None);
     store.append(Table::Schools, &school)?;
 
     let mut athlete = CanonicalAthlete::new(

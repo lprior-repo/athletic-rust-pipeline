@@ -44,6 +44,7 @@ fn shared_nonperson_and_invalid_person_links_cannot_authorize_same_person_advice
                     census_domain::UsJurisdiction::Wisconsin,
                     "Madison West",
                     "madison west",
+                    None,
                 )
                 .0
                 .id;
@@ -115,6 +116,7 @@ fn group_advice_is_not_requested_when_only_two_of_three_members_would_be_reviewe
                     census_domain::UsJurisdiction::Wisconsin,
                     "Madison West",
                     "madison west",
+                    None,
                 )
                 .0
                 .id;
@@ -175,6 +177,7 @@ fn an_explicit_nonfirst_pair_reviews_a_and_c_without_substituting_b() -> TestRes
                 census_domain::UsJurisdiction::Wisconsin,
                 "Madison West",
                 "madison west",
+                None,
             )
             .0
             .id;

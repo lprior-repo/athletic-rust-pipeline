@@ -78,13 +78,13 @@ fn summary(capture: &Capture<'_>) -> Result<String> {
             summary.teams.len()
         );
     }
-    let state = UsJurisdiction::from_code(&summary.state_code).ok_or_else(|| {
-        anyhow::anyhow!(
-            "{file}: `{}` is not a jurisdiction the census reads",
-            summary.state_code
-        )
-    })?;
-    let (_, school_id) = CanonicalSchool::new(state, &summary.name, normalize_name(&summary.name));
+    let state = jurisdiction(&summary.state_code, file)?;
+    let (_, school_id) = CanonicalSchool::new(
+        state,
+        &summary.name,
+        normalize_name(&summary.name),
+        summary.address.city.as_deref(),
+    );
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     hasher.update(capture.body.as_bytes());
@@ -121,6 +121,11 @@ fn summary(capture: &Capture<'_>) -> Result<String> {
         summary.teams.len(),
         mapped.coaches.len()
     ))
+}
+
+fn jurisdiction(code: &str, file: &str) -> Result<UsJurisdiction> {
+    UsJurisdiction::from_code(code)
+        .ok_or_else(|| anyhow::anyhow!("{file}: `{}` is not a jurisdiction the census reads", code))
 }
 
 fn expected_contexts(capture: &Capture<'_>) -> Result<Vec<String>> {

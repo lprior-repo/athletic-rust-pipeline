@@ -1,7 +1,7 @@
 use census_domain::model::{CanonicalAthlete, ReviewState};
 use census_store::Table;
 
-use super::binding_support::{assert_preserved, canonical_side, rows, Change, Fixture};
+use super::binding_support::{assert_preserved, canonical, canonical_side, rows, Change, Fixture};
 use super::options;
 use crate::consensus::tests::support::{
     audit, batch, client, lane, lane_with, row, state, TestResult,
@@ -91,18 +91,19 @@ fn a_source_url_or_retained_conflict_arriving_during_advice_refuses_the_old_bind
         }
         {
             let left = canonical_side(&requests[0], "side_a")?;
-            let right = &original_rows[0];
-            if &left != right { return Err(format!("left={left:?} right={right:?}").into()); }
+            let right = canonical(&original_rows[0])?;
+            if left != right { return Err(format!("left={left:?} right={right:?}").into()); }
         }
         let subject = current.iter().find(|row| row.id == original_rows[0].id).ok_or("subject")?;
         {
             let left = canonical_side(&requests[1], "side_a")?;
-            if &left != subject { return Err(format!("left={left:?} right={subject:?}").into()); }
+            let expected = canonical(subject)?;
+            if left != expected { return Err(format!("left={left:?} right={expected:?}").into()); }
         }
         {
             let left = canonical_side(&requests[1], "side_b")?;
-            let right = &original_rows[1];
-            if &left != right { return Err(format!("left={left:?} right={right:?}").into()); }
+            let right = canonical(&original_rows[1])?;
+            if left != right { return Err(format!("left={left:?} right={right:?}").into()); }
         }
     }
     {

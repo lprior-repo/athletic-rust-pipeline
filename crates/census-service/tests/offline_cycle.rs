@@ -57,8 +57,12 @@ fn build_corpus(schools: usize) -> TestResult<Corpus> {
     };
     for index in 0..schools {
         let name = format!("Offline Cycle School {index}");
-        let (mut school, school_id) =
-            CanonicalSchool::new(UsJurisdiction::Wisconsin, &name, normalize_name(&name));
+        let (mut school, school_id) = CanonicalSchool::new(
+            UsJurisdiction::Wisconsin,
+            &name,
+            normalize_name(&name),
+            None,
+        );
         school.evidence.push(evidence());
         let team_id = Id::mint("team", &[school_id.as_str(), "track", "m", "2025"]);
         corpus.teams.push(CanonicalTeam {

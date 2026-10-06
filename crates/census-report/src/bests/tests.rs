@@ -150,6 +150,7 @@ fn selection_dataset(kind: EventKind) -> TestResult<ExportDataset> {
         UsJurisdiction::Wisconsin,
         "Synthetic school",
         "synthetic school",
+        None,
     );
     let mut athlete = CanonicalAthlete::new(
         &school_id,

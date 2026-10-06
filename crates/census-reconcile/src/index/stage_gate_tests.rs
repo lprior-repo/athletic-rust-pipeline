@@ -5,7 +5,7 @@ use census_domain::UsJurisdiction;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 fn school(name: &str, slug: &str) -> CanonicalSchool {
-    let mut school = CanonicalSchool::new(UsJurisdiction::Wisconsin, name, slug).0;
+    let mut school = CanonicalSchool::new(UsJurisdiction::Wisconsin, name, slug, None).0;
     school
         .source_identities
         .push(SourceIdentity::new(SourceNamespace::MilesplitSchool, slug));

@@ -36,13 +36,18 @@ pub fn school_entities(
     faculties: &[FacultyRow],
 ) -> SchoolExtract {
     let normalized = normalize_name(facts.name);
-    let (mut school, school_id) = CanonicalSchool::new(facts.state, facts.name, &normalized);
-
-    if !facts.city.is_empty() {
-        school.city = Some(facts.city.to_string());
-    }
-
+    let (mut school, school_id) = CanonicalSchool::new(
+        facts.state,
+        facts.name,
+        &normalized,
+        if facts.city.is_empty() {
+            None
+        } else {
+            Some(facts.city)
+        },
+    );
     school.association = Some(facts.association.to_string());
+
     school.evidence.push(school_evidence(facts));
 
     let coaches = coach_entities(&school_id, facts, coaches, faculties);

@@ -58,8 +58,12 @@ fn a_jurisdiction_row_carries_the_counted_columns() -> TestResult {
 fn a_mirror_result_plane_row_is_counted_but_never_core() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
-    let (school, school_id) =
-        CanonicalSchool::new(UsJurisdiction::Ohio, "Dublin Coffman", "dublin coffman");
+    let (school, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Ohio,
+        "Dublin Coffman",
+        "dublin coffman",
+        None,
+    );
     store.append(Table::Schools, &school)?;
     let mut core_athlete = CanonicalAthlete::new(
         &school_id,

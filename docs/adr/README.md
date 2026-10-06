@@ -31,6 +31,7 @@ Accepted policy is not proof of implementation or successful execution.
 | [022](ADR-022-admissible-cross-source-corroboration.md) | Admissible cross-source identity corroboration: attested provider keys, independent documents, withholding reasons | Accepted; implemented 2026-10-04 (`46r`); link-document source qualification open under `b0f` |
 | [023](ADR-023-school-link-mapping.md) | School-link extension beyond the landed join core: provider/state-record keys, durable review cases, campus and co-op rules | Accepted; implemented and closed 2026-10-04 (`7vk`); no source publishes `co_op` or member aliases yet |
 | [024](ADR-024-coach-contact-tenure-admission.md) | Coach-contact tenure from a source-published staff listing: one claim binds role/program to mailbox; current tenures are the run's season; page-bound evidence | Accepted 2026-10-04; implementation open under `2b1`, `0hx`, `df2`, `jb2` |
+| [025](ADR-025-location-qualified-school-identity.md) | School identity is location-qualified: city participates in the minted id and natural key; location disagreement is a retained conflict, never a blend | Accepted 2026-10-06; implemented under `tq18`, gate green, review and landing pending |
 
 Changes record explicit supersession rather than silently rewriting prior decisions. Source-specific
 research and dated command results belong in their evidence references, not additional ADR copies.

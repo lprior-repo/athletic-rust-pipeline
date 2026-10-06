@@ -106,9 +106,12 @@ pub fn parse_nd_school_page(
     }
 
     let url = member.url();
-    let (mut school, school_id) =
-        CanonicalSchool::new(UsJurisdiction::NorthDakota, &name, normalize_name(&name));
-    school.city = nd_city(html)?;
+    let (mut school, school_id) = CanonicalSchool::new(
+        UsJurisdiction::NorthDakota,
+        &name,
+        normalize_name(&name),
+        nd_city(html)?.as_deref(),
+    );
     school.enrollment = nd_enrollment(html)?;
     school.school_website = nd_website_regex()?
         .captures(html)

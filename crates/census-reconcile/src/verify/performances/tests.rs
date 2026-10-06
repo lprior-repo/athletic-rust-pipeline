@@ -20,8 +20,12 @@ type Fixture = (
 fn fixture() -> TestResult<Fixture> {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
-    let (school, school_id) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Synthetic High", "synthetichigh");
+    let (school, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Synthetic High",
+        "synthetichigh",
+        None,
+    );
     store.append(Table::Schools, &school)?;
     let athlete = CanonicalAthlete::new(
         &school_id,

@@ -15,10 +15,10 @@
             }
           ],
           "gender": "mixed",
-          "id": "coa_7c80ceebb3e112ea",
+          "id": "coa_1e58adbe6e1283da",
           "name": "Alan Frank",
           "role": "athletic_director",
-          "school": "sch_2c870270b29ff075",
+          "school": "sch_4849a07a96ead5ad",
           "source_identities": []
         },
         {
@@ -33,10 +33,10 @@
             }
           ],
           "gender": "mixed",
-          "id": "coa_93e762d58dfcf99e",
+          "id": "coa_041463d83c410d68",
           "name": "Aub Boucher",
           "role": "athletic_director",
-          "school": "sch_2c870270b29ff075",
+          "school": "sch_4849a07a96ead5ad",
           "source_identities": []
         },
         {
@@ -51,10 +51,10 @@
             }
           ],
           "gender": "boys",
-          "id": "coa_d1605b78f84e15e5",
+          "id": "coa_fa4e7862ab674b43",
           "name": "Toni Fowler",
           "role": "head_coach",
-          "school": "sch_2c870270b29ff075",
+          "school": "sch_4849a07a96ead5ad",
           "source_identities": [],
           "sport": "cross_country"
         },
@@ -70,10 +70,10 @@
             }
           ],
           "gender": "girls",
-          "id": "coa_5704a6574ab3b879",
+          "id": "coa_1984853a8bc9ce7e",
           "name": "Toni Fowler",
           "role": "head_coach",
-          "school": "sch_2c870270b29ff075",
+          "school": "sch_4849a07a96ead5ad",
           "source_identities": [],
           "sport": "cross_country"
         },
@@ -89,10 +89,10 @@
             }
           ],
           "gender": "boys",
-          "id": "coa_377e0fa38b43d3b8",
+          "id": "coa_007e7d664bc7338f",
           "name": "Zeb Noyd",
           "role": "head_coach",
-          "school": "sch_2c870270b29ff075",
+          "school": "sch_4849a07a96ead5ad",
           "source_identities": [],
           "sport": "outdoor_track"
         },
@@ -108,10 +108,10 @@
             }
           ],
           "gender": "girls",
-          "id": "coa_58b9c28453650590",
+          "id": "coa_0097edbd1f4355ec",
           "name": "Toni Fowler",
           "role": "head_coach",
-          "school": "sch_2c870270b29ff075",
+          "school": "sch_4849a07a96ead5ad",
           "source_identities": [],
           "sport": "outdoor_track"
         }
@@ -363,7 +363,7 @@
             }
           }
         ],
-        "id": "sch_2c870270b29ff075",
+        "id": "sch_4849a07a96ead5ad",
         "name": "Adams Central",
         "normalized_name": "adams central",
         "school_website": "http://www.adamscentral.us/",
@@ -380,7 +380,7 @@
         ],
         "state": "NE"
       },
-      "school_id": "sch_2c870270b29ff075",
+      "school_id": "sch_4849a07a96ead5ad",
       "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
     }
   ]

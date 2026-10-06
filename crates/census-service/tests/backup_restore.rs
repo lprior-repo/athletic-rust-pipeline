@@ -80,6 +80,7 @@ fn corpus() -> TestResult<Corpus> {
             UsJurisdiction::Wisconsin,
             "Drill High School",
             "drill high school",
+            None,
         ),
     };
     let history = add_school(
@@ -110,7 +111,8 @@ fn add_school(
     name: &str,
     index: usize,
 ) -> TestResult<SchoolId> {
-    let (mut school, school_id) = CanonicalSchool::new(jurisdiction, name, normalize_name(name));
+    let (mut school, school_id) =
+        CanonicalSchool::new(jurisdiction, name, normalize_name(name), None);
     school.evidence.push(observation(SOURCE, FIRST_DATE));
     let team = CanonicalTeam {
         id: Id::mint("team", &[school_id.as_str(), "outdoor", "2026"]),
@@ -578,6 +580,7 @@ fn batch_row(batch: usize, slot: usize) -> CanonicalSchool {
         UsJurisdiction::Wisconsin,
         name.clone(),
         normalize_name(&name),
+        None,
     )
     .0
 }

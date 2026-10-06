@@ -24,6 +24,7 @@ mod scaffold;
 mod scan;
 mod seams;
 mod source_fixture;
+mod storage_ab;
 mod templates;
 
 use anyhow::Result;
@@ -230,6 +231,14 @@ enum Command {
         #[arg(help = "Sheet names to dump")]
         sheets: Vec<String>,
     },
+    #[command(
+        about = "Run the census-store keyspace A/B benchmark (single vs split evidence/derived keyspaces)"
+    )]
+    StorageAb {
+        #[arg(help = "Arguments forwarded to the example, given after --")]
+        #[arg(last = true, value_name = "AB_ARG")]
+        args: Vec<String>,
+    },
 }
 
 fn main() -> ExitCode {
@@ -285,5 +294,6 @@ fn run() -> Result<()> {
         } => census::export(target, out.as_deref(), grad_year, core, limit),
         Command::NewSource { name } => scaffold::new_source(&name),
         Command::DumpSheet { workbook, sheets } => dump_sheet::run(&workbook, &sheets),
+        Command::StorageAb { args } => storage_ab::run(args),
     }
 }

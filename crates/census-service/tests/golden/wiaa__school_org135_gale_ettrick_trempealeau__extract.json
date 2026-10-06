@@ -1,6 +1,6 @@
 {
   "school": {
-    "id": "sch_42ebe94d9f4a76b2",
+    "id": "sch_ba31ea51f882a851",
     "name": "Gale-Ettrick-Trempealeau",
     "normalized_name": "gale ettrick trempealeau",
     "city": "Galesville",
@@ -37,9 +37,9 @@
   },
   "coaches": [
     {
-      "id": "coa_1798aec2b19441c5",
+      "id": "coa_7d07b1fce3b2da0a",
       "name": "Jake Perner",
-      "school": "sch_42ebe94d9f4a76b2",
+      "school": "sch_ba31ea51f882a851",
       "gender": "mixed",
       "role": "athletic_director",
       "professional_email": "jakeperner@getschools.k12.wi.us",
@@ -56,9 +56,9 @@
       ]
     },
     {
-      "id": "coa_fb9770327e41e347",
+      "id": "coa_b84febe0178d311b",
       "name": "Paula Gold",
-      "school": "sch_42ebe94d9f4a76b2",
+      "school": "sch_ba31ea51f882a851",
       "sport": "cross_country",
       "gender": "boys",
       "role": "head_coach",
@@ -76,9 +76,9 @@
       ]
     },
     {
-      "id": "coa_c7d68d22d85ef487",
+      "id": "coa_796d0c37aba0a133",
       "name": "Ryan Mendez",
-      "school": "sch_42ebe94d9f4a76b2",
+      "school": "sch_ba31ea51f882a851",
       "sport": "outdoor_track",
       "gender": "boys",
       "role": "head_coach",
@@ -96,9 +96,9 @@
       ]
     },
     {
-      "id": "coa_74fe8fd1f95ee443",
+      "id": "coa_c1b7f92c83f7622b",
       "name": "Paula Gold",
-      "school": "sch_42ebe94d9f4a76b2",
+      "school": "sch_ba31ea51f882a851",
       "sport": "cross_country",
       "gender": "girls",
       "role": "head_coach",
@@ -116,9 +116,9 @@
       ]
     },
     {
-      "id": "coa_9352a2c8164a4cb0",
+      "id": "coa_d7018bda037d1fe6",
       "name": "Paula Gold",
-      "school": "sch_42ebe94d9f4a76b2",
+      "school": "sch_ba31ea51f882a851",
       "sport": "outdoor_track",
       "gender": "girls",
       "role": "head_coach",

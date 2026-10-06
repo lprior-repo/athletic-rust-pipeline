@@ -33,6 +33,7 @@ impl Fixture {
             UsJurisdiction::Wisconsin,
             "Madison West High School",
             normalize_name("Madison West High School"),
+            None,
         )
         .0
         .id;
@@ -231,10 +232,14 @@ fn dual_same_person_agreement_never_promotes_name_school_and_cohort_alone() -> T
         .block_on(async {
             let dir = tempfile::tempdir()?;
             let store = Store::open(dir.path())?;
-            let school =
-                CanonicalSchool::new(UsJurisdiction::Wisconsin, "Madison West", "madison west")
-                    .0
-                    .id;
+            let school = CanonicalSchool::new(
+                UsJurisdiction::Wisconsin,
+                "Madison West",
+                "madison west",
+                None,
+            )
+            .0
+            .id;
             let first_athlete = CanonicalAthlete::new(
                 &school,
                 "Jordan Smith",

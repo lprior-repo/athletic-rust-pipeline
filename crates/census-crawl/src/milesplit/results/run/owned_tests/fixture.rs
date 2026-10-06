@@ -13,7 +13,7 @@ pub(super) const MALE_RAW: &[u8] = include_bytes!(
     "../../../../../tests/fixtures/milesplit/troy_725218_rs1266815_raw_projection.html"
 );
 
-pub(super) fn setup() -> TestResult<(tempfile::TempDir, Store, Fetcher, ResultSetRef)> {
+pub(super) fn setup_bare() -> TestResult<(tempfile::TempDir, Store, Fetcher, ResultSetRef)> {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path().join("store"))?;
     let fetcher = Fetcher::new(
@@ -27,20 +27,17 @@ pub(super) fn setup() -> TestResult<(tempfile::TempDir, Store, Fetcher, ResultSe
     let reference =
         ResultSetRef::parse("https://al.milesplit.com/meets/725218/results/1266814/raw")
             .ok_or("reference")?;
-    let schools = [
+    Ok((dir, store, fetcher, reference))
+}
+
+pub(super) fn setup() -> TestResult<(tempfile::TempDir, Store, Fetcher, ResultSetRef)> {
+    let (dir, store, fetcher, reference) = setup_bare()?;
+    for school in [
         school("Spann provider school", "38332"),
         school("Charles", "4912"),
-    ];
-    std::fs::create_dir_all(store.out_dir())?;
-    let rows =
-        schools
-            .iter()
-            .try_fold(String::new(), |mut rows, school| -> TestResult<String> {
-                rows.push_str(&serde_json::to_string(school)?);
-                rows.push('\n');
-                Ok(rows)
-            })?;
-    std::fs::write(store.out_dir().join("schools.jsonl"), rows)?;
+    ] {
+        store.append(census_store::Table::Schools, &school)?;
+    }
     Ok((dir, store, fetcher, reference))
 }
 
@@ -49,6 +46,7 @@ pub(super) fn school(name: &str, team_id: &str) -> CanonicalSchool {
         UsJurisdiction::Alabama,
         name,
         census_domain::model::normalize_name(name),
+        None,
     )
     .0;
     school.source_identities.push(SourceIdentity::new(

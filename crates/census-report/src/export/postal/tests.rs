@@ -33,8 +33,12 @@ pub(crate) fn captured_school() -> TestResult<CanonicalSchool> {
     let name = summary["name"]
         .as_str()
         .ok_or("capture school name is not text")?;
-    let (mut school, _) =
-        CanonicalSchool::new(state, name, census_domain::model::normalize_name(name));
+    let (mut school, _) = CanonicalSchool::new(
+        state,
+        name,
+        census_domain::model::normalize_name(name),
+        None,
+    );
     let owner = SourceIdentity::new(
         SourceNamespace::association_school("nchsaa"),
         summary["shortCode"]

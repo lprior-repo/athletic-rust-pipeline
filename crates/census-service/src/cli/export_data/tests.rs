@@ -16,8 +16,12 @@ mod postal;
 fn recruiting_csv_selects_current_contacts_for_each_gender() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path().join("store"))?;
-    let (school, id) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Synthetic High", "synthetichigh");
+    let (school, id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Synthetic High",
+        "synthetichigh",
+        None,
+    );
     store.append(Table::Schools, &school)?;
     for (side, name, email) in [
         (Gender::Boys, "Boys coach", "boys@example.invalid"),
@@ -138,8 +142,12 @@ fn recruiting_csv_selects_current_contacts_for_each_gender() -> TestResult {
 fn unresolved_same_name_candidates_remain_individually_addressable() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path().join("store"))?;
-    let (school, school_id) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Synthetic High", "synthetichigh");
+    let (school, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Synthetic High",
+        "synthetichigh",
+        None,
+    );
     store.append(Table::Schools, &school)?;
     let candidate_ids = ["published-row-prelim", "published-row-final"]
         .into_iter()

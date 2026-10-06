@@ -47,7 +47,12 @@ fn parses_school_from_record() -> TestResult {
     );
 
     let normalized = normalize_name("Abilene HS");
-    let expected_id = CanonicalSchool::mint(UsJurisdiction::Kansas, "Abilene HS", &normalized);
+    let expected_id = CanonicalSchool::mint(
+        UsJurisdiction::Kansas,
+        "Abilene HS",
+        &normalized,
+        Some("Abilene"),
+    );
     check!(eq; id, expected_id);
     Ok(())
 }

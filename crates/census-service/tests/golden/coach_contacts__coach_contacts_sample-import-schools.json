@@ -57,70 +57,6 @@
   },
   {
     "aliases": [
-      "Abilene KS"
-    ],
-    "city": "Abilene",
-    "co_op": false,
-    "evidence": [
-      {
-        "method": "parsed",
-        "observed_on": "2026-09-19",
-        "source": {
-          "id": "coach_contacts_csv",
-          "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
-        }
-      }
-    ],
-    "id": "sch_75152c829b97d64c",
-    "name": "Abilene HS",
-    "normalized_name": "abilene",
-    "source_identities": [
-      {
-        "id": "abilene",
-        "namespace": {
-          "association_school": {
-            "association": "kshsaa"
-          }
-        },
-        "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
-      }
-    ],
-    "state": "KS"
-  },
-  {
-    "aliases": [
-      "Kentwood MI"
-    ],
-    "city": "Kentwood",
-    "co_op": false,
-    "evidence": [
-      {
-        "method": "parsed",
-        "observed_on": "2026-09-19",
-        "source": {
-          "id": "coach_contacts_csv",
-          "url": "https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351"
-        }
-      }
-    ],
-    "id": "sch_7ddf91cfded99415",
-    "name": "East Kentwood HS",
-    "normalized_name": "east kentwood",
-    "source_identities": [
-      {
-        "id": "east kentwood",
-        "namespace": {
-          "association_school": {
-            "association": "mhsaa"
-          }
-        },
-        "url": "https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351"
-      }
-    ],
-    "state": "MI"
-  },
-  {
-    "aliases": [
       "Abingdon IL"
     ],
     "city": "Abingdon",
@@ -135,7 +71,7 @@
         }
       }
     ],
-    "id": "sch_aae2f1a63267d711",
+    "id": "sch_7f088801c6a99414",
     "name": "Abingdon-Avon High School",
     "normalized_name": "abingdon avon",
     "source_identities": [
@@ -167,7 +103,7 @@
         }
       }
     ],
-    "id": "sch_b5ea31ddfcd999ba",
+    "id": "sch_807f13a4c3307f66",
     "name": "Abbotsford",
     "normalized_name": "abbotsford",
     "source_identities": [
@@ -182,5 +118,69 @@
       }
     ],
     "state": "WI"
+  },
+  {
+    "aliases": [
+      "Kentwood MI"
+    ],
+    "city": "Kentwood",
+    "co_op": false,
+    "evidence": [
+      {
+        "method": "parsed",
+        "observed_on": "2026-09-19",
+        "source": {
+          "id": "coach_contacts_csv",
+          "url": "https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351"
+        }
+      }
+    ],
+    "id": "sch_c421e7ac0c2013d9",
+    "name": "East Kentwood HS",
+    "normalized_name": "east kentwood",
+    "source_identities": [
+      {
+        "id": "east kentwood",
+        "namespace": {
+          "association_school": {
+            "association": "mhsaa"
+          }
+        },
+        "url": "https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351"
+      }
+    ],
+    "state": "MI"
+  },
+  {
+    "aliases": [
+      "Abilene KS"
+    ],
+    "city": "Abilene",
+    "co_op": false,
+    "evidence": [
+      {
+        "method": "parsed",
+        "observed_on": "2026-09-19",
+        "source": {
+          "id": "coach_contacts_csv",
+          "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
+        }
+      }
+    ],
+    "id": "sch_e1a76946e007cade",
+    "name": "Abilene HS",
+    "normalized_name": "abilene",
+    "source_identities": [
+      {
+        "id": "abilene",
+        "namespace": {
+          "association_school": {
+            "association": "kshsaa"
+          }
+        },
+        "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
+      }
+    ],
+    "state": "KS"
   }
 ]

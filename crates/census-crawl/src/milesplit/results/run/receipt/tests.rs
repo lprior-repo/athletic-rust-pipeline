@@ -75,6 +75,7 @@ fn school(name: &str, team: &str) -> CanonicalSchool {
         census_domain::UsJurisdiction::Alabama,
         name,
         census_domain::model::normalize_name(name),
+        None,
     )
     .0;
     school

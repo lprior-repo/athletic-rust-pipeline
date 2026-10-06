@@ -1,4 +1,5 @@
 use super::collision::{evidence_list, source_list};
+use super::school::city_key;
 use super::{
     normalize_name, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
     CanonicalPerformance, CanonicalSchool, CanonicalTeam, RetainedConflict,
@@ -31,15 +32,30 @@ fn compressed(name: &str) -> String {
 
 impl NaturalKey for CanonicalSchool {
     fn same_natural_key(&self, other: &Self) -> bool {
-        self.state == other.state && same_compressed(&self.normalized_name, &other.normalized_name)
+        if self.state != other.state
+            || !same_compressed(&self.normalized_name, &other.normalized_name)
+        {
+            return false;
+        }
+        match (self.city.as_deref(), other.city.as_deref()) {
+            (Some(left), Some(right)) => city_key(left) == city_key(right),
+            _ => true,
+        }
     }
 
     fn natural_key(&self) -> String {
         let state = self.state.map_or("??", UsJurisdiction::code);
-        format!(
-            "school in {state} named {:?}",
-            compressed(&self.normalized_name)
-        )
+        match self.city.as_deref() {
+            Some(city) => format!(
+                "school in {state} named {:?} in {:?}",
+                compressed(&self.normalized_name),
+                city_key(city)
+            ),
+            None => format!(
+                "school in {state} named {:?}",
+                compressed(&self.normalized_name)
+            ),
+        }
     }
 
     fn sources(&self) -> String {

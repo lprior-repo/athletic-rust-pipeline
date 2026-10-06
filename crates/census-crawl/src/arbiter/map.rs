@@ -17,7 +17,7 @@ pub fn map_org_school(
         return None;
     }
     let normalized = normalize_name(&row.name);
-    let (mut school, id) = CanonicalSchool::new(state, &row.name, &normalized);
+    let (mut school, id) = CanonicalSchool::new(state, &row.name, &normalized, None);
     school.association = Some(ASSOCIATION.to_string());
     school.evidence.push(Evidence::parsed(
         SourceRef::new(SOURCE_ID, Some(source_url.to_string())),

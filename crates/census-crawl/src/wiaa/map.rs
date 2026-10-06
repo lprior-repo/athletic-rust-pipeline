@@ -147,13 +147,16 @@ fn school_from_page(
 ) -> (CanonicalSchool, SchoolId) {
     let namespace = SourceNamespace::association_school(super::ASSOCIATION);
 
-    let (mut school, school_id) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, name, normalize_name(name));
-    school.city = page
-        .city
-        .as_deref()
-        .and_then(meaningful)
-        .or_else(|| meaningful(&entry.city));
+    let (mut school, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        name,
+        normalize_name(name),
+        page.city
+            .as_deref()
+            .and_then(meaningful)
+            .or_else(|| meaningful(&entry.city))
+            .as_deref(),
+    );
     if let Some(city) = school.city.as_ref() {
         school.aliases.push(format!("{city} WI"));
     }

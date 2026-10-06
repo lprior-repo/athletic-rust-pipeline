@@ -27,11 +27,11 @@ fn main() -> Result<()> {
     let store = Store::open(root.path())?;
     let ready = Barrier::new(2);
     let left = Aligned {
-        school: &CanonicalSchool::new(UsJurisdiction::Wisconsin, "Left", "left").0,
+        school: &CanonicalSchool::new(UsJurisdiction::Wisconsin, "Left", "left", None).0,
         ready: &ready,
     };
     let right = Aligned {
-        school: &CanonicalSchool::new(UsJurisdiction::Wisconsin, "Right", "right").0,
+        school: &CanonicalSchool::new(UsJurisdiction::Wisconsin, "Right", "right", None).0,
         ready: &ready,
     };
     let outcomes = std::thread::scope(|scope| {

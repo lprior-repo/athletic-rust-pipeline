@@ -66,12 +66,12 @@ fn entry_with_website(
 fn store_with_school() -> Result<(tempfile::TempDir, Store), Box<dyn std::error::Error>> {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path().join("store"))?;
-    let (mut school, _) = CanonicalSchool::new(
+    let (school, _) = CanonicalSchool::new(
         UsJurisdiction::Ohio,
         "Springfield High School",
         "springfield high school",
+        Some("Springfield"),
     );
-    school.city = Some("Springfield".to_string());
     store.append(Table::Schools, &school)?;
     Ok((dir, store))
 }
@@ -417,8 +417,12 @@ fn lane_evidence_reads_the_generation_lanes_and_overrides() -> TestResult {
 fn a_missing_state_is_reported_instead_of_linked() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path().join("store"))?;
-    let (school, _) =
-        CanonicalSchool::new(UsJurisdiction::Ohio, "Nowhere School", "nowhere school");
+    let (school, _) = CanonicalSchool::new(
+        UsJurisdiction::Ohio,
+        "Nowhere School",
+        "nowhere school",
+        None,
+    );
     let mut school = school;
     school.state = None;
     store.append(Table::Schools, &school)?;
@@ -522,8 +526,7 @@ fn store_with(
 ) -> Result<(tempfile::TempDir, Store), Box<dyn std::error::Error>> {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path().join("store"))?;
-    let (mut school, _) = CanonicalSchool::new(state, name, normalize_name(name));
-    school.city = Some(city.to_string());
+    let (school, _) = CanonicalSchool::new(state, name, normalize_name(name), Some(city));
     store.append(Table::Schools, &school)?;
     Ok((dir, store))
 }
@@ -833,10 +836,13 @@ fn co_op_school(
     city: &str,
     aliases: &[&str],
 ) -> Result<CanonicalSchool, Box<dyn std::error::Error>> {
-    let (mut school, _) =
-        CanonicalSchool::new(UsJurisdiction::Tennessee, name, normalize_name(name));
+    let (mut school, _) = CanonicalSchool::new(
+        UsJurisdiction::Tennessee,
+        name,
+        normalize_name(name),
+        Some(city),
+    );
     school.co_op = true;
-    school.city = Some(city.to_string());
     school.aliases = aliases.iter().map(|alias| (*alias).to_string()).collect();
     Ok(school)
 }
@@ -872,19 +878,19 @@ fn transfer_store(
 ) -> Result<(tempfile::TempDir, Store, SchoolId, SchoolId), Box<dyn std::error::Error>> {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path().join("store"))?;
-    let (mut springfield, springfield_id) = CanonicalSchool::new(
+    let (springfield, springfield_id) = CanonicalSchool::new(
         UsJurisdiction::Tennessee,
         "Springfield High School",
         normalize_name("Springfield High School"),
+        Some("Springfield"),
     );
-    springfield.city = Some("Springfield".to_string());
     store.append(Table::Schools, &springfield)?;
-    let (mut shelbyville, shelbyville_id) = CanonicalSchool::new(
+    let (shelbyville, shelbyville_id) = CanonicalSchool::new(
         UsJurisdiction::Tennessee,
         "Shelbyville Central High School",
         normalize_name("Shelbyville Central High School"),
+        Some("Shelbyville"),
     );
-    shelbyville.city = Some("Shelbyville".to_string());
     store.append(Table::Schools, &shelbyville)?;
     if with_athletes {
         let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "111");

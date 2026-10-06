@@ -19,8 +19,12 @@ fn school_from_capture() -> TestResult<CanonicalSchool> {
     let name = value["name"]
         .as_str()
         .ok_or("missing capture school name")?;
-    let (mut school, _) =
-        CanonicalSchool::new(state, name, census_domain::model::normalize_name(name));
+    let (mut school, _) = CanonicalSchool::new(
+        state,
+        name,
+        census_domain::model::normalize_name(name),
+        None,
+    );
     let owner = SourceIdentity::new(
         SourceNamespace::association_school("nchsaa"),
         value["shortCode"]

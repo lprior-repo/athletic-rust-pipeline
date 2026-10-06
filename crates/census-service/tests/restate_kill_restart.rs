@@ -446,6 +446,7 @@ fn add_school(corpus: &mut Corpus, index: usize, athletes_per_school: usize) -> 
         UsJurisdiction::Wisconsin,
         name.clone(),
         normalize_name(&name),
+        None,
     );
     school.evidence.push(evidence());
     let team = CanonicalTeam {

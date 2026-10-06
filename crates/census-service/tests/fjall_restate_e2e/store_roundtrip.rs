@@ -14,6 +14,7 @@ fn store_round_trip_merges_observations_and_reports_stats() -> TestResult {
         UsJurisdiction::Wisconsin,
         "Round Trip High School",
         "round trip",
+        None,
     );
     first.evidence.push(evidence());
     let mut duplicate = first.clone();

@@ -7,8 +7,13 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn buffered_page<'a>(ctx: &'a AdapterContext<'_>) -> TestResult<RowBatch<'a>> {
     let namespace = SourceNamespace::association_school("synthetic");
-    let mut school =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Test School", "test school").0;
+    let mut school = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Test School",
+        "test school",
+        None,
+    )
+    .0;
     school
         .source_identities
         .push(SourceIdentity::new(namespace.clone(), "school-1"));

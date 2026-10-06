@@ -39,8 +39,7 @@ fn seed(store: &Store) -> Result<(), Box<dyn std::error::Error>> {
             "Potsdam",
         ),
     ] {
-        let (mut school, _) = CanonicalSchool::new(state, name, normalize_name(name));
-        school.city = Some(city.to_string());
+        let (school, _) = CanonicalSchool::new(state, name, normalize_name(name), Some(city));
         store.append(Table::Schools, &school)?;
         println!("seeded\t{name}\t{city}\t{state}");
     }
@@ -49,9 +48,12 @@ fn seed(store: &Store) -> Result<(), Box<dyn std::error::Error>> {
 
 fn seed_campus_coop(store: &Store) -> Result<(), Box<dyn std::error::Error>> {
     for name in ["Page High School", "Page High School (East)"] {
-        let (mut school, _) =
-            CanonicalSchool::new(UsJurisdiction::Tennessee, name, normalize_name(name));
-        school.city = Some("Franklin".to_string());
+        let (school, _) = CanonicalSchool::new(
+            UsJurisdiction::Tennessee,
+            name,
+            normalize_name(name),
+            Some("Franklin"),
+        );
         store.append(Table::Schools, &school)?;
         println!(
             "seeded\t{name}\tFranklin\t{state}",
@@ -62,6 +64,7 @@ fn seed_campus_coop(store: &Store) -> Result<(), Box<dyn std::error::Error>> {
         UsJurisdiction::Tennessee,
         "Music City Coop",
         normalize_name("Music City Coop"),
+        Some("Nashville"),
     );
     co_op.co_op = true;
     co_op.city = Some("Nashville".to_string());

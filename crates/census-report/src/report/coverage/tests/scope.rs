@@ -5,8 +5,12 @@ fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() -> 
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
 
-    let (school, school_id) =
-        CanonicalSchool::new(UsJurisdiction::Ohio, "Dublin Coffman", "dublin coffman");
+    let (school, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Ohio,
+        "Dublin Coffman",
+        "dublin coffman",
+        None,
+    );
     store.append(Table::Schools, &school)?;
     let mut core_athlete = CanonicalAthlete::new(
         &school_id,
@@ -30,7 +34,7 @@ fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() -> 
     store.append(Table::Athletes, &mirror_athlete)?;
 
     let (ak_school, ak_school_id) =
-        CanonicalSchool::new(UsJurisdiction::Alaska, "Service High", "service high");
+        CanonicalSchool::new(UsJurisdiction::Alaska, "Service High", "service high", None);
     store.append(Table::Schools, &ak_school)?;
     let mut ak_athlete = CanonicalAthlete::new(
         &ak_school_id,

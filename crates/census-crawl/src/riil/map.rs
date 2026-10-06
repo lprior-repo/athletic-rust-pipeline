@@ -41,7 +41,7 @@ pub fn school_entities(table: &SchoolTable, capture: &FetchOutcome) -> SchoolExt
 fn school_from_table(table: &SchoolTable, capture: &FetchOutcome) -> (CanonicalSchool, SchoolId) {
     let name = table.name.clone();
     let normalized = normalize_name(&name);
-    let (school, id) = CanonicalSchool::new(super::STATE, name, normalized);
+    let (school, id) = CanonicalSchool::new(super::STATE, name, normalized, None);
     let evidence = capture_evidence(capture);
     let identity = SourceIdentity::new(
         SourceNamespace::association_school(ASSOCIATION),

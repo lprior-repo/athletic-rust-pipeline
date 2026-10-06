@@ -26,7 +26,7 @@ pub struct SchoolExtract {
 
 pub fn school_entities(facts: &ProfileFacts<'_>, coaches: &[CoachRow]) -> SchoolExtract {
     let normalized = normalize_name(facts.name);
-    let (mut school, school_id) = CanonicalSchool::new(STATE, facts.name, &normalized);
+    let (mut school, school_id) = CanonicalSchool::new(STATE, facts.name, &normalized, None);
 
     if !facts.classification.is_empty() {
         school.classification = Some(facts.classification.to_string());

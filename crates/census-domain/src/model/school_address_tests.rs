@@ -99,8 +99,13 @@ fn metadata_owner_line_breaks_cannot_forge_aligned_postal_rows(
 fn source_jurisdiction_binds_the_school_even_when_address_state_is_missing(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let street = StreetLine::parse("1 Rocket Drive")?;
-    let mut school =
-        CanonicalSchool::new(UsJurisdiction::NorthCarolina, "Rocket High", "rocket-high").0;
+    let mut school = CanonicalSchool::new(
+        UsJurisdiction::NorthCarolina,
+        "Rocket High",
+        "rocket-high",
+        None,
+    )
+    .0;
     school.source_identities.push(owner("1001"));
     let foreign = claim(
         street,

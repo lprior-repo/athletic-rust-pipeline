@@ -10,6 +10,7 @@ fn athlete_fixture() -> Result<(TempDir, Store, CanonicalAthlete), Box<dyn std::
         UsJurisdiction::Wisconsin,
         "Published Cohort High",
         "published cohort high",
+        None,
     );
     store.append(Table::Schools, &school)?;
     let athlete = CanonicalAthlete::new(

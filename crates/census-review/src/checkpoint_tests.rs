@@ -31,6 +31,7 @@ fn reconcile_athletes_writes_both_tables_in_one_commit() -> TestResult {
         census_domain::UsJurisdiction::Wisconsin,
         "School A",
         census_domain::model::normalize_name("School A"),
+        None,
     )
     .0
     .id;
@@ -38,6 +39,7 @@ fn reconcile_athletes_writes_both_tables_in_one_commit() -> TestResult {
         census_domain::UsJurisdiction::Minnesota,
         "School B",
         census_domain::model::normalize_name("School B"),
+        None,
     )
     .0
     .id;
@@ -97,6 +99,7 @@ fn deterministic_identity_decisions_are_not_submitted_for_model_advice() -> Test
                 census_domain::UsJurisdiction::Wisconsin,
                 "School A",
                 "school a",
+                None,
             )
             .0
             .id;
@@ -104,6 +107,7 @@ fn deterministic_identity_decisions_are_not_submitted_for_model_advice() -> Test
                 census_domain::UsJurisdiction::Minnesota,
                 "School B",
                 "school b",
+                None,
             )
             .0
             .id;

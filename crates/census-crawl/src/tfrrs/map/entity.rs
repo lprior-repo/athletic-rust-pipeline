@@ -14,7 +14,7 @@ impl<'a> Absorb<'a> {
             self.resolved.insert(name.to_string(), id.clone());
             return Some(id);
         }
-        let (school, id) = CanonicalSchool::new(page.jurisdiction, name, name.to_lowercase());
+        let (school, id) = CanonicalSchool::new(page.jurisdiction, name, name.to_lowercase(), None);
         self.stats.schools_minted = self.stats.schools_minted.saturating_add(1);
         self.accumulator
             .schools

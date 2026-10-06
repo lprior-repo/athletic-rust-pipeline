@@ -3,6 +3,7 @@ use census_crawl::AdapterContext;
 use census_domain::model::SchoolYear;
 use census_domain::model::SourceMeetRef;
 use census_domain::UsJurisdiction;
+use restate_sdk::prelude::Json;
 
 use super::{arm_for, athleticnet_meet_ids, athleticnet_meets, meet_id_in, ResultsArm};
 use crate::restate_services::tests::sdk_error;
@@ -172,4 +173,71 @@ fn a_selection_that_names_no_meet_is_not_a_pull() -> TestResult {
             check!(eq; report.requests, 0, "nothing to pull means no request");
             Ok(())
         })
+}
+
+#[test]
+fn an_unarmed_sweepable_slug_fails_closed() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (_dir, store, fetcher) = scratch()?;
+            let result = super::results_stage(
+                std::sync::Arc::new(store),
+                std::sync::Arc::new(fetcher),
+                UsJurisdiction::Alabama,
+                2026,
+                false,
+                "2026-09-24".to_string(),
+                vec!["never_armed_slug".to_string()],
+            )
+            .await;
+            check!(
+                result.is_err(),
+                "a sweepable slug with no stage arm must fail closed"
+            );
+            Ok(())
+        })
+}
+
+#[test]
+fn a_slug_armed_by_another_stage_is_not_a_results_pull() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (_dir, store, fetcher) = scratch()?;
+            let Json(outcome) = super::results_stage(
+                std::sync::Arc::new(store),
+                std::sync::Arc::new(fetcher),
+                UsJurisdiction::Alabama,
+                2026,
+                false,
+                "2026-09-24".to_string(),
+                vec!["coach_directories".to_string()],
+            )
+            .await
+            .map_err(sdk_error)?;
+            check!(outcome.per_source.is_empty());
+            Ok(())
+        })
+}
+
+#[test]
+fn the_outcome_carries_the_reports_unresolved_counters() -> TestResult {
+    let mut report = census_crawl::AdapterReport::new("milesplit_results", "result rows");
+    report.rows = 7;
+    report.unresolved = Some(census_crawl::UnresolvedCounters { rows: 4, labels: 2 });
+    let rows = super::source_rows("milesplit", 3, &report).map_err(sdk_error)?;
+    check!(eq; rows.slug, "milesplit");
+    check!(eq; rows.meets, 3);
+    check!(eq; rows.rows, 7);
+    check!(eq;
+        rows.unresolved,
+        Some(census_crawl::UnresolvedCounters { rows: 4, labels: 2 })
+    );
+    let silent = census_crawl::AdapterReport::new("athleticnet", "performances");
+    let rows = super::source_rows("athleticnet", 0, &silent).map_err(sdk_error)?;
+    check!(eq; rows.unresolved, None);
+    Ok(())
 }

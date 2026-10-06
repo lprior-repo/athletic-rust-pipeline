@@ -109,8 +109,12 @@ pub fn directory_school(
     else {
         return Ok(DirectoryAdmission::DroppedName);
     };
-    let (mut school, id) = CanonicalSchool::new(state, name.as_str(), normalize_name(&name));
-    school.city = row.city.as_deref().and_then(nonempty);
+    let (mut school, id) = CanonicalSchool::new(
+        state,
+        name.as_str(),
+        normalize_name(&name),
+        row.city.as_deref().and_then(nonempty).as_deref(),
+    );
     school.association = Some(association.to_string());
     school.classification = classification(&row.competition_levels);
     school.source_identities.push(

@@ -4,10 +4,13 @@ use census_domain::model::{CanonicalSchool, SourceIdentity, SourceNamespace};
 use census_domain::UsJurisdiction;
 
 fn school(identities: Vec<SourceIdentity>) -> CanonicalSchool {
-    let (mut school, _) =
-        CanonicalSchool::new(UsJurisdiction::Ohio, "DUBLIN COFFMAN", "dublin coffman");
+    let (mut school, _) = CanonicalSchool::new(
+        UsJurisdiction::Ohio,
+        "DUBLIN COFFMAN",
+        "dublin coffman",
+        Some("Dublin"),
+    );
     school.association = Some("ohsaa".to_string());
-    school.city = Some("Dublin".to_string());
     school.source_identities = identities;
     school
 }

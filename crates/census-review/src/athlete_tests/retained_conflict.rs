@@ -1,6 +1,6 @@
 use census_domain::model::ReviewState;
 
-use super::binding_support::{assert_preserved, canonical_side, rows, Change, Fixture};
+use super::binding_support::{assert_preserved, canonical, canonical_side, rows, Change, Fixture};
 use super::options;
 use crate::consensus::tests::support::{audit, batch, client, lane, row, state, TestResult};
 use crate::run_lanes;
@@ -54,8 +54,8 @@ fn a_retained_source_conflict_refuses_same_person_but_preserves_different_person
                     server_a.join().map_err(|_| "first lane panicked")??,
                     server_b.join().map_err(|_| "second lane panicked")??,
                 ] {
-                    check!(eq; canonical_side(&requests[0], "side_a")?, source_rows[0]);
-                    check!(eq; canonical_side(&requests[0], "side_b")?, source_rows[1]);
+                    check!(eq; canonical_side(&requests[0], "side_a")?, canonical(&source_rows[0])?);
+                    check!(eq; canonical_side(&requests[0], "side_b")?, canonical(&source_rows[1])?);
                     let content = requests[0]["messages"][1]["content"]
                         .as_str()
                         .ok_or("attributed packet")?;

@@ -35,19 +35,20 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
     let store = Store::open(dir.path())?;
 
     let (school_a, school_a_id) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford", None);
     store.append(Table::Schools, &school_a)?;
     let (school_b, school_b_id) =
-        CanonicalSchool::new(UsJurisdiction::Minnesota, "Wayzata", "wayzata");
+        CanonicalSchool::new(UsJurisdiction::Minnesota, "Wayzata", "wayzata", None);
     store.append(Table::Schools, &school_b)?;
     let (school_c, school_c_id) = CanonicalSchool::new(
         UsJurisdiction::Illinois,
         "Hinsdale Central",
         "hinsdale central",
+        None,
     );
     store.append(Table::Schools, &school_c)?;
     let (_school_d, school_d_id) =
-        CanonicalSchool::new(UsJurisdiction::Ohio, "Never Stored", "never stored");
+        CanonicalSchool::new(UsJurisdiction::Ohio, "Never Stored", "never stored", None);
 
     let mut wi_core = CanonicalAthlete::new(
         &school_a_id,
@@ -96,7 +97,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
     store.append(Table::Athletes, &mn_off_cohort)?;
 
     let (school_k, school_k_id) =
-        CanonicalSchool::new(UsJurisdiction::Kansas, "Olathe West", "olathe west");
+        CanonicalSchool::new(UsJurisdiction::Kansas, "Olathe West", "olathe west", None);
     store.append(Table::Schools, &school_k)?;
     let mut ks_off_cohort = CanonicalAthlete::new(
         &school_k_id,

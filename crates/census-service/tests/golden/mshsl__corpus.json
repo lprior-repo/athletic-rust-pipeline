@@ -1,10 +1,10 @@
 [
   {
-    "digest": "c08dab41c0232cc1b848d4da68c2e9e4e2e293d8df494b252f6ad10e8b732ca7",
+    "digest": "207f4fa0ea596c271b03d94f6a81fc6d2e9db33b9cf725ca657c0b44d09f4db5",
     "fixture": "coach_records_aitkin_track-and-field-boys.json"
   },
   {
-    "digest": "1e857a832e5470b99dea0888817f0c928bef502b956ce72bcb17c20cd6715c8f",
+    "digest": "e40f6595963633af29927e2279f85ded5bd4c75239a0db9de651aa884fdd9b67",
     "fixture": "coach_records_aitkin_track-and-field-girls.json"
   },
   {
@@ -12,11 +12,11 @@
     "fixture": "coach_records_wayzata_track_boys.json"
   },
   {
-    "digest": "fe1dfe433b8fd6eabb1042505577fd6d648744c241c1c42e0aef102de7caf689",
+    "digest": "53fac6495e7e9a6b1b79bbe590624d0b092586864c5f7c108b9e7e109d38c30e",
     "fixture": "school_detail_academic-arts-high-school.html"
   },
   {
-    "digest": "70c775c315cc4058a84f07a3bf65eeb8fefce2af9eaf5cbbe57b8b34c931a3a0",
+    "digest": "c37f46cb178de5053fbbf6c2a5063277826d6e549b28ed01c78dbf59756f0808",
     "fixture": "school_detail_aitkin-high-school.html"
   },
   {

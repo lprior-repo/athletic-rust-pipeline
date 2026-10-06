@@ -35,6 +35,7 @@ pub fn school_entities(facts: &ProfileFacts<'_>, directory: &StaffDirectory) -> 
         facts.state,
         &directory.name,
         normalize_name(&directory.name),
+        None,
     );
     school.athletics_website = Some(facts.host.to_string());
     school

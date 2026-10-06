@@ -28,6 +28,7 @@ fn an_explicitly_filed_pair_binds_across_two_schools() -> TestResult {
         UsJurisdiction::Montana,
         "Ekalaka High School",
         normalize_name("Ekalaka High School"),
+        None,
     )
     .0
     .id;

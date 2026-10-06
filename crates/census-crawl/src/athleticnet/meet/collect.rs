@@ -2,7 +2,7 @@ use super::read::EventMetadata;
 use super::wire::{AllResults, MeetData};
 use super::{meet_requests, metadata_request, MEET_ENDPOINT};
 use crate::athleticnet::collect::{
-    appended_total, consolidated_index, journaled_urls, stats_of, store_accumulated, EntityCounts,
+    appended_total, journaled_urls, live_index, stats_of, store_accumulated, EntityCounts,
 };
 use crate::athleticnet::map::{Accumulator, Stats};
 use crate::athleticnet::{Options, PARSE_VERSION};
@@ -26,7 +26,7 @@ pub(in crate::athleticnet) async fn collect(
         report: AdapterReport::new("athleticnet", "performances"),
         done: journaled_urls(ctx)?,
     };
-    let index = consolidated_index(ctx)?;
+    let index = live_index(ctx)?;
     let source = SourceRef::new("athleticnet", Some(MEET_ENDPOINT.to_string()));
     let (requests_before, cache_before) = stats_of(ctx).await;
     let rows = run.pull(ctx, options, &source, &index).await?;

@@ -104,7 +104,7 @@
         }
       }
     ],
-    "id": "sch_923bf42605772b4c",
+    "id": "sch_a9b943f08e5c61ec",
     "name": "Mandan Classical Academy",
     "normalized_name": "mandan classical academy",
     "school_website": "https://www.chestertonmandan.org",
@@ -121,7 +121,7 @@
     ],
     "state": "ND"
   },
-  "school_id": "sch_923bf42605772b4c",
+  "school_id": "sch_a9b943f08e5c61ec",
   "sport_coaches": [
     {
       "evidence": [
@@ -135,10 +135,10 @@
         }
       ],
       "gender": "boys",
-      "id": "coa_80fa82f51fdbef4d",
+      "id": "coa_326baab4c3540021",
       "name": "Bill Greb",
       "role": "unknown",
-      "school": "sch_923bf42605772b4c",
+      "school": "sch_a9b943f08e5c61ec",
       "source_identities": [],
       "sport": "cross_country"
     },
@@ -154,10 +154,10 @@
         }
       ],
       "gender": "girls",
-      "id": "coa_08b6f4446ef99208",
+      "id": "coa_a61e65cb2439026e",
       "name": "Gregory Brown",
       "role": "unknown",
-      "school": "sch_923bf42605772b4c",
+      "school": "sch_a9b943f08e5c61ec",
       "source_identities": [],
       "sport": "cross_country"
     }

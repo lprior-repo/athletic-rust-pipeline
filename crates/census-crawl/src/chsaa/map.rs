@@ -17,10 +17,12 @@ pub fn map_directory_row(
         return None;
     }
     let normalized = normalize_name(name);
-    let (mut school, id) = CanonicalSchool::new(UsJurisdiction::Colorado, name, &normalized);
-    if let Some(city) = &row.city {
-        school.city = nonempty(city);
-    }
+    let (mut school, id) = CanonicalSchool::new(
+        UsJurisdiction::Colorado,
+        name,
+        &normalized,
+        row.city.as_deref().and_then(nonempty).as_deref(),
+    );
     school.association = Some(ASSOCIATION.to_string());
     school.source_identities.push(
         SourceIdentity::new(

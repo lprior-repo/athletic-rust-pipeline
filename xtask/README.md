@@ -31,6 +31,7 @@ Do not invoke Cargo, bare Moon, `tools/gate.sh` or fault/backup wrappers directl
 | `perf record`, `perf check`, `perf profile <group>` | Record/compare/profile configured benchmarks; each lane's own reports own interpretation and limits |
 | `dump-sheet <workbook> <sheets>...` | Prints nonempty worksheet rows as `column=value` fields |
 | `new-source <name>` | Writes a source scaffold and module declaration; not a qualified or fully registered adapter |
+| `storage-ab [-- <args>]` | Manual census-store keyspace A/B benchmark: single vs split evidence/derived keyspaces; run with small sizes first (e.g. `--evidence-rows 20000 --derived-rows 40000 --generations 2`) before production-scale runs |
 
 `env -u CI tools/moon-local run pipeline:gate -- --full` and `--release` invoke the unfiltered mandatory proof lane.
 A passing explicitly selected harness is not coverage of missing kernels. Release also fails when
@@ -237,6 +238,15 @@ the XLSX is `<publication>/current/workbook.xlsx`. See [operations](../docs/OPER
 lifecycle, complete frozen-bundle verification and current certification limits.
 
 ## Measurement and fixture boundaries
+
+`storage-ab` is a manual measurement task that compares two physical layouts: arm A stores all
+evidence and derived data in a single `entities` keyspace, while arm B splits them into separate
+`evidence` and `derived` keyspaces. The task generates deterministic synthetic workloads, measures
+insert, rebuild, delete and point-read latencies plus disk footprint and peak RSS for both arms, and
+prints tab-separated metrics for direct comparison. It does not modify production code paths or
+declare a winner; the results gate a future architecture decision to split keyspaces only when
+measured advantage justifies the change. Run it with small sizes first to verify the harness, then
+scale up to production-relevant row counts before drawing conclusions.
 
 `scan` obtains members from Cargo metadata rather than a two-package list. Test-only regions and
 recognized test files are excluded from production measurements. `seams` is a separate structural

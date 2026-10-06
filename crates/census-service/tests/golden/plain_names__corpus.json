@@ -1,10 +1,10 @@
 [
   {
-    "digest": "6003a64e2aebd22b33a8a32cb633b8669a0f28a11a7690b4d7146f3351226925",
+    "digest": "cfe23f9c0ef6c60e5cd959234c875c7a6e912db5429d75c3487b63108a32f9f7",
     "fixture": "nd_school_page.html"
   },
   {
-    "digest": "6a829a1b413d4189899c81bd5b9b1938ea1fdd870e7fa294876a9c1b38b8aac2",
+    "digest": "8dab73cbab8fce3fd75ea4111a76fa484f763de8d08ad7583d8625a1d967e9c7",
     "fixture": "nd_school_page_no_ad.html"
   },
   {
@@ -12,7 +12,7 @@
     "fixture": "nd_schools_index.html"
   },
   {
-    "digest": "aab397bfc1aa6387f89f0a5174e1ca3bfab6a13c9269571f9c7506aac287815d",
+    "digest": "00a8437bd76259ec0e4c98b2d3639f56774aa3fa08105f6581efbc155b8ab77c",
     "fixture": "nsaa_directory_export.html"
   },
   {
@@ -20,7 +20,7 @@
     "fixture": "nsaa_directory_form.html"
   },
   {
-    "digest": "e964b465ec72e6de6a645007fd6d2802d78a01e06b0ff139f7f91030e7bd185b",
+    "digest": "d57d5dde4626e3d76eff28de289d692a9992820b684a02bfd3113ff930989ff5",
     "fixture": "nsaa_school_get_adams_central.html"
   }
 ]

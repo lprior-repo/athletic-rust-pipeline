@@ -137,16 +137,22 @@ fn the_sheets_render_the_rows_the_store_retains() -> TestResult {
     let evidence = Evidence::parsed(SourceRef::new("wiaa_results", None), day);
 
     let (school, school_id) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford", None);
     store.append(Table::Schools, &school)?;
 
-    let (mut twin, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
-    twin.id = CanonicalSchool::mint(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford legacy");
+    let (mut twin, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford", None);
+    twin.id = CanonicalSchool::mint(
+        UsJurisdiction::Wisconsin,
+        "Abbotsford",
+        "abbotsford legacy",
+        None,
+    );
     let twin_id = twin.id.clone();
     store.append(Table::Schools, &twin)?;
 
     let (mut orphan, _orphan_id) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Nowhere", "nowhere");
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Nowhere", "nowhere", None);
     orphan.state = None;
     store.append(Table::Schools, &orphan)?;
 
@@ -461,7 +467,7 @@ fn scope_divergence_is_published_in_the_coverage_sheet() -> TestResult {
     let other_evidence = Evidence::parsed(SourceRef::new("athleticnet", None), day);
 
     let (school, school_id) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford", None);
     store.append(Table::Schools, &school)?;
 
     let meet = CanonicalMeet::new(

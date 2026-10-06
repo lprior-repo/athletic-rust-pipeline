@@ -22,16 +22,10 @@ fn state(store: &Store) -> TestResult<(u64, String, Vec<census_store::TableWalk>
     ))
 }
 
-fn schools(store: &Store, schools: &[CanonicalSchool]) -> TestResult {
-    let rows =
-        schools
-            .iter()
-            .try_fold(String::new(), |mut rows, school| -> TestResult<String> {
-                rows.push_str(&serde_json::to_string(school)?);
-                rows.push('\n');
-                Ok(rows)
-            })?;
-    std::fs::write(store.out_dir().join("schools.jsonl"), rows)?;
+fn seed_schools(store: &Store, schools: &[CanonicalSchool]) -> TestResult {
+    for school in schools {
+        store.append(census_store::Table::Schools, school)?;
+    }
     Ok(())
 }
 
@@ -141,8 +135,7 @@ fn a_genuine_new_school_binding_resumes_partial_projection_without_reappending_p
         .enable_all()
         .build()?
         .block_on(async {
-            let (dir, store, fetcher, reference) = setup()?;
-            schools(&store, &[])?;
+            let (dir, store, fetcher, reference) = setup_bare()?;
             seed_owned(&fetcher, &reference, TROY)?;
             seed_metadata(&fetcher, &reference)?;
             collect_report(&store, &fetcher, &reference, 1).await?;
@@ -161,7 +154,7 @@ fn a_genuine_new_school_binding_resumes_partial_projection_without_reappending_p
             let store = Store::open(dir.path().join("store"))?;
             collect_report(&store, &fetcher, &reference, 1).await?;
             check!(eq; state(&store)?, before);
-            schools(
+            seed_schools(
                 &store,
                 &[
                     school("Spann provider school", "38332"),
@@ -180,8 +173,8 @@ fn a_genuine_new_school_binding_resumes_partial_projection_without_reappending_p
 }
 
 #[test]
-fn changed_exact_school_binding_after_completion_preserves_old_and_new_source_owned_facts(
-) -> TestResult {
+fn a_second_exact_school_claim_keeps_the_binding_ambiguous_and_preserves_prior_facts() -> TestResult
+{
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
@@ -195,42 +188,32 @@ fn changed_exact_school_binding_after_completion_preserves_old_and_new_source_ow
             let original = prior_marks
                 .iter()
                 .find(|row| row.source_key == "milesplit_result:201782263")
-                .ok_or("original Spann result")?;
+                .ok_or("original result")?;
             let changed_school = school("New exact canonical owner", "38332");
-            schools(&store, &[changed_school.clone(), school("Charles", "4912")])?;
-            collect_report(&store, &fetcher, &reference, 0).await?;
+            seed_schools(&store, std::slice::from_ref(&changed_school))?;
+            let report = crate::milesplit::collect_result_sets(
+                &context(&store, &fetcher)?,
+                &options(&reference),
+            )
+            .await?;
+            check!(eq; report.rows, 3);
+            check!(eq; report.errors, 1);
+            check!(eq;
+                report.unresolved,
+                Some(crate::UnresolvedCounters { rows: 2, labels: 1 })
+            );
             let marks: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
             check!(marks.contains(original));
-            let changed = marks
-                .iter()
-                .find(|row| {
-                    row.source_key == original.source_key && row.athlete != original.athlete
-                })
-                .ok_or("new exact canonical school owner")?;
-            check!(eq; changed.source_athlete, original.source_athlete);
-            check!(eq; changed.mark, original.mark);
+            check!(eq; marks.len(), 3);
             let athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes)?;
-            check!(eq;
-                athletes
-                    .iter()
-                    .find(|row| row.id == changed.athlete)
-                    .ok_or("new school athlete")?
-                    .school,
-                changed_school.id
-            );
+            check!(eq; athletes.len(), 2);
+            check!(!athletes.iter().any(|row| row.school == changed_school.id));
             check!(eq;
                 store
                     .walk_table(Table::SourceObservations)
                     ?
                     .rows,
                 3
-            );
-            check!(eq;
-                store
-                    .walk_table(Table::Performances)
-                    ?
-                    .rows,
-                5
             );
             let after_receipts = store.journal_payloads(super::super::super::RESULT_SET_PHASE)?;
             check!(prior_receipts
@@ -240,18 +223,14 @@ fn changed_exact_school_binding_after_completion_preserves_old_and_new_source_ow
                 .iter()
                 .filter(|row| row["disposition"] == "projection_applied")
                 .collect();
-            check!(eq; applied.len(), 2);
-            check!(eq; applied[0]["capture"], applied[1]["capture"]);
-            check!(eq;
-                applied[0]["raw_metadata_capture"],
-                applied[1]["raw_metadata_capture"]
-            );
-            check!(ne;
-                applied[0]["projection_context_digest"],
-                applied[1]["projection_context_digest"]
-            );
+            check!(eq; applied.len(), 1);
             let before_replay = state(&store)?;
-            collect_report(&store, &fetcher, &reference, 0).await?;
+            let report = crate::milesplit::collect_result_sets(
+                &context(&store, &fetcher)?,
+                &options(&reference),
+            )
+            .await?;
+            check!(eq; report.errors, 1);
             check!(eq; state(&store)?, before_replay);
             check!(eq;
                 store
