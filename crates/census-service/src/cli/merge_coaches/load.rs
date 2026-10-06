@@ -14,7 +14,7 @@ pub(super) fn from_fields(fields: Vec<String>) -> Row {
     Row {
         school: next(),
         city: next(),
-        state: next().trim().to_uppercase(),
+        state: next().trim().to_string(),
         sport: next(),
         role: next(),
         coach_name: next(),
@@ -47,7 +47,7 @@ pub(super) fn to_fields(row: &Row) -> Vec<String> {
 pub(super) fn dedupe_key(row: &Row) -> (String, String, String, String) {
     (
         row.school.trim().to_lowercase(),
-        row.state.clone(),
+        row.state.trim().to_ascii_uppercase(),
         row.sport.trim().to_lowercase(),
         row.role.trim().to_lowercase(),
     )
@@ -116,7 +116,7 @@ pub(super) fn load_rows(path: &Path, expected_state: &str) -> (Vec<(usize, Row)>
             continue;
         }
         let mut row = Row::from_fields(fields);
-        let state_field = row.state.trim().to_uppercase();
+        let state_field = row.state.trim().to_string();
         row.state = if state_field.is_empty() {
             expected_state.to_string()
         } else {

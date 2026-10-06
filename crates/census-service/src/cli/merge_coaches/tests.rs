@@ -809,6 +809,37 @@ fn merged_product_preserves_repeated_claims_for_digest_fidelity() -> TestResult 
 }
 
 #[test]
+fn merge_keeps_a_state_cells_case_so_the_proof_still_validates() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let union = dir.path().join("union");
+    let verified = verified_director("oh", "Alpha High School");
+    census_service::coachverify::write_state_union(&union, std::slice::from_ref(&verified))?;
+    check!(
+        union.join("OH.csv").is_file(),
+        "the union files a row under the uppercased state"
+    );
+    let out = dir.path().join("coach-contacts.csv");
+    run_merge_coaches(&MergeCoachesArgs {
+        fragments: union,
+        out: out.clone(),
+        report: dir.path().join("merge.md"),
+    })?;
+    let published = census_service::coachverify::read_fragment(&out)?;
+    check!(eq; published.len(), 1);
+    check!(
+        eq;
+        published[0].state,
+        "oh",
+        "the merge publishes the state cell as the union wrote it"
+    );
+    let reconciliation =
+        census_service::coachverify::reconcile(&out, std::slice::from_ref(&verified))?;
+    check!(eq; reconciliation.published, 1);
+    check!(eq; reconciliation.tampered_total(), 0);
+    Ok(())
+}
+
+#[test]
 fn merge_refuses_a_fragment_without_evidence() -> TestResult {
     let dir = tempfile::tempdir()?;
     let union = dir.path().join("union");

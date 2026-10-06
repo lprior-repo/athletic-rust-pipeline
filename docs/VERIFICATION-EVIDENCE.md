@@ -11432,12 +11432,24 @@ Lanes: `pipeline:tests` 2522 passed / 3 skipped (both `restate_kill_restart` sce
 (`merged_product_preserves_repeated_claims_for_digest_fidelity`,
 `a_repeated_pass_records_the_same_claim_once`) failed before their fixes and pass after. Recorded
 binaries: `coach_gate` `c929ef13…`, `census-service` `417c1671…`; the post-run counter fix rebuilt
-them (`5c46e5c7…`, `a85ae7d8…`) and its reconcile re-run produced byte-identical outputs.
+them (`5c46e5c7…`, `a85ae7d8…`) and its reconcile re-run produced byte-identical outputs. The
+state-case fix below rebuilt them once more (`coach_gate` `e3cc87ec…`, `census-service` `d3eaa867…`),
+and `merge-coaches` plus `verify-coaches --reconcile` re-run with `d3eaa867…` reproduced
+`coach-contacts.csv`, `coach-contacts.csv.evidence.jsonl` and the whole `reconcile-out/` tree
+byte-for-byte on the frozen union (`var/tap-wave2-20261005/verify5.log`: `rows identical`,
+`sidecars identical`, `reconcile tree identical`, reconcile exit 0 with `requests=0 cache_hits=2`).
 Limitations: gate verdict counts drift between runs on live sources (NV render-required 304→300,
 mismatch 13→17) while the chain structure and the shipped row held; `render_required` rows cannot
-verify until the gate's fetcher carries a browser lane; and `claims_for_row` compares `state`
-exactly, so a fragment row with a lowercase state cell would fail closed rather than publish
-(`athletic-rust-pipeline-dulh`).
+verify until the gate's fetcher carries a browser lane (`athletic-rust-pipeline-wff0`); and a
+fragment row's lowercase state cell used to be uppercased by `merge_coaches::load`, which left the
+published row's state out of step with its claims' verbatim state and made the proof digest
+unreconcilable (`athletic-rust-pipeline-dulh`) — the merge now preserves the cell and normalizes only
+the dedupe key, while `judge::check_state` stays case-insensitive and `claims_for_row` keeps the exact
+comparison the domain's `validate_claim_against_row` enforces (normalizing the selector alone would
+still have been rejected there on `state`/`role`/`school`/`value`). The regression
+`merge_keeps_a_state_cells_case_so_the_proof_still_validates` failed before the fix
+(`CheckFailure("…left=\"OH\" right=\"oh\"")`) and passes after; the all-uppercase `NJ` tap data
+re-ran byte-identically, and the focused lane holds 59/59 with the gate at 2533/2533.
 
 ## Wave-0 tap verification consolidated across all five source families — 2026-10-05
 
