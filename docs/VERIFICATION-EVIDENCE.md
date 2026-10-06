@@ -12743,8 +12743,10 @@ school-address join, parity-golden and bench-dataset levels, not by a fresh acqu
 
 Local state at verification: the untracked scratch example `crates/census-store/examples/keyspace_ab.rs`
 (nine compile errors against the current fjall API) was renamed to `keyspace_ab.rs.disabled` so the
-`--all-targets` lanes can compile the tree; the documented `cargo xtask storage-ab` verb therefore has
-no example target to run until that scratch example is repaired or removed.
+`--all-targets` lanes can compile the tree; that example was later repaired and re-enabled (`82f90042`,
+299 lines, zero `clippy::arithmetic_side_effects`/`as_conversions`/`indexing_slicing` findings), and
+`cargo xtask storage-ab -- --evidence-rows 2000 --derived-rows 4000 --generations 2` completes both arms
+on the landed revision — see the release-gate entries below.
 
 ## Release gate attempt on the post-migration tree — 2026-10-06
 
