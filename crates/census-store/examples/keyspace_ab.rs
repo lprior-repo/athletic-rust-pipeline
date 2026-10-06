@@ -1,13 +1,13 @@
 use fjall::{Database, Keyspace, KeyspaceCreateOptions, OwnedWriteBatch, PersistMode, Readable};
 use std::env;
-use std::fs;
-use std::path::Path;
 use std::process::ExitCode;
 use std::time::{Duration, Instant};
+use std::{fs, path::Path};
 use tempfile::tempdir;
 
-const BATCH_ROWS: u64 = 25_000;
-const READ_SAMPLE: u64 = 1_000;
+const ID_SPAN: u64 = 1_000;
+const EVIDENCE_VALUE_BYTES: u64 = 184;
+const DERIVED_VALUE_BYTES: u64 = 100;
 
 struct Args {
     evidence_rows: u64,
@@ -21,18 +21,16 @@ struct Shape<'a> {
     table: &'a str,
     second: u64,
     rows: u64,
-    base: u64,
-    span: u64,
+    length: u64,
 }
 
 impl Shape<'_> {
-    fn seeded(table: &str, rows: u64, base: u64, span: u64) -> Shape<'_> {
+    fn seeded(table: &str, rows: u64, length: u64) -> Shape<'_> {
         Shape {
             table,
             second: 0,
             rows,
-            base,
-            span,
+            length,
         }
     }
 
@@ -63,6 +61,9 @@ fn parse_args() -> Result<Args, String> {
             other => return Err(format!("unknown arg: {other}")),
         }
     }
+    if args.evidence_rows < ID_SPAN || args.derived_rows < ID_SPAN || args.generations == 0 {
+        return Err("row counts and generations must be positive".to_string());
+    }
     Ok(args)
 }
 
@@ -82,12 +83,11 @@ fn lcg(seed: u64) -> impl FnMut() -> u64 {
     }
 }
 
-fn body(rng: &mut impl FnMut() -> u64, base: u64, span: u64) -> Vec<u8> {
-    let length = rng().checked_rem(span).unwrap_or(0).saturating_add(base);
+fn body(rng: &mut impl FnMut() -> u64, length: u64) -> Vec<u8> {
     let mut value = Vec::new();
     for _ in 0..length {
-        let code = rng().checked_rem(90).unwrap_or(0).saturating_add(33);
-        value.push(u8::try_from(code).unwrap_or(b'?'));
+        let [byte, ..] = rng().to_le_bytes();
+        value.push(byte);
     }
     value
 }
@@ -127,8 +127,9 @@ fn flush(
     index: u64,
     rows: u64,
 ) -> Result<OwnedWriteBatch, ExitCode> {
+    const BATCH_ROWS: u64 = 25_000;
     let done = index.saturating_add(1);
-    if done.checked_rem(BATCH_ROWS).unwrap_or(1) != 0 && done < rows {
+    if done.wrapping_rem(BATCH_ROWS) != 0 && done < rows {
         return Ok(batch);
     }
     batch
@@ -150,7 +151,7 @@ fn stream_rows(
     for index in 0..shape.rows {
         let held = if writing {
             let key = keyed(shape.table, index, shape.second);
-            let value = body(rng, shape.base, shape.span);
+            let value = body(rng, shape.length);
             let held = key.len().saturating_add(value.len());
             batch.insert(space, key, value);
             held
@@ -158,7 +159,9 @@ fn stream_rows(
             batch.remove(space, keyed(shape.table, shape.second, index));
             0
         };
-        bytes = bytes.saturating_add(u64::try_from(held).unwrap_or(u64::MAX));
+        if let Ok(size) = u64::try_from(held) {
+            bytes = bytes.saturating_add(size);
+        }
         batch = flush(database, batch, index, shape.rows)?;
     }
     persist(database)?;
@@ -173,8 +176,8 @@ fn point_reads(
 ) -> Result<Duration, ExitCode> {
     let snapshot = database.snapshot();
     let start = Instant::now();
-    for _ in 0..READ_SAMPLE {
-        let id = rng().checked_rem(shape.rows).unwrap_or(0);
+    for _ in 0..ID_SPAN {
+        let id = rng().wrapping_rem(ID_SPAN);
         if let Err(error) = snapshot.get(space, keyed(shape.table, shape.second, id)) {
             return Err(fault("read error", error));
         }
@@ -217,8 +220,8 @@ fn arm_metrics(
     args: &Args,
     path: &Path,
 ) -> Result<(), ExitCode> {
-    let evidence_shape = Shape::seeded("schools", args.evidence_rows, 120, 80);
-    let derived_shape = Shape::seeded("source_identities", args.derived_rows, 90, 20);
+    let evidence_shape = Shape::seeded("schools", args.evidence_rows, EVIDENCE_VALUE_BYTES);
+    let derived_shape = Shape::seeded("source_identities", args.derived_rows, DERIVED_VALUE_BYTES);
     let insert = stream_rows(database, evidence, rng, evidence_shape, true)?;
     let mut write = (Duration::ZERO, 0_u64);
     let mut remove = Duration::ZERO;
@@ -279,16 +282,12 @@ fn run_arm(name: &str, split: bool, args: &Args) -> Result<(), ExitCode> {
 fn main() -> ExitCode {
     let args = match parse_args() {
         Ok(args) => args,
-        Err(message) => {
-            eprintln!("usage: keyspace_ab [--evidence-rows N] [--derived-rows N] [--generations N] [--seed N]");
-            eprintln!("error: {message}");
-            return ExitCode::FAILURE;
-        }
+        Err(message) => return fault("bad arguments", message),
     };
-    println!("keyspace-ab benchmark evidence_rows={}", args.evidence_rows);
-    println!("derived_rows={}", args.derived_rows);
-    println!("generations={}", args.generations);
-    println!("seed={}", args.seed);
+    println!(
+        "keyspace-ab benchmark evidence_rows={}\nderived_rows={}\ngenerations={}\nseed={}",
+        args.evidence_rows, args.derived_rows, args.generations, args.seed
+    );
     for (name, split) in [("A", false), ("B", true)] {
         if let Err(code) = run_arm(name, split, &args) {
             return code;
