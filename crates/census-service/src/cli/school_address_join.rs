@@ -30,7 +30,7 @@ pub(super) struct SchoolAddressJoinArgs {
     #[arg(
         long = "evidence-url",
         value_name = "SOURCE=URL",
-        help = "Capture URL override for a lane source (`nces-ccd`/`nces-pss`), repeatable; needs --evidence-date for the same source"
+        help = "Capture URL override for a lane source (`nces-ccd`/`nces-pss`) or one capture of it (`state-ed@<capture path>`), repeatable; needs --evidence-date for the same source"
     )]
     pub(super) evidence_urls: Vec<String>,
     #[arg(
@@ -67,15 +67,25 @@ pub(super) fn run(cli: &Cli, args: &SchoolAddressJoinArgs) -> Result<()> {
 
     println!("school-address-join\t{}", mode.as_str());
     println!(
-        "scanned\t{}\nlinked\t{}\nalready_linked\t{}\nwebsites\t{}\nreview\t{}\nno_match\t{}\nrefused\t{}\nevidence_missing\t{}\nmissing_state\t{}",
-        report.counters.scanned, report.counters.linked, report.counters.already_linked,
-        report.counters.websites, report.counters.review, report.counters.no_match,
-        report.counters.refused, report.counters.evidence_missing, report.counters.missing_state
+        "scanned\t{}\nlinked\t{}\nalready_linked\t{}\nbackfilled\t{}\nwebsites\t{}\nreview\t{}\nno_match\t{}\nrefused\t{}\nevidence_missing\t{}\nmissing_state\t{}",
+        report.counters.scanned,
+        report.counters.linked,
+        report.counters.already_linked,
+        report.counters.backfilled,
+        report.counters.websites,
+        report.counters.review,
+        report.counters.no_match,
+        report.counters.refused,
+        report.counters.evidence_missing,
+        report.counters.missing_state
     );
     println!(
         "rule_exact_name\t{}\nrule_core_name\t{}\nrule_parenthetical\t{}\nrule_parenthetical_inner\t{}\nrule_alias\t{}",
-        report.counters.exact_name, report.counters.core_name, report.counters.parenthetical,
-        report.counters.parenthetical_inner, report.counters.alias
+        report.counters.exact_name,
+        report.counters.core_name,
+        report.counters.parenthetical,
+        report.counters.parenthetical_inner,
+        report.counters.alias
     );
     println!("review_ambiguous\t{}", report.counters.ambiguous);
     println!(

@@ -446,6 +446,7 @@ impl<'a> ClaimSpec<'a> {
     fn new(
         field: ContactProofField,
         value: &'a str,
+        person: &'a str,
         sport: &'a str,
         school: &'a str,
         state: &'a str,
@@ -454,7 +455,7 @@ impl<'a> ClaimSpec<'a> {
         ClaimSpec {
             field,
             value,
-            person: value,
+            person,
             sport,
             school,
             state,
@@ -490,93 +491,182 @@ fn write_evidence(path: &std::path::Path, claims: &[ContactClaimEvidence]) -> Te
     Ok(())
 }
 
+fn proven_digest(
+    fields: &[&str],
+    claims: &[ContactClaimEvidence],
+) -> Result<String, Box<dyn std::error::Error>> {
+    let mut row = make_row(fields.to_vec());
+    row.normalize();
+    let raw = raw_contact_row(&row);
+    let covering = census_service::coachverify::claims_for_row(claims, &raw);
+    Ok(census_domain::model::compute_contact_proof(
+        &raw, &covering,
+    )?)
+}
+
+fn write_fragment_csv(
+    path: &std::path::Path,
+    rows: &[Vec<&str>],
+    claims: &[ContactClaimEvidence],
+) -> TestResult {
+    let header = "school,city,state,sport,role,coach_name,public_professional_email,ad_name,ad_email,source_url,last_observed,verified_proof_digest";
+    let mut body = String::from(header);
+    body.push('\n');
+    for fields in rows {
+        body.push_str(&fields.join(","));
+        body.push(',');
+        body.push_str(&proven_digest(fields, claims)?);
+        body.push('\n');
+    }
+    std::fs::write(path, body)?;
+    Ok(())
+}
+
+fn tamper_cell(path: &std::path::Path, from: &str, to: &str) -> TestResult {
+    let body = std::fs::read_to_string(path)?;
+    check!(body.contains(from), "fixture cell {from} is present");
+    std::fs::write(path, body.replacen(from, to, 1))?;
+    Ok(())
+}
+
+fn tamper_digest(path: &std::path::Path, replacement: &str) -> TestResult {
+    let body = std::fs::read_to_string(path)?;
+    let mut lines: Vec<String> = body.lines().map(str::to_string).collect();
+    let last = lines.len().saturating_sub(1);
+    if let Some(line) = lines.get_mut(last) {
+        if let Some((head, _)) = line.rsplit_once(',') {
+            *line = format!("{head},{replacement}");
+        }
+    }
+    std::fs::write(path, lines.join("\n") + "\n")?;
+    Ok(())
+}
+
 #[test]
 fn merge_round_trip_keeps_every_row_importable_and_distinct() -> TestResult {
     let dir = tempfile::tempdir()?;
-    let header = "school,city,state,sport,role,coach_name,public_professional_email,ad_name,\
-                  ad_email,source_url,last_observed,verified_proof_digest\n";
-    let proof = "9f2c1d4b7a3e50618c9d2f4a6b8e0c1d3f5a7b9c1d3e5f70819a2b3c4d5e6f70";
-    std::fs::write(
-        dir.path().join("WI.csv"),
-        format!(
-            "{header}\
-             Madison West High School,Madison,WI,Track & Field,Head Coach,Dana Reed,,,,\
-             https://madisonwest.example.org/athletics,2026-09-22,{proof}\n\
-             Madison West High School,Madison,WI,Track & Field,Head Coach,Dana Reed,\
-             dana.reed@madisonwest.example.org,,,https://madisonwest.example.org/athletics,\
-             2026-09-22,{proof}\n\
-             Madison West High School,Madison,WI,Cross Country,Head Coach,Sam Ellery,\
-             sam.ellery@madisonwest.example.org,,,https://madisonwest.example.org/athletics,\
-             2026-09-22,{proof}\n"
-        ),
-    )?;
-    std::fs::write(
-        dir.path().join("MN.csv"),
-        format!(
-            "{header}\
-             Washburn High School,Minneapolis,MN,Track & Field,Head Coach,Rae Lindqvist,\
-             rae.lindqvist@washburn.example.org,,,https://washburn.example.org/athletics,\
-             2026-09-22,{proof}\n"
-        ),
-    )?;
-    write_evidence(
-        &dir.path().join("WI.csv.evidence.jsonl"),
+    let wi_claims = vec![
+        claim(ClaimSpec::new(
+            ContactProofField::CoachName,
+            "Dana Reed",
+            "Dana Reed",
+            "Track & Field",
+            "Madison West High School",
+            "WI",
+            "https://madisonwest.example.org/athletics",
+        )),
+        claim(ClaimSpec::new(
+            ContactProofField::PublicProfessionalEmail,
+            "dana.reed@madisonwest.example.org",
+            "Dana Reed",
+            "Track & Field",
+            "Madison West High School",
+            "WI",
+            "https://madisonwest.example.org/athletics",
+        )),
+        claim(ClaimSpec::new(
+            ContactProofField::CoachName,
+            "Sam Ellery",
+            "Sam Ellery",
+            "Cross Country",
+            "Madison West High School",
+            "WI",
+            "https://madisonwest.example.org/athletics",
+        )),
+        claim(ClaimSpec::new(
+            ContactProofField::PublicProfessionalEmail,
+            "sam.ellery@madisonwest.example.org",
+            "Sam Ellery",
+            "Cross Country",
+            "Madison West High School",
+            "WI",
+            "https://madisonwest.example.org/athletics",
+        )),
+    ];
+    let mn_claims = vec![
+        claim(ClaimSpec::new(
+            ContactProofField::CoachName,
+            "Rae Lindqvist",
+            "Rae Lindqvist",
+            "Track & Field",
+            "Washburn High School",
+            "MN",
+            "https://washburn.example.org/athletics",
+        )),
+        claim(ClaimSpec::new(
+            ContactProofField::PublicProfessionalEmail,
+            "rae.lindqvist@washburn.example.org",
+            "Rae Lindqvist",
+            "Track & Field",
+            "Washburn High School",
+            "MN",
+            "https://washburn.example.org/athletics",
+        )),
+    ];
+    write_fragment_csv(
+        &dir.path().join("WI.csv"),
         &[
-            claim(ClaimSpec::new(
-                ContactProofField::CoachName,
+            vec![
+                "Madison West High School",
+                "Madison",
+                "WI",
+                "Track & Field",
+                "Head Coach",
                 "Dana Reed",
-                "Track & Field",
-                "Madison West High School",
-                "WI",
+                "",
+                "",
+                "",
                 "https://madisonwest.example.org/athletics",
-            )),
-            claim(ClaimSpec::new(
-                ContactProofField::PublicProfessionalEmail,
+                "2026-09-22",
+            ],
+            vec![
+                "Madison West High School",
+                "Madison",
+                "WI",
+                "Track & Field",
+                "Head Coach",
+                "Dana Reed",
                 "dana.reed@madisonwest.example.org",
-                "Track & Field",
-                "Madison West High School",
-                "WI",
+                "",
+                "",
                 "https://madisonwest.example.org/athletics",
-            )),
-            claim(ClaimSpec::new(
-                ContactProofField::CoachName,
+                "2026-09-22",
+            ],
+            vec![
+                "Madison West High School",
+                "Madison",
+                "WI",
+                "Cross Country",
+                "Head Coach",
                 "Sam Ellery",
-                "Cross Country",
-                "Madison West High School",
-                "WI",
-                "https://madisonwest.example.org/athletics",
-            )),
-            claim(ClaimSpec::new(
-                ContactProofField::PublicProfessionalEmail,
                 "sam.ellery@madisonwest.example.org",
-                "Cross Country",
-                "Madison West High School",
-                "WI",
+                "",
+                "",
                 "https://madisonwest.example.org/athletics",
-            )),
+                "2026-09-22",
+            ],
         ],
+        &wi_claims,
     )?;
-    write_evidence(
-        &dir.path().join("MN.csv.evidence.jsonl"),
-        &[
-            claim(ClaimSpec::new(
-                ContactProofField::CoachName,
-                "Rae Lindqvist",
-                "Track & Field",
-                "Washburn High School",
-                "MN",
-                "https://washburn.example.org/athletics",
-            )),
-            claim(ClaimSpec::new(
-                ContactProofField::PublicProfessionalEmail,
-                "rae.lindqvist@washburn.example.org",
-                "Track & Field",
-                "Washburn High School",
-                "MN",
-                "https://washburn.example.org/athletics",
-            )),
-        ],
+    write_fragment_csv(
+        &dir.path().join("MN.csv"),
+        &[vec![
+            "Washburn High School",
+            "Minneapolis",
+            "MN",
+            "Track & Field",
+            "Head Coach",
+            "Rae Lindqvist",
+            "rae.lindqvist@washburn.example.org",
+            "",
+            "",
+            "https://washburn.example.org/athletics",
+            "2026-09-22",
+        ]],
+        &mn_claims,
     )?;
+    write_evidence(&dir.path().join("WI.csv.evidence.jsonl"), &wi_claims)?;
+    write_evidence(&dir.path().join("MN.csv.evidence.jsonl"), &mn_claims)?;
 
     let out = NamedTempFile::new()?;
     let report = NamedTempFile::new()?;
@@ -861,5 +951,138 @@ fn merge_refuses_a_fragment_without_evidence() -> TestResult {
         "a fragment without its evidence sidecar cannot be merged"
     );
     check!(!dir.path().join("coach-contacts.csv").exists());
+    Ok(())
+}
+
+#[test]
+fn merge_rejects_rows_whose_proof_does_not_verify() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let union = dir.path().join("union");
+    let states = ["WI", "MN", "OH", "IA", "TX", "NV"];
+    let outcomes: Vec<_> = states
+        .iter()
+        .map(|state| verified_director(state, &format!("{state} High School")))
+        .collect();
+    census_service::coachverify::write_state_union(&union, &outcomes)?;
+    tamper_cell(
+        &union.join("MN.csv"),
+        "https://example.org/staff",
+        "https://example.org/other",
+    )?;
+    tamper_cell(&union.join("OH.csv"), "2026-09-21", "2026-09-20")?;
+    tamper_digest(&union.join("IA.csv"), &"b".repeat(64))?;
+    tamper_digest(&union.join("TX.csv"), "nothex")?;
+    std::fs::write(union.join("NV.csv.evidence.jsonl"), "")?;
+    let ks_claims = vec![
+        claim(ClaimSpec::new(
+            ContactProofField::CoachName,
+            "Kay Ross",
+            "Kay Ross",
+            "Cross Country",
+            "KS High School",
+            "KS",
+            "https://example.org/ks",
+        )),
+        claim(ClaimSpec::new(
+            ContactProofField::PublicProfessionalEmail,
+            "kay.ross@example.org",
+            "Kay Ross",
+            "Cross Country",
+            "KS High School",
+            "KS",
+            "https://example.org/ks",
+        )),
+    ];
+    write_fragment_csv(
+        &union.join("KS.csv"),
+        &[vec![
+            "KS High School",
+            "Alpha",
+            "KS",
+            "Cross Country",
+            "Head Coach",
+            "Kay Ross",
+            "kay.ross@example.org",
+            "",
+            "",
+            "https://example.org/ks",
+            "2026-09-22",
+        ]],
+        &ks_claims,
+    )?;
+    write_evidence(&union.join("KS.csv.evidence.jsonl"), &ks_claims)?;
+    let ne_claims = vec![
+        claim(ClaimSpec::new(
+            ContactProofField::CoachName,
+            "Nia Ellery",
+            "Nia Ellery",
+            "Track & Field",
+            "NE High School",
+            "NE",
+            "https://example.org/ne",
+        )),
+        claim(ClaimSpec::new(
+            ContactProofField::PublicProfessionalEmail,
+            "nia.ellery@example.org",
+            "Nia Ellery",
+            "Track & Field",
+            "NE High School",
+            "NE",
+            "https://example.org/ne",
+        )),
+    ];
+    write_fragment_csv(
+        &union.join("NE.csv"),
+        &[vec![
+            "NE High School",
+            "Alpha",
+            "NE",
+            "Track & Field",
+            "Head Coach",
+            "Nia Ellery",
+            "nia.ellery@example.org",
+            "",
+            "",
+            "https://example.org/ne",
+            "2026-09-22",
+        ]],
+        &ne_claims,
+    )?;
+    write_evidence(&union.join("NE.csv.evidence.jsonl"), &ne_claims)?;
+    tamper_cell(
+        &union.join("KS.csv"),
+        "kay.ross@example.org",
+        "attacker@example.org",
+    )?;
+    tamper_cell(&union.join("NE.csv"), "Head Coach", "Assistant Coach")?;
+
+    let out = dir.path().join("coach-contacts.csv");
+    run_merge_coaches(&MergeCoachesArgs {
+        fragments: union,
+        out: out.clone(),
+        report: dir.path().join("merge.md"),
+    })?;
+
+    let published = census_service::coachverify::read_fragment(&out)?;
+    check!(eq; published.len(), 1, "only the intact row publishes");
+    check!(eq; published[0].school, "WI High School");
+    let sidecar = census_service::coachverify::evidence_path(&out);
+    check!(
+        eq;
+        census_service::coachverify::read_evidence_jsonl(&sidecar)?,
+        outcomes[0].rows[0].evidence,
+        "the sidecar carries only the verified row's claims"
+    );
+    let report = std::fs::read_to_string(dir.path().join("merge.md"))?;
+    check!(
+        eq;
+        report.matches("proof not verified").count(),
+        7,
+        "every tampered row is rejected as unproven: {report}"
+    );
+    check!(
+        report.contains("proof digest mismatch"),
+        "the report names the digest mismatch: {report}"
+    );
     Ok(())
 }

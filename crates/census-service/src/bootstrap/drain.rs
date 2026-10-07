@@ -11,6 +11,13 @@ use std::time::Duration;
 use tokio::task::JoinSet;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum EndpointShutdown {
+    #[default]
+    Completed,
+    TimedOut,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct DrainReport {
     pub accepted: u64,
     pub completed: u64,
@@ -20,6 +27,7 @@ pub struct DrainReport {
     pub aborted: u64,
     pub panicked: u64,
     pub stop_reason: StopReason,
+    pub endpoint_shutdown: EndpointShutdown,
 }
 
 impl DrainReport {

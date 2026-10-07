@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use census_domain::school_directory::{ChangeSet, UpdateDecision};
+use census_domain::school_directory::{ChangeSet, IdentifiedKey, UpdateDecision};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Report {
@@ -41,6 +41,8 @@ pub struct LaneReport {
     pub notes: usize,
     pub skipped_rows: Vec<LedgerRow>,
     pub note_rows: Vec<LedgerRow>,
+    #[serde(default)]
+    pub captured: Vec<IdentifiedKey>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

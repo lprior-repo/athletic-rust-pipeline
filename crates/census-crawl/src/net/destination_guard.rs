@@ -63,34 +63,6 @@ impl DestinationGuard {
             )))
         }
     }
-
-    pub(super) fn redirect(
-        &self,
-        attempt: reqwest::redirect::Attempt<'_>,
-    ) -> reqwest::redirect::Action {
-        if attempt.previous().len() >= 5 {
-            return attempt.error("source redirect limit exceeded");
-        }
-        if let Err(error) = self.validate_url(attempt.url().as_str()) {
-            return attempt.error(error);
-        }
-        let Some(original) = attempt.previous().first() else {
-            return attempt.error("source redirect has no original URL");
-        };
-        if !self.permits_redirect(original, attempt.url()) {
-            return attempt.error("source redirect destination is not authorized");
-        }
-        let Some(host) = attempt.url().host_str() else {
-            return attempt.error("source redirect destination has no host");
-        };
-        if matches!(
-            crate::registry::transport_for_host(host),
-            Some(crate::registry::TransportKind::Browser)
-        ) {
-            return attempt.error("HTTP redirect destination requires browser transport");
-        }
-        attempt.follow()
-    }
 }
 
 fn policy(detail: &str) -> FetchError {
@@ -145,9 +117,6 @@ impl reqwest::dns::Resolve for GuardedResolver {
 
 #[cfg(test)]
 mod tests;
-
-#[cfg(test)]
-mod redirect_tests;
 
 #[cfg(test)]
 mod wiring_tests;

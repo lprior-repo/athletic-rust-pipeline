@@ -4,7 +4,7 @@ use std::path::Path;
 
 use super::super::super::{artifacts, transport::Ssh, GUEST};
 
-use super::clock_field;
+use super::clock::clock_field;
 
 mod observation;
 

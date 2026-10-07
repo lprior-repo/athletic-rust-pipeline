@@ -32,7 +32,7 @@ pub(super) fn check(args: &SchoolAddressArgs) -> Result<()> {
                     detail: "legacy flat layout is rejected; choose a fresh output directory"
                         .to_string(),
                 }
-                .into())
+                .into());
             }
             Err(source) if source.kind() == std::io::ErrorKind::NotFound => {}
             Err(source) => return Err(io(&path, source).into()),
@@ -46,10 +46,10 @@ pub(super) fn check(args: &SchoolAddressArgs) -> Result<()> {
             let path = args.out.join(name);
             match std::fs::symlink_metadata(&path) {
                 Ok(meta) if name == "generations" && !meta.file_type().is_dir() => {
-                    return Err(blocked(&path, "generations must be a real directory").into())
+                    return Err(blocked(&path, "generations must be a real directory").into());
                 }
                 Ok(meta) if name == "current" && !meta.file_type().is_symlink() => {
-                    return Err(blocked(&path, "current must be a symlink").into())
+                    return Err(blocked(&path, "current must be a symlink").into());
                 }
                 Ok(_) if name == "current" => {
                     manifest::verify_current(&args.out)?;

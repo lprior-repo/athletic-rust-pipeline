@@ -20,7 +20,7 @@ mod stages;
 mod team_collection;
 #[cfg(test)]
 mod team_collection_tests;
-mod team_source;
+pub(crate) mod team_source;
 pub use team_source::{TeamsSource, TeamsSourceClient, TeamsSourceIngressClient};
 
 type CachedFetcher = Option<(Vec<String>, usize, Arc<Fetcher>)>;

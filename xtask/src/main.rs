@@ -30,6 +30,7 @@ mod templates;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use cmd::Cmd;
+use perf::PerfCommand;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
@@ -42,35 +43,6 @@ use std::process::ExitCode;
 struct Cli {
     #[command(subcommand)]
     command: Command,
-}
-#[derive(Subcommand, Debug)]
-enum PerfCommand {
-    #[command(
-        about = "Run both census-service Criterion targets and record per-benchmark timing and declared throughput; peak RSS is recorded when GNU time is available"
-    )]
-    Record,
-    #[command(
-        about = "Re-run both benchmark targets, reject ID or measurement mismatches, and fail regressions beyond the tolerance (default 5%)"
-    )]
-    Check {
-        #[arg(
-            help = "Override the default 5% regression tolerance (e.g. `--tolerance 0.1` for 10%)"
-        )]
-        #[arg(long, default_value_t = 0.05)]
-        tolerance: f64,
-        #[arg(help = "Reason for running the check; stored alongside the baseline for audit")]
-        #[arg(long)]
-        reason: Option<String>,
-    },
-    #[command(
-        about = "Run one named group under `perf record --call-graph=dwarf`; prints the exact command and explains why it did not run when `perf` is absent"
-    )]
-    Profile {
-        #[arg(
-            help = "Criterion group id to profile, e.g. `census/parse` or `pipeline/result_file`"
-        )]
-        group: String,
-    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -209,6 +181,11 @@ enum Command {
         #[arg(long, default_value_t = 2027)]
         grad_year: i32,
         #[arg(
+            help = "School year the workbook contact tenure and coach cells are assessed against (2026 = the 2026-27 school year)"
+        )]
+        #[arg(long)]
+        school_year: i32,
+        #[arg(
             help = "Reduce the best-results sheet over the core scope instead of every approved source"
         )]
         #[arg(long)]
@@ -289,9 +266,10 @@ fn run() -> Result<()> {
             target,
             out,
             grad_year,
+            school_year,
             core,
             limit,
-        } => census::export(target, out.as_deref(), grad_year, core, limit),
+        } => census::export(target, out.as_deref(), grad_year, school_year, core, limit),
         Command::NewSource { name } => scaffold::new_source(&name),
         Command::DumpSheet { workbook, sheets } => dump_sheet::run(&workbook, &sheets),
         Command::StorageAb { args } => storage_ab::run(args),

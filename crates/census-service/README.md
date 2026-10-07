@@ -94,6 +94,8 @@ those requirements remain in [the delivery plan](../../docs/NATIONAL-CENSUS-PLAN
 
 With the store stopped, `census-service --store <root> export-data --data <directory>
 --school-year 2026` loads one immutable export dataset and writes the six named CSV products.
+`--school-year` is required: the contact season is the run's own, never inferred from the export
+date, and a missing or unsupported season is refused rather than defaulted.
 Canonical schools, meets and coaches use the full all-sources population; the canonical athlete
 and recruiting files select Class of 2027. Athletic.net seed rows retain published provider
 identities, not inferred profile URLs.

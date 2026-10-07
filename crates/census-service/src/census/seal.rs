@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use census_domain::model::{AccessBlockKind, SourceAccessCondition};
+use census_domain::model::{AccessBlockKind, CensusRun, GradYear, SourceAccessCondition};
 
 use super::{CensusState, SealEvidence, SealedCensus};
 use census_report::export::ExportDataset;
@@ -27,6 +27,10 @@ pub enum SealWorkflowError {
     SealRecording(String),
     #[error("seal write failed: {0}")]
     SealWrite(String),
+    #[error("the Class-of-2027 cohort is the only one that may be sealed; {requested} is not the census seal cohort")]
+    ForeignCohort { requested: i16 },
+    #[error("measured run {} does not match the store's bound run {bound}", run_display(.measured))]
+    RunMismatch { measured: CensusRun, bound: String },
 }
 
 mod assembly;
@@ -52,6 +56,7 @@ pub struct SealRequest {
     pub write: bool,
     pub journal: Option<JournalCounts>,
     pub source_failures: Option<u64>,
+    pub run: Option<CensusRun>,
 }
 
 #[derive(Debug)]
@@ -70,12 +75,25 @@ impl SealOutcome {
     }
 }
 
+fn run_display(run: &CensusRun) -> String {
+    format!("{}-{}", run.season().get(), run.revision())
+}
+
+fn bound_display(bound: Option<CensusRun>) -> String {
+    match bound {
+        Some(run) => run_display(&run),
+        None => "absent".to_string(),
+    }
+}
+
 pub fn seal(store: &Store, request: &SealRequest) -> Result<SealOutcome, SealWorkflowError> {
+    let cohort = census_cohort(request.grad_year)?;
     let dataset = ExportDataset::load(store)
         .map_err(|error| SealWorkflowError::CensusBuild(error.to_string()))?;
-    let coverage = report::coverage_report(&dataset, Some(request.grad_year))
+    bound_run(&dataset, request.run)?;
+    let coverage = report::coverage_report(&dataset, Some(cohort.get()))
         .map_err(|error| SealWorkflowError::Coverage(error.to_string()))?;
-    let derivation = Derivation::of(&dataset, request.scope, Some(request.grad_year));
+    let derivation = Derivation::of(&dataset, request.scope, Some(cohort.get()));
     let census = report::build_census(&derivation, &store.out_dir());
     let stats = store
         .stats()
@@ -88,7 +106,7 @@ pub fn seal(store: &Store, request: &SealRequest) -> Result<SealOutcome, SealWor
     else {
         return Err(SealWorkflowError::WorkbookMissing);
     };
-    let workbook = inspect_workbook(&path, &dataset, request.grad_year, request.scope)
+    let workbook = inspect_workbook(&path, &dataset, cohort, request.scope)
         .map_err(|error| SealWorkflowError::Workbook(error.to_string()))?;
     let evidence = assemble(&coverage, &census, &stats, cases, access, request, workbook);
 
@@ -119,6 +137,31 @@ pub fn seal(store: &Store, request: &SealRequest) -> Result<SealOutcome, SealWor
         refusal,
         wrote,
     })
+}
+
+fn bound_run(
+    dataset: &ExportDataset,
+    measured: Option<CensusRun>,
+) -> Result<(), SealWorkflowError> {
+    let Some(measured) = measured else {
+        return Ok(());
+    };
+    if dataset.lineage.run == Some(measured) {
+        return Ok(());
+    }
+    Err(SealWorkflowError::RunMismatch {
+        measured,
+        bound: bound_display(dataset.lineage.run),
+    })
+}
+
+pub fn census_cohort(grad_year: i16) -> Result<GradYear, SealWorkflowError> {
+    match GradYear::new(grad_year) {
+        Some(cohort) if cohort == GradYear::CO2027 => Ok(cohort),
+        _ => Err(SealWorkflowError::ForeignCohort {
+            requested: grad_year,
+        }),
+    }
 }
 
 fn retained_access(rows: &[SourceAccessCondition]) -> (u64, u64, u64) {

@@ -23,6 +23,25 @@ pub fn run_key(job: &str, parts: &[&str], generation: &str) -> String {
 }
 pub const DEFAULT_GENERATION: &str = "1";
 
+pub fn workbook_request_key(request: &WorkbookRequest) -> String {
+    let year = request
+        .grad_year
+        .map_or_else(|| "all".to_string(), |year| year.to_string());
+    let scope = request.scope.as_deref().map_or("all", |scope| scope);
+    let limit = request
+        .limit
+        .map_or_else(|| "all".to_string(), |limit| limit.to_string());
+    let out = request.out.as_deref().map_or(".", |out| out);
+    let season = request
+        .school_year
+        .map_or_else(|| "unstated".to_string(), |season| season.to_string());
+    run_key(
+        "workbook",
+        &[&year, scope, &limit, out, &season],
+        DEFAULT_GENERATION,
+    )
+}
+
 mod browser_session;
 mod census;
 mod ingest;
@@ -30,7 +49,7 @@ mod ingest_post;
 mod ingest_validation;
 mod jobs;
 mod journaled;
-mod jurisdiction;
+pub(crate) mod jurisdiction;
 mod limits;
 mod meets_arms;
 mod national;
@@ -46,13 +65,13 @@ mod teams_arms;
 mod wire;
 
 pub use wire::{
-    BestsReply, BestsRequest, CompletedTeams, ConsolidateReply, ConsolidateRequest,
-    ConsolidatedTable, EndpointObservation, IncompleteTeams, IngestReply, IngestRequest,
-    IngestState, JurisdictionOpen, JurisdictionReport, JurisdictionRequest, JurisdictionState,
-    JurisdictionSummary, NationalFailure, NationalReport, NationalRequest, OpenWorkReply,
-    OpenWorkRequest, RefusedSource, ReportReply, ReportRequest, SchoolAddressJoinReply,
-    SchoolAddressJoinRequest, SealItem, SealRef, SealReply, SealRequest, SourceObjectOpen,
-    SourcePlan, StageOutcome, StatusReply, SweepReport, SweepRequest, TableCount,
+    BestsReply, BestsRequest, BindRunReply, BindRunRequest, CompletedTeams, ConsolidateReply,
+    ConsolidateRequest, ConsolidatedTable, EndpointObservation, IncompleteTeams, IngestReply,
+    IngestRequest, IngestState, JurisdictionOpen, JurisdictionReport, JurisdictionRequest,
+    JurisdictionState, JurisdictionSummary, NationalFailure, NationalReport, NationalRequest,
+    OpenWorkReply, OpenWorkRequest, RefusedSource, ReportReply, ReportRequest,
+    SchoolAddressJoinReply, SchoolAddressJoinRequest, SealItem, SealRef, SealReply, SealRequest,
+    SourceObjectOpen, SourcePlan, StageOutcome, StatusReply, SweepReport, SweepRequest, TableCount,
     TeamsAttemptProgress, TeamsFailure, TeamsSourceFailure, TeamsSourceInspection,
     TeamsSourceOutcome, TeamsSourceRequest, TeamsStage, WindowRequest, WorkbookReply,
     WorkbookRequest,

@@ -59,8 +59,18 @@ pub(super) async fn run_seal(cli: &Cli, args: &SealArgs) -> Result<()> {
     match cli.route(args.ingress.as_deref())? {
         Route::Offline(root) => {
             let store = Store::open(root)?;
-            let outcome = seal::seal(&store, &store_request(args))?;
-            present(&Ladder::of_outcome(&outcome))
+            match seal::seal(&store, &store_request(args)) {
+                Ok(outcome) => present(&Ladder::of_outcome(&outcome)),
+                Err(seal::SealWorkflowError::ForeignCohort { requested }) => {
+                    bail!(
+                        "the Class-of-2027 cohort is the only one that may be sealed; {} is not the census seal cohort",
+                        requested
+                    );
+                }
+                Err(other) => {
+                    bail!("seal workflow failed: {other}");
+                }
+            }
         }
         Route::Ingress(origin) => {
             let reply = CensusIngressClient::from_client(ingress::client(origin)?)
@@ -84,6 +94,7 @@ fn store_request(args: &SealArgs) -> seal::SealRequest {
         write: args.write,
         journal: None,
         source_failures: None,
+        run: None,
     }
 }
 

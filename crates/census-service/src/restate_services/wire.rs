@@ -25,7 +25,7 @@ pub use plan::{RefusedSource, SourcePlan};
 
 pub(super) mod seal;
 
-pub use seal::{SealItem, SealRef, SealReply, SealRequest};
+pub use seal::{BindRunReply, BindRunRequest, SealItem, SealRef, SealReply, SealRequest};
 
 pub(super) mod school_address_join;
 
@@ -120,6 +120,8 @@ pub struct WorkbookRequest {
     pub scope: Option<String>,
     #[serde(default)]
     pub out: Option<String>,
+    #[serde(default)]
+    pub school_year: Option<i16>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

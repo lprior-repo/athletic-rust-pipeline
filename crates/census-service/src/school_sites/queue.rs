@@ -19,6 +19,7 @@ pub struct PlannedSite {
     pub website: String,
     pub row: QueueRow,
     pub artifact: PathBuf,
+    pub key: String,
 }
 
 impl PlannedSite {
@@ -26,9 +27,13 @@ impl PlannedSite {
         (self.state.code().to_string(), self.school.to_lowercase())
     }
 
-    pub fn fragment_key(&self) -> String {
-        self.state.code().to_string()
+    pub fn rows_path(&self, dir: &Path) -> PathBuf {
+        dir.join(format!("{}.csv", self.key))
     }
+}
+
+pub fn resumable(site: &PlannedSite, site_rows_dir: &Path, refresh: bool) -> bool {
+    !refresh && site.artifact.exists() && site.rows_path(site_rows_dir).exists()
 }
 
 pub fn plan(
@@ -70,6 +75,7 @@ pub fn plan(
             website: normalized,
             row,
             artifact: out_dir.join(format!("{key}.json")),
+            key,
         });
     }
     if let Some(sample) = sample.filter(|value| *value > 0) {

@@ -6,6 +6,8 @@ mod env;
 pub use baseline::load_baseline;
 pub use bench::run_benchmarks;
 
+use clap::Subcommand;
+
 use crate::cmd::Cmd;
 use crate::paths;
 use anyhow::{bail, Context, Result};
@@ -151,3 +153,33 @@ fn profile_benchmark(bench_name: &str, group: &str) -> Result<()> {
 #[cfg(test)]
 #[path = "perf_tests.rs"]
 mod tests;
+
+#[derive(Subcommand, Debug)]
+pub(crate) enum PerfCommand {
+    #[command(
+        about = "Run both census-service Criterion targets and record per-benchmark timing and declared throughput; peak RSS is recorded when GNU time is available"
+    )]
+    Record,
+    #[command(
+        about = "Re-run both benchmark targets, reject ID or measurement mismatches, and fail regressions beyond the tolerance (default 5%)"
+    )]
+    Check {
+        #[arg(
+            help = "Override the default 5% regression tolerance (e.g. `--tolerance 0.1` for 10%)"
+        )]
+        #[arg(long, default_value_t = 0.05)]
+        tolerance: f64,
+        #[arg(help = "Reason for running the check; stored alongside the baseline for audit")]
+        #[arg(long)]
+        reason: Option<String>,
+    },
+    #[command(
+        about = "Run one named group under `perf record --call-graph=dwarf`; prints the exact command and explains why it did not run when `perf` is absent"
+    )]
+    Profile {
+        #[arg(
+            help = "Criterion group id to profile, e.g. `census/parse` or `pipeline/result_file`"
+        )]
+        group: String,
+    },
+}

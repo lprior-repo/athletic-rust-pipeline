@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 
 mod lifecycle;
 mod manifest;
+mod seal;
 mod sidecars;
 mod verify_sidecars;
 pub use manifest::{current_workbook, verify_for_seal, verify_published, VerifiedPublication};
@@ -103,7 +104,8 @@ impl<'s> Stage<'s> {
 fn lock_publication(root: &Path) -> ReportResult<std::fs::File> {
     lifecycle::preflight(root)?;
     let generations = root.join("generations");
-    std::fs::create_dir_all(&generations).map_err(|source| io_error(&generations, source))?;
+    census_store::fs::create_dir_all_synced(&generations)
+        .map_err(|source| io_error(&generations, source))?;
     let metadata =
         std::fs::symlink_metadata(&generations).map_err(|source| io_error(&generations, source))?;
     if !metadata.file_type().is_dir() {

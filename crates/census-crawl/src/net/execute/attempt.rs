@@ -5,9 +5,8 @@ use crate::net::cache::{replay_cache, CacheMeta};
 use crate::net::request::RequestBody;
 use crate::net::{FetchError, FetchOptions, FetchOutcome, Fetcher};
 use std::path::Path;
-use std::sync::Arc;
-use std::time::Instant;
-use tokio::sync::Mutex;
+use std::time::{Duration, Instant};
+use tokio::sync::OwnedMutexGuard;
 use tracing::warn;
 
 pub(super) struct FetchPlan<'a> {
@@ -15,6 +14,8 @@ pub(super) struct FetchPlan<'a> {
     pub(super) url: &'a str,
     pub(super) payload: Option<&'a RequestBody>,
     pub(super) host: &'a str,
+    pub(super) crawl_delay: Option<Duration>,
+    pub(super) family: Option<String>,
     pub(super) body_path: &'a Path,
     pub(super) meta_path: &'a Path,
     pub(super) cached: Option<&'a CacheMeta>,
@@ -25,25 +26,72 @@ pub(super) struct FetchPlan<'a> {
 impl Fetcher {
     pub(super) async fn fetch_once(
         &self,
-        gate: Arc<Mutex<()>>,
         plan: &FetchPlan<'_>,
     ) -> Result<FetchOutcome, FetchError> {
-        let _permit = gate.lock().await;
-        self.wait_turn(plan.host).await;
-        self.attempt_once(plan).await
+        let mut current_url = plan.url.to_string();
+        let original_url = plan.url.to_string();
+        let mut permit: Option<OwnedMutexGuard<()>> = None;
+        for hop in 0..5 {
+            let (host, origin) = super::request_target(&current_url)?;
+            self.destination.validate_url(&current_url)?;
+            self.origin_locks.ensure(&origin)?;
+            if self.host_blocked(&host, &crate::net::now_iso8601()).await {
+                return Err(FetchError::Policy {
+                    detail: format!("host {host} is inside a recorded access cooldown"),
+                });
+            }
+            let crawl_delay = match hop {
+                0 => plan.crawl_delay,
+                _ => self.robots_for(&origin, &host).await.crawl_delay,
+            };
+            let _hop_permit = if hop == 0 || self.family_of(&host) == plan.family {
+                None
+            } else {
+                self.family_permit_now(&host).await?
+            };
+            let gate = self.host_gate(&host, crawl_delay).await;
+            drop(permit.take());
+            permit = Some(gate.lock_owned().await);
+            self.wait_turn(&host).await;
+            if self.host_blocked(&host, &crate::net::now_iso8601()).await {
+                return Err(FetchError::Policy {
+                    detail: format!(
+                        "host {host} entered a recorded access cooldown before this request was dispatched"
+                    ),
+                });
+            }
+            let response = self.dispatch_at(&current_url, plan).await?;
+            let status = response.status().as_u16();
+            self.count_request(&host, status).await;
+            match self.resolve_redirect_target(&current_url, &original_url, &response)? {
+                Some(next_url) => current_url = next_url.to_string(),
+                None => {
+                    return self
+                        .handle_final_response(plan, &current_url, &host, response)
+                        .await
+                }
+            }
+        }
+        Err(FetchError::Policy {
+            detail: format!("redirect limit exceeded after 5 hops for {original_url}"),
+        })
     }
 
-    async fn attempt_once(&self, plan: &FetchPlan<'_>) -> Result<FetchOutcome, FetchError> {
-        let response = self.dispatch(plan).await?;
-        self.check_redirect_admission(plan.url, &response)?;
+    async fn handle_final_response(
+        &self,
+        plan: &FetchPlan<'_>,
+        current_url: &str,
+        current_host: &str,
+        response: reqwest::Response,
+    ) -> Result<FetchOutcome, FetchError> {
         let status = response.status().as_u16();
         if let Some(kind) = blocking_kind(status) {
             self.record_access_condition(
-                plan.host,
+                current_host,
                 kind,
                 status,
                 retry_after_secs(&response),
-                plan.url.to_string(),
+                current_url.to_string(),
             )
             .await;
         }
@@ -53,6 +101,44 @@ impl Fetcher {
             304 => self.replay_cached(plan).await,
             _ => Err(self.status_error(status, plan).await),
         }
+    }
+
+    fn resolve_redirect_target(
+        &self,
+        current_url: &str,
+        original_url: &str,
+        response: &reqwest::Response,
+    ) -> Result<Option<url::Url>, FetchError> {
+        if !matches!(response.status().as_u16(), 301 | 302 | 303 | 307 | 308) {
+            return Ok(None);
+        }
+        let location = response
+            .headers()
+            .get(reqwest::header::LOCATION)
+            .and_then(|value| value.to_str().ok())
+            .ok_or_else(|| FetchError::Policy {
+                detail: format!("redirect response at {current_url} has no usable Location header"),
+            })?;
+        let next = redirect_target(current_url, location)?;
+        let original = url::Url::parse(original_url).map_err(|source| FetchError::InvalidUrl {
+            url: original_url.to_string(),
+            source,
+        })?;
+        if !self.destination.permits_redirect(&original, &next) {
+            return Err(FetchError::Policy {
+                detail: format!("redirect from {current_url} to {next} bypasses admission"),
+            });
+        }
+        if next
+            .host_str()
+            .and_then(crate::registry::transport_for_host)
+            == Some(crate::registry::TransportKind::Browser)
+        {
+            return Err(FetchError::Policy {
+                detail: format!("HTTP redirect to browser-transport destination {next}"),
+            });
+        }
+        Ok(Some(next))
     }
 
     async fn process_ok(
@@ -161,31 +247,13 @@ impl Fetcher {
             url: plan.url.to_string(),
         })
     }
+}
 
-    fn check_redirect_admission(
-        &self,
-        original_url: &str,
-        response: &reqwest::Response,
-    ) -> Result<(), FetchError> {
-        let final_url = response.url().as_str();
-        if final_url == original_url {
-            return Ok(());
-        }
-        let original = url::Url::parse(original_url).map_err(|source| FetchError::Policy {
-            detail: format!("cannot parse original URL for redirect admission: {source}"),
-        })?;
-        let parsed = response.url();
-        let final_host = parsed.host_str().ok_or_else(|| FetchError::Policy {
-            detail: "final URL after redirect has no host".to_string(),
-        })?;
-        if self.destination.permits_redirect(&original, parsed) {
-            return Ok(());
-        }
-        Err(FetchError::Policy {
-            detail: format!(
-                "redirect from {} to {} bypasses admission; host {} not authorized",
-                original_url, final_url, final_host
-            ),
+fn redirect_target(current_url: &str, location: &str) -> Result<url::Url, FetchError> {
+    url::Url::parse(current_url)
+        .and_then(|base| base.join(location))
+        .map_err(|source| FetchError::InvalidUrl {
+            url: current_url.to_string(),
+            source,
         })
-    }
 }

@@ -97,6 +97,9 @@ async fn drain_after_shutdown(
     let report = joined.ok_or("serve task vanished without drain report")???;
     check!(tasks.is_empty(), "the supervisor task was not reaped");
     check!(eq; report.remaining, 0, "work remains after drain: {report:?}");
+    check!(eq; report.endpoint_shutdown,
+    census_service::bootstrap::EndpointShutdown::Completed,
+    "effect admission must close only after the endpoint stops: {report:?}");
     check!(eq; report.panicked, 0,
     "a task panicked during drain: {report:?}");
     check!(eq; report.accepted,

@@ -4,10 +4,10 @@ use census_domain::UsJurisdiction;
 use census_reconcile::identity::Revision;
 use census_report::report;
 use census_service::restate_services::{
-    run_key, BestsIngressClient, BestsReply, BestsRequest, ConsolidateIngressClient,
-    ConsolidateReply, ConsolidateRequest, ConsolidatedTable, JurisdictionReport,
-    JurisdictionRequest, ReportIngressClient, ReportReply, ReportRequest, WorkbookIngressClient,
-    WorkbookReply, WorkbookRequest, DEFAULT_GENERATION,
+    run_key, workbook_request_key, BestsIngressClient, BestsReply, BestsRequest,
+    ConsolidateIngressClient, ConsolidateReply, ConsolidateRequest, ConsolidatedTable,
+    JurisdictionReport, JurisdictionRequest, ReportIngressClient, ReportReply, ReportRequest,
+    WorkbookIngressClient, WorkbookReply, WorkbookRequest, DEFAULT_GENERATION,
 };
 use restate_sdk::prelude::*;
 
@@ -54,17 +54,9 @@ fn workbook_client(
     origin: Option<&str>,
     request: &WorkbookRequest,
 ) -> Result<WorkbookIngressClient<CurrentRoute>> {
-    let year = request
-        .grad_year
-        .map_or_else(|| "all".to_string(), |year| year.to_string());
-    let scope = request.scope.as_deref().map_or("all", |value| value);
-    let limit = request
-        .limit
-        .map_or_else(|| "all".to_string(), |l| l.to_string());
-    let out = request.out.as_deref().map_or(".", |value| value);
     Ok(WorkbookIngressClient::from_client(
         ingress::job_client(ingress::origin(origin))?,
-        run_key("workbook", &[&year, scope, &limit, out], DEFAULT_GENERATION),
+        workbook_request_key(request),
     ))
 }
 

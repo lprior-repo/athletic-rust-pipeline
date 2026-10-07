@@ -52,7 +52,11 @@ pub(crate) async fn bootstrap(
     };
     let mut state = DocumentState::new(target.to_string());
     loop_context.run(&mut events, &mut state).await?;
-    let outcome = classify_observation(state.into_observation(), &gate, clock)?;
+    let observation = state.into_observation();
+    if let Some(refusal) = refuse_foreign_document(&observation.url, target, &gate) {
+        return Ok(refusal);
+    }
+    let outcome = classify_observation(observation, &gate, clock)?;
     if !matches!(outcome, NavigationOutcome::Challenged) {
         return Ok(outcome);
     }
@@ -61,7 +65,6 @@ pub(crate) async fn bootstrap(
     })
     .await
 }
-
 async fn settle<F, Fut>(
     clock: &dyn Clock,
     budget: Duration,
@@ -187,6 +190,9 @@ pub(crate) async fn inspect(
     if current.origin() != origin.origin() {
         return Err(BrowserError::Unavailable);
     }
+    if let Some(refusal) = refuse_foreign_document(&observation.url, origin, &gate) {
+        return Ok(refusal);
+    }
     if observation.url != current_url {
         return Ok(NavigationOutcome::Pending);
     }
@@ -241,6 +247,25 @@ fn retry_after(clock: &dyn Clock, headers: &HeaderMap) -> Result<Duration, Brows
         return Ok(Duration::from_secs(60));
     }
     Ok(delay)
+}
+
+fn foreign_final_document(observation_url: &str, admitted: &Url) -> bool {
+    match Url::parse(observation_url) {
+        Ok(parsed) => parsed.origin() != admitted.origin(),
+        Err(_) => true,
+    }
+}
+
+fn refuse_foreign_document(
+    observation_url: &str,
+    admitted: &Url,
+    gate: &ProfileGate,
+) -> Option<NavigationOutcome> {
+    if !foreign_final_document(observation_url, admitted) {
+        return None;
+    }
+    gate.revoke();
+    Some(NavigationOutcome::Failed(404))
 }
 
 #[cfg(test)]

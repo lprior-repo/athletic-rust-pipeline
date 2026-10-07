@@ -140,6 +140,20 @@ pub enum IdentifiedKey {
     },
 }
 
+impl IdentifiedKey {
+    pub fn of(key: &DirectoryKey) -> Option<Self> {
+        match key {
+            DirectoryKey::Nces(id) => Some(Self::Nces(id.clone())),
+            DirectoryKey::Pss(id) => Some(Self::Pss(id.clone())),
+            DirectoryKey::StateRecord { state, id } => Some(Self::StateRecord {
+                state: *state,
+                id: id.clone(),
+            }),
+            DirectoryKey::Weak(_) => None,
+        }
+    }
+}
+
 impl From<IdentifiedKey> for DirectoryKey {
     fn from(key: IdentifiedKey) -> Self {
         match key {

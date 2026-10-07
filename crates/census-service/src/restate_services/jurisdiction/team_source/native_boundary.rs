@@ -26,6 +26,8 @@ struct Armed {
     directory: Directory,
 }
 
+use census_crawl::milesplit::boundary;
+
 #[tracing::instrument(skip_all)]
 pub(super) async fn wait(
     jobs: &Jobs,
@@ -110,4 +112,70 @@ async fn hold(operation: &str, attempt: u8, timeout: Duration) -> Result<(), Bou
         attempt,
         seconds: timeout.as_secs(),
     })
+}
+
+pub struct NativeBoundaryHook;
+
+pub static NATIVE_BOUNDARY_HOOK: NativeBoundaryHook = NativeBoundaryHook {};
+
+impl boundary::Hook for NativeBoundaryHook {
+    fn reached<'a>(
+        &'a self,
+        point: boundary::Point,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<(), census_crawl::CrawlError>> + Send + 'a>,
+    > {
+        Box::pin(async move {
+            let Some(path) = std::env::var_os(ENVIRONMENT) else {
+                return Ok(());
+            };
+            let path = PathBuf::from(path);
+            let config = std::fs::read(&path).map_err(|e| census_crawl::CrawlError::Io {
+                path: path.clone(),
+                source: e,
+            })?;
+            let raw: config::RawConfig =
+                serde_json::from_slice(&config).map_err(|e| census_crawl::CrawlError::Decode {
+                    url: path.display().to_string(),
+                    source: e,
+                })?;
+            let cfg =
+                config::Config::parse(raw).map_err(|e| census_crawl::CrawlError::Invariant {
+                    detail: e.to_string(),
+                })?;
+            let selection = cfg.select_point(&point);
+            match selection {
+                config::Selection::Continue => Ok(()),
+                config::Selection::Hold(timeout) => {
+                    let directory = files::Directory::open(&path).map_err(|e| {
+                        census_crawl::CrawlError::Invariant {
+                            detail: e.to_string(),
+                        }
+                    })?;
+                    let identity = ledger::Identity {
+                        request_digest: "fault_injection".to_string(),
+                        observed_on: "fault_injection".to_string(),
+                    };
+                    let marker = marker::Marker::new_for_kind(
+                        &cfg.operation,
+                        cfg.attempt,
+                        point.kind(),
+                        &identity,
+                    )
+                    .map_err(|e| census_crawl::CrawlError::Invariant {
+                        detail: e.to_string(),
+                    })?;
+                    marker.publish(&directory).map_err(|e| {
+                        census_crawl::CrawlError::Invariant {
+                            detail: e.to_string(),
+                        }
+                    })?;
+                    tokio::time::sleep(timeout).await;
+                    Err(census_crawl::CrawlError::Invariant {
+                        detail: format!("boundary hook timeout at {}", point.kind()),
+                    })
+                }
+            }
+        })
+    }
 }

@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use super::{JoinError, LaneEvidence};
+use super::{JoinError, LaneEvidence, LaneSet};
 use crate::school_address::Report;
 
 const PROVIDERS: [&str; 3] = ["nces-ccd", "nces-pss", "state-ed"];
@@ -73,7 +73,10 @@ pub fn parse_source_pairs(values: &[String]) -> Result<BTreeMap<String, String>,
 }
 
 fn require_provider(source: &str) -> Result<(), JoinError> {
-    if admitted_provider(source) {
+    let provider = source
+        .split_once('@')
+        .map_or(source, |(provider, _)| provider);
+    if admitted_provider(provider) {
         return Ok(());
     }
     Err(JoinError::EvidenceSource {
@@ -98,25 +101,66 @@ fn validate_date(source: &str, value: &str) -> Result<(), JoinError> {
     })
 }
 
-pub fn build_lane_evidence(
-    report: &Report,
-    overrides: &Overrides,
-) -> BTreeMap<String, LaneEvidence> {
-    let mut lanes = BTreeMap::new();
+pub fn build_lane_evidence(report: &Report, overrides: &Overrides) -> Result<LaneSet, JoinError> {
+    let mut by_provider: BTreeMap<String, Vec<LaneEvidence>> = BTreeMap::new();
+    let mut selected: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
     for lane in &report.lanes {
         if !admitted_provider(&lane.source) {
             continue;
         }
-        lanes.insert(
-            lane.source.clone(),
-            LaneEvidence {
-                url: overrides.urls.get(&lane.source).cloned(),
-                observed_on: overrides.dates.get(&lane.source).cloned(),
-                path: lane.path.clone(),
-                capture_sha256: lane.sha256.clone(),
-                generation: report.manifest_digest.clone(),
-            },
-        );
+        let selector = capture_selector(&lane.source, &lane.path);
+        let lanes = by_provider.entry(lane.source.clone()).or_default();
+        if lanes.iter().any(|existing| existing.path == lane.path) {
+            continue;
+        }
+        if overrides.urls.contains_key(&selector) {
+            selected.insert(selector.clone());
+        }
+        if overrides.dates.contains_key(&selector) {
+            selected.insert(selector.clone());
+        }
+        lanes.push(LaneEvidence {
+            url: overrides
+                .urls
+                .get(&selector)
+                .or_else(|| overrides.urls.get(&lane.source))
+                .cloned(),
+            observed_on: overrides
+                .dates
+                .get(&selector)
+                .or_else(|| overrides.dates.get(&lane.source))
+                .cloned(),
+            path: lane.path.clone(),
+            capture_sha256: lane.sha256.clone(),
+            generation: report.manifest_digest.clone(),
+            captured: lane.captured.clone(),
+        });
     }
-    lanes
+    for (kind, keys) in [
+        ("url", overrides.urls.keys()),
+        ("date", overrides.dates.keys()),
+    ] {
+        for key in keys {
+            if is_capture_selector(key) && !selected.contains(key) {
+                return Err(JoinError::EvidenceValue {
+                    kind,
+                    pair: key.clone(),
+                    detail: format!(
+                        "no capture in this generation matches {key:?}; name a capture as \
+                         <provider>@<path>, copying the path from the lane list"
+                    ),
+                });
+            }
+        }
+    }
+    Ok(LaneSet::of(by_provider))
+}
+
+fn capture_selector(provider: &str, path: &str) -> String {
+    format!("{provider}@{path}")
+}
+
+fn is_capture_selector(key: &str) -> bool {
+    key.split_once('@')
+        .is_some_and(|(provider, path)| !provider.is_empty() && !path.is_empty())
 }

@@ -65,14 +65,17 @@ fn collect(
         return;
     }
     let row_ok = if director {
-        contains(&flat, "athletic director")
+        contains(&flat, "athletic director") && institution_matches(&flat, heading, row)
     } else {
         role_matches(&flat, row) && institution_matches(&flat, heading, row)
     };
     if !row_ok {
         return;
     }
-    result.contradicted |= !director && self_contradicts(&flat, row);
+    if self_contradicts(&flat, row, director) {
+        result.contradicted = true;
+        return;
+    }
     let name = if director {
         ContactProofField::AdName
     } else {
@@ -131,11 +134,13 @@ fn program_matches(flat: &str, row: &RawContactRow) -> bool {
     sport.contains("track") && contains(flat, "track")
 }
 
-fn self_contradicts(flat: &str, row: &RawContactRow) -> bool {
+fn self_contradicts(flat: &str, row: &RawContactRow, director: bool) -> bool {
     let negation_marker =
         contains(flat, "former") || contains(flat, "not current") || contains(flat, "no longer");
-    let role = normalize(&row.role);
-    negation_marker && contains(flat, &role) && contains(flat, "coach")
+    if director {
+        return negation_marker && contains(flat, "athletic director");
+    }
+    negation_marker && contains(flat, "coach") && contains(flat, &normalize(&row.role))
 }
 
 fn institution_matches(flat: &str, heading: &str, row: &RawContactRow) -> bool {

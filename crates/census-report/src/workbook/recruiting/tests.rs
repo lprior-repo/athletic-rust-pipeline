@@ -432,8 +432,11 @@ fn recruiting(store: &Store, scope: Scope, grad_year: Option<i16>) -> TestResult
 
 fn verified_publication(store: &Store, expected_athletes: u64) -> TestResult {
     let options = crate::workbook::Options {
-        school_year: Some(SchoolYear::new(2026).ok_or("invalid fixture season")?),
-        ..crate::workbook::Options::default()
+        grad_year: Some(2027),
+        out: None,
+        limit: None,
+        scope: crate::report::Scope::AllSources,
+        school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
     };
     let published = crate::workbook::build(store, &options)?;
     let dataset = crate::export::ExportDataset::load(store)?;

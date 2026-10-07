@@ -1,6 +1,4 @@
-use census_domain::model::{
-    ContactClaimEvidence, ContactProofField, RawContactRow, CONTACT_COLUMNS,
-};
+use census_domain::model::{ContactClaimEvidence, RawContactRow, CONTACT_COLUMNS};
 use std::path::Path;
 
 use super::fetch::verify_one_fragment;
@@ -117,22 +115,9 @@ pub fn claims_for_row(
 ) -> Vec<ContactClaimEvidence> {
     claims
         .iter()
-        .filter(|claim| claim_matches_row(claim, row))
+        .filter(|claim| census_domain::model::claim_binds_to_row(row, claim))
         .cloned()
         .collect()
-}
-
-fn claim_matches_row(claim: &ContactClaimEvidence, row: &RawContactRow) -> bool {
-    let person = match claim.field {
-        ContactProofField::CoachName | ContactProofField::PublicProfessionalEmail => {
-            &row.coach_name
-        }
-        ContactProofField::AdName | ContactProofField::AdEmail => &row.ad_name,
-    };
-    claim.school == row.school
-        && claim.state == row.state
-        && claim.role == row.role
-        && claim.person == *person
 }
 
 pub fn evidence_path(path: &Path) -> std::path::PathBuf {

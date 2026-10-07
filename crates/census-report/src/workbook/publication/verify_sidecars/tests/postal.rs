@@ -23,8 +23,11 @@ fn source_backed_postal_sidecar_rejects_a_tampered_school_address() -> TestResul
     });
     store.append(Table::Athletes, &athlete)?;
     let options = Options {
-        school_year: Some(SchoolYear::new(2026).ok_or("invalid fixture season")?),
-        ..Options::default()
+        grad_year: Some(2027),
+        out: None,
+        limit: None,
+        scope: crate::report::Scope::AllSources,
+        school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
     };
     let workbook = crate::workbook::build(&store, &options)?;
     let generation = workbook.parent().ok_or("missing generation directory")?;

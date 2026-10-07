@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 
 use census_domain::model::{CanonicalSchool, ReviewCase};
-use census_domain::school_directory::{AttestedRecord, DirectoryIndex};
+use census_domain::school_directory::{AttestedRecord, DirectoryIndex, IdentifiedKey};
 use census_store::{Store, StoreError, Table};
 use serde::{Deserialize, Serialize};
 
@@ -42,6 +42,66 @@ pub struct LaneEvidence {
     pub path: String,
     pub capture_sha256: String,
     pub generation: String,
+    #[serde(default)]
+    pub captured: Vec<IdentifiedKey>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct LaneSet {
+    #[serde(default)]
+    by_provider: BTreeMap<String, Vec<LaneEvidence>>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum LaneSelection {
+    Missing,
+    Unattributed { candidates: Vec<String> },
+    Ambiguous { candidates: Vec<String> },
+}
+
+impl LaneSet {
+    pub(super) fn of(mut by_provider: BTreeMap<String, Vec<LaneEvidence>>) -> Self {
+        for lanes in by_provider.values_mut() {
+            for lane in lanes.iter_mut() {
+                lane.captured.sort();
+            }
+        }
+        Self { by_provider }
+    }
+
+    pub fn tokens(&self) -> impl Iterator<Item = &String> {
+        self.by_provider.keys()
+    }
+
+    pub fn lanes(&self, provider: &str) -> &[LaneEvidence] {
+        self.by_provider.get(provider).map_or(&[], Vec::as_slice)
+    }
+
+    pub fn select(
+        &self,
+        provider: &str,
+        key: &IdentifiedKey,
+    ) -> Result<&LaneEvidence, LaneSelection> {
+        let lanes = self.lanes(provider);
+        let [single] = lanes else {
+            let candidates: Vec<&LaneEvidence> =
+                lanes.iter().filter(|lane| carries(lane, key)).collect();
+            return match candidates.as_slice() {
+                [lane] => Ok(lane),
+                [] => Err(LaneSelection::Unattributed {
+                    candidates: lanes.iter().map(|lane| lane.path.clone()).collect(),
+                }),
+                many => Err(LaneSelection::Ambiguous {
+                    candidates: many.iter().map(|lane| lane.path.clone()).collect(),
+                }),
+            };
+        };
+        Ok(single)
+    }
+}
+
+fn carries(lane: &LaneEvidence, key: &IdentifiedKey) -> bool {
+    lane.captured.binary_search(key).is_ok()
 }
 
 #[derive(Clone, Copy, Debug, Default, Serialize, Deserialize)]
@@ -49,6 +109,8 @@ pub struct Counters {
     pub scanned: u64,
     pub linked: u64,
     pub already_linked: u64,
+    #[serde(default)]
+    pub backfilled: u64,
     pub websites: u64,
     pub review: u64,
     pub no_match: u64,
@@ -89,7 +151,7 @@ pub struct JoinReport {
     pub report: String,
     pub outcomes: String,
     pub counters: Counters,
-    pub lanes: BTreeMap<String, LaneEvidence>,
+    pub lanes: LaneSet,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -126,7 +188,7 @@ pub enum JoinError {
 
 struct Job<'a> {
     index: &'a DirectoryIndex,
-    lanes: &'a BTreeMap<String, LaneEvidence>,
+    lanes: &'a LaneSet,
     mode: Mode,
     store: &'a Store,
     counters: Counters,
@@ -142,7 +204,7 @@ struct Job<'a> {
 pub fn process(
     store: &Store,
     index: &DirectoryIndex,
-    lanes: &BTreeMap<String, LaneEvidence>,
+    lanes: &LaneSet,
     mode: Mode,
 ) -> Result<(Counters, Vec<OutcomeRow>), JoinError> {
     let mut job = Job::new(index, lanes, mode, store)?;

@@ -24,8 +24,12 @@ pub(super) fn render(evidence: &SealEvidence) -> String {
         Some(count) => count.to_string(),
         None => "unmeasured".to_string(),
     };
+    let run_identity = match evidence.run {
+        Some(run) => format!("{}-{}", run.season().get(), run.revision()),
+        None => "unbound".to_string(),
+    };
     let rendered = format!(
-            "census-seal-v6\njurisdiction_buckets={}\nschools={}\nmeets={}\nathletes={}\nco2027={}\ncohort_performances={}\ncoaches={}\nconflicts={}\naccess_conditions={}\nblocked_hosts={}\nthrottled_hosts={}\nsilent_sources={silent_sources}\nsource_failures={source_failures}\nobservations={}\ncalculations={}\nworkbook_rows={}\nworkbook_sheets={}\nworkbook_sha256={workbook_digests}\ngaps={tallies}\n",
+            "census-seal-v7\nrun_identity={run_identity}\njurisdiction_buckets={}\nschools={}\nmeets={}\nathletes={}\nco2027={}\ncohort_performances={}\ncoaches={}\nconflicts={}\naccess_conditions={}\nblocked_hosts={}\nthrottled_hosts={}\nsilent_sources={silent_sources}\nsource_failures={source_failures}\nobservations={}\ncalculations={}\nworkbook_rows={}\nworkbook_sheets={}\nworkbook_sha256={workbook_digests}\ngaps={tallies}\n",
             counts.jurisdiction_buckets,
             counts.schools,
             counts.meets,

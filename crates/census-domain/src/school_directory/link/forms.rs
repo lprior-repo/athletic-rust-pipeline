@@ -1,27 +1,10 @@
 use super::super::name::MatchForm;
 use super::super::school::GradeSpan;
 use super::{Form, LinkRule, MAX_ALIASES};
+use variants::{directory_numbered_suffix, strip_numeric_tail, variants_of};
 
-const TRAILING_TOKENS: [&str; 18] = [
-    "high",
-    "school",
-    "hs",
-    "senior",
-    "sr",
-    "junior",
-    "jr",
-    "academy",
-    "prep",
-    "preparatory",
-    "charter",
-    "public",
-    "magnet",
-    "middle",
-    "elementary",
-    "the",
-    "and",
-    "of",
-];
+mod variants;
+
 const CAMPUS_TOKENS: [&str; 12] = [
     "east",
     "west",
@@ -36,7 +19,8 @@ const CAMPUS_TOKENS: [&str; 12] = [
     "southeast",
     "southwest",
 ];
-const STRUCTURAL_TOKENS: [&str; 21] = [
+const CAMPUS_WORDS: [&str; 2] = ["campus", "campuses"];
+pub(super) const STRUCTURAL_TOKENS: [&str; 21] = [
     "high",
     "school",
     "hs",
@@ -69,28 +53,28 @@ pub(super) fn candidate_forms(
     let mut forms: Vec<Form> = Vec::with_capacity(MAX_ALIASES + 8);
     push_form(&mut forms, LinkRule::ExactName, primary);
     push_form(&mut forms, LinkRule::ExactName, normalized);
-    push_variants(&mut forms, LinkRule::CoreName, primary);
-    push_variants(&mut forms, LinkRule::CoreName, normalized);
+    push_name_variants(&mut forms, LinkRule::CoreName, school_name, primary);
+    push_name_variants(&mut forms, LinkRule::CoreName, school_name, normalized);
     if let Some((head, inner)) = split_parenthetical(school_name) {
-        let inner = MatchForm::of(inner);
-        if !campus_designation(&inner) {
-            let head = MatchForm::of(head);
-            if !head.is_empty() {
-                push_form(&mut forms, LinkRule::Parenthetical, &head);
-                push_variants(&mut forms, LinkRule::Parenthetical, &head);
+        if !campus_designation(inner) {
+            let head_form = MatchForm::of(head);
+            if !head_form.is_empty() {
+                push_form(&mut forms, LinkRule::Parenthetical, &head_form);
+                push_name_variants(&mut forms, LinkRule::Parenthetical, head, &head_form);
             }
-            if !inner.is_empty() && token_count(&inner) >= 2 {
-                push_form(&mut forms, LinkRule::ParentheticalInner, &inner);
+            let inner_form = MatchForm::of(inner);
+            if !inner_form.is_empty() && token_count(&inner_form) >= 2 {
+                push_form(&mut forms, LinkRule::ParentheticalInner, &inner_form);
             }
         }
     }
     for alias in aliases.iter().take(MAX_ALIASES) {
-        let alias = MatchForm::of(alias);
-        if alias.is_empty() {
+        let form = MatchForm::of(alias);
+        if form.is_empty() {
             continue;
         }
-        push_form(&mut forms, LinkRule::Alias, &alias);
-        push_variants(&mut forms, LinkRule::Alias, &alias);
+        push_form(&mut forms, LinkRule::Alias, &form);
+        push_name_variants(&mut forms, LinkRule::Alias, alias.as_str(), &form);
     }
     forms
 }
@@ -105,131 +89,17 @@ fn push_form(forms: &mut Vec<Form>, rule: LinkRule, form: &MatchForm) {
     });
 }
 
-fn push_variants(forms: &mut Vec<Form>, rule: LinkRule, form: &MatchForm) {
-    for variant in variants(form) {
+fn push_name_variants(forms: &mut Vec<Form>, rule: LinkRule, name: &str, form: &MatchForm) {
+    for variant in name_variants(name, form) {
         push_form(forms, rule, &variant);
     }
 }
 
-pub(super) fn variants(form: &MatchForm) -> Vec<MatchForm> {
-    let expanded = expand(&strip_numeric_tail(form));
-    let mut out: Vec<MatchForm> = Vec::with_capacity(3);
-    push_variant(&mut out, form, &expanded);
-    for candidate in [strip_trailing(&expanded), strip_structural(&expanded)]
-        .into_iter()
-        .flatten()
-    {
-        push_variant(&mut out, form, &candidate);
+pub(super) fn name_variants(name: &str, form: &MatchForm) -> Vec<MatchForm> {
+    if directory_numbered_suffix(name) {
+        return variants_of(form, &strip_numeric_tail(form));
     }
-    out
-}
-
-fn push_variant(out: &mut Vec<MatchForm>, original: &MatchForm, candidate: &MatchForm) {
-    if candidate.is_empty() || candidate == original || out.contains(candidate) {
-        return;
-    }
-    out.push(candidate.clone());
-}
-
-fn expand(form: &MatchForm) -> MatchForm {
-    let tokens: Vec<&str> = form
-        .as_str()
-        .split(' ')
-        .filter(|token| !token.is_empty())
-        .collect();
-    let mut out: Vec<&str> = Vec::with_capacity(tokens.len().saturating_add(4));
-    let mut index = 0;
-    while let Some(token) = tokens.get(index).copied() {
-        if token == "h" && tokens.get(index.saturating_add(1)) == Some(&"s") {
-            out.extend_from_slice(&["high", "school"]);
-            index = index.saturating_add(2);
-            continue;
-        }
-        if token == "j"
-            && tokens.get(index.saturating_add(1)) == Some(&"h")
-            && tokens.get(index.saturating_add(2)) == Some(&"s")
-        {
-            out.extend_from_slice(&["junior", "high", "school"]);
-            index = index.saturating_add(3);
-            continue;
-        }
-        let replacement: &[&str] = match token {
-            "hs" => &["high", "school"],
-            "jhs" => &["junior", "high", "school"],
-            "sh" => &["senior", "high"],
-            "sr" => &["senior"],
-            "jr" => &["junior"],
-            "mhs" | "chs" => &[],
-            "acad" => &["academy"],
-            "elem" => &["elementary"],
-            "mid" => &["middle"],
-            _ => &[token],
-        };
-        out.extend_from_slice(replacement);
-        index = index.saturating_add(1);
-    }
-    MatchForm::of(&out.join(" "))
-}
-
-fn strip_numeric_tail(form: &MatchForm) -> MatchForm {
-    let mut tokens: Vec<&str> = form
-        .as_str()
-        .split(' ')
-        .filter(|token| !token.is_empty())
-        .collect();
-    if tokens
-        .last()
-        .is_some_and(|last| last.len() <= 2 && last.bytes().all(|byte| byte.is_ascii_digit()))
-    {
-        tokens.pop();
-    }
-    MatchForm::of(&tokens.join(" "))
-}
-
-fn strip_trailing(form: &MatchForm) -> Option<MatchForm> {
-    let tokens: Vec<&str> = form
-        .as_str()
-        .split(' ')
-        .filter(|token| !token.is_empty())
-        .collect();
-    let trailing = tokens
-        .iter()
-        .rev()
-        .take_while(|token| TRAILING_TOKENS.contains(token))
-        .count();
-    let end = tokens.len().saturating_sub(trailing);
-    let core: Vec<&str> = tokens
-        .iter()
-        .take(end)
-        .copied()
-        .filter(|token| *token != "the")
-        .collect();
-    if core.is_empty() {
-        return None;
-    }
-    let core = MatchForm::of(&core.join(" "));
-    if core == *form {
-        None
-    } else {
-        Some(core)
-    }
-}
-
-fn strip_structural(form: &MatchForm) -> Option<MatchForm> {
-    let core: Vec<&str> = form
-        .as_str()
-        .split(' ')
-        .filter(|token| !token.is_empty() && !STRUCTURAL_TOKENS.contains(token))
-        .collect();
-    if core.is_empty() {
-        return None;
-    }
-    let core = MatchForm::of(&core.join(" "));
-    if core == *form {
-        None
-    } else {
-        Some(core)
-    }
+    variants_of(form, form)
 }
 
 fn split_parenthetical(raw: &str) -> Option<(&str, &str)> {
@@ -251,16 +121,61 @@ fn token_count(form: &MatchForm) -> usize {
         .count()
 }
 
-fn campus_designation(inner: &MatchForm) -> bool {
-    let mut designated = false;
-    for token in inner.as_str().split(' ').filter(|token| !token.is_empty()) {
-        if CAMPUS_TOKENS.contains(&token) {
-            designated = true;
-        } else if token != "campus" {
-            return false;
-        }
+fn campus_designation(inner: &str) -> bool {
+    let tokens: Vec<(&str, MatchForm)> = inner
+        .split_whitespace()
+        .map(|token| (token, MatchForm::of(token)))
+        .collect();
+    if tokens.is_empty() {
+        return false;
     }
-    designated
+    if tokens
+        .iter()
+        .any(|(_, form)| CAMPUS_WORDS.contains(&form.as_str()))
+    {
+        return true;
+    }
+    if tokens
+        .iter()
+        .all(|(_, form)| CAMPUS_TOKENS.contains(&form.as_str()))
+    {
+        return true;
+    }
+    let numbers = tokens
+        .iter()
+        .filter(|(raw, _)| is_number_token(raw))
+        .count();
+    if numbers > 0 {
+        return numbers < tokens.len()
+            && tokens.iter().all(|(raw, form)| {
+                is_number_token(raw)
+                    || STRUCTURAL_TOKENS.contains(&form.as_str())
+                    || CAMPUS_TOKENS.contains(&form.as_str())
+            });
+    }
+    if tokens
+        .iter()
+        .any(|(raw, _)| raw.chars().any(|ch| !ch.is_alphanumeric()))
+    {
+        return false;
+    }
+    if !tokens
+        .iter()
+        .any(|(raw, _)| raw.chars().any(|ch| ch.is_lowercase()))
+    {
+        return false;
+    }
+    if tokens
+        .iter()
+        .all(|(_, form)| STRUCTURAL_TOKENS.contains(&form.as_str()))
+    {
+        return false;
+    }
+    true
+}
+
+pub(super) fn is_number_token(token: &str) -> bool {
+    !token.is_empty() && token.bytes().all(|byte| byte.is_ascii_digit())
 }
 
 pub(super) fn census_is_middle(form: &MatchForm) -> bool {

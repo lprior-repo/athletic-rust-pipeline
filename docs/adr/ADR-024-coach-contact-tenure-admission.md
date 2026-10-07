@@ -43,18 +43,28 @@ Three gaps break that chain (adversarial assessment of `rh3`, 2026-10-04):
    team is the source's own current-appointment statement; the emitted school year is the census
    run's season (`SchoolYear`), never a year inferred from a retrieval date. A school-scoped role
    that names no team (Athletic Director) carries the school's athletics as its program; the listing
-   must still state the role. A listing that states a different season, names no role, names a coach
-   role with no team, or carries no season scope emits `CoachTenure::Unknown` and publishes no
-   contact.
+   must still state the role. A listing that states a season other than the run season is retained
+   as `CoachTenure::Former { last_school_year: <stated> }`, which publishes no contact; the tenure
+   assessment ignores a stated year later than the queried season, so a future-dated listing
+   resolves unknown. A listing that names no role, names a coach role with no team, or carries no
+   season scope emits no current claim and publishes no contact.
 
 3. **Evidence is page-bound.** Tenure evidence carries the source URL, the retained capture's
    SHA256, an RFC3339 `retrieved_at` and a bounded statement naming the role and program. Retrieval
    alone never makes an appointment current, and an absent, blocked or unparsed capture yields no
    evidence.
 
-4. **Former and unstated roles never classify as current.** `coach_role`/`is_director` refuse any
-   title stating a former role (implemented 2026-10-04). An unknown-role row may remain raw history
-   but never supplies a contact.
+4. **A former statement is negative evidence on the same appointment identity.** `coach_role`
+   reads the coach noun a title names regardless of a "former" qualifier, and `is_director` accepts a
+   former director title, so a later former listing resolves to the same (person, school, role,
+   program) appointment identity as the corresponding current listing; `is_former` marks the
+   statement, and the emitter records `CoachTenure::Former` evidence there. Tenure assessment then
+   refuses a current/former conflict, so the earlier current mailbox is withheld while both captures
+   stay retained in the store. A role a title does not name still emits no evidence.
+   *(Superseded 2026-10-07: the 2026-10-04 rule classified every former title as `Unknown`, which -
+   because the canonical coach identity carries the role - minted a distinct owner and left the
+   earlier current claim published. CONTACT-13,
+   `athletic-rust-pipeline-hfhk.25`.)*
 
 5. **Research outcomes stay distinct.** Successful-empty, blocked or failed, and never-attempted
    research are distinct projected states; no state invents a negative finding, and a missing

@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use super::live;
 
 mod publish;
-use super::{build_fetcher, school_year, scope_of, Cli, Route};
+use super::{build_fetcher, contact_school_year, school_year, scope_of, Cli, Route};
 use publish::{
     publish_bests_and_workbook_live, publish_bests_and_workbook_with, publish_scope_live,
     publish_scope_with,
@@ -38,6 +38,11 @@ pub(super) struct RunArgs {
     )]
     #[arg(long, default_value_t = 2027)]
     grad_year: u16,
+    #[arg(
+        help = "School year the workbook contact tenure and coach cells are assessed against (2026 = the 2026-27 school year)"
+    )]
+    #[arg(long)]
+    school_year: u16,
     #[arg(
         help = "Restrict the best-mark reduction to the core scope, which excludes the Athletic.net source by design. Every approved source is what a plain run reduces"
     )]
@@ -89,6 +94,7 @@ async fn run_offline(cli: &Cli, store: std::sync::Arc<Store>, args: &RunArgs) ->
         None => census_crawl::net::today_iso(),
     };
     let grad_year = school_year(args.grad_year)?;
+    let contact_season = contact_school_year(args.school_year)?;
     let scope = scope_of(args.core);
 
     match (&args.input, args.meets.is_empty()) {
@@ -103,7 +109,14 @@ async fn run_offline(cli: &Cli, store: std::sync::Arc<Store>, args: &RunArgs) ->
     let stages = std::sync::Arc::clone(&store);
     let arguments = args.clone();
     tokio::task::spawn_blocking(move || {
-        offline_stages(&stages, &arguments, &observed_on, grad_year, scope)
+        offline_stages(
+            &stages,
+            &arguments,
+            &observed_on,
+            grad_year,
+            contact_season,
+            scope,
+        )
     })
     .await
     .map_err(|error| anyhow::anyhow!("the offline stages did not finish: {error}"))?
@@ -118,10 +131,11 @@ fn offline_stages(
     args: &RunArgs,
     observed_on: &str,
     grad_year: i16,
+    school_year: SchoolYear,
     scope: report::Scope,
 ) -> Result<()> {
     let total = std::time::Instant::now();
-    derive_index(store, observed_on)?;
+    derive_index(store, observed_on, school_year)?;
     consolidate_store(store)?;
     let dataset = load_dataset(store)?;
 
@@ -132,16 +146,24 @@ fn offline_stages(
     let censuses = workbook::Censuses { core, all_sources };
 
     let started = std::time::Instant::now();
-    publish_bests_and_workbook_with(&dataset, store, args, scope, grad_year, &censuses)?;
+    publish_bests_and_workbook_with(
+        &dataset,
+        store,
+        args,
+        scope,
+        grad_year,
+        school_year,
+        &censuses,
+    )?;
     stage_line("publish", "bests+workbook", started);
 
     stage_line("stages", "total", total);
     Ok(())
 }
 
-fn derive_index(store: &Store, observed_on: &str) -> Result<()> {
+fn derive_index(store: &Store, observed_on: &str, school_year: SchoolYear) -> Result<()> {
     let started = std::time::Instant::now();
-    let index = census_reconcile::index::derive(store, "run", observed_on)
+    let index = census_reconcile::index::derive(store, "run", observed_on, school_year)
         .context("deriving the durable indexes")?;
     let detail = format!(
         "source_identities={} conflicts={} reviews={} superseded={} coverage={}",
@@ -185,6 +207,7 @@ async fn run_live(origin: &str, args: &RunArgs) -> Result<()> {
     }
     println!("gather\tathleticnet\tskipped (no --input): publishing what the store holds");
     let grad_year = school_year(args.grad_year)?;
+    let contact_season = contact_school_year(args.school_year)?;
     let scope = scope_of(args.core);
     let tables = live::consolidate(Some(origin)).await?;
     println!(
@@ -201,7 +224,7 @@ async fn run_live(origin: &str, args: &RunArgs) -> Result<()> {
         publish_scope_live(origin, scope).await?;
     }
 
-    publish_bests_and_workbook_live(origin, args, scope, grad_year).await
+    publish_bests_and_workbook_live(origin, args, scope, grad_year, contact_season).await
 }
 
 async fn gather_athleticnet(

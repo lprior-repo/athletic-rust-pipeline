@@ -1,4 +1,5 @@
 use super::*;
+use census_domain::model::SchoolYear;
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalSchool, CoachContactClaim, CoachContactProgram,
     CoachRole, CoachTenure, CoachTenureEvidence, Gender, GradYear, SourceIdentity, SourceNamespace,
@@ -99,7 +100,7 @@ fn recruiting_csv_selects_current_contacts_for_each_gender() -> TestResult {
         &store,
         &ExportDataArgs {
             data: data.clone(),
-            school_year: Some(2026),
+            school_year: 2026,
         },
     )?;
     let mut reader = ::csv::Reader::from_path(data.join("recruiting-co2027.csv"))?;
@@ -176,7 +177,7 @@ fn unresolved_same_name_candidates_remain_individually_addressable() -> TestResu
         &store,
         &ExportDataArgs {
             data: data.clone(),
-            school_year: Some(2026),
+            school_year: 2026,
         },
     )?;
     let mut reader = ::csv::Reader::from_path(data.join("recruiting-co2027.csv"))?;

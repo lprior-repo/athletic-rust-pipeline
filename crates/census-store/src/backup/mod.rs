@@ -14,6 +14,8 @@ pub struct BackupReport {
     pub to: String,
     pub files: u64,
     pub bytes: u64,
+    #[serde(default)]
+    pub links: u64,
     pub tables: BTreeMap<String, u64>,
     pub elapsed_ms: u64,
 }
@@ -24,6 +26,8 @@ pub struct RestoreReport {
     pub to: String,
     pub files: u64,
     pub bytes: u64,
+    #[serde(default)]
+    pub links: u64,
     pub tables: BTreeMap<String, u64>,
 }
 
@@ -47,6 +51,8 @@ pub struct IntegrityTable {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub(super) struct ManifestEntry {
     pub path: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target: Option<String>,
     pub length: u64,
     pub sha256: String,
 }

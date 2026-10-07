@@ -16,10 +16,17 @@ pub(super) fn workbook(
     store: &Path,
     out: Option<&Path>,
     grad_year: i32,
+    school_year: i32,
     core: bool,
     limit: Option<usize>,
 ) -> Result<()> {
-    let mut cmd = binary(store).args(["workbook", "--grad-year", &grad_year.to_string()]);
+    let mut cmd = binary(store).args([
+        "workbook",
+        "--grad-year",
+        &grad_year.to_string(),
+        "--school-year",
+        &school_year.to_string(),
+    ]);
     if let Some(out) = out {
         cmd = cmd.arg("--out").arg(out.display().to_string());
     }

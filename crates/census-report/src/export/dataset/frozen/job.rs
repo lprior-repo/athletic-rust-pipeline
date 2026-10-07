@@ -7,7 +7,8 @@ pub(in crate::export::dataset) fn capture(store: &Store, job: &str) -> ReportRes
     }
     let digest = super::digest(&job)?;
     let directory = store.out_dir().join("export-inputs");
-    std::fs::create_dir_all(&directory).map_err(|source| io_error(&directory, source))?;
+    census_store::fs::create_dir_all_synced(&directory)
+        .map_err(|source| io_error(&directory, source))?;
     let lock_path = directory.join(format!("{digest}.lock"));
     let lock = std::fs::OpenOptions::new()
         .read(true)

@@ -131,7 +131,7 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory(
         out: None,
         limit: None,
         scope: Scope::Core,
-        school_year: None,
+        school_year,
     };
     let path = build(&store, &options)?;
 

@@ -113,11 +113,13 @@ async fn assert_origin_change_is_undispatched(change: OriginChange) -> TestResul
         "redirect contacted changed-port listener"
     );
     match outcome {
-        Err(FetchError::Transport { url, source }) => {
-            check!(eq; url, requested);
-            check!(eq; source.is_redirect(), true, "{source}");
+        Err(FetchError::Policy { detail }) => {
+            check!(
+                detail.contains("bypasses admission"),
+                "the refusal names the admission boundary: {detail}"
+            );
         }
-        other => return Err(format!("expected redirect-policy refusal, got {other:?}").into()),
+        other => return Err(format!("expected an admission refusal, got {other:?}").into()),
     }
     Ok(())
 }

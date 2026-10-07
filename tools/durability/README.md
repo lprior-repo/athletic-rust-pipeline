@@ -56,10 +56,11 @@ this directory. A narrower invoked test does not discharge the broader same-numb
 | 11 | `parent-exit` | Explicit skip: `ATHLETIC_FAULT_HTTP_EXIT` seam missing |
 | 12 | `cross-midnight` | Explicit skip: isolated clock fault missing |
 | 13 | `ai-review-failures` | Runs `census-review` HTTP transport tests; does not prove advice-checkpoint crash recovery |
-| 14 | `seal-refuses` | Empty-store CLI refusal; does not exercise every unmet acceptance item |
+| 14 | `seal-refuses` | Empty-store CLI refusal names the jurisdiction, source-object and run-binding items with their exact details; does not exercise every unmet acceptance item |
 | 15 | `full-backup-restore` | Runs service `backup_restore` integration tests; not Restate recovery |
 | 16 | `golden-census-determinism` | Runs exact `rebuilding_the_fixture_store_reproduces_semantics_not_publication_identity` regression and retains its log; not full frozen real-capture/advice replay |
 | 17 | `recovery-tests` | Runs service `recovery` suite; verify the actual reached batch window against the catalog |
+| 18 | `run-binding` | Native node + endpoint: admits one run through `Census.bind_run`, refuses a second with both runs named, refuses a `Census/seal` request naming another cohort or another run's journal, reads the binding back after an endpoint restart, and checks the offline ladder names the unmeasured binding; no crash injected and no full census run |
 
 Scenario 10 also uses `restate-enospc-probe.sh`; its current helper prerequisites include Python.
 That existing harness implementation is not permission to implement census pipeline logic in Python.
@@ -101,9 +102,34 @@ The host exercises reboot before the independent natural-midnight lane, so a gue
 injection cannot roll back on reboot and confound that fault. It retains both original Sweep
 and source recovery outcomes before propagating either error. Recovery polls original invocation
 status and captures full bookended journals/inspections on completion or the final bounded check,
-instead of duplicating them at every poll. The 32 MiB artifact limit, 300 checks and one-second
-interval are unchanged. A still-unfinished parent remains a failure with its exact obligations,
-not source acquisition or national PASS.
+instead of duplicating them at every poll. The 32 MiB artifact limit and one-second interval are
+unchanged. The recovery check budget is 3,200 polls, sized for the post-reboot jurisdiction run:
+under TCG emulation the replayed jurisdiction sweep is fsync-bound on the guest data disk and
+legitimately takes minutes, while the earlier 300-poll budget expired during a healthy run
+(`var/vm-sol-20261006-02/extracted-reconciliation.json`: store recovered 22:43:58, both
+`TeamsSource` children completed 22:44:02/22:44:05, the parent routed 120 rows at 22:44:10, the
+budget expired ~22:49:15 and the parent completed ~22:49:47). The guest action deadline is
+3,400 seconds and the host SSH transport allows 35,000 hundred-millisecond ticks, both below the
+3,600-second process-observation cap; keep that ordering when changing any of the three. A
+still-unfinished parent remains a failure with its exact obligations, not source acquisition or
+national PASS.
+
+Guest artifacts survive only inside the run's `root.qcow2` (btrfs, not readable by `debugfs`).
+To inspect them after a run, boot the preserved overlay read-only and read them over SSH:
+
+```sh
+qemu-system-x86_64 -machine pc -accel tcg,thread=multi -cpu max -smp 2 -m 4096 \
+  -display none -monitor none -L <tools>/prefix/usr/share/qemu -bios <tools>/prefix/usr/share/qemu/bios-256k.bin \
+  -serial file:<root>/evidence-boot-serial.log \
+  -drive "file=<root>/root.qcow2,if=virtio,format=qcow2,snapshot=on,cache=directsync,aio=threads" \
+  -drive "file=<root>/data.qcow2,if=virtio,format=qcow2,snapshot=on,cache=directsync,aio=threads" \
+  -netdev user,id=bootstrap,hostfwd=tcp:127.0.0.1:2222-:22 -device virtio-net-pci,netdev=bootstrap
+ssh -i <root>/ssh-key -o UserKnownHostsFile=<root>/known_hosts -p 2222 root@127.0.0.1 \
+  'cat /srv/qualification/jurisdiction-recovery-recovery-reconciliation.json'
+```
+
+`snapshot=on` discards every guest write, so the preserved evidence is never mutated. The store
+lives on the data disk (`/dev/vdb` mounted at `/srv/qualification`); boot both drives.
 
 ## Verdicts and evidence
 

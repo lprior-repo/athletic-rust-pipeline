@@ -148,6 +148,10 @@ pub fn verify_contact_proof(
     Ok(ValidatedContactProof { proof: actual })
 }
 
+pub fn claim_binds_to_row(row: &RawContactRow, claim: &ContactClaimEvidence) -> bool {
+    validation::claim_binds_to_row(row, claim)
+}
+
 fn compute_digest(
     row: &RawContactRow,
     claims: &[ContactClaimEvidence],

@@ -32,6 +32,7 @@ mod normalization;
 mod provenance;
 mod records;
 mod review;
+mod run;
 mod school;
 mod school_address;
 
@@ -43,8 +44,9 @@ pub use cohort::{GradYear, Grade, ObservedGrade, PublishedGraduation, SchoolYear
 pub use collision::{id_collision, CANONICAL_ID_COLLISION_FAMILY};
 pub use contact::{is_consumer_domain, published_email, MailboxKind};
 pub use contact_proof::{
-    compute_contact_proof, verify_contact_proof, ContactClaimEvidence, ContactProofError,
-    ContactProofField, RawContactRow, ValidatedContactProof, CONTACT_COLUMNS, CONTACT_PROOF_COLUMN,
+    claim_binds_to_row, compute_contact_proof, verify_contact_proof, ContactClaimEvidence,
+    ContactProofError, ContactProofField, RawContactRow, ValidatedContactProof, CONTACT_COLUMNS,
+    CONTACT_PROOF_COLUMN,
 };
 pub use contact_tenure::{
     assess_coach_tenure, validate_tenure_evidence, CoachContactClaim, CoachContactProgram,
@@ -87,6 +89,7 @@ pub use review::{
     ReviewCaseFact, ReviewEvidenceFact, ReviewPacket, ReviewVerdict, ReviewVerdictKind,
     ReviewVerdictRecord, VerdictBatch,
 };
+pub use run::{CensusRun, RunManifest};
 pub use school::CanonicalSchool;
 pub use school_address::{SchoolAddressError, SchoolPostalAddress};
 

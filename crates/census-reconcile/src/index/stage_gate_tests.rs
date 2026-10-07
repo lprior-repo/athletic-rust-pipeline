@@ -4,6 +4,10 @@ use census_domain::UsJurisdiction;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
+fn season() -> Result<census_domain::model::SchoolYear, Box<dyn std::error::Error>> {
+    census_domain::model::SchoolYear::new(2026).ok_or_else(|| "invalid fixture season".into())
+}
+
 fn school(name: &str, slug: &str) -> CanonicalSchool {
     let mut school = CanonicalSchool::new(UsJurisdiction::Wisconsin, name, slug, None).0;
     school
@@ -35,14 +39,14 @@ fn a_changed_input_publishes_a_new_generation_holding_the_whole_row_set() -> Tes
     let directory = tempfile::tempdir()?;
     let store = fixture(&directory)?;
 
-    let first = derive(&store, "index", "2026-09-22")?;
+    let first = derive(&store, "index", "2026-09-22", season()?)?;
     let published = store.snapshot().derived_generation();
     check!(published > 0, "the pass publishes a derived generation");
     let school = school("Second School", "second-school");
     store.append(Table::Schools, &school)?;
     store.append(Table::Athletes, &athlete(&school, "222"))?;
 
-    let second = derive(&store, "index", "2026-09-23")?;
+    let second = derive(&store, "index", "2026-09-23", season()?)?;
     check!(eq; second.source_identities,
         first.source_identities + 2,
         "the rebuilt rows cover both schools' athletes");
@@ -63,7 +67,7 @@ fn a_repeated_pass_publishes_nothing_and_leaves_reclaim_nothing() -> TestResult 
     let directory = tempfile::tempdir()?;
     let store = fixture(&directory)?;
 
-    let first = derive(&store, "index", "2026-09-22")?;
+    let first = derive(&store, "index", "2026-09-22", season()?)?;
     let published = store.snapshot().derived_generation();
     let receipts = store.receipt_count()?;
     let expected = store.scan::<SourceObjectIdentity>(Table::SourceIdentities)?;
@@ -76,7 +80,7 @@ fn a_repeated_pass_publishes_nothing_and_leaves_reclaim_nothing() -> TestResult 
         .iter()
         .any(|row| row.namespace == SourceNamespace::MilesplitAthlete && row.source_id == "111"));
 
-    let second = derive(&store, "index", "2026-09-22")?;
+    let second = derive(&store, "index", "2026-09-22", season()?)?;
     check!(eq; second.source_identities, first.source_identities);
     check!(eq;
         store.snapshot().derived_generation(),
@@ -106,7 +110,7 @@ fn index_preserves_located_unsupported_cohort_review_without_a_canonical_subject
         "Published grade 12 in school year 2040. URL: https://example.test/results. Row: 1.",
     );
     store.replace(Table::ReviewCases, &case)?;
-    derive(&store, "index", "2026-09-30")?;
+    derive(&store, "index", "2026-09-30", season()?)?;
     let cases = store.scan::<ReviewCase>(Table::ReviewCases)?;
     check!(eq; cases.iter().find(|row| row.id == case.id), Some(&case));
     Ok(())

@@ -35,8 +35,11 @@ fn seed(store: &Store) -> TestResult<(CanonicalSchool, CanonicalAthlete)> {
 
 fn published(store: &Store) -> TestResult<(std::path::PathBuf, ExportDataset, Options)> {
     let options = Options {
-        school_year: Some(SchoolYear::new(2026).ok_or("invalid fixture season")?),
-        ..Options::default()
+        grad_year: Some(2027),
+        out: None,
+        limit: None,
+        scope: crate::report::Scope::AllSources,
+        school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
     };
     let path = crate::workbook::build(store, &options)?;
     let generation = path.parent().ok_or("missing generation directory")?;

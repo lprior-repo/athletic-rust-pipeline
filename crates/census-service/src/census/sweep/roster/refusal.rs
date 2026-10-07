@@ -6,7 +6,7 @@ use census_store::{Application, Store};
 
 use super::super::rosters_phase;
 use super::super::units::RosterRun;
-use super::{roster_operation, Journal};
+use super::journal::{roster_operation, Journal};
 
 pub(crate) fn retain_refusal(
     store: &Store,

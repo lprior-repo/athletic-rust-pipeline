@@ -3,7 +3,7 @@ mod tenure;
 use super::collect::requested_states;
 use super::map::{absorb_summary, coach_entities, directory_school, team_sport};
 use super::parse::{parse_directory, parse_summary};
-use super::row::{coach_role, is_director};
+use super::row::{coach_role, is_director, is_former};
 use super::*;
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Gender, Sport,
@@ -310,13 +310,19 @@ fn the_possessive_and_genderless_labels_all_map() {
 }
 
 #[test]
-fn a_stated_former_role_never_classifies_as_a_current_one() {
-    assert_eq!(coach_role("Former Head Coach"), CoachRole::Unknown);
-    assert_eq!(coach_role("Former Assistant Coach"), CoachRole::Unknown);
+fn a_stated_former_role_keeps_a_same_identity_role_and_its_own_negative_statement() {
+    assert_eq!(coach_role("Former Head Coach"), CoachRole::HeadCoach);
+    assert_eq!(
+        coach_role("Former Assistant Coach"),
+        CoachRole::AssistantCoach
+    );
     assert_eq!(coach_role("Head Coach"), CoachRole::HeadCoach);
     assert_eq!(coach_role("Assistant Coach"), CoachRole::AssistantCoach);
-    assert!(!is_director("Former Athletic Director"));
+    assert!(is_former("Former Head Coach"));
+    assert!(!is_former("Head Coach"));
+    assert!(is_director("Former Athletic Director"));
     assert!(is_director("Athletic Director"));
+    assert!(!is_director("Former Track Coach"));
 }
 
 #[test]

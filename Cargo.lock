@@ -462,6 +462,7 @@ dependencies = [
 name = "census-store"
 version = "0.1.0"
 dependencies = [
+ "base64",
  "census-domain",
  "chrono",
  "csv",

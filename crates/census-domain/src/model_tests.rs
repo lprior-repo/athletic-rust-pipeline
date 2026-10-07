@@ -12,6 +12,8 @@ mod general_model;
 mod name_tests;
 #[path = "model_tests/provenance.rs"]
 mod provenance;
+#[path = "model_tests/run_manifest.rs"]
+mod run_manifest;
 #[path = "model_tests/school_postal.rs"]
 mod school_postal;
 #[path = "model_tests/source_ownership.rs"]

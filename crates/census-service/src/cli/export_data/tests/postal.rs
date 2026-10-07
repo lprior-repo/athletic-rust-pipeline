@@ -85,7 +85,7 @@ fn captured_zcum49_postal_claim_publishes_on_school_metadata_and_recruiting_csv(
         &store,
         &ExportDataArgs {
             data: data.clone(),
-            school_year: Some(2026),
+            school_year: 2026,
         },
     )?;
     let mut reader = ::csv::Reader::from_path(data.join("canonical-schools.csv"))?;

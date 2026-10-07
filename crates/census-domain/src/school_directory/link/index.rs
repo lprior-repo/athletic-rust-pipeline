@@ -8,7 +8,7 @@ use super::super::key::{DirectoryKey, IdentifiedKey};
 use super::super::label::SourceLabel;
 use super::super::name::MatchForm;
 use super::attest::{corroborated, record_label};
-use super::forms::{candidate_forms, census_is_middle, is_middle, variants};
+use super::forms::{candidate_forms, census_is_middle, is_middle, name_variants};
 use super::{
     AttestedRecord, CandidateRef, DirectoryIndex, Form, IndexEntry, LinkDecision, LinkMatch,
     ReviewReason, MAX_CANDIDATES,
@@ -66,7 +66,7 @@ impl DirectoryIndex {
                 .entry(form.clone())
                 .or_default()
                 .push(position);
-            for variant in variants(&form) {
+            for variant in name_variants(name.as_str(), &form) {
                 index.by_core.entry(variant).or_default().push(position);
             }
         }

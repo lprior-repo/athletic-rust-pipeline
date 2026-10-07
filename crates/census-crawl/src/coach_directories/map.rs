@@ -6,6 +6,7 @@ use census_domain::model::{
     SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 mod postal;
@@ -205,7 +206,8 @@ fn map_coaches(
 }
 
 pub(crate) fn team_sport(label: &str) -> Option<(Sport, Gender)> {
-    let mut rest = label.trim();
+    let candidate = without_season_tokens(label.trim());
+    let mut rest = candidate.as_ref();
     let mut gender = if let Some(value) = rest
         .strip_prefix("Boys'")
         .or_else(|| rest.strip_prefix("Boy's"))
@@ -238,4 +240,57 @@ pub(crate) fn team_sport(label: &str) -> Option<(Sport, Gender)> {
         return Some((Sport::OutdoorTrack, gender));
     }
     None
+}
+
+pub(crate) fn season_year(text: &str) -> Option<SchoolYear> {
+    text.split_whitespace().find_map(season_year_token)
+}
+
+fn season_year_token(token: &str) -> Option<SchoolYear> {
+    season_digits(token.trim_matches(|ch: char| !ch.is_ascii_alphanumeric()))
+        .and_then(SchoolYear::new)
+}
+
+fn season_digits(token: &str) -> Option<i16> {
+    let token = match token.strip_prefix("season") {
+        Some(stripped) => stripped,
+        None => match token.strip_prefix("sy") {
+            Some(stripped) => stripped,
+            None => token,
+        },
+    };
+    if token.len() == 4 {
+        return parse_season_number(token);
+    }
+    let (start, rest) = token.split_once(['-', '/'])?;
+    let start = parse_season_number(start)?;
+    let end = match rest.len() {
+        2 => {
+            let within: i16 = rest.parse().ok()?;
+            let century = start.checked_div(100)?.checked_mul(100)?;
+            century.checked_add(within)?
+        }
+        _ => parse_season_number(rest)?,
+    };
+    (end >= start && end <= start.saturating_add(1)).then_some(start)
+}
+
+fn parse_season_number(text: &str) -> Option<i16> {
+    let value: i16 = text.parse().ok()?;
+    (1900..=2100).contains(&value).then_some(value)
+}
+
+fn without_season_tokens(label: &str) -> Cow<'_, str> {
+    if !label
+        .split_whitespace()
+        .any(|token| season_year_token(token).is_some())
+    {
+        return Cow::Borrowed(label);
+    }
+    let kept = label
+        .split_whitespace()
+        .filter(|token| season_year_token(token).is_none())
+        .collect::<Vec<_>>()
+        .join(" ");
+    Cow::Owned(kept.trim_end_matches([',', ';']).to_string())
 }

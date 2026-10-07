@@ -29,7 +29,13 @@ fn altered_metadata_cells_are_rejected() -> TestResult {
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford", None);
     store.append(Table::Schools, &school)?;
 
-    let options = Options::default();
+    let options = Options {
+        grad_year: Some(2027),
+        out: None,
+        limit: None,
+        scope: crate::report::Scope::AllSources,
+        school_year: census_domain::model::SchoolYear::new(2026).ok_or("invalid fixture season")?,
+    };
     let good = crate::workbook::build(&store, &options)?;
     let frozen = good
         .parent()

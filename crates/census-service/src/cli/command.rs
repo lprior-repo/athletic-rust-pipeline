@@ -9,7 +9,7 @@ use super::merge_coaches::MergeCoachesArgs;
 use super::national::{JurisdictionArgs, NationalArgs, NationalReportArgs};
 use super::open_work::OpenWorkArgs;
 use super::provider::ProviderArgs;
-use super::publish::{BestsArgs, ReportArgs, WorkbookArgs};
+use super::publish::{BestsArgs, IndexArgs, ReportArgs, WorkbookArgs};
 use super::qa_reports::QaReportsArgs;
 use super::review::ReviewArgs;
 use super::school_names::SchoolNamesArgs;
@@ -60,7 +60,7 @@ pub(super) enum Command {
     #[command(
         about = "Derive the durable indexes into the store: source-object identities, retained conflicts and review cases, coverage, and a snapshot of the pass"
     )]
-    Index,
+    Index(IndexArgs),
     #[command(about = "Compute the measured census from the store")]
     Report(ReportArgs),
     #[command(about = "Reduce the consolidated tables to one best mark per athlete and event")]

@@ -1,8 +1,8 @@
 use anyhow::{Context, Result};
 use census_report::report::Scope;
 use census_service::restate_services::{
-    run_key, CensusIngressClient, ReportIngressClient, ReportReply, ReportRequest, StatusReply,
-    WorkbookIngressClient, WorkbookReply, WorkbookRequest,
+    run_key, workbook_request_key, CensusIngressClient, ReportIngressClient, ReportReply,
+    ReportRequest, StatusReply, WorkbookIngressClient, WorkbookReply, WorkbookRequest,
 };
 use census_store::Table;
 use restate_sdk::prelude::*;
@@ -53,6 +53,7 @@ pub(super) fn workbook(
     origin: &str,
     out: Option<&Path>,
     grad_year: i32,
+    school_year: i32,
     core: bool,
     limit: Option<usize>,
 ) -> Result<()> {
@@ -60,15 +61,13 @@ pub(super) fn workbook(
     ingress::announce(&endpoint, "Workbook", "run");
     let scope = if core { Scope::Core } else { Scope::AllSources };
     let request = WorkbookRequest {
-        grad_year: Some(school_year(grad_year)?),
+        grad_year: Some(grad_year_i16(grad_year)?),
         limit,
         scope: Some(scope.as_str().to_string()),
         out: out.map(|path| path.display().to_string()),
+        school_year: Some(school_year_i16(school_year)?),
     };
-    let year = request
-        .grad_year
-        .map_or_else(|| "all".to_string(), |year| year.to_string());
-    let key = run_key("workbook", &[&year, scope.as_str()], "1");
+    let key = workbook_request_key(&request);
     let workbook = WorkbookIngressClient::from_client(client, key);
     let response =
         ingress::block_on(workbook.run(Json(request)).call())?.map_err(ingress::error)?;
@@ -111,7 +110,14 @@ fn rows(status: &StatusReply, table: Table) -> u64 {
         .map_or(0, |count| count.rows)
 }
 
-fn school_year(grad_year: i32) -> Result<i16> {
-    i16::try_from(grad_year)
-        .with_context(|| format!("--grad-year {grad_year} is not a representable year"))
+fn year_i16(label: &str, year: i32) -> Result<i16> {
+    i16::try_from(year).with_context(|| format!("{label} {year} is not a representable year"))
+}
+
+fn school_year_i16(year: i32) -> Result<i16> {
+    year_i16("--school-year", year)
+}
+
+fn grad_year_i16(year: i32) -> Result<i16> {
+    year_i16("--grad-year", year)
 }

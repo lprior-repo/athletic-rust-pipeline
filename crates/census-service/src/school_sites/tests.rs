@@ -35,6 +35,7 @@ fn site(state: UsJurisdiction, school: &str, website: &str) -> PlannedSite {
             website: website.to_string(),
         },
         artifact: PathBuf::from(format!("{key}.json")),
+        key,
     }
 }
 
@@ -237,9 +238,13 @@ fn fragment_writer_emits_the_lane_header() -> TestResult {
         "https://example.k12.us",
     );
     let rows = contact_rows(&planned, &outcome);
-    let written = artifacts::write_fragments(dir.path(), &rows)?;
+    let site_rows = dir.path().join("site-rows");
+    let fragments = dir.path().join("fragments");
+    std::fs::create_dir_all(&site_rows)?;
+    artifacts::write_site_rows(&planned.rows_path(&site_rows), &rows)?;
+    let written = artifacts::publish_state_fragments(&fragments, &site_rows)?;
     check!(eq; written.len(), 1);
-    let mut reader = csv::Reader::from_path(dir.path().join("MO.csv"))?;
+    let mut reader = csv::Reader::from_path(fragments.join("MO.csv"))?;
     let header = reader.headers()?.clone();
     check!(eq; header.len(), 12);
     check!(eq; header.get(0), Some("school"));
@@ -251,6 +256,103 @@ fn fragment_writer_emits_the_lane_header() -> TestResult {
     check!(eq; record.get(5), Some("Jane Doe"));
     check!(eq; record.get(10), Some("2026-10-05"));
     Ok(())
+}
+
+#[test]
+fn a_resumed_state_fragment_keeps_the_earlier_sites_rows() -> TestResult {
+    let dir = tempfile::TempDir::new()?;
+    let site_rows = dir.path().join("site-rows");
+    let fragments = dir.path().join("fragments");
+    std::fs::create_dir_all(&site_rows)?;
+    let alpha = site(
+        UsJurisdiction::Ohio,
+        "Alpha High School",
+        "https://alpha.example.org",
+    );
+    let beta = site(
+        UsJurisdiction::Ohio,
+        "Beta High School",
+        "https://beta.example.org",
+    );
+    let alpha_rows = contact_rows(&alpha, &outcome_for("Jane Doe", "jane@alpha.example.org"));
+    artifacts::write_site_rows(&alpha.rows_path(&site_rows), &alpha_rows)?;
+    artifacts::publish_state_fragments(&fragments, &site_rows)?;
+    let beta_rows = contact_rows(&beta, &outcome_for("Bob Roe", "bob@beta.example.org"));
+    artifacts::write_site_rows(&beta.rows_path(&site_rows), &beta_rows)?;
+    let written = artifacts::publish_state_fragments(&fragments, &site_rows)?;
+    check!(eq; written.len(), 1);
+    check!(eq; fragment_coach_names(&fragments.join("OH.csv"))?,
+        vec!["Jane Doe".to_string(), "Bob Roe".to_string()]);
+    Ok(())
+}
+
+#[test]
+fn a_site_without_its_row_file_is_not_resumed() -> TestResult {
+    let dir = tempfile::TempDir::new()?;
+    std::fs::create_dir_all(dir.path())?;
+    let planned = site(
+        UsJurisdiction::Ohio,
+        "Alpha High School",
+        "https://alpha.example.org",
+    );
+    let site_rows = dir.path().join("site-rows");
+    std::fs::create_dir_all(&site_rows)?;
+    check!(
+        !queue::resumable(&planned, &site_rows, false),
+        "an artifact alone cannot certify a resumable site"
+    );
+    std::fs::write(&planned.artifact, "{}")?;
+    check!(
+        !queue::resumable(&planned, &site_rows, false),
+        "an artifact without its recovered rows must be crawled again"
+    );
+    artifacts::write_site_rows(&planned.rows_path(&site_rows), &Vec::new())?;
+    check!(
+        queue::resumable(&planned, &site_rows, false),
+        "an artifact with its recovered rows is resumable"
+    );
+    check!(
+        !queue::resumable(&planned, &site_rows, true),
+        "--refresh never resumes"
+    );
+    Ok(())
+}
+
+fn outcome_for(name: &str, email: &str) -> SiteOutcome {
+    SiteOutcome {
+        signals: Signals {
+            emails: vec![email.to_string()],
+            coach_hits: vec![hit(name, Sport::CrossCountry, Some(email))],
+            ad_hits: Vec::new(),
+            pages: vec!["https://example.k12.us/coaches".to_string()],
+        },
+        requests: 1,
+        errors: 0,
+        note: None,
+        pages: vec![PageEvidence {
+            url: "https://example.k12.us/coaches".to_string(),
+            digest: "digest".to_string(),
+            fetched_at: "2026-10-05T04:00:00Z".to_string(),
+            status: 200,
+        }],
+    }
+}
+
+fn fragment_coach_names(path: &std::path::Path) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    let mut reader = csv::Reader::from_path(path)?;
+    let header = reader.headers()?.clone();
+    let column = header
+        .iter()
+        .position(|field| field == "coach_name")
+        .ok_or("no coach_name column")?;
+    let mut names = Vec::new();
+    for record in reader.records() {
+        let record = record?;
+        if let Some(name) = record.get(column) {
+            names.push(name.to_string());
+        }
+    }
+    Ok(names)
 }
 
 #[test]

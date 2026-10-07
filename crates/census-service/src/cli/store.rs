@@ -69,6 +69,7 @@ pub(super) fn run_backup(root: &Path, args: &BackupArgs) -> Result<()> {
     println!("backup\t{}", report.to);
     println!("files\t{}", report.files);
     println!("bytes\t{}", report.bytes);
+    println!("links\t{}", report.links);
     println!("elapsed_ms\t{}", report.elapsed_ms);
     for (table, count) in &report.tables {
         println!("table\t{table}\t{count}");
@@ -81,6 +82,7 @@ pub(super) fn run_restore(args: &RestoreArgs) -> Result<()> {
     println!("restored\tfrom {}\tto {}", report.from, report.to);
     println!("files\t{}", report.files);
     println!("bytes\t{}", report.bytes);
+    println!("links\t{}", report.links);
     for (table, count) in &report.tables {
         println!("table\t{table}\t{count}");
     }

@@ -2,7 +2,8 @@ use crate::report::{ReportError, ReportResult};
 use census_domain::model::{
     AppliedAthleteIdentity, AthleteIdentityIndex, AthleteIdentityProjection, CanonicalAthlete,
     CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CanonicalTeam, ReviewCase, ReviewVerdictRecord, SchoolId, SourceAccessCondition, TeamId,
+    CanonicalTeam, CensusRun, GradYear, ReviewCase, ReviewVerdictRecord, SchoolId,
+    SourceAccessCondition, TeamId,
 };
 use census_store::{Store, Table};
 use serde::{Deserialize, Serialize};
@@ -47,6 +48,14 @@ pub struct DatasetLineage {
     pub snapshot_sequence: u64,
     pub schema_revision: u32,
     pub policy_revision: u32,
+    #[serde(default)]
+    pub run: Option<CensusRun>,
+    #[serde(default)]
+    pub cohort: Option<GradYear>,
+}
+
+pub fn store_identity(store: &Store) -> ReportResult<String> {
+    frozen::store_identity(store)
 }
 
 #[derive(Deserialize)]

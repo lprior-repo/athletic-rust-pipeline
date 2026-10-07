@@ -1,3 +1,4 @@
+use super::journal::{decode_chunk, is_manifest, manifest_info};
 use fjall::Keyspace;
 use std::collections::HashSet;
 use std::path::Path;
@@ -105,7 +106,52 @@ impl Store {
         else {
             return Ok(None);
         };
-        decode_journal_payload(phase, key, raw.as_ref()).map(Some)
+        if is_manifest(raw.as_ref()) {
+            let (_, chunks, _) = manifest_info(raw.as_ref())?;
+            let row_key = Self::journal_key(phase, key);
+            let mut collected = Vec::with_capacity(chunks);
+            for i in 0..chunks {
+                let chunk_key = super::journal::chunk_key(&row_key, i)?;
+                let Some(chunk_raw) = self
+                    .journal
+                    .get(&chunk_key)
+                    .map_err(|source| StoreError::Read { source })?
+                else {
+                    return Err(StoreError::Invariant {
+                        detail: format!("journal chunk {i} missing for {phase}/{key}"),
+                    });
+                };
+                let chunk_value: serde_json::Value = serde_json::from_slice(chunk_raw.as_ref())
+                    .map_err(|source| StoreError::Decode {
+                        key: format!("{phase}/{key} chunk {i}"),
+                        source,
+                    })?;
+                let data_b64 = chunk_value
+                    .get("data")
+                    .and_then(|d| d.as_str())
+                    .ok_or_else(|| StoreError::Invariant {
+                        detail: format!("journal chunk {i} for {phase}/{key} has no data"),
+                    })?
+                    .to_string();
+                let chunk_bytes = decode_chunk(&data_b64)?;
+                collected.push(chunk_bytes);
+            }
+            let reassembled = super::journal::reassemble_chunks(&collected);
+            let entry: serde_json::Value =
+                serde_json::from_slice(&reassembled).map_err(|source| StoreError::Decode {
+                    key: format!("{phase}/{key} (reassembled)"),
+                    source,
+                })?;
+            entry
+                .get("payload")
+                .cloned()
+                .ok_or_else(|| StoreError::Invariant {
+                    detail: format!("reassembled journal entry {phase}/{key} has no payload"),
+                })
+                .map(Some)
+        } else {
+            decode_journal_payload(phase, key, raw.as_ref()).map(Some)
+        }
     }
 
     pub fn journal_keys(&self, phase: &str) -> StoreResult<HashSet<String>> {
@@ -123,36 +169,45 @@ impl Store {
                             key_label(bytes)
                         ),
                     })?;
-            let key = std::str::from_utf8(suffix).map_err(|_| StoreError::Invariant {
-                detail: format!(
-                    "journal key {} under phase {phase} is not utf-8",
-                    key_label(bytes)
-                ),
-            })?;
-            keys.insert(key.to_string());
+            if let Some((logical, _)) = super::journal::parse_chunk_key(suffix) {
+                let key = std::str::from_utf8(logical).map_err(|_| StoreError::Invariant {
+                    detail: format!("chunk key for phase {phase} has non-utf-8 logical key"),
+                })?;
+                keys.insert(key.to_string());
+            } else {
+                let key = std::str::from_utf8(suffix).map_err(|_| StoreError::Invariant {
+                    detail: format!(
+                        "journal key {} under phase {phase} is not utf-8",
+                        key_label(bytes)
+                    ),
+                })?;
+                keys.insert(key.to_string());
+            }
         }
         Ok(keys)
     }
 
     pub fn journal_payloads(&self, phase: &str) -> StoreResult<Vec<serde_json::Value>> {
+        let mut keys: Vec<String> = self.journal_keys(phase)?.into_iter().collect();
+        keys.sort();
+        let mut out = Vec::with_capacity(keys.len());
+        for key in keys {
+            if let Some(payload) = self.journal_payload(phase, &key)? {
+                out.push(payload);
+            }
+        }
+        Ok(out)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn journal_physical_values(&self, phase: &str) -> StoreResult<Vec<usize>> {
         let prefix = Self::journal_key(phase, "");
         let mut out = Vec::new();
         for guard in self.journal.prefix(prefix.as_slice()) {
-            let (key, raw) = guard
+            let (_, raw) = guard
                 .into_inner()
                 .map_err(|source| StoreError::Read { source })?;
-            let value: serde_json::Value =
-                serde_json::from_slice(raw.as_ref()).map_err(|source| StoreError::Decode {
-                    key: key_label(&key),
-                    source,
-                })?;
-            let payload = value.get("payload").ok_or_else(|| StoreError::Invariant {
-                detail: format!(
-                    "journal entry {} under phase {phase} has no payload",
-                    key_label(&key)
-                ),
-            })?;
-            out.push(payload.clone());
+            out.push(raw.len());
         }
         Ok(out)
     }

@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use census_domain::model::SchoolYear;
 use census_report::export::ExportDataset;
 use census_report::report::{self, Census, Derivation};
 use census_report::workbook;
@@ -35,6 +36,7 @@ pub(super) fn publish_bests_and_workbook_with(
     args: &RunArgs,
     scope: report::Scope,
     grad_year: i16,
+    school_year: SchoolYear,
     censuses: &workbook::Censuses,
 ) -> Result<()> {
     let workbook = workbook::Options {
@@ -42,7 +44,7 @@ pub(super) fn publish_bests_and_workbook_with(
         out: args.out.clone(),
         limit: args.limit,
         scope,
-        school_year: None,
+        school_year,
     };
     let path = workbook::build_from(dataset, store, &workbook, censuses)
         .context("building the census workbook")?;
@@ -70,6 +72,7 @@ pub(super) async fn publish_bests_and_workbook_live(
     args: &RunArgs,
     scope: report::Scope,
     grad_year: i16,
+    school_year: SchoolYear,
 ) -> Result<()> {
     let workbook = WorkbookRequest {
         grad_year: Some(grad_year),
@@ -79,6 +82,7 @@ pub(super) async fn publish_bests_and_workbook_live(
             .map(|path| path.to_string_lossy().into_owned()),
         limit: args.limit,
         scope: Some(scope.as_str().to_string()),
+        school_year: Some(school_year.get()),
     };
     let WorkbookReply { path, .. } = live::workbook(Some(origin), workbook).await?;
     println!("workbook\t{path}");

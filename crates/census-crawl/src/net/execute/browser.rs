@@ -86,6 +86,7 @@ impl Fetcher {
         capture: BrowserCapture,
     ) -> Result<FetchOutcome, FetchError> {
         let status = capture.response.status;
+        self.check_capture_response_url(plan, &capture)?;
         self.count_request(plan.host, status).await;
         if let Some(kind) = blocking_kind(status) {
             let retry_after = capture.retry_after_ms.map(|ms| ms / 1_000);
@@ -109,6 +110,34 @@ impl Fetcher {
             }),
             _ => Err(self.status_error(status, plan).await),
         }
+    }
+
+    fn check_capture_response_url(
+        &self,
+        plan: &FetchPlan<'_>,
+        capture: &BrowserCapture,
+    ) -> Result<(), FetchError> {
+        let Some(response_url) = capture.response.response_url.as_deref() else {
+            return Ok(());
+        };
+        if response_url == plan.url {
+            return Ok(());
+        }
+        let final_url = url::Url::parse(response_url).map_err(|source| FetchError::Policy {
+            detail: format!("cannot parse browser capture response URL for admission: {source}"),
+        })?;
+        let original = url::Url::parse(plan.url).map_err(|source| FetchError::Policy {
+            detail: format!("cannot parse original browser URL for admission: {source}"),
+        })?;
+        if !self.destination.permits_redirect(&original, &final_url) {
+            return Err(FetchError::Policy {
+                detail: format!(
+                    "browser capture final URL {} is not admitted for {}",
+                    response_url, plan.url
+                ),
+            });
+        }
+        Ok(())
     }
 }
 

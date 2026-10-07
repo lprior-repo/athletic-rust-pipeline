@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use anyhow::{Context, Result};
+use census_domain::model::GradYear;
 use census_report::export::ExportDataset;
 use census_report::report::Scope;
 use census_report::workbook::publication::verify_for_seal;
@@ -10,10 +11,10 @@ use crate::census::WorkbookCheck;
 pub fn inspect_workbook(
     path: &Path,
     dataset: &ExportDataset,
-    grad_year: i16,
+    cohort: GradYear,
     scope: Scope,
 ) -> Result<WorkbookCheck> {
-    let verified = verify_for_seal(path, dataset, scope, grad_year)
+    let verified = verify_for_seal(path, dataset, scope, cohort)
         .context("verifying the complete current census publication")?;
     Ok(WorkbookCheck {
         sheets: verified.workbook.sheets,

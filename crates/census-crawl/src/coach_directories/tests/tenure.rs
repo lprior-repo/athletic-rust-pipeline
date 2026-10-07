@@ -4,8 +4,8 @@ use crate::net::cache::{content_digest, write_cache, CacheMeta};
 use crate::net::{FetchOptions, Fetcher};
 use crate::{AdapterContext, CrawlError};
 use census_domain::model::{
-    validate_tenure_evidence, CoachContactClaim, CoachContactProgram, CoachTenure, SchoolId,
-    SchoolYear,
+    validate_tenure_evidence, CanonicalCoach, CoachContactClaim, CoachContactProgram, CoachRole,
+    CoachTenure, SchoolId, SchoolYear, SourceRef, TenureAssessmentError,
 };
 use census_store::{Store, Table};
 use std::time::Duration;
@@ -38,6 +38,9 @@ fn emit_listing(body: &[u8]) -> Result<CoachEmission, Box<dyn std::error::Error>
         &content_digest(body),
     )?)
 }
+
+const CURRENT_SHA: &str = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+const FORMER_SHA: &str = "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210";
 
 #[test]
 fn a_listed_head_coach_has_a_page_bound_current_claim_for_the_run_season() -> TestResult {
@@ -78,8 +81,8 @@ fn a_listed_head_coach_has_a_page_bound_current_claim_for_the_run_season() -> Te
 }
 
 #[test]
-fn missing_unknown_and_former_roles_never_emit_current_evidence() -> TestResult {
-    for title in [None, Some(""), Some("Coach"), Some("Former Head Coach")] {
+fn missing_and_unknown_roles_never_emit_current_evidence() -> TestResult {
+    for title in [None, Some(""), Some("Coach")] {
         let body = listing(title, Some("Boys' Cross Country"), Some("ada@school.edu"));
         let emission = emit_listing(&body)?;
         let [coach] = emission.coaches.as_slice() else {
@@ -90,6 +93,104 @@ fn missing_unknown_and_former_roles_never_emit_current_evidence() -> TestResult 
         check!(eq;
             coach.tenure_state(SchoolYear::new(2031).ok_or("run season")?)?,
             CoachTenure::Unknown
+        );
+    }
+    Ok(())
+}
+#[test]
+fn former_roles_emit_former_tenure_evidence() -> TestResult {
+    let body = listing(
+        Some("Former Head Coach"),
+        Some("Boys' Cross Country"),
+        Some("ada@school.edu"),
+    );
+    let emission = emit_listing(&body)?;
+    let [coach] = emission.coaches.as_slice() else {
+        return Err("expected one former coach".into());
+    };
+    check!(eq; coach.role, CoachRole::HeadCoach);
+    let [evidence] = coach.tenure_evidence.as_slice() else {
+        return Err("expected one former tenure evidence".into());
+    };
+    check!(eq; evidence.tenure, CoachTenure::Former { last_school_year: None });
+    let run_year = SchoolYear::new(2031).ok_or("run season")?;
+    check!(eq;
+        coach.tenure_state(run_year)?,
+        CoachTenure::Former { last_school_year: None }
+    );
+    Ok(())
+}
+
+#[test]
+fn a_later_former_capture_keeps_the_appointment_identity_and_its_negative_statement() -> TestResult
+{
+    for (current_title, former_title, program) in [
+        (
+            "Head Coach",
+            "Former Head Coach",
+            Some("Boys' Cross Country"),
+        ),
+        ("Athletic Director", "Former Athletic Director", None),
+    ] {
+        let current = emit_listing(&listing(
+            Some(current_title),
+            program,
+            Some("ada@school.edu"),
+        ))?;
+        let [current_coach] = current.coaches.as_slice() else {
+            return Err("expected the current appointment".into());
+        };
+        let former = emit_listing(&listing(
+            Some(former_title),
+            program,
+            Some("ada@school.edu"),
+        ))?;
+        let [former_coach] = former.coaches.as_slice() else {
+            return Err("expected the former appointment".into());
+        };
+        check!(eq;
+            former_coach.id,
+            current_coach.id,
+            "a former statement must not mint a replacement identity"
+        );
+        let [evidence] = former_coach.tenure_evidence.as_slice() else {
+            return Err("expected the negative statement".into());
+        };
+        check!(eq; evidence.tenure, CoachTenure::Former { last_school_year: None });
+        check!(eq; validate_tenure_evidence(evidence), Ok(()));
+        check!(eq;
+            emit_listing(&listing(Some(former_title), program, Some("ada@school.edu")))?.coaches,
+            former.coaches,
+            "an unchanged replay must produce the same rows"
+        );
+        let root = tempfile::tempdir()?;
+        let store = Store::open(root.path().join("store"))?;
+        store.append_many(Table::Coaches, &current.coaches)?;
+        store.append_many(Table::Coaches, &former.coaches)?;
+        let stored = store.scan::<CanonicalCoach>(Table::Coaches)?;
+        let [merged] = stored.as_slice() else {
+            return Err("both captures must merge into one appointment identity".into());
+        };
+        check!(eq; merged.id, current_coach.id);
+        let mut tenures: Vec<CoachTenure> = merged
+            .tenure_evidence
+            .iter()
+            .map(|evidence| evidence.tenure)
+            .collect();
+        tenures.sort_by_key(|tenure| format!("{tenure:?}"));
+        let mut expected = vec![
+            CoachTenure::Current {
+                school_year: SchoolYear::new(2031).ok_or("run season")?,
+            },
+            CoachTenure::Former {
+                last_school_year: None,
+            },
+        ];
+        expected.sort_by_key(|tenure| format!("{tenure:?}"));
+        check!(eq;
+            tenures,
+            expected,
+            "the current claim and the later negative statement are both retained"
         );
     }
     Ok(())
@@ -117,12 +218,35 @@ fn a_school_scoped_director_claim_names_the_school_athletics_program() -> TestRe
     check!(evidence.statement.contains("Athletic Director"));
     check!(evidence.statement.contains("Test High School"));
     check!(evidence.statement.contains("athletics"));
-    let former = emit_listing(&listing(
+    Ok(())
+}
+#[test]
+fn a_former_athletic_director_is_included_in_the_ad_lane_with_former_tenure() -> TestResult {
+    let body = listing(
         Some("Former Athletic Director"),
         None,
         Some("ada@school.edu"),
-    ))?;
-    check!(eq; former.coaches, []);
+    );
+    let emission = emit_listing(&body)?;
+    let [coach] = emission.coaches.as_slice() else {
+        return Err("expected one former director".into());
+    };
+    check!(eq; coach.role, CoachRole::AthleticDirector);
+    let [evidence] = coach.tenure_evidence.as_slice() else {
+        return Err("expected one former director tenure evidence".into());
+    };
+    check!(eq; evidence.tenure, CoachTenure::Former { last_school_year: None });
+    check!(eq;
+        evidence.claim,
+        Some(CoachContactClaim {
+            coach: coach.id.clone(), school: coach.school.clone(), role: CoachRole::AthleticDirector,
+            program: CoachContactProgram::SchoolAthletics,
+            mailbox: Some("ada@school.edu".to_string()),
+        })
+    );
+    check!(evidence.statement.contains("Former Athletic Director"));
+    check!(evidence.statement.contains("Test High School"));
+    check!(evidence.statement.contains("athletics"));
     Ok(())
 }
 
@@ -155,6 +279,12 @@ fn a_coaching_role_without_a_team_cannot_assert_current_tenure() -> TestResult {
     let body = listing(Some("Head Coach"), None, Some("ada@school.edu"));
     let emission = emit_listing(&body)?;
     check!(eq; emission.coaches, []);
+    let former = emit_listing(&listing(
+        Some("Former Head Coach"),
+        None,
+        Some("ada@school.edu"),
+    ))?;
+    check!(eq; former.coaches, []);
     Ok(())
 }
 
@@ -289,4 +419,254 @@ fn the_production_collector_persists_the_run_season_and_actual_summary_capture_c
         check!(eq; evidence.claim.as_ref().ok_or("bound claim")?.mailbox.as_deref(), Some("ada@school.edu"));
         Ok(())
     })
+}
+#[test]
+fn a_coach_with_conflicting_current_and_former_ad_evidence_yields_conflict() -> TestResult {
+    let run_year = SchoolYear::new(2031).ok_or("valid run school year")?;
+    let school = SchoolId::mint("sch", &["test high school"]);
+    let mut coach = census_domain::model::CanonicalCoach::new(
+        &school,
+        "Ada Lovelace",
+        None,
+        census_domain::model::Gender::Mixed,
+        CoachRole::AthleticDirector,
+    );
+    let current = census_domain::model::CoachTenureEvidence {
+        tenure: CoachTenure::Current {
+            school_year: run_year,
+        },
+        source: SourceRef::new(SOURCE_ID, Some("https://current.example".to_string())),
+        source_sha256: CURRENT_SHA.to_string(),
+        retrieved_at: "2026-01-01T00:00:00Z".to_string(),
+        statement: "Current appointment.".to_string(),
+        claim: Some(CoachContactClaim {
+            coach: coach.id.clone(),
+            school: school.clone(),
+            role: CoachRole::AthleticDirector,
+            program: census_domain::model::CoachContactProgram::SchoolAthletics,
+            mailbox: None,
+        }),
+    };
+    coach.tenure_evidence.push(current);
+    let former = census_domain::model::CoachTenureEvidence {
+        tenure: CoachTenure::Former {
+            last_school_year: None,
+        },
+        source: SourceRef::new(SOURCE_ID, Some("https://former.example".to_string())),
+        source_sha256: FORMER_SHA.to_string(),
+        retrieved_at: "2026-01-01T00:00:00Z".to_string(),
+        statement: "Former appointment.".to_string(),
+        claim: Some(CoachContactClaim {
+            coach: coach.id.clone(),
+            school: school.clone(),
+            role: CoachRole::AthleticDirector,
+            program: census_domain::model::CoachContactProgram::SchoolAthletics,
+            mailbox: None,
+        }),
+    };
+    coach.tenure_evidence.push(former);
+    match coach.tenure_state(run_year) {
+        Err(TenureAssessmentError::Conflict) => {}
+        other => {
+            return Err(format!("expected Conflict, got {other:?}").into());
+        }
+    }
+    Ok(())
+}
+#[test]
+fn an_explicit_old_year_in_the_title_cannot_qualify_as_current() -> TestResult {
+    let body = listing(
+        Some("2024-2025 Head Coach"),
+        Some("Boys' Cross Country"),
+        Some("ada@school.edu"),
+    );
+    let emission = emit_listing(&body)?;
+    let [coach] = emission.coaches.as_slice() else {
+        return Err("expected one coach".into());
+    };
+    let [evidence] = coach.tenure_evidence.as_slice() else {
+        return Err("expected one tenure evidence".into());
+    };
+    check!(eq;
+        evidence.tenure,
+        CoachTenure::Former {
+            last_school_year: Some(SchoolYear::new(2024).ok_or("valid school year")?)
+        }
+    );
+    let run_year = SchoolYear::new(2031).ok_or("valid run school year")?;
+    check!(eq;
+        coach.tenure_state(run_year)?,
+        CoachTenure::Former {
+            last_school_year: Some(SchoolYear::new(2024).ok_or("valid school year")?)
+        }
+    );
+    Ok(())
+}
+
+#[test]
+fn an_explicit_matching_year_in_the_title_qualifies_as_current() -> TestResult {
+    let body = listing(
+        Some("2031-2032 Head Coach"),
+        Some("Boys' Cross Country"),
+        Some("ada@school.edu"),
+    );
+    let emission = emit_listing(&body)?;
+    let [coach] = emission.coaches.as_slice() else {
+        return Err("expected one coach".into());
+    };
+    let [evidence] = coach.tenure_evidence.as_slice() else {
+        return Err("expected one tenure evidence".into());
+    };
+    let year = SchoolYear::new(2031).ok_or("valid run school year")?;
+    check!(eq; evidence.tenure, CoachTenure::Current { school_year: year });
+    check!(eq; coach.tenure_state(year)?, CoachTenure::Current { school_year: year });
+    Ok(())
+}
+
+#[test]
+fn an_explicit_future_year_in_the_title_cannot_qualify_as_current() -> TestResult {
+    let body = listing(
+        Some("2035 Head Coach"),
+        Some("Boys' Cross Country"),
+        Some("ada@school.edu"),
+    );
+    let emission = emit_listing(&body)?;
+    let [coach] = emission.coaches.as_slice() else {
+        return Err("expected one coach".into());
+    };
+    let [evidence] = coach.tenure_evidence.as_slice() else {
+        return Err("expected one tenure evidence".into());
+    };
+    check!(eq;
+        evidence.tenure,
+        CoachTenure::Former {
+            last_school_year: Some(SchoolYear::new(2035).ok_or("valid stated school year")?)
+        },
+        "a stated future season is retained on the evidence and cannot assert an appointment"
+    );
+    let run_year = SchoolYear::new(2031).ok_or("valid run school year")?;
+    check!(eq; coach.tenure_state(run_year)?, CoachTenure::Unknown);
+    Ok(())
+}
+
+#[test]
+fn a_yearless_title_still_applies_the_run_season() -> TestResult {
+    let body = listing(
+        Some("Head Coach"),
+        Some("Boys' Cross Country"),
+        Some("ada@school.edu"),
+    );
+    let emission = emit_listing(&body)?;
+    let [coach] = emission.coaches.as_slice() else {
+        return Err("expected one coach".into());
+    };
+    let [evidence] = coach.tenure_evidence.as_slice() else {
+        return Err("expected one tenure evidence".into());
+    };
+    let year = SchoolYear::new(2031).ok_or("valid run school year")?;
+    check!(eq; evidence.tenure, CoachTenure::Current { school_year: year });
+    check!(eq; coach.tenure_state(year)?, CoachTenure::Current { school_year: year });
+    Ok(())
+}
+
+#[test]
+fn a_year_in_the_program_field_overrides_a_yearless_title() -> TestResult {
+    let body = listing(
+        Some("Head Coach"),
+        Some("Boys' 2024-2025 Cross Country"),
+        Some("ada@school.edu"),
+    );
+    let emission = emit_listing(&body)?;
+    let [coach] = emission.coaches.as_slice() else {
+        return Err("expected one coach".into());
+    };
+    let [evidence] = coach.tenure_evidence.as_slice() else {
+        return Err("expected one tenure evidence".into());
+    };
+    check!(eq;
+        evidence.tenure,
+        CoachTenure::Former {
+            last_school_year: Some(SchoolYear::new(2024).ok_or("valid school year")?)
+        }
+    );
+    let run_year = SchoolYear::new(2031).ok_or("valid run school year")?;
+    check!(eq;
+        coach.tenure_state(run_year)?,
+        CoachTenure::Former {
+            last_school_year: Some(SchoolYear::new(2024).ok_or("valid school year")?)
+        }
+    );
+    Ok(())
+}
+#[test]
+fn a_coach_with_conflicting_current_and_former_evidence_yields_conflict() -> TestResult {
+    let run_year = SchoolYear::new(2031).ok_or("valid run school year")?;
+    let school = SchoolId::mint("sch", &["test high school"]);
+    let mut coach = census_domain::model::CanonicalCoach::new(
+        &school,
+        "Ada Lovelace",
+        None,
+        census_domain::model::Gender::Mixed,
+        CoachRole::HeadCoach,
+    );
+    let current = census_domain::model::CoachTenureEvidence {
+        tenure: CoachTenure::Current {
+            school_year: run_year,
+        },
+        source: SourceRef::new(SOURCE_ID, Some("https://current.example".to_string())),
+        source_sha256: CURRENT_SHA.to_string(),
+        retrieved_at: "2026-01-01T00:00:00Z".to_string(),
+        statement: "Current appointment.".to_string(),
+        claim: None,
+    };
+    coach.tenure_evidence.push(current);
+    let former = census_domain::model::CoachTenureEvidence {
+        tenure: CoachTenure::Former {
+            last_school_year: Some(SchoolYear::new(2025).ok_or("valid former year")?),
+        },
+        source: SourceRef::new(SOURCE_ID, Some("https://former.example".to_string())),
+        source_sha256: FORMER_SHA.to_string(),
+        retrieved_at: "2026-01-01T00:00:00Z".to_string(),
+        statement: "Former appointment.".to_string(),
+        claim: None,
+    };
+    coach.tenure_evidence.push(former);
+    match coach.tenure_state(run_year) {
+        Err(TenureAssessmentError::Conflict) => {}
+        other => {
+            return Err(format!("expected Conflict, got {other:?}").into());
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn a_coach_with_only_former_evidence_yields_former() -> TestResult {
+    let run_year = SchoolYear::new(2031).ok_or("valid run school year")?;
+    let school = SchoolId::mint("sch", &["test high school"]);
+    let mut coach = census_domain::model::CanonicalCoach::new(
+        &school,
+        "Ada Lovelace",
+        None,
+        census_domain::model::Gender::Mixed,
+        CoachRole::HeadCoach,
+    );
+    let former = census_domain::model::CoachTenureEvidence {
+        tenure: CoachTenure::Former {
+            last_school_year: Some(SchoolYear::new(2025).ok_or("valid former year")?),
+        },
+        source: SourceRef::new(SOURCE_ID, Some("https://former.example".to_string())),
+        source_sha256: FORMER_SHA.to_string(),
+        retrieved_at: "2026-01-01T00:00:00Z".to_string(),
+        statement: "Former appointment.".to_string(),
+        claim: None,
+    };
+    coach.tenure_evidence.push(former);
+    check!(eq;
+        coach.tenure_state(run_year)?,
+        CoachTenure::Former {
+            last_school_year: Some(SchoolYear::new(2025).ok_or("valid former year")?)
+        }
+    );
+    Ok(())
 }

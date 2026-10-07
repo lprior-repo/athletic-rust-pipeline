@@ -30,6 +30,7 @@ impl Store {
             to: to.display().to_string(),
             files: copied.files,
             bytes: copied.bytes,
+            links: copied.links,
             tables,
             elapsed_ms: start
                 .elapsed()

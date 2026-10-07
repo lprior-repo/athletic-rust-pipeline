@@ -172,6 +172,8 @@ fn run_cycle(store: &Path, out: &Path) -> std::io::Result<std::process::Output> 
         .arg("run")
         .arg("--grad-year")
         .arg("2027")
+        .arg("--school-year")
+        .arg("2025")
         .arg("--out")
         .arg(out)
         .arg("--store")

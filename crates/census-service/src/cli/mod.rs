@@ -27,6 +27,7 @@ mod verify;
 mod verify_coaches;
 use anyhow::{Context, Result};
 use census_crawl::net::Fetcher;
+use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use census_report::report;
 use census_service::ingress;
@@ -206,6 +207,18 @@ pub(super) fn scope_of(core: bool) -> report::Scope {
 pub(super) fn school_year(grad_year: u16) -> Result<i16> {
     i16::try_from(grad_year)
         .with_context(|| format!("--grad-year {grad_year} is not a representable year"))
+}
+
+pub(super) fn contact_school_year(year: u16) -> Result<SchoolYear> {
+    let year = i16::try_from(year)
+        .with_context(|| format!("--school-year {year} is not representable"))?;
+    SchoolYear::new(year).ok_or_else(|| {
+        anyhow::anyhow!(
+            "--school-year {year} is outside {}..={}",
+            SchoolYear::MIN_START_YEAR,
+            SchoolYear::MAX_START_YEAR
+        )
+    })
 }
 
 pub(super) fn resolve_states(

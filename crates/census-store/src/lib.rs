@@ -5,6 +5,7 @@
 #[path = "../../../tools/fallible_checks.rs"]
 mod fallible_checks;
 
+use census_domain::model::RunManifest;
 use fjall::{Database, Keyspace, KeyspaceCreateOptions, PersistMode};
 use serde::Serialize;
 use std::path::{Path, PathBuf};
@@ -24,14 +25,17 @@ mod entities;
 mod error;
 mod fence;
 mod format;
+pub mod fs;
 mod generation;
 mod identity;
 mod inspect;
+mod journal;
 mod keys;
 mod meta;
 pub mod read;
 mod receipt;
 mod rows;
+mod run;
 mod sequences;
 mod table;
 mod write;
@@ -83,9 +87,9 @@ pub struct Store {
 }
 
 fn ensure_dirs(root: &Path) -> StoreResult<()> {
-    for sub in ["http", "out"] {
+    for sub in ["fjall", "http", "out"] {
         let dir = root.join(sub);
-        std::fs::create_dir_all(&dir).map_err(|source| StoreError::Io {
+        crate::fs::create_dir_all_synced(&dir).map_err(|source| StoreError::Io {
             path: dir.clone(),
             source,
         })?;
@@ -151,6 +155,14 @@ impl Store {
             .map_err(|source| StoreError::Flush { source })
     }
 
+    pub fn run_manifest(&self) -> StoreResult<Option<RunManifest>> {
+        run::read(self)
+    }
+
+    pub fn bind_run(&self, manifest: &RunManifest) -> StoreResult<()> {
+        run::write(self, manifest)
+    }
+
     pub fn snapshot(&self) -> StoreSnapshot<'_> {
         StoreSnapshot::new(
             self.db.snapshot(),
@@ -180,6 +192,8 @@ impl Store {
 #[cfg(test)]
 #[path = "backup_tests.rs"]
 mod backup_tests;
+#[cfg(test)]
+mod fs_tests;
 #[cfg(all(feature = "loom", test))]
 mod loom_tests;
 #[cfg(test)]

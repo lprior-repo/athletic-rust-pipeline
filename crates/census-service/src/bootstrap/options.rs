@@ -172,8 +172,18 @@ fn browser_on_path(path: Option<&OsStr>) -> Option<PathBuf> {
         .map(|dir| dir.join(DEFAULT_BROWSER_EXECUTABLE))
         .find(|candidate| candidate.is_absolute() && candidate.is_file())
 }
-
 fn lane_origin() -> Result<Url, BootstrapError> {
+    #[cfg(feature = "native-fault-injection")]
+    if let Ok(override_origin) = std::env::var("CENSUS_BROWSER_SOURCE_ORIGIN") {
+        if !override_origin.is_empty() {
+            return Url::parse(&override_origin).map_err(|source| {
+                BootstrapError::LaneOriginUnusable {
+                    origin: override_origin,
+                    source,
+                }
+            });
+        }
+    }
     Url::parse(LANE_ORIGIN).map_err(|source| BootstrapError::LaneOriginUnusable {
         origin: LANE_ORIGIN.to_string(),
         source,

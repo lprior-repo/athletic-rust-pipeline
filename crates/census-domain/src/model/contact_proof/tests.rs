@@ -296,3 +296,25 @@ fn too_many_claims_rejected() -> Result<(), Box<dyn std::error::Error>> {
     }
     Ok(())
 }
+
+#[test]
+fn a_claim_that_disagrees_with_the_row_does_not_bind() -> Result<(), Box<dyn std::error::Error>> {
+    let row = make_valid_coach_row();
+    let claims = make_valid_claims(&row, "2025-02-01T00:00:00Z");
+    let email_claim = claims
+        .iter()
+        .find(|claim| claim.field == ContactProofField::PublicProfessionalEmail)
+        .ok_or("fixture carries an email claim")?
+        .clone();
+    check!(super::claim_binds_to_row(&row, &email_claim));
+    let mut emailless = row.clone();
+    emailless.public_professional_email = String::new();
+    check!(!super::claim_binds_to_row(&emailless, &email_claim));
+    let mut stale = email_claim.clone();
+    stale.claimed_observed_on = "2025-01-14".to_string();
+    check!(!super::claim_binds_to_row(&row, &stale));
+    let mut foreign = email_claim;
+    foreign.source_url = "https://example.com/other".to_string();
+    check!(!super::claim_binds_to_row(&row, &foreign));
+    Ok(())
+}

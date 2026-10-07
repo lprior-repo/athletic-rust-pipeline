@@ -21,8 +21,8 @@ if ! unshare --user --map-root-user --mount --pid --fork --propagation private t
 fi
 mkdir -p "$SCRATCH_STORE"
 SCRATCH_STORE="$(cd "$SCRATCH_STORE" && pwd)"
-TEST_DIR="$(mktemp -d "$SCRATCH_STORE/restate-enospc-XXXXXX")"
-trap 'rm -rf -- "$TEST_DIR"' EXIT
+TEST_DIR="$(mktemp -d "$SCRATCH_STORE/scenario-10-XXXXXX")"
+echo "EVIDENCE: $TEST_DIR"
 read -r ADMIN_PORT INGRESS_PORT NODE_PORT SERVE_PORT < <(python3 -c '
 import socket
 sockets = [socket.socket() for _ in range(4)]

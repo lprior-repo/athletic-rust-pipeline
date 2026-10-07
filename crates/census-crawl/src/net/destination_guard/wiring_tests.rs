@@ -183,7 +183,7 @@ fn a_same_host_redirect_is_followed_and_a_local_hop_is_refused() -> TestResult {
                     .err()
                     .ok_or("unlisted hop followed")?;
                 check!(
-                    matches!(&error, FetchError::Transport { source, .. } if source.is_redirect()),
+                    matches!(&error, FetchError::Policy { detail } if detail.contains("bypasses admission")),
                     "{error:?}"
                 );
                 Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())

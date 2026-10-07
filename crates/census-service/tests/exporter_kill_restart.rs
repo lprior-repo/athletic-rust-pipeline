@@ -178,6 +178,8 @@ fn spawn_workbook(data_dir: &Path, out_path: &Path) -> TestResult<ChildGuard> {
         .arg("workbook")
         .arg("--grad-year")
         .arg("2027")
+        .arg("--school-year")
+        .arg("2025")
         .arg("--out")
         .arg(out_path)
         .arg("--store")

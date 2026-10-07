@@ -6,7 +6,7 @@ use census_store::Store;
 use serde::Serialize;
 
 use super::lanes::build_lane_evidence;
-use super::{process, Counters, JoinError, JoinReport, LaneEvidence, Mode, OutcomeRow, Overrides};
+use super::{process, Counters, JoinError, JoinReport, LaneSet, Mode, OutcomeRow, Overrides};
 use crate::school_address::{verify_current, Report, VerifiedGeneration};
 
 #[derive(Serialize)]
@@ -15,7 +15,7 @@ struct ReportFile<'a> {
     generation: String,
     manifest_digest: &'a str,
     now: &'a Option<String>,
-    lanes: &'a std::collections::BTreeMap<String, LaneEvidence>,
+    lanes: &'a LaneSet,
     counters: &'a Counters,
 }
 
@@ -30,7 +30,7 @@ pub fn join_generation(
     let generation = verify_current(generation_dir)?;
     let entries: Vec<SchoolDirectoryEntry> = parse_artifact(&generation, "school_directory.json")?;
     let report: Report = parse_artifact(&generation, "pipeline_report.json")?;
-    let lanes = build_lane_evidence(&report, &overrides);
+    let lanes = build_lane_evidence(&report, &overrides)?;
     let index = census_domain::school_directory::DirectoryIndex::build(&entries);
     let (counters, outcomes) = process(store, &index, &lanes, mode)?;
 

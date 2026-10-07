@@ -209,14 +209,10 @@ fn queue_row(id: &str, subject: String, detail: String) -> QueueRow {
     }
 }
 
-pub fn retained_records(dataset: &crate::export::ExportDataset) -> ReportResult<RetainedRecords> {
-    let generated_on = &dataset.lineage.generated_on;
-    let school_year =
-        census_domain::model::SchoolYear::from_date(generated_on).ok_or_else(|| {
-            crate::report::ReportError::Invariant {
-                detail: format!("cannot determine contact school year from {generated_on}"),
-            }
-        })?;
+pub fn retained_records(
+    dataset: &crate::export::ExportDataset,
+    school_year: census_domain::model::SchoolYear,
+) -> ReportResult<RetainedRecords> {
     let derivation = crate::report::Derivation::of(dataset, Scope::AllSources, None);
     let rows = StoreRows::of(&derivation, school_year)?;
     let cohort = cohort_of(dataset, Scope::AllSources);

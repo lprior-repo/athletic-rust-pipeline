@@ -243,7 +243,7 @@ instrumentation; no shared workstation reboot, host clock change or shared GPU-s
 | S12 | `9bk` | Actual isolated midnight crossing with stable run semantics |
 | S13 | `lie` | Owned proxy around real model HTTP and advice-persistence crashes |
 | S14 | `3as` | Each unmet seal item and interrupted publication promotion |
-| S15 | `66h` | Nonempty cold backup/restore, corruption and interrupted destinations |
+| S15 | `66h` | Nonempty cold backup/restore on a store that has published (`out/publication/current` present), corruption and interrupted destinations |
 | S16 | `5gn` | Real frozen capture/advice replay, quarantine and interrupted export |
 | S17 | `6gg` | Reached in-flight worker batch and deterministic partial-page chunks |
 

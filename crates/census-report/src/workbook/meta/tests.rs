@@ -364,9 +364,11 @@ fn unsupported_graduation_cases_are_retained_in_review_without_a_canonical_athle
     let path = crate::workbook::build(
         &store,
         &crate::workbook::Options {
+            grad_year: Some(2027),
             out: Some(dir.path().join("unsupported-cohort.xlsx")),
-            school_year: SchoolYear::new(2026),
-            ..crate::workbook::Options::default()
+            limit: None,
+            scope: crate::report::Scope::AllSources,
+            school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
         },
     )?;
 
@@ -425,9 +427,11 @@ fn school_link_cases_are_retained_in_review_until_a_verdict_answers_them() -> Te
     let path = crate::workbook::build(
         &store,
         &crate::workbook::Options {
+            grad_year: Some(2027),
             out: Some(dir.path().join("school-links.xlsx")),
-            school_year: SchoolYear::new(2026),
-            ..crate::workbook::Options::default()
+            limit: None,
+            scope: crate::report::Scope::AllSources,
+            school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
         },
     )?;
 

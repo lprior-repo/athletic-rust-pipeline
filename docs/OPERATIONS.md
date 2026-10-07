@@ -166,12 +166,18 @@ association lanes do not cover. The queue is JSONL with `state`, `name` and `web
 the NCES-recovered website queues under `var/school-site-wave4-*` and the school-address corpus are
 its inputs — and `state` accepts a code or a full jurisdiction name.
 
-The verb opens the store for its HTTP cache only (no Fjall writes) and writes three artifacts under
+The verb opens the store for its HTTP cache only (no Fjall writes) and writes four artifacts under
 `<store>/out/school-sites`: one `<STATE>__<school-slug>.json` per site holding the raw signals plus
 an evidence record (`url`, content digest, `fetched_at`, status) for every fetched page, one
-`fragments/<STATE>.csv` in the twelve-column contact lane shape, and `report.json`. Existing site
-artifacts are resumed and skipped; `--refresh` refetches and rewrites them. `--sample` and `--limit`
-narrow the run, and `--state` supplies a jurisdiction for queue records that carry none.
+`site-rows/<site-key>.csv` holding that site's contact-lane rows, one `fragments/<STATE>.csv` in the
+twelve-column contact lane shape, and `report.json`. A site is resumed only when its artifact *and*
+its recovered row file exist; an artifact without its rows is crawled again rather than skipped,
+because a crash between the two writes would otherwise lose the site from the projection forever.
+`--refresh` refetches and rewrites both. `fragments/<STATE>.csv` is republished as the sorted union
+of every per-site row file under `site-rows/`, so resuming a queue — including one that gained a
+school in a state an earlier run already covered — never drops or replaces rows captured earlier.
+`--sample` and `--limit` narrow the run, and `--state` supplies a jurisdiction for queue records
+that carry none.
 
 School sites redirect across origins constantly (`http` to `https`, apex to `www`, a school host to
 its district or platform host), so a run that intends to follow them passes
@@ -186,11 +192,20 @@ client-side therefore yields no coach rows, and the gate labels any candidate ro
 
 Fragments are candidates, not contacts: `verified_proof_digest` stays empty until `verify-coaches`
 re-fetches each row's `source_url` and writes the proof. Nothing the crawl writes is accepted into
-the census on its own. `--union <dir>` stages the verified rows as one `<ST>.csv` per state beside
-its `<ST>.csv.evidence.jsonl` claim sidecar; `merge-coaches --fragments <dir>` consumes exactly that
+the census on its own. A coach name is only verified on a span that carries its program, its school
+name and its state; an athletic-director name is verified under the same institution and
+jurisdiction binding, so a director certified for one school cannot be proven from a page naming
+another school or state. A span that marks the appointment `former`, `not current` or `no longer`
+— for a coach or a director — contributes no claim at all and marks the row contradicted, which
+withholds it from the union. `--union <dir>` stages the verified rows as one `<ST>.csv` per state
+beside its `<ST>.csv.evidence.jsonl` claim sidecar; `merge-coaches --fragments <dir>` consumes exactly that
 staging shape and publishes `<out>` with `<out>.evidence.jsonl` for the rows it kept, carrying their
 claims verbatim (the proof digest covers the claim sequence, so a repeated claim is preserved rather
-than deduplicated). A fragment whose sidecar is missing is refused rather than merged, and
+than deduplicated). Every kept row is validated before publication against the claims that bind to it
+and against its recorded digest, so an absent, empty, truncated or mismatched proof — and any edited
+school, role, sport, name, mailbox, source URL, observation date or digest cell — rejects that row;
+the report names each rejection and its reason. A fragment whose sidecar is missing is refused
+rather than merged, and
 `verify-coaches --reconcile <csv>` recomputes each published row's proof from that sidecar, so a
 merged product is only accepted when
 its digests still match the verified claims.
@@ -450,6 +465,20 @@ target/moon-portable/x86_64-unknown-linux-gnu/release/census-service --store var
   --evidence-date nces-ccd=YYYY-MM-DD --evidence-date nces-pss=YYYY-MM-DD
 ```
 
+A provider read from more than one capture needs per-capture attribution, and every generation
+records it: each lane in `pipeline_report.json` carries the source keys (`captured`) that its own
+capture holds, and a claim is credited only to the capture holding the matched key. Give each of a
+provider's captures its own URL with `--evidence-url <provider>@<capture path>=<URL>` (the lane's
+path as recorded in the report; `<provider>` alone still applies one URL to every capture of that
+provider, and `--evidence-date` stays provider-wide). A selector naming no capture in the
+generation is refused before anything is written. A school whose key several captures hold is
+`refused` — the row names every candidate path, and the remedy is one capture per school — and a
+school no capture holds is `evidence_missing`; neither case names a capture that does not carry the
+school, so a generation published before `captured` existed refuses a multi-capture provider
+instead of guessing, and rebuilding it from the same captures restores the links. The keys add
+6.8 MB to the 122 692-entry report above (0.3 MB → 6.8 MB; the corpus itself is 83.8 MB), because
+per-capture keys, not whole entries, are what naming a claim's bytes costs.
+
 The durable lane is the `SchoolAddressJoin` workflow (Restate service `SchoolAddressJoin`, key
 `<run identity>:school-address-join`). The national workflow invokes it after the jurisdiction
 census and consolidation and before workbook publication, carrying `--evidence-*` equivalents in
@@ -462,15 +491,20 @@ curl -s -X POST "http://127.0.0.1:<ingress>/SchoolAddressJoin/<key>/run" \
 ```
 
 Both lanes write `<store>/out/school-address-join/report.json` (mode, generation path, manifest
-digest, per-lane evidence, and the counters `scanned`, `linked`, `already_linked`, `websites`,
-`review`, `no_match`, `refused`, `evidence_missing`, `missing_state`, `review_filed`,
+digest, per-lane evidence, and the counters `scanned`, `linked`, `already_linked`, `backfilled`,
+`websites`, `review`, `no_match`, `refused`, `evidence_missing`, `missing_state`, `review_filed`,
 `review_present`, `co_op_members`, `co_op_declined` plus the per-rule counters) and
 `outcomes.jsonl` (one row per school: outcome, rule or reason, candidate labels). Under `--apply`
 an ambiguous tie files one `ReviewCase` under the `School identity` family carrying both candidate
 labels and the lane providers (`review_filed`); a
 replay that finds it already durable counts `review_present` and appends nothing, and a dry run
-files nothing. An already-owned identical claim is `already_linked` and appends nothing, so a
-replayed apply over the same generation is safe after a restart. A matched CCD entry whose website
+files nothing. An identity the school already owns is `already_linked`, and the matched capture is
+still applied: an already-owned record that lacks the claim gains it, a claim for a different
+address or a different capture appends beside the earlier one, and a record that gains any of those
+distinct observations (claim, website or lane evidence) counts `backfilled`. An identical replay of
+the same capture appends nothing (`already_linked`, `backfilled` 0), so a replayed apply over the
+same generation is safe after a restart, while rebuilding the corpus from the same captures — a
+different generation digest — re-presents each school as a new observation and is retained. A matched CCD entry whose website
 is an http(s) URL and whose school publishes none attaches it to `CanonicalSchool.school_website`
 (counted as `websites`, rendered by the workbook's `School site` column) with the same lane evidence
 note; a school that already publishes a website is not rewritten, and an unusable `WEBSITE` cell
@@ -499,9 +533,18 @@ independent live-store reads. Review decisions must be applied before capture. R
 job reuses its archived input; source advancement refuses that input rather than silently
 recapturing it. A changed input requires a new logical export, for example a new publication root.
 Returning an existing capture also synchronizes its archive directory, so retry success cannot
-skip a previously failed directory-durability step.
-An explicit offline `index` still re-derives mutable projections; those separately replaced tables
-are not the workbook's publication boundary and are not a prerequisite for retained-data export.
+skip a previously failed directory-durability step. A fresh publication root, a fresh
+`<store>/out/export-inputs` archive and any fresh output directory create every missing ancestor and
+fsync each newly created directory's parent before the verb acknowledges success, so a reboot cannot
+drop the new directory entry; [FJALL_BACKUP.md](FJALL_BACKUP.md) states the filesystem requirement
+for directory fsync.
+
+An explicit offline `index --store <dir> --school-year <yyyy>` still re-derives mutable projections;
+those separately replaced tables are not the workbook's publication boundary and are not a
+prerequisite for retained-data export. The index verb requires the run's contact school year
+explicitly, like `workbook`: the retained conflict and review queues assess coach tenure and contact
+claims against that season, so a queue row always reflects the run being indexed and never the
+calendar date the index happens to run on.
 
 Retained mark normalization is a separate, explicit offline operation, never a new scrape. Stop the
 store owner, cold-back up and restore into a new root under [FJALL_BACKUP.md](FJALL_BACKUP.md), then:
@@ -564,6 +607,17 @@ inventory, and compares every workbook row/cell and JSON/JSONL/CSV sidecar recor
 the serving store, sample, stride or impose the former 5,000-sample ceiling. It can therefore run
 beside the store owner. Historical loose workbooks without a complete manifest are not certified;
 preserve them and publish a new generation instead of editing old evidence.
+
+A store admits exactly one census run. National submission binds a run manifest — store identity,
+season, revision, the Class-of-2027 cohort and the admitted jurisdiction scope — through the
+`Census.bind_run` handler before any jurisdiction fans out, and a store already bound to another
+run refuses terminally instead of adopting it. The binding lives in the store and survives restart.
+The publication's lineage carries that manifest, so a seal measures the same run it certifies: a
+journal measured for one season/revision cannot certify a publication of another, and a route that
+measured no journal names the run binding as an unmet item instead of defaulting it. The contact
+school year must be the run's own. Only the Class-of-2027 cohort seals at all; any other
+`--grad-year` is refused at the boundary before a journal or a workbook is read, whether the request
+arrives through the CLI or the ingress.
 
 Seal uses the same complete bundle oracle, refuses limited/non-Class-of-2027 or stale-source
 publications, and fences the live source before atomically recording `out/seal.json`. Supply the

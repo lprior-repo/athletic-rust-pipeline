@@ -1,13 +1,15 @@
 mod judge;
 mod load;
 mod patterns;
+mod proof;
 mod report;
 use anyhow::{bail, Context, Result};
-use census_domain::model::{
-    ContactClaimEvidence, RawContactRow, CONTACT_COLUMNS, CONTACT_PROOF_COLUMN,
-};
+use census_domain::model::{CONTACT_COLUMNS, CONTACT_PROOF_COLUMN};
 use clap::Args;
 use load::load_rows;
+#[cfg(test)]
+use proof::raw_contact_row;
+use proof::{read_fragment_claims, verify_kept_proofs};
 use report::print_report;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -80,8 +82,9 @@ pub(super) fn run_merge_coaches(args: &MergeCoachesArgs) -> Result<()> {
         bail!("no fragment directory {}", args.fragments.display());
     }
     let csv_files = collect_csv_files(&args.fragments)?;
-    let pass = process_files(&csv_files)?;
-    let evidence = collect_merged_evidence(&pass.kept, &csv_files)?;
+    let mut pass = process_files(&csv_files)?;
+    let claims_by_file = read_fragment_claims(&csv_files)?;
+    let evidence = verify_kept_proofs(&mut pass, &claims_by_file);
     write_merged_csv(&pass.kept, args)?;
     census_store::read::write_snapshot_rows(
         &census_service::coachverify::evidence_path(&args.out),
@@ -101,9 +104,16 @@ pub(super) fn run_merge_coaches(args: &MergeCoachesArgs) -> Result<()> {
 #[derive(Default)]
 struct MergePass {
     kept: KeptRows,
+    origins: BTreeMap<RowKey, KeptOrigin>,
     per_state: BTreeMap<String, StateCounts>,
     rejects: Vec<Rejection>,
     broken: Vec<(String, String)>,
+}
+
+#[derive(Debug, Clone)]
+struct KeptOrigin {
+    file: PathBuf,
+    line_no: usize,
 }
 
 fn process_files(csv_files: &[PathBuf]) -> Result<MergePass> {
@@ -142,14 +152,20 @@ fn process_files(csv_files: &[PathBuf]) -> Result<MergePass> {
                 continue;
             }
             let key = row.dedupe_key();
+            let origin = KeptOrigin {
+                file: path.clone(),
+                line_no,
+            };
             if !pass.kept.contains_key(&key) {
-                pass.kept.insert(key, row);
+                pass.kept.insert(key.clone(), row);
+                pass.origins.insert(key, origin);
                 counts.kept = counts.kept.saturating_add(1);
             } else {
                 counts.duplicates = counts.duplicates.saturating_add(1);
                 if let Some(existing) = pass.kept.get(&key) {
                     if pick_richer(&row, existing) {
-                        pass.kept.insert(key, row);
+                        pass.kept.insert(key.clone(), row);
+                        pass.origins.insert(key, origin);
                     }
                 }
             }
@@ -225,49 +241,6 @@ fn write_merged_body(
             path: published.to_path_buf(),
             source,
         })
-}
-
-fn collect_merged_evidence(
-    kept: &KeptRows,
-    csv_files: &[PathBuf],
-) -> Result<Vec<ContactClaimEvidence>> {
-    let wanted: Vec<RawContactRow> = kept.values().map(raw_contact_row).collect();
-    let mut published: Vec<ContactClaimEvidence> = Vec::new();
-    for path in csv_files {
-        let sidecar = census_service::coachverify::evidence_path(path);
-        if !sidecar.is_file() {
-            bail!(
-                "fragment {} has no evidence sidecar {}",
-                path.display(),
-                sidecar.display()
-            );
-        }
-        let claims = census_service::coachverify::read_evidence_jsonl(&sidecar)?;
-        for row in &wanted {
-            published.extend(census_service::coachverify::claims_for_row(&claims, row));
-        }
-    }
-    Ok(published)
-}
-
-fn raw_contact_row(row: &Row) -> RawContactRow {
-    RawContactRow {
-        school: row.school.clone(),
-        city: row.city.clone(),
-        state: row.state.clone(),
-        sport: row.sport.clone(),
-        role: row.role.clone(),
-        coach_name: row.coach_name.clone(),
-        public_professional_email: row.public_professional_email.clone(),
-        ad_name: row.ad_name.clone(),
-        ad_email: row.ad_email.clone(),
-        source_urls: row
-            .source_url
-            .split_whitespace()
-            .map(str::to_string)
-            .collect(),
-        last_observed: row.last_observed.clone(),
-    }
 }
 
 #[cfg(test)]

@@ -1,3 +1,4 @@
+pub mod boundary;
 mod fetch;
 mod map;
 mod mark;

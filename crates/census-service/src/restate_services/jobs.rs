@@ -179,6 +179,16 @@ pub(super) fn assert_some_stage_arms(slug: &str) -> Result<(), HandlerError> {
     require_stage_arm(slug).map_err(job_error)
 }
 
+#[cfg(feature = "native-fault-injection")]
+fn install_native_boundary_hook() {
+    census::install_boundary_hook(
+        &crate::restate_services::jurisdiction::team_source::NATIVE_BOUNDARY_HOOK,
+    );
+}
+
+#[cfg(not(feature = "native-fault-injection"))]
+fn install_native_boundary_hook() {}
+
 pub(super) async fn rosters_stage(
     store: Arc<Store>,
     fetcher: Arc<Fetcher>,
@@ -188,6 +198,7 @@ pub(super) async fn rosters_stage(
     let teams = census::collect_state_teams(&fetcher, &store, jurisdiction, false)
         .await
         .map_err(|error| job_error(collect_error(error)))?;
+    install_native_boundary_hook();
     let progress = census::collect_state_rosters(&fetcher, &store, &teams, &options, jurisdiction)
         .await
         .map_err(|error| job_error(collect_error(error)))?;

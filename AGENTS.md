@@ -137,14 +137,15 @@ handling must follow its explicit ADR/migration contract, not an improvised fall
 
 ## Delegation
 
-Keep 2–4 useful workers during implementation when independent work exists; never create filler.
-The requested four-worker allocation is one `gpu5090-coder`, one `gpu3090-coder` and two
-`deepseek-flash` evidence workers. Keep GPU coding jobs coherent and non-overlapping; at most one
-coding job per GPU. Main owns shared contracts, identity acceptance and durability. Flash handles
-specific evidence collection, not repeated architecture audits.
+Keep 2–3 useful workers during implementation when independent work exists; never create filler.
+The owner-directed allocation is one `gpu5090-coder` and two `deepseek-flash` evidence workers.
+Keep the coding job coherent and non-overlapping; at most one coding job per GPU. Main owns shared
+contracts, identity acceptance and durability. Flash handles specific evidence collection and
+fixture repair, not production coding or repeated architecture audits.
 
-**Hard agent policy:** never spawn `luna-*` or the unnamed/default `task` worker (its default model
-is forbidden). Always name an allowed agent explicitly: `gpu5090-coder`, `gpu3090-coder`,
+**Hard agent policy:** never spawn `luna-*`, any `gpu3090-*` worker (retired by owner direction
+2026-10-07) or the unnamed/default `task` worker (its default model
+is forbidden). Always name an allowed agent explicitly: `gpu5090-coder`,
 `deepseek-flash`, `scout`, `reviewer`, `security-reviewer`, `sonic` or `sol-reviewer`. Workers may not edit
 outside ownership, change interfaces silently or reactivate finished peers.
 

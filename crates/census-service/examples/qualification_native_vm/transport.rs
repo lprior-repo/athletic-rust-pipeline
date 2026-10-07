@@ -55,7 +55,7 @@ impl Ssh {
             self.wait_owner()?;
         }
         let ticks = match action {
-            "jurisdiction-reboot-finish" => 6200,
+            "jurisdiction-reboot-finish" => 35_000,
             _ => 1800,
         };
         let output = self.exec_bounded(action, &remote, ticks)?;

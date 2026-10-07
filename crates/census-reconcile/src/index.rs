@@ -93,13 +93,18 @@ fn superseded(stored: &HashMap<String, ReviewCase>, current: &[ReviewCase]) -> V
         .collect()
 }
 
-pub fn derive(store: &Store, phase: &str, finished_at: &str) -> ReportResult<IndexReport> {
+pub fn derive(
+    store: &Store,
+    phase: &str,
+    finished_at: &str,
+    school_year: census_domain::model::SchoolYear,
+) -> ReportResult<IndexReport> {
     let digest = stage_digest(store)?;
     let operation = format!("{STAGE_RECEIPT}:{digest}");
     let pass = canonical_pass(store)?;
     let identity_applications = apply::apply_decisions(store, finished_at)?;
     let dataset = census_report::export::ExportDataset::load(store)?;
-    let retained = census_report::workbook::retained_records(&dataset)?;
+    let retained = census_report::workbook::retained_records(&dataset, school_year)?;
     let coverage = coverage_rows(&dataset, &pass.identities)?;
 
     let mut conflicts: Vec<RetainedConflict> = retained

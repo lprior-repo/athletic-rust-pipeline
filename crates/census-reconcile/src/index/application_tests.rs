@@ -8,6 +8,10 @@ use census_store::{Store, Table};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
+fn season() -> Result<census_domain::model::SchoolYear, Box<dyn std::error::Error>> {
+    census_domain::model::SchoolYear::new(2026).ok_or_else(|| "invalid fixture season".into())
+}
+
 fn athlete(school: &CanonicalSchool, native_id: &str) -> CanonicalAthlete {
     let mut athlete = CanonicalAthlete::new(
         &school.id,
@@ -33,14 +37,14 @@ fn derive_applies_source_binding_once_and_preserves_history_after_reopen() -> Te
         let store = Store::open(directory.path())?;
         store.append(Table::Schools, &school)?;
         store.append(Table::Athletes, &athlete)?;
-        check!(eq; super::derive(&store, "fixture", "2026-09-26")?.identity_applications,
+        check!(eq; super::derive(&store, "fixture", "2026-09-26", season()?)?.identity_applications,
         1);
         check!(eq; store
             .athlete_identity_projection()?
             .status(athlete.id.as_str())?,
         IdentityStatus::Verified);
         original = store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?;
-        check!(eq; super::derive(&store, "fixture", "2026-09-27")?.identity_applications,
+        check!(eq; super::derive(&store, "fixture", "2026-09-27", season()?)?.identity_applications,
         0);
         check!(eq; store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?,
         original);
@@ -53,7 +57,7 @@ fn derive_applies_source_binding_once_and_preserves_history_after_reopen() -> Te
             .athlete_identity_projection()?
             .status(athlete.id.as_str())?,
         IdentityStatus::Unverified);
-        check!(eq; super::derive(&store, "fixture", "2026-09-27")?.identity_applications,
+        check!(eq; super::derive(&store, "fixture", "2026-09-27", season()?)?.identity_applications,
         1);
         store.flush()?;
     }
@@ -67,7 +71,7 @@ fn derive_applies_source_binding_once_and_preserves_history_after_reopen() -> Te
         .athlete_identity_projection()?
         .status(athlete.id.as_str())?,
     IdentityStatus::Verified);
-    check!(eq; super::derive(&store, "fixture", "2026-09-28")?.identity_applications,
+    check!(eq; super::derive(&store, "fixture", "2026-09-28", season()?)?.identity_applications,
     0);
     check!(eq; store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?,
     history);
@@ -83,7 +87,7 @@ fn derive_does_not_promote_or_merge_provider_owned_homonyms() -> TestResult {
     let second = athlete(&school, "222");
     store.append(Table::Schools, &school)?;
     store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
-    check!(eq; super::derive(&store, "fixture", "2026-09-26")?.identity_applications,
+    check!(eq; super::derive(&store, "fixture", "2026-09-26", season()?)?.identity_applications,
     0);
     let projection = store.athlete_identity_projection()?;
     for athlete in [&first, &second] {

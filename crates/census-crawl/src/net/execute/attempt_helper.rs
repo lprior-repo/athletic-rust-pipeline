@@ -23,14 +23,15 @@ pub(super) fn retry_after_secs(response: &reqwest::Response) -> Option<u64> {
 use crate::net::execute::attempt::FetchPlan;
 
 impl Fetcher {
-    pub(super) async fn dispatch(
+    pub(super) async fn dispatch_at(
         &self,
+        url: &str,
         plan: &FetchPlan<'_>,
     ) -> Result<reqwest::Response, FetchError> {
         let request = build_request(
             &self.client,
             plan.method,
-            plan.url,
+            url,
             plan.payload,
             &plan.options.headers,
             plan.cached,
@@ -39,16 +40,15 @@ impl Fetcher {
         let response = tokio::time::timeout(Duration::from_secs(plan.timeout_secs), request.send())
             .await
             .map_err(|_| FetchError::Timeout {
-                url: plan.url.to_string(),
+                url: url.to_string(),
                 timeout_secs: plan.timeout_secs,
             })?
             .map_err(|source| FetchError::Transport {
-                url: plan.url.to_string(),
+                url: url.to_string(),
                 source,
             })?;
         Ok(response)
     }
-
     pub(super) async fn status_error(&self, status: u16, plan: &FetchPlan<'_>) -> FetchError {
         {
             let mut stats = self.stats.lock().await;

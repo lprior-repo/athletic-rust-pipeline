@@ -33,9 +33,12 @@ pub(super) fn appointment(
     if capture.url.trim().is_empty() {
         return Err(invalid_claim(capture, "tenure evidence has no source URL"));
     }
+    let source_year = scope_year(role, program);
+    let is_former = super::super::row::is_former(role);
+    let tenure = tenure_for(source_year, is_former, school_year);
     let statement = statement(coach, role, program, capture)?;
     let evidence = CoachTenureEvidence {
-        tenure: CoachTenure::Current { school_year },
+        tenure,
         source: SourceRef::new(super::super::SOURCE_ID, Some(capture.url.to_string())),
         source_sha256: capture.sha256.to_string(),
         retrieved_at: capture.observed_on.to_string(),
@@ -67,6 +70,30 @@ fn appointment_program(coach: &CanonicalCoach) -> Option<CoachContactProgram> {
         }
         CoachRole::AthleticDirector => Some(CoachContactProgram::SchoolAthletics),
         CoachRole::Unknown => None,
+    }
+}
+fn scope_year(title: &str, program: &str) -> Option<SchoolYear> {
+    super::super::map::season_year(title).or_else(|| super::super::map::season_year(program))
+}
+
+fn tenure_for(
+    source_year: Option<SchoolYear>,
+    is_former: bool,
+    run_year: SchoolYear,
+) -> CoachTenure {
+    if is_former {
+        return CoachTenure::Former {
+            last_school_year: source_year,
+        };
+    }
+    match source_year {
+        Some(year) if year != run_year => CoachTenure::Former {
+            last_school_year: Some(year),
+        },
+        Some(year) => CoachTenure::Current { school_year: year },
+        None => CoachTenure::Current {
+            school_year: run_year,
+        },
     }
 }
 

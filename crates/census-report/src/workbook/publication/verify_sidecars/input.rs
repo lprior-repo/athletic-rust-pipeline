@@ -4,8 +4,6 @@ use crate::workbook::Options;
 use census_domain::model::SchoolYear;
 use std::path::{Path, PathBuf};
 
-use super::defect;
-
 pub(super) struct Inputs<'a> {
     pub(super) dataset: &'a ExportDataset,
     pub(super) options: &'a Options,
@@ -16,15 +14,7 @@ pub(super) struct Inputs<'a> {
 
 impl<'a> Inputs<'a> {
     pub(super) fn new(dataset: &'a ExportDataset, options: &'a Options) -> ReportResult<Self> {
-        let school_year = options
-            .school_year
-            .or_else(|| SchoolYear::from_date(&dataset.lineage.generated_on))
-            .ok_or_else(|| {
-                defect(format!(
-                    "cannot determine the contact school year from {}",
-                    dataset.lineage.generated_on
-                ))
-            })?;
+        let school_year = options.school_year;
         let out_root = Path::new(&dataset.lineage.store_root).join("out");
         Ok(Self {
             dataset,

@@ -245,9 +245,6 @@ pub(super) fn person_name(member: &StaffMember) -> String {
 
 pub(super) fn coach_role(title: &str) -> CoachRole {
     let lowered = title.to_ascii_lowercase();
-    if lowered.contains("former") {
-        return CoachRole::Unknown;
-    }
     if lowered.contains("head coach") {
         CoachRole::HeadCoach
     } else if lowered.contains("assistant coach") {
@@ -257,7 +254,10 @@ pub(super) fn coach_role(title: &str) -> CoachRole {
     }
 }
 
+pub(super) fn is_former(title: &str) -> bool {
+    title.to_ascii_lowercase().contains("former")
+}
+
 pub(super) fn is_director(title: &str) -> bool {
-    let lowered = title.to_ascii_lowercase();
-    !lowered.contains("former") && lowered.contains("athletic director")
+    title.to_ascii_lowercase().contains("athletic director")
 }

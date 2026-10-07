@@ -5,7 +5,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::errors::{io_err, refused};
-use super::files::fsync_dir;
+use super::files::sync_directories;
+use crate::fs::fsync_dir;
 use crate::StoreResult;
 
 const STAGING_ATTEMPTS: usize = 4;
@@ -46,7 +47,7 @@ impl Generation {
     }
 
     pub(super) fn publish(mut self) -> StoreResult<()> {
-        fsync_dir(&self.path)?;
+        sync_directories(&self.path)?;
         let superseded = self.move_superseded_aside()?;
         if let Err(source) = fs::rename(&self.path, &self.to) {
             if let Some(trash) = &superseded {

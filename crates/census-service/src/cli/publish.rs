@@ -7,7 +7,7 @@ use census_store::Store;
 use clap::Args;
 use std::path::PathBuf;
 
-use super::{cohort_label, live, school_year, scope_of, Cli, Route};
+use super::{cohort_label, contact_school_year, live, school_year, scope_of, Cli, Route};
 
 pub(super) fn run_consolidate(store: &Store) -> Result<()> {
     let counts = census_service::census::consolidate(store)?;
@@ -157,6 +157,11 @@ pub(super) struct WorkbookArgs {
     #[arg(help = "Graduation year used for the cohort sheets (2027 = the class of 2027)")]
     #[arg(long, default_value_t = 2027)]
     grad_year: u16,
+    #[arg(
+        help = "School year the contact tenure and coach cells are assessed against (2026 = the 2026-27 school year)"
+    )]
+    #[arg(long)]
+    school_year: u16,
     #[arg(help = "Cap the per-athlete best-mark sheet at N rows")]
     #[arg(long)]
     limit: Option<usize>,
@@ -174,6 +179,7 @@ pub(super) struct WorkbookArgs {
 
 pub(super) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
     let grad_year = school_year(args.grad_year)?;
+    let contact_season = contact_school_year(args.school_year)?;
     match cli.route(args.ingress.as_deref())? {
         Route::Offline(root) => {
             let options = workbook::Options {
@@ -181,7 +187,7 @@ pub(super) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
                 out: args.out.clone(),
                 limit: args.limit,
                 scope: scope_of(args.core),
-                school_year: None,
+                school_year: contact_season,
             };
             let store = Store::open(root)?;
             let path = workbook::build(&store, &options).context("building the census workbook")?;
@@ -197,6 +203,7 @@ pub(super) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
                     .out
                     .as_ref()
                     .map(|path| path.to_string_lossy().into_owned()),
+                school_year: Some(contact_season.get()),
             };
             let WorkbookReply { path, .. } = live::workbook(Some(origin), request).await?;
             println!("wrote {path}");
@@ -205,9 +212,19 @@ pub(super) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
     }
 }
 
-pub(super) fn run_index(store: &Store) -> Result<()> {
+#[derive(Args, Debug)]
+pub(super) struct IndexArgs {
+    #[arg(
+        help = "School year the contact tenure and coach cells are assessed against (2026 = the 2026-27 school year)"
+    )]
+    #[arg(long)]
+    school_year: u16,
+}
+
+pub(super) fn run_index(store: &Store, args: &IndexArgs) -> Result<()> {
     let finished_on = census_crawl::net::today_iso();
-    let report = census_reconcile::index::derive(store, "index", &finished_on)
+    let school_year = contact_school_year(args.school_year)?;
+    let report = census_reconcile::index::derive(store, "index", &finished_on, school_year)
         .context("deriving the durable indexes")?;
     println!(
         "index\tsource_identities={} conflicts={} reviews={} superseded={} coverage={} snapshots={}",

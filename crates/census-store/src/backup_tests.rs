@@ -1,7 +1,9 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
-use super::backup::files::{stream_copy, COPY_BUFFER_BYTES};
+use super::backup::files::{
+    stream_copy, sync_directories, sync_directories_with, COPY_BUFFER_BYTES,
+};
 use super::backup::{Manifest, MANIFEST_VERSION};
 use super::*;
 use census_domain::model::*;
@@ -598,5 +600,227 @@ fn integrity_reports_unreadable_journal() -> TestResult {
         &serde_json::json!({"athletes": 5}),
     )?;
     check!(store.integrity()?.ok);
+    Ok(())
+}
+
+fn refusal_of(result: StoreResult<RestoreReport>) -> TestResult<String> {
+    match result {
+        Err(error) => Ok(error.to_string()),
+        Ok(report) => Err(format!("expected a refusal, got {report:?}").into()),
+    }
+}
+
+#[test]
+fn sync_directories_reaches_every_directory_bottom_up() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let root = dir.path().join("tree");
+    std::fs::create_dir_all(root.join("a/b/c"))?;
+    std::fs::create_dir_all(root.join("d"))?;
+    std::fs::write(root.join("a/b/c/evidence"), b"retained")?;
+    let mut seen: Vec<std::path::PathBuf> = Vec::new();
+    let count = sync_directories_with(&root, &mut |path| {
+        seen.push(path.to_path_buf());
+        Ok(())
+    })?;
+    check!(eq; count, 5, "the root, a, a/b, a/b/c and d are every directory");
+    check!(eq; seen.len(), 5, "each directory syncs exactly once");
+    let root_position = seen
+        .iter()
+        .position(|path| path == &root)
+        .ok_or("the walk must sync the root")?;
+    check!(
+        eq;
+        root_position,
+        seen.len() - 1,
+        "the root syncs after the directories it holds"
+    );
+    for (position, path) in seen.iter().enumerate() {
+        if position == root_position {
+            continue;
+        }
+        let parent = path.parent().ok_or("a nested directory has no parent")?;
+        let parent_position = seen
+            .iter()
+            .position(|candidate| candidate == parent)
+            .ok_or_else(|| format!("{} was never synced", parent.display()))?;
+        check!(
+            parent_position > position,
+            "{} must sync after {}",
+            parent.display(),
+            path.display()
+        );
+    }
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn sync_directories_reports_an_unreadable_nested_directory() -> TestResult {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = tempfile::tempdir()?;
+    let root = dir.path().join("tree");
+    let locked = root.join("locked");
+    std::fs::create_dir_all(locked.join("inner"))?;
+    let mut permissions = std::fs::metadata(&locked)?.permissions();
+    permissions.set_mode(0o000);
+    std::fs::set_permissions(&locked, permissions)?;
+    let result = sync_directories(&root);
+    let mut permissions = std::fs::metadata(&locked)?.permissions();
+    permissions.set_mode(0o700);
+    std::fs::set_permissions(&locked, permissions)?;
+    let error = match result {
+        Err(error) => error.to_string(),
+        Ok(count) => {
+            return Err(format!("expected a refusal, got {count} synced directories").into())
+        }
+    };
+    check!(
+        error.contains(&locked.display().to_string()),
+        "the failure must name the directory it could not read: {error}"
+    );
+    Ok(())
+}
+
+fn edit_manifest_entry(
+    backup: &Path,
+    path: &str,
+    edit: impl FnOnce(&mut serde_json::Value),
+) -> TestResult {
+    let mut edited = false;
+    let mut edit = Some(edit);
+    edit_manifest(backup, |document| {
+        let entry = match document["files"]
+            .as_array_mut()
+            .and_then(|entries| entries.iter_mut().find(|entry| entry["path"] == path))
+        {
+            Some(entry) => entry,
+            None => return,
+        };
+        if let Some(edit) = edit.take() {
+            edit(entry);
+            edited = true;
+        }
+    })?;
+    if !edited {
+        return Err(format!("the backup manifest records no entry for {path}").into());
+    }
+    Ok(())
+}
+
+#[cfg(unix)]
+fn store_with_publication(root: &Path) -> TestResult {
+    store_with(root, &["Published"])?;
+    let generation = root.join("out/publication/generations/g1");
+    std::fs::create_dir_all(&generation)?;
+    std::fs::write(generation.join("census.xlsx"), b"workbook")?;
+    std::os::unix::fs::symlink("generations/g1", root.join("out/publication/current"))?;
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn backup_and_restore_carry_a_store_relative_publication_pointer() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let root = dir.path().join("store");
+    store_with_publication(&root)?;
+    let to = dir.path().join("backup");
+    let report = Store::backup(&root, &to)?;
+    check!(eq; report.links, 1, "the pointer must be copied as a link");
+    check!(eq;
+        std::fs::read_link(to.join("out/publication/current"))?,
+        std::path::PathBuf::from("generations/g1"),
+        "the backup must hold the pointer itself, not what it names"
+    );
+    let restored = dir.path().join("restored");
+    let report = Store::restore(&to, &restored)?;
+    check!(eq; report.links, 1, "restore must recreate the pointer");
+    check!(eq;
+        std::fs::read_link(restored.join("out/publication/current"))?,
+        std::path::PathBuf::from("generations/g1"),
+        "the restored store must resolve the pointer beside it"
+    );
+    check!(eq;
+        std::fs::read(restored.join("out/publication/current/census.xlsx"))?,
+        b"workbook".to_vec(),
+        "the restored pointer must resolve to the copied generation"
+    );
+    let store = Store::open(&restored)?;
+    check!(eq; store.scan::<CanonicalSchool>(Table::Schools)?.len(), 1);
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn backup_refuses_a_symlink_that_leaves_the_store() -> TestResult {
+    for target in ["../../outside", "/etc/hostname"] {
+        let dir = tempfile::tempdir()?;
+        let root = dir.path().join("store");
+        store_with(&root, &["Fenced"])?;
+        let link = root.join("out/pointer");
+        std::os::unix::fs::symlink(target, &link)?;
+        let to = dir.path().join("backup");
+        let error = match Store::backup(&root, &to) {
+            Err(error) => error.to_string(),
+            Ok(report) => {
+                return Err(format!("expected a refusal for {target}, got {report:?}").into())
+            }
+        };
+        check!(
+            error.contains(&link.display().to_string()),
+            "the refusal must name the link: {error}"
+        );
+        check!(
+            error.contains("symlink") && error.contains("inside the store"),
+            "the refusal must say what it refused and why: {error}"
+        );
+        check!(!to.exists(), "a refused backup publishes nothing");
+        check!(staging_leftovers(dir.path())?.is_empty());
+    }
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn restore_refuses_a_tampered_link_entry() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let root = dir.path().join("store");
+    store_with_publication(&root)?;
+    let to = dir.path().join("backup");
+    Store::backup(&root, &to)?;
+    let restored = dir.path().join("restored");
+    let pointer = "out/publication/current";
+    let escaping = "../../../outside";
+    edit_manifest_entry(&to, pointer, |entry| {
+        entry["target"] = serde_json::json!(escaping);
+        entry["sha256"] = serde_json::json!(sha256_hex(escaping.as_bytes()));
+    })?;
+    let error = refusal_of(Store::restore(&to, &restored))?;
+    check!(
+        error.contains(pointer) && error.contains("leaves the backup"),
+        "an escaping link target must be refused: {error}"
+    );
+    check!(!restored.exists(), "a refused restore publishes nothing");
+
+    edit_manifest_entry(&to, pointer, |entry| {
+        entry["target"] = serde_json::json!("generations/g1");
+        entry["sha256"] = serde_json::json!(sha256_hex(b"generations/g1"));
+    })?;
+    std::fs::remove_file(to.join(pointer))?;
+    std::os::unix::fs::symlink("generations/other", to.join(pointer))?;
+    let error = refusal_of(Store::restore(&to, &restored))?;
+    check!(
+        error.contains("symlink target mismatch"),
+        "a link whose target moved must be refused: {error}"
+    );
+    check!(!restored.exists(), "a refused restore publishes nothing");
+
+    std::fs::remove_file(to.join(pointer))?;
+    std::fs::write(to.join(pointer), b"generations/g1")?;
+    let error = refusal_of(Store::restore(&to, &restored))?;
+    check!(
+        error.contains("not the symlink the manifest records"),
+        "a file standing in for the recorded link must be refused: {error}"
+    );
+    check!(!restored.exists(), "a refused restore publishes nothing");
     Ok(())
 }

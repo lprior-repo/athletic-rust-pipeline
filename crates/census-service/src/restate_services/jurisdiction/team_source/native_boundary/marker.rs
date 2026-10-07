@@ -25,6 +25,18 @@ pub(super) struct Marker {
 }
 
 impl Marker {
+    pub(super) fn new_for_kind(
+        operation: &str,
+        attempt: u8,
+        kind: &str,
+        identity: &ledger::Identity,
+    ) -> Result<Self, BoundaryError> {
+        validate_operation(kind)?;
+        let mut marker = Self::new(operation, attempt, identity)?;
+        marker.phase = kind.to_string();
+        Ok(marker)
+    }
+
     pub(super) fn new(
         operation: &str,
         attempt: u8,

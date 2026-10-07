@@ -1,6 +1,6 @@
 use std::fs;
 use std::io;
-use std::path::Path;
+use std::path::{Component, Path};
 
 use super::errors::{io_err, object_kind, refused};
 use super::files::copy_file;
@@ -16,6 +16,7 @@ pub(super) const DB_DIR: &str = "fjall";
 pub(super) struct Copied {
     pub files: u64,
     pub bytes: u64,
+    pub links: u64,
 }
 
 pub(super) fn copy_tree(from: &Path, dst: &Path) -> StoreResult<Copied> {
@@ -34,12 +35,12 @@ pub(super) fn copy_tree(from: &Path, dst: &Path) -> StoreResult<Copied> {
                 object_kind(kind)
             )));
         }
-        copy_dir(&src, &dst.join(root), &mut copied)?;
+        copy_dir(from, &src, &dst.join(root), &mut copied)?;
     }
     Ok(copied)
 }
 
-fn copy_dir(src: &Path, dst: &Path, copied: &mut Copied) -> StoreResult<()> {
+fn copy_dir(root: &Path, src: &Path, dst: &Path, copied: &mut Copied) -> StoreResult<()> {
     fs::create_dir_all(dst).map_err(|source| io_err(dst, source))?;
     let entries = fs::read_dir(src).map_err(|source| io_err(src, source))?;
     for entry in entries {
@@ -50,18 +51,92 @@ fn copy_dir(src: &Path, dst: &Path, copied: &mut Copied) -> StoreResult<()> {
             .map_err(|source| io_err(&path, source))?
             .file_type();
         if kind.is_dir() {
-            copy_dir(&path, &target, copied)?;
+            copy_dir(root, &path, &target, copied)?;
         } else if kind.is_file() {
             let streamed = copy_file(&path, &target)?;
             copied.files = copied.files.saturating_add(1);
             copied.bytes = copied.bytes.saturating_add(streamed.bytes);
+        } else if kind.is_symlink() {
+            copy_relative_link(root, &path, &target, copied)?;
         } else {
             return Err(refused(format!(
-                "backup refuses {}: it is {}, and a backup copies regular files and directories only",
+                "backup refuses {}: it is {}, and a backup copies regular files, directories and \
+                 store-relative links only",
                 path.display(),
                 object_kind(kind)
             )));
         }
     }
     Ok(())
+}
+
+#[cfg(unix)]
+fn copy_relative_link(
+    root: &Path,
+    link: &Path,
+    target: &Path,
+    copied: &mut Copied,
+) -> StoreResult<()> {
+    let destination = fs::read_link(link).map_err(|source| io_err(link, source))?;
+    if !store_relative_link(relative_parent(root, link), &destination) {
+        return Err(link_refusal(link, &destination));
+    }
+    std::os::unix::fs::symlink(&destination, target).map_err(|source| io_err(target, source))?;
+    copied.links = copied.links.saturating_add(1);
+    Ok(())
+}
+
+pub(super) fn link_refusal(link: &Path, target: &Path) -> crate::StoreError {
+    refused(format!(
+        "backup refuses {}: it is a symlink to {}, and a backup copies the links that stay inside \
+         the store only",
+        link.display(),
+        target.display()
+    ))
+}
+
+#[cfg(not(unix))]
+fn copy_relative_link(
+    _root: &Path,
+    link: &Path,
+    _target: &Path,
+    _copied: &mut Copied,
+) -> StoreResult<()> {
+    Err(refused(format!(
+        "backup refuses {}: it is a symbolic link, and this host cannot copy one",
+        link.display()
+    )))
+}
+
+pub(super) fn relative_parent<'a>(root: &Path, path: &'a Path) -> &'a Path {
+    match path.strip_prefix(root) {
+        Ok(relative) => match relative.parent() {
+            Some(parent) => parent,
+            None => Path::new(""),
+        },
+        Err(_) => Path::new(""),
+    }
+}
+
+pub(super) fn store_relative_link(parent: &Path, target: &Path) -> bool {
+    if target.is_absolute() || target.as_os_str().is_empty() {
+        return false;
+    }
+    let mut depth = 0_usize;
+    descend(&mut depth, parent) && descend(&mut depth, target)
+}
+
+fn descend(depth: &mut usize, path: &Path) -> bool {
+    for component in path.components() {
+        match component {
+            Component::Normal(_) => *depth = depth.saturating_add(1),
+            Component::CurDir => {}
+            Component::ParentDir => match depth.checked_sub(1) {
+                Some(remaining) => *depth = remaining,
+                None => return false,
+            },
+            Component::RootDir | Component::Prefix(_) => return false,
+        }
+    }
+    true
 }

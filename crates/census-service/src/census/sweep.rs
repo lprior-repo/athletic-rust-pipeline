@@ -13,6 +13,9 @@ mod access;
 mod roster;
 mod units;
 
+#[cfg(feature = "native-fault-injection")]
+pub use self::roster::install_boundary_hook;
+
 use crate::census::aggregate::summarize_states;
 
 use self::units::{roster_unit, RosterRun};

@@ -38,7 +38,7 @@ pub(super) async fn derive(store: &Store, inputs: &Inputs) -> Result<Binding> {
     if matching.next().is_some() {
         return Err("original index has ambiguous roster owner".into());
     }
-    let outcome = fetch_roster(&fetcher, team, &FetchOptions::default()).await?;
+    let outcome = fetch_roster(&fetcher, team, &FetchOptions::default(), None).await?;
     if outcome.capture.body != original.body
         || outcome.capture.fetched_at != original.metadata.fetched_at
         || outcome.capture.url != original.metadata.url

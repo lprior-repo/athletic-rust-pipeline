@@ -13,14 +13,29 @@ not make an arbitrary live-directory copy consistent across journal rotation and
 `flush()` makes writes durable but does not pause writers. Cold backup is the supported path.
 
 Current `Store::backup` copies existing `fjall/`, `entities/`, `journal/`, `http/` and `out/` subtrees,
-opens the staged copy for count validation, writes `backup.json` with file lengths/SHA-256 and table
-counts, and publishes the staged generation. Nonregular objects such as symlinks are refused.
-`Store::restore` checks the manifest/files and restored counts before promoting into its destination.
-Use a new destination for a drill; never restore over a served root.
+opens the staged copy for count validation, writes `backup.json` with file lengths/SHA-256, link
+targets and table counts, and publishes the staged generation. A symbolic link is copied when its
+target is relative and stays inside the store: the published workbook pointer
+`out/publication/current -> generations/<digest>` is such an object, and a backup that dropped or
+followed it would not be a complete store. The manifest records that target and the SHA-256 of the
+target string, and the backup report counts it under `links`. Absolute links, links that leave the
+store, sockets and other nonregular objects are refused.
+`Store::restore` checks the manifest/files and restored counts before promoting into its destination,
+and recreates every recorded link. Use a new destination for a drill; never restore over a served root.
 Restore rejects a symlink backup root or manifest, and checks every intermediate component and final
-file named by the manifest before staging and again before copying. These metadata checks reject a
+file named by the manifest before staging and again before copying. A link entry's final component is
+the link itself: restore accepts it only when the link on disk carries exactly the recorded target,
+that target is relative and stays inside the backup, and the recorded SHA-256 matches the target
+string restore would create. These metadata checks reject a
 static symlink escape, not a malicious concurrent path-replacement race: keep the cold backup tree
 owned and immutable throughout restore.
+
+Durability contract: both verbs fsync every copied file, then every directory of the staged
+generation bottom-up (deepest first) before the publish rename, and the destination's parent
+afterwards. An acknowledged backup or restore therefore survives a host crash on a filesystem where
+directory fsync is honoured; a filesystem that acknowledges or silently discards directory fsync
+(some network and overlay filesystems) is outside the supported contract, and the documented reboot
+qualification is what establishes it for the filesystems actually used.
 
 Native Restate's durable directory is **separate** and not included. Nor are arbitrary external raw
 capture paths. Inventory every referenced evidence object and run/decision/artifact manifest before
@@ -37,12 +52,16 @@ are templates; choose paths for the actual run and record them with build, schem
 census-service --store <source-store> store-integrity
 census-service --store <source-store> fjall-stats
 census-service --store <source-store> store-backup --to <backup-dir>
-census-service store-restore --from <backup-dir> --to <new-restored-store>
+census-service --store <fresh-unused-path> store-restore --from <backup-dir> --to <new-restored-store>
 census-service --store <new-restored-store> store-integrity
 census-service --store <new-restored-store> fjall-stats
 census-service --store <new-restored-store> consolidate
 census-service --store <new-restored-store> report
 ```
+
+`store-restore` is dispatched through the CLI's shared store open, so its `--store` root must itself
+open as a store; give it a fresh unused path (the drill script passes one under its own temporary
+directory), never the destination it is about to create.
 
 Inspect `store-integrity`'s `ok` and per-table findings, not just process success. Preserve the source
 baseline and backup manifest. Compare the complete physical table map, effect receipts, source IDs,

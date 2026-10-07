@@ -66,11 +66,14 @@ pub fn export(
     target: Target,
     out: Option<&Path>,
     grad_year: i32,
+    school_year: i32,
     core: bool,
     limit: Option<usize>,
 ) -> Result<()> {
     match target.mode()? {
-        Mode::Offline(store) => offline::workbook(store, out, grad_year, core, limit),
-        Mode::Ingress(origin) => service::workbook(origin, out, grad_year, core, limit),
+        Mode::Offline(store) => offline::workbook(store, out, grad_year, school_year, core, limit),
+        Mode::Ingress(origin) => {
+            service::workbook(origin, out, grad_year, school_year, core, limit)
+        }
     }
 }

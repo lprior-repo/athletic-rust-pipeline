@@ -1,3 +1,4 @@
+use census_domain::model::CensusRun;
 use serde::{Deserialize, Serialize};
 
 mod recorded;
@@ -20,10 +21,11 @@ pub enum AcceptanceItem {
     CoverageReportReconciles,
     RunMetricsReconcile,
     ExportVerified,
+    RunBound,
 }
 
 impl AcceptanceItem {
-    pub const ALL: [AcceptanceItem; 13] = [
+    pub const ALL: [AcceptanceItem; 14] = [
         AcceptanceItem::JurisdictionSweepsTerminal,
         AcceptanceItem::SourceObjectsTerminal,
         AcceptanceItem::CohortDecisionsTerminal,
@@ -37,6 +39,7 @@ impl AcceptanceItem {
         AcceptanceItem::CoverageReportReconciles,
         AcceptanceItem::RunMetricsReconcile,
         AcceptanceItem::ExportVerified,
+        AcceptanceItem::RunBound,
     ];
 
     pub const fn as_str(self) -> &'static str {
@@ -54,6 +57,7 @@ impl AcceptanceItem {
             AcceptanceItem::CoverageReportReconciles => "the coverage report reconciles",
             AcceptanceItem::RunMetricsReconcile => "run metrics reconcile",
             AcceptanceItem::ExportVerified => "final export verification passes",
+            AcceptanceItem::RunBound => "a census run is measured and bound to this store",
         }
     }
 }
@@ -65,6 +69,7 @@ pub struct SealEvidence {
     pub retained: RetainedFindings,
     pub workbook: WorkbookCheck,
     pub observed_on: String,
+    pub run: Option<CensusRun>,
 }
 
 impl SealEvidence {
@@ -112,6 +117,9 @@ impl SealEvidence {
         if !self.workbook.export_verified || !self.workbook.discrepancies.is_empty() {
             open.push(AcceptanceItem::ExportVerified);
         }
+        if self.run.is_none() {
+            open.push(AcceptanceItem::RunBound);
+        }
         open
     }
 
@@ -155,6 +163,9 @@ impl SealEvidence {
                 "{} reproducible calculations for the cohort's {} performances",
                 self.retained.calculations, self.counts.cohort_performances
             ),
+            AcceptanceItem::RunBound => {
+                "not measured - this route reads no workflow journal".to_string()
+            }
         }
     }
 
@@ -189,6 +200,7 @@ impl SealEvidence {
             workbook_rows: self.workbook.rows,
             sealed_on: self.observed_on,
             digest,
+            run: self.run,
         }
     }
 }
@@ -200,4 +212,5 @@ pub struct SealedCensus {
     pub workbook_rows: u64,
     pub sealed_on: String,
     pub digest: String,
+    pub run: Option<CensusRun>,
 }

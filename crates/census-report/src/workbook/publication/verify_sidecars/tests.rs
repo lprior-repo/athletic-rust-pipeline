@@ -93,7 +93,13 @@ fn publish(
 ) -> TestResult<(std::path::PathBuf, ExportDataset, Options)> {
     let store = Store::open(directory.path().join("store"))?;
     seed(&store)?;
-    let options = Options::default();
+    let options = Options {
+        grad_year: Some(2027),
+        out: None,
+        limit: None,
+        scope: crate::report::Scope::AllSources,
+        school_year: census_domain::model::SchoolYear::new(2026).ok_or("invalid fixture season")?,
+    };
     let published = crate::workbook::build(&store, &options)?;
     let generation = published
         .parent()

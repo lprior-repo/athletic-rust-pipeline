@@ -4,8 +4,10 @@ use std::io::Write;
 use std::path::Path;
 
 use super::errors::{io_err, object_kind, refused};
-use super::files::{digest_file, fsync_dir};
+use super::files::{digest_bytes, digest_file};
+use super::tree::{link_refusal, relative_parent, store_relative_link};
 use super::{Manifest, ManifestEntry, MANIFEST_PATH};
+use crate::fs::fsync_dir;
 use crate::keys;
 use crate::{StoreError, StoreResult, Table};
 
@@ -27,24 +29,55 @@ fn collect_digests(root: &Path, dir: &Path, entries: &mut Vec<ManifestEntry>) ->
         if kind.is_dir() {
             collect_digests(root, &path, entries)?;
         } else if kind.is_file() {
-            let relative = path.strip_prefix(root).map_err(|_| {
-                refused(format!("{} is outside {}", path.display(), root.display()))
-            })?;
+            let relative = relative_path(root, &path)?;
             let streamed = digest_file(&path)?;
             entries.push(ManifestEntry {
                 path: relative.to_string_lossy().to_string(),
+                target: None,
                 length: streamed.bytes,
                 sha256: streamed.sha256,
             });
+        } else if kind.is_symlink() {
+            entries.push(link_entry(root, &path)?);
         } else {
             return Err(refused(format!(
-                "backup refuses {}: it is {}, and a generation carries regular files and directories only",
+                "backup refuses {}: it is {}, and a generation carries regular files, directories \
+                 and store-relative links only",
                 path.display(),
                 object_kind(kind)
             )));
         }
     }
     Ok(())
+}
+
+fn relative_path<'a>(root: &Path, path: &'a Path) -> StoreResult<&'a Path> {
+    path.strip_prefix(root)
+        .map_err(|_| refused(format!("{} is outside {}", path.display(), root.display())))
+}
+
+#[cfg(unix)]
+fn link_entry(root: &Path, link: &Path) -> StoreResult<ManifestEntry> {
+    let relative = relative_path(root, link)?;
+    let target = fs::read_link(link).map_err(|source| io_err(link, source))?;
+    if !store_relative_link(relative_parent(root, link), &target) {
+        return Err(link_refusal(link, &target));
+    }
+    let target = target.to_string_lossy().to_string();
+    Ok(ManifestEntry {
+        path: relative.to_string_lossy().to_string(),
+        sha256: digest_bytes(target.as_bytes()),
+        target: Some(target),
+        length: 0,
+    })
+}
+
+#[cfg(not(unix))]
+fn link_entry(_root: &Path, link: &Path) -> StoreResult<ManifestEntry> {
+    Err(refused(format!(
+        "backup refuses {}: it is a symbolic link, and this host cannot record one",
+        link.display()
+    )))
 }
 
 pub(super) fn table_row_counts(root: &Path) -> StoreResult<BTreeMap<String, u64>> {

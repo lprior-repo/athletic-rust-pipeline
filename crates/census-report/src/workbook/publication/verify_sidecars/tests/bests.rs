@@ -84,7 +84,13 @@ fn valid_best_results_sidecars_pass_and_forgeries_fail() -> TestResult {
     store.append(Table::Performances, &faster)?;
 
     let dataset = ExportDataset::load(&store)?;
-    let options = Options::default();
+    let options = Options {
+        grad_year: Some(2027),
+        out: None,
+        limit: None,
+        scope: crate::report::Scope::AllSources,
+        school_year: census_domain::model::SchoolYear::new(2026).ok_or("invalid fixture season")?,
+    };
     let rows = build_from_dataset(&dataset, &bests_options(&options));
     check!(eq; rows.len(), 1);
     let inputs = Inputs::new(&dataset, &options)?;

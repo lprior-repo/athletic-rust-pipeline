@@ -6,28 +6,29 @@ REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
 
 mkdir -p "$SCRATCH_STORE"
 SCRATCH_STORE="$(cd "$SCRATCH_STORE" && pwd)"
-TEST_DIR=$(mktemp -d "$SCRATCH_STORE/test-XXXXXX")
-trap 'rm -rf -- "$TEST_DIR"' EXIT
-export TMPDIR="$TEST_DIR"
+EVIDENCE_DIR=$(mktemp -d "$SCRATCH_STORE/scenario-17-XXXXXX")
+echo "EVIDENCE: $EVIDENCE_DIR"
+export TMPDIR="$EVIDENCE_DIR/tmp"
+mkdir -p "$TMPDIR"
 
 cd "$REPO_ROOT"
 set +e
-cargo test -p census-service --test recovery -- --nocapture 2>&1 | tee "$TEST_DIR/log.txt"
+tools/moon-cargo test -p census-service --test recovery -- --nocapture 2>&1 | tee "$EVIDENCE_DIR/log.txt"
 TEST_RC=$?
 set -e
 cd - >/dev/null
 
 if [ "$TEST_RC" -ne 0 ]; then
     echo "FAIL: recovery exited $TEST_RC"
-    grep "test result:" "$TEST_DIR/log.txt" || true
+    grep "test result:" "$EVIDENCE_DIR/log.txt" || true
     exit 1
 fi
 
-if grep -qE '^test result: ok\. [1-9][0-9]* passed; 0 failed; 0 ignored;' "$TEST_DIR/log.txt" && ! grep -q '^SKIPPED:' "$TEST_DIR/log.txt"; then
+if grep -qE '^test result: ok\. [1-9][0-9]* passed; 0 failed; 0 ignored;' "$EVIDENCE_DIR/log.txt" && ! grep -q '^SKIPPED:' "$EVIDENCE_DIR/log.txt"; then
     echo "PASS: recovery test suite"
     exit 0
 else
     echo "FAIL: recovery had failures, skips, or unexpected output"
-    grep "test result:" "$TEST_DIR/log.txt" || true
+    grep "test result:" "$EVIDENCE_DIR/log.txt" || true
     exit 1
 fi

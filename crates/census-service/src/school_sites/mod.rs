@@ -101,12 +101,15 @@ pub async fn run(fetcher: &Fetcher, args: &SchoolSitesArgs, store_root: &Path) -
     let rules = Rules::new().context("compiling school-site extraction rules")?;
     std::fs::create_dir_all(&out_dir).with_context(|| format!("creating {}", out_dir.display()))?;
     let fragments_dir = out_dir.join("fragments");
+    let site_rows_dir = out_dir.join("site-rows");
+    std::fs::create_dir_all(&site_rows_dir)
+        .with_context(|| format!("creating {}", site_rows_dir.display()))?;
     let planned = sites.len();
 
     let mut skipped = 0usize;
     let mut pending: Vec<PlannedSite> = Vec::new();
     for site in sites {
-        if !args.refresh && site.artifact.exists() {
+        if queue::resumable(&site, &site_rows_dir, args.refresh) {
             skipped = skipped.saturating_add(1);
         } else {
             pending.push(site);
@@ -146,14 +149,18 @@ pub async fn run(fetcher: &Fetcher, args: &SchoolSitesArgs, store_root: &Path) -
                 errors = errors.saturating_add(outcome.errors);
                 let Some(note) = outcome.note.as_deref() else {
                     let record = artifacts::site_record(site, outcome);
+                    let rows: Vec<LaneRow> = if outcome.signals.has_signals() {
+                        contacts::contact_rows(site, outcome)
+                    } else {
+                        empty = empty.saturating_add(1);
+                        Vec::new()
+                    };
+                    let rows_path = site.rows_path(&site_rows_dir);
+                    artifacts::write_site_rows(&rows_path, &rows)?;
                     artifacts::write_site(&site.artifact, &record)?;
                     written = written.saturating_add(1);
                     emails = emails.saturating_add(outcome.signals.emails.len());
-                    if outcome.signals.has_signals() {
-                        lane_rows.extend(contacts::contact_rows(site, outcome));
-                    } else {
-                        empty = empty.saturating_add(1);
-                    }
+                    lane_rows.extend(rows);
                     continue;
                 };
                 failures.push(Failure {
@@ -173,9 +180,7 @@ pub async fn run(fetcher: &Fetcher, args: &SchoolSitesArgs, store_root: &Path) -
     }
     lane_rows.sort();
 
-    std::fs::create_dir_all(&fragments_dir)
-        .with_context(|| format!("creating {}", fragments_dir.display()))?;
-    let fragment_files = artifacts::write_fragments(&fragments_dir, &lane_rows)?;
+    let fragment_files = artifacts::publish_state_fragments(&fragments_dir, &site_rows_dir)?;
 
     let coach_contacts = lane_rows
         .iter()

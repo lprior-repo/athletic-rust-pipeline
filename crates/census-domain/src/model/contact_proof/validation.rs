@@ -128,6 +128,10 @@ fn validate_claim_against_row(
     Ok(())
 }
 
+pub(super) fn claim_binds_to_row(row: &RawContactRow, claim: &ContactClaimEvidence) -> bool {
+    validate_claim_against_row(row, claim, &mut [false; 4]).is_ok()
+}
+
 fn is_director(field: ContactProofField) -> bool {
     matches!(
         field,

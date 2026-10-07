@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 use census_domain::model::{CanonicalSchool, ReviewCase, SourceNamespace};
 use census_domain::school_directory::{
@@ -12,7 +12,7 @@ use super::lanes::{ASSOCIATION_PREFIX, STATE_ED};
 use super::support::{
     allocation, bump, bump_review_reason, parse_key_label, reason_name, row, rule_name,
 };
-use super::{Counters, Job, JoinError, LaneEvidence, Mode, OutcomeRow, SCHOOL_IDENTITY_FAMILY};
+use super::{Counters, Job, JoinError, LaneSet, Mode, OutcomeRow, SCHOOL_IDENTITY_FAMILY};
 
 const OUTCOME_RESERVE: usize = 1024;
 const WRITE_CHUNK: usize = 100;
@@ -20,7 +20,7 @@ const WRITE_CHUNK: usize = 100;
 impl<'a> Job<'a> {
     pub(super) fn new(
         index: &'a DirectoryIndex,
-        lanes: &'a BTreeMap<String, LaneEvidence>,
+        lanes: &'a LaneSet,
         mode: Mode,
         store: &'a Store,
     ) -> Result<Self, JoinError> {
@@ -86,7 +86,7 @@ impl<'a> Job<'a> {
         if self.mode != Mode::Apply {
             return Ok(());
         }
-        let providers: Vec<&str> = self.lanes.keys().map(String::as_str).collect();
+        let providers: Vec<&str> = self.lanes.tokens().map(String::as_str).collect();
         let detail = format!(
             "{} between candidates {}; providers {}",
             reason_name(reason),
@@ -263,10 +263,10 @@ fn member_detail(member: &str) -> String {
     format!("co-op member {member}")
 }
 
-fn association_lanes(lanes: &BTreeMap<String, LaneEvidence>) -> (Option<String>, Option<String>) {
+fn association_lanes(lanes: &LaneSet) -> (Option<String>, Option<String>) {
     let mut association: Option<String> = None;
     let mut problem: Option<String> = None;
-    for key in lanes.keys() {
+    for key in lanes.tokens() {
         let Some(slug) = key.strip_prefix(ASSOCIATION_PREFIX) else {
             continue;
         };

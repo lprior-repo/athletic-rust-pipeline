@@ -39,7 +39,8 @@ fn an_authentic_ownerless_fragment_remains_parseable_but_cannot_commit_an_acquir
             check!(eq; capture.bytes, WI_ROSTER_FIXTURE.len());
             check!(eq; capture.content_digest,
     format!("{:x}", Sha256::digest(WI_ROSTER_FIXTURE.as_bytes())));
-            let outcome = milesplit::fetch_roster(&fetcher, &team, &FetchOptions::default()).await;
+            let outcome =
+                milesplit::fetch_roster(&fetcher, &team, &FetchOptions::default(), None).await;
             check!(matches!(outcome, Err(CrawlError::Schema { url, .. }) if url == team.url));
             let options = collect_options();
             let before = replay::digest(&store)?;

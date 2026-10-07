@@ -14,6 +14,7 @@ use census_report::report::ReportError;
 use census_store::StoreError;
 
 use super::*;
+use crate::restate_services::ingest::credited_appended;
 use crate::restate_services::ingest::payload_digest;
 use crate::restate_services::plan::classify_access;
 use crate::restate_services::results_arms::ResultsStageOutcome;
@@ -86,6 +87,53 @@ fn an_omitted_scope_matches_the_cli_default_and_unknown_scopes_are_rejected() ->
 fn cohort_label_names_the_reduction() {
     assert_eq!(cohort_label(Some(2027)), "co2027");
     assert_eq!(cohort_label(None), "all");
+}
+
+#[test]
+fn a_lost_commit_acknowledgement_still_counts_the_operations_rows_once() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let operation = "wiaa_results_wi:inv-1:2026-W39:performances:0:0";
+    let rows = vec![
+        serde_json::json!({"id": "perf:wi:1", "mark": "10.94"}),
+        serde_json::json!({"id": "perf:wi:2", "mark": "11.02"}),
+    ];
+    let digest = payload_digest(Table::Performances, &rows).map_err(sdk_error)?;
+
+    let store = Store::open(dir.path())?;
+    let mut state = IngestState::default();
+    let attempt = apply_observations(&store, Table::Performances, &rows, operation, &digest)?;
+    let credited = credited_appended(&state, operation, attempt.receipt().appended);
+    check!(eq; credited, 2, "the writing attempt accounts both rows");
+    state.total_observations = state.total_observations.saturating_add(credited);
+    state.seen_operations.push(operation.to_string());
+
+    let replay = apply_observations(&store, Table::Performances, &rows, operation, &digest)?;
+    check!(
+        replay.repeated(),
+        "the retry must not append again: {replay:?}"
+    );
+    check!(eq; replay.appended(), 0, "the retry writes nothing new");
+    let credited = credited_appended(&state, operation, replay.receipt().appended);
+    check!(eq; credited, 0, "an accounted operation credits nothing twice");
+    state.total_observations = state.total_observations.saturating_add(credited);
+    check!(eq;
+        state.total_observations,
+        2,
+        "durable progress must match the rows the store holds"
+    );
+    check!(eq;
+        store.walk_table(Table::Performances)?.rows,
+        state.total_observations,
+        "a completed source must not read as silent"
+    );
+
+    let fresh = IngestState::default();
+    check!(eq;
+        credited_appended(&fresh, operation, replay.receipt().appended),
+        2,
+        "a lost acknowledgement credits the stable receipt on the next attempt"
+    );
+    Ok(())
 }
 
 fn physical(store: &Store, table: Table) -> TestResult<(u64, u64)> {
@@ -896,44 +944,57 @@ fn differing_semantic_parts_produce_different_keys() {
         run_key("bests", &["all", "2027", "100"], DEFAULT_GENERATION),
         "different limit must produce different keys"
     );
+}
 
-    assert_ne!(
-        run_key(
-            "workbook",
-            &["2027", "core", "all", "."],
-            DEFAULT_GENERATION
-        ),
-        run_key(
-            "workbook",
-            &["2028", "core", "all", "."],
-            DEFAULT_GENERATION
-        ),
-        "different grad year must produce different keys"
+#[test]
+fn a_workbook_request_key_carries_every_selection_and_destination_field() {
+    let request = WorkbookRequest {
+        grad_year: Some(2027),
+        limit: Some(50),
+        scope: Some("core".to_string()),
+        out: Some("/tmp/root-a".to_string()),
+        school_year: Some(2026),
+    };
+    let key = workbook_request_key(&request);
+    let segments: Vec<&str> = key.split(':').collect();
+    assert_eq!(
+        segments,
+        vec!["workbook", "2027", "core", "50", "/tmp/root-a", "2026", "1"],
+        "the key is workbook:year:scope:limit:out:school-year:generation"
+    );
+    assert_eq!(
+        workbook_request_key(&request),
+        key,
+        "an identical request must reattach the same workflow"
     );
 
+    let changed = |edit: &dyn Fn(&mut WorkbookRequest)| {
+        let mut other = WorkbookRequest {
+            grad_year: request.grad_year,
+            limit: request.limit,
+            scope: request.scope.clone(),
+            out: request.out.clone(),
+            school_year: request.school_year,
+        };
+        edit(&mut other);
+        workbook_request_key(&other)
+    };
+    assert_ne!(changed(&|r| r.grad_year = Some(2028)), key, "year");
     assert_ne!(
-        run_key(
-            "workbook",
-            &["2027", "core", "all", "."],
-            DEFAULT_GENERATION
-        ),
-        run_key(
-            "workbook",
-            &["2027", "core", "all", "/tmp/fresh"],
-            DEFAULT_GENERATION
-        ),
-        "different out path must produce different keys"
+        changed(&|r| r.scope = Some("all_sources".to_string())),
+        key,
+        "scope"
     );
+    assert_ne!(changed(&|r| r.limit = None), key, "limit");
+    assert_ne!(
+        changed(&|r| r.out = Some("/tmp/root-b".to_string())),
+        key,
+        "out"
+    );
+    assert_ne!(changed(&|r| r.school_year = Some(2025)), key, "school year");
 
-    assert_ne!(
-        run_key("workbook", &["2027", "core", "50", "."], DEFAULT_GENERATION),
-        run_key(
-            "workbook",
-            &["2027", "core", "100", "."],
-            DEFAULT_GENERATION
-        ),
-        "different limit must produce different keys"
-    );
+    let bare = workbook_request_key(&WorkbookRequest::default());
+    assert_eq!(bare, "workbook:all:all:all:.:unstated:1");
 }
 
 #[test]

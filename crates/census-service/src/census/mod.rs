@@ -24,6 +24,8 @@ pub use state::{
     Phase, RetainedFindings, SealCounts, SealError, SealEvidence, SealedCensus, SourceObject,
     WorkbookCheck,
 };
+#[cfg(feature = "native-fault-injection")]
+pub use sweep::install_boundary_hook;
 pub use sweep::{collect_milesplit, collect_state_rosters, collect_state_teams};
 
 pub const DEFAULT_ORIGIN_LOCK_ROOT: &str = "var/locks";

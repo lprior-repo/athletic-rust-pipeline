@@ -27,6 +27,7 @@ pub(super) fn assemble(
         retained: retained_findings(coverage, stats, access, request),
         workbook,
         observed_on: census.generated_on.clone(),
+        run: request.run,
     }
 }
 

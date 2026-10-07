@@ -1,6 +1,4 @@
-use census_domain::model::{
-    CanonicalSchool, Evidence, SchoolPostalAddress, SourceIdentity, SourceNamespace,
-};
+use census_domain::model::{CanonicalSchool, Evidence, SourceIdentity, SourceNamespace};
 use census_domain::school_directory::LinkMatch;
 use census_domain::UsJurisdiction;
 use census_store::StoreResult;
@@ -8,29 +6,10 @@ use census_store::StoreResult;
 use super::lanes::ASSOCIATION_PREFIX;
 use super::support::{
     allocation, already_owns, authority_kind, bump, bump_rule, lane_evidence, owner_id,
-    parse_key_label,
+    parse_key_label, postal_claim, retain_evidence, stamp_website, Authority, DirectoryAuthority,
+    Target,
 };
-use super::{Job, LaneEvidence};
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(super) enum DirectoryAuthority {
-    Directory(&'static str),
-    Association,
-}
-
-#[derive(Clone, Copy)]
-struct Target<'a> {
-    school: &'a CanonicalSchool,
-    state: UsJurisdiction,
-    matched: &'a LinkMatch,
-}
-
-pub(super) struct Authority {
-    pub(super) token: String,
-    pub(super) source: String,
-    pub(super) namespace: SourceNamespace,
-    pub(super) id: String,
-}
+use super::{Job, LaneEvidence, LaneSelection};
 
 impl<'a> Job<'a> {
     pub(super) fn link(
@@ -47,17 +26,45 @@ impl<'a> Job<'a> {
         let Some(authority) = self.authority(target)? else {
             return Ok(());
         };
-        let Some(lane) = self.lanes.get(&authority.token).cloned() else {
-            let detail = format!(
-                "provider {} has no lane in this generation",
-                authority.token
-            );
-            return self.missing_evidence(school, state, &matched.rule, detail);
+        let lane = match self.lanes.select(&authority.token, &target.matched.key) {
+            Ok(lane) => lane.clone(),
+            Err(LaneSelection::Missing) => {
+                let detail = format!(
+                    "provider {} has no lane in this generation",
+                    authority.token
+                );
+                return self.missing_evidence(school, state, &matched.rule, detail);
+            }
+            Err(LaneSelection::Unattributed { candidates }) => {
+                let detail = format!(
+                    "no capture of {} carries {} ({}); the generation was built without \
+                     per-capture provenance or lists a capture that does not hold this school, so \
+                     the claim cannot name its bytes",
+                    authority.token,
+                    parse_key_label(&target.matched.key),
+                    candidates.join(", ")
+                );
+                return self.missing_evidence(school, state, &matched.rule, detail);
+            }
+            Err(LaneSelection::Ambiguous { candidates }) => {
+                let detail = format!(
+                    "several captures of {} carry {} ({}); pass one capture per school or drop the \
+                     duplicate before building the generation",
+                    authority.token,
+                    parse_key_label(&target.matched.key),
+                    candidates.join(", ")
+                );
+                return self.refuse(school, state, &matched.rule, detail);
+            }
         };
         let (Some(url), Some(observed_on)) = (lane.url.clone(), lane.observed_on.clone()) else {
             let detail = format!(
-                "provider {} needs a capture URL and an observation date; pass --evidence-url {}=URL --evidence-date {}=YYYY-MM-DD",
-                authority.token, authority.token, authority.token
+                "provider {} needs a capture URL and an observation date; pass --evidence-url {}=URL --evidence-date {}=YYYY-MM-DD, or name one capture as {provider}@{path}=… when the generation holds several",
+                authority.token,
+                authority.token,
+                authority.token,
+                provider = authority.token,
+                path = lane.path
             );
             return self.missing_evidence(school, state, &matched.rule, detail);
         };
@@ -150,23 +157,49 @@ impl<'a> Job<'a> {
     ) -> StoreResult<()> {
         let evidence = lane_evidence(&authority, &lane, &url, &observed_on);
         if already_owns(target.school, &authority) {
-            return self.refresh(target, evidence);
+            return self.refresh(target, authority, lane, url, evidence);
         }
         self.append(target, authority, url, evidence, lane)
     }
 
-    fn refresh(&mut self, target: Target<'_>, evidence: Evidence) -> StoreResult<()> {
+    fn refresh(
+        &mut self,
+        target: Target<'_>,
+        authority: Authority,
+        lane: LaneEvidence,
+        url: String,
+        evidence: Evidence,
+    ) -> StoreResult<()> {
         bump(&mut self.counters.already_linked)?;
-        let Some(website) = target
-            .matched
-            .website
-            .clone()
-            .filter(|_| target.school.school_website.is_none())
-        else {
-            return Ok(());
-        };
         let mut clone = target.school.clone();
-        self.attach_website(&mut clone, website, &evidence)?;
+        let mut changed = stamp_website(target, &mut clone, &evidence, &mut self.counters)?;
+        match postal_claim(target.matched, &authority, &lane, &url, &evidence) {
+            Some(Ok(claim)) => {
+                let claims = clone.postal_addresses.len();
+                if let Err(error) = clone.add_postal_address(claim) {
+                    return self.refuse(
+                        target.school,
+                        target.state,
+                        &target.matched.rule,
+                        error.to_string(),
+                    );
+                }
+                changed |= clone.postal_addresses.len() > claims;
+            }
+            Some(Err(error)) => {
+                return self.refuse(
+                    target.school,
+                    target.state,
+                    &target.matched.rule,
+                    error.to_string(),
+                );
+            }
+            None => changed |= retain_evidence(&mut clone, &evidence)?,
+        }
+        if !changed {
+            return Ok(());
+        }
+        bump(&mut self.counters.backfilled)?;
         self.push_change(clone)
     }
 
@@ -178,28 +211,20 @@ impl<'a> Job<'a> {
         evidence: Evidence,
         lane: LaneEvidence,
     ) -> StoreResult<()> {
-        let identity =
-            SourceIdentity::new(authority.namespace.clone(), authority.id.as_str()).with_url(url);
-        let claim = match target.matched.address.clone() {
-            Some(address) => match SchoolPostalAddress::new(
-                address,
-                identity.clone(),
-                target.matched.source.clone(),
-                evidence.clone(),
-                lane.capture_sha256.clone(),
-            ) {
-                Ok(claim) => Some(claim),
-                Err(error) => {
-                    return self.refuse(
-                        target.school,
-                        target.state,
-                        &target.matched.rule,
-                        error.to_string(),
-                    )
-                }
-            },
+        let claim = match postal_claim(target.matched, &authority, &lane, &url, &evidence) {
+            Some(Ok(claim)) => Some(claim),
+            Some(Err(error)) => {
+                return self.refuse(
+                    target.school,
+                    target.state,
+                    &target.matched.rule,
+                    error.to_string(),
+                );
+            }
             None => None,
         };
+        let identity =
+            SourceIdentity::new(authority.namespace.clone(), authority.id.as_str()).with_url(url);
         let mut clone = self.stamp(target, identity, &evidence, claim.is_none())?;
         let Some(claim) = claim else {
             bump(&mut self.counters.linked)?;
@@ -229,14 +254,7 @@ impl<'a> Job<'a> {
         keep_evidence: bool,
     ) -> StoreResult<CanonicalSchool> {
         let mut clone = target.school.clone();
-        if let Some(website) = target
-            .matched
-            .website
-            .clone()
-            .filter(|_| target.school.school_website.is_none())
-        {
-            self.attach_website(&mut clone, website, evidence)?;
-        }
+        stamp_website(target, &mut clone, evidence, &mut self.counters)?;
         if keep_evidence {
             clone
                 .evidence
@@ -250,20 +268,5 @@ impl<'a> Job<'a> {
             .map_err(|error| allocation(error.to_string()))?;
         clone.source_identities.push(identity);
         Ok(clone)
-    }
-
-    fn attach_website(
-        &mut self,
-        clone: &mut CanonicalSchool,
-        website: String,
-        evidence: &Evidence,
-    ) -> StoreResult<()> {
-        clone
-            .evidence
-            .try_reserve(1)
-            .map_err(|error| allocation(error.to_string()))?;
-        clone.school_website = Some(website);
-        clone.evidence.push(evidence.clone());
-        bump(&mut self.counters.websites)
     }
 }

@@ -18,7 +18,12 @@ grep -qx $'ok\ttrue' "$DRILL_DIR/integrity"
 "$BINARY" --store "$DRILL_DIR/restored" fjall-stats > "$DRILL_DIR/stats"
 jq -Rn '[inputs | split("\t") | select(length == 2) |
     select(.[0] != "store" and .[0] != "observations" and
-           .[0] != "bytes_on_disk" and .[0] != "store_bytes") |
+           .[0] != "bytes_on_disk" and .[0] != "store_bytes" and
+           .[0] != "schema_version" and .[0] != "key_format" and
+           .[0] != "migration_target" and .[0] != "created_by" and
+           .[0] != "created_at" and .[0] != "evidence_generation" and
+           .[0] != "derived_generation") |
+    select(.[1] | test("^[0-9]+$")) |
     {key: .[0], value: (.[1] | tonumber)}] | from_entries' \
     < "$DRILL_DIR/stats" > "$DRILL_DIR/counts.json"
 jq -e --slurpfile actual "$DRILL_DIR/counts.json" '.tables == $actual[0]' \

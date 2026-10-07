@@ -6,13 +6,14 @@ REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
 
 mkdir -p "$SCRATCH_STORE"
 SCRATCH_STORE="$(cd "$SCRATCH_STORE" && pwd)"
-TEST_DIR=$(mktemp -d "$SCRATCH_STORE/test-XXXXXX")
-trap 'rm -rf -- "$TEST_DIR"' EXIT
-export TMPDIR="$TEST_DIR"
+TEST_DIR=$(mktemp -d "$SCRATCH_STORE/scenario-15-XXXXXX")
+echo "EVIDENCE: $TEST_DIR"
+export TMPDIR="$TEST_DIR/tmp"
+mkdir -p "$TMPDIR"
 
 cd "$REPO_ROOT"
 set +e
-cargo test -p census-service --test backup_restore -- --nocapture 2>&1 | tee "$TEST_DIR/log.txt"
+tools/moon-cargo test -p census-service --test backup_restore -- --nocapture 2>&1 | tee "$TEST_DIR/log.txt"
 TEST_RC=$?
 set -e
 cd - >/dev/null

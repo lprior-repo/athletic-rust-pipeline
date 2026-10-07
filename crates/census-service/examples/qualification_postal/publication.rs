@@ -21,9 +21,11 @@ pub(super) fn publish_and_readback(
 ) -> Result<(Value, [String; 12])> {
     let school = dataset.schools.values().next().context("school absent")?;
     let options = workbook::Options {
+        grad_year: Some(2027),
         out: Some(root.join("publication")),
-        school_year: Some(SchoolYear::new(2026).context("unsupported school year")?),
-        ..Default::default()
+        limit: None,
+        scope: census_report::report::Scope::AllSources,
+        school_year: SchoolYear::new(2026).context("unsupported school year")?,
     };
     let censuses = Censuses::of(dataset, &store.out_dir());
     let path = workbook::build_from(dataset, store, &options, &censuses)?;

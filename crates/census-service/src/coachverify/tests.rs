@@ -131,6 +131,67 @@ fn a_different_school_cannot_verify_the_claimed_institution() -> TestResult {
     Ok(())
 }
 
+fn director_fragment() -> RawContactRow {
+    RawContactRow {
+        role: "Athletic Director".to_string(),
+        coach_name: String::new(),
+        public_professional_email: String::new(),
+        ad_name: "Dana Reid".to_string(),
+        ad_email: "dana@example.org".to_string(),
+        ..fragment()
+    }
+}
+
+#[test]
+fn a_current_same_school_director_verifies() -> TestResult {
+    let evidence = evaluate(
+        &director_fragment(),
+        &staff("<tr><td>Dana Reid Athletic Director dana@example.org</td></tr>"),
+    )?;
+    check!(eq; evidence.verdict(), Verdict::Ok);
+    check!(evidence
+        .claims
+        .iter()
+        .any(|claim| claim.field == ContactProofField::AdEmail));
+    Ok(())
+}
+
+#[test]
+fn a_foreign_school_cannot_verify_the_claimed_director() -> TestResult {
+    let body = "<h1>Other High School WI</h1><table><tr><td>Dana Reid Athletic Director dana@example.org</td></tr></table>";
+    check!(!evaluate(&director_fragment(), body)?.verdict().shipped());
+    Ok(())
+}
+
+#[test]
+fn a_foreign_state_cannot_verify_the_claimed_director() -> TestResult {
+    let body = "<h1>Mosinee High School MN</h1><table><tr><td>Dana Reid Athletic Director dana@example.org</td></tr></table>";
+    check!(!evaluate(&director_fragment(), body)?.verdict().shipped());
+    Ok(())
+}
+
+#[test]
+fn former_athletic_director_is_contradicted() -> TestResult {
+    let evidence = evaluate(
+        &director_fragment(),
+        &staff("<tr><td>Dana Reid Former Athletic Director dana@example.org</td></tr>"),
+    )?;
+    check!(evidence.contradicted);
+    check!(eq; evidence.verdict(), Verdict::RoleContradicted);
+    check!(evidence.claims.is_empty());
+    Ok(())
+}
+
+#[test]
+fn a_not_current_director_title_is_contradicted() -> TestResult {
+    let evidence = evaluate(
+        &director_fragment(),
+        &staff("<tr><td>Dana Reid Athletic Director no longer dana@example.org</td></tr>"),
+    )?;
+    check!(evidence.contradicted);
+    Ok(())
+}
+
 #[test]
 fn former_role_escapes_as_contradiction() -> TestResult {
     let body = staff("<tr><td>Dana Reid former Head XC Coach dana@example.org</td></tr>");
@@ -301,6 +362,66 @@ fn freeze_manifest_covers_every_published_union_file() -> TestResult {
     let manifest = std::fs::read_to_string(&listed)?;
     check!(manifest.contains(&format!("{:x}", Sha256::digest(std::fs::read(&state)?))));
     check!(manifest.contains(&format!("{:x}", Sha256::digest(std::fs::read(&sidecar)?))));
+    Ok(())
+}
+
+#[test]
+fn the_state_union_publishes_only_a_same_school_current_director() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let cases = [
+        (
+            "Casey Control",
+            "casey@example.org",
+            "https://example.org/staff",
+            staff("<tr><td>Casey Control Athletic Director casey@example.org</td></tr>"),
+        ),
+        (
+            "Fay Foreign",
+            "fay@example.org",
+            "https://example.org/foreign",
+            "<h1>Other High School WI</h1><table><tr><td>Fay Foreign Athletic Director fay@example.org</td></tr></table>".to_string(),
+        ),
+        (
+            "Sam Staten",
+            "sam@example.org",
+            "https://example.org/staten",
+            "<h1>Mosinee High School MN</h1><table><tr><td>Sam Staten Athletic Director sam@example.org</td></tr></table>".to_string(),
+        ),
+        (
+            "Fran Former",
+            "fran@example.org",
+            "https://example.org/former",
+            staff("<tr><td>Fran Former Former Athletic Director fran@example.org</td></tr>"),
+        ),
+    ];
+    let mut rows = Vec::new();
+    for (name, email, url, body) in &cases {
+        let mut row = director_fragment();
+        row.ad_name = name.to_string();
+        row.ad_email = email.to_string();
+        row.source_urls = vec![url.to_string()];
+        let evidence = evaluate(&row, body)?;
+        rows.push(RowOutcome {
+            row,
+            verdict: evidence.verdict(),
+            evidence: evidence.claims.clone(),
+        });
+    }
+    let union = dir.path().join("union");
+    let staged = write_state_union(
+        &union,
+        &[FragmentOutcome {
+            file: "WI.csv".to_string(),
+            rows,
+            counts: Default::default(),
+        }],
+    )?;
+    check!(eq; staged.get("WI").copied(), Some(1));
+    let published = std::fs::read_to_string(union.join("WI.csv"))?;
+    check!(published.contains("casey@example.org"));
+    check!(!published.contains("fay@example.org"));
+    check!(!published.contains("sam@example.org"));
+    check!(!published.contains("fran@example.org"));
     Ok(())
 }
 

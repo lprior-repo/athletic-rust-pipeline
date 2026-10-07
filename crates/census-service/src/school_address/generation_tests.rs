@@ -78,7 +78,10 @@ fn crash_boundaries_never_publish_a_mixed_generation() -> TestResult {
             .ok_or("missing digest prefix")?;
         publish_with(Path::new(&out), files, &manifest, |position| {
             if format!("{position:?}") == point {
-                eprintln!("interrupt at {position:?}; staging {out}/.staging.{}; complete generation {out}/generations/{prefix}", std::process::id());
+                eprintln!(
+                    "interrupt at {position:?}; staging {out}/.staging.{}; complete generation {out}/generations/{prefix}",
+                    std::process::id()
+                );
                 std::process::exit(77);
             }
             Ok(())

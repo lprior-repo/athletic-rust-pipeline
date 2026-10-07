@@ -49,20 +49,48 @@ pub(super) fn copy_file(src: &Path, dst: &Path) -> StoreResult<Streamed> {
     Ok(streamed)
 }
 
+pub(super) fn digest_bytes(bytes: &[u8]) -> String {
+    format!("{:x}", Sha256::digest(bytes))
+}
+
 pub(super) fn digest_file(path: &Path) -> StoreResult<Streamed> {
     let mut reader = File::open(path).map_err(|source| io_err(path, source))?;
     let mut sink = io::sink();
     stream_copy(&mut reader, &mut sink).map_err(|source| io_err(path, source))
 }
 
-#[cfg(unix)]
-pub(super) fn fsync_dir(dir: &Path) -> StoreResult<()> {
-    let handle = File::open(dir).map_err(|source| io_err(dir, source))?;
-    handle.sync_all().map_err(|source| io_err(dir, source))
+pub(crate) fn sync_directories(root: &Path) -> StoreResult<u64> {
+    let mut sync = crate::fs::fsync_dir;
+    sync_directories_with(root, &mut sync)
 }
 
-#[cfg(not(unix))]
-pub(super) fn fsync_dir(_dir: &Path) -> StoreResult<()> {
+pub(crate) fn sync_directories_with(
+    root: &Path,
+    sync: &mut impl FnMut(&Path) -> StoreResult<()>,
+) -> StoreResult<u64> {
+    let mut synced = 0_u64;
+    sync_tree_directories(root, sync, &mut synced)?;
+    Ok(synced)
+}
+
+fn sync_tree_directories(
+    dir: &Path,
+    sync: &mut impl FnMut(&Path) -> StoreResult<()>,
+    synced: &mut u64,
+) -> StoreResult<()> {
+    let listing = fs::read_dir(dir).map_err(|source| io_err(dir, source))?;
+    for entry in listing {
+        let entry = entry.map_err(|source| io_err(dir, source))?;
+        let path = entry.path();
+        let kind = fs::symlink_metadata(&path)
+            .map_err(|source| io_err(&path, source))?
+            .file_type();
+        if kind.is_dir() {
+            sync_tree_directories(&path, sync, synced)?;
+        }
+    }
+    sync(dir)?;
+    *synced = synced.saturating_add(1);
     Ok(())
 }
 

@@ -30,6 +30,8 @@ pub struct IngestRequest {
 pub struct IngestReply {
     pub endpoint: String,
     pub appended: u64,
+    #[serde(default)]
+    pub written: u64,
     pub total_observations: u64,
     pub cursor: Option<String>,
     pub last_appended_at: Option<String>,

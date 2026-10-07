@@ -23,7 +23,7 @@ pub(super) async fn dispatch(cli: &Cli, store: &Store) -> Result<()> {
         Command::Provider(args) => provider::run_provider(cli, store, args).await?,
         Command::Survey(args) => survey::run_survey(cli, store, args).await?,
         Command::Consolidate => publish::run_consolidate(store)?,
-        Command::Index => publish::run_index(store)?,
+        Command::Index(args) => publish::run_index(store, args)?,
         Command::FjallStats => store::print_store_stats(store)?,
         Command::StoreRestore(args) => store::run_restore(args)?,
         Command::StoreIntegrity => store::run_integrity(store)?,

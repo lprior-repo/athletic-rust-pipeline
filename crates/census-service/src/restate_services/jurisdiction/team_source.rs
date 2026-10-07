@@ -16,6 +16,8 @@ mod admission;
 mod ledger;
 #[cfg(feature = "native-fault-injection")]
 mod native_boundary;
+#[cfg(feature = "native-fault-injection")]
+pub use native_boundary::NATIVE_BOUNDARY_HOOK;
 #[cfg(test)]
 mod tests;
 

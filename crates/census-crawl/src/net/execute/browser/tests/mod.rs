@@ -51,6 +51,8 @@ impl Coordinates {
             url: URL,
             payload: None,
             host: HOST,
+            crawl_delay: None,
+            family: None,
             body_path: &self.body_path,
             meta_path: &self.meta_path,
             cached: None,
@@ -302,4 +304,52 @@ fn a_host_with_no_lane_is_refused_by_name() -> TestResult {
             Ok(())
         })
 }
+
+#[test]
+fn a_capture_whose_final_document_is_foreign_is_refused_before_evidence() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let dir = tempfile::tempdir()?;
+            let fetcher = fetcher_in(dir.path())?;
+            let coordinates = Coordinates::for_get(&fetcher);
+            let plan = coordinates.plan("GET");
+            let body = b"<html>somewhere else</html>".to_vec();
+            let mut foreign = capture_of(200, "text/html; charset=utf-8", &body);
+            foreign.response.response_url = Some("https://other.example/landing".into());
+
+            let error = match fetcher.accept_capture(&plan, foreign).await {
+                Err(error) => error,
+                Ok(_) => return Err("a foreign final document is not this source's answer".into()),
+            };
+
+            match error {
+                FetchError::Policy { detail } => check!(
+                    detail.contains("not admitted"),
+                    "the refusal says the final document was not admitted: {detail}"
+                ),
+                other => return Err(format!("expected a policy refusal, got {other:?}").into()),
+            }
+            check!(
+                !coordinates.body_path.exists() && !coordinates.meta_path.exists(),
+                "a refused capture is never cached as the source's answer"
+            );
+            check!(
+                fetcher.access_conditions().await.is_empty(),
+                "a foreign document is not an observation about the host"
+            );
+
+            let mut served = capture_of(200, "text/html; charset=utf-8", &body);
+            served.response.response_url = Some(URL.into());
+            let outcome = fetcher.accept_capture(&plan, served).await?;
+            check!(
+                eq;
+                outcome.status, 200,
+                "the source's own document is admitted as evidence"
+            );
+            Ok(())
+        })
+}
+
 mod cache;

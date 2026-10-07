@@ -113,7 +113,7 @@ pub fn write(
     rows: &[SharedSelection],
     cohort: &str,
 ) -> StoreResult<(PathBuf, PathBuf)> {
-    std::fs::create_dir_all(out_dir).map_err(|source| StoreError::Io {
+    census_store::fs::create_dir_all_synced(out_dir).map_err(|source| StoreError::Io {
         path: out_dir.to_path_buf(),
         source,
     })?;

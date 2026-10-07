@@ -33,6 +33,7 @@ Accepted policy is not proof of implementation or successful execution.
 | [024](ADR-024-coach-contact-tenure-admission.md) | Coach-contact tenure from a source-published staff listing: one claim binds role/program to mailbox; current tenures are the run's season; page-bound evidence | Accepted 2026-10-04; implementation open under `2b1`, `0hx`, `df2`, `jb2` |
 | [025](ADR-025-location-qualified-school-identity.md) | School identity is location-qualified: city participates in the minted id and natural key; location disagreement is a retained conflict, never a blend | Accepted 2026-10-06; implemented under `tq18`; landed 2026-10-06 with the derived-generation storage integration (ADR-026) |
 | [026](ADR-026-derived-generations-and-store-schema.md) | Derived state is published by generation with one atomic pointer flip; the store names its schema and refuses what it cannot interpret; decisions fence on the evidence generation | Accepted 2026-10-06 |
+| [027](ADR-027-cold-backup-carries-store-relative-links.md) | A cold backup carries the store's relative links (the publication pointer included) as links and refuses escapes; the manifest records the link target and restore recreates it | Accepted 2026-10-07; implemented under `dtdq` |
 
 Changes record explicit supersession rather than silently rewriting prior decisions. Source-specific
 research and dated command results belong in their evidence references, not additional ADR copies.

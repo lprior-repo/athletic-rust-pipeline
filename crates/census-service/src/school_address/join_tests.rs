@@ -15,7 +15,8 @@ use census_store::{Store, Table};
 use super::*;
 use crate::school_address::{CorpusReport, LaneReport, Report};
 
-type TestResult = Result<(), Box<dyn std::error::Error>>;
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+type ClaimRow = (String, String, String, Option<String>);
 
 const CAPTURE_SHA: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const GENERATION: &str = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
@@ -74,19 +75,6 @@ fn store_with_school() -> Result<(tempfile::TempDir, Store), Box<dyn std::error:
     );
     store.append(Table::Schools, &school)?;
     Ok((dir, store))
-}
-
-fn lanes(url: Option<&str>, observed_on: Option<&str>) -> BTreeMap<String, LaneEvidence> {
-    BTreeMap::from([(
-        "nces-ccd".to_string(),
-        LaneEvidence {
-            url: url.map(str::to_string),
-            observed_on: observed_on.map(str::to_string),
-            path: "research/sources/nces-ccd/raw/ccd.csv".to_string(),
-            capture_sha256: CAPTURE_SHA.to_string(),
-            generation: GENERATION.to_string(),
-        },
-    )])
 }
 
 fn merged_school(store: &Store) -> Result<CanonicalSchool, Box<dyn std::error::Error>> {
@@ -162,12 +150,15 @@ fn a_second_apply_reports_already_linked_without_duplicating() -> TestResult {
     let lanes = lanes(Some("https://nces.ed.gov/ccd.csv"), Some("2026-08-01"));
     let (first, _) = process(&store, &index, &lanes, Mode::Apply)?;
     check!(eq; first.linked, 1);
+    let evidence = merged_school(&store)?.evidence.len();
     let (second, outcomes) = process(&store, &index, &lanes, Mode::Apply)?;
     check!(eq; second.linked, 0);
     check!(eq; second.already_linked, 1);
+    check!(eq; second.backfilled, 0);
     check!(eq; outcomes.len(), 0);
     let merged = merged_school(&store)?;
     check!(eq; merged.postal_addresses.len(), 1);
+    check!(eq; merged.evidence.len(), evidence);
     Ok(())
 }
 
@@ -224,6 +215,7 @@ fn a_replay_backfills_the_website_for_an_already_linked_school() -> TestResult {
     check!(eq; second.linked, 0);
     check!(eq; second.already_linked, 1);
     check!(eq; second.websites, 1);
+    check!(eq; second.backfilled, 1);
     check!(eq; outcomes.len(), 0);
     let merged = merged_school(&store)?;
     check!(eq; merged.postal_addresses.len(), 1);
@@ -236,6 +228,114 @@ fn a_replay_backfills_the_website_for_an_already_linked_school() -> TestResult {
             .count(),
         1
     );
+    Ok(())
+}
+
+#[test]
+fn refresh_backfills_a_postal_claim_for_an_owned_identity_without_one() -> TestResult {
+    let (_dir, store) = store_with_school()?;
+    let mut school = merged_school(&store)?;
+    school.source_identities.push(SourceIdentity::new(
+        SourceNamespace::school_directory("nces-ccd", UsJurisdiction::Ohio),
+        "390000000001",
+    ));
+    store.append(Table::Schools, &school)?;
+    let index = DirectoryIndex::build(&[entry(
+        "390000000001",
+        "Springfield High School",
+        "Springfield",
+        UsJurisdiction::Ohio,
+        "1 Main St",
+    )?]);
+    let (counters, outcomes) = process(
+        &store,
+        &index,
+        &lanes(Some("https://nces.ed.gov/ccd.csv"), Some("2026-08-01")),
+        Mode::Apply,
+    )?;
+    check!(eq; counters.linked, 0);
+    check!(eq; counters.already_linked, 1);
+    check!(eq; counters.backfilled, 1);
+    check!(eq; outcomes.len(), 0);
+    let merged = merged_school(&store)?;
+    check!(eq; merged.postal_addresses.len(), 1);
+    check!(eq; merged.postal_addresses[0].capture_sha256(), CAPTURE_SHA);
+    check!(eq; merged.postal_addresses[0].evidence().observed_on.as_str(), "2026-08-01");
+    Ok(())
+}
+
+#[test]
+fn refresh_retains_a_new_capture_address_beside_the_owned_claim() -> TestResult {
+    let (_dir, store) = store_with_school()?;
+    let lanes = lanes(Some("https://nces.ed.gov/ccd.csv"), Some("2026-08-01"));
+    let first_index = DirectoryIndex::build(&[entry(
+        "390000000001",
+        "Springfield High School",
+        "Springfield",
+        UsJurisdiction::Ohio,
+        "1 Main St",
+    )?]);
+    let (first, _) = process(&store, &first_index, &lanes, Mode::Apply)?;
+    check!(eq; first.linked, 1);
+    let second_index = DirectoryIndex::build(&[entry(
+        "390000000001",
+        "Springfield High School",
+        "Springfield",
+        UsJurisdiction::Ohio,
+        "2 Second St",
+    )?]);
+    let (second, outcomes) = process(&store, &second_index, &lanes, Mode::Apply)?;
+    check!(eq; second.linked, 0);
+    check!(eq; second.already_linked, 1);
+    check!(eq; second.backfilled, 1);
+    check!(eq; outcomes.len(), 0);
+    let merged = merged_school(&store)?;
+    check!(eq; merged.postal_addresses.len(), 2);
+    check!(merged.postal_addresses.iter().any(|claim| claim
+        .address()
+        .line1()
+        .map(|line| line.as_str())
+        == Some("1 Main St")));
+    check!(merged.postal_addresses.iter().any(|claim| claim
+        .address()
+        .line1()
+        .map(|line| line.as_str())
+        == Some("2 Second St")));
+    Ok(())
+}
+
+#[test]
+fn refresh_retains_a_new_observation_date_on_the_owned_claim() -> TestResult {
+    let (_dir, store) = store_with_school()?;
+    let index = DirectoryIndex::build(&[entry(
+        "390000000001",
+        "Springfield High School",
+        "Springfield",
+        UsJurisdiction::Ohio,
+        "1 Main St",
+    )?]);
+    let (first, _) = process(
+        &store,
+        &index,
+        &lanes(Some("https://nces.ed.gov/ccd.csv"), Some("2026-08-01")),
+        Mode::Apply,
+    )?;
+    check!(eq; first.linked, 1);
+    let (second, _) = process(
+        &store,
+        &index,
+        &lanes(Some("https://nces.ed.gov/ccd.csv"), Some("2026-09-01")),
+        Mode::Apply,
+    )?;
+    check!(eq; second.linked, 0);
+    check!(eq; second.already_linked, 1);
+    check!(eq; second.backfilled, 1);
+    let merged = merged_school(&store)?;
+    check!(eq; merged.postal_addresses.len(), 2);
+    check!(merged
+        .postal_addresses
+        .iter()
+        .any(|claim| claim.evidence().observed_on.as_str() == "2026-09-01"));
     Ok(())
 }
 
@@ -344,6 +444,7 @@ fn lane_evidence_reads_the_generation_lanes_and_overrides() -> TestResult {
                 notes: 0,
                 skipped_rows: Vec::new(),
                 note_rows: Vec::new(),
+                captured: Vec::new(),
             },
             LaneReport {
                 source: "state-ed".to_string(),
@@ -354,6 +455,7 @@ fn lane_evidence_reads_the_generation_lanes_and_overrides() -> TestResult {
                 notes: 0,
                 skipped_rows: Vec::new(),
                 note_rows: Vec::new(),
+                captured: Vec::new(),
             },
             LaneReport {
                 source: "association:tssaa".to_string(),
@@ -364,6 +466,7 @@ fn lane_evidence_reads_the_generation_lanes_and_overrides() -> TestResult {
                 notes: 0,
                 skipped_rows: Vec::new(),
                 note_rows: Vec::new(),
+                captured: Vec::new(),
             },
             LaneReport {
                 source: "milesplit".to_string(),
@@ -374,6 +477,7 @@ fn lane_evidence_reads_the_generation_lanes_and_overrides() -> TestResult {
                 notes: 0,
                 skipped_rows: Vec::new(),
                 note_rows: Vec::new(),
+                captured: Vec::new(),
             },
         ],
         corpus: CorpusReport {
@@ -395,19 +499,25 @@ fn lane_evidence_reads_the_generation_lanes_and_overrides() -> TestResult {
         )]),
         dates: BTreeMap::from([("nces-ccd".to_string(), "2026-08-01".to_string())]),
     };
-    let lanes = build_lane_evidence(&report, &overrides);
-    check!(eq; lanes.len(), 3);
-    check!(lanes.contains_key("state-ed"));
-    check!(lanes.contains_key("association:tssaa"));
-    check!(!lanes.contains_key("milesplit"));
-    let lane = lanes.get("nces-ccd").ok_or("missing nces-ccd lane")?;
+    let lanes = build_lane_evidence(&report, &overrides)?;
+    check!(eq; lanes.tokens().count(), 3);
+    check!(lanes.tokens().any(|token| token == "state-ed"));
+    check!(lanes.tokens().any(|token| token == "association:tssaa"));
+    check!(!lanes.tokens().any(|token| token == "milesplit"));
+    let lane = lanes
+        .lanes("nces-ccd")
+        .first()
+        .ok_or("missing nces-ccd lane")?;
     check!(eq; lane.url.as_deref(), Some("https://nces.ed.gov/ccd.zip"));
     check!(eq; lane.observed_on.as_deref(), Some("2026-08-01"));
     check!(eq; lane.capture_sha256.as_str(), CAPTURE_SHA);
     check!(eq; lane.generation.as_str(), GENERATION);
 
-    let bare = build_lane_evidence(&report, &Overrides::default());
-    let lane = bare.get("nces-ccd").ok_or("missing nces-ccd lane")?;
+    let bare = build_lane_evidence(&report, &Overrides::default())?;
+    let lane = bare
+        .lanes("nces-ccd")
+        .first()
+        .ok_or("missing nces-ccd lane")?;
     check!(eq; lane.url, None);
     check!(eq; lane.observed_on, None);
     Ok(())
@@ -563,20 +673,62 @@ fn state_record_entry(
     .with_grades(Some(span(9, 12)?)))
 }
 
-fn lane_map(
+fn lane_of(
     token: &str,
+    path: &str,
     url: Option<&str>,
     observed_on: Option<&str>,
-) -> BTreeMap<String, LaneEvidence> {
-    BTreeMap::from([(
+    captured: Vec<IdentifiedKey>,
+) -> (String, LaneEvidence) {
+    lane_of_sha(token, path, CAPTURE_SHA, url, observed_on, captured)
+}
+
+fn lane_of_sha(
+    token: &str,
+    path: &str,
+    sha: &str,
+    url: Option<&str>,
+    observed_on: Option<&str>,
+    captured: Vec<IdentifiedKey>,
+) -> (String, LaneEvidence) {
+    (
         token.to_string(),
         LaneEvidence {
             url: url.map(str::to_string),
             observed_on: observed_on.map(str::to_string),
-            path: format!("research/sources/{token}/raw/capture.html"),
-            capture_sha256: CAPTURE_SHA.to_string(),
+            path: path.to_string(),
+            capture_sha256: sha.to_string(),
             generation: GENERATION.to_string(),
+            captured,
         },
+    )
+}
+
+fn lanes_of(lanes: Vec<(String, LaneEvidence)>) -> LaneSet {
+    let mut by_provider: BTreeMap<String, Vec<LaneEvidence>> = BTreeMap::new();
+    for (token, lane) in lanes {
+        by_provider.entry(token).or_default().push(lane);
+    }
+    LaneSet::of(by_provider)
+}
+
+fn lanes(url: Option<&str>, observed_on: Option<&str>) -> LaneSet {
+    lanes_of(vec![lane_of(
+        "nces-ccd",
+        "research/sources/nces-ccd/raw/ccd.csv",
+        url,
+        observed_on,
+        Vec::new(),
+    )])
+}
+
+fn lane_map(token: &str, url: Option<&str>, observed_on: Option<&str>) -> LaneSet {
+    lanes_of(vec![lane_of(
+        token,
+        &format!("research/sources/{token}/raw/capture.html"),
+        url,
+        observed_on,
+        Vec::new(),
     )])
 }
 
@@ -693,7 +845,8 @@ fn an_attested_state_record_is_matched_without_city_agreement() -> TestResult {
 
     let merged = merged_school(&store)?;
     check!(eq; merged.source_identities.len(), 1);
-    check!(eq; merged.postal_addresses.len(), 0);
+    check!(eq; counters.backfilled, 1);
+    check!(eq; merged.postal_addresses.len(), 1);
     Ok(())
 }
 
@@ -811,23 +964,30 @@ fn several_association_lanes_refuse_state_record_links() -> TestResult {
         None,
         association(UsJurisdiction::Tennessee),
     )?]);
-    let mut lanes = lane_map(
-        "association:tssaa",
-        Some("https://portal.tssaa.org/schools"),
-        Some("2026-09-30"),
-    );
-    lanes.extend(lane_map(
-        "association:ihsa",
-        Some("https://www.ihsa.org/schools"),
-        Some("2026-09-30"),
-    ));
+    let lanes = lanes_of(vec![
+        lane_of(
+            "association:tssaa",
+            "research/sources/association:tssaa/raw/capture.html",
+            Some("https://portal.tssaa.org/schools"),
+            Some("2026-09-30"),
+            Vec::new(),
+        ),
+        lane_of(
+            "association:ihsa",
+            "research/sources/association:ihsa/raw/capture.html",
+            Some("https://www.ihsa.org/schools"),
+            Some("2026-09-30"),
+            Vec::new(),
+        ),
+    ]);
     let (counters, outcomes) = process(&store, &index, &lanes, Mode::DryRun)?;
     check!(eq; counters.refused, 1);
     check!(eq; counters.linked, 0);
-    check!(outcomes.iter().any(|row| row
-        .detail
-        .as_deref()
-        .is_some_and(|detail| detail.contains("several association lanes"))));
+    check!(outcomes.iter().any(|row| {
+        row.detail
+            .as_deref()
+            .is_some_and(|detail| detail.contains("several association lanes"))
+    }));
     Ok(())
 }
 
@@ -1102,5 +1262,291 @@ fn a_transfer_observation_never_links_schools() -> TestResult {
             .count(),
         1
     );
+    Ok(())
+}
+
+const ALPHA_SHA: &str = "1111111111111111111111111111111111111111111111111111111111111111";
+const BETA_SHA: &str = "2222222222222222222222222222222222222222222222222222222222222222";
+
+fn two_school_store() -> Result<(tempfile::TempDir, Store), Box<dyn std::error::Error>> {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path().join("store"))?;
+    for (name, city) in [("Alpha High School", "Alpha"), ("Beta High School", "Beta")] {
+        let (school, _) = CanonicalSchool::new(
+            UsJurisdiction::NewYork,
+            name,
+            normalize_name(name),
+            Some(city),
+        );
+        store.append(Table::Schools, &school)?;
+    }
+    Ok((dir, store))
+}
+
+fn key_of(id: &str) -> Result<IdentifiedKey, Box<dyn std::error::Error>> {
+    Ok(IdentifiedKey::StateRecord {
+        state: UsJurisdiction::NewYork,
+        id: StateRecordId::parse(id)?,
+    })
+}
+
+fn school_claims(store: &Store) -> TestResult<Vec<ClaimRow>> {
+    let mut rows: Vec<ClaimRow> = Vec::new();
+    for school in store.scan::<CanonicalSchool>(Table::Schools)? {
+        for claim in &school.postal_addresses {
+            rows.push((
+                school.name.clone(),
+                claim.capture_sha256().to_string(),
+                claim
+                    .evidence()
+                    .source
+                    .url
+                    .as_deref()
+                    .map_or(String::new(), str::to_string),
+                claim.evidence().note.clone(),
+            ));
+        }
+    }
+    rows.sort();
+    Ok(rows)
+}
+
+#[test]
+fn each_state_education_capture_keeps_its_own_provenance() -> TestResult {
+    let mut runs = Vec::new();
+    for reversed in [false, true] {
+        let (_dir, store) = two_school_store()?;
+        let alpha = state_record_entry(
+            "441001",
+            "Alpha High School",
+            "Alpha",
+            UsJurisdiction::NewYork,
+            Some("1 Main St"),
+            state_education(UsJurisdiction::NewYork),
+        )?;
+        let beta = state_record_entry(
+            "441002",
+            "Beta High School",
+            "Beta",
+            UsJurisdiction::NewYork,
+            Some("2 Side St"),
+            state_education(UsJurisdiction::NewYork),
+        )?;
+        let mut lanes = vec![
+            lane_of_sha(
+                "state-ed",
+                "research/sources/state-ed/raw/alpha.html",
+                ALPHA_SHA,
+                Some("https://data.nysed.gov/profile/441001"),
+                Some("2026-09-01"),
+                vec![key_of("441001")?],
+            ),
+            lane_of_sha(
+                "state-ed",
+                "research/sources/state-ed/raw/beta.html",
+                BETA_SHA,
+                Some("https://data.nysed.gov/profile/441002"),
+                Some("2026-09-01"),
+                vec![key_of("441002")?],
+            ),
+        ];
+        if reversed {
+            lanes.reverse();
+        }
+        let index = DirectoryIndex::build(&[alpha, beta]);
+        let (counters, _) = process(&store, &index, &lanes_of(lanes), Mode::Apply)?;
+        check!(eq; counters.linked, 2);
+        check!(eq; counters.refused, 0);
+        check!(eq; counters.evidence_missing, 0);
+        let rows = school_claims(&store)?;
+        check!(eq; rows.len(), 2);
+        let alpha_row = rows
+            .iter()
+            .find(|row| row.0 == "Alpha High School")
+            .ok_or("no alpha claim")?;
+        check!(eq; alpha_row.1.as_str(), ALPHA_SHA);
+        check!(eq; alpha_row.2.as_str(), "https://data.nysed.gov/profile/441001");
+        let alpha_note = alpha_row.3.as_deref().map_or(String::new(), str::to_string);
+        check!(alpha_note.contains("alpha.html"));
+        check!(!alpha_note.contains("beta.html"));
+        let beta_row = rows
+            .iter()
+            .find(|row| row.0 == "Beta High School")
+            .ok_or("no beta claim")?;
+        check!(eq; beta_row.1.as_str(), BETA_SHA);
+        check!(eq; beta_row.2.as_str(), "https://data.nysed.gov/profile/441002");
+        let beta_note = beta_row.3.as_deref().map_or(String::new(), str::to_string);
+        check!(beta_note.contains("beta.html"));
+        check!(!beta_note.contains("alpha.html"));
+        runs.push(rows);
+    }
+    check!(eq; runs[0], runs[1]);
+    Ok(())
+}
+
+#[test]
+fn two_captures_carrying_one_school_refuse_the_link() -> TestResult {
+    let (_dir, store) = store_with(UsJurisdiction::NewYork, "Kingston High School", "Kingston")?;
+    let entry = state_record_entry(
+        "441001",
+        "Kingston High School",
+        "Kingston",
+        UsJurisdiction::NewYork,
+        Some("1 Main St"),
+        state_education(UsJurisdiction::NewYork),
+    )?;
+    let lanes = lanes_of(vec![
+        lane_of_sha(
+            "state-ed",
+            "research/sources/state-ed/raw/march.html",
+            ALPHA_SHA,
+            Some("https://data.nysed.gov/profile/441001"),
+            Some("2026-03-01"),
+            vec![key_of("441001")?],
+        ),
+        lane_of_sha(
+            "state-ed",
+            "research/sources/state-ed/raw/september.html",
+            BETA_SHA,
+            Some("https://data.nysed.gov/profile/441001"),
+            Some("2026-09-01"),
+            vec![key_of("441001")?],
+        ),
+    ]);
+    let index = DirectoryIndex::build(&[entry]);
+    let (counters, outcomes) = process(&store, &index, &lanes, Mode::DryRun)?;
+    check!(eq; counters.linked, 0);
+    check!(eq; counters.refused, 1);
+    check!(outcomes.iter().any(|row| row
+        .detail
+        .as_deref()
+        .is_some_and(|detail| detail.contains("several captures of state-ed")
+            && detail.contains("march.html")
+            && detail.contains("september.html"))));
+    Ok(())
+}
+
+#[test]
+fn a_capture_selector_names_one_capture_and_an_unknown_one_is_refused() -> TestResult {
+    let report = Report {
+        manifest_digest: GENERATION.to_string(),
+        now: None,
+        lanes: vec![
+            LaneReport {
+                source: "state-ed".to_string(),
+                path: "research/sources/state-ed/raw/alpha.html".to_string(),
+                sha256: ALPHA_SHA.to_string(),
+                entries: 1,
+                skipped: 0,
+                notes: 0,
+                skipped_rows: Vec::new(),
+                note_rows: Vec::new(),
+                captured: Vec::new(),
+            },
+            LaneReport {
+                source: "state-ed".to_string(),
+                path: "research/sources/state-ed/raw/beta.html".to_string(),
+                sha256: BETA_SHA.to_string(),
+                entries: 1,
+                skipped: 0,
+                notes: 0,
+                skipped_rows: Vec::new(),
+                note_rows: Vec::new(),
+                captured: Vec::new(),
+            },
+        ],
+        corpus: CorpusReport {
+            rows: 2,
+            entries: 2,
+            skipped: 0,
+            notes: 0,
+            merges: 0,
+        },
+        changes: None,
+        schedule: Vec::new(),
+        outputs: Vec::new(),
+        phases: None,
+    };
+    let overrides = Overrides {
+        urls: BTreeMap::from([
+            (
+                "state-ed@research/sources/state-ed/raw/alpha.html".to_string(),
+                "https://data.nysed.gov/profile/441001".to_string(),
+            ),
+            (
+                "state-ed@research/sources/state-ed/raw/beta.html".to_string(),
+                "https://data.nysed.gov/profile/441002".to_string(),
+            ),
+        ]),
+        dates: BTreeMap::from([("state-ed".to_string(), "2026-09-01".to_string())]),
+    }
+    .validated()?;
+    let lanes = build_lane_evidence(&report, &overrides)?;
+    let state_ed = lanes.lanes("state-ed");
+    check!(eq; state_ed.len(), 2);
+    let alpha = state_ed
+        .iter()
+        .find(|lane| lane.path.ends_with("alpha.html"))
+        .ok_or("missing alpha capture")?;
+    check!(eq; alpha.url.as_deref(), Some("https://data.nysed.gov/profile/441001"));
+    check!(eq; alpha.observed_on.as_deref(), Some("2026-09-01"));
+    let beta = state_ed
+        .iter()
+        .find(|lane| lane.path.ends_with("beta.html"))
+        .ok_or("missing beta capture")?;
+    check!(eq; beta.url.as_deref(), Some("https://data.nysed.gov/profile/441002"));
+
+    let unknown = Overrides {
+        urls: BTreeMap::from([(
+            "state-ed@research/sources/state-ed/raw/nope.html".to_string(),
+            "https://data.nysed.gov/profile/1".to_string(),
+        )]),
+        dates: BTreeMap::new(),
+    }
+    .validated()?;
+    let refused = build_lane_evidence(&report, &unknown);
+    check!(refused.is_err(), "an unknown capture selector is refused");
+    Ok(())
+}
+
+#[test]
+fn captures_without_per_school_evidence_refuse_to_name_a_bytes_source() -> TestResult {
+    let (_dir, store) = store_with(UsJurisdiction::NewYork, "Kingston High School", "Kingston")?;
+    let entry = state_record_entry(
+        "441001",
+        "Kingston High School",
+        "Kingston",
+        UsJurisdiction::NewYork,
+        Some("1 Main St"),
+        state_education(UsJurisdiction::NewYork),
+    )?;
+    let lanes = lanes_of(vec![
+        lane_of(
+            "state-ed",
+            "research/sources/state-ed/raw/march.html",
+            Some("https://data.nysed.gov/profile/441001"),
+            Some("2026-03-01"),
+            Vec::new(),
+        ),
+        lane_of(
+            "state-ed",
+            "research/sources/state-ed/raw/september.html",
+            Some("https://data.nysed.gov/profile/441001"),
+            Some("2026-09-01"),
+            Vec::new(),
+        ),
+    ]);
+    let index = DirectoryIndex::build(&[entry]);
+    let (counters, outcomes) = process(&store, &index, &lanes, Mode::Apply)?;
+    check!(eq; counters.linked, 0);
+    check!(eq; counters.refused, 0);
+    check!(eq; counters.evidence_missing, 1);
+    check!(outcomes.iter().any(|row| row
+        .detail
+        .as_deref()
+        .is_some_and(|detail| detail.contains("no capture of state-ed carries")
+            && detail.contains("march.html")
+            && detail.contains("september.html"))));
+    check!(eq; school_claims(&store)?.len(), 0);
     Ok(())
 }

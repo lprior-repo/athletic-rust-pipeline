@@ -15,7 +15,7 @@ pub const DEFAULT_MEMORY_BUDGET_BYTES: u64 = 48 * 1024 * 1024 * 1024;
 
 pub use census_store::clock::{Clock, SystemClock};
 
-pub use drain::DrainReport;
+pub use drain::{DrainReport, EndpointShutdown};
 pub use options::ServeOptions;
 pub use serve::{init_tracing, serve, serve_until};
 pub use stop::StopReason;

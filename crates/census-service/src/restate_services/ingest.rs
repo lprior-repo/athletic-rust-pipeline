@@ -30,6 +30,18 @@ pub(super) fn payload_digest(table: Table, rows: &[Value]) -> Result<String, Han
         .collect())
 }
 
+pub(super) fn credited_appended(
+    state: &IngestState,
+    operation: &str,
+    receipt_appended: u64,
+) -> u64 {
+    if state.seen_operations.iter().any(|seen| seen == operation) {
+        0
+    } else {
+        receipt_appended
+    }
+}
+
 struct Posted {
     table: Table,
     rows: Vec<Value>,
@@ -142,7 +154,8 @@ impl Ingest {
                 },
             )
             .await?;
-        let appended = application.appended();
+        let appended = credited_appended(&state, &operation, application.receipt().appended);
+        let written = application.appended();
         Ingest::update_ingest_state(
             &mut state,
             appended,
@@ -154,6 +167,7 @@ impl Ingest {
         Ok(Json(IngestReply {
             endpoint: state.endpoint,
             appended,
+            written,
             total_observations: state.total_observations,
             cursor: state.cursor,
             last_appended_at: state.last_appended_at,

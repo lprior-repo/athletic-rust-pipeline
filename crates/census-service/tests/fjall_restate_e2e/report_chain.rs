@@ -1,5 +1,6 @@
 use crate::{count_of, synthetic_corpus, TestResult};
 use calamine::Reader;
+use census_domain::model::SchoolYear;
 use census_domain::JurisdictionBucket;
 use census_domain::UsJurisdiction;
 use census_report::bests;
@@ -60,7 +61,7 @@ fn report_bests_and_workbook_chain_over_synthetic_entities() -> TestResult {
             out: Some(dir.path().join("e2e-census.xlsx")),
             limit: None,
             scope: Scope::Core,
-            school_year: None,
+            school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
         },
     )?;
     assert_complete_xlsx(&path, &corpus)?;

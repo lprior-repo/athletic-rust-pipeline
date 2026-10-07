@@ -2,7 +2,7 @@ use super::{invariant, sidecars};
 use crate::export::{DatasetLineage, ExportDataset};
 use crate::report::{io_error, ReportResult, Scope};
 use crate::workbook::Options;
-use census_domain::model::SchoolYear;
+use census_domain::model::{GradYear, SchoolYear};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -25,7 +25,7 @@ impl Selection {
             scope: options.scope.as_str().to_string(),
             grad_year: options.grad_year,
             limit: options.limit,
-            school_year: options.school_year,
+            school_year: Some(options.school_year),
         }
     }
 
@@ -35,11 +35,14 @@ impl Selection {
             "all_sources" => Scope::AllSources,
             _ => return Err(invariant("invalid publication scope".to_string())),
         };
+        let school_year = self.school_year.ok_or_else(|| {
+            invariant("the publication manifest carries no contact school year".to_string())
+        })?;
         Ok(Options {
             scope,
             grad_year: self.grad_year,
             limit: self.limit,
-            school_year: self.school_year,
+            school_year,
             out: None,
         })
     }
@@ -56,6 +59,10 @@ pub(super) struct Manifest {
 }
 
 impl Manifest {
+    pub(super) fn selection(&self) -> ReportResult<Options> {
+        self.selection.options()
+    }
+
     pub(super) fn capture(
         directory: &Path,
         dataset: &ExportDataset,
@@ -152,28 +159,10 @@ pub fn verify_for_seal(
     path: &Path,
     current: &ExportDataset,
     scope: Scope,
-    grad_year: i16,
+    cohort: GradYear,
 ) -> ReportResult<VerifiedPublication> {
     let (manifest, workbook) = verified(path)?;
-    let selection = manifest.selection.options()?;
-    if selection.scope != scope
-        || selection.grad_year != Some(grad_year)
-        || selection.limit.is_some()
-    {
-        return Err(invariant(
-            "seal requires a complete publication of the requested scope and cohort".to_string(),
-        ));
-    }
-    if manifest.lineage.store_identity != current.lineage.store_identity
-        || manifest.lineage.source_digest != current.lineage.source_digest
-        || manifest.lineage.input_digest != current.lineage.input_digest
-        || manifest.lineage.schema_revision != current.lineage.schema_revision
-        || manifest.lineage.policy_revision != current.lineage.policy_revision
-    {
-        return Err(invariant(
-            "publication is stale or belongs to different source evidence".to_string(),
-        ));
-    }
+    super::seal::binding(&manifest, current, scope, cohort)?;
     Ok(VerifiedPublication {
         generation_digest: manifest.generation_digest,
         workbook,

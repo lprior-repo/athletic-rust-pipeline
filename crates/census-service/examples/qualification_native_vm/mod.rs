@@ -67,7 +67,7 @@ pub fn run() -> Result<()> {
                 .build()
                 .context("creating guest action runtime")?;
             let seconds = match action.as_str() {
-                "jurisdiction-reboot-finish" => 600,
+                "jurisdiction-reboot-finish" => 3_400,
                 _ => 150,
             };
             runtime.block_on(async {

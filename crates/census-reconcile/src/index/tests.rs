@@ -6,6 +6,10 @@ use census_store::Entity;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+fn season() -> TestResult<census_domain::model::SchoolYear> {
+    census_domain::model::SchoolYear::new(2026).ok_or_else(|| "invalid fixture season".into())
+}
+
 fn school() -> CanonicalSchool {
     let mut school =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford", None).0;
@@ -132,7 +136,7 @@ fn a_pass_appends_every_index_and_a_snapshot_of_the_store() -> TestResult {
     store.append(Table::Athletes, &athlete(&school))?;
     let meet = unplaced_meet();
     store.append(Table::Meets, &meet)?;
-    let report = derive(&store, "index", "2026-09-22")?;
+    let report = derive(&store, "index", "2026-09-22", season()?)?;
     check!(eq; report.source_identities, 3);
     check!(eq; report.snapshots, 1);
     check!(
@@ -163,13 +167,13 @@ fn a_repeated_pass_reuses_every_id_and_keeps_one_snapshot_a_day() -> TestResult 
     let store = Store::open(dir.path())?;
     let school = school();
     store.append(Table::Schools, &school)?;
-    derive(&store, "index", "2026-09-22")?;
+    derive(&store, "index", "2026-09-22", season()?)?;
     let first_ids: Vec<_> = store
         .scan::<SourceObjectIdentity>(Table::SourceIdentities)?
         .into_iter()
         .map(|identity| identity.id)
         .collect();
-    derive(&store, "index", "2026-09-22")?;
+    derive(&store, "index", "2026-09-22", season()?)?;
     let identities: Vec<SourceObjectIdentity> = store.scan(Table::SourceIdentities)?;
     check!(eq; identities.len(), 1, "the second pass reuses the row id, so a read sees one identity");
     check!(eq; identities.into_iter().map(|identity| identity.id).collect::<Vec<_>>(), first_ids,
@@ -240,7 +244,7 @@ fn a_canonical_id_collision_reaches_the_conflict_queue() -> TestResult {
     let marta = other_subject_under_one_id(&school, &jane.id);
     store.append(Table::Athletes, &jane)?;
     store.append(Table::Athletes, &marta)?;
-    let report = derive(&store, "index", "2026-09-22")?;
+    let report = derive(&store, "index", "2026-09-22", season()?)?;
     let conflicts: Vec<RetainedConflict> = store.scan(Table::Conflicts)?;
     let collision = conflicts
         .iter()
@@ -277,13 +281,13 @@ fn a_recorded_decision_survives_the_next_derivation() -> TestResult {
     let store = Store::open(dir.path())?;
     let meet = unplaced_meet();
     store.append(Table::Meets, &meet)?;
-    derive(&store, "index", "2026-09-22")?;
+    derive(&store, "index", "2026-09-22", season()?)?;
     let case = case_for(&store, meet.id.as_str())?;
     check!(eq; case.state, ReviewState::Pending, "the lane has asked nothing");
     let mut decided = case.clone();
     decided.state = ReviewState::Resolved;
     store.replace(Table::ReviewCases, &decided)?;
-    let report = derive(&store, "index", "2026-09-22")?;
+    let report = derive(&store, "index", "2026-09-22", season()?)?;
     check!(eq; case_for(&store, meet.id.as_str())?.state, ReviewState::Resolved,
         "the second pass re-derives the finding without putting the decision back in the queue");
     check!(eq; report.superseded, 0, "a case this pass derives again is not superseded");
@@ -303,7 +307,7 @@ fn a_pending_case_whose_finding_is_gone_is_superseded() -> TestResult {
     store.replace(Table::ReviewCases, &ghost)?;
     let live = unplaced_meet();
     store.append(Table::Meets, &live)?;
-    let report = derive(&store, "index", "2026-09-22")?;
+    let report = derive(&store, "index", "2026-09-22", season()?)?;
     check!(eq; report.superseded, 1);
     check!(eq; case_for(&store, "meet:ghost")?.state, ReviewState::Superseded,
         "the reading that no longer stands is closed rather than left owing a decision");
@@ -319,7 +323,7 @@ fn a_cohort_claim_the_rules_decide_is_stored_retained() -> TestResult {
     store.append(Table::Schools, &school)?;
     let athlete = athlete(&school);
     store.append(Table::Athletes, &athlete)?;
-    derive(&store, "index", "2026-09-22")?;
+    derive(&store, "index", "2026-09-22", season()?)?;
     let unverified = store
         .scan::<ReviewCase>(Table::ReviewCases)?
         .into_iter()

@@ -131,9 +131,9 @@ fn a_refused_entry_leaves_the_page_unwritten_and_every_counter_where_it_was() ->
     let before = sequence_pointer(&store, Table::Schools)?;
     let mut batch = store.write_batch();
     batch.append_many(Table::Schools, &[school("Never Landed")])?;
-    let refused = batch.journal_done("unit", "too-big", &"x".repeat(MAX_JOURNAL_VALUE_BYTES + 1));
+    let refused = batch.journal_done("unit", &"k".repeat(MAX_JOURNAL_KEY_BYTES + 1), &"x");
     if refused.is_ok() {
-        return Err(format!("an entry past its ceiling is refused: {refused:?}").into());
+        return Err(format!("an entry with a key past its ceiling is refused: {refused:?}").into());
     }
     drop(batch);
     {

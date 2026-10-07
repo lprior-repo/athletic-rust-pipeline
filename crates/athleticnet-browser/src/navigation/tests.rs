@@ -117,3 +117,46 @@ fn a_budget_the_clock_cannot_hold_is_no_budget() -> Result<(), Box<dyn std::erro
             Ok(())
         })
 }
+#[test]
+fn an_admitted_document_is_only_the_target_origin() -> Result<(), Box<dyn std::error::Error>> {
+    let target = url::Url::parse("https://www.athletic.net/team/123")?;
+    check!(
+        !foreign_final_document("https://www.athletic.net/team/456", &target),
+        "a same-origin document URL is admitted"
+    );
+    check!(
+        foreign_final_document("https://other.example/foreign", &target),
+        "a foreign-origin document URL is refused"
+    );
+    check!(
+        foreign_final_document("http://www.athletic.net/team/123", &target),
+        "a scheme downgrade is a different origin and is refused"
+    );
+    check!(
+        foreign_final_document("not-a-url", &target),
+        "an unparseable document URL is refused"
+    );
+    Ok(())
+}
+
+#[test]
+fn a_foreign_final_document_never_opens_the_profile_gate() -> Result<(), Box<dyn std::error::Error>>
+{
+    let admitted = url::Url::parse("https://www.athletic.net/team/123")?;
+    let gate = ProfileGate::new();
+    check!(
+        eq;
+        refuse_foreign_document("https://other.example/landing", &admitted, &gate),
+        Some(NavigationOutcome::Failed(404)),
+        "a document the source did not serve fails instead of settling"
+    );
+    check!(
+        !gate.snapshot().ready,
+        "a foreign final document leaves the profile gate closed"
+    );
+    check!(
+        refuse_foreign_document(admitted.as_str(), &admitted, &gate).is_none(),
+        "the admitted origin proceeds to classification"
+    );
+    Ok(())
+}

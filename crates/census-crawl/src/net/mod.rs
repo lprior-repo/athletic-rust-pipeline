@@ -58,7 +58,6 @@ pub struct Fetcher {
     robots_gates: Mutex<HashMap<String, Arc<Mutex<()>>>>,
     stats: Mutex<FetchStats>,
     source: String,
-    blocks: Mutex<HashMap<String, SourceAccessCondition>>,
     lane: Option<bridge::BrowserLane>,
     offline: bool,
     origin_locks: OriginLocks,
@@ -173,20 +172,20 @@ impl Fetcher {
             let mut stats = self.stats.lock().await;
             stats.challenges = stats.challenges.saturating_add(1);
         }
-        let mut blocks = self.blocks.lock().await;
+        let mut blocks = self.pacing.blocks.lock().await;
         blocks.insert(condition.id.clone(), condition.clone());
         condition
     }
 
     pub async fn access_conditions(&self) -> Vec<SourceAccessCondition> {
-        let blocks = self.blocks.lock().await;
+        let blocks = self.pacing.blocks.lock().await;
         let mut rows: Vec<SourceAccessCondition> = blocks.values().cloned().collect();
         rows.sort_by(|left, right| left.id.cmp(&right.id));
         rows
     }
 
     pub async fn blocked_hosts(&self, now_iso8601: &str) -> Vec<String> {
-        let blocks = self.blocks.lock().await;
+        let blocks = self.pacing.blocks.lock().await;
         let mut hosts: Vec<String> = blocks
             .values()
             .filter(|condition| condition.is_blocking(now_iso8601))
@@ -199,7 +198,7 @@ impl Fetcher {
 
     pub async fn host_blocked(&self, host: &str, now_iso8601: &str) -> bool {
         let host = host.trim().to_ascii_lowercase();
-        let blocks = self.blocks.lock().await;
+        let blocks = self.pacing.blocks.lock().await;
         blocks
             .values()
             .any(|condition| condition.host == host && condition.is_blocking(now_iso8601))

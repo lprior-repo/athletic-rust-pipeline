@@ -42,7 +42,7 @@ pub fn build_publication(
             out: Some(publication_root),
             limit: None,
             scope: Scope::Core,
-            school_year: Some(constants::SCHOOL_YEAR),
+            school_year: constants::SCHOOL_YEAR,
         },
     )?;
     Ok(workbook::publication::verify_published(&written)?)

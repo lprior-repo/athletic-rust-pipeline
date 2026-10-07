@@ -186,6 +186,43 @@ fn a_host_with_a_recorded_cooldown_is_refused_before_dispatch() -> TestResult {
 }
 
 #[test]
+fn a_task_waiting_in_queue_is_refused_after_cooldown_is_recorded() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()?
+        .block_on(async {
+            let dir = tempfile::tempdir()?;
+            let fetcher = fetcher_in(dir.path(), Duration::from_secs(1), Vec::new())?;
+            fetcher.host_gate(HOST, Some(Duration::from_secs(1))).await;
+
+            let first = Box::pin(fetcher.wait_turn(HOST));
+            first.await;
+
+            let second = Box::pin(fetcher.wait_turn(HOST));
+            let cooldown = fetcher
+                .record_access_condition(
+                    HOST,
+                    AccessBlockKind::RateLimited,
+                    429,
+                    Some(60),
+                    "recorded while task was waiting in queue",
+                )
+                .await;
+            check!(cooldown.is_blocking(&crate::net::now_iso8601()));
+
+            tokio::time::advance(Duration::from_secs(1)).await;
+            second.await;
+
+            let now = crate::net::now_iso8601();
+            check!(
+                fetcher.host_blocked(HOST, &now).await,
+                "the cooldown must still be active when the waiting task reaches the front"
+            );
+            Ok(())
+        })
+}
+#[test]
 fn two_fetchers_sharing_one_pacing_state_share_the_host_budget() -> TestResult {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()

@@ -5,6 +5,7 @@ use restate_sdk::prelude::*;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 
 use crate::spawn::Spawner;
+use census_domain::model::SchoolYear;
 use census_report::{bests, workbook};
 use census_store::Store;
 
@@ -13,7 +14,7 @@ use super::wire::{
     BestsReply, BestsRequest, ConsolidateReply, ConsolidateRequest, ReportReply, ReportRequest,
     WorkbookReply, WorkbookRequest,
 };
-use super::{blocking, job_error, resolve_scope, resolve_tables};
+use super::{blocking, job_error, resolve_scope, resolve_tables, JobError};
 
 #[derive(Clone)]
 pub struct Jobs {
@@ -225,12 +226,28 @@ impl Workbook {
         ctx: WorkflowContext<'_>,
         Json(request): Json<WorkbookRequest>,
     ) -> Result<Json<WorkbookReply>, HandlerError> {
+        let requested_year = match request.school_year {
+            Some(year) => year,
+            None => {
+                return Err(job_error(JobError::Terminal {
+                    message: "workbook publication requires an explicit school year".to_string(),
+                }))
+            }
+        };
+        let school_year = match SchoolYear::new(requested_year) {
+            Some(season) => season,
+            None => {
+                return Err(job_error(JobError::Terminal {
+                    message: format!("school year {requested_year} is outside the supported range"),
+                }))
+            }
+        };
         let options = workbook::Options {
             grad_year: request.grad_year,
             out: request.out.map(PathBuf::from),
             limit: request.limit,
             scope: resolve_scope(request.scope.as_deref())?,
-            school_year: None,
+            school_year,
         };
         let job = format!("workbook:{}", ctx.key());
         let store = Arc::clone(&self.jobs.store);

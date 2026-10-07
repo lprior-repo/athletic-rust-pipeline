@@ -4,10 +4,13 @@ use std::io;
 use std::path::Path;
 
 use super::errors::{io_err, object_kind, refused};
-use super::files::{copy_file, ensure_parent_dir};
+use super::files::{copy_file, digest_bytes, ensure_parent_dir};
 use super::generation::Generation;
 use super::manifest::{safe_entry_path, table_row_counts};
-use super::{Manifest, RestoreReport, MANIFEST_PATH, MANIFEST_VERSION, RESTORE_PREFIX};
+use super::tree::store_relative_link;
+use super::{
+    Manifest, ManifestEntry, RestoreReport, MANIFEST_PATH, MANIFEST_VERSION, RESTORE_PREFIX,
+};
 use crate::{Store, StoreError, StoreResult, Table};
 
 impl Store {
@@ -17,7 +20,7 @@ impl Store {
         let manifest = load_manifest(from)?;
         validate_manifest(from, &manifest)?;
         let generation = Generation::create(to, RESTORE_PREFIX)?;
-        let (files, bytes) = materialise(from, generation.path(), &manifest)?;
+        let (files, bytes, links) = materialise(from, generation.path(), &manifest)?;
         let tables = count_restored_generation(generation.path(), to)?;
         reconcile(from, &manifest, &tables)?;
         generation.publish()?;
@@ -26,6 +29,7 @@ impl Store {
             to: to.display().to_string(),
             files,
             bytes,
+            links,
             tables,
         })
     }
@@ -62,13 +66,18 @@ fn check_restore_destination(from: &Path, to: &Path) -> StoreResult<()> {
 }
 
 fn validate_source_path(path: &Path) -> StoreResult<()> {
+    validate_source_components(path, false)
+}
+
+fn validate_source_components(path: &Path, allow_final_link: bool) -> StoreResult<()> {
+    let total = path.components().count();
     let mut checked = std::path::PathBuf::new();
-    for component in path.components() {
+    for (position, component) in path.components().enumerate() {
         checked.push(component.as_os_str());
         let kind = fs::symlink_metadata(&checked)
             .map_err(|source| io_err(&checked, source))?
             .file_type();
-        if kind.is_symlink() {
+        if kind.is_symlink() && !(allow_final_link && position.saturating_add(1) == total) {
             return Err(refused(format!(
                 "backup source {} contains a symbolic link at {}",
                 path.display(),
@@ -100,62 +109,140 @@ fn validate_manifest(from: &Path, manifest: &Manifest) -> StoreResult<()> {
         )));
     }
     for entry in &manifest.files {
-        let relative = safe_entry_path(&entry.path)?;
-        let source = from.join(relative);
-        validate_source_path(&source)?;
-        let kind = fs::symlink_metadata(&source)
-            .map_err(|error| match error.kind() {
-                io::ErrorKind::NotFound => {
-                    refused(format!("missing file in backup: {}", entry.path))
-                }
-                _ => io_err(&source, error),
-            })?
-            .file_type();
-        if !kind.is_file() {
-            return Err(refused(format!(
-                "backup entry {} is {}, not a regular file",
-                entry.path,
-                object_kind(kind)
-            )));
-        }
-        let length = fs::metadata(&source)
-            .map_err(|source_error| io_err(&source, source_error))?
-            .len();
-        if length != entry.length {
-            return Err(refused(format!(
-                "length mismatch for {}: expected {} got {}",
-                entry.path, entry.length, length
-            )));
-        }
+        validate_entry(from, entry)?;
     }
     Ok(())
 }
 
-fn materialise(from: &Path, to: &Path, manifest: &Manifest) -> StoreResult<(u64, u64)> {
+fn validate_entry(from: &Path, entry: &ManifestEntry) -> StoreResult<()> {
+    let relative = safe_entry_path(&entry.path)?;
+    let source = from.join(relative);
+    validate_source_components(&source, entry.target.is_some())?;
+    let kind = fs::symlink_metadata(&source)
+        .map_err(|error| match error.kind() {
+            io::ErrorKind::NotFound => refused(format!("missing file in backup: {}", entry.path)),
+            _ => io_err(&source, error),
+        })?
+        .file_type();
+    match &entry.target {
+        None => {
+            if !kind.is_file() {
+                return Err(refused(format!(
+                    "backup entry {} is {}, not a regular file",
+                    entry.path,
+                    object_kind(kind)
+                )));
+            }
+            let length = fs::metadata(&source)
+                .map_err(|source_error| io_err(&source, source_error))?
+                .len();
+            if length != entry.length {
+                return Err(refused(format!(
+                    "length mismatch for {}: expected {} got {}",
+                    entry.path, entry.length, length
+                )));
+            }
+            Ok(())
+        }
+        Some(target) => validate_link_entry(entry, target, relative, &source, kind),
+    }
+}
+
+fn validate_link_entry(
+    entry: &ManifestEntry,
+    target: &str,
+    relative: &Path,
+    source: &Path,
+    kind: fs::FileType,
+) -> StoreResult<()> {
+    if !kind.is_symlink() {
+        return Err(refused(format!(
+            "backup entry {} is {}, not the symlink the manifest records",
+            entry.path,
+            object_kind(kind)
+        )));
+    }
+    if entry.length != 0 {
+        return Err(refused(format!(
+            "backup entry {} records length {} for the symlink it holds",
+            entry.path, entry.length
+        )));
+    }
+    let parent = match relative.parent() {
+        Some(parent) => parent,
+        None => Path::new(""),
+    };
+    if !store_relative_link(parent, Path::new(target)) {
+        return Err(refused(format!(
+            "backup entry {} records the symlink target {target}, which leaves the backup",
+            entry.path
+        )));
+    }
+    let actual = fs::read_link(source).map_err(|source_error| io_err(source, source_error))?;
+    if actual.to_string_lossy() != target {
+        return Err(refused(format!(
+            "symlink target mismatch for {}: the manifest records {target} and the link holds {}",
+            entry.path,
+            actual.display()
+        )));
+    }
+    let digest = digest_bytes(target.as_bytes());
+    if digest != entry.sha256 {
+        return Err(refused(format!(
+            "sha256 mismatch for {}: expected {} got {}",
+            entry.path, entry.sha256, digest
+        )));
+    }
+    Ok(())
+}
+
+fn materialise(from: &Path, to: &Path, manifest: &Manifest) -> StoreResult<(u64, u64, u64)> {
     let mut files: u64 = 0;
     let mut bytes: u64 = 0;
+    let mut links: u64 = 0;
     for entry in &manifest.files {
         let relative = safe_entry_path(&entry.path)?;
         let source = from.join(relative);
         let target = to.join(relative);
         ensure_parent_dir(&target)?;
-        let streamed = copy_file(&source, &target)?;
-        if streamed.bytes != entry.length {
-            return Err(refused(format!(
-                "length mismatch for {}: expected {} got {}",
-                entry.path, entry.length, streamed.bytes
-            )));
+        match &entry.target {
+            Some(link_target) => {
+                create_relative_link(link_target, &target)?;
+                links = links.saturating_add(1);
+            }
+            None => {
+                let streamed = copy_file(&source, &target)?;
+                if streamed.bytes != entry.length {
+                    return Err(refused(format!(
+                        "length mismatch for {}: expected {} got {}",
+                        entry.path, entry.length, streamed.bytes
+                    )));
+                }
+                if streamed.sha256 != entry.sha256 {
+                    return Err(refused(format!(
+                        "sha256 mismatch for {}: expected {} got {}",
+                        entry.path, entry.sha256, streamed.sha256
+                    )));
+                }
+                files = files.saturating_add(1);
+                bytes = bytes.saturating_add(streamed.bytes);
+            }
         }
-        if streamed.sha256 != entry.sha256 {
-            return Err(refused(format!(
-                "sha256 mismatch for {}: expected {} got {}",
-                entry.path, entry.sha256, streamed.sha256
-            )));
-        }
-        files = files.saturating_add(1);
-        bytes = bytes.saturating_add(streamed.bytes);
     }
-    Ok((files, bytes))
+    Ok((files, bytes, links))
+}
+
+#[cfg(unix)]
+fn create_relative_link(link_target: &str, target: &Path) -> StoreResult<()> {
+    std::os::unix::fs::symlink(link_target, target).map_err(|source| io_err(target, source))
+}
+
+#[cfg(not(unix))]
+fn create_relative_link(_link_target: &str, target: &Path) -> StoreResult<()> {
+    Err(refused(format!(
+        "the backup records a symlink at {}, and this host cannot create one",
+        target.display()
+    )))
 }
 
 fn count_restored_generation(generation: &Path, to: &Path) -> StoreResult<BTreeMap<String, u64>> {

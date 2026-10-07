@@ -1,3 +1,4 @@
+use census_domain::UsJurisdiction;
 use serde::{Deserialize, Serialize};
 
 use crate::census::seal::SealOutcome;
@@ -16,6 +17,22 @@ pub struct SealRequest {
     pub revision: u32,
     #[serde(default)]
     pub source_objects: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BindRunRequest {
+    pub season: i16,
+    pub revision: u32,
+    pub jurisdictions: Vec<UsJurisdiction>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BindRunReply {
+    pub store_identity: String,
+    pub season: i16,
+    pub revision: u32,
+    pub cohort: i16,
+    pub jurisdictions: Vec<UsJurisdiction>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

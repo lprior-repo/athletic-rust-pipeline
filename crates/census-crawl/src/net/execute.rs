@@ -142,8 +142,7 @@ impl Fetcher {
         self.destination.validate_url(url)?;
         let extra = body
             .as_ref()
-            .map(|(key, _)| key.clone())
-            .map_or(Default::default(), core::convert::identity);
+            .map_or_else(String::default, |(key, _)| key.clone());
         let key = Self::key_for(method, url, &extra);
         let (body_path, meta_path) = self.cache_paths(&key);
         let cached = read_cache(&body_path, &meta_path)?;
@@ -175,6 +174,8 @@ impl Fetcher {
             url,
             payload: body.as_ref().map(|(_, payload)| payload),
             host: &host,
+            crawl_delay,
+            family: self.family_of(&host),
             body_path: &body_path,
             meta_path: &meta_path,
             cached: cached.as_ref().map(|(meta, _)| meta),
@@ -185,7 +186,7 @@ impl Fetcher {
         let started = Instant::now();
         let outcome = match crate::registry::transport_for_host(&host) {
             Some(crate::registry::TransportKind::Browser) => self.fetch_browser(gate, &plan).await,
-            _ => self.fetch_once(gate, &plan).await,
+            _ => self.fetch_once(&plan).await,
         };
         self.record_transport(started, &outcome).await;
         outcome

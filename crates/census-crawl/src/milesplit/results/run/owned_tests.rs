@@ -10,6 +10,7 @@ mod acquisition_ledger;
 mod binding;
 mod changed_capture;
 mod fixture;
+mod large_partial_replay;
 mod mixed_replay;
 mod partial_replay;
 mod replay;

@@ -22,19 +22,7 @@ pub struct Options {
     pub out: Option<PathBuf>,
     pub limit: Option<usize>,
     pub scope: Scope,
-    pub school_year: Option<census_domain::model::SchoolYear>,
-}
-
-impl Default for Options {
-    fn default() -> Self {
-        Self {
-            grad_year: Some(2027),
-            out: None,
-            limit: None,
-            scope: Scope::AllSources,
-            school_year: None,
-        }
-    }
+    pub school_year: census_domain::model::SchoolYear,
 }
 
 pub struct Censuses {
@@ -79,13 +67,7 @@ fn write_artifacts(
     options: &Options,
     censuses: &Censuses,
 ) -> ReportResult<()> {
-    let generated_on = &dataset.lineage.generated_on;
-    let school_year = options
-        .school_year
-        .or_else(|| census_domain::model::SchoolYear::from_date(generated_on))
-        .ok_or_else(|| crate::report::ReportError::Invariant {
-            detail: format!("cannot determine contact school year from {generated_on}"),
-        })?;
+    let school_year = options.school_year;
 
     let started = Instant::now();
     let bests = bests::build_from_dataset(
@@ -146,7 +128,8 @@ struct Views<'a> {
 
 fn write_workbook(path: &Path, views: Views<'_>) -> ReportResult<()> {
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).map_err(|source| io_error(parent, source))?;
+        census_store::fs::create_dir_all_synced(parent)
+            .map_err(|source| io_error(parent, source))?;
     }
     let mut book = Workbook::new();
     write_objective_sheets(&mut book, path, views)?;

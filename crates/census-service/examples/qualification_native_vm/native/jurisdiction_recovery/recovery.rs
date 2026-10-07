@@ -68,22 +68,24 @@ pub(super) async fn finish(
     )
 }
 
+const CHECKS: u32 = 3_200;
+
 #[tracing::instrument(skip(client, original))]
 async fn wait(client: &Client, original: &Original) -> Result<Observation> {
-    let checks = stream::iter(0..300_u32).then(|attempt| async move {
+    let checks = stream::iter(0..CHECKS).then(|attempt| async move {
         let statuses = observe::statuses(client, &original.id).await?;
         observe::publish(
             "recovery-status-latest",
             &json!({"attempt":attempt,"original_id":original.id,"statuses":statuses}),
         )?;
         let parent = observe::status(&statuses, &original.id)?;
-        if input::text(parent, "status")? == "completed" || attempt == 299 {
+        if input::text(parent, "status")? == "completed" || attempt == CHECKS - 1 {
             let observation = observe::read(client, original).await?;
             observe::publish("recovery-latest", &json!({"attempt":attempt,"observation":observation,"unfinished_obligations":obligations(&observation, original)?}))?;
             let recovered_parent = observe::status(&observation.after, &original.id)?;
             if (input::text(recovered_parent, "status")? == "completed"
                 && observation.before == observation.after)
-                || attempt == 299
+                || attempt == CHECKS - 1
             {
                 return Ok(Some(observation));
             }

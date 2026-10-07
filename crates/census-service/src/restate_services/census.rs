@@ -3,16 +3,21 @@ use std::sync::Arc;
 
 use restate_sdk::prelude::*;
 
-use crate::census::seal::{self, JournalCounts, SealRequest as StoreSealRequest};
+use crate::census::seal::{self, census_cohort, JournalCounts, SealRequest as StoreSealRequest};
+use census_domain::model::{CensusRun, GradYear, RunManifest, SchoolYear};
+use census_domain::UsJurisdiction;
+use census_reconcile::identity::admitted_scope;
+use census_report::export::store_identity;
 use census_report::report::Scope;
 use census_store::clock::Clock;
 use census_store::Store;
 
 use super::publish::Jobs;
 use super::wire::{
-    OpenWorkReply, OpenWorkRequest, SealReply, SealRequest, StatusReply, TableCount,
+    BindRunReply, BindRunRequest, OpenWorkReply, OpenWorkRequest, SealReply, SealRequest,
+    StatusReply, TableCount,
 };
-use super::JobError;
+use super::{job_error, JobError};
 
 #[derive(Clone)]
 pub struct Census {
@@ -73,11 +78,34 @@ impl Census {
         ctx: Context<'_>,
         Json(request): Json<SealRequest>,
     ) -> Result<Json<SealReply>, HandlerError> {
+        if let Err(error) = census_cohort(request.grad_year) {
+            let message = match error {
+                seal::SealWorkflowError::ForeignCohort { requested } => format!(
+                    "the Class-of-2027 cohort is the only one that may be sealed; {requested} is not the census seal cohort"
+                ),
+                other => other.to_string(),
+            };
+            return Err(TerminalError::new(message).into());
+        }
+        let season = SchoolYear::new(request.season).ok_or_else(|| {
+            TerminalError::new(format!(
+                "invalid season {0}: must be in [{1}, {2}]",
+                request.season,
+                SchoolYear::MIN_START_YEAR,
+                SchoolYear::MAX_START_YEAR
+            ))
+        })?;
+        let run = CensusRun::new(season, request.revision).ok_or_else(|| {
+            TerminalError::new(format!(
+                "invalid run revision {0}: must be at least 1",
+                request.revision
+            ))
+        })?;
         let journal = super::open_work::measure(&ctx, &run_request(&request)).await?;
         let store = Arc::clone(self.jobs.store());
         let region = Arc::clone(self.jobs.region());
         let permit = self.jobs.permit().await?;
-        let request = store_request(&request, &journal);
+        let request = store_request(&request, &journal, run);
         let reply = ctx
             .run(move || async move {
                 super::blocking(region, move || {
@@ -94,6 +122,79 @@ impl Census {
             .await?;
         Ok(reply)
     }
+
+    #[handler]
+    #[tracing::instrument(skip_all, fields(season = request.season, revision = request.revision))]
+    async fn bind_run(
+        &self,
+        _ctx: Context<'_>,
+        Json(request): Json<BindRunRequest>,
+    ) -> Result<Json<BindRunReply>, HandlerError> {
+        let season = SchoolYear::new(request.season).ok_or_else(|| {
+            TerminalError::new(format!(
+                "invalid season {0}: must be in [{1}, {2}]",
+                request.season,
+                SchoolYear::MIN_START_YEAR,
+                SchoolYear::MAX_START_YEAR
+            ))
+        })?;
+        let run = CensusRun::new(season, request.revision).ok_or_else(|| {
+            TerminalError::new(format!(
+                "invalid run revision {0}: must be at least 1",
+                request.revision
+            ))
+        })?;
+        let jurisdictions = admitted_jurisdictions(&request.jurisdictions)?;
+        let store = Arc::clone(&self.store);
+        let region = Arc::clone(self.jobs.region());
+        let permit = self.jobs.permit().await?;
+        let result = super::blocking(region, move || {
+            let _permit = permit;
+            let identity = store_identity(&store).map_err(|error| JobError::Terminal {
+                message: format!("store identity check failed: {error}"),
+            })?;
+            let manifest = RunManifest {
+                store_identity: identity,
+                run,
+                cohort: GradYear::CO2027,
+                jurisdictions,
+            };
+            store.bind_run(&manifest).map_err(|error| match error {
+                census_store::StoreError::Refused { detail } => {
+                    JobError::Terminal { message: detail }
+                }
+                other => JobError::Terminal {
+                    message: format!("binding the run manifest failed: {other}"),
+                },
+            })?;
+            Ok::<_, JobError>(BindRunReply {
+                store_identity: manifest.store_identity,
+                season: request.season,
+                revision: request.revision,
+                cohort: GradYear::CO2027.get(),
+                jurisdictions: manifest.jurisdictions,
+            })
+        })
+        .await
+        .map_err(job_error)?;
+        Ok(Json(result))
+    }
+}
+
+fn admitted_jurisdictions(
+    requested: &[UsJurisdiction],
+) -> Result<Vec<UsJurisdiction>, HandlerError> {
+    let admitted = admitted_scope(requested);
+    for jurisdiction in &admitted {
+        if let Err(outside) = jurisdiction.require_census_scope() {
+            return Err(TerminalError::new(outside.to_string()).into());
+        }
+    }
+    Ok(UsJurisdiction::CENSUS_SCOPE
+        .iter()
+        .copied()
+        .filter(|state| admitted.contains(state))
+        .collect())
 }
 
 fn run_request(request: &SealRequest) -> OpenWorkRequest {
@@ -104,7 +205,11 @@ fn run_request(request: &SealRequest) -> OpenWorkRequest {
     }
 }
 
-fn store_request(request: &SealRequest, journal: &OpenWorkReply) -> StoreSealRequest {
+fn store_request(
+    request: &SealRequest,
+    journal: &OpenWorkReply,
+    run: CensusRun,
+) -> StoreSealRequest {
     StoreSealRequest {
         grad_year: request.grad_year,
         scope: if request.all_sources {
@@ -120,5 +225,6 @@ fn store_request(request: &SealRequest, journal: &OpenWorkReply) -> StoreSealReq
             silent_sources: journal.silent_sources.clone(),
         }),
         source_failures: None,
+        run: Some(run),
     }
 }

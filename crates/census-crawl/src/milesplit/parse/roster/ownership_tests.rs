@@ -81,9 +81,13 @@ fn captured_foreign_canonical_owner_admits_no_abbotsford_roster() -> TestResult 
                     ..CacheMeta::default()
                 },
             )?;
-            let outcome =
-                crate::milesplit::fetch_roster(&fetcher, &requested, &FetchOptions::default())
-                    .await;
+            let outcome = crate::milesplit::fetch_roster(
+                &fetcher,
+                &requested,
+                &FetchOptions::default(),
+                None,
+            )
+            .await;
             if let Ok(captured) = &outcome {
                 check!(eq; captured.capture.url, url);
                 check!(eq; captured.capture.body, body.as_bytes());

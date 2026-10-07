@@ -1,7 +1,17 @@
 use super::{resolve_restriction, resolve_states};
 use census_domain::UsJurisdiction;
 
-type TestResult = Result<(), Box<dyn std::error::Error>>;
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+fn full_options() -> TestResult<census_report::workbook::Options> {
+    Ok(census_report::workbook::Options {
+        grad_year: Some(2027),
+        out: None,
+        limit: None,
+        scope: census_report::report::Scope::AllSources,
+        school_year: census_domain::model::SchoolYear::new(2026).ok_or("invalid fixture season")?,
+    })
+}
 
 #[test]
 fn all_states_selects_the_census_run_scope() -> TestResult {
@@ -56,7 +66,7 @@ use census_store::{Store, Table};
 fn verification_uses_the_frozen_generation_after_the_store_changes() -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path().join("store"))?;
-    let workbook = census_report::workbook::build(&store, &Default::default())?;
+    let workbook = census_report::workbook::build(&store, &full_options()?)?;
     let (mut school, _) = CanonicalSchool::new(
         UsJurisdiction::Wisconsin,
         "Later School",
@@ -84,7 +94,7 @@ fn verification_uses_the_frozen_generation_after_the_store_changes() -> TestResu
 fn verification_refuses_a_changed_artifact_in_the_published_bundle() -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path().join("store"))?;
-    let workbook = census_report::workbook::build(&store, &Default::default())?;
+    let workbook = census_report::workbook::build(&store, &full_options()?)?;
     std::fs::write(&workbook, "damaged workbook")?;
     let error = match run_verify(
         store.root(),

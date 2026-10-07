@@ -2,7 +2,7 @@ use anyhow::{anyhow, bail, Context, Result};
 use census_crawl::directory::{ReadOutcome, RowIssue};
 use census_crawl::{nces, private_assoc, state_ed, tssaa, CrawlError, CrawlResult};
 use census_domain::school_directory::{
-    Baseline, ScheduleLedger, ScheduleSource, SchoolDirectoryEntry,
+    Baseline, IdentifiedKey, ScheduleLedger, ScheduleSource, SchoolDirectoryEntry,
 };
 use std::path::Path;
 
@@ -145,6 +145,13 @@ fn read_lane_with_token(
         other => other,
     })?;
     let counts = outcome.counts();
+    let mut captured: Vec<IdentifiedKey> = outcome
+        .entries()
+        .iter()
+        .filter_map(|entry| IdentifiedKey::of(entry.key()))
+        .collect();
+    captured.sort();
+    captured.dedup();
     let report = LaneReport {
         source: token.to_string(),
         path: path.display().to_string(),
@@ -154,6 +161,7 @@ fn read_lane_with_token(
         notes: counts.notes,
         skipped_rows: rows(outcome.skipped()),
         note_rows: rows(outcome.notes()),
+        captured,
     };
     Ok(LaneRead {
         source,

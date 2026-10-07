@@ -22,11 +22,30 @@ Only Cross Country and Track teams are emitted. Team labels are parsed with
 prefix matching: `Boys'`/`Boy's` → Boys, `Girls'`/`Girl's` → Girls, one
 `Unified ` or `Mixed ` prefix stripped (gender stays unset, and a second
 genderless prefix leaves no sport — the prototype breaks after the first match).
+A season token in a team label (`2024-2025`, `2024-25`, `2024/25`, `2024`,
+optionally prefixed `season` or `sy`) is read as that listing's published season
+scope and ignored for label matching.
+
 Role from title: "head coach" → HeadCoach, "assistant coach" → AssistantCoach,
-otherwise Unknown. Any title containing "former" stays Unknown and cannot assert
-current tenure. A published team assignment does not invent a head/assistant role.
-Current directors (title contains "athletic director", but not "former") become
-AthleticDirector rows with no sport or gender.
+otherwise Unknown. A published team assignment does not invent a head/assistant
+role. Titles containing "athletic director" become AthleticDirector rows with no
+sport or gender, whether or not they also say "former".
+
+A title containing "former" states a **past** appointment, never a current one.
+It keeps the role its title names — so the row resolves to the same
+sport/role/gender appointment identity as the corresponding current listing —
+and carries `CoachTenure::Former` evidence on that identity. A later former
+listing therefore merges with, and withholds, the earlier current claim instead
+of minting a replacement person: the contact projection reports a tenure
+conflict and publishes no mailbox. Tenure statements are page-bound tenure
+evidence: the mapper never rewrites the published title, and an explicit
+published season scope is parsed from the title first and the team label second.
+A stated season that is not the run season is retained as
+`CoachTenure::Former { last_school_year: <stated> }`, so it cannot assert a
+current appointment; a stated future season is retained the same way and the
+tenure assessment ignores it, leaving the identity Unknown. Only a listing with
+no stated season follows ADR-024 and takes the run school year as its current
+claim. Every emitted claim is validated before it is returned.
 
 Three passes: team `coachProfileIds` first, then unplaced staff with a `teamName`, then directors.
 All published records for an ID reach admission; no earlier eligible record is overwritten before

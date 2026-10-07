@@ -1,6 +1,7 @@
 use crate::net::{FetchError, FetchOptions, Fetcher};
 use crate::{CrawlError, CrawlResult};
 
+use super::boundary;
 use super::parse::{has_next_page, parse_meet_index, parse_meet_result_files, parse_team_index};
 use super::raw::{parse_raw, RawPage};
 use super::roster::{RosterOutcome, RosterQuarantine, RosterVerdict};
@@ -25,8 +26,12 @@ pub async fn fetch_roster(
     fetcher: &Fetcher,
     team: &TeamRef,
     options: &FetchOptions,
+    hook: Option<&dyn boundary::Hook>,
 ) -> CrawlResult<RosterOutcome> {
     let url = format!("{}/roster", team.url);
+    if let Some(hook) = hook {
+        hook.reached(boundary::Point::BeforeSourceRequest).await?;
+    }
     let outcome = fetcher
         .get(
             &url,
@@ -36,6 +41,9 @@ pub async fn fetch_roster(
             },
         )
         .await?;
+    if let Some(hook) = hook {
+        hook.reached(boundary::Point::ResponseReceived).await?;
+    }
     let verdict = match outcome.status {
         404 => RosterVerdict::Quarantined {
             reason: RosterQuarantine::NotFound,
@@ -50,10 +58,26 @@ pub async fn fetch_roster(
         },
         status => return Err(CrawlError::Fetch(FetchError::Http { status, url })),
     };
-    Ok(RosterOutcome {
+    let roster = RosterOutcome {
         capture: outcome,
         verdict,
-    })
+    };
+    if let Some(hook) = hook {
+        hook.reached(boundary::Point::CaptureCommitted).await?;
+    }
+    if let Some(roster) = roster.verdict.roster() {
+        let chunk_size = boundary::CHUNK_ROWS;
+        let chunk_count = roster.athletes.len().div_ceil(chunk_size);
+        for index in 0..chunk_count {
+            if let Some(hook) = hook {
+                let index = u32::try_from(index).map_err(|_| CrawlError::Arithmetic {
+                    detail: format!("page chunk index {index} exceeds the boundary point range"),
+                })?;
+                hook.reached(boundary::Point::PageChunk { index }).await?;
+            }
+        }
+    }
+    Ok(roster)
 }
 
 pub async fn fetch_result_set(

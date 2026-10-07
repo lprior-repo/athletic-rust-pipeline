@@ -1,6 +1,6 @@
 use census_domain::model::{
-    ReviewCase, ReviewState, COHORT_DECISION_FAMILIES, COHORT_UNVERIFIED_FAMILY,
-    IDENTITY_UNVERIFIED_FAMILY, UNRESOLVED_VENUE_FAMILY,
+    CensusRun, ReviewCase, ReviewState, SchoolYear, COHORT_DECISION_FAMILIES,
+    COHORT_UNVERIFIED_FAMILY, IDENTITY_UNVERIFIED_FAMILY, UNRESOLVED_VENUE_FAMILY,
 };
 
 use sha2::{Digest, Sha256};
@@ -8,6 +8,10 @@ use sha2::{Digest, Sha256};
 use super::*;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+fn bound_run() -> Option<CensusRun> {
+    CensusRun::new(SchoolYear::DEFAULT, CensusRun::MIN_REVISION)
+}
 
 fn evidence() -> SealEvidence {
     SealEvidence {
@@ -60,6 +64,7 @@ fn evidence() -> SealEvidence {
             discrepancies: Vec::new(),
         },
         observed_on: "2026-09-22".to_string(),
+        run: bound_run(),
     }
 }
 
@@ -385,6 +390,14 @@ fn retained_findings_do_not_block_a_seal_and_travel_inside_it() -> TestResult {
     check!(eq; seal.retained.gaps.len(), 2);
     check!(eq; seal.sealed_on, "2026-09-22");
     check!(eq; seal.workbook_rows, packet.workbook.rows);
+    check!(eq; seal.run, bound_run());
+    let recorded = serde_json::to_string(seal)?;
+    check!(
+        recorded.contains("\"run\""),
+        "a recorded seal serializes the run it certified: {recorded}"
+    );
+    let decoded: SealedCensus = serde_json::from_str(&recorded)?;
+    check!(eq; decoded.run, bound_run());
     check!(eq; sealed.phase(), Phase::Complete);
     Ok(())
 }
@@ -421,7 +434,8 @@ fn the_seal_digest_is_stable_and_moves_with_the_counts() -> TestResult {
 
 #[test]
 fn the_digest_is_pinned_field_by_field() -> TestResult {
-    let body = "census-seal-v6\n\
+    let body = "census-seal-v7\n\
+         run_identity=2026-1\n\
          jurisdiction_buckets=51\n\
          schools=18047\n\
          meets=11007\n\
@@ -450,7 +464,7 @@ fn the_digest_is_pinned_field_by_field() -> TestResult {
     );
     check!(eq;
         digest_of(&seal_from_export(evidence())?)?,
-        "62820209dbeaa3afbc6ca9546b27c0206d4f574624173c8c201e8cb09710fe36",
+        "2a028b22268258ee4b51d954ab8b0566b22d80766c455fa01ac0ecb28c308cbe",
         "the sealed digest is that digest in lowercase hex, which is what a stored `seal.json` carries"
     );
 

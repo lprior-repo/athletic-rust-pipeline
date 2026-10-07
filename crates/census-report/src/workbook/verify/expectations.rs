@@ -1,6 +1,6 @@
 use crate::bests::{self, SharedSelection};
 use crate::export::ExportDataset;
-use crate::report::{Derivation, ReportError, ReportResult};
+use crate::report::{Derivation, ReportResult};
 use crate::workbook::Options;
 use census_domain::model::SchoolYear;
 use std::collections::{BTreeMap, BTreeSet};
@@ -39,15 +39,7 @@ pub(super) struct Expectations<'a> {
 
 impl<'a> Expectations<'a> {
     pub(super) fn of(dataset: &'a ExportDataset, options: &Options) -> ReportResult<Self> {
-        let school_year = options
-            .school_year
-            .or_else(|| SchoolYear::from_date(&dataset.lineage.generated_on))
-            .ok_or_else(|| ReportError::Invariant {
-                detail: format!(
-                    "cannot determine the contact school year from {}",
-                    dataset.lineage.generated_on
-                ),
-            })?;
+        let school_year = options.school_year;
         let derivation = Derivation::of(dataset, options.scope, options.grad_year);
         let school_address = super::postal::athlete_address_index(dataset, derivation.athletes())?;
         let bests = bests::build_from_dataset(

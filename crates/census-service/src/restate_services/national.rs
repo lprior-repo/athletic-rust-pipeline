@@ -12,8 +12,8 @@ use super::jobs;
 use super::jurisdiction::JurisdictionCensusClient;
 use super::school_address_join::SchoolAddressJoinClient;
 use super::wire::{
-    ConsolidateRequest, JurisdictionReport, JurisdictionSummary, NationalFailure, NationalReport,
-    NationalRequest, SchoolAddressJoinReply,
+    BindRunRequest, ConsolidateRequest, JurisdictionReport, JurisdictionSummary, NationalFailure,
+    NationalReport, NationalRequest, SchoolAddressJoinReply,
 };
 use super::{publish::ConsolidateClient, KEY_STATE};
 
@@ -163,6 +163,24 @@ fn assemble(
         today,
     }
 }
+
+async fn bind_run(
+    ctx: &WorkflowContext<'_>,
+    request: &NationalRequest,
+) -> Result<(), HandlerError> {
+    let jurisdictions = admitted_scope(&request.jurisdictions);
+    let Json(_reply) = ctx
+        .service_client::<super::census::CensusClient>()
+        .bind_run(Json(BindRunRequest {
+            season: request.season.get(),
+            revision: request.revision.get(),
+            jurisdictions,
+        }))
+        .call()
+        .await?;
+    Ok(())
+}
+
 #[workflow(
     journal_retention = "90 days",
     workflow_completion_retention = "180 days",
@@ -195,6 +213,8 @@ impl NationalCensus {
             ))
             .into());
         }
+
+        bind_run(&ctx, &request).await?;
 
         let targets = targets(&request)?;
         let mut in_flight = DurableFuturesUnordered::new();

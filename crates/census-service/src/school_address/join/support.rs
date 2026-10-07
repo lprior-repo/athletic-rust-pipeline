@@ -1,10 +1,14 @@
-use census_domain::model::{CanonicalSchool, Evidence, SourceRef};
-use census_domain::school_directory::{IdentifiedKey, LinkRule, ReviewReason, SourceLabel};
+use census_domain::model::{
+    CanonicalSchool, Evidence, SchoolAddressError, SchoolPostalAddress, SourceIdentity,
+    SourceNamespace, SourceRef,
+};
+use census_domain::school_directory::{
+    IdentifiedKey, LinkMatch, LinkRule, ReviewReason, SourceLabel,
+};
 use census_domain::UsJurisdiction;
 use census_store::{StoreError, StoreResult};
 
 use super::lanes::STATE_ED;
-use super::link::{Authority, DirectoryAuthority};
 use super::{Counters, LaneEvidence, OutcomeRow};
 
 pub(super) fn parse_key_label(key: &IdentifiedKey) -> String {
@@ -134,4 +138,89 @@ pub(super) fn lane_evidence(
         authority.token, lane.path, lane.capture_sha256, lane.generation
     ));
     evidence
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum DirectoryAuthority {
+    Directory(&'static str),
+    Association,
+}
+
+pub(super) struct Authority {
+    pub(super) token: String,
+    pub(super) source: String,
+    pub(super) namespace: SourceNamespace,
+    pub(super) id: String,
+}
+
+#[derive(Clone, Copy)]
+pub(super) struct Target<'a> {
+    pub(super) school: &'a CanonicalSchool,
+    pub(super) state: UsJurisdiction,
+    pub(super) matched: &'a LinkMatch,
+}
+
+pub(super) fn postal_claim(
+    matched: &LinkMatch,
+    authority: &Authority,
+    lane: &LaneEvidence,
+    url: &str,
+    evidence: &Evidence,
+) -> Option<Result<SchoolPostalAddress, SchoolAddressError>> {
+    let address = matched.address.clone()?;
+    Some(SchoolPostalAddress::new(
+        address,
+        SourceIdentity::new(authority.namespace.clone(), authority.id.as_str()).with_url(url),
+        matched.source.clone(),
+        evidence.clone(),
+        lane.capture_sha256.clone(),
+    ))
+}
+
+pub(super) fn retain_evidence(
+    clone: &mut CanonicalSchool,
+    evidence: &Evidence,
+) -> StoreResult<bool> {
+    if clone.evidence.contains(evidence) {
+        return Ok(false);
+    }
+    clone
+        .evidence
+        .try_reserve(1)
+        .map_err(|error| allocation(error.to_string()))?;
+    clone.evidence.push(evidence.clone());
+    Ok(true)
+}
+
+pub(super) fn stamp_website(
+    target: Target<'_>,
+    clone: &mut CanonicalSchool,
+    evidence: &Evidence,
+    counters: &mut Counters,
+) -> StoreResult<bool> {
+    let Some(website) = target
+        .matched
+        .website
+        .clone()
+        .filter(|_| target.school.school_website.is_none())
+    else {
+        return Ok(false);
+    };
+    attach_website(counters, clone, website, evidence)?;
+    Ok(true)
+}
+
+fn attach_website(
+    counters: &mut Counters,
+    clone: &mut CanonicalSchool,
+    website: String,
+    evidence: &Evidence,
+) -> StoreResult<()> {
+    clone
+        .evidence
+        .try_reserve(1)
+        .map_err(|error| allocation(error.to_string()))?;
+    clone.school_website = Some(website);
+    clone.evidence.push(evidence.clone());
+    bump(&mut counters.websites)
 }

@@ -41,10 +41,19 @@ struct Archived {
 }
 
 pub(super) fn lineage(store: &Store, snapshot: &StoreSnapshot<'_>) -> ReportResult<DatasetLineage> {
+    let store_identity = store_identity(store)?;
+    let bound = store.run_manifest()?;
+    if let Some(manifest) = &bound {
+        if manifest.store_identity != store_identity {
+            return Err(invalid(
+                "the store's run manifest belongs to another store root",
+            ));
+        }
+    }
     Ok(DatasetLineage {
         store_root: store.root().display().to_string(),
         generated_on: SystemClock.today(),
-        store_identity: store_identity(store)?,
+        store_identity,
         export_job: None,
         input_generation: String::new(),
         input_digest: String::new(),
@@ -52,6 +61,8 @@ pub(super) fn lineage(store: &Store, snapshot: &StoreSnapshot<'_>) -> ReportResu
         snapshot_sequence: snapshot.sequence(),
         schema_revision: SCHEMA_REVISION,
         policy_revision: POLICY_REVISION,
+        run: bound.as_ref().map(|manifest| manifest.run),
+        cohort: bound.as_ref().map(|manifest| manifest.cohort),
     })
 }
 
@@ -138,7 +149,7 @@ fn digest(value: &impl Serialize) -> ReportResult<String> {
         .map_err(|error| invalid(&format!("encoding frozen export input: {error}")))
 }
 
-fn store_identity(store: &Store) -> ReportResult<String> {
+pub(super) fn store_identity(store: &Store) -> ReportResult<String> {
     let path = store.root().join(".export-lineage.lock");
     let lock = std::fs::OpenOptions::new()
         .read(true)

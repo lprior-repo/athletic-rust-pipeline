@@ -52,7 +52,7 @@ fn an_association_link_publishes_its_owner_and_lane_provenance() -> TestResult {
         &store,
         &ExportDataArgs {
             data: data.clone(),
-            school_year: Some(2026),
+            school_year: 2026,
         },
     )?;
     let (headers, record) = exported_row(&data)?;
@@ -105,7 +105,7 @@ fn a_school_without_an_association_link_publishes_empty_link_columns() -> TestRe
         &store,
         &ExportDataArgs {
             data: data.clone(),
-            school_year: Some(2026),
+            school_year: 2026,
         },
     )?;
     let (headers, record) = exported_row(&data)?;

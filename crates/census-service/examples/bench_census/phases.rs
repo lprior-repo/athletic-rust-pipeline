@@ -191,7 +191,7 @@ pub(super) fn workbook_phase(
             out: Some(out.clone()),
             limit: None,
             scope: Scope::AllSources,
-            school_year: None,
+            school_year: census_domain::model::SchoolYear::DEFAULT,
         },
         censuses,
     )

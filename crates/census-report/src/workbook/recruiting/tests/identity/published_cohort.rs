@@ -88,8 +88,11 @@ fn accepted_alias_published_cohort_survives_collapse_and_publication() -> TestRe
     check!(eq; coverage.published_totals().athletes, census.totals.athletes);
 
     let options = crate::workbook::Options {
-        school_year: Some(SchoolYear::new(2026).ok_or("invalid fixture school year")?),
-        ..crate::workbook::Options::default()
+        grad_year: Some(2027),
+        out: None,
+        limit: None,
+        scope: crate::report::Scope::AllSources,
+        school_year: SchoolYear::new(2026).ok_or("invalid fixture school year")?,
     };
     let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir());
     let path = crate::workbook::build_from(&dataset, &store, &options, &censuses)?;
