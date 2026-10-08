@@ -1,5 +1,4 @@
 use super::map::ProviderSchools;
-use super::wire::ResultSetRef;
 use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult, UnresolvedCounters};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
@@ -11,6 +10,7 @@ use std::collections::{HashMap, HashSet};
 
 mod accumulator;
 mod effects;
+mod group;
 mod pages;
 mod report;
 mod run;
@@ -67,7 +67,6 @@ pub(super) struct Stats {
     pub(super) unresolved: HashMap<String, usize>,
 }
 
-
 pub async fn collect(
     ctx: &AdapterContext<'_>,
     options: &ResultSetOptions,
@@ -88,40 +87,13 @@ pub async fn collect(
         accumulated: Accumulator::default(),
         seen: HashSet::new(),
         pending: Vec::new(),
-        window_rows,
         meet_id: String::new(),
     };
+    let groups = group::group_meets(&mut run, &options.urls);
     let mut total_counts = EntityCounts::default();
-    for request in &options.urls {
-        match ResultSetRef::parse(&request.url)
-            .or_else(|| ResultSetRef::parse_with_jurisdiction(&request.url, request.jurisdiction))
-        {
-            Some(reference) => run.read(ctx, &reference).await?,
-            None => run.reject(&request.url),
-        }
-        if run.accumulated.rows() >= run.window_rows {
-            let counts = append(ctx, run.drain_accumulated(), run.drain_pending())?;
-            total_counts.meets = total_counts.meets.saturating_add(counts.meets);
-            total_counts.events = total_counts.events.saturating_add(counts.events);
-            total_counts.teams = total_counts.teams.saturating_add(counts.teams);
-            total_counts.athletes = total_counts.athletes.saturating_add(counts.athletes);
-            total_counts.performances =
-                total_counts.performances.saturating_add(counts.performances);
-            total_counts.unsupported_cohorts = total_counts
-                .unsupported_cohorts
-                .saturating_add(counts.unsupported_cohorts);
-        }
+    for group in groups {
+        group::run_group(ctx, &mut run, group, window_rows, &mut total_counts).await?;
     }
-    let counts = append(ctx, run.drain_accumulated(), run.drain_pending())?;
-    total_counts.meets = total_counts.meets.saturating_add(counts.meets);
-    total_counts.events = total_counts.events.saturating_add(counts.events);
-    total_counts.teams = total_counts.teams.saturating_add(counts.teams);
-    total_counts.athletes = total_counts.athletes.saturating_add(counts.athletes);
-    total_counts.performances =
-        total_counts.performances.saturating_add(counts.performances);
-    total_counts.unsupported_cohorts = total_counts
-        .unsupported_cohorts
-        .saturating_add(counts.unsupported_cohorts);
     finish(
         ctx,
         &mut report,
@@ -133,7 +105,6 @@ pub async fn collect(
     .await?;
     Ok(report)
 }
-
 
 async fn finish(
     ctx: &AdapterContext<'_>,

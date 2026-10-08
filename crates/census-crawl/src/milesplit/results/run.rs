@@ -19,12 +19,10 @@ pub(super) struct Run {
     pub(super) meet_id: String,
     pub(super) schools: ProviderSchools,
     pub(super) owned: HashMap<String, AcquiredMeet>,
-    pub(super) pending_counts: HashMap<String, usize>,
     pub(super) stats: Stats,
     pub(super) accumulated: Accumulator,
     pub(super) seen: HashSet<String>,
     pub(super) pending: Vec<(String, serde_json::Value)>,
-    pub(super) window_rows: usize,
 }
 
 impl Run {
@@ -34,6 +32,15 @@ impl Run {
         ctx: &AdapterContext<'_>,
         reference: &ResultSetRef,
     ) -> CrawlResult<()> {
+        let owner = owned_key(reference);
+        if owner != self.meet_id {
+            return Err(crate::CrawlError::Invariant {
+                detail: format!(
+                    "{}: result set belongs to meet {owner}, not {}",
+                    reference.url, self.meet_id
+                ),
+            });
+        }
         let key = capture::digest(&(
             reference.site.code(),
             &reference.meet_id,
@@ -44,9 +51,6 @@ impl Run {
             return Ok(());
         }
         self.acquire_owned(ctx, reference).await?;
-        let owner = owned_key(reference);
-        *self.pending_counts.entry(owner).or_default() =
-            self.pending_counts.get(&owner).copied().unwrap_or(1);
         let (capture, page) = match metadata::fetch_metadata(ctx, reference).await {
             Ok(captured) => captured,
             Err(error) => {
@@ -56,10 +60,9 @@ impl Run {
         };
         capture::archive_metadata(ctx, reference, &capture)?;
         match page {
-            Ok(page) => self.record_page(ctx, reference, page, capture),
-            Err(error) => self.record_failure(reference, Some(&capture), &error),
+            Ok(page) => self.record_page(ctx, reference, page, capture)?,
+            Err(error) => self.record_failure(reference, Some(&capture), &error)?,
         }
-        self.decrement_pending(reference);
         Ok(())
     }
 
@@ -169,15 +172,8 @@ impl Run {
         std::mem::take(&mut self.pending)
     }
 
-    fn decrement_pending(&mut self, reference: &ResultSetRef) {
-        let key = owned_key(reference);
-        if let Some(count) = self.pending_counts.get_mut(&key) {
-            *count = count.saturating_sub(1);
-            if *count == 0 {
-                self.owned.remove(&key);
-                self.pending_counts.remove(&key);
-            }
-        }
+    pub(super) fn release_owned(&mut self) {
+        self.owned.clear();
     }
 }
 
@@ -199,7 +195,7 @@ fn note_unresolved(stats: &mut Stats, reference: &ResultSetRef, unresolved: bool
     }
 }
 
-fn owned_key(reference: &ResultSetRef) -> String {
+pub(super) fn owned_key(reference: &ResultSetRef) -> String {
     format!("{}/{}", reference.site.code(), reference.meet_id)
 }
 
