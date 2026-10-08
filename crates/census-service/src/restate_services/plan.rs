@@ -56,6 +56,48 @@ const NO_JURISDICTION_WALK: &str =
     "no run stage sweeps this source per jurisdiction: its walk is reachable from the CLI only, or \
      it is acquired per meet, team or athlete rather than per state";
 
+const UNWIRED_REASONS: &[(&str, &str)] = &[
+    (
+        "athleticlive",
+        "timer platform: its meets and rosters are acquired through the meet chain, not per \
+         jurisdiction",
+    ),
+    (
+        "athleticlive_athletes",
+        "search plane: athletes are acquired from a meet or directory capture, not per jurisdiction",
+    ),
+    (
+        "coach_contacts",
+        "professional contact claims are acquired from captured directory artifacts, not fetched \
+         per jurisdiction",
+    ),
+    (
+        "nces",
+        "the national school universes are parsed from operator-supplied files, not fetched per \
+         jurisdiction",
+    ),
+    (
+        "sidearm_staff",
+        "staff directories are acquired for a named site capture, not swept per jurisdiction",
+    ),
+    (
+        "state_ed",
+        "the state-agency directory is parsed from an operator-supplied capture, not fetched per \
+         jurisdiction",
+    ),
+    (
+        "tfrrs",
+        "athlete and meet pages are acquired from a known athlete or meet route, not per \
+         jurisdiction",
+    ),
+];
+
+pub fn unwired_reason(slug: &str) -> Option<&'static str> {
+    UNWIRED_REASONS
+        .iter()
+        .find_map(|(candidate, reason)| (*candidate == slug).then_some(*reason))
+}
+
 impl UnitDisposition {
     pub fn slug(&self) -> &'static str {
         match self {
@@ -125,7 +167,7 @@ pub(super) fn classify_access(
         return UnitDisposition::Refused(Refusal {
             slug,
             access,
-            reason: NO_JURISDICTION_WALK,
+            reason: unwired_reason(slug).unwrap_or(NO_JURISDICTION_WALK),
         });
     }
     if access == AccessClass::BrowserSession && lane == BrowserLaneState::Absent {

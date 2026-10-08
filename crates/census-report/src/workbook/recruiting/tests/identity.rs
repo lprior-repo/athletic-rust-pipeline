@@ -20,46 +20,56 @@ fn member(school: &SchoolId, name: &str, gender: Gender, url: &str) -> Canonical
 }
 
 pub(super) fn accept(store: &Store, members: &[CanonicalAthlete]) -> TestResult {
+    check!(eq; apply_identity_pairs(store, &[members])?, 1);
+    Ok(())
+}
+
+fn apply_identity_pairs(store: &Store, pairs: &[&[CanonicalAthlete]]) -> TestResult<u64> {
     let index = store.athlete_identity_index()?;
-    let ids = members
-        .iter()
-        .map(|athlete| athlete.id.cast())
-        .collect::<Vec<_>>();
-    let subject = "Source-backed identity fixture";
-    let detail = "One published provider identifier retained with alternate names";
-    let evidence = index.case_evidence(subject, detail, &ids)?;
-    let mut case = ReviewCase::pending_with_evidence(
-        ATHLETE_IDENTITY_FAMILY,
-        members
-            .first()
-            .ok_or("identity fixture has no members")?
-            .id
-            .as_str(),
-        subject,
-        detail,
-        evidence,
-    );
-    case.member_ids = ids;
-    case.state = ReviewState::Resolved;
-    let verdict = ReviewVerdictRecord {
-        id: case.id.clone(),
-        case_id: case.id.clone(),
-        subject_id: case.subject_id.clone(),
-        family: case.family.clone(),
-        kind: "value_proposed".into(),
-        field: "identity".into(),
-        value: "same_person".into(),
-        accepted: true,
-        confidence: 100,
-        rationale: detail.into(),
-        reviewer: "deterministic fixture".into(),
-        observed_at: DAY.into(),
-        member_ids: case.member_ids.clone(),
-    };
-    store.replace(Table::ReviewCases, &case)?;
-    store.replace(Table::IdentityVerdicts, &verdict)?;
-    let cases = [case];
-    let verdicts = [verdict];
+    let mut cases = Vec::new();
+    let mut verdicts = Vec::new();
+    for (ordinal, members) in pairs.iter().enumerate() {
+        let ids = members
+            .iter()
+            .map(|athlete| athlete.id.cast())
+            .collect::<Vec<_>>();
+        let subject = "Source-backed identity fixture";
+        let detail =
+            format!("One published provider identifier retained with alternate names {ordinal}");
+        let evidence = index.case_evidence(subject, &detail, &ids)?;
+        let mut case = ReviewCase::pending_with_evidence(
+            ATHLETE_IDENTITY_FAMILY,
+            members
+                .first()
+                .ok_or("identity fixture has no members")?
+                .id
+                .as_str(),
+            subject,
+            &detail,
+            evidence,
+        );
+        case.member_ids = ids;
+        case.state = ReviewState::Resolved;
+        let verdict = ReviewVerdictRecord {
+            id: case.id.clone(),
+            case_id: case.id.clone(),
+            subject_id: case.subject_id.clone(),
+            family: case.family.clone(),
+            kind: "value_proposed".into(),
+            field: "identity".into(),
+            value: "same_person".into(),
+            accepted: true,
+            confidence: 100,
+            rationale: detail,
+            reviewer: "deterministic fixture".into(),
+            observed_at: DAY.into(),
+            member_ids: case.member_ids.clone(),
+        };
+        store.replace(Table::ReviewCases, &case)?;
+        store.replace(Table::IdentityVerdicts, &verdict)?;
+        cases.push(case);
+        verdicts.push(verdict);
+    }
     let builder = IdentityProjectionBuilder::new(index, &cases, &verdicts)?;
     let decisions = builder
         .reviewed_applications(DAY)
@@ -72,8 +82,24 @@ pub(super) fn accept(store: &Store, members: &[CanonicalAthlete]) -> TestResult 
             }
         })
         .collect::<TestResult<Vec<_>>>()?;
-    check!(eq; store.apply_identity_decisions(&decisions)?, 1);
-    Ok(())
+    store.apply_identity_decisions(&decisions).map_err(Into::into)
+}
+
+fn provider_member(
+    school: &SchoolId,
+    name: &str,
+    gender: Gender,
+    source: SourceIdentity,
+    links: &[SourceIdentity],
+    url: &str,
+) -> CanonicalAthlete {
+    let mut athlete = CanonicalAthlete::new(school, name, GradYear::CO2027, gender, source);
+    athlete.public_profile_urls.push(url.to_owned());
+    athlete.evidence = evidence("wiaa_results", Some(url));
+    for link in links {
+        athlete.add_identity(link.clone());
+    }
+    athlete
 }
 
 fn add_result(
@@ -292,5 +318,91 @@ fn same_name_provider_owned_people_remain_separate_and_unresolved_status_is_expl
         check!(eq; text(&range, row, column_of(&range, "Review Status")?),
         "review");
     }
+    Ok(())
+}
+
+#[test]
+fn conflicting_union_component_exports_unmerged_profiles_and_prs_as_retained_conflict(
+) -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let school = school(&store, UsJurisdiction::Wisconsin, "Union High")?;
+    let mut first = provider_member(
+        &school,
+        "Synthetic Runner",
+        Gender::Girls,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "9001111")
+            .with_url("https://wi.milesplit.com/athletes/9001111"),
+        &[SourceIdentity::new(SourceNamespace::TfrrsAthlete, "7000009")
+            .with_url("https://wi.milesplit.com/athletes/9001111")],
+        "https://wi.milesplit.com/athletes/9001111",
+    );
+    let mut owner = provider_member(
+        &school,
+        "Synthetic Runner",
+        Gender::Girls,
+        SourceIdentity::new(SourceNamespace::TfrrsAthlete, "7000009")
+            .with_url("https://tfrrs.test/7000009"),
+        &[SourceIdentity::new(SourceNamespace::MilesplitAthlete, "9001111")
+            .with_url("https://tfrrs.test/7000009")],
+        "https://tfrrs.test/7000009",
+    );
+    let mut second = provider_member(
+        &school,
+        "Synthetic Runner",
+        Gender::Girls,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "9002222")
+            .with_url("https://mn.milesplit.com/athletes/9002222"),
+        &[SourceIdentity::new(SourceNamespace::TfrrsAthlete, "7000009")
+            .with_url("https://mn.milesplit.com/athletes/9002222")],
+        "https://mn.milesplit.com/athletes/9002222",
+    );
+    publish_fixture_cohort(&mut first, "wiaa_results", "provider-union-first", DAY);
+    publish_fixture_cohort(&mut owner, "wiaa_results", "provider-union-owner", DAY);
+    publish_fixture_cohort(&mut second, "wiaa_results", "provider-union-second", DAY);
+    store.append_many(
+        Table::Athletes,
+        &[first.clone(), owner.clone(), second.clone()],
+    )?;
+    add_result(&store, &first, EventKind::Track400m, 5000)?;
+    add_result(&store, &owner, EventKind::Track400m, 5100)?;
+    add_result(&store, &second, EventKind::Track400m, 5200)?;
+    let first_pair = [first.clone(), owner.clone()];
+    let second_pair = [owner.clone(), second.clone()];
+    let pairs: [&[CanonicalAthlete]; 2] = [&first_pair, &second_pair];
+    check!(eq; apply_identity_pairs(&store, &pairs)?, 2);
+    let dataset = crate::export::ExportDataset::load(&store)?;
+    check!(dataset.canonical_aliases.is_empty());
+    for athlete in [&first, &owner, &second] {
+        check!(eq; dataset.identities().status(athlete.id.as_str())?,
+        IdentityStatus::RetainedConflict);
+        check!(eq; dataset.identities().canonical_id(athlete.id.as_str()),
+        athlete.id.as_str());
+    }
+    let derivation = crate::report::Derivation::of(&dataset, Scope::AllSources, Some(2027));
+    check!(eq; derivation.athletes().len(), 3);
+    let expected = IdentityStatus::RetainedConflict.as_str();
+    let projection = recruiting(&store, Scope::AllSources, Some(2027))?;
+    let path = dir.path().join("conflicted-component.xlsx");
+    let mut book = Workbook::new();
+    projection.write_athletes(&mut book, &path)?;
+    projection.write_prs(&mut book, &path)?;
+    book.save(&path)?;
+    let mut book = open_workbook(&path)?;
+    let range = sheet(&mut book, "Athletes")?;
+    check!(eq; range.height(), 4);
+    for athlete in [&first, &owner, &second] {
+        let row = row_of(&range, athlete.id.as_str())?;
+        check!(eq; text(&range, row, column_of(&range, "Identity Status")?),
+        expected);
+        check!(eq; text(&range, row, column_of(&range, "Review Status")?),
+        "review");
+        check!(eq; text(&range, row, column_of(&range, "Performance count")?),
+        "1");
+        check!(eq; text(&range, row, column_of(&range, "Sources Count")?),
+        "2");
+    }
+    let prs = sheet(&mut book, "PRs")?;
+    check!(eq; prs.height(), 4);
     Ok(())
 }

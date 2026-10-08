@@ -249,3 +249,188 @@ fn name_school_and_cohort_agreement_alone_is_not_positive_evidence(
     check!(!index.supports_identity(AppliedIdentityKind::SamePerson, &pair(&first, &second)));
     Ok(())
 }
+
+fn resolved_identity_cases(
+    index: &AthleteIdentityIndex,
+    pairs: &[(&CanonicalAthlete, &CanonicalAthlete)],
+) -> Result<(Vec<ReviewCase>, Vec<ReviewVerdictRecord>), Box<dyn std::error::Error>> {
+    let mut cases = Vec::new();
+    let mut verdicts = Vec::new();
+    for (ordinal, (first, second)) in pairs.iter().enumerate() {
+        let ids = vec![first.id.cast(), second.id.cast()];
+        let subject = "Union component identity";
+        let detail = format!("Shared provider document attests runner pair {ordinal}");
+        let evidence = index.case_evidence(subject, &detail, &ids)?;
+        let mut case = ReviewCase::pending_with_evidence(
+            ATHLETE_IDENTITY_FAMILY,
+            first.id.as_str(),
+            subject,
+            &detail,
+            evidence,
+        );
+        case.member_ids = ids;
+        case.state = ReviewState::Resolved;
+        let verdict = ReviewVerdictRecord {
+            id: case.id.clone(),
+            case_id: case.id.clone(),
+            subject_id: case.subject_id.clone(),
+            family: case.family.clone(),
+            kind: "value_proposed".into(),
+            field: "identity".into(),
+            value: "same_person".into(),
+            accepted: true,
+            confidence: 100,
+            rationale: detail,
+            reviewer: "deterministic fixture".into(),
+            observed_at: "2026-10-02".into(),
+            member_ids: case.member_ids.clone(),
+        };
+        cases.push(case);
+        verdicts.push(verdict);
+    }
+    Ok((cases, verdicts))
+}
+
+fn accepted_component_decisions(
+    athletes: &[&CanonicalAthlete],
+    pairs: &[(usize, usize)],
+) -> Result<
+    (
+        Vec<ReviewCase>,
+        Vec<ReviewVerdictRecord>,
+        Vec<AppliedAthleteIdentity>,
+    ),
+    Box<dyn std::error::Error>,
+> {
+    let mut index = AthleteIdentityIndex::default();
+    for athlete in athletes {
+        index.observe(athlete)?;
+    }
+    let pairs = pairs
+        .iter()
+        .map(|(left, right)| (athletes[*left], athletes[*right]))
+        .collect::<Vec<_>>();
+    let (cases, verdicts) = resolved_identity_cases(&index, &pairs)?;
+    let builder = IdentityProjectionBuilder::new(index, &cases, &verdicts)?;
+    let decisions = builder
+        .reviewed_applications("2026-10-02")
+        .map(|(_, result)| match result? {
+            IdentityApplication::Accepted(decision) => Ok(decision.record().clone()),
+            IdentityApplication::Retained(issue) => {
+                Err(format!("fixture identity rejected: {issue:?}").into())
+            }
+        })
+        .collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
+    Ok((cases, verdicts, decisions))
+}
+
+fn component_projection(
+    athletes: &[&CanonicalAthlete],
+    cases: &[ReviewCase],
+    verdicts: &[ReviewVerdictRecord],
+    decisions: &[&AppliedAthleteIdentity],
+) -> Result<AthleteIdentityProjection, Box<dyn std::error::Error>> {
+    let mut index = AthleteIdentityIndex::default();
+    for athlete in athletes {
+        index.observe(athlete)?;
+    }
+    let mut builder = IdentityProjectionBuilder::new(index, cases, verdicts)?;
+    for decision in decisions {
+        check!(eq; builder.consider(decision)?, None);
+    }
+    Ok(builder.finish()?)
+}
+
+#[test]
+fn union_component_provider_conflict_withholds_aliases_in_either_application_order(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let first = observed(
+        "School A",
+        milesplit("111"),
+        &[tfrrs("999").with_url("https://milesplit.test/111")],
+        "https://milesplit.test/111",
+    );
+    let owner = observed(
+        "School B",
+        tfrrs("999"),
+        &[milesplit("111").with_url("https://tfrrs.test/999")],
+        "https://tfrrs.test/999",
+    );
+    let second = observed(
+        "School C",
+        milesplit("222"),
+        &[tfrrs("999").with_url("https://milesplit.test/222")],
+        "https://milesplit.test/222",
+    );
+    let athletes = [&first, &owner, &second];
+    let (cases, verdicts, decisions) = accepted_component_decisions(&athletes, &[(0, 1), (1, 2)])?;
+    let forward = component_projection(
+        &athletes,
+        &cases,
+        &verdicts,
+        &[&decisions[0], &decisions[1]],
+    )?;
+    let reverse = component_projection(
+        &athletes,
+        &cases,
+        &verdicts,
+        &[&decisions[1], &decisions[0]],
+    )?;
+    for athlete in athletes {
+        let subject = athlete.id.as_str();
+        check!(eq; forward.status(subject)?, IdentityStatus::RetainedConflict);
+        check!(eq; reverse.status(subject)?, IdentityStatus::RetainedConflict);
+        check!(eq; forward.canonical_id(subject), subject);
+        check!(eq; reverse.canonical_id(subject), subject);
+    }
+    check!(eq; forward
+        .rejected_applications()
+        .get(&IdentityDecisionIssue::ConflictingApplications),
+    Some(&1),);
+    check!(eq; reverse
+        .rejected_applications()
+        .get(&IdentityDecisionIssue::ConflictingApplications),
+    Some(&1),);
+    check!(eq; forward.rejected_applications().len(), 1);
+    check!(eq; reverse.rejected_applications().len(), 1);
+    Ok(())
+}
+
+#[test]
+fn compatible_provider_chain_component_publishes_one_verified_person(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let first = observed(
+        "School A",
+        milesplit("111"),
+        &[tfrrs("999").with_url("https://milesplit.test/111")],
+        "https://milesplit.test/111",
+    );
+    let owner = observed(
+        "School B",
+        tfrrs("999"),
+        &[milesplit("111").with_url("https://tfrrs.test/999")],
+        "https://tfrrs.test/999",
+    );
+    let mirror = observed(
+        "School D",
+        milesplit("111"),
+        &[tfrrs("999").with_url("https://mirror.test/111")],
+        "https://mirror.test/111",
+    );
+    let athletes = [&first, &owner, &mirror];
+    let (cases, verdicts, decisions) = accepted_component_decisions(&athletes, &[(0, 1), (1, 2)])?;
+    let projection = component_projection(
+        &athletes,
+        &cases,
+        &verdicts,
+        &[&decisions[0], &decisions[1]],
+    )?;
+    let canonical = projection.canonical_id(first.id.as_str()).to_owned();
+    for athlete in athletes {
+        check!(eq; projection.status(athlete.id.as_str())?,
+        IdentityStatus::Verified);
+        check!(eq; projection.canonical_id(athlete.id.as_str()), canonical.as_str());
+    }
+    check!(eq; projection.rejected_applications().len(), 0);
+    Ok(())
+}

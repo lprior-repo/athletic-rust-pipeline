@@ -1,5 +1,7 @@
 use super::{
     identity_aliases::IdentityAliases,
+    identity_corroboration::disjoint_provider_objects,
+    identity_index::IdentityFact,
     identity_validation::{validate, ReviewBindings},
     AppliedAthleteIdentity, AppliedIdentityKind, AthleteCandidateId, AthleteIdentityIndex,
     IdentityDecisionIssue, IdentityError, IdentityStatus, ReviewCase, ReviewState,
@@ -177,6 +179,27 @@ impl<'a> IdentityProjectionBuilder<'a> {
             *gender |= gender_bit(child.gender);
             if *gender == 3 || child.grad_year != parent.grad_year {
                 conflicts.insert(root.clone());
+            }
+        }
+        let mut components: BTreeMap<AthleteCandidateId, BTreeSet<&AthleteCandidateId>> =
+            BTreeMap::new();
+        for (member, root) in aliases {
+            let component = components.entry(root.clone()).or_default();
+            component.insert(member);
+            component.insert(root);
+        }
+        for (root, members) in components {
+            let facts = members
+                .into_iter()
+                .map(|member| {
+                    self.index
+                        .facts
+                        .get(member.as_str())
+                        .ok_or_else(|| IdentityError::UnknownSubject(member.to_string()))
+                })
+                .collect::<Result<Vec<&IdentityFact>, IdentityError>>()?;
+            if disjoint_provider_objects(&facts) {
+                conflicts.insert(root);
             }
         }
         Ok(conflicts)
