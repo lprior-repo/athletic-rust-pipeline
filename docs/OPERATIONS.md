@@ -159,6 +159,29 @@ the same source key. All jurisdiction fetchers share one serving-owner pacing st
 fetchers with different authorized-host sets; a new cache key cannot create another family budget.
 Count actual physical admissions separately from cache hits and retained entity populations.
 
+### Sweep watchdog and recovery
+
+Every census handler declares an inactivity timeout plus an abort timeout
+(`crates/census-service/src/restate_services/limits.rs`). When both expire with no journal progress
+Restate aborts the invocation, and it completes as a failure — it is never retried, so a sweep that
+stalls silently is permanently incomplete and its jurisdiction keeps owing the unfinished stages.
+Both are 12 h, i.e. 24 h of tolerated silence: a multi-hour single invocation is normal for a
+national run (2026-10-07: sweeps that completed ran 9.03–13.27 h; 42 states whose stream went silent
+were killed under the previous 1 h + 1 h watchdog).
+
+A failed sweep is re-driven on its own key; never mint a job because an attempt failed.
+`JurisdictionCensus` is a virtual object, so re-invoking `JurisdictionCensus/<key>/run` resumes from
+the stages its durable state records. `NationalCensus` is a workflow (run-once per identity): once
+the cause is fixed, restart its failed run through the admin API
+(`PATCH /invocations/<id>/restart-as-new`), or submit a new revision. Read the terminal account
+first:
+
+```sh
+curl -sS -X POST http://127.0.0.1:19095/query -H 'content-type: application/json' \
+  -H 'accept: application/json' \
+  -d '{"query":"SELECT target, status, completion_failure FROM sys_invocation WHERE completion_failure IS NOT NULL"}'
+```
+
 ## School athletics site crawl (long tail)
 
 `census-service school-sites <queue.jsonl>` crawls the school websites that the directories and
@@ -463,6 +486,22 @@ target/moon-portable/x86_64-unknown-linux-gnu/release/census-service --store var
   --evidence-url nces-ccd=https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2526_w_0a_050626.zip \
   --evidence-url nces-pss=https://nces.ed.gov/surveys/pss/zip/pss2324_pu_csv.zip \
   --evidence-date nces-ccd=YYYY-MM-DD --evidence-date nces-pss=YYYY-MM-DD
+```
+
+A national run always executes the join. A request without a school-directory argument carries no
+generation, and the workflow resolves the default root `<data-dir>/school-address` at the end of the
+fan-out — after every jurisdiction has swept. That root must therefore hold `current/` before the
+run is submitted, or the whole run fails terminally with
+`generation i/o failed for <data-dir>/school-address/current`; the 2026-10-06 national run lost ~13 h
+of sweeping to exactly that. Build it with the same binary that will serve the run (a generation
+built by an older binary can fail the join's manifest digest check), then submit, or pass
+`--school-directory <root>` explicitly:
+
+```sh
+target/moon-portable/x86_64-unknown-linux-gnu/release/census-service school-address \
+  --ccd <run>/ccd/ccd_sch_029_2526_w_0a_050626.csv \
+  --pss /home/lewis/src/ad-law-scrape/data/nces/pss/pss2324_pu.csv \
+  --out <data-dir>/school-address --now 2026-10
 ```
 
 A provider read from more than one capture needs per-capture attribution, and every generation

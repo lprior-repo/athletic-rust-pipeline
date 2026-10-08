@@ -139,6 +139,10 @@ pub(super) const SIDEARM_STAFF_REFUSAL: &str = "Only gomats.org and its Californ
                   hosts, custom-column variants and email mechanisms are unverified. Only published XC/TF \
                   coaches and the exact Athletic Director title become canonical contacts.";
 
+pub(super) const BOUND_EVIDENCE: &str = "The GoBound association staff pages publish Iowa (IGHSAU) and South Dakota (SDHSAA) cross-country and track & field coach rosters on a per-school basis at www.gobound.com/<state>/<slug>/<sport>. The adapter discovers its member-school index at www.gobound.com/<state>/schools (429 schools for Iowa in the 2026-10-04 index, plus a smaller South Dakota index) and resolves each known name through that index before reading staff pages for boys/girls cross country and boys/girls track & field. Real captures with full SHA-256 digests are recorded in crates/census-crawl/tests/fixtures/bound/PROVENANCE.json; the registry admission paces at 0.1 rps (10 s between requests) on both www.gobound.com and gobound.com.";
+
+pub(super) const BOUND_REFUSAL: &str = "Two states' association pages: GoBound serves only Iowa (IGHSAU) and South Dakota (SDHSAA) and publishes no content for the other jurisdictions in the corpus.";
+
 pub(super) const IHSAA_EVIDENCE: &str = "[13] IHSA API: 828 member schools (801 full + 26 approved + 1 associate), `/staff2` + \
                    `/staff/<pid>/email` per-row email reveal (49/49 sampled rows HasEmail), census 125/125 Co2027 with \
                    coach email. Re-derivable from `evidence/gaps/38/il-schools.json`.";

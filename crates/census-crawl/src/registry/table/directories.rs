@@ -1,10 +1,10 @@
 use super::super::policy::{
-    artifact, fetched, CRAWL_DELAY_THIRTY_RPS, FETCHER_RPS, HOME_CAMPUS_RPS, SCHOOL_ADDRESS,
-    SCHOOL_COACH_CONTACT,
+    artifact, fetched, CRAWL_DELAY_TEN_RPS, CRAWL_DELAY_THIRTY_RPS, FETCHER_RPS, HOME_CAMPUS_RPS,
+    SCHOOL_ADDRESS, SCHOOL_COACH_CONTACT,
 };
 use super::super::{SourceDescriptor, TransportKind};
 
-pub(super) const DIRECTORIES: [SourceDescriptor; 6] = [
+pub(super) const DIRECTORIES: [SourceDescriptor; 7] = [
     SourceDescriptor {
         slug: "nces",
         provider: "NCES Common Core of Data and Private School Survey school files",
@@ -46,5 +46,12 @@ pub(super) const DIRECTORIES: [SourceDescriptor; 6] = [
         transport: TransportKind::Html,
         capabilities: SCHOOL_COACH_CONTACT,
         admission: fetched("gomats.org", CRAWL_DELAY_THIRTY_RPS),
+    },
+    SourceDescriptor {
+        slug: "bound",
+        provider: "GoBound association staff pages (www.gobound.com)",
+        transport: TransportKind::Html,
+        capabilities: SCHOOL_COACH_CONTACT,
+        admission: fetched("www.gobound.com", CRAWL_DELAY_TEN_RPS),
     },
 ];

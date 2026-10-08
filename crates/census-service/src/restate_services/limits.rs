@@ -19,9 +19,9 @@ pub(super) fn validate_source_parallelism(value: usize) -> Result<(), TerminalEr
     Ok(())
 }
 
-const CENSUS_INACTIVITY_TIMEOUT: Duration = Duration::from_secs(60 * 60);
+const CENSUS_INACTIVITY_TIMEOUT: Duration = Duration::from_secs(12 * 60 * 60);
 
-const CENSUS_ABORT_TIMEOUT: Duration = Duration::from_secs(60 * 60);
+const CENSUS_ABORT_TIMEOUT: Duration = Duration::from_secs(12 * 60 * 60);
 
 fn census_service_options() -> ServiceOptions {
     ServiceOptions::new()

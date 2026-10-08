@@ -372,14 +372,15 @@ fn the_token_response_yields_the_access_token() -> TestResult {
 }
 
 #[test]
-fn the_lane_covers_the_four_arbiter_association_orgs() {
+fn the_lane_covers_the_five_arbiter_association_orgs() {
     assert_eq!(org_for(UsJurisdiction::NewHampshire), Some("2132"));
     assert_eq!(org_for(UsJurisdiction::Kentucky), Some("2507"));
     assert_eq!(org_for(UsJurisdiction::Montana), Some("4497"));
     assert_eq!(org_for(UsJurisdiction::WestVirginia), Some("4223"));
+    assert_eq!(org_for(UsJurisdiction::Oklahoma), Some("106940"));
     assert_eq!(org_for(UsJurisdiction::Delaware), None);
     let covered: Vec<UsJurisdiction> = covered_states().collect();
-    assert_eq!(covered.len(), 4);
+    assert_eq!(covered.len(), 5);
     assert!(covered.contains(&UsJurisdiction::NewHampshire));
 }
 

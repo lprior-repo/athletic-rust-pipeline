@@ -133,12 +133,42 @@ fn the_dispatch_question_is_asked_before_the_lane() -> Result<(), Box<dyn std::e
 }
 
 #[test]
+fn each_armed_directory_slug_is_swept_and_armed_for_its_own_state() {
+    for (jurisdiction, slug) in [
+        (UsJurisdiction::Connecticut, "ciac"),
+        (UsJurisdiction::Arizona, "aia"),
+        (UsJurisdiction::California, "home_campus"),
+        (UsJurisdiction::Florida, "home_campus"),
+        (UsJurisdiction::NewJersey, "home_campus"),
+        (UsJurisdiction::Utah, "uhsaa"),
+        (UsJurisdiction::Oklahoma, "arbiter_orgs"),
+    ] {
+        let dispositions = plan(jurisdiction, BrowserLaneState::Configured);
+        let units = sweepable(&dispositions);
+        assert!(
+            units.iter().any(|unit| unit.slug == slug),
+            "{jurisdiction}: {dispositions:?}"
+        );
+        assert!(
+            crate::restate_services::teams_arms::arm_for(slug).is_some(),
+            "{slug} is swept for {jurisdiction} but no teams stage arm collects it"
+        );
+    }
+}
+
+#[test]
 fn nothing_sweepable_is_a_source_no_stage_runs() {
     for jurisdiction in [
         UsJurisdiction::Wisconsin,
         UsJurisdiction::Minnesota,
         UsJurisdiction::Illinois,
         UsJurisdiction::Ohio,
+        UsJurisdiction::Connecticut,
+        UsJurisdiction::Arizona,
+        UsJurisdiction::California,
+        UsJurisdiction::Florida,
+        UsJurisdiction::NewJersey,
+        UsJurisdiction::Utah,
     ] {
         let dispositions = plan(jurisdiction, BrowserLaneState::Configured);
         for unit in sweepable(&dispositions) {
@@ -188,6 +218,29 @@ fn a_states_own_directory_walk_is_planned_only_for_that_state() {
         );
         let other = slugs(neighbour);
         assert!(other.contains(&"plain_names"), "{neighbour}: {other:?}");
+    }
+}
+
+#[test]
+fn the_gobound_staff_walk_is_planned_for_iowa_and_south_dakota_only() {
+    let slugs = |jurisdiction: UsJurisdiction| -> Vec<&'static str> {
+        sweepable(&plan(jurisdiction, BrowserLaneState::Configured))
+            .iter()
+            .map(|unit| unit.slug)
+            .collect()
+    };
+
+    for jurisdiction in [UsJurisdiction::Iowa, UsJurisdiction::SouthDakota] {
+        let planned = slugs(jurisdiction);
+        assert!(planned.contains(&"bound"), "{jurisdiction}: {planned:?}");
+    }
+
+    for jurisdiction in [UsJurisdiction::Nebraska, UsJurisdiction::Minnesota] {
+        let planned = slugs(jurisdiction);
+        assert!(
+            !planned.contains(&"bound"),
+            "{jurisdiction} is not GoBound's work: {planned:?}"
+        );
     }
 }
 

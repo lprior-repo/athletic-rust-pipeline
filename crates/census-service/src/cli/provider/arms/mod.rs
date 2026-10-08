@@ -14,5 +14,6 @@ pub(super) use meet_sources::{
     athleticnet_report, milesplit_report, milesplit_results_report, wayzata_report,
 };
 pub(super) use native_associations::{
-    chsaa_report, home_campus_report, sidearm_staff_report, tssaa_report, uhsaa_report,
+    bound_report, chsaa_report, home_campus_report, sidearm_staff_report, tssaa_report,
+    uhsaa_report,
 };

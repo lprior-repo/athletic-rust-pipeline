@@ -13866,3 +13866,270 @@ prior exercise was unit-level, so its standing regression is scenario-05's crawl
 new unit test (`school_sites::run` has no run-level test harness); the
 `functions_over_25_logical_lines` count (1242) is a context metric the ratchet reports but does not
 budget; and no national acquisition run was made in this slice.
+
+## Coach-lane arms: CT/AZ/CA/FL/NJ/UT swept by the durable teams stage (`jpx4` integration half) — 2026-10-07
+
+Beads: `jpx4` (21 jurisdictions with no durable coach arm), `zup7` (every jurisdiction armed or
+explicitly refused) and per-state lanes `69ja` CT, `br4l` AZ, `fhwz` CA, `at44` FL, `fiox` NJ,
+`x4ou` UT. Before this slice each of those states planned its coach directory as
+`Refused(NO_JURISDICTION_WALK)`: the adapters existed and were CLI-reachable, but no run stage swept
+them.
+
+`teams_arms::TEAMS_ARMS` gained `ciac`, `aia`, `home_campus` and `uhsaa`; `TeamsArm` gained
+`CiacSchools`, `AiaProfiles`, `HomeCampusSections` and `UhsaaDirectory`, each dispatching to a new
+`teams_arms/associations.rs` walker (`ciac`, `aia`, `home_campus`, `uhsaa`) built exactly like the
+existing `mpa`/`piaa` walkers (`limit: None`, `refresh`, `observed_on`, `states: vec![jurisdiction]`,
+empty `school_names`), and `jurisdiction::DISPATCHED` gained the same four slugs. All four
+descriptors are `TransportKind::Html` with `fetched(...)` admission, so `access_class()` is
+`AccessClass::Open` and the plain Fetcher sweeps them; `home_campus::SECTIONS` selects CA CIF, FL
+FHSAA and NJ NJSIAA sections from `options.states`; `crates/census-crawl/src/ciac/tests/` parses
+captured CIAC directory HTML and asserts schools and coach rows.
+
+Because `teams_arms.rs` stood at 295 of the 300-line ratchet budget and the remaining state arms
+must still grow the table, the eight `walk_*` functions moved verbatim into
+`teams_arms/walkers.rs` (`teams_arms.rs` 132 lines, `walkers.rs` 179 lines); no behaviour changed.
+
+Regression: `restate_services::plan::tests::each_armed_directory_slug_is_swept_and_armed_for_its_own_state`
+asserts, for each (jurisdiction, slug) pair above, that `plan(...)` Sweeps the slug **and** that
+`teams_arms::arm_for(slug)` collects it; `nothing_sweepable_is_a_source_no_stage_runs` now also runs
+for CT, AZ, CA, FL, NJ and UT. Commands on the final bytes: `cargo check -p census-service
+--all-targets` clean, `cargo test -p census-service --lib` `274 passed; 0 failed`,
+`cargo fmt --all --check` exit 0.
+
+Limits: no live request was made to any of the four routes in this slice; the live
+`national-fresh-20261006-01` deployment executes the pre-change binary (`open-work`: 12 of 49
+jurisdiction sweeps owe stages; last store capture 2026-10-07 06:44), so exercising these arms needs
+a new build and registration. CT's DragonFly route stays a redundancy candidate: CIAC is in
+`coach_directories::ASSOCIATIONS` but not in `REGISTERED`, so the FusionPoint arm is CT's wired
+route until a DragonFly survey qualification lands.
+
+## Prototype/worktree consolidation verdicts and the 49-jurisdiction coach-lane diff — 2026-10-07
+
+Three read-only worker slices produced `var/consolidation/python-port.md`,
+`var/consolidation/stashes.md` and `var/consolidation/jurisdiction-diff.md`; their formal outputs
+carry the same verdicts. No build, test or live request ran for this section: every count below is a
+source or git read, and the limit is stated with each verdict.
+
+**`arh-python-port` harvest — empty.** HEAD `0be3cfa7` is an ancestor of main (`main..HEAD` = 0
+commits). Of a 150-path footprint, 141 paths exist in main and each has a newer main-side last-touch
+commit that is a descendant of HEAD (machine-checked with `git log -1 main -- P` and
+`git merge-base --is-ancestor`); the 9 paths main lacks are strict subsets of newer main modules
+(`label_match.rs` < `qualified.rs`, `replay/cases/coach.rs` < `cases.rs`, the `coach_directories`
+re-split < main's `collect`/`probe`/`row` modules). Added-declaration and added-string scans found
+no capability main lacks. Three owner questions remain open and are recorded in the report (a CHSAA
+adjacency test name, the MileSplit fixed-width `Layout` design, Kani-era prose). Commands were
+read-only git; no test executed. Bead `mf5t` closed on this evidence.
+
+**Stashes — nothing newer than main.** All four stashes (`0`..`3`, created 2026-09-30..10-02): 382
+classified paths, 21 superseded, 0 harvest. The `conditional_capture.rs` drafts in stashes 0 and 1
+are an earlier 188-line form of main's `net/execute/conditional_capture_tests.rs` (199 lines, landed
+`b0bddca3`); the 14 `census-store/src` files are byte-identical to `92317aec` and to
+`park/orig-coach-acquisition-20261006`, whose content main evolved in place. One non-code draft
+(`stash@{1}:feminine-life-agent-prompt.md`, blob `4cf4ae1d`, 30710 B) exists in no main tree and is
+the owner's call before that stash is dropped. Bead `yetw` closed; `qyux` closed as the inventory.
+
+**49-jurisdiction coach/contact diff.** `jurisdiction-diff.md` maps every state's prototype coach
+sources against main's applicable slugs and existing `coach-lane` beads: **ARMED 28, CLI-ONLY 6,
+NONE 15, REFUSED 0**; 23 jurisdictions have an executable coach-email path (19 durable + 4 then-CLI);
+**0** jurisdictions have a school-level contact-email source independent of coach identity; all 49
+have a school-address path through `nces`, but that lane is executable only with operator-supplied
+CCD/PSS/state-ed files; 21 open `coach-lane` beads, none yet a recorded refusal. Reading it against
+the arms slice above, the CLI-ONLY six (CT AZ CA FL NJ UT) gained durable `TEAMS_ARMS` arms the same
+day, so their remaining gap is execution in a fresh run, not wiring. Of the NONE fifteen, only IA and
+SD have a proven fetchable directory (GoBound staff pages; robots allows them and disallows only
+`/*directory`); OR is closed for a live lane — `research/sources/osaa/SOURCE_REPORT.md` (2026-10-04)
+records robots, `/schools/regions` and `/` all 403 for anonymous access, which bead `fsg7` now cites
+— and the rest are robots/403/empty-202 refusals (MO VA TX OR NV MI), PDF-only school lists
+(LA MA IN OK) or shell pages (NY VT WA). Prototype yields quoted by the diff carry no run date, so no
+freshness claim attaches to them; the counts are applicability reads, not acquired coverage.
+
+## Live run reading: `national-fresh-20261006-01` (read-only) — 2026-10-07
+
+`pgrep` shows `census-serve` (`--listen 127.0.0.1:18096 --data-dir var/national-fresh-20261006-01`)
+and the native `restate-server` on ingress 18095 / admin 19095. Two read-only commands were run
+against the running deployment; no store was opened by a second process.
+
+`curl -s http://127.0.0.1:19095/deployments` → one deployment, **twelve services**:
+`BrowserSession, SchoolAddressJoin, Census, JurisdictionCensus, Report, Ingest, NationalCensus,
+Consolidate, Workbook, Sweep, Bests, TeamsSource` (matching AGENTS.md's "all twelve"). No
+reconciliation/review service exists, which is the runtime face of the Goal C gap (`b1ui`/`u4al`).
+
+`census-service open-work --ingress http://127.0.0.1:18095/` → `season 2026-27 revision 1`;
+**jurisdiction sweeps owed: 12 of 49**; `source objects owed: unmeasured`. The twelve:
+CA, FL (rosters, meets); IL (teams, rosters, meets); MI, MO, NY, OH, OK, TX, WA (rosters, meets);
+PA (teams, rosters, meets); WI (meets).
+
+Limits: this reads the deployment that was registered before today's arms and bound-port work, so it
+cannot execute `ciac`/`aia`/`home_campus`/`uhsaa` teams arms or a bound stage; exercising either
+needs a new build, a new run identity and a fresh registration. No stage was advanced, paused or
+cancelled by this reading.
+
+## GoBound staff adapter (`bound`): IA+SD wired, durably armed and exercised live — 2026-10-07
+
+The `bound` coach source — GoBound association staff pages for Iowa (IGHSAU) and South Dakota
+(SDHSAA) — is ported, registered, planned, dispatched and exercised against the live site. Source
+narrative, robots/user-agent findings and fixture provenance:
+`research/sources/bound/SOURCE_REPORT.md`; fixture contract and digests:
+`crates/census-crawl/tests/fixtures/bound/{README.md,SOURCE.md}`.
+
+**Wiring.** `crates/census-crawl/src/bound/{parse,collect,map}.rs`; registry descriptor in
+`registry/table/directories.rs` (`TransportKind::Html`, `SCHOOL_COACH_CONTACT`,
+`fetched("www.gobound.com", CRAWL_DELAY_TEN_RPS)`); applicability rows for Iowa and South Dakota in
+`applicability/table/data.rs` with `BOUND_EVIDENCE`/`BOUND_REFUSAL` prose; CLI arm
+`census-service provider bound`; replay arm `xtask replay bound`; durable teams arm
+`("bound", TeamsArm::Bound)` running `associations::bound`, and `bound` in `DISPATCHED`. The plan
+test `the_gobound_staff_walk_is_planned_for_iowa_and_south_dakota_only` asserts both states plan it
+as sweepable and that Nebraska and Minnesota do not.
+
+**Repairs inside this slice.** (1) `registry/tests.rs`'s `PLAN_SLUGS` carried a phantom
+`athleticlive_results`, which no descriptor registers, and a size that disagreed with its literal;
+corrected to the **29** registered slugs — `registry:: applicability::` 26 tests green. (2) The
+fixture directory carried `.keep`, `PROVENANCE.json` and six `.meta.json` sidecars, which the replay
+harness feeds to the case as captures (`xtask replay bound` failed on `.keep`); replaced with the
+sidearm convention — `README.md` + `SOURCE.md` contracts, five byte-exact captures and one
+hand-written page, full SHA-256 values in `SOURCE.md`. (3) The replay arm ignored its capture name,
+used a bare `return` and accepted a zero count; it now refuses non-capture names and asserts
+non-empty coach counts, so a body that stops parsing fails the verb:
+
+```
+source bound: 6 capture(s) under crates/census-crawl/tests/fixtures/bound, offline, no store, no clock
+staff-faith-sd-boys-xc-empty-staff.html  staff school="Faith Longhorns" sport="Boys Cross Country" coaches=0
+staff-non-coach-role.html                staff school="Example School" sport="Girls Cross Country" coaches=2
+staff-siouxcenter-ia-girls-xc.html       staff school="Sioux Center Warriors" sport="Girls Cross Country" coaches=4
+staff-whiteriver-sd-girls-xc.html        staff school="White River Lady Tigers" sport="Girls Cross Country" coaches=2
+staff-yankton-sd-boys-xc.html            staff school="Yankton Bucks" sport="Boys Cross Country" coaches=2
+staff-yankton-sd-girls-xc.html           staff school="Yankton Gazelles" sport="Girls Cross Country" coaches=2
+6 capture(s) replayed for source bound
+```
+
+**Three live defects, found by exercising the real surface, all repaired.** (1) The adapter's
+user-agent carried a parenthesized comment — `… Chrome/126.0 Safari/537.36 census-service/0.1
+(independent HS track & field research collector; polite; contact: repo owner)` — and
+`www.gobound.com` answers **403** with a 520-byte body to it on every path including `/robots.txt`
+and `/ia/schools`; the compact form `… Chrome/126.0 Safari/537.36 census-service/0.1` answers
+**200** with 641,210 bytes on `/ia/schools`, as does the prototype's `… census-prototype/0.1`
+(three `curl` probes, 2026-10-07). The constant now carries no comment. (2) The first end-to-end run
+stopped at `school observation failed`: the mapper minted no `SourceIdentity` for the school and
+recorded evidence with an empty URL, which `SourceSchoolObservation::of_school` refuses. The mapper
+now mints `AssociationSchool{association:"bound"}` keyed `<state>/<slug>` with the page URL, the
+collector builds one `ProfileFacts` per fetched page so every coach cites the page that published
+it, a school with no fetchable page is skipped with a report note instead of being emitted without
+evidence, and coach identity keys are school-scoped
+(`<state>/<slug>:<name>:<role>:<sport>:<gender>`). Regression:
+`a_fetched_page_answers_the_school_observation_contract`. (3) `AdapterReport::rows` was never set —
+the adapter reported 0 written rows while writing schools and coaches, and the durable stage reads
+that number — it now counts emitted schools.
+
+**Live smoke on the portable binaries from this tree** (`env -u CI tools/moon-local run
+pipeline:build-portable`, then a fresh scratch store):
+
+```
+target/moon-portable/x86_64-unknown-linux-gnu/release/census-service provider bound \
+  --store var/bound-smoke-20261007 --states IA,SD --school-names "Sioux Center,Yankton" \
+  --limit 4 --observed-on 2026-10-07
+```
+
+```json
+{ "adapter": "bound", "rows": 2, "requests": 10, "from_cache": 0, "errors": 0,
+  "with_email": 0, "rejections": 0, "unit": "schools",
+  "notes": [
+    "no Bound match for IA: Yankton",
+    "IA: index 1332 schools, matched 1 of 2 (ambiguous 0, unmatched 1); processed 1 (16 coaches)",
+    "no Bound match for SD: Sioux Center",
+    "SD: index 687 schools, matched 2 of 4 (ambiguous 0, unmatched 2); processed 1 (22 coaches)" ] }
+```
+
+100 s wall; ten paced requests (the host gate holds the published 10 s crawl delay). Two runs of the
+identical command produced the identical report. Readback of the same store
+(`… --store var/bound-smoke-20261007 fjall-stats`): `schools 2`, `coaches 38`,
+`source_observations 2`, `store_bytes 2914525`, `evidence_generation 2`. The two schools' staff
+pages are the fixture pages' live counterparts (Sioux Center girls XC four coaches, Yankton two per
+sport page), which is why 16 and 22 coaches accumulate across the four IA/SD sport walks.
+
+**Checks on the final bytes.** `cargo test -p census-crawl --lib` **978 passed**;
+`cargo test -p census-service --lib` **275 passed**; `cargo clippy -p census-crawl -p census-service
+-p xtask --all-targets` 0 warnings; `cargo fmt --all` exit 0; `xtask replay bound` 6 captures as
+above; `tools/gate.sh` recorded in `var/gate-bound-20261007.log`.
+
+**Run and backup state.** `census-serve` for `national-fresh-20261006-01` was drained before this
+slice (serve.log: `drained: accepted=123 completed=123 cancelled=0 timed_out=0 aborted=0
+panicked=0`, 16:45:49) and its store was backed up to
+`var/backups/national-fresh-20261006-01-20261007/` (`backup.json` 69,102,721 B, plus `fjall/`,
+`http/`, `out/`), which took 8m47s. The inventory that backup printed included `schools 33101`,
+`teams 88565`, `performances 414613`, `events 24710`, `meets 1970`, `source_meets 17194`,
+`source_observations 2292297`, with `identity_verdicts`, `review_cases`, `snapshots`,
+`source_access` and `source_identities` all 0; the tables printed before `events` are not quoted
+here. The Restate node for that run is still up (pid 1525355, `var/national-fresh-20261006-01/
+restate.toml`); no process holds the drained store.
+
+**Limits.** The durable stage was not executed: it needs a fresh run identity and registration, so
+the live exercise above is the CLI arm, not a `JurisdictionCensus` sweep. The fixtures carry no
+capture timestamps (the prototype cache records none), the pacing above covers ten requests rather
+than a whole-state sweep, and `with_email` is 0 by design — GoBound publishes coach names and roles,
+not mailboxes, so this source confirms identity rather than supplying contacts.
+
+## Gate ratchet repayment for the `bound` slice: size budget, lint debt and the unwrap family — 2026-10-07
+
+The `bound` adapter above landed code that broke three gate ratchets, so the tree failed
+`tools/gate.sh` on `panic extraction (all targets)` and `ratchet` (`var/gate-bound-20261007.log`,
+651,876 B). This slice repays that debt without changing adapter behaviour. Layout it establishes
+(superseding the `bound/{parse,collect,map}.rs` file list in the section above):
+`crates/census-crawl/src/bound/collect.rs` is now a parent module with `collect/index.rs` (index
+parsing, slug resolution, verified slugs) and `collect/emit.rs` (staff fetch, page merge,
+school/coach emission) beside it, mirroring `mshsl/collect.rs` + `mshsl/collect/`.
+
+**What the before-state measured.** The 17:14 log counted `structure: files>300=2 fns>60=5`
+(`bound/collect.rs` 542, `xtask/src/replay/cases.rs` 316; `collect` 99, `resolve_slugs` 77,
+`process_school` 61, `seal.rs binding` 66, `team_source` 67), 12 strict-clippy debt sites in
+`census-crawl` (`clippy::indexing_slicing` 6, `clippy::string_slice` 5,
+`clippy::arithmetic_side_effects` 1 — all in `bound/{parse,collect}.rs`) and one panic-extraction
+violation (`bound/collect.rs:207`, `.unwrap_or`; the policy forbids the whole family: `unwrap`,
+`expect`, `unwrap_err`, `expect_err`, `unwrap_unchecked`, `unwrap_or`, `unwrap_or_else`,
+`unwrap_or_default`).
+
+**Bounds.** `bound/collect.rs` 542 → 228 lines, `collect/index.rs` 270, `collect/emit.rs` 144;
+`xtask/src/replay/cases.rs` 316 → 295 with the bound arm moved to `xtask/src/replay/cases/bound.rs`;
+every over-budget function decomposed — `collect()` into `walk_state`/`sweep`, `resolve_slugs` into
+`resolve_one`/`single`/`token_candidates`/`prefix_candidates`, `process_school` into
+`fetch_pages`/`merge_pages`, `seal.rs binding` into `complete_selection`/`same_run`/
+`run_school_year`/`same_evidence`, and `team_source` into one line per source over a
+`walkers::Crawl` context struct (`walkers::crawl(...)`, `as_job`). The staff URL's season literal now
+lives once, in `emit.rs`, and the school observation namespace comes from `bound::school_namespace()`
+instead of a repeated `"bound"` literal.
+
+**Slice rewrites, not suppressions.** `parse_title`, the staff-row loop, `parse_school_index` and
+`resolve_one` now use `split_once`/`map_or`/`<[T]>::first()` shapes instead of slicing and indexing;
+the two `preferred[0]` picks became a slice match. The four `.unwrap_or*` calls are gone:
+`split(',').next().map_or(name, str::trim)`, `map_or_else(String::new, …)`,
+`map_or("", |(_, l)| l)`, and the label-head comparison collapsed to
+`label_upper.starts_with(&head)` — the naive `match … None => ""` form clippy prefers is itself
+forbidden, since the strict lane denies `clippy::manual_unwrap_or_default` while the extraction lane
+denies `unwrap_or_default`.
+
+**After-state evidence** (`var/gate-cleanup2-20261007.log`, `gate: PASS (debt ratchet holds; counts
+above)`):
+
+```
+--- fmt: PASS   --- zero code comments: PASS   --- architecture contract: PASS   --- check: PASS
+--- doc: PASS   --- tests: PASS   --- panic extraction (all targets): PASS
+--- domain type integrity: PASS   --- domain purity: PASS   --- module seams: PASS   --- ratchet: PASS
+--- deny: PASS   --- audit: PASS   --- machete: PASS   --- geiger: PASS
+--- feature powerset: PASS   --- bench presence: PASS
+  total diagnostics: 0
+  structure: files>300=0 fns>60=0 fns>25logical=1248
+  panic-extraction policy: 1630 Rust files and 3 rendered templates checked
+     Summary [  36.688s] 2683 tests run: 2683 passed, 3 skipped
+```
+
+Behaviour held across the move: `cargo test -p census-crawl --lib bound` 38 passed (fixture corpus,
+slug resolution, verified slugs, title guards), `cargo test -p census-report --lib` 230 passed
+(including the publication/seal suite `seal.rs` gates), `cargo test -p xtask` 120 passed, the
+`census-service` suite green, and `cargo xtask replay bound` printed the same six capture lines as
+the section above — the rewritten parser and slug resolver treat the same bytes the same way.
+
+**Limits.** This slice is structural: no live request was re-issued, so live evidence remains the CLI
+smoke in the section above, and the fixture/replay lanes establish the rewritten parser on committed
+captures only. Each gate above is a single run on a quiet tree; the perf lane stays `SKIP` (no
+`tools/perf-baseline.json`) and the release pass was not executed. The ratchet baseline in
+`tools/quality-baseline.json` is unchanged, so later growth past these counts fails again.
+

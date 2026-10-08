@@ -13,11 +13,12 @@ pub const TOKEN_SCOPE: &str = "Registration";
 pub const PAGE_SIZE: u64 = 200;
 pub const MAX_PAGES: u64 = 64;
 
-const ORGS: [(UsJurisdiction, &str); 4] = [
+const ORGS: [(UsJurisdiction, &str); 5] = [
     (UsJurisdiction::NewHampshire, "2132"),
     (UsJurisdiction::Kentucky, "2507"),
     (UsJurisdiction::Montana, "4497"),
     (UsJurisdiction::WestVirginia, "4223"),
+    (UsJurisdiction::Oklahoma, "106940"),
 ];
 
 pub fn org_for(state: UsJurisdiction) -> Option<&'static str> {

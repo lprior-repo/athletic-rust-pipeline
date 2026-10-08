@@ -1,3 +1,4 @@
+mod bound;
 mod coach_directories;
 mod pa_piaa;
 mod results;
@@ -28,6 +29,7 @@ pub(super) fn replay(capture: &Capture<'_>) -> Result<String> {
         "coach_directories" => coach_directories::replay(capture),
         "pa_piaa" => pa_piaa::replay(capture),
         "sidearm_staff" => sidearm_staff(capture),
+        "bound" => bound::replay(capture),
         "milesplit"
         | "athleticlive"
         | "athleticlive_athletes"

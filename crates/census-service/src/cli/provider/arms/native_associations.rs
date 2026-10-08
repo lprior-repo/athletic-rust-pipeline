@@ -92,3 +92,21 @@ pub(crate) async fn sidearm_staff_report(
     )
     .await?)
 }
+
+pub(crate) async fn bound_report(
+    context: &AdapterContext<'_>,
+    args: &ProviderArgs,
+    observed_on: String,
+) -> Result<AdapterReport> {
+    Ok(providers::bound::collect(
+        context,
+        &providers::bound::Options {
+            limit: args.limit,
+            refresh: args.refresh,
+            observed_on,
+            states: args.jurisdictions()?,
+            school_names: args.school_names.clone(),
+        },
+    )
+    .await?)
+}

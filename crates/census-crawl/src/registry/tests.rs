@@ -4,11 +4,12 @@ use super::{
 };
 use std::time::Duration;
 
-const PLAN_SLUGS: [&str; 28] = [
+const PLAN_SLUGS: [&str; 29] = [
     "aia",
     "athleticlive",
     "athleticlive_athletes",
     "athleticnet",
+    "bound",
     "ciac",
     "chsaa",
     "coach_contacts",

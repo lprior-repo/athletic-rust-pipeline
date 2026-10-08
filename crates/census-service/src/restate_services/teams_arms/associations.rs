@@ -47,6 +47,23 @@ pub(super) async fn riil(ctx: &AdapterContext<'_>) -> CrawlResult<AdapterReport>
     .await
 }
 
+pub(super) async fn ciac(
+    ctx: &AdapterContext<'_>,
+    state: UsJurisdiction,
+) -> CrawlResult<AdapterReport> {
+    census_crawl::ciac::collect(
+        ctx,
+        &census_crawl::ciac::Options {
+            limit: None,
+            refresh: ctx.refresh,
+            observed_on: ctx.observed_on.clone(),
+            states: vec![state],
+            school_names: Vec::new(),
+        },
+    )
+    .await
+}
+
 pub(super) async fn piaa(
     ctx: &AdapterContext<'_>,
     state: UsJurisdiction,
@@ -82,6 +99,57 @@ pub(super) async fn chsaa(
     .await
 }
 
+pub(super) async fn aia(
+    ctx: &AdapterContext<'_>,
+    state: UsJurisdiction,
+) -> CrawlResult<AdapterReport> {
+    census_crawl::aia::collect(
+        ctx,
+        &census_crawl::aia::Options {
+            limit: None,
+            refresh: ctx.refresh,
+            observed_on: ctx.observed_on.clone(),
+            states: vec![state],
+            school_names: Vec::new(),
+        },
+    )
+    .await
+}
+
+pub(super) async fn home_campus(
+    ctx: &AdapterContext<'_>,
+    state: UsJurisdiction,
+) -> CrawlResult<AdapterReport> {
+    census_crawl::home_campus::collect(
+        ctx,
+        &census_crawl::home_campus::Options {
+            limit: None,
+            refresh: ctx.refresh,
+            observed_on: ctx.observed_on.clone(),
+            states: vec![state],
+            school_names: Vec::new(),
+        },
+    )
+    .await
+}
+
+pub(super) async fn uhsaa(
+    ctx: &AdapterContext<'_>,
+    state: UsJurisdiction,
+) -> CrawlResult<AdapterReport> {
+    census_crawl::uhsaa::collect(
+        ctx,
+        &census_crawl::uhsaa::Options {
+            limit: None,
+            refresh: ctx.refresh,
+            observed_on: ctx.observed_on.clone(),
+            states: vec![state],
+            school_names: Vec::new(),
+        },
+    )
+    .await
+}
+
 pub(super) async fn tssaa(
     ctx: &AdapterContext<'_>,
     state: UsJurisdiction,
@@ -89,6 +157,23 @@ pub(super) async fn tssaa(
     census_crawl::tssaa::collect(
         ctx,
         &census_crawl::tssaa::Options {
+            limit: None,
+            refresh: ctx.refresh,
+            observed_on: ctx.observed_on.clone(),
+            states: vec![state],
+            school_names: Vec::new(),
+        },
+    )
+    .await
+}
+
+pub(super) async fn bound(
+    ctx: &AdapterContext<'_>,
+    state: UsJurisdiction,
+) -> CrawlResult<AdapterReport> {
+    census_crawl::bound::collect(
+        ctx,
+        &census_crawl::bound::Options {
             limit: None,
             refresh: ctx.refresh,
             observed_on: ctx.observed_on.clone(),

@@ -1,7 +1,7 @@
 use super::super::Applicability;
 use census_domain::UsJurisdiction;
 
-pub(crate) const TABLE: [Applicability; 28] = [
+pub(crate) const TABLE: [Applicability; 29] = [
     Applicability {
         slug: "aia",
         jurisdictions: &[UsJurisdiction::Arizona],
@@ -130,6 +130,12 @@ pub(crate) const TABLE: [Applicability; 28] = [
         jurisdictions: &[UsJurisdiction::California],
         evidence: super::prose::SIDEARM_STAFF_EVIDENCE,
         refusal: super::prose::SIDEARM_STAFF_REFUSAL,
+    },
+    Applicability {
+        slug: "bound",
+        jurisdictions: &[UsJurisdiction::Iowa, UsJurisdiction::SouthDakota],
+        evidence: super::prose::BOUND_EVIDENCE,
+        refusal: super::prose::BOUND_REFUSAL,
     },
     Applicability {
         slug: "ihsa",
