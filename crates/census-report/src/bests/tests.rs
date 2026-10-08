@@ -3,8 +3,9 @@ use crate::export::ExportDataset;
 use crate::report::Scope;
 use census_domain::model::{
     AthleteId, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CentiMetres, CentiPoints, CentiSeconds, EventId, EventKind, Gender, GradYear,
-    Id, Mark, MeetId, PerformanceId, SourceIdentity, SourceNamespace, Sport, TeamId, TimingMethod,
+    CanonicalSchool, CentiMetres, CentiPoints, EventId, EventIdentity, EventKind,
+    EventSpecification, ExactSeconds, Gender, GradYear, Id, Mark, MeetId, PerformanceId,
+    SourceIdentity, SourceNamespace, Sport, TeamId, TimingMethod,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -13,6 +14,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 mod classification;
 mod conflicts;
+mod exact_time;
 mod keys;
 mod measures;
 mod reduction;
@@ -169,7 +171,7 @@ fn selection_dataset(kind: EventKind) -> TestResult<ExportDataset> {
             ),
         });
     let meet = test_meet(vec![Sport::OutdoorTrack]);
-    let event = CanonicalEvent::new(&meet.id, kind, Gender::Boys, None, None);
+    let event = test_event(kind, &meet.id)?;
     store.append(Table::Schools, &school)?;
     store.append(Table::Athletes, &athlete)?;
     store.append(Table::Meets, &meet)?;
@@ -195,6 +197,19 @@ fn reported(dataset: &ExportDataset, label: &str, mark: Mark) -> CanonicalPerfor
     performance.source_athlete = athlete.source.clone();
     performance.source_key = label.into();
     performance
+}
+
+fn test_event(kind: EventKind, meet: &MeetId) -> TestResult<CanonicalEvent> {
+    Ok(CanonicalEvent::new(
+        EventIdentity {
+            meet,
+            kind,
+            gender: Gender::Boys,
+            division: None,
+            round: None,
+        },
+        EventSpecification::default(),
+    )?)
 }
 
 fn selected(dataset: &ExportDataset) -> Vec<SharedSelection> {

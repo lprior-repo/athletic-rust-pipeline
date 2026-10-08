@@ -5,7 +5,7 @@ use crate::report::ReportResult;
 
 use super::{header, Expect, Sheet};
 
-const HEADERS: [&str; 32] = [
+const HEADERS: [&str; 33] = [
     "School ID",
     "School",
     "State",
@@ -30,6 +30,7 @@ const HEADERS: [&str; 32] = [
     "Postal Source URL",
     "Postal Observed Date",
     "Postal Capture SHA256",
+    "Postal Address Kind",
     "Link School ID",
     "Link Owner Namespace",
     "Link Owner ID",
@@ -60,41 +61,21 @@ fn row(school: &CanonicalSchool) -> ReportResult<Vec<Expect>> {
         Expect::text(school.id.as_str()),
         Expect::text(school.name.as_str()),
         Expect::text(state_code(school)),
-        Expect::text(
-            school
-                .city
-                .as_deref()
-                .map_or(Default::default(), core::convert::identity),
-        ),
-        Expect::text(
-            school
-                .association
-                .as_deref()
-                .map_or(Default::default(), core::convert::identity),
-        ),
-        Expect::text(
-            school
-                .classification
-                .as_deref()
-                .map_or(Default::default(), core::convert::identity),
-        ),
+        optional_text(school.city.as_deref()),
+        optional_text(school.association.as_deref()),
+        optional_text(school.classification.as_deref()),
         enrollment(school),
-        Expect::text(
-            school
-                .athletics_website
-                .as_deref()
-                .map_or(Default::default(), core::convert::identity),
-        ),
-        Expect::text(
-            school
-                .school_website
-                .as_deref()
-                .map_or(Default::default(), core::convert::identity),
-        ),
+        optional_text(school.athletics_website.as_deref()),
+        optional_text(school.school_website.as_deref()),
         Expect::text(school.aliases.join(" | ")),
         Expect::count(school.source_identities.len())?,
         Expect::count(school.retained_conflicts.len())?,
     ];
+    append_evidence(&mut cells, school)?;
+    Ok(cells)
+}
+
+fn append_evidence(cells: &mut Vec<Expect>, school: &CanonicalSchool) -> ReportResult<()> {
     cells.extend(
         crate::workbook::verify::postal::fields([school])?
             .into_iter()
@@ -105,7 +86,11 @@ fn row(school: &CanonicalSchool) -> ReportResult<Vec<Expect>> {
             .into_iter()
             .map(Expect::text),
     );
-    Ok(cells)
+    Ok(())
+}
+
+fn optional_text(value: Option<&str>) -> Expect {
+    Expect::text(value.map_or("", core::convert::identity))
 }
 
 fn enrollment(school: &CanonicalSchool) -> Expect {

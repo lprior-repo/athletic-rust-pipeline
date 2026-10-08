@@ -7,8 +7,8 @@ use census_crawl::result_file::ParsedMeet;
 use census_crawl::{hytek, raceday, wiaa_results};
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam, GradYear, Grade, SourceIdentity, SourceNamespace, SourceRef,
-    Sport,
+    CanonicalSchool, CanonicalTeam, EventIdentity, EventSpecification, GradYear, Grade,
+    SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
@@ -19,8 +19,8 @@ pub fn wiaa_result_files(corpus: &mut Corpus) -> Result<()> {
     let mut parsed: Vec<(ResultArtifact, ParsedMeet, Sport)> = Vec::new();
     let mut schools: BTreeMap<String, CanonicalSchool> = BTreeMap::new();
     let mut labels: BTreeSet<String> = BTreeSet::new();
-    for path in common::fixtures("wiaa_results")? {
-        let file = common::file_name(&path)?;
+    for path in crate::listing::fixtures("wiaa_results")? {
+        let file = crate::listing::file_name(&path)?;
         let (page, year, label) = archive_identity(&file)?;
         let body = common::fixture("wiaa_results", &file)?;
         let (_, extension) = file
@@ -169,13 +169,17 @@ fn expected_ids_for(
 
     let mut graded = 0usize;
     for event in &meet.events {
+        let specification = EventSpecification::from_published_label(&event.label, &event.kind)?;
         let expected_event = CanonicalEvent::new(
-            &expected_meet.id,
-            event.kind.clone(),
-            event.gender,
-            event.division.as_deref(),
-            event.round.as_deref(),
-        );
+            EventIdentity {
+                meet: &expected_meet.id,
+                kind: event.kind.clone(),
+                gender: event.gender,
+                division: event.division.as_deref(),
+                round: event.round.as_deref(),
+            },
+            specification,
+        )?;
         expected
             .events
             .insert(expected_event.id.as_str().to_string());
@@ -231,7 +235,7 @@ fn expected_ids_for(
                     CanonicalPerformance::mint(
                         &athlete_id,
                         &expected_meet.id,
-                        &event.kind,
+                        &expected_event.id,
                         &expected_meet.date,
                         &source_key,
                     )

@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 
-use crate::census::{owed_source_objects, MeetCensus, SourceObject, StateProgress};
+use crate::census::{owed_source_objects, SourceObject, StateProgress};
 use census_crawl::registry::{
     AccessClass, SourceAdmission, SourceCapabilities, SourceDescriptor, TransportKind,
 };
@@ -17,7 +17,6 @@ use super::*;
 use crate::restate_services::ingest::payload_digest;
 use crate::restate_services::ingest::{check_identifier, record_window};
 use crate::restate_services::plan::classify_access;
-use crate::restate_services::results_arms::ResultsStageOutcome;
 use crate::restate_services::wire::ingest::{
     IngestState, MAX_OPERATION_ID_BYTES, MAX_WINDOW_LABEL_BYTES, WINDOW_LABEL_RING,
 };
@@ -127,8 +126,7 @@ fn empty_table_list_means_every_table_in_order() -> TestResult {
 }
 
 #[test]
-fn an_omitted_scope_matches_the_cli_default_and_unknown_scopes_are_rejected() -> TestResult {
-    check!(eq; resolve_scope(None).map_err(sdk_error)?, Scope::AllSources);
+fn requested_scope_selects_the_evidence_and_unknown_scopes_are_rejected() -> TestResult {
     check!(eq; resolve_scope(Some("core")).map_err(sdk_error)?, Scope::Core);
     check!(eq;
         resolve_scope(Some("all_sources")).map_err(sdk_error)?,
@@ -136,12 +134,6 @@ fn an_omitted_scope_matches_the_cli_default_and_unknown_scopes_are_rejected() ->
     );
     check!(resolve_scope(Some("all")).is_err());
     Ok(())
-}
-
-#[test]
-fn cohort_label_names_the_reduction() {
-    assert_eq!(cohort_label(Some(2027)), "co2027");
-    assert_eq!(cohort_label(None), "all");
 }
 
 #[test]
@@ -153,7 +145,7 @@ fn a_lost_commit_acknowledgement_still_counts_the_operations_rows_once() -> Test
         serde_json::json!({"id": "perf:wi:1", "mark": "10.94"}),
         serde_json::json!({"id": "perf:wi:2", "mark": "11.02"}),
     ];
-    let digest = payload_digest(Table::Performances, &rows).map_err(sdk_error)?;
+    let digest = payload_digest(Table::Performances, &rows)?;
 
     let store = Store::open(dir.path())?;
     let attempt = apply_observations(&store, Table::Performances, &rows, operation, &digest)?;
@@ -205,7 +197,7 @@ fn three_attempts_at_one_operation_append_it_once_and_leave_one_receipt() -> Tes
         serde_json::json!({"id": "perf:wi:1", "mark": "10.94"}),
         serde_json::json!({"id": "perf:wi:2", "mark": "11.02"}),
     ];
-    let digest = payload_digest(Table::Performances, &rows).map_err(sdk_error)?;
+    let digest = payload_digest(Table::Performances, &rows)?;
 
     let store = Store::open(dir.path())?;
     let first = apply_observations(&store, Table::Performances, &rows, operation, &digest)?;
@@ -246,7 +238,7 @@ fn a_second_operation_with_different_rows_is_not_mistaken_for_a_replay() -> Test
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     let rows = vec![serde_json::json!({"id": "perf:wi:1", "mark": "10.94"})];
-    let digest = payload_digest(Table::Performances, &rows).map_err(sdk_error)?;
+    let digest = payload_digest(Table::Performances, &rows)?;
 
     let first = apply_observations(&store, Table::Performances, &rows, "op-1", &digest)?;
     check!(eq; first.appended(), 1);
@@ -311,7 +303,7 @@ fn a_derived_page_is_written_by_id_and_a_replay_writes_nothing() -> TestResult {
             "state": "pending"
         }),
     ];
-    let digest = payload_digest(Table::ReviewCases, &rows).map_err(sdk_error)?;
+    let digest = payload_digest(Table::ReviewCases, &rows)?;
     let first = apply_observations(&store, Table::ReviewCases, &rows, operation, &digest)?;
     check!(eq;
         first.appended(),
@@ -426,6 +418,7 @@ fn national_request(jurisdictions: Vec<UsJurisdiction>) -> TestResult<NationalRe
     Ok(NationalRequest {
         season: SchoolYear::new(2026).ok_or("invalid fixture season")?,
         revision: Revision(1),
+        history: HistoryWindow::cohort("2026-09-22")?,
         jurisdictions,
         refresh: false,
         limit_per_state: None,
@@ -569,8 +562,8 @@ fn a_walk_with_no_concurrency_is_refused() -> TestResult {
     Ok(())
 }
 
-fn answered_report() -> JurisdictionReport {
-    JurisdictionReport {
+fn answered_report() -> TestResult<JurisdictionReport> {
+    Ok(JurisdictionReport {
         identity: "jurisdiction:WI:2026-27:1".to_string(),
         jurisdiction: UsJurisdiction::Wisconsin,
         plan: SourcePlan::of(
@@ -595,10 +588,10 @@ fn answered_report() -> JurisdictionReport {
             blocked_skipped: 0,
         },
         consolidated: Vec::new(),
-        meets: MeetCensus::default(),
-        results: ResultsStageOutcome::default(),
+        history: HistoricalProgress::default(),
+        history_window: HistoryWindow::cohort("2026-09-22")?,
         completed_at: "2026-09-22".to_string(),
-    }
+    })
 }
 
 #[test]
@@ -627,7 +620,7 @@ fn a_state_that_did_not_answer_becomes_a_failure_row_and_the_run_keeps_its_summa
     let answered = national::classify(
         UsJurisdiction::Wisconsin,
         "jurisdiction:WI:2026-27:1",
-        Ok(Json(answered_report())),
+        Ok(Json(answered_report()?)),
     );
     let national::Completion::Answered(summary) = answered else {
         return Err("returned report classified as a failure".into());
@@ -731,11 +724,12 @@ fn a_refused_source_is_owed_evidence_and_is_never_dispatched() {
         endpoint: BROWSER_ONLY.slug.to_string(),
         observations: 0,
         windows: 0,
+        disposition: census_crawl::CollectionDisposition::Blocked,
     };
     assert_eq!(
         owed_source_objects(&[recorded]),
         1,
-        "a source object that accepted no observation is owed work"
+        "a source object with blocked acquisition is owed work"
     );
 }
 

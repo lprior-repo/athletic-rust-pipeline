@@ -551,69 +551,19 @@ fn a_short_member_page_below_the_reported_total_is_a_recorded_failure() -> TestR
     let context = crate::AdapterContext {
         fetcher: &fetcher, store: &store, refresh: false,
         school_year: SchoolYear::new(2026).ok_or("2026 is a season")?,
+        performance_as_of: chrono::NaiveDate::parse_from_str(OBSERVED_ON, "%Y-%m-%d")?,
         observed_on: observed_on.clone(), recording: None,
     };
     let options = Options { states: vec![UsJurisdiction::NewHampshire], observed_on, limit: None, refresh: false };
     let mut run = super::collect::Run {
         ctx: &context, options: &options,
         fetch: crate::net::FetchOptions { refresh: false, allow_not_found: false, headers: Vec::new() },
-        done: std::collections::HashSet::new(), tally: super::collect::Tally::default(),
+        tally: super::collect::Tally::default(),
     };
     run.walk(UsJurisdiction::NewHampshire, "2132").await?;
     let tally = run.tally;
     check!(eq; tally.errors, 1, "100 rows read against a total of 150 is a contradiction, and the walk reports it");
     check!(eq; tally.schools, 100, "the rows that were read are still written");
-    Ok(())
-    })
-}
-
-#[test]
-fn a_journaled_school_is_skipped_and_an_unwritten_one_is_written() -> TestResult {
-    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
-    let dir = tempfile::tempdir()?;
-    let cache = dir.path().join("http");
-    seed_cache(&cache, ALVIRNE_URL, ALVIRNE_COACHES)?;
-    let store = Store::open(dir.path().join("store"))?;
-    let fetcher = Fetcher::new(&cache, None, Duration::from_millis(1), HashMap::new(), Vec::new())?.with_offline(true);
-    let page = parse_org_schools(NH_CHILDREN, CHILDREN_URL)?;
-    let bedford = page.rows.iter().find(|row| row.public_id == Some(1400)).ok_or("Bedford is in the member page")?;
-    let alvirne = page.rows.iter().find(|row| row.public_id == Some(450)).ok_or("Alvirne is in the member page")?;
-    let bedford_key = "NH:2132:1400";
-    let mut batch = store.write_batch();
-    batch.journal_done(super::collect::JOURNAL, bedford_key, &serde_json::json!({"seed": "the first run wrote this school"}))?;
-    batch.commit()?;
-    let observed_on = OBSERVED_ON.to_string();
-    let context = crate::AdapterContext {
-        fetcher: &fetcher, store: &store, refresh: false,
-        school_year: SchoolYear::new(2026).ok_or("2026 is a season")?,
-        observed_on: observed_on.clone(), recording: None,
-    };
-    let options = Options { states: vec![UsJurisdiction::NewHampshire], observed_on, limit: None, refresh: false };
-    let done = store.journal_keys(super::collect::JOURNAL)?;
-    check!(done.contains(bedford_key));
-    let requests_before = fetcher.stats().await.requests;
-    let mut run = super::collect::Run {
-        ctx: &context, options: &options,
-        fetch: crate::net::FetchOptions { refresh: false, allow_not_found: false, headers: Vec::new() },
-        done, tally: super::collect::Tally::default(),
-    };
-    run.process_school(UsJurisdiction::NewHampshire, "2132", bedford, ORGANISATION_URL).await?;
-    check!(eq; fetcher.stats().await.requests, requests_before, "a skipped school fetches nothing");
-    let skipped_only: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
-    check!(skipped_only.is_empty(), "a skipped school is not rewritten");
-    run.process_school(UsJurisdiction::NewHampshire, "2132", alvirne, ORGANISATION_URL).await?;
-    let tally = run.tally;
-    check!(eq; tally.skipped, 1, "the journaled school is counted as skipped");
-    check!(eq; tally.schools, 1);
-    check!(eq; tally.coaches, 3, "the written school's coach rows are counted, the skipped school's are not");
-    check!(eq; tally.errors, 0);
-    let schools: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
-    check!(eq; schools.len(), 1);
-    check!(eq; schools.first().ok_or("written school")?.name, "Alvirne High School");
-    let coaches: Vec<CanonicalCoach> = store.scan(Table::Coaches)?;
-    check!(eq; coaches.len(), 3, "the athletic director plus the two captured head coaches");
-    let journaled = store.journal_keys(super::collect::JOURNAL)?;
-    check!(journaled.contains("NH:2132:450"));
     Ok(())
     })
 }
@@ -640,13 +590,14 @@ fn a_full_member_page_is_written_before_the_next_page_is_fetched() -> TestResult
     let context = crate::AdapterContext {
         fetcher: &fetcher, store: &store, refresh: false,
         school_year: SchoolYear::new(2026).ok_or("2026 is a season")?,
+        performance_as_of: chrono::NaiveDate::parse_from_str(OBSERVED_ON, "%Y-%m-%d")?,
         observed_on: observed_on.clone(), recording: None,
     };
     let options = Options { states: vec![UsJurisdiction::NewHampshire], observed_on, limit: None, refresh: false };
     let mut run = super::collect::Run {
         ctx: &context, options: &options,
         fetch: crate::net::FetchOptions { refresh: false, allow_not_found: false, headers: Vec::new() },
-        done: std::collections::HashSet::new(), tally: super::collect::Tally::default(),
+        tally: super::collect::Tally::default(),
     };
     run.walk(UsJurisdiction::NewHampshire, "2132").await?;
     let tally = run.tally;
@@ -675,6 +626,7 @@ fn a_coach_walk_stopped_by_the_page_bound_records_a_failure() -> TestResult {
     let context = crate::AdapterContext {
         fetcher: &fetcher, store: &store, refresh: false,
         school_year: SchoolYear::new(2026).ok_or("2026 is a season")?,
+        performance_as_of: chrono::NaiveDate::parse_from_str(OBSERVED_ON, "%Y-%m-%d")?,
         observed_on: observed_on.clone(), recording: None,
     };
     let options = Options { states: vec![UsJurisdiction::NewHampshire], observed_on, limit: None, refresh: false };
@@ -683,14 +635,12 @@ fn a_coach_walk_stopped_by_the_page_bound_records_a_failure() -> TestResult {
     let mut run = super::collect::Run {
         ctx: &context, options: &options,
         fetch: crate::net::FetchOptions { refresh: false, allow_not_found: false, headers: Vec::new() },
-        done: std::collections::HashSet::new(), tally: super::collect::Tally::default(),
+        tally: super::collect::Tally::default(),
     };
     run.process_school(UsJurisdiction::NewHampshire, "2132", alvirne, ORGANISATION_URL).await?;
     let tally = run.tally;
     check!(eq; tally.schools, 1, "the school is written without its coaches");
     check!(eq; tally.errors, 1);
-    check!(tally.notes.iter().any(|note| note.contains("more pages than the 64-page walk")),
-        "the coach truncation is named rather than silent: {:?}", tally.notes);
     Ok(())
     })
 }
@@ -762,6 +712,7 @@ fn the_token_is_never_replayed_from_the_cache() -> TestResult {
                 refresh: false,
                 school_year: SchoolYear::new(2026).ok_or("2026 is a season")?,
                 observed_on: observed_on.clone(),
+                performance_as_of: chrono::NaiveDate::parse_from_str(OBSERVED_ON, "%Y-%m-%d")?,
                 recording: None,
             };
             let options = Options {
@@ -770,18 +721,9 @@ fn the_token_is_never_replayed_from_the_cache() -> TestResult {
                 limit: Some(1),
                 refresh: false,
             };
-            match super::collect(&context, &options).await {
-                Err(crate::CrawlError::Fetch(crate::net::FetchError::Offline { url })) => {
-                    check!(eq; url, super::TOKEN_URL)
-                }
-                Err(error) => return Err(error.into()),
-                Ok(_) => {
-                    return Err(
-                        "a cached token body is not replayed: the POST is issued and fails offline"
-                            .into(),
-                    )
-                }
-            }
+            let report = super::collect(&context, &options).await?;
+            check!(eq; report.disposition, crate::CollectionDisposition::Partial);
+            check!(report.unfinished.iter().any(|url| url == super::TOKEN_URL));
             let schools: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
             check!(
                 schools.is_empty(),

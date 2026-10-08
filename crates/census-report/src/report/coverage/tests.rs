@@ -1,9 +1,9 @@
 use super::*;
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam, CentiSeconds, CoachRole, CompetitionLevel, EventKind, Evidence,
-    Gender, GradYear, Grade, Mark, ObservedGrade, SchoolYear, SourceIdentity, SourceNamespace,
-    SourceRef, Sport,
+    CanonicalSchool, CanonicalTeam, CoachRole, CompetitionLevel, EventIdentity, EventKind,
+    EventSpecification, Evidence, ExactSeconds, Gender, GradYear, Grade, Mark, ObservedGrade,
+    SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -157,52 +157,67 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
         CompetitionLevel::Invitational,
     );
     store.append(Table::Meets, &meet)?;
-    let event = CanonicalEvent::new(&meet.id, EventKind::Track100m, Gender::Boys, None, None);
+    let event = CanonicalEvent::new(
+        EventIdentity {
+            meet: &meet.id,
+            kind: EventKind::Track100m,
+            gender: Gender::Boys,
+            division: None,
+            round: None,
+        },
+        EventSpecification::default(),
+    )?;
     store.append(Table::Events, &event)?;
     let comparable = performance(
         &wi_core,
         &event.id,
         &meet.id,
-        EventKind::Track100m,
-        Mark::TimeSeconds(CentiSeconds::new(1094)),
-        "wiaa_results",
-        "wi-1",
+        Mark::TimeSeconds(ExactSeconds::parse("10.94")?),
+        ("wiaa_results", "wi-1"),
     )?;
     store.append(Table::Performances, &comparable)?;
 
-    let missing_event =
-        CanonicalEvent::new(&meet.id, EventKind::Track200m, Gender::Girls, None, None);
+    let missing_event = CanonicalEvent::new(
+        EventIdentity {
+            meet: &meet.id,
+            kind: EventKind::Track200m,
+            gender: Gender::Girls,
+            division: None,
+            round: None,
+        },
+        EventSpecification::default(),
+    )?;
     let unparsed = performance(
         &wi_mirror,
         &missing_event.id,
         &meet.id,
-        EventKind::Track200m,
         Mark::Raw("12.4h".to_string()),
-        "athleticlive_athletes",
-        "al-1",
+        ("athleticlive_athletes", "al-1"),
     )?;
     store.append(Table::Performances, &unparsed)?;
 
     let unmapped_event = CanonicalEvent::new(
-        &meet.id,
-        EventKind::Unmapped {
-            label: "Coed 200m".to_string(),
+        EventIdentity {
+            meet: &meet.id,
+            kind: EventKind::Unmapped {
+                label: "Coed 200m".to_string(),
+            },
+            gender: Gender::Mixed,
+            division: None,
+            round: None,
         },
-        Gender::Girls,
-        None,
-        None,
-    );
+        EventSpecification::from_published_label(
+            "Coed 200m",
+            &EventKind::from_source_label("Coed 200m"),
+        )?,
+    )?;
     store.append(Table::Events, &unmapped_event)?;
     let unmapped_row = performance(
         &wi_mirror,
         &unmapped_event.id,
         &meet.id,
-        EventKind::Unmapped {
-            label: "Coed 200m".to_string(),
-        },
         Mark::Raw("27.1h".to_string()),
-        "athleticlive_athletes",
-        "al-2",
+        ("athleticlive_athletes", "al-2"),
     )?;
     store.append(Table::Performances, &unmapped_row)?;
 
@@ -217,10 +232,8 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
         &never_stored,
         &missing_event.id,
         &meet.id,
-        EventKind::Track200m,
-        Mark::TimeSeconds(CentiSeconds::new(2410)),
-        "ohsaa_results",
-        "oh-orphan",
+        Mark::TimeSeconds(ExactSeconds::parse("24.10")?),
+        ("ohsaa_results", "oh-orphan"),
     )?;
     store.append(Table::Performances, &orphan)?;
 
@@ -247,13 +260,12 @@ fn performance(
     athlete: &CanonicalAthlete,
     event: &census_domain::model::EventId,
     meet: &census_domain::model::MeetId,
-    kind: EventKind,
     mark: Mark,
-    source: &str,
-    source_key: &str,
+    provenance: (&str, &str),
 ) -> TestResult<CanonicalPerformance> {
+    let (source, source_key) = provenance;
     Ok(CanonicalPerformance {
-        id: CanonicalPerformance::mint(&athlete.id, meet, &kind, "2026-05-01", source_key),
+        id: CanonicalPerformance::mint(&athlete.id, meet, event, "2026-05-01", source_key),
         athlete: athlete.id.clone(),
         team: CanonicalTeam::mint(
             &athlete.school,

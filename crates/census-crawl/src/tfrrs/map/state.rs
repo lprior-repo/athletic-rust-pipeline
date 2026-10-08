@@ -62,6 +62,7 @@ pub(in crate::tfrrs) struct Absorb<'a> {
 pub(in crate::tfrrs) struct Page<'a> {
     pub(in crate::tfrrs) source: &'a SourceRef,
     pub(in crate::tfrrs) observed_on: &'a str,
+    pub(in crate::tfrrs) performance_as_of: chrono::NaiveDate,
     pub(in crate::tfrrs) jurisdiction: UsJurisdiction,
 }
 

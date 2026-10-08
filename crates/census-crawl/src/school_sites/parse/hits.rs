@@ -42,7 +42,13 @@ impl Signals {
     }
 }
 
-pub fn analyse(rules: &Rules, url: &str, html: &str, signals: &mut Signals) {
+pub fn analyse(
+    rules: &Rules,
+    url: &str,
+    html: &str,
+    signals: &mut Signals,
+) -> crate::CrawlResult<()> {
+    super::admission::page(rules, url, html, signals)?;
     let text = rules.visible_text(html);
     let title = rules.title_of(html);
     let mut emails = harvest_emails(rules, html, &text);
@@ -54,6 +60,7 @@ pub fn analyse(rules: &Rules, url: &str, html: &str, signals: &mut Signals) {
     let mut combined = std::mem::take(&mut signals.emails);
     combined.append(&mut emails);
     signals.emails = rules.sanitize_emails(combined.iter().map(String::as_str));
+    Ok(())
 }
 
 fn harvest_emails(rules: &Rules, html: &str, text: &str) -> Vec<String> {

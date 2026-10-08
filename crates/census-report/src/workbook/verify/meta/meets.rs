@@ -78,6 +78,7 @@ fn sport_label(sport: Sport) -> &'static str {
         Sport::CrossCountry => "xc",
         Sport::IndoorTrack => "indoor",
         Sport::OutdoorTrack => "outdoor",
+        Sport::Unknown => "unknown",
     }
 }
 

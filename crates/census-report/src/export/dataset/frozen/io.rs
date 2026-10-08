@@ -15,25 +15,31 @@ pub(super) fn write_json(path: &Path, value: &impl Serialize) -> ReportResult<()
         inner: BufWriter::new(file),
         remaining: MAX_INPUT_BYTES,
     };
-    let result = (|| {
-        serde_json::to_writer(&mut writer, value).map_err(|source| ReportError::Decode {
-            path: path.to_path_buf(),
-            line: 0,
-            source,
-        })?;
-        writer.flush().map_err(|source| io_error(path, source))?;
-        writer
-            .inner
-            .get_ref()
-            .sync_all()
-            .map_err(|source| io_error(path, source))
-    })();
+    let result = encode_and_sync(path, value, &mut writer);
     drop(writer);
     if result.is_err() {
         remove_owned(path, result)
     } else {
         result
     }
+}
+
+fn encode_and_sync(
+    path: &Path,
+    value: &impl Serialize,
+    writer: &mut BudgetWriter<BufWriter<std::fs::File>>,
+) -> ReportResult<()> {
+    serde_json::to_writer(&mut *writer, value).map_err(|source| ReportError::Decode {
+        path: path.to_path_buf(),
+        line: 0,
+        source,
+    })?;
+    writer.flush().map_err(|source| io_error(path, source))?;
+    writer
+        .inner
+        .get_ref()
+        .sync_all()
+        .map_err(|source| io_error(path, source))
 }
 
 pub(super) fn remove_owned<T>(path: &Path, result: ReportResult<T>) -> ReportResult<T> {

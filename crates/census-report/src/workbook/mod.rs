@@ -67,10 +67,23 @@ fn write_artifacts(
     options: &Options,
     censuses: &Censuses,
 ) -> ReportResult<()> {
-    let school_year = options.school_year;
+    let bests = select_bests(dataset, options);
+    let cohort = match options.grad_year.map(|year| format!("co{year}")) {
+        Some(value) => value,
+        None => "all".to_string(),
+    };
+    bests::write(directory, &bests, &cohort)?;
+    dataset.save_frozen(&directory.join("frozen-input.json"))?;
 
+    render_artifacts(directory, dataset, options, censuses, bests)
+}
+
+fn select_bests(
+    dataset: &crate::export::ExportDataset,
+    options: &Options,
+) -> Vec<bests::SharedSelection> {
     let started = Instant::now();
-    let bests = bests::build_from_dataset(
+    let rows = bests::build_from_dataset(
         dataset,
         &bests::Options {
             scope: options.scope,
@@ -79,41 +92,42 @@ fn write_artifacts(
         },
     );
     tracing::info!(
-        rows = bests.len(),
+        rows = rows.len(),
         ms = millis(started),
         "workbook build step: bests"
     );
-    let cohort = match options.grad_year.map(|year| format!("co{year}")) {
-        Some(value) => value,
-        None => "all".to_string(),
-    };
-    bests::write(directory, &bests, &cohort)?;
-    dataset.save_frozen(&directory.join("frozen-input.json"))?;
-    let path = directory.join("workbook.xlsx");
+    rows
+}
 
+fn render_artifacts(
+    directory: &Path,
+    dataset: &crate::export::ExportDataset,
+    options: &Options,
+    censuses: &Censuses,
+    bests: Vec<bests::SharedSelection>,
+) -> ReportResult<()> {
+    let path = directory.join("workbook.xlsx");
     let derivation = Derivation::of(dataset, options.scope, options.grad_year);
     let started = Instant::now();
-    let recruiting = recruiting::Recruiting::of(&derivation, school_year, bests)?;
+    let recruiting = recruiting::Recruiting::of(&derivation, options.school_year, bests)?;
     tracing::info!(ms = millis(started), "workbook build step: recruiting");
     let population = Derivation::of(dataset, options.scope, None);
-    let views = Views {
-        core: &censuses.core,
-        all_sources: &censuses.all_sources,
-        recruiting: &recruiting,
-        derivation: &derivation,
-        population: &population,
-        school_year,
-    };
+    let views = Views::of(
+        censuses,
+        &recruiting,
+        &derivation,
+        &population,
+        options.school_year,
+    );
     write_workbook(&path, views)?;
     publication::write_sidecars(
         directory,
         dataset,
-        options,
         censuses,
         &derivation,
-        school_year,
-    )?;
-    Ok(())
+        &population,
+        options.school_year,
+    )
 }
 
 #[derive(Clone, Copy)]
@@ -124,6 +138,25 @@ struct Views<'a> {
     derivation: &'a Derivation<'a>,
     population: &'a Derivation<'a>,
     school_year: census_domain::model::SchoolYear,
+}
+
+impl<'a> Views<'a> {
+    fn of(
+        censuses: &'a Censuses,
+        recruiting: &'a recruiting::Recruiting,
+        derivation: &'a Derivation<'a>,
+        population: &'a Derivation<'a>,
+        school_year: census_domain::model::SchoolYear,
+    ) -> Self {
+        Self {
+            core: &censuses.core,
+            all_sources: &censuses.all_sources,
+            recruiting,
+            derivation,
+            population,
+            school_year,
+        }
+    }
 }
 
 fn write_workbook(path: &Path, views: Views<'_>) -> ReportResult<()> {
@@ -140,7 +173,32 @@ fn write_workbook(path: &Path, views: Views<'_>) -> ReportResult<()> {
 }
 
 fn write_objective_sheets(book: &mut Workbook, path: &Path, views: Views<'_>) -> ReportResult<()> {
-    let recruiting = views.recruiting;
+    write_recruiting_sheets(book, path, views.recruiting)?;
+    write_performance_sheets(book, path, views.derivation)?;
+    write_coach_sheet(book, path, views.recruiting)?;
+    views.recruiting.trace_counts();
+    let started = Instant::now();
+    meta::write_meta_sheets(
+        book,
+        path,
+        meta::RunFacts {
+            population: views.population,
+            recruiting: views.derivation,
+            core: views.core,
+            all_sources: views.all_sources,
+            bests: views.recruiting.selected_prs(),
+            school_year: views.school_year,
+        },
+    )?;
+    tracing::info!(ms = millis(started), "workbook build step: meta sheets");
+    Ok(())
+}
+
+fn write_recruiting_sheets(
+    book: &mut Workbook,
+    path: &Path,
+    recruiting: &recruiting::Recruiting,
+) -> ReportResult<()> {
     let started = Instant::now();
     recruiting.write_athletes(book, path)?;
     tracing::info!(
@@ -153,33 +211,34 @@ fn write_objective_sheets(book: &mut Workbook, path: &Path, views: Views<'_>) ->
         ms = millis(started),
         "workbook build step: recruiting prs sheet"
     );
+    Ok(())
+}
+
+fn write_performance_sheets(
+    book: &mut Workbook,
+    path: &Path,
+    derivation: &Derivation<'_>,
+) -> ReportResult<()> {
     let started = Instant::now();
-    performances::write_performance_sheets(book, path, views.derivation)?;
+    performances::write_performance_sheets(book, path, derivation)?;
     tracing::info!(
         ms = millis(started),
         "workbook build step: performances sheets"
     );
+    Ok(())
+}
+
+fn write_coach_sheet(
+    book: &mut Workbook,
+    path: &Path,
+    recruiting: &recruiting::Recruiting,
+) -> ReportResult<()> {
     let started = Instant::now();
     recruiting.write_coaches(book, path)?;
     tracing::info!(
         ms = millis(started),
         "workbook build step: recruiting coaches sheet"
     );
-    recruiting.trace_counts();
-    let started = Instant::now();
-    meta::write_meta_sheets(
-        book,
-        path,
-        meta::RunFacts {
-            population: views.population,
-            recruiting: views.derivation,
-            core: views.core,
-            all_sources: views.all_sources,
-            bests: recruiting.selected_prs(),
-            school_year: views.school_year,
-        },
-    )?;
-    tracing::info!(ms = millis(started), "workbook build step: meta sheets");
     Ok(())
 }
 

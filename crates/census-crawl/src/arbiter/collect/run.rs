@@ -1,22 +1,22 @@
 use super::super::map::{map_org_school, map_primary_contact};
 use super::super::parse::{parse_org_schools, OrgSchool};
 use super::super::{HOST, MAX_PAGES, PAGE_SIZE, SOURCE_ID};
+use crate::directory::acquisition::{bounded, detail, persist, text};
 use crate::net::{FetchOptions, FetchOutcome};
 use crate::{AdapterContext, CrawlError, CrawlResult};
-use census_domain::model::{CanonicalCoach, CanonicalSchool, SourceNamespace};
+use census_domain::model::{
+    CanonicalCoach, CanonicalSchool, SourceNamespace, SourceObservation, SourceSchoolObservation,
+};
 use census_domain::UsJurisdiction;
 use census_store::Table;
-use serde_json::json;
-use std::collections::HashSet;
+use futures::{stream, StreamExt, TryStreamExt};
 
 mod coaches;
 mod recovery;
-
 #[cfg(test)]
 mod tests;
 
 pub(in crate::arbiter) const JOURNAL: &str = "arbiter_owned_coaches_v2";
-const MAX_NOTES: usize = 32;
 
 #[derive(Default)]
 pub(in crate::arbiter) struct Tally {
@@ -25,14 +25,25 @@ pub(in crate::arbiter) struct Tally {
     pub(in crate::arbiter) skipped: usize,
     pub(in crate::arbiter) errors: usize,
     pub(in crate::arbiter) notes: Vec<String>,
+    pub(in crate::arbiter) unfinished: Vec<String>,
+    attempted: usize,
 }
 
 impl Tally {
-    fn fail(&mut self, message: String) {
-        self.errors = self.errors.saturating_add(1);
-        if self.notes.len() < MAX_NOTES {
-            self.notes.push(message);
+    fn owe(&mut self, locator: &str) -> CrawlResult<()> {
+        if !self.unfinished.iter().any(|entry| entry == locator) {
+            bounded(&mut self.unfinished, locator.to_owned())?;
         }
+        Ok(())
+    }
+
+    fn fail(&mut self, locator: &str, error: impl std::fmt::Display) -> CrawlResult<()> {
+        self.errors = self.errors.saturating_add(1);
+        self.owe(locator)?;
+        if self.notes.len() < 5 {
+            bounded(&mut self.notes, detail(locator, error)?)?;
+        }
+        Ok(())
     }
 }
 
@@ -40,7 +51,6 @@ pub(in crate::arbiter) struct Run<'a> {
     pub(in crate::arbiter) ctx: &'a AdapterContext<'a>,
     pub(in crate::arbiter) options: &'a super::Options,
     pub(in crate::arbiter) fetch: FetchOptions,
-    pub(in crate::arbiter) done: HashSet<String>,
     pub(in crate::arbiter) tally: Tally,
 }
 
@@ -50,199 +60,252 @@ impl Run<'_> {
         state: UsJurisdiction,
         org: &str,
     ) -> CrawlResult<()> {
-        let base_url = format!("{HOST}/api/v2/organization/public/{org}/children");
-        let mut page = 1u64;
-        let mut ended = false;
-        while page <= MAX_PAGES {
-            if self.at_limit() {
-                break;
-            }
-            let url = format!("{base_url}?&pageSize={PAGE_SIZE}&pageNumber={page}");
-            let Some(outcome) = self.fetch_page(&url).await else {
-                ended = true;
-                break;
-            };
-            let parsed = match response_text(&outcome, "member")
-                .and_then(|body| parse_org_schools(body, &url))
-            {
-                Ok(parsed) => parsed,
-                Err(error) => {
-                    self.tally
-                        .fail(format!("schools page {page} for {}: {error}", state.code()));
-                    ended = true;
-                    break;
+        let base = format!("{HOST}/api/v2/organization/public/{org}/children");
+        let base = base.as_str();
+        let mut page = Some(1);
+        stream::iter(1..=MAX_PAGES)
+            .map(Ok::<_, CrawlError>)
+            .try_fold((&mut *self, &mut page), |(run, next), current| async move {
+                if next.is_some() {
+                    *next = run.member_page(state, org, (&base, current)).await?;
                 }
-            };
-            let rows_on_page =
-                u64::try_from(parsed.rows.len()).map_err(|_| CrawlError::Arithmetic {
-                    detail: "Arbiter member page row count exceeds u64".to_string(),
-                })?;
-            let last_page = rows_on_page < PAGE_SIZE;
-            if last_page && page_read_short(page, rows_on_page, parsed.total) {
-                self.tally.fail(format!(
-                    "schools page {page} for {} returned {rows_on_page} of {PAGE_SIZE} rows while \
-                     the response totals {}: the member walk stopped short",
-                    state.code(),
-                    parsed.total
-                ));
-            }
-            for row in &parsed.rows {
-                if self.at_limit() {
-                    break;
-                }
-                self.process_school(state, org, row, &base_url).await?;
-            }
-            if last_page {
-                ended = true;
-                break;
-            }
-            page = page.saturating_add(1);
-        }
-        if !ended && !self.at_limit() {
-            self.tally.fail(format!(
-                "{} has more member pages than the {MAX_PAGES}-page walk reads",
-                state.code()
-            ));
+                Ok((run, next))
+            })
+            .await?;
+        if let Some(page) = page {
+            self.tally.owe(&page_url(&base, page))?;
         }
         Ok(())
     }
 
-    fn at_limit(&self) -> bool {
-        match self.options.limit {
-            Some(limit) => self.tally.schools >= limit,
-            None => false,
+    async fn member_page(
+        &mut self,
+        state: UsJurisdiction,
+        org: &str,
+        page: (&str, u64),
+    ) -> CrawlResult<Option<u64>> {
+        let url = page_url(page.0, page.1);
+        let Some(capture) = self.fetch_page(&url).await? else {
+            return Ok(None);
+        };
+        let parsed = match text(&capture).and_then(|body| parse_org_schools(body, &url)) {
+            Ok(parsed) => parsed,
+            Err(error) => {
+                self.tally.fail(&url, error)?;
+                return Ok(None);
+            }
+        };
+        let count = u64::try_from(parsed.rows.len()).map_err(|_| CrawlError::Arithmetic {
+            detail: "member page size".into(),
+        })?;
+        let origin = (url.as_str(), HOST);
+        let stamp = capture.fetched_at.as_str();
+        stream::iter(&parsed.rows)
+            .map(Ok::<_, CrawlError>)
+            .try_fold(&mut *self, |run, row| async move {
+                run.project((state, org, row), origin, stamp).await?;
+                Ok(run)
+            })
+            .await?;
+        if count < PAGE_SIZE {
+            if page_read_short(page.1, count, parsed.total) {
+                self.tally
+                    .fail(&url, "member walk stopped short of the published total")?;
+            }
+            return Ok(None);
         }
+        Ok(page.1.checked_add(1))
     }
 
+    #[cfg(test)]
     pub(in crate::arbiter) async fn process_school(
         &mut self,
         state: UsJurisdiction,
         org: &str,
         row: &OrgSchool,
-        base_url: &str,
+        base: &str,
     ) -> CrawlResult<()> {
-        self.process_school_at(state, org, row, base_url, HOST)
+        let ctx = self.ctx;
+        self.project((state, org, row), (base, HOST), &ctx.observed_on)
             .await
     }
 
+    #[cfg(test)]
     async fn process_school_at(
         &mut self,
         state: UsJurisdiction,
         org: &str,
         row: &OrgSchool,
-        base_url: &str,
-        coach_host: &str,
+        origin: (&str, &str),
     ) -> CrawlResult<()> {
-        let Some((school, school_id)) =
-            map_org_school(row, state, base_url, &self.options.observed_on)
-        else {
-            self.tally.fail(format!(
-                "a member row of Arbiter organisation {org} for {} carries no school name \
-                 (association id {:?})",
-                state.code(),
-                row.public_id
-            ));
-            return Ok(());
-        };
-        let key = completion_key(state, org, row.public_id);
-        if key.as_ref().is_some_and(|key| self.done.contains(key)) {
-            self.tally.skipped = self.tally.skipped.saturating_add(1);
-            return Ok(());
-        }
-        let mut coaches = primary_coaches(row, &school_id, base_url, &self.options.observed_on);
-        let mut recovery = match key.as_deref() {
-            Some(key) => recovery::Recovery::load(self.ctx.store, &school_id, key)?,
-            None => recovery::Recovery::default(),
-        };
-        let completion = match row.public_id.filter(|id| *id > 0) {
-            Some(public_id) => {
-                let acquisition = self
-                    .collect_coaches(coach_host, org, public_id, &school, &mut recovery)
-                    .await;
-                coaches.extend(acquisition.coaches);
-                acquisition.completion
-            }
-            None => Err(CrawlError::Schema {
-                url: base_url.to_string(),
-                detail: format!(
-                    "{} has no association id to fetch coaches with",
-                    school.name
-                ),
-            }),
-        };
-        self.finish_school(
-            org,
-            row,
-            &school,
-            key,
-            coaches::CoachAcquisition {
-                coaches,
-                completion,
-            },
-            &recovery,
-        )
+        let ctx = self.ctx;
+        self.project((state, org, row), origin, &ctx.observed_on)
+            .await
     }
 
-    async fn fetch_page(&mut self, url: &str) -> Option<FetchOutcome> {
-        match self.ctx.fetcher.get(url, &self.fetch).await {
-            Ok(outcome) => Some(outcome),
-            Err(error) => {
-                self.tally.fail(format!("fetch {url}: {error}"));
-                None
-            }
-        }
-    }
-
-    fn persist_facts(
-        &self,
-        school: &CanonicalSchool,
-        coaches: &[CanonicalCoach],
-    ) -> CrawlResult<crate::recording::RowBatch<'_>> {
-        let namespace = SourceNamespace::association_school(SOURCE_ID);
-        let mut batch = self.ctx.write_batch();
-        batch.append_many(Table::Schools, std::slice::from_ref(school))?;
-        batch.append_many(
-            Table::SourceObservations,
-            self.ctx.school_observation(&namespace, school).as_slice(),
-        )?;
-        batch.append_many(Table::Coaches, coaches)?;
-        Ok(batch)
-    }
-
-    fn write(
+    async fn project(
         &mut self,
-        org: &str,
-        row: &OrgSchool,
-        school: &CanonicalSchool,
-        coaches: &[CanonicalCoach],
-        key: &str,
+        subject: (UsJurisdiction, &str, &OrgSchool),
+        origin: (&str, &str),
+        stamp: &str,
     ) -> CrawlResult<()> {
-        let mut batch = self.persist_facts(school, coaches)?;
-        batch.journal_done(
-            JOURNAL,
+        let (state, org, row) = subject;
+        let locator = format!("{}#school={:?}", origin.0, row.public_id);
+        if self
+            .options
+            .limit
+            .is_some_and(|limit| self.tally.attempted >= limit)
+        {
+            return self.tally.owe(&locator);
+        }
+        self.tally.attempted = self.tally.attempted.saturating_add(1);
+        let Some((school, id)) = map_org_school(row, state, origin.0, stamp) else {
+            return self.tally.fail(&locator, "missing member school name");
+        };
+        let errors = self.tally.errors;
+        let written = self.persist_owner(&school, &locator, stamp)?;
+        let primary = primary_coaches(row, &id, origin.0, stamp);
+        self.tally.coaches = self.tally.coaches.saturating_add(self.persist_rows(
+            &locator,
+            Table::Coaches,
+            &primary,
+        )?);
+        let Some(key) = completion_key(state, org, row.public_id) else {
+            self.tally.schools = self.tally.schools.saturating_add(written);
+            return self.tally.fail(&locator, "missing public coach owner id");
+        };
+        let mut recovery = recovery::Recovery::load(self.ctx.store, &id, &key)?;
+        let mut acquisition = self
+            .coaches((origin.1, org), row.public_id, &school, &mut recovery)
+            .await?;
+        if written > 0 || acquisition.admitted > 0 {
+            self.tally.schools = self.tally.schools.saturating_add(1);
+        } else {
+            self.tally.skipped = self.tally.skipped.saturating_add(1);
+        }
+        self.tally.coaches = self.tally.coaches.saturating_add(acquisition.admitted);
+        acquisition.published = acquisition.published.saturating_add(primary.len());
+        if errors != self.tally.errors && acquisition.completion.is_ok() {
+            return Ok(());
+        }
+        self.finish(&key, &school, &recovery, acquisition)
+    }
+
+    fn finish(
+        &self,
+        key: &str,
+        school: &CanonicalSchool,
+        recovery: &recovery::Recovery,
+        acquisition: coaches::Acquisition,
+    ) -> CrawlResult<()> {
+        match acquisition.completion {
+            Ok(()) => self.complete(key, school, acquisition.published),
+            Err(error) => {
+                let mut batch = self.ctx.write_batch();
+                recovery.persist(&mut batch, &school.id, key, &error)?;
+                batch.commit()
+            }
+        }
+    }
+
+    fn persist_rows<T: serde::Serialize>(
+        &mut self,
+        locator: &str,
+        table: Table,
+        rows: &[T],
+    ) -> CrawlResult<usize> {
+        rows.iter().try_fold(0usize, |written, row| {
+            match persist(
+                self.ctx,
+                (SOURCE_ID, locator),
+                table,
+                std::slice::from_ref(row),
+            ) {
+                Ok(admitted) => {
+                    written
+                        .checked_add(admitted)
+                        .ok_or_else(|| CrawlError::Arithmetic {
+                            detail: "source effect count".into(),
+                        })
+                }
+                Err(CrawlError::Store(error)) => Err(CrawlError::Store(error)),
+                Err(error) => {
+                    self.tally.fail(locator, error)?;
+                    Ok(written)
+                }
+            }
+        })
+    }
+
+    fn persist_owner(
+        &mut self,
+        school: &CanonicalSchool,
+        locator: &str,
+        stamp: &str,
+    ) -> CrawlResult<usize> {
+        let written = self.persist_rows(locator, Table::Schools, std::slice::from_ref(school))?;
+        let observation = SourceSchoolObservation::of_school(
+            &SourceNamespace::association_school(SOURCE_ID),
+            school,
+            stamp,
+        )
+        .map(SourceObservation::School);
+        self.persist_rows(locator, Table::SourceObservations, observation.as_slice())?;
+        Ok(written)
+    }
+
+    async fn fetch_page(&mut self, url: &str) -> CrawlResult<Option<FetchOutcome>> {
+        match self.ctx.fetcher.get(url, &self.fetch).await {
+            Ok(capture) if capture.status == 200 => Ok(Some(capture)),
+            Ok(capture) => {
+                self.tally.fail(url, format!("HTTP {}", capture.status))?;
+                Ok(None)
+            }
+            Err(error) => {
+                self.tally.fail(url, error)?;
+                Ok(None)
+            }
+        }
+    }
+
+    fn complete(&self, key: &str, school: &CanonicalSchool, coaches: usize) -> CrawlResult<()> {
+        let payload = serde_json::json!({ "school": school.name, "coach_rows": coaches });
+        let digest = census_domain::model::serialized_digest(&(
+            "northern_projection_v3",
             key,
-            &json!({
-                "org": org,
-                "state": school.state.map(UsJurisdiction::code),
-                "school": school.name,
-                "association_id": row.public_id,
-                "arbiter_org_id": row.org_id,
-                "coach_rows": coaches.len(),
-                "observed_on": self.options.observed_on,
-            }),
-        )?;
-        batch.commit()?;
-        self.done.insert(key.to_string());
-        self.tally.coaches = self.tally.coaches.saturating_add(coaches.len());
-        Ok(())
+            school,
+            &payload,
+        ))
+        .map_err(|source| CrawlError::Canonical {
+            table: JOURNAL.into(),
+            source,
+        })?;
+        let locator = census_domain::model::serialized_digest(&key).map_err(|source| {
+            CrawlError::Canonical {
+                table: JOURNAL.into(),
+                source,
+            }
+        })?;
+        let mut batch = self.ctx.write_batch();
+        batch.journal_done(JOURNAL, key, &payload)?;
+        batch
+            .commit_once(
+                &format!("northern_projection_v3:arbiter/completion:{locator}:{digest}"),
+                &digest,
+            )
+            .map(|_| ())
     }
 }
 
-fn page_read_short(page: u64, rows_on_page: u64, total: u64) -> bool {
-    page.saturating_sub(1)
-        .saturating_mul(PAGE_SIZE)
-        .saturating_add(rows_on_page)
-        < total
+fn page_url(base: &str, page: u64) -> String {
+    format!("{base}?&pageSize={PAGE_SIZE}&pageNumber={page}")
+}
+
+fn page_read_short(page: u64, rows: u64, total: u64) -> bool {
+    page.checked_sub(1)
+        .and_then(|page| page.checked_mul(PAGE_SIZE))
+        .and_then(|offset| offset.checked_add(rows))
+        .is_none_or(|read| read < total)
 }
 
 pub(in crate::arbiter) fn completion_key(
@@ -255,22 +318,15 @@ pub(in crate::arbiter) fn completion_key(
         .map(|id| format!("{}:{org}:{id}", state.code()))
 }
 
-fn response_text<'a>(outcome: &'a FetchOutcome, subject: &str) -> CrawlResult<&'a str> {
-    std::str::from_utf8(&outcome.body).map_err(|_| CrawlError::Schema {
-        url: outcome.url.clone(),
-        detail: format!("{subject} response is not UTF-8"),
-    })
-}
-
 fn primary_coaches(
     row: &OrgSchool,
-    school_id: &census_domain::model::SchoolId,
-    base_url: &str,
-    observed_on: &str,
+    id: &census_domain::model::SchoolId,
+    url: &str,
+    stamp: &str,
 ) -> Vec<CanonicalCoach> {
     row.primary_contact
         .as_ref()
-        .and_then(|contact| map_primary_contact(contact, school_id, base_url, observed_on))
+        .and_then(|contact| map_primary_contact(contact, id, url, stamp))
         .into_iter()
         .collect()
 }

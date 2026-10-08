@@ -3,9 +3,7 @@ use serde_json::Value;
 use std::collections::BTreeMap;
 
 use super::measure::{direction, file_entries, strings, union_keys, FileEntry};
-use super::{
-    CONTEXT_METRICS, FUNCTION_SITES, OVERSIZED_FILES, SOFT_STRUCTURE_METRICS, STRUCTURE_METRICS,
-};
+use super::{CONTEXT_METRICS, FUNCTION_SITES, OVERSIZED_FILES, STRUCTURE_METRICS};
 use crate::json::number;
 
 pub(super) fn clippy(
@@ -46,29 +44,42 @@ pub(super) fn scan(scan: &Value, known: &Value, failures: &mut Vec<String>) -> R
         let (Some(counts), before_crate) = (counts.as_object(), known_scan.get(name)) else {
             continue;
         };
-        for (metric, value) in counts {
-            let Some(value) = value.as_u64() else {
-                continue;
-            };
-            let was = before_crate
-                .and_then(Value::as_object)
-                .and_then(|counts| counts.get(metric))
-                .and_then(Value::as_u64)
-                .map_or(0, core::convert::identity);
-            let debt = !CONTEXT_METRICS.contains(&metric.as_str());
-            if debt && value > was {
-                failures.push(format!("scan {name}.{metric}: {was} -> {value}"));
-            }
-            if value != was {
-                let note = if debt { "" } else { " (context)" };
-                println!(
-                    "  scan {name}.{metric}: {was} -> {value} [{}]{note}",
-                    direction(value, was)
-                );
-            }
-        }
+        scan_counts(name, counts, before_crate, failures);
     }
     Ok(())
+}
+
+fn scan_counts(
+    name: &str,
+    counts: &serde_json::Map<String, Value>,
+    before: Option<&Value>,
+    failures: &mut Vec<String>,
+) {
+    for (metric, value) in counts {
+        let Some(value) = value.as_u64() else {
+            continue;
+        };
+        let was = before
+            .and_then(Value::as_object)
+            .and_then(|counts| counts.get(metric))
+            .and_then(Value::as_u64)
+            .map_or(0, core::convert::identity);
+        scan_metric(name, metric, value, was, failures);
+    }
+}
+
+fn scan_metric(name: &str, metric: &str, value: u64, was: u64, failures: &mut Vec<String>) {
+    let debt = !CONTEXT_METRICS.contains(&metric);
+    if debt && value > was {
+        failures.push(format!("scan {name}.{metric}: {was} -> {value}"));
+    }
+    if value != was {
+        let note = if debt { "" } else { " (context)" };
+        println!(
+            "  scan {name}.{metric}: {was} -> {value} [{}]{note}",
+            direction(value, was)
+        );
+    }
 }
 
 pub(super) fn structure(scan: &Value, known: &Value, failures: &mut Vec<String>) -> Result<()> {
@@ -78,30 +89,7 @@ pub(super) fn structure(scan: &Value, known: &Value, failures: &mut Vec<String>)
         .and_then(Value::as_object)
         .context("the scan report has no `structure` object")?;
     for metric in STRUCTURE_METRICS {
-        let was = number(known_structure.and_then(|known| known.get(metric)));
-        let value = number(structure.get(metric));
-        if value != was {
-            println!(
-                "  structure {metric}: {was} -> {value} [{}]",
-                direction(value, was)
-            );
-        }
-        if value > was {
-            failures.push(format!("structure {metric}: {was} -> {value}"));
-            for site in strings(structure.get(FUNCTION_SITES)) {
-                println!("    {site}");
-            }
-        }
-    }
-    for metric in SOFT_STRUCTURE_METRICS {
-        let was = number(known_structure.and_then(|known| known.get(metric)));
-        let value = number(structure.get(metric));
-        if value != was {
-            println!(
-                "  structure {metric}: {was} -> {value} [{}] (target, not a budget)",
-                direction(value, was)
-            );
-        }
+        structure_metric(structure, known_structure, metric, failures);
     }
 
     oversized(
@@ -110,6 +98,28 @@ pub(super) fn structure(scan: &Value, known: &Value, failures: &mut Vec<String>)
         failures,
     );
     Ok(())
+}
+
+fn structure_metric(
+    structure: &serde_json::Map<String, Value>,
+    known: Option<&serde_json::Map<String, Value>>,
+    metric: &str,
+    failures: &mut Vec<String>,
+) {
+    let was = number(known.and_then(|known| known.get(metric)));
+    let value = number(structure.get(metric));
+    if value != was {
+        println!(
+            "  structure {metric}: {was} -> {value} [{}]",
+            direction(value, was)
+        );
+    }
+    if value > was {
+        failures.push(format!("structure {metric}: {was} -> {value}"));
+        for site in strings(structure.get(FUNCTION_SITES)) {
+            println!("    {site}");
+        }
+    }
 }
 
 pub(super) fn raises(
@@ -144,23 +154,35 @@ fn raised_scan(scan: &Value, old: &Value, raised: &mut Vec<String>) -> Result<()
         let Some(counts) = counts.as_object() else {
             continue;
         };
-        let before_crate = known
-            .and_then(|known| known.get(name))
-            .and_then(Value::as_object);
-        for (metric, value) in counts {
-            let Some(value) = value.as_u64() else {
-                continue;
-            };
-            let before = before_crate
-                .and_then(|counts| counts.get(metric))
-                .and_then(Value::as_u64)
-                .map_or(0, core::convert::identity);
-            if value > before {
-                raised.push(format!("scan {name}.{metric}: {before} -> {value}"));
-            }
-        }
+        raised_counts(
+            name,
+            counts,
+            known.and_then(|known| known.get(name)),
+            raised,
+        );
     }
     Ok(())
+}
+
+fn raised_counts(
+    name: &str,
+    counts: &serde_json::Map<String, Value>,
+    before: Option<&Value>,
+    raised: &mut Vec<String>,
+) {
+    for (metric, value) in counts {
+        let Some(value) = value.as_u64() else {
+            continue;
+        };
+        let before = before
+            .and_then(Value::as_object)
+            .and_then(|counts| counts.get(metric))
+            .and_then(Value::as_u64)
+            .map_or(0, core::convert::identity);
+        if value > before {
+            raised.push(format!("scan {name}.{metric}: {before} -> {value}"));
+        }
+    }
 }
 
 fn raised_structure(scan: &Value, old: &Value, raised: &mut Vec<String>) -> Result<()> {
@@ -175,22 +197,11 @@ fn raised_structure(scan: &Value, old: &Value, raised: &mut Vec<String>) -> Resu
         .map(|entry| (entry.path.as_str(), entry))
         .collect();
     for entry in file_entries(structure.get(OVERSIZED_FILES)) {
-        let Some(previous) = known_files.get(entry.path.as_str()) else {
-            raised.push(format!(
-                "structure {OVERSIZED_FILES}: new {}",
-                entry.display
-            ));
-            continue;
-        };
-        let (Some(before), Some(after)) = (previous.count, entry.count) else {
-            continue;
-        };
-        if after > before {
-            raised.push(format!(
-                "structure {OVERSIZED_FILES}: {}: {before} -> {after}",
-                entry.path
-            ));
-        }
+        raised_file(
+            &entry,
+            known_files.get(entry.path.as_str()).copied(),
+            raised,
+        );
     }
     for metric in STRUCTURE_METRICS {
         let before = number(old_structure.and_then(|old| old.get(metric)));
@@ -202,32 +213,36 @@ fn raised_structure(scan: &Value, old: &Value, raised: &mut Vec<String>) -> Resu
     Ok(())
 }
 
+fn raised_file(entry: &FileEntry, previous: Option<&FileEntry>, raised: &mut Vec<String>) {
+    let Some(previous) = previous else {
+        raised.push(format!(
+            "structure {OVERSIZED_FILES}: new {}",
+            entry.display
+        ));
+        return;
+    };
+    let (Some(before), Some(after)) = (previous.count, entry.count) else {
+        return;
+    };
+    if after > before {
+        raised.push(format!(
+            "structure {OVERSIZED_FILES}: {}: {before} -> {after}",
+            entry.path
+        ));
+    }
+}
+
 fn oversized(known: &[FileEntry], current: &[FileEntry], failures: &mut Vec<String>) {
     let known_paths: BTreeMap<&str, &FileEntry> = known
         .iter()
         .map(|entry| (entry.path.as_str(), entry))
         .collect();
     for entry in current {
-        let Some(before) = known_paths.get(entry.path.as_str()) else {
-            failures.push(format!("new file over 300 lines: {}", entry.display));
-            continue;
-        };
-        let (Some(before), Some(after)) = (before.count, entry.count) else {
-            continue;
-        };
-        if after > before {
-            failures.push(format!(
-                "file over 300 lines grew: {}: {before} -> {after}",
-                entry.path
-            ));
-        }
-        if after != before {
-            println!(
-                "  file over 300 lines: {}: {before} -> {after} [{}]",
-                entry.path,
-                direction(after, before)
-            );
-        }
+        compare_file(
+            entry,
+            known_paths.get(entry.path.as_str()).copied(),
+            failures,
+        );
     }
     let current_paths: std::collections::BTreeSet<&str> =
         current.iter().map(|entry| entry.path.as_str()).collect();
@@ -241,6 +256,29 @@ fn oversized(known: &[FileEntry], current: &[FileEntry], failures: &mut Vec<Stri
         known.len(),
         current.len()
     );
+}
+
+fn compare_file(entry: &FileEntry, previous: Option<&FileEntry>, failures: &mut Vec<String>) {
+    let Some(previous) = previous else {
+        failures.push(format!("new file over 300 lines: {}", entry.display));
+        return;
+    };
+    let (Some(before), Some(after)) = (previous.count, entry.count) else {
+        return;
+    };
+    if after > before {
+        failures.push(format!(
+            "file over 300 lines grew: {}: {before} -> {after}",
+            entry.path
+        ));
+    }
+    if after != before {
+        println!(
+            "  file over 300 lines: {}: {before} -> {after} [{}]",
+            entry.path,
+            direction(after, before)
+        );
+    }
 }
 
 #[cfg(test)]

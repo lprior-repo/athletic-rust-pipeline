@@ -11,6 +11,8 @@ use census_store::Table;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 
+mod admission;
+mod effects;
 mod walk;
 
 use walk::{absorb_targets, flush_batch};
@@ -27,7 +29,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
 
     let targets = registry_targets(options, &mut report)?;
     let index = live_index(ctx)?;
-    let done = journaled_urls(ctx)?;
     let mut run = RunState {
         resolved: HashMap::new(),
         stats: Stats::default(),
@@ -36,7 +37,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         batches: Vec::new(),
         report,
     };
-    absorb_targets(ctx, options, &targets, &index, &done, &mut run).await?;
+    absorb_targets(ctx, options, &targets, &index, &mut run).await?;
     flush_batch(ctx, &mut run)?;
 
     let (requests_after, cache_after) = stats_of(ctx).await;
@@ -64,6 +65,9 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
          platform also gathers from governing bodies and timers, so the core comparison stays \
          independent of it",
     );
+    if !targets.is_empty() {
+        run.report.finish_frontier();
+    }
     Ok(run.report)
 }
 
@@ -107,35 +111,34 @@ pub(in crate::athleticnet) fn appended_total(
 }
 
 pub(super) fn journaled_urls(ctx: &AdapterContext<'_>) -> CrawlResult<HashSet<String>> {
-    let payloads = ctx.store.journal_payloads("athleticnet")?;
-    let profile_attempts = ctx.store.journal_payloads(PROFILE_ATTEMPT_PHASE)?;
-    let profiles: HashSet<_> = profile_attempts
-        .into_iter()
-        .filter(|entry| {
-            entry.get("parser").and_then(Value::as_u64) == Some(u64::from(PROFILE_PARSE_VERSION))
-                && entry.get("parsed").and_then(Value::as_bool) == Some(true)
-        })
-        .filter_map(|entry| entry.get("url").and_then(Value::as_str).map(str::to_string))
-        .collect();
-    let done = payloads
-        .into_iter()
-        .filter(|entry| {
-            let version = match entry.get("url").and_then(Value::as_str) {
-                Some(url) if url.starts_with(BIO_ENDPOINT) => PROFILE_PARSE_VERSION,
-                _ => PARSE_VERSION,
-            };
-            entry.get("parser").and_then(Value::as_u64) == Some(u64::from(version))
-        })
-        .filter(|entry| entry.get("parsed").and_then(Value::as_bool) == Some(true))
-        .filter(|entry| {
-            entry
-                .get("url")
-                .and_then(Value::as_str)
-                .is_some_and(|url| !url.starts_with(BIO_ENDPOINT) || profiles.contains(url))
-        })
-        .filter_map(|entry| entry.get("url").and_then(Value::as_str).map(str::to_string))
-        .collect();
+    let mut done = HashSet::new();
+    for entry in ctx.store.journal_payloads("athleticnet")? {
+        if let Some(url) = completed_url(&entry, PARSE_VERSION) {
+            if !url.starts_with(BIO_ENDPOINT) {
+                done.insert(url.to_string());
+            }
+        }
+    }
+    for key in ctx.store.journal_keys(PROFILE_ATTEMPT_PHASE)? {
+        if !key.starts_with(BIO_ENDPOINT) {
+            continue;
+        }
+        if let Some(entry) = ctx.store.journal_payload(PROFILE_ATTEMPT_PHASE, &key)? {
+            if completed_url(&entry, PROFILE_PARSE_VERSION) == Some(key.as_str()) {
+                done.insert(key);
+            }
+        }
+    }
     Ok(done)
+}
+
+fn completed_url(entry: &Value, version: u32) -> Option<&str> {
+    if entry.get("parser").and_then(Value::as_u64) != Some(u64::from(version))
+        || entry.get("parsed").and_then(Value::as_bool) != Some(true)
+    {
+        return None;
+    }
+    entry.get("url").and_then(Value::as_str)
 }
 
 pub(super) fn store_accumulated(

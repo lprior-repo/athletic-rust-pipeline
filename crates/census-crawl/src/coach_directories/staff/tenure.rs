@@ -33,31 +33,48 @@ pub(super) fn appointment(
     if capture.url.trim().is_empty() {
         return Err(invalid_claim(capture, "tenure evidence has no source URL"));
     }
-    let source_year = scope_year(role, program);
-    let is_former = super::super::row::is_former(role);
-    let tenure = tenure_for(source_year, is_former, school_year);
-    let statement = statement(coach, role, program, capture)?;
-    let evidence = CoachTenureEvidence {
+    let tenure = tenure_for(
+        scope_year(role, program),
+        super::super::row::is_former(role),
+        school_year,
+    );
+    let evidence = bound_evidence(
+        coach,
+        claim_program,
         tenure,
-        source: SourceRef::new(super::super::SOURCE_ID, Some(capture.url.to_string())),
-        source_sha256: capture.sha256.to_string(),
-        retrieved_at: capture.observed_on.to_string(),
+        statement(coach, role, program, capture)?,
+        capture,
+    );
+    validate_tenure_evidence(&evidence)
+        .map_err(|error| invalid_claim(capture, &error.to_string()))?;
+    Ok(Some(evidence))
+}
+
+fn bound_evidence(
+    coach: &CanonicalCoach,
+    program: CoachContactProgram,
+    tenure: CoachTenure,
+    statement: String,
+    capture: Capture<'_>,
+) -> CoachTenureEvidence {
+    CoachTenureEvidence {
+        tenure,
+        source: SourceRef::new(super::super::SOURCE_ID, Some(capture.url.to_owned())),
+        source_sha256: capture.sha256.to_owned(),
+        retrieved_at: capture.observed_on.to_owned(),
         statement,
         claim: Some(CoachContactClaim {
             coach: coach.id.clone(),
             school: coach.school.clone(),
             role: coach.role,
-            program: claim_program,
+            program,
             mailbox: coach
                 .professional_email
                 .as_ref()
                 .or(coach.personal_email.as_ref())
                 .cloned(),
         }),
-    };
-    validate_tenure_evidence(&evidence)
-        .map_err(|error| invalid_claim(capture, &error.to_string()))?;
-    Ok(Some(evidence))
+    }
 }
 
 fn appointment_program(coach: &CanonicalCoach) -> Option<CoachContactProgram> {

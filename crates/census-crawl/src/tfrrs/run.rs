@@ -11,35 +11,39 @@ use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
 use census_store::Table;
 use serde_json::json;
-use std::collections::HashSet;
 
+#[path = "run_receipts.rs"]
+mod run_receipts;
 struct Fetched {
     jurisdiction: UsJurisdiction,
     route: Route,
     body: String,
+    observed_on: String,
+    body_sha256: String,
 }
 
 struct Claim {
     url: String,
     kind: &'static str,
     rows: u64,
+    body_sha256: String,
 }
 
 pub(super) struct Run<'a> {
     pub(super) absorb: Absorb<'a>,
-    pub(super) done: HashSet<String>,
     pub(super) failures: Vec<String>,
+    pub(super) unfinished: Vec<String>,
     claims: Vec<Claim>,
     pub(super) pages: u64,
     pub(super) resumed: u64,
 }
 
 impl<'a> Run<'a> {
-    pub(super) fn new(index: &'a SchoolIndex, done: HashSet<String>) -> Self {
+    pub(super) fn new(index: &'a SchoolIndex) -> Self {
         Self {
             absorb: Absorb::new(index),
-            done,
             failures: Vec::new(),
+            unfinished: Vec::new(),
             claims: Vec::new(),
             pages: 0,
             resumed: 0,
@@ -63,6 +67,8 @@ impl<'a> Run<'a> {
                 jurisdiction,
                 route,
                 body: page.text(),
+                observed_on: page.fetched_at,
+                body_sha256: crate::net::cache::content_digest(&page.body),
             }),
             Err(error) => {
                 self.absorb.stats.fetches_failed =
@@ -74,22 +80,22 @@ impl<'a> Run<'a> {
     }
 
     pub(super) async fn read(&mut self, ctx: &AdapterContext<'_>, url: &str) {
-        if self.done.contains(url) {
-            self.resumed = self.resumed.saturating_add(1);
-            return;
-        }
         let Some(Fetched {
             jurisdiction,
             route,
             body,
+            observed_on,
+            body_sha256,
         }) = self.fetched(ctx, url).await
         else {
+            self.unfinished.push(url.to_string());
             return;
         };
         let source = SourceRef::new(source_id(jurisdiction), Some(url.to_string()));
         let page = Page {
             source: &source,
-            observed_on: &ctx.observed_on,
+            observed_on: &observed_on,
+            performance_as_of: ctx.performance_as_of,
             jurisdiction,
         };
         let (kind, rows) = match route {
@@ -100,7 +106,12 @@ impl<'a> Run<'a> {
                     list: &list,
                     filter: list_filter(url),
                 };
-                self.absorb.absorb_list(&context, &parsed);
+                if let Err(error) = self.absorb.absorb_list(&context, &parsed) {
+                    self.failures
+                        .push(format!("{url}: {error}; projection remains unfinished"));
+                    self.unfinished.push(url.to_string());
+                    return;
+                }
                 let rows =
                     u64::try_from(parsed.sections.iter().map(|s| s.rows.len()).sum::<usize>())
                         .map_or(u64::MAX, |value| value);
@@ -119,15 +130,21 @@ impl<'a> Run<'a> {
             url: url.to_string(),
             kind,
             rows,
+            body_sha256,
         });
     }
 
-    fn journal(&self, batch: &mut crate::recording::RowBatch<'_>) -> CrawlResult<()> {
-        for claim in &self.claims {
-            let payload = json!({ "url": claim.url, "kind": claim.kind, "rows": claim.rows });
-            batch.journal_done(PHASE, &claim.url, &payload)?;
-        }
-        Ok(())
+    fn journal(
+        &self,
+        batch: &mut crate::recording::RowBatch<'_>,
+        context: &str,
+    ) -> CrawlResult<()> {
+        self.claims.iter().try_for_each(|claim| {
+            let key = run_receipts::key(context, &claim.url, &claim.body_sha256)?;
+            let payload = json!({ "url": claim.url, "kind": claim.kind, "rows": claim.rows,
+                "body_sha256": claim.body_sha256, "projection_context": context });
+            batch.journal_done(run_receipts::PHASE, &key, &payload)
+        })
     }
 
     pub(super) fn append(
@@ -145,27 +162,44 @@ impl<'a> Run<'a> {
             accumulated.performances.into_values().collect();
         let mut batch = ctx.write_batch();
         accumulated.unsupported.append_to(&mut batch)?;
-        batch.append_many(Table::Schools, &schools)?;
-        batch.append_many(Table::Meets, &meets)?;
-        batch.append_many(Table::Teams, &teams)?;
-        batch.append_many(Table::Athletes, &athletes)?;
-        batch.append_many(
+        let school_count = append_rows(ctx, Table::Schools, &schools)?;
+        let meet_count = append_rows(ctx, Table::Meets, &meets)?;
+        let team_count = append_rows(ctx, Table::Teams, &teams)?;
+        let athlete_count = append_rows(ctx, Table::Athletes, &athletes)?;
+        append_rows(
+            ctx,
             Table::SourceObservations,
             &ctx.athlete_observations(&athletes, schools.iter().chain(consolidated.iter())),
         )?;
-        batch.append_many(Table::Events, &events)?;
-        batch.append_many(Table::Performances, &performances)?;
-        self.journal(&mut batch)?;
+        let event_count = append_rows(ctx, Table::Events, &events)?;
+        let performance_count = append_rows(ctx, Table::Performances, &performances)?;
+        self.journal(&mut batch, &run_receipts::context(ctx, consolidated)?)?;
         batch.commit()?;
         self.claims.clear();
         Ok(EntityCounts {
-            schools: schools.len(),
-            meets: meets.len(),
-            teams: teams.len(),
-            athletes: athletes.len(),
-            events: events.len(),
-            performances: performances.len(),
+            schools: school_count,
+            meets: meet_count,
+            teams: team_count,
+            athletes: athlete_count,
+            events: event_count,
+            performances: performance_count,
             unsupported_cohorts: accumulated.unsupported.len(),
         })
     }
+}
+fn append_rows<T: serde::Serialize>(
+    ctx: &AdapterContext<'_>,
+    table: Table,
+    rows: &[T],
+) -> CrawlResult<usize> {
+    rows.iter().try_fold(0usize, |count, row| {
+        if !ctx.append_row_once(PHASE, table, row)? {
+            return Ok(count);
+        }
+        count
+            .checked_add(1)
+            .ok_or_else(|| crate::CrawlError::Arithmetic {
+                detail: "TFRRS admitted row count overflow".into(),
+            })
+    })
 }

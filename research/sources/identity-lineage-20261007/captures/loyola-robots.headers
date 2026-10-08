@@ -1,0 +1,11 @@
+HTTP/2 200 
+cache-control: private
+content-type: text/plain; charset=utf-8
+server: Microsoft-IIS/10.0
+strict-transport-security: max-age=31536000; includeSubDomains
+x-content-type-options: nosniff
+x-xss-protection: 1; mode=block
+referrer-policy: no-referrer-when-downgrade
+date: Thu, 08 Oct 2026 03:16:21 GMT
+content-length: 6001
+

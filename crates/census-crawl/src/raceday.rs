@@ -9,7 +9,7 @@ pub use parse::parse;
 use title::division_of;
 
 #[cfg(test)]
-use census_domain::model::{CentiSeconds, EventKind, Gender, Grade, Mark, SourceRef};
+use census_domain::model::{EventKind, ExactSeconds, Gender, Grade, Mark, SourceRef};
 
 #[cfg(test)]
 mod tests;

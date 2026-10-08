@@ -2,9 +2,9 @@
 
 use census_domain::model::{
     published_email, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
-    CanonicalSchool, CanonicalTeam, CoachRole, CompetitionLevel, Confidence, EventKind, Evidence,
-    Gender, GradYear, Grade, MailboxKind, ObservedGrade, SchoolYear, SourceEventLabel,
-    SourceIdentity, SourceNamespace, SourceRef, Sport,
+    CanonicalSchool, CanonicalTeam, CoachRole, CompetitionLevel, Confidence, EventIdentity,
+    EventKind, EventSpecification, Evidence, Gender, GradYear, Grade, MailboxKind, ObservedGrade,
+    SchoolYear, SourceEventLabel, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 use census_store::Entity;
@@ -215,7 +215,22 @@ fn event() -> impl Strategy<Value = CanonicalEvent> {
         ],
         gender(),
     )
-        .prop_map(|(meet, kind, gender)| CanonicalEvent::new(&meet.id, kind, gender, None, None))
+        .prop_filter_map(
+            "a valid qualified event identity",
+            |(meet, kind, gender)| {
+                CanonicalEvent::new(
+                    EventIdentity {
+                        meet: &meet.id,
+                        kind,
+                        gender,
+                        division: None,
+                        round: None,
+                    },
+                    EventSpecification::default(),
+                )
+                .ok()
+            },
+        )
 }
 
 fn same_members<T: PartialEq + std::fmt::Debug>(left: &[T], right: &[T]) -> bool {

@@ -1,152 +1,87 @@
-use crate::restate_services::job_error;
+use super::super::{
+    history_stage::HistoricalStageScope,
+    jobs::{adapter_context, collect_error, AdapterScope},
+};
+use super::{report_census, MeetsArm};
+use crate::census::{self, MeetCensus, MeetWalkRequest};
+use census_crawl::{net::Fetcher, Recording};
+use census_store::Store;
+use restate_sdk::prelude::HandlerError;
 use std::sync::Arc;
 
-use census_domain::model::SchoolYear;
-use census_domain::UsJurisdiction;
-use restate_sdk::prelude::HandlerError;
-
-use crate::census::{self, MeetCensus};
-use census_crawl::net::Fetcher;
-use census_crawl::Recording;
-use census_store::Store;
-
-use super::super::jobs::{adapter_context, collect_error, rows_written};
-use super::{take_recorded, MeetsArm, RecordedSource};
-
-#[derive(Clone, Copy)]
-pub(super) struct Walk<'a> {
-    store: &'a Arc<Store>,
-    fetcher: &'a Arc<Fetcher>,
-    jurisdiction: UsJurisdiction,
-    season: SchoolYear,
-    refresh: bool,
-    at: &'a str,
-}
-
-impl<'a> Walk<'a> {
-    pub(super) fn new(
-        store: &'a Arc<Store>,
-        fetcher: &'a Arc<Fetcher>,
-        jurisdiction: UsJurisdiction,
-        season: SchoolYear,
-        refresh: bool,
-        at: &'a str,
-    ) -> Self {
-        Self {
-            store,
-            fetcher,
-            jurisdiction,
-            season,
-            refresh,
-            at,
-        }
-    }
-
-    pub(super) async fn armed(
-        self,
-        arm: MeetsArm,
-        recording: &Recording,
-    ) -> Result<usize, HandlerError> {
-        let (store, fetcher) = (self.store, self.fetcher);
-        let (jurisdiction, season) = (self.jurisdiction, self.season);
-        let (refresh, at) = (self.refresh, self.at);
-        match arm {
-            MeetsArm::WiaaResults => {
-                walk_wiaa_results(
-                    store,
-                    fetcher,
-                    jurisdiction,
-                    season,
-                    refresh,
-                    at,
-                    Some(recording),
-                )
+pub(super) async fn armed(
+    store: &Arc<Store>,
+    fetcher: &Arc<Fetcher>,
+    scope: HistoricalStageScope,
+    arm: MeetsArm,
+    recording: &Recording,
+) -> Result<MeetCensus, HandlerError> {
+    let at = scope.observed_on.to_string();
+    let adapter = AdapterScope {
+        season: super::season_of(scope.year)?,
+        refresh: scope.refresh,
+        at: &at,
+        as_of: scope.window.as_of(),
+    };
+    let context = adapter_context(store, fetcher, adapter, Some(recording));
+    match arm {
+        MeetsArm::MilesplitIndex => {
+            let options = context.fetch_options();
+            let request = MeetWalkRequest::new(scope.jurisdiction, scope.year, &at, &options);
+            census::collect_state_meets(fetcher, store, &request, Some(recording))
                 .await
-            }
-            MeetsArm::Wayzata => {
-                walk_wayzata(
-                    store,
-                    fetcher,
-                    jurisdiction,
-                    season,
-                    refresh,
-                    at,
-                    Some(recording),
-                )
-                .await
-            }
+                .map_err(|error| super::super::job_error(collect_error(error)))
         }
+        MeetsArm::WiaaResults => walk_wiaa(&context, scope).await,
+        MeetsArm::Wayzata => walk_wayzata(&context, scope).await,
     }
 }
 
-pub(super) async fn walk_index(
-    store: &Arc<Store>,
-    fetcher: &Arc<Fetcher>,
-    jurisdiction: UsJurisdiction,
-    year: u16,
-    refresh: bool,
-    at: &str,
-) -> Result<(MeetCensus, Option<RecordedSource>), HandlerError> {
-    let index = Recording::new();
-    let census = census::collect_state_meets(
-        fetcher,
-        store,
-        jurisdiction,
-        year,
-        at,
-        refresh,
-        Some(&index),
-    )
-    .await
-    .map_err(|error| job_error(collect_error(error)))?;
-    let mut recorded = Vec::new();
-    take_recorded(census::SOURCE, index.drain(), &mut recorded);
-    Ok((census, recorded.pop()))
-}
-
-async fn walk_wiaa_results(
-    store: &Arc<Store>,
-    fetcher: &Arc<Fetcher>,
-    jurisdiction: UsJurisdiction,
-    season: SchoolYear,
-    refresh: bool,
-    at: &str,
-    recording: Option<&Recording>,
-) -> Result<usize, HandlerError> {
+async fn walk_wiaa(
+    context: &census_crawl::AdapterContext<'_>,
+    scope: HistoricalStageScope,
+) -> Result<MeetCensus, HandlerError> {
     let options = census_crawl::wiaa_results::Options {
         limit: None,
-        refresh,
-        observed_on: at.to_string(),
-        seasons: vec![season.get()],
-        states: vec![jurisdiction],
+        refresh: scope.refresh,
+        observed_on: context.observed_on.clone(),
+        seasons: vec![source_year(scope.year)?],
+        states: vec![scope.jurisdiction],
         school_names: Vec::new(),
     };
-    let context = adapter_context(store, fetcher, season, refresh, at, recording);
-    let report = census_crawl::wiaa_results::collect(&context, &options)
+    let report = census_crawl::wiaa_results::collect(context, &options)
         .await
-        .map_err(|error| job_error(collect_error(error)))?;
-    rows_written(&report)
+        .map_err(|error| super::super::job_error(collect_error(error)))?;
+    report_census("wiaa_results", report)
 }
 
 async fn walk_wayzata(
-    store: &Arc<Store>,
-    fetcher: &Arc<Fetcher>,
-    jurisdiction: UsJurisdiction,
-    season: SchoolYear,
-    refresh: bool,
-    at: &str,
-    recording: Option<&Recording>,
-) -> Result<usize, HandlerError> {
+    context: &census_crawl::AdapterContext<'_>,
+    scope: HistoricalStageScope,
+) -> Result<MeetCensus, HandlerError> {
+    if !census_crawl::applicability::applicable_sources(scope.jurisdiction)
+        .iter()
+        .any(|source| source.slug == "wayzata")
+    {
+        return Ok(super::failed_census(
+            "wayzata",
+            scope,
+            "source geography does not admit this jurisdiction".to_string(),
+        ));
+    }
     let options = census_crawl::wayzata::Options {
-        years: vec![season.get()],
+        years: vec![source_year(scope.year)?],
+        jurisdictions: vec![scope.jurisdiction],
         limit: None,
-        refresh,
-        observed_on: Some(at.to_string()),
+        refresh: scope.refresh,
+        observed_on: Some(context.observed_on.clone()),
     };
-    let context = adapter_context(store, fetcher, season, refresh, at, recording);
-    let report = census_crawl::wayzata::collect(&context, &options)
+    let report = census_crawl::wayzata::collect(context, &options)
         .await
-        .map_err(|error| job_error(collect_error(error)))?;
-    let _ = jurisdiction;
-    rows_written(&report)
+        .map_err(|error| super::super::job_error(collect_error(error)))?;
+    report_census("wayzata", report)
+}
+
+fn source_year(calendar: u16) -> Result<i16, HandlerError> {
+    i16::try_from(calendar).map_err(|_| super::not_a_season(calendar))
 }

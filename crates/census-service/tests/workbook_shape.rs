@@ -5,8 +5,9 @@ mod fallible_checks;
 use calamine::{open_workbook, Reader, Xlsx};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CanonicalTeam, CentiMetres, CentiSeconds, CompetitionLevel, EventKind, Evidence, Gender,
-    GradYear, Mark, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
+    CanonicalTeam, CentiMetres, CompetitionLevel, EventIdentity, EventKind, EventSpecification,
+    Evidence, ExactSeconds, Gender, GradYear, Mark, SchoolYear, SourceIdentity, SourceNamespace,
+    SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 use census_report::bests;
@@ -78,7 +79,16 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory(
         (EventKind::Track400m, &[49.80_f64, 48.55, 49.10][..]),
         (EventKind::LongJump, &[6.10_f64, 6.42][..]),
     ] {
-        let mut event = CanonicalEvent::new(&meet_id, kind.clone(), Gender::Boys, None, None);
+        let mut event = CanonicalEvent::new(
+            EventIdentity {
+                meet: &meet_id,
+                kind: kind.clone(),
+                gender: Gender::Boys,
+                division: None,
+                round: None,
+            },
+            EventSpecification::default(),
+        )?;
         let event_id = event.id.clone();
         event
             .evidence
@@ -87,9 +97,7 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory(
         for (attempt, mark) in marks.iter().enumerate() {
             let performance_date = format!("2026-06-{:02}", 6 + attempt);
             let value = if matches!(kind, EventKind::Track400m) {
-                Mark::TimeSeconds(
-                    CentiSeconds::try_from_seconds_f64(*mark).ok_or("invalid fixture time")?,
-                )
+                Mark::TimeSeconds(ExactSeconds::parse(&mark.to_string())?)
             } else {
                 Mark::DistanceMetres(
                     CentiMetres::try_from_metres_f64(*mark).ok_or("invalid fixture distance")?,
@@ -100,7 +108,7 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory(
                 id: CanonicalPerformance::mint(
                     &athlete.id,
                     &meet_id,
-                    &kind,
+                    &event_id,
                     &performance_date,
                     &source_key,
                 ),
@@ -150,6 +158,8 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory(
         "Conflicts",
         "Review",
         "Run Metrics",
+        "School Contacts",
+        "Contact Research",
     ];
     let expected: std::collections::BTreeSet<_> = published.iter().copied().collect();
     check!(eq; names
@@ -171,13 +181,14 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory(
         .iter()
         .find(|row| row.key.event_kind == EventKind::Track400m)
         .ok_or("missing 400m best")?;
-    check!(eq; sprint.value, 4_855);
+    check!(eq; sprint.result.mark, Mark::TimeSeconds(ExactSeconds::parse("48.55")?));
     check!(eq; sprint.population.marks, 3);
     let jump = bests
         .iter()
         .find(|row| row.key.event_kind == EventKind::LongJump)
         .ok_or("missing long jump best")?;
-    check!(eq; jump.value, 6_420_000);
+    check!(eq; jump.result.mark, Mark::DistanceMetres(
+        CentiMetres::try_from_metres_f64(6.42).ok_or("expected long-jump distance")?));
 
     let range = book.worksheet_range("PRs")?;
     check!(eq; range.height(), 3);

@@ -7,11 +7,11 @@ use std::path::Path;
 #[path = "comments/extraction.rs"]
 pub(crate) mod extraction;
 #[path = "comments/lexer.rs"]
-mod lexer;
+pub(crate) mod lexer;
 #[path = "comments/lexical.rs"]
 mod lexical;
 #[path = "comments/literals.rs"]
-mod literals;
+pub(crate) mod literals;
 #[cfg(test)]
 #[path = "comments/parity_tests.rs"]
 mod parity_tests;

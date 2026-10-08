@@ -18,12 +18,12 @@ static TEAM_BLOCK: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"^\s*\d+\.\s+(\d+)\s+(\S.*?)\s*\(\s*\d"));
 static BLOCK_ROW: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
     Regex::new(
-        r"(\d{1,4})\s+(\(\s*\d+\s*\)|\d{1,4})\s+([A-Za-z][A-Za-z.'\- ]*?)\s+(\d{1,2})\s+(\d{1,3}:\d{2}\.\d)",
+        r"(\d{1,4})\s+(\(\s*\d+\s*\)|\d{1,4})\s+([A-Za-z][A-Za-z.'\- ]*?)\s+(\d{1,2})\s+(\d{1,3}:\d{2}(?:\.\d+)?)(?:\s|$)",
     )
 });
 static GRADE_TABLE_ROW: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
     Regex::new(
-        r"^\s*(\d+)\s+(\(\s*n/a\s*\)|\d+)\s+(\d+)\s+(.+?)\s{2,}(.+?)\s{2,}([MF])\s+(\d{1,2})\s+(\d{1,3}:\d{2}\.\d)\s+(\d+:\d{2})\s*$",
+        r"^\s*(\d+)\s+(\(\s*n/a\s*\)|\d+)\s+(\d+)\s+(.+?)\s{2,}(.+?)\s{2,}([MF])\s+(\d{1,2})\s+(\d{1,3}:\d{2}(?:\.\d+)?)\s+(\d+:\d{2})\s*$",
     )
 });
 static RACE_BANNER: LazyLock<Result<Regex, regex::Error>> =

@@ -80,3 +80,24 @@ pub(super) fn source_key(
         date.iso, meet_ref, event_ref, athlete_ref, mark, place
     )
 }
+pub(super) fn admit_date(
+    page: super::state::Page<'_>,
+    row: &ParsedRow,
+) -> crate::CrawlResult<bool> {
+    let Some(date) = row.date.as_ref() else {
+        return Err(crate::CrawlError::PerformanceDateUnknown {
+            published: String::new(),
+            as_of: page.performance_as_of,
+        });
+    };
+    match crate::context::assess_performance_date(page.performance_as_of, &date.iso) {
+        crate::context::PerformanceDateAssessment::Admitted => Ok(true),
+        crate::context::PerformanceDateAssessment::Future => Ok(false),
+        crate::context::PerformanceDateAssessment::Unknown => {
+            Err(crate::CrawlError::PerformanceDateUnknown {
+                published: date.raw.chars().take(64).collect(),
+                as_of: page.performance_as_of,
+            })
+        }
+    }
+}

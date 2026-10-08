@@ -66,6 +66,7 @@ pub(super) fn context<'a>(
         refresh: false,
         school_year: SchoolYear::new(2026).ok_or("school year")?,
         observed_on: "2099-01-01".into(),
+        performance_as_of: chrono::NaiveDate::parse_from_str("2026-10-07", "%Y-%m-%d")?,
         recording: None,
     })
 }

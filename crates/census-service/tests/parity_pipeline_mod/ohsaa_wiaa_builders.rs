@@ -1,4 +1,4 @@
-use crate::common;
+use crate::{common, listing};
 
 use std::collections::BTreeMap;
 
@@ -26,13 +26,13 @@ fn seeded_capture(url: &str, body: &str) -> census_crawl::net::FetchOutcome {
 }
 
 pub fn wiaa_directory(corpus: &mut Corpus) -> Result<()> {
-    let files = common::fixtures("wiaa")?;
+    let files = listing::fixtures("wiaa")?;
     let letter = files
         .iter()
-        .find(|path| common::file_name(path).is_ok_and(|name| name.starts_with("directory_")))
+        .find(|path| listing::file_name(path).is_ok_and(|name| name.starts_with("directory_")))
         .context("the wiaa corpus carries no directory letter")?;
     let index =
-        wiaa::parse_directory_letter(&common::fixture("wiaa", &common::file_name(letter)?)?);
+        wiaa::parse_directory_letter(&common::fixture("wiaa", &listing::file_name(letter)?)?);
     ensure!(
         !index.is_empty(),
         "{}: the directory letter yielded no rows",
@@ -43,7 +43,7 @@ pub fn wiaa_directory(corpus: &mut Corpus) -> Result<()> {
         if path == letter {
             continue;
         }
-        let name = common::file_name(path)?;
+        let name = listing::file_name(path)?;
         let Some(org_id) = name
             .strip_prefix("school_org")
             .and_then(|rest| rest.split('_').next())
@@ -79,8 +79,8 @@ pub fn ohsaa_schools(corpus: &mut Corpus) -> Result<()> {
     let mut searches: BTreeMap<String, Vec<ohsaa::SearchResult>> = BTreeMap::new();
     let mut sports: BTreeMap<String, String> = BTreeMap::new();
     let mut ads: BTreeMap<String, String> = BTreeMap::new();
-    for path in common::fixtures("ohsaa")? {
-        let name = common::file_name(&path)?;
+    for path in listing::fixtures("ohsaa")? {
+        let name = listing::file_name(&path)?;
         let body = common::fixture("ohsaa", &name)?;
         if name.starts_with("search_") {
             searches.insert(name, ohsaa::parse_search(&body));

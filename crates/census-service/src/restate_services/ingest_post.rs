@@ -1,14 +1,11 @@
 use chrono::Datelike;
 use restate_sdk::prelude::*;
-use serde_json::Value;
 
-use census_crawl::RecordedBatch;
+use census_crawl::Recorded;
 use census_domain::UsJurisdiction;
-use census_store::Table;
 
 use super::ingest::IngestClient;
-use super::wire::ingest::{IngestRequest, WindowRequest};
-use super::MAX_ROWS_PER_REQUEST;
+use super::wire::ingest::{RecordedIngestRequest, WindowRequest};
 
 pub(super) fn endpoint_of(slug: &str, jurisdiction: UsJurisdiction) -> String {
     format!("{slug}_{}", jurisdiction.code().to_ascii_lowercase())
@@ -22,79 +19,58 @@ pub(super) fn window_of(at: &str) -> Result<String, HandlerError> {
     Ok(format!("{}-W{:02}", week.year(), week.week()))
 }
 
+#[tracing::instrument(skip_all)]
 pub(super) async fn post(
     ctx: &ObjectContext<'_>,
     endpoint: &str,
     window: &str,
-    batches: &[RecordedBatch],
+    recorded: Recorded,
 ) -> Result<u64, HandlerError> {
     let object = ctx.object_client::<IngestClient>(endpoint);
-    let run = ctx.invocation_id();
-    let mut appended = 0_u64;
-    for (batch_index, batch) in batches.iter().enumerate() {
-        let table = batch.table;
-        for (chunk_index, chunk) in units_of(batch).enumerate() {
-            let Json(reply) = object
-                .record(Json(IngestRequest {
-                    table: table.file().to_string(),
-                    rows: chunk.to_vec(),
-                    operation_id: operation_of(
-                        endpoint,
-                        run,
-                        window,
-                        table,
-                        batch_index,
-                        chunk_index,
-                    ),
-                    cursor: None,
-                }))
-                .call()
-                .await?;
-            appended = appended.saturating_add(reply.appended);
-        }
-    }
+    let operation_id = operation_of(endpoint, window)?;
+    let Json(reply) = object
+        .recorded(Json(RecordedIngestRequest {
+            recorded,
+            operation_id,
+            cursor: None,
+        }))
+        .call()
+        .await?;
     object
         .complete_window(Json(WindowRequest {
             window: window.to_string(),
         }))
         .call()
         .await?;
-    Ok(appended)
+    Ok(reply.appended)
 }
 
-fn operation_of(
-    endpoint: &str,
-    run: &str,
-    window: &str,
-    table: Table,
-    batch_index: usize,
-    chunk_index: usize,
-) -> String {
-    format!(
-        "{endpoint}:{run}:{window}:{}:{batch_index}:{chunk_index}",
-        table.file()
-    )
-}
-
-fn units_of(batch: &RecordedBatch) -> impl Iterator<Item = &[Value]> {
-    let chunks = batch.rows.chunks(MAX_ROWS_PER_REQUEST);
-    let empty = batch.rows.get(..0).filter(|_| batch.rows.is_empty());
-    chunks.chain(empty)
+fn operation_of(endpoint: &str, window: &str) -> Result<String, HandlerError> {
+    let length = endpoint
+        .len()
+        .checked_add(window.len())
+        .and_then(|length| length.checked_add(1))
+        .ok_or_else(|| TerminalError::new("source operation length overflow"))?;
+    let max = census_store::MAX_OPERATION_BYTES
+        .checked_sub(65)
+        .ok_or_else(|| TerminalError::new("source operation digest capacity"))?;
+    if length > max {
+        return Err(TerminalError::new("source operation prefix capacity exceeded").into());
+    }
+    let mut operation = String::new();
+    operation
+        .try_reserve_exact(length)
+        .map_err(|_| TerminalError::new("allocating source operation identity"))?;
+    operation.push_str(endpoint);
+    operation.push(':');
+    operation.push_str(window);
+    Ok(operation)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::restate_services::tests::sdk_error;
-
-    #[test]
-    fn an_endpoint_is_the_slugs_own_name_with_the_state() {
-        assert_eq!(
-            endpoint_of("wiaa_results", UsJurisdiction::Wisconsin),
-            "wiaa_results_wi"
-        );
-        assert_eq!(endpoint_of("wayzata", UsJurisdiction::Iowa), "wayzata_ia");
-    }
 
     #[test]
     fn a_window_is_the_iso_week_of_the_run_day() -> Result<(), Box<dyn std::error::Error>> {

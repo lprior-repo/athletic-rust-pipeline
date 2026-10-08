@@ -1,6 +1,6 @@
 use super::journal::Journal;
 use super::map::{joined_name, school_year_of_term, AthleteRow, Mapper, XcList};
-use super::parse::{parse_error, parse_grade, parse_qualifiers};
+use super::parse::parse_grade;
 use super::report::gender_word;
 use super::requests::{self, qualifiers_url};
 use super::wire::{QualifierAthlete, QualifiersEnvelope};
@@ -16,6 +16,12 @@ const TOURNAMENTS: [(u32, &str, Gender); 6] = [
     (693, "3A", Gender::Girls),
 ];
 
+struct Tournament {
+    id: u32,
+    class: &'static str,
+    gender: Gender,
+}
+
 pub(super) struct Route<'a, 'b> {
     pub(super) ctx: &'a AdapterContext<'a>,
     pub(super) report: &'b mut AdapterReport,
@@ -30,13 +36,18 @@ impl Route<'_, '_> {
             return Ok(());
         };
         let Some(school_year) = school_year_of_term(&term) else {
+            self.report.errors = self.report.errors.saturating_add(1);
+            self.report
+                .unfinished
+                .push(format!("{}/v1/terms", crate::ihsa::IHSA_API));
             self.report.note(format!(
                 "terms: {term:?} is not a school-year label; the qualifier lists were not read"
             ));
             return Ok(());
         };
         for (id, class, gender) in TOURNAMENTS {
-            self.list(&term, school_year, id, class, gender).await?;
+            self.list(&term, school_year, Tournament { id, class, gender })
+                .await?;
         }
         Ok(())
     }
@@ -45,40 +56,56 @@ impl Route<'_, '_> {
         &mut self,
         term: &str,
         school_year: SchoolYear,
-        id: u32,
-        class: &str,
-        gender: Gender,
+        tournament: Tournament,
     ) -> CrawlResult<()> {
-        let key = format!("{term}:{id}");
+        let key = format!("{term}:{}", tournament.id);
         if self.journal.qualifiers.contains(&key) {
             *self.resumed = self.resumed.saturating_add(1);
             return Ok(());
         }
-        let url = qualifiers_url(term, id);
-        let Some(body) = requests::qualifiers(self.ctx, self.report, &url).await else {
+        let url = qualifiers_url(term, tournament.id);
+        let Some(capture) = requests::qualifiers(self.ctx, self.report, &url).await else {
             return Ok(());
         };
-        if let Some(message) = parse_error(&body) {
-            self.report.note(format!(
-                "tournamentId {id} ({class}, {}): {message}",
-                gender_word(gender)
-            ));
+        let Some(envelope) = self.decode_qualifiers(&capture, &tournament) else {
+            return Ok(());
+        };
+        let bound = self.mapper.bind_capture(capture);
+        if requests::decoded(self.report, &url, "qualifier capture lineage", bound).is_none() {
             return Ok(());
         }
-        let parsed = parse_qualifiers(&body);
-        let Some(envelope) =
-            requests::decoded(self.report, &url, "the cross-country qualifiers", parsed)
-        else {
-            return Ok(());
-        };
         let rows = XcList {
             tournament_id: envelope.tournament_id.as_str(),
-            gender,
+            gender: tournament.gender,
             school_year,
         };
         self.mapper.absorb_qualifiers(&envelope, &rows, &url);
         self.journal.list(&key, &url, &envelope);
         Ok(())
+    }
+
+    fn decode_qualifiers(
+        &mut self,
+        capture: &crate::net::FetchOutcome,
+        tournament: &Tournament,
+    ) -> Option<QualifiersEnvelope> {
+        if let Ok(error) = capture.json::<super::wire::ErrorEnvelope>() {
+            self.report.note(format!(
+                "tournamentId {} ({}, {}): {}",
+                tournament.id,
+                tournament.class,
+                gender_word(tournament.gender),
+                error.error,
+            ));
+            return None;
+        }
+        let parsed = capture.json().map_err(crate::CrawlError::from);
+        requests::decoded(
+            self.report,
+            &capture.url,
+            "the cross-country qualifiers",
+            parsed,
+        )
     }
 }
 

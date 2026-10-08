@@ -9,4 +9,5 @@ pub mod bests;
 mod csv_safety;
 pub mod export;
 pub mod report;
+pub mod school_contacts;
 pub mod workbook;

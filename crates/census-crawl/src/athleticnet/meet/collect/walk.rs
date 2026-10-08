@@ -31,7 +31,25 @@ impl MeetRun {
             let Some(documents) = self.documents(ctx, options, &urls).await? else {
                 continue;
             };
-            let (stored, counts) = self.absorb(&documents, source, index, &options.observed_on);
+            let (stored, counts) = match self.absorb(
+                &documents,
+                source,
+                index,
+                (&options.observed_on, ctx.performance_as_of),
+            ) {
+                Ok(outcome) => outcome,
+                Err(error) => {
+                    self.report.errors = self.report.errors.saturating_add(1);
+                    self.report.note(format!(
+                        "meet {meet_id}: {error}; projection remains unfinished"
+                    ));
+                    self.report
+                        .unfinished
+                        .push(format!("meet {meet_id}: {error}"));
+                    self.flush(ctx)?;
+                    continue;
+                }
+            };
             rows = rows.saturating_add(stored);
             totals.merge(&counts);
             urls.journal(stored, &mut self.pending);
@@ -93,19 +111,19 @@ impl MeetRun {
         documents: &Documents,
         source: &SourceRef,
         index: &SchoolIndex,
-        observed_on: &str,
-    ) -> (u64, MeetStats) {
+        timing: (&str, chrono::NaiveDate),
+    ) -> CrawlResult<(u64, MeetStats)> {
         let (stored, counts) = absorb_meet(
             &documents.meet,
             &documents.results,
             documents.metadata.as_ref(),
             source,
-            observed_on,
+            timing,
             index,
             &mut self.resolved,
             &mut self.stats,
             &mut self.accumulated,
-        );
+        )?;
         self.report
             .note(format!("meet {}: {counts}", documents.meet.meet.id));
         if let Some(metadata) = documents.metadata.as_ref() {
@@ -117,7 +135,7 @@ impl MeetRun {
                 metadata.hurdles()
             ));
         }
-        (stored, counts)
+        Ok((stored, counts))
     }
 
     async fn fetch<T: serde::de::DeserializeOwned>(

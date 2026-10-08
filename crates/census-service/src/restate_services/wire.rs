@@ -3,16 +3,17 @@ use census_domain::UsJurisdiction;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::census::{MeetCensus, StateProgress};
+use crate::census::StateProgress;
 use census_reconcile::identity::Revision;
 
-use super::results_arms::ResultsStageOutcome;
+mod history;
+pub use history::{HistoricalProgress, HistoryWindow};
 
 pub(super) mod ingest;
 
 pub use ingest::{
-    EndpointObservation, IngestReply, IngestRequest, IngestState, SweepReport, SweepRequest,
-    WindowRequest,
+    EndpointObservation, IngestReply, IngestRequest, IngestState, RecordedIngestRequest,
+    SweepReport, SweepRequest, WindowRequest,
 };
 
 pub(super) mod open;
@@ -135,6 +136,7 @@ pub struct JurisdictionRequest {
     pub jurisdiction: UsJurisdiction,
     pub season: SchoolYear,
     pub revision: Revision,
+    pub history: HistoryWindow,
     #[serde(default)]
     pub refresh: bool,
     #[serde(default)]
@@ -163,6 +165,7 @@ impl NationalRequest {
             jurisdiction,
             season: self.season,
             revision: self.revision,
+            history: self.history,
             refresh: self.refresh,
             limit_per_state: self.limit_per_state,
             concurrency: self.concurrency,
@@ -181,6 +184,10 @@ pub struct StageOutcome {
     pub errors: Vec<String>,
     #[serde(default)]
     pub notes: Vec<String>,
+    #[serde(default)]
+    pub disposition: census_crawl::CollectionDisposition,
+    #[serde(default)]
+    pub unfinished: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -195,11 +202,9 @@ pub struct JurisdictionState {
     #[serde(default)]
     pub consolidated: Option<Vec<ConsolidatedTable>>,
     #[serde(default)]
-    pub meets: Option<MeetCensus>,
+    pub history: HistoricalProgress,
     #[serde(default)]
-    pub meets_complete: bool,
-    #[serde(default)]
-    pub results: Option<ResultsStageOutcome>,
+    pub history_window: Option<HistoryWindow>,
     #[serde(default)]
     pub updated_at: Option<String>,
 }
@@ -214,8 +219,7 @@ pub struct JurisdictionReport {
     pub teams: usize,
     pub rosters: StateProgress,
     pub consolidated: Vec<ConsolidatedTable>,
-    pub meets: MeetCensus,
-    #[serde(default)]
-    pub results: ResultsStageOutcome,
+    pub history: HistoricalProgress,
+    pub history_window: HistoryWindow,
     pub completed_at: String,
 }

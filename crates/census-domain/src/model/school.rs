@@ -58,6 +58,10 @@ pub struct CanonicalSchool {
     )]
     pub postal_addresses: Vec<SchoolPostalAddress>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub mailbox_claims: Vec<SchoolMailboxClaim>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub contact_research: Vec<ContactResearch>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub retained_conflicts: Vec<RetainedConflict>,
 }
 
@@ -106,6 +110,8 @@ impl CanonicalSchool {
                 source_identities: Vec::new(),
                 evidence: Vec::new(),
                 postal_addresses: Vec::new(),
+                mailbox_claims: Vec::new(),
+                contact_research: Vec::new(),
                 retained_conflicts: Vec::new(),
             },
             id,

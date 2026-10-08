@@ -37,6 +37,7 @@ unimplemented = "deny"
 panic_in_result_fn = "deny"
 unwrap_used = "deny"
 expect_used = "deny"
+too_many_arguments = "allow"
 
 # Chromium 151 replaced Network.ClientSecurityState.privateNetworkRequestPolicy with
 # localNetworkAccessRequestPolicy, so the pinned generated model rejects every

@@ -228,6 +228,7 @@ pub fn csv_sport(sport: Sport) -> &'static str {
         Sport::CrossCountry => "Cross Country",
         Sport::IndoorTrack => "Indoor Track",
         Sport::OutdoorTrack => "Track",
+        Sport::Unknown => "Unknown",
     }
 }
 

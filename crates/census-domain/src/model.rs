@@ -15,12 +15,15 @@ mod contact;
 mod contact_proof;
 mod contact_tenure;
 mod dates;
+mod event_identity;
 mod event_ontology;
 mod event_performance;
+mod event_specification;
 mod fixed_mark;
 mod identifiers;
 mod identity_aliases;
 mod identity_application;
+mod identity_attestation;
 mod identity_corroboration;
 mod identity_decision;
 mod identity_index;
@@ -29,12 +32,14 @@ mod identity_validation;
 mod meet;
 mod natural_key;
 mod normalization;
+mod performance_identity;
 mod provenance;
 mod records;
 mod review;
 mod run;
 mod school;
 mod school_address;
+mod school_contact;
 
 pub use athlete::{AthleteCandidateKey, CanonicalAthlete};
 pub use canonical_json::{serialized_digest, CanonicalJsonError};
@@ -52,15 +57,22 @@ pub use contact_tenure::{
     assess_coach_tenure, validate_tenure_evidence, CoachContactClaim, CoachContactProgram,
     CoachTenure, CoachTenureEvidence, TenureAssessmentError, TenureValidation,
 };
+pub use event_identity::{EventIdentity, EventIdentityError};
 pub use event_ontology::{EventKind, SourceEventLabel};
 pub use event_performance::{CanonicalEvent, CanonicalPerformance, Mark, TimingMethod};
-pub use fixed_mark::{CentiMetres, CentiPoints, CentiSeconds};
+pub use event_specification::{
+    CompetitionCategory, CourseIdentity, CourseMeasurement, CrossCountryContext, DistanceUnit,
+    EventSpecification, HurdleSpecification, ImplementMass, IndoorTrackSpecification,
+    PublishedCourseConditions, PublishedDistance, SpecificationError, TrackBanking,
+};
+pub use fixed_mark::{CentiMetres, CentiPoints, ExactSeconds, TimeError};
 pub(crate) use identifiers::write_escaped;
 pub use identifiers::{
     tag, AthleteCandidateId, AthleteId, AthleteIndexId, CoachId, EventId, Id, IdTag, MeetId,
     PerformanceId, SchoolId, TeamId,
 };
 pub use identity_application::{AcceptedAthleteIdentity, IdentityApplication};
+pub use identity_attestation::{AttestationError, AttestationQualification, IdentityAttestation};
 pub use identity_decision::{
     athlete_identity_digest, identity_verdict_digest, person_key, person_provider,
     AppliedAthleteIdentity, AppliedIdentityKind, IdentityDecisionError, IdentityMember,
@@ -72,6 +84,7 @@ pub use identity_validation::{IdentityDecisionIssue, VerdictKind};
 pub use meet::{CanonicalMeet, MEET_STATE_UNRESOLVED};
 pub use natural_key::NaturalKey;
 pub use normalization::{flip_last_first, normalize_name};
+pub use performance_identity::{PerformanceError, PerformanceIdentity, PerformanceResult};
 pub use provenance::{
     Confidence, ConfidenceError, Evidence, EvidenceMethod, IdentityStatus, SourceIdentity,
     SourceNamespace, SourceRef,
@@ -92,6 +105,12 @@ pub use review::{
 pub use run::{CensusRun, RunManifest};
 pub use school::CanonicalSchool;
 pub use school_address::{SchoolAddressError, SchoolPostalAddress};
+pub use school_contact::{
+    mailbox as school_mailbox, mailbox_research as school_mailbox_research,
+    research as school_contact_research, source_research as school_contact_source_research,
+    ContactResearch, ContactResearchAttempt, ContactResearchOutcome, ContactResearchSubject,
+    SchoolContactError, SchoolMailboxClaim, SchoolMailboxPurpose,
+};
 
 #[cfg(test)]
 #[path = "model_tests.rs"]

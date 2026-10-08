@@ -14,11 +14,12 @@ const INDEX: &[u8] =
 pub fn prepare(root: &Path) -> Result<()> {
     let jurisdiction = UsJurisdiction::from_code("OH").context("OH jurisdiction missing")?;
     let text = std::str::from_utf8(INDEX)?;
-    let teams = parse_team_index(text)?;
+    let read = parse_team_index(text)?;
     ensure!(
-        !teams.is_empty(),
-        "authentic Ohio index contains no parsed teams"
+        read.disposition == census_crawl::CollectionDisposition::Complete,
+        "qualification requires complete captured team inventory"
     );
+    let teams = read.teams;
     let store = Store::open(root.join("store"))?;
     let url = Site::for_jurisdiction(jurisdiction).teams_url();
     let key_digest = Sha256::digest(format!("GET\u{1f}{url}\u{1f}").as_bytes());

@@ -175,7 +175,7 @@ fn attach(
         return Ok(());
     };
     let Some(address) = PostalAddress::of(Some(line1), line2, city, state, zip) else {
-        return Err(PostalReview::Claim(SchoolAddressError::MissingStreet));
+        return Err(PostalReview::Claim(SchoolAddressError::EmptyAddress));
     };
     let owner = short_code
         .filter(|code| !code.trim().is_empty())

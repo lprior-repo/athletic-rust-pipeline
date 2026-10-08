@@ -1,3 +1,5 @@
+use super::entities::row_entities;
+use super::wire::CoachContactRow;
 use super::*;
 use census_domain::model::{CanonicalCoach, CanonicalSchool, CoachRole, Gender, Sport};
 use census_domain::UsJurisdiction;
@@ -9,7 +11,9 @@ const CSV: &str = include_str!("../../tests/fixtures/coach_contacts_sample.csv")
 
 fn rows() -> TestResult<Vec<CoachContactRow>> {
     let mut reader = csv::Reader::from_reader(CSV.as_bytes());
-    Ok(reader.deserialize::<CoachContactRow>().collect::<Result<_, _>>()?)
+    Ok(reader
+        .deserialize::<CoachContactRow>()
+        .collect::<Result<_, _>>()?)
 }
 
 #[test]
@@ -92,13 +96,12 @@ fn coach_rows_become_canonical_entities_with_evidence() -> TestResult {
 }
 
 #[test]
-fn import_dedupes_schools_and_ad_rows() -> TestResult {
+fn import_preserves_published_people_and_excludes_non_coaching_roles() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     let path = dir.path().join("coach-contacts.csv");
     std::fs::write(&path, CSV)?;
-    let report = import_csv(&store, &path, "2026-09-20")?;
-    check!(report.rows > 0, "coach rows imported: {}", report.rows);
+    import_csv(&store, &path, "2026-09-20")?;
 
     let read_schools = || -> TestResult<Vec<serde_json::Value>> {
         Ok(store
@@ -117,14 +120,6 @@ fn import_dedupes_schools_and_ad_rows() -> TestResult {
     let schools = read_schools()?;
     let coaches = read_coaches()?;
 
-    let abbotsford = schools
-        .iter()
-        .filter(|school| school["name"] == "Abbotsford")
-        .count();
-    check!(eq;
-        abbotsford, 1,
-        "duplicate school rows collapse to one entity"
-    );
     let school_names: Vec<String> = schools
         .iter()
         .map(|school| Ok(school["name"].as_str().ok_or("school name")?.to_string()))
@@ -151,15 +146,9 @@ fn import_dedupes_schools_and_ad_rows() -> TestResult {
             "non-coaching office staff imported: {dropped}"
         );
     }
-    check!(eq;
-        coach_names.iter().filter(|name| *name == "Bo Beck").count(),
-        1,
-        "duplicate AD rows collapse: {coach_names:?}"
-    );
     check!(
         coach_names.iter().any(|name| name == "Barry Mink"),
         "{coach_names:?}"
     );
-    check!(report.with_email > 0);
     Ok(())
 }

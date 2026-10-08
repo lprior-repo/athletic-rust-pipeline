@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 #[path = "qualification_owned_projection/mod.rs"]
 mod qualification_owned_projection;
 

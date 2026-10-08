@@ -8,7 +8,9 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 mod artifact;
-use artifact::{hash_artifact, Artifact, MAX_BUNDLE_BYTES};
+mod directory;
+use artifact::{hash_artifact, Artifact};
+pub(super) use directory::verify_directory;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -104,6 +106,24 @@ pub fn current_workbook(root: &Path) -> ReportResult<PathBuf> {
 pub(super) fn current_generation(root: &Path) -> ReportResult<(PathBuf, Manifest)> {
     let pointer = root.join("current");
     let relative = std::fs::read_link(&pointer).map_err(|source| io_error(&pointer, source))?;
+    validate_pointer(&relative)?;
+    let generations = root.join("generations");
+    let directory = root.join(relative);
+    validate_generation_paths(&generations, &directory)?;
+    let directory =
+        std::fs::canonicalize(&directory).map_err(|source| io_error(&directory, source))?;
+    let manifest = verify_directory(&directory)?;
+    if directory.file_name().and_then(|name| name.to_str())
+        != Some(manifest.generation_digest.as_str())
+    {
+        return Err(invariant(
+            "publication directory does not match its manifest".to_string(),
+        ));
+    }
+    Ok((directory, manifest))
+}
+
+fn validate_pointer(relative: &Path) -> ReportResult<()> {
     let mut components = relative.components();
     let valid = components.next()
         == Some(std::path::Component::Normal(std::ffi::OsStr::new(
@@ -118,9 +138,11 @@ pub(super) fn current_generation(root: &Path) -> ReportResult<(PathBuf, Manifest
             "publication pointer escapes its generation directory".to_string(),
         ));
     }
-    let generations = root.join("generations");
-    let directory = root.join(relative);
-    for path in [&generations, &directory] {
+    Ok(())
+}
+
+fn validate_generation_paths(generations: &Path, directory: &Path) -> ReportResult<()> {
+    for path in [generations, directory] {
         let metadata = std::fs::symlink_metadata(path).map_err(|source| io_error(path, source))?;
         if !metadata.file_type().is_dir() {
             return Err(invariant(
@@ -128,17 +150,7 @@ pub(super) fn current_generation(root: &Path) -> ReportResult<(PathBuf, Manifest
             ));
         }
     }
-    let directory =
-        std::fs::canonicalize(&directory).map_err(|source| io_error(&directory, source))?;
-    let manifest = verify_directory(&directory)?;
-    if directory.file_name().and_then(|name| name.to_str())
-        != Some(manifest.generation_digest.as_str())
-    {
-        return Err(invariant(
-            "publication directory does not match its manifest".to_string(),
-        ));
-    }
-    Ok((directory, manifest))
+    Ok(())
 }
 
 #[derive(Debug)]
@@ -216,56 +228,6 @@ fn verified(path: &Path) -> ReportResult<(Manifest, crate::workbook::verify::Ver
     Ok((manifest, workbook))
 }
 
-pub(super) fn verify_directory(directory: &Path) -> ReportResult<Manifest> {
-    let path = directory.join("manifest.json");
-    let manifest: Manifest = sidecars::read_json(&path)?;
-    if manifest.schema_revision != 1 || manifest.digest()? != manifest.generation_digest {
-        return Err(invariant(
-            "unsupported or corrupt generation manifest".to_string(),
-        ));
-    }
-    manifest.selection.options()?;
-    let expected = artifact_names(manifest.selection.grad_year);
-    if manifest.artifacts.keys().cloned().collect::<Vec<_>>() != expected {
-        return Err(invariant(
-            "generation has an invalid artifact set".to_string(),
-        ));
-    }
-    let mut total = 0_u64;
-    manifest.artifacts.iter().try_for_each(|(name, expected)| {
-        let actual = hash_artifact(&directory.join(name))?;
-        if actual != *expected {
-            return Err(invariant(format!("generation artifact mismatch: {name}")));
-        }
-        total = total
-            .checked_add(actual.bytes)
-            .ok_or_else(|| invariant("bundle byte counter exhausted".to_string()))?;
-        if total > MAX_BUNDLE_BYTES {
-            return Err(invariant(
-                "generation exceeds 16 GiB byte budget".to_string(),
-            ));
-        }
-        Ok(())
-    })?;
-    let mut entries = std::fs::read_dir(directory).map_err(|source| io_error(directory, source))?;
-    entries.try_for_each(|entry| {
-        let entry = entry.map_err(|source| io_error(directory, source))?;
-        let name = entry.file_name();
-        if name != "manifest.json"
-            && !manifest
-                .artifacts
-                .contains_key(name.to_string_lossy().as_ref())
-        {
-            return Err(invariant(format!(
-                "unexpected generation artifact: {}",
-                name.to_string_lossy()
-            )));
-        }
-        Ok(())
-    })?;
-    Ok(manifest)
-}
-
 fn artifact_names(grad_year: Option<i16>) -> Vec<String> {
     let cohort = match grad_year.map(|year| format!("co{year}")) {
         Some(value) => value,
@@ -279,6 +241,8 @@ fn artifact_names(grad_year: Option<i16>) -> Vec<String> {
         "census-core.json".to_string(),
         "frozen-input.json".to_string(),
         "recruiting.csv".to_string(),
+        "school-contacts.csv".to_string(),
+        "contact-research.csv".to_string(),
         "workbook.xlsx".to_string(),
     ];
     names.sort_unstable();

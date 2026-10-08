@@ -1,4 +1,5 @@
 mod entity;
+mod events;
 mod list;
 mod meet;
 mod roster;

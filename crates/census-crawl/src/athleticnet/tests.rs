@@ -3,7 +3,7 @@ use crate::registry::{transport_for_host, TransportKind};
 use census_domain::core_scope::is_core_source;
 use census_domain::model::CentiMetres;
 use census_domain::model::CentiPoints;
-use census_domain::model::CentiSeconds;
+use census_domain::model::ExactSeconds;
 use census_domain::model::{EventKind, Mark, SourceNamespace};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -75,15 +75,15 @@ fn a_registry_is_refused_rather_than_guessed_between_states() -> TestResult {
 #[test]
 fn marks_are_read_in_the_form_athleticnet_publishes() -> TestResult {
     let time = parse_mark(&EventKind::Track800m, "1:17.80a").ok_or("an auto-timed time")?;
-    check!(eq; time, (Mark::TimeSeconds(CentiSeconds::new(7780)), true));
+    check!(eq; time, (Mark::TimeSeconds(ExactSeconds::parse("77.80")?), true));
     check!(eq;
         parse_mark(&EventKind::Track3200m, "9:41.23"),
-        Some((Mark::TimeSeconds(CentiSeconds::new(58123)), false)),
+        Some((Mark::TimeSeconds(ExactSeconds::parse("581.23")?), false)),
         "a bare mark is hand-timed"
     );
     check!(eq;
         parse_mark(&EventKind::Track100m, "11.32q"),
-        Some((Mark::TimeSeconds(CentiSeconds::new(1132)), false)),
+        Some((Mark::TimeSeconds(ExactSeconds::parse("11.32")?), false)),
         "a qualifier suffix is not part of the mark"
     );
     check!(eq;

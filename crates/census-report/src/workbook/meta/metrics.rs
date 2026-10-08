@@ -15,27 +15,7 @@ pub(super) fn metrics_sheet(
     rows: &super::StoreRows,
     conflicts: &[super::Family],
 ) -> ReportResult<Vec<Vec<Cell>>> {
-    let mut cells = vec![row!("Run metric", "Value")];
-    cells.push(row!(
-        "Workbook generated on",
-        Cell::text(facts.core.generated_on.clone())
-    ));
-    cells.push(row!("Store", Cell::text(facts.core.store_dir.clone())));
-    cells.push(row!("Workbook scope", facts.recruiting.scope().as_str()));
-    cells.push(row!(
-        "Contact assessment school year",
-        Cell::text(facts.school_year.short())
-    ));
-    cells.push(row!("Census scopes published", "core + all sources"));
-    cells.push(row!(
-        "Recruiting athletes",
-        Cell::number(facts.recruiting.athletes().len())?
-    ));
-    cells.push(row!(
-        "Best-mark rows reduced",
-        Cell::number(facts.bests.len())?
-    ));
-    cells.push(row!("Cohort behind the counters", "class of 2027"));
+    let mut cells = initial_metrics(facts)?;
     cells.push(row!());
     cells.extend(store::frozen_counters(facts.population.dataset())?);
     cells.push(row!());
@@ -49,4 +29,35 @@ pub(super) fn metrics_sheet(
     };
     cells.extend(reconcile::reconciliation(rows, conflicts, census)?);
     Ok(cells)
+}
+
+fn initial_metrics(facts: &RunFacts<'_>) -> ReportResult<Vec<Vec<Cell>>> {
+    let mut cells = metadata_metrics(facts);
+    cells.push(row!("Census scopes published", "core + all sources"));
+    cells.push(row!(
+        "Recruiting athletes",
+        Cell::number(facts.recruiting.athletes().len())?
+    ));
+    cells.push(row!(
+        "Best-mark rows reduced",
+        Cell::number(facts.bests.len())?
+    ));
+    cells.push(row!("Cohort behind the counters", "class of 2027"));
+    Ok(cells)
+}
+
+fn metadata_metrics(facts: &RunFacts<'_>) -> Vec<Vec<Cell>> {
+    vec![
+        row!("Run metric", "Value"),
+        row!(
+            "Workbook generated on",
+            Cell::text(facts.core.generated_on.clone())
+        ),
+        row!("Store", Cell::text(facts.core.store_dir.clone())),
+        row!("Workbook scope", facts.recruiting.scope().as_str()),
+        row!(
+            "Contact assessment school year",
+            Cell::text(facts.school_year.short())
+        ),
+    ]
 }

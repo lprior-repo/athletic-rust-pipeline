@@ -1,6 +1,6 @@
 use crate::report::Derivation;
 use census_domain::model::{
-    CanonicalAthlete, CanonicalMeet, CanonicalSchool, CanonicalTeam, EventKind,
+    CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalSchool, CanonicalTeam, EventKind,
 };
 use std::collections::HashMap;
 
@@ -8,7 +8,7 @@ pub(crate) struct Parents<'a> {
     athletes: HashMap<&'a str, &'a CanonicalAthlete>,
     aliases: &'a HashMap<String, String>,
     meets: HashMap<&'a str, &'a CanonicalMeet>,
-    events: HashMap<&'a str, &'a EventKind>,
+    events: HashMap<&'a str, &'a CanonicalEvent>,
     teams: HashMap<&'a str, &'a CanonicalTeam>,
     schools: HashMap<&'a str, &'a CanonicalSchool>,
 }
@@ -22,7 +22,7 @@ impl<'a> Parents<'a> {
             events: derivation
                 .events()
                 .iter()
-                .map(|event| (event.id.as_str(), &event.kind))
+                .map(|event| (event.id.as_str(), event))
                 .collect(),
             teams: derivation
                 .dataset()
@@ -44,6 +44,10 @@ impl<'a> Parents<'a> {
     }
 
     pub(crate) fn event(&self, id: &str) -> Option<&'a EventKind> {
+        self.events.get(id).map(|event| &event.kind)
+    }
+
+    pub(crate) fn canonical_event(&self, id: &str) -> Option<&'a CanonicalEvent> {
         self.events.get(id).copied()
     }
 

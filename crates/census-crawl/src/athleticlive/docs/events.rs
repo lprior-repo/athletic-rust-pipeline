@@ -14,6 +14,8 @@ pub struct EventDoc {
     pub meet_id: Option<Value>,
     #[serde(default, rename = "n")]
     pub name: Option<String>,
+    #[serde(default, rename = "sn")]
+    pub short_name: Option<String>,
     #[serde(default, rename = "ab")]
     pub abbrev: Option<String>,
     #[serde(default, rename = "un")]

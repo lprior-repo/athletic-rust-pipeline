@@ -18,6 +18,7 @@ pub(super) struct Journal {
 impl Journal {
     pub(super) fn load(ctx: &AdapterContext<'_>) -> CrawlResult<Self> {
         let mut journal = Self::default();
+        let performance_as_of = ctx.performance_as_of.to_string();
         for payload in ctx.store.journal_payloads(PHASE)? {
             if payload.get("parser").and_then(Value::as_u64) != Some(PARSER)
                 || payload.get("parsed").and_then(Value::as_bool) != Some(true)
@@ -27,6 +28,12 @@ impl Journal {
             let Some(key) = payload.get("key").and_then(Value::as_str) else {
                 continue;
             };
+            if key.starts_with("meet:")
+                && payload.get("performance_as_of").and_then(Value::as_str)
+                    != Some(performance_as_of.as_str())
+            {
+                continue;
+            }
             if let Some(meet) = key.strip_prefix("meet:") {
                 let refreshed = payload
                     .get("refreshed_at")
@@ -40,7 +47,7 @@ impl Journal {
         Ok(journal)
     }
 
-    pub(super) fn meet(&mut self, row: &MeetRow, url: &str, events: usize) {
+    pub(super) fn meet(&mut self, row: &MeetRow, url: &str, admission: (usize, chrono::NaiveDate)) {
         let key = format!("{MEET_KEY}:{}", row.meet_id);
         let payload = json!({
             "key": key.clone(),
@@ -48,7 +55,8 @@ impl Journal {
             "parser": PARSER,
             "parsed": true,
             "refreshed_at": row.last_refreshed_at,
-            "events": events,
+            "events": admission.0,
+            "performance_as_of": admission.1,
         });
         self.pending.push((key, payload));
         self.meets

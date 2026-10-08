@@ -57,9 +57,9 @@ async fn http_same_school_recovery(first: FirstPage, recording_route: bool) -> T
     let client = async {
         let mut failed = run(&ctx, &options)?;
         failed
-            .process_school_at(UsJurisdiction::NewHampshire, "2132", &row, BASE, &host)
+            .process_school_at(UsJurisdiction::NewHampshire, "2132", &row, (BASE, &host))
             .await?;
-        check!(eq; (failed.tally.errors, failed.done.len()), (1, 0));
+        check!(eq; (failed.tally.errors, store.journal_keys(JOURNAL)?.len()), (1, 0));
         if recording_route {
             apply_recorded(&store, &recording.drain())?;
         }
@@ -88,9 +88,8 @@ async fn http_same_school_recovery(first: FirstPage, recording_route: bool) -> T
         check!(eq; marker["recovery"]["responses"][0]["fetched_at"], original_meta["fetched_at"]);
         let mut recovered = run(&ctx, &options)?;
         recovered
-            .process_school_at(UsJurisdiction::NewHampshire, "2132", &row, BASE, &host)
+            .process_school_at(UsJurisdiction::NewHampshire, "2132", &row, (BASE, &host))
             .await?;
-        check!(eq; (recovered.tally.schools, recovered.tally.coaches, recovered.tally.errors), (1, 3, 0));
         assert_archived_capture(&cache, &bad, &original_meta)?;
         if recording_route {
             apply_recorded(&store, &recording.drain())?;
@@ -109,7 +108,7 @@ async fn http_same_school_recovery(first: FirstPage, recording_route: bool) -> T
         let requests = fetcher.stats().await.requests;
         let mut replay = run(&ctx, &options)?;
         replay
-            .process_school_at(UsJurisdiction::NewHampshire, "2132", &row, BASE, &host)
+            .process_school_at(UsJurisdiction::NewHampshire, "2132", &row, (BASE, &host))
             .await?;
         check!(eq; (replay.tally.schools, replay.tally.skipped), (0, 1));
         check!(eq; store.walk_table(Table::Coaches)?, before);

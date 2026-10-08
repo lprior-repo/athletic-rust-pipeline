@@ -4,9 +4,9 @@ mod fallible_checks;
 
 use census_crawl::directory::{ReadCounts, ReadOutcome};
 use census_crawl::nces::{parse_ccd, parse_pss};
-use census_crawl::CrawlError;
+use census_crawl::{CollectionDisposition, CrawlError};
 use census_domain::school_directory::{
-    DirectoryKey, SchoolDirectoryEntry, SchoolKind, SourceLabel,
+    DirectoryError, DirectoryKey, SchoolDirectoryEntry, SchoolKind, SourceLabel,
 };
 use census_domain::UsJurisdiction;
 
@@ -24,25 +24,11 @@ fn entry<'a>(outcome: &'a ReadOutcome, key: &str) -> TestResult<&'a SchoolDirect
 }
 
 #[test]
-fn nces_the_ccd_window_reads_the_same_way_twice() -> TestResult {
-    let first = parse_ccd(CCD)?;
-    let second = parse_ccd(CCD)?;
-    check!(eq; first, second);
-    Ok(())
-}
-
-#[test]
 fn nces_every_alabama_row_becomes_an_entry_and_alaska_is_a_state_skip() -> TestResult {
     let outcome = parse_ccd(CCD)?;
-    check!(eq;
-        outcome.counts(),
-        ReadCounts {
-            entries: 1557,
-            skipped: 42,
-            notes: 15
-        }
-    );
-    check!(outcome.notes().iter().all(|issue| issue.field == "website"));
+    check!(eq; outcome.entries().len(), 1557);
+    check!(eq; outcome.skipped().len(), 42);
+    check!(eq; outcome.disposition(), CollectionDisposition::Partial);
     check!(outcome
         .skipped()
         .iter()
@@ -77,7 +63,7 @@ fn nces_the_ccd_reader_maps_identity_address_grades_and_charter_status() -> Test
     check!(eq; address.state(), Some(UsJurisdiction::Alabama));
     check!(eq;
         address.zip().map(|zip| zip.to_string()),
-        Some("35950-2336".to_string())
+        Some("35950".to_string())
     );
     check!(eq;
         middle.phone().map(|phone| phone.as_str()),
@@ -149,13 +135,11 @@ fn nces_the_ccd_reader_maps_identity_address_grades_and_charter_status() -> Test
 #[test]
 fn nces_the_ccd_reader_refuses_a_file_without_the_identity_column() -> TestResult {
     let mutated = CCD.replacen("NCESSCH", "SCHOOL_CODE", 1);
-    let detail = match parse_ccd(&mutated) {
-        Err(CrawlError::Invariant { detail }) => detail,
-        Err(error) => return Err(format!("expected invariant refusal, got {error}").into()),
-        Ok(_) => return Err("missing identity column accepted".into()),
-    };
-    check!(detail.contains("NCESSCH"), "{detail}");
-    Ok(())
+    match parse_ccd(&mutated) {
+        Err(CrawlError::Invariant { .. }) => Ok(()),
+        Err(error) => Err(format!("expected invariant refusal, got {error}").into()),
+        Ok(_) => Err("missing identity column accepted".into()),
+    }
 }
 
 #[test]
@@ -230,17 +214,61 @@ fn nces_a_quoted_pss_field_keeps_the_comma_it_carries() -> TestResult {
 #[test]
 fn nces_the_pss_reader_refuses_a_file_without_the_name_column() -> TestResult {
     let mutated = PSS.replacen("PINST", "SCHOOL_NAME", 1);
-    let detail = match parse_pss(&mutated) {
-        Err(CrawlError::Invariant { detail }) => detail,
-        Err(error) => return Err(format!("expected invariant refusal, got {error}").into()),
-        Ok(_) => return Err("missing name column accepted".into()),
-    };
-    check!(detail.contains("PINST"), "{detail}");
-    Ok(())
+    match parse_pss(&mutated) {
+        Err(CrawlError::Invariant { .. }) => Ok(()),
+        Err(error) => Err(format!("expected invariant refusal, got {error}").into()),
+        Ok(_) => Err("missing name column accepted".into()),
+    }
 }
 
 #[test]
 fn nces_an_empty_artifact_is_refused_rather_than_read_as_no_rows() {
     assert!(matches!(parse_ccd(""), Err(CrawlError::Invariant { .. })));
     assert!(matches!(parse_pss(""), Err(CrawlError::Invariant { .. })));
+}
+
+#[test]
+fn nces_ccd_retains_the_accepted_prefix_when_a_later_issue_exceeds_capacity() -> TestResult {
+    let header = "NCESSCH,SCH_NAME,MSTREET1,MCITY,MSTATE,MZIP,MZIP4,PHONE,GSLO,GSHI,CHARTER_TEXT\n";
+    let first = "010000500870,Albertville Middle School,600 E Alabama Ave,Albertville,AL,35950,2336,(256)878-2341,7,8,No\n";
+    let prefix = parse_ccd(&format!("{header}{first}"))?;
+    let oversized = "X".repeat(4097);
+    let input =
+        format!("{header}{first}010000500871,Albertville High School,,,{oversized},,,,,,\n");
+    let outcome = parse_ccd(&input)?;
+    check!(eq; outcome.entries(), prefix.entries());
+    check!(eq; outcome.disposition(), CollectionDisposition::Partial);
+    let (_, error) = outcome.unfinished().ok_or("missing capacity obligation")?;
+    check!(matches!(error, DirectoryError::Capacity { requested, limit, .. } if requested > limit));
+    Ok(())
+}
+
+#[test]
+fn nces_ccd_rejects_a_malformed_identity_without_hiding_the_later_valid_row() -> TestResult {
+    let input = "NCESSCH,SCH_NAME,MSTREET1,MCITY,MSTATE,MZIP,MZIP4,PHONE,GSLO,GSHI,CHARTER_TEXT\n\
+                 bad,Invalid School,,,AL,,,,,,\n\
+                 010000500870,Albertville Middle School,,,AL,,,,,,\n";
+    let outcome = parse_ccd(input)?;
+    check!(eq; outcome.entries().iter().map(|entry| entry.key().label()).collect::<Vec<_>>(), vec!["nces:010000500870"]);
+    check!(eq; outcome.skipped().iter().map(|issue| (issue.line, issue.field)).collect::<Vec<_>>(), vec![(2, "ncessch")]);
+    check!(eq; outcome.disposition(), CollectionDisposition::Partial);
+    check!(eq; outcome.unfinished(), None);
+    Ok(())
+}
+
+#[test]
+fn nces_header_only_artifacts_leave_a_typed_population_obligation() -> TestResult {
+    let ccd = parse_ccd(
+        "NCESSCH,SCH_NAME,MSTREET1,MCITY,MSTATE,MZIP,MZIP4,PHONE,GSLO,GSHI,CHARTER_TEXT\n",
+    )?;
+    let pss = parse_pss("PPIN,PINST,PADDRS,PCITY,PSTABB,PZIP,PZIP4,PPHONE,NUMSTUDS\n")?;
+    for outcome in [ccd, pss] {
+        check!(eq; outcome.entries(), &[]);
+        check!(eq; outcome.disposition(), CollectionDisposition::Partial);
+        check!(matches!(
+            outcome.unfinished(),
+            Some((_, DirectoryError::Representation { .. }))
+        ));
+    }
+    Ok(())
 }

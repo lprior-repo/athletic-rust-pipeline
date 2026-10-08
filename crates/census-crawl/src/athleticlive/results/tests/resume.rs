@@ -130,13 +130,14 @@ fn a_missing_capture_file_resumes_from_the_archived_body() -> TestResult {
                 &labels_of(&labelled_schools(&doc, UsJurisdiction::Iowa)),
             )?;
             let path = stage_capture(&dir, "event-doc-2150205.json", XC_STATE)?;
-            let options = resume_options(vec![path.clone()]);
+            let mut options = resume_options(vec![path.clone()]);
+            options.capture_metadata = super::captures::documents(&options.documents)?;
 
             let first = collect(&context(&store, &fetcher)?, &options).await?;
             check!(eq; first.rows, 136);
             std::fs::remove_file(&path)?;
 
-            let second = collect(&context(&store, &fetcher)?, &options).await?;
+            let second = super::super::collect(&context(&store, &fetcher)?, &options).await?;
             check!(eq; second.rows, 0, "the archived bytes prove the capture was read");
             check!(eq; second.errors, 0, "{}", joined(&second));
             check!(
@@ -196,39 +197,41 @@ fn a_store_holding_retired_path_receipts_refuses_to_resume() -> TestResult {
         .enable_all()
         .build()?
         .block_on(async {
-            let (dir, store, fetcher) = scratch()?;
-            let doc = parse_event_document(&event_doc_url(2_150_205), XC_STATE)?;
-            write_schools(
-                &store,
-                &labels_of(&labelled_schools(&doc, UsJurisdiction::Iowa)),
-            )?;
-            let path = stage_capture(&dir, "event-doc-2150205.json", XC_STATE)?;
-            let options = resume_options(vec![path.clone()]);
+            for retired in ["athleticlive_results_v2", "athleticlive_results_effect_v1"] {
+                let (dir, store, fetcher) = scratch()?;
+                let doc = parse_event_document(&event_doc_url(2_150_205), XC_STATE)?;
+                write_schools(
+                    &store,
+                    &labels_of(&labelled_schools(&doc, UsJurisdiction::Iowa)),
+                )?;
+                let path = stage_capture(&dir, "event-doc-2150205.json", XC_STATE)?;
+                let options = resume_options(vec![path.clone()]);
 
-            let ctx = context(&store, &fetcher)?;
-            let mut page = ctx.write_batch();
-            page.journal_done(
-                "athleticlive_results_v2",
-                &path,
-                &serde_json::json!({"role": "event", "events": 0}),
-            )?;
-            page.commit()?;
+                let ctx = context(&store, &fetcher)?;
+                let mut page = ctx.write_batch();
+                page.journal_done(
+                    retired,
+                    &path,
+                    &serde_json::json!({"role": "event", "events": 0}),
+                )?;
+                page.commit()?;
 
-            let error = match collect(&context(&store, &fetcher)?, &options).await {
-                Err(error) => error,
-                Ok(report) => {
-                    return Err(format!(
-                        "a store holding the retired phase must not resume: {}",
-                        joined(&report)
-                    )
-                    .into())
-                }
-            };
-            check!(error.to_string().contains("retired"), "{error}");
-            check!(
-                receipts(&store)?.is_empty(),
-                "the refusal leaves the retired journal alone"
-            );
+                let error = match collect(&context(&store, &fetcher)?, &options).await {
+                    Err(error) => error,
+                    Ok(report) => {
+                        return Err(format!(
+                            "a store holding the retired phase must not resume: {}",
+                            joined(&report)
+                        )
+                        .into())
+                    }
+                };
+                check!(error.to_string().contains("retired"), "{error}");
+                check!(
+                    receipts(&store)?.is_empty(),
+                    "the refusal leaves the retired journal alone"
+                );
+            }
             Ok(())
         })
 }

@@ -1,10 +1,11 @@
-use super::map::{AthleteRow, EventContext, Mapper, PerformanceRow, ASSOCIATION, HIGH_SCHOOL};
+use super::map::{EventContext, Mapper, PerformanceRow, HIGH_SCHOOL};
 use super::wire::TeamRef;
 use census_domain::model::{
-    AthleteId, CanonicalAthlete, CanonicalPerformance, CanonicalTeam, Evidence, Gender,
-    ObservedGrade, SchoolId, SchoolYear, SourceAthleteObservation, SourceIdentity, SourceNamespace,
-    Sport, TeamId,
+    AthleteId, CanonicalPerformance, CanonicalTeam, Gender, SchoolId, SchoolYear, SourceIdentity,
+    SourceNamespace, Sport, TeamId,
 };
+
+mod athletes;
 
 impl<'a> Mapper<'a> {
     pub(super) fn team(
@@ -40,64 +41,6 @@ impl<'a> Mapper<'a> {
         id
     }
 
-    pub(super) fn athlete(
-        &mut self,
-        row: AthleteRow<'_>,
-        evidence: Evidence,
-    ) -> Option<(AthleteId, SourceIdentity)> {
-        let name = row.name.map(str::trim).filter(|value| !value.is_empty())?;
-        let grade = row.grade?;
-        let observation = ObservedGrade {
-            grade,
-            school_year: row.school_year,
-            source: evidence.source.clone(),
-        };
-        let mut identities =
-            athlete_identities(row.net_id, row.live_id, row.entry.as_deref()).into_iter();
-        let source = match identities.next() {
-            Some(value) => value,
-            None => SourceIdentity::new(
-                SourceNamespace::Other("ihsa_result_row".to_string()),
-                &row.source_key,
-            ),
-        };
-        let (grad_year, observation, source) =
-            self.accumulated
-                .unsupported
-                .admit(observation, source, |source| {
-                    SourceAthleteObservation::new(
-                        source.namespace,
-                        source.id,
-                        &row.source_key,
-                        name,
-                        self.origin.observed_on,
-                    )
-                    .with_gender(row.gender)
-                })?;
-        let id = CanonicalAthlete::mint(row.school, name, grad_year, row.gender, &source);
-        let key = id.as_str().to_string();
-        if let Some(athlete) = self.accumulated.athletes.get_mut(&key) {
-            push_once(&mut athlete.observed_grades, observation);
-            push_once(&mut athlete.sports, row.sport);
-            for identity in identities {
-                athlete.add_identity(identity);
-            }
-            push_once(&mut athlete.evidence, evidence);
-            return Some((athlete.id.clone(), source));
-        }
-        let mut athlete =
-            CanonicalAthlete::new(row.school, name, grad_year, row.gender, source.clone());
-        athlete.observed_grades.push(observation);
-        athlete.sports.push(row.sport);
-        for identity in identities {
-            athlete.add_identity(identity);
-        }
-        athlete.evidence.push(evidence);
-        let subject = (athlete.id.clone(), source);
-        self.accumulated.athletes.insert(key, athlete);
-        Some(subject)
-    }
-
     pub(super) fn performance(
         &mut self,
         subject: (AthleteId, SourceIdentity),
@@ -109,7 +52,7 @@ impl<'a> Mapper<'a> {
         let id = CanonicalPerformance::mint(
             &subject.0,
             &context.meet.id,
-            &context.event.kind,
+            &context.event.id,
             row.date,
             &row.source_key,
         );
@@ -155,39 +98,6 @@ fn team_identities(reference: Option<&TeamRef>) -> Vec<SourceIdentity> {
         ));
     }
     if let Some(id) = team.athletic_live_id {
-        identities.push(SourceIdentity::new(
-            SourceNamespace::AthleticNet {
-                kind: "live".to_string(),
-            },
-            id.to_string(),
-        ));
-    }
-    identities
-}
-
-fn athlete_identities(
-    net_id: Option<u64>,
-    live_id: Option<u64>,
-    entry: Option<&str>,
-) -> Vec<SourceIdentity> {
-    if let Some(entry) = entry {
-        return vec![SourceIdentity::new(
-            SourceNamespace::AssociationAthlete {
-                association: ASSOCIATION.to_string(),
-            },
-            entry,
-        )];
-    }
-    let mut identities = Vec::new();
-    if let Some(id) = net_id {
-        identities.push(SourceIdentity::new(
-            SourceNamespace::AthleticNet {
-                kind: "athlete".to_string(),
-            },
-            id.to_string(),
-        ));
-    }
-    if let Some(id) = live_id {
         identities.push(SourceIdentity::new(
             SourceNamespace::AthleticNet {
                 kind: "live".to_string(),

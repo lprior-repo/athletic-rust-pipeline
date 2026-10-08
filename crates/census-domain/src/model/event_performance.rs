@@ -6,6 +6,8 @@ pub struct CanonicalEvent {
     pub meet: MeetId,
     pub kind: EventKind,
     pub gender: Gender,
+    #[serde(default)]
+    pub specification: EventSpecification,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub division: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -18,38 +20,22 @@ pub struct CanonicalEvent {
 
 impl CanonicalEvent {
     pub fn new(
-        meet: &MeetId,
-        kind: EventKind,
-        gender: Gender,
-        division: Option<&str>,
-        round: Option<&str>,
-    ) -> Self {
-        let key = kind.stable_key();
-        let id = Id::mint(
-            "evt",
-            &[
-                meet.as_str(),
-                key.as_ref(),
-                match gender {
-                    Gender::Boys => "m",
-                    Gender::Girls => "f",
-                    _ => "u",
-                },
-                division.map_or("", |value| value),
-                round.map_or("", |value| value),
-            ],
-        );
-        Self {
+        identity: EventIdentity<'_>,
+        specification: EventSpecification,
+    ) -> Result<Self, EventIdentityError> {
+        let id = identity.mint(&specification)?;
+        Ok(Self {
             id,
-            meet: meet.clone(),
-            kind,
-            gender,
-            division: division.map(str::to_string),
-            round: round.map(str::to_string),
+            meet: identity.meet.clone(),
+            kind: identity.kind,
+            gender: identity.gender,
+            specification,
+            division: identity.division.map(str::to_string),
+            round: identity.round.map(str::to_string),
             source_labels: Vec::new(),
             evidence: Vec::new(),
             retained_conflicts: Vec::new(),
-        }
+        })
     }
 
     pub fn resolved_source_kind(&self) -> Option<EventKind> {
@@ -89,7 +75,7 @@ impl CanonicalEvent {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Mark {
-    TimeSeconds(CentiSeconds),
+    TimeSeconds(ExactSeconds),
     DistanceMetres(CentiMetres),
     FieldImperial {
         feet_mark: String,
@@ -179,90 +165,35 @@ fn mark_kind_compatible(kind: &EventKind, mark: &Mark) -> bool {
     }
 }
 
-use super::dates::valid_date;
-
 impl CanonicalPerformance {
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
-        athlete: &AthleteId,
-        team: &TeamId,
-        event: &EventId,
-        event_kind: &EventKind,
-        meet: &MeetId,
-        date: &str,
-        mark: Mark,
-        source_key: &str,
-        wind_mps: Option<f64>,
-        place: Option<u16>,
-    ) -> Self {
-        debug_assert!(!date.is_empty(), "performance date must not be empty");
-        debug_assert!(
-            valid_date(date),
-            "performance date {date:?} is not a valid ISO date or year"
-        );
-        let id = CanonicalPerformance::mint(athlete, meet, event_kind, date, source_key);
-        Self {
-            id,
-            athlete: athlete.clone(),
-            team: team.clone(),
-            event: event.clone(),
-            meet: meet.clone(),
-            date: date.to_string(),
-            mark,
-            wind_mps,
-            place,
-            heat: None,
-            round: None,
-            timing: None,
-            observed_grade: None,
-            evidence: Vec::new(),
-            source_key: source_key.to_string(),
-            source_athlete: None,
-            retained_conflicts: Vec::new(),
-        }
+        identity: PerformanceIdentity<'_>,
+        result: PerformanceResult<'_>,
+    ) -> Result<Self, PerformanceError> {
+        identity.validate()?;
+        Ok(Self::from_identity(identity, result))
     }
 
-    #[allow(clippy::too_many_arguments)]
-    pub fn new_checked(
-        athlete: &AthleteId,
-        event_kind: &EventKind,
-        team: &TeamId,
-        event: &EventId,
-        meet: &MeetId,
-        date: &str,
-        mark: Mark,
-        source_key: &str,
-        wind_mps: Option<f64>,
-        place: Option<u16>,
-    ) -> Result<Self, String> {
-        if date.is_empty() {
-            return Err("performance date must not be empty".to_string());
-        }
-        if !valid_date(date) {
-            return Err(format!(
-                "performance date {date:?} is not a valid ISO date or year"
-            ));
-        }
-        let id = CanonicalPerformance::mint(athlete, meet, event_kind, date, source_key);
-        Ok(Self {
-            id,
-            athlete: athlete.clone(),
-            team: team.clone(),
-            event: event.clone(),
-            meet: meet.clone(),
-            date: date.to_string(),
-            mark,
-            wind_mps,
-            place,
+    fn from_identity(identity: PerformanceIdentity<'_>, result: PerformanceResult<'_>) -> Self {
+        Self {
+            id: identity.mint(),
+            athlete: identity.athlete.clone(),
+            team: result.team.clone(),
+            event: identity.event.clone(),
+            meet: identity.meet.clone(),
+            date: identity.date.to_owned(),
+            mark: result.mark,
+            wind_mps: result.wind_mps,
+            place: result.place,
             heat: None,
             round: None,
             timing: None,
             observed_grade: None,
             evidence: Vec::new(),
-            source_key: source_key.to_string(),
+            source_key: identity.source_key.to_owned(),
             source_athlete: None,
             retained_conflicts: Vec::new(),
-        })
+        }
     }
 
     pub fn mark_compatible(&self, kind: &EventKind) -> bool {
@@ -272,17 +203,16 @@ impl CanonicalPerformance {
     pub fn mint(
         athlete: &AthleteId,
         meet: &MeetId,
-        kind: &EventKind,
+        event: &EventId,
         date: &str,
         source_key: &str,
     ) -> PerformanceId {
-        let kind_key = kind.stable_key();
         Id::mint(
             "perf",
             &[
                 athlete.as_str(),
                 meet.as_str(),
-                kind_key.as_ref(),
+                event.as_str(),
                 date,
                 source_key,
             ],

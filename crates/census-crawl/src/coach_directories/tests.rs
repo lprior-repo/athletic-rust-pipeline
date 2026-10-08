@@ -593,6 +593,7 @@ fn collect_stores_the_requested_school_and_its_coach_rows_from_the_cache() -> Te
         refresh: false,
         school_year: census_domain::model::SchoolYear::new(2026).ok_or("valid fixture school year")?,
         observed_on: OBSERVED_ON.to_string(),
+        performance_as_of: chrono::NaiveDate::parse_from_str("2026-09-29", "%Y-%m-%d")?,
         recording: None,
     };
     let options = Options {

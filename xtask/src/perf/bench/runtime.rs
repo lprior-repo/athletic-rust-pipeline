@@ -50,12 +50,7 @@ pub(super) fn compile(name: &str) -> Result<PathBuf> {
 }
 
 pub(super) fn measure(executable: &Path, directory: &Path) -> Result<(String, Option<u64>)> {
-    let time = Path::new("/usr/bin/time");
-    let time = time.is_file().then_some(time);
-    if time.is_none() {
-        eprintln!("GNU time is absent; peak RSS is unavailable, not zero");
-    }
-    measure_with_time(executable, directory, time)
+    measure_with_time(executable, directory, Some(Path::new("/usr/bin/time")))
 }
 
 pub(super) fn measure_with_time(
@@ -63,36 +58,34 @@ pub(super) fn measure_with_time(
     directory: &Path,
     time: Option<&Path>,
 ) -> Result<(String, Option<u64>)> {
+    let time = time.context("GNU time is required for peak RSS measurement")?;
     let stdout_path = directory.join("stdout");
     let rss_path = directory.join("rss");
-    let mut command = match time {
-        Some(time) => {
-            let mut command = Command::new(time);
-            command.args(["-v", "-o"]).arg(&rss_path).arg(executable);
-            command
-        }
-        None => Command::new(executable),
-    };
+    let mut command = Command::new(time);
+    command.args(["-v", "-o"]).arg(&rss_path).arg(executable);
+    run_timing(&mut command, directory, &stdout_path)?;
+    let stdout = std::fs::read_to_string(stdout_path).context("reading benchmark output")?;
+    let rss = parse_rss(&std::fs::read_to_string(rss_path).context("reading GNU time output")?)?;
+    Ok((stdout, Some(rss)))
+}
+
+fn run_timing(command: &mut Command, directory: &Path, stdout_path: &Path) -> Result<()> {
     let status = command
         .args(["--bench", "--output-format", "bencher", "--noplot"])
         .env("CRITERION_HOME", directory.join("criterion"))
         .env("LC_ALL", "C")
         .current_dir(crate::paths::repo_root())
-        .stdout(Stdio::from(File::create(&stdout_path)?))
+        .stdout(Stdio::from(File::create(stdout_path)?))
         .stderr(Stdio::inherit())
         .status()
-        .with_context(|| format!("running benchmark {}", executable.display()))?;
-    let stdout = std::fs::read_to_string(stdout_path).context("reading benchmark output")?;
+        .context("running benchmark with required GNU time")?;
     if !status.success() {
         bail!(
-            "benchmark {} exited with {status}: {stdout}",
-            executable.display()
+            "benchmark exited with {status}: {}",
+            std::fs::read_to_string(stdout_path)?
         );
     }
-    let rss = time
-        .map(|_| parse_rss(&std::fs::read_to_string(rss_path).context("reading GNU time output")?))
-        .transpose()?;
-    Ok((stdout, rss))
+    Ok(())
 }
 
 pub(super) fn parse_rss(output: &str) -> Result<u64> {

@@ -70,6 +70,8 @@ fn an_unknown_profile_school_does_not_report_a_missing_target_state() -> TestRes
         AbsorbContext {
             source: &source,
             observed_on: "2026-09-30",
+            performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 9, 30)
+                .ok_or("invalid fixture cutoff")?,
             index: &SchoolIndex::from_schools(&[]),
             resolved: &mut HashMap::new(),
             stats: &mut stats,
@@ -104,6 +106,8 @@ fn missing_target_state_counts_each_withheld_result_not_the_profile() -> TestRes
             AbsorbContext {
                 source: &source,
                 observed_on: "2026-10-01",
+                performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 10, 1)
+                    .ok_or("invalid fixture cutoff")?,
                 index: &SchoolIndex::from_schools(&[]),
                 resolved: &mut HashMap::new(),
                 stats: &mut stats,

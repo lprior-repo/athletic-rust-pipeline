@@ -1,12 +1,13 @@
 use super::nd::{parse_nd_school_refs, NdOffering, NdSchoolRef, NdStaffRole};
-use super::nd_walk::NdWalk;
 use super::parse::{is_office_role, strip_honorific};
-use super::{observed_on, Options, ND_ADAPTER_ID, ND_SCHOOLS_PHASE, ND_SCHOOLS_URL};
+use super::{Options, ND_ADAPTER_ID, ND_SCHOOLS_URL};
+use crate::directory::acquisition::{fail, owe, text};
 use crate::net::FetchOptions;
-use crate::{AdapterContext, AdapterReport, CrawlResult};
+use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_domain::model::{
     CanonicalCoach, CoachId, CoachRole, Evidence, Gender, SchoolId, SourceRef, Sport,
 };
+use futures::{stream, StreamExt, TryStreamExt};
 use std::collections::HashSet;
 
 pub fn parse_nd_sport(label: &str) -> Option<(Sport, Gender)> {
@@ -110,22 +111,28 @@ pub(super) async fn collect_north_dakota(
     let Some(members) = nd_members(ctx, fetch, report).await? else {
         return Ok((0, 0));
     };
-    let mut walk = NdWalk::new(observed_on(ctx, options));
-    let journal = ctx.store.journal_keys(ND_SCHOOLS_PHASE)?;
-
-    for member in &members {
-        if walk.limit_reached(options.limit) {
-            break;
-        }
-        let key = format!("ND:{}", member.id);
-        if journal.contains(&key) {
-            walk.note_resumed();
-            continue;
-        }
-        walk.visit(ctx, fetch, report, member).await?;
-    }
-
-    walk.publish(report, members.len())
+    let result = stream::iter(members.iter().enumerate())
+        .map(Ok::<_, CrawlError>)
+        .try_fold(
+            (report, 0usize, 0usize),
+            |(report, schools, coaches), (ordinal, member)| async move {
+                if options.limit.is_some_and(|limit| ordinal >= limit) {
+                    owe(report, member.url())?;
+                    return Ok((report, schools, coaches));
+                }
+                let written = super::nd_walk::visit(ctx, fetch, report, member).await?;
+                Ok((
+                    report,
+                    schools.saturating_add(written.0),
+                    coaches.saturating_add(written.1),
+                ))
+            },
+        )
+        .await?;
+    Ok((
+        u64::try_from(result.1).map_or(u64::MAX, |value| value),
+        u64::try_from(result.2).map_or(u64::MAX, |value| value),
+    ))
 }
 
 async fn nd_members(
@@ -136,18 +143,19 @@ async fn nd_members(
     let index = match ctx.fetcher.get(ND_SCHOOLS_URL, fetch).await {
         Ok(outcome) => outcome,
         Err(error) => {
-            report.errors = report.errors.saturating_add(1);
-            report.note(format!("ndhsaa: {ND_SCHOOLS_URL} failed: {error}"));
+            fail(report, ND_SCHOOLS_URL, error)?;
             return Ok(None);
         }
     };
-    let members = parse_nd_school_refs(&index.text())?;
+    let members = match text(&index).and_then(parse_nd_school_refs) {
+        Ok(members) => members,
+        Err(error) => {
+            fail(report, ND_SCHOOLS_URL, error)?;
+            return Ok(None);
+        }
+    };
     if members.is_empty() {
-        report.errors = report.errors.saturating_add(1);
-        report.note(format!(
-            "ndhsaa: {ND_SCHOOLS_URL} carried no member-school links"
-        ));
-        return Ok(None);
+        owe(report, ND_SCHOOLS_URL)?;
     }
     Ok(Some(members))
 }

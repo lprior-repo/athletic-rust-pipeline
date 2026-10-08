@@ -1,206 +1,190 @@
+use super::super::map::{capture_note, SchoolExtract};
+use super::super::ASSOCIATION;
 use super::fetch::{PageFailure, SchoolPages};
-use super::{SearchResult, Tally};
+use super::{counter_error, owe, SearchResult, Tally};
 use crate::net::FetchOutcome;
-use crate::recording::RowBatch;
-use crate::{school_observations_of, AdapterContext, AdapterReport, CrawlResult};
+use crate::{school_observations_of, AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_domain::model::{CanonicalCoach, CoachRole, Id, SourceNamespace};
 use census_store::Table;
 
-use super::super::map::{capture_note, SchoolExtract};
-use super::super::ASSOCIATION;
-
 pub(super) const CAPTURE_JOURNAL: &str = "ohsaa_captures_v1";
 const OUTCOME_JOURNAL: &str = "ohsaa_school_outcomes_v1";
+const PHASE: &str = "ohsaa_projection_v3";
+
+pub(super) struct Projection<'a> {
+    pub(super) school: &'a SearchResult,
+    pub(super) pages: &'a SchoolPages,
+    pub(super) extract: &'a mut SchoolExtract,
+}
 
 pub(super) fn emit_school(
     ctx: &AdapterContext<'_>,
-    sr: &SearchResult,
-    pages: &SchoolPages,
-    extract: &SchoolExtract,
+    mut projection: Projection<'_>,
     evaluated_on: &str,
     report: &mut AdapterReport,
     tally: &mut Tally,
 ) -> CrawlResult<()> {
-    let school_key = format!("OH:{}", sr.ohsaa_id);
-    let sports_key = capture_key(sr, "sports", &pages.sports);
-    let ad_key = pages.ad.as_ref().ok().map(|ad| capture_key(sr, "ad", ad));
-    let completion = pages
+    if !super::appointments::current(&projection.pages.sports, ctx.school_year) {
+        owe(report, &projection.pages.sports.url)?;
+    }
+    if projection
+        .pages
         .ad
         .as_ref()
-        .ok()
-        .map(|ad| completion_key(sr, &pages.sports, ad));
-    let new_completion = completion
-        .as_deref()
-        .filter(|key| !tally.completed.contains(*key));
-    let (directors, sports_coaches) = split_coaches(&extract.coaches);
-    let sports_new = !tally.captures.contains(&sports_key);
-    let ad_new = ad_key
-        .as_ref()
-        .is_some_and(|key| !tally.captures.contains(key));
-    let mut batch = ctx.write_batch();
-    if sports_new {
-        stage_school(
-            &mut batch,
-            &school_key,
-            &sports_key,
-            &pages.sports,
-            extract,
-            sports_coaches,
-        )?;
+        .is_ok_and(|capture| !super::appointments::current(capture, ctx.school_year))
+    {
+        owe(report, &projection.school.ad_url())?;
     }
-    if let (true, Ok(ad), Some(key)) = (ad_new, &pages.ad, &ad_key) {
-        stage_capture(&mut batch, &school_key, key, ad, directors)?;
+    if ctx.append_row_once(PHASE, Table::Schools, &projection.extract.school)? {
+        report.rows = report.rows.checked_add(1).ok_or_else(counter_error)?;
     }
-    stage_outcome(&mut batch, sr, pages, extract, evaluated_on, new_completion)?;
-    batch.commit()?;
-    if let Some(key) = completion {
-        tally.completed.insert(key);
-    }
-    if sports_new {
-        tally.captures.insert(sports_key);
-        report.rows = report.rows.saturating_add(1);
-        count_coaches(tally, sports_coaches);
-    }
-    if let (true, Some(key)) = (ad_new, ad_key) {
-        tally.captures.insert(key);
-        count_coaches(tally, directors);
-    }
-    Ok(())
-}
-
-fn split_coaches(coaches: &[CanonicalCoach]) -> (&[CanonicalCoach], &[CanonicalCoach]) {
-    match coaches.split_first() {
-        Some((director, sports)) if director.role == CoachRole::AthleticDirector => {
-            (std::slice::from_ref(director), sports)
-        }
-        _ => (&[], coaches),
-    }
-}
-
-fn capture_key(sr: &SearchResult, page: &str, capture: &FetchOutcome) -> String {
-    Id::<()>::mint(
-        "ohsaa_capture",
-        &[
-            &sr.ohsaa_id,
-            &sr.name,
-            &sr.city,
-            page,
-            &capture.url,
-            &capture.method,
-            &capture.content_digest,
-        ],
-    )
-    .to_string()
-}
-
-fn completion_key(sr: &SearchResult, sports: &FetchOutcome, ad: &FetchOutcome) -> String {
-    let projection = Id::<()>::mint(
-        "ohsaa_projection_v2",
-        &[
-            &sports.url,
-            &sports.content_digest,
-            &ad.url,
-            &ad.content_digest,
-        ],
-    );
-    format!("OH:{}:{projection}", sr.ohsaa_id)
-}
-
-fn stage_school(
-    batch: &mut RowBatch<'_>,
-    school_key: &str,
-    sports_key: &str,
-    sports: &FetchOutcome,
-    extract: &SchoolExtract,
-    coaches: &[CanonicalCoach],
-) -> CrawlResult<()> {
-    let schools = std::slice::from_ref(&extract.school);
-    let observations = school_observations_of(
+    school_observations_of(
         &SourceNamespace::association_school(ASSOCIATION),
-        schools,
-        &sports.fetched_at,
-    );
-    batch.append_many(Table::Schools, schools)?;
-    batch.append_many(Table::SourceObservations, &observations)?;
-    stage_capture(batch, school_key, sports_key, sports, coaches)
+        std::slice::from_ref(&projection.extract.school),
+        &projection.pages.sports.fetched_at,
+    )
+    .iter()
+    .try_for_each(|observation| {
+        ctx.append_row_once(PHASE, Table::SourceObservations, observation)
+            .map(|_| ())
+    })?;
+    persist_coaches(ctx, &mut projection, report, tally)?;
+    persist_capture(ctx, projection.school, "sports", &projection.pages.sports)?;
+    if let Ok(ad) = &projection.pages.ad {
+        persist_capture(ctx, projection.school, "ad", ad)?;
+    }
+    persist_outcome(ctx, &projection, evaluated_on, report)
 }
 
-fn stage_capture(
-    batch: &mut RowBatch<'_>,
-    school_key: &str,
-    key: &str,
-    capture: &FetchOutcome,
-    coaches: &[CanonicalCoach],
+fn persist_coaches(
+    ctx: &AdapterContext<'_>,
+    projection: &mut Projection<'_>,
+    report: &mut AdapterReport,
+    tally: &mut Tally,
 ) -> CrawlResult<()> {
-    batch.append_many(Table::Coaches, coaches)?;
-    batch.journal_done(
-        CAPTURE_JOURNAL,
-        key,
-        &serde_json::json!({
-            "school_key": school_key,
-            "capture": capture_note(capture),
-            "coach_rows": coaches.len(),
-        }),
-    )?;
-    coaches.iter().try_for_each(|coach| {
-        batch.journal_done(
-            "ohsaa_coaches",
-            &format!("{key}:{}", coach.id),
-            &serde_json::json!({
-                "school_key": school_key,
-                "coach_name": coach.name,
-                "sport": coach.sport,
-                "gender": coach.gender,
-                "role": coach.role,
-                "email": coach.has_published_email(),
-                "capture": capture_note(capture),
-            }),
-        )
+    let pages = projection.pages;
+    projection.extract.coaches.iter_mut().try_for_each(|coach| {
+        let capture = if coach.role == CoachRole::AthleticDirector {
+            pages.ad.as_ref().map_err(|_| CrawlError::Invariant {
+                detail: "director without owned capture".to_owned(),
+            })?
+        } else {
+            &pages.sports
+        };
+        if let Err(error) = super::appointments::qualify(coach, capture) {
+            super::fail(report, &capture.url, &error.to_string())?;
+        }
+        if ctx.append_row_once(PHASE, Table::Coaches, coach)? {
+            count_coach(tally, coach)?;
+        }
+        Ok::<_, CrawlError>(())
     })
 }
 
-fn count_coaches(tally: &mut Tally, coaches: &[CanonicalCoach]) {
-    tally.coach_rows = tally.coach_rows.saturating_add(coaches.len());
-    let emails = coaches
-        .iter()
-        .filter(|coach| coach.has_published_email())
-        .fold(0_u64, |count, _| count.saturating_add(1));
-    tally.with_email = tally.with_email.saturating_add(emails);
+fn persist_capture(
+    ctx: &AdapterContext<'_>,
+    school: &SearchResult,
+    page: &str,
+    capture: &FetchOutcome,
+) -> CrawlResult<()> {
+    let key = Id::<()>::mint(
+        PHASE,
+        &[
+            &school.ohsaa_id,
+            &school.name,
+            &school.city,
+            page,
+            &capture.url,
+            &capture.content_digest,
+            &capture.fetched_at,
+        ],
+    );
+    let operation = format!("{PHASE}:capture:{key}");
+    if ctx.effect_is_committed(&operation, &capture.content_digest)? {
+        return Ok(());
+    }
+    let mut batch = ctx.write_batch();
+    batch.journal_done(CAPTURE_JOURNAL, key.as_str(), &serde_json::json!({"school_key":format!("OH:{}", school.ohsaa_id),"capture":capture_note(capture)}))?;
+    batch.commit_once(&operation, &capture.content_digest)?;
+    Ok(())
 }
 
-fn stage_outcome(
-    batch: &mut RowBatch<'_>,
-    sr: &SearchResult,
-    pages: &SchoolPages,
-    extract: &SchoolExtract,
+fn count_coach(tally: &mut Tally, coach: &CanonicalCoach) -> CrawlResult<()> {
+    tally.coach_rows = tally.coach_rows.checked_add(1).ok_or_else(counter_error)?;
+    tally.with_email = tally
+        .with_email
+        .checked_add(u64::from(coach.has_published_email()))
+        .ok_or_else(counter_error)?;
+    Ok(())
+}
+
+fn persist_outcome(
+    ctx: &AdapterContext<'_>,
+    projection: &Projection<'_>,
     evaluated_on: &str,
-    completion: Option<&str>,
+    report: &AdapterReport,
 ) -> CrawlResult<()> {
-    let key = format!("OH:{}", sr.ohsaa_id);
-    let payload = match &pages.ad {
-        Ok(ad) => serde_json::json!({
-            "ohsaa_id": sr.ohsaa_id,
-            "city": sr.city,
-            "coaches": extract.coaches.len(),
-            "state": "complete",
-            "pending_pages": [],
-            "sports_capture": capture_note(&pages.sports),
-            "ad_capture": capture_note(ad),
-            "evaluated_on": evaluated_on,
-        }),
-        Err(failure) => serde_json::json!({
-            "ohsaa_id": sr.ohsaa_id,
-            "state": "partial",
-            "pending_pages": ["ad"],
-            "sports_capture": capture_note(&pages.sports),
-            "failure": failure.payload(),
-            "evaluated_on": evaluated_on,
-        }),
-    };
-    if let Some(key) = completion {
-        batch.journal_done("ohsaa_schools", key, &payload)?;
+    let mut pending = Vec::new();
+    if !super::appointments::current(&projection.pages.sports, ctx.school_year)
+        || report.unfinished.contains(&projection.school.sports_url())
+    {
+        pending.push(projection.school.sports_url());
     }
-    batch.journal_done(OUTCOME_JOURNAL, &key, &payload)
+    if projection.pages.ad.as_ref().map_or(true, |capture| {
+        !super::appointments::current(capture, ctx.school_year)
+    }) || report.unfinished.contains(&projection.school.ad_url())
+    {
+        pending.push(projection.school.ad_url());
+    }
+    let failure = projection.pages.ad.as_ref().err().map(PageFailure::payload);
+    let payload = serde_json::json!({"ohsaa_id":projection.school.ohsaa_id,
+        "state":if pending.is_empty() {"complete"} else {"partial"}, "pending_pages":pending,
+        "sports_capture":capture_note(&projection.pages.sports),"ad_capture":projection.pages.ad.as_ref().ok().map(capture_note),
+        "failure":failure,"evaluated_on":evaluated_on,"school_year":ctx.school_year,"performance_as_of":ctx.performance_as_of});
+    if pending.is_empty() {
+        persist_completion(ctx, projection, &payload)?;
+    }
+    let mut batch = ctx.write_batch();
+    batch.journal_done(
+        OUTCOME_JOURNAL,
+        &format!("OH:{}", projection.school.ohsaa_id),
+        &payload,
+    )?;
+    batch.commit()
+}
+
+fn persist_completion(
+    ctx: &AdapterContext<'_>,
+    projection: &Projection<'_>,
+    payload: &serde_json::Value,
+) -> CrawlResult<()> {
+    let binding = (
+        &projection.school.ohsaa_id,
+        &projection.pages.sports.content_digest,
+        &projection.pages.sports.fetched_at,
+        projection
+            .pages
+            .ad
+            .as_ref()
+            .ok()
+            .map(|capture| (&capture.content_digest, &capture.fetched_at)),
+        ctx.school_year,
+    );
+    let digest = census_domain::model::serialized_digest(&binding).map_err(|source| {
+        CrawlError::Canonical {
+            table: "ohsaa_schools".to_owned(),
+            source,
+        }
+    })?;
+    let key = format!("OH:{}:{digest}", projection.school.ohsaa_id);
+    let operation = format!("{PHASE}:complete:{digest}");
+    if ctx.effect_is_committed(&operation, &digest)? {
+        return Ok(());
+    }
+    let mut batch = ctx.write_batch();
+    batch.journal_done("ohsaa_schools", &key, payload)?;
+    batch.commit_once(&operation, &digest)?;
+    Ok(())
 }
 
 pub(super) fn persist_failure(
@@ -215,13 +199,8 @@ pub(super) fn persist_failure(
         OUTCOME_JOURNAL,
         &format!("OH:{}", sr.ohsaa_id),
         &serde_json::json!({
-            "ohsaa_id": sr.ohsaa_id,
-            "state": "failed",
-            "pending_pages": ["sports", "ad"],
-            "failed_page": page,
-            "failure": failure.payload(),
-            "evaluated_on": evaluated_on,
-        }),
+        "ohsaa_id":sr.ohsaa_id,"state":"failed","pending_pages":[sr.sports_url(),sr.ad_url()],
+        "failed_page":page,"failure":failure.payload(),"evaluated_on":evaluated_on}),
     )?;
     batch.commit()
 }

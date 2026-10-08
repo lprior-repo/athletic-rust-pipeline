@@ -16,6 +16,7 @@ impl Season {
             Sport::CrossCountry => 10,
             Sport::IndoorTrack => 3,
             Sport::OutdoorTrack => 5,
+            Sport::Unknown => return None,
         };
         SchoolYear::containing(self.year, month)
     }

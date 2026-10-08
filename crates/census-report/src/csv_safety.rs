@@ -43,17 +43,7 @@ pub(crate) fn serialize_text<S: Serializer>(value: &str, serializer: S) -> Resul
     serializer.serialize_str(&protect(value).map_err(S::Error::custom)?)
 }
 
-pub(crate) fn serialize_optional_text<S: Serializer>(
-    value: &Option<&str>,
-    serializer: S,
-) -> Result<S::Ok, S::Error> {
-    match value {
-        Some(value) => serializer.serialize_some(&Protected(value)),
-        None => serializer.serialize_none(),
-    }
-}
-
-struct Protected<'a>(&'a str);
+pub(crate) struct Protected<'a>(pub(crate) &'a str);
 impl Serialize for Protected<'_> {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serialize_text(self.0, serializer)

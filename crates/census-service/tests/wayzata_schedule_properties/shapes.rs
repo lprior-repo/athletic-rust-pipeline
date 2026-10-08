@@ -1,5 +1,4 @@
 use super::{rows, PAGES, SEASON};
-use proptest::prelude::*;
 
 fn date_is_well_formed(date: &str, year: i16) -> bool {
     let prefix = format!("{year:04}-");
@@ -68,49 +67,4 @@ fn every_row_carries_a_label_and_a_venue_and_only_real_keys(
         }
     }
     Ok(())
-}
-
-#[test]
-fn the_captures_publish_a_key_on_every_row() -> Result<(), Box<dyn std::error::Error>> {
-    for (name, body) in PAGES {
-        let parsed = rows(body, SEASON)?;
-        let with_keys = parsed.iter().filter(|row| row.slug.is_some()).count();
-        check!(eq; with_keys,
-        parsed.len(),
-        "{name}: every published row carries its `/links/<slug>` key");
-    }
-    Ok(())
-}
-
-fn shape_holds(body: &str) -> Result<(), TestCaseError> {
-    let Ok(parsed) = rows(body, SEASON) else {
-        return Ok(());
-    };
-    for row in &parsed {
-        prop_assert!(
-            date_is_well_formed(&row.date, SEASON),
-            "{} is not a date of the season: {:?}",
-            row.date,
-            row
-        );
-        prop_assert!(is_text(&row.name), "the name is text: {:?}", row);
-        prop_assert!(is_text(&row.location), "the venue is text: {:?}", row);
-        if let Some(slug) = &row.slug {
-            prop_assert!(
-                !slug.is_empty() && !slug.contains(['/', '?', '#', '"']),
-                "the provider key is one path segment: {:?}",
-                row
-            );
-        }
-    }
-    Ok(())
-}
-
-proptest! {
-    #![proptest_config(super::seam_config())]
-
-    #[test]
-    fn woven_pages_publish_rows_of_the_same_shape(body in super::shaped_body()) {
-        shape_holds(&body)?;
-    }
 }

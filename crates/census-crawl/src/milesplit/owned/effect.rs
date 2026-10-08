@@ -44,7 +44,13 @@ pub(crate) async fn read_owned_meet(
         }
     };
     let outcome = OwnedMeetOutcome { capture, verdict };
-    record_outcome(ctx, reference, &outcome).map(|_| outcome)
+    match record_outcome(ctx, reference, &outcome) {
+        Ok(()) => Ok(outcome),
+        Err(error @ CrawlError::Resource { .. }) => {
+            retain_limited_capture(ctx, reference, outcome, &error)
+        }
+        Err(error) => Err(error),
+    }
 }
 
 fn content_key(reference: &ResultSetRef, capture: &FetchOutcome) -> String {
@@ -60,6 +66,68 @@ fn record_outcome(
     let manifest = acquisition_manifest_key(owned_meet_id(reference)?, &outcome.capture)?;
     capture::archive(ctx, &key, &manifest, &outcome.capture)?;
     interpretation::record(ctx, &key, &manifest, outcome)
+}
+
+fn retain_limited_capture(
+    ctx: &AdapterContext<'_>,
+    reference: &ResultSetRef,
+    mut outcome: OwnedMeetOutcome,
+    error: &CrawlError,
+) -> CrawlResult<OwnedMeetOutcome> {
+    let archived = immutable_body(ctx, &outcome.capture)?;
+    let mut detail = format!(
+        "{error}; owned capture {} remains unfinished; immutable bytes: {}",
+        outcome.capture.content_digest,
+        archived.display()
+    );
+    let payload = serde_json::json!({
+        "capture": outcome.capture, "disposition": "resource_limit", "unfinished": true,
+        "capture_available": true, "immutable_body": archived, "unfinished_locator": "data",
+        "resource_error": error.to_string(),
+    });
+    let key = format!(
+        "partial/resource/{}/{}",
+        reference.meet_id,
+        journal::digest(&payload)?
+    );
+    let mut batch = ctx.write_batch();
+    let staged = journal::stage_capture(ctx, &mut batch, OWNED_MEET_PHASE, &key, &payload)
+        .and_then(|changed| if changed { batch.commit() } else { Ok(()) });
+    match staged {
+        Ok(()) => {}
+        Err(CrawlError::Resource { .. }) => detail.push_str("; recording cannot retain the partial receipt; immutable capture locator is report-only"),
+        Err(error) => return Err(error),
+    }
+    outcome.verdict = OwnedMeetVerdict::Malformed { detail };
+    Ok(outcome)
+}
+
+fn immutable_body(
+    ctx: &AdapterContext<'_>,
+    capture: &FetchOutcome,
+) -> CrawlResult<std::path::PathBuf> {
+    let path = ctx
+        .fetcher
+        .cache_dir()
+        .join("archive")
+        .join("bodies")
+        .join(format!("{}.body", capture.content_digest));
+    let metadata = std::fs::metadata(&path).map_err(|source| CrawlError::Io {
+        path: path.clone(),
+        source,
+    })?;
+    let bytes = u64::try_from(capture.bytes).map_err(|_| CrawlError::Arithmetic {
+        detail: "owned capture length exceeds archive metadata range".into(),
+    })?;
+    if !metadata.is_file() || metadata.len() != bytes {
+        return Err(CrawlError::Invariant {
+            detail: format!(
+                "immutable owned capture {} is unavailable or has the wrong length",
+                path.display()
+            ),
+        });
+    }
+    Ok(path)
 }
 
 fn record_failure(

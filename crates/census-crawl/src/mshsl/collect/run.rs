@@ -1,258 +1,185 @@
-use crate::mshsl::map::{ad_coaches, ad_role, provider_key, school_domains, school_entities};
+use super::fetch_options;
+use crate::directory::acquisition::{
+    fail, owe, publish as persist, publish_school as school, text,
+};
+use crate::mshsl::map::{ad_coaches, provider_key, school_domains, school_entities};
 use crate::mshsl::parse::{
     listing_page_url, parse_next_listing_page, parse_school_detail, parse_school_list,
-    school_page_url, SchoolDetail, SchoolListRow,
+    school_page_url, SchoolListRow,
 };
 use crate::mshsl::{Options, MAX_LISTING_PAGES, SOURCE_ID};
-use crate::net::{FetchOptions, FetchStats};
 use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
-use census_domain::model::{
-    normalize_name, CanonicalCoach, CanonicalSchool, SchoolId, SourceNamespace,
-};
+use census_domain::model::{normalize_name, SourceNamespace};
 use census_domain::UsJurisdiction;
-use census_store::{StoreBatch, Table};
-use serde_json::json;
-use std::collections::HashSet;
-
-use super::{collect_team_coaches, count, fetch_options};
+use census_store::Table;
+use futures::{stream, StreamExt, TryStreamExt};
 
 pub(super) struct MshslRun<'a> {
-    ctx: &'a AdapterContext<'a>,
-    options: &'a Options,
-    report: AdapterReport,
-    wanted: HashSet<String>,
-    done: HashSet<String>,
-    fetch: FetchOptions,
+    pub(super) ctx: &'a AdapterContext<'a>,
+    pub(super) options: &'a Options,
+    pub(super) report: AdapterReport,
+    pub(super) selected: bool,
+    page: Option<usize>,
     processed: usize,
-    skipped: usize,
-    unparsed: usize,
-    ad_rows: usize,
-    coach_rows: usize,
-    with_email: u64,
-    office_roles: usize,
 }
 
 impl<'a> MshslRun<'a> {
-    pub(super) fn start(
-        ctx: &'a AdapterContext<'a>,
-        options: &'a Options,
-    ) -> CrawlResult<Option<Self>> {
-        if !options.states.is_empty() && !options.states.contains(&UsJurisdiction::Minnesota) {
-            return Ok(None);
-        }
-        let wanted = options
-            .school_names
-            .iter()
-            .map(|name| normalize_name(name))
-            .filter(|name| !name.is_empty())
-            .collect();
-        Ok(Some(Self {
+    pub(super) fn start(ctx: &'a AdapterContext<'a>, options: &'a Options) -> Self {
+        let selected =
+            options.states.is_empty() || options.states.contains(&UsJurisdiction::Minnesota);
+        Self {
             ctx,
             options,
             report: AdapterReport::new(SOURCE_ID, "schools"),
-            wanted,
-            done: ctx.store.journal_keys("mshsl_schools")?,
-            fetch: fetch_options(ctx, options),
+            selected,
+            page: selected.then_some(0),
             processed: 0,
-            skipped: 0,
-            unparsed: 0,
-            ad_rows: 0,
-            coach_rows: 0,
-            with_email: 0,
-            office_roles: 0,
-        }))
+        }
     }
 
     pub(super) async fn walk(&mut self) -> CrawlResult<()> {
-        let mut page = 0usize;
-        'pages: while page < MAX_LISTING_PAGES {
-            let url = listing_page_url(page);
-            let outcome = self.ctx.fetcher.get(&url, &self.fetch).await?;
-            let html = outcome.text();
-            let rows = parse_school_list(&html);
-            if rows.is_empty() {
-                if page == 0 {
-                    return Err(CrawlError::Schema {
-                        url,
-                        detail: "contained no school rows (markup change or empty page)"
-                            .to_string(),
-                    });
+        stream::iter(0..MAX_LISTING_PAGES)
+            .map(Ok::<_, CrawlError>)
+            .try_fold(&mut *self, |run, _| async move {
+                if let Some(page) = run.page {
+                    run.listing(page).await?;
                 }
-                self.report.note(format!(
-                    "listing page {url} contained no school rows; pagination stopped"
-                ));
-                break;
-            }
-            for row in rows {
-                if self
-                    .options
-                    .limit
-                    .is_some_and(|limit| self.processed >= limit)
-                {
-                    break 'pages;
-                }
-                self.process_row(&row).await?;
-            }
-            match parse_next_listing_page(&html, page) {
-                Some(next) => page = next,
-                None => break,
-            }
+                Ok(run)
+            })
+            .await?;
+        if let Some(page) = self.page {
+            owe(&mut self.report, listing_page_url(page))?;
         }
         Ok(())
     }
 
-    async fn process_row(&mut self, row: &SchoolListRow) -> CrawlResult<()> {
-        if !self.wanted.is_empty() && !self.wanted.contains(&normalize_name(&row.name)) {
-            return Ok(());
-        }
-        let key = format!("MN:{}", row.slug);
-        if self.done.contains(&key) {
-            self.skipped = self.skipped.saturating_add(1);
-            return Ok(());
-        }
-        let page_url = school_page_url(&row.slug);
-        let fetched = self.ctx.fetcher.get(&page_url, &self.fetch).await;
-        let detail = match fetched {
-            Ok(outcome) => parse_school_detail(&outcome.text()),
+    async fn listing(&mut self, page: usize) -> CrawlResult<()> {
+        let url = listing_page_url(page);
+        let capture = match self
+            .ctx
+            .fetcher
+            .get(&url, &fetch_options(self.ctx, self.options))
+            .await
+        {
+            Ok(capture) => capture,
             Err(error) => {
-                self.report
-                    .note(format!("school page {page_url}: {error:#}"));
-                return Ok(());
+                self.page = None;
+                return fail(&mut self.report, &url, error);
             }
         };
-        let Some((school, school_id)) =
-            school_entities(row, &detail, &page_url, &self.options.observed_on)
-        else {
-            self.unparsed = self.unparsed.saturating_add(1);
-            self.report.note(format!(
-                "school page {page_url}: no school name in listing row or page"
-            ));
-            return Ok(());
-        };
-        self.emit_school(row, &school, &school_id, &detail).await
-    }
-
-    async fn emit_school(
-        &mut self,
-        row: &SchoolListRow,
-        school: &CanonicalSchool,
-        school_id: &SchoolId,
-        detail: &SchoolDetail,
-    ) -> CrawlResult<()> {
-        let page_url = school_page_url(&row.slug);
-        let school_key = provider_key(row, detail);
-        let observed_on = &self.options.observed_on;
-        let ads = ad_coaches(detail, school_id, &school_key, &page_url, observed_on);
-        let domains = school_domains(detail);
-        let office = detail
-            .admin
-            .iter()
-            .filter(|entry| ad_role(&entry.role).is_none());
-        self.office_roles = self.office_roles.saturating_add(office.count());
-        let (sport_coaches, notes) = match detail.school_id.as_deref() {
-            Some(id) => {
-                collect_team_coaches(self.ctx, &self.fetch, id, school_id, &domains, observed_on)
-                    .await
+        let body = match text(&capture) {
+            Ok(body) => body,
+            Err(error) => {
+                self.page = None;
+                return fail(&mut self.report, &url, error);
             }
-            None => (
-                Vec::new(),
-                vec![format!(
-                    "school page {page_url}: no /group/<id>/ link, sport coaches skipped"
-                )],
-            ),
         };
-        let mut batch = self.ctx.store.write_batch();
-        batch.append_many(Table::Schools, std::slice::from_ref(school))?;
-        batch.append_many(
-            Table::SourceObservations,
-            self.ctx
-                .school_observation(&SourceNamespace::association_school(SOURCE_ID), school)
-                .as_slice(),
-        )?;
-        batch.append_many(Table::Coaches, &ads)?;
-        batch.append_many(Table::Coaches, &sport_coaches)?;
-        for note in notes {
-            self.report.note(format!("{}: {note}", school.name));
+        let rows = parse_school_list(body);
+        if rows.is_empty() || body.matches("school-teaser__title").count() != rows.len() {
+            owe(&mut self.report, &url)?;
         }
-        self.journal_school(&mut batch, row, detail, school, &ads, &sport_coaches)?;
-        batch.commit()?;
+        stream::iter(&rows)
+            .map(Ok::<_, CrawlError>)
+            .try_fold(&mut *self, |run, row| async move {
+                run.school(row).await?;
+                Ok(run)
+            })
+            .await?;
+        self.page = parse_next_listing_page(body, page);
+        if body.contains("rel=\"next\"") && self.page.is_none() {
+            owe(&mut self.report, &url)?;
+        }
+        Ok(())
+    }
+
+    async fn school(&mut self, row: &SchoolListRow) -> CrawlResult<()> {
+        if !self.options.school_names.is_empty()
+            && !self
+                .options
+                .school_names
+                .iter()
+                .any(|name| normalize_name(name) == normalize_name(&row.name))
+        {
+            return Ok(());
+        }
+        let url = school_page_url(&row.slug);
+        if self
+            .options
+            .limit
+            .is_some_and(|limit| self.processed >= limit)
+        {
+            return owe(&mut self.report, url);
+        }
         self.processed = self.processed.saturating_add(1);
-        Ok(())
-    }
-
-    fn journal_school(
-        &mut self,
-        batch: &mut StoreBatch<'_>,
-        row: &SchoolListRow,
-        detail: &SchoolDetail,
-        school: &CanonicalSchool,
-        ads: &[CanonicalCoach],
-        sport_coaches: &[CanonicalCoach],
-    ) -> CrawlResult<()> {
-        let key = format!("MN:{}", row.slug);
-        let school_key = provider_key(row, detail);
-        let page_url = school_page_url(&row.slug);
-        let with_email = ads
-            .iter()
-            .chain(sport_coaches.iter())
-            .filter(|coach| coach.professional_email.is_some() || coach.personal_email.is_some())
-            .count();
-        self.ad_rows = self.ad_rows.saturating_add(ads.len());
-        self.coach_rows = self.coach_rows.saturating_add(sport_coaches.len());
-        self.with_email = self.with_email.saturating_add(count(with_email));
-        batch.journal_done(
-            "mshsl_schools",
-            &key,
-            &json!({
-                "school": school.name,
-                "school_id": school_key,
-                "page_url": page_url,
-                "city": row.city,
-                "ad_rows": ads.len(),
-                "sport_coach_rows": sport_coaches.len(),
-                "with_email": with_email,
-                "observed_on": self.options.observed_on,
-            }),
+        let capture = match self
+            .ctx
+            .fetcher
+            .get(&url, &fetch_options(self.ctx, self.options))
+            .await
+        {
+            Ok(capture) => capture,
+            Err(error) => return fail(&mut self.report, &url, error),
+        };
+        let body = match text(&capture) {
+            Ok(body) => body,
+            Err(error) => return fail(&mut self.report, &url, error),
+        };
+        let detail = parse_school_detail(body);
+        let Some((canonical, id)) = school_entities(row, &detail, &url, &capture.fetched_at) else {
+            return fail(&mut self.report, &url, "missing school owner");
+        };
+        let written = school(
+            self.ctx,
+            (SOURCE_ID, &url),
+            (
+                &SourceNamespace::association_school(SOURCE_ID),
+                &canonical,
+                &capture.fetched_at,
+            ),
+            &mut self.report,
         )?;
-        batch.journal_done(
-            "mshsl_coaches",
-            &key,
-            &json!({
-                "school_id": school_key,
-                "ad_rows": ads.len(),
-                "sport_coach_rows": sport_coaches.len(),
-                "with_email": with_email,
-                "observed_on": self.options.observed_on,
-            }),
-        )?;
-        Ok(())
-    }
-
-    pub(super) async fn finish(mut self, stats_before: FetchStats) -> AdapterReport {
-        let stats_after = self.ctx.fetcher.stats().await;
-        self.report.rows = count(self.processed);
-        self.report.requests = stats_after
-            .physical_requests()
-            .saturating_sub(stats_before.physical_requests());
-        self.report.from_cache = stats_after
-            .cache_hits
-            .saturating_sub(stats_before.cache_hits);
-        self.report.errors = stats_after
-            .errors
-            .saturating_sub(stats_before.errors)
-            .saturating_add(count(self.unparsed));
-        self.report.with_email = self.with_email;
-        self.report.note(format!(
-            "{} school(s) processed ({} already journalled): {} athletic-director row(s), {} sport-coach row(s), {} with a published email",
-            self.processed, self.skipped, self.ad_rows, self.coach_rows, self.with_email
-        ));
-        self.report.note(format!(
-            "{} Administration-block entry/entries were office roles (principal, superintendent, AD administrative assistant, trainer, advisors, Title IX, sports representatives) and were not emitted",
-            self.office_roles
-        ));
-        self.report.note(
-            "AD contacts come from the school page Administration block (Cloudflare-obfuscated addresses decoded locally); sport coaches come from /api/coaches/<team nid> reached through /jsonapi/views/teams/list_school, filtered to MSHSL coach levels; every well-formed published address is retained and classified, while phone columns remain withheld",
+        self.report.rows = self
+            .report
+            .rows
+            .saturating_add(u64::try_from(written).map_err(|_| CrawlError::Arithmetic {
+                detail: "school count".into(),
+            })?);
+        let ads = ad_coaches(
+            &detail,
+            &id,
+            &provider_key(row, &detail),
+            &url,
+            &capture.fetched_at,
         );
-        self.report
+        self.publish_coaches(&url, &ads)?;
+        let Some(key) = detail.school_id.as_deref() else {
+            return owe(&mut self.report, &url);
+        };
+        super::teams::collect(self, (key, &id), &school_domains(&detail)).await
+    }
+
+    pub(super) fn publish_coaches(
+        &mut self,
+        locator: &str,
+        coaches: &[census_domain::model::CanonicalCoach],
+    ) -> CrawlResult<()> {
+        coaches.iter().try_for_each(|coach| {
+            let written = persist(
+                self.ctx,
+                (SOURCE_ID, locator),
+                Table::Coaches,
+                std::slice::from_ref(coach),
+                &mut self.report,
+            )?;
+            if written > 0 && coach.has_published_email() {
+                self.report.with_email =
+                    self.report.with_email.checked_add(1).ok_or_else(|| {
+                        CrawlError::Arithmetic {
+                            detail: "MSHSL email count".to_owned(),
+                        }
+                    })?;
+            }
+            Ok(())
+        })
     }
 }

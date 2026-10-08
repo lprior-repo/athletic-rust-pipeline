@@ -6,7 +6,7 @@ pub(super) const PRS: &str = "PRs";
 
 pub(super) const COACHES: &str = "Coaches";
 
-pub(super) const META_SHEETS: [&str; 7] = [
+pub(super) const META_SHEETS: [&str; 9] = [
     "Schools",
     "Meets",
     "Sources",
@@ -14,6 +14,8 @@ pub(super) const META_SHEETS: [&str; 7] = [
     "Conflicts",
     "Review",
     "Run Metrics",
+    "School Contacts",
+    "Contact Research",
 ];
 
 pub(super) const PERFORMANCE_HEADERS: [&str; 20] = [
@@ -39,7 +41,7 @@ pub(super) const PERFORMANCE_HEADERS: [&str; 20] = [
     "Source URL",
 ];
 
-pub(super) const ATHLETE_HEADERS: [&str; 60] = [
+pub(super) const ATHLETE_HEADERS: [&str; 64] = [
     "Athlete ID",
     "Name",
     "Gender",
@@ -91,6 +93,10 @@ pub(super) const ATHLETE_HEADERS: [&str; 60] = [
     "Preferred Contact Role",
     "Preferred Contact Email",
     "Contact Coverage State",
+    "Preferred Contact Coach ID",
+    "Preferred Contact Source URL",
+    "Preferred Contact Capture SHA256",
+    "Preferred Contact Acquired At",
     "Athletic.net URL",
     "MileSplit URL",
     "Other profile URLs",
@@ -131,7 +137,7 @@ pub(super) const PR_HEADERS: [&str; 26] = [
     "Event Context",
 ];
 
-pub(super) const COACH_HEADERS: [&str; 18] = [
+pub(super) const COACH_HEADERS: [&str; 29] = [
     "School ID",
     "School",
     "School City",
@@ -150,6 +156,17 @@ pub(super) const COACH_HEADERS: [&str; 18] = [
     "Observed Date",
     "Declared Tenure",
     "Assessment School Year",
+    "Professional Email Source URL",
+    "Professional Email Capture SHA256",
+    "Professional Email Acquired At",
+    "Personal Email Source URL",
+    "Personal Email Capture SHA256",
+    "Personal Email Acquired At",
+    "Name Capture SHA256",
+    "AD Email Source URL",
+    "AD Email Capture SHA256",
+    "AD Email Acquired At",
+    "Contact Admission State",
 ];
 
 pub(super) const PR_EVENTS: [&str; 19] = [
@@ -221,6 +238,10 @@ pub(super) fn qualified_mark(pr: &SharedSelection) -> String {
     if let Some(context) = &pr.key.context {
         text.push_str(", event ");
         text.push_str(context.as_str());
+    }
+    if let Some(context) = super::context::cross_country(pr) {
+        text.push_str(", ");
+        text.push_str(&context);
     }
     text.push(']');
     text

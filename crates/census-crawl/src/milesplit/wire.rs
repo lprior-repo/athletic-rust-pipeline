@@ -78,7 +78,7 @@ impl MeetRef {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, Deserialize)]
 pub struct TeamRef {
     pub id: String,
     pub slug: String,

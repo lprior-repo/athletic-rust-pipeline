@@ -62,9 +62,5 @@ fn fetch_options(ctx: &AdapterContext<'_>, options: &Options) -> FetchOptions {
     }
 }
 
-fn count(value: usize) -> u64 {
-    u64::try_from(value).map_or(u64::MAX, |value| value)
-}
-
 #[cfg(test)]
 mod tests;

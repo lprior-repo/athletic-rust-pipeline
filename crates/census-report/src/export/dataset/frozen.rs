@@ -10,7 +10,7 @@ mod io;
 pub(super) mod job;
 
 const SCHEMA_REVISION: u32 = 1;
-const POLICY_REVISION: u32 = 6;
+const POLICY_REVISION: u32 = 7;
 const INPUT_TABLES: [Table; 13] = [
     Table::Schools,
     Table::Teams,
@@ -159,29 +159,35 @@ pub(super) fn store_identity(store: &Store) -> ReportResult<String> {
         .open(&path)
         .map_err(|source| io_error(&path, source))?;
     lock.lock().map_err(|source| io_error(&path, source))?;
-    let retained = store.journal_payloads("export-lineage-v1")?;
-    let identity = match retained.as_slice() {
-        [] => {
-            let created = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map_err(|error| invalid(&format!("creating export store identity: {error}")))?;
-            let identity = digest(&(
-                store.root().display().to_string(),
-                created.as_secs(),
-                created.subsec_nanos(),
-            ))?;
-            store.journal_done("export-lineage-v1", "store-identity", &identity)?;
-            identity
-        }
-        [value] => value
-            .as_str()
-            .ok_or_else(|| invalid("malformed durable export store identity"))?
-            .to_string(),
-        _ => return Err(invalid("multiple durable export store identities")),
-    };
+    let identity = retained_identity(store)?;
     if !hex_digest(&identity) {
         return Err(invalid("malformed persisted export store identity"));
     }
+    Ok(identity)
+}
+
+fn retained_identity(store: &Store) -> ReportResult<String> {
+    let retained = store.journal_payloads("export-lineage-v1")?;
+    match retained.as_slice() {
+        [] => create_identity(store),
+        [value] => value
+            .as_str()
+            .ok_or_else(|| invalid("malformed durable export store identity"))
+            .map(str::to_string),
+        _ => Err(invalid("multiple durable export store identities")),
+    }
+}
+
+fn create_identity(store: &Store) -> ReportResult<String> {
+    let created = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|error| invalid(&format!("creating export store identity: {error}")))?;
+    let identity = digest(&(
+        store.root().display().to_string(),
+        created.as_secs(),
+        created.subsec_nanos(),
+    ))?;
+    store.journal_done("export-lineage-v1", "store-identity", &identity)?;
     Ok(identity)
 }
 

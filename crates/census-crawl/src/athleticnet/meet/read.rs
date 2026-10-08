@@ -21,10 +21,11 @@ pub(super) fn meet_date(published: &str) -> Option<&str> {
     published_date(published)
 }
 
-pub(super) fn sport_of(published: Option<&str>) -> Sport {
+pub(super) fn sport_of(published: Option<&str>) -> Option<Sport> {
     match published.map(str::trim) {
-        Some("tfi") => Sport::IndoorTrack,
-        _ => Sport::OutdoorTrack,
+        Some("tfi") => Some(Sport::IndoorTrack),
+        Some("tfo") => Some(Sport::OutdoorTrack),
+        _ => None,
     }
 }
 
@@ -37,6 +38,9 @@ pub(super) fn meet_mark(
     published: &str,
     event_type: Option<&str>,
 ) -> Option<(Mark, bool)> {
+    if crate::result_status::invalid_token(published).is_some() {
+        return Some((Mark::Raw(published.to_string()), false));
+    }
     if !matches!(kind, EventKind::Unmapped { .. }) {
         return parse_mark(kind, published);
     }

@@ -24,12 +24,15 @@ enum EntryField {
     Phone,
     Website,
     Coordinates,
+    Jurisdiction,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(remote = "Self")]
 pub struct SchoolDirectoryEntry {
     key: DirectoryKey,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    jurisdiction: Option<UsJurisdiction>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     name: Option<SchoolName>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -58,6 +61,7 @@ impl SchoolDirectoryEntry {
         }
         Self {
             key: key.into(),
+            jurisdiction: None,
             name,
             address: None,
             kind: None,
@@ -81,6 +85,7 @@ impl SchoolDirectoryEntry {
         let provenance = BTreeMap::from([(EntryField::Name, source.clone())]);
         Ok(Self {
             key: DirectoryKey::Weak(key),
+            jurisdiction: state,
             name: Some(name),
             address: None,
             kind: None,
@@ -104,6 +109,16 @@ impl SchoolDirectoryEntry {
 
     pub fn address(&self) -> Option<&PostalAddress> {
         self.address.as_ref()
+    }
+
+    pub fn jurisdiction(&self) -> Option<UsJurisdiction> {
+        self.jurisdiction
+    }
+
+    pub fn with_jurisdiction(mut self, jurisdiction: Option<UsJurisdiction>) -> Self {
+        self.stamp(EntryField::Jurisdiction, jurisdiction.is_some());
+        self.jurisdiction = jurisdiction;
+        self
     }
 
     pub fn kind(&self) -> Option<&SchoolKind> {
@@ -194,6 +209,12 @@ impl SchoolDirectoryEntry {
     }
 
     pub fn absorb(&mut self, other: &Self) {
+        self.jurisdiction = self.merge(
+            EntryField::Jurisdiction,
+            self.jurisdiction,
+            other.jurisdiction.as_ref(),
+            other,
+        );
         let name = self.name.take();
         self.name = self.merge(EntryField::Name, name, other.name.as_ref(), other);
         let address = self.address.take();

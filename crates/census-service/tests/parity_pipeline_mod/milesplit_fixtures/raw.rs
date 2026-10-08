@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use census_crawl::milesplit;
 use census_domain::model::{
-    CentiSeconds, EventKind, Gender, Mark, SchoolYear, Sport, TimingMethod,
+    EventKind, ExactSeconds, Gender, Mark, SchoolYear, Sport, TimingMethod,
 };
 
 use super::TROY_URL;
@@ -61,16 +61,21 @@ fn validate_projected_rows(page: &milesplit::RawPage, boys: bool) -> Result<()> 
         .collect();
     let expected: Vec<_> = expected_rows(boys)
         .into_iter()
-        .map(|(name, school, grade, mark)| {
-            (
+        .map(|(name, school, grade, mark)| -> Result<_> {
+            Ok((
                 name,
                 school,
                 grade,
-                Mark::TimeSeconds(CentiSeconds::new(mark)),
+                Mark::TimeSeconds(ExactSeconds::from_parts(
+                    i64::from(mark)
+                        .checked_mul(10_000_000)
+                        .context("fixture time overflow")?,
+                    2,
+                )?),
                 Some(TimingMethod::Fat),
-            )
+            ))
         })
-        .collect();
+        .collect::<Result<_>>()?;
     check!(eq; actual, expected);
     Ok(())
 }

@@ -28,16 +28,12 @@ const ATTRIBUTE_LINE: &str = r"^\s*#\[";
 
 const TEST_ITEM_LINE: &str = r"^\s*(?:pub(?:\([^)]*\))?\s+)?mod\s";
 
-const FUNCTION: &str =
-    r"^\s*(?:pub(?:\([^)]*\))?\s+)?(?:const\s+|async\s+|unsafe\s+)*fn\s+([a-zA-Z0-9_]+)";
-
 pub(crate) struct Rules {
     pub(crate) forbidden: Vec<(&'static str, Regex)>,
     pub(crate) indexing: Regex,
     pub(crate) char_literal: Regex,
     pub(crate) attribute: Regex,
     pub(crate) test_item: Regex,
-    pub(crate) function: Regex,
     feature_gate: Regex,
 }
 
@@ -53,7 +49,6 @@ impl Rules {
             char_literal: compile(CHAR_LITERAL)?,
             attribute: compile(ATTRIBUTE_LINE)?,
             test_item: compile(TEST_ITEM_LINE)?,
-            function: compile(FUNCTION)?,
             feature_gate: compile(FEATURE_GATE)?,
         })
     }

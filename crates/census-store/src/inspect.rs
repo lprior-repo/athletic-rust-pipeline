@@ -27,7 +27,7 @@ impl Store {
         let root = root.as_ref().to_path_buf();
         let (db, entities, journal, meta_keyspace, receipts) =
             super::open_keyspaces(&root, cache_bytes)?;
-        open_format(&root, &db, &entities, &journal, &receipts, &meta_keyspace)?;
+        open_format(&root, &db, [&entities, &journal, &receipts], &meta_keyspace)?;
         let format = read_format(&meta_keyspace)?;
         let generations = generation::Generations::seeded(&meta_keyspace)?;
         Ok(StoreInspection {

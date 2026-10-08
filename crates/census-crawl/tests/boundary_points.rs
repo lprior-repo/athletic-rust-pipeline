@@ -81,7 +81,7 @@ fn fetch_roster_fires_all_boundary_points_in_order() -> anyhow::Result<()> {
         .block_on(async {
             let dir = tempfile::tempdir()?;
             let store = census_store::Store::open(dir.path())?;
-            let teams = milesplit::parse_team_index(WI_TEAMS_FIXTURE)?;
+            let teams = milesplit::parse_team_index(WI_TEAMS_FIXTURE)?.teams;
             let team = teams
                 .first()
                 .ok_or(anyhow::anyhow!("index fixture lists no teams"))?

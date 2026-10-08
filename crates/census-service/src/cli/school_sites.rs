@@ -15,7 +15,14 @@ pub(super) async fn run(
         Vec::new()
     };
     let fetcher = super::build_fetcher_authorizing(cli, &store, hosts)?.with_source(SOURCE_ID);
-    let report = census_service::school_sites::run(&fetcher, args, &store_root).await?;
+    let report = census_service::school_sites::run(&fetcher, args, &store).await?;
     census_service::school_sites::print_report(&report);
+    if report.failed > 0 || report.errors > 0 {
+        anyhow::bail!(
+            "school contact acquisition remains owed: {} failed subjects, {} acquisition errors",
+            report.failed,
+            report.errors
+        );
+    }
     Ok(())
 }

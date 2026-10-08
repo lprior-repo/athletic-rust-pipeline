@@ -1,6 +1,6 @@
 use crate::export::ExportDataset;
 use crate::report::{io_error, Derivation, ReportError, ReportResult};
-use crate::workbook::{Censuses, Options};
+use crate::workbook::Censuses;
 use census_domain::model::{CanonicalPerformance, SchoolYear};
 use census_store::Entity;
 use serde::{Serialize, Serializer};
@@ -36,9 +36,9 @@ impl Serialize for PerformanceIds<'_> {
 pub(in crate::workbook) fn write_sidecars(
     directory: &Path,
     dataset: &ExportDataset,
-    _options: &Options,
     censuses: &Censuses,
     derivation: &Derivation<'_>,
+    population: &Derivation<'_>,
     school_year: SchoolYear,
 ) -> ReportResult<()> {
     write_json(&directory.join("census-core.json"), &censuses.core)?;
@@ -51,19 +51,28 @@ pub(in crate::workbook) fn write_sidecars(
         school_year,
         &directory.join("recruiting.csv"),
     )?;
+    crate::school_contacts::write_csv(directory, population.schools(), school_year)?;
     write_json(
         &directory.join("audit.json"),
-        &Audit {
-            input_generation: &dataset.lineage.input_generation,
-            scope: derivation.scope().as_str(),
-            grad_year: derivation.grad_year(),
-            school_year,
-            athletes: RecordIds(derivation.athletes()),
-            performances: PerformanceIds(derivation.performances()),
-            coaches: RecordIds(derivation.coach_observations()),
-            identity_decisions: RecordIds(&dataset.identity_decisions),
-        },
+        &audit(dataset, derivation, school_year),
     )
+}
+
+fn audit<'a>(
+    dataset: &'a ExportDataset,
+    derivation: &'a Derivation<'_>,
+    school_year: SchoolYear,
+) -> Audit<'a> {
+    Audit {
+        input_generation: &dataset.lineage.input_generation,
+        scope: derivation.scope().as_str(),
+        grad_year: derivation.grad_year(),
+        school_year,
+        athletes: RecordIds(derivation.athletes()),
+        performances: PerformanceIds(derivation.performances()),
+        coaches: RecordIds(derivation.coach_observations()),
+        identity_decisions: RecordIds(&dataset.identity_decisions),
+    }
 }
 
 pub(super) fn write_json(path: &Path, value: &impl Serialize) -> ReportResult<()> {

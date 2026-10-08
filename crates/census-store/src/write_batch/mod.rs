@@ -1,9 +1,11 @@
 mod append;
 mod commit;
+mod conditional;
 mod journal;
 
 use super::Store;
 use super::Table;
+pub use conditional::ConditionalBatch;
 
 struct Page {
     table: Table,

@@ -34,16 +34,7 @@ impl PerformanceRows {
                 detail: "the performance row count does not fit u64".to_string(),
             })?;
         let ranges = ranges_for(held, range_rows, max_ranges, names.len())?;
-        let dir = SpillDir::create()?;
-        let mut writers = open_ranges(dir.path(), ranges)?;
-        let mut files = RangeFiles {
-            dir: dir.path(),
-            writers: &mut writers,
-            ranks: &ranks,
-            names: names.len(),
-        };
-        spill(derivation, &lookups, &mut files)?;
-        flush_ranges(dir.path(), &mut writers)?;
+        let dir = write_ranges(derivation, &lookups, ranges, &ranks, names.len())?;
         Ok(Self {
             dir,
             ranges,
@@ -51,6 +42,26 @@ impl PerformanceRows {
             ready: Vec::new().into_iter(),
         })
     }
+}
+
+fn write_ranges(
+    derivation: &Derivation<'_>,
+    lookups: &PerformanceProjection<'_>,
+    ranges: usize,
+    ranks: &HashMap<&str, usize>,
+    names: usize,
+) -> ReportResult<SpillDir> {
+    let dir = SpillDir::create()?;
+    let mut writers = open_ranges(dir.path(), ranges)?;
+    let mut files = RangeFiles {
+        dir: dir.path(),
+        writers: &mut writers,
+        ranks,
+        names,
+    };
+    spill(derivation, lookups, &mut files)?;
+    flush_ranges(dir.path(), &mut writers)?;
+    Ok(dir)
 }
 
 fn bucket_universe<'a>(

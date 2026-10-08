@@ -3,17 +3,23 @@ use crate::net::Fetcher;
 use census_domain::model::{CanonicalAthlete, CanonicalPerformance, Mark, SchoolYear};
 use census_store::{Store, Table};
 use serde_json::json;
+use std::collections::HashMap;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 mod acquisition_ledger;
 mod binding;
+mod bounded_buffers;
 mod changed_capture;
 mod fixture;
+mod frozen_frontier;
+mod horizon;
 mod large_partial_replay;
 mod mixed_replay;
 mod partial_replay;
+mod pending_recording;
 mod replay;
+mod resource_recovery;
 mod result_sets;
 mod unresolved;
 use fixture::*;

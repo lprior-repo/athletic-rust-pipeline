@@ -1,59 +1,91 @@
 use super::{level_of, Accumulator, ArchiveArtifact, Stats};
+use crate::context::PerformanceDateAssessment;
 use crate::result_file::{ParsedEvent, ParsedMeet};
 use census_domain::model::{
-    CanonicalEvent, CanonicalMeet, CanonicalTeam, CompetitionLevel, EventId, Evidence, Gender,
-    SchoolId, SchoolYear, SourceEventLabel, SourceIdentity, SourceNamespace, SourceRef, Sport,
-    TimingMethod,
+    CanonicalMeet, CanonicalTeam, CompetitionLevel, EventId, Evidence, Gender, SchoolId,
+    SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport, TimingMethod,
 };
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
 use std::collections::HashMap;
 
+mod events;
 #[path = "map_rows.rs"]
 mod map_rows;
 
+use events::record_event;
 use map_rows::record_row;
 
 pub(super) struct AbsorbedMeet<'a> {
     pub(super) parsed: &'a ParsedMeet,
     pub(super) artifact: &'a ArchiveArtifact,
     pub(super) sport: Sport,
-    pub(super) school_year: SchoolYear,
+    pub(super) school_year: Option<SchoolYear>,
+    pub(super) date_assessment: PerformanceDateAssessment,
+    pub(super) performance_as_of: chrono::NaiveDate,
     pub(super) observed_on: &'a str,
 }
 
-pub(super) fn absorb(read: AbsorbedMeet<'_>, mut writer: RowWriter<'_>) -> usize {
-    let AbsorbedMeet {
-        parsed,
-        artifact,
-        sport,
-        school_year,
-        observed_on,
-    } = read;
-    let (meet, meet_evidence, timing) = meet_for(parsed, artifact, sport, observed_on);
-
-    let mut athlete_rows = 0usize;
-    for parsed_event in &parsed.events {
-        let event_id = record_event(&mut writer, &meet, parsed_event, artifact, &meet_evidence);
-        let context = MeetContext {
-            artifact,
-            meet: &meet,
-            evidence: &meet_evidence,
-            sport,
-            school_year,
-            timing,
-            event: parsed_event,
-            observed_on,
-            event_id: &event_id,
-        };
-        for (row_index, row) in parsed_event.rows.iter().enumerate() {
-            athlete_rows =
-                athlete_rows.saturating_add(record_row(&mut writer, &context, row, row_index));
-        }
+pub(super) fn absorb(
+    read: AbsorbedMeet<'_>,
+    mut writer: RowWriter<'_>,
+) -> crate::CrawlResult<usize> {
+    let (meet, evidence, timing) =
+        meet_for(read.parsed, read.artifact, read.sport, read.observed_on);
+    keep_meet(&mut writer, meet.clone());
+    if matches!(read.date_assessment, PerformanceDateAssessment::Unknown) {
+        return Err(crate::CrawlError::PerformanceDateUnknown {
+            published: read.parsed.date.chars().take(64).collect(),
+            as_of: read.performance_as_of,
+        });
     }
+    if !matches!(read.date_assessment, PerformanceDateAssessment::Admitted)
+        || read.school_year.is_none()
+    {
+        return Ok(0);
+    }
+    let athlete_rows = read
+        .parsed
+        .events
+        .iter()
+        .fold(Ok(0usize), |outcome, event| {
+            let projected = project_event(&read, &mut writer, &meet, (&evidence, timing), event);
+            outcome.and_then(|count| projected.map(|rows| count.saturating_add(rows)))
+        })?;
+    Ok(athlete_rows)
+}
 
-    keep_meet(&mut writer, meet);
-    athlete_rows
+fn project_event(
+    read: &AbsorbedMeet<'_>,
+    writer: &mut RowWriter<'_>,
+    meet: &CanonicalMeet,
+    evidence: (&Evidence, TimingMethod),
+    event: &ParsedEvent,
+) -> crate::CrawlResult<usize> {
+    let event_id = record_event(writer, meet, event, evidence.0)?;
+    let context = MeetContext {
+        artifact: read.artifact,
+        meet,
+        evidence: evidence.0,
+        sport: read.sport,
+        school_year: SchoolYear::from_date(&meet.date)
+            .or(read.school_year)
+            .ok_or_else(|| crate::CrawlError::Schema {
+                url: read.artifact.url.clone(),
+                detail: "published source period does not establish a school year".into(),
+            })?,
+        timing: evidence.1,
+        event,
+        observed_on: read.observed_on,
+        event_id: &event_id,
+    };
+    Ok(event
+        .rows
+        .iter()
+        .enumerate()
+        .fold(0usize, |count, (index, row)| {
+            count.saturating_add(record_row(writer, &context, row, index))
+        }))
 }
 
 pub(super) struct RowWriter<'a> {
@@ -91,7 +123,7 @@ fn meet_for(
     let mut meet = CanonicalMeet::new(
         Some(UsJurisdiction::Wisconsin),
         parsed.name.clone(),
-        parsed.date.clone(),
+        canonical_date(&parsed.date),
         level,
     );
     meet.end_date = parsed.end_date.clone();
@@ -120,33 +152,11 @@ fn meet_for(
     (meet, meet_evidence, timing)
 }
 
-fn record_event(
-    writer: &mut RowWriter<'_>,
-    meet: &CanonicalMeet,
-    parsed_event: &ParsedEvent,
-    artifact: &ArchiveArtifact,
-    evidence: &Evidence,
-) -> EventId {
-    let mut event_entry = CanonicalEvent::new(
-        &meet.id,
-        parsed_event.kind.clone(),
-        parsed_event.gender,
-        parsed_event.division.as_deref(),
-        parsed_event.round.as_deref(),
-    );
-    let event_id = event_entry.id.clone();
-    event_entry.source_labels.push(SourceEventLabel {
-        source: SourceRef::new("wiaa_results", Some(artifact.url.clone())),
-        label: parsed_event.label.clone(),
-    });
-    event_entry.evidence.push(evidence.clone());
-    writer.stats.events = writer.stats.events.saturating_add(1);
-    writer
-        .accumulator
-        .events
-        .entry(event_id.as_str().to_string())
-        .or_insert(event_entry);
-    event_id
+fn canonical_date(published: &str) -> String {
+    match crate::context::published_performance_date(published) {
+        Some(date) => date.format("%Y-%m-%d").to_string(),
+        None => published.to_string(),
+    }
 }
 
 fn keep_meet(writer: &mut RowWriter<'_>, meet: CanonicalMeet) {

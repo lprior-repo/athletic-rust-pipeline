@@ -53,47 +53,49 @@ pub fn parse_search_json(document: &str) -> Result<Vec<ParsedRow>, ParseError> {
     })?;
 
     let mut rows = Vec::new();
-    for item in arr {
-        let obj = item.as_object().ok_or(ParseError::Failed {
-            reason: "expected JSON object".to_string(),
+    arr.iter().try_for_each(|item| {
+        rows.try_reserve(1).map_err(|_| ParseError::Failed {
+            reason: "search row allocation failed".into(),
         })?;
-
-        let id = obj
-            .get("id")
-            .and_then(|v| v.as_i64())
-            .map(|i| i.to_string())
-            .ok_or(ParseError::Failed {
-                reason: "missing school id".to_string(),
-            })?;
-
-        let name = obj
-            .get("name")
-            .and_then(|v| v.as_str())
-            .map(String::from)
-            .ok_or(ParseError::Failed {
-                reason: "missing school name".to_string(),
-            })?;
-
-        let full_name = obj
-            .get("full_name")
-            .and_then(|v| v.as_str())
-            .map(String::from);
-
-        let city = obj
-            .get("address")
-            .and_then(|address| address.get("city"))
-            .and_then(|v| v.as_str())
-            .map(String::from);
-
-        rows.push(ParsedRow {
-            school_id: id,
-            name,
-            full_name,
-            city,
-        });
-    }
-
+        rows.push(parse_search_item(item)?);
+        Ok::<_, ParseError>(())
+    })?;
     Ok(rows)
+}
+
+pub(super) fn parse_search_item(item: &serde_json::Value) -> Result<ParsedRow, ParseError> {
+    let obj = item.as_object().ok_or_else(|| ParseError::Failed {
+        reason: "expected JSON object".into(),
+    })?;
+    let school_id = obj
+        .get("id")
+        .and_then(serde_json::Value::as_i64)
+        .map(|id| id.to_string())
+        .ok_or_else(|| ParseError::Failed {
+            reason: "missing school id".into(),
+        })?;
+    let name = obj
+        .get("name")
+        .and_then(serde_json::Value::as_str)
+        .map(str::to_owned)
+        .ok_or_else(|| ParseError::Failed {
+            reason: "missing school name".into(),
+        })?;
+    let full_name = obj
+        .get("full_name")
+        .and_then(serde_json::Value::as_str)
+        .map(str::to_owned);
+    let city = obj
+        .get("address")
+        .and_then(|address| address.get("city"))
+        .and_then(serde_json::Value::as_str)
+        .map(str::to_owned);
+    Ok(ParsedRow {
+        school_id,
+        name,
+        full_name,
+        city,
+    })
 }
 
 pub fn parse_school_profile(document: &str) -> Result<SchoolProfile, ParseError> {

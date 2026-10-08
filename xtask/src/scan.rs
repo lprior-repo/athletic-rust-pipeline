@@ -2,8 +2,8 @@ pub(crate) mod counts;
 pub(crate) mod mask;
 mod packages;
 pub(crate) mod rules;
+pub(crate) mod strict;
 
-use crate::json::count;
 use crate::paths;
 use anyhow::{Context, Result};
 use counts::CrateScan;
@@ -33,8 +33,9 @@ pub(crate) fn run() -> Result<()> {
     let (packages, files) = walk()?;
     let measured = measure(&packages, &files)?;
     announce(&measured.packages);
-    println!("{}", serde_json::to_string_pretty(&report_value(measured))?);
-    Ok(())
+    let report = report_value(measured);
+    println!("{}", serde_json::to_string_pretty(&report)?);
+    strict::enforce_report(&report)
 }
 
 pub(crate) fn report() -> Result<Value> {
@@ -71,6 +72,13 @@ fn walk() -> Result<(Vec<Package>, Vec<SourceFile>)> {
 }
 
 fn root_files(package: &str, root: &Root) -> Result<Vec<SourceFile>> {
+    Ok(all_root_files(package, root)?
+        .into_iter()
+        .filter(|file| !counts::is_test_file(&file.path))
+        .collect())
+}
+
+fn all_root_files(package: &str, root: &Root) -> Result<Vec<SourceFile>> {
     let paths = if root.path.is_file() {
         vec![root.path.clone()]
     } else {
@@ -78,9 +86,6 @@ fn root_files(package: &str, root: &Root) -> Result<Vec<SourceFile>> {
     };
     let mut files = Vec::new();
     for path in paths {
-        if counts::is_test_file(&path) {
-            continue;
-        }
         files.push(SourceFile {
             package: package.to_string(),
             path,
@@ -102,9 +107,8 @@ struct Measured {
     packages: Vec<String>,
     crates: Map<String, Value>,
     files_over_300: Vec<String>,
-    functions_over_60: Vec<String>,
+    strict: strict::Findings,
     unstable_features: Vec<String>,
-    functions_over_logical: usize,
 }
 
 fn measure(packages: &[Package], files: &[SourceFile]) -> Result<Measured> {
@@ -113,100 +117,140 @@ fn measure(packages: &[Package], files: &[SourceFile]) -> Result<Measured> {
         .iter()
         .map(|package| (package.name.clone(), CrateScan::new(&rules)))
         .collect();
-    let mut measured = Measured {
-        packages: packages
-            .iter()
-            .map(|package| package.name.clone())
-            .collect(),
-        crates: Map::new(),
-        files_over_300: Vec::new(),
-        functions_over_60: Vec::new(),
-        unstable_features: Vec::new(),
-        functions_over_logical: 0,
-    };
+    let mut measured = Measured::new(packages);
     for file in files {
-        let lines = read_lines(&file.path)?;
-        let production = counts::production_lines(&lines, &rules);
-        let label = file.label();
-        let logical = counts::file_budgets(
-            &label,
-            &lines,
-            &production,
-            &rules,
-            &mut measured.files_over_300,
-            &mut measured.functions_over_60,
-        );
-        measured.functions_over_logical = measured.functions_over_logical.saturating_add(logical);
-        let Some(scan) = scans.get_mut(&file.package) else {
-            continue;
-        };
-        scan.add_file(if file.harness { 0 } else { production.len() });
-        if file.harness {
-            continue;
-        }
-        for (line, name) in scan.add_production(&production, &rules) {
-            measured
-                .unstable_features
-                .push(format!("{label}:{line} {name}"));
-        }
+        measure_file(file, &rules, &mut scans, &mut measured)?;
     }
+    measured.strict = strict_measure(packages)?;
     for (name, scan) in scans {
         measured
             .crates
             .insert(name, Value::Object(scan.into_counts()));
     }
     measured.files_over_300.sort();
-    measured.functions_over_60.sort();
     measured.unstable_features.sort();
     Ok(measured)
 }
 
+impl Measured {
+    fn new(packages: &[Package]) -> Self {
+        Self {
+            packages: packages
+                .iter()
+                .map(|package| package.name.clone())
+                .collect(),
+            crates: Map::new(),
+            files_over_300: Vec::new(),
+            strict: strict::Findings::default(),
+            unstable_features: Vec::new(),
+        }
+    }
+}
+
+fn measure_file(
+    file: &SourceFile,
+    rules: &Rules,
+    scans: &mut BTreeMap<String, CrateScan>,
+    measured: &mut Measured,
+) -> Result<()> {
+    let lines = read_lines(&file.path)?;
+    let production = counts::production_lines(&lines, rules);
+    let label = file.label();
+    counts::file_budgets(&label, &lines, &mut measured.files_over_300);
+    let scan = scans
+        .get_mut(&file.package)
+        .context("source belongs to unmeasured package")?;
+    scan.add_file(if file.harness { 0 } else { production.len() });
+    if file.harness {
+        return Ok(());
+    }
+    for (line, name) in scan.add_production(&production, rules) {
+        measured
+            .unstable_features
+            .push(format!("{label}:{line} {name}"));
+    }
+    Ok(())
+}
+
+fn strict_measure(packages: &[Package]) -> Result<strict::Findings> {
+    let files = strict_files(packages)?;
+    let roots = packages::production_targets()?;
+    let sources = strict_sources(&files, &roots)?;
+    let tests = strict::modules::test_files(&sources, &roots)?;
+    strict::inspect_sources(&sources, &roots, &tests)
+}
+
+fn strict_files(packages: &[Package]) -> Result<Vec<SourceFile>> {
+    let mut files = Vec::new();
+    for package in packages {
+        for root in package.roots.iter().filter(|root| !root.harness) {
+            files.extend(all_root_files(&package.name, root)?);
+        }
+    }
+    Ok(files)
+}
+
+fn strict_sources(files: &[SourceFile], roots: &[PathBuf]) -> Result<Vec<(PathBuf, String)>> {
+    let mut pending = Vec::new();
+    let mut admitted = std::collections::BTreeSet::new();
+    for path in files.iter().map(|file| &file.path).chain(roots) {
+        admit_source(path.clone(), &mut pending, &mut admitted)?;
+    }
+    let mut sources = Vec::new();
+    for _ in 0..100_000 {
+        let Some(path) = pending.pop() else {
+            return Ok(sources);
+        };
+        let source = fs::read_to_string(&path).with_context(|| paths::relative(&path))?;
+        for target in strict::modules::references(&path, &source, roots)? {
+            admit_source(target, &mut pending, &mut admitted)?;
+        }
+        sources.try_reserve(1)?;
+        sources.push((path, source));
+    }
+    anyhow::ensure!(
+        pending.is_empty(),
+        "strict source traversal budget exhausted"
+    );
+    Ok(sources)
+}
+
+fn admit_source(
+    path: PathBuf,
+    pending: &mut Vec<PathBuf>,
+    admitted: &mut std::collections::BTreeSet<PathBuf>,
+) -> Result<()> {
+    if admitted.contains(&path) {
+        return Ok(());
+    }
+    anyhow::ensure!(
+        admitted.len() < 100_000,
+        "strict source file budget exhausted"
+    );
+    pending.try_reserve(1)?;
+    admitted.insert(path.clone());
+    pending.push(path);
+    Ok(())
+}
+
 fn report_value(measured: Measured) -> Value {
-    let mut structure: Map<String, Value> = Map::new();
+    let mut structure = Map::new();
     structure.insert(
         "files_over_300_lines".to_string(),
-        Value::Array(
-            measured
-                .files_over_300
-                .into_iter()
-                .map(Value::String)
-                .collect(),
-        ),
-    );
-    structure.insert(
-        "functions_over_60_lines".to_string(),
-        Value::from(count(measured.functions_over_60.len())),
-    );
-    structure.insert(
-        "functions_over_60_sites".to_string(),
-        Value::Array(
-            measured
-                .functions_over_60
-                .into_iter()
-                .map(Value::String)
-                .collect(),
-        ),
+        string_array(measured.files_over_300),
     );
     structure.insert(
         "unstable_feature_sites".to_string(),
-        Value::Array(
-            measured
-                .unstable_features
-                .into_iter()
-                .map(Value::String)
-                .collect(),
-        ),
+        string_array(measured.unstable_features),
     );
-    structure.insert(
-        "functions_over_25_logical_lines".to_string(),
-        Value::from(count(measured.functions_over_logical)),
-    );
-    let mut report: Map<String, Value> = Map::new();
-    report.insert(
-        "packages".to_string(),
-        Value::Array(measured.packages.into_iter().map(Value::String).collect()),
-    );
+    measured.strict.insert(&mut structure);
+    let mut report = Map::new();
+    report.insert("packages".to_string(), string_array(measured.packages));
     report.insert("crates".to_string(), Value::Object(measured.crates));
     report.insert("structure".to_string(), Value::Object(structure));
     Value::Object(report)
+}
+
+fn string_array(items: Vec<String>) -> Value {
+    Value::Array(items.into_iter().map(Value::String).collect())
 }

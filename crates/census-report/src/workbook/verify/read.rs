@@ -9,6 +9,8 @@ use super::canonical::{cell_at, Value};
 use super::expectations::Expectations;
 use super::report::Findings;
 
+mod stream;
+
 pub(super) const EXCEL_ROWS_PER_SHEET: usize = 1_048_576;
 
 pub(super) const EXCEL_COLUMNS_PER_SHEET: usize = 16_384;
@@ -73,46 +75,7 @@ impl Book {
             .workbook
             .worksheet_cells_reader(name)
             .map_err(|source| unreadable(&self.path, source))?;
-        let dimensions = reader.dimensions();
-        let rows = usize::try_from(dimensions.end.0)
-            .map_or(usize::MAX, |value| value)
-            .saturating_add(1);
-        let columns = usize::try_from(dimensions.end.1)
-            .map_or(usize::MAX, |value| value)
-            .saturating_add(1);
-        budget.validate(name, rows, columns)?;
-        let mut held: Option<SparseRow> = None;
-        let mut next = 0_usize;
-        while let Some(cell) = reader
-            .next_cell()
-            .map_err(|source| unreadable(&self.path, source))?
-        {
-            let row = usize::try_from(cell.get_position().0).map_or(usize::MAX, |value| value);
-            let column = usize::try_from(cell.get_position().1).map_or(usize::MAX, |value| value);
-            if row >= budget.rows || column >= budget.columns {
-                return Err(ReportError::Invariant {
-                    detail: format!(
-                        "sheet {name} contains an out-of-budget cell at {row},{column}"
-                    ),
-                });
-            }
-            if held.as_ref().is_none_or(|current| current.index != row) {
-                if let Some(finished) = held.take() {
-                    next = visit_row(&finished, next, &mut visit);
-                }
-                held = Some(SparseRow::new(row));
-            }
-            if let Some(current) = held.as_mut() {
-                current
-                    .cells
-                    .insert(column, Value::from_ref(cell.get_value()));
-            }
-        }
-        if let Some(finished) = held.take() {
-            next = visit_row(&finished, next, &mut visit);
-        }
-        (next..rows).for_each(|index| visit(&SparseRow::new(index)));
-        Ok(Some(Shape { rows }))
+        stream::read(&mut reader, &self.path, name, budget, &mut visit).map(Some)
     }
 }
 

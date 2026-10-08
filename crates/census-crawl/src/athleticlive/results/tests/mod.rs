@@ -1,5 +1,4 @@
-use super::run::Run;
-use super::{collect, collect_manifest, ManifestOptions, ResultOptions, StandingsCapture};
+use super::{collect_manifest, ManifestOptions, ResultOptions, StandingsCapture};
 use crate::athleticlive::docs::{parse_event_document, parse_event_summary, EventDoc};
 use crate::athleticlive::map::SOURCE_ID;
 use crate::athleticlive::wire::{event_doc_url, event_summary_url};
@@ -8,7 +7,7 @@ use crate::net::cache::content_digest;
 use crate::net::Fetcher;
 use crate::{AdapterContext, AdapterReport};
 use census_domain::model::CentiMetres;
-use census_domain::model::CentiSeconds;
+use census_domain::model::ExactSeconds;
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, EventKind, Gender, GradYear, Grade, Mark, SchoolYear,
@@ -19,6 +18,9 @@ use census_store::{Store, Table};
 use std::collections::{BTreeMap, HashMap};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+mod captures;
+use captures::collect;
 
 const XC_STATE: &str =
     include_str!("../../../../tests/fixtures/athleticlive_results/event-doc-2150205.json");
@@ -85,6 +87,7 @@ fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> TestResult<AdapterCont
         refresh: false,
         school_year: SchoolYear::new(2026).ok_or("2026 is a season")?,
         observed_on: OBSERVED_ON.to_string(),
+        performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 9, 22).ok_or("snapshot date")?,
         recording: None,
     })
 }
@@ -96,14 +99,10 @@ fn stage_capture(dir: &tempfile::TempDir, name: &str, body: &str) -> TestResult<
 }
 
 fn write_schools(store: &Store, schools: &[(UsJurisdiction, &str)]) -> TestResult {
-    let mut lines = String::new();
     for (state, name) in schools {
         let (school, _) = CanonicalSchool::new(*state, *name, normalize_name(name), None);
-        lines.push_str(&serde_json::to_string(&school)?);
-        lines.push('\n');
+        store.append(Table::Schools, &school)?;
     }
-    std::fs::create_dir_all(store.out_dir())?;
-    std::fs::write(store.out_dir().join("schools.jsonl"), lines)?;
     Ok(())
 }
 
@@ -191,8 +190,8 @@ fn event_document_rows_carry_the_published_shapes() -> TestResult {
     check!(eq; xc.rows[0].place(), Some(1));
     check!(eq; xc.rows[0].mark.as_deref(), Some("18:20.7"));
     check!(eq;
-        xc.rows[0].canonical_mark(&EventKind::CrossCountry)?,
-        Some(Mark::TimeSeconds(CentiSeconds::new(110070)))
+        xc.rows[0].canonical_mark(&EventKind::CrossCountry),
+        Some(Mark::TimeSeconds(ExactSeconds::parse("1100.7")?))
     );
     check!(eq; xc.rows[0].splits.len(), 3, "the cross-country split list");
 
@@ -210,7 +209,7 @@ fn event_document_rows_carry_the_published_shapes() -> TestResult {
         "a field event publishes no splits"
     );
     check!(eq;
-        hj.rows[0].canonical_mark(&EventKind::HighJump)?,
+        hj.rows[0].canonical_mark(&EventKind::HighJump),
         Some(Mark::FieldImperial {
             feet_mark: "5-02.00".to_string(),
             metres: CentiMetres::new(157),
@@ -218,7 +217,7 @@ fn event_document_rows_carry_the_published_shapes() -> TestResult {
     );
     let no_height = &hj.rows[13];
     check!(eq; no_height.mark.as_deref(), Some("NH"));
-    check!(eq; no_height.canonical_mark(&EventKind::HighJump)?, None);
+    check!(eq; no_height.canonical_mark(&EventKind::HighJump), Some(Mark::Raw("NH".to_string())));
     check!(eq; no_height.place(), None, "an unplaced row publishes `--`");
     let blank_grade = &hj.rows[10];
     check!(eq; blank_grade.mark.as_deref(), Some("4-06.00"));
@@ -240,23 +239,20 @@ fn both_mark_channels_agree_on_every_captured_row() -> TestResult {
     for row in &xc.rows {
         let published = row.mark.as_deref().ok_or("every row publishes a mark")?;
         let seconds = crate::hytek::parse_time(published).ok_or("the time parses")?;
-        let Some(Mark::TimeSeconds(minted)) = row.canonical_mark(&EventKind::CrossCountry)? else {
+        let Some(Mark::TimeSeconds(minted)) = row.canonical_mark(&EventKind::CrossCountry) else {
             return Err(format!("row {:?} mints no time mark", row.place()).into());
         };
-        check!(
-            (minted.value() - seconds.value()).abs() < 1,
-            "{published} parsed {seconds} but the integer channel minted {minted}"
-        );
+        check!(eq; minted, seconds, "{published}: exact published precision");
+        check!(eq; row.mark_contradiction(&EventKind::CrossCountry), None);
         time_rows += 1;
     }
     check!(eq; time_rows, 136);
-
     let hj = parse_event_document(&event_doc_url(2_254_280), HJ_MITS)?;
     let mut field_rows = 0usize;
     for row in &hj.rows {
-        let Some(Mark::FieldImperial { metres, .. }) = row.canonical_mark(&EventKind::HighJump)?
+        let Some(Mark::FieldImperial { metres, .. }) = row.canonical_mark(&EventKind::HighJump)
         else {
-            check!(eq; row.mark.as_deref(), Some("NH"), "only `NH` mints no mark");
+            check!(eq; row.canonical_mark(&EventKind::HighJump), Some(Mark::Raw("NH".to_string())));
             continue;
         };
         let micros = row
@@ -264,21 +260,13 @@ fn both_mark_channels_agree_on_every_captured_row() -> TestResult {
             .as_ref()
             .and_then(|value| value.as_f64())
             .ok_or("im publishes")?;
-        check!(
-            (metres.value()
-                - CentiMetres::try_from_metres_f64(micros / 1_000_000.0)
-                    .ok_or("in range")?
-                    .value())
-            .abs()
-                < 1,
-            "{} published {metres} m against {micros} µm",
-            row.mark
-                .as_deref()
-                .map_or(Default::default(), core::convert::identity)
+        check!(eq;
+            metres,
+            CentiMetres::try_from_metres_f64(micros / 1_000_000.0).ok_or("in range")?
         );
         field_rows += 1;
     }
-    check!(eq; field_rows, 13, "four of the seventeen rows are `NH`");
+    check!(eq; field_rows, 13);
     Ok(())
 }
 mod disposition;
@@ -286,3 +274,5 @@ mod integration;
 mod integration2;
 mod integration3;
 mod resume;
+mod specifications;
+mod status;

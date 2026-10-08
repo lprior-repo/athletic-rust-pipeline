@@ -21,6 +21,7 @@ fn request() -> Result<TeamsSourceRequest, Box<dyn Error>> {
             jurisdiction: UsJurisdiction::Ohio,
             season: SchoolYear::new(2026).ok_or("invalid school year")?,
             revision: Revision(1),
+            history: crate::restate_services::wire::HistoryWindow::cohort("2026-10-02")?,
             refresh: false,
             limit_per_state: None,
             concurrency: 1,
@@ -101,6 +102,8 @@ fn acknowledged_completion_replays_original_progress_and_date_after_midnight() -
         at: observed_on,
         errors: Vec::new(),
         notes: vec!["retained independently acquired coaches".to_string()],
+        disposition: census_crawl::CollectionDisposition::Complete,
+        unfinished: Vec::new(),
     };
     let expected = serde_json::to_value(&outcome)?;
     ledger::finish(&store, &key(&request), attempt, (Ok(outcome)).into())?;

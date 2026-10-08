@@ -248,23 +248,21 @@ fn mark_of(value: &str, kind: &EventKind) -> (Mark, Option<TimingMethod>) {
     {
         return (Mark::Raw(value.to_string()), None);
     }
-    let field = || {
-        crate::milesplit::parse_published_metric_distance(value)
-            .map(Mark::DistanceMetres)
-            .or_else(|| hytek::parse_field_mark(value))
-            .map(|mark| (mark, None))
-    };
-    let time = || {
+    let parsed = if kind.is_field() {
+        field_mark(value)
+    } else {
         crate::milesplit::parse_published_time(value)
             .map(|(seconds, timing)| (Mark::TimeSeconds(seconds), timing))
-    };
-    let parsed = if kind.is_field() {
-        field().or_else(time)
-    } else {
-        time().or_else(field)
     };
     match parsed {
         Some(parsed_mark) => parsed_mark,
         None => (Mark::Raw(value.to_string()), None),
     }
+}
+
+fn field_mark(value: &str) -> Option<(Mark, Option<TimingMethod>)> {
+    crate::milesplit::parse_published_metric_distance(value)
+        .map(Mark::DistanceMetres)
+        .or_else(|| hytek::parse_field_mark(value))
+        .map(|mark| (mark, None))
 }

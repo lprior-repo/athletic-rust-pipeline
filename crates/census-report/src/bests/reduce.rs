@@ -1,4 +1,5 @@
 mod reports;
+mod row;
 
 use reports::{CompetitionContext, ReportGroup};
 
@@ -7,9 +8,9 @@ use super::selection::{Population, SharedSelection};
 use super::{is_relay, Measure, Options, Parents};
 use crate::report::{Derivation, Scope};
 use census_domain::model::{
-    AthleteId, CanonicalAthlete, CanonicalMeet, CanonicalPerformance, SourceIdentity,
+    CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, EventSpecification,
+    SourceIdentity,
 };
-use census_domain::{JurisdictionBucket, MeetState};
 use std::collections::{BTreeMap, HashMap};
 
 pub fn build_from_dataset(
@@ -18,24 +19,25 @@ pub fn build_from_dataset(
 ) -> Vec<SharedSelection> {
     let derivation = Derivation::of(dataset, options.scope, options.grad_year);
     let parents = Parents::of(&derivation);
-    let mut slots: HashMap<PrKey, PrSlot> = HashMap::new();
-    for performance in derivation.performances() {
-        let athlete_id = parents
-            .athlete(performance.athlete.as_str())
-            .map_or_else(|| performance.athlete.clone(), |athlete| athlete.id.clone());
-        fold(&mut slots, performance, &parents, athlete_id);
-    }
+    let mut slots: HashMap<PrKey, PrSlot<'_>> = HashMap::new();
+    derivation
+        .performances()
+        .iter()
+        .copied()
+        .for_each(|performance| {
+            fold(&mut slots, performance, &parents);
+        });
     super::selection::publish(
         slots
-            .into_values()
-            .filter_map(|slot| close(slot, &parents, derivation.scope()))
+            .into_iter()
+            .filter_map(|(key, slot)| close(key, slot, &parents, derivation.scope()))
             .collect(),
         options.limit,
     )
 }
 
 struct PrSlot<'a> {
-    sources: Vec<SourceIdentity>,
+    sources: Vec<&'a SourceIdentity>,
     reports: BTreeMap<CompetitionContext<'a>, ReportGroup<'a>>,
     marks: usize,
 }
@@ -50,8 +52,9 @@ impl PrSlot<'_> {
     }
 }
 
+#[derive(Clone, Copy)]
 struct Candidate<'a> {
-    key: PrKey,
+    event: &'a CanonicalEvent,
     athlete: &'a CanonicalAthlete,
     meet: Option<&'a CanonicalMeet>,
     performance: &'a CanonicalPerformance,
@@ -63,33 +66,30 @@ impl<'a> Candidate<'a> {
     fn resolve(
         performance: &'a CanonicalPerformance,
         parents: &Parents<'a>,
-        athlete_id: AthleteId,
-    ) -> Option<Self> {
-        let athlete = parents.athlete(athlete_id.as_str())?;
-        let kind = parents.event(performance.event.as_str())?;
-        if is_relay(kind) || !performance.mark_compatible(kind) {
-            return None;
-        }
-        let measure = Measure::of(&performance.mark)?;
-        let value = measure.value(&performance.mark)?;
+    ) -> Option<(PrKey, Self)> {
+        let athlete = parents.athlete(performance.athlete.as_str())?;
+        let (measure, value) = eligible_measure(performance, parents)?;
         let meet = parents.meet(performance.meet.as_str());
-        let mut key = PrKey::from_performance(performance, kind, meet, measure)?;
-        key.athlete_id = athlete_id;
-        Some(Self {
+        let event = parents.canonical_event(performance.event.as_str())?;
+        let key = PrKey::from_athlete(performance, event, meet, measure, &athlete.id)?;
+        Some((
             key,
-            athlete,
-            meet,
-            performance,
-            measure,
-            value,
-        })
+            Self {
+                event,
+                athlete,
+                meet,
+                performance,
+                measure,
+                value,
+            },
+        ))
     }
 
     fn record(self, entry: &mut PrSlot<'a>) {
         entry.marks = entry.marks.saturating_add(1);
         if let Some(owner) = owner_of(self.performance, self.athlete) {
-            if !entry.sources.contains(owner) {
-                entry.sources.push(owner.clone());
+            if !entry.sources.contains(&owner) {
+                entry.sources.push(owner);
             }
         }
         let context = CompetitionContext::of(self.performance);
@@ -126,30 +126,27 @@ fn fold<'a>(
     slots: &mut HashMap<PrKey, PrSlot<'a>>,
     performance: &'a CanonicalPerformance,
     parents: &Parents<'a>,
-    athlete_id: AthleteId,
 ) {
-    let Some(candidate) = Candidate::resolve(performance, parents, athlete_id) else {
+    let Some((key, candidate)) = Candidate::resolve(performance, parents) else {
         return;
     };
-    let entry = slots
-        .entry(candidate.key.clone())
-        .or_insert_with(PrSlot::empty);
+    let course_key = key.same_course(candidate.event);
+    if let Some(course_key) = course_key {
+        candidate.record(slots.entry(course_key).or_insert_with(PrSlot::empty));
+    }
+    let entry = slots.entry(key).or_insert_with(PrSlot::empty);
     candidate.record(entry);
 }
 
-fn close(slot: PrSlot<'_>, parents: &Parents<'_>, scope: Scope) -> Option<SharedSelection> {
-    let candidate = slot
-        .reports
-        .values()
-        .filter_map(ReportGroup::eligible)
-        .reduce(|incumbent, candidate| {
-            if candidate.wins_over(incumbent) {
-                candidate
-            } else {
-                incumbent
-            }
-        })?;
-    let mut winner = make_row(candidate, parents, scope);
+fn close(
+    key: PrKey,
+    slot: PrSlot<'_>,
+    parents: &Parents<'_>,
+    scope: Scope,
+) -> Option<SharedSelection> {
+    let candidate = winning_candidate(&slot)?;
+    let specification = candidate.event.resolved_specification().ok()?;
+    let mut winner = make_row(key, candidate, parents, scope, specification);
     let sources_count = slot.sources.len();
     let conflicts = slot
         .reports
@@ -165,50 +162,32 @@ fn close(slot: PrSlot<'_>, parents: &Parents<'_>, scope: Scope) -> Option<Shared
     Some(winner)
 }
 
-fn make_row(candidate: &Candidate<'_>, parents: &Parents<'_>, scope: Scope) -> SharedSelection {
-    let performance = candidate.performance;
-    let athlete = candidate.athlete;
-    let meet = candidate.meet;
-    let school_prov = resolve_school(&performance.team, parents);
+fn winning_candidate<'a, 'slot>(slot: &'slot PrSlot<'a>) -> Option<&'slot Candidate<'a>> {
+    slot.reports
+        .values()
+        .filter_map(ReportGroup::eligible)
+        .reduce(|incumbent, candidate| {
+            if candidate.wins_over(incumbent) {
+                candidate
+            } else {
+                incumbent
+            }
+        })
+}
 
-    let result_url = scope
-        .primary_evidence(performance)
-        .and_then(|evidence| evidence.source.url.clone())
-        .map_or(Default::default(), core::convert::identity);
-
-    let normalized = candidate.measure.normalized_mark(&performance.mark);
-
+fn make_row(
+    key: PrKey,
+    candidate: &Candidate<'_>,
+    parents: &Parents<'_>,
+    scope: Scope,
+    specification: EventSpecification,
+) -> SharedSelection {
     SharedSelection {
-        key: candidate.key.clone(),
-        value: candidate.value,
-        normalized,
-        mark: performance.mark.clone(),
-        date: performance.date.clone(),
-        meet: meet
-            .map(|m| m.name.clone())
-            .map_or(Default::default(), core::convert::identity),
-        meet_id: performance.meet.clone(),
-        meet_state: MeetState::from(meet.and_then(|m| m.state)),
-        place: performance.place,
-        wind_mps: performance.wind_mps,
-        timing: performance.timing,
-        result_url,
-        performance_id: performance.id.clone(),
-        source_athlete: owner_of(performance, athlete)
-            .map(|identity| identity.id.clone())
-            .map_or(Default::default(), core::convert::identity),
-        source_key: performance.source_key.clone(),
-        athlete: athlete.canonical_name.clone(),
-        gender: athlete.gender,
-        grad_year: athlete.grad_year.get(),
-        profile_url: athlete.public_profile_urls.first().cloned(),
-        school: school_prov,
-        athlete_school: athlete.school.as_str().to_string(),
-        athlete_state: JurisdictionBucket::from(
-            parents
-                .school(athlete.school.as_str())
-                .and_then(|s| s.state),
-        ),
+        key,
+        result: candidate.result(),
+        meet: candidate.meet(),
+        source: candidate.source(scope, specification),
+        athlete: candidate.athlete(parents),
         population: Population::default(),
         conflicts: Vec::new(),
     }
@@ -229,4 +208,16 @@ fn resolve_school(team_id: &census_domain::model::TeamId, parents: &Parents<'_>)
         .team(team_id.as_str())
         .and_then(|team| parents.school(team.school.as_str()))
         .map(|school| school.name.clone())
+}
+
+fn eligible_measure(
+    performance: &CanonicalPerformance,
+    parents: &Parents<'_>,
+) -> Option<(Measure, i64)> {
+    let kind = parents.event(performance.event.as_str())?;
+    if is_relay(kind) || !performance.mark_compatible(kind) {
+        return None;
+    }
+    let measure = Measure::of(&performance.mark)?;
+    Some((measure, measure.value(&performance.mark)?))
 }

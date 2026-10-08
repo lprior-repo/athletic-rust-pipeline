@@ -1,20 +1,23 @@
-use super::parse::{parse_staff, SchoolRecord, StaffPerson};
-use super::Options;
-use crate::net::{now_iso8601, FetchError};
-use crate::{AdapterContext, AdapterReport, CrawlResult};
-use census_domain::model::CanonicalCoach;
-use census_store::Table;
-use std::collections::HashMap;
+use super::map::parse_coach;
+use super::parse::{parse_email, SchoolRecord, StaffPerson};
+use super::IHSA_API;
+use crate::directory::acquisition::{bounded, fail, text};
+use crate::net::{now_iso8601, FetchError, FetchOutcome};
+use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
+use census_domain::model::{CanonicalCoach, Evidence, SchoolId, SourceRef};
+use serde_json::Value;
 
 pub(super) const IHSA_HOST: &str = "api.ihsa.org";
 
-pub(super) struct IhsaRun<'a> {
-    pub(super) options: &'a Options,
-    pub(super) revealed_emails: HashMap<i64, Option<String>>,
-    pub(super) processed: usize,
-    pub(super) skipped: usize,
-    pub(super) deferred: usize,
-    pub(super) blocked: usize,
+pub(super) enum StaffCapture {
+    Reached(FetchOutcome),
+    Unreachable,
+    Refused(String),
+}
+
+pub(super) enum StaffEmission {
+    Complete(Vec<CanonicalCoach>),
+    Unresolved(Vec<CanonicalCoach>),
 }
 
 pub(super) async fn retry_later(ctx: &AdapterContext<'_>, error: &FetchError) -> bool {
@@ -27,134 +30,212 @@ pub(super) async fn retry_later(ctx: &AdapterContext<'_>, error: &FetchError) ->
     }
 }
 
-pub(super) fn journal_school(
-    ctx: &AdapterContext<'_>,
-    journal_key: &str,
-    details: &serde_json::Value,
-    coaches: &[CanonicalCoach],
-) -> CrawlResult<()> {
-    let mut batch = ctx.store.write_batch();
-    batch.append_many(Table::Coaches, coaches)?;
-    batch.journal_done("ihsa_schools", journal_key, details)?;
-    batch.commit()?;
-    Ok(())
-}
-
-fn close_school(
-    ctx: &AdapterContext<'_>,
-    journal_key: &str,
-    run: &mut IhsaRun<'_>,
-    details: serde_json::Value,
-) -> CrawlResult<()> {
-    journal_school(ctx, journal_key, &details, &[])?;
-    run.processed = run.processed.saturating_add(1);
-    Ok(())
-}
-
-struct JournalFailure {
-    kind: &'static str,
-    message: String,
-    detail: String,
-}
-
-fn close_school_failure(
-    ctx: &AdapterContext<'_>,
-    journal_key: &str,
-    record: &SchoolRecord,
-    run: &mut IhsaRun<'_>,
-    report: &mut AdapterReport,
-    failure: JournalFailure,
-) -> CrawlResult<()> {
+fn record_failure(report: &mut AdapterReport, message: String) {
     report.errors = report.errors.saturating_add(1);
-    report.note(failure.message);
-    let mut details = serde_json::Map::new();
-    details.insert("school_id".to_string(), serde_json::json!(record.school_id));
-    details.insert("name".to_string(), serde_json::json!(record.name_formal));
-    details.insert(failure.kind.to_string(), serde_json::json!(failure.detail));
-    close_school(ctx, journal_key, run, serde_json::Value::Object(details))
-}
-
-pub(super) fn note_fetch(report: &mut AdapterReport, from_cache: bool) {
-    if from_cache {
-        report.from_cache = report.from_cache.saturating_add(1);
-    } else {
-        report.requests = report.requests.saturating_add(1);
+    if report.errors <= 5 {
+        report.note(message);
     }
-}
-
-fn staff_fetch_unreachable(
-    record: &SchoolRecord,
-    run: &mut IhsaRun<'_>,
-    report: &mut AdapterReport,
-    error: &FetchError,
-) {
-    report.errors = report.errors.saturating_add(1);
-    report.note(format!(
-        "failed to fetch staff for school {}: {error}",
-        record.school_id
-    ));
-    run.deferred = run.deferred.saturating_add(1);
-    report.note(format!(
-        "school {} left open: the staff fetch never reached the source",
-        record.school_id
-    ));
 }
 
 pub(super) async fn fetch_staff(
     ctx: &AdapterContext<'_>,
-    staff_url: &str,
+    url: &str,
     record: &SchoolRecord,
-    journal_key: &str,
-    run: &mut IhsaRun<'_>,
     report: &mut AdapterReport,
-) -> CrawlResult<Option<Vec<StaffPerson>>> {
-    let staff_outcome = match ctx.fetcher.get(staff_url, &ctx.fetch_options()).await {
-        Ok(outcome) => outcome,
-        Err(error) => {
-            if retry_later(ctx, &error).await {
-                staff_fetch_unreachable(record, run, report, &error);
-                return Ok(None);
-            }
-            close_school_failure(
-                ctx,
-                journal_key,
-                record,
-                run,
-                report,
-                JournalFailure {
-                    kind: "error",
-                    message: format!(
-                        "failed to fetch staff for school {}: {error}",
-                        record.school_id
-                    ),
-                    detail: error.to_string(),
-                },
-            )?;
-            return Ok(None);
-        }
+) -> CrawlResult<StaffCapture> {
+    let error = match ctx.fetcher.get(url, &ctx.fetch_options()).await {
+        Ok(capture) if capture.status == 200 => return Ok(StaffCapture::Reached(capture)),
+        Ok(capture) => FetchError::Http {
+            status: capture.status,
+            url: capture.url.clone(),
+        },
+        Err(error) => error,
     };
-    note_fetch(report, staff_outcome.from_cache);
+    if retry_later(ctx, &error).await {
+        fail(report, url, &error)?;
+        report.note(format!(
+            "school {} left open: the staff fetch never reached the source",
+            record.school_id
+        ));
+        return Ok(StaffCapture::Unreachable);
+    }
+    record_failure(
+        report,
+        format!(
+            "failed to fetch staff for school {}: {error}",
+            record.school_id
+        ),
+    );
+    Ok(StaffCapture::Refused(error.to_string()))
+}
 
-    let staff = match parse_staff(&staff_outcome.text()) {
-        Ok(env) => env,
+pub(super) async fn emit_staff(
+    ctx: &AdapterContext<'_>,
+    record: &SchoolRecord,
+    owner: (&SchoolId, &str),
+    capture: &FetchOutcome,
+    report: &mut AdapterReport,
+) -> CrawlResult<StaffEmission> {
+    let parsed = text(capture).and_then(|body| {
+        serde_json::from_str::<Value>(body).map_err(|source| CrawlError::Decode {
+            url: owner.1.to_owned(),
+            source,
+        })
+    });
+    let parsed = match parsed {
+        Ok(parsed) => parsed,
         Err(error) => {
-            close_school_failure(
-                ctx,
-                journal_key,
-                record,
-                run,
-                report,
-                JournalFailure {
-                    kind: "parse_error",
-                    message: format!(
-                        "failed to parse staff for school {}: {error}",
-                        record.school_id
-                    ),
-                    detail: error.to_string(),
-                },
-            )?;
-            return Ok(None);
+            fail(report, owner.1, error)?;
+            return Ok(StaffEmission::Unresolved(Vec::new()));
         }
     };
-    Ok(Some(staff))
+    let Some(categories) = parsed.get("data").and_then(Value::as_object) else {
+        fail(report, owner.1, "missing staff category map")?;
+        return Ok(StaffEmission::Unresolved(Vec::new()));
+    };
+    let mut coaches = Vec::new();
+    let mut complete = true;
+    for (category, values) in categories {
+        let locator = format!("{}#category={category}", owner.1);
+        let Some(rows) = values.as_array() else {
+            fail(report, &locator, "invalid staff category array")?;
+            complete = false;
+            continue;
+        };
+        for (ordinal, value) in rows.iter().enumerate() {
+            let locator = format!("{}#category={category}&row={ordinal}", owner.1);
+            match serde_json::from_value::<StaffPerson>(value.clone()) {
+                Ok(person) => {
+                    let emission = emit_person(
+                        ctx,
+                        record,
+                        (owner.0, owner.1, &capture.fetched_at),
+                        &person,
+                        report,
+                    )
+                    .await?;
+                    if let Some(coach) = emission.coach {
+                        bounded(&mut coaches, coach)?;
+                    }
+                    complete &= emission.reached;
+                }
+                Err(error) => {
+                    fail(report, &locator, error)?;
+                    complete = false;
+                }
+            }
+        }
+    }
+    if complete {
+        Ok(StaffEmission::Complete(coaches))
+    } else {
+        Ok(StaffEmission::Unresolved(coaches))
+    }
+}
+
+struct PersonEmission {
+    coach: Option<CanonicalCoach>,
+    reached: bool,
+}
+
+enum Reveal {
+    Address { address: String, stamp: String },
+    Unpublished,
+    Deferred,
+}
+
+async fn emit_person(
+    ctx: &AdapterContext<'_>,
+    record: &SchoolRecord,
+    owner: (&SchoolId, &str, &str),
+    person: &StaffPerson,
+    report: &mut AdapterReport,
+) -> CrawlResult<PersonEmission> {
+    let locator = format!("{}#person={}", owner.1, person.person_id);
+    if person.name.trim().is_empty() || person.default_title.trim().is_empty() {
+        fail(report, &locator, "missing staff name or title")?;
+        return Ok(PersonEmission {
+            coach: None,
+            reached: false,
+        });
+    }
+    let Some(mut coach) = parse_coach(person, owner.0, owner.1, owner.2) else {
+        return Ok(PersonEmission {
+            coach: None,
+            reached: true,
+        });
+    };
+    let mut reached = true;
+    if person.has_email == Some(true) {
+        let url = format!(
+            "{IHSA_API}/v1/schools/{}/staff/{}/email",
+            record.school_id, person.person_id
+        );
+        match reveal(ctx, &url, report).await? {
+            Reveal::Address { address, stamp } => {
+                coach.set_published_email(&address);
+                coach
+                    .evidence
+                    .push(Evidence::parsed(SourceRef::new("ihsa", Some(url)), stamp));
+            }
+            Reveal::Unpublished => {}
+            Reveal::Deferred => reached = false,
+        }
+    }
+    report.with_email = report
+        .with_email
+        .saturating_add(u64::from(coach.has_published_email()));
+    Ok(PersonEmission {
+        coach: Some(coach),
+        reached,
+    })
+}
+
+async fn reveal(
+    ctx: &AdapterContext<'_>,
+    url: &str,
+    report: &mut AdapterReport,
+) -> CrawlResult<Reveal> {
+    let capture = match ctx.fetcher.get(url, &ctx.fetch_options()).await {
+        Ok(capture) if capture.status == 200 => capture,
+        Ok(capture) => {
+            let error = FetchError::Http {
+                status: capture.status,
+                url: capture.url.clone(),
+            };
+            return refused(ctx, url, &error, report).await;
+        }
+        Err(error) => return refused(ctx, url, &error, report).await,
+    };
+    let body = match text(&capture) {
+        Ok(body) => body,
+        Err(error) => {
+            fail(report, url, error)?;
+            return Ok(Reveal::Deferred);
+        }
+    };
+    match parse_email(body) {
+        Some(address) => Ok(Reveal::Address {
+            address,
+            stamp: capture.fetched_at,
+        }),
+        None => {
+            fail(report, url, "reveal response carries no email address")?;
+            Ok(Reveal::Deferred)
+        }
+    }
+}
+
+async fn refused(
+    ctx: &AdapterContext<'_>,
+    url: &str,
+    error: &FetchError,
+    report: &mut AdapterReport,
+) -> CrawlResult<Reveal> {
+    if retry_later(ctx, error).await {
+        fail(report, url, error)?;
+        return Ok(Reveal::Deferred);
+    }
+    record_failure(report, format!("email reveal refused for {url}: {error}"));
+    Ok(Reveal::Unpublished)
 }

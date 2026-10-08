@@ -1,5 +1,8 @@
 use super::*;
-use census_domain::model::{GradYear, Grade, SchoolYear, SourceIdentity, SourceNamespace};
+use census_domain::model::{
+    CanonicalMeet, GradYear, Grade, SchoolYear, SourceIdentity, SourceNamespace,
+};
+use std::collections::HashMap;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 

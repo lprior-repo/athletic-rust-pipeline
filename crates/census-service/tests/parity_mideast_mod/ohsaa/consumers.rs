@@ -207,7 +207,7 @@ fn ohsaa_seeded_collection_persists_published_people_and_school_ownership() -> R
                 states: vec![UsJurisdiction::Ohio],
                 school_names: vec!["Dublin Coffman".to_string()],
             };
-            let report = ohsaa::collect(&context(&fetcher, &store), &options).await?;
+            let report = ohsaa::collect(&context(&fetcher, &store)?, &options).await?;
 
             check!(eq; (report.requests, report.from_cache), (0, 3));
             check!(eq; (report.rows, report.errors, report.with_email), (1, 0, 5));

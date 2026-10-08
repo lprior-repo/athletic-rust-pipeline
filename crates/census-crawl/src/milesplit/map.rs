@@ -5,15 +5,17 @@ use super::wire::ResultSetRef;
 use crate::net::FetchOutcome;
 use crate::CrawlResult;
 use census_domain::model::{
-    CanonicalEvent, CanonicalMeet, CanonicalTeam, EventId, Evidence, Gender, SchoolId, SchoolYear,
-    SourceEventLabel, SourceIdentity, SourceNamespace, SourceRef, Sport, TeamId,
+    CanonicalMeet, CanonicalTeam, Evidence, SchoolId, SourceIdentity, SourceNamespace, SourceRef,
+    Sport, TeamId,
 };
-use std::collections::HashMap;
 
+mod dates;
+mod events;
 #[path = "map_rows.rs"]
 mod map_rows;
 mod owned;
 
+use events::record_event;
 use map_rows::record_row;
 pub(super) use owned::ProviderSchools;
 
@@ -21,62 +23,89 @@ pub(super) struct OwnedResultSet<'a> {
     pub(super) capture: &'a FetchOutcome,
     pub(super) page: &'a OwnedMeetPage,
     pub(super) indices: &'a [usize],
+    pub(super) performance_as_of: chrono::NaiveDate,
 }
 
 pub(super) fn absorb_result_set(
     page: &RawPage,
     reference: &ResultSetRef,
     owned: OwnedResultSet<'_>,
-    schools: &ProviderSchools,
-    stats: &mut Stats,
-    accumulated: &mut Accumulator,
+    writer: &mut RowWriter<'_>,
 ) -> CrawlResult<usize> {
     validate_owned(reference, &owned)?;
-    let (meet, metadata) = meet_for(page, reference, &owned.capture.fetched_at)?;
+    let source = SourceContext {
+        page,
+        reference,
+        capture: owned.capture,
+        performance_as_of: owned.performance_as_of,
+    };
+    if page.meet.name.is_empty() {
+        return Err(crate::CrawlError::Schema {
+            url: reference.url.clone(),
+            detail: "meet name must not be empty".into(),
+        });
+    }
+    dates::validate(writer, &source, &owned)?;
+    let (meet, metadata) = meet_for(&source)?;
     let context = MeetContext {
         meet: &meet,
         metadata: &metadata,
-        reference,
-        capture: owned.capture,
-        sport: page.sport,
-        school_year: page.school_year,
+        source: &source,
     };
-    let mut writer = RowWriter {
-        schools,
-        stats,
-        accumulated,
-    };
-    let projected = owned.indices.iter().try_fold(0usize, |count, index| {
-        let Some(row) = owned.page.rows.get(*index) else {
-            return Err(crate::CrawlError::Invariant {
-                detail: "owned result-set index does not address a retained source row".into(),
-            });
-        };
-        record_row(&mut writer, &context, row).map(|written| count.saturating_add(written))
-    })?;
     writer
         .accumulated
         .meets
         .entry(meet.id.as_str().into())
-        .or_insert(meet);
-    Ok(projected)
+        .or_insert_with(|| meet.clone());
+    project_rows(writer, &context, &owned)
+}
+
+fn project_rows(
+    writer: &mut RowWriter<'_>,
+    context: &MeetContext<'_>,
+    owned: &OwnedResultSet<'_>,
+) -> CrawlResult<usize> {
+    owned.indices.iter().fold(Ok(0usize), |outcome, index| {
+        let projected = match owned.page.rows.get(*index) {
+            Some(row) => record_row(writer, context, row),
+            None => Err(crate::CrawlError::Invariant {
+                detail: "owned result-set index does not address a retained source row".into(),
+            }),
+        };
+        projection_outcome(outcome, projected)
+    })
+}
+
+fn projection_outcome(
+    outcome: CrawlResult<usize>,
+    projected: CrawlResult<usize>,
+) -> CrawlResult<usize> {
+    match (outcome, projected) {
+        (Ok(count), Ok(written)) => count
+            .checked_add(written)
+            .ok_or(crate::CrawlError::Resource {
+                resource: "milesplit projected results",
+                requested: usize::MAX,
+                limit: usize::MAX,
+            }),
+        (Err(first), Err(later)) if event_failure(&first) && !event_failure(&later) => Err(later),
+        (Err(first), _) => Err(first),
+        (_, Err(error)) => Err(error),
+    }
+}
+
+fn event_failure(error: &crate::CrawlError) -> bool {
+    matches!(
+        error,
+        crate::CrawlError::EventIdentity(_)
+            | crate::CrawlError::Specification(_)
+            | crate::CrawlError::PerformanceDateUnknown { .. }
+    )
 }
 
 fn validate_owned(reference: &ResultSetRef, owned: &OwnedResultSet<'_>) -> CrawlResult<()> {
     let meet_id = super::fetch::owned_meet_id(reference)?;
-    let result_set_id = reference
-        .rsid
-        .parse::<u64>()
-        .ok()
-        .filter(|id| {
-            *id > 0
-                && !reference.rsid.starts_with('0')
-                && reference.rsid.bytes().all(|byte| byte.is_ascii_digit())
-        })
-        .ok_or_else(|| crate::CrawlError::Schema {
-            url: reference.url.clone(),
-            detail: "invalid structured result-set ID".into(),
-        })?;
+    let result_set_id = result_set_id(reference)?;
     owned.indices.iter().try_for_each(|index| {
         let row = owned
             .page
@@ -95,6 +124,22 @@ fn validate_owned(reference: &ResultSetRef, owned: &OwnedResultSet<'_>) -> Crawl
     })
 }
 
+fn result_set_id(reference: &ResultSetRef) -> CrawlResult<u64> {
+    reference
+        .rsid
+        .parse::<u64>()
+        .ok()
+        .filter(|id| {
+            *id > 0
+                && !reference.rsid.starts_with('0')
+                && reference.rsid.bytes().all(|byte| byte.is_ascii_digit())
+        })
+        .ok_or_else(|| crate::CrawlError::Schema {
+            url: reference.url.clone(),
+            detail: "invalid structured result-set ID".into(),
+        })
+}
+
 pub(super) struct RowWriter<'a> {
     pub(super) schools: &'a ProviderSchools,
     pub(super) stats: &'a mut Stats,
@@ -104,21 +149,23 @@ pub(super) struct RowWriter<'a> {
 pub(super) struct MeetContext<'a> {
     pub(super) meet: &'a CanonicalMeet,
     pub(super) metadata: &'a Evidence,
-    pub(super) reference: &'a ResultSetRef,
-    pub(super) capture: &'a FetchOutcome,
-    pub(super) sport: Option<Sport>,
-    pub(super) school_year: SchoolYear,
+    pub(super) source: &'a SourceContext<'a>,
 }
 
-fn meet_for(
-    page: &RawPage,
-    reference: &ResultSetRef,
-    acquired_at: &str,
-) -> CrawlResult<(CanonicalMeet, Evidence)> {
+pub(super) struct SourceContext<'a> {
+    pub(super) page: &'a RawPage,
+    pub(super) reference: &'a ResultSetRef,
+    pub(super) capture: &'a FetchOutcome,
+    pub(super) performance_as_of: chrono::NaiveDate,
+}
+
+fn meet_for(context: &SourceContext<'_>) -> CrawlResult<(CanonicalMeet, Evidence)> {
+    let page = context.page;
+    let reference = context.reference;
     let mut meet = CanonicalMeet::new_checked(
         Some(reference.site.jurisdiction()),
         page.meet.name.clone(),
-        page.meet.date.clone(),
+        dates::canonical_date(&page.meet.date),
         crate::wiaa_results::level_of(&page.meet.name),
     )
     .map_err(|detail| crate::CrawlError::Schema {
@@ -132,74 +179,65 @@ fn meet_for(
         SourceNamespace::MilesplitMeet,
         reference.meet_id.clone(),
     ));
+    let metadata = meet_metadata(context);
+    meet.evidence.push(metadata.clone());
+    Ok((meet, metadata))
+}
+
+fn meet_metadata(context: &SourceContext<'_>) -> Evidence {
+    let page = context.page;
+    let reference = context.reference;
     let mut metadata = Evidence::parsed(
         SourceRef::new(reference.site.source_id(), Some(reference.url.clone())),
-        acquired_at,
+        &context.capture.fetched_at,
     );
     metadata.note = Some(serde_json::json!({
         "role": "raw result file meet/season metadata only",
         "meet_id": reference.meet_id, "result_set_id": reference.rsid,
         "region": page.region, "sport": page.sport, "school_year": page.school_year,
+        "published_date": page.meet.date,
         "acquisition_date_role": "structured capture acquisition; raw metadata freshness not asserted",
     }).to_string());
-    meet.evidence.push(metadata.clone());
-    Ok((meet, metadata))
+    metadata
 }
 
-fn record_event(
+fn team_for(
     writer: &mut RowWriter<'_>,
     context: &MeetContext<'_>,
     row: &OwnedPerformance,
+    affiliation: (&SchoolId, Sport),
     evidence: &Evidence,
-) -> EventId {
-    let mut event = CanonicalEvent::new(
-        &context.meet.id,
-        row.event_kind.clone(),
-        row.gender,
-        owned::text(row, "divisionName"),
-        owned::text(row, "roundName"),
-    );
-    let id = event.id.clone();
-    if let std::collections::hash_map::Entry::Vacant(entry) =
-        writer.accumulated.events.entry(id.as_str().into())
-    {
-        event.source_labels.push(SourceEventLabel {
-            source: evidence.source.clone(),
-            label: owned::text(row, "eventName").map_or_else(String::new, str::to_string),
-        });
-        event.evidence.push(evidence.clone());
-        writer.stats.events = writer.stats.events.saturating_add(1);
-        entry.insert(event);
-    }
+) -> TeamId {
+    let (school, sport) = affiliation;
+    let school_year = context.source.page.school_year;
+    let id = CanonicalTeam::mint(school, sport, row.gender, school_year);
+    writer
+        .accumulated
+        .teams
+        .entry(id.as_str().into())
+        .or_insert_with(|| new_team(&id, school, (sport, school_year), row, evidence));
     id
 }
 
-#[allow(clippy::too_many_arguments)]
-fn team_for(
-    teams: &mut HashMap<String, CanonicalTeam>,
+fn new_team(
+    id: &TeamId,
     school: &SchoolId,
-    sport: Sport,
-    gender: Gender,
-    school_year: SchoolYear,
+    season: (Sport, census_domain::model::SchoolYear),
     row: &OwnedPerformance,
     evidence: &Evidence,
-) -> TeamId {
-    let id = CanonicalTeam::mint(school, sport, gender, school_year);
-    teams
-        .entry(id.as_str().into())
-        .or_insert_with(|| CanonicalTeam {
-            id: id.clone(),
-            school: school.clone(),
-            sport,
-            gender,
-            school_year,
-            level: None,
-            source_identities: vec![SourceIdentity::new(
-                SourceNamespace::MilesplitTeam,
-                row.team_id.to_string(),
-            )],
-            evidence: vec![evidence.clone()],
-            retained_conflicts: Vec::new(),
-        });
-    id
+) -> CanonicalTeam {
+    CanonicalTeam {
+        id: id.clone(),
+        school: school.clone(),
+        sport: season.0,
+        gender: row.gender,
+        school_year: season.1,
+        level: None,
+        source_identities: vec![SourceIdentity::new(
+            SourceNamespace::MilesplitTeam,
+            row.team_id.to_string(),
+        )],
+        evidence: vec![evidence.clone()],
+        retained_conflicts: Vec::new(),
+    }
 }

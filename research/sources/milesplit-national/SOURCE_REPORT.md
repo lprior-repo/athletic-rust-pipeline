@@ -325,3 +325,11 @@ Why: the enumeration frame is complete and measured (26,562 teams, 51/51 hosts, 
 4. **What is the true Class-of-2027 count per jurisdiction?** Only order-of-magnitude bands exist (n=3 teams per state). Resolving it needs the roster sweep, not more indices.
 5. **Do `/results` and `/calendar` enumerate every meet?** Both captures are single pages (50 and 294 rows) and both are demonstrably paginated/bucketed at the source; whether a season-complete walk exists (e.g. `?page=N` to the end) was not tested — one `page=2` fetch would confirm the pattern, and `data-month` buckets suggest the calendar is complete for its season range.
 6. **Does the search endpoint's `filters[subdomain]` actually narrow server-side?** Only the `oh` and national (`www`) forms were exercised; the near-miss here is that `oh` returns only `oh` hits while `www` returns a mix, which is consistent with filtering but not proof of it (no cross-state query with an explicit `filters[subdomain]=ca` was sent).
+
+## CEN source index admission contract (2026-10-07 repair wave)
+
+Index admission uses the repository's existing HTML tokenizer, not substring discovery of provider markup. It requires a decoded, authoritative application-name declaration on a qualified MileSplit host. Comments, script/style text, template contents, foreign SVG/MathML content, and inert text containers cannot supply ownership. Conflicting authoritative declarations are refused. Captured meet-index URLs must match the requested index, and byte, token, and nesting limits apply before result discovery.
+
+Result projection witnesses remain in the same native recorded batch as their source journal associations. Content identity is independent of the evaluation horizon; horizon expansion can admit newly eligible performances without appending unchanged facts again.
+
+The repair worker added direct ownership controls but did not execute them during concurrent editing. No fresh network acquisition, performance claim, or completeness certification is recorded by this amendment.

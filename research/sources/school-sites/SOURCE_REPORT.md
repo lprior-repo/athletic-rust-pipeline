@@ -4,6 +4,10 @@ Source token: none (queue-commissioned host family, not a registry source)
 Lane slug: `school_sites` — `census-service school-sites` over `census-crawl::school_sites`
 Coverage: any school website supplied by an owner-approved queue (48 states + D.C. queue inputs)
 
+The canonical CLI acquisition contract added during the 2026-10-07 repair is
+specified below. The earlier fragment-only observations and acceptance chain
+are historical evidence, not verification of that cutover.
+
 ## Why this lane exists
 
 Every directory, association and platform lane leaves schools whose only published coach/AD
@@ -137,3 +141,43 @@ Refactor equivalence: the same wave-5 slice re-crawled after the module split pr
   candidates from fifteen crawled schools, of which the gate shipped one director row; the rest were
   rendering-dependent. Coach-bearing queues should come from the high-school universe, and the
   shipped share depends on the gate, not the crawl.
+
+## Canonical acquisition cutover (2026-10-07; verification pending)
+
+`school_sites::run(fetcher, args, store)` now consumes the queue only as a
+selector over existing public-source-discovered canonical schools. Exact parsed
+official school website, jurisdiction, and canonical name or canonical alias
+must identify one owner. Missing or ambiguous owners are explicit failures and
+remain owed; queue labels never mint a school. Source identity and fetched or
+parsed public-source evidence must already exist on the matched school.
+
+Ownership lookup retains at most 64 selected owners and 8 MiB of serialized
+school data per window. Queue input is admitted at 8 MiB, 65,536 rows, and bounded
+name/website/jurisdiction fields; admission and counters are fallible.
+The run season comes from the bound store manifest, otherwise `SchoolYear::DEFAULT`.
+Acquisition uses `census_crawl::school_sites::collect_contacts`, not fragment
+guesses or WordPress search. Artifact presence never bypasses canonical research.
+
+School-office and athletics-office mailboxes remain independent of named coach
+and athletic-director claims. Every acquired page binds its actual locator,
+SHA-256 and physical capture time. Missing or invalid capture dates and stale
+captures remain owed. Sparse new-claim/research deltas, their journal marker and
+effect travel through the recording-aware adapter batch. Earlier admitted
+canonical prefixes survive later refused or incomplete pages.
+
+The report's failures, failed count and error count now include canonical
+ownership/acquisition/research debt, allowing the CLI to reject incomplete work.
+Its crawled count measures processed canonical acquisitions; emails measures
+selected office mailbox purposes; empty means a completed acquisition with no
+selected office mailbox. Fragment orchestration and the obsolete fragments
+report field are removed. `census_crawl::school_sites::crawl_site` and
+`contact_rows` remain distinct candidate-artifact APIs; they cannot grant
+canonical claims or veto successful canonical acquisition through guessed routes.
+
+The new offline service scenarios use the existing verbatim CAC contact extract
+with explicitly controlled cache metadata. They cover canonical-alias ownership,
+unmatched queue population refusal, capture-bound mailbox persistence, and a
+bound later run year leaving the physical 2026 capture stale. They do not assert
+a live 2026 fetch. No build, test, formatter, lint or runtime command was executed
+by this concurrent repair worker; the owning agent must run the integrated
+compiler checkpoint and acceptance lanes before certification.

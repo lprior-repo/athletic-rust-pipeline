@@ -5,6 +5,9 @@ use super::{
 use serde_json::Value;
 use std::collections::HashSet;
 
+#[path = "admission.rs"]
+pub(super) mod admission;
+
 pub fn parse_owned_meet(body: &[u8], meet_id: u64) -> OwnedMeetVerdict {
     match parse_page(body, meet_id) {
         Ok(page) => OwnedMeetVerdict::Parsed(page),
@@ -16,6 +19,7 @@ fn parse_page(body: &[u8], meet_id: u64) -> Result<OwnedMeetPage, String> {
     if meet_id == 0 || body.len() > MAX_OWNED_BODY_BYTES {
         return Err("invalid meet ID or oversized structured response".to_string());
     }
+    admission::check(body).map_err(|error| error.to_string())?;
     let mut document: Value = serde_json::from_slice(body).map_err(|error| error.to_string())?;
     check_envelope(&document, meet_id)?;
     let data = document
@@ -33,18 +37,7 @@ fn parse_page(body: &[u8], meet_id: u64) -> Result<OwnedMeetPage, String> {
 }
 
 fn parse_rows(data: Vec<Value>, meet_id: u64) -> Result<OwnedMeetPage, String> {
-    let mut page = OwnedMeetPage {
-        rows: Vec::new(),
-        rejected: Vec::new(),
-        published_rows: data.len(),
-        completeness: OwnedCompleteness::Unknown,
-    };
-    page.rows
-        .try_reserve(data.len())
-        .map_err(|error| error.to_string())?;
-    page.rejected
-        .try_reserve(data.len())
-        .map_err(|error| error.to_string())?;
+    let mut page = reserved_page(data.len())?;
     let mut seen = HashSet::new();
     seen.try_reserve(data.len())
         .map_err(|error| error.to_string())?;
@@ -64,6 +57,22 @@ fn parse_rows(data: Vec<Value>, meet_id: u64) -> Result<OwnedMeetPage, String> {
             }),
         }
     });
+    Ok(page)
+}
+
+fn reserved_page(published_rows: usize) -> Result<OwnedMeetPage, String> {
+    let mut page = OwnedMeetPage {
+        rows: Vec::new(),
+        rejected: Vec::new(),
+        published_rows,
+        completeness: OwnedCompleteness::Unknown,
+    };
+    page.rows
+        .try_reserve_exact(published_rows)
+        .map_err(|error| error.to_string())?;
+    page.rejected
+        .try_reserve_exact(published_rows)
+        .map_err(|error| error.to_string())?;
     Ok(page)
 }
 

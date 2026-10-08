@@ -36,6 +36,12 @@ pub(super) fn census_notes(
         counts.coaches,
         out.display()
     )];
+    append_scope_notes(&mut notes, scope, counts);
+    append_population_notes(&mut notes, counts, coach_sources_empty);
+    notes
+}
+
+fn append_scope_notes(notes: &mut Vec<String>, scope: Scope, counts: &RowCounts) {
     if scope == Scope::Core {
         notes.push(format!(
             "core scope drops {} rows whose only evidence is {}",
@@ -47,6 +53,9 @@ pub(super) fn census_notes(
                 .to_string(),
         );
     }
+}
+
+fn append_population_notes(notes: &mut Vec<String>, counts: &RowCounts, coach_sources_empty: bool) {
     if counts.athletes == 0 {
         notes.push(
             "no athletes consolidated yet — run `collect` then `consolidate` before `report`"
@@ -56,5 +65,4 @@ pub(super) fn census_notes(
     if counts.coaches > 0 && coach_sources_empty {
         notes.push("coaches present but no coach source identities recorded".to_string());
     }
-    notes
 }

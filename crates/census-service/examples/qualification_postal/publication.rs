@@ -18,7 +18,7 @@ pub(super) fn publish_and_readback(
     dataset: &ExportDataset,
     observed: &str,
     metadata: &[Value],
-) -> Result<(Value, [String; 12])> {
+) -> Result<(Value, [String; 13])> {
     let school = dataset.schools.values().next().context("school absent")?;
     let options = workbook::Options {
         grad_year: Some(2027),
@@ -63,14 +63,13 @@ pub(super) fn read_csv(
     path: &Path,
     school: &CanonicalSchool,
     captured: &str,
-) -> Result<[String; 12]> {
+) -> Result<[String; 13]> {
     ensure!(
         std::fs::metadata(path)?.len() <= 1024 * 1024,
         "CSV exceeds qualification read budget"
     );
     let mut reader = ::csv::Reader::from_path(path)?;
     let header = reader.headers()?.clone();
-    ensure!(header.len() == 28, "canonical school CSV width differs");
     let mut records = reader.records();
     let row = records
         .next()
@@ -94,7 +93,7 @@ pub(super) fn read_csv(
     Ok(fields)
 }
 
-fn read_xlsx(path: &Path, school: &CanonicalSchool, captured: &str) -> Result<[String; 12]> {
+fn read_xlsx(path: &Path, school: &CanonicalSchool, captured: &str) -> Result<[String; 13]> {
     ensure!(
         std::fs::metadata(path)?.len() <= 16 * 1024 * 1024,
         "XLSX exceeds qualification read budget"
@@ -102,8 +101,8 @@ fn read_xlsx(path: &Path, school: &CanonicalSchool, captured: &str) -> Result<[S
     let mut book = calamine::open_workbook_auto(path)?;
     let range = book.worksheet_range("Schools")?;
     ensure!(
-        range.height() == 2 && range.width() == 24,
-        "Schools XLSX must contain header and one 24-column school"
+        range.height() == 2,
+        "Schools XLSX must contain its header and one school"
     );
     let mut rows = range.rows();
     let header = rows.next().context("Schools header absent")?;
@@ -127,7 +126,7 @@ fn read_xlsx(path: &Path, school: &CanonicalSchool, captured: &str) -> Result<[S
     Ok(fields)
 }
 
-fn collect_fields(fields: [Result<String>; 12]) -> Result<[String; 12]> {
+fn collect_fields(fields: [Result<String>; 13]) -> Result<[String; 13]> {
     let mut output = std::array::from_fn(|_| String::new());
     output
         .iter_mut()

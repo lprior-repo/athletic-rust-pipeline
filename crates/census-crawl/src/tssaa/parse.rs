@@ -51,22 +51,21 @@ pub(super) fn artifact(detail: impl Into<String>) -> CrawlError {
 }
 
 pub fn parse_school_list(text: &str) -> CrawlResult<ReadOutcome> {
+    admit_body(text)?;
     let (start, end) = fields::array_body(text)
         .ok_or_else(|| artifact("the capture embeds no typeahead school array"))?;
     let body = text
         .get(start..end)
         .ok_or_else(|| artifact("invalid school array bounds"))?;
     let pattern = compile_pattern(fields::ARRAY_ENTRY, "tssaa school array entry")?;
-    let (mut outcome, _) = pattern.captures_iter(body).fold(
-        (ReadOutcome::new(), BTreeSet::new()),
-        |(mut outcome, mut seen), captures| {
-            let offset = captures
-                .get(0)
-                .map_or(start, |row| start.saturating_add(row.start()));
-            append_index_row(&mut outcome, &mut seen, &captures, line_of(text, offset));
-            (outcome, seen)
-        },
-    );
+    let mut outcome = ReadOutcome::new();
+    let mut seen = BTreeSet::new();
+    for captures in pattern.captures_iter(body) {
+        let offset = captures
+            .get(0)
+            .map_or(start, |row| start.saturating_add(row.start()));
+        append_index_row(&mut outcome, &mut seen, &captures, line_of(text, offset))?;
+    }
     if pattern
         .replace_all(body, "")
         .chars()
@@ -76,9 +75,20 @@ pub fn parse_school_list(text: &str) -> CrawlResult<ReadOutcome> {
             line_of(text, start),
             "school array",
             "unparsed indexed school content",
-        );
+        )?;
     }
     Ok(outcome)
+}
+
+pub(super) fn admit_body(text: &str) -> CrawlResult<()> {
+    if text.len() > 1024 * 1024 {
+        return Err(CrawlError::Resource {
+            resource: "TSSAA body bytes",
+            requested: text.len(),
+            limit: 1024 * 1024,
+        });
+    }
+    Ok(())
 }
 
 fn append_index_row(
@@ -86,35 +96,54 @@ fn append_index_row(
     seen: &mut BTreeSet<StateRecordId>,
     captures: &regex::Captures<'_>,
     line: usize,
-) {
+) -> CrawlResult<()> {
     let raw_id = group(captures, 1);
-    let id = directory::skip_row(outcome, line, "id", numeric_id(raw_id));
+    let id = directory::skip_row(outcome, line, "id", numeric_id(raw_id))?;
     let (name, city) = fields::split_name_and_city(&fields::unescape_js(group(captures, 2)));
-    let name = directory::skip_row(outcome, line, "school name", SchoolName::parse(&name));
+    let name = directory::skip_row(outcome, line, "school name", SchoolName::parse(&name))?;
     let (Some(id), Some(name)) = (id, name) else {
-        return;
+        return Ok(());
     };
+    if seen.len() >= 20_000 && !seen.contains(&id) {
+        return Err(CrawlError::Resource {
+            resource: "TSSAA indexed schools",
+            requested: seen.len().saturating_add(1),
+            limit: 20_000,
+        });
+    }
     if !seen.insert(id.clone()) {
         outcome.skip(
             line,
             "id",
             format!("duplicate array row for {}", id.as_str()),
-        );
-        return;
+        )?;
+        return Ok(());
     }
-    let mut row = SchoolDirectoryEntry::identified(key(&id), source(), Some(name));
-    if let Some((city, state)) = city {
-        row = row.with_address(directory::skip_absent(
-            outcome,
-            line,
-            directory::postal_address(AddressParts {
-                city: &city,
-                state: &state,
-                ..AddressParts::default()
-            }),
-        ));
-    }
-    outcome.push(row);
+    let row = SchoolDirectoryEntry::identified(key(&id), source(), Some(name));
+    let row = indexed_address(row, city, outcome, line)?;
+    outcome.push(row)?;
+    Ok(())
+}
+
+fn indexed_address(
+    row: SchoolDirectoryEntry,
+    city: Option<(String, String)>,
+    outcome: &mut ReadOutcome,
+    line: usize,
+) -> CrawlResult<SchoolDirectoryEntry> {
+    let Some((city, state)) = city else {
+        return Ok(row);
+    };
+    let address = directory::skip_absent(
+        outcome,
+        line,
+        directory::postal_address(AddressParts {
+            city: &city,
+            state: &state,
+            ..AddressParts::default()
+        }),
+    )?;
+    Ok(row.with_address(address))
 }
 
 fn numeric_id(raw: &str) -> Result<StateRecordId, census_domain::school_directory::DirectoryError> {
@@ -144,26 +173,23 @@ fn school_name(text: &str) -> CrawlResult<(usize, SchoolName)> {
 }
 
 pub fn parse_school_page(text: &str, school_id: &StateRecordId) -> CrawlResult<SchoolRead> {
+    admit_body(text)?;
     let (line, name) = school_name(text)?;
     let directory = parse_school_list(text)?;
     let indexed = indexed_owner(&directory, school_id, &name)?;
     let mut school = ReadOutcome::new();
-    directory
-        .skipped()
-        .iter()
-        .chain(directory.notes())
-        .for_each(|issue| {
-            school.note(
-                issue.line,
-                issue.field,
-                format!("detail index: {}", issue.detail),
-            );
-        });
+    for issue in directory.skipped().iter().chain(directory.notes()) {
+        school.note(
+            issue.line,
+            issue.field,
+            format!("detail index: {}", issue.detail),
+        )?;
+    }
     let addresses = postal::parse_addresses(text, &mut school)?;
     let staff_year = match super::staff_year::read(text, &name) {
         Ok(claim) => claim,
         Err(error) => {
-            school.skip(line, "staff year", error.to_string());
+            school.skip(line, "staff year", error.to_string())?;
             None
         }
     };
@@ -178,9 +204,9 @@ pub fn parse_school_page(text: &str, school_id: &StateRecordId) -> CrawlResult<S
             line,
             "address",
             "no published postal address or indexed city",
-        );
+        )?;
     }
-    school.push(row);
+    school.push(row)?;
     let coaches = staff::coach_rows(text, &mut school)?;
     Ok(SchoolRead {
         school,

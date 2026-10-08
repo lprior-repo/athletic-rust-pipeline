@@ -66,7 +66,7 @@ fn finish_list_rows_carry_place_grade_school_and_the_final_time() -> anyhow::Res
     );
     {
         let left_value = &winner.mark;
-        let right_value = &(Mark::TimeSeconds(CentiSeconds::new(103369)));
+        let right_value = &(Mark::TimeSeconds(ExactSeconds::parse("1033.69")?));
         anyhow::ensure!(
             left_value == right_value,
             "17:13.69 is the finish, not a mile split — left={left_value:?} right={right_value:?}"
@@ -187,7 +187,7 @@ fn a_placement_value_is_not_mistaken_for_a_finish_time() -> anyhow::Result<()> {
         &bob.name,
         &"Bob Fast"
     );
-    let expected = Mark::TimeSeconds(CentiSeconds::new(128282));
+    let expected = Mark::TimeSeconds(ExactSeconds::parse("1282.82")?);
     anyhow::ensure!(
         bob.mark == expected,
         "expected 21:22.82 = {:?}, got {:?} — the placement 5 was not mistaken for 5 seconds",
@@ -202,7 +202,7 @@ fn a_placement_value_is_not_mistaken_for_a_finish_time() -> anyhow::Result<()> {
         &charlie.name,
         &"Charlie Slow"
     );
-    let expected = Mark::TimeSeconds(CentiSeconds::new(150500));
+    let expected = Mark::TimeSeconds(ExactSeconds::parse("1505.00")?);
     anyhow::ensure!(
         charlie.mark == expected,
         "expected 25:05.00 = {:?}, got {:?}",

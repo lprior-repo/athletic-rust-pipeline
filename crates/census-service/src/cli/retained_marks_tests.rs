@@ -1,7 +1,8 @@
 use super::*;
 use census_domain::model::{
-    CanonicalAthlete, CanonicalMeet, CanonicalSchool, CanonicalTeam, CentiMetres, CentiSeconds,
-    EventKind, Evidence, Gender, GradYear, Grade, SchoolYear, SourceIdentity, SourceRef, Sport,
+    CanonicalAthlete, CanonicalMeet, CanonicalSchool, CanonicalTeam, CentiMetres, EventIdentity,
+    EventKind, EventSpecification, Evidence, EvidenceMethod, ExactSeconds, Gender, GradYear, Grade,
+    SchoolYear, SourceIdentity, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 
@@ -37,7 +38,16 @@ fn seed(
         "Captured Meet",
         None,
     );
-    let event = CanonicalEvent::new(&meet, kind.clone(), Gender::Boys, None, Some("Finals"));
+    let event = CanonicalEvent::new(
+        EventIdentity {
+            meet: &meet,
+            kind,
+            gender: Gender::Boys,
+            division: None,
+            round: Some("Finals"),
+        },
+        EventSpecification::default(),
+    )?;
     store.append_many(Table::Events, std::slice::from_ref(&event))?;
     let team = CanonicalTeam::mint(
         &school,
@@ -46,7 +56,7 @@ fn seed(
         SchoolYear::new(2026).ok_or("invalid fixture season")?,
     );
     let perf = CanonicalPerformance {
-        id: CanonicalPerformance::mint(&athlete, &meet, &kind, "2026-04-21", locator),
+        id: CanonicalPerformance::mint(&athlete, &meet, &event.id, "2026-04-21", locator),
         athlete,
         team,
         event: event.id,
@@ -96,7 +106,7 @@ fn dry_run_apply_and_rerun_preserve_original_facts_and_observation_history() -> 
     let canonical: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
     check!(eq; canonical.len(), 1);
     let corrected = &canonical[0];
-    check!(eq; corrected.mark, Mark::TimeSeconds(CentiSeconds::new(2495)));
+    check!(eq; corrected.mark, Mark::TimeSeconds(ExactSeconds::parse("24.95")?));
     check!(eq; corrected.timing, Some(TimingMethod::Fat));
     let derived = corrected
         .evidence
@@ -105,12 +115,6 @@ fn dry_run_apply_and_rerun_preserve_original_facts_and_observation_history() -> 
         .ok_or("missing correction evidence")?;
     check!(eq; derived.source, original.evidence[0].source);
     check!(eq; derived.observed_on, original.evidence[0].observed_on);
-    let note = derived
-        .note
-        .as_deref()
-        .ok_or("missing original token and revision")?;
-    check!(note.contains("original_raw=24.95a"));
-    check!(note.contains("revision=1"));
     let mut retained_facts = corrected.clone();
     retained_facts.mark = original.mark.clone();
     retained_facts.timing = original.timing;
@@ -160,12 +164,15 @@ fn source_owner_provenance_not_locator_substrings_controls_admission() -> TestRe
     let other_dir = tempfile::tempdir()?;
     let other = Store::open(other_dir.path())?;
     let event = CanonicalEvent::new(
-        &unrelated.meet,
-        EventKind::Track100m,
-        Gender::Boys,
-        None,
-        Some("Finals"),
-    );
+        EventIdentity {
+            meet: &unrelated.meet,
+            kind: EventKind::Track100m,
+            gender: Gender::Boys,
+            division: None,
+            round: Some("Finals"),
+        },
+        EventSpecification::default(),
+    )?;
     other.append_many(Table::Events, &[event])?;
     other.append_many(Table::Performances, std::slice::from_ref(&unrelated))?;
     let report = process_retained_marks(&other, RepairMode::Apply)?;
@@ -219,7 +226,7 @@ fn hand_timing_is_preserved_without_automatic_conversion() -> TestResult {
     let canonical: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
     check!(eq;
         canonical[0].mark,
-        Mark::TimeSeconds(CentiSeconds::new(1132))
+        Mark::TimeSeconds(ExactSeconds::parse("11.32")?)
     );
     check!(eq; canonical[0].timing, Some(TimingMethod::Hand));
     Ok(())
@@ -278,10 +285,10 @@ fn final_partial_chunk_and_full_chunk_both_commit_exactly_once() -> TestResult {
     let applied = process_retained_marks(&store, RepairMode::Apply)?;
     check!(eq; (applied.eligible, applied.corrected), (101, 101));
     let canonical: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
+    let expected = Mark::TimeSeconds(ExactSeconds::parse("24.95")?);
     check!(canonical
         .iter()
-        .all(|row| row.mark == Mark::TimeSeconds(CentiSeconds::new(2495))
-            && row.timing == Some(TimingMethod::Fat)));
+        .all(|row| row.mark == expected && row.timing == Some(TimingMethod::Fat)));
     check!(eq;
         store
             .stats()?

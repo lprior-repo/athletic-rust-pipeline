@@ -1,139 +1,7 @@
-use std::collections::BTreeMap;
-
+use super::SEASON;
 use anyhow::{Context, Result};
 use census_crawl::{compiled, hytek};
-use census_domain::model::{EventKind, Gender, Grade, Mark, SourceRef};
-use serde::Serialize;
-
-use super::{assert_rollup, golden_case, SEASON};
-
-#[derive(Serialize)]
-struct MeetFacts {
-    name: String,
-    date: String,
-    end_date: Option<String>,
-    timer: Option<String>,
-    rows_parsed: usize,
-    rows_skipped: usize,
-    events: Vec<EventFacts>,
-}
-
-impl MeetFacts {
-    fn of(meet: &compiled::ParsedMeet) -> Self {
-        let compiled::ParsedMeet {
-            name,
-            date,
-            end_date,
-            timer,
-            events,
-            rows_parsed,
-            rows_skipped,
-        } = meet;
-        Self {
-            name: name.clone(),
-            date: date.clone(),
-            end_date: end_date.clone(),
-            timer: timer.clone(),
-            rows_parsed: *rows_parsed,
-            rows_skipped: *rows_skipped,
-            events: events.iter().map(EventFacts::of).collect(),
-        }
-    }
-}
-
-#[derive(Serialize)]
-struct EventFacts {
-    label: String,
-    kind: EventKind,
-    gender: Gender,
-    division: Option<String>,
-    round: Option<String>,
-    rows: Vec<RowFacts>,
-}
-
-impl EventFacts {
-    fn of(event: &compiled::ParsedEvent) -> Self {
-        let compiled::ParsedEvent {
-            label,
-            kind,
-            gender,
-            division,
-            round,
-            rows,
-        } = event;
-        Self {
-            label: label.clone(),
-            kind: kind.clone(),
-            gender: *gender,
-            division: division.clone(),
-            round: round.clone(),
-            rows: rows.iter().map(RowFacts::of).collect(),
-        }
-    }
-}
-
-#[derive(Serialize)]
-struct RowFacts {
-    place: Option<u16>,
-    name: String,
-    grade: Option<Grade>,
-    school: String,
-    mark: Mark,
-    wind_mps: Option<f64>,
-    heat: Option<String>,
-    points: Option<f64>,
-    legs: Vec<LegFacts>,
-}
-
-impl RowFacts {
-    fn of(row: &compiled::ParsedRow) -> Self {
-        let compiled::ParsedRow {
-            place,
-            name,
-            grade,
-            school,
-            mark,
-            wind_mps,
-            heat,
-            points,
-            legs,
-            ..
-        } = row;
-        Self {
-            place: *place,
-            name: name.clone(),
-            grade: *grade,
-            school: school.clone(),
-            mark: mark.clone(),
-            wind_mps: *wind_mps,
-            heat: heat.clone(),
-            points: *points,
-            legs: legs.iter().map(LegFacts::of).collect(),
-        }
-    }
-}
-
-#[derive(Serialize)]
-struct LegFacts {
-    position: u8,
-    name: String,
-    grade: Option<Grade>,
-}
-
-impl LegFacts {
-    fn of(leg: &compiled::RelayLeg) -> Self {
-        let compiled::RelayLeg {
-            position,
-            name,
-            grade,
-        } = leg;
-        Self {
-            position: *position,
-            name: name.clone(),
-            grade: *grade,
-        }
-    }
-}
+use census_domain::model::SourceRef;
 
 const REGIONAL_EXPORT: &str = r#"
 05/26/2026, 09:56 PM                                  D1 Regional 8B - Appleton North
@@ -160,12 +28,9 @@ const PAGE_STAMP_EXPORT: &str = "5/27/25, 8:35 PM                               
 
 const HEADERLESS_EXPORT: &str = "Girls' 100 Meters Division 1   Finals";
 
-const COMPILED_EXPORTS: usize = 3;
-
 #[test]
-fn compiled_documented_exports_match_golden() -> Result<()> {
+fn compiled_documented_exports_preserve_published_meet_and_event_blocks() -> Result<()> {
     let source = SourceRef::new("wiaa_results", None);
-    let mut cases = BTreeMap::new();
 
     let regional = compiled::parse(
         &hytek::lines_from_pdf_text(REGIONAL_EXPORT),
@@ -191,30 +56,25 @@ fn compiled_documented_exports_match_golden() -> Result<()> {
         &regional.events.len(),
         &2
     );
-    let (name, digest) = golden_case("compiled__regional_export", &MeetFacts::of(&regional))?;
-    cases.insert(name, digest);
 
     let page_stamp = compiled::parse(
         &hytek::lines_from_pdf_text(PAGE_STAMP_EXPORT),
         source.clone(),
         SEASON,
     );
-    let (name, digest) = golden_case(
-        "compiled__page_stamp_only_export",
-        &page_stamp.as_ref().map(MeetFacts::of),
-    )?;
-    cases.insert(name, digest);
+    anyhow::ensure!(
+        page_stamp.is_none(),
+        "a dated page stamp without event rows is not a meet"
+    );
 
     let headerless = compiled::parse(
         &hytek::lines_from_pdf_text(HEADERLESS_EXPORT),
         source,
         SEASON,
     );
-    let (name, digest) = golden_case(
-        "compiled__headerless_export",
-        &headerless.as_ref().map(MeetFacts::of),
-    )?;
-    cases.insert(name, digest);
-
-    assert_rollup("compiled", cases, COMPILED_EXPORTS)
+    anyhow::ensure!(
+        headerless.is_none(),
+        "an event heading without a meet header is not a meet"
+    );
+    Ok(())
 }

@@ -1,0 +1,24 @@
+HTTP/2 200 
+date: Thu, 08 Oct 2026 03:27:09 GMT
+content-type: text/html; charset=utf-8
+cf-ray: a4720c4d9a2fc474-ORD
+cf-cache-status: DYNAMIC
+cache-control: public, max-age=604800
+expires: Thu, 15 Oct 2026 03:27:08 GMT
+last-modified: Thu, 08 Oct 2026 03:27:08 GMT
+server: cloudflare
+x-xss-protection: 1; mode=block
+x-xss-protection: 1; mode=block
+strict-transport-security: max-age=31536000; includeSubDomains; preload;
+vary: *, accept-encoding
+content-security-policy: frame-ancestors 'self' https://*.sprxcms.com https://*.tiarccms.co.uk https://*.sprxvr.com https://*.sparxvr.com;
+feature-policy: sync-xhr 'self' https://cdn.knightlab.com; geolocation 'none'; camera 'none'; microphone 'none'; fullscreen *;
+referrer-policy: strict-origin
+x-content-type-options: nosniff
+x-frame-options: SAMEORIGIN
+x-html-minification-powered-by: WebMarkupMin
+x-ua-compatible: IE=edge
+set-cookie: culture=en-GB; expires=Fri, 08-Oct-2027 03:27:08 GMT; path=/; secure
+set-cookie: ASP.NET_SessionId=pqx32yb1zzki0zislwmf1m4q; path=/; HttpOnly; SameSite=Lax; secure
+set-cookie: __cf_bm=c.oX7jTC_fA_3367f88wHGLt5OpRkf.84c.1nyn4fcU-1791430028.4194374-1.0.1.1-Fb7YZkKizN43Tm7rcxY1WV7fts6vg.ZNkdsJjMK2HKVY8CfgDeAkT.36jKb4A3BAEt_H0hI98KXdyG.tg8gF6_5gPU6JVwD6S.IQViRsYr584Bjpdzq4mzkboTqI5iZY; HttpOnly; SameSite=None; Secure; Path=/; Domain=www.jesuithighschool.org; Expires=Thu, 08 Oct 2026 03:57:09 GMT
+

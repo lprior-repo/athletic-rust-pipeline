@@ -1,0 +1,22 @@
+HTTP/2 301 
+date: Thu, 08 Oct 2026 03:27:00 GMT
+content-type: text/html; charset=utf-8
+location: /student-life/athletics/teams-seasons
+cf-ray: a4720c192fd1cc1a-ORD
+cf-cache-status: DYNAMIC
+cache-control: private
+server: cloudflare
+vary: accept-encoding
+strict-transport-security: max-age=31536000; includeSubDomains; preload;
+content-security-policy: frame-ancestors 'self' https://*.sprxcms.com https://*.tiarccms.co.uk https://*.sprxvr.com https://*.sparxvr.com;
+feature-policy: sync-xhr 'self' https://cdn.knightlab.com; geolocation 'none'; camera 'none'; microphone 'none'; fullscreen *;
+referrer-policy: strict-origin
+x-content-type-options: nosniff
+x-frame-options: SAMEORIGIN
+x-ua-compatible: IE=edge
+x-xss-protection: 1; mode=block
+x-xss-protection: 1; mode=block
+set-cookie: culture=en-GB; expires=Fri, 08-Oct-2027 03:27:00 GMT; path=/; secure
+set-cookie: ASP.NET_SessionId=n2d0hysruckm4rdrxnl4lrml; path=/; HttpOnly; SameSite=Lax; secure
+set-cookie: __cf_bm=AoRWW3t4I1O.PRLXJWdS5pU78z3Y1jGsXM_PM59oc.A-1791430020.0259936-1.0.1.1-upTq.7Xai5.Wbw1.oD5.4h1HhquZXwwMf_8lDFtwu8cJ8wkQUPELpuh.4vRyenS21jcAXFb09zrlC8zNJvosPknn.E7iVaqe7hmMptfvlPL705HnLHCehT53GpBS5R9b; HttpOnly; SameSite=None; Secure; Path=/; Domain=www.jesuithighschool.org; Expires=Thu, 08 Oct 2026 03:57:00 GMT
+

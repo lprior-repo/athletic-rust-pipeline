@@ -23,24 +23,32 @@ fn parse_inches_hundredths(s: &str) -> Option<i64> {
     if frac.len() > 2 || !frac.bytes().all(|byte| byte.is_ascii_digit()) {
         return None;
     }
-    let whole: i64 = if whole.is_empty() {
-        if s.get(1..).is_none_or(str::is_empty) {
-            return None;
-        }
-        0
-    } else {
-        whole.parse().ok()?
-    };
-    let frac = match frac.len() {
-        0 => 0,
-        1 => frac.parse::<i64>().ok()?.checked_mul(10)?,
-        2 => frac.parse::<i64>().ok()?,
-        _ => return None,
-    };
+    let whole = parse_whole_inches(whole, s)?;
+    let frac = parse_fractional_inches(frac)?;
     if whole < 0 || frac < 0 {
         return None;
     }
     whole.checked_mul(100)?.checked_add(frac)
+}
+
+fn parse_whole_inches(whole: &str, source: &str) -> Option<i64> {
+    if whole.is_empty() {
+        if source.get(1..).is_none_or(str::is_empty) {
+            return None;
+        }
+        Some(0)
+    } else {
+        whole.parse().ok()
+    }
+}
+
+fn parse_fractional_inches(fraction: &str) -> Option<i64> {
+    match fraction.len() {
+        0 => Some(0),
+        1 => fraction.parse::<i64>().ok()?.checked_mul(10),
+        2 => fraction.parse().ok(),
+        _ => None,
+    }
 }
 
 pub(crate) fn parse_field_imperial(feet_mark: &str) -> Option<i64> {

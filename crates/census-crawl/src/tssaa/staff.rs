@@ -28,37 +28,70 @@ impl Patterns {
 pub(super) fn coach_rows(text: &str, outcome: &mut ReadOutcome) -> CrawlResult<Vec<CoachRow>> {
     let headers = compile_pattern(fields::CARD_HEADER, "tssaa card header")?;
     let patterns = Patterns::new()?;
-    let cards: Vec<_> = headers
-        .captures_iter(text)
-        .map(|captures| {
-            (
-                captures.get(0).map_or(0, |row| row.start()),
-                fields::strip_tags(&patterns.tag, group(&captures, 1)),
-            )
-        })
-        .collect();
-    Ok(patterns
-        .rows
-        .captures_iter(text)
-        .filter_map(|captures| {
-            let offset = captures.get(0).map_or(0, |row| row.start());
-            let header = fields::header_for(&cards, offset);
-            let (sport, gender) = fields::classify(header)?;
-            let html = group(&captures, 1);
-            let row = parse_row(html, header, sport, gender, &patterns)
-                .map_err(|detail| outcome.skip(line_of(text, offset), "appointment", detail))
-                .ok()
-                .flatten();
-            if row.as_ref().is_some_and(|row| row.email.is_none()) && html.contains("mail_hide(") {
-                outcome.note(
-                    line_of(text, offset),
-                    "email",
-                    "published mail call is malformed",
-                );
-            }
-            row
-        })
-        .collect())
+    let mut cards = Vec::new();
+    for captures in headers.captures_iter(text) {
+        admit_rows(cards.len())?;
+        cards.push((
+            captures.get(0).map_or(0, |row| row.start()),
+            fields::strip_tags(&patterns.tag, group(&captures, 1)),
+        ));
+    }
+    let mut rows = Vec::new();
+    for (count, captures) in patterns.rows.captures_iter(text).enumerate() {
+        admit_rows(count)?;
+        let offset = captures.get(0).map_or(0, |row| row.start());
+        let header = fields::header_for(&cards, offset);
+        if let Some((sport, gender)) = fields::classify(header) {
+            append_row(
+                &mut rows,
+                outcome,
+                group(&captures, 1),
+                (header, sport, gender, line_of(text, offset)),
+                &patterns,
+            )?;
+        }
+    }
+    Ok(rows)
+}
+
+fn admit_rows(count: usize) -> CrawlResult<()> {
+    if count >= 20_000 {
+        return Err(crate::CrawlError::Resource {
+            resource: "TSSAA staff rows",
+            requested: count.saturating_add(1),
+            limit: 20_000,
+        });
+    }
+    Ok(())
+}
+
+fn append_row(
+    rows: &mut Vec<CoachRow>,
+    outcome: &mut ReadOutcome,
+    html: &str,
+    context: (
+        &str,
+        Option<census_domain::model::Sport>,
+        census_domain::model::Gender,
+        usize,
+    ),
+    patterns: &Patterns,
+) -> CrawlResult<()> {
+    let (header, sport, gender, line) = context;
+    let row = match parse_row(html, header, sport, gender, patterns) {
+        Ok(row) => row,
+        Err(error) => {
+            outcome.skip(line, "appointment", error)?;
+            None
+        }
+    };
+    if row.as_ref().is_some_and(|row| row.email.is_none()) && html.contains("mail_hide(") {
+        outcome.note(line, "email", "published mail call is malformed")?;
+    }
+    if let Some(row) = row {
+        rows.push(row);
+    }
+    Ok(())
 }
 
 fn parse_row(

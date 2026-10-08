@@ -70,7 +70,7 @@ fn page_analysis_extracts_emails_hits_and_tables() -> TestResult {
         "https://example.k12.us/athletics",
         &page(),
         &mut signals,
-    );
+    )?;
     signals.finish();
     check!(eq; signals.emails, vec![
         "coach.smith@example.org".to_string(),
@@ -118,7 +118,7 @@ fn page_analysis_extracts_director_hits() -> TestResult {
         "https://example.k12.us/athletics",
         &page(),
         &mut signals,
-    );
+    )?;
     signals.finish();
     check!(eq; signals.ad_hits.len(), 2);
     check!(signals
@@ -134,7 +134,7 @@ fn junk_context_is_rejected() -> TestResult {
     let html =
         "<p>Track Coach John Doe passed away in 2019, a former coach remembered by alumni.</p>";
     let mut signals = Signals::default();
-    analyse(&rules, "https://example.org/memory", html, &mut signals);
+    analyse(&rules, "https://example.org/memory", html, &mut signals)?;
     check!(eq; signals.coach_hits.len(), 0);
     Ok(())
 }

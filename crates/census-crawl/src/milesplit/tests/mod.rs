@@ -16,7 +16,7 @@ const RESULTS_INDEX: &str = include_str!("../../../tests/fixtures/milesplit/oh_r
 
 #[test]
 fn parses_team_index_rows() -> TestResult {
-    let teams = parse_team_index(TEAMS)?;
+    let teams = parse_team_index(TEAMS)?.teams;
     check!(eq; teams.len(), 40);
     check!(eq; teams[0].id, "52649");
     check!(eq; teams[0].name, "Abbotsford");
@@ -26,7 +26,7 @@ fn parses_team_index_rows() -> TestResult {
 
 #[test]
 fn parses_roster_rows_with_grad_year_and_seasons() -> TestResult {
-    let teams = parse_team_index(TEAMS)?;
+    let teams = parse_team_index(TEAMS)?.teams;
     let parsed = parse_roster(ROSTER, teams[0].clone())?;
     let roster = parsed
         .roster()
@@ -56,18 +56,19 @@ fn parses_roster_rows_with_grad_year_and_seasons() -> TestResult {
 
 #[test]
 fn roster_entities_are_canonical_and_source_independent() -> TestResult {
-    let teams = parse_team_index(TEAMS)?;
+    let teams = parse_team_index(TEAMS)?.teams;
     let parsed = parse_roster(ROSTER, teams[0].clone())?;
     let roster = parsed
         .roster()
         .ok_or("the fixture has readable roster rows")?;
     let site = Site::for_jurisdiction(UsJurisdiction::Wisconsin);
     let (school, athletes, teams_out) = roster_entities(
-        roster,
+        &roster.team,
+        &roster.athletes,
         SchoolYear::new(2026).ok_or("2026 is a season")?,
         "2026-09-20",
         &site,
-    );
+    )?;
     check!(eq; school.name, "Abbotsford");
     check!(eq; school.city.as_deref(), Some("Abbotsford"));
     check!(!athletes.is_empty());
@@ -94,8 +95,18 @@ fn roster_entities_are_canonical_and_source_independent() -> TestResult {
 
 #[test]
 fn malformed_html_fails_loudly() -> TestResult {
-    check!(parse_team_index("<html><body>no rows</body></html>").is_err());
-    let teams = parse_team_index(TEAMS)?;
+    let html = "<html><body>no rows</body></html>";
+    let index = parse_team_index(html)?;
+    check!(eq; index.disposition, crate::CollectionDisposition::Quarantined);
+    check!(index.teams.is_empty());
+    check!(eq; index.errors, 1);
+    check!(eq; index.unfinished.len(), 1);
+    check!(index
+        .unfinished
+        .first()
+        .ok_or("rejected inventory")?
+        .starts_with(&format!("milesplit:teams#bytes=0-{}:", html.len())));
+    let teams = parse_team_index(TEAMS)?.teams;
     let outcome = parse_roster("<html></html>", teams[0].clone())?;
     check!(matches!(
         outcome,
@@ -121,7 +132,7 @@ const OH_MEET_RESULTS_URL: &str =
 
 #[test]
 fn team_index_row_count_pins_a_whole_state_in_one_body() -> TestResult {
-    let teams = parse_team_index(OH_TEAMS)?;
+    let teams = parse_team_index(OH_TEAMS)?.teams;
     check!(eq; teams.len(), 977);
     let unique: std::collections::HashSet<&str> =
         teams.iter().map(|team| team.id.as_str()).collect();
@@ -143,7 +154,7 @@ fn team_index_row_count_pins_a_whole_state_in_one_body() -> TestResult {
 
 #[test]
 fn oh_roster_pins_319_graded_rows_and_96_class_of_2027() -> TestResult {
-    let teams = parse_team_index(OH_TEAMS)?;
+    let teams = parse_team_index(OH_TEAMS)?.teams;
     let mason = teams
         .iter()
         .find(|team| team.id == "10002")
@@ -206,12 +217,15 @@ mod roster_entities;
 
 #[test]
 fn rejected_rows_keep_their_provider_identity_and_exact_utf8_span() -> TestResult {
-    let team = parse_team_index(TEAMS)?.remove(0);
+    let team = parse_team_index(TEAMS)?.teams.remove(0);
     let body = format!(
         "é\n{}",
         ROSTER.replacen("column-grad-year\">2027", "column-grad-year\">invalid", 1)
     );
-    let RosterVerdict::Partial { roster, rejected } = parse_roster(&body, team)? else {
+    let RosterVerdict::Partial {
+        roster, rejected, ..
+    } = parse_roster(&body, team)?
+    else {
         return Err("one malformed graduation year must not discard the readable rows".into());
     };
     check!(eq; roster.athletes.len(), 24);
@@ -241,9 +255,12 @@ fn rejected_rows_keep_their_provider_identity_and_exact_utf8_span() -> TestResul
 
 #[test]
 fn a_missing_name_does_not_erase_a_readable_provider_identity() -> TestResult {
-    let team = parse_team_index(TEAMS)?.remove(0);
+    let team = parse_team_index(TEAMS)?.teams.remove(0);
     let body = "<li class=\"athlete-row data-row\"><a href=\"https://wi.milesplit.com/athletes/42-empty\"></a></li>";
-    let RosterVerdict::Quarantined { reason, rejected } = parse_roster(body, team)? else {
+    let RosterVerdict::Quarantined {
+        reason, rejected, ..
+    } = parse_roster(body, team)?
+    else {
         return Err("an unnamed athlete cannot be published".into());
     };
     check!(eq; reason, RosterQuarantine::NoReadableRows);
@@ -255,10 +272,10 @@ fn a_missing_name_does_not_erase_a_readable_provider_identity() -> TestResult {
 
 #[test]
 fn an_empty_known_roster_is_a_named_gap_not_negative_identity_evidence() -> TestResult {
-    let team = parse_team_index(TEAMS)?.remove(0);
+    let team = parse_team_index(TEAMS)?.teams.remove(0);
     let outcome = parse_roster("<ul id=\"rosterDataset\"></ul>", team)?;
     check!(matches!(outcome, RosterVerdict::Quarantined {
-        reason: RosterQuarantine::NoReadableRows, rejected
+        reason: RosterQuarantine::NoReadableRows, rejected, ..
     } if rejected.is_empty()));
     Ok(())
 }

@@ -118,6 +118,7 @@ async fn acquire(store: &Store, fetcher: &Fetcher, observed: &str) -> Result<Ada
         refresh: false,
         school_year: SchoolYear::new(2026).context("unsupported school year")?,
         observed_on: observed.to_owned(),
+        performance_as_of: chrono::DateTime::parse_from_rfc3339(observed)?.date_naive(),
         recording: None,
     };
     Ok(coach_directories::collect(

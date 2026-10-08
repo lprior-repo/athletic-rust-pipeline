@@ -56,7 +56,11 @@ fn school_from_table(table: &SchoolTable, capture: &FetchOutcome) -> (CanonicalS
     (school, id)
 }
 
-fn coach_from_row(school_id: &SchoolId, row: &CoachRow, capture: &FetchOutcome) -> CanonicalCoach {
+pub(super) fn coach_from_row(
+    school_id: &SchoolId,
+    row: &CoachRow,
+    capture: &FetchOutcome,
+) -> CanonicalCoach {
     let gender = gender_from_label(&row.sport_label);
     let mut coach = CanonicalCoach::new(
         school_id,

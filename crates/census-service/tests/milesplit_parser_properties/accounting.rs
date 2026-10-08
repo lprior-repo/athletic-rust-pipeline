@@ -3,7 +3,7 @@ use super::{
     OH_FILE_LIST,
 };
 use census_crawl::result_file::ParsedRow;
-use census_domain::model::{CentiSeconds, Grade, Mark};
+use census_domain::model::{ExactSeconds, Grade, Mark};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -106,7 +106,7 @@ fn the_captures_rows_keep_their_published_fields() -> TestResult {
     check!(eq; winner.place, Some(1));
     check!(eq; winner.school, "North Buncombe");
     check!(eq; winner.grade, Some(Grade::new(12).ok_or("invalid grade")?));
-    check!(eq; winner.mark, Mark::TimeSeconds(CentiSeconds::new(52473)));
+    check!(eq; winner.mark, Mark::TimeSeconds(ExactSeconds::parse("524.73")?));
 
     let eighth = rows
         .iter()
@@ -116,7 +116,7 @@ fn the_captures_rows_keep_their_published_fields() -> TestResult {
     check!(eq; eighth.school, "North Raleigh Christ");
     check!(eq; eighth.grade, None,
     "an eighth grader is outside the domain's high-school grades");
-    check!(eq; eighth.mark, Mark::TimeSeconds(CentiSeconds::new(54250)));
+    check!(eq; eighth.mark, Mark::TimeSeconds(ExactSeconds::parse("542.50")?));
 
     let unplaced = rows
         .iter()

@@ -1,10 +1,16 @@
+pub(crate) mod acquisition;
+mod limits;
+mod outcome;
+pub use outcome::ReadOutcome;
+mod detail;
+pub use detail::issue_detail;
+
 use census_domain::school_directory::{
-    CityName, Coordinates, DirectoryError, Grade, GradeSpan, PostalAddress, SchoolDirectoryEntry,
-    StreetLine, ZipCode,
+    CityName, Coordinates, DirectoryError, Grade, GradeSpan, PostalAddress, StreetLine, ZipCode,
 };
 use census_domain::UsJurisdiction;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
 pub struct RowIssue {
     pub line: usize,
     pub field: &'static str,
@@ -12,12 +18,17 @@ pub struct RowIssue {
 }
 
 impl RowIssue {
-    pub fn new(line: usize, field: &'static str, detail: impl Into<String>) -> Self {
-        Self {
+    pub fn new(
+        line: usize,
+        field: &'static str,
+        detail: impl AsRef<str>,
+    ) -> Result<Self, DirectoryError> {
+        limits::check("directory issue field bytes", field.len(), 128)?;
+        Ok(Self {
             line,
             field,
-            detail: detail.into(),
-        }
+            detail: limits::text(detail.as_ref())?,
+        })
     }
 
     pub fn render(&self) -> String {
@@ -32,82 +43,21 @@ pub struct ReadCounts {
     pub notes: usize,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct ReadOutcome {
-    entries: Vec<SchoolDirectoryEntry>,
-    skipped: Vec<RowIssue>,
-    notes: Vec<RowIssue>,
-}
-
-impl ReadOutcome {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn push(&mut self, entry: SchoolDirectoryEntry) {
-        self.entries.push(entry);
-    }
-
-    pub fn skip(&mut self, line: usize, field: &'static str, detail: impl Into<String>) {
-        self.skipped.push(RowIssue::new(line, field, detail));
-    }
-
-    pub fn note(&mut self, line: usize, field: &'static str, detail: impl Into<String>) {
-        self.notes.push(RowIssue::new(line, field, detail));
-    }
-
-    pub fn entries(&self) -> &[SchoolDirectoryEntry] {
-        &self.entries
-    }
-
-    pub fn skipped(&self) -> &[RowIssue] {
-        &self.skipped
-    }
-
-    pub fn notes(&self) -> &[RowIssue] {
-        &self.notes
-    }
-
-    pub fn into_entries(self) -> Vec<SchoolDirectoryEntry> {
-        self.entries
-    }
-
-    pub fn counts(&self) -> ReadCounts {
-        ReadCounts {
-            entries: self.entries.len(),
-            skipped: self.skipped.len(),
-            notes: self.notes.len(),
-        }
-    }
-
-    pub fn absorb(&mut self, other: ReadOutcome) {
-        self.entries.extend(other.entries);
-        self.skipped.extend(other.skipped);
-        self.notes.extend(other.notes);
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FieldFailure {
     pub field: &'static str,
-    pub detail: String,
+    pub error: DirectoryError,
 }
 
 pub fn field<T>(name: &'static str, parsed: Result<T, DirectoryError>) -> Result<T, FieldFailure> {
-    parsed.map_err(|error| FieldFailure {
-        field: name,
-        detail: error.to_string(),
-    })
+    parsed.map_err(|error| FieldFailure { field: name, error })
 }
 
 pub fn optional<T>(
     name: &'static str,
     parsed: Result<Option<T>, DirectoryError>,
 ) -> Result<Option<T>, FieldFailure> {
-    parsed.map_err(|error| FieldFailure {
-        field: name,
-        detail: error.to_string(),
-    })
+    field(name, parsed)
 }
 
 pub fn skip_row<T>(
@@ -115,12 +65,13 @@ pub fn skip_row<T>(
     line: usize,
     field: &'static str,
     parsed: Result<T, DirectoryError>,
-) -> Option<T> {
+) -> Result<Option<T>, DirectoryError> {
     match parsed {
-        Ok(value) => Some(value),
+        Ok(value) => Ok(Some(value)),
+        Err(error) if error.is_resource() => Err(error),
         Err(error) => {
-            outcome.skip(line, field, error.to_string());
-            None
+            outcome.skip(line, field, issue_detail(format_args!("{error}"))?)?;
+            Ok(None)
         }
     }
 }
@@ -130,12 +81,13 @@ pub fn skip_optional<T>(
     line: usize,
     field: &'static str,
     parsed: Result<Option<T>, DirectoryError>,
-) -> Option<T> {
+) -> Result<Option<T>, DirectoryError> {
     match parsed {
-        Ok(value) => value,
+        Ok(value) => Ok(value),
+        Err(error) if error.is_resource() => Err(error),
         Err(error) => {
-            outcome.note(line, field, error.to_string());
-            None
+            outcome.note(line, field, issue_detail(format_args!("{error}"))?)?;
+            Ok(None)
         }
     }
 }
@@ -144,12 +96,17 @@ pub fn skip_failed<T>(
     outcome: &mut ReadOutcome,
     line: usize,
     parsed: Result<T, FieldFailure>,
-) -> Option<T> {
+) -> Result<Option<T>, DirectoryError> {
     match parsed {
-        Ok(value) => Some(value),
+        Ok(value) => Ok(Some(value)),
+        Err(failure) if failure.error.is_resource() => Err(failure.error),
         Err(failure) => {
-            outcome.note(line, failure.field, failure.detail);
-            None
+            outcome.note(
+                line,
+                failure.field,
+                issue_detail(format_args!("{}", failure.error))?,
+            )?;
+            Ok(None)
         }
     }
 }
@@ -158,12 +115,17 @@ pub fn skip_absent<T>(
     outcome: &mut ReadOutcome,
     line: usize,
     parsed: Result<Option<T>, FieldFailure>,
-) -> Option<T> {
+) -> Result<Option<T>, DirectoryError> {
     match parsed {
-        Ok(value) => value,
+        Ok(value) => Ok(value),
+        Err(failure) if failure.error.is_resource() => Err(failure.error),
         Err(failure) => {
-            outcome.note(line, failure.field, failure.detail);
-            None
+            outcome.note(
+                line,
+                failure.field,
+                issue_detail(format_args!("{}", failure.error))?,
+            )?;
+            Ok(None)
         }
     }
 }
@@ -223,17 +185,13 @@ pub fn grade_span(low: &str, high: &str) -> Result<Option<GradeSpan>, FieldFailu
     let low = field("grades", Grade::parse(low))?;
     let high = field("grades", Grade::parse(high))?;
     match (low, high) {
-        (Some(low), Some(high)) => {
-            GradeSpan::new(low, high)
-                .map(Some)
-                .map_err(|error| FieldFailure {
-                    field: "grades",
-                    detail: error.to_string(),
-                })
-        }
+        (Some(low), Some(high)) => field("grades", GradeSpan::new(low, high)).map(Some),
         (low, high) => Err(FieldFailure {
             field: "grades",
-            detail: format!("{}..{} has no rankable grade", label(low), label(high)),
+            error: DirectoryError::UnsupportedValue {
+                field: "grades",
+                value: format!("{}..{}", label(low), label(high)),
+            },
         }),
     }
 }
@@ -262,7 +220,7 @@ mod artifact;
 #[path = "directory/pattern.rs"]
 mod pattern;
 
-pub use artifact::{cell, first, read_rows, refusal, Header};
+pub use artifact::{cell, first, read_rows, refusal, CsvRow, Header};
 
 pub use pattern::{compile_pattern, group, line_of};
 

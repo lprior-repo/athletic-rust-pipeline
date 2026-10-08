@@ -1,174 +1,74 @@
-use super::super::map::{school_entities, SchoolExtract};
-use super::super::parse::{parse_school_page, IndexEntry, SchoolPage};
-use super::super::{count, fetch_options, Options};
-use crate::net::{FetchError, FetchOptions, FetchOutcome};
-use crate::{AdapterContext, AdapterReport, CrawlResult};
+use super::super::map::school_entities;
+use super::super::parse::{parse_school_page, IndexEntry};
+use super::super::{fetch_options, Options, ASSOCIATION};
+use crate::directory::acquisition::{
+    fail, owe, publish as persist, publish_school as school, text,
+};
+use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_domain::model::{normalize_name, SourceNamespace};
 use census_store::Table;
-use futures::stream::{self, StreamExt};
-use std::collections::HashSet;
-
-#[derive(Debug, Default)]
-pub(super) struct SchoolTally {
-    pub(super) processed: usize,
-    pub(super) skipped_done: usize,
-    pub(super) skipped_filter: usize,
-    pub(super) not_found: usize,
-    pub(super) page_failures: usize,
-    pub(super) coach_rows: usize,
-    pub(super) with_email: u64,
-    pub(super) skipped_admin_roles: Vec<String>,
-    pub(super) skipped_coach_rows: usize,
-}
-
-pub(super) async fn plan_schools(
-    ctx: &AdapterContext<'_>,
-    options: &Options,
-    index: &[IndexEntry],
-    done: &HashSet<String>,
-    tally: &mut SchoolTally,
-) -> Vec<(usize, Result<FetchOutcome, FetchError>)> {
-    let wanted: Option<HashSet<String>> = if options.school_names.is_empty() {
-        None
-    } else {
-        Some(
-            options
-                .school_names
-                .iter()
-                .map(|name| normalize_name(name))
-                .collect(),
-        )
-    };
-
-    let eligible: Vec<(usize, IndexEntry)> = index
-        .iter()
-        .enumerate()
-        .filter(|(_, entry)| {
-            if let Some(wanted) = wanted.as_ref() {
-                if !wanted.contains(&normalize_name(&entry.name)) {
-                    tally.skipped_filter = tally.skipped_filter.saturating_add(1);
-                    return false;
-                }
-            }
-            let key = format!("WI:{}", entry.org_id);
-            if done.contains(&key) {
-                tally.skipped_done = tally.skipped_done.saturating_add(1);
-                return false;
-            }
-            true
-        })
-        .map(|(index, entry)| (index, entry.clone()))
-        .collect();
-
-    const SCHOOL_CONCURRENCY: usize = crate::CONCURRENCY_BOUND;
-    stream::iter(eligible)
-        .map(|(idx, entry)| {
-            let url = entry.page_url();
-            let page_options = FetchOptions {
-                allow_not_found: true,
-                ..fetch_options(ctx, options)
-            };
-            async move { (idx, ctx.fetcher.get(&url, &page_options).await) }
-        })
-        .buffer_unordered(SCHOOL_CONCURRENCY)
-        .collect::<Vec<_>>()
-        .await
-}
 
 pub(super) async fn process_school(
     ctx: &AdapterContext<'_>,
-    report: &mut AdapterReport,
-    tally: &mut SchoolTally,
+    options: &Options,
     entry: &IndexEntry,
-    result: Result<FetchOutcome, FetchError>,
-    observed_on: &str,
+    progress: (&mut AdapterReport, &mut usize),
 ) -> CrawlResult<()> {
-    let key = format!("WI:{}", entry.org_id);
-    let outcome = match result {
-        Ok(outcome) => outcome,
-        Err(error) => {
-            tally.page_failures = tally.page_failures.saturating_add(1);
-            report.errors = report.errors.saturating_add(1);
-            if tally.page_failures <= 5 {
-                report.note(format!("school {key}: {error}"));
-            }
-            return Ok(());
-        }
-    };
-    if outcome.status == 404 {
-        tally.not_found = tally.not_found.saturating_add(1);
+    let (report, attempted) = progress;
+    if !options.school_names.is_empty()
+        && !options
+            .school_names
+            .iter()
+            .any(|name| normalize_name(name) == normalize_name(&entry.name))
+    {
         return Ok(());
     }
-    if outcome.status != 200 {
-        tally.page_failures = tally.page_failures.saturating_add(1);
-        report.errors = report.errors.saturating_add(1);
-        if tally.page_failures <= 5 {
-            report.note(format!("school {key}: HTTP {}", outcome.status));
-        }
-        return Ok(());
+    let url = entry.page_url();
+    if options.limit.is_some_and(|limit| *attempted >= limit) {
+        return owe(report, url);
     }
-
-    let page = parse_school_page(&outcome.text());
-    let Some(extract) = school_entities(entry, &page, observed_on) else {
-        tally.page_failures = tally.page_failures.saturating_add(1);
-        report.errors = report.errors.saturating_add(1);
-        if tally.page_failures <= 5 {
-            report.note(format!("school {key}: page carried no school name"));
-        }
-        return Ok(());
+    *attempted = attempted
+        .checked_add(1)
+        .ok_or_else(|| CrawlError::Arithmetic {
+            detail: "school counter".into(),
+        })?;
+    let capture = match ctx.fetcher.get(&url, &fetch_options(ctx, options)).await {
+        Ok(capture) if capture.status == 200 => capture,
+        Ok(capture) => return fail(report, &url, format!("HTTP {}", capture.status)),
+        Err(error) => return fail(report, &url, error),
     };
-    record_school(ctx, tally, &key, entry, &page, extract)
-}
-
-fn record_school(
-    ctx: &AdapterContext<'_>,
-    tally: &mut SchoolTally,
-    key: &str,
-    entry: &IndexEntry,
-    page: &SchoolPage,
-    extract: SchoolExtract,
-) -> CrawlResult<()> {
-    let mut batch = ctx.store.write_batch();
-    batch.append_many(Table::Schools, std::slice::from_ref(&extract.school))?;
-    batch.append_many(
-        Table::SourceObservations,
-        ctx.school_observation(
-            &SourceNamespace::association_school(super::super::ASSOCIATION),
+    let body = match text(&capture) {
+        Ok(body) => body,
+        Err(error) => return fail(report, &url, error),
+    };
+    let page = parse_school_page(body);
+    if page.name.trim().is_empty() || normalize_name(&page.name) != normalize_name(&entry.name) {
+        return fail(report, &url, "missing or foreign school owner");
+    }
+    let Some(extract) = school_entities(entry, &page, &capture.fetched_at) else {
+        return fail(report, &url, "missing school owner");
+    };
+    let written = school(
+        ctx,
+        ("wiaa", &url),
+        (
+            &SourceNamespace::association_school(ASSOCIATION),
             &extract.school,
-        )
-        .as_slice(),
+            &capture.fetched_at,
+        ),
+        report,
     )?;
-    batch.append_many(Table::Coaches, &extract.coaches)?;
-
-    let school_with_email = extract
-        .coaches
-        .iter()
-        .filter(|coach| coach.professional_email.is_some() || coach.personal_email.is_some())
-        .count();
-    tally.with_email = tally.with_email.saturating_add(count(school_with_email));
-    tally.coach_rows = tally.coach_rows.saturating_add(extract.coaches.len());
-    tally.skipped_coach_rows = tally
-        .skipped_coach_rows
-        .saturating_add(extract.skipped_coach_rows);
-    for role in extract.skipped_admin_roles {
-        if !tally.skipped_admin_roles.iter().any(|seen| seen == &role) {
-            tally.skipped_admin_roles.push(role);
-        }
-    }
-
-    let payload = serde_json::json!({
-        "org_id": entry.org_id,
-        "name": extract.school.name,
-        "city": extract.school.city,
-        "conference": extract.school.classification,
-        "level": page.level,
-        "coaches": extract.coaches.len(),
-        "coaches_with_email": school_with_email,
-    });
-    batch.journal_done("wiaa_schools", key, &payload)?;
-    batch.journal_done("wiaa_coaches", key, &payload)?;
-    batch.commit()?;
-
-    tally.processed = tally.processed.saturating_add(1);
+    persist(
+        ctx,
+        ("wiaa", &url),
+        Table::Coaches,
+        &extract.coaches,
+        report,
+    )?;
+    report.rows = report
+        .rows
+        .saturating_add(u64::try_from(written).map_err(|_| CrawlError::Arithmetic {
+            detail: "school count".into(),
+        })?);
     Ok(())
 }

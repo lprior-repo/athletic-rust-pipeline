@@ -1,7 +1,7 @@
 use crate::hytek::{parse_field_mark, parse_time};
-use census_domain::model::{CentiMetres, CentiSeconds, Mark, TimingMethod};
+use census_domain::model::{CentiMetres, ExactSeconds, Mark, TimingMethod};
 
-pub fn parse_published_time(value: &str) -> Option<(CentiSeconds, Option<TimingMethod>)> {
+pub fn parse_published_time(value: &str) -> Option<(ExactSeconds, Option<TimingMethod>)> {
     let value = value.trim();
     if value.is_empty() {
         return None;
@@ -58,19 +58,19 @@ mod tests {
     #[test]
     fn parse_published_fat_timing() -> TestResult {
         let (time, method) = parse_published_time("24.95a").ok_or("24.95a FAT time")?;
-        check!(eq; time, CentiSeconds::new(2495));
+        check!(eq; time, ExactSeconds::parse("24.95")?);
         check!(eq; method, Some(TimingMethod::Fat));
 
         let (time, method) = parse_published_time("11.52a").ok_or("11.52a FAT time")?;
-        check!(eq; time, CentiSeconds::new(1152));
+        check!(eq; time, ExactSeconds::parse("11.52")?);
         check!(eq; method, Some(TimingMethod::Fat));
 
         let (time, method) = parse_published_time("3:00.64a").ok_or("3:00.64a FAT time")?;
-        check!(eq; time, CentiSeconds::new(18064));
+        check!(eq; time, ExactSeconds::parse("180.64")?);
         check!(eq; method, Some(TimingMethod::Fat));
 
         let (time, method) = parse_published_time("24.95A").ok_or("24.95A FAT time")?;
-        check!(eq; time, CentiSeconds::new(2495));
+        check!(eq; time, ExactSeconds::parse("24.95")?);
         check!(eq; method, Some(TimingMethod::Fat));
         Ok(())
     }
@@ -78,11 +78,11 @@ mod tests {
     #[test]
     fn parse_published_hand_timing() -> TestResult {
         let (time, method) = parse_published_time("11.32h").ok_or("11.32h hand time")?;
-        check!(eq; time, CentiSeconds::new(1132));
+        check!(eq; time, ExactSeconds::parse("11.32")?);
         check!(eq; method, Some(TimingMethod::Hand));
 
         let (time, method) = parse_published_time("11.32H").ok_or("11.32H hand time")?;
-        check!(eq; time, CentiSeconds::new(1132));
+        check!(eq; time, ExactSeconds::parse("11.32")?);
         check!(eq; method, Some(TimingMethod::Hand));
         Ok(())
     }
@@ -90,11 +90,11 @@ mod tests {
     #[test]
     fn parse_published_plain_numeric() -> TestResult {
         let (time, method) = parse_published_time("11.32").ok_or("11.32 numeric time")?;
-        check!(eq; time, CentiSeconds::new(1132));
+        check!(eq; time, ExactSeconds::parse("11.32")?);
         check!(eq; method, None);
 
         let (time, method) = parse_published_time("3:00.64").ok_or("3:00.64 numeric time")?;
-        check!(eq; time, CentiSeconds::new(18064));
+        check!(eq; time, ExactSeconds::parse("180.64")?);
         check!(eq; method, None);
         Ok(())
     }
@@ -137,11 +137,11 @@ mod tests {
     #[test]
     fn parse_published_trims_whitespace() -> TestResult {
         let (time, method) = parse_published_time(" 11.32 ").ok_or("spaced numeric time")?;
-        check!(eq; time, CentiSeconds::new(1132));
+        check!(eq; time, ExactSeconds::parse("11.32")?);
         check!(eq; method, None);
 
         let (time, method) = parse_published_time(" 24.95a ").ok_or("spaced FAT time")?;
-        check!(eq; time, CentiSeconds::new(2495));
+        check!(eq; time, ExactSeconds::parse("24.95")?);
         check!(eq; method, Some(TimingMethod::Fat));
         Ok(())
     }
@@ -168,7 +168,7 @@ mod tests {
             .ok_or("published grade-11 100m result")?;
         check!(eq;
             row.mark,
-            census_domain::model::Mark::TimeSeconds(CentiSeconds::new(1267))
+            census_domain::model::Mark::TimeSeconds(ExactSeconds::parse("12.67")?)
         );
         check!(eq; row.timing, Some(TimingMethod::Fat));
         Ok(())

@@ -5,9 +5,9 @@ mod fallible_checks;
 use calamine::Reader;
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam, CentiSeconds, CompetitionLevel, EventKind, Evidence, Gender,
-    GradYear, Grade, Id, Mark, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
-    TimingMethod,
+    CanonicalSchool, CanonicalTeam, CompetitionLevel, EventIdentity, EventKind, EventSpecification,
+    Evidence, ExactSeconds, Gender, GradYear, Grade, Id, Mark, SchoolYear, SourceIdentity,
+    SourceNamespace, SourceRef, Sport, TimingMethod,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -112,17 +112,21 @@ fn build_corpus(n: usize) -> TestResult<Corpus> {
                     source: SourceRef::id("mshsl_results"),
                 });
             let aid = a.id.clone();
-            let ev = CanonicalEvent::new(&mid, EventKind::Track100m, Gender::Boys, None, None);
+            let ev = CanonicalEvent::new(
+                EventIdentity {
+                    meet: &mid,
+                    kind: EventKind::Track100m,
+                    gender: Gender::Boys,
+                    division: None,
+                    round: None,
+                },
+                EventSpecification::default(),
+            )?;
             let eid = ev.id.clone();
             c.events.push(ev);
             c.athletes.push(a);
-            let pid = CanonicalPerformance::mint(
-                &aid,
-                &mid,
-                &EventKind::Track100m,
-                MEET_DATE,
-                &format!("kill-{i}-{s}"),
-            );
+            let pid =
+                CanonicalPerformance::mint(&aid, &mid, &eid, MEET_DATE, &format!("kill-{i}-{s}"));
             c.performances.push(CanonicalPerformance {
                 id: pid,
                 athlete: aid,
@@ -130,9 +134,7 @@ fn build_corpus(n: usize) -> TestResult<Corpus> {
                 event: eid,
                 meet: mid.clone(),
                 date: MEET_DATE.to_string(),
-                mark: Mark::TimeSeconds(
-                    CentiSeconds::try_from_seconds_f64(12.0).ok_or("invalid fixture time")?,
-                ),
+                mark: Mark::TimeSeconds(ExactSeconds::parse("12.00")?),
                 wind_mps: None,
                 place: Some(1),
                 heat: None,

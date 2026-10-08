@@ -1,20 +1,28 @@
 mod write;
 
-use super::map::{capture_note, school_entities};
-use super::pages::checked::parse_capture;
-use super::{Options, ASSOCIATION};
-use crate::net::{FetchError, FetchOptions, FetchOutcome};
-use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
-use census_domain::model::{SourceNamespace, SourceObservation, SourceSchoolObservation};
+use super::map::{coach_from_row, school_entities, CoachRow, SchoolExtract, SchoolTable};
+use super::pages::checked::{visit_capture, DirectoryRecord};
+use super::Options;
+use crate::directory::acquisition::{fail, owe, publish};
+use crate::net::{FetchOptions, FetchOutcome};
+use crate::{AdapterContext, AdapterReport, CrawlResult};
+use census_store::Table;
 
-const JOURNAL: &str = "riil_schools";
+struct DirectoryRun<'a> {
+    ctx: &'a AdapterContext<'a>,
+    options: &'a Options,
+    capture: &'a FetchOutcome,
+    report: &'a mut AdapterReport,
+    processed: usize,
+    owner: Option<SchoolExtract>,
+    coaches: usize,
+    complete: bool,
+}
 
-#[tracing::instrument(skip(ctx, options))]
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     collect_directory(ctx, options, &format!("{}/Directory.aspx", super::HOST)).await
 }
 
-#[tracing::instrument(skip(ctx, options))]
 pub(super) async fn collect_directory(
     ctx: &AdapterContext<'_>,
     options: &Options,
@@ -22,27 +30,16 @@ pub(super) async fn collect_directory(
 ) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new("riil", "schools");
     let before = ctx.fetcher.stats().await;
-    let fetched = ctx
-        .fetcher
-        .get(
-            url,
-            &FetchOptions {
-                refresh: options.refresh || ctx.refresh,
-                ..ctx.fetch_options()
-            },
-        )
-        .await;
-    let mut tally = Tally::default();
-    match fetched {
-        Ok(capture) => match apply_directory(ctx, &capture, &mut report, &mut tally) {
-            Ok(()) => report.note(format!(
-                "parsed {} schools with {} XC/TF coach rows; {} identical committed schools skipped",
-                tally.schools, tally.coaches, tally.skipped
-            )),
-            Err(CrawlError::Store(error)) => return Err(error.into()),
-            Err(error) => fail(&mut report, error.to_string()),
-        },
-        Err(error) => fail(&mut report, format!("directory {url}: {error}")),
+    let fetch = FetchOptions {
+        refresh: options.refresh || ctx.refresh,
+        ..ctx.fetch_options()
+    };
+    match ctx.fetcher.get(url, &fetch).await {
+        Ok(capture) => apply_directory(ctx, options, &capture, &mut report)?,
+        Err(error) => fail(&mut report, url, error)?,
+    }
+    if report.unfinished.is_empty() {
+        report.finish_frontier();
     }
     let after = ctx.fetcher.stats().await;
     report.requests = after
@@ -52,81 +49,82 @@ pub(super) async fn collect_directory(
     Ok(report)
 }
 
-fn fail(report: &mut AdapterReport, detail: String) {
-    report.errors = report.errors.saturating_add(1);
-    report.note(format!("unfinished RIIL directory: {detail}"));
-}
-
 fn apply_directory(
     ctx: &AdapterContext<'_>,
+    options: &Options,
     capture: &FetchOutcome,
     report: &mut AdapterReport,
-    tally: &mut Tally,
 ) -> CrawlResult<()> {
-    if capture.status != 200 {
-        return Err(FetchError::Http {
-            status: capture.status,
-            url: capture.url.clone(),
-        }
-        .into());
-    }
-    let tables = parse_capture(capture)?;
-    if tables.is_empty() {
-        report.note("published directory contains no school entries");
-    }
-    tables
-        .iter()
-        .try_for_each(|table| process_school(ctx, table, capture, report, tally))
-}
-
-#[derive(Default)]
-struct Tally {
-    schools: usize,
-    coaches: usize,
-    skipped: usize,
-}
-
-fn process_school(
-    ctx: &AdapterContext<'_>,
-    table: &super::map::SchoolTable,
-    capture: &FetchOutcome,
-    report: &mut AdapterReport,
-    tally: &mut Tally,
-) -> CrawlResult<()> {
-    let extract = school_entities(table, capture);
-    tally.schools = tally.schools.saturating_add(1);
-    tally.coaches = tally.coaches.saturating_add(extract.coaches.len());
-    let school_key = format!("RI:{}:{}", extract.school.id, capture.content_digest);
-    if ctx.store.journal_contains(JOURNAL, &school_key)? {
-        tally.skipped = tally.skipped.saturating_add(1);
-        return Ok(());
-    }
-    let observation = SourceSchoolObservation::of_school(
-        &SourceNamespace::association_school(ASSOCIATION),
-        &extract.school,
-        &capture.fetched_at,
-    )
-    .map(|mut observation| {
-        observation.source_row_key = capture_note(capture).to_string();
-        SourceObservation::School(observation)
-    });
-    let payload = serde_json::json!({
-        "name": extract.school.name,
-        "coaches": extract.coaches.len(),
-        "xc_tf_coaches": extract.coaches.len(),
-        "capture": capture_note(capture),
-    });
-    if write::persist(
+    let mut run = DirectoryRun {
         ctx,
-        &extract,
-        observation.as_slice(),
-        &school_key,
+        options,
         capture,
-        &payload,
-    )? {
-        report.rows = report.rows.saturating_add(1);
-    } else {
-        tally.skipped = tally.skipped.saturating_add(1);
+        report,
+        processed: 0,
+        owner: None,
+        coaches: 0,
+        complete: true,
+    };
+    visit_capture(capture, |locator, parsed| run.apply(locator, parsed))
+}
+
+impl DirectoryRun<'_> {
+    fn apply(&mut self, locator: &str, parsed: CrawlResult<DirectoryRecord>) -> CrawlResult<()> {
+        match parsed {
+            Ok(DirectoryRecord::School(table)) => self.school(locator, &table),
+            Ok(DirectoryRecord::Coach(row)) => self.coach(locator, &row),
+            Ok(DirectoryRecord::Complete) => {
+                if self.complete {
+                    if let Some(owner) = &self.owner {
+                        write::complete(self.ctx, &owner.school, self.capture, self.coaches)?;
+                    }
+                }
+                Ok(())
+            }
+            Err(error) => {
+                self.complete = false;
+                fail(self.report, locator, error)
+            }
+        }
     }
-    Ok(())
+
+    fn school(&mut self, locator: &str, table: &SchoolTable) -> CrawlResult<()> {
+        self.owner = None;
+        self.coaches = 0;
+        if self
+            .options
+            .limit
+            .is_some_and(|limit| self.processed >= limit)
+        {
+            return owe(self.report, locator);
+        }
+        self.complete = true;
+        self.processed = self.processed.saturating_add(1);
+        let extract = school_entities(table, self.capture);
+        let before = self.report.errors;
+        if write::owner(self.ctx, &extract, self.capture, locator, self.report)? {
+            self.report.rows = self.report.rows.saturating_add(1);
+        }
+        self.owner = Some(extract);
+        self.complete = before == self.report.errors;
+        Ok(())
+    }
+
+    fn coach(&mut self, locator: &str, row: &CoachRow) -> CrawlResult<()> {
+        let Some(owner) = &self.owner else {
+            return Ok(());
+        };
+        let coach = coach_from_row(&owner.school.id, row, self.capture);
+        let before = self.report.errors;
+        publish(
+            self.ctx,
+            ("riil", locator),
+            Table::Coaches,
+            std::slice::from_ref(&coach),
+            self.report,
+        )?;
+        self.coaches = self.coaches.saturating_add(1);
+        self.complete &= before == self.report.errors;
+        Ok(())
+    }
 }

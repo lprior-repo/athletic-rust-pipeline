@@ -1,10 +1,10 @@
 mod centi_distance;
 mod centi_points;
-mod centi_time;
+mod exact_time;
 
 pub use centi_distance::CentiMetres;
 pub use centi_points::CentiPoints;
-pub use centi_time::CentiSeconds;
+pub use exact_time::{ExactSeconds, TimeError};
 
 fn checked_hundredths(value: f64) -> Option<i32> {
     rust_decimal::prelude::ToPrimitive::to_i32(&(value * 100.0).round())

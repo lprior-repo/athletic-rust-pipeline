@@ -1,5 +1,5 @@
 use super::{CanonicalSchool, Evidence, SourceIdentity};
-use crate::school_directory::{PostalAddress, SourceLabel};
+use crate::school_directory::{AddressKind, PostalAddress, SourceLabel};
 use serde::{Deserialize, Serialize};
 
 mod boundary;
@@ -25,8 +25,8 @@ struct SchoolPostalAddressWire {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum SchoolAddressError {
-    #[error("postal claim has no published street")]
-    MissingStreet,
+    #[error("postal claim has no published address components")]
+    EmptyAddress,
     #[error("postal claim has no bounded school-provider identity")]
     MissingOwner,
     #[error("postal claim has no parsed capture URL and observation date")]
@@ -57,8 +57,8 @@ impl SchoolPostalAddress {
         evidence: Evidence,
         capture_sha256: String,
     ) -> Result<Self, SchoolAddressError> {
-        if address.line1().is_none() {
-            return Err(SchoolAddressError::MissingStreet);
+        if address.is_empty() {
+            return Err(SchoolAddressError::EmptyAddress);
         }
         let state = boundary::provenance(&owner, &source_label, &evidence)?;
         if capture_sha256.len() != 64
@@ -68,7 +68,9 @@ impl SchoolPostalAddress {
         {
             return Err(SchoolAddressError::InvalidCaptureDigest);
         }
-        if address.state().is_some_and(|actual| actual != state) {
+        if address.kind() != AddressKind::Mailing
+            && address.state().is_some_and(|actual| actual != state)
+        {
             return Err(SchoolAddressError::ForeignJurisdiction);
         }
         Ok(Self {
@@ -108,10 +110,11 @@ impl SchoolPostalAddress {
         if school.state.is_some_and(|state| state != source_state) {
             return Err(SchoolAddressError::ForeignJurisdiction);
         }
-        if school
-            .state
-            .zip(self.address.state())
-            .is_some_and(|(school, address)| school != address)
+        if self.address.kind() != AddressKind::Mailing
+            && school
+                .state
+                .zip(self.address.state())
+                .is_some_and(|(school, address)| school != address)
         {
             return Err(SchoolAddressError::ForeignJurisdiction);
         }

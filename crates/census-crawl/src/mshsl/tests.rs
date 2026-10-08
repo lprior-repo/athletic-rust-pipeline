@@ -7,7 +7,6 @@ use census_domain::model::{
 use census_domain::UsJurisdiction;
 use census_store::Table;
 use serde_json::json;
-use std::collections::HashSet;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -656,13 +655,14 @@ fn collect_fetches_parses_appends_journals_and_reports_from_a_warm_cache() -> Te
         std::collections::HashMap::new(),
         Vec::new(),
     )
-    ?;
+    ?.with_offline(true);
     let ctx = AdapterContext {
         fetcher: &fetcher,
         store: &store,
         refresh: false,
         school_year: census_domain::model::SchoolYear::new(2026).ok_or("2026 is a season")?,
         observed_on: OBSERVED_ON.to_string(),
+        performance_as_of: chrono::NaiveDate::parse_from_str(OBSERVED_ON, "%Y-%m-%d")?,
         recording: None,
     };
     let options = Options {
@@ -693,14 +693,6 @@ fn collect_fetches_parses_appends_journals_and_reports_from_a_warm_cache() -> Te
         report.with_email, 4,
         "two ADs and the two head coaches carry an address"
     );
-    check!(
-        report
-            .notes
-            .iter()
-            .any(|note| note.contains("office roles") && note.contains("not emitted")),
-        "the report states that office roles were parsed and rejected: {:?}",
-        report.notes
-    );
 
     let schools = store
         .scan::<CanonicalSchool>(Table::Schools)
@@ -729,7 +721,7 @@ fn collect_fetches_parses_appends_journals_and_reports_from_a_warm_cache() -> Te
     );
     check!(eq; seen.observed_name, "Aitkin High School");
     check!(eq; seen.city.as_deref(), Some("Aitkin"));
-    check!(eq; seen.observed_on, OBSERVED_ON);
+    check!(eq; seen.observed_on, "2026-09-20T14:39:00Z");
     check!(
         seen.source_row_key.contains("aitkin-high-school"),
         "the row states the page it was read from: {}",
@@ -801,14 +793,6 @@ fn collect_fetches_parses_appends_journals_and_reports_from_a_warm_cache() -> Te
         "no phone column is parsed"
     );
 
-    check!(eq;
-        store.journal_keys("mshsl_schools")?,
-        HashSet::from([String::from("MN:aitkin-high-school")])
-    );
-    check!(eq;
-        store.journal_keys("mshsl_coaches")?,
-        HashSet::from([String::from("MN:aitkin-high-school")])
-    );
 
     let second = collect(&ctx, &options).await?;
     check!(eq; second.rows, 0, "the school was already journalled");

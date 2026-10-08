@@ -152,6 +152,7 @@ fn context<'a>(
         refresh: false,
         school_year: SchoolYear::new(2026).ok_or("school year")?,
         observed_on: AT.to_string(),
+        performance_as_of: chrono::NaiveDate::parse_from_str(AT, "%Y-%m-%d")?,
         recording,
     })
 }
@@ -170,7 +171,6 @@ fn run<'a>(ctx: &'a AdapterContext<'a>, options: &'a Options) -> TestResult<Run<
         ctx,
         options,
         fetch: FetchOptions::default(),
-        done: ctx.store.journal_keys(JOURNAL)?,
         tally: Tally::default(),
     })
 }
@@ -197,13 +197,6 @@ fn pending(store: &Store, row: &OrgSchool) -> TestResult<Value> {
 }
 
 fn apply_recorded(store: &Store, recorded: &crate::recording::Recorded) -> TestResult {
-    let mut batch = store.write_batch();
-    for rows in &recorded.rows {
-        batch.record_many(rows.table, &rows.rows)?;
-    }
-    for entry in &recorded.journal {
-        batch.journal_done(&entry.phase, &entry.key, &entry.payload)?;
-    }
-    batch.commit()?;
+    recorded.apply(store, "arbiter-recovery-test")?;
     Ok(())
 }

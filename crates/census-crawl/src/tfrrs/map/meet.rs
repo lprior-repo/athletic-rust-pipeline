@@ -2,8 +2,7 @@ use super::entity::push_identity;
 use super::state::{Absorb, Page};
 use crate::tfrrs::parse::{ParsedMeet, ParsedSection, PublishedDate};
 use census_domain::model::{
-    CanonicalEvent, CanonicalMeet, CompetitionLevel, EventId, EventKind, Evidence, Gender, MeetId,
-    SourceEventLabel, SourceNamespace,
+    CanonicalMeet, CompetitionLevel, EventId, EventKind, Evidence, Gender, MeetId, SourceNamespace,
 };
 
 impl<'a> Absorb<'a> {
@@ -49,31 +48,13 @@ impl<'a> Absorb<'a> {
         section: &ParsedSection,
         meet: &MeetId,
         gender: Gender,
-    ) -> (EventId, EventKind) {
-        let kind = EventKind::from_source_label(&section.label);
+    ) -> crate::CrawlResult<(EventId, EventKind)> {
+        let minted = super::events::mint(meet, gender, section)?;
+        let kind = minted.kind.clone();
         if matches!(kind, EventKind::Unmapped { .. }) {
             self.stats.events_unmapped = self.stats.events_unmapped.saturating_add(1);
         }
-        let mut minted = CanonicalEvent::new(meet, kind.clone(), gender, None, None);
-        minted
-            .evidence
-            .push(Evidence::parsed(page.source.clone(), page.observed_on));
-        let id = minted.id.clone();
-        let event = self
-            .accumulator
-            .events
-            .entry(id.as_str().to_string())
-            .or_insert(minted);
-        if !event
-            .source_labels
-            .iter()
-            .any(|known| known.label == section.label)
-        {
-            event.source_labels.push(SourceEventLabel {
-                source: page.source.clone(),
-                label: section.label.clone(),
-            });
-        }
-        (id, kind)
+        let id = super::events::retain(&mut self.accumulator, minted, page, &section.label)?;
+        Ok((id, kind))
     }
 }

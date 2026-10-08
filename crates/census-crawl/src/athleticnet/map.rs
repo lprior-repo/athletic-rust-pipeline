@@ -2,13 +2,14 @@ use super::parse::Bio;
 use super::SCHOOL_KIND;
 use census_domain::model::{
     AthleteId, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam, CompetitionLevel, EventId, EventKind, Evidence, Gender, Grade,
-    Mark, ObservedGrade, ReviewCase, SchoolId, SchoolYear, SourceEventLabel, SourceIdentity,
-    SourceNamespace, SourceObservation, SourceRef, Sport, TeamId, TimingMethod,
+    CanonicalSchool, CanonicalTeam, CompetitionLevel, EventKind, Evidence, Gender, Grade, Mark,
+    ObservedGrade, ReviewCase, SchoolId, SchoolYear, SourceIdentity, SourceNamespace,
+    SourceObservation, SourceRef, Sport, TeamId, TimingMethod,
 };
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
 use std::collections::HashMap;
+pub(super) mod events;
 
 pub(super) fn profile_url(athlete_id: u64) -> String {
     format!("https://www.athletic.net/athlete/{athlete_id}/track-and-field")
@@ -145,9 +146,10 @@ pub(super) struct PerformanceInput<'a> {
     pub(super) school: &'a SchoolId,
     pub(super) meet: &'a CanonicalMeet,
     pub(super) kind: &'a EventKind,
-    pub(super) sport: Sport,
+    pub(super) sport: Option<Sport>,
     pub(super) gender: Gender,
     pub(super) school_year: SchoolYear,
+    pub(super) performance_as_of: chrono::NaiveDate,
     pub(super) grade: Option<Grade>,
     pub(super) date: String,
     pub(super) mark: Mark,
@@ -157,23 +159,24 @@ pub(super) struct PerformanceInput<'a> {
     pub(super) timing: Option<TimingMethod>,
     pub(super) division: Option<String>,
     pub(super) source_key: String,
-    pub(super) label: Option<&'a str>,
+    pub(super) labels: &'a [&'a str],
 }
 
-#[allow(clippy::too_many_arguments)]
 pub(super) fn store_performance(
     accumulated: &mut Accumulator,
     source: &SourceRef,
     observed_on: &str,
     input: PerformanceInput<'_>,
-) {
+) -> crate::CrawlResult<()> {
+    let event = events::ensure_event(accumulated, source, observed_on, &input)?;
+    if !admit_date(&input)? {
+        return Ok(());
+    }
     let team_id = ensure_team(accumulated, source, observed_on, &input);
-    let event = ensure_event(accumulated, source, observed_on, &input);
-
     let performance_id = CanonicalPerformance::mint(
         input.athlete,
         &input.meet.id,
-        input.kind,
+        &event,
         &input.date,
         &input.source_key,
     );
@@ -199,6 +202,7 @@ pub(super) fn store_performance(
             source_athlete: Some(input.source_athlete),
             retained_conflicts: Vec::new(),
         });
+    Ok(())
 }
 
 pub(super) fn ensure_team(
@@ -207,14 +211,18 @@ pub(super) fn ensure_team(
     observed_on: &str,
     input: &PerformanceInput<'_>,
 ) -> TeamId {
-    let team_id = CanonicalTeam::mint(input.school, input.sport, input.gender, input.school_year);
+    let sport = match input.sport {
+        Some(sport) => sport,
+        None => Sport::Unknown,
+    };
+    let team_id = CanonicalTeam::mint(input.school, sport, input.gender, input.school_year);
     if !accumulated.teams.contains_key(team_id.as_str()) {
         accumulated.teams.insert(
             team_id.as_str().to_string(),
             CanonicalTeam {
                 id: team_id.clone(),
                 school: input.school.clone(),
-                sport: input.sport,
+                sport,
                 gender: input.gender,
                 school_year: input.school_year,
                 level: Some("high_school".to_string()),
@@ -227,47 +235,14 @@ pub(super) fn ensure_team(
     team_id
 }
 
-fn ensure_event(
-    accumulated: &mut Accumulator,
-    source: &SourceRef,
-    observed_on: &str,
-    input: &PerformanceInput<'_>,
-) -> EventId {
-    accumulated
-        .events
-        .entry(format!(
-            "{}:{:?}:{:?}:{}:{}",
-            input.meet.id.as_str(),
-            input.kind,
-            input.gender,
-            input
-                .division
-                .clone()
-                .map_or(Default::default(), core::convert::identity),
-            input
-                .round
-                .clone()
-                .map_or(Default::default(), core::convert::identity)
-        ))
-        .or_insert_with(|| {
-            let mut event = CanonicalEvent::new(
-                &input.meet.id,
-                input.kind.clone(),
-                input.gender,
-                input.division.as_deref(),
-                input.round.as_deref(),
-            );
-            if let Some(label) = input.label {
-                event.source_labels.push(SourceEventLabel {
-                    source: source.clone(),
-                    label: label.to_string(),
-                });
-            }
-            event
-                .evidence
-                .push(Evidence::parsed(source.clone(), observed_on));
-            event
-        })
-        .id
-        .clone()
+pub(super) fn admit_date(input: &PerformanceInput<'_>) -> crate::CrawlResult<bool> {
+    use crate::context::{assess_performance_date, PerformanceDateAssessment};
+    match assess_performance_date(input.performance_as_of, &input.date) {
+        PerformanceDateAssessment::Admitted => Ok(true),
+        PerformanceDateAssessment::Future => Ok(false),
+        PerformanceDateAssessment::Unknown => Err(crate::CrawlError::PerformanceDateUnknown {
+            published: input.date.chars().take(64).collect(),
+            as_of: input.performance_as_of,
+        }),
+    }
 }

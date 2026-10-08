@@ -715,3 +715,35 @@ publication; a repeat index pass reclaims the stage it abandons, and
 [Moon developer tasks](../xtask/README.md) are the only gate entrypoint; `tools/gate.sh` remains their internal gate implementation. [VERIFICATION-EVIDENCE.md](VERIFICATION-EVIDENCE.md) owns dated
 incidents and executed results. Report only the declared run/scope and observed verification, with
 terminal access gaps, unresolved review and unfinished discovery visible.
+
+## Exact source time precision
+
+Timed marks use `ExactSeconds`, a positive checked `i64` nanosecond value with the source's
+fractional-digit count (zero through nine). The current JSON shape is
+`{"TimeSeconds":{"nanoseconds":10941000000,"precision":3}}` for `10.941` seconds.
+Equivalent spellings compare and hash by nanoseconds; precision remains independent output
+provenance. Decimal seconds, `minutes:seconds` and `hours:minutes:seconds` are accumulated with
+checked integer arithmetic, not floating-point addition. Clock seconds must be below 60; minutes
+in an hours-prefixed clock must be below 60. Nonfinite, nonpositive, malformed, over-precision and
+overflowing times are refused rather than rounded into a usable mark.
+
+PR ordering uses nanoseconds for time, micrometres for distance and hundredths of a point for
+combined-event scores. `best-results-*.csv` declares these integer scales in `best_value_unit`
+(`ns`, `um`, `centipoints`). Its `best_mark` and the XLSX `Calculated PR` preserve source
+precision, including trailing zeroes. XLSX `Mark Value` remains a presentation number in seconds,
+with `Unit` equal to `s`; it is never the comparison authority. The JSONL mark retains exact
+nanoseconds and precision even when a floating-point presentation cannot retain all nine digits.
+
+Bare legacy integers remain centiseconds under their historical schema, never nanoseconds.
+Only an explicit versioned migration may convert them with checked multiplication by
+10,000,000 and precision two. Legacy floating-point seconds require the named historical
+schema's interpretation, with overflow and invalid values refused. Do not relabel an old
+frozen export or completed workflow reply as current exact-time data. Publish under the new
+schema/policy authority; captured fixtures, historical bundles and other runs remain immutable.
+
+The exact parser accepts borrowed text without creating a component vector. The time display
+uses scalar decimal formatting rather than building an intermediate fractional suffix.
+Serialized canonical meet/performance records independently own their identifier/date fields;
+their ownership-boundary copies are not a claim of free cloning or measured performance.
+No latency, throughput, allocation-count or memory improvement is certified by these source changes.
+

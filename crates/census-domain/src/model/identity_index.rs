@@ -1,10 +1,13 @@
+use super::identity_attestation::IdentityLineage;
 use super::identity_decision::person_key;
 use super::{
-    athlete_identity_digest, AthleteCandidateId, AthleteIndexId, CanonicalAthlete,
-    CanonicalJsonError, CaseEvidence, EvidenceMethod, Gender, GradYear, IdentityMember,
-    IdentityStatus, SourceIdentity, ATHLETE_IDENTITY_POLICY, MEMBER_SET_LABEL,
+    AthleteCandidateId, AthleteIndexId, CanonicalAthlete, CanonicalJsonError, CaseEvidence,
+    EvidenceMethod, Gender, GradYear, IdentityAttestation, IdentityMember, IdentityStatus,
+    ATHLETE_IDENTITY_POLICY, MEMBER_SET_LABEL,
 };
 use std::collections::{BTreeMap, BTreeSet};
+
+mod observation;
 
 pub(super) type PersonKey = (&'static str, u64);
 
@@ -22,6 +25,10 @@ pub enum IdentityError {
     CounterOverflow,
     #[error("identity aliases violate the strictly decreasing parent invariant")]
     AliasCycle,
+    #[error("identity attestation is invalid: {0}")]
+    Attestation(#[from] super::AttestationError),
+    #[error("identity attestation is not attached to subject {0}")]
+    UnboundAttestation(String),
 }
 
 pub(super) struct IdentityFact {
@@ -33,7 +40,7 @@ pub(super) struct IdentityFact {
     pub(super) source_bound: bool,
     pub(super) status: IdentityStatus,
     pub(super) authorized: bool,
-    pub(super) attested: BTreeMap<PersonKey, String>,
+    pub(super) attested: BTreeMap<PersonKey, Vec<IdentityLineage>>,
     bucket: AthleteIndexId,
     pub(super) primary: Option<PersonKey>,
     pub(super) links: Vec<PersonKey>,
@@ -42,44 +49,22 @@ pub(super) struct IdentityFact {
 impl IdentityFact {
     fn of(
         athlete: &CanonicalAthlete,
-        attested: &[(SourceIdentity, String)],
+        attested: &[IdentityAttestation],
     ) -> Result<Self, IdentityError> {
         let primary = athlete.source.as_ref().and_then(person_key);
-        let mut links: Vec<_> = athlete
-            .source_links
-            .iter()
-            .filter_map(person_key)
-            .filter(|key| Some(*key) != primary)
-            .collect();
-        links.sort_unstable();
-        links.dedup();
-        let alias_conflict = links
-            .iter()
-            .zip(links.iter().skip(1))
-            .any(|(left, right)| left.0 == right.0)
-            || primary.is_some_and(|key| links.iter().any(|link| link.0 == key.0));
-        let parsed = athlete.evidence.iter().any(|evidence| {
-            evidence.method == EvidenceMethod::Parsed
-                && evidence
-                    .source
-                    .url
-                    .as_ref()
-                    .is_some_and(|url| !url.is_empty())
-        });
-        let attested_documents =
-            super::identity_corroboration::attested_documents(athlete, primary, &links, attested);
+        let links = observation::links(athlete, primary);
+        let parsed = observation::parsed(athlete);
+        let documents = super::identity_corroboration::attested_documents(athlete, attested)?;
         Ok(Self {
-            digest: athlete_identity_digest(athlete)?,
+            digest: observation::digest(athlete, attested)?,
             grad_year: athlete.grad_year,
             gender: athlete.gender,
-            conflicted: alias_conflict
-                || !athlete.retained_conflicts.is_empty()
-                || athlete.has_cohort_conflict(),
+            conflicted: observation::conflicted(athlete, primary, &links),
             parsed,
             source_bound: primary.is_some() && parsed,
             status: IdentityStatus::Unverified,
             authorized: false,
-            attested: attested_documents,
+            attested: documents,
             bucket: athlete.candidate_key().index_id(),
             primary,
             links,
@@ -98,22 +83,6 @@ impl IdentityFact {
     }
 }
 
-pub(super) fn primary_document(athlete: &CanonicalAthlete) -> Option<String> {
-    athlete
-        .source
-        .as_ref()
-        .and_then(|source| source.url.clone())
-        .filter(|url| !url.is_empty())
-        .or_else(|| {
-            athlete.evidence.iter().find_map(|evidence| {
-                (evidence.method == EvidenceMethod::Parsed)
-                    .then(|| evidence.source.url.clone())
-                    .flatten()
-                    .filter(|url| !url.is_empty())
-            })
-        })
-}
-
 #[derive(Default)]
 pub struct AthleteIdentityIndex {
     pub(super) facts: BTreeMap<AthleteCandidateId, IdentityFact>,
@@ -129,7 +98,7 @@ impl AthleteIdentityIndex {
     pub fn observe_attested(
         &mut self,
         athlete: &CanonicalAthlete,
-        attested: &[(SourceIdentity, String)],
+        attested: &[IdentityAttestation],
     ) -> Result<(), IdentityError> {
         let id: AthleteCandidateId = athlete.id.cast();
         if self.facts.contains_key(id.as_str()) {

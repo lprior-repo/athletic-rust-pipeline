@@ -78,6 +78,7 @@ async fn evaluate(
         refresh: false,
         school_year: SchoolYear::DEFAULT,
         observed_on: evaluation.to_string(),
+        performance_as_of: chrono::DateTime::parse_from_rfc3339(evaluation)?.date_naive(),
         recording: None,
     };
     let options = mpa::Options {

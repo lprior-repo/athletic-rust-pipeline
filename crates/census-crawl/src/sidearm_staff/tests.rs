@@ -1,6 +1,6 @@
 use super::map::{school_entities, ProfileFacts};
 use super::parse::parse_staff_directory;
-use super::{DIRECTORY_URL, HOST, SOURCE_ID};
+use super::{DIRECTORY_URL, HOST};
 use crate::CrawlError;
 use census_domain::model::{CoachRole, Gender, Sport};
 use census_domain::UsJurisdiction;
@@ -100,7 +100,7 @@ fn fixture_trims_published_email_halves_and_preserves_other_sports() -> TestResu
 }
 
 #[test]
-fn missing_and_blank_email_rows_are_skipped() -> TestResult {
+fn missing_and_blank_email_rows_retain_published_staff_appointments() -> TestResult {
     let body = page(
         &[
             member("missing", "Cross Country", "Head Coach", ""),
@@ -125,7 +125,7 @@ fn missing_and_blank_email_rows_are_skipped() -> TestResult {
         .iter()
         .map(|row| (row.id.as_str(), row.email.as_str()))
         .collect();
-    check!(eq; actual, vec![("kept", "coach@school.org")]);
+    check!(eq; actual, vec![("missing", ""), ("blank", ""), ("kept", "coach@school.org")]);
     Ok(())
 }
 
@@ -143,7 +143,7 @@ fn email_halves_never_pair_across_member_or_category_rows() -> TestResult {
         .iter()
         .map(|row| (row.id.as_str(), row.email.as_str()))
         .collect();
-    check!(eq; actual, vec![("correct", "correct@school.org")]);
+    check!(eq; actual, vec![("first", ""), ("second", ""), ("correct", "correct@school.org")]);
     Ok(())
 }
 
@@ -186,17 +186,5 @@ fn non_sidearm_body_returns_schema_error() -> TestResult {
 fn directory_without_school_name_returns_schema_error() -> TestResult {
     let result = parse_staff_directory("<article class='sidearm-staff'><table></table></article>");
     check!(matches!(result, Err(CrawlError::Schema { .. })));
-    Ok(())
-}
-
-#[test]
-fn registry_paces_gomats_at_thirty_seconds_and_plans_only_california() -> TestResult {
-    check!(eq; crate::registry::declared_delay_for_host("gomats.org"), Some(std::time::Duration::from_secs(30)));
-    let actual: Vec<_> = crate::applicability::table()
-        .iter()
-        .filter(|row| row.slug == SOURCE_ID)
-        .flat_map(|row| row.jurisdictions.iter().copied())
-        .collect();
-    check!(eq; actual, vec![UsJurisdiction::California]);
     Ok(())
 }

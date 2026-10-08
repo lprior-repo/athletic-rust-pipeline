@@ -1,3 +1,4 @@
+pub(super) mod events;
 mod rows;
 
 use super::count::MeetStats;
@@ -14,21 +15,31 @@ use census_domain::UsJurisdiction;
 use rows::Block;
 use std::collections::{BTreeMap, HashMap};
 
-#[allow(clippy::too_many_arguments)]
 pub(in crate::athleticnet) fn absorb_meet(
     meet: &MeetData,
     results: &AllResults,
     metadata: Option<&EventMetadata>,
     source: &SourceRef,
-    observed_on: &str,
+    timing: (&str, chrono::NaiveDate),
     index: &SchoolIndex,
     resolved: &mut HashMap<String, SchoolId>,
     stats: &mut Stats,
     accumulated: &mut Accumulator,
-) -> (u64, MeetStats) {
+) -> crate::CrawlResult<(u64, MeetStats)> {
     let mut counts = MeetStats::default();
+    let (observed_on, performance_as_of) = timing;
+    let date = meet_date(&meet.meet.date).map_or(meet.meet.date.as_str(), |value| value);
+    if matches!(
+        crate::context::assess_performance_date(performance_as_of, date),
+        crate::context::PerformanceDateAssessment::Unknown
+    ) {
+        return Err(crate::CrawlError::PerformanceDateUnknown {
+            published: meet.meet.date.chars().take(64).collect(),
+            as_of: performance_as_of,
+        });
+    }
     let Some(place) = place_meet(meet, &mut counts) else {
-        return (0, counts);
+        return Ok((0, counts));
     };
     let sport = sport_of(meet.sport2.as_deref());
     let divisions: HashMap<i64, &str> = meet
@@ -49,6 +60,7 @@ pub(in crate::athleticnet) fn absorb_meet(
     let mut ctx = MeetCtx {
         source,
         observed_on,
+        performance_as_of,
         index,
         resolved,
         stats,
@@ -62,10 +74,10 @@ pub(in crate::athleticnet) fn absorb_meet(
         meet: row,
         school_names: school_names(results),
     };
-    ctx.walk(results, &legs, &divisions);
+    ctx.walk(results, &legs, &divisions)?;
     counts.meets_pulled = counts.meets_pulled.saturating_add(1);
     let stored = counts.stored();
-    (stored, counts)
+    Ok((stored, counts))
 }
 
 fn meet_state(meet: &MeetData) -> Option<UsJurisdiction> {
@@ -123,6 +135,7 @@ fn school_names(results: &AllResults) -> HashMap<String, &str> {
 struct MeetCtx<'a> {
     source: &'a SourceRef,
     observed_on: &'a str,
+    performance_as_of: chrono::NaiveDate,
     index: &'a SchoolIndex,
     resolved: &'a mut HashMap<String, SchoolId>,
     stats: &'a mut Stats,
@@ -130,7 +143,7 @@ struct MeetCtx<'a> {
     counts: &'a mut MeetStats,
     metadata: Option<&'a EventMetadata>,
     state: UsJurisdiction,
-    sport: census_domain::model::Sport,
+    sport: Option<census_domain::model::Sport>,
     school_year: SchoolYear,
     date: String,
     meet: CanonicalMeet,
@@ -138,12 +151,14 @@ struct MeetCtx<'a> {
 }
 
 fn kind_of(event: &FlatEvent) -> EventKind {
-    let short = event.short.trim();
-    if short.is_empty() {
-        EventKind::from_source_label(&event.label)
-    } else {
-        EventKind::from_source_label(short)
-    }
+    [&event.label, &event.short]
+        .into_iter()
+        .map(|label| EventKind::from_source_label(label))
+        .find(|kind| !matches!(kind, EventKind::Unmapped { .. }))
+        .map_or_else(
+            || EventKind::from_source_label(&event.label),
+            core::convert::identity,
+        )
 }
 
 impl<'a> MeetCtx<'a> {
@@ -159,50 +174,65 @@ impl MeetCtx<'_> {
         results: &AllResults,
         legs: &BTreeMap<i64, Vec<&PublishedLeg>>,
         divisions: &HashMap<i64, &str>,
-    ) {
-        let metadata = self.metadata;
-        for event in &results.blocks {
-            self.counts.blocks = self.counts.blocks.saturating_add(1);
-            let Some(gender) = gender_of(&event.gender) else {
-                self.counts.blocks_gender_unknown =
-                    self.counts.blocks_gender_unknown.saturating_add(1);
-                continue;
-            };
-            let kind = kind_of(event);
-            if let Some(metadata) = metadata {
-                if metadata.event_type(event.event_id).is_none() {
-                    self.counts.blocks_metadata_absent =
-                        self.counts.blocks_metadata_absent.saturating_add(1);
-                } else if event_type_agrees(&kind, metadata, event.event_id) == Some(false) {
-                    self.counts.blocks_event_type_mismatch =
-                        self.counts.blocks_event_type_mismatch.saturating_add(1);
-                }
-            }
-            let block = Block {
-                kind: &kind,
-                gender,
-                label: event.source_label(),
-                type_hint: self.type_hint(event.event_id),
-                division: self.division_of(event, divisions),
-                round: round_of(event.round.as_deref()),
-            };
-            for row in &event.results {
-                self.counts.rows_seen = self.counts.rows_seen.saturating_add(1);
-                if kind.is_relay() || legs.contains_key(&row.result_id) {
-                    self.relay_row(&block, row, legs);
-                } else {
-                    self.individual_row(&block, row);
-                }
-            }
-        }
+    ) -> crate::CrawlResult<()> {
+        results.blocks.iter().fold(Ok(()), |outcome, event| {
+            let projected = self.walk_event(event, legs, divisions);
+            outcome.and(projected)
+        })
     }
 
-    fn refuse_unmapped_label(&mut self, block: &Block<'_>) -> bool {
-        if matches!(block.kind, EventKind::Unmapped { .. }) && block.type_hint.is_none() {
-            self.counts.rows_unmapped_event = self.counts.rows_unmapped_event.saturating_add(1);
-            return true;
+    fn walk_event(
+        &mut self,
+        event: &FlatEvent,
+        legs: &BTreeMap<i64, Vec<&PublishedLeg>>,
+        divisions: &HashMap<i64, &str>,
+    ) -> crate::CrawlResult<()> {
+        self.counts.blocks = self.counts.blocks.saturating_add(1);
+        let Some(gender) = gender_of(&event.gender) else {
+            self.counts.blocks_gender_unknown = self.counts.blocks_gender_unknown.saturating_add(1);
+            return Ok(());
+        };
+        let kind = kind_of(event);
+        self.count_metadata(&kind, event.event_id);
+        let labels = [event.label.as_str(), event.short.as_str()];
+        let block = Block {
+            kind: &kind,
+            gender,
+            labels: &labels,
+            type_hint: self.type_hint(event.event_id),
+            division: self.division_of(event, divisions),
+            round: round_of(event.round.as_deref()),
+            metadata_conflict: self.metadata.and_then(|metadata| {
+                (event_type_agrees(&kind, metadata, event.event_id) == Some(false)).then(|| {
+                    events::MetadataConflict {
+                        event_id: event.event_id,
+                        declared_type: metadata.event_type(event.event_id),
+                        is_hurdle: metadata.is_hurdle(event.event_id),
+                    }
+                })
+            }),
+        };
+        event.results.iter().fold(Ok(()), |outcome, row| {
+            self.counts.rows_seen = self.counts.rows_seen.saturating_add(1);
+            let projected = if kind.is_relay() || legs.contains_key(&row.result_id) {
+                self.relay_row(&block, row, legs)
+            } else {
+                self.individual_row(&block, row)
+            };
+            outcome.and(projected)
+        })
+    }
+
+    fn count_metadata(&mut self, kind: &EventKind, event_id: i64) {
+        if let Some(metadata) = self.metadata {
+            if metadata.event_type(event_id).is_none() {
+                self.counts.blocks_metadata_absent =
+                    self.counts.blocks_metadata_absent.saturating_add(1);
+            } else if event_type_agrees(kind, metadata, event_id) == Some(false) {
+                self.counts.blocks_event_type_mismatch =
+                    self.counts.blocks_event_type_mismatch.saturating_add(1);
+            }
         }
-        false
     }
 
     fn division_of(&mut self, event: &FlatEvent, divisions: &HashMap<i64, &str>) -> Option<String> {

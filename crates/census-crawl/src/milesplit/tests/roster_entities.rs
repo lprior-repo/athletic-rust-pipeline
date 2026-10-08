@@ -8,7 +8,7 @@ fn row(url: &str, name: &str) -> String {
 
 #[test]
 fn roster_names_decode_numeric_entities_without_recursively_decoding_escaped_text() -> TestResult {
-    let team = parse_team_index(TEAMS)?.remove(0);
+    let team = parse_team_index(TEAMS)?.teams.remove(0);
     for (encoded, expected) in [
         ("D&#x27;Arc, Jos&#233;", "José D'Arc"),
         ("A&#X1F3C3; B", "A🏃 B"),
@@ -33,7 +33,7 @@ fn roster_names_decode_numeric_entities_without_recursively_decoding_escaped_tex
 
 #[test]
 fn provider_owned_athlete_hosts_preserve_profile_urls_and_roster_identity() -> TestResult {
-    let team = parse_team_index(TEAMS)?.remove(0);
+    let team = parse_team_index(TEAMS)?.teams.remove(0);
     for host in [
         "milesplit.com",
         "www.milesplit.com",
@@ -58,14 +58,16 @@ fn provider_owned_athlete_hosts_preserve_profile_urls_and_roster_identity() -> T
 
 #[test]
 fn lookalike_hosts_cannot_supply_roster_identity() -> TestResult {
-    let team = parse_team_index(TEAMS)?.remove(0);
+    let team = parse_team_index(TEAMS)?.teams.remove(0);
     for url in [
         "https://milesplit.com.evil.test/athletes/42-example",
         "https://notmilesplit.com/athletes/42-example",
         "https://milesplit.com@evil.test/athletes/42-example",
     ] {
         let body = row(url, "Athlete Example");
-        let RosterVerdict::Quarantined { reason, rejected } = parse_roster(&body, team.clone())?
+        let RosterVerdict::Quarantined {
+            reason, rejected, ..
+        } = parse_roster(&body, team.clone())?
         else {
             return Err("a lookalike host must not mint provider identity".into());
         };
@@ -81,7 +83,7 @@ fn lookalike_hosts_cannot_supply_roster_identity() -> TestResult {
 
 #[test]
 fn published_roster_year_is_high_without_inventing_grade_from_the_supplied_season() -> TestResult {
-    let team = parse_team_index(TEAMS)?.remove(0);
+    let team = parse_team_index(TEAMS)?.teams.remove(0);
     let body = row(
         "https://wi.milesplit.com/athletes/42-example",
         "Athlete Example",
@@ -92,11 +94,12 @@ fn published_roster_year_is_high_without_inventing_grade_from_the_supplied_seaso
     let site = Site::for_jurisdiction(UsJurisdiction::Wisconsin);
     for year in [2025, 2026, 2038] {
         let (_, athletes, _) = roster_entities(
-            &roster,
+            &roster.team,
+            &roster.athletes,
             SchoolYear::new(year).ok_or("supplied season")?,
             "2026-09-20",
             &site,
-        );
+        )?;
         let athlete = &athletes[0];
         check!(eq; athlete.grad_year, GradYear::CO2027);
         check!(eq; athlete.observed_grades, Vec::new());

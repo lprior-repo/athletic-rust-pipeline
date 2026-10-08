@@ -1,7 +1,7 @@
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CentiSeconds, CompetitionLevel, EventKind, Gender, GradYear, Id, Mark, PublishedGraduation,
-    SourceIdentity, SourceNamespace, SourceRef, Sport, TimingMethod,
+    CompetitionLevel, EventIdentity, EventKind, EventSpecification, ExactSeconds, Gender, GradYear,
+    Id, Mark, PublishedGraduation, SourceIdentity, SourceNamespace, SourceRef, Sport, TimingMethod,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -53,7 +53,16 @@ fn valid_best_results_sidecars_pass_and_forgeries_fail() -> TestResult {
     meet.sports = vec![Sport::OutdoorTrack];
     store.append(Table::Meets, &meet)?;
     let kind = EventKind::Track100m;
-    let event = CanonicalEvent::new(&meet.id, kind.clone(), Gender::Boys, None, None);
+    let event = CanonicalEvent::new(
+        EventIdentity {
+            meet: &meet.id,
+            kind: kind.clone(),
+            gender: Gender::Boys,
+            division: None,
+            round: None,
+        },
+        EventSpecification::default(),
+    )?;
     store.append(Table::Events, &event)?;
 
     let slower = CanonicalPerformance {
@@ -63,7 +72,7 @@ fn valid_best_results_sidecars_pass_and_forgeries_fail() -> TestResult {
         event: event.id.clone(),
         meet: meet.id.clone(),
         date: "2026-05-02".to_string(),
-        mark: Mark::TimeSeconds(CentiSeconds::new(1100)),
+        mark: Mark::TimeSeconds(ExactSeconds::parse("11.00")?),
         wind_mps: Some(1.0),
         place: None,
         heat: None,
@@ -79,7 +88,7 @@ fn valid_best_results_sidecars_pass_and_forgeries_fail() -> TestResult {
     let mut faster = slower.clone();
     faster.id = Id::mint("perf", &["verify-faster"]);
     faster.source_key = "verify:faster".to_string();
-    faster.mark = Mark::TimeSeconds(CentiSeconds::new(1080));
+    faster.mark = Mark::TimeSeconds(ExactSeconds::parse("10.80")?);
     faster.date = "2026-05-03".to_string();
     store.append(Table::Performances, &faster)?;
 

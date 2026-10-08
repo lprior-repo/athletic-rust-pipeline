@@ -1,5 +1,6 @@
 use crate::report::Scope;
 
+pub(crate) mod context;
 mod events;
 mod key;
 mod measure;
@@ -11,13 +12,16 @@ mod write;
 
 pub use events::{is_relay, sport_of};
 pub use key::{
-    classify_wind, is_wind_sensitive, resolve_timing, should_replace, tie_break_later, PrKey,
-    SurfaceClass, TimingClass, WindClass,
+    classify_wind, is_wind_sensitive, resolve_timing, should_replace, tie_break_later,
+    ComparisonPolicy, PrKey, SurfaceClass, TimingClass, WindClass,
 };
 pub use measure::{field_micrometres, mark_unit, Measure};
 pub use notation::{disagreement, format_time, mark_text};
 pub use reduce::build_from_dataset;
-pub use selection::{Conflict, Population, SharedSelection};
+pub use selection::{
+    Conflict, Population, SelectionAthlete, SelectionMeet, SelectionResult, SelectionSource,
+    SharedSelection,
+};
 pub use write::write;
 
 pub(crate) use parents::Parents;

@@ -51,7 +51,7 @@ pub(super) async fn ks_pass(
     limit: Option<usize>,
 ) -> super::TestResult<AdapterReport> {
     let fetcher = fetcher_for(store)?;
-    let ctx = context(&fetcher, store, OBSERVED_ON);
+    let ctx = context(&fetcher, store, OBSERVED_ON)?;
     let options = ks::Options {
         limit,
         refresh: false,
@@ -67,8 +67,13 @@ pub(super) fn store_seeded_with_wisconsin(
     site: &milesplit::Site,
 ) -> super::TestResult<Store> {
     let store = open_store(root)?;
-    seed_cache(&store.http_cache_dir(), &site.teams_url(), WI_TEAMS_FIXTURE)?;
-    let teams = milesplit::parse_team_index(WI_TEAMS_FIXTURE)?;
+    let synthetic_index = format!(
+        "<!doctype html><html data-fixture=\"synthetic-owned-team-index\"><head>\
+         <meta name=\"application-name\" content=\"MileSplit\"></head><body>\
+         {WI_TEAMS_FIXTURE}</body></html>"
+    );
+    seed_cache(&store.http_cache_dir(), &site.teams_url(), &synthetic_index)?;
+    let teams = milesplit::parse_team_index(WI_TEAMS_FIXTURE)?.teams;
     for team in &teams {
         let synthetic_body = format!(
             "<!doctype html><html data-fixture=\"synthetic-owned-roster\"><head>\

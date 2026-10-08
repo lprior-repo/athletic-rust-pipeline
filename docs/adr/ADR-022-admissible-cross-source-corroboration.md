@@ -3,6 +3,10 @@
 **Status:** Accepted (2026-10-04); implemented and evidenced 2026-10-04 (athletic-rust-pipeline-46r).
 Per-source link-document qualification remains open (athletic-rust-pipeline-b0f).
 
+**CEN14 amendment (2026-10-08):** The capture-lineage contract below supersedes the URL-based
+attestation definition in Decision 2 and 4 and the URL-only Class B consequences. The original
+2026-10-04 test/evidence record is historical; it does not certify the amended predicate.
+
 [ARCHITECTURE.md](../../ARCHITECTURE.md) §8 owns the binding rule: name, school text, cohort, a score
 or model agreement alone cannot establish identity; provider ownership and hard contradictions
 survive every projection; Rust requires admissible corroboration and reviewer agreement for
@@ -143,3 +147,52 @@ cross-source corroboration on a stated contract.
   `identity_index.rs`, `identity_corroboration.rs` (`positive_identity`), `identity_validation.rs`;
   `crates/census-review/src/athlete_flags.rs`, `athlete_verdict.rs`, `athlete_clusters.rs`;
   `crates/census-store/src/entities/canonical.rs` (`merge`).
+
+## CEN14 capture-lineage amendment
+
+A canonical athlete retains typed identity attestations. Each claim binds an exact published
+subject namespace and identifier to a source reference, immutable capture SHA-256, acquisition
+instant, publisher family, upstream producer, and exact subject locator. Malformed capture metadata
+and claims for a subject absent from the row are typed errors, including candidate-only claims.
+The subject binding uses namespace and identifier, not URL spelling.
+
+`CandidateOnly` preserves an observed binding but cannot prove independence.
+`IndependentPublished` requires source-owned qualification of the publisher and upstream producer.
+A URL, hostname, provider namespace, or locally minted fallback identifier does not qualify a
+source. Primary and linked URLs remain candidates; the index never synthesizes independent
+attestations from them.
+
+Class A retains the existing parsed shared-primary-provider-object rule. Class B requires that
+every pair of candidate rows has qualified captured claims for the same linked key with different
+capture bytes, source families and upstream producers. Case-only lineage spelling changes do not
+establish separation. The existing cohort, gender, denied provider-object and alias-component
+contradictions still withhold acceptance. Mirrored bytes, replicated state-result feeds and two
+pages emitted by one timing producer remain REVIEW even when their URLs differ.
+
+`AthleteIdentityIndex::observe_attested` accepts typed additional claims; ordinary `observe`
+consumes the canonical row's retained claims. Additional claims also enter the review evidence
+fingerprint, so supplying a new claim cannot silently change an existing review decision's
+admissibility. The review reducer uses the shared index and never qualifies a source itself.
+
+The index owns only the three lineage strings needed after its borrowed observation returns,
+not cloned subject/source/URL/date/locator payloads. Duplicate-lineage checks borrow existing
+facts before this necessary index ownership boundary. Canonical persisted rows own complete
+claims. No performance improvement is claimed without measurements.
+
+The IHSA tournament acquisition path carries validated `FetchOutcome` capture digests and
+acquisition instants to the row mapper. Exact Athletic.net athlete bindings are retained as
+candidate-only claims: the source report documents a shared state-meet feed, not independently
+qualified roster authorship. No timed-mark parser or public source DTO is changed.
+The digest is moved from the fetcher's existing verified body/capture boundary; the adapter does
+not rehash bytes already verified by cache acquisition or captured by the fetcher.
+
+Controlled domain fixture documents exercise the positive lineage predicate; they are not real
+source-qualification evidence. The real captured IHSA finisher regression covers parse-to-store
+retention, candidate-only mirror rejection and reopened claim preservation. The census-review
+regression keeps distinct URLs without typed capture lineage pending. These changed scenarios
+have not been executed during the concurrent repair wave.
+
+Before certifying CEN14, execute a genuinely independently qualified official-roster/timer
+control through parsing, reviewed decision and merged publication. The retained IHSA feed alone
+cannot satisfy that positive acceptance case. Execute the named CEN14 and CEN13 scenarios and the
+full acceptance gates after all concurrent writers have finished; this amendment records no pass.

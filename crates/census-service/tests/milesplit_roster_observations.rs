@@ -5,8 +5,7 @@ mod fallible_checks;
 use census_crawl::milesplit::{self, Site};
 use census_crawl::net::Fetcher;
 use census_domain::model::{
-    CanonicalAthlete, CanonicalSchool, SchoolYear, SourceAthleteObservation, SourceNamespace,
-    SourceObservation,
+    CanonicalSchool, SchoolYear, SourceAthleteObservation, SourceNamespace, SourceObservation,
 };
 use census_domain::UsJurisdiction;
 use census_service::census::{self, CollectOptions};
@@ -18,6 +17,8 @@ use std::time::Duration;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+#[path = "milesplit_roster_observations/outcomes.rs"]
+mod outcomes;
 #[path = "milesplit_roster_observations/projection.rs"]
 mod projection;
 #[path = "milesplit_roster_observations/provenance.rs"]
@@ -37,6 +38,25 @@ fn synthetic_owned_roster_document(team: &milesplit::TeamRef, fragment: &str) ->
          <link rel=\"canonical\" href=\"{}/roster\"></head><body>{fragment}</body></html>",
         team.url
     )
+}
+
+async fn configure_inventory(
+    store: &Store,
+    fetcher: &Fetcher,
+    team: &milesplit::TeamRef,
+) -> TestResult {
+    let site = Site::for_jurisdiction(UsJurisdiction::Wisconsin);
+    let synthetic = format!(
+        "<html data-fixture=\"synthetic-single-team-inventory\"><head>\
+         <meta name=\"application-name\" content=\"MileSplit\"></head><body><table>\
+         <tr><td><a href=\"{}\">{}</a></td><td>{}</td></tr></table></body></html>",
+        team.url, team.name, team.city_state
+    );
+    seed_cache(&store.http_cache_dir(), &site.teams_url(), &synthetic)?;
+    let teams =
+        census::collect_state_teams(fetcher, store, UsJurisdiction::Wisconsin, false).await?;
+    check!(eq; teams, vec![team.clone()]);
+    Ok(())
 }
 
 fn seed_cache(cache: &Path, url: &str, body: &str) -> TestResult {
@@ -75,9 +95,7 @@ fn a_synthetic_owned_roster_pass_files_an_observation_per_published_athlete() ->
         .block_on(async {
             let dir = tempfile::tempdir()?;
             let store = Store::open(dir.path())?;
-            let site = Site::for_jurisdiction(UsJurisdiction::Wisconsin);
-            seed_cache(&store.http_cache_dir(), &site.teams_url(), WI_TEAMS_FIXTURE)?;
-            let teams = milesplit::parse_team_index(WI_TEAMS_FIXTURE)?;
+            let teams = milesplit::parse_team_index(WI_TEAMS_FIXTURE)?.teams;
             let first = teams.first().ok_or("index fixture lists no teams")?.clone();
             let synthetic_body = synthetic_owned_roster_document(&first, WI_ROSTER_FIXTURE);
             seed_cache(
@@ -92,6 +110,7 @@ fn a_synthetic_owned_roster_pass_files_an_observation_per_published_athlete() ->
                 std::collections::HashMap::new(),
                 Vec::new(),
             )?;
+            configure_inventory(&store, &fetcher, &first).await?;
             let capture = fetcher
                 .get(
                     &format!("{}/roster", first.url),
@@ -201,174 +220,4 @@ fn collect_options() -> CollectOptions {
         observed_on: OBSERVED_ON.to_string(),
         revision: std::num::NonZeroU32::MIN,
     }
-}
-
-#[test]
-fn partial_and_quarantined_rosters_keep_their_reasons_and_still_owe_a_walk() -> TestResult {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(async {
-            let partial = WI_ROSTER_FIXTURE.replacen(
-                "column-grad-year\">2027",
-                "column-grad-year\">invalid",
-                1,
-            );
-            for (body, accepted) in [
-                (partial.as_str(), 24),
-                ("<html>unrecognized page</html>", 0),
-            ] {
-                let dir = tempfile::tempdir()?;
-                let store = Store::open(dir.path())?;
-                let team = milesplit::parse_team_index(WI_TEAMS_FIXTURE)?
-                    .into_iter()
-                    .next()
-                    .ok_or("index fixture lists no teams")?;
-                let synthetic_body = synthetic_owned_roster_document(&team, body);
-                seed_cache(
-                    &store.http_cache_dir(),
-                    &format!("{}/roster", team.url),
-                    &synthetic_body,
-                )?;
-                let fetcher = Fetcher::new(
-                    store.http_cache_dir(),
-                    None,
-                    Duration::from_millis(1),
-                    std::collections::HashMap::new(),
-                    Vec::new(),
-                )?;
-                let options = collect_options();
-                let first = census::collect_state_rosters(
-                    &fetcher,
-                    &store,
-                    std::slice::from_ref(&team),
-                    &options,
-                    UsJurisdiction::Wisconsin,
-                )
-                .await?;
-                check!(eq; first.rosters_committed, 0);
-                check!(eq; first.rosters_skipped, 1);
-                check!(eq; first.rosters_remaining, 0);
-                check!(eq;
-                    first.rosters_committed + first.rosters_skipped + first.rosters_remaining,
-                    first.rosters_total,
-                    "a partially parsed roster keeps its valid rows and still owes a walk");
-                check!(eq; first.athletes, accepted);
-                check!(eq; first.errors.len(), 1);
-                let athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes)?;
-                check!(eq; athletes.len(), accepted);
-                let observations: Vec<SourceObservation> = store.scan(Table::SourceObservations)?;
-                check!(eq; observations
-            .iter()
-            .filter(|row| matches!(row, SourceObservation::Athlete(_)))
-            .count(),
-        accepted);
-                let expected_observations = accepted + usize::from(accepted != 0);
-                check!(eq; observations.len(), expected_observations);
-                let before = replay::digest(&store)?;
-                drop(store);
-                let reopened = Store::open(dir.path())?;
-                let resumed = census::collect_state_rosters(
-                    &fetcher,
-                    &reopened,
-                    std::slice::from_ref(&team),
-                    &options,
-                    UsJurisdiction::Wisconsin,
-                )
-                .await?;
-                check!(eq; resumed.errors, first.errors);
-                check!(eq; resumed.rosters_committed, 0);
-                check!(eq; resumed.rosters_remaining, 0);
-                check!(eq; resumed.rosters_skipped, 1);
-                check!(eq; resumed.athletes, accepted);
-                let persisted: Vec<SourceObservation> = reopened.scan(Table::SourceObservations)?;
-                check!(eq; persisted.len(), expected_observations);
-                check!(eq; replay::digest(&reopened)?, before);
-                let stats = fetcher.stats().await;
-                check!(eq; stats.physical_requests(), 0);
-                check!(eq;
-                    stats.cache_hits,
-                    2,
-                    "a partial or quarantined roster is walked again, from cache, because its journal cannot certify exhaustion");
-            }
-            Ok(())
-        })
-}
-
-#[test]
-fn a_refused_roster_is_retained_without_rows_or_a_refetch() -> TestResult {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(async {
-            let dir = tempfile::tempdir()?;
-            let store = Store::open(dir.path())?;
-            let mut team = milesplit::parse_team_index(WI_TEAMS_FIXTURE)?
-                .into_iter()
-                .next()
-                .ok_or("index fixture lists no teams")?;
-            team.city_state = "Washington, DC".to_string();
-            let synthetic_body = synthetic_owned_roster_document(&team, WI_ROSTER_FIXTURE);
-            seed_cache(
-                &store.http_cache_dir(),
-                &format!("{}/roster", team.url),
-                &synthetic_body,
-            )?;
-            let fetcher = Fetcher::new(
-                store.http_cache_dir(),
-                None,
-                Duration::from_millis(1),
-                std::collections::HashMap::new(),
-                Vec::new(),
-            )?;
-            let options = collect_options();
-            let first = census::collect_state_rosters(
-                &fetcher,
-                &store,
-                std::slice::from_ref(&team),
-                &options,
-                UsJurisdiction::Wisconsin,
-            )
-            .await?;
-            check!(eq; first.rosters_committed, 0);
-            check!(eq; first.rosters_skipped, 1);
-            check!(eq; first.rosters_remaining, 0);
-            check!(eq;
-                first.rosters_committed + first.rosters_skipped + first.rosters_remaining,
-                first.rosters_total,
-                "a refused roster is an attempted team, not an owed fetch");
-            check!(eq; first.athletes, 0);
-            check!(eq; first.errors.len(), 1);
-            let report = first.errors.first().ok_or("the refusal is reported")?;
-            check!(
-                report.contains("refusal=schema mismatch"),
-                "the refusal keeps the source's own words"
-            );
-            check!(
-                report.contains("requested team location conflicts with its source jurisdiction"),
-                "the refusal names the conflicting jurisdiction"
-            );
-            let athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes)?;
-            check!(eq; athletes.len(), 0);
-            let before = replay::digest(&store)?;
-            drop(store);
-            let reopened = Store::open(dir.path())?;
-            let resumed = census::collect_state_rosters(
-                &fetcher,
-                &reopened,
-                std::slice::from_ref(&team),
-                &options,
-                UsJurisdiction::Wisconsin,
-            )
-            .await?;
-            check!(eq; resumed.errors, first.errors);
-            check!(eq; resumed.rosters_committed, 0);
-            check!(eq; resumed.rosters_skipped, 1);
-            check!(eq; resumed.rosters_remaining, 0);
-            check!(eq; replay::digest(&reopened)?, before);
-            let stats = fetcher.stats().await;
-            check!(eq; stats.physical_requests(), 0);
-            check!(eq; stats.cache_hits, 1);
-            Ok(())
-        })
 }

@@ -57,7 +57,7 @@ pub use table::{
     Entity, StorageMode, Table, MAX_ID_BYTES, MAX_JOURNAL_KEY_BYTES, MAX_JOURNAL_VALUE_BYTES,
     MAX_ROWS_PER_TABLE,
 };
-pub use write_batch::StoreBatch;
+pub use write_batch::{ConditionalBatch, StoreBatch};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Consolidated {

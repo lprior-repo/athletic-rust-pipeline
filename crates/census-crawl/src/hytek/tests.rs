@@ -1,5 +1,5 @@
 use super::*;
-use census_domain::model::CentiSeconds;
+use census_domain::model::ExactSeconds;
 use census_domain::model::{EventKind, Gender, Grade, Mark, SourceRef};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -144,10 +144,10 @@ fn event_labels_map_onto_the_ontology() {
 }
 
 #[test]
-fn marks_parse_from_published_notation() {
-    assert_eq!(parse_time("10.56"), Some(CentiSeconds::new(1056)));
-    assert_eq!(parse_time("1:54.32"), Some(CentiSeconds::new(11432)));
-    assert_eq!(parse_time("15:32.1"), Some(CentiSeconds::new(93210)));
+fn marks_parse_from_published_notation() -> TestResult {
+    assert_eq!(parse_time("10.56"), Some(ExactSeconds::parse("10.56")?));
+    assert_eq!(parse_time("1:54.32"), Some(ExactSeconds::parse("114.32")?));
+    assert_eq!(parse_time("15:32.1"), Some(ExactSeconds::parse("932.1")?));
     assert_eq!(parse_time("DNF"), None);
     match parse_field_mark("61-03.50") {
         Some(Mark::FieldImperial { metres, .. }) => {
@@ -156,8 +156,9 @@ fn marks_parse_from_published_notation() {
                 "61'3.5\" is 18.68 m, got {metres}"
             );
         }
-        other => panic!("expected an imperial field mark, got {other:?}"),
+        other => return Err(format!("expected an imperial field mark, got {other:?}").into()),
     }
+    Ok(())
 }
 
 #[test]
@@ -188,7 +189,7 @@ fn individual_rows_carry_place_grade_school_mark_and_wind() -> TestResult {
     check!(eq; winner.name, "Ben Lemirand");
     check!(eq; winner.grade.map(Grade::get), Some(12));
     check!(eq; winner.school, "West De Pere");
-    check!(eq; winner.mark, Mark::TimeSeconds(CentiSeconds::new(1056)));
+    check!(eq; winner.mark, Mark::TimeSeconds(ExactSeconds::parse("10.56")?));
     check!(eq; winner.wind_mps, Some(0.4));
     check!(event.rows.iter().all(|row| row.grade.is_some()));
     check!(event.rows.len() >= 20, "got {} rows", event.rows.len());

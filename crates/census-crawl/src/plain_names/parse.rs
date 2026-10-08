@@ -6,8 +6,6 @@ use std::sync::LazyLock;
 static TAG_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new(r"<[^>]*>"));
 static COMMENT_REGEX: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"(?s)<!--.*?-->"));
-static EMAIL_REGEX: LazyLock<Result<Regex, regex::Error>> =
-    LazyLock::new(|| Regex::new(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"));
 static COOP_REGEX: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"(?i)\s*(?:\(\s*)?co-?o+p\b.*$"));
 static NAME_SPLIT_REGEX: LazyLock<Result<Regex, regex::Error>> =
@@ -25,15 +23,6 @@ fn comment_regex() -> CrawlResult<&'static Regex> {
         .as_ref()
         .map_err(|source| CrawlError::RegexInit {
             pattern: "comment",
-            source: source.clone(),
-        })
-}
-
-pub(super) fn email_regex() -> CrawlResult<&'static Regex> {
-    EMAIL_REGEX
-        .as_ref()
-        .map_err(|source| CrawlError::RegexInit {
-            pattern: "email probe",
             source: source.clone(),
         })
 }

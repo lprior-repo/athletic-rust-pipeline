@@ -1,0 +1,13 @@
+HTTP/2 200 
+cache-control: public, max-age=600
+content-type: text/html; charset=utf-8
+expires: Thu, 08 Oct 2026 03:30:39 GMT
+last-modified: Thu, 08 Oct 2026 03:20:39 GMT
+vary: *
+strict-transport-security: max-age=31536000; includeSubDomains
+x-content-type-options: nosniff
+x-xss-protection: 1; mode=block
+referrer-policy: no-referrer-when-downgrade
+date: Thu, 08 Oct 2026 03:20:40 GMT
+content-length: 1192221
+

@@ -43,14 +43,23 @@ in the CCD file, and `LATITUDE24`/`LONGITUDE24` exist only in the PSS file).
 
 - **Identity.** CCD `NCESSCH` must be 12 digits (`NcesSchoolId`); PSS `PPIN` must be eight
   alphanumerics (`PssId`, upper-cased — real PPINs are `A2380006` and `02004116`).
-- **State.** The CCD location state is preferred, then the mailing state, then `ST`; the PSS uses
-  `PSTABB`. A state outside `UsJurisdiction::CENSUS_SCOPE` (Alaska, Hawaii, and the territories the
-  files publish: PR, GU, VI, AS, MP, and the BI rows) drops the row with `state` named in the ledger.
-  Closed and future schools stay in the corpus: the file's status columns do not remove a school.
-- **Address.** CCD prefers the location fields (`LSTREET1`, `LSTREET2`, `LCITY`, `LZIP`, `LZIP4`) and
-  falls back to the mailing fields (`MSTREET1`, `MSTREET2`, `MCITY`, `MZIP`, `MZIP4`) per field; PSS
-  uses `PADDRS`/`PCITY`/`PZIP`/`PZIP4`. A street-less address is still an address (city, state and ZIP
-  are real evidence), and a field that fails its type is a ledger note — the row survives.
+- **School jurisdiction.** CCD uses the published `ST`, then `LSTATE`/`MSTATE` only when `ST`
+  is absent; PSS uses `PSTABB`. This is stored separately as the entry's jurisdiction, never
+  copied into an address component. A school jurisdiction outside `UsJurisdiction::CENSUS_SCOPE`
+  drops the row with `state` named in the ledger. Closed and future schools stay in the corpus.
+- **Address tuples.** CCD parses location (`LSTREET1`, `LSTREET2`, `LCITY`, `LSTATE`, `LZIP`,
+  `LZIP4`) and mailing (`MSTREET1`, `MSTREET2`, `MCITY`, `MSTATE`, `MZIP`, `MZIP4`) independently.
+  Any nonempty published location component selects `Physical`, even when partial or malformed;
+  only an entirely absent location tuple selects `Mailing`. Selection never uses parse success or
+  completeness as evidence of source absence. No mailing street, second line, city, state, ZIP
+  or extension fills a physical component. Field failures retain valid components and ledger
+  diagnostics. An extension without its source tuple's base ZIP remains a diagnostic, not a ZIP.
+- **Unselected claims.** The current entry carries one selected tuple. A published mailing tuple
+  not selected is disclosed in the note ledger with all six raw components and its source row;
+  the original artifact capture retains it. It is not a second canonical postal claim.
+- **PSS address semantics.** `PADDRS`/`PCITY`/`PSTABB`/`PZIP`/`PZIP4` form the published mailing
+  address, tagged `Mailing`, including PO boxes. No coordinates or school identity imply that it
+  is a physical campus. Historical serialized addresses without a kind remain `Unknown`.
 - **Kind.** CCD rows are `Public { charter: false }` unless `CHARTER_TEXT` is `Yes`; PSS rows are
   `Private { affiliation: None }` (NCES publishes no affiliation there).
 - **Grades.** `GSLO`/`GSHI` map through `Grade::parse`/`GradeSpan::new`: `M` (missing) and `N` (not
@@ -66,8 +75,16 @@ in the CCD file, and `LATITUDE24`/`LONGITUDE24` exist only in the PSS file).
 records the URL, the window, and the digest of the window and of the full artifact. The
 fixture-driven tests live in `crates/census-service/tests/nces_directory_properties.rs`:
 
+`crates/census-service/tests/cen12_address_tuple.rs` uses synthetic, source-schema adversarial
+fixtures under `crates/census-crawl/tests/fixtures/cen12/`, not captured national evidence. Its
+parser → corpus generation → durable join → workbook readback scenarios assert complete and
+partial physical tuples, absent physical tuples, conflicting mailing cities/states/ZIPs, PO boxes,
+invalid ZIP diagnostics, and exact kind publication. Workbook/CSV projections append an explicit
+address-kind field; they never infer historical kind. These scenarios require execution after
+the coordinated repair wave; their presence alone is not verification.
+
 ```bash
-cargo xtask source-test nces   # `cargo nextest run -p census-service -E 'test(nces)'`
+env -u CI tools/moon-local run pipeline:xtask -- source-test nces
 ```
 
 The nextest filter matches **test function names**, not file names, so every acceptance test for a
@@ -86,3 +103,11 @@ The windows measure 1,557 CCD entries with 42 Alaska skips, and 374 PSS entries 
   enrollment and coordinates, and no affiliation beyond the file's own columns; the census treats it
   as address and level evidence, never as an authoritative name.
 - Neither reader enforces a row limit: the verb bounds the artifact size it hands over.
+
+The parser borrows source cells while constructing owned validated tuples and moves its selected
+tuple into the entry. Corpus CSV rendering borrows published text through a fixed record array;
+formatted identifiers, ZIPs, numeric values and labels still require encoded text, and the CSV
+writer owns the output buffer. The existing borrowed-input `DirectoryIndex` owns copies of selected
+addresses, and the join constructs an owned durable claim. Those copies are not free and have not
+been measured in this repair wave. No latency, throughput or allocation improvement is certified;
+post-wave acceptance must measure the representative corpus/index/join/publication path.

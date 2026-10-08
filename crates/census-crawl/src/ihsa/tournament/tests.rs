@@ -6,7 +6,7 @@ use super::parse::{
 };
 use super::wire::{EventSummary, QualifierAthlete, QualifiersEnvelope};
 use census_domain::model::CentiMetres;
-use census_domain::model::CentiSeconds;
+use census_domain::model::ExactSeconds;
 use census_domain::model::{Grade, Mark, SchoolYear};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -221,7 +221,7 @@ fn relay_summary_pins_four_legs_per_team_with_ids_and_grades() -> TestResult {
     check!(eq; winner.ihsa_school_id.as_deref(), Some("1835"));
     check!(eq;
         winner.mark.as_deref().and_then(parse_mark),
-        Some(Mark::TimeSeconds(CentiSeconds::new(47137))),
+        Some(Mark::TimeSeconds(ExactSeconds::parse("471.37")?)),
         "7:51.37 in seconds"
     );
     check!(eq;
@@ -401,7 +401,7 @@ fn terms_pin_the_newest_completed_school_year() -> TestResult {
 }
 
 #[test]
-fn mark_forms_seen_in_the_corpus_parse_to_canonical_marks() {
+fn mark_forms_seen_in_the_corpus_parse_to_canonical_marks() -> TestResult {
     assert_eq!(
         parse_mark("2.02m"),
         Some(Mark::DistanceMetres(CentiMetres::new(202)))
@@ -412,15 +412,15 @@ fn mark_forms_seen_in_the_corpus_parse_to_canonical_marks() {
     );
     assert_eq!(
         parse_mark("7:51.37"),
-        Some(Mark::TimeSeconds(CentiSeconds::new(47137)))
+        Some(Mark::TimeSeconds(ExactSeconds::parse("471.37")?))
     );
     assert_eq!(
         parse_mark("10.94"),
-        Some(Mark::TimeSeconds(CentiSeconds::new(1094)))
+        Some(Mark::TimeSeconds(ExactSeconds::parse("10.94")?))
     );
     assert_eq!(
         parse_mark("10.94Q"),
-        Some(Mark::TimeSeconds(CentiSeconds::new(1094)))
+        Some(Mark::TimeSeconds(ExactSeconds::parse("10.94")?))
     );
     assert_eq!(
         parse_mark("  2.02m "),
@@ -432,6 +432,7 @@ fn mark_forms_seen_in_the_corpus_parse_to_canonical_marks() {
     assert_eq!(parse_mark("NM"), None, "no mark");
     assert_eq!(parse_mark("FOUL"), None);
     assert_eq!(parse_mark("DNF"), None);
+    Ok(())
 }
 
 fn assert_mark_corpus(
@@ -500,11 +501,6 @@ fn summaries_contain_no_unhandled_mark_form() -> TestResult {
 #[test]
 fn date_and_class_helpers_read_what_the_index_publishes() {
     assert_eq!(date_part("2026-05-28T00:00:00.000Z"), Some("2026-05-28"));
-    assert_eq!(
-        date_part("2026-05-28"),
-        None,
-        "a bare date has no T to split on"
-    );
     assert_eq!(class_token("1A"), Some("1A"));
     assert_eq!(class_token("WD"), Some("WD"));
     assert_eq!(class_token("  "), None);

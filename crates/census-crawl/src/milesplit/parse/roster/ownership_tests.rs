@@ -13,6 +13,7 @@ const ABBOTSFORD: &str = include_str!("../../../../tests/fixtures/milesplit/wi_r
 
 fn team(id: &str) -> TestResult<TeamRef> {
     Ok(parse_team_index(TEAMS)?
+        .teams
         .into_iter()
         .find(|team| team.id == id)
         .ok_or("exact provider school in captured index")?)

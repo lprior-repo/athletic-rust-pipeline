@@ -83,19 +83,32 @@ fn performance(store: &Store, athlete: &CanonicalAthlete) -> TestResult {
     meet.sports.push(Sport::OutdoorTrack);
     store.append(Table::Meets, &meet)?;
     let kind = EventKind::Track100m;
-    let event = CanonicalEvent::new(&meet.id, kind.clone(), Gender::Boys, None, None);
+    let event = CanonicalEvent::new(
+        EventIdentity {
+            meet: &meet.id,
+            kind,
+            gender: Gender::Boys,
+            division: None,
+            round: None,
+        },
+        EventSpecification::default(),
+    )?;
     store.append(Table::Events, &event)?;
-    let mut performance = CanonicalPerformance::new_checked(
-        &athlete.id,
-        &kind,
-        &Id::mint("team", &["oracle-team"]),
-        &event.id,
-        &meet.id,
-        "2026-05-02",
-        Mark::TimeSeconds(CentiSeconds::new(1100)),
-        "oracle:1",
-        Some(1.0),
-        Some(1),
+    let team = Id::mint("team", &["oracle-team"]);
+    let mut performance = CanonicalPerformance::new(
+        PerformanceIdentity {
+            athlete: &athlete.id,
+            event: &event.id,
+            meet: &meet.id,
+            date: "2026-05-02",
+            source_key: "oracle:1",
+        },
+        PerformanceResult {
+            team: &team,
+            mark: Mark::TimeSeconds(ExactSeconds::parse("11.00")?),
+            wind_mps: Some(1.0),
+            place: Some(1),
+        },
     )?;
     performance.timing = Some(TimingMethod::Fat);
     performance.source_athlete = athlete.source.clone();

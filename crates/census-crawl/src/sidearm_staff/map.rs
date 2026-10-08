@@ -58,12 +58,12 @@ pub fn school_entities(facts: &ProfileFacts<'_>, directory: &StaffDirectory) -> 
     }
 }
 
-fn coach_entity(
+pub(super) fn coach_entity(
     school_id: &SchoolId,
     row: &StaffRow,
     facts: &ProfileFacts<'_>,
 ) -> Option<CanonicalCoach> {
-    if row.name.is_empty() || row.email.is_empty() {
+    if row.name.is_empty() {
         return None;
     }
     let (sport, gender, role) = if row.role == "Athletic Director" {

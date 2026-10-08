@@ -4,9 +4,10 @@ mod fallible_checks;
 
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
-    CanonicalPerformance, CanonicalSchool, CanonicalTeam, CentiSeconds, CoachRole,
-    CompetitionLevel, EventKind, Evidence, Gender, GradYear, Grade, Id, Mark, ObservedGrade,
-    SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport, TeamId, TimingMethod,
+    CanonicalPerformance, CanonicalSchool, CanonicalTeam, CoachRole, CompetitionLevel,
+    EventIdentity, EventKind, EventSpecification, Evidence, ExactSeconds, Gender, GradYear, Grade,
+    Id, Mark, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef,
+    Sport, TeamId, TimingMethod,
 };
 use census_domain::UsJurisdiction;
 use census_report::bests;
@@ -191,26 +192,33 @@ fn add_athlete(
     } else {
         EventKind::Track1600m
     };
-    let mut event = CanonicalEvent::new(meet_id, kind.clone(), gender, None, None);
+    let mut event = CanonicalEvent::new(
+        EventIdentity {
+            meet: meet_id,
+            kind,
+            gender,
+            division: None,
+            round: None,
+        },
+        EventSpecification::default(),
+    )?;
     event.evidence.push(observation(SOURCE, MEET_DATE));
     corpus.distinct_events.insert(event.id.as_str().to_string());
     for attempt in 0..2 {
         let source_key = format!("drill-{index}-{slot}-{attempt}");
         corpus.performances.push(CanonicalPerformance {
-            id: CanonicalPerformance::mint(&athlete.id, meet_id, &kind, MEET_DATE, &source_key),
+            id: CanonicalPerformance::mint(&athlete.id, meet_id, &event.id, MEET_DATE, &source_key),
             athlete: athlete.id.clone(),
             team: team_id.clone(),
             event: event.id.clone(),
             meet: meet_id.clone(),
             date: MEET_DATE.to_string(),
-            mark: Mark::TimeSeconds(
-                CentiSeconds::try_from_seconds_f64(
-                    130.0
-                        + f64::from(u32::try_from(index + slot)?)
-                        + f64::from(u32::try_from(attempt)?),
-                )
-                .ok_or("invalid fixture time")?,
-            ),
+            mark: Mark::TimeSeconds(ExactSeconds::parse(
+                &(130.0
+                    + f64::from(u32::try_from(index + slot)?)
+                    + f64::from(u32::try_from(attempt)?))
+                .to_string(),
+            )?),
             wind_mps: None,
             place: Some(u16::try_from(attempt + 1)?),
             heat: Some(format!("attempt-{}", attempt + 1)),

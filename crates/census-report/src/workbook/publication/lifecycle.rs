@@ -12,6 +12,11 @@ pub(super) fn preflight(root: &Path) -> ReportResult<()> {
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
         Err(source) => return Err(io_error(root, source)),
     }
+    reject_flat_artifacts(root)?;
+    validate_layout(root)
+}
+
+fn reject_flat_artifacts(root: &Path) -> ReportResult<()> {
     for name in [
         "workbook.xlsx",
         "frozen-input.json",
@@ -26,6 +31,10 @@ pub(super) fn preflight(root: &Path) -> ReportResult<()> {
             Err(source) => return Err(io_error(&path, source)),
         }
     }
+    Ok(())
+}
+
+fn validate_layout(root: &Path) -> ReportResult<()> {
     for (name, directory) in [("generations", true), ("current", false)] {
         let path = root.join(name);
         match std::fs::symlink_metadata(&path) {

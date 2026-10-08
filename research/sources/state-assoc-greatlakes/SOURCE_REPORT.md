@@ -136,6 +136,9 @@ per-state Athletic.net Grade-11 baseline, and coach-contact yields are tabulated
 | Estimated marginal coverage | complete IL school universe with sponsorship truth (828 / 632 / 624 / 539 / 507); 2,555 T&F state-final triples (838 Jr) + 1,214 boys XC qualifiers (358 G11) per season with association-published grade; AN identity for every T&F state-final finisher and relay leg with zero Athletic.net requests [13] |
 | Implementation recommendation | **PRIMARY** (universe + structure). Secondary roles: `COACH_SOURCE`, `RESULT_SOURCE` (state finals only), `VALIDATION_SOURCE` for grades |
 
+IHSA tournament replay contract for the CEN repair wave: event-index and result-summary facts use validated physical capture acquisition instants, never the run's evaluation date. Capture digest/body mismatches are refused. Meet replay decisions include the requested performance horizon; a future-excluded result remains eligible for later re-evaluation. Missing or invalid published calendar dates remain owed. Source-specific content witnesses and source journal associations are staged together in the native recorded batch, allowing unchanged facts to remain unchanged when the horizon expands. These source-local changes have not been executed during concurrent editing; integrated verification and its ledger belong to Main.
+
+
 ### 2.2 Supporting lanes — Illinois
 
 | Source | IDs observed | Measured | Recommendation (national token) |
@@ -455,3 +458,27 @@ Exact commands and readback limits belong to the dated
 originally under the external Midwest research workspace; retained reports now live under
 [the corpus index](../../midwest-source-program/README.md). CSV citations identify its `data/` and
 `reports/` generations; absent artifacts remain unavailable, not reverified by this document.
+
+## CEN14 identity capture-lineage qualification (2026-10-08)
+
+This amendment changes no historical capture, denominator or evidence entry. The IHSA event
+summary publishes an exact Athletic.net athlete identifier, but §2.2 describes the shared
+AthleticLIVE state-meet feed; an IHSA hostname does not establish independently authored roster
+evidence. Qualification therefore remains `CandidateOnly`, with publisher family `ihsa` and
+upstream producer `unqualified:ihsa-state-feed`. The latter explicitly represents a qualification
+gap, not an independently established producer.
+
+The tournament capture plumbing retains the acquired response's SHA-256 and RFC3339 fetch instant,
+plus the exact source URL and row locator, on canonical identity attestations. The known captured
+fixture `crates/census-crawl/tests/fixtures/ihsa_tournament/event_2790204_boys_hj_1a_finals.json`
+publishes Kehlin Crawford as `athlete.athleticNetId = 27740691` at finisher row zero and
+`athlete.athleticLiveId = 49752378`. The live key is not a provider person namespace. Its different
+URL must not promote the same captured state-meet publication into independent identity evidence.
+
+The new `cen14_ihsa_captured_parse_retains_exact_subject_capture_after_reopen_without_qualifying_a_mirror`
+scenario exercises that retained artifact through the adapter and store boundary and checks the
+candidate-only withholding predicate. Its replay acquisition metadata is test-owned, not a newly
+reported live fetch. It is unexecuted during the concurrent repair wave. Controlled positive
+domain fixture documents are not a substitute for a genuinely qualified school-roster/timer pair.
+An independently qualified real pair, followed through parsing, decision and merged publication,
+is still required before certifying CEN14.

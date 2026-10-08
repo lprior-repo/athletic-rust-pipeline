@@ -1,18 +1,19 @@
 use census_domain::school_directory::{
-    CityName, Enrollment, Phone, SchoolDirectoryEntry, SchoolName, SourceLabel, Website,
+    CityName, DirectoryError, Enrollment, Phone, SchoolDirectoryEntry, SchoolName, SourceLabel,
+    Website,
 };
 
-use crate::directory::{self, AddressParts, Header, ReadOutcome};
+use crate::directory::{self, AddressParts, CsvRow, Header, ReadOutcome};
 use crate::CrawlResult;
 
 pub const TABULAR_REQUIRED: [&str; 3] = ["NAME", "CITY", "STATE"];
 
 fn build_tabular_entry(
     header: &Header,
-    record: &csv::StringRecord,
+    record: &CsvRow<'_>,
     line: usize,
     outcome: &mut ReadOutcome,
-) -> Option<SchoolDirectoryEntry> {
+) -> Result<Option<SchoolDirectoryEntry>, DirectoryError> {
     let name = directory::skip_row(
         outcome,
         line,
@@ -22,81 +23,106 @@ fn build_tabular_entry(
             header,
             &["NAME", "SCHOOL_NAME", "SCHOOL"],
         )),
-    );
-    let state_raw = directory::first(record, header, &["STATE", "STATE_CODE"]);
-    if state_raw.trim().is_empty() {
-        outcome.skip(line, "state", "the row states no state");
-        return None;
-    }
-    let Some(state) = directory::census_state(state_raw) else {
-        outcome.skip(
-            line,
-            "state",
-            format!("{} is not a census jurisdiction", state_raw.trim()),
-        );
-        return None;
+    )?;
+    let Some(state) = row_state(header, record, line, outcome)? else {
+        return Ok(None);
     };
-    let name = name?;
+    let Some(name) = name else {
+        return Ok(None);
+    };
     let city_raw = directory::first(record, header, &["CITY", "TOWN"]);
     let city = directory::skip_failed(
         outcome,
         line,
         directory::field("city", CityName::parse(city_raw)),
-    );
-    let entry = match SchoolDirectoryEntry::weak(
+    )?;
+    match SchoolDirectoryEntry::weak(
         name,
         city,
         Some(state),
         SourceLabel::StateEducationAgency { state },
     ) {
-        Ok(e) => e,
+        Ok(entry) => Ok(Some(entry)),
+        Err(
+            error @ (DirectoryError::Capacity { .. }
+            | DirectoryError::Allocation { .. }
+            | DirectoryError::Representation { .. }),
+        ) => Err(error),
         Err(_) => {
-            outcome.skip(line, "school name", "the name leaves no matching form");
-            return None;
+            outcome.skip(line, "school name", "the name leaves no matching form")?;
+            Ok(None)
         }
-    };
-    Some(entry)
+    }
+}
+
+fn row_state(
+    header: &Header,
+    record: &CsvRow<'_>,
+    line: usize,
+    outcome: &mut ReadOutcome,
+) -> Result<Option<census_domain::UsJurisdiction>, DirectoryError> {
+    let raw = directory::first(record, header, &["STATE", "STATE_CODE"]);
+    if raw.trim().is_empty() {
+        outcome.skip(line, "state", "the row states no state")?;
+        return Ok(None);
+    }
+    let state = directory::census_state(raw);
+    if state.is_none() {
+        outcome.skip(
+            line,
+            "state",
+            directory::issue_detail(format_args!("{} is not a census jurisdiction", raw.trim()))?,
+        )?;
+    }
+    Ok(state)
 }
 
 fn enrich_tabular_entry(
     entry: SchoolDirectoryEntry,
     header: &Header,
-    record: &csv::StringRecord,
+    record: &CsvRow<'_>,
     line: usize,
     outcome: &mut ReadOutcome,
-) -> SchoolDirectoryEntry {
-    let city_raw = directory::first(record, header, &["CITY", "TOWN"]);
-    let state_raw = directory::first(record, header, &["STATE", "STATE_CODE"]);
-    let mut row = entry;
-    row = row.with_address(directory::skip_absent(
+) -> Result<SchoolDirectoryEntry, DirectoryError> {
+    let address = directory::skip_absent(
         outcome,
         line,
         directory::postal_address(AddressParts {
             street: directory::first(record, header, &["STREET", "ADDRESS", "ADDRESS1"]),
             line2: "",
-            city: city_raw,
-            state: state_raw,
+            city: directory::first(record, header, &["CITY", "TOWN"]),
+            state: directory::first(record, header, &["STATE", "STATE_CODE"]),
             zip: directory::first(record, header, &["ZIP", "ZIP_CODE", "POSTAL_CODE"]),
             plus4: "",
         }),
-    ));
-    row = row.with_phone(directory::skip_absent(
+    )?;
+    enrich_contacts(entry.with_address(address), header, record, line, outcome)
+}
+
+fn enrich_contacts(
+    entry: SchoolDirectoryEntry,
+    header: &Header,
+    record: &CsvRow<'_>,
+    line: usize,
+    outcome: &mut ReadOutcome,
+) -> Result<SchoolDirectoryEntry, DirectoryError> {
+    let phone = directory::skip_absent(
         outcome,
         line,
         directory::optional(
             "phone",
             Phone::parse(directory::first(record, header, &["PHONE", "PHONE_NUMBER"])),
         ),
-    ));
-    row = row.with_website(directory::skip_absent(
+    )?;
+    let website = directory::skip_absent(
         outcome,
         line,
         directory::optional(
             "website",
             Website::parse(directory::first(record, header, &["WEBSITE", "URL"])),
         ),
-    ));
-    row = row.with_enrollment(directory::skip_absent(
+    )?;
+    let enrollment = directory::skip_absent(
         outcome,
         line,
         directory::optional(
@@ -107,21 +133,24 @@ fn enrich_tabular_entry(
                 &["ENROLLMENT", "NUMSTUDS"],
             )),
         ),
-    ));
-    row
+    )?;
+    Ok(entry
+        .with_phone(phone)
+        .with_website(website)
+        .with_enrollment(enrollment))
 }
 
 fn tabular_row(
     header: &Header,
-    record: &csv::StringRecord,
+    record: &CsvRow<'_>,
     line: usize,
     outcome: &mut ReadOutcome,
-) {
-    let Some(entry) = build_tabular_entry(header, record, line, outcome) else {
-        return;
+) -> Result<(), DirectoryError> {
+    let Some(entry) = build_tabular_entry(header, record, line, outcome)? else {
+        return Ok(());
     };
-    let row = enrich_tabular_entry(entry, header, record, line, outcome);
-    outcome.push(row);
+    let row = enrich_tabular_entry(entry, header, record, line, outcome)?;
+    outcome.push(row)
 }
 
 pub fn parse_tabular(text: &str) -> CrawlResult<ReadOutcome> {

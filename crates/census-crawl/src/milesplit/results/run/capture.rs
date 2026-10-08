@@ -65,38 +65,57 @@ pub(super) fn archive_metadata(
         digest(&(reference.site.source_id(), &provenance))?
     );
     let phase = crate::milesplit::owned::OWNED_CAPTURE_PHASE;
-    if ctx
-        .store
-        .journal_contains(phase, &format!("{key}/manifest"))?
-    {
+    if super::super::journal_contains(ctx, phase, &format!("{key}/manifest"))? {
         return Ok(());
     }
-    let mut batch = ctx.write_batch();
-    let source_instance = reference.site.source_id();
     capture
         .body
         .chunks(CHUNK_BYTES)
         .enumerate()
         .try_for_each(|(index, bytes)| {
-            batch.journal_done(
-                phase,
-                &format!("{key}/{index}"),
-                &serde_json::json!({
-                    "capture": provenance, "source_instance": source_instance,
-                    "role": "raw_metadata", "chunk_index": index,
-                    "raw_base64": STANDARD.encode(bytes),
-                }),
-            )
+            archive_chunk(ctx, reference, capture, &key, (index, bytes))
         })?;
-    batch.journal_done(
-        phase,
+    archive_payload(
+        ctx,
         &format!("{key}/manifest"),
         &serde_json::json!({
-            "capture": provenance, "source_instance": source_instance,
+            "capture": provenance, "source_instance": reference.site.source_id(),
             "role": "raw_metadata", "encoding": "base64", "chunk_bytes": CHUNK_BYTES,
             "chunks": capture.body.chunks(CHUNK_BYTES).len(),
         }),
-    )?;
-    batch.commit()?;
-    Ok(())
+    )
+}
+
+fn archive_chunk(
+    ctx: &AdapterContext<'_>,
+    reference: &ResultSetRef,
+    capture: &FetchOutcome,
+    key: &str,
+    chunk: (usize, &[u8]),
+) -> CrawlResult<()> {
+    let key = format!("{key}/{}", chunk.0);
+    if super::super::journal_contains(ctx, crate::milesplit::owned::OWNED_CAPTURE_PHASE, &key)? {
+        return Ok(());
+    }
+    if let Some(recording) = ctx.recording {
+        recording.admit(CHUNK_BYTES.saturating_mul(4), 1)?;
+    }
+    archive_payload(
+        ctx,
+        &key,
+        &serde_json::json!({
+            "capture": provenance(capture), "source_instance": reference.site.source_id(),
+            "role": "raw_metadata", "chunk_index": chunk.0, "raw_base64": STANDARD.encode(chunk.1),
+        }),
+    )
+}
+
+fn archive_payload(
+    ctx: &AdapterContext<'_>,
+    key: &str,
+    payload: &serde_json::Value,
+) -> CrawlResult<()> {
+    let mut batch = ctx.write_batch();
+    batch.journal_done(crate::milesplit::owned::OWNED_CAPTURE_PHASE, key, payload)?;
+    batch.commit()
 }

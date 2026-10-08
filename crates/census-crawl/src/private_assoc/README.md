@@ -82,6 +82,7 @@ and these selectors re-checked against it.
   `---`).
 - **Noted** (row survives, field recorded): a published address part the domain refuses — a ZIP that
   is not five digits, a city over 64 characters, a street over 120 — and the parsed parts still land.
+  A published state outside the census jurisdiction set also retains a note instead of disappearing.
 - **Refused** (`CrawlError::Invariant`): the body carries no `school-list-item` element, or it names
   no association this reader recognizes; the reader names the three it accepts rather than guessing.
 
@@ -90,6 +91,19 @@ Each published part is validated on its own (`StreetLine::parse`, `CityName::par
 the first unusable part, and a listing's ZIP is the part most likely to be malformed, so routing it
 through `postal_address` would cost a row its street lines and its key's city/state for one bad
 digit. Here one bad part costs exactly one ledger note and the row keeps everything else.
+
+The reader admits at most 8 MiB of source body, 20,000 listing items, 16 KiB per item,
+128 address segments and 1,024 bytes per decoded name or address field. Text and segment
+growth is reserved fallibly before appending. The shared `ReadOutcome` also enforces
+entry/issue counts, issue detail length and conservative aggregate retained bytes.
+Fallible row and ledger calls propagate admission failures to `ReadOutcome::stop`, retaining
+the accepted prefix and the rejected locator even when another ledger row cannot fit.
+Whole-body refusal returns an error, never a successful empty directory.
+
+Neither the unqualified selectors nor exhaustion of the supplied file proves a finite
+association membership frontier. The reader therefore does not call `finish`: clean
+parses remain `Unknown`, and skipped rows, notes or stopped admission remain `Partial`.
+
 
 ## Fixtures
 
@@ -103,9 +117,9 @@ entry point end to end.
 ## Commands
 
 ```console
-cargo xtask source-test private_assoc      # nextest `-p census-service -E 'test(private_assoc)'`
-cargo xtask source-fixture private_assoc   # lists the directory's README: no capture exists
-cargo xtask replay private_assoc           # refuses: the directory holds no body to replay
+tools/moon-local run pipeline:tests -- -E 'test(private_assoc)'
+env -u CI tools/moon-local run pipeline:xtask -- source-fixture private_assoc
+env -u CI tools/moon-local run pipeline:xtask -- replay private_assoc
 ```
 
 ## Before this adapter lands

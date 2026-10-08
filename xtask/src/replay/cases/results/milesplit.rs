@@ -5,9 +5,14 @@ use census_crawl::milesplit;
 pub(super) fn capture(capture: &Capture<'_>) -> Result<String> {
     let (file, body) = (capture.file, capture.body);
     if let Some(site) = file.strip_suffix("_teams_index.html") {
-        let teams = milesplit::parse_team_index(body)?;
-        ensure_rows(file, teams.len(), "teams")?;
-        return Ok(format!("team_index site={site} teams={}", teams.len()));
+        let read = milesplit::parse_team_index(body)?;
+        ensure!(
+            read.disposition == census_crawl::CollectionDisposition::Complete,
+            "{file}: captured team inventory is {:?}",
+            read.disposition
+        );
+        ensure_rows(file, read.teams.len(), "teams")?;
+        return Ok(format!("team_index site={site} teams={}", read.teams.len()));
     }
     if file.ends_with("_results_index.html") {
         let meets = milesplit::parse_meet_index(body)?;
@@ -97,6 +102,7 @@ fn index_team(site: &str, team_id: &str, capture: &Capture<'_>) -> Result<milesp
         format!("no `{index_file}` capture in the same directory to resolve the team with")
     })?;
     milesplit::parse_team_index(index)?
+        .teams
         .into_iter()
         .find(|team| team.id == team_id)
         .with_context(|| format!("team {team_id} is not in the {index_file} capture"))

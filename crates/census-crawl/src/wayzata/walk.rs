@@ -1,241 +1,207 @@
-use super::map::{level_of, resolve_venue, VenueResolution};
-use super::parse::{schedule_rows, schedule_url, MeetRow, ScheduleSport};
-use super::{stats_of, Options, ADAPTER_ID, BASE, PARSE_VERSION, PROVIDER};
-use crate::{AdapterContext, AdapterReport, CrawlResult};
-use census_domain::model::{CanonicalMeet, Evidence, SourceIdentity, SourceNamespace, SourceRef};
-use census_domain::school_index::SchoolIndex;
-use census_domain::UsJurisdiction;
-use census_store::Table;
-use serde_json::json;
-use std::collections::{BTreeMap, HashMap, HashSet};
-
-#[derive(Debug, Default)]
-struct Stats {
-    pages: usize,
-    rows: usize,
-    states_resolved: usize,
-    states_from_school: usize,
-    states_unknown: usize,
-    levels: BTreeMap<String, usize>,
-    sports: BTreeMap<String, usize>,
-    unresolved_venues: BTreeMap<String, usize>,
-}
-
-fn count(value: usize) -> u64 {
-    u64::try_from(value).map_or(u64::MAX, |value| value)
-}
-
-pub(super) fn completed_pages(ctx: &AdapterContext<'_>) -> CrawlResult<HashSet<String>> {
-    Ok(ctx
-        .store
-        .journal_payloads(ADAPTER_ID)?
-        .into_iter()
-        .filter(|entry| {
-            entry.get("parser").and_then(serde_json::Value::as_u64)
-                == Some(u64::from(PARSE_VERSION))
-        })
-        .filter_map(|entry| {
-            entry
-                .get("url")
-                .and_then(serde_json::Value::as_str)
-                .map(str::to_string)
-        })
-        .collect())
-}
+use super::budget;
+use super::projection::{self, Page};
+use super::receipt;
+use super::{schedule_url, stats_of, MeetRow, Options, ScheduleSport, ADAPTER_ID};
+use crate::{AdapterContext, AdapterReport, CollectionDisposition, CrawlError, CrawlResult};
+use futures::{stream, TryStreamExt};
 
 pub(super) struct Walk {
-    observed_on: String,
-    stats: Stats,
-    meets: BTreeMap<String, CanonicalMeet>,
-    venue_cache: HashMap<String, VenueResolution>,
-    pending: Vec<(String, serde_json::Value)>,
     report: AdapterReport,
+    completed: usize,
+    pages: u64,
+}
+
+struct Located {
+    ordinal: usize,
+    row: MeetRow,
 }
 
 impl Walk {
-    pub(super) fn new(observed_on: String) -> Self {
+    pub(super) fn new() -> Self {
         Self {
-            observed_on,
-            stats: Stats::default(),
-            meets: BTreeMap::new(),
-            venue_cache: HashMap::new(),
-            pending: Vec::new(),
             report: AdapterReport::new(ADAPTER_ID, "meet-schedule rows"),
+            completed: 0,
+            pages: 0,
         }
     }
 
+    #[tracing::instrument(skip(self, ctx, options, years))]
     pub(super) async fn run(
+        self,
+        ctx: &AdapterContext<'_>,
+        options: &Options,
+        years: &[i16],
+    ) -> CrawlResult<Self> {
+        let pages = [ScheduleSport::Track, ScheduleSport::CrossCountry]
+            .into_iter()
+            .flat_map(|sport| years.iter().copied().map(move |year| (sport, year)));
+        stream::iter(pages.map(Ok))
+            .try_fold(self, |mut walk, (sport, year)| async move {
+                let url = schedule_url(sport, year);
+                if walk.limited(options) {
+                    walk.owed(url)?;
+                    return Ok(walk);
+                }
+                if let Err(error) = walk.read_page(ctx, options, sport, year).await {
+                    walk.failed(url, error)?;
+                }
+                Ok(walk)
+            })
+            .await
+    }
+
+    fn limited(&self, options: &Options) -> bool {
+        options.limit.is_some_and(|limit| self.completed >= limit)
+    }
+
+    #[tracing::instrument(skip(self, ctx, options))]
+    async fn read_page(
         &mut self,
         ctx: &AdapterContext<'_>,
         options: &Options,
-        done: &HashSet<String>,
-        years: &[i16],
-        index: &SchoolIndex,
+        sport: ScheduleSport,
+        year: i16,
     ) -> CrawlResult<()> {
-        'sport: for sport in [ScheduleSport::Track, ScheduleSport::CrossCountry] {
-            for year in years {
-                let url = schedule_url(sport, *year);
-                if done.contains(&url) {
-                    continue;
-                }
-                if options.limit.is_some_and(|limit| self.stats.rows >= limit) {
-                    break 'sport;
-                }
-                let fetched = ctx.fetcher.get(&url, &ctx.fetch_options()).await?;
-                let rows = schedule_rows(&fetched.text(), *year)?;
-                self.stats.pages = self.stats.pages.saturating_add(1);
-                self.report
-                    .note(format!("{url}: {} competition rows", rows.len()));
+        let url = schedule_url(sport, year);
+        let mut fetch_options = ctx.fetch_options();
+        fetch_options.refresh = ctx.refresh || options.refresh;
+        let fetched = ctx.fetcher.get(&url, &fetch_options).await?;
+        let body = validate_page(&fetched, &url)?;
+        let rows = super::parse::rows(body, year)?;
+        self.pages = budget::add(self.pages, 1)?;
+        let page = Page {
+            fetched: &fetched,
+            sport,
+            year,
+        };
+        self.apply_rows(ctx, options, &page, rows)
+    }
 
-                for row in &rows {
-                    if options.limit.is_some_and(|limit| self.stats.rows >= limit) {
-                        break 'sport;
-                    }
-                    let month = month_of(&row.date);
-                    let state = self.tally_row(row, sport, index, month);
-                    self.mint_meet(row, sport, state, month, &url);
-                }
-
-                self.pending.push((
-                    url.clone(),
-                    json!({
-                        "url": url,
-                        "parser": PARSE_VERSION,
-                        "sport": sport.as_str(),
-                        "year": year,
-                        "rows": rows.len(),
-                    }),
-                ));
+    fn apply_rows(
+        &mut self,
+        ctx: &AdapterContext<'_>,
+        options: &Options,
+        page: &Page<'_>,
+        rows: Vec<MeetRow>,
+    ) -> CrawlResult<()> {
+        rows.into_iter().enumerate().try_for_each(|(index, row)| {
+            let ordinal = index
+                .checked_add(1)
+                .ok_or_else(|| budget::arithmetic("Wayzata row ordinal"))?;
+            let located = Located { ordinal, row };
+            if let Err(error) = self.apply_row(ctx, options, page, located) {
+                self.failed(locator(page, ordinal), error)?;
             }
+            Ok(())
+        })
+    }
+
+    fn apply_row(
+        &mut self,
+        ctx: &AdapterContext<'_>,
+        options: &Options,
+        page: &Page<'_>,
+        located: Located,
+    ) -> CrawlResult<()> {
+        receipt::retain_raw(ctx, page, located.ordinal, &located.row)?;
+        let effect = receipt::projection_effect(ctx, options, page, located.ordinal)?;
+        if ctx.effect_is_committed(&effect.operation, &effect.digest)? {
+            return Ok(());
+        }
+        let meet = projection::project(ctx, options, page, located.row)?;
+        if meet.is_some() && self.limited(options) {
+            return self.owed(locator(page, located.ordinal));
+        }
+        if receipt::commit_projection(ctx, &effect, meet.as_ref())? && meet.is_some() {
+            self.completed = self
+                .completed
+                .checked_add(1)
+                .ok_or_else(|| budget::arithmetic("Wayzata completed rows"))?;
+            self.report.rows = budget::add(self.report.rows, 1)?;
         }
         Ok(())
     }
 
-    fn tally_row(
-        &mut self,
-        row: &MeetRow,
-        sport: ScheduleSport,
-        index: &SchoolIndex,
-        month: u8,
-    ) -> Option<UsJurisdiction> {
-        self.stats.rows = self.stats.rows.saturating_add(1);
-        let resolution = resolve_venue(index, &mut self.venue_cache, &row.location);
-        let state = resolution.state();
-        match resolution {
-            VenueResolution::Site(_) => {
-                self.stats.states_resolved = self.stats.states_resolved.saturating_add(1);
-            }
-            VenueResolution::School(_) => {
-                self.stats.states_from_school = self.stats.states_from_school.saturating_add(1);
-            }
-            VenueResolution::Unknown => {
-                self.stats.states_unknown = self.stats.states_unknown.saturating_add(1);
-                let slot = self
-                    .stats
-                    .unresolved_venues
-                    .entry(row.location.clone())
-                    .or_default();
-                *slot = slot.saturating_add(1);
-            }
-        }
-        let level = level_of(&row.name);
-        let slot = self.stats.levels.entry(format!("{level:?}")).or_default();
-        *slot = slot.saturating_add(1);
-        let slot = self
-            .stats
-            .sports
-            .entry(format!("{:?}", sport.sport_for(month)))
-            .or_default();
-        *slot = slot.saturating_add(1);
-        state
+    fn owed(&mut self, locator: String) -> CrawlResult<()> {
+        budget::reserve(&mut self.report.unfinished, 1, budget::MAX_UNFINISHED)?;
+        self.report.unfinished.push(locator);
+        self.report.disposition = CollectionDisposition::Partial;
+        Ok(())
     }
 
-    fn mint_meet(
-        &mut self,
-        row: &MeetRow,
-        sport: ScheduleSport,
-        state: Option<UsJurisdiction>,
-        month: u8,
-        url: &str,
-    ) {
-        let level = level_of(&row.name);
-        let mut meet = CanonicalMeet::new(state, &row.name, &row.date, level);
-        meet.location = Some(row.location.clone());
-        meet.sports.push(sport.sport_for(month));
-        if let Some(slug) = &row.slug {
-            meet.source_urls.push(format!("{BASE}/links/{slug}"));
+    fn failed(&mut self, locator: String, error: CrawlError) -> CrawlResult<()> {
+        self.owed(locator)?;
+        self.report.errors = budget::add(self.report.errors, 1)?;
+        if self.report.notes.len() < 5 {
+            budget::reserve(&mut self.report.notes, 1, 6)?;
+            self.report.note(budget::detail(&error)?);
         }
-        meet.source_urls.push(url.to_string());
-        meet.source_identities.push(SourceIdentity::new(
-            SourceNamespace::TimerMeet {
-                provider: PROVIDER.to_string(),
-            },
-            match row.slug.clone() {
-                Some(value) => value,
-                None => format!("{}|{}", row.date, meet.normalized_name),
-            },
-        ));
-        let mut evidence = Evidence::parsed(
-            SourceRef::new(ADAPTER_ID, Some(url.to_string())),
-            &self.observed_on,
-        );
-        evidence.note = Some(match &row.aria_label {
-            Some(label) => format!("provider schedule row: {label}"),
-            None => format!("provider schedule row at {}", row.location),
-        });
-        meet.evidence.push(evidence);
-        self.meets
-            .entry(meet.id.as_str().to_string())
-            .or_insert(meet);
+        Ok(())
     }
 
+    #[tracing::instrument(skip(self, ctx))]
     pub(super) async fn finish(
-        self,
+        mut self,
         ctx: &AdapterContext<'_>,
-        (requests_before, cache_before): (u64, u64),
+        before: (u64, u64),
     ) -> CrawlResult<AdapterReport> {
-        let Walk {
-            stats,
-            meets,
-            pending,
-            mut report,
-            ..
-        } = self;
-        let meets: Vec<CanonicalMeet> = meets.into_values().collect();
-        let mut batch = ctx.write_batch();
-        batch.append_many(Table::Meets, &meets)?;
-        for (url, payload) in pending {
-            batch.journal_done(ADAPTER_ID, &url, &payload)?;
+        let after = stats_of(ctx).await;
+        self.report.requests = budget::delta(after.0, before.0)?;
+        self.report.from_cache = budget::delta(after.1, before.1)?;
+        budget::reserve(&mut self.report.notes, 1, 6)?;
+        self.report.note(format!(
+            "schedules: {} pages read; schedule metadata only, no performance/result projection",
+            self.pages
+        ));
+        if self.report.unfinished.is_empty() {
+            self.report.finish_frontier();
         }
-        batch.commit()?;
-
-        let (requests_after, cache_after) = stats_of(ctx).await;
-        report.rows = count(stats.rows);
-        report.requests = requests_after.saturating_sub(requests_before);
-        report.from_cache = cache_after.saturating_sub(cache_before);
-        note_summary(&mut report, &stats, meets.len());
-        Ok(report)
+        Ok(self.report)
     }
 }
 
-fn month_of(date: &str) -> u8 {
-    date.get(5..7)
-        .and_then(|month| month.parse::<u8>().ok())
-        .map_or(0, |value| value)
+fn locator(page: &Page<'_>, ordinal: usize) -> String {
+    format!("{}#row={ordinal}", page.fetched.url)
 }
 
-fn note_summary(report: &mut AdapterReport, stats: &Stats, meets: usize) {
-    report.note(format!(
-        "schedules: {} pages read, {} competition rows, {meets} core meets minted",
-        stats.pages, stats.rows
-    ));
-    report.note(format!(
-        "venue state resolution: sites={} schools={} unresolved={} ({:?})",
-        stats.states_resolved,
-        stats.states_from_school,
-        stats.states_unknown,
-        stats.unresolved_venues
-    ));
-    report.note(format!("levels: {:?}", stats.levels));
-    report.note(format!("sports: {:?}", stats.sports));
+fn validate_page<'a>(fetched: &'a crate::net::FetchOutcome, url: &str) -> CrawlResult<&'a str> {
+    budget::check(
+        "Wayzata schedule bytes",
+        fetched.body.len(),
+        budget::MAX_PAGE_BYTES,
+    )?;
+    validate_capture(fetched, url)?;
+    let body = std::str::from_utf8(&fetched.body).map_err(|error| CrawlError::Schema {
+        url: fetched.url.clone(),
+        detail: format!("schedule is not UTF-8: {error}"),
+    })?;
+    super::parse::schedule_body(body)?.ok_or_else(|| CrawlError::Schema {
+        url: fetched.url.clone(),
+        detail: "published schedule table is missing".to_string(),
+    })
+}
+
+fn validate_capture(fetched: &crate::net::FetchOutcome, url: &str) -> CrawlResult<()> {
+    let physical_date = chrono::DateTime::parse_from_rfc3339(&fetched.fetched_at).is_ok()
+        || (fetched.fetched_at.len() == 10
+            && chrono::NaiveDate::parse_from_str(&fetched.fetched_at, "%Y-%m-%d").is_ok());
+    let digest = fetched.content_digest.len() == 64
+        && fetched
+            .content_digest
+            .bytes()
+            .all(|byte| byte.is_ascii_hexdigit());
+    if !physical_date
+        || !digest
+        || fetched.url != url
+        || fetched.method != "GET"
+        || !(200..300).contains(&fetched.status)
+        || fetched.status == 206
+        || fetched.bytes != fetched.body.len()
+    {
+        return Err(CrawlError::Schema {
+            url: url.to_string(),
+            detail: "physical capture metadata is missing or inconsistent".to_string(),
+        });
+    }
+    Ok(())
 }

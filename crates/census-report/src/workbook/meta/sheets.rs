@@ -15,52 +15,77 @@ fn built<T>(sheet: &'static str, build: impl FnOnce() -> T) -> T {
     value
 }
 
-#[allow(clippy::vec_init_then_push)]
+pub(super) struct Inputs<'a, 'd> {
+    facts: &'a RunFacts<'d>,
+    rows: &'a StoreRows<'d>,
+    conflicts: &'a [Family],
+    review: &'a [Family],
+    index: &'a SubjectIndex<'d>,
+}
+
+impl<'a, 'd> Inputs<'a, 'd> {
+    pub(super) fn of(
+        facts: &'a RunFacts<'d>,
+        rows: &'a StoreRows<'d>,
+        conflicts: &'a [Family],
+        review: &'a [Family],
+        index: &'a SubjectIndex<'d>,
+    ) -> Self {
+        Self {
+            facts,
+            rows,
+            conflicts,
+            review,
+            index,
+        }
+    }
+
+    fn schools(&self) -> ReportResult<Sheet> {
+        let cells = built("Schools", || schools_sheet(self.rows.schools))?;
+        Ok(("Schools", cells, &SCHOOL_WIDTHS, true))
+    }
+
+    fn meets(&self) -> Sheet {
+        let cells = built("Meets", || meets_sheet(self.rows.meets));
+        ("Meets", cells, &MEET_WIDTHS, true)
+    }
+
+    fn sources(&self) -> ReportResult<Sheet> {
+        let cells = built("Sources", || sources_sheet(self.facts.all_sources))?;
+        Ok(("Sources", cells, &SOURCE_WIDTHS, true))
+    }
+
+    fn coverage(&self) -> ReportResult<Sheet> {
+        let cells = built("Coverage", || {
+            coverage_sheet(self.facts.population.dataset())
+        })?;
+        Ok(("Coverage", cells, &COVERAGE_WIDTHS, true))
+    }
+
+    fn conflicts(&self) -> Sheet {
+        let cells = built("Conflicts", || conflicts_sheet(self.conflicts, self.index));
+        ("Conflicts", cells, &CONFLICT_WIDTHS, true)
+    }
+
+    fn review(&self) -> Sheet {
+        let cells = built("Review", || {
+            review_sheet(self.review, self.rows, self.index)
+        });
+        ("Review", cells, &REVIEW_WIDTHS, true)
+    }
+}
+
 pub(super) fn meta_sheets(
-    facts: &RunFacts<'_>,
-    rows: &StoreRows<'_>,
-    conflicts: &[Family],
-    review: &[Family],
-    index: &SubjectIndex<'_>,
+    inputs: &Inputs<'_, '_>,
     metrics: Vec<Vec<Cell>>,
 ) -> ReportResult<Vec<Sheet>> {
-    let mut sheets: Vec<Sheet> = Vec::with_capacity(7);
-    sheets.push((
-        "Schools",
-        built("Schools", || schools_sheet(rows.schools))?,
-        &SCHOOL_WIDTHS,
-        true,
-    ));
-    sheets.push((
-        "Meets",
-        built("Meets", || meets_sheet(rows.meets)),
-        &MEET_WIDTHS,
-        true,
-    ));
-    sheets.push((
-        "Sources",
-        built("Sources", || sources_sheet(facts.all_sources))?,
-        &SOURCE_WIDTHS,
-        true,
-    ));
-    sheets.push((
-        "Coverage",
-        built("Coverage", || coverage_sheet(facts.population.dataset()))?,
-        &COVERAGE_WIDTHS,
-        true,
-    ));
-    sheets.push((
-        "Conflicts",
-        built("Conflicts", || conflicts_sheet(conflicts, index)),
-        &CONFLICT_WIDTHS,
-        true,
-    ));
-    sheets.push((
-        "Review",
-        built("Review", || review_sheet(review, rows, index)),
-        &REVIEW_WIDTHS,
-        true,
-    ));
-    sheets.push(("Run Metrics", metrics, &METRIC_WIDTHS, false));
-    Ok(sheets)
+    Ok(vec![
+        inputs.schools()?,
+        inputs.meets(),
+        inputs.sources()?,
+        inputs.coverage()?,
+        inputs.conflicts(),
+        inputs.review(),
+        ("Run Metrics", metrics, &METRIC_WIDTHS, false),
+    ])
 }

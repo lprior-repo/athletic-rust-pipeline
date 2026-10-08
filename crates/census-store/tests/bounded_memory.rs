@@ -7,8 +7,8 @@ use std::path::Path;
 use census_domain::jurisdiction::UsJurisdiction;
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CanonicalTeam, CentiSeconds, EventKind, Gender, GradYear, Mark, SchoolYear, SourceIdentity,
-    SourceNamespace, Sport, TimingMethod,
+    CanonicalTeam, EventIdentity, EventKind, EventSpecification, ExactSeconds, Gender, GradYear,
+    Mark, SchoolYear, SourceIdentity, SourceNamespace, Sport, TimingMethod,
 };
 use census_store::{Store, Table};
 
@@ -46,25 +46,39 @@ fn performance(index: usize, version: usize) -> TestResult<CanonicalPerformance>
         Gender::Boys,
         SchoolYear::new(2026).ok_or("2026 is a season")?,
     );
+    let event = CanonicalEvent::new(
+        EventIdentity {
+            meet: &meet,
+            kind: EventKind::Track100m,
+            gender: Gender::Boys,
+            division: None,
+            round: None,
+        },
+        EventSpecification::default(),
+    )?;
+    let hundredths = 1094_usize
+        .checked_add(version)
+        .ok_or("fixture time overflow")?;
+    let nanoseconds = i64::try_from(hundredths)?
+        .checked_mul(10_000_000)
+        .ok_or("fixture time overflow")?;
+    let place = version.checked_add(1).ok_or("fixture place overflow")?;
     Ok(CanonicalPerformance {
         id: CanonicalPerformance::mint(
             &athlete,
             &meet,
-            &EventKind::Track100m,
+            &event.id,
             "2026-05-01",
             &format!("athlete-{index}"),
         ),
         athlete,
         team,
-        event: CanonicalEvent::new(&meet, EventKind::Track100m, Gender::Boys, None, None).id,
+        event: event.id,
         meet,
         date: "2026-05-01".to_string(),
-        mark: Mark::TimeSeconds(
-            CentiSeconds::try_from_seconds_f64(10.94 + (version as f64) / 100.0)
-                .ok_or("ten seconds is in range")?,
-        ),
+        mark: Mark::TimeSeconds(ExactSeconds::from_parts(nanoseconds, 2)?),
         wind_mps: None,
-        place: Some((version + 1) as u16),
+        place: Some(u16::try_from(place)?),
         heat: None,
         round: None,
         timing: Some(TimingMethod::Fat),

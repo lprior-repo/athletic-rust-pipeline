@@ -1,7 +1,7 @@
 use super::*;
 use census_domain::model::{
-    IdentityApplication, IdentityProjectionBuilder, IdentityStatus, ReviewCase, ReviewState,
-    ReviewVerdictRecord, ATHLETE_IDENTITY_FAMILY,
+    AttestationQualification, IdentityApplication, IdentityAttestation, IdentityProjectionBuilder,
+    IdentityStatus, ReviewCase, ReviewState, ReviewVerdictRecord, ATHLETE_IDENTITY_FAMILY,
 };
 
 mod published_cohort;
@@ -98,10 +98,14 @@ fn add_result(
             school: &athlete.school,
             meet: &meet,
             event: &event,
-            kind: &kind,
             date: "2026-05-01",
         },
-        Mark::TimeSeconds(CentiSeconds::new(value)),
+        Mark::TimeSeconds(ExactSeconds::from_parts(
+            i64::from(value)
+                .checked_mul(10_000_000)
+                .ok_or("fixture time overflow")?,
+            2,
+        )?),
         "wiaa_results",
         "https://wiaa.test/union/results",
     )
@@ -291,6 +295,212 @@ fn same_name_provider_owned_people_remain_separate_and_unresolved_status_is_expl
         status);
         check!(eq; text(&range, row, column_of(&range, "Review Status")?),
         "review");
+    }
+    Ok(())
+}
+
+fn attestation(
+    subject: &SourceIdentity,
+    publisher: &str,
+    digest: char,
+) -> TestResult<IdentityAttestation> {
+    let claim = IdentityAttestation {
+        subject: subject.clone(),
+        source: SourceRef::new(publisher, Some(format!("https://{publisher}.test/capture"))),
+        capture_sha256: digest.to_string().repeat(64),
+        acquired_at: format!("{DAY}T12:00:00Z"),
+        source_family: publisher.to_owned(),
+        upstream_producer: format!("{publisher}-producer"),
+        subject_locator: "published_subject".into(),
+        qualification: AttestationQualification::IndependentPublished,
+    };
+    claim.validate()?;
+    Ok(claim)
+}
+
+fn provider_member(
+    school: &SchoolId,
+    url: &str,
+    source: SourceIdentity,
+    links: &[SourceIdentity],
+    claim: IdentityAttestation,
+) -> CanonicalAthlete {
+    let mut athlete = CanonicalAthlete::new(
+        school,
+        "Synthetic Runner",
+        GradYear::CO2027,
+        Gender::Girls,
+        source,
+    );
+    athlete.public_profile_urls.push(url.to_owned());
+    athlete.evidence = evidence("wiaa_results", Some(url));
+    athlete.identity_attestations.push(claim);
+    for link in links {
+        athlete.add_identity(link.clone());
+    }
+    athlete
+}
+
+fn apply_identity_pairs(
+    store: &Store,
+    pairs: &[(CanonicalAthlete, CanonicalAthlete)],
+) -> TestResult {
+    let index = store.athlete_identity_index()?;
+    let mut cases = Vec::new();
+    let mut verdicts = Vec::new();
+    for (left, right) in pairs {
+        let ids = vec![left.id.cast(), right.id.cast()];
+        let subject = "Transitive disjoint provider objects";
+        let detail = "Independently attested shared provider object";
+        let evidence = index.case_evidence(subject, detail, &ids)?;
+        let mut case = ReviewCase::pending_with_evidence(
+            ATHLETE_IDENTITY_FAMILY,
+            left.id.as_str(),
+            subject,
+            detail,
+            evidence,
+        );
+        case.member_ids = ids;
+        case.state = ReviewState::Resolved;
+        verdicts.push(ReviewVerdictRecord {
+            id: case.id.clone(),
+            case_id: case.id.clone(),
+            subject_id: case.subject_id.clone(),
+            family: case.family.clone(),
+            kind: "value_proposed".into(),
+            field: "identity".into(),
+            value: "same_person".into(),
+            accepted: true,
+            confidence: 100,
+            rationale: detail.into(),
+            reviewer: "deterministic fixture".into(),
+            observed_at: DAY.into(),
+            member_ids: case.member_ids.clone(),
+        });
+        cases.push(case);
+    }
+    for case in &cases {
+        store.replace(Table::ReviewCases, case)?;
+    }
+    for verdict in &verdicts {
+        store.replace(Table::IdentityVerdicts, verdict)?;
+    }
+    let builder = IdentityProjectionBuilder::new(index, &cases, &verdicts)?;
+    let decisions = builder
+        .reviewed_applications(DAY)
+        .map(|(_, result)| -> TestResult<_> {
+            match result? {
+                IdentityApplication::Accepted(decision) => Ok(decision),
+                IdentityApplication::Retained(issue) => {
+                    Err(format!("pair rejection: {issue:?}").into())
+                }
+            }
+        })
+        .collect::<TestResult<Vec<_>>>()?;
+    check!(eq; store.apply_identity_decisions(&decisions)?, pairs.len() as u64);
+    Ok(())
+}
+
+#[test]
+fn conflicted_component_keeps_every_member_unmerged_in_both_orders() -> TestResult {
+    for reverse in [false, true] {
+        let dir = tempfile::tempdir()?;
+        let store = Store::open(dir.path())?;
+        let school = school(&store, UsJurisdiction::Wisconsin, "Union High")?;
+        let key = SourceIdentity::new(SourceNamespace::TfrrsAthlete, "7000009")
+            .with_url("https://tfrrs.test/athletes/7000009");
+        let mut first = provider_member(
+            &school,
+            "https://profiles.test/first",
+            SourceIdentity::new(SourceNamespace::MilesplitAthlete, "9001111")
+                .with_url("https://wi.milesplit.com/athletes/9001111"),
+            std::slice::from_ref(&key),
+            attestation(&key, "first-fixture", 'a')?,
+        );
+        let mut owner = provider_member(
+            &school,
+            "https://profiles.test/owner",
+            key.clone(),
+            &[],
+            attestation(&key, "owner-fixture", 'b')?,
+        );
+        let mut last = provider_member(
+            &school,
+            "https://profiles.test/last",
+            SourceIdentity::new(SourceNamespace::MilesplitAthlete, "9002222")
+                .with_url("https://mn.milesplit.com/athletes/9002222"),
+            std::slice::from_ref(&key),
+            attestation(&key, "last-fixture", 'c')?,
+        );
+        for (member, purpose) in [
+            (&mut first, "first"),
+            (&mut owner, "owner"),
+            (&mut last, "last"),
+        ] {
+            publish_fixture_cohort(
+                member,
+                "wiaa_results",
+                &format!("conflicted-{purpose}"),
+                DAY,
+            );
+        }
+        store.append_many(
+            Table::Athletes,
+            &[first.clone(), owner.clone(), last.clone()],
+        )?;
+        for member in [&first, &owner, &last] {
+            add_result(&store, member, EventKind::Track400m, 5000)?;
+        }
+        let mut pairs = [
+            (first.clone(), owner.clone()),
+            (owner.clone(), last.clone()),
+        ];
+        if reverse {
+            pairs.reverse();
+        }
+        apply_identity_pairs(&store, &pairs)?;
+        let dataset = crate::export::ExportDataset::load(&store)?;
+        check!(dataset.canonical_aliases.is_empty());
+        check!(eq; dataset.athletes.len(), 3);
+        for member in [&first, &owner, &last] {
+            check!(eq; dataset.identities().canonical_id(member.id.as_str()),
+            member.id.as_str());
+            check!(eq; dataset.identities().status(member.id.as_str())?,
+            IdentityStatus::RetainedConflict);
+        }
+        let derivation = crate::report::Derivation::of(&dataset, Scope::AllSources, Some(2027));
+        check!(eq; derivation.athletes().len(), 3);
+        let projection = recruiting(&store, Scope::AllSources, Some(2027))?;
+        let path = dir.path().join("conflicted.xlsx");
+        let mut book = Workbook::new();
+        projection.write_athletes(&mut book, &path)?;
+        projection.write_prs(&mut book, &path)?;
+        book.save(&path)?;
+        let mut book = open_workbook(&path)?;
+        let range = sheet(&mut book, "Athletes")?;
+        check!(eq; range.height(), 4);
+        for member in [&first, &owner, &last] {
+            let row = row_of(&range, member.id.as_str())?;
+            check!(eq; text(&range, row, column_of(&range, "Identity Status")?),
+            "retained_conflict");
+            let profiles = ["MileSplit URL", "Other profile URLs", "Athletic.net URL"]
+                .into_iter()
+                .map(|header| Ok(text(&range, row, column_of(&range, header)?)))
+                .collect::<TestResult<Vec<_>>>()?
+                .join("; ");
+            check!(profiles.contains(&member.public_profile_urls[0]));
+            for other in [&first, &owner, &last] {
+                check!(
+                    other.id == member.id || !profiles.contains(&other.public_profile_urls[0]),
+                    "another conflicted member profile must not merge into this row"
+                );
+            }
+        }
+        let prs = sheet(&mut book, "PRs")?;
+        check!(eq; prs.height(), 4);
+        for member in [&first, &owner, &last] {
+            row_of_event(&prs, member.id.as_str(), "Track400m")?;
+        }
     }
     Ok(())
 }

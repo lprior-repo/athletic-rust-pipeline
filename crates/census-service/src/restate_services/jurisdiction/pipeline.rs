@@ -1,17 +1,14 @@
 use restate_sdk::prelude::*;
 
-use crate::census::CollectOptions;
-use census_reconcile::identity::WorkflowIdentity;
-
 use super::JurisdictionCensus;
 use crate::restate_services::wire::{JurisdictionRequest, JurisdictionState};
+mod history;
 
 impl JurisdictionCensus {
     pub(super) async fn teams_owed(
         &self,
         ctx: &ObjectContext<'_>,
         request: &JurisdictionRequest,
-        identity: &WorkflowIdentity,
         state: &mut JurisdictionState,
         today: &str,
     ) -> Result<(), HandlerError> {
@@ -23,7 +20,6 @@ impl JurisdictionCensus {
         };
         let sweepable = plan.sweepable.clone();
         state.teams = super::team_collection::collect(ctx, request, &sweepable, today).await?;
-        state.identity = identity.as_str().to_string();
         self.save(ctx, state, today);
         Ok(())
     }
@@ -32,10 +28,21 @@ impl JurisdictionCensus {
         &self,
         ctx: &ObjectContext<'_>,
         request: &JurisdictionRequest,
-        options: CollectOptions,
         state: &mut JurisdictionState,
         today: &str,
     ) -> Result<(), HandlerError> {
+        let plan = state
+            .plan
+            .as_ref()
+            .ok_or_else(|| super::jobs::invariant("rosters ran before the source plan"))?;
+        if !plan
+            .sweepable
+            .iter()
+            .any(|slug| slug == crate::census::SOURCE)
+        {
+            return Ok(());
+        }
+        let options = self.options(request, today)?;
         let fetcher = self
             .fetcher(&request.authorized_hosts, request.source_parallelism)
             .await?;
@@ -43,83 +50,6 @@ impl JurisdictionCensus {
             .rosters_stage(ctx, fetcher, options, request.jurisdiction)
             .await?;
         state.rosters = Some(progress);
-        self.save(ctx, state, today);
-        Ok(())
-    }
-
-    pub(super) async fn meets_owed(
-        &self,
-        ctx: &ObjectContext<'_>,
-        request: &JurisdictionRequest,
-        state: &mut JurisdictionState,
-        today: &str,
-    ) -> Result<(), HandlerError> {
-        let year = u16::try_from(request.season.get()).map_err(|_| {
-            TerminalError::new(format!(
-                "season year {} is not a results-index year",
-                request.season.get()
-            ))
-        })?;
-        let Some(plan) = state.plan.as_ref() else {
-            return Err(TerminalError::new(
-                "the meets stage ran before the run recorded its source plan",
-            )
-            .into());
-        };
-        let sweepable = plan.sweepable.clone();
-        let fetcher = self
-            .fetcher(&request.authorized_hosts, request.source_parallelism)
-            .await?;
-        let census = self
-            .meets_stage(
-                ctx,
-                fetcher,
-                request.jurisdiction,
-                year,
-                request.refresh,
-                sweepable,
-            )
-            .await?;
-        state.meets = Some(census.clone());
-        state.meets_complete = census.truncated == 0;
-        self.save(ctx, state, today);
-        Ok(())
-    }
-
-    pub(super) async fn results_owed(
-        &self,
-        ctx: &ObjectContext<'_>,
-        request: &JurisdictionRequest,
-        state: &mut JurisdictionState,
-        today: &str,
-    ) -> Result<(), HandlerError> {
-        let year = u16::try_from(request.season.get()).map_err(|_| {
-            TerminalError::new(format!(
-                "season year {} is not a results-index year",
-                request.season.get()
-            ))
-        })?;
-        let Some(plan) = state.plan.as_ref() else {
-            return Err(TerminalError::new(
-                "the results stage ran before the run recorded its source plan",
-            )
-            .into());
-        };
-        let sweepable = plan.sweepable.clone();
-        let fetcher = self
-            .fetcher(&request.authorized_hosts, request.source_parallelism)
-            .await?;
-        let outcome = self
-            .results_stage(
-                ctx,
-                fetcher,
-                request.jurisdiction,
-                year,
-                request.refresh,
-                sweepable,
-            )
-            .await?;
-        state.results = Some(outcome);
         self.save(ctx, state, today);
         Ok(())
     }

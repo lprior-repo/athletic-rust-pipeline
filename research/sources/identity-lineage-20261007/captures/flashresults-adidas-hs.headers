@@ -1,0 +1,14 @@
+HTTP/2 200 
+content-type: text/html
+content-length: 101497
+date: Thu, 08 Oct 2026 03:17:13 GMT
+last-modified: Sun, 20 Sep 2026 09:44:30 GMT
+etag: "f57eede9d2a58262ce13c98237e125be"
+x-amz-server-side-encryption: AES256
+accept-ranges: bytes
+server: AmazonS3
+x-cache: Miss from cloudfront
+via: 1.1 ecc25ee46acdccbf14aa0d74c8f657b6.cloudfront.net (CloudFront)
+x-amz-cf-pop: ORD56-P5
+x-amz-cf-id: j42uY1uhzMtSxkKAZ3EFUVAp0vg0YJs4fHelPYZe2rLyCKujprdCrQ==
+

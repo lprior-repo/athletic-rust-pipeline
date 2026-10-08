@@ -4,11 +4,11 @@ use crate::report::Scope;
 use calamine::{open_workbook, Data, Range, Reader, Xlsx};
 use census_domain::model::{
     normalize_name, AthleteId, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
-    CanonicalPerformance, CanonicalSchool, CanonicalTeam, CentiMetres, CentiSeconds,
-    CoachContactClaim, CoachContactProgram, CoachRole, CoachTenure, CoachTenureEvidence,
-    CompetitionLevel, EventId, EventKind, Evidence, Gender, GradYear, Grade, Mark, MeetId,
-    ObservedGrade, PublishedGraduation, SchoolId, SchoolYear, SourceIdentity, SourceNamespace,
-    SourceRef, Sport,
+    CanonicalPerformance, CanonicalSchool, CanonicalTeam, CentiMetres, CoachContactClaim,
+    CoachContactProgram, CoachRole, CoachTenure, CoachTenureEvidence, CompetitionLevel, EventId,
+    EventIdentity, EventKind, EventSpecification, Evidence, ExactSeconds, Gender, GradYear, Grade,
+    Mark, MeetId, ObservedGrade, PublishedGraduation, SchoolId, SchoolYear, SourceIdentity,
+    SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -146,7 +146,16 @@ fn meet(
 }
 
 fn event(store: &Store, meet: &MeetId, kind: EventKind) -> TestResult<EventId> {
-    let mut event = CanonicalEvent::new(meet, kind, Gender::Boys, None, None);
+    let mut event = CanonicalEvent::new(
+        EventIdentity {
+            meet,
+            kind,
+            gender: Gender::Boys,
+            division: None,
+            round: None,
+        },
+        EventSpecification::default(),
+    )?;
     event.evidence = evidence("wiaa_results", None);
     let id = event.id.clone();
     store.append(Table::Events, &event)?;
@@ -192,7 +201,7 @@ fn performance(
             id: CanonicalPerformance::mint(
                 context.athlete,
                 context.meet,
-                context.kind,
+                context.event,
                 context.date,
                 &source_key,
             ),
@@ -222,7 +231,6 @@ struct PerformanceRow<'a> {
     school: &'a SchoolId,
     meet: &'a MeetId,
     event: &'a EventId,
-    kind: &'a EventKind,
     date: &'a str,
 }
 
@@ -315,38 +323,34 @@ fn fixture() -> TestResult<Fixture> {
     let jump = event(&store, &invite, EventKind::LongJump)?;
     let relay = event(&store, &state, EventKind::Relay4x400)?;
 
-    for (meet, event, kind, date, mark, source, url) in [
+    for (meet, event, date, mark, source, url) in [
         (
             &state,
             &sprint,
-            &EventKind::Track400m,
             "2026-06-06",
-            Mark::TimeSeconds(CentiSeconds::new(4980)),
+            Mark::TimeSeconds(ExactSeconds::parse("49.80")?),
             "wiaa_results",
             "https://wiaa.test/results/state",
         ),
         (
             &state,
             &sprint,
-            &EventKind::Track400m,
             "2026-06-06",
-            Mark::TimeSeconds(CentiSeconds::new(4971)),
+            Mark::TimeSeconds(ExactSeconds::parse("49.71")?),
             "pttiming_live",
             "https://pttiming.test/live/state",
         ),
         (
             &invite,
             &sprint_invite,
-            &EventKind::Track400m,
             "2026-05-01",
-            Mark::TimeSeconds(CentiSeconds::new(4855)),
+            Mark::TimeSeconds(ExactSeconds::parse("48.55")?),
             "wiaa_results",
             "https://wiaa.test/results/invite",
         ),
         (
             &invite,
             &jump,
-            &EventKind::LongJump,
             "2026-05-01",
             Mark::DistanceMetres(CentiMetres::new(762)),
             "athleticlive_athletes",
@@ -355,9 +359,8 @@ fn fixture() -> TestResult<Fixture> {
         (
             &state,
             &relay,
-            &EventKind::Relay4x400,
             "2026-06-06",
-            Mark::TimeSeconds(CentiSeconds::new(31950)),
+            Mark::TimeSeconds(ExactSeconds::parse("319.50")?),
             "wiaa_results",
             "https://wiaa.test/results/state",
         ),
@@ -369,7 +372,6 @@ fn fixture() -> TestResult<Fixture> {
                 school: &wi,
                 meet,
                 event,
-                kind,
                 date,
             },
             mark,

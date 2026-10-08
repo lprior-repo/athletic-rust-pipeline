@@ -33,7 +33,10 @@ impl RefusalRun {
         match refusal {
             Refusal::Host => true,
             Refusal::Page => {
-                self.consecutive = self.consecutive.saturating_add(1);
+                let Some(consecutive) = self.consecutive.checked_add(1) else {
+                    return true;
+                };
+                self.consecutive = consecutive;
                 self.consecutive >= FORBIDDEN_RUN
             }
             Refusal::None => {
@@ -57,7 +60,7 @@ pub(super) async fn observed(fetcher: &Fetcher, store: &Store) -> Observed {
         .await;
     let mut failures = 0_u64;
     if let Err(error) = store.replace_many(Table::SourceAccess, &conditions) {
-        failures = failures.saturating_add(1);
+        failures = 1;
         warn!(%error, "source access conditions were not recorded");
     }
     if !blocked_hosts.is_empty() {

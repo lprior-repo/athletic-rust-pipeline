@@ -1,46 +1,23 @@
 use super::*;
 
-fn five_k_performance(fixture: &Fixture, sport: Sport) -> TestResult<(EventId, String)> {
-    let meet_id = meet(
-        &fixture.store,
-        UsJurisdiction::Wisconsin,
-        &format!("Published 5000m {}", sport.stable_key()),
-        "2026-09-15",
-        CompetitionLevel::Invitational,
-        sport,
-    )?;
-    let kind = EventKind::Track5000m;
-    let event_id = event(&fixture.store, &meet_id, kind.clone())?;
-    let mark = Mark::TimeSeconds(CentiSeconds::new(180_000));
-    let displayed = bests::mark_text(&mark);
-    performance(
-        &fixture.store,
-        &PerformanceRow {
-            athlete: &fixture.julian,
-            school: &fixture.wi_school,
-            meet: &meet_id,
-            event: &event_id,
-            kind: &kind,
-            date: "2026-09-15",
-        },
-        mark,
-        "wiaa_results",
-        "https://wiaa.test/5000m/results",
-    )?;
-    Ok((event_id, displayed))
-}
+mod csv;
+mod fixtures;
+use fixtures::*;
 
 #[test]
 fn cross_country_5000m_fills_xc_cell_and_leaves_track_5000m_empty() -> TestResult {
     let fixture = fixture()?;
-    let (event, mark) = five_k_performance(&fixture, Sport::CrossCountry)?;
+    let (_, mark) = five_k_performance(&fixture, Sport::CrossCountry)?;
 
     let (mut book, _) = written(&fixture)?;
     let athletes = sheet(&mut book, "Athletes")?;
     let row = row_of(&athletes, fixture.julian.as_str())?;
 
-    check!(eq; text(&athletes, row, column_of(&athletes, "XC (s)")?),
-        format!("XC {mark} [xc, na, unknown, event {event}]"));
+    let expected = ["observed_fastest", "same_course"]
+        .map(|policy| format!("XC {mark} [xc, na, unknown, {}]", five_k_context(policy)));
+    let wide = text(&athletes, row, column_of(&athletes, "XC (s)")?);
+    check!(eq; wide, expected.join("; "));
+    csv::five_k(&fixture, &mark)?;
     check!(eq; text(&athletes, row, column_of(&athletes, "5000m (s)")?), "");
     Ok(())
 }
@@ -63,7 +40,7 @@ fn outdoor_5000m_fills_track_5000m_cell_and_leaves_xc_empty() -> TestResult {
 #[test]
 fn event_list_and_headline_name_cross_country_5000m_as_xc() -> TestResult {
     let fixture = fixture()?;
-    let (event, mark) = five_k_performance(&fixture, Sport::CrossCountry)?;
+    let (_, mark) = five_k_performance(&fixture, Sport::CrossCountry)?;
 
     let (mut book, _) = written(&fixture)?;
     let athletes = sheet(&mut book, "Athletes")?;
@@ -71,54 +48,15 @@ fn event_list_and_headline_name_cross_country_5000m_as_xc() -> TestResult {
     let headline = text(&athletes, row, column_of(&athletes, "Headline PR summary")?);
 
     check!(eq; text(&athletes, row, column_of(&athletes, "Event list")?), "XC; 400m");
-    check!(
-        headline
-            .split("; ")
-            .any(|entry| entry == format!("XC {mark} [xc, na, unknown, event {event}]")),
-        "{headline}"
-    );
-    check!(!headline.contains("5000m"), "{headline}");
+    for policy in ["observed_fastest", "same_course"] {
+        check!(
+            headline.split("; ").any(|entry| {
+                entry == format!("XC {mark} [xc, na, unknown, {}]", five_k_context(policy))
+            }),
+            "{headline}"
+        );
+    }
     Ok(())
-}
-
-fn cross_country_contexts(fixture: &Fixture, count: usize) -> TestResult<Vec<(EventId, String)>> {
-    (0..count)
-        .map(|index| {
-            let name = format!("Published XC Course {index}");
-            let meet_id = meet(
-                &fixture.store,
-                UsJurisdiction::Wisconsin,
-                &name,
-                "2026-09-15",
-                CompetitionLevel::Invitational,
-                Sport::CrossCountry,
-            )?;
-            let event_id = event(&fixture.store, &meet_id, EventKind::CrossCountry)?;
-            let offset = i32::try_from(index)?
-                .checked_mul(100)
-                .ok_or("fixture mark offset overflow")?;
-            let value = 180_000_i32
-                .checked_add(offset)
-                .ok_or("fixture mark overflow")?;
-            let mark = Mark::TimeSeconds(CentiSeconds::new(value));
-            let displayed = bests::mark_text(&mark);
-            performance(
-                &fixture.store,
-                &PerformanceRow {
-                    athlete: &fixture.julian,
-                    school: &fixture.wi_school,
-                    meet: &meet_id,
-                    event: &event_id,
-                    kind: &EventKind::CrossCountry,
-                    date: "2026-09-15",
-                },
-                mark,
-                "wiaa_results",
-                "https://wiaa.test/xc/results",
-            )?;
-            Ok((event_id, displayed))
-        })
-        .collect()
 }
 
 #[test]
@@ -131,17 +69,18 @@ fn headline_and_wide_cells_retain_every_compatible_course_context_after_ten_prs(
     let headline = text(&athletes, row, column_of(&athletes, "Headline PR summary")?);
     let wide = text(&athletes, row, column_of(&athletes, "XC (s)")?);
     let prs = sheet(&mut book, "PRs")?;
-    for (event, mark) in contexts {
+    for course in &contexts {
         for summary in [&headline, &wide] {
             check!(
-                summary.contains(&format!("XC {mark} [xc, na, unknown, event {event}]")),
+                summary.split("; ").any(|entry| entry == course.summary()),
                 "{summary}"
             );
         }
-        let pr = row_where(&prs, |row| text(&prs, row, 25) == event.as_str())?;
-        check!(eq; text(&prs, pr, 9), mark);
+        let pr = row_where(&prs, |row| text(&prs, row, 25) == course.context())?;
+        check!(eq; text(&prs, pr, 9), course.mark);
         check!(eq; text(&prs, pr, 0), fixture.julian.as_str());
     }
+    csv::courses(&fixture, &contexts)?;
     Ok(())
 }
 
@@ -158,12 +97,12 @@ fn excel_limit_is_explicit_while_the_pr_sheet_retains_all_course_contexts() -> T
         check!(summary.encode_utf16().count() <= 32_767);
     }
     let prs = sheet(&mut book, "PRs")?;
-    check!(eq; prs.height(), 702);
-    for (event, mark) in contexts {
-        let pr = row_where(&prs, |row| text(&prs, row, 25) == event.as_str())?;
-        check!(eq; text(&prs, pr, 9), mark);
+    for course in &contexts {
+        let pr = row_where(&prs, |row| text(&prs, row, 25) == course.context())?;
+        check!(eq; text(&prs, pr, 9), course.mark);
         check!(eq; text(&prs, pr, 16), "https://wiaa.test/xc/results");
     }
+    csv::courses(&fixture, &contexts)?;
     verified_publication(&fixture.store, 2)?;
     Ok(())
 }
@@ -171,15 +110,16 @@ fn excel_limit_is_explicit_while_the_pr_sheet_retains_all_course_contexts() -> T
 #[test]
 fn complete_summary_that_fits_excel_does_not_reserve_an_overflow_marker() -> TestResult {
     let fixture = fixture()?;
-    let contexts = cross_country_contexts(&fixture, 555)?;
+    let contexts = fitting_contexts(&fixture)?;
     let (mut book, _) = written(&fixture)?;
     let athletes = sheet(&mut book, "Athletes")?;
     let row = row_of(&athletes, fixture.julian.as_str())?;
     let wide = text(&athletes, row, column_of(&athletes, "XC (s)")?);
-    check!(eq; wide.encode_utf16().count(), 32_743);
-    for (event, mark) in contexts {
-        check!(wide.contains(&format!("XC {mark} [xc, na, unknown, event {event}]")));
+    check!(eq; wide.encode_utf16().count(), 32_767);
+    for course in &contexts {
+        check!(wide.split("; ").any(|entry| entry == course.summary()));
     }
+    csv::courses(&fixture, &contexts)?;
     verified_publication(&fixture.store, 2)?;
     Ok(())
 }

@@ -1,11 +1,12 @@
-use super::{
-    parse_directory_links, parse_school_details, school_entities, ProfileFacts, SchoolExtract,
-    Section, HOST, SECTIONS, SOURCE_ID,
-};
-use crate::net::{FetchOptions, FetchStats};
-use crate::{AdapterContext, AdapterReport, CrawlResult};
+use super::parse::decode_profile;
+use super::{parse_directory_links, Section, HOST, SECTIONS, SOURCE_ID};
+use crate::directory::acquisition::{fail, owe, text};
+use crate::net::FetchOptions;
+use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_domain::UsJurisdiction;
-use census_store::Table;
+use futures::{stream, StreamExt, TryStreamExt};
+use serde_json::Value;
+mod projection;
 
 #[derive(Debug, Clone, Default)]
 pub struct Options {
@@ -16,267 +17,160 @@ pub struct Options {
     pub school_names: Vec<String>,
 }
 
-pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
-    let mut report = AdapterReport::new(SOURCE_ID, "schools");
-    let before = ctx.fetcher.stats().await;
-
-    let sections = selected_sections(options);
-    if sections.is_empty() {
-        apply_stats(&mut report, &before, &ctx.fetcher.stats().await);
-        let codes: Vec<&str> = options.states.iter().map(|state| state.code()).collect();
-        report.note(format!(
-            "states {codes:?} do not include CA, FL or NJ; this adapter covers California sections 1-9 and 13, Florida section 10 and New Jersey section 12"
-        ));
-        return Ok(report);
-    }
-
-    let observed_on = if options.observed_on.trim().is_empty() {
-        ctx.observed_on.clone()
-    } else {
-        options.observed_on.clone()
-    };
-
-    let refresh = ctx.refresh || options.refresh;
-    let mut tally = Tally::default();
-    let mut remaining = options.limit.map_or(usize::MAX, |value| value);
-
-    for section in &sections {
-        if remaining == 0 {
-            break;
-        }
-        let links =
-            fetch_section_links(ctx, section, options, refresh, remaining, &mut report).await?;
-        run_section_details(
-            ctx,
-            section,
-            &links,
-            refresh,
-            &observed_on,
-            &mut tally,
-            &mut report,
-        )
-        .await?;
-        remaining = remaining.saturating_sub(links.len());
-    }
-
-    apply_stats(&mut report, &before, &ctx.fetcher.stats().await);
-    report.rows = tally.processed;
-    report.with_email = tally.with_email;
-    report.note(format!(
-        "processed {} schools ({} coach_rows, {} with email, {} errors)",
-        tally.processed, tally.coach_rows, tally.with_email, report.errors
-    ));
-
-    Ok(report)
+struct Run<'a> {
+    ctx: &'a AdapterContext<'a>,
+    options: &'a Options,
+    report: AdapterReport,
+    processed: usize,
 }
 
-fn apply_stats(report: &mut AdapterReport, before: &FetchStats, after: &FetchStats) {
-    report.requests = after
+pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
+    let before = ctx.fetcher.stats().await;
+    let run = Run {
+        ctx,
+        options,
+        report: AdapterReport::new(SOURCE_ID, "schools"),
+        processed: 0,
+    };
+    let sections = SECTIONS
+        .iter()
+        .filter(|section| options.states.is_empty() || options.states.contains(&section.state));
+    let mut run = stream::iter(sections)
+        .map(Ok::<_, CrawlError>)
+        .try_fold(run, |mut run, section| async move {
+            run.section(section).await?;
+            Ok(run)
+        })
+        .await?;
+    if run.report.unfinished.is_empty()
+        && (options.states.is_empty()
+            || SECTIONS
+                .iter()
+                .any(|section| options.states.contains(&section.state)))
+    {
+        run.report.finish_frontier();
+    }
+    let after = ctx.fetcher.stats().await;
+    run.report.requests = after
         .physical_requests()
         .saturating_sub(before.physical_requests());
-    report.from_cache = after.cache_hits.saturating_sub(before.cache_hits);
+    run.report.from_cache = after.cache_hits.saturating_sub(before.cache_hits);
+    Ok(run.report)
 }
 
-fn selected_sections(options: &Options) -> Vec<Section> {
-    SECTIONS
-        .iter()
-        .copied()
-        .filter(|section| options.states.is_empty() || options.states.contains(&section.state))
-        .collect()
-}
-
-async fn fetch_section_links(
-    ctx: &AdapterContext<'_>,
-    section: &Section,
-    options: &Options,
-    refresh: bool,
-    remaining: usize,
-    report: &mut AdapterReport,
-) -> CrawlResult<Vec<super::parse::SchoolLink>> {
-    let directory_url = format!("{HOST}/widget/school/directory?section={}", section.number);
-    let directory_opts = FetchOptions {
-        refresh,
-        allow_not_found: false,
-        headers: Vec::new(),
-    };
-
-    let outcome = match ctx.fetcher.get(&directory_url, &directory_opts).await {
-        Ok(outcome) => outcome,
-        Err(err) => {
-            report.errors = report.errors.saturating_add(1);
-            report.note(format!(
-                "failed to fetch directory section {}: {err}",
-                section.number
-            ));
-            return Ok(Vec::new());
-        }
-    };
-
-    let html = String::from_utf8_lossy(&outcome.body);
-    let links: Vec<super::parse::SchoolLink> = parse_directory_links(&html)
-        .into_iter()
-        .filter(|link| {
-            options.school_names.is_empty()
-                || options
-                    .school_names
-                    .iter()
-                    .any(|name| link.name.contains(name))
-        })
-        .take(remaining)
-        .collect();
-
-    report.note(format!(
-        "section {} ({}) parsed {} schools",
-        section.number,
-        section.state.code(),
-        links.len()
-    ));
-
-    Ok(links)
-}
-
-async fn run_section_details(
-    ctx: &AdapterContext<'_>,
-    section: &Section,
-    links: &[super::parse::SchoolLink],
-    refresh: bool,
-    observed_on: &str,
-    tally: &mut Tally,
-    report: &mut AdapterReport,
-) -> CrawlResult<()> {
-    let directory_url = format!("{HOST}/widget/school/directory?section={}", section.number);
-    let detail_opts = FetchOptions {
-        refresh,
-        allow_not_found: false,
-        headers: vec![
-            ("x-requested-with".to_string(), "XMLHttpRequest".to_string()),
-            ("referer".to_string(), directory_url),
-        ],
-    };
-
-    for link in links {
-        if let Some(note) =
-            refresh_school(ctx, section, link, &detail_opts, observed_on, tally).await?
+impl Run<'_> {
+    async fn section(&mut self, section: &Section) -> CrawlResult<()> {
+        let url = format!("{HOST}/widget/school/directory?section={}", section.number);
+        if self
+            .options
+            .limit
+            .is_some_and(|limit| self.processed >= limit)
         {
-            report.errors = report.errors.saturating_add(1);
-            report.note(note);
+            return owe(&mut self.report, url);
+        }
+        let capture = match self.ctx.fetcher.get(&url, &self.fetch()).await {
+            Ok(capture) => capture,
+            Err(error) => return fail(&mut self.report, &url, error),
+        };
+        let body = match text(&capture) {
+            Ok(body) => body,
+            Err(error) => return fail(&mut self.report, &url, error),
+        };
+        let links = parse_directory_links(body);
+        if links.is_empty() || body.matches("data-id=\"").count() != links.len() {
+            owe(&mut self.report, &url)?;
+        }
+        stream::iter(&links)
+            .map(Ok::<_, CrawlError>)
+            .try_fold(self, |run, link| async move {
+                run.school(section, link).await?;
+                Ok(run)
+            })
+            .await
+            .map(|_| ())
+    }
+
+    fn fetch(&self) -> FetchOptions {
+        FetchOptions {
+            refresh: self.ctx.refresh || self.options.refresh,
+            ..self.ctx.fetch_options()
         }
     }
 
-    Ok(())
-}
-
-async fn refresh_school(
-    ctx: &AdapterContext<'_>,
-    section: &Section,
-    link: &super::parse::SchoolLink,
-    fetch_opts: &FetchOptions,
-    observed_on: &str,
-    tally: &mut Tally,
-) -> CrawlResult<Option<String>> {
-    let details_url = format!("{HOST}/widget/get-school-details/{}/details", link.id);
-
-    let outcome = match ctx.fetcher.get(&details_url, fetch_opts).await {
-        Ok(outcome) => outcome,
-        Err(err) => {
-            return Ok(Some(format!(
-                "failed to fetch details for {}: {err}",
-                link.name
-            )));
+    async fn school(
+        &mut self,
+        section: &Section,
+        link: &super::parse::SchoolLink,
+    ) -> CrawlResult<()> {
+        if !self.options.school_names.is_empty()
+            && !self
+                .options
+                .school_names
+                .iter()
+                .any(|name| link.name.contains(name))
+        {
+            return Ok(());
         }
-    };
+        let url = format!("{HOST}/widget/get-school-details/{}/details", link.id);
+        if self
+            .options
+            .limit
+            .is_some_and(|limit| self.processed >= limit)
+        {
+            return owe(&mut self.report, url);
+        }
+        self.processed = self.processed.saturating_add(1);
+        let mut fetch = self.fetch();
+        fetch.headers = vec![
+            ("x-requested-with".into(), "XMLHttpRequest".into()),
+            (
+                "referer".into(),
+                format!("{HOST}/widget/school/directory?section={}", section.number),
+            ),
+        ];
+        let capture = match self.ctx.fetcher.get(&url, &fetch).await {
+            Ok(capture) => capture,
+            Err(error) => return fail(&mut self.report, &url, error),
+        };
+        self.project(section, link.id, &capture)
+    }
 
-    let body = String::from_utf8_lossy(&outcome.body);
-    let Some(details) = parse_school_details(&body) else {
-        return Ok(Some(format!(
-            "unparsable details for {} ({details_url})",
-            link.name
-        )));
-    };
-
-    let name = if details.profile.name.trim().is_empty() {
-        link.name.clone()
-    } else {
-        details.profile.name.clone()
-    };
-
-    let extract = school_entities(
-        &ProfileFacts {
-            state: section.state,
-            association: section.association,
-            name: &name,
-            city: &details.profile.city,
-            address: &details.profile.address,
-            zip: &details.profile.zip,
-            league: &details.profile.league,
-            phone: &details.profile.phone,
-            url: &details_url,
-            observed_on,
-        },
-        &details.coaches,
-        &details.faculties,
-    );
-
-    emit_school(ctx, &extract, tally)?;
-    Ok(None)
-}
-
-#[derive(Default)]
-struct Tally {
-    processed: u64,
-    coach_rows: usize,
-    with_email: u64,
-}
-
-fn emit_school(
-    ctx: &AdapterContext<'_>,
-    extract: &SchoolExtract,
-    tally: &mut Tally,
-) -> CrawlResult<()> {
-    let mut batch = ctx.write_batch();
-    batch.append_many(Table::Schools, std::slice::from_ref(&extract.school))?;
-    batch.append_many(
-        Table::SourceObservations,
-        ctx.school_observation(
-            &census_domain::model::SourceNamespace::AssociationSchool {
-                association: extract.association.clone(),
-            },
-            &extract.school,
+    fn project(
+        &mut self,
+        section: &Section,
+        owner_id: u64,
+        capture: &crate::net::FetchOutcome,
+    ) -> CrawlResult<()> {
+        let parsed = text(capture).and_then(|body| {
+            serde_json::from_str::<Value>(body).map_err(|source| CrawlError::Decode {
+                url: capture.url.clone(),
+                source,
+            })
+        });
+        let parsed = match parsed {
+            Ok(parsed) => parsed,
+            Err(error) => return fail(&mut self.report, &capture.url, error),
+        };
+        let Some(owner) = parsed.get("school") else {
+            return fail(&mut self.report, &capture.url, "missing school profile");
+        };
+        let profile = match decode_profile(owner.clone()) {
+            Ok(profile) if profile.id == owner_id && !profile.name.trim().is_empty() => profile,
+            Ok(_) => {
+                return fail(
+                    &mut self.report,
+                    &capture.url,
+                    "missing or foreign school owner",
+                )
+            }
+            Err(error) => return fail(&mut self.report, &capture.url, error),
+        };
+        projection::project(
+            self.ctx,
+            section,
+            (&capture.url, &capture.fetched_at),
+            (&profile, &parsed),
+            &mut self.report,
         )
-        .as_slice(),
-    )?;
-
-    for coach in &extract.coaches {
-        tally.coach_rows = tally.coach_rows.saturating_add(1);
-        if coach.has_published_email() {
-            tally.with_email = tally.with_email.saturating_add(1);
-        }
-        batch.append_many(Table::Coaches, std::slice::from_ref(coach))?;
     }
-
-    let school_key = format!("{}:{}", extract.state.code(), extract.school.id);
-    batch.journal_done(
-        "home_campus_schools",
-        &school_key,
-        &serde_json::json!({
-            "name": extract.school.name,
-            "coaches": extract.coaches.len(),
-        }),
-    )?;
-    for coach in &extract.coaches {
-        batch.journal_done(
-            "home_campus_coaches",
-            &school_key,
-            &serde_json::json!({
-                "coach_name": coach.name,
-                "sport": format!("{:?}", coach.sport),
-                "role": format!("{:?}", coach.role),
-            }),
-        )?;
-    }
-
-    batch.commit()?;
-    tally.processed = tally.processed.saturating_add(1);
-
-    Ok(())
 }

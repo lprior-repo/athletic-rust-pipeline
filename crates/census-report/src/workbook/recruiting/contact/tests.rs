@@ -1,13 +1,15 @@
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CoachContactClaim, CoachContactProgram, CoachRole,
-    CoachTenure, CoachTenureEvidence, Evidence, Gender, GradYear, SchoolId, SchoolYear,
-    SourceIdentity, SourceNamespace, SourceRef, Sport,
+    CoachTenure, CoachTenureEvidence, Gender, GradYear, SchoolId, SchoolYear, SourceIdentity,
+    SourceNamespace, SourceRef, Sport,
 };
 
 use super::{contacts, normalise::role_label, scoped, ContactState, Preferred, Slot};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+mod cen15;
+mod cen15_output;
 mod claim_binding;
 mod conflicts;
 mod persisted;
@@ -116,9 +118,35 @@ fn athlete() -> CanonicalAthlete {
     athlete
 }
 
-fn selected(rows: &[CanonicalCoach], athlete: &CanonicalAthlete) -> TestResult<Preferred> {
+struct SelectionSnapshot {
+    name: String,
+    email: String,
+    state: ContactState,
+    source_url: String,
+    coach_id: String,
+    observed_on: String,
+    source_sha256: String,
+}
+
+impl From<Preferred<'_>> for SelectionSnapshot {
+    fn from(preferred: Preferred<'_>) -> Self {
+        Self {
+            name: preferred.name.to_owned(),
+            email: preferred.email.to_owned(),
+            state: preferred.state,
+            source_url: preferred.source_url.to_owned(),
+            coach_id: preferred.coach_id.to_owned(),
+            observed_on: preferred.observed_on.to_owned(),
+            source_sha256: preferred.source_sha256.to_owned(),
+        }
+    }
+}
+
+fn selected(rows: &[CanonicalCoach], athlete: &CanonicalAthlete) -> TestResult<SelectionSnapshot> {
     let contacts = contacts(rows, year()?);
-    Ok(scoped(contacts.get(athlete.school.as_str()), athlete).preferred())
+    Ok(scoped(contacts.get(athlete.school.as_str()), athlete)
+        .preferred()
+        .into())
 }
 
 #[test]
@@ -236,28 +264,6 @@ fn role_labels_name_the_slot_and_side_except_for_the_director() -> TestResult {
         (Slot::CrossCountry, Gender::Girls, "Head XC Coach (girls)"),
     ] {
         check!(eq; role_label(slot, side).as_str(), expected);
-    }
-    Ok(())
-}
-
-#[test]
-fn merged_sources_take_the_newest_observation_and_larger_url_on_a_tied_date() -> TestResult {
-    for (first_date, second_date, expected) in [
-        ("2026-08-01", "2026-08-02", "https://example.invalid/second"),
-        ("2026-08-02", "2026-08-02", "https://example.invalid/second"),
-    ] {
-        let mut first = head("Same coach", Sport::OutdoorTrack, Gender::Boys)?;
-        first.evidence = vec![Evidence::parsed(
-            SourceRef::new("fixture", Some("https://example.invalid/first".into())),
-            first_date,
-        )];
-        let mut second = head("Same coach", Sport::OutdoorTrack, Gender::Boys)?;
-        second.evidence = vec![Evidence::parsed(
-            SourceRef::new("fixture", Some("https://example.invalid/second".into())),
-            second_date,
-        )];
-        let result = selected(&[first, second], &athlete())?;
-        check!(eq; result.source_url.as_str(), expected);
     }
     Ok(())
 }

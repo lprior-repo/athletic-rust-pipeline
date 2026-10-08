@@ -1,3 +1,4 @@
+use super::attestation::CaptureLineage;
 use super::schools::Schools;
 use crate::{AdapterContext, CrawlResult};
 use census_domain::model::{
@@ -10,10 +11,10 @@ use std::collections::HashMap;
 pub(super) use crate::ihsa::ASSOCIATION;
 pub(super) const HIGH_SCHOOL: &str = "high_school";
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub(super) struct Origin<'a> {
     pub(super) adapter: &'a str,
-    pub(super) observed_on: &'a str,
+    pub(super) observed_on: String,
 }
 
 impl Origin<'_> {
@@ -22,11 +23,11 @@ impl Origin<'_> {
     }
 
     pub(super) fn evidence(&self, url: &str) -> Evidence {
-        Evidence::parsed(self.source(url), self.observed_on)
+        Evidence::parsed(self.source(url), &self.observed_on)
     }
 
     pub(super) fn derived(&self, url: &str, note: String) -> Evidence {
-        Evidence::derived(self.source(url), self.observed_on, note)
+        Evidence::derived(self.source(url), &self.observed_on, note)
     }
 }
 
@@ -62,23 +63,28 @@ pub(super) struct Mapper<'a> {
     pub(super) schools: Schools,
     pub(super) stats: Stats,
     pub(super) origin: Origin<'a>,
+    pub(super) capture: Option<CaptureLineage>,
 }
 
 impl<'a> Mapper<'a> {
-    pub(super) fn load(
-        ctx: &AdapterContext<'_>,
-        adapter: &'a str,
-        observed_on: &'a str,
-    ) -> CrawlResult<Self> {
+    pub(super) fn load(ctx: &AdapterContext<'_>, adapter: &'a str) -> CrawlResult<Self> {
         Ok(Self {
             accumulated: Accumulator::default(),
+            capture: None,
             schools: Schools::load(ctx)?,
             stats: Stats::default(),
             origin: Origin {
                 adapter,
-                observed_on,
+                observed_on: String::new(),
             },
         })
+    }
+
+    pub(super) fn bind_capture(&mut self, capture: crate::net::FetchOutcome) -> CrawlResult<()> {
+        let lineage = CaptureLineage::from_capture(capture)?;
+        self.origin.observed_on = lineage.acquired_at().to_string();
+        self.capture = Some(lineage);
+        Ok(())
     }
 
     pub(super) fn stats(&self) -> Stats {
@@ -100,9 +106,9 @@ impl<'a> Mapper<'a> {
         name: Option<&str>,
         url: &str,
     ) -> Option<SchoolId> {
-        let resolved = self
-            .schools
-            .resolve(ihsa_id, name, url, self.origin, &mut self.accumulated);
+        let resolved =
+            self.schools
+                .resolve((ihsa_id, name, url), &self.origin, &mut self.accumulated);
         if resolved.is_none() {
             self.stats.rows_no_school = self.stats.rows_no_school.saturating_add(1);
         }
@@ -116,6 +122,7 @@ pub(super) struct EventContext<'a> {
     pub(super) sport: Sport,
     pub(super) date: &'a str,
     pub(super) school_year: SchoolYear,
+    pub(super) performance_as_of: chrono::NaiveDate,
 }
 
 pub(super) struct XcList<'a> {

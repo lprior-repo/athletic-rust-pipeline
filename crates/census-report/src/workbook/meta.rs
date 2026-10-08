@@ -9,7 +9,7 @@ use rust_xlsxwriter::Workbook;
 use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 
-use super::cells::{write_sheet, Cell};
+use super::cells::{write_sheet, Cell, SheetLayout};
 use super::millis;
 use std::time::Instant;
 
@@ -59,19 +59,80 @@ pub(super) fn write_meta_sheets(
     let review = step("review", || review_families(&rows, &cohort, &names))?;
     let metrics = step("metrics", || metrics_sheet(&facts, &rows, &conflicts))?;
     let index = SubjectIndex::of(&rows);
-    let sheets = meta_sheets(&facts, &rows, &conflicts, &review, &index, metrics)?;
-    for (name, cells, widths, autofilter) in sheets {
-        let count = cells.len();
-        let started = Instant::now();
-        write_sheet(book, path, name, cells, widths, autofilter)?;
-        tracing::info!(
-            sheet = name,
-            rows = count,
-            ms = millis(started),
-            "workbook sheet written"
-        );
+    let inputs = sheets::Inputs::of(&facts, &rows, &conflicts, &review, &index);
+    let sheets = meta_sheets(&inputs, metrics)?;
+    for sheet in sheets {
+        write_meta_sheet(book, path, sheet)?;
     }
+    write_contact_sheets(book, path, &rows)?;
     Ok(())
+}
+
+fn write_meta_sheet(book: &mut Workbook, path: &Path, sheet: Sheet) -> ReportResult<()> {
+    let (name, cells, widths, autofilter) = sheet;
+    let count = cells.len();
+    let started = Instant::now();
+    write_sheet(
+        book,
+        path,
+        SheetLayout {
+            name,
+            widths,
+            autofilter,
+        },
+        cells,
+    )?;
+    tracing::info!(
+        sheet = name,
+        rows = count,
+        ms = millis(started),
+        "workbook sheet written"
+    );
+    Ok(())
+}
+
+fn write_contact_sheets(
+    book: &mut Workbook,
+    path: &Path,
+    facts: &StoreRows<'_>,
+) -> ReportResult<()> {
+    let mailboxes = crate::school_contacts::mailbox_rows(facts.schools, facts.school_year)?;
+    write_contact_sheet(
+        book,
+        path,
+        crate::school_contacts::MAILBOX_SHEET,
+        &mailboxes,
+        &[40, 48, 24, 18, 40, 24, 64, 68, 28, 64],
+    )?;
+    let research = crate::school_contacts::research_rows(facts.schools, facts.school_year)?;
+    write_contact_sheet(
+        book,
+        path,
+        crate::school_contacts::RESEARCH_SHEET,
+        &research,
+        &[40, 48, 32, 18, 28, 64],
+    )
+}
+
+fn write_contact_sheet(
+    book: &mut Workbook,
+    path: &Path,
+    name: &str,
+    rows: &[Vec<String>],
+    widths: &[u16],
+) -> ReportResult<()> {
+    let mut writer = super::cells::SheetWriter::start(book, path, name, widths)?;
+    for (index, row) in rows.iter().enumerate() {
+        writer.write_strings(index, row)?;
+    }
+    let last_column =
+        widths
+            .len()
+            .checked_sub(1)
+            .ok_or_else(|| crate::report::ReportError::Invariant {
+                detail: "contact worksheet has no header".to_string(),
+            })?;
+    writer.finish(rows.len(), last_column, true)
 }
 
 pub(in crate::workbook) struct StoreRows<'d> {

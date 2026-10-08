@@ -7,6 +7,8 @@ use census_domain::model::{
 };
 use census_store::{Store, Table};
 
+mod cen14;
+
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 const FIXTURE_MEETS: &str =
@@ -108,6 +110,8 @@ impl Harness {
             refresh: false,
             school_year: SchoolYear::new(2025).ok_or("2025 is a season")?,
             observed_on: OBSERVED_ON.to_string(),
+            performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 9, 22)
+                .ok_or("snapshot date")?,
             recording: None,
         };
         Ok(collect(&ctx, options).await?)

@@ -58,14 +58,24 @@ fn insert(
     if data.full_id.is_empty() {
         bail!("Criterion benchmark ID is empty");
     }
-    if data.throughput.is_some_and(|value| value.value() == 0) {
+    let throughput = data.throughput.with_context(|| {
+        format!(
+            "Criterion benchmark {} must declare a throughput amount",
+            data.full_id
+        )
+    })?;
+    if throughput.value() == 0 {
         bail!("Criterion throughput must be positive for {}", data.full_id);
     }
     match benchmarks.entry(data.full_id) {
         Entry::Vacant(entry) => {
-            entry.insert(data.throughput);
+            entry.insert(Some(throughput));
         }
         Entry::Occupied(entry) => bail!("duplicate Criterion benchmark ID: {}", entry.key()),
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "metadata/tests.rs"]
+mod tests;

@@ -44,27 +44,10 @@ pub(super) fn review_sheet(
     rows: &StoreRows,
     index: &SubjectIndex<'_>,
 ) -> Vec<Vec<Cell>> {
-    let mut cells = vec![row!(
-        "Family",
-        "State",
-        "Subject ID",
-        "Subject",
-        "Answer",
-        "Confidence",
-        "Detail"
-    )];
+    let mut cells = vec![review_header()];
     for family in review {
         for retained in &family.rows {
-            let state = state_for_subject(family.label, &retained.subject_id, index);
-            cells.push(row!(
-                Cell::text(family.label),
-                state,
-                Cell::text(&retained.subject_id),
-                Cell::text(&retained.subject),
-                Cell::Empty,
-                Cell::Empty,
-                Cell::text(&retained.detail)
-            ));
+            cells.push(retained_review_row(family.label, retained, index));
         }
     }
     cells.extend(
@@ -73,6 +56,30 @@ pub(super) fn review_sheet(
             .map(|verdict| verdict_review_row(verdict, index)),
     );
     cells
+}
+
+fn review_header() -> Vec<Cell> {
+    row!(
+        "Family",
+        "State",
+        "Subject ID",
+        "Subject",
+        "Answer",
+        "Confidence",
+        "Detail"
+    )
+}
+
+fn retained_review_row(family: &str, retained: &QueueRow, index: &SubjectIndex<'_>) -> Vec<Cell> {
+    row!(
+        Cell::text(family),
+        state_for_subject(family, &retained.subject_id, index),
+        Cell::text(&retained.subject_id),
+        Cell::text(&retained.subject),
+        Cell::Empty,
+        Cell::Empty,
+        Cell::text(&retained.detail)
+    )
 }
 
 fn state_for_subject_id(subject_id: &str, index: &SubjectIndex<'_>) -> Cell {

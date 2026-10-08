@@ -2,6 +2,7 @@ use super::*;
 use crate::net::FetchOutcome;
 use census_domain::model::Sport;
 
+mod active_declarations;
 mod captured_metadata;
 use captured_metadata::assert_archived_metadata;
 

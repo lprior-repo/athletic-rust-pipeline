@@ -1,7 +1,7 @@
 use super::*;
 
 #[test]
-fn mark_raw_reports_the_published_value_or_its_unit() {
+fn mark_raw_reports_the_published_value_or_its_unit() -> Result<(), Box<dyn std::error::Error>> {
     let imperial = |feet: &str, metres: i32| Mark::FieldImperial {
         feet_mark: feet.into(),
         metres: CentiMetres::new(metres),
@@ -10,7 +10,7 @@ fn mark_raw_reports_the_published_value_or_its_unit() {
         (Mark::Raw("41-06.5".into()), "41-06.5"),
         (Mark::Raw(String::new()), ""),
         (Mark::Raw(" ".into()), " "),
-        (Mark::TimeSeconds(CentiSeconds::new(1094)), "time"),
+        (Mark::TimeSeconds(ExactSeconds::parse("10.94")?), "time"),
         (Mark::DistanceMetres(CentiMetres::new(173)), "distance"),
         (imperial("5' 4\"", 163), "field"),
         (Mark::Points(CentiPoints::new(842100)), "points"),
@@ -18,6 +18,7 @@ fn mark_raw_reports_the_published_value_or_its_unit() {
     for (mark, raw) in cases {
         assert_eq!(mark.raw(), *raw);
     }
+    Ok(())
 }
 
 #[test]

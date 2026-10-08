@@ -54,6 +54,7 @@ struct WirePerformance<'a> {
     grad_year: Option<Scalar<'a>>,
     mark: &'a str,
     profile_url: Option<&'a str>,
+    status_code: Option<&'a str>,
 }
 
 pub(super) fn parse_row(
@@ -93,7 +94,13 @@ pub(super) fn parse_row(
             "unknown gender or event".to_string(),
         ));
     }
-    let (mark, timing) = parsed_mark(&event_kind, row.mark)?;
+    let (mark, timing) = match row
+        .status_code
+        .and_then(crate::result_status::invalid_token)
+    {
+        Some(status) => (Mark::Raw(status.into()), None),
+        None => parsed_mark(&event_kind, row.mark)?,
+    };
     let (grad_year, cohort) = cohort(row.grad_year.as_ref());
     Ok(OwnedPerformance {
         locator,
@@ -203,11 +210,8 @@ fn cohort(raw: Option<&Scalar<'_>>) -> (Option<GradYear>, OwnedCohort) {
     }
 }
 
-fn no_mark(raw: &str) -> bool {
-    crate::hytek::NO_MARK
-        .iter()
-        .any(|token| raw.eq_ignore_ascii_case(token))
-        || raw.eq_ignore_ascii_case("NT")
+pub(super) fn no_mark(raw: &str) -> bool {
+    crate::result_status::invalid_token(raw).is_some()
 }
 
 fn parsed_mark(

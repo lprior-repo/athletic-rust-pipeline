@@ -104,6 +104,13 @@ impl Recovery {
                 detail: "incomplete coach response marker exceeds the page bound".to_string(),
             });
         }
+        self.responses.try_reserve(1).map_err(|_| {
+            crate::directory::acquisition::resource(
+                "recovery allocation",
+                1,
+                usize::try_from(MAX_PAGES).map_or(usize::MAX, |value| value),
+            )
+        })?;
         self.responses.push(IncompleteResponse {
             url: url.to_string(),
             response_url: outcome.url.clone(),
@@ -130,7 +137,7 @@ impl Recovery {
                 "version": 2,
                 "owner_key": owner_key,
                 "school_id": school_id,
-                "failure": error.to_string(),
+                "failure": crate::directory::acquisition::detail(owner_key, error)?,
                 "recovery": self,
             }),
         )

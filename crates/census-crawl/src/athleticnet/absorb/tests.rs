@@ -22,7 +22,9 @@ fn conflicting_profile_grades_preserve_both_observations_and_sources() -> TestRe
                 "LastName": "Casillas", "Gender": "F", "SchoolID": 13850},
             "grades": {"13850_2026": grade},
             "allTeams": {"13850": {"IDSchool": 13850, "SchoolName": "Seton Catholic"}},
-            "allSeasons": []
+            "allSeasons": [],
+            "resultsTF": [],
+            "resultsXC": []
         }))?;
         let source = SourceRef::new(
             "athleticnet",
@@ -38,6 +40,7 @@ fn conflicting_profile_grades_preserve_both_observations_and_sources() -> TestRe
             AbsorbContext {
                 source: &source,
                 observed_on: "2026-09-30",
+                performance_as_of: fixture_cutoff()?,
                 index: &index,
                 resolved: &mut resolved,
                 stats: &mut stats,
@@ -93,6 +96,7 @@ fn unsupported_latest_grade_does_not_discard_earlier_supported_evidence() -> Tes
         AbsorbContext {
             source: &source,
             observed_on: "2026-09-30",
+            performance_as_of: fixture_cutoff()?,
             index: &SchoolIndex::from_schools(&[]),
             resolved: &mut HashMap::new(),
             stats: &mut Stats::default(),
@@ -147,20 +151,29 @@ fn absorb_profile_for(
             "https://www.athletic.net/athlete/{requested_id}/tf"
         )),
     );
-    let outcome = absorb(
-        bio,
-        Scope::TrackField,
-        &target,
-        AbsorbContext {
-            source: &source,
-            observed_on: "2026-09-30",
-            index: &SchoolIndex::from_schools(&[]),
-            resolved: &mut HashMap::new(),
-            stats: &mut Stats::default(),
-            accumulated: &mut accumulated,
-        },
-    );
+    let outcome = fixture_cutoff().and_then(|performance_as_of| {
+        absorb(
+            bio,
+            Scope::TrackField,
+            &target,
+            AbsorbContext {
+                source: &source,
+                observed_on: "2026-09-30",
+                performance_as_of,
+                index: &SchoolIndex::from_schools(&[]),
+                resolved: &mut HashMap::new(),
+                stats: &mut Stats::default(),
+                accumulated: &mut accumulated,
+            },
+        )
+    });
     (accumulated, outcome)
+}
+
+fn fixture_cutoff() -> crate::CrawlResult<chrono::NaiveDate> {
+    chrono::NaiveDate::from_ymd_opt(2026, 9, 30).ok_or_else(|| crate::CrawlError::Invariant {
+        detail: "invalid controlled fixture cutoff".to_owned(),
+    })
 }
 
 #[test]

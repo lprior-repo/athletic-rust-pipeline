@@ -1,6 +1,6 @@
 use super::{PageFailure, SchoolPages};
 use crate::net::{FetchError, FetchOutcome, Fetcher};
-use crate::ohsaa::collect::write::{emit_school, persist_failure};
+use crate::ohsaa::collect::write::{emit_school, persist_failure, Projection};
 use crate::ohsaa::collect::Tally;
 use crate::ohsaa::{school_entities, SearchResult};
 use crate::{AdapterContext, AdapterReport};
@@ -41,12 +41,13 @@ impl Harness {
             refresh: false,
             school_year: SchoolYear::new(2026).ok_or_else(|| anyhow::anyhow!("school year"))?,
             observed_on: "2026-10-02".to_string(),
+            performance_as_of: chrono::NaiveDate::parse_from_str("2026-10-02", "%Y-%m-%d")?,
             recording: None,
         };
         let sr = dublin();
         let mut report = AdapterReport::new("ohsaa", "schools");
         let mut tally = Tally::default();
-        failure.report(&sr, page, &mut report, &mut tally);
+        failure.report(&sr, page, &mut report, &mut tally)?;
         if page == "sports" {
             persist_failure(&ctx, &sr, page, &failure, &ctx.observed_on)?;
             return Ok((report, tally));
@@ -55,12 +56,14 @@ impl Harness {
             sports: sports_capture(),
             ad: Err(failure),
         };
-        let extract = school_entities(&sr, &pages.sports, None);
+        let mut extract = school_entities(&sr, &pages.sports, None);
         emit_school(
             &ctx,
-            &sr,
-            &pages,
-            &extract,
+            Projection {
+                school: &sr,
+                pages: &pages,
+                extract: &mut extract,
+            },
             &ctx.observed_on,
             &mut report,
             &mut tally,
@@ -130,7 +133,7 @@ fn failed_ad_http_outcomes_keep_valid_sports_and_never_stamp_school_success() ->
             .all(|coach| coach.role == CoachRole::HeadCoach));
         let outcome = run.outcome()?;
         check!(eq; outcome["state"], "partial");
-        check!(eq; outcome["pending_pages"], serde_json::json!(["ad"]));
+        check!(eq; outcome["pending_pages"], serde_json::json!([dublin().ad_url()]));
         check!(eq; outcome["failure"]["kind"], "http");
         check!(eq; outcome["failure"]["status"], status);
         check!(eq;
@@ -157,7 +160,7 @@ fn sports_http_failures_are_counted_and_leave_both_page_obligations_unfinished(
         check!(eq; outcome["state"], "failed");
         check!(eq;
             outcome["pending_pages"],
-            serde_json::json!(["sports", "ad"])
+            serde_json::json!([dublin().sports_url(), dublin().ad_url()])
         );
         check!(eq; outcome["failure"]["status"], status);
     }

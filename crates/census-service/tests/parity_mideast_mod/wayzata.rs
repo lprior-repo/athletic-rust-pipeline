@@ -1,128 +1,70 @@
-use std::collections::BTreeMap;
-
 use anyhow::{Context, Result};
 use census_crawl::wayzata::{self, ScheduleSport};
-use census_crawl::AdapterReport;
-use census_domain::model::{CanonicalMeet, CompetitionLevel};
+use census_crawl::CollectionDisposition;
+use census_domain::model::{CanonicalMeet, CanonicalPerformance};
 use census_store::Table;
-use serde::Serialize;
 
-use super::{
-    assert_rollup, common, context, golden, golden_case, seeded, stem_of, OBSERVED_ON, SEASON,
-};
-
-#[derive(Serialize)]
-struct MeetsRun<'a> {
-    report: &'a AdapterReport,
-    meets: &'a [CanonicalMeet],
-}
-
-#[derive(Serialize)]
-struct MeetRowFacts {
-    date: String,
-    name: String,
-    location: String,
-    slug: Option<String>,
-    aria_label: Option<String>,
-    venue_state: Option<String>,
-    level: CompetitionLevel,
-}
-
-impl MeetRowFacts {
-    fn of(row: &wayzata::MeetRow) -> Self {
-        let wayzata::MeetRow {
-            date,
-            name,
-            location,
-            slug,
-            aria_label,
-        } = row;
-        Self {
-            date: date.clone(),
-            name: name.clone(),
-            location: location.clone(),
-            slug: slug.clone(),
-            aria_label: aria_label.clone(),
-            venue_state: wayzata::venue_state(location).map(|state| state.code().to_string()),
-            level: wayzata::level_of(name),
-        }
-    }
-}
+use super::{common, context, seeded, OBSERVED_ON, SEASON};
 
 #[test]
-fn wayzata_fixtures_match_the_golden_corpus() -> Result<()> {
-    let paths = common::fixtures("wayzata")?;
-    let mut cases = BTreeMap::new();
-    for path in &paths {
-        let file = common::file_name(path)?;
-        let stem = stem_of(&file);
-        let rows = wayzata::schedule_rows(&common::fixture("wayzata", &file)?, SEASON)
-            .with_context(|| format!("reading {file}"))?;
-        let facts = rows.iter().map(MeetRowFacts::of).collect::<Vec<_>>();
-        let (name, digest) = golden_case(&format!("wayzata__{stem}"), &facts)?;
-        cases.insert(name, digest);
-    }
-    assert_rollup("wayzata", cases, paths.len())
-}
-
-#[test]
-fn wayzata_collect_from_a_seeded_cache_matches_golden() -> Result<()> {
+fn wayzata_schedule_retains_unknown_venue_rows_without_inventing_canonical_geography() -> Result<()>
+{
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
         .block_on(async {
             let dir = tempfile::tempdir().context("temp dir")?;
-            let (store, fetcher) = seeded(
-                dir.path(),
-                &[
-                    (
-                        &wayzata::schedule_url(ScheduleSport::Track, SEASON),
-                        &common::fixture("wayzata", "track_2026_schedule.html")?,
-                    ),
-                    (
-                        &wayzata::schedule_url(ScheduleSport::CrossCountry, SEASON),
-                        &common::fixture("wayzata", "xc_2026_schedule.html")?,
-                    ),
-                ],
-            )?;
+            let track_url = wayzata::schedule_url(ScheduleSport::Track, SEASON);
+            let xc_url = wayzata::schedule_url(ScheduleSport::CrossCountry, SEASON);
+            let track = common::fixture("wayzata", "track_2026_schedule.html")?;
+            let xc = common::fixture("wayzata", "xc_2026_schedule.html")?;
+            let (store, fetcher) = seeded(dir.path(), &[(&track_url, &track), (&xc_url, &xc)])?;
             let options = wayzata::Options {
                 years: vec![SEASON],
+                jurisdictions: Vec::new(),
                 limit: None,
                 refresh: false,
                 observed_on: Some(OBSERVED_ON.to_string()),
             };
-            let report = wayzata::collect(&context(&fetcher, &store), &options).await?;
-
+            let report = wayzata::collect(&context(&fetcher, &store)?, &options).await?;
+            anyhow::ensure!(
+                report.disposition == CollectionDisposition::Partial,
+                "unknown geography must remain owed: {report:?}"
+            );
+            anyhow::ensure!(
+                report.unfinished.contains(&format!("{xc_url}#row=3")),
+                "Bassett Creek Park needs its exact row locator: {report:?}"
+            );
+            let raw = store.journal_payloads("wayzata_schedule_capture_v4")?;
+            anyhow::ensure!(
+                raw.iter()
+                    .any(|row| row["name"] == "Ron Kretsch Invitational"
+                        && row["venue"] == "Bassett Creek Park"
+                        && row["date"] == "2026-08-29"
+                        && row["capture"]["url"] == xc_url
+                        && row["capture"]["fetched_at"] == super::SEEDED_AT),
+                "unresolved published venue metadata must survive projection"
+            );
             let meets: Vec<CanonicalMeet> = store.scan(Table::Meets)?;
             anyhow::ensure!(
-                report.requests == 0,
-                "both schedules are answered from cache — left={:?} right={:?}",
-                &report.requests,
-                &0
+                !meets
+                    .iter()
+                    .any(|meet| meet.name == "Ron Kretsch Invitational"),
+                "unknown venue must not mint a canonical meet"
             );
             anyhow::ensure!(
-                report.from_cache == 2,
-                "one cached page per sport — left={:?} right={:?}",
-                &report.from_cache,
-                &2
+                meets
+                    .iter()
+                    .any(|meet| meet.name == "USATF Minnesota All-Comers Meet #3"
+                        && meet.date == "2026-01-04"
+                        && meet.state == Some(census_domain::UsJurisdiction::Minnesota)),
+                "known published campus must still produce its canonical calendar meet"
             );
+            let performances: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
             anyhow::ensure!(
-                report.rows == 23,
-                "13 track rows plus 10 cross-country rows: {report:?} — left={:?} right={:?}",
-                &report.rows,
-                &23
+                performances.is_empty(),
+                "schedule links labeled Results do not constitute performances"
             );
-            anyhow::ensure!(
-                meets.len() >= 20,
-                "most schedule rows mint a distinct meet; the store holds {}",
-                meets.len()
-            );
-            golden::assert_golden(
-                "wayzata__collect_2026_schedules",
-                &MeetsRun {
-                    report: &report,
-                    meets: &meets,
-                },
-            )
+            Ok(())
         })
 }

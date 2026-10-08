@@ -6,7 +6,6 @@ use restate_sdk::prelude::*;
 use crate::census::CollectOptions;
 use census_crawl::net::Fetcher;
 use census_crawl::{default_family_delays, default_host_delays};
-use census_reconcile::identity::WorkflowIdentity;
 
 use super::JurisdictionCensus;
 use crate::restate_services::plan::{compute_plan_fingerprint, plan as planned, BrowserLaneState};
@@ -37,42 +36,47 @@ impl JurisdictionCensus {
             source_parallelism.max(census_crawl::net::DEFAULT_FAMILY_PARALLELISM);
         let normalized = normalize_hosts(authorized_hosts);
         let mut slot = self.fetcher.lock().await;
-        let owner_parallelism = *self.source_parallelism.get_or_init(|| source_parallelism);
-        if owner_parallelism != source_parallelism {
-            return Err(TerminalError::new(format!(
-                "source parallelism mismatch: this serving owner is fixed at \
-                 {owner_parallelism}, but the request requires {source_parallelism}"
-            ))
-            .into());
-        }
+        self.bind_parallelism(source_parallelism)?;
         if let Some((cached, lanes, fetcher)) = slot.as_ref() {
             if *cached == normalized && *lanes == source_parallelism {
                 return Ok(Arc::clone(fetcher));
             }
         }
+        let shared = Arc::new(self.build_fetcher(normalized.clone(), source_parallelism)?);
+        *slot = Some((normalized, source_parallelism, Arc::clone(&shared)));
+        Ok(shared)
+    }
+
+    fn bind_parallelism(&self, requested: usize) -> Result<(), HandlerError> {
+        let bound = *self.source_parallelism.get_or_init(|| requested);
+        if bound != requested {
+            return Err(TerminalError::new(format!(
+                "source parallelism mismatch: serving owner is fixed at {bound}, requested {requested}")).into());
+        }
+        Ok(())
+    }
+
+    fn build_fetcher(
+        &self,
+        hosts: Vec<String>,
+        parallelism: usize,
+    ) -> Result<Fetcher, HandlerError> {
         let built = Fetcher::new(
             self.store.http_cache_dir(),
             None,
             WORKFLOW_DELAY,
             default_host_delays(),
-            normalized.clone(),
+            hosts,
         )
-        .map_err(|error| {
-            HandlerError::from(TerminalError::new(format!(
-                "the fetcher could not be built: {error}"
-            )))
-        })?
+        .map_err(|error| TerminalError::new(format!("the fetcher could not be built: {error}")))?
         .with_family_budgets(default_family_delays())
-        .with_family_parallelism(source_parallelism)
+        .with_family_parallelism(parallelism)
         .with_shared_pacing(Arc::clone(&self.pacing))
         .with_origin_locks(crate::census::DEFAULT_ORIGIN_LOCK_ROOT);
-        let built = match &self.lane {
+        Ok(match &self.lane {
             Some(lane) => built.with_browser_lane(lane.clone()),
             None => built,
-        };
-        let shared = Arc::new(built);
-        *slot = Some((normalized, source_parallelism, Arc::clone(&shared)));
-        Ok(shared)
+        })
     }
 
     pub(super) fn options(
@@ -94,10 +98,7 @@ impl JurisdictionCensus {
                 .await?
                 .map(|state| state.0)
             {
-                Some(value) => {
-                    drop(identity);
-                    value
-                }
+                Some(value) => guard_identity(value, &identity)?,
                 None => JurisdictionState {
                     identity,
                     ..JurisdictionState::default()
@@ -117,10 +118,7 @@ impl JurisdictionCensus {
                 .await?
                 .map(|state| state.0)
             {
-                Some(value) => {
-                    drop(identity);
-                    value
-                }
+                Some(value) => guard_identity(value, &identity)?,
                 None => JurisdictionState {
                     identity,
                     ..JurisdictionState::default()
@@ -143,7 +141,6 @@ impl JurisdictionCensus {
         &self,
         ctx: &ObjectContext<'_>,
         request: &JurisdictionRequest,
-        identity: &WorkflowIdentity,
         state: &mut JurisdictionState,
         today: &str,
     ) -> Result<(), HandlerError> {
@@ -154,23 +151,36 @@ impl JurisdictionCensus {
         let fingerprint =
             compute_plan_fingerprint(request.jurisdiction, request.season, request.revision, lane);
         if let Some(existing) = &state.plan {
-            if existing.fingerprint != fingerprint {
-                return Err(TerminalError::new(format!(
-                    "plan fingerprint mismatch: stored {} does not match current request {} — \
-                     the plan was built for different inputs and must not be reused; \
-                     fail the invocation rather than continuing with stale work",
-                    existing.fingerprint, fingerprint
-                ))
-                .into());
-            }
-            return Ok(());
+            return guard_fingerprint(&existing.fingerprint, &fingerprint);
         }
         state.plan = Some(SourcePlan::of(
             &planned(request.jurisdiction, lane),
             fingerprint,
         ));
-        state.identity = identity.as_str().to_string();
+        state.identity = ctx.key().to_string();
         self.save(ctx, state, today);
         Ok(())
     }
+}
+
+fn guard_identity(
+    state: JurisdictionState,
+    identity: &str,
+) -> Result<JurisdictionState, HandlerError> {
+    if state.identity != identity {
+        return Err(super::jobs::invariant(
+            "stored jurisdiction identity differs from object key",
+        ));
+    }
+    Ok(state)
+}
+
+fn guard_fingerprint(stored: &str, requested: &str) -> Result<(), HandlerError> {
+    if stored != requested {
+        return Err(TerminalError::new(format!(
+            "plan fingerprint mismatch: stored {stored} does not match request {requested}"
+        ))
+        .into());
+    }
+    Ok(())
 }

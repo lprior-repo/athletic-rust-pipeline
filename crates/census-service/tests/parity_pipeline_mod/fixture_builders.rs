@@ -1,4 +1,4 @@
-use crate::common;
+use crate::{common, listing};
 
 use std::collections::BTreeSet;
 
@@ -14,8 +14,8 @@ use super::fixtures::Corpus;
 pub fn milesplit_roster(corpus: &mut Corpus) -> Result<()> {
     let mut index_body = None;
     let mut roster: Option<(String, String)> = None;
-    for path in common::fixtures("milesplit")? {
-        let name = common::file_name(&path)?;
+    for path in listing::fixtures("milesplit")? {
+        let name = listing::file_name(&path)?;
         let body = common::fixture("milesplit", &name)?;
         if name == "wi_teams_index.html" {
             index_body = Some(body);
@@ -37,7 +37,7 @@ pub fn milesplit_roster(corpus: &mut Corpus) -> Result<()> {
     }
     let index_body = index_body.context("the milesplit corpus carries no team index")?;
     let (team_id, roster_body) = roster.context("the milesplit corpus carries no roster")?;
-    let teams = milesplit::parse_team_index(&index_body)?;
+    let teams = milesplit::parse_team_index(&index_body)?.teams;
     let team = teams
         .iter()
         .find(|team| team.id == team_id)
@@ -53,11 +53,12 @@ pub fn milesplit_roster(corpus: &mut Corpus) -> Result<()> {
     );
     let site = milesplit::Site::for_jurisdiction(UsJurisdiction::Wisconsin);
     let (school, athletes, school_teams) = milesplit::roster_entities(
-        parsed,
+        &parsed.team,
+        &parsed.athletes,
         constants::SCHOOL_YEAR,
         constants::OBSERVED_ON,
         &site,
-    );
+    )?;
     corpus.schools.push(school);
     corpus.athletes.extend(athletes);
     corpus.teams.extend(school_teams);
@@ -65,8 +66,8 @@ pub fn milesplit_roster(corpus: &mut Corpus) -> Result<()> {
 }
 
 pub fn athleticlive_meets(corpus: &mut Corpus) -> Result<()> {
-    for path in common::fixtures("athleticlive")? {
-        let name = common::file_name(&path)?;
+    for path in listing::fixtures("athleticlive")? {
+        let name = listing::file_name(&path)?;
         ensure!(
             name == "meets-sample.csv",
             "{name} is not a known athleticlive fixture"
@@ -85,8 +86,8 @@ pub fn athleticlive_meets(corpus: &mut Corpus) -> Result<()> {
 }
 
 pub fn athleticlive_athletes(corpus: &mut Corpus) -> Result<()> {
-    for path in common::fixtures("athleticlive_athletes")? {
-        let name = common::file_name(&path)?;
+    for path in listing::fixtures("athleticlive_athletes")? {
+        let name = listing::file_name(&path)?;
         ensure!(
             name == "athlete-list-sample.json",
             "{name} is not a known athleticlive_athletes fixture"

@@ -3,16 +3,18 @@ use crate::report::{Derivation, ReportResult};
 use rust_xlsxwriter::Workbook;
 use std::path::Path;
 
-use super::cells::write_sheet;
+use super::cells::{write_sheet, SheetLayout};
 use dataset::Dataset;
 
 mod athletes;
+pub(in crate::workbook) mod coach_projection;
 mod coaches;
 mod columns;
 pub(in crate::workbook) mod contact;
 mod csv;
 mod dataset;
 mod facts;
+pub(in crate::workbook) mod mailbox_provenance;
 pub(in crate::workbook) mod profiles;
 mod prs;
 
@@ -43,10 +45,12 @@ impl Recruiting {
         write_sheet(
             book,
             path,
-            athletes::TITLE,
+            SheetLayout {
+                name: athletes::TITLE,
+                widths: &athletes::WIDTHS,
+                autofilter: true,
+            },
             athletes::sheet(&self.dataset)?,
-            &athletes::WIDTHS,
-            true,
         )
     }
 
@@ -54,10 +58,12 @@ impl Recruiting {
         write_sheet(
             book,
             path,
-            prs::TITLE,
+            SheetLayout {
+                name: prs::TITLE,
+                widths: &prs::WIDTHS,
+                autofilter: true,
+            },
             prs::sheet(&self.dataset.prs)?,
-            &prs::WIDTHS,
-            true,
         )
     }
 
@@ -65,10 +71,12 @@ impl Recruiting {
         write_sheet(
             book,
             path,
-            coaches::TITLE,
+            SheetLayout {
+                name: coaches::TITLE,
+                widths: &coaches::WIDTHS,
+                autofilter: true,
+            },
             coaches::sheet(&self.dataset)?,
-            &coaches::WIDTHS,
-            true,
         )
     }
 

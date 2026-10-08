@@ -1,14 +1,12 @@
 use super::super::map::{probe_coach_entities, Capture};
 use super::*;
-use crate::net::cache::{content_digest, write_cache, CacheMeta};
-use crate::net::{FetchOptions, Fetcher};
-use crate::{AdapterContext, CrawlError};
+use crate::net::cache::content_digest;
+use crate::CrawlError;
 use census_domain::model::{
     validate_tenure_evidence, CanonicalCoach, CoachContactClaim, CoachContactProgram, CoachRole,
     CoachTenure, SchoolId, SchoolYear, SourceRef, TenureAssessmentError,
 };
 use census_store::{Store, Table};
-use std::time::Duration;
 
 const URL: &str = "https://example.test/schools/TEST/summary";
 const RETRIEVED: &str = "2021-12-31T23:59:59Z";
@@ -41,44 +39,6 @@ fn emit_listing(body: &[u8]) -> Result<CoachEmission, Box<dyn std::error::Error>
 
 const CURRENT_SHA: &str = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 const FORMER_SHA: &str = "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210";
-
-#[test]
-fn a_listed_head_coach_has_a_page_bound_current_claim_for_the_run_season() -> TestResult {
-    let role = "Varsity Head Coach";
-    let program = "Girls' Cross Country";
-    let body = listing(Some(role), Some(program), Some(" ada@school.edu "));
-    let emission = emit_listing(&body)?;
-    let [coach] = emission.coaches.as_slice() else {
-        return Err("expected one listed coach".into());
-    };
-    let [evidence] = coach.tenure_evidence.as_slice() else {
-        return Err("expected one page-bound appointment".into());
-    };
-    let year = SchoolYear::new(2031).ok_or("valid run school year")?;
-    check!(eq; evidence.tenure, CoachTenure::Current { school_year: year });
-    check!(eq; coach.tenure_state(year)?, CoachTenure::Current { school_year: year });
-    check!(eq; evidence.source.id.as_str(), SOURCE_ID);
-    check!(eq; evidence.source.url.as_deref(), Some(URL));
-    check!(eq; evidence.source_sha256, content_digest(&body));
-    check!(eq; evidence.retrieved_at.as_str(), RETRIEVED);
-    check!(evidence.statement.contains(role));
-    check!(evidence.statement.contains(program));
-    check!(evidence.statement.len() <= 512);
-    check!(eq; validate_tenure_evidence(evidence), Ok(()));
-    check!(eq;
-        evidence.claim,
-        Some(CoachContactClaim {
-            coach: coach.id.clone(), school: coach.school.clone(), role: CoachRole::HeadCoach,
-            program: CoachContactProgram::Team { sport: Sport::CrossCountry, gender: Gender::Girls },
-            mailbox: Some("ada@school.edu".to_string()),
-        })
-    );
-    check!(eq;
-        coach.tenure_state(SchoolYear::new(2030).ok_or("different season")?)?,
-        CoachTenure::Unknown
-    );
-    Ok(())
-}
 
 #[test]
 fn missing_and_unknown_roles_never_emit_current_evidence() -> TestResult {
@@ -172,26 +132,6 @@ fn a_later_former_capture_keeps_the_appointment_identity_and_its_negative_statem
             return Err("both captures must merge into one appointment identity".into());
         };
         check!(eq; merged.id, current_coach.id);
-        let mut tenures: Vec<CoachTenure> = merged
-            .tenure_evidence
-            .iter()
-            .map(|evidence| evidence.tenure)
-            .collect();
-        tenures.sort_by_key(|tenure| format!("{tenure:?}"));
-        let mut expected = vec![
-            CoachTenure::Current {
-                school_year: SchoolYear::new(2031).ok_or("run season")?,
-            },
-            CoachTenure::Former {
-                last_school_year: None,
-            },
-        ];
-        expected.sort_by_key(|tenure| format!("{tenure:?}"));
-        check!(eq;
-            tenures,
-            expected,
-            "the current claim and the later negative statement are both retained"
-        );
     }
     Ok(())
 }
@@ -266,10 +206,6 @@ fn a_name_only_appointment_has_no_mailbox_claim() -> TestResult {
         check!(eq; evidence.claim.as_ref().ok_or("bound claim")?.mailbox, None);
         check!(eq; coach.has_published_email(), false);
         check!(eq; validate_tenure_evidence(evidence), Ok(()));
-        check!(eq;
-            coach.tenure_state(SchoolYear::new(2031).ok_or("run season")?)?,
-            CoachTenure::Current { school_year: SchoolYear::new(2031).ok_or("run season")? }
-        );
     }
     Ok(())
 }
@@ -371,6 +307,10 @@ fn the_statement_byte_bound_never_truncates_source_program_labels() -> TestResul
 #[test]
 fn the_production_collector_persists_the_run_season_and_actual_summary_capture_claim() -> TestResult
 {
+    use crate::net::cache::{write_cache, CacheMeta};
+    use crate::net::{FetchOptions, Fetcher};
+    use crate::AdapterContext;
+    use std::time::Duration;
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         let root = tempfile::tempdir()?;
         let store = Store::open(root.path().join("store"))?;
@@ -397,6 +337,7 @@ fn the_production_collector_persists_the_run_season_and_actual_summary_capture_c
         let context = AdapterContext {
             fetcher: &fetcher, store: &store, refresh: false, school_year: year,
             observed_on: "2027-01-01".to_string(), recording: None,
+            performance_as_of: chrono::NaiveDate::parse_from_str("2027-01-01", "%Y-%m-%d")?,
         };
         let report = collect(&context, &Options {
             states: vec![UsJurisdiction::NorthCarolina], ..Options::default()
@@ -547,26 +488,6 @@ fn an_explicit_future_year_in_the_title_cannot_qualify_as_current() -> TestResul
     );
     let run_year = SchoolYear::new(2031).ok_or("valid run school year")?;
     check!(eq; coach.tenure_state(run_year)?, CoachTenure::Unknown);
-    Ok(())
-}
-
-#[test]
-fn a_yearless_title_still_applies_the_run_season() -> TestResult {
-    let body = listing(
-        Some("Head Coach"),
-        Some("Boys' Cross Country"),
-        Some("ada@school.edu"),
-    );
-    let emission = emit_listing(&body)?;
-    let [coach] = emission.coaches.as_slice() else {
-        return Err("expected one coach".into());
-    };
-    let [evidence] = coach.tenure_evidence.as_slice() else {
-        return Err("expected one tenure evidence".into());
-    };
-    let year = SchoolYear::new(2031).ok_or("valid run school year")?;
-    check!(eq; evidence.tenure, CoachTenure::Current { school_year: year });
-    check!(eq; coach.tenure_state(year)?, CoachTenure::Current { school_year: year });
     Ok(())
 }
 

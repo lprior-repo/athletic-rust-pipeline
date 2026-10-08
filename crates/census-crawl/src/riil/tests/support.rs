@@ -71,7 +71,7 @@ pub(super) async fn evaluate(
     evaluation: &str,
     option_date: &str,
 ) -> anyhow::Result<AdapterReport> {
-    let ctx = context(fetcher, store, recording, evaluation);
+    let ctx = context(fetcher, store, recording, evaluation)?;
     Ok(super::super::collect(
         &ctx,
         &super::super::Options {
@@ -87,15 +87,16 @@ pub(super) fn context<'a>(
     store: &'a Store,
     recording: Option<&'a Recording>,
     evaluation: &str,
-) -> AdapterContext<'a> {
-    AdapterContext {
+) -> anyhow::Result<AdapterContext<'a>> {
+    Ok(AdapterContext {
         fetcher,
         store,
         refresh: false,
         school_year: SchoolYear::DEFAULT,
         observed_on: evaluation.to_string(),
+        performance_as_of: chrono::NaiveDate::parse_from_str(evaluation, "%Y-%m-%d")?,
         recording,
-    }
+    })
 }
 
 pub(super) fn observations<T: Entity>(store: &Store, table: Table) -> anyhow::Result<Vec<T>> {

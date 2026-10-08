@@ -1,5 +1,5 @@
 use super::*;
-use census_domain::model::{CentiSeconds, EventKind, Gender, Grade, Mark};
+use census_domain::model::{EventKind, ExactSeconds, Gender, Grade, Mark};
 
 #[test]
 fn known_identities_and_marks_survive_the_seam() -> Result<(), Box<dyn std::error::Error>> {
@@ -14,7 +14,7 @@ fn known_identities_and_marks_survive_the_seam() -> Result<(), Box<dyn std::erro
     check!(eq; winner.grade.map(Grade::get), Some(12));
     check!(eq; winner.school, "West De Pere");
     check!(eq; winner.mark,
-    Mark::TimeSeconds(CentiSeconds::try_from_seconds_f64(10.56).ok_or("invalid expected dash time")?));
+    Mark::TimeSeconds(ExactSeconds::parse("10.56")?));
     check!(eq; winner.wind_mps, Some(0.4));
 
     let sections = parse(SECTIONS_HTML, ArtifactFormat::HytekHtml, ARCHIVE_YEAR)
@@ -45,7 +45,7 @@ fn known_identities_and_marks_survive_the_seam() -> Result<(), Box<dyn std::erro
     check!(eq; finisher.school, "Whitewater");
     check!(eq; finisher.mark,
     Mark::TimeSeconds(
-        CentiSeconds::try_from_seconds_f64(1033.69).ok_or("invalid expected cross-country time")?
+        ExactSeconds::parse("1033.69")?
     ));
     Ok(())
 }

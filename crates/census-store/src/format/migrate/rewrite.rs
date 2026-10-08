@@ -1,267 +1,167 @@
-use fjall::{Database, Keyspace, OwnedWriteBatch, PersistMode};
+use fjall::{Keyspace, OwnedWriteBatch};
 
-use super::super::{
-    CREATED_AT, CREATED_BY, KEY_FORMAT, KEY_FORMAT_VERSION, MIGRATING_TO, STORE_SCHEMA_VERSION,
-    STORE_VERSION,
-};
+use super::super::{CREATED_AT, CREATED_BY, KEY_FORMAT, KEY_FORMAT_VERSION, STORE_VERSION};
+use super::time::{commit, Context};
 use super::Rewritten;
 use crate::clock::{Clock, SystemClock};
 use crate::keys::{
-    derived_generation_prefix, derived_key, key_label, observation_key, observation_prefix,
-    view_observation_key, DERIVED_SEQUENCE,
+    derived_generation_prefix, derived_key, observation_key, observation_prefix,
+    view_observation_key,
 };
-use crate::rows::put_row_mark;
 use crate::{generation, meta, StorageMode, StoreError, StoreResult, Table};
 
 mod folding;
 
-use folding::{count_prefix, drive_prefix, fold};
+const REWRITTEN: &str = "schema:legacy:rewritten";
+const DROPPED: &str = "schema:legacy:dropped";
+const MAX_ROW_BYTES: usize = 4 * 1024 * 1024;
 
-const MIGRATED_GENERATION: u64 = 1;
+pub(super) fn rewrite(context: &Context<'_>) -> StoreResult<Rewritten> {
+    Table::ALL
+        .into_iter()
+        .try_for_each(|table| collapse(context, table))?;
+    finish(context)?;
+    Ok(Rewritten {
+        rewritten: count(context.meta, REWRITTEN)?,
+        dropped: count(context.meta, DROPPED)?,
+    })
+}
 
-pub(super) fn rewrite(
-    db: &Database,
-    entities: &Keyspace,
-    meta_keyspace: &Keyspace,
-) -> StoreResult<Rewritten> {
-    write_marker(db, meta_keyspace)?;
-    let mut total = Rewritten::default();
-    let mut marks: Vec<(Table, u64)> = Vec::new();
-    for table in Table::ALL {
-        match table.storage_mode() {
-            StorageMode::ObservationLog => {
-                marks.push((table, count_prefix(entities, &observation_prefix(table))?));
-            }
-            StorageMode::DerivedGeneration => {
-                let collapsed = collapse(db, entities, table, Sink::Generation)?;
-                total.rewritten = total
-                    .rewritten
-                    .checked_add(collapsed.rewritten)
-                    .ok_or(StoreError::CounterOverflow)?;
-                total.dropped = total
-                    .dropped
-                    .checked_add(collapsed.dropped)
-                    .ok_or(StoreError::CounterOverflow)?;
-                marks.push((table, collapsed.mark_rows));
-            }
-            StorageMode::DerivedMap => {
-                let collapsed = collapse(db, entities, table, Sink::Map)?;
-                total.dropped = total
-                    .dropped
-                    .checked_add(collapsed.dropped)
-                    .ok_or(StoreError::CounterOverflow)?;
-                marks.push((table, collapsed.mark_rows));
-            }
-        }
+fn collapse(context: &Context<'_>, table: Table) -> StoreResult<()> {
+    if table.storage_mode() == StorageMode::ObservationLog {
+        return Ok(());
     }
-    finish(db, meta_keyspace, &marks)?;
-    Ok(total)
+    context
+        .entities
+        .prefix(observation_prefix(table))
+        .try_for_each(|guard| {
+            let (key, value) = guard
+                .into_inner()
+                .map_err(|source| StoreError::Read { source })?;
+            collapse_row(context, table, &key, &value)
+        })
 }
 
-#[derive(Debug, Clone, Copy)]
-enum Sink {
-    Generation,
-    Map,
+fn collapse_row(context: &Context<'_>, table: Table, key: &[u8], value: &[u8]) -> StoreResult<()> {
+    bounded(value)?;
+    let target = target_key(table, key)?;
+    let prior = context
+        .entities
+        .get(&target)
+        .map_err(|source| StoreError::Read { source })?;
+    if target == key {
+        bounded(&folding::fold(table, None, value)?)?;
+        return Ok(());
+    }
+    if let Some(prior) = &prior {
+        bounded(prior)?;
+    }
+    let folded = folding::fold(table, prior.as_deref(), value)?;
+    bounded(&folded)?;
+    let mut batch = context.db.batch();
+    batch.remove(context.entities, key);
+    batch.insert(context.entities, target, folded);
+    if prior.is_some() {
+        increment(context, &mut batch, DROPPED)?;
+    } else if table.generation_partitioned() {
+        increment(context, &mut batch, REWRITTEN)?;
+    }
+    commit(batch)
 }
 
-#[derive(Debug, Default, Clone, Copy)]
-struct Collapsed {
-    mark_rows: u64,
-    rewritten: u64,
-    dropped: u64,
-}
-
-struct Pending {
-    keys: Vec<Vec<u8>>,
-    id: Vec<u8>,
-    values: Vec<Vec<u8>>,
-}
-
-fn collapse(
-    db: &Database,
-    entities: &Keyspace,
-    table: Table,
-    sink: Sink,
-) -> StoreResult<Collapsed> {
-    let mut collapsed = Collapsed {
-        mark_rows: match sink {
-            Sink::Generation => count_prefix(
-                entities,
-                &derived_generation_prefix(table, MIGRATED_GENERATION),
-            )?,
-            Sink::Map => 0,
-        },
-        ..Collapsed::default()
-    };
-    let mut pending: Option<Pending> = None;
-    drive_prefix(
-        db,
-        entities,
-        &observation_prefix(table),
-        |batch, key, value| {
-            let (_, id, _) = view_observation_key(key).ok_or_else(|| StoreError::Invariant {
-                detail: format!(
-                    "table {} holds a malformed key {} during migration",
-                    table.file(),
-                    key_label(key)
-                ),
+fn target_key(table: Table, key: &[u8]) -> StoreResult<Vec<u8>> {
+    let (_, id, _) = view_observation_key(key).ok_or_else(|| StoreError::Invariant {
+        detail: format!("malformed {} key during legacy migration", table.file()),
+    })?;
+    match table.storage_mode() {
+        StorageMode::DerivedGeneration => Ok(derived_key(table, 1, id)),
+        StorageMode::DerivedMap => {
+            let id = std::str::from_utf8(id).map_err(|_| StoreError::Invariant {
+                detail: "legacy map key has a non-utf8 id".into(),
             })?;
-            match pending.as_mut() {
-                Some(current) if current.id == id => {
-                    current.keys.push(key.to_vec());
-                    current.values.push(value.to_vec());
-                    collapsed.dropped = collapsed
-                        .dropped
-                        .checked_add(1)
-                        .ok_or(StoreError::CounterOverflow)?;
-                    return Ok(());
-                }
-                Some(_) => {
-                    flush_pending(batch, entities, table, sink, &mut pending, &mut collapsed)?
-                }
-                None => {}
-            }
-            pending = Some(Pending {
-                keys: vec![key.to_vec()],
-                id: id.to_vec(),
-                values: vec![value.to_vec()],
-            });
-            Ok(())
-        },
-    )?;
-    if let Some(current) = pending {
-        finish_pending(db, entities, table, sink, &current, &mut collapsed)?;
-    }
-    Ok(collapsed)
-}
-
-fn finish_pending(
-    db: &Database,
-    entities: &Keyspace,
-    table: Table,
-    sink: Sink,
-    current: &Pending,
-    collapsed: &mut Collapsed,
-) -> StoreResult<()> {
-    let mut batch = db.batch();
-    emit(&mut batch, entities, table, sink, current, collapsed)?;
-    batch
-        .durability(Some(PersistMode::SyncData))
-        .commit()
-        .map_err(|source| StoreError::Write { source })
-}
-
-fn flush_pending(
-    batch: &mut OwnedWriteBatch,
-    entities: &Keyspace,
-    table: Table,
-    sink: Sink,
-    pending: &mut Option<Pending>,
-    collapsed: &mut Collapsed,
-) -> StoreResult<()> {
-    let current = pending.take().ok_or_else(|| StoreError::Invariant {
-        detail: format!("table {} lost a pending row during migration", table.file()),
-    })?;
-    emit(batch, entities, table, sink, &current, collapsed)
-}
-
-fn emit(
-    batch: &mut OwnedWriteBatch,
-    entities: &Keyspace,
-    table: Table,
-    sink: Sink,
-    row: &Pending,
-    collapsed: &mut Collapsed,
-) -> StoreResult<()> {
-    let folded = fold(table, &row.values)?;
-    let id = std::str::from_utf8(&row.id).map_err(|_| StoreError::Invariant {
-        detail: format!("table {} holds a non-utf8 id", table.file()),
-    })?;
-    match sink {
-        Sink::Generation => {
-            for key in &row.keys {
-                batch.remove(entities, key.as_slice());
-            }
-            batch.insert(
-                entities,
-                derived_key(table, MIGRATED_GENERATION, id.as_bytes()),
-                folded.as_slice(),
-            );
-            collapsed.rewritten = collapsed
-                .rewritten
-                .checked_add(1)
-                .ok_or(StoreError::CounterOverflow)?;
+            Ok(observation_key(table, id, 0))
         }
-        Sink::Map => {
-            let settled = row.keys.len() == 1 && row.values.first() == Some(&folded);
-            if !settled {
-                for key in &row.keys {
-                    batch.remove(entities, key.as_slice());
-                }
-                batch.insert(
-                    entities,
-                    observation_key(table, id, DERIVED_SEQUENCE),
-                    folded.as_slice(),
-                );
-            }
-        }
+        StorageMode::ObservationLog => Err(StoreError::Invariant {
+            detail: "legacy collapse cannot rewrite an observation log".into(),
+        }),
     }
-    collapsed.mark_rows = collapsed
-        .mark_rows
-        .checked_add(1)
-        .ok_or(StoreError::CounterOverflow)?;
-    Ok(())
 }
 
-fn write_marker(db: &Database, meta_keyspace: &Keyspace) -> StoreResult<()> {
-    let mut batch = db.batch();
-    meta::put_text(&mut batch, meta_keyspace, MIGRATING_TO, "1");
-    batch
-        .durability(Some(PersistMode::SyncData))
-        .commit()
-        .map_err(|source| StoreError::Write { source })
-}
-
-fn finish(db: &Database, meta_keyspace: &Keyspace, marks: &[(Table, u64)]) -> StoreResult<()> {
-    let mut batch = db.batch();
-    for (table, rows) in marks {
-        put_row_mark(&mut batch, meta_keyspace, *table, *rows);
-    }
-    generation::write_seed(
-        &mut batch,
-        meta_keyspace,
-        0,
-        MIGRATED_GENERATION,
-        MIGRATED_GENERATION + 1,
-        MIGRATED_GENERATION + 1,
-    );
+fn finish(context: &Context<'_>) -> StoreResult<()> {
+    let mut batch = context.db.batch();
+    Table::ALL.into_iter().try_for_each(|table| {
+        let prefix = if table.generation_partitioned() {
+            derived_generation_prefix(table, 1)
+        } else {
+            observation_prefix(table)
+        };
+        let rows = context
+            .entities
+            .prefix(prefix)
+            .try_fold(0_u64, |count, guard| {
+                guard.key().map_err(|source| StoreError::Read { source })?;
+                count.checked_add(1).ok_or(StoreError::CounterOverflow)
+            })?;
+        crate::rows::put_row_mark(&mut batch, context.meta, table, rows);
+        Ok::<(), StoreError>(())
+    })?;
+    generation::write_seed(&mut batch, context.meta, 0, 1, 2, 2);
+    meta::put_text(&mut batch, context.meta, STORE_VERSION, "1");
     meta::put_text(
         &mut batch,
-        meta_keyspace,
-        STORE_VERSION,
-        &STORE_SCHEMA_VERSION.to_string(),
-    );
-    meta::put_text(
-        &mut batch,
-        meta_keyspace,
+        context.meta,
         KEY_FORMAT,
         &KEY_FORMAT_VERSION.to_string(),
     );
-    meta::put_text(
-        &mut batch,
-        meta_keyspace,
-        CREATED_BY,
-        env!("CARGO_PKG_VERSION"),
-    );
-    meta::put_text(
-        &mut batch,
-        meta_keyspace,
-        CREATED_AT,
-        &SystemClock.today_iso8601(),
-    );
-    batch.remove(meta_keyspace, MIGRATING_TO);
-    batch
-        .durability(Some(PersistMode::SyncData))
-        .commit()
-        .map_err(|source| StoreError::Write { source })
+    preserve_creation(context, &mut batch)?;
+    commit(batch)
+}
+
+fn preserve_creation(context: &Context<'_>, batch: &mut OwnedWriteBatch) -> StoreResult<()> {
+    if meta::get_text(context.meta, CREATED_BY)?.is_none() {
+        meta::put_text(batch, context.meta, CREATED_BY, env!("CARGO_PKG_VERSION"));
+    }
+    if meta::get_text(context.meta, CREATED_AT)?.is_none() {
+        meta::put_text(
+            batch,
+            context.meta,
+            CREATED_AT,
+            &SystemClock.today_iso8601(),
+        );
+    }
+    Ok(())
+}
+
+fn count(meta: &Keyspace, key: &str) -> StoreResult<u64> {
+    Ok(meta::get_u64(meta, key)?.map_or(0, core::convert::identity))
+}
+
+fn increment(context: &Context<'_>, batch: &mut OwnedWriteBatch, key: &str) -> StoreResult<()> {
+    let next = count(context.meta, key)?
+        .checked_add(1)
+        .ok_or(StoreError::CounterOverflow)?;
+    meta::put_text(batch, context.meta, key, &next.to_string());
+    Ok(())
+}
+
+fn bounded(bytes: &[u8]) -> StoreResult<()> {
+    if bytes.len() > MAX_ROW_BYTES {
+        return Err(StoreError::Refused {
+            detail: "legacy migration row exceeds 4 MiB".into(),
+        });
+    }
+    Ok(())
+}
+
+pub(super) fn statistics(meta: &Keyspace) -> StoreResult<Rewritten> {
+    Ok(Rewritten {
+        rewritten: count(meta, REWRITTEN)?,
+        dropped: count(meta, DROPPED)?,
+    })
+}
+
+pub(super) fn clear_statistics(batch: &mut OwnedWriteBatch, meta: &Keyspace) {
+    [REWRITTEN, DROPPED]
+        .into_iter()
+        .for_each(|key| batch.remove(meta, key));
 }

@@ -162,6 +162,12 @@ fn coverage_notes(
         outcome.jurisdictions.len(),
         dataset.lineage.store_root
     )];
+    append_population_notes(&mut notes, outcome, &cohort);
+    append_placement_notes(&mut notes, outcome);
+    notes
+}
+
+fn append_population_notes(notes: &mut Vec<String>, outcome: &Outcome, cohort: &str) {
     if outcome.read.athletes == 0 {
         notes.push(
             "no cohort athletes stored yet — run `collect` then `consolidate` before `report`"
@@ -174,6 +180,9 @@ fn coverage_notes(
             outcome.off_cohort_athletes
         ));
     }
+}
+
+fn append_placement_notes(notes: &mut Vec<String>, outcome: &Outcome) {
     if outcome.outside_scope != CoverageTotals::default() {
         notes.push(format!(
             "stored rows outside the census run scope (the 48 continental states plus DC, ADR-009) \
@@ -191,5 +200,4 @@ fn coverage_notes(
             "{unplaceable} cohort athletes carry no placeable jurisdiction and publish in the {UNKNOWN_JURISDICTION} row"
         ));
     }
-    notes
 }

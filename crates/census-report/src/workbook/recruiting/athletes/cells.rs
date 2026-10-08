@@ -83,42 +83,44 @@ fn pr_mark_name<'a>(pr: &SharedSelection, event: &'a str) -> &'a str {
     }
 }
 
+const SUMMARY_OVERFLOW: &str = "; additional classified marks in PRs";
+const SUMMARY_LIMIT: usize = 32_767;
+
 fn qualified_summary<'a>(mut prs: impl Iterator<Item = &'a SharedSelection>) -> Cell {
-    const OVERFLOW: &str = "; additional classified marks in PRs";
-    const LIMIT: usize = 32_767;
-    let budget = LIMIT.saturating_sub(OVERFLOW.len());
-    let result = prs.try_fold(
-        (String::new(), 0_usize, 0_usize),
-        |(mut text, used, marker_end), pr| {
-            let start = text.len();
-            if !text.is_empty() {
-                text.push_str("; ");
-            }
-            append_qualified_mark(&mut text, pr);
-            let required = text
-                .get(start..)
-                .map_or(0, |mark| mark.encode_utf16().count());
-            let total = used.saturating_add(required);
-            if total > LIMIT {
-                text.truncate(marker_end);
-                return Err(text);
-            }
-            let marker_end = if total <= budget {
-                text.len()
-            } else {
-                marker_end
-            };
-            Ok((text, total, marker_end))
-        },
-    );
+    let result = prs.try_fold((String::new(), 0_usize, 0_usize), append_summary_mark);
     match result {
         Ok((text, _, _)) if text.is_empty() => Cell::Empty,
         Ok((text, _, _)) => Cell::text(text),
         Err(mut text) => {
-            text.push_str(OVERFLOW);
+            text.push_str(SUMMARY_OVERFLOW);
             Cell::text(text)
         }
     }
+}
+
+fn append_summary_mark(
+    (mut text, used, marker_end): (String, usize, usize),
+    pr: &SharedSelection,
+) -> Result<(String, usize, usize), String> {
+    let start = text.len();
+    if !text.is_empty() {
+        text.push_str("; ");
+    }
+    append_qualified_mark(&mut text, pr);
+    let required = text
+        .get(start..)
+        .map_or(0, |mark| mark.encode_utf16().count());
+    let total = used.saturating_add(required);
+    if total > SUMMARY_LIMIT {
+        text.truncate(marker_end);
+        return Err(text);
+    }
+    let marker_end = if total <= SUMMARY_LIMIT.saturating_sub(SUMMARY_OVERFLOW.len()) {
+        text.len()
+    } else {
+        marker_end
+    };
+    Ok((text, total, marker_end))
 }
 
 fn append_qualified_mark(text: &mut String, pr: &SharedSelection) {
@@ -134,6 +136,10 @@ fn append_qualified_mark(text: &mut String, pr: &SharedSelection) {
     if let Some(context) = &pr.key.context {
         text.push_str(", event ");
         text.push_str(context.as_str());
+    }
+    if let Some(context) = crate::bests::context::cross_country(pr) {
+        text.push_str(", ");
+        text.push_str(&context);
     }
     text.push(']');
 }

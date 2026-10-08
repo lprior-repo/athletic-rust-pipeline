@@ -95,6 +95,35 @@ wait_admin() {
     return 1
 }
 
+stop_owned_process() {
+    local pid="$1" label="$2" rc=0 term_failed=0
+    [ -n "$pid" ] || return 0
+    if kill -0 "$pid" 2>/dev/null; then
+        echo "CLEANUP: TERM requested for owned $label pid=$pid"
+        kill -TERM "$pid" || {
+            echo "FAIL: could not request TERM for owned $label pid=$pid"
+            term_failed=1
+        }
+    fi
+    wait "$pid" || rc=$?
+    echo "REAP: owned $label pid=$pid exit=$rc"
+    [ "$rc" -eq 0 ] && [ "$term_failed" -eq 0 ] || {
+        echo "FAIL: owned $label stop/reap failed (exit=$rc TERM_failed=$term_failed)"
+        return 1
+    }
+}
+cleanup() {
+    local rc=$? cleanup_rc=0
+    trap - EXIT
+    stop_owned_process "${SERVE_PID:-}" endpoint || cleanup_rc=1
+    SERVE_PID=""
+    stop_owned_process "${NODE_PID:-}" Restate || cleanup_rc=1
+    NODE_PID=""
+    [ "$rc" -ne 0 ] || rc=$cleanup_rc
+    exit "$rc"
+}
+trap cleanup EXIT
+
 "$NODE" --no-logo -c "$WORK/restate.toml" > "$WORK/node-first.log" 2>&1 &
 NODE_PID=$!
 wait_admin || { echo "FAIL: node did not answer on the admin port"; exit 1; }
@@ -104,16 +133,6 @@ ATHLETIC_FAULT_HTTP_EXIT="$TRIGGER" "$SERVE" \
     --drain-timeout 60 --browser-profile "$WORK/browser-profile" \
     --browser-executable "$CHROMIUM" --browser-headless > "$WORK/endpoint.log" 2>&1 &
 SERVE_PID=$!
-RESUMED=false
-cleanup() {
-    [ "$RESUMED" = true ] || {
-        kill -TERM "$SERVE_PID" 2>/dev/null || true
-        wait "$SERVE_PID" 2>/dev/null || true
-    }
-    kill -TERM "$NODE_PID" 2>/dev/null || true
-    wait "$NODE_PID" 2>/dev/null || true
-}
-trap cleanup EXIT
 
 sleep 2
 kill -0 "$SERVE_PID" 2>/dev/null || { echo "FAIL: endpoint exited during startup"; tail -5 "$WORK/endpoint.log"; exit 1; }
@@ -229,7 +248,8 @@ DRAIN=$(grep -a 'drained: accepted=' "$WORK/endpoint.log" | tail -1)
 echo "DRAIN CERTIFICATE: $DRAIN"
 echo "$DRAIN" > "$WORK/drain-certificate.txt"
 
-python3 - "$WORK/drain-certificate.txt" <<'PY'
+validate_drain_certificate() {
+python3 - "$1" <<'PY'
 import re, sys
 drain = open(sys.argv[1]).read().strip()
 accepted = int(re.search(r'accepted=(\d+)', drain).group(1))
@@ -238,8 +258,12 @@ cancelled = int(re.search(r'cancelled=(\d+)', drain).group(1))
 timed_out = int(re.search(r'timed_out=(\d+)', drain).group(1))
 aborted = int(re.search(r'aborted=(\d+)', drain).group(1))
 panicked = int(re.search(r'panicked=(\d+)', drain).group(1))
-accounted = completed + cancelled + timed_out + aborted + panicked
-print(f"ACCOUNTING: accepted={accepted} vs accounted={accounted} (completed={completed} cancelled={cancelled} timed_out={timed_out} aborted={aborted} panicked={panicked})")
+accounted = completed + cancelled + aborted + panicked
+print(f"ACCOUNTING: accepted={accepted} vs exclusive_terminal={accounted} (completed={completed} cancelled={cancelled} aborted={aborted} panicked={panicked})")
+print(f"DEADLINE: timed_out={timed_out} is an overlapping subset of accepted={accepted}, not a terminal bucket")
+if timed_out > accepted:
+    print("FAIL: deadline subset exceeds accepted work")
+    sys.exit(1)
 if accepted != accounted:
     print("FAIL: exclusive outcome accounting mismatch")
     sys.exit(1)
@@ -251,10 +275,14 @@ if panicked != 0:
     sys.exit(1)
 print("PASS: exclusive outcome accounting verified")
 PY
+}
+validate_drain_certificate "$WORK/drain-certificate.txt"
 
-wait "$SERVE_PID" 2>/dev/null
-SERVE_EXIT=$?
+SERVE_EXIT=0
+wait "$SERVE_PID" || SERVE_EXIT=$?
+SERVE_PID=""
 echo "EXIT: census-serve exited with code $SERVE_EXIT"
+[ "$SERVE_EXIT" -eq 0 ] || { echo "FAIL: initial endpoint exited unsuccessfully"; exit 1; }
 
 REAPED=true
 if pgrep -f -- "--data-dir $DATA" >/dev/null 2>&1 || pgrep -f "$WORK/browser-profile" >/dev/null 2>&1; then
@@ -265,8 +293,8 @@ fi
 [ "$REAPED" = true ] || { echo "FAIL: owned child processes survived after parent exit"; exit 1; }
 echo "REAP: no owned child processes survived"
 
-kill -TERM "$NODE_PID" 2>/dev/null || true
-wait "$NODE_PID" 2>/dev/null || true
+stop_owned_process "$NODE_PID" Restate
+NODE_PID=""
 
 "$NODE" --no-logo -c "$WORK/restate.toml" > "$WORK/node-second.log" 2>&1 &
 NODE_PID=$!
@@ -278,8 +306,6 @@ echo "RESTARTED: Restate node from same base-dir"
     --drain-timeout 60 --browser-profile "$WORK/browser-profile" \
     --browser-executable "$CHROMIUM" --browser-headless > "$WORK/endpoint-second.log" 2>&1 &
 SERVE_PID=$!
-RESUMED=true
-trap cleanup EXIT
 
 sleep 2
 kill -0 "$SERVE_PID" 2>/dev/null || { echo "FAIL: restarted endpoint exited during startup"; tail -5 "$WORK/endpoint-second.log"; exit 1; }
@@ -345,13 +371,14 @@ done
 echo "OPEN WORK AFTER RESUME:"
 cat "$WORK/open-work-resumed.txt"
 
-kill -TERM "$SERVE_PID" 2>/dev/null || true
-wait "$SERVE_PID" 2>/dev/null || true
+stop_owned_process "$SERVE_PID" resumed-endpoint
+SERVE_PID=""
 DRAIN2=$(grep -a 'drained: accepted=' "$WORK/endpoint-second.log" | tail -1 || true)
-if [ -n "$DRAIN2" ]; then
-    echo "RESUME DRAIN CERTIFICATE: $DRAIN2"
-fi
-kill -TERM "$NODE_PID" 2>/dev/null || true
-wait "$NODE_PID" 2>/dev/null || true
+[ -n "$DRAIN2" ] || { echo "FAIL: resumed endpoint exited without a drain certificate"; exit 1; }
+echo "RESUME DRAIN CERTIFICATE: $DRAIN2"
+echo "$DRAIN2" > "$WORK/resume-drain-certificate.txt"
+validate_drain_certificate "$WORK/resume-drain-certificate.txt"
+stop_owned_process "$NODE_PID" Restate
+NODE_PID=""
 
-echo "PASS: parent HTTP server exited on trigger; drain certificate satisfied accepted == completed+cancelled+timed_out+aborted+panicked with accepted >= 1 and panicked == 0; owned children reaped; the same run identity resumed on the same store and a pre-trigger invocation advanced"
+echo "PASS: parent HTTP server exited on trigger; both drain certificates satisfied accepted == completed+cancelled+aborted+panicked with accepted >= 1, panicked == 0 and overlapping timed_out <= accepted; both owned endpoints drained/reaped; the same run identity resumed on the same store and a pre-trigger invocation advanced"

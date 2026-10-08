@@ -4,12 +4,14 @@ use census_reconcile::identity::Revision;
 use serde::{Deserialize, Serialize};
 
 use super::school_address_join::{SchoolAddressJoinReply, SchoolAddressJoinRequest};
+use super::HistoryWindow;
 use super::{default_concurrency, default_source_parallelism};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NationalRequest {
     pub season: SchoolYear,
     pub revision: Revision,
+    pub history: HistoryWindow,
     #[serde(default)]
     pub jurisdictions: Vec<UsJurisdiction>,
     #[serde(default)]

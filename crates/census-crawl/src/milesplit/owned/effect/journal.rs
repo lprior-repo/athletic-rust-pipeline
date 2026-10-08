@@ -23,14 +23,17 @@ pub(super) fn stage(
     key: &str,
     payload: &Value,
 ) -> CrawlResult<bool> {
-    match ctx.store.journal_payload(phase, key)? {
-        Some(prior) if &prior == payload => Ok(false),
-        Some(_) => Err(conflict(phase, key)),
-        None => {
-            batch.journal_done(phase, key, payload)?;
-            Ok(true)
+    if let Some(recording) = ctx.recording {
+        if recording.inspect_journal(phase, key, |prior| matching(prior, phase, key, payload))? {
+            return Ok(false);
         }
     }
+    let prior = ctx.store.journal_payload(phase, key)?;
+    if matching(prior.as_ref(), phase, key, payload)? {
+        return Ok(false);
+    }
+    batch.journal_done(phase, key, payload)?;
+    Ok(true)
 }
 
 pub(super) fn stage_capture(
@@ -40,24 +43,79 @@ pub(super) fn stage_capture(
     key: &str,
     payload: &Value,
 ) -> CrawlResult<bool> {
-    let Some(mut prior) = ctx.store.journal_payload(phase, key)? else {
-        batch.journal_done(phase, key, payload)?;
-        return Ok(true);
-    };
-    let flag = prior
-        .get_mut("capture")
-        .and_then(Value::as_object_mut)
-        .and_then(|capture| capture.get_mut("from_cache"))
-        .ok_or_else(|| conflict(phase, key))?;
-    *flag = payload
-        .get("capture")
-        .and_then(|capture| capture.get("from_cache"))
-        .ok_or_else(|| conflict(phase, key))?
-        .clone();
-    if &prior != payload {
-        return Err(conflict(phase, key));
+    if let Some(recording) = ctx.recording {
+        if recording.inspect_journal(phase, key, |prior| {
+            matching_capture(prior, phase, key, payload)
+        })? {
+            return Ok(false);
+        }
     }
-    Ok(false)
+    let prior = ctx.store.journal_payload(phase, key)?;
+    if matching_capture(prior.as_ref(), phase, key, payload)? {
+        return Ok(false);
+    }
+    batch.journal_done(phase, key, payload)?;
+    Ok(true)
+}
+
+pub(super) fn contains(ctx: &AdapterContext<'_>, phase: &str, key: &str) -> CrawlResult<bool> {
+    if let Some(recording) = ctx.recording {
+        if recording.inspect_journal(phase, key, |prior| Ok(prior.is_some()))? {
+            return Ok(true);
+        }
+    }
+    Ok(ctx.store.journal_contains(phase, key)?)
+}
+
+fn matching(prior: Option<&Value>, phase: &str, key: &str, payload: &Value) -> CrawlResult<bool> {
+    match prior {
+        Some(prior) if prior == payload => Ok(true),
+        Some(_) => Err(conflict(phase, key)),
+        None => Ok(false),
+    }
+}
+
+fn matching_capture(
+    prior: Option<&Value>,
+    phase: &str,
+    key: &str,
+    payload: &Value,
+) -> CrawlResult<bool> {
+    match prior {
+        Some(prior) if same_capture(prior, payload) => Ok(true),
+        Some(_) => Err(conflict(phase, key)),
+        None => Ok(false),
+    }
+}
+
+fn same_capture(prior: &Value, payload: &Value) -> bool {
+    let (Some(prior), Some(payload)) = (prior.as_object(), payload.as_object()) else {
+        return false;
+    };
+    prior.contains_key("capture")
+        && payload.contains_key("capture")
+        && prior.len() == payload.len()
+        && prior.iter().all(|(key, value)| {
+            if key == "capture" {
+                payload
+                    .get(key)
+                    .is_some_and(|next| same_acquisition(value, next))
+            } else {
+                payload.get(key) == Some(value)
+            }
+        })
+}
+
+fn same_acquisition(prior: &Value, payload: &Value) -> bool {
+    let (Some(prior), Some(payload)) = (prior.as_object(), payload.as_object()) else {
+        return false;
+    };
+    prior.get("from_cache").is_some()
+        && payload.get("from_cache").is_some()
+        && prior.len() == payload.len()
+        && prior
+            .iter()
+            .all(|(key, value)| key == "from_cache" || payload.get(key) == Some(value))
 }
 
 fn conflict(phase: &str, key: &str) -> CrawlError {

@@ -45,8 +45,6 @@ use sha2::{Digest, Sha256};
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 const KS_DIRECTORY_URL: &str = "https://kshsaa-api.kshsaa.org/directory/search/name/a/";
-const KS_PHASE: &str = "kshsaa_schools";
-const ATHLETICLIVE_PHASE: &str = "athleticlive_meets";
 const UNIT_PHASE: &str = "recovery_units";
 const OBSERVED_ON: &str = "2026-09-20";
 
@@ -111,6 +109,14 @@ fn meet_ids(store: &Store) -> TestResult<BTreeSet<String>> {
         .collect())
 }
 
+fn school_ids(store: &Store) -> TestResult<BTreeSet<String>> {
+    Ok(store
+        .scan::<CanonicalSchool>(Table::Schools)?
+        .into_iter()
+        .map(|school| school.id.to_string())
+        .collect())
+}
+
 fn open_store(root: &Path) -> TestResult<Store> {
     Ok(Store::open(root)?)
 }
@@ -125,13 +131,18 @@ fn fetcher_for(store: &Store) -> TestResult<Fetcher> {
     )?)
 }
 
-fn context<'a>(fetcher: &'a Fetcher, store: &'a Store, observed_on: &str) -> AdapterContext<'a> {
-    AdapterContext {
+fn context<'a>(
+    fetcher: &'a Fetcher,
+    store: &'a Store,
+    observed_on: &str,
+) -> TestResult<AdapterContext<'a>> {
+    Ok(AdapterContext {
         fetcher,
         store,
         refresh: false,
         school_year: census_domain::model::SchoolYear::DEFAULT,
         observed_on: observed_on.to_string(),
+        performance_as_of: chrono::NaiveDate::parse_from_str(observed_on, "%Y-%m-%d")?,
         recording: None,
-    }
+    })
 }

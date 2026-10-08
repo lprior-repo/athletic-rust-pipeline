@@ -1,75 +1,28 @@
 mod run;
+mod teams;
 
+use super::Options;
 use crate::net::FetchOptions;
 use crate::{AdapterContext, AdapterReport, CrawlResult};
-use census_domain::model::{CanonicalCoach, SchoolId};
-
-use self::run::MshslRun;
-use super::map::coach_entities;
-use super::teams::{parse_coach_records, parse_team_nodes, select_team_nodes, TeamCoaches};
-use super::{Options, COACH_API_PREFIX, SOURCE_ID, TEAMS_VIEW_URL};
-
-async fn collect_team_coaches(
-    ctx: &AdapterContext<'_>,
-    fetch_options: &FetchOptions,
-    school_key: &str,
-    school_id: &SchoolId,
-    domains: &[String],
-    observed_on: &str,
-) -> (Vec<CanonicalCoach>, Vec<String>) {
-    let teams_url = format!(
-        "{TEAMS_VIEW_URL}?views-argument%5B%5D={school_key}&fields%5Bnode--participant%5D=title,path,drupal_internal__nid"
-    );
-    let outcome = match ctx.fetcher.get(&teams_url, fetch_options).await {
-        Ok(outcome) => outcome,
-        Err(error) => {
-            return (
-                Vec::new(),
-                vec![format!("team list {teams_url}: {error:#}")],
-            )
-        }
-    };
-    let selected = select_team_nodes(&parse_team_nodes(&outcome.text()));
-    let mut teams: Vec<TeamCoaches> = Vec::with_capacity(selected.len());
-    let mut notes: Vec<String> = Vec::new();
-    for node in selected {
-        let api_url = format!("{COACH_API_PREFIX}{}", node.nid);
-        match ctx.fetcher.get(&api_url, fetch_options).await {
-            Ok(outcome) => teams.push(TeamCoaches {
-                node,
-                api_url,
-                records: parse_coach_records(&outcome.text()),
-            }),
-            Err(error) => notes.push(format!("coach list {api_url}: {error:#}")),
-        }
-    }
-    (
-        coach_entities(&teams, school_id, domains, observed_on),
-        notes,
-    )
-}
 
 fn fetch_options(ctx: &AdapterContext<'_>, options: &Options) -> FetchOptions {
     FetchOptions {
         refresh: options.refresh || ctx.refresh,
-        allow_not_found: false,
-        headers: Vec::new(),
+        ..ctx.fetch_options()
     }
 }
 
-fn count(value: usize) -> u64 {
-    u64::try_from(value).map_or(u64::MAX, |value| value)
-}
-
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
-    let stats_before = ctx.fetcher.stats().await;
-    let Some(mut run) = MshslRun::start(ctx, options)? else {
-        let mut report = AdapterReport::new(SOURCE_ID, "schools");
-        report.note(
-            "MSHSL covers Minnesota only; requested states do not include MN, so nothing was fetched",
-        );
-        return Ok(report);
-    };
+    let before = ctx.fetcher.stats().await;
+    let mut run = run::MshslRun::start(ctx, options);
     run.walk().await?;
-    Ok(run.finish(stats_before).await)
+    if run.report.unfinished.is_empty() && run.selected {
+        run.report.finish_frontier();
+    }
+    let after = ctx.fetcher.stats().await;
+    run.report.requests = after
+        .physical_requests()
+        .saturating_sub(before.physical_requests());
+    run.report.from_cache = after.cache_hits.saturating_sub(before.cache_hits);
+    Ok(run.report)
 }

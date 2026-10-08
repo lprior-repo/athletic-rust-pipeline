@@ -1,8 +1,11 @@
 use super::*;
-use census_domain::model::{CanonicalMeet, Evidence, Gender, SourceEventLabel, SourceRef};
+use census_domain::model::{
+    CanonicalMeet, CompetitionCategory, EventIdentity, EventSpecification, Evidence, Gender,
+    SourceEventLabel, SourceRef,
+};
 use census_domain::UsJurisdiction;
 
-fn retained(label: &str, meet_name: &str) -> CanonicalEvent {
+fn retained(label: &str, meet_name: &str) -> Result<CanonicalEvent> {
     let meet = CanonicalMeet::mint(
         Some(UsJurisdiction::Wisconsin),
         "2026-04-21",
@@ -13,21 +16,30 @@ fn retained(label: &str, meet_name: &str) -> CanonicalEvent {
         "captured_results",
         Some("https://wi.milesplit.com/meets/739060/results/1285723/raw".into()),
     );
+    let specification =
+        EventSpecification::from_published_label(label, &EventKind::from_source_label(label))?;
+    let gender = match &specification.category {
+        Some(CompetitionCategory::Girls) => Gender::Girls,
+        _ => Gender::Boys,
+    };
     let mut event = CanonicalEvent::new(
-        &meet,
-        EventKind::Unmapped {
-            label: label.into(),
+        EventIdentity {
+            meet: &meet,
+            kind: EventKind::Unmapped {
+                label: label.into(),
+            },
+            gender,
+            division: Some("2A"),
+            round: Some("Preliminaries"),
         },
-        Gender::Boys,
-        Some("2A"),
-        Some("Preliminaries"),
-    );
+        specification,
+    )?;
     event.source_labels.push(SourceEventLabel {
         source: source.clone(),
         label: label.into(),
     });
     event.evidence.push(Evidence::parsed(source, "2026-09-28"));
-    event
+    Ok(event)
 }
 
 fn observations(store: &Store) -> StoreResult<Vec<CanonicalEvent>> {
@@ -59,7 +71,7 @@ fn applied_counts(store: &Store) -> StoreResult<(u64, u64, u64, u64, u64)> {
 fn reported_hurdles_refine_without_changing_identity_context_or_source_labels() -> Result<()> {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
-    let original = retained("Boys 2A 110m Hurdles Preliminaries", "Captured Meet");
+    let original = retained("Boys 2A 110m Hurdles Preliminaries", "Captured Meet")?;
     store.append_many(Table::Events, std::slice::from_ref(&original))?;
     let report = process_retained_events(&store, RepairMode::Apply)?;
     check!(eq; report_counts(report), (1, 1, 1, 1, 0));
@@ -88,7 +100,7 @@ fn reported_hurdles_refine_without_changing_identity_context_or_source_labels() 
 fn dry_run_preserves_every_observation_and_table_digest() -> Result<()> {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
-    let original = retained("Boys Varsity Shot Put Finals", "Captured Meet");
+    let original = retained("Boys Varsity Shot Put Finals", "Captured Meet")?;
     store.append_many(Table::Events, std::slice::from_ref(&original))?;
     let before = store.snapshot().tables_digest(&[Table::Events])?;
     let dry = process_retained_events(&store, RepairMode::DryRun)?;
@@ -123,7 +135,8 @@ fn field_and_relay_labels_with_multiple_agreeing_sources_are_refined() -> Result
     ] {
         let dir = tempfile::tempdir()?;
         let store = Store::open(dir.path())?;
-        let mut original = retained(label, "Captured Meet");
+        let mut original = retained(label, "Captured Meet")
+            .with_context(|| format!("retained event fixture for {label}"))?;
         let alternate = SourceRef::new(
             "other_results",
             Some("https://results.example.org/meet/1".into()),
@@ -165,9 +178,9 @@ fn unsupported_contradictory_and_unbound_events_remain_retained() -> Result<()> 
     for scenario in 0..9 {
         let dir = tempfile::tempdir()?;
         let store = Store::open(dir.path())?;
-        let mut original = retained("110m Hurdles", "Captured Meet");
+        let mut original = retained("110m Hurdles", "Captured Meet")?;
         match scenario {
-            0 => original = retained("Unsupported Obstacle Race", "Captured Meet"),
+            0 => original = retained("Unsupported Obstacle Race", "Captured Meet")?,
             1 => original.source_labels.clear(),
             2 => original.evidence.clear(),
             3 => original
@@ -229,7 +242,7 @@ fn unsupported_contradictory_and_unbound_events_remain_retained() -> Result<()> 
 fn applied_corrections_remain_idempotent_after_store_reopen() -> Result<()> {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
-    let original = retained("110m Hurdles", "Captured Meet");
+    let original = retained("110m Hurdles", "Captured Meet")?;
     store.append_many(Table::Events, std::slice::from_ref(&original))?;
     check!(eq; applied_counts(&store)?, (1, 1, 1, 1, 0));
     let before = observations(&store)?;
@@ -252,9 +265,9 @@ fn full_and_partial_batches_preserve_every_original_and_skip_known_events() -> R
     let store = Store::open(dir.path())?;
     let originals: Vec<_> = (0..101)
         .map(|index| retained("110m Hurdles", &format!("Captured Meet {index}")))
-        .collect();
+        .collect::<Result<_>>()?;
     store.append_many(Table::Events, &originals)?;
-    let mut known = retained("shotput", "Already Mapped Meet");
+    let mut known = retained("shotput", "Already Mapped Meet")?;
     known.kind = EventKind::ShotPut;
     store.append_many(Table::Events, std::slice::from_ref(&known))?;
     check!(eq; applied_counts(&store)?, (102, 101, 101, 101, 0));

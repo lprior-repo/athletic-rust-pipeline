@@ -551,3 +551,11 @@ The package's own ranking (rank 1 = best) relevant to this lane:
 - No claim is made about PrimeTime result-file row counts beyond the single sampled division PDF/htm.
 - MeetPro field shapes, RACE RESULT result rows, OpenTrack schemas, and XCStats result formats are **unverified** — see each family's status.
 - The `[INFERENCE]` markers (HS slice of FlashResults, PrimeTime rows/file, GSE meets/season) are estimates, not measurements.
+
+## CEN capture replay contract (2026-10-07 repair wave)
+
+AthleticLIVE result captures require original capture metadata and a real published meet date. Evaluation time never substitutes for capture acquisition or missing publication dates. A future-dated result may be re-evaluated when the requested horizon expands; unchanged admitted facts are counted only when physically appended. Invalid published result statuses take precedence over stale numeric marks, with contradictory numeric bytes retained rather than promoted to a winner. Standings require one unambiguous event-document owner for their native run key.
+
+Manifest admission is limited to 8 MiB and 8,192 aggregate entries/capture references. Repeated compatible meet owners merge their capture references; conflicting owner/context or physical metadata is refused. State selection and operator limits preserve unfinished meet locators, and merged reports retain unresolved rows and failed-capture locators. XC sections with different published divisions remain distinct even when their gender and event label match.
+
+These are implementation obligations, not executed completeness evidence. The concurrent repair worker did not run builds, tests, lints, or runtime scenarios; Main owns integrated verification and the append-only verification ledger.

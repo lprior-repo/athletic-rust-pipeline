@@ -16,186 +16,173 @@ pub struct MeetRow {
 }
 
 pub fn implausible_year(date: &str) -> bool {
-    match date.get(..4).and_then(|y| y.parse::<u16>().ok()) {
-        Some(year) => !(2015..=2030).contains(&year),
-        None => true,
-    }
+    date.get(..4)
+        .and_then(|year| year.parse::<u16>().ok())
+        .is_none_or(|year| !(2015..=2030).contains(&year))
 }
 
 fn date_prefix(value: &str) -> Option<String> {
-    let head = value.trim().get(..10)?;
-    let mut parts = head.split('-');
-    let (y, m, d) = (parts.next()?, parts.next()?, parts.next()?);
-    if parts.next().is_some() || y.len() != 4 || m.len() != 2 || d.len() != 2 {
-        return None;
-    }
-    if !y
-        .chars()
-        .chain(m.chars())
-        .chain(d.chars())
-        .all(|c| c.is_ascii_digit())
-    {
-        return None;
-    }
-    Some(head.to_string())
+    let value = value.trim().get(..10)?;
+    chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d")
+        .ok()
+        .filter(|date| date.to_string() == value)?;
+    Some(value.to_string())
 }
 
 pub fn infer_level(name: &str) -> CompetitionLevel {
     let lowered = name.to_ascii_lowercase();
-    let has = |needle: &str| lowered.contains(needle);
-    if has("state") && (has("final") || has("championship") || has("champ") || has("meet")) {
-        CompetitionLevel::State
-    } else if has("sectional") {
-        CompetitionLevel::Sectional
-    } else if has("regional") {
-        CompetitionLevel::Regional
-    } else if has("district") {
-        CompetitionLevel::District
-    } else if has("conference") || has("conf ") {
-        CompetitionLevel::Conference
-    } else if has("invitational")
-        || has("invite")
-        || has("classic")
-        || has("relays")
-        || has("festival")
-        || has("open")
-    {
-        CompetitionLevel::Invitational
-    } else if has("dual") {
-        CompetitionLevel::Dual
-    } else {
-        CompetitionLevel::Unknown
-    }
+    let state = lowered.contains("state")
+        && ["final", "championship", "champ", "meet"]
+            .iter()
+            .any(|part| lowered.contains(part));
+    [
+        (state, CompetitionLevel::State),
+        (lowered.contains("sectional"), CompetitionLevel::Sectional),
+        (lowered.contains("regional"), CompetitionLevel::Regional),
+        (lowered.contains("district"), CompetitionLevel::District),
+        (
+            ["conference", "conf "]
+                .iter()
+                .any(|part| lowered.contains(part)),
+            CompetitionLevel::Conference,
+        ),
+        (
+            [
+                "invitational",
+                "invite",
+                "classic",
+                "relays",
+                "festival",
+                "open",
+            ]
+            .iter()
+            .any(|part| lowered.contains(part)),
+            CompetitionLevel::Invitational,
+        ),
+        (lowered.contains("dual"), CompetitionLevel::Dual),
+    ]
+    .into_iter()
+    .find(|(matches, _)| *matches)
+    .map_or(CompetitionLevel::Unknown, |(_, level)| level)
 }
-
-const HARVEST_LABEL: &str = "athleticlive harvest CSV";
 
 fn harvest_schema(detail: String) -> CrawlError {
     CrawlError::Schema {
-        url: HARVEST_LABEL.to_string(),
+        url: "athleticlive harvest CSV".to_string(),
         detail,
     }
 }
 
-fn field<'a>(columns: &[String], fields: &'a [String], want: &str) -> Option<&'a str> {
+fn field<'a>(
+    columns: &csv::StringRecord,
+    fields: &'a csv::StringRecord,
+    want: &str,
+) -> Option<&'a str> {
     columns
         .iter()
         .position(|column| column.eq_ignore_ascii_case(want))
         .and_then(|index| fields.get(index))
-        .map(|value| value.trim())
+        .map(str::trim)
 }
 
-fn require_columns(columns: &[String]) -> CrawlResult<()> {
-    for required in ["tenant", "athleticlive_meet_id", "name", "state", "start"] {
-        let present = columns
-            .iter()
-            .any(|column| column.eq_ignore_ascii_case(required));
-        if !present {
-            return Err(harvest_schema(format!(
-                "AthleticLIVE CSV is missing required column `{required}`"
-            )));
-        }
-    }
-    Ok(())
+pub(super) fn require_columns(columns: &csv::StringRecord) -> CrawlResult<()> {
+    ["tenant", "athleticlive_meet_id", "name", "state", "start"]
+        .into_iter()
+        .try_for_each(|required| {
+            if columns
+                .iter()
+                .any(|column| column.eq_ignore_ascii_case(required))
+            {
+                Ok(())
+            } else {
+                Err(harvest_schema(format!(
+                    "AthleticLIVE CSV is missing required column `{required}`"
+                )))
+            }
+        })
 }
 
 fn required_field(
-    columns: &[String],
-    fields: &[String],
+    columns: &csv::StringRecord,
+    fields: &csv::StringRecord,
     column: &str,
-    line_number: usize,
+    row: usize,
 ) -> CrawlResult<String> {
-    match field(columns, fields, column) {
-        Some(value) if !value.is_empty() => Ok(value.to_string()),
-        _ => Err(harvest_schema(format!("row {line_number} has no {column}"))),
-    }
-}
-
-fn non_empty(columns: &[String], fields: &[String], want: &str) -> Option<String> {
-    field(columns, fields, want)
+    field(columns, fields, column)
         .filter(|value| !value.is_empty())
         .map(str::to_string)
+        .ok_or_else(|| harvest_schema(format!("row {row} has no {column}")))
 }
 
-fn athleticnet_id(columns: &[String], fields: &[String]) -> Option<String> {
-    field(columns, fields, "athleticnet_meet_id")
-        .filter(|value| !value.is_empty() && value.chars().all(|c| c.is_ascii_digit()))
-        .map(str::to_string)
-}
-
-pub fn parse_meets_csv(body: &str) -> CrawlResult<Vec<MeetRow>> {
-    let mut lines = body.lines().filter(|line| !line.trim().is_empty());
-    let Some(header) = lines.next() else {
-        return Err(harvest_schema(
-            "AthleticLIVE CSV has no header row".to_string(),
-        ));
-    };
-    let columns = split_csv_record(header);
-    require_columns(&columns)?;
-
-    let mut rows = Vec::new();
-    for (n, line) in lines.enumerate() {
-        let fields = split_csv_record(line);
-        if let Some(row) = meet_row(&columns, &fields, n.saturating_add(2))? {
-            rows.push(row);
-        }
-    }
-    Ok(rows)
-}
-
-fn meet_row(
-    columns: &[String],
-    fields: &[String],
-    line_number: usize,
-) -> CrawlResult<Option<MeetRow>> {
-    let tenant = required_field(columns, fields, "tenant", line_number)?;
-    let meet_id = required_field(columns, fields, "athleticlive_meet_id", line_number)?;
-    let name = required_field(columns, fields, "name", line_number)?;
-    let Some(state_code) =
-        UsJurisdiction::parse(field(columns, fields, "state").map_or("", |value| value))
-    else {
-        return Ok(None);
-    };
-    let Some(start) = field(columns, fields, "start").and_then(date_prefix) else {
-        return Ok(None);
-    };
-    let end = field(columns, fields, "end")
+pub(super) fn meet_row(
+    columns: &csv::StringRecord,
+    fields: &csv::StringRecord,
+    row: usize,
+) -> CrawlResult<MeetRow> {
+    let tenant = required_field(columns, fields, "tenant", row)?;
+    let athleticlive_meet_id = required_field(columns, fields, "athleticlive_meet_id", row)?;
+    let name = required_field(columns, fields, "name", row)?;
+    let state_code = field(columns, fields, "state")
+        .and_then(UsJurisdiction::parse)
+        .ok_or_else(|| harvest_schema(format!("row {row} has an invalid state")))?;
+    let start = field(columns, fields, "start")
         .and_then(date_prefix)
+        .ok_or_else(|| harvest_schema(format!("row {row} has an invalid start date")))?;
+    let end = field(columns, fields, "end")
+        .filter(|value| !value.is_empty())
+        .map(|value| {
+            date_prefix(value)
+                .ok_or_else(|| harvest_schema(format!("row {row} has an invalid end date")))
+        })
+        .transpose()?
         .filter(|end| end != &start);
-    Ok(Some(MeetRow {
+    Ok(MeetRow {
         tenant,
-        athleticlive_meet_id: meet_id,
-        athleticnet_meet_id: athleticnet_id(columns, fields),
+        athleticlive_meet_id,
         name,
-        city_state: non_empty(columns, fields, "city_state"),
         state_code,
         start,
         end,
+        athleticnet_meet_id: field(columns, fields, "athleticnet_meet_id")
+            .filter(|value| !value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit()))
+            .map(str::to_string),
+        city_state: field(columns, fields, "city_state")
+            .filter(|value| !value.is_empty())
+            .map(str::to_string),
         has_results: field(columns, fields, "has_results")
             .is_some_and(|value| value.eq_ignore_ascii_case("true")),
-    }))
+    })
 }
 
-fn split_csv_record(line: &str) -> Vec<String> {
-    let mut fields = Vec::new();
-    let mut current = String::new();
-    let mut in_quotes = false;
-    let mut chars = line.chars().peekable();
-    while let Some(c) = chars.next() {
-        match c {
-            '"' if in_quotes => {
-                if chars.peek() == Some(&'"') {
-                    current.push('"');
-                    chars.next();
-                } else {
-                    in_quotes = false;
-                }
-            }
-            '"' => in_quotes = true,
-            ',' if !in_quotes => fields.push(std::mem::take(&mut current)),
-            other => current.push(other),
-        }
+pub fn parse_meets_csv(body: &str) -> CrawlResult<Vec<MeetRow>> {
+    if body.len() > crate::coach_contacts::artifact::MAX_RECORD_BYTES {
+        return Err(CrawlError::Resource {
+            resource: "LIVE CSV parse bytes",
+            requested: body.len(),
+            limit: crate::coach_contacts::artifact::MAX_RECORD_BYTES,
+        });
     }
-    fields.push(current);
-    fields
+    let mut reader = csv::Reader::from_reader(body.as_bytes());
+    let columns = reader
+        .headers()
+        .map_err(|error| harvest_schema(error.to_string()))?
+        .clone();
+    require_columns(&columns)?;
+    reader
+        .records()
+        .enumerate()
+        .try_fold(Vec::new(), |mut rows, (index, record)| {
+            let record = record.map_err(|error| harvest_schema(error.to_string()))?;
+            let number = index
+                .checked_add(2)
+                .ok_or_else(|| harvest_schema("CSV row number overflow".to_string()))?;
+            let row = meet_row(&columns, &record, number)?;
+            rows.try_reserve(1).map_err(|_| CrawlError::Resource {
+                resource: "LIVE CSV rows",
+                requested: number,
+                limit: body.len(),
+            })?;
+            rows.push(row);
+            Ok(rows)
+        })
 }

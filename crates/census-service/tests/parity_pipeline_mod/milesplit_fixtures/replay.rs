@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use anyhow::{Context, Result};
 use census_crawl::{milesplit, net::Fetcher, AdapterContext};
-use census_domain::model::{CanonicalSchool, SchoolYear};
+use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use census_store::Store;
 
@@ -12,7 +12,7 @@ use crate::common;
 
 #[path = "replay/assertions.rs"]
 mod assertions;
-#[path = "replay/cache.rs"]
+#[path = "../../common/capture_cache.rs"]
 mod cache;
 
 const OWNED: &[u8] =
@@ -21,34 +21,20 @@ const ACQUIRED_AT: &str = "2026-10-01T23:44:16Z";
 const PHASE: &str = milesplit::RESULT_SET_PHASE;
 
 pub async fn replay_owned_captures() -> Result<()> {
-    let school = fixture_school()?;
     let relays = common::fixture("milesplit", RELAYS)?;
-    replay_capture(&school, OWNED, false).await?;
-    replay_capture(&school, relays.as_bytes(), true).await
+    let provenance = common::fixture("milesplit", super::PROVENANCE)?;
+    check!(super::validate_result_fixture(
+        super::PROVENANCE,
+        &provenance
+    )?);
+    check!(super::validate_result_fixture(RELAYS, &relays)?);
+    replay_capture(OWNED, false).await?;
+    replay_capture(relays.as_bytes(), true).await
 }
 
-fn fixture_school() -> Result<CanonicalSchool> {
-    let teams = milesplit::parse_team_index(&common::fixture("milesplit", "wi_teams_index.html")?)?;
-    let team = teams
-        .into_iter()
-        .find(|team| team.id == "52649")
-        .context("Wisconsin source team missing")?;
-    let verdict =
-        milesplit::parse_roster(&common::fixture("milesplit", "wi_roster_52649.html")?, team)?;
-    let roster = verdict.roster().context("Wisconsin roster quarantined")?;
-    let site = milesplit::Site::for_jurisdiction(UsJurisdiction::Wisconsin);
-    let school_year = SchoolYear::new(2026).context("2026 school year")?;
-    Ok(milesplit::roster_entities(roster, school_year, "2026-09-20", &site).0)
-}
-
-async fn replay_capture(school: &CanonicalSchool, body: &[u8], relay: bool) -> Result<()> {
+async fn replay_capture(body: &[u8], relay: bool) -> Result<()> {
     let root = tempfile::tempdir().context("isolated retained-capture replay")?;
     let store = Store::open(root.path())?;
-    std::fs::create_dir_all(store.out_dir())?;
-    std::fs::write(
-        store.out_dir().join("schools.jsonl"),
-        format!("{}\n", serde_json::to_string(school)?),
-    )?;
     let fetcher = Fetcher::new(
         store.http_cache_dir(),
         None,
@@ -64,6 +50,7 @@ async fn replay_capture(school: &CanonicalSchool, body: &[u8], relay: bool) -> R
         refresh: false,
         school_year: SchoolYear::new(2026).context("2026 school year")?,
         observed_on: "2026-09-20".to_string(),
+        performance_as_of: chrono::NaiveDate::parse_from_str("2026-09-20", "%Y-%m-%d")?,
         recording: None,
     };
     let report = milesplit::collect_result_sets(&context, &options).await?;
@@ -84,7 +71,7 @@ fn seed_captures(fetcher: &Fetcher, body: &[u8]) -> Result<milesplit::ResultSetO
         "https://al.milesplit.com/api/v1/meets/725218/performances?isMeetPro=0&fields={}",
         milesplit::OWNED_FIELDS
     );
-    cache::seed(fetcher.cache_dir(), &owned_url, body, ACQUIRED_AT)?;
+    cache::seed(fetcher.cache_dir(), &owned_url, body, ACQUIRED_AT, &[])?;
     let mut urls = Vec::new();
     for (file, rsid, acquired_at) in [
         (RAW_FILES[0], "1266814", "2026-09-28T10:11:24Z"),
@@ -96,6 +83,7 @@ fn seed_captures(fetcher: &Fetcher, body: &[u8]) -> Result<milesplit::ResultSetO
             &url,
             common::fixture("milesplit", file)?.as_bytes(),
             acquired_at,
+            &[],
         )?;
         urls.push(milesplit::ResultSetRequest {
             url,

@@ -7,6 +7,7 @@ use clap::Args;
 use super::{build_fetcher, Cli};
 
 mod arms;
+mod capture_metadata;
 
 #[derive(Args, Debug)]
 pub(super) struct ProviderArgs {
@@ -42,6 +43,11 @@ pub(super) struct ProviderArgs {
     #[arg(long)]
     input: Option<String>,
     #[arg(
+        long,
+        help = "Producer CacheMeta JSON for a retained public LIVE CSV capture"
+    )]
+    input_metadata: Option<String>,
+    #[arg(
         help = "Athletic.net meet ids to pull whole (`--meets`), comma-separated. Non-empty selects the whole-meet route (two requests per meet) instead of the per-athlete registry route"
     )]
     #[arg(long, value_delimiter = ',')]
@@ -58,6 +64,11 @@ pub(super) struct ProviderArgs {
     #[arg(help = "ISO date stamped into evidence (defaults to today)")]
     #[arg(long)]
     observed_on: Option<String>,
+    #[arg(
+        long,
+        help = "Published performance cutoff date, independent of physical acquisition"
+    )]
+    as_of: Option<chrono::NaiveDate>,
 }
 
 impl ProviderArgs {
@@ -79,6 +90,9 @@ pub(super) async fn run_provider(cli: &Cli, store: &Store, args: &ProviderArgs) 
         school_year: SchoolYear::new(2026)
             .ok_or_else(|| anyhow::anyhow!("2026 is not a valid school year"))?,
         observed_on: observed_on.clone(),
+        performance_as_of: args
+            .as_of
+            .map_or_else(|| chrono::Utc::now().date_naive(), core::convert::identity),
         recording: None,
     };
     let outcome = match args.name.as_str() {

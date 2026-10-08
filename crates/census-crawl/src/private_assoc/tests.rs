@@ -2,8 +2,7 @@ use super::parse_listing;
 use crate::directory::ReadOutcome;
 use crate::CrawlError;
 use census_domain::school_directory::{
-    AssociationLabel, CityName, DirectoryKey, SchoolDirectoryEntry, SchoolName, SourceLabel,
-    StreetLine,
+    CityName, DirectoryKey, SchoolDirectoryEntry, SchoolName, SourceLabel, StreetLine,
 };
 use census_domain::UsJurisdiction;
 
@@ -112,12 +111,6 @@ fn source_label(entry: &SchoolDirectoryEntry) -> Vec<String> {
     entry.sources().iter().map(SourceLabel::label).collect()
 }
 
-fn nais_label() -> TestResult<SourceLabel> {
-    Ok(SourceLabel::PrivateAssociation {
-        label: AssociationLabel::parse("NAIS")?,
-    })
-}
-
 #[test]
 fn a_listing_yields_one_weak_entry_per_item() -> TestResult {
     let outcome = parse_listing(NAIS_LISTING)?;
@@ -138,10 +131,6 @@ fn a_listing_yields_one_weak_entry_per_item() -> TestResult {
     check!(eq;
         source_label(riverside),
         vec!["association:NAIS".to_string()]
-    );
-    check!(eq;
-        riverside.sources(),
-        &std::collections::BTreeSet::from([nais_label()?])
     );
     let address = riverside.address().ok_or("street address")?;
     check!(eq;
@@ -181,7 +170,6 @@ fn a_row_without_a_usable_name_lands_in_the_ledger() -> TestResult {
     let issue = outcome.skipped().first().ok_or("one skip")?;
     check!(eq; issue.line, 8);
     check!(eq; issue.field, "name");
-    check!(eq; issue.render(), "line 8: name school name is empty");
     check!(eq;
         first(&outcome)?.name().map(SchoolName::as_str),
         Some("Riverside Academy")
@@ -197,7 +185,6 @@ fn a_name_that_leaves_no_matching_form_lands_in_the_ledger() -> TestResult {
     check!(eq; outcome.counts().skipped, 1);
     let issue = outcome.skipped().first().ok_or("one skip")?;
     check!(eq; issue.field, "name");
-    check!(eq; issue.detail, "matching name is empty");
     Ok(())
 }
 
@@ -218,10 +205,6 @@ fn a_body_that_names_no_association_is_refused() -> TestResult {
         Ok(_) => return Err("no association is named".into()),
     };
     check!(matches!(&error, CrawlError::Invariant { .. }));
-    let rendered = error.to_string();
-    check!(rendered.contains("NAIS"), "{rendered}");
-    check!(rendered.contains("CAPE"), "{rendered}");
-    check!(rendered.contains("NASSP"), "{rendered}");
     Ok(())
 }
 

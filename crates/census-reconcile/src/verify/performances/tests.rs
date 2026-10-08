@@ -1,8 +1,9 @@
 use super::*;
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CanonicalTeam, CentiSeconds, CompetitionLevel, EventKind, Evidence, Gender, GradYear, Mark,
-    SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport, TimingMethod,
+    CanonicalTeam, CompetitionLevel, EventIdentity, EventKind, EventSpecification, Evidence,
+    ExactSeconds, Gender, GradYear, Mark, SchoolYear, SourceIdentity, SourceNamespace, SourceRef,
+    Sport, TimingMethod,
 };
 use census_domain::UsJurisdiction;
 use census_report::workbook::ProjectedValue;
@@ -44,22 +45,19 @@ fn fixture() -> TestResult<Fixture> {
         );
         store.append(Table::Meets, &meet)?;
         let event = CanonicalEvent::new(
-            &meet.id,
-            EventKind::Track100m,
-            Gender::Boys,
-            None,
-            Some("Finals"),
-        );
+            EventIdentity {
+                meet: &meet.id,
+                kind: EventKind::Track100m,
+                gender: Gender::Boys,
+                division: None,
+                round: Some("Finals"),
+            },
+            EventSpecification::default(),
+        )?;
         store.append(Table::Events, &event)?;
         let source_key = format!("result:{date}:101");
         let performance = CanonicalPerformance {
-            id: CanonicalPerformance::mint(
-                &athlete.id,
-                &meet.id,
-                &EventKind::Track100m,
-                date,
-                &source_key,
-            ),
+            id: CanonicalPerformance::mint(&athlete.id, &meet.id, &event.id, date, &source_key),
             athlete: athlete.id.clone(),
             team: CanonicalTeam::mint(
                 &school_id,
@@ -70,7 +68,7 @@ fn fixture() -> TestResult<Fixture> {
             event: event.id,
             meet: meet.id,
             date: date.into(),
-            mark: Mark::TimeSeconds(CentiSeconds::new(1086)),
+            mark: Mark::TimeSeconds(ExactSeconds::parse("10.86")?),
             wind_mps: Some(0.4),
             place: Some(2),
             heat: None,

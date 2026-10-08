@@ -1,20 +1,19 @@
 mod admission;
-use super::row::{grade_for, mark_of, source_key};
+use super::row::{admit_date, grade_for, mark_of, source_key};
 use super::state::{Absorb, AthleteFacts, ListContext, TeamFacts};
 use crate::tfrrs::parse::{
     parse_team_path, ParsedAthlete, ParsedList, ParsedMeet, ParsedRow, ParsedSection, ParsedTeam,
     PublishedDate,
 };
 use census_domain::model::{
-    AthleteId, CanonicalPerformance, EventId, EventKind, Evidence, EvidenceMethod, Gender, Grade,
-    Mark, MeetId, SchoolId, SchoolYear, SourceIdentity, Sport, TeamId,
+    AthleteId, CanonicalPerformance, EventId, Evidence, EvidenceMethod, Gender, Grade, Mark,
+    MeetId, SchoolId, SchoolYear, SourceIdentity, Sport, TeamId,
 };
 
 struct RowMints {
     team: TeamId,
     meet: MeetId,
     event: EventId,
-    kind: EventKind,
     athlete: AthleteId,
     source_athlete: SourceIdentity,
 }
@@ -31,13 +30,22 @@ struct RowFacts<'r> {
 }
 
 impl<'a> Absorb<'a> {
-    pub(in crate::tfrrs) fn absorb_list(&mut self, context: &ListContext<'_>, page: &ParsedList) {
-        for section in &page.sections {
+    pub(in crate::tfrrs) fn absorb_list(
+        &mut self,
+        context: &ListContext<'_>,
+        page: &ParsedList,
+    ) -> crate::CrawlResult<()> {
+        page.sections.iter().fold(Ok(()), |outcome, section| {
             self.stats.sections = self.stats.sections.saturating_add(1);
-            for (ordinal, row) in section.rows.iter().enumerate() {
-                self.absorb_row(context, section, row, ordinal);
-            }
-        }
+            section
+                .rows
+                .iter()
+                .enumerate()
+                .fold(outcome, |outcome, (ordinal, row)| {
+                    let projected = self.absorb_row(context, section, row, ordinal);
+                    outcome.and(projected)
+                })
+        })
     }
 
     fn absorb_row(
@@ -46,25 +54,28 @@ impl<'a> Absorb<'a> {
         section: &ParsedSection,
         row: &ParsedRow,
         ordinal: usize,
-    ) {
+    ) -> crate::CrawlResult<()> {
         self.stats.rows_seen = self.stats.rows_seen.saturating_add(1);
         if self.count_relay(row) {
-            return;
+            return Ok(());
+        }
+        if !admit_date(context.page, row)? {
+            return Ok(());
         }
         let Some(facts) = self.row_facts(context, row, ordinal) else {
-            return;
+            return Ok(());
         };
         let Some(grade) = grade_for(row, context.filter, &mut self.stats) else {
             self.stats.rows_without_grade = self.stats.rows_without_grade.saturating_add(1);
-            return;
+            return Ok(());
         };
         let Some(school_year) = facts.date.school_year() else {
             self.stats.rows_without_season = self.stats.rows_without_season.saturating_add(1);
-            return;
+            return Ok(());
         };
         let gender = self.gender_of(facts.team, section);
         let Some(school) = self.school_for(context.page, &facts.team.name) else {
-            return;
+            return Ok(());
         };
         if self
             .mint_row(
@@ -74,11 +85,12 @@ impl<'a> Absorb<'a> {
                 &facts,
                 (grade, school_year, gender),
                 &school,
-            )
+            )?
             .is_some()
         {
             self.stats.rows_absorbed = self.stats.rows_absorbed.saturating_add(1);
         }
+        Ok(())
     }
 
     fn count_relay(&mut self, row: &ParsedRow) -> bool {
@@ -165,18 +177,22 @@ impl<'a> Absorb<'a> {
         facts: &RowFacts<'_>,
         observed: (Grade, SchoolYear, Gender),
         school: &SchoolId,
-    ) -> Option<()> {
+    ) -> crate::CrawlResult<Option<()>> {
         let (grade, _, _) = observed;
         let source_key = format!(
             "{}:row:{}",
             source_key(facts.date, facts.meet, facts.athlete.id, section, row),
             facts.ordinal
         );
-        let mints = self.mint_entities(context, section, facts, observed, school, &source_key)?;
+        let Some(mints) =
+            self.mint_entities(context, section, facts, observed, school, &source_key)?
+        else {
+            return Ok(None);
+        };
         let id = CanonicalPerformance::mint(
             &mints.athlete,
             &mints.meet,
-            &mints.kind,
+            &mints.event,
             &facts.date.iso,
             &source_key,
         );
@@ -203,7 +219,7 @@ impl<'a> Absorb<'a> {
             .performances
             .entry(id.as_str().to_string())
             .or_insert(performance);
-        Some(())
+        Ok(Some(()))
     }
 
     fn mint_entities(
@@ -214,10 +230,13 @@ impl<'a> Absorb<'a> {
         observed: (Grade, SchoolYear, Gender),
         school: &SchoolId,
         source_key: &str,
-    ) -> Option<RowMints> {
+    ) -> crate::CrawlResult<Option<RowMints>> {
         let (_, school_year, gender) = observed;
-        let (grad_year, observation, source) =
-            admission::athlete(self, context, facts, observed, source_key)?;
+        let Some((grad_year, observation, source)) =
+            admission::athlete(self, context, facts, observed, source_key)
+        else {
+            return Ok(None);
+        };
         let published_route = parse_team_path(&facts.team.path);
         let team = self.team_for(
             context.page,
@@ -231,7 +250,7 @@ impl<'a> Absorb<'a> {
             },
         );
         let meet_id = self.meet_for(context.page, facts.meet, facts.date);
-        let (event, kind) = self.event_for(context.page, section, &meet_id, gender);
+        let (event, _) = self.event_for(context.page, section, &meet_id, gender)?;
         let (athlete_id, source_athlete) = self.athlete_for(
             context.page,
             AthleteFacts {
@@ -244,14 +263,13 @@ impl<'a> Absorb<'a> {
                 observed_grade: Some(observation),
             },
         );
-        Some(RowMints {
+        Ok(Some(RowMints {
             team,
             meet: meet_id,
             event,
-            kind,
             athlete: athlete_id,
             source_athlete,
-        })
+        }))
     }
 }
 

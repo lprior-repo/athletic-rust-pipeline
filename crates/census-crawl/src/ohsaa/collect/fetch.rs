@@ -1,6 +1,6 @@
 use super::{SearchResult, Tally};
 use crate::net::{FetchError, FetchOptions, FetchOutcome};
-use crate::{AdapterContext, AdapterReport};
+use crate::{AdapterContext, AdapterReport, CrawlResult};
 
 mod checked;
 
@@ -62,21 +62,32 @@ impl PageFailure {
         page: &str,
         report: &mut AdapterReport,
         tally: &mut Tally,
-    ) {
-        report.errors = report.errors.saturating_add(1);
-        tally.fetch_failures = tally.fetch_failures.saturating_add(1);
+    ) -> CrawlResult<()> {
+        super::fail(
+            report,
+            &if page == "sports" {
+                sr.sports_url()
+            } else {
+                sr.ad_url()
+            },
+            &self.detail(),
+        )?;
+        tally.fetch_failures = tally
+            .fetch_failures
+            .checked_add(1)
+            .ok_or_else(super::counter_error)?;
         let not_found = match self {
             Self::Http(capture) => capture.status == 404,
             Self::Fetch(FetchError::Http { status, .. }) => *status == 404,
             Self::Fetch(_) | Self::Invalid { .. } => false,
         };
         if not_found {
-            tally.not_found = tally.not_found.saturating_add(1);
+            tally.not_found = tally
+                .not_found
+                .checked_add(1)
+                .ok_or_else(super::counter_error)?;
         }
-        report.note(format!(
-            "school {} (ID {}) {page}: {}; unfinished obligation, no school completion marker written",
-            sr.name, sr.ohsaa_id, self.detail()
-        ));
+        Ok(())
     }
 }
 

@@ -2,6 +2,7 @@ use super::super::*;
 use crate::net::cache::{content_digest, write_cache, CacheMeta};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use census_domain::model::Evidence;
+use std::collections::HashSet;
 
 pub(super) fn seed_fresh(fetcher: &Fetcher, url: &str, body: &[u8]) -> TestResult<String> {
     let digest = content_digest(body);

@@ -15,51 +15,53 @@ pub(super) fn record(
             .ok_or_else(|| CrawlError::Invariant {
                 detail: "owned acquisition manifest key lacks suffix".into(),
             })?;
-    let mut batch = ctx.write_batch();
-    let (rows_changed, disposition, summary) = match &outcome.verdict {
-        OwnedMeetVerdict::Parsed(page) => {
-            let changed = record_rows(ctx, &mut batch, content_key, page)?;
-            let complete = page.individual_parse_complete();
-            let disposition = if complete { "parsed" } else { "partial" };
-            (changed, disposition, parsed_summary(outcome, page))
-        }
-        verdict => (
-            false,
-            "partial",
-            serde_json::json!({
-                "capture": &outcome.capture, "verdict": verdict,
-            }),
-        ),
-    };
+    let (disposition, summary) = summary(ctx, content_key, outcome)?;
     let receipt = format!("{disposition}/{acquisition}");
-    let summary_changed =
-        journal::stage_capture(ctx, &mut batch, OWNED_MEET_PHASE, &receipt, &summary)?;
-    if rows_changed || summary_changed {
+    let mut batch = ctx.write_batch();
+    if journal::stage_capture(ctx, &mut batch, OWNED_MEET_PHASE, &receipt, &summary)? {
         batch.commit()?;
     }
     Ok(())
 }
 
-fn record_rows(
+fn summary(
     ctx: &AdapterContext<'_>,
-    batch: &mut crate::recording::RowBatch<'_>,
     key: &str,
-    page: &OwnedMeetPage,
-) -> CrawlResult<bool> {
-    let rows = page.rows.iter().try_fold(false, |changed, row| {
-        let staged = record_source(ctx, batch, &format!("row/{key}/{}", row.locator), row)?;
-        Ok::<_, CrawlError>(changed || staged)
-    })?;
-    let rejected = page.rejected.iter().try_fold(false, |changed, rejection| {
-        let staged = record_source(
-            ctx,
-            batch,
-            &format!("rejected/{key}/{}", rejection.locator),
-            rejection,
-        )?;
-        Ok::<_, CrawlError>(changed || staged)
-    })?;
-    Ok(rows || rejected)
+    outcome: &OwnedMeetOutcome,
+) -> CrawlResult<(&'static str, serde_json::Value)> {
+    match &outcome.verdict {
+        OwnedMeetVerdict::Parsed(page) => {
+            record_rows(ctx, key, page)?;
+            let disposition = if page.individual_parse_complete() {
+                "parsed"
+            } else {
+                "partial"
+            };
+            Ok((disposition, parsed_summary(outcome, page)))
+        }
+        verdict => Ok((
+            "partial",
+            serde_json::json!({ "capture": &outcome.capture, "verdict": verdict }),
+        )),
+    }
+}
+
+fn record_rows(ctx: &AdapterContext<'_>, key: &str, page: &OwnedMeetPage) -> CrawlResult<()> {
+    page.rows
+        .iter()
+        .try_for_each(|row| commit_source(ctx, &format!("row/{key}/{}", row.locator), row))?;
+    page.rejected
+        .iter()
+        .try_for_each(|row| commit_source(ctx, &format!("rejected/{key}/{}", row.locator), row))
+}
+
+fn commit_source<T: Serialize>(ctx: &AdapterContext<'_>, key: &str, source: &T) -> CrawlResult<()> {
+    super::super::parse::admission::recording(ctx, source)?;
+    let mut batch = ctx.write_batch();
+    if record_source(ctx, &mut batch, key, source)? {
+        batch.commit()?;
+    }
+    Ok(())
 }
 
 fn record_source<T: Serialize>(
@@ -69,6 +71,13 @@ fn record_source<T: Serialize>(
     source: &T,
 ) -> CrawlResult<bool> {
     let payload = journal::payload(OWNED_MEET_PHASE, source)?;
+    if let Some(recording) = ctx.recording {
+        if recording.inspect_journal(OWNED_MEET_PHASE, legacy_key, |prior| {
+            Ok(prior == Some(&payload))
+        })? {
+            return Ok(false);
+        }
+    }
     if ctx
         .store
         .journal_payload(OWNED_MEET_PHASE, legacy_key)?

@@ -19,14 +19,14 @@ async fn http_refusal_preserves_owed_state(status: u16) -> TestResult {
     let row = school();
     let client = async {
         run(&ctx, &options)?
-            .process_school_at(UsJurisdiction::NewHampshire, "2132", &row, BASE, &host)
+            .process_school_at(UsJurisdiction::NewHampshire, "2132", &row, (BASE, &host))
             .await?;
         let original = pending(&store, &row)?["recovery"].clone();
         let mut refused = run(&ctx, &options)?;
         refused
-            .process_school_at(UsJurisdiction::NewHampshire, "2132", &row, BASE, &host)
+            .process_school_at(UsJurisdiction::NewHampshire, "2132", &row, (BASE, &host))
             .await?;
-        check!(eq; (refused.tally.errors, refused.done.len()), (1, 0));
+        check!(eq; (refused.tally.errors, store.journal_keys(JOURNAL)?.len()), (1, 0));
         check!(eq;
             pending(&store, &row)?["kind"],
             json!(if status == 429 { "retryable" } else { "source_refused" })
@@ -42,9 +42,9 @@ async fn http_refusal_preserves_owed_state(status: u16) -> TestResult {
         let before = fetcher.stats().await.physical_requests();
         let mut cooldown = run(&ctx, &options)?;
         cooldown
-            .process_school_at(UsJurisdiction::NewHampshire, "2132", &row, BASE, &host)
+            .process_school_at(UsJurisdiction::NewHampshire, "2132", &row, (BASE, &host))
             .await?;
-        check!(eq; (cooldown.tally.errors, cooldown.done.len()), (1, 0));
+        check!(eq; (cooldown.tally.errors, store.journal_keys(JOURNAL)?.len()), (1, 0));
         check!(eq; fetcher.stats().await.physical_requests(), before);
         check!(eq; pending(&store, &row)?["kind"], json!("source_refused"));
         check!(eq; pending(&store, &row)?["recovery"], original);

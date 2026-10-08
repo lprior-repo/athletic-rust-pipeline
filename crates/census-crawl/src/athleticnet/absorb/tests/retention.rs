@@ -131,7 +131,7 @@ fn profile_without_results_still_has_parsed_owner_support() -> TestResult {
     let (accumulated, outcome) = absorb_profile_for(&bio, 28872883);
     check!(eq;
         outcome?,
-        AbsorbOutcome::Complete { rows: 0 }
+        AbsorbOutcome::Partial { rows: 0 }
     );
     let athlete = accumulated.athletes.values().next().ok_or("athlete")?;
     check!(eq; athlete.evidence.len(), 1);
@@ -178,6 +178,8 @@ fn withheld_grade_history_and_rejections_survive_the_same_batch_and_reopen() -> 
                     refresh: false,
                     school_year: SchoolYear::new(2026).ok_or("school year")?,
                     observed_on: "2026-09-30".into(),
+                    performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 9, 30)
+                        .ok_or("snapshot date")?,
                     recording: None,
                 };
                 let mut batch = ctx.write_batch();
@@ -251,6 +253,7 @@ fn unresolved_state_keeps_grade_facts_without_minting_a_school() -> TestResult {
         AbsorbContext {
             source: &source,
             observed_on: "2026-09-30",
+            performance_as_of: super::fixture_cutoff()?,
             index: &SchoolIndex::from_schools(&[]),
             resolved: &mut HashMap::new(),
             stats: &mut Stats::default(),

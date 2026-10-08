@@ -17,7 +17,7 @@ fn http_errors_and_disconnected_transport_remain_unfinished(
                 let fetcher = fetcher(&store)?;
                 let listener = TcpListener::bind("127.0.0.1:0").await?;
                 let url = format!("http://{}/Directory.aspx", listener.local_addr()?);
-                let ctx = context(&fetcher, &store, None, "2026-10-02");
+                let ctx = context(&fetcher, &store, None, "2026-10-02")?;
                 let client = async {
                     let report = collect_directory(&ctx, &Default::default(), &url).await?;
                     check!(eq; (report.rows, report.errors, report.from_cache), (0, 1, 0));
@@ -64,8 +64,14 @@ fn malformed_or_refused_captures_cannot_create_completion_markers(
         let (_root, store, fetcher) = setup()?;
         seed(&fetcher, body, ACQUIRED_AT)?;
         let report = evaluate(&fetcher, &store, None, "2026-10-02", "2026-10-03").await?;
-        check!(eq; (report.rows, report.errors, report.from_cache), (0, 1, 1));
-        check!(eq; physical_counts(&store)?, vec![0, 0, 0]);
+        check!(report.unfinished.iter().any(|locator| locator.starts_with(URL)));
+        let schools = store.scan::<census_domain::model::CanonicalSchool>(Table::Schools)?;
+        let owned = std::str::from_utf8(body).is_ok_and(|text| text.contains("<summary>Example HS</summary>"));
+        check!(eq; schools.iter().map(|school| school.name.as_str()).collect::<std::collections::BTreeSet<_>>(),
+            if owned { std::collections::BTreeSet::from(["Example HS"]) } else { std::collections::BTreeSet::new() });
+        let coaches = store.scan::<census_domain::model::CanonicalCoach>(Table::Coaches)?;
+        check!(eq; coaches.iter().map(|coach| coach.name.as_str()).collect::<std::collections::BTreeSet<_>>(),
+            if body == malformed.as_bytes() { std::collections::BTreeSet::from(["Alex Coach"]) } else { std::collections::BTreeSet::new() });
         check!(eq; store.journal_keys("riil_schools")?.len(), 0);
     }
     Ok(())
@@ -156,7 +162,7 @@ fn http_200_refusal_is_not_a_complete_empty_directory() -> Result<(), Box<dyn st
             let fetcher = fetcher(&store)?;
             let listener = TcpListener::bind("127.0.0.1:0").await?;
             let url = format!("http://{}/Directory.aspx", listener.local_addr()?);
-            let ctx = context(&fetcher, &store, None, "2026-10-02");
+            let ctx = context(&fetcher, &store, None, "2026-10-02")?;
             let client = async {
                 let report = collect_directory(&ctx, &Default::default(), &url).await?;
                 check!(eq; (report.rows, report.errors, report.from_cache), (0, 1, 0));

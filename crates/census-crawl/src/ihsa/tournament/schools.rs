@@ -44,12 +44,11 @@ impl Schools {
 
     pub(super) fn resolve(
         &mut self,
-        ihsa_id: Option<&str>,
-        name: Option<&str>,
-        url: &str,
-        origin: Origin<'_>,
+        published_row: (Option<&str>, Option<&str>, &str),
+        origin: &Origin<'_>,
         accumulated: &mut Accumulator,
     ) -> Option<SchoolId> {
+        let (ihsa_id, name, url) = published_row;
         let published = trimmed(ihsa_id);
         if let Some(key) = published {
             if let Some(found) = self.memo("id", key) {
@@ -67,18 +66,17 @@ impl Schools {
         if let Some((found, _)) = self.index.resolve(UsJurisdiction::Illinois, label) {
             return Some(self.remember("name", &normalized, found));
         }
-        Some(self.mint(label, &normalized, published, url, origin, accumulated))
+        Some(self.mint((label, &normalized, published), (url, origin), accumulated))
     }
 
     fn mint(
         &mut self,
-        name: &str,
-        normalized: &str,
-        published: Option<&str>,
-        url: &str,
-        origin: Origin<'_>,
+        published_row: (&str, &str, Option<&str>),
+        provenance: (&str, &Origin<'_>),
         accumulated: &mut Accumulator,
     ) -> SchoolId {
+        let (name, normalized, published) = published_row;
+        let (url, origin) = provenance;
         let (mut school, id) =
             CanonicalSchool::new(UsJurisdiction::Illinois, name, normalized, None);
         school.association = Some(ASSOCIATION.to_string());

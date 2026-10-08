@@ -30,6 +30,66 @@ pub(crate) fn members() -> Result<Vec<Member>> {
     members_in(&metadata)
 }
 
+pub(crate) fn production_targets() -> Result<Vec<PathBuf>> {
+    let metadata = Cmd::new("cargo")
+        .args(["metadata", "--no-deps", "--format-version", "1"])
+        .output()?;
+    let document: Value = serde_json::from_str(&metadata).context("parsing target metadata")?;
+    let packages = document
+        .get("packages")
+        .and_then(Value::as_array)
+        .context("target metadata has no packages")?;
+    let mut paths = Vec::new();
+    for package in packages {
+        append_production_targets(package, &mut paths)?;
+    }
+    paths.sort();
+    paths.dedup();
+    Ok(paths)
+}
+
+fn append_production_targets(package: &Value, paths: &mut Vec<PathBuf>) -> Result<()> {
+    let targets = package
+        .get("targets")
+        .and_then(Value::as_array)
+        .context("package metadata has no targets")?;
+    for target in targets {
+        if is_production_target(target)? {
+            let source = target
+                .get("src_path")
+                .and_then(Value::as_str)
+                .context("production target has no source path")?;
+            anyhow::ensure!(
+                paths.len() < 16_384,
+                "production target inventory exceeds its bound"
+            );
+            paths
+                .try_reserve(1)
+                .context("reserving production target inventory")?;
+            paths.push(PathBuf::from(source));
+        }
+    }
+    Ok(())
+}
+
+fn is_production_target(target: &Value) -> Result<bool> {
+    let kinds = target
+        .get("kind")
+        .and_then(Value::as_array)
+        .context("target metadata has no kind")?;
+    anyhow::ensure!(!kinds.is_empty(), "target metadata has an empty kind");
+    let mut production = false;
+    for kind in kinds {
+        production |= match kind.as_str().context("target kind is not text")? {
+            "lib" | "rlib" | "proc-macro" | "bin" | "custom-build" | "dylib" | "cdylib"
+            | "staticlib" => true,
+            "test" | "example" | "bench" => false,
+            unknown => anyhow::bail!("unclassified target kind {unknown}"),
+        };
+    }
+    Ok(production)
+}
+
 pub(crate) fn scanned() -> Result<Vec<Package>> {
     let root = paths::repo_root();
     Ok(first_party(&members()?, &root))

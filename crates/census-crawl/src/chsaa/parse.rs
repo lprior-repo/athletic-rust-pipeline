@@ -22,12 +22,7 @@ pub fn parse_directory(body: &str) -> CrawlResult<Vec<MemberSchool>> {
         .map_or(Default::default(), core::convert::identity);
     let plain = from_anchor.replace("\\\"", "\"");
     let array = extract_balanced_array(&plain)?;
-    let schools = parse_school_json(&array)?;
-    let schools: Vec<MemberSchool> = schools
-        .into_iter()
-        .filter(|s| s.name.as_deref().is_some_and(|n| !n.trim().is_empty()))
-        .collect();
-    Ok(schools)
+    parse_school_json(&array)
 }
 
 pub fn parse_school_page(body: &str) -> CrawlResult<Vec<SchoolCoachRow>> {

@@ -1,10 +1,11 @@
 use super::super::map::{ensure_team, profile_url, Accumulator, PerformanceInput};
+use super::map::events::{project_event, MetadataConflict, ProjectionOutcome};
 use super::read::meet_date;
 use super::wire::MeetData;
 use census_domain::model::{
-    AthleteId, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CompetitionLevel, EventId, Evidence, Gender, Grade, ObservedGrade, SchoolId, SchoolYear,
-    SourceAthleteObservation, SourceEventLabel, SourceIdentity, SourceNamespace, SourceRef, Sport,
+    AthleteId, CanonicalAthlete, CanonicalMeet, CanonicalPerformance, CompetitionLevel, Evidence,
+    Gender, Grade, Mark, ObservedGrade, SchoolId, SchoolYear, SourceAthleteObservation,
+    SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 
@@ -16,7 +17,7 @@ pub(super) fn meet_row(
     meet: &MeetData,
     state: UsJurisdiction,
     date: &str,
-    sport: Sport,
+    sport: Option<Sport>,
     source: &SourceRef,
     observed_on: &str,
     accumulated: &mut Accumulator,
@@ -44,7 +45,7 @@ pub(super) fn meet_row(
                 .as_ref()
                 .map(|location| location.name.trim().to_string())
                 .filter(|name| !name.is_empty());
-            row.sports = vec![sport];
+            row.sports = sport.into_iter().collect();
             row.source_identities.push(SourceIdentity {
                 namespace: SourceNamespace::AthleticNet {
                     kind: "meet".to_string(),
@@ -76,7 +77,7 @@ pub(super) struct AthleteRow<'a> {
     pub(super) grade: Grade,
     pub(super) gender: Gender,
     pub(super) school_year: SchoolYear,
-    pub(super) sport: Sport,
+    pub(super) sport: Option<Sport>,
     pub(super) source_row: &'a str,
 }
 
@@ -116,8 +117,10 @@ pub(super) fn athlete(
         if !athlete.observed_grades.contains(&observation) {
             athlete.observed_grades.push(observation);
         }
-        if !athlete.sports.contains(&row.sport) {
-            athlete.sports.push(row.sport);
+        if let Some(sport) = row.sport {
+            if !athlete.sports.contains(&sport) {
+                athlete.sports.push(sport);
+            }
         }
         return Some((athlete.id.clone(), identity));
     }
@@ -131,7 +134,9 @@ pub(super) fn athlete(
     if let Some(url) = profile {
         athlete.public_profile_urls.push(url);
     }
-    athlete.sports.push(row.sport);
+    if let Some(sport) = row.sport {
+        athlete.sports.push(sport);
+    }
     athlete.observed_grades.push(observation);
     athlete
         .evidence
@@ -145,15 +150,32 @@ pub(super) fn store(
     accumulated: &mut Accumulator,
     source: &SourceRef,
     observed_on: &str,
-    input: PerformanceInput<'_>,
+    mut input: PerformanceInput<'_>,
     note: Option<String>,
-) {
+    published: &str,
+    metadata: Option<MetadataConflict<'_>>,
+) -> crate::CrawlResult<()> {
+    let (event, retained_conflicts) =
+        match project_event(accumulated, source, observed_on, &input, metadata)? {
+            ProjectionOutcome::Admitted(event) => (event, Vec::new()),
+            ProjectionOutcome::Withheld(event, conflict) => {
+                if !matches!(input.mark, Mark::Raw(_)) {
+                    input.mark = Mark::Raw(published.to_string());
+                }
+                (event, vec![conflict])
+            }
+        };
+    if matches!(input.mark, Mark::Raw(_)) {
+        input.timing = None;
+    }
+    if !super::super::map::admit_date(&input)? {
+        return Ok(());
+    }
     let team = ensure_team(accumulated, source, observed_on, &input);
-    let event = event_of(accumulated, source, observed_on, &input);
     let performance_id = CanonicalPerformance::mint(
         input.athlete,
         &input.meet.id,
-        input.kind,
+        &event,
         &input.date,
         &input.source_key,
     );
@@ -180,52 +202,8 @@ pub(super) fn store(
                 evidence: vec![evidence],
                 source_key: input.source_key,
                 source_athlete: Some(input.source_athlete),
-                retained_conflicts: Vec::new(),
+                retained_conflicts,
             }
         });
-}
-
-fn event_of(
-    accumulated: &mut Accumulator,
-    source: &SourceRef,
-    observed_on: &str,
-    input: &PerformanceInput<'_>,
-) -> EventId {
-    accumulated
-        .events
-        .entry(format!(
-            "{}:{:?}:{:?}:{}:{}",
-            input.meet.id.as_str(),
-            input.kind,
-            input.gender,
-            input
-                .division
-                .clone()
-                .map_or(Default::default(), core::convert::identity),
-            input
-                .round
-                .clone()
-                .map_or(Default::default(), core::convert::identity)
-        ))
-        .or_insert_with(|| {
-            let mut event = CanonicalEvent::new(
-                &input.meet.id,
-                input.kind.clone(),
-                input.gender,
-                input.division.as_deref(),
-                input.round.as_deref(),
-            );
-            if let Some(label) = input.label {
-                event.source_labels.push(SourceEventLabel {
-                    source: source.clone(),
-                    label: label.to_string(),
-                });
-            }
-            event
-                .evidence
-                .push(Evidence::parsed(source.clone(), observed_on));
-            event
-        })
-        .id
-        .clone()
+    Ok(())
 }

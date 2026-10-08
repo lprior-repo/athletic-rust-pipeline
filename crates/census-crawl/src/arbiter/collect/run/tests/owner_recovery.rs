@@ -41,8 +41,8 @@ fn same_name_incomplete_public_owners_refresh_independently_and_preserve_v1_hist
     let client = async {
         for row in [&first, &second] {
             let mut failed = run(&ctx, &options)?;
-            failed.process_school_at(UsJurisdiction::NewHampshire, "2132", row, BASE, &host).await?;
-            check!(eq; (failed.tally.errors, failed.done.len()), (1, 0));
+            failed.process_school_at(UsJurisdiction::NewHampshire, "2132", row, (BASE, &host)).await?;
+            check!(eq; (failed.tally.errors, store.journal_keys(JOURNAL)?.len()), (1, 0));
         }
         let first_pending = pending(&store, &first)?;
         let second_pending = pending(&store, &second)?;
@@ -60,11 +60,11 @@ fn same_name_incomplete_public_owners_refresh_independently_and_preserve_v1_hist
         );
         check!(eq; store.journal_keys(JOURNAL)?, std::collections::HashSet::new());
         let mut recovered = run(&ctx, &options)?;
-        recovered.process_school_at(UsJurisdiction::NewHampshire, "2132", &first, BASE, &host).await?;
+        recovered.process_school_at(UsJurisdiction::NewHampshire, "2132", &first, (BASE, &host)).await?;
         check!(eq; (recovered.tally.errors, recovered.tally.schools), (0, 1));
         check!(eq; store.journal_keys(JOURNAL)?, std::collections::HashSet::from(["NH:2132:450".to_string()]));
         check!(eq; pending(&store, &second)?, second_pending);
-        recovered.process_school_at(UsJurisdiction::NewHampshire, "2132", &second, BASE, &host).await?;
+        recovered.process_school_at(UsJurisdiction::NewHampshire, "2132", &second, (BASE, &host)).await?;
         check!(eq; (recovered.tally.errors, recovered.tally.schools), (0, 2));
         check!(eq;
             store.journal_keys(JOURNAL)?,
@@ -82,7 +82,7 @@ fn same_name_incomplete_public_owners_refresh_independently_and_preserve_v1_hist
         let before = fetcher.stats().await.requests;
         let mut replay = run(&ctx, &options)?;
         for row in [&first, &second] {
-            replay.process_school_at(UsJurisdiction::NewHampshire, "2132", row, BASE, &host).await?;
+            replay.process_school_at(UsJurisdiction::NewHampshire, "2132", row, (BASE, &host)).await?;
         }
         check!(eq; (replay.tally.schools, replay.tally.skipped), (0, 2));
         check!(eq; fetcher.stats().await.requests, before);

@@ -1,7 +1,7 @@
 use super::super::replay::{entities, physical};
 use super::*;
 
-const APPLICATION_PHASE: &str = super::super::super::super::effects::APPLICATION_PHASE;
+const APPLICATION_PHASE: &str = super::super::super::super::APPLICATION_PHASE;
 
 fn journal_state(store: &Store) -> TestResult<serde_json::Value> {
     let phases = [
@@ -101,21 +101,34 @@ fn identical_completed_result_sets_preserve_all_physical_effects_when_url_order_
                 crate::milesplit::collect_result_sets(&context(&store, &fetcher)?, &both).await?;
             check!(eq; (initial.rows, initial.errors, initial.requests), (3, 0, 0));
             let before = state(&store)?;
+            let selected: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
             check!(eq;
-                before
-                    .physical
-                    .iter()
-                    .map(|(table, walk)| (*table, walk.rows))
-                    .collect::<Vec<_>>(),
-                vec![
-                    (Table::Meets, 1),
-                    (Table::Events, 3),
-                    (Table::Teams, 2),
-                    (Table::Athletes, 2),
-                    (Table::Performances, 3),
-                    (Table::SourceObservations, 3),
-                ]
+                selected.iter().map(|row| row.source_key.as_str()).collect::<std::collections::BTreeSet<_>>(),
+                std::collections::BTreeSet::from([
+                    "milesplit_result:201782263", "milesplit_result:201782277", "milesplit_result:201782806",
+                ])
             );
+            check!(eq; selected.iter().map(|row| &row.meet).collect::<std::collections::BTreeSet<_>>().len(), 1);
+            check!(eq; selected.iter().map(|row| &row.team).collect::<std::collections::BTreeSet<_>>().len(), 2);
+            check!(eq; selected.iter().map(|row| &row.athlete).collect::<std::collections::BTreeSet<_>>().len(), 2);
+            check!(eq; selected.iter().filter_map(|row| row.source_athlete.as_ref().map(|owner| owner.id.as_str())).collect::<std::collections::BTreeSet<_>>(),
+                std::collections::BTreeSet::from(["14222592", "11357806"]));
+            for (key, mark) in [
+                ("milesplit_result:201782263", census_domain::model::Mark::FieldImperial {
+                    feet_mark: "13-9".into(), metres: census_domain::model::CentiMetres::new(419),
+                }),
+                ("milesplit_result:201782277", census_domain::model::Mark::FieldImperial {
+                    feet_mark: "30-7".into(), metres: census_domain::model::CentiMetres::new(932),
+                }),
+                ("milesplit_result:201782806", census_domain::model::Mark::TimeSeconds(
+                    census_domain::model::ExactSeconds::parse("12.40")?,
+                )),
+            ] {
+                let row = selected.iter().find(|row| row.source_key == key).ok_or("selected source result")?;
+                check!(eq; row.mark, mark);
+                check!(row.evidence.iter().any(|evidence| evidence.note.as_deref()
+                    .is_some_and(|note| note.contains("raw_metadata_capture") && note.contains("owned_capture"))));
+            }
             assert_repeat_is_immutable(&store, &fetcher, &both, &before, 0).await?;
             both.urls.reverse();
             assert_repeat_is_immutable(&store, &fetcher, &both, &before, 0).await?;
@@ -131,6 +144,9 @@ fn identical_completed_result_sets_preserve_all_physical_effects_when_url_order_
                 "order-only replay stages no effects or witnesses"
             );
             check!(eq; state(&store)?, before);
+            drop(store);
+            let reopened = Store::open(_dir.path().join("store"))?;
+            assert_repeat_is_immutable(&reopened, &fetcher, &both, &before, 0).await?;
             Ok(())
         })
 }

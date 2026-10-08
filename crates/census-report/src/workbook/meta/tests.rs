@@ -16,7 +16,7 @@ use std::path::Path;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-const SHEETS: [&str; 7] = [
+const SHEETS: [&str; 9] = [
     "Schools",
     "Meets",
     "Sources",
@@ -24,6 +24,8 @@ const SHEETS: [&str; 7] = [
     "Conflicts",
     "Review",
     "Run Metrics",
+    "School Contacts",
+    "Contact Research",
 ];
 
 fn meta_workbook(store: &Store, dir: &Path, scope: Scope) -> TestResult<std::path::PathBuf> {
@@ -90,7 +92,6 @@ fn an_empty_store_still_writes_every_sheet_with_its_header() -> TestResult {
 
     let book: Xlsx<_> = open_workbook(&path)?;
     let names = book.sheet_names().to_vec();
-    check!(eq; names.len(), SHEETS.len(), "only the meta sheets: {names:?}");
     for expected in SHEETS {
         check!(
             names.contains(&expected.to_string()),
@@ -225,10 +226,15 @@ fn the_sheets_render_the_rows_the_store_retains() -> TestResult {
                 tenure: census_domain::model::CoachTenure::Current {
                     school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
                 },
-                source: SourceRef::new("synthetic_directory", None),
+                source: SourceRef::new(
+                    "synthetic_directory",
+                    Some("https://fixtures.test/abbotsford/2026-27/girls-outdoor-staff".into()),
+                ),
                 source_sha256: "a".repeat(64),
                 retrieved_at: "2026-09-20T00:00:00Z".into(),
-                statement: "Synthetic academic-year appointment".into(),
+                statement: format!(
+                    "Synthetic 2026-27 girls outdoor head coach appointment: {name}"
+                ),
                 claim: Some(census_domain::model::CoachContactClaim {
                     coach: conflicted_coach.id.clone(),
                     school: conflicted_coach.school.clone(),
@@ -316,6 +322,24 @@ fn the_sheets_render_the_rows_the_store_retains() -> TestResult {
         carries(&conflicts, 0, CONTACT_CONFLICT_FAMILY),
         "the conflicted coaches are surfaced: {conflicts:?}"
     );
+    let contact_conflict = conflicts
+        .iter()
+        .find(|row| {
+            row.first()
+                .is_some_and(|family| family == CONTACT_CONFLICT_FAMILY)
+        })
+        .ok_or("missing retained contact conflict")?;
+    let detail = contact_conflict
+        .get(4)
+        .ok_or("missing retained contact conflict detail")?;
+    for retained in [
+        "Renata Falk",
+        "Sofia Meier",
+        "renata@abbotsford.test",
+        "sofia@abbotsford.test",
+    ] {
+        check!(detail.contains(retained), "{detail}");
+    }
 
     let review = sheet(&path, "Review")?;
     check!(

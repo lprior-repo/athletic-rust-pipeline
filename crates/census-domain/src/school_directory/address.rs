@@ -130,9 +130,28 @@ impl CityName {
     }
 }
 
+#[derive(
+    Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+)]
+#[serde(rename_all = "snake_case")]
+pub enum AddressKind {
+    Physical,
+    Mailing,
+    #[default]
+    Unknown,
+}
+
+impl AddressKind {
+    fn is_unknown(&self) -> bool {
+        matches!(self, Self::Unknown)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(remote = "Self")]
 pub struct PostalAddress {
+    #[serde(default, skip_serializing_if = "AddressKind::is_unknown")]
+    kind: AddressKind,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     line1: Option<StreetLine>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -154,6 +173,7 @@ impl PostalAddress {
         zip: Option<ZipCode>,
     ) -> Option<Self> {
         let address = Self {
+            kind: AddressKind::Unknown,
             line1,
             line2,
             city,
@@ -169,12 +189,22 @@ impl PostalAddress {
 
     pub fn line(line1: StreetLine) -> Self {
         Self {
+            kind: AddressKind::Unknown,
             line1: Some(line1),
             line2: None,
             city: None,
             state: None,
             zip: None,
         }
+    }
+
+    pub fn kind(&self) -> AddressKind {
+        self.kind
+    }
+
+    pub fn with_kind(mut self, kind: AddressKind) -> Self {
+        self.kind = kind;
+        self
     }
 
     pub fn is_empty(&self) -> bool {

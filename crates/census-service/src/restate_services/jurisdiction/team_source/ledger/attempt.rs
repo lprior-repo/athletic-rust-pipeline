@@ -42,9 +42,7 @@ fn failure(error: JobError, progress: Option<StageOutcome>) -> AttemptOutcome {
 
 pub(super) fn validate(outcome: &AttemptOutcome, observed_on: &str) -> Result<(), JobError> {
     let valid = match outcome {
-        AttemptOutcome::Completed { outcome } => {
-            outcome.errors.is_empty() && outcome.at == observed_on
-        }
+        AttemptOutcome::Completed { outcome } => complete(outcome) && outcome.at == observed_on,
         AttemptOutcome::Transient {
             progress: Some(outcome),
             ..
@@ -52,7 +50,7 @@ pub(super) fn validate(outcome: &AttemptOutcome, observed_on: &str) -> Result<()
         | AttemptOutcome::Terminal {
             progress: Some(outcome),
             ..
-        } => !outcome.errors.is_empty() && outcome.at == observed_on,
+        } => !complete(outcome) && outcome.at == observed_on,
         AttemptOutcome::Transient { progress: None, .. }
         | AttemptOutcome::Terminal { progress: None, .. } => true,
     };
@@ -63,6 +61,10 @@ pub(super) fn validate(outcome: &AttemptOutcome, observed_on: &str) -> Result<()
             "teams source outcome has inconsistent progress or date",
         ))
     }
+}
+
+fn complete(outcome: &StageOutcome) -> bool {
+    outcome.disposition.is_complete() && outcome.errors.is_empty() && outcome.unfinished.is_empty()
 }
 
 pub(super) fn progress(attempt: u8, outcome: &AttemptOutcome) -> TeamsAttemptProgress {

@@ -1,6 +1,7 @@
 use super::*;
 use census_domain::model::{
-    AthleteId, CentiSeconds, MeetId, PerformanceId, SourceIdentity, SourceNamespace, TeamId,
+    AthleteId, EventIdentity, EventSpecification, ExactSeconds, MeetId, PerformanceId,
+    SourceIdentity, SourceNamespace, TeamId,
 };
 
 pub(super) fn performance_observations() -> Result<Vec<CanonicalPerformance>> {
@@ -57,15 +58,25 @@ impl Fixture {
             SchoolYear::new(2024).context("2024 is a season")?,
         );
         let kind = EventKind::Track800m;
-        let event = CanonicalEvent::new(&meet, kind.clone(), Gender::Boys, None, Some("finals"));
+        let event = CanonicalEvent::new(
+            EventIdentity {
+                meet: &meet,
+                kind: kind.clone(),
+                gender: Gender::Boys,
+                division: None,
+                round: Some("finals"),
+            },
+            EventSpecification::default(),
+        )?;
         let source_key = format!("bench:{index:05}");
         let performance =
-            CanonicalPerformance::mint(&athlete, &meet, &kind, MEET_DATE, &source_key);
+            CanonicalPerformance::mint(&athlete, &meet, &event.id, MEET_DATE, &source_key);
         let step = u32::try_from(index % 900).context("a mark step does not fit u32")?;
-        let mark = Mark::TimeSeconds(
-            CentiSeconds::try_from_seconds_f64(120.0 + f64::from(step) / 100.0)
-                .context("fixture mark is in range")?,
-        );
+        let nanoseconds = 12_000_i64
+            .checked_add(i64::from(step))
+            .and_then(|value| value.checked_mul(10_000_000))
+            .context("fixture time overflow")?;
+        let mark = Mark::TimeSeconds(ExactSeconds::from_parts(nanoseconds, 2)?);
         Ok(Self {
             index,
             athlete,

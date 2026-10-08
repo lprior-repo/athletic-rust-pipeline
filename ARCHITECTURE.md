@@ -311,13 +311,16 @@ is not multi-artifact atomic publication. XLSX byte equality alone is not semant
   extraction with panics, assertions, waivers or fabricated defaults. Preserve domain-defined
   missing-value behavior with explicit matches or map combinators. Handle resource and counter
   exhaustion explicitly. The fatal owned-source lexical gate complements all-target Clippy.
-- **Size (§38):** files within 300 lines; production functions within 60 logical lines, with the
-  count of functions over 25 logical lines reported as a target rather than a budget. The debt ratchet
-  (`xtask/src/baseline.rs`, `tools/quality-baseline.json`) fails a new or grown file over 300 lines
-  and any increase of `functions_over_60_lines`; no function parameter count is measured, so a
-  five-parameter limit remains a review rule, not a gate. Decompose named stages rather than
-  suppressing checks. Dated evidence ledgers may retain longer command records; they are not
-  production source.
+- **Size (§38):** production source files within 300 lines. Handwritten production callables,
+  including closures and handwritten project-macro callable templates, have a hard maximum of
+  60 trusted logical lines; 25 lines is the preferred size and an advisory review threshold.
+  More than five parameters is a cohesion-review warning, not a release failure. Do not introduce
+  artificial context bags or mechanical extraction merely to satisfy an advisory count.
+  Compiler/vendor-generated code is excluded from style-size certification, not from compilation,
+  domain contracts, safety or behavior verification. Trusted AST measurement must resist statement
+  packing and structurally distinguish production, tests and captured literals. Unmeasurable
+  handwritten callable syntax fails closed; do not suppress or baseline away hard violations.
+  Dated evidence ledgers may retain longer command records; they are not production source.
 - **Errors (§39):** `thiserror` in production crates; `anyhow` only at CLI/composition boundaries.
 - **Async (§42-§43):** supervise every task, bound admission before spawning, avoid locks across
   awaits, and offload bounded blocking work. Cancellation is stop-intake, drain, finalize/persist,

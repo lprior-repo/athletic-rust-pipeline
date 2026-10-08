@@ -4,9 +4,9 @@ mod fallible_checks;
 
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam, CentiSeconds, CompetitionLevel, EventKind, Evidence, Gender,
-    GradYear, Grade, Id, Mark, ObservedGrade, SchoolId, SchoolYear, SourceIdentity,
-    SourceNamespace, SourceRef, Sport, TimingMethod,
+    CanonicalSchool, CanonicalTeam, CompetitionLevel, EventIdentity, EventKind, EventSpecification,
+    Evidence, ExactSeconds, Gender, GradYear, Grade, Id, Mark, ObservedGrade, SchoolId, SchoolYear,
+    SourceIdentity, SourceNamespace, SourceRef, Sport, TimingMethod,
 };
 use census_domain::UsJurisdiction;
 use census_reconcile::identity::{Revision, WorkflowIdentity};
@@ -526,14 +526,24 @@ fn add_athlete(
     corpus.athletes.push(athlete);
 
     let kind = EventKind::Track100m;
-    let mut event = CanonicalEvent::new(meet_id, kind.clone(), gender, None, None);
+    let mut event = CanonicalEvent::new(
+        EventIdentity {
+            meet: meet_id,
+            kind,
+            gender,
+            division: None,
+            round: None,
+        },
+        EventSpecification::default(),
+    )?;
     event.evidence.push(evidence());
     let event_id = event.id.clone();
     corpus.events.push(event);
 
     for attempt in 0..2 {
         let source_key = format!("kill-{index}-{slot}-{attempt}");
-        let id = CanonicalPerformance::mint(&athlete_id, meet_id, &kind, MEET_DATE, &source_key);
+        let id =
+            CanonicalPerformance::mint(&athlete_id, meet_id, &event_id, MEET_DATE, &source_key);
         corpus.performances.push(CanonicalPerformance {
             id,
             athlete: athlete_id.clone(),
@@ -541,12 +551,9 @@ fn add_athlete(
             event: event_id.clone(),
             meet: meet_id.clone(),
             date: MEET_DATE.to_string(),
-            mark: Mark::TimeSeconds(
-                CentiSeconds::try_from_seconds_f64(
-                    11.5 + f64::from(u32::try_from(attempt)?) / 10.0,
-                )
-                .ok_or("invalid fixture time")?,
-            ),
+            mark: Mark::TimeSeconds(ExactSeconds::parse(
+                &(11.5 + f64::from(u32::try_from(attempt)?) / 10.0).to_string(),
+            )?),
             wind_mps: None,
             place: Some(u16::try_from(attempt + 1)?),
             heat: None,

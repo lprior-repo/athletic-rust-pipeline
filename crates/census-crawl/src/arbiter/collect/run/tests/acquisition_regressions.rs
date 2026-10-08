@@ -116,7 +116,6 @@ fn invalid_utf8_coach_capture_cannot_manufacture_a_replacement_character_person(
     acquisition.process_school(UsJurisdiction::NewHampshire, "2132", &school(), BASE).await?;
     check!(eq; (acquisition.tally.schools, acquisition.tally.errors), (1, 1));
     assert_retained_facts(&store, &BTreeSet::from(["Casey Reed".to_string()]))?;
-    check!(acquisition.tally.notes.iter().any(|note| note.contains("coach response is not UTF-8")));
     Ok(())
     })
 }

@@ -21,17 +21,7 @@ pub(super) fn sheet(dataset: &Dataset) -> ReportResult<Vec<Vec<Cell>>> {
     let mut ordered: Vec<(&CanonicalAthlete, (String, String, String))> = dataset
         .athletes
         .iter()
-        .map(|athlete| {
-            let school = athlete.school.as_str();
-            (
-                athlete,
-                (
-                    dataset.school_state(school),
-                    dataset.school_name(school),
-                    athlete.canonical_name.clone(),
-                ),
-            )
-        })
+        .map(|athlete| (athlete, display_key(dataset, athlete)))
         .collect();
     ordered.sort_by(|left, right| left.1.cmp(&right.1));
     let mut rows = vec![HEADERS.iter().map(|header| Cell::text(*header)).collect()];
@@ -41,21 +31,50 @@ pub(super) fn sheet(dataset: &Dataset) -> ReportResult<Vec<Vec<Cell>>> {
     Ok(rows)
 }
 
+fn display_key(dataset: &Dataset, athlete: &CanonicalAthlete) -> (String, String, String) {
+    let school = athlete.school.as_str();
+    (
+        dataset.school_state(school),
+        dataset.school_name(school),
+        athlete.canonical_name.clone(),
+    )
+}
+
 fn row_for(dataset: &Dataset, athlete: &CanonicalAthlete) -> ReportResult<Vec<Cell>> {
     let school = athlete.school.as_str();
     let tally = dataset.tallies.get(athlete.id.as_str());
     let prs: Vec<&SharedSelection> = dataset.prs_of(athlete.id.as_str()).collect();
-    let profiles = profiles_of(athlete);
     let contacts = contact::scoped(dataset.contacts.get(school), athlete);
-    let preferred = contacts.preferred();
-    let director = contacts.director();
     let mut cells = identity_cells(dataset, athlete);
+    append_performance_cells(&mut cells, athlete, &prs, tally)?;
+    append_staff_cells(&mut cells, &contacts);
+    cells.extend(school_athletics_url(dataset, school));
+    cells.extend(public_recruiting_gpa());
+    cells.extend(gpa_source());
+    cells.extend(contact_cells(&contacts, contacts.preferred()));
+    cells.extend(profile_cells(profiles_of(athlete)));
+    cells.extend(audit_cells(dataset, athlete, tally, &prs)?);
+    cells.push(address_cell(dataset, athlete)?);
+    Ok(cells)
+}
+
+fn append_performance_cells(
+    cells: &mut Vec<Cell>,
+    athlete: &CanonicalAthlete,
+    prs: &[&SharedSelection],
+    tally: Option<&AthleteTally>,
+) -> ReportResult<()> {
     cells.extend(tf_flag(athlete));
     cells.extend(participation_flags(athlete));
-    cells.extend(event_list(athlete, &prs));
-    cells.extend(headline_pr_summary(athlete, &prs));
-    cells.extend(pr_event_cells(&prs));
+    cells.extend(event_list(athlete, prs));
+    cells.extend(headline_pr_summary(athlete, prs));
+    cells.extend(pr_event_cells(prs));
     cells.extend(participation_metrics(tally)?);
+    Ok(())
+}
+
+fn append_staff_cells(cells: &mut Vec<Cell>, contacts: &ScopedContacts<'_>) {
+    let director = contacts.director();
     cells.push(published(contacts.track_names()));
     cells.push(published(contacts.track_emails()));
     cells.push(published(
@@ -72,22 +91,16 @@ fn row_for(dataset: &Dataset, athlete: &CanonicalAthlete) -> ReportResult<Vec<Ce
     ));
     cells.push(published(director.map(|d| d.name.clone())));
     cells.push(published(director.and_then(|d| d.email.clone())));
-    cells.extend(school_athletics_url(dataset, school));
-    cells.extend(public_recruiting_gpa());
-    cells.extend(gpa_source());
-    cells.extend(contact_cells(&contacts, preferred));
-    cells.extend(profile_cells(profiles));
-    cells.extend(audit_cells(dataset, athlete, tally, &prs)?);
+}
+
+fn address_cell(dataset: &Dataset, athlete: &CanonicalAthlete) -> ReportResult<Cell> {
     match dataset.school_address.get(athlete.id.as_str()) {
-        Some(address) if address.is_empty() => cells.push(Cell::Empty),
-        Some(address) => cells.push(Cell::text(address.clone())),
-        None => {
-            return Err(crate::report::ReportError::Invariant {
-                detail: format!("athlete {} has no school address projection", athlete.id),
-            });
-        }
+        Some(address) if address.is_empty() => Ok(Cell::Empty),
+        Some(address) => Ok(Cell::text(address.clone())),
+        None => Err(crate::report::ReportError::Invariant {
+            detail: format!("athlete {} has no school address projection", athlete.id),
+        }),
     }
-    Ok(cells)
 }
 
 fn identity_cells(dataset: &Dataset, athlete: &CanonicalAthlete) -> Vec<Cell> {
@@ -129,6 +142,7 @@ fn audit_cells(
         .identities
         .status(athlete.id.as_str())
         .map_err(census_store::StoreError::from)?;
+    let verification = verification_label(status);
     Ok(row!(
         Cell::number(source_count(athlete))?,
         Cell::text(status.as_str()),
@@ -137,22 +151,28 @@ fn audit_cells(
             !prs.is_empty()
         )),
         flag(status == census_domain::model::IdentityStatus::RetainedConflict),
-        Cell::text(
-            if status == census_domain::model::IdentityStatus::Verified {
-                "verified"
-            } else {
-                "review"
-            }
-        ),
+        Cell::text(verification),
     ))
 }
 
-fn contact_cells(contacts: &ScopedContacts<'_>, preferred: Preferred) -> Vec<Cell> {
+fn verification_label(status: census_domain::model::IdentityStatus) -> &'static str {
+    if status == census_domain::model::IdentityStatus::Verified {
+        "verified"
+    } else {
+        "review"
+    }
+}
+
+fn contact_cells(contacts: &ScopedContacts<'_>, preferred: Preferred<'_>) -> Vec<Cell> {
     row!(
         Cell::text(contacts.all_emails()),
         Cell::text(preferred.name),
         Cell::text(preferred.role),
         Cell::text(preferred.email),
         Cell::text(preferred.state.as_str()),
+        Cell::text(preferred.coach_id),
+        Cell::text(preferred.source_url),
+        Cell::text(preferred.source_sha256),
+        Cell::text(preferred.observed_on),
     )
 }

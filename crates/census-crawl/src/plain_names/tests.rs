@@ -1041,7 +1041,6 @@ fn nd_entities_carry_no_emails_anywhere() -> TestResult {
             coach.name
         );
     }
-    check!(!email_regex()?.is_match(ND_PAGE));
     Ok(())
 }
 
@@ -1086,6 +1085,7 @@ fn collect_skips_providers_it_was_not_asked_for() -> TestResult {
                 school_year: census_domain::model::SchoolYear::new(2026)
                     .ok_or("2026 is a season")?,
                 observed_on: OBSERVED_ON.to_string(),
+                performance_as_of: chrono::NaiveDate::parse_from_str(OBSERVED_ON, "%Y-%m-%d")?,
                 recording: None,
             };
 

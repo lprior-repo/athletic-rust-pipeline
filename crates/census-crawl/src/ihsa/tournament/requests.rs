@@ -3,20 +3,31 @@ use super::wire::{EventSummary, EventsEnvelope, MeetRow};
 use crate::ihsa::IHSA_API;
 use crate::{AdapterContext, AdapterReport, CrawlResult};
 
+pub(super) async fn captured(
+    ctx: &AdapterContext<'_>,
+    report: &mut AdapterReport,
+    url: &str,
+    what: &str,
+) -> Option<crate::net::FetchOutcome> {
+    match ctx.fetcher.get(url, &ctx.fetch_options()).await {
+        Ok(outcome) => Some(outcome),
+        Err(error) => {
+            report.errors = report.errors.saturating_add(1);
+            report.unfinished.push(url.to_string());
+            report.note(format!("{what}: {url} failed: {error}"));
+            None
+        }
+    }
+}
 pub(super) async fn body(
     ctx: &AdapterContext<'_>,
     report: &mut AdapterReport,
     url: &str,
     what: &str,
 ) -> Option<String> {
-    match ctx.fetcher.get(url, &ctx.fetch_options()).await {
-        Ok(outcome) => Some(outcome.text()),
-        Err(error) => {
-            report.errors = report.errors.saturating_add(1);
-            report.note(format!("{what}: {url} failed: {error}"));
-            None
-        }
-    }
+    captured(ctx, report, url, what)
+        .await
+        .map(|outcome| outcome.text())
 }
 
 pub(super) fn decoded<T>(
@@ -29,6 +40,7 @@ pub(super) fn decoded<T>(
         Ok(value) => Some(value),
         Err(error) => {
             report.errors = report.errors.saturating_add(1);
+            report.unfinished.push(url.to_string());
             report.note(format!("{what} at {url} did not decode: {error}"));
             None
         }
@@ -49,28 +61,28 @@ pub(super) async fn events(
     ctx: &AdapterContext<'_>,
     report: &mut AdapterReport,
     url: &str,
-) -> Option<EventsEnvelope> {
-    let body = body(ctx, report, url, "track-field events index").await?;
-    let parsed = parse::parse_events(&body);
-    decoded(report, url, "the track-field events index", parsed)
+) -> Option<(EventsEnvelope, crate::net::FetchOutcome)> {
+    let capture = captured(ctx, report, url, "track-field events index").await?;
+    let parsed = parse::parse_events(&capture.text());
+    decoded(report, url, "the track-field events index", parsed).map(|events| (events, capture))
 }
 
 pub(super) async fn summary(
     ctx: &AdapterContext<'_>,
     report: &mut AdapterReport,
     url: &str,
-) -> Option<EventSummary> {
-    let body = body(ctx, report, url, "event summary").await?;
-    let parsed = parse::parse_summary(&body);
-    decoded(report, url, "the event summary", parsed)
+) -> Option<(EventSummary, crate::net::FetchOutcome)> {
+    let capture = captured(ctx, report, url, "event summary").await?;
+    let parsed = capture.json().map_err(crate::CrawlError::from);
+    decoded(report, url, "the event summary", parsed).map(|summary| (summary, capture))
 }
 
 pub(super) async fn qualifiers(
     ctx: &AdapterContext<'_>,
     report: &mut AdapterReport,
     url: &str,
-) -> Option<String> {
-    body(ctx, report, url, "cross-country qualifiers").await
+) -> Option<crate::net::FetchOutcome> {
+    captured(ctx, report, url, "cross-country qualifiers").await
 }
 
 pub(super) async fn newest_term(

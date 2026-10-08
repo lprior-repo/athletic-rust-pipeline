@@ -167,7 +167,10 @@ pub fn validate_tenure_evidence(
         match (&claim.program, &claim.role) {
             (CoachContactProgram::SchoolAthletics, CoachRole::AthleticDirector) => {}
             (
-                CoachContactProgram::Team { .. },
+                CoachContactProgram::Team {
+                    sport: Sport::OutdoorTrack | Sport::IndoorTrack | Sport::CrossCountry,
+                    ..
+                },
                 CoachRole::HeadCoach | CoachRole::AssistantCoach,
             ) => {}
             _ => {

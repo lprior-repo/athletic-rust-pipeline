@@ -1,5 +1,5 @@
-use crate::export::coach_source;
 use crate::report::ReportResult;
+use crate::workbook::recruiting::coach_projection;
 use census_domain::model::{
     CanonicalCoach, CoachRole, CoachTenure, SchoolYear, TenureAssessmentError,
 };
@@ -21,73 +21,105 @@ pub(super) fn verify(
     expectations: &Expectations<'_>,
     findings: &mut Findings,
 ) -> ReportResult<()> {
-    let ordered = ordered(expectations);
-    let mut printed: Vec<String> = Vec::new();
-    let mut seen = 0_usize;
-    let mut visit = |row: &SparseRow| {
-        if let Some(id) = verify_row(row, expectations, &ordered, findings) {
-            seen = seen.saturating_add(1);
-            printed.push(id);
-        }
-    };
-    let budget = Budget {
-        rows: EXCEL_ROWS_PER_SHEET,
-        columns: EXCEL_COLUMNS_PER_SHEET,
-    };
-    match book.read(labels::COACHES, budget, &mut visit)? {
-        Some(_) => findings.rows(seen),
-        None => findings.note(format!(
-            "sheet {} is missing, so {} coach observations were never read",
-            labels::COACHES,
-            ordered.len()
-        )),
-    }
-    membership(&ordered, &printed, findings);
-    if seen != ordered.len() {
-        findings.note(format!(
-            "{} verified {seen} coach rows where the frozen dataset holds {} observations",
-            labels::COACHES,
-            ordered.len()
-        ));
-    }
-    Ok(())
+    Verifier::new(expectations, findings).run(book)
 }
 
-fn verify_row(
-    row: &SparseRow,
-    expectations: &Expectations<'_>,
-    ordered: &[(&CanonicalCoach, SortKey)],
-    findings: &mut Findings,
-) -> Option<String> {
-    verify_width(row, labels::COACHES, labels::COACH_HEADERS.len(), findings);
-    if row.index() == 0 {
-        verify_header(row, labels::COACHES, &labels::COACH_HEADERS, findings);
-        return None;
+struct Verifier<'a, 'd> {
+    expectations: &'a Expectations<'d>,
+    ordered: Vec<(&'a CanonicalCoach, SortKey)>,
+    printed: Vec<String>,
+    seen: usize,
+    findings: &'a mut Findings,
+}
+
+impl<'a, 'd> Verifier<'a, 'd> {
+    fn new(expectations: &'a Expectations<'d>, findings: &'a mut Findings) -> Self {
+        Self {
+            expectations,
+            ordered: ordered(expectations),
+            printed: Vec::new(),
+            seen: 0,
+            findings,
+        }
     }
-    let expected = ordered.get(row.index().saturating_sub(1));
-    if row.blank() {
-        if let Some((coach, _)) = expected {
-            findings.note(format!(
+
+    fn run(mut self, book: &mut Book) -> ReportResult<()> {
+        let budget = Budget {
+            rows: EXCEL_ROWS_PER_SHEET,
+            columns: EXCEL_COLUMNS_PER_SHEET,
+        };
+        match book.read(labels::COACHES, budget, |row: &SparseRow| self.visit(row))? {
+            Some(_) => self.findings.rows(self.seen),
+            None => self.findings.note(format!(
+                "sheet {} is missing, so {} coach observations were never read",
+                labels::COACHES,
+                self.ordered.len()
+            )),
+        }
+        membership(&self.ordered, &self.printed, self.findings);
+        if self.seen != self.ordered.len() {
+            self.findings.note(format!(
+                "{} verified {} coach rows where the frozen dataset holds {} observations",
+                labels::COACHES,
+                self.seen,
+                self.ordered.len()
+            ));
+        }
+        Ok(())
+    }
+
+    fn visit(&mut self, row: &SparseRow) {
+        if self.header(row) {
+            return;
+        }
+        let position = row.index().saturating_sub(1);
+        let id = row.text(6).map_or("", |value| value).to_string();
+        if row.blank() {
+            self.blank_row(row, position);
+            return;
+        }
+        self.compare_admitted(row, position, &id);
+        self.printed.push(id);
+    }
+
+    fn header(&mut self, row: &SparseRow) -> bool {
+        verify_width(
+            row,
+            labels::COACHES,
+            labels::COACH_HEADERS.len(),
+            self.findings,
+        );
+        if row.index() != 0 {
+            return false;
+        }
+        verify_header(row, labels::COACHES, &labels::COACH_HEADERS, self.findings);
+        true
+    }
+
+    fn compare_admitted(&mut self, row: &SparseRow, position: usize, id: &str) {
+        if let Some((coach, _)) = self.ordered.get(position) {
+            self.seen = self.seen.saturating_add(1);
+            for (column, expected) in values(self.expectations, coach).iter().enumerate() {
+                compare(row, labels::COACHES, column, expected, self.findings);
+            }
+        } else {
+            self.findings.note(format!(
+                "{} carries an unexpected coach observation {id}",
+                cell_at(labels::COACHES, row.index(), 6)
+            ));
+        }
+    }
+
+    fn blank_row(&mut self, row: &SparseRow, position: usize) {
+        if let Some((coach, _)) = self.ordered.get(position) {
+            self.findings.note(format!(
                 "{} is blank where coach {} ({}) was expected",
                 cell_at(labels::COACHES, row.index(), 6),
                 coach.name,
                 coach.id.as_str()
             ));
         }
-        return None;
     }
-    let id = row.text(6).map_or("", |value| value).to_string();
-    if let Some((coach, _)) = expected {
-        for (column, expected) in values(expectations, coach).iter().enumerate() {
-            compare(row, labels::COACHES, column, expected, findings);
-        }
-    } else {
-        findings.note(format!(
-            "{} carries an unexpected coach observation {id}",
-            cell_at(labels::COACHES, row.index(), 6)
-        ));
-    }
-    Some(id)
 }
 
 fn ordered<'a, 'd>(expectations: &'a Expectations<'d>) -> Vec<(&'a CanonicalCoach, SortKey)> {
@@ -112,14 +144,54 @@ fn sort_key(expectations: &Expectations<'_>, coach: &CanonicalCoach) -> SortKey 
     )
 }
 
-fn values(expectations: &Expectations<'_>, coach: &CanonicalCoach) -> [Value; 18] {
+fn values(expectations: &Expectations<'_>, coach: &CanonicalCoach) -> Vec<Value> {
     let school = coach.school.as_str();
-    let director = expectations
-        .contacts
-        .get(school)
-        .and_then(|facts| facts.director());
-    let (source_url, observed_on) = coach_source(coach);
+    let contacts = expectations.contacts.get(school);
+    let director = contacts.and_then(|facts| facts.director());
+    let selected = coach_projection::admitted(coach, expectations.school_year, contacts);
+    let [_, name_digest, _] = coach_projection::capture(selected.name);
+    let mut values = identity_values(expectations, coach);
+    values.extend(contact_values(
+        coach,
+        expectations.school_year,
+        &selected,
+        director,
+    ));
+    values.extend(capture_values(
+        selected.professional.map(|contact| contact.tenure()),
+    ));
+    values.extend(capture_values(
+        selected.personal.map(|contact| contact.tenure()),
+    ));
+    values.push(Value::text(name_digest));
+    values.extend(director_values(director));
+    values.push(Value::text(selected.state));
+    values
+}
+
+fn contact_values(
+    coach: &CanonicalCoach,
+    year: SchoolYear,
+    selected: &coach_projection::Projection<'_>,
+    director: Option<&crate::workbook::recruiting::contact::Named>,
+) -> [Value; 9] {
+    let [name_url, _, name_at] = coach_projection::capture(selected.name);
     [
+        Value::optional(selected.professional.map(|contact| contact.mailbox())),
+        Value::optional(selected.personal.map(|contact| contact.mailbox())),
+        Value::optional(coach.phone.as_deref()),
+        Value::optional(director.map(|row| row.name.as_str())),
+        Value::optional(director.and_then(|row| row.email.as_deref())),
+        Value::text(name_url),
+        Value::text(name_at),
+        Value::text(tenure_label(coach, year)),
+        Value::text(year.short()),
+    ]
+}
+
+fn identity_values(expectations: &Expectations<'_>, coach: &CanonicalCoach) -> Vec<Value> {
+    let school = coach.school.as_str();
+    vec![
         Value::text(school),
         Value::text(expectations.school_name(school)),
         Value::text(expectations.school_city(school)),
@@ -129,15 +201,19 @@ fn values(expectations: &Expectations<'_>, coach: &CanonicalCoach) -> [Value; 18
         Value::text(coach.id.as_str()),
         Value::text(coach.gender.stable_key()),
         Value::text(coach.role.stable_key()),
-        Value::optional(coach.professional_email.as_deref()),
-        Value::optional(coach.personal_email.as_deref()),
-        Value::optional(coach.phone.as_deref()),
-        Value::optional(director.map(|row| row.name.as_str())),
-        Value::optional(director.and_then(|row| row.email.as_deref())),
-        Value::optional(source_url),
-        Value::optional(observed_on),
-        Value::text(tenure_label(coach, expectations.school_year)),
-        Value::text(expectations.school_year.short()),
+    ]
+}
+
+fn capture_values(fact: Option<&census_domain::model::CoachTenureEvidence>) -> [Value; 3] {
+    coach_projection::capture(fact).map(Value::text)
+}
+
+fn director_values(director: Option<&crate::workbook::recruiting::contact::Named>) -> [Value; 3] {
+    let source = director.and_then(|row| row.professional_source());
+    [
+        Value::optional(source.map(|source| source.source_url.as_str())),
+        Value::optional(source.map(|source| source.source_sha256.as_str())),
+        Value::optional(source.map(|source| source.observed_on.as_str())),
     ]
 }
 
@@ -160,17 +236,36 @@ fn sport_label(coach: &CanonicalCoach) -> String {
 }
 
 fn membership(ordered: &[(&CanonicalCoach, SortKey)], printed: &[String], findings: &mut Findings) {
+    let expected = observation_counts(ordered);
+    let actual = printed_counts(printed);
+    report_excess(&expected, &actual, findings);
+    report_missing(&expected, &actual, findings);
+}
+
+fn observation_counts<'a>(ordered: &[(&'a CanonicalCoach, SortKey)]) -> BTreeMap<&'a str, usize> {
     let mut expected: BTreeMap<&str, usize> = BTreeMap::new();
     for (coach, _) in ordered {
         let count = expected.entry(coach.id.as_str()).or_insert(0);
         *count = count.saturating_add(1);
     }
+    expected
+}
+
+fn printed_counts(printed: &[String]) -> BTreeMap<&str, usize> {
     let mut actual: BTreeMap<&str, usize> = BTreeMap::new();
     for id in printed {
         let count = actual.entry(id.as_str()).or_insert(0);
         *count = count.saturating_add(1);
     }
-    for (id, count) in &actual {
+    actual
+}
+
+fn report_excess(
+    expected: &BTreeMap<&str, usize>,
+    actual: &BTreeMap<&str, usize>,
+    findings: &mut Findings,
+) {
+    for (id, count) in actual {
         let held = expected
             .get(id)
             .copied()
@@ -187,7 +282,14 @@ fn membership(ordered: &[(&CanonicalCoach, SortKey)], printed: &[String], findin
             findings.note(message);
         }
     }
-    for (id, count) in &expected {
+}
+
+fn report_missing(
+    expected: &BTreeMap<&str, usize>,
+    actual: &BTreeMap<&str, usize>,
+    findings: &mut Findings,
+) {
+    for (id, count) in expected {
         let found = actual
             .get(id)
             .copied()

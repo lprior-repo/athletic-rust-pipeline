@@ -1,6 +1,6 @@
 use super::html::{attribute, collapse_whitespace, decode_entities, text_runs};
 
-use census_domain::model::CentiSeconds;
+use census_domain::model::ExactSeconds;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParsedMark {
     Time(String),
@@ -36,22 +36,8 @@ fn reads_as_mark(token: &str) -> bool {
         || feet_inches_metres(token).is_some()
         || metric_metres(token).is_some()
 }
-pub fn clock_seconds(token: &str) -> Option<CentiSeconds> {
-    let trimmed = token.trim();
-    let mut parts = trimmed.split(':');
-    let first: f64 = parts.next()?.trim().parse().ok()?;
-    let seconds = match parts.next() {
-        Some(rest) => {
-            if parts.next().is_some() {
-                return None;
-            }
-            first.mul_add(60.0, rest.trim().parse().ok()?)
-        }
-        None => first,
-    };
-    (seconds.is_finite() && seconds > 0.0)
-        .then_some(CentiSeconds::try_from_seconds_f64(seconds))
-        .flatten()
+pub fn clock_seconds(token: &str) -> Option<ExactSeconds> {
+    crate::hytek::parse_time(token)
 }
 
 pub fn metric_metres(token: &str) -> Option<f64> {

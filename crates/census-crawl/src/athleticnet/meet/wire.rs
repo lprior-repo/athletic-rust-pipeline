@@ -77,16 +77,6 @@ pub struct FlatEvent {
     pub results: Vec<FlatRow>,
 }
 
-impl FlatEvent {
-    pub(super) fn source_label(&self) -> &str {
-        if self.label.trim().is_empty() {
-            self.short.trim()
-        } else {
-            self.label.trim()
-        }
-    }
-}
-
 #[derive(Debug, Clone, Deserialize)]
 pub struct FlatRow {
     #[serde(rename = "IDResult")]

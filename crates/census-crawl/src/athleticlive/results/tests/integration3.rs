@@ -64,6 +64,7 @@ fn a_manifest_imports_every_meet_it_names_and_lands_on_the_harvest_ids() -> Test
                         "state": "IA",
                         "date": "2025-10-31",
                         "documents": [xc_path],
+                        "captures": captures::documents(std::slice::from_ref(&xc_path))?,
                     },
                     {
                         "athleticlive_meet_id": MITS_MEET,
@@ -72,6 +73,7 @@ fn a_manifest_imports_every_meet_it_names_and_lands_on_the_harvest_ids() -> Test
                         "state": "Michigan",
                         "date": "2026-02-14",
                         "documents": [hj_path],
+                        "captures": captures::documents(std::slice::from_ref(&hj_path))?,
                     },
                     {
                         "athleticlive_meet_id": STATE_MEET,
@@ -80,6 +82,7 @@ fn a_manifest_imports_every_meet_it_names_and_lands_on_the_harvest_ids() -> Test
                         "state": "IA",
                         "date": "2025-10-31",
                         "documents": [xc_path],
+                        "captures": captures::documents(std::slice::from_ref(&xc_path))?,
                     }
                 ]
             });
@@ -129,7 +132,7 @@ fn a_manifest_imports_every_meet_it_names_and_lands_on_the_harvest_ids() -> Test
             );
 
             let again = collect_manifest(&context(&store, &fetcher)?, &options).await?;
-            check!(eq; again.rows, 0, "the first import journaled every capture");
+            check!(eq; again.rows, 0, "unchanged replay admits no additional performances");
             check!(eq; again.errors, 0, "{}", joined(&again));
             let appended: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
             check!(eq; appended.len(), 136, "a repeated import appends no row");

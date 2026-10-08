@@ -1,16 +1,16 @@
-use super::super::docs::{parse_event_document, parse_event_summary, EventDoc};
+use super::super::docs::{parse_event_summary, EventDoc, SummaryEvent};
 use super::super::map::{Accumulator, ResultStats, RowContext, Writer, SOURCE_ID};
 use super::super::map_rows::{record_row, record_standing};
 use super::super::standings::parse_standings;
 use super::super::wire::{event_doc_url, event_summary_url, standings_url};
-use crate::athleticlive_athletes::{gender_from_token, sport_for, MeetTarget};
-use crate::hytek::round_marker;
+use crate::athleticlive_athletes::{sport_for, MeetTarget};
 use census_domain::model::{
-    CanonicalEvent, CanonicalMeet, EventId, EventKind, Evidence, Gender, SchoolId, SchoolYear,
-    SourceEventLabel, SourceRef,
+    CanonicalMeet, EventId, EventKind, Evidence, Gender, SchoolId, SchoolYear, SourceRef,
 };
 use census_domain::school_index::SchoolIndex;
 use std::collections::HashMap;
+mod events;
+use events::mint_event;
 
 #[derive(Debug, Clone)]
 pub(super) struct PublishedEvent {
@@ -32,6 +32,8 @@ pub(super) struct Fold<'a> {
     pub target: &'a MeetTarget,
     pub observed_on: &'a str,
     pub school_year: SchoolYear,
+    pub performance_as_of: chrono::NaiveDate,
+    pub capture_sha256: &'a str,
     pub index: &'a SchoolIndex,
     pub resolved: &'a mut HashMap<String, Option<SchoolId>>,
     pub stats: &'a mut ResultStats,
@@ -58,6 +60,7 @@ impl Fold<'_> {
             round: event.round.clone(),
             sport,
             school_year: self.school_year,
+            performance_as_of: self.performance_as_of,
             event_key: event.event_key.clone(),
             provider: &self.target.tenant,
             jurisdiction: self.target.state,
@@ -75,15 +78,8 @@ impl Fold<'_> {
 pub(super) fn absorb_document(
     fold: &mut Fold<'_>,
     path: &str,
-    body: &str,
+    doc: EventDoc,
 ) -> Option<PublishedEvent> {
-    let doc = match parse_event_document(path, body) {
-        Ok(doc) => doc,
-        Err(error) => {
-            fold.failures.push(format!("{path}: {error}"));
-            return None;
-        }
-    };
     let Some(capture_id) = doc.event_id() else {
         fold.failures
             .push(format!("{path}: the document carries no event id"));
@@ -99,75 +95,19 @@ pub(super) fn absorb_document(
         }
     }
     let url = event_doc_url(capture_id);
-    let kind = doc.kind();
-    let gender = doc
-        .gender_group
-        .as_deref()
-        .map(gender_from_token)
-        .map_or(Gender::Unknown, |value| value);
-    let event = mint_event(fold, &doc, capture_id, &url, &kind, gender);
-    fold_rows(fold, &doc, &url, &event, &kind);
+    let event = match mint_event(fold, &doc, capture_id, &url) {
+        Ok(event) => event,
+        Err(error) => {
+            fold.failures.push(format!("{path}: {error}"));
+            return None;
+        }
+    };
+    if let Err(error) = fold_rows(fold, &doc, &url, &event, &event.kind) {
+        fold.failures.push(format!("{path}: {error}"));
+        return None;
+    }
     fold.stats.documents_read = fold.stats.documents_read.saturating_add(1);
     Some(event)
-}
-
-fn mint_event(
-    fold: &mut Fold<'_>,
-    doc: &EventDoc,
-    capture_id: u64,
-    url: &str,
-    kind: &EventKind,
-    gender: Gender,
-) -> PublishedEvent {
-    let round = doc
-        .round_name
-        .as_deref()
-        .map(str::trim)
-        .and_then(round_marker)
-        .map(str::to_string);
-    let source = SourceRef::new(SOURCE_ID, Some(url.to_string()));
-    let mut evidence = Evidence::parsed(source.clone(), fold.observed_on);
-    evidence.note = Some(format!(
-        "event {capture_id} `{}`: published label `{}` mapped to {kind:?}",
-        doc.name
-            .as_deref()
-            .map_or(Default::default(), core::convert::identity),
-        doc.label()
-            .map_or(Default::default(), core::convert::identity)
-    ));
-    let event = CanonicalEvent::new(
-        &fold.meet.id,
-        kind.clone(),
-        gender,
-        doc.division_name(),
-        round.as_deref(),
-    );
-    let entry = fold
-        .accumulator
-        .events
-        .entry(event.id.as_str().to_string())
-        .or_insert_with(|| event.clone());
-    if let Some(label) = doc.label() {
-        let source_label = SourceEventLabel {
-            source: source.clone(),
-            label: label.to_string(),
-        };
-        if !entry.source_labels.contains(&source_label) {
-            entry.source_labels.push(source_label);
-        }
-    }
-    if !entry.evidence.contains(&evidence) {
-        entry.evidence.push(evidence);
-    }
-    PublishedEvent {
-        capture_id,
-        id: event.id,
-        kind: kind.clone(),
-        gender,
-        round,
-        run_id: doc.run_id().map(str::to_string),
-        event_key: event_key(capture_id),
-    }
 }
 
 fn fold_rows(
@@ -176,19 +116,24 @@ fn fold_rows(
     url: &str,
     event: &PublishedEvent,
     kind: &EventKind,
-) {
+) -> crate::CrawlResult<()> {
     let source = SourceRef::new(SOURCE_ID, Some(url.to_string()));
     let mut evidence = Evidence::parsed(source.clone(), fold.observed_on);
     evidence.note = Some(format!(
-        "{}: {} rows published for this event",
+        "capture sha256={}; {}: {} rows published for this event",
+        fold.capture_sha256,
         event.event_key,
         doc.rows.len()
     ));
     let sport = sport_for(doc.is_xc(), &fold.target.name, &fold.target.date);
     let (context, mut writer) = fold.split_for(&source, &evidence, event, kind, sport);
-    for (row_index, row) in doc.rows.iter().enumerate() {
-        record_row(&mut writer, &context, row, row_index);
-    }
+    doc.rows
+        .iter()
+        .enumerate()
+        .fold(Ok(()), |outcome, (row_index, row)| {
+            let projected = record_row(&mut writer, &context, row, row_index).map(|_| ());
+            outcome.and(projected)
+        })
 }
 
 pub(super) fn absorb_summary(fold: &mut Fold<'_>, path: &str, body: &str) -> Option<Vec<u64>> {
@@ -200,21 +145,69 @@ pub(super) fn absorb_summary(fold: &mut Fold<'_>, path: &str, body: &str) -> Opt
             return None;
         }
     };
-    let mut fetchable: Vec<u64> = Vec::new();
-    for event in events {
-        fold.stats.events_listed = fold.stats.events_listed.saturating_add(1);
-        if event.is_relay() {
-            fold.stats.events_relay = fold.stats.events_relay.saturating_add(1);
-            continue;
-        }
-        if matches!(event.kind(), EventKind::Unmapped { .. }) {
-            fold.stats.events_unmapped = fold.stats.events_unmapped.saturating_add(1);
-        }
-        if let Some(event_id) = event.event_id() {
-            fetchable.push(event_id);
+    let mut fetchable = Vec::new();
+    match events
+        .iter()
+        .try_for_each(|event| absorb_listed(fold, &url, event, &mut fetchable))
+    {
+        Ok(()) => Some(fetchable),
+        Err(error) => {
+            fold.failures.push(format!("{url}: {error}"));
+            None
         }
     }
-    Some(fetchable)
+}
+
+fn absorb_listed(
+    fold: &mut Fold<'_>,
+    url: &str,
+    event: &SummaryEvent,
+    fetchable: &mut Vec<u64>,
+) -> crate::CrawlResult<()> {
+    fold.stats.events_listed = fold
+        .stats
+        .events_listed
+        .checked_add(1)
+        .ok_or_else(super::run::counter_error)?;
+    let Some(event_id) = event.event_id() else {
+        fold.failures
+            .push(format!("{url}: listed event carries no native event id"));
+        return Ok(());
+    };
+    if event.is_relay() {
+        fold.stats.events_relay = fold
+            .stats
+            .events_relay
+            .checked_add(1)
+            .ok_or_else(super::run::counter_error)?;
+        return Ok(());
+    }
+    if !matches!(
+        crate::context::assess_performance_date(fold.performance_as_of, &fold.target.date),
+        crate::context::PerformanceDateAssessment::Future
+    ) && matches!(event.kind(), EventKind::Unmapped { .. })
+    {
+        fold.stats.events_unmapped = fold
+            .stats
+            .events_unmapped
+            .checked_add(1)
+            .ok_or_else(super::run::counter_error)?;
+    }
+    let requested = fetchable
+        .len()
+        .checked_add(1)
+        .ok_or_else(super::run::counter_error)?;
+    let resource = || crate::CrawlError::Resource {
+        resource: "athleticlive listed events",
+        requested,
+        limit: 100_000,
+    };
+    if requested > 100_000 {
+        return Err(resource());
+    }
+    fetchable.try_reserve(1).map_err(|_| resource())?;
+    fetchable.push(event_id);
+    Ok(())
 }
 
 pub(super) fn absorb_standings(
@@ -239,14 +232,23 @@ pub(super) fn absorb_standings(
     let source = SourceRef::new(SOURCE_ID, Some(url));
     let mut evidence = Evidence::parsed(source.clone(), fold.observed_on);
     evidence.note = Some(format!(
-        "{}: {} standings rows published for run {run_id}",
+        "capture sha256={}; {}: {} standings rows published for run {run_id}",
+        fold.capture_sha256,
         event.event_key,
         rows.len()
     ));
     let sport = sport_for(false, &fold.target.name, &fold.target.date);
     let (context, mut writer) = fold.split_for(&source, &evidence, event, &event.kind, sport);
-    for (row_index, (_run_row, row)) in rows.iter().enumerate() {
-        record_standing(&mut writer, &context, row, row_index);
+    let projected =
+        rows.iter()
+            .enumerate()
+            .fold(Ok(()), |outcome, (row_index, (_run_row, row))| {
+                let projected = record_standing(&mut writer, &context, row, row_index).map(|_| ());
+                outcome.and(projected)
+            });
+    if let Err(error) = projected {
+        fold.failures.push(format!("{path}: {error}"));
+        return None;
     }
     fold.stats.standings_read = fold.stats.standings_read.saturating_add(1);
     Some(rows.len())

@@ -12,6 +12,8 @@ fn outcome(errors: Vec<String>) -> StageOutcome {
         at: "2026-10-01".to_string(),
         errors,
         notes: vec!["wiaa: retained 37 teams".to_string()],
+        disposition: census_crawl::CollectionDisposition::Complete,
+        unfinished: Vec::new(),
     }
 }
 
@@ -169,5 +171,24 @@ fn completed_wrapper_wire_rejects_errors_even_without_stage_envelope() -> TestRe
         .ok_or("completed wrapper accepted retained source errors")?;
 
     check!(eq; error.classify(), serde_json::error::Category::Data);
+    Ok(())
+}
+
+#[test]
+fn unknown_disposition_and_unfinished_locators_cannot_complete_clean_counts() -> TestResult {
+    let mut unknown = outcome(Vec::new());
+    unknown.disposition = census_crawl::CollectionDisposition::Unknown;
+    let mut unfinished = outcome(Vec::new());
+    unfinished.unfinished = vec!["https://www.wiaawi.org/Schools?page=2".to_string()];
+    for pending in [unknown, unfinished] {
+        let stage = TeamsStage::from_outcome(pending.clone(), "2026-10-02".to_string());
+        let TeamsStage::Failed(TeamsFailure::IncompleteOutcome {
+            outcome: retained, ..
+        }) = stage
+        else {
+            return Err("clean counts manufactured source completion".into());
+        };
+        check!(eq; serde_json::to_value(retained)?, serde_json::to_value(pending)?);
+    }
     Ok(())
 }

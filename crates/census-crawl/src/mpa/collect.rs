@@ -1,199 +1,135 @@
-use super::map::{captured_school_entities, ParsedSchool, SchoolExtract};
+use super::map::{captured_school_entities, ParsedSchool};
 use super::pages::parse_directory;
 use super::{Options, ASSOCIATION, HOST_WWW};
-use crate::net::{FetchOptions, FetchOutcome, FetchStats};
-use crate::{AdapterContext, AdapterReport, CrawlResult};
-use census_domain::model::{
-    normalize_name, SourceNamespace, SourceObservation, SourceSchoolObservation,
+use crate::directory::acquisition::{
+    fail, owe, publish as persist, publish_school as school, text,
 };
+use crate::net::FetchOutcome;
+use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
+use census_domain::model::{normalize_name, SourceNamespace};
 use census_domain::UsJurisdiction;
 use census_store::Table;
+use futures::{stream, StreamExt, TryStreamExt};
 
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
-    let mut report = AdapterReport::new("mpa", "schools");
     let before = ctx.fetcher.stats().await;
-
+    let mut report = AdapterReport::new("mpa", "schools");
     if !options.states.is_empty() && !options.states.contains(&UsJurisdiction::Maine) {
-        record_spend(ctx, &mut report, &before).await;
-        let codes: Vec<&str> = options.states.iter().map(|state| state.code()).collect();
-        report.note(format!(
-            "states {codes:?} do not include ME; this adapter covers Maine only"
-        ));
         return Ok(report);
     }
-
-    let dir_url = format!("{HOST_WWW}/SchoolPages/School.aspx");
-    let directory = match ctx.fetcher.get(&dir_url, &ctx.fetch_options()).await {
-        Ok(outcome) if outcome.status == 200 => outcome,
-        Ok(outcome) => {
-            report.errors = report.errors.saturating_add(1);
-            report.note(format!("directory returned HTTP {}", outcome.status));
-            record_spend(ctx, &mut report, &before).await;
-            return Ok(report);
+    let url = format!("{HOST_WWW}/SchoolPages/School.aspx");
+    if let Some(directory) = fetch(ctx, &url, &mut report).await? {
+        let body = match text(&directory) {
+            Ok(body) => body,
+            Err(error) => {
+                fail(&mut report, &url, error)?;
+                ""
+            }
+        };
+        let entries = parse_directory(body);
+        if entries.is_empty() {
+            owe(&mut report, &url)?;
         }
-        Err(e) => {
-            report.errors = report.errors.saturating_add(1);
-            report.note(format!("directory fetch failed: {e}"));
-            record_spend(ctx, &mut report, &before).await;
-            return Ok(report);
+        report = stream::iter(&entries)
+            .map(Ok::<_, CrawlError>)
+            .try_fold(report, |mut report, entry| {
+                let directory = &directory;
+                async move {
+                    process_school(ctx, options, entry, directory, &mut report).await?;
+                    Ok(report)
+                }
+            })
+            .await?;
+        if report.unfinished.is_empty() {
+            report.finish_frontier();
         }
-    };
-
-    let entries = parse_directory(&directory.text());
-    let to_process = resolve_schools(&entries, options);
-    let mut tally = Tally::default();
-
-    for entry in &to_process {
-        process_school(ctx, entry, &directory, &mut report, &mut tally).await?;
     }
-
-    record_spend(ctx, &mut report, &before).await;
-
-    report.note(format!(
-        "processed {} of {} requested schools ({} fetch_failures, {} coach_rows)",
-        tally.processed,
-        to_process.len(),
-        tally.fetch_failures,
-        tally.coach_rows,
-    ));
-
-    Ok(report)
-}
-
-async fn record_spend(ctx: &AdapterContext<'_>, report: &mut AdapterReport, before: &FetchStats) {
     let after = ctx.fetcher.stats().await;
     report.requests = after
         .physical_requests()
         .saturating_sub(before.physical_requests());
     report.from_cache = after.cache_hits.saturating_sub(before.cache_hits);
+    Ok(report)
 }
 
-#[derive(Default)]
-struct Tally {
-    processed: usize,
-    fetch_failures: usize,
-    coach_rows: usize,
-}
-
-fn resolve_schools(entries: &[super::pages::SchoolEntry], options: &Options) -> Vec<ParsedSchool> {
-    let wanted: Option<std::collections::HashSet<String>> = if options.school_names.is_empty() {
-        None
-    } else {
-        Some(
-            options
-                .school_names
-                .iter()
-                .map(|name| normalize_name(name))
-                .collect(),
-        )
-    };
-
-    entries
-        .iter()
-        .filter_map(|e| {
-            if let Some(ref wanted) = wanted {
-                if !wanted.contains(&normalize_name(&e.name)) {
-                    return None;
-                }
-            }
-            Some(ParsedSchool {
-                name: e.name.clone(),
-                school_id: e.school_id.clone(),
-            })
-        })
-        .take(options.limit.map_or(usize::MAX, |limit| limit))
-        .collect()
+async fn fetch(
+    ctx: &AdapterContext<'_>,
+    url: &str,
+    report: &mut AdapterReport,
+) -> CrawlResult<Option<FetchOutcome>> {
+    match ctx.fetcher.get(url, &ctx.fetch_options()).await {
+        Ok(capture) if capture.status == 200 => Ok(Some(capture)),
+        Ok(capture) => {
+            fail(report, url, format!("HTTP {}", capture.status))?;
+            Ok(None)
+        }
+        Err(error) => {
+            fail(report, url, error)?;
+            Ok(None)
+        }
+    }
 }
 
 async fn process_school(
     ctx: &AdapterContext<'_>,
-    entry: &ParsedSchool,
+    options: &Options,
+    entry: &super::pages::SchoolEntry,
     directory: &FetchOutcome,
     report: &mut AdapterReport,
-    tally: &mut Tally,
 ) -> CrawlResult<()> {
-    let staff_url = format!(
+    if !options.school_names.is_empty()
+        && !options
+            .school_names
+            .iter()
+            .any(|name| normalize_name(name) == normalize_name(&entry.name))
+    {
+        return Ok(());
+    }
+    let url = format!(
         "{HOST_WWW}/SchoolPages/School.aspx?SchoolID={}&tab=staff",
         entry.school_id
     );
-    let staff = match ctx
-        .fetcher
-        .get(
-            &staff_url,
-            &FetchOptions {
-                allow_not_found: true,
-                ..ctx.fetch_options()
-            },
-        )
-        .await
+    if options
+        .limit
+        .is_some_and(|limit| report.rows >= u64::try_from(limit).map_or(u64::MAX, |value| value))
     {
-        Ok(outcome) if outcome.status == 200 => outcome,
-        Ok(outcome) => {
-            report.note(format!(
-                "school {} (ID {}) returned HTTP {}",
-                entry.name, entry.school_id, outcome.status
-            ));
-            return Ok(());
-        }
-        Err(e) => {
-            tally.fetch_failures = tally.fetch_failures.saturating_add(1);
-            report.note(format!("school {}: {}", entry.name, e));
-            return Ok(());
-        }
+        return owe(report, url);
+    }
+    let Some(staff) = fetch(ctx, &url, report).await? else {
+        return Ok(());
     };
-
-    let staff_rows = super::pages::parse_staff_table(&staff.text());
-    let extract = captured_school_entities(entry, &staff_rows, directory, &staff);
-
-    emit_school(ctx, report, &extract, &directory.fetched_at, tally)?;
-    tally.processed = tally.processed.saturating_add(1);
-    Ok(())
-}
-
-fn emit_school(
-    ctx: &AdapterContext<'_>,
-    report: &mut AdapterReport,
-    extract: &SchoolExtract,
-    acquired_at: &str,
-    tally: &mut Tally,
-) -> CrawlResult<()> {
-    let key = &extract.source_school_id;
-    let mut batch = ctx.write_batch();
-    batch.append_many(Table::Schools, std::slice::from_ref(&extract.school))?;
-    batch.append_many(
-        Table::SourceObservations,
-        SourceSchoolObservation::of_school(
+    let body = match text(&staff) {
+        Ok(body) => body,
+        Err(error) => return fail(report, &url, error),
+    };
+    if !body.contains("<table class='DirectoryStaffTable'>") || !body.contains("</table>") {
+        owe(report, &url)?;
+    }
+    let parsed = ParsedSchool {
+        name: entry.name.clone(),
+        school_id: entry.school_id.clone(),
+    };
+    let extract = captured_school_entities(
+        &parsed,
+        &super::pages::parse_staff_table(body),
+        directory,
+        &staff,
+    );
+    let written = school(
+        ctx,
+        ("mpa", &url),
+        (
             &SourceNamespace::association_school(ASSOCIATION),
             &extract.school,
-            acquired_at,
-        )
-        .map(SourceObservation::School)
-        .as_slice(),
+            &directory.fetched_at,
+        ),
+        report,
     )?;
-    report.rows = report.rows.saturating_add(1);
-
-    tally.coach_rows = tally.coach_rows.saturating_add(extract.coaches.len());
-    batch.append_many(Table::Coaches, &extract.coaches)?;
-
-    batch.journal_done(
-        "mpa_schools",
-        key,
-        &serde_json::json!({
-            "school_name": extract.school.name,
-            "coaches": extract.coaches.len(),
-        }),
-    )?;
-    for coach in &extract.coaches {
-        batch.journal_done(
-            "mpa_coaches",
-            key,
-            &serde_json::json!({
-                "coach_name": coach.name,
-                "sport": format!("{:?}", coach.sport),
-                "gender": format!("{:?}", coach.gender),
-            }),
-        )?;
-    }
-    batch.commit()?;
+    persist(ctx, ("mpa", &url), Table::Coaches, &extract.coaches, report)?;
+    report.rows = report
+        .rows
+        .saturating_add(u64::try_from(written).map_err(|_| CrawlError::Arithmetic {
+            detail: "school count".into(),
+        })?);
     Ok(())
 }

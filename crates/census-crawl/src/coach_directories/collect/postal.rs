@@ -96,9 +96,18 @@ impl Run<'_> {
         school: &CanonicalSchool,
         emission: &CoachEmission,
     ) -> CrawlResult<()> {
+        let digest = census_domain::model::serialized_digest(&(school, &emission.coaches))
+            .map_err(|source| crate::CrawlError::Canonical {
+                table: "school contact prefix".to_owned(),
+                source,
+            })?;
+        let operation = format!("coach_directories_prefix_v1:{digest}");
+        if self.ctx.effect_is_committed(&operation, &digest)? {
+            return Ok(());
+        }
         let mut batch = self.school_batch(school)?;
         batch.append_many(Table::Coaches, &emission.coaches)?;
-        batch.commit()?;
+        batch.commit_once(&operation, &digest)?;
         self.coach_rows = self.coach_rows.saturating_add(emission.coaches.len());
         let with_email = emission
             .coaches
@@ -119,35 +128,98 @@ impl Run<'_> {
         school_id: &SchoolId,
     ) -> Option<SummaryEmission> {
         let url = summary_url(short_code);
-        let outcome = self.get(&url).await?;
-        let summary = match parse_summary(&outcome.body) {
-            Ok(summary) => summary,
-            Err(error) => {
-                self.fail(format!("summary {url}: {error}"));
-                return None;
-            }
-        };
+        let outcome = self.summary_capture(&url, school).await?;
+        let summary = self.parsed_summary(&outcome, school)?;
         let capture = Capture {
-            url: &outcome.url,
+            url: outcome
+                .response_url
+                .as_deref()
+                .map_or(outcome.url.as_str(), |url| url),
             observed_on: &outcome.fetched_at,
             sha256: &outcome.content_digest,
         };
-        match process_owned_summary(
+        let mapped = process_owned_summary(
             school,
             row,
             &summary,
             school_id,
             capture,
             self.ctx.school_year,
-        ) {
+        )
+        .map_err(|error| match error {
+            super::super::map::SummaryError::Coaches(error) => error,
+            error => crate::CrawlError::Schema {
+                url: capture.url.to_owned(),
+                detail: error.to_string(),
+            },
+        });
+        self.finish_summary(school, &outcome, mapped)
+    }
+
+    fn finish_summary(
+        &mut self,
+        school: &mut CanonicalSchool,
+        outcome: &crate::net::FetchOutcome,
+        mapped: CrawlResult<SummaryEmission>,
+    ) -> Option<SummaryEmission> {
+        match mapped {
             Ok(mapped) => {
+                super::research::completed(school, self.ctx.school_year, outcome, &mapped.emission);
                 if let Some(review) = &mapped.postal_review {
-                    self.reject(format!("summary postal review {url}: {review}"));
+                    self.reject(format!("summary postal review {}: {review}", outcome.url));
                 }
                 Some(mapped)
             }
             Err(error) => {
-                self.fail(format!("summary association {url}: {error}"));
+                let attempt = super::research::attempt(
+                    outcome,
+                    super::super::research_failure::crawl(&error),
+                    error.to_string(),
+                );
+                super::research::retain(school, self.ctx.school_year, attempt);
+                self.fail(format!("summary association {}: {error}", outcome.url));
+                None
+            }
+        }
+    }
+
+    async fn summary_capture(
+        &mut self,
+        url: &str,
+        school: &mut CanonicalSchool,
+    ) -> Option<crate::net::FetchOutcome> {
+        match self.ctx.fetcher.get(url, &self.fetch).await {
+            Ok(outcome) => Some(outcome),
+            Err(error) => {
+                let attempt = census_domain::model::ContactResearchAttempt {
+                    locator: url.to_owned(),
+                    acquired_at: crate::net::now_iso8601(),
+                    source_sha256: None,
+                    outcome: super::super::research_failure::fetch(&error),
+                    reason: error.to_string(),
+                };
+                super::research::retain(school, self.ctx.school_year, attempt);
+                self.fail(format!("fetch {url}: {error}"));
+                None
+            }
+        }
+    }
+
+    fn parsed_summary(
+        &mut self,
+        outcome: &crate::net::FetchOutcome,
+        school: &mut CanonicalSchool,
+    ) -> Option<super::super::SchoolSummary> {
+        match parse_summary(&outcome.body) {
+            Ok(summary) => Some(summary),
+            Err(error) => {
+                let attempt = super::research::attempt(
+                    outcome,
+                    super::super::research_failure::crawl(&error),
+                    error.to_string(),
+                );
+                super::research::retain(school, self.ctx.school_year, attempt);
+                self.fail(format!("summary {}: {error}", outcome.url));
                 None
             }
         }

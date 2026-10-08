@@ -4,9 +4,21 @@ use census_store::Table;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+mod apply;
+#[cfg(test)]
+mod apply_tests;
+mod budget;
+mod effect;
+mod journal_index;
+mod once;
+pub(crate) mod projection;
+pub(crate) mod row;
 mod sink;
+pub use apply::PreparedRecorded;
+pub use budget::{RecordingUsage, MAX_RECORDED_BYTES, MAX_RECORDED_WORK};
+pub use effect::RecordedEffect;
 
-pub use sink::{RowBatch, RowSink};
+pub use sink::{RowApplication, RowBatch, RowSink};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RecordedBatch {
@@ -35,6 +47,8 @@ pub struct RecordedJournal {
 pub struct Recorded {
     pub rows: Vec<RecordedBatch>,
     pub journal: Vec<RecordedJournal>,
+    #[serde(default)]
+    pub effects: Vec<RecordedEffect>,
 }
 
 impl Recorded {
@@ -45,8 +59,14 @@ impl Recorded {
 
 #[derive(Debug, Default)]
 pub struct Recording {
-    batches: Mutex<Vec<RecordedBatch>>,
-    journal: Mutex<Vec<RecordedJournal>>,
+    state: Mutex<RecordingState>,
+}
+
+#[derive(Debug, Default)]
+struct RecordingState {
+    recorded: Recorded,
+    usage: RecordingUsage,
+    journal_index: std::collections::HashMap<journal_index::JournalDigest, usize>,
 }
 
 impl Recording {
@@ -55,52 +75,132 @@ impl Recording {
     }
 
     pub fn drain(&self) -> Recorded {
-        Recorded {
-            rows: std::mem::take(&mut *match self.batches.lock() {
-                Ok(guard) => guard,
-                Err(poison) => poison.into_inner(),
-            }),
-            journal: std::mem::take(&mut *match self.journal.lock() {
-                Ok(guard) => guard,
-                Err(poison) => poison.into_inner(),
-            }),
-        }
+        let mut state = self.state();
+        state.usage = RecordingUsage::default();
+        state.journal_index = std::collections::HashMap::new();
+        std::mem::take(&mut state.recorded)
     }
 
     pub fn rows(&self) -> usize {
-        match self.batches.lock() {
-            Ok(guard) => guard,
-            Err(poison) => poison.into_inner(),
-        }
-        .iter()
-        .map(RecordedBatch::len)
-        .sum()
+        self.state()
+            .recorded
+            .rows
+            .iter()
+            .map(RecordedBatch::len)
+            .sum()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.rows() == 0
-            && match self.journal.lock() {
-                Ok(guard) => guard,
-                Err(poison) => poison.into_inner(),
-            }
-            .is_empty()
+        let state = self.state();
+        state.recorded.rows.is_empty() && state.recorded.journal.is_empty()
     }
 
-    fn push(&self, batch: RecordedBatch) {
-        match self.batches.lock() {
-            Ok(guard) => guard,
-            Err(poison) => poison.into_inner(),
-        }
-        .push(batch);
+    pub fn usage(&self) -> RecordingUsage {
+        self.state().usage
     }
 
-    fn push_journal(&self, entry: RecordedJournal) {
-        match self.journal.lock() {
-            Ok(guard) => guard,
+    pub fn admit(&self, retained_bytes: usize, work: usize) -> crate::CrawlResult<()> {
+        self.state().usage.admitted(RecordingUsage {
+            retained_bytes,
+            work,
+        })?;
+        Ok(())
+    }
+
+    pub fn inspect_journal<T>(
+        &self,
+        phase: &str,
+        key: &str,
+        inspect: impl FnOnce(Option<&Value>) -> crate::CrawlResult<T>,
+    ) -> crate::CrawlResult<T> {
+        let state = self.state();
+        inspect(journal_index::lookup(&state, phase, key)?.map(|entry| &entry.payload))
+    }
+
+    pub fn append_batches(
+        &self,
+        rows: Vec<RecordedBatch>,
+        journal: Vec<RecordedJournal>,
+    ) -> crate::CrawlResult<()> {
+        append_state(&mut self.state(), rows, journal, None)
+    }
+
+    fn append_once(
+        &self,
+        rows: Vec<RecordedBatch>,
+        journal: Vec<RecordedJournal>,
+        effect: once::Effect<'_>,
+    ) -> crate::CrawlResult<RowApplication> {
+        let mut state = self.state();
+        let previous = journal_index::lookup(&state, once::PHASE, effect.operation())?;
+        if effect.seen(previous.map(|entry| &entry.payload))? {
+            return Ok(RowApplication::Repeated);
+        }
+        let extent = RecordedEffect::pending(&state.recorded, &rows, &journal)?;
+        append_state(&mut state, rows, journal, Some(extent))?;
+        Ok(RowApplication::Admitted)
+    }
+
+    fn state(&self) -> std::sync::MutexGuard<'_, RecordingState> {
+        match self.state.lock() {
+            Ok(state) => state,
             Err(poison) => poison.into_inner(),
         }
-        .push(entry);
     }
+}
+
+fn append_state(
+    state: &mut RecordingState,
+    rows: Vec<RecordedBatch>,
+    journal: Vec<RecordedJournal>,
+    effect: Option<RecordedEffect>,
+) -> crate::CrawlResult<()> {
+    let extra = budget::measure(&rows, &journal)?;
+    let extra = effect.as_ref().map_or(Ok(extra), |_| {
+        extra.admitted(RecordingUsage {
+            retained_bytes: budget::EFFECT_STORAGE,
+            work: 1,
+        })
+    })?;
+    let usage = state.usage.admitted(extra)?;
+    reserve(
+        state,
+        rows.len(),
+        journal.len(),
+        usize::from(effect.is_some()),
+    )?;
+    journal_index::reserve(state, &journal)?;
+    state.recorded.rows.extend(rows);
+    journal_index::append(state, journal);
+    state.usage = usage;
+    if let Some(effect) = effect {
+        state.recorded.effects.push(effect);
+    }
+    Ok(())
+}
+
+fn reserve(
+    state: &mut RecordingState,
+    rows: usize,
+    journal: usize,
+    effects: usize,
+) -> crate::CrawlResult<()> {
+    state
+        .recorded
+        .rows
+        .try_reserve(rows)
+        .map_err(|_| budget::resource("recorded batch allocation", rows, MAX_RECORDED_WORK))?;
+    state
+        .recorded
+        .journal
+        .try_reserve(journal)
+        .map_err(|_| budget::resource("recorded journal allocation", journal, MAX_RECORDED_WORK))?;
+    state
+        .recorded
+        .effects
+        .try_reserve(effects)
+        .map_err(|_| budget::resource("recorded effect allocation", effects, MAX_RECORDED_WORK))?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -136,7 +236,11 @@ mod tests {
     fn the_recording_route_holds_rows_and_leaves_the_store_alone() -> TestResult {
         let (_dir, store) = scratch()?;
         let recording = Recording::new();
-        let mut batch = RowSink::Record(&recording).write_batch();
+        let mut batch = RowSink::Record {
+            store: &store,
+            recording: &recording,
+        }
+        .write_batch();
         batch.append_many(Table::Meets, &[json!({"id": "m1"})])?;
         batch.append(Table::Performances, vec![json!({"id": "p1"})])?;
         batch.journal_done("milesplit_results_v1", "set-1", &json!({"url": "u"}))?;
@@ -171,7 +275,11 @@ mod tests {
     fn a_recorded_unit_is_not_journaled_until_it_is_written() -> TestResult {
         let (_dir, store) = scratch()?;
         let recording = Recording::new();
-        let mut batch = RowSink::Record(&recording).write_batch();
+        let mut batch = RowSink::Record {
+            store: &store,
+            recording: &recording,
+        }
+        .write_batch();
         batch.journal_done(
             "wayzata_schedule_v1",
             "page-1",
@@ -187,6 +295,55 @@ mod tests {
             "a marker the store cannot see is a marker no reader acts on"
         );
         check!(eq; recording.drain().journal.len(), 1);
+        Ok(())
+    }
+
+    #[test]
+    fn bounded_rows_keep_individual_node_limits_and_exact_batch_conservation() -> TestResult {
+        #[derive(Serialize)]
+        struct Row {
+            id: u16,
+            values: Vec<u8>,
+        }
+        let (_dir, store) = scratch()?;
+        let recording = Recording::new();
+        let rows: Vec<_> = (0..1000)
+            .map(|id| Row {
+                id,
+                values: vec![7; 100],
+            })
+            .collect();
+        let sink = RowSink::Record {
+            store: &store,
+            recording: &recording,
+        };
+        let mut batch = sink.write_batch();
+        batch.append_many(Table::Meets, &rows)?;
+        batch.commit()?;
+        check!(eq; recording.rows(), rows.len());
+        let oversized = Row {
+            id: 1000,
+            values: vec![7; MAX_RECORDED_WORK],
+        };
+        let mut refused = sink.write_batch();
+        check!(matches!(
+            refused.append_many(Table::Meets, &[oversized]),
+            Err(crate::CrawlError::Resource {
+                resource: "recording serialization work",
+                ..
+            })
+        ));
+        drop(refused);
+        check!(eq; recording.rows(), rows.len());
+        check!(eq; store.walk_table(Table::Meets)?.rows, 0);
+        let drained = recording.drain();
+        check!(eq; drained.rows.len(), 1);
+        let retained = drained.rows.first().ok_or("recorded batch")?;
+        check!(eq; retained.table, Table::Meets);
+        check!(eq; retained.rows.len(), rows.len());
+        for (retained, original) in retained.rows.iter().zip(rows) {
+            check!(eq; retained, &serde_json::to_value(original)?);
+        }
         Ok(())
     }
 }

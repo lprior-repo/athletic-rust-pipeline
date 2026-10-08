@@ -13,8 +13,8 @@ mod quarantine;
 const MAX_META_BYTES: usize = 64 * 1024;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub(crate) struct CacheMeta {
-    pub(crate) url: String,
+pub struct CacheMeta {
+    pub url: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) response_url: Option<String>,
     pub(crate) method: String,
@@ -25,11 +25,11 @@ pub(crate) struct CacheMeta {
     pub(crate) bytes: usize,
     pub(crate) fetched_at: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub(crate) etag: Option<String>,
+    pub etag: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub(crate) last_modified: Option<String>,
+    pub last_modified: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub(crate) content_type: Option<String>,
+    pub content_type: Option<String>,
 }
 
 impl Fetcher {
@@ -164,7 +164,7 @@ pub(crate) fn write_archive(
     meta_path: &Path,
     body: &[u8],
     meta: &CacheMeta,
-) -> Result<(), FetchError> {
+) -> Result<PathBuf, FetchError> {
     archive::write_preserved_capture(body_path, meta_path, body, meta)
 }
 

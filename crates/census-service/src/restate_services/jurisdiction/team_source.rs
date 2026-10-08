@@ -79,12 +79,18 @@ impl TeamsSource {
             }
         };
         match teams_arms::team_source(
-            &self.owner.store,
-            &fetcher,
+            teams_arms::SourceRuntime {
+                store: &self.owner.store,
+                fetcher: &fetcher,
+                region: self.jobs.region(),
+            },
             request.jurisdiction.jurisdiction,
-            request.jurisdiction.season,
-            request.jurisdiction.refresh,
-            &observed_on,
+            crate::restate_services::jobs::AdapterScope {
+                season: request.jurisdiction.season,
+                refresh: request.jurisdiction.refresh,
+                at: &observed_on,
+                as_of: request.jurisdiction.history.as_of(),
+            },
             &request.source,
         )
         .await
@@ -121,27 +127,42 @@ fn stage(report: Option<census_crawl::AdapterReport>, at: String) -> ledger::Att
             })
         }
     };
-    if report.errors > 0 {
-        let message = format!(
-            "{} incomplete teams acquisition: {} errors",
-            report.adapter, report.errors
-        );
+    let outcome = report_outcome(report, records, at);
+    if outcome.disposition.is_complete()
+        && outcome.errors.is_empty()
+        && outcome.unfinished.is_empty()
+    {
+        ledger::Attempt::Completed(outcome)
+    } else {
+        let message = format!("incomplete teams acquisition: {:?}", outcome.disposition);
         ledger::Attempt::Incomplete {
-            outcome: StageOutcome {
-                records,
-                at,
-                errors: vec![message.clone()],
-                notes: report.notes,
-            },
+            outcome,
             error: JobError::Transient { message },
         }
+    }
+}
+
+fn report_outcome(report: census_crawl::AdapterReport, records: usize, at: String) -> StageOutcome {
+    let errors = if report.errors > 0
+        || report.rejections > 0
+        || report
+            .unresolved
+            .is_some_and(|value| value.rows > 0 || value.labels > 0)
+    {
+        vec![format!(
+            "{} source errors, {} rejected rows; unresolved {:?}",
+            report.errors, report.rejections, report.unresolved
+        )]
     } else {
-        ledger::Attempt::Completed(StageOutcome {
-            records,
-            at,
-            errors: Vec::new(),
-            notes: report.notes,
-        })
+        Vec::new()
+    };
+    StageOutcome {
+        records,
+        at,
+        errors,
+        notes: report.notes,
+        disposition: report.disposition,
+        unfinished: report.unfinished,
     }
 }
 

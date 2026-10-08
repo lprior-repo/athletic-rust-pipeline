@@ -4,7 +4,11 @@ use census_store::{StoreError, StoreResult};
 use std::borrow::Cow;
 use std::path::Path;
 
-pub fn write_csv(path: &Path, header: &[&str], rows: &[Vec<String>]) -> Result<()> {
+pub fn write_csv(
+    path: &Path,
+    header: impl IntoIterator<Item = impl AsRef<[u8]>>,
+    rows: &[Vec<String>],
+) -> Result<()> {
     publish_atomically(path, |temporary| write_body(temporary, path, header, rows))?;
     Ok(())
 }
@@ -25,7 +29,7 @@ fn escape_field(field: &str) -> Cow<'_, str> {
 fn write_body(
     temporary: &Path,
     published: &Path,
-    header: &[&str],
+    header: impl IntoIterator<Item = impl AsRef<[u8]>>,
     rows: &[Vec<String>],
 ) -> StoreResult<()> {
     let mut writer = csv::WriterBuilder::new()

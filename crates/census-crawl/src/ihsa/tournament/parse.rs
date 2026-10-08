@@ -3,7 +3,7 @@ use super::wire::{
     QualifiersEnvelope, RelayMember, TermsEnvelope,
 };
 use crate::{CrawlError, CrawlResult};
-use census_domain::model::{CentiMetres, CentiSeconds};
+use census_domain::model::CentiMetres;
 use census_domain::model::{Grade, Mark};
 
 fn decode<T: serde::de::DeserializeOwned>(body: &str, what: &str) -> CrawlResult<T> {
@@ -60,18 +60,7 @@ pub fn parse_mark(published: &str) -> Option<Mark> {
             value,
         )?));
     }
-    if let Some((minutes, seconds)) = stripped.split_once(':') {
-        let minutes = minutes.trim().parse::<f64>().ok()?;
-        let seconds = seconds.trim().parse::<f64>().ok()?;
-        return Some(Mark::TimeSeconds(CentiSeconds::try_from_seconds_f64(
-            minutes.mul_add(60.0, seconds),
-        )?));
-    }
-    stripped
-        .parse::<f64>()
-        .ok()
-        .and_then(CentiSeconds::try_from_seconds_f64)
-        .map(Mark::TimeSeconds)
+    crate::hytek::parse_time(stripped).map(Mark::TimeSeconds)
 }
 
 pub fn parse_grade(published: Option<&str>) -> Option<Grade> {
@@ -130,12 +119,8 @@ pub fn event_label<'a>(event_name: &'a str, class_division: &str) -> Option<&'a 
 }
 
 pub fn date_part(timestamp: &str) -> Option<&str> {
-    let (date, _) = timestamp.split_once('T')?;
-    if date.is_empty() {
-        None
-    } else {
-        Some(date)
-    }
+    crate::context::published_performance_date(timestamp)?;
+    timestamp.get(..10)
 }
 
 pub fn event_date_range(rows: &[EventRow]) -> (Option<String>, Option<String>) {

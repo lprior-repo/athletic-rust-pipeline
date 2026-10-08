@@ -5,7 +5,7 @@ use census_domain::UsJurisdiction;
 use html5gum::Tokenizer;
 use url::Url;
 
-mod markup;
+use crate::milesplit::parse::markup;
 mod published;
 
 #[derive(Clone, Copy)]

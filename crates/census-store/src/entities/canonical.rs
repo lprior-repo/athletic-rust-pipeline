@@ -26,9 +26,10 @@ impl Entity for CanonicalSchool {
 
     fn merge(&mut self, other: Self) {
         let found = collision(self.id.as_str(), self, &other);
-        for conflict in other.retained_conflicts {
-            record(&mut self.retained_conflicts, conflict);
-        }
+        other
+            .retained_conflicts
+            .into_iter()
+            .for_each(|conflict| record(&mut self.retained_conflicts, conflict));
         if let Some(conflict) = found {
             record(&mut self.retained_conflicts, conflict);
             return;
@@ -55,10 +56,12 @@ impl Entity for CanonicalSchool {
         if other.name.len() > self.name.len() && other.name.starts_with(&self.name) {
             self.name = other.name;
         }
-        union_vec(&mut self.aliases, &other.aliases);
-        union_vec(&mut self.source_identities, &other.source_identities);
-        union_vec(&mut self.evidence, &other.evidence);
-        union_vec(&mut self.postal_addresses, &other.postal_addresses);
+        union_vec(&mut self.aliases, other.aliases);
+        union_vec(&mut self.source_identities, other.source_identities);
+        union_vec(&mut self.evidence, other.evidence);
+        union_vec(&mut self.postal_addresses, other.postal_addresses);
+        union_vec(&mut self.mailbox_claims, other.mailbox_claims);
+        union_vec(&mut self.contact_research, other.contact_research);
         self.postal_addresses.sort_unstable();
     }
 }
@@ -70,9 +73,10 @@ impl Entity for CanonicalTeam {
 
     fn merge(&mut self, other: Self) {
         let found = collision(self.id.as_str(), self, &other);
-        for conflict in other.retained_conflicts {
-            record(&mut self.retained_conflicts, conflict);
-        }
+        other
+            .retained_conflicts
+            .into_iter()
+            .for_each(|conflict| record(&mut self.retained_conflicts, conflict));
         if let Some(conflict) = found {
             record(&mut self.retained_conflicts, conflict);
             return;
@@ -80,8 +84,8 @@ impl Entity for CanonicalTeam {
         if self.level.is_none() {
             self.level = other.level;
         }
-        union_vec(&mut self.source_identities, &other.source_identities);
-        union_vec(&mut self.evidence, &other.evidence);
+        union_vec(&mut self.source_identities, other.source_identities);
+        union_vec(&mut self.evidence, other.evidence);
     }
 }
 
@@ -92,9 +96,10 @@ impl Entity for CanonicalCoach {
 
     fn merge(&mut self, other: Self) {
         let found = collision(self.id.as_str(), self, &other);
-        for conflict in other.retained_conflicts {
-            record(&mut self.retained_conflicts, conflict);
-        }
+        other
+            .retained_conflicts
+            .into_iter()
+            .for_each(|conflict| record(&mut self.retained_conflicts, conflict));
         if let Some(conflict) = found {
             record(&mut self.retained_conflicts, conflict);
             return;
@@ -105,9 +110,9 @@ impl Entity for CanonicalCoach {
         if self.phone.is_none() {
             self.phone = other.phone;
         }
-        union_vec(&mut self.source_identities, &other.source_identities);
-        union_vec(&mut self.evidence, &other.evidence);
-        union_vec(&mut self.tenure_evidence, &other.tenure_evidence);
+        union_vec(&mut self.source_identities, other.source_identities);
+        union_vec(&mut self.evidence, other.evidence);
+        union_vec(&mut self.tenure_evidence, other.tenure_evidence);
     }
 
     fn publish(&mut self) {
@@ -131,31 +136,26 @@ impl Entity for CanonicalAthlete {
 
     fn merge(&mut self, other: Self) {
         let found = collision(self.id.as_str(), self, &other);
-        for conflict in other.retained_conflicts {
-            record(&mut self.retained_conflicts, conflict);
-        }
+        other
+            .retained_conflicts
+            .into_iter()
+            .for_each(|conflict| record(&mut self.retained_conflicts, conflict));
         if let Some(conflict) = found {
             record(&mut self.retained_conflicts, conflict);
             return;
         }
-        union_vec(&mut self.known_names, &other.known_names);
-        union_vec(&mut self.sports, &other.sports);
-        union_vec(&mut self.public_profile_urls, &other.public_profile_urls);
+        union_vec(&mut self.known_names, other.known_names);
+        union_vec(&mut self.sports, other.sports);
+        union_vec(&mut self.public_profile_urls, other.public_profile_urls);
         other
             .source
             .into_iter()
             .chain(other.source_links)
             .for_each(|identity| self.add_identity(identity));
-        union_vec(&mut self.evidence, &other.evidence);
-        union_vec(
-            &mut self.published_graduations,
-            &other.published_graduations,
-        );
-        for observation in other.observed_grades {
-            if !self.observed_grades.contains(&observation) {
-                self.observed_grades.push(observation);
-            }
-        }
+        union_vec(&mut self.evidence, other.evidence);
+        union_vec(&mut self.published_graduations, other.published_graduations);
+        union_vec(&mut self.identity_attestations, other.identity_attestations);
+        union_vec(&mut self.observed_grades, other.observed_grades);
         self.publish();
     }
 }
@@ -167,9 +167,10 @@ impl Entity for CanonicalMeet {
 
     fn merge(&mut self, other: Self) {
         let found = collision(self.id.as_str(), self, &other);
-        for conflict in other.retained_conflicts {
-            record(&mut self.retained_conflicts, conflict);
-        }
+        other
+            .retained_conflicts
+            .into_iter()
+            .for_each(|conflict| record(&mut self.retained_conflicts, conflict));
         if let Some(conflict) = found {
             record(&mut self.retained_conflicts, conflict);
             return;
@@ -183,10 +184,10 @@ impl Entity for CanonicalMeet {
         if self.level == census_domain::model::CompetitionLevel::Unknown {
             self.level = other.level;
         }
-        union_vec(&mut self.sports, &other.sports);
-        union_vec(&mut self.source_identities, &other.source_identities);
-        union_vec(&mut self.source_urls, &other.source_urls);
-        union_vec(&mut self.evidence, &other.evidence);
+        union_vec(&mut self.sports, other.sports);
+        union_vec(&mut self.source_identities, other.source_identities);
+        union_vec(&mut self.source_urls, other.source_urls);
+        union_vec(&mut self.evidence, other.evidence);
     }
 }
 
@@ -202,18 +203,19 @@ impl Entity for CanonicalEvent {
         } else {
             collision(self.id.as_str(), self, &other)
         };
-        for conflict in other.retained_conflicts {
-            record(&mut self.retained_conflicts, conflict);
-        }
+        other
+            .retained_conflicts
+            .into_iter()
+            .for_each(|conflict| record(&mut self.retained_conflicts, conflict));
         if let Some(conflict) = found {
             record(&mut self.retained_conflicts, conflict);
             return;
         }
         if refinement && matches!(self.kind, census_domain::model::EventKind::Unmapped { .. }) {
-            self.kind = other.kind.clone();
+            self.kind = other.kind;
         }
-        union_vec(&mut self.source_labels, &other.source_labels);
-        union_vec(&mut self.evidence, &other.evidence);
+        union_vec(&mut self.source_labels, other.source_labels);
+        union_vec(&mut self.evidence, other.evidence);
     }
 }
 
@@ -238,9 +240,10 @@ impl Entity for CanonicalPerformance {
 
     fn merge(&mut self, other: Self) {
         let found = collision(self.id.as_str(), self, &other);
-        for conflict in other.retained_conflicts {
-            record(&mut self.retained_conflicts, conflict);
-        }
+        other
+            .retained_conflicts
+            .into_iter()
+            .for_each(|conflict| record(&mut self.retained_conflicts, conflict));
         if let Some(conflict) = found {
             record(&mut self.retained_conflicts, conflict);
             return;
@@ -273,7 +276,7 @@ impl Entity for CanonicalPerformance {
         if self.source_athlete.is_none() {
             self.source_athlete = other.source_athlete;
         }
-        union_vec(&mut self.evidence, &other.evidence);
+        union_vec(&mut self.evidence, other.evidence);
     }
 }
 

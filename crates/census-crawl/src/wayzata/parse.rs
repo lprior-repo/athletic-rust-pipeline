@@ -1,9 +1,13 @@
 use crate::{CrawlError, CrawlResult};
 use census_domain::model::Sport;
 use regex::Regex;
-use std::sync::LazyLock;
 
 use super::BASE;
+
+mod pattern;
+use pattern::{
+    aria, classes, date_cell, day, link, name_cell, row, tags, title, value, venue_cell,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ScheduleSport {
@@ -48,86 +52,6 @@ pub struct MeetRow {
     pub aria_label: Option<String>,
 }
 
-static ROW: LazyLock<Result<Regex, regex::Error>> =
-    LazyLock::new(|| Regex::new(r"(?is)<tr\b[^>]*>.*?</tr>"));
-static DATE_CELL: LazyLock<Result<Regex, regex::Error>> =
-    LazyLock::new(|| Regex::new(r#"(?is)<td[^>]*class="[^"]*date[^"]*"[^>]*>(.*?)</td>"#));
-static NAME_CELL: LazyLock<Result<Regex, regex::Error>> =
-    LazyLock::new(|| Regex::new(r#"(?is)<td[^>]*class="[^"]*awayteam[^"]*"[^>]*>(.*?)</td>"#));
-static VENUE_CELL: LazyLock<Result<Regex, regex::Error>> =
-    LazyLock::new(|| Regex::new(r#"(?is)<td[^>]*class="[^"]*hometeam[^"]*"[^>]*>(.*?)</td>"#));
-static TITLE: LazyLock<Result<Regex, regex::Error>> =
-    LazyLock::new(|| Regex::new(r#"(?is)<span[^>]*title="([^"]*)""#));
-static LINK: LazyLock<Result<Regex, regex::Error>> =
-    LazyLock::new(|| Regex::new(r#"(?is)<a[^>]*href="/links/([^"/?#]+)""#));
-static ARIA: LazyLock<Result<Regex, regex::Error>> =
-    LazyLock::new(|| Regex::new(r#"(?is)<a[^>]*aria-label="([^"]*)""#));
-static TAGS: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new(r"(?is)<[^>]*>"));
-static DAY: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new(r"(\d{1,2})"));
-
-fn row() -> CrawlResult<&'static Regex> {
-    ROW.as_ref().map_err(|source| CrawlError::RegexInit {
-        pattern: "ROW",
-        source: source.clone(),
-    })
-}
-
-fn date_cell() -> CrawlResult<&'static Regex> {
-    DATE_CELL.as_ref().map_err(|source| CrawlError::RegexInit {
-        pattern: "DATE_CELL",
-        source: source.clone(),
-    })
-}
-
-fn name_cell() -> CrawlResult<&'static Regex> {
-    NAME_CELL.as_ref().map_err(|source| CrawlError::RegexInit {
-        pattern: "NAME_CELL",
-        source: source.clone(),
-    })
-}
-
-fn venue_cell() -> CrawlResult<&'static Regex> {
-    VENUE_CELL.as_ref().map_err(|source| CrawlError::RegexInit {
-        pattern: "VENUE_CELL",
-        source: source.clone(),
-    })
-}
-
-fn title() -> CrawlResult<&'static Regex> {
-    TITLE.as_ref().map_err(|source| CrawlError::RegexInit {
-        pattern: "TITLE",
-        source: source.clone(),
-    })
-}
-
-fn link() -> CrawlResult<&'static Regex> {
-    LINK.as_ref().map_err(|source| CrawlError::RegexInit {
-        pattern: "LINK",
-        source: source.clone(),
-    })
-}
-
-fn aria() -> CrawlResult<&'static Regex> {
-    ARIA.as_ref().map_err(|source| CrawlError::RegexInit {
-        pattern: "ARIA",
-        source: source.clone(),
-    })
-}
-
-fn tags() -> CrawlResult<&'static Regex> {
-    TAGS.as_ref().map_err(|source| CrawlError::RegexInit {
-        pattern: "TAGS",
-        source: source.clone(),
-    })
-}
-
-fn day() -> CrawlResult<&'static Regex> {
-    DAY.as_ref().map_err(|source| CrawlError::RegexInit {
-        pattern: "DAY",
-        source: source.clone(),
-    })
-}
-
 const MONTHS: [&str; 12] = [
     "January",
     "February",
@@ -144,52 +68,111 @@ const MONTHS: [&str; 12] = [
 ];
 
 pub fn schedule_rows(body: &str, year: i16) -> CrawlResult<Vec<MeetRow>> {
+    super::budget::check(
+        "Wayzata schedule bytes",
+        body.len(),
+        super::budget::MAX_PAGE_BYTES,
+    )?;
+    let body = schedule_body(body)?.map_or(body, core::convert::identity);
+    rows(body, year)
+}
+
+pub(super) fn rows(body: &str, year: i16) -> CrawlResult<Vec<MeetRow>> {
+    let pattern = row()?;
+    let count = row_count(pattern, body)?;
     let mut rows = Vec::new();
-    let mut month: Option<u8> = None;
-    let day_pattern = day()?;
-    for found in row()?.find_iter(body) {
-        let row = found.as_str();
-        if row.contains("month-title") {
-            month = month_from_text(&tags()?.replace_all(row, " "));
-            continue;
-        }
-        if !row.contains("event-row") {
-            continue;
-        }
-        let Some(month) = month else {
-            continue;
-        };
-        let Some(day) = date_cell()?
-            .captures(row)
-            .and_then(|cell| cell.get(1))
-            .and_then(|cell| day_pattern.captures(cell.as_str()))
-            .and_then(|day| day.get(1))
-            .and_then(|day| day.as_str().parse::<u8>().ok())
-        else {
-            continue;
-        };
-        let name = cell_text(name_cell()?, row)?;
-        let location = cell_text(venue_cell()?, row)?;
-        if name.is_empty() || location.is_empty() {
-            continue;
-        }
-        rows.push(MeetRow {
-            date: format!("{year:04}-{month:02}-{day:02}"),
-            name,
-            location,
-            slug: link()?
-                .captures(row)
-                .and_then(|capture| capture.get(1))
-                .map(|slug| slug.as_str().to_string())
-                .filter(|slug| !slug.is_empty()),
-            aria_label: aria()?
-                .captures(row)
-                .and_then(|capture| capture.get(1))
-                .map(|label| normalize_whitespace(label.as_str()))
-                .filter(|label| !label.is_empty()),
+    super::budget::reserve(&mut rows, count, super::budget::MAX_PAGE_ROWS)?;
+    pattern
+        .find_iter(body)
+        .try_fold((None, rows), |(mut month, mut rows), found| {
+            let text = found.as_str();
+            let classes = classes(text)?;
+            if classes
+                .is_some_and(|classes| classes.split_whitespace().any(|class| class == "event-row"))
+            {
+                rows.push(parse_row(text, year, month)?);
+            } else if classes.is_some_and(|classes| {
+                classes
+                    .split_whitespace()
+                    .any(|class| class == "month-title")
+            }) {
+                super::budget::check(
+                    "Wayzata month heading bytes",
+                    text.len(),
+                    super::budget::MAX_ROW_BYTES,
+                )?;
+                month = month_from_text(&tags()?.replace_all(text, " "));
+            }
+            Ok((month, rows))
+        })
+        .map(|(_, rows)| rows)
+}
+
+fn row_count(pattern: &Regex, body: &str) -> CrawlResult<usize> {
+    let closed = pattern.find_iter(body).count();
+    let starts = pattern::row_open()?.find_iter(body).count();
+    if starts != closed {
+        return Err(CrawlError::Schema {
+            url: BASE.to_string(),
+            detail: "schedule contains an incomplete event row".to_string(),
         });
     }
-    Ok(rows)
+    let count = pattern.find_iter(body).try_fold(0usize, |count, found| {
+        if classes(found.as_str())?
+            .is_some_and(|classes| classes.split_whitespace().any(|class| class == "event-row"))
+        {
+            count
+                .checked_add(1)
+                .ok_or_else(|| super::budget::arithmetic("Wayzata row count"))
+        } else {
+            Ok(count)
+        }
+    })?;
+    super::budget::check("Wayzata schedule rows", count, super::budget::MAX_PAGE_ROWS)?;
+    Ok(count)
+}
+
+fn parse_row(text: &str, year: i16, month: Option<u8>) -> CrawlResult<MeetRow> {
+    super::budget::check(
+        "Wayzata row bytes",
+        text.len(),
+        super::budget::MAX_ROW_BYTES,
+    )?;
+    Ok(MeetRow {
+        date: published_date(text, year, month)?,
+        name: cell_text(name_cell()?, text)?,
+        location: cell_text(venue_cell()?, text)?,
+        slug: link()?
+            .captures(text)
+            .and_then(|capture| value(&capture))
+            .map(|slug| bounded_text(slug.as_str()))
+            .transpose()?
+            .filter(|slug| !slug.is_empty()),
+        aria_label: aria()?
+            .captures(text)
+            .and_then(|capture| value(&capture))
+            .map(|label| normalize_whitespace(label.as_str()))
+            .transpose()?
+            .filter(|label| !label.is_empty()),
+    })
+}
+
+fn published_date(text: &str, year: i16, month: Option<u8>) -> CrawlResult<String> {
+    let raw = cell_text(date_cell()?, text)?;
+    if raw.len() == 10 && chrono::NaiveDate::parse_from_str(&raw, "%Y-%m-%d").is_ok() {
+        return Ok(raw);
+    }
+    if day()?.find_iter(&raw).count() != 1 {
+        return Ok(raw);
+    }
+    let day = day()?
+        .captures(&raw)
+        .and_then(|capture| capture.get(1))
+        .and_then(|day| day.as_str().parse::<u8>().ok());
+    match (month, day) {
+        (Some(month), Some(day)) => Ok(format!("{year:04}-{month:02}-{day:02}")),
+        _ => Ok(raw),
+    }
 }
 
 fn cell_text(cell: &Regex, row: &str) -> CrawlResult<String> {
@@ -200,21 +183,91 @@ fn cell_text(cell: &Regex, row: &str) -> CrawlResult<String> {
         .get(1)
         .map(|cell| cell.as_str())
         .map_or(Default::default(), core::convert::identity);
-    if let Some(title) = title()?.captures(inner).and_then(|title| title.get(1)) {
-        return Ok(normalize_whitespace(title.as_str()));
+    if let Some(title) = title()?.captures(inner).and_then(|capture| value(&capture)) {
+        return normalize_whitespace(title.as_str());
     }
-    Ok(normalize_whitespace(&tags()?.replace_all(inner, " ")))
+    normalize_whitespace(&tags()?.replace_all(inner, " "))
 }
 
 fn month_from_text(text: &str) -> Option<u8> {
-    let text = text.trim().to_ascii_lowercase();
+    let heading = text.split_whitespace().next()?;
     MONTHS
         .iter()
-        .position(|month| text.starts_with(&month.to_ascii_lowercase()))
+        .position(|month| heading.eq_ignore_ascii_case(month))
         .and_then(|index| index.checked_add(1))
         .and_then(|month| u8::try_from(month).ok())
 }
 
-fn normalize_whitespace(text: &str) -> String {
-    text.split_whitespace().collect::<Vec<_>>().join(" ")
+fn normalize_whitespace(text: &str) -> CrawlResult<String> {
+    super::budget::check(
+        "Wayzata field bytes",
+        text.len(),
+        super::budget::MAX_FIELD_BYTES,
+    )?;
+    let mut result = String::new();
+    result.try_reserve(text.len()).map_err(|_| {
+        super::budget::resource(
+            "Wayzata field allocation",
+            text.len(),
+            super::budget::MAX_FIELD_BYTES,
+        )
+    })?;
+    text.split_whitespace().for_each(|word| {
+        if !result.is_empty() {
+            result.push(' ');
+        }
+        result.push_str(word);
+    });
+    Ok(result)
+}
+
+fn bounded_text(text: &str) -> CrawlResult<String> {
+    super::budget::check(
+        "Wayzata field bytes",
+        text.len(),
+        super::budget::MAX_FIELD_BYTES,
+    )?;
+    let mut value = String::new();
+    value.try_reserve(text.len()).map_err(|_| {
+        super::budget::resource(
+            "Wayzata field allocation",
+            text.len(),
+            super::budget::MAX_FIELD_BYTES,
+        )
+    })?;
+    value.push_str(text);
+    Ok(value)
+}
+
+pub(super) fn schedule_body(body: &str) -> CrawlResult<Option<&str>> {
+    let table = pattern::table_open()?
+        .captures_iter(body)
+        .find(|capture| {
+            value(capture).is_some_and(|classes| {
+                classes
+                    .as_str()
+                    .split_whitespace()
+                    .any(|class| class == "schedule")
+            })
+        })
+        .and_then(|capture| capture.get(0));
+    let Some(table) = table else {
+        return Ok(None);
+    };
+    let tail = body
+        .get(table.end()..)
+        .ok_or_else(|| super::budget::arithmetic("Wayzata table start"))?;
+    let closing = pattern::table_close()?
+        .find(tail)
+        .ok_or_else(|| CrawlError::Schema {
+            url: BASE.to_string(),
+            detail: "schedule table is truncated".to_string(),
+        })?;
+    let end = table
+        .end()
+        .checked_add(closing.end())
+        .ok_or_else(|| super::budget::arithmetic("Wayzata table end"))?;
+    body.get(table.start()..end)
+        .map(Some)
+        .ok_or_else(|| super::budget::arithmetic("Wayzata table slice"))
 }

@@ -70,34 +70,10 @@ pub(super) struct GapCounters {
 
 pub(super) fn rows(row: &JurisdictionCoverage, counters: &GapCounters) -> Vec<CoverageGap> {
     let empty = row.schools == 0 && row.athletes == 0;
-    let counts = [
-        (GapClass::MissingGraduationEvidence, row.grad_unresolved),
-        (
-            GapClass::MissingPerformanceHistory,
-            row.athletes.saturating_sub(row.with_performance),
-        ),
-        (GapClass::MissingCoach, counters.missing_coach),
-        (GapClass::MissingSchool, counters.missing_school),
-        (
-            GapClass::MissingProfile,
-            row.athletes.saturating_sub(row.with_profile_url),
-        ),
-        (GapClass::ConflictingIdentity, row.identity_conflicts),
-        (
-            GapClass::MissingEventContext,
-            counters.missing_event_context,
-        ),
-        (GapClass::UnmappedEvent, counters.unmapped_event),
-        (
-            GapClass::MissingPrSupport,
-            row.with_performance
-                .saturating_sub(row.with_comparable_mark),
-        ),
-        (GapClass::UnknownJurisdiction, unplaceable_athletes(row)),
-        (GapClass::EmptyJurisdiction, 0),
-    ];
+    let classes = gap_classes();
     let mut gaps = Vec::new();
-    for (class, count) in counts {
+    for class in classes {
+        let count = gap_count(class, row, counters);
         if count == 0 && !(empty && class == GapClass::EmptyJurisdiction) {
             continue;
         }
@@ -109,6 +85,40 @@ pub(super) fn rows(row: &JurisdictionCoverage, counters: &GapCounters) -> Vec<Co
         });
     }
     gaps
+}
+
+fn gap_classes() -> [GapClass; 11] {
+    [
+        GapClass::MissingGraduationEvidence,
+        GapClass::MissingPerformanceHistory,
+        GapClass::MissingCoach,
+        GapClass::MissingSchool,
+        GapClass::MissingProfile,
+        GapClass::ConflictingIdentity,
+        GapClass::MissingEventContext,
+        GapClass::UnmappedEvent,
+        GapClass::MissingPrSupport,
+        GapClass::UnknownJurisdiction,
+        GapClass::EmptyJurisdiction,
+    ]
+}
+
+fn gap_count(class: GapClass, row: &JurisdictionCoverage, counters: &GapCounters) -> usize {
+    match class {
+        GapClass::MissingGraduationEvidence => row.grad_unresolved,
+        GapClass::MissingPerformanceHistory => row.athletes.saturating_sub(row.with_performance),
+        GapClass::MissingCoach => counters.missing_coach,
+        GapClass::MissingSchool => counters.missing_school,
+        GapClass::MissingProfile => row.athletes.saturating_sub(row.with_profile_url),
+        GapClass::ConflictingIdentity => row.identity_conflicts,
+        GapClass::MissingEventContext => counters.missing_event_context,
+        GapClass::UnmappedEvent => counters.unmapped_event,
+        GapClass::MissingPrSupport => row
+            .with_performance
+            .saturating_sub(row.with_comparable_mark),
+        GapClass::UnknownJurisdiction => unplaceable_athletes(row),
+        GapClass::EmptyJurisdiction => 0,
+    }
 }
 
 fn unplaceable_athletes(row: &JurisdictionCoverage) -> usize {

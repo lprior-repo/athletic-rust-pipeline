@@ -1,9 +1,10 @@
 use super::super::map::{absorb, AbsorbedMeet, RowWriter};
 use super::super::parse::{parse_pdf, pdftotext};
 use super::super::{
-    artifact_format, school_year_for, ArchiveArtifact, ArtifactFormat, Options, PARSE_VERSION,
+    artifact_format, school_year_for, ArchiveArtifact, ArtifactFormat, PARSE_VERSION,
 };
 use super::ArtifactRun;
+use crate::context::PerformanceDateAssessment;
 use crate::net::FetchOutcome;
 use crate::result_file::ParsedMeet;
 use crate::{AdapterContext, AdapterReport, CrawlResult};
@@ -12,20 +13,24 @@ use serde_json::json;
 
 pub(super) async fn process_artifact(
     ctx: &AdapterContext<'_>,
-    options: &Options,
     report: &mut AdapterReport,
     run: &mut ArtifactRun,
     artifact: &ArchiveArtifact,
     sport: Sport,
 ) -> CrawlResult<()> {
     let extension = artifact.extension.as_str();
-    if artifact_format(extension, None) == ArtifactFormat::Unparsed {
-        return index_unparsed(run, artifact, extension);
-    }
     let Some(fetched) = fetch_body(ctx, report, run, artifact, extension).await else {
         return Ok(());
     };
-    let source = run.source.clone();
+    let projection_key = super::run_receipts::key(
+        &run.projection_context,
+        &artifact.url,
+        &fetched.outcome.body,
+    )?;
+    if run.done.contains(&projection_key) {
+        return Ok(());
+    }
+    let source = SourceRef::new("wiaa_results", Some(artifact.url.clone()));
     let Some(parsed) = parse_artifact(
         &fetched.outcome,
         &fetched.body,
@@ -46,30 +51,12 @@ pub(super) async fn process_artifact(
             artifact,
             format: fetched.format,
             sport,
-            observed_on: &options.observed_on,
+            observed_on: &fetched.outcome.fetched_at,
+            date_assessment: ctx.assess_performance_date(&parsed.date),
+            performance_as_of: ctx.performance_as_of,
+            projection_key,
         },
     )
-}
-
-fn index_unparsed(
-    run: &mut ArtifactRun,
-    artifact: &ArchiveArtifact,
-    extension: &str,
-) -> CrawlResult<()> {
-    run.stats.artifacts_unparsed = run.stats.artifacts_unparsed.saturating_add(1);
-    let formats = run.stats.formats.entry(extension.to_string()).or_default();
-    *formats = formats.saturating_add(1);
-    run.pending.push((
-        artifact.url.clone(),
-        json!({
-            "url": artifact.url,
-            "parser": PARSE_VERSION,
-            "format": "indexed_only",
-            "year": artifact.year,
-            "stem": artifact.stem
-        }),
-    ));
-    Ok(())
 }
 
 async fn fetch_body(
@@ -84,6 +71,7 @@ async fn fetch_body(
         Err(error) => {
             run.stats.artifacts_failed = run.stats.artifacts_failed.saturating_add(1);
             report.note(format!("{}: {error}", artifact.url));
+            report.unfinished.push(format!("{}: {error}", artifact.url));
             return None;
         }
     };
@@ -92,6 +80,10 @@ async fn fetch_body(
     if format == ArtifactFormat::Unparsed {
         run.stats.artifacts_unsupported = run.stats.artifacts_unsupported.saturating_add(1);
         report.note(format!("{}: unrecognised result format", artifact.url));
+        report.unfinished.push(format!(
+            "{}: unrecognized result format; raw response retained",
+            artifact.url
+        ));
         return None;
     }
     Some(FetchedBody {
@@ -113,6 +105,11 @@ fn note_unparsed(
     artifact: &ArchiveArtifact,
     format: ArtifactFormat,
 ) {
+    report.unfinished.push(format!(
+        "{}: {} body has no recognized result projection",
+        artifact.url,
+        format.as_str()
+    ));
     if format != ArtifactFormat::Pdf {
         run.stats.artifacts_parse_failed = run.stats.artifacts_parse_failed.saturating_add(1);
     }
@@ -197,6 +194,9 @@ struct ReadArtifact<'a> {
     format: ArtifactFormat,
     sport: Sport,
     observed_on: &'a str,
+    date_assessment: PerformanceDateAssessment,
+    performance_as_of: chrono::NaiveDate,
+    projection_key: String,
 }
 
 fn record_parsed_artifact(
@@ -204,15 +204,13 @@ fn record_parsed_artifact(
     run: &mut ArtifactRun,
     read: ReadArtifact<'_>,
 ) -> CrawlResult<()> {
-    let Some(school_year) = school_year_for(&read.parsed.date, read.sport, read.artifact.year)
-    else {
-        run.stats.artifacts_parse_failed = run.stats.artifacts_parse_failed.saturating_add(1);
-        report.note(format!(
-            "{}: date {:?} (archive year {}) is not a school year",
+    let school_year = school_year_for(&read.parsed.date, read.sport, read.artifact.year);
+    if school_year.is_none() && !matches!(read.date_assessment, PerformanceDateAssessment::Future) {
+        report.unfinished.push(format!(
+            "{}: source date {:?} and archive season {} do not establish an academic period",
             read.artifact.url, read.parsed.date, read.artifact.year
         ));
-        return Ok(());
-    };
+    }
     run.stats.artifacts_parsed = run.stats.artifacts_parsed.saturating_add(1);
     let parsed_formats = run
         .stats
@@ -222,13 +220,15 @@ fn record_parsed_artifact(
     *parsed_formats = parsed_formats.saturating_add(1);
     let seasons = run.stats.seasons.entry(read.artifact.year).or_default();
     *seasons = seasons.saturating_add(1);
-    let rows = absorb(
+    let rows = match absorb(
         AbsorbedMeet {
             parsed: read.parsed,
             artifact: read.artifact,
             sport: read.sport,
             school_year,
             observed_on: read.observed_on,
+            performance_as_of: read.performance_as_of,
+            date_assessment: read.date_assessment,
         },
         RowWriter {
             index: &run.index,
@@ -236,9 +236,29 @@ fn record_parsed_artifact(
             stats: &mut run.stats,
             accumulator: &mut run.accumulated,
         },
-    );
+    ) {
+        Ok(rows) => rows,
+        Err(error) => {
+            run.stats.artifacts_parse_failed = run.stats.artifacts_parse_failed.saturating_add(1);
+            report.errors = report.errors.saturating_add(1);
+            report.note(format!(
+                "{}: {error}; projection remains unfinished",
+                read.artifact.url
+            ));
+            report
+                .unfinished
+                .push(format!("{}: {error}", read.artifact.url));
+            return Ok(());
+        }
+    };
+    if !note_date_assessment(report, &read)
+        || (school_year.is_none()
+            && matches!(read.date_assessment, PerformanceDateAssessment::Admitted))
+    {
+        return Ok(());
+    }
     run.pending.push((
-        read.artifact.url.clone(),
+        read.projection_key,
         json!({
             "url": read.artifact.url,
             "parser": PARSE_VERSION,
@@ -248,7 +268,27 @@ fn record_parsed_artifact(
             "meet": read.parsed.name,
             "date": read.parsed.date,
             "rows": rows,
+            "performance_as_of": read.performance_as_of,
+            "date_assessment": format!("{:?}", read.date_assessment),
         }),
     ));
     Ok(())
+}
+
+fn note_date_assessment(report: &mut AdapterReport, read: &ReadArtifact<'_>) -> bool {
+    match read.date_assessment {
+        PerformanceDateAssessment::Admitted => true,
+        PerformanceDateAssessment::Future => {
+            report.note(format!("{}: published date {:?} is after performance snapshot {}; capture and source metadata retained, performances out of scope",
+                read.artifact.url, read.parsed.date, read.performance_as_of));
+            true
+        }
+        PerformanceDateAssessment::Unknown => {
+            let gap = format!("{}: published date {:?} cannot be compared to performance snapshot {}; raw capture retained for temporal review",
+                read.artifact.url, read.parsed.date, read.performance_as_of);
+            report.note(&gap);
+            report.unfinished.push(gap);
+            false
+        }
+    }
 }

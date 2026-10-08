@@ -7,6 +7,7 @@ mod audit;
 mod bests;
 mod cells;
 mod census;
+mod contacts;
 mod diff;
 mod input;
 mod read;
@@ -24,6 +25,7 @@ pub(super) fn verify(
     let inputs = input::Inputs::new(dataset, options)?;
     census::verify(directory, &inputs)?;
     recruiting::verify(directory, &inputs)?;
+    contacts::verify(directory, &inputs)?;
     audit::verify(directory, &inputs)?;
     bests::verify(directory, &inputs)
 }

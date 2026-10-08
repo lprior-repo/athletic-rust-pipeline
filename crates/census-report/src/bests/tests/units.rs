@@ -6,7 +6,7 @@ fn selection_skips_distance_reports_for_timed_events() -> TestResult {
     let valid = reported(
         &dataset,
         "valid_time",
-        Mark::TimeSeconds(CentiSeconds::new(5000)),
+        Mark::TimeSeconds(ExactSeconds::parse("50.00")?),
     );
     let incompatible = reported(
         &dataset,
@@ -18,9 +18,9 @@ fn selection_skips_distance_reports_for_timed_events() -> TestResult {
     let rows = selected(&dataset);
 
     check!(eq; rows.len(), 1);
-    check!(eq; rows[0].performance_id, valid.id);
-    check!(eq; rows[0].mark, valid.mark);
-    check!(eq; rows[0].value, 5000);
+    check!(eq; rows[0].source.performance_id, valid.id);
+    check!(eq; rows[0].result.mark, valid.mark);
+    check!(eq; rows[0].result.value, 50_000_000_000);
     check!(eq; rows[0].population.marks, 1);
     check!(eq; rows[0].conflicts, Vec::new());
     Ok(())
@@ -37,16 +37,16 @@ fn selection_skips_time_reports_for_combined_events() -> TestResult {
     let incompatible = reported(
         &dataset,
         "historical_time",
-        Mark::TimeSeconds(CentiSeconds::new(3456)),
+        Mark::TimeSeconds(ExactSeconds::parse("34.56")?),
     );
     dataset.performances = vec![incompatible, valid.clone()];
 
     let rows = selected(&dataset);
 
     check!(eq; rows.len(), 1);
-    check!(eq; rows[0].performance_id, valid.id);
-    check!(eq; rows[0].mark, valid.mark);
-    check!(eq; rows[0].value, 345600);
+    check!(eq; rows[0].source.performance_id, valid.id);
+    check!(eq; rows[0].result.mark, valid.mark);
+    check!(eq; rows[0].result.value, 345600);
     check!(eq; rows[0].population.marks, 1);
     check!(eq; rows[0].conflicts, Vec::new());
     Ok(())
@@ -70,9 +70,9 @@ fn selection_skips_points_reports_for_ordinary_field_events() -> TestResult {
     let rows = selected(&dataset);
 
     check!(eq; rows.len(), 1);
-    check!(eq; rows[0].performance_id, valid.id);
-    check!(eq; rows[0].mark, valid.mark);
-    check!(eq; rows[0].value, 12_000_000);
+    check!(eq; rows[0].source.performance_id, valid.id);
+    check!(eq; rows[0].result.mark, valid.mark);
+    check!(eq; rows[0].result.value, 12_000_000);
     check!(eq; rows[0].population.marks, 1);
     check!(eq; rows[0].conflicts, Vec::new());
     Ok(())
@@ -87,7 +87,7 @@ fn selection_publishes_no_pr_when_only_incompatible_marks_exist() -> TestResult 
         ),
         (
             EventKind::Decathlon,
-            Mark::TimeSeconds(CentiSeconds::new(3456)),
+            Mark::TimeSeconds(ExactSeconds::parse("34.56")?),
         ),
         (EventKind::ShotPut, Mark::Points(CentiPoints::new(345600))),
     ] {

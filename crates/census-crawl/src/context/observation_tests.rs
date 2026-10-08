@@ -64,6 +64,7 @@ fn context<'a>(
         refresh: false,
         school_year: census_domain::model::SchoolYear::new(2026).ok_or("2026 season")?,
         observed_on: "2026-09-26".to_owned(),
+        performance_as_of: chrono::NaiveDate::parse_from_str("2026-09-26", "%Y-%m-%d")?,
     })
 }
 

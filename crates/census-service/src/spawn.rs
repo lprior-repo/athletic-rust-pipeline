@@ -115,14 +115,7 @@ impl Spawner {
         F: Future<Output = ()> + Send + 'static,
     {
         let slot = self.admit()?;
-        let mut region = self.lock();
-        if region.closed {
-            return Err(SpawnError::RegionClosed);
-        }
-        region.reap_finished();
-        region.tasks.spawn(holding_slot(slot, task));
-        region.ledger.accept();
-        Ok(())
+        self.push_async(task, slot)
     }
 
     #[tracing::instrument(skip_all)]
@@ -175,6 +168,20 @@ impl Spawner {
             }
             Err(TryAcquireError::Closed) => Err(SpawnError::RegionClosed),
         }
+    }
+
+    fn push_async<F>(&self, task: F, slot: OwnedSemaphorePermit) -> Result<(), SpawnError>
+    where
+        F: Future<Output = ()> + Send + 'static,
+    {
+        let mut region = self.lock();
+        if region.closed {
+            return Err(SpawnError::RegionClosed);
+        }
+        region.reap_finished();
+        region.tasks.spawn(holding_slot(slot, task));
+        region.ledger.accept();
+        Ok(())
     }
 
     fn push_blocking<F>(&self, job: F, slot: OwnedSemaphorePermit) -> bool
@@ -232,6 +239,8 @@ fn publish<T, E>(tx: oneshot::Sender<Completion<T, E>>, completion: Completion<T
     }
 }
 
+#[cfg(test)]
+mod admission_tests;
 #[cfg(all(feature = "loom", test))]
 mod loom_tests;
 #[cfg(test)]

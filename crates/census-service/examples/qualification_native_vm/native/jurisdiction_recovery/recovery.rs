@@ -145,8 +145,8 @@ pub(super) fn obligations(observation: &Observation, original: &Original) -> Res
         "teams":match &state.teams { TeamsStage::Owed => "owed", TeamsStage::Completed(_) => "completed", TeamsStage::Failed(_) => "failed_with_retained_reasons" },
         "teams_evidence":state.teams,
         "rosters":if state.rosters.is_some() { "stage_returned_inspect_outcome" } else { "owed" },
-        "meets":if state.meets.is_some() { "stage_returned_inspect_outcome" } else { "owed" },
-        "results":if state.results.is_some() { "stage_returned_inspect_outcome" } else { "owed" },
+        "history":state.history,
+        "history_window":state.history_window,
         "source_refusals":plan.map(|plan| &plan.refused),
         "remaining_scope":"RI qualification; one roster target; not national coverage"
     }))

@@ -27,6 +27,12 @@ const FIXTURE: &str = "bio_28872883_tf.json";
 
 const PERFORMANCES: usize = 53;
 
+#[derive(Clone, Copy)]
+enum CrossCountryFixture {
+    SyntheticEmpty,
+    AuthenticMissing,
+}
+
 fn seed_cache(cache_dir: &Path, url: &str, body: &str) -> Result<()> {
     use census_crawl::net::RepresentationHeaders;
     use sha2::{Digest, Sha256};
@@ -80,13 +86,22 @@ struct Harness {
 }
 
 impl Harness {
-    fn new() -> Result<Self> {
+    fn new(cross_country: CrossCountryFixture) -> Result<Self> {
         let dir = tempfile::tempdir().context("creating a temp dir")?;
         let cache = dir.path().join("http");
         let body = fixture(SOURCE, FIXTURE)?;
-        for sport in ["tf", "xc"] {
-            seed_cache(&cache, &bio_url(ATHLETE_ID, sport), &body)?;
-        }
+        seed_cache(&cache, &bio_url(ATHLETE_ID, "tf"), &body)?;
+        let xc = match cross_country {
+            CrossCountryFixture::AuthenticMissing => body.clone(),
+            CrossCountryFixture::SyntheticEmpty => {
+                let mut value: serde_json::Value = serde_json::from_str(&body)?;
+                value["dataFixture"] = json!("synthetic-explicit-empty-xc");
+                value["resultsTF"] = serde_json::Value::Null;
+                value["resultsXC"] = json!([]);
+                serde_json::to_string(&value)?
+            }
+        };
+        seed_cache(&cache, &bio_url(ATHLETE_ID, "xc"), &xc)?;
         let store = Store::open(dir.path().join("store"))?;
         let fetcher = Fetcher::new(
             &cache,
@@ -121,6 +136,7 @@ impl Harness {
             refresh: false,
             school_year: SchoolYear::DEFAULT,
             observed_on: OBSERVED_ON.to_string(),
+            performance_as_of: chrono::NaiveDate::parse_from_str(OBSERVED_ON, "%Y-%m-%d")?,
             recording: None,
         };
         athleticnet::collect(&ctx, options)
@@ -142,7 +158,7 @@ fn athleticnet_bio_route_absorbs_both_scopes_and_journals_each_url() -> Result<(
         .enable_all()
         .build()?
         .block_on(async {
-            let harness = Harness::new()?;
+            let harness = Harness::new(CrossCountryFixture::SyntheticEmpty)?;
             let first = harness.run(&harness.options()).await?;
             ensure!(
                 first.requests == 0 && first.from_cache == 2,
@@ -172,25 +188,61 @@ fn athleticnet_bio_route_absorbs_both_scopes_and_journals_each_url() -> Result<(
                 performances.len()
             );
 
+            let physical_before = harness.store.stats()?.tables;
+            let journal_before = harness
+                .store
+                .journal_payloads("athleticnet_profile_attempts_v3")?;
             let second = harness.run(&harness.options()).await?;
-            ensure!(
-                second.requests == 0 && second.from_cache == 0,
-                "the journal short-circuits both URLs: {} requests, {} served",
-                second.requests,
-                second.from_cache
-            );
-            ensure!(
-                second.rows == 0,
-                "and nothing is walked twice: {} rows",
-                second.rows
-            );
+            ensure!(second.disposition == census_crawl::CollectionDisposition::Complete);
+            ensure!(second.errors == 0 && second.unfinished.is_empty());
             let (athletes_after, performances_after) = rows(&harness.store)?;
             ensure!(
-                (athletes_after.len(), performances_after.len())
-                    == (athletes.len(), performances.len()),
-                "the store still holds one copy of every row: {} athletes, {} performances",
-                athletes_after.len(),
-                performances_after.len()
+                athletes_after == athletes && performances_after == performances,
+                "logical replay changes neither accepted rows nor their physical evidence"
+            );
+            ensure!(
+                harness.store.stats()?.tables == physical_before,
+                "immutable capture replay appends no physical table rows"
+            );
+            ensure!(
+                harness
+                    .store
+                    .journal_payloads("athleticnet_profile_attempts_v3")?
+                    == journal_before,
+                "same-horizon replay preserves scope attempts"
+            );
+            Ok(())
+        })
+}
+
+#[test]
+fn authentic_missing_xc_results_remain_unfinished_after_replay() -> Result<()> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let harness = Harness::new(CrossCountryFixture::AuthenticMissing)?;
+            let first = harness.run(&harness.options()).await?;
+            ensure!(first.disposition == census_crawl::CollectionDisposition::Partial);
+            ensure!(first.errors == 1);
+            ensure!(first.unfinished == vec![bio_url(ATHLETE_ID, "xc")]);
+            let before = rows(&harness.store)?;
+            ensure!(before.1.len() == PERFORMANCES);
+            let physical_before = harness.store.stats()?.tables;
+            let journal_before = harness
+                .store
+                .journal_payloads("athleticnet_profile_attempts_v3")?;
+            let second = harness.run(&harness.options()).await?;
+            ensure!(
+                second.disposition == first.disposition && second.unfinished == first.unfinished
+            );
+            ensure!(rows(&harness.store)? == before);
+            ensure!(harness.store.stats()?.tables == physical_before);
+            ensure!(
+                harness
+                    .store
+                    .journal_payloads("athleticnet_profile_attempts_v3")?
+                    == journal_before
             );
             Ok(())
         })

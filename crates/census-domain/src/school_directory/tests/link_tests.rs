@@ -527,13 +527,14 @@ fn foreign_state_entries_are_not_candidates() -> TestResult {
 }
 
 #[test]
-fn entries_without_street_are_skipped() -> TestResult {
+fn entries_without_street_retain_the_published_partial_address() -> TestResult {
+    let partial = address(None, "Springfield", UsJurisdiction::Ohio)?;
     let entry = SchoolDirectoryEntry::identified(
         IdentifiedKey::Nces(NcesSchoolId::parse("390000000014")?),
         SourceLabel::Ccd,
         Some(SchoolName::parse("Springfield High School")?),
     )
-    .with_address(Some(address(None, "Springfield", UsJurisdiction::Ohio)?));
+    .with_address(Some(partial.clone()));
     let index = DirectoryIndex::build(&[entry]);
     let decision = index.link(
         "Springfield High School",
@@ -543,7 +544,12 @@ fn entries_without_street_are_skipped() -> TestResult {
         &[],
         &[],
     );
-    check!(eq; decision, LinkDecision::NoMatch);
+    let hit = match decision {
+        LinkDecision::Linked(hit) => hit,
+        other => return Err(format!("expected partial address link, got {other:?}").into()),
+    };
+    check!(eq; hit.key, IdentifiedKey::Nces(NcesSchoolId::parse("390000000014")?));
+    check!(eq; hit.address, Some(partial));
     Ok(())
 }
 

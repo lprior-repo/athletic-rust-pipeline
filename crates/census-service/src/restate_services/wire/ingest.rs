@@ -38,6 +38,14 @@ pub struct IngestRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecordedIngestRequest {
+    pub recorded: census_crawl::Recorded,
+    pub operation_id: String,
+    #[serde(default)]
+    pub cursor: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IngestReply {
     pub endpoint: String,
     pub appended: u64,

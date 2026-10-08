@@ -63,6 +63,7 @@ impl FixtureRun {
             refresh: false,
             school_year: SchoolYear::new(2026).ok_or("valid fixture school year")?,
             observed_on: OBSERVED.to_string(),
+            performance_as_of: chrono::NaiveDate::parse_from_str("2026-10-01", "%Y-%m-%d")?,
             recording: None,
         };
         Ok(collect(
@@ -231,10 +232,6 @@ fn foreign_summary_never_attaches_coaches_aliases_or_address_and_remains_unfinis
                 Some("1 Rocket Drive")
             );
             check!(eq; run.coaches()?, Vec::<CanonicalCoach>::new());
-            check!(!run
-                .store
-                .journal_keys("coach_directories_schools_v3")?
-                .contains("NC:ZCUM49"));
             seed(&run.fetcher, &summary_url("ZCUM49"), SUMMARY)?;
             let recovered = run.collect().await?;
             check!(eq; (recovered.rows, recovered.errors), (1, 0));

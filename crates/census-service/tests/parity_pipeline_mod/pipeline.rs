@@ -48,6 +48,7 @@ pub async fn run_pipeline(root: &Path) -> Result<Run> {
         refresh: false,
         school_year: constants::SCHOOL_YEAR,
         observed_on: constants::OBSERVED_ON.to_string(),
+        performance_as_of: chrono::NaiveDate::parse_from_str(constants::OBSERVED_ON, "%Y-%m-%d")?,
         recording: None,
     };
 

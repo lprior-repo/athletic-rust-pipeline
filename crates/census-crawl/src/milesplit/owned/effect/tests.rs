@@ -34,6 +34,7 @@ fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> TestResult<AdapterCont
         refresh: false,
         school_year: SchoolYear::new(2026).ok_or("school year")?,
         observed_on: "2026-10-01".into(),
+        performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 10, 1).ok_or("snapshot date")?,
         recording: None,
     })
 }

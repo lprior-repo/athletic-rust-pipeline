@@ -33,6 +33,7 @@ fn failed_summary_does_not_hide_recovered_public_contact() -> TestResult {
                 refresh: false,
                 school_year: SchoolYear::new(2026).ok_or("valid fixture school year")?,
                 observed_on: "2026-09-30".to_string(),
+                performance_as_of: chrono::NaiveDate::parse_from_str("2026-09-30", "%Y-%m-%d")?,
                 recording: None,
             };
             let options = Options {
@@ -116,6 +117,7 @@ fn a_rejected_directory_row_is_retained_without_failing_the_source() -> TestResu
                 refresh: false,
                 school_year: SchoolYear::new(2026).ok_or("valid fixture school year")?,
                 observed_on: "2026-09-30".to_string(),
+                performance_as_of: chrono::NaiveDate::parse_from_str("2026-09-30", "%Y-%m-%d")?,
                 recording: None,
             };
             let options = Options {

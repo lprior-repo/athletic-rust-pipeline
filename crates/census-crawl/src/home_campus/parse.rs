@@ -175,16 +175,7 @@ fn find_from(haystack: &str, from: usize, needle: &str) -> Option<usize> {
 
 pub fn parse_school_details(json: &str) -> Option<SchoolDetails> {
     let wire: WireDetails = serde_json::from_str(json).ok()?;
-    let profile = SchoolProfile {
-        id: wire.school.id.map_or(0, |value| value),
-        name: text(wire.school.name),
-        address: text(wire.school.address_line_1),
-        city: text(wire.school.city),
-        state: text(wire.school.physical_state),
-        zip: text(wire.school.physical_zip),
-        league: text(wire.school.league_name),
-        phone: text(wire.school.phone),
-    };
+    let profile = profile_row(wire.school);
     let coaches = wire.coaches.into_iter().map(coach_row).collect();
     let faculties = wire
         .athletic_faculties
@@ -196,6 +187,31 @@ pub fn parse_school_details(json: &str) -> Option<SchoolDetails> {
         coaches,
         faculties,
     })
+}
+
+pub(super) fn decode_profile(value: serde_json::Value) -> Result<SchoolProfile, serde_json::Error> {
+    serde_json::from_value::<WireSchool>(value).map(profile_row)
+}
+
+pub(super) fn decode_coach(value: serde_json::Value) -> Result<CoachRow, serde_json::Error> {
+    serde_json::from_value::<WireCoach>(value).map(coach_row)
+}
+
+pub(super) fn decode_faculty(value: serde_json::Value) -> Result<FacultyRow, serde_json::Error> {
+    serde_json::from_value::<WireFaculty>(value).map(faculty_row)
+}
+
+fn profile_row(wire: WireSchool) -> SchoolProfile {
+    SchoolProfile {
+        id: wire.id.map_or(0, |value| value),
+        name: text(wire.name),
+        address: text(wire.address_line_1),
+        city: text(wire.city),
+        state: text(wire.physical_state),
+        zip: text(wire.physical_zip),
+        league: text(wire.league_name),
+        phone: text(wire.phone),
+    }
 }
 
 pub fn parse_sport_and_gender(label: &str) -> Option<(Sport, Gender)> {

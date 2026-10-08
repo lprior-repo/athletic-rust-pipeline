@@ -15,31 +15,39 @@ pub(super) fn meet_coverage(meets: &[CanonicalMeet]) -> MeetCoverage {
                 .entry(MeetState::from(meet.state))
                 .or_default(),
         );
-        let names_athletic_net = meet.source_identities.iter().any(|identity| {
-            matches!(
-                identity.namespace,
-                SourceNamespace::LegacyAthleticNet { .. }
-            )
-        });
-        if names_athletic_net {
-            bump(&mut coverage.with_athletic_net_id);
-        }
-        for identity in &meet.source_identities {
-            if let SourceNamespace::TimerMeet { provider } = &identity.namespace {
-                let slug = format!("timer_meet:{provider}");
-                bump(coverage.by_provider.entry(slug).or_default());
-            }
-        }
-        let earliest = coverage.first_date.get_or_insert_with(|| meet.date.clone());
-        if meet.date < *earliest {
-            *earliest = meet.date.clone();
-        }
-        let latest = coverage.last_date.get_or_insert_with(|| meet.date.clone());
-        if meet.date > *latest {
-            *latest = meet.date.clone();
-        }
+        tally_meet_sources(&mut coverage, meet);
+        tally_meet_dates(&mut coverage, meet);
     }
     coverage
+}
+
+fn tally_meet_sources(coverage: &mut MeetCoverage, meet: &CanonicalMeet) {
+    let names_athletic_net = meet.source_identities.iter().any(|identity| {
+        matches!(
+            identity.namespace,
+            SourceNamespace::LegacyAthleticNet { .. }
+        )
+    });
+    if names_athletic_net {
+        bump(&mut coverage.with_athletic_net_id);
+    }
+    for identity in &meet.source_identities {
+        if let SourceNamespace::TimerMeet { provider } = &identity.namespace {
+            let slug = format!("timer_meet:{provider}");
+            bump(coverage.by_provider.entry(slug).or_default());
+        }
+    }
+}
+
+fn tally_meet_dates(coverage: &mut MeetCoverage, meet: &CanonicalMeet) {
+    let earliest = coverage.first_date.get_or_insert_with(|| meet.date.clone());
+    if meet.date < *earliest {
+        *earliest = meet.date.clone();
+    }
+    let latest = coverage.last_date.get_or_insert_with(|| meet.date.clone());
+    if meet.date > *latest {
+        *latest = meet.date.clone();
+    }
 }
 
 pub(super) fn schools_by_state(schools: &[CanonicalSchool]) -> BTreeMap<JurisdictionBucket, usize> {
@@ -74,38 +82,50 @@ pub(super) fn totals_of(
 ) -> StateCensus {
     let mut totals = StateCensus::default();
     for entry in by_state.values() {
-        add(&mut totals.athletes, entry.athletes);
-        add(&mut totals.class_of_2027, entry.class_of_2027);
-        add(&mut totals.class_of_2027_boys, entry.class_of_2027_boys);
-        add(&mut totals.class_of_2027_girls, entry.class_of_2027_girls);
-        add(
-            &mut totals.class_of_2027_unknown_gender,
-            entry.class_of_2027_unknown_gender,
-        );
-        add(
-            &mut totals.class_of_2027_with_profile_url,
-            entry.class_of_2027_with_profile_url,
-        );
-        add(
-            &mut totals.class_of_2027_with_grad_year_evidence,
-            entry.class_of_2027_with_grad_year_evidence,
-        );
-        add(
-            &mut totals.class_of_2027_multisource,
-            entry.class_of_2027_multisource,
-        );
-        add(
-            &mut totals.class_of_2027_with_coach,
-            entry.class_of_2027_with_coach,
-        );
-        add(
-            &mut totals.class_of_2027_with_coach_email,
-            entry.class_of_2027_with_coach_email,
-        );
+        tally_demographic_totals(&mut totals, entry);
+        tally_evidence_totals(&mut totals, entry);
+        tally_contact_totals(&mut totals, entry);
     }
     totals.state = crate::report::RowLabel::Total;
     totals.schools = counts.schools;
     totals.coaches = counts.coaches;
     totals.coaches_with_email = counts.coaches_with_email;
     totals
+}
+
+fn tally_demographic_totals(totals: &mut StateCensus, entry: &StateCensus) {
+    add(&mut totals.athletes, entry.athletes);
+    add(&mut totals.class_of_2027, entry.class_of_2027);
+    add(&mut totals.class_of_2027_boys, entry.class_of_2027_boys);
+    add(&mut totals.class_of_2027_girls, entry.class_of_2027_girls);
+    add(
+        &mut totals.class_of_2027_unknown_gender,
+        entry.class_of_2027_unknown_gender,
+    );
+}
+
+fn tally_evidence_totals(totals: &mut StateCensus, entry: &StateCensus) {
+    add(
+        &mut totals.class_of_2027_with_profile_url,
+        entry.class_of_2027_with_profile_url,
+    );
+    add(
+        &mut totals.class_of_2027_with_grad_year_evidence,
+        entry.class_of_2027_with_grad_year_evidence,
+    );
+    add(
+        &mut totals.class_of_2027_multisource,
+        entry.class_of_2027_multisource,
+    );
+}
+
+fn tally_contact_totals(totals: &mut StateCensus, entry: &StateCensus) {
+    add(
+        &mut totals.class_of_2027_with_coach,
+        entry.class_of_2027_with_coach,
+    );
+    add(
+        &mut totals.class_of_2027_with_coach_email,
+        entry.class_of_2027_with_coach_email,
+    );
 }

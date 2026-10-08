@@ -21,6 +21,9 @@ pub struct ResultStats {
     pub rows_skipped_no_grade: usize,
     pub rows_skipped_unsupported_cohort: usize,
     pub rows_without_mark: usize,
+    pub rows_out_of_scope_future: usize,
+    pub rows_date_unknown: usize,
+    pub rows_conflicting_status: usize,
     pub rows_with_athlete_id: usize,
     pub rows_with_timer_team_id: usize,
     pub rows_with_an_team_id: usize,
@@ -53,6 +56,12 @@ impl ResultStats {
         ];
         if let Some(line) = self.unresolved_line(prefix) {
             lines.push(line);
+        }
+        if self.rows_conflicting_status > 0 {
+            lines.push(format!(
+                "{prefix}source status/numeric conflicts: {} retained; numeric winners withheld",
+                self.rows_conflicting_status
+            ));
         }
         lines
     }
@@ -161,26 +170,49 @@ pub struct DocumentEntities {
 #[derive(Debug, Default)]
 pub(super) struct Accumulator {
     pub meets: BTreeMap<String, CanonicalMeet>,
-    pub events: BTreeMap<String, CanonicalEvent>,
+    pub events: HashMap<String, CanonicalEvent>,
     pub teams: BTreeMap<String, CanonicalTeam>,
     pub athletes: BTreeMap<String, CanonicalAthlete>,
-    pub performances: BTreeMap<String, CanonicalPerformance>,
+    pub performances: HashMap<String, CanonicalPerformance>,
     pub unsupported: crate::cohort::UnsupportedCohortRows,
 }
 
 impl Accumulator {
-    pub(super) fn into_entities(self, stats: ResultStats) -> DocumentEntities {
+    pub(super) fn into_entities(self, stats: ResultStats) -> crate::CrawlResult<DocumentEntities> {
         let (review_cases, source_observations) = self.unsupported.into_parts();
-        DocumentEntities {
+        Ok(DocumentEntities {
             meets: self.meets.into_values().collect(),
-            events: self.events.into_values().collect(),
+            events: ordered(self.events)?,
             teams: self.teams.into_values().collect(),
             athletes: self.athletes.into_values().collect(),
-            performances: self.performances.into_values().collect(),
+            performances: ordered(self.performances)?,
             review_cases,
             source_observations,
             stats,
-        }
+        })
+    }
+}
+
+fn ordered<T>(entries: HashMap<String, T>) -> crate::CrawlResult<Vec<T>> {
+    let mut keyed = Vec::new();
+    keyed
+        .try_reserve_exact(entries.len())
+        .map_err(|_| collection_resource(entries.len()))?;
+    keyed.extend(entries);
+    keyed.sort_unstable_by(|left, right| left.0.cmp(&right.0));
+    let mut values = Vec::new();
+    values
+        .try_reserve_exact(keyed.len())
+        .map_err(|_| collection_resource(keyed.len()))?;
+    values.extend(keyed.into_iter().map(|(_, value)| value));
+    Ok(values)
+}
+
+fn collection_resource(requested: usize) -> crate::CrawlError {
+    crate::CrawlError::Resource {
+        resource: "LIVE ordered entities",
+        requested,
+        limit: 100_000,
     }
 }
 
@@ -201,6 +233,7 @@ pub(super) struct RowContext<'a> {
     pub round: Option<String>,
     pub sport: Sport,
     pub school_year: SchoolYear,
+    pub performance_as_of: chrono::NaiveDate,
     pub event_key: String,
     pub provider: &'a str,
     pub jurisdiction: UsJurisdiction,

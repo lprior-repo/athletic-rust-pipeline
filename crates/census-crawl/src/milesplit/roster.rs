@@ -17,6 +17,7 @@ pub enum RosterQuarantine {
     UnknownTemplate,
     NoReadableRows,
     InvalidEncoding,
+    RowCapacity,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -26,6 +27,8 @@ pub enum RosterRejectionKind {
     MissingName,
     MissingGraduationYear,
     InvalidGraduationYear,
+    RowTooLarge,
+    FieldTooLarge,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -43,10 +46,12 @@ pub enum RosterVerdict {
     Partial {
         roster: Roster,
         rejected: Vec<RosterRejection>,
+        unfinished: Option<SourceRowLocator>,
     },
     Quarantined {
         reason: RosterQuarantine,
         rejected: Vec<RosterRejection>,
+        unfinished: Option<SourceRowLocator>,
     },
 }
 
@@ -62,6 +67,13 @@ impl RosterVerdict {
         match self {
             Self::Complete { .. } => &[],
             Self::Partial { rejected, .. } | Self::Quarantined { rejected, .. } => rejected,
+        }
+    }
+
+    pub fn unfinished(&self) -> Option<SourceRowLocator> {
+        match self {
+            Self::Complete { .. } => None,
+            Self::Partial { unfinished, .. } | Self::Quarantined { unfinished, .. } => *unfinished,
         }
     }
 }

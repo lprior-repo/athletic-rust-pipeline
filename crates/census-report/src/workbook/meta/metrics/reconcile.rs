@@ -10,6 +10,17 @@ pub(super) fn reconciliation(
     census: &Census,
 ) -> ReportResult<Vec<Vec<Cell>>> {
     let mut cells = vec![row!("Reconciled counter", "Sheet rows", "Census", "Status")];
+    append_population(&mut cells, rows, census)?;
+    append_cohort(&mut cells, rows, census)?;
+    append_source_findings(&mut cells, rows, conflicts, census)?;
+    Ok(cells)
+}
+
+fn append_population(
+    cells: &mut Vec<Vec<Cell>>,
+    rows: &StoreRows,
+    census: &Census,
+) -> ReportResult<()> {
     let sheet_counts = [
         ("Schools", rows.schools.len(), census.totals.schools),
         ("Meets", rows.meets.len(), census.meets.total),
@@ -20,6 +31,16 @@ pub(super) fn reconciliation(
             super::counters::count_coaches_with_email(rows.coaches),
             census.totals.coaches_with_email,
         ),
+    ];
+    append_counts(cells, sheet_counts)
+}
+
+fn append_cohort(
+    cells: &mut Vec<Vec<Cell>>,
+    rows: &StoreRows,
+    census: &Census,
+) -> ReportResult<()> {
+    let sheet_counts = [
         (
             "Class-of-2027 athletes",
             super::counters::count_co2027(rows.athletes),
@@ -30,6 +51,17 @@ pub(super) fn reconciliation(
             super::counters::count_grade_evidence(rows.athletes),
             census.totals.class_of_2027_with_grad_year_evidence,
         ),
+    ];
+    append_counts(cells, sheet_counts)
+}
+
+fn append_source_findings(
+    cells: &mut Vec<Vec<Cell>>,
+    rows: &StoreRows,
+    conflicts: &[Family],
+    census: &Census,
+) -> ReportResult<()> {
+    let sheet_counts = [
         (
             "Meets naming an Athletic.net id",
             super::counters::count_athletic_net_meets(rows.meets),
@@ -41,10 +73,17 @@ pub(super) fn reconciliation(
             census.duplicate_school_names,
         ),
     ];
-    for (label, sheet, census) in sheet_counts {
+    append_counts(cells, sheet_counts)
+}
+
+fn append_counts<const N: usize>(
+    cells: &mut Vec<Vec<Cell>>,
+    counts: [(&str, usize, usize); N],
+) -> ReportResult<()> {
+    for (label, sheet, census) in counts {
         cells.push(reconciled(label, sheet, census)?);
     }
-    Ok(cells)
+    Ok(())
 }
 
 fn reconciled(label: &str, sheet: usize, census: usize) -> ReportResult<Vec<Cell>> {

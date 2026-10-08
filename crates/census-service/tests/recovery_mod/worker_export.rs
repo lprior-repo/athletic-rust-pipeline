@@ -1,8 +1,8 @@
 use super::material::{ks_pass, store_seeded_with_ks};
 use super::process::{counters_of, report_of, run_census};
 use super::{
-    census, digest_of, journal_keys, note, open_store, report, BTreeMap, Derivation, Digest,
-    ExportDataset, Sha256, Store, Table, KS_PHASE,
+    census, digest_of, note, open_store, report, school_ids, BTreeMap, Derivation, Digest,
+    ExportDataset, Sha256, Store, Table,
 };
 
 #[test]
@@ -117,91 +117,38 @@ fn export(store: &Store) -> super::TestResult<Export> {
 
 #[test]
 fn cli_worker_restart_across_processes_resumes_and_keeps_counters() -> super::TestResult {
-    const SCENARIO: &str = "cli-restart";
     let dir = tempfile::tempdir()?;
-
     let control_root = dir.path().join("control");
-    {
-        let store = store_seeded_with_ks(&control_root)?;
-        drop(store);
-    }
+    drop(store_seeded_with_ks(&control_root)?);
     let control_report = report_of(&run_census(&control_root, &["provider", "ks"])?)?;
     let control_stats = counters_of(&run_census(&control_root, &["fjall-stats"])?);
-    let control_journal = {
+    let (control_units, control_receipts) = {
         let store = open_store(&control_root)?;
-        journal_keys(&store, KS_PHASE)?
+        (school_ids(&store)?, store.receipt_count()?)
     };
-    let total_units = control_journal.len();
-    note(
-        SCENARIO,
-        format!(
-            "control process: rows={} units={} stats={control_stats:?}",
-            control_report["rows"], total_units
-        ),
-    );
-    check!(eq; control_report["rows"].as_u64(),
-    Some(total_units as u64),
-    "the clean process covered every unit");
-
+    check!(eq; control_units.len(), 5);
+    check!(eq; control_report["rows"].as_u64(), Some(5));
     let root = dir.path().join("restart");
-    {
-        let store = store_seeded_with_ks(&root)?;
-        drop(store);
-    }
+    drop(store_seeded_with_ks(&root)?);
     let first = report_of(&run_census(&root, &["provider", "ks", "--limit", "2"])?)?;
-    let journal_after_first = {
+    let first_units = {
         let store = open_store(&root)?;
-        journal_keys(&store, KS_PHASE)?
+        school_ids(&store)?
     };
-    note(
-        SCENARIO,
-        format!(
-            "first process: rows={} requests={} from_cache={} journal={:?}",
-            first["rows"], first["requests"], first["from_cache"], journal_after_first
-        ),
-    );
-    check!(eq; journal_after_first.len(),
-    2,
-    "the first process did two units");
-    check!(eq; first["requests"].as_u64(),
-    Some(0),
-    "the directory request must come from the seeded cache");
-
+    check!(eq; first_units.len(), 2);
+    check!(eq; first["rows"].as_u64(), Some(2));
+    check!(eq; first["requests"].as_u64(), Some(0));
     let resumed = report_of(&run_census(&root, &["provider", "ks"])?)?;
-    let resumed_stats = counters_of(&run_census(&root, &["fjall-stats"])?);
+    check!(eq; resumed["rows"].as_u64(), Some(3));
+    check!(eq; resumed["requests"].as_u64(), Some(0));
+    let store = open_store(&root)?;
+    check!(eq; school_ids(&store)?, control_units);
+    check!(first_units.is_subset(&school_ids(&store)?));
+    check!(eq; store.receipt_count()?, control_receipts);
+    drop(store);
+    check!(eq; counters_of(&run_census(&root, &["fjall-stats"])?), control_stats);
     let consolidated = counters_of(&run_census(&root, &["consolidate"])?);
-    let after_export_stats = counters_of(&run_census(&root, &["fjall-stats"])?);
-    let final_journal = {
-        let store = open_store(&root)?;
-        journal_keys(&store, KS_PHASE)?
-    };
-    note(
-        SCENARIO,
-        format!(
-            "restart process: rows={} journal={} notes={:?} stats={resumed_stats:?}",
-            resumed["rows"],
-            final_journal.len(),
-            resumed["notes"]
-        ),
-    );
-    note(
-        SCENARIO,
-        format!(
-            "exporter process: consolidate={consolidated:?} stats_after={after_export_stats:?}"
-        ),
-    );
-
-    check!(eq; resumed["rows"].as_u64(),
-    Some(total_units as u64 - 2),
-    "the restarted process processed only the units the first one did not journal");
-    check!(eq; final_journal, control_journal,
-    "the restart completes exactly the control's unit set");
-    check!(eq; resumed_stats, control_stats,
-    "the store's counters after the restart equal a single-process control");
-    check!(eq; after_export_stats, control_stats,
-    "consolidating does not change the observation counters");
-    check!(eq; consolidated.get("schools"),
-    control_stats.get("schools"),
-    "the exporter publishes one row per stored school observation");
+    check!(eq; consolidated.get("schools"), control_stats.get("schools"));
+    check!(eq; counters_of(&run_census(&root, &["fjall-stats"])?), control_stats);
     Ok(())
 }

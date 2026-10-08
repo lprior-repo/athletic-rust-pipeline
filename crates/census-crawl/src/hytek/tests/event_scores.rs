@@ -49,7 +49,7 @@ fn qualified_hurdle_reports_preserve_event_identity_and_times() -> TestResult {
         check!(eq; event.kind, expected, "{label}");
         check!(eq;
             event.rows[0].mark,
-            Mark::TimeSeconds(CentiSeconds::new(centiseconds))
+            Mark::TimeSeconds(ExactSeconds::from_parts(i64::from(centiseconds).checked_mul(10_000_000).ok_or("fixture time overflow")?, 2)?)
         );
     }
     Ok(())

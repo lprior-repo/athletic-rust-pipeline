@@ -1,0 +1,19 @@
+[
+  {"name":"dq","display":"DQ","validity":1,"raw":"DQ"},
+  {"name":"dnf","display":" dnf ","validity":1,"raw":"dnf"},
+  {"name":"dns","display":"DNS","validity":1,"raw":"DNS"},
+  {"name":"nh","display":"NH","validity":1,"raw":"NH"},
+  {"name":"foul","display":"FOUL","validity":1,"raw":"FOUL"},
+  {"name":"invalid","display":"INVALID","validity":1,"raw":"INVALID"},
+  {"name":"scratch","display":"SCR","validity":1,"raw":"SCR"},
+  {"name":"no-mark","display":"NM","validity":1,"raw":"NM"},
+  {"name":"failed-attempt","display":"X","validity":1,"raw":"X"},
+  {"name":"nan","display":"NaN","validity":1,"raw":"NaN"},
+  {"name":"infinite","display":"Infinity","validity":1,"raw":"Infinity"},
+  {"name":"unknown","display":"UNRECOGNIZED","validity":1,"raw":"UNRECOGNIZED"},
+  {"name":"invalid-zero","display":"10.00","validity":0,"raw":"10.00"},
+  {"name":"invalid-string","display":"10.00","validity":"0","raw":"10.00"},
+  {"name":"invalid-bool","display":"10.00","validity":false,"raw":"10.00"},
+  {"name":"invalid-flag","display":"10.00","validity":"bad","raw":"10.00"},
+  {"name":"invalid-without-display","display":null,"validity":0,"raw":"vm=0"}
+]

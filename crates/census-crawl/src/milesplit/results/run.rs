@@ -2,68 +2,144 @@ use super::super::map::ProviderSchools;
 use super::super::owned::read_owned_meet;
 use super::super::raw::RawPage;
 use super::super::wire::ResultSetRef;
-use super::{Accumulator, Stats};
+use super::{EntityCounts, Stats};
 use crate::net::FetchOutcome;
-use crate::{AdapterContext, CrawlResult};
-use std::collections::{HashMap, HashSet};
+use crate::{AdapterContext, CrawlError, CrawlResult};
 
 mod acquired;
 mod capture;
 mod evidence;
 mod metadata;
 mod projection;
-mod receipt;
+pub(super) mod receipt;
+mod windows;
 use acquired::AcquiredMeet;
 
+pub(super) enum ActiveMeet {
+    Empty,
+    Acquired { key: String, meet: AcquiredMeet },
+}
+
+enum Intake {
+    Open,
+    Blocked { url: String },
+}
+
+enum MetadataCapture {
+    Unacquired,
+    Acquired(serde_json::Value),
+}
+
 pub(super) struct Run {
-    pub(super) meet_id: String,
     pub(super) schools: ProviderSchools,
-    pub(super) owned: HashMap<String, AcquiredMeet>,
+    pub(super) owned: ActiveMeet,
     pub(super) stats: Stats,
-    pub(super) accumulated: Accumulator,
-    pub(super) seen: HashSet<String>,
-    pub(super) pending: Vec<(String, serde_json::Value)>,
+    pub(super) counts: EntityCounts,
+    pub(super) frontier: super::frontier::Frontier,
+    intake: Intake,
+    metadata_capture: MetadataCapture,
 }
 
 impl Run {
+    pub(super) fn new(schools: ProviderSchools) -> Self {
+        Self {
+            schools,
+            owned: ActiveMeet::Empty,
+            stats: Stats::default(),
+            counts: EntityCounts::default(),
+            frontier: super::frontier::Frontier::default(),
+            intake: Intake::Open,
+            metadata_capture: MetadataCapture::Unacquired,
+        }
+    }
+
+    #[tracing::instrument(skip(self, ctx))]
+    pub(super) async fn request(
+        &mut self,
+        ctx: &AdapterContext<'_>,
+        request: &super::ResultSetRequest,
+        ordinal: usize,
+    ) -> CrawlResult<()> {
+        if let Intake::Blocked { url } = &self.intake {
+            self.stats.unread = self.stats.unread.saturating_add(1);
+            if self.stats.unread == 1 {
+                self.stats.failure(format!(
+                    "resource stop at {url}; subsequent supplied locators remain unread/unfinished"
+                ))?;
+            }
+            self.frontier.unfinished(ordinal, &request.url)?;
+            return Ok(());
+        }
+        let failures_before = self.stats.failure_count;
+        self.read_request(ctx, request).await?;
+        if failures_before != self.stats.failure_count {
+            self.frontier.unfinished(ordinal, &request.url)?;
+        }
+        Ok(())
+    }
+
+    async fn read_request(
+        &mut self,
+        ctx: &AdapterContext<'_>,
+        request: &super::ResultSetRequest,
+    ) -> CrawlResult<()> {
+        if request.url.len() > 4096 {
+            self.owned = ActiveMeet::Empty;
+            self.metadata_capture = MetadataCapture::Unacquired;
+            return self.resource(
+                ctx,
+                &request.url,
+                &CrawlError::Resource {
+                    resource: "result request URL",
+                    requested: request.url.len(),
+                    limit: 4096,
+                },
+            );
+        }
+        match ResultSetRef::parse(&request.url)
+            .or_else(|| ResultSetRef::parse_with_jurisdiction(&request.url, request.jurisdiction))
+        {
+            Some(reference) => self.read(ctx, &reference).await,
+            None => self.reject(&request.url),
+        }
+    }
+
     #[tracing::instrument(skip(self, ctx))]
     pub(super) async fn read(
         &mut self,
         ctx: &AdapterContext<'_>,
         reference: &ResultSetRef,
     ) -> CrawlResult<()> {
-        let owner = owned_key(reference);
-        if owner != self.meet_id {
-            return Err(crate::CrawlError::Invariant {
-                detail: format!(
-                    "{}: result set belongs to meet {owner}, not {}",
-                    reference.url, self.meet_id
-                ),
-            });
+        self.metadata_capture = MetadataCapture::Unacquired;
+        match self.read_unit(ctx, reference).await {
+            Err(error @ CrawlError::Resource { .. }) => self.resource(ctx, &reference.url, &error),
+            outcome => outcome,
         }
-        let key = capture::digest(&(
-            reference.site.code(),
-            &reference.meet_id,
-            &reference.rsid,
-            &reference.url,
-        ))?;
-        if !self.seen.insert(key) {
-            return Ok(());
-        }
+    }
+
+    #[tracing::instrument(skip(self, ctx))]
+    async fn read_unit(
+        &mut self,
+        ctx: &AdapterContext<'_>,
+        reference: &ResultSetRef,
+    ) -> CrawlResult<()> {
         self.acquire_owned(ctx, reference).await?;
-        let (capture, page) = match metadata::fetch_metadata(ctx, reference).await {
+        let (mut captured, page) = match metadata::fetch_metadata(ctx, reference).await {
             Ok(captured) => captured,
-            Err(error) => {
-                self.record_failure(reference, None, &error)?;
-                return Ok(());
-            }
+            Err(error) => return self.record_failure(ctx, reference, None, &error),
         };
-        capture::archive_metadata(ctx, reference, &capture)?;
+        self.metadata_capture =
+            MetadataCapture::Acquired(capture::metadata_provenance(reference, &captured)?);
+        capture::archive_metadata(ctx, reference, &captured)?;
+        captured.body = Vec::new();
         match page {
-            Ok(page) => self.record_page(ctx, reference, page, capture)?,
-            Err(error) => self.record_failure(reference, Some(&capture), &error)?,
+            Ok(mut page) => {
+                page.meet.events = Vec::new();
+                self.record_page(ctx, reference, &page, &captured)
+            }
+            Err(error @ CrawlError::Resource { .. }) => Err(error),
+            Err(error) => self.record_failure(ctx, reference, Some(&captured), &error),
         }
-        Ok(())
     }
 
     #[tracing::instrument(skip(self, ctx))]
@@ -72,15 +148,18 @@ impl Run {
         ctx: &AdapterContext<'_>,
         reference: &ResultSetRef,
     ) -> CrawlResult<()> {
-        let key = owned_key(reference);
-        if self.owned.contains_key(&key) {
+        let key = format!("{}/{}", reference.site.code(), reference.meet_id);
+        if matches!(&self.owned, ActiveMeet::Acquired { key: prior, .. } if prior == &key) {
             return Ok(());
         }
-        let acquired = AcquiredMeet::new(read_owned_meet(ctx, reference).await?);
-        if let Some(failure) = acquired.failure() {
-            self.stats.failures.push(failure);
-        }
-        self.owned.insert(key, acquired);
+        self.owned = ActiveMeet::Empty;
+        let mut meet = AcquiredMeet::new(read_owned_meet(ctx, reference).await?)?;
+        self.stats.peak_capture_bytes = self
+            .stats
+            .peak_capture_bytes
+            .max(meet.outcome.capture.bytes);
+        meet.release_body();
+        self.owned = ActiveMeet::Acquired { key, meet };
         Ok(())
     }
 
@@ -88,115 +167,129 @@ impl Run {
         &mut self,
         ctx: &AdapterContext<'_>,
         reference: &ResultSetRef,
-        page: RawPage,
-        metadata: FetchOutcome,
+        page: &RawPage,
+        metadata: &FetchOutcome,
     ) -> CrawlResult<()> {
-        self.stats.result_sets = self.stats.result_sets.saturating_add(1);
-        self.stats.skipped_lines = self.stats.skipped_lines.saturating_add(page.skipped.len());
-        let acquired =
-            self.owned
-                .get(&owned_key(reference))
-                .ok_or_else(|| crate::CrawlError::Invariant {
-                    detail: "result projection has no acquired source-owned meet".into(),
-                })?;
-        let rows_before = self.stats.rows;
-        let unresolved_before = unresolved_counts(&self.stats);
-        let (mut projected, complete_parse) =
-            projection::prepare(acquired, reference, &page, &self.schools, &mut self.stats)?;
-        let unresolved = unresolved_before != unresolved_counts(&self.stats);
-        note_unresolved(&mut self.stats, reference, unresolved);
-        evidence::bind(
-            &mut projected,
-            reference,
-            &page,
-            &acquired.outcome.capture,
-            &metadata,
-        )?;
-        receipt::identify_retained(&mut projected)?;
-        let entry = receipt::projection(
-            reference,
-            &page,
-            &metadata,
+        let acquired = acquired(&self.owned)?;
+        let input = projection::Input {
             acquired,
-            &projected,
-            complete_parse && !unresolved,
-            self.stats.rows.saturating_sub(rows_before),
-        )?;
-        if ctx
-            .store
-            .journal_contains(super::RESULT_SET_PHASE, &entry.0)?
-        {
-            self.stats.result_sets_resumed = self.stats.result_sets_resumed.saturating_add(1);
-        }
-        self.accumulated.absorb(projected);
-        self.pending.push(entry);
-        Ok(())
+            reference,
+            page,
+            schools: &self.schools,
+            performance_as_of: ctx.performance_as_of,
+        };
+        windows::execute(ctx, &input, metadata, &mut self.stats, &mut self.counts)
     }
 
     fn record_failure(
         &mut self,
+        ctx: &AdapterContext<'_>,
         reference: &ResultSetRef,
         metadata: Option<&FetchOutcome>,
-        error: &crate::CrawlError,
+        error: &CrawlError,
     ) -> CrawlResult<()> {
         let reason = format!(
             "{}: raw meet/season metadata unavailable: {error}",
             reference.url
         );
-        let acquired =
-            self.owned
-                .get(&owned_key(reference))
-                .ok_or_else(|| crate::CrawlError::Invariant {
-                    detail: "metadata failure has no acquired source-owned meet".into(),
-                })?;
-        self.pending
-            .push(receipt::failure(reference, acquired, metadata, &reason)?);
-        self.stats.failures.push(reason);
-        Ok(())
+        let entry = receipt::failure(
+            reference,
+            acquired(&self.owned)?,
+            metadata,
+            &reason,
+            ctx.performance_as_of,
+        )?;
+        let mut batch = ctx.write_batch();
+        super::journal_changed(ctx, &mut batch, &entry.0, &entry.1)?;
+        batch.commit()?;
+        self.stats.failure(reason)
     }
 
-    pub(super) fn reject(&mut self, entry: &str) {
-        self.stats
-            .failures
-            .push(format!("{entry}: not a /meets/<id>/results/<rsid>/raw URL"));
-    }
-    pub(super) fn rows(&self) -> usize {
-        self.accumulated.rows()
+    fn resource(
+        &mut self,
+        ctx: &AdapterContext<'_>,
+        url: &str,
+        error: &CrawlError,
+    ) -> CrawlResult<()> {
+        let url = url
+            .get(..url.len().min(4096))
+            .map_or("oversized URL", |url| url);
+        let payload = self.resource_payload(url, error, ctx.performance_as_of);
+        let key = format!("partial/resource/{}", capture::digest(&payload)?);
+        let mut batch = ctx.write_batch();
+        let staged =
+            super::journal_changed(ctx, &mut batch, &key, &payload).and_then(|()| batch.commit());
+        let receipt = match staged {
+            Ok(()) => "partial receipt retained",
+            Err(CrawlError::Resource { .. }) => {
+                "partial receipt cannot fit; unfinished locator retained in report"
+            }
+            Err(error) => return Err(error),
+        };
+        self.intake = Intake::Blocked { url: url.into() };
+        if matches!(&self.stats.resource_stop, super::ResourceStop::Open) {
+            self.stats.resource_stop =
+                super::ResourceStop::Unfinished(self.resource_locator(url, error, receipt));
+        }
+        self.release_owned();
+        self.stats.failure(format!(
+            "{url}: {error}; {receipt}; previously admitted effects retained"
+        ))
     }
 
-    pub(super) fn drain_accumulated(&mut self) -> Accumulator {
-        std::mem::take(&mut self.accumulated)
+    fn resource_payload(
+        &self,
+        url: &str,
+        error: &CrawlError,
+        performance_as_of: chrono::NaiveDate,
+    ) -> serde_json::Value {
+        let owned = match &self.owned {
+            ActiveMeet::Acquired { meet, .. } => capture::provenance(&meet.outcome.capture),
+            ActiveMeet::Empty => serde_json::Value::Null,
+        };
+        let raw = match &self.metadata_capture {
+            MetadataCapture::Acquired(capture) => Some(capture),
+            MetadataCapture::Unacquired => None,
+        };
+        serde_json::json!({
+            "source_url": url, "owned_capture": owned, "raw_metadata_capture": raw,
+            "performance_as_of": performance_as_of,
+            "disposition": "resource_limit", "unfinished": true, "resource_error": error.to_string(),
+        })
     }
-
-    pub(super) fn drain_pending(&mut self) -> Vec<(String, serde_json::Value)> {
-        std::mem::take(&mut self.pending)
-    }
-
     pub(super) fn release_owned(&mut self) {
-        self.owned.clear();
+        self.owned = ActiveMeet::Empty;
+        self.metadata_capture = MetadataCapture::Unacquired;
+    }
+
+    fn resource_locator(&self, url: &str, error: &CrawlError, receipt: &str) -> String {
+        let owned = match &self.owned {
+            ActiveMeet::Acquired { meet, .. } => meet.outcome.capture.content_digest.as_str(),
+            ActiveMeet::Empty => "unacquired",
+        };
+        let raw = match &self.metadata_capture {
+            MetadataCapture::Acquired(capture) => capture
+                .get("content_digest")
+                .and_then(serde_json::Value::as_str)
+                .map_or("unacquired", |digest| digest),
+            MetadataCapture::Unacquired => "unacquired",
+        };
+        format!("{url}; owned capture {owned}; raw metadata capture {raw}; {error}; {receipt}")
+    }
+
+    pub(super) fn reject(&mut self, entry: &str) -> CrawlResult<()> {
+        self.stats
+            .failure(format!("{entry}: not a /meets/<id>/results/<rsid>/raw URL"))
     }
 }
 
-fn unresolved_counts(stats: &Stats) -> (usize, usize, usize, usize) {
-    (
-        stats.rows_without_cohort,
-        stats.rows_without_school,
-        stats.rows_without_sport,
-        stats.rows_without_name,
-    )
-}
-
-fn note_unresolved(stats: &mut Stats, reference: &ResultSetRef, unresolved: bool) {
-    if unresolved {
-        stats.failures.push(format!(
-            "{}: source-owned observations retained unresolved; exact provider school, published cohort, name or sport metadata unavailable",
-            reference.url,
-        ));
+fn acquired(owned: &ActiveMeet) -> CrawlResult<&AcquiredMeet> {
+    match owned {
+        ActiveMeet::Acquired { meet, .. } => Ok(meet),
+        ActiveMeet::Empty => Err(CrawlError::Invariant {
+            detail: "result projection has no acquired source-owned meet".into(),
+        }),
     }
-}
-
-pub(super) fn owned_key(reference: &ResultSetRef) -> String {
-    format!("{}/{}", reference.site.code(), reference.meet_id)
 }
 
 #[cfg(test)]

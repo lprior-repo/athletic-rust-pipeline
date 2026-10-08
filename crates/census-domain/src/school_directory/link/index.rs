@@ -26,51 +26,26 @@ impl DirectoryIndex {
             by_name: BTreeMap::new(),
             by_core: BTreeMap::new(),
         };
-        for entry in entries {
-            let Some((key, source)) = identity(entry) else {
-                continue;
-            };
-            let Some(name) = entry.name() else {
-                continue;
-            };
-            let form = MatchForm::of(name.as_str());
-            if form.is_empty() {
-                continue;
-            }
-            let address = entry.address();
-            let Some(state) = entry_state(&key, address) else {
-                continue;
-            };
-            if !publishes_street(&key, address) {
-                continue;
-            }
-            let middle = is_middle(&form, entry.grades());
-            let city = address
-                .and_then(PostalAddress::city)
-                .map(|city| MatchForm::of(city.as_str()))
-                .filter(|form| !form.is_empty());
-            let Ok(position) = u32::try_from(index.entries.len()) else {
-                continue;
-            };
-            index.entries.push(IndexEntry {
-                key,
-                source,
-                city,
-                state,
-                address: address.filter(|address| address.line1().is_some()).cloned(),
-                website: entry.website().map(|website| website.as_str().to_string()),
-                middle,
-            });
-            index
-                .by_name
-                .entry(form.clone())
-                .or_default()
-                .push(position);
-            for variant in name_variants(name.as_str(), &form) {
-                index.by_core.entry(variant).or_default().push(position);
-            }
-        }
+        entries.iter().for_each(|entry| index.insert_entry(entry));
         index
+    }
+
+    fn insert_entry(&mut self, entry: &SchoolDirectoryEntry) {
+        let Some((form, indexed)) = index_entry(entry) else {
+            return;
+        };
+        let Ok(position) = u32::try_from(self.entries.len()) else {
+            return;
+        };
+        self.entries.push(indexed);
+        if let Some(name) = entry.name() {
+            name_variants(name.as_str(), &form)
+                .into_iter()
+                .for_each(|variant| {
+                    self.by_core.entry(variant).or_default().push(position);
+                });
+        }
+        self.by_name.entry(form).or_default().push(position);
     }
 
     pub fn link(
@@ -195,20 +170,50 @@ fn identity(entry: &SchoolDirectoryEntry) -> Option<(IdentifiedKey, SourceLabel)
     Some((key, source))
 }
 
-fn entry_state(key: &IdentifiedKey, address: Option<&PostalAddress>) -> Option<UsJurisdiction> {
+fn entry_state(key: &IdentifiedKey, entry: &SchoolDirectoryEntry) -> Option<UsJurisdiction> {
+    let jurisdiction = entry.jurisdiction();
+    let address_state = entry.address().and_then(PostalAddress::state);
     match key {
-        IdentifiedKey::StateRecord { state, .. } => match address.and_then(PostalAddress::state) {
+        IdentifiedKey::StateRecord { state, .. } => match address_state {
             Some(published) if published != *state => None,
             _ => Some(*state),
         },
-        _ => address.and_then(PostalAddress::state),
+        _ => jurisdiction.or(address_state),
     }
 }
 
-fn publishes_street(key: &IdentifiedKey, address: Option<&PostalAddress>) -> bool {
+fn index_entry(entry: &SchoolDirectoryEntry) -> Option<(MatchForm, IndexEntry)> {
+    let (key, source) = identity(entry)?;
+    let name = entry.name()?;
+    let form = MatchForm::of(name.as_str());
+    if form.is_empty() {
+        return None;
+    }
+    let address = entry.address();
+    let state = entry_state(&key, entry)?;
+    let city = address
+        .and_then(PostalAddress::city)
+        .map(|city| MatchForm::of(city.as_str()))
+        .filter(|form| !form.is_empty());
+    let postal = retained_address(&key, address);
+    let indexed = IndexEntry {
+        key,
+        source,
+        city,
+        state,
+        address: postal,
+        website: entry.website().map(|website| website.as_str().to_string()),
+        middle: is_middle(&form, entry.grades()),
+    };
+    Some((form, indexed))
+}
+
+fn retained_address(key: &IdentifiedKey, address: Option<&PostalAddress>) -> Option<PostalAddress> {
     match key {
-        IdentifiedKey::StateRecord { .. } => true,
-        _ => address.is_some_and(|address| address.line1().is_some()),
+        IdentifiedKey::Nces(_) | IdentifiedKey::Pss(_) => address.cloned(),
+        IdentifiedKey::StateRecord { .. } => {
+            address.filter(|address| address.line1().is_some()).cloned()
+        }
     }
 }
 

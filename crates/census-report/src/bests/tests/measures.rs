@@ -1,12 +1,30 @@
 use super::*;
 
 #[test]
-fn measure_of_time() {
-    let mark = Mark::TimeSeconds(CentiSeconds::new(1094));
+fn imperial_parser_rejects_malformed_unicode_and_fraction() {
+    for input in ["5-3.1é", "5-3.中", "5-3.+1", "5-3.001"] {
+        assert_eq!(crate::bests::field_micrometres(input), None, "{input}");
+    }
+    assert_eq!(crate::bests::field_micrometres("5-3.750"), Some(1_619_250));
+}
+
+#[test]
+fn metric_scaling_widens_before_multiplication() {
+    let mark = Mark::DistanceMetres(CentiMetres::new(i32::MAX));
+    assert_eq!(
+        crate::bests::Measure::Distance.value(&mark),
+        Some(i64::from(i32::MAX) * 10_000)
+    );
+}
+
+#[test]
+fn measure_of_time() -> TestResult {
+    let mark = Mark::TimeSeconds(ExactSeconds::parse("10.94")?);
     assert_eq!(
         crate::bests::Measure::of(&mark),
         Some(crate::bests::Measure::Time)
     );
+    Ok(())
 }
 
 #[test]
@@ -46,9 +64,13 @@ fn measure_of_raw_is_none() {
 }
 
 #[test]
-fn measure_time_value() {
-    let mark = Mark::TimeSeconds(CentiSeconds::new(1094));
-    assert_eq!(crate::bests::Measure::Time.value(&mark), Some(1094i64));
+fn measure_time_value() -> TestResult {
+    let mark = Mark::TimeSeconds(ExactSeconds::parse("10.94")?);
+    assert_eq!(
+        crate::bests::Measure::Time.value(&mark),
+        Some(10_940_000_000)
+    );
+    Ok(())
 }
 
 #[test]
@@ -98,8 +120,8 @@ fn measure_value_type_mismatch() {
 
 #[test]
 fn measure_time_better_is_lower() {
-    assert!(crate::bests::Measure::Time.better(1080, 1094));
-    assert!(!crate::bests::Measure::Time.better(1094, 1080));
+    assert!(crate::bests::Measure::Time.better(10_800_000_000, 10_940_000_000));
+    assert!(!crate::bests::Measure::Time.better(10_940_000_000, 10_800_000_000));
 }
 
 #[test]
@@ -115,12 +137,13 @@ fn measure_points_better_is_higher() {
 }
 
 #[test]
-fn measure_normalized_time() {
-    let mark = Mark::TimeSeconds(CentiSeconds::new(1094));
+fn measure_normalized_time() -> TestResult {
+    let mark = Mark::TimeSeconds(ExactSeconds::parse("10.94")?);
     assert_eq!(
         crate::bests::Measure::Time.normalized_mark(&mark),
         Some(10.94)
     );
+    Ok(())
 }
 
 #[test]

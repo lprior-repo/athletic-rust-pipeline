@@ -125,7 +125,7 @@ pub fn parse_staff_directory(html: &str) -> CrawlResult<StaffDirectory> {
         .collect();
     let members = elements(article, "<tr", "</tr>")
         .filter(|(tag, _)| markup.has_class(tag, "sidearm-staff-member"))
-        .filter_map(|(tag, row)| staff_row(&markup, &categories, tag, row))
+        .map(|(tag, row)| staff_row(&markup, &categories, tag, row))
         .collect();
     Ok(StaffDirectory { name, members })
 }
@@ -135,8 +135,10 @@ fn staff_row(
     categories: &BTreeMap<&str, String>,
     tag: &str,
     row: &str,
-) -> Option<StaffRow> {
-    let email = markup.email(row)?;
+) -> StaffRow {
+    let email = markup
+        .email(row)
+        .map_or_else(String::new, core::convert::identity);
     let category_id = markup.attribute(tag, "data-category-id");
     let published_sport = markup.text(markup.cell(row, "col-staff_custom_1"));
     let sport = if published_sport.is_empty() {
@@ -150,7 +152,7 @@ fn staff_row(
     let name = elements(name_cell, "<a", "</a>")
         .next()
         .map_or_else(String::new, |(_, body)| markup.text(body));
-    Some(StaffRow {
+    StaffRow {
         id: markup.attribute(tag, "data-member-id").to_string(),
         category_id: category_id.to_string(),
         name,
@@ -158,7 +160,7 @@ fn staff_row(
         level: markup.text(markup.cell(row, "col-staff_custom_2")),
         role: markup.text(markup.cell(row, "col-staff_title")),
         email,
-    })
+    }
 }
 
 fn school_name(html: &str, markup: &Markup) -> Option<String> {

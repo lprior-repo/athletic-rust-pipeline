@@ -1,6 +1,9 @@
 use super::*;
 use std::cmp::Ordering;
 
+mod persisted;
+use persisted::PersistedAthlete;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct AthleteCandidateKey {
     pub school: SchoolId,
@@ -80,6 +83,8 @@ pub struct CanonicalAthlete {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source: Option<SourceIdentity>,
     pub source_links: Vec<SourceIdentity>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub identity_attestations: Vec<IdentityAttestation>,
     pub evidence: Vec<Evidence>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub retained_conflicts: Vec<RetainedConflict>,
@@ -166,6 +171,7 @@ impl CanonicalAthlete {
             public_profile_urls: Vec::new(),
             source: Some(source),
             source_links: Vec::new(),
+            identity_attestations: Vec::new(),
             evidence: Vec::new(),
             retained_conflicts: Vec::new(),
         }
@@ -201,6 +207,7 @@ impl CanonicalAthlete {
             public_profile_urls: Vec::new(),
             source: Some(source),
             source_links: Vec::new(),
+            identity_attestations: Vec::new(),
             evidence: Vec::new(),
             retained_conflicts: Vec::new(),
         })
@@ -231,60 +238,6 @@ impl CanonicalAthlete {
             Some(Confidence::HIGH)
         } else {
             None
-        }
-    }
-}
-
-#[derive(Debug, Deserialize)]
-struct PersistedAthlete {
-    id: AthleteId,
-    canonical_name: String,
-    known_names: Vec<String>,
-    grad_year: GradYear,
-    school: SchoolId,
-    gender: Gender,
-    sports: Vec<Sport>,
-    observed_grades: Vec<ObservedGrade>,
-    #[serde(default)]
-    published_graduations: Vec<PublishedGraduation>,
-    public_profile_urls: Vec<String>,
-    #[serde(default)]
-    source: Option<SourceIdentity>,
-    #[serde(default)]
-    source_links: Vec<SourceIdentity>,
-    #[serde(default)]
-    source_identities: Vec<SourceIdentity>,
-    evidence: Vec<Evidence>,
-    #[serde(default)]
-    retained_conflicts: Vec<RetainedConflict>,
-}
-
-impl From<PersistedAthlete> for CanonicalAthlete {
-    fn from(persisted: PersistedAthlete) -> Self {
-        let mut source_links = persisted.source_links;
-        let source = persisted
-            .source
-            .or_else(|| persisted.source_identities.first().cloned());
-        for identity in persisted.source_identities {
-            if Some(&identity) != source.as_ref() && !source_links.contains(&identity) {
-                source_links.push(identity);
-            }
-        }
-        Self {
-            id: persisted.id,
-            canonical_name: persisted.canonical_name,
-            known_names: persisted.known_names,
-            grad_year: persisted.grad_year,
-            school: persisted.school,
-            gender: persisted.gender,
-            sports: persisted.sports,
-            observed_grades: persisted.observed_grades,
-            published_graduations: persisted.published_graduations,
-            public_profile_urls: persisted.public_profile_urls,
-            source,
-            source_links,
-            evidence: persisted.evidence,
-            retained_conflicts: persisted.retained_conflicts,
         }
     }
 }

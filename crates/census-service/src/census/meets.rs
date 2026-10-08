@@ -4,12 +4,18 @@ use census_crawl::recording::RowSink;
 use census_crawl::{CrawlResult, Recording};
 use census_domain::model::SourceMeetRef;
 use census_domain::UsJurisdiction;
-use census_store::{Store, Table};
+use census_store::Store;
+use futures::{stream, TryStreamExt};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use tracing::info;
 
+mod progress;
+mod request;
 mod walk;
+
+pub use progress::DiscoveryDisposition;
+pub use request::MeetWalkRequest;
 
 use walk::{walk_season, SeasonReader, SeasonWalk};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -20,7 +26,32 @@ pub enum SeasonScope {
 
 pub const SOURCE: &str = "milesplit";
 
-pub const MAX_PAGES_PER_SEASON: u32 = 400;
+pub const DEFAULT_PAGES_PER_SEASON: u32 = 400;
+pub const MAX_PAGES_PER_INVOCATION: u32 = 4096;
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MeetFrontier {
+    pub phase: String,
+    pub next_page: u32,
+    pub disposition: DiscoveryDisposition,
+    #[serde(default)]
+    pub failure: Option<MeetFrontierFailure>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MeetFrontierFailure {
+    pub kind: MeetFrontierFailureKind,
+    pub detail: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MeetFrontierFailureKind {
+    Capacity,
+    Acquisition,
+    Schema,
+    Invariant,
+}
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MeetCensus {
@@ -33,66 +64,137 @@ pub struct MeetCensus {
     pub repeated: usize,
     #[serde(default)]
     pub sources: Vec<MeetSourceRows>,
+    #[serde(default)]
+    pub frontiers: Vec<MeetFrontier>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MeetSourceRows {
     pub slug: String,
     pub rows: usize,
+    #[serde(default)]
+    pub disposition: census_crawl::CollectionDisposition,
+    #[serde(default)]
+    pub unfinished: Vec<String>,
+    #[serde(default)]
+    pub errors: Vec<String>,
+    #[serde(default)]
+    pub notes: Vec<String>,
+    #[serde(default)]
+    pub withheld: Option<u64>,
+    #[serde(default)]
+    pub unresolved: Option<census_crawl::UnresolvedCounters>,
 }
 
 impl MeetCensus {
-    fn fold(&mut self, walk: &SeasonWalk) {
-        self.pages = self.pages.saturating_add(walk.pages);
-        self.fetched = self.fetched.saturating_add(walk.fetched);
-        self.seen = self.seen.saturating_add(walk.seen);
-        self.repeated = self.repeated.saturating_add(walk.repeated);
-        self.truncated = self.truncated.saturating_add(walk.truncated);
+    pub fn is_terminal(&self) -> bool {
+        !self.sources.is_empty()
+            && self.sources.iter().all(|source| {
+                source.disposition.is_complete()
+                    && source.unfinished.is_empty()
+                    && source.errors.is_empty()
+                    && source.withheld == Some(0)
+                    && source
+                        .unresolved
+                        .is_some_and(|value| value.rows == 0 && value.labels == 0)
+            })
+    }
+
+    fn index_terminal(&self) -> bool {
+        self.frontiers.len() == Season::ALL.len()
+            && self.frontiers.iter().all(|frontier| {
+                frontier.disposition == DiscoveryDisposition::Exhausted
+                    && frontier.failure.is_none()
+            })
+    }
+
+    fn completed_index(mut self, site: Site, request: &MeetWalkRequest<'_>) -> Self {
+        let disposition = if self.index_terminal() {
+            census_crawl::CollectionDisposition::Complete
+        } else {
+            census_crawl::CollectionDisposition::Partial
+        };
+        let unfinished = self
+            .frontiers
+            .iter()
+            .zip(Season::ALL)
+            .filter(|(frontier, _)| frontier.disposition != DiscoveryDisposition::Exhausted)
+            .map(|(frontier, season)| site.results_url(season, request.year, frontier.next_page))
+            .collect();
+        let errors = self
+            .frontiers
+            .iter()
+            .filter_map(|frontier| {
+                frontier
+                    .failure
+                    .as_ref()
+                    .map(|failure| failure.detail.clone())
+            })
+            .collect();
+        self.sources.push(MeetSourceRows {
+            slug: SOURCE.to_owned(),
+            rows: self.rows,
+            disposition,
+            unfinished,
+            errors,
+            notes: Vec::new(),
+            withheld: Some(0),
+            unresolved: self
+                .index_terminal()
+                .then_some(census_crawl::UnresolvedCounters { rows: 0, labels: 0 }),
+        });
+        self
+    }
+
+    fn absorb(mut self, walk: SeasonWalk) -> CrawlResult<Self> {
+        self.pages = walk::add(self.pages, walk.pages)?;
+        self.fetched = walk::add(self.fetched, walk.fetched)?;
+        self.seen = walk::add(self.seen, walk.seen)?;
+        self.rows = walk::add(self.rows, walk.rows)?;
+        self.repeated = walk::add(self.repeated, walk.repeated)?;
+        self.truncated = walk::add(self.truncated, walk.truncated)?;
+        self.seasons = walk::add(self.seasons, 1)?;
+        if let Some(frontier) = walk.frontier {
+            self.frontiers.push(frontier);
+        }
+        Ok(self)
     }
 }
 
 pub async fn collect_state_meets(
     fetcher: &Fetcher,
     store: &Store,
-    jurisdiction: UsJurisdiction,
-    year: u16,
-    observed_on: &str,
-    refresh: bool,
+    request: &MeetWalkRequest<'_>,
     recording: Option<&Recording>,
 ) -> CrawlResult<MeetCensus> {
-    let site = Site::for_jurisdiction(jurisdiction);
-    let mut census = MeetCensus::default();
-    let mut rows: BTreeMap<String, SourceMeetRef> = BTreeMap::new();
-    let sink = match recording {
-        Some(recording) => RowSink::Record(recording),
-        None => RowSink::Store(store),
-    };
-    for season in Season::ALL {
-        let reader = SeasonReader {
-            site,
-            jurisdiction,
-            season,
-            year,
-            observed_on,
-            refresh,
-        };
-        census.seasons = census.seasons.saturating_add(1);
-        let walk = walk_season(fetcher, store, &reader, &mut rows, &sink).await?;
-        census.fold(&walk);
-    }
-    let rows: Vec<SourceMeetRef> = rows.into_values().collect();
-    let mut batch = sink.write_batch();
-    batch.append_many(Table::SourceMeets, &rows)?;
-    batch.commit()?;
-    census.rows = rows.len();
+    let site = Site::for_jurisdiction(request.jurisdiction);
+    let sink = recording.map_or(RowSink::Store(store), |recording| RowSink::Record {
+        store,
+        recording,
+    });
+    let mut initial = MeetCensus::default();
+    initial
+        .frontiers
+        .try_reserve_exact(Season::ALL.len())
+        .map_err(|_| progress::invalid("cannot reserve meet frontiers"))?;
+    let census = stream::iter(Season::ALL.into_iter().map(Ok))
+        .try_fold(initial, |census, season| async move {
+            let reader = SeasonReader {
+                site,
+                season,
+                request,
+            };
+            census.absorb(walk_season(fetcher, store, reader, sink).await?)
+        })
+        .await?;
     info!(
-        state = jurisdiction.code(),
+        state = request.jurisdiction.code(),
         pages = census.pages,
         seen = census.seen,
         rows = census.rows,
         "meet census collected"
     );
-    Ok(census)
+    Ok(census.completed_index(site, request))
 }
 
 pub fn select_meets(
@@ -131,37 +233,27 @@ fn filter_by_season(rows: Vec<SourceMeetRef>, scope: SeasonScope) -> Vec<SourceM
     }
 }
 
-fn repeats_previous(previous: Option<&[String]>, current: &[String]) -> bool {
-    previous.is_some_and(|previous| previous == current)
-}
-
 pub fn meets_phase(jurisdiction: UsJurisdiction, season: Season, year: u16) -> String {
     format!(
-        "milesplit_meet_index_{}_{}_{year}_v1",
+        "milesplit_meet_index_{}_{}_{year}_v2",
         jurisdiction.code().to_ascii_lowercase(),
         season.code()
     )
 }
 
-fn source_meet_row(
-    meet: &MeetRef,
-    jurisdiction: UsJurisdiction,
-    season: Season,
-    year: u16,
-    observed_on: &str,
-) -> SourceMeetRef {
+fn source_meet_row(meet: MeetRef, reader: &SeasonReader<'_>) -> SourceMeetRef {
     SourceMeetRef {
         id: SourceMeetRef::row_id(SOURCE, &meet.meet_id),
         source: SOURCE.to_string(),
-        source_meet_id: meet.meet_id.clone(),
-        jurisdiction,
-        season: season.code().to_string(),
-        year,
-        name: meet.name.clone(),
-        date: meet.date.clone(),
-        venue: meet.venue.clone(),
-        results_url: meet.results_url.clone(),
-        observed_on: observed_on.to_string(),
+        source_meet_id: meet.meet_id,
+        jurisdiction: reader.request.jurisdiction,
+        season: reader.season.code().to_string(),
+        year: reader.request.year,
+        name: meet.name,
+        date: meet.date,
+        venue: meet.venue,
+        results_url: meet.results_url,
+        observed_on: reader.request.observed_on.to_string(),
     }
 }
 #[cfg(test)]

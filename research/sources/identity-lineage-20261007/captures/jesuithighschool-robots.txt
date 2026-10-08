@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /bin
+Disallow: /bin/
+Disallow: /secure/
+
+Sitemap: https://www.jesuithighschool.org/sitemap.xml

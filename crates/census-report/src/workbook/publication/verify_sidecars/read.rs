@@ -38,28 +38,9 @@ pub(super) fn lines(
     let mut records = 0usize;
     while read_line(&mut reader, &mut buffer).map_err(|source| io_error(path, source))? {
         line = line.saturating_add(1);
-        let text = std::str::from_utf8(buffer.as_slice()).map_err(|_| {
-            defect(format!(
-                "{what} holds non-UTF-8 text at line {line}: {}",
-                path.display()
-            ))
-        })?;
-        let text = text.trim();
-        if text.is_empty() {
-            let detail = format!(
-                "{what} holds an empty record at line {line}: {}",
-                path.display()
-            );
-            return Err(defect(detail));
-        }
+        let text = record_text(path, what, line, buffer.as_slice())?;
         records = records.saturating_add(1);
-        if records > limits.records {
-            return Err(defect(format!(
-                "{what} holds more than {} records: {}",
-                limits.records,
-                path.display()
-            )));
-        }
+        check_record_count(path, what, records, limits.records)?;
         visit(line, text)?;
     }
     Ok(records)
@@ -80,13 +61,7 @@ pub(super) fn csv(
     for record in parser.records() {
         let record = record.map_err(|error| csv_error(path, error))?;
         records = records.saturating_add(1);
-        if records > limits.records {
-            return Err(defect(format!(
-                "{what} holds more than {} records: {}",
-                limits.records,
-                path.display()
-            )));
-        }
+        check_record_count(path, what, records, limits.records)?;
         visit(records, &record)?;
     }
     Ok(records)
@@ -109,15 +84,47 @@ pub(super) fn headers(
         let found = record
             .get(column)
             .map_or(Default::default(), core::convert::identity);
-        if found != *name {
-            return Err(defect(format!(
-                "{} header column {column}: expected {name:?}, found {:?}",
-                path.display(),
-                excerpt(found)
-            )));
-        }
+        check_header(path, column, name, found)?;
     }
     Ok(())
+}
+
+fn check_header(path: &Path, column: usize, name: &str, found: &str) -> ReportResult<()> {
+    if found != name {
+        return Err(defect(format!(
+            "{} header column {column}: expected {name:?}, found {:?}",
+            path.display(),
+            excerpt(found)
+        )));
+    }
+    Ok(())
+}
+
+fn check_record_count(path: &Path, what: &str, count: usize, limit: usize) -> ReportResult<()> {
+    if count > limit {
+        return Err(defect(format!(
+            "{what} holds more than {limit} records: {}",
+            path.display()
+        )));
+    }
+    Ok(())
+}
+
+fn record_text<'a>(path: &Path, what: &str, line: usize, bytes: &'a [u8]) -> ReportResult<&'a str> {
+    let text = std::str::from_utf8(bytes).map_err(|_| {
+        defect(format!(
+            "{what} holds non-UTF-8 text at line {line}: {}",
+            path.display()
+        ))
+    })?;
+    let text = text.trim();
+    if text.is_empty() {
+        return Err(defect(format!(
+            "{what} holds an empty record at line {line}: {}",
+            path.display()
+        )));
+    }
+    Ok(text)
 }
 
 pub(super) fn compare_record(
@@ -187,22 +194,27 @@ fn read_line(reader: &mut impl BufRead, buffer: &mut Vec<u8>) -> std::io::Result
         }
         let position = available.iter().position(|byte| *byte == b'\n');
         let length = position.map_or(available.len(), |position| position.saturating_add(1));
-        if buffer.len().saturating_add(length) > MAX_RECORD_BYTES {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                "record exceeds the readback line budget",
-            ));
-        }
-        let chunk = available.get(..length).ok_or_else(|| {
-            std::io::Error::new(std::io::ErrorKind::InvalidData, "invalid readback buffer")
-        })?;
-        buffer.extend_from_slice(chunk);
+        append_chunk(buffer, available, length)?;
         let complete = position.is_some();
         reader.consume(length);
         if complete {
             return Ok(true);
         }
     }
+}
+
+fn append_chunk(buffer: &mut Vec<u8>, available: &[u8], length: usize) -> std::io::Result<()> {
+    if buffer.len().saturating_add(length) > MAX_RECORD_BYTES {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "record exceeds the readback line budget",
+        ));
+    }
+    let chunk = available.get(..length).ok_or_else(|| {
+        std::io::Error::new(std::io::ErrorKind::InvalidData, "invalid readback buffer")
+    })?;
+    buffer.extend_from_slice(chunk);
+    Ok(())
 }
 
 fn csv_error(path: &Path, error: csv::Error) -> ReportError {

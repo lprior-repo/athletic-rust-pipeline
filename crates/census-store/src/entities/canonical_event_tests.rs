@@ -1,27 +1,37 @@
 use crate::{Entity, Store, Table};
 use census_domain::model::{
-    CanonicalEvent, CanonicalMeet, EventKind, Evidence, Gender, SourceEventLabel, SourceRef,
+    CanonicalEvent, CanonicalMeet, CompetitionCategory, EventIdentity, EventKind,
+    EventSpecification, Evidence, Gender, SourceEventLabel, SourceRef,
 };
 use census_domain::UsJurisdiction;
 
-type TestResult = Result<(), Box<dyn std::error::Error>>;
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-fn retained(label: &str) -> CanonicalEvent {
+fn retained(label: &str) -> TestResult<CanonicalEvent> {
     let meet = CanonicalMeet::mint(
         Some(UsJurisdiction::Alabama),
         "2026-04-25",
         "Captured Section Meet",
         None,
     );
+    let specification =
+        EventSpecification::from_published_label(label, &EventKind::from_source_label(label))?;
+    let gender = match &specification.category {
+        Some(CompetitionCategory::Girls) => Gender::Girls,
+        _ => Gender::Boys,
+    };
     let mut event = CanonicalEvent::new(
-        &meet,
-        EventKind::Unmapped {
-            label: label.into(),
+        EventIdentity {
+            meet: &meet,
+            kind: EventKind::Unmapped {
+                label: label.into(),
+            },
+            gender,
+            division: Some("2A"),
+            round: Some("preliminaries"),
         },
-        Gender::Boys,
-        Some("2A"),
-        Some("preliminaries"),
-    );
+        specification,
+    )?;
     let source = SourceRef::new(
         "milesplit_al",
         Some("https://al.milesplit.com/meets/745082/results".into()),
@@ -31,12 +41,12 @@ fn retained(label: &str) -> CanonicalEvent {
         label: label.into(),
     });
     event.evidence.push(Evidence::parsed(source, "2026-09-28"));
-    event
+    Ok(event)
 }
 
 #[test]
 fn source_proven_refinement_preserves_event_references_in_both_orders() -> TestResult {
-    let historical = retained("Boys 2A 110m Hurdles Preliminaries");
+    let historical = retained("Boys 2A 110m Hurdles Preliminaries")?;
     let mut corrected = historical.clone();
     corrected.kind = historical
         .resolved_source_kind()
@@ -58,23 +68,29 @@ fn source_proven_refinement_preserves_event_references_in_both_orders() -> TestR
 }
 
 #[test]
-fn unsupported_unbound_and_conflicting_labels_cannot_refine() {
-    assert_eq!(retained("Boys Mystery Race").resolved_source_kind(), None);
-    let mut unbound = retained("Boys 110m Hurdles");
+fn unsupported_unbound_and_conflicting_labels_cannot_refine() -> TestResult {
+    check!(eq; retained("Boys Mystery Race")?.resolved_source_kind(), None);
+    let mut unbound = retained("Boys 110m Hurdles")?;
     unbound.evidence.clear();
     assert_eq!(unbound.resolved_source_kind(), None);
-    let mut conflicting = retained("Boys 110m Hurdles");
-    let source = conflicting.source_labels[0].source.clone();
+    let mut conflicting = retained("Boys 110m Hurdles")?;
+    let source = conflicting
+        .source_labels
+        .first()
+        .ok_or("missing source label")?
+        .source
+        .clone();
     conflicting.source_labels.push(SourceEventLabel {
         source,
         label: "Boys 100m Dash".into(),
     });
     assert_eq!(conflicting.resolved_source_kind(), None);
+    Ok(())
 }
 
 #[test]
-fn refinement_cannot_change_context_or_override_known_kind() {
-    let original = retained("Boys 2A 110m Hurdles Preliminaries");
+fn refinement_cannot_change_context_or_override_known_kind() -> TestResult {
+    let original = retained("Boys 2A 110m Hurdles Preliminaries")?;
     for change in 0..3 {
         let mut incoming = original.clone();
         incoming.kind = EventKind::Track110mHurdles;
@@ -97,12 +113,13 @@ fn refinement_cannot_change_context_or_override_known_kind() {
     known.merge(different);
     assert_eq!(known.kind, EventKind::Track100m);
     assert_eq!(known.retained_conflicts.len(), 1);
+    Ok(())
 }
 
 #[test]
 fn retained_observations_survive_refinement_and_store_reopen() -> TestResult {
     let root = tempfile::tempdir()?;
-    let historical = retained("Girls Long Jump Finals");
+    let historical = retained("Girls Long Jump Finals")?;
     let mut corrected = historical.clone();
     corrected.kind = historical
         .resolved_source_kind()
@@ -130,8 +147,8 @@ fn retained_observations_survive_refinement_and_store_reopen() -> TestResult {
 }
 
 #[test]
-fn a_conflicted_typed_observation_cannot_refine_a_retained_unmapped_event() {
-    let original = retained("Boys 2A 110m Hurdles Preliminaries");
+fn a_conflicted_typed_observation_cannot_refine_a_retained_unmapped_event() -> TestResult {
+    let original = retained("Boys 2A 110m Hurdles Preliminaries")?;
     let mut incoming = original.clone();
     incoming.kind = EventKind::Track110mHurdles;
     let mut conflicting = incoming.clone();
@@ -146,16 +163,21 @@ fn a_conflicted_typed_observation_cannot_refine_a_retained_unmapped_event() {
     assert!(conflicts
         .iter()
         .all(|conflict| held.retained_conflicts.contains(conflict)));
+    Ok(())
 }
 
 #[test]
-fn typed_side_contradictory_or_unbound_labels_cannot_bypass_event_collision() {
-    let original = retained("Boys 2A 110m Hurdles Preliminaries");
+fn typed_side_contradictory_or_unbound_labels_cannot_bypass_event_collision() -> TestResult {
+    let original = retained("Boys 2A 110m Hurdles Preliminaries")?;
     for contradictory in [true, false] {
         let mut incoming = original.clone();
         incoming.kind = EventKind::Track110mHurdles;
         if contradictory {
-            incoming.source_labels[0].label = "Boys 100m Dash".into();
+            incoming
+                .source_labels
+                .first_mut()
+                .ok_or("missing source label")?
+                .label = "Boys 100m Dash".into();
         } else {
             incoming.evidence.clear();
         }
@@ -171,4 +193,5 @@ fn typed_side_contradictory_or_unbound_labels_cannot_bypass_event_collision() {
             assert_eq!(held.retained_conflicts.len(), 1);
         }
     }
+    Ok(())
 }

@@ -23,7 +23,10 @@ impl TryFrom<StageOutcome> for CompletedTeams {
     type Error = IncompleteTeams;
 
     fn try_from(outcome: StageOutcome) -> Result<Self, Self::Error> {
-        if outcome.errors.is_empty() {
+        if outcome.disposition.is_complete()
+            && outcome.errors.is_empty()
+            && outcome.unfinished.is_empty()
+        {
             Ok(Self(outcome))
         } else {
             Err(IncompleteTeams(outcome))

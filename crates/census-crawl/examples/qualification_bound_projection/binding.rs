@@ -25,11 +25,18 @@ pub(super) async fn derive(store: &Store, inputs: &Inputs) -> Result<Binding> {
     let fetcher = preserve::fetcher(store)?;
     let site = Site::for_jurisdiction(UsJurisdiction::Alabama);
     let index = fetch_team_index(&fetcher, site, &FetchOptions::default()).await?;
-    if index.len() > io::MAX_ROWS {
-        return Err("team index exceeds smoke row bound".into());
+    if index.disposition != census_crawl::CollectionDisposition::Complete
+        || index.teams.len() > io::MAX_ROWS
+    {
+        return Err(format!(
+            "team index is incomplete or exceeds smoke row bound: {:?}",
+            index.unfinished
+        )
+        .into());
     }
     let [_, _, _, original] = &inputs.captures;
     let mut matching = index
+        .teams
         .iter()
         .filter(|team| format!("{}/roster", team.url) == original.metadata.url);
     let team = matching
@@ -74,7 +81,7 @@ fn project(
     let roster_year = SchoolYear::new(acquired.format("%Y").to_string().parse()?)
         .ok_or("invalid roster school year")?;
     let (school, athletes, teams) =
-        roster_entities(roster, roster_year, &original.metadata.fetched_at, &site);
+        project_roster(roster, roster_year, &original.metadata.fetched_at, &site)?;
     let provider_team_id = roster.team.id.parse::<u64>()?;
     if !school.source_identities.iter().any(|identity| {
         identity.namespace == SourceNamespace::MilesplitSchool && identity.id == roster.team.id
@@ -96,6 +103,37 @@ fn project(
             "projected_roster_teams_not_ingested": teams,
             "role": "production roster_entities school binding only; no roster athlete/team population intake"}),
     })
+}
+
+fn project_roster(
+    roster: &census_crawl::milesplit::Roster,
+    year: SchoolYear,
+    acquired: &str,
+    site: &Site,
+) -> Result<(
+    CanonicalSchool,
+    Vec<census_domain::model::CanonicalAthlete>,
+    Vec<census_domain::model::CanonicalTeam>,
+)> {
+    let (school, _, _) = roster_entities(&roster.team, &[], year, acquired, site)?;
+    let mut athletes = Vec::new();
+    let mut teams: Vec<census_domain::model::CanonicalTeam> = Vec::new();
+    athletes.try_reserve(roster.athletes.len())?;
+    teams.try_reserve(12)?;
+    roster.athletes.chunks(64).try_for_each(|window| {
+        let (_, projected, programs) = roster_entities(&roster.team, window, year, acquired, site)?;
+        athletes.extend(projected);
+        programs.into_iter().try_for_each(|program| {
+            if !teams.iter().any(|retained| retained.id == program.id) {
+                if teams.len() >= 12 {
+                    return Err("roster program capacity exceeded".into());
+                }
+                teams.push(program);
+            }
+            Ok::<_, Box<dyn std::error::Error>>(())
+        })
+    })?;
+    Ok((school, athletes, teams))
 }
 
 pub(super) fn retain(store: &Store, root: &Path, binding: &Binding) -> Result<()> {

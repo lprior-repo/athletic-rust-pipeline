@@ -35,10 +35,17 @@ fn foreign_owned_meet_or_result_set_indices_are_refused_before_any_projection_mu
                 capture: &capture,
                 page: &foreign,
                 indices: &[0, 1, 2],
+                performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 9, 22)
+                    .ok_or("snapshot date")?,
             },
-            &ProviderSchools::from_schools(&[school("Spann", "38332"), school("Charles", "4912")]),
-            &mut stats,
-            &mut accumulated,
+            &mut RowWriter {
+                schools: &ProviderSchools::from_schools(&[
+                    school("Spann", "38332"),
+                    school("Charles", "4912"),
+                ]),
+                stats: &mut stats,
+                accumulated: &mut accumulated,
+            },
         ) {
             Err(crate::CrawlError::Schema { detail, .. }) => {
                 check!(eq; detail, "owned row does not match requested meet/result-set");

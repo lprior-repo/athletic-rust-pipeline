@@ -1,0 +1,13 @@
+HTTP/2 200 
+content-type: text/plain
+content-length: 99
+date: Thu, 08 Oct 2026 03:18:36 GMT
+accept-ranges: bytes
+server: nginx/1.29.2
+last-modified: Sat, 18 Oct 2025 17:43:34 GMT
+etag: "68f3d1c6-63"
+x-cache: Miss from cloudfront
+via: 1.1 e3da1744f17646ea239e89a01adcd79e.cloudfront.net (CloudFront)
+x-amz-cf-pop: ORD56-P5
+x-amz-cf-id: Pr8AGNMPuAqomgv-YUuaeu4ngGpEw43YkiMpq76MApnJebHhWuLrug==
+

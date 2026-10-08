@@ -27,17 +27,7 @@ struct Scanned<'a> {
 
 impl<'a> Scanned<'a> {
     fn of(dataset: &'a ExportDataset) -> Self {
-        let event_ids = dataset
-            .events
-            .iter()
-            .map(|event| event.id.as_str().to_string())
-            .collect();
-        let unmapped_event_ids = dataset
-            .events
-            .iter()
-            .filter(|event| matches!(event.kind, EventKind::Unmapped { .. }))
-            .map(|event| event.id.as_str().to_string())
-            .collect();
+        let (event_ids, unmapped_event_ids) = event_indices(dataset);
         Self {
             schools: dataset.schools.values().cloned().collect(),
             coaches: &dataset.coaches,
@@ -65,43 +55,34 @@ impl<'a> Scanned<'a> {
     }
 }
 
+fn event_indices(dataset: &ExportDataset) -> (HashSet<String>, HashSet<String>) {
+    let event_ids = dataset
+        .events
+        .iter()
+        .map(|event| event.id.as_str().to_string())
+        .collect();
+    let unmapped = dataset
+        .events
+        .iter()
+        .filter(|event| matches!(event.kind, EventKind::Unmapped { .. }))
+        .map(|event| event.id.as_str().to_string())
+        .collect();
+    (event_ids, unmapped)
+}
+
 pub(super) fn run(dataset: &ExportDataset, grad_year: Option<i16>) -> Outcome {
     let scanned = Scanned::of(dataset);
     let school_state = school_state_index(&scanned.schools);
     let universe = Published::new(jurisdiction_buckets());
     let reads = reads::totals(&scanned.tables(), &school_state, &universe, grad_year);
 
-    let coach_schools: HashSet<&str> = scanned
-        .coaches
-        .iter()
-        .map(|coach| coach.school.as_str())
-        .collect();
     let mut sets = SchoolSets::default();
     let mut buckets = seed_buckets();
-    let off_cohort_athletes = athletes::classify(
-        &scanned.athletes,
-        &school_state,
-        &coach_schools,
+    let placement = athletes::Placement {
+        school_state: &school_state,
         grad_year,
-        &mut buckets,
-        &mut sets.with_athletes,
-    );
-    let athlete_ids: HashSet<&str> = scanned.athletes.iter().map(|a| a.id.as_str()).collect();
-    let (perf_tallies, orphan_performances) = athletes::tally_performances(
-        scanned.performances,
-        &athlete_ids,
-        &scanned.event_ids,
-        &scanned.unmapped_event_ids,
-        scanned.aliases,
-    );
-    athletes::classify_performances(
-        &scanned.athletes,
-        &school_state,
-        &perf_tallies,
-        &orphan_performances,
-        grad_year,
-        &mut buckets,
-    );
+    };
+    let off_cohort_athletes = classify_population(&scanned, &placement, &mut buckets, &mut sets);
     classify_coaches(scanned.coaches, &school_state, &mut buckets, &mut sets);
     classify_schools(&scanned.schools, &sets, &mut buckets);
     classify_meets(scanned.meets, &mut buckets);
@@ -115,6 +96,57 @@ pub(super) fn run(dataset: &ExportDataset, grad_year: Option<i16>) -> Outcome {
         outside_scope: reads.outside,
         off_cohort_athletes,
     }
+}
+
+fn classify_population<'a>(
+    scanned: &'a Scanned<'_>,
+    placement: &athletes::Placement<'_, '_>,
+    buckets: &mut BucketMap,
+    sets: &mut SchoolSets<'a>,
+) -> usize {
+    let coach_schools = scanned
+        .coaches
+        .iter()
+        .map(|coach| coach.school.as_str())
+        .collect();
+    let off_cohort = athletes::classify(
+        &scanned.athletes,
+        placement,
+        &coach_schools,
+        buckets,
+        &mut sets.with_athletes,
+    );
+    classify_performances(scanned, placement, buckets);
+    off_cohort
+}
+
+fn classify_performances(
+    scanned: &Scanned<'_>,
+    placement: &athletes::Placement<'_, '_>,
+    buckets: &mut BucketMap,
+) {
+    let (tallies, orphan) = performance_tallies(scanned);
+    athletes::classify_performances(&scanned.athletes, placement, &tallies, &orphan, buckets);
+}
+
+fn performance_tallies<'a>(
+    scanned: &'a Scanned<'_>,
+) -> (
+    HashMap<&'a str, super::state::PerfTally>,
+    super::state::PerfTally,
+) {
+    let athlete_ids = scanned
+        .athletes
+        .iter()
+        .map(|athlete| athlete.id.as_str())
+        .collect();
+    athletes::tally_performances(
+        scanned.performances,
+        &athlete_ids,
+        &scanned.event_ids,
+        &scanned.unmapped_event_ids,
+        scanned.aliases,
+    )
 }
 
 fn seed_buckets() -> BucketMap {
@@ -170,18 +202,23 @@ fn classify_coaches<'a>(
             bump(&mut bucket.row.coaches_with_email);
             sets.with_coach_email.insert(school);
         }
-        if coach.role != CoachRole::HeadCoach {
-            continue;
+        classify_coach_program(coach, sets);
+    }
+}
+
+fn classify_coach_program<'a>(coach: &'a CanonicalCoach, sets: &mut SchoolSets<'a>) {
+    if coach.role != CoachRole::HeadCoach {
+        return;
+    }
+    let school = coach.school.as_str();
+    match coach.sport {
+        Some(Sport::OutdoorTrack | Sport::IndoorTrack) => {
+            sets.with_tf_coach.insert(school);
         }
-        match coach.sport {
-            Some(Sport::OutdoorTrack | Sport::IndoorTrack) => {
-                sets.with_tf_coach.insert(school);
-            }
-            Some(Sport::CrossCountry) => {
-                sets.with_xc_coach.insert(school);
-            }
-            None => {}
+        Some(Sport::CrossCountry) => {
+            sets.with_xc_coach.insert(school);
         }
+        Some(Sport::Unknown) | None => {}
     }
 }
 

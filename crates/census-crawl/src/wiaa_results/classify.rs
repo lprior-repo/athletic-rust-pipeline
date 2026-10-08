@@ -38,16 +38,21 @@ pub fn artifact_format(extension: &str, body: Option<&str>) -> ArtifactFormat {
 }
 
 pub fn school_year_for(date: &str, sport: Sport, archive_year: i16) -> Option<SchoolYear> {
-    let year = date
-        .get(..4)
-        .and_then(|value| value.parse::<i16>().ok())
-        .map_or(archive_year, |value| value);
-    let month = date.get(5..7).and_then(|value| value.parse::<u8>().ok());
-    match (month, sport) {
-        (Some(month), _) => SchoolYear::containing(year, month),
-        (None, Sport::CrossCountry) => SchoolYear::containing(year, 10),
-        (None, _) => SchoolYear::containing(year, 6),
-    }
+    SchoolYear::from_date(date).or_else(|| {
+        let year = match date {
+            value if value.len() == 4 && value.bytes().all(|byte| byte.is_ascii_digit()) => value
+                .parse::<i16>()
+                .ok()
+                .filter(|year| SchoolYear::new(*year).is_some()),
+            _ => None,
+        }
+        .map_or(archive_year, core::convert::identity);
+        match sport {
+            Sport::CrossCountry => SchoolYear::containing(year, 10),
+            Sport::IndoorTrack | Sport::OutdoorTrack => SchoolYear::containing(year, 6),
+            Sport::Unknown => None,
+        }
+    })
 }
 
 pub fn level_of(name: &str) -> CompetitionLevel {

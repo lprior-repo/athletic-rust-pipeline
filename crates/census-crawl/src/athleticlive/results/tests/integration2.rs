@@ -37,9 +37,10 @@ fn a_standings_capture_folds_into_the_event_that_published_its_run_key() -> Test
         "a standings row cannot name-merge into a native athlete"
     );
     check!(ne; miriam[0].source_athlete, miriam[1].source_athlete);
+    let time = ExactSeconds::parse("1225.7")?;
     check!(miriam
         .iter()
-        .all(|row| row.mark == Mark::TimeSeconds(CentiSeconds::new(122570))));
+        .all(|row| row.mark == Mark::TimeSeconds(time)));
     let sources: std::collections::BTreeSet<_> = miriam
         .iter()
         .flat_map(|row| {
@@ -72,42 +73,50 @@ fn a_standings_capture_folds_into_the_event_that_published_its_run_key() -> Test
 
 #[test]
 fn a_standings_capture_whose_run_key_no_document_published_is_refused() -> TestResult {
-    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
-    let (dir, store, fetcher) = scratch()?;
-    write_schools(
-        &store,
-        &[(UsJurisdiction::Michigan, "East Kentwood High School")],
-    )?;
-    let doc_path = stage_capture(&dir, "event-doc-2254280.json", HJ_MITS)?;
-    let standings_path = stage_capture(
-        &dir,
-        "live-run-standings-9-9.json",
-        &standings_payload("Miriam Downing", "SO", "East Kentwood High School"),
-    )?;
-    let options = ResultOptions {
-        documents: vec![doc_path.clone()],
-        standings: vec![StandingsCapture {
-            run_id: "9-9".to_string(),
-            path: standings_path.clone(),
-        }],
-        ..ResultOptions::for_meet(mits_meet(), OBSERVED_ON)
-    };
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (dir, store, fetcher) = scratch()?;
+            write_schools(
+                &store,
+                &[(UsJurisdiction::Michigan, "East Kentwood High School")],
+            )?;
+            let doc_path = stage_capture(&dir, "event-doc-2254280.json", HJ_MITS)?;
+            let standings_path = stage_capture(
+                &dir,
+                "live-run-standings-9-9.json",
+                &standings_payload("Miriam Downing", "SO", "East Kentwood High School"),
+            )?;
+            let options = ResultOptions {
+                documents: vec![doc_path.clone()],
+                standings: vec![StandingsCapture {
+                    run_id: "9-9".to_string(),
+                    path: standings_path.clone(),
+                }],
+                ..ResultOptions::for_meet(mits_meet(), OBSERVED_ON)
+            };
 
-    let report = collect(&context(&store, &fetcher)?, &options).await?;
-    check!(eq; report.errors, 1, "{}", joined(&report));
-    check!(
-        joined(&report).contains(&format!(
-            "capture refused: {standings_path}: no event document in this run published run key `9-9`"
-        )),
-        "{}",
-        joined(&report)
-    );
-    Ok(())
-    })
+            let report = collect(&context(&store, &fetcher)?, &options).await?;
+            check!(eq; report.errors, 1, "{}", joined(&report));
+            check!(report
+                .unfinished
+                .iter()
+                .any(|locator| locator == &standings_path));
+            let performances: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
+            check!(!performances
+                .iter()
+                .any(|row| row.evidence.iter().any(|evidence| evidence
+                    .source
+                    .url
+                    .as_deref()
+                    .is_some_and(|url| url.contains("9-9")))));
+            Ok(())
+        })
 }
 
 #[test]
-fn a_second_run_resumes_the_capture_the_first_journaled() -> TestResult {
+fn unchanged_capture_replay_does_not_duplicate_performances() -> TestResult {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
@@ -127,18 +136,49 @@ fn a_second_run_resumes_the_capture_the_first_journaled() -> TestResult {
             let first = collect(&context(&store, &fetcher)?, &options).await?;
             check!(eq; first.rows, 136);
             let second = collect(&context(&store, &fetcher)?, &options).await?;
-            check!(eq; second.rows, 0, "the capture is not read twice");
-            let notes = joined(&second);
-            check!(
-                notes.contains("captures already journaled by an earlier run: 1"),
-                "{notes}"
-            );
-            check!(
-        notes.contains("canonical entities: meets 1 events 0 teams 0 athletes 0 performances 0"),
-        "a resumed run rewrites only the meet it files under, and reads no capture: {notes}"
-    );
+            check!(eq; second.rows, 0, "unchanged replay admits no additional rows");
             let performances: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
             check!(eq; performances.len(), 136, "the tables are not appended twice");
+            Ok(())
+        })
+}
+
+#[test]
+fn partial_capture_replay_keeps_unfinished_and_commits_only_newly_resolved_rows() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (dir, store, fetcher) = scratch()?;
+            write_schools(&store, &[(UsJurisdiction::Iowa, "Waukon")])?;
+            let path = stage_capture(&dir, "partial.json", XC_STATE)?;
+            let options = ResultOptions {
+                documents: vec![path.clone()],
+                ..ResultOptions::for_meet(state_meet(), OBSERVED_ON)
+            };
+            let first = collect(&context(&store, &fetcher)?, &options).await?;
+            check!(eq; first.rows, 7);
+            check!(first.unfinished.contains(&path));
+            check!(receipts(&store)?
+                .values()
+                .all(|receipt| receipt["complete"] == serde_json::json!(false)));
+            let replay = collect(&context(&store, &fetcher)?, &options).await?;
+            check!(eq; replay.rows, 0);
+            check!(eq; replay.unfinished, first.unfinished);
+            check!(eq; store.scan::<CanonicalPerformance>(Table::Performances)?.len(), 7);
+            let doc = parse_event_document(&event_doc_url(2_150_205), XC_STATE)?;
+            write_schools(
+                &store,
+                &labels_of(&labelled_schools(&doc, UsJurisdiction::Iowa)),
+            )?;
+            let completed = collect(&context(&store, &fetcher)?, &options).await?;
+            check!(eq; completed.rows, 129);
+            check!(!completed.unfinished.contains(&path));
+            check!(receipts(&store)?
+                .values()
+                .any(|receipt| receipt["complete"] == serde_json::json!(true)));
+            check!(eq; store.scan::<CanonicalPerformance>(Table::Performances)?.len(), 136);
+            check!(eq; captures(&store)?.len(), 1);
             Ok(())
         })
 }
@@ -161,8 +201,10 @@ fn a_capture_whose_rows_never_landed_is_read_again_by_the_next_run() -> TestResu
                 ..ResultOptions::for_meet(state_meet(), OBSERVED_ON)
             };
 
-            let mut walk = Run::new(&context(&store, &fetcher)?, &state_meet(), &options)?;
-            walk.read_captures(&context(&store, &fetcher)?, &options)?;
+            let recording = crate::recording::Recording::new();
+            let mut staged = context(&store, &fetcher)?;
+            staged.recording = Some(&recording);
+            collect(&staged, &options).await?;
             check!(
                 receipts(&store)?.is_empty() && captures(&store)?.is_empty(),
                 "the walk writes neither a receipt nor an archived body of its own"
@@ -173,7 +215,7 @@ fn a_capture_whose_rows_never_landed_is_read_again_by_the_next_run() -> TestResu
                     .is_empty(),
                 "the walk writes no row of its own"
             );
-            drop(walk);
+            drop(recording);
 
             let report = collect(&context(&store, &fetcher)?, &options).await?;
             check!(eq; report.rows, 136, "the capture is a document of 136 rows");
@@ -191,7 +233,7 @@ fn a_capture_whose_rows_never_landed_is_read_again_by_the_next_run() -> TestResu
             check!(eq; payload["path"], serde_json::json!(path));
             check!(eq; payload["role"], serde_json::json!("event"));
             check!(eq; payload["meet"], serde_json::json!(STATE_MEET.to_string()));
-            check!(eq; payload["parser"], serde_json::json!("athleticlive_results_v2"));
+            check!(eq; payload["parser"], serde_json::json!(super::super::PARSER));
             check!(eq;
                 payload["digest"],
                 serde_json::json!(content_digest(XC_STATE.as_bytes())),
@@ -206,6 +248,50 @@ fn a_capture_whose_rows_never_landed_is_read_again_by_the_next_run() -> TestResu
                 std::collections::HashSet::from([content_digest(XC_STATE.as_bytes())]),
                 "the archived body is keyed by the digest it carries"
             );
+            Ok(())
+        })
+}
+
+#[test]
+fn malformed_row_retains_later_neighbors_and_partial_replay_conserves_rows() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (dir, store, fetcher) = scratch()?;
+            let doc = parse_event_document(&event_doc_url(2_150_205), XC_STATE)?;
+            write_schools(
+                &store,
+                &labels_of(&labelled_schools(&doc, UsJurisdiction::Iowa)),
+            )?;
+            let mut document: serde_json::Value = serde_json::from_str(XC_STATE)?;
+            *document
+                .pointer_mut("/_source/r/0/m")
+                .ok_or("published mark")? = serde_json::json!({"invalid":"mark"});
+            let path = stage_capture(&dir, "malformed-row.json", &document.to_string())?;
+            let options = ResultOptions {
+                documents: vec![path.clone()],
+                ..ResultOptions::for_meet(state_meet(), OBSERVED_ON)
+            };
+            let first = collect(&context(&store, &fetcher)?, &options).await?;
+            check!(eq; first.rows, 135);
+            check!(eq; first.errors, 1);
+            check!(first.unfinished.contains(&path));
+            let performances: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
+            check!(performances
+                .iter()
+                .any(|performance| performance.source_key.contains(":row135:")));
+            check!(!performances
+                .iter()
+                .any(|performance| performance.source_key.contains(":row0:")));
+            let replay = collect(&context(&store, &fetcher)?, &options).await?;
+            check!(eq; replay.rows, 0);
+            check!(eq; replay.errors, 1);
+            check!(replay.unfinished.contains(&path));
+            check!(eq; store.scan::<CanonicalPerformance>(Table::Performances)?.len(), 135);
+            check!(receipts(&store)?
+                .values()
+                .all(|receipt| receipt["complete"] == serde_json::json!(false)));
             Ok(())
         })
 }

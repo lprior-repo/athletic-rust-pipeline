@@ -14354,3 +14354,271 @@ Environment and limits:
   national run was executed in this slice, and accuracy/data-loss acceptance for the census itself
   remains with the F01-F15 plan and the S01-S17 fault matrix.
 
+## CEN-11 exact-time cutover preparation — 2026-10-07
+
+Scope: `ExactTimeMigration` owns the exact-time implementation, its parser/report consumers and
+narrow time fixtures. Main owns schema migration and the integrated validation run. No builds,
+tests, formatters, lints, benchmarks or runtime smoke commands were executed during the concurrent
+edit wave, as explicitly required by the caller. Source inspection and added scenarios are not
+before/after execution evidence. LSP is unavailable in this tool surface; bounded tagged
+`grep`/`read` inspection was used instead.
+
+[BLOCKED] high `crates/census-report/src/bests/tests/exact_time.rs:10` — CEN-11 parser-to-PR/XLSX/CSV and replay acceptance remains unexecuted — `cargo test -p census-report --lib bests::tests::exact_time -- --nocapture` NOT RUN: caller forbids builds/tests until Main integrates concurrent edits.
+
+Additional named acceptance commands, also NOT RUN here:
+
+```text
+cargo test -p census-domain --lib model::fixed_mark -- --nocapture
+cargo test -p census-crawl --lib xc::tests::precision -- --nocapture
+cargo test -p census-report --lib bests::write::tests -- --nocapture
+```
+
+The new source-to-artifact scenarios name the faster earlier `10.941` versus slower later
+`10.944`, equivalent `10.94`/`10.9400`, checked overflow/nonfinite refusals and exact colon
+nanoseconds. They perform independent CSV/JSONL/XLSX readback and receipt-backed replay with
+unchanged durable counts. XC scenarios cover the full source fractional token rather than a
+single-digit prefix. Domain scenarios cover exact clock arithmetic, numeric Eq/Ord/Hash,
+wire precision and the positive `i64` nanosecond boundary. Those are submitted obligations,
+not observed passing results. Main must record the actual outcomes against the integrated tree.
+
+Persistence proposal handed to Main: legacy integer centiseconds require checked `i64 * 10,000,000`
+with precision two under an explicit old schema; invalid/overflowing rows must be refused.
+Typed `Mark` is carried by the performances table; source-observation records are school/athlete
+observations and source-meet records are references. Frozen exports and serialized parsed workflow
+journals/replies also require versioned authority, not reinterpretation of historical bytes.
+No captured/golden files or durable `var/**` state were changed. No performance numbers, commit,
+push or integrated acceptance are claimed by this entry.
+
+Reviewer model: `openai-codex/gpt-6.1-sol`.
+VERDICT: BLOCKED 1
+
+
+### Additional CEN-11 source/type-boundary obligations
+
+The compiled and MileSplit raw source parsers no longer reinterpret a rejected timed token as
+a rounded distance mark. Named source regressions cover over-precision input and later rows;
+MileSplit retains an undecodable source token explicitly as `Mark::Raw`. No failing-before or
+passing-after execution is claimed. Additional commands submitted to Main, NOT RUN:
+
+```text
+cargo test -p census-crawl --lib compiled::tests::over_precision_timed_rows -- --nocapture
+cargo test -p census-crawl --lib milesplit::raw_rows::precision_tests -- --nocapture
+cargo test -p census-service --bin census-service cli::retained_marks::tests -- --nocapture
+```
+
+CSV serialization now borrows the selected record and reuses the existing CSV protection wrapper.
+Verifier field groups chain fixed arrays into the required final row, not two temporary vectors.
+The retained-mark repair copies only the source/date metadata required for a separately owned
+derived evidence record, not its overwritten note. These are source-level ownership observations,
+not measured allocation/latency/throughput results. `holzman-rust` zero-cost abstractions and
+latency-throughput playbook and `functional-rust` were reread; no new production imperative loops,
+dependencies, comments, extraction panics or suppression were introduced by this slice.
+
+All added behavioral commands remain blocked on the caller's integrated validation boundary.
+The ledger state remains one blocked acceptance lane.
+VERDICT: BLOCKED 1
+
+
+XC block capture decoding carries rejected-runner count alongside accepted rows, so a refused
+`15:50.2000000001` on a multi-runner line cannot disappear behind the later accepted runner.
+The full-source planned regression expects five accepted runners and one skipped runner while
+retaining Bennett Story's `993.6` result. This is a source inspection hypothesis and an unexecuted
+behavioral obligation, not a reproducing-command finding or a fixed-before/after claim.
+`cargo test -p census-crawl --lib xc::tests::precision -- --nocapture` remains NOT RUN.
+The event insertion boundary borrows division metadata and owns it only when creating an event;
+no allocation measurement was executed. Ledger acceptance remains BLOCKED 1.
+VERDICT: BLOCKED 1
+
+
+### CEN-11 behavioral scenario catalog — all execution unproven
+
+| Given | When | Then specified by the added source-to-artifact scenario |
+| --- | --- | --- |
+| HyTek publishes `10.941` earlier and slower `10.944` later | Parse, append/replay, reduce PR, publish and independently read XLSX/CSV/JSONL | Earlier `10.941` wins at `10941000000` ns, source precision survives, replay appends nothing |
+| HyTek publishes equal `10.94` and later `10.9400` | Parse and publish the selected PR through the same real pipeline | Later source/date wins without false numeric conflict, retaining four decimal places |
+| HyTek publishes `1:00.000000001` and `1:00.000000002` | Parse decimal clock components and publish the winning PR | `60000000001` ns remains exact in JSONL/CSV; XLSX seconds are display-only |
+| Source rows contain nonfinite, overflowing or over-precision times | Parse through the source boundary | No invented numeric PR; refusal accounting and later valid records remain visible |
+
+The last obligation has direct HyTek refusal, compiled later-record, MileSplit explicit-raw and
+XC multi-runner accounting scenarios. Numeric Eq/Ord/Hash and wire consistency have unit boundary
+obligations, not an executed end-to-end claim. No scenario is classified GREEN; the caller's
+integration run must supply real output before shipment. No Go-skill control-plane state advance,
+runtime provenance artifact or independent approval is claimed by this scoped repair worker.
+VERDICT: BLOCKED 1
+
+
+## SourceEventCallerClosure — source-qualified identity and invalid-status cutover
+
+Model: `openai-codex/gpt-6.1-sol`. This entry records implementation and deferred acceptance only.
+No build, test, lint, formatter, benchmark, runtime smoke, commit, or push was executed in this
+concurrent-worker round. No failing-before or passing-after result is claimed.
+
+The AthleticLIVE, Athletic.net, IHSA tournament, MileSplit owned-result, TFRRS, and WIAA event
+projection callers now parse published source specification before minting `CanonicalEvent`.
+Adapter event caches use its specification-qualified ID; compatible aliases append literal labels
+and parsed provenance rather than replacing supplied specification. New event context growth is
+checked and fallible, with an explicit 100,000-entry limit for contexts, labels, and evidence.
+No nominal implement mass, hurdle height, indoor geometry, or XC distance is inferred from a
+conventional event name. AthleticLIVE additionally reads and validates the published `sn` alias.
+
+Performance identity callers use the actual event ID. MileSplit and AthleticLIVE construct
+performances through the typed `PerformanceIdentity`/`PerformanceResult` boundary.
+AthleticLIVE uses one private source-status classification for document and standings paths.
+Invalid published status takes precedence over stale numeric `im`/`rtm`; the raw performance,
+native athlete, literal status, numeric contradiction, source provenance, and report note remain.
+Such legitimately published invalid results are not rejected solely for lacking a numeric winner.
+
+New authored scenarios cover distinct/equivalent implement masses, hurdle dimensions with exact
+times, unknown specification, invalid specification with later valid records, contradictory source
+aliases, one source result ID in distinct specification contexts, and stale numeric invalid statuses
+through actual captured adapter projection. These scenarios are obligations, not execution evidence.
+Main owns the adapter-to-store-to-selection-to-CSV/XLSX winner bridge.
+
+The late immutable-date contract is wired into WIAA and MileSplit projection. Physical acquisition
+metadata is unchanged. Future rows are excluded from canonical performance projection while raw
+source material is retained; unknown dates are explicit unfinished temporal review. MileSplit's
+private `OwnedResultSet` now carries `performance_as_of`; its producer owns populating that field
+and persisting unfinished native-observation drafts. WIAA receipt payloads include the immutable
+date, but the newly assigned digest-qualified `wiaa_results_projection_v2` reader/writer cutover is
+not implemented in this round. Other owned adapters' late date-gate propagation is not implemented.
+
+[BLOCKED] acceptance crates/census-crawl/src/athleticlive/results/tests/status.rs:25 — source-qualified and invalid-status regression execution remains unproved — `tools/moon-local run pipeline:tests -- -E 'package(census-crawl) & (test(athleticlive::) | test(athleticnet::) | test(ihsa::tournament::) | test(milesplit::map::) | test(tfrrs::) | test(wiaa_results::))'` — NOT RUN: caller prohibits worker checks during concurrent edits.
+[BLOCKED] acceptance crates/census-crawl/src/wiaa_results/run_artifacts.rs:207 — immutable-date integration and snapshot-qualified receipt acceptance remain incomplete — `tools/moon-local run pipeline:tests -- -E 'package(census-crawl) & (test(wiaa_results::) | test(milesplit::))'` — NOT RUN: late receipt/gate integration and date-window scenarios remain for Main after caller-requested wrap.
+[BLOCKED] gate crates/census-crawl/src/milesplit/map/events.rs:10 — compilation, formatting, source budgets, and lint compliance are not certified — `tools/moon-local run pipeline:fmt`; `tools/moon-local run pipeline:check`; `tools/moon-local run pipeline:lint-src` — NOT RUN: caller reserves integrated gates for Main.
+
+VERDICT: BLOCKED 3
+
+## SourceEventCallerClosure — immutable date caller continuation
+
+Model: `openai-codex/gpt-6.1-sol`. No build, test, lint, formatter, benchmark, or runtime
+command was executed: Main continues to reserve those lanes while sibling writers are active.
+This continuation supersedes only the preceding round's unimplemented caller propagation
+description; it does not change any historical observations or certify acceptance.
+
+All six owned projection paths now carry the configured `chrono::NaiveDate` snapshot.
+AthleticLIVE gates document and standing rows before grade-based native projection; Athleticnet
+profile and meet performance storage share the date policy; IHSA captures summaries before
+date admission and uses the published scheduled date when present; TFRRS gates missing and
+parsed row dates; MileSplit gates after raw observations are retained and before school/cohort
+admission; WIAA retains meet metadata before returning the typed unknown-date error.
+Future exclusions write no canonical performances and create no date-only unfinished obligation.
+Physical acquisition timestamps remain independent and unchanged.
+
+Unknown-date errors use `CrawlError::PerformanceDateUnknown { published, as_of }`, not a Schema
+exception-text protocol. Error metadata retains at most 64 characters; complete literals remain
+in the original source capture. MileSplit's obsolete string constant and public helper exposure
+were removed; the owned producer/retainer consumes the typed variant.
+
+Private API migrations: AthleticLIVE `Fold`/`RowContext`, Athleticnet `PerformanceInput`/`MeetCtx`,
+TFRRS `Page`, IHSA `EventContext`, and WIAA `AbsorbedMeet` carry immutable `performance_as_of`.
+Athleticnet `absorb_meet` takes `timing: (&str, chrono::NaiveDate)` in its former physical-time
+argument position. Its owned callers and direct tests were migrated. TFRRS `Run::unfinished`
+records failed or partial URLs for root finalization. These signatures and temporal scenarios
+remain unexecuted.
+
+The obsolete AthleticLIVE test that pinned abandoned whole-source batches to zero durable rows
+and zero journals was deleted rather than re-pinned after the durable-prefix cutover.
+
+[BLOCKED] acceptance crates/census-crawl/src/athleticlive/results/tests/status.rs:25 — source-qualified identity and invalid-status scenarios remain unexecuted — `tools/moon-local run pipeline:tests -- -E 'package(census-crawl) & (test(athleticlive::) | test(athleticnet::) | test(ihsa::tournament::) | test(milesplit::map::) | test(tfrrs::) | test(wiaa_results::))'` — NOT RUN: worker runtime checks remain prohibited during concurrent edits.
+[BLOCKED] acceptance crates/census-crawl/src/wiaa_results/run.rs:98 — snapshot/content/binding-qualified receipt cutover, actual WIAA finite-frontier finalization, TFRRS URL-only skip removal, and date-window smoke execution remain incomplete — `tools/moon-local run pipeline:tests -- -E 'package(census-crawl) & (test(wiaa_results::) | test(tfrrs::) | test(milesplit::))'` — NOT RUN: root receipt integration remains unfinished and worker checks are reserved for Main.
+[BLOCKED] gate crates/census-crawl/src/athleticlive/map_rows.rs:117 — compiled contract parity, formatting, and source/function budgets remain uncertified — `tools/moon-local run pipeline:fmt`; `tools/moon-local run pipeline:check`; `tools/moon-local run pipeline:lint-src` — NOT RUN: integrated gates belong to Main.
+
+VERDICT: BLOCKED 3
+
+## SourceEventCallerClosure — receipt and acquisition fixture continuation
+
+Model: `openai-codex/gpt-6.1-sol`. No runtime/build/test/lint/formatter/benchmark command was
+executed. Earlier rounds remain historical; the following implementation descriptions supersede
+their pending root receipt and acquisition-fixture work, not their unexecuted acceptance status.
+
+WIAA root now uses `wiaa_results_projection_v2` keys containing body content, source URL, projector
+phase/parser revision, immutable date horizon, configured year, and serialized school binding
+context. Historical `wiaa_results` journals are neither rewritten nor completion authority.
+Current acquisition precedes the completion lookup; a changed body or context therefore reopens
+projection. Future completion is horizon-qualified. Failed acquisition, unsupported/unparsed
+responses, unknown dates, and artifact limits retain exact unfinished units. Root finalization
+calls `finish_frontier` only after configured archives are traversed. Canonical rows use Main's
+shared `append_row_once`; frontier receipts are written separately after row admission.
+
+TFRRS removes historical URL-only skip authority and its obsolete constructor done argument.
+Its private constructor is `Run::new(index)`; SouthernFrontierClosure migrated the owning caller.
+Projection uses the owning fetched timestamp rather than the evaluation timestamp. Canonical
+rows use shared per-row admission, counters use actual selected-sink admission, and separate
+`tfrrs_projection_v2` frontier journals bind URL/body/horizon/year/school context.
+
+AthleticLIVE now accepts an already parsed `EventDoc` in its private absorber, avoiding repeated
+parse/allocation. `Fold.capture_sha256` is propagated into event/document/standing evidence;
+performance provenance preserves that owning SHA note. The owning acquisition producer bypasses
+canonical projection for fully future captures, and summary handling adds no unmapped-performance
+obligation for that future case.
+
+Main authorized controlled synthetic metadata for generated test bodies: `TEST_CAPTURED_AT`
+is a fixed UTC fixture clock, separate from evaluation `observed_on`; exact generated bytes/SHA,
+owning production-format URL, simulated GET/status 200 form the explicitly simulated protocol.
+These are not historical/public acquisition evidence or qualification/profiling results.
+Original XC and HJ bodies instead use the actual corpus acquisition clocks
+`2026-09-22T03:59:19Z` and `2026-09-22T04:01:13Z`. The family test adapter and manifest fixture
+metadata were migrated; incidental path-journal assertions were removed, not re-pinned.
+
+[BLOCKED] acceptance crates/census-crawl/src/athleticlive/results/tests/captures.rs:6 — source-qualified/status/acquisition scenarios remain unexecuted — `tools/moon-local run pipeline:tests -- -E 'package(census-crawl) & (test(athleticlive::) | test(athleticnet::) | test(ihsa::tournament::) | test(milesplit::map::) | test(tfrrs::) | test(wiaa_results::))'` — NOT RUN: worker checks prohibited while other writers are active.
+[BLOCKED] acceptance crates/census-crawl/src/wiaa_results/run_receipts.rs:7 — date-window, changed-body/context, and unchanged-replay behavior plus real source/store/export smoke remain uncertified — `tools/moon-local run pipeline:tests -- -E 'package(census-crawl) & (test(wiaa_results::) | test(tfrrs::) | test(milesplit::))'` — NOT RUN: integrated executable proof and export bridge belong to Main.
+[BLOCKED] gate crates/census-crawl/src/wiaa_results/run.rs:162 — compilation, formatting, function/module budgets, and lint parity remain uncertified — `tools/moon-local run pipeline:fmt`; `tools/moon-local run pipeline:check`; `tools/moon-local run pipeline:lint-src` — NOT RUN: integrated gates belong to Main.
+
+VERDICT: BLOCKED 3
+
+### Source timestamp producer continuation — unexecuted
+
+Main approved adopting `crate::context::published_performance_date` in the adjacent private NET
+and IHSA date decoders. They now validate the entire literal before borrowing its ten-byte calendar
+prefix. This replaces unconditional `T` suffix truncation; a bare valid ISO date is also admitted.
+The old incidental assertion requiring a `T` separator was deleted, not re-pinned.
+MileSplit and WIAA canonical meet construction formats a validated calendar date once before any
+canonical performance mint. Malformed literals remain unchanged for unknown-date disposition.
+MileSplit owning metadata additionally preserves the original published literal. IHSA's event
+index with no valid published date now records an exact unfinished index URL and an error rather
+than only a note. LIVE summary identifier validation precedes relay suppression and summary
+event-list growth is checked, bounded to 100,000 entries, and fallible; malformed IDs cannot be
+hidden by relay classification. Main owns LIVE producer normalization and root capture archival.
+
+No reproducing command was executed during this continuation; these are implementation changes
+and deferred obligations, not demonstrated failing-before/passing-after findings.
+The three preceding BLOCKED acceptance/gate lanes remain blocked with the same exact commands.
+
+VERDICT: BLOCKED 3
+
+## 2026-10-08 — Owner-requested immediate CEN integration checkpoint, not release acceptance
+
+The owner explicitly requested all current changes be pushed to remote main immediately, before
+the remaining CEN acceptance repairs. This checkpoint is not a completed CEN delivery or a green
+release. Source integration and verification ran in the isolated worktree
+`/home/lewis/.cache/athletic-cen-sol-20261008-c357`, initially based on `faf1b1e7742d`.
+The newer incoming main commit `4fb207437232` retains the owner's seven committed local changes.
+
+Executed from the isolated tree:
+
+- `tools/moon-local run pipeline:check`: PASS, checkpoint `efd7265e`; all workspace targets and
+  features compiled, including benchmarks and qualification examples.
+- `env -u CI tools/moon-local run pipeline:fmt-write`: completed, checkpoint `4dbc206d`.
+- `tools/moon-local run pipeline:tests -- -E 'test(cen17_athleticnet) | test(cen10_controlled_metadata_type_conflict) | test(a_result_pass_files_one_observation_per_athlete_id) | test(partial_results_replay_then_new_exact_binding) | test(census::meets::tests) | test(milesplit_fixtures)'`:
+  PASS, checkpoint `32bd5482`; 17 passed, 2,956 skipped. Controlled offline Athleticnet replay
+  exercised captured source parsing, Fjall persistence, exact best identities, JSONL/CSV and
+  independently read published XLSX, including DNS and unresolved surface controls.
+- `tools/moon-local run pipeline:tests`: FAIL, checkpoint `1ac9f5bd`; 2,970 executed,
+  2,945 passed, 25 failed, three skipped. Remaining failures span Arbiter recovery accounting,
+  compiled timed precision, TSSAA dispositions/receipts, WIAA school prerequisites, roster
+  completion, NET bio replay and whole-meet subject conservation, ownerless roster disposition,
+  northern source fixtures and pipeline event qualification. The complete output is retained
+  in this session's `artifact://441`; none of these failures is waived or declared repaired.
+
+CEN14's independent positive remains unproven. Additional original school and club discovery
+captures are preserved under `var/cen14-original-school-discovery-20261008/` and
+`var/cen14-original-club-discovery-20261008/`. No independent claim was promoted from those
+captures; source authority, exact admitted person keys, upstream separation and compatible
+gender/cohort were not jointly established.
+
+The owner explicitly approved a new measured CEN20 acceptance baseline, conditional on verified
+integrated source, unchanged preservation of the old baseline, matched corpus/toolchain and
+actual measurements of all required workloads followed by a fresh comparison. No new acceptance
+baseline has yet been recorded. No full release, all seventeen native faults, proof lanes or
+fresh national census is certified by this checkpoint. All CEN beads remain open.
+

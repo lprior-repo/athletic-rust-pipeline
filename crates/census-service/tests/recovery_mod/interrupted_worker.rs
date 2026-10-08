@@ -1,8 +1,8 @@
 use super::process::{counters_of, kill_ladder, report_of, run_census, Subject};
 use super::{
-    count_of, journal_keys, meet_ids, note, open_store, table_counts, Instant, Table,
-    ATHLETICLIVE_FIXTURE, ATHLETICLIVE_PHASE,
+    count_of, meet_ids, note, open_store, table_counts, Instant, Table, ATHLETICLIVE_FIXTURE,
 };
+use sha2::{Digest, Sha256};
 
 fn generate_athleticlive_csv(count: usize) -> super::TestResult<String> {
     let mut csv = format!(
@@ -14,7 +14,7 @@ fn generate_athleticlive_csv(count: usize) -> super::TestResult<String> {
     );
     for i in 0..count {
         csv.push_str(&format!(
-            "athleticlive,{},,State Meet {i},,Illinois,2025-09-15T04:00:00Z,,True\n",
+            "athleticlive,{},,Synthetic Recovery Meet {i},,Illinois,2025-09-15T04:00:00Z,,True\n",
             50000 + i + 1
         ));
     }
@@ -26,12 +26,23 @@ fn sigkill_mid_batch_worker_restart_completes_the_remaining_units() -> super::Te
     const SCENARIO: &str = "sigkill-worker";
     let dir = tempfile::tempdir()?;
     let input = dir.path().join("athleticlive-meets.csv");
-    std::fs::write(&input, generate_athleticlive_csv(4096)?)?;
+    let body = generate_athleticlive_csv(4096)?;
+    std::fs::write(&input, &body)?;
+    let metadata = dir.path().join("synthetic-capture.meta.json");
+    let producer = serde_json::json!({
+        "url": "https://synthetic.athleticlive.example/meets.csv",
+        "method": "GET", "status": 200, "bytes": body.len(),
+        "content_digest": format!("{:x}", Sha256::digest(body.as_bytes())),
+        "fetched_at": "2026-09-20T00:00:00Z", "content_type": "text/csv"
+    });
+    std::fs::write(&metadata, serde_json::to_vec(&producer)?)?;
     let args = [
         "provider",
         "athleticlive",
         "--input",
         input.to_str().ok_or("CSV path is not UTF-8")?,
+        "--input-metadata",
+        metadata.to_str().ok_or("metadata path is not UTF-8")?,
     ];
 
     let control_root = dir.path().join("control");
@@ -39,11 +50,13 @@ fn sigkill_mid_batch_worker_restart_completes_the_remaining_units() -> super::Te
     run_census(&control_root, &args)?;
     let clean_runtime = started.elapsed();
     let control_stats = counters_of(&run_census(&control_root, &["fjall-stats"])?);
-    let (control_journal, control_ids) = {
+    let (control_receipts, control_ids) = {
         let store = open_store(&control_root)?;
-        (journal_keys(&store, ATHLETICLIVE_PHASE)?, meet_ids(&store)?)
+        (store.receipt_count()?, meet_ids(&store)?)
     };
-    let total_units = control_journal.len();
+    let total_units = control_ids.len();
+    check!(eq; total_units, 4096);
+    check!(eq; control_receipts, u64::try_from(total_units)?);
     note(
         SCENARIO,
         format!("control: runtime={clean_runtime:?} units={total_units} stats={control_stats:?}"),
@@ -58,7 +71,6 @@ fn sigkill_mid_batch_worker_restart_completes_the_remaining_units() -> super::Te
         &root,
         &args,
         Subject {
-            phase: ATHLETICLIVE_PHASE,
             table: Table::Meets,
             ids_of: meet_ids,
         },
@@ -67,21 +79,21 @@ fn sigkill_mid_batch_worker_restart_completes_the_remaining_units() -> super::Te
     )?;
     let landed_partial = attempts
         .iter()
-        .any(|attempt| !attempt.journal.is_empty() && attempt.journal.len() < total_units);
+        .any(|attempt| !attempt.entity_ids.is_empty() && attempt.entity_ids.len() < total_units);
     check!(
         landed_partial,
-        "a real mid-batch kill must have happened (0 < journal < total); workload completed \
+        "a real mid-batch kill must have happened (0 < durable units < total); workload completed \
      before the first kill delay"
     );
     for attempt in &attempts {
-        check!(eq; attempt.journal, attempt.entity_ids,
-        "each meet and its journal marker must commit atomically");
+        check!(eq; attempt.receipts, u64::try_from(attempt.entity_ids.len())?,
+            "each physical meet effect and its receipt commit atomically");
     }
 
     let resumed = report_of(&run_census(&root, &args)?)?;
-    let (journal, ids) = {
+    let (receipts, ids) = {
         let store = open_store(&root)?;
-        (journal_keys(&store, ATHLETICLIVE_PHASE)?, meet_ids(&store)?)
+        (store.receipt_count()?, meet_ids(&store)?)
     };
     let observations = {
         let store = open_store(&root)?;
@@ -92,10 +104,10 @@ fn sigkill_mid_batch_worker_restart_completes_the_remaining_units() -> super::Te
     note(
         SCENARIO,
         format!(
-            "restart: rows={} journal={} meets={} meet_observations={observations} \
+            "restart: rows={} receipts={} meets={} meet_observations={observations} \
              stats={resumed_stats:?} consolidate={consolidated:?}",
             resumed["rows"],
-            journal.len(),
+            receipts,
             ids.len()
         ),
     );
@@ -109,8 +121,8 @@ fn sigkill_mid_batch_worker_restart_completes_the_remaining_units() -> super::Te
         ),
     );
 
-    check!(eq; journal, control_journal,
-    "the restart completes exactly the control's unit set");
+    check!(eq; receipts, control_receipts,
+    "the restart completes exactly the control's durable effect set");
     check!(eq; ids, control_ids,
     "the killed-then-restarted store merges to the control's meets: no lost unit, no double count");
     check!(eq; consolidated.get("meets"),

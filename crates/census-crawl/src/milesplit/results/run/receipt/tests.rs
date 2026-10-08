@@ -35,12 +35,29 @@ fn receipt(
     let acquired = AcquiredMeet::new(OwnedMeetOutcome {
         verdict: parse_owned_meet(&owned.body, 725218),
         capture: owned,
-    });
+    })?;
     let page = super::super::metadata::parse_capture(metadata, &reference)?;
     let mut stats = super::super::super::Stats::default();
     let bindings = super::super::ProviderSchools::from_schools(schools);
-    let (mut projected, complete) =
-        super::super::projection::prepare(&acquired, &reference, &page, &bindings, &mut stats)?;
+    let performance_as_of = chrono::NaiveDate::parse_from_str("2026-10-07", "%Y-%m-%d")?;
+    let input = Input {
+        acquired: &acquired,
+        reference: &reference,
+        page: &page,
+        schools: &bindings,
+        performance_as_of,
+    };
+    let result_set = acquired
+        .result_set(&reference.rsid, performance_as_of)
+        .ok_or("result set")?;
+    let complete = result_set.page.individual_parse_complete();
+    let mut projected =
+        match super::super::projection::prepare(&input, result_set.indices, &mut stats)? {
+            super::super::projection::Prepared::Complete(projected) => projected,
+            super::super::projection::Prepared::Unfinished { error, .. } => {
+                return Err(error.into())
+            }
+        };
     super::super::evidence::bind(
         &mut projected,
         &reference,
@@ -50,10 +67,8 @@ fn receipt(
     )?;
     identify_retained(&mut projected)?;
     Ok(projection(
-        &reference,
-        &page,
+        &input,
         metadata,
-        &acquired,
         &projected,
         complete && stats.rows_without_school == 0,
         stats.rows,
@@ -184,16 +199,23 @@ fn contradictory_observed_owned_response_refuses_projection_of_matching_body_row
     let acquired = AcquiredMeet::new(OwnedMeetOutcome {
         verdict: parse_owned_meet(&owned.body, 725218),
         capture: owned,
-    });
+    })?;
     let page = super::super::metadata::parse_capture(&metadata, &reference)?;
     let mut stats = super::super::super::Stats::default();
-    match super::super::projection::prepare(
-        &acquired,
-        &reference,
-        &page,
-        &super::super::ProviderSchools::default(),
-        &mut stats,
-    ) {
+    let schools = super::super::ProviderSchools::default();
+    let performance_as_of = chrono::NaiveDate::parse_from_str("2026-10-07", "%Y-%m-%d")?;
+    let input = Input {
+        acquired: &acquired,
+        reference: &reference,
+        page: &page,
+        schools: &schools,
+        performance_as_of,
+    };
+    let indices = acquired
+        .result_set(&reference.rsid, performance_as_of)
+        .ok_or("result set")?
+        .indices;
+    match super::super::projection::prepare(&input, indices, &mut stats) {
         Err(crate::CrawlError::Schema { url, .. }) => {
             check!(eq; url, reference.url);
         }

@@ -1,37 +1,67 @@
 use super::super::map::SearchResult;
 use super::super::parse::resolve_school_name;
 use super::super::{Options, ASSOCIATION, HOST, SEARCH_PATH};
-use crate::{AdapterContext, AdapterReport, CrawlResult};
+use super::{counter_error, fail, owe};
+use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_domain::model::{CanonicalSchool, SourceNamespace};
-use std::collections::HashSet;
+use census_store::Table;
+use futures::{stream, StreamExt, TryStreamExt};
+
+const MAX_SCHOOLS: usize = 2048;
+const MAX_SEARCH_BYTES: usize = 1024 * 1024;
 
 pub(super) async fn resolve_schools(
     ctx: &AdapterContext<'_>,
     options: &Options,
     report: &mut AdapterReport,
 ) -> CrawlResult<Vec<SearchResult>> {
-    let mut to_process = if !options.school_names.is_empty() {
-        search_schools(ctx, options, report).await?
+    let mut rows = if options.school_names.is_empty() {
+        existing_schools(ctx, report)?
     } else {
-        let existing: Vec<census_domain::model::CanonicalSchool> =
-            census_store::read::read_rows(&ctx.store.out_dir().join("schools.jsonl"))?;
-        existing
-            .into_iter()
-            .filter(|s| matches!(&s.association, Some(a) if a.as_str() == ASSOCIATION))
-            .filter_map(|school| existing_school(school, report))
-            .collect()
+        search_schools(ctx, options, report).await?
     };
-
-    let mut seen_ids: HashSet<String> = HashSet::new();
-    to_process.retain(|sr| seen_ids.insert(sr.ohsaa_id.clone()));
-    if let Some(limit) = options.limit {
-        to_process.truncate(limit);
+    if rows.is_empty() {
+        owe(report, &format!("{HOST}{SEARCH_PATH}"))?;
     }
-
-    Ok(to_process)
+    if let Some(limit) = options.limit {
+        rows.iter().skip(limit).try_for_each(|row| {
+            owe(report, &row.sports_url())?;
+            owe(report, &row.ad_url())
+        })?;
+        rows.truncate(limit);
+    }
+    Ok(rows)
 }
 
-fn existing_school(school: CanonicalSchool, report: &mut AdapterReport) -> Option<SearchResult> {
+fn existing_schools(
+    ctx: &AdapterContext<'_>,
+    report: &mut AdapterReport,
+) -> CrawlResult<Vec<SearchResult>> {
+    let mut rows = Vec::new();
+    let mut failure = None;
+    ctx.store
+        .for_each_merged(Table::Schools, |school: CanonicalSchool| {
+            if failure.is_none() {
+                if let Err(error) = existing_school(school, report, &mut rows) {
+                    failure = Some(error);
+                }
+            }
+            Ok(())
+        })?;
+    match failure {
+        Some(error) => Err(error),
+        None => Ok(rows),
+    }
+}
+
+fn existing_school(
+    school: CanonicalSchool,
+    report: &mut AdapterReport,
+    rows: &mut Vec<SearchResult>,
+) -> CrawlResult<()> {
+    if school.association.as_deref() != Some(ASSOCIATION) {
+        return Ok(());
+    }
     let namespace = SourceNamespace::association_school(ASSOCIATION);
     let owner = school.source_identities.iter().find(|identity| {
         identity.namespace == namespace
@@ -39,20 +69,20 @@ fn existing_school(school: CanonicalSchool, report: &mut AdapterReport) -> Optio
             && identity.id.bytes().all(|byte| byte.is_ascii_digit())
     });
     let Some(owner) = owner else {
-        report.errors = report.errors.saturating_add(1);
-        report.note(format!(
-            "school {} has no usable OHSAA school owner; unfinished acquisition obligation",
-            school.name
-        ));
-        return None;
+        return fail(
+            report,
+            &format!("ohsaa:school:{}", school.id),
+            "indexed school has no usable OHSAA owner",
+        );
     };
-    Some(SearchResult {
+    let row = SearchResult {
+        ohsaa_id: owner.id.clone(),
         name: school.name,
         city: school
             .city
-            .map_or(Default::default(), core::convert::identity),
-        ohsaa_id: owner.id.clone(),
-    })
+            .map_or_else(String::new, core::convert::identity),
+    };
+    push_school(rows, row, report)
 }
 
 async fn search_schools(
@@ -60,48 +90,108 @@ async fn search_schools(
     options: &Options,
     report: &mut AdapterReport,
 ) -> CrawlResult<Vec<SearchResult>> {
-    let mut results = Vec::new();
-    for name in &options.school_names {
-        let url = format!("{HOST}{SEARCH_PATH}?Name={}", url_encode(name));
-        let mut notes: Vec<String> = Vec::new();
-        match ctx.fetcher.get(&url, &ctx.fetch_options()).await {
-            Ok(outcome) if outcome.status == 200 => {
-                if let Some(sr) = resolve_school_name(&outcome.text(), name, &mut notes) {
-                    results.push(sr);
-                } else {
-                    report.note(format!("no school found for \"{}\"", name));
+    let (_, rows) = stream::iter(&options.school_names)
+        .map(Ok::<_, CrawlError>)
+        .try_fold(
+            (report, Vec::new()),
+            |(report, mut rows), name| async move {
+                let url = format!("{HOST}{SEARCH_PATH}?Name={}", url_encode(name)?);
+                match ctx.fetcher.get(&url, &ctx.fetch_options()).await {
+                    Ok(capture) if capture.status == 200 => {
+                        project_search(&capture, name, &url, &mut rows, report)?
+                    }
+                    Ok(capture) => fail(
+                        report,
+                        &url,
+                        &format!("school search returned HTTP {}", capture.status),
+                    )?,
+                    Err(error) => fail(report, &url, &error.to_string())?,
                 }
-                for n in notes {
-                    report.note(n);
-                }
-            }
-            Ok(outcome) => {
-                report.errors = report.errors.saturating_add(1);
-                report.note(format!(
-                    "search \"{}\" returned HTTP {}",
-                    name, outcome.status
-                ));
-            }
-            Err(e) => {
-                report.errors = report.errors.saturating_add(1);
-                report.note(format!("search \"{}\": {}", name, e));
-            }
-        }
-    }
-    Ok(results)
+                Ok((report, rows))
+            },
+        )
+        .await?;
+    Ok(rows)
 }
-fn url_encode(value: &str) -> String {
-    let mut result = String::new();
-    for ch in value.chars() {
-        match ch {
-            'a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '_' | '.' | '~' => result.push(ch),
-            ' ' => result.push_str("%20"),
-            _ => {
-                for byte in ch.to_string().bytes() {
-                    result.push_str(&format!("%{:02X}", byte));
-                }
-            }
-        }
+
+fn project_search(
+    capture: &crate::net::FetchOutcome,
+    name: &str,
+    url: &str,
+    rows: &mut Vec<SearchResult>,
+    report: &mut AdapterReport,
+) -> CrawlResult<()> {
+    if capture.body.len() > MAX_SEARCH_BYTES {
+        return fail(report, url, "school search exceeds bounded capture budget");
     }
-    result
+    let html = match std::str::from_utf8(&capture.body) {
+        Ok(html) => html,
+        Err(error) => return fail(report, url, &error.to_string()),
+    };
+    let mut notes = Vec::new();
+    match resolve_school_name(html, name, &mut notes) {
+        Some(row) => push_school(rows, row, report)?,
+        None => fail(
+            report,
+            url,
+            "requested school has no unambiguous published owner",
+        )?,
+    }
+    notes.into_iter().take(5).for_each(|note| {
+        if report.notes.len() < 5 {
+            report.note(note.chars().take(4096).collect::<String>());
+        }
+    });
+    Ok(())
+}
+
+fn push_school(
+    rows: &mut Vec<SearchResult>,
+    row: SearchResult,
+    report: &mut AdapterReport,
+) -> CrawlResult<()> {
+    if row.name.len() > 4096 || row.city.len() > 4096 || row.ohsaa_id.len() > 4096 {
+        return fail(
+            report,
+            &row.sports_url(),
+            "resolved school fields exceed source budget",
+        );
+    }
+    if rows.len() >= MAX_SCHOOLS {
+        fail(
+            report,
+            &row.sports_url(),
+            "school frontier capacity reached",
+        )?;
+        return owe(report, &row.ad_url());
+    }
+    rows.try_reserve(1).map_err(|_| CrawlError::Resource {
+        resource: "Ohio resolved schools",
+        requested: 1,
+        limit: MAX_SCHOOLS,
+    })?;
+    rows.push(row);
+    Ok(())
+}
+
+fn url_encode(value: &str) -> CrawlResult<String> {
+    url::form_urlencoded::byte_serialize(value.as_bytes()).try_fold(
+        String::new(),
+        |mut encoded, part| {
+            let part = if part == "+" { "%20" } else { part };
+            let size = encoded
+                .len()
+                .checked_add(part.len())
+                .ok_or_else(counter_error)?;
+            encoded
+                .try_reserve(part.len())
+                .map_err(|_| CrawlError::Resource {
+                    resource: "Ohio search URL",
+                    requested: size,
+                    limit: value.len().saturating_mul(3),
+                })?;
+            encoded.push_str(part);
+            Ok(encoded)
+        },
+    )
 }

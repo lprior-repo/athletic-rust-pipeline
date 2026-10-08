@@ -3,39 +3,53 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct JurisdictionStages {
-    pub teams: bool,
-    pub rosters: bool,
-    pub meets: bool,
-    pub results: bool,
+    pub teams: census_crawl::CollectionDisposition,
+    pub rosters: census_crawl::CollectionDisposition,
+    pub meets: census_crawl::CollectionDisposition,
+    pub results: census_crawl::CollectionDisposition,
+    pub contacts: census_crawl::CollectionDisposition,
+    pub publication: census_crawl::CollectionDisposition,
+    pub refused_sources: u64,
     pub owed_rosters: u64,
     pub owed_results: u64,
 }
 
 impl JurisdictionStages {
     pub fn terminal(self) -> bool {
-        self.teams
-            && self.rosters
-            && self.meets
-            && self.results
+        [
+            self.teams,
+            self.rosters,
+            self.meets,
+            self.results,
+            self.contacts,
+            self.publication,
+        ]
+        .into_iter()
+        .all(census_crawl::CollectionDisposition::is_complete)
             && self.owed_rosters == 0
             && self.owed_results == 0
+            && self.refused_sources == 0
     }
 
     pub fn owing(self) -> Vec<&'static str> {
-        let mut owing = Vec::new();
-        if !self.teams {
-            owing.push("teams");
-        }
-        if !self.rosters || self.owed_rosters > 0 {
-            owing.push("rosters");
-        }
-        if !self.meets {
-            owing.push("meets");
-        }
-        if !self.results || self.owed_results > 0 {
-            owing.push("results");
-        }
-        owing
+        let stages = [
+            (self.teams, "teams"),
+            (self.rosters, "rosters"),
+            (self.meets, "meets_history"),
+            (self.results, "results_history"),
+            (self.contacts, "contact_research"),
+            (self.publication, "publication"),
+        ];
+        stages
+            .into_iter()
+            .filter(|(status, name)| {
+                !status.is_complete()
+                    || (*name == "rosters" && self.owed_rosters > 0)
+                    || (*name == "results_history" && self.owed_results > 0)
+            })
+            .map(|(_, name)| name)
+            .chain((self.refused_sources > 0).then_some("refused_sources"))
+            .collect()
     }
 }
 
@@ -44,11 +58,13 @@ pub struct SourceObject {
     pub endpoint: String,
     pub observations: u64,
     pub windows: u64,
+    #[serde(default)]
+    pub disposition: census_crawl::CollectionDisposition,
 }
 
 impl SourceObject {
     pub fn terminal(&self) -> bool {
-        self.windows > 0
+        self.disposition.is_complete()
     }
 }
 
@@ -63,7 +79,7 @@ pub fn owed_source_objects(objects: &[SourceObject]) -> u64 {
 pub fn silent_source_objects(objects: &[SourceObject]) -> Vec<String> {
     let mut names = objects
         .iter()
-        .filter(|object| object.observations == 0 && object.windows > 0)
+        .filter(|object| object.terminal() && object.observations == 0 && object.windows > 0)
         .map(|object| object.endpoint.clone())
         .collect::<Vec<_>>();
     names.sort();

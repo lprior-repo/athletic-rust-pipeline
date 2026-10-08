@@ -1,5 +1,5 @@
 use super::{athlete, cases, school, store_of, verdicts, TestResult};
-use crate::{reconcile_athletes, RULE_REVIEWER};
+use crate::reconcile_athletes;
 use census_domain::model::{
     Gender, IdentityApplication, IdentityProjectionBuilder, IdentityStatus, ReviewCase,
     ReviewState, ReviewVerdictRecord, SourceIdentity, SourceNamespace,
@@ -37,7 +37,7 @@ pub(super) fn admits_one_identity(
 }
 
 #[test]
-fn a_link_retained_with_a_distinct_document_decides_one_athlete() -> TestResult {
+fn cen14_distinct_document_urls_without_capture_lineage_stay_pending() -> TestResult {
     let lakeland = school("Lakeland");
     let west = school("Madison West");
     let mut linked = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169");
@@ -52,15 +52,12 @@ fn a_link_retained_with_a_distinct_document_decides_one_athlete() -> TestResult 
     );
     let (_dir, store) = store_of(&[lakeland, west], &[linked, owner])?;
     let report = reconcile_athletes(&store, "2026-09-23", false)?;
-    check!(eq; report.decided, 1, "the corroboration rule decides one finding");
-    check!(eq; report.pending, 0, "nothing is left open");
+    check!(eq; report.decided, 0, "different URLs without captured lineage cannot decide identity");
+    check!(eq; report.pending, 1);
     let filed = cases(&store)?;
-    let case = filed.first().ok_or("one case")?;
-    check!(eq; case.state, ReviewState::Resolved, "a decision closes it");
-    let recorded = verdicts(&store)?;
-    let verdict = recorded.first().ok_or("one verdict")?;
-    check!(eq; verdict.reviewer, RULE_REVIEWER);
-    admits_one_identity(&store, &filed, &recorded, case)?;
+    let case = filed.first().ok_or("one retained case")?;
+    check!(eq; case.state, ReviewState::Pending);
+    check!(eq; verdicts(&store)?.len(), 0);
     Ok(())
 }
 

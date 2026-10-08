@@ -543,128 +543,203 @@ fn the_seal_binds_the_workbook_it_certifies() -> TestResult {
     Ok(())
 }
 
-#[test]
-fn a_jurisdiction_is_terminal_only_when_every_stage_ran() {
-    let complete = JurisdictionStages {
-        teams: true,
-        rosters: true,
-        meets: true,
-        results: true,
+fn completed_stages() -> JurisdictionStages {
+    use census_crawl::CollectionDisposition::Complete;
+    JurisdictionStages {
+        teams: Complete,
+        rosters: Complete,
+        meets: Complete,
+        results: Complete,
+        contacts: Complete,
+        publication: Complete,
+        refused_sources: 0,
         owed_rosters: 0,
         owed_results: 0,
-    };
-    assert!(complete.terminal());
-    for partial in [
-        JurisdictionStages {
-            teams: false,
-            ..complete
-        },
-        JurisdictionStages {
-            rosters: false,
-            ..complete
-        },
-        JurisdictionStages {
-            meets: false,
-            ..complete
-        },
-        JurisdictionStages {
-            results: false,
-            ..complete
-        },
-        JurisdictionStages {
-            owed_rosters: 12,
-            ..complete
-        },
-        JurisdictionStages {
-            owed_results: 1,
-            ..complete
-        },
-    ] {
-        assert!(!partial.terminal(), "{partial:?} still owes work");
     }
 }
 
 #[test]
-fn unread_jurisdictions_count_as_owing() {
-    let terminal = JurisdictionStages {
-        teams: true,
-        rosters: true,
-        meets: true,
-        results: true,
-        owed_rosters: 0,
-        owed_results: 0,
-    };
-    assert_eq!(owed_jurisdictions(&[terminal]), 0);
-    assert_eq!(
-        owed_jurisdictions(&[terminal, JurisdictionStages::default(), terminal]),
-        1
-    );
+fn every_required_stage_and_refusal_blocks_jurisdiction_completion() -> TestResult {
+    use census_crawl::CollectionDisposition::{Partial, Unknown};
+    let complete = completed_stages();
+    check!(complete.terminal());
+    [
+        (
+            JurisdictionStages {
+                teams: Unknown,
+                ..complete
+            },
+            "teams",
+        ),
+        (
+            JurisdictionStages {
+                rosters: Partial,
+                ..complete
+            },
+            "rosters",
+        ),
+        (
+            JurisdictionStages {
+                meets: Unknown,
+                ..complete
+            },
+            "meets_history",
+        ),
+        (
+            JurisdictionStages {
+                results: Partial,
+                ..complete
+            },
+            "results_history",
+        ),
+        (
+            JurisdictionStages {
+                contacts: Unknown,
+                ..complete
+            },
+            "contact_research",
+        ),
+        (
+            JurisdictionStages {
+                publication: Partial,
+                ..complete
+            },
+            "publication",
+        ),
+        (
+            JurisdictionStages {
+                refused_sources: 1,
+                ..complete
+            },
+            "refused_sources",
+        ),
+        (
+            JurisdictionStages {
+                owed_rosters: 1,
+                ..complete
+            },
+            "rosters",
+        ),
+        (
+            JurisdictionStages {
+                owed_results: 1,
+                ..complete
+            },
+            "results_history",
+        ),
+    ]
+    .into_iter()
+    .try_for_each(|(stage, expected)| {
+        check!(!stage.terminal());
+        check!(eq; stage.owing(), vec![expected]);
+        check!(eq; owed_jurisdictions(&[complete, stage]), 1);
+        Ok(())
+    })
 }
 
 #[test]
-fn a_source_object_is_owed_until_it_completes_a_window() {
-    let written = SourceObject {
-        endpoint: "milesplit_wi".to_string(),
-        observations: 1,
-        windows: 0,
-    };
-    let resumed = SourceObject {
-        endpoint: "wayzata_mn".to_string(),
-        observations: 0,
-        windows: 1,
-    };
-    let empty_read = SourceObject {
-        endpoint: "wiaa_results_wi".to_string(),
-        observations: 0,
-        windows: 3,
-    };
-    let untouched = SourceObject {
-        endpoint: "never_walked".to_string(),
-        observations: 0,
-        windows: 0,
-    };
-    assert!(
-        !written.terminal(),
-        "observations without a completed window are an unfinished walk"
-    );
-    assert!(resumed.terminal());
-    assert!(empty_read.terminal());
-    assert!(!untouched.terminal());
-    assert_eq!(
-        owed_source_objects(&[written, resumed, empty_read, untouched]),
-        2
-    );
+fn populated_source_objects_remain_open_until_explicitly_complete() -> TestResult {
+    use census_crawl::CollectionDisposition::{Complete, Partial, Unknown};
+    let objects = [
+        SourceObject {
+            endpoint: "rosters".to_string(),
+            observations: 412,
+            windows: 1,
+            disposition: Partial,
+        },
+        SourceObject {
+            endpoint: "results/2024".to_string(),
+            observations: 1000,
+            windows: 3,
+            disposition: Unknown,
+        },
+        SourceObject {
+            endpoint: "school-office".to_string(),
+            observations: 1,
+            windows: 1,
+            disposition: Unknown,
+        },
+        SourceObject {
+            endpoint: "publication".to_string(),
+            observations: 99,
+            windows: 1,
+            disposition: Partial,
+        },
+    ];
+    check!(eq; owed_source_objects(&objects), 4);
+    check!(eq; silent_source_objects(&objects), Vec::<String>::new());
+    let mut completed = objects;
+    completed
+        .get_mut(1)
+        .ok_or("missing results obligation")?
+        .disposition = Complete;
+    check!(eq; owed_source_objects(&completed), 3);
+    check!(completed.get(0).is_some_and(|object| !object.terminal()));
+    check!(completed.get(2).is_some_and(|object| !object.terminal()));
+    check!(completed.get(3).is_some_and(|object| !object.terminal()));
+    Ok(())
 }
 
 #[test]
-fn the_objects_that_finished_empty_are_named_rather_than_owed() {
-    let written = SourceObject {
-        endpoint: "milesplit_mn".to_string(),
-        observations: 412,
+fn only_verified_empty_sources_are_named_silent() -> TestResult {
+    use census_crawl::CollectionDisposition::{Complete, Unknown};
+    let objects = [
+        SourceObject {
+            endpoint: "unread".to_string(),
+            observations: 0,
+            windows: 3,
+            disposition: Unknown,
+        },
+        SourceObject {
+            endpoint: "empty".to_string(),
+            observations: 0,
+            windows: 1,
+            disposition: Complete,
+        },
+        SourceObject {
+            endpoint: "populated".to_string(),
+            observations: 412,
+            windows: 1,
+            disposition: Complete,
+        },
+    ];
+    check!(eq; owed_source_objects(&objects), 1);
+    check!(eq; silent_source_objects(&objects), vec!["empty".to_string()]);
+    Ok(())
+}
+
+#[test]
+fn each_source_completion_closes_only_its_own_seal_obligation() -> TestResult {
+    use census_crawl::CollectionDisposition::{Complete, Unknown};
+    let mut objects = [
+        "history/2024",
+        "results/2024",
+        "refused/engineering-gap",
+        "contact/school-office",
+        "contact/athletics-office",
+        "publication",
+    ]
+    .map(|endpoint| SourceObject {
+        endpoint: endpoint.to_string(),
+        observations: 50,
         windows: 1,
-    };
-    let resumed = SourceObject {
-        endpoint: "wayzata_mn".to_string(),
-        observations: 0,
-        windows: 1,
-    };
-    let empty_read = SourceObject {
-        endpoint: "wiaa_results_wi".to_string(),
-        observations: 0,
-        windows: 3,
-    };
-    let untouched = SourceObject {
-        endpoint: "never_walked".to_string(),
-        observations: 0,
-        windows: 0,
-    };
-    let objects = [written, resumed, empty_read, untouched];
-    assert_eq!(owed_source_objects(&objects), 1);
-    assert_eq!(
-        silent_source_objects(&objects),
-        vec!["wayzata_mn".to_string(), "wiaa_results_wi".to_string()],
-        "sorted, and only the objects whose walk finished with nothing"
-    );
+        disposition: Unknown,
+    });
+    (0..objects.len()).try_for_each(|index| {
+        let mut proof = evidence();
+        proof.open.source_objects = Some(owed_source_objects(&objects));
+        check!(matches!(seal_from_export(proof), Err(SealError::ItemUnmet {
+            item: AcceptanceItem::SourceObjectsTerminal, ..
+        })));
+        objects.get_mut(index).ok_or("missing obligation")?.disposition = Complete;
+        let closed = index.checked_add(1).ok_or("bad obligation index")?;
+        check!(eq; owed_source_objects(&objects), u64::try_from(objects.len().checked_sub(closed).ok_or("bad obligation count")?)?);
+        Ok::<_, Box<dyn std::error::Error>>(())
+    })?;
+    let mut proof = evidence();
+    proof.open.source_objects = Some(owed_source_objects(&objects));
+    check!(seal_from_export(proof)?.sealed().is_some());
+    Ok(())
 }
 
 #[test]
@@ -766,25 +841,22 @@ fn another_lanes_pending_case_is_not_a_cohort_decision() {
 }
 
 #[test]
-fn dur09_source_with_observations_only_is_not_terminal() {
-    let observations_only = SourceObject {
-        endpoint: "test".to_string(),
-        observations: 42,
-        windows: 0,
-    };
-    assert!(!observations_only.terminal());
-
-    let observations_and_windows = SourceObject {
-        endpoint: "test".to_string(),
-        observations: 42,
-        windows: 3,
-    };
-    assert!(observations_and_windows.terminal());
-
-    let windows_only = SourceObject {
-        endpoint: "test".to_string(),
-        observations: 0,
-        windows: 2,
-    };
-    assert!(windows_only.terminal());
+fn source_counts_cannot_certify_an_unmeasured_disposition() {
+    use census_crawl::CollectionDisposition as Disposition;
+    for (disposition, observations, windows, terminal) in [
+        (Disposition::Unknown, 42, 0, false),
+        (Disposition::Unknown, 42, 3, false),
+        (Disposition::Partial, 42, 3, false),
+        (Disposition::Complete, 42, 3, true),
+        (Disposition::Complete, 0, 2, true),
+        (Disposition::Complete, 0, 0, true),
+    ] {
+        let source = SourceObject {
+            endpoint: "test".to_string(),
+            observations,
+            windows,
+            disposition,
+        };
+        assert_eq!(source.terminal(), terminal);
+    }
 }

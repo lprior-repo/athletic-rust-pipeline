@@ -7,32 +7,45 @@ use census_domain::JurisdictionBucket;
 use census_domain::UsJurisdiction;
 use std::collections::{BTreeSet, HashMap, HashSet};
 
+pub(super) struct Placement<'a, 's> {
+    pub(super) school_state: &'a HashMap<&'s str, Option<UsJurisdiction>>,
+    pub(super) grad_year: Option<i16>,
+}
+
 pub(super) fn classify<'a>(
     athletes: &'a [CanonicalAthlete],
-    school_state: &HashMap<&str, Option<UsJurisdiction>>,
+    placement: &Placement<'_, '_>,
     coach_schools: &HashSet<&str>,
-    grad_year: Option<i16>,
     buckets: &mut BucketMap,
     with_athletes: &mut BTreeSet<&'a str>,
 ) -> usize {
     let mut off_cohort = 0_usize;
     for athlete in athletes {
-        if !in_requested_year(athlete, grad_year) {
+        if !in_requested_year(athlete, placement.grad_year) {
             bump(&mut off_cohort);
             continue;
         }
         let school = athlete.school.as_str();
         with_athletes.insert(school);
-        let bucket = bucket_mut(buckets, jurisdiction_of(school_state, school));
+        let bucket = bucket_mut(buckets, jurisdiction_of(placement.school_state, school));
         tally(bucket, athlete);
-        if !school_state.contains_key(school) {
-            bump(&mut bucket.gaps.missing_school);
-        }
-        if !coach_schools.contains(school) {
-            bump(&mut bucket.gaps.missing_coach);
-        }
+        tally_support_gaps(bucket, school, placement.school_state, coach_schools);
     }
     off_cohort
+}
+
+fn tally_support_gaps(
+    bucket: &mut Bucket,
+    school: &str,
+    school_state: &HashMap<&str, Option<UsJurisdiction>>,
+    coach_schools: &HashSet<&str>,
+) {
+    if !school_state.contains_key(school) {
+        bump(&mut bucket.gaps.missing_school);
+    }
+    if !coach_schools.contains(school) {
+        bump(&mut bucket.gaps.missing_coach);
+    }
 }
 
 fn tally(bucket: &mut Bucket, athlete: &CanonicalAthlete) {
@@ -51,21 +64,17 @@ fn tally(bucket: &mut Bucket, athlete: &CanonicalAthlete) {
     if athlete.has_cohort_conflict() {
         bump(&mut row.identity_conflicts);
     }
-    for sport in [Sport::OutdoorTrack, Sport::IndoorTrack, Sport::CrossCountry] {
+    for (sport, column) in [
+        (Sport::OutdoorTrack, &mut row.outdoor_track),
+        (Sport::IndoorTrack, &mut row.indoor_track),
+        (Sport::CrossCountry, &mut row.cross_country),
+    ] {
         if athlete.sports.contains(&sport) {
-            bump(sport_column(row, sport));
+            bump(column);
         }
     }
     tally_profile(row, athlete);
     tally_sources(row, athlete);
-}
-
-fn sport_column(row: &mut JurisdictionCoverage, sport: Sport) -> &mut usize {
-    match sport {
-        Sport::OutdoorTrack => &mut row.outdoor_track,
-        Sport::IndoorTrack => &mut row.indoor_track,
-        Sport::CrossCountry => &mut row.cross_country,
-    }
 }
 
 fn tally_profile(row: &mut JurisdictionCoverage, athlete: &CanonicalAthlete) {
@@ -135,50 +144,60 @@ pub(super) fn tally_performances<'a>(
         } else {
             &mut orphan
         };
-        bump(&mut tally.rows);
-        if !matches!(performance.mark, Mark::Raw(_)) {
-            bump(&mut tally.comparable);
-        }
-        if !event_ids.contains(performance.event.as_str()) {
-            bump(&mut tally.missing_event_context);
-        }
-        if unmapped_event_ids.contains(performance.event.as_str()) {
-            bump(&mut tally.unmapped_event);
-        }
+        tally_mark(tally, performance, event_ids, unmapped_event_ids);
     }
     (tallies, orphan)
 }
 
+fn tally_mark(
+    tally: &mut PerfTally,
+    performance: &CanonicalPerformance,
+    event_ids: &HashSet<String>,
+    unmapped_event_ids: &HashSet<String>,
+) {
+    bump(&mut tally.rows);
+    if !matches!(performance.mark, Mark::Raw(_)) {
+        bump(&mut tally.comparable);
+    }
+    if !event_ids.contains(performance.event.as_str()) {
+        bump(&mut tally.missing_event_context);
+    }
+    if unmapped_event_ids.contains(performance.event.as_str()) {
+        bump(&mut tally.unmapped_event);
+    }
+}
+
 pub(super) fn classify_performances(
     athletes: &[CanonicalAthlete],
-    school_state: &HashMap<&str, Option<UsJurisdiction>>,
+    placement: &Placement<'_, '_>,
     tallies: &HashMap<&str, PerfTally>,
     orphan: &PerfTally,
-    grad_year: Option<i16>,
     buckets: &mut BucketMap,
 ) {
-    {
-        let bucket = bucket_mut(buckets, JurisdictionBucket::Unplaced);
-        bucket.row.performances = bucket.row.performances.saturating_add(orphan.rows);
-        bucket.gaps.missing_event_context = bucket
-            .gaps
-            .missing_event_context
-            .saturating_add(orphan.missing_event_context);
-        bucket.gaps.unmapped_event = bucket
-            .gaps
-            .unmapped_event
-            .saturating_add(orphan.unmapped_event);
-    }
+    add_orphan(buckets, orphan);
     for athlete in athletes {
-        if !in_requested_year(athlete, grad_year) {
+        if !in_requested_year(athlete, placement.grad_year) {
             continue;
         }
         let Some(tally) = tallies.get(athlete.id.as_str()) else {
             continue;
         };
-        let bucket = jurisdiction_of(school_state, athlete.school.as_str());
+        let bucket = jurisdiction_of(placement.school_state, athlete.school.as_str());
         add_perf(bucket_mut(buckets, bucket), tally);
     }
+}
+
+fn add_orphan(buckets: &mut BucketMap, orphan: &PerfTally) {
+    let bucket = bucket_mut(buckets, JurisdictionBucket::Unplaced);
+    bucket.row.performances = bucket.row.performances.saturating_add(orphan.rows);
+    bucket.gaps.missing_event_context = bucket
+        .gaps
+        .missing_event_context
+        .saturating_add(orphan.missing_event_context);
+    bucket.gaps.unmapped_event = bucket
+        .gaps
+        .unmapped_event
+        .saturating_add(orphan.unmapped_event);
 }
 
 fn add_perf(bucket: &mut Bucket, tally: &PerfTally) {

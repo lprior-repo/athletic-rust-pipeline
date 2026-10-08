@@ -1,4 +1,4 @@
-use super::super::cells::{row, Cell};
+use super::super::cells::Cell;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 
@@ -54,48 +54,14 @@ impl PerformanceRow {
     }
 
     pub(super) fn cells(&self) -> Vec<Cell> {
-        row!(
-            Cell::text(self.id.clone()),
-            Cell::text(self.athlete_id.clone()),
-            Cell::text(self.athlete.clone()),
-            Cell::text(self.school.clone()),
-            self.grad_year
-                .map(|year| Cell::Number(f64::from(year)))
-                .map_or(Cell::Empty, |value| value),
-            Cell::text(self.meet_id.clone()),
-            Cell::text(self.meet.clone()),
-            Cell::text(self.date.clone()),
-            Cell::text(
-                self.state
-                    .clone()
-                    .map_or(Default::default(), core::convert::identity)
-            ),
-            Cell::text(self.sport.clone()),
-            Cell::text(self.event.clone()),
-            Cell::text(self.mark.clone()),
-            self.normalized
-                .map(Cell::Number)
-                .map_or(Cell::Empty, |value| value),
-            Cell::text(
-                self.timing
-                    .clone()
-                    .map_or(Default::default(), core::convert::identity)
-            ),
-            self.wind_mps
-                .map(Cell::Number)
-                .map_or(Cell::Empty, |value| value),
-            Cell::text(
-                self.round
-                    .clone()
-                    .map_or(Default::default(), core::convert::identity)
-            ),
-            self.place
-                .map(|place| Cell::Number(f64::from(place)))
-                .map_or(Cell::Empty, |value| value),
-            Cell::text(self.source.clone()),
-            Cell::text(self.source_result.clone()),
-            Cell::text(self.source_url.clone()),
-        )
+        self.values()
+            .into_iter()
+            .map(|value| match value {
+                ProjectedValue::Text(text) => Cell::text(text),
+                ProjectedValue::Number(Some(number)) => Cell::Number(number),
+                ProjectedValue::Number(None) => Cell::Empty,
+            })
+            .collect()
     }
 }
 

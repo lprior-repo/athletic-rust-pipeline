@@ -2,8 +2,8 @@ use super::{fixture_source, CanonicalAthlete, CanonicalSchool, Derivation, Evide
 use super::{GradYear, Scope, Store, Table, UsJurisdiction};
 use crate::export::ExportDataset;
 use census_domain::model::{
-    CanonicalPerformance, EventKind, Grade, Id, Mark, ObservedGrade, PublishedGraduation,
-    SchoolYear, SourceRef,
+    CanonicalPerformance, Grade, Id, Mark, ObservedGrade, PublishedGraduation, SchoolYear,
+    SourceRef,
 };
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -53,22 +53,25 @@ fn dataset(athletes: &[CanonicalAthlete]) -> TestResult<ExportDataset> {
     Ok(ExportDataset::load(&store)?)
 }
 
-fn performance(subject: &CanonicalAthlete, key: &str) -> CanonicalPerformance {
+fn performance(subject: &CanonicalAthlete, key: &str) -> TestResult<CanonicalPerformance> {
     let mut row = CanonicalPerformance::new(
-        &subject.id,
-        &Id::mint("team", &["fixture"]),
-        &Id::mint("evt", &["fixture"]),
-        &EventKind::Track100m,
-        &Id::mint("meet", &["fixture"]),
-        "2026-05-01",
-        Mark::Raw("12.34".to_string()),
-        key,
-        None,
-        None,
-    );
+        census_domain::model::PerformanceIdentity {
+            athlete: &subject.id,
+            event: &Id::mint("evt", &["fixture"]),
+            meet: &Id::mint("meet", &["fixture"]),
+            date: "2026-05-01",
+            source_key: key,
+        },
+        census_domain::model::PerformanceResult {
+            team: &Id::mint("team", &["fixture"]),
+            mark: Mark::Raw("12.34".to_string()),
+            wind_mps: None,
+            place: None,
+        },
+    )?;
     row.source_athlete = subject.source.clone();
     row.evidence = subject.evidence.clone();
-    row
+    Ok(row)
 }
 
 #[test]
@@ -134,7 +137,7 @@ fn requested_cohort_excludes_direct_grade_and_uninferable_grade_contradictions()
         .push(grade(12, "2100-09-01")?);
     for conflicting in [direct_conflict, grade_conflict, uninferable_grade] {
         let mut input = dataset(std::slice::from_ref(&conflicting))?;
-        let result = performance(&conflicting, "conflicting-result");
+        let result = performance(&conflicting, "conflicting-result")?;
         input.performances.push(result.clone());
         let requested = Derivation::of(&input, Scope::AllSources, Some(2027));
         check!(eq; requested.athletes(), &[]);
@@ -173,7 +176,7 @@ fn accepted_alias_support_admits_the_canonical_member_and_preserves_result_owner
     input
         .canonical_aliases
         .insert(alias.id.to_string(), canonical.id.to_string());
-    let result = performance(&alias, "alias-result");
+    let result = performance(&alias, "alias-result")?;
     input.performances.push(result.clone());
     let requested = Derivation::of(&input, Scope::AllSources, Some(2027));
     let retained = requested
@@ -212,7 +215,7 @@ fn aliased_conflicts_remain_archived_but_exclude_requested_members() -> TestResu
         input
             .canonical_aliases
             .insert(alias.id.to_string(), canonical.id.to_string());
-        let result = performance(&alias, "alias-conflict-result");
+        let result = performance(&alias, "alias-conflict-result")?;
         input.performances.push(result.clone());
         let requested = Derivation::of(&input, Scope::AllSources, Some(2027));
         check!(eq; requested.athletes(), &[]);
@@ -260,12 +263,12 @@ fn requested_results_exclude_unknown_joins_but_unfiltered_archive_preserves_them
     input
         .canonical_aliases
         .insert(dangling.id.to_string(), missing.id.to_string());
-    let admitted_result = performance(&admitted, "admitted");
+    let admitted_result = performance(&admitted, "admitted")?;
     input.performances = vec![
         admitted_result.clone(),
-        performance(&off_cohort, "off-cohort"),
-        performance(&unmatched, "unmatched"),
-        performance(&dangling, "dangling"),
+        performance(&off_cohort, "off-cohort")?,
+        performance(&unmatched, "unmatched")?,
+        performance(&dangling, "dangling")?,
     ];
     let requested = Derivation::of(&input, Scope::AllSources, Some(2027));
     check!(eq; requested.athletes(), std::slice::from_ref(&admitted));

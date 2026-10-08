@@ -53,7 +53,7 @@ fn shaped_token() -> impl Strategy<Value = String> {
 
 fn number_of(mark: &Mark) -> Option<f64> {
     match mark {
-        Mark::TimeSeconds(cs) => Some(cs.as_seconds_f64()),
+        Mark::TimeSeconds(time) => time.try_as_seconds_f64(),
         Mark::Points(cp) => Some(cp.as_points_f64()),
         Mark::DistanceMetres(cm) => Some(cm.as_metres_f64()),
         Mark::FieldImperial { metres, .. } => Some(metres.as_metres_f64()),

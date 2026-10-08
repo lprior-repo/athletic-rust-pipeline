@@ -16,6 +16,8 @@ fn unsupported_settled_completion_is_rejected_by_admission_and_inspection() -> T
                 at: request.observed_on.clone(),
                 errors: Vec::new(),
                 notes: Vec::new(),
+                disposition: census_crawl::CollectionDisposition::Complete,
+                unfinished: Vec::new(),
             },
             progress: Vec::new(),
         },
@@ -55,6 +57,8 @@ fn source_completion_refuses_error_bearing_or_changed_date_outcomes() -> TestRes
                     at: at.to_string(),
                     errors,
                     notes: Vec::new(),
+                    disposition: census_crawl::CollectionDisposition::Complete,
+                    unfinished: Vec::new(),
                 })
                 .into()
             ),

@@ -3,8 +3,8 @@ use crate::export::ExportDataset;
 use crate::report::{Derivation, Scope};
 use census_domain::model::{
     AthleteId, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam, CentiSeconds, CompetitionLevel, EventKind, Gender, GradYear,
-    Mark, SchoolId, SchoolYear, Sport, TeamId, TimingMethod,
+    CanonicalSchool, CanonicalTeam, CompetitionLevel, EventIdentity, EventKind, EventSpecification,
+    ExactSeconds, Gender, GradYear, Mark, SchoolId, SchoolYear, Sport, TeamId, TimingMethod,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -70,31 +70,28 @@ fn performance(store: &Store, athlete: &AthleteId, team: &TeamId) -> TestResult 
     store.append(Table::Meets, &meet)?;
 
     let mut event = CanonicalEvent::new(
-        &meet_id,
-        EventKind::Track400m,
-        Gender::Boys,
-        None,
-        Some("Finals"),
-    );
+        EventIdentity {
+            meet: &meet_id,
+            kind: EventKind::Track400m,
+            gender: Gender::Boys,
+            division: None,
+            round: Some("Finals"),
+        },
+        EventSpecification::default(),
+    )?;
     let event_id = event.id.clone();
     event.evidence.push(observation());
     store.append(Table::Events, &event)?;
 
     let source_key = format!("test:{}:{RESULT_DATE}", athlete.as_str());
     let row = CanonicalPerformance {
-        id: CanonicalPerformance::mint(
-            athlete,
-            &meet_id,
-            &EventKind::Track400m,
-            RESULT_DATE,
-            &source_key,
-        ),
+        id: CanonicalPerformance::mint(athlete, &meet_id, &event_id, RESULT_DATE, &source_key),
         athlete: athlete.clone(),
         team: team.clone(),
         event: event_id,
         meet: meet_id,
         date: RESULT_DATE.to_string(),
-        mark: Mark::TimeSeconds(CentiSeconds::new(4855)),
+        mark: Mark::TimeSeconds(ExactSeconds::parse("48.55")?),
         wind_mps: None,
         place: Some(1),
         heat: None,

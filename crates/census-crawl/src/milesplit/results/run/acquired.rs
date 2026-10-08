@@ -1,5 +1,7 @@
 use super::super::super::map::OwnedResultSet;
-use super::super::super::owned::{OwnedMeetOutcome, OwnedMeetVerdict};
+use super::super::super::owned::{OwnedMeetOutcome, OwnedMeetVerdict, MAX_OWNED_ROWS};
+use super::super::budget;
+use crate::{CrawlError, CrawlResult};
 use std::collections::HashMap;
 
 #[derive(Debug)]
@@ -9,33 +11,50 @@ pub(in crate::milesplit::results) struct AcquiredMeet {
 }
 
 impl AcquiredMeet {
-    pub(super) fn new(outcome: OwnedMeetOutcome) -> Self {
-        let result_sets = match &outcome.verdict {
-            OwnedMeetVerdict::Parsed(page) => page.rows.iter().enumerate().fold(
-                HashMap::<u64, Vec<usize>>::new(),
-                |mut sets, (index, row)| {
-                    sets.entry(row.result_set_id).or_default().push(index);
-                    sets
-                },
-            ),
-            _ => HashMap::new(),
-        };
-        Self {
+    pub(super) fn new(outcome: OwnedMeetOutcome) -> CrawlResult<Self> {
+        let mut result_sets = HashMap::new();
+        if let OwnedMeetVerdict::Parsed(page) = &outcome.verdict {
+            if page.rows.len() > MAX_OWNED_ROWS {
+                return Err(CrawlError::Invariant {
+                    detail: "owned projection row admission exceeded".into(),
+                });
+            }
+            result_sets
+                .try_reserve(page.rows.len())
+                .map_err(budget::reserve)?;
+            page.rows.iter().enumerate().try_for_each(|(index, row)| {
+                let indices = result_sets
+                    .entry(row.result_set_id)
+                    .or_insert_with(Vec::new);
+                indices.try_reserve(1).map_err(budget::reserve)?;
+                indices.push(index);
+                Ok::<_, CrawlError>(())
+            })?;
+        }
+        Ok(Self {
             outcome,
             result_sets,
-        }
+        })
     }
 
-    pub(super) fn result_set(&self, id: &str) -> Option<OwnedResultSet<'_>> {
+    pub(super) fn release_body(&mut self) {
+        self.outcome.capture.body = Vec::new();
+    }
+
+    pub(super) fn result_set(
+        &self,
+        id: &str,
+        performance_as_of: chrono::NaiveDate,
+    ) -> Option<OwnedResultSet<'_>> {
         let OwnedMeetVerdict::Parsed(page) = &self.outcome.verdict else {
             return None;
         };
         let id = id.parse::<u64>().ok()?;
-        let indices = self.result_sets.get(&id).map_or(&[][..], Vec::as_slice);
         Some(OwnedResultSet {
             capture: &self.outcome.capture,
             page,
-            indices,
+            indices: self.result_sets.get(&id).map_or(&[], Vec::as_slice),
+            performance_as_of,
         })
     }
 

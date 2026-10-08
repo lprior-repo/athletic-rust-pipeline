@@ -104,6 +104,9 @@ fn qualification_request(manifest: &Value) -> Result<JurisdictionRequest> {
         jurisdiction: UsJurisdiction::RhodeIsland,
         season: SchoolYear::new(season).context("invalid season")?,
         revision: Revision(revision),
+        history: census_service::restate_services::HistoryWindow::cohort(
+            &census_crawl::net::today_iso(),
+        )?,
         refresh: false,
         limit_per_state: Some(1),
         concurrency: 1,

@@ -3,13 +3,9 @@
 mod fallible_checks;
 
 mod common;
-#[path = "common/golden.rs"]
-mod golden;
 
 #[path = "parity_mideast_mod/compiled.rs"]
 mod compiled;
-#[path = "parity_mideast_mod/ihsa.rs"]
-mod ihsa;
 #[path = "parity_mideast_mod/ks.rs"]
 mod ks;
 #[path = "parity_mideast_mod/ohsaa.rs"]
@@ -17,24 +13,19 @@ mod ohsaa;
 #[path = "parity_mideast_mod/wayzata.rs"]
 mod wayzata;
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::path::Path;
 use std::time::Duration;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use census_crawl::net::Fetcher;
 use census_crawl::AdapterContext;
 use census_domain::model::SchoolYear;
 use census_store::Store;
-use serde::Serialize;
 
 const OBSERVED_ON: &str = "2026-09-20";
 const SEASON: i16 = 2026;
 const SEEDED_AT: &str = "2026-09-20T14:39:00Z";
-
-fn stem_of(file: &str) -> &str {
-    file.split_once('.').map_or(file, |(stem, _)| stem)
-}
 
 fn seed_cache(cache_dir: &Path, url: &str, body: &str) -> Result<()> {
     use sha2::{Digest as _, Sha256};
@@ -87,34 +78,14 @@ fn seeded(dir: &Path, bodies: &[(&str, &str)]) -> Result<(Store, Fetcher)> {
     Ok((store, fetcher))
 }
 
-fn context<'a>(fetcher: &'a Fetcher, store: &'a Store) -> AdapterContext<'a> {
-    AdapterContext {
+fn context<'a>(fetcher: &'a Fetcher, store: &'a Store) -> Result<AdapterContext<'a>> {
+    Ok(AdapterContext {
         fetcher,
         store,
         refresh: false,
         school_year: SchoolYear::DEFAULT,
         observed_on: OBSERVED_ON.to_string(),
+        performance_as_of: chrono::NaiveDate::parse_from_str(OBSERVED_ON, "%Y-%m-%d")?,
         recording: None,
-    }
-}
-
-fn golden_case<T: Serialize>(name: &str, value: &T) -> Result<(String, String)> {
-    golden::assert_golden(name, value)?;
-    Ok((name.to_string(), golden::digest(value)?))
-}
-
-#[derive(Serialize)]
-struct Rollup {
-    cases: BTreeMap<String, String>,
-    inputs: usize,
-}
-
-fn assert_rollup(source: &str, cases: BTreeMap<String, String>, inputs: usize) -> Result<()> {
-    if cases.len() != inputs {
-        bail!(
-            "{source}: {} cases for {inputs} inputs — an input did not produce a case",
-            cases.len()
-        );
-    }
-    golden::assert_golden(&format!("{source}__rollup"), &Rollup { cases, inputs })
+    })
 }

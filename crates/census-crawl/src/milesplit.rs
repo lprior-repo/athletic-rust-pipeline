@@ -1,5 +1,6 @@
 pub mod boundary;
 mod fetch;
+mod index;
 mod map;
 mod mark;
 mod normalize;
@@ -13,9 +14,9 @@ mod roster;
 mod wire;
 
 pub use fetch::{
-    fetch_meet_index, fetch_meet_result_files, fetch_owned_meet, fetch_result_set, fetch_roster,
-    fetch_team_index,
+    fetch_meet_result_files, fetch_owned_meet, fetch_result_set, fetch_roster, fetch_team_index,
 };
+pub use index::{fetch_meet_index, MeetIndexPage, MeetIndexRequest, PageContinuation};
 pub use mark::{parse_published_metric_distance, parse_published_time};
 pub use normalize::roster_entities;
 pub use owned::{
@@ -25,6 +26,7 @@ pub use owned::{
 };
 pub use parse::{
     has_next_page, parse_meet_index, parse_meet_result_files, parse_roster, parse_team_index,
+    TeamIndexRead,
 };
 pub use raw::{parse_raw, RawPage};
 pub use raw_issue::{RawGradeIssue, RawGradeIssueKind};

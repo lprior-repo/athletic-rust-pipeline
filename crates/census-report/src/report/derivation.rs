@@ -1,14 +1,16 @@
-use super::coverage::{in_requested_year, jurisdiction_of, school_state_index};
-use super::{is_core_evidenced, retain_core, Scope};
+use super::{is_core_evidenced, Scope};
 use crate::export::ExportDataset;
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, Gender,
+    CanonicalSchool,
 };
 use census_domain::{JurisdictionBucket, UsJurisdiction};
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 
+mod aliases;
 mod cohort;
+mod population;
+pub(super) use aliases::collapse_athletes;
 pub(crate) use cohort::candidates as cohort_candidates;
 
 pub(crate) fn in_run_scope(bucket: JurisdictionBucket) -> bool {
@@ -50,55 +52,11 @@ pub struct Derivation<'a> {
 
 impl<'a> Derivation<'a> {
     pub fn of(dataset: &'a ExportDataset, scope: Scope, grad_year: Option<i16>) -> Self {
-        let school_state = school_state_index(dataset.schools.values());
-        let mut schools: Vec<CanonicalSchool> = dataset.schools.values().cloned().collect();
-        let outside_schools = exclude_out_of_scope(&mut schools, |school| school.state.into());
-        let mut meets: Vec<CanonicalMeet> = dataset.meets.clone();
-        let outside_meets = exclude_out_of_scope(&mut meets, |meet| meet.state.into());
-        let athlete_aliases = &dataset.canonical_aliases;
-        let mut athletes: Vec<CanonicalAthlete> =
-            collapse_athletes(&dataset.athletes, athlete_aliases);
-        let outside_athletes = exclude_out_of_scope(&mut athletes, |athlete| {
-            jurisdiction_of(&school_state, athlete.school.as_str())
-        });
-        let mut coaches: Vec<CanonicalCoach> = dataset.coaches.clone();
-        let outside_coaches = exclude_out_of_scope(&mut coaches, |coach| {
-            jurisdiction_of(&school_state, coach.school.as_str())
-        });
-        let mut coach_observations: Vec<CanonicalCoach> = dataset.coach_observations.clone();
-        coach_observations
-            .retain(|coach| in_run_scope(jurisdiction_of(&school_state, coach.school.as_str())));
-        let mut events = dataset.events.clone();
-        let dropped_rows = if scope == Scope::Core {
-            retain_core(&mut events);
-            retain_core(&mut athletes).saturating_add(retain_core(&mut meets))
-        } else {
-            0
-        };
-        let scoped_athletes = athletes.len();
-        athletes.retain(|athlete| cohort::publishable(athlete, grad_year));
-        let cohort: HashSet<&str> = athletes.iter().map(|athlete| athlete.id.as_str()).collect();
-        let performances = cohort_performances(dataset, scope, grad_year, &cohort, athlete_aliases);
-        Self {
-            dataset,
-            scope,
-            grad_year,
-            school_state,
-            schools,
-            outside_schools,
-            athletes,
-            outside_athletes,
-            scoped_athletes,
-            meets,
-            outside_meets,
-            coaches,
-            outside_coaches,
-            coach_observations,
-            events,
-            performances,
-            athlete_aliases,
-            dropped_rows,
-        }
+        let mut derivation = Self::population(dataset, scope, grad_year);
+        derivation.retain_geography();
+        derivation.retain_evidence_scope();
+        derivation.select_cohort();
+        derivation
     }
 
     pub(crate) fn dataset(&self) -> &'a ExportDataset {
@@ -181,13 +139,7 @@ fn cohort_performances<'d>(
     cohort: &HashSet<&str>,
     aliases: &HashMap<String, String>,
 ) -> Vec<&'d CanonicalPerformance> {
-    let known_athletes = grad_year.is_none().then(|| {
-        dataset
-            .athletes
-            .iter()
-            .map(|athlete| athlete.id.as_str())
-            .collect::<HashSet<_>>()
-    });
+    let known_athletes = known_athletes(dataset, grad_year);
     dataset
         .performances
         .iter()
@@ -203,90 +155,12 @@ fn cohort_performances<'d>(
         .collect()
 }
 
-pub(super) fn collapse_athletes(
-    athletes: &[CanonicalAthlete],
-    aliases: &HashMap<String, String>,
-) -> Vec<CanonicalAthlete> {
-    if aliases.is_empty() {
-        return athletes.to_vec();
-    }
-    let groups = athletes.iter().fold(
-        BTreeMap::<&str, Vec<&CanonicalAthlete>>::new(),
-        |mut groups, athlete| {
-            let canonical = aliases
-                .get(athlete.id.as_str())
-                .map_or(athlete.id.as_str(), String::as_str);
-            groups.entry(canonical).or_default().push(athlete);
-            groups
-        },
-    );
-    let capacity = groups.len();
-    groups.into_iter().fold(
-        Vec::with_capacity(capacity),
-        |mut collapsed, (canonical, members)| {
-            match members
-                .iter()
-                .find(|member| member.id.as_str() == canonical)
-            {
-                Some(representative) => {
-                    collapsed.push(union_accepted_members(representative, &members));
-                }
-                None => collapsed.extend(members.into_iter().cloned()),
-            }
-            collapsed
-        },
-    )
-}
-
-fn union_accepted_members(
-    representative: &CanonicalAthlete,
-    members: &[&CanonicalAthlete],
-) -> CanonicalAthlete {
-    let mut row = representative.clone();
-    let known_gender = members
-        .iter()
-        .map(|member| member.gender)
-        .filter(|gender| *gender != Gender::Unknown);
-    if row.gender == Gender::Unknown {
-        let mut genders = known_gender;
-        if let Some(first) = genders.next() {
-            if genders.all(|gender| gender == first) {
-                row.gender = first;
-            }
-        }
-    }
-    members
-        .iter()
-        .filter(|member| member.id != representative.id)
-        .for_each(|member| {
-            union_values(&mut row.known_names, &member.known_names);
-            union_values(
-                &mut row.known_names,
-                std::slice::from_ref(&member.canonical_name),
-            );
-            union_values(&mut row.sports, &member.sports);
-            union_values(&mut row.public_profile_urls, &member.public_profile_urls);
-            union_values(&mut row.observed_grades, &member.observed_grades);
-            union_values(
-                &mut row.published_graduations,
-                &member.published_graduations,
-            );
-            union_values(&mut row.evidence, &member.evidence);
-            union_values(&mut row.retained_conflicts, &member.retained_conflicts);
-            member.identities().for_each(|identity| {
-                if let Some(url) = &identity.url {
-                    union_values(&mut row.public_profile_urls, std::slice::from_ref(url));
-                }
-                row.add_identity(identity.clone());
-            });
-        });
-    row
-}
-
-fn union_values<T: PartialEq + Clone>(target: &mut Vec<T>, values: &[T]) {
-    values.iter().for_each(|value| {
-        if !target.contains(value) {
-            target.push(value.clone());
-        }
-    });
+fn known_athletes(dataset: &ExportDataset, grad_year: Option<i16>) -> Option<HashSet<&str>> {
+    grad_year.is_none().then(|| {
+        dataset
+            .athletes
+            .iter()
+            .map(|athlete| athlete.id.as_str())
+            .collect()
+    })
 }

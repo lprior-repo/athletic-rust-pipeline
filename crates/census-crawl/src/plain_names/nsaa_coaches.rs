@@ -1,14 +1,15 @@
 use super::nsaa::{parse_nsaa_school_names, NsaaRow, NsaaSchool};
-use super::nsaa_walk::NsaaWalk;
 use super::parse::{is_office_role, split_person_names};
-use super::{observed_on, Options, NSAA_ADAPTER_ID, NSAA_FORM_URL, NSAA_SCHOOLS_PHASE};
+use super::{Options, NSAA_ADAPTER_ID, NSAA_FORM_URL};
+use crate::directory::acquisition::{fail, owe, text};
 use crate::net::FetchOptions;
-use crate::{AdapterContext, AdapterReport, CrawlResult};
+use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachId, CoachRole, Evidence, Gender,
     SchoolId, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
+use futures::{stream, StreamExt, TryStreamExt};
 use std::collections::HashSet;
 
 pub fn parse_nsaa_row(label: &str) -> Option<NsaaRow> {
@@ -115,22 +116,28 @@ pub(super) async fn collect_nebraska(
     let Some(members) = nsaa_members(ctx, fetch, report).await? else {
         return Ok((0, 0));
     };
-    let mut walk = NsaaWalk::new(observed_on(ctx, options));
-    let journal = ctx.store.journal_keys(NSAA_SCHOOLS_PHASE)?;
-
-    for name in &members {
-        if walk.limit_reached(options.limit) {
-            break;
-        }
-        let key = format!("NE:{name}");
-        if journal.contains(&key) {
-            walk.note_resumed();
-            continue;
-        }
-        walk.visit(ctx, fetch, report, name).await?;
-    }
-
-    walk.publish(report, members.len())
+    let result = stream::iter(members.iter().enumerate())
+        .map(Ok::<_, CrawlError>)
+        .try_fold(
+            (report, 0usize, 0usize),
+            |(report, schools, coaches), (ordinal, name)| async move {
+                if options.limit.is_some_and(|limit| ordinal >= limit) {
+                    owe(report, super::nsaa_school_url(name))?;
+                    return Ok((report, schools, coaches));
+                }
+                let written = super::nsaa_walk::visit(ctx, fetch, report, name).await?;
+                Ok((
+                    report,
+                    schools.saturating_add(written.0),
+                    coaches.saturating_add(written.1),
+                ))
+            },
+        )
+        .await?;
+    Ok((
+        u64::try_from(result.1).map_or(u64::MAX, |value| value),
+        u64::try_from(result.2).map_or(u64::MAX, |value| value),
+    ))
 }
 
 async fn nsaa_members(
@@ -141,18 +148,19 @@ async fn nsaa_members(
     let form = match ctx.fetcher.get(NSAA_FORM_URL, fetch).await {
         Ok(outcome) => outcome,
         Err(error) => {
-            report.errors = report.errors.saturating_add(1);
-            report.note(format!("nsaa: {NSAA_FORM_URL} failed: {error}"));
+            fail(report, NSAA_FORM_URL, error)?;
             return Ok(None);
         }
     };
-    let members = parse_nsaa_school_names(&form.text())?;
+    let members = match text(&form).and_then(parse_nsaa_school_names) {
+        Ok(members) => members,
+        Err(error) => {
+            fail(report, NSAA_FORM_URL, error)?;
+            return Ok(None);
+        }
+    };
     if members.is_empty() {
-        report.errors = report.errors.saturating_add(1);
-        report.note(format!(
-            "nsaa: {NSAA_FORM_URL} carried no member-school options"
-        ));
-        return Ok(None);
+        owe(report, NSAA_FORM_URL)?;
     }
     Ok(Some(members))
 }

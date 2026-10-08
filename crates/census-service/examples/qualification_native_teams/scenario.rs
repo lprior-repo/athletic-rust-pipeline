@@ -42,6 +42,9 @@ pub fn request() -> Result<(String, Value)> {
         jurisdiction,
         season,
         revision,
+        history: census_service::restate_services::HistoryWindow::cohort(
+            &census_crawl::net::today_iso(),
+        )?,
         refresh: true,
         limit_per_state: Some(1),
         concurrency: 1,

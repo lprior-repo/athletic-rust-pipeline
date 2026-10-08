@@ -1,8 +1,9 @@
-use serde_json::Value;
+use serde_json::{Map, Value};
 
 use super::excerpt;
 
 const MAX_STEPS: usize = 4_096;
+type Pending<'a> = Vec<(String, &'a Value, &'a Value)>;
 
 pub(super) fn difference(expected: &Value, found: &Value) -> String {
     let mut stack = vec![("$".to_string(), expected, found)];
@@ -15,40 +16,63 @@ pub(super) fn difference(expected: &Value, found: &Value) -> String {
         if left == right {
             continue;
         }
-        match (left, right) {
-            (Value::Object(left_map), Value::Object(right_map)) => {
-                if let Some(extra) = right_map.keys().find(|key| !left_map.contains_key(*key)) {
-                    return format!("{path}: unexpected key {extra:?}");
-                }
-                for (key, value) in left_map.iter().rev() {
-                    match right_map.get(key) {
-                        Some(found) => stack.push((format!("{path}.{key}"), value, found)),
-                        None => return format!("{path}.{key}: missing"),
-                    }
-                }
-            }
-            (Value::Array(left_rows), Value::Array(right_rows)) => {
-                if left_rows.len() != right_rows.len() {
-                    return format!(
-                        "{path}: expected {} entries, found {}",
-                        left_rows.len(),
-                        right_rows.len()
-                    );
-                }
-                for (index, (value, found)) in
-                    left_rows.iter().zip(right_rows.iter()).enumerate().rev()
-                {
-                    stack.push((format!("{path}[{index}]"), value, found));
-                }
-            }
-            _ => {
-                return format!(
-                    "{path}: expected {}, found {}",
-                    excerpt(&left.to_string()),
-                    excerpt(&right.to_string())
-                );
-            }
+        if let Some(difference) = inspect(&path, left, right, &mut stack) {
+            return difference;
         }
     }
     String::new()
+}
+
+fn inspect<'a>(
+    path: &str,
+    left: &'a Value,
+    right: &'a Value,
+    stack: &mut Pending<'a>,
+) -> Option<String> {
+    match (left, right) {
+        (Value::Object(left), Value::Object(right)) => objects(path, left, right, stack),
+        (Value::Array(left), Value::Array(right)) => arrays(path, left, right, stack),
+        _ => Some(format!(
+            "{path}: expected {}, found {}",
+            excerpt(&left.to_string()),
+            excerpt(&right.to_string())
+        )),
+    }
+}
+
+fn objects<'a>(
+    path: &str,
+    left: &'a Map<String, Value>,
+    right: &'a Map<String, Value>,
+    stack: &mut Pending<'a>,
+) -> Option<String> {
+    if let Some(extra) = right.keys().find(|key| !left.contains_key(*key)) {
+        return Some(format!("{path}: unexpected key {extra:?}"));
+    }
+    for (key, value) in left.iter().rev() {
+        match right.get(key) {
+            Some(found) => stack.push((format!("{path}.{key}"), value, found)),
+            None => return Some(format!("{path}.{key}: missing")),
+        }
+    }
+    None
+}
+
+fn arrays<'a>(
+    path: &str,
+    left: &'a [Value],
+    right: &'a [Value],
+    stack: &mut Pending<'a>,
+) -> Option<String> {
+    if left.len() != right.len() {
+        return Some(format!(
+            "{path}: expected {} entries, found {}",
+            left.len(),
+            right.len()
+        ));
+    }
+    for (index, (value, found)) in left.iter().zip(right.iter()).enumerate().rev() {
+        stack.push((format!("{path}[{index}]"), value, found));
+    }
+    None
 }

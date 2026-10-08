@@ -14,6 +14,7 @@ use super::read::{
 };
 use super::report::Findings;
 
+pub(in crate::workbook) mod contacts;
 mod coverage;
 mod meets;
 mod metrics;
@@ -21,7 +22,7 @@ mod queues;
 mod schools;
 mod sources;
 
-pub(super) enum Expect {
+pub(in crate::workbook) enum Expect {
     Text(String),
     Number(f64),
     Empty,
@@ -45,7 +46,7 @@ impl Expect {
     }
 }
 
-pub(super) type Sheet = (&'static str, Vec<Vec<Expect>>);
+pub(in crate::workbook) type Sheet = (&'static str, Vec<Vec<Expect>>);
 
 pub(super) fn header(headers: &[&str]) -> Vec<Expect> {
     headers.iter().map(|header| Expect::text(*header)).collect()
@@ -77,6 +78,8 @@ impl Series<'_, '_> {
         let names = school_name_index(self.population.schools());
         let conflicts = conflict_families(self.rows, &cohort, &names);
         let review = review_families(self.rows, &cohort, &names)?;
+        let [mailboxes, research] =
+            contacts::expected(self.population.schools(), self.school_year)?;
         Ok(vec![
             schools::expected(self.population.schools())?,
             meets::expected(self.population.meets())?,
@@ -85,6 +88,8 @@ impl Series<'_, '_> {
             queues::conflicts(&conflicts, self.index),
             queues::review(&review, &self.dataset.verdicts, self.index),
             self.metrics(&conflicts)?,
+            mailboxes,
+            research,
         ])
     }
 

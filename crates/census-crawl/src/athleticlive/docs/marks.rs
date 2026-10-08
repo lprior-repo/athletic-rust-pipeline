@@ -1,117 +1,122 @@
 use serde_json::Value;
 
 use super::value_u64;
-use census_domain::model::{CentiMetres, CentiSeconds, EventKind, Mark};
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
-pub enum MarkError {
-    #[error("published no-result disposition contradicts a numeric mark or valid status")]
-    NoResultConflict,
-    #[error("invalid published result validity flag")]
-    InvalidValidity,
-    #[error("published display is not a supported result mark")]
-    InvalidDisplay,
-    #[error("published integer mark is outside the supported result range")]
-    InvalidInteger,
-    #[error("published display and integer mark disagree at provider centi-unit precision")]
-    MarkConflict,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum Disposition {
-    Unstated,
-    Valid,
-    NoResult,
-}
+use census_domain::model::{CentiMetres, ExactSeconds};
+use census_domain::model::{EventKind, Mark};
 
 pub(super) fn row_mark(
     kind: &EventKind,
     published: Option<&str>,
     mark_int: Option<&Value>,
     validity: Option<&Value>,
-) -> Result<Option<Mark>, MarkError> {
-    let disposition = disposition(validity)?;
+) -> Option<Mark> {
     let published = published.map(str::trim).filter(|text| !text.is_empty());
-    let numeric = mark_int
-        .map(|value| integer_mark(kind, value))
-        .transpose()?
-        .flatten();
-    if published.is_some_and(no_result) || disposition == Disposition::NoResult {
-        if numeric.is_some()
-            || published
-                .and_then(|text| display_mark(kind, text))
-                .is_some()
-            || (published.is_some_and(no_result) && disposition == Disposition::Valid)
-        {
-            return Err(MarkError::NoResultConflict);
+    match source_status(published, validity) {
+        SourceStatus::InvalidToken(token) => return Some(Mark::Raw(token.into())),
+        SourceStatus::InvalidValidity(value) => {
+            return Some(Mark::Raw(
+                published.map_or_else(|| format!("vm={value}"), str::to_string),
+            ))
         }
-        return Ok(None);
+        SourceStatus::Valid => {}
     }
-    let display = published
-        .map(|text| display_mark(kind, text).ok_or(MarkError::InvalidDisplay))
-        .transpose()?;
-    reconcile(display, numeric, mark_int.is_some())
+    if numeric_contradiction(kind, published, mark_int) {
+        return published.map(|text| Mark::Raw(text.into()));
+    }
+    if let Some(text) = published {
+        let Some(mark) = published_mark(kind, text) else {
+            return Some(Mark::Raw(text.to_string()));
+        };
+        return Some(mark);
+    }
+    let integer = mark_int?;
+    canonical_mark(kind, integer).or_else(|| Some(Mark::Raw(format!("im={integer}"))))
 }
 
-fn disposition(value: Option<&Value>) -> Result<Disposition, MarkError> {
+enum SourceStatus<'a, 'b> {
+    Valid,
+    InvalidToken(&'a str),
+    InvalidValidity(&'b Value),
+}
+
+fn source_status<'a, 'b>(
+    published: Option<&'a str>,
+    validity: Option<&'b Value>,
+) -> SourceStatus<'a, 'b> {
+    if let Some(token) = published.and_then(crate::result_status::invalid_token) {
+        return SourceStatus::InvalidToken(token);
+    }
+    match validity.filter(|value| !valid_mark(value)) {
+        Some(value) => SourceStatus::InvalidValidity(value),
+        None => SourceStatus::Valid,
+    }
+}
+
+pub(super) fn mark_contradiction<'a>(
+    kind: &EventKind,
+    published: Option<&'a str>,
+    mark_int: Option<&Value>,
+    validity: Option<&Value>,
+) -> Option<&'a str> {
+    if numeric_contradiction(kind, published, mark_int) {
+        return Some("numeric mark channels");
+    }
+    if value_u64(mark_int?)? == 0 {
+        return None;
+    }
+    match source_status(published, validity) {
+        SourceStatus::InvalidToken(token) => Some(token),
+        SourceStatus::InvalidValidity(_) => Some("invalid vm"),
+        SourceStatus::Valid => None,
+    }
+}
+
+fn valid_mark(value: &Value) -> bool {
     match value {
-        None | Some(Value::Null) => Ok(Disposition::Unstated),
-        Some(Value::Bool(true)) => Ok(Disposition::Valid),
-        Some(Value::Bool(false)) => Ok(Disposition::NoResult),
-        Some(value) => match value_u64(value) {
-            Some(1) => Ok(Disposition::Valid),
-            Some(0) => Ok(Disposition::NoResult),
-            _ => Err(MarkError::InvalidValidity),
-        },
+        Value::Bool(valid) => *valid,
+        value => value_u64(value) == Some(1),
     }
 }
 
-fn no_result(text: &str) -> bool {
-    ["DQ", "DNF", "DNS", "NH", "FOUL", "NM", "NT", "SCR", "--"]
-        .iter()
-        .any(|status| text.eq_ignore_ascii_case(status))
-}
-
-fn display_mark(kind: &EventKind, text: &str) -> Option<Mark> {
+fn published_mark(kind: &EventKind, text: &str) -> Option<Mark> {
     if kind.is_field() {
         crate::hytek::parse_field_mark(text)
     } else {
         crate::hytek::parse_time(text).map(Mark::TimeSeconds)
     }
 }
-
-fn reconcile(
-    display: Option<Mark>,
-    numeric: Option<Mark>,
-    integer_published: bool,
-) -> Result<Option<Mark>, MarkError> {
-    match (display, numeric) {
-        (Some(display), Some(numeric)) if comparable(&display) != comparable(&numeric) => {
-            Err(MarkError::MarkConflict)
+fn numeric_contradiction(
+    kind: &EventKind,
+    published: Option<&str>,
+    integer: Option<&Value>,
+) -> bool {
+    let Some(display) = published.and_then(|text| published_mark(kind, text)) else {
+        return false;
+    };
+    let Some(integer) = integer.filter(|value| !value.is_null()) else {
+        return false;
+    };
+    let Some(measured) = canonical_mark(kind, integer) else {
+        return true;
+    };
+    match (display, measured) {
+        (Mark::TimeSeconds(display), Mark::TimeSeconds(measured)) => {
+            let quantum = 9_u32
+                .checked_sub(u32::from(display.precision()))
+                .and_then(|exponent| 10_i64.checked_pow(exponent))
+                .map_or(10_000_000, |value| value.max(10_000_000));
+            display.value().abs_diff(measured.value())
+                >= u64::try_from(quantum).map_or(u64::MAX, |value| value)
         }
-        (Some(_), None) if integer_published => Err(MarkError::MarkConflict),
-        (Some(display), _) => Ok(Some(display)),
-        (None, numeric) => Ok(numeric),
+        (
+            Mark::FieldImperial {
+                metres: display, ..
+            }
+            | Mark::DistanceMetres(display),
+            Mark::DistanceMetres(measured),
+        ) => display.value().abs_diff(measured.value()) > 1,
+        _ => true,
     }
-}
-
-fn comparable(mark: &Mark) -> Option<i32> {
-    match mark {
-        Mark::TimeSeconds(value) => Some(value.value()),
-        Mark::DistanceMetres(value) | Mark::FieldImperial { metres: value, .. } => {
-            Some(value.value())
-        }
-        _ => None,
-    }
-}
-
-fn integer_mark(kind: &EventKind, value: &Value) -> Result<Option<Mark>, MarkError> {
-    if value_u64(value) == Some(0) {
-        return Ok(None);
-    }
-    canonical_mark(kind, value)
-        .map(Some)
-        .ok_or(MarkError::InvalidInteger)
 }
 
 pub(super) fn canonical_mark(kind: &EventKind, mark_int: &Value) -> Option<Mark> {
@@ -123,7 +128,9 @@ pub(super) fn canonical_mark(kind: &EventKind, mark_int: &Value) -> Option<Mark>
         let cm = (micros.checked_add(5_000)? / 10_000).try_into().ok()?;
         Some(Mark::DistanceMetres(CentiMetres::new(cm)))
     } else {
-        let cs = (micros.checked_add(5)? / 10).try_into().ok()?;
-        Some(Mark::TimeSeconds(CentiSeconds::new(cs)))
+        let nanoseconds = i64::try_from(micros.checked_mul(1_000_000)?).ok()?;
+        ExactSeconds::from_parts(nanoseconds, 3)
+            .ok()
+            .map(Mark::TimeSeconds)
     }
 }

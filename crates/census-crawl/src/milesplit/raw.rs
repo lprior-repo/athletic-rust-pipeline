@@ -5,6 +5,13 @@ use serde::Deserialize;
 
 use super::raw_rows::{read_block, RawSection};
 
+mod document;
+
+enum DatePrecision {
+    Day,
+    Published,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct RawPage {
     pub meet: ParsedMeet,
@@ -16,7 +23,30 @@ pub struct RawPage {
 }
 
 pub fn parse_raw(html: &str, url: &str) -> CrawlResult<RawPage> {
-    let facts = page_facts(html, url)?;
+    parse_document(html, url, document::Ownership::Unbound, DatePrecision::Day)
+}
+
+pub(in crate::milesplit) fn parse_bound(
+    html: &str,
+    url: &str,
+    check: &dyn Fn(&str, &str) -> CrawlResult<()>,
+) -> CrawlResult<RawPage> {
+    parse_document(
+        html,
+        url,
+        document::Ownership::Bound(check),
+        DatePrecision::Published,
+    )
+}
+
+fn parse_document(
+    html: &str,
+    url: &str,
+    ownership: document::Ownership<'_>,
+    precision: DatePrecision,
+) -> CrawlResult<RawPage> {
+    let event = document::read(html, url, ownership)?;
+    let facts = page_facts(event, url, precision)?;
     let (block_start, block_text) =
         pre_block(html).ok_or_else(|| schema(url, "no <pre> result block"))?;
     let block = read_block(block_text, facts.sport, block_start)?;
@@ -61,10 +91,7 @@ struct PageFacts {
     school_year: SchoolYear,
 }
 
-fn page_facts(html: &str, url: &str) -> CrawlResult<PageFacts> {
-    let block = ld_block(html).ok_or_else(|| schema(url, "no schema.org SportsEvent block"))?;
-    let event: SportsEvent = serde_json::from_str(block)
-        .map_err(|source| schema(url, &format!("schema.org block did not decode: {source}")))?;
+fn page_facts(event: SportsEvent, url: &str, precision: DatePrecision) -> CrawlResult<PageFacts> {
     let name = event.name.trim();
     if name.is_empty() {
         return Err(schema(url, "schema.org block carries no meet name"));
@@ -81,7 +108,10 @@ fn page_facts(html: &str, url: &str) -> CrawlResult<PageFacts> {
         .ok_or_else(|| schema(url, &format!("meet start date {date:?} has no month")))?;
     Ok(PageFacts {
         name: name.to_string(),
-        date: date.to_string(),
+        date: match precision {
+            DatePrecision::Day => date.to_string(),
+            DatePrecision::Published => event.start_date,
+        },
         end_date: event
             .end_date
             .as_deref()
@@ -128,7 +158,7 @@ fn schema(url: &str, detail: &str) -> CrawlError {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, PartialEq, Deserialize)]
 struct SportsEvent {
     name: String,
     #[serde(rename = "startDate")]
@@ -139,12 +169,12 @@ struct SportsEvent {
     location: Option<Location>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, PartialEq, Deserialize)]
 struct Location {
     address: Option<Address>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, PartialEq, Deserialize)]
 struct Address {
     #[serde(rename = "addressRegion")]
     region: Option<String>,
@@ -156,18 +186,6 @@ fn pre_block(html: &str) -> Option<(usize, &str)> {
     let start = html.len().checked_sub(body.len())?;
     let (block, _) = body.split_once("</pre>")?;
     Some((start, block))
-}
-
-fn ld_block(html: &str) -> Option<&str> {
-    const OPEN: [&str; 2] = [
-        "<script type=\"application/ld+json\">",
-        "<script type='application/ld+json'>",
-    ];
-    OPEN.iter().find_map(|open| {
-        let (_, after_open) = html.split_once(open)?;
-        let (block, _) = after_open.split_once("</script>")?;
-        Some(block)
-    })
 }
 
 fn sport_of(value: &str) -> Option<Sport> {

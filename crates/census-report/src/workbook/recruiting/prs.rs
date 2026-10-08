@@ -1,6 +1,6 @@
-use super::super::cells::{row, Cell};
+use super::super::cells::Cell;
 use crate::bests::{Conflict, SharedSelection};
-use crate::report::ReportResult;
+use crate::report::{ReportError, ReportResult};
 
 pub(super) const TITLE: &str = "PRs";
 
@@ -39,42 +39,89 @@ pub(super) const WIDTHS: [u16; 26] = [
 ];
 
 pub(super) fn sheet(prs: &[SharedSelection]) -> ReportResult<Vec<Vec<Cell>>> {
-    let mut rows = vec![HEADERS.iter().map(|header| Cell::text(*header)).collect()];
-    for pr in prs {
-        rows.push(row!(
-            Cell::text(pr.athlete_id().as_str()),
-            Cell::text(&pr.athlete),
-            Cell::text(pr.gender.stable_key()),
-            pr.school.as_deref().map_or(Cell::Empty, Cell::text),
-            Cell::text(pr.athlete_state.code()),
-            Cell::Number(f64::from(pr.grad_year)),
-            Cell::text(pr.sport()),
-            Cell::text(pr.key.event_kind.stable_key()),
-            Cell::text(pr.season()),
-            Cell::text(pr.mark_text()),
-            pr.normalized.map_or(Cell::Empty, Cell::Number),
-            pr.unit().map_or(Cell::Empty, Cell::text),
-            pr.wind_mps.map_or(Cell::Empty, Cell::Number),
-            Cell::text(&pr.date),
-            Cell::text(&pr.meet),
-            pr.place
-                .map_or(Cell::Empty, |place| Cell::Number(f64::from(place))),
-            Cell::text(&pr.result_url),
-            Cell::number(pr.population.sources)?,
-            conflict_cell(&pr.conflicts),
-            Cell::text(pr.key.surface.label()),
-            Cell::text(pr.key.wind_class.label()),
-            Cell::text(pr.key.timing.label()),
-            Cell::text(pr.performance_id.as_str()),
-            Cell::text(pr.meet_id.as_str()),
-            Cell::text(&pr.source_key),
-            pr.key
-                .context
-                .as_ref()
-                .map_or(Cell::Empty, |id| Cell::text(id.as_str())),
-        ));
+    let count = prs
+        .len()
+        .checked_add(1)
+        .ok_or_else(|| ReportError::Invariant {
+            detail: "PR sheet row count overflow".into(),
+        })?;
+    let mut rows = Vec::new();
+    rows.try_reserve(count)
+        .map_err(|error| ReportError::Invariant {
+            detail: format!("reserving PR sheet rows: {error}"),
+        })?;
+    rows.push(HEADERS.iter().map(|header| Cell::text(*header)).collect());
+    prs.iter().try_fold(rows, |mut rows, pr| {
+        rows.push(cells(pr)?);
+        Ok(rows)
+    })
+}
+
+fn cells(pr: &SharedSelection) -> ReportResult<Vec<Cell>> {
+    let mut cells = Vec::new();
+    cells
+        .try_reserve(HEADERS.len())
+        .map_err(|error| ReportError::Invariant {
+            detail: format!("reserving PR sheet cells: {error}"),
+        })?;
+    cells.extend(identity_cells(pr));
+    cells.extend(result_cells(pr)?);
+    cells.extend(context_cells(pr));
+    Ok(cells)
+}
+
+fn identity_cells(pr: &SharedSelection) -> [Cell; 9] {
+    [
+        Cell::text(pr.athlete_id().as_str()),
+        Cell::text(&pr.athlete.name),
+        Cell::text(pr.athlete.gender.stable_key()),
+        pr.athlete.school.as_deref().map_or(Cell::Empty, Cell::text),
+        Cell::text(pr.athlete.athlete_state.code()),
+        Cell::Number(f64::from(pr.athlete.grad_year)),
+        Cell::text(pr.sport()),
+        Cell::text(pr.key.event_kind.stable_key()),
+        Cell::text(pr.season()),
+    ]
+}
+
+fn result_cells(pr: &SharedSelection) -> ReportResult<[Cell; 10]> {
+    Ok([
+        Cell::text(pr.mark_text()),
+        pr.result.normalized.map_or(Cell::Empty, Cell::Number),
+        pr.unit().map_or(Cell::Empty, Cell::text),
+        pr.result.wind_mps.map_or(Cell::Empty, Cell::Number),
+        Cell::text(&pr.meet.date),
+        Cell::text(&pr.meet.name),
+        pr.result
+            .place
+            .map_or(Cell::Empty, |place| Cell::Number(f64::from(place))),
+        Cell::text(&pr.source.result_url),
+        Cell::number(pr.population.sources)?,
+        conflict_cell(&pr.conflicts),
+    ])
+}
+
+fn context_cells(pr: &SharedSelection) -> [Cell; 7] {
+    [
+        Cell::text(pr.key.surface.label()),
+        Cell::text(pr.key.wind_class.label()),
+        Cell::text(pr.key.timing.label()),
+        Cell::text(pr.source.performance_id.as_str()),
+        Cell::text(pr.meet.meet_id.as_str()),
+        Cell::text(&pr.source.source_key),
+        event_context(pr),
+    ]
+}
+
+fn event_context(pr: &SharedSelection) -> Cell {
+    match crate::bests::context::cross_country(pr) {
+        Some(context) => Cell::text(context),
+        None => pr
+            .key
+            .context
+            .as_ref()
+            .map_or(Cell::Empty, |id| Cell::text(id.as_str())),
     }
-    Ok(rows)
 }
 
 fn conflict_cell(conflicts: &[Conflict]) -> Cell {

@@ -24,10 +24,21 @@ impl SourcePlan {
                 .map(|refusal| RefusedSource {
                     slug: refusal.slug.to_string(),
                     reason: refusal.reason.to_string(),
+                    kind: refusal.kind,
                 })
                 .collect(),
             fingerprint,
         }
+    }
+
+    pub fn has_engineering_gaps(&self) -> bool {
+        self.refused.iter().any(|refusal| {
+            matches!(
+                refusal.kind,
+                crate::restate_services::plan::RefusalKind::Unknown
+                    | crate::restate_services::plan::RefusalKind::EngineeringGap
+            )
+        })
     }
 }
 
@@ -35,4 +46,6 @@ impl SourcePlan {
 pub struct RefusedSource {
     pub slug: String,
     pub reason: String,
+    #[serde(default)]
+    pub kind: crate::restate_services::plan::RefusalKind,
 }

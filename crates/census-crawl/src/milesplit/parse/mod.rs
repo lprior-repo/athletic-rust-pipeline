@@ -85,47 +85,10 @@ fn season_cell_regex() -> CrawlResult<&'static Regex> {
         })
 }
 
-pub fn parse_team_index(html: &str) -> CrawlResult<Vec<TeamRef>> {
-    let row_regex = team_row_regex()?;
-    let mut teams = Vec::new();
-    for capture in row_regex.captures_iter(html) {
-        let Some(url_match) = capture.get(1) else {
-            continue;
-        };
-        let Some(id_match) = capture.get(2) else {
-            continue;
-        };
-        let Some(slug_match) = capture.get(3) else {
-            continue;
-        };
-        let name = capture
-            .get(4)
-            .map(|m| m.as_str().trim().to_string())
-            .map_or(Default::default(), core::convert::identity);
-        let city_state = capture
-            .get(5)
-            .map(|m| m.as_str().trim().to_string())
-            .map_or(Default::default(), core::convert::identity);
-        if name.is_empty() {
-            continue;
-        }
-        teams.push(TeamRef {
-            id: id_match.as_str().to_string(),
-            slug: slug_match.as_str().to_string(),
-            url: url_match.as_str().to_string(),
-            name,
-            city_state,
-        });
-    }
-    if teams.is_empty() {
-        return Err(CrawlError::Invariant {
-            detail: "team index contained no team rows (markup change or empty state page)"
-                .to_string(),
-        });
-    }
-    Ok(teams)
-}
+mod team_index;
+pub use team_index::{parse_team_index, TeamIndexRead};
 
+pub(in crate::milesplit) mod markup;
 pub(in crate::milesplit) mod roster;
 pub use roster::parse_roster;
 

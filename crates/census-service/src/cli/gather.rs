@@ -60,30 +60,19 @@ pub(super) struct MeetsArgs {
     flags: WorkflowFlags,
 }
 
-fn teams_line(report: &JurisdictionReport) -> String {
-    format!(
+fn teams_line(report: &JurisdictionReport) -> Result<String> {
+    Ok(format!(
         "{}\tteams={} rosters={} meets={} co2027={}",
         report.jurisdiction.code(),
         report.teams,
         report.rosters.athletes,
-        report.meets.rows,
+        serde_json::to_string(&report.history.meets)?,
         report.rosters.class_of_2027
-    )
+    ))
 }
 
-fn meets_line(report: &JurisdictionReport) -> String {
-    let meets = &report.meets;
-    format!(
-        "{}\tpages={}\tfetched={}\tseen={}\trows={}\tseasons={}\trepeated={}\ttruncated={}",
-        report.jurisdiction.code(),
-        meets.pages,
-        meets.fetched,
-        meets.seen,
-        meets.rows,
-        meets.seasons,
-        meets.repeated,
-        meets.truncated
-    )
+fn meets_line(report: &JurisdictionReport) -> Result<String> {
+    serde_json::to_string(&report.history.meets).context("encoding historical meet frontiers")
 }
 
 pub(super) async fn run_teams(cli: &Cli, args: &TeamsArgs) -> Result<()> {
@@ -113,18 +102,17 @@ pub(super) async fn run_teams(cli: &Cli, args: &TeamsArgs) -> Result<()> {
                         *jurisdiction,
                         season,
                         &args.flags,
-                        args.refresh,
-                        None,
-                        4,
-                        cli.authorized_hosts.clone(),
-                        cli.source_parallelism,
+                        live::JurisdictionRun {
+                            refresh: args.refresh,
+                            limit_per_state: None,
+                            concurrency: 4,
+                            authorized_hosts: cli.authorized_hosts.clone(),
+                            source_parallelism: cli.source_parallelism,
+                        },
                     )
                 })
-                .collect();
-            live::drive_states(origin, requests, args.flags.rounds(), |report| {
-                Ok(teams_line(report))
-            })
-            .await
+                .collect::<Result<Vec<_>>>()?;
+            live::drive_states(origin, requests, args.flags.rounds(), teams_line).await
         }
     }
 }
@@ -137,16 +125,13 @@ pub(super) async fn run_meets(cli: &Cli, args: &MeetsArgs) -> Result<()> {
             let fetcher = build_fetcher(cli, &store)?;
             let observed_on = census_crawl::net::today_iso();
             for jurisdiction in &jurisdictions {
-                let census = census::collect_state_meets(
-                    &fetcher,
-                    &store,
-                    *jurisdiction,
-                    args.year,
-                    &observed_on,
-                    args.refresh,
-                    None,
-                )
-                .await?;
+                let options = census_crawl::net::FetchOptions {
+                    refresh: args.refresh,
+                    ..Default::default()
+                };
+                let request =
+                    census::MeetWalkRequest::new(*jurisdiction, args.year, &observed_on, &options);
+                let census = census::collect_state_meets(&fetcher, &store, &request, None).await?;
                 println!(
                     "{}\tpages={}\tfetched={}\tseen={}\trows={}\tseasons={}\trepeated={}\ttruncated={}",
                     jurisdiction.code(),
@@ -171,18 +156,17 @@ pub(super) async fn run_meets(cli: &Cli, args: &MeetsArgs) -> Result<()> {
                         *jurisdiction,
                         season,
                         &args.flags,
-                        args.refresh,
-                        None,
-                        4,
-                        cli.authorized_hosts.clone(),
-                        cli.source_parallelism,
+                        live::JurisdictionRun {
+                            refresh: args.refresh,
+                            limit_per_state: None,
+                            concurrency: 4,
+                            authorized_hosts: cli.authorized_hosts.clone(),
+                            source_parallelism: cli.source_parallelism,
+                        },
                     )
                 })
-                .collect();
-            live::drive_states(origin, requests, args.flags.rounds(), |report| {
-                Ok(meets_line(report))
-            })
-            .await
+                .collect::<Result<Vec<_>>>()?;
+            live::drive_states(origin, requests, args.flags.rounds(), meets_line).await
         }
     }
 }
@@ -263,14 +247,16 @@ pub(super) async fn run_collect(cli: &Cli, args: &CollectArgs) -> Result<()> {
                         *jurisdiction,
                         options.school_year,
                         &args.flags,
-                        options.refresh,
-                        options.limit_per_state,
-                        options.concurrency,
-                        cli.authorized_hosts.clone(),
-                        cli.source_parallelism,
+                        live::JurisdictionRun {
+                            refresh: options.refresh,
+                            limit_per_state: options.limit_per_state,
+                            concurrency: options.concurrency,
+                            authorized_hosts: cli.authorized_hosts.clone(),
+                            source_parallelism: cli.source_parallelism,
+                        },
                     )
                 })
-                .collect();
+                .collect::<Result<Vec<_>>>()?;
             live::drive_states(origin, requests, args.flags.rounds(), |report| {
                 serde_json::to_string_pretty(report).context("encoding one state's report")
             })

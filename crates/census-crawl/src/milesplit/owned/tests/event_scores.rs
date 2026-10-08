@@ -37,7 +37,7 @@ fn qualified_owned_hurdles_preserve_kind_time_and_provider_json() -> TestResult 
         check!(eq; page.rejected, Vec::new(), "{label}");
         let row = &page.rows[0];
         check!(eq; row.event_kind, expected, "{label}");
-        check!(eq; row.mark, Mark::TimeSeconds(CentiSeconds::new(centiseconds)));
+        check!(eq; row.mark, Mark::TimeSeconds(ExactSeconds::from_parts(i64::from(centiseconds).checked_mul(10_000_000).ok_or("fixture time overflow")?, 2)?));
         check!(eq; row.provider, document["data"][0]);
     }
     Ok(())

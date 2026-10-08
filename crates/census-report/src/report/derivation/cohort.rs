@@ -1,7 +1,6 @@
-use super::{
-    collapse_athletes, in_requested_year, in_run_scope, jurisdiction_of, school_state_index,
-};
+use super::{collapse_athletes, in_run_scope};
 use crate::export::ExportDataset;
+use crate::report::coverage::{in_requested_year, jurisdiction_of, school_state_index};
 use crate::report::{is_core_evidenced, Scope};
 use census_domain::model::{CanonicalAthlete, Confidence};
 

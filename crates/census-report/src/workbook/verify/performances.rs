@@ -17,6 +17,12 @@ struct ResultKey {
     index: usize,
 }
 
+struct SheetScope<'a> {
+    name: &'a str,
+    offset: usize,
+    expected: usize,
+}
+
 pub(super) fn verify(
     book: &mut Book,
     expectations: &Expectations<'_>,
@@ -37,17 +43,7 @@ struct Reader<'a, 'd> {
 impl<'a, 'd> Reader<'a, 'd> {
     fn new(expectations: &'a Expectations<'d>, findings: &'a mut Findings) -> Self {
         let projection = PerformanceProjection::of(&expectations.derivation);
-        let mut ordered: Vec<ResultKey> = expectations
-            .derivation
-            .performances()
-            .iter()
-            .enumerate()
-            .map(|(index, performance)| ResultKey {
-                key: key_of(&projection.row(performance)),
-                index,
-            })
-            .collect();
-        ordered.sort_by(|left, right| left.key.cmp(&right.key));
+        let ordered = ordered_results(expectations, &projection);
         Self {
             expectations,
             projection,
@@ -70,60 +66,80 @@ impl<'a, 'd> Reader<'a, 'd> {
     }
 
     fn sheet(&mut self, book: &mut Book, index: usize, name: &str) -> ReportResult<()> {
-        let offset = index.saturating_mul(DATA_ROWS_PER_SHEET);
-        let expected_here = self
-            .ordered
-            .len()
-            .saturating_sub(offset)
-            .min(DATA_ROWS_PER_SHEET);
+        let scope = self.sheet_scope(index, name);
         let mut seen = 0_usize;
-        let mut visit = |row: &SparseRow| {
-            verify_width(row, name, labels::PERFORMANCE_HEADERS.len(), self.findings);
-            if row.index() == 0 {
-                verify_header(row, name, &labels::PERFORMANCE_HEADERS, self.findings);
-                return;
-            }
-            let position = offset.saturating_add(row.index().saturating_sub(1));
-            if row.blank() {
-                if let Some(entry) = self.ordered.get(position) {
-                    self.findings.note(format!(
-                        "{} is blank where result {} was expected",
-                        cell_at(name, row.index(), 0),
-                        self.id_at(entry.index)
-                    ));
-                }
-                return;
-            }
-            match self.ordered.get(position).map(|entry| entry.index) {
-                Some(index) => {
-                    seen = seen.saturating_add(1);
-                    if let Some(id) = row.text(0) {
-                        let count = self.actual.entry(id.to_string()).or_insert(0);
-                        *count = count.saturating_add(1);
-                    }
-                    self.compare(row, name, index);
-                }
-                None => self.findings.note(format!(
-                    "{} carries an unexpected result row whose id reads {:?}",
-                    cell_at(name, row.index(), 0),
-                    row.text(0).map_or("", |value| value)
-                )),
-            }
-        };
         let budget = Budget {
             rows: DATA_ROWS_PER_SHEET.saturating_add(1),
             columns: EXCEL_COLUMNS_PER_SHEET,
         };
-        let Some(shape) = book.read(name, budget, &mut visit)? else {
+        let mut visit = |row: &SparseRow| self.visit(row, &scope, &mut seen);
+        let shape = book.read(name, budget, &mut visit)?;
+        let Some(shape) = shape else {
             self.findings.note(format!(
-                "sheet {name} is missing, so up to {expected_here} written result rows were never \
-                 read"
+                "sheet {name} is missing, so up to {} written result rows were never read",
+                scope.expected
             ));
             return Ok(());
         };
         let written = shape.rows.saturating_sub(1);
-        self.report_sheet_counts(seen, written, name, offset, expected_here);
+        self.report_sheet_counts(seen, written, &scope);
         Ok(())
+    }
+
+    fn sheet_scope<'n>(&self, index: usize, name: &'n str) -> SheetScope<'n> {
+        let offset = index.saturating_mul(DATA_ROWS_PER_SHEET);
+        SheetScope {
+            name,
+            offset,
+            expected: self
+                .ordered
+                .len()
+                .saturating_sub(offset)
+                .min(DATA_ROWS_PER_SHEET),
+        }
+    }
+
+    fn visit(&mut self, row: &SparseRow, scope: &SheetScope<'_>, seen: &mut usize) {
+        let name = scope.name;
+        verify_width(row, name, labels::PERFORMANCE_HEADERS.len(), self.findings);
+        if row.index() == 0 {
+            verify_header(row, name, &labels::PERFORMANCE_HEADERS, self.findings);
+            return;
+        }
+        let position = scope.offset.saturating_add(row.index().saturating_sub(1));
+        if row.blank() {
+            self.blank_row(row, name, position);
+            return;
+        }
+        self.result_row(row, name, position, seen);
+    }
+
+    fn blank_row(&mut self, row: &SparseRow, name: &str, position: usize) {
+        if let Some(entry) = self.ordered.get(position) {
+            self.findings.note(format!(
+                "{} is blank where result {} was expected",
+                cell_at(name, row.index(), 0),
+                self.id_at(entry.index)
+            ));
+        }
+    }
+
+    fn result_row(&mut self, row: &SparseRow, name: &str, position: usize, seen: &mut usize) {
+        match self.ordered.get(position).map(|entry| entry.index) {
+            Some(index) => {
+                *seen = seen.saturating_add(1);
+                if let Some(id) = row.text(0) {
+                    let count = self.actual.entry(id.to_string()).or_insert(0);
+                    *count = count.saturating_add(1);
+                }
+                self.compare(row, name, index);
+            }
+            None => self.findings.note(format!(
+                "{} carries an unexpected result row whose id reads {:?}",
+                cell_at(name, row.index(), 0),
+                row.text(0).map_or("", |value| value)
+            )),
+        }
     }
 
     fn report(&mut self) {
@@ -167,14 +183,12 @@ impl<'a, 'd> Reader<'a, 'd> {
             .map_or(Default::default(), core::convert::identity)
     }
 
-    fn report_sheet_counts(
-        &mut self,
-        seen: usize,
-        written: usize,
-        name: &str,
-        offset: usize,
-        expected_here: usize,
-    ) {
+    fn report_sheet_counts(&mut self, seen: usize, written: usize, scope: &SheetScope<'_>) {
+        let SheetScope {
+            name,
+            offset,
+            expected: expected_here,
+        } = *scope;
         self.seen = self.seen.saturating_add(seen);
         if written < expected_here {
             let first = self
@@ -188,6 +202,24 @@ impl<'a, 'd> Reader<'a, 'd> {
             ));
         }
     }
+}
+
+fn ordered_results(
+    expectations: &Expectations<'_>,
+    projection: &PerformanceProjection<'_>,
+) -> Vec<ResultKey> {
+    let mut ordered: Vec<ResultKey> = expectations
+        .derivation
+        .performances()
+        .iter()
+        .enumerate()
+        .map(|(index, performance)| ResultKey {
+            key: key_of(&projection.row(performance)),
+            index,
+        })
+        .collect();
+    ordered.sort_by(|left, right| left.key.cmp(&right.key));
+    ordered
 }
 
 fn key_of(row: &PerformanceRow) -> Key {

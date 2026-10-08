@@ -19,7 +19,9 @@ pub(in crate::arbiter) async fn mint_token(
         &super::fetch_options(ctx, options, Vec::new()),
     )
     .await?;
-    let Some((client_id, client_secret)) = credentials_in_bundle(&bundle.text()) else {
+    let Some((client_id, client_secret)) =
+        credentials_in_bundle(crate::directory::acquisition::text(&bundle)?)
+    else {
         return Err(CrawlError::Schema {
             url: bundle.url.clone(),
             detail: "no client_id/client_secret pair in the published bundle".to_string(),
@@ -37,7 +39,7 @@ pub(in crate::arbiter) async fn mint_token(
         .fetcher
         .post_form(TOKEN_URL, &form, &token_fetch)
         .await?;
-    parse_token(&body.text(), TOKEN_URL)
+    parse_token(crate::directory::acquisition::text(&body)?, TOKEN_URL)
 }
 
 async fn acquire_bundle(
@@ -48,6 +50,7 @@ async fn acquire_bundle(
     let authority = Url::parse(entry_url)
         .map_err(|_| discovery::refuse(entry_url, "invalid stable directory entry URL"))?;
     let entry = fetcher.get(entry_url, fetch).await?;
+    crate::directory::acquisition::text(&entry)?;
     let module = discovery::discover(&entry, &authority)?;
     let bundle = fetcher.get(module.as_str(), fetch).await?;
     discovery::validate_bundle(&bundle, &authority)?;

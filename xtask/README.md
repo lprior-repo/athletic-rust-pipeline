@@ -259,8 +259,17 @@ measured advantage justifies the change. Run it with small sizes first to verify
 scale up to production-relevant row counts before drawing conclusions.
 
 `scan` obtains members from Cargo metadata rather than a two-package list. Test-only regions and
-recognized test files are excluded from production measurements. `seams` is a separate structural
-check; a clean scan is not acceptance of identity, durability or coverage.
+recognized test files are excluded from production measurements. Callable sizes and arities use
+the trusted Rust AST policy: 25 logical lines is advisory, 60 is the hard maximum for handwritten
+production functions, methods, closures and project-macro callable templates. More than five
+parameters is a cohesion-review warning. Statement packing does not reduce the logical count.
+The workspace disables Clippy's separate hard arity threshold; the AST scan still reports every
+handwritten callable above five parameters for cohesion review.
+Compiler/vendor-generated code is excluded from style-size certification; its compilation, domain
+contracts, safety and behavior obligations remain. Opaque handwritten callable syntax fails closed.
+The gate rejects missing, malformed or stale size evidence rather than accepting a fabricated clean
+summary. `seams` is a separate structural check; a clean scan is not acceptance of identity,
+durability or coverage.
 
 `comments` and `panic-extraction` share the in-repository Rust lexer and bounded source walker.
 `comments` rejects prose `doc = ...` attributes and permits non-prose attributes such as

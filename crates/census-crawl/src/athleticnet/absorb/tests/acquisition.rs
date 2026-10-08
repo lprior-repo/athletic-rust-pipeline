@@ -60,6 +60,7 @@ fn context<'a>(
         refresh: false,
         school_year: SchoolYear::new(2026).ok_or("school year")?,
         observed_on: "2026-09-30".into(),
+        performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 9, 30).ok_or("snapshot date")?,
         recording: None,
     })
 }
@@ -153,12 +154,14 @@ fn malformed_bio_does_not_certify_a_completed_parse() -> TestResult {
             let report =
                 crate::athleticnet::collect::collect(&ctx, &options(dir.path(), 28872883)?).await?;
             check!(eq; report.errors, 2);
+            check!(eq; report.unfinished, source_urls(28872883));
+            check!(eq; report.disposition, crate::CollectionDisposition::Partial);
             check!(crate::athleticnet::collect::journaled_urls(&ctx)?.is_empty());
             check!(store.journal_payloads("athleticnet")?.is_empty());
             let reviews: Vec<ReviewCase> = store.snapshot().scan(Table::ReviewCases)?;
             for url in source_urls(28872883) {
                 check!(reviews.iter().any(|review| review.subject_id == url
-                    && review.detail.contains("body is not an athlete bio")));
+                    && review.state == census_domain::model::ReviewState::Pending));
             }
             Ok(())
         })
@@ -174,8 +177,8 @@ fn admitted_empty_history_uses_each_exact_profile_fetch_locator() -> TestResult 
             let store = Store::open(dir.path().join("store"))?;
             let cache = dir.path().join("http");
             let mut profile: serde_json::Value = serde_json::from_str(CAPTURE)?;
-            profile["resultsTF"] = serde_json::Value::Null;
-            profile["resultsXC"] = serde_json::Value::Null;
+            profile["resultsTF"] = serde_json::json!([]);
+            profile["resultsXC"] = serde_json::json!([]);
             let profile = serde_json::to_string(&profile)?;
             let urls = source_urls(28872883);
             for url in &urls {
@@ -193,23 +196,26 @@ fn admitted_empty_history_uses_each_exact_profile_fetch_locator() -> TestResult 
             let report =
                 crate::athleticnet::collect::collect(&ctx, &options(dir.path(), 28872883)?).await?;
             check!(eq; report.errors, 0);
+            check!(report.unfinished.is_empty());
+            check!(eq; report.disposition, crate::CollectionDisposition::Complete);
             check!(eq; report.rows, 1);
             let athletes = store.snapshot().athletes()?;
-            let athlete = athletes.first().ok_or("admitted")?;
-            check!(eq;
-                athlete.source.as_ref().ok_or("provider owner")?.id,
-                "28872883"
-            );
-            for url in &urls {
-                check!(athlete.evidence.iter().any(|support| {
-                    support.source.url.as_deref() == Some(url.as_str())
-                        && support.method == census_domain::model::EvidenceMethod::Parsed
-                }));
-            }
-            check!(eq; athlete.evidence.len(), 2);
+            let mut evidence_urls = Vec::new();
             let mut index = census_domain::model::AthleteIdentityIndex::default();
-            index.observe(athlete)?;
-            check!(index.isolated_source(&athlete.id.cast()));
+            for athlete in &athletes {
+                check!(eq; athlete.source.as_ref().ok_or("provider owner")?.id, "28872883");
+                for support in &athlete.evidence {
+                    check!(eq; support.method, census_domain::model::EvidenceMethod::Parsed);
+                    check!(eq; support.observed_on, "2026-09-20T12:00:00Z");
+                    evidence_urls.push(support.source.url.clone().ok_or("capture URL")?);
+                }
+                index.observe(athlete)?;
+                check!(index.isolated_source(&athlete.id.cast()));
+            }
+            evidence_urls.sort();
+            let mut expected_urls = urls.clone();
+            expected_urls.sort();
+            check!(eq; evidence_urls, expected_urls);
             check!(eq;
                 crate::athleticnet::collect::journaled_urls(&ctx)
                     ?

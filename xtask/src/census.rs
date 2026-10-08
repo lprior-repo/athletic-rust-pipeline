@@ -48,6 +48,65 @@ impl Target {
     }
 }
 
+#[derive(clap::Subcommand, Debug)]
+pub enum CensusCommand {
+    #[command(
+        about = "Print the core-scope census: the store's own counts from the running deployment (`Census/status`), or a whole core report offline (`census-service report --core`)"
+    )]
+    CensusStatus {
+        #[command(flatten)]
+        target: Target,
+    },
+    #[command(
+        about = "Print the census over every source: `Report/run` on the running deployment, or `census-service report` offline"
+    )]
+    Coverage {
+        #[command(flatten)]
+        target: Target,
+    },
+    #[command(
+        about = "Build the census workbook (`.xlsx`) and its text sidecars: `Workbook/run` on the running deployment, or `census-service workbook` offline"
+    )]
+    Export(ExportRequest),
+}
+
+impl CensusCommand {
+    pub fn run(self) -> Result<()> {
+        match self {
+            Self::CensusStatus { target } => status(target),
+            Self::Coverage { target } => coverage(target),
+            Self::Export(request) => export(request),
+        }
+    }
+}
+
+#[derive(clap::Args, Debug)]
+pub struct ExportRequest {
+    #[command(flatten)]
+    target: Target,
+    #[arg(
+        help = "Where to write the `.xlsx` (defaults to `<store>/out/census-service-<generated-on>.xlsx`)"
+    )]
+    #[arg(long, value_name = "FILE")]
+    out: Option<PathBuf>,
+    #[arg(help = "Graduation year used for the cohort sheets (2027 = the class of 2027)")]
+    #[arg(long, default_value_t = 2027)]
+    grad_year: i32,
+    #[arg(
+        help = "School year the workbook contact tenure and coach cells are assessed against (2026 = the 2026-27 school year)"
+    )]
+    #[arg(long)]
+    school_year: i32,
+    #[arg(
+        help = "Reduce the best-results sheet over the core scope instead of every approved source"
+    )]
+    #[arg(long)]
+    core: bool,
+    #[arg(help = "Cap the per-athlete best-mark sheet at N rows")]
+    #[arg(long, value_name = "N")]
+    limit: Option<usize>,
+}
+
 pub fn status(target: Target) -> Result<()> {
     match target.mode()? {
         Mode::Offline(store) => offline::report(store, Scope::Core),
@@ -62,18 +121,9 @@ pub fn coverage(target: Target) -> Result<()> {
     }
 }
 
-pub fn export(
-    target: Target,
-    out: Option<&Path>,
-    grad_year: i32,
-    school_year: i32,
-    core: bool,
-    limit: Option<usize>,
-) -> Result<()> {
-    match target.mode()? {
-        Mode::Offline(store) => offline::workbook(store, out, grad_year, school_year, core, limit),
-        Mode::Ingress(origin) => {
-            service::workbook(origin, out, grad_year, school_year, core, limit)
-        }
+pub fn export(request: ExportRequest) -> Result<()> {
+    match request.target.mode()? {
+        Mode::Offline(store) => offline::workbook(store, &request),
+        Mode::Ingress(origin) => service::workbook(origin, &request),
     }
 }

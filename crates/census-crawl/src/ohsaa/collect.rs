@@ -1,60 +1,64 @@
 use super::map::{school_entities, SearchResult};
 use super::pages::parse_ad_page;
 use super::Options;
-use crate::{AdapterContext, AdapterReport, CrawlResult};
+use crate::{AdapterContext, AdapterReport, CollectionDisposition, CrawlError, CrawlResult};
 use census_domain::UsJurisdiction;
 use futures::{stream, StreamExt, TryStreamExt};
-use std::collections::HashSet;
 
+mod appointments;
 mod fetch;
 mod search;
 mod write;
-
 use fetch::{fetch_page, PageKind, SchoolPages};
 use search::resolve_schools;
-use write::{emit_school, persist_failure, CAPTURE_JOURNAL};
+use write::{emit_school, persist_failure, Projection};
 
-#[tracing::instrument(skip(ctx, options))]
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new("ohsaa", "schools");
+    if !options.states.is_empty() && !options.states.contains(&UsJurisdiction::Ohio) {
+        return Ok(report);
+    }
+    let before = ctx.fetcher.stats().await;
+    let schools = resolve_schools(ctx, options, &mut report).await?;
     let evaluated_on = if options.observed_on.trim().is_empty() {
         &ctx.observed_on
     } else {
         &options.observed_on
     };
-    let before = ctx.fetcher.stats().await;
-    if !options.states.is_empty() && !options.states.contains(&UsJurisdiction::Ohio) {
-        let codes: Vec<&str> = options.states.iter().map(|state| state.code()).collect();
-        report.note(format!(
-            "states {codes:?} do not include OH; this adapter covers Ohio only"
-        ));
-        return Ok(report);
-    }
-    let to_process = resolve_schools(ctx, options, &mut report).await?;
-    let tally = Tally {
-        captures: ctx.store.journal_keys(CAPTURE_JOURNAL)?,
-        completed: ctx.store.journal_keys("ohsaa_schools")?,
-        ..Tally::default()
-    };
-    let (mut report, tally) = stream::iter(&to_process)
-        .map(Ok::<_, crate::CrawlError>)
-        .try_fold((report, tally), |(mut report, mut tally), sr| async move {
-            process_school(ctx, sr, evaluated_on, &mut report, &mut tally).await?;
-            Ok((report, tally))
-        })
-        .await?;
+    let (mut report, tally) = walk(ctx, &schools, evaluated_on, report).await?;
     let after = ctx.fetcher.stats().await;
     report.requests = after
         .physical_requests()
-        .saturating_sub(before.physical_requests());
-    report.from_cache = after.cache_hits.saturating_sub(before.cache_hits);
+        .checked_sub(before.physical_requests())
+        .ok_or_else(counter_error)?;
+    report.from_cache = after
+        .cache_hits
+        .checked_sub(before.cache_hits)
+        .ok_or_else(counter_error)?;
     report.with_email = tally.with_email;
-    report.note(format!(
-        "processed {} of {} requested schools ({} not_found, {} fetch_failures, {} coach_rows, {} office_roles_skipped)",
-        tally.processed, to_process.len(), tally.not_found, tally.fetch_failures,
-        tally.coach_rows, tally.office_roles_skipped
-    ));
+    report.note(format!("processed {} configured schools; {} fetch failures; {} coach rows; {} office roles retained outside coaching projection", tally.processed, tally.fetch_failures, tally.coach_rows, tally.office_roles_skipped));
+    if !schools.is_empty() {
+        report.finish_frontier();
+    }
     Ok(report)
+}
+
+async fn walk(
+    ctx: &AdapterContext<'_>,
+    schools: &[SearchResult],
+    evaluated_on: &str,
+    report: AdapterReport,
+) -> CrawlResult<(AdapterReport, Tally)> {
+    stream::iter(schools)
+        .map(Ok::<_, CrawlError>)
+        .try_fold(
+            (report, Tally::default()),
+            |(mut report, mut tally), school| async move {
+                process_school(ctx, school, evaluated_on, &mut report, &mut tally).await?;
+                Ok((report, tally))
+            },
+        )
+        .await
 }
 
 #[derive(Default)]
@@ -65,11 +69,8 @@ struct Tally {
     coach_rows: usize,
     with_email: u64,
     office_roles_skipped: usize,
-    captures: HashSet<String>,
-    completed: HashSet<String>,
 }
 
-#[tracing::instrument(skip(ctx, sr, report, tally))]
 async fn process_school(
     ctx: &AdapterContext<'_>,
     sr: &SearchResult,
@@ -80,24 +81,71 @@ async fn process_school(
     let sports = match fetch_page(ctx, sr, PageKind::Sports).await {
         Ok(capture) => capture,
         Err(failure) => {
-            failure.report(sr, "sports", report, tally);
+            failure.report(sr, "sports", report, tally)?;
             persist_failure(ctx, sr, "sports", &failure, evaluated_on)?;
+            owe(report, &sr.ad_url())?;
             return Ok(());
         }
     };
     let ad = fetch_page(ctx, sr, PageKind::AthleticDirector).await;
     if let Err(failure) = &ad {
-        failure.report(sr, "AD", report, tally);
+        failure.report(sr, "AD", report, tally)?;
     }
     let pages = SchoolPages { sports, ad };
-    let extract = school_entities(sr, &pages.sports, pages.ad.as_ref().ok());
+    let mut extract = school_entities(sr, &pages.sports, pages.ad.as_ref().ok());
     if let Ok(capture) = &pages.ad {
-        let parsed = parse_ad_page(&String::from_utf8_lossy(&capture.body));
+        let html = std::str::from_utf8(&capture.body).map_err(|error| CrawlError::Schema {
+            url: capture.url.clone(),
+            detail: error.to_string(),
+        })?;
         tally.office_roles_skipped = tally
             .office_roles_skipped
-            .saturating_add(parsed.office_roles.len());
+            .checked_add(parse_ad_page(html).office_roles.len())
+            .ok_or_else(counter_error)?;
     }
-    emit_school(ctx, sr, &pages, &extract, evaluated_on, report, tally)?;
-    tally.processed = tally.processed.saturating_add(1);
+    emit_school(
+        ctx,
+        Projection {
+            school: sr,
+            pages: &pages,
+            extract: &mut extract,
+        },
+        evaluated_on,
+        report,
+        tally,
+    )?;
+    tally.processed = tally.processed.checked_add(1).ok_or_else(counter_error)?;
     Ok(())
+}
+
+fn owe(report: &mut AdapterReport, locator: &str) -> CrawlResult<()> {
+    if report.unfinished.iter().any(|value| value == locator) {
+        return Ok(());
+    }
+    report
+        .unfinished
+        .try_reserve(1)
+        .map_err(|_| CrawlError::Resource {
+            resource: "Ohio unfinished locators",
+            requested: 1,
+            limit: 4096,
+        })?;
+    report.unfinished.push(locator.to_string());
+    report.disposition = CollectionDisposition::Partial;
+    Ok(())
+}
+
+fn fail(report: &mut AdapterReport, locator: &str, detail: &str) -> CrawlResult<()> {
+    report.errors = report.errors.checked_add(1).ok_or_else(counter_error)?;
+    owe(report, locator)?;
+    if report.errors <= 5 {
+        report.note(detail.chars().take(4096).collect::<String>());
+    }
+    Ok(())
+}
+
+fn counter_error() -> CrawlError {
+    CrawlError::Arithmetic {
+        detail: "Ohio acquisition accounting overflow".to_string(),
+    }
 }

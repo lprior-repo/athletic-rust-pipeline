@@ -1,251 +1,295 @@
-use super::map::{build_entities, BatchEntities};
-use super::parse::AthleteHit;
-use super::targets::MeetTarget;
-use super::{
-    batch_query, BatchStats, Options, ENDPOINT, MEETS_PER_BATCH, PAGE_SIZE, RESULT_WINDOW,
-};
+use super::map::build_entities;
+use super::{batch_query, MeetTarget, Options, ENDPOINT, PAGE_SIZE, RESULT_WINDOW};
+use crate::directory::acquisition::{fail, owe, text};
 use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
-use census_store::{StoreBatch, Table};
-use serde_json::{json, Value};
-use std::collections::{HashMap, VecDeque};
+use census_store::Table;
+use futures::{stream, StreamExt, TryStreamExt};
+use serde_json::Value;
+use std::collections::HashMap;
 
-const MAX_ROWS_PER_MEET: usize = 8_000;
-const MAX_PLAUSIBLE_TOTAL: usize = MAX_ROWS_PER_MEET * MEETS_PER_BATCH;
-
-pub(super) async fn run_batches<'t>(
-    ctx: &AdapterContext<'_>,
-    options: &Options,
-    by_id: &HashMap<u64, &'t MeetTarget>,
-    queue: &mut VecDeque<Vec<&'t MeetTarget>>,
-    stats: &mut BatchStats,
-    report: &mut AdapterReport,
-) -> CrawlResult<()> {
-    while let Some(batch) = queue.pop_front() {
-        if let Some(limit) = options.limit {
-            if stats.meets >= limit {
-                break;
-            }
-        }
-        let ids: Vec<u64> = batch.iter().map(|t| t.athleticlive_meet_id).collect();
-        let (hits, total) = page_hits(ctx, options, &ids, report).await?;
-        if split_batch(queue, &batch, total, report, stats) {
-            continue;
-        }
-        emit_batch(ctx, options, &batch, &hits, by_id, stats)?;
-    }
-    Ok(())
+struct PageWalk<'a> {
+    ctx: &'a AdapterContext<'a>,
+    options: &'a Options,
+    target: &'a MeetTarget,
+    report: AdapterReport,
+    from: usize,
+    done: bool,
 }
 
-async fn page_hits(
+pub(super) async fn run_target(
     ctx: &AdapterContext<'_>,
     options: &Options,
-    ids: &[u64],
-    report: &mut AdapterReport,
-) -> CrawlResult<(Vec<AthleteHit>, usize)> {
-    let fetch = crate::net::FetchOptions {
-        refresh: options.refresh,
-        allow_not_found: false,
-        headers: vec![("accept".to_string(), "application/json".to_string())],
+    target: &MeetTarget,
+    report: AdapterReport,
+) -> CrawlResult<AdapterReport> {
+    let run = PageWalk {
+        ctx,
+        options,
+        target,
+        report,
+        from: 0,
+        done: false,
     };
-    let mut from = 0usize;
-    let mut hits: Vec<AthleteHit> = Vec::new();
-    let mut total = 0usize;
-    let mut declared: Option<usize> = None;
-    loop {
-        let body = batch_query(ids, from);
-        let outcome = ctx.fetcher.post_json(ENDPOINT, &body, &fetch).await?;
-        if outcome.status != 200 {
-            report.errors = report.errors.saturating_add(1);
-            report.note(format!(
-                "batch of {} meets returned HTTP {} at offset {from}",
-                ids.len(),
-                outcome.status
-            ));
-            break;
-        }
-        let parsed: Value = outcome.json()?;
-        let page: Vec<AthleteHit> = serde_json::from_value(Value::Array(page_sources(&parsed)))
-            .map_err(|source| CrawlError::Decode {
-                url: ENDPOINT.to_string(),
+    let mut run = stream::iter(0..RESULT_WINDOW)
+        .map(Ok::<_, CrawlError>)
+        .try_fold(run, |mut run, _| async move {
+            if !run.done {
+                run.page().await?;
+            }
+            Ok(run)
+        })
+        .await?;
+    if !run.done {
+        let locator = run.locator();
+        owe(&mut run.report, locator)?;
+    }
+    Ok(run.report)
+}
+
+impl PageWalk<'_> {
+    fn locator(&self) -> String {
+        format!(
+            "{ENDPOINT}#meet={}&from={}",
+            self.target.athleticlive_meet_id, self.from
+        )
+    }
+
+    async fn page(&mut self) -> CrawlResult<()> {
+        let locator = self.locator();
+        let fetch = crate::net::FetchOptions {
+            refresh: self.ctx.refresh || self.options.refresh,
+            headers: vec![("accept".into(), "application/json".into())],
+            ..self.ctx.fetch_options()
+        };
+        let capture = match self
+            .ctx
+            .fetcher
+            .post_json(
+                ENDPOINT,
+                &batch_query(&[self.target.athleticlive_meet_id], self.from),
+                &fetch,
+            )
+            .await
+        {
+            Ok(capture) if capture.status == 200 => capture,
+            Ok(capture) => {
+                self.done = true;
+                return fail(
+                    &mut self.report,
+                    &locator,
+                    format!("HTTP {}", capture.status),
+                );
+            }
+            Err(error) => {
+                self.done = true;
+                return fail(&mut self.report, &locator, error);
+            }
+        };
+        let parsed = text(&capture).and_then(|body| {
+            serde_json::from_str::<Value>(body).map_err(|source| CrawlError::Decode {
+                url: locator.clone(),
                 source,
-            })?;
-        let fetched = page.len();
-        if from == 0 {
-            declared = declared_rows(&parsed);
-            total = usable_total(declared, fetched, ids.len(), report);
-        }
-        hits.extend(page);
-        from = from.saturating_add(fetched);
-        let window_reached = from.saturating_add(PAGE_SIZE) > RESULT_WINDOW;
-        if fetched == 0 || from >= total || window_reached {
-            if declared.is_none() && window_reached && fetched > 0 {
-                report.note(format!(
-                    "batch of {} meets reached the {RESULT_WINDOW}-row result window with no usable result total: any rows beyond it were not retrieved",
-                    ids.len()
-                ));
-            }
-            break;
-        }
-    }
-    Ok((hits, total))
-}
-
-fn declared_rows(parsed: &Value) -> Option<usize> {
-    parsed
-        .pointer("/hits/total/value")
-        .and_then(Value::as_u64)
-        .and_then(|value| usize::try_from(value).ok())
-}
-
-fn usable_total(
-    declared: Option<usize>,
-    fetched: usize,
-    meets: usize,
-    report: &mut AdapterReport,
-) -> usize {
-    if fetched == 0 {
-        if let Some(claimed) = declared.filter(|total| *total > 0) {
-            report.note(format!(
-                "batch of {meets} meets returned no rows though it declared {claimed}: nothing was written for it"
-            ));
-        }
-        return 0;
-    }
-    match declared.filter(|total| (fetched..=MAX_PLAUSIBLE_TOTAL).contains(total)) {
-        Some(total) => total,
-        None => {
-            let claim = match declared {
-                Some(total) => format!("declared {total} rows against {fetched} on the first page"),
-                None => format!("returned {fetched} rows with no result total"),
-            };
-            tracing::warn!(
-                meets,
-                fetched,
-                declared = ?declared,
-                window = RESULT_WINDOW,
-                "athleticlive result total is missing or implausible; paginating to the result window"
-            );
-            report.note(format!(
-                "batch of {meets} meets {claim}; paginating to the {RESULT_WINDOW}-row result window"
-            ));
-            RESULT_WINDOW
-        }
-    }
-}
-
-fn page_sources(parsed: &Value) -> Vec<Value> {
-    match parsed.pointer("/hits/hits").and_then(Value::as_array) {
-        Some(hits) => hits
-            .iter()
-            .map(|hit| {
-                hit.get("_source")
-                    .cloned()
-                    .map_or(Value::Null, |value| value)
             })
-            .collect::<Vec<Value>>(),
-        None => Default::default(),
+        });
+        let parsed = match parsed {
+            Ok(parsed) => parsed,
+            Err(error) => {
+                self.done = true;
+                return fail(&mut self.report, &locator, error);
+            }
+        };
+        let Some(rows) = parsed.pointer("/hits/hits").and_then(Value::as_array) else {
+            self.done = true;
+            return fail(&mut self.report, &locator, "missing hits array");
+        };
+        if rows.len() > PAGE_SIZE {
+            self.done = true;
+            return fail(
+                &mut self.report,
+                &locator,
+                "published page exceeds requested size",
+            );
+        }
+        self.retain_page(&parsed, rows, &capture)
     }
-}
 
-fn split_batch<'t>(
-    queue: &mut VecDeque<Vec<&'t MeetTarget>>,
-    batch: &[&'t MeetTarget],
-    total: usize,
-    report: &mut AdapterReport,
-    stats: &mut BatchStats,
-) -> bool {
-    if total <= RESULT_WINDOW {
-        return false;
+    fn advance(&mut self, parsed: &Value, fetched: usize) -> CrawlResult<()> {
+        let total = parsed
+            .pointer("/hits/total/value")
+            .and_then(Value::as_u64)
+            .and_then(|value| usize::try_from(value).ok());
+        let exact = parsed
+            .pointer("/hits/total/relation")
+            .and_then(Value::as_str)
+            == Some("eq");
+        self.from = self
+            .from
+            .checked_add(fetched)
+            .ok_or_else(|| CrawlError::Arithmetic {
+                detail: "athlete page offset".into(),
+            })?;
+        if exact && total == Some(self.from) {
+            self.done = true;
+            return Ok(());
+        }
+        if !exact
+            || total.is_none_or(|total| total < self.from)
+            || fetched == 0
+            || self.from >= RESULT_WINDOW
+        {
+            self.done = true;
+            let locator = self.locator();
+            return owe(&mut self.report, locator);
+        }
+        Ok(())
     }
-    if batch.len() > 1 {
-        let (left, right) = batch.split_at(batch.len() / 2);
-        queue.push_front(right.to_vec());
-        queue.push_front(left.to_vec());
-        stats.splits = stats.splits.saturating_add(1);
-        report.note(format!(
-            "split a {}-meet batch ({} rows exceeds the {}-row result window)",
-            batch.len(),
-            total,
-            RESULT_WINDOW
-        ));
-        return true;
-    }
-    let Some(target) = batch.first() else {
-        return true;
-    };
-    report.note(format!(
-        "meet {} alone has {} rows: only {} were retrievable in one result window",
-        target.athleticlive_meet_id, total, RESULT_WINDOW
-    ));
-    false
-}
 
-fn emit_batch<'t>(
-    ctx: &AdapterContext<'_>,
-    options: &Options,
-    batch: &[&'t MeetTarget],
-    hits: &[AthleteHit],
-    by_id: &HashMap<u64, &'t MeetTarget>,
-    stats: &mut BatchStats,
-) -> CrawlResult<()> {
-    let mut page = ctx.store.write_batch();
-    if hits.is_empty() {
-        for target in batch {
-            page.journal_done(
-                "athleticlive_rosters",
-                &target.athleticlive_meet_id.to_string(),
-                &json!({ "meet": target.name, "rows": 0 }),
+    fn emit(
+        &mut self,
+        batch: &mut crate::recording::RowBatch<'_>,
+        row: &Value,
+        ordinal: usize,
+        stamp: &str,
+    ) -> CrawlResult<usize> {
+        let locator = format!("{}#row={ordinal}", self.locator());
+        let hit = match row
+            .get("_source")
+            .cloned()
+            .map(serde_json::from_value::<super::AthleteHit>)
+        {
+            Some(Ok(hit)) => hit,
+            Some(Err(error)) => {
+                fail(&mut self.report, &locator, error)?;
+                return Ok(0);
+            }
+            None => {
+                fail(&mut self.report, &locator, "missing athlete source")?;
+                return Ok(0);
+            }
+        };
+        let by_id = HashMap::from([(self.target.athleticlive_meet_id, self.target)]);
+        let entities = build_entities(
+            std::slice::from_ref(&hit),
+            &by_id,
+            stamp,
+            self.ctx.school_year,
+        );
+        let phase = "athleticlive_athletes_projection_v2";
+        if entities.athletes.is_empty() {
+            owe(&mut self.report, &locator)?;
+        }
+        let observations =
+            crate::athlete_observations_of(&entities.athletes, &entities.schools, stamp);
+        let written = crate::recording::projection::append_new(
+            self.ctx,
+            batch,
+            Table::Athletes,
+            entities.athletes,
+            phase,
+        )?;
+        crate::recording::projection::append_new(
+            self.ctx,
+            batch,
+            Table::Schools,
+            entities.schools,
+            phase,
+        )?;
+        crate::recording::projection::append_new(
+            self.ctx,
+            batch,
+            Table::Teams,
+            entities.teams,
+            phase,
+        )?;
+        crate::recording::projection::append_new(
+            self.ctx,
+            batch,
+            Table::SourceObservations,
+            observations,
+            phase,
+        )?;
+        Ok(written)
+    }
+
+    fn retain_page(
+        &mut self,
+        parsed: &Value,
+        rows: &[Value],
+        capture: &crate::net::FetchOutcome,
+    ) -> CrawlResult<()> {
+        let locator = self.locator();
+        let before = (self.report.errors, self.report.unfinished.len());
+        let ctx = self.ctx;
+        let mut batch = ctx.write_batch();
+        let written = rows
+            .iter()
+            .enumerate()
+            .try_fold(0usize, |count, (ordinal, row)| {
+                count
+                    .checked_add(self.emit(&mut batch, row, ordinal, &capture.fetched_at)?)
+                    .ok_or_else(|| CrawlError::Arithmetic {
+                        detail: "athlete committed rows".into(),
+                    })
+            })?;
+        let next = self
+            .from
+            .checked_add(rows.len())
+            .ok_or_else(|| CrawlError::Arithmetic {
+                detail: "athlete cursor".into(),
+            })?;
+        let exact = parsed
+            .pointer("/hits/total/relation")
+            .and_then(Value::as_str)
+            == Some("eq");
+        let total = parsed.pointer("/hits/total/value").and_then(Value::as_u64);
+        let consistent = total
+            .zip(u64::try_from(next).ok())
+            .is_some_and(|(total, next)| total >= next);
+        let complete = exact
+            && consistent
+            && before == (self.report.errors, self.report.unfinished.len())
+            && (!rows.is_empty() || total == u64::try_from(next).ok());
+        let body = text(capture)?;
+        let receipt = serde_json::json!({"parser":"athleticlive_athletes_projection_v2",
+            "locator":locator, "meet":self.target.athleticlive_meet_id, "provider":self.target.tenant,
+            "meet_name":self.target.name,"meet_date":self.target.date,"state":self.target.state,"school_year":self.ctx.school_year,
+            "capture":{"url":capture.url,"response_url":capture.response_url,"method":capture.method,
+                "status":capture.status,"content_digest":capture.content_digest,"bytes":capture.bytes,
+                "fetched_at":capture.fetched_at,"content_type":capture.content_type},
+            "next":next,"complete":complete,"rows":rows.len()});
+        let key = census_domain::model::serialized_digest(&receipt).map_err(|error| {
+            CrawlError::Invariant {
+                detail: error.to_string(),
+            }
+        })?;
+        if !self
+            .ctx
+            .store
+            .journal_contains("athleticlive_athletes_capture_v1", &capture.content_digest)?
+        {
+            batch.journal_done(
+                "athleticlive_athletes_capture_v1",
+                &capture.content_digest,
+                &serde_json::json!({"body":body,"bytes":capture.bytes}),
             )?;
         }
-        page.commit()?;
-        stats.meets = stats.meets.saturating_add(batch.len());
-        return Ok(());
+        if !self
+            .ctx
+            .store
+            .journal_contains("athleticlive_athletes_effect_v2", &key)?
+        {
+            batch.journal_done("athleticlive_athletes_effect_v2", &key, &receipt)?;
+        }
+        batch.commit()?;
+        self.report.rows = self
+            .report
+            .rows
+            .checked_add(u64::try_from(written).map_err(|_| CrawlError::Arithmetic {
+                detail: "athlete committed count".into(),
+            })?)
+            .ok_or_else(|| CrawlError::Arithmetic {
+                detail: "athlete report count".into(),
+            })?;
+        self.advance(parsed, rows.len())
     }
-
-    let entities = fill_page(ctx, options, batch, hits, by_id, &mut page)?;
-    page.commit()?;
-    stats.meets = stats.meets.saturating_add(batch.len());
-    stats.rows = stats.rows.saturating_add(entities.rows);
-    stats.athletes = stats.athletes.saturating_add(entities.athletes.len());
-    stats.schools = stats.schools.saturating_add(entities.schools.len());
-    stats.teams = stats.teams.saturating_add(entities.teams.len());
-    stats.rows_with_grade = stats
-        .rows_with_grade
-        .saturating_add(entities.rows_with_grade);
-    stats.rows_with_athlete_id = stats
-        .rows_with_athlete_id
-        .saturating_add(entities.rows_with_athlete_id);
-    stats.rows_with_team_id = stats
-        .rows_with_team_id
-        .saturating_add(entities.rows_with_team_id);
-    stats.rows_without_school = stats
-        .rows_without_school
-        .saturating_add(entities.rows_without_school);
-    Ok(())
-}
-
-fn fill_page<'t>(
-    ctx: &AdapterContext<'_>,
-    options: &Options,
-    batch: &[&'t MeetTarget],
-    hits: &[AthleteHit],
-    by_id: &HashMap<u64, &'t MeetTarget>,
-    page: &mut StoreBatch<'_>,
-) -> CrawlResult<BatchEntities> {
-    let entities = build_entities(hits, by_id, &options.observed_on, ctx.school_year);
-    page.append_many(Table::Schools, &entities.schools)?;
-    page.append_many(Table::Teams, &entities.teams)?;
-    page.append_many(Table::Athletes, &entities.athletes)?;
-    page.append_many(
-        Table::SourceObservations,
-        &ctx.athlete_observations(&entities.athletes, &entities.schools),
-    )?;
-    for target in batch {
-        page.journal_done(
-            "athleticlive_rosters",
-            &target.athleticlive_meet_id.to_string(),
-            &json!({ "meet": target.name, "batch_rows": hits.len() }),
-        )?;
-    }
-    Ok(entities)
 }

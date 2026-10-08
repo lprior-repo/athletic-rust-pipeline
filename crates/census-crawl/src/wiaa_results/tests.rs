@@ -185,11 +185,7 @@ fn overlapping_archives_process_one_logical_result_once() -> TestResult {
     .with_source("wiaa_results")
     .with_offline(true);
     let (school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Middleton", "middleton", None);
-    std::fs::write(
-        store.out_dir().join("schools.jsonl"),
-        format!("{}\n", serde_json::to_string(&school)?),
-    )
-    ?;
+    store.append(census_store::Table::Schools, &school)?;
     let url = "https://www.wiaawi.org/Portals/0/PDF/Results/Track/2025/d1boysstateresults.htm";
     let archive = format!("<a href=\"{url}\">Boys</a>");
     for (archive_url, _) in ARCHIVES {
@@ -206,6 +202,7 @@ fn overlapping_archives_process_one_logical_result_once() -> TestResult {
         refresh: false,
         school_year: SchoolYear::new(2026).ok_or("2026 school year")?,
         observed_on: "2026-09-19".into(),
+        performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 9, 19).ok_or("snapshot date")?,
         recording: None,
     };
     let options = Options {

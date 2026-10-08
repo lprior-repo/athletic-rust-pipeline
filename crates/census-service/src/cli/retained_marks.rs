@@ -2,8 +2,8 @@ use super::Cli;
 use anyhow::{Context, Result};
 use census_crawl::milesplit::{parse_published_metric_distance, parse_published_time};
 use census_domain::model::{
-    CanonicalEvent, CanonicalPerformance, CentiMetres, CentiSeconds, EventId, EventKind,
-    EvidenceMethod, Mark, SourceNamespace, TimingMethod,
+    CanonicalEvent, CanonicalPerformance, CentiMetres, EventId, EventKind, ExactSeconds, Mark,
+    SourceNamespace, TimingMethod,
 };
 use census_store::{Store, StoreError, StoreResult, Table};
 use clap::Args;
@@ -30,7 +30,7 @@ enum RepairMode {
 }
 
 enum DeclaredMark {
-    Time(CentiSeconds, TimingMethod),
+    Time(ExactSeconds, TimingMethod),
     Metric(CentiMetres),
 }
 
@@ -107,56 +107,107 @@ fn correction_for(
     mode: RepairMode,
     report: &mut RepairReport,
 ) -> StoreResult<Option<CanonicalPerformance>> {
-    let Mark::Raw(raw) = &perf.mark else {
-        return Ok(None);
-    };
-    if !perf.source_athlete.as_ref().is_some_and(|source| matches!(&source.namespace, SourceNamespace::Other(name) if name == "milesplit_result_row")) {
-        return Ok(None);
-    }
-    let Some(kind) = events.get(&perf.event) else {
-        bump(&mut report.missing_event)?;
-        return Ok(None);
-    };
-    let Some(declared) = declared_mark(raw, kind, perf.timing, report)? else {
-        return Ok(None);
-    };
-    let Some(evidence) = perf.evidence.first() else {
-        bump(&mut report.missing_evidence)?;
+    let Some(declared) = eligible_mark(&perf, events, report)? else {
         return Ok(None);
     };
     bump(&mut report.eligible)?;
     if mode == RepairMode::DryRun {
         return Ok(None);
     }
-    let mut correction = evidence.clone();
-    correction.method = EvidenceMethod::Derived;
-    let (mark, timing, note) = match declared {
-        DeclaredMark::Time(seconds, timing) => (
-            Mark::TimeSeconds(seconds),
-            Some(timing),
-            format!(
-                "milesplit-time-suffix revision=1 original_raw={raw} centiseconds={} timing={}",
-                seconds.value(),
-                timing.stable_key()
-            ),
-        ),
-        DeclaredMark::Metric(distance) => (
-            Mark::DistanceMetres(distance),
-            perf.timing,
-            format!(
-                "milesplit-metric-suffix revision=1 original_raw={raw} centimetres={}",
-                distance.value()
-            ),
-        ),
+    apply_declared(&mut perf, declared)?;
+    Ok(Some(perf))
+}
+
+fn eligible_mark(
+    perf: &CanonicalPerformance,
+    events: &HashMap<EventId, EventKind>,
+    report: &mut RepairReport,
+) -> StoreResult<Option<DeclaredMark>> {
+    let Mark::Raw(raw) = &perf.mark else {
+        return Ok(None);
     };
-    correction.note = Some(note);
+    if !retained_owner(perf) {
+        return Ok(None);
+    }
+    let Some(kind) = events.get(&perf.event) else {
+        bump(&mut report.missing_event)?;
+        return Ok(None);
+    };
+    let declared = declared_mark(raw, kind, perf.timing, report)?;
+    if declared.is_some() && perf.evidence.is_empty() {
+        bump(&mut report.missing_evidence)?;
+        return Ok(None);
+    }
+    Ok(declared)
+}
+
+fn retained_owner(perf: &CanonicalPerformance) -> bool {
+    perf.source_athlete.as_ref().is_some_and(|source| {
+        matches!(&source.namespace, SourceNamespace::Other(name) if name == "milesplit_result_row")
+    })
+}
+
+fn apply_declared(perf: &mut CanonicalPerformance, declared: DeclaredMark) -> StoreResult<()> {
+    let Mark::Raw(raw) = &perf.mark else {
+        return Err(correction_invariant("raw token"));
+    };
+    let evidence = perf
+        .evidence
+        .first()
+        .ok_or_else(|| correction_invariant("source evidence"))?;
+    let (mark, timing, note) = declared_values(declared, raw, perf.timing);
+    let correction = census_domain::model::Evidence::derived(
+        evidence.source.clone(),
+        &evidence.observed_on,
+        note,
+    );
     perf.evidence
         .try_reserve(1)
         .map_err(|error| allocation(error.to_string()))?;
     perf.evidence.push(correction);
     perf.mark = mark;
     perf.timing = timing;
-    Ok(Some(perf))
+    Ok(())
+}
+
+fn correction_invariant(missing: &str) -> StoreError {
+    StoreError::Invariant {
+        detail: format!("retained mark correction lost its {missing}"),
+    }
+}
+
+fn declared_values(
+    declared: DeclaredMark,
+    raw: &str,
+    known_timing: Option<TimingMethod>,
+) -> (Mark, Option<TimingMethod>, String) {
+    match declared {
+        DeclaredMark::Time(seconds, timing) => time_values(seconds, raw, timing),
+        DeclaredMark::Metric(distance) => (
+            Mark::DistanceMetres(distance),
+            known_timing,
+            format!(
+                "milesplit-metric-suffix revision=1 original_raw={raw} centimetres={}",
+                distance.value()
+            ),
+        ),
+    }
+}
+
+fn time_values(
+    seconds: ExactSeconds,
+    raw: &str,
+    timing: TimingMethod,
+) -> (Mark, Option<TimingMethod>, String) {
+    (
+        Mark::TimeSeconds(seconds),
+        Some(timing),
+        format!(
+            "milesplit-time-suffix revision=2 original_raw={raw} nanoseconds={} timing={}",
+            seconds.value(),
+            timing.stable_key(),
+        ),
+    )
 }
 
 fn declared_mark(

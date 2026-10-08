@@ -85,6 +85,7 @@ async fn collect(store: &Store) -> Result<Attempt> {
         refresh: false,
         school_year: SchoolYear::new(2025).ok_or("invalid qualification school year")?,
         observed_on: chrono::Utc::now().format("%Y-%m-%d").to_string(),
+        performance_as_of: chrono::DateTime::parse_from_rfc3339(&started)?.date_naive(),
         recording: None,
     };
     let options = ResultSetOptions {

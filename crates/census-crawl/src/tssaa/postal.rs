@@ -1,10 +1,8 @@
-use census_domain::school_directory::PostalAddress;
-use census_domain::UsJurisdiction;
-
+use super::fields;
 use crate::directory::{self, compile_pattern, group, line_of, AddressParts, ReadOutcome};
 use crate::CrawlResult;
-
-use super::fields;
+use census_domain::school_directory::PostalAddress;
+use census_domain::UsJurisdiction;
 
 pub(super) fn parse_addresses(
     text: &str,
@@ -17,24 +15,25 @@ pub(super) fn parse_addresses(
     let breaks = compile_pattern(r"(?i)<br\s*/?>", "tssaa address breaks")?;
     let tag = compile_pattern(fields::TAG, "tssaa address tags")?;
     let locality = compile_pattern(r"^(.+),\s*([A-Z]{2})(?:\s+(\S+))?$", "tssaa locality")?;
-    let addresses = blocks
-        .captures_iter(text)
-        .filter_map(|captures| {
-            let line = captures.get(0).map_or(1, |row| line_of(text, row.start()));
-            let lines: Vec<_> = breaks
-                .split(group(&captures, 2))
-                .map(|raw| fields::strip_tags(&tag, raw))
-                .filter(|line| !line.is_empty())
-                .collect();
-            match address_parts(&lines, &locality) {
-                Ok(address) => Some((group(&captures, 1).to_string(), address)),
-                Err(detail) => {
-                    outcome.note(line, "address", detail);
-                    None
-                }
-            }
-        })
-        .collect();
+    let mut addresses = Vec::new();
+    for (index, captures) in blocks.captures_iter(text).enumerate() {
+        if index >= 128 {
+            return Err(super::parse::artifact(
+                "TSSAA postal block budget exhausted",
+            ));
+        }
+        let line = captures.get(0).map_or(1, |row| line_of(text, row.start()));
+        let lines: Vec<_> = breaks
+            .split(group(&captures, 2))
+            .map(|raw| fields::strip_tags(&tag, raw))
+            .filter(|line| !line.is_empty())
+            .take(4)
+            .collect();
+        match address_parts(&lines, &locality) {
+            Ok(address) => addresses.push((group(&captures, 1).to_string(), address)),
+            Err(error) => outcome.note(line, "address", error)?,
+        }
+    }
     Ok(addresses)
 }
 
@@ -65,6 +64,6 @@ fn address_parts(lines: &[String], locality: &regex::Regex) -> Result<PostalAddr
         zip: group(&captures, 3),
         plus4: "",
     })
-    .map_err(|failure| failure.detail)?
+    .map_err(|failure| failure.error.to_string())?
     .ok_or_else(|| "empty published postal address".to_string())
 }

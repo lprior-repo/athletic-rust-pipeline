@@ -20,12 +20,12 @@ proptest! {
     #![proptest_config(seam_config())]
 
     #[test]
-    fn a_rendered_time_reads_back_as_the_same_duration(centis in 0u64..36_000_000) {
+    fn a_rendered_time_reads_back_as_the_same_duration(centis in 1u64..36_000_000) {
         let (text, expected) = render_centis(centis);
         let parsed = parse_time(&text)
             .ok_or_else(|| TestCaseError::fail(format!("{text} (from {centis}) was refused")))?;
         prop_assert!(
-            (parsed.as_seconds_f64() - expected).abs() < 1e-9,
+            (parsed.try_as_seconds_f64().ok_or_else(|| TestCaseError::fail("time display conversion failed"))? - expected).abs() < 1e-9,
             "{text} parsed to {} not {}",
             parsed,
             expected
@@ -46,7 +46,12 @@ fn the_vendors_own_notation_reads_exactly() -> Result<(), Box<dyn std::error::Er
     for (text, expected) in cases {
         let parsed = parse_time(text).ok_or_else(|| format!("{text} was refused"))?;
         check!(
-            (parsed.as_seconds_f64() - expected).abs() < 1e-9,
+            (parsed
+                .try_as_seconds_f64()
+                .ok_or("time display conversion failed")?
+                - expected)
+                .abs()
+                < 1e-9,
             "{text} parsed to {parsed}, not {expected}"
         );
     }

@@ -34,6 +34,7 @@ pub enum Sport {
     OutdoorTrack,
     IndoorTrack,
     CrossCountry,
+    Unknown,
 }
 
 impl Sport {
@@ -42,6 +43,7 @@ impl Sport {
             Self::OutdoorTrack => "OutdoorTrack",
             Self::IndoorTrack => "IndoorTrack",
             Self::CrossCountry => "CrossCountry",
+            Self::Unknown => "Unknown",
         }
     }
 }

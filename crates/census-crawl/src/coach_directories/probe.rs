@@ -216,6 +216,7 @@ fn artifact_sport_key(sport: Option<Sport>) -> String {
     match sport {
         Some(Sport::IndoorTrack) | Some(Sport::OutdoorTrack) => "Track".to_string(),
         Some(Sport::CrossCountry) => "CrossCountry".to_string(),
+        Some(Sport::Unknown) => "Unknown".to_string(),
         None => "AthleticDirector".to_string(),
     }
 }

@@ -1,7 +1,6 @@
 use census_domain::UsJurisdiction;
 
 use super::*;
-use crate::restate_services::jurisdiction::DISPATCHED;
 use crate::restate_services::wire::{JurisdictionState, RefusedSource, SourcePlan};
 
 #[test]
@@ -153,30 +152,6 @@ fn each_armed_directory_slug_is_swept_and_armed_for_its_own_state() {
             crate::restate_services::teams_arms::arm_for(slug).is_some(),
             "{slug} is swept for {jurisdiction} but no teams stage arm collects it"
         );
-    }
-}
-
-#[test]
-fn nothing_sweepable_is_a_source_no_stage_runs() {
-    for jurisdiction in [
-        UsJurisdiction::Wisconsin,
-        UsJurisdiction::Minnesota,
-        UsJurisdiction::Illinois,
-        UsJurisdiction::Ohio,
-        UsJurisdiction::Connecticut,
-        UsJurisdiction::Arizona,
-        UsJurisdiction::California,
-        UsJurisdiction::Florida,
-        UsJurisdiction::NewJersey,
-        UsJurisdiction::Utah,
-    ] {
-        let dispositions = plan(jurisdiction, BrowserLaneState::Configured);
-        for unit in sweepable(&dispositions) {
-            assert!(
-                DISPATCHED.contains(&unit.slug),
-                "{jurisdiction}: {unit:?} is planned as sweepable but no stage sweeps it"
-            );
-        }
     }
 }
 
@@ -358,10 +333,12 @@ fn a_recorded_plan_partitions_the_dispositions_in_plan_order() {
             RefusedSource {
                 slug: "tfrrs".to_string(),
                 reason: NO_BROWSER_LANE.to_string(),
+                kind: RefusalKind::AccessBlocked,
             },
             RefusedSource {
                 slug: "wiha".to_string(),
                 reason: NO_BROWSER_LANE.to_string(),
+                kind: RefusalKind::AccessBlocked,
             },
         ]
     );

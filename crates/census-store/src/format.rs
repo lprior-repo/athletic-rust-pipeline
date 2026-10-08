@@ -9,7 +9,7 @@ mod migrate;
 
 pub use migrate::MigrationReport;
 
-pub const STORE_SCHEMA_VERSION: u32 = 1;
+pub const STORE_SCHEMA_VERSION: u32 = 2;
 pub const KEY_FORMAT_VERSION: u32 = 1;
 
 pub const DEFAULT_CACHE_BYTES: u64 = 1024 * 1024 * 1024;
@@ -49,12 +49,14 @@ enum Verdict {
 pub(super) fn open_format(
     root: &Path,
     db: &Database,
-    entities: &Keyspace,
-    journal: &Keyspace,
-    receipts: &Keyspace,
+    data: [&Keyspace; 3],
     meta_keyspace: &Keyspace,
 ) -> StoreResult<StoreFormat> {
     let format = read_format(meta_keyspace)?;
+    if fresh_directory(&format, data, meta_keyspace)? {
+        initialize(db, meta_keyspace)?;
+        return read_format(meta_keyspace);
+    }
     match classify(&format) {
         Verdict::Current => Ok(format),
         Verdict::Newer {
@@ -66,31 +68,30 @@ pub(super) fn open_format(
             found,
             supported,
         }),
-        Verdict::Migrate(detail) => {
-            if store_is_empty(entities, journal, receipts)? {
-                initialize(db, meta_keyspace)?;
-                return read_format(meta_keyspace);
-            }
-            Err(StoreError::MigrationRequired {
-                root: root.display().to_string(),
-                detail,
-            })
-        }
+        Verdict::Migrate(detail) => Err(StoreError::MigrationRequired {
+            root: root.display().to_string(),
+            detail,
+        }),
         Verdict::Unknown(detail) => Err(StoreError::SchemaUnknown { detail }),
     }
 }
 
-fn store_is_empty(
-    entities: &Keyspace,
-    journal: &Keyspace,
-    receipts: &Keyspace,
+fn fresh_directory(
+    format: &StoreFormat,
+    data: [&Keyspace; 3],
+    meta: &Keyspace,
 ) -> StoreResult<bool> {
-    let empty = |keyspace: &Keyspace| -> StoreResult<bool> {
-        keyspace
-            .is_empty()
-            .map_err(|source| StoreError::Read { source })
-    };
-    Ok(empty(entities)? && empty(journal)? && empty(receipts)?)
+    if format.schema_version.is_some() || format.migration_target.is_some() {
+        return Ok(false);
+    }
+    data.into_iter()
+        .chain(std::iter::once(meta))
+        .try_fold(true, |empty, keyspace| {
+            Ok(empty
+                && keyspace
+                    .is_empty()
+                    .map_err(|source| StoreError::Read { source })?)
+        })
 }
 
 pub(super) fn read_format(meta_keyspace: &Keyspace) -> StoreResult<StoreFormat> {
@@ -117,31 +118,7 @@ fn classify(format: &StoreFormat) -> Verdict {
                 Verdict::Migrate("the store predates versioned schemas".to_string())
             }
         }
-        (Some(version), Some(key_format)) => {
-            if format.created_by.is_none() || format.created_at.is_none() {
-                return Verdict::Unknown("creation lineage rows are missing".to_string());
-            }
-            if version > STORE_SCHEMA_VERSION {
-                return Verdict::Newer {
-                    what: "schema version",
-                    found: version,
-                    supported: STORE_SCHEMA_VERSION,
-                };
-            }
-            if key_format > KEY_FORMAT_VERSION {
-                return Verdict::Newer {
-                    what: "key format",
-                    found: key_format,
-                    supported: KEY_FORMAT_VERSION,
-                };
-            }
-            if version < STORE_SCHEMA_VERSION || key_format < KEY_FORMAT_VERSION {
-                return Verdict::Migrate(format!(
-                    "the store records schema version {version} and key format {key_format}"
-                ));
-            }
-            Verdict::Current
-        }
+        (Some(version), Some(key_format)) => classify_versioned(format, version, key_format),
         (Some(version), None) => Verdict::Unknown(format!(
             "schema version {version} is recorded without a key format"
         )),
@@ -149,6 +126,32 @@ fn classify(format: &StoreFormat) -> Verdict {
             "key format {key_format} is recorded without a schema version"
         )),
     }
+}
+
+fn classify_versioned(format: &StoreFormat, version: u32, key_format: u32) -> Verdict {
+    if format.created_by.is_none() || format.created_at.is_none() {
+        return Verdict::Unknown("creation lineage rows are missing".to_string());
+    }
+    if version > STORE_SCHEMA_VERSION {
+        return Verdict::Newer {
+            what: "schema version",
+            found: version,
+            supported: STORE_SCHEMA_VERSION,
+        };
+    }
+    if key_format > KEY_FORMAT_VERSION {
+        return Verdict::Newer {
+            what: "key format",
+            found: key_format,
+            supported: KEY_FORMAT_VERSION,
+        };
+    }
+    if version < STORE_SCHEMA_VERSION || key_format < KEY_FORMAT_VERSION {
+        return Verdict::Migrate(format!(
+            "the store records schema version {version} and key format {key_format}"
+        ));
+    }
+    Verdict::Current
 }
 
 fn initialize(db: &Database, meta_keyspace: &Keyspace) -> StoreResult<()> {
@@ -202,7 +205,7 @@ impl Store {
         super::ensure_dirs(&root)?;
         let (db, entities, journal, meta_keyspace, receipts) =
             super::open_keyspaces(&root, cache_bytes)?;
-        open_format(&root, &db, &entities, &journal, &receipts, &meta_keyspace)?;
+        open_format(&root, &db, [&entities, &journal, &receipts], &meta_keyspace)?;
         super::read::sweep_stale_temporaries(&root)?;
         let generations = generation::Generations::seeded(&meta_keyspace)?;
         let sequences = super::sequences::Counters::seeded(&db, &entities, &meta_keyspace)?;

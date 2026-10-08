@@ -8,6 +8,7 @@ mod write;
 pub use read::{read_raw_contacts, read_verified_contacts};
 pub use write::stage_verified_contacts;
 
+pub(crate) use csv_reader::ContactCsv;
 pub use io::{
     BoundedHashReader, BoundedHashWriter, CSV_FILE, EVIDENCE_FILE, MANIFEST_FILE, MAX_CSV_BYTES,
     MAX_JSONL_BYTES, MAX_MANIFEST_BYTES, MAX_RECORD_BYTES, MAX_ROWS,

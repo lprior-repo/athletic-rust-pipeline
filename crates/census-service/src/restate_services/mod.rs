@@ -44,6 +44,7 @@ pub fn workbook_request_key(request: &WorkbookRequest) -> String {
 
 mod browser_session;
 mod census;
+mod history_stage;
 mod ingest;
 mod ingest_post;
 mod ingest_validation;
@@ -59,6 +60,7 @@ mod publish;
 mod resolve;
 mod results_arms;
 mod school_address_join;
+mod source_selection;
 mod support;
 mod sweep;
 mod teams_arms;
@@ -66,10 +68,10 @@ mod wire;
 
 pub use wire::{
     BestsReply, BestsRequest, BindRunReply, BindRunRequest, CompletedTeams, ConsolidateReply,
-    ConsolidateRequest, ConsolidatedTable, EndpointObservation, IncompleteTeams, IngestReply,
-    IngestRequest, IngestState, JurisdictionOpen, JurisdictionReport, JurisdictionRequest,
-    JurisdictionState, JurisdictionSummary, NationalFailure, NationalReport, NationalRequest,
-    OpenWorkReply, OpenWorkRequest, RefusedSource, ReportReply, ReportRequest,
+    ConsolidateRequest, ConsolidatedTable, EndpointObservation, HistoricalProgress, HistoryWindow,
+    IncompleteTeams, IngestReply, IngestRequest, IngestState, JurisdictionOpen, JurisdictionReport,
+    JurisdictionRequest, JurisdictionState, JurisdictionSummary, NationalFailure, NationalReport,
+    NationalRequest, OpenWorkReply, OpenWorkRequest, RefusedSource, ReportReply, ReportRequest,
     SchoolAddressJoinReply, SchoolAddressJoinRequest, SealItem, SealRef, SealReply, SealRequest,
     SourceObjectOpen, SourcePlan, StageOutcome, StatusReply, SweepReport, SweepRequest, TableCount,
     TeamsAttemptProgress, TeamsFailure, TeamsSourceFailure, TeamsSourceInspection,
@@ -79,7 +81,7 @@ pub use wire::{
 
 pub use plan::{
     owed, plan, plan_sources, sweepable, BrowserLaneState, Dispatch, PlannedUnit, Refusal,
-    UnitDisposition,
+    RefusalKind, UnitDisposition,
 };
 
 #[allow(unused_imports)]

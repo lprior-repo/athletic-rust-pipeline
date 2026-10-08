@@ -16,8 +16,6 @@ const NOTE: &str = "Debt baseline for tools/gate.sh. Numbers may only shrink; re
 
 const STRUCTURE_METRICS: [&str; 1] = ["functions_over_60_lines"];
 
-const SOFT_STRUCTURE_METRICS: [&str; 1] = ["functions_over_25_logical_lines"];
-
 const CONTEXT_METRICS: [&str; 2] = ["files", "production_lines"];
 
 const OVERSIZED_FILES: &str = "files_over_300_lines";
@@ -32,22 +30,13 @@ pub fn update(
 ) -> Result<()> {
     let clippy = clippy_counts(clippy_tsv)?;
     let scan = read_json(scan_json)?;
+    crate::scan::strict::enforce_report(&scan)?;
     let old = if baseline.exists() {
         read_json(baseline)?
     } else {
         Value::Object(Map::new())
     };
-
-    if !allow_increase && truthy(&old) {
-        let raised = raises(&clippy, &scan, &old)?;
-        if !raised.is_empty() {
-            println!("refusing to raise the baseline without --allow-increase:");
-            for item in &raised {
-                println!("  {item}");
-            }
-            bail!("the debt baseline was not written");
-        }
-    }
+    refuse_increases(&clippy, &scan, &old, allow_increase)?;
 
     let written = refresh::baseline(clippy, &scan)?;
     fs::write(baseline, written)
@@ -56,10 +45,31 @@ pub fn update(
     Ok(())
 }
 
+fn refuse_increases(
+    clippy: &std::collections::BTreeMap<String, u64>,
+    scan: &Value,
+    old: &Value,
+    allow_increase: bool,
+) -> Result<()> {
+    if allow_increase || !truthy(old) {
+        return Ok(());
+    }
+    let raised = raises(clippy, scan, old)?;
+    if !raised.is_empty() {
+        println!("refusing to raise the baseline without --allow-increase:");
+        for item in &raised {
+            println!("  {item}");
+        }
+        bail!("the debt baseline was not written");
+    }
+    Ok(())
+}
+
 pub fn ratchet(baseline: &Path, clippy_tsv: &Path, scan_json: &Path) -> Result<()> {
     let known = read_json(baseline)?;
     let clippy = clippy_counts(clippy_tsv)?;
     let scan = read_json(scan_json)?;
+    crate::scan::strict::enforce_report(&scan)?;
     let mut failures: Vec<String> = Vec::new();
 
     compare::clippy(&known, &clippy, &mut failures)?;

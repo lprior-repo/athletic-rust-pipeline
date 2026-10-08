@@ -7,7 +7,22 @@ use census_domain::UsJurisdiction;
 pub(super) const MEET_WIDTHS: [u16; 10] = [14, 44, 12, 12, 8, 13, 22, 24, 40, 28];
 
 pub(super) fn meets_sheet(meets: &[CanonicalMeet]) -> Vec<Vec<Cell>> {
-    let mut cells = vec![row!(
+    let mut cells = vec![meet_header()];
+    let mut sorted: Vec<&CanonicalMeet> = meets.iter().collect();
+    sorted.sort_by(|left, right| {
+        left.date
+            .cmp(&right.date)
+            .then_with(|| left.name.cmp(&right.name))
+            .then_with(|| left.id.as_str().cmp(right.id.as_str()))
+    });
+    for meet in sorted {
+        cells.push(meet_row(meet));
+    }
+    cells
+}
+
+fn meet_header() -> Vec<Cell> {
+    row!(
         "Meet ID",
         "Meet",
         "Date",
@@ -18,45 +33,29 @@ pub(super) fn meets_sheet(meets: &[CanonicalMeet]) -> Vec<Vec<Cell>> {
         "Location",
         "Source identities",
         "Source URLs",
-    )];
-    let mut sorted: Vec<&CanonicalMeet> = meets.iter().collect();
-    sorted.sort_by(|left, right| {
-        left.date
-            .cmp(&right.date)
-            .then_with(|| left.name.cmp(&right.name))
-            .then_with(|| left.id.as_str().cmp(right.id.as_str()))
-    });
-    for meet in sorted {
-        cells.push(row!(
-            Cell::text(meet.id.as_str()),
-            Cell::text(meet.name.clone()),
-            Cell::text(meet.date.clone()),
-            Cell::text(
-                meet.end_date
-                    .clone()
-                    .map_or(Default::default(), core::convert::identity)
-            ),
-            Cell::text(
-                meet.state
-                    .map_or(MEET_STATE_UNRESOLVED, UsJurisdiction::code)
-            ),
-            Cell::text(level_label(meet.level)),
-            Cell::text(sport_list(&meet.sports)),
-            Cell::text(
-                meet.location
-                    .clone()
-                    .map_or(Default::default(), core::convert::identity)
-            ),
-            Cell::text(identities_text(&meet.source_identities)),
-            Cell::text(
-                meet.source_urls
-                    .first()
-                    .cloned()
-                    .map_or(Default::default(), core::convert::identity)
-            ),
-        ));
-    }
-    cells
+    )
+}
+
+fn meet_row(meet: &CanonicalMeet) -> Vec<Cell> {
+    row!(
+        Cell::text(meet.id.as_str()),
+        Cell::text(meet.name.clone()),
+        Cell::text(meet.date.clone()),
+        optional_text(meet.end_date.as_deref()),
+        Cell::text(
+            meet.state
+                .map_or(MEET_STATE_UNRESOLVED, UsJurisdiction::code)
+        ),
+        Cell::text(level_label(meet.level)),
+        Cell::text(sport_list(&meet.sports)),
+        optional_text(meet.location.as_deref()),
+        Cell::text(identities_text(&meet.source_identities)),
+        optional_text(meet.source_urls.first().map(String::as_str)),
+    )
+}
+
+fn optional_text(value: Option<&str>) -> Cell {
+    Cell::text(value.map_or("", core::convert::identity))
 }
 
 fn level_label(level: CompetitionLevel) -> String {
@@ -76,6 +75,7 @@ fn sport_label(sport: Sport) -> &'static str {
         Sport::CrossCountry => "xc",
         Sport::IndoorTrack => "indoor",
         Sport::OutdoorTrack => "outdoor",
+        Sport::Unknown => "unknown",
     }
 }
 

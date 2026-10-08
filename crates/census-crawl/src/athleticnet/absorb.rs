@@ -33,6 +33,7 @@ impl AbsorbOutcome {
 pub(super) struct AbsorbContext<'a> {
     pub source: &'a SourceRef,
     pub observed_on: &'a str,
+    pub performance_as_of: chrono::NaiveDate,
     pub index: &'a SchoolIndex,
     pub resolved: &'a mut HashMap<String, SchoolId>,
     pub stats: &'a mut Stats,
@@ -75,6 +76,7 @@ pub(super) fn absorb(
     let mut ctx = Ctx {
         source: ctx.source,
         observed_on: ctx.observed_on,
+        performance_as_of: ctx.performance_as_of,
         index: ctx.index,
         resolved: ctx.resolved,
         stats: ctx.stats,
@@ -125,6 +127,16 @@ fn absorb_admitted(
         Scope::TrackField => ctx.track_rows(published.bio, &athlete_id, gender),
         Scope::CrossCountry => ctx.cross_rows(published.bio, &athlete_id, gender),
     };
+    let missing = match published.scope {
+        Scope::TrackField => published.bio.results_tf.is_none(),
+        Scope::CrossCountry => published.bio.results_xc.is_none(),
+    };
+    if missing {
+        published.withhold(
+            ctx.accumulated,
+            "Published results field is absent, not an empty result set",
+        );
+    }
     if ctx.accumulated.profile_reviews.len() > before.0
         || ctx.accumulated.unsupported.len() > before.1
     {
@@ -160,6 +172,7 @@ fn admission(
 struct Ctx<'a> {
     source: &'a SourceRef,
     observed_on: &'a str,
+    performance_as_of: chrono::NaiveDate,
     index: &'a SchoolIndex,
     resolved: &'a mut HashMap<String, SchoolId>,
     stats: &'a mut Stats,

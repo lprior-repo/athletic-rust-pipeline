@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 #[path = "qualification_bound_projection/mod.rs"]
 mod qualification_bound_projection;
 

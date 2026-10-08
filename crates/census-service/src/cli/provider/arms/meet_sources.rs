@@ -119,6 +119,7 @@ pub(crate) async fn wayzata_report(
         context,
         &providers::wayzata::Options {
             years: args.seasons.clone(),
+            jurisdictions: args.jurisdictions()?,
             limit: args.limit,
             refresh: args.refresh,
             observed_on: Some(observed_on),
@@ -130,7 +131,7 @@ pub(crate) async fn wayzata_report(
 pub(crate) async fn athleticlive_report(
     context: &AdapterContext<'_>,
     args: &ProviderArgs,
-    observed_on: String,
+    _observed_on: String,
 ) -> Result<AdapterReport> {
     Ok(providers::athleticlive::collect(
         context,
@@ -138,7 +139,11 @@ pub(crate) async fn athleticlive_report(
             input: args.input.clone(),
             limit: args.limit,
             refresh: args.refresh,
-            observed_on,
+            input_metadata: args
+                .input_metadata
+                .as_deref()
+                .map(super::super::capture_metadata::read)
+                .transpose()?,
             states: args.jurisdictions()?,
             school_names: args.school_names.clone(),
         },

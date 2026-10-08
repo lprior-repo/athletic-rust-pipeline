@@ -1,5 +1,5 @@
 use super::*;
-use crate::milesplit::map::{absorb_result_set, OwnedResultSet};
+use crate::milesplit::map::{absorb_result_set, OwnedResultSet, RowWriter};
 use crate::milesplit::owned::{parse_owned_meet, OwnedMeetOutcome, OwnedMeetVerdict};
 use crate::milesplit::raw::RawPage;
 use crate::milesplit::results::{Accumulator, Stats};
@@ -16,6 +16,7 @@ const TROY: &[u8] = include_bytes!("../../owned/fixtures/troy_725218.json");
 
 mod binding;
 mod cohorts;
+mod specifications;
 mod unresolved;
 
 fn document() -> TestResult<Value> {
@@ -88,10 +89,14 @@ fn project(
             capture: &outcome.capture,
             page,
             indices: &indices,
+            performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 9, 22)
+                .ok_or("snapshot date")?,
         },
-        &ProviderSchools::from_schools(schools),
-        &mut stats,
-        &mut accumulated,
+        &mut RowWriter {
+            schools: &ProviderSchools::from_schools(schools),
+            stats: &mut stats,
+            accumulated: &mut accumulated,
+        },
     )?;
     Ok((accumulated, stats))
 }

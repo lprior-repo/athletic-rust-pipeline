@@ -3,8 +3,8 @@ use crate::{Store, Table};
 use census_domain::jurisdiction::UsJurisdiction;
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalTeam,
-    CentiSeconds, EventKind, Gender, GradYear, Mark, SchoolYear, SourceIdentity, SourceNamespace,
-    Sport, TimingMethod,
+    EventIdentity, EventKind, EventSpecification, ExactSeconds, Gender, GradYear, Mark, SchoolYear,
+    SourceIdentity, SourceNamespace, Sport, TimingMethod,
 };
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -35,20 +35,24 @@ fn performance(source_key: &str, identity: SourceIdentity) -> TestResult<Canonic
         Gender::Boys,
         SchoolYear::new(2026).ok_or("2026 is a season")?,
     );
+    let event = CanonicalEvent::new(
+        EventIdentity {
+            meet: &meet,
+            kind: EventKind::Track100m,
+            gender: Gender::Boys,
+            division: None,
+            round: None,
+        },
+        EventSpecification::default(),
+    )?;
     Ok(CanonicalPerformance {
-        id: CanonicalPerformance::mint(
-            &athlete,
-            &meet,
-            &EventKind::Track100m,
-            "2026-05-01",
-            source_key,
-        ),
+        id: CanonicalPerformance::mint(&athlete, &meet, &event.id, "2026-05-01", source_key),
         athlete,
         team,
-        event: CanonicalEvent::new(&meet, EventKind::Track100m, Gender::Boys, None, None).id,
+        event: event.id,
         meet,
         date: "2026-05-01".to_string(),
-        mark: Mark::TimeSeconds(CentiSeconds::new(1094)),
+        mark: Mark::TimeSeconds(ExactSeconds::parse("10.94")?),
         wind_mps: None,
         place: None,
         heat: None,
@@ -98,7 +102,7 @@ fn a_numeric_revision_refines_raw_observations_without_deleting_history() -> Tes
     raw.mark = Mark::Raw("24.95a".to_string());
     raw.timing = Some(TimingMethod::Unknown);
     let mut measured = raw.clone();
-    measured.mark = Mark::TimeSeconds(CentiSeconds::new(2495));
+    measured.mark = Mark::TimeSeconds(ExactSeconds::parse("24.95")?);
     measured.timing = Some(TimingMethod::Fat);
     for observations in [
         [raw.clone(), measured.clone()],
@@ -143,15 +147,18 @@ fn a_refinement_under_another_event_keeps_the_original_mark() -> TestResult {
     raw.timing = Some(TimingMethod::Unknown);
     let mut measured = raw.clone();
     measured.event = CanonicalEvent::new(
-        &measured.meet,
-        EventKind::Track200m,
-        Gender::Boys,
-        None,
-        None,
-    )
+        EventIdentity {
+            meet: &measured.meet,
+            kind: EventKind::Track200m,
+            gender: Gender::Boys,
+            division: None,
+            round: None,
+        },
+        EventSpecification::default(),
+    )?
     .id;
     measured.timing = Some(TimingMethod::Fat);
-    measured.mark = Mark::TimeSeconds(CentiSeconds::new(2495));
+    measured.mark = Mark::TimeSeconds(ExactSeconds::parse("24.95")?);
     raw.merge(measured);
     check!(eq; raw.mark, Mark::Raw("24.95a".to_string()));
     check!(eq; raw.timing, Some(TimingMethod::Unknown));
@@ -176,7 +183,7 @@ fn a_refinement_under_another_team_keeps_original_mark_and_timing() -> TestResul
         Gender::Boys,
         SchoolYear::new(2026).ok_or("season")?,
     );
-    measured.mark = Mark::TimeSeconds(CentiSeconds::new(2495));
+    measured.mark = Mark::TimeSeconds(ExactSeconds::parse("24.95")?);
     measured.timing = Some(TimingMethod::Fat);
     raw.merge(measured);
     check!(eq; raw.mark, Mark::Raw("24.95a".to_string()));

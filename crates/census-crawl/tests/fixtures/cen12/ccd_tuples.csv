@@ -1,0 +1,8 @@
+NCESSCH,SCH_NAME,ST,LSTREET1,LSTREET2,LCITY,LSTATE,LZIP,LZIP4,MSTREET1,MSTREET2,MCITY,MSTATE,MZIP,MZIP4,PHONE,GSLO,GSHI,CHARTER_TEXT
+340000000001,Partial Physical High School,NJ,10 Campus Road,,,NJ,07030,,PO Box 900,Mail Suite,New York,NY,10001,1234,,09,12,No
+340000000002,Absent Physical High School,NJ,,,,,,,PO Box 901,,Hoboken,NJ,07030,9999,,09,12,No
+340000000003,Streetless Physical High School,NJ,,,Hoboken,NJ,,,PO Box 902,Mail Suite,New York,NY,10002,2222,,09,12,No
+340000000004,Stateless Physical High School,NJ,40 Campus Road,,Hoboken,,07030,,PO Box 903,Mail Suite,New York,NY,10003,3333,,09,12,No
+340000000005,Invalid Physical ZIP High School,NJ,50 Campus Road,,Hoboken,NJ,BAD,4444,PO Box 904,Mail Suite,New York,NY,10004,5555,,09,12,No
+340000000006,Cross State Mailing High School,NJ,,,,,,,PO Box 905,Mail Suite,New York,NY,10005,6666,,09,12,No
+340000000007,Complete Physical High School,NJ,70 Campus Road,Building A,Hoboken,NJ,07030,7777,PO Box 906,Mail Suite,New York,NY,10006,8888,,09,12,No

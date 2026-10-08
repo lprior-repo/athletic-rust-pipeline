@@ -1,5 +1,4 @@
 use super::*;
-use crate::athleticlive::docs::MarkError;
 use serde_json::{json, Value};
 
 fn cohort_document(fixture: &str, field: &str, value: Value) -> TestResult<String> {
@@ -49,23 +48,26 @@ fn stale_numeric_no_results_keep_the_cohort_athlete_and_refused_locator() -> Tes
                 };
                 collect(&context(&store, &fetcher)?, &options).await?;
                 let performances: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
-                check!(eq; performances.len(), 0, "{status}");
+                check!(eq; performances.len(), 1, "{status}");
+                let performance = performances.first().ok_or("retained raw row")?;
+                check!(eq; performance.mark, Mark::Raw(status.into()));
+                check!(performance
+                    .retained_conflicts
+                    .iter()
+                    .any(|conflict| conflict.subject_id == performance.id.as_str()));
                 let athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes)?;
                 let [athlete] = athletes.as_slice() else {
                     return Err(format!("{status}: cohort athlete was dropped").into());
                 };
                 check!(eq; athlete.grad_year, GradYear::new(2028).ok_or("2028 is a cohort")?);
-                check!(
-                    athlete.evidence.iter().any(|evidence| {
-                        evidence.note.as_deref().is_some_and(|note| {
-                            note.contains("2150205:row:0")
-                                && note.contains("refused numeric result")
-                        }) && evidence.source.url.as_deref()
-                            == Some(event_doc_url(2_150_205).as_str())
-                    }),
-                    "{status}: {:?}",
-                    athlete.evidence
-                );
+                check!(eq; performance.athlete, athlete.id);
+                check!(performance.evidence.iter().any(|evidence| evidence
+                    .note
+                    .as_deref()
+                    .is_some_and(
+                        |note| note.contains(status) && note.contains("numeric winner withheld")
+                    )
+                    && evidence.source.url.as_deref() == Some(event_doc_url(2_150_205).as_str())));
                 check!(eq; std::fs::read_to_string(path)?, body, "capture must remain intact");
             }
             Ok(())
@@ -75,26 +77,34 @@ fn stale_numeric_no_results_keep_the_cohort_athlete_and_refused_locator() -> Tes
 #[test]
 fn invalid_validity_and_disagreeing_mark_channels_never_mint_a_numeric_mark() -> TestResult {
     for (field, value, expected) in [
-        ("vm", json!(0), MarkError::NoResultConflict),
-        ("vm", json!(2), MarkError::InvalidValidity),
-        ("m", json!("1:00.00"), MarkError::MarkConflict),
+        ("vm", json!(0), "invalid vm"),
+        ("vm", json!(2), "invalid vm"),
+        ("m", json!("1:00.00"), "numeric mark channels"),
     ] {
         let body = cohort_document(XC_STATE, field, value)?;
         let doc = parse_event_document(&event_doc_url(2_150_205), &body)?;
         let row = doc.rows.first().ok_or("fixture row")?;
-        check!(eq; row.canonical_mark(&EventKind::CrossCountry), Err(expected));
+        check!(eq; row.canonical_mark(&EventKind::CrossCountry), Some(Mark::Raw(row.mark.clone().ok_or("published value")?)));
+        check!(eq; row.mark_contradiction(&EventKind::CrossCountry), Some(expected));
     }
     let body = cohort_document(XC_STATE, "vm", json!(1))?;
     let doc = parse_event_document(&event_doc_url(2_150_205), &body)?;
     let row = doc.rows.first().ok_or("fixture row")?;
     let published = crate::hytek::parse_time(row.mark.as_deref().ok_or("display")?)
         .ok_or("valid displayed time")?;
-    check!(eq; row.canonical_mark(&EventKind::CrossCountry)?, Some(Mark::TimeSeconds(published)));
+    check!(eq; row.canonical_mark(&EventKind::CrossCountry), Some(Mark::TimeSeconds(published)));
+    for (display, integer) in [("10.941", 10_940), ("10.949", 10_940), ("10.94", 10_940)] {
+        let mut row = row.clone();
+        row.mark = Some(display.into());
+        row.mark_int = Some(json!(integer));
+        check!(eq; row.canonical_mark(&EventKind::CrossCountry), Some(Mark::TimeSeconds(ExactSeconds::parse(display)?)));
+        check!(eq; row.mark_contradiction(&EventKind::CrossCountry), None);
+    }
     Ok(())
 }
 
 #[test]
-fn field_no_result_with_a_stale_integer_is_a_typed_refusal() -> TestResult {
+fn field_no_result_with_a_stale_integer_retains_raw_status_and_contradiction() -> TestResult {
     let mut document: Value = serde_json::from_str(HJ_MITS)?;
     let row = document
         .pointer_mut("/_source/r/0")
@@ -104,6 +114,7 @@ fn field_no_result_with_a_stale_integer_is_a_typed_refusal() -> TestResult {
     row.insert("vm".into(), json!(0));
     let doc = parse_event_document(&event_doc_url(2_254_280), &document.to_string())?;
     let row = doc.rows.first().ok_or("captured field row")?;
-    check!(eq; row.canonical_mark(&EventKind::HighJump), Err(MarkError::NoResultConflict));
+    check!(eq; row.canonical_mark(&EventKind::HighJump), Some(Mark::Raw("NH".into())));
+    check!(eq; row.mark_contradiction(&EventKind::HighJump), Some("NH"));
     Ok(())
 }

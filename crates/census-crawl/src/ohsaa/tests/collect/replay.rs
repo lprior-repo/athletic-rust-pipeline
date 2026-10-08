@@ -20,7 +20,7 @@ fn identical_partial_replay_keeps_ad_unfinished_without_duplicate_physical_facts
             let captured: Vec<CanonicalCoach> = run.store.scan(Table::Coaches)?;
             let outcome = run.outcome()?;
             check!(eq; outcome["state"], "partial");
-            check!(eq; outcome["pending_pages"], serde_json::json!(["ad"]));
+            check!(eq; outcome["pending_pages"], serde_json::json!([dublin().ad_url()]));
             check!(eq; outcome["sports_capture"]["acquired_at"], SPORTS_FETCHED);
             check!(eq; outcome["failure"]["kind"], "fetch");
             let key = run

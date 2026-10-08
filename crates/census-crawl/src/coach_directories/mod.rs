@@ -1,15 +1,26 @@
 mod collect;
+mod generic;
 mod map;
 mod parse;
 mod probe;
 mod probe_utils;
+mod research_failure;
 mod row;
+mod source_research;
 mod staff;
+pub(crate) use generic::inspect_staff_links;
+pub(crate) use research_failure::{
+    fetch as contact_fetch_failure, status as contact_status_failure,
+};
+pub(crate) use source_research::{
+    persist_staff_attempt, persist_staff_capture, persist_unattempted, staff_capture,
+};
 mod survey;
 #[cfg(test)]
 mod survey_tests;
 
 pub use collect::collect;
+pub use generic::{apply_school_mailbox_capture, research_school_mailboxes};
 pub use map::{
     absorb_summary, coach_entities, directory_school, CoachCounters, CoachEmission,
     DirectoryAdmission, EmissionScope,

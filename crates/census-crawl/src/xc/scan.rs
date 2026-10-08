@@ -76,45 +76,36 @@ impl XcScan {
     }
 
     fn read_rows(&mut self, line: &str, trimmed: &str) {
-        let block = block_rows(line, self.team.as_deref());
-        if !block.is_empty() {
-            for row in block {
-                self.rows_parsed = self.rows_parsed.saturating_add(1);
-                push_row(
-                    &mut self.events,
-                    &self.gender,
-                    &self.label,
-                    self.division.clone(),
-                    row,
-                );
-            }
+        if self.read_block_rows(line) {
             return;
         }
-        if let Some(row) = grade_table_row(line) {
-            self.rows_parsed = self.rows_parsed.saturating_add(1);
-            push_row(
-                &mut self.events,
-                &self.gender,
-                &self.label,
-                self.division.clone(),
-                row,
-            );
-            return;
-        }
-        if let Some(row) = accurace_row(line, self.spans.as_deref()) {
-            self.rows_parsed = self.rows_parsed.saturating_add(1);
-            push_row(
-                &mut self.events,
-                &self.gender,
-                &self.label,
-                self.division.clone(),
-                row,
-            );
-            return;
-        }
-        if starts_like_a_row(trimmed) {
+        let row = grade_table_row(line).or_else(|| accurace_row(line, self.spans.as_deref()));
+        if let Some(row) = row {
+            self.record_row(row);
+        } else if starts_like_a_row(trimmed) {
             self.rows_skipped = self.rows_skipped.saturating_add(1);
         }
+    }
+
+    fn read_block_rows(&mut self, line: &str) -> bool {
+        let (rows, skipped) = block_rows(line, self.team.as_deref());
+        if rows.is_empty() && skipped == 0 {
+            return false;
+        }
+        self.rows_skipped = self.rows_skipped.saturating_add(skipped);
+        rows.into_iter().for_each(|row| self.record_row(row));
+        true
+    }
+
+    fn record_row(&mut self, row: ParsedRow) {
+        self.rows_parsed = self.rows_parsed.saturating_add(1);
+        push_row(
+            &mut self.events,
+            &self.gender,
+            &self.label,
+            self.division.as_deref(),
+            row,
+        );
     }
 }
 
@@ -122,28 +113,35 @@ fn push_row(
     events: &mut Vec<ParsedEvent>,
     gender: &Gender,
     label: &str,
-    division: Option<String>,
+    division: Option<&str>,
     row: ParsedRow,
 ) {
-    let index = match events
-        .iter()
-        .position(|event| &event.gender == gender && event.label == label)
-    {
-        Some(index) => index,
-        None => {
-            let index = events.len();
-            events.push(ParsedEvent {
-                label: label.to_string(),
-                kind: EventKind::CrossCountry,
-                gender: *gender,
-                division,
-                round: Some("finals".to_string()),
-                rows: Vec::new(),
-            });
-            index
-        }
-    };
+    let index = event_index(events, gender, label, division);
     if let Some(event) = events.get_mut(index) {
         event.rows.push(row);
     }
+}
+
+fn event_index(
+    events: &mut Vec<ParsedEvent>,
+    gender: &Gender,
+    label: &str,
+    division: Option<&str>,
+) -> usize {
+    let matches = |event: &ParsedEvent| {
+        &event.gender == gender && event.label == label && event.division.as_deref() == division
+    };
+    if let Some(index) = events.iter().position(matches) {
+        return index;
+    }
+    let index = events.len();
+    events.push(ParsedEvent {
+        label: label.to_string(),
+        kind: EventKind::CrossCountry,
+        gender: *gender,
+        division: division.map(str::to_string),
+        round: Some("finals".to_string()),
+        rows: Vec::new(),
+    });
+    index
 }

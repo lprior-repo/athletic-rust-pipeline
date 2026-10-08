@@ -1,4 +1,7 @@
-use super::{collect_options, milesplit, replay, seed_cache, WI_ROSTER_FIXTURE, WI_TEAMS_FIXTURE};
+use super::{
+    collect_options, configure_inventory, milesplit, replay, seed_cache, WI_ROSTER_FIXTURE,
+    WI_TEAMS_FIXTURE,
+};
 use census_crawl::net::{FetchOptions, Fetcher};
 use census_crawl::CrawlError;
 use census_domain::model::{CanonicalAthlete, CanonicalSchool, SourceObservation};
@@ -18,6 +21,7 @@ fn an_authentic_ownerless_fragment_remains_parseable_but_cannot_commit_an_acquir
             let dir = tempfile::tempdir()?;
             let store = Store::open(dir.path())?;
             let team = milesplit::parse_team_index(WI_TEAMS_FIXTURE)?
+                .teams
                 .into_iter()
                 .next()
                 .ok_or("historical index lists no teams")?;
@@ -33,6 +37,7 @@ fn an_authentic_ownerless_fragment_remains_parseable_but_cannot_commit_an_acquir
                 std::collections::HashMap::new(),
                 Vec::new(),
             )?;
+            configure_inventory(&store, &fetcher, &team).await?;
             let capture = fetcher.get(&url, &FetchOptions::default()).await?;
             check!(eq; capture.response_url, None);
             check!(eq; capture.body, WI_ROSTER_FIXTURE.as_bytes());

@@ -127,6 +127,7 @@ impl Harness {
             refresh: false,
             school_year: SchoolYear::DEFAULT,
             observed_on: OBSERVED_ON.to_string(),
+            performance_as_of: chrono::NaiveDate::parse_from_str(OBSERVED_ON, "%Y-%m-%d")?,
             recording: None,
         };
         athleticnet::collect(&ctx, options)

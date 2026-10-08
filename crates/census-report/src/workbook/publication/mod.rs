@@ -34,15 +34,7 @@ impl<'s> Stage<'s> {
         let lock = lock_publication(&root)?;
         fence(&root, dataset)?;
         lifecycle::sweep(&root, &dataset.lineage.store_identity)?;
-        let time = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_err(|error| invariant(format!("creating publication stage: {error}")))?;
-        let nonce = format!(
-            "{}.{}.{}",
-            dataset.lineage.store_identity,
-            std::process::id(),
-            time.as_nanos()
-        );
+        let nonce = staging_nonce(&dataset.lineage.store_identity)?;
         let directory = root.join(format!(".staging.{nonce}"));
         let pointer = root.join(format!(".current.{nonce}.tmp"));
         std::fs::create_dir(&directory).map_err(|source| io_error(&directory, source))?;
@@ -75,34 +67,65 @@ impl<'s> Stage<'s> {
             .root
             .join("generations")
             .join(&manifest.generation_digest);
+        self.retain_generation(&target, &manifest.generation_digest)?;
+        sync_directory(&self.root.join("generations"))?;
+        self.switch_pointer(dataset, &manifest.generation_digest)?;
+        Ok(target.join("workbook.xlsx"))
+    }
+
+    fn retain_generation(&self, target: &Path, digest: &str) -> ReportResult<()> {
         if target.exists() {
-            let retained = manifest::verify_directory(&target)?;
-            if retained.generation_digest != manifest.generation_digest {
+            let retained = manifest::verify_directory(target)?;
+            if retained.generation_digest != digest {
                 return Err(invariant("publication generation collision".to_string()));
             }
             std::fs::remove_dir_all(&self.directory)
                 .map_err(|source| io_error(&self.directory, source))?;
         } else {
-            std::fs::rename(&self.directory, &target)
-                .map_err(|source| io_error(&target, source))?;
+            std::fs::rename(&self.directory, target).map_err(|source| io_error(target, source))?;
         }
-        sync_directory(&self.root.join("generations"))?;
-        std::os::unix::fs::symlink(
-            Path::new("generations").join(&manifest.generation_digest),
-            &self.pointer,
-        )
-        .map_err(|source| io_error(&self.pointer, source))?;
+        Ok(())
+    }
+
+    fn switch_pointer(&self, dataset: &ExportDataset, digest: &str) -> ReportResult<()> {
+        std::os::unix::fs::symlink(Path::new("generations").join(digest), &self.pointer)
+            .map_err(|source| io_error(&self.pointer, source))?;
         let source_fence = self.store.fenced_snapshot();
         dataset.ensure_snapshot(source_fence.view())?;
         std::fs::rename(&self.pointer, self.root.join("current"))
             .map_err(|source| io_error(&self.root.join("current"), source))?;
-        sync_directory(&self.root)?;
-        Ok(target.join("workbook.xlsx"))
+        sync_directory(&self.root)
     }
+}
+
+fn staging_nonce(store_identity: &str) -> ReportResult<String> {
+    let time = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|error| invariant(format!("creating publication stage: {error}")))?;
+    Ok(format!(
+        "{}.{}.{}",
+        store_identity,
+        std::process::id(),
+        time.as_nanos()
+    ))
 }
 
 fn lock_publication(root: &Path) -> ReportResult<std::fs::File> {
     lifecycle::preflight(root)?;
+    prepare_generations(root)?;
+    let lock_path = root.join(".publication.lock");
+    let lock = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(&lock_path)
+        .map_err(|source| io_error(&lock_path, source))?;
+    acquire_lock(&lock, &lock_path)?;
+    Ok(lock)
+}
+
+fn prepare_generations(root: &Path) -> ReportResult<()> {
     let generations = root.join("generations");
     census_store::fs::create_dir_all_synced(&generations)
         .map_err(|source| io_error(&generations, source))?;
@@ -113,14 +136,10 @@ fn lock_publication(root: &Path) -> ReportResult<std::fs::File> {
             "publication generations must be a real directory".to_string(),
         ));
     }
-    let lock_path = root.join(".publication.lock");
-    let lock = std::fs::OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .truncate(false)
-        .open(&lock_path)
-        .map_err(|source| io_error(&lock_path, source))?;
+    Ok(())
+}
+
+fn acquire_lock(lock: &std::fs::File, path: &Path) -> ReportResult<()> {
     lock.try_lock().map_err(|error| {
         let source = match error {
             std::fs::TryLockError::WouldBlock => std::io::Error::new(
@@ -129,9 +148,8 @@ fn lock_publication(root: &Path) -> ReportResult<std::fs::File> {
             ),
             std::fs::TryLockError::Error(source) => source,
         };
-        io_error(&lock_path, source)
-    })?;
-    Ok(lock)
+        io_error(path, source)
+    })
 }
 
 fn fence(root: &Path, dataset: &ExportDataset) -> ReportResult<()> {

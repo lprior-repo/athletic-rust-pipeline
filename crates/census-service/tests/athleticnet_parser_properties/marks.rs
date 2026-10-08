@@ -1,5 +1,5 @@
 use super::{number_of, parse_mark, seam_config};
-use census_domain::model::{CentiSeconds, EventKind, Mark};
+use census_domain::model::{EventKind, ExactSeconds, Mark};
 use proptest::prelude::*;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -25,21 +25,21 @@ proptest! {
     #![proptest_config(seam_config())]
 
     #[test]
-    fn a_published_time_reads_as_the_duration_it_prints(centis in 0u64..36_000_000) {
+    fn a_published_time_reads_as_the_duration_it_prints(centis in 1u64..36_000_000) {
         let (text, expected) = render_centis(centis);
         let (mark, auto) = parse_mark(&RUN, &text)
             .ok_or_else(|| TestCaseError::fail(format!("{text} (from {centis}) was refused")))?;
         prop_assert!(!auto, "a bare mark is not marked automatic: {text}");
-        prop_assert_eq!(mark, Mark::TimeSeconds(CentiSeconds::try_from_seconds_f64(expected).ok_or_else(|| TestCaseError::fail(format!("invalid expected time: {expected}")))?));
+        prop_assert_eq!(mark, Mark::TimeSeconds(ExactSeconds::parse(&expected.to_string()).map_err(|error| TestCaseError::fail(error.to_string()))?));
     }
 
     #[test]
-    fn an_automatic_suffix_marks_the_flag_not_the_mark(centis in 0u64..36_000_000) {
+    fn an_automatic_suffix_marks_the_flag_not_the_mark(centis in 1u64..36_000_000) {
         let (text, expected) = render_centis(centis);
         let (mark, auto) = parse_mark(&RUN, &format!("{text}a"))
             .ok_or_else(|| TestCaseError::fail(format!("{text}a was refused")))?;
         prop_assert!(auto, "the `a` suffix is the automatic flag: {text}a");
-        prop_assert_eq!(mark, Mark::TimeSeconds(CentiSeconds::try_from_seconds_f64(expected).ok_or_else(|| TestCaseError::fail(format!("invalid expected time: {expected}")))?));
+        prop_assert_eq!(mark, Mark::TimeSeconds(ExactSeconds::parse(&expected.to_string()).map_err(|error| TestCaseError::fail(error.to_string()))?));
     }
 }
 
@@ -55,7 +55,7 @@ fn the_notation_table_holds_and_defers_to_one_time_parser() -> TestResult {
         check!(eq;
             mark,
             Mark::TimeSeconds(
-                CentiSeconds::try_from_seconds_f64(expected).ok_or("invalid expected time")?
+                ExactSeconds::parse(&expected.to_string())?
             ),
             "{text}"
         );
@@ -78,7 +78,7 @@ fn a_qualifier_is_stripped_rather_than_read_as_part_of_the_mark() -> TestResult 
         check!(eq;
             mark,
             Mark::TimeSeconds(
-                CentiSeconds::try_from_seconds_f64(12.34).ok_or("invalid expected time")?
+                ExactSeconds::parse("12.34")?
             ),
             "{text}"
         );

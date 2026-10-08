@@ -1,7 +1,8 @@
 use census_domain::model::{CanonicalCoach, Gender, Sport};
 
-use super::claims::Mailboxes;
+use super::provenance::{self, ContactProvenance};
 use super::{ContactState, Slot};
+use crate::export::provenance::{CurrentCoachContacts, SelectedContact};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(in crate::workbook) struct Named {
@@ -10,54 +11,93 @@ pub(in crate::workbook) struct Named {
     pub(in crate::workbook::recruiting) personal_email: Option<String>,
     pub(in crate::workbook::recruiting) side: Gender,
     pub(in crate::workbook::recruiting) sport: Option<Sport>,
-    source: Option<(String, String)>,
+    professional_source: Option<ContactProvenance>,
+    personal_source: Option<ContactProvenance>,
+    name_source: Option<ContactProvenance>,
 }
 
 impl Named {
-    pub(super) fn of(coach: &CanonicalCoach, mailboxes: Mailboxes<'_>) -> Option<Self> {
+    pub(super) fn of(coach: &CanonicalCoach, mailboxes: CurrentCoachContacts<'_>) -> Option<Self> {
         if coach.name.trim().is_empty() {
             return None;
         }
+        let (email, professional_source) = owned_mailbox(mailboxes.professional());
+        let (personal_email, personal_source) = owned_mailbox(mailboxes.personal());
         Some(Self {
             name: coach.name.clone(),
-            email: mailboxes.professional.map(str::to_owned),
-            personal_email: mailboxes.personal.map(str::to_owned),
+            email,
+            personal_email,
             sport: coach.sport,
             side: coach.gender,
-            source: provenance(coach),
+            professional_source,
+            personal_source,
+            name_source: mailboxes
+                .name_only()
+                .map(|fact| ContactProvenance::of(&coach.id, fact)),
         })
     }
 
-    pub(super) fn merge(&mut self, coach: &CanonicalCoach, mailboxes: Mailboxes<'_>) -> bool {
-        let email = mailboxes.professional;
-        let personal_email = mailboxes.personal;
-        if differs(self.email.as_deref(), email)
-            || differs(self.personal_email.as_deref(), personal_email)
-        {
+    pub(super) fn merge(
+        &mut self,
+        coach: &CanonicalCoach,
+        mailboxes: CurrentCoachContacts<'_>,
+    ) -> bool {
+        if self.conflicts(mailboxes) {
             return false;
         }
         if coach.name < self.name {
             self.name.clone_from(&coach.name);
         }
-        if self.email.is_none() {
-            self.email = email.map(str::to_owned);
-        }
-        if self.personal_email.is_none() {
-            self.personal_email = personal_email.map(str::to_owned);
-        }
-        let source = provenance(coach);
-        if source.as_ref().is_some_and(|next| {
-            self.source
-                .as_ref()
-                .is_none_or(|current| (&next.1, &next.0) > (&current.1, &current.0))
-        }) {
-            self.source = source;
-        }
+        self.merge_claims(coach, mailboxes);
         true
+    }
+
+    fn merge_claims(&mut self, coach: &CanonicalCoach, mailboxes: CurrentCoachContacts<'_>) {
+        merge_mailbox(
+            &mut self.email,
+            &mut self.professional_source,
+            mailboxes.professional(),
+        );
+        merge_mailbox(
+            &mut self.personal_email,
+            &mut self.personal_source,
+            mailboxes.personal(),
+        );
+        if let Some(fact) = mailboxes.name_only() {
+            provenance::merge(&mut self.name_source, &coach.id, fact);
+        }
+    }
+
+    fn conflicts(&self, mailboxes: CurrentCoachContacts<'_>) -> bool {
+        differs(
+            self.email.as_deref(),
+            mailboxes.professional().map(SelectedContact::mailbox),
+        ) || differs(
+            self.personal_email.as_deref(),
+            mailboxes.personal().map(SelectedContact::mailbox),
+        )
     }
 
     pub(in crate::workbook) fn address(&self) -> Option<&str> {
         self.email.as_deref().or(self.personal_email.as_deref())
+    }
+
+    pub(in crate::workbook) fn professional_source(&self) -> Option<&ContactProvenance> {
+        self.professional_source.as_ref()
+    }
+
+    pub(in crate::workbook) fn personal_source(&self) -> Option<&ContactProvenance> {
+        self.personal_source.as_ref()
+    }
+
+    pub(in crate::workbook) fn name_source(&self) -> Option<&ContactProvenance> {
+        self.name_source.as_ref()
+    }
+
+    pub(in crate::workbook) fn source(&self) -> Option<&ContactProvenance> {
+        self.professional_source()
+            .or(self.personal_source())
+            .or(self.name_source())
     }
 
     pub(super) fn state(&self, slot: Slot) -> ContactState {
@@ -76,52 +116,65 @@ fn differs(left: Option<&str>, right: Option<&str>) -> bool {
     matches!((left, right), (Some(left), Some(right)) if left != right)
 }
 
-fn provenance(coach: &CanonicalCoach) -> Option<(String, String)> {
-    let (url, observed_on) = crate::export::coach_source(coach);
-    url.map(|url| {
-        (
-            url.to_owned(),
-            observed_on
-                .map_or(Default::default(), core::convert::identity)
-                .to_owned(),
-        )
-    })
+fn owned_mailbox(
+    selected: Option<SelectedContact<'_>>,
+) -> (Option<String>, Option<ContactProvenance>) {
+    (
+        selected.map(|selected| selected.mailbox().to_owned()),
+        selected.map(ContactProvenance::mailbox),
+    )
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(in crate::workbook) struct Preferred {
-    pub(in crate::workbook) name: String,
+fn merge_mailbox(
+    address: &mut Option<String>,
+    source: &mut Option<ContactProvenance>,
+    selected: Option<SelectedContact<'_>>,
+) {
+    if address.is_none() {
+        *address = selected.map(|selected| selected.mailbox().to_owned());
+    }
+    if let Some(selected) = selected {
+        provenance::merge(source, &selected.claim().coach, selected.tenure());
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(in crate::workbook) struct Preferred<'a> {
+    pub(in crate::workbook) name: &'a str,
     pub(in crate::workbook) role: String,
-    pub(in crate::workbook) email: String,
+    pub(in crate::workbook) email: &'a str,
     pub(in crate::workbook) state: ContactState,
-    pub(in crate::workbook) source_url: String,
+    pub(in crate::workbook) source_url: &'a str,
+    pub(in crate::workbook) coach_id: &'a str,
+    pub(in crate::workbook) observed_on: &'a str,
+    pub(in crate::workbook) source_sha256: &'a str,
 }
 
-impl Preferred {
-    pub(super) fn named(slot: Slot, contact: &Named) -> Self {
+impl<'a> Preferred<'a> {
+    pub(super) fn named(slot: Slot, contact: &'a Named) -> Self {
+        let source = contact.source();
         Self {
-            name: contact.name.clone(),
+            name: &contact.name,
             role: role_label(slot, contact.side),
-            email: contact
-                .address()
-                .map_or(Default::default(), core::convert::identity)
-                .to_owned(),
+            email: contact.address().map_or("", |address| address),
             state: contact.state(slot),
-            source_url: contact
-                .source
-                .as_ref()
-                .map(|source| source.0.clone())
-                .map_or(Default::default(), core::convert::identity),
+            source_url: source.map_or("", |source| source.source_url.as_str()),
+            coach_id: source.map_or("", |source| source.coach_id.as_str()),
+            observed_on: source.map_or("", |source| source.observed_on.as_str()),
+            source_sha256: source.map_or("", |source| source.source_sha256.as_str()),
         }
     }
 
     pub(super) fn unnamed(state: ContactState) -> Self {
         Self {
-            name: String::new(),
+            name: "",
             role: String::new(),
-            email: String::new(),
+            email: "",
             state,
-            source_url: String::new(),
+            source_url: "",
+            coach_id: "",
+            observed_on: "",
+            source_sha256: "",
         }
     }
 }

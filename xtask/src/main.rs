@@ -18,6 +18,8 @@ mod json;
 mod paths;
 mod perf;
 mod purity;
+#[path = "main/quality.rs"]
+mod quality;
 mod replay;
 mod retry;
 mod scaffold;
@@ -82,31 +84,8 @@ enum Command {
         about = "List the type-integrity review candidates of the domain modules; JSON on stdout"
     )]
     Integrity,
-    #[command(about = "Rewrite the debt baseline from current measurements")]
-    QualityBaseline {
-        #[arg(help = "The baseline to write, e.g. `tools/quality-baseline.json`")]
-        baseline: PathBuf,
-        #[arg(help = "The gate's clippy tallies: `crate<TAB>lint<TAB>count` lines")]
-        clippy: PathBuf,
-        #[arg(help = "The `scan` report the clippy tallies are ratcheted with")]
-        scan: PathBuf,
-        #[arg(
-            help = "Permit an increase: without it, the update refuses any number that would grow"
-        )]
-        #[arg(long)]
-        allow_increase: bool,
-    },
-    #[command(
-        about = "Compare current measurements against the debt baseline; fail when any metric grew"
-    )]
-    Ratchet {
-        #[arg(help = "The baseline to compare against, e.g. `tools/quality-baseline.json`")]
-        baseline: PathBuf,
-        #[arg(help = "The gate's clippy tallies: `crate<TAB>lint<TAB>count` lines")]
-        clippy: PathBuf,
-        #[arg(help = "The `scan` report to compare with the baseline's recorded scan")]
-        scan: PathBuf,
-    },
+    #[command(flatten)]
+    Quality(quality::QualityCommand),
     #[command(about = "Prove the `census-domain` dependency tree carries no async or I/O package")]
     DomainPurity,
     #[command(
@@ -137,20 +116,8 @@ enum Command {
         )]
         name: String,
     },
-    #[command(
-        about = "Print the core-scope census: the store's own counts from the running deployment (`Census/status`), or a whole core report offline (`census-service report --core`)"
-    )]
-    CensusStatus {
-        #[command(flatten)]
-        target: census::Target,
-    },
-    #[command(
-        about = "Print the census over every source: `Report/run` on the running deployment, or `census-service report` offline"
-    )]
-    Coverage {
-        #[command(flatten)]
-        target: census::Target,
-    },
+    #[command(flatten)]
+    Census(census::CensusCommand),
     #[command(
         about = "Run the pipeline benchmark (`cargo bench -p census-service`), with filters after `--`: `cargo xtask bench -- parser` runs only the parser benchmarks"
     )]
@@ -165,34 +132,6 @@ enum Command {
     Perf {
         #[command(subcommand)]
         command: PerfCommand,
-    },
-    #[command(
-        about = "Build the census workbook (`.xlsx`) and its text sidecars: `Workbook/run` on the running deployment, or `census-service workbook` offline"
-    )]
-    Export {
-        #[command(flatten)]
-        target: census::Target,
-        #[arg(
-            help = "Where to write the `.xlsx` (defaults to `<store>/out/census-service-<generated-on>.xlsx`)"
-        )]
-        #[arg(long, value_name = "FILE")]
-        out: Option<PathBuf>,
-        #[arg(help = "Graduation year used for the cohort sheets (2027 = the class of 2027)")]
-        #[arg(long, default_value_t = 2027)]
-        grad_year: i32,
-        #[arg(
-            help = "School year the workbook contact tenure and coach cells are assessed against (2026 = the 2026-27 school year)"
-        )]
-        #[arg(long)]
-        school_year: i32,
-        #[arg(
-            help = "Reduce the best-results sheet over the core scope instead of every approved source"
-        )]
-        #[arg(long)]
-        core: bool,
-        #[arg(help = "Cap the per-athlete best-mark sheet at N rows")]
-        #[arg(long, value_name = "N")]
-        limit: Option<usize>,
     },
     #[command(about = "Scaffold a new source adapter in the directory-module layout")]
     NewSource {
@@ -231,47 +170,36 @@ fn run() -> Result<()> {
         Command::Gate { args } => Cmd::new("bash").arg("tools/gate.sh").args(args).run(),
         Command::Scan => scan::run(),
         Command::Comments => comments::run(&paths::repo_root()),
-        Command::PanicExtraction { root } => root.map_or_else(
-            || comments::extraction::run(&paths::repo_root()),
-            |root| comments::extraction::run(&root),
-        ),
+        Command::PanicExtraction { root } => panic_extraction(root),
         Command::Contract => contract::run(),
         Command::Seams => seams::run(),
         Command::Integrity => integrity::run(),
-        Command::QualityBaseline {
-            baseline,
-            clippy,
-            scan,
-            allow_increase,
-        } => baseline::update(&baseline, &clippy, &scan, allow_increase),
-        Command::Ratchet {
-            baseline,
-            clippy,
-            scan,
-        } => baseline::ratchet(&baseline, &clippy, &scan),
+        Command::Quality(command) => command.run(),
         Command::DomainPurity => purity::run(),
         Command::SourceTest { source } => helpers::source_test(&source),
         Command::SourceTests => helpers::source_tests(),
         Command::SourceFixture { source } => source_fixture::list(&source),
         Command::Replay { name } => replay::run(&name),
-        Command::CensusStatus { target } => census::status(target),
-        Command::Coverage { target } => census::coverage(target),
+        Command::Census(command) => command.run(),
         Command::Bench { args } => helpers::bench(&args),
-        Command::Perf { command } => match command {
-            PerfCommand::Record => perf::run_record(),
-            PerfCommand::Check { tolerance, reason } => perf::run_check(tolerance, reason),
-            PerfCommand::Profile { group } => perf::run_profile(&group),
-        },
-        Command::Export {
-            target,
-            out,
-            grad_year,
-            school_year,
-            core,
-            limit,
-        } => census::export(target, out.as_deref(), grad_year, school_year, core, limit),
+        Command::Perf { command } => run_perf(command),
         Command::NewSource { name } => scaffold::new_source(&name),
         Command::DumpSheet { workbook, sheets } => dump_sheet::run(&workbook, &sheets),
         Command::StorageAb { args } => storage_ab::run(args),
+    }
+}
+
+fn panic_extraction(root: Option<PathBuf>) -> Result<()> {
+    root.map_or_else(
+        || comments::extraction::run(&paths::repo_root()),
+        |root| comments::extraction::run(&root),
+    )
+}
+
+fn run_perf(command: PerfCommand) -> Result<()> {
+    match command {
+        PerfCommand::Record => perf::run_record(),
+        PerfCommand::Check { tolerance, reason } => perf::run_check(tolerance, reason),
+        PerfCommand::Profile { group } => perf::run_profile(&group),
     }
 }

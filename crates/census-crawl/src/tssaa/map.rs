@@ -47,30 +47,76 @@ pub(super) fn map_capture(
     if indexed.name() != row.name() {
         return Err(parse::artifact("detail owner differs from discovery index"));
     }
+    emit_read(&read, row, id, capture)
+}
+
+fn emit_read(
+    read: &super::SchoolRead,
+    row: &SchoolDirectoryEntry,
+    id: &StateRecordId,
+    capture: &FetchOutcome,
+) -> CrawlResult<Emission> {
     let school = map_school(row, id, capture, &read.addresses)?;
-    let mut issues: Vec<_> = read
-        .school
+    let mut issues = Vec::new();
+    read.school
         .skipped()
         .iter()
-        .chain(read.school.notes())
-        .map(|issue| issue.render())
-        .collect();
-    let coaches = read
-        .coaches
-        .iter()
-        .map(|row| {
-            let coach = map_coach(row, &school, id, capture, read.staff_year.as_ref());
-            if row.email.is_some() && !coach.has_published_email() {
-                issues.push(format!("{}: published email is invalid", row.person));
-            }
-            coach
-        })
-        .collect();
+        .chain(
+            read.school
+                .notes()
+                .iter()
+                .filter(|issue| issue.field == "email"),
+        )
+        .try_for_each(|issue| push_issue(&mut issues, issue.render()))?;
+    if read.staff_year.is_none() {
+        push_issue(
+            &mut issues,
+            "published staff-year metadata is missing".to_string(),
+        )?;
+    }
+    let coaches = map_staff(read, &school, id, capture, &mut issues)?;
     Ok(Emission {
         school,
         coaches,
         issues,
     })
+}
+
+fn map_staff(
+    read: &super::SchoolRead,
+    school: &CanonicalSchool,
+    id: &StateRecordId,
+    capture: &FetchOutcome,
+    issues: &mut Vec<String>,
+) -> CrawlResult<Vec<CanonicalCoach>> {
+    read.coaches
+        .iter()
+        .try_fold(Vec::new(), |mut coaches, row| {
+            let coach = map_coach(row, school, id, capture, read.staff_year.as_ref());
+            if row.email.is_some() && !coach.has_published_email() {
+                push_issue(
+                    issues,
+                    format!("{}: published email is invalid", row.person),
+                )?;
+            }
+            coaches.try_reserve(1).map_err(|_| CrawlError::Resource {
+                resource: "TSSAA projected staff",
+                requested: 1,
+                limit: 8192,
+            })?;
+            coaches.push(coach);
+            Ok(coaches)
+        })
+}
+
+fn push_issue(issues: &mut Vec<String>, issue: String) -> CrawlResult<()> {
+    issues.try_reserve(1).map_err(|_| CrawlError::Resource {
+        resource: "TSSAA projected issues",
+        requested: 1,
+        limit: 8192,
+    })?;
+    issues.push(issue);
+    Ok(())
 }
 
 fn map_school(

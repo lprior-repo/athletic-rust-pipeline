@@ -77,7 +77,7 @@ fn verify_claim(
     claim: &SchoolPostalAddress,
     school: &CanonicalSchool,
     captured: &str,
-    expected: &[[String; 12]; 2],
+    expected: &[[String; 13]; 2],
 ) -> Result<()> {
     claim.belongs_to(school)?;
     let matched = expected
@@ -111,7 +111,7 @@ fn verify_claim(
     Ok(())
 }
 
-fn expected_claims(school: &CanonicalSchool, captured: &str) -> [[String; 12]; 2] {
+fn expected_claims(school: &CanonicalSchool, captured: &str) -> [[String; 13]; 2] {
     [
         (
             coach_directories::directory_page_url("NCHSAA", 1),
@@ -134,12 +134,13 @@ fn expected_claims(school: &CanonicalSchool, captured: &str) -> [[String; 12]; 2
             url,
             captured.to_owned(),
             sha256(body),
+            "unknown".into(),
         ]
     })
 }
 
 pub(super) fn verify_positions(
-    fields: &[String; 12],
+    fields: &[String; 13],
     school: &CanonicalSchool,
     captured: &str,
 ) -> Result<()> {

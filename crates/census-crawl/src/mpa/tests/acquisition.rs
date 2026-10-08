@@ -45,6 +45,7 @@ fn collect_retains_cached_acquisition_when_execution_and_options_are_later(
                 ACQUIRED_AT,
             )?;
             evaluate(&fetcher, &store, "2026-10-02T12:00:00Z", "").await?;
+            let before = [store.walk_table(Table::Schools)?.rows, store.walk_table(Table::Coaches)?.rows, store.walk_table(Table::SourceObservations)?.rows];
             evaluate(
                 &fetcher,
                 &store,
@@ -52,6 +53,7 @@ fn collect_retains_cached_acquisition_when_execution_and_options_are_later(
                 "2026-10-04T12:00:00Z",
             )
             .await?;
+            check!(eq; [store.walk_table(Table::Schools)?.rows, store.walk_table(Table::Coaches)?.rows, store.walk_table(Table::SourceObservations)?.rows], before);
             let stats = fetcher.stats().await;
             check!(eq; stats.cache_hits, 4);
             check!(eq; stats.physical_requests(), 0);
@@ -92,6 +94,7 @@ async fn evaluate(
         refresh: false,
         school_year: SchoolYear::DEFAULT,
         observed_on: evaluation.to_string(),
+        performance_as_of: chrono::DateTime::parse_from_rfc3339(evaluation)?.date_naive(),
         recording: None,
     };
     let options = Options {
@@ -102,7 +105,6 @@ async fn evaluate(
         ..Options::default()
     };
     let report = collect(&ctx, &options).await?;
-    check!(eq; report.rows, 1);
     check!(eq; report.errors, 0);
     check!(eq; report.from_cache, 2);
     Ok(())
@@ -121,9 +123,9 @@ fn assert_readback(store: &Store) -> Result<(), Box<dyn std::error::Error>> {
     let schools = observations::<CanonicalSchool>(store, Table::Schools)?;
     let coaches = observations::<CanonicalCoach>(store, Table::Coaches)?;
     let sources = observations::<SourceObservation>(store, Table::SourceObservations)?;
-    check!(eq; schools.len(), 2);
-    check!(eq; coaches.len(), 12);
-    check!(eq; sources.len(), 2);
+    check!(eq; schools.len(), 1);
+    check!(eq; sources.len(), 1);
+    check!(eq; coaches.len(), 6);
     schools.iter().try_for_each(|school| {
         check!(eq; school.name, "Bonny Eagle High School");
         check!(eq; school.evidence.len(), 1);

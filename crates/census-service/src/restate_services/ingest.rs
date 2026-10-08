@@ -6,7 +6,7 @@ use restate_sdk::prelude::*;
 
 use crate::spawn::Spawner;
 use census_store::clock::Clock;
-use census_store::{Application, Credit, Store, Table};
+use census_store::{Application, Credit as StoreCredit, Store, Table};
 
 use super::ingest_validation::validate_rows;
 use super::jobs::apply_observations;
@@ -14,9 +14,18 @@ use super::wire::ingest::{
     IngestReply, IngestRequest, IngestState, WindowRequest, MAX_OPERATION_ID_BYTES,
     MAX_WINDOW_LABEL_BYTES, WINDOW_LABEL_RING,
 };
-use super::{blocking, job_error, resolve_table, JobError, KEY_STATE};
+use super::{blocking, job_error, JobError, KEY_STATE};
 
-pub(super) fn payload_digest(table: Table, rows: &[Value]) -> Result<String, HandlerError> {
+mod raw;
+mod recorded;
+
+struct Credit {
+    total: u64,
+    cursor: Option<String>,
+    today: String,
+}
+
+pub(super) fn payload_digest(table: Table, rows: &[Value]) -> Result<String, JobError> {
     let mut hasher = Sha256::new();
     hasher.update(table.file().as_bytes());
     for row in rows {
@@ -26,11 +35,7 @@ pub(super) fn payload_digest(table: Table, rows: &[Value]) -> Result<String, Han
             })?,
         );
     }
-    Ok(hasher
-        .finalize()
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect())
+    Ok(format!("{:x}", hasher.finalize()))
 }
 
 pub(super) fn record_window(state: &mut IngestState, window: String) -> bool {
@@ -57,7 +62,6 @@ struct Posted {
     table: Table,
     rows: Vec<Value>,
     operation: String,
-    digest: String,
 }
 
 #[derive(Clone)]
@@ -137,72 +141,33 @@ impl Ingest {
     }
 
     #[handler]
+    #[tracing::instrument(skip_all)]
+    async fn recorded(
+        &self,
+        ctx: ObjectContext<'_>,
+        Json(request): Json<super::wire::RecordedIngestRequest>,
+    ) -> Result<Json<IngestReply>, HandlerError> {
+        self.recording(&ctx, request).await
+    }
+
+    #[handler]
     #[tracing::instrument(skip_all, fields(rows = request.rows.len()))]
     async fn record(
         &self,
         ctx: ObjectContext<'_>,
         Json(request): Json<IngestRequest>,
     ) -> Result<Json<IngestReply>, HandlerError> {
-        let table = resolve_table(&request.table)?;
-        validate_rows(table, &request.rows)?;
-        let store = Arc::clone(&self.store);
-        let region = Arc::clone(&self.region);
-        let credit_store = Arc::clone(&self.store);
-        let credit_region = Arc::clone(&self.region);
-        let operation = request.operation_id;
-        check_identifier("operation id", &operation, MAX_OPERATION_ID_BYTES)?;
-        let rows = request.rows;
-        let today = super::journaled_today(&ctx, &self.clock).await?;
-        let mut state = self.load_object(&ctx).await?;
-        let digest = payload_digest(table, &rows)?;
-        let applied = self
-            .apply(
-                &ctx,
-                store,
-                region,
-                Posted {
-                    table,
-                    rows,
-                    operation: operation.clone(),
-                    digest,
-                },
-            )
-            .await?;
-        let written = applied.appended();
-        let credit = self
-            .credit(
-                &ctx,
-                credit_store,
-                credit_region,
-                state.endpoint.clone(),
-                operation,
-            )
-            .await?;
-        Ingest::update_ingest_state(
-            &mut state,
-            credit.total,
-            request.cursor.clone(),
-            today,
-            &ctx,
-        );
-        Ok(Json(IngestReply {
-            endpoint: state.endpoint,
-            appended: credit.credited,
-            written,
-            total_observations: state.total_observations,
-            cursor: state.cursor,
-            last_appended_at: state.last_appended_at,
-        }))
+        self.record_raw(&ctx, request).await
     }
 
     async fn credit(
         &self,
         ctx: &ObjectContext<'_>,
-        store: Arc<Store>,
-        region: Arc<Spawner>,
         endpoint: String,
         operation: String,
-    ) -> Result<Credit, HandlerError> {
+    ) -> Result<StoreCredit, HandlerError> {
+        let store = Arc::clone(&self.store);
+        let region = Arc::clone(&self.region);
         let Json(credit) = ctx
             .run(move || async move {
                 blocking(region, move || {
@@ -228,12 +193,14 @@ impl Ingest {
             table,
             rows,
             operation,
-            digest,
         } = posted;
         let Json(application) = ctx
             .run(move || async move {
                 blocking(region, move || {
+                    validate_rows(table, &rows)?;
+                    let digest = payload_digest(table, &rows)?;
                     apply_observations(&store, table, &rows, &operation, &digest)
+                        .map_err(JobError::from)
                 })
                 .await
                 .map(Json)
@@ -246,17 +213,22 @@ impl Ingest {
 
     fn update_ingest_state(
         state: &mut IngestState,
-        total: u64,
-        cursor: Option<String>,
-        today: String,
+        credit: Credit,
         ctx: &ObjectContext<'_>,
-    ) {
-        state.total_observations = total;
-        if cursor.is_some() {
-            state.cursor = cursor;
+    ) -> Result<(), HandlerError> {
+        state.total_observations = credit.total;
+        if credit.cursor.is_some() {
+            state.cursor = credit.cursor;
         }
-        state.last_appended_at = Some(today);
-        ctx.set(KEY_STATE, Json(state.clone()));
+        state.last_appended_at = Some(credit.today);
+        Self::persist_state(ctx, state)
+    }
+
+    fn persist_state(ctx: &ObjectContext<'_>, state: &IngestState) -> Result<(), HandlerError> {
+        let encoded = restate_sdk::serde::Serialize::serialize(&Json(state))
+            .map_err(|error| TerminalError::new(format!("encoding ingest state: {error}")))?;
+        ctx.set(KEY_STATE, encoded);
+        Ok(())
     }
 
     #[handler]
@@ -265,13 +237,16 @@ impl Ingest {
         ctx: ObjectContext<'_>,
         Json(request): Json<WindowRequest>,
     ) -> Result<Json<IngestState>, HandlerError> {
-        if request.window.trim().is_empty() {
-            return Err(TerminalError::new("window label must not be empty").into());
-        }
-        check_identifier("window label", &request.window, MAX_WINDOW_LABEL_BYTES)?;
+        raw::admit_window(&request.window)?;
         let mut state = self.load_object(&ctx).await?;
-        if record_window(&mut state, request.window) {
-            ctx.set(KEY_STATE, Json(state.clone()));
+        if !state.windows.contains(&request.window) {
+            state
+                .windows
+                .try_reserve(1)
+                .map_err(|_| TerminalError::new("allocating bounded ingest windows"))?;
+            if record_window(&mut state, request.window) {
+                Self::persist_state(&ctx, &state)?;
+            }
         }
         Ok(Json(state))
     }

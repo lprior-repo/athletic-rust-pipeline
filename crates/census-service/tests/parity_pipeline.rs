@@ -1,8 +1,12 @@
+#![recursion_limit = "256"]
+
 #[macro_use]
 #[path = "../../../tools/fallible_checks.rs"]
 mod fallible_checks;
 
 mod common;
+#[path = "common/listing.rs"]
+mod listing;
 
 #[path = "parity_pipeline_mod/assertions.rs"]
 mod assertions;

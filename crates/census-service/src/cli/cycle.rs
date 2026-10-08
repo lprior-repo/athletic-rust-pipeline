@@ -55,6 +55,11 @@ pub(super) struct RunArgs {
     #[arg(long)]
     observed_on: Option<String>,
     #[arg(
+        long,
+        help = "Published performance cutoff date, independent of physical acquisition"
+    )]
+    as_of: Option<chrono::NaiveDate>,
+    #[arg(
         help = "Athletic.net meet ids to pull whole (`--meets`), comma-separated. Non-empty selects the whole-meet route (two requests per meet) instead of the per-athlete registry route, and needs no `--input`"
     )]
     #[arg(long, value_delimiter = ',')]
@@ -242,6 +247,9 @@ async fn gather_athleticnet(
         refresh: args.refresh,
         school_year: season,
         observed_on: observed_on.clone(),
+        performance_as_of: args
+            .as_of
+            .map_or_else(|| chrono::Utc::now().date_naive(), core::convert::identity),
         recording: None,
     };
     let report = census_crawl::athleticnet::collect(

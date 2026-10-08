@@ -1,6 +1,6 @@
 pub(crate) const TITLE: &str = "Athletes";
 
-pub(crate) const HEADERS: [&str; 60] = [
+pub(crate) const HEADERS: [&str; 64] = [
     "Athlete ID",
     "Name",
     "Gender",
@@ -52,6 +52,10 @@ pub(crate) const HEADERS: [&str; 60] = [
     "Preferred Contact Role",
     "Preferred Contact Email",
     "Contact Coverage State",
+    "Preferred Contact Coach ID",
+    "Preferred Contact Source URL",
+    "Preferred Contact Capture SHA256",
+    "Preferred Contact Acquired At",
     "Athletic.net URL",
     "MileSplit URL",
     "Other profile URLs",
@@ -63,10 +67,10 @@ pub(crate) const HEADERS: [&str; 60] = [
     crate::export::postal::ATHLETE_ADDRESS_HEADER,
 ];
 
-pub(crate) const WIDTHS: [u16; 60] = [
+pub(crate) const WIDTHS: [u16; 64] = [
     20, 26, 10, 16, 14, 8, 30, 16, 20, 8, 8, 8, 8, 30, 30, 12, 12, 12, 12, 12, 12, 12, 18, 18, 18,
     16, 16, 16, 16, 16, 16, 16, 12, 16, 12, 24, 32, 24, 32, 24, 32, 24, 24, 24, 24, 48, 30, 24, 32,
-    28, 36, 36, 40, 14, 18, 18, 14, 14, 14, 56,
+    28, 36, 40, 64, 28, 36, 36, 40, 14, 18, 18, 14, 14, 14, 56,
 ];
 
 pub(crate) const PR_EVENTS: [&str; 19] = [

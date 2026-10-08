@@ -2,8 +2,9 @@ use crate::{CrawlError, CrawlResult};
 use regex::Regex;
 use std::sync::LazyLock;
 
+mod rows;
+
 use super::super::wire::{MeetRef, MeetResultFile};
-use super::html_unescape;
 use super::{
     MEET_INDEX_MARKER_REGEX, MEET_ROW_DAY_REGEX, MEET_ROW_ID_REGEX, MEET_ROW_LINK_REGEX,
     MEET_ROW_VENUE_REGEX,
@@ -137,52 +138,7 @@ fn meet_row_venue_regex() -> CrawlResult<&'static Regex> {
 }
 
 pub fn parse_meet_index(html: &str) -> CrawlResult<Vec<MeetRef>> {
-    let marker = meet_index_marker_regex()?;
-    let id = meet_row_id_regex()?;
-    let link = meet_row_link_regex()?;
-    let day = meet_row_day_regex()?;
-    let venue = meet_row_venue_regex()?;
-    let mut meets = Vec::new();
-    let mut month: Option<String> = None;
-    for capture in marker.captures_iter(html) {
-        if let Some(bucket) = capture.get(1) {
-            month = Some(bucket.as_str().to_string());
-            continue;
-        }
-        let Some(row) = capture.get(2).map(|row| row.as_str()) else {
-            continue;
-        };
-        let Some(meet_id) = id
-            .captures(row)
-            .and_then(|captures| captures.get(1))
-            .map(|capture| capture.as_str().to_string())
-        else {
-            continue;
-        };
-        let Some(link) = link.captures(row) else {
-            continue;
-        };
-        let (Some(url), Some(name)) = (link.get(1), link.get(2)) else {
-            continue;
-        };
-        let day = day
-            .captures(row)
-            .and_then(|captures| captures.get(1))
-            .map(|capture| capture.as_str().to_string())
-            .map_or(Default::default(), core::convert::identity);
-        meets.push(MeetRef {
-            meet_id,
-            name: html_unescape(name.as_str().trim()),
-            date: month.as_deref().and_then(|bucket| iso_date(bucket, &day)),
-            venue: venue
-                .captures(row)
-                .and_then(|captures| captures.get(1))
-                .map(|capture| html_unescape(capture.as_str().trim()))
-                .map_or(Default::default(), core::convert::identity),
-            results_url: url.as_str().to_string(),
-        });
-    }
-    Ok(meets)
+    rows::parse(html)
 }
 
 pub fn has_next_page(html: &str) -> bool {

@@ -10,13 +10,14 @@ use census_store::clock::Clock;
 use census_store::Store;
 
 use super::jobs;
-use super::wire::{
-    JurisdictionReport, JurisdictionRequest, JurisdictionState, TeamsFailure, TeamsStage,
-};
+use super::wire::{JurisdictionReport, JurisdictionRequest, JurisdictionState, TeamsFailure};
 
 mod pipeline;
+mod report;
 mod stage_runs;
 mod stages;
+#[cfg(test)]
+mod state_tests;
 mod team_collection;
 #[cfg(test)]
 mod team_collection_tests;
@@ -51,39 +52,72 @@ impl JurisdictionCensus {
         &self,
         ctx: &ObjectContext<'_>,
         request: &JurisdictionRequest,
-        identity: &WorkflowIdentity,
         state: &mut JurisdictionState,
     ) -> Result<Vec<String>, HandlerError> {
+        use futures::{stream, StreamExt, TryStreamExt};
         let today = super::journaled_today(ctx, &self.clock).await?;
-        let options = self.options(request, &today)?;
-        let mut stages_run: Vec<String> = Vec::new();
+        bind_history_window(state, request.history)?;
+        self.record_plan(ctx, request, state, &today).await?;
+        stream::iter([Stage::Teams, Stage::Rosters, Stage::Meets, Stage::Results])
+            .map(Ok::<_, HandlerError>)
+            .try_fold((state, Vec::new()), |(state, mut ran), stage| {
+                let today = &today;
+                async move {
+                    if self.run_stage(ctx, request, state, (stage, today)).await? {
+                        ran.try_reserve(1)
+                            .map_err(|_| jobs::invariant("stage name allocation"))?;
+                        ran.push(stage.name().to_string());
+                    }
+                    Ok((state, ran))
+                }
+            })
+            .await
+            .map(|(_, ran)| ran)
+    }
 
-        self.record_plan(ctx, request, identity, state, &today)
-            .await?;
-
-        if state.teams.is_resumable() {
-            self.teams_owed(ctx, request, identity, state, &today)
-                .await?;
-            stages_run.push("teams".to_string());
+    async fn run_stage(
+        &self,
+        ctx: &ObjectContext<'_>,
+        request: &JurisdictionRequest,
+        state: &mut JurisdictionState,
+        step: (Stage, &str),
+    ) -> Result<bool, HandlerError> {
+        let (stage, today) = step;
+        match stage {
+            Stage::Teams if state.teams.is_resumable() => {
+                self.teams_owed(ctx, request, state, today).await?
+            }
+            Stage::Rosters if roster_stage_owed(state) => {
+                self.rosters_owed(ctx, request, state, today).await?
+            }
+            Stage::Meets if !state.history.meets_terminal(&request.history) => {
+                self.meets_owed(ctx, request, state, today).await?
+            }
+            Stage::Results if !state.history.results_terminal(&request.history) => {
+                self.results_owed(ctx, request, state, today).await?
+            }
+            _ => return Ok(false),
         }
+        Ok(true)
+    }
+}
 
-        if roster_stage_owed(state) {
-            self.rosters_owed(ctx, request, options, state, &today)
-                .await?;
-            stages_run.push("rosters".to_string());
+#[derive(Clone, Copy)]
+enum Stage {
+    Teams,
+    Rosters,
+    Meets,
+    Results,
+}
+
+impl Stage {
+    fn name(self) -> &'static str {
+        match self {
+            Self::Teams => "teams",
+            Self::Rosters => "rosters",
+            Self::Meets => "meets",
+            Self::Results => "results",
         }
-
-        if state.meets.is_none() || !state.meets_complete {
-            self.meets_owed(ctx, request, state, &today).await?;
-            stages_run.push("meets".to_string());
-        }
-
-        if state.results.is_none() {
-            self.results_owed(ctx, request, state, &today).await?;
-            stages_run.push("results".to_string());
-        }
-
-        Ok(stages_run)
     }
 }
 
@@ -94,80 +128,17 @@ pub(super) fn roster_stage_owed(state: &JurisdictionState) -> bool {
     }
 }
 
-pub(super) const DISPATCHED: &[&str] = &[
-    crate::census::SOURCE,
-    "wiaa",
-    "mshsl",
-    "plain_names",
-    "ihsa",
-    "ks",
-    "coach_directories",
-    "arbiter_orgs",
-    "ohsaa",
-    "ciac",
-    "aia",
-    "home_campus",
-    "uhsaa",
-    "mpa",
-    "riil",
-    "pa_piaa",
-    "chsaa",
-    "tssaa",
-    "bound",
-    "wiaa_results",
-    "wayzata",
-    "milesplit",
-    "athleticnet",
-];
-
-fn report(
-    request: &JurisdictionRequest,
-    identity: &WorkflowIdentity,
-    state: &JurisdictionState,
-    stages_run: Vec<String>,
-    completed_at: String,
-) -> Result<JurisdictionReport, HandlerError> {
-    let plan = state
-        .plan
-        .clone()
-        .ok_or_else(|| jobs::invariant("no source plan recorded before the stages ran"))?;
-    let teams = match &state.teams {
-        TeamsStage::Completed(completed) => completed.outcome(),
-        TeamsStage::Failed(failure) => return Err(teams_failure(failure)),
-        TeamsStage::Owed => {
-            return Err(jobs::invariant(
-                "teams work remains owed after the stages ran",
-            ));
-        }
-    };
-    let rosters = state
-        .rosters
-        .clone()
-        .ok_or_else(|| jobs::invariant("no walk outcome recorded after the rosters stage"))?;
-    let consolidated = state
-        .consolidated
-        .clone()
-        .map_or(Default::default(), core::convert::identity);
-    let meets = state
-        .meets
-        .clone()
-        .ok_or_else(|| jobs::invariant("no meet census recorded after the meets stage"))?;
-    let results = state
-        .results
-        .clone()
-        .ok_or_else(|| jobs::invariant("no results outcome recorded after the results stage"))?;
-    Ok(JurisdictionReport {
-        identity: identity.as_str().to_string(),
-        jurisdiction: request.jurisdiction,
-        plan,
-        stages_run,
-        teams: teams.records,
-        rosters,
-        consolidated,
-        meets,
-        results,
-        completed_at,
-    })
+fn bind_history_window(
+    state: &mut JurisdictionState,
+    window: super::wire::HistoryWindow,
+) -> Result<(), HandlerError> {
+    if state.history_window.is_some_and(|bound| bound != window) {
+        return Err(jobs::invariant(
+            "history scope changed within an existing logical run",
+        ));
+    }
+    state.history_window = Some(window);
+    Ok(())
 }
 
 fn teams_failure(failure: &TeamsFailure) -> HandlerError {
@@ -231,14 +202,12 @@ impl JurisdictionCensus {
         }
 
         let mut state = self.load_object(&ctx).await?;
-        let stages_run = self
-            .run_owed_stages(&ctx, &request, &identity, &mut state)
-            .await?;
+        let stages_run = self.run_owed_stages(&ctx, &request, &mut state).await?;
         let observed_on = super::journaled_today(&ctx, &self.clock).await?;
-        Ok(Json(report(
+        Ok(Json(report::report(
             &request,
             &identity,
-            &state,
+            state,
             stages_run,
             observed_on,
         )?))

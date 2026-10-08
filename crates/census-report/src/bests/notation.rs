@@ -1,4 +1,4 @@
-use census_domain::model::CentiSeconds;
+use census_domain::model::ExactSeconds;
 use census_domain::model::Mark;
 
 pub fn mark_text(mark: &Mark) -> String {
@@ -21,19 +21,38 @@ pub fn format_points_scored(cp: i32) -> String {
     format!("{whole} pts")
 }
 
-pub fn format_time(cs: CentiSeconds) -> String {
-    let total_cs = cs.value().abs();
-    let total_seconds = total_cs / 100;
-    let sub_seconds = total_cs % 100;
+pub fn format_time(time: ExactSeconds) -> String {
+    let total_seconds = time.value() / 1_000_000_000;
     let hours = total_seconds / 3600;
     let minutes = (total_seconds % 3600) / 60;
-    let seconds = total_seconds % 60;
+    if hours == 0 && minutes == 0 {
+        return time.to_string();
+    }
+    let whole_seconds = total_seconds % 60;
+    let exact = time.to_string();
+    let fraction = exact.split_once('.').map(|(_, fraction)| fraction);
+    let seconds = ClockSeconds {
+        whole: whole_seconds,
+        fraction,
+    };
     if hours > 0 {
-        format!("{hours}:{minutes:02}:{seconds:02}.{sub_seconds:02}")
-    } else if minutes > 0 {
-        format!("{minutes}:{seconds:02}.{sub_seconds:02}")
+        format!("{hours}:{minutes:02}:{seconds}")
     } else {
-        format!("{total_seconds}.{sub_seconds:02}")
+        format!("{minutes}:{seconds}")
+    }
+}
+
+struct ClockSeconds<'a> {
+    whole: i64,
+    fraction: Option<&'a str>,
+}
+
+impl std::fmt::Display for ClockSeconds<'_> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.fraction {
+            Some(fraction) => write!(formatter, "{:02}.{fraction}", self.whole),
+            None => write!(formatter, "{:02}", self.whole),
+        }
     }
 }
 

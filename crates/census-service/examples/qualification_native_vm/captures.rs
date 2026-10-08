@@ -28,7 +28,13 @@ pub fn prepare(root: &Path, input: &Path) -> Result<Value> {
         UsJurisdiction::from_code(&input.jurisdiction).context("unknown jurisdiction")?;
     let site = Site::for_jurisdiction(jurisdiction);
     let (index, index_meta) = load(&input.index, &site.teams_url())?;
-    let mut matching = parse_team_index(std::str::from_utf8(&index)?)?
+    let index_read = parse_team_index(std::str::from_utf8(&index)?)?;
+    ensure!(
+        index_read.disposition == census_crawl::CollectionDisposition::Complete,
+        "qualification requires complete original configured team inventory"
+    );
+    let mut matching = index_read
+        .teams
         .into_iter()
         .filter(|team| team.id == input.team_id);
     let team = matching
@@ -45,17 +51,7 @@ pub fn prepare(root: &Path, input: &Path) -> Result<Value> {
         .get("fetched_at")
         .and_then(Value::as_str)
         .context("capture date absent")?;
-    let (_, athletes, _) = roster_entities(
-        &roster,
-        SchoolYear::new(2026).context("season invalid")?,
-        captured,
-        &site,
-    );
-    let rows = athletes
-        .into_iter()
-        .filter(|athlete| athlete.grad_year.get() == 2027)
-        .map(serde_json::to_value)
-        .collect::<serde_json::Result<Vec<_>>>()?;
+    let rows = cohort_rows(&roster, &site, captured)?;
     ensure!(
         !rows.is_empty() && rows.len() <= 100,
         "require 1..100 genuine Class-of-2027 rows"
@@ -70,6 +66,31 @@ pub fn prepare(root: &Path, input: &Path) -> Result<Value> {
     Ok(
         json!({"request":payload, "captures":[index_meta,roster_meta], "season":2026, "cohort":2027, "revision":1, "fresh_public_acquisition":false, "transport":"SSH fixture replay", "date_semantics":"immutable supplied source capture dates; not replay installation time"}),
     )
+}
+
+fn cohort_rows(
+    roster: &census_crawl::milesplit::Roster,
+    site: &Site,
+    captured: &str,
+) -> Result<Vec<Value>> {
+    let year = SchoolYear::new(2026).context("season invalid")?;
+    let mut rows = Vec::new();
+    rows.try_reserve(100)?;
+    roster.athletes.chunks(64).try_for_each(|window| {
+        let (_, athletes, _) = roster_entities(&roster.team, window, year, captured, site)?;
+        athletes
+            .into_iter()
+            .filter(|athlete| athlete.grad_year.get() == 2027)
+            .try_for_each(|athlete| {
+                ensure!(
+                    rows.len() < 100,
+                    "Class-of-2027 qualification row capacity exceeded"
+                );
+                rows.push(serde_json::to_value(athlete)?);
+                Ok::<_, anyhow::Error>(())
+            })
+    })?;
+    Ok(rows)
 }
 
 fn load(capture: &Capture, expected_url: &str) -> Result<(Vec<u8>, Value)> {

@@ -20,13 +20,15 @@ fn unsupported_list_cohort_retains_locator_and_does_not_count_a_phantom_performa
         page: Page {
             source: &source,
             observed_on: "2026-09-30",
+            performance_as_of: chrono::NaiveDate::from_ymd_opt(2040, 9, 30)
+                .ok_or("snapshot date")?,
             jurisdiction: UsJurisdiction::Indiana,
         },
         list: &route,
         filter: None,
     };
     let mut absorb = Absorb::new(&index);
-    absorb.absorb_list(&context, &parsed);
+    absorb.absorb_list(&context, &parsed)?;
     check!(eq; absorb.stats.rows_seen, 1);
     check!(eq; absorb.stats.rows_absorbed, 0);
     check!(absorb.accumulator.athletes.is_empty());
@@ -70,6 +72,8 @@ fn unsupported_roster_cohort_keeps_published_grade_and_school_for_review() -> Te
         page: Page {
             source: &source,
             observed_on: "2026-09-30",
+            performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 9, 30)
+                .ok_or("snapshot date")?,
             jurisdiction: UsJurisdiction::NewHampshire,
         },
         team: &team,

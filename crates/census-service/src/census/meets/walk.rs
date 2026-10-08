@@ -1,145 +1,199 @@
-use census_crawl::milesplit::{self, MeetRef, Season, Site};
-use census_crawl::net::{FetchOptions, Fetcher};
+use super::progress::{invalid, DiscoveryDisposition, SeasonProgress};
+use super::{
+    meets_phase, MeetFrontier, MeetFrontierFailure, MeetFrontierFailureKind, MeetWalkRequest,
+};
+use census_crawl::milesplit::{Season, Site};
+use census_crawl::net::Fetcher;
 use census_crawl::recording::RowSink;
 use census_crawl::CrawlResult;
-use census_domain::model::SourceMeetRef;
-use census_domain::UsJurisdiction;
 use census_store::Store;
-use std::collections::{BTreeMap, HashSet};
-use tracing::warn;
+use futures::{stream, TryStreamExt};
+use page::{PageContext, PageMetrics};
 
-use super::{meets_phase, repeats_previous, source_meet_row, MAX_PAGES_PER_SEASON};
+mod page;
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub(super) struct SeasonWalk {
     pub(super) pages: usize,
     pub(super) fetched: usize,
     pub(super) seen: usize,
+    pub(super) rows: usize,
     pub(super) repeated: usize,
     pub(super) truncated: usize,
+    pub(super) frontier: Option<MeetFrontier>,
 }
 
+#[derive(Clone, Copy)]
 pub(super) struct SeasonReader<'a> {
     pub(super) site: Site,
-    pub(super) jurisdiction: UsJurisdiction,
     pub(super) season: Season,
-    pub(super) year: u16,
-    pub(super) observed_on: &'a str,
-    pub(super) refresh: bool,
+    pub(super) request: &'a MeetWalkRequest<'a>,
 }
 
-pub(super) async fn walk_season(
-    fetcher: &Fetcher,
-    store: &Store,
-    reader: &SeasonReader<'_>,
-    rows: &mut BTreeMap<String, SourceMeetRef>,
-    sink: &RowSink<'_>,
+struct PageState<'a> {
+    fetcher: &'a Fetcher,
+    reader: SeasonReader<'a>,
+    sink: RowSink<'a>,
+    phase: String,
+    progress: SeasonProgress,
+    remaining: u32,
+}
+
+enum WalkStep<'a> {
+    Read(PageState<'a>),
+    Done,
+}
+
+struct PageStep {
+    metrics: PageMetrics,
+    completed: Option<SeasonWalk>,
+}
+
+pub(super) async fn walk_season<'a>(
+    fetcher: &'a Fetcher,
+    store: &'a Store,
+    reader: SeasonReader<'a>,
+    sink: RowSink<'a>,
 ) -> CrawlResult<SeasonWalk> {
-    let phase = meets_phase(reader.jurisdiction, reader.season, reader.year);
-    let known = store.journal_keys(&phase)?;
-    let mut walk = SeasonWalk::default();
-    let mut page = 1_u32;
-    let mut previous: Option<Vec<String>> = None;
-    loop {
-        let read = read_season_page(fetcher, reader, &phase, page, &known, sink).await?;
-        walk.pages = walk.pages.saturating_add(1);
-        walk.fetched = walk.fetched.saturating_add(usize::from(!read.journaled));
-        walk.seen = walk.seen.saturating_add(read.meets.len());
-        let ids: Vec<String> = read.meets.iter().map(|meet| meet.meet_id.clone()).collect();
-        if repeats_previous(previous.as_deref(), &ids) {
-            walk.repeated = walk.repeated.saturating_add(1);
-            warn_repeated(reader, page);
-            break;
-        }
-        previous = Some(ids);
-        keep_rows(rows, &read.meets, reader);
-        if !read.has_next {
-            break;
-        }
-        if page >= MAX_PAGES_PER_SEASON {
-            walk.truncated = walk.truncated.saturating_add(1);
-            warn_truncated(reader, page);
-            break;
-        }
-        page = page.saturating_add(1);
-    }
-    Ok(walk)
-}
-
-struct SeasonPage {
-    journaled: bool,
-    meets: Vec<MeetRef>,
-    has_next: bool,
-}
-
-async fn read_season_page(
-    fetcher: &Fetcher,
-    reader: &SeasonReader<'_>,
-    phase: &str,
-    page: u32,
-    known: &HashSet<String>,
-    sink: &RowSink<'_>,
-) -> CrawlResult<SeasonPage> {
-    let key = page.to_string();
-    let journaled = !reader.refresh && known.contains(&key);
-    let options = FetchOptions {
-        refresh: reader.refresh,
-        ..Default::default()
-    };
-    let (meets, has_next) = milesplit::fetch_meet_index(
-        fetcher,
-        reader.site,
+    let phase = meets_phase(
+        reader.request.jurisdiction,
         reader.season,
-        reader.year,
-        page,
-        &options,
-    )
-    .await?;
-    if !journaled {
-        let mut batch = sink.write_batch();
-        batch.journal_done(phase, &key, &serde_json::json!({ "meets": meets.len() }))?;
-        batch.commit()?;
-    }
-    Ok(SeasonPage {
-        journaled,
-        meets,
-        has_next,
-    })
+        reader.request.year,
+    );
+    let progress = SeasonProgress::load(store, &phase)?;
+    let remaining = reader.request.page_budget;
+    let initial = WalkStep::Read(PageState {
+        fetcher,
+        reader,
+        sink,
+        phase,
+        progress,
+        remaining,
+    });
+    stream::try_unfold(initial, next_step)
+        .try_fold(SeasonWalk::default(), |walk, step| {
+            futures::future::ready(walk.absorb(step))
+        })
+        .await
 }
 
-fn keep_rows(
-    rows: &mut BTreeMap<String, SourceMeetRef>,
-    meets: &[MeetRef],
-    reader: &SeasonReader<'_>,
-) {
-    for meet in meets {
-        let row = source_meet_row(
-            meet,
-            reader.jurisdiction,
-            reader.season,
-            reader.year,
-            reader.observed_on,
-        );
-        rows.entry(row.id.clone()).or_insert(row);
+async fn next_step<'a>(state: WalkStep<'a>) -> CrawlResult<Option<(PageStep, WalkStep<'a>)>> {
+    match state {
+        WalkStep::Done => Ok(None),
+        WalkStep::Read(state) => state.advance().await.map(Some),
     }
 }
 
-fn warn_repeated(reader: &SeasonReader<'_>, page: u32) {
-    warn!(
-        state = reader.jurisdiction.code(),
-        season = reader.season.code(),
-        year = reader.year,
-        page,
-        "results index served the previous page again; the season's listing ends here"
-    );
+impl<'a> PageState<'a> {
+    async fn advance(mut self) -> CrawlResult<(PageStep, WalkStep<'a>)> {
+        if self.progress.disposition == DiscoveryDisposition::Exhausted || self.remaining == 0 {
+            return Ok(self.finish(PageMetrics::default(), None));
+        }
+        let input = PageContext {
+            fetcher: self.fetcher,
+            reader: self.reader,
+            sink: self.sink,
+            phase: &self.phase,
+        };
+        let metrics = match page::fetch_and_commit(input, &mut self.progress).await {
+            Ok(metrics) => metrics,
+            Err(error) => return Ok(self.failed(error)),
+        };
+        self.remaining = self
+            .remaining
+            .checked_sub(1)
+            .ok_or_else(|| invalid("meet page budget underflow"))?;
+        if self.progress.disposition != DiscoveryDisposition::Partial || self.remaining == 0 {
+            return Ok(self.finish(metrics, None));
+        }
+        Ok((
+            PageStep {
+                metrics,
+                completed: None,
+            },
+            WalkStep::Read(self),
+        ))
+    }
+
+    fn finish(
+        self,
+        metrics: PageMetrics,
+        failure: Option<MeetFrontierFailure>,
+    ) -> (PageStep, WalkStep<'a>) {
+        let repeated = usize::from(self.progress.disposition == DiscoveryDisposition::Quarantined);
+        let truncated = usize::from(self.progress.disposition == DiscoveryDisposition::Partial);
+        let frontier = MeetFrontier {
+            phase: self.phase,
+            next_page: self.progress.next_page,
+            disposition: self.progress.disposition,
+            failure,
+        };
+        let completed = SeasonWalk {
+            rows: self.progress.rows_seen,
+            repeated,
+            truncated,
+            frontier: Some(frontier),
+            ..Default::default()
+        };
+        (
+            PageStep {
+                metrics,
+                completed: Some(completed),
+            },
+            WalkStep::Done,
+        )
+    }
+
+    fn failed(mut self, error: census_crawl::CrawlError) -> (PageStep, WalkStep<'a>) {
+        use census_crawl::CrawlError;
+        let kind = match &error {
+            CrawlError::Resource { .. } => MeetFrontierFailureKind::Capacity,
+            CrawlError::Fetch(_) | CrawlError::Io { .. } => MeetFrontierFailureKind::Acquisition,
+            CrawlError::Schema { .. } | CrawlError::Decode { .. } => {
+                MeetFrontierFailureKind::Schema
+            }
+            _ => MeetFrontierFailureKind::Invariant,
+        };
+        if kind == MeetFrontierFailureKind::Schema {
+            self.progress.disposition = DiscoveryDisposition::Quarantined;
+        }
+        let failure = MeetFrontierFailure {
+            kind,
+            detail: bounded_failure(error.to_string()),
+        };
+        self.finish(PageMetrics::default(), Some(failure))
+    }
 }
 
-fn warn_truncated(reader: &SeasonReader<'_>, page: u32) {
-    warn!(
-        state = reader.jurisdiction.code(),
-        season = reader.season.code(),
-        year = reader.year,
-        page,
-        "meet index hit the per-season page bound with pages still owed"
-    );
+impl SeasonWalk {
+    fn absorb(mut self, step: PageStep) -> CrawlResult<Self> {
+        self.pages = add(self.pages, step.metrics.pages)?;
+        self.fetched = add(self.fetched, step.metrics.fetched)?;
+        self.seen = add(self.seen, step.metrics.seen)?;
+        if let Some(completed) = step.completed {
+            self.rows = completed.rows;
+            self.repeated = completed.repeated;
+            self.truncated = completed.truncated;
+            self.frontier = completed.frontier;
+        }
+        Ok(self)
+    }
+}
+
+pub(super) fn add(left: usize, right: usize) -> CrawlResult<usize> {
+    left.checked_add(right)
+        .ok_or_else(|| invalid("meet census counter overflow"))
+}
+
+fn bounded_failure(mut detail: String) -> String {
+    if detail.len() > 4096 {
+        let boundary = detail
+            .char_indices()
+            .map(|(index, _)| index)
+            .take_while(|index| *index <= 4096)
+            .last()
+            .map_or(0, core::convert::identity);
+        detail.truncate(boundary);
+    }
+    detail
 }

@@ -27,7 +27,7 @@ fn malformed_refused_or_wrong_owner_ad_is_partial_not_successful_absence(
                 check!(run.store.journal_keys("ohsaa_schools")?.is_empty());
                 let outcome = run.outcome()?;
                 check!(eq; outcome["state"], "partial");
-                check!(eq; outcome["pending_pages"], serde_json::json!(["ad"]));
+                check!(eq; outcome["pending_pages"], serde_json::json!([dublin().ad_url()]));
                 check!(eq; outcome["failure"]["kind"], "invalid_page");
                 check!(eq;
                     outcome["failure"]["capture"]["capture_url"],
@@ -67,7 +67,7 @@ fn malformed_refused_or_wrong_owner_sports_cannot_stamp_complete_school(
                 check!(eq; outcome["state"], "failed");
                 check!(eq;
                     outcome["pending_pages"],
-                    serde_json::json!(["sports", "ad"])
+                    serde_json::json!([dublin().sports_url(), dublin().ad_url()])
                 );
                 check!(eq; outcome["failure"]["kind"], "invalid_page");
                 check!(eq;
@@ -127,7 +127,7 @@ fn refused_ad_after_prior_success_keeps_history_but_marks_current_work_partial(
             check!(eq; run.counts()?, (1, 5, 1));
             check!(eq; run.store.journal_payloads("ohsaa_schools")?, receipts);
             check!(eq; run.outcome()?["state"], "partial");
-            check!(eq; run.outcome()?["pending_pages"], serde_json::json!(["ad"]));
+            check!(eq; run.outcome()?["pending_pages"], serde_json::json!([dublin().ad_url()]));
             Ok(())
         })
 }

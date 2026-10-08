@@ -1,133 +1,209 @@
-use std::collections::BTreeMap;
-use std::convert::{TryFrom, TryInto};
+use super::artifact::{BoundedHashWriter, ContactCsv, MAX_RECORD_BYTES, MAX_ROWS};
+use super::entities::row_entities;
+use super::wire::CoachContactRow;
+use crate::{AdapterReport, CollectionDisposition, CrawlError, CrawlResult};
+use census_domain::UsJurisdiction;
+use census_store::{Store, Table};
+use serde::Serialize;
 use std::path::Path;
 
-use census_domain::model::{CanonicalCoach, CanonicalSchool, CoachId};
-use census_domain::UsJurisdiction;
-
-use crate::{AdapterReport, CrawlError, CrawlResult};
-use census_store::{Store, Table};
-
-use super::entities::row_entities;
-use super::wire::{CoachContactRow, RowEntities};
+const PHASE: &str = "coach_contacts_csv_v2";
+enum Progress {
+    Read,
+    Finished,
+}
 
 pub fn import_csv(
     store: &Store,
-    csv_path: &Path,
+    path: &Path,
     default_observed_on: &str,
 ) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new("coach_contacts_csv", "coaches");
-    let file = std::fs::File::open(csv_path).map_err(|source| CrawlError::Io {
-        path: csv_path.to_path_buf(),
-        source,
-    })?;
-    let mut reader = csv::Reader::from_reader(file);
-
-    let mut schools: BTreeMap<String, CanonicalSchool> = BTreeMap::new();
-    let mut coaches: BTreeMap<CoachId, CanonicalCoach> = BTreeMap::new();
-    let mut skipped_roles = 0usize;
-
-    for (index, record) in reader.deserialize::<CoachContactRow>().enumerate() {
-        let (row, state) = contact_row(record, index, csv_path)?;
-        let entities = row_entities(&row, state, default_observed_on)?;
-        if merge_entities(&mut schools, &mut coaches, entities) {
-            skipped_roles = skipped_roles.saturating_add(1);
+    let mut csv = ContactCsv::open(path, 0).map_err(|error| schema(path, error.to_string()))?;
+    let header = match csv
+        .record(0)
+        .map_err(|error| schema(path, error.to_string()))?
+    {
+        Some(record) => record,
+        None => {
+            report.unfinished.push(path.display().to_string());
+            return Ok(report);
         }
+    };
+    if !header.iter().any(|field| field == "school") || !header.iter().any(|field| field == "state")
+    {
+        fail(&mut report, path, 0, "CSV header omits school/state")?;
+        return Ok(report);
     }
-    let _ = Table::Coaches;
+    let mut run = Run {
+        store,
+        path,
+        csv,
+        header,
+        default_observed_on,
+        report,
+        seen: 0,
+    };
+    let end = MAX_ROWS.checked_add(1).ok_or_else(counter_error)?;
+    (1..=end)
+        .find_map(|index| match run.read(index) {
+            Ok(Progress::Finished) => Some(Ok(())),
+            Ok(Progress::Read) => None,
+            Err(error) => Some(Err(error)),
+        })
+        .transpose()?;
+    Ok(run.report)
+}
 
-    write_entities(store, &mut report, schools, coaches, skipped_roles)?;
-    Ok(report)
+struct Run<'a> {
+    store: &'a Store,
+    path: &'a Path,
+    csv: ContactCsv,
+    header: csv::StringRecord,
+    default_observed_on: &'a str,
+    report: AdapterReport,
+    seen: usize,
+}
+
+impl Run<'_> {
+    fn read(&mut self, index: usize) -> CrawlResult<Progress> {
+        let fields = match self.csv.record(index) {
+            Ok(Some(record)) => record,
+            Ok(None) => {
+                if self.seen > 0 {
+                    self.report.finish_frontier();
+                } else {
+                    self.report.unfinished.push(self.path.display().to_string());
+                }
+                return Ok(Progress::Finished);
+            }
+            Err(error) => {
+                fail(&mut self.report, self.path, index, &error.to_string())?;
+                return Ok(if self.csv.can_continue() {
+                    Progress::Read
+                } else {
+                    Progress::Finished
+                });
+            }
+        };
+        if index > MAX_ROWS {
+            fail(
+                &mut self.report,
+                self.path,
+                index,
+                "CSV row capacity reached; remaining input is owed",
+            )?;
+            return Ok(Progress::Finished);
+        }
+        self.seen = index;
+        if fields.iter().any(|value| value.len() > 4096) {
+            fail(
+                &mut self.report,
+                self.path,
+                index,
+                "CSV field exceeds 4096 bytes",
+            )?;
+            return Ok(Progress::Read);
+        }
+        let parsed = fields
+            .deserialize::<CoachContactRow>(Some(&self.header))
+            .map_err(|error| schema(self.path, error.to_string()))
+            .and_then(|row| contact_row(row, self.path));
+        match parsed {
+            Ok((row, state)) => self.project(&row, state, index)?,
+            Err(error) => fail(&mut self.report, self.path, index, &error.to_string())?,
+        }
+        Ok(Progress::Read)
+    }
+
+    fn project(
+        &mut self,
+        row: &CoachContactRow,
+        state: UsJurisdiction,
+        index: usize,
+    ) -> CrawlResult<()> {
+        let entities = match row_entities(row, state, self.default_observed_on) {
+            Ok(entities) => entities,
+            Err(error) => {
+                fail(&mut self.report, self.path, index, &error.to_string())?;
+                return Ok(());
+            }
+        };
+        write_row(self.store, Table::Schools, &entities.school)?;
+        entities.coaches.iter().try_for_each(|coach| {
+            if write_row(self.store, Table::Coaches, coach)? {
+                self.report.rows = self.report.rows.checked_add(1).ok_or_else(counter_error)?;
+                if coach.has_published_email() {
+                    self.report.with_email = self
+                        .report
+                        .with_email
+                        .checked_add(1)
+                        .ok_or_else(counter_error)?;
+                }
+            }
+            Ok::<_, CrawlError>(())
+        })?;
+        Ok(())
+    }
 }
 
 fn contact_row(
-    record: Result<CoachContactRow, csv::Error>,
-    index: usize,
-    csv_path: &Path,
+    row: CoachContactRow,
+    path: &Path,
 ) -> CrawlResult<(CoachContactRow, UsJurisdiction)> {
-    let line = index.saturating_add(2);
-    let row = record.map_err(|source| CrawlError::Schema {
-        url: csv_path.display().to_string(),
-        detail: format!("row {line}: {source}"),
-    })?;
-    if row.school.trim().is_empty() || row.state.trim().is_empty() {
-        return Err(CrawlError::Schema {
-            url: csv_path.display().to_string(),
-            detail: format!("row {line} has no school/state"),
-        });
+    if row.school.trim().is_empty() {
+        return Err(schema(path, "row has no school".to_string()));
     }
-    let state = UsJurisdiction::from_code(row.state.trim()).ok_or_else(|| CrawlError::Schema {
-        url: csv_path.display().to_string(),
-        detail: format!(
-            "row {line}: `{}` is not one of the 50 states or the District of Columbia",
-            row.state.trim()
-        ),
-    })?;
+    let state = UsJurisdiction::from_code(row.state.trim())
+        .ok_or_else(|| schema(path, format!("invalid jurisdiction {:?}", row.state)))?;
     Ok((row, state))
 }
 
-fn merge_entities(
-    schools: &mut BTreeMap<String, CanonicalSchool>,
-    coaches: &mut BTreeMap<CoachId, CanonicalCoach>,
-    entities: RowEntities,
-) -> bool {
-    let school_id = entities.school.id.clone();
-    schools
-        .entry(school_id.as_str().to_string())
-        .or_insert(entities.school);
-    let without_coach_role = entities.coaches.is_empty();
-    for coach in entities.coaches {
-        merge_coach(coaches, coach);
-    }
-    without_coach_role
+fn write_row<T: Serialize>(store: &Store, table: Table, row: &T) -> CrawlResult<bool> {
+    let mut writer = BoundedHashWriter::new(
+        std::io::sink(),
+        u64::try_from(MAX_RECORD_BYTES).map_err(|_| counter_error())?,
+    );
+    serde_json::to_writer(&mut writer, row).map_err(|source| CrawlError::Encode {
+        table: table.file().to_string(),
+        source,
+    })?;
+    let (_, digest) = writer.finish();
+    let operation = format!("{PHASE}:{}:{digest}", table.file());
+    let mut batch = store.write_batch();
+    batch.record_many(table, std::slice::from_ref(row))?;
+    Ok(batch.commit_once(&operation, &digest)?.written())
 }
 
-fn merge_coach(coaches: &mut BTreeMap<CoachId, CanonicalCoach>, coach: CanonicalCoach) {
-    match coaches.get_mut(&coach.id) {
-        Some(existing) => {
-            if let Some(email) = coach.professional_email.as_deref() {
-                existing.set_published_email(email);
-            }
-            if let Some(email) = coach.personal_email.as_deref() {
-                existing.set_published_email(email);
-            }
-            for evidence in coach.evidence.iter().cloned() {
-                if !existing.evidence.contains(&evidence) {
-                    existing.evidence.push(evidence);
-                }
-            }
-            for identity in coach.source_identities.iter().cloned() {
-                if !existing.source_identities.contains(&identity) {
-                    existing.source_identities.push(identity);
-                }
-            }
-        }
-        None => {
-            coaches.insert(coach.id.clone(), coach);
-        }
+fn fail(report: &mut AdapterReport, path: &Path, index: usize, detail: &str) -> CrawlResult<()> {
+    report.errors = report.errors.checked_add(1).ok_or_else(counter_error)?;
+    report
+        .unfinished
+        .try_reserve(1)
+        .map_err(|_| CrawlError::Resource {
+            resource: "contact import unfinished rows",
+            requested: 1,
+            limit: MAX_ROWS,
+        })?;
+    report
+        .unfinished
+        .push(format!("{}#record={index}", path.display()));
+    report.disposition = CollectionDisposition::Partial;
+    if report.errors <= 5 {
+        report.note(detail.chars().take(4096).collect::<String>());
     }
-}
-
-fn write_entities(
-    store: &Store,
-    report: &mut AdapterReport,
-    schools: BTreeMap<String, CanonicalSchool>,
-    coaches: BTreeMap<CoachId, CanonicalCoach>,
-    skipped_roles: usize,
-) -> CrawlResult<()> {
-    let school_records: Vec<CanonicalSchool> = schools.into_values().collect();
-    let coach_records: Vec<CanonicalCoach> = coaches.into_values().collect();
-    store.append_many(Table::Schools, &school_records)?;
-    store.append_many(Table::Coaches, &coach_records)?;
-
-    report.rows = u64::try_from(coach_records.len()).map_or(u64::MAX, |value| value);
-    report.with_email = coach_records
-        .iter()
-        .filter(|coach| coach.professional_email.is_some() || coach.personal_email.is_some())
-        .count()
-        .try_into()
-        .map_or(u64::MAX, |value| value);
-    report.note(format!("schools={}", school_records.len()));
-    report.note(format!("rows_without_coach_role={skipped_roles}"));
     Ok(())
+}
+
+fn schema(path: &Path, detail: String) -> CrawlError {
+    CrawlError::Schema {
+        url: path.display().to_string(),
+        detail,
+    }
+}
+
+fn counter_error() -> CrawlError {
+    CrawlError::Arithmetic {
+        detail: "contact import count overflow".to_string(),
+    }
 }

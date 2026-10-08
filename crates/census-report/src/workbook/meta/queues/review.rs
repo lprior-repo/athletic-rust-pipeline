@@ -18,27 +18,29 @@ pub(super) fn cohort_unverified(
             &athlete.canonical_name,
             school_of(names, athlete.school.as_str()),
         );
-        let detail = if athlete.observed_grades.is_empty()
-            && athlete.published_graduations.is_empty()
-        {
-            format!(
-                "no cohort observation retained; {} evidence row(s), {} source(s)",
-                athlete.evidence.len(),
-                source_count(athlete)
-            )
-        } else {
-            format!(
-                "cohort observations do not confirm canonical year {}; {} published graduation observation(s), {} grade observation(s), {} evidence row(s), {} source(s)",
-                athlete.grad_year,
-                athlete.published_graduations.len(),
-                athlete.observed_grades.len(),
-                athlete.evidence.len(),
-                source_count(athlete)
-            )
-        };
+        let detail = cohort_detail(athlete);
         family.push(queue_row(athlete.id.as_str(), subject, detail));
     }
     family
+}
+
+fn cohort_detail(athlete: &CanonicalAthlete) -> String {
+    if athlete.observed_grades.is_empty() && athlete.published_graduations.is_empty() {
+        format!(
+            "no cohort observation retained; {} evidence row(s), {} source(s)",
+            athlete.evidence.len(),
+            source_count(athlete)
+        )
+    } else {
+        format!(
+            "cohort observations do not confirm canonical year {}; {} published graduation observation(s), {} grade observation(s), {} evidence row(s), {} source(s)",
+            athlete.grad_year,
+            athlete.published_graduations.len(),
+            athlete.observed_grades.len(),
+            athlete.evidence.len(),
+            source_count(athlete)
+        )
+    }
 }
 
 pub(super) fn identity_unverified(
@@ -55,20 +57,28 @@ pub(super) fn identity_unverified(
         if status == census_domain::model::IdentityStatus::Verified {
             continue;
         }
-        let subject = subject_of(
-            &athlete.canonical_name,
-            school_of(names, athlete.school.as_str()),
-        );
-        family.push(queue_row(
-            athlete.id.as_str(),
-            subject,
-            format!(
-                "identity status {}; verification requires a current admissible identity decision",
-                status.as_str(),
-            ),
-        ));
+        family.push(identity_row(athlete, names, status));
     }
     Ok(family)
+}
+
+fn identity_row(
+    athlete: &CanonicalAthlete,
+    names: &HashMap<&str, &str>,
+    status: census_domain::model::IdentityStatus,
+) -> super::super::QueueRow {
+    let subject = subject_of(
+        &athlete.canonical_name,
+        school_of(names, athlete.school.as_str()),
+    );
+    queue_row(
+        athlete.id.as_str(),
+        subject,
+        format!(
+            "identity status {}; verification requires a current admissible identity decision",
+            status.as_str(),
+        ),
+    )
 }
 
 pub(super) fn unresolved_venues(meets: &[CanonicalMeet]) -> Family {

@@ -15,7 +15,7 @@ mod schedule;
 mod school;
 mod text;
 
-pub use address::{CityName, PostalAddress, StreetLine, ZipCode};
+pub use address::{AddressKind, CityName, PostalAddress, StreetLine, ZipCode};
 pub use change::{Baseline, ChangeSet, DirectoryField, FieldDelta, Modification};
 pub use collapse::{collapse_entries, CollapseNote, CollapseOutcome};
 pub use contact::{Phone, Website};

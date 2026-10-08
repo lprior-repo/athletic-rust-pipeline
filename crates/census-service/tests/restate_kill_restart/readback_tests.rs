@@ -1,6 +1,6 @@
 use super::readback::{self, Verdict};
 use super::{synthetic_corpus, Corpus, TestResult};
-use census_domain::model::{CanonicalEvent, CentiSeconds, GradYear, Mark};
+use census_domain::model::{CanonicalEvent, ExactSeconds, GradYear, Mark};
 use census_store::Table;
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -132,8 +132,7 @@ fn a_snapshot_oracle_rejects_duplicate_missing_changed_malformed_and_absent_rows
     let performance = tampered
         .first_mut()
         .ok_or("the fixture corpus holds no performance")?;
-    performance.mark =
-        Mark::TimeSeconds(CentiSeconds::try_from_seconds_f64(12.7).ok_or("invalid fixture mark")?);
+    performance.mark = Mark::TimeSeconds(ExactSeconds::parse("12.70")?);
     performance.source_key.push_str("-tampered");
     write_snapshot(dir.path(), Table::Performances, &tampered)?;
     let reason = rejection(

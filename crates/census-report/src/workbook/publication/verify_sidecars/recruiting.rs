@@ -12,7 +12,7 @@ use super::defect;
 use super::input::Inputs;
 use super::read::{self, Limits};
 
-const HEADERS: [&str; 21] = [
+const HEADERS: [&str; 25] = [
     "athlete_id",
     "name",
     "grad_year",
@@ -31,6 +31,10 @@ const HEADERS: [&str; 21] = [
     "athletic_director_email",
     "athletics_website",
     "coach_source_url",
+    "coach_capture_sha256",
+    "coach_acquired_at",
+    "coach_id",
+    "contact_provenance",
     "identity_status",
     "evidence_sources",
     crate::export::postal::ATHLETE_ADDRESS_CSV_HEADER,
@@ -43,33 +47,86 @@ const LIMITS: Limits = Limits {
 
 pub(super) fn verify(directory: &Path, inputs: &Inputs<'_>) -> ReportResult<()> {
     let path = directory.join("recruiting.csv");
-    let schools: HashMap<&str, &CanonicalSchool> = inputs
-        .derivation
-        .schools()
-        .iter()
-        .map(|school| (school.id.as_str(), school))
-        .collect();
-    let contacts = contact::contacts(inputs.derivation.coach_observations(), inputs.school_year);
-    let school_address = crate::workbook::verify::postal::athlete_address_index(
-        inputs.dataset,
-        inputs.derivation.athletes(),
-    )?;
+    let projection = Projection::of(inputs)?;
     let mut position = 0usize;
     let total = read::csv(&path, LIMITS, "recruiting.csv", |index, record| {
-        if index == 1 {
-            return read::headers(&path, record, &HEADERS);
-        }
-        let Some(athlete) = inputs.derivation.athletes().get(position) else {
-            return Err(defect(format!(
-                "{} record {index} is an unexpected extra athlete row",
-                path.display()
-            )));
-        };
-        let cells = cells(inputs, &schools, &contacts, &school_address, athlete)?;
-        read::compare_record(&path, index, record, &cells)?;
-        position = position.saturating_add(1);
-        Ok(())
+        projection.row(&path, index, record, &mut position)
     })?;
+    verify_count(&path, total, inputs.derivation.athletes().len())
+}
+
+struct Projection<'a, 'd> {
+    inputs: &'a Inputs<'d>,
+    schools: HashMap<&'a str, &'a CanonicalSchool>,
+    contacts: BTreeMap<String, SchoolContacts>,
+    school_address: BTreeMap<String, String>,
+}
+
+impl<'a, 'd> Projection<'a, 'd> {
+    fn of(inputs: &'a Inputs<'d>) -> ReportResult<Self> {
+        let schools = inputs
+            .derivation
+            .schools()
+            .iter()
+            .map(|school| (school.id.as_str(), school))
+            .collect();
+        let contacts =
+            contact::contacts(inputs.derivation.coach_observations(), inputs.school_year);
+        let school_address = crate::workbook::verify::postal::athlete_address_index(
+            inputs.dataset,
+            inputs.derivation.athletes(),
+        )?;
+        Ok(Self {
+            inputs,
+            schools,
+            contacts,
+            school_address,
+        })
+    }
+
+    fn row(
+        &self,
+        path: &Path,
+        index: usize,
+        record: &csv::StringRecord,
+        position: &mut usize,
+    ) -> ReportResult<()> {
+        if index == 1 {
+            return read::headers(path, record, &HEADERS);
+        }
+        let athlete = self.athlete(path, index, *position)?;
+        let expected = cells(
+            self.inputs,
+            &self.schools,
+            &self.contacts,
+            &self.school_address,
+            athlete,
+        )?;
+        read::compare_record(path, index, record, &expected)?;
+        *position = position.saturating_add(1);
+        Ok(())
+    }
+
+    fn athlete(
+        &self,
+        path: &Path,
+        index: usize,
+        position: usize,
+    ) -> ReportResult<&CanonicalAthlete> {
+        self.inputs
+            .derivation
+            .athletes()
+            .get(position)
+            .ok_or_else(|| {
+                defect(format!(
+                    "{} record {index} is an unexpected extra athlete row",
+                    path.display()
+                ))
+            })
+    }
+}
+
+fn verify_count(path: &Path, total: usize, expected: usize) -> ReportResult<()> {
     if total == 0 {
         return Err(defect(format!(
             "{} is empty; the recruiting header is missing",
@@ -77,7 +134,6 @@ pub(super) fn verify(directory: &Path, inputs: &Inputs<'_>) -> ReportResult<()> 
         )));
     }
     let written = total.saturating_sub(1);
-    let expected = inputs.derivation.athletes().len();
     if written == expected {
         Ok(())
     } else {
@@ -98,7 +154,7 @@ fn cells(
     let school = schools.get(athlete.school.as_str()).copied();
     let scoped = contact::scoped(contacts.get(athlete.school.as_str()), athlete);
     let status = identity_status(inputs, athlete)?;
-    let mut cells = athletic_cells(athlete, school, &scoped, status);
+    let mut cells = athletic_cells(athlete, school, &scoped, status)?;
     let address = school_address.get(athlete.id.as_str()).ok_or_else(|| {
         defect(format!(
             "athlete {} has no frozen school address projection",
@@ -125,9 +181,26 @@ fn athletic_cells(
     school: Option<&CanonicalSchool>,
     scoped: &contact::ScopedContacts<'_>,
     status: String,
-) -> Vec<Cell> {
-    let profiles = profiles_of(athlete);
+) -> ReportResult<Vec<Cell>> {
     let preferred = scoped.preferred();
+    let mut cells = athlete_cells(athlete, school);
+    cells.extend(role_cells(scoped, school));
+    cells.extend([
+        Cell::text(preferred.source_url),
+        Cell::text(preferred.source_sha256),
+        Cell::text(preferred.observed_on),
+        Cell::text(preferred.coach_id),
+        Cell::text(crate::workbook::recruiting::mailbox_provenance::json(
+            scoped,
+        )?),
+        Cell::text(status),
+        Cell::text(evidence_sources(athlete)),
+    ]);
+    Ok(cells)
+}
+
+fn athlete_cells(athlete: &CanonicalAthlete, school: Option<&CanonicalSchool>) -> Vec<Cell> {
+    let profiles = profiles_of(athlete);
     let sports = athlete
         .sports
         .iter()
@@ -145,26 +218,18 @@ fn athletic_cells(
         Cell::text(sports),
         Cell::optional(profiles.athletic_net.as_deref()),
         Cell::optional(profiles.milesplit.as_deref()),
+    ]
+}
+
+fn role_cells(scoped: &contact::ScopedContacts<'_>, school: Option<&CanonicalSchool>) -> [Cell; 7] {
+    [
         Cell::optional(scoped.track_names()),
         Cell::optional(scoped.track_emails()),
         Cell::optional(scoped.cross_country().map(|coach| coach.name.as_str())),
-        Cell::optional(
-            scoped
-                .cross_country()
-                .and_then(|coach| coach.address())
-                .map(str::to_owned),
-        ),
+        Cell::optional(scoped.cross_country().and_then(|coach| coach.address())),
         Cell::optional(scoped.director().map(|coach| coach.name.as_str())),
-        Cell::optional(
-            scoped
-                .director()
-                .and_then(|coach| coach.address())
-                .map(str::to_owned),
-        ),
+        Cell::optional(scoped.director().and_then(|coach| coach.address())),
         Cell::optional(school.and_then(|school| school.athletics_website.as_deref())),
-        Cell::text(preferred.source_url.as_str()),
-        Cell::text(status),
-        Cell::text(evidence_sources(athlete)),
     ]
 }
 

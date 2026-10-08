@@ -1,6 +1,6 @@
 use super::{
-    count_of, journal_keys, note, open_store, table_counts, BTreeMap, BTreeSet, Command, Duration,
-    ExitStatusExt, Instant, Output, Path, Stdio, Store, Table, CENSUS_BIN, DEAD_PROXY,
+    count_of, note, open_store, table_counts, BTreeMap, BTreeSet, Command, Duration, ExitStatusExt,
+    Instant, Output, Path, Stdio, Store, Table, CENSUS_BIN, DEAD_PROXY,
 };
 
 fn census_command(root: &Path) -> Command {
@@ -54,7 +54,7 @@ pub(super) struct KillAttempt {
     delay: Duration,
     exited_before_kill: bool,
     signal: Option<i32>,
-    pub(super) journal: BTreeSet<String>,
+    pub(super) receipts: u64,
     pub(super) entity_ids: BTreeSet<String>,
     observations: u64,
 }
@@ -63,7 +63,6 @@ fn attempt_kill(
     root: &Path,
     args: &[&str],
     delay: Duration,
-    phase: &str,
     table: Table,
     ids_of: fn(&Store) -> super::TestResult<BTreeSet<String>>,
 ) -> super::TestResult<KillAttempt> {
@@ -77,21 +76,20 @@ fn attempt_kill(
     let _ = child.kill();
     let status = child.wait()?;
     let store = open_store(root)?;
-    let journal = journal_keys(&store, phase)?;
+    let receipts = store.receipt_count()?;
     let entity_ids = ids_of(&store)?;
     let observations = count_of(&table_counts(&store)?, table);
     Ok(KillAttempt {
         delay,
         exited_before_kill,
         signal: status.signal(),
-        journal,
+        receipts,
         entity_ids,
         observations,
     })
 }
 
-pub(super) struct Subject<'a> {
-    pub(super) phase: &'a str,
+pub(super) struct Subject {
     pub(super) table: Table,
     pub(super) ids_of: fn(&Store) -> super::TestResult<BTreeSet<String>>,
 }
@@ -126,7 +124,7 @@ pub(super) fn kill_ladder(
     scenario: &str,
     root: &Path,
     args: &[&str],
-    subject: Subject<'_>,
+    subject: Subject,
     total_units: usize,
     clean_runtime: Duration,
 ) -> super::TestResult<Vec<KillAttempt>> {
@@ -154,16 +152,15 @@ pub(super) fn kill_ladder(
                 root,
                 args,
                 Duration::from_micros(delay_us),
-                subject.phase,
                 subject.table,
                 subject.ids_of,
             )?;
             note(scenario, format!(
-                "round {round} offset={offset_us} us kill delay={:?} exited_before_kill={} signal={:?} journal={} entities={} observations={}",
+                "round {round} offset={offset_us} us kill delay={:?} exited_before_kill={} signal={:?} receipts={} entities={} observations={}",
                 attempt.delay, attempt.exited_before_kill, attempt.signal,
-                attempt.journal.len(), attempt.entity_ids.len(), attempt.observations,
+                attempt.receipts, attempt.entity_ids.len(), attempt.observations,
             ));
-            let partial = !attempt.journal.is_empty() && attempt.journal.len() < total_units;
+            let partial = !attempt.entity_ids.is_empty() && attempt.entity_ids.len() < total_units;
             if partial {
                 check!(
                     !attempt.exited_before_kill,
@@ -173,7 +170,7 @@ pub(super) fn kill_ladder(
                 Some(9),
                 "partial work must be interrupted by SIGKILL");
             }
-            let completed = attempt.journal.len() >= total_units;
+            let completed = attempt.entity_ids.len() >= total_units;
             if let Some(completed_us) = completed
                 .then(|| u64::try_from(attempt.delay.as_micros()).map_or(u64::MAX, |value| value))
             {

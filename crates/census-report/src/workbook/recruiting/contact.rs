@@ -1,6 +1,6 @@
-mod claims;
 mod heads;
 mod normalise;
+mod provenance;
 mod school;
 #[cfg(test)]
 mod tests;
@@ -11,6 +11,7 @@ use census_domain::model::{CanonicalAthlete, CanonicalCoach, Gender, SchoolYear,
 use heads::Outcome;
 
 pub(in crate::workbook) use normalise::{Named, Preferred};
+pub(in crate::workbook) use provenance::ContactProvenance;
 pub(in crate::workbook) use school::{contacts, SchoolContacts};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -53,11 +54,12 @@ pub(super) enum Slot {
 }
 
 impl Slot {
-    pub(super) const fn of(sport: Sport) -> Self {
+    pub(super) const fn of(sport: Sport) -> Option<Self> {
         match sport {
-            Sport::OutdoorTrack => Self::OutdoorTrack,
-            Sport::IndoorTrack => Self::IndoorTrack,
-            Sport::CrossCountry => Self::CrossCountry,
+            Sport::OutdoorTrack => Some(Self::OutdoorTrack),
+            Sport::IndoorTrack => Some(Self::IndoorTrack),
+            Sport::CrossCountry => Some(Self::CrossCountry),
+            Sport::Unknown => None,
         }
     }
 
@@ -103,18 +105,10 @@ pub(in crate::workbook) fn scoped<'a>(
     athlete: &'a CanonicalAthlete,
 ) -> ScopedContacts<'a> {
     let school = school.filter(|school| school.school == athlete.school);
-    let resolve = |sport| {
-        if !athlete.sports.contains(&sport) {
-            return &Outcome::Unknown;
-        }
-        school
-            .map(|school| school.heads.resolve(Slot::of(sport), athlete.gender))
-            .map_or(&Outcome::Unknown, |value| value)
-    };
     ScopedContacts {
-        outdoor: resolve(Sport::OutdoorTrack),
-        indoor: resolve(Sport::IndoorTrack),
-        cross_country: resolve(Sport::CrossCountry),
+        outdoor: scoped_head(school, athlete, Sport::OutdoorTrack),
+        indoor: scoped_head(school, athlete, Sport::IndoorTrack),
+        cross_country: scoped_head(school, athlete, Sport::CrossCountry),
         director: school
             .map(|school| school.heads.resolve(Slot::Director, Gender::Mixed))
             .map_or(&Outcome::Unknown, |value| value),
@@ -123,6 +117,20 @@ pub(in crate::workbook) fn scoped<'a>(
             .map_or(&[][..], |value| value),
         athlete,
     }
+}
+
+fn scoped_head<'a>(
+    school: Option<&'a SchoolContacts>,
+    athlete: &CanonicalAthlete,
+    sport: Sport,
+) -> &'a Outcome {
+    if !athlete.sports.contains(&sport) {
+        return &Outcome::Unknown;
+    }
+    school
+        .zip(Slot::of(sport))
+        .map(|(school, slot)| school.heads.resolve(slot, athlete.gender))
+        .map_or(&Outcome::Unknown, core::convert::identity)
 }
 
 impl ScopedContacts<'_> {
@@ -135,13 +143,21 @@ impl ScopedContacts<'_> {
         .into_iter()
     }
 
-    pub(in crate::workbook) fn preferred(&self) -> Preferred {
+    pub(in crate::workbook) fn preferred(&self) -> Preferred<'_> {
+        let (named, blocker) = self.head_choice();
+        if let Some((slot, coach)) = named.filter(|(_, coach)| coach.address().is_some()) {
+            return Preferred::named(slot, coach);
+        }
+        self.fallback_preferred(named, blocker)
+    }
+
+    fn head_choice(&self) -> (Option<(Slot, &Named)>, Option<ContactState>) {
         let mut named = None;
         let mut blocker = None;
         for (slot, outcome) in self.heads() {
             if let Some(coach) = outcome.named() {
                 if coach.address().is_some() {
-                    return Preferred::named(slot, coach);
+                    return (Some((slot, coach)), blocker);
                 }
                 if named.is_none() {
                     named = Some((slot, coach));
@@ -149,6 +165,14 @@ impl ScopedContacts<'_> {
             }
             blocker = blocker.or(outcome.blocker());
         }
+        (named, blocker)
+    }
+
+    fn fallback_preferred<'a>(
+        &'a self,
+        named: Option<(Slot, &'a Named)>,
+        blocker: Option<ContactState>,
+    ) -> Preferred<'a> {
         if named.is_none() {
             if let Some(state) = blocker {
                 return Preferred::unnamed(state);
@@ -212,28 +236,35 @@ impl ScopedContacts<'_> {
             .find_map(|(_, outcome)| outcome.named()?.email.as_deref())
     }
 
-    pub(in crate::workbook) fn all_emails(&self) -> String {
+    fn eligible(&self) -> impl Iterator<Item = &Named> {
         let assistants = self.assistants.iter().filter(|coach| {
             coach
                 .sport
                 .is_some_and(|sport| self.athlete.sports.contains(&sport))
                 && matches_side(coach.side, self.athlete.gender)
         });
-        let eligible = self
-            .heads()
+        self.heads()
             .filter_map(|(_, outcome)| outcome.named())
             .chain(self.director())
-            .chain(assistants);
-        let mut addresses = BTreeSet::new();
-        for coach in eligible {
-            addresses.extend(
-                coach
-                    .email
-                    .iter()
-                    .chain(&coach.personal_email)
-                    .map(String::as_str),
-            );
-        }
+            .chain(assistants)
+    }
+
+    pub(in crate::workbook) fn mailboxes(
+        &self,
+    ) -> impl Iterator<Item = (&Named, &str, &ContactProvenance)> {
+        self.eligible().flat_map(|coach| {
+            [
+                coach.email.as_deref().zip(coach.professional_source()),
+                coach.personal_email.as_deref().zip(coach.personal_source()),
+            ]
+            .into_iter()
+            .flatten()
+            .map(move |(address, source)| (coach, address, source))
+        })
+    }
+
+    pub(in crate::workbook) fn all_emails(&self) -> String {
+        let addresses: BTreeSet<_> = self.mailboxes().map(|(_, address, _)| address).collect();
         let mut text = String::new();
         for address in addresses {
             if !text.is_empty() {

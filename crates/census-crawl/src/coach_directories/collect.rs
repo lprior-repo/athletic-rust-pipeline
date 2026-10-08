@@ -1,55 +1,39 @@
-use super::map::{retain_directory_postal, Capture, CoachCounters};
-use super::parse::{parse_directory, DirectoryPage, DirectorySchool};
-use super::{directory_page_url, Options, MAX_DIRECTORY_PAGES, REGISTERED, SOURCE_ID};
+use super::map::{Capture, CoachCounters};
+use super::parse::{DirectoryPage, DirectorySchool};
+use super::{Options, MAX_DIRECTORY_PAGES, REGISTERED, SOURCE_ID};
 use crate::net::{FetchOptions, FetchOutcome, FetchStats};
 use crate::{AdapterContext, AdapterReport, CrawlResult};
-use census_domain::model::{normalize_name, CanonicalCoach, CanonicalSchool, SourceNamespace};
+use census_domain::model::{
+    CanonicalCoach, CanonicalSchool, ContactResearchAttempt, SchoolId, SourceNamespace,
+};
 use census_domain::UsJurisdiction;
 use census_store::Table;
 use serde_json::json;
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashMap, HashSet};
 
+mod directory;
+mod frontier;
+mod lifecycle;
 mod postal;
+mod research;
+mod schools;
+mod setup;
 
-const JOURNAL: &str = "coach_directories_schools_v3";
+const JOURNAL: &str = "coach_directories_schools_v4";
 
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let stats_before = ctx.fetcher.stats().await;
     let requested = requested_states(options);
     if requested.is_empty() {
-        let mut report = AdapterReport::new(SOURCE_ID, "schools");
-        report.note(
-            "no requested jurisdiction is one of the 15 associations that publish staff on this platform, so nothing was fetched",
-        );
-        return Ok(report);
+        return Ok(setup::unrequested());
     }
-    let wanted: HashSet<String> = options
-        .school_names
-        .iter()
-        .map(|name| normalize_name(name))
-        .filter(|name| !name.is_empty())
-        .collect();
-    let mut run = Run {
-        ctx,
-        options,
-        fetch: FetchOptions {
-            refresh: options.refresh || ctx.refresh,
-            allow_not_found: false,
-            headers: Vec::new(),
-        },
-        wanted,
-        done: ctx.store.journal_keys(JOURNAL)?,
-        report: AdapterReport::new(SOURCE_ID, "schools"),
-        processed: 0,
-        skipped: 0,
-        coach_rows: 0,
-        with_email: 0,
-        counters: CoachCounters::default(),
-        dropped_school_rows: 0,
-    };
+    let mut run = Run::new(ctx, options)?;
+    let expected_states = requested.len();
     for (state, association) in requested {
         run.walk_state(state, association).await?;
     }
+    run.seal_frontiers()?;
+    run.finish_frontier(expected_states);
     Ok(run.finish(stats_before).await)
 }
 
@@ -74,117 +58,23 @@ struct Run<'a> {
     with_email: u64,
     counters: CoachCounters,
     dropped_school_rows: u64,
+    researched: HashMap<SchoolId, String>,
+    frontiers: BTreeMap<UsJurisdiction, ContactResearchAttempt>,
+    incomplete_states: HashSet<UsJurisdiction>,
+    drained_states: usize,
+    seen_names: HashSet<String>,
 }
 
 impl<'a> Run<'a> {
-    async fn walk_state(&mut self, state: UsJurisdiction, association: &str) -> CrawlResult<()> {
-        let mut page = 1usize;
-        let mut total_pages = 1usize;
-        let mut rows_read = 0usize;
-        let mut declared_rows = 0usize;
-        while page <= total_pages && page <= MAX_DIRECTORY_PAGES {
-            let url = directory_page_url(association, page);
-            let Some(outcome) = self.get(&url).await else {
-                return Ok(());
-            };
-            let parsed = match parse_directory(&outcome.body) {
-                Ok(parsed) => parsed,
-                Err(error) => {
-                    self.fail(format!("directory page {url}: {error}"));
-                    return Ok(());
-                }
-            };
-            if !self.directory_page_matches(&parsed, page, &url) {
-                return Ok(());
-            }
-            total_pages = total_pages.max(parsed.total_pages.max(1));
-            rows_read = rows_read.saturating_add(parsed.results.len());
-            declared_rows = declared_rows.max(parsed.total_results);
-            let capture = Capture {
-                url: &outcome.url,
-                observed_on: &outcome.fetched_at,
-                sha256: &outcome.content_digest,
-            };
-            for row in &parsed.results {
-                if self
-                    .options
-                    .limit
-                    .is_some_and(|limit| self.processed >= limit)
-                {
-                    return Ok(());
-                }
-                self.process_school(state, association, capture, row)
-                    .await?;
-            }
-            page = page.saturating_add(1);
-        }
-        if total_pages > MAX_DIRECTORY_PAGES {
-            self.fail(format!(
-                "{} has more directory pages than the {MAX_DIRECTORY_PAGES}-page walk reads",
-                state.code()
-            ));
-        }
-        if rows_read < declared_rows {
-            self.fail(format!(
-                "{} directory walk stopped short: read {rows_read} of {declared_rows} published rows",
-                state.code()
-            ));
-        }
-        Ok(())
-    }
-
-    async fn process_school(
-        &mut self,
-        state: UsJurisdiction,
-        association: &str,
-        capture: Capture<'_>,
-        row: &DirectorySchool,
-    ) -> CrawlResult<()> {
-        let Some(short_code) = self.directory_owner(state, capture, row) else {
-            return Ok(());
-        };
-        let key = format!("{}:{short_code}", state.code());
-        if self.done.contains(&key) && !self.fetch.refresh {
-            self.skipped = self.skipped.saturating_add(1);
-            return Ok(());
-        }
-        let Some((mut school, school_id)) =
-            self.admit_directory_school(state, association, capture, row)?
-        else {
-            return Ok(());
-        };
-        if !self.wanted.is_empty() && !self.wanted.contains(&school.normalized_name) {
-            return Ok(());
-        }
-        let postal_complete = match retain_directory_postal(&mut school, row, capture) {
-            Ok(()) => true,
-            Err(review) => {
-                self.fail(format!("directory postal review {}: {review}", capture.url));
-                false
-            }
-        };
-        let Some(mapped) = self
-            .fetch_and_process_summary(row, &short_code, &mut school, &school_id)
-            .await
-        else {
-            self.school_batch(&school)?.commit()?;
-            return Ok(());
-        };
-        let emission = mapped.emission;
-        if postal_complete && mapped.postal_review.is_none() {
-            self.write(&key, &school, &emission.coaches, &short_code)?;
-        } else {
-            self.retain_incomplete_summary(&school, &emission)?;
-        }
-        self.counters.absorb(&emission.counters);
-        self.processed = self.processed.saturating_add(1);
-        Ok(())
-    }
-
     async fn get(&mut self, url: &str) -> Option<FetchOutcome> {
         match self.ctx.fetcher.get(url, &self.fetch).await {
             Ok(outcome) => Some(outcome),
             Err(error) => {
+                self.report.disposition =
+                    lifecycle::failure_disposition(super::research_failure::fetch(&error));
+                self.report
+                    .unfinished
+                    .push(format!("directory fetch remains unresolved: {url}"));
                 self.fail(format!("fetch {url}: {error}"));
                 None
             }

@@ -5,7 +5,10 @@ use super::{
     IdentityDecisionIssue, IdentityError, IdentityStatus, ReviewCase, ReviewState,
     ReviewVerdictRecord, VerdictKind, ATHLETE_IDENTITY_FAMILY, CANONICAL_ID_COLLISION_FAMILY,
 };
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
+
+#[path = "identity_projection_components.rs"]
+mod components;
 
 pub struct AthleteIdentityProjection {
     statuses: BTreeMap<AthleteCandidateId, IdentityStatus>,
@@ -121,65 +124,12 @@ impl<'a> IdentityProjectionBuilder<'a> {
                 u64::try_from(conflicts.len()).map_err(|_| IdentityError::CounterOverflow)?;
             rejected.insert(IdentityDecisionIssue::ConflictingApplications, count);
         }
-        let facts = self.index.into_facts();
-        let statuses = facts
-            .into_iter()
-            .map(|(id, fact)| {
-                let root = self.aliases.root(&id)?;
-                let status = if conflicts.contains(root) {
-                    IdentityStatus::RetainedConflict
-                } else if fact.status > IdentityStatus::Verified {
-                    fact.status
-                } else if fact.authorized {
-                    IdentityStatus::Verified
-                } else {
-                    IdentityStatus::Unverified
-                };
-                Ok((id, status))
-            })
-            .collect::<Result<_, IdentityError>>()?;
+        let statuses = components::finish_statuses(self.index, &self.aliases, &conflicts)?;
         Ok(AthleteIdentityProjection {
             statuses,
             aliases,
             rejected_applications: rejected,
         })
-    }
-
-    fn conflicting_roots(
-        &self,
-        aliases: &BTreeMap<AthleteCandidateId, AthleteCandidateId>,
-    ) -> Result<BTreeSet<AthleteCandidateId>, IdentityError> {
-        let mut conflicts = BTreeSet::new();
-        for distinct in &self.different {
-            let mut seen = BTreeSet::new();
-            for member in distinct {
-                let root = self.aliases.root(member)?;
-                if !seen.insert(root) {
-                    conflicts.insert(root.clone());
-                }
-            }
-        }
-        let mut genders = BTreeMap::new();
-        for (member, root) in aliases {
-            let parent = self
-                .index
-                .facts
-                .get(root.as_str())
-                .ok_or_else(|| IdentityError::UnknownSubject(root.to_string()))?;
-            let child = self
-                .index
-                .facts
-                .get(member.as_str())
-                .ok_or_else(|| IdentityError::UnknownSubject(member.to_string()))?;
-            let gender = genders
-                .entry(root)
-                .or_insert_with(|| gender_bit(parent.gender));
-            *gender |= gender_bit(child.gender);
-            if *gender == 3 || child.grad_year != parent.grad_year {
-                conflicts.insert(root.clone());
-            }
-        }
-        Ok(conflicts)
     }
 }
 fn gender_bit(gender: super::Gender) -> u8 {

@@ -148,11 +148,6 @@ fn malformed_summary_postal_components_keep_coaches_and_directory_facts_with_rev
                     == Some(summary_url("ZCUM49").as_str())),
             "{field}"
         );
-        check!(eq;
-            run.store.journal_keys("coach_directories_schools_v3")?,
-            std::collections::HashSet::new(),
-            "{field}"
-        );
     }
     Ok(())
     })
@@ -185,18 +180,10 @@ fn malformed_directory_street_does_not_discard_valid_summary_coaches_or_address(
                 Some("1 Rocket Drive")
             );
             check!(eq; run.coaches()?.len(), 16);
-            check!(eq;
-                run.store.journal_keys("coach_directories_schools_v3")?,
-                std::collections::HashSet::new()
-            );
             seed(&run.fetcher, &directory_page_url("NCHSAA", 1), DIRECTORY)?;
             let recovered = run.collect().await?;
             check!(eq; (recovered.rows, recovered.errors), (1, 0));
             check!(eq; run.school()?.postal_addresses.len(), 2);
-            check!(eq;
-                run.store.journal_keys("coach_directories_schools_v3")?,
-                std::collections::HashSet::from(["NC:ZCUM49".to_string()])
-            );
             Ok(())
         })
 }

@@ -85,6 +85,10 @@ pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
     let request = NationalRequest {
         season,
         revision,
+        history: census_service::restate_services::HistoryWindow::cohort(
+            &chrono::Utc::now().date_naive().to_string(),
+        )
+        .map_err(anyhow::Error::msg)?,
         jurisdictions: jurisdictions.clone(),
         refresh: args.refresh,
         limit_per_state: args.limit_per_state,
@@ -126,6 +130,10 @@ pub(crate) async fn run_jurisdiction(cli: &Cli, args: &JurisdictionArgs) -> Resu
         jurisdiction: args.jurisdiction,
         season,
         revision,
+        history: census_service::restate_services::HistoryWindow::cohort(
+            &chrono::Utc::now().date_naive().to_string(),
+        )
+        .map_err(anyhow::Error::msg)?,
         refresh: args.refresh,
         limit_per_state: args.limit_per_state,
         concurrency: args.concurrency,

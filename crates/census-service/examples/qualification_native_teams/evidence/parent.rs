@@ -19,8 +19,9 @@ pub(super) fn tls_failure(first: &Run) -> bool {
 }
 
 pub(super) fn independent_checks(state: &JurisdictionState, persisted: bool) -> [Value; 4] {
-    let stages = json!({"rosters":state.rosters, "meets":state.meets, "results":state.results});
-    let later = state.rosters.is_some() && state.meets.is_some() && state.results.is_some();
+    let stages = json!({"rosters":state.rosters, "history":state.history,
+        "history_window":state.history_window});
+    let later = state.rosters.is_some() && meets_persisted(state) && results_persisted(state);
     [
         oracle(
             "independent_rosters_persisted",
@@ -29,13 +30,13 @@ pub(super) fn independent_checks(state: &JurisdictionState, persisted: bool) -> 
         ),
         oracle(
             "independent_meets_persisted",
-            state.meets.is_some() && persisted,
-            json!({"meets":state.meets, "national_completeness":false}),
+            meets_persisted(state) && persisted,
+            json!({"meets":state.history.meets, "national_completeness":false}),
         ),
         oracle(
             "independent_results_persisted",
-            state.results.is_some() && persisted,
-            json!({"results":state.results, "national_completeness":false}),
+            results_persisted(state) && persisted,
+            json!({"results":state.history.results, "national_completeness":false}),
         ),
         oracle(
             "independent_stages_ran_and_persisted",
@@ -111,13 +112,29 @@ pub(super) fn reached_boundary(state: &JurisdictionState) -> &'static str {
     if state.rosters.is_none() {
         return "teams SourceFailures persisted; production rosters did not persist";
     }
-    if state.meets.is_none() {
+    if !meets_persisted(state) {
         return "teams SourceFailures and rosters persisted; production meets did not persist; results not reached";
     }
-    if state.results.is_none() {
+    if !results_persisted(state) {
         return "teams SourceFailures, rosters and meets persisted; production results did not persist";
     }
     "teams SourceFailures and all independent stages persisted; final refusal and source proof obligations observed separately"
+}
+
+fn meets_persisted(state: &JurisdictionState) -> bool {
+    state.history_window.as_ref().is_some_and(|window| {
+        window
+            .years()
+            .all(|year| state.history.meets.contains_key(&year))
+    })
+}
+
+fn results_persisted(state: &JurisdictionState) -> bool {
+    state.history_window.as_ref().is_some_and(|window| {
+        window
+            .years()
+            .all(|year| state.history.results.contains_key(&year))
+    })
 }
 
 pub(super) fn admin_matches(run: &Run) -> Result<bool> {

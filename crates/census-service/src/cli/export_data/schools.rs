@@ -80,7 +80,7 @@ fn build_school_row(s: &CanonicalSchool) -> anyhow::Result<Vec<String>> {
     Ok(row)
 }
 
-const CANONICAL_SCHOOL_HEADERS: [&str; 36] = [
+const SCHOOL_IDENTITY_HEADERS: [&str; 16] = [
     "school_id",
     "name",
     "state",
@@ -97,26 +97,6 @@ const CANONICAL_SCHOOL_HEADERS: [&str; 36] = [
     "source_namespaces",
     "evidence_sources",
     "identity_count",
-    "postal_school_id",
-    "postal_street",
-    "postal_second_line",
-    "postal_city",
-    "postal_state",
-    "postal_zip",
-    "postal_owner_namespace",
-    "postal_owner_id",
-    "postal_source",
-    "postal_source_url",
-    "postal_observed_date",
-    "postal_capture_sha256",
-    "link_school_id",
-    "link_owner_namespace",
-    "link_owner_id",
-    "link_owner_url",
-    "link_source",
-    "link_source_url",
-    "link_observed_date",
-    "link_note",
 ];
 
 pub fn write_canonical_schools(
@@ -142,7 +122,10 @@ pub fn write_canonical_schools(
 
     write_csv(
         &data.join("canonical-schools.csv"),
-        &CANONICAL_SCHOOL_HEADERS,
+        SCHOOL_IDENTITY_HEADERS
+            .into_iter()
+            .chain(census_report::export::postal::POSTAL_CSV_HEADERS)
+            .chain(census_report::export::link::LINK_CSV_HEADERS),
         &rows,
     )?;
 

@@ -1,15 +1,14 @@
 use super::{archive_artifacts, stats_of, Accumulator, Options, Stats, ARCHIVES, PARSE_VERSION};
 use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
-use census_domain::model::{
-    CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CanonicalTeam, SchoolId, SourceRef, Sport,
-};
+use census_domain::model::{CanonicalSchool, SchoolId, Sport};
 use census_domain::school_index::SchoolIndex;
 use census_store::Table;
 use std::collections::{HashMap, HashSet};
 
 #[path = "run_artifacts.rs"]
 mod run_artifacts;
+#[path = "run_receipts.rs"]
+mod run_receipts;
 
 use run_artifacts::process_artifact;
 
@@ -17,10 +16,20 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     let mut report = AdapterReport::new("wiaa_results", "artifacts");
     let (requests_before, cache_before) = stats_of(ctx).await;
     let schools = consolidated_schools(ctx)?;
-    let mut run = ArtifactRun::new(&schools, resumed_urls(ctx)?);
+    let mut run = ArtifactRun::new(
+        &schools,
+        ctx.store.journal_keys(run_receipts::PHASE)?,
+        run_receipts::context(ctx, &schools)?,
+    );
 
     for (archive_url, sport) in ARCHIVES {
-        collect_archive(ctx, options, &mut report, &mut run, archive_url, sport).await?;
+        if let Err(error) =
+            collect_archive(ctx, options, &mut report, &mut run, archive_url, sport).await
+        {
+            report.errors = report.errors.saturating_add(1);
+            report.unfinished.push(format!("{archive_url}: {error}"));
+            report.note(format!("{archive_url}: {error}"));
+        }
     }
 
     let counts = append_entities(ctx, run.accumulated, run.pending)?;
@@ -33,6 +42,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         cache_before,
     )
     .await?;
+    report.finish_frontier();
     Ok(report)
 }
 
@@ -71,49 +81,30 @@ async fn finish_report(
 
 struct ArtifactRun {
     index: SchoolIndex,
-    source: SourceRef,
     resolved: HashMap<String, Option<SchoolId>>,
     stats: Stats,
     accumulated: Accumulator,
     visited: HashSet<String>,
+    done: HashSet<String>,
+    projection_context: String,
     pending: Vec<(String, serde_json::Value)>,
     reported_missing_tool: bool,
 }
 
 impl ArtifactRun {
-    fn new(schools: &[CanonicalSchool], done: HashSet<String>) -> Self {
+    fn new(schools: &[CanonicalSchool], done: HashSet<String>, projection_context: String) -> Self {
         Self {
             index: SchoolIndex::from_schools(schools),
-            source: SourceRef::new("wiaa_results", None),
             resolved: HashMap::new(),
             stats: Stats::default(),
             accumulated: Accumulator::default(),
-            visited: done,
+            visited: HashSet::new(),
+            done,
+            projection_context,
             pending: Vec::new(),
             reported_missing_tool: false,
         }
     }
-}
-
-fn resumed_urls(ctx: &AdapterContext<'_>) -> CrawlResult<HashSet<String>> {
-    Ok(ctx
-        .store
-        .journal_payloads("wiaa_results")?
-        .into_iter()
-        .filter(|entry| {
-            entry.get("parser").and_then(serde_json::Value::as_u64)
-                == Some(u64::from(PARSE_VERSION))
-                && (entry.get("parsed").and_then(serde_json::Value::as_bool) == Some(true)
-                    || entry.get("format").and_then(serde_json::Value::as_str)
-                        == Some("indexed_only"))
-        })
-        .filter_map(|entry| {
-            entry
-                .get("url")
-                .and_then(serde_json::Value::as_str)
-                .map(str::to_string)
-        })
-        .collect())
 }
 
 async fn collect_archive(
@@ -127,6 +118,11 @@ async fn collect_archive(
     let archive = ctx.fetcher.get(archive_url, &ctx.fetch_options()).await?;
     let body = archive.text();
     let artifacts = archive_artifacts(&body)?;
+    if artifacts.is_empty() {
+        report.unfinished.push(format!(
+            "{archive_url}: no recognized result artifact catalogue"
+        ));
+    }
     report.note(format!(
         "{archive_url}: {} result artifacts ({} in the requested seasons)",
         artifacts.len(),
@@ -148,10 +144,14 @@ async fn collect_archive(
             .limit
             .is_some_and(|limit| run.stats.artifacts_seen >= limit)
         {
-            break 'artifact;
+            report.unfinished.push(format!(
+                "{}: artifact limit reached before acquisition",
+                artifact.url
+            ));
+            continue 'artifact;
         }
         run.stats.artifacts_seen = run.stats.artifacts_seen.saturating_add(1);
-        process_artifact(ctx, options, report, run, &artifact, sport).await?;
+        process_artifact(ctx, report, run, &artifact, sport).await?;
         run.visited.insert(artifact.url);
     }
     Ok(())
@@ -171,29 +171,41 @@ fn append_entities(
     accumulated: Accumulator,
     pending: Vec<(String, serde_json::Value)>,
 ) -> CrawlResult<EntityCounts> {
-    let meets: Vec<CanonicalMeet> = accumulated.meets.into_values().collect();
-    let teams: Vec<CanonicalTeam> = accumulated.teams.into_values().collect();
-    let athletes: Vec<CanonicalAthlete> = accumulated.athletes.into_values().collect();
-    let events: Vec<CanonicalEvent> = accumulated.events.into_values().collect();
-    let performances: Vec<CanonicalPerformance> = accumulated.performances.into_values().collect();
     let mut batch = ctx.write_batch();
     accumulated.unsupported.append_to(&mut batch)?;
-    batch.append_many(Table::Meets, &meets)?;
-    batch.append_many(Table::Teams, &teams)?;
-    batch.append_many(Table::Athletes, &athletes)?;
-    batch.append_many(Table::Events, &events)?;
-    batch.append_many(Table::Performances, &performances)?;
-    for (url, payload) in pending {
-        batch.journal_done("wiaa_results", &url, &payload)?;
-    }
     batch.commit()?;
-    Ok(EntityCounts {
-        meets: meets.len(),
-        events: events.len(),
-        athletes: athletes.len(),
-        teams: teams.len(),
-        performances: performances.len(),
+    let counts = EntityCounts {
+        meets: append_rows(ctx, Table::Meets, accumulated.meets.into_values())?,
+        teams: append_rows(ctx, Table::Teams, accumulated.teams.into_values())?,
+        athletes: append_rows(ctx, Table::Athletes, accumulated.athletes.into_values())?,
+        events: append_rows(ctx, Table::Events, accumulated.events.into_values())?,
+        performances: append_rows(
+            ctx,
+            Table::Performances,
+            accumulated.performances.into_values(),
+        )?,
         unsupported_cohorts: accumulated.unsupported.len(),
+    };
+    let mut batch = ctx.write_batch();
+    pending
+        .iter()
+        .try_for_each(|(key, payload)| batch.journal_done(run_receipts::PHASE, key, payload))?;
+    batch.commit()?;
+    Ok(counts)
+}
+
+fn append_rows<T: serde::Serialize>(
+    ctx: &AdapterContext<'_>,
+    table: Table,
+    mut rows: impl Iterator<Item = T>,
+) -> CrawlResult<usize> {
+    rows.try_fold(0usize, |count, row| {
+        if !ctx.append_row_once(run_receipts::PHASE, table, &row)? {
+            return Ok(count);
+        }
+        count.checked_add(1).ok_or_else(|| CrawlError::Arithmetic {
+            detail: "WIAA admitted row count overflow".into(),
+        })
     })
 }
 

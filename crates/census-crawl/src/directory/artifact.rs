@@ -3,6 +3,12 @@ use std::collections::HashMap;
 use crate::{CrawlError, CrawlResult};
 
 use super::ReadOutcome;
+use census_domain::school_directory::DirectoryError;
+#[path = "artifact/decoded.rs"]
+mod decoded;
+pub use decoded::CsvRow;
+use decoded::Decoder;
+const MAX_SOURCE_ROWS: usize = 65_536;
 
 pub struct Header {
     columns: HashMap<String, usize>,
@@ -10,19 +16,28 @@ pub struct Header {
 }
 
 impl Header {
-    pub fn of(record: &csv::StringRecord) -> Self {
-        let mut columns: HashMap<String, usize> = HashMap::with_capacity(record.len());
-        for (index, name) in record.iter().enumerate() {
-            let name = name
-                .trim_start_matches('\u{feff}')
-                .trim()
-                .to_ascii_uppercase();
-            columns.entry(name).or_insert(index);
-        }
-        Self {
+    pub fn of(record: &CsvRow<'_>) -> CrawlResult<Self> {
+        let mut columns = HashMap::new();
+        columns
+            .try_reserve(record.len())
+            .map_err(|_| DirectoryError::Allocation {
+                resource: "directory CSV header",
+            })?;
+        record
+            .iter()
+            .enumerate()
+            .try_for_each(|(index, name)| -> Result<(), DirectoryError> {
+                let name = name.trim_start_matches('\u{feff}').trim();
+                super::limits::check("directory CSV header name bytes", name.len(), 128)?;
+                let mut name = super::limits::text(name)?;
+                name.make_ascii_uppercase();
+                columns.entry(name).or_insert(index);
+                Ok(())
+            })?;
+        Ok(Self {
             columns,
             width: record.len(),
-        }
+        })
     }
 
     pub fn width(&self) -> usize {
@@ -30,19 +45,12 @@ impl Header {
     }
 
     pub fn require(&self, source: &str, names: &[&str]) -> CrawlResult<()> {
-        let missing: Vec<&str> = names
-            .iter()
-            .copied()
-            .filter(|name| !self.columns.contains_key(*name))
-            .collect();
-        if missing.is_empty() {
+        let missing = names.iter().find(|name| !self.columns.contains_key(**name));
+        let Some(missing) = missing else {
             return Ok(());
-        }
+        };
         Err(CrawlError::Invariant {
-            detail: format!(
-                "the {source} file has no {} column; the reader maps by header name",
-                missing.join(", ")
-            ),
+            detail: super::issue_detail(format_args!("the {source} file has no {missing} column"))?,
         })
     }
 
@@ -51,25 +59,26 @@ impl Header {
     }
 }
 
-pub fn cell(record: &csv::StringRecord, index: Option<usize>) -> &str {
+pub fn cell<'a>(record: &'a CsvRow<'_>, index: Option<usize>) -> &'a str {
     index
         .and_then(|index| record.get(index))
         .map_or(Default::default(), core::convert::identity)
 }
 
-pub fn first<'a>(record: &'a csv::StringRecord, header: &Header, names: &[&str]) -> &'a str {
-    for name in names {
-        let value = cell(record, header.index(name));
-        if !value.trim().is_empty() {
-            return value;
-        }
-    }
-    ""
+pub fn first<'a>(record: &'a CsvRow<'_>, header: &Header, names: &[&str]) -> &'a str {
+    names
+        .iter()
+        .map(|name| cell(record, header.index(name)))
+        .find(|value| !value.trim().is_empty())
+        .map_or("", core::convert::identity)
 }
 
 pub fn refusal(error: csv::Error) -> CrawlError {
-    CrawlError::Invariant {
-        detail: format!("the file is not readable as a csv artifact: {error}"),
+    match super::issue_detail(format_args!(
+        "the file is not readable as a CSV artifact: {error}"
+    )) {
+        Ok(detail) => CrawlError::Invariant { detail },
+        Err(error) => error.into(),
     }
 }
 
@@ -80,41 +89,79 @@ pub fn read_rows<F>(
     mut row: F,
 ) -> CrawlResult<ReadOutcome>
 where
-    F: FnMut(&Header, &csv::StringRecord, usize, &mut ReadOutcome),
+    F: FnMut(&Header, &CsvRow<'_>, usize, &mut ReadOutcome) -> Result<(), DirectoryError>,
 {
-    let mut reader = csv::ReaderBuilder::new()
-        .has_headers(false)
-        .flexible(true)
-        .from_reader(text.as_bytes());
-    let mut records = reader.records();
-    let header = match records.next() {
-        Some(record) => Header::of(&record.map_err(refusal)?),
-        None => {
-            return Err(CrawlError::Invariant {
-                detail: format!("the {source} artifact is empty"),
-            })
-        }
-    };
+    let mut decoder = Decoder::new(text)?;
+    let header_row = decoder.next()?.ok_or_else(|| CrawlError::Invariant {
+        detail: "directory artifact has no header".into(),
+    })?;
+    let header = Header::of(&header_row)?;
     header.require(source, required)?;
     let mut outcome = ReadOutcome::new();
-    for record in records {
-        let record = record.map_err(refusal)?;
-        let line = record
-            .position()
-            .map(|position| usize::try_from(position.line()).map_or(usize::MAX, |value| value))
-            .map_or(Default::default(), core::convert::identity);
-        if record.len() < header.width() {
-            outcome.note(
-                line,
-                "row",
-                format!(
-                    "the row carries {} of {} cells: the columns it omits read as absent",
-                    record.len(),
-                    header.width()
-                ),
-            );
-        }
-        row(&header, &record, line, &mut outcome);
+    let stop = (0..=MAX_SOURCE_ROWS)
+        .find_map(|ordinal| visit(&mut decoder, &header, &mut row, &mut outcome, ordinal))
+        .ok_or_else(|| CrawlError::Invariant {
+            detail: "directory CSV frontier was not classified".into(),
+        })?;
+    match stop {
+        Stop::End(0) => outcome.stop(
+            2,
+            DirectoryError::Representation {
+                detail: "directory CSV has no data rows".into(),
+            },
+        ),
+        Stop::End(_) => outcome.finish(),
+        Stop::Refused(line, error) => outcome.stop(line, error),
     }
     Ok(outcome)
+}
+
+enum Stop {
+    End(usize),
+    Refused(usize, DirectoryError),
+}
+
+fn visit<F>(
+    decoder: &mut Decoder<'_>,
+    header: &Header,
+    row: &mut F,
+    outcome: &mut ReadOutcome,
+    ordinal: usize,
+) -> Option<Stop>
+where
+    F: FnMut(&Header, &CsvRow<'_>, usize, &mut ReadOutcome) -> Result<(), DirectoryError>,
+{
+    let record = match decoder.next() {
+        Ok(Some(record)) => record,
+        Ok(None) => return Some(Stop::End(ordinal)),
+        Err(error) => return Some(Stop::Refused(decoder.row_start(), error)),
+    };
+    if ordinal == MAX_SOURCE_ROWS {
+        return Some(Stop::Refused(
+            record.line,
+            DirectoryError::Capacity {
+                resource: "directory CSV source rows",
+                requested: ordinal + 1,
+                limit: MAX_SOURCE_ROWS,
+            },
+        ));
+    }
+    let result = note_short_row(outcome, &record, header.width())
+        .and_then(|()| row(header, &record, record.line, outcome));
+    result.err().map(|error| Stop::Refused(record.line, error))
+}
+
+fn note_short_row(
+    outcome: &mut ReadOutcome,
+    record: &CsvRow<'_>,
+    width: usize,
+) -> Result<(), DirectoryError> {
+    if record.len() >= width {
+        return Ok(());
+    }
+    let detail = super::issue_detail(format_args!(
+        "the row carries {} of {width} cells: the columns it omits read as absent",
+        record.len()
+    ))?;
+    outcome.note(record.line, "row", detail)
 }

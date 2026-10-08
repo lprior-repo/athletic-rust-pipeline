@@ -10,7 +10,9 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 mod postal;
-pub(super) use postal::{process_owned_summary, retain_directory_postal, Capture, SummaryEmission};
+pub(super) use postal::{
+    process_owned_summary, retain_directory_postal, Capture, SummaryEmission, SummaryError,
+};
 
 #[cfg(test)]
 #[path = "tests/postal_regressions.rs"]

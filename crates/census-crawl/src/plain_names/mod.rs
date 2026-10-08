@@ -1,8 +1,6 @@
 use crate::net::FetchOptions;
 use crate::{AdapterContext, AdapterReport, CrawlResult};
 
-#[cfg(doc)]
-use census_domain::model::CoachRole;
 use census_domain::UsJurisdiction;
 
 pub const ND_SCHOOLS_URL: &str = "https://ndhsaa.com/schools";
@@ -12,11 +10,6 @@ pub const NSAA_FORM_URL: &str = "https://secure.nsaahome.org/nsaaforms/direxport
 const ND_ADAPTER_ID: &str = "ndhsaa";
 const NSAA_ADAPTER_ID: &str = "nsaa";
 const ADAPTER_ID: &str = "plain_names";
-
-const ND_SCHOOLS_PHASE: &str = "ndhsaa_schools";
-const ND_COACHES_PHASE: &str = "ndhsaa_coaches";
-const NSAA_SCHOOLS_PHASE: &str = "nsaa_schools";
-const NSAA_COACHES_PHASE: &str = "nsaa_coaches";
 
 #[derive(Debug, Clone, Default)]
 pub struct Options {
@@ -47,21 +40,11 @@ pub use nsaa_coaches::{nsaa_coaches, parse_nsaa_row, parse_nsaa_school};
 
 use nd_coaches::collect_north_dakota;
 use nsaa_coaches::collect_nebraska;
-use parse::nonempty;
 
 #[cfg(test)]
 use nsaa::NSAA_ALL_SCHOOLS;
 #[cfg(test)]
-use parse::email_regex;
-#[cfg(test)]
 use parse::split_person_names;
-
-fn observed_on(ctx: &AdapterContext<'_>, options: &Options) -> String {
-    match nonempty(&options.observed_on) {
-        Some(date) => date,
-        None => ctx.observed_on.clone(),
-    }
-}
 
 fn fetch_options(ctx: &AdapterContext<'_>, options: &Options) -> FetchOptions {
     let mut fetch = ctx.fetch_options();
@@ -108,8 +91,9 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     report.note(format!(
         "wrote {schools_written} schools and {coaches_written} coach/AD rows"
     ));
-    report.with_email = 0;
-    report.note("names only: provider publishes no coach email");
+    if report.unfinished.is_empty() && (run_nd || run_ne) {
+        report.finish_frontier();
+    }
     Ok(report)
 }
 

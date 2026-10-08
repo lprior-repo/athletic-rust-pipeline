@@ -146,28 +146,34 @@ pub(super) async fn workbook(
     Ok(reply)
 }
 
-#[allow(clippy::too_many_arguments)]
+pub(super) struct JurisdictionRun {
+    pub refresh: bool,
+    pub limit_per_state: Option<usize>,
+    pub concurrency: usize,
+    pub authorized_hosts: Vec<String>,
+    pub source_parallelism: usize,
+}
+
 pub(super) fn jurisdiction_request(
     jurisdiction: UsJurisdiction,
     season: SchoolYear,
     flags: &WorkflowFlags,
-    refresh: bool,
-    limit_per_state: Option<usize>,
-    concurrency: usize,
-    authorized_hosts: Vec<String>,
-    source_parallelism: usize,
-) -> JurisdictionRequest {
-    JurisdictionRequest {
+    options: JurisdictionRun,
+) -> Result<JurisdictionRequest> {
+    Ok(JurisdictionRequest {
         jurisdiction,
         season,
         revision: Revision(flags.revision),
-        refresh,
-        limit_per_state,
-        concurrency,
+        history: census_service::restate_services::HistoryWindow::cohort(
+            &census_crawl::net::today_iso(),
+        )?,
+        refresh: options.refresh,
+        limit_per_state: options.limit_per_state,
+        concurrency: options.concurrency,
         observed_on: None,
-        authorized_hosts,
-        source_parallelism,
-    }
+        authorized_hosts: options.authorized_hosts,
+        source_parallelism: options.source_parallelism,
+    })
 }
 
 pub(super) async fn drive_states(

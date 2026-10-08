@@ -1,14 +1,15 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 
 use census_domain::model::{CanonicalAthlete, CanonicalSchool, SchoolYear};
 
-use super::contact::{contacts, scoped, ScopedContacts};
-use super::profiles::profiles_of;
+use super::contact::{contacts, scoped, SchoolContacts};
 use crate::csv_safety::protect_owned;
 use crate::report::{Derivation, ReportError, ReportResult};
 
-const HEADERS: [&str; 21] = [
+mod rows;
+
+const HEADERS: [&str; 25] = [
     "athlete_id",
     "name",
     "grad_year",
@@ -27,6 +28,10 @@ const HEADERS: [&str; 21] = [
     "athletic_director_email",
     "athletics_website",
     "coach_source_url",
+    "coach_capture_sha256",
+    "coach_acquired_at",
+    "coach_id",
+    "contact_provenance",
     "identity_status",
     "evidence_sources",
     crate::export::postal::ATHLETE_ADDRESS_CSV_HEADER,
@@ -42,48 +47,96 @@ pub fn write_recruiting_csv(
     school_year: SchoolYear,
     path: &Path,
 ) -> ReportResult<RecruitingCsvCounts> {
-    let schools: HashMap<&str, &CanonicalSchool> = derivation
-        .schools()
-        .iter()
-        .map(|school| (school.id.as_str(), school))
-        .collect();
-    let contact_index = contacts(derivation.coach_observations(), school_year);
-    let identities = derivation.dataset().identities();
-    let school_address =
-        crate::export::postal::athlete_address_index(derivation.dataset(), derivation.athletes())?;
+    let projection = CsvProjection::new(derivation, school_year)?;
+    let mut writer = open_writer(path)?;
+    let counts = write_athletes(derivation, &projection, &mut writer, path)?;
+    writer
+        .flush()
+        .map_err(|source| crate::report::io_error(path, source))?;
+    Ok(counts)
+}
+
+fn open_writer(path: &Path) -> ReportResult<csv::Writer<std::fs::File>> {
     let mut writer = csv::Writer::from_path(path).map_err(|error| csv_error(path, error))?;
     writer
         .write_record(HEADERS)
         .map_err(|error| csv_error(path, error))?;
+    Ok(writer)
+}
+
+fn write_athletes(
+    derivation: &Derivation<'_>,
+    projection: &CsvProjection<'_>,
+    writer: &mut csv::Writer<std::fs::File>,
+    path: &Path,
+) -> ReportResult<RecruitingCsvCounts> {
+    let identities = derivation.dataset().identities();
     let mut counts = RecruitingCsvCounts {
         with_school_coach: 0,
         with_coach_email: 0,
     };
     for athlete in derivation.athletes() {
-        let status = identities
-            .status(athlete.id.as_str())
-            .map_err(census_store::StoreError::from)?;
-        let contact = scoped(contact_index.get(athlete.school.as_str()), athlete);
-        let (row, has_coach, has_email) = record(
-            athlete,
-            schools.get(athlete.school.as_str()).copied(),
-            &contact,
-            status.as_str(),
-        );
-        let address =
-            school_address
-                .get(athlete.id.as_str())
-                .ok_or_else(|| ReportError::Invariant {
-                    detail: format!("athlete {} has no school address projection", athlete.id),
-                })?;
-        write_row(&mut writer, row.chain([address.clone()]), path)?;
+        let (row, has_coach, has_email) = projection.identified_record(athlete, &identities)?;
+        write_row(writer, row, path)?;
         counts.with_school_coach = increment(counts.with_school_coach, has_coach)?;
         counts.with_coach_email = increment(counts.with_coach_email, has_email)?;
     }
-    writer
-        .flush()
-        .map_err(|source| crate::report::io_error(path, source))?;
     Ok(counts)
+}
+
+struct CsvProjection<'a> {
+    schools: HashMap<&'a str, &'a CanonicalSchool>,
+    contacts: BTreeMap<String, SchoolContacts>,
+    school_address: BTreeMap<String, String>,
+}
+
+impl<'a> CsvProjection<'a> {
+    fn new(derivation: &'a Derivation<'_>, school_year: SchoolYear) -> ReportResult<Self> {
+        Ok(Self {
+            schools: derivation
+                .schools()
+                .iter()
+                .map(|school| (school.id.as_str(), school))
+                .collect(),
+            contacts: contacts(derivation.coach_observations(), school_year),
+            school_address: crate::export::postal::athlete_address_index(
+                derivation.dataset(),
+                derivation.athletes(),
+            )?,
+        })
+    }
+
+    fn identified_record(
+        &self,
+        athlete: &CanonicalAthlete,
+        identities: &census_domain::model::AthleteIdentityProjection,
+    ) -> ReportResult<(impl Iterator<Item = String> + use<>, bool, bool)> {
+        let status = identities
+            .status(athlete.id.as_str())
+            .map_err(census_store::StoreError::from)?;
+        self.record(athlete, status.as_str())
+    }
+
+    fn record(
+        &self,
+        athlete: &CanonicalAthlete,
+        status: &str,
+    ) -> ReportResult<(impl Iterator<Item = String> + use<>, bool, bool)> {
+        let contact = scoped(self.contacts.get(athlete.school.as_str()), athlete);
+        let (row, has_coach, has_email) = rows::record(
+            athlete,
+            self.schools.get(athlete.school.as_str()).copied(),
+            &contact,
+            status,
+        )?;
+        let address = self
+            .school_address
+            .get(athlete.id.as_str())
+            .ok_or_else(|| ReportError::Invariant {
+                detail: format!("athlete {} has no school address projection", athlete.id),
+            })?;
+        Ok((row.chain([address.clone()]), has_coach, has_email))
+    }
 }
 
 fn write_row<W: std::io::Write>(
@@ -100,95 +153,6 @@ fn write_row<W: std::io::Write>(
     writer
         .write_record(std::iter::empty::<&str>())
         .map_err(|error| csv_error(path, error))
-}
-
-fn record(
-    athlete: &CanonicalAthlete,
-    school: Option<&CanonicalSchool>,
-    contacts: &ScopedContacts<'_>,
-    identity_status: &str,
-) -> (impl Iterator<Item = String>, bool, bool) {
-    let (contacts, has_coach, has_email) = contact_cells(contacts, school);
-    let row = athlete_cells(athlete, school)
-        .into_iter()
-        .chain(contacts)
-        .chain([identity_status.to_owned(), evidence_sources(athlete)]);
-    (row, has_coach, has_email)
-}
-
-fn athlete_cells(athlete: &CanonicalAthlete, school: Option<&CanonicalSchool>) -> [String; 10] {
-    let profiles = profiles_of(athlete);
-    [
-        athlete.id.to_string(),
-        athlete.canonical_name.clone(),
-        athlete.grad_year.get().to_string(),
-        athlete.gender.stable_key().to_owned(),
-        school
-            .and_then(|school| school.state)
-            .map_or_else(String::new, |state| state.code().to_owned()),
-        school.map_or_else(String::new, |school| school.name.clone()),
-        school
-            .and_then(|school| school.city.clone())
-            .map_or(Default::default(), core::convert::identity),
-        athlete
-            .sports
-            .iter()
-            .map(|sport| sport.stable_key())
-            .collect::<Vec<_>>()
-            .join(";"),
-        profiles
-            .athletic_net
-            .map_or(Default::default(), core::convert::identity),
-        profiles
-            .milesplit
-            .map_or(Default::default(), core::convert::identity),
-    ]
-}
-
-fn contact_cells(
-    contacts: &ScopedContacts<'_>,
-    school: Option<&CanonicalSchool>,
-) -> ([String; 8], bool, bool) {
-    let preferred = contacts.preferred();
-    let track_name = contacts
-        .track_names()
-        .map_or(Default::default(), core::convert::identity);
-    let track_email = contacts
-        .track_emails()
-        .map_or(Default::default(), core::convert::identity);
-    let xc = contacts.cross_country();
-    let director = contacts.director();
-    let has_coach = !track_name.is_empty() || xc.is_some();
-    let has_email = !track_email.is_empty()
-        || xc.is_some_and(|coach| coach.address().is_some())
-        || director.is_some_and(|coach| coach.address().is_some());
-    let row = [
-        track_name,
-        track_email,
-        xc.map_or_else(String::new, |coach| coach.name.clone()),
-        xc.and_then(|coach| coach.address())
-            .map_or_else(String::new, str::to_owned),
-        director.map_or_else(String::new, |coach| coach.name.clone()),
-        director
-            .and_then(|coach| coach.address())
-            .map_or_else(String::new, str::to_owned),
-        school
-            .and_then(|school| school.athletics_website.clone())
-            .map_or(Default::default(), core::convert::identity),
-        preferred.source_url,
-    ];
-    (row, has_coach, has_email)
-}
-
-fn evidence_sources(athlete: &CanonicalAthlete) -> String {
-    athlete
-        .evidence
-        .iter()
-        .map(|evidence| evidence.source.id.as_str())
-        .collect::<BTreeSet<_>>()
-        .into_iter()
-        .collect::<Vec<_>>()
-        .join(";")
 }
 
 fn increment(count: usize, present: bool) -> ReportResult<usize> {

@@ -191,3 +191,36 @@ fn extra_and_missing_bundle_sidecars_are_rejected() -> TestResult {
     check!(super::verify(&generation, &dataset, &options).is_err());
     Ok(())
 }
+
+#[test]
+fn contact_mailboxes_and_research_cannot_borrow_frozen_source_claims() -> TestResult {
+    for (name, column, forged) in [
+        ("school-contacts.csv", "Mailbox", "borrowed@other.edu"),
+        ("school-contacts.csv", "Capture SHA256", "other-capture"),
+        ("school-contacts.csv", "Contact State", "current_claim"),
+        (
+            "school-contacts.csv",
+            "Retained Claims",
+            "[{\"borrowed\":true}]",
+        ),
+        (
+            "contact-research.csv",
+            "Research Outcome",
+            "completed_empty",
+        ),
+        (
+            "contact-research.csv",
+            "Retained Research",
+            "[{\"borrowed\":true}]",
+        ),
+    ] {
+        let directory = tempfile::tempdir()?;
+        let (generation, dataset, options) = publish(&directory)?;
+        rewrite_cell(&generation.join(name), column, forged)?;
+        check!(matches!(
+            super::verify(&generation, &dataset, &options),
+            Err(crate::report::ReportError::Invariant { .. })
+        ));
+    }
+    Ok(())
+}

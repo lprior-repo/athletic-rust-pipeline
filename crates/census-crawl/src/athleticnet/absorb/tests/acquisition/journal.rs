@@ -28,7 +28,7 @@ fn explicit_refresh_reopens_journaled_profiles_and_keeps_failed_refresh_owed() -
                 )?;
                 store.journal_done(
                     PROFILE_ATTEMPT_PHASE,
-                    &format!("attempt:{url}"),
+                    url,
                     &serde_json::json!({
                         "url": url, "parser": PROFILE_PARSE_VERSION, "parsed": true,
                     }),
@@ -44,6 +44,8 @@ fn explicit_refresh_reopens_journaled_profiles_and_keeps_failed_refresh_owed() -
             options.refresh = true;
             let report = crate::athleticnet::collect::collect(&ctx, &options).await?;
             check!(eq; report.errors, 2);
+            check!(eq; report.unfinished, urls);
+            check!(eq; report.disposition, crate::CollectionDisposition::Partial);
             check!(crate::athleticnet::collect::journaled_urls(&ctx)?.is_empty());
             check!(eq;
                 store
@@ -54,7 +56,7 @@ fn explicit_refresh_reopens_journaled_profiles_and_keeps_failed_refresh_owed() -
             );
             let attempt_keys = store.journal_keys(PROFILE_ATTEMPT_PHASE)?;
             for url in &urls {
-                check!(attempt_keys.contains(&format!("attempt:{url}")));
+                check!(attempt_keys.contains(url));
             }
             let reviews: Vec<ReviewCase> = store.snapshot().scan(Table::ReviewCases)?;
             for url in urls {

@@ -30,6 +30,24 @@ impl Census {
     pub fn new(store: Arc<Store>, clock: Arc<dyn Clock>, jobs: Jobs) -> Self {
         Self { store, clock, jobs }
     }
+
+    async fn store_evidence(
+        &self,
+        request: &OpenWorkRequest,
+    ) -> Result<super::open_work::StoreEvidence, HandlerError> {
+        let season = SchoolYear::new(request.season)
+            .ok_or_else(|| TerminalError::new("invalid open-work season"))?;
+        let revision = census_reconcile::identity::Revision(request.revision);
+        let store = Arc::clone(&self.store);
+        let region = Arc::clone(self.jobs.region());
+        let permit = self.jobs.permit().await?;
+        super::blocking(region, move || {
+            let _permit = permit;
+            super::open_work::inspect_store(&store, season, revision)
+        })
+        .await
+        .map_err(job_error)
+    }
 }
 
 #[service(
@@ -68,7 +86,10 @@ impl Census {
         ctx: Context<'_>,
         Json(request): Json<OpenWorkRequest>,
     ) -> Result<Json<OpenWorkReply>, HandlerError> {
-        Ok(Json(super::open_work::measure(&ctx, &request).await?))
+        let evidence = self.store_evidence(&request).await?;
+        Ok(Json(
+            super::open_work::measure(&ctx, &request, &evidence).await?,
+        ))
     }
 
     #[handler]
@@ -101,7 +122,9 @@ impl Census {
                 request.revision
             ))
         })?;
-        let journal = super::open_work::measure(&ctx, &run_request(&request)).await?;
+        let query = run_request(&request);
+        let evidence = self.store_evidence(&query).await?;
+        let journal = super::open_work::measure(&ctx, &query, &evidence).await?;
         let store = Arc::clone(self.jobs.store());
         let region = Arc::clone(self.jobs.region());
         let permit = self.jobs.permit().await?;

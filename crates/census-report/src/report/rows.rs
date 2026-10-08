@@ -98,6 +98,18 @@ pub(super) fn tally_co2027(
     athlete: &CanonicalAthlete,
     school_coach: &HashMap<&str, (&CanonicalCoach, bool)>,
 ) {
+    tally_cohort_demographics(entry, athlete);
+    tally_cohort_sources(entry, co, athlete);
+    if let Some((_, has_email)) = school_coach.get(athlete.school.as_str()) {
+        bump(&mut entry.class_of_2027_with_coach);
+        if *has_email {
+            bump(&mut entry.class_of_2027_with_coach_email);
+        }
+    }
+    tally_sports(&mut co.sports, athlete);
+}
+
+fn tally_cohort_demographics(entry: &mut StateCensus, athlete: &CanonicalAthlete) {
     bump(&mut entry.class_of_2027);
     match athlete.gender {
         Gender::Boys => bump(&mut entry.class_of_2027_boys),
@@ -110,13 +122,14 @@ pub(super) fn tally_co2027(
     if !athlete.observed_grades.is_empty() || !athlete.published_graduations.is_empty() {
         bump(&mut entry.class_of_2027_with_grad_year_evidence);
     }
-    for observation in &athlete.observed_grades {
-        bump(
-            co.grade_evidence_sources
-                .entry(observation.source.id.clone())
-                .or_default(),
-        );
-    }
+}
+
+fn tally_cohort_sources(
+    entry: &mut StateCensus,
+    co: &mut Co2027Rollup,
+    athlete: &CanonicalAthlete,
+) {
+    tally_grade_sources(co, athlete);
     let distinct: BTreeSet<String> = athlete
         .identities()
         .map(|identity| identity.namespace.to_string())
@@ -128,6 +141,20 @@ pub(super) fn tally_co2027(
     for namespace in distinct {
         bump(co.namespaces.entry(namespace).or_default());
     }
+    tally_profile_source(co, athlete);
+}
+
+fn tally_grade_sources(co: &mut Co2027Rollup, athlete: &CanonicalAthlete) {
+    for observation in &athlete.observed_grades {
+        bump(
+            co.grade_evidence_sources
+                .entry(observation.source.id.clone())
+                .or_default(),
+        );
+    }
+}
+
+fn tally_profile_source(co: &mut Co2027Rollup, athlete: &CanonicalAthlete) {
     if athlete
         .public_profile_urls
         .iter()
@@ -135,13 +162,6 @@ pub(super) fn tally_co2027(
     {
         bump(&mut co.athletic_net_urls);
     }
-    if let Some((_, has_email)) = school_coach.get(athlete.school.as_str()) {
-        bump(&mut entry.class_of_2027_with_coach);
-        if *has_email {
-            bump(&mut entry.class_of_2027_with_coach_email);
-        }
-    }
-    tally_sports(&mut co.sports, athlete);
 }
 
 pub(super) fn coach_sport(coach: &CanonicalCoach) -> String {

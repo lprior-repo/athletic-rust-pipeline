@@ -1,4 +1,4 @@
-use super::{MeetContext, OwnedPerformance};
+use super::{OwnedPerformance, SourceContext};
 use census_domain::model::{
     CanonicalAthlete, CanonicalSchool, Evidence, PublishedGraduation, SchoolId,
     SourceAthleteObservation, SourceNamespace, SourceObservation, SourceRef,
@@ -82,7 +82,7 @@ pub(super) fn source_key(row: &OwnedPerformance) -> String {
     format!("milesplit_result:{}", row.result_id)
 }
 
-pub(super) fn evidence(context: &MeetContext<'_>, row: &OwnedPerformance) -> Evidence {
+pub(super) fn evidence(context: &SourceContext<'_>, row: &OwnedPerformance) -> Evidence {
     let mut evidence = Evidence::parsed(
         SourceRef::new(
             context.reference.site.source_id(),
@@ -90,23 +90,25 @@ pub(super) fn evidence(context: &MeetContext<'_>, row: &OwnedPerformance) -> Evi
         ),
         &context.capture.fetched_at,
     );
-    evidence.note = Some(
-        serde_json::json!({
-            "locator": row.locator, "result_id": row.result_id, "meet_id": row.meet_id,
-            "result_set_id": row.result_set_id, "team_id": row.team_id,
-            "source_athlete": row.source_athlete, "cohort": row.cohort,
-            "published_grad_year": row.grad_year, "provider": row.provider,
-            "capture_url": context.capture.url, "sha256": context.capture.content_digest,
-            "acquired_at": context.capture.fetched_at,
-            "raw_metadata_url": context.reference.url,
-            "meet_name": context.meet.name, "meet_date": context.meet.date,
-            "sport": context.sport, "school_year": context.school_year,
-            "identity_decision": "none; source-owned observation only",
-            "best_mark_scope": "observed performance; not lifetime PR",
-        })
-        .to_string(),
-    );
+    evidence.note = Some(producer_note(context, row));
     evidence
+}
+
+fn producer_note(context: &SourceContext<'_>, row: &OwnedPerformance) -> String {
+    serde_json::json!({
+        "locator": row.locator, "result_id": row.result_id, "meet_id": row.meet_id,
+        "result_set_id": row.result_set_id, "team_id": row.team_id,
+        "source_athlete": row.source_athlete, "cohort": row.cohort,
+        "published_grad_year": row.grad_year, "provider": row.provider,
+        "capture_url": context.capture.url, "sha256": context.capture.content_digest,
+        "acquired_at": context.capture.fetched_at,
+        "raw_metadata_url": context.reference.url,
+        "meet_name": context.page.meet.name, "meet_date": context.page.meet.date,
+        "sport": context.page.sport, "school_year": context.page.school_year,
+        "identity_decision": "none; source-owned observation only",
+        "best_mark_scope": "observed performance; not lifetime PR",
+    })
+    .to_string()
 }
 
 pub(super) fn record_published_graduation(
@@ -134,7 +136,7 @@ pub(super) fn record_published_graduation(
 }
 
 pub(super) fn observation(
-    context: &MeetContext<'_>,
+    context: &SourceContext<'_>,
     row: &OwnedPerformance,
     name: &str,
 ) -> SourceObservation {

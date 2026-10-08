@@ -1,6 +1,7 @@
 use crate::hytek::{self, grade_from_token, looks_like_a_name, substring};
 use crate::result_file::ParsedRow;
 use census_domain::model::{Gender, Mark};
+use regex::Captures;
 
 use super::patterns::{block_row, gender_heading, grade_table_row_regex, race_banner};
 
@@ -52,42 +53,53 @@ pub(super) fn rule_spans(line: &str) -> Option<Vec<(usize, usize)>> {
     (spans.len() >= 5).then_some(spans)
 }
 
-pub(super) fn block_rows(line: &str, team: Option<&str>) -> Vec<ParsedRow> {
+pub(super) fn block_rows(line: &str, team: Option<&str>) -> (Vec<ParsedRow>, usize) {
     let Some(team) = team else {
-        return Vec::new();
+        return (Vec::new(), 0);
     };
     let Ok(regex) = block_row() else {
-        return Vec::new();
+        return (Vec::new(), 0);
     };
     regex
         .captures_iter(line)
-        .filter_map(|captures| {
-            let name = captures.get(3)?.as_str().trim().to_string();
-            if !looks_like_a_name(&name) {
-                return None;
-            }
-            let seconds = hytek::parse_time(captures.get(5)?.as_str())?;
-            Some(ParsedRow {
-                place: captures
-                    .get(2)?
-                    .as_str()
-                    .trim()
-                    .trim_matches(|ch| ch == '(' || ch == ')')
-                    .trim()
-                    .parse::<u16>()
-                    .ok(),
-                name,
-                grade: grade_from_token(captures.get(4)?.as_str()),
-                school: team.to_string(),
-                mark: Mark::TimeSeconds(seconds),
-                timing: None,
-                wind_mps: None,
-                heat: None,
-                points: None,
-                legs: Vec::new(),
-            })
-        })
-        .collect()
+        .fold(
+            (Vec::new(), 0usize),
+            |(mut rows, skipped), captures| match block_runner(&captures, team) {
+                Some(row) => {
+                    rows.push(row);
+                    (rows, skipped)
+                }
+                None => (rows, skipped.saturating_add(1)),
+            },
+        )
+}
+
+fn block_runner(captures: &Captures<'_>, team: &str) -> Option<ParsedRow> {
+    let name = captures.get(3)?.as_str().trim();
+    if !looks_like_a_name(name) {
+        return None;
+    }
+    let seconds = hytek::parse_time(captures.get(5)?.as_str())?;
+    Some(ParsedRow {
+        place: block_place(captures.get(2)?.as_str()),
+        name: name.to_string(),
+        grade: grade_from_token(captures.get(4)?.as_str()),
+        school: team.to_string(),
+        mark: Mark::TimeSeconds(seconds),
+        timing: None,
+        wind_mps: None,
+        heat: None,
+        points: None,
+        legs: Vec::new(),
+    })
+}
+
+fn block_place(raw: &str) -> Option<u16> {
+    raw.trim()
+        .trim_matches(|ch| ch == '(' || ch == ')')
+        .trim()
+        .parse()
+        .ok()
 }
 
 pub(super) fn grade_table_row(line: &str) -> Option<ParsedRow> {
@@ -143,5 +155,8 @@ pub(super) fn accurace_row(line: &str, spans: Option<&[(usize, usize)]>) -> Opti
 }
 
 pub(super) fn starts_like_a_row(trimmed: &str) -> bool {
-    trimmed.chars().next().is_some_and(|ch| ch.is_ascii_digit())
+    trimmed
+        .split_whitespace()
+        .next()
+        .is_some_and(|token| token.bytes().all(|byte| byte.is_ascii_digit()))
 }

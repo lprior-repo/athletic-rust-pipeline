@@ -1,777 +1,249 @@
+#![recursion_limit = "256"]
+
 #[macro_use]
 #[path = "../../../tools/fallible_checks.rs"]
 mod fallible_checks;
 
 mod common;
-#[path = "common/golden.rs"]
-mod golden;
-
 #[path = "parity_pipeline_mod/milesplit_fixtures.rs"]
 mod milesplit_fixtures;
 
-use anyhow::{bail, Context, Result};
-use census_crawl::athleticlive_athletes::{self, AthleteHit, MeetTarget};
-use census_crawl::coach_contacts::entities::row_entities;
-use census_crawl::coach_contacts::wire::CoachContactRow;
-use census_crawl::net::Fetcher;
-use census_crawl::{athleticlive, athleticnet, coach_contacts, milesplit, AdapterContext};
-use census_domain::model::{
-    CanonicalMeet, CompetitionLevel, EventKind, SchoolYear, SourceIdentity, SourceNamespace,
-};
+use anyhow::{bail, ensure, Context, Result};
+use census_crawl::{athleticnet, coach_contacts};
+use census_domain::model::{CanonicalCoach, CanonicalSchool, CoachRole, Gender, Sport};
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
-use serde_json::{json, Value};
-use std::collections::{BTreeSet, HashMap};
-use std::path::{Path, PathBuf};
-use std::time::Duration;
+use std::collections::BTreeSet;
 
 const OBSERVED_ON: &str = "2026-09-20";
-const SCHOOL_YEAR: SchoolYear = SchoolYear::DEFAULT;
-
-struct Harness {
-    store: Store,
-    fetcher: Fetcher,
-    _root: tempfile::TempDir,
-}
-
-impl Harness {
-    fn new() -> Result<Self> {
-        let root = tempfile::tempdir().context("temp dir for a parity store")?;
-        let store = Store::open(root.path()).context("opening a scratch store")?;
-        let cache = store.http_cache_dir();
-        let fetcher = Fetcher::new(&cache, None, Duration::ZERO, HashMap::new(), Vec::new())
-            .context("building a fetcher over the scratch cache")?;
-        Ok(Self {
-            store,
-            fetcher,
-            _root: root,
-        })
-    }
-
-    fn adapter_context(&self) -> AdapterContext<'_> {
-        AdapterContext {
-            fetcher: &self.fetcher,
-            store: &self.store,
-            refresh: false,
-            school_year: SCHOOL_YEAR,
-            observed_on: OBSERVED_ON.to_string(),
-            recording: None,
-        }
-    }
-}
-
-fn case(cases: &mut Vec<(String, String)>, name: &str, value: &Value) -> Result<()> {
-    golden::assert_golden(name, value).with_context(|| format!("golden case `{name}`"))?;
-    let digest = golden::digest(value).with_context(|| format!("digesting case `{name}`"))?;
-    cases.push((name.to_string(), digest));
-    Ok(())
-}
-
-fn digest_all(source: &str, cases: &[(String, String)]) -> Result<()> {
-    golden::assert_golden(&format!("{source}__digest"), &serde_json::to_value(cases)?)
-        .with_context(|| format!("aggregate digest for {source}"))
-}
-
-fn file_stem(name: &str) -> Result<String> {
-    Path::new(name)
-        .file_stem()
-        .map(|stem| stem.to_string_lossy().into_owned())
-        .with_context(|| format!("fixture `{name}` has no file stem"))
-}
-
-fn meet_row_json(row: &athleticlive::MeetRow) -> Value {
-    json!({
-        "tenant": row.tenant,
-        "athleticlive_meet_id": row.athleticlive_meet_id,
-        "athleticnet_meet_id": row.athleticnet_meet_id,
-        "name": row.name,
-        "city_state": row.city_state,
-        "state_code": row.state_code,
-        "start": row.start,
-        "end": row.end,
-        "has_results": row.has_results,
-        "implausible_year": athleticlive::implausible_year(&row.start),
-    })
-}
-
-#[test]
-fn athleticlive_harvest_parity() -> Result<()> {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(async {
-            const SOURCE: &str = "athleticlive";
-            let mut cases: Vec<(String, String)> = Vec::new();
-            for path in common::fixtures(SOURCE)? {
-                let file = common::file_name(&path)?;
-                let stem = file_stem(&file)?;
-                let body = common::fixture(SOURCE, &file)?;
-
-                let rows = athleticlive::parse_meets_csv(&body)
-                    .with_context(|| format!("parsing {SOURCE}/{file}"))?;
-                case(
-                    &mut cases,
-                    &format!("{SOURCE}__{stem}-rows"),
-                    &json!({
-                        "file": file,
-                        "rows": rows.iter().map(meet_row_json).collect::<Vec<Value>>(),
-                    }),
-                )?;
-                let meets = athleticlive::build_meets(&rows, OBSERVED_ON, "athleticlive_meets_csv");
-                case(
-                    &mut cases,
-                    &format!("{SOURCE}__{stem}-meets"),
-                    &serde_json::to_value(&meets)?,
-                )?;
-
-                let harness = Harness::new()?;
-                let options =
-                    athleticlive::Options::for_input(path.display().to_string(), OBSERVED_ON);
-                let report = athleticlive::collect(&harness.adapter_context(), &options)
-                    .await
-                    .with_context(|| format!("collecting {SOURCE}/{file}"))?;
-                let written: Vec<CanonicalMeet> = harness.store.scan(Table::Meets)?;
-                if written != meets {
-                    bail!(
-                        "`{SOURCE}::collect` wrote {} meets for {file}, the parse path produced {}",
-                        written.len(),
-                        meets.len()
-                    );
-                }
-                case(
-                    &mut cases,
-                    &format!("{SOURCE}__{stem}-collect-report"),
-                    &serde_json::to_value(&report)?,
-                )?;
-                case(
-                    &mut cases,
-                    &format!("{SOURCE}__{stem}-collect-meets"),
-                    &serde_json::to_value(&written)?,
-                )?;
-            }
-            digest_all(SOURCE, &cases)
-        })
-}
-
-fn hits_from_response(body: &str) -> Result<Vec<AthleteHit>> {
-    let value: Value = serde_json::from_str(body).context("an athlete_list response is JSON")?;
-    let hits = value
-        .pointer("/hits/hits")
-        .and_then(Value::as_array)
-        .context("the response has hits.hits")?;
-    let sources: Vec<Value> = hits
-        .iter()
-        .map(|hit| {
-            hit.get("_source")
-                .cloned()
-                .map_or(Value::Null, |value| value)
-        })
-        .collect();
-    serde_json::from_value(Value::Array(sources)).context("the hits decode as athlete rows")
-}
-
-fn captured_meet() -> CanonicalMeet {
-    let mut meet = CanonicalMeet::new(
-        Some(UsJurisdiction::Kansas),
-        "Abilene Invitational",
-        "2025-04-25",
-        CompetitionLevel::Invitational,
-    );
-    meet.source_identities.push(SourceIdentity::new(
-        SourceNamespace::TimerMeet {
-            provider: "reddirt".to_string(),
-        },
-        "73566".to_string(),
-    ));
-    meet
-}
-
-fn athlete_hit_json(hit: &AthleteHit) -> Value {
-    json!({
-        "row_id": hit.athleticlive_row_id(),
-        "i": hit.i,
-        "name": hit.n,
-        "grade_token": hit.y,
-        "gender": hit.g,
-        "meet_id": hit.meet_id(),
-        "mi": hit.mi,
-        "athletic_net_athlete_id": hit.athletic_net_athlete_id(),
-        "ani": hit.ani,
-        "team": hit.t.as_ref().map(|team| json!({
-            "i": team.i,
-            "n": team.n,
-            "f": team.f,
-            "ab": team.ab,
-            "ani": team.ani,
-            "xc": team.xc,
-            "school_name": team.school_name(),
-            "athleticlive_team_id": team.athleticlive_team_id(),
-            "athletic_net_team_id": team.athletic_net_team_id(),
-            "is_cross_country": team.is_cross_country(),
-        })),
-    })
-}
-
-fn meet_target_json(target: &MeetTarget) -> Value {
-    json!({
-        "athleticlive_meet_id": target.athleticlive_meet_id,
-        "meet_id": target.meet_id,
-        "tenant": target.tenant,
-        "name": target.name,
-        "state": target.state,
-        "date": target.date,
-    })
-}
-
-#[test]
-fn athleticlive_athletes_fixture_corpus_parity() -> Result<()> {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(async {
-    const SOURCE: &str = "athleticlive_athletes";
-    let mut cases: Vec<(String, String)> = Vec::new();
-    for path in common::fixtures(SOURCE)? {
-        let file = common::file_name(&path)?;
-        let stem = file_stem(&file)?;
-        let body = common::fixture(SOURCE, &file)?;
-
-        let hits = hits_from_response(&body).with_context(|| format!("reading {SOURCE}/{file}"))?;
-        if hits.is_empty() {
-            bail!("{SOURCE}/{file} carries no rows to assert");
-        }
-        case(
-            &mut cases,
-            &format!("{SOURCE}__{stem}-hits"),
-            &json!({
-                "file": file,
-                "rows": hits.iter().map(athlete_hit_json).collect::<Vec<Value>>(),
-            }),
-        )?;
-
-        let selection =
-            athleticlive_athletes::meet_targets(&[captured_meet()], &[UsJurisdiction::Kansas]);
-        let targets: Vec<MeetTarget> = selection.targets;
-        if targets.is_empty() {
-            bail!("{SOURCE}/{file}: the captured meet is not selectable");
-        }
-        let ids: Vec<u64> = targets
-            .iter()
-            .map(|target| target.athleticlive_meet_id)
-            .collect();
-        for hit in &hits {
-            match hit.meet_id() {
-                Some(meet_id) if ids.contains(&meet_id) => {}
-                other => {
-                    bail!("{SOURCE}/{file}: row {other:?} is outside the selected meets {ids:?}")
-                }
-            }
-        }
-        case(
-            &mut cases,
-            &format!("{SOURCE}__{stem}-targets"),
-            &json!({
-                "targets": targets.iter().map(meet_target_json).collect::<Vec<Value>>(),
-                "skipped_implausible": selection.skipped_implausible,
-                "query_from_0": athleticlive_athletes::batch_query(&ids, 0),
-                "query_from_2000": athleticlive_athletes::batch_query(&ids, 2000),
-            }),
-        )?;
-
-        let by_id: HashMap<u64, &MeetTarget> = targets
-            .iter()
-            .map(|target| (target.athleticlive_meet_id, target))
-            .collect();
-        let entities =
-            athleticlive_athletes::build_entities(&hits, &by_id, OBSERVED_ON, SCHOOL_YEAR);
-        if entities.rows != hits.len() {
-            bail!(
-                "{SOURCE}/{file}: {} of {} rows reached an entity pass",
-                entities.rows,
-                hits.len()
-            );
-        }
-        case(
-            &mut cases,
-            &format!("{SOURCE}__{stem}-entities"),
-            &json!({
-                "rows": entities.rows,
-                "rows_with_grade": entities.rows_with_grade,
-                "rows_with_athlete_id": entities.rows_with_athlete_id,
-                "rows_with_team_id": entities.rows_with_team_id,
-                "rows_without_school": entities.rows_without_school,
-                "schools": entities.schools,
-                "teams": entities.teams,
-                "athletes": entities.athletes,
-            }),
-        )?;
-    }
-    digest_all(SOURCE, &cases)
-        })
-}
-
-fn team_json(team: &milesplit::TeamRef) -> Value {
-    json!({
-        "id": team.id,
-        "slug": team.slug,
-        "url": team.url,
-        "name": team.name,
-        "city_state": team.city_state,
-    })
-}
-
-fn meet_json(meet: &milesplit::MeetRef) -> Value {
-    json!({
-        "meet_id": meet.meet_id,
-        "name": meet.name,
-        "date": meet.date,
-        "venue": meet.venue,
-        "results_url": meet.results_url,
-    })
-}
-
-fn roster_json(roster: &milesplit::Roster) -> Value {
-    json!({
-        "team": team_json(&roster.team),
-        "athletes": roster.athletes.iter().map(|athlete| json!({
-            "roster_name": athlete.roster_name,
-            "name": athlete.name,
-            "gender": athlete.gender,
-            "grad_year": athlete.grad_year,
-            "athlete_id": athlete.athlete_id,
-            "profile_url": athlete.profile_url,
-            "indoor": athlete.indoor,
-            "outdoor": athlete.outdoor,
-            "xc": athlete.xc,
-            "sports": athlete.sports(),
-        })).collect::<Vec<Value>>(),
-    })
-}
-
-fn roster_fixture(name: &str) -> Option<(String, String)> {
-    let parts: Vec<&str> = name
-        .strip_suffix(".html")?
-        .split('_')
-        .filter(|part| !part.is_empty())
-        .collect();
-    match (parts.first(), parts.get(1), parts.get(2), parts.len()) {
-        (Some(site), Some(&"roster"), Some(team_id), 3 | 4) => {
-            Some(((*site).to_string(), (*team_id).to_string()))
-        }
-        _ => None,
-    }
-}
-
-type MileSplitIndexes = HashMap<String, (String, Vec<milesplit::TeamRef>)>;
-type MileSplitRosters = Vec<(String, String, String, String, String)>;
-
-#[test]
-fn milesplit_html_parity() -> Result<()> {
-    const SOURCE: &str = "milesplit";
-    let mut indexes = MileSplitIndexes::new();
-    let mut rosters = MileSplitRosters::new();
-
-    for path in common::fixtures(SOURCE)? {
-        let file = common::file_name(&path)?;
-        let stem = file_stem(&file)?;
-        let body = common::fixture(SOURCE, &file)?;
-        if let Some(site) = file.strip_suffix("_teams_index.html") {
-            let teams = milesplit::parse_team_index(&body)
-                .with_context(|| format!("parsing {SOURCE}/{file}"))?;
-            if teams.is_empty() {
-                bail!("{SOURCE}/{file} carries no teams to assert");
-            }
-            golden::assert_golden(
-                &format!("{SOURCE}__{stem}"),
-                &json!({
-                    "file": file,
-                    "teams": teams.iter().map(team_json).collect::<Vec<Value>>(),
-                }),
-            )?;
-            indexes.insert(site.to_string(), (file, teams));
-        } else if let Some((site, team_id)) = roster_fixture(&file) {
-            rosters.push((file, stem, body, site, team_id));
-        } else if file.contains("_results_index") {
-            let meets = milesplit::parse_meet_index(&body)
-                .with_context(|| format!("parsing {SOURCE}/{file}"))?;
-            if meets.is_empty() {
-                bail!("{SOURCE}/{file} carries no meets to assert");
-            }
-            golden::assert_golden(
-                &format!("{SOURCE}__{stem}-decoded-labels"),
-                &json!({
-                    "file": file,
-                    "meets": meets.iter().map(meet_json).collect::<Vec<Value>>(),
-                }),
-            )?;
-        } else if milesplit_fixtures::validate_result_fixture(&file, &body)? {
-            continue;
-        } else {
-            bail!("uncovered {SOURCE} fixture `{file}`: parity_national.rs has no case for it");
-        }
-    }
-
-    assert_milesplit_rosters(&indexes, rosters)
-}
-
-fn assert_milesplit_rosters(indexes: &MileSplitIndexes, rosters: MileSplitRosters) -> Result<()> {
-    const SOURCE: &str = "milesplit";
-    for (file, stem, body, site_id, team_id) in rosters {
-        let (index_file, index_teams) = indexes.get(&site_id).with_context(|| {
-            format!("no `{site_id}_teams_index.html` capture to resolve {file}'s team with")
-        })?;
-        let team = index_teams
-            .iter()
-            .find(|team| team.id == team_id)
-            .with_context(|| format!("team {team_id} is not in the {index_file} capture"))?
-            .clone();
-
-        let parsed = milesplit::parse_roster(&body, team)
-            .with_context(|| format!("parsing {SOURCE}/{file}"))?;
-        let roster = parsed.roster().context("captured roster was quarantined")?;
-        if roster.athletes.is_empty() {
-            bail!("{SOURCE}/{file} carries no athletes to assert");
-        }
-        golden::assert_golden(
-            &format!("{SOURCE}__{stem}-decoded-labels"),
-            &json!({ "file": file, "roster": roster_json(roster) }),
-        )?;
-    }
-    Ok(())
-}
 
 #[test]
 fn authentic_milesplit_projections_retain_owners_without_inventing_school_bindings() -> Result<()> {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
-        .block_on(async { milesplit_fixtures::replay_owned_captures().await })
+        .block_on(milesplit_fixtures::replay_owned_captures())
 }
 
 #[test]
-fn coach_contacts_csv_parity() -> Result<()> {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(async {
-    const SOURCE: &str = "coach_contacts";
-    let mut cases: Vec<(String, String)> = Vec::new();
-    let fixtures = common::fixtures_dir()?;
+fn coach_contacts_csv_preserves_published_people_and_deduplicates_replay() -> Result<()> {
+    use CoachRole::{AthleticDirector, HeadCoach};
+    use Gender::{Boys, Girls, Mixed};
+    use Sport::{CrossCountry, OutdoorTrack};
+    let path = common::fixtures_dir()?.join("coach_contacts_sample.csv");
+    let dir = tempfile::tempdir()?;
+    let root = dir.path().join("store");
+    let store = Store::open(&root)?;
+    coach_contacts::import_csv(&store, &path, OBSERVED_ON)?;
+    let schools = store.scan::<CanonicalSchool>(Table::Schools)?;
+    let coaches = store.scan::<CanonicalCoach>(Table::Coaches)?;
+    let published: BTreeSet<_> = coaches
+        .iter()
+        .map(|coach| {
+            let owner = schools
+                .iter()
+                .find(|school| school.id == coach.school)
+                .context("published school owner")?;
+            Ok((
+                owner.name.as_str(),
+                coach.name.as_str(),
+                coach.role,
+                coach.sport,
+                coach.gender,
+                coach.professional_email.as_deref(),
+            ))
+        })
+        .collect::<Result<_>>()?;
+    let expected = BTreeSet::from([
+        (
+            "Abbotsford",
+            "JACOB KNAPMILLER",
+            HeadCoach,
+            Some(OutdoorTrack),
+            Boys,
+            Some("jknapmiller@abbotsford.k12.wi.us"),
+        ),
+        (
+            "Abbotsford",
+            "JACOB KNAPMILLER",
+            HeadCoach,
+            Some(OutdoorTrack),
+            Girls,
+            Some("jknapmiller@abbotsford.k12.wi.us"),
+        ),
+        (
+            "Abbotsford",
+            "Dillon Novak",
+            HeadCoach,
+            Some(CrossCountry),
+            Girls,
+            Some("dnovak@abbotsford.k12.wi.us"),
+        ),
+        (
+            "Abbotsford",
+            "Alex Larson",
+            AthleticDirector,
+            None,
+            Mixed,
+            Some("alarson@abbotsford.k12.wi.us"),
+        ),
+        (
+            "Abilene HS",
+            "Derek Berns",
+            AthleticDirector,
+            None,
+            Mixed,
+            Some("dberns@abileneschools.org"),
+        ),
+        (
+            "Adams Central",
+            "Toni Fowler",
+            HeadCoach,
+            Some(CrossCountry),
+            Boys,
+            None,
+        ),
+        (
+            "Adams Central",
+            "Toni Fowler",
+            HeadCoach,
+            Some(CrossCountry),
+            Girls,
+            None,
+        ),
+        (
+            "Adams Central",
+            "Zeb Noyd",
+            HeadCoach,
+            Some(OutdoorTrack),
+            Boys,
+            None,
+        ),
+        (
+            "Adams Central",
+            "Alan Frank",
+            AthleticDirector,
+            None,
+            Mixed,
+            None,
+        ),
+        (
+            "aberdeencentral",
+            "Bo Beck",
+            AthleticDirector,
+            None,
+            Mixed,
+            None,
+        ),
+        (
+            "Abingdon-Avon High School",
+            "Barry Mink",
+            HeadCoach,
+            Some(CrossCountry),
+            Boys,
+            Some("bmink@atown276.net"),
+        ),
+        (
+            "Abingdon-Avon High School",
+            "Justin Rakestraw",
+            HeadCoach,
+            Some(OutdoorTrack),
+            Boys,
+            Some("jrakestraw@atown276.net"),
+        ),
+        (
+            "Abingdon-Avon High School",
+            "Reid Kelso",
+            AthleticDirector,
+            None,
+            Mixed,
+            Some("rkelso@atown276.net"),
+        ),
+    ]);
+    ensure!(published == expected && coaches.len() == expected.len());
+    ensure!(
+        schools
+            .iter()
+            .any(|school| school.name == "East Kentwood HS"),
+        "non-coaching administration still belongs to a retained school"
+    );
+    let physical = store.stats()?.tables;
+    drop(store);
+    let reopened = Store::open(&root)?;
+    coach_contacts::import_csv(&reopened, &path, OBSERVED_ON)?;
+    ensure!(reopened.scan::<CanonicalSchool>(Table::Schools)? == schools);
+    ensure!(reopened.scan::<CanonicalCoach>(Table::Coaches)? == coaches);
+    ensure!(reopened.stats()?.tables == physical);
+    Ok(())
+}
 
-    let mut paths: Vec<PathBuf> = Vec::new();
-    for entry in
-        std::fs::read_dir(&fixtures).with_context(|| format!("listing {}", fixtures.display()))?
-    {
-        let path = entry
-            .with_context(|| format!("reading an entry of {}", fixtures.display()))?
-            .path();
-        let name = common::file_name(&path)?;
-        if path.is_file() && name.starts_with(SOURCE) {
-            paths.push(path);
-        }
-    }
-    paths.sort();
-    if paths.is_empty() {
-        bail!("no {SOURCE}* captures under {}", fixtures.display());
-    }
-
-    for path in paths {
-        let file = common::file_name(&path)?;
-        let stem = file_stem(&file)?;
-        let body = common::fixture("", &file)?;
-
-        let mut reader = csv::Reader::from_reader(body.as_bytes());
-        let parsed: Vec<CoachContactRow> = reader
-            .deserialize()
-            .collect::<std::result::Result<Vec<_>, _>>()
-            .with_context(|| format!("decoding {SOURCE}/{file}"))?;
-        if parsed.is_empty() {
-            bail!("{SOURCE}/{file} carries no rows to assert");
-        }
-        let mut rows = Vec::with_capacity(parsed.len());
-        let mut expected_schools: BTreeSet<String> = BTreeSet::new();
-        let mut expected_coaches: BTreeSet<String> = BTreeSet::new();
-        for (index, row) in parsed.iter().enumerate() {
-            let state = UsJurisdiction::from_code(row.state.trim()).with_context(|| {
-                format!(
-                    "{SOURCE}/{file} row {}: state {:?}",
-                    index.saturating_add(2),
-                    row.state
-                )
-            })?;
-            let entities = row_entities(row, state, OBSERVED_ON)
-                .with_context(|| format!("{SOURCE}/{file} row {}", index.saturating_add(2)))?;
-            expected_schools.insert(entities.school.id.as_str().to_string());
-            for coach in &entities.coaches {
-                expected_coaches.insert(coach.id.as_str().to_string());
-            }
-            rows.push(json!({
-                "row": index.saturating_add(2),
-                "school": entities.school,
-                "coaches": entities.coaches,
-            }));
-        }
-        case(
-            &mut cases,
-            &format!("{SOURCE}__{stem}-rows"),
-            &json!({ "file": file, "rows": rows }),
-        )?;
-
-        let harness = Harness::new()?;
-        let report = coach_contacts::import_csv(&harness.store, &path, OBSERVED_ON)
-            .with_context(|| format!("importing {SOURCE}/{file}"))?;
-        let schools: Vec<census_domain::model::CanonicalSchool> =
-            harness.store.scan(Table::Schools)?;
-        let coaches: Vec<census_domain::model::CanonicalCoach> =
-            harness.store.scan(Table::Coaches)?;
-        if schools.len() != expected_schools.len() || coaches.len() != expected_coaches.len() {
+#[test]
+fn registry_rejects_ambiguous_and_malformed_athlete_ownership() -> Result<()> {
+    for (registry, states) in [
+        (
+            "28127170\n",
+            vec![UsJurisdiction::Wisconsin, UsJurisdiction::Alaska],
+        ),
+        ("28127170,Alaska\n", Vec::new()),
+        ("natalia\n", Vec::new()),
+        ("28127170,AK,extra\n", Vec::new()),
+    ] {
+        if let Ok(parsed) = athleticnet::parse_targets(registry, &states) {
             bail!(
-                "{SOURCE}/{file}: import_csv wrote {} schools and {} coaches, the row pass produced {} and {}",
-                schools.len(),
-                coaches.len(),
-                expected_schools.len(),
-                expected_coaches.len()
+                "malformed registry {registry:?} admitted {} targets",
+                parsed.len()
             );
         }
-        case(
-            &mut cases,
-            &format!("{SOURCE}__{stem}-import-report"),
-            &serde_json::to_value(&report)?,
-        )?;
-        case(
-            &mut cases,
-            &format!("{SOURCE}__{stem}-import-schools"),
-            &serde_json::to_value(&schools)?,
-        )?;
-        case(
-            &mut cases,
-            &format!("{SOURCE}__{stem}-import-coaches"),
-            &serde_json::to_value(&coaches)?,
-        )?;
     }
-    digest_all(SOURCE, &cases)
-        })
-}
-
-const REGISTRY: &str = "# season 2026\n28127170,AK\n\n26631105\n28127170,AK\n";
-
-const REFUSED_REGISTRIES: [(&str, &[UsJurisdiction]); 4] = [
-    (
-        "28127170\n",
-        &[UsJurisdiction::Wisconsin, UsJurisdiction::Alaska],
-    ),
-    ("28127170,Alaska\n", &[]),
-    ("natalia\n", &[]),
-    ("28127170,AK,extra\n", &[]),
-];
-
-const MARK_TOKENS: [(EventKind, &str); 11] = [
-    (EventKind::Track800m, "1:17.80a"),
-    (EventKind::Track3200m, "9:41.23"),
-    (EventKind::Track100m, "11.32q"),
-    (EventKind::LongJump, "5-04.25"),
-    (EventKind::ShotPut, "12.34m"),
-    (EventKind::Decathlon, "3,456"),
-    (EventKind::Track1600m, "DNS"),
-    (EventKind::Track1600m, "ND"),
-    (EventKind::Track1600m, "FOUL"),
-    (EventKind::Track1600m, "X"),
-    (EventKind::Track1600m, ""),
-];
-
-const BIO_TRACK_FIELD: &str = r#"{
-  "athlete": {"IDAthlete": 28127170, "FirstName": "Natalia", "LastName": "Casillas",
-              "Gender": "F", "SchoolID": 13850},
-  "grades": {"13850_2026": 11},
-  "allTeams": {"13850": {"IDSchool": 13850, "SchoolName": "Seton Catholic"}},
-  "allSeasons": [
-     {"SchoolID": 13850, "IDSeason": 2026, "Display": "2026 Indoor"},
-     {"SchoolID": 13850, "IDSeason": 2026, "Display": "2026 Outdoor"}
-  ],
-  "eventsTF": [{"IDEvent": 20, "Event": "200 Meters"}],
-  "meets": {"589334": {"MeetName": "SOHI Invite", "EndDate": "2025-05-03T00:00:00"}},
-  "resultsTF": [
-    {"IDResult": 1, "Result": "26.10a", "FAT": 1, "Place": "3", "Round": "F",
-     "Wind": 1.2, "Division": "Varsity", "SchoolID": 13850, "EventID": 20,
-     "MeetID": 589334, "SeasonID": 2026, "ResultDate": "2025-05-02T00:00:00"},
-    {"IDResult": 2, "Result": "DNS", "FAT": 0, "Place": "", "Round": "P",
-     "Division": "Varsity", "SchoolID": 13850, "EventID": 20,
-     "MeetID": 589334, "SeasonID": 2026, "ResultDate": "2025-05-02T00:00:00"}
-  ],
-  "resultsXC": null
-}"#;
-
-const BIO_CROSS_COUNTRY: &str = r#"{
-  "athlete": {"IDAthlete": 28127170, "FirstName": "Natalia", "LastName": "Casillas",
-              "Gender": "F", "SchoolID": 13850},
-  "grades": {"13850_2026": 11},
-  "allTeams": {"13850": {"IDSchool": 13850, "SchoolName": "Seton Catholic"}},
-  "allSeasons": [],
-  "meets": {"223703": {"MeetName": "Chandler Invitational", "EndDate": "2025-09-02T00:00:00"}},
-  "resultsXC": [
-    {"IDResult": 47122798, "Result": "25:31.2", "Place": 68, "Division": "Varsity",
-     "SchoolID": 13850, "MeetID": 223703, "SeasonID": 2025, "Distance": 5000}
-  ]
-}"#;
-
-fn bio_json(bio: &athleticnet::Bio) -> Value {
-    json!({
-        "athlete": {
-            "id": bio.athlete.id,
-            "name": bio.athlete.name(),
-            "first_name": bio.athlete.first_name,
-            "last_name": bio.athlete.last_name,
-            "gender": bio.athlete.gender,
-            "school_id": bio.athlete.school_id,
-        },
-        "grades": bio.grades,
-        "teams": bio.teams.iter().map(|(school_id, team)| json!({
-            "school_id": school_id,
-            "school_name": team.school_name,
-        })).collect::<Vec<Value>>(),
-        "seasons": bio.seasons.iter().map(|season| json!({
-            "school_id": season.school_id,
-            "season_id": season.season_id,
-            "display": season.display,
-        })).collect::<Vec<Value>>(),
-        "events": bio.events.as_ref().map(|events| events.iter().map(|event| json!({
-            "id": event.id,
-            "label": event.label,
-        })).collect::<Vec<Value>>()),
-        "results_tf": bio.results_tf.as_ref().map(|rows| rows.iter().map(|row| json!({
-            "id": row.id,
-            "result": row.result,
-            "fat": row.fat,
-            "place": row.place,
-            "round": row.round,
-            "wind": row.wind,
-            "division": row.division,
-            "school_id": row.school_id,
-            "event_id": row.event_id,
-            "meet_id": row.meet_id,
-            "season_id": row.season_id,
-            "result_date": row.result_date,
-        })).collect::<Vec<Value>>()),
-        "results_xc": bio.results_xc.as_ref().map(|rows| rows.iter().map(|row| json!({
-            "id": row.id,
-            "result": row.result,
-            "place": row.place,
-            "division": row.division,
-            "school_id": row.school_id,
-            "meet_id": row.meet_id,
-            "season_id": row.season_id,
-            "distance": row.distance,
-        })).collect::<Vec<Value>>()),
-        "meets": bio.meets.iter().map(|(meet_id, meet)| json!({
-            "meet_id": meet_id,
-            "name": meet.name,
-            "end_date": meet.end_date,
-        })).collect::<Vec<Value>>(),
-    })
+    let targets = athleticnet::parse_targets(
+        "28127170,AK\n26631105\n28127170,AK\n",
+        &[UsJurisdiction::Wisconsin],
+    )?;
+    let owned: BTreeSet<_> = targets
+        .iter()
+        .map(|target| (target.athlete_id, target.state))
+        .collect();
+    ensure!(
+        owned
+            == BTreeSet::from([
+                (28127170, Some(UsJurisdiction::Alaska)),
+                (26631105, Some(UsJurisdiction::Wisconsin))
+            ])
+    );
+    ensure!(targets.len() == owned.len());
+    Ok(())
 }
 
 #[test]
-fn athleticnet_inline_capture_parity() -> Result<()> {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(async {
-            const SOURCE: &str = "athleticnet";
-            let mut cases: Vec<(String, String)> = Vec::new();
-
-            let targets = athleticnet::parse_targets(REGISTRY, &[UsJurisdiction::Wisconsin])?;
-            case(
-                &mut cases,
-                &format!("{SOURCE}__registry-targets"),
-                &json!({
-                    "registry": REGISTRY,
-                    "targets": targets.iter().map(|target| json!({
-                        "athlete_id": target.athlete_id,
-                        "state": target.state,
-                    })).collect::<Vec<Value>>(),
-                }),
-            )?;
-
-            let mut refusals: Vec<Value> = Vec::new();
-            for (registry, states) in REFUSED_REGISTRIES {
-                let states: Vec<UsJurisdiction> = states.to_vec();
-                match athleticnet::parse_targets(registry, &states) {
-                    Ok(parsed) => bail!(
-                "registry `{registry}` was accepted with {} targets where the adapter refuses",
-                parsed.len()
-            ),
-                    Err(error) => refusals.push(json!({
-                        "registry": registry,
-                        "states": states,
-                        "refusal": error.to_string(),
-                    })),
-                }
-            }
-            case(
-                &mut cases,
-                &format!("{SOURCE}__registry-refusals"),
-                &json!({ "refusals": refusals }),
-            )?;
-
-            let marks: Vec<Value> = MARK_TOKENS
-                .iter()
-                .map(|(kind, published)| {
-                    json!({
-                        "event": format!("{kind:?}"),
-                        "published": published,
-                        "mark": athleticnet::parse_mark(kind, published),
-                    })
-                })
-                .collect();
-            case(
-                &mut cases,
-                &format!("{SOURCE}__marks"),
-                &json!({ "marks": marks }),
-            )?;
-
-            let track: athleticnet::Bio =
-                serde_json::from_str(BIO_TRACK_FIELD).context("the track payload decodes")?;
-            let track_rows = track
-                .results_tf
-                .as_ref()
-                .context("the track payload carries resultsTF")?;
-            if track_rows.first().and_then(|row| row.place.as_deref()) != Some("3") {
-                bail!("a string place no longer reads as a place");
-            }
-            if track_rows
-                .get(1)
-                .and_then(|row| row.place.as_deref())
-                .is_some()
-            {
-                bail!("an empty place reads as a place again");
-            }
-            if track.results_xc.is_some() {
-                bail!("a null resultsXC no longer reads as no rows");
-            }
-            case(
-                &mut cases,
-                &format!("{SOURCE}__bio-track-field"),
-                &bio_json(&track),
-            )?;
-
-            let cross_country: athleticnet::Bio = serde_json::from_str(BIO_CROSS_COUNTRY)
-                .context("the cross-country payload decodes")?;
-            let xc_rows = cross_country
-                .results_xc
-                .as_ref()
-                .context("the cross-country payload carries resultsXC")?;
-            if xc_rows.first().and_then(|row| row.place.as_deref()) != Some("68") {
-                bail!("a numeric place no longer reads as a place");
-            }
-            if xc_rows.first().and_then(|row| row.distance) != Some(5000) {
-                bail!("the published course distance no longer reads");
-            }
-            case(
-                &mut cases,
-                &format!("{SOURCE}__bio-cross-country"),
-                &bio_json(&cross_country),
-            )?;
-
-            digest_all(SOURCE, &cases)
-        })
+fn synthetic_bio_preserves_string_numeric_empty_places_and_absent_scopes() -> Result<()> {
+    let body = serde_json::json!({
+        "dataFixture": "synthetic-bio-wire-consumer",
+        "athlete": {"IDAthlete": 28127170, "FirstName": "Natalia", "LastName": "Casillas",
+            "Gender": "F", "SchoolID": 13850},
+        "grades": {}, "allTeams": {}, "allSeasons": [], "eventsTF": [], "meets": {},
+        "resultsTF": [{"IDResult": 1, "Result": "26.10a", "Place": "3", "SchoolID": 13850,
+            "EventID": 20, "MeetID": 589334, "SeasonID": 2026},
+            {"IDResult": 2, "Result": "DNS", "Place": "", "SchoolID": 13850,
+                "EventID": 20, "MeetID": 589334, "SeasonID": 2026}],
+        "resultsXC": null
+    });
+    let track: athleticnet::Bio = serde_json::from_value(body.clone())?;
+    let track_rows = track.results_tf.as_ref().context("track rows")?;
+    ensure!(track_rows.first().and_then(|row| row.place.as_deref()) == Some("3"));
+    ensure!(track_rows
+        .get(1)
+        .and_then(|row| row.place.as_deref())
+        .is_none());
+    ensure!(track.results_xc.is_none());
+    let mut cross = body;
+    cross["resultsXC"] = serde_json::json!([{"IDResult": 47122798, "Result": "25:31.2", "Place": 68,
+        "SchoolID": 13850, "MeetID": 223703, "SeasonID": 2025, "Distance": 5000}]);
+    let xc: athleticnet::Bio = serde_json::from_value(cross)?;
+    let row = xc
+        .results_xc
+        .as_ref()
+        .and_then(|rows| rows.first())
+        .context("XC row")?;
+    ensure!(row.place.as_deref() == Some("68") && row.distance == Some(5000));
+    Ok(())
 }

@@ -1,7 +1,7 @@
 use super::literals;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(super) enum Kind {
+pub(crate) enum Kind {
     Whitespace,
     LineComment,
     BlockComment { terminated: bool },
@@ -17,16 +17,16 @@ pub(super) enum Kind {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(super) struct Token {
-    pub(super) kind: Kind,
-    pub(super) len: usize,
+pub(crate) struct Token {
+    pub(crate) kind: Kind,
+    pub(crate) len: usize,
 }
 
-pub(super) fn tokens(source: &str) -> Tokenizer<'_> {
+pub(crate) fn tokens(source: &str) -> Tokenizer<'_> {
     Tokenizer { rest: source }
 }
 
-pub(super) struct Tokenizer<'a> {
+pub(crate) struct Tokenizer<'a> {
     rest: &'a str,
 }
 

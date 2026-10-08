@@ -156,17 +156,14 @@ data-filter-text="z"><span class="meet-row__day">Sep 31</span>
 <a class="meet-row__name" href="https://oh.milesplit.com/meets/770622-z/results">Z Invite</a></li>
 </section>
 "#;
-    let meets = parse_meet_index(html)?;
-    check!(eq; meets.len(), 2, "the row with no meet id is dropped");
-    check!(eq; meets[0].meet_id, "770621");
-    check!(eq; meets[0].date.as_deref(), Some("2026-09-19"));
-    check!(eq;
-        meets[0].venue, "",
-        "an absent venue is empty, never invented"
-    );
-    check!(eq; meets[1].meet_id, "770622");
-    check!(eq; meets[1].date, None, "September has no 31st day");
-    check!(!has_next_page(html));
+    match parse_meet_index(html) {
+        Err(CrawlError::Schema { url, .. }) => check!(eq; url, "meet index"),
+        outcome => {
+            return Err(
+                format!("missing required provider id must refuse the index: {outcome:?}").into(),
+            )
+        }
+    }
     Ok(())
 }
 

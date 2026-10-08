@@ -16,7 +16,9 @@ mod tests;
 
 pub use aggregate::consolidate;
 pub use meets::{
-    collect_state_meets, select_meets, MeetCensus, MeetSourceRows, SeasonScope, SOURCE,
+    collect_state_meets, select_meets, DiscoveryDisposition, MeetCensus, MeetFrontier,
+    MeetFrontierFailure, MeetFrontierFailureKind, MeetSourceRows, MeetWalkRequest, SeasonScope,
+    SOURCE,
 };
 pub use state::{
     owed_cohort_decisions, owed_identity_candidates, owed_jurisdictions, owed_source_objects,
@@ -24,6 +26,7 @@ pub use state::{
     Phase, RetainedFindings, SealCounts, SealError, SealEvidence, SealedCensus, SourceObject,
     WorkbookCheck,
 };
+pub(crate) use sweep::index::{inspect_rosters, RosterIndexEvidence};
 #[cfg(feature = "native-fault-injection")]
 pub use sweep::install_boundary_hook;
 pub use sweep::{collect_milesplit, collect_state_rosters, collect_state_teams};
@@ -62,7 +65,11 @@ pub struct StateProgress {
 
 impl StateProgress {
     pub fn is_terminal(&self) -> bool {
-        self.rosters_remaining == 0 && self.blocked_skipped == 0 && !self.blocked
+        self.rosters_remaining == 0
+            && self.rosters_skipped == 0
+            && self.errors.is_empty()
+            && self.blocked_skipped == 0
+            && !self.blocked
     }
 }
 

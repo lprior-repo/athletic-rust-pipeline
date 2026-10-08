@@ -14,23 +14,11 @@ fn ad_fetch_failure_preserves_sport_facts_and_reports_an_unfinished_obligation(
             check!(run.store.journal_keys("ohsaa_schools")?.is_empty());
             let outcome = run.outcome()?;
             check!(eq; outcome["state"], "partial");
-            check!(eq; outcome["pending_pages"], serde_json::json!(["ad"]));
+            check!(eq; outcome["pending_pages"], serde_json::json!([super::dublin().ad_url()]));
             check!(eq; outcome["failure"]["kind"], "fetch");
             check!(outcome["failure"]["detail"]
                 .as_str()
                 .is_some_and(|detail| detail.contains("offline and not cached:")));
-            check!(eq;
-                report
-                    .notes
-                    .iter()
-                    .filter(|note| note.contains("unfinished obligation"))
-                    .count(),
-                1
-            );
-            check!(report
-                .notes
-                .iter()
-                .any(|note| note.contains("1 fetch_failures")));
             check!(eq; run.store.journal_keys(CAPTURES)?.len(), 1);
             Ok(())
         })
@@ -55,13 +43,9 @@ fn sports_fetch_failure_is_visible_and_does_not_complete_or_create_facts(
             check!(eq; outcome["failed_page"], "sports");
             check!(eq;
                 outcome["pending_pages"],
-                serde_json::json!(["sports", "ad"])
+                serde_json::json!([super::dublin().sports_url(), super::dublin().ad_url()])
             );
             check!(eq; outcome["failure"]["kind"], "fetch");
-            check!(report
-                .notes
-                .iter()
-                .any(|note| note.contains("1 fetch_failures")));
             let replay = run.run("2026-10-03", None).await?;
             check!(eq; (replay.rows, replay.errors), (0, 1));
             check!(eq; run.counts()?, (0, 0, 0));

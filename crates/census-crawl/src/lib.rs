@@ -42,9 +42,28 @@ pub enum CrawlError {
     #[error(transparent)]
     Domain(#[from] census_domain::DomainError),
     #[error(transparent)]
+    Directory(#[from] census_domain::school_directory::DirectoryError),
+    #[error(transparent)]
     Store(#[from] census_store::StoreError),
     #[error("arithmetic overflow: {detail}")]
     Arithmetic { detail: String },
+    #[error("{resource} reservation of {requested} exceeds limit {limit}")]
+    Resource {
+        resource: &'static str,
+        requested: usize,
+        limit: usize,
+    },
+    #[error(transparent)]
+    EventIdentity(#[from] census_domain::model::EventIdentityError),
+    #[error(transparent)]
+    Specification(#[from] census_domain::model::SpecificationError),
+    #[error(transparent)]
+    Performance(#[from] census_domain::model::PerformanceError),
+    #[error("published performance date {published:?} cannot be compared to snapshot {as_of}")]
+    PerformanceDateUnknown {
+        published: String,
+        as_of: chrono::NaiveDate,
+    },
     #[error("i/o failed for {path}: {source}")]
     Io {
         path: std::path::PathBuf,
@@ -75,6 +94,8 @@ pub mod ciac;
 pub mod coach_contacts;
 pub mod coach_directories;
 mod cohort;
+mod disposition;
+pub use disposition::CollectionDisposition;
 pub mod compiled;
 mod context;
 pub mod directory;
@@ -97,6 +118,7 @@ pub mod raceday;
 pub mod recording;
 pub mod registry;
 pub mod result_file;
+mod result_status;
 pub mod riil;
 pub mod row_hygiene;
 pub mod school_sites;
@@ -117,8 +139,10 @@ pub use registry::{
 };
 
 pub use athlete_observations::athlete_observations_of;
-pub use context::{school_observations_of, AdapterContext};
-pub use recording::{Recorded, RecordedBatch, RecordedJournal, Recording};
+pub use context::{
+    assess_performance_date, school_observations_of, AdapterContext, PerformanceDateAssessment,
+};
+pub use recording::{PreparedRecorded, Recorded, RecordedBatch, RecordedJournal, Recording};
 
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
@@ -144,6 +168,10 @@ pub struct AdapterReport {
     pub unresolved: Option<UnresolvedCounters>,
     pub unit: String,
     pub notes: Vec<String>,
+    #[serde(default)]
+    pub disposition: CollectionDisposition,
+    #[serde(default)]
+    pub unfinished: Vec<String>,
 }
 
 impl AdapterReport {
@@ -159,7 +187,23 @@ impl AdapterReport {
             unresolved: None,
             unit: unit.into(),
             notes: Vec::new(),
+            disposition: CollectionDisposition::Unknown,
+            unfinished: Vec::new(),
         }
+    }
+
+    pub fn finish_frontier(&mut self) {
+        self.disposition = if self.errors == 0
+            && self.rejections == 0
+            && self
+                .unresolved
+                .is_none_or(|value| value.rows == 0 && value.labels == 0)
+            && self.unfinished.is_empty()
+        {
+            CollectionDisposition::Complete
+        } else {
+            CollectionDisposition::Partial
+        };
     }
 
     pub fn note(&mut self, message: impl Into<String>) {

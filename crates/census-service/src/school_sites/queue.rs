@@ -1,7 +1,7 @@
-use census_crawl::school_sites::{queue_key, QueueRow};
+use census_crawl::school_sites::QueueRow;
 use census_domain::UsJurisdiction;
 use serde::Serialize;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize)]
 pub struct QueueStats {
@@ -17,83 +17,107 @@ pub struct PlannedSite {
     pub state: UsJurisdiction,
     pub school: String,
     pub website: String,
-    pub row: QueueRow,
-    pub artifact: PathBuf,
-    pub key: String,
 }
 
-impl PlannedSite {
-    pub fn sort_key(&self) -> (String, String) {
-        (self.state.code().to_string(), self.school.to_lowercase())
-    }
-
-    pub fn rows_path(&self, dir: &Path) -> PathBuf {
-        dir.join(format!("{}.csv", self.key))
-    }
-}
-
-pub fn resumable(site: &PlannedSite, site_rows_dir: &Path, refresh: bool) -> bool {
-    !refresh && site.artifact.exists() && site.rows_path(site_rows_dir).exists()
-}
-
-pub fn plan(
+pub(super) fn plan(
     rows: Vec<QueueRow>,
     state_override: Option<UsJurisdiction>,
-    sample: Option<usize>,
-    limit: Option<usize>,
-    out_dir: &Path,
+    selection: (Option<usize>, Option<usize>),
     stats: &mut QueueStats,
-) -> Vec<PlannedSite> {
-    let mut sites: Vec<PlannedSite> = Vec::new();
-    let mut seen: std::collections::BTreeSet<(UsJurisdiction, String)> =
-        std::collections::BTreeSet::new();
-    for row in rows {
-        stats.read = stats.read.saturating_add(1);
-        let website = row.website.trim().to_string();
-        if website.is_empty() {
-            stats.without_website = stats.without_website.saturating_add(1);
-            continue;
-        }
-        let state = match UsJurisdiction::parse(&row.state).or(state_override) {
-            Some(state) => state,
-            None => {
-                stats.unmapped_state = stats.unmapped_state.saturating_add(1);
-                continue;
-            }
-        };
-        if !seen.insert((state, row.name.to_lowercase())) {
-            stats.duplicate = stats.duplicate.saturating_add(1);
-            continue;
-        }
-        let key = queue_key(state.code(), &row.name);
-        let normalized = normalize_site(&website);
-        let mut row = row;
-        row.website = normalized.clone();
-        sites.push(PlannedSite {
-            state,
-            school: row.name.trim().to_string(),
-            website: normalized,
-            row,
-            artifact: out_dir.join(format!("{key}.json")),
-            key,
-        });
-    }
-    if let Some(sample) = sample.filter(|value| *value > 0) {
+) -> anyhow::Result<Vec<PlannedSite>> {
+    let mut seen = std::collections::BTreeSet::new();
+    let mut sites =
+        rows.into_iter()
+            .try_fold(Vec::new(), |mut sites, row| -> anyhow::Result<_> {
+                let Some(site) = admit(row, state_override, stats)? else {
+                    return Ok(sites);
+                };
+                if !seen.insert((site.state, site.school.to_lowercase())) {
+                    bump(&mut stats.duplicate)?;
+                    return Ok(sites);
+                }
+                sites.try_reserve(1)?;
+                sites.push(site);
+                Ok(sites)
+            })?;
+    if let Some(sample) = selection.0.filter(|sample| *sample > 0) {
         let step = sites
             .len()
             .checked_div(sample)
             .map_or(1, |step| step.max(1));
         sites = sites.into_iter().step_by(step).take(sample).collect();
-    } else if let Some(limit) = limit.filter(|value| *value > 0) {
+    } else if selection.0 == Some(0) {
+        sites.clear();
+    }
+    if let Some(limit) = selection.1 {
         sites.truncate(limit);
     }
-    sites
+    Ok(sites)
+}
+
+fn admit(
+    row: QueueRow,
+    state_override: Option<UsJurisdiction>,
+    stats: &mut QueueStats,
+) -> anyhow::Result<Option<PlannedSite>> {
+    bump(&mut stats.read)?;
+    anyhow::ensure!(
+        row.name.len() <= 512 && row.website.len() <= 4096 && row.state.len() <= 128,
+        "queue field exceeds its admission budget"
+    );
+    if row.website.trim().is_empty() {
+        bump(&mut stats.without_website)?;
+        return Ok(None);
+    }
+    let state = if row.state.trim().is_empty() {
+        state_override
+    } else {
+        UsJurisdiction::parse(&row.state)
+    };
+    let Some(state) = state else {
+        bump(&mut stats.unmapped_state)?;
+        return Ok(None);
+    };
+    let website = normalize_site(row.website.trim());
+    Ok(Some(PlannedSite {
+        state,
+        school: row.name.trim().to_owned(),
+        website,
+    }))
+}
+
+fn bump(count: &mut usize) -> anyhow::Result<()> {
+    *count = count
+        .checked_add(1)
+        .ok_or_else(|| anyhow::anyhow!("queue counter overflow"))?;
+    Ok(())
+}
+
+pub(super) fn read_queue(path: &Path) -> anyhow::Result<(Vec<QueueRow>, usize)> {
+    use std::io::Read;
+    let mut file = std::fs::File::open(path)
+        .map_err(|error| anyhow::anyhow!("reading queue {}: {error}", path.display()))?;
+    let size = file.metadata()?.len();
+    anyhow::ensure!(size <= 8 * 1024 * 1024, "queue exceeds 8 MiB");
+    let mut text = String::new();
+    text.try_reserve_exact(usize::try_from(size)?)?;
+    (&mut file).take(size).read_to_string(&mut text)?;
+    anyhow::ensure!(
+        u64::try_from(text.len())? == size,
+        "queue changed while being read"
+    );
+    match file.read_exact(&mut [0_u8; 1]) {
+        Err(error) if error.kind() == std::io::ErrorKind::UnexpectedEof => {}
+        Err(error) => return Err(error.into()),
+        Ok(()) => anyhow::bail!("queue changed while being read"),
+    }
+    let parsed = census_crawl::school_sites::parse_queue(&text);
+    anyhow::ensure!(parsed.0.len() <= 65_536, "queue exceeds 65536 rows");
+    Ok(parsed)
 }
 
 pub fn host_roots(queue_path: &Path) -> anyhow::Result<Vec<String>> {
-    let text = std::fs::read_to_string(queue_path)
-        .map_err(|error| anyhow::anyhow!("reading queue {}: {error}", queue_path.display()))?;
-    let (rows, _) = census_crawl::school_sites::parse_queue(&text);
+    let (rows, _) = read_queue(queue_path)?;
     let mut hosts: Vec<String> = rows
         .iter()
         .filter_map(|row| host_of(&normalize_site(row.website.trim())))

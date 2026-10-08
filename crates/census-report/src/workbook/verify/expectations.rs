@@ -42,14 +42,7 @@ impl<'a> Expectations<'a> {
         let school_year = options.school_year;
         let derivation = Derivation::of(dataset, options.scope, options.grad_year);
         let school_address = super::postal::athlete_address_index(dataset, derivation.athletes())?;
-        let bests = bests::build_from_dataset(
-            dataset,
-            &bests::Options {
-                scope: options.scope,
-                grad_year: options.grad_year,
-                limit: options.limit,
-            },
-        );
+        let bests = selected_bests(dataset, options);
         let schools = schools(derivation.schools());
         let pr_index = index(&bests);
         let tallies = tallies(&derivation);
@@ -115,6 +108,17 @@ impl<'a> Expectations<'a> {
     }
 }
 
+fn selected_bests(dataset: &ExportDataset, options: &Options) -> Vec<SharedSelection> {
+    bests::build_from_dataset(
+        dataset,
+        &bests::Options {
+            scope: options.scope,
+            grad_year: options.grad_year,
+            limit: options.limit,
+        },
+    )
+}
+
 pub(super) fn performance_sheet_names(count: usize) -> Vec<String> {
     let sheets = count.div_ceil(DATA_ROWS_PER_SHEET).max(1);
     (0..sheets)
@@ -166,6 +170,15 @@ fn tallies(derivation: &Derivation<'_>) -> BTreeMap<String, Tally> {
         .iter()
         .map(|athlete| ((*athlete).to_string(), Tally::default()))
         .collect();
+    tally_performances(&mut tallies, &cohort, derivation);
+    tallies
+}
+
+fn tally_performances(
+    tallies: &mut BTreeMap<String, Tally>,
+    cohort: &BTreeSet<&str>,
+    derivation: &Derivation<'_>,
+) {
     for performance in derivation.performances() {
         let subject = performance.athlete.as_str();
         let athlete = derivation
@@ -181,5 +194,4 @@ fn tallies(derivation: &Derivation<'_>) -> BTreeMap<String, Tally> {
         tally.performances = tally.performances.saturating_add(1);
         tally.meets.insert(performance.meet.as_str().to_string());
     }
-    tallies
 }

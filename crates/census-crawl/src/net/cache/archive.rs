@@ -46,13 +46,13 @@ pub(super) fn write_preserved_capture(
     meta_path: &Path,
     body: &[u8],
     meta: &CacheMeta,
-) -> Result<(), FetchError> {
+) -> Result<PathBuf, FetchError> {
     let root = cache_root(body_path, meta_path)?;
     let capture = Capture::from_meta(meta, meta_path)?;
     capture.verify_body(body, body_path)?;
     let archive = initialize_archive(root)?;
     with_stage(root, |stage| {
-        preserve_capture(&archive, stage, "new", body, &capture).map(|_| ())
+        preserve_capture(&archive, stage, "new", body, &capture)
     })
 }
 

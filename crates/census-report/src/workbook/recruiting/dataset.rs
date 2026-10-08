@@ -1,6 +1,6 @@
 use crate::bests::SharedSelection;
 use crate::report::{Derivation, ReportResult, Scope};
-use census_domain::model::{CanonicalAthlete, CanonicalCoach, CanonicalSchool};
+use census_domain::model::{CanonicalAthlete, CanonicalCoach, CanonicalSchool, SchoolYear};
 use std::collections::BTreeMap;
 
 use super::contact::{contacts, SchoolContacts};
@@ -41,44 +41,40 @@ impl Dataset {
         let athletes = derivation.athletes().to_vec();
         let school_address =
             crate::export::postal::athlete_address_index(derivation.dataset(), &athletes)?;
-        let identities = derivation.dataset().identities();
-        let schools = school_index(derivation.schools());
-        let coaches = derivation.coach_observations().to_vec();
-        let events = derivation.events().to_vec();
-        let performances = derivation.performances().to_vec();
-        let contacts = contacts(&coaches, school_year);
-        let contact_conflicts: usize = contacts.values().map(|facts| facts.heads.conflicts()).sum();
-        let kinds = kind_index(&events);
-        let tallies = tally(
-            &athletes,
-            &performances,
-            &kinds,
-            derivation.athlete_aliases(),
-        );
-        let pr_index = pr_index(&prs);
-        let audit = Reconciliation {
-            store_athletes: derivation.dataset().athletes.len(),
-            scoped_athletes: derivation.scoped_athletes(),
-            cohort_athletes: athletes.len(),
-            pr_rows: prs.len(),
-            coach_rows: coaches.len(),
-            contact_conflicts,
-        };
-        Ok(Dataset {
-            scope: derivation.scope(),
-            grad_year: derivation.grad_year(),
-            school_year,
+        let inputs = Inputs::new(derivation, school_year, prs);
+        let contacts = contacts(derivation.coach_observations(), school_year);
+        let audit = inputs.audit(&contacts);
+        Ok(Self::assemble(
+            inputs,
             athletes,
-            identities,
-            schools,
-            coaches,
-            contacts,
-            tallies,
-            prs,
             school_address,
-            pr_index,
+            contacts,
             audit,
-        })
+        ))
+    }
+
+    fn assemble(
+        inputs: Inputs<'_, '_>,
+        athletes: Vec<CanonicalAthlete>,
+        school_address: BTreeMap<String, String>,
+        contacts: BTreeMap<String, SchoolContacts>,
+        audit: Reconciliation,
+    ) -> Self {
+        Self {
+            scope: inputs.derivation.scope(),
+            grad_year: inputs.derivation.grad_year(),
+            school_year: inputs.school_year,
+            identities: inputs.derivation.dataset().identities(),
+            schools: school_index(inputs.derivation.schools()),
+            coaches: inputs.derivation.coach_observations().to_vec(),
+            tallies: tallies_of(inputs.derivation, &athletes),
+            athletes,
+            contacts,
+            pr_index: pr_index(&inputs.prs),
+            prs: inputs.prs,
+            school_address,
+            audit,
+        }
     }
 
     pub(super) fn audit(&self) -> Reconciliation {
@@ -112,4 +108,48 @@ impl Dataset {
             None => Box::new(std::iter::empty()),
         }
     }
+}
+
+struct Inputs<'a, 'd> {
+    derivation: &'a Derivation<'d>,
+    school_year: SchoolYear,
+    prs: Vec<SharedSelection>,
+}
+
+impl<'a, 'd> Inputs<'a, 'd> {
+    fn new(
+        derivation: &'a Derivation<'d>,
+        school_year: SchoolYear,
+        prs: Vec<SharedSelection>,
+    ) -> Self {
+        Self {
+            derivation,
+            school_year,
+            prs,
+        }
+    }
+
+    fn audit(&self, contacts: &BTreeMap<String, SchoolContacts>) -> Reconciliation {
+        Reconciliation {
+            store_athletes: self.derivation.dataset().athletes.len(),
+            scoped_athletes: self.derivation.scoped_athletes(),
+            cohort_athletes: self.derivation.athletes().len(),
+            pr_rows: self.prs.len(),
+            coach_rows: self.derivation.coach_observations().len(),
+            contact_conflicts: contacts.values().map(|facts| facts.heads.conflicts()).sum(),
+        }
+    }
+}
+
+fn tallies_of(
+    derivation: &Derivation<'_>,
+    athletes: &[CanonicalAthlete],
+) -> BTreeMap<String, AthleteTally> {
+    let kinds = kind_index(derivation.events());
+    tally(
+        athletes,
+        derivation.performances(),
+        &kinds,
+        derivation.athlete_aliases(),
+    )
 }

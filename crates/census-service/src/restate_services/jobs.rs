@@ -8,7 +8,7 @@ use serde_json::Value;
 
 use crate::census::{self, CollectOptions, StateProgress};
 use census_crawl::net::Fetcher;
-use census_crawl::{AdapterContext, AdapterReport, CrawlError, RecordedJournal, Recording};
+use census_crawl::{AdapterContext, AdapterReport, CrawlError, Recording};
 use census_report::export::ExportDataset;
 use census_report::report::{self, Derivation, ReportError, ReportResult, Scope};
 use census_report::{bests, workbook};
@@ -42,16 +42,23 @@ pub(super) fn consolidate_tables(
     store: &Store,
     tables: &[Table],
 ) -> StoreResult<Vec<ConsolidatedTable>> {
-    let mut out = Vec::with_capacity(tables.len());
-    for table in tables {
+    if tables.len() > Table::ALL.len() {
+        return Err(StoreError::Invariant {
+            detail: "consolidation table inventory exceeds its finite bound".to_string(),
+        });
+    }
+    tables.iter().try_fold(Vec::new(), |mut out, table| {
         let path = store.out_dir().join(format!("{}.jsonl", table.file()));
         let consolidated = store.consolidate_table(*table, &path)?;
+        out.try_reserve(1).map_err(|_| StoreError::Invariant {
+            detail: "consolidation allocation failed".to_string(),
+        })?;
         out.push(ConsolidatedTable {
             table: table.file().to_string(),
             rows: consolidated.rows,
         });
-    }
-    Ok(out)
+        Ok(out)
+    })
 }
 
 pub(super) fn build_report(store: &Store, scope: Scope) -> ReportResult<ReportReply> {
@@ -121,39 +128,29 @@ pub(super) fn write_sweep_report(
 pub(super) use super::meets_arms::meets_stage;
 pub(super) use super::results_arms::results_stage;
 
+#[derive(Clone, Copy)]
+pub(super) struct AdapterScope<'a> {
+    pub season: SchoolYear,
+    pub refresh: bool,
+    pub at: &'a str,
+    pub as_of: chrono::NaiveDate,
+}
+
 pub(super) fn adapter_context<'a>(
     store: &'a Arc<Store>,
     fetcher: &'a Arc<Fetcher>,
-    season: SchoolYear,
-    refresh: bool,
-    at: &str,
+    scope: AdapterScope<'_>,
     recording: Option<&'a Recording>,
 ) -> AdapterContext<'a> {
     AdapterContext {
         fetcher: fetcher.as_ref(),
         store: store.as_ref(),
-        refresh,
-        school_year: season,
-        observed_on: at.to_string(),
+        refresh: scope.refresh,
+        school_year: scope.season,
+        observed_on: scope.at.to_string(),
+        performance_as_of: scope.as_of,
         recording,
     }
-}
-
-pub(super) async fn flush_journal(
-    store: Arc<Store>,
-    entries: Vec<RecordedJournal>,
-) -> Result<Json<u64>, HandlerError> {
-    let written = u64::try_from(entries.len()).map_err(|_| {
-        TerminalError::new(format!("{} journal entries do not fit u64", entries.len()))
-    })?;
-    let mut batch = store.write_batch();
-    for entry in &entries {
-        batch
-            .journal_done(&entry.phase, &entry.key, &entry.payload)
-            .map_err(|source| job_error(source.into()))?;
-    }
-    batch.commit().map_err(|source| job_error(source.into()))?;
-    Ok(Json(written))
 }
 
 pub(super) fn rows_written(report: &AdapterReport) -> Result<usize, HandlerError> {
@@ -167,7 +164,7 @@ pub(super) fn rows_written(report: &AdapterReport) -> Result<usize, HandlerError
 }
 
 pub(super) fn require_stage_arm(slug: &str) -> Result<(), JobError> {
-    if super::jurisdiction::DISPATCHED.contains(&slug) {
+    if super::plan::Dispatch::of(slug) == super::plan::Dispatch::Wired {
         return Ok(());
     }
     Err(JobError::Terminal {
@@ -216,7 +213,13 @@ pub fn collect_error(error: CrawlError) -> JobError {
         | CrawlError::Decode { .. }
         | CrawlError::Canonical { .. }
         | CrawlError::Domain(..)
+        | CrawlError::Directory(..)
         | CrawlError::Arithmetic { .. }
+        | CrawlError::Resource { .. }
+        | CrawlError::EventIdentity(..)
+        | CrawlError::Specification(..)
+        | CrawlError::Performance(..)
+        | CrawlError::PerformanceDateUnknown { .. }
         | CrawlError::Io { .. }
         | CrawlError::DirectoryArtifact { .. }
         | CrawlError::RegexInit { .. } => JobError::Terminal {

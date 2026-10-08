@@ -1,5 +1,5 @@
 use super::super::Throughput;
-use super::{metadata, parse_bencher_line, parse_measurement, runtime};
+use super::{memory, metadata, parse_bencher_line, parse_measurement, runtime};
 use anyhow::Result;
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -26,13 +26,8 @@ fn criterion_full_ids_preserve_distinct_per_benchmark_throughputs() -> TestResul
         "group/second",
         r#"{"full_id":"group/second","throughput":{"Bytes":1024}}"#,
     )?;
-    capture(
-        root.path(),
-        "group/timing",
-        r#"{"full_id":"group/timing","throughput":null}"#,
-    )?;
     let declarations = metadata::read(root.path())?;
-    let output = "test group/first ... bench: 1 s/iter (+/- 0)\ntest group/second ... bench: 2 s/iter (+/- 0)\ntest group/timing ... bench: 500 ms/iter (+/- 0)";
+    let output = "test group/first ... bench: 1 s/iter (+/- 0)\ntest group/second ... bench: 2 s/iter (+/- 0)";
     let result = parse_measurement(output, &declarations, None)?;
     let first = result
         .get("group/first")
@@ -40,9 +35,6 @@ fn criterion_full_ids_preserve_distinct_per_benchmark_throughputs() -> TestResul
     let second = result
         .get("group/second")
         .ok_or_else(|| anyhow::anyhow!("missing group/second measurement"))?;
-    let timing = result
-        .get("group/timing")
-        .ok_or_else(|| anyhow::anyhow!("missing group/timing measurement"))?;
     check!(eq;
         first.throughput,
         Some(Throughput::Elements(42.0))
@@ -51,8 +43,6 @@ fn criterion_full_ids_preserve_distinct_per_benchmark_throughputs() -> TestResul
         second.throughput,
         Some(Throughput::Bytes(512.0))
     );
-    check!(eq; timing.throughput, None);
-    check!(eq; timing.wall_time_seconds, 0.5);
     Ok(())
 }
 
@@ -72,32 +62,33 @@ fn missing_duplicate_empty_and_malformed_metadata_refuse_collection() -> TestRes
     capture(
         root.path(),
         "first",
-        r#"{"full_id":"g/f","throughput":null}"#,
+        r#"{"full_id":"g/f","throughput":{"Elements":1}}"#,
     )?;
     capture(
         root.path(),
         "second",
-        r#"{"full_id":"g/f","throughput":null}"#,
+        r#"{"full_id":"g/f","throughput":{"Elements":1}}"#,
     )?;
     check!(metadata::read(root.path()).is_err());
     Ok(())
 }
 
 #[test]
-fn metadata_and_output_must_describe_the_same_nonempty_results() {
+fn metadata_and_output_must_describe_the_same_nonempty_results() -> TestResult {
     let declared = BTreeMap::from([("g/f".into(), Some(Throughput::Elements(1)))]);
     for output in [
         "",
         "test g/other ... bench: 1 ns/iter",
         "test g/f ... bench: 1 ns/iter\ntest g/f ... bench: 2 ns/iter",
     ] {
-        assert!(parse_measurement(output, &declared, None).is_err());
+        check!(parse_measurement(output, &declared, None).is_err());
     }
     let extra = BTreeMap::from([
         ("g/f".into(), Some(Throughput::Elements(1))),
         ("g/other".into(), Some(Throughput::Elements(1))),
     ]);
-    assert!(parse_measurement("test g/f ... bench: 1 ns/iter", &extra, None).is_err());
+    check!(parse_measurement("test g/f ... bench: 1 ns/iter", &extra, None).is_err());
+    Ok(())
 }
 
 #[test]
@@ -118,7 +109,7 @@ fn time_units_and_thousands_separators_convert_exactly() -> TestResult {
 }
 
 #[test]
-fn invalid_time_and_extra_timing_fields_cannot_make_a_baseline() {
+fn invalid_time_and_extra_timing_fields_cannot_make_a_baseline() -> TestResult {
     for raw in [
         "0 ns",
         "-1 ns",
@@ -128,8 +119,9 @@ fn invalid_time_and_extra_timing_fields_cannot_make_a_baseline() {
         "1 minute",
         "1 unexpected ns",
     ] {
-        assert!(parse_bencher_line(&format!("test g/f ... bench: {raw}/iter")).is_err());
+        check!(parse_bencher_line(&format!("test g/f ... bench: {raw}/iter")).is_err());
     }
+    Ok(())
 }
 
 #[test]
@@ -163,37 +155,83 @@ fn persisted_rate_cannot_compare_elements_with_bytes() -> TestResult {
         r#"{"full_id":"g/f","throughput":{"Bytes":100}}"#,
     )?;
     let output = "test g/f ... bench: 1 s/iter (+/- 0)";
-    let baseline = super::super::PerfBaseline {
+    let mut baseline = super::super::PerfBaseline {
         metadata: super::super::Meta {
             cpu: "test".into(),
             cores: 1,
             rustc: "test".into(),
             sha: "test".into(),
             corpus_lines: 1,
+            corpus_sha256: "a".repeat(64),
         },
         check_reason: None,
         groups: parse_measurement(output, &metadata::read(old.path())?, None)?,
     };
+    baseline.groups.insert(
+        "pipeline/capture_export/captured_live_wiaa_co2027".into(),
+        crate::perf::tests::capture_measurement(),
+    );
+    for measurement in baseline.groups.values_mut() {
+        measurement.peak_rss_kib = Some(100);
+        measurement.allocation_count = Some(100);
+        measurement.allocated_bytes = Some(100);
+        measurement.tail_time_seconds = Some(1.0);
+    }
     let baseline: super::super::PerfBaseline =
         serde_json::from_slice(&serde_json::to_vec(&baseline)?)?;
-    let current = parse_measurement(output, &metadata::read(current.path())?, None)?;
-    check!(super::super::compare::check_throughput(&baseline, &current, 0.05).is_err());
+    let mut current = parse_measurement(output, &metadata::read(current.path())?, None)?;
+    for measurement in current.values_mut() {
+        measurement.peak_rss_kib = Some(100);
+        measurement.allocation_count = Some(100);
+        measurement.allocated_bytes = Some(100);
+        measurement.tail_time_seconds = Some(1.0);
+    }
+    current.insert(
+        "pipeline/capture_export/captured_live_wiaa_co2027".into(),
+        crate::perf::tests::capture_measurement(),
+    );
+    let error = match super::super::compare::check_throughput(&baseline, &current, 0.05) {
+        Err(error) => error,
+        Ok(()) => return Err(anyhow::anyhow!("throughput unit change was accepted").into()),
+    };
+    check!(error.to_string().contains("throughput unit changed"));
     Ok(())
 }
 
 #[test]
 #[cfg(unix)]
-fn absent_timer_keeps_rss_unavailable_and_nonzero_children_fail() -> TestResult {
+fn absent_timer_refuses_measurement_and_nonzero_processes_fail() -> TestResult {
     let directory = tempfile::tempdir()?;
-    let (_, rss) = runtime::measure_with_time(Path::new("/bin/true"), directory.path(), None)?;
-    check!(eq; rss, None);
-    let failure = match runtime::measure_with_time(Path::new("/bin/false"), directory.path(), None)
-    {
-        Err(failure) => failure,
-        Ok(_) => {
-            return Err(anyhow::anyhow!("benchmark process failure must be propagated").into())
-        }
+    let absent = match runtime::measure_with_time(Path::new("/bin/true"), directory.path(), None) {
+        Err(error) => error,
+        Ok(_) => return Err(anyhow::anyhow!("missing timer was accepted").into()),
     };
-    check!(failure.to_string().contains("exit status: 1"), "{failure}");
+    check!(absent.to_string().contains("GNU time is required"));
+    let failure = match runtime::measure_with_time(
+        Path::new("/bin/true"),
+        directory.path(),
+        Some(Path::new("/bin/false")),
+    ) {
+        Err(error) => error,
+        Ok(_) => return Err(anyhow::anyhow!("process failure was accepted").into()),
+    };
+    check!(failure.to_string().contains("exit status: 1"));
+    Ok(())
+}
+
+#[test]
+fn allocation_summary_preserves_counts_and_rejects_missing_or_invalid_memory() -> TestResult {
+    check!(eq; memory::parse_allocations("==123==   total heap usage: 1,234 allocs, 1,200 frees, 987,654 bytes allocated")?, (1234, 987654));
+    for raw in [
+        "",
+        "total heap usage: 0 allocs, 0 frees, 100 bytes allocated",
+        "total heap usage: 1 allocs, 1 frees, 0 bytes allocated",
+        "total heap usage: NaN allocs, 1 frees, 100 bytes allocated",
+        "total heap usage: 1 allocs, 1 frees, -1 bytes allocated",
+        "total heap usage: 1 allocs, 1 frees, 18446744073709551616 bytes allocated",
+        "total heap usage: 1 allocs, 1 frees, 1 bytes allocated\ntotal heap usage: 2 allocs, 1 frees, 2 bytes allocated",
+    ] {
+        check!(memory::parse_allocations(raw).is_err(), "{raw}");
+    }
     Ok(())
 }

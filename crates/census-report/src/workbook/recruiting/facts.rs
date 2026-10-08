@@ -48,13 +48,21 @@ pub(super) fn tally(
         let Some(tally) = tallies.get_mut(athlete_id) else {
             continue;
         };
-        tally.performances = tally.performances.saturating_add(1);
-        tally.meets.insert(performance.meet.as_str().to_string());
-        if let Some(kind) = kinds.get(performance.event.as_str()) {
-            tally.events.insert(kind.stable_key().into_owned());
-        }
+        tally_performance(tally, performance, kinds);
     }
     tallies
+}
+
+fn tally_performance(
+    tally: &mut AthleteTally,
+    performance: &CanonicalPerformance,
+    kinds: &BTreeMap<String, EventKind>,
+) {
+    tally.performances = tally.performances.saturating_add(1);
+    tally.meets.insert(performance.meet.as_str().to_string());
+    if let Some(kind) = kinds.get(performance.event.as_str()) {
+        tally.events.insert(kind.stable_key().into_owned());
+    }
 }
 
 pub(super) fn pr_index(prs: &[SharedSelection]) -> BTreeMap<String, Vec<usize>> {

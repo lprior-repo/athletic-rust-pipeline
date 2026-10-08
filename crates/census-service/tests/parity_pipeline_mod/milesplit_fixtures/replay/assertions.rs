@@ -3,8 +3,8 @@ use std::collections::BTreeSet;
 use anyhow::{Context, Result};
 use census_crawl::milesplit;
 use census_domain::model::{
-    CanonicalAthlete, CanonicalMeet, CanonicalPerformance, CanonicalSchool, CentiMetres,
-    CentiSeconds, EventKind, Mark, SourceObservation, Sport,
+    CanonicalAthlete, CanonicalMeet, CanonicalPerformance, CanonicalSchool, CentiMetres, EventKind,
+    ExactSeconds, Mark, SourceObservation, Sport,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -110,7 +110,7 @@ fn assert_individuals(page: &milesplit::OwnedMeetPage) -> Result<()> {
             "11357806",
             Some(2026),
             EventKind::Track100m,
-            Mark::TimeSeconds(CentiSeconds::new(1240))
+            Mark::TimeSeconds(ExactSeconds::parse("12.40")?)
         ),
     ]);
     Ok(())

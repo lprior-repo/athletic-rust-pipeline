@@ -1,47 +1,43 @@
-use super::map::{school_entities, SchoolExtract};
+use super::map::school_entities;
 use super::pages::parse_directory;
 use super::{Options, HOST};
-use crate::net::FetchOptions;
-use crate::AdapterReport;
-use crate::{AdapterContext, CrawlResult};
+use crate::directory::acquisition::{fail, owe, text};
+use crate::{AdapterContext, AdapterReport, CrawlResult};
 
-pub async fn resolve_schools(
+pub(super) async fn collect_directory(
     ctx: &AdapterContext<'_>,
     options: &Options,
     report: &mut AdapterReport,
-) -> CrawlResult<Vec<SchoolExtract>> {
+) -> CrawlResult<()> {
     let url = format!("{HOST}/Directory.aspx?SchoolLevelID=1");
-    let fetch_opts = FetchOptions {
+    let fetch = crate::net::FetchOptions {
         refresh: ctx.refresh || options.refresh,
-        allow_not_found: false,
-        headers: Vec::new(),
+        ..ctx.fetch_options()
     };
-
-    let outcome = ctx.fetcher.get(&url, &fetch_opts).await?;
-    let html = String::from_utf8_lossy(&outcome.body);
-
-    let parsed = parse_directory(&html);
-    let observed_on = if options.observed_on.trim().is_empty() {
-        ctx.observed_on.clone()
-    } else {
-        options.observed_on.clone()
+    let capture = match ctx.fetcher.get(&url, &fetch).await {
+        Ok(capture) => capture,
+        Err(error) => return fail(report, &url, error),
     };
-
-    let mut results = Vec::new();
-    for (name, table) in &parsed {
-        let extract = school_entities(name, table, &observed_on);
-        results.push(extract);
+    let body = match text(&capture) {
+        Ok(body) => body,
+        Err(error) => return fail(report, &url, error),
+    };
+    let parsed = parse_directory(body);
+    if parsed.is_empty()
+        || body.matches("<table class='DirectoryStaffTable'>").count() != parsed.len()
+    {
+        owe(report, &url)?;
     }
-
-    let limit = options.limit.map_or(usize::MAX, |value| value);
-    if results.len() > limit {
-        results.truncate(limit);
-    }
-
-    report.note(format!(
-        "parsed {} school tables from directory page",
-        parsed.len()
-    ));
-
-    Ok(results)
+    parsed.iter().try_for_each(|(name, table)| {
+        if options.limit.is_some_and(|limit| {
+            report.rows >= u64::try_from(limit).map_or(u64::MAX, |value| value)
+        }) {
+            return owe(report, format!("{url}#school={name}"));
+        }
+        super::collect::emit_school(
+            ctx,
+            &school_entities(name, table, &capture.fetched_at),
+            report,
+        )
+    })
 }

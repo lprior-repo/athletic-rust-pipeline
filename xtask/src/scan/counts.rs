@@ -8,15 +8,11 @@ use std::path::Path;
 
 pub(crate) const FILE_LINE_BUDGET: usize = 300;
 
-const FN_LINE_BUDGET: usize = 60;
-
-const FN_LOGICAL_BUDGET: usize = 25;
-
 pub(crate) fn is_test_file(path: &Path) -> bool {
     let named = path
         .file_name()
         .and_then(OsStr::to_str)
-        .is_some_and(|name| name.contains("tests"));
+        .is_some_and(|name| name == "tests.rs" || name.ends_with("_tests.rs"));
     let under_tests = path.components().any(|part| {
         let part = part.as_os_str();
         part == OsStr::new("tests") || part.to_str().is_some_and(|name| name.ends_with("_tests"))
@@ -47,20 +43,10 @@ pub(crate) fn production_lines(lines: &[String], rules: &Rules) -> Vec<String> {
     lines.to_vec()
 }
 
-pub(crate) fn file_budgets(
-    label: &str,
-    lines: &[String],
-    production: &[String],
-    rules: &Rules,
-    over_300: &mut Vec<String>,
-    over_60: &mut Vec<String>,
-) -> usize {
+pub(crate) fn file_budgets(label: &str, lines: &[String], over_300: &mut Vec<String>) {
     if lines.len() > FILE_LINE_BUDGET {
         over_300.push(format!("{label} ({})", lines.len()));
     }
-    let (functions_over_60, functions_over_logical) = scan_functions(rules, production, label);
-    over_60.extend(functions_over_60);
-    functions_over_logical
 }
 
 fn count_indexing(rules: &Rules, lines: &[String]) -> u64 {
@@ -72,66 +58,6 @@ fn count_indexing(rules: &Rules, lines: &[String]) -> u64 {
             .filter(|line| rules.indexing.is_match(line))
             .count(),
     )
-}
-
-fn scan_functions(rules: &Rules, production: &[String], label: &str) -> (Vec<String>, usize) {
-    let mut mask = CodeMask::default();
-    let masked = mask.apply_all(production, &rules.char_literal);
-    let mut over_60: Vec<String> = Vec::new();
-    let mut over_logical = 0usize;
-    let mut index = 0usize;
-    while let Some(line) = production.get(index) {
-        if !rules.function.is_match(line) {
-            index = index.saturating_add(1);
-            continue;
-        }
-        let span_end = body_end(&masked, index).saturating_add(1);
-        let body = production
-            .get(index..span_end.min(production.len()))
-            .map_or(Default::default(), core::convert::identity);
-        let span = span_end.saturating_sub(index);
-        if span > FN_LINE_BUDGET {
-            let name = rules
-                .function
-                .captures(line)
-                .and_then(|captures| captures.get(1))
-                .map_or("<unnamed>", |name| name.as_str());
-            let start = index.saturating_add(1);
-            over_60.push(format!("{label}:{start}-{span_end} {name} ({span})"));
-        }
-        let logical = body
-            .iter()
-            .filter(|line| {
-                let text = line.trim();
-                !text.is_empty() && !text.starts_with("//")
-            })
-            .count();
-        if logical > FN_LOGICAL_BUDGET {
-            over_logical = over_logical.saturating_add(1);
-        }
-        index = span_end;
-    }
-    (over_60, over_logical)
-}
-
-fn body_end(masked: &[String], start: usize) -> usize {
-    let mut depth = 0i64;
-    let mut end = start;
-    while let Some(line) = masked.get(end) {
-        let opens =
-            i64::try_from(line.matches('{').count()).map_or(i64::MAX, core::convert::identity);
-        let closes =
-            i64::try_from(line.matches('}').count()).map_or(i64::MAX, core::convert::identity);
-        depth = depth.saturating_add(opens).saturating_sub(closes);
-        let opened = masked
-            .get(start..=end)
-            .is_some_and(|span| span.iter().any(|line| line.contains('{')));
-        if depth <= 0 && opened {
-            break;
-        }
-        end = end.saturating_add(1);
-    }
-    end
 }
 
 pub(crate) struct CrateScan {

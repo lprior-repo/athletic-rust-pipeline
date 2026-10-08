@@ -1,8 +1,8 @@
 use super::super::super::map::Accumulator;
 use super::*;
 use census_domain::model::{
-    CanonicalEvent, CanonicalMeet, CanonicalSchool, CompetitionLevel, EventKind, Evidence, Grade,
-    SchoolYear, SourceRef, Sport,
+    CanonicalEvent, CanonicalMeet, CanonicalSchool, CompetitionLevel, EventIdentity, EventKind,
+    EventSpecification, Evidence, Grade, SchoolYear, SourceRef, Sport,
 };
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
@@ -20,7 +20,16 @@ fn shared_names_keep_row_owners_separate_and_reuse_only_the_same_native_owner() 
         "2026-04-01",
         CompetitionLevel::Unknown,
     );
-    let event = CanonicalEvent::new(&meet.id, EventKind::Track1600m, Gender::Boys, None, None);
+    let event = CanonicalEvent::new(
+        EventIdentity {
+            meet: &meet.id,
+            kind: EventKind::Track1600m,
+            gender: Gender::Boys,
+            division: None,
+            round: None,
+        },
+        EventSpecification::from_published_label("1600m", &EventKind::Track1600m)?,
+    )?;
     let index = SchoolIndex::from_schools(std::slice::from_ref(&school));
     let mut accumulator = Accumulator::default();
     let mut stats = ResultStats::default();
@@ -50,6 +59,8 @@ fn shared_names_keep_row_owners_separate_and_reuse_only_the_same_native_owner() 
             round: None,
             sport: Sport::OutdoorTrack,
             school_year: SchoolYear::new(2026).ok_or("2026 school year")?,
+            performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 4, 1)
+                .ok_or("snapshot date")?,
             event_key: "event:7".to_owned(),
             provider,
             jurisdiction: state,

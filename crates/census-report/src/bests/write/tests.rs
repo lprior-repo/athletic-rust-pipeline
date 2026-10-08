@@ -1,8 +1,11 @@
 use super::write;
 use crate::bests::{
-    Measure, Population, PrKey, SharedSelection, SurfaceClass, TimingClass, WindClass,
+    ComparisonPolicy, Measure, Population, PrKey, SelectionAthlete, SelectionMeet, SelectionResult,
+    SelectionSource, SharedSelection, SurfaceClass, TimingClass, WindClass,
 };
-use census_domain::model::{CentiSeconds, EventKind, Gender, Id, Mark, TimingMethod};
+use census_domain::model::{
+    EventKind, EventSpecification, ExactSeconds, Gender, Id, Mark, TimingMethod,
+};
 use census_domain::{JurisdictionBucket, MeetState, UsJurisdiction};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -21,41 +24,72 @@ fn selection(
     wind_mps: Option<f64>,
 ) -> SharedSelection {
     SharedSelection {
-        key: PrKey {
-            athlete_id: Id::mint("ath", &["csv_safety"]),
-            event_kind: EventKind::Track100m,
-            surface: SurfaceClass::Outdoor,
-            wind_class: WindClass::Legal,
-            timing: TimingClass::Fat,
-            measure: Measure::Time,
-            context: None,
+        key: key(),
+        result: result(mark, wind_mps),
+        meet: selection_meet(meet),
+        source: source(athlete),
+        athlete: selection_athlete(athlete, school),
+        population: Population {
+            marks: 3,
+            sources: 2,
         },
-        value: 1094,
+        conflicts: Vec::new(),
+    }
+}
+
+fn key() -> PrKey {
+    PrKey {
+        athlete_id: Id::mint("ath", &["csv_safety"]),
+        event_kind: EventKind::Track100m,
+        surface: SurfaceClass::Outdoor,
+        wind_class: WindClass::Legal,
+        timing: TimingClass::Fat,
+        measure: Measure::Time,
+        context: None,
+        specification: EventSpecification::default(),
+        comparison: ComparisonPolicy::Standard,
+    }
+}
+
+fn result(mark: Mark, wind_mps: Option<f64>) -> SelectionResult {
+    SelectionResult {
+        value: 10_940_000_000,
         normalized: Some(10.94),
         mark,
-        date: "2025-03-01".to_string(),
-        meet: meet.to_string(),
-        meet_id: Id::mint("meet", &["csv_safety"]),
-        meet_state: MeetState::Placed(UsJurisdiction::Wisconsin),
         place: Some(3),
         wind_mps,
         timing: Some(TimingMethod::Fat),
+    }
+}
+
+fn selection_meet(meet: &str) -> SelectionMeet {
+    SelectionMeet {
+        date: "2025-03-01".to_string(),
+        name: meet.to_string(),
+        meet_id: Id::mint("meet", &["csv_safety"]),
+        meet_state: MeetState::Placed(UsJurisdiction::Wisconsin),
+    }
+}
+
+fn source(athlete: &str) -> SelectionSource {
+    SelectionSource {
+        specification: EventSpecification::default(),
         result_url: "https://results.test/meet".to_string(),
         performance_id: Id::mint("perf", &["csv_safety"]),
         source_athlete: athlete.to_string(),
         source_key: "wiaa_results:2025-03-01:time".to_string(),
-        athlete: athlete.to_string(),
+    }
+}
+
+fn selection_athlete(athlete: &str, school: &str) -> SelectionAthlete {
+    SelectionAthlete {
+        name: athlete.to_string(),
         gender: Gender::Boys,
         grad_year: 2027,
         profile_url: Some("https://profiles.test/athlete".to_string()),
         school: Some(school.to_string()),
         athlete_school: school.to_string(),
         athlete_state: JurisdictionBucket::Jurisdiction(UsJurisdiction::Wisconsin),
-        population: Population {
-            marks: 3,
-            sources: 2,
-        },
-        conflicts: Vec::new(),
     }
 }
 
@@ -112,7 +146,7 @@ fn ordinary_text_and_negative_numerics_publish_unchanged() -> TestResult {
         ORDINARY_NAME,
         "Ordinary School",
         "Ordinary Meet",
-        Mark::TimeSeconds(CentiSeconds::new(1094)),
+        Mark::TimeSeconds(ExactSeconds::parse("10.94")?),
         Some(-2.3),
     )];
     let (_, csv) = write(directory.path(), &rows, "co2027")?;
@@ -128,7 +162,8 @@ fn ordinary_text_and_negative_numerics_publish_unchanged() -> TestResult {
     check!(eq; row.get(column(&header, "name")?), Some(ORDINARY_NAME));
     check!(eq; row.get(column(&header, "wind_mps")?), Some("-2.3"));
     check!(eq; row.get(column(&header, "best_mark")?), Some("10.94"));
-    check!(eq; row.get(column(&header, "best_value")?), Some("1094"));
+    check!(eq; row.get(column(&header, "best_value")?), Some("10940000000"));
+    check!(eq; row.get(column(&header, "best_value_unit")?), Some("ns"));
     check!(eq; row.get(column(&header, "grad_year")?), Some("2027"));
     Ok(())
 }

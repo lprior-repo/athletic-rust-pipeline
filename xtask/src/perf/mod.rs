@@ -1,6 +1,7 @@
 mod baseline;
 mod bench;
 pub(crate) mod compare;
+mod corpus;
 mod env;
 
 pub use baseline::load_baseline;
@@ -44,6 +45,14 @@ pub(crate) struct GroupMeasurement {
     throughput: Option<Throughput<f64>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     peak_rss_kib: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    allocation_count: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    allocated_bytes: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tail_time_seconds: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    timing_scope: Option<String>,
     wall_time_seconds: f64,
 }
 
@@ -62,6 +71,7 @@ pub(crate) struct Meta {
     rustc: String,
     sha: String,
     corpus_lines: u64,
+    corpus_sha256: String,
 }
 
 pub fn run_record() -> Result<()> {
@@ -83,9 +93,9 @@ pub fn run_record() -> Result<()> {
 pub fn run_check(tolerance: f64, reason: Option<String>) -> Result<()> {
     compare::validate_tolerance(tolerance)?;
     let baseline = load_baseline()?;
-    let current_data = run_benchmarks()?;
-
     compare::check_environment(&baseline)?;
+    compare::validate_baseline(&baseline)?;
+    let current_data = run_benchmarks()?;
     if let Some(reason) = &reason {
         println!("check reason: {reason}");
     }
@@ -157,7 +167,7 @@ mod tests;
 #[derive(Subcommand, Debug)]
 pub(crate) enum PerfCommand {
     #[command(
-        about = "Run both census-service Criterion targets and record per-benchmark timing and declared throughput; peak RSS is recorded when GNU time is available"
+        about = "Record Criterion timing, sample-tail timing, throughput and required GNU time/Valgrind memory measurements"
     )]
     Record,
     #[command(
@@ -169,7 +179,9 @@ pub(crate) enum PerfCommand {
         )]
         #[arg(long, default_value_t = 0.05)]
         tolerance: f64,
-        #[arg(help = "Reason for running the check; stored alongside the baseline for audit")]
+        #[arg(
+            help = "Reason for running the check; does not waive environment or metric mismatches"
+        )]
         #[arg(long)]
         reason: Option<String>,
     },

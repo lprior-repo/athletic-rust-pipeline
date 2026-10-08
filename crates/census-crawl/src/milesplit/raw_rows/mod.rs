@@ -10,6 +10,8 @@ mod columns;
 mod edge_tests;
 mod labels;
 #[cfg(test)]
+mod precision_tests;
+#[cfg(test)]
 mod tests;
 
 use super::parse::html_unescape;

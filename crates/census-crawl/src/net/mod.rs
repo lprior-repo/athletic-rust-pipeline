@@ -9,7 +9,7 @@ use destination_guard::DestinationGuard;
 
 pub mod bridge;
 
-pub(crate) mod cache;
+pub mod cache;
 mod client;
 mod destination_guard;
 mod execute;

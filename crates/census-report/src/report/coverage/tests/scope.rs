@@ -60,16 +60,23 @@ fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() -> 
         CompetitionLevel::Invitational,
     );
     store.append(Table::Meets, &ak_meet)?;
-    let ak_event = CanonicalEvent::new(&ak_meet.id, EventKind::Track100m, Gender::Boys, None, None);
+    let ak_event = CanonicalEvent::new(
+        EventIdentity {
+            meet: &ak_meet.id,
+            kind: EventKind::Track100m,
+            gender: Gender::Boys,
+            division: None,
+            round: None,
+        },
+        EventSpecification::default(),
+    )?;
     store.append(Table::Events, &ak_event)?;
     let ak_result = performance(
         &ak_athlete,
         &ak_event.id,
         &ak_meet.id,
-        EventKind::Track100m,
-        Mark::TimeSeconds(CentiSeconds::new(1142)),
-        "athleticlive_results",
-        "ak-1",
+        Mark::TimeSeconds(ExactSeconds::parse("11.42")?),
+        ("athleticlive_results", "ak-1"),
     )?;
     store.append(Table::Performances, &ak_result)?;
 

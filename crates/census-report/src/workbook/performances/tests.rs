@@ -4,8 +4,8 @@ use crate::report::{Derivation, Scope};
 use calamine::{open_workbook, Data, Range, Reader, Xlsx};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CanonicalTeam, CentiMetres, CentiSeconds, CompetitionLevel, EventKind, Evidence, Gender,
-    GradYear, Mark, SchoolYear, SourceRef, Sport, TimingMethod,
+    CanonicalTeam, CentiMetres, CompetitionLevel, EventIdentity, EventKind, EventSpecification,
+    Evidence, ExactSeconds, Gender, GradYear, Mark, SchoolYear, SourceRef, Sport, TimingMethod,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -25,15 +25,15 @@ struct Fixture {
     mark: Mark,
 }
 
-fn fixtures() -> Vec<Fixture> {
-    vec![
+fn fixtures() -> TestResult<Vec<Fixture>> {
+    Ok(vec![
         Fixture {
             school: "Abbotsford",
             athlete: "Ada",
             source_id: "runner-a",
             date: "2026-05-01",
             kind: EventKind::Track400m,
-            mark: Mark::TimeSeconds(CentiSeconds::new(4855)),
+            mark: Mark::TimeSeconds(ExactSeconds::parse("48.55")?),
         },
         Fixture {
             school: "Abbotsford",
@@ -41,7 +41,7 @@ fn fixtures() -> Vec<Fixture> {
             source_id: "runner-a",
             date: "2026-05-08",
             kind: EventKind::Track400m,
-            mark: Mark::TimeSeconds(CentiSeconds::new(4810)),
+            mark: Mark::TimeSeconds(ExactSeconds::parse("48.10")?),
         },
         Fixture {
             school: "Abbotsford",
@@ -65,9 +65,9 @@ fn fixtures() -> Vec<Fixture> {
             source_id: "runner-d",
             date: "2026-05-08",
             kind: EventKind::Track1600m,
-            mark: Mark::TimeSeconds(CentiSeconds::new(28123)),
+            mark: Mark::TimeSeconds(ExactSeconds::parse("281.23")?),
         },
-    ]
+    ])
 }
 
 fn expected_order() -> Vec<String> {
@@ -125,12 +125,15 @@ fn seed(store: &Store, fixture: &Fixture) -> TestResult<String> {
     store.append(Table::Meets, &meet)?;
 
     let mut event = CanonicalEvent::new(
-        &meet_id,
-        fixture.kind.clone(),
-        Gender::Boys,
-        None,
-        Some("Finals"),
-    );
+        EventIdentity {
+            meet: &meet_id,
+            kind: fixture.kind.clone(),
+            gender: Gender::Boys,
+            division: None,
+            round: Some("Finals"),
+        },
+        EventSpecification::default(),
+    )?;
     let event_id = event.id.clone();
     event.evidence.push(observation());
     store.append(Table::Events, &event)?;
@@ -151,13 +154,7 @@ fn seed(store: &Store, fixture: &Fixture) -> TestResult<String> {
 
     let source_key = format!("test:{}:{}", fixture.athlete, fixture.date);
     let performance = CanonicalPerformance {
-        id: CanonicalPerformance::mint(
-            &athlete.id,
-            &meet_id,
-            &fixture.kind,
-            fixture.date,
-            &source_key,
-        ),
+        id: CanonicalPerformance::mint(&athlete.id, &meet_id, &event_id, fixture.date, &source_key),
         athlete: athlete.id.clone(),
         team: team.id.clone(),
         event: event_id,
@@ -225,7 +222,7 @@ fn sheet_names_zero_pad_to_three_digits_and_grow_past_them() {
 #[test]
 fn a_row_prints_the_canonical_values_behind_it() -> TestResult {
     let dir = tempfile::tempdir()?;
-    let store = seeded_store(&dir, &fixtures())?;
+    let store = seeded_store(&dir, &fixtures()?)?;
     let rows = performance_rows(&store, Scope::Core)?;
     let row = rows
         .iter()
@@ -262,7 +259,7 @@ fn a_row_prints_the_canonical_values_behind_it() -> TestResult {
 #[test]
 fn two_partitions_repeat_the_header_and_split_the_sorted_rows() -> TestResult {
     let dir = tempfile::tempdir()?;
-    let store = seeded_store(&dir, &fixtures())?;
+    let store = seeded_store(&dir, &fixtures()?)?;
     let rows = performance_rows(&store, Scope::Core)?;
     check!(eq; rows.len(), 5);
 
@@ -304,12 +301,12 @@ fn two_partitions_repeat_the_header_and_split_the_sorted_rows() -> TestResult {
 
 #[test]
 fn the_same_rows_in_a_differently_ordered_store_partition_identically() -> TestResult {
-    let mut reversed = fixtures();
+    let mut reversed = fixtures()?;
     reversed.reverse();
 
     let first_dir = tempfile::tempdir()?;
     let second_dir = tempfile::tempdir()?;
-    let first = seeded_store(&first_dir, &fixtures())?;
+    let first = seeded_store(&first_dir, &fixtures()?)?;
     let second = seeded_store(&second_dir, &reversed)?;
 
     let first_rows = performance_rows(&first, Scope::Core)?;
@@ -332,7 +329,7 @@ fn the_same_rows_in_a_differently_ordered_store_partition_identically() -> TestR
 #[test]
 fn the_spilled_rows_match_the_collected_rows_across_range_seams() -> TestResult {
     let dir = tempfile::tempdir()?;
-    let store = seeded_store(&dir, &fixtures())?;
+    let store = seeded_store(&dir, &fixtures()?)?;
     let collected = performance_rows(&store, Scope::Core)?;
     let dataset = ExportDataset::load(&store)?;
     let derivation = Derivation::of(&dataset, Scope::Core, None);
@@ -372,7 +369,7 @@ fn the_spilled_rows_match_the_collected_rows_across_range_seams() -> TestResult 
 #[test]
 fn a_last_sheet_that_fills_exactly_is_not_followed_by_an_empty_one() -> TestResult {
     let dir = tempfile::tempdir()?;
-    let store = seeded_store(&dir, &fixtures())?;
+    let store = seeded_store(&dir, &fixtures()?)?;
     let rows = performance_rows(&store, Scope::Core)?;
     let exactly_full = rows[..4].to_vec();
 
@@ -390,7 +387,7 @@ fn a_last_sheet_that_fills_exactly_is_not_followed_by_an_empty_one() -> TestResu
 #[test]
 fn a_budget_that_holds_no_row_is_rejected_naming_the_row() -> TestResult {
     let dir = tempfile::tempdir()?;
-    let store = seeded_store(&dir, &fixtures())?;
+    let store = seeded_store(&dir, &fixtures()?)?;
     let rows = performance_rows(&store, Scope::Core)?;
     let first = rows.first().ok_or("missing first fixture row")?.id.clone();
 
@@ -410,7 +407,7 @@ fn a_budget_that_holds_no_row_is_rejected_naming_the_row() -> TestResult {
 #[test]
 fn a_spill_budget_that_holds_no_row_or_no_range_is_rejected() -> TestResult {
     let dir = tempfile::tempdir()?;
-    let store = seeded_store(&dir, &fixtures())?;
+    let store = seeded_store(&dir, &fixtures()?)?;
     let dataset = ExportDataset::load(&store)?;
     let derivation = Derivation::of(&dataset, Scope::Core, None);
 
@@ -455,14 +452,18 @@ fn a_performance_the_store_cannot_join_is_still_written() -> TestResult {
         "Unreported Invitational",
         None,
     );
+    let event = CanonicalEvent::new(
+        EventIdentity {
+            meet: &meet,
+            kind: EventKind::Track800m,
+            gender: Gender::Boys,
+            division: None,
+            round: None,
+        },
+        EventSpecification::default(),
+    )?;
     let performance = CanonicalPerformance {
-        id: CanonicalPerformance::mint(
-            &athlete,
-            &meet,
-            &EventKind::Track800m,
-            "2026-04-30",
-            "test:orphan",
-        ),
+        id: CanonicalPerformance::mint(&athlete, &meet, &event.id, "2026-04-30", "test:orphan"),
         athlete: athlete.clone(),
         team: CanonicalTeam::mint(
             &school_id,
@@ -470,10 +471,10 @@ fn a_performance_the_store_cannot_join_is_still_written() -> TestResult {
             Gender::Boys,
             SchoolYear::new(2026).ok_or("invalid fixture season")?,
         ),
-        event: CanonicalEvent::new(&meet, EventKind::Track800m, Gender::Boys, None, None).id,
+        event: event.id,
         meet: meet.clone(),
         date: "2026-04-30".to_string(),
-        mark: Mark::TimeSeconds(CentiSeconds::new(12050)),
+        mark: Mark::TimeSeconds(ExactSeconds::parse("120.50")?),
         wind_mps: None,
         place: None,
         heat: None,
@@ -513,7 +514,7 @@ fn a_performance_the_store_cannot_join_is_still_written() -> TestResult {
 #[test]
 fn the_frozen_entry_point_writes_the_partitioned_sheets() -> TestResult {
     let dir = tempfile::tempdir()?;
-    let store = seeded_store(&dir, &fixtures())?;
+    let store = seeded_store(&dir, &fixtures()?)?;
     let path = dir.path().join("book.xlsx");
 
     let dataset = ExportDataset::load(&store)?;

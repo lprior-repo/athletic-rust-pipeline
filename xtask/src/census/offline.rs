@@ -4,6 +4,8 @@ use std::path::Path;
 
 use crate::cmd::Cmd;
 
+use super::ExportRequest;
+
 pub(super) fn report(store: &Path, scope: Scope) -> Result<()> {
     let mut cmd = binary(store).arg("report");
     if let Scope::Core = scope {
@@ -12,28 +14,21 @@ pub(super) fn report(store: &Path, scope: Scope) -> Result<()> {
     cmd.run()
 }
 
-pub(super) fn workbook(
-    store: &Path,
-    out: Option<&Path>,
-    grad_year: i32,
-    school_year: i32,
-    core: bool,
-    limit: Option<usize>,
-) -> Result<()> {
+pub(super) fn workbook(store: &Path, request: &ExportRequest) -> Result<()> {
     let mut cmd = binary(store).args([
         "workbook",
         "--grad-year",
-        &grad_year.to_string(),
+        &request.grad_year.to_string(),
         "--school-year",
-        &school_year.to_string(),
+        &request.school_year.to_string(),
     ]);
-    if let Some(out) = out {
+    if let Some(out) = request.out.as_deref() {
         cmd = cmd.arg("--out").arg(out.display().to_string());
     }
-    if core {
+    if request.core {
         cmd = cmd.arg("--core");
     }
-    if let Some(limit) = limit {
+    if let Some(limit) = request.limit {
         cmd = cmd.args(["--limit", &limit.to_string()]);
     }
     cmd.run()

@@ -39,28 +39,29 @@ pub(super) fn record_row(
     context: &RowContext<'_>,
     row: &DocRow,
     row_index: usize,
-) -> bool {
+) -> crate::CrawlResult<bool> {
     writer.stats.rows_read = writer.stats.rows_read.saturating_add(1);
+    if !admit_date(writer, context)? {
+        return Ok(false);
+    }
     let Some(identity) = decode_row(writer, row) else {
-        return false;
+        return Ok(false);
     };
     let Some(school_id) = resolve_school(writer, context, identity.school_name) else {
-        return false;
+        return Ok(false);
     };
     let Some(mapped) = map_identity(writer, context, &school_id, &identity, row_index) else {
-        return false;
+        return Ok(false);
     };
     writer.stats.rows_mapped = writer.stats.rows_mapped.saturating_add(1);
     count_channels(writer.stats, row);
-    let mark = match row.canonical_mark(context.kind) {
-        Ok(Some(mark)) => mark,
-        outcome => {
-            writer.stats.rows_without_mark = writer.stats.rows_without_mark.saturating_add(1);
-            if let Err(error) = outcome {
-                retain_mark_refusal(writer, context, &mapped, row_index, &error.to_string());
-            }
-            return true;
-        }
+    let contradiction = row.mark_contradiction(context.kind).map(|status| format!(
+        "published result {status} contradicts im: m={:?}, vm={:?}, im={:?}; numeric winner withheld",
+        row.mark, row.validity, row.mark_int,
+    ));
+    let Some(mark) = row.canonical_mark(context.kind) else {
+        writer.stats.rows_without_mark = writer.stats.rows_without_mark.saturating_add(1);
+        return Ok(true);
     };
     let facts = PerformanceFacts {
         mark,
@@ -69,28 +70,10 @@ pub(super) fn record_row(
         heat: row.heat_number().map(|heat| heat.to_string()),
         grade: identity.grade,
         row: row_index,
+        contradiction,
     };
-    write_performance(writer, context, &mapped, &facts);
-    true
-}
-
-fn retain_mark_refusal(
-    writer: &mut Writer<'_>,
-    context: &RowContext<'_>,
-    mapped: &Mapped,
-    row_index: usize,
-    reason: &str,
-) {
-    if let Some(athlete) = writer.accumulator.athletes.get_mut(mapped.athlete.as_str()) {
-        let mut evidence = context.evidence.clone();
-        evidence.note = Some(format!(
-            "{}:{}:row:{row_index}: refused numeric result: {reason}",
-            context.provider, context.event_key
-        ));
-        if !athlete.evidence.contains(&evidence) {
-            athlete.evidence.push(evidence);
-        }
-    }
+    write_performance(writer, context, &mapped, &facts)?;
+    Ok(true)
 }
 
 pub(super) fn record_standing(
@@ -98,22 +81,29 @@ pub(super) fn record_standing(
     context: &RowContext<'_>,
     row: &StandingRow,
     row_index: usize,
-) -> bool {
+) -> crate::CrawlResult<bool> {
     writer.stats.rows_read = writer.stats.rows_read.saturating_add(1);
+    if !admit_date(writer, context)? {
+        return Ok(false);
+    }
     let Some(identity) = decode_standing(writer, row) else {
-        return false;
+        return Ok(false);
     };
     let Some(school_id) = resolve_school(writer, context, identity.school_name) else {
-        return false;
+        return Ok(false);
     };
     let Some(mapped) = map_identity(writer, context, &school_id, &identity, row_index) else {
-        return false;
+        return Ok(false);
     };
     writer.stats.rows_mapped = writer.stats.rows_mapped.saturating_add(1);
     count_standing_channels(writer.stats, row);
+    let contradiction = row.mark_contradiction(context.kind).map(|status| format!(
+        "published status {status} contradicts numeric standings value: m={:?}, rtm={:?}; numeric winner withheld",
+        row.mark, row.raw_time,
+    ));
     let Some(mark) = row.canonical_mark(context.kind) else {
         writer.stats.rows_without_mark = writer.stats.rows_without_mark.saturating_add(1);
-        return true;
+        return Ok(true);
     };
     let facts = PerformanceFacts {
         mark,
@@ -122,9 +112,29 @@ pub(super) fn record_standing(
         heat: None,
         grade: identity.grade,
         row: row_index,
+        contradiction,
     };
-    write_performance(writer, context, &mapped, &facts);
-    true
+    write_performance(writer, context, &mapped, &facts)?;
+    Ok(true)
+}
+
+fn admit_date(writer: &mut Writer<'_>, context: &RowContext<'_>) -> crate::CrawlResult<bool> {
+    use crate::context::{assess_performance_date, PerformanceDateAssessment};
+    match assess_performance_date(context.performance_as_of, &context.meet.date) {
+        PerformanceDateAssessment::Admitted => Ok(true),
+        PerformanceDateAssessment::Future => {
+            writer.stats.rows_out_of_scope_future =
+                writer.stats.rows_out_of_scope_future.saturating_add(1);
+            Ok(false)
+        }
+        PerformanceDateAssessment::Unknown => {
+            writer.stats.rows_date_unknown = writer.stats.rows_date_unknown.saturating_add(1);
+            Err(crate::CrawlError::PerformanceDateUnknown {
+                published: context.meet.date.chars().take(64).collect(),
+                as_of: context.performance_as_of,
+            })
+        }
+    }
 }
 
 fn refused<T>(stats: &mut ResultStats, refusal: Refusal) -> Option<T> {

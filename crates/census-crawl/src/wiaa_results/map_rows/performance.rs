@@ -20,7 +20,7 @@ pub(super) fn record_performance(
     let id = CanonicalPerformance::mint(
         &facts.athlete,
         &context.meet.id,
-        &context.event.kind,
+        context.event_id,
         &context.meet.date,
         &facts.key,
     );

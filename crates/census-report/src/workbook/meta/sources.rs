@@ -9,7 +9,16 @@ use super::sorted_counts;
 pub(super) const SOURCE_WIDTHS: [u16; 8] = [22, 46, 15, 62, 24, 10, 9, 11];
 
 pub(super) fn sources_sheet(census: &Census) -> ReportResult<Vec<Vec<Cell>>> {
-    let mut cells = vec![row!(
+    let mut cells = vec![source_header()];
+    for descriptor in descriptors() {
+        cells.push(descriptor_row(descriptor)?);
+    }
+    append_evidence_channels(&mut cells, census)?;
+    Ok(cells)
+}
+
+fn source_header() -> Vec<Cell> {
+    row!(
         "Source",
         "Provider",
         "Transport",
@@ -18,10 +27,10 @@ pub(super) fn sources_sheet(census: &Census) -> ReportResult<Vec<Vec<Cell>>> {
         "Requests/s",
         "In flight",
         "Crawl delay",
-    )];
-    for descriptor in descriptors() {
-        cells.push(descriptor_row(descriptor)?);
-    }
+    )
+}
+
+fn append_evidence_channels(cells: &mut Vec<Vec<Cell>>, census: &Census) -> ReportResult<()> {
     cells.push(row!());
     cells.push(row!("Evidence channel", "Source id", "Records", ""));
     for (channel, counts) in evidence_channels(census) {
@@ -34,7 +43,7 @@ pub(super) fn sources_sheet(census: &Census) -> ReportResult<Vec<Vec<Cell>>> {
             ));
         }
     }
-    Ok(cells)
+    Ok(())
 }
 
 fn descriptor_row(descriptor: &SourceDescriptor) -> ReportResult<Vec<Cell>> {
@@ -68,39 +77,33 @@ fn evidence_channels(census: &Census) -> Vec<(&'static str, &BTreeMap<String, us
 }
 
 fn capability_labels(capabilities: &SourceCapabilities) -> String {
-    let mut labels: Vec<&str> = Vec::new();
-    push_flag(
-        &mut labels,
-        capabilities.athlete_discovery,
-        "athlete_discovery",
-    );
-    push_flag(&mut labels, capabilities.athlete_profile, "athlete_profile");
-    push_flag(&mut labels, capabilities.meet_discovery, "meet_discovery");
-    push_flag(&mut labels, capabilities.bulk_results, "bulk_results");
-    push_flag(&mut labels, capabilities.grade_evidence, "grade_evidence");
-    push_flag(
-        &mut labels,
-        capabilities.graduation_evidence,
-        "graduation_evidence",
-    );
-    push_flag(&mut labels, capabilities.school_evidence, "school_evidence");
-    push_flag(&mut labels, capabilities.coach_directory, "coach_directory");
-    push_flag(
-        &mut labels,
-        capabilities.public_professional_contact,
-        "public_professional_contact",
-    );
-    push_flag(&mut labels, capabilities.pr_evidence, "pr_evidence");
+    let flags = capability_flags(capabilities);
+    let labels: Vec<&str> = flags
+        .into_iter()
+        .filter_map(|(claimed, label)| claimed.then_some(label))
+        .collect();
     if labels.is_empty() {
         return "none".to_string();
     }
     labels.join(", ")
 }
 
-fn push_flag(labels: &mut Vec<&'static str>, claimed: bool, label: &'static str) {
-    if claimed {
-        labels.push(label);
-    }
+fn capability_flags(capabilities: &SourceCapabilities) -> [(bool, &'static str); 10] {
+    [
+        (capabilities.athlete_discovery, "athlete_discovery"),
+        (capabilities.athlete_profile, "athlete_profile"),
+        (capabilities.meet_discovery, "meet_discovery"),
+        (capabilities.bulk_results, "bulk_results"),
+        (capabilities.grade_evidence, "grade_evidence"),
+        (capabilities.graduation_evidence, "graduation_evidence"),
+        (capabilities.school_evidence, "school_evidence"),
+        (capabilities.coach_directory, "coach_directory"),
+        (
+            capabilities.public_professional_contact,
+            "public_professional_contact",
+        ),
+        (capabilities.pr_evidence, "pr_evidence"),
+    ]
 }
 
 fn transport_label(kind: TransportKind) -> &'static str {

@@ -112,14 +112,7 @@ fn recording_defers_rows_and_completion_until_application() -> Result<(), Box<dy
             check!(eq; physical_counts(&store)?, vec![0, 0, 0]);
             check!(eq; store.journal_keys("riil_schools")?.len(), 0);
             let recorded = recording.drain();
-            let mut batch = store.write_batch();
-            for rows in recorded.rows {
-                batch.append_many(rows.table, &rows.rows)?;
-            }
-            for journal in recorded.journal {
-                batch.journal_done(&journal.phase, &journal.key, &journal.payload)?;
-            }
-            batch.commit()?;
+            recorded.apply(&store, "riil-recording-test")?;
             check!(eq; physical_counts(&store)?, vec![1, 2, 1]);
             let replay = evaluate(&fetcher, &store, Some(&recording), "2026-10-03", "").await?;
             check!(eq; replay.rows, 0);

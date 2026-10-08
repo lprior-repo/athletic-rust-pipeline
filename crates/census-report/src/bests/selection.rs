@@ -1,6 +1,8 @@
 use crate::bests::key::{PrKey, SurfaceClass, TimingClass, WindClass};
 use crate::bests::Measure;
-use census_domain::model::{AthleteId, Gender, Mark, PerformanceId, TimingMethod};
+use census_domain::model::{
+    AthleteId, EventSpecification, Gender, Mark, PerformanceId, TimingMethod,
+};
 use census_domain::{JurisdictionBucket, MeetState};
 use serde::Serialize;
 
@@ -17,29 +19,56 @@ pub struct Conflict {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
-pub struct SharedSelection {
-    pub key: PrKey,
+pub struct SelectionResult {
     pub value: i64,
     pub normalized: Option<f64>,
     pub mark: Mark,
-    pub date: String,
-    pub meet: String,
-    pub meet_id: census_domain::model::MeetId,
-    pub meet_state: MeetState,
     pub place: Option<u16>,
     pub wind_mps: Option<f64>,
     pub timing: Option<TimingMethod>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct SelectionMeet {
+    pub date: String,
+    #[serde(rename = "meet")]
+    pub name: String,
+    pub meet_id: census_domain::model::MeetId,
+    pub meet_state: MeetState,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct SelectionSource {
+    pub specification: EventSpecification,
     pub result_url: String,
     pub performance_id: PerformanceId,
     pub source_athlete: String,
     pub source_key: String,
-    pub athlete: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct SelectionAthlete {
+    #[serde(rename = "athlete")]
+    pub name: String,
     pub gender: Gender,
     pub grad_year: i16,
     pub profile_url: Option<String>,
     pub school: Option<String>,
     pub athlete_school: String,
     pub athlete_state: JurisdictionBucket,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct SharedSelection {
+    pub key: PrKey,
+    #[serde(flatten)]
+    pub result: SelectionResult,
+    #[serde(flatten)]
+    pub meet: SelectionMeet,
+    #[serde(flatten)]
+    pub source: SelectionSource,
+    #[serde(flatten)]
+    pub athlete: SelectionAthlete,
     pub population: Population,
     pub conflicts: Vec<Conflict>,
 }
@@ -77,18 +106,18 @@ impl SharedSelection {
     }
 
     pub fn mark_text(&self) -> String {
-        super::mark_text(&self.mark)
+        super::mark_text(&self.result.mark)
     }
 
     pub fn unit(&self) -> Option<&'static str> {
-        crate::bests::mark_unit(&self.mark)
+        crate::bests::mark_unit(&self.result.mark)
     }
 
     fn order_key(&self) -> OrderKey<'_> {
         (
-            self.athlete_state,
-            self.athlete_school.as_str(),
-            self.athlete.as_str(),
+            self.athlete.athlete_state,
+            self.athlete.athlete_school.as_str(),
+            self.athlete.name.as_str(),
             &self.key,
         )
     }

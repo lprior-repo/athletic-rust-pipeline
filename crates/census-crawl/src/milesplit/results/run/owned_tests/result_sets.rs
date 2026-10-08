@@ -16,24 +16,15 @@ fn shared_owned_capture_projects_only_matching_result_sets_without_duplicate_sub
             seed_owned(&fetcher, &first, &body)?;
             seed_metadata(&fetcher, &first)?;
             seed_metadata(&fetcher, &second)?;
-            let mut run = Run {
-                meet_id: owned_key(&first),
-                schools: ProviderSchools::from_schools(&[
-                    school("Spann", "38332"),
-                    school("Charles", "4912"),
-                ]),
-                owned: HashMap::new(),
-                stats: Stats::default(),
-                accumulated: Accumulator::default(),
-                seen: HashSet::new(),
-                pending: Vec::new(),
-            };
+            let mut run = Run::new(ProviderSchools::from_schools(&[
+                school("Spann", "38332"),
+                school("Charles", "4912"),
+            ]));
             let ctx = context(&store, &fetcher)?;
             run.read(&ctx, &first).await?;
+            let first_rows: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
             check!(eq;
-                run.accumulated
-                    .performances
-                    .values()
+                first_rows.iter()
                     .map(|row| row.source_key.as_str())
                     .collect::<std::collections::BTreeSet<_>>(),
                 std::collections::BTreeSet::from([
@@ -42,10 +33,9 @@ fn shared_owned_capture_projects_only_matching_result_sets_without_duplicate_sub
                 ])
             );
             run.read(&ctx, &second).await?;
+            let all_rows: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
             check!(eq;
-                run.accumulated
-                    .performances
-                    .values()
+                all_rows.iter()
                     .map(|row| row.source_key.as_str())
                     .collect::<std::collections::BTreeSet<_>>(),
                 std::collections::BTreeSet::from([
@@ -54,16 +44,12 @@ fn shared_owned_capture_projects_only_matching_result_sets_without_duplicate_sub
                     "milesplit_result:201782806",
                 ])
             );
-            let long = run
-                .accumulated
-                .performances
-                .values()
+            let long = all_rows
+                .iter()
                 .find(|row| row.source_key == "milesplit_result:201782263")
                 .ok_or("long jump")?;
-            let triple = run
-                .accumulated
-                .performances
-                .values()
+            let triple = all_rows
+                .iter()
                 .find(|row| row.source_key == "milesplit_result:201782277")
                 .ok_or("triple jump")?;
             check!(eq; long.athlete, triple.athlete);
@@ -74,30 +60,37 @@ fn shared_owned_capture_projects_only_matching_result_sets_without_duplicate_sub
 }
 
 #[test]
-fn a_run_refuses_a_result_set_from_another_meet() -> TestResult {
+fn a_later_result_set_cannot_reuse_the_previous_meets_owned_capture() -> TestResult {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
         .block_on(async {
             let (_dir, store, fetcher, first) = setup()?;
-            let mut run = Run {
-                meet_id: owned_key(&first),
-                schools: ProviderSchools::from_schools(&[school("Spann", "38332")]),
-                owned: HashMap::new(),
-                stats: Stats::default(),
-                accumulated: Accumulator::default(),
-                seen: HashSet::new(),
-                pending: Vec::new(),
-            };
             let foreign = ResultSetRef::parse("https://al.milesplit.com/meets/1/results/2/raw")
                 .ok_or("foreign set")?;
+            seed_owned(&fetcher, &first, TROY)?;
+            seed_metadata(&fetcher, &first)?;
+            let mut run = Run::new(ProviderSchools::from_schools(&[
+                school("Spann", "38332"),
+                school("Charles", "4912"),
+            ]));
             let ctx = context(&store, &fetcher)?;
-            let error = run
-                .read(&ctx, &foreign)
-                .await
-                .err()
-                .ok_or("a foreign meet's result set must be refused")?;
-            check!(eq; error.to_string().contains("belongs to meet"), true);
+            run.read(&ctx, &first).await?;
+            let facts = super::replay::entities(&store)?;
+            let physical = super::replay::physical(&store)?;
+            match run.read(&ctx, &foreign).await {
+                Err(crate::CrawlError::Fetch(crate::net::FetchError::Offline { url })) => {
+                    check!(eq; url, crate::milesplit::fetch::owned_meet_url(&foreign)?);
+                }
+                outcome => {
+                    return Err(format!(
+                        "later meet must acquire its own source capture: {outcome:?}"
+                    )
+                    .into())
+                }
+            }
+            check!(eq; super::replay::entities(&store)?, facts);
+            check!(eq; super::replay::physical(&store)?, physical);
             Ok(())
         })
 }

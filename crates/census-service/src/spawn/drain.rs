@@ -9,6 +9,25 @@ struct Draining<'a> {
     region: Region,
 }
 
+impl<'a> Draining<'a> {
+    fn new(owner: &'a Spawner) -> Self {
+        let mut region = owner.lock();
+        region.closed = true;
+        owner.permits.close();
+        owner.stopping.send_replace(true);
+        Self {
+            owner,
+            region: std::mem::replace(
+                &mut *region,
+                Region {
+                    closed: true,
+                    ..Region::default()
+                },
+            ),
+        }
+    }
+}
+
 impl Drop for Draining<'_> {
     fn drop(&mut self) {
         *self.owner.lock() = std::mem::take(&mut self.region);
@@ -19,43 +38,40 @@ impl Spawner {
     #[tracing::instrument(skip_all, fields(timeout = ?timeout))]
     pub async fn drain(&self, timeout: Duration) -> Result<TaskReport, SpawnError> {
         let _exclusive = self.draining.lock().await;
-        let mut owned = {
-            let mut region = self.lock();
-            self.permits.close();
-            self.stopping.send_replace(true);
-            Draining {
-                owner: self,
-                region: std::mem::take(&mut *region),
-            }
-        };
+        let mut owned = Draining::new(self);
         let region = &mut owned.region;
         let deadline = SystemClock.now().checked_add(timeout);
         if region.aborting {
             abort_and_reap(region).await?;
         }
-        while !region.tasks.is_empty() {
-            let joined = match deadline {
-                Some(deadline) => {
-                    match tokio::time::timeout_at(deadline, region.tasks.join_next()).await {
-                        Ok(joined) => joined,
-                        Err(_) => {
-                            abort_and_reap(region).await?;
-                            break;
-                        }
-                    }
-                }
-                None => region.tasks.join_next().await,
-            };
-            match joined {
-                Some(joined) => region.ledger.classify(DrainState::from_join(joined)),
-                None => break,
-            }
-        }
+        drain_until(region, deadline).await?;
         let report = region.ledger.report();
         region.ledger = Ledger::default();
         region.aborting = false;
         Ok(report)
     }
+}
+
+async fn drain_until(
+    region: &mut Region,
+    deadline: Option<tokio::time::Instant>,
+) -> Result<(), SpawnError> {
+    while !region.tasks.is_empty() {
+        let joined = match deadline {
+            Some(deadline) => {
+                match tokio::time::timeout_at(deadline, region.tasks.join_next()).await {
+                    Ok(joined) => joined,
+                    Err(_) => return abort_and_reap(region).await,
+                }
+            }
+            None => region.tasks.join_next().await,
+        };
+        match joined {
+            Some(joined) => region.ledger.classify(DrainState::from_join(joined)),
+            None => break,
+        }
+    }
+    Ok(())
 }
 
 async fn abort_and_reap(region: &mut Region) -> Result<(), SpawnError> {

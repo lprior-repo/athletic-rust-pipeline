@@ -7,7 +7,7 @@ use crate::census;
 use census_crawl::{net::Fetcher, AdapterReport};
 use census_store::Store;
 
-use super::super::jobs::{adapter_context, collect_error};
+use super::super::jobs::{adapter_context, collect_error, AdapterScope};
 
 #[derive(Clone, Copy)]
 pub(super) struct Crawl<'a> {
@@ -17,23 +17,23 @@ pub(super) struct Crawl<'a> {
     pub(super) season: SchoolYear,
     pub(super) refresh: bool,
     pub(super) at: &'a str,
+    pub(super) as_of: chrono::NaiveDate,
 }
 
 pub(super) fn crawl<'a>(
     store: &'a Arc<Store>,
     fetcher: &'a Arc<Fetcher>,
     jurisdiction: UsJurisdiction,
-    season: SchoolYear,
-    refresh: bool,
-    at: &'a str,
+    scope: AdapterScope<'a>,
 ) -> Crawl<'a> {
     Crawl {
         store,
         fetcher,
         jurisdiction,
-        season,
-        refresh,
-        at,
+        season: scope.season,
+        refresh: scope.refresh,
+        at: scope.at,
+        as_of: scope.as_of,
     }
 }
 
@@ -65,6 +65,7 @@ pub(super) async fn walk_wiaa(crawl: Crawl<'_>) -> Result<AdapterReport, super::
         season,
         refresh,
         at,
+        as_of,
     } = crawl;
     let options = census_crawl::wiaa::Options {
         limit: None,
@@ -73,7 +74,17 @@ pub(super) async fn walk_wiaa(crawl: Crawl<'_>) -> Result<AdapterReport, super::
         states: vec![jurisdiction],
         school_names: Vec::new(),
     };
-    let context = adapter_context(store, fetcher, season, refresh, at, None);
+    let context = adapter_context(
+        store,
+        fetcher,
+        AdapterScope {
+            season,
+            refresh,
+            at,
+            as_of,
+        },
+        None,
+    );
     let report = census_crawl::wiaa::collect(&context, &options)
         .await
         .map_err(collect_error)?;
@@ -88,6 +99,7 @@ pub(super) async fn walk_mshsl(crawl: Crawl<'_>) -> Result<AdapterReport, super:
         season,
         refresh,
         at,
+        as_of,
     } = crawl;
     let options = census_crawl::mshsl::Options {
         limit: None,
@@ -96,7 +108,17 @@ pub(super) async fn walk_mshsl(crawl: Crawl<'_>) -> Result<AdapterReport, super:
         states: vec![jurisdiction],
         school_names: Vec::new(),
     };
-    let context = adapter_context(store, fetcher, season, refresh, at, None);
+    let context = adapter_context(
+        store,
+        fetcher,
+        AdapterScope {
+            season,
+            refresh,
+            at,
+            as_of,
+        },
+        None,
+    );
     let report = census_crawl::mshsl::collect(&context, &options)
         .await
         .map_err(collect_error)?;
@@ -113,6 +135,7 @@ pub(super) async fn walk_plain_names(
         season,
         refresh,
         at,
+        as_of,
     } = crawl;
     let options = census_crawl::plain_names::Options {
         limit: None,
@@ -121,7 +144,17 @@ pub(super) async fn walk_plain_names(
         states: vec![jurisdiction],
         school_names: Vec::new(),
     };
-    let context = adapter_context(store, fetcher, season, refresh, at, None);
+    let context = adapter_context(
+        store,
+        fetcher,
+        AdapterScope {
+            season,
+            refresh,
+            at,
+            as_of,
+        },
+        None,
+    );
     let report = census_crawl::plain_names::collect(&context, &options)
         .await
         .map_err(collect_error)?;
@@ -136,6 +169,7 @@ pub(super) async fn walk_ihsa(crawl: Crawl<'_>) -> Result<AdapterReport, super::
         season,
         refresh,
         at,
+        as_of,
     } = crawl;
     let options = census_crawl::ihsa::Options {
         limit: None,
@@ -144,7 +178,17 @@ pub(super) async fn walk_ihsa(crawl: Crawl<'_>) -> Result<AdapterReport, super::
         states: vec![jurisdiction],
         school_names: Vec::new(),
     };
-    let context = adapter_context(store, fetcher, season, refresh, at, None);
+    let context = adapter_context(
+        store,
+        fetcher,
+        AdapterScope {
+            season,
+            refresh,
+            at,
+            as_of,
+        },
+        None,
+    );
     let report = census_crawl::ihsa::collect(&context, &options)
         .await
         .map_err(collect_error)?;
@@ -159,6 +203,7 @@ pub(super) async fn walk_ks(crawl: Crawl<'_>) -> Result<AdapterReport, super::su
         season,
         refresh,
         at,
+        as_of,
     } = crawl;
     let options = census_crawl::ks::Options {
         limit: None,
@@ -167,7 +212,17 @@ pub(super) async fn walk_ks(crawl: Crawl<'_>) -> Result<AdapterReport, super::su
         states: vec![jurisdiction],
         school_names: Vec::new(),
     };
-    let context = adapter_context(store, fetcher, season, refresh, at, None);
+    let context = adapter_context(
+        store,
+        fetcher,
+        AdapterScope {
+            season,
+            refresh,
+            at,
+            as_of,
+        },
+        None,
+    );
     let report = census_crawl::ks::collect(&context, &options)
         .await
         .map_err(collect_error)?;
@@ -184,6 +239,7 @@ pub(super) async fn walk_coach_directories(
         season,
         refresh,
         at,
+        as_of,
     } = crawl;
     let options = census_crawl::coach_directories::Options {
         limit: None,
@@ -192,7 +248,17 @@ pub(super) async fn walk_coach_directories(
         states: vec![jurisdiction],
         school_names: Vec::new(),
     };
-    let context = adapter_context(store, fetcher, season, refresh, at, None);
+    let context = adapter_context(
+        store,
+        fetcher,
+        AdapterScope {
+            season,
+            refresh,
+            at,
+            as_of,
+        },
+        None,
+    );
     let report = census_crawl::coach_directories::collect(&context, &options)
         .await
         .map_err(collect_error)?;
@@ -209,6 +275,7 @@ pub(super) async fn walk_arbiter_orgs(
         season,
         refresh,
         at,
+        as_of,
     } = crawl;
     let options = census_crawl::arbiter::Options {
         limit: None,
@@ -216,7 +283,17 @@ pub(super) async fn walk_arbiter_orgs(
         observed_on: at.to_string(),
         states: vec![jurisdiction],
     };
-    let context = adapter_context(store, fetcher, season, refresh, at, None);
+    let context = adapter_context(
+        store,
+        fetcher,
+        AdapterScope {
+            season,
+            refresh,
+            at,
+            as_of,
+        },
+        None,
+    );
     let report = census_crawl::arbiter::collect(&context, &options)
         .await
         .map_err(collect_error)?;

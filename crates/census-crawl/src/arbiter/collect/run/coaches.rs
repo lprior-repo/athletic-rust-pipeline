@@ -1,179 +1,184 @@
 use super::recovery::Recovery;
-use super::{page_read_short, response_text, Run};
+use super::{page_read_short, Run};
 use crate::arbiter::map::map_coach_row;
-use crate::arbiter::parse::{parse_coach_outcomes, CoachRow, OrgSchool, Page};
+use crate::arbiter::parse::parse_coach_outcomes;
 use crate::arbiter::{MAX_PAGES, PAGE_SIZE};
+use crate::directory::acquisition::text;
 use crate::{CrawlError, CrawlResult};
-use census_domain::model::{CanonicalCoach, CanonicalSchool};
+use census_domain::model::CanonicalSchool;
+use census_store::Table;
+use futures::{stream, StreamExt, TryStreamExt};
 
-pub(super) struct CoachAcquisition {
-    pub(super) coaches: Vec<CanonicalCoach>,
+pub(super) struct Acquisition {
+    pub(super) admitted: usize,
+    pub(super) published: usize,
     pub(super) completion: CrawlResult<()>,
 }
 
-impl CoachAcquisition {
-    fn incomplete(coaches: Vec<CanonicalCoach>, error: CrawlError) -> Self {
-        Self {
-            coaches,
-            completion: Err(error),
-        }
-    }
+struct CoachWalk {
+    admitted: usize,
+    published: usize,
+    page: Option<u64>,
+    completion: CrawlResult<()>,
 }
 
 impl Run<'_> {
-    pub(super) fn finish_school(
+    pub(super) async fn coaches(
         &mut self,
-        org: &str,
-        row: &OrgSchool,
-        school: &CanonicalSchool,
-        key: Option<String>,
-        acquisition: CoachAcquisition,
-        recovery: &Recovery,
-    ) -> CrawlResult<()> {
-        match (acquisition.completion, key) {
-            (Ok(()), Some(key)) => self.write(org, row, school, &acquisition.coaches, &key)?,
-            (Ok(()), None) => {
-                return Err(CrawlError::Invariant {
-                    detail: "completed Arbiter acquisition has no source owner".to_string(),
-                });
-            }
-            (Err(error), key) => {
-                let mut batch = self.persist_facts(school, &acquisition.coaches)?;
-                if let Some(key) = key {
-                    recovery.persist(&mut batch, &school.id, &key, &error)?;
-                }
-                batch.commit()?;
-                self.tally.coaches = self.tally.coaches.saturating_add(acquisition.coaches.len());
-                self.tally.fail(format!(
-                    "{} coaches for {}: {error}; completion owed",
-                    failure_kind(&error),
-                    school.name,
-                ));
-            }
-        }
-        self.tally.schools = self.tally.schools.saturating_add(1);
-        Ok(())
-    }
-
-    pub(super) async fn collect_coaches(
-        &self,
-        host: &str,
-        org: &str,
-        public_id: u64,
+        origin: (&str, &str),
+        public_id: Option<u64>,
         school: &CanonicalSchool,
         recovery: &mut Recovery,
-    ) -> CoachAcquisition {
-        let mut coaches = Vec::new();
-        let mut completion = Ok(());
-        for page in 1..=MAX_PAGES {
-            let url = format!(
-                "{host}/api/v2/legacy/public/{org}/coaches?filter.EntityId={public_id}&&pageSize={PAGE_SIZE}&pageNumber={page}"
-            );
-            let (parsed, rows_on_page) = match self.coach_page(&url, page, recovery).await {
-                Ok(parsed) => parsed,
-                Err(error) => return CoachAcquisition::incomplete(coaches, error),
+    ) -> CrawlResult<Acquisition> {
+        let id = public_id
+            .filter(|id| *id > 0)
+            .ok_or_else(|| CrawlError::Invariant {
+                detail: "missing coach owner id".into(),
+            })?;
+        let base = format!(
+            "{}/api/v2/legacy/public/{}/coaches?filter.EntityId={id}",
+            origin.0, origin.1
+        );
+        let base = base.as_str();
+        let walk = CoachWalk {
+            admitted: 0,
+            published: 0,
+            page: Some(1),
+            completion: Ok(()),
+        };
+        let (mut walk, run, _) = stream::iter(1..=MAX_PAGES)
+            .map(Ok::<_, CrawlError>)
+            .try_fold(
+                (walk, &mut *self, recovery),
+                |(mut walk, run, recovery), page| async move {
+                    if walk.page.is_some() {
+                        run.coach_page((base, page), school, recovery, &mut walk)
+                            .await?;
+                    }
+                    Ok((walk, run, recovery))
+                },
+            )
+            .await?;
+        if let Some(page) = walk.page {
+            let url = format!("{base}&&pageSize={PAGE_SIZE}&pageNumber={page}");
+            let error = CrawlError::Schema {
+                url: url.clone(),
+                detail: "coach page capacity exhausted".into(),
             };
-            completion = completion.and(retain_coaches(
-                &mut coaches,
-                parsed.rows,
-                school,
-                &url,
-                &self.options.observed_on,
-            ));
-            if rows_on_page < PAGE_SIZE {
-                return CoachAcquisition {
-                    coaches,
-                    completion: completion.and(short_page_completion(
-                        page,
-                        rows_on_page,
-                        parsed.total,
-                        url,
-                        &school.name,
-                    )),
-                };
-            }
+            run.tally.fail(&url, &error)?;
+            walk.completion = walk.completion.and(Err(error));
         }
-        CoachAcquisition::incomplete(
-            coaches,
-            CrawlError::Schema {
-                url: format!(
-                    "{host}/api/v2/legacy/public/{org}/coaches?filter.EntityId={public_id}"
-                ),
-                detail: format!(
-                    "coaches for {} have more pages than the {MAX_PAGES}-page walk reads",
-                    school.name,
-                ),
-            },
-        )
+        Ok(Acquisition {
+            admitted: walk.admitted,
+            published: walk.published,
+            completion: walk.completion,
+        })
     }
 
     async fn coach_page(
-        &self,
-        url: &str,
-        page: u64,
+        &mut self,
+        page: (&str, u64),
+        school: &CanonicalSchool,
         recovery: &mut Recovery,
-    ) -> CrawlResult<(Page<CrawlResult<CoachRow>>, u64)> {
-        let outcome = recovery.fetch(self, url).await?;
-        let parsed = match response_text(&outcome, "coach")
-            .and_then(|body| parse_coach_outcomes(body, url))
-        {
+        walk: &mut CoachWalk,
+    ) -> CrawlResult<()> {
+        let url = format!("{}&&pageSize={PAGE_SIZE}&pageNumber={}", page.0, page.1);
+        let capture = match recovery.fetch(self, &url).await {
+            Ok(capture) => capture,
+            Err(error) => {
+                self.tally.fail(&url, &error)?;
+                walk.page = None;
+                walk.completion = walk.completion.take_error(error);
+                return Ok(());
+            }
+        };
+        let parsed = match text(&capture).and_then(|body| parse_coach_outcomes(body, &url)) {
             Ok(parsed) => parsed,
             Err(error) => {
-                recovery.remember(url, &outcome)?;
-                return Err(error);
+                recovery.remember(&url, &capture)?;
+                self.tally.fail(&url, &error)?;
+                walk.page = None;
+                walk.completion = walk.completion.take_error(error);
+                return Ok(());
             }
         };
         let count = u64::try_from(parsed.rows.len()).map_err(|_| CrawlError::Arithmetic {
-            detail: "Arbiter coach page row count exceeds u64".to_string(),
+            detail: "coach page size".into(),
         })?;
-        let short = count < PAGE_SIZE && page_read_short(page, count, parsed.total);
-        let bounded = (page == 1 && parsed.total > MAX_PAGES.saturating_mul(PAGE_SIZE))
-            || (page == MAX_PAGES && count >= PAGE_SIZE);
-        if short || bounded || parsed.rows.iter().any(Result::is_err) {
-            recovery.remember(url, &outcome)?;
-        }
-        Ok((parsed, count))
-    }
-}
-
-fn retain_coaches(
-    coaches: &mut Vec<CanonicalCoach>,
-    rows: Vec<CrawlResult<CoachRow>>,
-    school: &CanonicalSchool,
-    url: &str,
-    observed_on: &str,
-) -> CrawlResult<()> {
-    let mut completion = Ok(());
-    for row in rows {
-        match row {
-            Ok(row) => {
-                if let Some(coach) = map_coach_row(&row, &school.id, url, observed_on) {
-                    coaches.push(coach);
+        let mut malformed = false;
+        parsed
+            .rows
+            .into_iter()
+            .enumerate()
+            .try_for_each(|(ordinal, row)| {
+                let locator = format!("{url}#row={ordinal}");
+                match row {
+                    Ok(row) => {
+                        if let Some(coach) =
+                            map_coach_row(&row, &school.id, &url, &capture.fetched_at)
+                        {
+                            let errors = self.tally.errors;
+                            walk.admitted = walk.admitted.saturating_add(self.persist_rows(
+                                &locator,
+                                Table::Coaches,
+                                std::slice::from_ref(&coach),
+                            )?);
+                            walk.published = walk.published.saturating_add(1);
+                            malformed |= errors != self.tally.errors;
+                        }
+                    }
+                    Err(error) => {
+                        malformed = true;
+                        self.tally.fail(&locator, &error)?;
+                        walk.completion = walk.completion.take_error(error);
+                    }
                 }
-            }
-            Err(error) => completion = completion.and(Err(error)),
-        }
+                Ok::<_, CrawlError>(())
+            })?;
+        self.advance(
+            (page.1, count, parsed.total),
+            (&url, &capture),
+            recovery,
+            (walk, malformed),
+        )
     }
-    completion
+
+    fn advance(
+        &mut self,
+        totals: (u64, u64, u64),
+        source: (&str, &crate::net::FetchOutcome),
+        recovery: &mut Recovery,
+        state: (&mut CoachWalk, bool),
+    ) -> CrawlResult<()> {
+        let short = totals.1 < PAGE_SIZE && page_read_short(totals.0, totals.1, totals.2);
+        if short || state.1 || totals.0 == MAX_PAGES {
+            recovery.remember(source.0, source.1)?;
+        }
+        state.0.page = if totals.1 < PAGE_SIZE {
+            None
+        } else {
+            totals.0.checked_add(1)
+        };
+        if short {
+            let error = CrawlError::Schema {
+                url: source.0.to_owned(),
+                detail: "coach page stopped short of the published total".into(),
+            };
+            self.tally.fail(source.0, &error)?;
+            state.0.completion = state.0.completion.take_error(error);
+        }
+        Ok(())
+    }
 }
 
-fn short_page_completion(
-    page: u64,
-    rows_on_page: u64,
-    total: u64,
-    url: String,
-    school_name: &str,
-) -> CrawlResult<()> {
-    if !page_read_short(page, rows_on_page, total) {
-        return Ok(());
+trait FirstFailure {
+    fn take_error(&mut self, error: CrawlError) -> CrawlResult<()>;
+}
+
+impl FirstFailure for CrawlResult<()> {
+    fn take_error(&mut self, error: CrawlError) -> CrawlResult<()> {
+        std::mem::replace(self, Ok(())).and(Err(error))
     }
-    Err(CrawlError::Schema {
-        url,
-        detail: format!(
-            "coaches for {school_name}: page {page} returned {rows_on_page} of \
-             {PAGE_SIZE} rows while the response totals {total}"
-        ),
-    })
 }
 
 pub(super) fn failure_kind(error: &CrawlError) -> &'static str {

@@ -1,6 +1,7 @@
 use super::map::SchoolExtract;
-use super::search::resolve_schools;
+use super::search::collect_directory;
 use super::{Options, ASSOCIATION};
+use crate::directory::acquisition::{publish as persist, publish_school as school};
 use crate::{AdapterContext, AdapterReport, CrawlResult};
 use census_domain::model::SourceNamespace;
 use census_domain::UsJurisdiction;
@@ -8,96 +9,54 @@ use census_store::Table;
 
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new("ciac", "schools");
-
-    let before = ctx.fetcher.stats().await;
-
     if !options.states.is_empty() && !options.states.contains(&UsJurisdiction::Connecticut) {
-        let after = ctx.fetcher.stats().await;
-        report.requests = after
-            .physical_requests()
-            .saturating_sub(before.physical_requests());
-        report.from_cache = after.cache_hits.saturating_sub(before.cache_hits);
-        let codes: Vec<&str> = options.states.iter().map(|state| state.code()).collect();
-        report.note(format!(
-            "states {codes:?} do not include CT; this adapter covers Connecticut only"
-        ));
         return Ok(report);
     }
-
-    let to_process = resolve_schools(ctx, options, &mut report).await?;
-    let mut tally = Tally::default();
-
-    for extract in &to_process {
-        emit_school(ctx, extract, &mut tally)?;
+    let before = ctx.fetcher.stats().await;
+    collect_directory(ctx, options, &mut report).await?;
+    if report.unfinished.is_empty() {
+        report.finish_frontier();
     }
-
     let after = ctx.fetcher.stats().await;
     report.requests = after
         .physical_requests()
         .saturating_sub(before.physical_requests());
     report.from_cache = after.cache_hits.saturating_sub(before.cache_hits);
-
-    report.rows = tally.processed;
-    report.note(format!(
-        "processed {} schools ({} coach_rows)",
-        tally.processed, tally.coach_rows
-    ));
-
     Ok(report)
 }
 
-#[derive(Default)]
-struct Tally {
-    processed: u64,
-    coach_rows: usize,
-}
-
-fn emit_school(
+pub(super) fn emit_school(
     ctx: &AdapterContext<'_>,
     extract: &SchoolExtract,
-    tally: &mut Tally,
+    report: &mut AdapterReport,
 ) -> CrawlResult<()> {
-    let mut batch = ctx.write_batch();
-    batch.append_many(Table::Schools, std::slice::from_ref(&extract.school))?;
-    batch.append_many(
-        Table::SourceObservations,
-        ctx.school_observation(
-            &SourceNamespace::AssociationSchool {
-                association: ASSOCIATION.to_string(),
-            },
+    let stamp = extract
+        .school
+        .evidence
+        .first()
+        .map_or(ctx.observed_on.as_str(), |evidence| {
+            evidence.observed_on.as_str()
+        });
+    let locator = format!("{}#school={}", super::HOST, extract.school.id);
+    let written = school(
+        ctx,
+        ("ciac", &locator),
+        (
+            &SourceNamespace::association_school(ASSOCIATION),
             &extract.school,
-        )
-        .as_slice(),
+            stamp,
+        ),
+        report,
     )?;
-
-    for coach in &extract.coaches {
-        tally.coach_rows = tally.coach_rows.saturating_add(1);
-        batch.append_many(Table::Coaches, std::slice::from_ref(coach))?;
-    }
-
-    let school_key = format!("CT:{}", extract.school.id);
-    batch.journal_done(
-        "ciac_schools",
-        &school_key,
-        &serde_json::json!({
-            "name": extract.school.name,
-            "coaches": extract.coaches.len(),
-        }),
+    persist(
+        ctx,
+        ("ciac", &locator),
+        Table::Coaches,
+        &extract.coaches,
+        report,
     )?;
-    for coach in &extract.coaches {
-        batch.journal_done(
-            "ciac_coaches",
-            &school_key,
-            &serde_json::json!({
-                "coach_name": coach.name,
-                "sport": format!("{:?}", coach.sport),
-                "gender": format!("{:?}", coach.gender),
-            }),
-        )?;
-    }
-
-    batch.commit()?;
-    tally.processed = tally.processed.saturating_add(1);
-
+    report.rows = report
+        .rows
+        .saturating_add(u64::try_from(written).map_or(u64::MAX, |value| value));
     Ok(())
 }

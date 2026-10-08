@@ -29,10 +29,9 @@ fn relay_leg() -> CrawlResult<&'static Regex> {
 
 pub(super) fn starts_like_a_row(slice: &str) -> bool {
     slice
-        .trim_start()
-        .chars()
+        .split_whitespace()
         .next()
-        .is_some_and(|ch| ch.is_ascii_digit())
+        .is_some_and(|token| token.bytes().all(|byte| byte.is_ascii_digit()))
 }
 
 pub(super) fn parse_row(
@@ -137,10 +136,7 @@ fn mark_for(kind: &EventKind, token: &str) -> Option<Mark> {
     let cleaned = qualifier().ok()?.replace(token, "");
     let cleaned = cleaned.trim();
     if kind.is_field() {
-        return hytek::parse_field_mark(cleaned)
-            .or_else(|| hytek::parse_time(cleaned).map(Mark::TimeSeconds));
+        return hytek::parse_field_mark(cleaned);
     }
-    hytek::parse_time(cleaned)
-        .map(Mark::TimeSeconds)
-        .or_else(|| hytek::parse_field_mark(cleaned))
+    hytek::parse_time(cleaned).map(Mark::TimeSeconds)
 }

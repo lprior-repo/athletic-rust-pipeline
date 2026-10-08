@@ -1028,6 +1028,7 @@ fn athlete(
         public_profile_urls: Vec::new(),
         source: Some(source),
         source_links: Vec::new(),
+        identity_attestations: Vec::new(),
         evidence: Vec::new(),
         retained_conflicts: Vec::new(),
     })

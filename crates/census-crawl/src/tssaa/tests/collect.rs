@@ -52,6 +52,7 @@ impl FixtureRun {
             school_year: SchoolYear::new(2026)
                 .ok_or_else(|| anyhow::anyhow!("fixture school year is invalid"))?,
             observed_on: "2026-10-02".to_string(),
+            performance_as_of: chrono::NaiveDate::parse_from_str("2026-10-02", "%Y-%m-%d")?,
             recording,
         };
         Ok(collect(&context, options).await?)

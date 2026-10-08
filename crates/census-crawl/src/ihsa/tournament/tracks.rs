@@ -1,13 +1,12 @@
-use super::map::{published_gender, unmapped, AthleteRow, EventContext, Mapper, PerformanceRow};
-use super::parse::{
-    class_token, event_label, finisher_grade, member_grade, parse_mark, round_label,
-};
+use super::map::{AthleteRow, EventContext, Mapper, PerformanceRow};
+use super::parse::{finisher_grade, member_grade, parse_mark};
 use super::wire::{EventRow, EventSummary, FinisherRow, MeetRow};
 use census_domain::model::{
-    AthleteId, CanonicalEvent, CanonicalMeet, CompetitionLevel, EventKind, Mark, SchoolId,
-    SourceEventLabel, SourceIdentity, SourceNamespace, Sport,
+    AthleteId, CanonicalEvent, CanonicalMeet, CompetitionLevel, Mark, SchoolId, SourceIdentity,
+    SourceNamespace, Sport,
 };
 use census_domain::UsJurisdiction;
+mod events;
 
 impl<'a> Mapper<'a> {
     pub(super) fn meet(
@@ -47,26 +46,10 @@ impl<'a> Mapper<'a> {
         meet: &CanonicalMeet,
         row: &EventRow,
         url: &str,
-    ) -> CanonicalEvent {
-        let kind = event_label(&row.event_name, &row.class_division)
-            .map_or_else(|| unmapped(&row.event_name), EventKind::from_source_label);
-        let mut event = CanonicalEvent::new(
-            &meet.id,
-            kind,
-            published_gender(&row.gender),
-            class_token(&row.class_division),
-            round_label(row.round.as_deref()),
-        );
-        event.source_labels.push(SourceEventLabel {
-            source: self.origin.source(url),
-            label: row.event_name.clone(),
-        });
-        event.evidence.push(self.origin.evidence(url));
-        self.accumulated
-            .events
-            .entry(event.id.as_str().to_string())
-            .or_insert_with(|| event.clone());
-        event
+    ) -> crate::CrawlResult<CanonicalEvent> {
+        let mut event = events::mint(meet, row)?;
+        events::retain(self, &mut event, &row.event_name, url)?;
+        Ok(event)
     }
 
     pub(super) fn absorb_summary(

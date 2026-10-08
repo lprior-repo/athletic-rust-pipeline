@@ -1,3 +1,4 @@
+mod strategies;
 use census_crawl::applicability::applicable_sources;
 use census_crawl::net::Fetcher;
 use census_crawl::registry::{AccessClass, SourceDescriptor};
@@ -29,12 +30,24 @@ pub enum Dispatch {
 
 impl Dispatch {
     pub fn of(slug: &str) -> Self {
-        if super::jurisdiction::DISPATCHED.contains(&slug) {
+        if !matches!(
+            strategies::strategy(slug),
+            strategies::SourceStrategy::Gap(_)
+        ) {
             Self::Wired
         } else {
             Self::Unwired
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RefusalKind {
+    #[default]
+    Unknown,
+    EngineeringGap,
+    AccessBlocked,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -84,6 +97,7 @@ pub struct Refusal {
     pub slug: &'static str,
     pub access: AccessClass,
     pub reason: &'static str,
+    pub kind: RefusalKind,
 }
 
 pub fn sweepable(dispositions: &[UnitDisposition]) -> Vec<PlannedUnit> {
@@ -107,10 +121,18 @@ pub fn owed(dispositions: &[UnitDisposition]) -> Vec<Refusal> {
 }
 
 fn classify(descriptor: &'static SourceDescriptor, lane: BrowserLaneState) -> UnitDisposition {
+    if let strategies::SourceStrategy::Gap(reason) = strategies::strategy(descriptor.slug) {
+        return UnitDisposition::Refused(Refusal {
+            slug: descriptor.slug,
+            access: descriptor.access_class(),
+            reason,
+            kind: RefusalKind::EngineeringGap,
+        });
+    }
     classify_access(
         descriptor.slug,
         descriptor.access_class(),
-        Dispatch::of(descriptor.slug),
+        Dispatch::Wired,
         lane,
     )
 }
@@ -126,6 +148,7 @@ pub(super) fn classify_access(
             slug,
             access,
             reason: NO_JURISDICTION_WALK,
+            kind: RefusalKind::EngineeringGap,
         });
     }
     if access == AccessClass::BrowserSession && lane == BrowserLaneState::Absent {
@@ -133,6 +156,7 @@ pub(super) fn classify_access(
             slug,
             access,
             reason: NO_BROWSER_LANE,
+            kind: RefusalKind::AccessBlocked,
         });
     }
     UnitDisposition::Sweep(PlannedUnit { slug, access })

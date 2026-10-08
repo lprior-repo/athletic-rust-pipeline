@@ -58,6 +58,12 @@ pub fn classify_error(error: &CrawlError) -> (&'static str, String) {
         | CrawlError::Canonical { .. }
         | CrawlError::Domain(_)
         | CrawlError::Arithmetic { .. }
+        | CrawlError::Directory(_)
+        | CrawlError::Resource { .. }
+        | CrawlError::EventIdentity(_)
+        | CrawlError::Specification(_)
+        | CrawlError::Performance(_)
+        | CrawlError::PerformanceDateUnknown { .. }
         | CrawlError::Invariant { .. }
         | CrawlError::DirectoryArtifact { .. } => "invariant",
     };

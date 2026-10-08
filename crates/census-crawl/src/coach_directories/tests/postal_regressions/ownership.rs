@@ -11,20 +11,14 @@ fn malformed_summary_postal_review_can_reacquire_corrected_captured_facts() -> T
             let rejected = run.collect().await?;
             check!(eq; (rejected.errors, rejected.rejections), (0, 1));
             check!(eq; run.coaches()?.len(), 16);
-            check!(eq;
-                run.store.journal_keys("coach_directories_schools_v3")?,
-                std::collections::HashSet::new()
-            );
             seed(&run.fetcher, &summary_url("ZCUM49"), SUMMARY)?;
             let recovered = run.collect().await?;
             check!(eq; (recovered.rows, recovered.errors), (1, 0));
             let school = run.school()?;
             check!(eq; school.postal_addresses.len(), 2);
-            check!(eq;
-                run.store.journal_keys("coach_directories_schools_v3")?,
-                std::collections::HashSet::from(["NC:ZCUM49".to_string()])
-            );
-            check!(eq; run.collect().await?.rows, 0);
+            let coaches = run.coaches()?;
+            run.collect().await?;
+            check!(eq; run.coaches()?, coaches);
             Ok(())
         })
 }
@@ -44,10 +38,6 @@ fn a_foreign_directory_jurisdiction_cannot_attach_school_or_postal_claims() -> T
                 Vec::new()
             );
             check!(eq; run.coaches()?, Vec::<CanonicalCoach>::new());
-            check!(eq;
-                run.store.journal_keys("coach_directories_schools_v3")?,
-                std::collections::HashSet::new()
-            );
             Ok(())
         })
 }
@@ -89,14 +79,14 @@ fn legacy_completion_is_preserved_but_cannot_suppress_newly_qualified_postal_fac
             check!(eq; run.coaches()?.len(), 16);
             check!(eq; run.school()?.postal_addresses.len(), 2);
             check!(eq;
-                run.store.journal_keys("coach_directories_schools_v3")?,
-                std::collections::HashSet::from(["NC:ZCUM49".to_string()]),
-            );
-            check!(eq;
                 run.store.journal_payloads("coach_directories_schools_v2")?,
                 historical,
             );
-            check!(eq; run.collect().await?.rows, 0);
+            let school = run.school()?;
+            let coaches = run.coaches()?;
+            run.collect().await?;
+            check!(eq; run.school()?, school);
+            check!(eq; run.coaches()?, coaches);
             Ok(())
         })
 }

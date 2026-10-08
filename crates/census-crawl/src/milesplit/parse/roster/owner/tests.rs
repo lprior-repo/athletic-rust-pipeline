@@ -9,6 +9,7 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 fn team() -> Result<TeamRef, Box<dyn std::error::Error>> {
     crate::milesplit::parse_team_index(TEAMS)?
+        .teams
         .into_iter()
         .find(|team| team.id == "52649")
         .ok_or_else(|| "captured Abbotsford team missing".into())

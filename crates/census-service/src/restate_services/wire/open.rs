@@ -30,6 +30,8 @@ pub struct SourceObjectOpen {
     pub observations: u64,
     pub windows: u64,
     pub unreadable: bool,
+    #[serde(default)]
+    pub disposition: census_crawl::CollectionDisposition,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

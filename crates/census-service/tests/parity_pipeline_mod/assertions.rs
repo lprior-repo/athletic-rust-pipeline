@@ -131,19 +131,19 @@ pub fn assert_best_reduction(rows: &[SharedSelection], store: &Store, scope: Sco
         .iter()
         .map(|athlete| (athlete.id.as_str(), athlete.grad_year.get()))
         .collect();
-    let kinds: BTreeMap<&str, &census_domain::model::EventKind> = events
+    let events_by_id: BTreeMap<&str, &CanonicalEvent> = events
         .iter()
-        .map(|event| (event.id.as_str(), &event.kind))
+        .map(|event| (event.id.as_str(), event))
         .collect();
 
     let parents: BTreeMap<_, _> = meets.iter().map(|meet| (meet.id.as_str(), meet)).collect();
     let mut expected: BTreeMap<PrKey, (i64, usize)> = BTreeMap::new();
     for performance in &performances {
-        let Some(kind) = kinds.get(performance.event.as_str()) else {
+        let Some(event) = events_by_id.get(performance.event.as_str()) else {
             continue;
         };
         if cohort.get(performance.athlete.as_str()) != Some(&constants::COHORT)
-            || bests::is_relay(kind)
+            || bests::is_relay(&event.kind)
         {
             continue;
         }
@@ -155,7 +155,7 @@ pub fn assert_best_reduction(rows: &[SharedSelection], store: &Store, scope: Sco
         };
         let Some(key) = PrKey::from_performance(
             performance,
-            kind,
+            event,
             parents.get(performance.meet.as_str()).copied(),
             measure,
         ) else {
@@ -201,11 +201,11 @@ pub fn assert_best_reduction(rows: &[SharedSelection], store: &Store, scope: Sco
             row.population.marks
         );
         ensure!(
-            row.value == *value,
+            row.result.value == *value,
             "{} of {} is {}, the store's best is {value}",
             row.event_label(),
             row.athlete_id(),
-            row.value
+            row.result.value
         );
     }
     Ok(())

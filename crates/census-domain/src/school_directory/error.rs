@@ -38,4 +38,39 @@ pub enum DirectoryError {
     UnexpectedFieldProvenance { field: &'static str },
     #[error("field {field} provenance names an unrecorded source")]
     UnrecordedFieldSource { field: &'static str },
+    #[error("{resource} requests {requested}, over the {limit} limit")]
+    Capacity {
+        resource: &'static str,
+        requested: usize,
+        limit: usize,
+    },
+    #[error("allocating {resource} failed")]
+    Allocation { resource: &'static str },
+    #[error("directory representation failed: {detail}")]
+    Representation { detail: String },
+}
+
+impl DirectoryError {
+    pub fn is_resource(&self) -> bool {
+        match self {
+            Self::Capacity { .. } | Self::Allocation { .. } | Self::Representation { .. } => true,
+            Self::EmptyField { .. }
+            | Self::FieldTooLong { .. }
+            | Self::ControlCharacter { .. }
+            | Self::MalformedZip { .. }
+            | Self::UnsupportedGrade { .. }
+            | Self::GradeSpanInverted { .. }
+            | Self::CoordinateOutOfRange { .. }
+            | Self::MalformedCoordinate { .. }
+            | Self::MalformedMonth { .. }
+            | Self::MalformedYear { .. }
+            | Self::MalformedYearMonth { .. }
+            | Self::MalformedInteger { .. }
+            | Self::UnsupportedValue { .. }
+            | Self::MissingEntrySources
+            | Self::MissingFieldProvenance { .. }
+            | Self::UnexpectedFieldProvenance { .. }
+            | Self::UnrecordedFieldSource { .. } => false,
+        }
+    }
 }

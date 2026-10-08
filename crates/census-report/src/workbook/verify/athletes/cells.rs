@@ -45,18 +45,22 @@ pub(super) fn profiles_of(athlete: &CanonicalAthlete) -> Profiles {
             continue;
         }
         seen.push(url.clone());
-        let lowered = url.to_ascii_lowercase();
-        match lowered.as_str() {
-            _ if lowered.contains("athletic.net") && profiles.athletic_net.is_none() => {
-                profiles.athletic_net = Some(url);
-            }
-            _ if lowered.contains("milesplit") && profiles.milesplit.is_none() => {
-                profiles.milesplit = Some(url);
-            }
-            _ => profiles.other.push(url),
-        }
+        classify_profile(&mut profiles, url);
     }
     profiles
+}
+
+fn classify_profile(profiles: &mut Profiles, url: String) {
+    let lowered = url.to_ascii_lowercase();
+    match lowered.as_str() {
+        _ if lowered.contains("athletic.net") && profiles.athletic_net.is_none() => {
+            profiles.athletic_net = Some(url);
+        }
+        _ if lowered.contains("milesplit") && profiles.milesplit.is_none() => {
+            profiles.milesplit = Some(url);
+        }
+        _ => profiles.other.push(url),
+    }
 }
 
 pub(super) fn event_list(prs: &[&SharedSelection]) -> Value {
@@ -111,39 +115,42 @@ fn selection_matches_event(pr: &SharedSelection, event: &str) -> bool {
     }
 }
 
+const SUMMARY_OVERFLOW: &str = "; additional classified marks in PRs";
+const SUMMARY_BUDGET: usize = 32_767_usize.saturating_sub(SUMMARY_OVERFLOW.len());
+
 fn qualified_summary<'a>(mut prs: impl Iterator<Item = &'a SharedSelection>) -> Value {
-    const OVERFLOW: &str = "; additional classified marks in PRs";
-    let budget = 32_767_usize.saturating_sub(OVERFLOW.len());
-    let result = prs.try_fold(
-        (String::new(), 0_usize, 0_usize),
-        |(mut text, used, marker_end), pr| {
-            let mark = labels::qualified_mark(pr);
-            let separator = if text.is_empty() { 0 } else { 2 };
-            let total = used
-                .saturating_add(mark.encode_utf16().count())
-                .saturating_add(separator);
-            if total > 32_767 {
-                text.truncate(marker_end);
-                return Err(text);
-            }
-            if separator != 0 {
-                text.push_str("; ");
-            }
-            text.push_str(&mark);
-            let marker_end = if total <= budget {
-                text.len()
-            } else {
-                marker_end
-            };
-            Ok((text, total, marker_end))
-        },
-    );
+    let result = prs.try_fold((String::new(), 0_usize, 0_usize), append_summary_mark);
     match result {
         Ok((text, _, _)) if text.is_empty() => Value::Empty,
         Ok((text, _, _)) => Value::text(text),
         Err(mut text) => {
-            text.push_str(OVERFLOW);
+            text.push_str(SUMMARY_OVERFLOW);
             Value::text(text)
         }
     }
+}
+
+fn append_summary_mark(
+    (mut text, used, marker_end): (String, usize, usize),
+    pr: &SharedSelection,
+) -> Result<(String, usize, usize), String> {
+    let mark = labels::qualified_mark(pr);
+    let separator = if text.is_empty() { 0 } else { 2 };
+    let total = used
+        .saturating_add(mark.encode_utf16().count())
+        .saturating_add(separator);
+    if total > 32_767 {
+        text.truncate(marker_end);
+        return Err(text);
+    }
+    if separator != 0 {
+        text.push_str("; ");
+    }
+    text.push_str(&mark);
+    let marker_end = if total <= SUMMARY_BUDGET {
+        text.len()
+    } else {
+        marker_end
+    };
+    Ok((text, total, marker_end))
 }

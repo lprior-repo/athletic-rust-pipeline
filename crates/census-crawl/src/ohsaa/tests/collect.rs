@@ -90,6 +90,12 @@ impl FixtureRun {
             refresh: false,
             school_year: SchoolYear::new(2026).ok_or_else(|| anyhow::anyhow!("school year"))?,
             observed_on: evaluated_on.to_string(),
+            performance_as_of: chrono::NaiveDate::parse_from_str(
+                evaluated_on
+                    .get(..10)
+                    .ok_or_else(|| anyhow::anyhow!("evaluation date"))?,
+                "%Y-%m-%d",
+            )?,
             recording,
         })
     }
@@ -189,8 +195,16 @@ fn assert_coach_captures(
             )
         };
         check!(eq; coach.school, school.id);
-        check!(coach.source_identities.is_empty());
-        check!(coach.tenure_evidence.is_empty());
+        let current = coach.tenure_evidence.first().ok_or("capture-bound current appointment")?;
+        check!(eq; current.tenure, census_domain::model::CoachTenure::Current { school_year: SchoolYear::new(2026).ok_or("school year")? });
+        check!(eq; current.source.url.as_deref(), Some(expected.url.as_str()));
+        check!(eq; current.retrieved_at, expected.fetched_at);
+        check!(eq; current.source_sha256, expected.content_digest);
+        let claim = current.claim.as_ref().ok_or("staff contact claim")?;
+        check!(eq; claim.coach, coach.id);
+        check!(eq; claim.school, coach.school);
+        check!(eq; claim.role, coach.role);
+        check!(eq; claim.mailbox.as_deref(), coach.professional_email.as_deref().or(coach.personal_email.as_deref()));
         let evidence = coach.evidence.first().ok_or("coach capture evidence")?;
         check!(eq; evidence.observed_on, expected.fetched_at);
         check!(eq; evidence.source.url.as_deref(), Some(expected.url.as_str()));

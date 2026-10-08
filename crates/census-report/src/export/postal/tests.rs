@@ -94,6 +94,7 @@ fn captured_postal_claim_preserves_raw_capture_provenance_and_published_componen
         SUMMARY_URL.into(),
         CAPTURE_DAY.into(),
         format!("{:x}", Sha256::digest(SUMMARY)),
+        "unknown".into(),
     ]);
     Ok(())
 }

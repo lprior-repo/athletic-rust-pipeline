@@ -208,3 +208,91 @@ rather than trusting its caller:
   `from_cache` field: re-running the survey over a warm cache replays retained
   bodies as if they were measured, so a fresh qualification number needs
   `--offline`-free replay over a cleared cache directory.
+
+## School mailbox and contact research publication
+
+Generic school-office and athletics-office mailboxes are separate school-owned
+claims, never substitute coach or athletic-director identities, and may use a
+personal-provider address when the publisher explicitly designates its office
+purpose. Acquisition reads the school's declared website and bounded,
+same-origin contact links actually present in captured pages; it does not guess
+contact routes, people or addresses.
+
+Each admitted claim retains its exact capture URL, lowercase SHA-256, acquisition
+timestamp, publisher statement, school owner and purpose. Selection checks the
+capture's academic year, not merely the requested year stamped onto a crawl.
+Stale captures remain retained but cannot become current by replaying an old
+cache under a new requested year; a later eligible capture can replace that
+stale evidence. Independently published current office addresses conflict
+rather than silently choosing one.
+
+Contact research persists for school athletics and each boys'/girls' XC,
+indoor-track and outdoor-track program even when a summary contains no coaches.
+Unattempted, completed-empty, completed-claims, partial, blocked, failed,
+exhausted, stale, ambiguous and conflict remain distinct. Attempts retain the
+actual locator, acquisition time, available capture digest, outcome and reason.
+Retries supersede only the same locator: a successful source cannot hide another
+blocked source. Dropped rows or incomplete parsed appointments remain partial.
+Access refusals remain blocked; transport and decode failures remain failed.
+
+Research subjects distinguish each team program from school-office and
+athletics-office mailbox discovery. A blocked AD directory cannot change the
+office purpose's completed state, even when both observations share a URL.
+Nonterminal row assessments remain owed despite empty child attempts; newer
+retries supersede only their own source. An audited exhausted directory cannot
+erase a separately admitted completed-empty capture or itself certify one.
+
+Yearless staff titles inherit the academic year of the physical capture, not
+the requested collection year. Journal completion keys include the requested
+year, so an older run cannot skip a newer school contact obligation.
+
+Exhaustion is certified only by the final captured page of an unfiltered,
+unlimited finite state-directory walk with complete rows and no failed,
+rejected or unresolved school summary. It is attached only to schools processed
+in that walk whose source-local program research is terminal. A directory
+frontier is research evidence, never mailbox or appointment provenance.
+
+Workbook publication uses separate School Contacts and Contact Research sheets
+and matching `school-contacts.csv` and `contact-research.csv` sidecars. Selected
+coach and preferred-athlete contact cells carry the exact independently chosen
+mailbox capture; archival canonical-coach CSV source fields are explicitly named
+archival fields rather than presented as selected contact provenance.
+
+The offline CAC fixture is a verbatim contact-paragraph and owner-metadata
+extract from `https://cacmustangs.org/about/contact/`, not the full captured
+page. Its tests compute the digest of those fixture bytes and use a controlled
+acquisition timestamp. Gmail, stale-capture and malformed-content cases, named
+coach/AD records in the three-mailbox publication scenario, and the prior-year
+AK cache clock are controlled variants, not live publisher observations.
+The concurrent repair wave prohibited commands, so these added tests
+and publication scenarios are unexecuted until Main runs the acceptance lanes;
+this documentation does not certify their results.
+
+## Recording-aware acquisition closure (2026-10-07)
+
+The school-site canonical collector persists the seven team/program research
+subjects and two independently assessed office purposes, including acquisitions
+that publish no named staff. Each physical page contributes only its new claims
+and research rows through `AdapterContext.write_batch`; the effect and journal
+association remain recorded rather than writing the store directly when a native
+recording is active. Later page or retained-state limits do not discard admitted
+earlier page prefixes. Invalid capture timestamps cannot certify completed-empty
+research merely because their first ten bytes look like a current date.
+
+SIDEARM native discovery consumes at most 64 source-discovered canonical schools
+per call through `collect_discovered`. Only published school/athletics website
+seeds and same-origin published staff/directory links are used; the collector
+does not synthesize routes or replace those owners with the fixed gomats fixture.
+Unmatched provider pages and deferred endpoints remain unfinished. Exact
+canonical names or canonical aliases are required before staff is attached, and
+the existing located canonical school identity is preserved. Physical projection
+keys omit requested school year and performance horizon; per-year research has
+its own recording-aware effect. UH, PIAA and TSSAA use the same separate staff
+research persistence.
+
+The three-purpose scenario's named athletic director and mailbox are taken from
+the captured NC ZCUM49 summary. Its two office paragraphs and 2026 acquisition
+clock are controlled test inputs, not additional live publication evidence.
+The added service and publication scenarios remain unexecuted during concurrent
+edits. Main owns the integrated compiler, runtime, test and source-gate evidence;
+this handoff certifies none of those lanes.

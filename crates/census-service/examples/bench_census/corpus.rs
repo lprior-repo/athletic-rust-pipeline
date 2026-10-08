@@ -1,8 +1,9 @@
 use anyhow::Result;
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam, CentiSeconds, EventKind, Gender, GradYear, Mark, MeetId,
-    SchoolId, SourceIdentity, SourceNamespace, Sport, TeamId, TimingMethod,
+    CanonicalSchool, CanonicalTeam, EventIdentity, EventKind, EventSpecification, ExactSeconds,
+    Gender, GradYear, Mark, MeetId, SchoolId, SourceIdentity, SourceNamespace, Sport, TeamId,
+    TimingMethod,
 };
 use census_domain::UsJurisdiction;
 use std::collections::HashSet;
@@ -117,7 +118,7 @@ fn append_athlete(
     let owner = athlete_identity(index, slot);
     let athlete = athlete_of(school_id, index, slot, gender, owner.clone())?;
     let kind = event_kind(rng.next());
-    let event = event_of(meet_id, &kind, gender);
+    let event = event_of(meet_id, &kind, gender)?;
     corpus.distinct_events.insert(event.id.as_str().to_string());
     for attempt in 0..PERFORMANCES_PER_ATHLETE {
         let source_key = format!("perf-{index}-{slot}-{attempt}");
@@ -168,10 +169,19 @@ fn athlete_of(
     Ok(athlete)
 }
 
-fn event_of(meet_id: &MeetId, kind: &EventKind, gender: Gender) -> CanonicalEvent {
-    let mut event = CanonicalEvent::new(meet_id, kind.clone(), gender, None, None);
+fn event_of(meet_id: &MeetId, kind: &EventKind, gender: Gender) -> Result<CanonicalEvent> {
+    let mut event = CanonicalEvent::new(
+        EventIdentity {
+            meet: meet_id,
+            kind: kind.clone(),
+            gender,
+            division: None,
+            round: None,
+        },
+        EventSpecification::default(),
+    )?;
     event.evidence.push(evidence());
-    event
+    Ok(event)
 }
 
 fn performance_of(
@@ -184,11 +194,11 @@ fn performance_of(
     rng: &mut Lcg,
 ) -> Result<CanonicalPerformance> {
     let kind = &event.kind;
-    let id = CanonicalPerformance::mint(&athlete.id, meet_id, kind, MEET_DATE, &source_key);
-    let mark = Mark::TimeSeconds(
-        CentiSeconds::try_from_seconds_f64(base_seconds(kind, rng))
-            .ok_or_else(|| anyhow::anyhow!("fixture mark is out of range"))?,
-    );
+    let id = CanonicalPerformance::mint(&athlete.id, meet_id, &event.id, MEET_DATE, &source_key);
+    let mark = Mark::TimeSeconds(ExactSeconds::parse(&format!(
+        "{:.2}",
+        base_seconds(kind, rng)
+    ))?);
     let place = place_of(rng.next())?;
     Ok(CanonicalPerformance {
         id,

@@ -177,7 +177,9 @@ fn nsaa_directory_case() -> Result<Case> {
 
 fn roster_team() -> Result<milesplit::TeamRef> {
     let index = fixture("milesplit", "wi_teams_index.html")?;
-    let teams = milesplit::parse_team_index(&index).context("the team index was rejected")?;
+    let teams = milesplit::parse_team_index(&index)
+        .context("the team index was rejected")?
+        .teams;
     teams
         .iter()
         .find(|team| team.id == ROSTER_TEAM_ID)

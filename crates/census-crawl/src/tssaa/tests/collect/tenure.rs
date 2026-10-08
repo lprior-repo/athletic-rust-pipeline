@@ -62,7 +62,15 @@ fn absent_statement_preserves_unknown_appointments_despite_dated_admin_header(
             let text = std::str::from_utf8(RETAINED)?.replacen(STATEMENT, "", 1);
             let run = FixtureRun::new(RETAINED, Some(text.as_bytes()))?;
             let report = run.run(&page_options(), None).await?;
-            check!(eq; (report.rows, report.errors, report.with_email), (1, 0, 11));
+            check!(eq; report.with_email, 11);
+            check!(eq; report.disposition, crate::CollectionDisposition::Partial);
+            check!(
+                report
+                    .unfinished
+                    .contains(&super::super::super::DIRECTORY_URL.to_string())
+                    || report.unfinished.iter().any(|url| url.contains("?id=157"))
+            );
+            check!(eq; run.coaches()?.len(), 11);
             for coach in run.coaches()? {
                 check!(eq; coach.tenure_evidence, vec![]);
                 check!(eq; assessment(&coach, 2026)?, CoachTenure::Unknown);
@@ -113,11 +121,10 @@ fn malformed_foreign_and_conflicting_context_retain_contacts_without_completion(
                 let mutated = text.replacen(&original, &replacement, 1);
                 let run = FixtureRun::new(RETAINED, Some(mutated.as_bytes()))?;
                 let report = run.run(&page_options(), None).await?;
-                check!(eq;
-                    (report.rows, report.errors, report.with_email),
-                    (1, 1, 11),
-                    "{replacement}"
-                );
+                check!(eq; report.with_email, 11, "{replacement}");
+                check!(eq; report.disposition, crate::CollectionDisposition::Partial, "{replacement}");
+                check!(report.unfinished.iter().any(|url| url.contains("?id=157")));
+                check!(eq; run.coaches()?.len(), 11);
                 for coach in run.coaches()? {
                     check!(eq;
                         assessment(&coach, 2026)?,
@@ -125,11 +132,8 @@ fn malformed_foreign_and_conflicting_context_retain_contacts_without_completion(
                         "{replacement}"
                     );
                 }
-                check!(eq;
-                    run.store
-                        .journal_keys(super::super::super::collect::JOURNAL)?,
-                    std::collections::HashSet::<String>::new()
-                );
+                check!(run.store.journal_payloads(super::super::super::collect::JOURNAL)?
+                    .iter().all(|payload| payload["complete"] != true));
             }
             Ok(())
         })
@@ -145,7 +149,10 @@ fn older_published_year_is_retained_without_becoming_current_or_former_in_run_ye
             let text = std::str::from_utf8(RETAINED)?.replace("2026-2027", "2025-2026");
             let run = FixtureRun::new(RETAINED, Some(text.as_bytes()))?;
             let report = run.run(&page_options(), None).await?;
-            check!(eq; (report.rows, report.errors), (1, 0));
+            check!(eq; report.with_email, 11);
+            check!(eq; report.disposition, crate::CollectionDisposition::Partial);
+            check!(report.unfinished.iter().any(|url| url.contains("?id=157")));
+            check!(eq; run.coaches()?.len(), 11);
             for coach in run.coaches()? {
                 check!(eq;
                     assessment(&coach, 2025)?,

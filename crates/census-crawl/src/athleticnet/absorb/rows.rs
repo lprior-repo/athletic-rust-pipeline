@@ -31,8 +31,20 @@ impl<'a> Ctx<'a> {
         let mut rows = 0u64;
         for (position, row) in bio.results_tf.iter().flatten().enumerate() {
             if let Some(resolved) = self.resolve_tf_row(bio, row, &labels) {
-                self.store_tf_row(row, &resolved, athlete_id, gender);
-                rows = rows.saturating_add(1);
+                match self.store_tf_row(row, &resolved, athlete_id, gender) {
+                    Ok(()) => rows = rows.saturating_add(1),
+                    Err(error) => ProfileRows {
+                        bio,
+                        scope: Scope::TrackField,
+                        source: self.source,
+                        observed_on: self.observed_on,
+                    }
+                    .review(
+                        self.accumulated,
+                        &format!("resultsTF/{position}"),
+                        &error.to_string(),
+                    ),
+                }
             } else {
                 ProfileRows {
                     bio,
@@ -56,8 +68,20 @@ impl<'a> Ctx<'a> {
         let mut rows = 0u64;
         for (position, row) in bio.results_xc.iter().flatten().enumerate() {
             if let Some(resolved) = self.resolve_xc_row(bio, row) {
-                self.store_xc_row(row, &resolved, athlete_id, gender);
-                rows = rows.saturating_add(1);
+                match self.store_xc_row(row, &resolved, athlete_id, gender) {
+                    Ok(()) => rows = rows.saturating_add(1),
+                    Err(error) => ProfileRows {
+                        bio,
+                        scope: Scope::CrossCountry,
+                        source: self.source,
+                        observed_on: self.observed_on,
+                    }
+                    .review(
+                        self.accumulated,
+                        &format!("resultsXC/{position}"),
+                        &error.to_string(),
+                    ),
+                }
             } else {
                 ProfileRows {
                     bio,
@@ -210,8 +234,9 @@ impl<'a> Ctx<'a> {
         resolved: &ResolvedRow<'_>,
         athlete_id: &AthleteId,
         gender: Gender,
-    ) {
+    ) -> crate::CrawlResult<()> {
         let source_key = format!("athleticnet:{}-{}", self.target.athlete_id, row.id);
+        let labels = [resolved.label.map_or("", core::convert::identity)];
         store_performance(
             self.accumulated,
             self.source,
@@ -222,9 +247,10 @@ impl<'a> Ctx<'a> {
                 school: &resolved.school,
                 meet: &resolved.meet,
                 kind: &resolved.kind,
-                sport: resolved.sport,
+                sport: Some(resolved.sport),
                 gender,
                 school_year: resolved.school_year,
+                performance_as_of: self.performance_as_of,
                 grade: resolved.grade,
                 date: resolved.date.clone(),
                 mark: resolved.mark.clone(),
@@ -234,10 +260,11 @@ impl<'a> Ctx<'a> {
                 timing: resolved.timing,
                 division: row.division.clone(),
                 source_key,
-                label: resolved.label,
+                labels: &labels,
             },
-        );
+        )?;
         self.stats.rows_absorbed = self.stats.rows_absorbed.saturating_add(1);
+        Ok(())
     }
 
     fn store_xc_row(
@@ -246,8 +273,10 @@ impl<'a> Ctx<'a> {
         resolved: &ResolvedRow<'_>,
         athlete_id: &AthleteId,
         gender: Gender,
-    ) {
+    ) -> crate::CrawlResult<()> {
         let source_key = format!("athleticnet:{}-{}", self.target.athlete_id, row.id);
+        let label = row.distance.map(|distance| format!("{distance}m"));
+        let labels = [label.as_deref().map_or("", core::convert::identity)];
         store_performance(
             self.accumulated,
             self.source,
@@ -258,9 +287,10 @@ impl<'a> Ctx<'a> {
                 school: &resolved.school,
                 meet: &resolved.meet,
                 kind: &resolved.kind,
-                sport: Sport::CrossCountry,
+                sport: Some(Sport::CrossCountry),
                 gender,
                 school_year: resolved.school_year,
+                performance_as_of: self.performance_as_of,
                 grade: resolved.grade,
                 date: resolved.date.clone(),
                 mark: resolved.mark.clone(),
@@ -268,14 +298,12 @@ impl<'a> Ctx<'a> {
                 place: row.place.as_deref(),
                 round: None,
                 timing: resolved.timing,
-                division: row
-                    .division
-                    .clone()
-                    .or_else(|| row.distance.map(|metres| format!("{metres}m"))),
+                division: row.division.clone(),
                 source_key,
-                label: None,
+                labels: &labels,
             },
-        );
+        )?;
         self.stats.rows_absorbed = self.stats.rows_absorbed.saturating_add(1);
+        Ok(())
     }
 }

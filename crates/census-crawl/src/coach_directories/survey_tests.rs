@@ -1,4 +1,5 @@
 mod collect;
+mod research;
 
 use super::probe_utils::{round_half_even, sample_rows};
 use super::API_HOST;
@@ -12,7 +13,7 @@ use census_domain::UsJurisdiction;
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::Duration;
 
-type TestResult = Result<(), Box<dyn std::error::Error>>;
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn seed_cache(fetcher: &Fetcher, url: &str, status: u16, body: &[u8]) -> TestResult {
     let key = Fetcher::key_for("GET", url, "");

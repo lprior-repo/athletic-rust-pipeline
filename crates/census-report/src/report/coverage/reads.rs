@@ -52,20 +52,12 @@ pub(super) fn totals(
     universe: &Published,
     grad_year: Option<i16>,
 ) -> Reads {
-    let athlete_by_id = tables.athlete_by_id();
     let splits = Splits {
         schools: schools(tables.schools, universe),
         athletes: athletes(tables.athletes, school_state, universe, grad_year),
         coaches: coaches(tables.coaches, school_state, universe),
         meets: meets(tables.meets, universe),
-        performances: performances(
-            tables.performances,
-            &athlete_by_id,
-            school_state,
-            universe,
-            grad_year,
-            tables.aliases,
-        ),
+        performances: performance_scope(tables, school_state, universe, grad_year),
     };
     Reads {
         published: splits.published(),
@@ -165,26 +157,49 @@ fn athletes(
     split
 }
 
-fn performances(
-    performances: &[CanonicalPerformance],
-    athlete_by_id: &HashMap<&str, &CanonicalAthlete>,
+fn performance_scope(
+    tables: &Tables<'_>,
     school_state: &HashMap<&str, Option<UsJurisdiction>>,
     universe: &Published,
     grad_year: Option<i16>,
-    aliases: &HashMap<String, String>,
+) -> ScopeSplit {
+    let athlete_by_id = tables.athlete_by_id();
+    let placement = PerformancePlacement {
+        athlete_by_id: &athlete_by_id,
+        school_state,
+        universe,
+        grad_year,
+        aliases: tables.aliases,
+    };
+    performances(tables.performances, &placement)
+}
+
+struct PerformancePlacement<'a, 's> {
+    athlete_by_id: &'a HashMap<&'s str, &'s CanonicalAthlete>,
+    school_state: &'a HashMap<&'s str, Option<UsJurisdiction>>,
+    universe: &'a Published,
+    grad_year: Option<i16>,
+    aliases: &'a HashMap<String, String>,
+}
+fn performances(
+    performances: &[CanonicalPerformance],
+    placement: &PerformancePlacement<'_, '_>,
 ) -> ScopeSplit {
     let mut split = ScopeSplit::default();
     for performance in performances {
         let subject = performance.athlete.as_str();
-        let canonical = aliases.get(subject).map_or(subject, String::as_str);
-        let bucket = match athlete_by_id.get(canonical) {
-            Some(athlete) if in_requested_year(athlete, grad_year) => {
-                jurisdiction_of(school_state, athlete.school.as_str())
+        let canonical = placement
+            .aliases
+            .get(subject)
+            .map_or(subject, String::as_str);
+        let bucket = match placement.athlete_by_id.get(canonical) {
+            Some(athlete) if in_requested_year(athlete, placement.grad_year) => {
+                jurisdiction_of(placement.school_state, athlete.school.as_str())
             }
             Some(_) => continue,
             None => JurisdictionBucket::Unplaced,
         };
-        split.add(universe.contains(bucket));
+        split.add(placement.universe.contains(bucket));
     }
     split
 }

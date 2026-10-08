@@ -23,7 +23,7 @@ impl Measure {
 
     pub fn value(self, mark: &Mark) -> Option<i64> {
         match (self, mark) {
-            (Measure::Time, Mark::TimeSeconds(cs)) => Some(i64::from(cs.value())),
+            (Measure::Time, Mark::TimeSeconds(time)) => Some(time.value()),
             (Measure::Distance, Mark::DistanceMetres(cm)) => {
                 i64::from(cm.value()).checked_mul(10_000)
             }
@@ -43,14 +43,26 @@ impl Measure {
     }
 
     pub fn normalized_mark(self, mark: &Mark) -> Option<f64> {
+        if let (Measure::Time, Mark::TimeSeconds(time)) = (self, mark) {
+            return time.try_as_seconds_f64();
+        }
         let value = self.value(mark)?;
         let (scale, floating_scale) = match self {
-            Measure::Time | Measure::Points => (100, 100.0),
+            Measure::Time => (1_000_000_000, 1_000_000_000.0),
+            Measure::Points => (100, 100.0),
             Measure::Distance => (1_000_000, 1_000_000.0),
         };
         let units = i32::try_from(value.checked_div(scale)?).ok()?;
         let fraction = i32::try_from(value.checked_rem(scale)?).ok()?;
         Some((f64::from(units) * floating_scale + f64::from(fraction)) / floating_scale)
+    }
+
+    pub const fn value_unit(self) -> &'static str {
+        match self {
+            Measure::Time => "ns",
+            Measure::Distance => "um",
+            Measure::Points => "centipoints",
+        }
     }
 
     pub const fn as_str(self) -> &'static str {

@@ -1,4 +1,3 @@
-use super::collect::requested_details;
 use super::map::{map_contact_row, map_directory_row};
 use super::parse::{parse_details, parse_directory};
 use super::*;
@@ -6,7 +5,6 @@ use crate::AdapterReport;
 use census_domain::model::{CanonicalCoach, CanonicalSchool, CoachRole, Gender};
 use census_domain::UsJurisdiction;
 use serde_json::Value;
-use std::collections::HashSet;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -134,16 +132,6 @@ fn malformed_pages_error_instead_of_panicking() {
     assert!(parse_details("<html><head><title></title></head></html>").is_err());
 }
 
-#[test]
-fn detail_name_filter_normalises_whitespace_and_discards_empty_names() {
-    let details: HashSet<String> = requested_details(&Options {
-        details_names: vec!["  A J McMullen   School ".to_string(), "".to_string()],
-        ..Options::default()
-    });
-    assert!(details.contains(&census_domain::model::normalize_name("A J McMullen School")));
-    assert_eq!(details.len(), 1);
-}
-
 fn seed_cache(cache_dir: &std::path::Path, url: &str, body: &str) -> TestResult {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
@@ -201,6 +189,10 @@ async fn collect_from_cache(
         refresh: false,
         school_year: census_domain::model::SchoolYear::new(2026).ok_or("2026 is a season")?,
         observed_on: OBSERVED_ON.to_string(),
+        performance_as_of: chrono::NaiveDate::parse_from_str(
+            OBSERVED_ON.get(..10).ok_or("fixture observation date")?,
+            "%Y-%m-%d",
+        )?,
         recording: None,
     };
     let report = collect(&ctx, &options()).await?;
@@ -209,70 +201,57 @@ async fn collect_from_cache(
 
 #[test]
 fn collect_stores_the_letter_schools_and_the_requested_details_page_from_the_cache() -> TestResult {
-    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
-    let dir = tempfile::tempdir()?;
-    let cache = dir.path().join("http");
-    seed_cache(&cache, &list_url('A'), DIRECTORY_A)?;
-    seed_cache(&cache, &list_url('B'), DIRECTORY_B)?;
-    seed_cache(&cache, &details_url("12048"), DETAILS_12048)?;
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let dir = tempfile::tempdir()?;
+            let cache = dir.path().join("http");
+            seed_cache(&cache, &list_url('A'), DIRECTORY_A)?;
+            seed_cache(&cache, &list_url('B'), DIRECTORY_B)?;
+            seed_cache(&cache, &details_url("12048"), DETAILS_12048)?;
 
-    let (report, store) = collect_from_cache(&cache, &dir.path().join("store")).await?;
+            let (report, store) = collect_from_cache(&cache, &dir.path().join("store")).await?;
 
-    check!(eq; report.rows, 154, "53 schools on A plus 101 on B");
-    check!(eq; report.errors, 0);
-    check!(eq;
-        report.requests, 0,
-        "all three responses came from the seeded cache"
-    );
-    check!(eq;
-        report.from_cache, 3,
-        "two letter pages and one details page"
-    );
+            check!(eq; report.rows, 154, "53 schools on A plus 101 on B");
+            check!(eq; report.errors, 0);
+            check!(eq;
+                report.requests, 0,
+                "all three responses came from the seeded cache"
+            );
+            check!(eq;
+                report.from_cache, 3,
+                "two letter pages and one details page"
+            );
 
-    let schools = store
-        .scan::<CanonicalSchool>(census_store::Table::Schools)
-        ?;
-    check!(eq; schools.len(), 154);
-    let mcmullen = schools
-        .iter()
-        .find(|school| school.name == "A J McMullen School")
-        .ok_or("the A page names A J McMullen School")?;
-    check!(eq; mcmullen.state, Some(UsJurisdiction::Pennsylvania));
-    check!(eq; mcmullen.association.as_deref(), Some("PIAA"));
-    check!(eq; mcmullen.city.as_deref(), Some("MARKLEYSBURG"));
+            let schools = store.scan::<CanonicalSchool>(census_store::Table::Schools)?;
+            check!(eq; schools.len(), 154);
+            let mcmullen = schools
+                .iter()
+                .find(|school| school.name == "A J McMullen School")
+                .ok_or("the A page names A J McMullen School")?;
+            check!(eq; mcmullen.state, Some(UsJurisdiction::Pennsylvania));
+            check!(eq; mcmullen.association.as_deref(), Some("PIAA"));
+            check!(eq; mcmullen.city.as_deref(), Some("MARKLEYSBURG"));
 
-    let coaches = store
-        .scan::<CanonicalCoach>(census_store::Table::Coaches)
-        ?;
-    check!(eq; coaches.len(), 1, "only the requested details page was read");
-    let director = &coaches[0];
-    check!(eq; director.school.as_str(), mcmullen.id.as_str());
-    check!(eq; director.role, CoachRole::AthleticDirector);
-    check!(eq; director.gender, Gender::Mixed);
-    check!(eq; director.sport, None, "an administrator post names no sport");
-    check!(
-        director.has_published_email(),
-        "the details page publishes it"
-    );
+            let coaches = store.scan::<CanonicalCoach>(census_store::Table::Coaches)?;
+            check!(eq; coaches.len(), 1, "only the requested details page was read");
+            let director = &coaches[0];
+            check!(eq; director.school.as_str(), mcmullen.id.as_str());
+            check!(eq; director.role, CoachRole::AthleticDirector);
+            check!(eq; director.gender, Gender::Mixed);
+            check!(eq; director.sport, None, "an administrator post names no sport");
+            check!(
+                director.has_published_email(),
+                "the details page publishes it"
+            );
 
-    let journal = store.journal_keys("pa_piaa_schools")?;
-    for key in ["PA:list:A", "PA:list:B", "PA:school:12048"] {
-        check!(journal.contains(key), "{key} is journalled");
-    }
-    check!(eq;
-        journal
-            .iter()
-            .filter(|key| key.starts_with("PA:school:"))
-            .count(),
-        154,
-        "every listed school is journalled; only the requested one had a details page read, which is why the store holds one administrator row and the run spent three cache reads"
-    );
-    Ok(())
-    })
+            Ok(())
+        })
 }
 
 #[test]
-fn a_journalled_letter_and_school_are_skipped_on_the_next_run() -> TestResult {
+fn unchanged_capture_under_larger_horizon_retains_fact_counts_and_owed_targets() -> TestResult {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
@@ -286,9 +265,32 @@ fn a_journalled_letter_and_school_are_skipped_on_the_next_run() -> TestResult {
             let (first, store) = collect_from_cache(&cache, &store_dir).await?;
             check!(eq; first.rows, 154);
             drop(store);
-            let (second, _) = collect_from_cache(&cache, &store_dir).await?;
-            check!(eq; second.rows, 0, "both letters were already journalled");
-            check!(eq; second.requests, 0, "a skipped letter is not fetched again");
+            let (second, store) = collect_from_cache(&cache, &store_dir).await?;
+            check!(eq; second.rows, 0);
+            check!(eq; second.requests, 0);
+            check!(eq; store.scan::<CanonicalCoach>(census_store::Table::Coaches)?.len(), 1);
+            let fetcher = crate::net::Fetcher::new(
+                &cache,
+                None,
+                std::time::Duration::from_millis(1),
+                std::collections::HashMap::new(),
+                Vec::new(),
+            )?
+            .with_offline(true);
+            let context = crate::AdapterContext {
+                fetcher: &fetcher,
+                store: &store,
+                refresh: false,
+                school_year: census_domain::model::SchoolYear::new(2027).ok_or("year")?,
+                observed_on: "2027-10-07".to_owned(),
+                performance_as_of: chrono::NaiveDate::parse_from_str("2027-10-07", "%Y-%m-%d")?,
+                recording: None,
+            };
+            let expanded = collect(&context, &options()).await?;
+            check!(eq; expanded.rows, 0);
+            check!(eq; store.scan::<CanonicalCoach>(census_store::Table::Coaches)?.len(), 1);
+            check!(eq; store.scan::<CanonicalSchool>(census_store::Table::Schools)?.len(), 154);
+            check!(expanded.unfinished.contains(&details_url("12048")));
             Ok(())
         })
 }

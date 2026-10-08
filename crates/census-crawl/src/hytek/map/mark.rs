@@ -1,6 +1,6 @@
 use census_domain::model::CentiMetres;
 use census_domain::model::CentiPoints;
-use census_domain::model::CentiSeconds;
+use census_domain::model::ExactSeconds;
 use census_domain::model::{EventKind, Mark};
 
 use super::super::NO_MARK;
@@ -45,41 +45,8 @@ pub fn round_marker(trimmed: &str) -> Option<&'static str> {
         _ => None,
     }
 }
-pub fn parse_time(token: &str) -> Option<CentiSeconds> {
-    let token = token.trim();
-    if token.is_empty() {
-        return None;
-    }
-    let parts: Vec<&str> = token.split(':').collect();
-    match parts.as_slice() {
-        [seconds] => {
-            let value: f64 = seconds.parse().ok()?;
-            (value.is_finite() && value >= 0.0)
-                .then_some(CentiSeconds::try_from_seconds_f64(value))
-                .flatten()
-        }
-        [minutes, seconds] => {
-            let minutes: f64 = minutes.parse().ok()?;
-            let seconds: f64 = seconds.parse().ok()?;
-            let total = minutes * 60.0 + seconds;
-            (minutes >= 0.0 && (0.0..60.0).contains(&seconds) && total.is_finite())
-                .then_some(CentiSeconds::try_from_seconds_f64(total))
-                .flatten()
-        }
-        [hours, minutes, seconds] => {
-            let hours: f64 = hours.parse().ok()?;
-            let minutes: f64 = minutes.parse().ok()?;
-            let seconds: f64 = seconds.parse().ok()?;
-            let total = hours * 3600.0 + minutes * 60.0 + seconds;
-            (hours >= 0.0
-                && (0.0..60.0).contains(&minutes)
-                && (0.0..60.0).contains(&seconds)
-                && total.is_finite())
-            .then_some(CentiSeconds::try_from_seconds_f64(total))
-            .flatten()
-        }
-        _ => None,
-    }
+pub fn parse_time(token: &str) -> Option<ExactSeconds> {
+    ExactSeconds::parse_clock(token.trim()).ok()
 }
 
 pub(crate) fn parse_points(token: &str) -> Option<Mark> {

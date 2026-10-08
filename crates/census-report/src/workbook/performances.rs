@@ -58,41 +58,90 @@ fn write_partitions(
     rows: impl IntoIterator<Item = ReportResult<PerformanceRow>>,
     per_sheet: usize,
 ) -> ReportResult<()> {
-    let widths: Vec<u16> = COLUMNS.iter().map(|(_, width)| *width).collect();
-    let header_row = header();
-    let last_column = COLUMNS.len().saturating_sub(1);
+    let layout = PartitionLayout::new();
     let mut rows = rows.into_iter();
     if per_sheet == 0 {
         let first = rows.next().transpose()?;
         return Err(no_budget(first.as_ref()));
     }
-    let mut sheets = 0_usize;
     let mut next = rows.next().transpose()?;
-    while next.is_some() {
-        let filled = {
-            let mut sheet = SheetWriter::start(book, path, &sheet_name(sheets), &widths)?;
-            sheet.write_row(0, &header_row)?;
-            let mut filled = 0_usize;
-            while filled < per_sheet {
-                let Some(row) = next.take() else { break };
-                sheet.write_row(filled.saturating_add(HEADER_ROWS), &row.cells())?;
-                filled = filled.saturating_add(1);
-                next = rows.next().transpose()?;
-            }
-            sheet.finish(filled.saturating_add(HEADER_ROWS), last_column, true)?;
-            filled
-        };
-        sheets = sheets.saturating_add(1);
-        if filled < per_sheet {
-            break;
+    let mut pending = PartitionRows {
+        rows: &mut rows,
+        next: &mut next,
+        per_sheet,
+    };
+    layout.write_all(book, path, &mut pending)?;
+    Ok(())
+}
+
+struct PartitionLayout {
+    widths: Vec<u16>,
+    header: Vec<Cell>,
+    last_column: usize,
+}
+
+struct PartitionRows<'a, I> {
+    rows: &'a mut I,
+    next: &'a mut Option<PerformanceRow>,
+    per_sheet: usize,
+}
+
+impl PartitionLayout {
+    fn new() -> Self {
+        Self {
+            widths: COLUMNS.iter().map(|(_, width)| *width).collect(),
+            header: header(),
+            last_column: COLUMNS.len().saturating_sub(1),
         }
     }
-    if sheets == 0 {
-        let mut sheet = SheetWriter::start(book, path, &sheet_name(0), &widths)?;
-        sheet.write_row(0, &header_row)?;
-        sheet.finish(HEADER_ROWS, last_column, true)?;
+
+    fn write_all<I: Iterator<Item = ReportResult<PerformanceRow>>>(
+        &self,
+        book: &mut Workbook,
+        path: &Path,
+        pending: &mut PartitionRows<'_, I>,
+    ) -> ReportResult<()> {
+        let mut sheets = 0_usize;
+        while pending.next.is_some() {
+            let filled = self.write(book, path, sheets, pending)?;
+            sheets = sheets.saturating_add(1);
+            if filled < pending.per_sheet {
+                break;
+            }
+        }
+        if sheets == 0 {
+            self.write_empty(book, path)?;
+        }
+        Ok(())
     }
-    Ok(())
+
+    fn write<I: Iterator<Item = ReportResult<PerformanceRow>>>(
+        &self,
+        book: &mut Workbook,
+        path: &Path,
+        index: usize,
+        pending: &mut PartitionRows<'_, I>,
+    ) -> ReportResult<usize> {
+        let mut sheet = SheetWriter::start(book, path, &sheet_name(index), &self.widths)?;
+        sheet.write_row(0, &self.header)?;
+        let mut filled = 0_usize;
+        while filled < pending.per_sheet {
+            let Some(row) = pending.next.take() else {
+                break;
+            };
+            sheet.write_row(filled.saturating_add(HEADER_ROWS), &row.cells())?;
+            filled = filled.saturating_add(1);
+            *pending.next = pending.rows.next().transpose()?;
+        }
+        sheet.finish(filled.saturating_add(HEADER_ROWS), self.last_column, true)?;
+        Ok(filled)
+    }
+
+    fn write_empty(&self, book: &mut Workbook, path: &Path) -> ReportResult<()> {
+        let mut sheet = SheetWriter::start(book, path, &sheet_name(0), &self.widths)?;
+        sheet.write_row(0, &self.header)?;
+        sheet.finish(HEADER_ROWS, self.last_column, true)
+    }
 }
 
 fn header() -> Vec<Cell> {

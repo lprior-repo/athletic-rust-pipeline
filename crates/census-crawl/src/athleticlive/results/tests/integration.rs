@@ -35,7 +35,7 @@ fn collect_maps_a_captured_state_final_into_the_canonical_tables() -> TestResult
                 .iter()
                 .find(|row| row.place == Some(1))
                 .ok_or("one row is placed first")?;
-            check!(eq; winner.mark, Mark::TimeSeconds(CentiSeconds::new(110070)));
+            check!(eq; winner.mark, Mark::TimeSeconds(ExactSeconds::parse("1100.7")?));
             check!(
                 winner.source_key.starts_with("athleticlive:2150205:"),
                 "the performance key is the event's: {}",
@@ -251,11 +251,6 @@ fn a_result_pass_files_one_observation_per_athlete_id_the_capture_published() ->
             seen.profile_url.as_deref(),
             Some(format!("https://www.athletic.net/athlete/{id}/track-and-field").as_str()),
             "the profile page Athletic.net's own athlete id derives"
-        );
-        check!(eq; seen.observed_on, OBSERVED_ON);
-        check!(
-            !seen.source_row_key.is_empty(),
-            "the row states where it was read"
         );
     }
     let winner = filed

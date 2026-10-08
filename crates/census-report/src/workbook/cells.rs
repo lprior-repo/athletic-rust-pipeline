@@ -48,17 +48,21 @@ macro_rules! row {
 }
 pub(super) use row;
 
+pub(super) struct SheetLayout<'a> {
+    pub(super) name: &'a str,
+    pub(super) widths: &'a [u16],
+    pub(super) autofilter: bool,
+}
+
 pub(super) fn write_sheet(
     book: &mut Workbook,
     path: &Path,
-    name: &str,
+    layout: SheetLayout<'_>,
     rows: Vec<Vec<Cell>>,
-    widths: &[u16],
-    autofilter: bool,
 ) -> ReportResult<()> {
-    let mut writer = SheetWriter::start(book, path, name, widths)?;
+    let mut writer = SheetWriter::start(book, path, layout.name, layout.widths)?;
     let last_column = writer.write_rows(&rows)?;
-    writer.finish(rows.len(), last_column, autofilter)
+    writer.finish(rows.len(), last_column, layout.autofilter)
 }
 
 pub(super) struct SheetWriter<'a> {
@@ -111,6 +115,19 @@ impl<'a> SheetWriter<'a> {
         Ok(())
     }
 
+    pub(super) fn write_strings(&mut self, index: usize, values: &[String]) -> ReportResult<()> {
+        let row = u32::try_from(index).map_err(|_| ReportError::Invariant {
+            detail: "row index does not fit u32".to_string(),
+        })?;
+        for (column, value) in values.iter().enumerate() {
+            let column = u16::try_from(column).map_err(|_| ReportError::Invariant {
+                detail: "column index does not fit u16".to_string(),
+            })?;
+            self.write_text(row, column, value)?;
+        }
+        Ok(())
+    }
+
     pub(super) fn finish(
         &mut self,
         rows: usize,
@@ -138,23 +155,26 @@ impl<'a> SheetWriter<'a> {
 
     fn write_cell(&mut self, row: u32, column: u16, cell: &Cell) -> ReportResult<()> {
         match cell {
-            Cell::Text(value) => {
-                if row == 0 {
-                    self.sheet
-                        .write_string_with_format(row, column, value, &self.bold)
-                        .map_err(|source| xlsx_error(self.path, source))?;
-                } else {
-                    self.sheet
-                        .write_string(row, column, value)
-                        .map_err(|source| xlsx_error(self.path, source))?;
-                }
-            }
+            Cell::Text(value) => self.write_text(row, column, value)?,
             Cell::Number(value) => {
                 self.sheet
                     .write_number(row, column, *value)
                     .map_err(|source| xlsx_error(self.path, source))?;
             }
             Cell::Empty => {}
+        }
+        Ok(())
+    }
+
+    fn write_text(&mut self, row: u32, column: u16, value: &str) -> ReportResult<()> {
+        if row == 0 {
+            self.sheet
+                .write_string_with_format(row, column, value, &self.bold)
+                .map_err(|source| xlsx_error(self.path, source))?;
+        } else {
+            self.sheet
+                .write_string(row, column, value)
+                .map_err(|source| xlsx_error(self.path, source))?;
         }
         Ok(())
     }

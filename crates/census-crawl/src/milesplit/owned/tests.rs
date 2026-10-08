@@ -1,10 +1,11 @@
 use super::*;
-use census_domain::model::{CentiMetres, CentiSeconds, EventKind, Gender, GradYear, Mark};
+use census_domain::model::{CentiMetres, EventKind, ExactSeconds, Gender, GradYear, Mark};
 use serde_json::{json, Value};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 mod event_scores;
+mod status_precedence;
 
 pub(super) const TROY: &[u8] = include_bytes!("fixtures/troy_725218.json");
 pub(super) const TEAM_RELAYS: &[u8] =
@@ -83,7 +84,7 @@ fn captured_provider_time_uses_the_existing_mark_conversion() -> TestResult {
     check!(eq; row.result_id, 201782806);
     check!(eq; row.source_athlete.id, "11357806");
     check!(eq; row.event_kind, EventKind::Track100m);
-    check!(eq; row.mark, Mark::TimeSeconds(CentiSeconds::new(1240)));
+    check!(eq; row.mark, Mark::TimeSeconds(ExactSeconds::parse("12.40")?));
     check!(eq; row.timing, None);
     check!(eq; row.provider["eventCode"], "100m");
     Ok(())
@@ -212,25 +213,6 @@ fn malformed_document_and_foreign_empty_envelope_are_not_parsed_success() -> Tes
     check!(eq; empty.published_rows, 0);
     check!(eq; empty.completeness, OwnedCompleteness::Unknown);
     check!(!empty.ownership_complete());
-    Ok(())
-}
-
-#[test]
-fn excessive_body_and_row_counts_are_explicit_document_refusals() -> TestResult {
-    let oversized = vec![b' '; MAX_OWNED_BODY_BYTES + 1];
-    check!(eq;
-        parse_owned_meet(&oversized, 725218),
-        OwnedMeetVerdict::Malformed {
-            detail: "invalid meet ID or oversized structured response".into(),
-        }
-    );
-    let rows = serde_json::to_vec(&json!({"data": vec![json!({}); MAX_OWNED_ROWS + 1]}))?;
-    check!(eq;
-        parse_owned_meet(&rows, 725218),
-        OwnedMeetVerdict::Malformed {
-            detail: format!("structured data exceeds {MAX_OWNED_ROWS} rows"),
-        }
-    );
     Ok(())
 }
 

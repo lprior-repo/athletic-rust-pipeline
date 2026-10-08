@@ -1,59 +1,55 @@
+use super::identity_attestation::IdentityLineage;
 use super::identity_decision::person_key;
-use super::identity_index::{primary_document, IdentityFact, PersonKey};
+use super::identity_index::{IdentityFact, PersonKey};
 use super::{
     AppliedIdentityKind, AthleteCandidateId, AthleteIdentityIndex, CanonicalAthlete, Gender,
-    SourceIdentity,
+    IdentityAttestation, IdentityError,
 };
 use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
 
 pub(super) fn attested_documents(
     athlete: &CanonicalAthlete,
-    primary: Option<PersonKey>,
-    links: &[PersonKey],
-    attested: &[(SourceIdentity, String)],
-) -> BTreeMap<PersonKey, String> {
-    let mut documents = BTreeMap::new();
-    if let Some(key) = primary {
-        if let Some(document) = primary_document(athlete) {
-            documents.insert(key, document);
-        }
-    }
-    for link in &athlete.source_links {
-        if let Some((key, document)) = link_document(link, links) {
-            documents.insert(key, document);
-        }
-    }
-    for (identity, document) in attested {
-        if let Some(key) = explicit_document(identity, document, primary, links) {
-            documents.insert(key, document.clone());
-        }
-    }
-    documents
+    attested: &[IdentityAttestation],
+) -> Result<BTreeMap<PersonKey, Vec<IdentityLineage>>, IdentityError> {
+    athlete
+        .identity_attestations
+        .iter()
+        .chain(attested)
+        .try_fold(BTreeMap::new(), |mut documents, claim| {
+            include_claim(athlete, claim, &mut documents)?;
+            Ok(documents)
+        })
 }
 
-fn link_document(link: &SourceIdentity, links: &[PersonKey]) -> Option<(PersonKey, String)> {
-    let key = person_key(link)?;
-    if !links.contains(&key) {
-        return None;
+fn include_claim(
+    athlete: &CanonicalAthlete,
+    claim: &IdentityAttestation,
+    documents: &mut BTreeMap<PersonKey, Vec<IdentityLineage>>,
+) -> Result<(), IdentityError> {
+    let Some(key) = bound_key(athlete, claim)? else {
+        return Ok(());
+    };
+    let claims = documents.entry(key).or_default();
+    if !claims.iter().any(|lineage| lineage.matches(claim)) {
+        if let Some(lineage) = claim.independent_lineage() {
+            claims.push(lineage);
+        }
     }
-    link.url
-        .clone()
-        .filter(|url| !url.is_empty())
-        .map(|url| (key, url))
+    Ok(())
 }
 
-fn explicit_document(
-    identity: &SourceIdentity,
-    document: &str,
-    primary: Option<PersonKey>,
-    links: &[PersonKey],
-) -> Option<PersonKey> {
-    let key = person_key(identity)?;
-    if document.is_empty() || (Some(key) != primary && !links.contains(&key)) {
-        return None;
+fn bound_key(
+    athlete: &CanonicalAthlete,
+    claim: &IdentityAttestation,
+) -> Result<Option<PersonKey>, IdentityError> {
+    claim.validate()?;
+    if !athlete.identities().any(|identity| {
+        identity.namespace == claim.subject.namespace && identity.id == claim.subject.id
+    }) {
+        return Err(IdentityError::UnboundAttestation(claim.subject.id.clone()));
     }
-    Some(key)
+    Ok(person_key(&claim.subject))
 }
 
 pub(super) fn member_facts<'a>(
@@ -96,36 +92,44 @@ fn same_person_evidence(facts: &[&IdentityFact]) -> bool {
 }
 
 pub(super) fn disjoint_provider_objects(facts: &[&IdentityFact]) -> bool {
-    let mut objects: BTreeMap<&'static str, u64> = BTreeMap::new();
-    for fact in facts {
-        let Some(primary) = fact.primary else {
-            continue;
-        };
-        match objects.entry(primary.0) {
-            Entry::Vacant(slot) => {
-                slot.insert(primary.1);
+    facts
+        .iter()
+        .filter_map(|fact| fact.primary)
+        .try_fold(BTreeMap::new(), |mut objects, primary| {
+            match objects.entry(primary.0) {
+                Entry::Vacant(slot) => {
+                    slot.insert(primary.1);
+                }
+                Entry::Occupied(slot) if *slot.get() == primary.1 => {}
+                Entry::Occupied(_) => return Err(()),
             }
-            Entry::Occupied(slot) if *slot.get() == primary.1 => {}
-            Entry::Occupied(_) => return true,
-        }
-    }
-    false
+            Ok(objects)
+        })
+        .is_err()
 }
 
 fn corroborated_by(facts: &[&IdentityFact], key: PersonKey) -> bool {
-    let mut documents = BTreeSet::new();
-    for fact in facts {
-        if fact.primary != Some(key) && !fact.links.contains(&key) {
-            return false;
-        }
-        let Some(document) = fact.attested.get(&key) else {
-            return false;
-        };
-        if document.is_empty() || !documents.insert(document.as_str()) {
-            return false;
-        }
+    if facts
+        .iter()
+        .any(|fact| fact.primary != Some(key) && !fact.links.contains(&key))
+    {
+        return false;
     }
-    !documents.is_empty()
+    facts.iter().enumerate().all(|(position, fact)| {
+        facts
+            .iter()
+            .skip(position.saturating_add(1))
+            .all(|other| independent_claims(fact, other, key))
+    })
+}
+
+fn independent_claims(first: &IdentityFact, second: &IdentityFact, key: PersonKey) -> bool {
+    match (first.attested.get(&key), second.attested.get(&key)) {
+        (Some(left), Some(right)) => left
+            .iter()
+            .any(|claim| right.iter().any(|other| claim.is_independent_of(other))),
+        _ => false,
+    }
 }
 
 impl AthleteIdentityIndex {

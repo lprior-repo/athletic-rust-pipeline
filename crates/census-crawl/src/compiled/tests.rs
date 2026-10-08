@@ -1,6 +1,6 @@
 use super::header::header;
 use super::*;
-use census_domain::model::CentiSeconds;
+use census_domain::model::ExactSeconds;
 use census_domain::model::{Gender, Mark, SourceRef};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -47,7 +47,7 @@ fn regional_export_parses_both_blocks_of_a_page() -> TestResult {
     check!(eq; relay.round.as_deref(), Some("finals"));
     let winner = &relay.rows[0];
     check!(eq; winner.school, "HORTONVILLE");
-    check!(eq; winner.mark, Mark::TimeSeconds(CentiSeconds::new(59511)));
+    check!(eq; winner.mark, Mark::TimeSeconds(ExactSeconds::parse("595.11")?));
     check!(eq; winner.points, Some(10.0));
     check!(eq;
         winner.legs,
@@ -84,7 +84,7 @@ fn regional_export_parses_both_blocks_of_a_page() -> TestResult {
     check!(eq; relay.rows[1].school, "APPLETON NORTH");
     check!(eq;
         relay.rows[2].mark,
-        Mark::TimeSeconds(CentiSeconds::new(60338))
+        Mark::TimeSeconds(ExactSeconds::parse("603.38")?)
     );
     check!(eq;
         relay.rows[2].legs,
@@ -106,7 +106,7 @@ fn regional_export_parses_both_blocks_of_a_page() -> TestResult {
     check!(eq; leader.grade, census_domain::model::Grade::new(11));
     check!(eq; leader.place, Some(1));
     check!(eq; leader.school, "APPLETON NOR\u{2026}");
-    check!(eq; leader.mark, Mark::TimeSeconds(CentiSeconds::new(1230)));
+    check!(eq; leader.mark, Mark::TimeSeconds(ExactSeconds::parse("12.30")?));
     check!(eq; leader.points, None);
     Ok(())
 }
@@ -129,4 +129,26 @@ fn print_artifacts_do_not_become_part_of_the_meet_name() -> TestResult {
 fn a_file_without_a_header_is_not_claimed() {
     let lines = vec!["Girls' 100 Meters Division 1   Finals".to_string()];
     assert!(parse(&lines, source(), 2026).is_none());
+}
+
+#[test]
+fn over_precision_timed_rows_do_not_fall_back_to_distance_or_hide_later_results() -> TestResult {
+    let body = REGIONAL.replace("12.30 Q", "12.3000000001 Q");
+    let meet = parse(&crate::hytek::lines_from_pdf_text(&body), source(), 2026)
+        .ok_or("missing compiled source meet")?;
+    let dash = meet
+        .events
+        .iter()
+        .find(|event| event.kind == census_domain::model::EventKind::Track100m)
+        .ok_or("missing dash event")?;
+    check!(eq; dash.rows.len(), 7);
+    check!(eq; meet.rows_skipped, 1);
+    check!(dash.rows.iter().all(|row| row.name != "Parrish, Ashley"));
+    let later = dash
+        .rows
+        .iter()
+        .find(|row| row.name == "Thompson, Emily")
+        .ok_or("missing later source row")?;
+    check!(eq; later.mark, Mark::TimeSeconds(ExactSeconds::parse("12.74")?));
+    Ok(())
 }

@@ -7,9 +7,10 @@ use census_service::restate_services::{
 use census_store::Table;
 use restate_sdk::prelude::*;
 use serde_json::Value;
-use std::path::Path;
 
 use crate::ingress;
+
+use super::ExportRequest;
 
 pub(super) fn status(origin: &str) -> Result<()> {
     let (endpoint, client) = ingress::client(origin)?;
@@ -37,47 +38,60 @@ pub(super) fn coverage(origin: &str) -> Result<()> {
         scope: Some(Scope::AllSources.as_str().to_string()),
     };
     let response = ingress::block_on(report.run(Json(request)).call())?.map_err(ingress::error)?;
-    let Json(ReportReply {
+    let Json(reply) = response.into_body().map_err(ingress::error)?;
+    print_report(reply)
+}
+
+fn print_report(reply: ReportReply) -> Result<()> {
+    let ReportReply {
         scope,
         totals,
         json_path,
         csv_path,
         ..
-    }) = response.into_body().map_err(ingress::error)?;
+    } = reply;
     println!("wrote {json_path}");
     println!("wrote {csv_path}");
     totals_line(&scope, &totals)
 }
 
-pub(super) fn workbook(
-    origin: &str,
-    out: Option<&Path>,
-    grad_year: i32,
-    school_year: i32,
-    core: bool,
-    limit: Option<usize>,
-) -> Result<()> {
+pub(super) fn workbook(origin: &str, options: &ExportRequest) -> Result<()> {
     let (endpoint, client) = ingress::job_client(origin)?;
     ingress::announce(&endpoint, "Workbook", "run");
-    let scope = if core { Scope::Core } else { Scope::AllSources };
-    let request = WorkbookRequest {
-        grad_year: Some(grad_year_i16(grad_year)?),
-        limit,
-        scope: Some(scope.as_str().to_string()),
-        out: out.map(|path| path.display().to_string()),
-        school_year: Some(school_year_i16(school_year)?),
-    };
+    let request = workbook_request(options)?;
     let key = workbook_request_key(&request);
     let workbook = WorkbookIngressClient::from_client(client, key);
     let response =
         ingress::block_on(workbook.run(Json(request)).call())?.map_err(ingress::error)?;
-    let Json(WorkbookReply { path, grad_year }) = response.into_body().map_err(ingress::error)?;
+    let Json(reply) = response.into_body().map_err(ingress::error)?;
+    print_workbook(reply);
+    Ok(())
+}
+
+fn workbook_request(options: &ExportRequest) -> Result<WorkbookRequest> {
+    let scope = if options.core {
+        Scope::Core
+    } else {
+        Scope::AllSources
+    };
+    Ok(WorkbookRequest {
+        grad_year: Some(grad_year_i16(options.grad_year)?),
+        limit: options.limit,
+        scope: Some(scope.as_str().to_string()),
+        out: options
+            .out
+            .as_deref()
+            .map(|path| path.display().to_string()),
+        school_year: Some(school_year_i16(options.school_year)?),
+    })
+}
+
+fn print_workbook(WorkbookReply { path, grad_year }: WorkbookReply) {
     println!("wrote {path}");
     match grad_year {
         Some(year) => println!("grad_year={year}"),
         None => println!("grad_year=all"),
     }
-    Ok(())
 }
 
 fn totals_line(scope: &str, totals: &Value) -> Result<()> {
