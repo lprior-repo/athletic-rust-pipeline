@@ -33,18 +33,28 @@ Do not invoke Cargo, bare Moon, `tools/gate.sh` or fault/backup wrappers directl
 | `new-source <name>` | Writes a source scaffold and module declaration; not a qualified or fully registered adapter |
 | `storage-ab [-- <args>]` | Manual census-store keyspace A/B benchmark: single vs split evidence/derived keyspaces; run with small sizes first (e.g. `--evidence-rows 20000 --derived-rows 40000 --generations 2`) before production-scale runs |
 
-`env -u CI tools/moon-local run pipeline:gate -- --full` and `--release` invoke the unfiltered mandatory proof lane.
-A passing explicitly selected harness is not coverage of missing kernels. Release also fails when
-Cargo metadata contains no benchmark target; compiling a benchmark is not a measured performance
-result. See the dated evidence for actually executed lanes and remaining blockers.
+`env -u CI tools/moon-local run pipeline:gate -- --full` adds the heavy performance-threshold lane to
+the default lane list; `--release` runs that same list with an absent tool and a missing performance
+baseline failing instead of skipping. Neither invocation runs a proof lane: `xtask` and `tools/gate.sh`
+carry no proof, Kani or Verus command and no kernel registry, and no `kani::proof` source exists in the
+repository, so no release invocation certifies the twelve mandatory proof kernels of
+[docs/NATIONAL-CENSUS-PLAN.md](../docs/NATIONAL-CENSUS-PLAN.md) §10 or fails for their absence. The
+obligation and the eight currently missing kernels live in that plan and
+[docs/VERIFICATION-EVIDENCE.md](../docs/VERIFICATION-EVIDENCE.md); the reconciliation is owned by beads
+`7w5` (twelve-kernel requirement versus this wrapper) and `psx` (proof verdicts), and no explicitly
+selected harness substitutes for a missing kernel. Release also fails when Cargo metadata contains no
+benchmark target; compiling a benchmark is not a measured performance result. See the dated evidence
+for actually executed lanes and remaining blockers.
 
 ## Fast Rust iteration and local Moon cache
 
 Run all developer commands through `tools/moon-local` from the repository root. Cargo is an internal
 implementation, not a second supported workflow. The opt-in iteration profile and Moon CI do not
 replace the full gate: `env -u CI tools/moon-local run pipeline:gate -- --release` is the release
-acceptance entrypoint, including proof, policy and performance obligations; the whole-workspace
-mutation lane was retired by owner decision (bead `5rtr`). A scoped report
+acceptance entrypoint for the policy, security, feature-powerset, benchmark-presence and measured
+performance lanes; it carries no proof lane, so kernel coverage must be reported by name rather than
+inferred from a passing release run. The whole-workspace mutation lane was retired by owner decision
+(bead `5rtr`). A scoped report
 test, cached task result, successful build or benchmark scaffold is not national-census or
 native-recovery acceptance. Manual tasks are excluded from automatic CI; `env -u CI` is required
 when any `CI` value is present, including `CI=false`.

@@ -6,11 +6,14 @@ use restate_sdk::prelude::*;
 
 use crate::spawn::Spawner;
 use census_store::clock::Clock;
-use census_store::{Application, Store, Table};
+use census_store::{Application, Credit, Store, Table};
 
 use super::ingest_validation::validate_rows;
 use super::jobs::apply_observations;
-use super::wire::ingest::{IngestReply, IngestRequest, IngestState, WindowRequest};
+use super::wire::ingest::{
+    IngestReply, IngestRequest, IngestState, WindowRequest, MAX_OPERATION_ID_BYTES,
+    MAX_WINDOW_LABEL_BYTES, WINDOW_LABEL_RING,
+};
 use super::{blocking, job_error, resolve_table, JobError, KEY_STATE};
 
 pub(super) fn payload_digest(table: Table, rows: &[Value]) -> Result<String, HandlerError> {
@@ -30,16 +33,28 @@ pub(super) fn payload_digest(table: Table, rows: &[Value]) -> Result<String, Han
         .collect())
 }
 
-pub(super) fn credited_appended(
-    state: &IngestState,
-    operation: &str,
-    receipt_appended: u64,
-) -> u64 {
-    if state.seen_operations.iter().any(|seen| seen == operation) {
-        0
-    } else {
-        receipt_appended
+pub(super) fn record_window(state: &mut IngestState, window: String) -> bool {
+    if state.windows.contains(&window) {
+        return false;
     }
+    state.windows_completed = state.completed_windows().saturating_add(1);
+    state.windows.push(window);
+    state.windows.sort();
+    if state.windows.len() > WINDOW_LABEL_RING {
+        state.windows.remove(0);
+    }
+    true
+}
+
+pub(super) fn check_identifier(
+    kind: &str,
+    value: &str,
+    limit: usize,
+) -> Result<(), HandlerError> {
+    if value.len() > limit {
+        return Err(TerminalError::new(format!("{kind} exceeds {limit} bytes")).into());
+    }
+    Ok(())
 }
 
 struct Posted {
@@ -136,12 +151,15 @@ impl Ingest {
         validate_rows(table, &request.rows)?;
         let store = Arc::clone(&self.store);
         let region = Arc::clone(&self.region);
+        let credit_store = Arc::clone(&self.store);
+        let credit_region = Arc::clone(&self.region);
         let operation = request.operation_id;
+        check_identifier("operation id", &operation, MAX_OPERATION_ID_BYTES)?;
         let rows = request.rows;
         let today = super::journaled_today(&ctx, &self.clock).await?;
         let mut state = self.load_object(&ctx).await?;
         let digest = payload_digest(table, &rows)?;
-        let application = self
+        let applied = self
             .apply(
                 &ctx,
                 store,
@@ -154,24 +172,53 @@ impl Ingest {
                 },
             )
             .await?;
-        let appended = credited_appended(&state, &operation, application.receipt().appended);
-        let written = application.appended();
+        let written = applied.appended();
+        let credit = self
+            .credit(
+                &ctx,
+                credit_store,
+                credit_region,
+                state.endpoint.clone(),
+                operation,
+            )
+            .await?;
         Ingest::update_ingest_state(
             &mut state,
-            appended,
-            operation,
+            credit.total,
             request.cursor.clone(),
             today,
             &ctx,
         );
         Ok(Json(IngestReply {
             endpoint: state.endpoint,
-            appended,
+            appended: credit.credited,
             written,
             total_observations: state.total_observations,
             cursor: state.cursor,
             last_appended_at: state.last_appended_at,
         }))
+    }
+
+    async fn credit(
+        &self,
+        ctx: &ObjectContext<'_>,
+        store: Arc<Store>,
+        region: Arc<Spawner>,
+        endpoint: String,
+        operation: String,
+    ) -> Result<Credit, HandlerError> {
+        let Json(credit) = ctx
+            .run(move || async move {
+                blocking(region, move || {
+                    store.credit_observations(&endpoint, &operation)
+                })
+                .await
+                .map(Json)
+                .map_err(job_error)
+            })
+            .retry_policy(RunRetryPolicy::new().max_attempts(1))
+            .await?;
+        Ok(credit)
     }
 
     async fn apply(
@@ -203,16 +250,12 @@ impl Ingest {
 
     fn update_ingest_state(
         state: &mut IngestState,
-        appended: u64,
-        operation: String,
+        total: u64,
         cursor: Option<String>,
         today: String,
         ctx: &ObjectContext<'_>,
     ) {
-        state.total_observations = state.total_observations.saturating_add(appended);
-        if !state.seen_operations.contains(&operation) {
-            state.seen_operations.push(operation);
-        }
+        state.total_observations = total;
         if cursor.is_some() {
             state.cursor = cursor;
         }
@@ -229,10 +272,9 @@ impl Ingest {
         if request.window.trim().is_empty() {
             return Err(TerminalError::new("window label must not be empty").into());
         }
+        check_identifier("window label", &request.window, MAX_WINDOW_LABEL_BYTES)?;
         let mut state = self.load_object(&ctx).await?;
-        if !state.windows.contains(&request.window) {
-            state.windows.push(request.window);
-            state.windows.sort();
+        if record_window(&mut state, request.window) {
             ctx.set(KEY_STATE, Json(state.clone()));
         }
         Ok(Json(state))

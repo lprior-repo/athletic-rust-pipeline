@@ -34,11 +34,35 @@ pub(super) async fn subscribe_fetch(page: &Page) -> Result<FetchListeners, Brows
     })
 }
 
+const MAX_REQUEST_HEADERS: usize = 8;
+const MAX_REQUEST_HEADER_NAME_BYTES: usize = 64;
+const MAX_REQUEST_HEADER_VALUE_BYTES: usize = 1024;
+
+fn validate_request_headers(headers: &[(String, String)]) -> Result<(), BrowserError> {
+    if headers.len() > MAX_REQUEST_HEADERS {
+        return Err(BrowserError::Protocol);
+    }
+    for (name, value) in headers {
+        let valid_name = !name.is_empty()
+            && name.len() <= MAX_REQUEST_HEADER_NAME_BYTES
+            && name.bytes().all(|byte| {
+                byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-' || byte == b'_'
+            });
+        let valid_value = value.len() <= MAX_REQUEST_HEADER_VALUE_BYTES
+            && !value.bytes().any(|byte| byte == b'\r' || byte == b'\n');
+        if !valid_name || !valid_value {
+            return Err(BrowserError::Protocol);
+        }
+    }
+    Ok(())
+}
+
 fn fetch_call(
     request: &RequestSpec,
     request_body: Option<&str>,
     request_timeout: Duration,
 ) -> Result<CallFunctionOnParams, BrowserError> {
+    validate_request_headers(&request.headers)?;
     let arguments = FetchArguments {
         url: request.url.as_str(),
         method: request_method(request),
@@ -46,6 +70,7 @@ fn fetch_call(
         timeout_ms: u64::try_from(request_timeout.as_millis())
             .map_err(|_| BrowserError::Protocol)?,
         max_body: MAX_SOURCE_RESPONSE_BYTES,
+        headers: request.headers.as_slice(),
     };
     let value = serde_json::to_value(arguments).map_err(|_| BrowserError::Protocol)?;
     CallFunctionOnParams::builder()

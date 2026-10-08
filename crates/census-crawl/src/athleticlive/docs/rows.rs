@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use serde_json::Value;
 
-use super::marks::row_mark;
+use super::marks::{row_mark, MarkError};
 use super::value_u64;
 use census_domain::model::{EventKind, Mark};
 
@@ -69,6 +69,8 @@ pub struct DocRow {
     pub mark: Option<String>,
     #[serde(default, rename = "im")]
     pub mark_int: Option<Value>,
+    #[serde(default, rename = "vm")]
+    pub validity: Option<Value>,
     #[serde(default, rename = "w")]
     pub wind: Option<Value>,
     #[serde(default, rename = "hn")]
@@ -99,7 +101,12 @@ impl DocRow {
         self.heat.as_ref().and_then(value_u64)
     }
 
-    pub fn canonical_mark(&self, kind: &EventKind) -> Option<Mark> {
-        row_mark(kind, self.mark.as_deref(), self.mark_int.as_ref())
+    pub fn canonical_mark(&self, kind: &EventKind) -> Result<Option<Mark>, MarkError> {
+        row_mark(
+            kind,
+            self.mark.as_deref(),
+            self.mark_int.as_ref(),
+            self.validity.as_ref(),
+        )
     }
 }

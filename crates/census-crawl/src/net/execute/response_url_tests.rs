@@ -91,7 +91,14 @@ async fn acquire(
     check!(replay.from_cache);
     check!(eq; replay.fetched_at, first.fetched_at);
     let (body_path, meta_path) = fetcher.cache_paths(&Fetcher::key_for("GET", requested, ""));
-    let (meta, body) = read_cache(&body_path, &meta_path)?.ok_or("redirect cache missing")?;
+    let (meta, body) = read_cache(
+        &body_path,
+        &meta_path,
+        "GET",
+        requested,
+        &crate::net::RepresentationHeaders::default(),
+    )?
+    .ok_or("redirect cache missing")?;
     check!(eq; body, BODY);
     assert_archive(cache, &meta)?;
     let metadata_before = std::fs::read(&meta_path)?;

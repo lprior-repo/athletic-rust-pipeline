@@ -162,11 +162,10 @@ fn a_capture_whose_rows_never_landed_is_read_again_by_the_next_run() -> TestResu
             };
 
             let mut walk = Run::new(&context(&store, &fetcher)?, &state_meet(), &options)?;
-            walk.read_captures(&options)?;
+            walk.read_captures(&context(&store, &fetcher)?, &options)?;
             check!(
-                journal(&store)?.is_empty(),
-                "the walk writes no entry of its own: {:?}",
-                journal(&store)?
+                receipts(&store)?.is_empty() && captures(&store)?.is_empty(),
+                "the walk writes neither a receipt nor an archived body of its own"
             );
             check!(
                 store
@@ -186,10 +185,26 @@ fn a_capture_whose_rows_never_landed_is_read_again_by_the_next_run() -> TestResu
             );
             let meets: Vec<CanonicalMeet> = store.scan(Table::Meets)?;
             check!(eq; meets.len(), 1, "the meet the run files under");
+            let receipts = receipts(&store)?;
+            check!(eq; receipts.len(), 1, "one effect receipt per capture read");
+            let (key, payload) = receipts.iter().next().ok_or("the receipt")?;
+            check!(eq; payload["path"], serde_json::json!(path));
+            check!(eq; payload["role"], serde_json::json!("event"));
+            check!(eq; payload["meet"], serde_json::json!(STATE_MEET.to_string()));
+            check!(eq; payload["parser"], serde_json::json!("athleticlive_results_v2"));
             check!(eq;
-                journal(&store)?,
-                std::collections::HashSet::from([path]),
-                "one entry per capture read"
+                payload["digest"],
+                serde_json::json!(content_digest(XC_STATE.as_bytes())),
+                "the receipt binds the bytes it read"
+            );
+            check!(
+                key.starts_with(&format!("{STATE_MEET}:event:")),
+                "the receipt key names the meet and the role: {key}"
+            );
+            check!(eq;
+                captures(&store)?,
+                std::collections::HashSet::from([content_digest(XC_STATE.as_bytes())]),
+                "the archived body is keyed by the digest it carries"
             );
             Ok(())
         })

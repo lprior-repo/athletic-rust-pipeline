@@ -60,6 +60,31 @@ fn options_reject_unknown_flags_and_zero_concurrency() {
 }
 
 #[test]
+fn options_reject_concurrency_above_the_operational_ceiling() -> TestResult {
+    let at_ceiling = [
+        "--max-concurrent".to_string(),
+        MAX_CONCURRENT_CEILING.to_string(),
+    ];
+    let options = ServeOptions::from_env(at_ceiling.into_iter())?;
+    check!(eq; options.max_concurrent, MAX_CONCURRENT_CEILING);
+    for value in [MAX_CONCURRENT_CEILING + 1, usize::MAX] {
+        let over = ["--max-concurrent".to_string(), value.to_string()];
+        match ServeOptions::from_env(over.into_iter()) {
+            Err(BootstrapError::ConcurrencyTooLarge {
+                value: rejected,
+                ceiling,
+            }) => {
+                check!(eq; rejected, value);
+                check!(eq; ceiling, MAX_CONCURRENT_CEILING);
+            }
+            Err(other) => return Err(format!("unexpected error: {other}").into()),
+            Ok(_) => return Err("oversized concurrency accepted".into()),
+        }
+    }
+    Ok(())
+}
+
+#[test]
 fn options_name_the_flag_whose_value_is_missing_or_unparseable() -> TestResult {
     let missing = ["--listen"].into_iter().map(str::to_string);
     let error = match ServeOptions::from_env(missing) {

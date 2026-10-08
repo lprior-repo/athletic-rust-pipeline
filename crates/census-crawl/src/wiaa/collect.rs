@@ -24,7 +24,9 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
 
     if !options.states.is_empty() && !options.states.contains(&UsJurisdiction::Wisconsin) {
         let after = ctx.fetcher.stats().await;
-        report.requests = after.requests.saturating_sub(before.requests);
+        report.requests = after
+            .physical_requests()
+            .saturating_sub(before.physical_requests());
         let codes: Vec<&str> = options.states.iter().map(|state| state.code()).collect();
         report.note(format!(
             "states {codes:?} do not include WI; this adapter covers Wisconsin only"
@@ -55,7 +57,9 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
 
     let after = ctx.fetcher.stats().await;
     report.rows = count(tally.processed);
-    report.requests = after.requests.saturating_sub(before.requests);
+    report.requests = after
+        .physical_requests()
+        .saturating_sub(before.physical_requests());
     report.from_cache = after.cache_hits.saturating_sub(before.cache_hits);
     report.with_email = tally.with_email;
 
@@ -92,7 +96,9 @@ async fn scan_index(
     let (index, letters_ok, first_problem) = absorb_letters(&letters, letter_results, report);
     if letters_ok == 0 {
         let after = ctx.fetcher.stats().await;
-        report.requests = after.requests.saturating_sub(before.requests);
+        report.requests = after
+            .physical_requests()
+            .saturating_sub(before.physical_requests());
         report.from_cache = after.cache_hits.saturating_sub(before.cache_hits);
         return Err(CrawlError::Schema {
             url: format!("{HOST}{INDEX_PATH}"),

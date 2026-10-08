@@ -52,7 +52,9 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     let mut tally = run.tally;
     let mut report = AdapterReport::new(super::SOURCE_ID, "org_schools");
     report.rows = u64::try_from(tally.schools).map_or(u64::MAX, |value| value);
-    report.requests = stats_after.requests.saturating_sub(stats_before.requests);
+    report.requests = stats_after
+        .physical_requests()
+        .saturating_sub(stats_before.physical_requests());
     report.from_cache = stats_after
         .cache_hits
         .saturating_sub(stats_before.cache_hits);

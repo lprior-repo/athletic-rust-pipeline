@@ -35,7 +35,14 @@ fn every_durable_quarantine_boundary_allows_fresh_publication_without_evidence_l
         let (retained, encoded, original) = interrupted_quarantine(root.path(), moved_files)?;
         let reason_before = std::fs::read(retained.join("reason.json"))?;
         let (body_path, meta_path) = cache_paths(root.path());
-        check!(read_cache(&body_path, &meta_path)?.is_none());
+        check!(read_cache(
+            &body_path,
+            &meta_path,
+            &original.method,
+            &original.url,
+            &original.representation
+        )?
+        .is_none());
         let fresh = metadata(b"fresh response");
         write_cache(&body_path, &meta_path, b"fresh response", &fresh)?;
         assert_served(root.path(), b"fresh response", &fresh)?;

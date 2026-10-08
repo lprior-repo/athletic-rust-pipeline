@@ -3,9 +3,9 @@ mod journal;
 use super::*;
 use crate::athleticnet::collect::{PROFILE_ATTEMPT_PHASE, PROFILE_PARSE_VERSION};
 use crate::athleticnet::{Options, BIO_ENDPOINT, HIGH_SCHOOL_LEVEL, SCOPES};
+use crate::net::cache::{content_digest, write_cache, CacheMeta};
 use census_domain::model::ReviewCase;
 use census_store::{Store, Table};
-use sha2::{Digest, Sha256};
 
 const CAPTURE: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -25,27 +25,27 @@ fn source_urls(id: u64) -> Vec<String> {
 }
 
 fn seed_cache(cache: &std::path::Path, url: &str, body: &str) -> TestResult {
-    let mut hasher = Sha256::new();
-    hasher.update(b"GET");
-    hasher.update([0x1f]);
-    hasher.update(url.as_bytes());
-    hasher.update([0x1f]);
-    let key: String = hasher
-        .finalize()
-        .iter()
-        .take(16)
-        .map(|byte| format!("{byte:02x}"))
-        .collect();
-    let meta = serde_json::json!({
-        "url": url, "method": "GET", "status": 200,
-        "content_digest": format!("{:x}", Sha256::digest(body.as_bytes())),
-        "bytes": body.len(), "fetched_at": "2026-09-20T12:00:00Z",
-    });
+    let representation = crate::net::RepresentationHeaders::canonical(&[(
+        "Accept".to_string(),
+        "application/json".to_string(),
+    )])?;
+    let key = crate::net::Fetcher::key_for("GET", url, &representation.identity());
+    let meta = CacheMeta {
+        url: url.to_string(),
+        method: "GET".to_string(),
+        representation,
+        status: 200,
+        content_digest: content_digest(body.as_bytes()),
+        bytes: body.len(),
+        fetched_at: "2026-09-20T12:00:00Z".to_string(),
+        ..CacheMeta::default()
+    };
     std::fs::create_dir_all(cache)?;
-    std::fs::write(cache.join(format!("{key}.body")), body)?;
-    std::fs::write(
-        cache.join(format!("{key}.meta.json")),
-        serde_json::to_vec(&meta)?,
+    write_cache(
+        &cache.join(format!("{key}.body")),
+        &cache.join(format!("{key}.meta.json")),
+        body.as_bytes(),
+        &meta,
     )?;
     Ok(())
 }

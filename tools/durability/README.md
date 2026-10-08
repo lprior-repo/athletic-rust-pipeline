@@ -74,6 +74,11 @@ another reopen. The wrapper uses a 300-second TERM-only deadline and retains `pr
 and a cold `preserved-store` under its printed `EVIDENCE:` directory before namespace exit.
 Set `SCRATCH_STORE` to an existing owned local-disk parent to preserve this evidence; no
 scratch cleanup deletes it. These tmpfs results do not establish power-loss/reboot recovery.
+Scenario 09 resolves its probe through Cargo's JSON artifact protocol and refuses any
+artifact outside the selected target directory, so a Moon build under `CARGO_TARGET_DIR`
+either runs the artifact it just built or fails closed; it records that artifact's hash
+and re-checks it before and inside the private mount, and a deterministic routing check
+proves a stale default-target probe is never selected or executed.
 
 The separate `qualification_native_vm` example's source-reservation reboot lane
 requires an explicitly feature-enabled endpoint:

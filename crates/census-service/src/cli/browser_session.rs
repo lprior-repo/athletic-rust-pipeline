@@ -120,6 +120,7 @@ async fn fetch_page(origin: &str, key: &str, fetch: &FetchArgs) -> Result<Browse
         url,
         semantic_url: fetch.semantic_url.clone(),
         action: RequestAction::Fetch { body: None },
+        headers: Vec::new(),
     };
     let lane = BrowserSessionIngressClient::from_client(ingress::client(origin)?, key);
     let outcome: BrowserOutcome = lane

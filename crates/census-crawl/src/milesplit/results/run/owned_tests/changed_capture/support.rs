@@ -11,6 +11,7 @@ pub(super) fn seed_fresh(fetcher: &Fetcher, url: &str, body: &[u8]) -> TestResul
         &meta_path,
         body,
         &CacheMeta {
+            representation: crate::net::RepresentationHeaders::default(),
             url: url.into(),
             method: "GET".into(),
             status: 200,

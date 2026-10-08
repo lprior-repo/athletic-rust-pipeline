@@ -16,7 +16,7 @@ use super::{job_error, MAX_SWEEP_ENDPOINTS, MAX_SWEEP_WINDOWS, STOP_SIGNAL};
 mod blocking_prune_receipts;
 mod blocking_write_report;
 
-pub const REPLAY_RETENTION_DAYS: u64 = 90;
+pub const REPLAY_RETENTION_DAYS: u64 = 365;
 
 fn retention_boundary(today: &str) -> Result<String, HandlerError> {
     let day = NaiveDate::parse_from_str(today, "%Y-%m-%d")
@@ -188,11 +188,13 @@ impl Sweep {
             if state.total_observations == 0 {
                 stale.push(endpoint.clone());
             }
+            let completed_windows = usize::try_from(state.completed_windows())
+                .map_or(usize::MAX, core::convert::identity);
             observed.push(EndpointObservation {
                 endpoint: endpoint.clone(),
                 total_observations: state.total_observations,
                 cursor: state.cursor,
-                completed_windows: state.windows.len(),
+                completed_windows,
             });
         }
         Ok((observed, stale))
@@ -215,3 +217,6 @@ impl Sweep {
 }
 
 mod wait_windows_tests;
+#[cfg(test)]
+#[path = "dur10_retention_test.rs"]
+mod dur10_retention_test;

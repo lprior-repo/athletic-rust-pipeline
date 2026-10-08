@@ -17,6 +17,7 @@ fn shared_owned_capture_projects_only_matching_result_sets_without_duplicate_sub
             seed_metadata(&fetcher, &first)?;
             seed_metadata(&fetcher, &second)?;
             let mut run = Run {
+                meet_id: owned_key(&first),
                 schools: ProviderSchools::from_schools(&[
                     school("Spann", "38332"),
                     school("Charles", "4912"),
@@ -68,6 +69,34 @@ fn shared_owned_capture_projects_only_matching_result_sets_without_duplicate_sub
             check!(eq; long.athlete, triple.athlete);
             check!(eq; long.team, triple.team);
             check!(eq; fetcher.stats().await.cache_hits, 3);
+            Ok(())
+        })
+}
+
+#[test]
+fn a_run_refuses_a_result_set_from_another_meet() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (_dir, store, fetcher, first) = setup()?;
+            let mut run = Run {
+                meet_id: owned_key(&first),
+                schools: ProviderSchools::from_schools(&[school("Spann", "38332")]),
+                owned: HashMap::new(),
+                stats: Stats::default(),
+                accumulated: Accumulator::default(),
+                seen: HashSet::new(),
+                pending: Vec::new(),
+            };
+            let foreign = ResultSetRef::parse("https://al.milesplit.com/meets/1/results/2/raw")
+                .ok_or("foreign set")?;
+            let ctx = context(&store, &fetcher)?;
+            let error = run
+                .read(&ctx, &foreign)
+                .await
+                .expect_err("a foreign meet's result set must be refused");
+            check!(eq; error.to_string().contains("belongs to meet"), true);
             Ok(())
         })
 }

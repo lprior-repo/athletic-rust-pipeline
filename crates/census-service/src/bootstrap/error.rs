@@ -24,6 +24,8 @@ pub enum BootstrapError {
     },
     #[error("--max-concurrent must be at least 1")]
     ConcurrencyIsZero,
+    #[error("--max-concurrent {value} is outside 1..={ceiling}")]
+    ConcurrencyTooLarge { value: usize, ceiling: usize },
     #[error("{raw} is not a number of seconds")]
     DrainTimeoutNotASeconds {
         raw: String,

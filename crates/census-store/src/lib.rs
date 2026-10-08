@@ -51,7 +51,7 @@ pub use format::{
 pub use identity::MAX_IDENTITY_APPLICATION_BATCH;
 pub use inspect::StoreInspection;
 pub use read::{build_athlete_identity_projection, StoreSnapshot};
-pub use receipt::{Application, Pruned, Receipt, MAX_DIGEST_BYTES, MAX_OPERATION_BYTES};
+pub use receipt::{Application, Credit, Pruned, Receipt, MAX_DIGEST_BYTES, MAX_OPERATION_BYTES};
 pub use rows::TableWalk;
 pub use table::{
     Entity, StorageMode, Table, MAX_ID_BYTES, MAX_JOURNAL_KEY_BYTES, MAX_JOURNAL_VALUE_BYTES,

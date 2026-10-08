@@ -97,6 +97,7 @@ fn a_foreign_origin_is_refused_before_the_lane_is_reached() -> anyhow::Result<()
             url: Url::parse(url)?,
             semantic_url: url.to_string(),
             action: RequestAction::Fetch { body: None },
+            headers: Vec::new(),
         })
     };
     for url in [

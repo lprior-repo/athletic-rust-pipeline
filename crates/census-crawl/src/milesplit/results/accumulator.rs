@@ -48,6 +48,15 @@ impl Accumulator {
             self.retained.insert(key, value);
         });
     }
+    pub(super) fn rows(&self) -> usize {
+        self.meets.len()
+            + self.events.len()
+            + self.teams.len()
+            + self.athletes.len()
+            + self.performances.len()
+            + self.observations.len()
+            + self.retained.len()
+    }
 }
 
 fn absorb<T: Entity>(

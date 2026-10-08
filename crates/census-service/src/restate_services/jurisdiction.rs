@@ -73,7 +73,7 @@ impl JurisdictionCensus {
             stages_run.push("rosters".to_string());
         }
 
-        if state.meets.is_none() {
+        if state.meets.is_none() || !state.meets_complete {
             self.meets_owed(ctx, request, state, &today).await?;
             stages_run.push("meets".to_string());
         }

@@ -1,6 +1,10 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+pub const MAX_OPERATION_ID_BYTES: usize = 128;
+pub const MAX_WINDOW_LABEL_BYTES: usize = 128;
+pub const WINDOW_LABEL_RING: usize = 64;
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct IngestState {
     #[serde(default)]
@@ -14,7 +18,14 @@ pub struct IngestState {
     #[serde(default)]
     pub windows: Vec<String>,
     #[serde(default)]
-    pub seen_operations: Vec<String>,
+    pub windows_completed: u64,
+}
+
+impl IngestState {
+    pub fn completed_windows(&self) -> u64 {
+        self.windows_completed
+            .max(u64::try_from(self.windows.len()).map_or(u64::MAX, core::convert::identity))
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

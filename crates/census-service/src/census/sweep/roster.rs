@@ -1,7 +1,7 @@
 use census_crawl::milesplit::{self, boundary, TeamRef};
 use census_crawl::net::{FetchOptions, Fetcher};
 use census_crawl::{CrawlError, CrawlResult};
-use census_store::{Application, Store};
+use census_store::{Application, Store, StoreResult};
 use std::collections::HashSet;
 
 use super::{rosters_phase, units::RosterRun};
@@ -11,6 +11,9 @@ pub(super) mod refusal;
 
 use journal::{quarantine_of, roster_digest, roster_journal, roster_operation, Journal, Records};
 pub(super) use refusal::retain_refusal;
+
+#[cfg(test)]
+mod tests;
 
 pub(super) async fn fetch_and_store(
     fetcher: &Fetcher,
@@ -120,6 +123,30 @@ pub(super) fn summarize(store: &Store, phase: &str, teams: &[TeamRef]) -> CrawlR
     summary.committed = clean.len();
     summary.held = unclean.difference(&clean).count();
     Ok(summary)
+}
+pub(crate) fn roster_is_complete(
+    store: &Store,
+    phase: &str,
+    team: &TeamRef,
+) -> StoreResult<bool> {
+    let payloads = store.journal_payloads(phase)?;
+    let mut complete = false;
+    for payload in payloads {
+        let row: Journal = serde_json::from_value(payload).map_err(|source| {
+            census_store::StoreError::Decode {
+                key: phase.to_string(),
+                source,
+            }
+        })?;
+        if row.team_id != team.id {
+            continue;
+        }
+        if row.quarantine.is_some() || !row.rejected.is_empty() {
+            return Ok(false);
+        }
+        complete = true;
+    }
+    Ok(complete)
 }
 
 pub(super) fn remaining(total: usize, committed: usize, held: usize) -> CrawlResult<usize> {

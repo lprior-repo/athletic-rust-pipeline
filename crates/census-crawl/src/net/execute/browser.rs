@@ -25,12 +25,23 @@ impl Fetcher {
                 ),
             });
         }
+        if plan
+            .options
+            .headers
+            .iter()
+            .any(|(name, _)| super::representation::is_validator(name))
+        {
+            return Err(FetchError::Policy {
+                detail: "browser requests cannot carry conditional validators".to_string(),
+            });
+        }
         let _permit = gate.lock().await;
         self.wait_turn(plan.host).await;
         let spec = RequestSpec {
             url: plan.url.to_string(),
             semantic_url: plan.url.to_string(),
             action: Action::Fetch { body: None },
+            headers: plan.representation.clone(),
         };
         let Some(lane) = self.lane.as_ref() else {
             return self.refuse_without_lane(plan).await;

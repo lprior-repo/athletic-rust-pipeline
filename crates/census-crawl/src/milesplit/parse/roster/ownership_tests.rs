@@ -72,6 +72,7 @@ fn captured_foreign_canonical_owner_admits_no_abbotsford_roster() -> TestResult 
                 &meta_path,
                 body.as_bytes(),
                 &CacheMeta {
+                    representation: crate::net::RepresentationHeaders::default(),
                     url: url.clone(),
                     method: "GET".into(),
                     status: 200,

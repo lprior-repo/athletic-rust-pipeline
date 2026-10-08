@@ -41,6 +41,7 @@ fn projected_raw_metadata_retains_its_own_acquisition_time_and_replays_physical_
                 &meta_path,
                 FEMALE_RAW,
                 &crate::net::cache::CacheMeta {
+                    representation: crate::net::RepresentationHeaders::default(),
                     url: reference.url.clone(),
                     method: "GET".into(),
                     status: 200,

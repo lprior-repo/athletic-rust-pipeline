@@ -5,6 +5,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 fn metadata(body: &[u8]) -> CacheMeta {
     CacheMeta {
+        representation: RepresentationHeaders::default(),
         url: "https://example.test/source".to_owned(),
         response_url: None,
         method: "GET".to_owned(),
@@ -101,7 +102,14 @@ fn assert_quarantined(
 
 fn assert_served(root: &Path, body: &[u8], meta: &CacheMeta) -> TestResult {
     let (body_path, meta_path) = cache_paths(root);
-    let (served, actual) = read_cache(&body_path, &meta_path)?.ok_or("hit")?;
+    let (served, actual) = read_cache(
+        &body_path,
+        &meta_path,
+        &meta.method,
+        &meta.url,
+        &meta.representation,
+    )?
+    .ok_or("hit")?;
     check!(eq; actual, body);
     check!(eq;
         serde_json::to_value(served)?,
@@ -121,7 +129,14 @@ fn refresh_retains_both_raw_captures_and_serves_the_replacement() -> TestResult 
     write_cache(&body_path, &meta_path, b"raw B", &second)?;
     assert_capture(root.path(), b"raw A", &first)?;
     assert_capture(root.path(), b"raw B", &second)?;
-    let (served, body) = read_cache(&body_path, &meta_path)?.ok_or("hit")?;
+    let (served, body) = read_cache(
+        &body_path,
+        &meta_path,
+        &second.method,
+        &second.url,
+        &second.representation,
+    )?
+    .ok_or("hit")?;
     check!(eq; body, b"raw B");
     check!(eq; served.fetched_at, second.fetched_at);
     Ok(())
@@ -188,7 +203,14 @@ fn identical_bodies_retain_distinct_source_method_status_and_capture_time() -> T
             .ok_or("name")?
             .to_owned()]
     );
-    check!(read_cache(&body_path, &meta_path)?.is_none());
+    check!(read_cache(
+        &body_path,
+        &meta_path,
+        &second.method,
+        &second.url,
+        &second.representation
+    )?
+    .is_none());
     Ok(())
 }
 

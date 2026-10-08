@@ -67,6 +67,7 @@ pub(super) struct Stats {
     pub(super) unresolved: HashMap<String, usize>,
 }
 
+
 pub async fn collect(
     ctx: &AdapterContext<'_>,
     options: &ResultSetOptions,
@@ -77,14 +78,20 @@ pub async fn collect(
         report.note("no result-set URLs supplied; nothing was requested".to_string());
         return Ok(report);
     }
+    let schools = live_schools(ctx)?;
+    let schools = ProviderSchools::from_schools(&schools);
+    let window_rows = 5000usize;
     let mut run = Run {
-        schools: ProviderSchools::from_schools(&live_schools(ctx)?),
+        schools,
         owned: HashMap::new(),
         stats: Stats::default(),
         accumulated: Accumulator::default(),
         seen: HashSet::new(),
         pending: Vec::new(),
+        window_rows,
+        meet_id: String::new(),
     };
+    let mut total_counts = EntityCounts::default();
     for request in &options.urls {
         match ResultSetRef::parse(&request.url)
             .or_else(|| ResultSetRef::parse_with_jurisdiction(&request.url, request.jurisdiction))
@@ -92,19 +99,41 @@ pub async fn collect(
             Some(reference) => run.read(ctx, &reference).await?,
             None => run.reject(&request.url),
         }
+        if run.accumulated.rows() >= run.window_rows {
+            let counts = append(ctx, run.drain_accumulated(), run.drain_pending())?;
+            total_counts.meets = total_counts.meets.saturating_add(counts.meets);
+            total_counts.events = total_counts.events.saturating_add(counts.events);
+            total_counts.teams = total_counts.teams.saturating_add(counts.teams);
+            total_counts.athletes = total_counts.athletes.saturating_add(counts.athletes);
+            total_counts.performances =
+                total_counts.performances.saturating_add(counts.performances);
+            total_counts.unsupported_cohorts = total_counts
+                .unsupported_cohorts
+                .saturating_add(counts.unsupported_cohorts);
+        }
     }
-    let counts = append(ctx, run.accumulated, run.pending)?;
+    let counts = append(ctx, run.drain_accumulated(), run.drain_pending())?;
+    total_counts.meets = total_counts.meets.saturating_add(counts.meets);
+    total_counts.events = total_counts.events.saturating_add(counts.events);
+    total_counts.teams = total_counts.teams.saturating_add(counts.teams);
+    total_counts.athletes = total_counts.athletes.saturating_add(counts.athletes);
+    total_counts.performances =
+        total_counts.performances.saturating_add(counts.performances);
+    total_counts.unsupported_cohorts = total_counts
+        .unsupported_cohorts
+        .saturating_add(counts.unsupported_cohorts);
     finish(
         ctx,
         &mut report,
         &run.stats,
-        counts,
+        total_counts,
         requests_before,
         cache_before,
     )
     .await?;
     Ok(report)
 }
+
 
 async fn finish(
     ctx: &AdapterContext<'_>,
@@ -159,7 +188,7 @@ async fn finish(
 
 async fn stats_of(ctx: &AdapterContext<'_>) -> (u64, u64) {
     let stats = ctx.fetcher.stats().await;
-    (stats.requests, stats.cache_hits)
+    (stats.physical_requests(), stats.cache_hits)
 }
 
 #[derive(Debug, Default, Clone, Copy)]

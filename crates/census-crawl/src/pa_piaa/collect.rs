@@ -273,7 +273,9 @@ impl<'a> Run<'a> {
 
     async fn finish(mut self, stats_before: FetchStats) -> AdapterReport {
         let stats_after = self.ctx.fetcher.stats().await;
-        self.report.requests = stats_after.requests.saturating_sub(stats_before.requests);
+        self.report.requests = stats_after
+            .physical_requests()
+            .saturating_sub(stats_before.physical_requests());
         self.report.from_cache = stats_after
             .cache_hits
             .saturating_sub(stats_before.cache_hits);

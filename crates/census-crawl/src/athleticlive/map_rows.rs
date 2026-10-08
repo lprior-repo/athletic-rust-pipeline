@@ -52,9 +52,15 @@ pub(super) fn record_row(
     };
     writer.stats.rows_mapped = writer.stats.rows_mapped.saturating_add(1);
     count_channels(writer.stats, row);
-    let Some(mark) = row.canonical_mark(context.kind) else {
-        writer.stats.rows_without_mark = writer.stats.rows_without_mark.saturating_add(1);
-        return true;
+    let mark = match row.canonical_mark(context.kind) {
+        Ok(Some(mark)) => mark,
+        outcome => {
+            writer.stats.rows_without_mark = writer.stats.rows_without_mark.saturating_add(1);
+            if let Err(error) = outcome {
+                retain_mark_refusal(writer, context, &mapped, row_index, &error.to_string());
+            }
+            return true;
+        }
     };
     let facts = PerformanceFacts {
         mark,
@@ -66,6 +72,25 @@ pub(super) fn record_row(
     };
     write_performance(writer, context, &mapped, &facts);
     true
+}
+
+fn retain_mark_refusal(
+    writer: &mut Writer<'_>,
+    context: &RowContext<'_>,
+    mapped: &Mapped,
+    row_index: usize,
+    reason: &str,
+) {
+    if let Some(athlete) = writer.accumulator.athletes.get_mut(mapped.athlete.as_str()) {
+        let mut evidence = context.evidence.clone();
+        evidence.note = Some(format!(
+            "{}:{}:row:{row_index}: refused numeric result: {reason}",
+            context.provider, context.event_key
+        ));
+        if !athlete.evidence.contains(&evidence) {
+            athlete.evidence.push(evidence);
+        }
+    }
 }
 
 pub(super) fn record_standing(

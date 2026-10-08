@@ -156,6 +156,12 @@ fn readback(
         Some(shape) => shape_note(shape, sheet, expected.len(), findings),
         None => findings.note(unwritten(sheet, expected.len())),
     }
+    if seen != expected.len() {
+        findings.note(format!(
+            "sheet {sheet} verified {seen} rows where the frozen projection writes {}",
+            expected.len()
+        ));
+    }
     Ok(seen)
 }
 

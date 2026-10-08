@@ -2,16 +2,76 @@ use super::super::map::{Accumulator, ResultStats, SOURCE_ID};
 use super::super::parse::infer_level;
 use super::super::wire::event_summary_url;
 use super::absorb::{absorb_document, absorb_standings, absorb_summary, Fold, PublishedEvent};
-use super::{ResultOptions, StandingsCapture, WalkResult, PHASE};
+use super::{
+    CapturedBody, EffectReceipt, ResultOptions, WalkResult, CAPTURE_PHASE, EFFECT_PHASE,
+    RETIRED_PHASE,
+};
 use crate::athleticlive_athletes::{school_year_for_date, MeetTarget};
+use crate::net::cache::content_digest;
 use crate::{AdapterContext, CrawlError, CrawlResult};
 use census_domain::model::{
     CanonicalMeet, CanonicalSchool, Evidence, SchoolId, SourceIdentity, SourceNamespace, SourceRef,
 };
 use census_domain::school_index::SchoolIndex;
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::path::PathBuf;
+
+const PARSER: &str = "athleticlive_results_v2";
+const ROLE_SUMMARY: &str = "summary";
+const ROLE_EVENT: &str = "event";
+const ROLE_STANDINGS: &str = "standings";
+
+#[derive(Default)]
+struct ReceiptIndex {
+    by_path: HashMap<String, (String, String, String)>,
+    by_digest: HashMap<String, Vec<(String, String)>>,
+}
+
+struct Resolved {
+    digest: String,
+    path_key: String,
+    path: String,
+    bytes: usize,
+    body: String,
+}
+
+fn path_key(path: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(path.as_bytes());
+    hasher.finalize()[..8]
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+fn receipt_key(meet: &str, role: &str, path_key: &str, digest: &str) -> String {
+    format!("{meet}:{role}:{path_key}:{digest}")
+}
+
+fn parse_receipt_key(key: &str) -> Option<(String, String, String, String)> {
+    let mut parts = key.splitn(4, ':');
+    let meet = parts.next()?;
+    let role = parts.next()?;
+    let path = parts.next()?;
+    let digest = parts.next()?;
+    let hex = |value: &str, len: usize| {
+        value.len() == len && value.bytes().all(|byte| byte.is_ascii_hexdigit())
+    };
+    let valid = !meet.is_empty()
+        && meet.bytes().all(|byte| byte.is_ascii_digit())
+        && !role.is_empty()
+        && hex(path, 16)
+        && hex(digest, 64);
+    valid.then(|| {
+        (
+            meet.to_string(),
+            role.to_string(),
+            path.to_string(),
+            digest.to_string(),
+        )
+    })
+}
 
 pub(super) struct Run {
     meet: CanonicalMeet,
@@ -25,9 +85,11 @@ pub(super) struct Run {
     stats: ResultStats,
     accumulator: Accumulator,
     failures: Vec<String>,
-    done: HashSet<String>,
+    indexed: ReceiptIndex,
+    archived: HashSet<String>,
+    captured: Vec<CapturedBody>,
+    receipts: Vec<EffectReceipt>,
     resumed: usize,
-    pending: Vec<(String, Value)>,
     by_run: BTreeMap<String, PublishedEvent>,
     listed: Vec<u64>,
     read_documents: HashSet<u64>,
@@ -45,6 +107,30 @@ impl Run {
         accumulator
             .meets
             .insert(meet.id.as_str().to_string(), meet.clone());
+        let retired = ctx.store.journal_keys(RETIRED_PHASE)?;
+        if !retired.is_empty() {
+            return Err(CrawlError::Invariant {
+                detail: format!(
+                    "the store holds {} receipts under the retired `{RETIRED_PHASE}` phase, whose \
+                     shape cannot prove which bytes an earlier run projected; this route refuses to \
+                     resume it - run against a fresh store directory",
+                    retired.len()
+                ),
+            });
+        }
+        let mut indexed = ReceiptIndex::default();
+        for key in ctx.store.journal_keys(EFFECT_PHASE)? {
+            if let Some((meet_id, role, path, digest)) = parse_receipt_key(&key) {
+                indexed
+                    .by_path
+                    .insert(path, (digest.clone(), meet_id.clone(), role.clone()));
+                indexed
+                    .by_digest
+                    .entry(digest)
+                    .or_default()
+                    .push((meet_id, role));
+            }
+        }
         Ok(Self {
             meet,
             target: target.clone(),
@@ -57,9 +143,11 @@ impl Run {
             stats: ResultStats::default(),
             accumulator,
             failures: Vec::new(),
-            done: ctx.store.journal_keys(PHASE)?,
+            indexed,
+            archived: ctx.store.journal_keys(CAPTURE_PHASE)?,
+            captured: Vec::new(),
+            receipts: Vec::new(),
             resumed: 0,
-            pending: Vec::new(),
             by_run: BTreeMap::new(),
             listed: Vec::new(),
             read_documents: HashSet::new(),
@@ -80,21 +168,22 @@ impl Run {
         }
     }
 
-    pub(super) fn read_captures(&mut self, options: &ResultOptions) -> CrawlResult<()> {
-        if let Some(path) = options.summary.as_deref() {
-            self.read_once(path, |run| {
-                let body = read_capture(path)?;
+    pub(super) fn read_captures(
+        &mut self,
+        ctx: &AdapterContext<'_>,
+        options: &ResultOptions,
+    ) -> CrawlResult<()> {
+        if let Some(path) = options.summary.clone() {
+            if let Some(capture) = self.capture(ctx, &path, ROLE_SUMMARY)? {
                 let listed = {
-                    let mut fold = run.fold();
-                    absorb_summary(&mut fold, path, &body)
+                    let mut fold = self.fold();
+                    absorb_summary(&mut fold, &path, &capture.body)
                 };
-                let Some(listed) = listed else {
-                    return Ok(None);
-                };
-                let payload = json!({"role": "summary", "events": listed.len()});
-                run.listed = listed;
-                Ok(Some(payload))
-            })?;
+                if let Some(listed) = listed {
+                    self.listed = listed;
+                    self.record(&capture, ROLE_SUMMARY);
+                }
+            }
         }
         for path in &options.documents {
             if self
@@ -103,10 +192,44 @@ impl Run {
             {
                 break;
             }
-            self.read_once(path, |run| run.read_document(path))?;
+            if let Some(capture) = self.capture(ctx, path, ROLE_EVENT)? {
+                let event = {
+                    let mut fold = self.fold();
+                    absorb_document(&mut fold, path, &capture.body)
+                };
+                if let Some(event) = event {
+                    self.read_documents.insert(event.capture_id);
+                    if let Some(run_id) = event.run_id.clone() {
+                        self.by_run.insert(run_id, event);
+                    }
+                    self.record(&capture, ROLE_EVENT);
+                }
+            }
         }
-        for capture in &options.standings {
-            self.read_once(&capture.path, |run| run.read_standings(capture))?;
+        for standings in &options.standings {
+            let Some(capture) = self.capture(ctx, &standings.path, ROLE_STANDINGS)? else {
+                continue;
+            };
+            let Some(event) = self.by_run.get(&standings.run_id).cloned() else {
+                self.failures.push(format!(
+                    "{}: no event document in this run published run key `{}`",
+                    standings.path, standings.run_id
+                ));
+                continue;
+            };
+            let rows = {
+                let mut fold = self.fold();
+                absorb_standings(
+                    &mut fold,
+                    &standings.run_id,
+                    &standings.path,
+                    &capture.body,
+                    &event,
+                )
+            };
+            if rows.is_some() {
+                self.record(&capture, ROLE_STANDINGS);
+            }
         }
         let unfetched = self
             .listed
@@ -117,54 +240,112 @@ impl Run {
         Ok(())
     }
 
-    fn read_once(
+    fn capture(
         &mut self,
+        ctx: &AdapterContext<'_>,
         path: &str,
-        read: impl FnOnce(&mut Self) -> CrawlResult<Option<Value>>,
-    ) -> CrawlResult<()> {
-        if self.done.contains(path) {
-            self.resumed = self.resumed.saturating_add(1);
-            return Ok(());
+        role: &str,
+    ) -> CrawlResult<Option<Resolved>> {
+        let meet_id = self.target.athleticlive_meet_id.to_string();
+        let path_key = path_key(path);
+        if let Some((_, owner, owner_role)) = self.indexed.by_path.get(&path_key) {
+            if owner != &meet_id {
+                self.failures.push(format!(
+                    "{path}: capture already journaled for meet {owner} ({owner_role}); refusing \
+                     to project it for meet {meet_id}"
+                ));
+                return Ok(None);
+            }
+            if owner_role != role {
+                self.failures.push(format!(
+                    "{path}: capture already journaled in role {owner_role}; refusing to read it \
+                     as {role}"
+                ));
+                return Ok(None);
+            }
         }
-        if let Some(payload) = read(self)? {
-            self.pending.push((path.to_string(), payload));
+        let (digest, body) = match std::fs::read_to_string(path) {
+            Ok(body) => {
+                let digest = content_digest(body.as_bytes());
+                if !self.archived.contains(&digest)
+                    && !self.captured.iter().any(|entry| entry.digest == digest)
+                {
+                    self.captured.push(CapturedBody {
+                        digest: digest.clone(),
+                        bytes: body.len(),
+                        body: body.clone(),
+                    });
+                }
+                (digest, body)
+            }
+            Err(_) => {
+                let Some((digest, _, _)) = self.indexed.by_path.get(&path_key).cloned() else {
+                    self.failures.push(format!(
+                        "{path}: the operator capture is missing and no archived body was \
+                         journaled under this path"
+                    ));
+                    return Ok(None);
+                };
+                let Some(payload) = ctx.store.journal_payload(CAPTURE_PHASE, &digest)? else {
+                    self.failures.push(format!(
+                        "{path}: the archived body for capture {digest} is missing from the store"
+                    ));
+                    return Ok(None);
+                };
+                let Some(body) = payload.get("body").and_then(Value::as_str) else {
+                    self.failures.push(format!(
+                        "{path}: the archived capture {digest} carries no readable body"
+                    ));
+                    return Ok(None);
+                };
+                if content_digest(body.as_bytes()) != digest {
+                    self.failures.push(format!(
+                        "{path}: the archived capture {digest} no longer hashes to its receipt"
+                    ));
+                    return Ok(None);
+                }
+                (digest, body.to_string())
+            }
+        };
+        if let Some(owners) = self.indexed.by_digest.get(&digest) {
+            if let Some((owner, _)) = owners.iter().find(|(owner, _)| owner != &meet_id) {
+                self.failures.push(format!(
+                    "{path}: bytes {digest} were journaled for meet {owner}; refusing to project \
+                     them for meet {meet_id}"
+                ));
+                return Ok(None);
+            }
+            if owners.iter().any(|(owner, _)| owner == &meet_id) {
+                self.resumed = self.resumed.saturating_add(1);
+                return Ok(None);
+            }
         }
-        Ok(())
+        Ok(Some(Resolved {
+            digest,
+            path_key,
+            bytes: body.len(),
+            path: path.to_string(),
+            body,
+        }))
     }
 
-    fn read_document(&mut self, path: &str) -> CrawlResult<Option<Value>> {
-        let body = read_capture(path)?;
-        let before = self.stats.rows_read;
-        let event = {
-            let mut fold = self.fold();
-            absorb_document(&mut fold, path, &body)
-        };
-        let Some(event) = event else {
-            return Ok(None);
-        };
-        let rows = self.stats.rows_read.saturating_sub(before);
-        self.read_documents.insert(event.capture_id);
-        let payload = json!({"role": "event", "event": event.capture_id, "rows": rows});
-        if let Some(run_id) = event.run_id.clone() {
-            self.by_run.insert(run_id, event);
-        }
-        Ok(Some(payload))
-    }
-
-    fn read_standings(&mut self, capture: &StandingsCapture) -> CrawlResult<Option<Value>> {
-        let Some(event) = self.by_run.get(&capture.run_id).cloned() else {
-            self.failures.push(format!(
-                "{}: no event document in this run published run key `{}`",
-                capture.path, capture.run_id
-            ));
-            return Ok(None);
-        };
-        let body = read_capture(&capture.path)?;
-        let rows = {
-            let mut fold = self.fold();
-            absorb_standings(&mut fold, &capture.run_id, &capture.path, &body, &event)
-        };
-        Ok(rows.map(|rows| json!({"role": "standings", "run": capture.run_id, "rows": rows})))
+    fn record(&mut self, capture: &Resolved, role: &str) {
+        let meet_id = self.target.athleticlive_meet_id.to_string();
+        self.receipts.push(EffectReceipt {
+            key: receipt_key(&meet_id, role, &capture.path_key, &capture.digest),
+            payload: json!({
+                "path": &capture.path,
+                "role": role,
+                "meet": &meet_id,
+                "provider": &self.target.tenant,
+                "meet_name": &self.target.name,
+                "observed_on": &self.observed_on,
+                "school_year": &self.school_year,
+                "parser": PARSER,
+                "bytes": capture.bytes,
+                "digest": &capture.digest,
+            }),
+        });
     }
 
     pub(super) fn close(mut self) -> WalkResult {
@@ -173,18 +354,12 @@ impl Run {
                 .accumulator
                 .into_entities(std::mem::take(&mut self.stats)),
             schools: self.schools,
-            entries: std::mem::take(&mut self.pending),
+            captured: std::mem::take(&mut self.captured),
+            receipts: std::mem::take(&mut self.receipts),
             failures: std::mem::take(&mut self.failures),
             resumed: self.resumed,
         }
     }
-}
-
-fn read_capture(path: &str) -> CrawlResult<String> {
-    std::fs::read_to_string(path).map_err(|source| CrawlError::Io {
-        path: PathBuf::from(path),
-        source,
-    })
 }
 
 fn meet_for(target: &MeetTarget, observed_on: &str) -> CanonicalMeet {

@@ -197,6 +197,8 @@ pub struct JurisdictionState {
     #[serde(default)]
     pub meets: Option<MeetCensus>,
     #[serde(default)]
+    pub meets_complete: bool,
+    #[serde(default)]
     pub results: Option<ResultsStageOutcome>,
     #[serde(default)]
     pub updated_at: Option<String>,

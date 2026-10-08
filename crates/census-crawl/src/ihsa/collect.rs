@@ -41,7 +41,9 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     }
 
     let after = ctx.fetcher.stats().await;
-    let delta_requests = after.requests.saturating_sub(before.requests);
+    let delta_requests = after
+        .physical_requests()
+        .saturating_sub(before.physical_requests());
     report.rows = u64::try_from(run.processed).map_err(|_| CrawlError::Arithmetic {
         detail: "ihsa school count exceeds u64".to_string(),
     })?;

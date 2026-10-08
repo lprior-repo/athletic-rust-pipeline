@@ -311,9 +311,13 @@ is not multi-artifact atomic publication. XLSX byte equality alone is not semant
   extraction with panics, assertions, waivers or fabricated defaults. Preserve domain-defined
   missing-value behavior with explicit matches or map combinators. Handle resource and counter
   exhaustion explicitly. The fatal owned-source lexical gate complements all-target Clippy.
-- **Size (§38):** files within 300 lines; production functions within 60 logical lines and hot
-  paths within 25. Decompose named stages rather than suppressing checks. Dated evidence ledgers
-  may retain longer command records; they are not production source.
+- **Size (§38):** files within 300 lines; production functions within 60 logical lines, with the
+  count of functions over 25 logical lines reported as a target rather than a budget. The debt ratchet
+  (`xtask/src/baseline.rs`, `tools/quality-baseline.json`) fails a new or grown file over 300 lines
+  and any increase of `functions_over_60_lines`; no function parameter count is measured, so a
+  five-parameter limit remains a review rule, not a gate. Decompose named stages rather than
+  suppressing checks. Dated evidence ledgers may retain longer command records; they are not
+  production source.
 - **Errors (§39):** `thiserror` in production crates; `anyhow` only at CLI/composition boundaries.
 - **Async (§42-§43):** supervise every task, bound admission before spawning, avoid locks across
   awaits, and offload bounded blocking work. Cancellation is stop-intake, drain, finalize/persist,
@@ -340,10 +344,23 @@ passing build, skipped lane or old run is not acceptance evidence for a new deli
 
 The release contract requires strict format/check/Clippy/tests, architectural and comment gates,
 dependency advisories/provenance, security and async review, adversarial identity/contact/
-result fixtures, property tests, parser fuzzing, mutation of critical logic, concurrency/cancellation,
-duplicate delivery, fault injection, crash recovery, retry exhaustion, malformed model replies,
-representative load/resource measurements, and actual CLI/Restate/export execution. License
-**enforcement and cargo-vet are excluded by owner direction**; security checks are not waived.
+result fixtures, property tests, parser fuzzing, concurrency/cancellation, duplicate delivery,
+fault injection, crash recovery, retry exhaustion, malformed model replies, representative
+load/resource measurements, and actual CLI/Restate/export execution.
+[tools/gate.sh](tools/gate.sh) `--release` executes the format, check, strict Clippy, doc, test,
+zero-comment, architecture-contract, panic-extraction, production-scan/size-budget,
+domain-integrity, purity, module-seam, debt-ratchet, dependency-advisory, feature-powerset,
+bench-presence and pre-release performance lanes; it does not itself execute the native fault
+scenarios or a parser-fuzz campaign, so a passing gate alone is not the whole release acceptance.
+Those obligations remain separately executed and dated: the scenarios through the manual
+`pipeline:durability` wrappers and the fuzz targets in the `fuzz/` workspace, with results recorded
+in [VERIFICATION-EVIDENCE.md](docs/VERIFICATION-EVIDENCE.md). Giving the gate that coverage would
+take a release-only lane invoking `tools/durability/run.sh` over the
+[catalogued fault scenarios](docs/NATIONAL-CENSUS-FAULTS.md) and a bounded `cargo fuzz` smoke per
+target. Mutation testing of critical logic was retired by owner decision
+(bead `5rtr`, tombstone in [tools/gate.sh](tools/gate.sh)), so its absence is not a release
+blocker. License **enforcement and cargo-vet are excluded by owner direction**; security checks
+are not waived.
 
 The delivery plan retains every F01–F15 correction, named regression and all 17 native fault
 scenarios. Unresolved accuracy, data-loss or recovery failures block release. Report exact commands,

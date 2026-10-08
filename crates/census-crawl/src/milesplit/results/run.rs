@@ -16,12 +16,15 @@ mod receipt;
 use acquired::AcquiredMeet;
 
 pub(super) struct Run {
+    pub(super) meet_id: String,
     pub(super) schools: ProviderSchools,
     pub(super) owned: HashMap<String, AcquiredMeet>,
+    pub(super) pending_counts: HashMap<String, usize>,
     pub(super) stats: Stats,
     pub(super) accumulated: Accumulator,
     pub(super) seen: HashSet<String>,
     pub(super) pending: Vec<(String, serde_json::Value)>,
+    pub(super) window_rows: usize,
 }
 
 impl Run {
@@ -41,6 +44,9 @@ impl Run {
             return Ok(());
         }
         self.acquire_owned(ctx, reference).await?;
+        let owner = owned_key(reference);
+        *self.pending_counts.entry(owner).or_default() =
+            self.pending_counts.get(&owner).copied().unwrap_or(1);
         let (capture, page) = match metadata::fetch_metadata(ctx, reference).await {
             Ok(captured) => captured,
             Err(error) => {
@@ -53,6 +59,8 @@ impl Run {
             Ok(page) => self.record_page(ctx, reference, page, capture),
             Err(error) => self.record_failure(reference, Some(&capture), &error),
         }
+        self.decrement_pending(reference);
+        Ok(())
     }
 
     #[tracing::instrument(skip(self, ctx))]
@@ -148,6 +156,28 @@ impl Run {
         self.stats
             .failures
             .push(format!("{entry}: not a /meets/<id>/results/<rsid>/raw URL"));
+    }
+    pub(super) fn rows(&self) -> usize {
+        self.accumulated.rows()
+    }
+
+    pub(super) fn drain_accumulated(&mut self) -> Accumulator {
+        std::mem::take(&mut self.accumulated)
+    }
+
+    pub(super) fn drain_pending(&mut self) -> Vec<(String, serde_json::Value)> {
+        std::mem::take(&mut self.pending)
+    }
+
+    fn decrement_pending(&mut self, reference: &ResultSetRef) {
+        let key = owned_key(reference);
+        if let Some(count) = self.pending_counts.get_mut(&key) {
+            *count = count.saturating_sub(1);
+            if *count == 0 {
+                self.owned.remove(&key);
+                self.pending_counts.remove(&key);
+            }
+        }
     }
 }
 

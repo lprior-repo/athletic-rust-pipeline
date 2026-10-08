@@ -5,6 +5,8 @@ mod marks;
 mod rows;
 
 pub use events::{parse_event_document, parse_event_summary, EventDoc};
+#[cfg(test)]
+pub use marks::MarkError;
 pub use rows::{DocRow, DocTeam};
 
 pub(super) fn value_u64(value: &Value) -> Option<u64> {

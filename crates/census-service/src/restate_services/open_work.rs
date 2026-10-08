@@ -111,16 +111,33 @@ async fn read_jurisdictions(
 }
 
 fn stages_of(state: &JurisdictionState) -> JurisdictionStages {
+    let results = state.results.as_ref();
+    let results_complete = results.is_some_and(|outcome| {
+        outcome.per_source.iter().all(|source| {
+            source.errors == 0
+                && source
+                    .unresolved
+                    .as_ref()
+                    .is_none_or(|u| u.rows == 0 && u.labels == 0)
+        })
+    });
+    let owed_results = if results.is_none() || !results_complete {
+        1
+    } else {
+        0
+    };
     JurisdictionStages {
         teams: state.teams.is_completed(),
         rosters: state
             .rosters
             .as_ref()
             .is_some_and(|progress| progress.is_terminal()),
-        meets: state.meets.is_some(),
+        meets: state.meets_complete,
+        results: results_complete,
         owed_rosters: state.rosters.as_ref().map_or(0, |progress| {
             count(progress.rosters_remaining.max(progress.blocked_skipped))
         }),
+        owed_results,
     }
 }
 
@@ -143,7 +160,7 @@ async fn read_source_objects(ctx: &Context<'_>, endpoints: &[String]) -> Vec<Sou
         };
         if let Some(row) = rows.get_mut(index) {
             row.observations = state.total_observations;
-            row.windows = count(state.windows.len());
+            row.windows = state.completed_windows();
             row.unreadable = false;
         }
     }
@@ -161,6 +178,7 @@ mod tests {
     use super::{owed_jurisdictions, stages_of, JurisdictionState};
     use crate::census::{MeetCensus, StateProgress};
     use crate::restate_services::jurisdiction::roster_stage_owed;
+    use crate::restate_services::results_arms::{ResultsSourceRows, ResultsStageOutcome};
     use crate::restate_services::wire::{StageOutcome, TeamsFailure, TeamsStage};
     use census_domain::UsJurisdiction;
 
@@ -183,6 +201,16 @@ mod tests {
                 teams: 2,
             }),
             meets: Some(MeetCensus::default()),
+            meets_complete: true,
+            results: Some(ResultsStageOutcome {
+                per_source: vec![ResultsSourceRows {
+                    slug: "milesplit_results".to_string(),
+                    meets: 12,
+                    rows: 400,
+                    errors: 0,
+                    unresolved: None,
+                }],
+            }),
             ..JurisdictionState::default()
         }
     }
@@ -286,6 +314,49 @@ mod tests {
             check!(!stages.terminal());
             check!(eq; owed_jurisdictions(&[stages]), 1);
         }
+        Ok(())
+    }
+
+    #[test]
+    fn results_failures_keep_the_jurisdiction_owed() -> Result<(), Box<dyn Error>> {
+        let teams = TeamsStage::from_outcome(
+            StageOutcome {
+                records: 19,
+                at: "2026-10-05".to_string(),
+                errors: Vec::new(),
+                notes: Vec::new(),
+            },
+            "2026-10-05".to_string(),
+        );
+        let clean = independent_stages_completed(teams);
+        let failed = JurisdictionState {
+            results: Some(ResultsStageOutcome {
+                per_source: vec![ResultsSourceRows {
+                    slug: "milesplit_results".to_string(),
+                    meets: 12,
+                    rows: 400,
+                    errors: 1,
+                    unresolved: None,
+                }],
+            }),
+            ..clean.clone()
+        };
+        let absent = JurisdictionState {
+            results: None,
+            ..clean.clone()
+        };
+        for (state, label) in [(&failed, "failed"), (&absent, "absent")] {
+            let stages = stages_of(state);
+            check!(!stages.results, "{label} results are not complete");
+            check!(eq; stages.owed_results, 1);
+            check!(!stages.terminal(), "{label} results stay owed");
+            check!(eq; stages.owing(), vec!["results"]);
+            check!(eq; owed_jurisdictions(&[stages]), 1);
+        }
+        let stages = stages_of(&clean);
+        check!(stages.results);
+        check!(eq; stages.owed_results, 0);
+        check!(stages.terminal());
         Ok(())
     }
 }

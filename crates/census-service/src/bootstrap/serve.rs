@@ -179,7 +179,11 @@ fn spawn_endpoint(
         Arc::clone(region),
         options.lane.clone(),
         lane,
-    );
+    )
+    .map_err(|error| BootstrapError::ConcurrencyTooLarge {
+        value: error.value,
+        ceiling: error.ceiling,
+    })?;
     region
         .spawn(async move {
             let fault = std::env::var_os("ATHLETIC_FAULT_HTTP_EXIT");

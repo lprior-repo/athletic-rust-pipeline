@@ -71,6 +71,7 @@ fn a_corrupted_cache_body_is_rejected_not_served() -> TestResult {
             let body = b"valid body";
             use super::cache::{content_digest, write_cache};
             let meta = super::cache::CacheMeta {
+                representation: RepresentationHeaders::default(),
                 url: "https://example.com/teams".to_string(),
                 response_url: None,
                 method: "GET".to_string(),
@@ -84,15 +85,27 @@ fn a_corrupted_cache_body_is_rejected_not_served() -> TestResult {
             };
             write_cache(&body_path, &meta_path, body, &meta)?;
 
-            let (cached_meta, cached_body) =
-                super::cache::read_cache(&body_path, &meta_path)?.ok_or("cache hit")?;
+            let (cached_meta, cached_body) = super::cache::read_cache(
+                &body_path,
+                &meta_path,
+                &meta.method,
+                &meta.url,
+                &meta.representation,
+            )?
+            .ok_or("cache hit")?;
             check!(eq; cached_body, body);
             check!(eq; cached_meta.bytes, body.len());
 
             std::fs::remove_file(&body_path)?;
             std::fs::write(&body_path, b"corrupted body!!!")?;
 
-            let result = super::cache::read_cache(&body_path, &meta_path)?;
+            let result = super::cache::read_cache(
+                &body_path,
+                &meta_path,
+                &meta.method,
+                &meta.url,
+                &meta.representation,
+            )?;
             check!(result.is_none(), "corrupted body must be a cache miss");
             Ok(())
         })

@@ -299,11 +299,28 @@ async fn wait_for_node(client: &reqwest::Client, node: &Node) -> Result<(), Stri
     Err(format!("node invocation query never became ready: {last}"))
 }
 
-async fn paused_invocation(
+async fn poll_consolidate(
     client: &reqwest::Client,
     node: &Node,
+    status: Option<&str>,
     deadline: Instant,
 ) -> Result<String, String> {
+    let (query, expectation) = match status {
+        Some(status) => (
+            format!(
+                "SELECT id, status FROM sys_invocation \
+                 WHERE target_service_name = 'Consolidate' AND status = '{status}' ORDER BY created_at DESC;"
+            ),
+            format!("entered its {status} state"),
+        ),
+        None => (
+            String::from(
+                "SELECT id, status FROM sys_invocation \
+                 WHERE target_service_name = 'Consolidate' ORDER BY created_at DESC;",
+            ),
+            String::from("was visible"),
+        ),
+    };
     let mut last = String::from("the admin query was never asked");
     for _ in 0..1_200 {
         let remaining = deadline.saturating_duration_since(Instant::now());
@@ -313,10 +330,7 @@ async fn paused_invocation(
         let response = client
             .post(format!("{}query", node.admin))
             .header("accept", "application/json")
-            .json(&serde_json::json!({
-                "query": "SELECT id, status FROM sys_invocation \
-                          WHERE target_service_name = 'Consolidate' AND status = 'paused' ORDER BY created_at DESC;"
-            }))
+            .json(&serde_json::json!({ "query": query.as_str() }))
             .timeout(remaining)
             .send()
             .await
@@ -350,7 +364,7 @@ async fn paused_invocation(
         tokio::time::sleep(POLL_INTERVAL.min(remaining)).await;
     }
     Err(format!(
-        "the killed endpoint's invocation never entered its paused state: {last}"
+        "no Consolidate invocation ever {expectation} in the admin query: {last}"
     ))
 }
 
@@ -567,7 +581,6 @@ fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() -> TestResul
             std::fs::create_dir_all(&data_dir)?;
 
             let corpus = synthetic_corpus(SCHOOLS, ATHLETES_PER_SCHOOL)?;
-            let expected_observations = corpus.appended_rows();
             {
                 let store = Store::open(&data_dir)?;
                 corpus.append(&store)?;
@@ -607,7 +620,29 @@ fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() -> TestResul
                         .map_err(|error| error.to_string())
                 })
             };
-            tokio::time::sleep(KILL_DELAY).await;
+            let snapshot_dir = data_dir.join("out");
+            let snapshots_written = || {
+                Table::ALL
+                    .into_iter()
+                    .filter(|table| {
+                        snapshot_dir
+                            .join(format!("{}.jsonl", table.file()))
+                            .is_file()
+                    })
+                    .count()
+            };
+            let invocation =
+                poll_consolidate(&client, &node_guard, None, Instant::now() + READY_BUDGET).await?;
+            let progress_deadline = Instant::now() + READY_BUDGET;
+            let mut reached = snapshots_written();
+            while Instant::now() < progress_deadline && reached < 1 {
+                tokio::time::sleep(POLL_INTERVAL).await;
+                reached = snapshots_written();
+            }
+            oracle::require_mid_merge_progress(reached, Table::ALL.len()).map_err(|reason| {
+                format!("{reason}\n{}", oracle::failure_logs(&endpoint, &node_guard))
+            })?;
+            let killed_pid = endpoint.guard.child.id();
             endpoint.guard.kill_hard()?;
             submission.abort();
             let killed = submission.await;
@@ -622,26 +657,26 @@ fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() -> TestResul
                 Err(error) => return Err(format!("submission task panicked: {error}").into()),
             }
 
-            let snapshot_dir = data_dir.join("out");
-            let snapshots_written = || {
-                Table::ALL
-                    .into_iter()
-                    .filter(|table| {
-                        snapshot_dir
-                            .join(format!("{}.jsonl", table.file()))
-                            .is_file()
-                    })
-                    .count()
-            };
+            eprintln!(
+                "note: the endpoint process {killed_pid} was SIGKILLed after {reached} of {} snapshots",
+                Table::ALL.len()
+            );
             let at_kill = snapshots_written();
-            check!(at_kill < Table::ALL.len(),
-    "the merge had already written every one of its {} snapshots before the kill landed, so \
-     this run never had to resume",
-    Table::ALL.len());
+            oracle::require_mid_merge_progress(at_kill, Table::ALL.len()).map_err(|reason| {
+                format!("{reason}\n{}", oracle::failure_logs(&endpoint, &node_guard))
+            })?;
 
-            let invocation =
-                paused_invocation(&client, &node_guard, Instant::now() + RUN_BUDGET).await?;
+            let paused_id =
+                poll_consolidate(&client, &node_guard, Some("paused"), Instant::now() + RUN_BUDGET)
+                    .await?;
+            check!(eq; invocation, paused_id,
+    "the invocation that paused after the endpoint kill is not the one that was in flight: \
+     expected {invocation}, found {paused_id}");
+
             let mut endpoint = Endpoint::start(&data_dir, endpoint_port)?;
+            let resumed_pid = endpoint.guard.child.id();
+            check!(resumed_pid != killed_pid,
+    "the resumed merge is running on the killed endpoint process {killed_pid}");
             register(&client, &node_guard, &endpoint).await?;
 
             let attaching = reqwest::Client::builder().build()?;
@@ -665,39 +700,34 @@ fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() -> TestResul
             resume(&client, &node_guard, &invocation).await?;
             eprintln!("note: the paused invocation {invocation} was resumed");
 
-            let deadline = Instant::now() + RUN_BUDGET;
-            let mut written = at_kill;
-            while Instant::now() < deadline && written < Table::ALL.len() {
-                tokio::time::sleep(POLL_INTERVAL).await;
-                written = snapshots_written();
-            }
-            check!(written == Table::ALL.len(),
-    "the run never finished its merge after the endpoint restarted: {written} of {} snapshots \
-     landed (at the kill: {at_kill})\n\
-     --- endpoint log ({}):\n{}\n--- node log ({}):\n{}",
-    Table::ALL.len(),
-    endpoint.log_path.display(),
-    endpoint.log(),
-    node_guard.log_path.display(),
-    std::fs::read_to_string(&node_guard.log_path).map_or(Default::default(), core::convert::identity),);
+            let terminal = oracle::require_completed_success(
+                &client,
+                &node_guard,
+                &invocation,
+                Instant::now() + RUN_BUDGET,
+            )
+            .await
+            .map_err(|reason| {
+                format!("{reason}\n{}", oracle::failure_logs(&endpoint, &node_guard))
+            })?;
+            eprintln!("note: the original invocation reached {terminal}");
+            let output = oracle::attached_output(
+                &client,
+                &node_guard,
+                &invocation,
+                Duration::from_secs(60),
+            )
+            .await
+            .map_err(|reason| {
+                format!("{reason}\n{}", oracle::failure_logs(&endpoint, &node_guard))
+            })?;
 
             endpoint.guard.stop_gracefully();
+            let out = data_dir.join("out");
             let store = Store::open(&data_dir)?;
-            let stats = store.stats()?;
-            check!(eq; stats.observations, expected_observations as u64,
-    "a resumed run replayed a durable write: expected {expected_observations} observations, \
-     found {}",
-    stats.observations);
-
-            let athletes_snapshot = data_dir.join("out").join("athletes.jsonl");
-            let rows = std::fs::read_to_string(&athletes_snapshot)?
-                .lines()
-                .filter(|line| !line.trim().is_empty())
-                .count();
-            check!(eq; rows,
-    corpus.athletes.len(),
-    "the athletes snapshot holds {rows} rows, not the corpus's {}",
-    corpus.athletes.len());
+            readback::verify_physical_observations(&store, &corpus)?;
+            readback::verify_reply_tables(&output, &out)?;
+            readback::verify_snapshots(&out, &corpus)?;
 
             drop(node_guard);
             let _ = std::fs::remove_dir_all(&root);
@@ -718,7 +748,6 @@ fn b_restate_server_sigkill_resumes_workflow() -> TestResult {
     std::fs::create_dir_all(&data_dir)?;
 
     let corpus = synthetic_corpus(SCHOOLS, ATHLETES_PER_SCHOOL)?;
-    let expected_observations = corpus.appended_rows();
     {
         let store = Store::open(&data_dir)?;
         corpus.append(&store)?;
@@ -792,14 +821,14 @@ fn b_restate_server_sigkill_resumes_workflow() -> TestResult {
     }
 
     let deadline = Instant::now() + Duration::from_secs(15);
-    let original_invocation = paused_invocation(&client, &node, deadline).await?;
+    let original_invocation = poll_consolidate(&client, &node, Some("paused"), deadline).await?;
 
     node.restart()?;
 
     wait_for_node(&client, &node).await?;
 
     let deadline = Instant::now() + Duration::from_secs(15);
-    let resumed_invocation = paused_invocation(&client, &node, deadline).await?;
+    let resumed_invocation = poll_consolidate(&client, &node, Some("paused"), deadline).await?;
     check!(eq; original_invocation, resumed_invocation,
     "the invocation ID changed after restart: expected {original_invocation}, found {resumed_invocation}");
 
@@ -807,34 +836,42 @@ fn b_restate_server_sigkill_resumes_workflow() -> TestResult {
     register(&client, &node, &endpoint).await?;
     resume(&client, &node, &resumed_invocation).await?;
 
-    let deadline = Instant::now() + RUN_BUDGET;
-    let mut written = snapshots_written();
-    while Instant::now() < deadline && written < Table::ALL.len() {
-        tokio::time::sleep(POLL_INTERVAL).await;
-        written = snapshots_written();
-    }
-    check!(written == Table::ALL.len(),
-    "the merge never finished after server restart: {written} of {} snapshots landed",
-    Table::ALL.len());
+    let terminal = oracle::require_completed_success(
+        &client,
+        &node,
+        &resumed_invocation,
+        Instant::now() + RUN_BUDGET,
+    )
+    .await
+    .map_err(|reason| format!("{reason}\n{}", oracle::failure_logs(&endpoint, &node)))?;
+    eprintln!("note: the original invocation reached {terminal}");
+    let output = oracle::attached_output(
+        &client,
+        &node,
+        &resumed_invocation,
+        Duration::from_secs(60),
+    )
+    .await
+    .map_err(|reason| format!("{reason}\n{}", oracle::failure_logs(&endpoint, &node)))?;
 
     drop(node);
     endpoint.guard.stop_gracefully();
+    let out = data_dir.join("out");
     let store = Store::open(&data_dir)?;
-    let stats = store.stats()?;
-    check!(eq; stats.observations, expected_observations as u64,
-    "a resumed run replayed a durable write: expected {expected_observations} observations, \
-     found {}",
-    stats.observations);
-
-    let athletes_snapshot = data_dir.join("out").join("athletes.jsonl");
-    let rows = std::fs::read_to_string(&athletes_snapshot)?
-        .lines()
-        .filter(|line| !line.trim().is_empty())
-        .count();
-    check!(eq; rows,
-    corpus.athletes.len(),
-    "the athletes snapshot holds {rows} rows, not the corpus's {}",
-    corpus.athletes.len());
+    readback::verify_physical_observations(&store, &corpus)?;
+    readback::verify_reply_tables(&output, &out)?;
+    readback::verify_snapshots(&out, &corpus)?;
     Ok(())
         })
 }
+
+#[path = "restate_kill_restart/oracle.rs"]
+mod oracle;
+#[path = "restate_kill_restart/readback.rs"]
+mod readback;
+#[path = "restate_kill_restart/readback_tests.rs"]
+mod readback_tests;
+#[path = "restate_kill_restart/readback_physical_tests.rs"]
+mod readback_physical_tests;
+#[path = "restate_kill_restart/oracle_tests.rs"]
+mod oracle_tests;

@@ -63,7 +63,14 @@ pub(super) fn replay_preserved_cache(
 ) -> Result<Option<Vec<u8>>, FetchError> {
     let root = cache_root(body_path, meta_path)?;
     let lock = lock_cache(meta_path)?;
-    let Some((meta, body)) = super::read_cache(body_path, meta_path)? else {
+    let Some((meta, body)) = super::read_cache(
+        body_path,
+        meta_path,
+        &expected.method,
+        &expected.url,
+        &expected.representation,
+    )?
+    else {
         return Ok(None);
     };
     if &meta != expected {

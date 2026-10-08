@@ -33,6 +33,7 @@ struct Coordinates {
     body_path: PathBuf,
     meta_path: PathBuf,
     options: FetchOptions,
+    representation: crate::net::RepresentationHeaders,
 }
 
 impl Coordinates {
@@ -42,6 +43,7 @@ impl Coordinates {
             body_path,
             meta_path,
             options: FetchOptions::default(),
+            representation: crate::net::RepresentationHeaders::default(),
         }
     }
 
@@ -57,6 +59,7 @@ impl Coordinates {
             meta_path: &self.meta_path,
             cached: None,
             options: &self.options,
+            representation: &self.representation,
             timeout_secs: 45,
         }
     }
@@ -177,8 +180,14 @@ fn a_capture_mints_the_evidence_an_http_body_would() -> TestResult {
                 "the digest is the body's, so content ids match the HTTP path's"
             );
 
-            let (meta, _) = read_cache(&coordinates.body_path, &coordinates.meta_path)?
-                .ok_or("the capture's body is cached")?;
+            let (meta, _) = read_cache(
+                &coordinates.body_path,
+                &coordinates.meta_path,
+                "GET",
+                URL,
+                &coordinates.representation,
+            )?
+            .ok_or("the capture's body is cached")?;
             check!(eq; meta.status, 200);
             check!(eq; meta.content_digest, outcome.content_digest);
             check!(eq; meta.bytes, body.len());

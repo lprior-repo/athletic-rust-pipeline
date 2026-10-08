@@ -2,7 +2,7 @@ use super::journal::Journal;
 use super::map::{school_year_of, EventContext, Mapper};
 use super::report::{narrate, Walked};
 use super::requests::{self, events_url, summary_url};
-use super::wire::{EventRow, MeetRow};
+use super::wire::{EventRow, EventSummary, MeetRow};
 use super::{parse, xc};
 use crate::ihsa::Options;
 use crate::{AdapterContext, AdapterReport, CrawlResult};
@@ -14,7 +14,7 @@ const SOURCE: &str = "ihsa";
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let before = ctx.fetcher.stats().await;
     let mut run = Run::new(ctx, options)?;
-    run.requests_before = before.requests;
+    run.requests_before = before.physical_requests();
     run.cache_before = before.cache_hits;
     if !run.in_scope() {
         return Ok(run.report);
@@ -112,6 +112,18 @@ impl<'a> Run<'a> {
         let Some(envelope) = requests::events(self.ctx, &mut self.report, &url).await else {
             return Ok(());
         };
+        let gender = match row.gender.as_str() {
+            "Boys" => "M",
+            "Girls" => "F",
+            _ => "",
+        };
+        if envelope.meet_id != row.meet_id
+            || gender.is_empty()
+            || envelope.data.iter().any(|event| event.gender != gender)
+        {
+            self.refuse(&url, "event index contradicts the requested meet or gender");
+            return Ok(());
+        }
         let (first, last) = parse::event_date_range(&envelope.data);
         let Some(date) = first else {
             self.report.note(format!(
@@ -121,7 +133,9 @@ impl<'a> Run<'a> {
             return Ok(());
         };
         let meet = self.mapper.meet(row, &date, last.as_deref(), &url);
-        let (events, complete) = self.walk_events(&envelope.data, &meet, &date, &url).await;
+        let (events, complete) = self
+            .walk_events(&envelope.data, (row.meet_id, &url), &meet, &date)
+            .await;
         if complete {
             self.journal.meet(row, &url, events);
             self.walked = self.walked.saturating_add(1);
@@ -132,10 +146,11 @@ impl<'a> Run<'a> {
     async fn walk_events(
         &mut self,
         rows: &[EventRow],
+        request: (u64, &str),
         meet: &CanonicalMeet,
         date: &str,
-        index_url: &str,
     ) -> (usize, bool) {
+        let (meet_id, index_url) = request;
         let school_year = school_year_of(date, self.ctx.school_year);
         let mut complete = true;
         for row in rows {
@@ -149,6 +164,11 @@ impl<'a> Run<'a> {
                 complete = false;
                 continue;
             };
+            if !summary_matches(&summary, row, meet_id) {
+                self.refuse(&url, "summary contradicts the requested event context");
+                complete = false;
+                continue;
+            }
             let context = EventContext {
                 meet,
                 event: &event,
@@ -166,12 +186,20 @@ impl<'a> Run<'a> {
         (rows.len(), complete)
     }
 
+    fn refuse(&mut self, url: &str, reason: &str) {
+        self.report.errors = self.report.errors.saturating_add(1);
+        self.report
+            .note(format!("{url}: {reason}; retained unfinished"));
+    }
+
     async fn finish(mut self) -> CrawlResult<AdapterReport> {
         let stats = self.mapper.stats();
         let entries = self.journal.take_pending();
         let counts = self.mapper.store(self.ctx, entries)?;
         let after = self.ctx.fetcher.stats().await;
-        self.report.requests = after.requests.saturating_sub(self.requests_before);
+        self.report.requests = after
+            .physical_requests()
+            .saturating_sub(self.requests_before);
         self.report.from_cache = after.cache_hits.saturating_sub(self.cache_before);
         self.report.rows = stats.performances;
         narrate(
@@ -187,4 +215,20 @@ impl<'a> Run<'a> {
         );
         Ok(self.report)
     }
+}
+
+fn summary_matches(summary: &EventSummary, row: &EventRow, meet_id: u64) -> bool {
+    summary.meet_id == meet_id
+        && summary.event_id == row.event_id
+        && summary.event_type == row.event_type
+        && summary.gender == row.gender
+        && summary.class_division == row.class_division
+        && summary.event_name == row.event_name
+        && summary.round == row.round
+        && summary
+            .round_label
+            .as_deref()
+            .is_none_or(|label| Some(label) == parse::round_label(row.round.as_deref()))
+        && summary.scheduled_date == row.scheduled_date
+        && summary.has_results == row.has_results
 }

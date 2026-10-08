@@ -39,13 +39,13 @@ async fn http_refusal_preserves_owed_state(status: u16) -> TestResult {
         let conditions = fetcher.access_conditions().await;
         check!(eq; conditions.len(), 1);
         check!(eq; conditions.first().ok_or("source condition")?.status, status);
-        let before = fetcher.stats().await.requests;
+        let before = fetcher.stats().await.physical_requests();
         let mut cooldown = run(&ctx, &options)?;
         cooldown
             .process_school_at(UsJurisdiction::NewHampshire, "2132", &row, BASE, &host)
             .await?;
         check!(eq; (cooldown.tally.errors, cooldown.done.len()), (1, 0));
-        check!(eq; fetcher.stats().await.requests, before);
+        check!(eq; fetcher.stats().await.physical_requests(), before);
         check!(eq; pending(&store, &row)?["kind"], json!("source_refused"));
         check!(eq; pending(&store, &row)?["recovery"], original);
         assert_retained_facts(

@@ -204,7 +204,7 @@ fn collect_options() -> CollectOptions {
 }
 
 #[test]
-fn partial_and_quarantined_rosters_retain_their_reasons_without_owing_a_refetch() -> TestResult {
+fn partial_and_quarantined_rosters_keep_their_reasons_and_still_owe_a_walk() -> TestResult {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
@@ -252,7 +252,7 @@ fn partial_and_quarantined_rosters_retain_their_reasons_without_owing_a_refetch(
                 check!(eq;
                     first.rosters_committed + first.rosters_skipped + first.rosters_remaining,
                     first.rosters_total,
-                    "a held roster is an attempted team, not an owed fetch");
+                    "a partially parsed roster keeps its valid rows and still owes a walk");
                 check!(eq; first.athletes, accepted);
                 check!(eq; first.errors.len(), 1);
                 let athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes)?;
@@ -286,7 +286,10 @@ fn partial_and_quarantined_rosters_retain_their_reasons_without_owing_a_refetch(
                 check!(eq; replay::digest(&reopened)?, before);
                 let stats = fetcher.stats().await;
                 check!(eq; stats.requests, 0);
-                check!(eq; stats.cache_hits, 1);
+                check!(eq;
+                    stats.cache_hits,
+                    2,
+                    "a partial or quarantined roster is walked again, from cache, because its journal cannot certify exhaustion");
             }
             Ok(())
         })

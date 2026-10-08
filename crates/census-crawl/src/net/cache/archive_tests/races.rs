@@ -46,7 +46,14 @@ fn simultaneous_identical_and_different_bodies_keep_each_metadata_binding_exact(
                     barrier.wait();
                     write_cache(&body_path, &meta_path, body, &meta)?;
                     assert_capture(root, body, &meta)?;
-                    let (served, raw) = read_cache(&body_path, &meta_path)?.ok_or("hit")?;
+                    let (served, raw) = read_cache(
+                        &body_path,
+                        &meta_path,
+                        &meta.method,
+                        &meta.url,
+                        &meta.representation,
+                    )?
+                    .ok_or("hit")?;
                     check!(eq; served.url, meta.url);
                     check!(eq; raw, body);
                     Ok(meta)
@@ -113,7 +120,14 @@ fn same_cache_races_never_bind_one_writers_body_to_another_writers_metadata() ->
             .collect::<TestResult<Vec<_>>>()
     })?;
     let (body_path, meta_path) = cache_paths(root.path());
-    let (served, raw) = read_cache(&body_path, &meta_path)?.ok_or("coherent hit")?;
+    let (served, raw) = read_cache(
+        &body_path,
+        &meta_path,
+        "GET",
+        "https://example.test/source",
+        &RepresentationHeaders::default(),
+    )?
+    .ok_or("coherent hit")?;
     check!(eq; content_digest(&raw), served.content_digest);
     let winner = results
         .iter()

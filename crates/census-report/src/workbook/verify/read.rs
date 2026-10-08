@@ -109,8 +109,9 @@ impl Book {
             }
         }
         if let Some(finished) = held.take() {
-            visit_row(&finished, next, &mut visit);
+            next = visit_row(&finished, next, &mut visit);
         }
+        (next..rows).for_each(|index| visit(&SparseRow::new(index)));
         Ok(Some(Shape { rows }))
     }
 }
@@ -232,3 +233,6 @@ fn unreadable(path: &Path, source: calamine::XlsxError) -> ReportError {
         ),
     }
 }
+
+#[cfg(test)]
+pub(super) mod tests;

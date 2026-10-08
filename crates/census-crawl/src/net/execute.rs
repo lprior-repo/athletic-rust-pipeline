@@ -13,6 +13,7 @@ mod attempt_helper;
 mod body_reader;
 mod browser;
 mod cache_writer;
+mod representation;
 
 use attempt::FetchPlan;
 
@@ -140,12 +141,11 @@ impl Fetcher {
         timeout_secs: u64,
     ) -> Result<FetchOutcome, FetchError> {
         self.destination.validate_url(url)?;
-        let extra = body
-            .as_ref()
-            .map_or_else(String::default, |(key, _)| key.clone());
+        let representation = representation::canonical_request(&options.headers)?;
+        let extra = representation::cache_extra(body.as_ref(), &representation);
         let key = Self::key_for(method, url, &extra);
         let (body_path, meta_path) = self.cache_paths(&key);
-        let cached = read_cache(&body_path, &meta_path)?;
+        let cached = read_cache(&body_path, &meta_path, method, url, &representation)?;
         if let Some((meta, body)) = cached.as_ref() {
             if let Some(outcome) = self
                 .cached_outcome(method, url, meta, options, body.clone())
@@ -180,6 +180,7 @@ impl Fetcher {
             meta_path: &meta_path,
             cached: cached.as_ref().map(|(meta, _)| meta),
             options,
+            representation: &representation,
             timeout_secs,
         };
         let _family_permit = self.family_permit(&host).await?;
@@ -209,6 +210,7 @@ impl Fetcher {
         {
             let mut stats = self.stats.lock().await;
             stats.cache_hits = stats.cache_hits.saturating_add(1);
+            stats.requests = stats.requests.saturating_add(1);
             let entry = stats.per_host.entry(crate::net::host_of(url)).or_default();
             entry.requests = entry.requests.saturating_add(1);
             entry.cache_hits = entry.cache_hits.saturating_add(1);
@@ -257,3 +259,6 @@ mod conditional_capture;
 
 #[cfg(test)]
 mod response_url_tests;
+
+#[cfg(test)]
+mod acquisition_regressions;

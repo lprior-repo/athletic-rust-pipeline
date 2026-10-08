@@ -100,7 +100,9 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     }
 
     let after = ctx.fetcher.stats().await;
-    report.requests = after.requests.saturating_sub(before.requests);
+    report.requests = after
+        .physical_requests()
+        .saturating_sub(before.physical_requests());
     report.from_cache = after.cache_hits.saturating_sub(before.cache_hits);
     report.rows = schools_written;
     report.note(format!(

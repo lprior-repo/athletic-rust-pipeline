@@ -80,7 +80,8 @@ impl JurisdictionCensus {
                 sweepable,
             )
             .await?;
-        state.meets = Some(census);
+        state.meets = Some(census.clone());
+        state.meets_complete = census.truncated == 0;
         self.save(ctx, state, today);
         Ok(())
     }

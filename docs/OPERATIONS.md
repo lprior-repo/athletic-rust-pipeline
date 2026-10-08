@@ -158,6 +158,11 @@ TeamsSource acquisition shares the endpoint's Jobs admission budget and serializ
 the same source key. All jurisdiction fetchers share one serving-owner pacing state, including
 fetchers with different authorized-host sets; a new cache key cannot create another family budget.
 Count actual physical admissions separately from cache hits and retained entity populations.
+In the acquisition layer `FetchStats.requests` counts logical attempts, including attempts served
+from the cache, `FetchStats::physical_requests()` is that count minus the cache hits, and every
+`AdapterReport.requests` projects the physical count with its cache hits reported separately as
+`from_cache`. A cache-served acquisition therefore reports zero requests, and per-fetch counters
+increment `from_cache` alone when the cache answered.
 
 ### Sweep watchdog and recovery
 
@@ -433,6 +438,11 @@ the collector does not load an ever-growing witness set or emit one recording ba
 An unchanged partial replay stays partial, produces no duplicate physical rows and does not rewrite
 identical retained/projection receipt payloads. A new exact provider school binding still permits
 the unresolved projection to proceed.
+Result-set requests are grouped by their shared meet: one meet is acquired, parsed and committed as
+its own canonical/effect/receipt batch, then released before the next meet is read. A later meet's
+interruption therefore leaves an already completed meet's projection durable and resumable, while
+the interrupted meet leaves no half-visible rows; re-running the same selection resumes from the
+retained captures, journals and receipts instead of re-projecting them.
 This interpretation revision does not migrate completed historical canonical projections. A fresh
 census uses a fresh store; existing projected stores still require an explicit source-bound
 correction/migration before they can claim the new parser semantics. Do not append newly minted

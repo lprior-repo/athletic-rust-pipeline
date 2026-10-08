@@ -13,6 +13,7 @@ fn waiting() -> Result<(Pending, oneshot::Receiver<BrowserOutcome>), url::ParseE
         url: Url::parse("https://example.test/capture")?,
         semantic_url: "https://example.test/capture".to_string(),
         action: RequestAction::Fetch { body: None },
+        headers: Vec::new(),
     };
     Ok((Pending { request, reply }, answer))
 }

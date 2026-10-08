@@ -1,3 +1,4 @@
+use super::attempt::FetchPlan;
 use super::body_reader::read_checked_body;
 use crate::net::cache::{write_archive, write_cache, CacheMeta};
 use crate::net::{host_of, now_iso8601, FetchError, FetchOutcome, FetchStats};
@@ -6,13 +7,13 @@ use tokio::sync::Mutex;
 
 pub(super) async fn cache_and_record(
     response: reqwest::Response,
-    url: &str,
-    method: &str,
+    plan: &FetchPlan<'_>,
     status: u16,
-    body_path: &Path,
-    meta_path: &Path,
     stats: &Mutex<FetchStats>,
 ) -> Result<FetchOutcome, crate::net::FetchError> {
+    let url = plan.url;
+    let meta_path = plan.meta_path;
+    let body_path = plan.body_path;
     let etag = header_value(&response, reqwest::header::ETAG, meta_path)?;
     let last_modified = header_value(&response, reqwest::header::LAST_MODIFIED, meta_path)?;
     let content_type = header_value(&response, reqwest::header::CONTENT_TYPE, meta_path)?;
@@ -21,7 +22,8 @@ pub(super) async fn cache_and_record(
     let meta = CacheMeta {
         url: url.to_string(),
         response_url,
-        method: method.to_string(),
+        method: plan.method.to_string(),
+        representation: plan.representation.clone(),
         status,
         content_digest: content_hex,
         bytes: body_vec.len(),
@@ -149,13 +151,30 @@ mod tests {
                 let body_path = root.path().join("source.body");
                 let meta_path = root.path().join("source.meta.json");
                 let stats = Mutex::new(FetchStats::default());
+                let mut success_url = String::new();
+                let options = crate::net::FetchOptions::default();
+                let representation = crate::net::RepresentationHeaders::default();
                 for (status, raw) in [(200, b"success".as_slice()), (404, b"missing".as_slice())] {
                     let (requested, response) = acquired_response(status, raw).await?;
                     let response_url = response.url().as_str().to_string();
-                    let outcome = cache_and_record(
-                        response, &requested, "GET", status, &body_path, &meta_path, &stats,
-                    )
-                    .await?;
+                    if status == 200 {
+                        success_url.clone_from(&requested);
+                    }
+                    let plan = FetchPlan {
+                        method: "GET",
+                        url: &requested,
+                        payload: None,
+                        host: "127.0.0.1",
+                        crawl_delay: None,
+                        family: None,
+                        body_path: &body_path,
+                        meta_path: &meta_path,
+                        cached: None,
+                        options: &options,
+                        representation: &representation,
+                        timeout_secs: 45,
+                    };
+                    let outcome = cache_and_record(response, &plan, status, &stats).await?;
                     check!(eq; outcome.status, status);
                     check!(eq; outcome.body, raw);
                     check!(eq; outcome.response_url.as_deref(), Some(response_url.as_str()));
@@ -166,7 +185,8 @@ mod tests {
                     assert_archived(root.path(), &outcome)?;
                 }
                 let (meta, body) =
-                    read_cache(&body_path, &meta_path)?.ok_or("successful capture missing")?;
+                    read_cache(&body_path, &meta_path, "GET", &success_url, &representation)?
+                        .ok_or("successful capture missing")?;
                 check!(eq; meta.status, 200);
                 check!(eq; body, b"success");
                 check!(eq; meta.content_digest, content_digest(b"success"));

@@ -298,3 +298,58 @@ fn an_id_or_digest_the_store_cannot_record_is_refused() -> TestResult {
     check!(eq; store.receipt_count()?, 0);
     Ok(())
 }
+
+#[test]
+fn a_credited_operation_counts_its_rows_once_however_often_it_is_offered() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let operation = "wiaa_schools_wi:w39:schools:0";
+    let first = apply(&store, operation, "digest-a", "unit-0")?;
+    check!(first.written(), "{first:?}");
+    let credit = store.credit_observations("wiaa_schools", operation)?;
+    check!(eq; credit.credited, 2, "the first credit counts the applied rows");
+    check!(eq; credit.total, 2, "and the endpoint total starts there");
+    let replay = apply(&store, operation, "digest-a", "unit-0")?;
+    check!(replay.repeated(), "{replay:?}");
+    let again = store.credit_observations("wiaa_schools", operation)?;
+    check!(eq; again.credited, 0, "a repeated credit adds nothing");
+    check!(eq; again.total, 2, "and leaves the total standing");
+    check!(eq; store.endpoint_credit("wiaa_schools")?, 2);
+    check!(eq; store.endpoint_credit("milesplit_wi")?, 0, "totals are per endpoint");
+    Ok(())
+}
+
+#[test]
+fn an_endpoints_total_survives_reopening_and_accumulates_across_operations() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    apply(&store, "op-0", "digest-0", "unit-0")?;
+    apply(&store, "op-1", "digest-1", "unit-1")?;
+    check!(eq; store.credit_observations("wiaa_schools", "op-0")?.total, 2);
+    check!(eq; store.credit_observations("wiaa_schools", "op-1")?.total, 4);
+    check!(eq; store.credit_observations("wiaa_schools", "op-0")?.credited, 0);
+    drop(store);
+    let reopened = Store::open(dir.path())?;
+    check!(eq; reopened.endpoint_credit("wiaa_schools")?, 4, "the total is durable");
+    check!(eq; reopened.credit_observations("wiaa_schools", "op-1")?.credited, 0);
+    check!(eq; reopened.credit_observations("wiaa_schools", "op-1")?.total, 4);
+    Ok(())
+}
+
+#[test]
+fn an_operation_without_a_receipt_is_never_credited() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let refused = store.credit_observations("wiaa_schools", "never_applied");
+    check!(
+        matches!(refused, Err(StoreError::Refused { .. })),
+        "an unapplied operation is refused rather than counted: {refused:?}"
+    );
+    let unnamed = store.credit_observations("", "never_applied");
+    check!(
+        matches!(unnamed, Err(StoreError::Refused { .. })),
+        "an empty endpoint is refused rather than totalled into nothing: {unnamed:?}"
+    );
+    check!(eq; store.endpoint_credit("wiaa_schools")?, 0);
+    Ok(())
+}

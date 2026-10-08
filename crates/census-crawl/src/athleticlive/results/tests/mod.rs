@@ -4,6 +4,7 @@ use crate::athleticlive::docs::{parse_event_document, parse_event_summary, Event
 use crate::athleticlive::map::SOURCE_ID;
 use crate::athleticlive::wire::{event_doc_url, event_summary_url};
 use crate::athleticlive_athletes::{school_year_for_date, MeetTarget};
+use crate::net::cache::content_digest;
 use crate::net::Fetcher;
 use crate::{AdapterContext, AdapterReport};
 use census_domain::model::CentiMetres;
@@ -130,8 +131,26 @@ fn joined(report: &AdapterReport) -> String {
     report.notes.join("\n")
 }
 
-fn journal(store: &Store) -> TestResult<std::collections::HashSet<String>> {
-    Ok(store.journal_keys(super::PHASE)?)
+fn receipts(store: &Store) -> TestResult<BTreeMap<String, serde_json::Value>> {
+    let mut receipts = BTreeMap::new();
+    for key in store.journal_keys(super::EFFECT_PHASE)? {
+        let payload = store
+            .journal_payload(super::EFFECT_PHASE, &key)?
+            .ok_or("a receipt key carries no payload")?;
+        receipts.insert(key, payload);
+    }
+    Ok(receipts)
+}
+
+fn captures(store: &Store) -> TestResult<std::collections::HashSet<String>> {
+    Ok(store.journal_keys(super::CAPTURE_PHASE)?)
+}
+
+fn receipt_paths(store: &Store) -> TestResult<std::collections::BTreeSet<String>> {
+    Ok(receipts(store)?
+        .values()
+        .filter_map(|payload| payload["path"].as_str().map(str::to_string))
+        .collect())
 }
 
 fn standings_payload(name: &str, grade: &str, team: &str) -> String {
@@ -172,7 +191,7 @@ fn event_document_rows_carry_the_published_shapes() -> TestResult {
     check!(eq; xc.rows[0].place(), Some(1));
     check!(eq; xc.rows[0].mark.as_deref(), Some("18:20.7"));
     check!(eq;
-        xc.rows[0].canonical_mark(&EventKind::CrossCountry),
+        xc.rows[0].canonical_mark(&EventKind::CrossCountry)?,
         Some(Mark::TimeSeconds(CentiSeconds::new(110070)))
     );
     check!(eq; xc.rows[0].splits.len(), 3, "the cross-country split list");
@@ -191,7 +210,7 @@ fn event_document_rows_carry_the_published_shapes() -> TestResult {
         "a field event publishes no splits"
     );
     check!(eq;
-        hj.rows[0].canonical_mark(&EventKind::HighJump),
+        hj.rows[0].canonical_mark(&EventKind::HighJump)?,
         Some(Mark::FieldImperial {
             feet_mark: "5-02.00".to_string(),
             metres: CentiMetres::new(157),
@@ -199,7 +218,7 @@ fn event_document_rows_carry_the_published_shapes() -> TestResult {
     );
     let no_height = &hj.rows[13];
     check!(eq; no_height.mark.as_deref(), Some("NH"));
-    check!(eq; no_height.canonical_mark(&EventKind::HighJump), None);
+    check!(eq; no_height.canonical_mark(&EventKind::HighJump)?, None);
     check!(eq; no_height.place(), None, "an unplaced row publishes `--`");
     let blank_grade = &hj.rows[10];
     check!(eq; blank_grade.mark.as_deref(), Some("4-06.00"));
@@ -221,7 +240,7 @@ fn both_mark_channels_agree_on_every_captured_row() -> TestResult {
     for row in &xc.rows {
         let published = row.mark.as_deref().ok_or("every row publishes a mark")?;
         let seconds = crate::hytek::parse_time(published).ok_or("the time parses")?;
-        let Some(Mark::TimeSeconds(minted)) = row.canonical_mark(&EventKind::CrossCountry) else {
+        let Some(Mark::TimeSeconds(minted)) = row.canonical_mark(&EventKind::CrossCountry)? else {
             return Err(format!("row {:?} mints no time mark", row.place()).into());
         };
         check!(
@@ -235,7 +254,7 @@ fn both_mark_channels_agree_on_every_captured_row() -> TestResult {
     let hj = parse_event_document(&event_doc_url(2_254_280), HJ_MITS)?;
     let mut field_rows = 0usize;
     for row in &hj.rows {
-        let Some(Mark::FieldImperial { metres, .. }) = row.canonical_mark(&EventKind::HighJump)
+        let Some(Mark::FieldImperial { metres, .. }) = row.canonical_mark(&EventKind::HighJump)?
         else {
             check!(eq; row.mark.as_deref(), Some("NH"), "only `NH` mints no mark");
             continue;
@@ -262,6 +281,8 @@ fn both_mark_channels_agree_on_every_captured_row() -> TestResult {
     check!(eq; field_rows, 13, "four of the seventeen rows are `NH`");
     Ok(())
 }
+mod disposition;
 mod integration;
 mod integration2;
 mod integration3;
+mod resume;

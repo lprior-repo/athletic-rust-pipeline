@@ -1,4 +1,4 @@
-use super::{FetchError, Fetcher, MAX_BODY_BYTES};
+use super::{FetchError, Fetcher, RepresentationHeaders, MAX_BODY_BYTES};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fs::File;
@@ -18,6 +18,8 @@ pub(crate) struct CacheMeta {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) response_url: Option<String>,
     pub(crate) method: String,
+    #[serde(default, skip_serializing_if = "RepresentationHeaders::is_empty")]
+    pub(crate) representation: RepresentationHeaders,
     pub(crate) status: u16,
     pub(crate) content_digest: String,
     pub(crate) bytes: usize,
@@ -111,6 +113,9 @@ fn read_snapshot(reader: &mut impl Read, size: usize) -> std::io::Result<Option<
 pub(crate) fn read_cache(
     body_path: &Path,
     meta_path: &Path,
+    method: &str,
+    url: &str,
+    representation: &RepresentationHeaders,
 ) -> Result<Option<(CacheMeta, Vec<u8>)>, FetchError> {
     if !meta_path.exists() || !body_path.exists() {
         return Ok(None);
@@ -122,6 +127,9 @@ pub(crate) fn read_cache(
         Ok(meta) => meta,
         Err(_) => return Ok(None),
     };
+    if meta.method != method || meta.url != url || &meta.representation != representation {
+        return Ok(None);
+    }
     if meta.status != 200 || !is_valid_hex64(&meta.content_digest) || meta.bytes > MAX_BODY_BYTES {
         return Ok(None);
     }

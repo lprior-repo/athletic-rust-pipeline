@@ -99,6 +99,7 @@ fn seed(fetcher: &Fetcher, url: &str, body: &[u8]) -> TestResult {
         &meta_path,
         body,
         &CacheMeta {
+            representation: crate::net::RepresentationHeaders::default(),
             url: url.to_string(),
             response_url: None,
             method: "GET".to_string(),

@@ -219,6 +219,7 @@ async fn the_lane_refuses_a_non_http_scheme_before_any_ingress_call() -> TestRes
             url: url.to_string(),
             semantic_url: url.to_string(),
             action: Action::Fetch { body: None },
+            headers: crate::net::RepresentationHeaders::default(),
         };
         match lane.answer(&spec).await {
             Err(crate::net::FetchError::Policy { detail }) => check!(

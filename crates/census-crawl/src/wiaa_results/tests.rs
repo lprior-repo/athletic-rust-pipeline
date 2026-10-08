@@ -150,6 +150,7 @@ fn seed_result_cache(fetcher: &crate::net::Fetcher, url: &str, body: &[u8]) -> T
     let key = crate::net::Fetcher::key_for("GET", url, "");
     let (body_path, meta_path) = fetcher.cache_paths(&key);
     let meta = CacheMeta {
+        representation: crate::net::RepresentationHeaders::default(),
         url: url.to_owned(),
         response_url: None,
         method: "GET".to_owned(),

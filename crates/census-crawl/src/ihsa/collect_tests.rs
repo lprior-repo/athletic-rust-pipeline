@@ -54,6 +54,7 @@ impl FixtureRun {
             &meta_path,
             body.as_bytes(),
             &CacheMeta {
+                representation: crate::net::RepresentationHeaders::default(),
                 url: url.to_string(),
                 response_url: Some(url.to_string()),
                 method: "GET".to_string(),

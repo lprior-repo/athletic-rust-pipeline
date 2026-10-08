@@ -4,5 +4,6 @@
   "action": {
     "action": "fetch",
     "body": null
-  }
+  },
+  "headers": []
 }

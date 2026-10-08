@@ -5,6 +5,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn metadata(body: &[u8]) -> CacheMeta {
     CacheMeta {
+        representation: RepresentationHeaders::default(),
         url: "https://example.test/capture".to_owned(),
         response_url: None,
         method: "GET".to_owned(),
@@ -29,17 +30,38 @@ fn exact_limit_metadata_is_admitted_and_oversized_metadata_recovers_with_evidenc
     check!(encoded.len() < MAX_META_BYTES);
     encoded.resize(MAX_META_BYTES, b' ');
     std::fs::write(&meta_path, &encoded)?;
-    let (_, body) = read_cache(&body_path, &meta_path)?.ok_or("hit")?;
+    let (_, body) = read_cache(
+        &body_path,
+        &meta_path,
+        &meta.method,
+        &meta.url,
+        &meta.representation,
+    )?
+    .ok_or("hit")?;
     check!(eq; body, b"captured body");
     std::fs::OpenOptions::new()
         .append(true)
         .open(&meta_path)?
         .write_all(b" ")?;
-    check!(read_cache(&body_path, &meta_path)?.is_none());
+    check!(read_cache(
+        &body_path,
+        &meta_path,
+        &meta.method,
+        &meta.url,
+        &meta.representation
+    )?
+    .is_none());
     encoded.push(b' ');
     let fresh = metadata(b"fresh body");
     write_cache(&body_path, &meta_path, b"fresh body", &fresh)?;
-    let (_, served) = read_cache(&body_path, &meta_path)?.ok_or("hit")?;
+    let (_, served) = read_cache(
+        &body_path,
+        &meta_path,
+        &fresh.method,
+        &fresh.url,
+        &fresh.representation,
+    )?
+    .ok_or("hit")?;
     check!(eq; served, b"fresh body");
     let quarantine = dir.path().join("quarantine");
     let bundles: Vec<_> = std::fs::read_dir(quarantine)?
@@ -70,7 +92,14 @@ fn body_accepts_empty_and_exact_limit_but_refuses_a_false_small_declaration() ->
         let body = vec![b'x'; size];
         let meta = metadata(&body);
         write_cache(&body_path, &meta_path, &body, &meta)?;
-        let (_, cached) = read_cache(&body_path, &meta_path)?.ok_or("hit")?;
+        let (_, cached) = read_cache(
+            &body_path,
+            &meta_path,
+            &meta.method,
+            &meta.url,
+            &meta.representation,
+        )?
+        .ok_or("hit")?;
         check!(eq; cached, body);
     }
     let meta = metadata(b"x");
@@ -82,7 +111,14 @@ fn body_accepts_empty_and_exact_limit_but_refuses_a_false_small_declaration() ->
         .write(true)
         .open(&body_path)?
         .set_len(size)?;
-    check!(read_cache(&body_path, &meta_path)?.is_none());
+    check!(read_cache(
+        &body_path,
+        &meta_path,
+        &meta.method,
+        &meta.url,
+        &meta.representation
+    )?
+    .is_none());
     Ok(())
 }
 
@@ -136,13 +172,26 @@ fn an_eligible_body_io_failure_remains_a_typed_cache_error() -> TestResult {
     meta.bytes = usize::try_from(std::fs::metadata(&body_path)?.len())?;
     std::fs::write(&meta_path, serde_json::to_vec(&meta)?)?;
     check!(matches!(
-        read_cache(&body_path, &meta_path),
+        read_cache(
+            &body_path,
+            &meta_path,
+            &meta.method,
+            &meta.url,
+            &meta.representation
+        ),
         Err(FetchError::Cache { .. })
     ));
     for status in [404, 500] {
         meta.status = status;
         std::fs::write(&meta_path, serde_json::to_vec(&meta)?)?;
-        check!(read_cache(&body_path, &meta_path)?.is_none());
+        check!(read_cache(
+            &body_path,
+            &meta_path,
+            &meta.method,
+            &meta.url,
+            &meta.representation
+        )?
+        .is_none());
     }
     Ok(())
 }
@@ -178,7 +227,14 @@ fn historical_capture_replay_keeps_absent_final_url_and_original_serialized_byte
     );
     std::fs::write(&body_path, raw)?;
     std::fs::write(&meta_path, encoded.as_bytes())?;
-    let (meta, body) = read_cache(&body_path, &meta_path)?.ok_or("legacy capture lost")?;
+    let (meta, body) = read_cache(
+        &body_path,
+        &meta_path,
+        "GET",
+        "https://example.test/source",
+        &RepresentationHeaders::default(),
+    )?
+    .ok_or("legacy capture lost")?;
     check!(eq; meta.response_url, None);
     check!(eq; body, raw);
     check!(eq;

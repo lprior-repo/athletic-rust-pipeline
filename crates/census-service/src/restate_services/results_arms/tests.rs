@@ -241,3 +241,16 @@ fn the_outcome_carries_the_reports_unresolved_counters() -> TestResult {
     check!(eq; rows.unresolved, None);
     Ok(())
 }
+
+#[test]
+fn dur05_adapter_errors_are_preserved_in_results_source_rows() -> TestResult {
+    let mut report = census_crawl::AdapterReport::new("milesplit_results", "result rows");
+    report.rows = 10;
+    report.errors = 2;
+    let rows = super::source_rows("test_slug", 5, &report).map_err(sdk_error)?;
+    check!(eq; rows.errors, 2);
+    let silent = census_crawl::AdapterReport::new("athleticnet", "performances");
+    let rows = super::source_rows("test_slug", 5, &silent).map_err(sdk_error)?;
+    check!(eq; rows.errors, 0);
+    Ok(())
+}

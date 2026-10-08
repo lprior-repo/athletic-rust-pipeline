@@ -1,4 +1,4 @@
-use super::{capture_of, fetcher_in, Coordinates, TestResult, FAILURE_FIXTURE};
+use super::{capture_of, fetcher_in, Coordinates, TestResult, FAILURE_FIXTURE, URL};
 use crate::net::bridge::{BrowserError, BrowserFailure, BrowserOutcome, Verdict};
 use crate::net::cache::read_cache;
 use crate::net::{AccessBlockKind, FetchError};
@@ -95,7 +95,14 @@ fn an_allowed_404_capture_is_observed_but_not_cached() -> TestResult {
                 outcome.content_digest,
                 "23c62f7de04040a4949182f3ca7f84a99b7106c3040e11734aae9e1329c0691b"
             );
-            check!(read_cache(&coordinates.body_path, &coordinates.meta_path)?.is_none());
+            check!(read_cache(
+                &coordinates.body_path,
+                &coordinates.meta_path,
+                "GET",
+                URL,
+                &coordinates.representation
+            )?
+            .is_none());
             check!(!coordinates.body_path.exists());
             check!(!coordinates.meta_path.exists());
             Ok(())
@@ -126,7 +133,14 @@ fn a_disallowed_404_capture_returns_err() -> TestResult {
                 "expected Http(404), got {error:?}"
             );
 
-            check!(read_cache(&coordinates.body_path, &coordinates.meta_path)?.is_none());
+            check!(read_cache(
+                &coordinates.body_path,
+                &coordinates.meta_path,
+                "GET",
+                URL,
+                &coordinates.representation
+            )?
+            .is_none());
             check!(!coordinates.body_path.exists());
             check!(!coordinates.meta_path.exists());
             Ok(())

@@ -59,6 +59,7 @@ fn checked(url: Url, semantic_url: Url, action: RequestAction) -> Result<Request
         url,
         semantic_url: semantic_url.to_string(),
         action,
+        headers: Vec::new(),
     })
 }
 

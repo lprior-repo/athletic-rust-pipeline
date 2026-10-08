@@ -41,7 +41,14 @@ fn captured_nc_directory_and_summary_fixtures_survive_synthetic_cache_refresh() 
         write_cache(&body_path, &meta_path, &refreshed_raw, &refreshed)?;
         assert_capture(root.path(), raw, &original)?;
         assert_capture(root.path(), &refreshed_raw, &refreshed)?;
-        let (served, body) = read_cache(&body_path, &meta_path)?.ok_or("hit")?;
+        let (served, body) = read_cache(
+            &body_path,
+            &meta_path,
+            &refreshed.method,
+            &refreshed.url,
+            &refreshed.representation,
+        )?
+        .ok_or("hit")?;
         check!(eq; body, refreshed_raw);
         check!(eq; served.url, url);
         check!(eq; served.fetched_at, refreshed.fetched_at);

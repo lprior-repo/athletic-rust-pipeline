@@ -1,11 +1,14 @@
 use serde::{Deserialize, Serialize};
 
+use crate::net::RepresentationHeaders;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RequestSpec {
     pub url: String,
     pub semantic_url: String,
     pub action: Action,
+    pub headers: RepresentationHeaders,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

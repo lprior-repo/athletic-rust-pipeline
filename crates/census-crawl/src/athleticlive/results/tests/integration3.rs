@@ -100,10 +100,10 @@ fn a_manifest_imports_every_meet_it_names_and_lands_on_the_harvest_ids() -> Test
             check!(eq; report.errors, 0, "{}", joined(&report));
             check!(eq; report.requests, 0, "the adapter fetches nothing");
 
-            let journaled = journal(&store)?;
+            let read = receipt_paths(&store)?;
             check!(
-                journaled.contains(&xc_path) && journaled.contains(&hj_path),
-                "the manifest's own documents are the captures read: {journaled:?}"
+                read.contains(&xc_path) && read.contains(&hj_path),
+                "the manifest's own documents are the captures read: {read:?}"
             );
 
             let meets: Vec<CanonicalMeet> = store.scan(Table::Meets)?;

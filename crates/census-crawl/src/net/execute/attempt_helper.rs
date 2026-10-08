@@ -28,15 +28,20 @@ impl Fetcher {
         url: &str,
         plan: &FetchPlan<'_>,
     ) -> Result<reqwest::Response, FetchError> {
-        let request = build_request(
+        let mut request = build_request(
             &self.client,
             plan.method,
             url,
             plan.payload,
-            &plan.options.headers,
+            plan.representation.entries(),
             plan.cached,
             plan.options.refresh,
         )?;
+        for (name, value) in &plan.options.headers {
+            if super::representation::is_validator(name) {
+                request = request.header(name.as_str(), value.as_str());
+            }
+        }
         let response = tokio::time::timeout(Duration::from_secs(plan.timeout_secs), request.send())
             .await
             .map_err(|_| FetchError::Timeout {

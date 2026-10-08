@@ -27,6 +27,8 @@ pub struct RequestSpec {
     pub url: Url,
     pub semantic_url: String,
     pub action: RequestAction,
+    #[serde(default)]
+    pub headers: Vec<(String, String)>,
 }
 
 impl RequestSpec {

@@ -36,9 +36,10 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     };
 
     let records = parse_records(&outcome.text())?;
-    report.requests = report.requests.saturating_add(1);
     if outcome.from_cache {
         report.from_cache = report.from_cache.saturating_add(1);
+    } else {
+        report.requests = report.requests.saturating_add(1);
     }
 
     let done_keys: HashSet<String> = ctx.store.journal_keys("kshsaa_schools")?;
@@ -46,7 +47,9 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     let tally = collect_records(&records, ctx, options, &url, &done_keys, &mut report)?;
 
     let after = ctx.fetcher.stats().await;
-    let delta_requests = after.requests.saturating_sub(before.requests);
+    let delta_requests = after
+        .physical_requests()
+        .saturating_sub(before.physical_requests());
     report.rows = u64::try_from(tally.processed).map_or(u64::MAX, |value| value);
     report.requests = delta_requests;
     report.note(format!(

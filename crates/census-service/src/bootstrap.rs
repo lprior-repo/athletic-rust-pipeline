@@ -10,6 +10,7 @@ mod stop;
 pub use error::BootstrapError;
 
 pub const DEFAULT_MAX_CONCURRENT: usize = 8;
+pub const MAX_CONCURRENT_CEILING: usize = 1024;
 pub const DEFAULT_DRAIN_TIMEOUT: Duration = Duration::from_secs(30);
 pub const DEFAULT_MEMORY_BUDGET_BYTES: u64 = 48 * 1024 * 1024 * 1024;
 

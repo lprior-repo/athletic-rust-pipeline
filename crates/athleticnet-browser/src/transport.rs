@@ -50,6 +50,7 @@ struct FetchArguments<'a> {
     body: Option<&'a str>,
     timeout_ms: u64,
     max_body: usize,
+    headers: &'a [(String, String)],
 }
 #[derive(Debug, Deserialize)]
 struct FetchResult {

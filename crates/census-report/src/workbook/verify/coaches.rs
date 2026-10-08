@@ -25,32 +25,10 @@ pub(super) fn verify(
     let mut printed: Vec<String> = Vec::new();
     let mut seen = 0_usize;
     let mut visit = |row: &SparseRow| {
-        verify_width(row, labels::COACHES, labels::COACH_HEADERS.len(), findings);
-        if row.index() == 0 {
-            verify_header(row, labels::COACHES, &labels::COACH_HEADERS, findings);
-            return;
-        }
-        let position = row.index().saturating_sub(1);
-        let id = row.text(6).map_or("", |value| value).to_string();
-        let expected = ordered.get(position);
-        if row.blank() {
-            if let Some((coach, _)) = expected {
-                findings.note(format!(
-                    "{} is blank where coach {} ({}) was expected",
-                    cell_at(labels::COACHES, row.index(), 6),
-                    coach.name,
-                    coach.id.as_str()
-                ));
-            }
-            return;
-        }
-        if let Some((coach, _)) = expected.filter(|(coach, _)| coach.id.as_str() == id) {
+        if let Some(id) = verify_row(row, expectations, &ordered, findings) {
             seen = seen.saturating_add(1);
-            for (column, expected) in values(expectations, coach).iter().enumerate() {
-                compare(row, labels::COACHES, column, expected, findings);
-            }
+            printed.push(id);
         }
-        printed.push(id);
     };
     let budget = Budget {
         rows: EXCEL_ROWS_PER_SHEET,
@@ -65,7 +43,48 @@ pub(super) fn verify(
         )),
     }
     membership(&ordered, &printed, findings);
+    if seen != ordered.len() {
+        findings.note(format!(
+            "{} verified {seen} coach rows where the frozen dataset holds {} observations",
+            labels::COACHES, ordered.len()
+        ));
+    }
     Ok(())
+}
+
+fn verify_row(
+    row: &SparseRow,
+    expectations: &Expectations<'_>,
+    ordered: &[(&CanonicalCoach, SortKey)],
+    findings: &mut Findings,
+) -> Option<String> {
+    verify_width(row, labels::COACHES, labels::COACH_HEADERS.len(), findings);
+    if row.index() == 0 {
+        verify_header(row, labels::COACHES, &labels::COACH_HEADERS, findings);
+        return None;
+    }
+    let expected = ordered.get(row.index().saturating_sub(1));
+    if row.blank() {
+        if let Some((coach, _)) = expected {
+            findings.note(format!(
+                "{} is blank where coach {} ({}) was expected",
+                cell_at(labels::COACHES, row.index(), 6), coach.name, coach.id.as_str()
+            ));
+        }
+        return None;
+    }
+    let id = row.text(6).map_or("", |value| value).to_string();
+    if let Some((coach, _)) = expected {
+        for (column, expected) in values(expectations, coach).iter().enumerate() {
+            compare(row, labels::COACHES, column, expected, findings);
+        }
+    } else {
+        findings.note(format!(
+            "{} carries an unexpected coach observation {id}",
+            cell_at(labels::COACHES, row.index(), 6)
+        ));
+    }
+    Some(id)
 }
 
 fn ordered<'a, 'd>(expectations: &'a Expectations<'d>) -> Vec<(&'a CanonicalCoach, SortKey)> {
@@ -178,3 +197,6 @@ fn membership(ordered: &[(&CanonicalCoach, SortKey)], printed: &[String], findin
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

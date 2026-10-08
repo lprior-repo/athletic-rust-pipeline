@@ -53,6 +53,12 @@ pub(super) fn verify(
     };
     let shape = book.read(labels::PRS, budget, &mut visit)?;
     report_prs_read_result(shape, prs, seen, findings);
+    if seen != prs.len() {
+        findings.note(format!(
+            "{} verified {seen} PR rows where the shared reduction selected {}",
+            labels::PRS, prs.len()
+        ));
+    }
     Ok(())
 }
 

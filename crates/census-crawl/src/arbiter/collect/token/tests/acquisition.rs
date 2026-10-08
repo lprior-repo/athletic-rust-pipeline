@@ -177,6 +177,7 @@ fn historical_cached_entry_and_bundle_keep_the_observed_final_url_unknown() -> T
                     &cache.join(format!("{key}.meta.json")),
                     bytes,
                     &CacheMeta {
+                        representation: crate::net::RepresentationHeaders::default(),
                         url: url.to_string(),
                         method: "GET".into(),
                         status: 200,

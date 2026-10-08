@@ -66,6 +66,7 @@ fn collect_retains_cached_acquisition_when_execution_and_options_are_later(
 fn seed(fetcher: &Fetcher, url: &str, body: &str, fetched_at: &str) -> anyhow::Result<()> {
     let (body_path, meta_path) = fetcher.cache_paths(&Fetcher::key_for("GET", url, ""));
     let meta = CacheMeta {
+        representation: crate::net::RepresentationHeaders::default(),
         url: url.to_string(),
         method: "GET".to_string(),
         status: 200,

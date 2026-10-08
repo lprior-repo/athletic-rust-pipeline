@@ -62,6 +62,12 @@ impl Fetcher {
     }
 
     async fn fetch_robots(&self, url: &str) -> Result<(u16, Vec<u8>), FetchError> {
+        {
+            let mut stats = self.stats.lock().await;
+            stats.requests = stats.requests.saturating_add(1);
+            let entry = stats.per_host.entry(super::host_of(url)).or_default();
+            entry.requests = entry.requests.saturating_add(1);
+        }
         let response =
             self.client
                 .get(url)

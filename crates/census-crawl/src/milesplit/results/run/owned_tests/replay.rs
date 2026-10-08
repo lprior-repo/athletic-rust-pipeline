@@ -116,38 +116,23 @@ fn collect_interruption_after_owned_capture_reopens_without_a_half_visible_proje
             let (dir, store, fetcher, reference) = setup()?;
             seed_owned(&fetcher, &reference, TROY)?;
             seed_metadata(&fetcher, &reference)?;
-            let other =
+            let unread =
                 ResultSetRef::parse("https://oh.milesplit.com/meets/770621/results/1321880/raw")
-                    .ok_or("uncached source")?;
-            let mut interrupted = options(&reference);
-            interrupted.urls.push(crate::milesplit::ResultSetRequest {
-                url: other.url.clone(),
+                    .ok_or("uncached result set of a later meet")?;
+            let mut both = options(&reference);
+            both.urls.push(crate::milesplit::ResultSetRequest {
+                url: unread.url.clone(),
                 jurisdiction: census_domain::UsJurisdiction::Ohio,
             });
-            match crate::milesplit::collect_result_sets(&context(&store, &fetcher)?, &interrupted)
-                .await
-            {
-                Err(crate::CrawlError::Fetch(crate::net::FetchError::Offline { url })) => {
-                    check!(eq;
-                        url,
-                        crate::milesplit::fetch::owned_meet_url(&other)?
-                    );
-                }
-                outcome => {
-                    return Err(format!(
-                        "expected deterministic interruption before projection commit: {outcome:?}"
-                    )
-                    .into());
-                }
-            }
-            assert_absent(&store)?;
+            interrupt_on_unread_meet(&store, &fetcher, &both, &unread).await?;
+            assert_completed_meet_only(&store, &reference)?;
             let raw = store.journal_payloads(crate::milesplit::OWNED_CAPTURE_PHASE)?;
             check!(raw.iter().any(|value| value["encoding"] == "base64"));
             let owned = store.journal_payloads(crate::milesplit::OWNED_MEET_PHASE)?;
             check!(owned.iter().any(|value| value["result_id"] == 201782263));
             drop(store);
             let store = Store::open(dir.path().join("store"))?;
-            assert_absent(&store)?;
+            assert_completed_meet_only(&store, &reference)?;
             let report = crate::milesplit::collect_result_sets(
                 &context(&store, &fetcher)?,
                 &options(&reference),
@@ -193,6 +178,82 @@ fn collect_interruption_after_owned_capture_reopens_without_a_half_visible_proje
             );
             Ok(())
         })
+}
+
+#[test]
+fn a_later_meets_offline_failure_keeps_the_completed_meets_projection_resumable() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (dir, store, fetcher, reference) = setup()?;
+            seed_owned(&fetcher, &reference, TROY)?;
+            seed_metadata(&fetcher, &reference)?;
+            let unread =
+                ResultSetRef::parse("https://al.milesplit.com/meets/725219/results/1266816/raw")
+                    .ok_or("uncached result set of a later meet")?;
+            let mut both = options(&reference);
+            both.urls.push(crate::milesplit::ResultSetRequest {
+                url: unread.url.clone(),
+                jurisdiction: census_domain::UsJurisdiction::Alabama,
+            });
+            interrupt_on_unread_meet(&store, &fetcher, &both, &unread).await?;
+            assert_completed_meet_only(&store, &reference)?;
+            let before_entities = entities(&store)?;
+            let before_physical = physical(&store)?;
+            let before_captures = store.journal_payloads(crate::milesplit::OWNED_CAPTURE_PHASE)?;
+            let before_receipts = store.journal_payloads(super::super::super::RESULT_SET_PHASE)?;
+            drop(store);
+            let store = Store::open(dir.path().join("store"))?;
+            assert_completed_meet_only(&store, &reference)?;
+            interrupt_on_unread_meet(&store, &fetcher, &both, &unread).await?;
+            check!(eq; entities(&store)?, before_entities);
+            check!(eq; physical(&store)?, before_physical);
+            check!(eq;
+                store.journal_payloads(crate::milesplit::OWNED_CAPTURE_PHASE)?,
+                before_captures
+            );
+            check!(eq;
+                store.journal_payloads(super::super::super::RESULT_SET_PHASE)?,
+                before_receipts
+            );
+            Ok(())
+        })
+}
+
+fn assert_completed_meet_only(store: &Store, reference: &ResultSetRef) -> TestResult {
+    assert_projected(store)?;
+    let meets: Vec<CanonicalMeet> = store.scan(Table::Meets)?;
+    let identified: Vec<&str> = meets
+        .iter()
+        .flat_map(|meet| meet.source_identities.iter())
+        .map(|identity| identity.id.as_str())
+        .collect();
+    check!(
+        eq;
+        identified,
+        vec![reference.meet_id.as_str()],
+        "only the completed meet is projected; the interrupted meet leaves no half-visible rows",
+    );
+    Ok(())
+}
+
+async fn interrupt_on_unread_meet(
+    store: &Store,
+    fetcher: &Fetcher,
+    options: &crate::milesplit::ResultSetOptions,
+    unread: &ResultSetRef,
+) -> TestResult {
+    match crate::milesplit::collect_result_sets(&context(store, fetcher)?, options).await {
+        Err(crate::CrawlError::Fetch(crate::net::FetchError::Offline { url })) => {
+            check!(eq; url, crate::milesplit::fetch::owned_meet_url(unread)?);
+            Ok(())
+        }
+        outcome => Err(format!(
+            "expected the later meet to interrupt after the completed meet commits: {outcome:?}"
+        )
+        .into()),
+    }
 }
 
 #[test]

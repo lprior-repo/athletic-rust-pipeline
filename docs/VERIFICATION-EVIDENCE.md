@@ -5731,7 +5731,7 @@ all remain present.
 | G10 | Applicability mapped twelve Midwest states, with empty fallback elsewhere |
 | G11 | Batch accounting saturated row counts and lacked a total byte budget |
 
-The 24 named canaries, 12 proof kernels, 17 faults and full-artifact verifier requirements now live
+The 23 named canaries, 12 proof kernels, 17 faults and full-artifact verifier requirements now live
 in their single current owners (national plan, TESTING and fault catalog). The old one-model policy,
 seed-workbook branch and competing T01–T36 implementation waves are not current instructions.
 
@@ -12564,7 +12564,9 @@ generation digest.
 Scenario 15 (cold backup/restore, nonempty corpus): `pipeline:backup-drill -- …/var/scenario-s01-20261006`
 → `PASS: verified manifest digests, exact table counts, integrity, consolidation and census across
 reopen` (exit 0, 429 ms); restored counts schools 784 / teams 36 / coaches 1869 / athletes 641 and the
-identical `scope=all_sources` census line before and after restore.
+identical `scope=all_sources` census line before and after restore. These are limited
+scenario-store counts, not national delivered workbook totals or current per-state performance
+coverage.
 
 Verification of delivered generations: a fresh S01 generation returns `verify: OK`; the delivered Oct-3
 generation is 7/8 artifacts byte-exact with `frozen-input.json` absent, the Oct-4 delivery holds the
@@ -12585,9 +12587,9 @@ run pipeline:durability` → `Total: 7 PASS, 1 FAIL, 9 SKIPPED (17 scenarios)`, 
 | # | status | note |
 |---|---|---|
 | 01 | PASS | wrapper runs the `restate_kill_restart` integration tests |
-| 02 | SKIPPED | "no isolated NationalCensus mid-fanout crash scenario" — the lane below discharges it |
+| 02 | SKIPPED | "no isolated NationalCensus mid-fanout crash scenario" — the lane below records a bounded partial recovery, not a scenario discharge: scenario 02 still owes retry counts and exact remaining obligations |
 | 03/04/05/06/07/08 | SKIPPED | no isolated machine reboot, no two-version upgrade, no browser HTTP fault server, no crash-injected replay assertion, no concurrent cross-workflow dedup, no multi-endpoint budget |
-| 09 | FAIL | `FAIL: probe binary not found`: the script requires `target/debug/examples/enospc` while the Moon runner builds the probe into `target/fast-iteration/debug/examples/` (present there, 76 417 152 bytes); rerun with the default target dir recorded in `var/durability-scenario-09-rerun-20261006.log` |
+| 09 | FAIL | `FAIL: probe binary not found`: the script requires `target/debug/examples/enospc` while the Moon runner builds the probe into `target/fast-iteration/debug/examples/` (present there, 76 417 152 bytes); rerun with the default target dir recorded in `var/durability-scenario-09-rerun-20261006.log`; this wrapper/target-dir mismatch is counted once under FAULT-HARNESS-03 (`athletic-rust-pipeline-hfhk.44`), not a second current-source ENOSPC defect |
 | 10 | PASS | real OS ENOSPC in a private bounded mount; the acknowledged invocation survived, a duplicate was refused and the baseline was reproduced (log lines quoted in the run log) |
 | 11 | SKIPPED | `ATHLETIC_FAULT_HTTP_EXIT` seam missing (tracked by `ekqb`) |
 | 12 | SKIPPED | no clock-manipulation seam |
@@ -12604,9 +12606,10 @@ Restate restarted from the same base-dir 1 s later (new pid) with **before=99 af
 new=1** — the original invocation identities survived, re-submission was deduplicated against the same
 run, and the fan-out continued after recovery (`teams 16→24/49`, `rosters 26/49`, `athletes 1570`,
 `co2027 383`). VT's stage kept `journal_size` 3. Outstanding obligations at that point: 49/49 sweeps
-open, rosters owed in FL 1026 / IL 848 / NY 1357. The lane was then drained under the documented
-order (endpoint exit 0 after 9 s, node exit 0 after 2 s, no listeners left). Limits: retry counts were
-not captured in the snapshots; the run was not followed to completion.
+open, rosters owed in FL 1026 / IL 848 / NY 1357 (owed roster rows in the incomplete limited
+scenario store, not missing coach counts or per-state performance totals). The lane was then drained under the documented
+order (endpoint exit 0 after 9 s, node exit 0 after 2 s, no listeners left). Limits: retry counts were not captured in the snapshots and the run was not followed to
+completion, so this is a bounded partial recovery observation, not a discharge of scenario 02.
 
 Beads commented with these outcomes: `ew2`, `8o5`, `ob8`, `3as`, `66h`, `5gn`, `9ir`, `lie`, `6gg`,
 `9j7`, `3ct`, `5oi`, `lwx`, `ahz`, `9bk`, `15fx`.
@@ -12651,7 +12654,9 @@ Read-only evidence workers against the preserved generations and the S01/S02 sto
   `source_objects: null`; `Census/seal` (write=false) refuses and names the sweeps as **not terminal
   (journal-measured)** while source objects remain `not measured`, with counts
   `jurisdiction_buckets 50, schools 784, athletes 159, class_of_2027 159, cohort_performances 0,
-  coaches 1869` and retained `missing_performance_history` 20 athletes.
+  coaches 1869` and retained `missing_performance_history` 20 athletes. These readbacks
+describe the limited scenario store, not national delivered workbook totals or current per-state
+performance coverage.
 
 Limits: the wave is read-only; the delivered census remains incomplete (49/49 sweeps, 8,503 owed
 roster rows), the merge path is unexercised, and no worker opened a live store as a writer.
@@ -14132,4 +14137,131 @@ smoke in the section above, and the fixture/replay lanes establish the rewritten
 captures only. Each gate above is a single run on a quiet tree; the perf lane stays `SKIP` (no
 `tools/perf-baseline.json`) and the release pass was not executed. The ratchet baseline in
 `tools/quality-baseline.json` is unchanged, so later growth past these counts fails again.
+
+## Cache representation identity, physical request accounting and per-meet commit — 2026-10-07
+
+Repair of two P1 acquisition findings plus the MileSplit commit unit, executed on a working tree that
+also carries peer lanes' unrelated changes.
+
+Commands and observed results:
+
+- `cargo test -p census-crawl` -> lib `1000 passed; 0 failed`, integration `1 passed; 0 failed`,
+  doc `0 passed; 0 failed`. This run covers every `AdapterReport.requests` producer in the crate
+  migrated to `FetchStats::physical_requests()` (per-fetch counters increment `from_cache` alone on a
+  cache hit), the two arbiter refusal-recovery assertions moved to the physical projection, the
+  representation-aware Athletic.net cache seeding, and the MileSplit commit-unit regressions below.
+- `cargo fmt -p census-crawl -- --check` -> no diffs.
+- `cargo test -p census-crawl --lib milesplit::results::run::owned_tests::replay` -> 3 passed.
+
+MileSplit commit unit: `collect` groups result-set requests by shared meet, commits one meet's
+canonical/effect/receipt batch and releases it before reading the next meet.
+`collect_interruption_after_owned_capture_reopens_without_a_half_visible_projection` drives an
+offline interruption on an uncached result set of a later meet and asserts the completed meet's
+population is exactly projected while the interrupted meet contributes no rows, both in memory and
+after reopening the store. `a_later_meets_offline_failure_keeps_the_completed_meets_projection_resumable`
+repeats that interruption after reopen and asserts entity snapshots, physical table walks, capture
+journals and result-set receipts are byte-identical, so resume neither re-projects nor duplicates.
+Both scenarios require a later meet: an unread result set of the same meet is a retained failure
+(`report.errors`), not an interruption.
+
+**Limits.**
+- `tools/gate.sh` was not executed end to end. `xtask` links `census-service`, and that crate did not
+  compile during this window because another lane's roster-sweep/results-arm refactor was in flight
+  (`census/sweep/roster.rs` names `Table::RosterJournals`, `UsJurisdiction::default()` and a private
+  `sweep::roster`; `restate_services/results_arms.rs` passes an `AdapterReport.errors` `u64` where a
+  `Vec<String>` is declared). Workspace `cargo fmt --all -- --check` still reports diffs under
+  `census-report/` and `census-service/`, both outside this change.
+- One untracked scratch module (`crates/census-crawl/src/milesplit/results/cen18_buffered.rs`) that a
+  peer lane declared into `milesplit/results.rs` did not compile (private `run::owned_key`, E0716).
+  The declaration was removed to restore the build; the file is preserved on disk and the
+  requirement is recorded on `athletic-rust-pipeline-7t36`.
+- The declared per-meet retained-byte ceiling required by `athletic-rust-pipeline-hfhk.58` remains
+  unimplemented and is recorded on that bead; this change bounds retention structurally (one meet
+  group live at a time) without a declared aggregate ceiling.
+
+## Durability P1/P2 integration: census-service repairs, roster completeness and receipt-keyed credit — 2026-10-07/08
+
+Another lane's census-service durability slice (`hfhk.27`–`hfhk.34`, `hfhk.39`, `hfhk.40`) did not
+compile as delivered, and two of its beads (`DUR-15`, `DUR-16`) had no implementation in the tree at
+all. Main repaired and completed the slice.
+
+Repairs, all inside `crates/census-service/src`:
+
+- `restate_services/results_arms.rs` (DUR-05): `ResultsSourceRows.errors` is a durable `u64` counter
+  (`AdapterReport.errors`'s type), not `Vec<String>`; `stages_of` compares `errors == 0`, and the
+  regression test builds a real `AdapterReport`.
+- `restate_services/open_work.rs`, `census/state/tests.rs` (DUR-07/DUR-08): fixtures predating
+  `meets_complete`, `results` and `owed_results` did not compile; the stage fixture is now complete
+  and `results_failures_keep_the_jurisdiction_owed` pins failed and absent results as owed.
+  `UnresolvedCounters` has `rows`/`labels`, not `total`.
+- `census/scope.rs`, `census/sweep.rs`, `census/sweep/roster.rs` (DUR-06): `roster` is
+  `pub(super)`, `roster_is_complete` is `pub(crate)`, and the invented `UsJurisdiction::default()`,
+  `StoreError::Decode { table }` and `Table::RosterJournals` are gone. The payload scan returns
+  complete when a matching row exists and none of that team's rows is `quarantine`d or has a
+  non-empty `rejected` set; an explicitly authorized `refusal` row stays terminal, per the bead's
+  "preserve explicitly authorized terminal refusals separately". Regression:
+  `census/sweep/roster/tests.rs::completeness_needs_a_clean_row_or_an_authorized_refusal_without_parser_rejections`
+  (refused complete; quarantined/rejected not; other teams' rows ignored both ways; a later unclean
+  row poisons an earlier clean one; a different phase does not leak). The superseded exclusion
+  contract in `tests/milesplit_roster_observations.rs` was updated:
+  `partial_and_quarantined_rosters_keep_their_reasons_and_still_owe_a_walk` now observes the
+  cache-only re-walk (`cache_hits == 2`, `requests == 0`) with unchanged valid rows, reasons and
+  store digest, while `a_refused_roster_is_retained_without_rows_or_a_refetch` is untouched and
+  still passes.
+- `restate_services/sweep/mod.rs`, `sweep/dur10_retention_test.rs` (DUR-10): the declared test file
+  did not exist; it now pins the 365-day retention boundary, a leap-day case and malformed days.
+  `observe_endpoints` had a partial-move error.
+- `census/state/tests.rs` (DUR-09): the superseded observations-only certificate assertion was
+  updated to the window contract.
+- DUR-15 (`hfhk.39`): `validate_concurrency` rejects 0 and above `MAX_ENDPOINT_CONCURRENCY`
+  (`Semaphore::MAX_PERMITS`) inside `build_endpoint` — the `.max(1)` clamp is gone and the refusal is
+  typed — and `ServeOptions` rejects above `MAX_CONCURRENT_CEILING`.
+- DUR-16 (`hfhk.40`): `IngestState.windows_completed` counts completions exactly and `windows` is a
+  bounded 64-label ring with `record_window`; operation ids and window labels are length-limited and
+  both count consumers use the exact count (ADR-028). The `seen_operations` half is replaced by
+  receipt-keyed credit (ADR-029): `Receipt.credited` plus a per-endpoint total in the store's `meta`
+  keyspace (`endpoint_credit/<endpoint>`) are updated in one `PersistMode::SyncData` batch by
+  `Store::credit_observations`, the `Ingest` object calls it in a journaled `ctx.run` after the
+  append, and `IngestState.total_observations` mirrors the returned store total instead of
+  accumulating. Both crash-window outcomes are now exact (a lost acknowledgement credits the stable
+  receipt once; a repeat after a landed credit credits nothing); `seen_operations` is removed from
+  the state shape.
+- Latent compile break outside the slice: the `qualification_native_vm` example target had never
+  been built with its test submodules (`host/scenario/tests.rs` used `Instant` without importing
+  it), so `--all-targets` failed at HEAD as well; one `use std::time::Instant;` line fixes it.
+- The other lane's durable kill/restart harness (`tests/restate_kill_restart{,/*}`) runs in the
+  worktree and fails two heavy scenarios (`a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write`,
+  `b_restate_server_sigkill_resumes_workflow`) with `events rows differ: missing=[…]` after a
+  successful resume. Attribution experiments — bypassing the ADR-029 credit call and restoring the
+  pre-DUR-06 roster predicate — leave the failure unchanged, so neither this session's census-service
+  changes nor the credit change causes it; details and the open status are recorded on
+  `athletic-rust-pipeline-ew2` and `athletic-rust-pipeline-8o5`.
+
+Command and observed result:
+
+- `cargo test -p census-service -p census-store --all-targets` -> 29 suites ok; `census-service`
+  lib `283 passed; 0 failed; 0 ignored`; `census-store` lib `158 passed; 0 failed` plus its
+  integration suites. The one failing suite was the other lane's `restate_kill_restart` harness
+  (`5 passed; 2 failed`, attributed above and on `ew2`/`8o5`). Run in
+  `/tmp/verify-wt`, a throwaway worktree at commit `b4bfa921` carrying this working tree's
+  `crates/census-service` (including the untracked test files), `crates/census-store` and
+  `crates/athleticnet-browser/src`.
+  The worktree was needed because the main tree's `census-crawl` held another lane's in-flight
+  `milesplit/results` WIP (`Run.pending_counts`) that did not compile; the shared target directory
+  reused dependency artifacts, so each run was seconds.
+
+**Limits.**
+- The main tree was not re-run for this slice: `cargo check -p census-crawl --lib` still reported
+  three errors from that other lane's WIP at 22:59, and `cargo test -p census-service` needs a
+  compilable `census-crawl`. One confirmation run is required after that work lands.
+- `census-service/tests/restate_kill_restart.rs` (FaultHarness) declares
+  `tests/restate_kill_restart/oracle.rs`, which exists only as an untracked file; the worktree
+  carried it, so `--all-targets` compiled there, but the main tree's integration target depends on
+  that lane's untracked files likewise being present.
+- `hfhk.39`/`hfhk.40` had no prior implementation to regress against; their tests are the first
+  coverage of the concurrency boundary, the window ring, the identifier limits and receipt-keyed
+  credit.
+- DUR-06's regression test landed only after this section was first written
+  (`census/sweep/roster/tests.rs`, reported above); the durable kill/restart scenarios
+  (`ew2`, `8o5`) remain open and unverified.
 

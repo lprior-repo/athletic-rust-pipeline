@@ -20,6 +20,7 @@ pub(super) struct FetchPlan<'a> {
     pub(super) meta_path: &'a Path,
     pub(super) cached: Option<&'a CacheMeta>,
     pub(super) options: &'a FetchOptions,
+    pub(super) representation: &'a crate::net::RepresentationHeaders,
     pub(super) timeout_secs: u64,
 }
 
@@ -146,16 +147,7 @@ impl Fetcher {
         plan: &FetchPlan<'_>,
         response: reqwest::Response,
     ) -> Result<FetchOutcome, FetchError> {
-        cache_and_record(
-            response,
-            plan.url,
-            plan.method,
-            200,
-            plan.body_path,
-            plan.meta_path,
-            &self.stats,
-        )
-        .await
+        cache_and_record(response, plan, 200, &self.stats).await
     }
 
     async fn handle_404(
@@ -164,16 +156,7 @@ impl Fetcher {
         response: reqwest::Response,
     ) -> Result<FetchOutcome, FetchError> {
         let status = 404u16;
-        let outcome = cache_and_record(
-            response,
-            plan.url,
-            plan.method,
-            status,
-            plan.body_path,
-            plan.meta_path,
-            &self.stats,
-        )
-        .await?;
+        let outcome = cache_and_record(response, plan, status, &self.stats).await?;
         if plan.options.allow_not_found {
             Ok(outcome)
         } else {

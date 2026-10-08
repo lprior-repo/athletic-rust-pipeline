@@ -10,7 +10,7 @@ use tokio::sync::Mutex;
 use tracing::info;
 
 mod access;
-mod roster;
+pub(super) mod roster;
 mod units;
 
 #[cfg(feature = "native-fault-injection")]

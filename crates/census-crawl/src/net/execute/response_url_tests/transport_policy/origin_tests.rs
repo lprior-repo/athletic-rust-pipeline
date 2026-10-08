@@ -61,8 +61,14 @@ fn empty_grants_same_origin_redirect_preserves_archive_cache_offline_and_304_pro
             check!(eq; fetcher.stats().await.conditional_304, 1);
             let (body_path, meta_path) =
                 fetcher.cache_paths(&Fetcher::key_for("GET", &requested, ""));
-            let (meta, body) =
-                read_cache(&body_path, &meta_path)?.ok_or("requested cache missing")?;
+            let (meta, body) = read_cache(
+                &body_path,
+                &meta_path,
+                "GET",
+                &requested,
+                &crate::net::RepresentationHeaders::default(),
+            )?
+            .ok_or("requested cache missing")?;
             check!(eq; meta.url, requested);
             check!(eq; meta.response_url.as_deref(), Some(destination.as_str()));
             check!(eq; meta.fetched_at, acquired_at);

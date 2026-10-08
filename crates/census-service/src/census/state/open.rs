@@ -6,12 +6,19 @@ pub struct JurisdictionStages {
     pub teams: bool,
     pub rosters: bool,
     pub meets: bool,
+    pub results: bool,
     pub owed_rosters: u64,
+    pub owed_results: u64,
 }
 
 impl JurisdictionStages {
     pub fn terminal(self) -> bool {
-        self.teams && self.rosters && self.meets && self.owed_rosters == 0
+        self.teams
+            && self.rosters
+            && self.meets
+            && self.results
+            && self.owed_rosters == 0
+            && self.owed_results == 0
     }
 
     pub fn owing(self) -> Vec<&'static str> {
@@ -24,6 +31,9 @@ impl JurisdictionStages {
         }
         if !self.meets {
             owing.push("meets");
+        }
+        if !self.results || self.owed_results > 0 {
+            owing.push("results");
         }
         owing
     }
@@ -38,7 +48,7 @@ pub struct SourceObject {
 
 impl SourceObject {
     pub fn terminal(&self) -> bool {
-        self.observations > 0 || self.windows > 0
+        self.windows > 0
     }
 }
 

@@ -5,6 +5,8 @@ use census_store::{Store, StoreResult};
 use super::rosters_phase;
 use census_domain::UsJurisdiction;
 
+use super::sweep::roster::roster_is_complete;
+
 pub(super) fn pending_rosters(
     store: &Store,
     teams: &[TeamRef],
@@ -12,13 +14,14 @@ pub(super) fn pending_rosters(
     school_year: SchoolYear,
     revision: std::num::NonZeroU32,
 ) -> StoreResult<Vec<TeamRef>> {
-    let state = jurisdiction.code();
-    let done = store.journal_keys(&rosters_phase(jurisdiction, school_year, revision))?;
-    Ok(teams
-        .iter()
-        .filter(|team| !done.contains(&format!("{}:{}", state, team.id)))
-        .cloned()
-        .collect())
+    let phase = rosters_phase(jurisdiction, school_year, revision);
+    let mut pending = Vec::new();
+    for team in teams {
+        if !roster_is_complete(store, &phase, team)? {
+            pending.push(team.clone());
+        }
+    }
+    Ok(pending)
 }
 
 pub(super) fn count_co2027(roster: &Roster) -> usize {

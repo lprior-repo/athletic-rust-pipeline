@@ -45,7 +45,9 @@ pub(super) async fn collect_directory(
         Err(error) => fail(&mut report, format!("directory {url}: {error}")),
     }
     let after = ctx.fetcher.stats().await;
-    report.requests = after.requests.saturating_sub(before.requests);
+    report.requests = after
+        .physical_requests()
+        .saturating_sub(before.physical_requests());
     report.from_cache = after.cache_hits.saturating_sub(before.cache_hits);
     Ok(report)
 }

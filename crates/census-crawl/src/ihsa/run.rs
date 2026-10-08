@@ -75,9 +75,10 @@ fn close_school_failure(
 }
 
 pub(super) fn note_fetch(report: &mut AdapterReport, from_cache: bool) {
-    report.requests = report.requests.saturating_add(1);
     if from_cache {
         report.from_cache = report.from_cache.saturating_add(1);
+    } else {
+        report.requests = report.requests.saturating_add(1);
     }
 }
 

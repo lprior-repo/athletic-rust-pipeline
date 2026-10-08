@@ -78,6 +78,7 @@ async fn serve(listener: TcpListener, body_path: PathBuf, mutation: Mutation) ->
 
 fn original_meta(url: &str) -> CacheMeta {
     CacheMeta {
+        representation: crate::net::RepresentationHeaders::default(),
         url: url.to_string(),
         response_url: None,
         method: "GET".to_string(),
@@ -153,8 +154,14 @@ async fn conditional(mutation: Mutation) -> TestResult {
             check!(eq; outcome.content_digest, meta.content_digest);
             check!(eq; outcome.status, 200);
             check!(!outcome.from_cache);
-            let (cached, body) =
-                read_cache(&body_path, &meta_path)?.ok_or("valid replay lost cache")?;
+            let (cached, body) = read_cache(
+                &body_path,
+                &meta_path,
+                &meta.method,
+                &meta.url,
+                &meta.representation,
+            )?
+            .ok_or("valid replay lost cache")?;
             check!(eq; cached.fetched_at, CAPTURED);
             check!(eq; cached.response_url, None);
             check!(eq; body, BODY);

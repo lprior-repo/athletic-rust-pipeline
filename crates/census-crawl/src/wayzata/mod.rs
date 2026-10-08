@@ -64,7 +64,7 @@ fn default_years(observed_on: &str) -> Vec<i16> {
 
 async fn stats_of(ctx: &AdapterContext<'_>) -> (u64, u64) {
     let stats = ctx.fetcher.stats().await;
-    (stats.requests, stats.cache_hits)
+    (stats.physical_requests(), stats.cache_hits)
 }
 
 #[cfg(test)]

@@ -46,6 +46,8 @@ pub struct ResultsSourceRows {
     pub slug: String,
     pub meets: usize,
     pub rows: usize,
+    #[serde(default)]
+    pub errors: u64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub unresolved: Option<UnresolvedCounters>,
 }
@@ -95,6 +97,7 @@ fn source_rows(
         slug: slug.to_string(),
         meets,
         rows: rows_written(report)?,
+        errors: report.errors,
         unresolved: report.unresolved,
     })
 }

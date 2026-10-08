@@ -29,7 +29,9 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     let before = ctx.fetcher.stats().await;
     let mut run = Run::new(ctx, options)?.walk().await?;
     let after = ctx.fetcher.stats().await;
-    run.report.requests = after.requests.saturating_sub(before.requests);
+    run.report.requests = after
+        .physical_requests()
+        .saturating_sub(before.physical_requests());
     run.report.from_cache = after.cache_hits.saturating_sub(before.cache_hits);
     run.report.note(format!(
         "{} schools committed; {} previously completed schools; {} published appointments",

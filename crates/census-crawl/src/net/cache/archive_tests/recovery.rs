@@ -11,7 +11,14 @@ fn interrupted_body_replacement_recovers_and_retains_all_three_verified_captures
     let original_meta = std::fs::read(&meta_path)?;
     write_cache(&body_path, &meta_path, b"source B", &second)?;
     std::fs::write(&meta_path, &original_meta)?;
-    check!(read_cache(&body_path, &meta_path)?.is_none());
+    check!(read_cache(
+        &body_path,
+        &meta_path,
+        &first.method,
+        &first.url,
+        &first.representation
+    )?
+    .is_none());
     write_cache(&body_path, &meta_path, b"source C", &third)?;
     assert_capture(root.path(), b"source A", &first)?;
     assert_capture(root.path(), b"source B", &second)?;
@@ -37,7 +44,14 @@ fn malformed_and_invalid_integrity_metadata_recovers_with_exact_untrusted_eviden
         let (body_path, meta_path) = cache_paths(root.path());
         std::fs::write(&body_path, b"old raw")?;
         std::fs::write(&meta_path, &encoded)?;
-        check!(read_cache(&body_path, &meta_path)?.is_none());
+        check!(read_cache(
+            &body_path,
+            &meta_path,
+            "GET",
+            "https://example.test/source",
+            &RepresentationHeaders::default()
+        )?
+        .is_none());
         let fresh = metadata(b"verified fresh");
         write_cache(&body_path, &meta_path, b"verified fresh", &fresh)?;
         assert_quarantined(
@@ -74,7 +88,14 @@ fn oversized_sparse_mutable_body_is_renamed_without_copying_or_false_archival() 
     drop(body);
     std::fs::write(&meta_path, &encoded)?;
     let original = std::fs::metadata(&body_path)?;
-    check!(read_cache(&body_path, &meta_path)?.is_none());
+    check!(read_cache(
+        &body_path,
+        &meta_path,
+        &old.method,
+        &old.url,
+        &old.representation
+    )?
+    .is_none());
     let fresh = metadata(b"fresh");
     write_cache(&body_path, &meta_path, b"fresh", &fresh)?;
     let bundles = quarantine_bundles(root.path())?;

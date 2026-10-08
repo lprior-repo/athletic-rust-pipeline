@@ -10,9 +10,12 @@ pub(super) const FETCH_FUNCTION: &str = r#"async function(spec) {
     globalThis.__adlaw_transport_completion = completion;
     const timer = setTimeout(() => controller.abort(), spec.timeout_ms);
     try {
-        const init = {method: spec.method, redirect: 'error', signal: controller.signal};
+        const init = {method: spec.method, redirect: 'error', signal: controller.signal, headers: {}};
+        for (const pair of spec.headers) {
+            init.headers[pair[0]] = pair[1];
+        }
         if (spec.body !== null) {
-            init.headers = {'content-type': 'application/json'};
+            init.headers['content-type'] = 'application/json';
             init.body = spec.body;
         }
         const response = await fetch(spec.url, init);

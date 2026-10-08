@@ -549,7 +549,9 @@ fn a_jurisdiction_is_terminal_only_when_every_stage_ran() {
         teams: true,
         rosters: true,
         meets: true,
+        results: true,
         owed_rosters: 0,
+        owed_results: 0,
     };
     assert!(complete.terminal());
     for partial in [
@@ -566,7 +568,15 @@ fn a_jurisdiction_is_terminal_only_when_every_stage_ran() {
             ..complete
         },
         JurisdictionStages {
+            results: false,
+            ..complete
+        },
+        JurisdictionStages {
             owed_rosters: 12,
+            ..complete
+        },
+        JurisdictionStages {
+            owed_results: 1,
             ..complete
         },
     ] {
@@ -580,7 +590,9 @@ fn unread_jurisdictions_count_as_owing() {
         teams: true,
         rosters: true,
         meets: true,
+        results: true,
         owed_rosters: 0,
+        owed_results: 0,
     };
     assert_eq!(owed_jurisdictions(&[terminal]), 0);
     assert_eq!(
@@ -590,7 +602,7 @@ fn unread_jurisdictions_count_as_owing() {
 }
 
 #[test]
-fn a_source_object_is_owed_until_it_accepts_an_observation_or_completes_a_window() {
+fn a_source_object_is_owed_until_it_completes_a_window() {
     let written = SourceObject {
         endpoint: "milesplit_wi".to_string(),
         observations: 1,
@@ -611,13 +623,16 @@ fn a_source_object_is_owed_until_it_accepts_an_observation_or_completes_a_window
         observations: 0,
         windows: 0,
     };
-    assert!(written.terminal());
+    assert!(
+        !written.terminal(),
+        "observations without a completed window are an unfinished walk"
+    );
     assert!(resumed.terminal());
     assert!(empty_read.terminal());
     assert!(!untouched.terminal());
     assert_eq!(
         owed_source_objects(&[written, resumed, empty_read, untouched]),
-        1
+        2
     );
 }
 
@@ -748,4 +763,28 @@ fn another_lanes_pending_case_is_not_a_cohort_decision() {
         "no evidence placed the venue in a jurisdiction",
     );
     assert_eq!(owed_cohort_decisions(&[venue, another_venue]), 0);
+}
+
+#[test]
+fn dur09_source_with_observations_only_is_not_terminal() {
+    let observations_only = SourceObject {
+        endpoint: "test".to_string(),
+        observations: 42,
+        windows: 0,
+    };
+    assert!(!observations_only.terminal());
+
+    let observations_and_windows = SourceObject {
+        endpoint: "test".to_string(),
+        observations: 42,
+        windows: 3,
+    };
+    assert!(observations_and_windows.terminal());
+
+    let windows_only = SourceObject {
+        endpoint: "test".to_string(),
+        observations: 0,
+        windows: 2,
+    };
+    assert!(windows_only.terminal());
 }

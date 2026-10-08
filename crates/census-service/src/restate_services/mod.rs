@@ -154,6 +154,25 @@ pub(super) use journaled::{journaled_today, journaled_today_workflow};
 
 use limits::census_service;
 
+pub const MAX_ENDPOINT_CONCURRENCY: usize = Semaphore::MAX_PERMITS;
+
+#[derive(Debug, thiserror::Error)]
+#[error("max-concurrent {value} is outside 1..={ceiling}")]
+pub struct ConcurrencyTooLarge {
+    pub value: usize,
+    pub ceiling: usize,
+}
+
+pub fn validate_concurrency(max_concurrent: usize) -> Result<usize, ConcurrencyTooLarge> {
+    if max_concurrent == 0 || max_concurrent > MAX_ENDPOINT_CONCURRENCY {
+        return Err(ConcurrencyTooLarge {
+            value: max_concurrent,
+            ceiling: MAX_ENDPOINT_CONCURRENCY,
+        });
+    }
+    Ok(max_concurrent)
+}
+
 #[tracing::instrument(skip_all, fields(max_concurrent))]
 pub fn build_endpoint(
     store: Arc<Store>,
@@ -161,9 +180,10 @@ pub fn build_endpoint(
     region: Arc<Spawner>,
     serves_lane: Option<BrowserSettings>,
     uses_lane: Option<BrowserLane>,
-) -> Endpoint {
+) -> Result<Endpoint, ConcurrencyTooLarge> {
+    let max_concurrent = validate_concurrency(max_concurrent)?;
     let clock: Arc<dyn Clock> = Arc::new(census_store::clock::SystemClock);
-    let load = Arc::new(Semaphore::new(max_concurrent.max(1)));
+    let load = Arc::new(Semaphore::new(max_concurrent));
     let jobs = Jobs::new(Arc::clone(&store), load, Arc::clone(&region));
     let jurisdiction = JurisdictionCensus::new(Arc::clone(&store), Arc::clone(&clock), uses_lane);
     let mut builder = Endpoint::builder()
@@ -193,7 +213,8 @@ pub fn build_endpoint(
     if let Some(settings) = serves_lane {
         builder = builder.bind(BrowserSession::new(settings, Arc::new(SystemClock)));
     }
-    builder.build()
+    let endpoint = builder.build();
+    Ok(endpoint)
 }
 
 #[cfg(test)]

@@ -14,8 +14,11 @@ use census_report::report::ReportError;
 use census_store::StoreError;
 
 use super::*;
-use crate::restate_services::ingest::credited_appended;
 use crate::restate_services::ingest::payload_digest;
+use crate::restate_services::ingest::{check_identifier, record_window};
+use crate::restate_services::wire::ingest::{
+    IngestState, MAX_OPERATION_ID_BYTES, MAX_WINDOW_LABEL_BYTES, WINDOW_LABEL_RING,
+};
 use crate::restate_services::plan::classify_access;
 use crate::restate_services::results_arms::ResultsStageOutcome;
 use census_report::report::Scope;
@@ -52,6 +55,53 @@ fn invalid_json() -> TestResult<serde_json::Error> {
         Err(error) => Ok(error),
         Ok(_) => Err("invalid JSON fixture parsed".into()),
     }
+}
+
+#[test]
+fn window_labels_are_counted_exactly_and_the_ring_stays_bounded() -> TestResult {
+    let mut state = IngestState::default();
+    for index in 0..WINDOW_LABEL_RING + 8 {
+        check!(record_window(&mut state, format!("w{index:04}")));
+    }
+    check!(eq; state.windows.len(), WINDOW_LABEL_RING);
+    check!(eq; state.completed_windows(), u64::try_from(WINDOW_LABEL_RING + 8)?);
+    check!(!record_window(&mut state, "w0008".to_string()));
+    check!(eq; state.completed_windows(), u64::try_from(WINDOW_LABEL_RING + 8)?);
+
+    let legacy = IngestState {
+        windows: vec!["w1".to_string(), "w2".to_string()],
+        ..IngestState::default()
+    };
+    check!(eq; legacy.completed_windows(), 2);
+
+    check!(check_identifier("window label", "w", MAX_WINDOW_LABEL_BYTES).is_ok());
+    check!(check_identifier(
+        "window label",
+        &"w".repeat(MAX_WINDOW_LABEL_BYTES + 1),
+        MAX_WINDOW_LABEL_BYTES
+    )
+    .is_err());
+    check!(check_identifier("operation id", &"o".repeat(MAX_OPERATION_ID_BYTES), MAX_OPERATION_ID_BYTES).is_ok());
+    check!(check_identifier(
+        "operation id",
+        &"o".repeat(MAX_OPERATION_ID_BYTES + 1),
+        MAX_OPERATION_ID_BYTES
+    )
+    .is_err());
+    Ok(())
+}
+
+#[test]
+fn endpoint_concurrency_is_validated_before_the_semaphore() -> TestResult {
+    check!(eq; validate_concurrency(1)?, 1);
+    check!(eq;
+        validate_concurrency(MAX_ENDPOINT_CONCURRENCY)?,
+        MAX_ENDPOINT_CONCURRENCY
+    );
+    for refused in [0, MAX_ENDPOINT_CONCURRENCY + 1, usize::MAX] {
+        check!(validate_concurrency(refused).is_err());
+    }
+    Ok(())
 }
 
 #[test]
@@ -92,6 +142,7 @@ fn cohort_label_names_the_reduction() {
 #[test]
 fn a_lost_commit_acknowledgement_still_counts_the_operations_rows_once() -> TestResult {
     let dir = tempfile::tempdir()?;
+    let endpoint = "wiaa_results_wi";
     let operation = "wiaa_results_wi:inv-1:2026-W39:performances:0:0";
     let rows = vec![
         serde_json::json!({"id": "perf:wi:1", "mark": "10.94"}),
@@ -100,12 +151,11 @@ fn a_lost_commit_acknowledgement_still_counts_the_operations_rows_once() -> Test
     let digest = payload_digest(Table::Performances, &rows).map_err(sdk_error)?;
 
     let store = Store::open(dir.path())?;
-    let mut state = IngestState::default();
     let attempt = apply_observations(&store, Table::Performances, &rows, operation, &digest)?;
-    let credited = credited_appended(&state, operation, attempt.receipt().appended);
-    check!(eq; credited, 2, "the writing attempt accounts both rows");
-    state.total_observations = state.total_observations.saturating_add(credited);
-    state.seen_operations.push(operation.to_string());
+    check!(attempt.written(), "{attempt:?}");
+    let first = store.credit_observations(endpoint, operation)?;
+    check!(eq; first.credited, 2, "the writing attempt accounts both rows");
+    check!(eq; first.total, 2);
 
     let replay = apply_observations(&store, Table::Performances, &rows, operation, &digest)?;
     check!(
@@ -113,25 +163,27 @@ fn a_lost_commit_acknowledgement_still_counts_the_operations_rows_once() -> Test
         "the retry must not append again: {replay:?}"
     );
     check!(eq; replay.appended(), 0, "the retry writes nothing new");
-    let credited = credited_appended(&state, operation, replay.receipt().appended);
-    check!(eq; credited, 0, "an accounted operation credits nothing twice");
-    state.total_observations = state.total_observations.saturating_add(credited);
+    let again = store.credit_observations(endpoint, operation)?;
+    check!(eq; again.credited, 0, "an accounted operation credits nothing twice");
     check!(eq;
-        state.total_observations,
+        again.total,
         2,
         "durable progress must match the rows the store holds"
     );
     check!(eq;
         store.walk_table(Table::Performances)?.rows,
-        state.total_observations,
+        again.total,
         "a completed source must not read as silent"
     );
 
-    let fresh = IngestState::default();
+    let fresh = IngestState {
+        total_observations: store.endpoint_credit(endpoint)?,
+        ..IngestState::default()
+    };
     check!(eq;
-        credited_appended(&fresh, operation, replay.receipt().appended),
+        fresh.total_observations,
         2,
-        "a lost acknowledgement credits the stable receipt on the next attempt"
+        "a state lost after crediting recovers the store's total rather than recounting the rows"
     );
     Ok(())
 }

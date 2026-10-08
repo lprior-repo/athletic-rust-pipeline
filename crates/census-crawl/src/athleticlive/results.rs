@@ -14,7 +14,9 @@ pub use manifest::{collect_manifest, ManifestOptions};
 
 use run::Run;
 
-const PHASE: &str = "athleticlive_results_v2";
+const RETIRED_PHASE: &str = "athleticlive_results_v2";
+pub(super) const CAPTURE_PHASE: &str = "athleticlive_results_capture_v1";
+pub(super) const EFFECT_PHASE: &str = "athleticlive_results_effect_v1";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StandingsCapture {
@@ -72,9 +74,15 @@ pub async fn collect(
     };
     let mut report = AdapterReport::new(SOURCE_ID, "result rows");
     let mut run = Run::new(ctx, target, options)?;
-    run.read_captures(options)?;
+    run.read_captures(ctx, options)?;
     let walk = run.close();
-    let counts = append(ctx, &walk.entities, &walk.schools, walk.entries)?;
+    let counts = append(
+        ctx,
+        &walk.entities,
+        &walk.schools,
+        walk.captured,
+        walk.receipts,
+    )?;
     finish(
         &mut report,
         RunSummary {
@@ -90,16 +98,29 @@ pub async fn collect(
 pub(super) struct WalkResult {
     pub(super) entities: DocumentEntities,
     pub(super) schools: Vec<CanonicalSchool>,
-    pub(super) entries: Vec<(String, serde_json::Value)>,
+    pub(super) captured: Vec<CapturedBody>,
+    pub(super) receipts: Vec<EffectReceipt>,
     pub(super) failures: Vec<String>,
     pub(super) resumed: usize,
+}
+
+pub(super) struct CapturedBody {
+    pub(super) digest: String,
+    pub(super) bytes: usize,
+    pub(super) body: String,
+}
+
+pub(super) struct EffectReceipt {
+    pub(super) key: String,
+    pub(super) payload: serde_json::Value,
 }
 
 fn append(
     ctx: &AdapterContext<'_>,
     entities: &DocumentEntities,
     schools: &[CanonicalSchool],
-    entries: Vec<(String, serde_json::Value)>,
+    captured: Vec<CapturedBody>,
+    receipts: Vec<EffectReceipt>,
 ) -> CrawlResult<EntityCounts> {
     let mut page = ctx.write_batch();
     page.append_many(Table::Meets, &entities.meets)?;
@@ -113,8 +134,18 @@ fn append(
     page.append_many(Table::Performances, &entities.performances)?;
     page.append_many(Table::ReviewCases, &entities.review_cases)?;
     page.append_many(Table::SourceObservations, &entities.source_observations)?;
-    for (path, payload) in &entries {
-        page.journal_done(PHASE, path, payload)?;
+    for entry in &captured {
+        if ctx.store.journal_contains(CAPTURE_PHASE, &entry.digest)? {
+            continue;
+        }
+        page.journal_done(
+            CAPTURE_PHASE,
+            &entry.digest,
+            &serde_json::json!({"bytes": entry.bytes, "body": entry.body}),
+        )?;
+    }
+    for receipt in &receipts {
+        page.journal_done(EFFECT_PHASE, &receipt.key, &receipt.payload)?;
     }
     page.commit()?;
     Ok(EntityCounts {

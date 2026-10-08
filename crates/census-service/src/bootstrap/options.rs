@@ -8,7 +8,7 @@ use athleticnet_browser::BrowserSettings;
 use url::Url;
 
 use super::error::BootstrapError;
-use super::{DEFAULT_DRAIN_TIMEOUT, DEFAULT_MAX_CONCURRENT};
+use super::{DEFAULT_DRAIN_TIMEOUT, DEFAULT_MAX_CONCURRENT, MAX_CONCURRENT_CEILING};
 
 const LANE_ORIGIN: &str = "https://www.athletic.net";
 
@@ -113,6 +113,12 @@ fn apply_flag<I: Iterator<Item = String>>(
                 .map_err(|source| BootstrapError::ConcurrencyNotANumber { raw, source })?;
             if parsed == 0 {
                 return Err(BootstrapError::ConcurrencyIsZero);
+            }
+            if parsed > MAX_CONCURRENT_CEILING {
+                return Err(BootstrapError::ConcurrencyTooLarge {
+                    value: parsed,
+                    ceiling: MAX_CONCURRENT_CEILING,
+                });
             }
             options.max_concurrent = parsed;
         }
