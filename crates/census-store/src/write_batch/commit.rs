@@ -86,11 +86,33 @@ impl<'store> StoreBatch<'store> {
         write_journal(journal, store, &mut batch);
         let generation = stage_generation(&pages, &replacements, store, &mut batch)?;
         write_replacements(replacements, store, &mut batch)?;
+        #[cfg(feature = "native-fault-injection")]
+        if let Some(Application::Written(receipt)) = &written {
+            let ordinal = store
+                .receipt_count()?
+                .checked_add(1)
+                .ok_or(StoreError::CounterOverflow)?;
+            crate::native_worker_boundary::pause(
+                crate::native_worker_boundary::Position::SourceBatchStagedBeforeCommit { ordinal },
+                &receipt.operation,
+                &receipt.digest,
+            )?;
+        }
         batch
             .durability(Some(PersistMode::SyncData))
             .commit()
             .map_err(|source| StoreError::Write { source })?;
         publish_marks(&pages, &reservations, generation, store)?;
+        #[cfg(feature = "native-fault-injection")]
+        if let Some(Application::Written(receipt)) = &written {
+            crate::native_worker_boundary::pause(
+                crate::native_worker_boundary::Position::SourceChunkCommittedBeforeNext {
+                    ordinal: store.receipt_count()?,
+                },
+                &receipt.operation,
+                &receipt.digest,
+            )?;
+        }
         Ok(written)
     }
 }

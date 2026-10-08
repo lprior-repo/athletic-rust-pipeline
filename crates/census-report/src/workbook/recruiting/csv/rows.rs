@@ -95,10 +95,10 @@ fn role_cells(contacts: &ScopedContacts<'_>, school: Option<&CanonicalSchool>) -
     [
         contacts
             .track_names()
-            .map_or_else(String::new, |value| value),
+            .map_or(String::new(), core::convert::identity),
         contacts
             .track_emails()
-            .map_or_else(String::new, |value| value),
+            .map_or(String::new(), core::convert::identity),
         xc.map_or_else(String::new, |coach| coach.name.clone()),
         optional_text(xc.and_then(|coach| coach.address())),
         director.map_or_else(String::new, |coach| coach.name.clone()),

@@ -6,6 +6,8 @@ use super::clock::{Clock, SystemClock};
 use super::meta;
 use super::{Store, StoreError, StoreResult};
 
+pub(crate) mod scan;
+
 pub const MAX_OPERATION_BYTES: usize = 512;
 
 pub const MAX_DIGEST_BYTES: usize = 256;

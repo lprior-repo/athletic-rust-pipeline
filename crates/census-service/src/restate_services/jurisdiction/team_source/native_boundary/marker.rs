@@ -7,7 +7,9 @@ use serde::{Deserialize, Serialize};
 use super::super::ledger;
 use super::config::validate_operation;
 use super::error::{artifact, io, BoundaryError};
-use super::files::{Directory, MAX_BYTES};
+use super::files::{Directory, MAX_MARKER_BYTES};
+
+mod encoding;
 
 pub(super) const BASENAME: &str = "teams-source-reservation-reached.json";
 pub(super) const PENDING: &str = "teams-source-reservation-reached.json.pending";
@@ -22,6 +24,8 @@ pub(super) struct Marker {
     attempt: u8,
     request_digest: String,
     observed_on: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    acknowledged_effects: Option<census_store::NativeEffectCheckpoint>,
 }
 
 impl Marker {
@@ -60,6 +64,25 @@ impl Marker {
             attempt,
             request_digest: identity.request_digest.clone(),
             observed_on: identity.observed_on.clone(),
+            acknowledged_effects: None,
+        })
+    }
+
+    pub(super) fn with_acknowledged_effects(
+        mut self,
+        checkpoint: census_store::NativeEffectCheckpoint,
+    ) -> Self {
+        self.schema = 2;
+        self.acknowledged_effects = Some(checkpoint);
+        self
+    }
+
+    pub(super) fn hold(&self, timeout: std::time::Duration) -> Result<(), BoundaryError> {
+        std::thread::sleep(timeout);
+        Err(BoundaryError::HoldExpired {
+            operation: self.operation.clone(),
+            attempt: self.attempt,
+            seconds: timeout.as_secs(),
         })
     }
 
@@ -70,16 +93,13 @@ impl Marker {
             return Err(artifact(&pending, "unexpected preexisting pending file"));
         }
         if directory.inspect(&target)?.is_some() {
-            let existing: Self = directory.read(&target)?;
+            let existing: Self = directory.read_marker(&target)?;
             if existing != *self {
                 return Err(BoundaryError::IdentityMismatch);
             }
             return sync_existing(directory, &target);
         }
-        let bytes = serde_json::to_vec(self)?;
-        if bytes.len() > MAX_BYTES {
-            return Err(artifact(&target, "encoded marker exceeds 4096 bytes"));
-        }
+        let bytes = encoding::encode(self, MAX_MARKER_BYTES)?;
         let mut file = directory.create_pending(&pending)?;
         let publication = publish_pending(directory, &mut file, &pending, &target, &bytes);
         let cleanup = directory

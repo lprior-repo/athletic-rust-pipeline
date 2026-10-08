@@ -32,6 +32,10 @@ mod inspect;
 mod journal;
 mod keys;
 mod meta;
+#[cfg(feature = "native-fault-injection")]
+mod native_effect_checkpoint;
+#[cfg(feature = "native-fault-injection")]
+mod native_worker_boundary;
 pub mod read;
 mod receipt;
 mod rows;
@@ -50,6 +54,8 @@ pub use format::{
 };
 pub use identity::MAX_IDENTITY_APPLICATION_BATCH;
 pub use inspect::StoreInspection;
+#[cfg(feature = "native-fault-injection")]
+pub use native_effect_checkpoint::{NativeEffectCheckpoint, NativeEffectRow};
 pub use read::{build_athlete_identity_projection, StoreSnapshot};
 pub use receipt::{Application, Credit, Pruned, Receipt, MAX_DIGEST_BYTES, MAX_OPERATION_BYTES};
 pub use rows::TableWalk;

@@ -1,15 +1,15 @@
-use super::super::map::{absorb, AbsorbedMeet, RowWriter};
 use super::super::parse::{parse_pdf, pdftotext};
-use super::super::{
-    artifact_format, school_year_for, ArchiveArtifact, ArtifactFormat, PARSE_VERSION,
-};
+use super::super::{artifact_format, ArchiveArtifact, ArtifactFormat};
 use super::ArtifactRun;
-use crate::context::PerformanceDateAssessment;
 use crate::net::FetchOutcome;
 use crate::result_file::ParsedMeet;
 use crate::{AdapterContext, AdapterReport, CrawlResult};
 use census_domain::model::{SourceRef, Sport};
-use serde_json::json;
+
+#[path = "run_artifacts/projection.rs"]
+mod projection;
+
+use projection::{record_parsed_artifact, ReadArtifact};
 
 pub(super) async fn process_artifact(
     ctx: &AdapterContext<'_>,
@@ -184,111 +184,6 @@ fn parse_pdf_artifact(
                 ));
             }
             None
-        }
-    }
-}
-
-struct ReadArtifact<'a> {
-    parsed: &'a ParsedMeet,
-    artifact: &'a ArchiveArtifact,
-    format: ArtifactFormat,
-    sport: Sport,
-    observed_on: &'a str,
-    date_assessment: PerformanceDateAssessment,
-    performance_as_of: chrono::NaiveDate,
-    projection_key: String,
-}
-
-fn record_parsed_artifact(
-    report: &mut AdapterReport,
-    run: &mut ArtifactRun,
-    read: ReadArtifact<'_>,
-) -> CrawlResult<()> {
-    let school_year = school_year_for(&read.parsed.date, read.sport, read.artifact.year);
-    if school_year.is_none() && !matches!(read.date_assessment, PerformanceDateAssessment::Future) {
-        report.unfinished.push(format!(
-            "{}: source date {:?} and archive season {} do not establish an academic period",
-            read.artifact.url, read.parsed.date, read.artifact.year
-        ));
-    }
-    run.stats.artifacts_parsed = run.stats.artifacts_parsed.saturating_add(1);
-    let parsed_formats = run
-        .stats
-        .formats
-        .entry(read.format.as_str().to_string())
-        .or_default();
-    *parsed_formats = parsed_formats.saturating_add(1);
-    let seasons = run.stats.seasons.entry(read.artifact.year).or_default();
-    *seasons = seasons.saturating_add(1);
-    let rows = match absorb(
-        AbsorbedMeet {
-            parsed: read.parsed,
-            artifact: read.artifact,
-            sport: read.sport,
-            school_year,
-            observed_on: read.observed_on,
-            performance_as_of: read.performance_as_of,
-            date_assessment: read.date_assessment,
-        },
-        RowWriter {
-            index: &run.index,
-            resolved: &mut run.resolved,
-            stats: &mut run.stats,
-            accumulator: &mut run.accumulated,
-        },
-    ) {
-        Ok(rows) => rows,
-        Err(error) => {
-            run.stats.artifacts_parse_failed = run.stats.artifacts_parse_failed.saturating_add(1);
-            report.errors = report.errors.saturating_add(1);
-            report.note(format!(
-                "{}: {error}; projection remains unfinished",
-                read.artifact.url
-            ));
-            report
-                .unfinished
-                .push(format!("{}: {error}", read.artifact.url));
-            return Ok(());
-        }
-    };
-    if !note_date_assessment(report, &read)
-        || (school_year.is_none()
-            && matches!(read.date_assessment, PerformanceDateAssessment::Admitted))
-    {
-        return Ok(());
-    }
-    run.pending.push((
-        read.projection_key,
-        json!({
-            "url": read.artifact.url,
-            "parser": PARSE_VERSION,
-            "format": read.format.as_str(),
-            "year": read.artifact.year,
-            "parsed": true,
-            "meet": read.parsed.name,
-            "date": read.parsed.date,
-            "rows": rows,
-            "performance_as_of": read.performance_as_of,
-            "date_assessment": format!("{:?}", read.date_assessment),
-        }),
-    ));
-    Ok(())
-}
-
-fn note_date_assessment(report: &mut AdapterReport, read: &ReadArtifact<'_>) -> bool {
-    match read.date_assessment {
-        PerformanceDateAssessment::Admitted => true,
-        PerformanceDateAssessment::Future => {
-            report.note(format!("{}: published date {:?} is after performance snapshot {}; capture and source metadata retained, performances out of scope",
-                read.artifact.url, read.parsed.date, read.performance_as_of));
-            true
-        }
-        PerformanceDateAssessment::Unknown => {
-            let gap = format!("{}: published date {:?} cannot be compared to performance snapshot {}; raw capture retained for temporal review",
-                read.artifact.url, read.parsed.date, read.performance_as_of);
-            report.note(&gap);
-            report.unfinished.push(gap);
-            false
         }
     }
 }

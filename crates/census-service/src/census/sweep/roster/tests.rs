@@ -276,7 +276,14 @@ async fn completion_requires_scoped_capture_without_refusal_quarantine_or_reject
             }])?,
         ),
         ("capture", serde_json::Value::Null),
-        ("year", serde_json::json!(2026)),
+        (
+            "year",
+            serde_json::json!(run
+                .school_year
+                .get()
+                .checked_sub(1)
+                .ok_or("fixture year underflow")?),
+        ),
     ] {
         let previous = payload
             .as_object_mut()

@@ -19,7 +19,7 @@ fn outcome() -> FetchOutcome {
 
 fn stats() -> Result<FetchStats> {
     Ok(FetchStats {
-        requests: 1,
+        requests: 2,
         bytes_downloaded: u64::try_from(HTML.len())?,
         ..FetchStats::default()
     })
@@ -154,5 +154,18 @@ fn acquisition_root_cannot_alias_an_endpoint_database() -> Result<()> {
     let other = tempfile::tempdir()?;
     std::os::unix::fs::symlink(other.path(), acquisition.path().join("fjall"))?;
     assert!(persistence::ensure_owned_directories(acquisition.path()).is_err());
+    Ok(())
+}
+
+#[test]
+fn fresh_directory_body_with_policy_traffic_is_a_physical_acquisition() -> Result<()> {
+    let capture = outcome();
+    let traffic = stats()?;
+    assert_eq!(checks::capture(&capture, &traffic)?, (1, 1));
+    let additional = FetchStats {
+        requests: 3,
+        ..traffic
+    };
+    assert!(checks::capture(&capture, &additional).is_err());
     Ok(())
 }

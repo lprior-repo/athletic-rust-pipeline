@@ -65,15 +65,17 @@ fn project_rows(
     context: &MeetContext<'_>,
     owned: &OwnedResultSet<'_>,
 ) -> CrawlResult<usize> {
-    owned.indices.iter().fold(Ok(0usize), |outcome, index| {
+    let mut outcome = Ok(0usize);
+    for index in owned.indices {
         let projected = match owned.page.rows.get(*index) {
             Some(row) => record_row(writer, context, row),
             None => Err(crate::CrawlError::Invariant {
                 detail: "owned result-set index does not address a retained source row".into(),
             }),
         };
-        projection_outcome(outcome, projected)
-    })
+        outcome = projection_outcome(outcome, projected);
+    }
+    outcome
 }
 
 fn projection_outcome(

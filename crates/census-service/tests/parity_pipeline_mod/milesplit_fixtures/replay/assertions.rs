@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use census_crawl::milesplit;
 use census_domain::model::{
     CanonicalAthlete, CanonicalMeet, CanonicalPerformance, CanonicalSchool, CentiMetres, EventKind,
-    ExactSeconds, Mark, SourceObservation, Sport,
+    ExactSeconds, Gender, Mark, SourceNamespace, SourceObservation, Sport,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -19,6 +19,7 @@ pub(super) fn assert_retention(store: &Store, body: &[u8], relay: bool) -> Resul
     Vec::new());
     check!(eq; store.scan::<CanonicalSchool>(Table::Schools)?, Vec::new());
     assert_observations(store, relay)?;
+    assert_physical_observations(store, relay)?;
     let page = super::super::owned_page(body)?;
     check!(eq; page.completeness, milesplit::OwnedCompleteness::Unknown);
     check!(!page.ownership_complete());
@@ -65,6 +66,64 @@ fn assert_observations(store: &Store, relay: bool) -> Result<()> {
         ])
     };
     check!(eq; actual, expected);
+    Ok(())
+}
+
+fn assert_physical_observations(store: &Store, relay: bool) -> Result<()> {
+    let mut rows = Vec::new();
+    store
+        .snapshot()
+        .for_each_observation(Table::SourceObservations, |row| {
+            rows.push(row);
+            Ok(())
+        })?;
+    check!(eq; rows.len(), if relay { 0 } else { 3 });
+    let mut keys = BTreeSet::new();
+    for row in rows {
+        let SourceObservation::Athlete(row) = row else {
+            anyhow::bail!("retained athlete capture fabricated a school observation");
+        };
+        check!(eq; row.namespace, SourceNamespace::MilesplitAthlete);
+        check!(eq; row.observed_on, ACQUIRED_AT);
+        check!(eq; row.gender, Gender::Girls);
+        check!(eq; row.observed_grade, None);
+        let (name, school, profile) = match row.source_athlete_id.as_str() {
+            "14222592" => (
+                "Adelyn Spann",
+                None,
+                "https://www.milesplit.com/athletes/14222592-adelyn-spann",
+            ),
+            "11357806" => (
+                "Payton Ousley",
+                Some("Charles Henderson"),
+                "https://www.milesplit.com/athletes/11357806-payton-ousley",
+            ),
+            other => anyhow::bail!("unexpected native participant {other}"),
+        };
+        check!(eq; row.observed_name, name);
+        check!(eq; row.observed_school.as_deref(), school);
+        check!(eq; row.profile_url.as_deref(), Some(profile));
+        check!(keys.insert((row.source_athlete_id, row.source_row_key)));
+    }
+    let expected = if relay {
+        BTreeSet::new()
+    } else {
+        BTreeSet::from([
+            (
+                "14222592".to_string(),
+                "milesplit_result:201782263".to_string(),
+            ),
+            (
+                "14222592".to_string(),
+                "milesplit_result:201782277".to_string(),
+            ),
+            (
+                "11357806".to_string(),
+                "milesplit_result:201782806".to_string(),
+            ),
+        ])
+    };
+    check!(eq; keys, expected);
     Ok(())
 }
 

@@ -121,13 +121,11 @@ fn validate_row(row: &str, locator: &str) -> CrawlResult<()> {
     }
     let sport = super::parse_coach_name(super::extract_td_text(row, 0));
     let role = super::parse_coach_name(super::extract_td_text(row, 1));
-    if parse_sport_label(&sport).is_some() && role.contains("Head Coach") {
-        if cells < 4 {
-            return Err(malformed(
-                locator,
-                "target appointment row lacks published staff columns",
-            ));
-        }
+    if parse_sport_label(&sport).is_some() && role.contains("Head Coach") && cells < 4 {
+        return Err(malformed(
+            locator,
+            "target appointment row lacks published staff columns",
+        ));
     }
     Ok(())
 }

@@ -20,24 +20,15 @@ pub(in crate::athleticnet) fn absorb_meet(
     results: &AllResults,
     metadata: Option<&EventMetadata>,
     source: &SourceRef,
-    timing: (&str, chrono::NaiveDate),
+    timing: (&str, &str, chrono::NaiveDate),
     index: &SchoolIndex,
     resolved: &mut HashMap<String, SchoolId>,
     stats: &mut Stats,
     accumulated: &mut Accumulator,
 ) -> crate::CrawlResult<(u64, MeetStats)> {
     let mut counts = MeetStats::default();
-    let (observed_on, performance_as_of) = timing;
-    let date = meet_date(&meet.meet.date).map_or(meet.meet.date.as_str(), |value| value);
-    if matches!(
-        crate::context::assess_performance_date(performance_as_of, date),
-        crate::context::PerformanceDateAssessment::Unknown
-    ) {
-        return Err(crate::CrawlError::PerformanceDateUnknown {
-            published: meet.meet.date.chars().take(64).collect(),
-            as_of: performance_as_of,
-        });
-    }
+    let (meet_observed_on, observed_on, performance_as_of) = timing;
+    require_meet_date(meet, performance_as_of)?;
     let Some(place) = place_meet(meet, &mut counts) else {
         return Ok((0, counts));
     };
@@ -54,7 +45,7 @@ pub(in crate::athleticnet) fn absorb_meet(
         &place.date,
         sport,
         source,
-        observed_on,
+        meet_observed_on,
         accumulated,
     );
     let mut ctx = MeetCtx {
@@ -78,6 +69,23 @@ pub(in crate::athleticnet) fn absorb_meet(
     counts.meets_pulled = counts.meets_pulled.saturating_add(1);
     let stored = counts.stored();
     Ok((stored, counts))
+}
+
+fn require_meet_date(
+    meet: &MeetData,
+    performance_as_of: chrono::NaiveDate,
+) -> crate::CrawlResult<()> {
+    let date = meet_date(&meet.meet.date).map_or(meet.meet.date.as_str(), |value| value);
+    if matches!(
+        crate::context::assess_performance_date(performance_as_of, date),
+        crate::context::PerformanceDateAssessment::Unknown
+    ) {
+        return Err(crate::CrawlError::PerformanceDateUnknown {
+            published: meet.meet.date.chars().take(64).collect(),
+            as_of: performance_as_of,
+        });
+    }
+    Ok(())
 }
 
 fn meet_state(meet: &MeetData) -> Option<UsJurisdiction> {
@@ -151,14 +159,14 @@ struct MeetCtx<'a> {
 }
 
 fn kind_of(event: &FlatEvent) -> EventKind {
-    [&event.label, &event.short]
+    let known = [&event.label, &event.short]
         .into_iter()
         .map(|label| EventKind::from_source_label(label))
-        .find(|kind| !matches!(kind, EventKind::Unmapped { .. }))
-        .map_or_else(
-            || EventKind::from_source_label(&event.label),
-            core::convert::identity,
-        )
+        .find(|kind| !matches!(kind, EventKind::Unmapped { .. }));
+    match known {
+        Some(kind) => kind,
+        None => EventKind::from_source_label(&event.label),
+    }
 }
 
 impl<'a> MeetCtx<'a> {
@@ -175,10 +183,12 @@ impl MeetCtx<'_> {
         legs: &BTreeMap<i64, Vec<&PublishedLeg>>,
         divisions: &HashMap<i64, &str>,
     ) -> crate::CrawlResult<()> {
-        results.blocks.iter().fold(Ok(()), |outcome, event| {
+        let mut outcome = Ok(());
+        for event in &results.blocks {
             let projected = self.walk_event(event, legs, divisions);
-            outcome.and(projected)
-        })
+            outcome = outcome.and(projected);
+        }
+        outcome
     }
 
     fn walk_event(
@@ -212,15 +222,17 @@ impl MeetCtx<'_> {
                 })
             }),
         };
-        event.results.iter().fold(Ok(()), |outcome, row| {
+        let mut outcome = Ok(());
+        for row in &event.results {
             self.counts.rows_seen = self.counts.rows_seen.saturating_add(1);
             let projected = if kind.is_relay() || legs.contains_key(&row.result_id) {
                 self.relay_row(&block, row, legs)
             } else {
                 self.individual_row(&block, row)
             };
-            outcome.and(projected)
-        })
+            outcome = outcome.and(projected);
+        }
+        outcome
     }
 
     fn count_metadata(&mut self, kind: &EventKind, event_id: i64) {

@@ -6,36 +6,7 @@ use census_store::Table;
 impl Run<'_> {
     pub(super) fn write(&mut self, projection: Projection<'_>) -> CrawlResult<()> {
         let key = projection_key(&projection);
-        if let Some(capture) = &projection.detail {
-            crate::coach_directories::persist_staff_capture(
-                self.ctx,
-                &projection.school,
-                capture,
-                &projection.coaches,
-                projection.detail_outcome.clone(),
-            )?;
-        } else if projection.detail_outcome == super::Outcome::Unattempted {
-            crate::coach_directories::persist_unattempted(self.ctx, &projection.school)?;
-        } else {
-            crate::coach_directories::persist_staff_attempt(
-                self.ctx,
-                &projection.school,
-                census_domain::model::ContactResearchAttempt {
-                    locator: projection
-                        .school
-                        .source_identities
-                        .first()
-                        .and_then(|owner| owner.url.clone())
-                        .ok_or_else(|| crate::CrawlError::Invariant {
-                            detail: "PIAA school has no details locator".to_owned(),
-                        })?,
-                    acquired_at: crate::net::now_iso8601(),
-                    source_sha256: None,
-                    outcome: projection.detail_outcome.clone(),
-                    reason: "details acquisition failed".to_owned(),
-                },
-            )?;
-        }
+        self.record_contact_research(&projection)?;
         let operation = format!("{JOURNAL}:{key}");
         if self
             .ctx
@@ -74,6 +45,40 @@ impl Run<'_> {
             .with_email
             .checked_add(emails)
             .ok_or_else(counter_error)?;
+        Ok(())
+    }
+
+    fn record_contact_research(&self, projection: &Projection<'_>) -> CrawlResult<()> {
+        if let Some(capture) = &projection.detail {
+            crate::coach_directories::persist_staff_capture(
+                self.ctx,
+                &projection.school,
+                capture,
+                &projection.coaches,
+                projection.detail_outcome.clone(),
+            )?;
+        } else if projection.detail_outcome == super::Outcome::Unattempted {
+            crate::coach_directories::persist_unattempted(self.ctx, &projection.school)?;
+        } else {
+            crate::coach_directories::persist_staff_attempt(
+                self.ctx,
+                &projection.school,
+                census_domain::model::ContactResearchAttempt {
+                    locator: projection
+                        .school
+                        .source_identities
+                        .first()
+                        .and_then(|owner| owner.url.clone())
+                        .ok_or_else(|| crate::CrawlError::Invariant {
+                            detail: "PIAA school has no details locator".to_owned(),
+                        })?,
+                    acquired_at: crate::net::now_iso8601(),
+                    source_sha256: None,
+                    outcome: projection.detail_outcome.clone(),
+                    reason: "details acquisition failed".to_owned(),
+                },
+            )?;
+        }
         Ok(())
     }
 }

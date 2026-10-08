@@ -63,7 +63,9 @@ impl FixtureRun {
     }
 
     fn coaches(&self) -> anyhow::Result<Vec<CanonicalCoach>> {
-        Ok(self.store.scan(Table::Coaches)?)
+        let mut coaches = self.store.scan::<CanonicalCoach>(Table::Coaches)?;
+        coaches.sort_by(|left, right| left.id.cmp(&right.id));
+        Ok(coaches)
     }
 }
 
@@ -112,6 +114,7 @@ fn retained_page_collects_source_owned_postal_claims_with_capture_freshness(
             let schools = run.schools()?;
             let school = schools.first().ok_or_else(|| anyhow::anyhow!("school"))?;
             check!(eq; school.name, "Page High School");
+            check!(eq; school.state, Some(census_domain::UsJurisdiction::Tennessee));
             check!(eq; school.city.as_deref(), Some("Franklin"));
             check!(eq;
                 school
@@ -119,6 +122,10 @@ fn retained_page_collects_source_owned_postal_claims_with_capture_freshness(
                     .first()
                     .map(|owner| owner.id.as_str()),
                 Some("157")
+            );
+            check!(eq;
+                school.source_identities.first().map(|owner| &owner.namespace),
+                Some(&census_domain::model::SourceNamespace::association_school("tssaa"))
             );
             check!(eq;
                 school
@@ -135,13 +142,19 @@ fn retained_page_collects_source_owned_postal_claims_with_capture_freshness(
                     .evidence
                     .iter()
                     .all(|evidence| evidence.observed_on == CAPTURED)));
-            check!(eq;
-                run.store.journal_keys(super::super::collect::JOURNAL)?,
-                ["TN:157".to_string()].into_iter().collect()
-            );
+            check!(eq; report.disposition, crate::CollectionDisposition::Complete);
+            check!(eq; report.unfinished, Vec::<String>::new());
+            let completions = run.store.journal_payloads(super::super::collect::JOURNAL)?;
+            assert_completion(&completions, school)?;
             let replay = run.run(&page_options(), None).await?;
             check!(eq; (replay.rows, replay.errors), (0, 0));
             check!(eq; run.coaches()?, coaches);
+            check!(eq; run.schools()?, schools);
+            check!(eq; replay.disposition, crate::CollectionDisposition::Complete);
+            check!(eq;
+                run.store.journal_payloads(super::super::collect::JOURNAL)?,
+                completions
+            );
             Ok(())
         })
 }
@@ -173,6 +186,8 @@ fn assert_postal_claims(school: &CanonicalSchool) -> Result<(), Box<dyn std::err
                 Some(street)
             );
             check!(eq; claim.address().zip().map(|zip| zip.code()), Some("37064"));
+            check!(eq; claim.address().city().map(|city| city.as_str()), Some("Franklin"));
+            check!(eq; claim.address().state(), Some(census_domain::UsJurisdiction::Tennessee));
             check!(eq; claim.owner().id, "157");
             check!(eq; claim.evidence().observed_on, CAPTURED);
             check!(eq; claim.capture_sha256(), digest);
@@ -184,5 +199,23 @@ fn assert_postal_claims(school: &CanonicalSchool) -> Result<(), Box<dyn std::err
         })
         .collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
     check!(eq; kinds, vec!["Mailing", "Physical", "Shipping"]);
+    Ok(())
+}
+
+fn assert_completion(
+    completions: &[serde_json::Value],
+    school: &CanonicalSchool,
+) -> anyhow::Result<()> {
+    check!(eq; completions.len(), 1);
+    let receipt = completions
+        .first()
+        .ok_or_else(|| anyhow::anyhow!("source projection completion"))?;
+    check!(eq; receipt["complete"], true);
+    check!(eq; receipt["school_id"], "157");
+    check!(eq; receipt["school"], school.name);
+    check!(eq; receipt["capture_url"], format!("{DIRECTORY_URL}?id=157"));
+    check!(eq; receipt["capture_sha256"], content_digest(RETAINED));
+    check!(eq; receipt["captured_at"], CAPTURED);
+    check!(eq; receipt["school_year"], 2026);
     Ok(())
 }

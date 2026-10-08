@@ -5,7 +5,6 @@ use std::collections::BTreeMap;
 
 pub(super) const CAPTURE_EXPORT_WORKLOAD: &str =
     "pipeline/capture_export/captured_live_wiaa_co2027";
-pub(super) const CAPTURE_EXPORT_TIMING_SCOPE: &str = "capture-publication-independent-readback/v1";
 const REQUIRED_WORKLOADS: &[&str] = &[CAPTURE_EXPORT_WORKLOAD];
 
 pub fn check_environment(baseline: &PerfBaseline) -> Result<()> {
@@ -184,11 +183,7 @@ pub(super) fn validate_measurement(
             bail!("{source} {id}: {label} must be positive");
         }
     }
-    if id == CAPTURE_EXPORT_WORKLOAD
-        && measurement.timing_scope.as_deref() != Some(CAPTURE_EXPORT_TIMING_SCOPE)
-    {
-        bail!("{source} {id}: incompatible timing scope; required {CAPTURE_EXPORT_TIMING_SCOPE}");
-    }
+    super::scope::validate(id, measurement.timing_scope.as_deref(), source)?;
     Ok(())
 }
 

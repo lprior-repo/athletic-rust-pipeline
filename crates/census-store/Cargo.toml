@@ -13,6 +13,7 @@ workspace = true
 # `cfg(all(feature = "loom", test))`, so a default build neither compiles the dependency nor the
 # model; run it with `cargo test -p census-store --features loom --lib`.
 loom = ["dep:loom"]
+native-fault-injection = []
 
 [dependencies]
 census-domain = { path = "../census-domain" }

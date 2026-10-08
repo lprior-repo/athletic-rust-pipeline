@@ -36,7 +36,7 @@ impl Candidate<'_> {
             result_url: scope
                 .primary_evidence(performance)
                 .and_then(|evidence| evidence.source.url.clone())
-                .map_or_else(String::new, core::convert::identity),
+                .map_or(String::new(), core::convert::identity),
             performance_id: performance.id.clone(),
             source_athlete: owner_of(performance, self.athlete)
                 .map_or_else(String::new, |identity| identity.id.clone()),

@@ -124,6 +124,14 @@ impl<'s> DerivedStage<'s> {
     pub fn publish(mut self, operation: &str, digest: &str) -> StoreResult<Publication> {
         receipt::refuse_over_operation(operation, digest)?;
         self.flush()?;
+        #[cfg(feature = "native-fault-injection")]
+        crate::native_worker_boundary::pause(
+            crate::native_worker_boundary::Position::DerivedBatchStagedBeforePublish {
+                generation: self.generation,
+            },
+            operation,
+            digest,
+        )?;
         let exclusivity = self.exclusivity.take();
         let _appends = self.store.lock_appends();
         self.refuse_moved_inputs()?;

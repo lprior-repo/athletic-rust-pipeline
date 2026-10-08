@@ -39,15 +39,7 @@ pub(super) async fn collect(
         .try_fold(
             (outcome, Vec::new()),
             |(mut outcome, mut failures), source| async move {
-                let input = TeamsSourceRequest {
-                    jurisdiction: request.clone(),
-                    source: source.clone(),
-                    observed_on: request
-                        .observed_on
-                        .as_deref()
-                        .map_or(at, |value| value)
-                        .to_string(),
-                };
+                let input = source_request(request, source, at);
                 retain(
                     source,
                     recovery::invoke(ctx, input).await,
@@ -68,6 +60,18 @@ pub(super) async fn collect(
             failures,
         })
     })
+}
+
+fn source_request(request: &JurisdictionRequest, source: &str, at: &str) -> TeamsSourceRequest {
+    TeamsSourceRequest {
+        jurisdiction: request.clone(),
+        source: source.to_string(),
+        observed_on: request
+            .observed_on
+            .as_deref()
+            .map_or(at, |value| value)
+            .to_string(),
+    }
 }
 
 pub(super) fn retain(

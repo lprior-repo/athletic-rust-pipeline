@@ -16,10 +16,10 @@ impl Writer<'_, '_> {
             )?;
         }
         if !self.window.complete && self.stats.failure_count == self.failures_before {
-            let detail = self.input.acquired.failure().map_or_else(
-                || "source-owned observations retained unresolved; exact provider school, published cohort, name or sport metadata unavailable".into(),
-                |reason| reason,
-            );
+            let detail = match self.input.acquired.failure() {
+                Some(reason) => reason,
+                None => "source-owned observations retained unresolved; exact provider school, published cohort, name or sport metadata unavailable".into(),
+            };
             self.stats
                 .failure(format!("{}: {detail}", self.input.reference.url))?;
         }
@@ -53,7 +53,7 @@ impl Writer<'_, '_> {
                 requested,
                 limit,
             } => Err(CrawlError::Resource {
-                resource: *resource,
+                resource,
                 requested: *requested,
                 limit: *limit,
             }),

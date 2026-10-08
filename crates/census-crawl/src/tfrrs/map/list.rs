@@ -35,17 +35,15 @@ impl<'a> Absorb<'a> {
         context: &ListContext<'_>,
         page: &ParsedList,
     ) -> crate::CrawlResult<()> {
-        page.sections.iter().fold(Ok(()), |outcome, section| {
+        let mut outcome = Ok(());
+        for section in &page.sections {
             self.stats.sections = self.stats.sections.saturating_add(1);
-            section
-                .rows
-                .iter()
-                .enumerate()
-                .fold(outcome, |outcome, (ordinal, row)| {
-                    let projected = self.absorb_row(context, section, row, ordinal);
-                    outcome.and(projected)
-                })
-        })
+            for (ordinal, row) in section.rows.iter().enumerate() {
+                let projected = self.absorb_row(context, section, row, ordinal);
+                outcome = outcome.and(projected);
+            }
+        }
+        outcome
     }
 
     fn absorb_row(

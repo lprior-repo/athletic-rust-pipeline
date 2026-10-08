@@ -1,4 +1,4 @@
-use super::super::imports::{self, Catalog, Definition};
+use super::super::imports::{self, Catalog, Definition, Origin};
 
 pub(super) fn lookup(
     catalog: &Catalog,
@@ -27,4 +27,35 @@ pub(super) fn lookup(
         scope = parent;
     }
     Err("macro parent definition traversal budget exhausted")
+}
+
+pub(super) fn origin(
+    catalog: &Catalog,
+    request: &super::Request,
+    name: &str,
+) -> Option<Option<Origin>> {
+    let definition = if request.parents {
+        lookup(catalog, request.scope, name, request.at).ok()?
+    } else {
+        catalog
+            .scopes
+            .get(request.scope)?
+            .macros
+            .get(name)
+            .and_then(|definitions| {
+                definitions
+                    .iter()
+                    .rev()
+                    .find(|definition| definition.exported)
+            })
+            .copied()
+    };
+    Some(definition.map(|definition| {
+        Origin::Project(
+            definition.owner,
+            name.to_string(),
+            imports::position(definition.at),
+            definition.measured,
+        )
+    }))
 }

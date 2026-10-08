@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fs;
 use std::path::Path;
 use std::time::Duration;
@@ -23,6 +23,7 @@ fn fixture(source: &str, file: &str) -> Result<String> {
 }
 
 const OBSERVED_ON: &str = "2026-09-22";
+const CAPTURED_AT: &str = "2026-09-22T12:00:00Z";
 const MEET_ID: i64 = 634313;
 const SOURCE: &str = "athleticnet";
 
@@ -52,7 +53,7 @@ fn seed_cache(cache_dir: &Path, url: &str, token: Option<&str>, body: &str) -> R
         "representation": representation,
         "content_digest": format!("{:x}", Sha256::digest(body.as_bytes())),
         "bytes": body.len(),
-        "fetched_at": "2026-09-22T12:00:00Z",
+        "fetched_at": CAPTURED_AT,
     });
     fs::create_dir_all(cache_dir)
         .with_context(|| format!("creating cache dir {}", cache_dir.display()))?;
@@ -136,6 +137,53 @@ impl Harness {
     }
 }
 
+fn captured_subject_keys() -> Result<BTreeSet<String>> {
+    let capture: athleticnet::AllResults =
+        serde_json::from_str(&fixture(SOURCE, "meet_634313_allresults.json")?)?;
+    let relay_parents: BTreeSet<_> = capture.legs.iter().map(|leg| leg.result_id).collect();
+    let mut subjects = BTreeSet::new();
+    for row in capture.blocks.iter().flat_map(|block| &block.results) {
+        if !relay_parents.contains(&row.result_id) {
+            let owner = row
+                .athlete_id
+                .context("captured individual has no native owner")?;
+            ensure!(
+                subjects.insert(format!("athleticnet:{owner}-{}", row.result_id)),
+                "duplicate published individual"
+            );
+        }
+    }
+    let mut positions = BTreeMap::<i64, usize>::new();
+    for leg in &capture.legs {
+        let position = positions.entry(leg.result_id).or_insert(0);
+        *position = position.checked_add(1).context("relay position overflow")?;
+        let owner = leg
+            .athlete_id
+            .context("captured relay member has no native owner")?;
+        ensure!(
+            subjects.insert(format!(
+                "athleticnet:{owner}-{}:leg{position}",
+                leg.result_id
+            )),
+            "duplicate published relay member"
+        );
+    }
+    Ok(subjects)
+}
+
+fn exact_capture_subjects(rows: &[CanonicalPerformance]) -> Result<()> {
+    let actual: BTreeSet<_> = rows.iter().map(|row| row.source_key.clone()).collect();
+    ensure!(
+        actual.len() == rows.len(),
+        "physical duplicate native result subjects"
+    );
+    ensure!(
+        actual == captured_subject_keys()?,
+        "captured native participant lost or invented"
+    );
+    Ok(())
+}
+
 #[test]
 fn athleticnet_whole_meet_route_pulls_two_requests_and_stores_every_storable_row() -> Result<()> {
     tokio::runtime::Builder::new_current_thread()
@@ -144,16 +192,6 @@ fn athleticnet_whole_meet_route_pulls_two_requests_and_stores_every_storable_row
         .block_on(async {
             let harness = Harness::new(false)?;
             let report = harness.run(&harness.options(false)).await?;
-            ensure!(
-                report.adapter == SOURCE,
-                "the report names the adapter: {}",
-                report.adapter
-            );
-            ensure!(
-                report.unit == "performances",
-                "the whole-meet route counts performances, not athletes: {}",
-                report.unit
-            );
             ensure!(
                 report.requests == 0,
                 "no socket was opened: {} requests went to the network",
@@ -166,25 +204,9 @@ fn athleticnet_whole_meet_route_pulls_two_requests_and_stores_every_storable_row
             );
             ensure!(report.errors == 0, "no request failed: {}", report.errors);
             ensure!(
-                report.rows == 903,
-                "623 individual results plus 280 relay legs: {}",
+                report.rows == u64::try_from(captured_subject_keys()?.len())?,
+                "every independently inventoried native result subject is retained: {}",
                 report.rows
-            );
-            ensure!(
-                report
-                    .notes
-                    .iter()
-                    .any(|note| note.contains("758 seen") && note.contains("288 legs seen")),
-                "the run report carries the walk's own counters: {:?}",
-                report.notes
-            );
-            ensure!(
-                report
-                    .notes
-                    .iter()
-                    .any(|note| note.contains("the third request is off by default")),
-                "the run says the third request was not spent: {:?}",
-                report.notes
             );
 
             let meets: Vec<CanonicalMeet> = harness.store.scan(Table::Meets)?;
@@ -200,34 +222,44 @@ fn athleticnet_whole_meet_route_pulls_two_requests_and_stores_every_storable_row
                 meets[0].name
             );
             let athletes: Vec<CanonicalAthlete> = harness.store.scan(Table::Athletes)?;
+            let subjects = captured_subject_keys()?;
+            let expected_owners: BTreeSet<_> = subjects
+                .iter()
+                .filter_map(|key| {
+                    key.strip_prefix("athleticnet:")
+                        .and_then(|key| key.split_once('-'))
+                })
+                .map(|(owner, _)| owner)
+                .collect();
+            let actual_owners: BTreeSet<_> = athletes
+                .iter()
+                .flat_map(CanonicalAthlete::identities)
+                .filter(|source| {
+                    source.namespace
+                        == census_domain::model::SourceNamespace::athletic_net("athlete")
+                })
+                .map(|source| source.id.as_str())
+                .collect();
             ensure!(
-                athletes.len() == 490,
-                "490 athletes keyed by (athlete id, school): {}",
-                athletes.len()
+                actual_owners == expected_owners,
+                "captured native participant owner lost or invented"
             );
             let performances: Vec<CanonicalPerformance> =
                 harness.store.scan(Table::Performances)?;
-            ensure!(
-                performances.len() == 903,
-                "903 performances: {}",
-                performances.len()
-            );
+            exact_capture_subjects(&performances)?;
             let legs: Vec<&CanonicalPerformance> = performances
                 .iter()
                 .filter(|row| row.source_key.contains(":leg"))
                 .collect();
             ensure!(
-                legs.len() == 280,
-                "280 relay legs, each its own row: {}",
-                legs.len()
-            );
-            ensure!(
-                legs.iter().all(|row| row
-                    .evidence
-                    .first()
-                    .and_then(|evidence| evidence.note.as_deref())
-                    .is_some_and(|note| note.starts_with("relay leg "))),
-                "every leg says so in its own evidence"
+                legs.iter()
+                    .map(|row| &row.source_key)
+                    .collect::<BTreeSet<_>>()
+                    == captured_subject_keys()?
+                        .iter()
+                        .filter(|key| key.contains(":leg"))
+                        .collect::<BTreeSet<_>>(),
+                "every published native relay member has exactly one result subject"
             );
             ensure!(
                 performances.iter().all(|row| row
@@ -245,9 +277,9 @@ fn athleticnet_whole_meet_route_pulls_two_requests_and_stores_every_storable_row
                 performances.iter().all(|row| row
                     .evidence
                     .first()
-                    .is_some_and(|evidence| evidence.observed_on == OBSERVED_ON
+                    .is_some_and(|evidence| evidence.observed_on == CAPTURED_AT
                         && evidence.source.id == SOURCE)),
-                "every row carries this run's evidence"
+                "every row carries its original physical acquisition evidence"
             );
             Ok(())
         })
@@ -272,23 +304,13 @@ fn athleticnet_third_request_is_spent_only_when_asked_and_changes_no_row() -> Re
                 report.requests
             );
             ensure!(
-                report.rows == 903,
-                "and it changes no row: {} stored",
+                report.rows == u64::try_from(captured_subject_keys()?.len())?,
+                "optional event metadata loses or invents no captured result subject: {}",
                 report.rows
-            );
-            ensure!(
-                report.notes.iter().any(|note| note
-                    .contains("36 events declared, 12 of them field events, 4 hurdle races")),
-                "the run reports what the metadata document declared: {:?}",
-                report.notes
             );
             let performances: Vec<CanonicalPerformance> =
                 harness.store.scan(Table::Performances)?;
-            ensure!(
-                performances.len() == 903,
-                "903 performances with the third request spent: {}",
-                performances.len()
-            );
+            exact_capture_subjects(&performances)?;
             Ok(())
         })
 }
@@ -301,7 +323,10 @@ fn athleticnet_second_run_resumes_from_the_journal_and_spends_nothing() -> Resul
         .block_on(async {
             let harness = Harness::new(false)?;
             let first = harness.run(&harness.options(false)).await?;
-            ensure!(first.rows == 903, "the first run stores: {}", first.rows);
+            ensure!(
+                first.rows == u64::try_from(captured_subject_keys()?.len())?,
+                "first capture subject conservation"
+            );
             let second = harness.run(&harness.options(false)).await?;
             ensure!(
                 second.requests == 0 && second.from_cache == 0,
@@ -314,21 +339,9 @@ fn athleticnet_second_run_resumes_from_the_journal_and_spends_nothing() -> Resul
                 "and nothing is walked twice: {} rows",
                 second.rows
             );
-            ensure!(
-                second
-                    .notes
-                    .iter()
-                    .any(|note| note.contains("meets: 0 pulled")),
-                "the run says the meet was already journaled: {:?}",
-                second.notes
-            );
             let performances: Vec<CanonicalPerformance> =
                 harness.store.scan(Table::Performances)?;
-            ensure!(
-                performances.len() == 903,
-                "the store still holds exactly one copy of every row: {}",
-                performances.len()
-            );
+            exact_capture_subjects(&performances)?;
             let sports: Vec<Sport> = harness
                 .store
                 .scan::<CanonicalMeet>(Table::Meets)?

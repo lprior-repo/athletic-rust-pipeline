@@ -6,7 +6,8 @@ mod run;
 
 use crate::AdapterContext;
 use census_domain::model::{
-    CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalTeam, Sport,
+    CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalTeam,
+    SourceObservation, Sport,
 };
 use census_domain::UsJurisdiction;
 use std::collections::HashMap;
@@ -44,7 +45,7 @@ pub struct Options {
     pub school_names: Vec<String>,
 }
 
-const PARSE_VERSION: u32 = 7;
+const PARSE_VERSION: u32 = 8;
 
 #[derive(Debug, Default)]
 struct Accumulator {
@@ -54,6 +55,7 @@ struct Accumulator {
     athletes: HashMap<String, CanonicalAthlete>,
     performances: HashMap<String, CanonicalPerformance>,
     unsupported: crate::cohort::UnsupportedCohortRows,
+    undated: Vec<SourceObservation>,
 }
 
 #[derive(Debug, Default)]

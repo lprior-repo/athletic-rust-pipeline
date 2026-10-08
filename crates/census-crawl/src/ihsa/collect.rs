@@ -168,20 +168,31 @@ impl Run<'_> {
             }
             StaffCapture::Refused(detail) => return self.close(record, &key, &detail),
         };
-        match emit_staff(
+        let emission = emit_staff(
             self.ctx,
             record,
             (&school_id, &staff_url),
             &staff,
             &mut self.report,
         )
-        .await?
-        {
+        .await?;
+        self.project_staff(record, &key, &school, emission, &capture.fetched_at)
+    }
+
+    fn project_staff(
+        &mut self,
+        record: &SchoolRecord,
+        key: &str,
+        school: &CanonicalSchool,
+        emission: StaffEmission,
+        observed_on: &str,
+    ) -> CrawlResult<()> {
+        match emission {
             StaffEmission::Complete(coaches) => {
-                self.complete(record, &key, &school, &coaches, &capture.fetched_at)
+                self.complete(record, key, school, &coaches, observed_on)
             }
             StaffEmission::Unresolved(coaches) => {
-                self.retain(&school, &coaches, &capture.fetched_at)?;
+                self.retain(school, &coaches, observed_on)?;
                 self.deferred = self.deferred.saturating_add(1);
                 self.report.note(format!(
                     "school {} left open: the staff page did not read completely",

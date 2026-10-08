@@ -4,6 +4,7 @@ use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::path::Path;
 
+pub(super) mod corpus;
 pub(super) mod snapshot;
 
 pub fn payload_digest(payload: &Value) -> Result<String> {
@@ -94,6 +95,35 @@ pub fn reconcile(ack: &Value, reboot: &Value, clock: &Value) -> Result<Value> {
     );
     Ok(
         json!({"verdict":"PASS","scope":"exact acknowledged physical rows, effect receipt, immutable capture bodies/metadata and deployment survival; same-effect replay across guest midnight","fresh_acquisition":false}),
+    )
+}
+
+pub(super) fn reconcile_source(before: &Value, after: &Value) -> Result<()> {
+    [
+        "original_invocation_id",
+        "source_ledgers",
+        "original_registration",
+        "original_reservation",
+        "captures",
+    ]
+    .into_iter()
+    .try_for_each(|key| -> Result<()> {
+        ensure!(
+            before.get(key).is_some() && before.get(key) == after.get(key),
+            "cold source-stage invariant changed: {key}"
+        );
+        Ok(())
+    })?;
+    let receipts = before
+        .pointer("/acknowledged_effects/after/receipts")
+        .context("cold acknowledged effect receipts absent")?;
+    ensure!(
+        Some(receipts) == after.pointer("/acknowledged_effects/after/receipts"),
+        "exact physical receipts changed at midnight"
+    );
+    corpus::reconcile(
+        before.get("corpus").context("cold source corpus absent")?,
+        after.get("corpus").context("cold midnight corpus absent")?,
     )
 }
 

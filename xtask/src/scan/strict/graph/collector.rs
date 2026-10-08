@@ -1,7 +1,7 @@
 use super::super::{
     attributes, exclusions,
-    imports::{Binding, Catalog, Definition, MacroCall, Template},
-    modules, templates,
+    imports::{Binding, Catalog, Definition, MacroCall, Origin, Template},
+    modules, provenance, templates,
 };
 use anyhow::{Context, Result};
 use proc_macro2::LineColumn;
@@ -22,10 +22,22 @@ pub(super) struct Collector<'a> {
 
 impl Collector<'_> {
     fn binding(&mut self, name: String, binding: Binding) -> Result<()> {
-        self.catalog
-            .scope_mut(self.scope)?
-            .names
-            .insert(name, binding);
+        let binding = match binding {
+            Binding::Alias(path, at) => {
+                match provenance::resolve(self.catalog, self.scope, path.clone(), at) {
+                    Origin::Vendor(_) | Origin::Project(_, _, _, _) => {
+                        Binding::MacroAlias(path, at)
+                    }
+                    Origin::Value => Binding::ValueAlias(path, at),
+                    Origin::Unknown => Binding::Alias(path, at),
+                }
+            }
+            binding => binding,
+        };
+        let names = &mut self.catalog.scope_mut(self.scope)?.names;
+        if !matches!(binding, Binding::Other) || !names.contains_key(&name) {
+            names.insert(name, binding);
+        }
         Ok(())
     }
 
@@ -69,10 +81,10 @@ impl Collector<'_> {
                 .catalog
                 .add_scope(self.path, Some(previous), Some(module.span()))?;
             self.catalog.scope_mut(self.scope)?.module = self.scope;
-            self.catalog.scope_mut(previous)?.names.insert(
-                module.ident.unraw().to_string(),
-                Binding::Module(self.scope),
-            );
+            self.catalog
+                .scope_mut(previous)?
+                .modules
+                .insert(module.ident.unraw().to_string(), self.scope);
             self.inline.push(module.ident.unraw().to_string());
             visit::visit_item_mod(self, module);
             if module
@@ -91,7 +103,10 @@ impl Collector<'_> {
             let target = modules::target_for(self.path, self.roots, &self.inline, module)?;
             let scope = self.catalog.file_scope(&target, Some(previous))?;
             self.catalog.scope_mut(scope)?.inherited_at = Some(module.span().start());
-            self.binding(module.ident.unraw().to_string(), Binding::Module(scope))?;
+            self.catalog
+                .scope_mut(previous)?
+                .modules
+                .insert(module.ident.unraw().to_string(), scope);
             self.pending.push((target, scope));
             if module
                 .attrs
@@ -215,6 +230,13 @@ impl<'ast> Visit<'ast> for Collector<'_> {
             }
             Err(error) => self.error = Some(error),
         }
+    }
+
+    fn visit_item_fn(&mut self, item: &'ast syn::ItemFn) {
+        if let Err(error) = self.binding(item.sig.ident.unraw().to_string(), Binding::Other) {
+            self.error = Some(error);
+        }
+        visit::visit_item_fn(self, item);
     }
 
     fn visit_item_struct(&mut self, item: &'ast syn::ItemStruct) {

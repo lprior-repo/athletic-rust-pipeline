@@ -7,7 +7,7 @@ use std::path::Path;
 use std::time::Duration;
 
 mod clock;
-mod clock_acquisition;
+pub(super) mod clock_acquisition;
 mod configuration;
 mod http;
 mod jurisdiction_recovery;
@@ -36,11 +36,24 @@ pub async fn action(action: &str) -> Result<()> {
         "sweep-clock-finish" => workflow::finish(&client, super::CLOCK_WORKFLOW).await?,
         "jurisdiction-reboot-start" => jurisdiction_recovery::start(&client).await?,
         "jurisdiction-reboot-finish" => jurisdiction_recovery::finish(&client).await?,
+        "jurisdiction-quiescence" => jurisdiction_recovery::quiescence(&client).await?,
         "clock-acquire-before" => clock_acquisition::acquire("before").await?,
         "clock-acquire-after" => clock_acquisition::acquire("after").await?,
         "clock-set" => set_clock()?,
         "clock" => clock()?,
-        "snapshot" => oracle::snapshot::read()?,
+        "snapshot" => tokio::task::spawn_blocking(|| {
+            let mut value = oracle::snapshot::read()?;
+            value
+                .as_object_mut()
+                .context("physical snapshot malformed")?
+                .insert(
+                    "source_recovery".to_owned(),
+                    jurisdiction_recovery::offline()?,
+                );
+            Ok::<_, anyhow::Error>(value)
+        })
+        .await
+        .context("offline snapshot worker failed")??,
         "drain-certificate" => oracle::snapshot::drain_certificate()?,
         other => bail!("unknown guest action {other}"),
     };

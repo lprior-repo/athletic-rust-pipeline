@@ -3,7 +3,7 @@ use std::path::Path;
 use anyhow::Result;
 use census_report::bests;
 use census_report::export::ExportDataset;
-use census_report::report::{self, Derivation, Scope};
+use census_report::report::Scope;
 use census_report::workbook;
 use census_store::Store;
 
@@ -12,17 +12,11 @@ use super::{assertions, constants};
 pub fn build_publication(
     store: &Store,
     root: &Path,
-) -> Result<workbook::publication::VerifiedPublication> {
+) -> Result<(
+    workbook::publication::VerifiedPublication,
+    super::artifacts::Semantics,
+)> {
     let dataset = ExportDataset::load(store)?;
-    let core = report::build_census(
-        &Derivation::of(&dataset, Scope::Core, None),
-        &store.out_dir(),
-    );
-    let all_sources = report::build_census(
-        &Derivation::of(&dataset, Scope::AllSources, None),
-        &store.out_dir(),
-    );
-    assertions::assert_scope_split(store, &core, &all_sources)?;
 
     let rows = bests::build_from_dataset(
         &dataset,
@@ -32,7 +26,7 @@ pub fn build_publication(
             limit: None,
         },
     );
-    assertions::assert_best_reduction(&rows, store, Scope::Core)?;
+    assertions::assert_source_bests(&rows)?;
 
     let publication_root = root.join("publication");
     let written = workbook::build(
@@ -45,5 +39,7 @@ pub fn build_publication(
             school_year: constants::SCHOOL_YEAR,
         },
     )?;
-    Ok(workbook::publication::verify_published(&written)?)
+    let verified = workbook::publication::verify_published(&written)?;
+    let artifacts = super::artifacts::read(&written)?;
+    Ok((verified, artifacts))
 }

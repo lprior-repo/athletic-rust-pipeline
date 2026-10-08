@@ -11,14 +11,15 @@ fn measurement(throughput: Option<f64>, seconds: f64) -> GroupMeasurement {
         allocation_count: Some(100),
         allocated_bytes: Some(100),
         tail_time_seconds: Some(1.0),
-        timing_scope: None,
+        timing_scope: Some(super::scope::expected("group/benchmark").to_owned()),
         wall_time_seconds: seconds,
     }
 }
 
 pub(super) fn capture_measurement() -> GroupMeasurement {
     let mut measured = measurement(Some(196.0), 1.0);
-    measured.timing_scope = Some("capture-publication-independent-readback/v1".into());
+    measured.timing_scope =
+        Some(super::scope::expected(super::compare::CAPTURE_EXPORT_WORKLOAD).to_owned());
     measured
 }
 

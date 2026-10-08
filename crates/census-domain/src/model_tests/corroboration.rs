@@ -193,24 +193,15 @@ fn component_projection(
 #[test]
 fn union_component_provider_conflict_withholds_aliases_in_either_application_order(
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let first = observed(
-        "School A",
-        milesplit("111"),
-        &[tfrrs("999").with_url("https://milesplit.test/111")],
-        "https://milesplit.test/111",
-    );
-    let owner = observed(
-        "School B",
-        tfrrs("999"),
-        &[milesplit("111").with_url("https://tfrrs.test/999")],
-        "https://tfrrs.test/999",
-    );
-    let second = observed(
-        "School C",
-        milesplit("222"),
-        &[tfrrs("999").with_url("https://milesplit.test/222")],
-        "https://milesplit.test/222",
-    );
+    let [first, mut owner] = independent_pair()?;
+    owner.add_identity(milesplit("111").with_url("https://tfrrs.test/999"));
+    let key = tfrrs("999");
+    let mut second = observed("School C", milesplit("222"), std::slice::from_ref(&key));
+    second.identity_attestations.push(captured_claim(
+        &key,
+        "other-roster-fixture",
+        "other-school-fixture",
+    )?);
     let athletes = [&first, &owner, &second];
     let (cases, verdicts, decisions) = accepted_component_decisions(&athletes, &[(0, 1), (1, 2)])?;
     let forward = component_projection(
@@ -248,24 +239,15 @@ fn union_component_provider_conflict_withholds_aliases_in_either_application_ord
 #[test]
 fn compatible_provider_chain_component_publishes_one_verified_person(
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let first = observed(
-        "School A",
-        milesplit("111"),
-        &[tfrrs("999").with_url("https://milesplit.test/111")],
-        "https://milesplit.test/111",
-    );
-    let owner = observed(
-        "School B",
-        tfrrs("999"),
-        &[milesplit("111").with_url("https://tfrrs.test/999")],
-        "https://tfrrs.test/999",
-    );
-    let mirror = observed(
-        "School D",
-        milesplit("111"),
-        &[tfrrs("999").with_url("https://mirror.test/111")],
-        "https://mirror.test/111",
-    );
+    let [first, mut owner] = independent_pair()?;
+    owner.add_identity(milesplit("111").with_url("https://tfrrs.test/999"));
+    let key = tfrrs("999");
+    let mut mirror = observed("School D", milesplit("111"), std::slice::from_ref(&key));
+    mirror.identity_attestations.push(captured_claim(
+        &key,
+        "compatible-roster-fixture",
+        "compatible-school-fixture",
+    )?);
     let athletes = [&first, &owner, &mirror];
     let (cases, verdicts, decisions) = accepted_component_decisions(&athletes, &[(0, 1), (1, 2)])?;
     let projection = component_projection(

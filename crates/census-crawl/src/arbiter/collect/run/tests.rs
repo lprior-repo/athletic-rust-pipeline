@@ -197,6 +197,30 @@ fn pending(store: &Store, row: &OrgSchool) -> TestResult<Value> {
 }
 
 fn apply_recorded(store: &Store, recorded: &crate::recording::Recorded) -> TestResult {
-    recorded.apply(store, "arbiter-recovery-test")?;
+    let application = recorded.apply(store, "arbiter-recovery-test")?;
+    let rows = [Table::Schools, Table::SourceObservations, Table::Coaches]
+        .into_iter()
+        .map(|table| store.walk_table(table))
+        .collect::<Result<Vec<_>, _>>()?;
+    let journals = recorded
+        .journal
+        .iter()
+        .map(|entry| store.journal_payloads(&entry.phase))
+        .collect::<Result<Vec<_>, _>>()?;
+    let receipts = store.receipt_count()?;
+    check!(eq;
+        recorded.apply(store, "arbiter-recovery-test")?,
+        census_store::Application::Repeated(application.receipt().clone())
+    );
+    check!(eq; store.receipt_count()?, receipts);
+    for (table, before) in [Table::Schools, Table::SourceObservations, Table::Coaches]
+        .into_iter()
+        .zip(rows)
+    {
+        check!(eq; store.walk_table(table)?, before);
+    }
+    for (entry, before) in recorded.journal.iter().zip(journals) {
+        check!(eq; store.journal_payloads(&entry.phase)?, before);
+    }
     Ok(())
 }

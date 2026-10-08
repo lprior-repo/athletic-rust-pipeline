@@ -131,7 +131,6 @@ impl<'a> IdentityProjectionBuilder<'a> {
             rejected_applications: rejected,
         })
     }
-
 }
 fn gender_bit(gender: super::Gender) -> u8 {
     match gender {

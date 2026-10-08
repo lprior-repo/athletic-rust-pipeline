@@ -200,12 +200,12 @@ pub fn write_athletes(
     }
     write_csv(
         &data.join("canonical-athletes-co2027.csv"),
-        &ATHLETE_HEADERS,
+        ATHLETE_HEADERS,
         &cohort,
     )?;
     write_csv(
         &data.join("athleticnet-athlete-seeds.csv"),
-        &SEED_HEADERS,
+        SEED_HEADERS,
         &seeds,
     )?;
     Ok((cohort.len(), multi_source))

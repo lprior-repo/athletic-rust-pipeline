@@ -24,6 +24,7 @@ pub struct Options {
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let before = ctx.fetcher.stats().await;
     let mut run = Run::new(ctx, options).walk().await?;
+    run.report.finish_frontier();
     let after = ctx.fetcher.stats().await;
     run.report.requests = after
         .physical_requests()
@@ -83,7 +84,7 @@ impl<'a> Run<'a> {
         };
         self.validate_requested(&directory)?;
         let options = self.options;
-        let mut run = stream::iter(
+        let run = stream::iter(
             directory
                 .entries()
                 .iter()
@@ -100,7 +101,6 @@ impl<'a> Run<'a> {
             Ok(run)
         })
         .await?;
-        run.report.finish_frontier();
         Ok(run)
     }
 
@@ -108,14 +108,16 @@ impl<'a> Run<'a> {
         let options = self.options;
         options.school_names.iter().try_for_each(|wanted| {
             if directory.entries().iter().any(|row| {
-                row.name()
-                    .is_some_and(|name| normalize_name(wanted) == normalize_name(name.as_str()))
+                in_state(row)
+                    && row
+                        .name()
+                        .is_some_and(|name| normalize_name(wanted) == normalize_name(name.as_str()))
             }) {
                 return Ok(());
             }
             self.fail(
                 DIRECTORY_URL,
-                format!("requested school {wanted:?} is not indexed"),
+                format!("requested school {wanted:?} is not indexed in Tennessee"),
             )
         })
     }
@@ -138,12 +140,14 @@ impl<'a> Run<'a> {
         directory
             .skipped()
             .iter()
+            .chain(directory.notes())
             .try_for_each(|issue| self.fail(DIRECTORY_URL, issue.render()))?;
-        directory
-            .notes()
-            .iter()
-            .take(5)
-            .for_each(|issue| self.report.note(issue.render()));
+        if directory.entries().is_empty() {
+            if directory.skipped().is_empty() && directory.notes().is_empty() {
+                self.fail(DIRECTORY_URL, "public school index is empty".to_string())?;
+            }
+            return Ok(None);
+        }
         Ok(Some(directory))
     }
 
@@ -244,14 +248,7 @@ impl<'a> Run<'a> {
             .checked_add(1)
             .ok_or_else(counter_error)?;
         self.owe(url)?;
-        if self.report.errors <= 5 {
-            self.report.note(
-                format!("{url}: {message}")
-                    .chars()
-                    .take(4096)
-                    .collect::<String>(),
-            );
-        }
+        self.report.note(format!("{url}: {message}"));
         Ok(())
     }
 }
@@ -264,9 +261,7 @@ fn school_url(row: &SchoolDirectoryEntry) -> CrawlResult<String> {
 }
 
 fn matches(options: &Options, row: &SchoolDirectoryEntry) -> bool {
-    !row.address()
-        .and_then(|address| address.state())
-        .is_some_and(|state| state != UsJurisdiction::Tennessee)
+    in_state(row)
         && (options.school_names.is_empty()
             || row.name().is_some_and(|name| {
                 options
@@ -274,4 +269,10 @@ fn matches(options: &Options, row: &SchoolDirectoryEntry) -> bool {
                     .iter()
                     .any(|wanted| normalize_name(wanted) == normalize_name(name.as_str()))
             }))
+}
+
+fn in_state(row: &SchoolDirectoryEntry) -> bool {
+    !row.address()
+        .and_then(|address| address.state())
+        .is_some_and(|state| state != UsJurisdiction::Tennessee)
 }

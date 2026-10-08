@@ -111,7 +111,7 @@ pub(in crate::workbook) fn scoped<'a>(
         cross_country: scoped_head(school, athlete, Sport::CrossCountry),
         director: school
             .map(|school| school.heads.resolve(Slot::Director, Gender::Mixed))
-            .map_or(&Outcome::Unknown, |value| value),
+            .map_or(&Outcome::UNKNOWN, core::convert::identity),
         assistants: school
             .map(|school| school.assistants.as_slice())
             .map_or(&[][..], |value| value),
@@ -125,12 +125,12 @@ fn scoped_head<'a>(
     sport: Sport,
 ) -> &'a Outcome {
     if !athlete.sports.contains(&sport) {
-        return &Outcome::Unknown;
+        return &Outcome::UNKNOWN;
     }
     school
         .zip(Slot::of(sport))
         .map(|(school, slot)| school.heads.resolve(slot, athlete.gender))
-        .map_or(&Outcome::Unknown, core::convert::identity)
+        .map_or(&Outcome::UNKNOWN, core::convert::identity)
 }
 
 impl ScopedContacts<'_> {

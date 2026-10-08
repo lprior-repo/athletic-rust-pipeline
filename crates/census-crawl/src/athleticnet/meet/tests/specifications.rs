@@ -144,6 +144,7 @@ fn invalid_published_mass_refuses_numeric_projection_without_hiding_later_valid_
         &source,
         (
             OBSERVED_ON,
+            OBSERVED_ON,
             chrono::NaiveDate::from_ymd_opt(2026, 9, 30).ok_or("snapshot date")?,
         ),
         &SchoolIndex::from_schools(&[]),
@@ -189,6 +190,7 @@ fn contradictory_published_aliases_cannot_mint_a_numeric_event() -> TestResult {
         None,
         &source,
         (
+            OBSERVED_ON,
             OBSERVED_ON,
             chrono::NaiveDate::from_ymd_opt(2026, 9, 30).ok_or("snapshot date")?,
         ),

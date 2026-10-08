@@ -1,4 +1,4 @@
-use super::runtime;
+use super::{dhat, runtime};
 use anyhow::{bail, Context, Result};
 use std::path::Path;
 use std::process::Command;
@@ -12,18 +12,17 @@ pub(super) struct MemoryMeasurement {
 pub(super) fn measure(executable: &Path, directory: &Path, id: &str) -> Result<MemoryMeasurement> {
     let filter = format!("^{}$", regex::escape(id));
     let rss_path = directory.join("single-rss");
-    let heap_path = directory.join("single-heap");
-    let mut time = Command::new("/usr/bin/time");
+    let heap_path = directory.join("single-dhat.json");
+    let mut time = Command::new("time");
     time.args(["-v", "-o"]).arg(&rss_path).arg(executable);
     run_single(&mut time, directory, &filter)?;
     let peak_rss_kib = runtime::parse_rss(&std::fs::read_to_string(rss_path)?)?;
     let mut heap = Command::new("valgrind");
-    heap.args(["--tool=memcheck", "--leak-check=no", "--error-exitcode=97"])
-        .arg(format!("--log-file={}", heap_path.display()))
+    heap.args(["--tool=dhat", "--error-exitcode=97"])
+        .arg(format!("--dhat-out-file={}", heap_path.display()))
         .arg(executable);
     run_single(&mut heap, directory, &filter)?;
-    let (allocation_count, allocated_bytes) =
-        parse_allocations(&std::fs::read_to_string(heap_path)?)?;
+    let (allocation_count, allocated_bytes) = dhat::read(&heap_path)?;
     Ok(MemoryMeasurement {
         peak_rss_kib,
         allocation_count,
@@ -52,38 +51,4 @@ fn run_single(command: &mut Command, directory: &Path, filter: &str) -> Result<(
         bail!("memory measurement selected no successful benchmark: {stdout}");
     }
     Ok(())
-}
-
-pub(super) fn parse_allocations(output: &str) -> Result<(u64, u64)> {
-    let mut summaries = output
-        .lines()
-        .filter_map(|line| line.split_once("total heap usage:").map(|(_, rest)| rest));
-    let summary = summaries
-        .next()
-        .context("Valgrind output has no allocation summary")?;
-    if summaries.next().is_some() {
-        bail!("Valgrind output has ambiguous allocation summaries");
-    }
-    let (allocations, rest) = summary
-        .split_once(" allocs, ")
-        .context("invalid allocation count summary")?;
-    let (_, bytes) = rest
-        .split_once(" frees, ")
-        .context("invalid free count summary")?;
-    let bytes = bytes
-        .trim()
-        .strip_suffix(" bytes allocated")
-        .context("invalid allocated bytes summary")?;
-    Ok((positive_count(allocations.trim())?, positive_count(bytes)?))
-}
-
-fn positive_count(raw: &str) -> Result<u64> {
-    let value = raw
-        .replace(',', "")
-        .parse::<u64>()
-        .context("invalid memory count")?;
-    if value == 0 {
-        bail!("memory count must be positive");
-    }
-    Ok(value)
 }

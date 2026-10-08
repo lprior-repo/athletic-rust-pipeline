@@ -91,13 +91,13 @@ pub(super) fn absorb(
         observed_grades,
         seasons: season_sports(bio),
     };
-    Ok(absorb_admitted(
+    absorb_admitted(
         &published,
         &mut ctx,
         &school,
         (grad_year, gender),
         (reviews_before, unsupported_before),
-    ))
+    )
 }
 
 fn absorb_admitted(
@@ -106,7 +106,12 @@ fn absorb_admitted(
     school: &str,
     admitted: (GradYear, Gender),
     before: (usize, usize),
-) -> AbsorbOutcome {
+) -> crate::CrawlResult<AbsorbOutcome> {
+    let observed_school = published
+        .bio
+        .teams
+        .get(school)
+        .map(|team| team.school_name.clone());
     let Some(school) = ctx.canonical_school(school) else {
         if ctx.target.state.is_none() {
             let count = match published.scope {
@@ -119,10 +124,16 @@ fn absorb_admitted(
         }
         let reason = "Unresolved profile school or state";
         published.withhold(ctx.accumulated, reason);
-        return AbsorbOutcome::Withheld { reason };
+        return Ok(AbsorbOutcome::Withheld { reason });
     };
     let (grad_year, gender) = admitted;
-    let athlete_id = ctx.athlete_id(&school, &published.bio.athlete.name(), grad_year, gender);
+    let athlete_id = ctx.athlete_id(
+        &school,
+        &published.bio.athlete.name(),
+        grad_year,
+        gender,
+        observed_school,
+    )?;
     let rows = match published.scope {
         Scope::TrackField => ctx.track_rows(published.bio, &athlete_id, gender),
         Scope::CrossCountry => ctx.cross_rows(published.bio, &athlete_id, gender),
@@ -137,13 +148,15 @@ fn absorb_admitted(
             "Published results field is absent, not an empty result set",
         );
     }
-    if ctx.accumulated.profile_reviews.len() > before.0
-        || ctx.accumulated.unsupported.len() > before.1
-    {
-        AbsorbOutcome::Partial { rows }
-    } else {
-        AbsorbOutcome::Complete { rows }
-    }
+    Ok(
+        if ctx.accumulated.profile_reviews.len() > before.0
+            || ctx.accumulated.unsupported.len() > before.1
+        {
+            AbsorbOutcome::Partial { rows }
+        } else {
+            AbsorbOutcome::Complete { rows }
+        },
+    )
 }
 
 fn admission(
@@ -205,7 +218,8 @@ impl<'a> Ctx<'a> {
         name: &str,
         grad_year: GradYear,
         gender: Gender,
-    ) -> AthleteId {
+        observed_school: Option<String>,
+    ) -> crate::CrawlResult<AthleteId> {
         let key = format!("{}:{}", self.target.athlete_id, school.as_str());
         let id = match self.accumulated.athletes.get(&key) {
             Some(existing) => existing.id.clone(),
@@ -235,8 +249,28 @@ impl<'a> Ctx<'a> {
             if !athlete.evidence.contains(&evidence) {
                 athlete.evidence.push(evidence);
             }
+            let observation = SourceAthleteObservation::of_athlete(
+                &self.source_athlete.namespace,
+                athlete,
+                observed_school,
+                self.observed_on,
+            )
+            .ok_or_else(|| crate::CrawlError::Invariant {
+                detail: "admitted NET profile lacks its provider identity".into(),
+            })?;
+            self.accumulated
+                .profile_observations
+                .try_reserve(1)
+                .map_err(|_| crate::CrawlError::Resource {
+                    resource: "NET profile observations",
+                    requested: usize::MAX,
+                    limit: crate::net::MAX_BODY_BYTES,
+                })?;
+            self.accumulated.profile_observations.push(
+                census_domain::model::SourceObservation::Athlete(observation),
+            );
         }
-        id
+        Ok(id)
     }
 }
 

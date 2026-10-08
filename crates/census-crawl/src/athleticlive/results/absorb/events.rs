@@ -84,7 +84,10 @@ fn published_kind(doc: &EventDoc) -> CrawlResult<EventKind> {
             }
             Ok(Some(kind))
         })?;
-    Ok(known.map_or_else(|| doc.kind(), core::convert::identity))
+    Ok(match known {
+        Some(kind) => kind,
+        None => doc.kind(),
+    })
 }
 
 fn published_specification(doc: &EventDoc, kind: &EventKind) -> CrawlResult<EventSpecification> {

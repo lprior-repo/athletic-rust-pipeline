@@ -137,7 +137,7 @@ fn mailbox_row(
         state.to_owned(),
         selected
             .and_then(|claim| claim.source.url.clone())
-            .map_or_else(String::new, |url| url),
+            .map_or(String::new(), core::convert::identity),
         selected.map_or_else(String::new, |claim| claim.source_sha256.clone()),
         selected.map_or_else(String::new, |claim| claim.acquired_at.clone()),
         encode(&claims)?,

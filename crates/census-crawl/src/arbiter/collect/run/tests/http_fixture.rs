@@ -41,7 +41,8 @@ pub(super) fn reply(
 pub(super) async fn serve_responses(
     listener: tokio::net::TcpListener,
     replies: Vec<(String, u16, Vec<u8>)>,
-) -> TestResult {
+) -> TestResult<Vec<String>> {
+    let mut accepted = Vec::new();
     for (path, status, body) in replies {
         let (mut socket, _) = listener.accept().await?;
         let mut request = Vec::new();
@@ -57,7 +58,9 @@ pub(super) async fn serve_responses(
             }
         }
         let request = std::str::from_utf8(&request)?;
-        check!(eq; request.split_whitespace().nth(1), Some(path.as_str()));
+        let requested = request.split_whitespace().nth(1).ok_or("request target")?;
+        check!(eq; requested, path.as_str());
+        accepted.push(requested.to_string());
         let header = format!(
             "HTTP/1.1 {status} Fixture\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
             body.len()
@@ -65,6 +68,21 @@ pub(super) async fn serve_responses(
         socket.write_all(header.as_bytes()).await?;
         socket.write_all(&body).await?;
     }
+    Ok(accepted)
+}
+
+pub(super) async fn assert_request_conservation(
+    fetcher: &Fetcher,
+    accepted: &[String],
+) -> TestResult {
+    let count = u64::try_from(accepted.len())?;
+    let stats = fetcher.stats().await;
+    check!(eq; stats.physical_requests(), count);
+    check!(eq;
+        stats.per_host.get("127.0.0.1").ok_or("loopback traffic")?.physical_requests(),
+        count
+    );
+    check!(eq; accepted.iter().filter(|path| path.as_str() == "/robots.txt").count(), 1);
     Ok(())
 }
 

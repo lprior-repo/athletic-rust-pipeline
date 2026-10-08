@@ -9,42 +9,51 @@ use super::normalise::{role_label, Named};
 use super::{ContactState, Disagreement, Slot};
 use crate::export::provenance::{current_coach_contacts, ContactSelectionError};
 
-#[derive(Debug, Default, Clone)]
-pub(in crate::workbook::recruiting) enum Outcome {
-    Current(Named),
+#[derive(Debug, Clone)]
+pub(in crate::workbook::recruiting) struct Outcome(Result<Named, Unavailable>);
+
+#[derive(Debug, Clone)]
+enum Unavailable {
     Conflict,
     TenureConflict,
     InvalidEvidence,
-    #[default]
     Unknown,
 }
 
 impl Outcome {
+    pub(in crate::workbook::recruiting) const UNKNOWN: Self = Self(Err(Unavailable::Unknown));
+
     pub(in crate::workbook::recruiting) fn named(&self) -> Option<&Named> {
-        match self {
-            Self::Current(named) => Some(named),
-            _ => None,
-        }
+        self.0.as_ref().ok()
     }
 
     pub(super) fn blocker(&self) -> Option<ContactState> {
-        match self {
-            Self::Conflict => Some(ContactState::ContactConflict),
-            Self::TenureConflict => Some(ContactState::ContactTenureConflict),
-            Self::InvalidEvidence => Some(ContactState::ContactEvidenceInvalid),
-            Self::Current(_) | Self::Unknown => None,
+        match self.0 {
+            Err(Unavailable::Conflict) => Some(ContactState::ContactConflict),
+            Err(Unavailable::TenureConflict) => Some(ContactState::ContactTenureConflict),
+            Err(Unavailable::InvalidEvidence) => Some(ContactState::ContactEvidenceInvalid),
+            Ok(_) | Err(Unavailable::Unknown) => None,
         }
     }
 
+    fn is_unknown(&self) -> bool {
+        matches!(self.0, Err(Unavailable::Unknown))
+    }
+
+    fn unavailable(reason: Unavailable) -> Self {
+        Self(Err(reason))
+    }
+
     fn combine(self, other: Self) -> Self {
-        match (self, other) {
-            (Self::TenureConflict, _) | (_, Self::TenureConflict) => Self::TenureConflict,
-            (Self::Conflict, _) | (_, Self::Conflict) => Self::Conflict,
-            (Self::Current(_), Self::Current(_)) => Self::Conflict,
-            (current @ Self::Current(_), _) | (_, current @ Self::Current(_)) => current,
-            (Self::InvalidEvidence, _) | (_, Self::InvalidEvidence) => Self::InvalidEvidence,
-            _ => Self::Unknown,
-        }
+        use Unavailable::{Conflict, InvalidEvidence, TenureConflict, Unknown};
+        Self(match (self.0, other.0) {
+            (Err(TenureConflict), _) | (_, Err(TenureConflict)) => Err(TenureConflict),
+            (Err(Conflict), _) | (_, Err(Conflict)) => Err(Conflict),
+            (Ok(_), Ok(_)) => Err(Conflict),
+            (current @ Ok(_), _) | (_, current @ Ok(_)) => current,
+            (Err(InvalidEvidence), _) | (_, Err(InvalidEvidence)) => Err(InvalidEvidence),
+            _ => Err(Unknown),
+        })
     }
 }
 
@@ -64,11 +73,12 @@ pub(super) struct HeadScope<'a> {
 impl Heads {
     pub(super) fn insert(&mut self, scope: HeadScope<'_>, rows: &[&CanonicalCoach]) {
         let outcome = resolve(rows, scope.school_year);
-        if matches!(outcome, Outcome::Conflict | Outcome::TenureConflict) {
-            let state = match outcome {
-                Outcome::TenureConflict => ContactState::ContactTenureConflict,
-                _ => ContactState::ContactConflict,
-            };
+        if let Some(state) = outcome.blocker().filter(|state| {
+            matches!(
+                state,
+                ContactState::ContactConflict | ContactState::ContactTenureConflict
+            )
+        }) {
             self.disagreements.push(Disagreement {
                 school: scope.school.to_owned(),
                 role: role_label(scope.slot, scope.side),
@@ -86,14 +96,14 @@ impl Heads {
     pub(super) fn resolve(&self, slot: Slot, side: Gender) -> &Outcome {
         if matches!(side, Gender::Boys | Gender::Girls) {
             if let Some(outcome) = self.scopes.get(&(slot, side)) {
-                if !matches!(outcome, Outcome::Unknown) {
+                if !outcome.is_unknown() {
                     return outcome;
                 }
             }
         }
         self.scopes
             .get(&(slot, Gender::Mixed))
-            .map_or(&Outcome::Unknown, |value| value)
+            .map_or(&Outcome::UNKNOWN, core::convert::identity)
     }
 
     pub(super) fn into_disagreements(self) -> Vec<Disagreement> {
@@ -104,7 +114,7 @@ impl Heads {
 pub(super) fn resolve(rows: &[&CanonicalCoach], school_year: SchoolYear) -> Outcome {
     owners(rows)
         .into_values()
-        .fold(Outcome::Unknown, |outcome, owner| {
+        .fold(Outcome::UNKNOWN, |outcome, owner| {
             outcome.combine(resolve_owner(&owner, school_year))
         })
 }
@@ -112,10 +122,7 @@ pub(super) fn resolve(rows: &[&CanonicalCoach], school_year: SchoolYear) -> Outc
 pub(super) fn individuals(rows: &[&CanonicalCoach], school_year: SchoolYear) -> Vec<Named> {
     owners(rows)
         .into_values()
-        .filter_map(|owner| match resolve_owner(&owner, school_year) {
-            Outcome::Current(named) => Some(named),
-            _ => None,
-        })
+        .filter_map(|owner| resolve_owner(&owner, school_year).0.ok())
         .collect()
 }
 
@@ -130,9 +137,13 @@ fn owners<'a>(rows: &[&'a CanonicalCoach]) -> BTreeMap<&'a CoachId, Vec<&'a Cano
 fn resolve_owner(rows: &[&CanonicalCoach], school_year: SchoolYear) -> Outcome {
     let evidence = rows.iter().flat_map(|coach| &coach.tenure_evidence);
     match assess_coach_tenure(evidence, school_year) {
-        Err(TenureAssessmentError::Conflict) => return Outcome::TenureConflict,
-        Err(TenureAssessmentError::InvalidEvidence { .. }) => return Outcome::InvalidEvidence,
-        Ok(CoachTenure::Former { .. } | CoachTenure::Unknown) => return Outcome::Unknown,
+        Err(TenureAssessmentError::Conflict) => {
+            return Outcome::unavailable(Unavailable::TenureConflict)
+        }
+        Err(TenureAssessmentError::InvalidEvidence { .. }) => {
+            return Outcome::unavailable(Unavailable::InvalidEvidence)
+        }
+        Ok(CoachTenure::Former { .. } | CoachTenure::Unknown) => return Outcome::UNKNOWN,
         Ok(CoachTenure::Current { .. }) => {}
     }
     resolve_current(rows, school_year)
@@ -149,27 +160,29 @@ fn resolve_current(rows: &[&CanonicalCoach], school_year: SchoolYear) -> Outcome
         match named.as_mut() {
             Some(named) => {
                 if !named.merge(coach, mailboxes) {
-                    return Outcome::Conflict;
+                    return Outcome::unavailable(Unavailable::Conflict);
                 }
             }
             None => match Named::of(coach, mailboxes) {
                 Some(current) => named = Some(current),
-                None => return Outcome::InvalidEvidence,
+                None => return Outcome::unavailable(Unavailable::InvalidEvidence),
             },
         }
     }
-    named.map_or(Outcome::Unknown, Outcome::Current)
+    Outcome(named.ok_or(Unavailable::Unknown))
 }
 
 fn selection_error(error: ContactSelectionError) -> Outcome {
-    match error {
-        ContactSelectionError::MailboxConflict => Outcome::Conflict,
-        ContactSelectionError::Tenure(TenureAssessmentError::Conflict) => Outcome::TenureConflict,
+    Outcome::unavailable(match error {
+        ContactSelectionError::MailboxConflict => Unavailable::Conflict,
+        ContactSelectionError::Tenure(TenureAssessmentError::Conflict) => {
+            Unavailable::TenureConflict
+        }
         ContactSelectionError::MissingCaptureUrl
         | ContactSelectionError::Tenure(TenureAssessmentError::InvalidEvidence { .. }) => {
-            Outcome::InvalidEvidence
+            Unavailable::InvalidEvidence
         }
-    }
+    })
 }
 
 fn describe(rows: &[&CanonicalCoach], school_year: SchoolYear) -> Vec<String> {

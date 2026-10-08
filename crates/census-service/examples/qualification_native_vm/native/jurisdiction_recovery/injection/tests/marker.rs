@@ -7,41 +7,6 @@ use census_service::restate_services::{
 use serde_json::{json, Value};
 
 #[test]
-fn reached_marker_preserves_exact_private_bytes_and_journal_registration() -> Result<()> {
-    let (original, observation) = fixture::active()?;
-    let directory = fixture::directory()?;
-    let config = fixture::configured(directory.path(), &original)?;
-    let marker = fixture::marker(&original)?;
-    fixture::publish_marker(&config, &marker)?;
-    let witness =
-        fixture::runtime(&config, &original, &observation)?.context("reached witness absent")?;
-    let evidence = witness
-        .get("native_source_boundary")
-        .context("marker evidence absent")?;
-    assert_eq!(
-        evidence.pointer("/marker/content"),
-        Some(&serde_json::to_value(&marker)?)
-    );
-    assert_eq!(
-        evidence.pointer("/registration"),
-        Some(&json!({"request_digest":"a".repeat(64),"observed_on":"2026-10-02"}))
-    );
-    assert_eq!(
-        evidence.pointer("/registration_journal_references/completion"),
-        Some(&json!({"invocation_id":"inv_child","index":2,"version":2}))
-    );
-    assert_eq!(
-        evidence.pointer("/marker/bytes"),
-        Some(&serde_json::to_value(serde_json::to_vec(&marker)?)?)
-    );
-    assert_eq!(
-        witness.get("physical_request_in_flight_proven"),
-        Some(&json!(false))
-    );
-    Ok(())
-}
-
-#[test]
 fn missing_or_incompletely_published_marker_never_accepts_a_reset() -> Result<()> {
     let (original, observation) = fixture::active()?;
     let directory = fixture::directory()?;
@@ -66,7 +31,7 @@ fn missing_or_incompletely_published_marker_never_accepts_a_reset() -> Result<()
 #[test]
 fn marker_refuses_each_mismatched_authority_field() -> Result<()> {
     [
-        ("schema", json!(2), "schema/phase"),
+        ("schema", json!(1), "schema/phase"),
         ("phase", json!("http_response"), "schema/phase"),
         (
             "operation",

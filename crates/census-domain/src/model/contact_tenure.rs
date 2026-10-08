@@ -157,30 +157,32 @@ pub fn validate_tenure_evidence(
         });
     }
     if let Some(claim) = &e.claim {
-        if let Some(mailbox) = &claim.mailbox {
-            if published_email(mailbox).is_none() {
-                return Err(TenureValidation::Malformed {
-                    field: "claim.mailbox",
-                });
-            }
-        }
-        match (&claim.program, &claim.role) {
-            (CoachContactProgram::SchoolAthletics, CoachRole::AthleticDirector) => {}
-            (
-                CoachContactProgram::Team {
-                    sport: Sport::OutdoorTrack | Sport::IndoorTrack | Sport::CrossCountry,
-                    ..
-                },
-                CoachRole::HeadCoach | CoachRole::AssistantCoach,
-            ) => {}
-            _ => {
-                return Err(TenureValidation::Malformed {
-                    field: "claim.program",
-                });
-            }
-        }
+        validate_contact_claim(claim)?;
     }
     Ok(())
+}
+
+fn validate_contact_claim(claim: &CoachContactClaim) -> Result<(), TenureValidation> {
+    if let Some(mailbox) = &claim.mailbox {
+        if published_email(mailbox).is_none() {
+            return Err(TenureValidation::Malformed {
+                field: "claim.mailbox",
+            });
+        }
+    }
+    match (&claim.program, &claim.role) {
+        (CoachContactProgram::SchoolAthletics, CoachRole::AthleticDirector) => Ok(()),
+        (
+            CoachContactProgram::Team {
+                sport: Sport::OutdoorTrack | Sport::IndoorTrack | Sport::CrossCountry,
+                ..
+            },
+            CoachRole::HeadCoach | CoachRole::AssistantCoach,
+        ) => Ok(()),
+        _ => Err(TenureValidation::Malformed {
+            field: "claim.program",
+        }),
+    }
 }
 
 #[cfg(test)]

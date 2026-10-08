@@ -113,9 +113,14 @@ impl MeetUrls {
 }
 
 struct Documents {
-    meet: MeetData,
-    results: AllResults,
+    meet: Captured<MeetData>,
+    results: Captured<AllResults>,
     metadata: Option<EventMetadata>,
+}
+
+struct Captured<T> {
+    document: T,
+    fetched_at: String,
 }
 
 fn journal_entry(url: &str, meet_id: i64, rows: u64) -> (String, Value) {

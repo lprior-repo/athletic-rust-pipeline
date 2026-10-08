@@ -128,6 +128,19 @@ School, coach and postal evidence retains the actual capture `fetched_at`; the a
 instant remains a separate execution input. CSV/XLSX postal evidence dates must agree with stored
 claims, not with a later replay date.
 
+NET whole-meet collection preserves the original meet-response and result-response capture
+instants separately. Meet provenance uses the former; result-derived participant/performance
+provenance uses the latter. Published meet dates and season evidence still determine the school
+year and grade/cohort context; a later replay or decision date replaces neither acquisition clock.
+
+WIAA result interpretation revision 8 retains published participants from year-only artifacts as
+raw `SourceObservations`, including source-owned row/relay-member keys, literal names/schools,
+published grades and archive-supported school years. Unknown exact performance dates remain
+explicit unfinished debt: no date, dated canonical event or performance is manufactured.
+Compatible observations of the same canonical meet use the shared lossless entity merge so
+independent result-file URLs and their acquisition evidence survive. Replay preserves physical
+observations and acknowledgement receipts rather than relying on later canonical deduplication.
+
 Request pacing has two independent dials, and both default to the polite setting:
 
 - Per-source spacing. Each host (or, for a single-lane source family, the family as a whole) leaves
@@ -152,6 +165,16 @@ origin is refused before that request with `origin <origin> is held by another c
 than doubling the origin's request rate. Cached responses need no lock, and one process re-entering
 an origin it already holds proceeds. A held origin is a refusal, not a queue: wait or stop the
 holder.
+
+The native origin-budget qualification uses
+`env -u CI SCRATCH_STORE=<new-root> ADMIN_PORT=<unused-port> SERVICE_PORT=<unused-port> tools/moon-local run pipeline:durability -- scenario-08-global-budget`.
+Use a current portable build. It executes three independent native CLI processes with separate
+stores, one common working directory/production lock root and a reached physical target handshake.
+Its fresh certificate binds binary, regression, ledger and capture hashes; it verifies contender
+refusals with the exact holder PID, no contender traffic, actual200 pacing/peak/burst, lock release
+and traffic-free exact cache replay. This one-host CLI qualification does not certify distributed
+locks, multiple serving endpoints, turnover pacing or sustained-load behavior. Keep each run's
+certificate and ledger; a historical passing certificate is not evidence for a new build.
 
 Aggregate throughput also follows the endpoint's `--max-concurrent` and per-request `--concurrency`.
 TeamsSource acquisition shares the endpoint's Jobs admission budget and serializes active work for

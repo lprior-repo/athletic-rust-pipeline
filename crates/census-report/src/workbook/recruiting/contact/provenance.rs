@@ -18,7 +18,11 @@ impl ContactProvenance {
     pub(super) fn of(coach_id: &CoachId, fact: &CoachTenureEvidence) -> Self {
         Self {
             coach_id: coach_id.clone(),
-            source_url: fact.source.url.clone().map_or_else(String::new, |url| url),
+            source_url: fact
+                .source
+                .url
+                .clone()
+                .map_or(String::new(), core::convert::identity),
             source_sha256: fact.source_sha256.clone(),
             observed_on: fact.retrieved_at.clone(),
         }

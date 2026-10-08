@@ -14,20 +14,7 @@ use syn::visit::Visit;
 impl Catalog {
     pub(super) fn collect(sources: &[Parsed<'_>], roots: &[PathBuf]) -> Result<Self> {
         let mut catalog = Self::default();
-        let mut pending = Vec::new();
-        for root in roots {
-            let scope = catalog.file_scope(root, None)?;
-            pending.push((root.clone(), scope));
-            if root.file_name().is_some_and(|name| name == "lib.rs") {
-                let name = root
-                    .parent()
-                    .and_then(Path::parent)
-                    .and_then(Path::file_name)
-                    .and_then(|name| name.to_str())
-                    .context("macro crate root name unavailable")?;
-                catalog.roots.insert(name.replace('-', "_"), scope);
-            }
-        }
+        let mut pending = catalog.root_scopes(roots)?;
         let mut visited = std::collections::BTreeSet::new();
         for _ in 0..100_000 {
             let next = pending
@@ -40,6 +27,7 @@ impl Catalog {
                         .map(|source| (source.path.to_path_buf(), None))
                 });
             let Some((path, scope)) = next else {
+                catalog.classify_aliases()?;
                 catalog.collect_arguments(roots)?;
                 return Ok(catalog);
             };
@@ -73,6 +61,24 @@ impl Catalog {
         anyhow::bail!("macro module traversal budget exhausted")
     }
 
+    fn root_scopes(&mut self, roots: &[PathBuf]) -> Result<Vec<(PathBuf, usize)>> {
+        let mut pending = Vec::new();
+        for root in roots {
+            let scope = self.file_scope(root, None)?;
+            pending.push((root.clone(), scope));
+            if root.file_name().is_some_and(|name| name == "lib.rs") {
+                let name = root
+                    .parent()
+                    .and_then(Path::parent)
+                    .and_then(Path::file_name)
+                    .and_then(|name| name.to_str())
+                    .context("macro crate root name unavailable")?;
+                self.roots.insert(name.replace('-', "_"), scope);
+            }
+        }
+        Ok(pending)
+    }
+
     fn file_scope(&mut self, path: &Path, parent: Option<usize>) -> Result<usize> {
         if let Some(scope) = self.files.get(path) {
             return Ok(*scope);
@@ -81,6 +87,32 @@ impl Catalog {
         self.scope_mut(scope)?.module = scope;
         self.files.insert(path.to_path_buf(), scope);
         Ok(scope)
+    }
+
+    fn classify_aliases(&mut self) -> Result<()> {
+        let mut selected = Vec::new();
+        for (scope, current) in self.scopes.iter().enumerate() {
+            for (name, binding) in &current.names {
+                let super::imports::Binding::Alias(path, at) = binding else {
+                    continue;
+                };
+                let origin = super::provenance::resolve(self, scope, path.clone(), *at);
+                let binding = match origin {
+                    Origin::Vendor(_) | Origin::Project(_, _, _, _) => {
+                        Some(super::imports::Binding::MacroAlias(path.clone(), *at))
+                    }
+                    Origin::Value => Some(super::imports::Binding::ValueAlias(path.clone(), *at)),
+                    Origin::Unknown => None,
+                };
+                if let Some(binding) = binding {
+                    selected.push((scope, name.clone(), binding));
+                }
+            }
+        }
+        for (scope, name, binding) in selected {
+            self.scope_mut(scope)?.names.insert(name, binding);
+        }
+        Ok(())
     }
 
     fn collect_arguments(&mut self, roots: &[PathBuf]) -> Result<()> {

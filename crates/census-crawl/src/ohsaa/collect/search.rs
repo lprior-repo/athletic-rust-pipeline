@@ -78,9 +78,7 @@ fn existing_school(
     let row = SearchResult {
         ohsaa_id: owner.id.clone(),
         name: school.name,
-        city: school
-            .city
-            .map_or_else(String::new, core::convert::identity),
+        city: school.city.map_or(String::new(), core::convert::identity),
     };
     push_school(rows, row, report)
 }

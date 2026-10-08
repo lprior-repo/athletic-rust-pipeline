@@ -87,8 +87,12 @@ fn agrees(
     registration: &journal::Registration,
 ) -> Result<()> {
     ensure!(
-        marker.schema == 1 && marker.phase == "teams_reserved_before_acquisition",
+        marker.schema == 2 && marker.phase == "teams_reserved_before_acquisition",
         "native marker schema/phase differs"
+    );
+    ensure!(
+        marker.acknowledged_effects.schema == 1,
+        "acknowledged effect checkpoint schema differs"
     );
     ensure!(
         marker.operation == config.operation && marker.operation == call.child_key,

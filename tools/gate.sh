@@ -85,6 +85,7 @@ LINT_SET=(
   -D clippy::as_conversions
   -D clippy::let_underscore_must_use
   -D clippy::await_holding_lock
+  --force-warn clippy::too_many_arguments
 )
 
 FAILURES=()
@@ -125,7 +126,7 @@ lane_check() {
 lane_no_panic_extraction() {
   cargo xtask panic-extraction &&
     cargo -Zallow-features="$FEATURE_ALLOWLIST" clippy --workspace --all-targets --all-features -- \
-      -D warnings -D clippy::unwrap_used -D clippy::expect_used
+      -D warnings -D clippy::unwrap_used -D clippy::expect_used --force-warn clippy::too_many_arguments
 }
 lane_doc() { cargo doc --workspace --all-features --no-deps; }
 lane_deny() { cargo deny check advisories bans sources; }

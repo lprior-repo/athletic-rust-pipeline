@@ -1,13 +1,17 @@
 mod markup;
+mod offices;
+mod research;
 
 use crate::net::FetchOutcome;
 use crate::{AdapterContext, CrawlError, CrawlResult};
 use census_domain::model::{
-    normalize_name, CanonicalSchool, ContactResearch, ContactResearchAttempt,
-    ContactResearchOutcome as Outcome, ContactResearchSubject as Subject, SchoolMailboxClaim,
-    SchoolMailboxPurpose as Purpose, SchoolYear, SourceRef,
+    normalize_name, CanonicalSchool, ContactResearchAttempt, ContactResearchOutcome as Outcome,
+    ContactResearchSubject as Subject, SchoolMailboxPurpose as Purpose, SchoolYear,
 };
 use sha2::{Digest, Sha256};
+
+use offices::assess_offices;
+use research::{record, record_capture, unattempted};
 
 #[tracing::instrument(skip(ctx, school))]
 pub async fn research_school_mailboxes(
@@ -160,145 +164,6 @@ fn admit_page(
     Ok(links)
 }
 
-fn assess_offices(
-    school: &mut CanonicalSchool,
-    year: SchoolYear,
-    capture: &FetchOutcome,
-    page: &markup::Page,
-    link_count: usize,
-) {
-    for purpose in [Purpose::SchoolOffice, Purpose::AthleticsOffice] {
-        let mut state = if page.limited
-            || page.malformed
-            || link_count >= crate::school_sites::MAX_SITE_PAGES
-        {
-            Outcome::Partial
-        } else {
-            Outcome::CompletedEmpty
-        };
-        for block in page
-            .blocks
-            .iter()
-            .filter(|block| purpose_of(block) == Some(purpose))
-        {
-            state = state.combine(admit_block(school, capture, block));
-        }
-        if capture.fetched_at.get(..10).and_then(SchoolYear::from_date) != Some(year) {
-            state = state.combine(Outcome::Stale);
-        }
-        let attempt = ContactResearchAttempt {
-            locator: locator(capture).to_owned(),
-            acquired_at: capture.fetched_at.clone(),
-            source_sha256: Some(capture.content_digest.clone()),
-            outcome: state,
-            reason: "assessed page-bound office purpose".to_owned(),
-        };
-        let outcome = purpose_outcome(school, year, purpose, &attempt);
-        append(
-            school,
-            year,
-            purpose,
-            ContactResearchAttempt { outcome, ..attempt },
-        );
-    }
-}
-
-fn admit_block(
-    school: &mut CanonicalSchool,
-    capture: &FetchOutcome,
-    block: &markup::Block,
-) -> Outcome {
-    let Some(purpose) = purpose_of(block) else {
-        return Outcome::CompletedEmpty;
-    };
-    if block.mailboxes.len() > 1 {
-        return Outcome::Ambiguous;
-    }
-    let Some(mailbox) = block.mailboxes.first().cloned() else {
-        return Outcome::CompletedEmpty;
-    };
-    let Some(year) = capture.fetched_at.get(..10).and_then(SchoolYear::from_date) else {
-        return Outcome::Partial;
-    };
-    let claim = SchoolMailboxClaim {
-        school: school.id.clone(),
-        purpose,
-        mailbox,
-        school_year: year,
-        source: SourceRef::new(
-            crate::school_sites::SOURCE_ID,
-            Some(locator(capture).to_owned()),
-        ),
-        source_sha256: capture.content_digest.clone(),
-        acquired_at: capture.fetched_at.clone(),
-        statement: crate::row_hygiene::clean_text(&block.text),
-    };
-    match claim.validate() {
-        Ok(()) => {
-            if !school.mailbox_claims.contains(&claim) {
-                school.mailbox_claims.push(claim);
-            }
-            Outcome::CompletedClaims
-        }
-        Err(_) => Outcome::Partial,
-    }
-}
-
-fn purpose_of(block: &markup::Block) -> Option<Purpose> {
-    let text = block.text.trim();
-    if after(
-        text,
-        "contact us anytime with questions or comments. email us at ",
-    )
-    .is_some()
-    {
-        return Some(Purpose::SchoolOffice);
-    }
-    for (label, purpose) in [
-        ("school office", Purpose::SchoolOffice),
-        ("main office", Purpose::SchoolOffice),
-        ("athletics office", Purpose::AthleticsOffice),
-        ("athletic office", Purpose::AthleticsOffice),
-    ] {
-        if let Some(rest) = after(text, label) {
-            let rest =
-                rest.trim_start_matches(|ch: char| ch.is_whitespace() || matches!(ch, ':' | '-'));
-            if block
-                .mailboxes
-                .iter()
-                .any(|mailbox| after(rest, mailbox).is_some())
-            {
-                return Some(purpose);
-            }
-        }
-    }
-    None
-}
-
-fn after<'a>(text: &'a str, prefix: &str) -> Option<&'a str> {
-    if !text.get(..prefix.len())?.eq_ignore_ascii_case(prefix) {
-        return None;
-    }
-    text.get(prefix.len()..)
-}
-
-fn conflicting(school: &CanonicalSchool, year: SchoolYear, purpose: Purpose) -> bool {
-    let mut claims = school.mailbox_claims.iter().filter(|claim| {
-        claim.school_year == year
-            && claim.purpose == purpose
-            && claim.acquired_at.get(..10).and_then(SchoolYear::from_date) == Some(year)
-    });
-    let Some(first) = claims.next() else {
-        return false;
-    };
-    claims.any(|claim| {
-        !first
-            .mailbox
-            .trim()
-            .eq_ignore_ascii_case(claim.mailbox.trim())
-    })
-}
-
 fn contact_links(
     school: &CanonicalSchool,
     capture: &FetchOutcome,
@@ -334,87 +199,6 @@ fn contact_links(
     Ok(urls.into_iter().collect())
 }
 
-fn record_capture(
-    school: &mut CanonicalSchool,
-    year: SchoolYear,
-    capture: &FetchOutcome,
-    outcome: Outcome,
-    reason: String,
-) {
-    record(
-        school,
-        year,
-        ContactResearchAttempt {
-            locator: locator(capture).to_owned(),
-            acquired_at: capture.fetched_at.clone(),
-            source_sha256: Some(capture.content_digest.clone()),
-            outcome,
-            reason,
-        },
-    );
-}
-
-fn locator(capture: &FetchOutcome) -> &str {
-    capture
-        .response_url
-        .as_deref()
-        .map_or(capture.url.as_str(), |url| url)
-}
-
-fn record(school: &mut CanonicalSchool, year: SchoolYear, attempt: ContactResearchAttempt) {
-    let office = purpose_outcome(school, year, Purpose::SchoolOffice, &attempt);
-    let athletics = purpose_outcome(school, year, Purpose::AthleticsOffice, &attempt);
-    let mut office_attempt = attempt.clone();
-    office_attempt.outcome = office;
-    append(school, year, Purpose::SchoolOffice, office_attempt);
-    let mut athletics_attempt = attempt;
-    athletics_attempt.outcome = athletics;
-    append(school, year, Purpose::AthleticsOffice, athletics_attempt);
-}
-
-fn append(
-    school: &mut CanonicalSchool,
-    year: SchoolYear,
-    purpose: Purpose,
-    attempt: ContactResearchAttempt,
-) {
-    let research = ContactResearch {
-        school: school.id.clone(),
-        subject: Subject::SchoolMailbox(purpose),
-        school_year: year,
-        outcome: attempt.outcome.clone(),
-        attempts: vec![attempt],
-    };
-    if !school.contact_research.contains(&research) {
-        school.contact_research.push(research);
-    }
-}
-
-fn purpose_outcome(
-    school: &CanonicalSchool,
-    year: SchoolYear,
-    purpose: Purpose,
-    attempt: &ContactResearchAttempt,
-) -> Outcome {
-    if !attempt.outcome.is_terminal() {
-        return attempt.outcome.clone();
-    }
-    if conflicting(school, year, purpose) {
-        return Outcome::Conflict;
-    }
-    if school.mailbox_claims.iter().any(|claim| {
-        claim.purpose == purpose
-            && claim.school_year == year
-            && claim.source.url.as_deref() == Some(attempt.locator.as_str())
-            && Some(claim.source_sha256.as_str()) == attempt.source_sha256.as_deref()
-            && claim.acquired_at == attempt.acquired_at
-    }) {
-        Outcome::CompletedClaims
-    } else {
-        Outcome::CompletedEmpty
-    }
-}
-
 fn schema(detail: &str) -> CrawlError {
     CrawlError::Schema {
         url: crate::school_sites::SOURCE_ID.to_owned(),
@@ -444,21 +228,6 @@ fn admit_retained(school: &CanonicalSchool) -> CrawlResult<()> {
         }
     }
     Ok(())
-}
-
-fn unattempted(school: &mut CanonicalSchool, year: SchoolYear) {
-    for purpose in [Purpose::SchoolOffice, Purpose::AthleticsOffice] {
-        let research = ContactResearch {
-            school: school.id.clone(),
-            subject: Subject::SchoolMailbox(purpose),
-            school_year: year,
-            outcome: Outcome::Unattempted,
-            attempts: Vec::new(),
-        };
-        if !school.contact_research.contains(&research) {
-            school.contact_research.push(research);
-        }
-    }
 }
 
 #[cfg(test)]

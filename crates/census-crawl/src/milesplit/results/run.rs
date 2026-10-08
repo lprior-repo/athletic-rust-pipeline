@@ -15,9 +15,9 @@ pub(super) mod receipt;
 mod windows;
 use acquired::AcquiredMeet;
 
-pub(super) enum ActiveMeet {
-    Empty,
-    Acquired { key: String, meet: AcquiredMeet },
+pub(super) struct ActiveMeet {
+    key: String,
+    meet: AcquiredMeet,
 }
 
 enum Intake {
@@ -32,7 +32,7 @@ enum MetadataCapture {
 
 pub(super) struct Run {
     pub(super) schools: ProviderSchools,
-    pub(super) owned: ActiveMeet,
+    pub(super) owned: Option<ActiveMeet>,
     pub(super) stats: Stats,
     pub(super) counts: EntityCounts,
     pub(super) frontier: super::frontier::Frontier,
@@ -44,7 +44,7 @@ impl Run {
     pub(super) fn new(schools: ProviderSchools) -> Self {
         Self {
             schools,
-            owned: ActiveMeet::Empty,
+            owned: None,
             stats: Stats::default(),
             counts: EntityCounts::default(),
             frontier: super::frontier::Frontier::default(),
@@ -84,7 +84,7 @@ impl Run {
         request: &super::ResultSetRequest,
     ) -> CrawlResult<()> {
         if request.url.len() > 4096 {
-            self.owned = ActiveMeet::Empty;
+            self.owned = None;
             self.metadata_capture = MetadataCapture::Unacquired;
             return self.resource(
                 ctx,
@@ -149,17 +149,17 @@ impl Run {
         reference: &ResultSetRef,
     ) -> CrawlResult<()> {
         let key = format!("{}/{}", reference.site.code(), reference.meet_id);
-        if matches!(&self.owned, ActiveMeet::Acquired { key: prior, .. } if prior == &key) {
+        if matches!(&self.owned, Some(ActiveMeet { key: prior, .. }) if prior == &key) {
             return Ok(());
         }
-        self.owned = ActiveMeet::Empty;
+        self.owned = None;
         let mut meet = AcquiredMeet::new(read_owned_meet(ctx, reference).await?)?;
         self.stats.peak_capture_bytes = self
             .stats
             .peak_capture_bytes
             .max(meet.outcome.capture.bytes);
         meet.release_body();
-        self.owned = ActiveMeet::Acquired { key, meet };
+        self.owned = Some(ActiveMeet { key, meet });
         Ok(())
     }
 
@@ -244,8 +244,8 @@ impl Run {
         performance_as_of: chrono::NaiveDate,
     ) -> serde_json::Value {
         let owned = match &self.owned {
-            ActiveMeet::Acquired { meet, .. } => capture::provenance(&meet.outcome.capture),
-            ActiveMeet::Empty => serde_json::Value::Null,
+            Some(ActiveMeet { meet, .. }) => capture::provenance(&meet.outcome.capture),
+            None => serde_json::Value::Null,
         };
         let raw = match &self.metadata_capture {
             MetadataCapture::Acquired(capture) => Some(capture),
@@ -258,14 +258,14 @@ impl Run {
         })
     }
     pub(super) fn release_owned(&mut self) {
-        self.owned = ActiveMeet::Empty;
+        self.owned = None;
         self.metadata_capture = MetadataCapture::Unacquired;
     }
 
     fn resource_locator(&self, url: &str, error: &CrawlError, receipt: &str) -> String {
         let owned = match &self.owned {
-            ActiveMeet::Acquired { meet, .. } => meet.outcome.capture.content_digest.as_str(),
-            ActiveMeet::Empty => "unacquired",
+            Some(ActiveMeet { meet, .. }) => meet.outcome.capture.content_digest.as_str(),
+            None => "unacquired",
         };
         let raw = match &self.metadata_capture {
             MetadataCapture::Acquired(capture) => capture
@@ -283,10 +283,10 @@ impl Run {
     }
 }
 
-fn acquired(owned: &ActiveMeet) -> CrawlResult<&AcquiredMeet> {
+fn acquired(owned: &Option<ActiveMeet>) -> CrawlResult<&AcquiredMeet> {
     match owned {
-        ActiveMeet::Acquired { meet, .. } => Ok(meet),
-        ActiveMeet::Empty => Err(CrawlError::Invariant {
+        Some(ActiveMeet { meet, .. }) => Ok(meet),
+        None => Err(CrawlError::Invariant {
             detail: "result projection has no acquired source-owned meet".into(),
         }),
     }

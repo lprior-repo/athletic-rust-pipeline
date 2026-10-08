@@ -41,8 +41,21 @@ pub(super) fn provision_and_exercise(
         "/usr/bin/systemctl start qualification.service",
     )?;
     wait_ready_after_restart(ssh, root)?;
+    let quiescent = ssh.action("jurisdiction-quiescence")?;
+    artifacts::publish(
+        &root.join("source-quiescent-before-midnight.json"),
+        &quiescent,
+    )?;
     let physical_clock = midnight(ssh, root)?;
     let reconciled = oracle::reconcile(&ack, &physical_reboot, &physical_clock)?;
+    oracle::reconcile_source(
+        physical_reboot
+            .get("source_recovery")
+            .context("cold reboot source oracle absent")?,
+        physical_clock
+            .get("source_recovery")
+            .context("cold midnight source oracle absent")?,
+    )?;
     artifacts::publish(&root.join("measured-durability-oracles.json"), &reconciled)
 }
 
@@ -58,7 +71,13 @@ fn reboot(
         .and_then(|value| value.get("boot_id"))
         .and_then(Value::as_str)
         .context("original boot_id absent")?;
-    qmp::reset(root)?;
+    let boundary_at = artifacts::now();
+    let reset = qmp::reset(root)?;
+    artifacts::publish(
+        &root.join("host-reset-boundary-order.json"),
+        &json!({"host_boundary_received_at":boundary_at,"qmp_reset":reset,
+            "boundary_artifact":"host-source-active-before-reset.json"}),
+    )?;
     let boot = ssh.wait_boot(Some(old), vm)?;
     let recovered = recovery::ready(ssh, root, before, &boot, vm)?;
     let clock = recovered.get("clock").context("recovered clock absent")?;
@@ -176,7 +195,7 @@ fn wait_ready_after_restart(ssh: &Ssh, root: &Path) -> Result<()> {
             }
         }
     }
-    unreachable!("exhausted attempts and propagated error")
+    anyhow::bail!("restart readiness probe budget exhausted")
 }
 #[cfg(test)]
 mod tests;

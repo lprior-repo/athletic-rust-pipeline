@@ -14622,3 +14622,405 @@ actual measurements of all required workloads followed by a fresh comparison. No
 baseline has yet been recorded. No full release, all seventeen native faults, proof lanes or
 fresh national census is certified by this checkpoint. All CEN beads remain open.
 
+## 2026-10-08 — CEN repair continuation: reached worker boundaries, remaining source parity
+
+Executed in `/home/lewis/.cache/athletic-cen-sol-20261008-c357` after the named source writers
+were frozen:
+
+`tools/moon-local run pipeline:tests -- -E 'binary(athleticnet_meet_parity) | test(overlapping_archives) | test(compound_throw_names) | binary(parity_pipeline) | test(sigkill_mid_batch_worker) | test(sigkill_derived_generation)'`
+
+Checkpoint `7f72a585`: eight executed, six passed, two failed, 2,970 skipped; 42.92 seconds wall.
+
+- PASS: `interrupted_worker::sigkill_mid_batch_worker_restart_completes_the_remaining_units`,
+  37.007 seconds. The actual CLI worker published a durable reached marker before a source batch
+  commit and, in a separate fresh store, after a committed source chunk. The test delivered and
+  reaped actual SIGKILL 9, then cold-opened each store. It checked all 4,096 independent generated
+  native meet identifiers, exact acknowledged operation receipts and physical source occurrences,
+  the exact remaining set on recovery, the original staged operation/digest, and a zero-credit
+  replay with unchanged physical effects. This is an explicitly synthetic native fault input,
+  not a public census acquisition or a national completion claim. The obsolete timing-guess kill
+  ladder and its database-reset helpers were removed; no guessed delay is an acceptance condition.
+- PASS: `interrupted_worker::sigkill_derived_generation_restart_never_exposes_partial_state`,
+  0.210 seconds. The actual CLI indexed an initial source generation, acquired changed source
+  evidence, and was killed after flushing a later staged generation but before the visibility
+  pointer publication. Cold readback retained the previous generation and its exact active
+  projection digest, with no acknowledgement for the hidden staged operation. Restart recovered
+  that same operation/digest and published the complete clean-control projection; another replay
+  preserved its generation, source occurrences and receipts.
+- PASS: WIAA overlapping-archive source subject conservation and physical replay, compound
+  Discus/Javelin/Hammer `Throw` labels with unknown implement mass and exact malformed explicit
+  mass errors, and two NET whole-meet cache/replay scenarios. The independent whole-meet
+  inventory contains 974 native individual/relay-member result subjects, not a re-pinned magic
+  performance count.
+- FAIL: pipeline independent raw MileSplit observation readback compared the owned JSONL input's
+  literal `www.milesplit.com` profile URL with a different roster URL at `al.milesplit.com`.
+- FAIL: NET whole-meet performance provenance lost the seeded physical capture instant
+  `2026-09-22T12:00:00Z` in favor of the collector's civil observation date. Native subject,
+  participant owner and relay-leg assertions preceding this failure passed.
+
+Compiler-only failed iterations `951d5762`, `199f81d9`, `392de5ce` and `2eea1b70` identified and
+were followed by repairs to fallible test error types, native marker byte-limit types, store/hold
+caller ownership, and the nonexistent WIAA `Options::default()` caller. They are not test passes.
+Subsequent SOL-only source repairs retain separate original NET meet/results response instants
+and fix the MileSplit expectation to its actual publishing artifact; their passing-after
+verification is not claimed in this entry.
+
+Native reservation markers now carry a bounded schema-2 source-occurrence/receipt checkpoint
+while the owned blocking worker holds the append fence through marker publication and its bounded
+hold. Transaction worker markers retain schema 1 and the actual operation/digest/ordinal or staged
+generation. Scenario-17 certificate wrapper execution, native VM reboot/midnight execution,
+all seventeen fault obligations, full integrated gates and new performance measurements remain
+unexecuted or unproven here; passing the two worker tests does not certify those other lanes.
+
+The original AL38332 VM input captures remain unchanged. Executed `sha256sum` readback matched
+`index.body` SHA `c123718c4dead1a5646c1e06acf644c58e7926e20ec1e5358bf2a3bcaba6e142` and
+`roster.body` SHA `e5579dd29d2e1013fbb715091aaa4d9b0b0afa31a7eaf9c2389316e310b780f0`.
+A fresh absolute-path manifest under `var/native-vm-input-cen-20261008.json` references these
+original bodies and their actual acquisition metadata. No host clock or existing Restate node
+was modified.
+
+CEN14 remains without a genuine qualified positive. Two additional bounded acquisition slices
+retain 27 east-school bodies and 58 west-school bodies, including failed HTTP outcomes and
+official endorsement evidence where observed. Their acquisition verifiers reported matching
+SHA-256/body lengths but no original-school binding to an admitted native person key; no claim,
+decision or merged publication was promoted. This excludes the examined documents, not all
+schools or the population.
+
+The selected MileSplit replay fixture's metadata names a historical full 602-row producer body
+at `var/retained-pr-correction-20261001/store/http/52e0b5d61b6c7de90be2a35dd5fc3f42.body`.
+Main's exact original-repository checksum command and directory lookup found it absent; the
+authorized historical-worktree lookup also found it absent. Its declared original SHA/byte/row
+counts are metadata declarations, not newly verified original-body equality. The literal
+three-row replay input is retained and must not be passed off as the complete original response.
+All CEN beads remain open.
+
+## 2026-10-08 — CEN integrated parity, real postal readback and strict-lint repair
+
+This entry distinguishes executed results from subsequent repairs. No national-census,
+all-seventeen-fault, CEN14 qualified-positive, performance or ALL21 certificate is claimed.
+
+|Exact command / Moon identity|Observed result|
+|---|---|
+|`tools/moon-local run pipeline:tests -- -E 'test(parity_pipeline) \| test(meet_parity) \| test(cached_meet_keeps_capture_instants)'`, `7dbaf90a`|Five executed: four passed and one pipeline parity failed. NET whole-meet parity and the distinct original capture-instant replay regression passed; WIAA same-meet source-URL retention failed.|
+|`tools/moon-local run pipeline:tests -- -E 'test(parity_pipeline)'`, `7c642575`|One executed, one passed after using the existing lossless canonical-meet entity merge. Independently reconstructed source/replay and decoded publication parity passed for the captured qualification inputs.|
+|`env -u CI tools/moon-local run pipeline:build-portable -- --features native-fault-injection --example qualification_native_vm --example qualification_postal`, `8a68e39f`|Optimized portable binaries/examples built successfully. This build precedes the later WIAA same-meet merge and strict-lint repairs; it is not a final-source build certificate.|
+|`target/moon-portable/x86_64-unknown-linux-gnu/release/examples/qualification_postal var/cen-postal-smoke-20261008-r1 target/moon-portable/x86_64-unknown-linux-gnu/release/census-service 2026-10-08T00:00:00Z`|PASS: actual captured NCHSAA facts through Fjall, consolidation, frozen dataset, independently read XLSX, closed store, actual `export-data` CLI and independently read CSV. One school, two postal claims, sixteen coaches, zero athletes. Both artifact formats retained stored postal provenance.|
+|`tools/moon-local ci --force --summary detailed`, `838c54f2`; retained full output `artifact://632`|FAIL. Formatting, all-target/all-feature check and 270 report tests passed. Workspace suite executed 2,976 tests: 2,975 passed, one failed, three skipped. All twenty-five failures from the earlier workspace run were cleared. The remaining failure used an obsolete incidental 4 KiB marker assumption; source lint first failed the equivalent legacy-schema `map_or` expression.|
+|`env -u CI tools/moon-local run pipeline:fmt-write`, `4906c020`|PASS after those two repairs.|
+|`tools/moon-local run pipeline:tests -- -E 'test(native_boundary::tests::markers) \| package(census-store)'`, `811cbb5a`; `artifact://637`|200 executed, 200 passed, 2,779 skipped. Includes migration/store tests and actual oversized sparse-file authority refusal before decode, preserving inode, length and original prefix. An unused test import remained visible and was subsequently removed.|
+|`tools/moon-local run pipeline:lint-src`, `52029c9e`; `artifact://636`|FAIL with 28 census-crawl diagnostics after the earlier store lint was cleared. These include deliberate complete-outcome Result folds; the suggested short-circuiting `try_fold` would lose valid later facts and was not used.|
+|`env -u CI tools/moon-local run pipeline:fmt-write`, `b249e3ec`|PASS after integrated source-lint repairs. Their compiler/lint/behavior verification runs follow this entry; no passing result is inferred here.|
+
+Postal artifacts and `qualification.json` remain in `var/cen-postal-smoke-20261008-r1`.
+The input body digests/lengths and actual 2026-09-27 acquisition clocks are retained; the later
+2026-10-08 qualification decision does not refresh source evidence. This is frozen-capture
+qualification, not a fresh public acquisition or national completion.
+
+The first actual native-VM host attempt under `var/native-vm-cen-20261008-r1` rejected the shared
+`/home/lewis/bin/restate-server` version 1.6.2 before starting QEMU. Its fail-closed verdict and
+cleanup record are preserved. A separate fresh `r2` invocation uses the existing pinned
+`/home/lewis/.local/share/athletic-rust-pipeline/restate/1.7.10/restate-server`; no result is claimed
+while that finite native scenario execution remains active. Neither the shared node nor its
+durable state was modified.
+
+Two frozen SOL source slices replaced complete-outcome folds with explicit all-item iteration,
+preserving existing error precedence and retaining valid facts after malformed independent items.
+MileSplit active captured work became one optional owned payload without boxing or new allocation.
+Optional source-defined fallbacks use exhaustive matches; no unwrap-family calls or source lint
+allow attributes were introduced.
+
+The owner-approved arity policy is now consistently represented in Moon and release Clippy by
+`--force-warn clippy::too_many_arguments`: diagnostics remain visible despite otherwise fatal
+warnings. The trusted AST scan still reports more than five parameters as cohesion-review warnings.
+No safety, compiler, domain, behavior, sixty-logical-line hard limit or production-file budget was
+relaxed. These edits require the subsequent strict-lint, complete-source parity and full gates.
+
+## 2026-10-08 — Green iteration CI, reached catalog17 and failed trusted/native qualification
+
+|Moon task / exact retained command|Observed result|
+|---|---|
+|Focused source/captured-parity `pipeline:tests` task, `dc2fb9a6`; `artifact://642`|1,094 executed, 1,094 passed, 1,885 skipped by the focused filter. Complete-outcome source parsing and captured/replayed meet/publication parity passed.|
+|Focused report/publication `pipeline:tests` task, `8d7cef48`; `artifact://649`|270 executed, 270 passed, 2,709 skipped by the focused filter. Contact/publication behavior passed after allocation-free source-lint repairs.|
+|`tools/moon-local ci --force --summary detailed`; `artifact://653`|PASS: `fmt` `1652c0cb`, `lint-src` `a56919fc`, all-target/all-feature `check` `64248015`, report tests `be22b4ab` (270/270), workspace tests `65784d35` (2,976 executed and passed, three skipped). The only source-lint diagnostics were the two visible owner-approved arity warnings.|
+|`env -u CI SCRATCH_STORE=/home/lewis/.cache/athletic-cen-sol-20261008-c357/var/cen-native17-20261008-r1 ADMIN_PORT=19421 SERVICE_PORT=18422 tools/moon-local run pipeline:durability -- scenario-17-recovery-tests`, `79c1a4b4`; `artifact://653`|PASS: one catalog scenario, zero failed or skipped. Actual source and derived CLI workers reached their fault boundaries; three strict reached-SIGKILL and exact-recovery certificates passed.|
+|`env -u CI tools/moon-local run pipeline:xtask -- scan`, `1f2e4dba`; `artifact://654`|FAIL: unresolved standard/vendor macro provenance and unparseable handwritten `tokio::select!` arguments in actual production source. Compiler/test success does not substitute for trusted measurement. Repairs remain subject to subsequent integrated scanner execution.|
+
+Catalog17 evidence is retained under
+`var/cen-native17-20261008-r1/scenario-17-3GBO5O/certificates/`:
+`source_batch_staged_before_commit.json`, `source_chunk_committed_before_next.json` and
+`derived_batch_staged_before_publish.json`. The wrapper validated reached PID/operation/content,
+signal9, exact source/receipt sets and recovered replay, and unpublished/staged/new derived
+generations with atomic old-pointer visibility. This certifies scenario17, not all seventeen.
+
+The actual native-VM `r2` host command used pinned Restate1.7.10 and the captured manifest at
+`var/native-vm-input-cen-20261008.json`, preserving `var/native-vm-cen-20261008-r2/`.
+The 3,600-second outer command deadline expired. Its retained artifacts show an actual QMP reset,
+changed guest boot identity and successful original Sweep reconciliation. The original production
+jurisdiction recovery action instead exceeded its own 3,400-second deadline; its error and combined
+recovery outcomes are retained. No source-recovery, midnight or orderly-cleanup PASS is claimed.
+After termination, the actual `pgrep -af 'qemu-system|qualification_native_vm'` ownership check
+returned no processes. Disks, source boundary witness, reset order, logs and process records remain
+preserved; absence of remaining processes is not a drain certificate.
+
+All CEN beads remain open. Genuine CEN14 qualification, aggregate-origin native qualification,
+final-source native coverage, matched performance, release/proof/security gates and final landing
+remain uncertified. The newly green iteration suite is narrower than those obligations.
+
+
+## 2026-10-08 — Trusted scanner regressions and original-VM forensic readback
+
+The integrated command
+`env -u CI tools/moon-local run pipeline:fmt-write && tools/moon-local run pipeline:tests -- -E 'test(scan::strict::tests)' && env -u CI tools/moon-local run pipeline:xtask -- scan`
+completed its formatter and all 66 scanner adversarial tests (`c04506ea`, `3b51d5c7`).
+The actual production scan (`441b17d8`, `artifact://661`) failed: 28 callables exceeded
+hard60, 12 production files exceeded 300 lines and three `write!` sites remained unresolved.
+Coverage was 13,645 callables across 1,148 files. Later source repairs are not certified by
+this earlier execution; no counters, limits or provenance exemptions were waived.
+
+With the failed `r2` VM no longer running, the original qcow2 data disk was exported read-only
+to a sparse diagnostic raw image using the pinned QEMU11.1.1 `qemu-img convert -f qcow2 -O raw -S 4k`.
+`btrfs restore -l` succeeded. The first selected-file restoration failed because its destination
+did not exist; after creating a private destination, the actual command
+`btrfs restore --path-regex '^/(|[^/]*\.json|[^/]*\.log)$' var/native-vm-cen-20261008-r2/data-inspect.raw var/native-vm-cen-20261008-r2/guest-inspect`
+succeeded. Original disks and recovered logs/JSON remain preserved; no live store was opened.
+
+The recovered latest status (`jurisdiction-recovery-recovery-status-latest.json`, attempt3,078)
+shows both original `TeamsSource` children completed with successful handler results and unchanged
+parent binding. The original parent `inv_1j4peqPCiaI67cn2AwcwPynzYVTxAok0uV` remained running,
+journal58 and retry1. The first post-reset readback retains the honest MileSplit `Interrupted`
+outcome after three attempts, 72 roster obligations with one committed and 71 remaining, and
+an unfinished history stage. Successful child handler completion is not successful acquisition
+or terminal parent recovery. The timeout cause remains under investigation; no scenario03,
+scenario12, orderly-drain or national acceptance is claimed.
+
+
+## 2026-10-08 — Trusted hard budgets, integrated CI and native catalog08 PASS
+
+After private cohesive decompositions and complete private-consumer migration, the exact scanner
+command retained above passed: formatter `81c64d03`, scanner regressions `19fdeec4` (68/68),
+and actual production scan `f6c488c7` (`artifact://674`). It measured 13,683 handwritten callables
+across 1,164 files, zero callables over hard60, zero production files over300 and zero unresolved
+macro sites. Advisory25 and parameter-review diagnostics remain visible. Module and value aliases
+now have distinct provenance, preserving standard `write!` without exempting a handwritten shadow.
+
+`tools/moon-local ci --force --summary detailed` passed against the integrated frozen source
+(`artifact://675`): formatter `7d1b89df`, source lint `61a577ce`, all-target/all-feature check
+`c6dd7652`, workspace tests `a8110e5c` (2,990/2,990 passed, three skipped), and report tests
+`d9320b24` (270/270 passed). Only the two owner-approved forced arity warnings were emitted.
+`env -u CI tools/moon-local run pipeline:build-portable -- --features native-fault-injection --example qualification_native_vm --example qualification_postal`
+then passed (`f9668526`).
+
+The actual command
+`env -u CI SCRATCH_STORE=/home/lewis/.cache/athletic-cen-sol-20261008-c357/var/cen-native08-20261008-r1 ADMIN_PORT=19431 SERVICE_PORT=18432 tools/moon-local run pipeline:durability -- scenario-08-global-budget`
+passed (`5c2b8ae1`, `artifact://675`): one catalog scenario, zero failed or skipped.
+Evidence is retained at
+`var/cen-native08-20261008-r1/scenario-08-lzze4i/native-origin-budget-PfXaox/origin-budget.json`.
+Three simultaneous native CLI workflows used distinct stores and a shared production `var/locks`
+root. The real owner target handshake preceded two contenders; both were refused with the exact
+owner PID and emitted zero physical traffic. The owner's actual robots/target200 request ledger
+met 1,000ms spacing with 50ms tolerance, peak in-flight1 and burst1. Four subprocesses were reaped;
+the origin lock released and subsequent cache replay retained exact capture facts without traffic.
+The certificate binds binary/ledger/capture hashes. This proves the exercised one-host CLI scope,
+not multiple serving Restate endpoints, distributed coordination, cross-owner turnover pacing or
+sustained load.
+
+The source/general service parity review (`InspectionPublicationParityReview`,
+`openai-codex/gpt-6.1-sol:high`) found no confirmed semantic defects in its assigned private
+decompositions. That read-only review is not runtime certification. Release, matched performance,
+the remaining native catalog coverage and genuine CEN14 positive qualification are still open.
+
+
+The second source parity review (`SourceProjectionParityReview`,
+`openai-codex/gpt-6.1-sol:high`) found no confirmed semantic regression in its 28 assigned
+provider/authority files. No commands or writes were delegated to either parity review.
+
+The fresh `f9668526` postal qualification binary was exercised separately:
+`target/moon-portable/x86_64-unknown-linux-gnu/release/examples/qualification_postal var/cen-postal-smoke-20261008-r2 target/moon-portable/x86_64-unknown-linux-gnu/release/census-service 2026-10-08T22:00:00Z`.
+It exited0 in0.46s. `var/cen-postal-smoke-20261008-r2/qualification.json` and independent CSV/XLSX
+readbacks retain the exact captured school, two postal claims and 16 coaches with no athletes.
+The actual CLI runs only after the owning store closes. Source capture times remain
+2026-09-27T00:00:00Z; the supplied October8 observation instant is an execution input, not a
+replacement physical acquisition clock. This is retained-public-fixture replay and publication
+proof, not fresh network acquisition, independent athlete-source qualification or national coverage.
+
+Feature binaries were copied without replacement into
+`var/cen-upgrade-binaries-20261008-r1/` before any plain rebuild:
+`census-serve-v1` SHA-256 `249e085c93dc3213cd3f4e71833df0df91c0ae3c3bfa6b289e282db0ed674962`,
+`census-service-feature` SHA-256 `73e3654b87ae3759f22457012bd02f04296568c6567c7582a7a6f86419006e4d`.
+These are preserved V1 inputs, not an upgrade acceptance result.
+
+
+## 2026-10-08 — Native04 failure and genuine qualification prerequisites
+
+Distinct plain V2 compiled through
+`env -u CI tools/moon-local run pipeline:build -- --release -p census-service --bin census-serve`
+(`7b03e578`, exit0,122.10s), without replacing the active portable binaries.
+`env -u CI SCRATCH_STORE=/home/lewis/.cache/athletic-cen-sol-20261008-c357/var/cen-native04-20261008-r1 ADMIN_PORT=19631 SERVICE_PORT=18632 BINARY=/home/lewis/.cache/athletic-cen-sol-20261008-c357/var/cen-upgrade-binaries-20261008-r1/census-service-feature S04_V1_BINARY=/home/lewis/.cache/athletic-cen-sol-20261008-c357/var/cen-upgrade-binaries-20261008-r1/census-serve-v1 S04_V2_BINARY=/home/lewis/.cache/athletic-cen-sol-20261008-c357/target/moon-build/x86_64-unknown-linux-gnu/release/census-serve tools/moon-local run pipeline:durability -- scenario-04-rolling-upgrade`
+failed (`0f60296c`, exit1,25.56s).
+`var/cen-native04-20261008-r1/scenario-04-wSRJ7o/` preserves real reached reservation, owned
+kill/handoff, distinct binary hashes, original parent/child identities and returned outcome.
+V2 SHA-256 is `cbb96816e2510b554d60dc3fdab88fc6c959a2dd065f7c7ab9f9ec75b4583d6f`.
+Both binaries registered the same 11-service set and the second writer was actually refused.
+Different-revision legacy-store refusal was explicitly EXCLUDED, not measured. The child returned
+`Interrupted` after three retained attempts: Unknown1, Transient2 and3, each latter attempt reporting
+117 rows but Unknown disposition. The ledger oracle required a completed attempt and failed.
+No native04 PASS is claimed. Inspection found the MileSplit teams walker constructing a default
+Unknown adapter report and setting only its row count; the durable team-index receipt already
+retains measured completeness/errors/unfinished inputs. A proper measurement repair must consume
+that evidence, not infer completion from117 rows or suppress the oracle.
+
+The SOL-only genuine CEN14 investigation retained six additional actual production-fetch captures
+under `var/cen14-independent-20261008-r1/`. `capture-readback.json`,
+`acquisition-commands.json` and the raw bodies/manifests record exact URLs, SHA-256, public locators
+and physical capture clocks. Official Eudora's published dynamic search was exercised: Chapelle
+returned a Science Olympiad fragment; cross-country returned only its coaching tab. FBCHA program
+pages publish team-level Athletic.net schedules, not the required person key. `fbcha.org` returned403
+and was not bypassed. No qualifying independently school-authored person binding was acquired:
+DirectAthletics9450666 still lacks the school side, and Athletic.net23561346 remains an unqualified
+personal recruiting lead. These are bounded observed negatives, not proof no public positive exists.
+Zero independent assertions, no parsing-to-review positive and no CEN14 certification.
+
+Performance prerequisites were inspected without recording a baseline. The host lacks Valgrind
+and `/usr/bin/time`; genuine configured-mirror Valgrind3.25.1, GNU Time1.10 and its mandatory
+debug acquisition dependencies were extracted into `var/cen-valgrind-3.25.1-20261008/`, without
+host package installation, downgrade or clock changes. GNU Time version smoke passed. Memcheck
+cannot start against the installed stripped glibc2.44+r24 loader because mandatory `memcmp`
+redirection lacks matching symbols; exact loader build ID is
+`1e794eb14f4bccf6186bf8d9aa2018e8963ea668`. Matching debuginfod, archive and configured-mirror
+debug-package requests failed404. No missing allocation measurement was replaced by zero.
+
+The genuine Valgrind DHAT allocation tool does start against the same installed loader.
+`--tool=dhat --dhat-out-file=var/cen-valgrind-3.25.1-20261008/dhat-cli-help.json --error-exitcode=97`
+with the actual portable `census-service --help` exited0 in0.41s and recorded
+2,806 allocated blocks /1,022,425 cumulative allocated bytes. Its raw version2 heap profile is
+preserved. This proves tool operation on the actual CLI, not benchmark timing, census workload
+memory, Memcheck safety, a matched baseline or a performance improvement. The three benchmark
+targets and fresh5% comparison still have not been measured.
+
+Read-only SOL VM contract-parity review found the terminal whole-history Jurisdiction prerequisite
+stricter than fault03. It permits pending-parent recovery only with original acknowledged effects,
+reached reset/changed boot, conserved complete journals/captures/receipts, settled original source
+results recorded by the original parent and exact resumable remaining work. Running status alone
+is insufficient. Existing midnight equality, physical readback, orderly drain and owned cleanup
+must remain. The supported vendor pause/resume API was located; it has not yet been exercised for
+the VM's quiescent comparison interval. No native03/12 or cleanup PASS is added here.
+
+
+## 2026-10-08 — Current native catalog batch and focused completion/profiler repairs
+
+The thirteen-scenario batch ran through the actual Moon durability entrypoint:
+`env -u CI SCRATCH_STORE=/home/lewis/.cache/athletic-cen-sol-20261008-c357/var/cen-native-catalog-20261008-r1 ADMIN_PORT=19521 SERVICE_PORT=18522 tools/moon-local run pipeline:durability -- scenario-01-endpoint-kill scenario-02-restate-kill-during-fanout scenario-05-http-error-taxonomy scenario-06-no-duplicate-evidence scenario-07-domain-dedup scenario-09-disk-full-fjall scenario-10-disk-full-restate scenario-11-parent-exit scenario-13-ai-review-failures scenario-14-seal-refuses scenario-15-full-backup-restore scenario-16-golden-census-determinism scenario-17-recovery-tests`.
+Moon `b30d24a5` exited1 in2259.89s: **7PASS,2FAIL,4SKIPPED**, not catalog acceptance.
+
+Passed slices retain their individual limits:
+
+- 01: eight endpoint/Restate crash-recovery and readback tests passed, including actual endpoint
+  SIGKILL after3 of17 snapshots and resumed original `inv_1037RzneRgxI0H41pIXDAbyXXTrSDz2T9Y`.
+- 09: bounded kernel Fjall ENOSPC refused batch26 at school836;28 exact acknowledged receipts
+  survived cold readback, same-content replay appended zero and a new recovery batch survived reopen.
+  `enospc-09-SW01PD/` preserves the selected executable identity and probe evidence.
+- 10: owned bounded Restate tmpfs filler reached actual ENOSPC/RocksDB errors;
+  acknowledged `inv_141qvNVPwYiW4Rz1aeylrgHl8R1Mlkxb0f` survived restart, duplicate was refused
+  and a new workflow reproduced its baseline output. `scenario-10-zBVZ2Q/` retains evidence.
+- 14: actual empty-store seal refused three named unmeasured items;25 state/seal tests and two
+  actual interrupted exporter tests passed. Retained findings are not invented refusal items.
+- 15: six cold-backup/restore integrity tests passed, including exact nonempty readback,
+  interrupted/torn copies, append after restore and live-store second-writer refusal.
+- 16:210 frozen captures stayed byte-identical; offline parser, retained-advice, quarantine,
+  interrupted-publication and derived-generation suites passed. No live national corpus, source
+  re-crawl or real model server was replayed in this slice.
+- 17: actual SIGKILL and exact recovery certificates passed for
+  `source_batch_staged_before_commit`, `source_chunk_committed_before_next` and
+  `derived_batch_staged_before_publish`, under `scenario-17-8cQEkB/certificates/`.
+
+Failed07 was a harness admission-observation defect, not evidence of missing ingress admission:
+`scenario-07-FNF3oS/submit-1.json` contains the admitted invocation
+`inv_15ajpKUIztST4BRodszPE21meZdHNRP9hW` as CLI stdout prose; the wrapper watched stderr.
+Failed11 queried nonexistent Restate1.7.10 field `progress`; its900 saved inventories are actual
+Datafusion errors, not empty successful queries. Original11 admission was
+`inv_12pvZZnkdzg800c3K2gX147qQVKh4KWAwj`. Both owned endpoints reported
+`accepted=16 completed=16 cancelled=0 timed_out=0 aborted=0 panicked=0` at cleanup.
+These failures were inspected from retained artifacts, not rerun merely to confirm them.
+
+Skipped02/05/06 selected a nonexistent feature artifact under `target/moon-build`; the actual
+portable feature artifact existed elsewhere. Skipped13 lacked its dual-lane seed store.
+The source repair now uses selected portable feature artifacts, structured admission/idempotency,
+supported admin fields and query/schema error propagation. Post-repair native qualification
+is still required. Native06 additionally needs honest reachable roster-phase markers and exact
+physical occurrence/receipt readback: its old Hook fabricated `fault_injection` identity,
+mislabelled phase placement and did not bind actual operation/attempt. Status growth cannot
+certify no duplicates. No conditional prerequisite SKIP discharges that obligation.
+
+The current MileSplit source-report repair reads authoritative team-index receipt/input state,
+preserving unknown/partial/error/unfinished and missing-input evidence. A completed directory
+does not require already-collected rosters; a row count cannot establish completion.
+The DHAT backend uses version2 heap-profile totals, checked counters, bounded16MiB input and
+65,536 points, positive allocation/byte aggregates and an explicit whole-process single-selected-
+Criterion-test/GNU-RSS scope. Old Memcheck or absent scopes cannot compare silently.
+
+`env -u CI tools/moon-local run pipeline:fmt-write && tools/moon-local run pipeline:tests -- -E 'test(perf::) | test(census::sweep::index::tests)' && tools/moon-local run pipeline:check`
+first failed on the new report's checked-size conversion prerequisite (`d2eaac22` fmtPASS,
+`bb45e595` compileFAIL: usize receipt errors assigned to u64 report errors). Checked conversion
+was applied. The second command passed fmt `e73ca6a0`, focused tests `62309b56` **48/48**
+(2955 skipped) and all-target check `8b851554`; it exposed one unused `Method` import,
+subsequently removed. No fresh release or runtime certification follows from these tests.
+
+The actual isolated GNU Time invocation of portable `census-service --help` exited0 and measured
+8,152KiB peak RSS in `var/cen-valgrind-3.25.1-20261008/cli-help-rss.txt`.
+Independent `jq` readback of the retained actual DHAT profile confirmed version2/heap,
+2,806 allocations and1,022,425 cumulative bytes. All six additional CEN14 raw capture bodies
+were independently rehashed and matched their retained manifests. These are tool/capture
+readbacks, not benchmark acceptance, genuine independent athlete qualification or national release.
+
+The new VM source-recovery path distinguishes actual completed output from paused-resumable
+original work. It retains full remaining state/journals and requires settled original source
+results recorded by the original parent; pause targets the actual original invocation and
+owned descendants. Before/after midnight live quiescence and existing cold equality/drain
+oracles remain required. This source compiles in the focused lane, but native VM03/12 execution,
+physical quiescence, real clock crossing and cleanup have not yet passed.
+
+## 2026-10-08 — Owner-directed source recovery checkpoint after host shutdown
+
+The owner requested immediate commitment into local `main`. This checkpoint preserves work;
+it is not ALL21 completion, release readiness or a runnable current-tree certification.
+The source inventory retained179 modified tracked files and42 untracked paths before the
+last interrupted private repairs. No pre-shutdown byte-for-byte snapshot proves zero source loss.
+
+Before the shutdown, integrated source lint `8c3ab06c` passed with only two owner-approved
+arity warnings. Trusted scan `7c3aafa1` checked13,694 callables across1,166 files, with zero
+60-line violations and zero unresolved sites. Portable feature build `e0dde4aa` passed.
+After restart, the plain portable-upgrade counterpart build `84ea0d07` passed.
+These results predate the newest private verification edits; they do not certify this checkpoint.
+
+Actual catalog03/12 command `aa074fb2` failed after184.18 seconds, with0 PASS,2 FAIL.
+Original source recovery, cold snapshot and actual subtree quiescence were reached, but the
+clock-acquisition oracle wrongly required one physical request where production charged both
+robots policy and directory GET. The observed fresh statistics were requests2, cache_hits0,
+conditional_3040, errors0 and bytes_downloaded203537. That oracle now explicitly accounts for
+one robots request plus one full-body response; hashes, body bytes, timestamps and cold readback
+remain required. The new behavioral regression has not run.
+
+The host restarted: observed boot identity `d7804ade-fc82-44c1-863c-3d937ebae585` and uptime669.53
+seconds. Old jobs and listeners were gone. `/tmp/cen-vm-C6UnXK/machine` vanished and its persistent
+producer link became dangling; its disks/logs cannot be revalidated or counted as certification.
+New wrapper allocations use private persistent `$HOME/.cache/cen-native-vm/run-XXXXXXXX/machine`,
+retaining exact session nonce, input/output hashes, owned-root and reuse checks. The updated
+wrapper has not yet produced a passing native certificate. The interrupted07/11/02/05 batch
+has no recovered complete result and is not counted as a post-repair pass.
+
+Two SOL writers stopped immediately for this checkpoint. VM source-call/child bijection and
+the separate4096-byte registration bound were written, but their new regressions remain
+unexecuted. The pause/completion-race repair is partial: `hold` expects an optional tree result
+while `tree::settle` still supplies a nonoptional result; current-tree compile failure is
+expected [INFERENCE], not an observed command result. The private native origin endpoint
+fixture/API/process files are preserved but not declared or exercised; full endpoint,
+steady-state and owner-turnover orchestration is absent. The existing08 certificate is still
+CLI-only. Production next-admission time is not persisted across lease ownership turnover.
+
+The perf integer-boundary regression is also preserved before its production fix:
+72057594037928040 →75660473739824442 is exactly21/20, but the existing f64 cost comparison
+rejects it in independently executed arithmetic. The new project regression has not run;
+no failing-before/passing-after project execution is claimed. Full release/native17,
+all-three-workload fresh performance comparison, genuine independent public identity positive
+control and the actual fresh49-jurisdiction sealed national export remain incomplete.
+

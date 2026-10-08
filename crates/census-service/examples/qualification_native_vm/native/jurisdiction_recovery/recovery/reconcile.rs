@@ -30,6 +30,17 @@ pub(super) fn original(
         "JurisdictionCensus",
         original,
     )?;
+    ensure!(
+        observation.parent_state.identity == original.key,
+        "retained parent state identity differs"
+    );
+    ensure!(
+        observation
+            .parent_state
+            .history_window
+            .is_none_or(|window| window == original.request.history),
+        "retained historical window differs from original immutable request"
+    );
     let previous: Observation = serde_json::from_value(
         before
             .pointer("/boundary/observation")
@@ -186,6 +197,27 @@ fn retained_entries(before: &Value, after: &Value) -> Result<()> {
         );
         Ok(())
     })
+}
+
+pub(super) fn retained_observation(
+    original: &Original,
+    previous: &Observation,
+    current: &Observation,
+) -> Result<()> {
+    let old = observe::status(&previous.after, &original.id)?;
+    let parent = observe::status(&current.after, &original.id)?;
+    ensure!(
+        old.get("pinned_service_protocol_version") == parent.get("pinned_service_protocol_version"),
+        "original parent protocol changed during pause race"
+    );
+    ensure!(
+        current.parent_state.identity == original.key
+            && current.parent_state.history_window.is_none_or(|window| window == original.request.history)
+            && previous.parent_state.plan == current.parent_state.plan,
+        "original parent scope changed during pause race"
+    );
+    retained_entries(&previous.parent_journal, &current.parent_journal)?;
+    retained_children(original, previous, current)
 }
 
 pub(super) fn capture_obligations(

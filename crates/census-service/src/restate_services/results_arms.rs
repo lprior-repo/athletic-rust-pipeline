@@ -1,4 +1,6 @@
 mod collection;
+mod meet_pages;
+mod outcomes;
 mod selection;
 use std::sync::Arc;
 
@@ -13,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use super::job_error;
 use super::jobs::{assert_some_stage_arms, collect_error, rows_written};
 use super::{history_stage::HistoricalStageScope, source_selection::SourceSelection};
+use outcomes::{delegated_source, source_complete};
 
 const MILESPLIT: &str = "milesplit";
 const ATHLETICNET: &str = "athleticnet";
@@ -131,17 +134,6 @@ fn required_slug(source: &'static census_crawl::SourceDescriptor) -> Option<&'st
     required(source).then_some(source.slug)
 }
 
-fn source_complete(source: &ResultsSourceRows) -> bool {
-    source.disposition.is_complete()
-        && source.rows.is_some()
-        && source.errors == 0
-        && source.withheld == Some(0)
-        && source.unfinished.is_empty()
-        && source
-            .unresolved
-            .is_some_and(|value| value.rows == 0 && value.labels == 0)
-}
-
 async fn collect_source(
     slug: &str,
     store: &Arc<Store>,
@@ -154,20 +146,6 @@ async fn collect_source(
         return Ok(delegated_source(slug));
     };
     collection::collect(slug, arm, store, fetcher, (selected, scope)).await
-}
-
-fn delegated_source(slug: &str) -> ResultsSourceRows {
-    ResultsSourceRows {
-        slug: slug.to_string(),
-        meets: 0,
-        rows: None,
-        disposition: CollectionDisposition::Unknown,
-        errors: 0,
-        withheld: None,
-        notes: Vec::new(),
-        unfinished: vec![format!("{slug}/acquisition-stage-outcome")],
-        unresolved: None,
-    }
 }
 
 fn failed_source(slug: &str, meets: usize, error: HandlerError) -> ResultsSourceRows {
@@ -223,48 +201,13 @@ async fn milesplit_results(
     )
     .await
     .map_err(|error| job_error(collect_error(error)))?;
-    let urls = pages.files.iter().try_fold(Vec::new(), |mut urls, file| {
-        if urls.len() >= 4096 {
-            return Err(super::jobs::invariant(
-                "meet result-set frontier exceeds 4096",
-            ));
-        }
-        urls.try_reserve(1)
-            .map_err(|_| super::jobs::invariant("meet result-set allocation"))?;
-        urls.push(file.request());
-        Ok(urls)
-    })?;
-    let report = census_crawl::milesplit::collect_result_sets(
-        context,
-        &census_crawl::milesplit::ResultSetOptions { urls },
-    )
-    .await
-    .map_err(|error| job_error(collect_error(error)))?;
-    let mut report = record_quarantines(report, pages.quarantined)?;
+    let options = meet_pages::options(&pages)?;
+    let report = census_crawl::milesplit::collect_result_sets(context, &options)
+        .await
+        .map_err(|error| job_error(collect_error(error)))?;
+    let mut report = meet_pages::record_quarantines(report, pages.quarantined)?;
     report.note(format!("meet_pages_read={}", pages.pages_read));
     Ok((1, report))
-}
-
-fn record_quarantines(
-    report: AdapterReport,
-    quarantined: Vec<(String, String)>,
-) -> Result<AdapterReport, HandlerError> {
-    quarantined
-        .into_iter()
-        .try_fold(report, |mut report, (url, reason)| {
-            report.errors = report
-                .errors
-                .checked_add(1)
-                .ok_or_else(|| super::jobs::invariant("meet-page quarantine counter overflow"))?;
-            report.disposition = CollectionDisposition::Partial;
-            report
-                .unfinished
-                .try_reserve(1)
-                .map_err(|_| super::jobs::invariant("quarantine locator allocation"))?;
-            report.unfinished.push(url.clone());
-            report.note(format!("quarantined meet page {url}: {reason}"));
-            Ok(report)
-        })
 }
 
 async fn athleticnet_meets(

@@ -133,6 +133,8 @@ fn a_file_without_a_header_is_not_claimed() {
 
 #[test]
 fn over_precision_timed_rows_do_not_fall_back_to_distance_or_hide_later_results() -> TestResult {
+    let baseline = parse(&crate::hytek::lines_from_pdf_text(REGIONAL), source(), 2026)
+        .ok_or("missing baseline compiled source meet")?;
     let body = REGIONAL.replace("12.30 Q", "12.3000000001 Q");
     let meet = parse(&crate::hytek::lines_from_pdf_text(&body), source(), 2026)
         .ok_or("missing compiled source meet")?;
@@ -142,7 +144,7 @@ fn over_precision_timed_rows_do_not_fall_back_to_distance_or_hide_later_results(
         .find(|event| event.kind == census_domain::model::EventKind::Track100m)
         .ok_or("missing dash event")?;
     check!(eq; dash.rows.len(), 7);
-    check!(eq; meet.rows_skipped, 1);
+    check!(eq; meet.rows_skipped, baseline.rows_skipped.checked_add(1).ok_or("rejected-row counter overflow")?);
     check!(dash.rows.iter().all(|row| row.name != "Parrish, Ashley"));
     let later = dash
         .rows

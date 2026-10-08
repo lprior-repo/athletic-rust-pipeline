@@ -20,19 +20,17 @@ pub(super) fn require_owner(
             .journal_payload(EFFECT_PHASE, &key)?
             .ok_or_else(|| super::schema(path, "current receipt has no payload"))?;
         require_shape(path, &key, &payload)?;
-        if payload.get("path").and_then(serde_json::Value::as_str) == Some(path)
+        if (payload.get("path").and_then(serde_json::Value::as_str) == Some(path)
             || payload.get("digest").and_then(serde_json::Value::as_str)
-                == Some(meta.content_digest.as_str())
-        {
-            if payload.get("meet").and_then(serde_json::Value::as_str) != Some(meet.as_str())
+                == Some(meta.content_digest.as_str()))
+            && (payload.get("meet").and_then(serde_json::Value::as_str) != Some(meet.as_str())
                 || payload.get("provider").and_then(serde_json::Value::as_str)
-                    != Some(run.target.tenant.as_str())
-            {
-                return Err(super::schema(
-                    path,
-                    "capture belongs to another meet/provider; refusing to project",
-                ));
-            }
+                    != Some(run.target.tenant.as_str()))
+        {
+            return Err(super::schema(
+                path,
+                "capture belongs to another meet/provider; refusing to project",
+            ));
         }
     }
     Ok(())

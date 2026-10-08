@@ -41,19 +41,10 @@ pub(super) fn normalize(matcher: &Group, output: Group) -> syn::Result<Group> {
                 frame.output.extend([token]);
             }
             None => {
-                let finished = frames
+                let group = frames
                     .pop()
-                    .ok_or_else(|| syn::Error::new(Span::call_site(), "missing template frame"))?;
-                if finished.repeated {
-                    syn::parse2::<syn::Expr>(finished.output.clone())?;
-                }
-                let delimiter = if finished.repeated {
-                    proc_macro2::Delimiter::None
-                } else {
-                    finished.delimiter
-                };
-                let mut group = Group::new(delimiter, finished.output);
-                group.set_span(finished.span);
+                    .ok_or_else(|| syn::Error::new(Span::call_site(), "missing template frame"))?
+                    .finish()?;
                 match frames.last_mut() {
                     Some(parent) => parent.output.extend([TokenTree::Group(group)]),
                     None => return Ok(group),
@@ -88,6 +79,20 @@ impl Frame {
             arguments,
             repeated: false,
         }
+    }
+
+    fn finish(self) -> syn::Result<Group> {
+        if self.repeated {
+            syn::parse2::<syn::Expr>(self.output.clone())?;
+        }
+        let delimiter = if self.repeated {
+            proc_macro2::Delimiter::None
+        } else {
+            self.delimiter
+        };
+        let mut group = Group::new(delimiter, self.output);
+        group.set_span(self.span);
+        Ok(group)
     }
 }
 

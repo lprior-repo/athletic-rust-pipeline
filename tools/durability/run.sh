@@ -25,6 +25,9 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SCRATCH_STORE="${SCRATCH_STORE:-/tmp/durability-scenario}"
 mkdir -p "$SCRATCH_STORE"
 SCRATCH_STORE="$(cd "$SCRATCH_STORE" && pwd)"
+CENSUS_NATIVE_VM_SESSION_ROOT="$(mktemp -d "$SCRATCH_STORE/native-vm-session-XXXXXXXX")"
+read -r CENSUS_NATIVE_VM_SESSION_TOKEN < /proc/sys/kernel/random/uuid
+export CENSUS_NATIVE_VM_SESSION_ROOT CENSUS_NATIVE_VM_SESSION_TOKEN
 TMPDIR="${TMPDIR:-$SCRATCH_STORE/tmp}"
 mkdir -p "$TMPDIR"
 TMPDIR="$(cd "$TMPDIR" && pwd)"

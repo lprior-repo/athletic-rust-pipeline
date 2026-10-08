@@ -1,3 +1,4 @@
+mod dhat;
 mod memory;
 mod metadata;
 pub(super) mod runtime;
@@ -35,9 +36,7 @@ fn measure_target(name: &str) -> Result<BTreeMap<String, GroupMeasurement>> {
         measurement.peak_rss_kib = Some(memory.peak_rss_kib);
         measurement.allocation_count = Some(memory.allocation_count);
         measurement.allocated_bytes = Some(memory.allocated_bytes);
-        if name == "capture_export" && id == super::compare::CAPTURE_EXPORT_WORKLOAD {
-            measurement.timing_scope = Some(super::compare::CAPTURE_EXPORT_TIMING_SCOPE.to_owned());
-        }
+        measurement.timing_scope = Some(super::scope::expected(id).to_owned());
         measurement.tail_time_seconds = Some(
             *tails
                 .get(id)

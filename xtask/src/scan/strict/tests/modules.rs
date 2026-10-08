@@ -67,3 +67,26 @@ fn opaque_macro_module_tokens_remain_expansion_obligations_not_source_paths() ->
     check!(enforce_report(&report(found)).is_err());
     Ok(())
 }
+
+#[test]
+fn external_module_vendor_globs_preserve_standard_macros_and_vendor_aliases() -> TestResult {
+    let root = PathBuf::from("/source/src/lib.rs");
+    let caller = PathBuf::from("/source/src/caller.rs");
+    let sources = vec![
+        (
+            root.clone(),
+            "use restate_sdk::prelude::*; use tracing as log; #[path=\"caller.rs\"] mod caller;"
+                .to_string(),
+        ),
+        (
+            caller,
+            "use super::*; use anyhow::anyhow; fn run() { format!(\"value\"); vec![1]; matches!(1, _); cfg!(unix); log::warn!(\"observed\"); anyhow!(\"message\"); }"
+                .to_string(),
+        ),
+    ];
+    let found = inspect_sources(&sources, &[root], &std::collections::BTreeSet::new())?;
+    check!(eq; found.callables, 1);
+    check!(eq; found.unresolved.len(), 0);
+    validate_report(&report(found))?;
+    Ok(())
+}

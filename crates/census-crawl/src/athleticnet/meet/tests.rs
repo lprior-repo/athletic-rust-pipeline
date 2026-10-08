@@ -14,6 +14,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+mod acquisition;
 mod captured;
 mod performance_specifications;
 mod qualification;
@@ -59,6 +60,7 @@ fn absorb(
         metadata,
         &source,
         (
+            OBSERVED_ON,
             OBSERVED_ON,
             chrono::NaiveDate::from_ymd_opt(2026, 9, 30).ok_or("snapshot date")?,
         ),

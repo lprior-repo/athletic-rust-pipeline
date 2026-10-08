@@ -132,11 +132,23 @@ impl Parse for Select {
                 }
             }
             input.parse::<Token![=>]>()?;
-            expressions.push(input.parse()?);
+            expressions.push(select_handler(input)?);
             if input.peek(Token![,]) {
                 input.parse::<Token![,]>()?;
             }
         }
         Ok(Self(expressions))
+    }
+}
+
+fn select_handler(input: ParseStream<'_>) -> syn::Result<syn::Expr> {
+    if input.peek(syn::token::Brace) {
+        Ok(syn::Expr::Block(syn::ExprBlock {
+            attrs: Vec::new(),
+            label: None,
+            block: input.parse()?,
+        }))
+    } else {
+        input.parse()
     }
 }

@@ -54,6 +54,11 @@ pub(super) fn midnight(ssh: &Ssh, root: &Path) -> Result<Value> {
         &root.join("clock-oracle.json"),
         &json!({"verdict":"PASS","injection":injected,"before":before,"after":after,"active_before":active,"baseline_proof":baseline_proof,"same_sweep_journal_date":workflow,"same_effect_replay":replay,"fresh_before":acquired_before,"fresh_after":acquired_after,"host_after":artifacts::now(),"limit":"isolated guest acquisition clock proof; sampled realtime and uptime must not regress and elapsed discrepancy must be at most one second both from the previous validated sample and the original baseline, with no rate allowance; two-decimal uptime quantization and sequential measurement are included in this total allowance, not proof against unsampled, cancelling or sub-tolerance clock adjustments; not host-clock freshness or national census acceptance"}),
     )?;
+    let quiescent = ssh.action("jurisdiction-quiescence")?;
+    artifacts::publish(
+        &root.join("source-quiescent-after-midnight.json"),
+        &quiescent,
+    )?;
     offline_snapshot(ssh, root, "after-clock")
 }
 

@@ -21,15 +21,6 @@ pub(super) fn persist(ctx: &AdapterContext<'_>, rows: Accumulator) -> CrawlResul
     let meets = write_rows(ctx, Table::Meets, rows.meets.values())?;
     let teams = write_rows(ctx, Table::Teams, rows.teams.values())?;
     let athletes = write_rows(ctx, Table::Athletes, rows.athletes.values())?;
-    rows.athletes.values().try_for_each(|athlete| {
-        write_rows(
-            ctx,
-            Table::SourceObservations,
-            ctx.athlete_observations(std::slice::from_ref(athlete), rows.schools.values())
-                .iter(),
-        )
-        .map(|_| ())
-    })?;
     let events = write_rows(ctx, Table::Events, rows.events.values())?;
     let performances = write_rows(ctx, Table::Performances, rows.performances.values())?;
     let unsupported_cohorts = rows.unsupported.len();

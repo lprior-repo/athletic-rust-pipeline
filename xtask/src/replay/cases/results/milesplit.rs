@@ -36,33 +36,43 @@ pub(super) fn capture(capture: &Capture<'_>) -> Result<String> {
         return raw(capture, &site, &meet_id, &rsid);
     }
     if let Some((site, meet_id, template)) = results_fixture(file) {
-        let url = format!("corpus://milesplit/{file}");
-        let files = milesplit::parse_meet_result_files(&url, body)?;
-        ensure_rows(file, files.len(), "result files")?;
-        if template != ResultsTemplate::Inline {
-            return Ok(format!(
-                "meet_result_files site={site} meet={meet_id} template={} files={}",
-                template.name(),
-                files.len()
-            ));
-        }
-        let set = files
-            .first()
-            .context("an inline results page publishes one result set")?;
-        let set_url = set.raw_url(&url);
-        ensure!(
-            set_url == url,
-            "{file}: an inline set is addressed by the page itself"
-        );
-        let page = milesplit::parse_raw(body, &set_url)?;
-        ensure_rows(file, page.meet.rows_parsed, "result rows")?;
-        return Ok(format!(
-            "meet_result_files site={site} meet={meet_id} template=inline files={} rows={}",
-            files.len(),
-            page.meet.rows_parsed
-        ));
+        return result_listing(capture, &site, &meet_id, template);
     }
     unmapped("milesplit", file)
+}
+
+fn result_listing(
+    capture: &Capture<'_>,
+    site: &str,
+    meet_id: &str,
+    template: ResultsTemplate,
+) -> Result<String> {
+    let (file, body) = (capture.file, capture.body);
+    let url = format!("corpus://milesplit/{file}");
+    let files = milesplit::parse_meet_result_files(&url, body)?;
+    ensure_rows(file, files.len(), "result files")?;
+    if template != ResultsTemplate::Inline {
+        return Ok(format!(
+            "meet_result_files site={site} meet={meet_id} template={} files={}",
+            template.name(),
+            files.len()
+        ));
+    }
+    let set = files
+        .first()
+        .context("an inline results page publishes one result set")?;
+    let set_url = set.raw_url(&url);
+    ensure!(
+        set_url == url,
+        "{file}: an inline set is addressed by the page itself"
+    );
+    let page = milesplit::parse_raw(body, &set_url)?;
+    ensure_rows(file, page.meet.rows_parsed, "result rows")?;
+    Ok(format!(
+        "meet_result_files site={site} meet={meet_id} template=inline files={} rows={}",
+        files.len(),
+        page.meet.rows_parsed
+    ))
 }
 
 fn raw(capture: &Capture<'_>, site: &str, meet_id: &str, rsid: &str) -> Result<String> {

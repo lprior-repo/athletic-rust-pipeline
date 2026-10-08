@@ -27,6 +27,8 @@ pub(super) enum BoundaryError {
     Json(#[from] serde_json::Error),
     #[error("native source boundary: bounded input allocation failed: {0}")]
     Allocation(#[from] std::collections::TryReserveError),
+    #[error("native source boundary: acknowledged source checkpoint failed: {0}")]
+    Checkpoint(#[from] census_store::StoreError),
     #[error("native source boundary: journaled identity is empty or oversized")]
     IdentityBounds,
     #[error("native source boundary: existing marker contradicts the reserved journaled identity")]

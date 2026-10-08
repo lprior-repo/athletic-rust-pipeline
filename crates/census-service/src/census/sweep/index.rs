@@ -27,6 +27,62 @@ struct Receipt {
     errors: usize,
 }
 
+pub(crate) fn team_index_report(
+    store: &Store,
+    jurisdiction: UsJurisdiction,
+) -> CrawlResult<census_crawl::AdapterReport> {
+    let mut report = census_crawl::AdapterReport::new(super::super::SOURCE, "teams");
+    let Some(receipt) = load(store, jurisdiction)? else {
+        return Ok(report);
+    };
+    let capacity = receipt
+        .roster_teams
+        .len()
+        .checked_add(receipt.unfinished.len())
+        .ok_or_else(|| CrawlError::Arithmetic {
+            detail: "team index obligations overflow".to_string(),
+        })?;
+    report
+        .unfinished
+        .try_reserve_exact(capacity)
+        .map_err(|_| ids::resource(capacity))?;
+    receipt
+        .roster_teams
+        .iter()
+        .try_for_each(|id| -> CrawlResult<()> {
+            if inputs::load(store, jurisdiction, id)?.is_some() {
+                report.rows = report
+                    .rows
+                    .checked_add(1)
+                    .ok_or_else(|| CrawlError::Arithmetic {
+                        detail: "team index report count overflow".to_string(),
+                    })?;
+            } else {
+                report.unfinished.push(format!(
+                    "{}/roster-input/{id}/unmeasured",
+                    jurisdiction.code()
+                ));
+            }
+            Ok(())
+        })?;
+    report.disposition = measured_disposition(&receipt, report.unfinished.is_empty());
+    report.errors = u64::try_from(receipt.errors).map_err(|_| CrawlError::Arithmetic {
+        detail: "team index error count exceeds u64".to_string(),
+    })?;
+    report.unfinished.extend(receipt.unfinished);
+    Ok(report)
+}
+
+fn measured_disposition(receipt: &Receipt, inputs_resolved: bool) -> Disposition {
+    if receipt.disposition.is_complete()
+        && (!inputs_resolved || receipt.errors != 0 || !receipt.unfinished.is_empty())
+    {
+        Disposition::Partial
+    } else {
+        receipt.disposition
+    }
+}
+
 pub(super) fn configure(
     store: &Store,
     jurisdiction: UsJurisdiction,
@@ -35,7 +91,7 @@ pub(super) fn configure(
     let verified = read.disposition.is_complete() && read.errors == 0 && read.unfinished.is_empty();
     let mut fresh = super::unique_teams(read.teams)?;
     let mut receipt =
-        load(store, jurisdiction)?.map_or_else(Receipt::default, core::convert::identity);
+        load(store, jurisdiction)?.map_or(Receipt::default(), core::convert::identity);
     receipt.roster_teams = ids::merge(receipt.roster_teams, &fresh)?;
     receipt.unfinished = work::merge(receipt.unfinished, read.unfinished)?;
     receipt.errors = read.errors;
@@ -90,7 +146,7 @@ pub(super) fn retain_failure(
 ) -> CrawlError {
     let saved = (|| {
         let mut receipt =
-            load(store, jurisdiction)?.map_or_else(Receipt::default, core::convert::identity);
+            load(store, jurisdiction)?.map_or(Receipt::default(), core::convert::identity);
         receipt.disposition = Disposition::Partial;
         receipt.errors = receipt
             .errors

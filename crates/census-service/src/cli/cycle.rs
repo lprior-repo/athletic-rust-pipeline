@@ -247,9 +247,10 @@ async fn gather_athleticnet(
         refresh: args.refresh,
         school_year: season,
         observed_on: observed_on.clone(),
-        performance_as_of: args
-            .as_of
-            .map_or_else(|| chrono::Utc::now().date_naive(), core::convert::identity),
+        performance_as_of: match args.as_of {
+            Some(date) => date,
+            None => chrono::Utc::now().date_naive(),
+        },
         recording: None,
     };
     let report = census_crawl::athleticnet::collect(

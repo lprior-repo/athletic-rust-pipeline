@@ -28,9 +28,8 @@ pub(super) fn record_row(
         return Ok(1);
     };
     let team = team_for(writer, context, row, (school, sport), &evidence);
-    let event = record_event(writer, context, row, &evidence).map_err(|error| {
-        retain_event_failure(writer, context, row, &error);
-        error
+    let event = record_event(writer, context, row, &evidence).inspect_err(|error| {
+        retain_event_failure(writer, context, row, error);
     })?;
     record_performance(writer, context, row, (&athlete, &team, &event), evidence)?;
     Ok(1)

@@ -1,5 +1,5 @@
 use super::super::absorb_meet;
-use super::{Documents, MeetRun, MeetUrls};
+use super::{Captured, Documents, MeetRun, MeetUrls};
 use crate::athleticnet::meet::count::{note, MeetStats};
 use crate::athleticnet::meet::read::EventMetadata;
 use crate::athleticnet::meet::wire::{AllResults, EventDivisions, MeetData};
@@ -31,25 +31,21 @@ impl MeetRun {
             let Some(documents) = self.documents(ctx, options, &urls).await? else {
                 continue;
             };
-            let (stored, counts) = match self.absorb(
-                &documents,
-                source,
-                index,
-                (&options.observed_on, ctx.performance_as_of),
-            ) {
-                Ok(outcome) => outcome,
-                Err(error) => {
-                    self.report.errors = self.report.errors.saturating_add(1);
-                    self.report.note(format!(
-                        "meet {meet_id}: {error}; projection remains unfinished"
-                    ));
-                    self.report
-                        .unfinished
-                        .push(format!("meet {meet_id}: {error}"));
-                    self.flush(ctx)?;
-                    continue;
-                }
-            };
+            let (stored, counts) =
+                match self.absorb(&documents, source, index, ctx.performance_as_of) {
+                    Ok(outcome) => outcome,
+                    Err(error) => {
+                        self.report.errors = self.report.errors.saturating_add(1);
+                        self.report.note(format!(
+                            "meet {meet_id}: {error}; projection remains unfinished"
+                        ));
+                        self.report
+                            .unfinished
+                            .push(format!("meet {meet_id}: {error}"));
+                        self.flush(ctx)?;
+                        continue;
+                    }
+                };
             rows = rows.saturating_add(stored);
             totals.merge(&counts);
             urls.journal(stored, &mut self.pending);
@@ -73,7 +69,7 @@ impl MeetRun {
         let Some(meet) = self.fetch::<MeetData>(ctx, options, &urls.meet, None).await else {
             return Ok(None);
         };
-        let token = meet.token.clone();
+        let token = meet.document.token.clone();
         let Some(results) = self
             .fetch::<AllResults>(ctx, options, &urls.results, token.as_deref())
             .await
@@ -103,7 +99,7 @@ impl MeetRun {
         };
         self.pending
             .push(super::journal_entry(url, urls.meet_id, 0));
-        Ok(Some(EventMetadata::new(&document)))
+        Ok(Some(EventMetadata::new(&document.document)))
     }
 
     fn absorb(
@@ -111,25 +107,31 @@ impl MeetRun {
         documents: &Documents,
         source: &SourceRef,
         index: &SchoolIndex,
-        timing: (&str, chrono::NaiveDate),
+        performance_as_of: chrono::NaiveDate,
     ) -> CrawlResult<(u64, MeetStats)> {
         let (stored, counts) = absorb_meet(
-            &documents.meet,
-            &documents.results,
+            &documents.meet.document,
+            &documents.results.document,
             documents.metadata.as_ref(),
             source,
-            timing,
+            (
+                &documents.meet.fetched_at,
+                &documents.results.fetched_at,
+                performance_as_of,
+            ),
             index,
             &mut self.resolved,
             &mut self.stats,
             &mut self.accumulated,
         )?;
-        self.report
-            .note(format!("meet {}: {counts}", documents.meet.meet.id));
+        self.report.note(format!(
+            "meet {}: {counts}",
+            documents.meet.document.meet.id
+        ));
         if let Some(metadata) = documents.metadata.as_ref() {
             self.report.note(format!(
                 "meet {} metadata: {} events declared, {} of them field events, {} hurdle races",
-                documents.meet.meet.id,
+                documents.meet.document.meet.id,
                 metadata.len(),
                 metadata.field_events(),
                 metadata.hurdles()
@@ -144,7 +146,7 @@ impl MeetRun {
         options: &Options,
         url: &str,
         token: Option<&str>,
-    ) -> Option<T> {
+    ) -> Option<Captured<T>> {
         let mut headers = vec![("Accept".to_string(), "application/json".to_string())];
         if let Some(token) = token {
             headers.push(("anettokens".to_string(), token.to_string()));
@@ -162,8 +164,11 @@ impl MeetRun {
                 return None;
             }
         };
-        match serde_json::from_str(&fetched.text()) {
-            Ok(document) => Some(document),
+        match serde_json::from_slice(&fetched.body) {
+            Ok(document) => Some(Captured {
+                document,
+                fetched_at: fetched.fetched_at,
+            }),
             Err(error) => {
                 self.stats.fetches_failed = self.stats.fetches_failed.saturating_add(1);
                 self.report.note(format!(

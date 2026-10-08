@@ -82,24 +82,9 @@ fn apply_identity_pairs(store: &Store, pairs: &[&[CanonicalAthlete]]) -> TestRes
             }
         })
         .collect::<TestResult<Vec<_>>>()?;
-    store.apply_identity_decisions(&decisions).map_err(Into::into)
-}
-
-fn provider_member(
-    school: &SchoolId,
-    name: &str,
-    gender: Gender,
-    source: SourceIdentity,
-    links: &[SourceIdentity],
-    url: &str,
-) -> CanonicalAthlete {
-    let mut athlete = CanonicalAthlete::new(school, name, GradYear::CO2027, gender, source);
-    athlete.public_profile_urls.push(url.to_owned());
-    athlete.evidence = evidence("wiaa_results", Some(url));
-    for link in links {
-        athlete.add_identity(link.clone());
-    }
-    athlete
+    store
+        .apply_identity_decisions(&decisions)
+        .map_err(Into::into)
 }
 
 fn add_result(
@@ -367,66 +352,6 @@ fn provider_member(
     athlete
 }
 
-fn apply_identity_pairs(
-    store: &Store,
-    pairs: &[(CanonicalAthlete, CanonicalAthlete)],
-) -> TestResult {
-    let index = store.athlete_identity_index()?;
-    let mut cases = Vec::new();
-    let mut verdicts = Vec::new();
-    for (left, right) in pairs {
-        let ids = vec![left.id.cast(), right.id.cast()];
-        let subject = "Transitive disjoint provider objects";
-        let detail = "Independently attested shared provider object";
-        let evidence = index.case_evidence(subject, detail, &ids)?;
-        let mut case = ReviewCase::pending_with_evidence(
-            ATHLETE_IDENTITY_FAMILY,
-            left.id.as_str(),
-            subject,
-            detail,
-            evidence,
-        );
-        case.member_ids = ids;
-        case.state = ReviewState::Resolved;
-        verdicts.push(ReviewVerdictRecord {
-            id: case.id.clone(),
-            case_id: case.id.clone(),
-            subject_id: case.subject_id.clone(),
-            family: case.family.clone(),
-            kind: "value_proposed".into(),
-            field: "identity".into(),
-            value: "same_person".into(),
-            accepted: true,
-            confidence: 100,
-            rationale: detail.into(),
-            reviewer: "deterministic fixture".into(),
-            observed_at: DAY.into(),
-            member_ids: case.member_ids.clone(),
-        });
-        cases.push(case);
-    }
-    for case in &cases {
-        store.replace(Table::ReviewCases, case)?;
-    }
-    for verdict in &verdicts {
-        store.replace(Table::IdentityVerdicts, verdict)?;
-    }
-    let builder = IdentityProjectionBuilder::new(index, &cases, &verdicts)?;
-    let decisions = builder
-        .reviewed_applications(DAY)
-        .map(|(_, result)| -> TestResult<_> {
-            match result? {
-                IdentityApplication::Accepted(decision) => Ok(decision),
-                IdentityApplication::Retained(issue) => {
-                    Err(format!("pair rejection: {issue:?}").into())
-                }
-            }
-        })
-        .collect::<TestResult<Vec<_>>>()?;
-    check!(eq; store.apply_identity_decisions(&decisions)?, pairs.len() as u64);
-    Ok(())
-}
-
 #[test]
 fn conflicted_component_keeps_every_member_unmerged_in_both_orders() -> TestResult {
     for reverse in [false, true] {
@@ -478,13 +403,13 @@ fn conflicted_component_keeps_every_member_unmerged_in_both_orders() -> TestResu
             add_result(&store, member, EventKind::Track400m, 5000)?;
         }
         let mut pairs = [
-            (first.clone(), owner.clone()),
-            (owner.clone(), last.clone()),
+            [first.clone(), owner.clone()],
+            [owner.clone(), last.clone()],
         ];
         if reverse {
             pairs.reverse();
         }
-        apply_identity_pairs(&store, &pairs)?;
+        apply_identity_pairs(&store, &[pairs[0].as_slice(), pairs[1].as_slice()])?;
         let dataset = crate::export::ExportDataset::load(&store)?;
         check!(dataset.canonical_aliases.is_empty());
         check!(eq; dataset.athletes.len(), 3);

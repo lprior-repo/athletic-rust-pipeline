@@ -120,17 +120,27 @@ across sports by design, so a missing row is not evidence of no coach.
 
 Every member row with a name is written as a canonical school plus a source observation keyed by
 the source namespace; the contact only decides whether an athletic-director coach row is written
-alongside it. The journal key is the school id, and a run reads the journal before it walks: a
-school the journal already names is skipped without fetching its coach page, so a re-run continues
-with the schools it has not written and reports how many it skipped. The journal detail carries the
-organisation, the state's two-letter code, the association id, the organisation's own school id and
-the coach-row count.
+alongside it. Coach completion is keyed by jurisdiction, organisation and public school owner,
+not by the canonical school's name-derived id. Re-evaluation can read completed pages from the
+immutable cache without issuing physical requests or duplicating their effects. Incomplete response
+markers bind that exact public owner and capture; ordinary recovery reacquires only a cached response
+known to be incomplete, retaining earlier valid rows and the failed capture archive.
 
 A member page that fails or does not parse, and a coach page that fails, are recorded as failures
 and end only that walk — the remaining organisations in `--states` still run — while entry
 discovery, bundle acquisition or token failure ends the run before an organisation is walked.
 Corrected code does not replay retained terminal failures, mutate old captures, or establish
 national completion.
+
+The local recovery protocol includes the origin's initial `/robots.txt` request. Fetcher
+`requests` includes both physical dispatches and cache reads; `physical_requests()` excludes cache
+hits. Recovery regressions reconcile the server's accepted request targets with that physical
+metric, require only the unfinished URL to be reacquired, and forbid physical refetch of completed
+pages. Recording-route scenarios apply the same recorded operation twice and require the original
+receipt, unchanged facts and unchanged journal payloads on the second application. A separate
+live-store route interprets the same cached captures and must retain byte-equal facts, owner
+recovery markers and completion payloads after partial acquisition, recovery and completed replay.
+These are executable obligations, not a claim that the current checkout has passed them.
 
 ## Fixtures
 

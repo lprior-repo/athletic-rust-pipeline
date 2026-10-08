@@ -2,8 +2,8 @@
 mod performance;
 
 use super::super::Stats;
-use super::{team_for, MeetContext, RowWriter};
-use crate::result_file::ParsedRow;
+use super::{team_for, ArchiveArtifact, MeetContext, RowWriter};
+use crate::result_file::{ParsedEvent, ParsedRow};
 use census_domain::model::{
     AthleteId, CanonicalAthlete, Evidence, GradYear, Grade, ObservedGrade, SchoolId,
     SourceAthleteObservation, SourceIdentity, SourceNamespace, SourceRef, TeamId,
@@ -97,7 +97,7 @@ fn record_members(
         if member_name.trim().is_empty() {
             continue;
         }
-        let source_key = performance_key(context, row_index, leg_position);
+        let source_key = source_key(context.artifact, context.event, row_index, leg_position);
         let Some((athlete_id, source_athlete)) = record_athlete(
             writer,
             context,
@@ -216,25 +216,26 @@ fn round_label(round: &Option<String>) -> &str {
     }
 }
 
-fn performance_key(
-    context: &MeetContext<'_>,
+pub(super) fn source_key(
+    artifact: &ArchiveArtifact,
+    event: &ParsedEvent,
     row_index: usize,
     leg_position: Option<u8>,
 ) -> String {
     match leg_position {
         Some(position) => format!(
             "{}:{}:{}:{}:leg{}",
-            context.artifact.url,
-            context.event.label,
-            round_label(&context.event.round),
+            artifact.url,
+            event.label,
+            round_label(&event.round),
             row_index,
             position
         ),
         None => format!(
             "{}:{}:{}:{}",
-            context.artifact.url,
-            context.event.label,
-            round_label(&context.event.round),
+            artifact.url,
+            event.label,
+            round_label(&event.round),
             row_index
         ),
     }

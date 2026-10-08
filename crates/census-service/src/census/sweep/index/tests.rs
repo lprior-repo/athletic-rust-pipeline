@@ -96,3 +96,66 @@ fn index_partial_prefix_and_exact_late_locator_remain_owed() -> TestResult {
         && !row.terminal()));
     Ok(())
 }
+
+#[test]
+fn completed_directory_report_does_not_wait_for_roster_collection() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let store = Store::open(root.path())?;
+    let jurisdiction = UsJurisdiction::Wisconsin;
+    configure(&store, jurisdiction, read(vec![team("52649")]))?;
+    let report = team_index_report(&store, jurisdiction)?;
+    check!(eq; report.disposition, Disposition::Complete);
+    check!(eq; report.rows, 1);
+    check!(eq; report.errors, 0);
+    check!(report.unfinished.is_empty());
+    let rosters = inspect_rosters(&store, run()?, jurisdiction)?;
+    check!(eq; rosters.disposition, Disposition::Partial);
+    check!(eq; rosters.owed, 1);
+    Ok(())
+}
+
+#[test]
+fn partial_directory_report_preserves_acquisition_failure_and_locator() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let store = Store::open(root.path())?;
+    let jurisdiction = UsJurisdiction::Wisconsin;
+    let locator = "https://wi.milesplit.com/teams#row-20001-bytes-1024";
+    configure(
+        &store,
+        jurisdiction,
+        TeamIndexRead {
+            teams: vec![team("52649")],
+            disposition: Disposition::Partial,
+            unfinished: vec![locator.to_string()],
+            errors: 1,
+        },
+    )?;
+    let report = team_index_report(&store, jurisdiction)?;
+    check!(eq; report.disposition, Disposition::Partial);
+    check!(eq; report.rows, 1);
+    check!(eq; report.errors, 1);
+    check!(eq; report.unfinished, vec![locator.to_string()]);
+    Ok(())
+}
+
+#[test]
+fn missing_durable_team_input_refuses_completed_directory_report() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let store = Store::open(root.path())?;
+    let jurisdiction = UsJurisdiction::Wisconsin;
+    check!(eq; team_index_report(&store, jurisdiction)?.disposition, Disposition::Unknown);
+    save(
+        &store,
+        jurisdiction,
+        &Receipt {
+            roster_teams: vec!["52649".to_string()],
+            disposition: Disposition::Complete,
+            ..Receipt::default()
+        },
+    )?;
+    let report = team_index_report(&store, jurisdiction)?;
+    check!(eq; report.disposition, Disposition::Partial);
+    check!(eq; report.rows, 0);
+    check!(eq; report.unfinished, vec!["WI/roster-input/52649/unmeasured".to_string()]);
+    Ok(())
+}

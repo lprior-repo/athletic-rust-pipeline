@@ -59,12 +59,17 @@ fn same_name_incomplete_public_owners_refresh_independently_and_preserve_v1_hist
             BTreeSet::from(["Ada Lane", "Beau Pine", "Casey Reed"])
         );
         check!(eq; store.journal_keys(JOURNAL)?, std::collections::HashSet::new());
+        let physical_before_first = fetcher.stats().await.physical_requests();
         let mut recovered = run(&ctx, &options)?;
         recovered.process_school_at(UsJurisdiction::NewHampshire, "2132", &first, (BASE, &host)).await?;
+        check!(eq; fetcher.stats().await.physical_requests(), physical_before_first.checked_add(1).ok_or("request count")?);
+        check!(eq; capture_meta(&cache, &second_url)?, second_meta);
         check!(eq; (recovered.tally.errors, recovered.tally.schools), (0, 1));
         check!(eq; store.journal_keys(JOURNAL)?, std::collections::HashSet::from(["NH:2132:450".to_string()]));
         check!(eq; pending(&store, &second)?, second_pending);
+        let physical_before_second = fetcher.stats().await.physical_requests();
         recovered.process_school_at(UsJurisdiction::NewHampshire, "2132", &second, (BASE, &host)).await?;
+        check!(eq; fetcher.stats().await.physical_requests(), physical_before_second.checked_add(1).ok_or("request count")?);
         check!(eq; (recovered.tally.errors, recovered.tally.schools), (0, 2));
         check!(eq;
             store.journal_keys(JOURNAL)?,
@@ -79,19 +84,24 @@ fn same_name_incomplete_public_owners_refresh_independently_and_preserve_v1_hist
         assert_archived_capture(&cache, &first_bad, &first_meta)?;
         assert_archived_capture(&cache, &second_bad, &second_meta)?;
         check!(eq; store.journal_payloads(&historic_phase)?, vec![historic]);
-        let before = fetcher.stats().await.requests;
+        let before = fetcher.stats().await.physical_requests();
         let mut replay = run(&ctx, &options)?;
         for row in [&first, &second] {
             replay.process_school_at(UsJurisdiction::NewHampshire, "2132", row, (BASE, &host)).await?;
         }
         check!(eq; (replay.tally.schools, replay.tally.skipped), (0, 2));
-        check!(eq; fetcher.stats().await.requests, before);
+        check!(eq; fetcher.stats().await.physical_requests(), before);
         Ok::<(), Box<dyn std::error::Error>>(())
     };
     tokio::time::timeout(Duration::from_secs(15), async {
         let (served, acquired) = tokio::join!(serve_responses(listener, replies), client);
-        served?;
-        acquired
+        let accepted = served?;
+        acquired?;
+        for url in [&first_url, &second_url] {
+            let path = url.strip_prefix(&host).ok_or("public owner path")?;
+            check!(eq; accepted.iter().filter(|requested| requested.as_str() == path).count(), 2);
+        }
+        assert_request_conservation(&fetcher, &accepted).await
     }).await?
     })
 }

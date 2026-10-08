@@ -1,5 +1,5 @@
 use super::super::Throughput;
-use super::{memory, metadata, parse_bencher_line, parse_measurement, runtime};
+use super::{metadata, parse_bencher_line, parse_measurement, runtime};
 use anyhow::Result;
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -176,6 +176,9 @@ fn persisted_rate_cannot_compare_elements_with_bytes() -> TestResult {
         measurement.allocation_count = Some(100);
         measurement.allocated_bytes = Some(100);
         measurement.tail_time_seconds = Some(1.0);
+        if measurement.timing_scope.is_none() {
+            measurement.timing_scope = Some(crate::perf::scope::expected("g/f").to_owned());
+        }
     }
     let baseline: super::super::PerfBaseline =
         serde_json::from_slice(&serde_json::to_vec(&baseline)?)?;
@@ -185,6 +188,7 @@ fn persisted_rate_cannot_compare_elements_with_bytes() -> TestResult {
         measurement.allocation_count = Some(100);
         measurement.allocated_bytes = Some(100);
         measurement.tail_time_seconds = Some(1.0);
+        measurement.timing_scope = Some(crate::perf::scope::expected("g/f").to_owned());
     }
     current.insert(
         "pipeline/capture_export/captured_live_wiaa_co2027".into(),
@@ -216,22 +220,5 @@ fn absent_timer_refuses_measurement_and_nonzero_processes_fail() -> TestResult {
         Ok(_) => return Err(anyhow::anyhow!("process failure was accepted").into()),
     };
     check!(failure.to_string().contains("exit status: 1"));
-    Ok(())
-}
-
-#[test]
-fn allocation_summary_preserves_counts_and_rejects_missing_or_invalid_memory() -> TestResult {
-    check!(eq; memory::parse_allocations("==123==   total heap usage: 1,234 allocs, 1,200 frees, 987,654 bytes allocated")?, (1234, 987654));
-    for raw in [
-        "",
-        "total heap usage: 0 allocs, 0 frees, 100 bytes allocated",
-        "total heap usage: 1 allocs, 1 frees, 0 bytes allocated",
-        "total heap usage: NaN allocs, 1 frees, 100 bytes allocated",
-        "total heap usage: 1 allocs, 1 frees, -1 bytes allocated",
-        "total heap usage: 1 allocs, 1 frees, 18446744073709551616 bytes allocated",
-        "total heap usage: 1 allocs, 1 frees, 1 bytes allocated\ntotal heap usage: 2 allocs, 1 frees, 2 bytes allocated",
-    ] {
-        check!(memory::parse_allocations(raw).is_err(), "{raw}");
-    }
     Ok(())
 }

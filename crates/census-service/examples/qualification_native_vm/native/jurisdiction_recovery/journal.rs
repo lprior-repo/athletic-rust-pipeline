@@ -7,6 +7,9 @@ use serde_json::Value;
 use std::borrow::Cow;
 use std::collections::BTreeSet;
 
+mod admission;
+pub(super) use admission::settled_sources;
+
 mod future;
 mod ledger;
 pub(super) use future::awaited;
@@ -82,6 +85,11 @@ pub(super) fn calls(journal: &[Value], original: &Original) -> Result<Vec<Source
         let entry = decode(row.get("entry_json").context("journal JSON absent")?)?;
         if let Some(call) = source_call(row, &entry, original)? {
             ensure!(calls.len() < 16, "source call budget exceeded");
+            ensure!(
+                calls.iter().all(|prior: &SourceCall| prior.child_id != call.child_id
+                    && prior.child_key != call.child_key),
+                "duplicate original source call identity"
+            );
             calls.try_reserve(1)?;
             calls.push(call);
         }

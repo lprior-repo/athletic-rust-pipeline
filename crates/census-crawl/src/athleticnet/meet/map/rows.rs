@@ -102,20 +102,19 @@ impl MeetCtx<'_> {
             .legs_seen
             .saturating_add(u64::try_from(squad.len()).map_or(u64::MAX, |value| value));
         let (mark, auto) = self.mark_of(block, &row.result);
-        squad
-            .iter()
-            .enumerate()
-            .fold(Ok(()), |outcome, (index, leg)| {
-                let projected = self.relay_leg(
-                    block,
-                    row,
-                    leg,
-                    index.saturating_add(1),
-                    &school,
-                    (&mark, auto),
-                );
-                outcome.and(projected)
-            })
+        let mut outcome = Ok(());
+        for (index, leg) in squad.iter().enumerate() {
+            let projected = self.relay_leg(
+                block,
+                row,
+                leg,
+                index.saturating_add(1),
+                &school,
+                (&mark, auto),
+            );
+            outcome = outcome.and(projected);
+        }
+        outcome
     }
 
     fn relay_leg(

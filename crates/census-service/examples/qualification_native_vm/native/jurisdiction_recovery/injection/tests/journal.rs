@@ -74,7 +74,7 @@ fn registration_refuses_nonregistration_first_effect_and_failed_result() -> Resu
 }
 
 #[test]
-fn registration_refuses_malformed_digest_date_and_payload_boundaries() -> Result<()> {
+fn registration_refuses_malformed_digest_date_and_payload_bytes() -> Result<()> {
     [
         ("not-a-digest", "2026-10-02", "request digest malformed"),
         (
@@ -91,7 +91,7 @@ fn registration_refuses_malformed_digest_date_and_payload_boundaries() -> Result
         assert!(failure(journal::registration(&entries))?.contains(diagnostic));
         Ok(())
     })?;
-    [json!(vec![32_u8; 4097]), json!([256]), json!([-1])]
+    [json!([256]), json!([-1])]
         .into_iter()
         .try_for_each(|payload| -> Result<()> {
             let mut entries = entries()?;
@@ -99,12 +99,34 @@ fn registration_refuses_malformed_digest_date_and_payload_boundaries() -> Result
                 ["Notification"]["Completion"]["Run"]["result"] = json!({"Success":payload});
             let error = failure(journal::registration(&entries))?;
             assert!(
-                error.contains("4096 bytes")
-                    || error.contains("out of range")
-                    || error.contains("byte malformed")
+                error.contains("out of range") || error.contains("byte malformed")
             );
             Ok(())
         })
+}
+
+#[test]
+fn registration_refuses_valid_json_over_four_kib_but_retains_boundary_identity() -> Result<()> {
+    let identity = Registration {
+        request_digest: "a".repeat(64),
+        observed_on: "2026-10-02".to_owned(),
+    };
+    let mut payload = serde_json::to_vec(&identity)?;
+    payload.resize(4096, b' ');
+    let mut entries = entries()?;
+    entries.get_mut(2).context("fixture completion absent")?["entry_json"]
+        ["Notification"]["Completion"]["Run"]["result"] = json!({"Success":payload});
+    assert_eq!(
+        journal::registration(&entries)?.context("boundary registration refused")?.0,
+        identity
+    );
+    payload.push(b' ');
+    assert_eq!(payload.len(), 4097);
+    assert_eq!(serde_json::from_slice::<Registration>(&payload)?, identity);
+    entries.get_mut(2).context("fixture completion absent")?["entry_json"]
+        ["Notification"]["Completion"]["Run"]["result"] = json!({"Success":payload});
+    assert!(journal::registration(&entries).is_err());
+    Ok(())
 }
 
 #[test]

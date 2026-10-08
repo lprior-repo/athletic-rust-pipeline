@@ -1,3 +1,5 @@
+mod publication;
+
 use super::obligation;
 use crate::restate_services::{wire::SourceObjectOpen, JobError};
 use census_crawl::CollectionDisposition as Disposition;
@@ -7,9 +9,7 @@ use census_domain::model::{
 };
 use census_domain::UsJurisdiction;
 use census_reconcile::identity::Revision;
-use census_report::export::{store_identity, ExportDataset};
-use census_report::report::Scope;
-use census_report::workbook::publication::{current_workbook, verify_for_seal};
+use census_report::export::store_identity;
 use census_store::{Store, StoreError, StoreResult, Table};
 
 pub(crate) struct StoreEvidence {
@@ -102,6 +102,25 @@ pub(crate) fn inspect_store(
     snapshot.for_each_merged(Table::Schools, |school: CanonicalSchool| {
         school_obligations(&mut evidence, &school)
     })?;
+    unmeasured_school_inventories(&mut evidence)?;
+    if bound {
+        evidence.publication = publication::inspect(store, run);
+    }
+    append(
+        &mut evidence.objects,
+        obligation(
+            "publication/current-generation".to_string(),
+            evidence.publication,
+        ),
+    )?;
+    append(
+        &mut evidence.objects,
+        obligation("store/run-binding".to_string(), super::complete(bound)),
+    )?;
+    Ok(evidence)
+}
+
+fn unmeasured_school_inventories(evidence: &mut StoreEvidence) -> StoreResult<()> {
     evidence
         .contacts
         .iter()
@@ -117,22 +136,7 @@ pub(crate) fn inspect_store(
                     Disposition::Unknown,
                 ),
             )
-        })?;
-    if bound {
-        evidence.publication = publication(store, run);
-    }
-    append(
-        &mut evidence.objects,
-        obligation(
-            "publication/current-generation".to_string(),
-            evidence.publication,
-        ),
-    )?;
-    append(
-        &mut evidence.objects,
-        obligation("store/run-binding".to_string(), super::complete(bound)),
-    )?;
-    Ok(evidence)
+        })
 }
 
 fn roster_obligations(
@@ -268,39 +272,6 @@ fn research_disposition(outcome: ContactResearchOutcome) -> Disposition {
         | ContactResearchOutcome::Conflict => Disposition::Partial,
         ContactResearchOutcome::Unattempted | ContactResearchOutcome::Stale => Disposition::Unknown,
     }
-}
-
-fn publication(store: &Store, run: CensusRun) -> Disposition {
-    match verify_publication(store, run) {
-        Ok(true) => Disposition::Complete,
-        Ok(false) => Disposition::Partial,
-        Err(error) => {
-            tracing::warn!(%error, "publication obligation is unreadable or absent");
-            Disposition::Unknown
-        }
-    }
-}
-
-fn verify_publication(store: &Store, run: CensusRun) -> census_report::report::ReportResult<bool> {
-    let path = current_workbook(&store.out_dir().join("publication"))?;
-    let dataset = ExportDataset::load(store)?;
-    if dataset.lineage.run != Some(run) {
-        return Ok(false);
-    }
-    match verify_for_seal(&path, &dataset, Scope::Core, GradYear::CO2027) {
-        Ok(_) => {}
-        Err(core_error) => {
-            match verify_for_seal(&path, &dataset, Scope::AllSources, GradYear::CO2027) {
-                Ok(_) => {}
-                Err(error) => {
-                    tracing::warn!(%core_error, %error, "publication obligation failed exact verification");
-                    return Ok(false);
-                }
-            }
-        }
-    }
-    dataset.ensure_current(store)?;
-    Ok(true)
 }
 
 fn append(rows: &mut Vec<SourceObjectOpen>, row: SourceObjectOpen) -> StoreResult<()> {

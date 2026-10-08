@@ -45,10 +45,19 @@ contradictory context retains valid appointments with a parse error and no compl
 Historical `tssaa_schools_v1` receipts do not certify this tenure-bearing projection.
 
 School, coach, postal and source-observation freshness is the capture's actual `fetched_at`.
-The caller's evaluation date appears only in the completion receipt. `tssaa_schools_v2` receipts
-commit with the rows through `AdapterContext::write_batch`, supporting both store and recording
-routes. Completed schools are skipped unless refresh is requested. Failed details and partial
-parses increment report errors; valid partial rows are retained without a completion marker.
+The caller's evaluation date does not replace acquisition freshness. Receipt-keyed
+`tssaa_school_projection_v3` completions bind the capture URL, full digest and original acquisition
+time; legacy owner-only keys do not certify this projection. Row effects are independently
+idempotent through `AdapterContext`, supporting both store and recording routes.
+Failed details, rejected index fields, postal claims and partial parses retain every diagnostic
+and owed locator. Valid partial schools, appointments and immutable invalid postal captures remain
+retained without a projection completion marker; identical replay reports the same unfinished
+work without appending the valid rows again. Empty public indexes and requested names outside the
+Tennessee selection are incomplete outcomes, not successful-empty discoveries.
+
+Research journals and effect witnesses use distinct phases. The same research operation key
+appears once in `staff_capture_research_v1` and once in `crawl_effect_receipts_v1`; comparing keys
+without their phases falsely treats those two obligations as duplicate research effects.
 
 ## Retained regression evidence
 
@@ -80,6 +89,6 @@ they do not establish statewide or durable-workflow qualification.
 ## Run
 
 ```sh
-cargo xtask source-fixture tssaa
-cargo xtask source-test tssaa
+env -u CI tools/moon-local run pipeline:xtask -- source-fixture tssaa
+env -u CI tools/moon-local run pipeline:xtask -- source-test tssaa
 ```

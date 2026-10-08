@@ -52,7 +52,7 @@ skip() {
     exit 0
 }
 
-for tool in curl python3 jq ss timeout; do
+for tool in curl python3 jq ss timeout sha256sum; do
     command -v "$tool" >/dev/null 2>&1 || skip "missing prerequisite tool $tool"
 done
 
@@ -62,13 +62,10 @@ CHROMIUM="${CHROMIUM_EXECUTABLE:-/usr/bin/chromium}"
 CLIENT="${BINARY:-$REPO_ROOT/target/moon-portable/x86_64-unknown-linux-gnu/release/census-service}"
 [ -x "$CLIENT" ] || skip "census-service binary missing at $CLIENT"
 
-SERVE="${SERVE_BINARY:-$REPO_ROOT/target/moon-portable/x86_64-unknown-linux-gnu/release/census-serve}"
-[ -x "$SERVE" ] || skip "census-serve binary missing at $SERVE"
-
-FAULT_SERVE="${FAULT_BINARY:-$REPO_ROOT/target/moon-build/x86_64-unknown-linux-gnu/release/census-serve}"
-[ -x "$FAULT_SERVE" ] || skip "feature-enabled endpoint missing; build it with env -u CI tools/moon-local run pipeline:build -- --release -p census-service --features native-fault-injection --bin census-serve"
-grep -qac CENSUS_BROWSER_SOURCE_ORIGIN "$FAULT_SERVE" >/dev/null \
-    || { echo "FAIL: $FAULT_SERVE lacks the CENSUS_BROWSER_SOURCE_ORIGIN lane-origin seam"; exit 1; }
+FAULT_SERVE="${S05_SERVE_BINARY:-${FAULT_BINARY:-${SERVE_BINARY:-$REPO_ROOT/target/moon-portable/x86_64-unknown-linux-gnu/release/census-serve}}}"
+[ -x "$FAULT_SERVE" ] || skip "endpoint missing at $FAULT_SERVE"
+grep -aqF CENSUS_BROWSER_SOURCE_ORIGIN "$FAULT_SERVE" \
+    || { echo "FAIL: selected endpoint lacks the CENSUS_BROWSER_SOURCE_ORIGIN lane-origin seam: $FAULT_SERVE"; exit 1; }
 
 PINNED_SERVER="$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10/restate-server"
 if [ -n "${RESTATE_SERVER_BIN:-}" ] && [ -x "$RESTATE_SERVER_BIN" ]; then
@@ -80,13 +77,14 @@ else
 fi
 NODE="$RESTATE_SERVER_BIN"
 
-INGRESS_PORT="${ADMIN_PORT:-19405}"
-ENDPOINT_PORT="${SERVICE_PORT:-9405}"
-NODE_PORT=$((INGRESS_PORT + 2))
-ADMIN_HTTP=$((INGRESS_PORT + 1))
-FAULT_PORT="${FAULT_PORT:-$((INGRESS_PORT + 3))}"
+INGRESS_PORT="${S05_INGRESS_PORT:-19405}"
+ENDPOINT_PORT="${S05_ENDPOINT_PORT:-19406}"
+NODE_PORT="${S05_NODE_PORT:-19407}"
+ADMIN_HTTP="${S05_ADMIN_PORT:-19408}"
+FAULT_PORT="${S05_FAULT_PORT:-${FAULT_PORT:-19409}}"
 
 for port in "$INGRESS_PORT" "$ADMIN_HTTP" "$NODE_PORT" "$ENDPOINT_PORT" "$FAULT_PORT"; do
+    case "$port" in 18095|19095|15192) echo "FAIL: shared port $port is forbidden"; exit 1 ;; esac
     if ss -ltn 2>/dev/null | grep -q ":$port "; then
         skip "port $port is already in use"
     fi
@@ -104,6 +102,8 @@ FAULT_ORIGIN="http://127.0.0.1:$FAULT_PORT"
 # longer than that, so the browser lane gets a short private temp dir of its own.
 LANE_TMP="$(mktemp -d /tmp/scenario-05-lane-XXXXXX)"
 echo "EVIDENCE: $WORK"
+sha256sum "$CLIENT" "$FAULT_SERVE" "$NODE" > "$WORK/binary-hashes.sha256"
+cat "$WORK/binary-hashes.sha256"
 
 NODE_PID=""
 SERVE_PID=""

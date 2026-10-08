@@ -18,6 +18,9 @@ impl Run<'_> {
             .iter()
             .try_for_each(|issue| self.fail(&capture.url, issue.clone()))?;
         self.emit_rows(capture, &emission)?;
+        if !emission.issues.is_empty() {
+            return Ok(());
+        }
         let operation = format!("{JOURNAL}:{key}");
         if self
             .ctx

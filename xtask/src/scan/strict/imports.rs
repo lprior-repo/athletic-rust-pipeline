@@ -29,6 +29,7 @@ pub(super) struct Scope {
     pub(super) root: usize,
     pub(super) span: Option<Span>,
     pub(super) inherited_at: Option<LineColumn>,
+    pub(super) modules: BTreeMap<String, usize>,
     pub(super) names: BTreeMap<String, Binding>,
     pub(super) macros: BTreeMap<String, Vec<Definition>>,
     pub(super) globs: Vec<Vec<String>>,
@@ -44,8 +45,9 @@ pub(super) struct Definition {
 }
 
 pub(super) enum Binding {
-    Module(usize),
     Alias(Vec<String>, LineColumn),
+    MacroAlias(Vec<String>, LineColumn),
+    ValueAlias(Vec<String>, LineColumn),
     External(String),
     Other,
 }
@@ -73,6 +75,7 @@ pub(super) struct Arguments {
 pub(super) enum Origin {
     Vendor(String),
     Project(usize, String, (usize, usize), bool),
+    Value,
     Unknown,
 }
 
@@ -113,13 +116,13 @@ impl Catalog {
     pub(super) fn take_templates(&mut self, path: &Path) -> BTreeMap<(usize, usize), Template> {
         self.templates
             .remove(path)
-            .map_or_else(BTreeMap::new, |templates| templates)
+            .map_or(BTreeMap::new(), core::convert::identity)
     }
 
     pub(super) fn take_arguments(&mut self, path: &Path) -> Arguments {
         self.arguments
             .remove(path)
-            .map_or_else(Arguments::default, |arguments| arguments)
+            .map_or(Arguments::default(), core::convert::identity)
     }
 
     pub(super) fn scope(&self, index: usize) -> Result<&Scope> {
@@ -156,6 +159,7 @@ impl Catalog {
             root,
             span,
             inherited_at: None,
+            modules: BTreeMap::new(),
             names: BTreeMap::new(),
             macros: BTreeMap::new(),
             globs: Vec::new(),

@@ -77,10 +77,10 @@ fn decorate(meet: &mut CanonicalMeet, slug: Option<String>, page: &Page<'_>) -> 
         SourceNamespace::TimerMeet {
             provider: PROVIDER.to_string(),
         },
-        slug.map_or_else(
-            || format!("{}|{}", meet.date, meet.normalized_name),
-            core::convert::identity,
-        ),
+        match slug {
+            Some(slug) => slug,
+            None => format!("{}|{}", meet.date, meet.normalized_name),
+        },
     ));
     let mut evidence = Evidence::parsed(
         SourceRef::new(ADAPTER_ID, Some(page.fetched.url.clone())),

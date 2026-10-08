@@ -69,15 +69,13 @@ impl Mapper<'_> {
         let mut identities = identities(row.net_id, row.live_id, row.entry.as_deref())
             .into_iter()
             .flatten();
-        let source = identities.next().map_or_else(
-            || {
-                SourceIdentity::new(
-                    SourceNamespace::Other("ihsa_result_row".into()),
-                    &row.source_key,
-                )
-            },
-            core::convert::identity,
-        );
+        let source = match identities.next() {
+            Some(identity) => identity,
+            None => SourceIdentity::new(
+                SourceNamespace::Other("ihsa_result_row".into()),
+                &row.source_key,
+            ),
+        };
         let (grad_year, observation, source) =
             self.accumulated
                 .unsupported

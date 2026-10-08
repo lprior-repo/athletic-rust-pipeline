@@ -66,26 +66,39 @@ fn inspect_segment(
         if json {
             expressions.push(syn::parse2::<syn::Expr>(key)?);
         }
-        match syn::parse2::<syn::Expr>(value) {
-            Ok(expression) => {
-                expressions.push(expression);
-                return Ok(());
-            }
-            Err(error) if groups.is_empty() && json => return Err(error),
-            Err(_) => {}
+        if let Some(expression) = field_expression(value, json, &groups)? {
+            expressions.push(expression);
+            return Ok(());
         }
     }
-    if let Some(span) = opaque {
-        return Err(syn::Error::new(
-            span,
-            "opaque handwritten code in vendor arguments",
-        ));
-    }
+    reject_opaque(opaque)?;
     if !field || !json {
         groups.extend(key_groups);
     }
     pending.extend(groups);
     Ok(())
+}
+
+fn field_expression(
+    value: TokenStream,
+    json: bool,
+    groups: &[TokenStream],
+) -> syn::Result<Option<syn::Expr>> {
+    match syn::parse2::<syn::Expr>(value) {
+        Ok(expression) => Ok(Some(expression)),
+        Err(error) if groups.is_empty() && json => Err(error),
+        Err(_) => Ok(None),
+    }
+}
+
+fn reject_opaque(span: Option<proc_macro2::Span>) -> syn::Result<()> {
+    match span {
+        Some(span) => Err(syn::Error::new(
+            span,
+            "opaque handwritten code in vendor arguments",
+        )),
+        None => Ok(()),
+    }
 }
 
 fn segments(tokens: TokenStream) -> Vec<TokenStream> {

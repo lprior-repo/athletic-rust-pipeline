@@ -76,7 +76,7 @@ tasks:
       runInCI: true
       mutex: rust-build
   lint-src:
-    command: 'tools/moon-cargo --config .cargo/fast-iteration.toml clippy --workspace --lib --bins --examples --all-features --locked --offline -- -D warnings -W clippy::all'
+    command: 'tools/moon-cargo --config .cargo/fast-iteration.toml clippy --workspace --lib --bins --examples --all-features --locked --offline -- -D warnings -W clippy::all --force-warn clippy::too_many_arguments'
     toolchains: [system]
     env: *iterationEnvironment
     inputs: *rustCacheInputs

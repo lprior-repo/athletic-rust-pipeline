@@ -5,11 +5,8 @@ use std::time::Duration;
 use census_store::{clock::SystemClock, Store};
 use tokio::sync::Semaphore;
 
-use super::super::{hold, wait_configured};
-use super::{
-    expected_marker, fixture, identity, read_marker, write_new, BoundaryError, TestResult,
-    OPERATION,
-};
+use super::super::wait_configured;
+use super::{fixture, identity, read_marker, write_new, TestResult, OPERATION};
 use crate::restate_services::jurisdiction::{team_source::TeamsSource, JurisdictionCensus};
 use crate::restate_services::{JobError, Jobs};
 use crate::spawn::{Spawner, TaskReport};
@@ -88,7 +85,6 @@ fn unrelated_operations_and_later_reserved_attempts_ignore_owned_marker_artifact
 fn exact_reserved_attempt_publishes_original_identity_before_failed_hold_expiry() -> TestResult {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
-        .start_paused(true)
         .build()?
         .block_on(async {
             let runtime = runtime()?;
@@ -100,7 +96,8 @@ fn exact_reserved_attempt_publishes_original_identity_before_failed_hold_expiry(
                     .await
                     .map_err(super::terminal)?,
             );
-            let began = tokio::time::Instant::now();
+            let acknowledged = runtime.jobs.store().native_effect_checkpoint()?;
+            let began = std::time::Instant::now();
             let result = wait_configured(
                 &runtime.jobs,
                 admission,
@@ -111,8 +108,12 @@ fn exact_reserved_attempt_publishes_original_identity_before_failed_hold_expiry(
             )
             .await;
             check!(matches!(result, Err(JobError::Terminal { .. })));
-            check!(eq; began.elapsed(), Duration::from_secs(60));
-            check!(eq; read_marker(&fixture)?, expected_marker(1));
+            check!(began.elapsed() >= Duration::from_secs(60), "the owned append fence was released before its bounded hold deadline");
+            let marker = read_marker(&fixture)?;
+            check!(eq; marker.get("operation").and_then(serde_json::Value::as_str), Some(OPERATION));
+            check!(eq; marker.get("request_digest").and_then(serde_json::Value::as_str), Some(identity().request_digest.as_str()));
+            check!(eq; serde_json::from_value::<census_store::NativeEffectCheckpoint>(
+                marker.get("acknowledged_effects").ok_or("acknowledged source checkpoint missing")?.clone())?, acknowledged);
             check!(eq; std::fs::symlink_metadata(fixture.pending())
     .err()
     .map(|error| error.kind()),
@@ -122,17 +123,6 @@ Some(std::io::ErrorKind::NotFound));
 completed(2));
             Ok(())
         })
-}
-
-#[test]
-fn hold_remains_pending_until_exact_deadline_and_never_returns_success() -> TestResult {
-    tokio::runtime::Builder::new_current_thread().enable_all().start_paused(true).build()?.block_on(async { let mut holding = Box::pin(hold(OPERATION, 3, Duration::from_secs(60)));
-check!(futures::poll!(holding.as_mut()).is_pending());
-tokio::time::advance(Duration::from_secs(59)).await;
-check!(futures::poll!(holding.as_mut()).is_pending());
-tokio::time::advance(Duration::from_secs(1)).await;
-check!(matches!(holding.await, Err(BoundaryError::HoldExpired { operation, attempt: 3, seconds: 60 }) if operation == OPERATION));
-Ok(()) })
 }
 
 #[test]

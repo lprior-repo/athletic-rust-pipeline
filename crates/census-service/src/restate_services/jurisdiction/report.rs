@@ -26,7 +26,7 @@ impl TryFrom<JurisdictionState> for ReadyReport {
             rosters: required(state.rosters, "roster outcome")?,
             consolidated: state
                 .consolidated
-                .map_or_else(Vec::new, core::convert::identity),
+                .map_or(Vec::new(), core::convert::identity),
             history: state.history,
             window: required(state.history_window, "history window")?,
         })

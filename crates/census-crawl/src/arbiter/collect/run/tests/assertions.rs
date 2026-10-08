@@ -90,3 +90,25 @@ pub(super) async fn assert_recovered_once(
     check!(eq; ctx.store.walk_table(Table::Coaches)?, before);
     Ok(())
 }
+
+pub(super) async fn assert_live_parity(
+    recorded_ctx: &AdapterContext<'_>,
+    live: &Store,
+    options: &Options,
+    row: &OrgSchool,
+    host: &str,
+) -> TestResult {
+    let ctx = context(recorded_ctx.fetcher, live, None)?;
+    run(&ctx, options)?
+        .process_school_at(UsJurisdiction::NewHampshire, "2132", row, (BASE, host))
+        .await?;
+    for table in [Table::Schools, Table::SourceObservations, Table::Coaches] {
+        check!(eq; recorded_ctx.store.walk_table(table)?, live.walk_table(table)?);
+    }
+    let key = super::super::completion_key(UsJurisdiction::NewHampshire, "2132", row.public_id)
+        .ok_or("public owner")?;
+    for phase in [JOURNAL.to_string(), super::super::recovery::phase(&key)] {
+        check!(eq; recorded_ctx.store.journal_payloads(&phase)?, live.journal_payloads(&phase)?);
+    }
+    Ok(())
+}

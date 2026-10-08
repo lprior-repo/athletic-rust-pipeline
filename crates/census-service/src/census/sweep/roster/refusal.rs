@@ -40,8 +40,10 @@ pub(crate) fn retain_refusal(
     run: &RosterRun<'_>,
     error: &CrawlError,
 ) -> CrawlResult<Application> {
-    let mut journal =
-        super::prior(store, team, run)?.map_or_else(|| empty(team, run), core::convert::identity);
+    let mut journal = match super::prior(store, team, run)? {
+        Some(journal) => journal,
+        None => empty(team, run),
+    };
     journal.refusal = Some(error.to_string());
     journal.disposition = disposition(error);
     persist(store, team, run, &journal)

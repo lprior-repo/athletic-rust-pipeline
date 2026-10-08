@@ -87,13 +87,7 @@ pub(super) fn parse_row(
             format!("expected meet {meet_id}, found {published_meet}"),
         ));
     }
-    let gender = Gender::parse_milesplit(row.gender);
-    if gender == Gender::Unknown || matches!(event_kind, EventKind::Unmapped { .. }) {
-        return Err((
-            OwnedRejectionKind::InvalidContext,
-            "unknown gender or event".to_string(),
-        ));
-    }
+    let gender = admitted_gender(row.gender, &event_kind)?;
     let (mark, timing) = match row
         .status_code
         .and_then(crate::result_status::invalid_token)
@@ -119,6 +113,20 @@ pub(super) fn parse_row(
         timing,
         provider: value,
     })
+}
+
+fn admitted_gender(
+    published: &str,
+    event_kind: &EventKind,
+) -> Result<Gender, (OwnedRejectionKind, String)> {
+    let gender = Gender::parse_milesplit(published);
+    if gender == Gender::Unknown || matches!(event_kind, EventKind::Unmapped { .. }) {
+        return Err((
+            OwnedRejectionKind::InvalidContext,
+            "unknown gender or event".to_string(),
+        ));
+    }
+    Ok(gender)
 }
 
 fn provider_id(value: &Scalar<'_>) -> Result<u64, (OwnedRejectionKind, String)> {

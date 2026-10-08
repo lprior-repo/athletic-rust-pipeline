@@ -77,7 +77,7 @@ pub fn write_canonical_meets(
 
     write_csv(
         &data.join("canonical-meets.csv"),
-        &[
+        [
             "meet_id",
             "state",
             "date",

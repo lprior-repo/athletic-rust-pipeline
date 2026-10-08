@@ -175,7 +175,7 @@ fn a_thousand_result_sets_share_one_bounded_active_capture_and_preserve_every_fa
         check!(eq; performances.len(), 1000);
         let mut run = Run::new(ProviderSchools::from_schools(&[school("Spann provider school", "38332")]));
         run.read(&context(&store, &fetcher)?, &reference).await?;
-        let ActiveMeet::Acquired { meet, .. } = &run.owned else { return Err("active capture".into()); };
+        let Some(ActiveMeet { meet, .. }) = &run.owned else { return Err("active capture".into()); };
         check!(meet.outcome.capture.body.is_empty());
         check!(eq; meet.result_set("1266814", context(&store, &fetcher)?.performance_as_of).ok_or("result set")?.page.rows.len(), 1000);
         replay_once(&store, &fetcher, &options, 1000).await?;

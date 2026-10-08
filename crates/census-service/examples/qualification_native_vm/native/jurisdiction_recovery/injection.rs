@@ -2,6 +2,7 @@ use super::input::{self, Original};
 use super::observe::Observation;
 use anyhow::{ensure, Result};
 use census_service::restate_services::{JurisdictionRequest, SourcePlan};
+use census_store::NativeEffectCheckpoint;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::path::Path;
@@ -14,7 +15,8 @@ mod tests;
 
 const CONFIG: &str = "/srv/qualification/native-source-boundary-config.json";
 const MARKER: &str = "teams-source-reservation-reached.json";
-const LIMIT: u64 = 4096;
+const CONFIG_LIMIT: u64 = 4096;
+const LIMIT: u64 = 32 * 1024 * 1024;
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -25,7 +27,7 @@ struct Configuration {
     timeout_seconds: u8,
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Marker {
     schema: u8,
@@ -34,6 +36,7 @@ struct Marker {
     attempt: u8,
     request_digest: String,
     observed_on: String,
+    acknowledged_effects: NativeEffectCheckpoint,
 }
 
 fn configuration(request: &JurisdictionRequest, plan: &SourcePlan) -> Result<Configuration> {

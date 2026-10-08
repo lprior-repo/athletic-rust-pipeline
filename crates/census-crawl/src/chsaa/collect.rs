@@ -122,7 +122,7 @@ impl Run<'_> {
         };
         let written = persist_school(
             self.ctx,
-            (SOURCE_ID, &url),
+            (SOURCE_ID, url),
             (
                 &SourceNamespace::association_school(SOURCE_ID),
                 &school,
@@ -130,17 +130,17 @@ impl Run<'_> {
             ),
             &mut self.report,
         )?;
-        let rows = match text(&capture).and_then(parse_school_page) {
+        let rows = match text(capture).and_then(parse_school_page) {
             Ok(rows) => rows,
-            Err(error) => return fail(&mut self.report, &url, error),
+            Err(error) => return fail(&mut self.report, url, error),
         };
         rows.iter().try_for_each(|row| {
-            let Some(coach) = map_coach_row(row, &id, &url, &capture.fetched_at) else {
+            let Some(coach) = map_coach_row(row, &id, url, &capture.fetched_at) else {
                 return Ok(());
             };
             persist(
                 self.ctx,
-                (SOURCE_ID, &url),
+                (SOURCE_ID, url),
                 Table::Coaches,
                 std::slice::from_ref(&coach),
                 &mut self.report,

@@ -72,11 +72,15 @@ async fn wait_configured(
     let marker = Marker::new(operation, attempt, identity)?;
     blocking(
         Arc::clone(jobs.region()),
-        marker_worker(Arc::clone(&admission), armed.directory, marker),
+        marker_worker(
+            Arc::clone(&admission),
+            Arc::clone(jobs.store()),
+            armed.directory,
+            marker,
+            timeout,
+        ),
     )
-    .await?;
-    let _admission = admission;
-    hold(operation, attempt, timeout).await.map_err(Into::into)
+    .await
 }
 
 fn read_armed(path: &std::path::Path) -> Result<Armed, BoundaryError> {
@@ -95,23 +99,19 @@ fn read_armed(path: &std::path::Path) -> Result<Armed, BoundaryError> {
 
 fn marker_worker(
     admission: Arc<admission::WorkAdmission>,
+    store: Arc<census_store::Store>,
     directory: Directory,
     marker: Marker,
+    timeout: Duration,
 ) -> impl FnOnce() -> Result<(), BoundaryError> + Send + 'static {
     move || {
         let _admission = admission;
-        marker.publish(&directory)
+        store.with_native_effect_checkpoint(|checkpoint| {
+            let marker = marker.with_acknowledged_effects(checkpoint);
+            marker.publish(&directory)?;
+            marker.hold(timeout)
+        })?
     }
-}
-
-#[tracing::instrument(skip_all, fields(operation, attempt, ?timeout))]
-async fn hold(operation: &str, attempt: u8, timeout: Duration) -> Result<(), BoundaryError> {
-    tokio::time::sleep(timeout).await;
-    Err(BoundaryError::HoldExpired {
-        operation: operation.to_string(),
-        attempt,
-        seconds: timeout.as_secs(),
-    })
 }
 
 pub struct NativeBoundaryHook;

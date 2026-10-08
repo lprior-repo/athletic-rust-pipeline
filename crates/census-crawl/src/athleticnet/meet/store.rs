@@ -3,9 +3,10 @@ use super::map::events::{project_event, MetadataConflict, ProjectionOutcome};
 use super::read::meet_date;
 use super::wire::MeetData;
 use census_domain::model::{
-    AthleteId, CanonicalAthlete, CanonicalMeet, CanonicalPerformance, CompetitionLevel, Evidence,
-    Gender, Grade, Mark, ObservedGrade, SchoolId, SchoolYear, SourceAthleteObservation,
-    SourceIdentity, SourceNamespace, SourceRef, Sport,
+    AthleteId, CanonicalAthlete, CanonicalMeet, CanonicalPerformance, CompetitionLevel, EventId,
+    Evidence, Gender, Grade, Mark, ObservedGrade, PerformanceId, RetainedConflict, SchoolId,
+    SchoolYear, SourceAthleteObservation, SourceIdentity, SourceNamespace, SourceRef, Sport,
+    TeamId,
 };
 use census_domain::UsJurisdiction;
 
@@ -114,14 +115,7 @@ pub(super) fn athlete(
                 .with_profile_url(identity.url)
             })?;
     if let Some(athlete) = accumulated.athletes.get_mut(&key) {
-        if !athlete.observed_grades.contains(&observation) {
-            athlete.observed_grades.push(observation);
-        }
-        if let Some(sport) = row.sport {
-            if !athlete.sports.contains(&sport) {
-                athlete.sports.push(sport);
-            }
-        }
+        reconcile_athlete(athlete, observation, row.sport);
         return Some((athlete.id.clone(), identity));
     }
     let mut athlete = CanonicalAthlete::new(
@@ -144,6 +138,21 @@ pub(super) fn athlete(
     let subject = (athlete.id.clone(), identity);
     accumulated.athletes.insert(key, athlete);
     Some(subject)
+}
+
+fn reconcile_athlete(
+    athlete: &mut CanonicalAthlete,
+    observation: ObservedGrade,
+    sport: Option<Sport>,
+) {
+    if !athlete.observed_grades.contains(&observation) {
+        athlete.observed_grades.push(observation);
+    }
+    if let Some(sport) = sport {
+        if !athlete.sports.contains(&sport) {
+            athlete.sports.push(sport);
+        }
+    }
 }
 
 pub(super) fn store(
@@ -185,25 +194,43 @@ pub(super) fn store(
         .or_insert_with(|| {
             let mut evidence = Evidence::parsed(source.clone(), observed_on);
             evidence.note = note;
-            CanonicalPerformance {
-                id: performance_id,
-                athlete: input.athlete.clone(),
+            performance_row(
+                performance_id,
+                input,
                 team,
                 event,
-                meet: input.meet.id.clone(),
-                date: input.date,
-                mark: input.mark,
-                wind_mps: input.wind_mps,
-                place: input.place.and_then(|place| place.trim().parse().ok()),
-                heat: None,
-                round: input.round,
-                timing: input.timing,
-                observed_grade: input.grade,
-                evidence: vec![evidence],
-                source_key: input.source_key,
-                source_athlete: Some(input.source_athlete),
+                evidence,
                 retained_conflicts,
-            }
+            )
         });
     Ok(())
+}
+
+fn performance_row(
+    performance_id: PerformanceId,
+    input: PerformanceInput<'_>,
+    team: TeamId,
+    event: EventId,
+    evidence: Evidence,
+    retained_conflicts: Vec<RetainedConflict>,
+) -> CanonicalPerformance {
+    CanonicalPerformance {
+        id: performance_id,
+        athlete: input.athlete.clone(),
+        team,
+        event,
+        meet: input.meet.id.clone(),
+        date: input.date,
+        mark: input.mark,
+        wind_mps: input.wind_mps,
+        place: input.place.and_then(|place| place.trim().parse().ok()),
+        heat: None,
+        round: input.round,
+        timing: input.timing,
+        observed_grade: input.grade,
+        evidence: vec![evidence],
+        source_key: input.source_key,
+        source_athlete: Some(input.source_athlete),
+        retained_conflicts,
+    }
 }

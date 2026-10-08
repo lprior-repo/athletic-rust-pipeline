@@ -8,7 +8,7 @@ set -euo pipefail
 REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
 SCRATCH_STORE="${SCRATCH_STORE:-/tmp/durability-scenario/11}"
 
-for tool in curl python3 timeout ss; do
+for tool in curl python3 jq timeout ss sha256sum pgrep; do
     command -v "$tool" >/dev/null 2>&1 || { echo "SKIPPED: missing prerequisite tool $tool"; exit 0; }
 done
 CHROMIUM="${CHROMIUM_EXECUTABLE:-/usr/bin/chromium}"
@@ -28,18 +28,18 @@ NODE="$RESTATE_SERVER_BIN"
 CLIENT="${BINARY:-$REPO_ROOT/target/moon-portable/x86_64-unknown-linux-gnu/release/census-service}"
 [ -x "$CLIENT" ] || { echo "SKIPPED: census-service binary missing at $CLIENT"; exit 0; }
 
-SERVE="${SERVE_BINARY:-$REPO_ROOT/target/moon-build/x86_64-unknown-linux-gnu/release/census-serve}"
-if [ ! -x "$SERVE" ]; then
-    echo "SKIPPED: feature-enabled endpoint missing; build it with"
-    echo "SKIPPED: env -u CI tools/moon-local run pipeline:build -- --release -p census-service --features native-fault-injection --bin census-serve"
-    exit 0
-fi
+SERVE="${S11_SERVE_BINARY:-${SERVE_BINARY:-$REPO_ROOT/target/moon-portable/x86_64-unknown-linux-gnu/release/census-serve}}"
+[ -x "$SERVE" ] || { echo "SKIPPED: endpoint missing at $SERVE"; exit 0; }
+for seam in CENSUS_NATIVE_SOURCE_BOUNDARY 'HTTP endpoint exiting due to the ATHLETIC_FAULT_HTTP_EXIT trigger'; do
+    grep -aqF "$seam" "$SERVE" || { echo "FAIL: selected endpoint lacks native seam $seam: $SERVE"; exit 1; }
+done
 
 INGRESS_PORT="${S11_INGRESS_PORT:-18420}"
 ADMIN_PORT="${S11_ADMIN_PORT:-19420}"
 ENDPOINT_PORT="${S11_ENDPOINT_PORT:-18421}"
-NODE_PORT=$((INGRESS_PORT + 2))
+NODE_PORT="${S11_NODE_PORT:-$((INGRESS_PORT + 2))}"
 for port in "$INGRESS_PORT" "$ADMIN_PORT" "$ENDPOINT_PORT" "$NODE_PORT"; do
+    case "$port" in 18095|19095|15192) echo "FAIL: shared port $port is forbidden"; exit 1 ;; esac
     if ss -ltn 2>/dev/null | grep -q ":$port "; then
         echo "SKIPPED: port $port is already in use"
         exit 0
@@ -53,6 +53,16 @@ DATA="$WORK/store"
 TRIGGER="$WORK/trigger"
 mkdir -p "$DATA"
 echo "EVIDENCE: $WORK"
+sha256sum "$CLIENT" "$SERVE" "$NODE" > "$WORK/binary-hashes.sha256"
+cat "$WORK/binary-hashes.sha256"
+STATE="${S11_STATE:-VT}"
+KEY="jurisdiction:$STATE:2026-27:1"
+OPERATION="$KEY/teams/milesplit"
+BOUNDARY="$WORK/boundary"
+mkdir -m 700 "$BOUNDARY"
+CONFIG="$BOUNDARY/native-source-boundary-config.json"
+MARKER="$BOUNDARY/teams-source-reservation-reached.json"
+printf '{"schema":1,"operation":"%s","attempt":1,"timeout_seconds":60}\n' "$OPERATION" > "$CONFIG"
 
 cat > "$WORK/restate.toml" <<EOF
 roles = ["http-ingress", "admin", "worker", "log-server", "metadata-server"]
@@ -80,12 +90,16 @@ bind-address = "127.0.0.1:$ADMIN_PORT"
 EOF
 
 sql() {
-    curl -sS --max-time 20 -X POST "http://127.0.0.1:$ADMIN_PORT/query" \
+    local reply
+    reply="$(curl -sS --fail-with-body --max-time 20 -X POST "http://127.0.0.1:$ADMIN_PORT/query" \
         -H 'content-type: application/json' -H 'accept: application/json' \
-        -d "{\"query\":\"$1\"}"
+        -d "{\"query\":\"$1\"}")" || { printf '%s\n' "$reply" >&2; return 1; }
+    printf '%s\n' "$reply" | jq -e 'has("rows") and (.rows | type == "array")' >/dev/null \
+        || { printf 'FAIL: invalid admin query reply: %s\n' "$reply" >&2; return 1; }
+    printf '%s\n' "$reply"
 }
 inventory() {
-    sql "SELECT id, target_service_name, target_service_key, status, journal_size, progress FROM sys_invocation" > "$1"
+    sql "SELECT id, target_service_name, target_service_key, invoked_by_id, status, journal_size, completion_result, completion_failure FROM sys_invocation WHERE id = '$INVOCATION' OR invoked_by_id = '$INVOCATION'" > "$1"
 }
 wait_admin() {
     for _ in $(seq 1 60); do
@@ -128,7 +142,7 @@ trap cleanup EXIT
 NODE_PID=$!
 wait_admin || { echo "FAIL: node did not answer on the admin port"; exit 1; }
 
-ATHLETIC_FAULT_HTTP_EXIT="$TRIGGER" "$SERVE" \
+RUST_LOG=info ATHLETIC_FAULT_HTTP_EXIT="$TRIGGER" CENSUS_NATIVE_SOURCE_BOUNDARY="$CONFIG" "$SERVE" \
     --listen "127.0.0.1:$ENDPOINT_PORT" --data-dir "$DATA" --max-concurrent 64 \
     --drain-timeout 60 --browser-profile "$WORK/browser-profile" \
     --browser-executable "$CHROMIUM" --browser-headless > "$WORK/endpoint.log" 2>&1 &
@@ -162,61 +176,50 @@ PY
 done
 [ "$REGISTERED" = true ] || { echo "FAIL: endpoint did not register the expected services"; cat "$WORK/deployments.json"; exit 1; }
 
-CANDIDATES="VT RI DE DC SD WY ND AK"
-STATE=""
-SUBMIT_LOG="$WORK/submission.log"
-for candidate in $CANDIDATES; do
-    echo "SUBMITTING: jurisdiction $candidate"
-    "$CLIENT" jurisdiction "$candidate" --ingress "http://127.0.0.1:$INGRESS_PORT/" \
-        --season 2026 --revision 1 --limit-per-state 1 --detach \
-        > "$SUBMIT_LOG" 2>&1 && { STATE="$candidate"; break; }
-    if grep -q 'held by another census-service process' "$SUBMIT_LOG"; then
-        echo "SKIPPED: $candidate held by another process"
-    else
-        echo "WARNING: $candidate failed unexpectedly:"
-        cat "$SUBMIT_LOG"
-    fi
-done
-[ -n "$STATE" ] || { echo "FAIL: no jurisdiction could be submitted"; exit 1; }
-echo "SUBMITTED: jurisdiction $STATE revision 1"
-grep -q "jurisdiction:{$STATE}" "$SUBMIT_LOG" || grep -q "jurisdiction:$STATE" "$SUBMIT_LOG" || { echo "FAIL: submission did not report a run identity"; cat "$SUBMIT_LOG"; exit 1; }
-
+AS_OF="$(date -u +%F)"
+LAST_YEAR="$(date -u +%Y)"
+[ "$LAST_YEAR" -le 2027 ] || LAST_YEAR=2027
+jq -n --arg state "$STATE" --arg date "$AS_OF" --argjson last "$LAST_YEAR" \
+    '{jurisdiction:$state,season:2026,revision:1,history:{first_calendar_year:2023,last_calendar_year:$last,as_of:$date},limit_per_state:1,concurrency:4,source_parallelism:1}' \
+    > "$WORK/request.json"
+KEY_ROUTE="$(printf '%s' "$KEY" | jq -sRr @uri)"
+submit() {
+    curl -fsS --max-time 30 -X POST "http://127.0.0.1:$INGRESS_PORT/JurisdictionCensus/$KEY_ROUTE/run/send" \
+        -H 'content-type: application/json' -H 'accept: application/json' \
+        -H "idempotency-key: $KEY" --data-binary @"$WORK/request.json"
+}
+submit > "$WORK/submission.json" 2> "$WORK/submission.log" \
+    || { echo "FAIL: submission refused"; cat "$WORK/submission.log"; exit 1; }
+INVOCATION="$(jq -er 'select(.status == "Accepted") | .invocationId | select(type == "string") | select(test("^inv_[A-Za-z0-9]+$"))' "$WORK/submission.json")"
+echo "SUBMITTED: $KEY as $INVOCATION"
 INFLIGHT=false
-for i in $(seq 1 900); do
+for i in $(seq 1 60); do
     inventory "$WORK/invocations-${i}.json"
-    FOUND=$(python3 - "$WORK/invocations-${i}.json" <<'PY'
-import json, sys
-rows = json.load(open(sys.argv[1])).get("rows", [])
-live = []
-for r in rows:
-    if r.get("status") in ("running", "backing-off", "pending", "suspended"):
-        js = r.get("journal_size", 0)
-        if isinstance(js, (int, float)) and js > 0:
-            live.append(r)
-if live:
-    print(json.dumps(live, indent=2))
-PY
-)
-    if [ -n "$FOUND" ]; then
-        INFLIGHT=true
+    jq -e --arg id "$INVOCATION" --arg key "$KEY" \
+        'any(.rows[]; .id == $id and .target_service_key == $key)' "$WORK/invocations-${i}.json" >/dev/null \
+        || { echo "FAIL: admitted original invocation missing from admin inventory"; exit 1; }
+    if jq -e --arg id "$INVOCATION" \
+        'any(.rows[]; .id == $id and .status == "completed")' "$WORK/invocations-${i}.json" >/dev/null; then
+        echo "FAIL: original parent settled before active-owned-worker fault"
+        cat "$WORK/invocations-${i}.json"
+        exit 1
+    fi
+    if [ -f "$MARKER" ]; then
+        jq -e --arg operation "$OPERATION" \
+            '.schema == 2 and .phase == "teams_reserved_before_acquisition" and .operation == $operation and .attempt == 1 and .request_digest != "fault_injection" and (.acknowledged_effects | type == "object")' \
+            "$MARKER" >/dev/null || { echo "FAIL: reached reservation marker identity invalid"; exit 1; }
+        jq -e --arg id "$INVOCATION" --arg operation "$OPERATION" \
+            'any(.rows[]; .target_service_name == "TeamsSource" and .target_service_key == $operation and .invoked_by_id == $id and .status == "running" and .journal_size > 0)' \
+            "$WORK/invocations-${i}.json" >/dev/null || { echo "FAIL: reached worker not active and owned by original parent"; exit 1; }
+        cp "$MARKER" "$WORK/reservation-before-exit.json"
         cp "$WORK/invocations-${i}.json" "$WORK/work-in-flight.json"
-        echo "$FOUND" > "$WORK/live-invocations.json"
-        echo "INFLIGHT: live invocations captured at iteration $i"
-        python3 - "$WORK/work-in-flight.json" <<'PY'
-import json, sys
-rows = json.load(open(sys.argv[1])).get("rows", [])
-live = [r for r in rows if r.get("status") in ("running", "backing-off", "pending", "suspended")]
-if live:
-    print(f"LIVE: {len(live)} invocation(s) active:")
-    for r in live[:3]:
-        print(f"  {r.get('id', '?')} {r.get('target_service_name', '?')} status={r.get('status', '?')} journal={r.get('journal_size', '?')}")
-PY
+        INFLIGHT=true
+        echo "INFLIGHT: original parent $INVOCATION owns active reservation $OPERATION"
         break
     fi
-    if [ $((i % 60)) -eq 0 ]; then echo "WAITING: no live invocations after $((i * 2))s"; fi
-    sleep 2
+    sleep 1
 done
-[ "$INFLIGHT" = true ] || { echo "FAIL: no live invocations found before trigger"; exit 1; }
+[ "$INFLIGHT" = true ] || { echo "FAIL: owned source reservation not reached before trigger"; exit 1; }
 
 echo "INJECTED: creating ATHLETIC_FAULT_HTTP_EXIT trigger file at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 touch "$TRIGGER"
@@ -301,7 +304,8 @@ NODE_PID=$!
 wait_admin || { echo "FAIL: restarted node did not answer on the admin port"; exit 1; }
 echo "RESTARTED: Restate node from same base-dir"
 
-"$SERVE" \
+sha256sum -c "$WORK/binary-hashes.sha256" > "$WORK/restart-binary-hashes.txt"
+env -u ATHLETIC_FAULT_HTTP_EXIT -u CENSUS_NATIVE_SOURCE_BOUNDARY "$SERVE" \
     --listen "127.0.0.1:$ENDPOINT_PORT" --data-dir "$DATA" --max-concurrent 64 \
     --drain-timeout 60 --browser-profile "$WORK/browser-profile" \
     --browser-executable "$CHROMIUM" --browser-headless > "$WORK/endpoint-second.log" 2>&1 &
@@ -310,55 +314,27 @@ SERVE_PID=$!
 sleep 2
 kill -0 "$SERVE_PID" 2>/dev/null || { echo "FAIL: restarted endpoint exited during startup"; tail -5 "$WORK/endpoint-second.log"; exit 1; }
 
-curl -sS -X POST "http://127.0.0.1:$ADMIN_PORT/deployments" -H 'content-type: application/json' \
-    -d "{\"uri\":\"http://127.0.0.1:$ENDPOINT_PORT/\"}" > "$WORK/deployment-second.json" || true
+curl -fsS --max-time 30 -X POST "http://127.0.0.1:$ADMIN_PORT/deployments" -H 'content-type: application/json' \
+    -d "{\"uri\":\"http://127.0.0.1:$ENDPOINT_PORT/\"}" > "$WORK/deployment-second.json"
 
-echo "RESUMING: re-submitting jurisdiction $STATE revision 1 on same store"
-"$CLIENT" jurisdiction "$STATE" --ingress "http://127.0.0.1:$INGRESS_PORT/" \
-    --season 2026 --revision 1 --limit-per-state 1 --detach \
-    > "$WORK/resubmit.log" 2>&1 || {
-    echo "FAIL: resubmission rejected"; cat "$WORK/resubmit.log"; exit 1;
-}
-echo "RESUBMIT LOG:"
-cat "$WORK/resubmit.log"
-
-ORIGINAL_IDENTITY=$(grep -oE 'jurisdiction[^ "]*' "$SUBMIT_LOG" | head -1 || true)
-RESUBMIT_IDENTITY=$(grep -oE 'jurisdiction[^ "]*' "$WORK/resubmit.log" | head -1 || true)
-echo "IDENTITY: original=$ORIGINAL_IDENTITY resubmit=$RESUBMIT_IDENTITY"
-if [ -z "$ORIGINAL_IDENTITY" ] || [ "$ORIGINAL_IDENTITY" != "$RESUBMIT_IDENTITY" ]; then
-    echo "FAIL: resubmission did not reuse the original run identity"
-    exit 1
-fi
-echo "IDENTITY: resubmission reused the same run identity"
+echo "RESUMING: original invocation $INVOCATION on the same store"
+submit > "$WORK/resubmit.json" 2> "$WORK/resubmit.log" \
+    || { echo "FAIL: resubmission refused"; cat "$WORK/resubmit.log"; exit 1; }
+jq -e --arg id "$INVOCATION" '.invocationId == $id and .status == "PreviouslyAccepted"' \
+    "$WORK/resubmit.json" >/dev/null || { echo "FAIL: resubmission did not reuse the original invocation"; exit 1; }
+echo "IDENTITY: original invocation and idempotency key reused"
 
 RESUME_PROVEN=false
-for _ in $(seq 1 60); do
-    inventory "$WORK/invocations-resumed.json" || true
-    if python3 - "$WORK/work-in-flight.json" "$WORK/invocations-resumed.json" <<'PY'
-import json, sys
-before_rows = json.load(open(sys.argv[1])).get("rows", [])
-after = {r["id"]: r for r in json.load(open(sys.argv[2])).get("rows", [])}
-terminal = ("completed", "failed", "cancelled", "timed-out", "aborted", "panicked")
-progressed = []
-for r in before_rows:
-    a = after.get(r["id"])
-    if a is None:
-        continue
-    if (
-        a.get("status") in terminal
-        or a.get("status") != r.get("status")
-        or a.get("journal_size", 0) > r.get("journal_size", 0)
-    ):
-        progressed.append(
-            (r["id"], r.get("status"), a.get("status"), r.get("journal_size"), a.get("journal_size"))
-        )
-if progressed:
-    for row in progressed:
-        print(f"RESUMED: {row[0]} {row[1]} -> {row[2]} journal {row[3]} -> {row[4]}")
-    sys.exit(0)
-sys.exit(1)
-PY
-    then
+for _ in $(seq 1 300); do
+    inventory "$WORK/invocations-resumed.json"
+    jq -e --slurpfile before "$WORK/work-in-flight.json" \
+        '([.rows[].id] as $after | all($before[0].rows[]; .id as $id | $after | index($id) != null))' \
+        "$WORK/invocations-resumed.json" >/dev/null || { echo "FAIL: original invocation identity lost during recovery"; exit 1; }
+    if jq -e --arg id "$INVOCATION" \
+        'any(.rows[]; .id == $id and .status == "completed")' "$WORK/invocations-resumed.json" >/dev/null; then
+        jq -e --arg id "$INVOCATION" \
+            'any(.rows[]; .id == $id and .completion_result == "success")' "$WORK/invocations-resumed.json" >/dev/null \
+            || { echo "FAIL: recovered original invocation failed"; cat "$WORK/invocations-resumed.json"; exit 1; }
         RESUME_PROVEN=true
         break
     fi
@@ -366,11 +342,12 @@ PY
 done
 [ "$RESUME_PROVEN" = true ] || { echo "FAIL: no pre-trigger invocation resumed after restart"; exit 1; }
 
-"$CLIENT" open-work --ingress "http://127.0.0.1:$INGRESS_PORT/" --season 2026 --revision 1 \
-    > "$WORK/open-work-resumed.txt" 2>&1 || true
-echo "OPEN WORK AFTER RESUME:"
-cat "$WORK/open-work-resumed.txt"
 
+OPERATION_ROUTE="$(printf '%s' "$OPERATION" | jq -sRr @uri)"
+curl -fsS --max-time 20 -X POST "http://127.0.0.1:$INGRESS_PORT/TeamsSource/$OPERATION_ROUTE/inspection" \
+    -H 'content-type: application/json' > "$WORK/source-after-recovery.json"
+jq -e '.status == "settled" and .outcome.status == "completed" and .outcome.outcome.disposition == "complete" and .outcome.outcome.errors == [] and .outcome.outcome.unfinished == [] and (.outcome.progress | length <= 3) and any(.outcome.progress[]; .status == "completed" and .outcome.records > 0 and .outcome.disposition == "complete" and .outcome.errors == [] and .outcome.unfinished == [])' \
+    "$WORK/source-after-recovery.json" >/dev/null || { echo "FAIL: original source did not settle with completed records"; exit 1; }
 stop_owned_process "$SERVE_PID" resumed-endpoint
 SERVE_PID=""
 DRAIN2=$(grep -a 'drained: accepted=' "$WORK/endpoint-second.log" | tail -1 || true)
@@ -378,7 +355,12 @@ DRAIN2=$(grep -a 'drained: accepted=' "$WORK/endpoint-second.log" | tail -1 || t
 echo "RESUME DRAIN CERTIFICATE: $DRAIN2"
 echo "$DRAIN2" > "$WORK/resume-drain-certificate.txt"
 validate_drain_certificate "$WORK/resume-drain-certificate.txt"
+if pgrep -f -- "--data-dir $DATA" >/dev/null 2>&1 || pgrep -f "$WORK/browser-profile" >/dev/null 2>&1; then
+    echo "FAIL: owned child processes survived the resumed endpoint drain"
+    exit 1
+fi
+echo "REAP: no owned child processes survived resumed endpoint exit"
 stop_owned_process "$NODE_PID" Restate
 NODE_PID=""
 
-echo "PASS: parent HTTP server exited on trigger; both drain certificates satisfied accepted == completed+cancelled+aborted+panicked with accepted >= 1, panicked == 0 and overlapping timed_out <= accepted; both owned endpoints drained/reaped; the same run identity resumed on the same store and a pre-trigger invocation advanced"
+echo "PASS: actual parent HTTP trigger fired with an identity-bound active owned source reservation; exclusive drain accounting and zero orphans/reaped children verified; original invocation/key/idempotency resumed to successful completion on preserved state and source settled with records"

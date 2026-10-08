@@ -73,6 +73,7 @@ fn mshsl_collection_retains_published_coaches_and_physical_capture_evidence() ->
         let people = [
             ("Adam Carlson", Gender::Boys, Some(Sport::OutdoorTrack), CoachRole::HeadCoach, "acarlson@isd1.org"),
             ("Ava Carlson", Gender::Girls, Some(Sport::OutdoorTrack), CoachRole::HeadCoach, "avacarlson@isd1.org"),
+            ("Jim Henrickson", Gender::Mixed, None, CoachRole::AthleticDirector, "jhenrickson@isd1.org"),
             ("Alan Hills", Gender::Mixed, None, CoachRole::AthleticDirector, "ahills@isd1.org"),
         ];
         ensure!(coaches.len() == people.len());
@@ -136,7 +137,7 @@ fn controlled_plain_names_inventory_is_offline_and_retains_published_school_owne
         ensure!(reopened.scan::<CanonicalSchool>(Table::Schools)? == schools);
         ensure!(reopened.scan::<CanonicalCoach>(Table::Coaches)? == coaches);
         ensure!(reopened.stats()?.tables == physical);
-        ensure!(fetcher.stats().await.requests == 0);
+        ensure!(fetcher.stats().await.physical_requests() == 0);
         Ok(())
     })
 }

@@ -102,35 +102,49 @@ pub(super) async fn emit_staff(
             complete = false;
             continue;
         };
-        for (ordinal, value) in rows.iter().enumerate() {
-            let locator = format!("{}#category={category}&row={ordinal}", owner.1);
-            match serde_json::from_value::<StaffPerson>(value.clone()) {
-                Ok(person) => {
-                    let emission = emit_person(
-                        ctx,
-                        record,
-                        (owner.0, owner.1, &capture.fetched_at),
-                        &person,
-                        report,
-                    )
-                    .await?;
-                    if let Some(coach) = emission.coach {
-                        bounded(&mut coaches, coach)?;
-                    }
-                    complete &= emission.reached;
-                }
-                Err(error) => {
-                    fail(report, &locator, error)?;
-                    complete = false;
-                }
-            }
-        }
+        complete &= emit_category(
+            ctx,
+            record,
+            (owner.0, owner.1, &capture.fetched_at),
+            (category, rows),
+            &mut coaches,
+            report,
+        )
+        .await?;
     }
     if complete {
         Ok(StaffEmission::Complete(coaches))
     } else {
         Ok(StaffEmission::Unresolved(coaches))
     }
+}
+
+async fn emit_category(
+    ctx: &AdapterContext<'_>,
+    record: &SchoolRecord,
+    owner: (&SchoolId, &str, &str),
+    category: (&str, &[Value]),
+    coaches: &mut Vec<CanonicalCoach>,
+    report: &mut AdapterReport,
+) -> CrawlResult<bool> {
+    let mut complete = true;
+    for (ordinal, value) in category.1.iter().enumerate() {
+        let locator = format!("{}#category={}&row={ordinal}", owner.1, category.0);
+        match serde_json::from_value::<StaffPerson>(value.clone()) {
+            Ok(person) => {
+                let emission = emit_person(ctx, record, owner, &person, report).await?;
+                if let Some(coach) = emission.coach {
+                    bounded(coaches, coach)?;
+                }
+                complete &= emission.reached;
+            }
+            Err(error) => {
+                fail(report, &locator, error)?;
+                complete = false;
+            }
+        }
+    }
+    Ok(complete)
 }
 
 struct PersonEmission {

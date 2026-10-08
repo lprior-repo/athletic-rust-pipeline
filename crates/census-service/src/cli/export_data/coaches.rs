@@ -95,7 +95,7 @@ pub fn write_canonical_coaches(
         .collect::<anyhow::Result<Vec<_>>>()?;
     write_csv(
         &data.join("canonical-coaches.csv"),
-        &[
+        [
             "coach_id",
             "name",
             "role",

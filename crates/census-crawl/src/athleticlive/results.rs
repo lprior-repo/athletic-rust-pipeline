@@ -116,64 +116,7 @@ fn append(
     receipt: &EffectReceipt,
 ) -> CrawlResult<EntityCounts> {
     let mut page = ctx.write_batch();
-    let mut observations = ctx.athlete_observations(&entities.athletes, schools);
-    observations
-        .try_reserve(entities.source_observations.len())
-        .map_err(|_| CrawlError::Resource {
-            resource: "LIVE source observations",
-            requested: entities.source_observations.len(),
-            limit: crate::recording::MAX_RECORDED_WORK,
-        })?;
-    observations.extend(entities.source_observations);
-    let meets = crate::recording::projection::append_new(
-        ctx,
-        &mut page,
-        Table::Meets,
-        entities.meets,
-        ROW_PHASE,
-    )?;
-    let events = crate::recording::projection::append_new(
-        ctx,
-        &mut page,
-        Table::Events,
-        entities.events,
-        ROW_PHASE,
-    )?;
-    let teams = crate::recording::projection::append_new(
-        ctx,
-        &mut page,
-        Table::Teams,
-        entities.teams,
-        ROW_PHASE,
-    )?;
-    let athletes = crate::recording::projection::append_new(
-        ctx,
-        &mut page,
-        Table::Athletes,
-        entities.athletes,
-        ROW_PHASE,
-    )?;
-    let performances = crate::recording::projection::append_new(
-        ctx,
-        &mut page,
-        Table::Performances,
-        entities.performances,
-        ROW_PHASE,
-    )?;
-    crate::recording::projection::append_new(
-        ctx,
-        &mut page,
-        Table::ReviewCases,
-        entities.review_cases,
-        ROW_PHASE,
-    )?;
-    crate::recording::projection::append_new(
-        ctx,
-        &mut page,
-        Table::SourceObservations,
-        observations,
-        ROW_PHASE,
-    )?;
+    let counts = append_entities(ctx, &mut page, entities, schools)?;
     let digest = crate::net::cache::content_digest(body.as_bytes());
     if !ctx.store.journal_contains(CAPTURE_PHASE, &digest)? {
         page.journal_done(
@@ -186,12 +129,76 @@ fn append(
         page.journal_done(EFFECT_PHASE, &receipt.key, &receipt.payload)?;
     }
     page.commit()?;
+    Ok(counts)
+}
+
+fn append_entities(
+    ctx: &AdapterContext<'_>,
+    page: &mut crate::recording::RowBatch<'_>,
+    entities: DocumentEntities,
+    schools: &[CanonicalSchool],
+) -> CrawlResult<EntityCounts> {
+    let mut observations = ctx.athlete_observations(&entities.athletes, schools);
+    observations
+        .try_reserve(entities.source_observations.len())
+        .map_err(|_| CrawlError::Resource {
+            resource: "LIVE source observations",
+            requested: entities.source_observations.len(),
+            limit: crate::recording::MAX_RECORDED_WORK,
+        })?;
+    observations.extend(entities.source_observations);
+    let mut counts = append_context(ctx, page, entities.meets, entities.events, entities.teams)?;
+    let athletes = crate::recording::projection::append_new(
+        ctx,
+        page,
+        Table::Athletes,
+        entities.athletes,
+        ROW_PHASE,
+    )?;
+    let performances = crate::recording::projection::append_new(
+        ctx,
+        page,
+        Table::Performances,
+        entities.performances,
+        ROW_PHASE,
+    )?;
+    crate::recording::projection::append_new(
+        ctx,
+        page,
+        Table::ReviewCases,
+        entities.review_cases,
+        ROW_PHASE,
+    )?;
+    crate::recording::projection::append_new(
+        ctx,
+        page,
+        Table::SourceObservations,
+        observations,
+        ROW_PHASE,
+    )?;
+    counts.athletes = athletes;
+    counts.performances = performances;
+    Ok(counts)
+}
+
+fn append_context(
+    ctx: &AdapterContext<'_>,
+    page: &mut crate::recording::RowBatch<'_>,
+    meets: Vec<census_domain::model::CanonicalMeet>,
+    events: Vec<census_domain::model::CanonicalEvent>,
+    teams: Vec<census_domain::model::CanonicalTeam>,
+) -> CrawlResult<EntityCounts> {
+    let meets =
+        crate::recording::projection::append_new(ctx, page, Table::Meets, meets, ROW_PHASE)?;
+    let events =
+        crate::recording::projection::append_new(ctx, page, Table::Events, events, ROW_PHASE)?;
+    let teams =
+        crate::recording::projection::append_new(ctx, page, Table::Teams, teams, ROW_PHASE)?;
     Ok(EntityCounts {
         meets,
         events,
         teams,
-        athletes,
-        performances,
+        ..EntityCounts::default()
     })
 }
 

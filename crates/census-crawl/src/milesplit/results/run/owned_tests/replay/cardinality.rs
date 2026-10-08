@@ -101,7 +101,7 @@ async fn commit_requests(
     }
     run.release_owned();
     check!(
-        matches!(run.owned, super::super::super::ActiveMeet::Empty),
+        run.owned.is_none(),
         "decoded captures released at meet boundary"
     );
     Ok(())

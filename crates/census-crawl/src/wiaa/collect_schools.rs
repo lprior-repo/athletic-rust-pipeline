@@ -48,23 +48,27 @@ pub(super) async fn process_school(
     let Some(extract) = school_entities(entry, &page, &capture.fetched_at) else {
         return fail(report, &url, "missing school owner");
     };
+    persist_school(ctx, &url, &extract, &capture.fetched_at, report)
+}
+
+fn persist_school(
+    ctx: &AdapterContext<'_>,
+    url: &str,
+    extract: &super::super::map::SchoolExtract,
+    observed_on: &str,
+    report: &mut AdapterReport,
+) -> CrawlResult<()> {
     let written = school(
         ctx,
-        ("wiaa", &url),
+        ("wiaa", url),
         (
             &SourceNamespace::association_school(ASSOCIATION),
             &extract.school,
-            &capture.fetched_at,
+            observed_on,
         ),
         report,
     )?;
-    persist(
-        ctx,
-        ("wiaa", &url),
-        Table::Coaches,
-        &extract.coaches,
-        report,
-    )?;
+    persist(ctx, ("wiaa", url), Table::Coaches, &extract.coaches, report)?;
     report.rows = report
         .rows
         .saturating_add(u64::try_from(written).map_err(|_| CrawlError::Arithmetic {

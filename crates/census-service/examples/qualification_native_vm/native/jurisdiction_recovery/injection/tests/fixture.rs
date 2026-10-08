@@ -142,13 +142,16 @@ pub(super) fn registration_entry(index: u64, observed_on: &str, digest: &str) ->
 }
 
 pub(super) fn marker(original: &Original) -> Result<Marker> {
+    let directory = tempfile::tempdir()?;
+    let store = census_store::Store::open(directory.path().join("store"))?;
     Ok(Marker {
-        schema: 1,
+        schema: 2,
         phase: "teams_reserved_before_acquisition".to_owned(),
         operation: super::super::operation(original)?,
         attempt: 1,
         request_digest: "a".repeat(64),
         observed_on: "2026-10-02".to_owned(),
+        acknowledged_effects: store.native_effect_checkpoint()?,
     })
 }
 

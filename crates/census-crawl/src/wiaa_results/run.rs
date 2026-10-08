@@ -174,6 +174,11 @@ fn append_entities(
     let mut batch = ctx.write_batch();
     accumulated.unsupported.append_to(&mut batch)?;
     batch.commit()?;
+    append_rows(
+        ctx,
+        Table::SourceObservations,
+        accumulated.undated.into_iter(),
+    )?;
     let counts = EntityCounts {
         meets: append_rows(ctx, Table::Meets, accumulated.meets.into_values())?,
         teams: append_rows(ctx, Table::Teams, accumulated.teams.into_values())?,

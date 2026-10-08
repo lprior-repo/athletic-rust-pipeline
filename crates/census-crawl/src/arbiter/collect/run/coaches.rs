@@ -105,18 +105,32 @@ impl Run<'_> {
         let count = u64::try_from(parsed.rows.len()).map_err(|_| CrawlError::Arithmetic {
             detail: "coach page size".into(),
         })?;
+        let malformed =
+            self.write_coach_rows(parsed.rows, school, &url, &capture.fetched_at, walk)?;
+        self.advance(
+            (page.1, count, parsed.total),
+            (&url, &capture),
+            recovery,
+            (walk, malformed),
+        )
+    }
+
+    fn write_coach_rows(
+        &mut self,
+        rows: Vec<CrawlResult<crate::arbiter::parse::CoachRow>>,
+        school: &CanonicalSchool,
+        url: &str,
+        observed_on: &str,
+        walk: &mut CoachWalk,
+    ) -> CrawlResult<bool> {
         let mut malformed = false;
-        parsed
-            .rows
-            .into_iter()
+        rows.into_iter()
             .enumerate()
             .try_for_each(|(ordinal, row)| {
                 let locator = format!("{url}#row={ordinal}");
                 match row {
                     Ok(row) => {
-                        if let Some(coach) =
-                            map_coach_row(&row, &school.id, &url, &capture.fetched_at)
-                        {
+                        if let Some(coach) = map_coach_row(&row, &school.id, url, observed_on) {
                             let errors = self.tally.errors;
                             walk.admitted = walk.admitted.saturating_add(self.persist_rows(
                                 &locator,
@@ -135,12 +149,7 @@ impl Run<'_> {
                 }
                 Ok::<_, CrawlError>(())
             })?;
-        self.advance(
-            (page.1, count, parsed.total),
-            (&url, &capture),
-            recovery,
-            (walk, malformed),
-        )
+        Ok(malformed)
     }
 
     fn advance(

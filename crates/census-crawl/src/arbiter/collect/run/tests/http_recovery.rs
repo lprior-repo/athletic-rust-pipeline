@@ -54,6 +54,11 @@ async fn http_same_school_recovery(first: FirstPage, recording_route: bool) -> T
     )?;
     let options = options();
     let row = school();
+    let live_store = if recording_route {
+        Some(Store::open(dir.path().join("live-store"))?)
+    } else {
+        None
+    };
     let client = async {
         let mut failed = run(&ctx, &options)?;
         failed
@@ -62,6 +67,9 @@ async fn http_same_school_recovery(first: FirstPage, recording_route: bool) -> T
         check!(eq; (failed.tally.errors, store.journal_keys(JOURNAL)?.len()), (1, 0));
         if recording_route {
             apply_recorded(&store, &recording.drain())?;
+            if let Some(live) = &live_store {
+                assert_live_parity(&ctx, live, &options, &row, &host).await?;
+            }
         }
         let retained = match first {
             FirstPage::Malformed | FirstPage::EmptyShort => {
@@ -85,14 +93,28 @@ async fn http_same_school_recovery(first: FirstPage, recording_route: bool) -> T
         check!(eq; marker["recovery"]["responses"][0]["status"], json!(200));
         check!(eq; marker["recovery"]["responses"][0]["method"], json!("GET"));
         let original_meta = capture_meta(&cache, &bad_url)?;
+        let completed_meta = if later {
+            Some(capture_meta(&cache, &url)?)
+        } else {
+            None
+        };
+        let physical_before_recovery = fetcher.stats().await.physical_requests();
         check!(eq; marker["recovery"]["responses"][0]["fetched_at"], original_meta["fetched_at"]);
         let mut recovered = run(&ctx, &options)?;
         recovered
             .process_school_at(UsJurisdiction::NewHampshire, "2132", &row, (BASE, &host))
             .await?;
+        check!(eq; recovered.tally.errors, 0);
+        check!(eq; fetcher.stats().await.physical_requests(), physical_before_recovery.checked_add(1).ok_or("request count")?);
+        if let Some(meta) = &completed_meta {
+            check!(eq; capture_meta(&cache, &url)?, *meta);
+        }
         assert_archived_capture(&cache, &bad, &original_meta)?;
         if recording_route {
             apply_recorded(&store, &recording.drain())?;
+            if let Some(live) = &live_store {
+                assert_live_parity(&ctx, live, &options, &row, &host).await?;
+            }
         }
         let coaches: Vec<CanonicalCoach> = store.scan(Table::Coaches)?;
         check!(eq; coaches.len(), 3);
@@ -105,21 +127,35 @@ async fn http_same_school_recovery(first: FirstPage, recording_route: bool) -> T
             std::collections::HashSet::from(["NH:2132:450".to_string()])
         );
         let before = store.walk_table(Table::Coaches)?;
-        let requests = fetcher.stats().await.requests;
+        let requests = fetcher.stats().await.physical_requests();
         let mut replay = run(&ctx, &options)?;
         replay
             .process_school_at(UsJurisdiction::NewHampshire, "2132", &row, (BASE, &host))
             .await?;
         check!(eq; (replay.tally.schools, replay.tally.skipped), (0, 1));
         check!(eq; store.walk_table(Table::Coaches)?, before);
-        check!(eq; fetcher.stats().await.requests, requests);
+        check!(eq; fetcher.stats().await.physical_requests(), requests);
+        if recording_route {
+            apply_recorded(&store, &recording.drain())?;
+            check!(eq; store.walk_table(Table::Coaches)?, before);
+            if let Some(live) = &live_store {
+                assert_live_parity(&ctx, live, &options, &row, &host).await?;
+            }
+        }
         assert_archived_capture(&cache, &bad, &original_meta)?;
         Ok::<(), Box<dyn std::error::Error>>(())
     };
     tokio::time::timeout(Duration::from_secs(15), async {
         let (served, acquired) = tokio::join!(serve_responses(listener, replies), client);
-        served?;
-        acquired
+        let accepted = served?;
+        acquired?;
+        let unfinished_path = bad_url.strip_prefix(&host).ok_or("unfinished path")?;
+        check!(eq; accepted.iter().filter(|path| path.as_str() == unfinished_path).count(), 2);
+        if later {
+            let completed_path = url.strip_prefix(&host).ok_or("completed path")?;
+            check!(eq; accepted.iter().filter(|path| path.as_str() == completed_path).count(), 1);
+        }
+        assert_request_conservation(&fetcher, &accepted).await
     })
     .await?
 }

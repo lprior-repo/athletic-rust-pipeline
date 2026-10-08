@@ -48,33 +48,9 @@ async fn walk(
     let Some(capture) = get(ctx, DIRECTORY, fetch, &mut report).await? else {
         return Ok(report);
     };
-    let html = match std::str::from_utf8(&capture.body) {
-        Ok(html) => html,
-        Err(error) => {
-            fail(&mut report, DIRECTORY, error.to_string())?;
-            return Ok(report);
-        }
-    };
-    let links = parse::parse_directory_links(html);
-    if links.is_empty() {
-        fail(
-            &mut report,
-            DIRECTORY,
-            "no validated school links".to_string(),
-        )?;
+    let Some(links) = directory_links(&capture, options, &mut report)? else {
         return Ok(report);
-    }
-    options.school_names.iter().try_for_each(|name| {
-        if links.iter().any(|link| link.name.contains(name)) {
-            Ok(())
-        } else {
-            fail(
-                &mut report,
-                DIRECTORY,
-                format!("requested school {name:?} not indexed"),
-            )
-        }
-    })?;
+    };
     let mut report = stream::iter(
         links
             .iter()
@@ -100,6 +76,37 @@ async fn walk(
     .await?;
     report.finish_frontier();
     Ok(report)
+}
+
+fn directory_links(
+    capture: &FetchOutcome,
+    options: &Options,
+    report: &mut AdapterReport,
+) -> CrawlResult<Option<Vec<parse::SchoolLink>>> {
+    let html = match std::str::from_utf8(&capture.body) {
+        Ok(html) => html,
+        Err(error) => {
+            fail(report, DIRECTORY, error.to_string())?;
+            return Ok(None);
+        }
+    };
+    let links = parse::parse_directory_links(html);
+    if links.is_empty() {
+        fail(report, DIRECTORY, "no validated school links".to_string())?;
+        return Ok(None);
+    }
+    options.school_names.iter().try_for_each(|name| {
+        if links.iter().any(|link| link.name.contains(name)) {
+            Ok(())
+        } else {
+            fail(
+                report,
+                DIRECTORY,
+                format!("requested school {name:?} not indexed"),
+            )
+        }
+    })?;
+    Ok(Some(links))
 }
 
 #[tracing::instrument(skip(ctx, link, fetch, report))]
@@ -144,15 +151,25 @@ async fn refresh_school(
         },
         &profile.coaches,
     );
+    persist_profile(ctx, &url, &extract, &capture, report)
+}
+
+fn persist_profile(
+    ctx: &AdapterContext<'_>,
+    url: &str,
+    extract: &SchoolExtract,
+    capture: &FetchOutcome,
+    report: &mut AdapterReport,
+) -> CrawlResult<()> {
     if !extract.coaches.is_empty() {
-        owe(report, &url)?;
+        owe(report, url)?;
         report.note("appointment season is not published; tenure remains unknown");
     }
-    emit_school(ctx, &extract, &capture)?;
+    emit_school(ctx, extract, capture)?;
     crate::coach_directories::persist_staff_capture(
         ctx,
         &extract.school,
-        &capture,
+        capture,
         &extract.coaches,
         census_domain::model::ContactResearchOutcome::CompletedEmpty,
     )?;

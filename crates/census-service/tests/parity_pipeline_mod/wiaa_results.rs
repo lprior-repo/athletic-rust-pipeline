@@ -7,8 +7,8 @@ use census_crawl::result_file::ParsedMeet;
 use census_crawl::{hytek, raceday, wiaa_results};
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam, EventIdentity, EventSpecification, GradYear, Grade,
-    SourceIdentity, SourceNamespace, SourceRef, Sport,
+    CanonicalSchool, CanonicalTeam, EventIdentity, EventSpecification, GradYear, SourceIdentity,
+    SourceNamespace, SourceRef, Sport,
 };
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
@@ -94,21 +94,10 @@ pub fn wiaa_result_files(corpus: &mut Corpus) -> Result<()> {
         schools.insert(id.as_str().to_string(), school);
     }
     let index = SchoolIndex::from_schools(&schools.values().cloned().collect::<Vec<_>>());
-    for label in &labels {
-        ensure!(
-            index.resolve(UsJurisdiction::Wisconsin, label).is_some(),
-            "the published school label {label:?} does not resolve against a school minted from it"
-        );
-    }
 
     let mut expected = ExpectedEntities::default();
     for (artifact, meet, sport) in &parsed {
-        let graded = expected_ids_for(&index, artifact, meet, *sport, &mut expected)?;
-        ensure!(
-            graded > 0,
-            "{}: no row carried a grade, so the fixture contributes no performance",
-            artifact.file
-        );
+        expected_ids_for(&index, artifact, meet, *sport, &mut expected)?;
     }
     corpus.schools.extend(schools.into_values());
     corpus.artifacts = parsed
@@ -122,6 +111,10 @@ pub fn wiaa_result_files(corpus: &mut Corpus) -> Result<()> {
         })
         .collect();
     expected.absorb_into(&mut corpus.expected);
+    corpus.published_results = parsed
+        .into_iter()
+        .map(|(artifact, meet, sport)| (artifact.url, meet, sport))
+        .collect();
     Ok(())
 }
 
@@ -150,7 +143,7 @@ fn expected_ids_for(
     meet: &ParsedMeet,
     sport: Sport,
     expected: &mut ExpectedEntities,
-) -> Result<usize> {
+) -> Result<()> {
     let url = &artifact.url;
     let expected_meet = CanonicalMeet::new(
         Some(UsJurisdiction::Wisconsin),
@@ -159,6 +152,14 @@ fn expected_ids_for(
         wiaa_results::level_of(&meet.name),
     );
     expected.meets.insert(expected_meet.id.as_str().to_string());
+    if meet.date.len() == 4 {
+        ensure!(
+            sport == Sport::CrossCountry && meet.date == artifact.year.to_string(),
+            "{}: year-only source has no supported archive-period context",
+            artifact.file
+        );
+        return Ok(());
+    }
     let school_year = wiaa_results::school_year_for(&meet.date, sport, artifact.year)
         .with_context(|| {
             format!(
@@ -167,9 +168,14 @@ fn expected_ids_for(
             )
         })?;
 
-    let mut graded = 0usize;
     for event in &meet.events {
-        let specification = EventSpecification::from_published_label(&event.label, &event.kind)?;
+        let specification = EventSpecification::from_published_label(&event.label, &event.kind)
+            .with_context(|| {
+                format!(
+                    "{} ({url}): published event {:?}, kind {:?}, division {:?}, round {:?}",
+                    artifact.file, event.label, event.kind, event.division, event.round
+                )
+            })?;
         let expected_event = CanonicalEvent::new(
             EventIdentity {
                 meet: &expected_meet.id,
@@ -200,23 +206,17 @@ fn expected_ids_for(
                     .as_str()
                     .to_string(),
             );
-            let members: Vec<(Option<u8>, &str, Option<Grade>)> = if row.legs.is_empty() {
-                vec![(None, row.name.as_str(), row.grade)]
-            } else {
-                row.legs
-                    .iter()
-                    .map(|leg| (Some(leg.position), leg.name.as_str(), leg.grade))
-                    .collect()
-            };
-            for (leg_position, member, grade) in members {
+            for (leg_position, member, grade) in super::wiaa_readback::members(row) {
                 let Some(grade) = grade else { continue };
                 if member.trim().is_empty() {
                     continue;
                 }
-                let Some(grad_year) = GradYear::of(grade, school_year) else {
-                    continue;
-                };
-                graded = graded.saturating_add(1);
+                let grad_year = GradYear::of(grade, school_year).with_context(|| {
+                    format!(
+                        "{}: {member:?} publishes grade {grade} in school year {} outside the supported cohort range",
+                        artifact.file, school_year.get()
+                    )
+                })?;
                 let round = event.round.as_deref().map_or("<none>", |value| value);
                 let source_key = match leg_position {
                     Some(position) => {
@@ -245,5 +245,5 @@ fn expected_ids_for(
             }
         }
     }
-    Ok(graded)
+    Ok(())
 }

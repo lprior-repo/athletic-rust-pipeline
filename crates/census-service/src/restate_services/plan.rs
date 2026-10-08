@@ -69,7 +69,6 @@ const NO_JURISDICTION_WALK: &str =
     "no run stage sweeps this source per jurisdiction: its walk is reachable from the CLI only, or \
      it is acquired per meet, team or athlete rather than per state";
 
-
 pub fn unwired_reason(slug: &str) -> Option<&'static str> {
     match strategies::strategy(slug) {
         strategies::SourceStrategy::Gap(reason) => Some(reason),

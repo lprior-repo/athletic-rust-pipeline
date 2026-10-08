@@ -1,14 +1,8 @@
 #!/usr/bin/env bash
-# scenario-12-cross-midnight-replay.sh — cross midnight during replay.
 
 set -euo pipefail
 
-BINARY="${BINARY:-census-service}"
-
-if ! "$BINARY" --help >/dev/null 2>&1; then
-    echo "SKIPPED: census-service binary not available"
-    exit 0
-fi
-
-echo "SKIPPED: no clock-manipulation seam in census-service"
-exit 0
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="${REPO_ROOT:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
+source "$SCRIPT_DIR/native-vm-qualification.sh"
+native_vm_qualification 12

@@ -138,7 +138,7 @@ fn staff_row(
 ) -> StaffRow {
     let email = markup
         .email(row)
-        .map_or_else(String::new, core::convert::identity);
+        .map_or(String::new(), core::convert::identity);
     let category_id = markup.attribute(tag, "data-category-id");
     let published_sport = markup.text(markup.cell(row, "col-staff_custom_1"));
     let sport = if published_sport.is_empty() {

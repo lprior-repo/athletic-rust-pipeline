@@ -56,17 +56,12 @@ fn emit_read(
     id: &StateRecordId,
     capture: &FetchOutcome,
 ) -> CrawlResult<Emission> {
-    let school = map_school(row, id, capture, &read.addresses)?;
     let mut issues = Vec::new();
+    let school = map_school(row, id, capture, &read.addresses, &mut issues)?;
     read.school
         .skipped()
         .iter()
-        .chain(
-            read.school
-                .notes()
-                .iter()
-                .filter(|issue| issue.field == "email"),
-        )
+        .chain(read.school.notes())
         .try_for_each(|issue| push_issue(&mut issues, issue.render()))?;
     if read.staff_year.is_none() {
         push_issue(
@@ -124,6 +119,7 @@ fn map_school(
     id: &StateRecordId,
     capture: &FetchOutcome,
     addresses: &[(String, census_domain::school_directory::PostalAddress)],
+    issues: &mut Vec<String>,
 ) -> CrawlResult<CanonicalSchool> {
     let name = row
         .name()
@@ -152,8 +148,11 @@ fn map_school(
             evidence,
             capture.content_digest.clone(),
         )
-        .map_err(mapping_error)?;
-        school.add_postal_address(claim).map_err(mapping_error)
+        .and_then(|claim| school.add_postal_address(claim));
+        if let Err(error) = claim {
+            push_issue(issues, mapping_error(error).to_string())?;
+        }
+        Ok::<_, CrawlError>(())
     })?;
     Ok(school)
 }

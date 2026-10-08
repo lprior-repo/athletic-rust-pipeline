@@ -5,7 +5,7 @@ use anyhow::{Context, Result};
 use census_crawl::{milesplit, net::Fetcher, AdapterContext};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
-use census_store::Store;
+use census_store::{Store, Table};
 
 use super::{RAW_FILES, RELAYS, TROY_URL};
 use crate::common;
@@ -60,9 +60,15 @@ async fn replay_capture(body: &[u8], relay: bool) -> Result<()> {
     check!(eq; report.errors, if relay { 0 } else { 1 });
     assertions::assert_retention(&store, body, relay)?;
     let before = store.journal_payloads(PHASE)?;
+    let observations = store.snapshot().tables_digest(&Table::ALL)?;
+    let source_meets = store.journal_payloads(milesplit::OWNED_MEET_PHASE)?;
+    let captures = store.journal_payloads(milesplit::OWNED_CAPTURE_PHASE)?;
     let repeated = milesplit::collect_result_sets(&context, &options).await?;
     check!(eq; repeated.requests, 0);
     check!(eq; store.journal_payloads(PHASE)?, before);
+    check!(eq; store.snapshot().tables_digest(&Table::ALL)?, observations);
+    check!(eq; store.journal_payloads(milesplit::OWNED_MEET_PHASE)?, source_meets);
+    check!(eq; store.journal_payloads(milesplit::OWNED_CAPTURE_PHASE)?, captures);
     assertions::assert_retention(&store, body, relay)
 }
 

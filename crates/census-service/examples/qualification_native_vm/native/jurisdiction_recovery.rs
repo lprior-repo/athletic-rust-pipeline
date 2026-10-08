@@ -6,11 +6,24 @@ use std::path::Path;
 
 mod boundary;
 mod captures;
+mod effects;
 mod injection;
 mod input;
 mod journal;
 mod observe;
+mod offline;
 mod recovery;
+
+pub(super) fn offline() -> Result<Value> {
+    offline::read()
+}
+
+#[tracing::instrument(skip(client))]
+pub(super) async fn quiescence(client: &Client) -> Result<Value> {
+    let original = input::load()?;
+    let finished = artifacts::json(&Path::new(GUEST).join("jurisdiction-recovery-finished.json"))?;
+    recovery::verify_live(client, &original, &finished).await
+}
 
 #[tracing::instrument(skip(client))]
 pub(super) async fn start(client: &Client) -> Result<Value> {
@@ -22,8 +35,7 @@ pub(super) async fn start(client: &Client) -> Result<Value> {
         "reached_real_source_stage": true,
         "physical_request_in_flight_proven": false,
         "unproven_obligations": [
-            "exact HTTP request/response/capture/parse fault subphase needs a production boundary signal",
-            "host must retain QMP reset time and prove this witness predates reset"
+            "exact HTTP request/response/capture/parse fault subphase needs a production boundary signal"
         ]
     });
     artifacts::publish(

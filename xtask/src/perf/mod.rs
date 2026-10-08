@@ -3,6 +3,7 @@ mod bench;
 pub(crate) mod compare;
 mod corpus;
 mod env;
+mod scope;
 
 pub use baseline::load_baseline;
 pub use bench::run_benchmarks;
@@ -167,11 +168,11 @@ mod tests;
 #[derive(Subcommand, Debug)]
 pub(crate) enum PerfCommand {
     #[command(
-        about = "Record Criterion timing, sample-tail timing, throughput and required GNU time/Valgrind memory measurements"
+        about = "Record Criterion timing, sample-tail timing, throughput and required GNU time RSS/Valgrind DHAT heap allocation measurements"
     )]
     Record,
     #[command(
-        about = "Re-run both benchmark targets, reject ID or measurement mismatches, and fail regressions beyond the tolerance (default 5%)"
+        about = "Re-run all three benchmark targets, reject ID or measurement mismatches, and fail regressions beyond the tolerance (default 5%)"
     )]
     Check {
         #[arg(

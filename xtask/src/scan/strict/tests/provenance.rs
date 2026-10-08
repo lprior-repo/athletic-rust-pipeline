@@ -146,3 +146,142 @@ fn raw_and_textually_imported_macros_do_not_inherit_standard_data_exemptions() -
     }
     Ok(())
 }
+
+#[test]
+fn vendor_prelude_globs_do_not_invent_macro_exports_or_hide_closures() -> TestResult {
+    for invocation in [
+        "format!(\"{}\", (|| { BODY })())",
+        "vec![|| { BODY }]",
+        "matches!((|| { BODY })(), Some(_))",
+        "tracing::warn!(value = (|| { BODY })(), \"observed\")",
+        "anyhow::anyhow!(\"{}\", (|| { BODY })())",
+    ] {
+        let source = format!(
+            "use restate_sdk::prelude::*; fn run() {{ {invocation}; cfg!(unix); }}",
+            invocation = invocation.replace("BODY", &"step();".repeat(59))
+        );
+        let found = inspect(&source)?;
+        check!(eq; found.callables, 2);
+        check!(eq; found.over_60.len(), 2);
+        check!(eq; found.unresolved.len(), 0);
+    }
+    Ok(())
+}
+
+#[test]
+fn same_named_vendor_macro_imports_resolve_the_crate_prefix() -> TestResult {
+    let found = inspect(
+        "use anyhow::{anyhow, ensure}; fn run() { ensure!(true, \"valid\"); anyhow!(\"message\"); }",
+    )?;
+    check!(eq; found.callables, 1);
+    check!(eq; found.unresolved.len(), 0);
+    validate_report(&report(found))?;
+    Ok(())
+}
+
+#[test]
+fn vendor_glob_cycles_leave_standard_fallback_and_vendor_aliases_resolvable() -> TestResult {
+    let found = inspect(
+        "use anyhow::*; use tracing as log; mod caller { use super::*; fn run() { format!(\"value\"); anyhow!(\"message\"); log::warn!(\"observed\"); } }",
+    )?;
+    check!(eq; found.callables, 1);
+    check!(eq; found.unresolved.len(), 0);
+    validate_report(&report(found))?;
+    Ok(())
+}
+
+#[test]
+fn handwritten_standard_shadow_wins_over_unrelated_vendor_prelude() -> TestResult {
+    let source = format!(
+        "use restate_sdk::prelude::*; macro_rules! stringify {{ ($value:expr) => {{ $value }}; }} fn run() {{ stringify!(|| {{{}}}); }}",
+        "step();".repeat(59)
+    );
+    let found = inspect(&source)?;
+    check!(eq; found.callables, 2);
+    check!(eq; found.over_60.len(), 2);
+    check!(eq; found.unresolved.len(), 0);
+    Ok(())
+}
+
+#[test]
+fn project_glob_reexports_shadow_prelude_and_preserve_callable_templates() -> TestResult {
+    let source = format!(
+        "use restate_sdk::prelude::*; mod definitions {{ macro_rules! format {{ () => {{ fn generated() {{{}}} }}; }} pub(crate) use format; }} mod reexports {{ pub(crate) use crate::definitions::*; }} use reexports::*; fn run() {{ format!(); }}",
+        "step();".repeat(59)
+    );
+    let found = inspect(&source)?;
+    check!(eq; found.callables, 2);
+    check!(eq; found.over_60.len(), 1);
+    check!(eq; found.unresolved.len(), 0);
+    Ok(())
+}
+
+#[test]
+fn ambiguous_project_and_vendor_globs_do_not_fall_back_to_the_prelude() -> TestResult {
+    let found = inspect(
+        "mod local { macro_rules! format { () => { 1 }; } pub(crate) use format; } use local::*; use std::*; fn run() { format!(); }",
+    )?;
+    check!(eq; found.callables, 1);
+    check!(eq; found.unresolved.len(), 1);
+    check!(validate_report(&report(found)).is_err());
+    Ok(())
+}
+
+#[test]
+fn unknown_vendor_exports_and_unmeasurable_project_shadows_fail_closed() -> TestResult {
+    for source in [
+        "use tracing::format; fn run() { format!(\"value\"); }",
+        "use restate_sdk::prelude::*; fn run() { restate_sdk::prelude::format!(\"value\"); }",
+        "use restate_sdk::prelude::*; macro_rules! vec { ($name:ident) => { fn $name() {} }; } fn run() { vec!(generated); }",
+    ] {
+        let found = inspect(source)?;
+        check!(eq; found.callables, 1);
+        check!(validate_report(&report(found)).is_err());
+    }
+    Ok(())
+}
+
+#[test]
+fn imported_macros_do_not_shadow_qualified_crate_namespaces() -> TestResult {
+    let found = inspect(
+        "use anyhow::anyhow; use local::pack as tracing; mod local { macro_rules! pack { ($value:expr) => { $value }; } pub(crate) use pack; } fn run() { anyhow!(\"message\"); anyhow::ensure!(true); tracing!(|| { step(); }); tracing::warn!(\"observed\"); }",
+    )?;
+    check!(eq; found.callables, 2);
+    check!(eq; found.unresolved.len(), 0);
+    validate_report(&report(found))?;
+    Ok(())
+}
+
+#[test]
+fn type_namespace_names_do_not_erase_imported_macro_bindings() -> TestResult {
+    let found = inspect("use anyhow::anyhow; struct anyhow; fn run() { anyhow!(\"message\"); }")?;
+    check!(eq; found.callables, 1);
+    check!(eq; found.unresolved.len(), 0);
+    validate_report(&report(found))?;
+    Ok(())
+}
+
+#[test]
+fn same_named_module_and_function_do_not_shadow_prelude_macros() -> TestResult {
+    let found = inspect(
+        "mod write { pub fn write() {} } pub use write::write; mod caller { fn run(f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { write!(f, \"{}\", 1) } }",
+    )?;
+    check!(eq; found.callables, 2);
+    check!(eq; found.unresolved.len(), 0);
+    validate_report(&report(found))?;
+    Ok(())
+}
+
+#[test]
+fn value_reexports_never_exempt_same_named_handwritten_macros() -> TestResult {
+    let source = format!(
+        "mod write {{ pub fn write() {{}} }} pub use write::write; macro_rules! write {{ () => {{ fn generated() {{{}}} }}; }} fn run() {{ write!(); }}",
+        "step();".repeat(59)
+    );
+    let found = inspect(&source)?;
+    check!(eq; found.callables, 3);
+    check!(eq; found.over_60.len(), 1);
+    check!(eq; found.unresolved.len(), 0);
+    check!(validate_report(&report(found)).is_err());
+    Ok(())
+}

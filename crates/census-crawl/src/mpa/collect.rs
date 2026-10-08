@@ -115,17 +115,27 @@ async fn process_school(
         directory,
         &staff,
     );
+    persist_school(ctx, &url, &extract, &directory.fetched_at, report)
+}
+
+fn persist_school(
+    ctx: &AdapterContext<'_>,
+    url: &str,
+    extract: &super::map::SchoolExtract,
+    observed_on: &str,
+    report: &mut AdapterReport,
+) -> CrawlResult<()> {
     let written = school(
         ctx,
-        ("mpa", &url),
+        ("mpa", url),
         (
             &SourceNamespace::association_school(ASSOCIATION),
             &extract.school,
-            &directory.fetched_at,
+            observed_on,
         ),
         report,
     )?;
-    persist(ctx, ("mpa", &url), Table::Coaches, &extract.coaches, report)?;
+    persist(ctx, ("mpa", url), Table::Coaches, &extract.coaches, report)?;
     report.rows = report
         .rows
         .saturating_add(u64::try_from(written).map_err(|_| CrawlError::Arithmetic {

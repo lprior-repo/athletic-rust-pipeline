@@ -1,4 +1,4 @@
-use super::{Configuration, LIMIT, MARKER};
+use super::{Configuration, CONFIG_LIMIT, LIMIT, MARKER};
 use crate::qualification_native_vm::artifacts;
 use anyhow::{ensure, Context, Result};
 use serde_json::{json, Value};
@@ -63,7 +63,7 @@ pub(super) fn publish_config(path: &Path, configuration: &Configuration) -> Resu
     .try_for_each(absent)?;
     let bytes = serde_json::to_vec(configuration)?;
     ensure!(
-        u64::try_from(bytes.len())? <= LIMIT,
+        u64::try_from(bytes.len())? <= CONFIG_LIMIT,
         "native config exceeds 4096 bytes"
     );
     let mut file = OpenOptions::new()
@@ -127,7 +127,7 @@ fn unchanged(left: &Metadata, right: &Metadata) -> bool {
         && left.ctime_nsec() == right.ctime_nsec()
 }
 
-fn regular(path: &Path, metadata: &Metadata, owner: &Metadata) -> Result<()> {
+fn regular(path: &Path, metadata: &Metadata, owner: &Metadata, limit: u64) -> Result<()> {
     ensure!(
         metadata.is_file()
             && metadata.uid() == owner.uid()
@@ -137,33 +137,35 @@ fn regular(path: &Path, metadata: &Metadata, owner: &Metadata) -> Result<()> {
         path.display()
     );
     ensure!(
-        metadata.len() <= LIMIT,
-        "native boundary artifact exceeds 4096 bytes: {}",
+        metadata.len() <= limit,
+        "native boundary artifact exceeds {limit} bytes: {}",
         path.display()
     );
     Ok(())
 }
 
-pub(super) fn read_optional(path: &Path) -> Result<Option<Vec<u8>>> {
+fn read_optional(path: &Path, limit: u64) -> Result<Option<Vec<u8>>> {
     let owner = private_parent(path)?;
     let Some(before) = metadata(path)? else {
         return Ok(None);
     };
-    regular(path, &before, &owner)?;
+    regular(path, &before, &owner, limit)?;
     let file = open_read(path)?;
     let opened = file.metadata()?;
-    regular(path, &opened, &owner)?;
+    regular(path, &opened, &owner, limit)?;
     ensure!(
         unchanged(&before, &opened),
         "native artifact changed during open"
     );
     let mut bytes = Vec::new();
-    bytes.try_reserve_exact(usize::try_from(LIMIT.saturating_add(1))?)?;
-    (&file)
-        .take(LIMIT.saturating_add(1))
-        .read_to_end(&mut bytes)?;
+    let read_limit = opened
+        .len()
+        .checked_add(1)
+        .context("native file length overflow")?;
+    bytes.try_reserve_exact(usize::try_from(read_limit)?)?;
+    (&file).take(read_limit).read_to_end(&mut bytes)?;
     let after = std::fs::symlink_metadata(path)?;
-    regular(path, &after, &owner)?;
+    regular(path, &after, &owner, limit)?;
     ensure!(
         unchanged(&before, &after)
             && unchanged(&after, &file.metadata()?)
@@ -174,7 +176,7 @@ pub(super) fn read_optional(path: &Path) -> Result<Option<Vec<u8>>> {
 }
 
 pub(super) fn read_required(path: &Path) -> Result<Vec<u8>> {
-    read_optional(path)?
+    read_optional(path, CONFIG_LIMIT)?
         .with_context(|| format!("native boundary artifact missing: {}", path.display()))
 }
 
@@ -194,12 +196,12 @@ pub(super) fn published_marker(path: &Path) -> Result<Option<Vec<u8>>> {
     let Some(before) = metadata(path)? else {
         return Ok(None);
     };
-    let Some(bytes) = read_optional(path)? else {
+    let Some(bytes) = read_optional(path, LIMIT)? else {
         return Ok(None);
     };
     let file = open_read(path)?;
     let opened = file.metadata()?;
-    regular(path, &opened, &owner)?;
+    regular(path, &opened, &owner, LIMIT)?;
     ensure!(
         unchanged(&before, &opened),
         "native marker changed before durability confirmation"

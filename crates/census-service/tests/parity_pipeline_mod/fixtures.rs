@@ -8,7 +8,7 @@ use census_crawl::net::Fetcher;
 use census_crawl::wiaa_results;
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam,
+    CanonicalSchool, CanonicalTeam, Sport,
 };
 use census_store::{Store, Table};
 use sha2::{Digest, Sha256};
@@ -27,6 +27,7 @@ pub struct Corpus {
     pub performances: Vec<CanonicalPerformance>,
     pub artifacts: Vec<ResultArtifact>,
     pub expected: ExpectedEntities,
+    pub published_results: Vec<(String, census_crawl::result_file::ParsedMeet, Sport)>,
 }
 
 pub struct ResultArtifact {
@@ -204,7 +205,7 @@ fn seed(cache: &Path, url: &str, body: &str) -> Result<()> {
         "status": 200,
         "content_digest": content_digest(body.as_bytes()),
         "bytes": body.len(),
-        "fetched_at": "2026-09-20T00:00:00Z",
+        "fetched_at": super::constants::WIAA_CAPTURED_AT,
         "content_type": if url.ends_with(".txt") { "text/plain" } else { "text/html" },
     });
     std::fs::write(&meta_path, serde_json::to_vec_pretty(&meta)?)

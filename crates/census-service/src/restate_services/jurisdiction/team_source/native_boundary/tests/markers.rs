@@ -1,23 +1,8 @@
-use std::os::unix::fs::symlink;
+use std::os::unix::fs::{symlink, MetadataExt};
 
 use serde_json::json;
 
-use super::{
-    expected_marker, fixture, read_marker, reserved_marker, write_new, BoundaryError, TestResult,
-};
-
-#[test]
-fn published_marker_binds_all_original_identity_fields_and_leaves_no_pending_file() -> TestResult {
-    let fixture = fixture(1, 60)?;
-    let armed = fixture.armed()?;
-    reserved_marker(1)?.publish(&armed.directory)?;
-    check!(eq; read_marker(&fixture)?, expected_marker(1));
-    check!(eq; std::fs::symlink_metadata(fixture.pending())
-        .err()
-        .map(|error| error.kind()),
-    Some(std::io::ErrorKind::NotFound));
-    Ok(())
-}
+use super::{expected_marker, fixture, reserved_marker, write_new, BoundaryError, TestResult};
 
 #[test]
 fn exact_existing_authority_is_retained_even_while_it_has_another_hard_link() -> TestResult {
@@ -67,7 +52,7 @@ fn each_marker_identity_mismatch_is_refused_without_overwriting_authority() -> T
 }
 
 #[test]
-fn unknown_fields_incomplete_or_oversized_existing_authority_are_not_trusted() -> TestResult {
+fn unknown_fields_or_incomplete_existing_authority_are_not_trusted() -> TestResult {
     let mut extra = expected_marker(1);
     extra["physical_http_started"] = json!(true);
     let mut missing = expected_marker(1);
@@ -87,15 +72,34 @@ fn unknown_fields_incomplete_or_oversized_existing_authority_are_not_trusted() -
         ));
         check!(eq; std::fs::read(fixture.marker())?, bytes);
     }
+    Ok(())
+}
+
+#[test]
+fn oversized_authority_is_refused_before_decode_without_replacing_its_bytes() -> TestResult {
     let fixture = fixture(1, 60)?;
     let armed = fixture.armed()?;
-    let bytes = vec![b' '; 4097];
-    write_new(&fixture.marker(), &bytes)?;
+    let prefix = serde_json::to_vec(&expected_marker(1))?;
+    write_new(&fixture.marker(), &prefix)?;
+    let length = u64::try_from(super::super::files::MAX_MARKER_BYTES)?
+        .checked_add(1)
+        .ok_or("native marker boundary length overflow")?;
+    let file = std::fs::OpenOptions::new()
+        .write(true)
+        .open(fixture.marker())?;
+    file.set_len(length)?;
+    file.sync_all()?;
+    let before = std::fs::metadata(fixture.marker())?;
     check!(matches!(
         reserved_marker(1)?.publish(&armed.directory),
         Err(BoundaryError::Artifact { .. })
     ));
-    check!(eq; std::fs::read(fixture.marker())?, bytes);
+    let after = std::fs::metadata(fixture.marker())?;
+    check!(eq; after.len(), length);
+    check!(eq; after.ino(), before.ino());
+    let mut held = vec![0; prefix.len()];
+    std::io::Read::read_exact(&mut std::fs::File::open(fixture.marker())?, &mut held)?;
+    check!(eq; held, prefix);
     Ok(())
 }
 

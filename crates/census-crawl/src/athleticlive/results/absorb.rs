@@ -127,13 +127,12 @@ fn fold_rows(
     ));
     let sport = sport_for(doc.is_xc(), &fold.target.name, &fold.target.date);
     let (context, mut writer) = fold.split_for(&source, &evidence, event, kind, sport);
-    doc.rows
-        .iter()
-        .enumerate()
-        .fold(Ok(()), |outcome, (row_index, row)| {
-            let projected = record_row(&mut writer, &context, row, row_index).map(|_| ());
-            outcome.and(projected)
-        })
+    let mut outcome = Ok(());
+    for (row_index, row) in doc.rows.iter().enumerate() {
+        let projected = record_row(&mut writer, &context, row, row_index).map(|_| ());
+        outcome = outcome.and(projected);
+    }
+    outcome
 }
 
 pub(super) fn absorb_summary(fold: &mut Fold<'_>, path: &str, body: &str) -> Option<Vec<u64>> {
@@ -239,13 +238,11 @@ pub(super) fn absorb_standings(
     ));
     let sport = sport_for(false, &fold.target.name, &fold.target.date);
     let (context, mut writer) = fold.split_for(&source, &evidence, event, &event.kind, sport);
-    let projected =
-        rows.iter()
-            .enumerate()
-            .fold(Ok(()), |outcome, (row_index, (_run_row, row))| {
-                let projected = record_standing(&mut writer, &context, row, row_index).map(|_| ());
-                outcome.and(projected)
-            });
+    let mut projected = Ok(());
+    for (row_index, (_run_row, row)) in rows.iter().enumerate() {
+        let outcome = record_standing(&mut writer, &context, row, row_index).map(|_| ());
+        projected = projected.and(outcome);
+    }
     if let Err(error) = projected {
         fold.failures.push(format!("{path}: {error}"));
         return None;

@@ -50,7 +50,7 @@ pub(super) fn compile(name: &str) -> Result<PathBuf> {
 }
 
 pub(super) fn measure(executable: &Path, directory: &Path) -> Result<(String, Option<u64>)> {
-    measure_with_time(executable, directory, Some(Path::new("/usr/bin/time")))
+    measure_with_time(executable, directory, Some(Path::new("time")))
 }
 
 pub(super) fn measure_with_time(

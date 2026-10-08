@@ -56,8 +56,9 @@ async fn http_refusal_preserves_owed_state(status: u16) -> TestResult {
     };
     tokio::time::timeout(Duration::from_secs(15), async {
         let (served, acquired) = tokio::join!(serve_responses(listener, replies), client);
-        served?;
-        acquired
+        let accepted = served?;
+        acquired?;
+        assert_request_conservation(&fetcher, &accepted).await
     })
     .await?
 }

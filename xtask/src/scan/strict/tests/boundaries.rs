@@ -185,3 +185,13 @@ fn formatted_nested_closures_do_not_inflate_the_enclosing_callable() -> TestResu
     validate_report(&report(found))?;
     Ok(())
 }
+
+#[test]
+fn comma_less_select_handlers_measure_handwritten_closures() -> TestResult {
+    let source = "fn run() { tokio::select! { () = first() => {} () = second() => { let nested = || step(); } else => { done(); } } }";
+    let found = inspect(source)?;
+    check!(eq; found.unresolved.len(), 0);
+    check!(eq; found.callables, 2);
+    validate_report(&report(found))?;
+    Ok(())
+}

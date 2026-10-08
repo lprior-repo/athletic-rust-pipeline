@@ -1,13 +1,13 @@
-use super::super::map::{Accumulator, ResultStats, SOURCE_ID};
+use super::super::map::{Accumulator, ResultStats};
 use super::super::parse::infer_level;
 use super::super::wire::{event_doc_url, event_summary_url, standings_url};
 use super::absorb::{absorb_document, absorb_standings, absorb_summary, Fold, PublishedEvent};
-use super::{append, EntityCounts, ResultOptions, StandingsCapture, WalkResult};
+use super::{EntityCounts, StandingsCapture};
 use crate::athleticlive_athletes::{school_year_for_date, MeetTarget};
 use crate::net::cache::CacheMeta;
 use crate::{AdapterContext, CrawlError, CrawlResult, PerformanceDateAssessment};
 use census_domain::model::{
-    CanonicalMeet, CanonicalSchool, Evidence, SchoolId, SourceIdentity, SourceNamespace, SourceRef,
+    CanonicalMeet, CanonicalSchool, SchoolId, SourceIdentity, SourceNamespace,
 };
 use census_domain::school_index::SchoolIndex;
 use serde_json::{json, Value};
@@ -15,7 +15,12 @@ use std::collections::{HashMap, HashSet};
 
 mod capture;
 mod documents;
+mod inputs;
+mod publication;
 mod receipts;
+
+use publication::{capture_evidence, unresolved};
+
 const MAX_CAPTURE_RECORDS: usize = 8192;
 
 pub(super) struct Run {
@@ -78,78 +83,6 @@ impl Run {
             accumulator: &mut self.accumulator,
             failures: &mut self.failures,
         }
-    }
-
-    pub(super) fn read_captures(
-        &mut self,
-        ctx: &AdapterContext<'_>,
-        options: &ResultOptions,
-    ) -> CrawlResult<()> {
-        let captures = options
-            .documents
-            .len()
-            .checked_add(options.standings.len())
-            .and_then(|count| count.checked_add(usize::from(options.summary.is_some())))
-            .ok_or_else(counter_error)?;
-        if captures > MAX_CAPTURE_RECORDS {
-            return Err(resource("LIVE input captures", captures));
-        }
-        if let Some(path) = options.summary.as_deref() {
-            self.read_once(
-                ctx,
-                path,
-                options.capture_metadata.get(path),
-                |run, body, metadata| run.read_summary(path, body, metadata),
-            )?;
-        } else {
-            self.owe(&event_summary_url(self.target.athleticlive_meet_id))?;
-        }
-        options
-            .documents
-            .iter()
-            .enumerate()
-            .try_for_each(|(index, path)| {
-                if options.limit.is_some_and(|limit| index >= limit) {
-                    self.owe(path)
-                } else {
-                    self.read_once(
-                        ctx,
-                        path,
-                        options.capture_metadata.get(path),
-                        |run, body, metadata| run.read_document(path, body, metadata),
-                    )
-                }
-            })?;
-        options
-            .standings
-            .iter()
-            .enumerate()
-            .try_for_each(|(index, row)| {
-                if options.limit.is_some_and(|limit| index >= limit) {
-                    self.owe(&row.path)
-                } else {
-                    self.read_once(
-                        ctx,
-                        &row.path,
-                        options.capture_metadata.get(&row.path),
-                        |run, body, metadata| run.read_standings(row, body, metadata),
-                    )
-                }
-            })?;
-        let missing = self
-            .listed
-            .iter()
-            .filter(|id| !self.read_documents.contains(id))
-            .copied()
-            .collect::<Vec<_>>();
-        self.stats.events_unfetched = self
-            .stats
-            .events_unfetched
-            .checked_add(missing.len())
-            .ok_or_else(counter_error)?;
-        missing
-            .into_iter()
-            .try_for_each(|id| self.owe(&event_doc_url(id)))
     }
 
     fn read_summary(
@@ -219,64 +152,6 @@ impl Run {
             (failures_before, unresolved_before),
             payload,
         )
-    }
-
-    fn retain_window(
-        &mut self,
-        ctx: &AdapterContext<'_>,
-        capture: (&str, &str, &CacheMeta),
-        before: (usize, usize),
-        parsed: Option<Value>,
-    ) -> CrawlResult<()> {
-        let new_failures = self
-            .failures
-            .len()
-            .checked_sub(before.0)
-            .ok_or_else(counter_error)?;
-        self.failure_count = self
-            .failure_count
-            .checked_add(new_failures)
-            .ok_or_else(counter_error)?;
-        let complete =
-            parsed.is_some() && new_failures == 0 && unresolved(&self.stats)? == before.1;
-        if !complete {
-            self.owe(capture.0)?;
-        }
-        self.failures.truncate(5);
-        self.failures
-            .iter_mut()
-            .for_each(|failure| *failure = failure.chars().take(4096).collect());
-        if !matches!(
-            crate::assess_performance_date(self.performance_as_of, &self.target.date),
-            PerformanceDateAssessment::Unknown
-        ) {
-            self.accumulator
-                .meets
-                .insert(self.meet.id.as_str().to_string(), self.meet.clone());
-        }
-        let entities =
-            std::mem::take(&mut self.accumulator).into_entities(ResultStats::default())?;
-        let receipt = receipts::receipt(self, capture, &entities, complete, parsed)?;
-        if ctx
-            .store
-            .journal_contains(super::EFFECT_PHASE, &receipt.key)?
-        {
-            self.resumed = self.resumed.checked_add(1).ok_or_else(counter_error)?;
-        }
-        let physical = AdapterContext {
-            observed_on: capture.2.fetched_at.clone(),
-            school_year: self.school_year,
-            ..*ctx
-        };
-        self.counts.add(append(
-            &physical,
-            entities,
-            &self.schools,
-            capture.1,
-            &receipt,
-        )?)?;
-        self.resolved.clear();
-        Ok(())
     }
 
     fn read_document(
@@ -376,64 +251,6 @@ impl Run {
             PerformanceDateAssessment::Future
         )
     }
-
-    fn reject(&mut self, locator: &str, detail: &str) -> CrawlResult<()> {
-        self.failure_count = self
-            .failure_count
-            .checked_add(1)
-            .ok_or_else(counter_error)?;
-        self.owe(locator)?;
-        if self.failures.len() < 5 {
-            self.failures
-                .try_reserve(1)
-                .map_err(|_| resource("LIVE failure allocation", 1))?;
-            self.failures.push(detail.chars().take(4096).collect());
-        }
-        Ok(())
-    }
-
-    fn owe(&mut self, locator: &str) -> CrawlResult<()> {
-        if self.unfinished.iter().any(|value| value == locator) {
-            return Ok(());
-        }
-        if locator.len() > 4096 {
-            return Err(resource("LIVE unfinished locator bytes", locator.len()));
-        }
-        if self.unfinished.len() >= MAX_CAPTURE_RECORDS {
-            return Err(resource("LIVE unfinished locators", self.unfinished.len()));
-        }
-        self.unfinished
-            .try_reserve(1)
-            .map_err(|_| resource("LIVE unfinished allocation", 1))?;
-        self.unfinished.push(locator.to_string());
-        Ok(())
-    }
-
-    pub(super) fn close(self) -> CrawlResult<WalkResult> {
-        Ok(WalkResult {
-            entities: self.accumulator.into_entities(self.stats)?,
-            counts: self.counts,
-            failures: self.failures,
-            failure_count: self.failure_count,
-            unfinished: self.unfinished,
-            resumed: self.resumed,
-        })
-    }
-}
-
-fn unresolved(stats: &ResultStats) -> CrawlResult<usize> {
-    [
-        stats.rows_skipped_no_name,
-        stats.rows_skipped_no_school,
-        stats.rows_skipped_unresolved_school,
-        stats.rows_skipped_no_grade,
-        stats.rows_skipped_unsupported_cohort,
-        stats.events_unmapped,
-    ]
-    .into_iter()
-    .try_fold(0usize, |count, value| {
-        count.checked_add(value).ok_or_else(counter_error)
-    })
 }
 
 fn base_meet(target: &MeetTarget) -> CanonicalMeet {
@@ -450,15 +267,6 @@ fn base_meet(target: &MeetTarget) -> CanonicalMeet {
         target.athleticlive_meet_id.to_string(),
     ));
     meet
-}
-
-fn capture_evidence(metadata: &CacheMeta) -> Evidence {
-    let mut evidence = Evidence::parsed(
-        SourceRef::new(SOURCE_ID, Some(metadata.url.clone())),
-        &metadata.fetched_at,
-    );
-    evidence.note = Some(json!({"capture_url":metadata.url,"sha256":metadata.content_digest,"acquired_at":metadata.fetched_at}).to_string());
-    evidence
 }
 
 pub(super) fn counter_error() -> CrawlError {

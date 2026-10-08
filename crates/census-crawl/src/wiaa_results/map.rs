@@ -7,11 +7,13 @@ use census_domain::model::{
 };
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
+use census_store::Entity;
 use std::collections::HashMap;
 
 mod events;
 #[path = "map_rows.rs"]
 mod map_rows;
+mod undated;
 
 use events::record_event;
 use map_rows::record_row;
@@ -34,6 +36,7 @@ pub(super) fn absorb(
         meet_for(read.parsed, read.artifact, read.sport, read.observed_on);
     keep_meet(&mut writer, meet.clone());
     if matches!(read.date_assessment, PerformanceDateAssessment::Unknown) {
+        undated::retain(&read, &mut writer)?;
         return Err(crate::CrawlError::PerformanceDateUnknown {
             published: read.parsed.date.chars().take(64).collect(),
             as_of: read.performance_as_of,
@@ -44,15 +47,12 @@ pub(super) fn absorb(
     {
         return Ok(0);
     }
-    let athlete_rows = read
-        .parsed
-        .events
-        .iter()
-        .fold(Ok(0usize), |outcome, event| {
-            let projected = project_event(&read, &mut writer, &meet, (&evidence, timing), event);
-            outcome.and_then(|count| projected.map(|rows| count.saturating_add(rows)))
-        })?;
-    Ok(athlete_rows)
+    let mut outcome = Ok(0usize);
+    for event in &read.parsed.events {
+        let projected = project_event(&read, &mut writer, &meet, (&evidence, timing), event);
+        outcome = outcome.and_then(|count| projected.map(|rows| count.saturating_add(rows)));
+    }
+    outcome
 }
 
 fn project_event(
@@ -160,11 +160,14 @@ fn canonical_date(published: &str) -> String {
 }
 
 fn keep_meet(writer: &mut RowWriter<'_>, meet: CanonicalMeet) {
-    writer
-        .accumulator
-        .meets
-        .entry(meet.id.as_str().to_string())
-        .or_insert(meet);
+    match writer.accumulator.meets.entry(meet.id.as_str().to_string()) {
+        std::collections::hash_map::Entry::Vacant(entry) => {
+            entry.insert(meet);
+        }
+        std::collections::hash_map::Entry::Occupied(mut entry) => {
+            entry.get_mut().merge(meet);
+        }
+    }
 }
 fn team_for(
     teams: &mut HashMap<String, CanonicalTeam>,

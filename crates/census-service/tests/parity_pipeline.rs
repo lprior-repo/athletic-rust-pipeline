@@ -8,6 +8,8 @@ mod common;
 #[path = "common/listing.rs"]
 mod listing;
 
+#[path = "parity_pipeline_mod/artifacts.rs"]
+mod artifacts;
 #[path = "parity_pipeline_mod/assertions.rs"]
 mod assertions;
 #[path = "parity_pipeline_mod/constants.rs"]
@@ -22,6 +24,8 @@ mod milesplit_fixtures;
 mod ohsaa_wiaa_builders;
 #[path = "parity_pipeline_mod/pipeline.rs"]
 mod pipeline;
+#[path = "parity_pipeline_mod/wiaa_readback.rs"]
+mod wiaa_readback;
 #[path = "parity_pipeline_mod/wiaa_results.rs"]
 mod wiaa_results;
 #[path = "parity_pipeline_mod/workbook.rs"]
@@ -54,11 +58,15 @@ fn rebuilding_the_fixture_store_reproduces_semantics_not_publication_identity() 
             );
 
             ensure!(
-        first.publication.workbook.rows == second.publication.workbook.rows
-            && first.publication.workbook.mapped_athletes
-                == second.publication.workbook.mapped_athletes,
-        "rebuilding the same source corpus changed the verified published record population"
-    );
+                first.publication.workbook.rows == second.publication.workbook.rows
+                    && first.publication.workbook.mapped_athletes
+                        == second.publication.workbook.mapped_athletes,
+                "rebuilding the same source corpus changed the verified published record population"
+            );
+            ensure!(
+                first.artifacts == second.artifacts,
+                "rebuilding the same source corpus changed workbook cells or published sidecar facts"
+            );
             ensure!(
                 first.publication.generation_digest != second.publication.generation_digest,
                 "a rebuilt store must not inherit the earlier store's publication identity"

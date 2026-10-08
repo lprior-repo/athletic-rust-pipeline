@@ -316,6 +316,9 @@ is not multi-artifact atomic publication. XLSX byte equality alone is not semant
   60 trusted logical lines; 25 lines is the preferred size and an advisory review threshold.
   More than five parameters is a cohesion-review warning, not a release failure. Do not introduce
   artificial context bags or mechanical extraction merely to satisfy an advisory count.
+  Moon and release Clippy retain `too_many_arguments` as a forced review warning under otherwise
+  fatal warnings; the trusted AST scan reports the five-parameter threshold. Arity diagnostics
+  remain visible rather than being suppressed or converted into artificial context containers.
   Compiler/vendor-generated code is excluded from style-size certification, not from compilation,
   domain contracts, safety or behavior verification. Trusted AST measurement must resist statement
   packing and structurally distinguish production, tests and captured literals. Unmeasurable

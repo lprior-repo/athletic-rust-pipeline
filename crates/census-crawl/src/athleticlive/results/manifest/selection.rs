@@ -36,23 +36,7 @@ pub(super) fn select(
 }
 
 fn combine(existing: &mut ResultOptions, incoming: ResultOptions) -> CrawlResult<()> {
-    let left = existing.meet.as_ref().ok_or_else(owner_error)?;
-    let right = incoming.meet.as_ref().ok_or_else(owner_error)?;
-    if (
-        left.athleticlive_meet_id,
-        &left.tenant,
-        &left.name,
-        left.state,
-        &left.date,
-    ) != (
-        right.athleticlive_meet_id,
-        &right.tenant,
-        &right.name,
-        right.state,
-        &right.date,
-    ) {
-        return Err(owner_error());
-    }
+    require_same_owner(existing, &incoming)?;
     if existing.summary.is_some()
         && incoming.summary.is_some()
         && existing.summary != incoming.summary
@@ -93,6 +77,27 @@ fn combine(existing: &mut ResultOptions, incoming: ResultOptions) -> CrawlResult
             });
         }
         existing.capture_metadata.insert(path, metadata);
+    }
+    Ok(())
+}
+
+fn require_same_owner(existing: &ResultOptions, incoming: &ResultOptions) -> CrawlResult<()> {
+    let left = existing.meet.as_ref().ok_or_else(owner_error)?;
+    let right = incoming.meet.as_ref().ok_or_else(owner_error)?;
+    if (
+        left.athleticlive_meet_id,
+        &left.tenant,
+        &left.name,
+        left.state,
+        &left.date,
+    ) != (
+        right.athleticlive_meet_id,
+        &right.tenant,
+        &right.name,
+        right.state,
+        &right.date,
+    ) {
+        return Err(owner_error());
     }
     Ok(())
 }

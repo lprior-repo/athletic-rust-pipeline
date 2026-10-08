@@ -156,7 +156,7 @@ impl Page {
         if href.len() > 4096 {
             return Err(error("school contact link exceeds 4096 bytes"));
         }
-        if let Some(address) = super::after(href, "mailto:") {
+        if let Some(address) = after(href, "mailto:") {
             if let Some(block) = &mut self.current {
                 if block.mailboxes.len() >= 32 {
                     return Err(error("school office block exceeds 32 mailboxes"));
@@ -237,4 +237,11 @@ fn inert_kind(name: &[u8]) -> Option<&'static [u8]> {
 
 fn error(detail: &'static str) -> Failure {
     Failure::Budget(detail)
+}
+
+pub(super) fn after<'a>(text: &'a str, prefix: &str) -> Option<&'a str> {
+    if !text.get(..prefix.len())?.eq_ignore_ascii_case(prefix) {
+        return None;
+    }
+    text.get(prefix.len()..)
 }

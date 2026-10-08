@@ -54,13 +54,17 @@ pub(crate) fn inspect_rosters(
         &receipt.roster_teams,
         &mut evidence,
     )?;
-    let index_status = if receipt.disposition.is_complete()
-        && (!inputs_resolved || receipt.errors != 0 || !receipt.unfinished.is_empty())
-    {
-        Disposition::Partial
-    } else {
-        receipt.disposition
-    };
+    append_index(receipt, jurisdiction, inputs_resolved, &mut evidence)?;
+    Ok(evidence)
+}
+
+fn append_index(
+    receipt: super::Receipt,
+    jurisdiction: UsJurisdiction,
+    inputs_resolved: bool,
+    evidence: &mut RosterIndexEvidence,
+) -> CrawlResult<()> {
+    let index_status = super::measured_disposition(&receipt, inputs_resolved);
     evidence.disposition = if index_status.is_complete() && evidence.owed != 0 {
         Disposition::Partial
     } else {
@@ -79,7 +83,7 @@ pub(crate) fn inspect_rosters(
             Disposition::Partial,
         ))
     });
-    Ok(evidence)
+    Ok(())
 }
 
 fn append_teams(

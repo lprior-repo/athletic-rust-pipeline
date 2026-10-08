@@ -117,7 +117,7 @@ fn upgrade(context: &time::Context<'_>, format: &StoreFormat) -> StoreResult<Rew
     if format.schema_version.is_some_and(|version| version >= 1) {
         crate::generation::Generations::seeded(context.meta)?;
     }
-    let legacy = if format.schema_version.map_or(true, |version| version == 0) {
+    let legacy = if format.schema_version.is_none_or(|version| version == 0) {
         rewrite::rewrite(context)?
     } else {
         rewrite::statistics(context.meta)?

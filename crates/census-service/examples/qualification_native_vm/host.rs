@@ -1,8 +1,9 @@
 use super::{artifacts, bootstrap::Seed, cancellation, process::Process, transport::Ssh, Host};
-use anyhow::{bail, ensure, Context, Result};
+use anyhow::{ensure, Context, Result};
 use serde_json::json;
 use std::path::Path;
 
+mod certificates;
 mod cleanup;
 mod machine;
 mod payload;
@@ -13,9 +14,21 @@ pub fn run(config: Host) -> Result<()> {
         .context("fresh exclusive VM root required; recovery artifacts never overwritten")?;
     let root = std::fs::canonicalize(&config.root)?;
     let mut signals = cancellation::Signals::install()?;
-    let result = execute(&config, &root).and_then(|()| cancellation::checkpoint());
-    let signal_reason = signals.reason();
+    let result = execute(&config, &root)
+        .and_then(|()| cancellation::checkpoint())
+        .and_then(|()| certificates::verify(&root))
+        .and_then(|evidence| {
+            artifacts::publish(&root.join("qualification-certificates.json"), &evidence)
+        });
     let joined = signals.finish();
+    let signal_reason = signals.reason();
+    let result = result.and_then(|()| {
+        ensure!(
+            signal_reason == 0,
+            "qualification interrupted by signal {signal_reason}"
+        );
+        Ok(())
+    });
     let failure = match &result {
         Ok(()) => None,
         Err(error) => Some(format!("{error:#}")),
@@ -28,25 +41,27 @@ pub fn run(config: Host) -> Result<()> {
     } else {
         Ok(())
     };
-    let verdict_record = artifacts::publish(
-        &root.join("verdict.json"),
-        &json!({"verdict":"BLOCKED_OR_UNPROVEN","failure":failure,"signal_reason":signal_reason,"signal_worker":format!("{joined:?}"),"model":"openai-codex/gpt-6.1-sol","missing_required_obligations":["same active JurisdictionCensus/source-stage recovery boundary across guest reboot", "successful production Fetcher acquisitions on both sides of guest midnight with honest new fetched_at"],"scope":"fixture transport/replay native VM qualification; not national completion or full scenario03/scenario12 PASS"}),
-    );
-    [
+    let result = [
         (
             "fallback cleanup evidence publication",
             cleanup_record.as_ref().err(),
         ),
-        ("verdict publication", verdict_record.as_ref().err()),
         ("signal worker finalization", joined.as_ref().err()),
     ]
     .into_iter()
     .fold(result, |result, (label, error)| {
         cleanup::attach(result, label, error)
-    })?;
-    bail!(
-        "BLOCKED_OR_UNPROVEN: measured VM/Sweep/Ingest/reused-capture oracles completed, but full census/source reboot and fresh acquisition clock obligations remain unproven; see retained verdict.json"
-    )
+    });
+    artifacts::publish(
+        &root.join("verdict.json"),
+        &json!({"verdict":if result.is_ok() {"PASS"} else {"BLOCKED_OR_UNPROVEN"},
+            "failure":result.as_ref().err().map(|error| format!("{error:#}")),
+            "signal_reason":signal_reason,"signal_worker":format!("{joined:?}"),
+            "model":"openai-codex/gpt-6.1-sol",
+            "certificate":if result.is_ok() {Some("qualification-certificates.json")} else {None},
+            "scope":"catalog03 active reserved source-stage reboot and catalog12 fresh production guest-midnight acquisitions; not national completion, all HTTP phase subcases, or scenario17"}),
+    )?;
+    result
 }
 
 fn execute(config: &Host, root: &Path) -> Result<()> {

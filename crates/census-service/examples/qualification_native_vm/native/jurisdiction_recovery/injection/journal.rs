@@ -1,8 +1,9 @@
 use super::super::{input, journal};
-use super::LIMIT;
 use anyhow::{ensure, Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+
+const REGISTRATION_LIMIT: usize = 4096;
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -62,7 +63,7 @@ fn success(run: &Value) -> Result<Vec<u8>> {
         .and_then(Value::as_array)
         .context("registration did not journal success")?;
     ensure!(
-        u64::try_from(bytes.len())? <= LIMIT,
+        bytes.len() <= REGISTRATION_LIMIT,
         "registration identity exceeds 4096 bytes"
     );
     bytes

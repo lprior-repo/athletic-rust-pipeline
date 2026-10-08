@@ -147,10 +147,11 @@ fn meet_levels_come_from_the_published_name() {
 
 fn seed_result_cache(fetcher: &crate::net::Fetcher, url: &str, body: &[u8]) -> TestResult {
     use crate::net::cache::{content_digest, write_cache, CacheMeta};
-    let key = crate::net::Fetcher::key_for("GET", url, "");
+    let representation = crate::net::RepresentationHeaders::canonical(&[])?;
+    let key = crate::net::Fetcher::key_for("GET", url, &representation.identity());
     let (body_path, meta_path) = fetcher.cache_paths(&key);
     let meta = CacheMeta {
-        representation: crate::net::RepresentationHeaders::default(),
+        representation,
         url: url.to_owned(),
         response_url: None,
         method: "GET".to_owned(),
@@ -169,7 +170,7 @@ fn seed_result_cache(fetcher: &crate::net::Fetcher, url: &str, body: &[u8]) -> T
 #[test]
 fn overlapping_archives_process_one_logical_result_once() -> TestResult {
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
-    use census_domain::model::{CanonicalSchool, SchoolYear};
+    use census_domain::model::{CanonicalAthlete, CanonicalPerformance, CanonicalSchool, ExactSeconds, Mark, SchoolYear};
     use census_store::Store;
     use std::time::Duration;
     let dir = tempfile::tempdir()?;
@@ -186,6 +187,8 @@ fn overlapping_archives_process_one_logical_result_once() -> TestResult {
     .with_offline(true);
     let (school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Middleton", "middleton", None);
     store.append(census_store::Table::Schools, &school)?;
+    std::fs::create_dir_all(store.out_dir())?;
+    std::fs::write(store.out_dir().join("schools.jsonl"), format!("{}\n", serde_json::to_string(&school)?))?;
     let url = "https://www.wiaawi.org/Portals/0/PDF/Results/Track/2025/d1boysstateresults.htm";
     let archive = format!("<a href=\"{url}\">Boys</a>");
     for (archive_url, _) in ARCHIVES {
@@ -214,20 +217,24 @@ fn overlapping_archives_process_one_logical_result_once() -> TestResult {
         school_names: Vec::new(),
     };
     let report = collect(&context, &options).await?;
-    check!(eq; report.rows, 1);
+    check!(eq; report.errors, 0, "{report:?}");
+    check!(eq; report.rows, 1, "{report:?}");
     check!(eq; report.from_cache, 5);
     check!(eq; report.requests, 0);
-    let receipts = store.journal_payloads("wiaa_results")?;
-    check!(eq;
-        receipts
-            .iter()
-            .filter(|entry| entry.get("url").and_then(serde_json::Value::as_str) == Some(url))
-            .count(),
-        1
-    );
+    let athletes: Vec<CanonicalAthlete> = store.scan(census_store::Table::Athletes)?;
+    check!(eq; athletes.iter().map(|row| row.canonical_name.as_str()).collect::<std::collections::BTreeSet<_>>(),
+        std::collections::BTreeSet::from(["Kingston Penn"]));
+    check!(athletes.iter().all(|row| row.grad_year == GradYear::CO2027));
+    let performances: Vec<CanonicalPerformance> = store.scan(census_store::Table::Performances)?;
+    let marks: Vec<_> = performances.iter().map(|row| row.mark.clone()).collect();
+    check!(eq; marks.len(), 2);
+    check!(marks.contains(&Mark::TimeSeconds(ExactSeconds::parse("10.86")?)));
+    check!(marks.contains(&Mark::TimeSeconds(ExactSeconds::parse("10.89")?)));
+    let physical = store.stats()?.tables;
     let replay = collect(&context, &options).await?;
     check!(eq; replay.rows, 0);
-    check!(eq; replay.from_cache, 4);
+    check!(eq; store.stats()?.tables, physical);
+    check!(eq; store.scan::<CanonicalPerformance>(census_store::Table::Performances)?, performances);
     Ok(())
     })
 }

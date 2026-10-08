@@ -6,6 +6,9 @@ mod course;
 mod quantity;
 mod tokens;
 
+#[cfg(test)]
+mod tests;
+
 const HURDLE_ANCHORS: &[&str] = &[
     "hurdles", "hurdle", "55mh", "60mh", "100mh", "110mh", "300mh", "400mh", "55h", "60h", "100h",
     "110h", "300h", "400h",
@@ -108,7 +111,17 @@ fn implement(
         EventKind::WeightThrow => &["throw", "weightthrow", "wt"],
         _ => return Ok(None),
     };
-    quantity_parts(tail(tokens, anchors))?
+    let mut suffix = tail(tokens, anchors);
+    if matches!(
+        kind,
+        EventKind::Discus | EventKind::Javelin | EventKind::Hammer
+    ) && suffix
+        .first()
+        .is_some_and(|token| token.eq_ignore_ascii_case("throw"))
+    {
+        suffix = suffix.get(1..).ok_or(SpecificationError::InvalidLabel)?;
+    }
+    quantity_parts(suffix)?
         .map(|(number, unit)| ImplementMass::try_from(quantity::mass(number, unit)?))
         .transpose()
 }

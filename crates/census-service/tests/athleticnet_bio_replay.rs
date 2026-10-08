@@ -202,7 +202,7 @@ fn athleticnet_bio_route_absorbs_both_scopes_and_journals_each_url() -> Result<(
             );
             ensure!(
                 harness.store.stats()?.tables == physical_before,
-                "immutable capture replay appends no physical table rows"
+                "immutable capture replay appends no physical table rows: before={physical_before:?}; after={:?}", harness.store.stats()?.tables
             );
             ensure!(
                 harness
@@ -237,7 +237,8 @@ fn authentic_missing_xc_results_remain_unfinished_after_replay() -> Result<()> {
                 second.disposition == first.disposition && second.unfinished == first.unfinished
             );
             ensure!(rows(&harness.store)? == before);
-            ensure!(harness.store.stats()?.tables == physical_before);
+            ensure!(harness.store.stats()?.tables == physical_before,
+                "immutable partial replay changed physical rows: before={physical_before:?}; after={:?}", harness.store.stats()?.tables);
             ensure!(
                 harness
                     .store

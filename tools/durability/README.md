@@ -94,13 +94,18 @@ stage them into the guest's documented deployment paths rather than assuming `ta
 The feature is disabled by default. The owned guest supervisor sets
 `CENSUS_NATIVE_SOURCE_BOUNDARY` only on its endpoint, with private configuration
 under `/srv/qualification`. A matching original operation and reserved attempt
-publishes a complete, no-overwrite, identity-bound marker before acquisition and
+publishes a complete, no-overwrite, identity-bound schema-2 marker before acquisition and
 holds for at most 60 seconds; expiry fails the injection rather than continuing
-normally. The host must still prove the original parent is owed, its original
-child is active and awaited, its deployment pin and journaled registration match,
-and its actual durable reservation exists. Configuration and marker are verified
-byte-exact after reboot. This reached seam proves reserved pre-acquisition work,
-not an HTTP request, response or parse in flight, and does not certify all
+normally. Its owned blocking worker holds the store append fence across a single-snapshot
+checkpoint, marker publication and the bounded hold. The checkpoint records exact physical
+source table/key/value SHA-256 occurrences and full acknowledged receipts, not merged output
+counts or a selected row sample. Marker encoding/readback is bounded to 32 MiB; configuration
+remains bounded to 4 KiB. An oversized checkpoint fails rather than omitting evidence.
+The host must still prove the original parent is owed, its original child is active and
+awaited, its deployment pin and journaled registration match, and its actual durable reservation
+exists. Configuration and marker are verified byte-exact after reboot; cold readback must retain
+every checkpointed source occurrence and receipt. This reached seam proves reserved
+pre-acquisition work, not an HTTP request, response or parse in flight, and does not certify all
 scenario-03 phase boundaries or a full national census.
 
 The host exercises reboot before the independent natural-midnight lane, so a guest-only clock
@@ -118,6 +123,24 @@ budget expired ~22:49:15 and the parent completed ~22:49:47). The guest action d
 3,600-second process-observation cap; keep that ordering when changing any of the three. A
 still-unfinished parent remains a failure with its exact obligations, not source acquisition or
 national PASS.
+
+The separate natural-midnight lane requires two successful, refreshed full-body public HTTPS
+acquisitions through the production `census_crawl::net::Fetcher`, with distinct immutable
+manifests and journal readback. A cache hit, 304, denied/challenged/error response or substituted
+fixture cannot certify physical acquisition times. Guest clock bookends, actual `fetched_at`
+values and stable run/cohort/season/source-unit identities must agree; no host clock changes
+are permitted.
+
+Scenario 17 executes feature-enabled actual CLI worker tests and requires three reached-boundary
+certificates: `source_batch_staged_before_commit`, `source_chunk_committed_before_next` and
+`derived_batch_staged_before_publish`. The store publishes schema-1 markers containing the real
+operation/digest and receipt ordinal or staged generation. The tests wait for atomic marker
+publication, deliver and reap SIGKILL, then cold-open the owned store. Exact recovered native
+identifiers, full operation receipt sets, remaining work and unchanged physical replay are
+required. The derived subcase also proves the previous generation remains visible after the
+kill and a complete generation is published on restart. A guessed sleep, unreached worker,
+missing certificate or skipped test fails the wrapper.
+
 
 Guest artifacts survive only inside the run's `root.qcow2` (btrfs, not readable by `debugfs`).
 To inspect them after a run, boot the preserved overlay read-only and read them over SSH:

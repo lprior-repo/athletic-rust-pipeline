@@ -193,3 +193,42 @@ fn changed_json_capture_with_identical_text_line_count_refuses_perf_comparison()
     check!(error.to_string().contains("Corpus digest mismatch"));
     Ok(())
 }
+
+#[test]
+fn absent_old_or_unknown_memory_backend_refuses_comparison_even_against_itself() -> Result<()> {
+    for scope in [
+        None,
+        Some("criterion-per-iteration/v1"),
+        Some("criterion-per-iteration/v1;memory=memcheck"),
+        Some("criterion-per-iteration/v1;memory=dhat-heap-json-v3"),
+        Some(crate::perf::scope::expected(
+            crate::perf::compare::CAPTURE_EXPORT_WORKLOAD,
+        )),
+    ] {
+        let mut invalid = measurement(Some(100.0), 1.0);
+        invalid.timing_scope = scope.map(str::to_owned);
+        let good = measurement(Some(100.0), 1.0);
+        for (old, current) in [
+            (invalid.clone(), invalid.clone()),
+            (invalid.clone(), good.clone()),
+            (good.clone(), invalid),
+        ] {
+            check!(gate_error(old, current)?.contains("memory backend"));
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn integer_memory_budget_preserves_exact_five_percent_above_float_precision() -> Result<()> {
+    for label in ["peak RSS", "allocation count", "allocated bytes"] {
+        let mut old = measurement(Some(100.0), 1.0);
+        let mut current = old.clone();
+        set_memory(&mut old, label, Some(72_057_594_037_928_040))?;
+        set_memory(&mut current, label, Some(75_660_473_739_824_442))?;
+        check_throughput(&baseline(old.clone()), &groups(current.clone()), 0.05)?;
+        set_memory(&mut current, label, Some(75_660_473_739_824_443))?;
+        check!(gate_error(old, current)?.contains(&format!("{label} regression")));
+    }
+    Ok(())
+}

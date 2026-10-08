@@ -8,6 +8,7 @@ use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+pub(in super::super) mod certificate;
 mod checks;
 mod persistence;
 #[cfg(test)]

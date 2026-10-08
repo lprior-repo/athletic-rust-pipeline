@@ -132,8 +132,10 @@ fn malformed_foreign_and_conflicting_context_retain_contacts_without_completion(
                         "{replacement}"
                     );
                 }
-                check!(run.store.journal_payloads(super::super::super::collect::JOURNAL)?
-                    .iter().all(|payload| payload["complete"] != true));
+                check!(eq;
+                    run.store.journal_payloads(super::super::super::collect::JOURNAL)?,
+                    Vec::<serde_json::Value>::new()
+                );
             }
             Ok(())
         })

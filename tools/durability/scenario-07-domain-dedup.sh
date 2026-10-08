@@ -6,7 +6,7 @@ set -euo pipefail
 
 SCRATCH_STORE="${SCRATCH_STORE:-/tmp/durability-scenario/07}"
 REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
-for tool in curl python3 ss timeout; do
+for tool in curl python3 jq ss timeout sha256sum; do
     command -v "$tool" >/dev/null 2>&1 || { echo "SKIPPED: missing prerequisite tool $tool"; exit 0; }
 done
 
@@ -24,17 +24,18 @@ NODE="$RESTATE_SERVER_BIN"
 CLIENT="${BINARY:-$REPO_ROOT/target/moon-portable/x86_64-unknown-linux-gnu/release/census-service}"
 [ -x "$CLIENT" ] || { echo "SKIPPED: census-service binary missing at $CLIENT"; exit 0; }
 
-SERVE="${SERVE_BINARY:-$(dirname "$CLIENT")/census-serve}"
+SERVE="${S07_SERVE_BINARY:-${SERVE_BINARY:-$REPO_ROOT/target/moon-portable/x86_64-unknown-linux-gnu/release/census-serve}}"
 [ -x "$SERVE" ] || { echo "SKIPPED: census-serve binary missing at $SERVE"; exit 0; }
 
 CHROMIUM="${CHROMIUM_EXECUTABLE:-/usr/bin/chromium}"
 [ -x "$CHROMIUM" ] || { echo "SKIPPED: no executable browser at $CHROMIUM"; exit 0; }
 
-INGRESS_PORT="${SERVICE_PORT:-9107}"
-ADMIN_PORT="${ADMIN_PORT:-19107}"
-ENDPOINT_PORT=9108
-NODE_PORT=9109
+INGRESS_PORT="${S07_INGRESS_PORT:-18520}"
+ADMIN_PORT="${S07_ADMIN_PORT:-19520}"
+ENDPOINT_PORT="${S07_ENDPOINT_PORT:-18521}"
+NODE_PORT="${S07_NODE_PORT:-18522}"
 for port in "$INGRESS_PORT" "$ADMIN_PORT" "$ENDPOINT_PORT" "$NODE_PORT"; do
+    case "$port" in 18095|19095|15192) echo "FAIL: shared port $port is forbidden"; exit 1 ;; esac
     if ss -ltn 2>/dev/null | grep -q ":$port "; then
         echo "SKIPPED: port $port is already in use"
         exit 0
@@ -47,6 +48,8 @@ WORK="$(mktemp -d "$SCRATCH_STORE/scenario-07-XXXXXX")"
 DATA="$WORK/store"
 mkdir -p "$DATA"
 echo "EVIDENCE: $WORK"
+sha256sum "$CLIENT" "$SERVE" "$NODE" > "$WORK/binary-hashes.sha256"
+cat "$WORK/binary-hashes.sha256"
 
 cat > "$WORK/restate.toml" <<EOF
 roles = ["http-ingress", "admin", "worker", "log-server", "metadata-server"]
@@ -82,12 +85,16 @@ SEASON=2026
 REVISION=2
 KEY="jurisdiction:${JURISDICTION}:2026-27:${REVISION}"
 TEAM_KEY="jurisdiction:${JURISDICTION}:2026-27:${REVISION}/teams/milesplit"
-KEY_ENC="$(printf '%s' "$TEAM_KEY" | sed 's#/#%2F#g')"
+KEY_ENC="$(printf '%s' "$TEAM_KEY" | jq -sRr @uri)"
 
 sql() {
-    curl -sS --max-time 20 -X POST "http://127.0.0.1:$ADMIN_PORT/query" \
+    local reply
+    reply="$(curl -sS --fail-with-body --max-time 20 -X POST "http://127.0.0.1:$ADMIN_PORT/query" \
         -H 'content-type: application/json' -H 'accept: application/json' \
-        -d "{\"query\":\"$1\"}"
+        -d "{\"query\":\"$1\"}")" || { printf '%s\n' "$reply" >&2; return 1; }
+    printf '%s\n' "$reply" | jq -e 'has("rows") and (.rows | type == "array")' >/dev/null \
+        || { printf 'FAIL: invalid admin query reply: %s\n' "$reply" >&2; return 1; }
+    printf '%s\n' "$reply"
 }
 
 wait_admin() {
@@ -98,26 +105,28 @@ wait_admin() {
     return 1
 }
 
-# Start Restate
+NODE_PID=""
+SERVE_PID=""
+SUBMIT1_PID=""
+SUBMIT2_PID=""
+cleanup() {
+    local pid
+    for pid in "$SUBMIT1_PID" "$SUBMIT2_PID" "$SERVE_PID" "$NODE_PID"; do
+        [ -n "$pid" ] || continue
+        kill -TERM "$pid" 2>/dev/null || true
+        wait "$pid" 2>/dev/null || true
+    done
+}
+trap cleanup EXIT
 "$NODE" --no-logo -c "$WORK/restate.toml" > "$WORK/node.log" 2>&1 &
 NODE_PID=$!
 wait_admin || { echo "FAIL: node did not answer on the admin port"; exit 1; }
 echo "NODE: restate-server pid $NODE_PID admin $ADMIN_PORT ingress $INGRESS_PORT"
-
-# Start endpoint
 "$SERVE" \
     --listen "127.0.0.1:$ENDPOINT_PORT" --data-dir "$DATA" --max-concurrent 64 \
     --drain-timeout 30 --browser-profile "$WORK/browser-profile" \
     --browser-executable "$CHROMIUM" --browser-headless > "$WORK/endpoint.log" 2>&1 &
 SERVE_PID=$!
-cleanup() {
-    kill -TERM "$SERVE_PID" 2>/dev/null || true
-    wait "$SERVE_PID" 2>/dev/null || true
-    kill -TERM "$NODE_PID" 2>/dev/null || true
-    wait "$NODE_PID" 2>/dev/null || true
-}
-trap cleanup EXIT
-
 sleep 2
 kill -0 "$SERVE_PID" 2>/dev/null || { echo "FAIL: endpoint exited during startup"; tail -5 "$WORK/endpoint.log"; exit 1; }
 
@@ -148,74 +157,75 @@ PY
 done
 [ "$REGISTERED" = true ] || { echo "FAIL: endpoint did not register the expected services"; exit 1; }
 
-echo "SUBMITTING: first jurisdiction census for $JURISDICTION 2026-27 revision $REVISION"
-"$CLIENT" jurisdiction "$JURISDICTION" --ingress "http://127.0.0.1:$INGRESS_PORT/" \
-    --season "$SEASON" --revision "$REVISION" --limit-per-state 1 --timeout-seconds 600 --json \
-    > "$WORK/submit-1.json" 2> "$WORK/submit-1.txt" &
+AS_OF="$(date -u +%F)"
+LAST_YEAR="$(date -u +%Y)"
+[ "$LAST_YEAR" -le 2027 ] || LAST_YEAR=2027
+jq -n --arg state "$JURISDICTION" --arg date "$AS_OF" --argjson last "$LAST_YEAR" \
+    '{jurisdiction:$state,season:2026,revision:2,history:{first_calendar_year:2023,last_calendar_year:$last,as_of:$date},limit_per_state:1,concurrency:4,source_parallelism:1}' \
+    > "$WORK/request.json"
+KEY_ROUTE="$(printf '%s' "$KEY" | jq -sRr @uri)"
+submit() {
+    curl -fsS --max-time 30 -X POST "http://127.0.0.1:$INGRESS_PORT/JurisdictionCensus/$KEY_ROUTE/run/send" \
+        -H 'content-type: application/json' -H 'accept: application/json' \
+        -H "idempotency-key: $KEY" --data-binary @"$WORK/request.json"
+}
+echo "SUBMITTING: concurrent identical requests for $KEY with explicit idempotency key"
+submit > "$WORK/submit-1.json" 2> "$WORK/submit-1.txt" &
 SUBMIT1_PID=$!
-
-# Wait for first submission to report its invocation
-for _ in $(seq 1 60); do
-    if grep -q 'submitted as invocation' "$WORK/submit-1.txt" 2>/dev/null; then break; fi
-    sleep 1
-done
-if ! grep -q 'submitted as invocation' "$WORK/submit-1.txt"; then
-    echo "FAIL: first submission did not report an invocation identity"
-    cat "$WORK/submit-1.txt" 2>/dev/null || true
-    exit 1
-fi
-echo "FIRST SUBMISSION: $(grep -m1 'submitted as invocation' "$WORK/submit-1.txt")"
-
-echo "SUBMITTING: second (identical) jurisdiction census — should be deduplicated by Restate"
-"$CLIENT" jurisdiction "$JURISDICTION" --ingress "http://127.0.0.1:$INGRESS_PORT/" \
-    --season "$SEASON" --revision "$REVISION" --limit-per-state 1 --timeout-seconds 600 --json \
-    > "$WORK/submit-2.json" 2> "$WORK/submit-2.txt" &
+submit > "$WORK/submit-2.json" 2> "$WORK/submit-2.txt" &
 SUBMIT2_PID=$!
-
-# Both submissions must exit 0 (the run's handler returned its report)
-wait "$SUBMIT1_PID" || { echo "FAIL: first submission exited non-zero"; cat "$WORK/submit-1.txt"; exit 1; }
-wait "$SUBMIT2_PID" || { echo "FAIL: second submission exited non-zero"; cat "$WORK/submit-2.txt"; exit 1; }
-echo "BOTH SUBMISSIONS COMPLETED: rc 0 for each"
-
-# Assert: same invocation id in both
-INV1=$(grep -m1 -o 'invocation [^ ]*' "$WORK/submit-1.txt" | awk '{print $2}')
-INV2=$(grep -m1 -o 'invocation [^ ]*' "$WORK/submit-2.txt" | awk '{print $2}')
-echo "INVOCATION 1: $INV1"
-echo "INVOCATION 2: $INV2"
-[ "$INV1" != "" ] || { echo "FAIL: could not extract invocation id from first submission"; exit 1; }
-[ "$INV1" = "$INV2" ] || { echo "FAIL: different invocation ids — dedup not observed ($INV1 vs $INV2)"; exit 1; }
-echo "ASSERTION: identical invocation ids across both submissions — PASS"
-
-# Assert: second submission contains the dedup note
-if grep -q 'already had a run — restate deduplicated this submission' "$WORK/submit-2.txt"; then
-    echo "ASSERTION: second submission contains the dedup note — PASS"
-else
-    echo "FAIL: second submission did not contain the dedup note"
-    cat "$WORK/submit-2.txt"
-    exit 1
-fi
+wait "$SUBMIT1_PID" || { echo "FAIL: first submission refused"; cat "$WORK/submit-1.txt"; exit 1; }
+SUBMIT1_PID=""
+wait "$SUBMIT2_PID" || { echo "FAIL: second submission refused"; cat "$WORK/submit-2.txt"; exit 1; }
+SUBMIT2_PID=""
+INV1="$(jq -er '.invocationId | select(type == "string") | select(test("^inv_[A-Za-z0-9]+$"))' "$WORK/submit-1.json")"
+INV2="$(jq -er '.invocationId | select(type == "string") | select(test("^inv_[A-Za-z0-9]+$"))' "$WORK/submit-2.json")"
+[ "$INV1" = "$INV2" ] || { echo "FAIL: different invocation ids ($INV1 vs $INV2)"; exit 1; }
+jq -es '[.[].status] | sort == ["Accepted","PreviouslyAccepted"]' "$WORK/submit-1.json" "$WORK/submit-2.json" >/dev/null \
+    || { echo "FAIL: expected one admitted and one deduplicated structured reply"; exit 1; }
+echo "IDENTITY: both submissions admitted as $INV1 for $KEY"
+SETTLED=false
+for _ in $(seq 1 300); do
+    sql "SELECT id, target_service_key, idempotency_key, status, completion_result, completion_failure FROM sys_invocation WHERE id = '$INV1'" \
+        > "$WORK/parent-status.json"
+    jq -e --arg id "$INV1" --arg key "$KEY" \
+        '.rows | length == 1 and .[0].id == $id and .[0].target_service_key == $key and .[0].idempotency_key == $key' \
+        "$WORK/parent-status.json" >/dev/null || { echo "FAIL: admitted invocation identity missing"; exit 1; }
+    if jq -e '.rows[0].status == "completed"' "$WORK/parent-status.json" >/dev/null; then
+        jq -e '.rows[0].completion_result == "success"' "$WORK/parent-status.json" >/dev/null \
+            || { echo "FAIL: original invocation failed"; cat "$WORK/parent-status.json"; exit 1; }
+        SETTLED=true
+        break
+    fi
+    sleep 2
+done
+[ "$SETTLED" = true ] || { echo "FAIL: original invocation did not settle"; exit 1; }
 
 # Assert: exactly one JurisdictionCensus invocation
-sql "SELECT count(*) FROM sys_invocation WHERE target_service_name = 'JurisdictionCensus' AND target_service_key = '$KEY'" \
+sql "SELECT count(*) AS n FROM sys_invocation WHERE target_service_name = 'JurisdictionCensus' AND target_service_key = '$KEY'" \
     > "$WORK/juris-count.json"
-JURIS_COUNT=$(python3 -c "import json,sys; print(json.load(sys.stdin).get('rows',[[0]])[0][0])" < "$WORK/juris-count.json")
+JURIS_COUNT="$(jq -er '.rows[0].n' "$WORK/juris-count.json")"
 echo "JurisdictionCensus invocations for $KEY: $JURIS_COUNT"
 [ "$JURIS_COUNT" = "1" ] || { echo "FAIL: expected exactly 1 JurisdictionCensus invocation, found $JURIS_COUNT"; exit 1; }
 echo "ASSERTION: exactly 1 JurisdictionCensus invocation — PASS"
 
 # Assert: exactly one TeamsSource invocation
-sql "SELECT count(*) FROM sys_invocation WHERE target_service_name = 'TeamsSource' AND target_service_key = '$TEAM_KEY'" \
+sql "SELECT count(*) AS n FROM sys_invocation WHERE target_service_name = 'TeamsSource' AND target_service_key = '$TEAM_KEY'" \
     > "$WORK/teams-count.json"
-TEAMS_COUNT=$(python3 -c "import json,sys; print(json.load(sys.stdin).get('rows',[[0]])[0][0])" < "$WORK/teams-count.json")
+TEAMS_COUNT="$(jq -er '.rows[0].n' "$WORK/teams-count.json")"
 echo "TeamsSource invocations for $TEAM_KEY: $TEAMS_COUNT"
 [ "$TEAMS_COUNT" = "1" ] || { echo "FAIL: expected exactly 1 TeamsSource invocation, found $TEAMS_COUNT"; exit 1; }
 echo "ASSERTION: exactly 1 TeamsSource invocation — PASS"
 
 # Assert: TeamsSource inspection shows settled, one completed attempt, records >= 1
-curl -sS --max-time 10 -X POST "http://127.0.0.1:$INGRESS_PORT/TeamsSource/${KEY_ENC}/inspection" \
+curl -fsS --max-time 10 -X POST "http://127.0.0.1:$INGRESS_PORT/TeamsSource/${KEY_ENC}/inspection" \
     -H 'content-type: application/json' -H 'accept: application/json' \
-    > "$WORK/teams-inspection.json" 2>&1 || true
-echo "TEAMS SOURCE INSPECTION: $(cat "$WORK/teams-inspection.json" | head -c 400)"
+    > "$WORK/teams-inspection.json"
+cat "$WORK/teams-inspection.json"
+jq -e '.outcome.progress | length == 1' "$WORK/teams-inspection.json" >/dev/null \
+    || { echo "FAIL: more than one physical acquisition reservation"; exit 1; }
+jq -e '.outcome.outcome.disposition == "complete" and .outcome.outcome.errors == [] and .outcome.outcome.unfinished == [] and .outcome.outcome == .outcome.progress[0].outcome' \
+    "$WORK/teams-inspection.json" >/dev/null || { echo "FAIL: source completion is unknown, partial or contradicts its physical attempt"; exit 1; }
 python3 - "$WORK/teams-inspection.json" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
@@ -238,12 +248,14 @@ fi
 
 # Drain and shutdown
 kill -TERM "$SERVE_PID"
-wait "$SERVE_PID" 2>/dev/null || true
+wait "$SERVE_PID"
+SERVE_PID=""
 DRAIN=$(grep -a 'drained:' "$WORK/endpoint.log" | tail -1 || true)
 [ -n "$DRAIN" ] || { echo "FAIL: endpoint log contains no 'drained:' line"; exit 1; }
 echo "DRAIN: $DRAIN"
 kill -TERM "$NODE_PID"
-wait "$NODE_PID" 2>/dev/null || true
+wait "$NODE_PID"
+NODE_PID=""
 
 # After drain: fjall-stats
 "$CLIENT" --store "$DATA" fjall-stats > "$WORK/fjall-stats.txt" 2>&1
@@ -268,4 +280,4 @@ echo "tables with rows: $TABLES_WITH_ROWS"
 [ "$TABLES_WITH_ROWS" -gt 0 ] || { echo "FAIL: no table has a positive row count"; exit 1; }
 echo "ASSERTION: at least one table has positive row count — PASS"
 
-echo "PASS: two concurrent identical jurisdiction submissions produced one durable effect; invocation ids identical; restated dedup note present; exactly one JurisdictionCensus and one TeamsSource invocation; TeamsSource inspection shows one settled completed attempt with records; drain observed; store has observations and populated tables"
+echo "PASS: concurrent identical structured submissions reused one invocation and idempotency key; exactly one jurisdiction and source invocation; source settled with one completed physical reservation and positive records; endpoint drained and store observations retained"

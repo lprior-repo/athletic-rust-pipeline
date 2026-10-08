@@ -10,7 +10,7 @@ set -euo pipefail
 REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
 SCRATCH_STORE="${SCRATCH_STORE:-/tmp/durability-scenario/06}"
 
-for tool in curl python3 timeout ss jq; do
+for tool in curl python3 timeout ss jq sha256sum; do
     command -v "$tool" >/dev/null 2>&1 || { echo "SKIPPED: missing prerequisite tool $tool"; exit 0; }
 done
 CHROMIUM="${CHROMIUM_EXECUTABLE:-/usr/bin/chromium}"
@@ -30,21 +30,22 @@ NODE="$RESTATE_SERVER_BIN"
 CLIENT="${BINARY:-$REPO_ROOT/target/moon-portable/x86_64-unknown-linux-gnu/release/census-service}"
 [ -x "$CLIENT" ] || { echo "SKIPPED: census-service binary missing at $CLIENT"; exit 0; }
 
-SERVE="${S06_SERVE_BINARY:-}"
-if [ -z "$SERVE" ]; then
-    SERVE="$REPO_ROOT/target/moon-build/x86_64-unknown-linux-gnu/release/census-serve"
-fi
-if [ ! -x "$SERVE" ]; then
-    echo "SKIPPED: feature-enabled endpoint missing; build it with"
-    echo "SKIPPED: env -u CI tools/moon-local run pipeline:build -- --release -p census-service --features native-fault-injection --bin census-serve"
+SERVE="${S06_SERVE_BINARY:-${SERVE_BINARY:-$REPO_ROOT/target/moon-portable/x86_64-unknown-linux-gnu/release/census-serve}}"
+[ -x "$SERVE" ] || { echo "SKIPPED: endpoint missing at $SERVE"; exit 0; }
+grep -aqF CENSUS_NATIVE_SOURCE_BOUNDARY "$SERVE" \
+    || { echo "FAIL: selected endpoint lacks native source boundary seam: $SERVE"; exit 1; }
+RECEIPT_ORACLE="${S06_RECEIPT_ORACLE_BINARY:-}"
+if [ -z "$RECEIPT_ORACLE" ] || [ ! -x "$RECEIPT_ORACLE" ]; then
+    echo "SKIPPED: exact physical receipt/readback Rust oracle missing (set S06_RECEIPT_ORACLE_BINARY)"
     exit 0
 fi
 
 INGRESS_PORT="${S06_INGRESS_PORT:-18610}"
 ADMIN_PORT="${S06_ADMIN_PORT:-19610}"
 ENDPOINT_PORT="${S06_ENDPOINT_PORT:-18611}"
-NODE_PORT=$((INGRESS_PORT + 2))
+NODE_PORT="${S06_NODE_PORT:-$((INGRESS_PORT + 2))}"
 for port in "$INGRESS_PORT" "$ADMIN_PORT" "$ENDPOINT_PORT" "$NODE_PORT"; do
+    case "$port" in 18095|19095|15192) echo "FAIL: shared port $port is forbidden"; exit 1 ;; esac
     if ss -ltn 2>/dev/null | grep -q ":$port "; then
         echo "SKIPPED: port $port is already in use"
         exit 0
@@ -59,15 +60,18 @@ BOUNDARY="$WORK/boundary"
 mkdir -p "$DATA" "$BOUNDARY"
 chmod 700 "$BOUNDARY"
 echo "EVIDENCE: $WORK"
+sha256sum "$CLIENT" "$SERVE" "$NODE" > "$WORK/binary-hashes.sha256"
+cat "$WORK/binary-hashes.sha256"
 
-cat > "$WORK/restate.toml" <<EOF
+write_node_config() {
+cat > "$CASE/restate.toml" <<EOF
 roles = ["http-ingress", "admin", "worker", "log-server", "metadata-server"]
 node-name = "durability-scenario-06"
 cluster-name = "durability-scenario-06"
 auto-provision = true
 default-num-partitions = 1
 default-replication = 1
-base-dir = "$WORK/restate"
+base-dir = "$RESTATE_DATA"
 listen-mode = "tcp"
 bind-ip = "127.0.0.1"
 bind-port = $NODE_PORT
@@ -84,6 +88,7 @@ bind-address = "127.0.0.1:$INGRESS_PORT"
 [admin]
 bind-address = "127.0.0.1:$ADMIN_PORT"
 EOF
+}
 
 OPERATION="jurisdiction:VT:2026-27:2/teams/milesplit"
 CONFIG="$BOUNDARY/native-source-boundary-config.json"
@@ -102,13 +107,17 @@ write_boundary_v2() {
 }
 
 sql() {
-    curl -sS --max-time 20 -X POST "http://127.0.0.1:$ADMIN_PORT/query" \
+    local reply
+    reply="$(curl -sS --fail-with-body --max-time 20 -X POST "http://127.0.0.1:$ADMIN_PORT/query" \
         -H 'content-type: application/json' -H 'accept: application/json' \
-        -d "{\"query\":\"$1\"}"
+        -d "{\"query\":\"$1\"}")" || { printf '%s\n' "$reply" >&2; return 1; }
+    printf '%s\n' "$reply" | jq -e 'has("rows") and (.rows | type == "array")' >/dev/null \
+        || { printf 'FAIL: invalid admin query reply: %s\n' "$reply" >&2; return 1; }
+    printf '%s\n' "$reply"
 }
 
 inventory() {
-    sql "SELECT id, target_service_name, target_service_key, status, journal_size FROM sys_invocation" > "$1"
+    sql "SELECT id, target_service_name, target_service_key, invoked_by_id, idempotency_key, status, journal_size, completion_result, completion_failure FROM sys_invocation" > "$1"
 }
 
 wait_admin() {
@@ -127,6 +136,28 @@ wait_endpoint() {
     return 1
 }
 
+NODE_PID=""
+SERVE_PID=""
+stop_case() {
+    local pid
+    for pid in "$SERVE_PID" "$NODE_PID"; do
+        [ -n "$pid" ] || continue
+        kill -TERM "$pid" 2>/dev/null || true
+        wait "$pid" 2>/dev/null || true
+    done
+    SERVE_PID=""
+    NODE_PID=""
+}
+trap stop_case EXIT
+AS_OF="$(date -u +%F)"
+LAST_YEAR="$(date -u +%Y)"
+[ "$LAST_YEAR" -le 2027 ] || LAST_YEAR=2027
+jq -n --arg date "$AS_OF" --argjson last "$LAST_YEAR" \
+    '{jurisdiction:"VT",season:2026,revision:2,history:{first_calendar_year:2023,last_calendar_year:$last,as_of:$date},limit_per_state:1,concurrency:4,source_parallelism:1}' \
+    > "$WORK/request.json"
+KEY="jurisdiction:VT:2026-27:2"
+KEY_ROUTE="$(printf '%s' "$KEY" | jq -sRr @uri)"
+
 PROVEN=""
 UNREACHED=""
 
@@ -134,11 +165,15 @@ for KIND in before_source_request response_received capture_committed page_chunk
     echo ""
     echo "=== Scenario 06 / $KIND ==="
     
-    # Fresh store and directories for each kind so effects are not cumulative
-    rm -rf "$DATA" "$BOUNDARY" "$WORK/restate"
+    CASE="$WORK/$KIND"
+    DATA="$CASE/store"
+    BOUNDARY="$CASE/boundary"
+    RESTATE_DATA="$CASE/restate"
+    CONFIG="$BOUNDARY/native-source-boundary-config.json"
+    MARKER="$BOUNDARY/teams-source-reservation-reached.json"
     mkdir -p "$DATA" "$BOUNDARY"
     chmod 700 "$BOUNDARY"
-    [ -f "$MARKER" ] && rm -f "$MARKER"
+    write_node_config
     
     if [ "$KIND" = "page_chunk" ]; then
         write_boundary_v2 "page_chunk" 0
@@ -147,9 +182,9 @@ for KIND in before_source_request response_received capture_committed page_chunk
     fi
     
     # Start Restate node
-    "$NODE" --no-logo -c "$WORK/restate.toml" > "$WORK/node-$KIND.log" 2>&1 &
+    "$NODE" --no-logo -c "$CASE/restate.toml" > "$WORK/node-$KIND.log" 2>&1 &
     NODE_PID=$!
-    wait_admin || { echo "UNREACHED: $KIND — node did not answer on the admin port"; UNREACHED="$UNREACHED $KIND"; kill -9 "$NODE_PID" 2>/dev/null || true; continue; }
+    wait_admin || { echo "UNREACHED: $KIND — node did not answer on the admin port"; UNREACHED="$UNREACHED $KIND"; stop_case; continue; }
     
     # Start endpoint with boundary config
     CENSUS_NATIVE_SOURCE_BOUNDARY="$CONFIG" "$SERVE" \
@@ -161,7 +196,7 @@ for KIND in before_source_request response_received capture_committed page_chunk
     if ! wait_endpoint; then
         echo "UNREACHED: $KIND — endpoint did not respond on port $ENDPOINT_PORT"
         UNREACHED="$UNREACHED $KIND"
-        kill -9 "$NODE_PID" "$SERVE_PID" 2>/dev/null || true
+        stop_case
         continue
     fi
     
@@ -191,18 +226,16 @@ PY
     if [ "$REGISTERED" != true ]; then
         echo "UNREACHED: $KIND — endpoint did not register the expected services"
         UNREACHED="$UNREACHED $KIND"
-        kill -9 "$NODE_PID" "$SERVE_PID" 2>/dev/null || true
+        stop_case
         continue
     fi
     
-    # Submit one jurisdiction's census (VT) with a small limit to ensure it completes
-    "$CLIENT" jurisdiction VT --ingress "http://127.0.0.1:$INGRESS_PORT/" --revision 2 \
-        --limit-per-state 1 --detach > "$WORK/submission-$KIND.txt" 2>&1 || {
-        echo "UNREACHED: $KIND — submission refused"; cat "$WORK/submission-$KIND.txt"
-        UNREACHED="$UNREACHED $KIND"
-        kill -9 "$NODE_PID" "$SERVE_PID" 2>/dev/null || true
-        continue
-    }
+    curl -fsS --max-time 30 -X POST "http://127.0.0.1:$INGRESS_PORT/JurisdictionCensus/$KEY_ROUTE/run/send" \
+        -H 'content-type: application/json' -H 'accept: application/json' \
+        -H "idempotency-key: $KEY" --data-binary @"$WORK/request.json" \
+        > "$WORK/submission-$KIND.json" 2> "$WORK/submission-$KIND.txt" \
+        || { echo "FAIL: $KIND submission refused"; cat "$WORK/submission-$KIND.txt"; exit 1; }
+    INVOCATION="$(jq -er 'select(.status == "Accepted") | .invocationId | select(test("^inv_[A-Za-z0-9]+$"))' "$WORK/submission-$KIND.json")"
     
     # Wait for the boundary marker (up to 3 minutes)
     REACHED=false
@@ -220,24 +253,37 @@ PY
             echo "UNREACHED: $KIND — endpoint did not carry CENSUS_NATIVE_SOURCE_BOUNDARY"
         fi
         UNREACHED="$UNREACHED $KIND"
-        kill -9 "$NODE_PID" "$SERVE_PID" 2>/dev/null || true
+        stop_case
         continue
     fi
     
     # Boundary reached — capture the marker and the pre-kill snapshot
     cp "$MARKER" "$WORK/marker-$KIND.json"
+    jq -e --arg kind "$KIND" \
+        '.phase == $kind and .attempt >= 1 and .attempt <= 3 and (.operation | type == "string" and length > 0) and (.request_digest | type == "string" and length > 0 and . != "fault_injection") and (.observed_on | type == "string" and . != "fault_injection") and (.acknowledged_effects | type == "object")' \
+        "$WORK/marker-$KIND.json" >/dev/null || { echo "FAIL: $KIND marker lacks actual identity-bound checkpoint"; exit 1; }
+    ACTUAL_OPERATION="$(jq -er '.operation' "$WORK/marker-$KIND.json")"
     echo "REACHED: $KIND at $(date -u +%H:%M:%S)"
     cat "$WORK/marker-$KIND.json" | head -3
     inventory "$WORK/invocations-before-$KIND.json"
+    jq -e --arg id "$INVOCATION" 'any(.rows[]; .id == $id and .status != "completed")' \
+        "$WORK/invocations-before-$KIND.json" >/dev/null || { echo "FAIL: $KIND original parent already settled before fault"; exit 1; }
+    cp "$WORK/invocations-before-$KIND.json" "$CASE/invocations-before.json"
+    cp "$WORK/submission-$KIND.json" "$CASE/submission.json"
+    cp "$WORK/request.json" "$CASE/request.json"
     
     # Kill the endpoint at the reached boundary
     kill -9 "$SERVE_PID"
-    wait "$SERVE_PID" 2>/dev/null || true
-    if kill -0 "$SERVE_PID" 2>/dev/null; then echo "FAIL: endpoint survived SIGKILL at $KIND"; exit 1; fi
-    echo "INJECTED: SIGKILL endpoint pid $SERVE_PID at $KIND; node pid $NODE_PID stayed up"
+    KILL_EXIT=0
+    wait "$SERVE_PID" || KILL_EXIT=$?
+    [ "$KILL_EXIT" -eq 137 ] || { echo "FAIL: endpoint was not reaped as SIGKILL at $KIND (exit=$KILL_EXIT)"; exit 1; }
+    KILLED_PID="$SERVE_PID"
+    SERVE_PID=""
+    echo "INJECTED: SIGKILL endpoint pid $KILLED_PID at $KIND; node pid $NODE_PID stayed up"
     
     # Restart endpoint against the same store and directories
-    CENSUS_NATIVE_SOURCE_BOUNDARY="$CONFIG" "$SERVE" \
+    sha256sum -c "$WORK/binary-hashes.sha256" > "$WORK/restart-binary-hashes-$KIND.txt"
+    env -u CENSUS_NATIVE_SOURCE_BOUNDARY "$SERVE" \
         --listen "127.0.0.1:$ENDPOINT_PORT" --data-dir "$DATA" --max-concurrent 64 \
         --drain-timeout 30 --browser-profile "$WORK/browser-profile-$KIND" \
         --browser-executable "$CHROMIUM" --browser-headless > "$WORK/endpoint-restart-$KIND.log" 2>&1 &
@@ -245,37 +291,25 @@ PY
     
     if ! wait_endpoint; then
         echo "FAIL: restarted endpoint did not respond at $KIND"
-        kill -9 "$NODE_PID" "$SERVE_PID" 2>/dev/null || true
+        stop_case
         exit 1
     fi
     echo "RECOVERED: endpoint restarted at $KIND as pid $SERVE_PID"
     
-    # The restarted endpoint should resume the same invocation and reach completion
-    # (or at least resume past the killed boundary without crashing)
+    curl -fsS --max-time 30 -X POST "http://127.0.0.1:$INGRESS_PORT/JurisdictionCensus/$KEY_ROUTE/run/send" \
+        -H 'content-type: application/json' -H "idempotency-key: $KEY" --data-binary @"$WORK/request.json" \
+        > "$WORK/resubmission-$KIND.json"
+    jq -e --arg id "$INVOCATION" '.invocationId == $id and .status == "PreviouslyAccepted"' \
+        "$WORK/resubmission-$KIND.json" >/dev/null || { echo "FAIL: $KIND original invocation changed on replay"; exit 1; }
     RESUMED=false
-    for _ in $(seq 1 60); do
-        inventory "$WORK/invocations-after-$KIND.json" 2>/dev/null || true
-        if python3 - "$WORK/invocations-before-$KIND.json" "$WORK/invocations-after-$KIND.json" <<'PY'
-import json, sys
-before = {r["id"]: r for r in json.load(open(sys.argv[1])).get("rows", [])}
-after_rows = json.load(open(sys.argv[2])).get("rows", [])
-after = {r["id"]: r for r in after_rows}
-# Every pre-kill invocation must still exist after restart
-missing = set(before.keys()) - set(after.keys())
-if missing:
-    print(f"IDENTITIES: {len(before)} before, {len(after)} after, {len(missing)} missing")
-    sys.exit(1)
-# Check that the killed invocation resumed (status changed or journal grew)
-for inv_id, b in before.items():
-    a = after[inv_id]
-    if b["status"] in ("running", "pending", "suspended", "backing-off"):
-        if a["status"] != b["status"] or a["journal_size"] > b["journal_size"]:
-            print(f"RESUMED: {inv_id} advanced from {b['status']} journal {b['journal_size']} to {a['status']} journal {a['journal_size']}")
-            sys.exit(0)
-print("NO_RESUMPTION")
-sys.exit(1)
-PY
-        then
+    for _ in $(seq 1 300); do
+        inventory "$WORK/invocations-after-$KIND.json"
+        jq -e --slurpfile before "$WORK/invocations-before-$KIND.json" \
+            '([.rows[].id] as $after | all($before[0].rows[]; .id as $id | $after | index($id) != null))' \
+            "$WORK/invocations-after-$KIND.json" >/dev/null || { echo "FAIL: $KIND pre-kill invocation lost"; exit 1; }
+        if jq -e --slurpfile before "$WORK/invocations-before-$KIND.json" --arg id "$INVOCATION" \
+            'any(.rows[]; select(.id == $id or .invoked_by_id == $id) | . as $after | any($before[0].rows[]; .id == $after.id and ($after.status != .status or $after.journal_size > .journal_size)))' \
+            "$WORK/invocations-after-$KIND.json" >/dev/null; then
             RESUMED=true
             break
         fi
@@ -283,23 +317,25 @@ PY
     done
     
     if [ "$RESUMED" != true ]; then
-        echo "UNREACHED: $KIND — invocation did not resume after endpoint restart (may have already completed before the kill)"
+        echo "UNREACHED: $KIND — no original root/owned-unit recovery progress was observed"
         UNREACHED="$UNREACHED $KIND"
-        kill -9 "$NODE_PID" "$SERVE_PID" 2>/dev/null || true
+        stop_case
         continue
     fi
     
-    # Verify idempotency: no duplicate effects. For a completed run, the run
-    # should report the same observation/receipt counts as before the kill.
-    # We assert that the run terminates successfully after the kill/restart.
-    echo "PASS: $KIND — endpoint killed at reached boundary, restarted from the same store, same invocation resumed"
+    cp "$WORK/invocations-after-$KIND.json" "$CASE/invocations-after.json"
+    kill -TERM "$SERVE_PID"
+    wait "$SERVE_PID"
+    SERVE_PID=""
+    mkdir -p "$CASE/reconciliation"
+    "$RECEIPT_ORACLE" --store "$DATA" --marker "$WORK/marker-$KIND.json" \
+        --invocation "$INVOCATION" --operation "$ACTUAL_OPERATION" --kind "$KIND" \
+        --evidence "$CASE/reconciliation" > "$CASE/receipt-oracle.log" 2>&1 \
+        || { echo "FAIL: $KIND exact physical conservation/replay oracle rejected"; cat "$CASE/receipt-oracle.log"; exit 1; }
+    cat "$CASE/receipt-oracle.log"
+    echo "PASS: $KIND — actual boundary/root identity and exact physical receipt/readback oracle verified"
     PROVEN="$PROVEN $KIND"
-    
-    # Cleanup this kind's processes
-    kill -TERM "$SERVE_PID" 2>/dev/null || true
-    wait "$SERVE_PID" 2>/dev/null || true
-    kill -TERM "$NODE_PID" 2>/dev/null || true
-    wait "$NODE_PID" 2>/dev/null || true
+    stop_case
 done
 
 echo ""
@@ -309,8 +345,8 @@ if [ -n "$UNREACHED" ]; then
     echo "UNREACHED: ${UNREACHED# }"
 fi
 
-if [ -z "$PROVEN" ]; then
-    echo "FAIL: no boundary kind was proven"
+if [ -n "$UNREACHED" ] || [ -z "$PROVEN" ]; then
+    echo "FAIL: every named boundary must be reached and reconciled"
     exit 1
 fi
 

@@ -120,17 +120,26 @@ impl<'a> MshslRun<'a> {
             Ok(capture) => capture,
             Err(error) => return fail(&mut self.report, &url, error),
         };
-        let body = match text(&capture) {
+        self.project_school(row, &url, &capture).await
+    }
+
+    async fn project_school(
+        &mut self,
+        row: &SchoolListRow,
+        url: &str,
+        capture: &crate::net::FetchOutcome,
+    ) -> CrawlResult<()> {
+        let body = match text(capture) {
             Ok(body) => body,
-            Err(error) => return fail(&mut self.report, &url, error),
+            Err(error) => return fail(&mut self.report, url, error),
         };
         let detail = parse_school_detail(body);
-        let Some((canonical, id)) = school_entities(row, &detail, &url, &capture.fetched_at) else {
-            return fail(&mut self.report, &url, "missing school owner");
+        let Some((canonical, id)) = school_entities(row, &detail, url, &capture.fetched_at) else {
+            return fail(&mut self.report, url, "missing school owner");
         };
         let written = school(
             self.ctx,
-            (SOURCE_ID, &url),
+            (SOURCE_ID, url),
             (
                 &SourceNamespace::association_school(SOURCE_ID),
                 &canonical,
@@ -148,12 +157,12 @@ impl<'a> MshslRun<'a> {
             &detail,
             &id,
             &provider_key(row, &detail),
-            &url,
+            url,
             &capture.fetched_at,
         );
-        self.publish_coaches(&url, &ads)?;
+        self.publish_coaches(url, &ads)?;
         let Some(key) = detail.school_id.as_deref() else {
-            return owe(&mut self.report, &url);
+            return owe(&mut self.report, url);
         };
         super::teams::collect(self, (key, &id), &school_domains(&detail)).await
     }

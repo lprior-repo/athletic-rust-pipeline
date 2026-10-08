@@ -6,14 +6,14 @@ use tokio::sync::oneshot;
 
 use super::super::marker_worker;
 use super::control::{completed, runtime, Runtime};
-use super::{expected_marker, fixture, read_marker, reserved_marker, TestResult, OPERATION};
+use super::{fixture, read_marker, reserved_marker, BoundaryError, TestResult, OPERATION};
 use crate::restate_services::{blocking, JobError};
 
 const DEADLINE: Duration = Duration::from_secs(5);
 
 struct Suspended {
     release: SyncSender<()>,
-    finished: oneshot::Receiver<()>,
+    finished: oneshot::Receiver<Result<(), BoundaryError>>,
 }
 
 async fn cancel_marker_caller(
@@ -27,7 +27,13 @@ async fn cancel_marker_caller(
             .await
             .map_err(super::terminal)?,
     );
-    let worker = marker_worker(admission, directory, reserved_marker(1)?);
+    let worker = marker_worker(
+        admission,
+        Arc::clone(runtime.jobs.store()),
+        directory,
+        reserved_marker(1)?,
+        Duration::ZERO,
+    );
     let (started, began) = oneshot::channel();
     let (release, released) = std::sync::mpsc::sync_channel(1);
     let (finished, completion) = oneshot::channel();
@@ -40,8 +46,8 @@ async fn cancel_marker_caller(
             .map_err(|error| JobError::Terminal {
                 message: format!("marker release failed: {error}"),
             })?;
-        worker()?;
-        finished.send(()).map_err(|()| JobError::Terminal {
+        let outcome = worker();
+        finished.send(outcome).map_err(|_| JobError::Terminal {
             message: "marker completion observer closed".to_string(),
         })?;
         Ok::<(), JobError>(())
@@ -77,11 +83,17 @@ Some(std::io::ErrorKind::NotFound));
             check!(futures::poll!(waiting.as_mut()).is_pending());
             check!(eq; runtime.load.available_permits(), 0);
             suspended.release.send(())?;
-            tokio::time::timeout(DEADLINE, suspended.finished).await??;
+            let outcome = tokio::time::timeout(DEADLINE, suspended.finished).await??;
+            check!(matches!(outcome, Err(BoundaryError::HoldExpired { operation, attempt: 1, seconds: 0 }) if operation == OPERATION),
+                "the owned native marker worker must fail closed after its hold deadline");
             let admission = tokio::time::timeout(DEADLINE, waiting)
                 .await?
                 .map_err(super::terminal)?;
-            check!(eq; read_marker(&fixture)?, expected_marker(1));
+            let marker = read_marker(&fixture)?;
+            check!(eq; marker.get("operation").and_then(serde_json::Value::as_str), Some(OPERATION));
+            check!(eq; serde_json::from_value::<census_store::NativeEffectCheckpoint>(
+                marker.get("acknowledged_effects").ok_or("original source checkpoint missing after caller cancellation")?.clone())?,
+                runtime.jobs.store().native_effect_checkpoint()?);
             check!(eq; runtime.load.available_permits(), 1);
             drop(admission);
             check!(eq; runtime.load.available_permits(), 2);
