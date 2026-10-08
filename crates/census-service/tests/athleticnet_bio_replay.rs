@@ -28,13 +28,19 @@ const FIXTURE: &str = "bio_28872883_tf.json";
 const PERFORMANCES: usize = 53;
 
 fn seed_cache(cache_dir: &Path, url: &str, body: &str) -> Result<()> {
+    use census_crawl::net::RepresentationHeaders;
     use sha2::{Digest, Sha256};
 
+    let representation = RepresentationHeaders::canonical(&[(
+        "Accept".to_string(),
+        "application/json".to_string(),
+    )])?;
     let mut hasher = Sha256::new();
     hasher.update(b"GET");
     hasher.update([0x1f]);
     hasher.update(url.as_bytes());
     hasher.update([0x1f]);
+    hasher.update(representation.identity().as_bytes());
     let key: String = hasher.finalize()[..16]
         .iter()
         .map(|byte| format!("{byte:02x}"))
@@ -43,6 +49,7 @@ fn seed_cache(cache_dir: &Path, url: &str, body: &str) -> Result<()> {
         "url": url,
         "method": "GET",
         "status": 200,
+        "representation": representation,
         "content_digest": format!("{:x}", Sha256::digest(body.as_bytes())),
         "bytes": body.len(),
         "fetched_at": "2026-09-22T12:00:00Z",

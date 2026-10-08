@@ -46,7 +46,8 @@ pub(super) fn verify(
     if seen != ordered.len() {
         findings.note(format!(
             "{} verified {seen} coach rows where the frozen dataset holds {} observations",
-            labels::COACHES, ordered.len()
+            labels::COACHES,
+            ordered.len()
         ));
     }
     Ok(())
@@ -68,7 +69,9 @@ fn verify_row(
         if let Some((coach, _)) = expected {
             findings.note(format!(
                 "{} is blank where coach {} ({}) was expected",
-                cell_at(labels::COACHES, row.index(), 6), coach.name, coach.id.as_str()
+                cell_at(labels::COACHES, row.index(), 6),
+                coach.name,
+                coach.id.as_str()
             ));
         }
         return None;

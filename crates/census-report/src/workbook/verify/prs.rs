@@ -56,7 +56,8 @@ pub(super) fn verify(
     if seen != prs.len() {
         findings.note(format!(
             "{} verified {seen} PR rows where the shared reduction selected {}",
-            labels::PRS, prs.len()
+            labels::PRS,
+            prs.len()
         ));
     }
     Ok(())

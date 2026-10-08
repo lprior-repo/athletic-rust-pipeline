@@ -24,7 +24,7 @@ fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_rosters(
             .await
             ?;
         let index_stats = fetcher.stats().await;
-        check!(eq; index_stats.requests, 0,
+        check!(eq; index_stats.physical_requests(), 0,
         "the team index must come from the seeded cache");
         check!(index_stats.cache_hits >= 1);
         let progress = census::collect_state_rosters(
@@ -67,7 +67,7 @@ fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_rosters(
                 walk.progress.rosters_committed,
                 walk.progress.class_of_2027,
                 walk.athletes.len(),
-                walk.stats.requests,
+                walk.stats.physical_requests(),
                 walk.stats.cache_hits,
                 walk.counts
             ),
@@ -88,7 +88,7 @@ fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_rosters(
         check!(walk.progress.errors.is_empty(),
         "the seeded cache leaves no roster unfetched: {:?}",
         walk.progress.errors);
-        check!(eq; walk.stats.requests, 0, "no walk step needs the network");
+        check!(eq; walk.stats.physical_requests(), 0, "no walk step needs the network");
         check!(eq; walk.roster_journal.len(),
         walk.teams.len(),
         "one journal entry per finished roster");
@@ -141,13 +141,13 @@ fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_rosters(
         format!(
             "replay: teams={} requests={} cache_hits={}",
             teams.len(),
-            index_stats.requests,
+            index_stats.physical_requests(),
             index_stats.cache_hits
         ),
     );
     check!(eq; teams, control.teams,
     "the second stage re-reads the journaled index rather than rebuilding it");
-    check!(eq; index_stats.requests, 0,
+    check!(eq; index_stats.physical_requests(), 0,
     "the index replay is answered from the cache");
 
     let resumed = census::collect_state_rosters(
@@ -173,7 +173,7 @@ fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_rosters(
             resumed.rosters_skipped,
             resumed.class_of_2027,
             athletes.len(),
-            stats.requests,
+            stats.physical_requests(),
             stats.cache_hits
         ),
     );
@@ -186,7 +186,7 @@ fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_rosters(
         resumed.rosters_committed + resumed.rosters_skipped + resumed.rosters_remaining,
         resumed.rosters_total,
         "the restarted buckets match the indexed teams");
-    check!(eq; stats.requests, 0,
+    check!(eq; stats.physical_requests(), 0,
     "every roster the first pass journaled is skipped unread");
     check!(stopped_after.is_subset(&journal_keys(&store, &wi_rosters_phase())?),
     "the restarted store keeps every roster the limited first pass journaled");

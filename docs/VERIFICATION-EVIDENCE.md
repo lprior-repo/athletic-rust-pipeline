@@ -14265,3 +14265,92 @@ Command and observed result:
   (`census/sweep/roster/tests.rs`, reported above); the durable kill/restart scenarios
   (`ew2`, `8o5`) remain open and unverified.
 
+## Integrated gate green: structure budgets, canonical readback, cache-seed identity and physical request accounting — 2026-10-08
+
+The durability section above left the tree red in three lane families. This section records the
+repairs and the first `gate: PASS` on the integrated tree; it supersedes that section's
+"remain open and unverified" note for the two harness scenarios while leaving `ew2`/`8o5` open for
+their full boundary matrix.
+
+Structure (scan budgets: 300 lines per file, 60 lines per function):
+
+- `crates/census-crawl/src/athleticlive/results/run.rs` 402 -> 173 lines. New children
+  `run/receipts.rs` (receipt index and key derivation; `path_key` no longer slices the digest with
+  `.take(8)`) and `run/captures.rs` (`Resolved` plus the capture/read/process helpers). The two
+  functions it was hiding shrank with it: `read_captures` 71 -> 28 rows, `capture` 88 -> 53.
+- `crates/census-service/src/restate_services/open_work.rs` 362 -> 175 lines; the in-file
+  `#[cfg(test)] mod tests` moved verbatim to `open_work/tests.rs` (186 lines) as `mod tests;`.
+- `crates/census-crawl/src/milesplit/results/accumulator.rs::rows` folds the seven table counts with
+  `usize::saturating_add` instead of a bare `+` chain.
+- `crates/census-crawl/src/home_campus/collect.rs`: `collect` 61 -> 53 rows via an extracted
+  `apply_stats`.
+
+Result: `structure: files>300=0 fns>60=0` over the nine measured packages.
+
+Panic-extraction policy (all targets, tests included) and the all-targets clippy lane:
+
+- Seven `unwrap`-family references repaid in four files: `census-store/src/receipt.rs:110/140`
+  (`map_or(0, core::convert::identity)`), `restate_kill_restart/readback.rs:124/131/324`,
+  `restate_kill_restart/oracle.rs:51`, and
+  `milesplit/results/run/owned_tests/result_sets.rs:98` (`.expect_err(...)` -> `.err().ok_or(...)?`).
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings -D clippy::unwrap_used
+  -D clippy::expect_used` then flagged `cloned_ref_to_slice_refs` in the harness's
+  `readback_tests.rs:252`; `&[succeeded.clone()]` became `std::slice::from_ref(&succeeded)`.
+
+Debt ratchet: `census-crawl.indexing` 0 -> 2. The two sites were `bodies[0]`/`bodies[1]` in
+`crates/census-crawl/src/net/execute/acquisition_regressions/fixture.rs`, a `#[cfg(test)]`-declared
+module whose file path carries no `tests`, so the size scan counts it as production. Destructuring
+`let [first_body, second_body] = bodies;` removes both; indexing is back to 0 and the ratchet holds.
+
+Stale readback oracle (`ew2`, `8o5`): `readback.rs::verify_snapshots` compared `corpus.events` — one
+event observation per athlete, 12,000 rows — against the canonical `events.jsonl` dump of 600 rows,
+which is why a successful resume reported `events rows differ: missing=[…] x19`. The corpus is right
+about the observation stream; the dump is right about the table. `verify_snapshots` now uses
+`compare_canonical_table` for events (one expected row per canonical key) and still refuses a
+genuinely absent event; `compare_rows` was split into `describe_difference` over two multiset
+builders. Regression:
+`readback_tests::f_canonical_event_snapshots_collapse_duplicate_observations_and_still_require_every_event`
+(a 4x5 corpus whose boys' event repeats: the deduped snapshot is accepted, a removed genuine row is
+refused). `cargo test -p census-service --test restate_kill_restart` -> 8 passed, 0 failed, 13.47 s,
+both SIGKILL scenarios green. `ew2`/`8o5` stay open for the full request/response/capture/parse/
+apply/lost-ack matrix.
+
+Cache identity and request accounting (the two red suites from the 2026-10-07 section):
+
+- `crates/census-service/tests/athleticnet_bio_replay.rs` and `athleticnet_meet_parity.rs` seeded
+  cache entries by hand, and `net/execute/representation.rs` (930939b6) made cache keys
+  representation-scoped. Both now derive the key and the recorded meta `representation` from the
+  crate's own `net::RepresentationHeaders::canonical(...).identity()`, re-exported `pub` from
+  `census-crawl::net`; the meet seeding folds the meet's `jwtMeet` token into the anettokens header
+  exactly as the walk does.
+- `FetchStats.requests` counts cache hits since 930939b6, so the cache-only assertions in
+  `milesplit_roster_observations` (2 sites) and `recovery_mod/jurisdiction_replay` (6 sites) now
+  assert `physical_requests()`.
+
+Command and observed result:
+
+- `cargo run -q -p xtask -- gate` -> `gate: PASS` in 520 s. Every lane passed: fmt, zero code
+  comments, architecture contract (9 checks), check, doc, tests (2727 run / 2727 passed / 3 skipped
+  across 57 binaries in 37 s), panic extraction (1653 Rust files and 3 rendered templates, plus the
+  all-targets clippy lane), strict clippy (0 diagnostics), production scan (every package 0
+  expect/unwrap/unsafe/assert_family/panic/indexing/as_cast; structure 0/0), domain type integrity,
+  domain purity, module seams, debt ratchet, deny, cargo-audit, machete, geiger, feature powerset
+  and bench presence. Log: `var/gate-structure-20261008c.log`.
+- Two earlier runs of the same command are kept as the failure record:
+  `var/gate-structure-20261008.log` (`tests`, panic extraction, ratchet red) and
+  `var/gate-structure-20261008b.log` (fmt and the all-targets clippy lane red).
+
+Environment and limits:
+
+- `/tmp` on this host is a 62 GiB tmpfs that was 100% full (a 23.5 GiB throwaway `target/` from the
+  2026-10-07 census copy plus 18.2 GiB of terminal logs). That is what failed the three
+  `census-service::backup_restore` tests and `census_store::backup_tests::backup_refuses_a_socket_in_the_store_tree`
+  (which binds under a hard-coded `tempdir_in("/tmp")`) with `Os { code: 122, kind: QuotaExceeded }`:
+  all six backup/restore tests pass with `TMPDIR` on the root filesystem, and the socket test passes
+  once `/tmp` has space. `bd`'s auto-backup reported the same quota error throughout.
+- The operator authorized truncating the two terminal logs (18.2 GiB) for this run; the census copy
+  was left untouched.
+- This gate certifies the integrated working tree. It is not fresh-census acceptance evidence: no
+  national run was executed in this slice, and accuracy/data-loss acceptance for the census itself
+  remains with the F01-F15 plan and the S01-S17 fault matrix.
+

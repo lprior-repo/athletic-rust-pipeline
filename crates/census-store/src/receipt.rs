@@ -98,14 +98,16 @@ impl Store {
             });
         }
         let _appends = self.lock_appends();
-        let receipt = self.receipt(operation)?.ok_or_else(|| StoreError::Refused {
-            detail: format!(
+        let receipt = self
+            .receipt(operation)?
+            .ok_or_else(|| StoreError::Refused {
+                detail: format!(
                 "operation {operation} has no receipt: observations are credited only after they \
                  are applied"
             ),
-        })?;
+            })?;
         let key = credit_key(endpoint);
-        let standing = meta::get_u64(&self.meta, &key)?.unwrap_or(0);
+        let standing = meta::get_u64(&self.meta, &key)?.map_or(0, core::convert::identity);
         if receipt.credited {
             return Ok(Credit {
                 credited: 0,
@@ -135,7 +137,7 @@ impl Store {
     }
 
     pub fn endpoint_credit(&self, endpoint: &str) -> StoreResult<u64> {
-        Ok(meta::get_u64(&self.meta, &credit_key(endpoint))?.unwrap_or(0))
+        Ok(meta::get_u64(&self.meta, &credit_key(endpoint))?.map_or(0, core::convert::identity))
     }
 }
 

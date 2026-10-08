@@ -867,11 +867,11 @@ fn b_restate_server_sigkill_resumes_workflow() -> TestResult {
 
 #[path = "restate_kill_restart/oracle.rs"]
 mod oracle;
-#[path = "restate_kill_restart/readback.rs"]
-mod readback;
-#[path = "restate_kill_restart/readback_tests.rs"]
-mod readback_tests;
-#[path = "restate_kill_restart/readback_physical_tests.rs"]
-mod readback_physical_tests;
 #[path = "restate_kill_restart/oracle_tests.rs"]
 mod oracle_tests;
+#[path = "restate_kill_restart/readback.rs"]
+mod readback;
+#[path = "restate_kill_restart/readback_physical_tests.rs"]
+mod readback_physical_tests;
+#[path = "restate_kill_restart/readback_tests.rs"]
+mod readback_tests;

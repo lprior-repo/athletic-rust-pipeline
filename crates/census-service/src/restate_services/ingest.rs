@@ -46,11 +46,7 @@ pub(super) fn record_window(state: &mut IngestState, window: String) -> bool {
     true
 }
 
-pub(super) fn check_identifier(
-    kind: &str,
-    value: &str,
-    limit: usize,
-) -> Result<(), HandlerError> {
+pub(super) fn check_identifier(kind: &str, value: &str, limit: usize) -> Result<(), HandlerError> {
     if value.len() > limit {
         return Err(TerminalError::new(format!("{kind} exceeds {limit} bytes")).into());
     }

@@ -124,20 +124,15 @@ pub(super) fn summarize(store: &Store, phase: &str, teams: &[TeamRef]) -> CrawlR
     summary.held = unclean.difference(&clean).count();
     Ok(summary)
 }
-pub(crate) fn roster_is_complete(
-    store: &Store,
-    phase: &str,
-    team: &TeamRef,
-) -> StoreResult<bool> {
+pub(crate) fn roster_is_complete(store: &Store, phase: &str, team: &TeamRef) -> StoreResult<bool> {
     let payloads = store.journal_payloads(phase)?;
     let mut complete = false;
     for payload in payloads {
-        let row: Journal = serde_json::from_value(payload).map_err(|source| {
-            census_store::StoreError::Decode {
+        let row: Journal =
+            serde_json::from_value(payload).map_err(|source| census_store::StoreError::Decode {
                 key: phase.to_string(),
                 source,
-            }
-        })?;
+            })?;
         if row.team_id != team.id {
             continue;
         }

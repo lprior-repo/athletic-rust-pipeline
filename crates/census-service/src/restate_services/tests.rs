@@ -16,11 +16,11 @@ use census_store::StoreError;
 use super::*;
 use crate::restate_services::ingest::payload_digest;
 use crate::restate_services::ingest::{check_identifier, record_window};
+use crate::restate_services::plan::classify_access;
+use crate::restate_services::results_arms::ResultsStageOutcome;
 use crate::restate_services::wire::ingest::{
     IngestState, MAX_OPERATION_ID_BYTES, MAX_WINDOW_LABEL_BYTES, WINDOW_LABEL_RING,
 };
-use crate::restate_services::plan::classify_access;
-use crate::restate_services::results_arms::ResultsStageOutcome;
 use census_report::report::Scope;
 use census_store::Table;
 
@@ -81,7 +81,12 @@ fn window_labels_are_counted_exactly_and_the_ring_stays_bounded() -> TestResult 
         MAX_WINDOW_LABEL_BYTES
     )
     .is_err());
-    check!(check_identifier("operation id", &"o".repeat(MAX_OPERATION_ID_BYTES), MAX_OPERATION_ID_BYTES).is_ok());
+    check!(check_identifier(
+        "operation id",
+        &"o".repeat(MAX_OPERATION_ID_BYTES),
+        MAX_OPERATION_ID_BYTES
+    )
+    .is_ok());
     check!(check_identifier(
         "operation id",
         &"o".repeat(MAX_OPERATION_ID_BYTES + 1),

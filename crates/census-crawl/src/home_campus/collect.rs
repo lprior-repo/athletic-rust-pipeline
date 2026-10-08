@@ -2,7 +2,7 @@ use super::{
     parse_directory_links, parse_school_details, school_entities, ProfileFacts, SchoolExtract,
     Section, HOST, SECTIONS, SOURCE_ID,
 };
-use crate::net::FetchOptions;
+use crate::net::{FetchOptions, FetchStats};
 use crate::{AdapterContext, AdapterReport, CrawlResult};
 use census_domain::UsJurisdiction;
 use census_store::Table;
@@ -22,11 +22,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
 
     let sections = selected_sections(options);
     if sections.is_empty() {
-        let after = ctx.fetcher.stats().await;
-        report.requests = after
-            .physical_requests()
-            .saturating_sub(before.physical_requests());
-        report.from_cache = after.cache_hits.saturating_sub(before.cache_hits);
+        apply_stats(&mut report, &before, &ctx.fetcher.stats().await);
         let codes: Vec<&str> = options.states.iter().map(|state| state.code()).collect();
         report.note(format!(
             "states {codes:?} do not include CA, FL or NJ; this adapter covers California sections 1-9 and 13, Florida section 10 and New Jersey section 12"
@@ -63,11 +59,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         remaining = remaining.saturating_sub(links.len());
     }
 
-    let after = ctx.fetcher.stats().await;
-    report.requests = after
-        .physical_requests()
-        .saturating_sub(before.physical_requests());
-    report.from_cache = after.cache_hits.saturating_sub(before.cache_hits);
+    apply_stats(&mut report, &before, &ctx.fetcher.stats().await);
     report.rows = tally.processed;
     report.with_email = tally.with_email;
     report.note(format!(
@@ -76,6 +68,13 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     ));
 
     Ok(report)
+}
+
+fn apply_stats(report: &mut AdapterReport, before: &FetchStats, after: &FetchStats) {
+    report.requests = after
+        .physical_requests()
+        .saturating_sub(before.physical_requests());
+    report.from_cache = after.cache_hits.saturating_sub(before.cache_hits);
 }
 
 fn selected_sections(options: &Options) -> Vec<Section> {

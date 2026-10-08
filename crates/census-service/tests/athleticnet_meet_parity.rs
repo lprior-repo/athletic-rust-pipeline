@@ -26,14 +26,21 @@ const OBSERVED_ON: &str = "2026-09-22";
 const MEET_ID: i64 = 634313;
 const SOURCE: &str = "athleticnet";
 
-fn seed_cache(cache_dir: &Path, url: &str, body: &str) -> Result<()> {
+fn seed_cache(cache_dir: &Path, url: &str, token: Option<&str>, body: &str) -> Result<()> {
+    use census_crawl::net::RepresentationHeaders;
     use sha2::{Digest, Sha256};
 
+    let mut headers = vec![("Accept".to_string(), "application/json".to_string())];
+    if let Some(token) = token {
+        headers.push(("anettokens".to_string(), token.to_string()));
+    }
+    let representation = RepresentationHeaders::canonical(&headers)?;
     let mut hasher = Sha256::new();
     hasher.update(b"GET");
     hasher.update([0x1f]);
     hasher.update(url.as_bytes());
     hasher.update([0x1f]);
+    hasher.update(representation.identity().as_bytes());
     let key: String = hasher.finalize()[..16]
         .iter()
         .map(|byte| format!("{byte:02x}"))
@@ -42,6 +49,7 @@ fn seed_cache(cache_dir: &Path, url: &str, body: &str) -> Result<()> {
         "url": url,
         "method": "GET",
         "status": 200,
+        "representation": representation,
         "content_digest": format!("{:x}", Sha256::digest(body.as_bytes())),
         "bytes": body.len(),
         "fetched_at": "2026-09-22T12:00:00Z",
@@ -69,20 +77,22 @@ impl Harness {
         let dir = tempfile::tempdir().context("creating a temp dir")?;
         let cache = dir.path().join("http");
         let [meet_url, results_url] = meet_requests(MEET_ID);
-        seed_cache(
-            &cache,
-            &meet_url,
-            &fixture(SOURCE, "meet_634313_meetdata.json")?,
-        )?;
+        let meet_body = fixture(SOURCE, "meet_634313_meetdata.json")?;
+        let token = serde_json::from_str::<athleticnet::MeetData>(&meet_body)
+            .context("parsing the meet fixture's token")?
+            .token;
+        seed_cache(&cache, &meet_url, None, &meet_body)?;
         seed_cache(
             &cache,
             &results_url,
+            token.as_deref(),
             &fixture(SOURCE, "meet_634313_allresults.json")?,
         )?;
         if event_metadata {
             seed_cache(
                 &cache,
                 &metadata_request(MEET_ID),
+                token.as_deref(),
                 &fixture(SOURCE, "meet_634313_eventdiv.json")?,
             )?;
         }

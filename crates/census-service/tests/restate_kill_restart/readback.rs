@@ -95,19 +95,43 @@ pub(super) fn compare_rows<T: Serialize + DeserializeOwned>(
 ) -> Result<(), String> {
     let expected = multiset(expected)?;
     let actual = multiset(actual)?;
+    describe_difference(label, &expected, &actual)
+}
+
+fn compare_canonical_rows<T: Serialize + DeserializeOwned>(
+    label: &str,
+    expected: &[T],
+    actual: &[T],
+) -> Result<(), String> {
+    let mut expected = multiset(expected)?;
+    for count in expected.values_mut() {
+        *count = 1;
+    }
+    let actual = multiset(actual)?;
+    describe_difference(label, &expected, &actual)
+}
+
+fn describe_difference(
+    label: &str,
+    expected: &BTreeMap<String, usize>,
+    actual: &BTreeMap<String, usize>,
+) -> Result<(), String> {
     if expected == actual {
         return Ok(());
     }
     let mut missing = Vec::new();
-    for (row, count) in &expected {
-        let found = actual.get(row).copied().unwrap_or(0);
+    for (row, count) in expected {
+        let found = actual.get(row).copied().map_or(0, core::convert::identity);
         if found < *count {
             missing.push(format!("{row} x{}", *count - found));
         }
     }
     let mut extra = Vec::new();
-    for (row, count) in &actual {
-        let wanted = expected.get(row).copied().unwrap_or(0);
+    for (row, count) in actual {
+        let wanted = expected
+            .get(row)
+            .copied()
+            .map_or(0, core::convert::identity);
         if *count > wanted {
             extra.push(format!("{row} x{}", *count - wanted));
         }
@@ -130,12 +154,21 @@ fn compare_table<T: Serialize + DeserializeOwned>(
     compare_rows(table.file(), expected, &actual)
 }
 
+fn compare_canonical_table<T: Serialize + DeserializeOwned>(
+    dir: &Path,
+    table: Table,
+    expected: &[T],
+) -> Result<(), String> {
+    let actual = snapshot_rows(&snapshot_file(dir, table))?;
+    compare_canonical_rows(table.file(), expected, &actual)
+}
+
 pub(super) fn verify_snapshots(dir: &Path, corpus: &crate::Corpus) -> Result<(), String> {
     compare_table(dir, Table::Schools, &corpus.schools)?;
     compare_table(dir, Table::Teams, &corpus.teams)?;
     compare_table(dir, Table::Athletes, &corpus.athletes)?;
     compare_table(dir, Table::Meets, &corpus.meets)?;
-    compare_table(dir, Table::Events, &corpus.events)?;
+    compare_canonical_table(dir, Table::Events, &corpus.events)?;
     compare_table(dir, Table::Performances, &corpus.performances)?;
     Ok(())
 }
@@ -192,7 +225,11 @@ pub(super) fn verify_physical_observations(
             Ok(())
         })
         .map_err(|error| error.to_string())?;
-    compare_rows(Table::Performances.file(), &corpus.performances, &performances)?;
+    compare_rows(
+        Table::Performances.file(),
+        &corpus.performances,
+        &performances,
+    )?;
     let stats = store.stats().map_err(|error| error.to_string())?;
     let expected = corpus.appended_rows() as u64;
     if stats.observations != expected {
@@ -285,15 +322,17 @@ pub(super) fn invocation_verdict(row: &Value, expected_id: &str) -> Verdict {
             Some("success") => Verdict::Succeeded,
             Some("failure") => Verdict::Refused(format!(
                 "completed with failure: {}",
-                row.get("completion_failure").cloned().unwrap_or(Value::Null)
+                row.get("completion_failure")
+                    .cloned()
+                    .map_or(Value::Null, core::convert::identity)
             )),
             other => Verdict::Refused(format!("completed with completion_result {other:?}")),
         },
         Some("paused") => Verdict::Refused(String::from("the invocation is still paused")),
         Some("killed") => Verdict::Refused(String::from("the invocation was killed")),
-        Some(other @ ("pending" | "scheduled" | "ready" | "running" | "backing-off" | "suspended")) => {
-            Verdict::Pending(format!("the invocation is still {other}"))
-        }
+        Some(
+            other @ ("pending" | "scheduled" | "ready" | "running" | "backing-off" | "suspended"),
+        ) => Verdict::Pending(format!("the invocation is still {other}")),
         other => Verdict::Refused(format!("the invocation reported status {other:?}")),
     }
 }

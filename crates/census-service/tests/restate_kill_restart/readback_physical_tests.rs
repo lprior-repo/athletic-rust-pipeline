@@ -25,6 +25,9 @@ fn d_physical_readback_rejects_an_equal_count_replacement() -> TestResult {
         readback::verify_physical_observations(&store, &replaced),
         "an equal-count replacement of a physical observation",
     )?;
-    check!(reason.contains("athletes"), "the refusal must name the athletes table: {reason}");
+    check!(
+        reason.contains("athletes"),
+        "the refusal must name the athletes table: {reason}"
+    );
     Ok(())
 }

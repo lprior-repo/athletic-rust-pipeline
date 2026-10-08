@@ -216,7 +216,7 @@ impl Sweep {
     }
 }
 
-mod wait_windows_tests;
 #[cfg(test)]
 #[path = "dur10_retention_test.rs"]
 mod dur10_retention_test;
+mod wait_windows_tests;

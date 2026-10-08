@@ -49,13 +49,17 @@ impl Accumulator {
         });
     }
     pub(super) fn rows(&self) -> usize {
-        self.meets.len()
-            + self.events.len()
-            + self.teams.len()
-            + self.athletes.len()
-            + self.performances.len()
-            + self.observations.len()
-            + self.retained.len()
+        [
+            self.meets.len(),
+            self.events.len(),
+            self.teams.len(),
+            self.athletes.len(),
+            self.performances.len(),
+            self.observations.len(),
+            self.retained.len(),
+        ]
+        .into_iter()
+        .fold(0usize, usize::saturating_add)
     }
 }
 

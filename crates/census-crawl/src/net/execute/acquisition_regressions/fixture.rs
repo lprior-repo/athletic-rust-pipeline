@@ -87,10 +87,11 @@ pub(super) async fn independent_representations(
     let url = format!("http://{}/payload", listener.local_addr()?);
     let client = async {
         let [first_options, second_options, equivalent_options] = headers;
+        let [first_body, second_body] = bodies;
         let first = fetcher.get(&url, &first_options).await?;
         let second = fetcher.get(&url, &second_options).await?;
-        check!(eq; first.body.as_slice(), bodies[0]);
-        check!(eq; second.body.as_slice(), bodies[1]);
+        check!(eq; first.body.as_slice(), first_body);
+        check!(eq; second.body.as_slice(), second_body);
         check!(!first.from_cache);
         check!(!second.from_cache);
         for (request, expected) in [(&equivalent_options, &first), (&second_options, &second)] {

@@ -285,7 +285,7 @@ fn partial_and_quarantined_rosters_keep_their_reasons_and_still_owe_a_walk() -> 
                 check!(eq; persisted.len(), expected_observations);
                 check!(eq; replay::digest(&reopened)?, before);
                 let stats = fetcher.stats().await;
-                check!(eq; stats.requests, 0);
+                check!(eq; stats.physical_requests(), 0);
                 check!(eq;
                     stats.cache_hits,
                     2,
@@ -367,7 +367,7 @@ fn a_refused_roster_is_retained_without_rows_or_a_refetch() -> TestResult {
             check!(eq; resumed.rosters_remaining, 0);
             check!(eq; replay::digest(&reopened)?, before);
             let stats = fetcher.stats().await;
-            check!(eq; stats.requests, 0);
+            check!(eq; stats.physical_requests(), 0);
             check!(eq; stats.cache_hits, 1);
             Ok(())
         })

@@ -24,7 +24,7 @@ mod types;
 pub use time::{cooldown_until_iso8601, instant_iso8601, now_iso8601, today_iso};
 pub use types::{FetchError, FetchOptions, FetchOutcome, FetchStats, HostTraffic};
 
-pub(crate) use representation::RepresentationHeaders;
+pub use representation::RepresentationHeaders;
 pub(crate) use types::host_of;
 
 pub use client::PacingState;

@@ -78,7 +78,8 @@ fn check(store: &Store, phase: &str, team: &TeamRef, complete: bool) -> TestResu
 }
 
 #[test]
-fn completeness_needs_a_clean_row_or_an_authorized_refusal_without_parser_rejections() -> TestResult {
+fn completeness_needs_a_clean_row_or_an_authorized_refusal_without_parser_rejections() -> TestResult
+{
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     let refused = team("52649");

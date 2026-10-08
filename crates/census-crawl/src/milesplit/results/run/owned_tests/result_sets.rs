@@ -95,7 +95,8 @@ fn a_run_refuses_a_result_set_from_another_meet() -> TestResult {
             let error = run
                 .read(&ctx, &foreign)
                 .await
-                .expect_err("a foreign meet's result set must be refused");
+                .err()
+                .ok_or("a foreign meet's result set must be refused")?;
             check!(eq; error.to_string().contains("belongs to meet"), true);
             Ok(())
         })

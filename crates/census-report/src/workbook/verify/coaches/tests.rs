@@ -1,5 +1,7 @@
-use super::super::read::tests::{alter_sheet, copy_bundle, publication, recapture, rejected_by_all, replace_cell, TestResult};
 use super::super::expectations::Expectations;
+use super::super::read::tests::{
+    alter_sheet, copy_bundle, publication, recapture, rejected_by_all, replace_cell, TestResult,
+};
 
 #[test]
 fn displaced_coach_ids_do_not_bypass_any_observation_cell() -> TestResult {

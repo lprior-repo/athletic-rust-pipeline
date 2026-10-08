@@ -48,7 +48,10 @@ fn entry_label(row: &Value) -> String {
     let index = row
         .get("index")
         .map_or_else(|| String::from("?"), |value| value.to_string());
-    let kind = row.get("entry_type").and_then(Value::as_str).unwrap_or("?");
+    let kind = row
+        .get("entry_type")
+        .and_then(Value::as_str)
+        .map_or("?", core::convert::identity);
     format!("{index}:{kind}")
 }
 
@@ -121,10 +124,13 @@ pub(super) async fn attached_output(
     let status = response.status();
     let text = response.text().await.map_err(|error| error.to_string())?;
     if !status.is_success() {
-        return Err(format!("attaching to {invocation} answered {status}: {text}"));
+        return Err(format!(
+            "attaching to {invocation} answered {status}: {text}"
+        ));
     }
-    let body: Value = serde_json::from_str(&text)
-        .map_err(|error| format!("the attached output of {invocation} is not json: {error}: {text}"))?;
+    let body: Value = serde_json::from_str(&text).map_err(|error| {
+        format!("the attached output of {invocation} is not json: {error}: {text}")
+    })?;
     require_reply_body(&body)?;
     Ok(body)
 }
