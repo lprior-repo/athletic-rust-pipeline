@@ -20,46 +20,56 @@ fn member(school: &SchoolId, name: &str, gender: Gender, url: &str) -> Canonical
 }
 
 pub(super) fn accept(store: &Store, members: &[CanonicalAthlete]) -> TestResult {
+    check!(eq; apply_identity_pairs(store, &[members])?, 1);
+    Ok(())
+}
+
+fn apply_identity_pairs(store: &Store, pairs: &[&[CanonicalAthlete]]) -> TestResult<u64> {
     let index = store.athlete_identity_index()?;
-    let ids = members
-        .iter()
-        .map(|athlete| athlete.id.cast())
-        .collect::<Vec<_>>();
-    let subject = "Source-backed identity fixture";
-    let detail = "One published provider identifier retained with alternate names";
-    let evidence = index.case_evidence(subject, detail, &ids)?;
-    let mut case = ReviewCase::pending_with_evidence(
-        ATHLETE_IDENTITY_FAMILY,
-        members
-            .first()
-            .ok_or("identity fixture has no members")?
-            .id
-            .as_str(),
-        subject,
-        detail,
-        evidence,
-    );
-    case.member_ids = ids;
-    case.state = ReviewState::Resolved;
-    let verdict = ReviewVerdictRecord {
-        id: case.id.clone(),
-        case_id: case.id.clone(),
-        subject_id: case.subject_id.clone(),
-        family: case.family.clone(),
-        kind: "value_proposed".into(),
-        field: "identity".into(),
-        value: "same_person".into(),
-        accepted: true,
-        confidence: 100,
-        rationale: detail.into(),
-        reviewer: "deterministic fixture".into(),
-        observed_at: DAY.into(),
-        member_ids: case.member_ids.clone(),
-    };
-    store.replace(Table::ReviewCases, &case)?;
-    store.replace(Table::IdentityVerdicts, &verdict)?;
-    let cases = [case];
-    let verdicts = [verdict];
+    let mut cases = Vec::new();
+    let mut verdicts = Vec::new();
+    for (ordinal, members) in pairs.iter().enumerate() {
+        let ids = members
+            .iter()
+            .map(|athlete| athlete.id.cast())
+            .collect::<Vec<_>>();
+        let subject = "Source-backed identity fixture";
+        let detail =
+            format!("One published provider identifier retained with alternate names {ordinal}");
+        let evidence = index.case_evidence(subject, &detail, &ids)?;
+        let mut case = ReviewCase::pending_with_evidence(
+            ATHLETE_IDENTITY_FAMILY,
+            members
+                .first()
+                .ok_or("identity fixture has no members")?
+                .id
+                .as_str(),
+            subject,
+            &detail,
+            evidence,
+        );
+        case.member_ids = ids;
+        case.state = ReviewState::Resolved;
+        let verdict = ReviewVerdictRecord {
+            id: case.id.clone(),
+            case_id: case.id.clone(),
+            subject_id: case.subject_id.clone(),
+            family: case.family.clone(),
+            kind: "value_proposed".into(),
+            field: "identity".into(),
+            value: "same_person".into(),
+            accepted: true,
+            confidence: 100,
+            rationale: detail,
+            reviewer: "deterministic fixture".into(),
+            observed_at: DAY.into(),
+            member_ids: case.member_ids.clone(),
+        };
+        store.replace(Table::ReviewCases, &case)?;
+        store.replace(Table::IdentityVerdicts, &verdict)?;
+        cases.push(case);
+        verdicts.push(verdict);
+    }
     let builder = IdentityProjectionBuilder::new(index, &cases, &verdicts)?;
     let decisions = builder
         .reviewed_applications(DAY)
@@ -72,8 +82,24 @@ pub(super) fn accept(store: &Store, members: &[CanonicalAthlete]) -> TestResult 
             }
         })
         .collect::<TestResult<Vec<_>>>()?;
-    check!(eq; store.apply_identity_decisions(&decisions)?, 1);
-    Ok(())
+    store.apply_identity_decisions(&decisions).map_err(Into::into)
+}
+
+fn provider_member(
+    school: &SchoolId,
+    name: &str,
+    gender: Gender,
+    source: SourceIdentity,
+    links: &[SourceIdentity],
+    url: &str,
+) -> CanonicalAthlete {
+    let mut athlete = CanonicalAthlete::new(school, name, GradYear::CO2027, gender, source);
+    athlete.public_profile_urls.push(url.to_owned());
+    athlete.evidence = evidence("wiaa_results", Some(url));
+    for link in links {
+        athlete.add_identity(link.clone());
+    }
+    athlete
 }
 
 fn add_result(
@@ -483,6 +509,8 @@ fn conflicted_component_keeps_every_member_unmerged_in_both_orders() -> TestResu
             let row = row_of(&range, member.id.as_str())?;
             check!(eq; text(&range, row, column_of(&range, "Identity Status")?),
             "retained_conflict");
+            check!(eq; text(&range, row, column_of(&range, "Review Status")?), "review");
+            check!(eq; text(&range, row, column_of(&range, "Performance count")?), "1");
             let profiles = ["MileSplit URL", "Other profile URLs", "Athletic.net URL"]
                 .into_iter()
                 .map(|header| Ok(text(&range, row, column_of(&range, header)?)))

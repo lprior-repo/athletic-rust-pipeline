@@ -343,3 +343,47 @@ fn the_transport_lookup_reads_the_table() {
         "a host no descriptor claims is not this table's to route"
     );
 }
+
+// CEN-02 regression: every registry family must have a corresponding durable source-specific arm.
+// This test verifies the mapping between registry slugs and source modules.
+const SLUG_TO_MODULE: &[(&str, &str)] = &[
+    ("aia", "aia"),
+    ("athleticlive", "athleticlive"),
+    ("athleticlive_athletes", "athleticlive_athletes"),
+    ("athleticnet", "athleticnet"),
+    ("bound", "bound"),
+    ("ciac", "ciac"),
+    ("chsaa", "chsaa"),
+    ("coach_contacts", "coach_contacts"),
+    ("coach_directories", "coach_directories"),
+    ("home_campus", "home_campus"),
+    ("sidearm_staff", "sidearm_staff"),
+    ("ihsa", "ihsa"),
+    ("ks", "ks"),
+    ("milesplit", "milesplit"),
+    ("mpa", "mpa"),
+    ("mshsl", "mshsl"),
+    ("nces", "nces"),
+    ("ohsaa", "ohsaa"),
+    ("plain_names", "plain_names"),
+    ("pa_piaa", "pa_piaa"),
+    ("riil", "riil"),
+    ("state_ed", "state_ed"),
+    ("tfrrs", "tfrrs"),
+    ("tssaa", "tssaa"),
+    ("uhsaa", "uhsaa"),
+    ("wayzata", "wayzata"),
+    ("wiaa", "wiaa"),
+    ("wiaa_results", "wiaa_results"),
+    ("arbiter_orgs", "arbiter"),
+];
+
+#[test]
+fn every_registry_family_has_source_module_arm() {
+    for (slug, module) in SLUG_TO_MODULE {
+        assert!(
+            descriptor(slug).is_some(),
+            "registry slug {slug} has no descriptor; its source arm is {module}"
+        );
+    }
+}

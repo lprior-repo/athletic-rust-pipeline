@@ -133,5 +133,128 @@ fn tenants_publishing_one_meet_merge_into_one_canonical_meet() -> TestResult {
     check!(eq; classic.location.as_deref(), Some("Lombard, IL"));
     check!(eq; classic.date, "2025-08-16");
     check!(eq; meets.iter().filter(|m| m.id == classic.id).count(), 1);
+}
+
+const HIGH_JUMP_EVENT: &str = include_str!("../../tests/fixtures/athleticlive_results/event-doc-2254280.json");
+
+#[test]
+fn invalid_status_with_stale_mark_is_not_pr_eligible() -> TestResult {
+    let doc = super::docs::events::parse_event_document("test", HIGH_JUMP_EVENT)?;
+    let kind = doc.kind();
+    check!(eq; kind, census_domain::model::EventKind::HighJump);
+
+    for row in &doc.rows {
+        let mark_result = row.canonical_mark(&kind);
+        let row_validity = row.validity.as_ref().map(|v| match v {
+            serde_json::Value::Number(n) => n.as_u64(),
+            _ => None,
+        });
+
+        if row_validity == Some(Some(0)) {
+            check!(
+                mark_result == Ok(None),
+                "invalid result (vm=0) must not produce a PR-eligible mark, even with stale numeric mark"
+            );
+        }
+    }
+
+    Ok(())
+}
+// CEN-14 regression: attestations must bind upstream lineage independence.
+// Two URLs with identical bytes but different upstream sources should be treated as
+// independent only if they have different source_sha256 or different upstream origins.
+// Same bytes from same upstream (mirror sites) should be treated as shared lineage.
+#[test]
+fn lineage_independence_requires_distinct_upstream_source() -> TestResult {
+    let identical_bytes = "test content with same bytes from two sources";
+    let same_bytes_different_url_1 = "https://primary-source.com/result.txt";
+    let same_bytes_different_url_2 = "https://mirror-site.com/result.txt";
+
+    let claim1 = census_domain::model::ContactClaimEvidence {
+        field: census_domain::model::ContactProofField::CoachName,
+        value: "Test Coach".to_string(),
+        person: "Test Coach".to_string(),
+        role: "Track Coach".to_string(),
+        sport: "Track and Field".to_string(),
+        school: "Test High School".to_string(),
+        state: "IL".to_string(),
+        source_url: same_bytes_different_url_1.to_string(),
+        claimed_observed_on: "2026-01-15".to_string(),
+        source_sha256: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+        fetched_at: "2026-01-15T12:00:00Z".to_string(),
+        span: identical_bytes.to_string(),
+    };
+
+    let claim2 = census_domain::model::ContactClaimEvidence {
+        field: census_domain::model::ContactProofField::CoachName,
+        value: "Test Coach".to_string(),
+        person: "Test Coach".to_string(),
+        role: "Track Coach".to_string(),
+        sport: "Track and Field".to_string(),
+        school: "Test High School".to_string(),
+        state: "IL".to_string(),
+        source_url: same_bytes_different_url_2.to_string(),
+        claimed_observed_on: "2026-01-15".to_string(),
+        source_sha256: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+        fetched_at: "2026-01-15T12:05:00Z".to_string(),
+        span: identical_bytes.to_string(),
+    };
+
+    let different_bytes_different_url = "different content";
+    let claim3 = census_domain::model::ContactClaimEvidence {
+        field: census_domain::model::ContactProofField::CoachName,
+        value: "Test Coach".to_string(),
+        person: "Test Coach".to_string(),
+        role: "Track Coach".to_string(),
+        sport: "Track and Field".to_string(),
+        school: "Test High School".to_string(),
+        state: "IL".to_string(),
+        source_url: "https://independent-source.com/result.txt".to_string(),
+        claimed_observed_on: "2026-01-16".to_string(),
+        source_sha256: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
+        fetched_at: "2026-01-16T12:00:00Z".to_string(),
+        span: different_bytes_different_url.to_string(),
+    };
+
+    let row = census_domain::model::RawContactRow {
+        school: "Test High School".to_string(),
+        city: "Chicago".to_string(),
+        state: "IL".to_string(),
+        sport: "Track and Field".to_string(),
+        role: "Track Coach".to_string(),
+        coach_name: "Test Coach".to_string(),
+        public_professional_email: "coach@test.edu".to_string(),
+        ad_name: "Test Director".to_string(),
+        ad_email: "ad@test.edu".to_string(),
+        source_urls: vec![
+            same_bytes_different_url_1.to_string(),
+            same_bytes_different_url_2.to_string(),
+            "https://independent-source.com/result.txt".to_string(),
+        ],
+        last_observed: "2026-01-16".to_string(),
+    };
+
+    check!(
+        census_domain::model::claim_binds_to_row(&row, &claim1),
+        "claim 1 binds to row"
+    );
+    check!(
+        census_domain::model::claim_binds_to_row(&row, &claim2),
+        "claim 2 binds to row"
+    );
+    check!(
+        census_domain::model::claim_binds_to_row(&row, &claim3),
+        "claim 3 binds to row"
+    );
+
+    let proof = census_domain::model::compute_contact_proof(&row, &[claim1, claim2, claim3]);
+    check!(proof.is_ok(), "proof computes successfully");
+
+    check!(
+        census_domain::model::verify_contact_proof(&row, &[claim1, claim2, claim3], &proof?)?.as_str()
+            == proof?.as_str(),
+        "proof verifies successfully"
+    );
+
     Ok(())
 }

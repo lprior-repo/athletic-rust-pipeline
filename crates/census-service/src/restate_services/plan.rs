@@ -69,6 +69,14 @@ const NO_JURISDICTION_WALK: &str =
     "no run stage sweeps this source per jurisdiction: its walk is reachable from the CLI only, or \
      it is acquired per meet, team or athlete rather than per state";
 
+
+pub fn unwired_reason(slug: &str) -> Option<&'static str> {
+    match strategies::strategy(slug) {
+        strategies::SourceStrategy::Gap(reason) => Some(reason),
+        _ => None,
+    }
+}
+
 impl UnitDisposition {
     pub fn slug(&self) -> &'static str {
         match self {
@@ -147,7 +155,10 @@ pub(super) fn classify_access(
         return UnitDisposition::Refused(Refusal {
             slug,
             access,
-            reason: NO_JURISDICTION_WALK,
+            reason: match unwired_reason(slug) {
+                Some(reason) => reason,
+                None => NO_JURISDICTION_WALK,
+            },
             kind: RefusalKind::EngineeringGap,
         });
     }
