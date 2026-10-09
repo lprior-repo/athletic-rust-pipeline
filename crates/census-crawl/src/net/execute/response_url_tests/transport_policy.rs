@@ -580,7 +580,7 @@ fn a_request_queued_behind_a_429_is_refused_at_the_last_admission_point() -> Tes
                 "{first:?}"
             );
             check!(
-                matches!(&second, Err(FetchError::Policy { detail }) if detail.contains("cooldown")),
+                matches!(&second, Err(FetchError::Cooldown { host }) if host == "www.piaa.org"),
                 "{second:?}"
             );
             {
@@ -642,7 +642,7 @@ fn fetchers_sharing_an_origin_budget_share_recorded_cooldowns() -> TestResult {
                 )
                 .await;
             check!(
-                matches!(refused, Err(FetchError::Policy { .. })),
+                matches!(refused, Err(FetchError::Cooldown { ref host }) if host == "www.piaa.org"),
                 "a fetcher sharing the origin budget must observe the recorded cooldown: {refused:?}"
             );
             {

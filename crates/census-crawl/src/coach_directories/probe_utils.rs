@@ -38,6 +38,7 @@ pub fn classify_error(error: &CrawlError) -> (&'static str, String) {
             | FetchError::TooLarge { .. }
             | FetchError::BrowserLane { .. } => "http",
             FetchError::RateLimited { .. } => "rate_limited",
+            FetchError::Cooldown { .. } => "cooldown",
             FetchError::Transport { .. } | FetchError::Client { .. } => "transport",
             FetchError::Timeout { .. } => "timeout",
             FetchError::Decode { .. } => "json",

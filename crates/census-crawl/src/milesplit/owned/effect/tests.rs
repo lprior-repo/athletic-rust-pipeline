@@ -281,3 +281,57 @@ fn recording_route_retains_all_capture_chunks_before_source_receipts_are_applied
             Ok(())
         })
 }
+
+#[test]
+fn a_recorded_cooldown_refuses_the_meet_without_closing_it() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (dir, store, fetcher, reference) = setup()?;
+            let live = Fetcher::new(
+                dir.path().join("live"),
+                None,
+                std::time::Duration::ZERO,
+                HashMap::new(),
+                vec!["milesplit.com".into()],
+            )?;
+            let cooldown = live
+                .record_access_condition(
+                    "al.milesplit.com",
+                    census_domain::model::AccessBlockKind::RateLimited,
+                    429,
+                    Some(60),
+                    "recorded while the host was cooled down",
+                )
+                .await;
+            check!(cooldown.is_blocking(&crate::net::now_iso8601()));
+            let error = match read_owned_meet(&context(&store, &live)?, &reference).await {
+                Err(error) => error,
+                Ok(_) => return Err("a host inside a cooldown cannot acquire the meet".into()),
+            };
+            check!(
+                matches!(
+                    &error,
+                    CrawlError::Fetch(crate::net::FetchError::Cooldown { host })
+                        if host == "al.milesplit.com"
+                ),
+                "the refusal is a typed cooldown: {error:?}"
+            );
+            check!(error.retryable(), "a cooldown is temporary, not terminal");
+            check!(
+                eq;
+                store.journal_payloads(OWNED_MEET_PHASE)?.len(),
+                0,
+                "a cooldown writes no completion receipt, so the meet stays owed"
+            );
+            seed(&fetcher, &reference, crate::milesplit::owned::tests::TROY)?;
+            let outcome = read_owned_meet(&context(&store, &fetcher)?, &reference).await?;
+            parsed(&outcome)?;
+            check!(
+                !store.journal_payloads(OWNED_MEET_PHASE)?.is_empty(),
+                "the retry journals the completed meet under the same store"
+            );
+            Ok(())
+        })
+}

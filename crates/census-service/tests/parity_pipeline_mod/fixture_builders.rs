@@ -27,7 +27,10 @@ pub fn milesplit_roster(corpus: &mut Corpus) -> Result<()> {
         } else if super::milesplit_fixtures::validate_result_fixture(&name, &body)?
             || matches!(
                 name.as_str(),
-                "oh_teams_index.html" | "oh_results_index.html" | "oh_roster_10002_mason.html"
+                "oh_teams_index.html"
+                    | "oh_results_index.html"
+                    | "oh_roster_10002_mason.html"
+                    | "al_teams_index.html"
             )
         {
             continue;

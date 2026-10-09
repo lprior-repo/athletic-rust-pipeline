@@ -46,7 +46,12 @@ async fn http_refusal_preserves_owed_state(status: u16) -> TestResult {
             .await?;
         check!(eq; (cooldown.tally.errors, store.journal_keys(JOURNAL)?.len()), (1, 0));
         check!(eq; fetcher.stats().await.physical_requests(), before);
-        check!(eq; pending(&store, &row)?["kind"], json!("source_refused"));
+        check!(
+            eq;
+            pending(&store, &row)?["kind"],
+            json!("retryable"),
+            "a recorded cooldown keeps the school retryable instead of refusing it"
+        );
         check!(eq; pending(&store, &row)?["recovery"], original);
         assert_retained_facts(
             &store,

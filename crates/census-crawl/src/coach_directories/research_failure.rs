@@ -8,6 +8,7 @@ pub(crate) fn fetch(error: &FetchError) -> Outcome {
         | FetchError::Offline { .. }
         | FetchError::OriginHeld { .. }
         | FetchError::RateLimited { .. }
+        | FetchError::Cooldown { .. }
         | FetchError::BrowserLane {
             retryable: false, ..
         } => Outcome::Blocked,

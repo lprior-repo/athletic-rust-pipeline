@@ -81,6 +81,12 @@ pub enum CrawlError {
 
 pub type CrawlResult<T> = std::result::Result<T, CrawlError>;
 
+impl CrawlError {
+    pub fn retryable(&self) -> bool {
+        matches!(self, Self::Fetch(error) if error.retryable())
+    }
+}
+
 pub mod aia;
 pub mod applicability;
 pub mod arbiter;

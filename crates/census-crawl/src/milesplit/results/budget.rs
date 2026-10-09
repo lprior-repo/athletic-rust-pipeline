@@ -6,8 +6,7 @@ pub(super) const WINDOW_ROWS: usize = 64;
 pub(super) const WINDOW_BYTES: usize = 8 * 1024 * 1024;
 pub(super) const WINDOW_WORK: usize = 131_072;
 pub(super) const METADATA_LABELS: usize = 4096;
-pub(super) const SCHOOL_ROWS: usize = 65_536;
-pub(super) const SCHOOL_BYTES: usize = 64 * 1024 * 1024;
+pub(super) const SCHOOL_BINDINGS: usize = 65_536;
 const COPY_BOUND: usize = 64;
 const ROW_OVERHEAD: usize = 32 * 1024;
 

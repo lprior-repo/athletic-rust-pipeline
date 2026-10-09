@@ -163,9 +163,7 @@ impl Fetcher {
         let (host, origin) = request_target(url)?;
         self.origin_locks.ensure(&origin)?;
         if self.host_blocked(&host, &super::now_iso8601()).await {
-            return Err(FetchError::Policy {
-                detail: format!("host {host} is inside a recorded access cooldown"),
-            });
+            return Err(FetchError::Cooldown { host: host.clone() });
         }
         let crawl_delay = self.robots_for(&origin, &host).await.crawl_delay;
         let gate = self.host_gate(&host, crawl_delay).await;

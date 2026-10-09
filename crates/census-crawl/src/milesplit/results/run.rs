@@ -126,6 +126,7 @@ impl Run {
         self.acquire_owned(ctx, reference).await?;
         let (mut captured, page) = match metadata::fetch_metadata(ctx, reference).await {
             Ok(captured) => captured,
+            Err(error) if error.retryable() => return Err(error),
             Err(error) => return self.record_failure(ctx, reference, None, &error),
         };
         self.metadata_capture =
@@ -138,6 +139,7 @@ impl Run {
                 self.record_page(ctx, reference, &page, &captured)
             }
             Err(error @ CrawlError::Resource { .. }) => Err(error),
+            Err(error) if error.retryable() => Err(error),
             Err(error) => self.record_failure(ctx, reference, Some(&captured), &error),
         }
     }

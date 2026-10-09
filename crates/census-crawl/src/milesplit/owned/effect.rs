@@ -32,7 +32,9 @@ pub(crate) async fn read_owned_meet(
     let capture = match fetch_owned_capture(ctx.fetcher, reference, &ctx.fetch_options()).await {
         Ok(capture) => capture,
         Err(error) => {
-            record_failure(ctx, reference, &error)?;
+            if !error.retryable() {
+                record_failure(ctx, reference, &error)?;
+            }
             return Err(error);
         }
     };

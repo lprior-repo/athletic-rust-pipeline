@@ -11,24 +11,32 @@ pub(in crate::milesplit) struct ProviderSchools {
 }
 
 impl ProviderSchools {
+    #[cfg(test)]
     pub(in crate::milesplit) fn from_schools(schools: &[CanonicalSchool]) -> Self {
-        let mut bindings = HashMap::new();
-        schools.iter().for_each(|school| {
-            school
-                .source_identities
-                .iter()
-                .filter(|identity| identity.namespace == SourceNamespace::MilesplitSchool)
-                .filter_map(|identity| positive_id(&identity.id))
-                .for_each(|id| {
-                    let entry = bindings
-                        .entry(id)
-                        .or_insert_with(|| Some(school.id.clone()));
-                    if entry.as_ref().is_some_and(|owner| owner != &school.id) {
-                        *entry = None;
-                    }
-                });
-        });
-        Self { bindings }
+        let mut index = Self::default();
+        schools.iter().for_each(|school| index.absorb(school));
+        index
+    }
+
+    pub(in crate::milesplit) fn absorb(&mut self, school: &CanonicalSchool) {
+        school
+            .source_identities
+            .iter()
+            .filter(|identity| identity.namespace == SourceNamespace::MilesplitSchool)
+            .filter_map(|identity| positive_id(&identity.id))
+            .for_each(|id| {
+                let entry = self
+                    .bindings
+                    .entry(id)
+                    .or_insert_with(|| Some(school.id.clone()));
+                if entry.as_ref().is_some_and(|owner| owner != &school.id) {
+                    *entry = None;
+                }
+            });
+    }
+
+    pub(in crate::milesplit) fn entries(&self) -> usize {
+        self.bindings.len()
     }
 
     pub(super) fn resolve(&self, team_id: u64) -> Option<&SchoolId> {

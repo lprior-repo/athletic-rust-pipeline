@@ -14,6 +14,8 @@ pub enum FetchError {
         url: String,
         retry_after_secs: Option<u64>,
     },
+    #[error("host {host} is inside a recorded access cooldown")]
+    Cooldown { host: String },
     #[error("response body for {url} exceeds {MAX_BODY_BYTES} bytes")]
     TooLarge { url: String },
     #[error("transport error for {url}: {source}")]
@@ -78,7 +80,10 @@ pub enum FetchError {
 impl FetchError {
     pub fn retryable(&self) -> bool {
         match self {
-            Self::Transport { .. } | Self::Timeout { .. } | Self::RateLimited { .. } => true,
+            Self::Transport { .. }
+            | Self::Timeout { .. }
+            | Self::RateLimited { .. }
+            | Self::Cooldown { .. } => true,
             Self::BrowserLane { retryable, .. } => *retryable,
             Self::Http { status, .. } => *status >= 500 || *status == 429,
             Self::TooLarge { .. }

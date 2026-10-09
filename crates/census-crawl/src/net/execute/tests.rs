@@ -178,8 +178,12 @@ fn a_host_with_a_recorded_cooldown_is_refused_before_dispatch() -> TestResult {
                 Ok(_) => return Err("a blocked host is refused".into()),
             };
             check!(
-                matches!(error, FetchError::Policy { .. }),
-                "the refusal is a policy error, not a request: {error:?}"
+                matches!(error, FetchError::Cooldown { ref host } if host == "www.example.test"),
+                "the refusal is a typed cooldown, not a request: {error:?}"
+            );
+            check!(
+                error.retryable(),
+                "a recorded cooldown is temporary work, not a terminal refusal: {error:?}"
             );
             Ok(())
         })

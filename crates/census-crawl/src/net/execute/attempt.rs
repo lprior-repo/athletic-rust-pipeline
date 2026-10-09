@@ -37,9 +37,7 @@ impl Fetcher {
             self.destination.validate_url(&current_url)?;
             self.origin_locks.ensure(&origin)?;
             if self.host_blocked(&host, &crate::net::now_iso8601()).await {
-                return Err(FetchError::Policy {
-                    detail: format!("host {host} is inside a recorded access cooldown"),
-                });
+                return Err(FetchError::Cooldown { host });
             }
             let crawl_delay = match hop {
                 0 => plan.crawl_delay,
@@ -55,11 +53,7 @@ impl Fetcher {
             permit = Some(gate.lock_owned().await);
             self.wait_turn(&host).await;
             if self.host_blocked(&host, &crate::net::now_iso8601()).await {
-                return Err(FetchError::Policy {
-                    detail: format!(
-                        "host {host} entered a recorded access cooldown before this request was dispatched"
-                    ),
-                });
+                return Err(FetchError::Cooldown { host });
             }
             let response = self.dispatch_at(&current_url, plan).await?;
             let status = response.status().as_u16();
