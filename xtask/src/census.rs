@@ -85,9 +85,9 @@ pub struct ExportRequest {
     #[command(flatten)]
     target: Target,
     #[arg(
-        help = "Where to write the `.xlsx` (defaults to `<store>/out/census-service-<generated-on>.xlsx`)"
+        help = "Publication root the workbook generation is written under; the `.xlsx` lands at `<root>/current/workbook.xlsx` (defaults to `<store>/out/publication`)"
     )]
-    #[arg(long, value_name = "FILE")]
+    #[arg(long, value_name = "DIR")]
     out: Option<PathBuf>,
     #[arg(help = "Graduation year used for the cohort sheets (2027 = the class of 2027)")]
     #[arg(long, default_value_t = 2027)]
