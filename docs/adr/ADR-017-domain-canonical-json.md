@@ -68,5 +68,3 @@ the encoder is a contract shared by every writer and reader of those stores.
 - The domain now formats floats itself, so its dependency set carries the float formatter directly.
   A serde_json upgrade that changes its formatter would break byte equality for float-bearing
   payloads, and the byte-equality tests are what would catch it.
-- Dated command evidence for this decision is recorded in
-  [VERIFICATION-EVIDENCE.md](../VERIFICATION-EVIDENCE.md).

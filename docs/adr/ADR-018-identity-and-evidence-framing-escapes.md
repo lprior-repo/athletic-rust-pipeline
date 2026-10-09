@@ -71,5 +71,3 @@ escaped payloads contain **neither framing delimiter**, not merely that record s
 - Any future framing that adds a delimiter byte must extend `write_escaped` and its harnesses rather
   than hash payload bytes directly. A new digest input shape is a framing change, not an encoding
   detail.
-- Dated command evidence for this decision is recorded in
-  [VERIFICATION-EVIDENCE.md](../VERIFICATION-EVIDENCE.md).

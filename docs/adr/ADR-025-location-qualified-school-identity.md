@@ -61,4 +61,4 @@ attached to the school of the wrong city — the corruption the reported defect 
 same city agrees), `cargo test -p census-store --lib entities` (conflicting cities on one id retain a
 conflict; compatible cities merge), and the school-address join's same-name two-city lane. Dated
 command results for the landing are recorded in
-[VERIFICATION-EVIDENCE.md](../VERIFICATION-EVIDENCE.md).
+the verification ledger (removed 2026-10-09).

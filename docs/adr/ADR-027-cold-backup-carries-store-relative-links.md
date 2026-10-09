@@ -76,4 +76,4 @@ accounting), `mod.rs`/`copy.rs` (report and manifest shape). Regression coverage
 `backup_tests.rs`: `backup_and_restore_carry_a_store_relative_publication_pointer`,
 `backup_refuses_a_symlink_that_leaves_the_store` and `restore_refuses_a_tampered_link_entry`, plus
 the retained absolute-link refusals. Dated command evidence is in
-[VERIFICATION-EVIDENCE.md](../VERIFICATION-EVIDENCE.md).
+the verification ledger (removed 2026-10-09).

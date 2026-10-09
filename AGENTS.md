@@ -30,7 +30,7 @@ skill rather than silently proceeding:
 | External Restate vendor documentation | `docs/restate/README.md` |
 | Backup/restore and deployment | `docs/FJALL_BACKUP.md`, `docs/deployment-lifecycle.md` |
 | Test/gate and benchmark procedures | `tools/gate.sh`, `xtask/README.md` |
-| Dated command evidence and limitations | `docs/VERIFICATION-EVIDENCE.md` |
+| Dated command evidence and limitations | the verification ledger (removed 2026-10-09) |
 | Developer verbs and native entry points | `xtask/README.md`, `crates/census-service/README.md` |
 
 Keep implementation facts, target requirements and historical results distinct. Edit the owning

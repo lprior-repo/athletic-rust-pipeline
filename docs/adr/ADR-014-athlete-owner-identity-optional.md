@@ -7,7 +7,7 @@ Status: accepted historical-shape contract; does not authorize inventing provide
 The source-owned identity cutover (`99f88c9`) encountered historical athlete rows without provider
 identity and performance rows written before `source_athlete` existed. Refusing those rows makes
 retained evidence unreadable; synthesizing an owner fabricates evidence. Dated failures, counts and
-recovery measurements are retained in [VERIFICATION-EVIDENCE.md](../VERIFICATION-EVIDENCE.md).
+recovery measurements were taken when this decision was recorded.
 
 ## Decision
 

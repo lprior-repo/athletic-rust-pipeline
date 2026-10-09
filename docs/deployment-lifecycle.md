@@ -85,7 +85,7 @@ Use the installed server/CLI version's supported inspection and retirement opera
 object can block subsequent calls behind its owned key. Preserve the failure, invocation IDs and
 receipts before an operator deliberately cancels/kills it. Do not create replacement revisions merely
 to evade blocked/exhausted work. Historical API retirement responses and timeout incidents are in
-[verification evidence](VERIFICATION-EVIDENCE.md), not guarantees about every server version.
+the verification ledger (removed 2026-10-09), not guarantees about every server version.
 
 Store-backed handlers advertise long inactivity/abort timeouts; the browser uses SDK defaults.
 Queueing without journal progress consumes that budget. Increasing a timeout is not a substitute

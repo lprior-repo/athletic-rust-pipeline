@@ -93,6 +93,6 @@ census-report` (195), and the integration targets `nces_directory_properties` (8
 `school_address_corpus` (8), `school_address_publication` (3) and `workbook_shape` (1). `cargo
 clippy -p census-domain -p census-service -p census-crawl -p census-report --all-targets` is clean
 and `cargo fmt --check` passes for the touched crates. The dated native smoke in
-[VERIFICATION-EVIDENCE.md](../VERIFICATION-EVIDENCE.md) carries real captures → two corpus
+the verification ledger (removed 2026-10-09) carries real captures → two corpus
 generations → `SchoolAddressJoin` via ingress → two workbooks read back → verifier OK, followed by
 restart re-applies and a final-revision dry run.

@@ -118,5 +118,5 @@ Landed with this ADR in `census-store` (`format.rs`, `format/migrate.rs` with it
 its fenced commit — and `review_process.rs`) and `census-service` (`cli/store.rs` printing the format
 and both generations, the `store-migrate` verb, and error classification treating a refused
 publication or a moved-evidence decision as retriable). Dated command evidence is in
-[VERIFICATION-EVIDENCE.md](../VERIFICATION-EVIDENCE.md); the fault matrix remains owned by
+the verification ledger (removed 2026-10-09); the fault matrix remains owned by
 [NATIONAL-CENSUS-FAULTS.md](../NATIONAL-CENSUS-FAULTS.md).

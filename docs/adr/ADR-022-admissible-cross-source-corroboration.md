@@ -116,7 +116,7 @@ cross-source corroboration on a stated contract.
   gate requires an attested shared key (Class A or B) rather than any flag;
   `reconcile_athletes`' deterministic path keeps `RULE_REVIEWER = "deterministic:shared-provider-object"`
   and extends to Class B only when the domain predicate does.
-- **Tests delivered** (2026-10-04, see [VERIFICATION-EVIDENCE.md](../VERIFICATION-EVIDENCE.md)):
+- **Tests delivered** (2026-10-04, see the verification ledger (removed 2026-10-09)):
   `model_tests::corroboration` implements `linked_object_corroborates_when_attested_independently`,
   `a_link_shared_pair_without_attestation_stays_review`, `two_ids_from_one_provider_withhold`,
   `same_document_attestation_does_not_corroborate`,

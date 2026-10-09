@@ -791,7 +791,7 @@ stopped, exactly as for cold backup. Derived generations are reclaimed with a bu
 publication; a repeat index pass reclaims the stage it abandons, and
 `Store::reclaim_derived_generations` exposes the same sweep to an offline caller.
 
-[Moon developer tasks](../xtask/README.md) are the only gate entrypoint; `tools/gate.sh` remains their internal gate implementation. [VERIFICATION-EVIDENCE.md](VERIFICATION-EVIDENCE.md) owns dated
+[Moon developer tasks](../xtask/README.md) are the only gate entrypoint; `tools/gate.sh` remains their internal gate implementation. the verification ledger (removed 2026-10-09) owns dated
 incidents and executed results. Report only the declared run/scope and observed verification, with
 terminal access gaps, unresolved review and unfinished discovery visible.
 

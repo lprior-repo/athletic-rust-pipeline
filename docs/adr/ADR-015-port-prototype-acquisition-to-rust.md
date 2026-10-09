@@ -31,7 +31,7 @@ Decide:
 ## Consequences
 
 - Golden files are generated once, by the prototype extractor, at port time; the generating command
-  is recorded in [VERIFICATION-EVIDENCE.md](../VERIFICATION-EVIDENCE.md).
+  was recorded with that port's evidence.
 - Tests run without Python, and the fixture bodies make each adapter's behavior reproducible offline.
 - A national re-run reaches parity only when the ported set covers every in-scope jurisdiction; the
   remaining gap stays visible in `research/sources/applicability-matrix.md` until closed.
@@ -50,7 +50,7 @@ touching one another's decisions.
   `crates/census-crawl/src/registry/table/*.rs`, one `Applicability` appended to
   `crates/census-crawl/src/applicability/table.rs`, the `pub mod <slug>;` line in
   `crates/census-crawl/src/lib.rs`, and the slice's dated section in
-  [VERIFICATION-EVIDENCE.md](../VERIFICATION-EVIDENCE.md). Nothing else — in particular not
+  the verification ledger (removed 2026-10-09). Nothing else — in particular not
   `net/**`, not another adapter, not `census-service/**`.
 - **Admission.** The descriptor and the applicability entry are appended as a pair carrying the same
   slug (`applicability/tests.rs` asserts the two slug sets are equal). `transport`, `capabilities`

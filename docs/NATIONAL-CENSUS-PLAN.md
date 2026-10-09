@@ -3,7 +3,7 @@
 Status: binding unfinished delivery contract, **not execution evidence**. This is the only active
 plan. [ARCHITECTURE.md](../ARCHITECTURE.md) owns mission, engineering policy and semantics
 (§8–9), and [ADRs](adr/README.md) own decisions.
-[Dated verification](VERIFICATION-EVIDENCE.md) records what actually ran.
+The dated verification ledger (removed 2026-10-09) records what actually ran.
 
 ## 1. Run boundary
 
@@ -302,7 +302,7 @@ names 23 canaries.
 Historical mark-shape cases exercise explicit maintenance readers, not a fresh-run import path.
 Executed per-canary coverage from 2026-10-05/06 — each carrier, its observed result, and the
 canaries that still have no carrier — is recorded in the "Named regression canaries §9 — executed
-coverage" section of [VERIFICATION-EVIDENCE.md](VERIFICATION-EVIDENCE.md).
+coverage" section of the verification ledger (removed 2026-10-09).
 
 | # | Input/fault | Required outcome |
 |---|---|---|
@@ -342,7 +342,7 @@ PASS. The release requirement retains 12 mandatory proof kernels, and no harness
 them: the [xtask](../xtask/README.md) command list and `tools/gate.sh` carry no proof, Kani or Verus
 command, no kernel registry and no proof verdict taxonomy, no `kani::proof` or Verus source is checked
 in, and neither invocation enumerates the eight kernels named as missing in
-[VERIFICATION-EVIDENCE.md](VERIFICATION-EVIDENCE.md), so a release invocation does not establish the
+the verification ledger (removed 2026-10-09), so a release invocation does not establish the
 twelve-kernel requirement and cannot fail for its absence. Moon is the only repository developer
 entrypoint: `env -u CI tools/moon-local run pipeline:gate -- --release`. Its internal `tools/gate.sh`
 and xtask carry the lint/type, all-feature test (property tests and `loom` async models included),

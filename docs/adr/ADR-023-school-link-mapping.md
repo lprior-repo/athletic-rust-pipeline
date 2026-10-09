@@ -4,7 +4,7 @@
 attested provider keys in `7vk.2`, §3–4 (durable review cases and refusals) with the join's apply
 path, §5 in `7vk.3` (`DirectoryIndex::link_name`, the co-op member path and the campus-designation
 guard), §6–7 by the transfer-scope regression and the workbook/CSV readback. Dated evidence is in
-[docs/VERIFICATION-EVIDENCE.md](../VERIFICATION-EVIDENCE.md).
+the verification ledger (removed 2026-10-09).
 
 ## Context
 

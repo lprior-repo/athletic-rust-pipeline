@@ -217,7 +217,7 @@ Given CCD without a phone, an athletic-association phone `9999999999`, and a sta
 `1111111111`, every arrival permutation must resolve to `1111111111`, including after serializing
 and decoding an intermediate merge. The former record-priority implementation retained
 `9999999999` in that concrete case. Executed before/after observations and native corpus smoke
-are appended to `docs/VERIFICATION-EVIDENCE.md` and `var/sol-review/state.md`.
+are appended to the verification ledger (removed 2026-10-09) and `var/sol-review/state.md`.
 
 **Completed 37k inventory (Main approval, 2026-09-30).** Strings and scaled coordinates use the
 existing checked `serde(try_from)` convention with private payloads. Cross-field composites
