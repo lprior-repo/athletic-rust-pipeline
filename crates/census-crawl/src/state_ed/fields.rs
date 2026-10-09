@@ -53,7 +53,7 @@ fn decoded_byte(input: &mut std::str::Bytes<'_>) -> Option<u8> {
             match pair {
                 Some((high, low)) => {
                     *input = preview;
-                    Some(high * 16 + low)
+                    Some(high.checked_mul(16)?.checked_add(low)?)
                 }
                 None => Some(byte),
             }

@@ -211,19 +211,20 @@ fn roster_team((sport, gender): (Sport, Gender), projection: &Projection<'_>) ->
 }
 
 fn program_bit(sport: Sport, gender: Gender) -> u16 {
-    let sport = match sport {
+    let sport: u32 = match sport {
         Sport::IndoorTrack => 0,
         Sport::OutdoorTrack => 1,
         Sport::CrossCountry => 2,
         Sport::Unknown => 3,
     };
-    let gender = match gender {
+    let gender: u32 = match gender {
         Gender::Boys => 0,
         Gender::Girls => 1,
         Gender::Mixed => 2,
         Gender::Unknown => 3,
     };
-    1u16 << (sport * 4 + gender)
+    let shift = sport.saturating_mul(4).saturating_add(gender);
+    1u16 << shift
 }
 
 fn owner_name(team: &TeamRef) -> &str {

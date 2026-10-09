@@ -45,7 +45,7 @@ fn accepted_names(body: &str, team: &milesplit::TeamRef) -> TestResult<Vec<Strin
                 .map(|athlete| athlete.name.clone())
                 .collect::<Vec<_>>()
         })
-        .map_or_else(Vec::new, core::convert::identity);
+        .map_or(Default::default(), core::convert::identity);
     names.sort();
     Ok(names)
 }

@@ -6,6 +6,10 @@
 #[path = "../../../tools/fallible_checks.rs"]
 mod fallible_checks;
 
+#[cfg(test)]
+#[path = "../tests/common/capture_cache.rs"]
+pub(crate) mod capture_cache;
+
 pub mod bootstrap;
 pub mod census;
 pub mod coachverify;

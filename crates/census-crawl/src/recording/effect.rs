@@ -32,7 +32,7 @@ impl RecordedEffect {
     pub(super) fn validate(&self, recorded: &Recorded, previous: &Self) -> CrawlResult<()> {
         validate_range(&self.rows, recorded.rows.len(), previous.rows.end)?;
         validate_range(&self.journal, recorded.journal.len(), previous.journal.end)?;
-        if self.journal.is_empty() || self.witness != self.journal.end - 1 {
+        if self.journal.is_empty() || self.journal.end.checked_sub(1) != Some(self.witness) {
             return Err(invariant(
                 "conditional effect witness is outside its journal range",
             ));

@@ -246,7 +246,7 @@ fn assert_workbook(path: &Path, athlete: &CanonicalAthlete, expected: &[String])
         .next()
         .ok_or("PR header")?
         .iter()
-        .position(|cell| cell.to_string() == "Performance ID")
+        .position(|cell| cell == "Performance ID")
         .ok_or("XLSX performance identity")?;
     let ids = prs
         .rows()

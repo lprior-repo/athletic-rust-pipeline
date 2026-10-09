@@ -180,8 +180,7 @@ fn season_scope_applies_before_limit() {
     assert_eq!(selected.len(), 1);
 }
 
-#[path = "../../../tests/common/capture_cache.rs"]
-mod cache;
+use crate::capture_cache as cache;
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Tail {

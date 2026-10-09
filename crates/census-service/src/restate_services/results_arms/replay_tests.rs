@@ -13,8 +13,7 @@ const OWNED: &[u8] =
 const RAW: &[u8] = include_bytes!(
     "../../../../census-crawl/tests/fixtures/milesplit/troy_725218_rs1266814_raw_projection.html"
 );
-#[path = "../../../tests/common/capture_cache.rs"]
-mod cache;
+use crate::capture_cache as cache;
 
 fn school(name: &str, owner: &str) -> CanonicalSchool {
     let mut school = CanonicalSchool::new(

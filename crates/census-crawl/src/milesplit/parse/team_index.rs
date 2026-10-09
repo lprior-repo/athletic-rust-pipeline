@@ -109,10 +109,13 @@ impl Run {
                 MAX_RETAINED_BYTES,
             ));
         }
-        self.read
-            .teams
-            .try_reserve(1)
-            .map_err(|_| resource("team-index allocation", self.read.teams.len() + 1, MAX_ROWS))?;
+        self.read.teams.try_reserve(1).map_err(|_| {
+            resource(
+                "team-index allocation",
+                self.read.teams.len().saturating_add(1),
+                MAX_ROWS,
+            )
+        })?;
         self.read.teams.push(TeamRef {
             id: fields.id.to_string(),
             slug: fields.slug.to_string(),
@@ -129,7 +132,7 @@ impl Run {
         self.read.unfinished.try_reserve(1).map_err(|_| {
             resource(
                 "team-index unfinished allocation",
-                self.read.unfinished.len() + 1,
+                self.read.unfinished.len().saturating_add(1),
                 MAX_ROWS + 1,
             )
         })?;

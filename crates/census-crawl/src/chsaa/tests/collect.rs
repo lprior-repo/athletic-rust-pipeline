@@ -50,10 +50,10 @@ fn collect_stores_the_requested_school_and_its_coach_rows_from_the_cache() -> Te
         let coaches = store.scan::<CanonicalCoach>(Table::Coaches)?;
         let expected = golden_rows(GOLDEN_COACHES)?.iter().filter(|row|
             matches!(field(row, "sport").as_deref(), Some("Track" | "CrossCountry")))
-            .map(|row| (field(row, "person").map_or_else(String::new, core::convert::identity),
-                field(row, "sport").map_or_else(String::new, core::convert::identity),
-                field(row, "role").map_or_else(String::new, core::convert::identity),
-                field(row, "gender").map_or_else(String::new, core::convert::identity)))
+            .map(|row| (field(row, "person").map_or(Default::default(), core::convert::identity),
+                field(row, "sport").map_or(Default::default(), core::convert::identity),
+                field(row, "role").map_or(Default::default(), core::convert::identity),
+                field(row, "gender").map_or(Default::default(), core::convert::identity)))
             .collect::<std::collections::BTreeSet<_>>();
         check!(eq; coaches.len(), 50);
         check!(eq; coaches.iter().map(coach_key).collect::<std::collections::BTreeSet<_>>(), expected);

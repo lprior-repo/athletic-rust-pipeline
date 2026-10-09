@@ -19,10 +19,9 @@ impl CsvRow<'_> {
     }
     pub fn get(&self, index: usize) -> Option<&str> {
         let end = *self.ends.get(index)?;
-        let start = if index == 0 {
-            0
-        } else {
-            *self.ends.get(index - 1)?
+        let start = match index.checked_sub(1) {
+            Some(previous) => *self.ends.get(previous)?,
+            None => 0,
         };
         self.text.get(start..end)
     }
@@ -138,7 +137,7 @@ impl<'a> Decoder<'a> {
 fn capacity(resource: &'static str, limit: usize) -> DirectoryError {
     DirectoryError::Capacity {
         resource,
-        requested: limit + 1,
+        requested: limit.saturating_add(1),
         limit,
     }
 }

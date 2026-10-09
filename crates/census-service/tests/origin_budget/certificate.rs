@@ -46,14 +46,11 @@ pub(super) fn identities(binary: &Path) -> Result<Identities> {
 pub(super) fn identity(path: &Path) -> Result<Identity> {
     let mut file = File::open(path)?;
     let bytes = file.metadata()?.len();
-    ensure!(
-        bytes > 0 && bytes <= 536_870_912,
-        "executable exceeds 512MiB qualification bound"
-    );
+    ensure!(bytes > 0, "executable is empty");
     let mut hash = Sha256::new();
     let mut buffer = [0_u8; 65_536];
     let mut read = 0_u64;
-    for _ in 0..8193 {
+    loop {
         let count = file.read(&mut buffer)?;
         if count == 0 {
             ensure!(read == bytes, "executable length changed while hashing");
@@ -73,7 +70,6 @@ pub(super) fn identity(path: &Path) -> Result<Identity> {
                 .ok_or_else(|| anyhow::anyhow!("executable read size"))?,
         );
     }
-    Err(anyhow::anyhow!("executable hash read bound exceeded"))
 }
 
 pub(super) fn digest(bytes: &[u8]) -> String {

@@ -250,10 +250,19 @@ fn body_bound(html: &str) -> CrawlResult<()> {
 
 fn reserve<T>(rows: &mut Vec<T>) -> CrawlResult<()> {
     if rows.len() >= MAX_ROWS {
-        return Err(resource("roster rows", rows.len() + 1, MAX_ROWS));
+        return Err(resource(
+            "roster rows",
+            rows.len().saturating_add(1),
+            MAX_ROWS,
+        ));
     }
-    rows.try_reserve(1)
-        .map_err(|_| resource("roster row allocation", rows.len() + 1, MAX_ROWS))
+    rows.try_reserve(1).map_err(|_| {
+        resource(
+            "roster row allocation",
+            rows.len().saturating_add(1),
+            MAX_ROWS,
+        )
+    })
 }
 
 fn resource(resource: &'static str, requested: usize, limit: usize) -> CrawlError {

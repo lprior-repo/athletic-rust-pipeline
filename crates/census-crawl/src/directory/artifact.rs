@@ -160,7 +160,7 @@ where
             record.line,
             DirectoryError::Capacity {
                 resource: "directory CSV source rows",
-                requested: ordinal + 1,
+                requested: ordinal.saturating_add(1),
                 limit: outcome.source_row_limit(),
             },
         ));

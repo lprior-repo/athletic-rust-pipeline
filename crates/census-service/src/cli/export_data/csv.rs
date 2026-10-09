@@ -72,7 +72,7 @@ mod tests {
         .map(|value| vec![value])
         .collect::<Vec<_>>();
 
-        write_csv(&path, &["=header"], &rows)?;
+        write_csv(&path, ["=header"], &rows)?;
 
         let bytes = std::fs::read(&path)?;
         let expected = b"=header\r\n'=cmd|' /C calc'!A0\r\n'+1+1\r\n'@SUM(1)\r\n-2.5\r\n'-dash-leading\r\nPlain Name\r\n";
