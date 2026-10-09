@@ -73,7 +73,7 @@ pub(super) async fn run_seal(cli: &Cli, args: &SealArgs) -> Result<()> {
             }
         }
         Route::Ingress(origin) => {
-            let reply = CensusIngressClient::from_client(ingress::client(origin)?)
+            let reply = CensusIngressClient::from_client(ingress::job_client(origin)?)
                 .seal(Json(wire_request(args)))
                 .call()
                 .await
