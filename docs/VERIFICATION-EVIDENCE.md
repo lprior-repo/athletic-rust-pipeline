@@ -15180,3 +15180,129 @@ core count, rustc and fixture-corpus digest and `perf check` refuses to compare 
 the gate's perf lane measures after the other lanes, so its numbers are taken with the CPU warm —
 that state is what the tail floor above absorbs.
 
+## Review verbs in Rust replace the transient review scripts — 2026-10-09
+
+The census-completeness review's static matrix, bundle readback and review assembly previously ran
+as throwaway scripts outside the repository. They are now four Moon-only `xtask` verbs under
+`xtask/src/review/` (`review-matrix`, `review-readback`, `review-build`, `review-watch`), sharing
+only parsing primitives with the pipeline: each reads committed source or a published bundle, never
+the producer's projection code. `review-matrix` resolves quoted slugs and string constants out of
+the applicability table, the referenced `ARBITER` entry, `UsJurisdiction::CENSUS_SCOPE`, the three
+arm tables and the arm-strategy map, and it fails closed on a parsed-plus-referenced element count
+that disagrees with the declared array length, on an unresolved constant reference, and on any
+`UsJurisdiction::` constant other than `CENSUS_SCOPE` that carries an underscore.
+
+Measured at this revision (`env -u CI tools/moon-local run pipeline:xtask -- review-matrix --out
+var/census-completeness-review-20261009/matrix/static-matrix.rust.json`): 29 registered families,
+23 with a durable arm, 6 explicit engineering gaps (athleticlive, athleticlive_athletes,
+coach_contacts, nces, state_ed, tfrrs), 49 jurisdictions, no arm slug outside the registry. The
+29th family is the referenced `arbiter_orgs` entry, which the transient script missed: its five
+jurisdictions (Kentucky, Montana, New Hampshire, Oklahoma, West Virginia) are armed through the
+teams arm. Against the retained script artifact (the earlier Python review's `source_matrix`
+section, `var/census-completeness-review-20261009/snapshots/census-completeness-review-prior-matrix-2026-10-09.json`)
+the only family delta is that entry, the only jurisdiction deltas are its ten applicable/armed rows,
+and the strategy labels are more precise
+(`teams`/`meets`/`results` versus one `durable_arm` label). The review's G02 gate note and the
+CEN-02 prior-delta note were corrected to the measured counts and
+`review-build` regenerated `census-completeness-review.json`/`.md` (families=29 armed=23
+findings=3 gates=12 verdict=BLOCKED — the verdict did not move) with
+`source_matrix.provenance` naming the producing path.
+
+`review-readback` recomputes every manifest artifact SHA-256 and byte length, then reads the
+workbook with calamine and reports per-sheet used-range rows, non-empty cells and a content digest,
+plus sidecar record counts. On the retained generation
+`var/review-dual-gpu-20261005/store/out/publication/generations/ea8894a8…` it reproduced 8/8
+artifact hashes with zero mismatches, 11 sheets, and 9 533 `recruiting.csv` data rows against the
+Athletes sheet's 9 534 used-range rows (header excluded). Fail-closed smoke: appending a byte to a
+copy of `recruiting.csv` exited 1, and removing a copied `audit.json` exited 1.
+
+```text
+env -u CI tools/moon-local run pipeline:xtask -- review-readback --bundle var/review-dual-gpu-20261005/store/out/publication/generations/ea8894a8a0c91ab09269a5f36cbb855eae1ebabb9a65058fe7bdf90060a0cc7d --out var/census-completeness-review-20261009/readback.json
+env -u CI tools/moon-local run pipeline:xtask -- review-build --dir var/census-completeness-review-20261009 --run var/national-fresh-20261009-01 --reviewed-at 2026-10-09T16:04:09Z
+pipeline:check PASS · pipeline:lint-src PASS · pipeline:fmt PASS (after pipeline:fmt-write)
+pipeline:tests: Summary [68.512s] 3028 tests run: 3028 passed (1 slow), 4 skipped
+pipeline:xtask -- scan: exit 0, zero strict callable violations
+pipeline:tests -E 'test(review)': 66 review tests pass
+```
+
+Five unit-test expectations that had never run were corrected rather than pinned: the A1-style
+reference boundaries (col 51 is `AZ`, col 701 is `ZZ`, col 702 is `AAA`), a header-only CSV
+counted zero data rows, and new regressions cover `CENSUS_SCOPE` expansion, rejection of an
+underscored unsupported jurisdiction constant, an unterminated final CSV record, and an
+applicability block without a trailing comma.
+
+Limits: the transient review script was not retained, so its per-sheet digest convention could not
+be recovered; artifact-level equality (the claimed 8/8) reproduces exactly and the sheet set and
+per-sheet cell counts match its retained output
+(`var/census-completeness-review-20261009/snapshots/readback-transient-oracle-2026-10-09.json`) for
+all eleven sheets, while the digest is
+a new documented definition (`ref=value` records joined by `|`, trailing newline) and the row
+metric is the used-range span (three sheets differ from the script's count by convention: Sources
+30/29, Coverage 113/110, Run Metrics 54/50). This pass does not implement the row-level oracle of
+[NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md) §6, which stays an open gate, and it read no
+fresh publication bundle because the national run had not published; the iteration CI above is
+narrower than `pipeline:gate -- --release`.
+
+`review-watch`, `review-build` and the census CLI share one wire contract with the pinned
+`restate-server 1.6.2`, and three integration defects in that contract were found and repaired
+before the run below.
+
+The SDK client (`restate-sdk 0.12`) posts `/restate/call/{service}/{handler}`; 1.6.2 answers that
+path 404 and serves `/{service}/{handler}`. `review-watch` first built the SDK's own
+`ReqwestClient`, so its `Census/open_work` call failed, while the census CLI already wrapped the
+same client in `crates/census-crawl/src/ingress.rs` (`CurrentRoute`, the served-path adapter). The
+verb now builds its transport through that adapter, so the four Rust verbs and the CLI speak one
+route. Regressions: the xtask test
+`a_built_client_carries_the_transport_that_rewrites_sdk_routes_to_served_paths` pins the returned
+client type, and the adapter's own tests pin the rewrite for call, legacy invoke, send (`/send`
+suffix) and query preservation.
+
+`review-build` read the optional `open-work-summary.json` from the run directory while
+`review-watch` writes it to the review directory, so the first regenerated review carried
+`run.open_work: null` although a fresh summary existed. It now reads the review directory, matching
+its own stated curated inputs and the sibling `readback.json`; the fixture test
+`open_work_summary_is_read_from_the_review_dir_not_the_run_dir` plants a decoy summary in the run
+directory and fails if the run copy is used.
+
+The watcher's block writer serialised `sampled_at` and `season` with `Value::to_string`, which
+quotes JSON strings, and printed the builder's always-present `invocations: null` key, while the
+parser kept the trailing `=== ` boundary inside `sampled_at`. Blocks now carry plain values, omit a
+null invocations line, and the parser trims the boundary; the round-trip test
+`the_written_block_round_trips_through_the_review_parser` writes a summary, parses it back and
+asserts the timestamp, sweep pair, owed source objects and owed-set rows.
+
+Measured against the live run `var/national-fresh-20261009-01` (restate-server 1.6.2 ingress
+18095, `census-serve` 9080):
+
+```text
+env -u CI tools/moon-local run pipeline:xtask -- review-watch --run var/national-fresh-20261009-01 --dir var/census-completeness-review-20261009 --once
++ POST http://127.0.0.1:18095/Census/open_work
+2026-10-09T16:18:27Z: sweeps owed 49 of 49, source objects owed 65030
+env -u CI tools/moon-local run pipeline:xtask -- review-build --dir var/census-completeness-review-20261009 --run var/national-fresh-20261009-01 --reviewed-at 2026-10-09T17:00:00Z
+```
+
+It wrote `open-work-latest.json` and `open-work-summary.json`, appended one sample block to the
+run's `progress.log`, and the regenerated review reads both: `run.open_work` and
+`run.latest_progress` report `2026-10-09T16:18:27Z`, 49 of 49 sweeps owed and 65 030 owed source
+objects, the coverage gate records `discovered_source_objects` = 65030, and the verdict stays
+BLOCKED with the same 3 findings and 12 gates. That sampled state is itself the review's finding:
+every jurisdiction still owes work, with `results_history`, `contact_research`, `publication` and
+`refused_sources` owed group-wide while 40 of 49 already carry a `teams` value — the
+presence-versus-completion split CEN-04/CEN-05 describe. Blocks from an older build of the same verb
+also sit in `progress.log` (they omit the source-objects line), and the 16:11:17Z block from the
+pre-repair writer is still visible with its quoted timestamp and `null` line, so the log mixes
+block shapes; the parser reads all of them and the review's counts come from the summary file.
+
+```text
+pipeline:fmt PASS (after pipeline:fmt-write) · pipeline:check PASS · pipeline:lint-src PASS
+pipeline:tests: Summary [68.530s] 3031 tests run: 3031 passed (1 slow), 4 skipped
+pipeline:report-test: Summary [1.736s] 270 tests run: 270 passed, 0 skipped
+```
+
+Limits: one sample of one live run; it proves the verbs' route and the in-flight run's open-work
+state, not that any jurisdiction completes, and the owed-object count moves while the census runs
+(63 605 at 16:11, 65 030 at 16:18 — new source objects, not repaired ones). The national fault
+examples outside `xtask` still build raw `/restate/call` URLs, so any native fault or qualification
+run on this node version fails at its first status inspection; that is filed as
+`athletic-rust-pipeline-86mw`, which blocks `vjlp` (the seventeen-scenario run).
+

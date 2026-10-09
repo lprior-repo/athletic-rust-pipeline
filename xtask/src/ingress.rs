@@ -1,10 +1,13 @@
 use anyhow::{bail, Result};
-use restate_sdk::ingress::{ClientError, RequestTarget, ReqwestClient};
+use census_crawl::ingress::{self as crawl, Ingress};
+use restate_sdk::ingress::{ClientError, RequestTarget};
 use std::future::Future;
 use std::time::Duration;
 use url::{Host, Url};
 
 pub const NODE_ORIGIN: &str = "http://127.0.0.1:18095/";
+
+pub const ADMIN_ORIGIN: &str = "http://127.0.0.1:19095/";
 
 #[derive(serde::Deserialize)]
 struct IngressFailure {
@@ -29,15 +32,15 @@ const READ_TIMEOUT: Duration = Duration::from_secs(120);
 
 const JOB_TIMEOUT: Duration = Duration::from_secs(900);
 
-pub fn client(origin: &str) -> Result<(String, ReqwestClient)> {
+pub fn client(origin: &str) -> Result<(String, Ingress)> {
     build(origin, READ_TIMEOUT)
 }
 
-pub fn job_client(origin: &str) -> Result<(String, ReqwestClient)> {
+pub fn job_client(origin: &str) -> Result<(String, Ingress)> {
     build(origin, JOB_TIMEOUT)
 }
 
-fn build(origin: &str, timeout: Duration) -> Result<(String, ReqwestClient)> {
+fn build(origin: &str, timeout: Duration) -> Result<(String, Ingress)> {
     let url = Url::parse(origin)?;
     if !is_loopback_origin(&url) {
         bail!(
@@ -47,13 +50,13 @@ fn build(origin: &str, timeout: Duration) -> Result<(String, ReqwestClient)> {
     let endpoint = url.as_str().to_string();
     Ok((
         endpoint.clone(),
-        ReqwestClient::new(endpoint.parse()?, http_client(timeout)?)?,
+        crawl::client(endpoint.parse()?, http_client(timeout)?)?,
     ))
 }
 
 pub fn announce(endpoint: &str, service: &str, handler: &str) {
     println!(
-        "+ POST {endpoint}restate/call/{}",
+        "+ POST {endpoint}{}",
         RequestTarget::service(service, handler)
     );
 }
@@ -91,7 +94,8 @@ fn http_client(timeout: Duration) -> Result<reqwest::Client> {
 
 #[cfg(test)]
 mod tests {
-    use super::is_loopback_origin;
+    use super::{client, is_loopback_origin, NODE_ORIGIN};
+    use census_crawl::ingress::Ingress;
     use url::Url;
 
     fn origin(value: &str) -> bool {
@@ -108,5 +112,12 @@ mod tests {
         assert!(!origin("http://127.0.0.1:18095/admin"));
         assert!(!origin("http://user:pass@127.0.0.1:18095/"));
         assert!(!origin("http://127.0.0.1:18095/?x=1"));
+    }
+
+    #[test]
+    fn a_built_client_carries_the_transport_that_rewrites_sdk_routes_to_served_paths(
+    ) -> anyhow::Result<()> {
+        let (_, _ingress): (String, Ingress) = client(NODE_ORIGIN)?;
+        Ok(())
     }
 }

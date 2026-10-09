@@ -22,6 +22,7 @@ mod purity;
 mod quality;
 mod replay;
 mod retry;
+mod review;
 mod scaffold;
 mod scan;
 mod seams;
@@ -118,6 +119,8 @@ enum Command {
     },
     #[command(flatten)]
     Census(census::CensusCommand),
+    #[command(flatten)]
+    Review(review::ReviewCommand),
     #[command(
         about = "Run the pipeline benchmark (`cargo bench -p census-service`), with filters after `--`: `cargo xtask bench -- parser` runs only the parser benchmarks"
     )]
@@ -181,6 +184,7 @@ fn run() -> Result<()> {
         Command::SourceFixture { source } => source_fixture::list(&source),
         Command::Replay { name } => replay::run(&name),
         Command::Census(command) => command.run(),
+        Command::Review(command) => command.run(),
         Command::Bench { args } => helpers::bench(&args),
         Command::Perf { command } => run_perf(command),
         Command::NewSource { name } => scaffold::new_source(&name),
