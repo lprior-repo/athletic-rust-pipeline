@@ -15351,9 +15351,10 @@ publication all execute, but the run does not carry the bead's acceptance (every
 once, PRs with exact support, contacts current-role-backed, addresses accounted, coverage
 reconciled, zero unwired stages), so no seal acceptance item reconciles.
 
-Seal: no terminal verdict, and both reasons are measured rather than inferred. `Census/seal` is a
-long job — it re-verifies the generation, measures the run's open work and assembles the §70
-ladder — but the CLI sent it through the 120 s read client instead of the 900 s job client that
+Seal: no terminal verdict through the ingress, and both reasons are measured rather than inferred.
+`Census/seal` is a long job — it re-verifies the generation, measures the run's open work and
+assembles the §70 ladder — but the CLI sent it through the 120 s read client instead of the 900 s
+job client that
 `national`, `jurisdiction` and `workbook` use, so the first attempt died client-side
 (`operation timed out` after 120.04 s) while the handler was still live; the transport is repaired
 in commit `20980967` (`pipeline:check` PASS, `pipeline:tests -E 'binary(census_service)'`
@@ -15369,9 +15370,46 @@ revision. The node paused both seal invocations
 `PATCH /invocations/<id>/resume` restarted one on the same deployment and it re-climbed the same
 slope, which is the reproducible half of the defect, filed as `athletic-rust-pipeline-q41j`.
 
-Limits: `sealed: not_established` (no seal artifact was written; `--write` was not passed);
-`national_run: performed`, refused by name; `live_pipeline_acquisition: performed`, with the
-Athletic.net lane challenged throughout. The run root, both drain certificates, the node's durable
-state and every publication artifact are retained; the store is owned by the live `census-serve`
-endpoint, which must be stopped before an offline verb reads it.
+Limits: `sealed: refused` (offline route; no seal artifact was written because `--write` was not
+passed); `national_run: performed`, refused by name; `live_pipeline_acquisition: performed`, with
+the Athletic.net lane challenged throughout. The run root, all three drain certificates, the node's
+durable state and every publication artifact are retained.
+
+Seal arc, driven after the handoff. The first CLI attempt was aborted client-side at 120 s while
+the handler was still live, and the transport is repaired in `20980967` (the seal route now uses
+the 900 s job client, like `national`, `jurisdiction` and `workbook`). Two further attempts — one
+through a long-timeout client, one resumed with `PATCH /invocations/<id>/resume` after the first
+memory-budget drain — both re-materialized the frozen input past the endpoint's 48 GiB budget
+(RSS 9.9 → 30.1 GiB on the resume), which is `athletic-rust-pipeline-q41j`. The endpoint was then
+stopped deliberately:
+
+```text
+2026-10-09T20:20:13Z  INFO census service stopped report=DrainReport { accepted: 5, completed: 5, cancelled: 0, timed_out: 0, remaining: 0, aborted: 0, panicked: 0, stop_reason: Signal, endpoint_shutdown: TimedOut }
+drained: accepted=5 completed=5 cancelled=0 timed_out=0 aborted=0 panicked=0
+```
+
+Both duplicate read-only seal invocations were disposed of explicitly (`PATCH /invocations/<id>/kill`;
+both terminal with `completion_result=failure`), the deployment stays registered so the run's
+identity is preserved, and the node keeps the journal. The restart used the sha-pinned binary on
+the same URI and store, but with `--browser-headless` where the run kit specifies a headed lane; no
+browser-lane invocation ran during the resume, so nothing observed that flag.
+
+The offline route (this route's own limit is named in its output) then produced the run's terminal
+verdict, `census-service seal --store var/national-fresh-20261009-01`, 2026-10-09T20:20:21Z:
+
+```text
+frozen workbook readback verified rows=562569
+phase: acquiring
+acceptance: jurisdiction sweeps are terminal unmet — not measured - this seal does not read the workflow journal
+acceptance: source objects are terminal unmet — not measured - this seal does not read the workflow journal
+acceptance: identity candidates are terminal unmet — 270 identity candidates are undecided
+acceptance: a census run is measured and bound to this store unmet — not measured - this route reads no workflow journal
+refused: census cannot move from acquiring to complete: each phase advances one step, and completion needs a seal
+Error: seal refused                                                    # exit 1, no out/seal.json
+```
+
+So the seal agrees with the workbook: the run is in `acquiring`, 270 identity candidates are
+undecided, and the three journal-derived items are unknown rather than satisfied. The run's
+publication remains the deliverable; the seal's refusal is the honest closure of that arc until a
+revision-2 run reconciles the obligations.
 
