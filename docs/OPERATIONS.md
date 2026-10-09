@@ -722,6 +722,14 @@ census-service verify --workbook <publication-root>/current/workbook.xlsx
 census-service seal --ingress http://127.0.0.1:18095/ --workbook <publication-root>/current/workbook.xlsx --write
 ```
 
+One measured limit: a full-size publication currently cannot seal through the ingress route. The
+handler re-materializes the frozen input inside the endpoint, past `census-serve`'s memory budget,
+so the endpoint drains itself mid-seal and Restate pauses the invocation — two clean `MemoryBudget`
+drains on `var/national-fresh-20261009-01` (2026-10-09), filed as `athletic-rust-pipeline-q41j`.
+Until that is repaired, read the verdict from the offline route (`census-service seal --store <run>`
+with the store's owner stopped) and record the run's own open work as unknown: only the ingress
+route measures it.
+
 Standalone `verify` reopens the immutable bundle's frozen input, verifies lineage, hashes and exact
 inventory, and compares every workbook row/cell and JSON/JSONL/CSV sidecar record. It does not open
 the serving store, sample, stride or impose the former 5,000-sample ceiling. It can therefore run
