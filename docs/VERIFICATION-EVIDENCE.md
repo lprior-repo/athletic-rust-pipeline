@@ -15413,3 +15413,18 @@ undecided, and the three journal-derived items are unknown rather than satisfied
 publication remains the deliverable; the seal's refusal is the honest closure of that arc until a
 revision-2 run reconciles the obligations.
 
+The independent readback oracle — the plan's §6 oracle, a separate tool from `census-service
+verify` — agrees with the bundle:
+
+```text
+env -u CI tools/moon-local run pipeline:xtask -- review-readback \
+  --bundle var/national-fresh-20261009-01/out/publication/current \
+  --out var/national-fresh-20261009-01/review-readback.json      # 3m 12s
+```
+
+Manifest generation `995d19f2…`, ten artifacts recomputed with **zero** mismatches, thirteen
+sheets (Athletes 108 030 used-range rows / 2 256 772 cells), and sidecar records 108 029
+recruiting, 35 034 school contacts, 23 721 best results, 157 653 contact research, plus the
+6 476 440 525-byte frozen input. Both oracles read the same bytes and neither found a cell,
+record or artifact that the manifest does not declare.
+
