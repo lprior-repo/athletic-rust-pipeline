@@ -1,3 +1,7 @@
+#[macro_use]
+#[path = "../../../tools/fallible_checks.rs"]
+mod fallible_checks;
+
 use census_crawl::state_ed::{parse_index, parse_profile, parse_tabular};
 use census_crawl::CollectionDisposition;
 use census_domain::school_directory::{
@@ -148,8 +152,8 @@ fn state_ed_profile_refuses_a_page_that_is_not_a_profile() -> TestResult {
 #[test]
 fn state_ed_index_marks_a_profile_as_unfinished_instead_of_complete_empty() -> TestResult {
     let outcome = parse_index(KINGSTON)?;
-    assert_eq!(outcome.disposition(), CollectionDisposition::Partial);
-    assert!(matches!(
+    check!(eq; outcome.disposition(), CollectionDisposition::Partial);
+    check!(matches!(
         outcome.unfinished(),
         Some((1, DirectoryError::Representation { .. }))
     ));
@@ -207,22 +211,16 @@ fn state_ed_index_rejects_malformed_rows_and_keeps_later_valid_schools() -> Test
         <div class=\"title\"><a href=\"profile.php?instid=999999999999\">Later School</a></div>\n"
     );
     let outcome = parse_index(&input)?;
-    assert_eq!(outcome.entries().len(), 221);
-    assert_eq!(
-        outcome
-            .skipped()
-            .iter()
-            .map(|issue| issue.field)
-            .collect::<Vec<_>>(),
-        vec!["institution id"]
-    );
+    check!(eq; outcome.entries().len(), 221);
+    let skipped: Vec<_> = outcome.skipped().iter().map(|issue| issue.field).collect();
+    check!(eq; skipped, vec!["institution id"]);
     let last = outcome.entries().last().ok_or("missing later school")?;
-    assert_eq!(last.name().map(SchoolName::as_str), Some("Later School"));
-    assert!(
+    check!(eq; last.name().map(SchoolName::as_str), Some("Later School"));
+    check!(
         matches!(last.key(), DirectoryKey::StateRecord { state, id } if state == &UsJurisdiction::NewYork && id.as_str() == "999999999999")
     );
-    assert_eq!(outcome.disposition(), CollectionDisposition::Partial);
-    assert_eq!(outcome.unfinished(), None);
+    check!(eq; outcome.disposition(), CollectionDisposition::Partial);
+    check!(eq; outcome.unfinished(), None);
     Ok(())
 }
 
@@ -234,10 +232,11 @@ fn state_ed_index_retains_captured_schools_when_a_later_field_exceeds_capacity()
         "X".repeat(4097)
     );
     let outcome = parse_index(&input)?;
-    assert_eq!(outcome.entries(), prefix.entries());
-    assert_eq!(outcome.disposition(), CollectionDisposition::Partial);
+    check!(eq; outcome.entries(), prefix.entries());
+    check!(eq; outcome.disposition(), CollectionDisposition::Partial);
     let (_, error) = outcome.unfinished().ok_or("missing capacity obligation")?;
-    assert_eq!(
+    check!(
+        eq;
         error,
         &DirectoryError::Capacity {
             resource: "NYSED field bytes",
@@ -251,25 +250,21 @@ fn state_ed_index_retains_captured_schools_when_a_later_field_exceeds_capacity()
 #[test]
 fn state_ed_tabular_rejects_malformed_names_without_hiding_later_valid_rows() -> TestResult {
     let outcome = parse_tabular("NAME,CITY,STATE\n,Potsdam,NY\nLater School,Potsdam,NY\n")?;
-    assert_eq!(outcome.entries().len(), 1);
-    assert_eq!(
-        outcome
-            .entries()
-            .first()
-            .and_then(|entry| entry.name())
-            .map(SchoolName::as_str),
-        Some("Later School")
-    );
-    assert_eq!(
-        outcome
-            .skipped()
-            .iter()
-            .map(|issue| (issue.line, issue.field))
-            .collect::<Vec<_>>(),
-        vec![(2, "school name")]
-    );
-    assert_eq!(outcome.disposition(), CollectionDisposition::Partial);
-    assert_eq!(outcome.unfinished(), None);
+    check!(eq; outcome.entries().len(), 1);
+    let name = outcome
+        .entries()
+        .first()
+        .and_then(|entry| entry.name())
+        .map(SchoolName::as_str);
+    check!(eq; name, Some("Later School"));
+    let skipped: Vec<_> = outcome
+        .skipped()
+        .iter()
+        .map(|issue| (issue.line, issue.field))
+        .collect();
+    check!(eq; skipped, vec![(2, "school name")]);
+    check!(eq; outcome.disposition(), CollectionDisposition::Partial);
+    check!(eq; outcome.unfinished(), None);
     Ok(())
 }
 
@@ -281,15 +276,13 @@ fn state_ed_profile_keeps_literal_malformed_percent_escapes_in_the_source_addres
     );
     let outcome = parse_profile(&input)?;
     let entry = outcome.entries().first().ok_or("missing profile school")?;
-    assert_eq!(
-        entry
-            .address()
-            .and_then(|address| address.line1())
-            .map(StreetLine::as_str),
-        Some("29 Main%G1 St")
-    );
-    assert_eq!(outcome.disposition(), CollectionDisposition::Complete);
-    assert_eq!(outcome.unfinished(), None);
+    let line = entry
+        .address()
+        .and_then(|address| address.line1())
+        .map(StreetLine::as_str);
+    check!(eq; line, Some("29 Main%G1 St"));
+    check!(eq; outcome.disposition(), CollectionDisposition::Complete);
+    check!(eq; outcome.unfinished(), None);
     Ok(())
 }
 
@@ -301,9 +294,9 @@ fn state_ed_profile_marks_invalid_decoded_utf8_as_unfinished_without_lossy_addre
         "%FF%2C+Potsdam%2C+NY%2C+13676",
     );
     let outcome = parse_profile(&input)?;
-    assert_eq!(outcome.entries(), &[]);
-    assert_eq!(outcome.disposition(), CollectionDisposition::Partial);
-    assert!(matches!(
+    check!(eq; outcome.entries(), &[]);
+    check!(eq; outcome.disposition(), CollectionDisposition::Partial);
+    check!(matches!(
         outcome.unfinished(),
         Some((1, DirectoryError::Representation { .. }))
     ));
@@ -313,9 +306,9 @@ fn state_ed_profile_marks_invalid_decoded_utf8_as_unfinished_without_lossy_addre
 #[test]
 fn state_ed_header_only_tabular_artifacts_leave_a_typed_population_obligation() -> TestResult {
     let outcome = parse_tabular("NAME,CITY,STATE\n")?;
-    assert_eq!(outcome.entries(), &[]);
-    assert_eq!(outcome.disposition(), CollectionDisposition::Partial);
-    assert!(matches!(
+    check!(eq; outcome.entries(), &[]);
+    check!(eq; outcome.disposition(), CollectionDisposition::Partial);
+    check!(matches!(
         outcome.unfinished(),
         Some((_, DirectoryError::Representation { .. }))
     ));

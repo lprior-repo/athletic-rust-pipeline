@@ -197,6 +197,8 @@ fn positive_metric(id: &str, label: &str, value: f64) -> Result<()> {
     Ok(())
 }
 
+const TAIL_JITTER_FLOOR: f64 = 0.2;
+
 fn compare_benchmark(
     id: &str,
     baseline: &GroupMeasurement,
@@ -218,7 +220,7 @@ fn compare_benchmark(
             required_float(baseline.tail_time_seconds)?,
             required_float(current.tail_time_seconds)?,
         ),
-        tolerance.fraction(),
+        tolerance.fraction().max(TAIL_JITTER_FLOOR),
         failures,
     );
     compare_memory(id, baseline, current, tolerance, failures)?;

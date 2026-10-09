@@ -59,6 +59,31 @@ fn throughput_decline_crosses_the_tolerance_boundary() -> TestResult {
 }
 
 #[test]
+fn sample_tail_floor_absorbs_remeasurement_jitter() -> TestResult {
+    let baseline = baseline(measurement(Some(100.0), 1.0));
+    for (tail, accepted) in [(1.0, true), (1.087, true), (1.19, true), (1.25, false)] {
+        let mut measured = measurement(Some(100.0), 1.0);
+        measured.tail_time_seconds = Some(tail);
+        let current = groups(measured);
+        check!(eq; check_throughput(&baseline, &current, 0.05).is_ok(), accepted, "{tail}");
+    }
+    Ok(())
+}
+
+#[test]
+fn sample_tail_floor_does_not_absorb_a_mean_shaped_regression() -> TestResult {
+    let baseline = baseline(measurement(Some(100.0), 1.0));
+    let mut measured = measurement(Some(100.0), 1.12);
+    measured.tail_time_seconds = Some(1.12);
+    let current = groups(measured);
+    let error = check_throughput(&baseline, &current, 0.05)
+        .err()
+        .ok_or("a wall-time regression inside the tail floor was accepted")?;
+    check!(error.to_string().contains("wall time regression"));
+    Ok(())
+}
+
+#[test]
 fn missing_or_null_rates_refuse_comparison_with_other_metrics_complete() -> TestResult {
     for raw in [
         r#"{"wall_time_seconds":1,"tail_time_seconds":1,"peak_rss_kib":100,"allocation_count":100,"allocated_bytes":100}"#,

@@ -350,6 +350,15 @@ a compiled Criterion binary manually, pass `--bench` and set `CRITERION_HOME` to
 directory, as `xtask/src/perf/bench/runtime.rs` does; otherwise the invocation/output is not
 equivalent to the measured lane. `pipeline:bench -- --no-run` only compiles; it is not a runtime measurement.
 
+`perf check` compares each recorded metric against the baseline at the requested tolerance
+(`--tolerance`, default 5%) with one exception: the sample-maximum tail. That metric is an
+extreme-order statistic, and re-measuring unchanged release binaries on this machine moved it by
+5.4% on an idle machine and by 8.7% while the CPU was still cooling from the preceding gate lane,
+while the criterion mean stayed inside the tolerance both times. The tail comparison therefore
+floors its bound at 20% (`TAIL_JITTER_FLOOR` in `xtask/src/perf/compare.rs`), which still catches
+the pathological worst-case regressions the metric exists for. Mean-shaped metrics — wall time,
+throughput, peak RSS and the Valgrind DHAT allocation counts — keep the requested tolerance.
+
 The historical `tools/perf-baseline.json` tagged its fifteen throughput measurements `Elements`, as
 evidenced by the benchmark sources at its recorded commit (sha `0be3cfa…`, 2026-09-30, corpus
 38,530 lines). Its metadata, workload names and numbers are unchanged; the original untagged JSON is
