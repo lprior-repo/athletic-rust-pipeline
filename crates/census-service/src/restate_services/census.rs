@@ -19,6 +19,8 @@ use super::wire::{
 };
 use super::{job_error, JobError};
 
+mod preflight;
+
 #[derive(Clone)]
 pub struct Census {
     store: Arc<Store>,
@@ -78,6 +80,15 @@ impl Census {
             bytes_on_disk: stats.bytes_on_disk,
             today: self.clock.today(),
         }))
+    }
+
+    #[handler]
+    async fn school_address_preflight(
+        &self,
+        ctx: Context<'_>,
+        Json(request): Json<super::wire::SchoolAddressJoinRequest>,
+    ) -> Result<Json<String>, HandlerError> {
+        self.preflight_addresses(ctx, request).await
     }
 
     #[handler]

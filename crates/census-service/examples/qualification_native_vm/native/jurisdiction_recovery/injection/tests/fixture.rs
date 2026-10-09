@@ -21,6 +21,7 @@ pub(super) fn original(jurisdiction: UsJurisdiction, revision: u32) -> Result<Or
         jurisdiction,
         season: SchoolYear::new(2026).context("fixture season invalid")?,
         revision: Revision(revision),
+        history: census_service::restate_services::HistoryWindow::cohort("2026-10-02")?,
         refresh: false,
         limit_per_state: Some(1),
         concurrency: 1,
@@ -47,7 +48,7 @@ pub(super) fn original(jurisdiction: UsJurisdiction, revision: u32) -> Result<Or
     })
 }
 
-pub(super) fn active() -> Result<(Original, Observation)> {
+pub(in super::super::super) fn active() -> Result<(Original, Observation)> {
     let original = original(UsJurisdiction::RhodeIsland, 17)?;
     let source = TeamsSourceRequest {
         jurisdiction: original.request.clone(),

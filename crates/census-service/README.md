@@ -36,19 +36,26 @@ all commands have identical durable/recovery semantics.
 | Publication | `report`, `bests`, `workbook`, `verify`, `seal` | Reports, compatible bests, workbook, current verifier and seal/refusal |
 | Store maintenance | `fjall-stats`, `store-integrity`, `store-backup`, `store-restore`, `store-migrate`, `repair-retained-marks`, `repair-retained-events` | Inspect, safely back up/restore or migrate a stopped store, or append source-backed retained corrections. `fjall-stats` reports the persisted schema/key format, creator, and both generation counters: `evidence_generation` moves with evidence-bearing writes, `derived_generation` names the derived generation readers see |
 | Public coach research | `import-coaches`, `merge-coaches`, `verify-coaches`, `school-sites` | Research CSV handling, source-backed contact verification and the long-tail school-website crawl whose fragments feed the verifier |
-| Research artifacts | `qa-reports`, `export-data`, `school-names`, `census-doc`, `school-address`, `school-address-join` | Research report/CSV helpers, the school-directory corpus verb and the corpus-to-store join; not a second product workflow |
+| Research artifacts | `qa-reports`, `export-data`, `school-names`, `census-doc`, `school-address`, `school-address-preflight`, `school-address-join` | Research report/CSV helpers, verified school-directory input and its corpus-to-store join; not a second product workflow |
 
 Pipeline commands with serving/offline routing default to Restate ingress. An explicit `--store`
 selects in-process access where supported and is rejected by service-only commands; it cannot be
-combined with `--ingress`. Offline default storage is `var/census-service`. `school-address` is the
-one command here that touches no store at all: it reads operator-supplied directory artifacts into
-the collapsed school corpus and exports it
+combined with `--ingress`. Offline default storage is `var/census-service`. `school-address` and
+`school-address-preflight` touch no store: the former builds a corpus from operator-supplied public
+directory artifacts; the latter verifies its exact artifact bytes, schema and lane attribution
 ([ADR-020](../../docs/adr/ADR-020-school-address-corpus-port.md)). `school-address-join` requires an
 explicit `--store` and a stopped owner: it joins that verified corpus into owned postal claims and
 the matched CCD website on canonical schools, or reports each school's outcome without changing
 anything ([ADR-021](../../docs/adr/ADR-021-school-address-join-durable-stage.md)); an ambiguous tie
 is filed under `--apply` as a pending `School identity` review case that the workbook's `Review`
 sheet surfaces ([ADR-023](../../docs/adr/ADR-023-school-link-mapping.md)).
+
+National execution checks the address corpus before discovery, pins its digest for the later join,
+then runs durable school-site coach/office-mailbox acquisition in every requested jurisdiction using
+the newly attached official websites. `national-report --contacts` prints its settled phase;
+`open-work` retains unmeasured, partial and failed obligations. A staff listing's same-capture
+person/role/program/mailbox claim follows ADR-024's run-season rule, without fabricating mailbox
+patterns or independently corroborated freshness.
 
 **One owning process per store:** stop `census-serve` before an offline command opens that database.
 Prefer [xtask](../../xtask/README.md)'s serving status/coverage/export wrappers while it runs.

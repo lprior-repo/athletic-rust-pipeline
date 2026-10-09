@@ -77,6 +77,16 @@ pub fn parse_school_list(text: &str) -> CrawlResult<ReadOutcome> {
             "unparsed indexed school content",
         )?;
     }
+    if outcome.entries().is_empty() {
+        outcome.stop(
+            line_of(text, start),
+            census_domain::school_directory::DirectoryError::Representation {
+                detail: "the capture yielded no indexed schools".into(),
+            },
+        );
+    } else {
+        outcome.finish();
+    }
     Ok(outcome)
 }
 

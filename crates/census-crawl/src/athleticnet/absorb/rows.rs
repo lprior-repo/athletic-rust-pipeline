@@ -110,7 +110,7 @@ impl<'a> Ctx<'a> {
         labels: &'b HashMap<i64, &'b str>,
     ) -> Option<ResolvedRow<'b>> {
         self.stats.rows_seen = self.stats.rows_seen.saturating_add(1);
-        let (season_id, sport) = self.row_season(row)?;
+        let sport = self.row_season(row)?;
         let Some(label) = row.event_id.and_then(|id| labels.get(&id).copied()) else {
             self.stats.rows_no_event = self.stats.rows_no_event.saturating_add(1);
             return None;
@@ -140,7 +140,7 @@ impl<'a> Ctx<'a> {
                 .map_or(Default::default(), core::convert::identity)
                 .to_string(),
         )?;
-        let Some(school_year) = SchoolYear::containing(season_id, 5) else {
+        let Some(school_year) = crate::context::published_school_year(&date) else {
             self.stats.rows_no_season = self.stats.rows_no_season.saturating_add(1);
             return None;
         };
@@ -160,10 +160,6 @@ impl<'a> Ctx<'a> {
 
     fn resolve_xc_row<'b>(&mut self, bio: &'b Bio, row: &'b XcRow) -> Option<ResolvedRow<'b>> {
         self.stats.rows_seen = self.stats.rows_seen.saturating_add(1);
-        let Some(season_id) = row.season_id else {
-            self.stats.rows_no_season = self.stats.rows_no_season.saturating_add(1);
-            return None;
-        };
         let kind = EventKind::CrossCountry;
         let Some((mark, auto)) = parse_mark(&kind, &row.result) else {
             self.stats.rows_no_mark = self.stats.rows_no_mark.saturating_add(1);
@@ -186,7 +182,7 @@ impl<'a> Ctx<'a> {
                 .map_or(Default::default(), core::convert::identity)
                 .to_string(),
         )?;
-        let Some(school_year) = SchoolYear::containing(season_id, 9) else {
+        let Some(school_year) = crate::context::published_school_year(&date) else {
             self.stats.rows_no_season = self.stats.rows_no_season.saturating_add(1);
             return None;
         };
@@ -204,7 +200,7 @@ impl<'a> Ctx<'a> {
         })
     }
 
-    fn row_season(&mut self, row: &TfRow) -> Option<(i16, Sport)> {
+    fn row_season(&mut self, row: &TfRow) -> Option<Sport> {
         let Some(season_id) = row.season_id else {
             self.stats.rows_no_season = self.stats.rows_no_season.saturating_add(1);
             return None;
@@ -227,6 +223,6 @@ impl<'a> Ctx<'a> {
             *season = (*season).saturating_add(1);
             return None;
         };
-        Some((season_id, sport))
+        Some(sport)
     }
 }

@@ -10,8 +10,9 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 mod postal;
+pub(crate) use postal::Capture;
 pub(super) use postal::{
-    process_owned_summary, retain_directory_postal, Capture, SummaryEmission, SummaryError,
+    process_owned_summary, retain_directory_postal, SummaryEmission, SummaryError,
 };
 
 #[cfg(test)]

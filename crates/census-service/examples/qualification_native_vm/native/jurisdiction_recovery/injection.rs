@@ -11,7 +11,7 @@ mod files;
 mod journal;
 mod proof;
 #[cfg(test)]
-mod tests;
+pub(super) mod tests;
 
 const CONFIG: &str = "/srv/qualification/native-source-boundary-config.json";
 const MARKER: &str = "teams-source-reservation-reached.json";

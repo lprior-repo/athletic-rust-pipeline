@@ -54,12 +54,7 @@ impl ParentRecovery {
     pub(super) async fn live_tree(&self, client: &Client, original: &Original) -> Result<Value> {
         let current = super::quiescence::inventory(client, original).await?;
         match self {
-            Self::Completed { .. } => ensure!(
-                current
-                    .iter()
-                    .all(|row| row.get("status").and_then(Value::as_str) == Some("completed")),
-                "completed parent retains active descendant work"
-            ),
+            Self::Completed { .. } => super::quiescence::verify_completed_tree(original, &current)?,
             Self::PausedResumable { pause, .. } => ensure!(
                 current == pause.after,
                 "paused original invocation tree changed across measured interval"

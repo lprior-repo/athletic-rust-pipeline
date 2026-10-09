@@ -9,12 +9,14 @@ mod row;
 mod source_research;
 mod staff;
 pub(crate) use generic::inspect_staff_links;
+pub(crate) use map::Capture as StaffCapture;
 pub(crate) use research_failure::{
     fetch as contact_fetch_failure, status as contact_status_failure,
 };
 pub(crate) use source_research::{
     persist_staff_attempt, persist_staff_capture, persist_unattempted, staff_capture,
 };
+pub(crate) use staff::{listing_appointment, PublishedListing};
 mod survey;
 #[cfg(test)]
 mod survey_tests;

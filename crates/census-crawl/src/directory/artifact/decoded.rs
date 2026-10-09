@@ -47,8 +47,8 @@ struct Position {
 }
 
 impl<'a> Decoder<'a> {
-    pub(super) fn new(input: &'a str) -> Result<Self, DirectoryError> {
-        super::super::limits::check("directory artifact bytes", input.len(), 8 * 1024 * 1024)?;
+    pub(super) fn new(input: &'a str, max_bytes: usize) -> Result<Self, DirectoryError> {
+        super::super::limits::check("directory artifact bytes", input.len(), max_bytes)?;
         let mut bytes = Vec::new();
         bytes
             .try_reserve_exact(MAX_RECORD_BYTES)

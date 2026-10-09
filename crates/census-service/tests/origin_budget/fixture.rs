@@ -19,7 +19,13 @@ pub(super) struct Input {
 #[serde(tag = "outcome")]
 pub(super) enum Reply {
     Complete { invocation_id: String, pid: u32, captures: Vec<FetchOutcomeWire> },
-    Refused { invocation_id: String, pid: u32, origin: String, holder: serde_json::Value },
+    Refused {
+        invocation_id: String,
+        pid: u32,
+        origin: String,
+        holder: serde_json::Value,
+        captures: Vec<FetchOutcomeWire>,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -43,7 +49,23 @@ impl From<FetchOutcome> for FetchOutcomeWire {
 struct Counters {
     accepted: AtomicUsize,
     completed: AtomicUsize,
+    failed: AtomicUsize,
+    cancelled: AtomicUsize,
     active: AtomicUsize,
+}
+
+struct ActiveInvocation<'a> {
+    counters: &'a Counters,
+    settled: bool,
+}
+
+impl Drop for ActiveInvocation<'_> {
+    fn drop(&mut self) {
+        self.counters.active.fetch_sub(1, Ordering::SeqCst);
+        if !self.settled {
+            self.counters.cancelled.fetch_add(1, Ordering::SeqCst);
+        }
+    }
 }
 
 struct BudgetProbe {
@@ -58,9 +80,16 @@ impl BudgetProbe {
     async fn acquire(&self, ctx: Context<'_>, Json(input): Json<Input>) -> std::result::Result<Json<Reply>, HandlerError> {
         self.counters.accepted.fetch_add(1, Ordering::SeqCst);
         self.counters.active.fetch_add(1, Ordering::SeqCst);
+        let mut active = ActiveInvocation {
+            counters: &self.counters,
+            settled: false,
+        };
         let result = self.acquire_pages(&ctx, input).await;
-        self.counters.active.fetch_sub(1, Ordering::SeqCst);
-        self.counters.completed.fetch_add(1, Ordering::SeqCst);
+        match &result {
+            Ok(_) => self.counters.completed.fetch_add(1, Ordering::SeqCst),
+            Err(_) => self.counters.failed.fetch_add(1, Ordering::SeqCst),
+        };
+        active.settled = true;
         result.map(Json)
     }
 }
@@ -68,12 +97,19 @@ impl BudgetProbe {
 impl BudgetProbe {
     async fn acquire_pages(&self, ctx: &Context<'_>, input: Input) -> std::result::Result<Reply, HandlerError> {
         validate(&input)?;
+        let invocation = ctx.invocation_id().to_string();
         let mut captures = Vec::with_capacity(input.paths.len());
         for path in &input.paths {
-            let reply = ctx.run(|| self.fetch_page(ctx.invocation_id(), &input.origin, path)).await?.into_inner();
+            let reply = ctx
+                .run(|| self.fetch_page(&invocation, &input.origin, path))
+                .retry_policy(RunRetryPolicy::new().max_attempts(1))
+                .await?
+                .into_inner();
             match reply {
                 Reply::Complete { captures: page, .. } => captures.extend(page),
-                refused @ Reply::Refused { .. } => return Ok(refused),
+                Reply::Refused { invocation_id, pid, origin, holder, .. } => {
+                    return Ok(Reply::Refused { invocation_id, pid, origin, holder, captures });
+                }
             }
         }
         Ok(Reply::Complete { invocation_id: ctx.invocation_id().to_string(), pid: std::process::id(), captures })
@@ -86,6 +122,7 @@ impl BudgetProbe {
             Err(FetchError::OriginHeld { origin, holder }) => Reply::Refused {
                 invocation_id: invocation.to_string(), pid: std::process::id(), origin,
                 holder: serde_json::from_str(&holder).map_err(|error| TerminalError::new(error.to_string()))?,
+                captures: Vec::new(),
             },
             Err(error) => return Err(TerminalError::new(error.to_string()).into()),
         };
@@ -116,13 +153,29 @@ pub(super) async fn serve() -> Result<()> {
     let endpoint = Endpoint::builder().bind(BudgetProbe { store: Arc::clone(&store), fetcher, counters: Arc::clone(&counters) }).build();
     let listener = tokio::net::TcpListener::bind(&listen).await?;
     let mut signal = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
+    std::fs::create_dir_all(census_service::census::DEFAULT_ORIGIN_LOCK_ROOT)?;
+    let ready = serde_json::json!({
+        "pid":std::process::id(),
+        "listen":listen,
+        "store":std::fs::canonicalize(&root)?,
+        "origin_lock_root":std::fs::canonicalize(census_service::census::DEFAULT_ORIGIN_LOCK_ROOT)?,
+    });
+    std::fs::write(root.join("fixture-ready.json"), serde_json::to_vec_pretty(&ready)?)?;
     HttpServer::new(endpoint).serve_with_cancel(listener, signal.recv()).await;
     store.flush()?;
     let accepted = counters.accepted.load(Ordering::SeqCst);
     let completed = counters.completed.load(Ordering::SeqCst);
     let active = counters.active.load(Ordering::SeqCst);
-    let drain = serde_json::json!({"pid":std::process::id(),"accepted":accepted,"completed":completed,"remaining":active});
+    let failed = counters.failed.load(Ordering::SeqCst);
+    let cancelled = counters.cancelled.load(Ordering::SeqCst);
+    let drain = serde_json::json!({
+        "pid":std::process::id(),"accepted":accepted,"completed":completed,
+        "failed":failed,"cancelled":cancelled,"remaining":active,
+    });
     std::fs::write(root.join("fixture-drain.json"), serde_json::to_vec_pretty(&drain)?)?;
-    ensure!(active == 0 && accepted == completed, "fixture did not drain: {drain}");
+    ensure!(
+        active == 0 && accepted == completed.saturating_add(failed).saturating_add(cancelled),
+        "fixture did not reconcile drain: {drain}"
+    );
     Ok(())
 }

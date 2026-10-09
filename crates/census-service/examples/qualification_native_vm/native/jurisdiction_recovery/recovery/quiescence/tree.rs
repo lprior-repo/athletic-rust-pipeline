@@ -1,6 +1,6 @@
 use super::super::super::super::http::{query, rows};
 use super::super::super::input::{self, Original};
-use super::Pause;
+use super::{Control, Pause};
 use anyhow::{ensure, Result};
 use futures::{stream, StreamExt, TryStreamExt};
 use reqwest::Client;
@@ -81,7 +81,7 @@ pub(in super::super) async fn settle(
     client: &Client,
     original: &Original,
     pause: Pause,
-) -> Result<TreePause> {
+) -> Result<Control> {
     let before = inventory(client, original).await?;
     let mut descendant_pauses = Vec::new();
     descendant_pauses.try_reserve_exact(MAX_INVOCATIONS)?;
@@ -119,8 +119,16 @@ pub(in super::super) async fn settle(
         before,
         after,
     };
+    admit(original, proof)
+}
+
+fn admit(original: &Original, proof: TreePause) -> Result<Control> {
+    if root_completed(original, &proof.after)? {
+        super::completion::verify_tree(original, &proof.after)?;
+        return Ok(Control::Completed);
+    }
     proof.verify(original)?;
-    Ok(proof)
+    Ok(Control::Paused(proof))
 }
 
 #[tracing::instrument(skip(client, original, current, pauses))]
@@ -130,6 +138,9 @@ async fn pause_active(
     current: &[Value],
     pauses: Vec<Pause>,
 ) -> Result<Vec<Pause>> {
+    if root_completed(original, current)? {
+        return Ok(pauses);
+    }
     stream::iter(current)
         .map(Ok::<_, anyhow::Error>)
         .try_fold(pauses, |mut pauses, row| async move {
@@ -142,11 +153,48 @@ async fn pause_active(
                     pauses.len() < MAX_INVOCATIONS,
                     "descendant pause budget exhausted"
                 );
-                pauses.push(super::pause_id(client, id).await?);
+                let pause = super::pause_id(client, id).await?;
+                if pause.status_code == 202 {
+                    pauses.push(pause);
+                } else {
+                    let after = inventory(client, original).await?;
+                    verify_completed_pause_race(row, &after)?;
+                }
             }
             Ok(pauses)
         })
         .await
+}
+
+fn root_completed(original: &Original, tree: &[Value]) -> Result<bool> {
+    let row = tree
+        .iter()
+        .find(|row| row.get("id").and_then(Value::as_str) == Some(&original.id))
+        .ok_or_else(|| anyhow::anyhow!("original root absent during tree settlement"))?;
+    Ok(input::text(row, "status")? == "completed")
+}
+
+fn verify_completed_pause_race(before: &Value, tree: &[Value]) -> Result<()> {
+    let after = tree
+        .iter()
+        .find(|row| row.get("id") == before.get("id"))
+        .ok_or_else(|| anyhow::anyhow!("unacknowledged descendant pause lost its invocation"))?;
+    ensure!(
+        input::text(after, "status")? == "completed"
+            && input::text(after, "completion_result")? == "success"
+            && [
+                "target_service_name",
+                "target_service_key",
+                "target_handler_name",
+                "invoked_by_id",
+                "pinned_deployment_id",
+                "pinned_service_protocol_version",
+            ]
+            .into_iter()
+            .all(|field| after.get(field) == before.get(field)),
+        "descendant pause was neither accepted nor completed successfully with its original identity"
+    );
+    Ok(())
 }
 
 fn quiet(row: &Value) -> bool {

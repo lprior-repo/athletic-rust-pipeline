@@ -1,12 +1,12 @@
 use census_domain::model::{
-    CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam, CollectionSnapshot, NaturalKey, RetainedConflict, ReviewCase,
-    ReviewState, SourceEntityKind, SourceIdentity, SourceObjectIdentity,
+    CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, CanonicalTeam,
+    CollectionSnapshot, NaturalKey, RetainedConflict, ReviewCase, ReviewState, SourceEntityKind,
+    SourceIdentity, SourceObjectIdentity,
 };
 use std::collections::HashMap;
 
 use census_report::report::ReportResult;
-use census_store::{Entity, Store, Table};
+use census_store::{Entity, Store, StoreSnapshot, Table};
 
 mod apply;
 mod coverage;
@@ -52,16 +52,16 @@ const STAGE_OUTPUTS: [Table; 6] = [
     Table::AthleteIdentityDecisions,
 ];
 
-fn stage_digest(store: &Store) -> ReportResult<String> {
+fn stage_digest(snapshot: &StoreSnapshot<'_>) -> ReportResult<String> {
     let inputs: Vec<Table> = Table::ALL
         .into_iter()
         .filter(|table| !STAGE_OUTPUTS.contains(table))
         .collect();
-    Ok(store.snapshot().tables_digest(&inputs)?)
+    Ok(snapshot.tables_digest(&inputs)?)
 }
 
-fn stored_cases(store: &Store) -> ReportResult<HashMap<String, ReviewCase>> {
-    Ok(store
+fn stored_cases(snapshot: &StoreSnapshot<'_>) -> ReportResult<HashMap<String, ReviewCase>> {
+    Ok(snapshot
         .scan::<ReviewCase>(Table::ReviewCases)?
         .into_iter()
         .map(|case| (case.id.clone(), case))
@@ -99,11 +99,12 @@ pub fn derive(
     finished_at: &str,
     school_year: census_domain::model::SchoolYear,
 ) -> ReportResult<IndexReport> {
-    let digest = stage_digest(store)?;
-    let operation = format!("{STAGE_RECEIPT}:{digest}");
-    let pass = canonical_pass(store)?;
     let identity_applications = apply::apply_decisions(store, finished_at)?;
-    let dataset = census_report::export::ExportDataset::load(store)?;
+    let mut stage = store.stage_derived()?;
+    let digest = stage_digest(stage.view())?;
+    let operation = format!("{STAGE_RECEIPT}:{digest}");
+    let dataset = census_report::export::ExportDataset::from_snapshot(store, stage.view())?;
+    let pass = canonical_pass(&dataset);
     let retained = census_report::workbook::retained_records(&dataset, school_year)?;
     let coverage = coverage_rows(&dataset, &pass.identities)?;
 
@@ -115,7 +116,7 @@ pub fn derive(
         })
         .collect();
     conflicts.extend(pass.collisions);
-    let stored = stored_cases(store)?;
+    let stored = stored_cases(stage.view())?;
     let reviews: Vec<ReviewCase> = retained
         .reviews
         .iter()
@@ -125,9 +126,8 @@ pub fn derive(
         })
         .collect();
     let closed = superseded(&stored, &reviews);
-    let snapshot = snapshot_row(store, phase, finished_at)?;
+    let snapshot = snapshot_row(stage.view(), phase, finished_at)?;
 
-    let mut stage = store.stage_derived()?;
     for table in STAGE_OUTPUTS {
         if table.generation_partitioned() {
             stage.carry_forward(table)?;
@@ -197,28 +197,23 @@ struct CanonicalPass {
     collisions: Vec<RetainedConflict>,
 }
 
-fn canonical_pass(store: &Store) -> ReportResult<CanonicalPass> {
+fn canonical_pass(dataset: &census_report::export::ExportDataset) -> CanonicalPass {
     let mut pass = CanonicalPass::default();
-    absorb(&mut pass, store.scan::<CanonicalSchool>(Table::Schools)?);
-    absorb(&mut pass, store.scan::<CanonicalTeam>(Table::Teams)?);
-    absorb(&mut pass, store.scan::<CanonicalCoach>(Table::Coaches)?);
-    absorb(&mut pass, store.snapshot().athletes()?);
-    absorb(&mut pass, store.scan::<CanonicalMeet>(Table::Meets)?);
-    take_collisions(
-        &mut pass,
-        store.scan::<CanonicalEvent>(Table::Events)?.iter(),
-    );
-    take_collisions(
-        &mut pass,
-        store
-            .scan::<CanonicalPerformance>(Table::Performances)?
-            .iter(),
-    );
-    Ok(pass)
+    absorb(&mut pass, dataset.schools.values());
+    absorb(&mut pass, dataset.teams.values());
+    absorb(&mut pass, &dataset.coaches);
+    absorb(&mut pass, &dataset.athletes);
+    absorb(&mut pass, &dataset.meets);
+    take_collisions(&mut pass, &dataset.events);
+    take_collisions(&mut pass, &dataset.performances);
+    pass
 }
 
-fn absorb<T: IdentityBearing + NaturalKey>(pass: &mut CanonicalPass, entities: Vec<T>) {
-    for entity in &entities {
+fn absorb<'a, T: IdentityBearing + NaturalKey + 'a>(
+    pass: &mut CanonicalPass,
+    entities: impl IntoIterator<Item = &'a T>,
+) {
+    for entity in entities {
         for identity in entity.source_identities() {
             let mut row = SourceObjectIdentity::new(
                 identity.namespace.clone(),
@@ -231,8 +226,9 @@ fn absorb<T: IdentityBearing + NaturalKey>(pass: &mut CanonicalPass, entities: V
             }
             pass.identities.push(row);
         }
+        pass.collisions
+            .extend(entity.retained_conflicts().iter().cloned());
     }
-    take_collisions(pass, entities.iter());
 }
 
 fn take_collisions<'a, T: NaturalKey + 'a>(
@@ -245,10 +241,13 @@ fn take_collisions<'a, T: NaturalKey + 'a>(
     }
 }
 
-fn snapshot_row(store: &Store, phase: &str, finished_at: &str) -> ReportResult<CollectionSnapshot> {
-    let stats = store.stats()?;
+fn snapshot_row(
+    view: &StoreSnapshot<'_>,
+    phase: &str,
+    finished_at: &str,
+) -> ReportResult<CollectionSnapshot> {
     let mut snapshot = CollectionSnapshot::new(phase, finished_at);
-    for (table, observations) in stats.appended {
+    for (table, observations) in view.appended_counts()? {
         snapshot.observations.insert(table, observations);
     }
     Ok(snapshot)

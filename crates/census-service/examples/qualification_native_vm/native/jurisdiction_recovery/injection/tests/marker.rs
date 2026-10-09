@@ -81,6 +81,8 @@ fn marker_cannot_override_completed_parent_or_completed_teams_stage() -> Result<
             at: "2026-10-02".to_owned(),
             errors: Vec::new(),
             notes: Vec::new(),
+            disposition: census_crawl::CollectionDisposition::Complete,
+            unfinished: Vec::new(),
         }
         .try_into()?,
     );

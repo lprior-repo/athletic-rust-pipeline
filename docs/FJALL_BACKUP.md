@@ -10,6 +10,10 @@ Canonical operator procedure. The store's own table and key definitions
 Stop intake, drain and close the sole store-owning process before backup. The backup API takes the
 Fjall lock and refuses a live owner. `Store::snapshot()` pins an in-process MVCC read view; it does
 not make an arbitrary live-directory copy consistent across journal rotation and compaction.
+`Store::snapshot()` also takes the store's append lock while it pins that view, so the view and both
+generation counters (`evidence_generation`, `derived_generation`) describe one write boundary rather
+than a batch committed between the two reads. A reader waits only for the commit critical section,
+not for the reads that follow it.
 `flush()` makes writes durable but does not pause writers. Cold backup is the supported path.
 
 Current `Store::backup` copies existing `fjall/`, `entities/`, `journal/`, `http/` and `out/` subtrees,

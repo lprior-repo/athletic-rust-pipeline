@@ -122,8 +122,15 @@ fn team_map(rows: Vec<CanonicalTeam>) -> BTreeMap<TeamId, CanonicalTeam> {
 impl ExportDataset {
     pub fn load(store: &Store) -> ReportResult<Self> {
         let snapshot = store.snapshot();
-        let loaded = read::all(&snapshot)?;
-        Self::from_loaded(loaded, frozen::lineage(store, &snapshot)?)
+        Self::from_snapshot(store, &snapshot)
+    }
+
+    pub fn from_snapshot(
+        store: &Store,
+        snapshot: &census_store::StoreSnapshot<'_>,
+    ) -> ReportResult<Self> {
+        let loaded = read::all(snapshot)?;
+        Self::from_loaded(loaded, frozen::lineage(store, snapshot)?)
     }
 
     pub fn for_job(store: &Store, job: &str) -> ReportResult<Self> {

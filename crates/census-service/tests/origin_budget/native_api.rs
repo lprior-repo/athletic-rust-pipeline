@@ -60,8 +60,12 @@ pub(super) async fn submit(client: &reqwest::Client, ingress: &str, key: &str, i
     let value = request(client.post(format!("{ingress}/BudgetProbe/acquire/send"))
         .header("idempotency-key", key).json(input), path).await?;
     let submission: Submission = serde_json::from_value(value)?;
-    ensure!(submission.invocation_id.starts_with("inv_") && submission.invocation_id.len() <= 128,
-        "invalid original native invocation identity");
+    ensure!(
+        submission.invocation_id.starts_with("inv_")
+            && submission.invocation_id.len() <= 128
+            && submission.invocation_id.bytes().all(|byte| byte.is_ascii_alphanumeric() || byte == b'_'),
+        "invalid original native invocation identity"
+    );
     ensure!(submission.status == "Accepted" || submission.status == "PreviouslyAccepted", "invalid submission disposition");
     Ok(submission)
 }
@@ -75,14 +79,39 @@ pub(super) async fn attach(client: &reqwest::Client, ingress: &str, submitted: &
 }
 
 pub(super) async fn journal(client: &reqwest::Client, admin: &str, path: &Path, expected: &[&Submission]) -> Result<Value> {
-    let query = "SELECT id, status, target_service_name, target_handler_name, completion_result FROM sys_invocation WHERE target_service_name = 'BudgetProbe' ORDER BY id";
+    let query = "SELECT id, status, target_service_name, target_handler_name, completion_result, pinned_deployment_id, journal_size FROM sys_invocation WHERE target_service_name = 'BudgetProbe' ORDER BY id LIMIT 17";
     let value = request(client.post(format!("{admin}/query")).header("accept", "application/json").json(&json!({"query":query})), path).await?;
     let rows = value.get("rows").and_then(Value::as_array).ok_or_else(|| anyhow::anyhow!("native journal rows missing"))?;
     ensure!(rows.len() == expected.len(), "native original invocation census differs: {value}");
     for submission in expected {
         ensure!(rows.iter().filter(|row| row.get("id").and_then(Value::as_str) == Some(&submission.invocation_id)
-            && row.get("status").and_then(Value::as_str) == Some("completed")).count() == 1,
-            "original native invocation did not survive completed: {value}");
+            && row.get("status").and_then(Value::as_str) == Some("completed")
+            && row.get("completion_result").and_then(Value::as_str) == Some("success")
+            && row.get("target_handler_name").and_then(Value::as_str) == Some("acquire")
+            && row.get("pinned_deployment_id").and_then(Value::as_str).is_some_and(|id| !id.is_empty())
+            && row.get("journal_size").and_then(Value::as_u64).is_some_and(|size| size > 0)).count() == 1,
+            "original native invocation did not survive completed with deployment and journal: {value}");
     }
-    Ok(value)
+    let mut journals = Vec::with_capacity(expected.len());
+    for submission in expected {
+        let query = format!(
+            "SELECT id, index, version, entry_type, entry_json FROM sys_journal WHERE id = '{}' ORDER BY index LIMIT 65",
+            submission.invocation_id
+        );
+        let artifact = path.with_file_name(format!("{}-journal.json", submission.invocation_id));
+        let journal = request(
+            client.post(format!("{admin}/query")).header("accept", "application/json").json(&json!({"query":query})),
+            &artifact,
+        ).await?;
+        let entries = journal.get("rows").and_then(Value::as_array)
+            .ok_or_else(|| anyhow::anyhow!("actual admin journal rows missing"))?;
+        ensure!(!entries.is_empty() && entries.len() <= 64, "actual retained native journal missing/exceeded bound: {journal}");
+        ensure!(entries.iter().all(|entry|
+            entry.get("id").and_then(Value::as_str) == Some(&submission.invocation_id)
+                && entry.get("index").and_then(Value::as_u64).is_some()
+                && entry.get("entry_type").and_then(Value::as_str).is_some()
+        ), "foreign/malformed actual journal: {journal}");
+        journals.push(json!({"invocation_id":submission.invocation_id,"artifact":artifact,"journal":journal}));
+    }
+    Ok(json!({"invocations":value,"journals":journals}))
 }

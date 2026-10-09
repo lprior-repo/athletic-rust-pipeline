@@ -37,7 +37,18 @@ pub(super) async fn observe(
     release: watch::Receiver<Release>,
     stop: oneshot::Receiver<()>,
 ) -> Result<Vec<Request>> {
-    observe_bounded(listener, directory, handshake, release, stop, Bounds { connections: 8, events: 16 }).await
+    observe_bounded(
+        listener,
+        directory,
+        handshake,
+        release,
+        stop,
+        Bounds {
+            connections: 8,
+            events: 16,
+        },
+    )
+    .await
 }
 
 pub(super) async fn observe_bounded(
@@ -90,7 +101,10 @@ pub(super) async fn observe_bounded(
     drop(event_tx);
     let drained = drain(&mut tasks, &mut event_rx, &mut log, &mut events, bounds).await;
     log.sync_all()?;
-    ensure!(connections <= bounds.connections, "physical connection bound exceeded");
+    ensure!(
+        connections <= bounds.connections,
+        "physical connection bound exceeded"
+    );
     drained?;
     if let Some(error) = failure {
         return Err(error);
@@ -98,7 +112,12 @@ pub(super) async fn observe_bounded(
     ledger::assemble(events)
 }
 
-fn record(event: Option<Event>, log: &mut std::fs::File, events: &mut Vec<Event>, bound: usize) -> Result<()> {
+fn record(
+    event: Option<Event>,
+    log: &mut std::fs::File,
+    events: &mut Vec<Event>,
+    bound: usize,
+) -> Result<()> {
     let event = event.ok_or_else(|| anyhow::anyhow!("physical ledger channel closed"))?;
     ensure!(events.len() < bound, "physical event bound exceeded");
     serde_json::to_writer(&mut *log, &event)?;

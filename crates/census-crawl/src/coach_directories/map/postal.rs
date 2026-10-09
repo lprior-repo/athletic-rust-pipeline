@@ -10,7 +10,7 @@ use census_domain::school_directory::{
 use census_domain::UsJurisdiction;
 
 #[derive(Clone, Copy)]
-pub(in super::super) struct Capture<'a> {
+pub(crate) struct Capture<'a> {
     pub url: &'a str,
     pub observed_on: &'a str,
     pub sha256: &'a str,

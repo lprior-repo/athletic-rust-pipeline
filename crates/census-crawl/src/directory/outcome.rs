@@ -1,4 +1,4 @@
-use super::{limits, ReadCounts, RowIssue};
+use super::{budget::ReadBudget, limits, ReadCounts, RowIssue};
 use crate::CollectionDisposition;
 use census_domain::school_directory::{DirectoryError, SchoolDirectoryEntry};
 
@@ -10,11 +10,24 @@ pub struct ReadOutcome {
     retained_bytes: usize,
     stopped: Option<(usize, DirectoryError)>,
     drained: bool,
+    budget: ReadBudget,
 }
 
 impl ReadOutcome {
     pub fn new() -> Self {
         Self::default()
+    }
+    pub(super) fn with_budget(budget: ReadBudget) -> Self {
+        Self {
+            budget,
+            ..Self::default()
+        }
+    }
+    pub(super) fn source_row_limit(&self) -> usize {
+        self.budget.source_rows()
+    }
+    pub fn frontier_complete(&self) -> bool {
+        self.drained && self.stopped.is_none()
     }
     pub fn entries(&self) -> &[SchoolDirectoryEntry] {
         &self.entries
@@ -50,8 +63,8 @@ impl ReadOutcome {
         }
     }
     pub fn push(&mut self, entry: SchoolDirectoryEntry) -> Result<(), DirectoryError> {
-        let retained = limits::admitted(self.retained_bytes, &entry)?;
-        limits::reserve(&mut self.entries, 1)?;
+        let retained = limits::admitted(self.retained_bytes, &entry, self.budget)?;
+        limits::reserve(&mut self.entries, 1, self.budget)?;
         self.entries.push(entry);
         self.retained_bytes = retained;
         Ok(())
@@ -63,8 +76,8 @@ impl ReadOutcome {
         detail: impl AsRef<str>,
     ) -> Result<(), DirectoryError> {
         let issue = RowIssue::new(line, field, detail)?;
-        let retained = limits::admitted(self.retained_bytes, &issue)?;
-        limits::reserve(&mut self.skipped, 1)?;
+        let retained = limits::admitted(self.retained_bytes, &issue, self.budget)?;
+        limits::reserve(&mut self.skipped, 1, self.budget)?;
         self.skipped.push(issue);
         self.retained_bytes = retained;
         Ok(())
@@ -76,8 +89,8 @@ impl ReadOutcome {
         detail: impl AsRef<str>,
     ) -> Result<(), DirectoryError> {
         let issue = RowIssue::new(line, field, detail)?;
-        let retained = limits::admitted(self.retained_bytes, &issue)?;
-        limits::reserve(&mut self.notes, 1)?;
+        let retained = limits::admitted(self.retained_bytes, &issue, self.budget)?;
+        limits::reserve(&mut self.notes, 1, self.budget)?;
         self.notes.push(issue);
         self.retained_bytes = retained;
         Ok(())
@@ -94,11 +107,11 @@ impl ReadOutcome {
         limits::check(
             "directory retained bytes",
             retained,
-            limits::MAX_RETAINED_BYTES,
+            self.budget.retained_bytes(),
         )?;
-        limits::reserve(&mut self.entries, other.entries.len())?;
-        limits::reserve(&mut self.skipped, other.skipped.len())?;
-        limits::reserve(&mut self.notes, other.notes.len())?;
+        limits::reserve(&mut self.entries, other.entries.len(), self.budget)?;
+        limits::reserve(&mut self.skipped, other.skipped.len(), self.budget)?;
+        limits::reserve(&mut self.notes, other.notes.len(), self.budget)?;
         self.entries.extend(other.entries);
         self.skipped.extend(other.skipped);
         self.notes.extend(other.notes);

@@ -232,3 +232,35 @@ fn integer_memory_budget_preserves_exact_five_percent_above_float_precision() ->
     }
     Ok(())
 }
+
+#[test]
+fn configured_memory_tolerance_retains_integer_boundary_and_one_unit_refusal() -> Result<()> {
+    for (tolerance, before, boundary) in [
+        (0.025, 200, 205),
+        (0.0, u64::MAX - 1, u64::MAX - 1),
+        (1e-100, u64::MAX - 1, u64::MAX - 1),
+        (1e-20, u64::MAX - 1, u64::MAX - 1),
+    ] {
+        let mut old = measurement(Some(100.0), 1.0);
+        let mut current = old.clone();
+        set_memory(&mut old, "allocation count", Some(before))?;
+        set_memory(&mut current, "allocation count", Some(boundary))?;
+        check_throughput(&baseline(old.clone()), &groups(current.clone()), tolerance)?;
+        let exceeded = boundary
+            .checked_add(1)
+            .ok_or_else(|| anyhow!("memory boundary fixture overflowed"))?;
+        set_memory(&mut current, "allocation count", Some(exceeded))?;
+        check!(check_throughput(&baseline(old), &groups(current), tolerance).is_err());
+    }
+    Ok(())
+}
+
+#[test]
+fn maximum_integer_memory_measurements_do_not_overflow_tolerance_limit() -> Result<()> {
+    let mut old = measurement(Some(100.0), 1.0);
+    for label in ["peak RSS", "allocation count", "allocated bytes"] {
+        set_memory(&mut old, label, Some(u64::MAX))?;
+    }
+    check_throughput(&baseline(old.clone()), &groups(old), 0.05)?;
+    Ok(())
+}

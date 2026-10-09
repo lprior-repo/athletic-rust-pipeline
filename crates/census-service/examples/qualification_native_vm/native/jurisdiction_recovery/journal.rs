@@ -15,6 +15,9 @@ mod ledger;
 pub(super) use future::awaited;
 pub(super) use ledger::source_ledger;
 
+#[cfg(test)]
+pub(super) mod tests;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub(super) struct JournalRef {
     pub(super) invocation_id: String,
@@ -86,8 +89,10 @@ pub(super) fn calls(journal: &[Value], original: &Original) -> Result<Vec<Source
         if let Some(call) = source_call(row, &entry, original)? {
             ensure!(calls.len() < 16, "source call budget exceeded");
             ensure!(
-                calls.iter().all(|prior: &SourceCall| prior.child_id != call.child_id
-                    && prior.child_key != call.child_key),
+                calls
+                    .iter()
+                    .all(|prior: &SourceCall| prior.child_id != call.child_id
+                        && prior.child_key != call.child_key),
                 "duplicate original source call identity"
             );
             calls.try_reserve(1)?;

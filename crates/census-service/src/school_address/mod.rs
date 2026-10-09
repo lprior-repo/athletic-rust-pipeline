@@ -12,9 +12,11 @@ mod read;
 mod report;
 
 pub use generation_error::GenerationError;
+pub(crate) use join::join_generation_pinned;
 pub use join::{
-    build_lane_evidence, join_generation, parse_source_pairs, process, Counters, JoinError,
-    JoinReport, LaneEvidence, LaneSelection, LaneSet, Mode, OutcomeRow, Overrides,
+    build_lane_evidence, join_generation, parse_source_pairs, preflight_generation, process,
+    Counters, JoinError, JoinReport, LaneEvidence, LaneSelection, LaneSet, Mode, OutcomeRow,
+    Overrides,
 };
 pub use manifest::{verify_current, VerifiedGeneration};
 pub use report::{

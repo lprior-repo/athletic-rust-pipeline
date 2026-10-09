@@ -52,9 +52,9 @@ impl<'s> DerivedStage<'s> {
     pub(super) fn begin(store: &'s Store) -> StoreResult<Self> {
         let exclusivity = store.lock_staging();
         let generation = generation::reserve_derived(&store.db, &store.meta)?;
-        let base_evidence = store.evidence_generation();
-        let base_derived_generation = store.derived_generation();
         let snapshot = store.snapshot();
+        let base_evidence = snapshot.evidence_generation();
+        let base_derived_generation = snapshot.derived_generation();
         Ok(Self {
             store,
             exclusivity: Some(exclusivity),

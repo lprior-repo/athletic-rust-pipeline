@@ -2,13 +2,12 @@ use std::collections::HashMap;
 
 use crate::{CrawlError, CrawlResult};
 
-use super::ReadOutcome;
+use super::{budget::ReadBudget, ReadOutcome};
 use census_domain::school_directory::DirectoryError;
 #[path = "artifact/decoded.rs"]
 mod decoded;
 pub use decoded::CsvRow;
 use decoded::Decoder;
-const MAX_SOURCE_ROWS: usize = 65_536;
 
 pub struct Header {
     columns: HashMap<String, usize>,
@@ -82,23 +81,43 @@ pub fn refusal(error: csv::Error) -> CrawlError {
     }
 }
 
-pub fn read_rows<F>(
+pub fn read_rows<F>(text: &str, source: &str, required: &[&str], row: F) -> CrawlResult<ReadOutcome>
+where
+    F: FnMut(&Header, &CsvRow<'_>, usize, &mut ReadOutcome) -> Result<(), DirectoryError>,
+{
+    read_rows_with_budget(text, source, required, row, ReadBudget::Page)
+}
+
+pub(crate) fn read_national_rows<F>(
     text: &str,
     source: &str,
     required: &[&str],
-    mut row: F,
+    row: F,
 ) -> CrawlResult<ReadOutcome>
 where
     F: FnMut(&Header, &CsvRow<'_>, usize, &mut ReadOutcome) -> Result<(), DirectoryError>,
 {
-    let mut decoder = Decoder::new(text)?;
+    read_rows_with_budget(text, source, required, row, ReadBudget::NationalFile)
+}
+
+fn read_rows_with_budget<F>(
+    text: &str,
+    source: &str,
+    required: &[&str],
+    mut row: F,
+    budget: ReadBudget,
+) -> CrawlResult<ReadOutcome>
+where
+    F: FnMut(&Header, &CsvRow<'_>, usize, &mut ReadOutcome) -> Result<(), DirectoryError>,
+{
+    let mut decoder = Decoder::new(text, budget.input_bytes())?;
     let header_row = decoder.next()?.ok_or_else(|| CrawlError::Invariant {
         detail: "directory artifact has no header".into(),
     })?;
     let header = Header::of(&header_row)?;
     header.require(source, required)?;
-    let mut outcome = ReadOutcome::new();
-    let stop = (0..=MAX_SOURCE_ROWS)
+    let mut outcome = ReadOutcome::with_budget(budget);
+    let stop = (0..=budget.source_rows())
         .find_map(|ordinal| visit(&mut decoder, &header, &mut row, &mut outcome, ordinal))
         .ok_or_else(|| CrawlError::Invariant {
             detail: "directory CSV frontier was not classified".into(),
@@ -136,13 +155,13 @@ where
         Ok(None) => return Some(Stop::End(ordinal)),
         Err(error) => return Some(Stop::Refused(decoder.row_start(), error)),
     };
-    if ordinal == MAX_SOURCE_ROWS {
+    if ordinal == outcome.source_row_limit() {
         return Some(Stop::Refused(
             record.line,
             DirectoryError::Capacity {
                 resource: "directory CSV source rows",
                 requested: ordinal + 1,
-                limit: MAX_SOURCE_ROWS,
+                limit: outcome.source_row_limit(),
             },
         ));
     }

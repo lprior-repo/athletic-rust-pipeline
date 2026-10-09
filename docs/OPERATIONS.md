@@ -89,10 +89,25 @@ source units and actually wired stage handlers are different things; inspect ref
 units rather than infer coverage from a registered name. A roster or meet page is shared evidence,
 not per-athlete work. Respect source policy and shared physical admission, not a per-workflow budget.
 
-Current public coach CSV import and some batch derivations remain separate command surfaces; the
-active plan requires their coherent durable integration. Weekly staging units are operational legacy,
-not a second canonical census or proof of a fresh source-to-output path. Do not run old offline
-collection chains against the serving store or copy their output into a new run as its population.
+The national workflow runs school-site contact acquisition for every requested jurisdiction after
+the school-address join has attached source-backed official websites, and before consolidation.
+Its durable `TeamsSource.contacts` key is `<jurisdiction identity>/contacts/sidearm_staff`, distinct
+from the earlier team-discovery phase. `open-work` includes this obligation even where the registry
+has no singleton SIDEARM seed. Old completed team receipts cannot complete this contact phase.
+Only source-owned, qualified staff rows bind coach appointments; unsupported pages, missing websites,
+ambiguous owners/categories and access stops remain owed. A published listing binds currentness to
+the run school year under ADR-024; it does not independently establish freshness or corroboration.
+School office/athletics mailboxes remain separate school-owned claims.
+
+Inspect the settled phase with `national-report --contacts` using the original season, revision and
+jurisdiction set. Its `source_rows` measures adapter rows, not distinct schools or nationwide recall;
+unknown acquisition counts are null. An absent report means the contact fan-out is not yet measured,
+not successful-empty. Use `open-work` for individual active/unfinished obligations.
+
+Public coach CSV import remains a separate operator-controlled surface, not population discovery.
+Weekly staging units are operational legacy, not a second canonical census or proof of a fresh
+source-to-output path. Do not run old offline collection chains against the serving store or copy
+their output into a new run as its population.
 
 An index rebuild and review application can change review-case populations. Retained verdicts and
 unresolved candidates must reconcile; never choose a smaller intermediate case table to obtain a
@@ -498,12 +513,30 @@ target/moon-portable/x86_64-unknown-linux-gnu/release/census-service school-addr
 `https://nces.ed.gov/surveys/pss/zip/pss2324_pu_csv.zip` archive; the verb reads the CSV, not the
 archive.)
 
-The run above produced 122 692 entries (CCD 100 307, PSS 22 385) over 122 692 rows with 1 920
-skipped rows and 386 notes, a `current/` publication with `manifest.json`,
+The national CCD/PSS CSV readers admit at most 128 MiB of input, 200,000 source rows and
+200,000 retained rows per vector, with a shared 512 MiB retained-byte accounting limit.
+These national-file limits do not enlarge the ordinary directory-page limits. Any decoder stop
+or unfinished frontier refuses generation publication; a parsed prefix is not a complete input.
+
+CCD school jurisdiction prefers the source's physical `LSTATE` to its administrative `ST`;
+`ST` and then `MSTATE` remain fallbacks when the location state is absent. Agency code `BI`
+is not a geographic exclusion when the same row publishes an in-scope physical state.
+NCES school keys are unchanged. Address selection still retains one owned physical or mailing
+tuple and its explicit kind; jurisdiction selection does not splice address components.
+
+The 2026-10-08 code-only replay of these retained files produced 122,518 all-grade school records
+across the 49 approved jurisdictions: 100,133 CCD physical-address records and 22,385 PSS
+mailing-address records. Seventeen PSS ZIP codes remain unknown, not reconstructed.
+There are 70,056 website claims; ID, IN, KY, LA, NE, RI and SC have no website links in this input.
+This is an observed NCES frame, not a measured nationwide school/program denominator or a coach
+mailbox census. The files' source-year lag and missing fields remain material limitations.
+
+Historical 2026-10-04 execution produced 122,692 entries (CCD 100,307, PSS 22,385) over 122,692
+rows with 1,920 skipped rows and 386 notes, a `current/` publication with `manifest.json`,
 `school_directory.json`, `school_directory.csv`, `pipeline_report.json`, `baseline.json` and
 `update_ledger.json`, and lane digests `nces-ccd=d1473136…`, `nces-pss=14a2f9e6…`.
 
-Re-reading the same captures with the CCD `WEBSITE` column mapped changes nothing about the
+Historical re-reading of those captures with the CCD `WEBSITE` column mapped changed nothing about the
 entries — same 122 692 over 122 692 rows, same 1 920 skipped rows — and adds only website notes:
 the CCD lane goes from 369 to 398 notes because 29 `WEBSITE` cells are not http(s) URLs (for
 example `website is not a supported value: "http://601 South Clinton Street"`), and the exported
@@ -521,14 +554,14 @@ target/moon-portable/x86_64-unknown-linux-gnu/release/census-service --store var
   --evidence-date nces-ccd=YYYY-MM-DD --evidence-date nces-pss=YYYY-MM-DD
 ```
 
-A national run always executes the join. A request without a school-directory argument carries no
-generation, and the workflow resolves the default root `<data-dir>/school-address` at the end of the
-fan-out — after every jurisdiction has swept. That root must therefore hold `current/` before the
-run is submitted, or the whole run fails terminally with
-`generation i/o failed for <data-dir>/school-address/current`; the 2026-10-06 national run lost ~13 h
-of sweeping to exactly that. Build it with the same binary that will serve the run (a generation
-built by an older binary can fail the join's manifest digest check), then submit, or pass
-`--school-directory <root>` explicitly:
+A national run validates the school-directory generation and every lane's URL/acquisition-date
+attribution through `Census.school_address_preflight` before starting jurisdiction fan-out.
+Missing `current/`, malformed artifacts, digest mismatches and unattributed lanes are refused early.
+The verified manifest digest is journalled into the address-join request; a different generation is
+refused before applying any join effects. A request without `--school-directory` resolves
+`<data-dir>/school-address`. Build that input with the same binary that will serve the run, then
+submit, or pass `--school-directory <root>` explicitly. The historical 2026-10-06 run lost about
+13 hours because its missing input was checked only after sweeping; that is not the current order.
 
 ```sh
 target/moon-portable/x86_64-unknown-linux-gnu/release/census-service school-address \
@@ -536,6 +569,19 @@ target/moon-portable/x86_64-unknown-linux-gnu/release/census-service school-addr
   --pss /home/lewis/src/ad-law-scrape/data/nces/pss/pss2324_pu.csv \
   --out <data-dir>/school-address --now 2026-10
 ```
+
+Check the exact input without opening a store or starting acquisition:
+
+```sh
+target/moon-portable/x86_64-unknown-linux-gnu/release/census-service school-address-preflight \
+  --generation <data-dir>/school-address \
+  --evidence-url nces-ccd=https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2526_w_0a_050626.zip \
+  --evidence-url nces-pss=https://nces.ed.gov/surveys/pss/zip/pss2324_pu_csv.zip \
+  --evidence-date nces-ccd=YYYY-MM-DD --evidence-date nces-pss=YYYY-MM-DD
+```
+
+Use the actual retained capture dates, not the replay/build date. Passing preflight verifies these
+declared input bytes and attribution, not school-population recall, contact availability or freshness.
 
 A provider read from more than one capture needs per-capture attribution, and every generation
 records it: each lane in `pipeline_report.json` carries the source keys (`captured`) that its own
@@ -551,10 +597,12 @@ instead of guessing, and rebuilding it from the same captures restores the links
 6.8 MB to the 122 692-entry report above (0.3 MB → 6.8 MB; the corpus itself is 83.8 MB), because
 per-capture keys, not whole entries, are what naming a claim's bytes costs.
 
-The durable lane is the `SchoolAddressJoin` workflow (Restate service `SchoolAddressJoin`, key
-`<run identity>:school-address-join`). The national workflow invokes it after the jurisdiction
-census and consolidation and before workbook publication, carrying `--evidence-*` equivalents in
-its request; invoke it directly through the ingress only when repeating a failed stage:
+The durable apply lane remains the `SchoolAddressJoin` workflow (Restate service `SchoolAddressJoin`,
+key `<run identity>:school-address-join`). National execution orders preflight, jurisdiction census,
+digest-fenced address join, school-site contacts and consolidation. Workbook publication remains a
+separate existing publication surface; a national report alone is not an exported or sealed workbook.
+The workflow carries `--evidence-*` equivalents and the preflight digest in its request; invoke it
+directly through the ingress only when repeating a failed stage:
 
 ```sh
 curl -s -X POST "http://127.0.0.1:<ingress>/SchoolAddressJoin/<key>/run" \

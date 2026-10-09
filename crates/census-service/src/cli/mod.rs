@@ -16,6 +16,7 @@ mod retained_events;
 mod retained_marks;
 mod review;
 mod school_address_join;
+mod school_address_preflight;
 mod school_names;
 mod school_sites;
 mod seal;
@@ -149,6 +150,7 @@ pub(super) async fn run() -> Result<()> {
         Command::National(args) => national::run_national(&cli, args).await,
         Command::Jurisdiction(args) => national::run_jurisdiction(&cli, args).await,
         Command::NationalReport(args) => national::run_national_report(&cli, args).await,
+        Command::SchoolAddressPreflight(args) => school_address_preflight::run(args),
         Command::OpenWork(args) => open_work::run_open_work(&cli, args).await,
         Command::BrowserSession(args) => browser_session::run_browser_session(&cli, args).await,
         Command::Seal(args) => seal::run_seal(&cli, args).await,

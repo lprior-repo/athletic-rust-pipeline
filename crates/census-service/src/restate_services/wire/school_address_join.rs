@@ -12,6 +12,8 @@ pub struct SchoolAddressJoinRequest {
     pub urls: BTreeMap<String, String>,
     #[serde(default)]
     pub dates: BTreeMap<String, String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expected_digest: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -1,5 +1,6 @@
 use anyhow::{ensure, Result};
 use serde::Serialize;
+use std::os::unix::process::ExitStatusExt;
 use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
@@ -12,6 +13,10 @@ pub(super) struct Owned {
     pub pid: u32,
     pub argv: Vec<String>,
     pub exit_code: Option<i32>,
+    pub exit_signal: Option<i32>,
+    pub term_delivered: bool,
+    pub reaped: bool,
+    pub ports_released: bool,
     pub root: PathBuf,
     pub ports: Vec<u16>,
     pub log: PathBuf,
@@ -23,7 +28,11 @@ impl Owned {
         let file = std::fs::OpenOptions::new().create_new(true).write(true).open(&log)?;
         let child = Command::new(binary).args(&argv).stdin(Stdio::null())
             .stdout(Stdio::from(file.try_clone()?)).stderr(Stdio::from(file)).spawn()?;
-        Ok(Self { pid: child.id(), child, argv, exit_code: None, root: root.into(), ports, log })
+        Ok(Self {
+            pid: child.id(), child, argv, exit_code: None, exit_signal: None,
+            term_delivered: false, reaped: false, ports_released: false,
+            root: root.into(), ports, log,
+        })
     }
 
     pub(super) fn endpoint(directory: &Path, name: &str, port: u16) -> Result<Self> {
@@ -36,31 +45,63 @@ impl Owned {
             .env("CENSUS_BUDGET_FIXTURE_LISTEN", format!("127.0.0.1:{port}"))
             .env("CENSUS_BUDGET_FIXTURE_AGENT", format!("CensusOriginBudgetQualification/{name}"))
             .stdin(Stdio::null()).stdout(Stdio::from(file.try_clone()?)).stderr(Stdio::from(file)).spawn()?;
-        Ok(Self { pid: child.id(), child, argv, exit_code: None, root, ports: vec![port], log })
+        Ok(Self {
+            pid: child.id(), child, argv, exit_code: None, exit_signal: None,
+            term_delivered: false, reaped: false, ports_released: false,
+            root, ports: vec![port], log,
+        })
     }
 
     pub(super) fn require_live(&mut self) -> Result<()> {
-        ensure!(self.child.try_wait()?.is_none(), "owned process {} died; see {}", self.pid, self.log.display());
+        let status = self.child.try_wait()?;
+        if let Some(status) = status {
+            self.record_exit(status);
+            return Err(anyhow::anyhow!(
+                "owned process {} died: {status}; see {}", self.pid, self.log.display()
+            ));
+        }
         Ok(())
     }
 
     pub(super) async fn stop(&mut self) -> Result<()> {
-        if self.exit_code.is_some() { return Ok(()); }
-        self.require_live()?;
-        let status = Command::new("kill").args(["-TERM", &self.pid.to_string()]).status()?;
-        ensure!(status.success(), "owned process TERM delivery failed: {status}");
-        let mut ticks = tokio::time::interval(Duration::from_millis(100));
-        for _ in 0..900 {
+        if self.reaped {
+            self.require_ports_released()?;
+            self.ports_released = true;
+            ensure!(self.exit_code == Some(0), "owned process {} exited abnormally", self.pid);
+            return Ok(());
+        }
+        if let Some(status) = self.child.try_wait()? {
+            self.record_exit(status);
+            self.require_ports_released()?;
+            self.ports_released = true;
+            return Err(anyhow::anyhow!("owned process {} exited before TERM: {status}", self.pid));
+        }
+        self.term()?;
+        let mut ticks = tokio::time::interval(Duration::from_millis(10));
+        for _ in 0..9000 {
             if let Some(status) = self.child.try_wait()? {
-                self.exit_code = status.code();
-                ensure!(self.exit_code == Some(0), "owned process {} failed: {status}; {}", self.pid, self.log.display());
-                return self.require_ports_released();
+                self.record_exit(status);
+                self.require_ports_released()?;
+                self.ports_released = true;
+                ensure!(status.success(), "owned process {} failed: {status}; {}", self.pid, self.log.display());
+                return Ok(());
             }
             ticks.tick().await;
         }
-        self.child.kill()?;
-        let status = self.child.wait()?;
-        Err(anyhow::anyhow!("owned process {} exceeded drain; emergency reaped {status}", self.pid))
+        Err(anyhow::anyhow!("owned process {} exceeded 90s TERM drain; guard retains reap obligation", self.pid))
+    }
+
+    fn term(&mut self) -> Result<()> {
+        let status = Command::new("kill").args(["-TERM", &self.pid.to_string()]).status()?;
+        ensure!(status.success(), "owned process TERM delivery failed: {status}");
+        self.term_delivered = true;
+        Ok(())
+    }
+
+    fn record_exit(&mut self, status: std::process::ExitStatus) {
+        self.exit_code = status.code();
+        self.exit_signal = status.signal();
+        self.reaped = true;
     }
 
     fn require_ports_released(&self) -> Result<()> {
@@ -72,6 +113,39 @@ impl Owned {
     }
 }
 
+impl Drop for Owned {
+    fn drop(&mut self) {
+        if self.reaped {
+            return;
+        }
+        let result = (|| -> Result<()> {
+            match self.child.try_wait()? {
+                Some(status) => self.record_exit(status),
+                None => {
+                    self.term()?;
+                    let status = self.child.wait()?;
+                    self.record_exit(status);
+                }
+            }
+            self.require_ports_released()?;
+            self.ports_released = true;
+            Ok(())
+        })();
+        let evidence = serde_json::json!({
+            "process":self,"fallback_reap":true,"error":result.as_ref().err().map(ToString::to_string),
+        });
+        let written = serde_json::to_vec_pretty(&evidence)
+            .map_err(anyhow::Error::from)
+            .and_then(|bytes| std::fs::write(self.root.with_extension("fallback-reap.json"), bytes).map_err(anyhow::Error::from));
+        if let Err(error) = written {
+            eprintln!("owned process {} fallback evidence failed: {error}", self.pid);
+        }
+        if let Err(error) = result {
+            eprintln!("owned process {} fallback reap failed: {error}", self.pid);
+        }
+    }
+}
+
 pub(super) fn reserve(count: usize) -> Result<Vec<TcpListener>> {
     ensure!(count <= 16, "port reservation count exceeded");
     (0..count).map(|_| Ok(TcpListener::bind("127.0.0.1:0")?)).collect()
@@ -80,8 +154,7 @@ pub(super) fn reserve(count: usize) -> Result<Vec<TcpListener>> {
 pub(super) fn pinned_binary() -> Result<PathBuf> {
     let path = match std::env::var_os("RESTATE_SERVER_BIN") {
         Some(path) => PathBuf::from(path),
-        None => PathBuf::from(std::env::var_os("HOME").ok_or_else(|| anyhow::anyhow!("HOME missing"))?)
-            .join(".local/share/athletic-rust-pipeline/restate/1.7.10/restate-server"),
+        None => PathBuf::from("/home/lewis/bin/restate-server"),
     };
     let path = std::fs::canonicalize(path)?;
     let output = Command::new(&path).arg("--version").output()?;

@@ -54,7 +54,8 @@ fn source_object_identities_keep_provider_ids_verbatim_and_name_their_table() ->
     let school = school();
     store.append(Table::Schools, &school)?;
     store.append(Table::Athletes, &athlete(&school))?;
-    let rows = canonical_pass(&store)?.identities;
+    let dataset = census_report::export::ExportDataset::load(&store)?;
+    let rows = canonical_pass(&dataset).identities;
     let ids: Vec<&str> = rows.iter().map(|row| row.id.as_str()).collect();
     check!(ids.contains(&"milesplit_school:schools:1234"), "{ids:?}");
     check!(
@@ -82,8 +83,8 @@ fn the_jurisdiction_row_carries_its_measured_denominators() -> TestResult {
     let school = school();
     store.append(Table::Schools, &school)?;
     store.append(Table::Athletes, &athlete(&school))?;
-    let identities = canonical_pass(&store)?.identities;
     let dataset = census_report::export::ExportDataset::load(&store)?;
+    let identities = canonical_pass(&dataset).identities;
     let rows = coverage_rows(&dataset, &identities)?;
     let wisconsin = rows
         .iter()
@@ -104,7 +105,8 @@ fn source_rows_count_what_each_namespace_contributes_per_table() -> TestResult {
     let school = school();
     store.append(Table::Schools, &school)?;
     store.append(Table::Athletes, &athlete(&school))?;
-    let identities = canonical_pass(&store)?.identities;
+    let dataset = census_report::export::ExportDataset::load(&store)?;
+    let identities = canonical_pass(&dataset).identities;
     let rows = super::coverage::source_coverage(&identities);
     let milesplit = rows
         .iter()

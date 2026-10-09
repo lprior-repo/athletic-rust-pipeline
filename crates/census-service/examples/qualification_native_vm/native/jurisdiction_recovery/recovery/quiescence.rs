@@ -28,6 +28,11 @@ pub(super) enum Control {
     Paused(TreePause),
 }
 
+enum Held {
+    Completed(Observation),
+    Paused(Observation),
+}
+
 #[tracing::instrument(skip(client, original, candidate))]
 pub(super) async fn hold(
     client: &Client,
@@ -41,11 +46,19 @@ pub(super) async fn hold(
     if let Some(completed) = completion::read(client, original, &candidate).await? {
         return Ok((completed, Control::Completed));
     }
-    ensure!(pause.status_code == 202, "original invocation pause was not accepted: {}", pause.status_code);
-    let Some(tree) = tree::settle(client, original, pause).await? else {
-        let completed = completion::read(client, original, &candidate).await?
-            .context("completed original tree did not yield fresh coherent success evidence")?;
-        return Ok((completed, Control::Completed));
+    ensure!(
+        pause.status_code == 202,
+        "original invocation pause was not accepted: {}",
+        pause.status_code
+    );
+    let tree = match tree::settle(client, original, pause).await? {
+        Control::Completed => {
+            let completed = completion::read(client, original, &candidate)
+                .await?
+                .context("completed original tree did not yield fresh coherent success evidence")?;
+            return Ok((completed, Control::Completed));
+        }
+        Control::Paused(tree) => tree,
     };
     let checks = stream::iter(0..120u32)
         .then(|_| async {
@@ -53,23 +66,26 @@ pub(super) async fn hold(
             let parent = observe::status(&observation.after, &original.id)?;
             if input::text(parent, "status")? == "completed" {
                 if let Some(completed) = completion::read(client, original, &candidate).await? {
-                    return Ok(Some((completed, true)));
+                    return Ok(Some(Held::Completed(completed)));
                 }
             } else if input::text(parent, "status")? == "paused"
                 && super::candidate(original, &observation)?
             {
-                return Ok(Some((observation, false)));
+                return Ok(Some(Held::Paused(observation)));
             }
             tokio::time::sleep(Duration::from_secs(1)).await;
             Ok::<_, anyhow::Error>(None)
         })
         .try_filter_map(|value| futures::future::ready(Ok(value)));
     futures::pin_mut!(checks);
-    let (observation, completed) = checks
+    let held = checks
         .try_next()
         .await?
         .context("original pause did not yield coherent settled source evidence")?;
-    Ok((observation, if completed { Control::Completed } else { Control::Paused(tree) }))
+    Ok(match held {
+        Held::Completed(observation) => (observation, Control::Completed),
+        Held::Paused(observation) => (observation, Control::Paused(tree)),
+    })
 }
 
 #[tracing::instrument(skip(client))]

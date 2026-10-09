@@ -1,4 +1,5 @@
 pub(crate) mod acquisition;
+mod budget;
 mod limits;
 mod outcome;
 pub use outcome::ReadOutcome;
@@ -220,6 +221,7 @@ mod artifact;
 #[path = "directory/pattern.rs"]
 mod pattern;
 
+pub(crate) use artifact::read_national_rows;
 pub use artifact::{cell, first, read_rows, refusal, CsvRow, Header};
 
 pub use pattern::{compile_pattern, group, line_of};

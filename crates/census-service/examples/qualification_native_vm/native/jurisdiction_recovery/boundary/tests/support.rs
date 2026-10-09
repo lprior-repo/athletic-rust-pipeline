@@ -14,6 +14,7 @@ pub(super) fn active() -> Result<(Original, Observation)> {
         jurisdiction: UsJurisdiction::RhodeIsland,
         season: SchoolYear::new(2026).context("invalid test season")?,
         revision: Revision(1),
+        history: census_service::restate_services::HistoryWindow::cohort("2026-10-02")?,
         refresh: false,
         limit_per_state: Some(1),
         concurrency: 1,

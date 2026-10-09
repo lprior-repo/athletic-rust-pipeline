@@ -3,6 +3,8 @@ use super::{GroupMeasurement, Meta, PerfBaseline, Throughput};
 use anyhow::{bail, Context, Result};
 use std::collections::BTreeMap;
 
+mod integer;
+
 pub(super) const CAPTURE_EXPORT_WORKLOAD: &str =
     "pipeline/capture_export/captured_live_wiaa_co2027";
 const REQUIRED_WORKLOADS: &[&str] = &[CAPTURE_EXPORT_WORKLOAD];
@@ -115,13 +117,14 @@ fn compare_measurements(
     current_data: &BTreeMap<String, GroupMeasurement>,
     tolerance: f64,
 ) -> Result<Vec<String>> {
+    let tolerance = integer::Tolerance::parse(tolerance)?;
     let mut failures = Vec::new();
     for (id, current) in current_data {
         let baseline = baseline
             .groups
             .get(id)
             .context("validated benchmark ID disappeared")?;
-        compare_benchmark(id, baseline, current, tolerance, &mut failures)?;
+        compare_benchmark(id, baseline, current, &tolerance, &mut failures)?;
     }
     Ok(failures)
 }
@@ -198,14 +201,14 @@ fn compare_benchmark(
     id: &str,
     baseline: &GroupMeasurement,
     current: &GroupMeasurement,
-    tolerance: f64,
+    tolerance: &integer::Tolerance,
     failures: &mut Vec<String>,
 ) -> Result<()> {
     compare_cost(
         id,
         "wall time",
         (baseline.wall_time_seconds, current.wall_time_seconds),
-        tolerance,
+        tolerance.fraction(),
         failures,
     );
     compare_cost(
@@ -215,14 +218,14 @@ fn compare_benchmark(
             required_float(baseline.tail_time_seconds)?,
             required_float(current.tail_time_seconds)?,
         ),
-        tolerance,
+        tolerance.fraction(),
         failures,
     );
     compare_memory(id, baseline, current, tolerance, failures)?;
     match (baseline.throughput, current.throughput) {
         (Some(Throughput::Elements(old)), Some(Throughput::Elements(new)))
         | (Some(Throughput::Bytes(old)), Some(Throughput::Bytes(new))) => {
-            if new < old * (1.0 - tolerance) {
+            if new < old * (1.0 - tolerance.fraction()) {
                 failures.push(format!(
                     "{id}: throughput regression: baseline={old} current={new}"
                 ));
@@ -238,7 +241,7 @@ fn compare_memory(
     id: &str,
     baseline: &GroupMeasurement,
     current: &GroupMeasurement,
-    tolerance: f64,
+    tolerance: &integer::Tolerance,
     failures: &mut Vec<String>,
 ) -> Result<()> {
     for (label, old, new) in [
@@ -254,13 +257,13 @@ fn compare_memory(
             current.allocated_bytes,
         ),
     ] {
-        compare_cost(
-            id,
-            label,
-            (numeric(old)?, numeric(new)?),
-            tolerance,
-            failures,
-        );
+        let baseline = required_integer(old)?;
+        let current = required_integer(new)?;
+        if tolerance.integer_exceeded(baseline, current)? {
+            failures.push(format!(
+                "{id}: {label} regression: baseline={baseline} current={current}"
+            ));
+        }
     }
     Ok(())
 }
@@ -269,10 +272,8 @@ fn required_float(value: Option<f64>) -> Result<f64> {
     value.context("validated tail measurement disappeared")
 }
 
-fn numeric(value: Option<u64>) -> Result<f64> {
-    serde_json::Number::from(value.context("validated memory measurement disappeared")?)
-        .as_f64()
-        .context("memory measurement cannot be converted")
+fn required_integer(value: Option<u64>) -> Result<u64> {
+    value.context("validated memory measurement disappeared")
 }
 
 fn compare_cost(

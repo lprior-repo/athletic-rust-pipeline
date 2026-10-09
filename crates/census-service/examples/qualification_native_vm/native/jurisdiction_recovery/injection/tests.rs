@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 
 mod configuration;
 mod files;
-mod fixture;
+pub(in super::super) mod fixture;
 mod journal;
 mod marker;
 

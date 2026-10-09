@@ -97,10 +97,6 @@ fn meet_state(meet: &MeetData) -> Option<UsJurisdiction> {
     )
 }
 
-fn season_of(date: &str) -> Option<i16> {
-    date.split('-').next()?.trim().parse::<i16>().ok()
-}
-
 struct Placement {
     state: UsJurisdiction,
     date: String,
@@ -117,11 +113,7 @@ fn place_meet(meet: &MeetData, counts: &mut MeetStats) -> Option<Placement> {
         return None;
     };
     let date = date.to_string();
-    let Some(season) = meet.meet.season_id.or_else(|| season_of(&date)) else {
-        counts.meets_without_season = counts.meets_without_season.saturating_add(1);
-        return None;
-    };
-    let Some(school_year) = SchoolYear::containing(season, 5) else {
+    let Some(school_year) = crate::context::published_school_year(&date) else {
         counts.meets_without_season = counts.meets_without_season.saturating_add(1);
         return None;
     };

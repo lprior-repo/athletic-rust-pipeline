@@ -1,5 +1,4 @@
 use census_domain::model::serialized_digest;
-use census_reconcile::identity::WorkflowIdentity;
 use census_store::{Store, StoreSnapshot};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
@@ -222,23 +221,18 @@ fn identity(
 
 fn request_digest(key: &str, request: &TeamsSourceRequest) -> Result<String, JobError> {
     let jurisdiction = &request.jurisdiction;
-    let identity = WorkflowIdentity::jurisdiction(
-        jurisdiction.jurisdiction,
-        jurisdiction.season,
-        jurisdiction.revision,
-    );
-    if key != format!("{}/teams/{}", identity.as_str(), request.source) {
-        return Err(terminal(
-            "teams source request identity does not match object key",
-        ));
-    }
-    serialized_digest(&(
+    let phase = super::operation::phase(key, request)?;
+    let subject = (
         jurisdiction.jurisdiction,
         jurisdiction.season,
         jurisdiction.revision,
         &request.source,
-    ))
-    .map_err(|error| terminal(&format!("digesting teams source identity: {error}")))
+    );
+    let digest = match phase {
+        super::operation::Phase::Teams => serialized_digest(&subject),
+        super::operation::Phase::SchoolContacts => serialized_digest(&(subject, "school_contacts")),
+    };
+    digest.map_err(|error| terminal(&format!("digesting source phase identity: {error}")))
 }
 
 fn read<T: DeserializeOwned>(store: &StoreSnapshot<'_>, key: &str) -> Result<Option<T>, JobError> {

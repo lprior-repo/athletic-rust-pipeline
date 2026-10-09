@@ -19,6 +19,50 @@ struct ReportFile<'a> {
     counters: &'a Counters,
 }
 
+struct JoinPolicy<'a> {
+    mode: Mode,
+    expected_digest: Option<&'a str>,
+}
+
+pub fn preflight_generation(
+    generation_dir: &Path,
+    overrides: Overrides,
+) -> Result<String, JoinError> {
+    let overrides = overrides.validated()?;
+    let generation = verify_current(generation_dir)?;
+    let _: Vec<SchoolDirectoryEntry> = parse_artifact(&generation, "school_directory.json")?;
+    let report: Report = parse_artifact(&generation, "pipeline_report.json")?;
+    let lanes = build_lane_evidence(&report, &overrides)?;
+    for provider in lanes.tokens() {
+        for lane in lanes.lanes(provider) {
+            if lane.url.is_none() || lane.observed_on.is_none() {
+                return Err(JoinError::Invariant {
+                    detail: format!("school-address lane {provider}@{} requires its published URL and actual acquisition date", lane.path),
+                });
+            }
+        }
+    }
+    Ok(report.manifest_digest)
+}
+
+pub(crate) fn join_generation_pinned(
+    store: &Store,
+    generation_dir: &Path,
+    overrides: Overrides,
+    expected_digest: &str,
+) -> Result<JoinReport, JoinError> {
+    join_checked(
+        store,
+        generation_dir,
+        None,
+        overrides,
+        JoinPolicy {
+            mode: Mode::Apply,
+            expected_digest: Some(expected_digest),
+        },
+    )
+}
+
 pub fn join_generation(
     store: &Store,
     generation_dir: &Path,
@@ -26,10 +70,38 @@ pub fn join_generation(
     overrides: Overrides,
     mode: Mode,
 ) -> Result<JoinReport, JoinError> {
+    join_checked(
+        store,
+        generation_dir,
+        out_dir,
+        overrides,
+        JoinPolicy {
+            mode,
+            expected_digest: None,
+        },
+    )
+}
+
+fn join_checked(
+    store: &Store,
+    generation_dir: &Path,
+    out_dir: Option<&Path>,
+    overrides: Overrides,
+    policy: JoinPolicy<'_>,
+) -> Result<JoinReport, JoinError> {
     let overrides = overrides.validated()?;
     let generation = verify_current(generation_dir)?;
     let entries: Vec<SchoolDirectoryEntry> = parse_artifact(&generation, "school_directory.json")?;
     let report: Report = parse_artifact(&generation, "pipeline_report.json")?;
+    if policy
+        .expected_digest
+        .is_some_and(|digest| digest != report.manifest_digest)
+    {
+        return Err(JoinError::Invariant {
+            detail: "school-address generation changed after the run preflight".to_owned(),
+        });
+    }
+    let mode = policy.mode;
     let lanes = build_lane_evidence(&report, &overrides)?;
     let index = census_domain::school_directory::DirectoryIndex::build(&entries);
     let (counters, outcomes) = process(store, &index, &lanes, mode)?;

@@ -170,6 +170,11 @@ impl Store {
     }
 
     pub fn snapshot(&self) -> StoreSnapshot<'_> {
+        let _appends = self.lock_appends();
+        self.snapshot_locked()
+    }
+
+    fn snapshot_locked(&self) -> StoreSnapshot<'_> {
         StoreSnapshot::new(
             self.db.snapshot(),
             &self.entities,

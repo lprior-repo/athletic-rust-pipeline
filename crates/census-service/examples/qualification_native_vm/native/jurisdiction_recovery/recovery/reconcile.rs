@@ -212,7 +212,10 @@ pub(super) fn retained_observation(
     );
     ensure!(
         current.parent_state.identity == original.key
-            && current.parent_state.history_window.is_none_or(|window| window == original.request.history)
+            && current
+                .parent_state
+                .history_window
+                .is_none_or(|window| window == original.request.history)
             && previous.parent_state.plan == current.parent_state.plan,
         "original parent scope changed during pause race"
     );

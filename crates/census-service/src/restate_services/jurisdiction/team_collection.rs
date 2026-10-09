@@ -14,13 +14,10 @@ pub(super) async fn collect(
     sources: &[String],
     at: &str,
 ) -> Result<TeamsStage, HandlerError> {
-    let eligible = sources
-        .iter()
-        .filter(|source| teams_arms::arm_for(source).is_some());
-    let selected = eligible
-        .clone()
-        .filter(|source| source.as_str() != "sidearm_staff")
-        .chain(eligible.filter(|source| source.as_str() == "sidearm_staff"));
+    let selected = sources.iter().filter(|source| {
+        source.as_str() != census_crawl::sidearm_staff::SOURCE_ID
+            && teams_arms::arm_for(source).is_some()
+    });
     let disposition = if selected.clone().next().is_some() {
         CollectionDisposition::Complete
     } else {

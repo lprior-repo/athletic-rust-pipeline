@@ -65,6 +65,10 @@ pub(super) enum Command {
     Report(ReportArgs),
     #[command(about = "Reduce the consolidated tables to one best mark per athlete and event")]
     Bests(BestsArgs),
+    #[command(
+        about = "Verify school-address input bytes and capture attribution before discovery; opens no store"
+    )]
+    SchoolAddressPreflight(super::school_address_preflight::SchoolAddressPreflightArgs),
     #[command(about = "Build the census workbook (`.xlsx`) and its text sidecars")]
     Workbook(WorkbookArgs),
     #[command(about = "Seal the census: assemble §70's evidence, then complete or refuse by name")]

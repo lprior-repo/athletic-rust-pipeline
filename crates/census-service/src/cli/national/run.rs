@@ -72,6 +72,7 @@ fn school_address_request(args: &NationalArgs) -> Result<Option<SchoolAddressJoi
         generation: args.school_directory.clone(),
         urls: overrides.urls,
         dates: overrides.dates,
+        expected_digest: None,
     }))
 }
 
@@ -169,6 +170,21 @@ pub(crate) async fn run_national_report(cli: &Cli, args: &NationalReportArgs) ->
     let origin = cli.service_origin("national-report", args.ingress.as_deref())?;
     let ingestion = ingress::client(origin)?;
     let national = NationalCensusIngressClient::from_client(ingestion, identity.as_str());
+    if args.contacts {
+        let Json(report) = national
+            .contact_report()
+            .call()
+            .await
+            .map_err(ingress::error)?
+            .into_body()
+            .map_err(ingress::error)?;
+        let report = report.ok_or_else(|| anyhow::anyhow!(
+            "{} has no completed contact-phase measurement; use open-work for active source obligations",
+            identity.as_str()
+        ))?;
+        println!("{}", serde_json::to_string_pretty(&report)?);
+        return Ok(());
+    }
     let last = national
         .report()
         .call()

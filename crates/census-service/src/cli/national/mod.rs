@@ -171,6 +171,11 @@ pub(super) struct NationalReportArgs {
     )]
     #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,
+    #[arg(
+        long,
+        help = "Print the durable post-address school-contact phase instead of the roster report"
+    )]
+    contacts: bool,
     #[arg(help = "Print the report as JSON")]
     #[arg(long)]
     json: bool,

@@ -3,8 +3,8 @@ use super::{failed_capture, failure, locator, owe, schema};
 use crate::net::FetchOutcome;
 use crate::{AdapterContext, AdapterReport, CrawlResult};
 use census_domain::model::{
-    normalize_name, CanonicalSchool, ContactResearchAttempt, ContactResearchOutcome as Outcome,
-    Evidence, SourceIdentity, SourceRef,
+    normalize_name, CanonicalCoach, CanonicalSchool, CoachTenure, ContactResearchAttempt,
+    ContactResearchOutcome as Outcome, Evidence, SchoolId, SchoolYear, SourceIdentity, SourceRef,
 };
 
 pub(super) fn project(
@@ -42,7 +42,7 @@ pub(super) fn project(
             Outcome::Ambiguous,
         );
     }
-    let mut extract = owned_extract(school, capture, &directory)?;
+    let mut extract = owned_extract(school, capture, &directory, ctx.school_year)?;
     super::super::capture_provenance(&mut extract, capture);
     super::super::emit_school(ctx, &extract, capture)?;
     let baseline = if directory.members.iter().any(|row| row.name.is_empty()) {
@@ -58,9 +58,16 @@ pub(super) fn project(
         baseline.clone(),
     )?;
     count_projection(report, &extract)?;
-    if !extract.coaches.is_empty() || !baseline.is_terminal() {
+    if !baseline.is_terminal()
+        || extract.coaches.iter().any(|coach| {
+            !matches!(
+                coach.tenure_state(ctx.school_year),
+                Ok(CoachTenure::Current { .. } | CoachTenure::Former { .. })
+            )
+        })
+    {
         owe(report, locator(capture));
-        report.note("appointment season is not published; contact research remains owed");
+        report.note("unresolved appointment role or tenure remains owed");
     }
     Ok(())
 }
@@ -89,6 +96,7 @@ fn owned_extract(
     school: &CanonicalSchool,
     capture: &FetchOutcome,
     directory: &StaffDirectory,
+    school_year: SchoolYear,
 ) -> CrawlResult<SchoolExtract> {
     let state = school.state.ok_or_else(|| {
         schema(
@@ -125,17 +133,48 @@ fn owned_extract(
         SourceRef::new(SOURCE_ID, Some(locator(capture).to_owned())),
         &capture.fetched_at,
     ));
-    let coaches = directory
-        .members
-        .iter()
-        .filter_map(|row| super::super::map::coach_entity(&school_id, row, &facts))
-        .collect();
+    let coaches = owned_coaches(&school_id, directory, &facts, capture, school_year)?;
     Ok(SchoolExtract {
         school: source,
         school_id,
         state,
         coaches,
     })
+}
+
+fn owned_coaches(
+    school_id: &SchoolId,
+    directory: &StaffDirectory,
+    facts: &ProfileFacts<'_>,
+    capture: &FetchOutcome,
+    school_year: SchoolYear,
+) -> CrawlResult<Vec<CanonicalCoach>> {
+    let coaches = directory
+        .members
+        .iter()
+        .filter_map(|row| {
+            super::super::map::coach_entity(school_id, row, facts).map(|mut coach| {
+                let listing = crate::coach_directories::PublishedListing {
+                    role: &row.role,
+                    program: &row.sport,
+                    source: SOURCE_ID,
+                    school_year,
+                };
+                let retained = crate::coach_directories::StaffCapture {
+                    url: locator(capture),
+                    observed_on: &capture.fetched_at,
+                    sha256: &capture.content_digest,
+                };
+                if let Some(evidence) =
+                    crate::coach_directories::listing_appointment(&coach, listing, retained)?
+                {
+                    coach.tenure_evidence.push(evidence);
+                }
+                Ok(coach)
+            })
+        })
+        .collect::<CrawlResult<Vec<_>>>()?;
+    Ok(coaches)
 }
 
 pub(super) fn capture_attempt(

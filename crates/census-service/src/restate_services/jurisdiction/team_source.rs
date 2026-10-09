@@ -13,6 +13,9 @@ use crate::restate_services::wire::{
 use crate::restate_services::{blocking, job_error, teams_arms, JobError, Jobs};
 
 mod admission;
+mod execution;
+mod operation;
+pub(crate) use operation::contacts_key;
 mod ledger;
 #[cfg(feature = "native-fault-injection")]
 mod native_boundary;
@@ -179,46 +182,32 @@ impl TeamsSource {
         ctx: ObjectContext<'_>,
         Json(request): Json<TeamsSourceRequest>,
     ) -> Result<Json<TeamsSourceOutcome>, HandlerError> {
-        if ctx.key() != key(&request) || teams_arms::arm_for(&request.source).is_none() {
+        if operation::phase(ctx.key(), &request).map_err(job_error)? != operation::Phase::Teams
+            || teams_arms::arm_for(&request.source).is_none()
+        {
             return Err(TerminalError::new(
                 "teams source request does not match its operation key",
             )
             .into());
         }
-        crate::restate_services::limits::validate_source_parallelism(
-            request.jurisdiction.source_parallelism,
-        )?;
-        if let Some(outcome) =
-            ledger::status(&self.owner.store, ctx.key(), Some(&request)).map_err(job_error)?
+        self.execute(ctx, request).await
+    }
+
+    #[handler]
+    async fn contacts(
+        &self,
+        ctx: ObjectContext<'_>,
+        Json(request): Json<TeamsSourceRequest>,
+    ) -> Result<Json<TeamsSourceOutcome>, HandlerError> {
+        if operation::phase(ctx.key(), &request).map_err(job_error)?
+            != operation::Phase::SchoolContacts
         {
-            return Ok(Json(outcome));
+            return Err(TerminalError::new(
+                "school contact request does not match its operation key",
+            )
+            .into());
         }
-        let request = Arc::new(request);
-        let _admission = Arc::new(self.admit(ctx.key()).await?);
-        let registered = self.register(&ctx, &request, &_admission).await?;
-        let admission = ledger::begin(&self.owner.store, ctx.key(), &request, &registered)
-            .map_err(job_error)?;
-        let (attempt, observed_on) = match admission {
-            ledger::Admission::Settled(outcome) => return Ok(Json(outcome)),
-            ledger::Admission::Reserved {
-                attempt,
-                observed_on,
-            } => (attempt, observed_on),
-        };
-        #[cfg(feature = "native-fault-injection")]
-        native_boundary::wait(
-            &self.jobs,
-            Arc::clone(&_admission),
-            ctx.key(),
-            attempt,
-            &registered,
-        )
-        .await?;
-        let result = self.acquire(&request, observed_on).await;
-        match ledger::finish(&self.owner.store, ctx.key(), attempt, result).map_err(job_error)? {
-            ledger::Completion::Settled(outcome) => Ok(Json(outcome)),
-            ledger::Completion::Retry(error) => Err(job_error(error)),
-        }
+        self.execute(ctx, request).await
     }
 
     #[handler]

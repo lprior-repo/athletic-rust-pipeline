@@ -16,7 +16,7 @@ impl Store {
     pub fn fenced_snapshot(&self) -> FencedSnapshot<'_> {
         let writes = self.lock_appends();
         FencedSnapshot {
-            snapshot: self.snapshot(),
+            snapshot: self.snapshot_locked(),
             _writes: writes,
         }
     }

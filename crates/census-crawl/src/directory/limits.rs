@@ -1,16 +1,15 @@
+use super::budget::ReadBudget;
 use census_domain::school_directory::DirectoryError;
 use serde::Serialize;
 use std::io::{self, Write};
 
-pub(super) const MAX_ROWS: usize = 20_000;
-pub(super) const MAX_RETAINED_BYTES: usize = 8 * 1024 * 1024;
 pub(super) const MAX_DETAIL_BYTES: usize = 4096;
 
 pub(super) fn add(left: usize, right: usize) -> Result<usize, DirectoryError> {
     left.checked_add(right).ok_or(DirectoryError::Capacity {
         resource: "directory arithmetic",
         requested: usize::MAX,
-        limit: MAX_RETAINED_BYTES,
+        limit: usize::MAX,
     })
 }
 
@@ -29,8 +28,12 @@ pub(super) fn check(
     Ok(())
 }
 
-pub(super) fn reserve<T>(values: &mut Vec<T>, extra: usize) -> Result<(), DirectoryError> {
-    check("directory rows", add(values.len(), extra)?, MAX_ROWS)?;
+pub(super) fn reserve<T>(
+    values: &mut Vec<T>,
+    extra: usize,
+    budget: ReadBudget,
+) -> Result<(), DirectoryError> {
+    check("directory rows", add(values.len(), extra)?, budget.rows())?;
     values
         .try_reserve(extra)
         .map_err(|_| DirectoryError::Allocation {
@@ -56,13 +59,19 @@ pub(super) fn text(value: &str) -> Result<String, DirectoryError> {
 #[derive(Default)]
 struct Meter {
     bytes: usize,
+    budget: ReadBudget,
     failure: Option<DirectoryError>,
 }
 
 impl Write for Meter {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
         let next = add(self.bytes, bytes.len()).and_then(|next| {
-            check("directory serialized bytes", next, MAX_RETAINED_BYTES).map(|_| next)
+            check(
+                "directory serialized bytes",
+                next,
+                self.budget.retained_bytes(),
+            )
+            .map(|_| next)
         });
         match next {
             Ok(next) => {
@@ -80,8 +89,15 @@ impl Write for Meter {
     }
 }
 
-pub(super) fn admitted<T: Serialize>(retained: usize, value: &T) -> Result<usize, DirectoryError> {
-    let mut meter = Meter::default();
+pub(super) fn admitted<T: Serialize>(
+    retained: usize,
+    value: &T,
+    budget: ReadBudget,
+) -> Result<usize, DirectoryError> {
+    let mut meter = Meter {
+        budget,
+        ..Meter::default()
+    };
     let result = serde_json::to_writer(&mut meter, value);
     if let Some(error) = meter.failure {
         return Err(error);
@@ -92,9 +108,13 @@ pub(super) fn admitted<T: Serialize>(retained: usize, value: &T) -> Result<usize
     let encoded = meter.bytes.checked_mul(2).ok_or(DirectoryError::Capacity {
         resource: "directory retained bytes",
         requested: usize::MAX,
-        limit: MAX_RETAINED_BYTES,
+        limit: budget.retained_bytes(),
     })?;
     let retained = add(retained, add(encoded, 1024)?)?;
-    check("directory retained bytes", retained, MAX_RETAINED_BYTES)?;
+    check(
+        "directory retained bytes",
+        retained,
+        budget.retained_bytes(),
+    )?;
     Ok(retained)
 }

@@ -124,6 +124,15 @@ async fn append_entry(
         ),
     )?;
     append_frontiers(entry, rows)?;
+    push(
+        rows,
+        team_object(
+            ctx,
+            &entry.row.identity,
+            census_crawl::sidearm_staff::SOURCE_ID,
+        )
+        .await?,
+    )?;
     if !plan_covers(entry.row.jurisdiction, &entry.state) {
         push(
             rows,
@@ -154,14 +163,18 @@ async fn append_entry(
             ),
         )
     })?;
-    stream::iter(&plan.sweepable)
-        .map(Ok::<_, HandlerError>)
-        .try_fold(rows, |rows, slug| async move {
-            append_source(ctx, entry, slug, rows).await?;
-            Ok(rows)
-        })
-        .await
-        .map(|_| ())
+    stream::iter(
+        plan.sweepable
+            .iter()
+            .filter(|slug| slug.as_str() != census_crawl::sidearm_staff::SOURCE_ID),
+    )
+    .map(Ok::<_, HandlerError>)
+    .try_fold(rows, |rows, slug| async move {
+        append_source(ctx, entry, slug, rows).await?;
+        Ok(rows)
+    })
+    .await
+    .map(|_| ())
 }
 
 async fn append_source(
@@ -227,7 +240,11 @@ async fn team_object(
     identity: &str,
     slug: &str,
 ) -> Result<SourceObjectOpen, HandlerError> {
-    let key = format!("{identity}/teams/{slug}");
+    let key = if slug == census_crawl::sidearm_staff::SOURCE_ID {
+        crate::restate_services::jurisdiction::team_source::contacts_key(identity)
+    } else {
+        format!("{identity}/teams/{slug}")
+    };
     let mut row = obligation(key.clone(), Disposition::Unknown);
     match ctx
         .object_client::<TeamsSourceClient>(&key)

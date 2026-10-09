@@ -1,7 +1,7 @@
+use super::captures;
 use super::input::{self, Original};
 use super::journal;
 use super::observe::{self, Observation};
-use super::captures;
 use anyhow::{ensure, Context, Result};
 use census_service::restate_services::{TeamsSourceInspection, TeamsSourceOutcome, TeamsStage};
 use futures::{stream, StreamExt, TryStreamExt};

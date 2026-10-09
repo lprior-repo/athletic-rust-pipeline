@@ -6,6 +6,13 @@ use census_domain::model::{
     CoachTenure, CoachTenureEvidence, SchoolYear, SourceRef,
 };
 
+pub(crate) struct PublishedListing<'a> {
+    pub role: &'a str,
+    pub program: &'a str,
+    pub source: &'a str,
+    pub school_year: SchoolYear,
+}
+
 pub(super) fn appointment(
     coach: &CanonicalCoach,
     member: &StaffMember,
@@ -16,12 +23,6 @@ pub(super) fn appointment(
     let Some(school_year) = school_year else {
         return Ok(None);
     };
-    if coach.name.trim().is_empty() {
-        return Ok(None);
-    }
-    let Some(claim_program) = appointment_program(coach) else {
-        return Ok(None);
-    };
     let Some((role, program)) = member
         .title
         .as_deref()
@@ -30,20 +31,48 @@ pub(super) fn appointment(
     else {
         return Ok(None);
     };
+    listing_appointment(
+        coach,
+        PublishedListing {
+            role,
+            program,
+            source: super::super::SOURCE_ID,
+            school_year,
+        },
+        capture,
+    )
+}
+
+pub(crate) fn listing_appointment(
+    coach: &CanonicalCoach,
+    listing: PublishedListing<'_>,
+    capture: Capture<'_>,
+) -> CrawlResult<Option<CoachTenureEvidence>> {
+    if coach.name.trim().is_empty() {
+        return Ok(None);
+    }
+    let Some(claim_program) = appointment_program(coach) else {
+        return Ok(None);
+    };
+    let role = listing.role;
+    let program = listing.program;
+    if role.trim().is_empty() || program.trim().is_empty() {
+        return Ok(None);
+    };
     if capture.url.trim().is_empty() {
         return Err(invalid_claim(capture, "tenure evidence has no source URL"));
     }
     let tenure = tenure_for(
         scope_year(role, program),
         super::super::row::is_former(role),
-        school_year,
+        listing.school_year,
     );
     let evidence = bound_evidence(
-        coach,
-        claim_program,
+        contact_claim(coach, claim_program),
         tenure,
         statement(coach, role, program, capture)?,
         capture,
+        listing.source,
     );
     validate_tenure_evidence(&evidence)
         .map_err(|error| invalid_claim(capture, &error.to_string()))?;
@@ -51,29 +80,33 @@ pub(super) fn appointment(
 }
 
 fn bound_evidence(
-    coach: &CanonicalCoach,
-    program: CoachContactProgram,
+    claim: CoachContactClaim,
     tenure: CoachTenure,
     statement: String,
     capture: Capture<'_>,
+    source: &str,
 ) -> CoachTenureEvidence {
     CoachTenureEvidence {
         tenure,
-        source: SourceRef::new(super::super::SOURCE_ID, Some(capture.url.to_owned())),
+        source: SourceRef::new(source, Some(capture.url.to_owned())),
         source_sha256: capture.sha256.to_owned(),
         retrieved_at: capture.observed_on.to_owned(),
         statement,
-        claim: Some(CoachContactClaim {
-            coach: coach.id.clone(),
-            school: coach.school.clone(),
-            role: coach.role,
-            program,
-            mailbox: coach
-                .professional_email
-                .as_ref()
-                .or(coach.personal_email.as_ref())
-                .cloned(),
-        }),
+        claim: Some(claim),
+    }
+}
+
+fn contact_claim(coach: &CanonicalCoach, program: CoachContactProgram) -> CoachContactClaim {
+    CoachContactClaim {
+        coach: coach.id.clone(),
+        school: coach.school.clone(),
+        role: coach.role,
+        program,
+        mailbox: coach
+            .professional_email
+            .as_ref()
+            .or(coach.personal_email.as_ref())
+            .cloned(),
     }
 }
 

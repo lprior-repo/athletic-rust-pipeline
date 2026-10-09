@@ -16,7 +16,8 @@ mod lanes;
 mod link;
 mod support;
 
-pub use generation::join_generation;
+pub(crate) use generation::join_generation_pinned;
+pub use generation::{join_generation, preflight_generation};
 pub use lanes::{build_lane_evidence, parse_source_pairs, Overrides};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]

@@ -90,6 +90,30 @@ impl<'s> StoreSnapshot<'s> {
             })
     }
 
+    pub fn appended_counts(&self) -> StoreResult<Vec<(String, u64)>> {
+        Table::ALL
+            .into_iter()
+            .map(|table| {
+                let rows = if table.storage_mode() == crate::StorageMode::ObservationLog {
+                    let prefix = self.layout().prefix(table);
+                    let max = usize::try_from(MAX_ROWS_PER_TABLE)
+                        .map_err(|_| StoreError::CounterOverflow)?;
+                    self.snapshot
+                        .prefix(self.entities, &prefix)
+                        .enumerate()
+                        .try_fold(0_u64, |count, (index, guard)| {
+                            merge::check_limit(index, max, table)?;
+                            guard.key().map_err(|source| StoreError::Read { source })?;
+                            count.checked_add(1).ok_or(StoreError::CounterOverflow)
+                        })?
+                } else {
+                    0
+                };
+                Ok((table.file().to_owned(), rows))
+            })
+            .collect()
+    }
+
     pub fn tables_digest(&self, tables: &[Table]) -> StoreResult<String> {
         let mut hasher = Sha256::new();
         for table in tables {

@@ -4,6 +4,7 @@ use census_crawl::{nces, private_assoc, state_ed, tssaa, CrawlError, CrawlResult
 use census_domain::school_directory::{
     Baseline, IdentifiedKey, ScheduleLedger, ScheduleSource, SchoolDirectoryEntry,
 };
+use std::io::Read;
 use std::path::Path;
 
 use super::export;
@@ -132,10 +133,7 @@ fn read_lane_with_token(
     token: &str,
     reader: fn(&str) -> CrawlResult<ReadOutcome>,
 ) -> Result<LaneRead> {
-    let text = std::fs::read_to_string(path).map_err(|source| CrawlError::DirectoryArtifact {
-        path: path.to_path_buf(),
-        detail: format!("the file could not be read: {source}"),
-    })?;
+    let text = read_capture(path)?;
     let sha256 = export::sha256_hex(text.as_bytes());
     let outcome = reader(&text).map_err(|error| match error {
         CrawlError::Invariant { detail } => CrawlError::DirectoryArtifact {
@@ -144,6 +142,18 @@ fn read_lane_with_token(
         },
         other => other,
     })?;
+    if let Some((line, error)) = outcome.unfinished() {
+        bail!(
+            "directory capture {} stopped at row {line}: {error}; no corpus is published",
+            path.display()
+        );
+    }
+    if !outcome.frontier_complete() {
+        bail!(
+            "directory capture {} has no completed parser frontier; no corpus is published",
+            path.display()
+        );
+    }
     let counts = outcome.counts();
     let mut captured: Vec<IdentifiedKey> = outcome
         .entries()
@@ -166,8 +176,37 @@ fn read_lane_with_token(
     Ok(LaneRead {
         source,
         report,
-        entries: outcome.entries().to_vec(),
+        entries: outcome.into_entries(),
     })
+}
+
+fn read_capture(path: &Path) -> Result<String> {
+    const MAX_BYTES: u64 = 128 * 1024 * 1024;
+    let file = std::fs::File::open(path)
+        .with_context(|| format!("opening directory capture {}", path.display()))?;
+    let bytes = file
+        .metadata()
+        .with_context(|| format!("reading directory capture metadata {}", path.display()))?
+        .len();
+    if bytes > MAX_BYTES {
+        bail!(
+            "directory capture {} is {bytes} bytes, over the {MAX_BYTES}-byte limit",
+            path.display()
+        );
+    }
+    let mut text = String::new();
+    text.try_reserve_exact(usize::try_from(bytes)?)
+        .with_context(|| format!("allocating bounded directory capture {}", path.display()))?;
+    file.take(MAX_BYTES + 1)
+        .read_to_string(&mut text)
+        .with_context(|| format!("reading directory capture {}", path.display()))?;
+    if u64::try_from(text.len())? > MAX_BYTES {
+        bail!(
+            "directory capture {} grew beyond its {MAX_BYTES}-byte limit",
+            path.display()
+        );
+    }
+    Ok(text)
 }
 
 fn rows(issues: &[RowIssue]) -> Vec<LedgerRow> {

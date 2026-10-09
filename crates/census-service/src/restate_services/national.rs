@@ -17,6 +17,8 @@ use super::wire::{
 };
 use super::{publish::ConsolidateClient, KEY_STATE};
 
+mod contact_phase;
+
 #[derive(Clone)]
 pub struct NationalCensus {
     clock: Arc<dyn Clock>,
@@ -201,7 +203,7 @@ impl NationalCensus {
     async fn run(
         &self,
         ctx: WorkflowContext<'_>,
-        Json(request): Json<NationalRequest>,
+        Json(mut request): Json<NationalRequest>,
     ) -> Result<Json<NationalReport>, HandlerError> {
         let identity =
             WorkflowIdentity::national(request.season, request.revision, &request.jurisdictions);
@@ -215,6 +217,13 @@ impl NationalCensus {
         }
 
         bind_run(&ctx, &request).await?;
+        let address = request.school_address.get_or_insert_with(Default::default);
+        let Json(digest) = ctx
+            .service_client::<super::census::CensusClient>()
+            .school_address_preflight(Json(address.clone()))
+            .call()
+            .await?;
+        address.expected_digest = Some(digest);
 
         let targets = targets(&request)?;
         let mut in_flight = DurableFuturesUnordered::new();
@@ -229,6 +238,10 @@ impl NationalCensus {
         let (jurisdictions, failures) = collect_outcomes(&mut in_flight, &targets).await?;
 
         let join = join_addresses(&ctx, &identity, &request).await?;
+
+        let contact_at = super::journaled_today_workflow(&ctx, &self.clock).await?;
+        let contacts = contact_phase::collect(&ctx, &request, &targets, &contact_at).await?;
+        ctx.set(contact_phase::KEY_CONTACTS, Json(contacts));
 
         let Json(consolidated) = ctx
             .workflow_client::<ConsolidateClient>(format!("{}:consolidate", identity.as_str()))
@@ -260,6 +273,18 @@ impl NationalCensus {
     ) -> Result<Json<Option<NationalReport>>, HandlerError> {
         Ok(Json(
             ctx.get::<Json<NationalReport>>(KEY_STATE)
+                .await?
+                .map(|report| report.0),
+        ))
+    }
+
+    #[handler]
+    async fn contact_report(
+        &self,
+        ctx: SharedWorkflowContext<'_>,
+    ) -> Result<Json<Option<Vec<super::wire::ContactSummary>>>, HandlerError> {
+        Ok(Json(
+            ctx.get::<Json<Vec<super::wire::ContactSummary>>>(contact_phase::KEY_CONTACTS)
                 .await?
                 .map(|report| report.0),
         ))

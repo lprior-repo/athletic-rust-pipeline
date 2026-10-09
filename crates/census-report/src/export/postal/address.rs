@@ -1,44 +1,20 @@
-use census_domain::model::{CanonicalAthlete, CanonicalSchool, SchoolId};
+use census_domain::model::{CanonicalAthlete, CanonicalSchool};
 use census_domain::school_directory::PostalAddress;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 use super::{ordered_claims, ExportDataset, ReportResult};
-
-type Affiliations<'a> = BTreeMap<&'a str, BTreeSet<&'a SchoolId>>;
 
 pub(super) fn index(
     dataset: &ExportDataset,
     athletes: &[CanonicalAthlete],
 ) -> ReportResult<BTreeMap<String, String>> {
-    affiliations(dataset, athletes)
-        .into_iter()
-        .map(|(athlete, schools)| {
-            address_line(schools.into_iter().filter_map(|id| dataset.schools.get(id)))
-                .map(|line| (athlete.to_owned(), line))
+    athletes
+        .iter()
+        .map(|athlete| {
+            address_line(dataset.schools.get(&athlete.school))
+                .map(|line| (athlete.id.as_str().to_owned(), line))
         })
         .collect()
-}
-
-fn affiliations<'a>(
-    dataset: &'a ExportDataset,
-    athletes: &'a [CanonicalAthlete],
-) -> Affiliations<'a> {
-    let selected: BTreeSet<_> = athletes.iter().map(|athlete| athlete.id.as_str()).collect();
-    dataset
-        .athletes
-        .iter()
-        .chain(athletes)
-        .fold(Affiliations::new(), |mut groups, member| {
-            let subject = member.id.as_str();
-            let canonical = dataset
-                .canonical_aliases
-                .get(subject)
-                .map_or(subject, String::as_str);
-            if selected.contains(canonical) {
-                groups.entry(canonical).or_default().insert(&member.school);
-            }
-            groups
-        })
 }
 
 fn address_line<'a>(

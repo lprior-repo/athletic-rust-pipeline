@@ -1,6 +1,6 @@
 use crate::directory::{
-    cell, census_state, coordinates, first, grade_span, read_rows, skip_absent, skip_optional,
-    skip_row, AddressParts, CsvRow, Header, ReadOutcome,
+    cell, census_state, coordinates, first, grade_span, read_national_rows, skip_absent,
+    skip_optional, skip_row, AddressParts, CsvRow, Header, ReadOutcome,
 };
 use crate::CrawlResult;
 use census_domain::school_directory::{
@@ -83,7 +83,7 @@ fn ccd_identity<'a>(
     else {
         return Ok(None);
     };
-    let state = first(record, header, &["ST", "LSTATE", "MSTATE"]);
+    let state = first(record, header, &["LSTATE", "ST", "MSTATE"]);
     if !state_admitted(outcome, line, state)? {
         return Ok(None);
     }
@@ -152,7 +152,7 @@ fn ccd_contacts(
 }
 
 pub fn parse_ccd(text: &str) -> CrawlResult<ReadOutcome> {
-    read_rows(text, "ccd", &CCD_REQUIRED, process_ccd_row)
+    read_national_rows(text, "ccd", &CCD_REQUIRED, process_ccd_row)
 }
 
 fn process_pss_row(
@@ -284,5 +284,5 @@ fn state_admitted(
 }
 
 pub fn parse_pss(text: &str) -> CrawlResult<ReadOutcome> {
-    read_rows(text, "pss", &PSS_REQUIRED, process_pss_row)
+    read_national_rows(text, "pss", &PSS_REQUIRED, process_pss_row)
 }

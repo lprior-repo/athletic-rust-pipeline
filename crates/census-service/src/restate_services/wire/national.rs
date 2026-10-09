@@ -63,3 +63,24 @@ pub struct NationalReport {
     pub school_address: Option<SchoolAddressJoinReply>,
     pub today: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContactSummary {
+    pub jurisdiction: UsJurisdiction,
+    pub identity: String,
+    pub status: ContactStatus,
+    pub source_rows: Option<usize>,
+    pub errors: Option<usize>,
+    pub unfinished: Option<usize>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ContactStatus {
+    Complete,
+    Partial,
+    Terminal,
+    Exhausted,
+    Interrupted,
+    HandlerFailed,
+}

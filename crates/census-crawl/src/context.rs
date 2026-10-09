@@ -57,6 +57,13 @@ pub(crate) fn published_performance_date(published: &str) -> Option<chrono::Naiv
         .filter(|parsed| *parsed == date)
 }
 
+pub(crate) fn published_school_year(published: &str) -> Option<census_domain::model::SchoolYear> {
+    let date = published_performance_date(published)?;
+    let year = i16::try_from(chrono::Datelike::year(&date)).ok()?;
+    let month = u8::try_from(chrono::Datelike::month(&date)).ok()?;
+    census_domain::model::SchoolYear::containing(year, month)
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PerformanceDateAssessment {
     Admitted,

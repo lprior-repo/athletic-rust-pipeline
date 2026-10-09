@@ -15024,3 +15024,79 @@ no failing-before/passing-after project execution is claimed. Full release/nativ
 all-three-workload fresh performance comparison, genuine independent public identity positive
 control and the actual fresh49-jurisdiction sealed national export remain incomplete.
 
+## Store read-boundary fencing, association-lane frontier and postal attribution — 2026-10-08
+
+Three repairs and one reverted experiment in the delivery tree, with the executed gate recorded
+below. All commands ran from the delivery worktree through `tools/moon-local`; no fresh national
+run, native fault scenario or workbook generation was executed for this entry.
+
+**Store reads describe one write boundary.** `Store::snapshot()` now pins the Fjall MVCC view
+under the store's append lock (`snapshot_locked`, also used by `FencedSnapshot`), so a captured
+view and the `evidence_generation`/`derived_generation` counters it reports come from one commit
+boundary instead of two unordered reads. `DerivedStage::begin` takes its base evidence and base
+derived generations from that pinned view rather than re-reading the store, `StoreSnapshot::
+appended_counts()` counts appended observations through the same view, and
+`census-reconcile::derive` stages its input digest, export dataset, stored review cases and
+collection snapshot from the stage view through `ExportDataset::from_snapshot`. Before this,
+`DerivedStage::begin` and the export lineage could stamp a view with a generation belonging to a
+later commit, which `refuse_moved_inputs` then reported as moved inputs. Lock order stays
+`staging → appends`; every region that holds the append lock (`write.rs`, `write_batch/commit.rs`,
+`receipt.rs`, `derived/reclaim.rs`, `DerivedStage::publish`, `native_effect_checkpoint.rs`) was
+audited to touch keyspaces directly, so the new fence acquires no nested lock and cannot
+self-deadlock. `docs/FJALL_BACKUP.md` records the semantics. No dedicated race regression exists:
+the fence rests on that static audit plus the derived-publication and replay lanes below, and a
+read that blocks for one commit critical section is the accepted cost.
+
+**The association lane publishes again.** The `school-address` lane refuses an unfinished parser
+frontier, and `tssaa::parse_school_list` was the one whole-body reader that never reported
+completion, so the lane published no corpus. It now marks a consumed capture complete
+(`ReadOutcome::finish`) and stops with a representation error when a capture yields no indexed
+school, mirroring `directory/artifact.rs`'s complete/empty/refused classification and
+`tssaa::collect`'s `finish_frontier`. Observed before the repair:
+
+```text
+env -u CI tools/moon-local run pipeline:tests -- -E 'test(/association_directory/)'
+FAIL … Error: directory capture …/census-crawl/tests/fixtures/tssaa/directory_id157.html has no
+completed parser frontier; no corpus is published
+```
+
+Observed after: `2 tests run: 2 passed`. A capture whose rows are all skipped still finishes (a
+skip is a `Partial` disposition, not a stop), so published entries keep their noted skips.
+
+**Postal attribution follows the exported athlete.** `athlete_address_index` keys each exported
+athlete id to its own school's ordered postal claim. The replaced version pooled the schools of
+every identity-alias member and keyed the map by the canonical id, so a transfer row could carry
+another affiliated school's street address and an alias row could miss the key its workbook and
+CSV cells look up. The workbook/CSV acceptance tests that pin this behaviour already exist in
+tree and pass — `workbook::recruiting::tests::postal::
+accepted_alias_school_affiliations_preserve_their_source_owned_postal_claims`,
+`a_same_named_school_without_a_claim_does_not_inherit_another_schools_postal_address` and
+`unresolved_same_named_athletes_keep_postal_affiliations_distinct_in_workbook_and_csv` — and the
+verifier recomputes the same index, so publication and verification cannot diverge silently.
+
+**Reverted, not landed.** A working-tree experiment that added
+`ComparisonPolicy::ReportedDistanceFastest` and admitted course-unverified or
+unknown-measurement cross-country rows is reverted. It contradicted the accepted CEN-8
+separation: the experiment pooled a 5 km row carrying no course identity into the measured-course
+slot (winning it) and minted a same-course row from an unknown-measurement capture, observed as
+`courses.rs:200 assertion left: 5 right: 4`. The CEN-8 lane reads `12 tests run: 12 passed` after
+the revert; the accepted policy that rejected/ambiguous values never contribute to calculated
+bests is unchanged.
+
+**Gate (executed on this tree).**
+
+```text
+env -u CI tools/moon-local ci --force --summary detailed
+pass pipeline:check | pass pipeline:tests | pass pipeline:lint-src | pass pipeline:report-test |
+pass pipeline:fmt | skip SyncWorkspace (skipped); 5 completed, 1 skipped, 0 failed
+
+env -u CI tools/moon-local run pipeline:tests
+Summary [68.428s] 3003 tests run: 3003 passed (1 slow), 3 skipped
+```
+
+Previously failing in the same lane before the repairs: the association-directory lane and
+`cen8_three_miles_short_unknown_and_conditions_cannot_enter_standard_five_km_slot` (the reverted
+experiment). The CI iteration gate is narrower than `pipeline:gate -- --release`; no release,
+proof, security or native fault obligation is certified by it, and no performance number is
+claimed for the store fence.
+
