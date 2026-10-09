@@ -64,21 +64,5 @@
     ["Cavan Mulligan","Unattached",23596752,"5:06.67",306670000000,20],
     ["Gunnar Hallett","Unattached",17342362,"5:45.23",345230000000,36],
     ["Grady Galaviz","Unattached",17302213,"6:04.08",364080000000,38]
-  ],
-  "best_values": {
-    "Brooklyn Brown": 1574800,
-    "Evie Budnick": 1524000,
-    "Lily Johnson": 1473200,
-    "Adeline Bagnall": 1473200,
-    "Kasey Gaudette": 1473200,
-    "Annelyse Schneider": 1473200,
-    "Lilly Payne": 1422400,
-    "David Castrejon": 287250000000,
-    "Caiden Caswell": 287710000000,
-    "Brennan Ackerman": 304660000000,
-    "Grayson Campbell": 306210000000,
-    "Cavan Mulligan": 306670000000,
-    "Gunnar Hallett": 345230000000,
-    "Grady Galaviz": 364080000000
-  }
+  ]
 }

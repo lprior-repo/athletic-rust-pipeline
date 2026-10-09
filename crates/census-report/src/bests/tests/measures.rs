@@ -20,7 +20,8 @@ fn metric_scaling_widens_before_multiplication() {
 #[test]
 fn measure_of_time() -> TestResult {
     let mark = Mark::TimeSeconds(ExactSeconds::parse("10.94")?);
-    assert_eq!(
+    check!(
+        eq;
         crate::bests::Measure::of(&mark),
         Some(crate::bests::Measure::Time)
     );
@@ -66,7 +67,8 @@ fn measure_of_raw_is_none() {
 #[test]
 fn measure_time_value() -> TestResult {
     let mark = Mark::TimeSeconds(ExactSeconds::parse("10.94")?);
-    assert_eq!(
+    check!(
+        eq;
         crate::bests::Measure::Time.value(&mark),
         Some(10_940_000_000)
     );
@@ -139,7 +141,8 @@ fn measure_points_better_is_higher() {
 #[test]
 fn measure_normalized_time() -> TestResult {
     let mark = Mark::TimeSeconds(ExactSeconds::parse("10.94")?);
-    assert_eq!(
+    check!(
+        eq;
         crate::bests::Measure::Time.normalized_mark(&mark),
         Some(10.94)
     );

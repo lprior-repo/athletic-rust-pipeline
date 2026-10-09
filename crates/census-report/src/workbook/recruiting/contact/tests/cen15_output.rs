@@ -66,13 +66,10 @@ fn workbook_row(
     let headers = rows.next().ok_or("missing workbook headers")?;
     let column = headers
         .iter()
-        .position(|header| header.to_string() == field)
+        .position(|header| header == field)
         .ok_or("missing identity header")?;
     let row = rows
-        .find(|row| {
-            row.get(column)
-                .is_some_and(|cell| cell.to_string() == value)
-        })
+        .find(|row| row.get(column).is_some_and(|cell| cell == value))
         .ok_or("missing published athlete")?;
     Ok(headers
         .iter()

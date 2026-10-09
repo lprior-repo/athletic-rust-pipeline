@@ -58,7 +58,7 @@ fn rejected_block_time_counts_the_runner_without_hiding_later_valid_runners(
         .ok_or("missing source meet")?;
     let event = meet.events.first().ok_or("missing source event")?;
     check!(eq; (meet.rows_parsed, meet.rows_skipped), (5, 1));
-    assert!(!event.rows.iter().any(|row| row.name == "Cooper Erickson"));
+    check!(!event.rows.iter().any(|row| row.name == "Cooper Erickson"));
     let later = event
         .rows
         .iter()

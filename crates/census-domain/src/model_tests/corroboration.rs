@@ -140,17 +140,16 @@ fn resolved_identity_cases(
     Ok((cases, verdicts))
 }
 
+type AcceptedComponentDecisions = (
+    Vec<ReviewCase>,
+    Vec<ReviewVerdictRecord>,
+    Vec<AppliedAthleteIdentity>,
+);
+
 fn accepted_component_decisions(
     athletes: &[&CanonicalAthlete],
     pairs: &[(usize, usize)],
-) -> Result<
-    (
-        Vec<ReviewCase>,
-        Vec<ReviewVerdictRecord>,
-        Vec<AppliedAthleteIdentity>,
-    ),
-    Box<dyn std::error::Error>,
-> {
+) -> Result<AcceptedComponentDecisions, Box<dyn std::error::Error>> {
     let mut index = AthleteIdentityIndex::default();
     for athlete in athletes {
         index.observe(athlete)?;

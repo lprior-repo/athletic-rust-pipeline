@@ -24,12 +24,14 @@ fn cen8_distance_fastest_and_same_course_cross_dates_are_separate_policies() -> 
         .iter()
         .find(|row| row.key.comparison == ComparisonPolicy::ObservedFastest)
         .ok_or("distance fastest")?;
-    assert_eq!(
+    check!(
+        eq;
         fastest.result.mark,
         Mark::TimeSeconds(ExactSeconds::parse("970")?)
     );
-    assert_eq!(fastest.population.marks, 4);
-    assert_eq!(
+    check!(eq; fastest.population.marks, 4);
+    check!(
+        eq;
         fastest
             .source
             .specification
@@ -39,7 +41,8 @@ fn cen8_distance_fastest_and_same_course_cross_dates_are_separate_policies() -> 
             .course,
         Some(CourseIdentity::new("A", "2")?)
     );
-    assert_eq!(
+    check!(
+        eq;
         fastest
             .key
             .specification
@@ -49,8 +52,9 @@ fn cen8_distance_fastest_and_same_course_cross_dates_are_separate_policies() -> 
             .course,
         None
     );
-    assert_eq!(fastest.meet.date, "2023-10-01");
-    assert_eq!(
+    check!(eq; fastest.meet.date, "2023-10-01");
+    check!(
+        eq;
         fastest.source.specification,
         EventSpecification {
             category: Some(CompetitionCategory::Boys),
@@ -61,7 +65,7 @@ fn cen8_distance_fastest_and_same_course_cross_dates_are_separate_policies() -> 
         .iter()
         .filter(|row| row.key.comparison == ComparisonPolicy::SameCourse)
         .collect();
-    assert_eq!(course_rows.len(), 3);
+    check!(eq; course_rows.len(), 3);
     let course_a = CourseIdentity::new("A", "1")?;
     let a = course_rows
         .iter()
@@ -73,11 +77,12 @@ fn cen8_distance_fastest_and_same_course_cross_dates_are_separate_policies() -> 
                 .is_some_and(|context| context.course.as_ref() == Some(&course_a))
         })
         .ok_or("A version1 winner")?;
-    assert_eq!(
+    check!(
+        eq;
         a.result.mark,
         Mark::TimeSeconds(ExactSeconds::parse("990")?)
     );
-    assert_eq!(a.population.marks, 2);
+    check!(eq; a.population.marks, 2);
     let directory = tempfile::tempdir()?;
     let (jsonl, _) = crate::bests::write(directory.path(), &rows, "co2027")?;
     let text = std::fs::read_to_string(jsonl)?;
@@ -93,15 +98,18 @@ fn cen8_distance_fastest_and_same_course_cross_dates_are_separate_policies() -> 
                 == Some("observed_fastest")
         })
         .ok_or("published fastest")?;
-    assert_eq!(
+    check!(
+        eq;
         published.pointer("/specification/cross_country/course"),
         Some(&serde_json::json!(["A", "2"]))
     );
-    assert_eq!(
+    check!(
+        eq;
         published.pointer("/key/specification/cross_country/course"),
         Some(&serde_json::Value::Null)
     );
-    assert_eq!(
+    check!(
+        eq;
         published.get("date"),
         Some(&serde_json::json!("2023-10-01"))
     );
@@ -191,23 +199,25 @@ fn cen8_three_miles_short_unknown_and_conditions_cannot_enter_standard_five_km_s
     add(&mut data, unknown, unknown_event, "600")?;
     let rows = selections(&data);
     let times: Vec<_> = rows.iter().map(|row| &row.result.mark).collect();
-    assert_eq!(
+    check!(
+        eq;
         rows.iter()
             .filter(|row| row.key.comparison == ComparisonPolicy::ObservedFastest)
             .count(),
         3
     );
-    assert_eq!(
+    check!(
+        eq;
         rows.iter()
             .filter(|row| row.key.comparison == ComparisonPolicy::SameCourse)
             .count(),
         4
     );
-    assert!(!times.contains(&&Mark::TimeSeconds(ExactSeconds::parse("700")?)));
-    assert!(!times.contains(&&Mark::TimeSeconds(ExactSeconds::parse("600")?)));
-    assert!(!times.contains(&&Mark::TimeSeconds(ExactSeconds::parse("750")?)));
+    check!(!times.contains(&&Mark::TimeSeconds(ExactSeconds::parse("700")?)));
+    check!(!times.contains(&&Mark::TimeSeconds(ExactSeconds::parse("600")?)));
+    check!(!times.contains(&&Mark::TimeSeconds(ExactSeconds::parse("750")?)));
     let short_mark = Mark::TimeSeconds(ExactSeconds::parse("800")?);
-    assert_eq!(times.iter().filter(|mark| ***mark == short_mark).count(), 1);
+    check!(eq; times.iter().filter(|mark| ***mark == short_mark).count(), 1);
     let wet_mark = Mark::TimeSeconds(ExactSeconds::parse("950")?);
     let wet = rows
         .iter()
@@ -221,8 +231,9 @@ fn cen8_three_miles_short_unknown_and_conditions_cannot_enter_standard_five_km_s
         .cross_country
         .as_ref()
         .ok_or("wet source context")?;
-    assert_eq!(context.course, Some(CourseIdentity::new("A", "1")?));
-    assert_eq!(
+    check!(eq; context.course, Some(CourseIdentity::new("A", "1")?));
+    check!(
+        eq;
         context.conditions,
         Some(PublishedCourseConditions::try_from("wet".to_string())?)
     );
@@ -232,7 +243,7 @@ fn cen8_three_miles_short_unknown_and_conditions_cannot_enter_standard_five_km_s
         .cross_country
         .as_ref()
         .ok_or("wet projected context")?;
-    assert_eq!(projected.course, None);
-    assert_eq!(projected.conditions, context.conditions);
+    check!(eq; projected.course, None);
+    check!(eq; projected.conditions, context.conditions);
     Ok(())
 }

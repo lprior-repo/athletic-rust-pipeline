@@ -72,7 +72,7 @@ fn unsupported_unbound_and_conflicting_labels_cannot_refine() -> TestResult {
     check!(eq; retained("Boys Mystery Race")?.resolved_source_kind(), None);
     let mut unbound = retained("Boys 110m Hurdles")?;
     unbound.evidence.clear();
-    assert_eq!(unbound.resolved_source_kind(), None);
+    check!(eq; unbound.resolved_source_kind(), None);
     let mut conflicting = retained("Boys 110m Hurdles")?;
     let source = conflicting
         .source_labels
@@ -84,7 +84,7 @@ fn unsupported_unbound_and_conflicting_labels_cannot_refine() -> TestResult {
         source,
         label: "Boys 100m Dash".into(),
     });
-    assert_eq!(conflicting.resolved_source_kind(), None);
+    check!(eq; conflicting.resolved_source_kind(), None);
     Ok(())
 }
 
@@ -101,18 +101,18 @@ fn refinement_cannot_change_context_or_override_known_kind() -> TestResult {
         }
         let mut held = original.clone();
         held.merge(incoming);
-        assert_eq!(held.kind, original.kind);
-        assert_eq!(held.round, original.round);
-        assert_eq!(held.gender, original.gender);
-        assert_eq!(held.retained_conflicts.len(), 1);
+        check!(eq; held.kind, original.kind);
+        check!(eq; held.round, original.round);
+        check!(eq; held.gender, original.gender);
+        check!(eq; held.retained_conflicts.len(), 1);
     }
     let mut known = original.clone();
     known.kind = EventKind::Track100m;
     let mut different = original;
     different.kind = EventKind::Track110mHurdles;
     known.merge(different);
-    assert_eq!(known.kind, EventKind::Track100m);
-    assert_eq!(known.retained_conflicts.len(), 1);
+    check!(eq; known.kind, EventKind::Track100m);
+    check!(eq; known.retained_conflicts.len(), 1);
     Ok(())
 }
 
@@ -157,10 +157,10 @@ fn a_conflicted_typed_observation_cannot_refine_a_retained_unmapped_event() -> T
     let conflicts = incoming.retained_conflicts.clone();
     let mut held = original.clone();
     held.merge(incoming);
-    assert_eq!(held.kind, original.kind);
-    assert_eq!(held.source_labels, original.source_labels);
-    assert_eq!(held.evidence, original.evidence);
-    assert!(conflicts
+    check!(eq; held.kind, original.kind);
+    check!(eq; held.source_labels, original.source_labels);
+    check!(eq; held.evidence, original.evidence);
+    check!(conflicts
         .iter()
         .all(|conflict| held.retained_conflicts.contains(conflict)));
     Ok(())
@@ -187,10 +187,10 @@ fn typed_side_contradictory_or_unbound_labels_cannot_bypass_event_collision() ->
         ] {
             let prior = held.clone();
             held.merge(other);
-            assert_eq!(held.kind, prior.kind);
-            assert_eq!(held.source_labels, prior.source_labels);
-            assert_eq!(held.evidence, prior.evidence);
-            assert_eq!(held.retained_conflicts.len(), 1);
+            check!(eq; held.kind, prior.kind);
+            check!(eq; held.source_labels, prior.source_labels);
+            check!(eq; held.evidence, prior.evidence);
+            check!(eq; held.retained_conflicts.len(), 1);
         }
     }
     Ok(())

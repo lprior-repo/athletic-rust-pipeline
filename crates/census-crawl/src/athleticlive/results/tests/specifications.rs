@@ -52,7 +52,8 @@ async fn project_documents(
         documents,
         ..ResultOptions::for_meet(mits_meet(), OBSERVED_ON)
     };
-    Ok(collect(&context(store, fetcher)?, &options).await?)
+    let report = collect(&context(store, fetcher)?, &options).await?;
+    Ok(report)
 }
 
 fn event_for<'a>(

@@ -145,13 +145,13 @@ fn event_labels_map_onto_the_ontology() {
 
 #[test]
 fn marks_parse_from_published_notation() -> TestResult {
-    assert_eq!(parse_time("10.56"), Some(ExactSeconds::parse("10.56")?));
-    assert_eq!(parse_time("1:54.32"), Some(ExactSeconds::parse("114.32")?));
-    assert_eq!(parse_time("15:32.1"), Some(ExactSeconds::parse("932.1")?));
-    assert_eq!(parse_time("DNF"), None);
+    check!(eq; parse_time("10.56"), Some(ExactSeconds::parse("10.56")?));
+    check!(eq; parse_time("1:54.32"), Some(ExactSeconds::parse("114.32")?));
+    check!(eq; parse_time("15:32.1"), Some(ExactSeconds::parse("932.1")?));
+    check!(eq; parse_time("DNF"), None);
     match parse_field_mark("61-03.50") {
         Some(Mark::FieldImperial { metres, .. }) => {
-            assert!(
+            check!(
                 (metres.value() - 1868).abs() < 1,
                 "61'3.5\" is 18.68 m, got {metres}"
             );

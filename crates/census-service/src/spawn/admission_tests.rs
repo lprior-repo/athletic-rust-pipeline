@@ -151,8 +151,8 @@ fn cancelling_deadline_reap_keeps_started_blocking_effect_and_certificate() -> T
             let (started, began) = oneshot::channel();
             let (release, released) = std::sync::mpsc::channel();
             let mut caller = Box::pin(spawner.blocking(move || {
-                assert!(started.send(()).is_ok());
-                released.recv().map(|()| 7)
+                let delivered = started.send(()).is_ok();
+                released.recv().map(|()| (delivered, 7))
             }));
             tokio::select! {
                 outcome = &mut caller => return Err(format!("effect finished before release: {outcome:?}").into()),
@@ -174,7 +174,7 @@ fn cancelling_deadline_reap_keeps_started_blocking_effect_and_certificate() -> T
             drop(draining);
             release.send(())?;
             let (outcome, report) = tokio::join!(caller, spawner.drain(Duration::from_secs(5)));
-            check!(eq; outcome, Outcome::Ok(7));
+            check!(eq; outcome, Outcome::Ok((true, 7)), "the started signal was delivered");
             check!(eq; report?, TaskReport {
                 accepted: 1,
                 completed: 1,

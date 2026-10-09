@@ -222,7 +222,8 @@ fn reduce_same_meet_different_dates_picks_later() -> TestResult {
         Some(&meet),
         crate::bests::Measure::Time,
     );
-    assert_eq!(
+    check!(
+        eq;
         result_earlier.ok_or("missing earlier key")?,
         result_later.ok_or("missing later key")?
     );

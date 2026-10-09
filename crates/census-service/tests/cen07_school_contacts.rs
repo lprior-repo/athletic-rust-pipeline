@@ -86,13 +86,10 @@ fn sheet_row(
     let headers = rows.next().ok_or("headers")?;
     let column = headers
         .iter()
-        .position(|header| header.to_string() == identity)
+        .position(|header| header == identity)
         .ok_or("identity column")?;
     let row = rows
-        .find(|row| {
-            row.get(column)
-                .is_some_and(|cell| cell.to_string() == value)
-        })
+        .find(|row| row.get(column).is_some_and(|cell| cell == value))
         .ok_or("published row")?;
     Ok(headers
         .iter()

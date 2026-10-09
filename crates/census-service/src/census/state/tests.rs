@@ -674,7 +674,7 @@ fn populated_source_objects_remain_open_until_explicitly_complete() -> TestResul
         .ok_or("missing results obligation")?
         .disposition = Complete;
     check!(eq; owed_source_objects(&completed), 3);
-    check!(completed.get(0).is_some_and(|object| !object.terminal()));
+    check!(completed.first().is_some_and(|object| !object.terminal()));
     check!(completed.get(2).is_some_and(|object| !object.terminal()));
     check!(completed.get(3).is_some_and(|object| !object.terminal()));
     Ok(())

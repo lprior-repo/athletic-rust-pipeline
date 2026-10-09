@@ -174,7 +174,10 @@ fn reserve_athlete(athlete: &mut CanonicalAthlete) -> CrawlResult<()> {
 
 fn roster_teams(mask: u16, projection: &Projection<'_>) -> CrawlResult<Vec<CanonicalTeam>> {
     let mut teams = Vec::new();
-    reserve(&mut teams, usize::from(mask.count_ones() as u16))?;
+    let programs = usize::try_from(mask.count_ones()).map_err(|_| CrawlError::Arithmetic {
+        detail: format!("milesplit roster program mask {mask} population exceeds usize"),
+    })?;
+    reserve(&mut teams, programs)?;
     [Sport::IndoorTrack, Sport::OutdoorTrack, Sport::CrossCountry]
         .into_iter()
         .for_each(|sport| {

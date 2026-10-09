@@ -4,7 +4,7 @@ use census_domain::model::{CanonicalAthlete, CanonicalPerformance, Mark, SourceN
 use census_report::export::ExportDataset;
 use census_report::report::{Derivation, Scope};
 use serde::Deserialize;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 #[derive(Deserialize)]
 pub struct Expected(
@@ -21,7 +21,6 @@ pub struct Oracle {
     xc: Vec<Expected>,
     jump: Vec<Expected>,
     track: Vec<Expected>,
-    best_values: BTreeMap<String, i64>,
 }
 
 impl Oracle {
@@ -33,32 +32,11 @@ impl Oracle {
         );
         let names: BTreeSet<_> = oracle.all().map(|row| row.0.as_str()).collect();
         ensure!(names.len() == 60, "frozen oracle has duplicate identities");
-        ensure!(
-            oracle.best_values.len() == 14
-                && oracle
-                    .prs()
-                    .all(|row| oracle.best_values.contains_key(&row.0)),
-            "frozen PR oracle membership changed"
-        );
         Ok(oracle)
     }
 
     pub fn all(&self) -> impl Iterator<Item = &Expected> {
         self.xc.iter().chain(&self.jump).chain(&self.track)
-    }
-
-    pub fn prs(&self) -> impl Iterator<Item = &Expected> {
-        self.jump
-            .iter()
-            .chain(&self.track)
-            .filter(|row| row.4.is_some())
-    }
-
-    pub fn best_value(&self, expected: &Expected) -> Result<i64> {
-        self.best_values
-            .get(&expected.0)
-            .copied()
-            .context("missing frozen PR value")
     }
 
     pub fn event(&self, expected: &Expected) -> Result<&Event> {

@@ -27,7 +27,8 @@ fn cen10_throw_mass_known_unknown_and_category_have_exact_slots() -> TestResult 
         })
         .collect();
     winners.sort_by_key(|(mass, _)| *mass);
-    assert_eq!(
+    check!(
+        eq;
         winners,
         vec![
             (None, &Mark::DistanceMetres(CentiMetres::new(2000))),
@@ -72,29 +73,33 @@ fn cen10_hurdle_height_spacing_and_unknown_specs_do_not_merge() -> TestResult {
                 })
         })
     };
-    assert_eq!(rows.len(), 4);
-    assert_eq!(
+    check!(eq; rows.len(), 4);
+    check!(
+        eq;
         winner(Some(838_200), None)
             .ok_or("33 inch winner")?
             .result
             .mark,
         Mark::TimeSeconds(ExactSeconds::parse("8.5")?)
     );
-    assert_eq!(
+    check!(
+        eq;
         winner(Some(990_600), None)
             .ok_or("39 inch winner")?
             .result
             .mark,
         Mark::TimeSeconds(ExactSeconds::parse("8.0")?)
     );
-    assert_eq!(
+    check!(
+        eq;
         winner(Some(838_200), Some(8_500_000))
             .ok_or("spacing winner")?
             .result
             .mark,
         Mark::TimeSeconds(ExactSeconds::parse("8.2")?)
     );
-    assert_eq!(
+    check!(
+        eq;
         winner(None, None).ok_or("unknown winner")?.result.mark,
         Mark::TimeSeconds(ExactSeconds::parse("7.0")?)
     );

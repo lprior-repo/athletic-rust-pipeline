@@ -147,9 +147,10 @@ fn changed_frozen_input_bytes_are_rejected_before_any_request_is_recovered() -> 
             let mut bytes = std::fs::read(&body)?;
             let first = bytes.first_mut().ok_or("original body first byte")?;
             *first = b'{';
+            use std::os::unix::fs::PermissionsExt;
             let permissions = std::fs::metadata(&body)?.permissions();
             let mut writable = permissions.clone();
-            writable.set_readonly(false);
+            writable.set_mode(permissions.mode() | 0o200);
             std::fs::set_permissions(&body, writable)?;
             std::fs::write(&body, bytes)?;
             std::fs::set_permissions(&body, permissions)?;

@@ -39,7 +39,7 @@ pub(super) struct Facts {
     pub calls: Vec<Call>,
     pub reached_connection: usize,
     pub holder: Value,
-    pub released_lock: PathBuf,
+    pub retained_lock: PathBuf,
 }
 
 pub(super) async fn exercise(
@@ -52,7 +52,14 @@ pub(super) async fn exercise(
     let mut children = Vec::with_capacity(6);
     let result = tokio::time::timeout(
         Duration::from_secs(180),
-        drive(directory, binary, origin, &mut children, handshake, &release),
+        drive(
+            directory,
+            binary,
+            origin,
+            &mut children,
+            handshake,
+            &release,
+        ),
     )
     .await;
     release.send_replace(Release::Released);
@@ -81,7 +88,10 @@ async fn drive(
     for site in &mut sites {
         site.ready = ready(directory, site, children).await?;
         site.deployment = native_api::register(
-            &client, &site.admin, site.endpoint_port, &directory.join(&site.name),
+            &client,
+            &site.admin,
+            site.endpoint_port,
+            &directory.join(&site.name),
         )
         .await?;
     }
@@ -90,36 +100,67 @@ async fn drive(
     )
     .await?;
     for site in &mut facts.sites {
-        let expected: Vec<_> = facts.calls.iter()
-            .filter(|call| call.endpoint == site.name).map(|call| &call.original).collect();
+        let expected: Vec<_> = facts
+            .calls
+            .iter()
+            .filter(|call| call.endpoint == site.name)
+            .map(|call| &call.original)
+            .collect();
         site.journal = native_api::journal(
-            &client, &site.admin, &directory.join(format!("{}-invocations.json", site.name)), &expected,
+            &client,
+            &site.admin,
+            &directory.join(format!("{}-invocations.json", site.name)),
+            &expected,
         )
         .await?;
     }
-    super::native_certificate::write(directory, "native-workload-outcomes.json", &serde_json::to_value(&facts)?)?;
+    super::native_certificate::write(
+        directory,
+        "native-workload-outcomes.json",
+        &serde_json::to_value(&facts)?,
+    )?;
     Ok(facts)
 }
 
 fn launch(directory: &Path, binary: &Path, children: &mut Vec<Owned>) -> Result<Vec<Site>> {
     let reservations = native_process::reserve(12)?;
-    let ports: Vec<_> = reservations.iter().map(|socket| socket.local_addr().map(|addr| addr.port()))
+    let ports: Vec<_> = reservations
+        .iter()
+        .map(|socket| socket.local_addr().map(|addr| addr.port()))
         .collect::<std::io::Result<_>>()?;
     drop(reservations);
     let mut sites = Vec::with_capacity(3);
-    for (name, ports) in ["owner", "rival-one", "rival-two"].into_iter().zip(ports.chunks_exact(4)) {
-        let endpoint_port = *ports.first().ok_or_else(|| anyhow::anyhow!("endpoint port missing"))?;
+    for (name, ports) in ["owner", "rival-one", "rival-two"]
+        .into_iter()
+        .zip(ports.chunks_exact(4))
+    {
+        let endpoint_port = *ports
+            .first()
+            .ok_or_else(|| anyhow::anyhow!("endpoint port missing"))?;
         let endpoint_index = children.len();
         children.push(Owned::endpoint(directory, name, endpoint_port)?);
         let node_index = children.len();
-        let node_ports = ports.get(1..).ok_or_else(|| anyhow::anyhow!("node ports missing"))?;
+        let node_ports = ports
+            .get(1..)
+            .ok_or_else(|| anyhow::anyhow!("node ports missing"))?;
         children.push(native_process::node(directory, name, binary, node_ports)?);
-        let ingress = *node_ports.get(1).ok_or_else(|| anyhow::anyhow!("ingress port missing"))?;
-        let admin = *node_ports.get(2).ok_or_else(|| anyhow::anyhow!("admin port missing"))?;
+        let ingress = *node_ports
+            .get(1)
+            .ok_or_else(|| anyhow::anyhow!("ingress port missing"))?;
+        let admin = *node_ports
+            .get(2)
+            .ok_or_else(|| anyhow::anyhow!("admin port missing"))?;
         sites.push(Site {
-            name: name.to_string(), endpoint_index, node_index, endpoint_port,
-            ingress: format!("http://127.0.0.1:{ingress}"), admin: format!("http://127.0.0.1:{admin}"),
-            ready: Value::Null, deployment: Value::Null, journal: Value::Null, drain: Value::Null,
+            name: name.to_string(),
+            endpoint_index,
+            node_index,
+            endpoint_port,
+            ingress: format!("http://127.0.0.1:{ingress}"),
+            admin: format!("http://127.0.0.1:{admin}"),
+            ready: Value::Null,
+            deployment: Value::Null,
+            journal: Value::Null,
+            drain: Value::Null,
         });
     }
     ensure!(sites.len() == 3, "native private site census incomplete");
@@ -135,21 +176,35 @@ async fn ready(directory: &Path, site: &Site, children: &mut [Owned]) -> Result<
         child(children, site.node_index)?.require_live()?;
         if ready_path.is_file() {
             let value: Value = serde_json::from_slice(&std::fs::read(&ready_path)?)?;
-            let expected_lock = std::fs::canonicalize(directory.join(census_service::census::DEFAULT_ORIGIN_LOCK_ROOT))?;
-            ensure!(value.get("pid").and_then(Value::as_u64) == Some(u64::from(child(children, index)?.pid))
-                && value.get("listen").and_then(Value::as_str) == Some(format!("127.0.0.1:{}", site.endpoint_port).as_str())
-                && value.get("store") == Some(&json!(std::fs::canonicalize(&child(children, index)?.root)?))
-                && value.get("origin_lock_root") == Some(&json!(expected_lock)),
-                "foreign private endpoint ready identity: {value}");
+            let expected_lock = std::fs::canonicalize(
+                directory.join(census_service::census::DEFAULT_ORIGIN_LOCK_ROOT),
+            )?;
+            ensure!(
+                value.get("pid").and_then(Value::as_u64)
+                    == Some(u64::from(child(children, index)?.pid))
+                    && value.get("listen").and_then(Value::as_str)
+                        == Some(format!("127.0.0.1:{}", site.endpoint_port).as_str())
+                    && value.get("store")
+                        == Some(&json!(std::fs::canonicalize(
+                            &child(children, index)?.root
+                        )?))
+                    && value.get("origin_lock_root") == Some(&json!(expected_lock)),
+                "foreign private endpoint ready identity: {value}"
+            );
             return Ok(value);
         }
         ticks.tick().await;
     }
-    Err(anyhow::anyhow!("owned endpoint not ready: {}", ready_path.display()))
+    Err(anyhow::anyhow!(
+        "owned endpoint not ready: {}",
+        ready_path.display()
+    ))
 }
 
 pub(super) fn child(children: &mut [Owned], index: usize) -> Result<&mut Owned> {
-    children.get_mut(index).ok_or_else(|| anyhow::anyhow!("owned native child {index} missing"))
+    children
+        .get_mut(index)
+        .ok_or_else(|| anyhow::anyhow!("owned native child {index} missing"))
 }
 
 async fn cleanup(children: &mut [Owned]) -> Result<()> {
@@ -163,22 +218,38 @@ async fn cleanup(children: &mut [Owned]) -> Result<()> {
             }
         }
     }
-    ensure!(children.iter().all(|child| child.reaped && child.ports_released),
-        "native cleanup left children/ports owned: {children:?}; {failures:?}");
+    ensure!(
+        children
+            .iter()
+            .all(|child| child.reaped && child.ports_released),
+        "native cleanup left children/ports owned: {children:?}; {failures:?}"
+    );
     ensure!(failures.is_empty(), "native cleanup failed: {failures:?}");
     Ok(())
 }
 
 fn collect_drains(sites: &mut [Site], children: &[Owned], calls: &[Call]) -> Result<()> {
     for site in sites {
-        let endpoint = children.get(site.endpoint_index).ok_or_else(|| anyhow::anyhow!("endpoint child absent"))?;
-        let drain: Value = serde_json::from_slice(&std::fs::read(endpoint.root.join("fixture-drain.json"))?)?;
-        let count = u64::try_from(calls.iter().filter(|call| call.endpoint == site.name).count())?;
-        ensure!(drain.get("pid").and_then(Value::as_u64) == Some(u64::from(endpoint.pid))
-            && drain.get("accepted").and_then(Value::as_u64) == Some(count)
-            && drain.get("completed").and_then(Value::as_u64) == Some(count)
-            && ["failed", "cancelled", "remaining"].iter().all(|field| drain.get(field).and_then(Value::as_u64) == Some(0)),
-            "native endpoint outcomes do not balance original calls: {drain}");
+        let endpoint = children
+            .get(site.endpoint_index)
+            .ok_or_else(|| anyhow::anyhow!("endpoint child absent"))?;
+        let drain: Value =
+            serde_json::from_slice(&std::fs::read(endpoint.root.join("fixture-drain.json"))?)?;
+        let count = u64::try_from(
+            calls
+                .iter()
+                .filter(|call| call.endpoint == site.name)
+                .count(),
+        )?;
+        ensure!(
+            drain.get("pid").and_then(Value::as_u64) == Some(u64::from(endpoint.pid))
+                && drain.get("accepted").and_then(Value::as_u64) == Some(count)
+                && drain.get("completed").and_then(Value::as_u64) == Some(count)
+                && ["failed", "cancelled", "remaining"]
+                    .iter()
+                    .all(|field| drain.get(field).and_then(Value::as_u64) == Some(0)),
+            "native endpoint outcomes do not balance original calls: {drain}"
+        );
         site.drain = drain;
     }
     Ok(())

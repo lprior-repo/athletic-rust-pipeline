@@ -14,26 +14,29 @@ async fn limited_pass_keeps_prefix_durable_and_unlimited_resume_admits_each_rema
     );
     let harness = Harness::new(&page, Some(EMPTY))?;
     let first = harness.run(&[2026], &[], Some(1), "2026-09-20").await?;
-    assert_eq!(first.disposition, CollectionDisposition::Partial);
-    assert_eq!(
+    check!(eq; first.disposition, CollectionDisposition::Partial);
+    check!(
+        eq;
         first.unfinished,
         vec![
             row_locator(2),
             schedule_url(ScheduleSport::CrossCountry, 2026)
         ]
     );
-    assert_eq!(observed_meet_names(&harness)?, vec!["First admitted"]);
+    check!(eq; observed_meet_names(&harness)?, vec!["First admitted"]);
     let resumed = harness.run(&[2026], &[], None, "2026-09-20").await?;
-    assert_eq!(resumed.disposition, CollectionDisposition::Complete);
-    assert_eq!(resumed.rows, 1);
-    assert_eq!(
+    check!(eq; resumed.disposition, CollectionDisposition::Complete);
+    check!(eq; resumed.rows, 1);
+    check!(
+        eq;
         observed_meet_names(&harness)?,
         vec!["First admitted", "Second admitted"]
     );
     let again = harness.run(&[2026], &[], None, "2026-09-20").await?;
-    assert_eq!(again.disposition, CollectionDisposition::Complete);
-    assert_eq!(again.rows, 0);
-    assert_eq!(
+    check!(eq; again.disposition, CollectionDisposition::Complete);
+    check!(eq; again.rows, 0);
+    check!(
+        eq;
         observed_meet_names(&harness)?,
         vec!["First admitted", "Second admitted"]
     );
@@ -48,12 +51,14 @@ async fn a_later_page_failure_does_not_roll_back_an_admitted_prefix() -> TestRes
     );
     let harness = Harness::new(&page, None)?;
     let first = harness.run(&[2026], &[], None, "2026-09-20").await?;
-    assert_eq!(first.disposition, CollectionDisposition::Partial);
-    assert_eq!(
+    check!(eq; first.disposition, CollectionDisposition::Partial);
+    check!(
+        eq;
         first.unfinished,
         vec![schedule_url(ScheduleSport::CrossCountry, 2026)]
     );
-    assert_eq!(
+    check!(
+        eq;
         harness
             .meets()?
             .iter()
@@ -63,9 +68,10 @@ async fn a_later_page_failure_does_not_roll_back_an_admitted_prefix() -> TestRes
     );
     harness.seed(ScheduleSport::CrossCountry, 2026, EMPTY)?;
     let resumed = harness.run(&[2026], &[], None, "2026-09-20").await?;
-    assert_eq!(resumed.disposition, CollectionDisposition::Complete);
-    assert_eq!(resumed.rows, 0);
-    assert_eq!(
+    check!(eq; resumed.disposition, CollectionDisposition::Complete);
+    check!(eq; resumed.rows, 0);
+    check!(
+        eq;
         harness
             .meets()?
             .iter()
@@ -87,15 +93,17 @@ async fn future_rows_are_not_owed_when_an_admitted_row_consumes_the_limit() -> T
     );
     let harness = Harness::new(&page, Some(EMPTY))?;
     let report = harness.run(&[2026], &[], Some(1), "2026-09-01").await?;
-    assert_eq!(
+    check!(
+        eq;
         report.unfinished,
         vec![schedule_url(ScheduleSport::CrossCountry, 2026)]
     );
-    assert!(harness
+    check!(harness
         .raw()?
         .iter()
         .any(|row| row["name"] == "Future with unknown geography" && row["date"] == "2026-09-02"));
-    assert_eq!(
+    check!(
+        eq;
         harness
             .meets()?
             .iter()
@@ -110,8 +118,9 @@ async fn future_rows_are_not_owed_when_an_admitted_row_consumes_the_limit() -> T
 async fn missing_or_truncated_tables_cannot_certify_published_empty() -> TestResult {
     let harness = Harness::new("<html>login</html>", Some(EMPTY))?;
     let missing = harness.run(&[2026], &[], None, "2026-09-20").await?;
-    assert_eq!(missing.disposition, CollectionDisposition::Partial);
-    assert_eq!(
+    check!(eq; missing.disposition, CollectionDisposition::Partial);
+    check!(
+        eq;
         missing.unfinished,
         vec![schedule_url(ScheduleSport::Track, 2026)]
     );
@@ -121,15 +130,16 @@ async fn missing_or_truncated_tables_cannot_certify_published_empty() -> TestRes
         "<table class=\"schedule\"><tr class=\"event-row\"><td>1</td></table>",
     )?;
     let truncated = harness.run(&[2026], &[], None, "2026-09-20").await?;
-    assert_eq!(truncated.disposition, CollectionDisposition::Partial);
-    assert_eq!(
+    check!(eq; truncated.disposition, CollectionDisposition::Partial);
+    check!(
+        eq;
         truncated.unfinished,
         vec![schedule_url(ScheduleSport::Track, 2026)]
     );
     harness.seed(ScheduleSport::Track, 2026, EMPTY)?;
     let published_empty = harness.run(&[2026], &[], None, "2026-09-20").await?;
-    assert_eq!(published_empty.disposition, CollectionDisposition::Complete);
-    assert!(harness.meets()?.is_empty());
+    check!(eq; published_empty.disposition, CollectionDisposition::Complete);
+    check!(harness.meets()?.is_empty());
     Ok(())
 }
 
@@ -149,8 +159,9 @@ async fn a_historical_url_only_journal_does_not_hide_a_current_schedule() -> Tes
         }),
     )?;
     let report = harness.run(&[2026], &[], None, "2026-09-20").await?;
-    assert_eq!(report.disposition, CollectionDisposition::Complete);
-    assert_eq!(
+    check!(eq; report.disposition, CollectionDisposition::Complete);
+    check!(
+        eq;
         harness
             .meets()?
             .iter()
@@ -167,8 +178,8 @@ async fn missing_capture_time_cannot_certify_a_published_empty_schedule() -> Tes
     let url = schedule_url(ScheduleSport::Track, 2026);
     super::super::seed_cache_at(&harness.store.http_cache_dir(), &url, EMPTY, "")?;
     let report = harness.run(&[2026], &[], None, "2026-09-20").await?;
-    assert_eq!(report.disposition, CollectionDisposition::Partial);
-    assert_eq!(report.unfinished, vec![url]);
-    assert!(harness.meets()?.is_empty());
+    check!(eq; report.disposition, CollectionDisposition::Partial);
+    check!(eq; report.unfinished, vec![url]);
+    check!(harness.meets()?.is_empty());
     Ok(())
 }

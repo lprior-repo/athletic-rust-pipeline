@@ -16,7 +16,7 @@ fn mark_raw_reports_the_published_value_or_its_unit() -> Result<(), Box<dyn std:
         (Mark::Points(CentiPoints::new(842100)), "points"),
     ];
     for (mark, raw) in cases {
-        assert_eq!(mark.raw(), *raw);
+        check!(eq; mark.raw(), *raw);
     }
     Ok(())
 }

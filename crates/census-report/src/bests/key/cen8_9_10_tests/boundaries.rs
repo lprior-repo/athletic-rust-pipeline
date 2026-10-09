@@ -24,14 +24,14 @@ fn cen10_mass_height_are_exact_and_invalid_labels_cannot_mint_events() -> TestRe
     let mass = EventSpecification::from_published_label("Shot Put (12 lb)", &EventKind::ShotPut)?
         .implement
         .ok_or("mass")?;
-    assert_eq!(mass.micrograms(), 5_443_108_440);
+    check!(eq; mass.micrograms(), 5_443_108_440);
     let hurdle = EventSpecification::from_published_label(
         "60m Hurdles (33\")",
         &EventKind::Track60mHurdles,
     )?
     .hurdles
     .ok_or("hurdle")?;
-    assert_eq!(hurdle.height_micrometres, 838_200);
+    check!(eq; hurdle.height_micrometres, 838_200);
     for (label, expected) in [
         ("Shot Put (NaNkg)", SpecificationError::InvalidLabel),
         ("Shot Put (-4kg)", SpecificationError::InvalidLabel),
@@ -40,11 +40,9 @@ fn cen10_mass_height_are_exact_and_invalid_labels_cannot_mint_events() -> TestRe
     ] {
         let meet = meet(label, Sport::OutdoorTrack, "2025-05-01");
         match event(&meet, label) {
-            Err(error) => assert_eq!(
-                error.downcast_ref::<SpecificationError>(),
-                Some(&expected),
-                "{label}"
-            ),
+            Err(error) => {
+                check!(eq; error.downcast_ref::<SpecificationError>(), Some(&expected), "{label}")
+            }
             Ok(_) => return Err(format!("invalid specification minted an event: {label}").into()),
         }
     }
@@ -60,12 +58,14 @@ fn cen10_source_labels_require_parsed_binding_and_conflicts_withhold() -> TestRe
         source,
         label: "Boys Shot Put (5kg)".into(),
     });
-    assert_eq!(
+    check!(
+        eq;
         event.resolved_specification(),
         Err(SpecificationError::ConflictingSpecification)
     );
     event.evidence.clear();
-    assert_eq!(
+    check!(
+        eq;
         event.resolved_specification()?.implement,
         Some(ImplementMass::try_from(4_000_000_000)?)
     );
@@ -80,7 +80,7 @@ fn cen10_source_labels_require_parsed_binding_and_conflicts_withhold() -> TestRe
         EventSpecification::default(),
     )?;
     unbound.source_labels = event.source_labels;
-    assert_eq!(unbound.resolved_specification()?.implement, None);
+    check!(eq; unbound.resolved_specification()?.implement, None);
     Ok(())
 }
 
@@ -90,7 +90,8 @@ fn cen8_published_distance_label_does_not_invent_course_or_measurement() -> Test
         "Boys Cross Country 3 miles",
         &EventKind::CrossCountry,
     )?;
-    assert_eq!(
+    check!(
+        eq;
         specification.cross_country,
         Some(CrossCountryContext {
             distance: PublishedDistance::new(DistanceUnit::Miles, 3000)?,
@@ -111,11 +112,13 @@ fn cen10_abbreviation_and_full_published_label_hydrate_without_assuming_standard
         source,
         label: "SP".into(),
     });
-    assert_eq!(
+    check!(
+        eq;
         event.resolved_specification()?.implement,
         Some(ImplementMass::try_from(4_000_000_000)?)
     );
-    assert_eq!(
+    check!(
+        eq;
         EventSpecification::from_published_label("Boys 200m banked", &EventKind::Track200m),
         Err(SpecificationError::InvalidTrack)
     );

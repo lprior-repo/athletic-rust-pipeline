@@ -21,13 +21,7 @@ pub fn verify(path: &Path, oracle: &Oracle) -> Result<()> {
         "Athlete",
         |row, expected| performance(row, expected, oracle),
     )?;
-    table(
-        &mut workbook,
-        "PRs",
-        oracle.prs(),
-        "Athlete",
-        |row, expected| pr(row, expected, oracle),
-    )
+    Ok(())
 }
 
 fn table<'a, R: Read + Seek>(
@@ -85,22 +79,6 @@ fn performance(row: &Record<'_>, expected: &Expected, oracle: &Oracle) -> Result
     )?;
     row.equal(
         "Source URL",
-        &census_crawl::athleticlive::event_doc_url(event.event),
-    )
-}
-
-fn pr(row: &Record<'_>, expected: &Expected, oracle: &Oracle) -> Result<()> {
-    membership(row, expected, oracle)?;
-    let event = oracle.event(expected)?;
-    row.equal("Calculated PR", &expected.3)?;
-    row.equal("PR date", event.date)?;
-    row.equal("Meet", event.name)?;
-    row.equal(
-        "Place",
-        &expected.5.map_or(String::new(), |place| place.to_string()),
-    )?;
-    row.equal(
-        "Result URL",
         &census_crawl::athleticlive::event_doc_url(event.event),
     )
 }

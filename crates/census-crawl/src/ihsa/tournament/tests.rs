@@ -402,36 +402,42 @@ fn terms_pin_the_newest_completed_school_year() -> TestResult {
 
 #[test]
 fn mark_forms_seen_in_the_corpus_parse_to_canonical_marks() -> TestResult {
-    assert_eq!(
+    check!(
+        eq;
         parse_mark("2.02m"),
         Some(Mark::DistanceMetres(CentiMetres::new(202)))
     );
-    assert_eq!(
+    check!(
+        eq;
         parse_mark("1.88mq"),
         Some(Mark::DistanceMetres(CentiMetres::new(188)))
     );
-    assert_eq!(
+    check!(
+        eq;
         parse_mark("7:51.37"),
         Some(Mark::TimeSeconds(ExactSeconds::parse("471.37")?))
     );
-    assert_eq!(
+    check!(
+        eq;
         parse_mark("10.94"),
         Some(Mark::TimeSeconds(ExactSeconds::parse("10.94")?))
     );
-    assert_eq!(
+    check!(
+        eq;
         parse_mark("10.94Q"),
         Some(Mark::TimeSeconds(ExactSeconds::parse("10.94")?))
     );
-    assert_eq!(
+    check!(
+        eq;
         parse_mark("  2.02m "),
         Some(Mark::DistanceMetres(CentiMetres::new(202)))
     );
 
-    assert_eq!(parse_mark(""), None, "an absent mark is never invented");
-    assert_eq!(parse_mark("NH"), None, "no height");
-    assert_eq!(parse_mark("NM"), None, "no mark");
-    assert_eq!(parse_mark("FOUL"), None);
-    assert_eq!(parse_mark("DNF"), None);
+    check!(eq; parse_mark(""), None, "an absent mark is never invented");
+    check!(eq; parse_mark("NH"), None, "no height");
+    check!(eq; parse_mark("NM"), None, "no mark");
+    check!(eq; parse_mark("FOUL"), None);
+    check!(eq; parse_mark("DNF"), None);
     Ok(())
 }
 

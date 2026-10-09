@@ -15,24 +15,27 @@ async fn full_iso_horizon_excludes_future_but_retains_unknown_dates_as_owed() ->
     );
     let harness = Harness::new(&page, Some(EMPTY))?;
     let report = harness.run(&[2026], &[], None, "2026-09-01").await?;
-    assert_eq!(report.disposition, CollectionDisposition::Partial);
-    assert_eq!(
+    check!(eq; report.disposition, CollectionDisposition::Partial);
+    check!(
+        eq;
         report.unfinished,
         vec![row_locator(3), row_locator(4), row_locator(5)]
     );
     let meets = harness.meets()?;
-    assert_eq!(
+    check!(
+        eq;
         meets
             .iter()
             .map(|meet| meet.name.as_str())
             .collect::<Vec<_>>(),
         vec!["Same-day admitted"]
     );
-    assert_eq!(meets[0].date, "2026-09-01");
-    assert_eq!(meets[0].evidence[0].observed_on, FETCHED);
+    check!(eq; meets[0].date, "2026-09-01");
+    check!(eq; meets[0].evidence[0].observed_on, FETCHED);
     let mut raw = harness.raw()?;
     raw.sort_by_key(|row| row["capture"]["ordinal"].as_u64());
-    assert_eq!(
+    check!(
+        eq;
         raw.iter()
             .map(|row| row["date"].as_str())
             .collect::<Vec<_>>(),
@@ -44,7 +47,7 @@ async fn full_iso_horizon_excludes_future_but_retains_unknown_dates_as_owed() ->
             Some("2026"),
         ]
     );
-    assert!(raw
+    check!(raw
         .iter()
         .all(|row| row["capture"]["fetched_at"] == FETCHED));
     Ok(())
@@ -59,20 +62,21 @@ async fn a_later_horizon_replays_previously_excluded_rows_without_relabeling_cap
     );
     let harness = Harness::new(&page, Some(EMPTY))?;
     let first = harness.run(&[2026], &[], None, "2026-09-01").await?;
-    assert_eq!(first.disposition, CollectionDisposition::Complete);
-    assert!(harness.meets()?.is_empty());
+    check!(eq; first.disposition, CollectionDisposition::Complete);
+    check!(harness.meets()?.is_empty());
     let second = harness.run(&[2026], &[], None, "2026-09-02").await?;
-    assert_eq!(second.disposition, CollectionDisposition::Complete);
+    check!(eq; second.disposition, CollectionDisposition::Complete);
     let meets = harness.meets()?;
-    assert_eq!(
+    check!(
+        eq;
         meets
             .iter()
             .map(|meet| (meet.name.as_str(), meet.date.as_str()))
             .collect::<Vec<_>>(),
         vec![("After first snapshot", "2026-09-02")]
     );
-    assert_eq!(meets[0].evidence[0].observed_on, FETCHED);
-    assert!(harness
+    check!(eq; meets[0].evidence[0].observed_on, FETCHED);
+    check!(harness
         .raw()?
         .iter()
         .all(|row| row["capture"]["fetched_at"] == FETCHED));
@@ -93,8 +97,9 @@ async fn default_calendar_windows_follow_snapshot_year_not_cohort_year() -> Test
     harness.seed(crate::wayzata::ScheduleSport::Track, 2025, &previous)?;
     harness.seed(crate::wayzata::ScheduleSport::CrossCountry, 2025, EMPTY)?;
     let report = harness.run(&[], &[], None, "2026-09-01").await?;
-    assert_eq!(report.disposition, CollectionDisposition::Complete);
-    assert_eq!(
+    check!(eq; report.disposition, CollectionDisposition::Complete);
+    check!(
+        eq;
         harness
             .meets()?
             .iter()

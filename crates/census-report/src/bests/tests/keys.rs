@@ -48,7 +48,7 @@ fn key_excluded_unresolved_surface() -> TestResult {
         Some(&meet),
         crate::bests::Measure::Time,
     );
-    assert!(result.is_none());
+    check!(result.is_none());
     Ok(())
 }
 
@@ -66,7 +66,7 @@ fn key_no_meet_is_excluded() -> TestResult {
 
     let result =
         crate::bests::PrKey::from_performance(&perf, &event, None, crate::bests::Measure::Time);
-    assert!(result.is_none());
+    check!(result.is_none());
     Ok(())
 }
 
@@ -135,11 +135,12 @@ fn cross_country_keys_separate_courses_but_share_measured_distance() -> TestResu
     )
     .ok_or("second distance key")?;
     let second_course = second.same_course(&event).ok_or("second course key")?;
-    assert_eq!(first, second);
-    assert_ne!(first_course, second_course);
+    check!(eq; first, second);
+    check!(ne; first_course, second_course);
     perf.mark = Mark::TimeSeconds(ExactSeconds::parse("170.00")?);
     perf.date = "2025-10-02".to_owned();
-    assert_eq!(
+    check!(
+        eq;
         Some(second),
         crate::bests::PrKey::from_performance(
             &perf,

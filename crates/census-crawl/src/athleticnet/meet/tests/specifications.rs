@@ -47,10 +47,7 @@ pub(super) fn blocks(labels: &[(&str, &str, &str)]) -> TestResult<(MeetData, All
     Ok((meet, results))
 }
 
-fn event_for<'a>(
-    walk: &'a Walk,
-    result: i64,
-) -> TestResult<&'a census_domain::model::CanonicalEvent> {
+fn event_for(walk: &Walk, result: i64) -> TestResult<&census_domain::model::CanonicalEvent> {
     let suffix = format!("-{result}");
     let performance = walk
         .accumulated

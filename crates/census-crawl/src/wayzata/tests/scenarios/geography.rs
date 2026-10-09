@@ -32,9 +32,10 @@ async fn requested_geography_uses_published_venues_not_school_name_heuristics() 
     let report = harness
         .run(&[2026], &[UsJurisdiction::Wisconsin], None, "2026-09-20")
         .await?;
-    assert_eq!(report.disposition, CollectionDisposition::Partial);
-    assert_eq!(report.unfinished, vec![row_locator(3), row_locator(4)]);
-    assert_eq!(
+    check!(eq; report.disposition, CollectionDisposition::Partial);
+    check!(eq; report.unfinished, vec![row_locator(3), row_locator(4)]);
+    check!(
+        eq;
         harness
             .meets()?
             .iter()
@@ -46,10 +47,10 @@ async fn requested_geography_uses_published_venues_not_school_name_heuristics() 
         ]
     );
     let raw = harness.raw()?;
-    assert!(raw
+    check!(raw
         .iter()
         .any(|row| row["name"] == "School-shaped unknown" && row["venue"] == "River Falls HS"));
-    assert!(raw
+    check!(raw
         .iter()
         .any(|row| row["name"] == "Minnesota campus" && row["venue"] == "University of Minnesota"));
     Ok(())
@@ -65,13 +66,14 @@ async fn a_changed_requested_scope_replays_a_previously_excluded_meet() -> TestR
     let excluded = harness
         .run(&[2026], &[UsJurisdiction::Wisconsin], None, "2026-09-20")
         .await?;
-    assert_eq!(excluded.disposition, CollectionDisposition::Complete);
-    assert!(harness.meets()?.is_empty());
+    check!(eq; excluded.disposition, CollectionDisposition::Complete);
+    check!(harness.meets()?.is_empty());
     let admitted = harness
         .run(&[2026], &[UsJurisdiction::Minnesota], None, "2026-09-20")
         .await?;
-    assert_eq!(admitted.disposition, CollectionDisposition::Complete);
-    assert_eq!(
+    check!(eq; admitted.disposition, CollectionDisposition::Complete);
+    check!(
+        eq;
         harness
             .meets()?
             .iter()
@@ -90,8 +92,9 @@ async fn row_content_cannot_impersonate_a_month_heading() -> TestResult {
     );
     let harness = Harness::new(&page, Some(EMPTY))?;
     let report = harness.run(&[2026], &[], None, "2026-09-20").await?;
-    assert_eq!(report.disposition, CollectionDisposition::Complete);
-    assert_eq!(
+    check!(eq; report.disposition, CollectionDisposition::Complete);
+    check!(
+        eq;
         harness
             .meets()?
             .iter()
@@ -116,12 +119,14 @@ async fn malformed_rows_keep_their_raw_metadata_and_do_not_hide_later_meets() ->
     );
     let harness = Harness::new(&page, Some(EMPTY))?;
     let report = harness.run(&[2026], &[], None, "2026-09-20").await?;
-    assert_eq!(report.disposition, CollectionDisposition::Partial);
-    assert_eq!(
+    check!(eq; report.disposition, CollectionDisposition::Partial);
+    check!(
+        eq;
         report.unfinished,
         vec![row_locator(2), row_locator(4), row_locator(5)]
     );
-    assert_eq!(
+    check!(
+        eq;
         harness
             .meets()?
             .iter()
@@ -133,14 +138,14 @@ async fn malformed_rows_keep_their_raw_metadata_and_do_not_hide_later_meets() ->
         ]
     );
     let raw = harness.raw()?;
-    assert!(raw.iter().any(|row| row["capture"]["ordinal"] == 2
+    check!(raw.iter().any(|row| row["capture"]["ordinal"] == 2
         && row["date"] == ""
         && row["name"] == ""
         && row["venue"] == ""));
-    assert!(raw.iter().any(|row| row["capture"]["ordinal"] == 4
+    check!(raw.iter().any(|row| row["capture"]["ordinal"] == 4
         && row["date"] == "2026-01-04"
         && row["name"] == ""));
-    assert!(raw.iter().any(|row| row["capture"]["ordinal"] == 5
+    check!(raw.iter().any(|row| row["capture"]["ordinal"] == 5
         && row["name"] == "Missing venue"
         && row["venue"] == ""));
     Ok(())
@@ -151,19 +156,20 @@ async fn valid_single_quoted_cells_preserve_apostrophes_and_provider_links() -> 
     let page = r#"<table class='table schedule'><tr class='month-title'><td>January</td></tr><tr class='event-row'><td class='date'>1</td><td class='awayteam'><span title="Saint Mary's Invitational">Display label</span></td><td class='hometeam'>University of Minnesota</td><td><a href='/links/knownid' aria-label="January 1 Saint Mary's Invitational">Results</a></td></tr></table>"#;
     let harness = Harness::new(page, Some(EMPTY))?;
     let report = harness.run(&[2026], &[], None, "2026-09-20").await?;
-    assert_eq!(report.disposition, CollectionDisposition::Complete);
+    check!(eq; report.disposition, CollectionDisposition::Complete);
     let meets = harness.meets()?;
-    assert_eq!(
+    check!(
+        eq;
         meets
             .iter()
             .map(|meet| (meet.name.as_str(), meet.date.as_str()))
             .collect::<Vec<_>>(),
         vec![("Saint Mary's Invitational", "2026-01-01")]
     );
-    assert!(meets[0]
+    check!(meets[0]
         .source_urls
         .contains(&format!("{}/links/knownid", crate::wayzata::BASE)));
-    assert!(harness
+    check!(harness
         .raw()?
         .iter()
         .any(|row| row["name"] == "Saint Mary's Invitational" && row["slug"] == "knownid"));

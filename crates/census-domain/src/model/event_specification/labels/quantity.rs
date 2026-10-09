@@ -25,10 +25,16 @@ pub(super) fn scaled(input: &str, multiplier: u64) -> Result<u64, SpecificationE
     let value = coefficient
         .checked_mul(multiplier)
         .ok_or(SpecificationError::InvalidLabel)?;
-    if value % scale != 0 {
+    if value
+        .checked_rem(scale)
+        .ok_or(SpecificationError::InvalidLabel)?
+        != 0
+    {
         return Err(SpecificationError::InvalidLabel);
     }
-    Ok(value / scale)
+    value
+        .checked_div(scale)
+        .ok_or(SpecificationError::InvalidLabel)
 }
 
 pub(super) fn mass(input: &str, unit: Option<&str>) -> Result<u64, SpecificationError> {

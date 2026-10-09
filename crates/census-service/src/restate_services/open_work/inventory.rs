@@ -133,6 +133,27 @@ async fn append_entry(
         )
         .await?,
     )?;
+    append_plan(entry, rows)?;
+    if let Some(plan) = &entry.state.plan {
+        stream::iter(
+            plan.sweepable
+                .iter()
+                .filter(|slug| slug.as_str() != census_crawl::sidearm_staff::SOURCE_ID),
+        )
+        .map(Ok::<_, HandlerError>)
+        .try_fold(rows, |rows, slug| async move {
+            append_source(ctx, entry, slug, rows).await?;
+            Ok(rows)
+        })
+        .await?;
+    }
+    Ok(())
+}
+
+fn append_plan(
+    entry: &ReadJurisdiction,
+    rows: &mut Vec<SourceObjectOpen>,
+) -> Result<(), HandlerError> {
     if !plan_covers(entry.row.jurisdiction, &entry.state) {
         push(
             rows,
@@ -162,19 +183,7 @@ async fn append_entry(
                 Disposition::Blocked,
             ),
         )
-    })?;
-    stream::iter(
-        plan.sweepable
-            .iter()
-            .filter(|slug| slug.as_str() != census_crawl::sidearm_staff::SOURCE_ID),
-    )
-    .map(Ok::<_, HandlerError>)
-    .try_fold(rows, |rows, slug| async move {
-        append_source(ctx, entry, slug, rows).await?;
-        Ok(rows)
     })
-    .await
-    .map(|_| ())
 }
 
 async fn append_source(

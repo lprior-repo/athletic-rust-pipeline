@@ -200,10 +200,6 @@ fn every_row_states_its_evidence_and_its_refusal() {
         );
     }
 }
-// CEN-02 regression: every registry family must produce either real durable source-specific
-// execution or a justified terminal access outcome. The applicability table is the
-// obligation map: each row declares what a source family commits to execute (evidence)
-// and what constitutes a justified terminal gap (refusal).
 #[test]
 fn every_source_family_has_executable_obligation_or_terminal_gap() {
     for row in table() {

@@ -114,7 +114,7 @@ pub(super) fn admissions() -> Result<Check> {
     Ok(Check::violated(5, NAME, detail, failures))
 }
 
-const NON_ADAPTERS: [(&str, &str); 20] = [
+const NON_ADAPTERS: [(&str, &str); 22] = [
     (
         "applicability",
         "the per-jurisdiction source table the planner reads: data, with no origin to admit",
@@ -181,6 +181,14 @@ const NON_ADAPTERS: [(&str, &str); 20] = [
     (
         "wikidata",
         "parses Wikidata Query Service SPARQL results into school-directory entries",
+    ),
+    (
+        "disposition",
+        "the collection-disposition vocabulary a source walk reports; it names no origin of its own",
+    ),
+    (
+        "result_status",
+        "the shared result-status token grammar the results parsers classify against; it fetches nothing",
     ),
     (
         "lib",

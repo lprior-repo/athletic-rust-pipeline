@@ -151,4 +151,4 @@ pub fn should_replace(
 }
 
 #[cfg(test)]
-mod cen8_9_10;
+mod cen8_9_10_tests;

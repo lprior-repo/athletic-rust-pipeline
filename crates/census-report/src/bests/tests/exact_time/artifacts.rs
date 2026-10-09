@@ -45,9 +45,7 @@ fn assert_csv(path: &Path, expected: &str, nanos: i64) -> TestResult {
     check!(eq; record.get(column("best_value")?), Some(nanos.to_string().as_str()));
     check!(eq; record.get(column("best_value_unit")?), Some("ns"));
     match records.next() {
-        Some(result) => {
-            return Err(format!("unexpected extra best-results record: {:?}", result?).into())
-        }
+        Some(result) => Err(format!("unexpected extra best-results record: {:?}", result?).into()),
         None => Ok(()),
     }
 }
@@ -69,7 +67,7 @@ fn assert_xlsx(store: &Store, out: &Path, expected: &str, normalized: f64) -> Te
     let column = |name: &str| {
         header
             .iter()
-            .position(|value| value.to_string() == name)
+            .position(|value| value == name)
             .ok_or_else(|| format!("missing XLSX {name}"))
     };
     let row = rows.next().ok_or("missing XLSX best")?;

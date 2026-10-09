@@ -45,7 +45,7 @@ pub(super) fn seed(store: &Store, entries: &[SchoolDirectoryEntry]) -> TestResul
 fn cell(row: &[calamine::Data], headers: &[calamine::Data], name: &str) -> TestResult<String> {
     let position = headers
         .iter()
-        .position(|value| value.to_string() == name)
+        .position(|value| value == name)
         .ok_or_else(|| format!("missing output column {name}"))?;
     Ok(row
         .get(position)

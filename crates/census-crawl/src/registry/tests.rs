@@ -344,8 +344,6 @@ fn the_transport_lookup_reads_the_table() {
     );
 }
 
-// CEN-02 regression: every registry family must have a corresponding durable source-specific arm.
-// This test verifies the mapping between registry slugs and source modules.
 const SLUG_TO_MODULE: &[(&str, &str)] = &[
     ("aia", "aia"),
     ("athleticlive", "athleticlive"),

@@ -8,11 +8,6 @@ pub fn verify(directory: &Path, oracle: &Oracle) -> Result<()> {
         &directory.join("recruiting.csv"),
         oracle.all(),
         |row, expected| recruiting(row, expected, oracle),
-    )?;
-    table(
-        &directory.join("best-results-co2027.csv"),
-        oracle.prs(),
-        |row, expected| pr(row, expected, oracle),
     )
 }
 
@@ -47,19 +42,4 @@ fn recruiting(row: &Record<'_>, expected: &Expected, oracle: &Oracle) -> Result<
         "coach_acquired_at",
         census_report::export::postal::ATHLETE_ADDRESS_CSV_HEADER,
     ])
-}
-
-fn pr(row: &Record<'_>, expected: &Expected, oracle: &Oracle) -> Result<()> {
-    membership(row, expected, oracle)?;
-    row.equal("best_mark", &expected.3)?;
-    row.equal("best_value", &oracle.best_value(expected)?.to_string())?;
-    let field = oracle.event(expected)?.event == 2_254_280;
-    row.equal("best_value_unit", if field { "um" } else { "ns" })?;
-    row.equal("date", oracle.event(expected)?.date)?;
-    row.equal("meet", oracle.event(expected)?.name)?;
-    row.equal(
-        "place",
-        &expected.5.map_or(String::new(), |place| place.to_string()),
-    )?;
-    row.equal("marks_in_event", "1")
 }

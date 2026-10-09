@@ -16,7 +16,7 @@ fn cen10_banked_flat_unknown_and_published_category_remain_distinct() -> TestRes
         add(&mut data, meet, event, time)?;
     }
     let rows = selections(&data);
-    assert_eq!(rows.len(), 6);
+    check!(eq; rows.len(), 6);
     let expected_track = IndoorTrackSpecification::new(200_000_000, TrackBanking::Banked)?;
     let banked = rows
         .iter()
@@ -25,7 +25,8 @@ fn cen10_banked_flat_unknown_and_published_category_remain_distinct() -> TestRes
                 && row.source.specification.indoor_track == Some(expected_track)
         })
         .ok_or("banked winner")?;
-    assert_eq!(
+    check!(
+        eq;
         banked.result.mark,
         Mark::TimeSeconds(ExactSeconds::parse("145")?)
     );
@@ -33,7 +34,8 @@ fn cen10_banked_flat_unknown_and_published_category_remain_distinct() -> TestRes
         .iter()
         .find(|row| row.source.specification.indoor_track.is_none())
         .ok_or("unknown winner")?;
-    assert_eq!(
+    check!(
+        eq;
         unknown.result.mark,
         Mark::TimeSeconds(ExactSeconds::parse("130")?)
     );
@@ -42,7 +44,8 @@ fn cen10_banked_flat_unknown_and_published_category_remain_distinct() -> TestRes
         .iter()
         .find(|row| row.source.specification.indoor_track == Some(unknown_banking))
         .ok_or("unknown banking winner")?;
-    assert_eq!(
+    check!(
+        eq;
         unknown_banking.result.mark,
         Mark::TimeSeconds(ExactSeconds::parse("132")?)
     );
@@ -51,7 +54,8 @@ fn cen10_banked_flat_unknown_and_published_category_remain_distinct() -> TestRes
         .iter()
         .find(|row| row.source.specification.indoor_track == Some(flat))
         .ok_or("flat winner")?;
-    assert_eq!(
+    check!(
+        eq;
         flat.result.mark,
         Mark::TimeSeconds(ExactSeconds::parse("140")?)
     );
@@ -71,8 +75,9 @@ fn cen10_unknown_category_never_merges_with_published_boys() -> TestResult {
         add(&mut data, meet, event, time)?;
     }
     let rows = selections(&data);
-    assert_eq!(rows.len(), 2);
-    assert_eq!(
+    check!(eq; rows.len(), 2);
+    check!(
+        eq;
         rows.iter()
             .find(|row| row.source.specification.category.is_none())
             .ok_or("unknown category")?
@@ -80,7 +85,8 @@ fn cen10_unknown_category_never_merges_with_published_boys() -> TestResult {
             .mark,
         Mark::TimeSeconds(ExactSeconds::parse("140")?)
     );
-    assert_eq!(
+    check!(
+        eq;
         rows.iter()
             .find(|row| row.source.specification.category == Some(CompetitionCategory::Boys))
             .ok_or("known category")?

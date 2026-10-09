@@ -29,18 +29,7 @@ pub(super) fn project(
             .iter()
             .any(|alias| normalize_name(alias) == owner)
     {
-        let attempt = capture_attempt(
-            capture,
-            Outcome::Ambiguous,
-            "published staff owner differs from discovered school".to_owned(),
-        );
-        crate::coach_directories::persist_staff_attempt(ctx, school, attempt)?;
-        return failure(
-            report,
-            locator(capture),
-            "published staff owner differs from discovered school".to_owned(),
-            Outcome::Ambiguous,
-        );
+        return owner_mismatch(ctx, school, capture, report);
     }
     let mut extract = owned_extract(school, capture, &directory, ctx.school_year)?;
     super::super::capture_provenance(&mut extract, capture);
@@ -70,6 +59,23 @@ pub(super) fn project(
         report.note("unresolved appointment role or tenure remains owed");
     }
     Ok(())
+}
+
+fn owner_mismatch(
+    ctx: &AdapterContext<'_>,
+    school: &CanonicalSchool,
+    capture: &FetchOutcome,
+    report: &mut AdapterReport,
+) -> CrawlResult<()> {
+    let reason = "published staff owner differs from discovered school";
+    let attempt = capture_attempt(capture, Outcome::Ambiguous, reason.to_owned());
+    crate::coach_directories::persist_staff_attempt(ctx, school, attempt)?;
+    failure(
+        report,
+        locator(capture),
+        reason.to_owned(),
+        Outcome::Ambiguous,
+    )
 }
 
 fn count_projection(report: &mut AdapterReport, extract: &SchoolExtract) -> CrawlResult<()> {

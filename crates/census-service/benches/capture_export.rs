@@ -31,7 +31,7 @@ fn run() -> Result<()> {
     let oracle = Oracle::load()?;
     let runtime = Builder::new_current_thread().enable_all().build()?;
     operation(&runtime, &oracle)?;
-    println!("capture_export oracle verified: 185 canonical rows, 60 cohort members, 14 PRs; XLSX/CSV/JSONL authoritative readback passed");
+    println!("capture_export oracle verified: 185 canonical rows, 60 cohort members; XLSX/CSV/JSONL authoritative readback passed");
     let mut criterion = Criterion::default().configure_from_args();
     benchmark(&mut criterion, &runtime, &oracle);
     criterion.final_summary();

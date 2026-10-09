@@ -184,9 +184,10 @@ fn wind_not_applicable_xc() {
 #[test]
 fn timing_fat() -> TestResult {
     let mark = Mark::TimeSeconds(ExactSeconds::parse("10.94")?);
-    assert_eq!(
+    check!(
+        eq;
         crate::bests::key::resolve_timing(&mark, Some(TimingMethod::Fat)),
-        crate::bests::key::TimingClass::Fat,
+        crate::bests::key::TimingClass::Fat
     );
     Ok(())
 }
@@ -194,9 +195,10 @@ fn timing_fat() -> TestResult {
 #[test]
 fn timing_hand() -> TestResult {
     let mark = Mark::TimeSeconds(ExactSeconds::parse("10.94")?);
-    assert_eq!(
+    check!(
+        eq;
         crate::bests::key::resolve_timing(&mark, Some(TimingMethod::Hand)),
-        crate::bests::key::TimingClass::Hand,
+        crate::bests::key::TimingClass::Hand
     );
     Ok(())
 }
@@ -204,9 +206,10 @@ fn timing_hand() -> TestResult {
 #[test]
 fn timing_unknown_explicit() -> TestResult {
     let mark = Mark::TimeSeconds(ExactSeconds::parse("10.94")?);
-    assert_eq!(
+    check!(
+        eq;
         crate::bests::key::resolve_timing(&mark, Some(TimingMethod::Unknown)),
-        crate::bests::key::TimingClass::Unknown,
+        crate::bests::key::TimingClass::Unknown
     );
     Ok(())
 }
@@ -214,9 +217,10 @@ fn timing_unknown_explicit() -> TestResult {
 #[test]
 fn timing_none_with_time_mark_is_unknown() -> TestResult {
     let mark = Mark::TimeSeconds(ExactSeconds::parse("10.94")?);
-    assert_eq!(
+    check!(
+        eq;
         crate::bests::key::resolve_timing(&mark, None),
-        crate::bests::key::TimingClass::Unknown,
+        crate::bests::key::TimingClass::Unknown
     );
     Ok(())
 }
