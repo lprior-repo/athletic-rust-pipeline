@@ -15306,3 +15306,72 @@ examples outside `xtask` still build raw `/restate/call` URLs, so any native fau
 run on this node version fails at its first status inspection; that is filed as
 `athletic-rust-pipeline-86mw`, which blocks `vjlp` (the seventeen-scenario run).
 
+## Fresh national census run `national-fresh-20261009-01`: publication verified, fan-out refused by name — 2026-10-09
+
+One fresh 49-jurisdiction Class-of-2027 run (bead `athletic-rust-pipeline-ooat`) on its own node,
+store and endpoint, from the HEAD `acfdbfc1` portable build. The retained run kit
+(`var/national-fresh-20261009-01/RUN-KIT.md`, `binary-sha256.txt`, `registration.json`,
+`run-start.txt`) pins the identity: `census-service` `005a937c…`, `census-serve` `84e0c3a2…`,
+`restate-server` 1.6.2 with the run's own `restate.toml` (ingress 18095, admin 19095), endpoint
+deployment `dp_15z3Zx3Q3fT4Has6mI4hatr` with twelve services, submit `2026-10-09T15:24:54Z` as
+`national:2026-27:51472a0f63b82f0d:1` (`inv_13LIoGM6LB600EGmJ5iU9yGQmEPr4dHTGp`).
+
+```text
+env -u CI tools/moon-local run pipeline:build-portable
+restate-server --no-logo -c var/national-fresh-20261009-01/restate.toml
+census-serve --listen 127.0.0.1:9080 --data-dir var/national-fresh-20261009-01 \
+  --max-concurrent 32 --drain-timeout 300 --browser-profile var/national-fresh-20261009-01/browser-profile \
+  --browser-executable /usr/bin/chromium --browser-headless
+curl -X POST http://127.0.0.1:19095/deployments -H 'content-type: application/json' \
+  -d '{"uri":"http://127.0.0.1:9080/"}'      # twelve services confirmed in GET /deployments
+census-service national --ingress http://127.0.0.1:18095/ --detach
+census-service verify --store var/national-fresh-20261009-01
+```
+
+Delivered and verified. Publication generation
+`995d19f2e4eb94ce480072a6293d23c398f194e8b6f0c32e4090155853253705` under
+`out/publication/current/`: 40 MB `workbook.xlsx` (13 sheets), the recruiting, school-contact,
+contact-research and best-results sidecars, `census-core.json`, `census-all-sources.json`,
+`audit.json`, `manifest.json` and the 6.5 GB `frozen-input.json` capture archive. `verify`
+re-hashed every artifact, reopened the frozen input from bytes and re-derived every sidecar and
+workbook cell: `frozen workbook readback verified rows=562569`, then
+`verify: OK (complete frozen generation)`. Measured from the sidecars: 108 029 `grad_year=2027`
+recruiting rows (head track coach email 6 798, head XC coach 2 415, athletic director 12 098;
+mileSplit URL and school city on all 108 029); 35 034 school-contact rows with zero mailboxes
+(17 278 unattempted, 14 884 blocked, 2 194 failed, 480 ambiguous, 192 partial, 6 completed-empty);
+zero Athletic.net URLs; addresses 12 103 linked / 270 review / 5 144 no match.
+
+Not reconciled, and the workbook states it row by row in `Coverage`, `Sources`, `Conflicts` and
+`Review`. All 49 jurisdictions refused by name (MileSplit teams-index ownership conflict in about
+twenty states; "source work remains incomplete after the stages ran" elsewhere), leaving 16 449
+owed rosters, 49 results obligations and 99 refused sources. The Athletic.net lane latched
+`Challenged` at run start and stayed challenged all run, so its URLs are absent rather than
+zero-valued. This is a qualification-shaped run: the fan-out, the durable fan-in and the
+publication all execute, but the run does not carry the bead's acceptance (every accepted athlete
+once, PRs with exact support, contacts current-role-backed, addresses accounted, coverage
+reconciled, zero unwired stages), so no seal acceptance item reconciles.
+
+Seal: no terminal verdict, and both reasons are measured rather than inferred. `Census/seal` is a
+long job — it re-verifies the generation, measures the run's open work and assembles the §70
+ladder — but the CLI sent it through the 120 s read client instead of the 900 s job client that
+`national`, `jurisdiction` and `workbook` use, so the first attempt died client-side
+(`operation timed out` after 120.04 s) while the handler was still live; the transport is repaired
+in commit `20980967` (`pipeline:check` PASS, `pipeline:tests -E 'binary(census_service)'`
+333 passed). The handler then stopped the endpoint twice by its own bound:
+`census service stopped report=DrainReport { accepted: 484, completed: 484, cancelled: 0,
+timed_out: 0, remaining: 0, aborted: 0, panicked: 0, stop_reason: MemoryBudget,
+endpoint_shutdown: TimedOut }`, with `drained: accepted=484 completed=484 cancelled=0 timed_out=0
+aborted=0 panicked=0` appended to `serve.log`. The seal's readback re-materializes the frozen
+input inside the endpoint (RSS 9.9 → 24 GiB before the second stop) and passes the endpoint's
+48 GiB budget on a 123 GiB host, so no online seal of a full-size run can complete at this
+revision. The node paused both seal invocations
+(`inv_11GnB96U2ibj66kXraewfR8u5u5Ru32UZX`, `inv_17iGsMmQLlT124AzhVDHkVQxMaJANGENDb`);
+`PATCH /invocations/<id>/resume` restarted one on the same deployment and it re-climbed the same
+slope, which is the reproducible half of the defect, filed as `athletic-rust-pipeline-q41j`.
+
+Limits: `sealed: not_established` (no seal artifact was written; `--write` was not passed);
+`national_run: performed`, refused by name; `live_pipeline_acquisition: performed`, with the
+Athletic.net lane challenged throughout. The run root, both drain certificates, the node's durable
+state and every publication artifact are retained; the store is owned by the live `census-serve`
+endpoint, which must be stopped before an offline verb reads it.
+
