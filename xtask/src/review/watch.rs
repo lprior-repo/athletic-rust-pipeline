@@ -167,10 +167,11 @@ fn numeric(value: Option<&Value>) -> String {
 
 fn invocation_counts(admin_origin: &str) -> Result<Value> {
     let query = json!({"query": INVOCATION_SQL});
+    let endpoint = admin_query_endpoint(admin_origin);
     let body = ingress::block_on(async {
         let client = reqwest::Client::new();
         let response = client
-            .post(admin_origin)
+            .post(endpoint)
             .header("accept", "application/json")
             .json(&query)
             .send()
@@ -180,6 +181,10 @@ fn invocation_counts(admin_origin: &str) -> Result<Value> {
         Ok::<String, reqwest::Error>(response)
     })??;
     serde_json::from_str(&body).context("parsing the admin query reply")
+}
+
+fn admin_query_endpoint(admin_origin: &str) -> String {
+    format!("{}/query", admin_origin.trim_end_matches('/'))
 }
 
 fn write_json(path: &PathBuf, value: &Value) -> Result<()> {
@@ -243,6 +248,18 @@ mod tests {
     #[test]
     fn leap_day_formats() {
         assert_eq!(rfc3339(1_582_934_400), "2020-02-29T00:00:00Z");
+    }
+
+    #[test]
+    fn the_admin_query_endpoint_joins_once() {
+        assert_eq!(
+            admin_query_endpoint("http://127.0.0.1:19095/"),
+            "http://127.0.0.1:19095/query"
+        );
+        assert_eq!(
+            admin_query_endpoint("http://127.0.0.1:19095"),
+            "http://127.0.0.1:19095/query"
+        );
     }
 
     #[test]
