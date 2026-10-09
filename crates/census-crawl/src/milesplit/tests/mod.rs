@@ -152,6 +152,21 @@ fn team_index_row_count_pins_a_whole_state_in_one_body() -> TestResult {
     Ok(())
 }
 
+const AL_TEAMS: &str = include_str!("../../../tests/fixtures/milesplit/al_teams_index.html");
+const AL_TEAMS_URL: &str = "https://al.milesplit.com/teams";
+
+#[test]
+fn al_teams_index_admits_the_rebranded_state_ownership_and_rows() -> TestResult {
+    super::index::validate_surface(AL_TEAMS, AL_TEAMS_URL)?;
+    let teams = parse_team_index(AL_TEAMS)?.teams;
+    check!(eq; teams.len(), 562);
+    check!(eq; teams[0].id, "75497");
+    check!(teams
+        .iter()
+        .all(|team| team.url.starts_with("https://al.milesplit.com/teams/")));
+    Ok(())
+}
+
 #[test]
 fn oh_roster_pins_319_graded_rows_and_96_class_of_2027() -> TestResult {
     let teams = parse_team_index(OH_TEAMS)?.teams;

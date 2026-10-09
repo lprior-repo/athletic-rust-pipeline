@@ -62,3 +62,58 @@ fn rejects_a_valid_marker_hidden_beyond_the_representation_node_budget() {
         Err(CrawlError::Resource { .. })
     ));
 }
+
+#[test]
+fn accepts_a_rebranded_state_index_that_loads_network_assets(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let body = "<html><head><meta name='application-name' content='AlabamaRunners'><link rel='icon' href='https://assets.sp.milesplit.com/images/milesplit-favicon.png'><script src='https://js.sp.milesplit.com/drivefaze/api.js'></script></head><body>Teams</body></html>";
+    validate_surface(body, "https://al.milesplit.com/teams")?;
+    Ok(())
+}
+
+#[test]
+fn rejects_a_rebranded_index_without_network_assets() {
+    let body = "<html><head><meta name='application-name' content='AlabamaRunners'><link rel='icon' href='https://assets.sp.example.com/images/favicon.png'></head><body>Teams</body></html>";
+    assert!(matches!(
+        validate_surface(body, "https://al.milesplit.com/teams"),
+        Err(CrawlError::Schema { .. })
+    ));
+}
+
+#[test]
+fn rejects_network_asset_claims_on_foreign_or_relative_targets() {
+    for href in [
+        "https://milesplit.com.evil.example/favicon.png",
+        "https://assets.milesplit.com.evil.example/favicon.png",
+        "https://operator@assets.sp.milesplit.com/favicon.png",
+        "https://assets.sp.milesplit.com:9000/favicon.png",
+        "/images/milesplit-favicon.png",
+    ] {
+        let body = format!("<html><head><link href='{href}'></head><body>Teams</body></html>");
+        assert!(matches!(
+            validate_surface(&body, "https://al.milesplit.com/teams"),
+            Err(CrawlError::Schema { .. })
+        ));
+    }
+}
+
+#[test]
+fn rejects_network_assets_inside_non_authoritative_markup() {
+    let marker = "<link href='https://assets.sp.milesplit.com/favicon.png'>";
+    for (open, close) in [
+        ("<!--", "-->"),
+        ("<script>", "</script>"),
+        ("<style>", "</style>"),
+        ("<template>", "</template>"),
+        ("<svg>", "</svg>"),
+        ("<math>", "</math>"),
+        ("<textarea>", "</textarea>"),
+        ("<noscript>", "</noscript>"),
+    ] {
+        let body = format!("<html><head>{open}{marker}{close}</head><body>Teams</body></html>");
+        assert!(matches!(
+            validate_surface(&body, "https://al.milesplit.com/teams"),
+            Err(CrawlError::Schema { .. })
+        ));
+    }
+}

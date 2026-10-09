@@ -61,6 +61,21 @@ UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrom
 | `meet-oh-770621-entries.html` | https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026/entries | 200 | 10836 | 37101 | 2026-09-22T03:59:53Z | `curl -sS -A "$UA" --compressed --max-time 30 -o samples/meet-oh-770621-entries.html -w '%{http_code} %{size_download} %{content_type}' https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026/entries` |
 | `js-ms18-teams-rankings.js` | https://js.sp.milesplit.com/ms18/teams/rankings.js?build=20260921153357 | 200 | 1503 | 8016 | 2026-09-22T04:00:03Z | `curl -sS -A "$UA" --compressed --max-time 30 -o samples/js-ms18-teams-rankings.js -w '%{http_code} %{size_download} %{content_type}' https://js.sp.milesplit.com/ms18/teams/rankings.js?build=20260921153357` |
 
+## Wave 3 — state-brand re-admission (2026-10-09)
+
+`al.milesplit.com/teams` now declares `<meta name="application-name" content="AlabamaRunners">`
+instead of a MileSplit-branded name, which refused the run's teams indexes on AL, CO, FL, KY, ME, MO,
+OK, OR, PA, SC, TN, VA, WA, WV and WI until the adapter admitted authoritative network assets
+(`assets.sp.milesplit.com`, `css.sp.milesplit.com`, `js.sp.milesplit.com`). This capture pins the
+rebranded head: the admitted index parses to 562 teams.
+
+| file | URL | HTTP | transfer | on disk | UTC | exact command |
+|---|---|---|---|---|---|---|
+| `crates/census-crawl/tests/fixtures/milesplit/al_teams_index.html` | https://al.milesplit.com/teams | 200 | - | 193421 | 2026-10-09T20:36:37Z | `curl -s -m 25 -A "athletic-rust-pipeline/0.1 (source qualification)" -o /tmp/al-teams.html https://al.milesplit.com/teams` |
+
+Transfer size is unmeasured for this row: the capture used no `--compressed` and no `-w`, so
+`on disk` is the decoded body, which is byte-identical to the committed fixture.
+
 ## Wave 1 — prior phase (pre-existing when this lane started)
 
 | file | URL | bytes | mtime (UTC) | URL provenance |

@@ -2,11 +2,19 @@ use super::{schema, CrawlError, CrawlResult};
 use html5gum::{DefaultEmitter, Token, Tokenizer};
 
 const MAX_TOKENS: usize = 65_536;
+const MAX_ASSET_URL: usize = 2_048;
 
 #[derive(Default)]
 struct Surface {
     inert: Vec<&'static [u8]>,
-    owned: bool,
+    declaration: Option<Declaration>,
+    network_asset: bool,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Declaration {
+    MileSplit,
+    Other,
 }
 
 pub(super) fn validate(body: &str, url: &str) -> CrawlResult<()> {
@@ -39,13 +47,19 @@ pub(super) fn validate(body: &str, url: &str) -> CrawlResult<()> {
             limit: MAX_TOKENS,
         });
     }
-    if !surface.owned {
+    if surface.declaration == Some(Declaration::MileSplit) || surface.network_asset {
+        return Ok(());
+    }
+    if surface.declaration == Some(Declaration::Other) {
         return Err(schema(
             url,
-            "index lacks its MileSplit application ownership",
+            "index publishes conflicting application ownership",
         ));
     }
-    Ok(())
+    Err(schema(
+        url,
+        "index lacks its MileSplit application ownership",
+    ))
 }
 
 fn provider_host(host: &str) -> bool {
@@ -53,6 +67,21 @@ fn provider_host(host: &str) -> bool {
         || host
             .strip_suffix(".milesplit.com")
             .is_some_and(|code| census_domain::UsJurisdiction::from_code(code).is_some())
+}
+
+fn network_asset(target: &str) -> bool {
+    target.len() <= MAX_ASSET_URL
+        && url::Url::parse(target).is_ok_and(|parsed| {
+            matches!(parsed.scheme(), "http" | "https")
+                && parsed.username().is_empty()
+                && parsed.password().is_none()
+                && parsed.port().is_none()
+                && parsed.host_str().is_some_and(network_host)
+        })
+}
+
+fn network_host(host: &str) -> bool {
+    host == "milesplit.com" || host.ends_with(".milesplit.com")
 }
 
 impl Surface {
@@ -82,22 +111,37 @@ impl Surface {
                     .map_err(|_| schema(url, "index scope allocation failed"))?;
                 self.inert.push(kind);
             }
-        } else if self.inert.is_empty()
-            && tag.name.as_ref() == b"meta"
-            && attribute(&tag, b"name")
-                .is_some_and(|name| name.eq_ignore_ascii_case("application-name"))
-        {
-            let owned = attribute(&tag, b"content").is_some_and(|name| {
-                name.split_whitespace()
-                    .any(|word| word.eq_ignore_ascii_case("MileSplit"))
-            });
-            if !owned {
-                return Err(schema(
-                    url,
-                    "index publishes conflicting application ownership",
-                ));
+        } else if self.inert.is_empty() {
+            if tag.name.as_ref() == b"meta"
+                && attribute(&tag, b"name")
+                    .is_some_and(|name| name.eq_ignore_ascii_case("application-name"))
+            {
+                let declaration = if attribute(&tag, b"content").is_some_and(|content| {
+                    content
+                        .split_whitespace()
+                        .any(|word| word.eq_ignore_ascii_case("MileSplit"))
+                }) {
+                    Declaration::MileSplit
+                } else {
+                    Declaration::Other
+                };
+                if self.declaration.is_some_and(|seen| seen != declaration) {
+                    return Err(schema(
+                        url,
+                        "index publishes conflicting application ownership",
+                    ));
+                }
+                self.declaration = Some(declaration);
+            } else if matches!(tag.name.as_ref(), b"link" | b"script") {
+                let target = if tag.name.as_ref() == b"link" {
+                    attribute(&tag, b"href")
+                } else {
+                    attribute(&tag, b"src")
+                };
+                if target.is_some_and(network_asset) {
+                    self.network_asset = true;
+                }
             }
-            self.owned = true;
         }
         Ok(())
     }
