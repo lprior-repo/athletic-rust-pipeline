@@ -27,7 +27,7 @@ pub(super) async fn collect(
             jobs::invariant("no index URLs for jurisdiction"),
         ));
     }
-    let discovered = stream::iter(urls.into_iter())
+    let discovered = stream::iter(urls)
         .map(Ok::<_, HandlerError>)
         .try_fold(Vec::new(), |mut collected, url| async move {
             let lists = discover_lists(store, fetcher, &url).await?;
