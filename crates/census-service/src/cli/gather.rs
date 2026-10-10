@@ -82,7 +82,9 @@ pub(super) async fn run_teams(cli: &Cli, args: &TeamsArgs) -> Result<()> {
             let store = Store::open(root)?;
             let fetcher = build_fetcher(cli, &store)?;
             for jurisdiction in &jurisdictions {
-                match census::collect_state_teams(&fetcher, &store, *jurisdiction, args.refresh).await {
+                match census::collect_state_teams(&fetcher, &store, *jurisdiction, args.refresh)
+                    .await
+                {
                     Ok(teams) => {
                         println!("{}\tteams={}", jurisdiction.code(), teams.len());
                         for team in teams.iter().take(3) {

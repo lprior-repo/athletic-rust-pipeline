@@ -1,9 +1,8 @@
-use crate::{CrawlError, CrawlResult};
-use std::sync::LazyLock;
+use crate::CrawlResult;
+use regex::Regex;
 
 mod pattern;
 
-/// Performance record extracted from a Wayzata result page.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Performance {
     pub event: String,
@@ -12,22 +11,18 @@ pub struct Performance {
     pub mark: String,
 }
 
-/// Parse individual performances from a Wayzata result page body.
 pub fn parse_performances(body: &str) -> CrawlResult<Vec<Performance>> {
     super::super::budget::check(
         "Wayzata result body bytes",
         body.len(),
         super::super::budget::MAX_PAGE_BYTES,
     )?;
-    let results = results_body(body)?;
-    let Some(body) = results else {
+    let Some(results) = results_body(body)? else {
         return Ok(Vec::new());
     };
-    let rows = pattern::row()?.find_iter(body);
     let mut performances = Vec::new();
-    for row_match in rows {
-        let row_text = row_match.as_str();
-        let Some(performance) = parse_performance(row_text)? else {
+    for found in pattern::row()?.find_iter(results) {
+        let Some(performance) = parse_performance(found.as_str())? else {
             continue;
         };
         performances.push(performance);
@@ -36,26 +31,10 @@ pub fn parse_performances(body: &str) -> CrawlResult<Vec<Performance>> {
 }
 
 fn parse_performance(row: &str) -> CrawlResult<Option<Performance>> {
-    let event = pattern::event_cell()?
-        .captures(row)
-        .and_then(|c| pattern::value(&c))
-        .map(|m| normalize(m.as_str()))
-        .unwrap_or_default();
-    let athlete = pattern::athlete_cell()?
-        .captures(row)
-        .and_then(|c| pattern::value(&c))
-        .map(|m| normalize(m.as_str()))
-        .unwrap_or_default();
-    let team = pattern::team_cell()?
-        .captures(row)
-        .and_then(|c| pattern::value(&c))
-        .map(|m| normalize(m.as_str()))
-        .unwrap_or_default();
-    let mark = pattern::mark_cell()?
-        .captures(row)
-        .and_then(|c| pattern::value(&c))
-        .map(|m| normalize(m.as_str()))
-        .unwrap_or_default();
+    let event = cell(pattern::event_cell(), row)?;
+    let athlete = cell(pattern::athlete_cell(), row)?;
+    let team = cell(pattern::team_cell(), row)?;
+    let mark = cell(pattern::mark_cell(), row)?;
     if athlete.is_empty() && mark.is_empty() {
         return Ok(None);
     }
@@ -67,10 +46,21 @@ fn parse_performance(row: &str) -> CrawlResult<Option<Performance>> {
     }))
 }
 
+fn cell(source: CrawlResult<&'static Regex>, row: &str) -> CrawlResult<String> {
+    let regex = source?;
+    let Some(found) = regex
+        .captures(row)
+        .and_then(|captures| pattern::value(&captures))
+    else {
+        return Ok(String::new());
+    };
+    Ok(normalize(found.as_str()))
+}
+
 fn normalize(text: &str) -> String {
     let text = text.replace('\n', " ");
     let text = text.replace('\r', " ");
-    let mut parts = text.split(' ');
+    let parts = text.split(' ');
     let mut result = String::new();
     for part in parts {
         let part = part.trim();
@@ -86,25 +76,25 @@ fn normalize(text: &str) -> String {
 }
 
 fn results_body(body: &str) -> CrawlResult<Option<&str>> {
-    let results_table = pattern::results_table_open()?
+    let table_open = pattern::results_table_open()?
         .find(body)
-        .map(|m| m.start());
-    let Some(start) = results_table else {
+        .map(|found| found.start());
+    let Some(start) = table_open else {
         return Ok(None);
     };
-    let table_close = pattern::table_close()?
+    let table_end = pattern::table_close()?
         .find(&body[start..])
-        .map(|m| m.end() + start);
-    Ok(table_close.map(|end| &body[start..end]))
+        .map(|found| found.end() + start);
+    Ok(table_end.map(|end| &body[start..end]))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_parse_simple_performance() {
-        let html = r#"
+    type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+    const RESULTS_TABLE: &str = r#"
         <table class="results">
             <tr>
                 <td class="event">100 Meter Dash</td>
@@ -119,17 +109,30 @@ mod tests {
                 <td class="mark">23.45</td>
             </tr>
         </table>"#;
-        let performances = parse_performances(html).unwrap();
-        assert_eq!(performances.len(), 2);
-        assert_eq!(performances[0].event, "100 Meter Dash");
-        assert_eq!(performances[0].athlete, "John Smith");
-        assert_eq!(performances[0].team, "Wayzata");
-        assert_eq!(performances[0].mark, "11.23");
+
+    #[test]
+    fn a_results_table_projects_event_athlete_team_and_mark() -> TestResult {
+        let performances = parse_performances(RESULTS_TABLE)?;
+        if performances.len() != 2 {
+            return Err(format!("row count: {}", performances.len()).into());
+        }
+        let first = performances.first().ok_or("first row is absent")?;
+        if first.event != "100 Meter Dash"
+            || first.athlete != "John Smith"
+            || first.team != "Wayzata"
+            || first.mark != "11.23"
+        {
+            return Err(format!("first row: {first:?}").into());
+        }
+        Ok(())
     }
 
     #[test]
-    fn test_parse_empty_body() {
-        let performances = parse_performances("").unwrap();
-        assert_eq!(performances.len(), 0);
+    fn a_body_without_a_results_table_yields_no_performances() -> TestResult {
+        let performances = parse_performances("")?;
+        if !performances.is_empty() {
+            return Err(format!("row count: {}", performances.len()).into());
+        }
+        Ok(())
     }
 }

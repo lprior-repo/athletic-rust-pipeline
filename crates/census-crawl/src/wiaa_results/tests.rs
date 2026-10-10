@@ -542,8 +542,12 @@ fn an_ambiguous_school_label_mints_no_team_or_performance() -> TestResult {
         None,
     );
     south.aliases.push("Arrowhead".to_string());
-    let (monona, monona_id) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Monona Grove", "monona grove", None);
+    let (monona, monona_id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Monona Grove",
+        "monona grove",
+        None,
+    );
     for school in [&north, &south, &monona] {
         store.append(census_store::Table::Schools, school)?;
     }
@@ -596,12 +600,14 @@ fn an_ambiguous_school_label_mints_no_team_or_performance() -> TestResult {
     );
     check!(teams.iter().all(|team| team.school == monona_id));
     let athletes: Vec<CanonicalAthlete> = store.scan(census_store::Table::Athletes)?;
-    check!(!athletes.is_empty(), "the control school still maps its rows");
+    check!(
+        !athletes.is_empty(),
+        "the control school still maps its rows"
+    );
     check!(athletes.iter().all(|athlete| athlete.school == monona_id));
     let monona_athletes: Vec<AthleteId> =
         athletes.iter().map(|athlete| athlete.id.clone()).collect();
-    let performances: Vec<CanonicalPerformance> =
-        store.scan(census_store::Table::Performances)?;
+    let performances: Vec<CanonicalPerformance> = store.scan(census_store::Table::Performances)?;
     check!(
         performances
             .iter()

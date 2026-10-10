@@ -25,7 +25,9 @@ static MARK_CELL: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
     )
 });
 static RESULTS_TABLE_OPEN: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
-    Regex::new(r#"(?is)<table\b[^>]*\sclass\s*=\s*(?:"[^"]*\bresults[^"]*"|'[^']*\bresults[^']*')[^>]*>"#)
+    Regex::new(
+        r#"(?is)<table\b[^>]*\sclass\s*=\s*(?:"[^"]*\bresults[^"]*"|'[^']*\bresults[^']*')[^>]*>"#,
+    )
 });
 static TABLE_CLOSE: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"(?is)</table\s*>"));

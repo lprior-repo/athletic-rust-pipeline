@@ -5,49 +5,21 @@ use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use restate_sdk::prelude::{HandlerError, Json, TerminalError};
 #[cfg(feature = "native-fault-injection")]
-pub fn inject_consolidate_failpoint(kind: ConsolidateFaultKind) {
-    use std::sync::atomic::Ordering;
-    FAULT_CONSOLIDATE.store(kind as u8, Ordering::SeqCst);
-}
-
-#[cfg(not(feature = "native-fault-injection"))]
-pub fn inject_consolidate_failpoint(_kind: ConsolidateFaultKind) {}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ConsolidateFaultKind {
-    None,
-    ExitAfterConsolidate,
-}
-
-#[cfg(feature = "native-fault-injection")]
 fn trigger_consolidate_fault() -> Option<StoreError> {
-    use std::sync::atomic::Ordering;
-    let raw = FAULT_CONSOLIDATE.load(Ordering::SeqCst);
-    let kind = match raw {
-        0 => ConsolidateFaultKind::None,
-        1 => ConsolidateFaultKind::ExitAfterConsolidate,
-        _ => ConsolidateFaultKind::None,
-    };
-    match kind {
-        ConsolidateFaultKind::None => None,
-        ConsolidateFaultKind::ExitAfterConsolidate => {
-            tracing::info!("fault: exiting after consolidate, before acknowledgement");
-            Some(StoreError::Invariant {
-                detail: "fault injection: exit after consolidate".to_string(),
-            })
-        }
+    let requested = std::env::var_os("ATHLETIC_FAULT_EXIT_AFTER_CONSOLIDATE")?;
+    if requested.is_empty() {
+        return None;
     }
+    tracing::info!("fault: exiting after consolidate, before acknowledgement");
+    Some(StoreError::Invariant {
+        detail: "fault injection: exit after consolidate".to_string(),
+    })
 }
 
 #[cfg(not(feature = "native-fault-injection"))]
 fn trigger_consolidate_fault() -> Option<StoreError> {
     None
 }
-
-#[cfg(feature = "native-fault-injection")]
-use std::sync::atomic::AtomicU8;
-#[cfg(feature = "native-fault-injection")]
-static FAULT_CONSOLIDATE: AtomicU8 = AtomicU8::new(0);
 use serde_json::Value;
 
 use crate::census::{self, CollectOptions, StateProgress};
@@ -91,9 +63,9 @@ pub(super) fn consolidate_tables(
             detail: "consolidation table inventory exceeds its finite bound".to_string(),
         });
     }
-    let out = tables
-        .iter()
-        .try_fold(Vec::new(), |mut out, table| -> Result<Vec<ConsolidatedTable>, StoreError> {
+    let out = tables.iter().try_fold(
+        Vec::new(),
+        |mut out, table| -> Result<Vec<ConsolidatedTable>, StoreError> {
             let path = store.out_dir().join(format!("{}.jsonl", table.file()));
             let consolidated = store.consolidate_table(*table, &path)?;
             out.try_reserve(1).map_err(|_| StoreError::Invariant {
@@ -104,7 +76,8 @@ pub(super) fn consolidate_tables(
                 rows: consolidated.rows,
             });
             Ok(out)
-        })?;
+        },
+    )?;
     if let Some(error) = trigger_consolidate_fault() {
         return Err(error);
     }

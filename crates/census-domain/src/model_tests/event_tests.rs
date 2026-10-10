@@ -122,9 +122,16 @@ fn medley_relay_and_modifier_labels_never_fall_back_to_a_distance(
     check!(eq; EventKind::from_source_label("Sprint Medley Relay"), EventKind::SprintMedley);
     check!(eq; EventKind::from_source_label("Boys 1600m Sprint Medley Relay Finals"), EventKind::SprintMedley);
     check!(eq; EventKind::from_source_label("Distance Medley Relay"), EventKind::DistanceMedley);
-    for label in ["200 Meter Hurdles", "3000m Race Walk", "3000 Meter Race Walk"] {
+    for label in [
+        "200 Meter Hurdles",
+        "3000m Race Walk",
+        "3000 Meter Race Walk",
+    ] {
         check!(
-            matches!(EventKind::from_source_label(label), EventKind::Unmapped { .. }),
+            matches!(
+                EventKind::from_source_label(label),
+                EventKind::Unmapped { .. }
+            ),
             "{label} is an unmodeled modifier, not a distance"
         );
     }

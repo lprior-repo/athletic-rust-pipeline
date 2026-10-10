@@ -170,9 +170,7 @@ fn retained_access(rows: &[SourceAccessCondition]) -> (u64, u64, u64) {
         .filter(|row| {
             matches!(
                 row.kind,
-                AccessBlockKind::Forbidden
-                    | AccessBlockKind::RobotsDisallowed
-                    | AccessBlockKind::HumanRequired
+                AccessBlockKind::Forbidden | AccessBlockKind::HumanRequired
             )
         })
         .count();

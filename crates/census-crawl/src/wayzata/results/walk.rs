@@ -1,12 +1,10 @@
 use super::parse::{parse_performances, Performance};
 use crate::{AdapterContext, CrawlError, CrawlResult};
-use census_domain::model::{
-    CanonicalPerformance, Evidence, Id, Mark, SourceIdentity, SourceNamespace, SourceRef,
-};
+use census_domain::model::{CanonicalPerformance, Evidence, Id, Mark, SourceRef};
 use census_store::Table;
 
 pub struct ResultsWalk {
-    pub collected: usize,
+    pub collected: u64,
 }
 
 impl ResultsWalk {
@@ -24,38 +22,36 @@ impl ResultsWalk {
         let url = format!("https://www.wayzataresults.com/links/{slug}");
         let options = ctx.fetch_options();
         let fetched = match ctx.fetcher.get(&url, &options).await {
-            Ok(f) => f,
-            Err(error) => {
-                return Ok(());
-            }
+            Ok(fetched) => fetched,
+            Err(_) => return Ok(()),
         };
         let body = match validate(&fetched) {
-            Ok(b) => b,
-            Err(_) => {
-                return Ok(());
-            }
+            Ok(body) => body,
+            Err(_) => return Ok(()),
         };
         let performances = match parse_performances(body) {
-            Ok(p) => p,
-            Err(_) => {
-                return Ok(());
-            }
+            Ok(performances) => performances,
+            Err(_) => return Ok(()),
         };
         let mut batch = ctx.write_batch();
+        let mut appended = 0u64;
         for perf in &performances {
             if perf.athlete.is_empty() || perf.mark.is_empty() {
                 continue;
             }
-            match build_performance(&fetched, meet_name, meet_date, perf) {
-                Ok(performance) => {
-                    match batch.append_many(Table::Performances, &[performance]) {
-                        Ok(_) => self.collected += 1,
-                        Err(_) => {}
-                    }
+            if let Ok(performance) = build_performance(&fetched, meet_name, meet_date, perf) {
+                if batch
+                    .append_many(Table::Performances, &[performance])
+                    .is_ok()
+                {
+                    appended = super::super::budget::add(appended, 1)?;
                 }
-                Err(_) => {}
             }
         }
+        if appended > 0 {
+            batch.commit()?;
+        }
+        self.collected = super::super::budget::add(self.collected, appended)?;
         Ok(())
     }
 }
@@ -67,10 +63,10 @@ fn validate(fetched: &crate::net::FetchOutcome) -> CrawlResult<&str> {
             detail: "non-200 status".to_string(),
         });
     }
-    Ok(std::str::from_utf8(&fetched.body).map_err(|_| CrawlError::Schema {
+    std::str::from_utf8(&fetched.body).map_err(|_| CrawlError::Schema {
         url: fetched.url.clone(),
         detail: "invalid UTF-8".to_string(),
-    })?)
+    })
 }
 
 fn build_performance(
@@ -108,6 +104,7 @@ fn build_performance(
         retained_conflicts: Vec::new(),
     })
 }
+
 fn parse_mark(mark: &str) -> Mark {
     Mark::Raw(mark.to_string())
 }

@@ -203,6 +203,61 @@ fn persisted_rate_cannot_compare_elements_with_bytes() -> TestResult {
 }
 
 #[test]
+fn the_best_measured_run_supplies_its_own_criterion_root() -> TestResult {
+    let runs = vec![
+        runtime::RunOutcome {
+            output: "first".to_string(),
+            rss: Some(900),
+            criterion: Path::new("/runs/run-0/criterion").to_path_buf(),
+        },
+        runtime::RunOutcome {
+            output: "second".to_string(),
+            rss: Some(120),
+            criterion: Path::new("/runs/run-1/criterion").to_path_buf(),
+        },
+        runtime::RunOutcome {
+            output: "third".to_string(),
+            rss: None,
+            criterion: Path::new("/runs/run-2/criterion").to_path_buf(),
+        },
+    ];
+    let best = match runtime::best_run(runs) {
+        Some(best) => best,
+        None => return Err(anyhow::anyhow!("no measured run was selected").into()),
+    };
+    check!(eq; best.output, "second");
+    check!(
+        eq;
+        best.criterion,
+        Path::new("/runs/run-1/criterion").to_path_buf()
+    );
+    Ok(())
+}
+
+#[test]
+fn runs_without_memory_readings_keep_the_first_criterion_root() -> TestResult {
+    let runs = vec![
+        runtime::RunOutcome {
+            output: "first".to_string(),
+            rss: None,
+            criterion: Path::new("/runs/run-0/criterion").to_path_buf(),
+        },
+        runtime::RunOutcome {
+            output: "second".to_string(),
+            rss: None,
+            criterion: Path::new("/runs/run-1/criterion").to_path_buf(),
+        },
+    ];
+    let best = match runtime::best_run(runs) {
+        Some(best) => best,
+        None => return Err(anyhow::anyhow!("no fallback run was selected").into()),
+    };
+    check!(eq; best.output, "first");
+    check!(eq; best.rss, None);
+    Ok(())
+}
+
+#[test]
 #[cfg(unix)]
 fn absent_timer_refuses_measurement_and_nonzero_processes_fail() -> TestResult {
     let directory = tempfile::tempdir()?;

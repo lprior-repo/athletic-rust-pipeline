@@ -528,10 +528,8 @@ fn scratch_script(tag: &str, body: &str) -> TestResult<PathBuf> {
 }
 
 fn scratch_dir(tag: &str) -> TestResult<PathBuf> {
-    let path = std::env::temp_dir().join(format!(
-        "coachverify-scratch-{}-{tag}",
-        std::process::id()
-    ));
+    let path =
+        std::env::temp_dir().join(format!("coachverify-scratch-{}-{tag}", std::process::id()));
     std::fs::remove_dir_all(&path).ok();
     std::fs::create_dir_all(&path)?;
     Ok(path)
@@ -555,25 +553,15 @@ fn an_over_cap_coach_converter_refuses_and_leaves_no_scratch_files() -> TestResu
     let scratch = scratch_dir("over-cap")?;
     let binary = converter.to_string_lossy().into_owned();
     let body = b"%PDF-1.4 coach body";
-    let refused = super::fetch::inflate_pdf_in(
-        &scratch,
-        &binary,
-        body,
-        Duration::from_secs(60),
-        4096,
-    );
+    let refused =
+        super::fetch::inflate_pdf_in(&scratch, &binary, body, Duration::from_secs(60), 4096);
     check!(
         refused.is_none(),
         "converted text over the cap must be refused: {refused:?}"
     );
     assert_scratch_empty(&scratch)?;
-    let inflated = super::fetch::inflate_pdf_in(
-        &scratch,
-        &binary,
-        body,
-        Duration::from_secs(60),
-        1_048_576,
-    );
+    let inflated =
+        super::fetch::inflate_pdf_in(&scratch, &binary, body, Duration::from_secs(60), 1_048_576);
     check!(
         eq;
         inflated.as_deref().map(str::len),

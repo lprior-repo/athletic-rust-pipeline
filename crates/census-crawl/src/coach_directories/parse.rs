@@ -6,8 +6,6 @@ mod postal;
 
 const MAX_SOURCE_ROWS: usize = 20_000;
 
-/// Parse the directory JSON body and validate its shape.
-/// A JSON-valid but shape-divergent body (e.g. auth error object) is rejected.
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DirectoryPage {
@@ -162,9 +160,6 @@ pub fn parse_summary(body: &[u8]) -> CrawlResult<SchoolSummary> {
     }
     Ok(summary)
 }
-/// Reject bodies that parse to all-default values because they are
-/// shape-divergent (e.g. {"error":"unauthorized"}) rather than legitimately
-/// empty. A legitimately empty page carries at least one expected field.
 fn validate_directory_shape(body: &[u8], page: &DirectoryPage) -> CrawlResult<()> {
     let all_defaults = page.current_page == 0
         && page.total_pages == 0
@@ -173,17 +168,19 @@ fn validate_directory_shape(body: &[u8], page: &DirectoryPage) -> CrawlResult<()
     if !all_defaults {
         return Ok(());
     }
-    // All defaults — check if the body actually contained expected field names.
-    // A legitimately empty page has at least one of these.
     let body_str = String::from_utf8_lossy(body);
-    let has_expected_field =
-        body_str.contains("currentPage") || body_str.contains("totalPages") || body_str.contains("totalResults");
+    let has_expected_field = body_str.contains("currentPage")
+        || body_str.contains("totalPages")
+        || body_str.contains("totalResults");
     if !has_expected_field {
         return Err(CrawlError::Schema {
             url: "DragonFly association directory page".to_string(),
             detail: format!(
                 "shape-divergent directory body (no expected fields found): {}",
-                String::from_utf8_lossy(body).chars().take(200).collect::<String>()
+                String::from_utf8_lossy(body)
+                    .chars()
+                    .take(200)
+                    .collect::<String>()
             ),
         });
     }

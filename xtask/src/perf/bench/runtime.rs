@@ -49,25 +49,52 @@ pub(super) fn compile(name: &str) -> Result<PathBuf> {
     executable.with_context(|| format!("Cargo returned no executable for benchmark {name}"))
 }
 
-pub(super) fn measure(executable: &Path, directory: &Path) -> Result<(String, Option<u64>)> {
+pub(super) struct RunOutcome {
+    pub(super) output: String,
+    pub(super) rss: Option<u64>,
+    pub(super) criterion: PathBuf,
+}
+
+pub(super) fn measure(
+    executable: &Path,
+    directory: &Path,
+) -> Result<(String, Option<u64>, PathBuf)> {
     let iterations = 3;
-    let mut best_output = None;
-    let mut best_rss = u64::MAX;
+    let mut runs = Vec::new();
     for i in 0..iterations {
-        let tmp_dir = directory.join(format!("run-{i}"));
-        std::fs::create_dir_all(&tmp_dir)?;
-        let (output, rss) = measure_with_time(executable, &tmp_dir, Some(Path::new("time")))?;
-        if let Some(r) = rss {
-            if r < best_rss {
-                best_rss = r;
-                best_output = Some(output);
+        let run_dir = directory.join(format!("run-{i}"));
+        std::fs::create_dir_all(&run_dir)?;
+        let (output, rss) = measure_with_time(executable, &run_dir, Some(Path::new("time")))?;
+        runs.push(RunOutcome {
+            output,
+            rss,
+            criterion: run_dir.join("criterion"),
+        });
+    }
+    let best = best_run(runs).ok_or_else(|| anyhow::anyhow!("all benchmark runs failed"))?;
+    Ok((best.output, best.rss, best.criterion))
+}
+
+pub(super) fn best_run(runs: Vec<RunOutcome>) -> Option<RunOutcome> {
+    let mut best: Option<(u64, RunOutcome)> = None;
+    let mut fallback: Option<RunOutcome> = None;
+    for run in runs {
+        match run.rss {
+            Some(rss) => match &best {
+                Some((current, _)) if rss >= *current => {}
+                _ => best = Some((rss, run)),
+            },
+            None => {
+                if fallback.is_none() {
+                    fallback = Some(run);
+                }
             }
-        } else if best_output.is_none() {
-            best_output = Some(output);
         }
     }
-    let output = best_output.ok_or_else(|| anyhow::anyhow!("all benchmark runs failed"))?;
-    Ok((output, Some(best_rss)))
+    match best {
+        Some((_, run)) => Some(run),
+        None => fallback,
+    }
 }
 
 pub(super) fn measure_with_time(

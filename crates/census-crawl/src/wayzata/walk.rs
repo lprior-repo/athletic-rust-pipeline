@@ -1,12 +1,11 @@
 use super::budget;
-use super::map;
 use super::parse::{schedule_url, MeetRow, ScheduleSport};
 use super::projection::{self, Page};
 use super::receipt;
 use super::results::walk::ResultsWalk;
-use futures::{stream, TryStreamExt};
-use super::{ADAPTER_ID, Options, stats_of};
+use super::{stats_of, Options, ADAPTER_ID};
 use crate::{AdapterContext, AdapterReport, CollectionDisposition, CrawlError, CrawlResult};
+use futures::{stream, TryStreamExt};
 pub(super) struct Walk {
     report: AdapterReport,
     completed: usize,
@@ -142,14 +141,19 @@ impl Walk {
         Ok(())
     }
 
-    async fn collect_results(&mut self, ctx: &AdapterContext<'_>, located: &Located) -> CrawlResult<()> {
-        if located.row.slug.is_none() {
+    async fn collect_results(
+        &mut self,
+        ctx: &AdapterContext<'_>,
+        located: &Located,
+    ) -> CrawlResult<()> {
+        let Some(slug) = located.row.slug.as_deref() else {
             return Ok(());
-        }
-        let slug = located.row.slug.as_ref().unwrap();
+        };
         let mut results = ResultsWalk::new();
-        results.collect_for_slug(ctx, slug, &located.row.name, &located.row.date).await?;
-        self.report.rows = budget::add(self.report.rows, results.collected as u64)?;
+        results
+            .collect_for_slug(ctx, slug, &located.row.name, &located.row.date)
+            .await?;
+        self.report.rows = budget::add(self.report.rows, results.collected)?;
         Ok(())
     }
 

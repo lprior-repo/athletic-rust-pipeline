@@ -2,8 +2,8 @@
 #[path = "../../../tools/fallible_checks.rs"]
 mod fallible_checks;
 
-use census_crawl::CrawlError;
 use census_crawl::convert::{converter_files_capped, converter_stdout_capped, read_file_capped};
+use census_crawl::CrawlError;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 

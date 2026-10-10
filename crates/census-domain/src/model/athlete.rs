@@ -101,12 +101,9 @@ impl CanonicalAthlete {
     }
 
     pub fn add_identity(&mut self, identity: SourceIdentity) {
-        let same_owner = self
-            .source
-            .as_ref()
-            .is_some_and(|source| {
-                source.namespace == identity.namespace && source.id == identity.id
-            });
+        let same_owner = self.source.as_ref().is_some_and(|source| {
+            source.namespace == identity.namespace && source.id == identity.id
+        });
         if !same_owner {
             if self.source.is_none() {
                 self.source = Some(identity);

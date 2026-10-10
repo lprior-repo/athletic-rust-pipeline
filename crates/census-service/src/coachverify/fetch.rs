@@ -1,5 +1,5 @@
 use census_crawl::convert::{
-    CONVERTER_DEADLINE, CONVERTER_MAX_OUTPUT_BYTES, converter_files_capped, read_file_capped,
+    converter_files_capped, read_file_capped, CONVERTER_DEADLINE, CONVERTER_MAX_OUTPUT_BYTES,
 };
 use census_crawl::net::{FetchOptions, Fetcher};
 use census_domain::model::RawContactRow;

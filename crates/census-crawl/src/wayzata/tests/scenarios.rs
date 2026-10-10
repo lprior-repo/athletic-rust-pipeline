@@ -10,6 +10,7 @@ use std::collections::HashMap;
 mod dates;
 mod frontier;
 mod geography;
+mod results;
 
 const EMPTY: &str = "<table class=\"schedule\"></table>";
 const FETCHED: &str = "2026-09-20T14:39:00Z";

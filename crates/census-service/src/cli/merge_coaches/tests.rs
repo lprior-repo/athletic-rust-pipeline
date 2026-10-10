@@ -886,8 +886,8 @@ fn verified_combined(state: &str, school: &str) -> census_service::coachverify::
         source_urls: vec!["https://example.org/staff".to_string()],
         last_observed: "2026-09-21".to_string(),
     };
-    let claim = |field: ContactProofField, value: &str, person: &str, role: &str| {
-        ContactClaimEvidence {
+    let claim =
+        |field: ContactProofField, value: &str, person: &str, role: &str| ContactClaimEvidence {
             field,
             value: value.to_string(),
             person: person.to_string(),
@@ -900,8 +900,7 @@ fn verified_combined(state: &str, school: &str) -> census_service::coachverify::
             source_sha256: "b".repeat(64),
             fetched_at: "2026-09-22T10:00:00Z".to_string(),
             span: format!("<span class=\"cell\">{value}</span>"),
-        }
-    };
+        };
     let evidence = vec![
         claim(
             ContactProofField::CoachName,
@@ -945,10 +944,7 @@ fn combined_row_survives_merge_and_reconciliation() -> TestResult {
     let union = dir.path().join("union");
     let combined = verified_combined("OH", "Alpha High School");
     let director = verified_director("OH", "Beta High School");
-    census_service::coachverify::write_state_union(
-        &union,
-        &[combined.clone(), director.clone()],
-    )?;
+    census_service::coachverify::write_state_union(&union, &[combined.clone(), director.clone()])?;
     let out = dir.path().join("coach-contacts.csv");
     run_merge_coaches(&MergeCoachesArgs {
         fragments: union,

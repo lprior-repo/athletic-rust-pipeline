@@ -125,6 +125,16 @@ impl Spawner {
         T: Send + 'static,
         E: Send + 'static,
     {
+        {
+            let region = self.lock();
+            if region.closed {
+                tracing::error!(
+                    capacity = self.capacity,
+                    "the task region is closed; the blocking job was not run"
+                );
+                return Outcome::Cancelled;
+            }
+        }
         let Ok(slot) = Arc::clone(&self.permits).acquire_owned().await else {
             tracing::error!(
                 capacity = self.capacity,

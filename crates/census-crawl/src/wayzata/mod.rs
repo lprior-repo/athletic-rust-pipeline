@@ -6,8 +6,8 @@ mod map;
 mod parse;
 mod projection;
 mod receipt;
-mod walk;
 pub(super) mod results;
+mod walk;
 pub use map::{level_of, venue_state};
 pub use parse::{schedule_rows, schedule_url, MeetRow, ScheduleSport};
 

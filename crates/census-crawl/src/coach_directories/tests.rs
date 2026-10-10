@@ -227,26 +227,25 @@ fn a_summary_without_staff_is_school_identity_only() -> TestResult {
 }
 
 #[test]
-fn a_body_that_is_not_json_is_a_failed_fetch() {
-    assert!(parse_summary(ACCESS_DENIED.as_bytes()).is_err());
-    assert!(parse_directory(ACCESS_DENIED.as_bytes()).is_err());
+fn a_body_that_is_not_json_is_a_failed_fetch() -> TestResult {
+    check!(parse_summary(ACCESS_DENIED.as_bytes()).is_err());
+    check!(parse_directory(ACCESS_DENIED.as_bytes()).is_err());
+    Ok(())
 }
+
 #[test]
-fn a_shape_divergent_json_body_is_a_failed_parse() {
-    // An auth error object or different API envelope is JSON-valid but shape-divergent.
-    // It must not report status=ok with zero rows (the S16 clause).
+fn a_shape_divergent_json_body_is_a_failed_parse() -> TestResult {
     let auth_error = br#"{"error":"unauthorized","message":"invalid or missing api key"}"#;
-    assert!(
+    check!(
         parse_directory(auth_error).is_err(),
         "a shape-divergent auth error body must fail"
     );
-
-    // A legitimately empty page with expected fields must still succeed.
     let legitimately_empty = br#"{"currentPage":1,"totalPages":0,"totalResults":0,"results":[]}"#;
-    assert!(
+    check!(
         parse_directory(legitimately_empty).is_ok(),
         "a legitimately empty page with expected fields must succeed"
     );
+    Ok(())
 }
 
 #[test]

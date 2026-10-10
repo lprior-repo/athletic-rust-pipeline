@@ -71,7 +71,6 @@ pub(super) fn pdftotext_with(
     deadline: Duration,
     max_output: usize,
 ) -> CrawlResult<String> {
-    let bytes =
-        crate::convert::converter_stdout_capped(command, args, body, deadline, max_output)?;
+    let bytes = crate::convert::converter_stdout_capped(command, args, body, deadline, max_output)?;
     Ok(String::from_utf8_lossy(&bytes).into_owned())
 }

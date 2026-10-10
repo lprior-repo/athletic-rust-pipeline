@@ -75,14 +75,16 @@ pub(super) fn school_for(
     if let Some(id) = context.resolved.get(&key) {
         return Some(id.clone());
     }
-    let Some(name) = context.school_names.get(school_id).map(|name| name.to_string()) else {
-        context.stats.rows_unknown_school =
-            context.stats.rows_unknown_school.saturating_add(1);
+    let Some(name) = context
+        .school_names
+        .get(school_id)
+        .map(|name| name.to_string())
+    else {
+        context.stats.rows_unknown_school = context.stats.rows_unknown_school.saturating_add(1);
         return None;
     };
     if let Some((id, _)) = context.index.resolve(state, &name) {
-        context.stats.schools_resolved =
-            context.stats.schools_resolved.saturating_add(1);
+        context.stats.schools_resolved = context.stats.schools_resolved.saturating_add(1);
         context.resolved.insert(key, id.clone());
         return Some(id);
     }
@@ -98,8 +100,7 @@ pub(super) fn school_for(
         context.source.clone(),
         context.observed_on,
     ));
-    context.stats.schools_minted =
-        context.stats.schools_minted.saturating_add(1);
+    context.stats.schools_minted = context.stats.schools_minted.saturating_add(1);
     let id = context
         .accumulated
         .schools

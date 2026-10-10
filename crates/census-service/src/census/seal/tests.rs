@@ -96,8 +96,8 @@ fn access_conditions_split_into_refusals_and_throttles() {
 
     assert_eq!(
         retained_access(&rows),
-        (7, 3, 4),
-        "three refusals and four cooldown-bounded rows over seven"
+        (7, 2, 5),
+        "two refusals and five cooldown-bounded rows over seven"
     );
     assert_eq!(
         retained_access(&[]),

@@ -23,10 +23,9 @@ pub fn run_benchmarks() -> Result<BTreeMap<String, GroupMeasurement>> {
 fn measure_target(name: &str) -> Result<BTreeMap<String, GroupMeasurement>> {
     let executable = runtime::compile(name)?;
     let directory = tempfile::tempdir().context("creating benchmark measurement directory")?;
-    let (output, rss) = runtime::measure(&executable, directory.path())?;
-    let root = directory.path().join("criterion");
-    let declarations = metadata::read(&root)?;
-    let tails = tail::read(&root)?;
+    let (output, rss, criterion_root) = runtime::measure(&executable, directory.path())?;
+    let declarations = metadata::read(&criterion_root)?;
+    let tails = tail::read(&criterion_root)?;
     let mut groups = parse_measurement(&output, &declarations, rss)?;
     if !groups.keys().eq(tails.keys()) {
         bail!("Criterion results and tail samples must contain the same benchmark IDs");

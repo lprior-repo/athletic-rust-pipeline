@@ -2,9 +2,9 @@ use super::*;
 use crate::{Entity, Store, Table};
 use census_domain::jurisdiction::UsJurisdiction;
 use census_domain::model::{
-    AthleteId, CanonicalAthlete, CanonicalCoach, CoachRole, Confidence, Evidence, Gender,
-    GradYear, Grade, MailboxKind, ObservedGrade, SchoolId, SchoolYear, SourceIdentity,
-    SourceNamespace, SourceRef, Sport, CANONICAL_ID_COLLISION_FAMILY,
+    AthleteId, CanonicalAthlete, CanonicalCoach, CoachRole, Confidence, Evidence, Gender, GradYear,
+    Grade, MailboxKind, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace,
+    SourceRef, Sport, CANONICAL_ID_COLLISION_FAMILY,
 };
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -248,7 +248,10 @@ fn a_different_provider_id_or_namespace_remains_a_collision() -> TestResult {
     other_id.sports.push(Sport::OutdoorTrack);
     kept.merge(other_id);
     check!(eq; kept.retained_conflicts.len(), 1, "a distinct provider id is a real mismatch");
-    check!(kept.sports.is_empty(), "a collision does not absorb the other subject's claims");
+    check!(
+        kept.sports.is_empty(),
+        "a collision does not absorb the other subject's claims"
+    );
     let mut other_namespace = athlete(
         &kept.id.clone(),
         "Julian Aguilera",
