@@ -773,6 +773,56 @@ fn the_recruiting_xlsx_keeps_formula_looking_text_as_literal_string_cells() -> T
 }
 
 #[test]
+fn an_athlete_without_a_grade_observation_publishes_the_season_of_their_capture() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let (mut school, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Observed Season High School",
+        normalize_name("Observed Season High School"),
+        Some("Madison"),
+    );
+    school.evidence = evidence("wiaa_results", Some("https://wiaa.test/schools"));
+    store.append(Table::Schools, &school)?;
+    for (name, observed_on) in [
+        ("Autumn Runner", "2026-09-20"),
+        ("Spring Runner", "2027-04-02"),
+        ("Prior Runner", "2024-09-10"),
+    ] {
+        let mut athlete = CanonicalAthlete::new(
+            &school_id,
+            name,
+            GradYear::CO2027,
+            Gender::Boys,
+            SourceIdentity::new(SourceNamespace::MilesplitAthlete, name),
+        );
+        athlete.sports = vec![Sport::OutdoorTrack];
+        publish_fixture_cohort(&mut athlete, "milesplit_roster", "observed-season", observed_on);
+        store.append(Table::Athletes, &athlete)?;
+    }
+
+    let projection = recruiting(&store, Scope::AllSources, Some(2027))?;
+    let path = dir.path().join("observed.xlsx");
+    let mut book = Workbook::new();
+    projection.write_athletes(&mut book, &path)?;
+    book.save(&path)?;
+
+    let mut book = open_workbook(&path)?;
+    let athletes = sheet(&mut book, "Athletes")?;
+    let name_column = column_of(&athletes, "Name")?;
+    let season_column = column_of(&athletes, "Observed School Year")?;
+    for (name, expected) in [
+        ("Autumn Runner", "2026-27"),
+        ("Spring Runner", "2026-27"),
+        ("Prior Runner", "2024-25"),
+    ] {
+        let row = row_where(&athletes, |row| text(&athletes, row, name_column) == name)?;
+        check!(eq; text(&athletes, row, season_column), expected, "{name}");
+    }
+    Ok(())
+}
+
+#[test]
 fn a_schools_research_outcome_reaches_the_athletes_contact_coverage_state() -> TestResult {
     const SCHOOL: &str = "Research Fixture High School";
     for (outcome, expected) in [
