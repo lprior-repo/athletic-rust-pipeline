@@ -6,6 +6,7 @@ use census_domain::model::SchoolYear;
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::labels;
+use crate::workbook::recruiting::coalesce;
 use crate::workbook::recruiting::contact::{self, SchoolContacts};
 
 pub(super) const DATA_ROWS_PER_SHEET: usize = 1_000_000;
@@ -29,6 +30,7 @@ pub(super) struct Expectations<'a> {
     pub(super) dataset: &'a ExportDataset,
     pub(super) school_year: SchoolYear,
     pub(super) derivation: Derivation<'a>,
+    pub(super) coach_claims: Vec<census_domain::model::CanonicalCoach>,
     pub(super) bests: Vec<SharedSelection>,
     pub(super) contacts: BTreeMap<String, SchoolContacts>,
     pub(super) school_address: BTreeMap<String, String>,
@@ -47,10 +49,12 @@ impl<'a> Expectations<'a> {
         let pr_index = index(&bests);
         let tallies = tallies(&derivation);
         let contacts = contact::contacts(derivation.coach_observations(), school_year);
+        let coach_claims = coalesce::claims(derivation.coach_observations());
         Ok(Self {
             dataset,
             school_year,
             derivation,
+            coach_claims,
             bests,
             contacts,
             school_address,

@@ -686,6 +686,203 @@ fn the_run_audits_every_sheet_against_the_store_counts_behind_it() -> TestResult
     check!(eq; audit.cohort_athletes, 2);
     check!(eq; audit.pr_rows, 1);
     check!(eq; audit.coach_rows, 3);
+    check!(eq; audit.published_coach_rows, 3);
     check!(eq; audit.contact_conflicts, 0);
+    Ok(())
+}
+
+#[test]
+fn duplicate_coach_observations_publish_one_row() -> TestResult {
+    let fixture = fixture()?;
+    let first = CanonicalCoach::new(
+        &fixture.wi_school,
+        "Duplicate Tester",
+        Some(Sport::OutdoorTrack),
+        Gender::Mixed,
+        CoachRole::HeadCoach,
+    );
+    let second = CanonicalCoach::new(
+        &fixture.wi_school,
+        "Duplicate Tester",
+        Some(Sport::OutdoorTrack),
+        Gender::Mixed,
+        CoachRole::HeadCoach,
+    );
+    fixture.store.append(Table::Coaches, &first)?;
+    fixture.store.append(Table::Coaches, &second)?;
+    let projection = recruiting(&fixture.store, Scope::Core, Some(2027))?;
+    check!(eq; projection.dataset.published_coaches.len(), 4);
+    let duplicate_ids: Vec<_> = projection
+        .dataset
+        .published_coaches
+        .iter()
+        .filter(|c| c.name == "Duplicate Tester")
+        .map(|c| c.id.clone())
+        .collect();
+    check!(eq; duplicate_ids.len(), 1);
+    Ok(())
+}
+
+#[test]
+fn merged_coach_email_routes_into_published_row() -> TestResult {
+    let fixture = fixture()?;
+    let first = CanonicalCoach::new(
+        &fixture.wi_school,
+        "Merge Tester",
+        Some(Sport::OutdoorTrack),
+        Gender::Mixed,
+        CoachRole::HeadCoach,
+    );
+    fixture.store.append(Table::Coaches, &first)?;
+    let second = CanonicalCoach::new(
+        &fixture.wi_school,
+        "Merge Tester",
+        Some(Sport::OutdoorTrack),
+        Gender::Mixed,
+        CoachRole::HeadCoach,
+    );
+    let mut second = second;
+    second.professional_email = Some("merge-later@example.test".to_string());
+    fixture.store.append(Table::Coaches, &second)?;
+    let projection = recruiting(&fixture.store, Scope::Core, Some(2027))?;
+    let merged = projection
+        .dataset
+        .published_coaches
+        .iter()
+        .find(|c| c.name == "Merge Tester")
+        .ok_or("merged coach not found")?;
+    check!(eq; merged.professional_email, Some("merge-later@example.test".to_string()));
+    Ok(())
+}
+
+#[test]
+fn distinct_coach_ids_produce_distinct_published_rows() -> TestResult {
+    let fixture = fixture()?;
+    let first = CanonicalCoach::new(
+        &fixture.wi_school,
+        "Distinct One",
+        Some(Sport::OutdoorTrack),
+        Gender::Mixed,
+        CoachRole::HeadCoach,
+    );
+    fixture.store.append(Table::Coaches, &first)?;
+    let second = CanonicalCoach::new(
+        &fixture.wi_school,
+        "Distinct One",
+        Some(Sport::CrossCountry),
+        Gender::Mixed,
+        CoachRole::HeadCoach,
+    );
+    fixture.store.append(Table::Coaches, &second)?;
+    let projection = recruiting(&fixture.store, Scope::Core, Some(2027))?;
+    let distinct_names: Vec<_> = projection
+        .dataset
+        .published_coaches
+        .iter()
+        .filter(|c| c.name == "Distinct One")
+        .collect();
+    check!(eq; distinct_names.len(), 2);
+    Ok(())
+}
+
+#[test]
+fn every_sheet_publishes_hostile_source_text_as_literal_cells() -> TestResult {
+    const FORMULA_SCHOOL: &str = "=cmd|' /C calc'!A0";
+    const FORMULA_CITY: &str = "\u{feff}+1+1";
+    const FORMULA_ATHLETE: &str = "-2+3";
+    const FORMULA_COACH: &str = "@SUM(1)";
+    const FORMULA_EMAIL: &str = "=2+2@contacts.test";
+    const TOKENS: [&str; 5] = [
+        FORMULA_SCHOOL,
+        FORMULA_CITY,
+        FORMULA_ATHLETE,
+        FORMULA_COACH,
+        FORMULA_EMAIL,
+    ];
+
+    let fixture = fixture()?;
+    let store = &fixture.store;
+    let (mut school, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        FORMULA_SCHOOL,
+        normalize_name(FORMULA_SCHOOL),
+        Some(FORMULA_CITY),
+    );
+    school.athletics_website = Some("https://schools.test/athletics".to_string());
+    school.evidence = evidence("wiaa_results", Some("https://wiaa.test/schools"));
+    store.append(Table::Schools, &school)?;
+    let mut athlete = CanonicalAthlete::new(
+        &school_id,
+        FORMULA_ATHLETE,
+        GradYear::CO2027,
+        Gender::Boys,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "hostile-text"),
+    );
+    athlete.sports = vec![Sport::OutdoorTrack];
+    publish_fixture_cohort(&mut athlete, "wiaa_results", "hostile-text", DAY);
+    store.append(Table::Athletes, &athlete)?;
+    coach(
+        store,
+        &school_id,
+        FORMULA_COACH,
+        Some(Sport::OutdoorTrack),
+        CoachRole::HeadCoach,
+        FORMULA_EMAIL,
+    )?;
+
+    let options = crate::workbook::Options {
+        grad_year: Some(2027),
+        out: None,
+        limit: None,
+        scope: Scope::AllSources,
+        school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
+    };
+    let published = crate::workbook::build(store, &options)?;
+    let frozen = published
+        .parent()
+        .ok_or("publication generation")?
+        .join("frozen-input.json");
+    let dataset = crate::export::ExportDataset::reopen_frozen(&frozen)?;
+    crate::workbook::verify::verify_frozen(&published, &dataset, &options)?;
+    crate::workbook::publication::verify_published(&published)?;
+
+    let mut book: Xlsx<std::io::BufReader<std::fs::File>> = open_workbook(&published)?;
+    let names = book.sheet_names().to_vec();
+    for expected in ["Athletes", "Coaches", "PRs"] {
+        check!(
+            names.iter().any(|name| name == expected),
+            "missing sheet {expected}"
+        );
+    }
+    let mut seen: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
+    for name in &names {
+        let range = book.worksheet_range(name)?;
+        for row in 0..range.height() {
+            for column in 0..range.width() {
+                let Some(value) = range.get((row, column)) else {
+                    continue;
+                };
+                match value {
+                    Data::Error(error) => {
+                        return Err(format!(
+                            "{name} R{}C{} is a spreadsheet error: {error:?}",
+                            row + 1,
+                            column + 1
+                        )
+                        .into());
+                    }
+                    Data::String(text) => {
+                        for token in TOKENS {
+                            if text.contains(token) {
+                                seen.insert(token);
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+    check!(eq; seen.len(), TOKENS.len(), "every hostile token stays literal string text");
     Ok(())
 }

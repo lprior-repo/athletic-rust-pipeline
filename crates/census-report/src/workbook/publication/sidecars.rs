@@ -1,5 +1,6 @@
 use crate::export::ExportDataset;
 use crate::report::{io_error, Derivation, ReportError, ReportResult};
+use crate::workbook::recruiting::coalesce;
 use crate::workbook::Censuses;
 use census_domain::model::{CanonicalPerformance, SchoolYear};
 use census_store::Entity;
@@ -52,15 +53,17 @@ pub(in crate::workbook) fn write_sidecars(
         &directory.join("recruiting.csv"),
     )?;
     crate::school_contacts::write_csv(directory, population.schools(), school_year)?;
+    let coaches = coalesce::claims(derivation.coach_observations());
     write_json(
         &directory.join("audit.json"),
-        &audit(dataset, derivation, school_year),
+        &audit(dataset, derivation, &coaches, school_year),
     )
 }
 
 fn audit<'a>(
     dataset: &'a ExportDataset,
     derivation: &'a Derivation<'_>,
+    coaches: &'a [census_domain::model::CanonicalCoach],
     school_year: SchoolYear,
 ) -> Audit<'a> {
     Audit {
@@ -70,7 +73,7 @@ fn audit<'a>(
         school_year,
         athletes: RecordIds(derivation.athletes()),
         performances: PerformanceIds(derivation.performances()),
-        coaches: RecordIds(derivation.coach_observations()),
+        coaches: RecordIds(coaches),
         identity_decisions: RecordIds(&dataset.identity_decisions),
     }
 }

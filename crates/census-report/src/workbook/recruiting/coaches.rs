@@ -44,7 +44,7 @@ type SortKey = (String, String, String, String, String);
 
 pub(super) fn sheet(dataset: &Dataset) -> ReportResult<Vec<Vec<Cell>>> {
     let mut ordered: Vec<_> = dataset
-        .coaches
+        .published_coaches
         .iter()
         .map(|coach| (coach, sort_key(dataset, coach)))
         .collect();
@@ -107,7 +107,7 @@ fn contact_cells(
         optional_text(director.and_then(|director| director.email.as_deref())),
         Cell::text(name_url),
         Cell::text(name_at),
-        Cell::text(tenure_label(coach, year)),
+        Cell::text(coach_projection::tenure_label(coach, year)),
         Cell::text(year.short()),
     ]
 }
@@ -144,20 +144,6 @@ fn director_capture(director: Option<&super::contact::Named>) -> [Cell; 3] {
         Cell::text(source.map_or("", |source| source.source_sha256.as_str())),
         Cell::text(source.map_or("", |source| source.observed_on.as_str())),
     ]
-}
-
-fn tenure_label(
-    coach: &CanonicalCoach,
-    school_year: census_domain::model::SchoolYear,
-) -> &'static str {
-    use census_domain::model::{CoachTenure, TenureAssessmentError};
-    match coach.tenure_state(school_year) {
-        Ok(CoachTenure::Current { .. }) => "current_declared",
-        Ok(CoachTenure::Former { .. }) => "former_declared",
-        Ok(CoachTenure::Unknown) => "unknown",
-        Err(TenureAssessmentError::Conflict) => "tenure_conflict",
-        Err(TenureAssessmentError::InvalidEvidence { .. }) => "invalid_tenure_evidence",
-    }
 }
 
 fn sport_label(coach: &CanonicalCoach) -> String {
