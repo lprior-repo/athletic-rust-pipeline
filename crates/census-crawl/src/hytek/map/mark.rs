@@ -49,6 +49,26 @@ pub fn parse_time(token: &str) -> Option<ExactSeconds> {
     ExactSeconds::parse_clock(token.trim()).ok()
 }
 
+pub fn parse_time_with_hand(token: &str) -> Option<ExactSeconds> {
+    let trimmed = token.trim();
+    if let Some(stripped) = trimmed.strip_suffix(['h', 'H']) {
+        if let Ok(seconds) = ExactSeconds::parse_clock(stripped) {
+            return Some(seconds);
+        }
+    }
+    ExactSeconds::parse_clock(trimmed).ok()
+}
+
+pub fn time_is_hand(token: &str) -> bool {
+    let trimmed = token.trim();
+    if let Some(stripped) = trimmed.strip_suffix(['h', 'H']) {
+        if !stripped.trim().is_empty() && ExactSeconds::parse_clock(stripped).is_ok() {
+            return true;
+        }
+    }
+    false
+}
+
 pub(crate) fn parse_points(token: &str) -> Option<Mark> {
     let points: f64 = token.trim().parse().ok()?;
     if !points.is_finite() || points < 0.0 {
@@ -123,7 +143,7 @@ pub(in crate::hytek) fn parse_marks(
                 parse_points(numeric)?
             }
             kind if kind.is_field() => parse_field_mark(numeric)?,
-            _ => Mark::TimeSeconds(parse_time(numeric)?),
+            _ => Mark::TimeSeconds(parse_time_with_hand(numeric)?),
         }
     };
 

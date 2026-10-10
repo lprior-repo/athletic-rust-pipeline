@@ -2,8 +2,8 @@ use super::{level_of, Accumulator, ArchiveArtifact, Stats};
 use crate::context::PerformanceDateAssessment;
 use crate::result_file::{ParsedEvent, ParsedMeet};
 use census_domain::model::{
-    CanonicalMeet, CanonicalTeam, CompetitionLevel, EventId, Evidence, Gender, SchoolId,
-    SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport, TimingMethod,
+    CanonicalMeet, CanonicalTeam, EventId, Evidence, Gender, SchoolId, SchoolYear, SourceIdentity,
+    SourceNamespace, SourceRef, Sport, TimingMethod,
 };
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
@@ -114,12 +114,7 @@ fn meet_for(
     observed_on: &str,
 ) -> (CanonicalMeet, Evidence, TimingMethod) {
     let level = level_of(&parsed.name);
-    let timing = match level {
-        CompetitionLevel::State | CompetitionLevel::Sectional | CompetitionLevel::Regional => {
-            TimingMethod::Fat
-        }
-        _ => TimingMethod::Unknown,
-    };
+    let timing = TimingMethod::Unknown;
     let mut meet = CanonicalMeet::new(
         Some(UsJurisdiction::Wisconsin),
         parsed.name.clone(),

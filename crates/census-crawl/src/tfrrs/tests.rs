@@ -1,9 +1,11 @@
 use super::classify;
+use super::parse::metric_metres;
 use super::parse::{
     clock_seconds, jurisdiction_of_url, list_filter, parse_list_page, parse_list_path,
     parse_team_page, parse_team_path, published_date, season_from_label, ParsedList, ParsedMark,
     ParsedRow, ParsedSection, TeamPath, YearToken,
 };
+use census_domain::model::{CentiMetres, Mark};
 use census_domain::model::{ExactSeconds, Gender, Grade, Sport};
 use census_domain::UsJurisdiction;
 
@@ -308,6 +310,42 @@ fn fixture_list_urls_with_year_segment_still_parse() -> TestResult {
     check!(eq; path.slug, "HSR_All_School_Performance_List");
     check!(path.season.is_some());
     check!(classify(url).is_some());
+    Ok(())
+}
+
+#[test]
+fn metric_field_mark_without_conv_produces_distance_metres() -> TestResult {
+    let row = crate::tfrrs::map::row::mark_of(&ParsedMark::Field("6.50m".to_string()), None);
+    check!(row.is_some(), "metric mark without Conv is not dropped");
+    match row.unwrap() {
+        Mark::DistanceMetres(cm) => {
+            check!(eq; cm, CentiMetres::new(650), "6.50m is 650 cm");
+        }
+        other => return Err(format!("expected DistanceMetres, got {other:?}").into()),
+    }
+    Ok(())
+}
+
+#[test]
+fn metric_metres_function_parses_metric_tokens() -> TestResult {
+    check!(eq; metric_metres("6.50m"), Some(6.50));
+    check!(eq; metric_metres("1.90M"), Some(1.90));
+    check!(eq; metric_metres("40.1m"), Some(40.1));
+    check!(eq; metric_metres("1.80"), None);
+    check!(eq; metric_metres("6'5\""), None);
+    Ok(())
+}
+
+#[test]
+fn imperial_with_conv_still_works() -> TestResult {
+    let row = crate::tfrrs::map::row::mark_of(&ParsedMark::Field("7-2".to_string()), Some(2.18));
+    check!(row.is_some());
+    match row.unwrap() {
+        Mark::FieldImperial { feet_mark, .. } => {
+            check!(eq; feet_mark, "7-2");
+        }
+        other => return Err(format!("expected FieldImperial, got {other:?}").into()),
+    }
     Ok(())
 }
 

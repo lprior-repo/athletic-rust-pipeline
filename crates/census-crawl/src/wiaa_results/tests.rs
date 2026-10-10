@@ -1,6 +1,7 @@
 use super::*;
-use census_domain::model::{CompetitionLevel, GradYear, Grade};
+use census_domain::model::{CompetitionLevel, GradYear, Grade, TimingMethod};
 
+use census_domain::model::SchoolYear;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 const ARCHIVE_HTML: &str = r#"
@@ -299,4 +300,75 @@ fn overlapping_archives_process_one_logical_result_once() -> TestResult {
     check!(eq; store.scan::<CanonicalPerformance>(census_store::Table::Performances)?, performances);
     Ok(())
     })
+}
+
+#[test]
+fn state_title_rows_preserve_per_row_timing_classes() -> TestResult {
+    use census_domain::model::{CanonicalPerformance, CanonicalSchool, ExactSeconds, Mark};
+    use census_store::Store;
+    use std::time::Duration;
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let fetcher = crate::net::Fetcher::new(
+        store.http_cache_dir(),
+        None,
+        Duration::ZERO,
+        HashMap::new(),
+        Vec::new(),
+    )?
+    .with_source("wiaa_results")
+    .with_offline(true);
+    let (school, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Testville", "testville", None);
+    store.append(census_store::Table::Schools, &school)?;
+    std::fs::create_dir_all(store.out_dir())?;
+    let body = "<pre>Licensed to Test\nWIAA Track & Field State Championships - 6/6/2025\nEvent 1  Boys 100 Meter Dash\n\n    Name                Year School              Finals\n  1 Athlete A             12 Testville           11.00h\n  2 Athlete B             11 Testville            11.50\n</pre>";
+    let url = "https://www.wiaawi.org/Portals/0/PDF/Results/Track/2025/d1boysstateresults.htm";
+    seed_result_cache(&fetcher, url, body.as_bytes())?;
+    let html = format!("<a href=\"{url}\">Boys</a>");
+    for (archive_url, _) in ARCHIVES {
+        seed_result_cache(&fetcher, archive_url, html.as_bytes())?;
+    }
+    let context = AdapterContext {
+        fetcher: &fetcher,
+        store: &store,
+        refresh: false,
+        school_year: SchoolYear::new(2026).ok_or("2026 school year")?,
+        observed_on: "2026-09-19".into(),
+        performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 9, 19).ok_or("snapshot date")?,
+        recording: None,
+    };
+    let options = Options {
+        limit: None,
+        refresh: false,
+        observed_on: "2026-09-19".into(),
+        seasons: vec![2025],
+        states: vec![UsJurisdiction::Wisconsin],
+        school_names: Vec::new(),
+    };
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async { collect(&context, &options).await })?;
+    let performances: Vec<CanonicalPerformance> = store.scan(census_store::Table::Performances)?;
+    check!(eq; performances.len(), 2, "{performances:?}");
+    let hand_mark = Mark::TimeSeconds(ExactSeconds::parse("11.00")?);
+    let hand_row = performances
+        .iter()
+        .find(|p| p.mark == hand_mark)
+        .ok_or("hand-suffixed row exists")?;
+    check!(
+        matches!(hand_row.timing, Some(TimingMethod::Hand)),
+        "hand-suffixed time preserves Hand timing under State title"
+    );
+    let auto_mark = Mark::TimeSeconds(ExactSeconds::parse("11.50")?);
+    let auto_row = performances
+        .iter()
+        .find(|p| p.mark == auto_mark)
+        .ok_or("non-suffixed row exists")?;
+    check!(
+        auto_row.timing == Some(TimingMethod::Unknown),
+        "non-suffixed time is Unknown, not inferred FAT"
+    );
+    Ok(())
 }

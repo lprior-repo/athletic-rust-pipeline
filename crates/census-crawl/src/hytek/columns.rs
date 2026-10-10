@@ -11,7 +11,7 @@ pub(crate) fn looks_like_a_name(name: &str) -> bool {
 
 pub(super) const TEXT_LABELS: [&str; 5] = ["Name", "School", "Team", "Relay", "Athlete"];
 
-const NUMERIC_LABELS: [&str; 23] = [
+const NUMERIC_LABELS: [&str; 24] = [
     "Semi-Finals",
     "Preliminaries",
     "Prelims",
@@ -34,6 +34,7 @@ const NUMERIC_LABELS: [&str; 23] = [
     "H#",
     "Lane",
     "Flight",
+    "Wind",
     "#",
 ];
 

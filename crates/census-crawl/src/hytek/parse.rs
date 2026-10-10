@@ -1,6 +1,6 @@
 use crate::result_file::{ParsedRow, RelayLeg};
 use crate::{CrawlError, CrawlResult};
-use census_domain::model::{EventKind, Grade};
+use census_domain::model::{EventKind, Grade, TimingMethod};
 use regex::Regex;
 use std::sync::LazyLock;
 
@@ -8,7 +8,7 @@ use super::columns::{
     columns_from_header, looks_like_a_name, substring, tokens, Column, Token, TEXT_LABELS,
 };
 use super::identity::individual_identity;
-use super::map::parse_marks;
+use super::map::{parse_marks, time_is_hand};
 
 static RELAY_LEG: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"(\d+)\)\s+([^0-9]+?)\s+(\d{1,2})\b"));
@@ -80,9 +80,21 @@ impl Section {
 
     fn numeric_token_for<'a>(&self, tokens: &[Token<'a>], column: &Column) -> Option<Token<'a>> {
         let edge = column.end.saturating_add(1);
+        let previous_end = self
+            .columns
+            .iter()
+            .filter(|other| other.start < column.start)
+            .map(|other| other.end)
+            .max()
+            .unwrap_or_default();
+        let trailing = !self.columns.iter().any(|other| other.start > column.start);
         tokens
             .iter()
-            .filter(|token| token.end.saturating_add(1) >= column.end && token.end <= edge)
+            .filter(|token| {
+                token.end <= edge
+                    && (token.end.saturating_add(1) >= column.end
+                        || (trailing && token.end > previous_end))
+            })
             .min_by_key(|token| column.end.abs_diff(token.end))
             .copied()
     }
@@ -108,6 +120,30 @@ impl Section {
             .find_map(|label| self.numeric_token(tokens, label))
             .map(|token| token.text.to_string())
     }
+    fn wind(&self, tokens: &[Token<'_>]) -> Option<f64> {
+        self.numeric_token(tokens, "Wind")
+            .and_then(|token| token.text.parse::<f64>().ok())
+            .filter(|value| value.is_finite() && value.abs() <= 12.0)
+    }
+    fn declares_extra_numeric(&self) -> bool {
+        self.columns
+            .iter()
+            .filter(|column| column.numeric)
+            .any(|column| !MARK_LABELS.contains(&column.label.as_str()))
+    }
+    fn declares_heat(&self) -> bool {
+        ["H#", "Flight", "Lane"]
+            .iter()
+            .any(|label| self.column(label).is_some())
+    }
+    fn declares_wind(&self) -> bool {
+        self.column("Wind").is_some()
+    }
+    fn declares_points(&self) -> bool {
+        ["Points", "Pts"]
+            .iter()
+            .any(|label| self.column(label).is_some())
+    }
 }
 
 pub(super) fn starts_like_a_row(trimmed: &str) -> bool {
@@ -130,16 +166,41 @@ pub(super) fn parse_row(line: &str, kind: &EventKind, section: &Section) -> Opti
             .get(token.end..)
             .map_or(Default::default(), core::convert::identity);
         if let Some(parsed) = parse_marks(kind, token.text, tail) {
-            marks = Some(parsed);
+            marks = Some((parsed, token.text));
             break;
         }
     }
-    let (mark, wind_mps, heat_from_tail, points_from_tail) = marks?;
-    let heat = section.heat(&tokens).or(heat_from_tail);
+    let ((mark, wind_from_tail, heat_from_tail, points_from_tail), mark_text) = marks?;
+    let strict = section.declares_extra_numeric();
+    let heat = section.heat(&tokens).or_else(|| {
+        let from_tail = heat_from_tail
+            .filter(|heat| !heat.is_empty() && heat.chars().all(|ch| ch.is_ascii_digit()));
+        if !strict || section.declares_heat() {
+            from_tail
+        } else {
+            None
+        }
+    });
     let points = section
         .numeric_token(&tokens, "Points")
         .and_then(|token| token.text.parse::<f64>().ok())
-        .or(points_from_tail);
+        .or(if !strict || section.declares_points() {
+            points_from_tail
+        } else {
+            None
+        });
+    let wind = section
+        .wind(&tokens)
+        .or(if !strict || section.declares_wind() {
+            wind_from_tail
+        } else {
+            None
+        });
+    let timing = if time_is_hand(mark_text) {
+        Some(TimingMethod::Hand)
+    } else {
+        None
+    };
 
     Some(ParsedRow {
         place,
@@ -147,8 +208,8 @@ pub(super) fn parse_row(line: &str, kind: &EventKind, section: &Section) -> Opti
         grade,
         school,
         mark,
-        timing: None,
-        wind_mps,
+        timing,
+        wind_mps: wind,
         heat,
         points,
         legs: Vec::new(),

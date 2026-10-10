@@ -40,7 +40,7 @@ pub(super) fn record_performance(
             place: row.place,
             heat: row.heat.clone(),
             round: context.event.round.clone(),
-            timing: Some(context.timing),
+            timing: row.timing.or(Some(context.timing)),
             observed_grade: Some(facts.grade),
             evidence: vec![performance_evidence(context, row, facts.leg_position)],
             source_key: facts.key,

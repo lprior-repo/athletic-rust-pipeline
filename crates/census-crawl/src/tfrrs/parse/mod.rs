@@ -11,7 +11,7 @@ mod team;
 pub use date::published_date;
 pub use date::PublishedDate;
 pub use list::{parse_list_page, ParsedList, ParsedSection};
-pub use mark::{clock_seconds, feet_inches_metres, ParsedMark};
+pub use mark::{clock_seconds, feet_inches_metres, metric_metres, ParsedMark};
 pub use route::{
     jurisdiction_of_url, list_filter, parse_list_path, parse_team_path, ListPath, TeamPath,
 };

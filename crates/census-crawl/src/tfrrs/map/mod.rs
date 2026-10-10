@@ -3,7 +3,7 @@ mod events;
 mod list;
 mod meet;
 mod roster;
-mod row;
+pub(super) mod row;
 mod state;
 
 pub(super) use state::{Absorb, ListContext, Page, RosterContext, Stats};

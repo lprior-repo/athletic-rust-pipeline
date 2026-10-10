@@ -1,7 +1,7 @@
 use super::state::Stats;
 use crate::tfrrs::parse::{
-    clock_seconds, feet_inches_metres, ParsedMark, ParsedMeet, ParsedRow, ParsedSection,
-    PublishedDate, YearToken,
+    clock_seconds, feet_inches_metres, metric_metres, ParsedMark, ParsedMeet, ParsedRow,
+    ParsedSection, PublishedDate, YearToken,
 };
 use census_domain::model::{CentiMetres, Grade, Mark};
 
@@ -33,7 +33,7 @@ pub(super) fn grade_for(
     }
 }
 
-pub(super) fn mark_of(mark: &ParsedMark, conv_metres: Option<f64>) -> Option<Mark> {
+pub fn mark_of(mark: &ParsedMark, conv_metres: Option<f64>) -> Option<Mark> {
     match mark {
         ParsedMark::Time(token) => clock_seconds(token).map(Mark::TimeSeconds),
         ParsedMark::Field(token) => {
@@ -42,6 +42,11 @@ pub(super) fn mark_of(mark: &ParsedMark, conv_metres: Option<f64>) -> Option<Mar
                     feet_mark: token.clone(),
                     metres: CentiMetres::try_from_metres_f64(metres)?,
                 });
+            }
+            if let Some(metres) = metric_metres(token) {
+                return Some(Mark::DistanceMetres(CentiMetres::try_from_metres_f64(
+                    metres,
+                )?));
             }
             match conv_metres {
                 Some(metres) => Some(Mark::DistanceMetres(CentiMetres::try_from_metres_f64(

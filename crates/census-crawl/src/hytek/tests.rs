@@ -1,6 +1,7 @@
 use super::*;
+use crate::hytek::map::time_is_hand;
 use census_domain::model::ExactSeconds;
-use census_domain::model::{EventKind, Gender, Grade, Mark, SourceRef};
+use census_domain::model::{EventKind, Gender, Grade, Mark, SourceRef, TimingMethod};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -287,4 +288,89 @@ fn plain_text_reports_parse_the_same_way_as_html_ones() -> TestResult {
     check!(eq; from_text.events.len(), from_html.events.len());
     check!(eq; from_text.events[0].rows[0], from_html.events[0].rows[0]);
     Ok(())
+}
+
+#[test]
+fn finals_rows_carry_no_invented_heats_when_wind_and_points_are_named() -> TestResult {
+    let lines = lines_from_text(DASH_TEXT);
+    let parsed = super::parse(&lines, source()).ok_or("fixture has a meet header")?;
+    let finals = parsed
+        .events
+        .iter()
+        .find(|event| event.round.as_deref() == Some("finals"))
+        .ok_or("the fixture publishes a finals round")?;
+    for row in &finals.rows {
+        check!(eq; row.heat, None, "finals rows must not invent heats from scoring points");
+    }
+    Ok(())
+}
+
+#[test]
+fn finals_rows_preserve_wind_and_points_when_named_columns_exist() -> TestResult {
+    let lines = lines_from_text(DASH_TEXT);
+    let parsed = super::parse(&lines, source()).ok_or("fixture has a meet header")?;
+    let finals = parsed
+        .events
+        .iter()
+        .find(|event| event.round.as_deref() == Some("finals"))
+        .ok_or("the fixture publishes a finals round")?;
+    let winner = finals
+        .rows
+        .iter()
+        .find(|row| row.place == Some(1))
+        .ok_or("a first place row exists")?;
+    check!(eq; winner.wind_mps, Some(1.0), "named Wind column is preserved");
+    check!(eq; winner.points, Some(10.0), "named Points column is preserved");
+    let last_placed = finals
+        .rows
+        .iter()
+        .find(|row| row.place == Some(8))
+        .ok_or("an eighth place row exists")?;
+    check!(eq; last_placed.points, Some(1.0));
+    let ninth = finals
+        .rows
+        .iter()
+        .find(|row| row.place == Some(9))
+        .ok_or("a ninth place row exists")?;
+    check!(eq; ninth.points, None, "no invented points for unplaced finishers");
+    Ok(())
+}
+
+#[test]
+fn field_rows_preserve_wind_when_wind_column_is_named() -> TestResult {
+    let body = "<pre>Licensed to Test\nTest Meet - 6/6/2025\nEvent 1  Boys Long Jump\n\n    Name                    Year School                  Finals  Wind Points\n  1 Athlete A                 12 School A                 13-09  -0.5     10\n  2 Athlete B                 11 School B                 12-06   2.3      8\n  3 Athlete C                 10 School C                 11-03  -1.8      6\n</pre>";
+    let lines = lines_from_html(body);
+    let parsed = super::parse(&lines, source()).ok_or("fixture has a meet header")?;
+    let event = &parsed.events[0];
+    check!(eq; event.rows[0].wind_mps, Some(-0.5));
+    check!(eq; event.rows[1].wind_mps, Some(2.3));
+    check!(eq; event.rows[2].wind_mps, Some(-1.8));
+    for row in &event.rows {
+        check!(eq; row.heat, None, "field rows must not invent heats");
+    }
+    Ok(())
+}
+
+#[test]
+fn hand_suffixed_times_are_parsed_and_flagged_as_hand_timed() -> TestResult {
+    let body = "<pre>Licensed to Test\nTest Meet - 6/6/2025\nEvent 1  Boys 100 Meter Dash\n\n    Name                    Year School                  Finals\n  1 Athlete A                 12 School A                11.00h\n  2 Athlete B                 11 School B                 11.50\n</pre>";
+    let lines = lines_from_html(body);
+    let parsed = super::parse(&lines, source()).ok_or("fixture has a meet header")?;
+    let event = &parsed.events[0];
+    check!(eq; event.rows[0].mark, Mark::TimeSeconds(ExactSeconds::parse("11.00")?));
+    check!(
+        matches!(event.rows[0].timing, Some(TimingMethod::Hand)),
+        "hand-suffixed time is marked as hand-timed"
+    );
+    check!(eq; event.rows[1].mark, Mark::TimeSeconds(ExactSeconds::parse("11.50")?));
+    check!(eq; event.rows[1].timing, None, "non-suffixed time is not hand-timed");
+    Ok(())
+}
+
+#[test]
+fn time_is_hand_detects_suffix() {
+    assert!(time_is_hand("11.00h"));
+    assert!(time_is_hand("1:54.32H"));
+    assert!(!time_is_hand("11.00"));
+    assert!(!time_is_hand("11.00q"));
 }
