@@ -3,7 +3,7 @@ use crate::report::{Derivation, ReportResult, Scope};
 use census_domain::model::{CanonicalAthlete, CanonicalCoach, CanonicalSchool, SchoolYear};
 use std::collections::BTreeMap;
 
-use super::contact::{contacts, SchoolContacts};
+use super::contact::{attach_research, contacts, SchoolContacts};
 use super::facts::{kind_index, pr_index, school_index, tally, AthleteTally};
 
 #[derive(Debug, Clone, Copy)]
@@ -42,7 +42,8 @@ impl Dataset {
         let school_address =
             crate::export::postal::athlete_address_index(derivation.dataset(), &athletes)?;
         let inputs = Inputs::new(derivation, school_year, prs);
-        let contacts = contacts(derivation.coach_observations(), school_year);
+        let mut contacts = contacts(derivation.coach_observations(), school_year);
+        attach_research(&mut contacts, derivation.schools(), school_year);
         let audit = inputs.audit(&contacts);
         Ok(Self::assemble(
             inputs,
