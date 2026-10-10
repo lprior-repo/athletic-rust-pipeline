@@ -447,7 +447,7 @@ fn resolve_slug(expr: &str, constants: &IndexMap<String, String>, file: &str) ->
     if expr.len() >= 2 && expr.starts_with('"') && expr.ends_with('"') {
         return Ok(expr[1..expr.len() - 1].to_string());
     }
-    let name = expr.rsplit("::").next().unwrap_or(expr);
+    let name = expr.rsplit_once("::").map_or(expr, |(_, tail)| tail);
     constants
         .get(name)
         .cloned()
@@ -581,32 +581,33 @@ fn determine_arms(slug: &str, arms: &Arms) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::{ensure, Result};
 
     #[test]
-    fn slug_extraction_from_sample() {
+    fn slug_extraction_from_sample() -> Result<()> {
         let content = r#"Applicability {
     slug: "aia",
     jurisdictions: &[UsJurisdiction::Arizona],
 }"#;
-        let entries = parse_applicability_entries(content, &[])
-            .map_or_else(|e| panic!("parse failed: {}", e), core::convert::identity);
-        assert_eq!(entries.len(), 1);
-        assert_eq!(entries[0]["slug"], "aia");
-        assert_eq!(entries[0]["applicable"][0], "Arizona");
+        let entries = parse_applicability_entries(content, &[])?;
+        ensure!(entries.len() == 1);
+        ensure!(entries[0]["slug"] == "aia");
+        ensure!(entries[0]["applicable"][0] == "Arizona");
+        Ok(())
     }
 
     #[test]
-    fn census_scope_expansion_in_applicability() {
+    fn census_scope_expansion_in_applicability() -> Result<()> {
         let content = r#"Applicability {
     slug: "milesplit",
-    jurisdictions: &UsJurisdiction::CENSUS_SCOPE,
+    jurisdictions: &[UsJurisdiction::CENSUS_SCOPE],
 }"#;
         let scope = vec!["Alabama".to_string(), "Wyoming".to_string()];
-        let entries = parse_applicability_entries(content, &scope)
-            .map_or_else(|e| panic!("parse failed: {}", e), core::convert::identity);
-        assert_eq!(entries.len(), 1);
-        assert_eq!(entries[0]["applicable"][0], "Alabama");
-        assert_eq!(entries[0]["applicable"][1], "Wyoming");
+        let entries = parse_applicability_entries(content, &scope)?;
+        ensure!(entries.len() == 1);
+        ensure!(entries[0]["applicable"][0] == "Alabama");
+        ensure!(entries[0]["applicable"][1] == "Wyoming");
+        Ok(())
     }
 
     #[test]
@@ -620,15 +621,14 @@ mod tests {
     }
 
     #[test]
-    fn declared_length_mismatch_detected() {
+    fn declared_length_mismatch_detected() -> Result<()> {
         let content = "pub(crate) const TABLE: [Applicability; 100] = [\n";
-        let declared = parse_declared_length(content, "TABLE", "Applicability")
-            .map_or_else(|e| panic!("parse failed: {}", e), core::convert::identity);
-        assert_eq!(declared, 100);
-        let parsed = parse_applicability_entries(content, &[])
-            .map_or_else(|e| panic!("parse failed: {}", e), core::convert::identity);
-        assert_eq!(parsed.len(), 0);
-        assert_ne!(parsed.len(), declared);
+        let declared = parse_declared_length(content, "TABLE", "Applicability")?;
+        ensure!(declared == 100);
+        let parsed = parse_applicability_entries(content, &[])?;
+        ensure!(parsed.is_empty());
+        ensure!(parsed.len() != declared);
+        Ok(())
     }
 
     #[test]
@@ -656,7 +656,7 @@ mod tests {
     }
 
     #[test]
-    fn ref_ordering_deterministic() {
+    fn ref_ordering_deterministic() -> Result<()> {
         let content = r#"Applicability {
     slug: "z",
     jurisdictions: &[UsJurisdiction::Wyoming, UsJurisdiction::Alabama],
@@ -665,12 +665,12 @@ Applicability {
     slug: "a",
     jurisdictions: &[UsJurisdiction::Wyoming, UsJurisdiction::Alabama],
 },"#;
-        let entries = parse_applicability_entries(content, &[])
-            .map_or_else(|e| panic!("parse failed: {}", e), core::convert::identity);
-        assert_eq!(entries.len(), 2);
-        assert_eq!(entries[0]["slug"], "z");
-        assert_eq!(entries[0]["applicable"][0], "Wyoming");
-        assert_eq!(entries[0]["applicable"][1], "Alabama");
-        assert_eq!(entries[1]["slug"], "a");
+        let entries = parse_applicability_entries(content, &[])?;
+        ensure!(entries.len() == 2);
+        ensure!(entries[0]["slug"] == "z");
+        ensure!(entries[0]["applicable"][0] == "Wyoming");
+        ensure!(entries[0]["applicable"][1] == "Alabama");
+        ensure!(entries[1]["slug"] == "a");
+        Ok(())
     }
 }

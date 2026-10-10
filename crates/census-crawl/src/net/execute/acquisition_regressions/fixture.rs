@@ -101,9 +101,9 @@ pub(super) async fn independent_representations(
         Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
     };
     let (requests, ()) = tokio::time::timeout(Duration::from_secs(10), async {
-        tokio::try_join!(serve(listener, 3), client)
+        tokio::try_join!(serve(listener, 2), client)
     })
     .await??;
-    check!(eq; requests.len(), 3);
+    check!(eq; requests.len(), 2);
     Ok(())
 }

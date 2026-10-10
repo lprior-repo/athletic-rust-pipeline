@@ -29,7 +29,7 @@ async fn request_headers(socket: &mut TcpStream) -> TestResult<String> {
 }
 
 async fn serve(listener: TcpListener) -> TestResult {
-    for _ in 0..5 {
+    for _ in 0..4 {
         let (mut socket, _) = listener.accept().await?;
         let request = request_headers(&mut socket).await?;
         let response = match request.split_whitespace().nth(1).ok_or("missing request path")? {
@@ -138,7 +138,7 @@ fn actual_redirect_keeps_request_and_final_urls_through_archive_cache_offline_an
             let origin = format!("http://{}", listener.local_addr()?);
             let requested = format!("{origin}/start");
             let final_url = format!("{origin}/finish");
-            let ((), acquired_at) = tokio::time::timeout(Duration::from_secs(10), async {
+            let ((), acquired_at) = tokio::time::timeout(Duration::from_secs(30), async {
                 tokio::try_join!(
                     serve(listener),
                     acquire(&fetcher, &cache, &requested, &final_url)

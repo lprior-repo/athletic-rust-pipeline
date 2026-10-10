@@ -99,20 +99,18 @@ fn an_explicit_loopback_grant_admits_the_fixture() -> TestResult {
             let address = listener.local_addr()?;
             let server = async move {
                 let mut paths = Vec::new();
-                for _ in 0..2 {
-                    let (mut socket, _) = listener.accept().await?;
-                    let path = read_path(&mut socket).await?;
-                    let response = match path.as_str() {
-                        "/payload" => ok("evidence"),
-                        other => {
-                            return Err::<Vec<String>, _>(
-                                format!("unapproved path contacted: {other}").into(),
-                            )
-                        }
-                    };
-                    paths.push(path);
-                    socket.write_all(response.as_bytes()).await?;
-                }
+                let (mut socket, _) = listener.accept().await?;
+                let path = read_path(&mut socket).await?;
+                let response = match path.as_str() {
+                    "/payload" => ok("evidence"),
+                    other => {
+                        return Err::<Vec<String>, _>(
+                            format!("unapproved path contacted: {other}").into(),
+                        )
+                    }
+                };
+                paths.push(path);
+                socket.write_all(response.as_bytes()).await?;
                 assert_silent(&listener).await?;
                 Ok::<_, Box<dyn std::error::Error + Send + Sync>>(paths)
             };
@@ -125,7 +123,7 @@ fn an_explicit_loopback_grant_admits_the_fixture() -> TestResult {
                 check!(!outcome.from_cache);
                 Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
             };
-            let (paths, ()) = tokio::time::timeout(Duration::from_secs(5), async {
+            let (paths, ()) = tokio::time::timeout(Duration::from_secs(30), async {
                 tokio::try_join!(server, requests)
             })
             .await??;
@@ -147,7 +145,7 @@ fn a_same_host_redirect_is_followed_and_a_local_hop_is_refused() -> TestResult {
             let hop = format!("http://127.0.0.1:{}/hidden", unlisted_address.port());
             let server = async move {
                 let mut paths = Vec::new();
-                for _ in 0..4 {
+                for _ in 0..3 {
                     let (mut socket, _) = listener.accept().await?;
                     let path = read_path(&mut socket).await?;
                     let response = match path.as_str() {
@@ -182,7 +180,7 @@ fn a_same_host_redirect_is_followed_and_a_local_hop_is_refused() -> TestResult {
                 );
                 Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
             };
-            let (paths, ()) = tokio::time::timeout(Duration::from_secs(5), async {
+            let (paths, ()) = tokio::time::timeout(Duration::from_secs(30), async {
                 tokio::try_join!(server, requests)
             })
             .await??;

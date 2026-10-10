@@ -136,7 +136,7 @@ fn research_outcome(school: &CanonicalSchool, school_year: SchoolYear) -> Contac
             ContactResearchSubject::SchoolMailbox(_) => None,
         })
         .reduce(ContactResearchOutcome::combine)
-        .unwrap_or(ContactResearchOutcome::Unattempted)
+        .map_or(ContactResearchOutcome::Unattempted, core::convert::identity)
 }
 
 fn role_slot(coach: &CanonicalCoach) -> Option<(Slot, Gender)> {

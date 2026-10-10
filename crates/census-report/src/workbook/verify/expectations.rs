@@ -92,8 +92,7 @@ impl<'a> Expectations<'a> {
     pub(super) fn published_coach_name<'b>(&'b self, id: &str, fallback: &'b str) -> &'b str {
         self.coach_spellings
             .get(id)
-            .map(String::as_str)
-            .unwrap_or(fallback)
+            .map_or(fallback, String::as_str)
     }
 
     pub(super) fn athletics_url(&self, id: &str) -> Option<&str> {

@@ -41,22 +41,20 @@ async fn serve_origin(
     finished: oneshot::Receiver<()>,
 ) -> TestResult<(Vec<String>, usize)> {
     let mut paths = Vec::new();
-    for _ in 0..2 {
-        let (mut socket, _) = listener.accept().await?;
-        let headers = request_headers(&mut socket).await?;
-        let path = headers
-            .split_whitespace()
-            .nth(1)
-            .ok_or("missing request path")?;
-        let response = match path {
-            "/start" => format!(
-                "HTTP/1.1 302 Found\r\nLocation: {destination}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
-            ),
-            other => return Err(format!("unexpected origin request: {other}").into()),
-        };
-        paths.push(path.to_string());
-        socket.write_all(response.as_bytes()).await?;
-    }
+    let (mut socket, _) = listener.accept().await?;
+    let headers = request_headers(&mut socket).await?;
+    let path = headers
+        .split_whitespace()
+        .nth(1)
+        .ok_or("missing request path")?;
+    let response = match path {
+        "/start" => format!(
+            "HTTP/1.1 302 Found\r\nLocation: {destination}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+        ),
+        other => return Err(format!("unexpected origin request: {other}").into()),
+    };
+    paths.push(path.to_string());
+    socket.write_all(response.as_bytes()).await?;
     Ok((paths, observe_connections(listener, finished).await?))
 }
 

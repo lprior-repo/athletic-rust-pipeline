@@ -113,21 +113,40 @@ lane_check() {
   cargo -Zallow-features="$FEATURE_ALLOWLIST" check --workspace --all-targets --all-features
 }
 lane_no_panic_extraction() {
-  # One `--workspace` clippy run stops at the first crate whose lint fails: cargo does not schedule a
-  # failed crate's dependents, so their diagnostics — test targets included — never appear and each
-  # burn-down round pays a full gate to reveal one layer. Every package is linted by its own
-  # invocation instead, which keeps all of them in one pass against a warm target directory.
-  local failed=0 package packages
-  packages="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[].name')" || return 1
-  if [ -z "$packages" ]; then
-    printf 'cargo metadata named no packages: the all-target lint pass did not run\n' >&2
+  # Denying warnings inside a `--workspace` clippy run makes the first failing crate stop its
+  # dependents: cargo does not schedule them, so their diagnostics — test targets included — never
+  # appear, and each burn-down round pays a full gate to reveal one layer. The lane therefore
+  # collects instead of denying: clippy runs once over every target with the forbidden lints at
+  # warn level, so no crate can block another, and the lane fails on the collected diagnostics.
+  # `clippy::too_many_arguments` stays a forced warning and is printed, never a failure.
+  local failed=0 raw
+  raw="$(mktemp)"
+  cargo xtask panic-extraction || failed=1
+  cargo -Zallow-features="$FEATURE_ALLOWLIST" clippy --workspace --all-targets --all-features --keep-going \
+    --message-format=json -- \
+    -W clippy::unwrap_used -W clippy::expect_used --force-warn clippy::too_many_arguments \
+    > "$raw" || failed=1
+  if [ "$(grep -c '"reason":"build-finished"' "$raw")" -eq 0 ]; then
+    printf 'clippy produced no build-finished record: the all-target lint pass did not complete\n' >&2
+    rm -f "$raw"
     return 1
   fi
-  cargo xtask panic-extraction || failed=1
-  while IFS= read -r package; do
-    cargo -Zallow-features="$FEATURE_ALLOWLIST" clippy -p "$package" --all-targets --all-features --keep-going -- \
-      -D warnings -D clippy::unwrap_used -D clippy::expect_used --force-warn clippy::too_many_arguments || failed=1
-  done <<< "$packages"
+  local diagnostics
+  diagnostics="$(jq -r 'select(.reason=="compiler-message")
+    | select(.message.level=="error" or .message.level=="warning")
+    | select((.message.code.code // "") != "clippy::too_many_arguments")
+    | (.message.spans // [] | map(select(.is_primary)) | first) as $span
+    | "\(.message.level): \(.message.code.code // "no-code") \(.message.message) [\(.target.name)] \($span.file_name // "no-span"):\($span.line_start // 0)"' "$raw" | sort -u)"
+  printf '%s\n' "$(jq -r 'select(.reason=="compiler-message")
+    | select(.message.level=="error" or .message.level=="warning")
+    | select((.message.code.code // "") == "clippy::too_many_arguments")
+    | "\(.message.level): \(.message.message) [\(.target.name)]"' "$raw" | sort -u)"
+  rm -f "$raw"
+  if [ -n "$diagnostics" ]; then
+    printf '%s\n' "$diagnostics"
+    printf 'all-target lint diagnostics: %s\n' "$(printf '%s\n' "$diagnostics" | wc -l)"
+    failed=1
+  fi
   return "$failed"
 }
 lane_doc() { cargo doc --workspace --all-features --no-deps; }

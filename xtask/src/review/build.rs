@@ -560,7 +560,9 @@ fn read_optional_json(path: &Path) -> Result<Option<Value>> {
 }
 
 fn read_kv(path: &Path) -> Result<BTreeMap<String, String>> {
-    let text = read_optional(path)?.unwrap_or_default();
+    let Some(text) = read_optional(path)? else {
+        return Ok(BTreeMap::new());
+    };
     Ok(text
         .lines()
         .filter_map(|line| line.split_once('='))
@@ -569,7 +571,9 @@ fn read_kv(path: &Path) -> Result<BTreeMap<String, String>> {
 }
 
 fn read_binaries(path: &Path) -> Result<Map<String, Value>> {
-    let text = read_optional(path)?.unwrap_or_default();
+    let Some(text) = read_optional(path)? else {
+        return Ok(Map::new());
+    };
     let mut out = Map::new();
     for line in text.lines() {
         if let Some((sha, path)) = line.split_once("  ") {
@@ -597,7 +601,9 @@ fn read_submission(path: &Path) -> Result<Option<Value>> {
 }
 
 fn read_services(path: &Path) -> Result<u64> {
-    let text = read_optional(path)?.unwrap_or_default();
+    let Some(text) = read_optional(path)? else {
+        return Ok(0);
+    };
     let Ok(value) = serde_json::from_str::<Value>(&text) else {
         return Ok(0);
     };
@@ -615,13 +621,12 @@ fn drain_certificate(log: &str) -> Option<String> {
 
 pub(super) fn latest_sample(progress: &str) -> Option<Value> {
     let block = progress.rsplit("=== ").next()?;
-    let sweeps: Vec<u64> = find_line(block, "jurisdiction sweeps owed: ")
-        .map(|line| {
+    let sweeps: Vec<u64> =
+        find_line(block, "jurisdiction sweeps owed: ").map_or_else(Vec::new, |line| {
             line.split(" of ")
                 .filter_map(|part| part.trim().parse().ok())
                 .collect()
-        })
-        .unwrap_or_default();
+        });
     let invoations = block
         .lines()
         .find(|line| line.trim_start().starts_with('{'))

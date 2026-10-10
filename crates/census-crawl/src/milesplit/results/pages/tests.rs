@@ -118,36 +118,32 @@ fn an_unreachable_page_is_not_read_as_a_meet_without_results() -> TestResult {
     );
     let options = options();
     let serve = async {
-        for (status, body) in [
-            ("200 OK", "User-agent: *\nAllow: /\n"),
-            ("500 Internal Server Error", "server error"),
-        ] {
-            let (mut stream, _) = listener.accept().await?;
-            let mut request = [0_u8; 8192];
-            let mut filled = 0;
-            for _ in 0..request.len() {
-                let count = stream
-                    .read(&mut request[filled..])
-                    .await
-                    ?;
-                filled += count;
-                if count == 0 || request[..filled].ends_with(b"\r\n\r\n") {
-                    break;
-                }
-            }
-            check!(
-                request[..filled].ends_with(b"\r\n\r\n"),
-                "bounded HTTP request headers"
-            );
-            let response = format!(
-                "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
-                body.len()
-            );
-            stream
-                .write_all(response.as_bytes())
+        let (status, body) = ("500 Internal Server Error", "server error");
+        let (mut stream, _) = listener.accept().await?;
+        let mut request = [0_u8; 8192];
+        let mut filled = 0;
+        for _ in 0..request.len() {
+            let count = stream
+                .read(&mut request[filled..])
                 .await
                 ?;
+            filled += count;
+            if count == 0 || request[..filled].ends_with(b"\r\n\r\n") {
+                break;
+            }
         }
+        check!(
+            request[..filled].ends_with(b"\r\n\r\n"),
+            "bounded HTTP request headers"
+        );
+        let response = format!(
+            "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+            body.len()
+        );
+        stream
+            .write_all(response.as_bytes())
+            .await
+            ?;
         Ok::<(), Box<dyn std::error::Error>>(())
     };
     let (result, served) = tokio::time::timeout(std::time::Duration::from_secs(5), async {

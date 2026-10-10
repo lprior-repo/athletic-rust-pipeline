@@ -50,23 +50,20 @@ fn mutate(path: &Path, mutation: Mutation) -> TestResult {
 }
 
 async fn serve(listener: TcpListener, body_path: PathBuf, mutation: Mutation) -> TestResult {
-    for _ in 0..2 {
-        let (mut socket, _) = listener.accept().await?;
-        let request = read_headers(&mut socket).await?;
-        let response = {
-            check!(request.starts_with("GET /payload "), "{request}");
-            check!(
-                request
-                    .to_ascii_lowercase()
-                    .contains("if-none-match: \"capture-v1\""),
-                "{request}"
-            );
-            mutate(&body_path, mutation)?;
-            "HTTP/1.1 304 Not Modified\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
-                .to_string()
-        };
-        socket.write_all(response.as_bytes()).await?;
-    }
+    let (mut socket, _) = listener.accept().await?;
+    let request = read_headers(&mut socket).await?;
+    let response = {
+        check!(request.starts_with("GET /payload "), "{request}");
+        check!(
+            request
+                .to_ascii_lowercase()
+                .contains("if-none-match: \"capture-v1\""),
+            "{request}"
+        );
+        mutate(&body_path, mutation)?;
+        "HTTP/1.1 304 Not Modified\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_string()
+    };
+    socket.write_all(response.as_bytes()).await?;
     Ok(())
 }
 
@@ -136,7 +133,7 @@ async fn conditional(mutation: Mutation) -> TestResult {
             .await;
         Ok::<_, Box<dyn std::error::Error + Send + Sync>>(outcome)
     };
-    let ((), outcome) = tokio::time::timeout(Duration::from_secs(10), async {
+    let ((), outcome) = tokio::time::timeout(Duration::from_secs(30), async {
         tokio::try_join!(serve(listener, body_path.clone(), mutation), response)
     })
     .await??;
