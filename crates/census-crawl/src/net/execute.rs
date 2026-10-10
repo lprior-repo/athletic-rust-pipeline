@@ -139,7 +139,9 @@ impl Fetcher {
         let (body_path, meta_path) = self.cache_paths(&key);
         let cached = read_cache(&body_path, &meta_path, method, url, &representation)?;
         if let Some((meta, body)) = cached.as_ref() {
-            if let Some(outcome) = self
+            if options.refresh {
+                // refresh requested; fall through to network
+            } else if let Some(outcome) = self
                 .cached_outcome(method, url, meta, options, body.clone())
                 .await?
             {
