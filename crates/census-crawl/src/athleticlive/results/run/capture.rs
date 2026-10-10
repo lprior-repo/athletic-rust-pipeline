@@ -71,3 +71,7 @@ fn schema(path: &str, detail: &str) -> CrawlError {
         detail: detail.to_string(),
     }
 }
+
+#[cfg(test)]
+#[path = "capture_tests.rs"]
+mod capture_tests;

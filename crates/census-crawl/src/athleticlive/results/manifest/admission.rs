@@ -86,3 +86,7 @@ fn io(path: &str, source: std::io::Error) -> CrawlError {
         source,
     }
 }
+
+#[cfg(test)]
+#[path = "admission_tests.rs"]
+mod admission_tests;
