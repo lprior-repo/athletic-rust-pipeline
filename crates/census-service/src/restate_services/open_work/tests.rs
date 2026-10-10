@@ -67,6 +67,7 @@ fn result_source(slug: &str, disposition: Disposition) -> ResultsSourceRows {
         notes: Vec::new(),
         unfinished: Vec::new(),
         unresolved: Some(census_crawl::UnresolvedCounters { rows: 0, labels: 0 }),
+        resolution: Some(census_crawl::ResolutionCounters::default()),
     }
 }
 
@@ -467,5 +468,76 @@ fn results_failures_keep_the_jurisdiction_owed() -> TestResult {
     check!(stages.results.is_complete());
     check!(eq; stages.owed_results, 0);
     check!(stages.terminal());
+    Ok(())
+}
+
+#[test]
+fn resolution_counters_affect_disposition_and_are_persisted() -> TestResult {
+    let unresolved_source = ResultsSourceRows {
+        slug: "milesplit".to_string(),
+        meets: 1,
+        rows: Some(100),
+        disposition: Disposition::Complete,
+        errors: 0,
+        withheld: Some(0),
+        notes: Vec::new(),
+        unfinished: Vec::new(),
+        unresolved: Some(census_crawl::UnresolvedCounters { rows: 0, labels: 0 }),
+        resolution: Some(census_crawl::ResolutionCounters {
+            rows: 100,
+            resolved: 2,
+            unresolved: 1,
+            retained: 0,
+            quarantined: 0,
+        }),
+    };
+    let clean_source = ResultsSourceRows {
+        slug: "milesplit".to_string(),
+        meets: 1,
+        rows: Some(100),
+        disposition: Disposition::Complete,
+        errors: 0,
+        withheld: Some(0),
+        notes: Vec::new(),
+        unfinished: Vec::new(),
+        unresolved: Some(census_crawl::UnresolvedCounters { rows: 0, labels: 0 }),
+        resolution: Some(census_crawl::ResolutionCounters::default()),
+    };
+    let mut state = historical_state()?;
+    state
+        .history
+        .results
+        .get_mut(&2025)
+        .ok_or("missing year")?
+        .per_source = vec![unresolved_source.clone()];
+    let (disposition, _, resolution) =
+        history::source(&state, 2025, "milesplit", history::Kind::Results)
+            .map_err(handler_error)?;
+    check!(eq; disposition, Disposition::Partial);
+    check!(resolution.is_some_and(|value| value.unresolved == 1));
+    state
+        .history
+        .results
+        .get_mut(&2025)
+        .ok_or("missing year")?
+        .per_source = vec![clean_source];
+    let (disposition, _, resolution) =
+        history::source(&state, 2025, "milesplit", history::Kind::Results)
+            .map_err(handler_error)?;
+    check!(eq; disposition, Disposition::Complete);
+    check!(resolution.is_some_and(|value| value.unresolved == 0));
+    Ok(())
+}
+
+#[test]
+fn legacy_results_source_rows_without_resolution_key_deserialize() -> TestResult {
+    let legacy_json = r#"{"slug":"milesplit","meets":1,"rows":100,"disposition":"Complete","errors":0,"withheld":0,"notes":[],"unfinished":[],"unresolved":{"rows":0,"labels":0}}"#;
+    let source: ResultsSourceRows = serde_json::from_str(legacy_json)?;
+    check!(eq; source.slug, "milesplit");
+    check!(eq; source.rows, Some(100));
+    check!(source.resolution.is_none());
+    let legacy_outcome_json = r#"{"per_source":[{"slug":"milesplit","meets":1,"rows":100,"disposition":"Complete","errors":0,"withheld":0,"notes":[],"unfinished":[],"unresolved":{"rows":0,"labels":0}}],"pending":[],"required_sources":["milesplit"]}"#;
+    let outcome: ResultsStageOutcome = serde_json::from_str(legacy_outcome_json)?;
+    check!(outcome.per_source[0].resolution.is_none());
     Ok(())
 }

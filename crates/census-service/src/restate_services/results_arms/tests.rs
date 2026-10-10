@@ -228,3 +228,120 @@ fn dur05_adapter_errors_are_preserved_in_results_source_rows() -> TestResult {
     check!(eq; rows.errors, 0);
     Ok(())
 }
+
+#[test]
+fn resolution_counters_are_captured_and_survive_serialization() -> TestResult {
+    let mut report = census_crawl::AdapterReport::new("milesplit", "result rows");
+    report.rows = 100;
+    report.disposition = CollectionDisposition::Complete;
+    report.resolution = Some(census_crawl::ResolutionCounters {
+        rows: 100,
+        resolved: 5,
+        unresolved: 1,
+        retained: 3,
+        quarantined: 0,
+    });
+    let source =
+        source_rows("milesplit", 1, report).map_err(crate::restate_services::tests::sdk_error)?;
+    check!(source.resolution.is_some());
+    let resolution = source.resolution.unwrap();
+    check!(eq; resolution.rows, 100);
+    check!(eq; resolution.resolved, 5);
+    check!(eq; resolution.unresolved, 1);
+    check!(eq; resolution.retained, 3);
+    check!(eq; resolution.quarantined, 0);
+    let json = serde_json::to_string(&source)?;
+    let restored: ResultsSourceRows = serde_json::from_str(&json)?;
+    check!(restored.resolution.is_some());
+    check!(eq; restored.resolution.unwrap().unresolved, 1);
+    Ok(())
+}
+
+#[test]
+fn legacy_source_rows_without_resolution_key_deserialize() -> TestResult {
+    let legacy = r#"{"slug":"milesplit","meets":1,"rows":100,"disposition":"Complete","errors":0,"withheld":0,"notes":[],"unfinished":[],"unresolved":{"rows":0,"labels":0}}"#;
+    let source: ResultsSourceRows = serde_json::from_str(legacy)?;
+    check!(eq; source.slug, "milesplit");
+    check!(source.resolution.is_none());
+    Ok(())
+}
+
+#[test]
+fn unresolved_resolution_counters_block_terminal_status() -> TestResult {
+    let mut report = census_crawl::AdapterReport::new("milesplit", "result rows");
+    report.rows = 100;
+    report.disposition = CollectionDisposition::Complete;
+    report.resolution = Some(census_crawl::ResolutionCounters {
+        rows: 100,
+        resolved: 5,
+        unresolved: 1,
+        retained: 0,
+        quarantined: 0,
+    });
+    let source =
+        source_rows("milesplit", 1, report).map_err(crate::restate_services::tests::sdk_error)?;
+    let outcome = ResultsStageOutcome {
+        per_source: vec![source],
+        pending: Vec::new(),
+        required_sources: vec!["milesplit".to_string()],
+    };
+    check!(!outcome.is_terminal());
+    let mut clean_report = census_crawl::AdapterReport::new("milesplit", "result rows");
+    clean_report.rows = 100;
+    clean_report.disposition = CollectionDisposition::Complete;
+    clean_report.resolution = Some(census_crawl::ResolutionCounters::default());
+    let clean_source = source_rows("milesplit", 1, clean_report)
+        .map_err(crate::restate_services::tests::sdk_error)?;
+    let clean_outcome = ResultsStageOutcome {
+        per_source: vec![clean_source],
+        pending: Vec::new(),
+        required_sources: vec!["milesplit".to_string()],
+    };
+    check!(clean_outcome.is_terminal());
+    Ok(())
+}
+
+#[test]
+fn resolution_counter_merge_overflow_returns_invariant() -> TestResult {
+    let left = ResultsSourceRows {
+        slug: "test".to_string(),
+        meets: 1,
+        rows: Some(1),
+        disposition: CollectionDisposition::Complete,
+        errors: 0,
+        withheld: Some(0),
+        notes: Vec::new(),
+        unfinished: Vec::new(),
+        unresolved: Some(UnresolvedCounters { rows: 0, labels: 0 }),
+        resolution: Some(census_crawl::ResolutionCounters {
+            rows: u64::MAX,
+            resolved: 0,
+            unresolved: 0,
+            retained: 0,
+            quarantined: 0,
+        }),
+    };
+    let right = ResultsSourceRows {
+        slug: "test".to_string(),
+        meets: 1,
+        rows: Some(1),
+        disposition: CollectionDisposition::Complete,
+        errors: 0,
+        withheld: Some(0),
+        notes: Vec::new(),
+        unfinished: Vec::new(),
+        unresolved: Some(UnresolvedCounters { rows: 0, labels: 0 }),
+        resolution: Some(census_crawl::ResolutionCounters {
+            rows: 1,
+            resolved: 0,
+            unresolved: 0,
+            retained: 0,
+            quarantined: 0,
+        }),
+    };
+    let result = collection::merge(left, right);
+    check!(result.is_err());
+    let error = result.err().unwrap();
+    check!(format!("{error:?}").contains("resolution row counter overflow"));
+    Ok(())
+}

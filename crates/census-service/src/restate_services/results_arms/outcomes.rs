@@ -11,6 +11,7 @@ pub(super) fn source_complete(source: &ResultsSourceRows) -> bool {
         && source
             .unresolved
             .is_some_and(|value| value.rows == 0 && value.labels == 0)
+        && source.resolution.is_some_and(|value| value.unresolved == 0)
 }
 
 pub(super) fn delegated_source(slug: &str) -> ResultsSourceRows {
@@ -24,5 +25,6 @@ pub(super) fn delegated_source(slug: &str) -> ResultsSourceRows {
         notes: Vec::new(),
         unfinished: vec![format!("{slug}/acquisition-stage-outcome")],
         unresolved: None,
+        resolution: None,
     }
 }

@@ -32,6 +32,8 @@ pub struct SourceObjectOpen {
     pub unreadable: bool,
     #[serde(default)]
     pub disposition: census_crawl::CollectionDisposition,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub resolution: Option<census_crawl::ResolutionCounters>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

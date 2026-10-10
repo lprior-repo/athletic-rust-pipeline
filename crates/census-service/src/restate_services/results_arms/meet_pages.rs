@@ -1,5 +1,5 @@
 use census_crawl::milesplit::{MeetPages, ResultSetOptions};
-use census_crawl::{AdapterReport, CollectionDisposition};
+use census_crawl::{AdapterReport, CollectionDisposition, ResolutionCounters};
 use restate_sdk::prelude::HandlerError;
 
 use crate::restate_services::jobs::invariant;
@@ -35,6 +35,15 @@ pub(super) fn record_quarantines(
                 .map_err(|_| invariant("quarantine locator allocation"))?;
             report.unfinished.push(url.clone());
             report.note(format!("quarantined meet page {url}: {reason}"));
+            let counters = report.resolution.unwrap_or(ResolutionCounters::default());
+            let quarantined = counters
+                .quarantined
+                .checked_add(1)
+                .ok_or_else(|| invariant("resolution quarantined counter overflow"))?;
+            report.resolution = Some(ResolutionCounters {
+                quarantined,
+                ..counters
+            });
             Ok(report)
         })
 }

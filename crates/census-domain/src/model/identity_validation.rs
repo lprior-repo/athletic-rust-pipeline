@@ -1,4 +1,6 @@
-use super::identity_corroboration::{disjoint_provider_objects, member_facts, positive_identity};
+use super::identity_corroboration::{
+    disjoint_provider_objects, distinct_person_evidence, member_facts, positive_identity,
+};
 #[cfg(test)]
 use super::CaseEvidence;
 use super::{
@@ -142,11 +144,19 @@ pub(super) fn validate(
         return Ok(Some(issue));
     }
     let facts = member_facts(index, &ids);
-    if disjoint_provider_objects(&facts) {
-        return Ok(Some(Issue::ConflictingProviderObjects));
-    }
-    Ok((!positive_identity(decision.kind, &facts))
-        .then_some(Issue::MissingPositiveIdentityEvidence))
+    let issue = match decision.kind {
+        AppliedIdentityKind::SamePerson => disjoint_provider_objects(&facts)
+            .then_some(Issue::ConflictingProviderObjects)
+            .or_else(|| {
+                (!positive_identity(decision.kind, &facts))
+                    .then_some(Issue::MissingPositiveIdentityEvidence)
+            }),
+        AppliedIdentityKind::DifferentPerson => {
+            (!distinct_person_evidence(&facts)).then_some(Issue::MissingPositiveIdentityEvidence)
+        }
+        AppliedIdentityKind::SourceBound => None,
+    };
+    Ok(issue)
 }
 
 fn target_issue(

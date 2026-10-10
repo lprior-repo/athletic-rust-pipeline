@@ -68,6 +68,10 @@ pub(super) fn positive_identity(kind: AppliedIdentityKind, facts: &[&IdentityFac
     }
 }
 
+pub(super) fn distinct_person_evidence(facts: &[&IdentityFact]) -> bool {
+    !same_person_evidence(facts)
+}
+
 fn same_person_evidence(facts: &[&IdentityFact]) -> bool {
     let Some(first) = facts.first() else {
         return false;

@@ -1,6 +1,6 @@
 use super::{complete, count};
 use crate::restate_services::{meets_arms, results_arms, wire::JurisdictionState};
-use census_crawl::{registry, CollectionDisposition as Disposition};
+use census_crawl::{registry, CollectionDisposition as Disposition, ResolutionCounters};
 use restate_sdk::prelude::HandlerError;
 
 #[derive(Clone, Copy)]
@@ -71,7 +71,7 @@ pub(super) fn source(
     year: u16,
     slug: &str,
     kind: Kind,
-) -> Result<(Disposition, u64), HandlerError> {
+) -> Result<(Disposition, u64, Option<ResolutionCounters>), HandlerError> {
     match kind {
         Kind::Meets => meet(state, year, slug),
         Kind::Results => result(state, year, slug),
@@ -82,13 +82,13 @@ fn meet(
     state: &JurisdictionState,
     year: u16,
     slug: &str,
-) -> Result<(Disposition, u64), HandlerError> {
+) -> Result<(Disposition, u64, Option<ResolutionCounters>), HandlerError> {
     let Some(census) = state.history.meets.get(&year) else {
-        return Ok((Disposition::Unknown, 0));
+        return Ok((Disposition::Unknown, 0, None));
     };
     let mut selected = census.sources.iter().filter(|source| source.slug == slug);
     let Some(source) = selected.next() else {
-        return Ok((Disposition::Unknown, 0));
+        return Ok((Disposition::Unknown, 0, None));
     };
     let uncertain = !source.errors.is_empty()
         || !source.unfinished.is_empty()
@@ -102,23 +102,23 @@ fn meet(
         } else {
             source.disposition
         };
-    Ok((disposition, count(source.rows)?))
+    Ok((disposition, count(source.rows)?, None))
 }
 
 fn result(
     state: &JurisdictionState,
     year: u16,
     slug: &str,
-) -> Result<(Disposition, u64), HandlerError> {
+) -> Result<(Disposition, u64, Option<ResolutionCounters>), HandlerError> {
     let Some(outcome) = state.history.results.get(&year) else {
-        return Ok((Disposition::Unknown, 0));
+        return Ok((Disposition::Unknown, 0, None));
     };
     let mut selected = outcome
         .per_source
         .iter()
         .filter(|source| source.slug == slug);
     let Some(source) = selected.next() else {
-        return Ok((Disposition::Unknown, 0));
+        return Ok((Disposition::Unknown, 0, None));
     };
     let uncertain = source.errors > 0
         || !source.unfinished.is_empty()
@@ -126,7 +126,8 @@ fn result(
         || source.rows.is_none()
         || source
             .unresolved
-            .is_none_or(|value| value.rows > 0 || value.labels > 0);
+            .is_none_or(|value| value.rows > 0 || value.labels > 0)
+        || source.resolution.is_none_or(|value| value.unresolved > 0);
     let disposition =
         if selected.next().is_some() || (source.disposition.is_complete() && uncertain) {
             Disposition::Partial
@@ -140,5 +141,6 @@ fn result(
             .map(count)
             .transpose()?
             .map_or(0, core::convert::identity),
+        source.resolution,
     ))
 }

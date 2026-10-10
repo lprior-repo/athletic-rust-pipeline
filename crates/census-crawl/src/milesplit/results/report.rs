@@ -1,5 +1,5 @@
 use super::{EntityCounts, Stats, ADAPTER};
-use crate::{AdapterReport, CrawlError, CrawlResult, UnresolvedCounters};
+use crate::{AdapterReport, CrawlError, CrawlResult, ResolutionCounters, UnresolvedCounters};
 const WORST_FAILURES: usize = 5;
 
 pub(super) fn finish(
@@ -11,9 +11,22 @@ pub(super) fn finish(
     let mut report = AdapterReport::new(ADAPTER, "result rows");
     report.rows = counter(stats.rows)?;
     report.errors = counter(stats.failure_count)?;
-    report.unresolved = Some(UnresolvedCounters {
+    let unresolved = UnresolvedCounters {
         rows: counter(stats.rows_without_school)?,
         labels: counter(stats.unresolved.len())?,
+    };
+    report.unresolved = Some(unresolved);
+    let retained = counter(stats.rows_without_cohort)?
+        .checked_add(counter(counts.unsupported_cohorts)?)
+        .ok_or_else(|| CrawlError::Arithmetic {
+            detail: "retained resolution counter overflow".to_string(),
+        })?;
+    report.resolution = Some(ResolutionCounters {
+        rows: report.rows,
+        resolved: counter(stats.school_resolved.len())?,
+        unresolved: unresolved.labels,
+        retained,
+        quarantined: 0,
     });
     report.requests = after.0.saturating_sub(before.0);
     report.from_cache = after.1.saturating_sub(before.1);
