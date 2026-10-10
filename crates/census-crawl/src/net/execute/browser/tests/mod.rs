@@ -243,7 +243,10 @@ fn a_browser_refusal_status_is_archived_without_replacing_a_success() -> TestRes
                 matches!(error, FetchError::Http { status: 429, .. }),
                 "the refusal keeps its status: {error}"
             );
-            check!(error.retryable(), "a throttled source stays retryable: {error}");
+            check!(
+                error.retryable(),
+                "a throttled source stays retryable: {error}"
+            );
 
             let archived = dir
                 .path()
