@@ -58,7 +58,7 @@ fn identity_values(expectations: &Expectations<'_>, coach: &CanonicalCoach) -> V
         Value::text(expectations.school_city(school)),
         Value::text(expectations.school_state(school)),
         Value::text(sport_label(coach)),
-        Value::text(&coach.name),
+        Value::text(expectations.published_coach_name(coach.id.as_str(), &coach.name)),
         Value::text(coach.id.as_str()),
         Value::text(coach.gender.stable_key()),
         Value::text(coach.role.stable_key()),

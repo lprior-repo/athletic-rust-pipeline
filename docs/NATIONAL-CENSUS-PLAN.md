@@ -172,6 +172,10 @@ engineering blocker. Never remove failed sources from the declared manifest to o
 | 8 — Assurance | Required tests/proofs/faults/security/load/backup restoration have actual evidence |
 | 9 — Release | Validated seal binds tested build, run, artifacts and coverage limits; no unresolved blocker |
 
+Coaches-sheet distinct counts name the entity. A count of schools that have at least one coach
+row is distinct schools, not distinct coach names or distinct coach IDs. The workbook publishes
+those three figures separately.
+
 ### 7.1. Beads execution graph — 2026-10-01
 
 `athletic-rust-pipeline-7lx` owns the complete product target: one accepted canonical Class-of-2027
