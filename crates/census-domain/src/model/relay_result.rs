@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use super::{
-    AthleteId, EventId, Evidence, Id, Mark, MeetId, RelayId, SourceIdentity, TeamId, TimingMethod,
+    AthleteId, EventId, Evidence, Id, Mark, MeetId, RelayId, RetainedConflict, SourceIdentity,
+    TeamId, TimingMethod,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -44,6 +45,8 @@ pub struct RelayResult {
     pub members: Vec<RelayMember>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub evidence: Vec<Evidence>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub retained_conflicts: Vec<RetainedConflict>,
     pub source_key: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source_team: Option<SourceIdentity>,
@@ -68,6 +71,7 @@ impl RelayResult {
             timing: None,
             members: Vec::new(),
             evidence: Vec::new(),
+            retained_conflicts: Vec::new(),
             source_key: source_key.into(),
             source_team: None,
         }

@@ -1,7 +1,8 @@
-use crate::{Store, Table};
+use crate::{Entity, Store, Table};
 use census_domain::model::{
-    normalize_name, CanonicalSchool, SourceAthleteObservation, SourceIdentity, SourceNamespace,
-    SourceObservation, SourceSchoolObservation,
+    normalize_name, AthleteId, CanonicalSchool, EventId, Mark, MeetId, RelayMember, RelayResult,
+    SourceAthleteObservation, SourceIdentity, SourceNamespace, SourceObservation,
+    SourceSchoolObservation, TeamId, RELAY_MEMBER_NAME_FAMILY,
 };
 use census_domain::UsJurisdiction;
 
@@ -152,5 +153,104 @@ fn an_athlete_observation_keeps_the_cohort_evidence_it_was_minted_with() -> Test
         "the id stays at the top level where the key encoder reads it: {encoded}"
     );
     check!(encoded.contains("\"observed_school\":\"Abbotsford High School\""));
+    Ok(())
+}
+
+fn relay_leg(order: u32, name: &str) -> RelayResult {
+    RelayResult::new(
+        &TeamId::mint("team", &["a"]),
+        &EventId::mint("event", &["b"]),
+        &MeetId::mint("meet", &["c"]),
+        Mark::Raw("raw".to_string()),
+        "test:key",
+    )
+    .with_member(RelayMember::new(order, name))
+}
+
+#[test]
+fn a_second_capture_with_a_different_member_name_is_retained_as_a_conflict() -> TestResult {
+    let mut held = relay_leg(1, "Jordan Blake");
+    held.merge(relay_leg(1, "Jordan Black"));
+    check!(eq; held.members.len(), 1, "one order still reads back as one slot");
+    check!(eq; held.members[0].order, 1);
+    check!(
+        eq; held.members[0].name_as_published, "Jordan Blake",
+        "the first published spelling keeps the display slot"
+    );
+    check!(eq; held.retained_conflicts.len(), 1, "the contradiction is retained, not dropped");
+    let conflict = &held.retained_conflicts[0];
+    check!(eq; conflict.family, RELAY_MEMBER_NAME_FAMILY);
+    check!(eq; conflict.subject_id, held.id.as_str());
+    check!(
+        conflict.detail.contains("Jordan Blake") && conflict.detail.contains("Jordan Black"),
+        "both spellings stay recoverable from the retained detail: {}",
+        conflict.detail
+    );
+    Ok(())
+}
+
+#[test]
+fn an_identical_relay_repeat_merges_idempotently() -> TestResult {
+    let mut held = relay_leg(2, "Jordan Blake");
+    held.merge(relay_leg(2, "Jordan Blake"));
+    held.merge(relay_leg(2, "Jordan Blake"));
+    check!(eq; held.members.len(), 1);
+    check!(
+        held.retained_conflicts.is_empty(),
+        "a repeat sighting mints no conflict"
+    );
+    Ok(())
+}
+
+#[test]
+fn three_spellings_for_one_slot_keep_two_conflicts() -> TestResult {
+    let mut held = relay_leg(3, "Jordan Blake");
+    held.merge(relay_leg(3, "Jordan Black"));
+    held.merge(relay_leg(3, "Jorden Blake"));
+    check!(eq; held.members.len(), 1, "one order still reads back as one slot");
+    check!(eq; held.members[0].name_as_published, "Jordan Blake");
+    check!(
+        eq; held.retained_conflicts.len(), 2,
+        "each distinct later spelling retains its own contradiction"
+    );
+    Ok(())
+}
+
+fn relay_leg_linked(order: u32, name: &str, athlete: &str) -> RelayResult {
+    RelayResult::new(
+        &TeamId::mint("team", &["a"]),
+        &EventId::mint("event", &["b"]),
+        &MeetId::mint("meet", &["c"]),
+        Mark::Raw("raw".to_string()),
+        "test:key",
+    )
+    .with_member(RelayMember::new(order, name).with_athlete(AthleteId::mint("athlete", &[athlete])))
+}
+
+#[test]
+fn a_later_athlete_link_fills_an_unlinked_slot_without_conflict() -> TestResult {
+    let mut held = relay_leg(4, "Jordan Blake");
+    held.merge(relay_leg_linked(4, "Jordan Blake", "7"));
+    check!(eq; held.members.len(), 1);
+    check!(
+        held.members[0].athlete.is_some(),
+        "the same-spelling link fills the empty athlete slot"
+    );
+    check!(
+        held.retained_conflicts.is_empty(),
+        "linking the same spelling mints no conflict"
+    );
+    Ok(())
+}
+
+#[test]
+fn two_athlete_links_for_one_spelling_retain_the_contradiction() -> TestResult {
+    let mut held = relay_leg_linked(5, "Jordan Blake", "7");
+    held.merge(relay_leg_linked(5, "Jordan Blake", "8"));
+    check!(eq; held.members.len(), 1);
+    check!(
+        eq; held.retained_conflicts.len(), 1,
+        "conflicting athlete links for one spelling are retained"
+    );
     Ok(())
 }

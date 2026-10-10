@@ -55,7 +55,7 @@ impl CanonicalProjection for CanonicalPerformance {
 impl CanonicalProjection for RelayResult {
     fn canonicalize_sets(&mut self) {
         self.members.sort_by_key(|member| member.order);
-        provenance(&mut self.evidence, &mut []);
+        provenance(&mut self.evidence, &mut self.retained_conflicts);
     }
 }
 

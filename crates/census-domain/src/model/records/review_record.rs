@@ -53,6 +53,7 @@ pub const COHORT_DECISION_FAMILIES: [&str; 2] =
 pub const UNRESOLVED_VENUE_FAMILY: &str = "Meet venue unresolved";
 pub const UNRESOLVED_SCHOOL_FAMILY: &str = "School jurisdiction unresolved";
 pub const CONTACT_CONFLICT_FAMILY: &str = "Recruiting contact conflict";
+pub const RELAY_MEMBER_NAME_FAMILY: &str = "Relay member name conflict";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ReviewCase {
