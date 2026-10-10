@@ -12,7 +12,7 @@ fn seed_cache(cache: &std::path::Path, url: &str, body: &str) -> TestResult {
         &cache.join(format!("{key}.meta.json")),
         body.as_bytes(),
         &CacheMeta {
-        redirects: Vec::new(),
+            redirects: Vec::new(),
             url: url.to_owned(),
             method: "GET".to_owned(),
             status: 200,

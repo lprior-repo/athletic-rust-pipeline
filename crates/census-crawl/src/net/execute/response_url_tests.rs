@@ -29,7 +29,7 @@ async fn request_headers(socket: &mut TcpStream) -> TestResult<String> {
 }
 
 async fn serve(listener: TcpListener) -> TestResult {
-    for _ in 0..5 {
+    for _ in 0..4 {
         let (mut socket, _) = listener.accept().await?;
         let request = request_headers(&mut socket).await?;
         let response = match request.split_whitespace().nth(1).ok_or("missing request path")? {

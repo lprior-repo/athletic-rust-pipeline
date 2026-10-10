@@ -80,7 +80,7 @@ fn a_tenure_only_capture_is_the_coach_source() -> TestResult {
         Some("https://example.invalid/tenure"),
         "2026-05-02",
     )?);
-    assert_eq!(
+    check!(eq;
         crate::export::coach_source(&coach),
         (Some("https://example.invalid/tenure"), Some("2026-05-02"))
     );
@@ -101,7 +101,7 @@ fn a_tenure_capture_outranks_generic_coach_evidence() -> TestResult {
         ),
         "2026-04-01",
     ));
-    assert_eq!(
+    check!(eq;
         crate::export::coach_source(&coach),
         (Some("https://example.invalid/claim"), Some("2026-03-01"))
     );
@@ -109,7 +109,7 @@ fn a_tenure_capture_outranks_generic_coach_evidence() -> TestResult {
         Some("https://example.invalid/claim-2"),
         "2026-05-01",
     )?);
-    assert_eq!(
+    check!(eq;
         crate::export::coach_source(&coach),
         (Some("https://example.invalid/claim-2"), Some("2026-05-01"))
     );
@@ -127,7 +127,7 @@ fn a_tenure_fact_without_a_url_falls_back_to_coach_evidence() -> TestResult {
         ),
         "2026-04-01",
     ));
-    assert_eq!(
+    check!(eq;
         crate::export::coach_source(&coach),
         (
             Some("https://example.invalid/observation"),

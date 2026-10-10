@@ -18,7 +18,7 @@ fn seed_acquisition(
         &meta_path,
         body,
         &CacheMeta {
-        redirects: Vec::new(),
+            redirects: Vec::new(),
             representation: crate::net::RepresentationHeaders::default(),
             url,
             response_url: response_url.map(str::to_owned),

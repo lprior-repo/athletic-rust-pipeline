@@ -33,8 +33,7 @@ pub(in crate::workbook) fn published<'a>(
 ) -> &'a str {
     spellings
         .get(coach.id.as_str())
-        .map(String::as_str)
-        .unwrap_or(coach.name.as_str())
+        .map_or(coach.name.as_str(), String::as_str)
 }
 
 pub(in crate::workbook) fn coach_sheet_census(coaches: &[CanonicalCoach]) -> CoachSheetCensus {

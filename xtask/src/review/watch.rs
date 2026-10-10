@@ -92,8 +92,9 @@ fn summarize(reply: &OpenWorkReply, invocations: Option<Value>) -> Value {
         .iter()
         .map(|(stages, count)| json!({"stages": stages, "count": count}))
         .collect();
+    let sampled_at = rfc3339_now().map_or(String::new(), String::from);
     json!({
-        "sampled_at": rfc3339_now().unwrap_or_default(),
+        "sampled_at": sampled_at,
         "season": reply.season,
         "revision": reply.revision,
         "jurisdiction_sweeps": reply.jurisdiction_sweeps,

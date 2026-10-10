@@ -3,14 +3,13 @@ use calamine::{open_workbook, Data, Range, Reader, Xlsx};
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool,
     CoachContactClaim, CoachContactProgram, CoachRole, CoachTenure, CoachTenureEvidence, Evidence,
-    Gender, GradYear, SchoolYear, SourceIdentity, SourceNamespace, SourceRef,
+    Gender, GradYear, PublishedGraduation, SchoolYear, SourceIdentity, SourceNamespace, SourceRef,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use std::path::Path;
-use std::path::PathBuf;
 
-type TestResult = Result<(), Box<dyn std::error::Error>>;
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 const DAY: &str = "2026-09-20";
 const FORMULA_ATHLETE: &str = "=cmd|' /C calc'!A0";
@@ -29,7 +28,7 @@ fn school(
         CanonicalSchool::new(UsJurisdiction::Wisconsin, name, normalize_name(name), city);
     school.athletics_website = Some("https://schools.test/athletics".to_string());
     school.evidence = vec![Evidence::parsed(
-        SourceRef::new("fixture", Some("https://fixtures.test/schools")),
+        SourceRef::new("fixture", Some("https://fixtures.test/schools".into())),
         DAY,
     )];
     store.append(Table::Schools, &school)?;
@@ -49,10 +48,13 @@ fn athlete(
         SourceIdentity::new(SourceNamespace::Other("fixture".to_owned()), "hostile"),
     );
     athlete.sports = vec![census_domain::model::Sport::OutdoorTrack];
-    athlete.evidence = vec![Evidence::parsed(
-        SourceRef::new("fixture", Some("https://fixtures.test/athlete")),
-        DAY,
-    )];
+    let claim = PublishedGraduation {
+        grad_year: GradYear::CO2027,
+        source: SourceRef::new("fixture", Some("https://fixtures.test/athlete/2027".into())),
+    };
+    let claim_evidence = Evidence::parsed(claim.source.clone(), DAY);
+    athlete.evidence = vec![claim_evidence];
+    athlete.published_graduations.push(claim);
     store.append(Table::Athletes, &athlete)?;
     Ok(athlete.id)
 }
@@ -80,7 +82,7 @@ fn coach(store: &Store, school: &census_domain::model::SchoolId) -> TestResult {
         tenure: CoachTenure::Current {
             school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
         },
-        source: SourceRef::new("fixture", Some("https://contacts.test")),
+        source: SourceRef::new("fixture", Some("https://contacts.test".into())),
         source_sha256: "a".repeat(64),
         retrieved_at: "2026-09-20T00:00:00Z".into(),
         statement: "Synthetic appointment".into(),
@@ -94,9 +96,10 @@ fn coach(store: &Store, school: &census_domain::model::SchoolId) -> TestResult {
 fn column_of(range: &Range<Data>, header: &str) -> TestResult<usize> {
     (0..range.width())
         .find(|column| {
-            range
-                .get_value((0, *column as u32))
-                .map_or(false, |value| value.to_string() == header)
+            matches!(
+                range.get_value((0, *column as u32)),
+                Some(Data::String(value)) if value.as_str() == header
+            )
         })
         .ok_or_else(|| format!("missing column {header}").into())
 }
@@ -104,12 +107,11 @@ fn column_of(range: &Range<Data>, header: &str) -> TestResult<usize> {
 fn cell_text(range: &Range<Data>, row: usize, column: usize) -> String {
     range
         .get_value((row as u32, column as u32))
-        .map(|value| value.to_string())
-        .unwrap_or_default()
+        .map_or_else(String::new, |value| value.to_string())
 }
 
 fn cell_string(range: &Range<Data>, row: usize, column: usize) -> Option<String> {
-    match range.get((row as u32, column as u32)) {
+    match range.get((row, column)) {
         Some(Data::String(value)) => Some(value.as_str().to_string()),
         _ => None,
     }
@@ -133,14 +135,13 @@ fn row_where(range: &Range<Data>, header: &str, value: &str) -> TestResult<usize
         .ok_or_else(|| format!("missing row with {header}={value}").into())
 }
 
-fn build_hostile_workbook() -> TestResult<(Store, PathBuf)> {
+fn build_hostile_workbook() -> TestResult<(Store, tempfile::TempDir)> {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     let school_id = school(&store, FORMULA_SCHOOL, Some(FORMULA_CITY))?;
     athlete(&store, &school_id, FORMULA_ATHLETE)?;
     coach(&store, &school_id)?;
-    let path = dir.path().join("hostile.xlsx");
-    let dataset = crate::export::ExportDataset::load(&store)?;
+    crate::export::ExportDataset::load(&store)?;
     let options = crate::workbook::Options {
         grad_year: Some(2027),
         out: None,
@@ -149,18 +150,14 @@ fn build_hostile_workbook() -> TestResult<(Store, PathBuf)> {
         school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
     };
     crate::workbook::build(&store, &options)?;
-    Ok((store, path))
+    Ok((store, dir))
 }
 
 #[test]
 fn all_workbook_sheets_write_formula_prefixed_text_as_literal_strings() -> TestResult {
-    let (store, _) = build_hostile_workbook()?;
-    let path = store
-        .out_dir()
-        .join("publication")
-        .join("current")
-        .join("workbook.xlsx");
-    let path = std::fs::read_link(&path)?;
+    let (store, _dir) = build_hostile_workbook()?;
+    let path =
+        crate::workbook::publication::current_workbook(&store.out_dir().join("publication"))?;
 
     let mut book: Xlsx<_> = open_workbook(&path)?;
     let names: Vec<String> = book.sheet_names().iter().map(|n| n.to_string()).collect();
@@ -168,14 +165,14 @@ fn all_workbook_sheets_write_formula_prefixed_text_as_literal_strings() -> TestR
     check!(names.contains(&"Coaches".to_string()));
 
     let athletes = book.worksheet_range("Athletes")?;
-    let school_column = column_of(&athletes, "School")?;
+    column_of(&athletes, "School")?;
     let athlete_row = row_where(&athletes, "Name", FORMULA_ATHLETE)?;
     verify_literal(&athletes, athlete_row, "Name", FORMULA_ATHLETE)?;
     verify_literal(&athletes, athlete_row, "School", FORMULA_SCHOOL)?;
     verify_literal(&athletes, athlete_row, "School City", FORMULA_CITY)?;
 
     let coaches = book.worksheet_range("Coaches")?;
-    let coach_column = column_of(&coaches, "Coach")?;
+    column_of(&coaches, "Coach")?;
     let coach_row = row_where(&coaches, "Coach", FORMULA_COACH)?;
     verify_literal(&coaches, coach_row, "Coach", FORMULA_COACH)?;
     verify_literal(&coaches, coach_row, "Professional Email", FORMULA_EMAIL)?;
@@ -201,7 +198,7 @@ fn meta_sheets_write_formula_prefixed_text_as_literal_strings() -> TestResult {
     school(&store, FORMULA_SCHOOL, Some(FORMULA_CITY))?;
     seed_hostile_meet(&store)?;
 
-    let dataset = crate::export::ExportDataset::load(&store)?;
+    crate::export::ExportDataset::load(&store)?;
     let options = crate::workbook::Options {
         grad_year: Some(2027),
         out: None,
@@ -211,12 +208,8 @@ fn meta_sheets_write_formula_prefixed_text_as_literal_strings() -> TestResult {
     };
     crate::workbook::build(&store, &options)?;
 
-    let path = store
-        .out_dir()
-        .join("publication")
-        .join("current")
-        .join("workbook.xlsx");
-    let path = std::fs::read_link(&path)?;
+    let path =
+        crate::workbook::publication::current_workbook(&store.out_dir().join("publication"))?;
 
     let mut book: Xlsx<_> = open_workbook(&path)?;
     let names: Vec<String> = book.sheet_names().iter().map(|n| n.to_string()).collect();
@@ -224,13 +217,13 @@ fn meta_sheets_write_formula_prefixed_text_as_literal_strings() -> TestResult {
     check!(names.contains(&"Meets".to_string()));
 
     let schools = book.worksheet_range("Schools")?;
-    let name_column = column_of(&schools, "School")?;
+    column_of(&schools, "School")?;
     let row = row_where(&schools, "School", FORMULA_SCHOOL)?;
     verify_literal(&schools, row, "School", FORMULA_SCHOOL)?;
     verify_literal(&schools, row, "City", FORMULA_CITY)?;
 
     let meets = book.worksheet_range("Meets")?;
-    let name_column = column_of(&meets, "Meet")?;
+    column_of(&meets, "Meet")?;
     let row = row_where(&meets, "Meet", FORMULA_MEET)?;
     verify_literal(&meets, row, "Meet", FORMULA_MEET)?;
 
@@ -260,13 +253,10 @@ fn recruiting_csv_protects_formula_prefixed_text() -> TestResult {
     let csv_path = dir.path().join("recruiting.csv");
     write_recruiting_csv(&store, &csv_path)?;
 
-    let content = std::fs::read_to_string(&csv_path)?;
-    let lines: Vec<&str> = content.lines().collect();
-    check!(lines.len() > 1);
-
-    let headers: Vec<String> = lines[0].split(',').map(|h| h.to_string()).collect();
-    check!(headers.contains(&"name".to_string()));
-    check!(headers.contains(&"school".to_string()));
+    let mut reader = csv::Reader::from_path(&csv_path)?;
+    let headers = reader.headers()?.clone();
+    check!(headers.iter().any(|h| h == "name"));
+    check!(headers.iter().any(|h| h == "school"));
 
     let name_index = headers
         .iter()
@@ -277,12 +267,14 @@ fn recruiting_csv_protects_formula_prefixed_text() -> TestResult {
         .position(|h| h == "school")
         .ok_or("missing school header")?;
 
-    for line in lines.iter().skip(1) {
-        if line.contains(FORMULA_ATHLETE) {
-            let fields: Vec<&str> = line.split(',').collect();
-            check!(fields.len() == headers.len());
-            let name_field = fields[name_index];
-            let school_field = fields[school_index];
+    let mut matched = false;
+    for record in reader.records() {
+        let record = record?;
+        check!(record.len() == headers.len());
+        if record.iter().any(|field| field.contains(FORMULA_ATHLETE)) {
+            matched = true;
+            let name_field = &record[name_index];
+            let school_field = &record[school_index];
             check!(
                 name_field.starts_with("'"),
                 "CSV name field must be single-quoted to prevent formula evaluation"
@@ -293,25 +285,21 @@ fn recruiting_csv_protects_formula_prefixed_text() -> TestResult {
             );
         }
     }
+    check!(matched, "expected a CSV row for the hostile athlete");
 
     Ok(())
 }
 
 #[test]
-fn csv_protection_adds_quote_only_when_needed() {
-    assert_eq!(protect_owned("=cmd".to_string()).unwrap(), "'=cmd");
-    assert_eq!(protect_owned("+cmd".to_string()).unwrap(), "'+cmd");
-    assert_eq!(protect_owned("-cmd".to_string()).unwrap(), "'-cmd");
-    assert_eq!(protect_owned("@cmd".to_string()).unwrap(), "'@cmd");
-    assert_eq!(protect_owned("\t+cmd".to_string()).unwrap(), "'\t+cmd");
-    assert_eq!(
-        protect_owned("\u{feff}@cmd".to_string()).unwrap(),
-        "'\u{feff}@cmd"
-    );
-    assert_eq!(
-        protect_owned("normal text".to_string()).unwrap(),
-        "normal text"
-    );
-    assert_eq!(protect_owned("123".to_string()).unwrap(), "123");
-    assert_eq!(protect_owned("A&B".to_string()).unwrap(), "A&B");
+fn csv_protection_adds_quote_only_when_needed() -> TestResult {
+    check!(eq; protect_owned("=cmd".to_string())?, "'=cmd");
+    check!(eq; protect_owned("+cmd".to_string())?, "'+cmd");
+    check!(eq; protect_owned("-cmd".to_string())?, "'-cmd");
+    check!(eq; protect_owned("@cmd".to_string())?, "'@cmd");
+    check!(eq; protect_owned("\t+cmd".to_string())?, "'\t+cmd");
+    check!(eq; protect_owned("\u{feff}@cmd".to_string())?, "'\u{feff}@cmd");
+    check!(eq; protect_owned("normal text".to_string())?, "normal text");
+    check!(eq; protect_owned("123".to_string())?, "123");
+    check!(eq; protect_owned("A&B".to_string())?, "A&B");
+    Ok(())
 }

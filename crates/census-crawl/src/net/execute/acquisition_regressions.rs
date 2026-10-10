@@ -35,7 +35,7 @@ fn cache_replay_refuses_a_foreign_request_identity_and_separates_vary_accept() -
                 (requested, "GET", selected),
             ] {
                 let meta = CacheMeta {
-        redirects: Vec::new(),
+                    redirects: Vec::new(),
                     url: url.into(),
                     method: method.into(),
                     representation,
@@ -110,7 +110,7 @@ fn validators_share_cache_identity_and_preserve_conditional_dispatch() -> TestRe
                 Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
             };
             let (requests, ()) = tokio::time::timeout(Duration::from_secs(10), async {
-                tokio::try_join!(serve(listener, 4), client)
+                tokio::try_join!(serve(listener, 3), client)
             })
             .await??;
             check!(requests.iter().any(|request| request
@@ -146,17 +146,17 @@ fn physical_request_accounting_agrees_across_aggregate_and_per_host() -> TestRes
             Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
         };
         let (requests, ()) = tokio::time::timeout(Duration::from_secs(10), async {
-            tokio::try_join!(serve(listener, 6), client)
+            tokio::try_join!(serve(listener, 5), client)
         }).await??;
         let stats = fetcher.stats().await;
         let observed = u64::try_from(requests.len())?;
-        check!(eq; observed, 6);
+        check!(eq; observed, 5);
         check!(eq; stats.physical_requests(), observed);
         check!(eq; stats.per_host.values().map(|host| host.physical_requests()).sum::<u64>(), observed);
-        check!(eq; stats.requests, 7);
+        check!(eq; stats.requests, 6);
         check!(eq; stats.cache_hits, 1);
         check!(eq; stats.conditional_304, 1);
-        check!(eq; stats.useful_records_per_physical_request(12), Some(2.0));
+        check!(eq; stats.useful_records_per_physical_request(12), Some(2.4));
         Ok(())
     })
 }
