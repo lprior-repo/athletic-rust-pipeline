@@ -298,7 +298,7 @@ main() {
     FAILURES+=("production scan")
   fi
 
-  printf '\n=== domain type integrity (review candidates, ratcheted in the DDD phase) ===\n'
+  printf '\n=== domain type integrity (candidates are advisory; the checked gate is ok/coverage) ===\n'
   # The lane used to discard the command's status, so a scan that failed read as a scan of zero
   # candidates — and this report is the ratchet's input, so a missing report must never look like a
   # clean one. The status is checked, and the report has to carry `ok: true`: `xtask integrity` sets
