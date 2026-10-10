@@ -260,6 +260,7 @@ async fn finish_report(
         })?;
     report.access_conditions = observed.conditions;
     report.blocked_hosts = observed.blocked_hosts;
+    report.evidence_losses = observed.evidence_losses;
     Ok(())
 }
 

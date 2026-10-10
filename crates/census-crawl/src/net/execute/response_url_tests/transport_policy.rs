@@ -597,6 +597,58 @@ fn a_request_queued_behind_a_429_is_refused_at_the_last_admission_point() -> Tes
 }
 
 #[test]
+fn a_refusal_whose_archive_write_fails_reports_the_loss_and_keeps_its_status() -> TestResult {
+    use std::os::unix::fs::PermissionsExt;
+
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let cache = tempfile::tempdir()?;
+            let listener = TcpListener::bind("127.0.0.1:0").await?;
+            let address = listener.local_addr()?;
+            let fetcher = pinned_fetcher(cache.path(), "www.piaa.org", address)?;
+            let server = tokio::spawn(async move {
+                use tokio::io::AsyncReadExt;
+                let (mut socket, _) = listener.accept().await?;
+                let mut request = [0_u8; 1024];
+                let _ = socket.read(&mut request).await?;
+                socket
+                    .write_all(
+                        b"HTTP/1.1 403 Forbidden\r\ncontent-length: 2\r\nconnection: close\r\n\r\nno",
+                    )
+                    .await?;
+                Ok::<(), Box<dyn std::error::Error + Send + Sync>>(())
+            });
+            let url = format!("http://www.piaa.org:{}/denied", address.port());
+            let mut locked = std::fs::metadata(cache.path())?.permissions();
+            locked.set_mode(0o555);
+            std::fs::set_permissions(cache.path(), locked)?;
+            let outcome = fetcher.get(&url, &FetchOptions::default()).await;
+            let mut restored = std::fs::metadata(cache.path())?.permissions();
+            restored.set_mode(0o755);
+            std::fs::set_permissions(cache.path(), restored)?;
+
+            let error = match outcome {
+                Err(error) => error,
+                Ok(outcome) => return Err(format!("a 403 is a refusal, got {outcome:?}").into()),
+            };
+            check!(
+                matches!(error, FetchError::Http { status: 403, .. }),
+                "the refusal keeps its status when its body cannot be archived: {error}"
+            );
+            let losses = fetcher.refusal_evidence_losses().await;
+            check!(eq; losses.len(), 1, "the failed archive write is reported once");
+            let loss = losses.first().ok_or("the failed archive write is not reported")?;
+            check!(eq; loss.lane, crate::net::EvidenceLane::Http);
+            check!(eq; loss.status, 403);
+            check!(eq; loss.url, url);
+            server.abort();
+            Ok(())
+        })
+}
+
+#[test]
 fn fetchers_sharing_an_origin_budget_share_recorded_cooldowns() -> TestResult {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()

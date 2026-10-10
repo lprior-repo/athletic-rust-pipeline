@@ -92,6 +92,7 @@ impl Fetcher {
             pacing: Arc::new(PacingState::new()),
             authorized_hosts,
             stats: Mutex::new(FetchStats::default()),
+            evidence_losses: Mutex::new(Vec::new()),
             source: super::DEFAULT_SOURCE.to_string(),
             lane: None,
             offline: false,

@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
+use tracing::warn;
 
 use census_domain::model::{AccessBlockKind, SourceAccessCondition};
 use destination_guard::DestinationGuard;
@@ -21,7 +22,10 @@ mod time;
 mod types;
 
 pub use time::{cooldown_until_iso8601, instant_iso8601, now_iso8601, today_iso};
-pub use types::{FetchError, FetchOptions, FetchOutcome, FetchStats, HostTraffic, RedirectHop};
+pub use types::{
+    EvidenceLane, FetchError, FetchOptions, FetchOutcome, FetchStats, HostTraffic, RedirectHop,
+    RefusalEvidenceLoss,
+};
 
 pub use representation::RepresentationHeaders;
 pub(crate) use types::host_of;
@@ -40,6 +44,8 @@ const MIN_AUTHORIZED_DELAY: Duration = Duration::from_millis(500);
 
 pub const BLOCK_COOLDOWN_SECONDS: u64 = 6 * 60 * 60;
 
+pub const MAX_EVIDENCE_LOSSES: usize = 4096;
+
 pub const DEFAULT_FAMILY_PARALLELISM: usize = 1;
 
 const DEFAULT_SOURCE: &str = "unknown";
@@ -55,6 +61,7 @@ pub struct Fetcher {
     pacing: Arc<PacingState>,
     authorized_hosts: Vec<String>,
     stats: Mutex<FetchStats>,
+    evidence_losses: Mutex<Vec<RefusalEvidenceLoss>>,
     source: String,
     lane: Option<bridge::BrowserLane>,
     offline: bool,
@@ -180,6 +187,38 @@ impl Fetcher {
         let mut rows: Vec<SourceAccessCondition> = blocks.values().cloned().collect();
         rows.sort_by(|left, right| left.id.cmp(&right.id));
         rows
+    }
+
+    pub async fn record_refusal_evidence_loss(
+        &self,
+        url: &str,
+        status: u16,
+        lane: EvidenceLane,
+        detail: impl Into<String>,
+    ) -> RefusalEvidenceLoss {
+        let loss = RefusalEvidenceLoss {
+            source: self.source.clone(),
+            url: url.to_string(),
+            status,
+            lane,
+            detail: detail.into(),
+            observed_at: now_iso8601(),
+        };
+        let mut losses = self.evidence_losses.lock().await;
+        if losses.len() < MAX_EVIDENCE_LOSSES {
+            losses.push(loss.clone());
+        } else {
+            warn!(
+                status,
+                url, "refusal evidence loss exceeded the {MAX_EVIDENCE_LOSSES}-record report bound"
+            );
+        }
+        loss
+    }
+
+    pub async fn refusal_evidence_losses(&self) -> Vec<RefusalEvidenceLoss> {
+        let losses = self.evidence_losses.lock().await;
+        losses.clone()
     }
 
     pub async fn blocked_hosts(&self, now_iso8601: &str) -> Vec<String> {

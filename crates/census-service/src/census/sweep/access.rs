@@ -50,6 +50,7 @@ impl RefusalRun {
 pub(super) struct Observed {
     pub(super) conditions: Vec<SourceAccessCondition>,
     pub(super) blocked_hosts: Vec<String>,
+    pub(super) evidence_losses: Vec<census_crawl::net::RefusalEvidenceLoss>,
     pub(super) failures: u64,
 }
 
@@ -58,6 +59,7 @@ pub(super) async fn observed(fetcher: &Fetcher, store: &Store) -> Observed {
     let blocked_hosts = fetcher
         .blocked_hosts(census_crawl::net::now_iso8601().as_str())
         .await;
+    let evidence_losses = fetcher.refusal_evidence_losses().await;
     let mut failures = 0_u64;
     if let Err(error) = store.replace_many(Table::SourceAccess, &conditions) {
         failures = 1;
@@ -69,9 +71,16 @@ pub(super) async fn observed(fetcher: &Fetcher, store: &Store) -> Observed {
             "walk stopped on source access blocks; the rosters they cover stay owed"
         );
     }
+    if !evidence_losses.is_empty() {
+        warn!(
+            losses = evidence_losses.len(),
+            "refusal captures were not retained; their refusals keep their classification without an archived body"
+        );
+    }
     Observed {
         conditions,
         blocked_hosts,
+        evidence_losses,
         failures,
     }
 }

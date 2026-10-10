@@ -85,6 +85,7 @@ pub struct CollectReport {
     pub transport: TransportReport,
     pub access_conditions: Vec<SourceAccessCondition>,
     pub blocked_hosts: Vec<String>,
+    pub evidence_losses: Vec<census_crawl::net::RefusalEvidenceLoss>,
 }
 
 #[derive(Debug, Clone, Serialize)]

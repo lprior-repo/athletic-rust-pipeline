@@ -277,6 +277,52 @@ fn a_browser_refusal_status_is_archived_without_replacing_a_success() -> TestRes
 }
 
 #[test]
+fn a_refusal_whose_capture_cannot_be_archived_reports_the_loss() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let dir = tempfile::tempdir()?;
+            let fetcher = fetcher_in(dir.path())?;
+            let coordinates = Coordinates::for_get(&fetcher);
+            let plan = coordinates.plan("GET");
+            std::fs::create_dir_all(dir.path().join("http/archive"))?;
+            std::fs::write(dir.path().join("http/archive/bodies"), b"not a directory")?;
+
+            let refusal = b"<html>maintenance</html>".to_vec();
+            let error = match fetcher
+                .accept_capture(&plan, capture_of(429, "text/html; charset=utf-8", &refusal))
+                .await
+            {
+                Err(error) => error,
+                Ok(outcome) => {
+                    return Err(format!("a 429 capture is a refusal, got {outcome:?}").into())
+                }
+            };
+            check!(
+                matches!(error, FetchError::Http { status: 429, .. }),
+                "the refusal keeps its status when its body cannot be archived: {error}"
+            );
+
+            let mut undecodable = capture_of(403, "text/html; charset=utf-8", b"");
+            undecodable.response.body = "!!! not base64 !!!".to_string();
+            let _ = fetcher.accept_capture(&plan, undecodable).await;
+
+            let losses = fetcher.refusal_evidence_losses().await;
+            check!(eq; losses.len(), 2, "both retention failures are reported");
+            let archived = losses.first().ok_or("the failed archive is not reported")?;
+            check!(eq; archived.lane, crate::net::EvidenceLane::Browser);
+            check!(eq; archived.status, 429);
+            let undecoded = losses
+                .get(1)
+                .ok_or("the undecodable capture is not reported")?;
+            check!(eq; undecoded.status, 403);
+            check!(eq; undecoded.url, URL);
+            Ok(())
+        })
+}
+
+#[test]
 fn a_body_over_the_ceiling_is_refused_before_it_is_allocated() -> TestResult {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()

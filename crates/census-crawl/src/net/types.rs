@@ -114,6 +114,23 @@ pub struct RedirectHop {
     pub url: String,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EvidenceLane {
+    Http,
+    Browser,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RefusalEvidenceLoss {
+    pub source: String,
+    pub url: String,
+    pub status: u16,
+    pub lane: EvidenceLane,
+    pub detail: String,
+    pub observed_at: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FetchOutcome {
     pub url: String,

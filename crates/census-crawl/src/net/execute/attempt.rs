@@ -109,6 +109,13 @@ impl Fetcher {
         status: u16,
     ) -> Result<FetchOutcome, FetchError> {
         if let Err(error) = record_response(response, plan, status, redirects).await {
+            self.record_refusal_evidence_loss(
+                plan.url,
+                status,
+                crate::net::EvidenceLane::Http,
+                error.to_string(),
+            )
+            .await;
             warn!(
                 status,
                 url = plan.url,

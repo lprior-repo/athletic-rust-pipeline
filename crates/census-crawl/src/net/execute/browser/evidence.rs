@@ -46,6 +46,13 @@ impl Fetcher {
         let body = match decode_capture_body(plan, capture) {
             Ok(body) => body,
             Err(error) => {
+                self.record_refusal_evidence_loss(
+                    plan.url,
+                    status,
+                    crate::net::EvidenceLane::Browser,
+                    error.to_string(),
+                )
+                .await;
                 warn!(
                     status,
                     url = plan.url,
@@ -75,6 +82,13 @@ impl Fetcher {
             content_type: content_type(&capture.response.headers),
         };
         if let Err(error) = write_archive(plan.body_path, plan.meta_path, &body, &meta) {
+            self.record_refusal_evidence_loss(
+                plan.url,
+                status,
+                crate::net::EvidenceLane::Browser,
+                error.to_string(),
+            )
+            .await;
             warn!(
                 status,
                 url = plan.url,

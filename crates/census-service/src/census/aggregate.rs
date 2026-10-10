@@ -29,6 +29,7 @@ pub(super) fn summarize_states(
         transport: TransportReport::default(),
         access_conditions: Vec::new(),
         blocked_hosts: Vec::new(),
+        evidence_losses: Vec::new(),
     };
     let mut failures = Vec::new();
     for (jurisdiction, outcome) in results {
