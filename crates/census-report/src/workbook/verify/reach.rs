@@ -25,7 +25,8 @@ pub(super) struct Reach {
 impl Reach {
     pub(super) fn of(expectations: &Expectations<'_>, athlete: &CanonicalAthlete) -> Self {
         let school = expectations.contacts.get(athlete.school.as_str());
-        let contacts = contact::scoped(school, athlete);
+        let contacts = contact::scoped(school, athlete)
+            .with_research(expectations.contact_research(athlete.school.as_str()));
         Self::from_contacts(&contacts)
     }
 

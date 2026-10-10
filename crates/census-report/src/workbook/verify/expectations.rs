@@ -2,7 +2,9 @@ use crate::bests::{self, SharedSelection};
 use crate::export::ExportDataset;
 use crate::report::{Derivation, ReportResult};
 use crate::workbook::Options;
-use census_domain::model::SchoolYear;
+use census_domain::model::{
+    school_contact_research, CoachContactProgram, ContactResearchOutcome, SchoolYear,
+};
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::labels;
@@ -33,6 +35,8 @@ pub(super) struct Expectations<'a> {
     pub(super) contacts: BTreeMap<String, SchoolContacts>,
     pub(super) school_address: BTreeMap<String, String>,
     schools: BTreeMap<String, School>,
+    contact_research: BTreeMap<String, ContactResearchOutcome>,
+    coach_spellings: BTreeMap<String, String>,
     pr_index: BTreeMap<String, Vec<usize>>,
     tallies: BTreeMap<String, Tally>,
 }
@@ -47,6 +51,9 @@ impl<'a> Expectations<'a> {
         let pr_index = index(&bests);
         let tallies = tallies(&derivation);
         let contacts = contact::contacts(derivation.coach_observations(), school_year);
+        let contact_research = research_index(derivation.schools(), school_year);
+        let coach_spellings =
+            crate::workbook::recruiting::coach_spelling::spellings(derivation.coach_observations());
         Ok(Self {
             dataset,
             school_year,
@@ -55,6 +62,8 @@ impl<'a> Expectations<'a> {
             contacts,
             school_address,
             schools,
+            contact_research,
+            coach_spellings,
             pr_index,
             tallies,
         })
@@ -78,6 +87,17 @@ impl<'a> Expectations<'a> {
 
     pub(super) fn school_id<'b>(&'b self, id: &'b str) -> &'b str {
         self.school(id).map_or(id, |school| school.id.as_str())
+    }
+
+    pub(super) fn contact_research(&self, school: &str) -> Option<ContactResearchOutcome> {
+        self.contact_research.get(school).cloned()
+    }
+
+    pub(super) fn published_coach_name<'b>(&'b self, id: &str, fallback: &'b str) -> &'b str {
+        self.coach_spellings
+            .get(id)
+            .map(String::as_str)
+            .unwrap_or(fallback)
     }
 
     pub(super) fn athletics_url(&self, id: &str) -> Option<&str> {
@@ -158,6 +178,21 @@ fn index(prs: &[SharedSelection]) -> BTreeMap<String, Vec<usize>> {
             .push(position);
     }
     index
+}
+
+fn research_index(
+    schools: &[census_domain::model::CanonicalSchool],
+    year: SchoolYear,
+) -> BTreeMap<String, ContactResearchOutcome> {
+    schools
+        .iter()
+        .map(|school| {
+            (
+                school.id.as_str().to_string(),
+                school_contact_research(school, &CoachContactProgram::SchoolAthletics, year),
+            )
+        })
+        .collect()
 }
 
 fn tallies(derivation: &Derivation<'_>) -> BTreeMap<String, Tally> {

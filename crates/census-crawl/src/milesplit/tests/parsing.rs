@@ -200,7 +200,7 @@ fn captured_nc_wrapped_round_keeps_its_event_and_finisher() -> TestResult {
     check!(eq; event.gender, Gender::Boys);
     check!(eq; event.round.as_deref(), Some("Finals"));
     check!(eq; page.meet.events.len(), 1);
-    check!(eq; event.label, "PR Running Camp Boys 3200M Finals");
+    check!(eq; event.label, "Boys 3200M Finals");
     check!(eq; event.rows.len(), 214);
     for (name, school, grade, mark) in [
         ("WHARTON, Elijah", "Davidson Academy", 11, "DNF"),

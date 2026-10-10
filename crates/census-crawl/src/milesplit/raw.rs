@@ -59,11 +59,14 @@ fn parse_document(
             ),
         ));
     }
-    let events: Vec<_> = block
+    let mut events: Vec<_> = block
         .sections
         .iter()
         .map(RawSection::event)
         .collect::<Vec<_>>();
+    for event in &mut events {
+        event.label = published_event_label(&event.label, &facts.name);
+    }
     Ok(RawPage {
         meet: ParsedMeet {
             name: facts.name,
@@ -89,6 +92,25 @@ struct PageFacts {
     sport: Option<Sport>,
     region: Option<String>,
     school_year: SchoolYear,
+}
+
+fn published_event_label(label: &str, meet_name: &str) -> String {
+    let prefix = meet_name.trim();
+    if prefix.is_empty() {
+        return label.to_string();
+    }
+    let Some(rest) = label.strip_prefix(prefix) else {
+        return label.to_string();
+    };
+    if !rest.is_empty() && !rest.starts_with(char::is_whitespace) {
+        return label.to_string();
+    }
+    let rest = rest.trim_start();
+    if rest.is_empty() {
+        label.to_string()
+    } else {
+        rest.to_string()
+    }
 }
 
 fn page_facts(event: SportsEvent, url: &str, precision: DatePrecision) -> CrawlResult<PageFacts> {

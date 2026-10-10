@@ -113,8 +113,26 @@ fn top_rows(
             Expect::text("Best-mark rows reduced"),
             Expect::count(bests)?,
         ],
+        vec![
+            Expect::text(crate::workbook::recruiting::coach_spelling::SHEET_ROWS),
+            Expect::count(coach_census(recruiting).rows)?,
+        ],
+        vec![
+            Expect::text(crate::workbook::recruiting::coach_spelling::DISTINCT_SCHOOLS),
+            Expect::count(coach_census(recruiting).schools)?,
+        ],
+        vec![
+            Expect::text(crate::workbook::recruiting::coach_spelling::DISTINCT_COACH_IDS),
+            Expect::count(coach_census(recruiting).coach_ids)?,
+        ],
         text_row("Cohort behind the counters", "class of 2027"),
     ])
+}
+
+fn coach_census(
+    recruiting: &Derivation<'_>,
+) -> crate::workbook::recruiting::coach_spelling::CoachSheetCensus {
+    crate::workbook::recruiting::coach_spelling::coach_sheet_census(recruiting.coach_observations())
 }
 
 fn frozen_rows(dataset: &ExportDataset) -> ReportResult<Vec<Vec<Expect>>> {
