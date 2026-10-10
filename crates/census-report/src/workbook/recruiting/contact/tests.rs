@@ -1,7 +1,7 @@
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CoachContactClaim, CoachContactProgram, CoachRole,
-    CoachTenure, CoachTenureEvidence, Gender, GradYear, SchoolId, SchoolYear, SourceIdentity,
-    SourceNamespace, SourceRef, Sport,
+    CoachTenure, CoachTenureEvidence, ContactResearchOutcome, Gender, GradYear, SchoolId,
+    SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 
 use super::{contacts, normalise::role_label, scoped, ContactState, Preferred, Slot};
@@ -224,6 +224,23 @@ fn personal_director_address_never_enters_a_professional_coach_column() -> TestR
     check!(eq; result.state, ContactState::PersonalAdEmail);
     check!(eq; scope.professional_coach_email(), None);
     check!(eq; scope.director().ok_or("missing director")?.email, None);
+    Ok(())
+}
+
+#[test]
+fn research_outcomes_stay_distinct_and_do_not_invent_a_negative_finding() -> TestResult {
+    let athlete = athlete();
+    let unattempted =
+        scoped(None, &athlete).with_research(Some(ContactResearchOutcome::Unattempted));
+    check!(eq; unattempted.preferred().state, ContactState::ContactResearchUnattempted);
+    let empty = scoped(None, &athlete).with_research(Some(ContactResearchOutcome::CompletedEmpty));
+    check!(eq; empty.preferred().state, ContactState::ContactResearchEmpty);
+    let blocked = scoped(None, &athlete).with_research(Some(ContactResearchOutcome::Blocked));
+    check!(eq; blocked.preferred().state, ContactState::ContactResearchBlocked);
+    let failed = scoped(None, &athlete).with_research(Some(ContactResearchOutcome::Failed));
+    check!(eq; failed.preferred().state, ContactState::ContactResearchBlocked);
+    check!(ne; unattempted.preferred().state, ContactState::ContactResearchEmpty);
+    check!(eq; scoped(None, &athlete).preferred().state, ContactState::ContactResearchUnknown);
     Ok(())
 }
 

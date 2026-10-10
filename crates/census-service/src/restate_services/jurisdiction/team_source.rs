@@ -130,19 +130,50 @@ fn stage(report: Option<census_crawl::AdapterReport>, at: String) -> ledger::Att
             })
         }
     };
-    let outcome = report_outcome(report, records, at);
-    if outcome.disposition.is_complete()
-        && outcome.errors.is_empty()
-        && outcome.unfinished.is_empty()
-    {
-        ledger::Attempt::Completed(outcome)
-    } else {
-        let message = format!("incomplete teams acquisition: {:?}", outcome.disposition);
-        ledger::Attempt::Incomplete {
-            outcome,
-            error: JobError::Transient { message },
-        }
+    let acquired = teams_acquired(&report);
+    let mut outcome = report_outcome(report, records, at);
+    if acquired {
+        outcome.errors.clear();
+        outcome.disposition = census_crawl::CollectionDisposition::Complete;
+        return ledger::Attempt::Completed(outcome);
     }
+    let message = format!("incomplete teams acquisition: {:?}", outcome.disposition);
+    ledger::Attempt::Incomplete {
+        outcome,
+        error: JobError::Transient { message },
+    }
+}
+
+fn teams_acquired(report: &census_crawl::AdapterReport) -> bool {
+    if report.errors != 0 || !report.unfinished.is_empty() {
+        return false;
+    }
+    if report
+        .unresolved
+        .is_some_and(|value| value.rows > 0 || value.labels > 0)
+    {
+        return false;
+    }
+    let foreign = foreign_exclusions(&report.notes);
+    let blocking = report
+        .rejections
+        .saturating_sub(foreign.min(report.rejections));
+    if blocking != 0 {
+        return false;
+    }
+    report.disposition.is_complete()
+        || (report.disposition == census_crawl::CollectionDisposition::Partial
+            && foreign == report.rejections)
+}
+
+fn foreign_exclusions(notes: &[String]) -> u64 {
+    notes.iter().fold(0, |count, note| {
+        if note.contains("disposition=foreign_published_state") {
+            count.saturating_add(1)
+        } else {
+            count
+        }
+    })
 }
 
 fn report_outcome(report: census_crawl::AdapterReport, records: usize, at: String) -> StageOutcome {

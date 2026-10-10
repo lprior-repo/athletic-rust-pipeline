@@ -44,7 +44,8 @@ fn row_for(dataset: &Dataset, athlete: &CanonicalAthlete) -> ReportResult<Vec<Ce
     let school = athlete.school.as_str();
     let tally = dataset.tallies.get(athlete.id.as_str());
     let prs: Vec<&SharedSelection> = dataset.prs_of(athlete.id.as_str()).collect();
-    let contacts = contact::scoped(dataset.contacts.get(school), athlete);
+    let contacts = contact::scoped(dataset.contacts.get(school), athlete)
+        .with_research(dataset.contact_research(&athlete.school));
     let mut cells = identity_cells(dataset, athlete);
     append_performance_cells(&mut cells, athlete, &prs, tally)?;
     append_staff_cells(&mut cells, &contacts);

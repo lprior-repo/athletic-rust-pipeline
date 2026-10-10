@@ -42,6 +42,21 @@ fn initial_metrics(facts: &RunFacts<'_>) -> ReportResult<Vec<Vec<Cell>>> {
         "Best-mark rows reduced",
         Cell::number(facts.bests.len())?
     ));
+    let coaches = super::super::recruiting::coach_spelling::coach_sheet_census(
+        facts.recruiting.coach_observations(),
+    );
+    cells.push(row!(
+        super::super::recruiting::coach_spelling::SHEET_ROWS,
+        Cell::number(coaches.rows)?
+    ));
+    cells.push(row!(
+        super::super::recruiting::coach_spelling::DISTINCT_SCHOOLS,
+        Cell::number(coaches.schools)?
+    ));
+    cells.push(row!(
+        super::super::recruiting::coach_spelling::DISTINCT_COACH_IDS,
+        Cell::number(coaches.coach_ids)?
+    ));
     cells.push(row!("Cohort behind the counters", "class of 2027"));
     Ok(cells)
 }

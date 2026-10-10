@@ -7,7 +7,9 @@ mod tests;
 
 use std::collections::BTreeSet;
 
-use census_domain::model::{CanonicalAthlete, CanonicalCoach, Gender, SchoolYear, Sport};
+use census_domain::model::{
+    CanonicalAthlete, CanonicalCoach, ContactResearchOutcome, Gender, SchoolYear, Sport,
+};
 use heads::Outcome;
 
 pub(in crate::workbook) use normalise::{Named, Preferred};
@@ -24,6 +26,9 @@ pub(in crate::workbook) enum ContactState {
     AdNameOnly,
     ContactConflict,
     ContactResearchUnknown,
+    ContactResearchUnattempted,
+    ContactResearchEmpty,
+    ContactResearchBlocked,
     ContactTenureConflict,
     ContactEvidenceInvalid,
 }
@@ -39,6 +44,9 @@ impl ContactState {
             Self::AdNameOnly => "ad_name_only",
             Self::ContactConflict => "contact_conflict",
             Self::ContactResearchUnknown => "contact_research_unknown",
+            Self::ContactResearchUnattempted => "contact_research_unattempted",
+            Self::ContactResearchEmpty => "contact_research_empty",
+            Self::ContactResearchBlocked => "contact_research_blocked",
             Self::ContactTenureConflict => "contact_tenure_conflict",
             Self::ContactEvidenceInvalid => "contact_evidence_invalid",
         }
@@ -98,6 +106,7 @@ pub(in crate::workbook) struct ScopedContacts<'a> {
     director: &'a Outcome,
     assistants: &'a [Named],
     athlete: &'a CanonicalAthlete,
+    research: Option<ContactResearchOutcome>,
 }
 
 pub(in crate::workbook) fn scoped<'a>(
@@ -116,6 +125,36 @@ pub(in crate::workbook) fn scoped<'a>(
             .map(|school| school.assistants.as_slice())
             .map_or(&[][..], |value| value),
         athlete,
+        research: None,
+    }
+}
+
+impl<'a> ScopedContacts<'a> {
+    pub(in crate::workbook) fn with_research(
+        mut self,
+        outcome: Option<ContactResearchOutcome>,
+    ) -> Self {
+        self.research = outcome;
+        self
+    }
+}
+
+fn research_state(outcome: Option<ContactResearchOutcome>) -> ContactState {
+    match outcome {
+        None => ContactState::ContactResearchUnknown,
+        Some(ContactResearchOutcome::Unattempted) => ContactState::ContactResearchUnattempted,
+        Some(ContactResearchOutcome::CompletedEmpty) => ContactState::ContactResearchEmpty,
+        Some(ContactResearchOutcome::Blocked | ContactResearchOutcome::Failed) => {
+            ContactState::ContactResearchBlocked
+        }
+        Some(
+            ContactResearchOutcome::CompletedClaims
+            | ContactResearchOutcome::Partial
+            | ContactResearchOutcome::Exhausted
+            | ContactResearchOutcome::Stale
+            | ContactResearchOutcome::Ambiguous
+            | ContactResearchOutcome::Conflict,
+        ) => ContactState::ContactResearchUnknown,
     }
 }
 
@@ -189,7 +228,7 @@ impl ScopedContacts<'_> {
         Preferred::unnamed(
             self.director
                 .blocker()
-                .map_or(ContactState::ContactResearchUnknown, |value| value),
+                .unwrap_or_else(|| research_state(self.research.clone())),
         )
     }
 

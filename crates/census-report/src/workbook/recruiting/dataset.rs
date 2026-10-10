@@ -1,6 +1,9 @@
 use crate::bests::SharedSelection;
 use crate::report::{Derivation, ReportResult, Scope};
-use census_domain::model::{CanonicalAthlete, CanonicalCoach, CanonicalSchool, SchoolYear};
+use census_domain::model::{
+    school_contact_research, CanonicalAthlete, CanonicalCoach, CanonicalSchool,
+    CoachContactProgram, ContactResearchOutcome, SchoolId, SchoolYear,
+};
 use std::collections::BTreeMap;
 
 use super::contact::{contacts, SchoolContacts};
@@ -75,6 +78,16 @@ impl Dataset {
             school_address,
             audit,
         }
+    }
+
+    pub(super) fn contact_research(&self, school: &SchoolId) -> Option<ContactResearchOutcome> {
+        self.schools.get(school).map(|record| {
+            school_contact_research(
+                record,
+                &CoachContactProgram::SchoolAthletics,
+                self.school_year,
+            )
+        })
     }
 
     pub(super) fn audit(&self) -> Reconciliation {
