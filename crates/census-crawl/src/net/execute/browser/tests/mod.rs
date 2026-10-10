@@ -1,6 +1,6 @@
 use super::*;
 use crate::net::bridge::BrowserResponse;
-use crate::net::cache::read_cache;
+use crate::net::cache::{content_digest, read_cache};
 use crate::net::FetchOptions;
 use base64::Engine as _;
 use std::collections::HashMap;
@@ -80,7 +80,7 @@ fn capture_of(status: u16, content_type: &str, body: &[u8]) -> BrowserCapture {
 }
 
 #[test]
-fn a_challenge_capture_leaves_a_human_required_row_and_no_evidence() -> TestResult {
+fn a_challenge_capture_is_archived_and_never_cached_as_the_source_answer() -> TestResult {
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
     let dir = tempfile::tempdir()?;
     let fetcher = fetcher_in(dir.path())?;
@@ -123,6 +123,16 @@ fn a_challenge_capture_leaves_a_human_required_row_and_no_evidence() -> TestResu
     check!(
         !coordinates.body_path.exists() && !coordinates.meta_path.exists(),
         "a challenge page must not be cached as the source's answer"
+    );
+    let challenged = BASE64.decode(capture.response.body.as_str())?;
+    let archived = dir
+        .path()
+        .join("http/archive/bodies")
+        .join(format!("{}.body", content_digest(&challenged)));
+    check!(eq;
+        std::fs::read(&archived)?,
+        challenged,
+        "the challenge page is retained as a refusal capture, byte for byte"
     );
 
     let rows = fetcher.access_conditions().await;
@@ -199,6 +209,65 @@ fn a_capture_mints_the_evidence_an_http_body_would() -> TestResult {
             check!(
                 fetcher.access_conditions().await.is_empty(),
                 "a capture is the source's answer, not an observation about the host"
+            );
+            Ok(())
+        })
+}
+
+#[test]
+fn a_browser_refusal_status_is_archived_without_replacing_a_success() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let dir = tempfile::tempdir()?;
+            let fetcher = fetcher_in(dir.path())?;
+            let coordinates = Coordinates::for_get(&fetcher);
+            let plan = coordinates.plan("GET");
+            let success = b"<html>roster</html>".to_vec();
+            fetcher
+                .mint_capture(&plan, capture_of(200, "text/html; charset=utf-8", &success))
+                .await?;
+
+            let refusal = b"<html>maintenance</html>".to_vec();
+            let error = match fetcher
+                .accept_capture(&plan, capture_of(429, "text/html; charset=utf-8", &refusal))
+                .await
+            {
+                Err(error) => error,
+                Ok(outcome) => {
+                    return Err(format!("a 429 capture is a refusal, got {outcome:?}").into())
+                }
+            };
+            check!(
+                matches!(error, FetchError::Http { status: 429, .. }),
+                "the refusal keeps its status: {error}"
+            );
+            check!(error.retryable(), "a throttled source stays retryable: {error}");
+
+            let archived = dir
+                .path()
+                .join("http/archive/bodies")
+                .join(format!("{}.body", content_digest(&refusal)));
+            check!(eq;
+                std::fs::read(&archived)?,
+                refusal,
+                "the refusal body is retained byte for byte"
+            );
+            let (meta, served) = read_cache(
+                &coordinates.body_path,
+                &coordinates.meta_path,
+                "GET",
+                URL,
+                &coordinates.representation,
+            )?
+            .ok_or("the earlier success is still cached")?;
+            check!(eq; meta.status, 200);
+            check!(eq; served, success);
+            check!(eq;
+                fetcher.access_conditions().await.len(),
+                1,
+                "a throttled capture leaves one access condition"
             );
             Ok(())
         })

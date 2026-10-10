@@ -1,6 +1,6 @@
 use super::FetchPlan;
 use crate::net::bridge::BrowserCapture;
-use crate::net::cache::{content_digest, write_cache, CacheMeta};
+use crate::net::cache::{content_digest, write_archive, write_cache, CacheMeta};
 use crate::net::{instant_iso8601, now_iso8601, FetchError, FetchOutcome, Fetcher, MAX_BODY_BYTES};
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine as _;
@@ -37,6 +37,53 @@ pub(super) fn content_type(headers: &[(String, String)]) -> Option<String> {
 }
 
 impl Fetcher {
+    pub(super) async fn archive_refusal_capture(
+        &self,
+        plan: &FetchPlan<'_>,
+        capture: &BrowserCapture,
+        status: u16,
+    ) {
+        let body = match decode_capture_body(plan, capture) {
+            Ok(body) => body,
+            Err(error) => {
+                warn!(
+                    status,
+                    url = plan.url,
+                    error = %error,
+                    "refusal capture was not retained"
+                );
+                return;
+            }
+        };
+        let bytes = body.len();
+        let fetched_at = match capture.fetched_at_ms.and_then(instant_iso8601) {
+            Some(value) => value,
+            None => now_iso8601(),
+        };
+        let meta = CacheMeta {
+            redirects: Vec::new(),
+            url: plan.url.to_string(),
+            response_url: capture.response.response_url.as_deref().map(str::to_owned),
+            method: plan.method.to_string(),
+            representation: plan.representation.clone(),
+            status,
+            content_digest: content_digest(&body),
+            bytes,
+            fetched_at,
+            etag: None,
+            last_modified: None,
+            content_type: content_type(&capture.response.headers),
+        };
+        if let Err(error) = write_archive(plan.body_path, plan.meta_path, &body, &meta) {
+            warn!(
+                status,
+                url = plan.url,
+                error = %error,
+                "refusal capture was not retained"
+            );
+        }
+    }
+
     pub(super) async fn mint_capture(
         &self,
         plan: &FetchPlan<'_>,

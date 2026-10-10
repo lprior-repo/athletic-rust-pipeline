@@ -119,7 +119,10 @@ impl Fetcher {
                     plan.url
                 ),
             }),
-            _ => Err(self.status_error(status, plan).await),
+            _ => {
+                self.archive_refusal_capture(plan, &capture, status).await;
+                Err(self.status_error(status, plan).await)
+            }
         }
     }
 

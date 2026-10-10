@@ -5,11 +5,10 @@ use crate::net::{host_of, now_iso8601, FetchError, FetchOutcome, FetchStats, Red
 use std::path::Path;
 use tokio::sync::Mutex;
 
-pub(super) async fn cache_and_record(
+pub(super) async fn record_response(
     response: reqwest::Response,
     plan: &FetchPlan<'_>,
     status: u16,
-    stats: &Mutex<FetchStats>,
     redirects: &[RedirectHop],
 ) -> Result<FetchOutcome, crate::net::FetchError> {
     let url = plan.url;
@@ -39,8 +38,6 @@ pub(super) async fn cache_and_record(
     } else {
         write_archive(body_path, meta_path, &body_vec, &meta)?;
     }
-    let downloaded = u64::try_from(body_vec.len()).map_or(u64::MAX, |value| value);
-    record_request_stats(stats, url, downloaded).await;
     Ok(FetchOutcome {
         url: meta.url,
         response_url: meta.response_url,
@@ -53,6 +50,19 @@ pub(super) async fn cache_and_record(
         content_type: meta.content_type,
         body: body_vec,
     })
+}
+
+pub(super) async fn cache_and_record(
+    response: reqwest::Response,
+    plan: &FetchPlan<'_>,
+    status: u16,
+    stats: &Mutex<FetchStats>,
+    redirects: &[RedirectHop],
+) -> Result<FetchOutcome, crate::net::FetchError> {
+    let outcome = record_response(response, plan, status, redirects).await?;
+    let downloaded = u64::try_from(outcome.bytes).map_or(u64::MAX, |value| value);
+    record_request_stats(stats, plan.url, downloaded).await;
+    Ok(outcome)
 }
 
 fn header_value(
@@ -156,7 +166,13 @@ mod tests {
                 let mut success_url = String::new();
                 let options = crate::net::FetchOptions::default();
                 let representation = crate::net::RepresentationHeaders::default();
-                for (status, raw) in [(200, b"success".as_slice()), (404, b"missing".as_slice())] {
+                for (status, raw) in [
+                    (200, b"success".as_slice()),
+                    (404, b"missing".as_slice()),
+                    (403, b"forbidden".as_slice()),
+                    (429, b"throttled".as_slice()),
+                    (500, b"broken".as_slice()),
+                ] {
                     let (requested, response) = acquired_response(status, raw).await?;
                     let response_url = response.url().as_str().to_string();
                     if status == 200 {

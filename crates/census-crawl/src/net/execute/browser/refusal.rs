@@ -9,6 +9,8 @@ impl Fetcher {
         plan: &FetchPlan<'_>,
         capture: &BrowserCapture,
     ) -> Result<FetchOutcome, FetchError> {
+        self.archive_refusal_capture(plan, capture, capture.response.status)
+            .await;
         let waited = capture.retry_after_ms.map(|ms| ms / 1_000);
         let detail = match waited {
             Some(seconds) => format!(

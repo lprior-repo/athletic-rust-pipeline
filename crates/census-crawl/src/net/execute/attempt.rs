@@ -1,6 +1,6 @@
 pub(super) use super::attempt_helper::blocking_kind;
 use super::attempt_helper::retry_after_secs;
-use super::cache_writer::cache_and_record;
+use super::cache_writer::{cache_and_record, record_response};
 use crate::net::cache::{replay_cache, CacheMeta};
 use crate::net::request::RequestBody;
 use crate::net::{FetchError, FetchOptions, FetchOutcome, Fetcher};
@@ -97,8 +97,26 @@ impl Fetcher {
             200 => self.process_ok(plan, response, redirects).await,
             404 => self.handle_404(plan, response, redirects).await,
             304 => self.replay_cached(plan).await,
-            _ => Err(self.status_error(status, plan).await),
+            _ => self.handle_refusal(plan, response, redirects, status).await,
         }
+    }
+
+    async fn handle_refusal(
+        &self,
+        plan: &FetchPlan<'_>,
+        response: reqwest::Response,
+        redirects: &[crate::net::RedirectHop],
+        status: u16,
+    ) -> Result<FetchOutcome, FetchError> {
+        if let Err(error) = record_response(response, plan, status, redirects).await {
+            warn!(
+                status,
+                url = plan.url,
+                error = %error,
+                "refusal capture was not retained"
+            );
+        }
+        Err(self.status_error(status, plan).await)
     }
 
     fn resolve_redirect_target(
