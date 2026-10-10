@@ -2,18 +2,32 @@ use super::*;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-fn entry(tenant: &str) -> CaptureEntry {
-    CaptureEntry {
-        athleticlive_meet_id: 1,
-        tenant: tenant.to_string(),
-        name: String::new(),
-        state: String::new(),
-        date: String::new(),
-        summary: None,
-        documents: Vec::new(),
-        standings: Vec::new(),
-        captures: std::collections::BTreeMap::new(),
+fn manifest_body(meets: usize) -> String {
+    let mut body = String::with_capacity(meets.saturating_mul(160).saturating_add(16));
+    body.push_str("{\"meets\":[");
+    for index in 0..meets {
+        if index > 0 {
+            body.push(',');
+        }
+        body.push_str(
+            "{\"athleticlive_meet_id\":1,\"tenant\":\"timer\",\"name\":\"Abilene Invitational\",\"state\":\"KS\",\"date\":\"2025-04-25\"}",
+        );
     }
+    body.push_str("]}");
+    body
+}
+
+fn manifest_documents(documents: usize) -> String {
+    let mut paths = String::with_capacity(documents.saturating_mul(16).saturating_add(16));
+    for index in 0..documents {
+        if index > 0 {
+            paths.push(',');
+        }
+        paths.push_str("\"capture.json\"");
+    }
+    format!(
+        "{{\"meets\":[{{\"athleticlive_meet_id\":1,\"tenant\":\"timer\",\"name\":\"Abilene Invitational\",\"state\":\"KS\",\"date\":\"2025-04-25\",\"documents\":[{paths}]}}]}}"
+    )
 }
 
 #[test]
@@ -64,15 +78,15 @@ fn manifest_admission_refuses_body_over_8_mib_before_parsing() -> TestResult {
 }
 
 #[test]
-fn manifest_admission_refuses_meets_over_8192_records() -> TestResult {
-    let admitted = ManifestFile {
-        meets: vec![entry("timer"); MAX_RECORDS],
+fn manifest_admission_refuses_meets_over_8192_from_the_body() -> TestResult {
+    let admitted = manifest_body(MAX_RECORDS);
+    let options = match super::super::parse_manifest(&admitted, "2026-10-09") {
+        Ok(options) => options,
+        Err(error) => return Err(format!("8192 meets were refused as {error:?}").into()),
     };
-    check!(check(&admitted).is_ok(), "exactly 8192 meets are admitted");
-    let refused = ManifestFile {
-        meets: vec![entry("timer"); MAX_RECORDS + 1],
-    };
-    let error = match check(&refused) {
+    check!(eq; options.len(), MAX_RECORDS);
+    let refused = manifest_body(MAX_RECORDS + 1);
+    let error = match super::super::parse_manifest(&refused, "2026-10-09") {
         Err(error) => error,
         Ok(_) => return Err("8193 meets were admitted".into()),
     };
@@ -92,13 +106,9 @@ fn manifest_admission_refuses_meets_over_8192_records() -> TestResult {
 }
 
 #[test]
-fn manifest_admission_refuses_records_over_8192_per_meet() -> TestResult {
-    let mut crowded = entry("timer");
-    crowded.documents = vec![String::new(); MAX_RECORDS + 1];
-    let file = ManifestFile {
-        meets: vec![crowded],
-    };
-    let error = match check(&file) {
+fn manifest_admission_refuses_records_over_8192_from_the_body() -> TestResult {
+    let crowded = manifest_documents(MAX_RECORDS + 1);
+    let error = match super::super::parse_manifest(&crowded, "2026-10-09") {
         Err(error) => error,
         Ok(_) => return Err("8193 records were admitted".into()),
     };

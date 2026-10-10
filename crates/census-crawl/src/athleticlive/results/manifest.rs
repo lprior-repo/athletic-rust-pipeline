@@ -9,9 +9,10 @@ use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 mod admission;
 mod selection;
 
-#[derive(Debug, Clone, Deserialize)]
-struct ManifestFile {
-    meets: Vec<CaptureEntry>,
+#[derive(Debug, Deserialize)]
+struct ManifestEnvelope<'a> {
+    #[serde(borrow)]
+    meets: Vec<&'a serde_json::value::RawValue>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -47,19 +48,32 @@ pub struct ManifestOptions {
 
 pub fn parse_manifest(body: &str, observed_on: &str) -> CrawlResult<Vec<ResultOptions>> {
     admission::limit("LIVE manifest bytes", body.len(), admission::MAX_BYTES)?;
-    let file: ManifestFile = serde_json::from_str(body).map_err(|error| CrawlError::Invariant {
-        detail: format!("the capture manifest does not parse: {error}"),
-    })?;
-    admission::check(&file)?;
+    let envelope: ManifestEnvelope<'_> =
+        serde_json::from_str(body).map_err(|error| CrawlError::Invariant {
+            detail: format!("the capture manifest does not parse: {error}"),
+        })?;
+    admission::limit(
+        "LIVE manifest meets",
+        envelope.meets.len(),
+        admission::MAX_RECORDS,
+    )?;
     let mut options = Vec::new();
-    options.try_reserve_exact(file.meets.len()).map_err(|_| {
-        admission::resource(
-            "LIVE manifest allocation",
-            file.meets.len(),
-            admission::MAX_RECORDS,
-        )
-    })?;
-    for (index, entry) in file.meets.into_iter().enumerate() {
+    options
+        .try_reserve_exact(envelope.meets.len())
+        .map_err(|_| {
+            admission::resource(
+                "LIVE manifest allocation",
+                envelope.meets.len(),
+                admission::MAX_RECORDS,
+            )
+        })?;
+    let mut records = 0usize;
+    for (index, raw) in envelope.meets.into_iter().enumerate() {
+        let entry: CaptureEntry =
+            serde_json::from_str(raw.get()).map_err(|error| CrawlError::Invariant {
+                detail: format!("the capture manifest does not parse: {error}"),
+            })?;
+        records = admission::admit(&entry, records)?;
         options.push(entry_options(entry, index, observed_on)?);
     }
     Ok(options)

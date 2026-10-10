@@ -1,4 +1,4 @@
-use super::{CaptureEntry, CrawlError, CrawlResult, ManifestFile};
+use super::{CaptureEntry, CrawlError, CrawlResult};
 use std::io::Read;
 
 pub(super) const MAX_BYTES: usize = 8 * 1024 * 1024;
@@ -22,24 +22,20 @@ pub(super) fn read(path: &str) -> CrawlResult<String> {
     Ok(body)
 }
 
-pub(super) fn check(file: &ManifestFile) -> CrawlResult<()> {
-    limit("LIVE manifest meets", file.meets.len(), MAX_RECORDS)?;
-    file.meets
-        .iter()
-        .try_fold(0usize, |count, entry| {
-            owner(entry)?;
-            let records = entry
-                .documents
-                .len()
-                .checked_add(entry.standings.len())
-                .and_then(|value| value.checked_add(entry.captures.len()))
-                .and_then(|value| value.checked_add(usize::from(entry.summary.is_some())))
-                .and_then(|value| count.checked_add(value))
-                .ok_or_else(|| resource("LIVE manifest records", usize::MAX, MAX_RECORDS))?;
-            limit("LIVE manifest records", records, MAX_RECORDS)?;
-            Ok(records)
-        })
-        .map(|_| ())
+pub(super) fn admit(entry: &CaptureEntry, records: usize) -> CrawlResult<usize> {
+    owner(entry)?;
+    let added = entry
+        .documents
+        .len()
+        .checked_add(entry.standings.len())
+        .and_then(|value| value.checked_add(entry.captures.len()))
+        .and_then(|value| value.checked_add(usize::from(entry.summary.is_some())))
+        .ok_or_else(|| resource("LIVE manifest records", usize::MAX, MAX_RECORDS))?;
+    let total = records
+        .checked_add(added)
+        .ok_or_else(|| resource("LIVE manifest records", usize::MAX, MAX_RECORDS))?;
+    limit("LIVE manifest records", total, MAX_RECORDS)?;
+    Ok(total)
 }
 
 fn owner(entry: &CaptureEntry) -> CrawlResult<()> {
