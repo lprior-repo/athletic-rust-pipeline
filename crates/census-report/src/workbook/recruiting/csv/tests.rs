@@ -49,6 +49,58 @@ fn column(header: &csv::StringRecord, name: &str) -> TestResult<usize> {
 }
 
 #[test]
+fn an_uncollected_source_value_publishes_an_empty_csv_field() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let store = Store::open(directory.path())?;
+    let (school, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "No Website High School",
+        normalize_name("No Website High School"),
+        Some("Sheboygan"),
+    );
+    store.append(Table::Schools, &school)?;
+    let mut athlete = CanonicalAthlete::new(
+        &school_id,
+        "No Profile Runner",
+        GradYear::CO2027,
+        Gender::Girls,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "no-profile-runner"),
+    );
+    let claim = PublishedGraduation {
+        grad_year: GradYear::CO2027,
+        source: SourceRef::new(
+            "milesplit_roster",
+            Some("https://fixtures.test/recruiting/no-website/2027".to_owned()),
+        ),
+    };
+    let mut claim_evidence = Evidence::parsed(claim.source.clone(), "2026-09-20");
+    claim_evidence.note = Some("Synthetic public class-of-2027 fixture claim".to_owned());
+    athlete.evidence = vec![claim_evidence];
+    athlete.published_graduations.push(claim);
+    store.append(Table::Athletes, &athlete)?;
+
+    let dataset = ExportDataset::load(&store)?;
+    let derivation = Derivation::of(&dataset, Scope::AllSources, Some(2027));
+    let path = directory.path().join("no-website.csv");
+    write_recruiting_csv(
+        &derivation,
+        SchoolYear::new(2026).ok_or("invalid fixture season")?,
+        &path,
+    )?;
+
+    let mut reader = csv::Reader::from_path(&path)?;
+    let header = reader.headers()?.clone();
+    let records = reader.records().collect::<Result<Vec<_>, _>>()?;
+    let [record] = records.as_slice() else {
+        return Err("one published recruiting row required".into());
+    };
+    for name in ["athletics_website", "athleticnet_url"] {
+        check!(eq; &record[column(&header, name)?], "", "{name}");
+    }
+    Ok(())
+}
+
+#[test]
 fn published_recruiting_csv_literalizes_source_text_without_rewriting_it() -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path())?;

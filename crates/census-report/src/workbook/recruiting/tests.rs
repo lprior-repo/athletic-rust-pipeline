@@ -823,6 +823,54 @@ fn an_athlete_without_a_grade_observation_publishes_the_season_of_their_capture(
 }
 
 #[test]
+fn an_absent_value_publishes_a_blank_cell_while_counts_publish_zero() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let (school, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Bare Fixture High School",
+        normalize_name("Bare Fixture High School"),
+        Some("Kenosha"),
+    );
+    store.append(Table::Schools, &school)?;
+    let mut athlete = CanonicalAthlete::new(
+        &school_id,
+        "Bare Runner",
+        GradYear::CO2027,
+        Gender::Girls,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "bare-runner"),
+    );
+    publish_fixture_cohort(&mut athlete, "milesplit_roster", "blank", DAY);
+    store.append(Table::Athletes, &athlete)?;
+
+    let projection = recruiting(&store, Scope::AllSources, Some(2027))?;
+    let path = dir.path().join("blank.xlsx");
+    let mut book = Workbook::new();
+    projection.write_athletes(&mut book, &path)?;
+    book.save(&path)?;
+
+    let mut book = open_workbook(&path)?;
+    let athletes = sheet(&mut book, "Athletes")?;
+    let name_column = column_of(&athletes, "Name")?;
+    let row = row_where(&athletes, |row| text(&athletes, row, name_column) == "Bare Runner")?;
+    for header in [
+        "1 Mile (s)",
+        "5000m (s)",
+        "School Athletics URL",
+        "Public Recruiting GPA",
+        "GPA Source",
+        "Athletic.net URL",
+        "Other profile URLs",
+    ] {
+        check!(eq; text(&athletes, row, column_of(&athletes, header)?), "", "{header}");
+    }
+    for header in ["Performance count", "Meet count"] {
+        check!(eq; text(&athletes, row, column_of(&athletes, header)?), "0", "{header}");
+    }
+    Ok(())
+}
+
+#[test]
 fn a_schools_research_outcome_reaches_the_athletes_contact_coverage_state() -> TestResult {
     const SCHOOL: &str = "Research Fixture High School";
     for (outcome, expected) in [
