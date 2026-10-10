@@ -52,6 +52,7 @@ pub(crate) fn generation_rows(store: &Store, table: Table, generation: u64) -> T
 }
 
 mod batch_atomicity;
+mod boundary;
 mod derived_publication;
 mod derived_rows;
 mod journal_limits;

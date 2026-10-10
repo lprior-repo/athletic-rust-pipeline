@@ -146,3 +146,93 @@ fn an_unpublished_plan_leaves_no_sequence_gap() {
     builder.preemption_bound = Some(2);
     builder.check(|| assert_eq!(unpublished_snapshot(), Ok((true, 0, 3, 3))));
 }
+
+struct BoundaryModel {
+    append: Mutex<()>,
+    evidence: SequenceCounter<AtomicU64>,
+    derived: SequenceCounter<AtomicU64>,
+}
+
+fn boundary_model() -> Arc<BoundaryModel> {
+    Arc::new(BoundaryModel {
+        append: Mutex::new(()),
+        evidence: SequenceCounter::starting_at(0),
+        derived: SequenceCounter::starting_at(0),
+    })
+}
+
+fn publish_generations(
+    state: &Arc<BoundaryModel>,
+    mark: u64,
+) -> thread::JoinHandle<ModelResult<()>> {
+    let state = Arc::clone(state);
+    thread::spawn(move || {
+        let _append = state
+            .append
+            .lock()
+            .map_err(|error| format!("append lock poisoned: {error}"))?;
+        state.evidence.publish(mark);
+        state.derived.publish(mark);
+        Ok(())
+    })
+}
+
+fn fenced_boundary_coherent() -> ModelResult<bool> {
+    let state = boundary_model();
+    let writer = publish_generations(&state, 1);
+    let reader_state = Arc::clone(&state);
+    let reader = thread::spawn(move || -> ModelResult<(u64, u64)> {
+        let _append = reader_state
+            .append
+            .lock()
+            .map_err(|error| format!("append lock poisoned: {error}"))?;
+        Ok((reader_state.evidence.next(), reader_state.derived.next()))
+    });
+    let (evidence, derived) = reader
+        .join()
+        .map_err(|_| "boundary reader panicked".to_string())??;
+    writer
+        .join()
+        .map_err(|_| "generation writer panicked".to_string())??;
+    Ok(evidence == derived && derived <= 1)
+}
+
+fn unfenced_boundary_torn() -> ModelResult<bool> {
+    let state = boundary_model();
+    let writer = publish_generations(&state, 1);
+    let reader_state = Arc::clone(&state);
+    let reader = thread::spawn(move || (reader_state.evidence.next(), reader_state.derived.next()));
+    let (evidence, derived) = reader
+        .join()
+        .map_err(|_| "boundary reader panicked".to_string())?;
+    writer
+        .join()
+        .map_err(|_| "generation writer panicked".to_string())??;
+    Ok(evidence != derived)
+}
+
+#[test]
+fn an_append_fenced_boundary_read_observes_one_commit() {
+    let mut builder = loom::model::Builder::new();
+    builder.max_threads = 3;
+    builder.preemption_bound = Some(2);
+    builder.check(|| assert_eq!(fenced_boundary_coherent(), Ok(true)));
+}
+
+#[test]
+fn an_unfenced_boundary_read_can_observe_a_torn_commit() {
+    let torn = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let observed = std::sync::Arc::clone(&torn);
+    let mut builder = loom::model::Builder::new();
+    builder.max_threads = 3;
+    builder.preemption_bound = Some(2);
+    builder.check(move || {
+        if unfenced_boundary_torn() == Ok(true) {
+            observed.store(true, std::sync::atomic::Ordering::SeqCst);
+        }
+    });
+    assert!(
+        torn.load(std::sync::atomic::Ordering::SeqCst),
+        "no explored schedule crossed the two generation reads, so the model no longer reproduces the pre-fence ordering"
+    );
+}
