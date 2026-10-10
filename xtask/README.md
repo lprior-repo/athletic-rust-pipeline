@@ -370,10 +370,14 @@ retained with the dated [verification evidence](../docs/VERIFICATION-EVIDENCE.md
 superseded tagged file is preserved byte-identical (md5 `f4181a9f0afb5abcf56937fbe71da2fc`) at
 `var/audit-20261006/perf-baseline-before-revision-matched-record.json`. Its four legacy pipeline
 entries do not describe the separate snapshot-readback workload. The current acceptance baseline was
-re-recorded on explicit owner approval (`6yj.7`) at sha `d285a548…` with the same workload IDs and
-an 88,338-line corpus; that is not a reset of the historical numbers, which stay readable in the
-preserved file. Match target, workload, corpus and revision before comparing current results, and
-treat a new acceptance baseline as requiring the same explicit approval.
+re-recorded on explicit owner approval (`6yj.7`) and extended with peak RSS, DHAT allocation counts
+and sample-maximum tail time at sha `22de9cfb…` with the same workload IDs and a 94,530-line corpus
+(corpus sha256 `12c06847…`); a missing, malformed or regressed memory/tail measurement fails the
+gate instead of passing silently, and a cold comparison without a recorded baseline fails closed.
+That is not a reset of the historical numbers, which stay readable in the preserved file; the
+pre-extension shape is retained at `var/gate-cc7c82f3/perf-baseline-before-20261009-record.json`.
+Match target, workload, corpus and revision before comparing current results, and treat a new
+acceptance baseline as requiring the same explicit approval.
 
 ## Source scaffolding
 
