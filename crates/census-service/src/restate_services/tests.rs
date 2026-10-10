@@ -980,11 +980,17 @@ fn same_semantics_different_generation_produces_new_key() -> TestResult {
     assert_eq!(key_default, "report:core:1");
     assert_eq!(key_new, "report:core:2");
 
-    assert_ne!(
-        bests_export_key("all", "2027", "50", &legacy)?,
-        bests_export_key("all", "2027", "50", &ExportGeneration::parse("abc-def")?)?,
-        "any two generation values must produce different keys"
-    );
+    let bests_default = bests_export_key("all", "2027", "50", &legacy)?;
+    let bests_fresh = bests_export_key("all", "2027", "50", &fresh)?;
+    assert_eq!(bests_default, "bests:all:2027:50:1");
+    assert_eq!(bests_fresh, "bests:all:2027:50:2");
+    assert_ne!(bests_default, bests_fresh);
+
+    let consolidate_default = consolidate_export_key(&legacy);
+    let consolidate_fresh = consolidate_export_key(&fresh);
+    assert_eq!(consolidate_default, "consolidate:1");
+    assert_eq!(consolidate_fresh, "consolidate:2");
+    assert_ne!(consolidate_default, consolidate_fresh);
     Ok(())
 }
 
@@ -1002,6 +1008,16 @@ fn differing_semantic_parts_produce_different_keys() -> TestResult {
         bests_export_key("all", "2027", "100", &legacy)?,
         "different limit must produce different keys"
     );
+    assert_ne!(
+        bests_export_key("all", "2027", "50", &legacy)?,
+        bests_export_key("core", "2027", "50", &legacy)?,
+        "different scope must produce different keys"
+    );
+    assert_ne!(
+        bests_export_key("all", "2027", "50", &legacy)?,
+        bests_export_key("all", "2028", "50", &legacy)?,
+        "different year must produce different keys"
+    );
     Ok(())
 }
 
@@ -1017,8 +1033,12 @@ fn both_entries_share_one_generation_resolver() -> TestResult {
         "both entries reject the same malformed generations"
     );
     check!(
-        reject_offline_generation(None).is_ok() && reject_offline_generation(Some("2")).is_err(),
-        "both entries refuse offline generations with one message"
+        reject_offline_generation(None).is_ok(),
+        "both entries accept an offline invocation without a generation"
+    );
+    check!(
+        reject_offline_generation(Some("2")).is_err(),
+        "both entries refuse a requested offline generation"
     );
     Ok(())
 }
@@ -1095,6 +1115,17 @@ fn a_workbook_request_key_carries_every_selection_and_destination_field() -> Tes
     check!(
         workbook_request_key(&colon, &legacy).is_err(),
         "a colon scope must not silently shift the key segments"
+    );
+    colon.scope = Some("".to_string());
+    check!(
+        workbook_request_key(&colon, &legacy).is_err(),
+        "an empty scope must not collapse the workbook key grammar"
+    );
+    colon.scope = Some("core".to_string());
+    colon.out = Some("".to_string());
+    check!(
+        workbook_request_key(&colon, &legacy).is_err(),
+        "an empty output path must not collapse the workbook key grammar"
     );
     Ok(())
 }

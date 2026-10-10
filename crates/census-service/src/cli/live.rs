@@ -264,6 +264,10 @@ mod tests {
             bests_export_key("all", "2027", "50", &generation)?
         );
         assert_eq!(
+            bests_export_key("all", "2027", "50", &generation)?.as_str(),
+            "bests:all:2027:50:1"
+        );
+        assert_eq!(
             consolidate_export_key(&generation),
             consolidate_export_key(&generation)
         );
@@ -287,10 +291,15 @@ mod tests {
             bests_export_key("core", "2027", "all", &previous)?,
             bests_export_key("core", "2027", "all", &next)?
         );
+        assert_eq!(
+            bests_export_key("core", "2027", "all", &next)?.as_str(),
+            "bests:core:2027:all:2"
+        );
         assert_ne!(
             consolidate_export_key(&previous),
             consolidate_export_key(&next)
         );
+        assert_eq!(consolidate_export_key(&next).as_str(), "consolidate:2");
         Ok(())
     }
 
@@ -378,6 +387,14 @@ mod tests {
         check!(
             bests_export_key("all", "2027", "", &generation).is_err(),
             "an empty limit must not collapse the bests key grammar"
+        );
+        check!(
+            bests_export_key("", "2027", "50", &generation).is_err(),
+            "an empty scope must not collapse the bests key grammar"
+        );
+        check!(
+            bests_export_key("all", "", "50", &generation).is_err(),
+            "an empty year must not collapse the bests key grammar"
         );
         Ok(())
     }
