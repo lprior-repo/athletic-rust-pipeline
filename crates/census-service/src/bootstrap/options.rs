@@ -104,63 +104,87 @@ fn apply_flag<I: Iterator<Item = String>>(
         })
     };
     match flag {
-        "--listen" => {
-            let raw = value("--listen")?;
-            options.listen = raw
-                .parse()
-                .map_err(|source| BootstrapError::ListenNotAnAddress { raw, source })?;
-        }
+        "--listen" => parse_listen(value("--listen")?, options)?,
         "--data-dir" => options.data_dir = PathBuf::from(value("--data-dir")?),
-        "--max-concurrent" => {
-            let raw = value("--max-concurrent")?;
-            let parsed: usize = raw
-                .parse()
-                .map_err(|source| BootstrapError::ConcurrencyNotANumber { raw, source })?;
-            if parsed == 0 {
-                return Err(BootstrapError::ConcurrencyIsZero);
-            }
-            if parsed > MAX_CONCURRENT_CEILING {
-                return Err(BootstrapError::ConcurrencyTooLarge {
-                    value: parsed,
-                    ceiling: MAX_CONCURRENT_CEILING,
-                });
-            }
-            options.max_concurrent = parsed;
+        "--max-concurrent" => parse_max_concurrent(value("--max-concurrent")?, options)?,
+        "--drain-timeout" => parse_drain_timeout(value("--drain-timeout")?, options)?,
+        "--memory-budget-gib" => parse_memory_budget(value("--memory-budget-gib")?, options)?,
+        "--browser-profile" | "--browser-executable" | "--browser-headless" => {
+            apply_browser_flag(flag, args, lane)?;
         }
-        "--drain-timeout" => {
-            let raw = value("--drain-timeout")?;
-            let seconds: u64 = raw
-                .parse()
-                .map_err(|source| BootstrapError::DrainTimeoutNotASeconds { raw, source })?;
-            options.drain_timeout = Duration::from_secs(seconds);
-        }
-        "--memory-budget-gib" => {
-            let raw = value("--memory-budget-gib")?;
-            let gib: u64 = raw
-                .parse()
-                .map_err(|source| BootstrapError::MemoryBudgetNotAGib { raw, source })?;
-            if gib == 0 {
-                return Err(BootstrapError::MemoryBudgetIsZero);
-            }
-            if gib > MEMORY_BUDGET_CEILING_GIB {
-                return Err(BootstrapError::MemoryBudgetTooLarge {
-                    value: gib,
-                    ceiling: MEMORY_BUDGET_CEILING_GIB,
-                });
-            }
-            options.memory_budget_bytes = gib * 1024 * 1024 * 1024;
-        }
-        "--browser-profile" => lane.profile = Some(PathBuf::from(value("--browser-profile")?)),
-        "--browser-executable" => {
-            lane.executable = Some(PathBuf::from(value("--browser-executable")?))
-        }
-        "--browser-headless" => lane.headless = true,
         "--help" | "-h" => return Err(BootstrapError::HelpRequested),
         other => {
             return Err(BootstrapError::UnknownFlag {
                 flag: other.to_string(),
             })
         }
+    }
+    Ok(())
+}
+
+fn parse_listen(raw: String, options: &mut ServeOptions) -> Result<(), BootstrapError> {
+    options.listen = raw
+        .parse()
+        .map_err(|source| BootstrapError::ListenNotAnAddress { raw, source })?;
+    Ok(())
+}
+
+fn parse_max_concurrent(raw: String, options: &mut ServeOptions) -> Result<(), BootstrapError> {
+    let parsed: usize = raw
+        .parse()
+        .map_err(|source| BootstrapError::ConcurrencyNotANumber { raw, source })?;
+    if parsed == 0 {
+        return Err(BootstrapError::ConcurrencyIsZero);
+    }
+    if parsed > MAX_CONCURRENT_CEILING {
+        return Err(BootstrapError::ConcurrencyTooLarge {
+            value: parsed,
+            ceiling: MAX_CONCURRENT_CEILING,
+        });
+    }
+    options.max_concurrent = parsed;
+    Ok(())
+}
+
+fn parse_drain_timeout(raw: String, options: &mut ServeOptions) -> Result<(), BootstrapError> {
+    let seconds: u64 = raw
+        .parse()
+        .map_err(|source| BootstrapError::DrainTimeoutNotASeconds { raw, source })?;
+    options.drain_timeout = Duration::from_secs(seconds);
+    Ok(())
+}
+
+fn parse_memory_budget(raw: String, options: &mut ServeOptions) -> Result<(), BootstrapError> {
+    let gib: u64 = raw
+        .parse()
+        .map_err(|source| BootstrapError::MemoryBudgetNotAGib { raw, source })?;
+    if gib == 0 {
+        return Err(BootstrapError::MemoryBudgetIsZero);
+    }
+    if gib > MEMORY_BUDGET_CEILING_GIB {
+        return Err(BootstrapError::MemoryBudgetTooLarge {
+            value: gib,
+            ceiling: MEMORY_BUDGET_CEILING_GIB,
+        });
+    }
+    options.memory_budget_bytes = gib * 1024 * 1024 * 1024;
+    Ok(())
+}
+
+fn apply_browser_flag<I: Iterator<Item = String>>(
+    flag: &str,
+    args: &mut Peekable<I>,
+    lane: &mut LaneFlags,
+) -> Result<(), BootstrapError> {
+    let mut next = || -> Result<String, BootstrapError> {
+        args.next().ok_or_else(|| BootstrapError::MissingValue {
+            flag: flag.to_string(),
+        })
+    };
+    match flag {
+        "--browser-profile" => lane.profile = Some(PathBuf::from(next()?)),
+        "--browser-executable" => lane.executable = Some(PathBuf::from(next()?)),
+        _ => lane.headless = true,
     }
     Ok(())
 }

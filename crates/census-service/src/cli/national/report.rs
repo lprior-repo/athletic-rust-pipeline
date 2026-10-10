@@ -38,6 +38,18 @@ pub(crate) fn print_national(report: &NationalReport, json: bool) -> Result<()> 
         println!("{}", serde_json::to_string_pretty(report)?);
         return Ok(());
     }
+    print_national_header(report);
+    for summary in &report.jurisdictions {
+        print_national_row(summary);
+    }
+    print_national_totals(report);
+    print_national_failures(report);
+    print_national_owed(report);
+    print_national_addresses(report);
+    Ok(())
+}
+
+fn print_national_header(report: &NationalReport) {
     println!(
         "national {} revision {} observed {}",
         report.season.short(),
@@ -48,9 +60,9 @@ pub(crate) fn print_national(report: &NationalReport, json: bool) -> Result<()> 
         "{:>3}  {:>9}  {:>9}  {:>7}  {:>9}  {:>7}  {:>9}  {:>8}  blocked",
         "st", "rosters", "committed", "held", "remaining", "athletes", "co2027", ""
     );
-    for summary in &report.jurisdictions {
-        print_national_row(summary);
-    }
+}
+
+fn print_national_totals(report: &NationalReport) {
     println!(
         "total: rosters {} · committed {} · athletes {} · co2027 {} · jurisdictions done {} · failed {} · owed {} · remaining {} · blocked {}",
         report.rosters_total,
@@ -63,6 +75,9 @@ pub(crate) fn print_national(report: &NationalReport, json: bool) -> Result<()> 
         owed_total(&report.jurisdictions),
         blocked_count(&report.jurisdictions),
     );
+}
+
+fn print_national_failures(report: &NationalReport) {
     for failure in &report.failures {
         println!(
             "failed {} {} {}",
@@ -71,6 +86,9 @@ pub(crate) fn print_national(report: &NationalReport, json: bool) -> Result<()> 
             failure.error
         );
     }
+}
+
+fn print_national_owed(report: &NationalReport) {
     for owed in &report.owed {
         println!(
             "owed {} {} stages {} · {}",
@@ -84,6 +102,9 @@ pub(crate) fn print_national(report: &NationalReport, json: bool) -> Result<()> 
             owed.reasons.join(" | ")
         );
     }
+}
+
+fn print_national_addresses(report: &NationalReport) {
     if let Some(join) = &report.school_address {
         println!(
             "school addresses: {} linked · {} already linked · {} review · {} no match · {} evidence missing · {} refused · generations {}",
@@ -96,7 +117,6 @@ pub(crate) fn print_national(report: &NationalReport, json: bool) -> Result<()> 
             join.generation,
         );
     }
-    Ok(())
 }
 
 pub(crate) fn failure_exit(report: &NationalReport) -> Result<()> {

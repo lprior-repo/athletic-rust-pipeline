@@ -488,50 +488,7 @@ fn build_families(
     let mut families = Vec::new();
 
     for entry in all_applicability {
-        let slug = entry["slug"]
-            .as_str()
-            .map_or_else(|| "unknown".to_string(), |s| s.to_string());
-        let applicable = entry["applicable"]
-            .as_array()
-            .map_or_else(Vec::new, Clone::clone);
-        let mut applicable_names: Vec<String> = applicable
-            .iter()
-            .filter_map(|v| v.as_str().map(|s| s.to_string()))
-            .collect();
-        applicable_names.sort();
-        applicable_names.dedup();
-
-        let strategy = determine_strategy(&slug, arms);
-        let arm_names = determine_arms(&slug, arms);
-        let gap_reason = if strategy == "engineering_gap" {
-            strategies
-                .get(&slug)
-                .map_or_else(
-                    || {
-                        strategies.get("wildcard").map_or(
-                            "registry family has no implemented durable execution strategy",
-                            String::as_str,
-                        )
-                    },
-                    String::as_str,
-                )
-                .to_string()
-        } else {
-            String::new()
-        };
-
-        let mut family = json!({
-            "slug": slug,
-            "applicable": applicable_names,
-            "strategy": strategy,
-            "arms": arm_names,
-        });
-
-        if strategy == "engineering_gap" {
-            family["gap_reason"] = json!(gap_reason);
-        }
-
-        families.push(family);
+        families.push(family_entry(entry, arms, strategies));
     }
 
     let mut seen = IndexMap::new();
@@ -550,6 +507,51 @@ fn build_families(
     });
 
     result
+}
+
+fn family_entry(entry: &Value, arms: &Arms, strategies: &IndexMap<String, String>) -> Value {
+    let slug = entry["slug"]
+        .as_str()
+        .map_or_else(|| "unknown".to_string(), |s| s.to_string());
+    let strategy = determine_strategy(&slug, arms);
+    let mut family = json!({
+        "slug": slug,
+        "applicable": applicable_names(entry),
+        "strategy": strategy,
+        "arms": determine_arms(&slug, arms),
+    });
+    if strategy == "engineering_gap" {
+        family["gap_reason"] = json!(gap_reason(&slug, strategies));
+    }
+    family
+}
+
+fn applicable_names(entry: &Value) -> Vec<String> {
+    let applicable = entry["applicable"]
+        .as_array()
+        .map_or_else(Vec::new, Clone::clone);
+    let mut names: Vec<String> = applicable
+        .iter()
+        .filter_map(|v| v.as_str().map(|s| s.to_string()))
+        .collect();
+    names.sort();
+    names.dedup();
+    names
+}
+
+fn gap_reason(slug: &str, strategies: &IndexMap<String, String>) -> String {
+    strategies
+        .get(slug)
+        .map_or_else(
+            || {
+                strategies.get("wildcard").map_or(
+                    "registry family has no implemented durable execution strategy",
+                    String::as_str,
+                )
+            },
+            String::as_str,
+        )
+        .to_string()
 }
 
 fn determine_strategy(slug: &str, arms: &Arms) -> String {
