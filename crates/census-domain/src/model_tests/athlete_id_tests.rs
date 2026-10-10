@@ -58,3 +58,56 @@ fn candidate_index_collisions_do_not_erase_distinct_categories() {
     assert!(keys.contains(&mixed));
     assert!(keys.contains(&unknown));
 }
+
+#[test]
+fn athlete_natural_ownership_follows_namespace_and_provider_id_not_locator() {
+    let school = CanonicalSchool::mint(
+        UsJurisdiction::Wisconsin,
+        "Madison West High School",
+        "madison-west",
+        None,
+    );
+    let class = GradYear::CO2027;
+    let owned = |url: Option<&str>| {
+        let mut identity = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "111");
+        identity.url = url.map(str::to_string);
+        CanonicalAthlete::new(&school, "Jane Doe", class, Gender::Girls, identity)
+    };
+    let base = owned(Some("https://milesplit.com/athletes/111"));
+    let www = owned(Some("https://www.milesplit.com/athletes/111"));
+    let slug = owned(Some("https://www.milesplit.com/athletes/111-jane-doe"));
+    let absent = owned(None);
+    for variant in [&www, &slug, &absent] {
+        assert_eq!(base.id, variant.id);
+        assert!(base.same_natural_key(variant));
+    }
+    let other_id = CanonicalAthlete::new(
+        &school,
+        "Jane Doe",
+        class,
+        Gender::Girls,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "112"),
+    );
+    let other_namespace = CanonicalAthlete::new(
+        &school,
+        "Jane Doe",
+        class,
+        Gender::Girls,
+        SourceIdentity::new(SourceNamespace::TfrrsAthlete, "111"),
+    );
+    let other_school = CanonicalAthlete::new(
+        &CanonicalSchool::mint(
+            UsJurisdiction::Minnesota,
+            "Other High School",
+            "other",
+            None,
+        ),
+        "Jane Doe",
+        class,
+        Gender::Girls,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "111"),
+    );
+    for mismatch in [&other_id, &other_namespace, &other_school] {
+        assert!(!base.same_natural_key(mismatch));
+    }
+}

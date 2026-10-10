@@ -23,13 +23,13 @@ pub(super) fn grade_for(
                 }
             }
         }
-        None => match filter.and_then(YearToken::grade) {
-            Some(grade) => {
-                stats.grades_from_filter = stats.grades_from_filter.saturating_add(1);
-                Some(grade)
+        None => {
+            if filter.and_then(YearToken::grade).is_some() {
+                stats.grade_less_with_filter =
+                    stats.grade_less_with_filter.saturating_add(1);
             }
-            None => None,
-        },
+            None
+        }
     }
 }
 
@@ -38,24 +38,57 @@ pub fn mark_of(mark: &ParsedMark, conv_metres: Option<f64>) -> Option<Mark> {
         ParsedMark::Time(token) => clock_seconds(token).map(Mark::TimeSeconds),
         ParsedMark::Field(token) => {
             if let Some(metres) = feet_inches_metres(token) {
-                return Some(Mark::FieldImperial {
-                    feet_mark: token.clone(),
-                    metres: CentiMetres::try_from_metres_f64(metres)?,
-                });
+                return Some(field_mark(
+                    token,
+                    CentiMetres::try_from_metres_f64(metres).ok(),
+                    conv_metres,
+                    true,
+                ));
             }
             if let Some(metres) = metric_metres(token) {
-                return Some(Mark::DistanceMetres(CentiMetres::try_from_metres_f64(
-                    metres,
-                )?));
+                return Some(field_mark(
+                    token,
+                    CentiMetres::try_from_metres_f64(metres).ok(),
+                    conv_metres,
+                    false,
+                ));
             }
             match conv_metres {
-                Some(metres) => Some(Mark::DistanceMetres(CentiMetres::try_from_metres_f64(
-                    metres,
-                )?)),
+                Some(metres) => Some(match CentiMetres::try_from_metres_f64(metres) {
+                    Ok(converted) => Mark::DistanceMetres(converted),
+                    Err(_) => Mark::Raw(token.clone()),
+                }),
                 None => Some(Mark::Raw(token.clone())),
             }
         }
     }
+}
+
+fn field_mark(
+    token: &str,
+    primary: Option<CentiMetres>,
+    conv_metres: Option<f64>,
+    imperial: bool,
+) -> Mark {
+    let Some(primary) = primary else {
+        return Mark::Raw(token.to_string());
+    };
+    if conv_contradicts(primary, conv_metres) {
+        return Mark::Raw(token.to_string());
+    }
+    if imperial {
+        return Mark::FieldImperial {
+            feet_mark: token.to_string(),
+            metres: primary,
+        };
+    }
+    Mark::DistanceMetres(primary)
+}
+
+fn conv_contradicts(primary: CentiMetres, conv_metres: Option<f64>) -> bool {
+    conv_metres
+        .and_then(CentiMetres::try_from_metres_f64)
+        .is_some_and(|conv| conv.value().abs_diff(primary.value()) > 2)
 }
 
 pub(super) fn source_key(

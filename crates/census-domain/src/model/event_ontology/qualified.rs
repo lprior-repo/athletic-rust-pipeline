@@ -1,5 +1,14 @@
 use super::{LABEL_PHRASES, LABEL_QUALIFIERS};
 
+const MODIFIERS: &[&str] = &[
+    "relay",
+    "medley",
+    "hurdles",
+    "hurdle",
+    "steeplechase",
+    "walk",
+];
+
 struct Token<'a> {
     text: &'a str,
     cleaned: String,
@@ -33,6 +42,12 @@ pub(super) fn candidates(label: &str) -> Vec<String> {
             .then_some(token)
         })
         .collect();
+    let modifier_ranges: Vec<(usize, usize)> = kept
+        .iter()
+        .enumerate()
+        .filter(|(_, token)| MODIFIERS.contains(&token.cleaned.as_str()))
+        .map(|(index, _)| (index, index.saturating_add(1)))
+        .collect();
     let mut candidates = Vec::new();
     if !kept.is_empty() {
         candidates.push(render(&kept));
@@ -45,11 +60,10 @@ pub(super) fn candidates(label: &str) -> Vec<String> {
             let compact_len = window.iter().fold(0_usize, |len, token| {
                 len.saturating_add(token.cleaned.len())
             });
-            let follower_relay = kept
-                .get(start.saturating_add(width))
-                .is_some_and(|token| token.cleaned == "relay");
-            let ends_relay = window.last().is_some_and(|token| token.cleaned == "relay");
-            if compact_len >= 3 && (!follower_relay || ends_relay) {
+            let discards_modifier = modifier_ranges
+                .iter()
+                .any(|(first, after)| *first < start || *after > start.saturating_add(width));
+            if compact_len >= 3 && !discards_modifier {
                 candidates.push(render(window));
             }
         }

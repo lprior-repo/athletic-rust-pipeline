@@ -870,6 +870,107 @@ fn merged_product_carries_reconcilable_evidence() -> TestResult {
     Ok(())
 }
 
+fn verified_combined(state: &str, school: &str) -> census_service::coachverify::FragmentOutcome {
+    use census_domain::model::{ContactClaimEvidence, ContactProofField, RawContactRow};
+    use census_service::coachverify::{FragmentOutcome, RowOutcome, Verdict};
+    let row = RawContactRow {
+        school: school.to_string(),
+        city: "Alpha".to_string(),
+        state: state.to_string(),
+        sport: "Cross Country".to_string(),
+        role: "Head XC Coach".to_string(),
+        coach_name: "Dana Reid".to_string(),
+        public_professional_email: "dana@example.org".to_string(),
+        ad_name: "Pat Nolan".to_string(),
+        ad_email: "pat@example.org".to_string(),
+        source_urls: vec!["https://example.org/staff".to_string()],
+        last_observed: "2026-09-21".to_string(),
+    };
+    let claim = |field: ContactProofField, value: &str, person: &str, role: &str| {
+        ContactClaimEvidence {
+            field,
+            value: value.to_string(),
+            person: person.to_string(),
+            role: role.to_string(),
+            sport: row.sport.clone(),
+            school: row.school.clone(),
+            state: row.state.clone(),
+            source_url: row.source_urls[0].clone(),
+            claimed_observed_on: row.last_observed.clone(),
+            source_sha256: "b".repeat(64),
+            fetched_at: "2026-09-22T10:00:00Z".to_string(),
+            span: format!("<span class=\"cell\">{value}</span>"),
+        }
+    };
+    let evidence = vec![
+        claim(
+            ContactProofField::CoachName,
+            &row.coach_name,
+            &row.coach_name,
+            &row.role,
+        ),
+        claim(
+            ContactProofField::PublicProfessionalEmail,
+            &row.public_professional_email,
+            &row.coach_name,
+            &row.role,
+        ),
+        claim(
+            ContactProofField::AdName,
+            &row.ad_name,
+            &row.ad_name,
+            "Athletic Director",
+        ),
+        claim(
+            ContactProofField::AdEmail,
+            &row.ad_email,
+            &row.ad_name,
+            "Athletic Director",
+        ),
+    ];
+    FragmentOutcome {
+        file: format!("{state}.csv"),
+        rows: vec![RowOutcome {
+            row,
+            verdict: Verdict::Ok,
+            evidence,
+        }],
+        counts: Default::default(),
+    }
+}
+
+#[test]
+fn combined_row_survives_merge_and_reconciliation() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let union = dir.path().join("union");
+    let combined = verified_combined("OH", "Alpha High School");
+    let director = verified_director("OH", "Beta High School");
+    census_service::coachverify::write_state_union(
+        &union,
+        &[combined.clone(), director.clone()],
+    )?;
+    let out = dir.path().join("coach-contacts.csv");
+    run_merge_coaches(&MergeCoachesArgs {
+        fragments: union,
+        out: out.clone(),
+        report: dir.path().join("merge.md"),
+    })?;
+    let published = census_service::coachverify::read_fragment(&out)?;
+    check!(eq; published.len(), 2, "both rows publish their proofs");
+    let sidecar = census_service::coachverify::evidence_path(&out);
+    check!(
+        eq;
+        census_service::coachverify::read_evidence_jsonl(&sidecar)?.len(),
+        5,
+        "all four combined claims and the director claim survive the merge"
+    );
+    let reconciliation = census_service::coachverify::reconcile(&out, &[combined, director])?;
+    check!(eq; reconciliation.published, 2);
+    check!(eq; reconciliation.unmatched_total(), 0);
+    check!(eq; reconciliation.tampered_total(), 0);
+    Ok(())
+}
+
 #[test]
 fn merged_product_preserves_repeated_claims_for_digest_fidelity() -> TestResult {
     let dir = tempfile::tempdir()?;

@@ -120,6 +120,7 @@ pub(super) fn canonical_athlete(row: &CanonicalAthlete) -> StoreResult<Canonical
     ordered(&mut canonical.published_graduations)?;
     ordered(&mut canonical.public_profile_urls)?;
     ordered(&mut canonical.source_links)?;
+    ordered(&mut canonical.identity_attestations)?;
     ordered(&mut canonical.evidence)?;
     ordered(&mut canonical.retained_conflicts)?;
     Ok(canonical)

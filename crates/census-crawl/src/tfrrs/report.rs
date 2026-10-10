@@ -48,7 +48,8 @@ pub(super) fn note_rows(report: &mut AdapterReport, stats: &Stats) {
         stats.marks_converted, stats.marks_unconverted, stats.events_unmapped
     ));
     report.note(format!(
-        "grades: {} rows placed by the page's `year=` filter (they print no year), {} rows whose \
+        "grades: {} grade-less rows naming the page's `year=` filter (the missing grade stays \
+         unknown; the filter is a selection hint only), {} rows whose \
          filter disagrees with the year they print (the printed year wins), {} rows below high \
          school, {} rows whose gender the page does not state",
         stats.grades_from_filter,

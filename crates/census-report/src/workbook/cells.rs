@@ -79,7 +79,7 @@ impl<'a> SheetWriter<'a> {
         widths: &[u16],
     ) -> ReportResult<Self> {
         let mut writer = Self {
-            sheet: book.add_worksheet(),
+            sheet: book.add_worksheet_with_constant_memory(),
             path,
             bold: Format::new().set_bold(),
         };

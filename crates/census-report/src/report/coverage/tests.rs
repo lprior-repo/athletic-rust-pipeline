@@ -150,12 +150,13 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
     );
     store.append(Table::Coaches, &xc_coach)?;
 
-    let meet = CanonicalMeet::new(
+    let mut meet = CanonicalMeet::new(
         Some(UsJurisdiction::Wisconsin),
         "Abbotsford Invite",
         "2026-05-01",
         CompetitionLevel::Invitational,
     );
+    meet.sports.push(Sport::OutdoorTrack);
     store.append(Table::Meets, &meet)?;
     let event = CanonicalEvent::new(
         EventIdentity {

@@ -6,6 +6,7 @@ use census_domain::model::{EventKind, Gender, Grade, Mark, SourceRef, TimingMeth
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 mod event_scores;
+mod wind_heat;
 
 const DASH: &str = include_str!("../../tests/fixtures/wiaa_results/d1boysstateresults-dash.htm");
 const SECTIONS: &str =
@@ -140,6 +141,19 @@ fn event_labels_map_onto_the_ontology() {
     assert_eq!(hytek_event_kind("Pole Vault"), EventKind::PoleVault);
     assert!(matches!(
         hytek_event_kind("300 Meter Hurdles Relay Race Unknown"),
+        EventKind::Unmapped { .. }
+    ));
+    assert_eq!(
+        hytek_event_kind("1600m Sprint Medley Relay"),
+        EventKind::SprintMedley,
+        "a distance-prefixed medley relay is never a flat distance"
+    );
+    assert!(matches!(
+        hytek_event_kind("200 Meter Hurdles"),
+        EventKind::Unmapped { .. }
+    ));
+    assert!(matches!(
+        hytek_event_kind("3000 Meter Race Walk"),
         EventKind::Unmapped { .. }
     ));
 }

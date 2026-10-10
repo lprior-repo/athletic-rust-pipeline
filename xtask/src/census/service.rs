@@ -1,8 +1,9 @@
 use anyhow::{Context, Result};
 use census_report::report::Scope;
 use census_service::restate_services::{
-    run_key, workbook_request_key, CensusIngressClient, ReportIngressClient, ReportReply,
-    ReportRequest, StatusReply, WorkbookIngressClient, WorkbookReply, WorkbookRequest,
+    report_export_key, workbook_request_key, CensusIngressClient, ExportGeneration,
+    ReportIngressClient, ReportReply, ReportRequest, StatusReply, WorkbookIngressClient,
+    WorkbookReply, WorkbookRequest,
 };
 use census_store::Table;
 use restate_sdk::prelude::*;
@@ -32,7 +33,10 @@ pub(super) fn status(origin: &str) -> Result<()> {
 pub(super) fn coverage(origin: &str) -> Result<()> {
     let (endpoint, client) = ingress::job_client(origin)?;
     ingress::announce(&endpoint, "Report", "run");
-    let key = run_key("report", &[Scope::AllSources.as_str()], "1");
+    let key = report_export_key(
+        Scope::AllSources.as_str(),
+        &ExportGeneration::default_generation(),
+    );
     let report = ReportIngressClient::from_client(client, key);
     let request = ReportRequest {
         scope: Some(Scope::AllSources.as_str().to_string()),

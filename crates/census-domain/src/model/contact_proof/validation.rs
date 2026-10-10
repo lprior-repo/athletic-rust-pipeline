@@ -132,7 +132,7 @@ pub(super) fn claim_binds_to_row(row: &RawContactRow, claim: &ContactClaimEviden
     validate_claim_against_row(row, claim, &mut [false; 4]).is_ok()
 }
 
-fn is_director(field: ContactProofField) -> bool {
+pub(super) fn is_director(field: ContactProofField) -> bool {
     matches!(
         field,
         ContactProofField::AdName | ContactProofField::AdEmail

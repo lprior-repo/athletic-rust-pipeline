@@ -32,11 +32,9 @@ pub fn parse_result_body(
     }
 }
 
-use crate::{CrawlError, CrawlResult};
+use crate::CrawlResult;
 use census_domain::model::SourceRef;
-use std::io::Write;
-use std::path::PathBuf;
-use std::process::{Child, Command, Stdio};
+use std::time::Duration;
 
 pub(super) fn parse_pdf(
     text: &str,
@@ -57,41 +55,23 @@ pub(super) fn parse_pdf(
 }
 
 pub(super) fn pdftotext(body: &[u8]) -> CrawlResult<String> {
-    let mut child = spawn_pdftotext()?;
-    let Some(mut stdin) = child.stdin.take() else {
-        return Err(CrawlError::Invariant {
-            detail: "stdin was piped".to_string(),
-        });
-    };
-    let payload = body.to_vec();
-    let writer = std::thread::spawn(move || stdin.write_all(&payload));
-    let output = child.wait_with_output().map_err(pdftotext_failed)?;
-    let written = writer.join().map_err(|_| CrawlError::Invariant {
-        detail: "the pdftotext writer thread panicked".to_string(),
-    })?;
-    if !output.status.success() {
-        return Err(pdftotext_failed(std::io::Error::other(format!(
-            "pdftotext exited with {}",
-            output.status
-        ))));
-    }
-    written.map_err(pdftotext_failed)?;
-    Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+    pdftotext_with(
+        "pdftotext",
+        &["-layout", "-", "-"],
+        body,
+        crate::convert::CONVERTER_DEADLINE,
+        crate::convert::CONVERTER_MAX_OUTPUT_BYTES,
+    )
 }
 
-fn spawn_pdftotext() -> CrawlResult<Child> {
-    Command::new("pdftotext")
-        .args(["-layout", "-", "-"])
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()
-        .map_err(pdftotext_failed)
-}
-
-fn pdftotext_failed(source: std::io::Error) -> CrawlError {
-    CrawlError::Io {
-        path: PathBuf::from("pdftotext"),
-        source,
-    }
+pub(super) fn pdftotext_with(
+    command: &str,
+    args: &[&str],
+    body: &[u8],
+    deadline: Duration,
+    max_output: usize,
+) -> CrawlResult<String> {
+    let bytes =
+        crate::convert::converter_stdout_capped(command, args, body, deadline, max_output)?;
+    Ok(String::from_utf8_lossy(&bytes).into_owned())
 }

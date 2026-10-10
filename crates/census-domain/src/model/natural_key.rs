@@ -2,7 +2,7 @@ use super::collision::{evidence_list, source_list};
 use super::school::{city_key, same_city};
 use super::{
     normalize_name, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
-    CanonicalPerformance, CanonicalSchool, CanonicalTeam, RetainedConflict,
+    CanonicalPerformance, CanonicalSchool, CanonicalTeam, RetainedConflict, SourceIdentity,
 };
 use crate::jurisdiction::UsJurisdiction;
 
@@ -18,6 +18,14 @@ pub trait NaturalKey {
 
 fn same_name(left: &str, right: &str) -> bool {
     left == right || normalize_name(left) == normalize_name(right)
+}
+
+fn same_owner(left: &Option<SourceIdentity>, right: &Option<SourceIdentity>) -> bool {
+    match (left, right) {
+        (Some(left), Some(right)) => left.namespace == right.namespace && left.id == right.id,
+        (None, None) => true,
+        _ => false,
+    }
 }
 
 fn same_compressed(left: &str, right: &str) -> bool {
@@ -129,7 +137,7 @@ impl NaturalKey for CanonicalAthlete {
             && self.grad_year == other.grad_year
             && self.gender == other.gender
             && same_name(&self.canonical_name, &other.canonical_name)
-            && self.source == other.source
+            && same_owner(&self.source, &other.source)
     }
 
     fn natural_key(&self) -> String {

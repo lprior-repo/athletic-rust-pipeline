@@ -2,6 +2,8 @@ use super::evidence::RowEvidence;
 use super::*;
 use census_domain::model::{ContactProofField, RawContactRow};
 use sha2::{Digest, Sha256};
+use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -167,6 +169,33 @@ fn a_foreign_school_cannot_verify_the_claimed_director() -> TestResult {
 fn a_foreign_state_cannot_verify_the_claimed_director() -> TestResult {
     let body = "<h1>Mosinee High School MN</h1><table><tr><td>Dana Reid Athletic Director dana@example.org</td></tr></table>";
     check!(!evaluate(&director_fragment(), body)?.verdict().shipped());
+    Ok(())
+}
+
+#[test]
+fn combined_coach_and_ad_row_emits_director_role_for_ad_email() -> TestResult {
+    let row = RawContactRow {
+        role: "Head XC Coach".to_string(),
+        coach_name: "Dana Reid".to_string(),
+        public_professional_email: "dana@example.org".to_string(),
+        ad_name: "Pat Nolan".to_string(),
+        ad_email: "pat@example.org".to_string(),
+        ..fragment()
+    };
+    let body = staff(
+        "<tr><td>Dana Reid Head XC Coach dana@example.org</td></tr><tr><td>Pat Nolan Athletic Director pat@example.org</td></tr>",
+    );
+    let evidence = evaluate(&row, &body)?;
+    check!(eq; evidence.verdict(), Verdict::Ok);
+    let director_email = evidence
+        .claims
+        .iter()
+        .find(|claim| claim.field == ContactProofField::AdEmail)
+        .ok_or("the combined row publishes its director address")?;
+    check!(eq; director_email.role, "Athletic Director");
+    check!(eq; director_email.person, "Pat Nolan");
+    let proof = census_domain::model::compute_contact_proof(&row, &evidence.claims)?;
+    check!(eq; proof.len(), 64);
     Ok(())
 }
 
@@ -483,5 +512,102 @@ fn union_staging_publishes_reconcilable_evidence() -> TestResult {
     let reconciliation = reconcile(&union.join("WI.csv"), std::slice::from_ref(&verified))?;
     check!(eq; reconciliation.unmatched_total(), 0);
     check!(eq; reconciliation.tampered_total(), 0);
+    Ok(())
+}
+
+fn scratch_script(tag: &str, body: &str) -> TestResult<PathBuf> {
+    use std::os::unix::fs::PermissionsExt;
+
+    let path = std::env::temp_dir().join(format!(
+        "coachverify-script-{}-{tag}.sh",
+        std::process::id()
+    ));
+    std::fs::write(&path, body)?;
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755))?;
+    Ok(path)
+}
+
+fn scratch_dir(tag: &str) -> TestResult<PathBuf> {
+    let path = std::env::temp_dir().join(format!(
+        "coachverify-scratch-{}-{tag}",
+        std::process::id()
+    ));
+    std::fs::remove_dir_all(&path).ok();
+    std::fs::create_dir_all(&path)?;
+    Ok(path)
+}
+
+fn assert_scratch_empty(scratch: &Path) -> TestResult {
+    check!(
+        std::fs::read_dir(scratch)?.next().is_none(),
+        "the coach converter must leave no scratch files in {}",
+        scratch.display()
+    );
+    Ok(())
+}
+
+#[test]
+fn an_over_cap_coach_converter_refuses_and_leaves_no_scratch_files() -> TestResult {
+    let converter = scratch_script(
+        "over-cap",
+        "#!/bin/sh\nhead -c 300000 /dev/zero | tr '\\0' 'a' > \"$3\"\n",
+    )?;
+    let scratch = scratch_dir("over-cap")?;
+    let binary = converter.to_string_lossy().into_owned();
+    let body = b"%PDF-1.4 coach body";
+    let refused = super::fetch::inflate_pdf_in(
+        &scratch,
+        &binary,
+        body,
+        Duration::from_secs(60),
+        4096,
+    );
+    check!(
+        refused.is_none(),
+        "converted text over the cap must be refused: {refused:?}"
+    );
+    assert_scratch_empty(&scratch)?;
+    let inflated = super::fetch::inflate_pdf_in(
+        &scratch,
+        &binary,
+        body,
+        Duration::from_secs(60),
+        1_048_576,
+    );
+    check!(
+        eq;
+        inflated.as_deref().map(str::len),
+        Some(300_000),
+        "conversion under the cap is retained: {inflated:?}"
+    );
+    assert_scratch_empty(&scratch)?;
+    std::fs::remove_dir_all(&scratch)?;
+    std::fs::remove_file(&converter)?;
+    Ok(())
+}
+
+#[test]
+fn a_stalled_coach_converter_refuses_at_its_deadline_and_leaves_no_scratch_files() -> TestResult {
+    let converter = scratch_script("stall", "#!/bin/sh\nexec sleep 300\n")?;
+    let scratch = scratch_dir("stall")?;
+    let started = Instant::now();
+    let refused = super::fetch::inflate_pdf_in(
+        &scratch,
+        &converter.to_string_lossy(),
+        b"%PDF-1.4 coach body",
+        Duration::from_millis(200),
+        1_048_576,
+    );
+    check!(
+        refused.is_none(),
+        "a stalled coach converter must be refused: {refused:?}"
+    );
+    check!(
+        started.elapsed() < Duration::from_secs(20),
+        "a stalled coach converter must be killed at its deadline"
+    );
+    assert_scratch_empty(&scratch)?;
+    std::fs::remove_dir_all(&scratch)?;
+    std::fs::remove_file(&converter)?;
     Ok(())
 }

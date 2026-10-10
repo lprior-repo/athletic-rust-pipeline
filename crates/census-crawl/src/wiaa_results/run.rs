@@ -290,6 +290,20 @@ fn note_resolution(report: &mut AdapterReport, stats: &Stats) {
             .collect::<Vec<_>>()
             .join(" ")
     ));
+    if !stats.ambiguous.is_empty() {
+        let mut ambiguous: Vec<(&String, &usize)> = stats.ambiguous.iter().collect();
+        ambiguous.sort_by(|a, b| b.1.cmp(a.1));
+        report.note(format!(
+            "ambiguous school labels ({}): {}",
+            stats.ambiguous.values().sum::<usize>(),
+            ambiguous
+                .iter()
+                .take(12)
+                .map(|(name, count)| format!("{name} x{count}"))
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+    }
     if !stats.unresolved.is_empty() {
         let mut unresolved: Vec<(&String, &usize)> = stats.unresolved.iter().collect();
         unresolved.sort_by(|a, b| b.1.cmp(a.1));

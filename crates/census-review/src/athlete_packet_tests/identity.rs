@@ -2,6 +2,7 @@ use super::*;
 
 use crate::athlete_packet::packet as athlete_packet;
 use census_domain::model::serialized_digest;
+use census_domain::model::{AttestationQualification, IdentityAttestation};
 
 #[test]
 fn canary_11_swapping_which_subject_owns_the_cohort_fact_changes_review_identity() -> TestResult {
@@ -54,9 +55,20 @@ fn reordered_fact_set(reverse: bool) -> TestResult<(CanonicalAthlete, CanonicalA
             Some("https://www.athletic.net/athlete/998877/track-and-field"),
         ),
     ];
+    let mut attestations = vec![
+        (SourceNamespace::TfrrsAthlete, "77", "/athletes/77"),
+        (
+            SourceNamespace::AthleticNet {
+                kind: "athlete".to_string(),
+            },
+            "998877",
+            "/athlete/998877",
+        ),
+    ];
     if reverse {
         observations.reverse();
         links.reverse();
+        attestations.reverse();
     }
     for (grade, school_year) in observations {
         observed(&mut subject, grade, school_year)?;
@@ -64,8 +76,27 @@ fn reordered_fact_set(reverse: bool) -> TestResult<(CanonicalAthlete, CanonicalA
     for (namespace, id, url) in links {
         known_as(&mut subject, namespace, id, url);
     }
+    for (namespace, id, locator) in attestations {
+        attested(&mut subject, namespace, id, locator);
+    }
     observed(&mut peer, 11, 2025)?;
     Ok((subject, peer))
+}
+
+fn attested(athlete: &mut CanonicalAthlete, namespace: SourceNamespace, id: &str, locator: &str) {
+    athlete.identity_attestations.push(IdentityAttestation {
+        subject: SourceIdentity::new(namespace, id),
+        source: SourceRef::new(
+            "milesplit-capture",
+            Some(format!("https://www.milesplit.com/athletes/{id}")),
+        ),
+        capture_sha256: "0".repeat(64),
+        acquired_at: "2026-09-30T12:00:00Z".to_string(),
+        source_family: "milesplit".to_string(),
+        upstream_producer: "milesplit-profile".to_string(),
+        subject_locator: locator.to_string(),
+        qualification: AttestationQualification::IndependentPublished,
+    });
 }
 
 #[test]
@@ -79,6 +110,12 @@ fn canary_12_reordering_an_unordered_fact_set_keeps_review_identity() -> TestRes
         forward_subject.observed_grades,
         reverse_subject.observed_grades,
         "the two fact sets really are stored in different orders"
+    );
+    check!(
+        ne;
+        forward_subject.identity_attestations,
+        reverse_subject.identity_attestations,
+        "the two attestation sets really are stored in different orders"
     );
 
     let mut group = vec![forward_subject.id.to_string(), forward_peer.id.to_string()];

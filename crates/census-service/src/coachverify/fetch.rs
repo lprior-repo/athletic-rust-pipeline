@@ -1,6 +1,12 @@
+use census_crawl::convert::{
+    CONVERTER_DEADLINE, CONVERTER_MAX_OUTPUT_BYTES, converter_files_capped, read_file_capped,
+};
 use census_crawl::net::{FetchOptions, Fetcher};
 use census_domain::model::RawContactRow;
+use std::ffi::OsStr;
+use std::path::Path;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::Duration;
 
 #[derive(Debug, Clone)]
 pub struct GateOptions {
@@ -96,7 +102,25 @@ pub fn body_text(body: &[u8], pdftotext: Option<&str>) -> String {
 static SCRATCH: AtomicU64 = AtomicU64::new(0);
 
 fn inflate_pdf(binary: &str, body: &[u8]) -> Option<String> {
-    let scratch = std::env::temp_dir();
+    inflate_pdf_under(binary, body, CONVERTER_DEADLINE, CONVERTER_MAX_OUTPUT_BYTES)
+}
+
+pub(crate) fn inflate_pdf_under(
+    binary: &str,
+    body: &[u8],
+    deadline: Duration,
+    max_output: usize,
+) -> Option<String> {
+    inflate_pdf_in(&std::env::temp_dir(), binary, body, deadline, max_output)
+}
+
+pub(crate) fn inflate_pdf_in(
+    scratch: &Path,
+    binary: &str,
+    body: &[u8],
+    deadline: Duration,
+    max_output: usize,
+) -> Option<String> {
     let tag = format!(
         "coachverify-{}-{}",
         std::process::id(),
@@ -104,18 +128,18 @@ fn inflate_pdf(binary: &str, body: &[u8]) -> Option<String> {
     );
     let raw = scratch.join(format!("{tag}.pdf"));
     let text = scratch.join(format!("{tag}.txt"));
-    let result = (|| {
+    let result = (|| -> Option<String> {
         std::fs::write(&raw, body).ok()?;
-        let status = std::process::Command::new(binary)
-            .arg("-q")
-            .arg(&raw)
-            .arg(&text)
-            .status()
-            .ok()?;
-        if !status.success() {
-            return None;
-        }
-        std::fs::read_to_string(&text).ok()
+        converter_files_capped(
+            binary,
+            [OsStr::new("-q"), raw.as_os_str(), text.as_os_str()],
+            &text,
+            deadline,
+            max_output,
+        )
+        .ok()?;
+        let bytes = read_file_capped(&text, max_output).ok()?;
+        Some(String::from_utf8_lossy(&bytes).into_owned())
     })();
     std::fs::remove_file(&raw).ok();
     std::fs::remove_file(&text).ok();

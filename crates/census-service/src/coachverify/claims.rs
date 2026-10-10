@@ -180,7 +180,7 @@ fn evidence(
     context: &ClaimContext<'_>,
 ) -> ContactClaimEvidence {
     let row = context.row;
-    let role = if field == ContactProofField::AdName {
+    let role = if census_domain::model::is_director(field) {
         "Athletic Director".to_string()
     } else {
         row.role.clone()

@@ -8,7 +8,7 @@ use census_domain::model::{
     AthleteId, CanonicalAthlete, GradYear, Grade, ObservedGrade, RelayMember, RelayResult,
     SchoolId, SourceAthleteObservation, SourceIdentity, SourceNamespace, SourceRef, TeamId,
 };
-use census_domain::school_index::SchoolIndex;
+use census_domain::school_index::{SchoolIndex, SchoolResolution};
 use census_domain::UsJurisdiction;
 use performance::{record_performance, MemberFacts};
 use std::collections::HashMap;
@@ -141,13 +141,18 @@ fn resolve_school(
     resolved
         .entry(row.school.clone())
         .or_insert_with(
-            || match index.resolve(UsJurisdiction::Wisconsin, &row.school) {
-                Some((id, kind)) => {
+            || match index.resolve_label(UsJurisdiction::Wisconsin, &row.school) {
+                SchoolResolution::Resolved(id, kind) => {
                     let resolved_kind = stats.school_resolved.entry(kind.as_str()).or_default();
                     *resolved_kind = resolved_kind.saturating_add(1);
                     Some(id)
                 }
-                None => {
+                SchoolResolution::Ambiguous => {
+                    let ambiguous = stats.ambiguous.entry(row.school.clone()).or_default();
+                    *ambiguous = ambiguous.saturating_add(1);
+                    None
+                }
+                SchoolResolution::Absent => {
                     let unresolved = stats.unresolved.entry(row.school.clone()).or_default();
                     *unresolved = unresolved.saturating_add(1);
                     None

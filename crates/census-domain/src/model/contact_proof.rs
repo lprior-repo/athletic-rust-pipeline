@@ -152,6 +152,10 @@ pub fn claim_binds_to_row(row: &RawContactRow, claim: &ContactClaimEvidence) -> 
     validation::claim_binds_to_row(row, claim)
 }
 
+pub fn is_director(field: ContactProofField) -> bool {
+    validation::is_director(field)
+}
+
 fn compute_digest(
     row: &RawContactRow,
     claims: &[ContactClaimEvidence],

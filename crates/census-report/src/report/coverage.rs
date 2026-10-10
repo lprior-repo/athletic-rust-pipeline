@@ -1,8 +1,8 @@
-use super::{ReportError, ReportResult};
+use super::{ReportError, ReportResult, Scope};
 use crate::export::ExportDataset;
 use census_domain::JurisdictionBucket;
 use serde::Serialize;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 
 mod athletes;
 mod classify;
@@ -48,6 +48,7 @@ pub struct JurisdictionCoverage {
     pub cross_country: usize,
     pub with_performance: usize,
     pub with_comparable_mark: usize,
+    pub with_pr_support: usize,
     pub multisource: usize,
     pub identity_conflicts: usize,
     pub with_profile_url: usize,
@@ -127,7 +128,7 @@ pub fn coverage_report(
     grad_year: Option<i16>,
 ) -> ReportResult<CoverageReport> {
     let outcome = classify::run(dataset, grad_year);
-    let report = CoverageReport {
+    let mut report = CoverageReport {
         grad_year,
         notes: coverage_notes(dataset, grad_year, &outcome),
         jurisdictions: outcome.jurisdictions,
@@ -135,8 +136,67 @@ pub fn coverage_report(
         read: outcome.read,
         off_cohort_athletes: outcome.off_cohort_athletes,
     };
+    apply_pr_support(&mut report, dataset, grad_year);
     report.reconcile()?;
     Ok(report)
+}
+
+fn pr_supported_athletes(dataset: &ExportDataset, grad_year: Option<i16>) -> HashSet<String> {
+    crate::bests::build_from_dataset(
+        dataset,
+        &crate::bests::Options {
+            scope: Scope::AllSources,
+            grad_year,
+            limit: None,
+        },
+    )
+    .iter()
+    .map(|selection| selection.athlete_id().as_str().to_string())
+    .collect()
+}
+
+fn apply_pr_support(report: &mut CoverageReport, dataset: &ExportDataset, grad_year: Option<i16>) {
+    let supported = pr_supported_athletes(dataset, grad_year);
+    let school_state = state::school_state_index(dataset.schools.values());
+    let athletes =
+        super::derivation::collapse_athletes(&dataset.athletes, &dataset.canonical_aliases);
+    for athlete in &athletes {
+        if !state::in_requested_year(athlete, grad_year) {
+            continue;
+        }
+        if !supported.contains(athlete.id.as_str()) {
+            continue;
+        }
+        let bucket = state::jurisdiction_of(&school_state, athlete.school.as_str());
+        if let Some(row) = report
+            .jurisdictions
+            .iter_mut()
+            .find(|row| row.jurisdiction == bucket)
+        {
+            row.with_pr_support = row.with_pr_support.saturating_add(1);
+        }
+    }
+    for row in &report.jurisdictions {
+        refresh_pr_gap(row, &mut report.gaps);
+    }
+}
+
+fn refresh_pr_gap(row: &JurisdictionCoverage, gaps: &mut Vec<CoverageGap>) {
+    let count = row.with_performance.saturating_sub(row.with_pr_support);
+    if let Some(gap) = gaps
+        .iter_mut()
+        .find(|gap| gap.jurisdiction == row.jurisdiction && gap.class == GapClass::MissingPrSupport)
+    {
+        gap.count = count;
+    } else if count > 0 {
+        gaps.push(CoverageGap {
+            jurisdiction: row.jurisdiction,
+            class: GapClass::MissingPrSupport,
+            unit: GapClass::MissingPrSupport.unit(),
+            count,
+        });
+    }
+    gaps.retain(|gap| gap.class != GapClass::MissingPrSupport || gap.count > 0);
 }
 
 fn add(total: &mut usize, value: usize) {

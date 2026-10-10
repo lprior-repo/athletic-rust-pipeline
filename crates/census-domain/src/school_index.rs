@@ -1,6 +1,6 @@
 use crate::model::{normalize_name, CanonicalSchool, SchoolId};
 use crate::UsJurisdiction;
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SchoolMatch {
@@ -19,6 +19,19 @@ impl SchoolMatch {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SchoolResolution {
+    Resolved(SchoolId, SchoolMatch),
+    Ambiguous,
+    Absent,
+}
+
+enum LabelLookup {
+    Unique(SchoolId),
+    Ambiguous,
+    Absent,
+}
+
 const ABBREVIATIONS: [(&str, &str); 6] = [
     ("milw.", "milwaukee"),
     ("univ.", "university"),
@@ -34,32 +47,57 @@ struct Entry {
 }
 
 pub struct SchoolIndex {
-    exact: HashMap<(UsJurisdiction, String), SchoolId>,
+    names: HashMap<(UsJurisdiction, String), BTreeSet<SchoolId>>,
+    aliases: HashMap<(UsJurisdiction, String), BTreeSet<SchoolId>>,
     by_state: HashMap<UsJurisdiction, Vec<Entry>>,
+}
+
+fn record_label(
+    labels: &mut HashMap<(UsJurisdiction, String), BTreeSet<SchoolId>>,
+    key: (UsJurisdiction, String),
+    id: &SchoolId,
+) {
+    labels.entry(key).or_default().insert(id.clone());
+}
+
+fn unique(ids: &BTreeSet<SchoolId>) -> LabelLookup {
+    match ids.len() {
+        0 => LabelLookup::Absent,
+        1 => match ids.iter().next() {
+            Some(id) => LabelLookup::Unique(id.clone()),
+            None => LabelLookup::Absent,
+        },
+        _ => LabelLookup::Ambiguous,
+    }
 }
 
 impl SchoolIndex {
     pub fn from_schools(schools: &[CanonicalSchool]) -> Self {
-        let mut exact = HashMap::new();
+        let mut names = HashMap::new();
+        let mut aliases = HashMap::new();
         let mut by_state: HashMap<UsJurisdiction, Vec<Entry>> = HashMap::new();
         for school in schools {
             let Some(state) = school.state else {
                 continue;
             };
-            exact
-                .entry((state, school.normalized_name.clone()))
-                .or_insert_with(|| school.id.clone());
+            record_label(
+                &mut names,
+                (state, school.normalized_name.clone()),
+                &school.id,
+            );
             for alias in &school.aliases {
-                exact
-                    .entry((state, normalize_name(alias)))
-                    .or_insert_with(|| school.id.clone());
+                record_label(&mut aliases, (state, normalize_name(alias)), &school.id);
             }
             by_state.entry(state).or_default().push(Entry {
                 normalized: school.normalized_name.clone(),
                 id: school.id.clone(),
             });
         }
-        Self { exact, by_state }
+        Self {
+            names,
+            aliases,
+            by_state,
+        }
     }
 
     pub fn school_count(&self) -> usize {
@@ -67,45 +105,69 @@ impl SchoolIndex {
     }
 
     pub fn resolve(&self, state: UsJurisdiction, raw: &str) -> Option<(SchoolId, SchoolMatch)> {
+        match self.resolve_label(state, raw) {
+            SchoolResolution::Resolved(id, kind) => Some((id, kind)),
+            SchoolResolution::Ambiguous | SchoolResolution::Absent => None,
+        }
+    }
+
+    pub fn resolve_label(&self, state: UsJurisdiction, raw: &str) -> SchoolResolution {
         let normalized = normalize_name(raw);
         if normalized.is_empty() {
-            return None;
+            return SchoolResolution::Absent;
         }
-        if let Some(id) = self.exact.get(&(state, normalized.clone())) {
-            return Some((id.clone(), SchoolMatch::Exact));
+        let lowered = raw.to_ascii_lowercase();
+        match settle(self.label(state, &normalized), SchoolMatch::Exact) {
+            SchoolResolution::Absent => {}
+            settled => return settled,
         }
         for (pattern, replacement) in ABBREVIATIONS {
-            if raw.to_ascii_lowercase().contains(pattern) {
-                let expanded =
-                    normalize_name(&raw.to_ascii_lowercase().replace(pattern, replacement));
-                if let Some(id) = self.exact.get(&(state, expanded)) {
-                    return Some((id.clone(), SchoolMatch::Abbreviation));
+            if lowered.contains(pattern) {
+                let expanded = normalize_name(&lowered.replace(pattern, replacement));
+                match settle(self.label(state, &expanded), SchoolMatch::Abbreviation) {
+                    SchoolResolution::Absent => {}
+                    settled => return settled,
                 }
             }
         }
         if let Some(without_squad) = without_squad_letter(&normalized) {
-            if let Some(id) = self.exact.get(&(state, without_squad.to_string())) {
-                return Some((id.clone(), SchoolMatch::Exact));
+            match settle(self.label(state, without_squad), SchoolMatch::Exact) {
+                SchoolResolution::Absent => {}
+                settled => return settled,
             }
             for (pattern, replacement) in ABBREVIATIONS {
-                if raw.to_ascii_lowercase().contains(pattern) {
-                    let expanded =
-                        normalize_name(&raw.to_ascii_lowercase().replace(pattern, replacement));
+                if lowered.contains(pattern) {
+                    let expanded = normalize_name(&lowered.replace(pattern, replacement));
                     let key =
                         without_squad_letter(&expanded).map_or(expanded.as_str(), |value| value);
-                    if let Some(id) = self.exact.get(&(state, key.to_string())) {
-                        return Some((id.clone(), SchoolMatch::Abbreviation));
+                    match settle(self.label(state, key), SchoolMatch::Abbreviation) {
+                        SchoolResolution::Absent => {}
+                        settled => return settled,
                     }
                 }
             }
-            return self.partial(state, without_squad);
+            return settle(self.partial(state, without_squad), SchoolMatch::Partial);
         }
-        self.partial(state, &normalized)
+        settle(self.partial(state, &normalized), SchoolMatch::Partial)
     }
 
-    fn partial(&self, state: UsJurisdiction, normalized: &str) -> Option<(SchoolId, SchoolMatch)> {
-        let entries = self.by_state.get(&state)?;
-        let (head, last) = normalized.rsplit_once(' ')?;
+    fn label(&self, state: UsJurisdiction, label: &str) -> LabelLookup {
+        match self.names.get(&(state, label.to_string())) {
+            Some(ids) => unique(ids),
+            None => match self.aliases.get(&(state, label.to_string())) {
+                Some(ids) => unique(ids),
+                None => LabelLookup::Absent,
+            },
+        }
+    }
+
+    fn partial(&self, state: UsJurisdiction, normalized: &str) -> LabelLookup {
+        let Some(entries) = self.by_state.get(&state) else {
+            return LabelLookup::Absent;
+        };
+        let Some((head, last)) = normalized.rsplit_once(' ') else {
+            return LabelLookup::Absent;
+        };
         let head = format!("{head} ");
         let tail = format!(" {normalized}");
         let mut matched: Option<SchoolId> = None;
@@ -117,13 +179,24 @@ impl SchoolIndex {
             let suffix = entry.normalized.ends_with(&tail);
             if candidate || suffix {
                 match &matched {
-                    Some(existing) if *existing != entry.id => return None,
+                    Some(existing) if *existing != entry.id => return LabelLookup::Ambiguous,
                     Some(_) => {}
                     None => matched = Some(entry.id.clone()),
                 }
             }
         }
-        matched.map(|id| (id, SchoolMatch::Partial))
+        match matched {
+            Some(id) => LabelLookup::Unique(id),
+            None => LabelLookup::Absent,
+        }
+    }
+}
+
+fn settle(lookup: LabelLookup, kind: SchoolMatch) -> SchoolResolution {
+    match lookup {
+        LabelLookup::Unique(id) => SchoolResolution::Resolved(id, kind),
+        LabelLookup::Ambiguous => SchoolResolution::Ambiguous,
+        LabelLookup::Absent => SchoolResolution::Absent,
     }
 }
 
@@ -245,6 +318,56 @@ mod tests {
         assert_eq!(
             index.resolve(UsJurisdiction::Minnesota, "West De Pere"),
             None
+        );
+    }
+
+    #[test]
+    fn shared_exact_alias_is_unresolved_in_both_orders() {
+        let (mut abundant, _) = CanonicalSchool::new(
+            UsJurisdiction::Wisconsin,
+            "Abundant Life Christian",
+            "abundant life christian",
+            Some("Madison"),
+        );
+        abundant.aliases.push("Madison WI".to_string());
+        let (mut east, east_id) = CanonicalSchool::new(
+            UsJurisdiction::Wisconsin,
+            "Madison East",
+            "madison east",
+            Some("Madison"),
+        );
+        east.aliases.push("Madison WI".to_string());
+        for index in [
+            SchoolIndex::from_schools(&[abundant.clone(), east.clone()]),
+            SchoolIndex::from_schools(&[east.clone(), abundant.clone()]),
+        ] {
+            assert_eq!(
+                index.resolve_label(UsJurisdiction::Wisconsin, "Madison WI"),
+                SchoolResolution::Ambiguous
+            );
+            assert_eq!(index.resolve(UsJurisdiction::Wisconsin, "Madison WI"), None);
+            assert_eq!(
+                index.resolve(UsJurisdiction::Wisconsin, "Madison East"),
+                Some((east_id.clone(), SchoolMatch::Exact))
+            );
+        }
+        let (mut one_owner, _) = CanonicalSchool::new(
+            UsJurisdiction::Wisconsin,
+            "Madison East",
+            "madison east",
+            Some("Madison"),
+        );
+        one_owner.aliases.push("Madison WI".to_string());
+        let (unaliased, _) = CanonicalSchool::new(
+            UsJurisdiction::Wisconsin,
+            "Madison West",
+            "madison west",
+            Some("Madison"),
+        );
+        let unique = SchoolIndex::from_schools(&[one_owner, unaliased]);
+        assert_eq!(
+            unique.resolve_label(UsJurisdiction::Wisconsin, "Madison WI"),
+            SchoolResolution::Resolved(east_id, SchoolMatch::Exact)
         );
     }
 }

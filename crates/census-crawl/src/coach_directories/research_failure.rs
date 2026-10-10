@@ -41,7 +41,7 @@ pub(super) fn crawl(error: &crate::CrawlError) -> Outcome {
         CrawlError::Fetch(error) => fetch(error),
         CrawlError::Directory(error) if error.is_resource() => Outcome::Partial,
         CrawlError::Directory(_) => Outcome::Ambiguous,
-        CrawlError::Resource { .. } => Outcome::Partial,
+        CrawlError::Resource { .. } | CrawlError::ConverterDeadline { .. } => Outcome::Partial,
         CrawlError::Schema { .. }
         | CrawlError::Domain(_)
         | CrawlError::Invariant { .. }

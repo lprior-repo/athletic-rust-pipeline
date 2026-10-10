@@ -62,8 +62,8 @@ fn relay(label: &str) -> Option<EventKind> {
         "4x200m" | "4x200" | "4x200mrelay" | "4x200relay" | "800mrelay" => EventKind::Relay4x200,
         "4x400m" | "4x400" | "4x400mrelay" | "4x400relay" | "1600mrelay" => EventKind::Relay4x400,
         "4x800m" | "4x800" | "4x800mrelay" | "4x800relay" | "3200mrelay" => EventKind::Relay4x800,
-        "sprintmedley" | "smed" | "smr" => EventKind::SprintMedley,
-        "distancemedley" | "dmed" | "dmr" => EventKind::DistanceMedley,
+        "sprintmedley" | "smed" | "smr" | "sprintmedleyrelay" => EventKind::SprintMedley,
+        "distancemedley" | "dmed" | "dmr" | "distancemedleyrelay" => EventKind::DistanceMedley,
         _ => return None,
     })
 }

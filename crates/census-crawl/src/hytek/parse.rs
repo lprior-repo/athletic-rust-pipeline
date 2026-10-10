@@ -114,36 +114,50 @@ impl Section {
             .min()
     }
 
-    fn heat<'a>(&self, tokens: &[Token<'a>]) -> Option<String> {
-        ["H#", "Flight", "Lane"]
-            .iter()
-            .find_map(|label| self.numeric_token(tokens, label))
-            .map(|token| token.text.to_string())
+    fn heat(&self, tokens: &[Token<'_>]) -> Option<String> {
+        ["H#", "Flight", "Lane"].iter().find_map(|label| {
+            let column = self.column(label)?;
+            let edge = column.end.saturating_add(1);
+            let previous_end = self
+                .columns
+                .iter()
+                .filter(|other| other.start < column.start)
+                .map(|other| other.end)
+                .max()
+                .unwrap_or_default();
+            let trailing = !self.columns.iter().any(|other| other.start > column.start);
+            tokens
+                .iter()
+                .filter(|token| {
+                    token.start >= column.start
+                        && token.end <= edge
+                        && (token.end.saturating_add(1) >= column.end
+                            || (trailing && token.end > previous_end))
+                        && heat_token(token.text)
+                })
+                .min_by_key(|token| column.end.abs_diff(token.end))
+                .map(|token| token.text.to_string())
+        })
     }
     fn wind(&self, tokens: &[Token<'_>]) -> Option<f64> {
         self.numeric_token(tokens, "Wind")
             .and_then(|token| token.text.parse::<f64>().ok())
             .filter(|value| value.is_finite() && value.abs() <= 12.0)
     }
-    fn declares_extra_numeric(&self) -> bool {
-        self.columns
-            .iter()
-            .filter(|column| column.numeric)
-            .any(|column| !MARK_LABELS.contains(&column.label.as_str()))
-    }
-    fn declares_heat(&self) -> bool {
-        ["H#", "Flight", "Lane"]
-            .iter()
-            .any(|label| self.column(label).is_some())
-    }
-    fn declares_wind(&self) -> bool {
-        self.column("Wind").is_some()
-    }
-    fn declares_points(&self) -> bool {
+
+    fn points(&self, tokens: &[Token<'_>]) -> Option<f64> {
         ["Points", "Pts"]
             .iter()
-            .any(|label| self.column(label).is_some())
+            .find_map(|label| self.numeric_token(tokens, label))
+            .and_then(|token| token.text.parse::<f64>().ok())
+            .filter(|value| value.is_finite() && *value >= 0.0)
     }
+}
+
+fn heat_token(text: &str) -> bool {
+    !text.is_empty()
+        && (text.chars().all(|ch| ch.is_ascii_digit())
+            || (text.len() == 1 && text.chars().all(|ch| ch.is_ascii_alphabetic())))
 }
 
 pub(super) fn starts_like_a_row(trimmed: &str) -> bool {
@@ -156,46 +170,10 @@ pub(super) fn starts_like_a_row(trimmed: &str) -> bool {
 pub(super) fn parse_row(line: &str, kind: &EventKind, section: &Section) -> Option<ParsedRow> {
     let tokens = tokens(line);
     let (place, name, school, grade) = row_identity(line, &tokens, section)?;
-
-    let mut marks = None;
-    for label in MARK_LABELS {
-        let Some(token) = section.numeric_token(&tokens, label) else {
-            continue;
-        };
-        let tail = line
-            .get(token.end..)
-            .map_or(Default::default(), core::convert::identity);
-        if let Some(parsed) = parse_marks(kind, token.text, tail) {
-            marks = Some((parsed, token.text));
-            break;
-        }
-    }
-    let ((mark, wind_from_tail, heat_from_tail, points_from_tail), mark_text) = marks?;
-    let strict = section.declares_extra_numeric();
-    let heat = section.heat(&tokens).or_else(|| {
-        let from_tail = heat_from_tail
-            .filter(|heat| !heat.is_empty() && heat.chars().all(|ch| ch.is_ascii_digit()));
-        if !strict || section.declares_heat() {
-            from_tail
-        } else {
-            None
-        }
-    });
-    let points = section
-        .numeric_token(&tokens, "Points")
-        .and_then(|token| token.text.parse::<f64>().ok())
-        .or(if !strict || section.declares_points() {
-            points_from_tail
-        } else {
-            None
-        });
-    let wind = section
-        .wind(&tokens)
-        .or(if !strict || section.declares_wind() {
-            wind_from_tail
-        } else {
-            None
-        });
+    let (mark, mark_text) = row_mark(&tokens, section, kind)?;
+    let heat = section.heat(&tokens);
+    let points = section.points(&tokens);
+    let wind = section.wind(&tokens);
     let timing = if time_is_hand(mark_text) {
         Some(TimingMethod::Hand)
     } else {
@@ -216,29 +194,48 @@ pub(super) fn parse_row(line: &str, kind: &EventKind, section: &Section) -> Opti
     })
 }
 
-fn row_identity(
+fn row_mark<'a>(
+    tokens: &[Token<'a>],
+    section: &Section,
+    kind: &EventKind,
+) -> Option<(Mark, &'a str)> {
+    for label in MARK_LABELS {
+        let Some(token) = section.numeric_token(tokens, label) else {
+            continue;
+        };
+        if let Some(parsed) = parse_marks(kind, token.text) {
+            return Some((parsed, token.text));
+        }
+    }
+    None
+}
+
+fn row_place(tokens: &[Token<'_>], first_column_start: usize) -> Option<u16> {
+    tokens
+        .iter()
+        .rfind(|token| token.end <= first_column_start)
+        .and_then(|token| token.text.parse::<u16>().ok())
+}
+
+fn school_column_start(section: &Section, name_start: Option<usize>) -> Option<usize> {
+    ["School", "Team", "Relay", "Athlete"]
+        .iter()
+        .find_map(|label| section.column(label).map(|column| column.start))
+        .or(name_start)
+}
+
+fn school_and_name(
     line: &str,
     tokens: &[Token<'_>],
     section: &Section,
-) -> Option<(Option<u16>, String, String, Option<Grade>)> {
-    let first_column_start = section.columns.first()?.start;
-
-    let place = tokens
-        .iter()
-        .rfind(|token| token.end <= first_column_start)
-        .and_then(|token| token.text.parse::<u16>().ok());
-
-    let name_start = section.column("Name").map(|column| column.start);
-    let school_start = ["School", "Team", "Relay", "Athlete"]
-        .iter()
-        .find_map(|label| section.column(label).map(|column| column.start))
-        .or(name_start)?;
-
-    let mut school = match section.next_numeric_start(tokens, school_start) {
+    school_start: usize,
+    name_start: Option<usize>,
+) -> (String, String) {
+    let school = match section.next_numeric_start(tokens, school_start) {
         Some(end) => substring(line, school_start, end),
         None => substring(line, school_start, line.len()),
     };
-    let mut name = match name_start {
+    let name = match name_start {
         Some(start) => {
             let end = section
                 .next_numeric_start(tokens, start)
@@ -247,10 +244,28 @@ fn row_identity(
         }
         None => String::new(),
     };
-    let mut grade = section
+    (school, name)
+}
+
+fn row_grade(tokens: &[Token<'_>], section: &Section) -> Option<Grade> {
+    section
         .numeric_token(tokens, "Year")
         .and_then(|token| token.text.parse::<u8>().ok())
-        .and_then(Grade::new);
+        .and_then(Grade::new)
+}
+
+fn row_identity(
+    line: &str,
+    tokens: &[Token<'_>],
+    section: &Section,
+) -> Option<(Option<u16>, String, String, Option<Grade>)> {
+    let first_column_start = section.columns.first()?.start;
+    let place = row_place(tokens, first_column_start);
+    let name_start = section.column("Name").map(|column| column.start);
+    let school_start = school_column_start(section, name_start)?;
+    let (mut school, mut name) =
+        school_and_name(line, tokens, section, school_start, name_start);
+    let mut grade = row_grade(tokens, section);
     if name_start.is_none() {
         if let Some((athlete, row_grade, school_label)) = individual_identity(&school) {
             name = athlete;

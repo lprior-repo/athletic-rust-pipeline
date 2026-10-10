@@ -113,9 +113,7 @@ fn gap_count(class: GapClass, row: &JurisdictionCoverage, counters: &GapCounters
         GapClass::ConflictingIdentity => row.identity_conflicts,
         GapClass::MissingEventContext => counters.missing_event_context,
         GapClass::UnmappedEvent => counters.unmapped_event,
-        GapClass::MissingPrSupport => row
-            .with_performance
-            .saturating_sub(row.with_comparable_mark),
+        GapClass::MissingPrSupport => row.with_performance.saturating_sub(row.with_pr_support),
         GapClass::UnknownJurisdiction => unplaceable_athletes(row),
         GapClass::EmptyJurisdiction => 0,
     }

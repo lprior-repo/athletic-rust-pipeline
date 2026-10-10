@@ -101,18 +101,37 @@ impl CanonicalAthlete {
     }
 
     pub fn add_identity(&mut self, identity: SourceIdentity) {
-        match self.source.as_mut() {
-            Some(source) if source.namespace == identity.namespace && source.id == identity.id => {
-                if source.url.is_none() {
-                    source.url = identity.url;
-                }
+        let same_owner = self
+            .source
+            .as_ref()
+            .is_some_and(|source| {
+                source.namespace == identity.namespace && source.id == identity.id
+            });
+        if !same_owner {
+            if self.source.is_none() {
+                self.source = Some(identity);
+            } else if !self.source_links.contains(&identity) {
+                self.source_links.push(identity);
             }
-            Some(_) => {
-                if !self.source_links.contains(&identity) {
-                    self.source_links.push(identity);
-                }
+            return;
+        }
+        let fills_missing_locator = self
+            .source
+            .as_ref()
+            .is_some_and(|source| source.url.is_none() && identity.url.is_some());
+        if fills_missing_locator {
+            if let Some(source) = self.source.as_mut() {
+                source.url = identity.url;
             }
-            None => self.source = Some(identity),
+            return;
+        }
+        let alternate_locator = identity.url.is_some()
+            && self
+                .source
+                .as_ref()
+                .is_some_and(|source| source.url != identity.url);
+        if alternate_locator && !self.source_links.contains(&identity) {
+            self.source_links.push(identity);
         }
     }
 

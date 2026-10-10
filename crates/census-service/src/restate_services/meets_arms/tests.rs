@@ -39,6 +39,47 @@ fn rejected_and_unresolved_meet_rows_keep_authoritative_unfinished_locators() ->
 }
 
 #[test]
+fn every_meet_family_slug_maps_to_exactly_one_arm() -> TestResult {
+    use crate::restate_services::plan::Dispatch;
+    let mut slugs: Vec<&str> = MEETS_ARMS.iter().map(|(slug, _)| *slug).collect();
+    let mut sorted = slugs.clone();
+    sorted.sort_unstable();
+    slugs.sort_unstable();
+    slugs.dedup();
+    check!(
+        eq;
+        slugs.len(),
+        sorted.len(),
+        "a meet slug must not carry conflicting arms: {sorted:?}"
+    );
+    for (slug, arm) in MEETS_ARMS {
+        check!(eq; arm_for(slug), Some(*arm), "slug {slug}");
+        check!(eq; Dispatch::of(slug), Dispatch::Wired, "the plan wires {slug}");
+    }
+    Ok(())
+}
+
+#[test]
+fn an_unwired_meet_family_slug_refuses_by_name() -> TestResult {
+    use crate::restate_services::plan::Dispatch;
+    check!(eq; arm_for("athleticlive"), None);
+    check!(
+        eq;
+        Dispatch::of("athleticlive"),
+        Dispatch::Unwired,
+        "the plan owes the AthleticLIVE artifact family"
+    );
+    let refusal = jobs::assert_some_stage_arms("athleticlive")
+        .err()
+        .ok_or("an applicable meet family without an arm must fail closed")?;
+    check!(
+        format!("{refusal:?}").contains("athleticlive"),
+        "the refusal names the slug: {refusal:?}"
+    );
+    Ok(())
+}
+
+#[test]
 fn unselected_milesplit_never_opens_its_index_frontier() -> TestResult {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()

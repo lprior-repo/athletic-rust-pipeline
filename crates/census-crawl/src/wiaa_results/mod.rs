@@ -77,6 +77,7 @@ struct Stats {
     relay_legs: usize,
     events: usize,
     school_resolved: HashMap<&'static str, usize>,
+    ambiguous: HashMap<String, usize>,
     unresolved: HashMap<String, usize>,
     formats: HashMap<String, usize>,
     seasons: HashMap<i16, usize>,

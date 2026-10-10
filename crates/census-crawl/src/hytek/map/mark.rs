@@ -118,13 +118,7 @@ pub fn parse_field_mark(token: &str) -> Option<Mark> {
         .map(Mark::DistanceMetres)
 }
 
-pub(in crate::hytek) type ParsedMark = (Mark, Option<f64>, Option<String>, Option<f64>);
-
-pub(in crate::hytek) fn parse_marks(
-    kind: &EventKind,
-    mark_token: &str,
-    tail: &str,
-) -> Option<ParsedMark> {
+pub(in crate::hytek) fn parse_marks(kind: &EventKind, mark_token: &str) -> Option<Mark> {
     let upper = mark_token.to_ascii_uppercase();
     let mark = if NO_MARK.contains(&upper.as_str()) {
         Mark::Raw(mark_token.to_string())
@@ -146,37 +140,5 @@ pub(in crate::hytek) fn parse_marks(
             _ => Mark::TimeSeconds(parse_time_with_hand(numeric)?),
         }
     };
-
-    let mut wind = None;
-    let mut heat = None;
-    let mut points = None;
-    for token in tail.split_whitespace() {
-        let is_decimal = token.contains('.') || token.starts_with('-');
-        if is_decimal && !kind.is_field() && wind.is_none() {
-            if let Ok(value) = token.parse::<f64>() {
-                if value.abs() <= 6.0 {
-                    wind = Some(value);
-                    continue;
-                }
-            }
-        }
-        if let Ok(value) = token.parse::<f64>() {
-            if kind.is_field() {
-                if heat.is_none() {
-                    heat = Some(token.to_string());
-                } else if points.is_none() {
-                    points = Some(value);
-                }
-                continue;
-            }
-            if heat.is_none() {
-                heat = Some(token.to_string());
-                continue;
-            }
-            if points.is_none() {
-                points = Some(value);
-            }
-        }
-    }
-    Some((mark, wind, heat, points))
+    Some(mark)
 }

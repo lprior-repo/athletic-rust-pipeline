@@ -30,17 +30,6 @@ impl<'a> PerformanceProjection<'a> {
         }
     }
 
-    pub(super) fn school_names(&self) -> Vec<&'a str> {
-        let mut names: Vec<&str> = self
-            .schools
-            .values()
-            .map(|school| school.name.as_str())
-            .collect();
-        names.sort_unstable();
-        names.dedup();
-        names
-    }
-
     pub fn row(&self, performance: &CanonicalPerformance) -> PerformanceRow {
         let joins = self.joins(performance);
         PerformanceRow {

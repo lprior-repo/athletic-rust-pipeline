@@ -61,6 +61,7 @@ pub fn classify_error(error: &CrawlError) -> (&'static str, String) {
         | CrawlError::Arithmetic { .. }
         | CrawlError::Directory(_)
         | CrawlError::Resource { .. }
+        | CrawlError::ConverterDeadline { .. }
         | CrawlError::EventIdentity(_)
         | CrawlError::Specification(_)
         | CrawlError::Performance(_)

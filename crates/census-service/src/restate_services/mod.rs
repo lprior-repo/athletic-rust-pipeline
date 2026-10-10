@@ -23,6 +23,65 @@ pub fn run_key(job: &str, parts: &[&str], generation: &str) -> String {
 }
 pub const DEFAULT_GENERATION: &str = "1";
 
+pub const MAX_EXPORT_GENERATION_LEN: usize = 32;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExportGeneration(String);
+
+#[derive(Debug, thiserror::Error)]
+pub enum ExportGenerationError {
+    #[error("export generation must not be empty")]
+    Empty,
+    #[error("export generation is {value} bytes, longer than {MAX_EXPORT_GENERATION_LEN}")]
+    TooLong { value: usize },
+    #[error("export generation {value:?} carries a character outside [A-Za-z0-9._-]")]
+    InvalidChar { value: String },
+}
+
+impl ExportGeneration {
+    pub fn parse(value: &str) -> Result<Self, ExportGenerationError> {
+        if value.is_empty() {
+            return Err(ExportGenerationError::Empty);
+        }
+        if value.len() > MAX_EXPORT_GENERATION_LEN {
+            return Err(ExportGenerationError::TooLong { value: value.len() });
+        }
+        if !value.bytes().all(|byte| {
+            byte.is_ascii_alphanumeric() || byte == b'.' || byte == b'-' || byte == b'_'
+        }) {
+            return Err(ExportGenerationError::InvalidChar {
+                value: value.to_string(),
+            });
+        }
+        Ok(Self(value.to_string()))
+    }
+
+    pub fn default_generation() -> Self {
+        Self(DEFAULT_GENERATION.to_string())
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+pub fn report_export_key(scope: &str, generation: &ExportGeneration) -> String {
+    run_key("report", &[scope], generation.as_str())
+}
+
+pub fn bests_export_key(
+    scope: &str,
+    year: &str,
+    limit: &str,
+    generation: &ExportGeneration,
+) -> String {
+    run_key("bests", &[scope, year, limit], generation.as_str())
+}
+
+pub fn consolidate_export_key(generation: &ExportGeneration) -> String {
+    run_key("consolidate", &[], generation.as_str())
+}
+
 pub fn workbook_request_key(request: &WorkbookRequest) -> String {
     let year = request
         .grad_year

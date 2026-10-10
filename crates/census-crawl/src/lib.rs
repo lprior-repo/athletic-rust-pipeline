@@ -55,6 +55,11 @@ pub enum CrawlError {
         requested: usize,
         limit: usize,
     },
+    #[error("converter {command} exceeded its {deadline:?} deadline and was killed")]
+    ConverterDeadline {
+        command: String,
+        deadline: std::time::Duration,
+    },
     #[error(transparent)]
     EventIdentity(#[from] census_domain::model::EventIdentityError),
     #[error(transparent)]
@@ -106,6 +111,7 @@ mod disposition;
 pub use disposition::CollectionDisposition;
 pub mod compiled;
 mod context;
+pub mod convert;
 pub mod directory;
 pub mod geocode;
 pub mod home_campus;

@@ -98,6 +98,44 @@ fn wrapped_event_labels_map_to_their_kind() -> Result<(), Box<dyn std::error::Er
 }
 
 #[test]
+fn medley_relay_and_modifier_labels_never_fall_back_to_a_distance(
+) -> Result<(), Box<dyn std::error::Error>> {
+    for label in [
+        "1600m Sprint Medley Relay",
+        "Sprint Medley Relay",
+        "Boys 1600m Sprint Medley Relay Finals",
+        "Distance Medley Relay",
+        "200 Meter Hurdles",
+        "3000m Race Walk",
+        "3000 Meter Race Walk",
+    ] {
+        let got = EventKind::from_source_label(label);
+        check!(
+            !matches!(
+                got,
+                EventKind::Track1600m | EventKind::Track3000m | EventKind::Track200m
+            ),
+            "{label} fell back to a flat distance: {got:?}"
+        );
+    }
+    check!(eq; EventKind::from_source_label("1600m Sprint Medley Relay"), EventKind::SprintMedley);
+    check!(eq; EventKind::from_source_label("Sprint Medley Relay"), EventKind::SprintMedley);
+    check!(eq; EventKind::from_source_label("Boys 1600m Sprint Medley Relay Finals"), EventKind::SprintMedley);
+    check!(eq; EventKind::from_source_label("Distance Medley Relay"), EventKind::DistanceMedley);
+    for label in ["200 Meter Hurdles", "3000m Race Walk", "3000 Meter Race Walk"] {
+        check!(
+            matches!(EventKind::from_source_label(label), EventKind::Unmapped { .. }),
+            "{label} is an unmodeled modifier, not a distance"
+        );
+    }
+    check!(eq; EventKind::from_source_label("Girls 100 Meter Hurdles"), EventKind::Track100mHurdles);
+    check!(eq; EventKind::from_source_label("Girls 300 Meter Hurdles"), EventKind::Track300mHurdles);
+    check!(eq; EventKind::from_source_label("Boys 4x800 Meter Relay"), EventKind::Relay4x800);
+    check!(eq; EventKind::from_source_label("HS Boys 1600m En Route Finals"), EventKind::Track1600m);
+    Ok(())
+}
+
+#[test]
 fn structural_labels_stay_unmapped() -> Result<(), Box<dyn std::error::Error>> {
     for label in ["Flight 1 of 1", "Section 2 of 4", "Compiled", "Overall"] {
         let got = EventKind::from_source_label(label);
