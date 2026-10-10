@@ -16,6 +16,7 @@ use crate::{AdapterContext, AdapterReport};
 use census_domain::model::CanonicalSchool;
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
+use census_store::{StoreError, Table};
 use futures::{stream, StreamExt, TryStreamExt};
 
 use run::Run;
@@ -137,10 +138,17 @@ async fn stats_of(ctx: &AdapterContext<'_>) -> (u64, u64) {
 }
 
 fn consolidated_schools(ctx: &AdapterContext<'_>) -> CrawlResult<Vec<CanonicalSchool>> {
-    let path = ctx.store.out_dir().join("schools.jsonl");
-    if !path.exists() {
-        return Ok(Vec::new());
-    }
-    let schools: Vec<CanonicalSchool> = census_store::read::read_rows(&path)?;
+    let mut schools: Vec<CanonicalSchool> = Vec::new();
+    ctx.store
+        .for_each_merged(Table::Schools, |school: CanonicalSchool| {
+            schools.push(school);
+            if schools.len() > crate::SCHOOL_BINDINGS {
+                return Err(StoreError::Invariant {
+                    detail: "result school-binding resource limit; projection remains unfinished"
+                        .into(),
+                });
+            }
+            Ok(())
+        })?;
     Ok(schools)
 }

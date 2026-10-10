@@ -9,6 +9,8 @@ pub const CONCURRENCY_BOUND: usize = 8;
 
 pub const FLUSH_UNITS: usize = 64;
 
+pub const SCHOOL_BINDINGS: usize = 65_536;
+
 #[derive(Debug, thiserror::Error)]
 pub enum CrawlError {
     #[error(transparent)]

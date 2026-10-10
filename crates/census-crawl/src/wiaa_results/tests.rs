@@ -169,6 +169,67 @@ fn seed_result_cache(fetcher: &crate::net::Fetcher, url: &str, body: &[u8]) -> T
 }
 
 #[test]
+fn a_fresh_store_binds_schools_without_a_consolidated_jsonl() -> TestResult {
+    use census_domain::model::{CanonicalSchool, SchoolYear};
+    use census_store::Store;
+    use std::time::Duration;
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let fetcher = crate::net::Fetcher::new(
+        store.http_cache_dir(),
+        None,
+        Duration::ZERO,
+        HashMap::new(),
+        Vec::new(),
+    )?
+    .with_source("wiaa_results")
+    .with_offline(true);
+    let (school, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Middleton", "middleton", None);
+    store.append(census_store::Table::Schools, &school)?;
+    let context = AdapterContext {
+        fetcher: &fetcher,
+        store: &store,
+        refresh: false,
+        school_year: SchoolYear::new(2026).ok_or("2026 school year")?,
+        observed_on: "2026-09-19".into(),
+        performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 9, 19).ok_or("snapshot date")?,
+        recording: None,
+    };
+    check!(
+        !store.out_dir().join("schools.jsonl").exists(),
+        "a fresh store carries no consolidated jsonl"
+    );
+    let schools = super::run::consolidated_schools(&context)?;
+    check!(eq; schools.len(), 1, "the live store is the binding source");
+    let empty = tempfile::tempdir()?;
+    let empty_store = Store::open(empty.path())?;
+    let empty_fetcher = crate::net::Fetcher::new(
+        empty_store.http_cache_dir(),
+        None,
+        Duration::ZERO,
+        HashMap::new(),
+        Vec::new(),
+    )?
+    .with_source("wiaa_results")
+    .with_offline(true);
+    let empty_context = AdapterContext {
+        fetcher: &empty_fetcher,
+        store: &empty_store,
+        refresh: false,
+        school_year: SchoolYear::new(2026).ok_or("2026 school year")?,
+        observed_on: "2026-09-19".into(),
+        performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 9, 19).ok_or("snapshot date")?,
+        recording: None,
+    };
+    check!(
+        super::run::consolidated_schools(&empty_context).is_err(),
+        "an empty store still refuses to project"
+    );
+    Ok(())
+}
+
+#[test]
 fn overlapping_archives_process_one_logical_result_once() -> TestResult {
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
     use census_domain::model::{CanonicalAthlete, CanonicalPerformance, CanonicalSchool, ExactSeconds, Mark, SchoolYear};
@@ -186,10 +247,10 @@ fn overlapping_archives_process_one_logical_result_once() -> TestResult {
     ?
     .with_source("wiaa_results")
     .with_offline(true);
-    let (school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Middleton", "middleton", None);
+    let (school, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Middleton", "middleton", None);
     store.append(census_store::Table::Schools, &school)?;
     std::fs::create_dir_all(store.out_dir())?;
-    std::fs::write(store.out_dir().join("schools.jsonl"), format!("{}\n", serde_json::to_string(&school)?))?;
     let url = "https://www.wiaawi.org/Portals/0/PDF/Results/Track/2025/d1boysstateresults.htm";
     let archive = format!("<a href=\"{url}\">Boys</a>");
     for (archive_url, _) in ARCHIVES {

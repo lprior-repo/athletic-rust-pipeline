@@ -28,6 +28,44 @@ fn row(section: &ParsedSection, index: usize) -> TestResult<&ParsedRow> {
 }
 
 #[test]
+fn a_fresh_store_binds_schools_without_a_consolidated_jsonl() -> TestResult {
+    use crate::AdapterContext;
+    use census_domain::model::{CanonicalSchool, SchoolYear};
+    use census_store::Store;
+    use std::collections::HashMap;
+    use std::time::Duration;
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let fetcher = crate::net::Fetcher::new(
+        store.http_cache_dir(),
+        None,
+        Duration::ZERO,
+        HashMap::new(),
+        Vec::new(),
+    )?
+    .with_source("tfrrs")
+    .with_offline(true);
+    let (school, _) = CanonicalSchool::new(UsJurisdiction::Indiana, "Pembroke", "pembroke", None);
+    store.append(census_store::Table::Schools, &school)?;
+    let context = AdapterContext {
+        fetcher: &fetcher,
+        store: &store,
+        refresh: false,
+        school_year: SchoolYear::new(2026).ok_or("2026 school year")?,
+        observed_on: "2026-09-19".into(),
+        performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 9, 19).ok_or("snapshot date")?,
+        recording: None,
+    };
+    check!(
+        !store.out_dir().join("schools.jsonl").exists(),
+        "a fresh store carries no consolidated jsonl"
+    );
+    let schools = super::consolidated_schools(&context)?;
+    check!(eq; schools.len(), 1, "the live store is the binding source");
+    Ok(())
+}
+
+#[test]
 fn sections_keep_the_hosts_labels_sides_and_handles() -> TestResult {
     let list = parse_list_page(LIST);
     let expected = [

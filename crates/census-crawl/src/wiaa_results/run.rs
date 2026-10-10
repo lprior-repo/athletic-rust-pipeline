@@ -46,9 +46,19 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     Ok(report)
 }
 
-fn consolidated_schools(ctx: &AdapterContext<'_>) -> CrawlResult<Vec<CanonicalSchool>> {
-    let schools: Vec<CanonicalSchool> =
-        census_store::read::read_rows(&ctx.store.out_dir().join("schools.jsonl"))?;
+pub(super) fn consolidated_schools(ctx: &AdapterContext<'_>) -> CrawlResult<Vec<CanonicalSchool>> {
+    let mut schools: Vec<CanonicalSchool> = Vec::new();
+    ctx.store
+        .for_each_merged(Table::Schools, |school: CanonicalSchool| {
+            schools.push(school);
+            if schools.len() > crate::SCHOOL_BINDINGS {
+                return Err(census_store::StoreError::Invariant {
+                    detail: "result school-binding resource limit; projection remains unfinished"
+                        .into(),
+                });
+            }
+            Ok(())
+        })?;
     if schools.is_empty() {
         return Err(CrawlError::Invariant {
             detail: "no consolidated schools: run `collect` and `consolidate` before the \
