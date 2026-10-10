@@ -36,9 +36,7 @@ fn verify_artifacts(directory: &Path, manifest: &Manifest) -> ReportResult<()> {
             .checked_add(actual.bytes)
             .ok_or_else(|| invariant("bundle byte counter exhausted".to_string()))?;
         if total > MAX_BUNDLE_BYTES {
-            return Err(invariant(
-                "generation exceeds 16 GiB byte budget".to_string(),
-            ));
+            return Err(invariant("generation exceeds its byte budget".to_string()));
         }
         Ok(())
     })
