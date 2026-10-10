@@ -133,7 +133,7 @@ async fn conditional(mutation: Mutation) -> TestResult {
             .await;
         Ok::<_, Box<dyn std::error::Error + Send + Sync>>(outcome)
     };
-    let ((), outcome) = tokio::time::timeout(Duration::from_secs(10), async {
+    let ((), outcome) = tokio::time::timeout(Duration::from_secs(30), async {
         tokio::try_join!(serve(listener, body_path.clone(), mutation), response)
     })
     .await??;

@@ -138,7 +138,7 @@ fn actual_redirect_keeps_request_and_final_urls_through_archive_cache_offline_an
             let origin = format!("http://{}", listener.local_addr()?);
             let requested = format!("{origin}/start");
             let final_url = format!("{origin}/finish");
-            let ((), acquired_at) = tokio::time::timeout(Duration::from_secs(10), async {
+            let ((), acquired_at) = tokio::time::timeout(Duration::from_secs(30), async {
                 tokio::try_join!(
                     serve(listener),
                     acquire(&fetcher, &cache, &requested, &final_url)

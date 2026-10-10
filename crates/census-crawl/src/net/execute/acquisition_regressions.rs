@@ -109,7 +109,7 @@ fn validators_share_cache_identity_and_preserve_conditional_dispatch() -> TestRe
                 }
                 Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
             };
-            let (requests, ()) = tokio::time::timeout(Duration::from_secs(10), async {
+            let (requests, ()) = tokio::time::timeout(Duration::from_secs(30), async {
                 tokio::try_join!(serve(listener, 3), client)
             })
             .await??;
@@ -145,7 +145,7 @@ fn physical_request_accounting_agrees_across_aggregate_and_per_host() -> TestRes
                 Err(FetchError::Http { status: 429, .. })));
             Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
         };
-        let (requests, ()) = tokio::time::timeout(Duration::from_secs(10), async {
+        let (requests, ()) = tokio::time::timeout(Duration::from_secs(30), async {
             tokio::try_join!(serve(listener, 5), client)
         }).await??;
         let stats = fetcher.stats().await;

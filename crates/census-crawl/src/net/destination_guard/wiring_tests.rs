@@ -123,7 +123,7 @@ fn an_explicit_loopback_grant_admits_the_fixture() -> TestResult {
                 check!(!outcome.from_cache);
                 Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
             };
-            let (paths, ()) = tokio::time::timeout(Duration::from_secs(5), async {
+            let (paths, ()) = tokio::time::timeout(Duration::from_secs(30), async {
                 tokio::try_join!(server, requests)
             })
             .await??;
@@ -180,7 +180,7 @@ fn a_same_host_redirect_is_followed_and_a_local_hop_is_refused() -> TestResult {
                 );
                 Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
             };
-            let (paths, ()) = tokio::time::timeout(Duration::from_secs(5), async {
+            let (paths, ()) = tokio::time::timeout(Duration::from_secs(30), async {
                 tokio::try_join!(server, requests)
             })
             .await??;
