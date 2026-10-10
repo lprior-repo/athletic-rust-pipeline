@@ -1,6 +1,7 @@
+use std::ffi::OsString;
 use std::fs::{self, File};
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use super::errors::{io_err, refused};
 use super::generation::Generation;
@@ -95,13 +96,57 @@ fn count_published_generation(
     })
 }
 
+fn resolve_destination_real(to: &Path) -> StoreResult<PathBuf> {
+    let mut candidate = to.to_path_buf();
+    let mut missing: Vec<OsString> = Vec::new();
+    loop {
+        match fs::canonicalize(&candidate) {
+            Ok(real) => {
+                let mut resolved = real;
+                resolved.extend(missing.iter().rev());
+                return Ok(resolved);
+            }
+            Err(error) if error.kind() == io::ErrorKind::NotFound => {
+                let Some(name) = candidate.file_name() else {
+                    return Err(refused(format!(
+                        "destination {} has no resolvable existing ancestor: pass a path without '..' \
+                         beyond the directories that exist",
+                        to.display()
+                    )));
+                };
+                missing.push(name.to_os_string());
+                if !candidate.pop() {
+                    return Err(refused(format!(
+                        "destination {} has no resolvable existing ancestor: pass a path without '..' \
+                         beyond the directories that exist",
+                        to.display()
+                    )));
+                }
+            }
+            Err(source) => return Err(io_err(&candidate, source)),
+        }
+    }
+}
+
 fn check_backup_destination(from: &Path, to: &Path) -> StoreResult<()> {
-    if to.starts_with(from) {
+    let real_from = fs::canonicalize(from).map_err(|source| io_err(from, source))?;
+    let real_to = resolve_destination_real(to)?;
+    if real_to.starts_with(&real_from) {
         return Err(refused(format!(
-            "destination {} is inside the store at {}: a backup cannot be written into the tree it is \
-             copying",
+            "destination {} resolves to {} inside the store at {}: a backup cannot be written into the \
+             tree it is copying",
             to.display(),
-            from.display()
+            real_to.display(),
+            real_from.display()
+        )));
+    }
+    if real_from.starts_with(&real_to) {
+        return Err(refused(format!(
+            "destination {} resolves to {} above the store at {}: publishing a backup there would \
+             replace the store it is copying",
+            to.display(),
+            real_to.display(),
+            real_from.display()
         )));
     }
     let kind = match fs::symlink_metadata(to) {

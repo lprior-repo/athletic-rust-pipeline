@@ -204,6 +204,77 @@ fn backup_refuses_a_destination_inside_the_store_it_is_copying() -> TestResult {
 
 #[cfg(unix)]
 #[test]
+fn backup_refuses_a_destination_aliased_into_the_store_tree() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let root = dir.path().join("store");
+    store_with(&root, &["Aliased"])?;
+    let alias = dir.path().join("alias");
+    std::os::unix::fs::symlink(&root, &alias)?;
+    let to = alias.join("http").join("backup");
+    let error = match Store::backup(&root, &to) {
+        Err(error) => error.to_string(),
+        Ok(report) => {
+            return Err(format!("expected an aliased-destination refusal, got {report:?}").into())
+        }
+    };
+    check!(
+        error.contains("inside the store"),
+        "the refusal must say the destination is inside the source: {error}"
+    );
+    check!(
+        error.contains(&alias.display().to_string()),
+        "the refusal must name the destination as given: {error}"
+    );
+    check!(!root.join("http").join("backup").exists());
+    check!(staging_leftovers(dir.path())?.is_empty());
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn backup_refuses_an_inside_destination_when_the_store_path_is_an_alias() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let root = dir.path().join("store");
+    store_with(&root, &["Alias Source"])?;
+    let alias = dir.path().join("alias");
+    std::os::unix::fs::symlink(&root, &alias)?;
+    let to = root.join("http").join("backup");
+    let error = match Store::backup(&alias, &to) {
+        Err(error) => error.to_string(),
+        Ok(report) => {
+            return Err(format!("expected an aliased-source refusal, got {report:?}").into())
+        }
+    };
+    check!(
+        error.contains("inside the store"),
+        "the refusal must say the destination is inside the source: {error}"
+    );
+    check!(!to.exists(), "a refused backup publishes nothing");
+    check!(staging_leftovers(dir.path())?.is_empty());
+    Ok(())
+}
+
+#[test]
+fn backup_refuses_a_destination_above_the_store_it_is_copying() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let root = dir.path().join("store");
+    store_with(&root, &["Above"])?;
+    let error = match Store::backup(&root, dir.path()) {
+        Err(error) => error.to_string(),
+        Ok(report) => {
+            return Err(format!("expected an above-source refusal, got {report:?}").into())
+        }
+    };
+    check!(
+        error.contains("above the store"),
+        "the refusal must say the destination would replace the source: {error}"
+    );
+    check!(staging_leftovers(dir.path())?.is_empty());
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
 fn backup_refuses_a_symlink_in_the_store_tree_by_name() -> TestResult {
     let dir = tempfile::tempdir()?;
     let root = dir.path().join("store");
