@@ -23,7 +23,6 @@ pub(super) fn strategy(slug: &str) -> SourceStrategy {
         "athleticlive_athletes" => {
             "qualified athlete-index collector lacks bounded jurisdiction seed discovery"
         }
-        "tfrrs" => "qualified collector lacks durable jurisdiction list frontier discovery",
         "coach_contacts" => {
             "qualified contact import lacks a durable jurisdiction research frontier"
         }

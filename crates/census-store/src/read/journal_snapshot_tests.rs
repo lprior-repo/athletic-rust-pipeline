@@ -5,6 +5,27 @@ use serde_json::json;
 use crate::Store;
 
 #[test]
+fn oversized_journal_payloads_read_through_a_snapshot() -> Result<(), Box<dyn Error>> {
+    let root = tempfile::tempdir()?;
+    let store = Store::open(root.path())?;
+    let value = json!({"blob": "x".repeat(2_000_000)});
+    let mut batch = store.write_batch();
+    batch.journal_done("teams_source_attempts_v1", "settled", &value)?;
+    batch.commit()?;
+    let direct = store.journal_payload("teams_source_attempts_v1", "settled")?;
+    if direct != Some(value.clone()) {
+        return Err(format!("direct={direct:?}").into());
+    }
+    let through_snapshot = store
+        .snapshot()
+        .journal_payload("teams_source_attempts_v1", "settled")?;
+    if through_snapshot != Some(value) {
+        return Err(format!("snapshot={through_snapshot:?}").into());
+    }
+    Ok(())
+}
+
+#[test]
 fn journal_payloads_keep_one_sequence_while_an_atomic_batch_changes_multiple_keys(
 ) -> Result<(), Box<dyn Error>> {
     let root = tempfile::tempdir()?;

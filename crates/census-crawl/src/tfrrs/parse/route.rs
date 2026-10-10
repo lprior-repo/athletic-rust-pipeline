@@ -3,8 +3,9 @@ use super::season::{Season, YearToken};
 use census_domain::model::{Gender, Sport};
 use census_domain::UsJurisdiction;
 
-pub fn parse_list_path(path: &str) -> Option<ListPath> {
-    let mut segments = tail_after(route_path(path), "lists")?
+pub fn parse_list_path(url: &str) -> Option<ListPath> {
+    let path = route_path(url);
+    let mut segments = tail_after(path, "lists")?
         .split('/')
         .filter(|segment| !segment.is_empty());
     let id = segments.next()?.to_string();

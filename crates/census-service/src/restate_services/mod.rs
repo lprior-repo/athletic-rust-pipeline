@@ -69,14 +69,14 @@ mod wire;
 pub use wire::{
     BestsReply, BestsRequest, BindRunReply, BindRunRequest, CompletedTeams, ConsolidateReply,
     ConsolidateRequest, ConsolidatedTable, EndpointObservation, HistoricalProgress, HistoryWindow,
-    IncompleteTeams, IngestReply, IngestRequest, IngestState, JurisdictionOpen, JurisdictionReport,
-    JurisdictionRequest, JurisdictionState, JurisdictionSummary, NationalFailure, NationalReport,
-    NationalRequest, OpenWorkReply, OpenWorkRequest, RefusedSource, ReportReply, ReportRequest,
-    SchoolAddressJoinReply, SchoolAddressJoinRequest, SealItem, SealRef, SealReply, SealRequest,
-    SourceObjectOpen, SourcePlan, StageOutcome, StatusReply, SweepReport, SweepRequest, TableCount,
-    TeamsAttemptProgress, TeamsFailure, TeamsSourceFailure, TeamsSourceInspection,
-    TeamsSourceOutcome, TeamsSourceRequest, TeamsStage, WindowRequest, WorkbookReply,
-    WorkbookRequest,
+    IncompleteTeams, IngestReply, IngestRequest, IngestState, JurisdictionOpen, JurisdictionOwed,
+    JurisdictionReport, JurisdictionRequest, JurisdictionState, JurisdictionSummary,
+    NationalFailure, NationalReport, NationalRequest, OpenWorkReply, OpenWorkRequest,
+    RefusedSource, ReportReply, ReportRequest, SchoolAddressJoinReply, SchoolAddressJoinRequest,
+    SealItem, SealRef, SealReply, SealRequest, SourceObjectOpen, SourcePlan, StageOutcome,
+    StatusReply, SweepReport, SweepRequest, TableCount, TeamsAttemptProgress, TeamsFailure,
+    TeamsSourceFailure, TeamsSourceInspection, TeamsSourceOutcome, TeamsSourceRequest, TeamsStage,
+    WindowRequest, WorkbookReply, WorkbookRequest,
 };
 
 pub use plan::{

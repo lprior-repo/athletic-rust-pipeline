@@ -167,6 +167,7 @@ pub struct ResolutionCounters {
     pub retained: u64,
     pub quarantined: u64,
 }
+
 #[derive(Debug, Clone, Serialize)]
 pub struct AdapterReport {
     pub adapter: String,

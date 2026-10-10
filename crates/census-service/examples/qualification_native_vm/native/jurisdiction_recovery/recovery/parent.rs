@@ -86,7 +86,7 @@ pub(super) async fn outcome(
                 client,
                 Method::GET,
                 &format!(
-                    "{}restate/attach/{}",
+                    "{}restate/invocation/{}/attach",
                     super::super::super::http::INGRESS,
                     original.id
                 ),

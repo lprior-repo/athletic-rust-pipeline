@@ -8,6 +8,7 @@ use dataset::Dataset;
 
 mod athletes;
 pub(in crate::workbook) mod coach_projection;
+pub(in crate::workbook) mod coach_spelling;
 mod coaches;
 pub(in crate::workbook) mod coalesce;
 mod columns;

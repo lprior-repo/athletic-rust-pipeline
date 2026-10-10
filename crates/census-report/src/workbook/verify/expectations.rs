@@ -7,7 +7,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use super::labels;
 use crate::workbook::recruiting::coalesce;
-use crate::workbook::recruiting::contact::{self, SchoolContacts};
+use crate::workbook::recruiting::contact::{self, attach_research, SchoolContacts};
 
 pub(super) const DATA_ROWS_PER_SHEET: usize = 1_000_000;
 
@@ -35,6 +35,7 @@ pub(super) struct Expectations<'a> {
     pub(super) contacts: BTreeMap<String, SchoolContacts>,
     pub(super) school_address: BTreeMap<String, String>,
     schools: BTreeMap<String, School>,
+    coach_spellings: BTreeMap<String, String>,
     pr_index: BTreeMap<String, Vec<usize>>,
     tallies: BTreeMap<String, Tally>,
 }
@@ -48,8 +49,11 @@ impl<'a> Expectations<'a> {
         let schools = schools(derivation.schools());
         let pr_index = index(&bests);
         let tallies = tallies(&derivation);
-        let contacts = contact::contacts(derivation.coach_observations(), school_year);
+        let mut contacts = contact::contacts(derivation.coach_observations(), school_year);
+        attach_research(&mut contacts, derivation.schools(), school_year);
         let coach_claims = coalesce::claims(derivation.coach_observations());
+        let coach_spellings =
+            crate::workbook::recruiting::coach_spelling::spellings(derivation.coach_observations());
         Ok(Self {
             dataset,
             school_year,
@@ -59,6 +63,7 @@ impl<'a> Expectations<'a> {
             contacts,
             school_address,
             schools,
+            coach_spellings,
             pr_index,
             tallies,
         })
@@ -82,6 +87,13 @@ impl<'a> Expectations<'a> {
 
     pub(super) fn school_id<'b>(&'b self, id: &'b str) -> &'b str {
         self.school(id).map_or(id, |school| school.id.as_str())
+    }
+
+    pub(super) fn published_coach_name<'b>(&'b self, id: &str, fallback: &'b str) -> &'b str {
+        self.coach_spellings
+            .get(id)
+            .map(String::as_str)
+            .unwrap_or(fallback)
     }
 
     pub(super) fn athletics_url(&self, id: &str) -> Option<&str> {

@@ -43,6 +43,7 @@ pub(super) const WIDTHS: [u16; 29] = [
 type SortKey = (String, String, String, String, String);
 
 pub(super) fn sheet(dataset: &Dataset) -> ReportResult<Vec<Vec<Cell>>> {
+    let names = &dataset.coach_spellings;
     let mut ordered: Vec<_> = dataset
         .published_coaches
         .iter()
@@ -53,7 +54,7 @@ pub(super) fn sheet(dataset: &Dataset) -> ReportResult<Vec<Vec<Cell>>> {
     rows.extend(
         ordered
             .into_iter()
-            .map(|(coach, _)| row_for(dataset, coach)),
+            .map(|(coach, _)| row_for(dataset, coach, &names)),
     );
     Ok(rows)
 }
@@ -68,12 +69,20 @@ fn sort_key(dataset: &Dataset, coach: &CanonicalCoach) -> SortKey {
     )
 }
 
-fn row_for(dataset: &Dataset, coach: &CanonicalCoach) -> Vec<Cell> {
+fn row_for(
+    dataset: &Dataset,
+    coach: &CanonicalCoach,
+    names: &std::collections::BTreeMap<String, String>,
+) -> Vec<Cell> {
     let contacts = dataset.contacts.get(coach.school.as_str());
     let selected = coach_projection::admitted(coach, dataset.school_year, contacts);
     let director = contacts.and_then(|contacts| contacts.director());
     let [_, name_digest, _] = coach_projection::capture(selected.name);
-    let mut cells = identity_cells(dataset, coach);
+    let mut cells = identity_cells(
+        dataset,
+        coach,
+        super::coach_spelling::published(names, coach),
+    );
     cells.extend(contact_cells(
         coach,
         dataset.school_year,
@@ -116,14 +125,14 @@ fn optional_text(value: Option<&str>) -> Cell {
     Cell::text(value.map_or("", core::convert::identity))
 }
 
-fn identity_cells(dataset: &Dataset, coach: &CanonicalCoach) -> Vec<Cell> {
+fn identity_cells(dataset: &Dataset, coach: &CanonicalCoach, name: &str) -> Vec<Cell> {
     [
         coach.school.to_string(),
         dataset.school_name(coach.school.as_str()),
         dataset.school_city(coach.school.as_str()),
         dataset.school_state(coach.school.as_str()),
         sport_label(coach),
-        coach.name.clone(),
+        name.to_string(),
         coach.id.to_string(),
         coach.gender.stable_key().to_owned(),
         coach.role.stable_key().to_owned(),

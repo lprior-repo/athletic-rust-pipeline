@@ -1,0 +1,9 @@
+{
+  "size": 2,
+  "track_total_hits": true,
+  "query": {
+    "bool": {
+      "filter": [{ "term": { "i": 55746 } }]
+    }
+  }
+}

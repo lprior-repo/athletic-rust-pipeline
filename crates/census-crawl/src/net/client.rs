@@ -91,8 +91,6 @@ impl Fetcher {
             family_parallelism: super::DEFAULT_FAMILY_PARALLELISM,
             pacing: Arc::new(PacingState::new()),
             authorized_hosts,
-            robots: Mutex::new(HashMap::new()),
-            robots_gates: Mutex::new(HashMap::new()),
             stats: Mutex::new(FetchStats::default()),
             source: super::DEFAULT_SOURCE.to_string(),
             lane: None,

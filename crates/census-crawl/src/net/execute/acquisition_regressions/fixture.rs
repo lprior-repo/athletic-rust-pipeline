@@ -50,9 +50,7 @@ pub(super) async fn serve(listener: TcpListener, count: usize) -> TestResult<Vec
 }
 
 fn response_for(request: &str, lower: &str) -> (u16, &'static str, &'static str) {
-    if request.starts_with("GET /robots.txt ") {
-        (200, "", "User-agent: *\r\nAllow: /\r\n")
-    } else if request.starts_with("GET /redirect ") {
+    if request.starts_with("GET /redirect ") {
         (302, "Location: /payload\r\n", "")
     } else if request.starts_with("GET /limited ") {
         (429, "Retry-After: 1\r\n", "slow down")

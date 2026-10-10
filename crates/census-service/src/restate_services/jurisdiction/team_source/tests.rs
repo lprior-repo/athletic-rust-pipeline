@@ -248,3 +248,37 @@ fn mixed_unknown_and_transient_attempts_never_claim_three_acknowledged_failures(
     ));
     Ok(())
 }
+
+#[test]
+fn deliberate_foreign_state_exclusions_complete_teams_acquisition() -> TestResult {
+    let mut report = census_crawl::AdapterReport::new("coach_directories", "schools");
+    report.rows = 2;
+    report.reject(
+        "directory jurisdiction rejection https://example.test/directory: school SXBQNQ; disposition=foreign_published_state; requested=AL; published=FL; observed_on=2026-10-02; capture_sha256=abc",
+    );
+    report.finish_frontier();
+    check!(eq; report.disposition, census_crawl::CollectionDisposition::Partial);
+    let completed = super::stage(Some(report), "2026-10-02".to_string());
+    let ledger::Attempt::Completed(outcome) = completed else {
+        return Err("a deliberate foreign-state exclusion must not retry".into());
+    };
+    check!(eq; outcome.disposition, census_crawl::CollectionDisposition::Complete);
+    check!(
+        outcome.errors.is_empty(),
+        "foreign exclusions are not acquisition errors: {:?}",
+        outcome.errors
+    );
+    check!(
+        outcome
+            .notes
+            .iter()
+            .any(|note| note.contains("disposition=foreign_published_state")),
+        "the exclusion remains on the stage notes"
+    );
+    let mut blocked = census_crawl::AdapterReport::new("coach_directories", "schools");
+    blocked.reject("directory row https://example.test: no short code to fetch a summary with");
+    blocked.finish_frontier();
+    let refused = super::stage(Some(blocked), "2026-10-02".to_string());
+    check!(matches!(refused, ledger::Attempt::Incomplete { .. }));
+    Ok(())
+}

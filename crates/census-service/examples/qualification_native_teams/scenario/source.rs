@@ -37,10 +37,22 @@ pub struct SourceRepeat {
 
 pub fn route(ingress: &str, mode: &str, key: &str, handler: &str) -> Result<String> {
     let mut url = url::Url::parse(ingress)?;
-    url.path_segments_mut()
-        .map_err(|()| anyhow::anyhow!("ingress URL cannot accept path segments"))?
-        .pop_if_empty()
-        .extend(["restate", mode, "TeamsSource", key, handler]);
+    let suffix = match mode {
+        "call" => None,
+        "send" => Some("send"),
+        mode => anyhow::bail!("unknown invocation mode {mode}"),
+    };
+    {
+        let mut segments = url
+            .path_segments_mut()
+            .map_err(|()| anyhow::anyhow!("ingress URL cannot accept path segments"))?;
+        segments
+            .pop_if_empty()
+            .extend(["TeamsSource", key, handler]);
+        if let Some(suffix) = suffix {
+            segments.push(suffix);
+        }
+    }
     Ok(url.into())
 }
 
@@ -107,7 +119,7 @@ pub(super) async fn capture(
         client,
         &config.root,
         Method::GET,
-        &format!("{}restate/output/{id}", config.ingress),
+        &format!("{}restate/invocation/{id}/output", config.ingress),
         None,
     )
     .await?;

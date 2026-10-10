@@ -177,8 +177,7 @@ fn progress_route(raw: &str, key: &str) -> bool {
     let Ok(mut path) = expected.path_segments_mut() else {
         return false;
     };
-    path.clear()
-        .extend(["restate", "call", "TeamsSource", key, "progress"]);
+    path.clear().extend(["TeamsSource", key, "progress"]);
     drop(path);
     url == expected
 }

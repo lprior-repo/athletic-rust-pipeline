@@ -98,6 +98,8 @@ pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
         authorized_hosts: cli.authorized_hosts.clone(),
         source_parallelism: cli.source_parallelism,
         school_address: school_address_request(args)?,
+        pass_budget: args.pass_budget,
+        pass_delay_seconds: args.pass_delay_seconds,
     };
     let handle = submit_national(&ingestion, &identity, request).await?;
     println!(

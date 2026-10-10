@@ -69,6 +69,7 @@ pub(super) fn documents(paths: &[String]) -> TestResult<BTreeMap<String, CacheMe
 
 fn metadata(url: String, body: &[u8], acquired_at: &str) -> CacheMeta {
     CacheMeta {
+        redirects: Vec::new(),
         url,
         response_url: None,
         method: "GET".into(),

@@ -111,7 +111,6 @@ fn an_owned_loopback_entry_redirect_and_redeployment_acquire_only_the_declared_b
     let first_bundle = "export const fixtureRevision = 1;";
     let next_bundle = "export const fixtureRevision = 2;";
     let replies = vec![
-        reply("/robots.txt", 200, "User-agent: *\r\nAllow: /\r\n"),
         redirect(),
         reply("/directory/shell/index.html", 200, first),
         reply("/directory/assets/index-loopback-old.js", 200, first_bundle),
@@ -177,6 +176,7 @@ fn historical_cached_entry_and_bundle_keep_the_observed_final_url_unknown() -> T
                     &cache.join(format!("{key}.meta.json")),
                     bytes,
                     &CacheMeta {
+        redirects: Vec::new(),
                         representation: crate::net::RepresentationHeaders::default(),
                         url: url.to_string(),
                         method: "GET".into(),
@@ -207,7 +207,7 @@ fn entry_and_module_http_failures_preserve_their_typed_retry_disposition() -> Te
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
         let host = format!("http://{}", listener.local_addr()?);
         let entry_url = format!("{host}/directory/");
-        let mut replies = vec![reply("/robots.txt", 200, "User-agent: *\r\nAllow: /\r\n")];
+        let mut replies = vec![];
         if module_failure {
             replies.push(reply("/directory/", 200, "<script type=module src=assets/index-failed.js></script>"));
             replies.push(reply("/directory/assets/index-failed.js", 503, "fixture unavailable"));
@@ -249,7 +249,6 @@ fn unsafe_or_ambiguous_entry_html_refuses_before_any_bundle_acquisition() -> Tes
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
         let entry_url = format!("http://{}/directory/", listener.local_addr()?);
         let replies = vec![
-            reply("/robots.txt", 200, "User-agent: *\r\nAllow: /\r\n"),
             reply("/directory/", 200, html),
         ];
         let client = async {
@@ -280,7 +279,6 @@ fn a_deleted_discovered_asset_remains_a_typed_terminal_404_without_a_fallback() 
     let entry_url = format!("{host}/directory/");
     let module_url = format!("{host}/directory/assets/index-deleted.js");
     let replies = vec![
-        reply("/robots.txt", 200, "User-agent: *\r\nAllow: /\r\n"),
         reply("/directory/", 200, "<script type=module src=assets/index-deleted.js></script>"),
         reply("/directory/assets/index-deleted.js", 404, "fixture deleted"),
     ];

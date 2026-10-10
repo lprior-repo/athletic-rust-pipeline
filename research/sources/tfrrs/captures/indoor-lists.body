@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html class="no-js js-menubar" lang="en">
+<head>
+<!-- level: essential trigger: api domain: tfrrs.org ts: 1791597602340 -->
+<script data-cfasync='false' nowprocket>
+(()=>{"use strict";const Collectors={HTMLIFrameElement_contentWindow:()=>Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype,"contentWindow"),XMLHttpRequest_open:()=>collectFunction(window,"XMLHttpRequest","open"),XMLHttpRequest_send:()=>collectFunction(window,"XMLHttpRequest","send"),Window_decodeURIComponent:()=>collectFunction(window,"Window","decodeURIComponent"),Window_fetch:()=>collectFunction(window,"Window","fetch"),Element_setAttribute:()=>collectFunction(window,"Element","setAttribute"),EventTarget_addEventListener:()=>collectFunction(window,"EventTarget","addEventListener"),EventTarget_removeEventListener:()=>collectFunction(window,"EventTarget","removeEventListener"),Document_write:()=>collectFunction(window,"Document","write"),Document_writeln:()=>collectFunction(window,"Document","writeln"),Document_querySelector:()=>collectFunction(window,"Document","querySelector"),Document_querySelectorAll:()=>collectFunction(window,"Document","querySelectorAll"),Document_createElement:()=>collectFunction(window,"Document","createElement"),Node_appendChild:()=>collectFunction(window,"Node","appendChild"),Node_insertBefore:()=>collectFunction(window,"Node","insertBefore"),Node_replaceChild:()=>collectFunction(window,"Node","replaceChild"),Node_textContent:()=>Object.getOwnPropertyDescriptor(Node.prototype,"textContent"),Element_append:()=>collectFunction(window,"Element","append"),Element_prepend:()=>collectFunction(window,"Element","prepend"),Element_replaceWith:()=>collectFunction(window,"Element","replaceWith"),Element_replaceChildren:()=>collectFunction(window,"Element","replaceChildren"),Element_insertAdjacentElement:()=>collectFunction(window,"Element","insertAdjacentElement"),Element_insertAdjacentHTML:()=>collectFunction(window,"Element","insertAdjacentHTML"),Element_innerHTML:()=>Object.getOwnPropertyDescriptor(Element.prototype,"innerHTML"),Element_setAttributeNode:()=>collectFunction(window,"Element","setAttributeNode"),Attr_value:()=>Object.getOwnPropertyDescriptor(Attr.prototype,"value"),HTMLScriptElement_text:()=>Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype,"text"),HTMLScriptElement_type:()=>Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype,"type"),HTMLScriptElement_src:()=>Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype,"src"),HTMLIFrameElement_src:()=>Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype,"src"),HTMLIFrameElement_srcdoc:()=>Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype,"srcdoc"),HTMLIFrameElement_contentDocument:()=>Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype,"contentDocument"),HTMLAnchorElement_href:()=>Object.getOwnPropertyDescriptor(HTMLAnchorElement.prototype,"href"),HTMLImageElement_src:()=>Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,"src"),HTMLMetaElement_httpEquiv:()=>Object.getOwnPropertyDescriptor(HTMLMetaElement.prototype,"httpEquiv"),HTMLMetaElement_content:()=>Object.getOwnPropertyDescriptor(HTMLMetaElement.prototype,"content"),XMLHttpRequest_getResponseHeader:()=>collectFunction(window,"XMLHttpRequest","getResponseHeader"),HTMLElement_onerror:()=>Object.getOwnPropertyDescriptor(HTMLElement.prototype,"onerror"),XMLHttpRequest_response:()=>Object.getOwnPropertyDescriptor(XMLHttpRequest.prototype,"response"),XMLHttpRequest_responseText:()=>Object.getOwnPropertyDescriptor(XMLHttpRequest.prototype,"responseText"),Window_Function:()=>Object.getOwnPropertyDescriptor(window,"Function"),Element_matches:()=>collectFunction(window,"Element","matches"),Function_toString:()=>collectFunction(window,"Function","toString")},SAFE_API="__sa_"+window.btoa(window.location.href);function safe_resolvePropertyHost(_window,target){var _window$target;return"window"===target.toLowerCase()?_window:"document"===target?_window.document:"JSON"===target?_window.JSON:null===(_window$target=_window[target])||void 0===_window$target?void 0:_window$target.prototype}const utils_safe={get(){return this.collect(),window[SAFE_API]},collectOne(key){window[SAFE_API]=window[SAFE_API]||{},window[SAFE_API][key]||(window[SAFE_API][key]=Collectors[key]())},collect(){window[SAFE_API]=window[SAFE_API]||{};for(const[key,collector]of Object.entries(Collectors))window[SAFE_API][key]||(window[SAFE_API][key]=collector())}};function collectFunction(_window,obj,func){var _resolvePropertyHost;return null===(_resolvePropertyHost=safe_resolvePropertyHost(_window,obj))||void 0===_resolvePropertyHost?void 0:_resolvePropertyHost[func]}const hash=str=>{let hash=0;for(let i=0,len=str.length;i<len;i++){hash=(hash<<5)-hash+str.charCodeAt(i),hash|=0}return hash};function setPropertySafe(prototype,key,value){const propertyDescriptor=Object.getOwnPropertyDescriptor(prototype,key);if(propertyDescriptor){const newProperty={...propertyDescriptor,value};delete newProperty.get,delete newProperty.set,Object.defineProperty(prototype,key,newProperty)}else prototype[key]=value}function getAsInjectedKeyByHostname(hostname){return"as_"+hash(hostname+"_as_injected_functions")}function getAsPrehookedKeyByHostname(hostname){return"as_"+hash(hostname+"_as_prehooked_functions")}function getAsAPIs(_window,key,blankHostnameKey,create){const currentAPIs=_window[key];if(currentAPIs)return currentAPIs;if(_window!==window&&key!==blankHostnameKey){const blankHostnameAPIs=_window[blankHostnameKey];if(blankHostnameAPIs)return blankHostnameAPIs}const apis=create();return _window[key]=apis,apis}function getAsPrehookedAPIs(_window){return getAsAPIs(_window,function(_window){return getAsPrehookedKeyByHostname(_window.location.hostname)}(_window),getAsPrehookedKeyByHostname(""),(()=>({})))}function getAsInjectedAPIs(_window){return getAsAPIs(_window,function(_window){return getAsInjectedKeyByHostname(_window.location.hostname)}(_window),getAsInjectedKeyByHostname(""),(()=>({})))}function saveXhrOpenInfo(fn){return function(){for(var _len9=arguments.length,args=new Array(_len9),_key9=0;_key9<_len9;_key9++)args[_key9]=arguments[_key9];return this.__as_xhr_open_args=args,fn.apply(this,args)}}function deferXHREventListener(deferContext,isXhrDeferTarget){XMLHttpRequest.prototype.addEventListener=function(){for(var _this3=this,_len1=arguments.length,args=new Array(_len1),_key1=0;_key1<_len1;_key1++)args[_key1]=arguments[_key1];const[eventName,callback,...restArgs]=args;if(deferContext.isDontDefer()||"error"!==eventName||!(callback instanceof Object))return EventTarget.prototype.addEventListener.apply(this,args);const callOriginalCallback=callbackArgs=>"function"==typeof callback?callback.apply(this,callbackArgs):callback.handleEvent(...callbackArgs);return EventTarget.prototype.addEventListener.call(this,eventName,(function(){for(var _len10=arguments.length,callbackArgs=new Array(_len10),_key10=0;_key10<_len10;_key10++)callbackArgs[_key10]=arguments[_key10];if(!isXhrDeferTarget(_this3))return callOriginalCallback(callbackArgs);var xhr;(xhr=_this3,xhr.__as_xhr_deferred_error||(xhr.__as_xhr_deferred_error=new Promise((resolve=>{xhr.__as_is_xhr_listener_loading=!0,xhr.__as_xhr_resolve_deferred_error=isRecovered=>{xhr.__as_is_xhr_listener_loading=!1,resolve(isRecovered)},deferContext.globalDeferTimeout.then((()=>xhr.__as_xhr_resolve_deferred_error(!1))),window.__as_rej.push({type:"xhr_defer",callback:()=>xhr.__as_xhr_resolve_deferred_error(!1),xhr})})))).then((isRecovered=>{isRecovered||callOriginalCallback(callbackArgs)}))}),...restArgs)}}(()=>{var _window,_window2;const IS_PREHOOKED=function(_window){return"as_"+hash(_window.location.hostname+"_as_prehooked")}(window);if(window[IS_PREHOOKED])return;utils_safe.collect(),(_window=window)["__as_ready_resolve"]||(_window.__as_ready_resolve=[]),(_window2=window)["__as_rej"]||(_window2.__as_rej=[]);const deferContext=function(){let dontDefer=!1;return window.__as_ready_resolve.push((()=>{dontDefer=!0})),{isDontDefer:()=>dontDefer,globalDeferTimeout:new Promise((resolve=>{setTimeout((()=>{dontDefer=!0,resolve()}),7005)}))}}();!function(target,key,wrapper){let _window=arguments.length>3&&void 0!==arguments[3]?arguments[3]:window,config=arguments.length>4?arguments[4]:void 0;const targetKey=target+"_"+key,targetPrehookedAPIs=getAsPrehookedAPIs(_window);if(targetPrehookedAPIs[targetKey])return;const prototype=safe_resolvePropertyHost(_window,target),originFunction=_window===window?utils_safe.get()[targetKey]:null==prototype?void 0:prototype[key];if(!originFunction)return;const targetInjectedAPIs=getAsInjectedAPIs(_window),_newFunc=function(){for(var _len=arguments.length,args=new Array(_len),_key=0;_key<_len;_key++)args[_key]=arguments[_key];try{const injectedHookedFunction=targetInjectedAPIs[targetKey];return injectedHookedFunction&&"function"==typeof injectedHookedFunction?injectedHookedFunction.call(this,originFunction,...args):originFunction.call(this,...args)}catch(e){return originFunction.call(this,...args)}},newFunc=wrapper?wrapper(_newFunc):_newFunc;null!=config&&config.nonConstructible&&Object.defineProperty(newFunc,"prototype",{value:void 0}),Object.defineProperty(newFunc,"name",{value:key}),Object.defineProperty(newFunc,"__prehooked",{value:!0}),setPropertySafe(prototype,key,newFunc),window.__as_ready_resolve.push((()=>{window.adshield&&!window.adshield.isAdBlockerDetected&&prototype[key]===newFunc&&setPropertySafe(prototype,key,originFunction)})),targetPrehookedAPIs[targetKey]=newFunc}("XMLHttpRequest","open",saveXhrOpenInfo),function(deferContext){let shouldPostDeferError=arguments.length>1&&void 0!==arguments[1]&&arguments[1],shouldDeferEventListener=arguments.length>2&&void 0!==arguments[2]&&arguments[2];const isXhrDeferTarget=xhr=>{var _xhr$__as_xhr_open_ar,_xhr$__as_xhr_open_ar2,_xhr$__as_xhr_open_ar3;const method=null===(_xhr$__as_xhr_open_ar=xhr.__as_xhr_open_args)||void 0===_xhr$__as_xhr_open_ar?void 0:_xhr$__as_xhr_open_ar[0];return(shouldPostDeferError?"GET"===method||"POST"===method:"GET"===method)&&0===xhr.status&&((null===(_xhr$__as_xhr_open_ar2=xhr.__as_xhr_open_args)||void 0===_xhr$__as_xhr_open_ar2?void 0:_xhr$__as_xhr_open_ar2.length)<3||!1!==(null===(_xhr$__as_xhr_open_ar3=xhr.__as_xhr_open_args)||void 0===_xhr$__as_xhr_open_ar3?void 0:_xhr$__as_xhr_open_ar3[2]))},originalXhrOnReadyStateChange=Object.getOwnPropertyDescriptor(XMLHttpRequest.prototype,"onreadystatechange"),originalReadyStateDescriptor=Object.getOwnPropertyDescriptor(XMLHttpRequest.prototype,"readyState"),originalXhrOnError=Object.getOwnPropertyDescriptor(XMLHttpRequestEventTarget.prototype,"onerror"),originalXhrOnLoad=Object.getOwnPropertyDescriptor(XMLHttpRequestEventTarget.prototype,"onload");originalXhrOnReadyStateChange&&originalReadyStateDescriptor&&originalXhrOnError&&originalXhrOnLoad&&(Object.defineProperty(XMLHttpRequest.prototype,"onreadystatechange",{get:function(){const onreadystatechange=originalXhrOnReadyStateChange.get.call(this);return(null==onreadystatechange?void 0:onreadystatechange.__origin)||onreadystatechange},set:function(value){if(deferContext.isDontDefer()||!value||"function"!=typeof value)return originalXhrOnReadyStateChange.set.call(this,value);const newFn=event=>{if(this.readyState===XMLHttpRequest.DONE&&isXhrDeferTarget(this))return this.__as_is_ready_state_change_loading=!0,deferContext.globalDeferTimeout.then((()=>{this.__as_is_ready_state_change_loading&&(this.__as_is_ready_state_change_loading=!1,value.call(this,event))})),void window.__as_rej.push({type:"xhr_defer",callback:()=>(this.__as_is_ready_state_change_loading=!1,value.call(this,event)),xhr:this});value.call(this,event)};newFn.__origin=value,originalXhrOnReadyStateChange.set.call(this,newFn)}}),Object.defineProperty(XMLHttpRequest.prototype,"readyState",{get:function(){var _this$__as_new_xhr_da;return this.__as_is_ready_state_change_loading?XMLHttpRequest.LOADING:null!==(_this$__as_new_xhr_da=this.__as_new_xhr_data)&&void 0!==_this$__as_new_xhr_da&&_this$__as_new_xhr_da.readyState?XMLHttpRequest.DONE:originalReadyStateDescriptor.get.call(this)}}),Object.defineProperty(XMLHttpRequestEventTarget.prototype,"onerror",{get:function(){const onerror=originalXhrOnError.get.call(this);return(null==onerror?void 0:onerror.__origin)||onerror},set:function(value){if(deferContext.isDontDefer()||!value||"function"!=typeof value)return originalXhrOnError.set.call(this,value);const newFn=event=>{if(isXhrDeferTarget(this))return this.__as_is_xhr_loading=!0,deferContext.globalDeferTimeout.then((()=>{this.__as_is_xhr_loading&&(this.__as_is_xhr_loading=!1,value.call(this,event))})),void window.__as_rej.push({type:"xhr_defer",callback:()=>(this.__as_is_xhr_loading=!1,value.call(this,event)),xhr:this});value.call(this,event)};newFn.__origin=value,originalXhrOnError.set.call(this,newFn)}}),Object.defineProperty(XMLHttpRequestEventTarget.prototype,"onload",{get:function(){return originalXhrOnLoad.get.call(this)},set:function(value){if(deferContext.isDontDefer()||!value||"function"!=typeof value)return originalXhrOnLoad.set.call(this,value);this.__as_xhr_onload=value,this.addEventListener("error",(event=>{isXhrDeferTarget(this)&&window.__as_rej.push({type:"xhr_defer",callback:()=>{},xhr:this})})),originalXhrOnLoad.set.call(this,value)}}),shouldDeferEventListener&&deferXHREventListener(deferContext,isXhrDeferTarget))}(deferContext,!1,!0),window[IS_PREHOOKED]=!0})()})();
+!function(){function a6g(t,n){const e=a6S();return(a6g=function(t,n){return e[t-=425]})(t,n)}function a6S(){const t=[".js","__sa_","390300GJAply","2509308CiWngI","join","href","hostname","currentScript","11XCLWZv","https://","length","ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_","slice","createElement","remove","24956ElRpOZ","3437qQfaAw","setAttribute","replace","appendChild","515hhnjAd","toString","contentWindow","now","as_essential","876776vlgUex","concat","getOwnPropertyDescriptor","padStart","indexOf","prototype","/script/","ZGF0YS1zZGs=","head","script","src","load","error","2400170OaTcfd","parse","54ZbLdEO","addEventListener","map","2478rKDhtq","33552DKmWgs"];return(a6S=function(){return t})()}(function(){const t=a6g,n=a6S();for(;;)try{if(674703==-parseInt(t(462))/1+-parseInt(t(430))/2*(parseInt(t(455))/3)+parseInt(t(459))/4*(parseInt(t(435))/5)+-parseInt(t(458))/6*(parseInt(t(431))/7)+parseInt(t(440))/8+parseInt(t(463))/9+-parseInt(t(453))/10*(-parseInt(t(468))/11))break;n.push(n.shift())}catch(t){n.push(n.shift())}})(),(t=>{const n=a6g;null===(t=document[n(467)])||void 0===t||t[n(429)](),window[n(461)+btoa(location[n(465)])]={HTMLIFrameElement_contentWindow:Object[n(442)](HTMLIFrameElement[n(445)],n(437)),...window[n(461)+btoa(location[n(465)])]||{}};const e=t=>{const o=n;if(0===t[o(425)])return;const[r,...a]=t,s=document[o(428)](o(449));s[o(450)]=o(469)[o(441)](r,o(446))[o(441)]((()=>{const t=o,n=t(426),e=btoa(location[t(466)])[t(433)](/\+/g,"-")[t(433)](/\//g,"_")[t(433)](/=+$/,""),r=(Date[t(438)]()/36e5|0)[t(436)](36)[t(443)](4,"0")[t(427)](-4);let a="";for(let o=0;o<e[t(425)];o++)a+=n[(n[t(444)](e[o])+n[t(444)](r[o%4]))%64];const s=[0,0,0,0],c=r+a;for(let e=0;e<c[t(425)];e++)s[e%4]=(s[e%4]+n[t(444)](c[e]))%64;return r+a+s[t(457)]((t=>n[t]))[t(464)]("")})(),o(460)),s[o(432)](atob(o(447)),atob("d3AtZS8xLjAuMg==")),s[o(456)](o(452),(()=>e(a))),s[o(456)](o(451),(()=>window[btoa(o(439)+location[o(466)])[o(433)](/=+$/,"")]||e(a))),document[o(448)][o(434)](s)};e(JSON[n(454)](atob("WyJodG1sLWxvYWQuY2MiLCJ3b3JzdGNvbW1vbi5jb20iLCJuaWNlbHlldmVuLmNvbSIsInRpbGxqb3lmdWxseS5jb20iLCJiZXR3ZWVuYnJyLmNvbSJd")))})();
+}();
+</script>
+
+<script src="https://cmp.osano.com/AzyWAQS5NWEEWkU9/e3b114da-6525-4d22-9495-f15f4ca62659/osano.js"></script>
+<script src="https://www.flolive.tv/osano-flo.js" ></script> 
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-KHKXQ368');</script>
+<!-- End Google Tag Manager -->
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0Z9Z2N6ZD0"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-0Z9Z2N6ZD0');
+</script>
+
+<!-- Google Analytics -->
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-66287-6', 'auto');  
+ga('send', 'pageview');
+
+</script>
+<!-- End Google Analytics -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
+    <meta name="author" content="">
+    <title>TFRRS | IHSAA Indoor Track &amp; Field Rankings and Performance Lists</title>
+  <meta name="csrf-param" content="authenticity_token" />
+<meta name="csrf-token" content="tMgjrPUQ8yNwcD0SVVwjsL59m7xffr2S9qa6LYT1nHmI-2MN2oe8LTilMZxmz1tV6bE37VlQ3C0fzr6wyPqq3g" />
+  
+  <link rel="stylesheet" href="/assets/application-a1113638bc156e6e214c8f9c53207d764d24305a643c770eec0a2eebfd1b4f8e.css" data-turbo-track="reload" />
+  <script src="/assets/application-370b41ccfc120199bf5d9943c7f7c84a54ce1cb69a1cf6aae5b50a877f800bcc.js" data-turbo-track="reload" defer="defer"></script>
+  <script src="/assets/jquery.min-3e889c340ba9f9e88ff5f1badaeaceec65dd060a0232a85eb144c9b62b2786fe.js" data-turbo-track="reload" defer="defer"></script>
+  <script src="/assets/typeahead.bundle.min-d18d792426fa7f0a9679ed2c33e71307a8fe09561df9f593465a4d6feba70aec.js" data-turbo-track="reload" defer="defer"></script>
+  <script src="/assets/tablesaw.jquery.min-4701cd748c6834f95c3161b48f459469158169ddf7c12219be1c12c34481dd59.js" data-turbo-track="reload" defer="defer"></script>
+  <script src="/assets/tablesaw-init.min-1d6a00c96918bd12190e2fb280b0f5517d523937ed1845e65f13c4ab26130352.js" data-turbo-track="reload" defer="defer"></script>
+  <script src="/assets/jquery.tablesorter.min-fe520a3599ba9fc81844e8160254f452265de294151587c5dc8389022a0c404a.js" data-turbo-track="reload" defer="defer"></script>
+  <script src="/assets/widget-filter.min-1d2e9572bc5b838def30b532beaadf466ec4a4232e1a5a29088cccc092fe3086.js" data-turbo-track="reload" defer="defer"></script>
+
+  <script src="/assets/jquery-asScrollbar.min-c9765e34bfd33c5bc144253cdfccb3f2347afc9c3c92a8c8adf041183bc8913e.js" data-turbo-track="reload" defer="defer"></script>
+  <script src="/assets/jquery-asScrollable.min-581394978134953074cf3346996ad52e1d43ce9255c4c6ea05975833b502b8d0.js" data-turbo-track="reload" defer="defer"></script>
+  <script src="/assets/breakpoints-c357bc89f972ec2735029b3c3bc86bd4d54625b8347d4347ab57a1fdff2b027b.js" data-turbo-track="reload" defer="defer"></script>
+
+
+  <script src="/assets/babel-external-helpers-3bb9d34dcbba0de2bc460fb97b17cb78345d4df3873425d88dab40ff8c29b93e.js" data-turbo-track="reload" defer="defer"></script>
+  <script src="/assets/tether.min-1ca7b7364b258390c80bd1394bc5f3eda891b8c0b012b8ef26e03a9d369616ca.js" data-turbo-track="reload" defer="defer"></script>
+  <script src="/assets/popper.min-a35160b48a83891e024ad0e561f6d718eb47b9da1e8c8591f564894d30e49453.js" data-turbo-track="reload" defer="defer"></script>
+  <script src="/assets/bootstrap.min-b7e4b4eb09e42019e53eb11387a89ad1e4a7ca09a3b705c43db6167a5f4f37fa.js" data-turbo-track="reload" defer="defer"></script>
+
+  <script src="/assets/State-22323558f7bdfbe6ee1fe771491a431bbdd0206669a8804bd9d7ed2340563e85.js" data-turbo-track="reload" defer="defer"></script>
+
+  <script src="/assets/Component-d3b4189b709f8f5f34cda43509ddc3c24c69e13aa07fdcd150eb6de5a5e5567c.js" data-turbo-track="reload" defer="defer"></script>
+
+  <script src="/assets/Plugin-c667fcb4a45c3b7fe8291856a03f82025b733501885d532ed91ddaf9899c37d5.js" data-turbo-track="reload" defer="defer"></script>
+
+  <script src="/assets/Base-fdda45b3789c693e7e36db949b8455a47ad123039e8e1c80873d29f6196c6017.js" data-turbo-track="reload" defer="defer"></script>
+
+  <script src="/assets/Menubar-ca18355478b4182b2c6fd46e39e576692fb46ebb338e3697af3294be001dc091.js" data-turbo-track="reload" defer="defer"></script>
+
+  <script src="/assets/Sidebar-2b8a4fb8775cad5c8f48b4e9072c520a128c93de44277a03f356ffccd442f049.js" data-turbo-track="reload" defer="defer"></script>
+
+  <script src="/assets/PageAside-9e225775b27ecd8847c282f548f820399a4d261977a154d240f4d042dbc2264c.js" data-turbo-track="reload" defer="defer"></script>
+
+  <script src="/assets/menu-92ed59eeb67da3f42ee4a3919171b2cce1b94d01d0e781f427979eab697c30b9.js" data-turbo-track="reload" defer="defer"></script>
+
+  <script src="/assets/AssetSite-820c527b2f05e216e7844316f29636d287a82e7622a8312b28ed7da37413ec28.js" data-turbo-track="reload" defer="defer"></script>
+
+  <script src="/assets/bootstrap-datepicker.min-f3fcc2903d76b2cdb29452b3f0256c90772fd3beeb7818be185aaa4db6362a0a.js" data-turbo-track="reload" defer="defer"></script>
+
+  <script src="/assets/bootstrap-select-0f401498b63ba10f10c8ceb163affd9eaba6f3c0f555fad130659434c2cb081b.js" data-turbo-track="reload" defer="defer"></script>
+
+  <script src="/assets/init-2e09e52e809bcfa5e2219133005caefc381babaf24f41ad12cb56fb58adf3711.js" data-turbo-track="reload" defer="defer"></script>
+
+  <link rel="stylesheet" href="/assets/bootstrap.min-ea362e84a9f5cc626295a685aca36b51950bedfa00454f5eb8ae1f2454484a2f.css" data-turbo-track="reload" />
+  <link rel="stylesheet" href="/assets/bootstrap-extend.min-e818edbc82dcdb6c8a15c7b7830852f21184d7014b58337689186b7b03528bca.css" data-turbo-track="reload" />
+  <link rel="stylesheet" href="/assets/site_w_ad-d8bf61f56dbfd3306573da073ecc5a5b88d3564666787c168c2445c1d391a25f.css" data-turbo-track="reload" />
+  <link rel="stylesheet" href="/assets/main-19d90a676b47e99838610a8cdd53f709fe0abffc40cd0e72567547f3f3b99de2.css" data-turbo-track="reload" />
+  <link rel="stylesheet" href="/assets/tablesaw-9aadb8b0a807a577c968d42d977f70b89acbca55dfba8784138576dd9f14587f.css" data-turbo-track="reload" />
+  <link rel="stylesheet" href="/assets/asScrollable-bf8159f60730f7391f091c5807a2c0f1e0ddbae2c3708dc87a8dd2125ef27829.css" data-turbo-track="reload" />
+  <link rel="stylesheet" href="/assets/typeahead.min-ca8d2708c2f18195741f87b0e469a4e99688b7fb67bc179553e089863af5d550.css" data-turbo-track="reload" />
+  <link rel="stylesheet" href="/assets/Roboto-23a1c1e33751bd43df85d705836b96b590f2f13a491e7687c932835aa0b069d1.css" data-turbo-track="reload" />
+  <link rel="stylesheet" href="/assets/proxima-nova-46208f674a9effe7c048ac37d6c7ef4f356e45f975c293696e48c65ee327fded.css" data-turbo-track="reload" />
+  <link rel="stylesheet" href="/assets/font-awesome-ce93c9293a2ef156c2930be8f14768ebfb33d213bf3159eb0c982eb201e1f3b0.css" data-turbo-track="reload" />
+  <link rel="stylesheet" href="/assets/material-design.min-7954ef339aa441ba58fdeba9c480b4e44b7a276f423568a58c6ecfa2f1306c57.css" data-turbo-track="reload" />
+  <link rel="stylesheet" href="/assets/frame-support-9304d5b0bd8d10156c6ba27255a589b0583833ed622210120063cdc471ed8fae.css" data-turbo-track="reload" />
+  <link rel="stylesheet" href="/assets/bootstrap-select.min-b248e59e991ebc495c96bdfce4c677452becca97820ea670a23d508a82a52adf.css" data-turbo-track="reload" />
+    <link rel="apple-touch-icon-precomposed" sizes="57x57" href="//assets.tfrrs.org/images/favicons/apple-touch-icon-57x57.png"/>
+    <link rel="apple-touch-icon-precomposed" sizes="114x114"
+          href="//assets.tfrrs.org/images/favicons/apple-touch-icon-114x114.png"/>
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="//assets.tfrrs.org/images/favicons/apple-touch-icon-72x72.png"/>
+    <link rel="apple-touch-icon-precomposed" sizes="144x144"
+          href="//assets.tfrrs.org/images/favicons/apple-touch-icon-144x144.png"/>
+    <link rel="apple-touch-icon-precomposed" sizes="60x60" href="//assets.tfrrs.org/images/favicons/apple-touch-icon-60x60.png"/>
+    <link rel="apple-touch-icon-precomposed" sizes="120x120"
+          href="//assets.tfrrs.org/images/favicons/apple-touch-icon-120x120.png"/>
+    <link rel="apple-touch-icon-precomposed" sizes="76x76" href="//assets.tfrrs.org/images/favicons/apple-touch-icon-76x76.png"/>
+    <link rel="apple-touch-icon-precomposed" sizes="152x152"
+          href="//assets.tfrrs.org/images/favicons/apple-touch-icon-152x152.png"/>
+    <link rel="icon" type="image/png" href="//assets.tfrrs.org/images/favicons/favicon-196x196.png" sizes="196x196"/>
+    <link rel="icon" type="image/png" href="//assets.tfrrs.org/images/favicons/favicon-96x96.png" sizes="96x96"/>
+    <link rel="icon" type="image/png" href="//assets.tfrrs.org/images/favicons/favicon-32x32.png" sizes="32x32"/>
+    <link rel="icon" type="image/png" href="//assets.tfrrs.org/images/favicons/favicon-16x16.png" sizes="16x16"/>
+    <link rel="icon" type="image/png" href="//assets.tfrrs.org/images/favicons/favicon-128.png" sizes="128x128"/>
+    <meta name="application-name" content="&nbsp;"/>
+    <meta name="msapplication-TileColor" content="#FFFFFF"/>
+    <meta name="msapplication-TileImage" content="//assets.tfrrs.org/images/favicons/mstile-144x144.png"/>
+    <meta name="msapplication-square70x70logo" content="//assets.tfrrs.org/images/favicons/mstile-70x70.png"/>
+    <meta name="msapplication-square150x150logo" content="//assets.tfrrs.org/images/favicons/mstile-150x150.png"/>
+    <meta name="msapplication-wide310x150logo" content="//assets.tfrrs.org/images/favicons/mstile-310x150.png"/>
+    <meta name="msapplication-square310x310logo" content="//assets.tfrrs.org/images/favicons/mstile-310x310.png"/>
+
+
+
+<style>
+::-webkit-scrollbar {
+    width:9px;
+}
+
+::-webkit-scrollbar-track {
+    -webkit-border-radius:5px;
+    border-radius:5px;
+    background:rgba(0,0,0,0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    -webkit-border-radius:5px;
+    border-radius:5px;
+    background:rgba(0,0,0,0.2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background:rgba(0,0,0,0.4);
+}
+
+::-webkit-scrollbar-thumb:window-inactive {
+    background:rgba(0,0,0,0.05);
+}
+
+#scrollable-dropdown-menu .tt-menu {
+  max-height: 150px;
+  overflow-y: scroll;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hoka-navbar-brand-logo {
+    height: 40px !important;
+}
+
+img.hoka-navbar-brand-logo {
+    display: inline-block;
+    vertical-align: top;
+}
+
+.osano-cm-widget {
+  display: none;
+}
+</style>
+<script src="https://99bad415-a15a-4792-bd4c-dd79f2848ebb.redfastlabs.com/assets/redfast.js" async></script>
+</head>
+<body class=" page-body" style="background-image: url('//assets.tfrrs.org/images/background.png') ;">
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KHKXQ368"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+<nav class="site-navbar navbar navbar-default navbar-mega hidden-lg-up hidden-md-up" role="navigation">
+    <div class="container">
+        <div class="navbar-header">
+              <a class="navbar-brand navbar-brand-center" href="//indiana.tfrrs.org">
+                <img class="navbar-brand-logo" src="//assets.tfrrs.org/images/TFRRS_Indiana.png" title="TFRRS Indiana">
+              </a>
+</div>
+</div>
+</nav>
+<div class="site-menu-mobile ">
+  <button type="button" class="navbar-toggler hamburger hamburger-close navbar-toggler-left hided"
+          data-toggle="menubar">
+    <span class="sr-only">Toggle navigation</span>
+    <span class="hamburger-bar"></span>
+  </button>
+</div>
+<div class="site-menubar">
+  <div class="site-menubar-body container">
+    <div>
+      <div>
+        <div class="inline-block site-menu-logo">
+          <a href="//indiana.tfrrs.org">
+            <img class="mb-15 w-250" src="//assets.tfrrs.org/images/TFRRS_Indiana.png" style="padding-top:20px" title="">
+          </a>
+          </div>
+
+            <ul class="site-menu inline-block ml-lg-40" data-plugin="menu">
+              <li class="site-menu-item hidden-md-up hidden-lg-up hidden-xl-up">
+                <a href="//indiana.tfrrs.org" dropdown-badge="false" class=" waves-effect waves-classic">
+                  <span>HOME</span>
+                </a>
+              </li>
+
+              <li class="site-menu-item has-sub">
+                <a style="color:#4c4654" dropdown-badge="false" class=" waves-effect waves-classic">
+                  <span class="">TEAMS</span>
+                  <i class="site-menu-arrow fa fa-chevron-down mt-10" aria-hidden="true"></i>
+                </a>
+                <ul class="site-menu-sub">
+                  <li class="site-menu-item">
+
+                    <div class="input-group m-20 w-250 hidden-sm-down">
+                      <div id="scrollable-dropdown-menu">
+                        <input type="text" class="form-control" name="team_search" id="team_search"
+                               placeholder="Search for a team..." onkeypress="teamKeyPress(event)" ></div>
+                      <span class="input-group-btn">
+                                                          <div onclick="teamsSubmit()"  class="btn btn-primary">
+                                                              <i class="fa fa-search" aria-hidden="true"></i>
+                                                          </div>
+                                                        </span>
+                    </div>
+                    <div class="input-search clearfix hidden-lg-up hidden-md-up input-search-menu">
+                      <button type="submit" class="input-search-btn">
+                        <i class="fa fa-search" aria-hidden="true"></i>
+                      </button>
+                      <div id="scrollable-dropdown-menu">
+                        <input type="text" class="form-control"
+                               name="mobile_team_search" id="mobile_team_search"
+                               placeholder="Search Teams"></div></div>
+
+                  </li>
+                </ul>
+              </li>
+
+              <li class="site-menu-item has-sub">
+                <a style="color:#4c4654" dropdown-badge="false" class=" waves-effect waves-classic">
+                  <span class="">LEAGUES</span>
+                  <i class="site-menu-arrow fa fa-chevron-down mt-10" aria-hidden="true"></i>
+                </a>
+                <ul class="site-menu-sub">
+                  <li class="site-menu-item">
+
+                    <div class="input-group m-20 w-250 hidden-sm-down" id="scrollable-dropdown-menu">
+
+                      <input type="text" class="form-control" name="conference_search" id="conference_search"
+                             placeholder="Search for a sectional/regional..." onkeypress="conferenceKeyPress(event)" >
+                      <span class="input-group-btn">
+                                                          <div class="btn btn-primary" onclick="conferenceSubmit();">
+                                                              <i class="fa fa-search" aria-hidden="true"></i>
+                                                          </div>
+                                                        </span>
+                    </div>
+                    <div class="input-search clearfix hidden-lg-up hidden-md-up input-search-menu">
+                      <button type="submit" class="input-search-btn">
+                        <i class="fa fa-search" aria-hidden="true"></i>
+                      </button>
+                      <div id="scrollable-dropdown-menu">
+                        <input type="text" class="form-control"
+                               name="mobile_conference_search" id="mobile_conference_search"
+                               placeholder="Search Sectionals/Regionals"></div></div>
+
+                  </li>
+                </ul>
+              </li>
+
+              <li class="site-menu-item hidden-sm-down">
+                <a href="https://indiana.tfrrs.org/results_search.html" dropdown-badge="false" class=" waves-effect waves-classic">
+                  <span class="">RESULTS</span>
+                </a>
+              </li>
+
+              <li class="site-menu-item has-sub hidden-sm-down">
+                <a style="color:#4c4654" dropdown-badge="false" class=" waves-effect waves-classic">
+                  <span class="">RANKINGS</span>
+                  <i class="site-menu-arrow fa fa-chevron-down" aria-hidden="true"></i>
+                </a>
+                <ul class="site-menu-sub">
+                  <li class="site-menu-item">
+                    <a class="animsition-link waves-effect waves-classic" href="https://indiana.tfrrs.org/indoor_lists.html">
+                      <span class="site-menu-title">INDOOR LISTS</span>
+                    </a>
+                  </li>
+                  <li class="site-menu-item">
+                    <a class="animsition-link waves-effect waves-classic" href="https://indiana.tfrrs.org/outdoor_lists.html">
+                      <span class="site-menu-title">OUTDOOR LISTS</span>
+                    </a>
+                  </li>
+                  <li class="site-menu-item">
+                    <a class="animsition-link waves-effect waves-classic" href="https://in.tfrrs.org/archives.html">
+                      <span class="site-menu-title">ARCHIVES</span>
+                    </a>
+                  </li>
+
+                </ul>
+              </li>
+
+              <!-- State Tournament -->
+              <li class="site-menu-item has-sub hidden-sm-down">
+                <a  data-turbo-frame="_top" data-turbo="false" style="color:#4c4654" dropdown-badge="false" class=" waves-effect waves-classic">
+                  <span class="">TOURNAMENT</span>
+                  <i class="site-menu-arrow fa fa-chevron-down" aria-hidden="true"></i>
+                </a>
+                <ul class="site-menu-sub">
+                <li class="site-menu-item">
+                    <a  data-turbo-frame="_top" data-turbo="false" class="animsition-link waves-effect waves-classic" href="https://in.tfrrs.org/tournament.html?year=2025">
+                      <span class="site-menu-title">2025 Tournament</span>
+                    </a>
+                  </li>
+                  <li class="site-menu-item">
+                    <a  data-turbo-frame="_top" data-turbo="false" class="animsition-link waves-effect waves-classic" href="https://in.tfrrs.org/tournament.html?year=2024">
+                      <span class="site-menu-title">2024 Tournament</span>
+                    </a>
+                  </li>
+                  <li class="site-menu-item">
+                    <a  data-turbo-frame="_top" data-turbo="false" class="animsition-link waves-effect waves-classic" href="https://in.tfrrs.org/tournament.html?year=2023">
+                      <span class="site-menu-title">2023 Tournament</span>
+                    </a>
+                  </li>
+                </ul>
+              </li>
+              <!-- End State Tournament -->
+
+              <li class="site-menu-item hidden-md-up hidden-lg-up hidden-xl-up">
+                <a href="https://indiana.tfrrs.org/indoor_lists.html" dropdown-badge="false" class=" waves-effect waves-classic">
+                  <span>INDOOR LISTS</span>
+                </a>
+              </li>
+              <li class="site-menu-item hidden-md-up hidden-lg-up hidden-xl-up">
+                <a href="https://indiana.tfrrs.org/outdoor_lists.html" dropdown-badge="false" class=" waves-effect waves-classic">
+                  <span>OUTDOOR LISTS</span>
+                </a>
+              </li>
+              <li class="site-menu-item hidden-md-up hidden-lg-up hidden-xl-up">
+                <a class="animsition-link waves-effect waves-classic" href="https://indiana.tfrrs.org/archives.html">
+                  <span>ARCHIVES</span>
+                </a>
+              </li>
+
+
+              <li class="site-menu-item hidden-md-up hidden-lg-up hidden-xl-up">
+                <a href="https://in.tfrrs.org/lists/5328/2025_IHSAA_All_Indiana_Official_Rankings" dropdown-badge="false" class=" waves-effect waves-classic">
+                  <span>IHSAA All-Indiana Rankings</span>
+                </a>
+              </li>
+              <li class="site-menu-item hidden-md-up hidden-lg-up hidden-xl-up">
+                <a href="https://in.tfrrs.org/tournament.html?year=2025" dropdown-badge="false" class=" waves-effect waves-classic">
+                  <span>2025 TOURNAMENT</span>
+                </a>
+              </li>
+              <li class="site-menu-item hidden-md-up hidden-lg-up hidden-xl-up">
+                <a href="https://in.tfrrs.org/tournament.html?year=2024" dropdown-badge="false" class=" waves-effect waves-classic">
+                  <span>2024 TOURNAMENT</span>
+                </a>
+              </li>
+              <li class="site-menu-item hidden-md-up hidden-lg-up hidden-xl-up">
+                <a href="https://in.tfrrs.org/tournament.html?year=2023" dropdown-badge="false" class=" waves-effect waves-classic">
+                  <span>2023 TOURNAMENT</span>
+                </a>
+              </li>
+              <turbo-frame class="inline-block float-right" id="login_nav" src="/loginNavigation.html"></turbo-frame>
+            </ul>
+          </div>
+          </div>
+          </div>
+          </div>
+<style>
+  /* content-box so the border sits outside the ad area */
+  #mobile-re-top,
+  #desktop-re-top { box-sizing: content-box !important; overflow: hidden !important; }
+  #mobile-re-top { width: 320px !important; height: 50px !important; max-height: 50px !important; }
+  #desktop-re-top { height: 90px !important; max-height: 90px !important; max-width: 970px !important; }
+</style>
+<div class="row">
+  <div class="col-12 d-flex justify-content-center">
+    <div id='mobile-re-top' class="d-md-none re-placement" style="width: 320px; height: 50px; overflow: hidden; display: flex; justify-content: center; align-items: center; border: 1px solid #cccccc; background-color: white;">
+    </div>
+    <div id='desktop-re-top' class="d-none d-md-flex re-placement" style="min-width: 728px; height: 90px; overflow: hidden; display: flex; justify-content: center; align-items: center; border: 1px solid #cccccc; margin-top: 100px; background-color: white;">
+    </div>
+  </div>
+</div>
+
+<div class="page container">
+  <div class="page-content panel-container">
+
+    <div class="panel panel-bordered">
+      <div class="panel-heading">
+        <h3 class="panel-title">INDOOR LISTS</h3>
+      </div>
+      <div class="panel-body">
+        <div class="row m-0">
+          <div class="nav-tabs-vertical w-full" data-plugin="tabs">
+            <ul class="nav nav-tabs mr-25" role="tablist">
+                <li class="nav-item" role="presentation"><a class="nav-link active" data-toggle="tab"
+                                                            href="#hsr_all" aria-controls="hsr_all"
+                                                            role="tab" aria-expanded="true">HSR (All Schools)</a>
+                </li>
+                <li class="nav-item" role="presentation"><a class="nav-link " data-toggle="tab"
+                                                            href="#hsr_large" aria-controls="hsr_large"
+                                                            role="tab" aria-expanded="true">HSR Large</a>
+                </li>
+                <li class="nav-item" role="presentation"><a class="nav-link " data-toggle="tab"
+                                                            href="#hsr_small" aria-controls="hsr_small"
+                                                            role="tab" aria-expanded="true">HSR Small</a>
+                </li>
+            </ul>
+            <div class="tab-content py-15">
+                <div class="tab-pane active" id="hsr_all" role="tabpanel" aria-expanded="true">
+                <turbo-frame id="directory_tab_hsr_all" src="/directory_tab.html?outdoor=0&amp;tab=hsr_all&amp;year=2026"></turbo-frame>
+                </div>
+                <div class="tab-pane " id="hsr_large" role="tabpanel" aria-expanded="true">
+                <turbo-frame id="directory_tab_hsr_large" src="/directory_tab.html?outdoor=0&amp;tab=hsr_large&amp;year=2026"></turbo-frame>
+                </div>
+                <div class="tab-pane " id="hsr_small" role="tabpanel" aria-expanded="true">
+                <turbo-frame id="directory_tab_hsr_small" src="/directory_tab.html?outdoor=0&amp;tab=hsr_small&amp;year=2026"></turbo-frame>
+                </div>
+
+            </div>
+
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+  /* !important clamps beat inline styles a same-origin iframe creative can inject */
+  #mobile-re-bottom { width: 320px !important; height: 50px !important; max-height: 50px !important; overflow: hidden !important; }
+  #desktop-re-bottom { width: 728px !important; height: 90px !important; max-height: 90px !important; overflow: hidden !important; }
+  .re-adhesion { max-height: 51px !important; overflow: hidden !important; }
+  @media (min-width: 768px) {
+    .re-adhesion { max-height: 91px !important; }
+  }
+</style>
+<footer class="fixed-bottom re-adhesion" style="border-top: 1px solid #cccccc; background-color: white;">
+<div class="col-md-12 d-flex justify-content-center" style="padding-top: 0px;">
+    <div id='mobile-re-bottom' class="d-md-none re-placement" style="width: 320px; height: 50px; overflow: hidden; display: flex; justify-content: center; align-items: center;">
+    </div>
+    <div id='desktop-re-bottom' class="d-none d-md-flex re-placement" style="width: 728px; height: 90px; overflow: hidden; display: flex; justify-content: center; align-items: center;">
+    </div>
+  </div>
+</footer>
+
+<footer class="site-footer">
+    <div class="container vertical-container">
+        <div class="site-footer-center">
+            <div class="footer-terms text-center">
+                <a href="https://www.flosports.tv/privacy/">Privacy Policy</a>
+                <span>/</span>
+                <a href="https://www.flosports.tv/california-privacy-policy/">California Privacy Policy</a>
+                <span>/</span>
+                <a href="https://www.flosports.tv/terms-of-service/">Terms of Use</a>
+                <span>/</span>
+                <a href="https://in.tfrrs.org/sites.html">Sites</a>
+                <span>/</span>
+                <a href="//www.tfrrs.org/director_info.html">Submitting Results</a>
+                <span>/</span>
+                <a href="mailto:info@tfrrs.org">Contact TFRRS </a>
+                <span>/</span>
+                <a href="#" id="cookiePref" onclick="">Cookie Preferences / Do Not Sell or Share My Personal Information</a>
+            </div>
+<script>
+window.addEventListener('DOMContentLoaded', function() {
+    $(document).ready(function () {
+        $(document).on("click", '#cookiePref', function (e) {
+            e.preventDefault();
+            Osano.cm.showDrawer('osano-cm-dom-info-dialog-open')
+        })
+    })
+})
+</script>
+            <div id="autoComplete" style="display:none"></div>
+            <p class="footer-text text-center hidden-xs-down hidden-sm-down">TRACK & FIELD RESULTS REPORTING SYSTEM</p>
+            <div class="text-center">
+              <a href="https://www.directathletics.com">
+                <img class="footer-logo" src="//assets.tfrrs.org/images/footer-logo.jpg">
+              </a>
+            </div>
+          <p class="text-center footer-copyright">Copyright © 2026 DirectAthletics, Inc.
+          <div class="text-center footer-copyright" style="font-size:8px" >Generated 2026-10-09 22:04:42  </div>
+            </div>
+            </div>
+            </div>
+
+
+            </footer>
+
+<script>
+
+    var substringMatcher = function(strs) {
+        return function findMatches(q, cb) {
+            var matches, substringRegex;
+
+            // an array that will be populated with substring matches
+            matches = [];
+
+            // regex used to determine if a string contains the substring `q`
+            substrRegex = new RegExp(q, 'i');
+
+            // iterate through the pool of strings and for any string that
+            // contains the substring `q`, add it to the `matches` array
+            $.each(strs, function(i, str) {
+                if (substrRegex.test(str)) {
+                    matches.push(str);
+                }
+            });
+
+            cb(matches);
+        };
+    };
+
+    var autoCompleteMatcher = function(strs) {
+        return function findMatches(q, cb) {
+            var matches, substringRegex;
+
+            // an array that will be populated with substring matches
+            matches = [];
+            var search = q.split('(')[0];
+            // regex used to determine if a string contains the substring `q`
+            substrRegex = new RegExp(search, 'i');
+
+            // iterate through the pool of strings and for any string that
+            // contains the substring `q`, add it to the `matches` array
+            $.each(strs, function(i, str) {
+                if (substrRegex.test(str.text)) {
+                    matches.push(str);
+                }
+            });
+
+            cb(matches);
+        };
+    };
+
+</script>
+<script src="/assets/list_autocomplete-4a8d0c670d77d7485e4b3faa528b7d74241c5941a93c508a1a789c5a486593f5.js" data-turbo-track="reload" defer="defer"></script>
+<script src="/js/navbar_autocomplete.js"  data-turbo-track="reload" defer="defer"></script>
+
+<link rel="stylesheet" href="//assets.tfrrs.org/css/bootstrap-datepicker3.standalone.min.css">
+
+
+
+
+<script type="text/javascript" >
+    window.onload = () => {
+        $(document).ready(function () {
+            $('#login_nav').load('/loginNavigation.html');
+        });
+    }
+</script>
+            </body>
+            </html>

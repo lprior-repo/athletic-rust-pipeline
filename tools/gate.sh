@@ -41,22 +41,11 @@
 # commands and nothing here carries analysis code of its own.
 set -uo pipefail
 
-cd "$(dirname "$(readlink -f "$0")")/.." || exit 2
-
 BASELINE=tools/quality-baseline.json
 UPDATE=0
 ALLOW_INCREASE=0
 FULL=0
 RELEASE=0
-for arg in "$@"; do
-  case "$arg" in
-    --update-baseline) UPDATE=1 ;;
-    --allow-increase) ALLOW_INCREASE=1 ;;
-    --full) FULL=1 ;;
-    --release) RELEASE=1; FULL=1 ;;
-    *) printf 'unknown argument: %s\n' "$arg" >&2; exit 2 ;;
-  esac
-done
 
 # The nightly feature allowlist (Holzman pinned-nightly policy). `-Zallow-features` is
 # crate-graph-wide rather than per-crate, so it carries two kinds of name. Ours are the two features
@@ -124,9 +113,22 @@ lane_check() {
   cargo -Zallow-features="$FEATURE_ALLOWLIST" check --workspace --all-targets --all-features
 }
 lane_no_panic_extraction() {
-  cargo xtask panic-extraction &&
-    cargo -Zallow-features="$FEATURE_ALLOWLIST" clippy --workspace --all-targets --all-features -- \
-      -D warnings -D clippy::unwrap_used -D clippy::expect_used --force-warn clippy::too_many_arguments
+  # One `--workspace` clippy run stops at the first crate whose lint fails: cargo does not schedule a
+  # failed crate's dependents, so their diagnostics — test targets included — never appear and each
+  # burn-down round pays a full gate to reveal one layer. Every package is linted by its own
+  # invocation instead, which keeps all of them in one pass against a warm target directory.
+  local failed=0 package packages
+  packages="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[].name')" || return 1
+  if [ -z "$packages" ]; then
+    printf 'cargo metadata named no packages: the all-target lint pass did not run\n' >&2
+    return 1
+  fi
+  cargo xtask panic-extraction || failed=1
+  while IFS= read -r package; do
+    cargo -Zallow-features="$FEATURE_ALLOWLIST" clippy -p "$package" --all-targets --all-features --keep-going -- \
+      -D warnings -D clippy::unwrap_used -D clippy::expect_used --force-warn clippy::too_many_arguments || failed=1
+  done <<< "$packages"
+  return "$failed"
 }
 lane_doc() { cargo doc --workspace --all-features --no-deps; }
 lane_deny() { cargo deny check advisories bans sources; }
@@ -347,4 +349,19 @@ main() {
   summary
 }
 
-main
+# The lanes above are also a library: the perf-lane boundary test sources this file and calls
+# `lane_perf` from an empty directory to pin its missing-baseline branches. Only a direct run owns
+# the working directory, parses the command line and runs the lanes.
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+  cd "$(dirname "$(readlink -f "$0")")/.." || exit 2
+  for arg in "$@"; do
+    case "$arg" in
+      --update-baseline) UPDATE=1 ;;
+      --allow-increase) ALLOW_INCREASE=1 ;;
+      --full) FULL=1 ;;
+      --release) RELEASE=1; FULL=1 ;;
+      *) printf 'unknown argument: %s\n' "$arg" >&2; exit 2 ;;
+    esac
+  done
+  main
+fi

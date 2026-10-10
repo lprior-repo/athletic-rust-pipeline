@@ -327,6 +327,7 @@ fn the_production_collector_persists_the_run_season_and_actual_summary_capture_c
             let key = Fetcher::key_for("GET", &url, "");
             let (body_path, meta_path) = fetcher.cache_paths(&key);
             write_cache(&body_path, &meta_path, body, &CacheMeta {
+        redirects: Vec::new(),
                 representation: crate::net::RepresentationHeaders::default(),
                 url, response_url: None, method: "GET".to_string(), status: 200,
                 content_digest: content_digest(body), bytes: body.len(), fetched_at: RETRIEVED.to_string(),

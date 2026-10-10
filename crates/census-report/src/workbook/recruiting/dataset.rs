@@ -27,6 +27,7 @@ pub(super) struct Dataset {
     pub(super) identities: std::sync::Arc<census_domain::model::AthleteIdentityProjection>,
     pub(super) schools: BTreeMap<census_domain::model::SchoolId, CanonicalSchool>,
     pub(super) published_coaches: Vec<CanonicalCoach>,
+    pub(super) coach_spellings: BTreeMap<String, String>,
     pub(super) contacts: BTreeMap<String, SchoolContacts>,
     pub(super) tallies: BTreeMap<String, AthleteTally>,
     pub(super) prs: Vec<SharedSelection>,
@@ -71,6 +72,9 @@ impl Dataset {
             identities: inputs.derivation.dataset().identities(),
             schools: school_index(inputs.derivation.schools()),
             published_coaches: coalesce::claims(inputs.derivation.coach_observations()),
+            coach_spellings: super::coach_spelling::spellings(
+                inputs.derivation.coach_observations(),
+            ),
             tallies: tallies_of(inputs.derivation, &athletes),
             athletes,
             contacts,

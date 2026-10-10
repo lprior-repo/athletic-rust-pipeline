@@ -345,3 +345,9 @@ fn resolution_counter_merge_overflow_returns_invariant() -> TestResult {
     check!(format!("{error:?}").contains("resolution row counter overflow"));
     Ok(())
 }
+
+#[test]
+fn tfrrs_is_an_armed_results_source_for_applicable_states() -> TestResult {
+    check!(matches!(arm_for("tfrrs"), Some(ResultsArm::TfrrsResults)));
+    Ok(())
+}

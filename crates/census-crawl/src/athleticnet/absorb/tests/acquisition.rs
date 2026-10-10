@@ -31,6 +31,7 @@ fn seed_cache(cache: &std::path::Path, url: &str, body: &str) -> TestResult {
     )])?;
     let key = crate::net::Fetcher::key_for("GET", url, &representation.identity());
     let meta = CacheMeta {
+        redirects: Vec::new(),
         url: url.to_string(),
         method: "GET".to_string(),
         representation,

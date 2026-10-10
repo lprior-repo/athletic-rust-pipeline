@@ -51,7 +51,6 @@ pub struct SourceAdmission {
     pub origin: &'static str,
     pub target_requests_per_second: f64,
     pub maximum_in_flight: NonZeroUsize,
-    pub robots_crawl_delay_respected: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]

@@ -6,7 +6,6 @@ async fn http_refusal_preserves_owed_state(status: u16) -> TestResult {
     let url = local_url(&host, 450, 1);
     let bad = serde_json::to_vec(&json!({"data": {"total": 2, "rows": [coach("Ada", "Lane")]}}))?;
     let replies = vec![
-        robots(),
         reply(&host, &url, 200, &bad)?,
         reply(&host, &url, status, b"source refused")?,
     ];

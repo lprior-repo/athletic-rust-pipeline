@@ -4,6 +4,12 @@ use restate_sdk::ingress::{Client, ClientBuildError, RequestExecutor};
 
 const SDK_ROUTE_PREFIX: &str = "/restate";
 
+const SDK_OUTPUT_OPERATION: &str = "output/";
+
+const SDK_ATTACH_OPERATION: &str = "attach/";
+
+const SERVED_INVOCATION_ROOT: &str = "/restate/invocation";
+
 const SDK_SYNC_OPERATIONS: [&str; 2] = ["call", "invoke"];
 
 const SDK_SEND_OPERATION: &str = "send";
@@ -42,18 +48,21 @@ pub fn client(origin: Uri, transport: reqwest::Client) -> Result<Ingress, Client
 fn invocation_route(uri: &Uri) -> Option<Uri> {
     let path = uri.path();
     let remainder = path.strip_prefix(SDK_ROUTE_PREFIX)?.strip_prefix('/')?;
-    let invoked = match SDK_SYNC_OPERATIONS
+    let invoked = if let Some(invocation) = remainder.strip_prefix(SDK_OUTPUT_OPERATION) {
+        format!("{SERVED_INVOCATION_ROOT}/{invocation}/output")
+    } else if let Some(invocation) = remainder.strip_prefix(SDK_ATTACH_OPERATION) {
+        format!("{SERVED_INVOCATION_ROOT}/{invocation}/attach")
+    } else if let Some(invoked) = SDK_SYNC_OPERATIONS
         .iter()
         .find_map(|operation| remainder.strip_prefix(operation))
         .filter(|invoked| invoked.starts_with('/'))
     {
-        Some(invoked) => invoked.to_string(),
-        None => {
-            let sent = remainder
-                .strip_prefix(SDK_SEND_OPERATION)?
-                .strip_prefix('/')?;
-            format!("/{sent}/send")
-        }
+        invoked.to_string()
+    } else {
+        let sent = remainder
+            .strip_prefix(SDK_SEND_OPERATION)?
+            .strip_prefix('/')?;
+        format!("/{sent}/send")
     };
     let path_and_query = match uri.query() {
         Some(query) => format!("{invoked}?{query}"),
@@ -126,10 +135,20 @@ mod tests {
     }
 
     #[test]
+    fn rewrites_invocation_output_and_attach_routes_to_served_paths() {
+        assert_eq!(
+            rewritten("http://127.0.0.1:18095/restate/output/inv_1").as_deref(),
+            Some("http://127.0.0.1:18095/restate/invocation/inv_1/output")
+        );
+        assert_eq!(
+            rewritten("http://127.0.0.1:18095/restate/attach/inv_1").as_deref(),
+            Some("http://127.0.0.1:18095/restate/invocation/inv_1/attach")
+        );
+    }
+
+    #[test]
     fn leaves_unserved_routes_untouched() {
         for value in [
-            "http://127.0.0.1:18095/restate/output/inv_1",
-            "http://127.0.0.1:18095/restate/attach/inv_1",
             "http://127.0.0.1:18095/restate/scope/tenant/call/Census/report",
             "http://127.0.0.1:18095/restate/health",
             "http://127.0.0.1:18095/restate/invocation-probe",

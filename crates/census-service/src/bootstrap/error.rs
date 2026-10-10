@@ -26,6 +26,16 @@ pub enum BootstrapError {
     ConcurrencyIsZero,
     #[error("--max-concurrent {value} is outside 1..={ceiling}")]
     ConcurrencyTooLarge { value: usize, ceiling: usize },
+    #[error("{raw} is not a number of gibibytes")]
+    MemoryBudgetNotAGib {
+        raw: String,
+        #[source]
+        source: std::num::ParseIntError,
+    },
+    #[error("--memory-budget-gib must be at least 1")]
+    MemoryBudgetIsZero,
+    #[error("--memory-budget-gib {value} is outside 1..={ceiling}")]
+    MemoryBudgetTooLarge { value: u64, ceiling: u64 },
     #[error("{raw} is not a number of seconds")]
     DrainTimeoutNotASeconds {
         raw: String,

@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 
 use super::{header, sorted_counts, Expect, Sheet};
 
-const HEADERS: [&str; 8] = [
+const HEADERS: [&str; 7] = [
     "Source",
     "Provider",
     "Transport",
@@ -13,7 +13,6 @@ const HEADERS: [&str; 8] = [
     "Origin",
     "Requests/s",
     "In flight",
-    "Crawl delay",
 ];
 
 const CHANNEL_HEADERS: [&str; 4] = ["Evidence channel", "Source id", "Records", ""];
@@ -73,11 +72,6 @@ fn descriptor_row(descriptor: &SourceDescriptor) -> ReportResult<Vec<Expect>> {
         Expect::text(admission.origin),
         Expect::Number(admission.target_requests_per_second),
         Expect::count(admission.maximum_in_flight.get())?,
-        Expect::text(if admission.robots_crawl_delay_respected {
-            "respected"
-        } else {
-            "not declared"
-        }),
     ])
 }
 

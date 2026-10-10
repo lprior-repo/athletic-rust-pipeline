@@ -63,13 +63,18 @@ pub(super) fn member_facts<'a>(
 
 pub(super) fn positive_identity(kind: AppliedIdentityKind, facts: &[&IdentityFact]) -> bool {
     match kind {
-        AppliedIdentityKind::SourceBound | AppliedIdentityKind::DifferentPerson => false,
+        AppliedIdentityKind::SourceBound => false,
         AppliedIdentityKind::SamePerson => same_person_evidence(facts),
+        AppliedIdentityKind::DifferentPerson => separable(facts),
     }
 }
 
-pub(super) fn distinct_person_evidence(facts: &[&IdentityFact]) -> bool {
-    !same_person_evidence(facts)
+fn separable(facts: &[&IdentityFact]) -> bool {
+    let Some(first) = facts.first() else {
+        return false;
+    };
+    let one_object = facts.iter().all(|fact| first.shares_primary(fact));
+    !one_object && !same_person_evidence(facts)
 }
 
 fn same_person_evidence(facts: &[&IdentityFact]) -> bool {

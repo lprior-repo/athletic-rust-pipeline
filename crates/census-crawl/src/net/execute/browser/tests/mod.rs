@@ -53,7 +53,6 @@ impl Coordinates {
             url: URL,
             payload: None,
             host: HOST,
-            crawl_delay: None,
             family: None,
             body_path: &self.body_path,
             meta_path: &self.meta_path,

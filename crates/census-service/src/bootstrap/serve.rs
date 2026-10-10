@@ -54,7 +54,7 @@ pub(super) async fn supervise(
     let (cancel, mut endpoint_done) = spawn_endpoint(&region, &store, &options, listener, lane)?;
     region
         .spawn(super::guard::watch_memory(
-            super::DEFAULT_MEMORY_BUDGET_BYTES,
+            options.memory_budget_bytes,
             Arc::clone(&over_budget),
             region.stopping(),
         ))
@@ -62,7 +62,7 @@ pub(super) async fn supervise(
     tracing::info!(
         %bound,
         max_concurrent = options.max_concurrent,
-        memory_budget_gib = super::DEFAULT_MEMORY_BUDGET_BYTES / (1024 * 1024 * 1024),
+        memory_budget_gib = options.memory_budget_bytes / (1024 * 1024 * 1024),
         "census service listening"
     );
 

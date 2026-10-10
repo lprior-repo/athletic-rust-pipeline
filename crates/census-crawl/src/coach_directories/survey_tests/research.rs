@@ -153,6 +153,7 @@ fn seed(fetcher: &crate::net::Fetcher, url: &str, body: &[u8], acquired_at: &str
         &meta_path,
         body,
         &crate::net::cache::CacheMeta {
+        redirects: Vec::new(),
             url: url.to_owned(),
             response_url: None,
             method: "GET".to_owned(),

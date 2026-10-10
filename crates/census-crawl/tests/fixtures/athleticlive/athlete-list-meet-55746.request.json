@@ -1,0 +1,14 @@
+{
+  "size": 2000,
+  "from": 0,
+  "track_total_hits": true,
+  "query": {
+    "bool": {
+      "filter": [
+        { "terms": { "mi": [55746] } },
+        { "terms": { "y": ["11", "12", "JR", "SR", "Jr", "Sr"] } }
+      ]
+    }
+  },
+  "_source": ["i", "n", "y", "g", "mi", "ani", "t"]
+}

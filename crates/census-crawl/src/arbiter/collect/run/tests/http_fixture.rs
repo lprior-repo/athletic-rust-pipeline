@@ -17,14 +17,6 @@ pub(super) fn local_fetcher(cache: &Path) -> TestResult<Fetcher> {
     )?)
 }
 
-pub(super) fn robots() -> (String, u16, Vec<u8>) {
-    (
-        "/robots.txt".to_string(),
-        200,
-        b"User-agent: *\r\nAllow: /\r\n".to_vec(),
-    )
-}
-
 pub(super) fn reply(
     host: &str,
     url: &str,
@@ -82,7 +74,7 @@ pub(super) async fn assert_request_conservation(
         stats.per_host.get("127.0.0.1").ok_or("loopback traffic")?.physical_requests(),
         count
     );
-    check!(eq; accepted.iter().filter(|path| path.as_str() == "/robots.txt").count(), 1);
+    check!(eq; accepted.iter().filter(|path| path.as_str() == "/robots.txt").count(), 0);
     Ok(())
 }
 

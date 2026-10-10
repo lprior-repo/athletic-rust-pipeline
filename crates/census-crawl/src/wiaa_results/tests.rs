@@ -151,6 +151,7 @@ fn seed_result_cache(fetcher: &crate::net::Fetcher, url: &str, body: &[u8]) -> T
     let key = crate::net::Fetcher::key_for("GET", url, &representation.identity());
     let (body_path, meta_path) = fetcher.cache_paths(&key);
     let meta = CacheMeta {
+        redirects: Vec::new(),
         representation,
         url: url.to_owned(),
         response_url: None,

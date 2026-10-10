@@ -1,7 +1,7 @@
 use super::attempt::FetchPlan;
 use super::body_reader::read_checked_body;
 use crate::net::cache::{write_archive, write_cache, CacheMeta};
-use crate::net::{host_of, now_iso8601, FetchError, FetchOutcome, FetchStats};
+use crate::net::{host_of, now_iso8601, FetchError, FetchOutcome, FetchStats, RedirectHop};
 use std::path::Path;
 use tokio::sync::Mutex;
 
@@ -10,6 +10,7 @@ pub(super) async fn cache_and_record(
     plan: &FetchPlan<'_>,
     status: u16,
     stats: &Mutex<FetchStats>,
+    redirects: &[RedirectHop],
 ) -> Result<FetchOutcome, crate::net::FetchError> {
     let url = plan.url;
     let meta_path = plan.meta_path;
@@ -20,6 +21,7 @@ pub(super) async fn cache_and_record(
     let response_url = Some(response.url().as_str().to_owned());
     let (body_vec, content_hex) = read_checked_body(response, url).await?;
     let meta = CacheMeta {
+        redirects: redirects.to_vec(),
         url: url.to_string(),
         response_url,
         method: plan.method.to_string(),
@@ -165,7 +167,6 @@ mod tests {
                         url: &requested,
                         payload: None,
                         host: "127.0.0.1",
-                        crawl_delay: None,
                         family: None,
                         body_path: &body_path,
                         meta_path: &meta_path,
@@ -174,7 +175,7 @@ mod tests {
                         representation: &representation,
                         timeout_secs: 45,
                     };
-                    let outcome = cache_and_record(response, &plan, status, &stats).await?;
+                    let outcome = cache_and_record(response, &plan, status, &stats, &[]).await?;
                     check!(eq; outcome.status, status);
                     check!(eq; outcome.body, raw);
                     check!(eq; outcome.response_url.as_deref(), Some(response_url.as_str()));

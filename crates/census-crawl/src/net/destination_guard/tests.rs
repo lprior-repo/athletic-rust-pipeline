@@ -83,7 +83,7 @@ fn public_ipv4_neighbors_are_not_reserved_networks() -> TestResult {
 }
 
 #[test]
-fn denied_local_request_issues_neither_robots_nor_payload() -> TestResult {
+fn denied_local_request_issues_no_request() -> TestResult {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?

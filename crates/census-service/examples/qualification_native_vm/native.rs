@@ -121,11 +121,7 @@ async fn ingest(client: &Client, label: &str) -> Result<Value> {
     let reply = request(
         client,
         Method::POST,
-        &format!(
-            "{}restate/call/Ingest/{}/record",
-            http::INGRESS,
-            super::ENDPOINT
-        ),
+        &format!("{}Ingest/{}/record", http::INGRESS, super::ENDPOINT),
         Some(&payload),
     )
     .await?;

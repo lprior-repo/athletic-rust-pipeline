@@ -70,17 +70,9 @@ impl Fetcher {
         }
     }
 
-    pub(super) async fn host_gate(
-        &self,
-        host: &str,
-        robots_delay: Option<Duration>,
-    ) -> Arc<Mutex<()>> {
+    pub(super) async fn host_gate(&self, host: &str) -> Arc<Mutex<()>> {
         let scope = self.pace_scope(host);
-        let configured = self.configured_delay(&scope);
-        let mut effective = match robots_delay {
-            Some(robots) if robots > configured => robots,
-            _ => configured,
-        };
+        let mut effective = self.configured_delay(&scope);
         if self.is_authorized_host(host) && effective < MIN_AUTHORIZED_DELAY {
             effective = MIN_AUTHORIZED_DELAY;
         }
@@ -165,14 +157,12 @@ impl Fetcher {
         if self.host_blocked(&host, &super::now_iso8601()).await {
             return Err(FetchError::Cooldown { host: host.clone() });
         }
-        let crawl_delay = self.robots_for(&origin, &host).await.crawl_delay;
-        let gate = self.host_gate(&host, crawl_delay).await;
+        let gate = self.host_gate(&host).await;
         let plan = FetchPlan {
             method,
             url,
             payload: body.as_ref().map(|(_, payload)| payload),
             host: &host,
-            crawl_delay,
             family: self.family_of(&host),
             body_path: &body_path,
             meta_path: &meta_path,

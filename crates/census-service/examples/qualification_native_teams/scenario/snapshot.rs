@@ -19,10 +19,7 @@ pub(super) async fn capture(
         client,
         &config.root,
         Method::POST,
-        &format!(
-            "{}restate/call/JurisdictionCensus/{key}/state",
-            config.ingress
-        ),
+        &format!("{}JurisdictionCensus/{key}/state", config.ingress),
         None,
     )
     .await?;
@@ -35,7 +32,7 @@ pub(super) async fn capture(
         client,
         &config.root,
         Method::GET,
-        &format!("{}restate/output/{id}", config.ingress),
+        &format!("{}restate/invocation/{id}/output", config.ingress),
         None,
     )
     .await?;
@@ -85,7 +82,7 @@ async fn inspect_store(
         client,
         &config.root,
         Method::POST,
-        &format!("{}restate/call/Census/status", config.ingress),
+        &format!("{}Census/status", config.ingress),
         None,
     )
     .await?;

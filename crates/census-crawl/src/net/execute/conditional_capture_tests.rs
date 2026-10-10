@@ -53,13 +53,7 @@ async fn serve(listener: TcpListener, body_path: PathBuf, mutation: Mutation) ->
     for _ in 0..2 {
         let (mut socket, _) = listener.accept().await?;
         let request = read_headers(&mut socket).await?;
-        let response = if request.starts_with("GET /robots.txt ") {
-            let robots = "User-agent: *\r\nAllow: /\r\n";
-            format!(
-                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{robots}",
-                robots.len()
-            )
-        } else {
+        let response = {
             check!(request.starts_with("GET /payload "), "{request}");
             check!(
                 request
@@ -78,6 +72,7 @@ async fn serve(listener: TcpListener, body_path: PathBuf, mutation: Mutation) ->
 
 fn original_meta(url: &str) -> CacheMeta {
     CacheMeta {
+        redirects: Vec::new(),
         representation: crate::net::RepresentationHeaders::default(),
         url: url.to_string(),
         response_url: None,

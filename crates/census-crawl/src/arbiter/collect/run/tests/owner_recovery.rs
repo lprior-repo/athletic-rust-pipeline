@@ -13,7 +13,6 @@ fn same_name_incomplete_public_owners_refresh_independently_and_preserve_v1_hist
     let first_good = serde_json::to_vec(&json!({"data": {"total": 1, "rows": [coach("Ada", "Lane")]}}))?;
     let second_good = serde_json::to_vec(&json!({"data": {"total": 1, "rows": [coach("Beau", "Pine")]}}))?;
     let replies = vec![
-        robots(),
         reply(&host, &first_url, 200, &first_bad)?,
         reply(&host, &second_url, 200, &second_bad)?,
         reply(&host, &first_url, 200, &first_good)?,

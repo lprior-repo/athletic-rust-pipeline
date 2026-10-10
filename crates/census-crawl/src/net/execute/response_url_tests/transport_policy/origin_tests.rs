@@ -47,7 +47,6 @@ fn empty_grants_same_origin_redirect_preserves_archive_cache_offline_and_304_pro
             check!(eq;
                 requests,
                 [
-                    "/robots.txt",
                     "/start",
                     "/destination",
                     "/start",
@@ -71,6 +70,13 @@ fn empty_grants_same_origin_redirect_preserves_archive_cache_offline_and_304_pro
             .ok_or("requested cache missing")?;
             check!(eq; meta.url, requested);
             check!(eq; meta.response_url.as_deref(), Some(destination.as_str()));
+            check!(eq;
+                meta.redirects,
+                vec![crate::net::RedirectHop {
+                    status: 302,
+                    url: destination.clone()
+                }]
+            );
             check!(eq; meta.fetched_at, acquired_at);
             check!(eq; meta.etag.as_deref(), Some("\"capture-v1\""));
             check!(eq; meta.bytes, BODY.len());
@@ -87,6 +93,65 @@ fn empty_grants_same_origin_redirect_preserves_archive_cache_offline_and_304_pro
                 other => {
                     return Err(
                         format!("final URL incorrectly became a cache key: {other:?}").into(),
+                    )
+                }
+            }
+            Ok(())
+        })
+}
+
+#[test]
+fn a_same_origin_redirect_into_an_authentication_path_is_refused_undispatched() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let root = tempfile::tempdir()?;
+            let cache = root.path().join("http");
+            let listener = TcpListener::bind("127.0.0.1:0").await?;
+            let address = listener.local_addr()?;
+            let origin = format!("http://source.example:{}", address.port());
+            let requested = format!("{origin}/start");
+            let login =
+                format!("{origin}/user/login?destination=/schools/abraham-clark-high-school");
+            let fetcher = pinned_fetcher_with(&cache, &[("source.example", address)], Vec::new())?;
+            let (finished, completion) = oneshot::channel();
+            let acquisition = async {
+                let outcome = fetcher.get(&requested, &FetchOptions::default()).await;
+                finished
+                    .send(())
+                    .map_err(|()| "fixture server stopped early")?;
+                Ok::<_, Box<dyn std::error::Error + Send + Sync>>(outcome)
+            };
+            let (requests, outcome) = tokio::time::timeout(Duration::from_secs(10), async {
+                tokio::try_join!(
+                    serve_synthetic_redirect(
+                        listener,
+                        &login,
+                        std::str::from_utf8(BODY)?,
+                        completion
+                    ),
+                    acquisition
+                )
+            })
+            .await??;
+            check!(eq;
+                requests,
+                [(
+                    "/start".to_string(),
+                    format!("source.example:{}", address.port())
+                )]
+            );
+            match outcome {
+                Err(FetchError::Policy { detail }) => {
+                    check!(
+                        detail.contains("enters an authentication path"),
+                        "the refusal names the authentication hop: {detail}"
+                    );
+                }
+                other => {
+                    return Err(
+                        format!("expected an authentication-path refusal, got {other:?}").into(),
                     )
                 }
             }

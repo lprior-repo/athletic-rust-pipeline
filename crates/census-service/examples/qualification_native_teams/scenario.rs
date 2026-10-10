@@ -128,10 +128,7 @@ pub async fn run(
         client,
         &config.root,
         Method::POST,
-        &format!(
-            "{}restate/send/JurisdictionCensus/{key}/run",
-            config.ingress
-        ),
+        &format!("{}JurisdictionCensus/{key}/run/send", config.ingress),
         Some(body),
     )
     .await?;

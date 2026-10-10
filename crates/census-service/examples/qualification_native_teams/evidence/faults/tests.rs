@@ -166,7 +166,7 @@ fn native_progress_witness_cannot_target_a_flattened_or_other_source_key() -> Re
     let mut url = url::Url::parse("http://127.0.0.1:8080/")?;
     url.path_segments_mut()
         .map_err(|()| anyhow::anyhow!("no URL segments"))?
-        .extend(["restate", "call", "TeamsSource", key, "progress"]);
+        .extend(["TeamsSource", key, "progress"]);
     assert!(progress_route(url.as_str(), key));
     assert!(!progress_route(url.as_str(), "OH/2026/2/teams/milesplit"));
     assert!(!progress_route(

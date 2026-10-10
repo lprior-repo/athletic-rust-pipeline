@@ -18,7 +18,7 @@ pub(super) async fn start(client: &Client, key: &str) -> Result<Value> {
     let sent = request(
         client,
         Method::POST,
-        &format!("{INGRESS}restate/send/Sweep/{key}/run"),
+        &format!("{INGRESS}Sweep/{key}/run/send"),
         Some(&json!({"endpoints":[ENDPOINT],"windows":1,"window_seconds":3600})),
     )
     .await?;
@@ -125,7 +125,7 @@ async fn wait_output(client: &Client, id: &str) -> Result<Value> {
             match request(
                 client,
                 Method::GET,
-                &format!("{INGRESS}restate/output/{id}"),
+                &format!("{INGRESS}restate/invocation/{id}/output"),
                 None,
             )
             .await
@@ -162,7 +162,7 @@ async fn interrupt_existing(client: &Client, key: &str, id: &str) -> Result<Valu
     request(
         client,
         Method::POST,
-        &format!("{INGRESS}restate/call/Sweep/{key}/interrupt"),
+        &format!("{INGRESS}Sweep/{key}/interrupt"),
         Some(&json!(id)),
     )
     .await?;

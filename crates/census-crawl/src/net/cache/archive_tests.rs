@@ -5,6 +5,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 fn metadata(body: &[u8]) -> CacheMeta {
     CacheMeta {
+        redirects: Vec::new(),
         representation: RepresentationHeaders::default(),
         url: "https://example.test/source".to_owned(),
         response_url: None,

@@ -172,6 +172,10 @@ engineering blocker. Never remove failed sources from the declared manifest to o
 | 8 — Assurance | Required tests/proofs/faults/security/load/backup restoration have actual evidence |
 | 9 — Release | Validated seal binds tested build, run, artifacts and coverage limits; no unresolved blocker |
 
+Coaches-sheet distinct counts name the entity. A count of schools that have at least one coach
+row is distinct schools, not distinct coach names or distinct coach IDs. The workbook publishes
+those three figures separately.
+
 ### 7.1. Beads execution graph — 2026-10-01
 
 `athletic-rust-pipeline-7lx` owns the complete product target: one accepted canonical Class-of-2027
@@ -281,7 +285,7 @@ These IDs denote corrections, not the separately dated source-audit findings in 
 | F01 | Exact public mailbox binds to permitted current role; no fabricated address |
 | F02 | Homonyms, transfers and reversible cross-source identities preserve attribution and contradictions |
 | F03 | Cohort evidence cannot establish identity by itself |
-| F04 | Partial/budget-limited work resumes under the same logical identity with apply-once effects |
+| F04 | Partial/budget-limited work resumes under the same logical identity with apply-once effects; a national submission re-drives owed jurisdictions through stage-resilient `pass` calls and reports each unfinished identity under `owed` instead of publishing it as done |
 | F05 | Exact mark/condition normalization and compatible PR winners agree across every projection |
 | F06 | Contacts distinguish current/former role, TF/XC and side/category; unknown is not both |
 | F07 | Source/program/season obligations and history remain explicit even with no accepted athletes |

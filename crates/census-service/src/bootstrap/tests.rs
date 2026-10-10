@@ -15,6 +15,8 @@ fn options_parse_every_flag() -> TestResult {
         "3",
         "--drain-timeout",
         "7",
+        "--memory-budget-gib",
+        "96",
     ]
     .into_iter()
     .map(str::to_string);
@@ -42,6 +44,14 @@ fn options_parse_every_flag() -> TestResult {
         )
         .into());
     }
+    if options.memory_budget_bytes != 96_u64 * 1024 * 1024 * 1024 {
+        return Err(format!(
+            "memory_budget_bytes: left={:?}, right={:?}",
+            options.memory_budget_bytes,
+            96_u64 * 1024 * 1024 * 1024
+        )
+        .into());
+    }
     Ok(())
 }
 
@@ -57,6 +67,27 @@ fn options_reject_unknown_flags_and_zero_concurrency() {
         ServeOptions::from_env(zero),
         Err(BootstrapError::ConcurrencyIsZero)
     ));
+    let zero = ["--memory-budget-gib", "0"].into_iter().map(str::to_string);
+    assert!(matches!(
+        ServeOptions::from_env(zero),
+        Err(BootstrapError::MemoryBudgetIsZero)
+    ));
+    let junk = ["--memory-budget-gib", "lots"]
+        .into_iter()
+        .map(str::to_string);
+    assert!(matches!(
+        ServeOptions::from_env(junk),
+        Err(BootstrapError::MemoryBudgetNotAGib { .. })
+    ));
+    let huge = ["--memory-budget-gib", "2048"]
+        .into_iter()
+        .map(str::to_string);
+    assert!(matches!(
+        ServeOptions::from_env(huge),
+        Err(BootstrapError::MemoryBudgetTooLarge { .. })
+    ));
+    let default = ServeOptions::default();
+    assert_eq!(default.memory_budget_bytes, 48_u64 * 1024 * 1024 * 1024);
 }
 
 #[test]

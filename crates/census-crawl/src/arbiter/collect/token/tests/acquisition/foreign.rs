@@ -13,7 +13,6 @@ fn unmatched_foreign_markup_requests_only_the_genuine_entry_bundle() -> TestResu
     let html = "<svg></math><script type=module src='assets/index-decoy.js'></script></svg><math/><script type=module src='assets/index-real.js'></script>";
     let body = "export const sourceRevision = 'genuine';";
     let replies = vec![
-        reply("/robots.txt", 200, "User-agent: *\r\nAllow: /\r\n"),
         reply("/directory/", 200, html),
         reply("/directory/assets/index-real.js", 200, body),
     ];

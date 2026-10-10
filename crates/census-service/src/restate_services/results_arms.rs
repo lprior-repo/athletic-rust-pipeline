@@ -2,6 +2,7 @@ mod collection;
 mod meet_pages;
 mod outcomes;
 mod selection;
+mod tfrrs;
 use std::sync::Arc;
 
 use census_crawl::net::Fetcher;
@@ -21,6 +22,7 @@ use outcomes::{delegated_source, source_complete};
 
 const MILESPLIT: &str = "milesplit";
 const ATHLETICNET: &str = "athleticnet";
+const TFRRS: &str = "tfrrs";
 
 const ATHLETICNET_HOST: &str = "athletic.net";
 
@@ -29,12 +31,14 @@ const ATHLETICNET_HOST_SUFFIX: &str = ".athletic.net";
 pub(super) const RESULTS_ARMS: &[(&str, ResultsArm)] = &[
     (MILESPLIT, ResultsArm::MilesplitResults),
     (ATHLETICNET, ResultsArm::AthleticnetMeets),
+    (TFRRS, ResultsArm::TfrrsResults),
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum ResultsArm {
     MilesplitResults,
     AthleticnetMeets,
+    TfrrsResults,
 }
 
 pub(super) fn arm_for(slug: &str) -> Option<ResultsArm> {

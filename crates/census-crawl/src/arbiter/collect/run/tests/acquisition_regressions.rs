@@ -9,6 +9,7 @@ fn seed_capture(cache: &Path, url: &str, body: &[u8]) -> TestResult {
         &cache.join(format!("{key}.meta.json")),
         body,
         &CacheMeta {
+        redirects: Vec::new(),
             representation: crate::net::RepresentationHeaders::default(),
             url: url.to_string(),
             method: "GET".into(),

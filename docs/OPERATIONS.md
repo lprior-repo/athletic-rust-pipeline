@@ -30,12 +30,13 @@ census-service national-report --help
 
 Serving commands default to loopback ingress `http://127.0.0.1:18095/` and open no second store.
 The ingress client rewrites the SDK's synchronous `/restate/call/...` and `/restate/invoke/...`
-routes onto the served `/<service>[/<key>]/<handler>` path, and the SDK's asynchronous
-`/restate/send/...` route onto the served `/<service>[/<key>]/<handler>/send` suffix, so `national`
-and `jurisdiction` submit through the CLI. The SDK's invocation-handle routes have no ingress
-equivalent on this server version, so a submission that returns a handle can be submitted with
-`--detach` and inspected through `Census/open_work`, `JurisdictionCensus/<key>/state` or the admin
-API; the same run can also be submitted on the workflow route itself:
+routes onto the served `/<service>[/<key>]/<handler>` path, the SDK's asynchronous
+`/restate/send/...` route onto the served `/<service>[/<key>]/<handler>/send` suffix, and the SDK's
+invocation-handle `/restate/output/<id>` and `/restate/attach/<id>` routes onto this server
+version's served `/restate/invocation/<id>/output` and `/restate/invocation/<id>/attach` paths, so
+`national` and `jurisdiction` submit and observe through the CLI. A submission can also run with
+`--detach` and be inspected through `Census/open_work`, `JurisdictionCensus/<key>/state` or the
+admin API; the same run can also be submitted on the workflow route itself:
 
 ```sh
 curl -X POST http://127.0.0.1:18095/NationalCensus/national:<year>:<plan>:<revision>/run \
@@ -88,6 +89,22 @@ Use the serving jurisdiction/national path for durable acquisition. Registry app
 source units and actually wired stage handlers are different things; inspect refused/unfinished
 units rather than infer coverage from a registered name. A roster or meet page is shared evidence,
 not per-athlete work. Respect source policy and shared physical admission, not a per-workflow budget.
+
+A national submission re-drives unfinished jurisdictions instead of ending on their first refusal.
+After the initial fan-out, every jurisdiction whose `run` call failed is asked for a stage-resilient
+`pass`: that handler runs each stage whose work is still owed — teams, rosters, meets, results — and
+returns per-stage failures beside the owed set, so one refused source (for example a MileSplit state
+index that serves a foreign application declaration) no longer keeps a jurisdiction's roster, meet
+and result stages from running in the same pass. The workflow repeats rounds of those passes for
+`--pass-budget` rounds spaced `--pass-delay-seconds` apart (defaults 96 and 900 s; 0 disables
+re-driving), drives every still-owed jurisdiction concurrently within a round, reclassifies a
+jurisdiction through `run` once a round makes no stage progress, and then records it as owed instead
+of driving it again. `run` keeps its strict contract: it reports a jurisdiction only when every stage
+is complete, so partial or refused work is never published as a finished census. A report's `owed`
+rows name each unfinished identity, the stages that ran, the stages still owed and their reasons, and
+`national-report` exits non-zero while any jurisdiction is owed. Revision 2 on an existing store is
+the supported way to give every settled source a fresh attempt budget; a re-drive round does not
+reset an exhausted budget by itself.
 
 The national workflow runs school-site contact acquisition for every requested jurisdiction after
 the school-address join has attached source-backed official websites, and before consolidation.
@@ -377,7 +394,10 @@ Each case retains both endpoint/model/request bindings, structured answers or fa
 classifications, adjudications and the evidence digest. Both lanes must agree on an admissible
 value; unknown JSON fields, malformed/duplicate/ghost verdicts, unsupported values, incomplete
 membership, missing positive identity evidence and SamePerson contradictions cannot accept.
-DifferentPerson remains admissible when Rust's existing identity rules permit it. A case filed with
+DifferentPerson remains admissible when Rust's existing identity rules permit it: the accepted
+member pair must not be one provider object and must not carry corroborated same-person evidence,
+and an accepted separation is persisted as a non-aliasing identity decision that keeps the case
+resolved rather than returning it to retained. A case filed with
 an explicit member pair is asked on that filed pair: both member rows are loaded and compared even
 when their canonical keys disagree, so a pair whose two rows differ in school still reaches both
 models. A case no packet can be built for — no filed pair of two distinct rows, or a member row the
@@ -726,13 +746,22 @@ census-service verify --workbook <publication-root>/current/workbook.xlsx
 census-service seal --ingress http://127.0.0.1:18095/ --workbook <publication-root>/current/workbook.xlsx --write
 ```
 
-One measured limit: a full-size publication currently cannot seal through the ingress route. The
-handler re-materializes the frozen input inside the endpoint, past `census-serve`'s memory budget,
-so the endpoint drains itself mid-seal and Restate pauses the invocation — two clean `MemoryBudget`
-drains on `var/national-fresh-20261009-01` (2026-10-09), filed as `athletic-rust-pipeline-q41j`.
-Until that is repaired, read the verdict from the offline route (`census-service seal --store <run>`
-with the store's owner stopped) and record the run's own open work as unknown: only the ingress
-route measures it.
+One measured limit: a full-size publication could not seal through the ingress route at the
+endpoint's default budget. The `Census.seal` handler loads the whole store projection
+(`ExportDataset::load`) before it verifies the workbook, so the endpoint holds every canonical table
+at once; past `census-serve`'s memory budget it drained itself mid-seal and Restate paused the
+invocation — two clean `MemoryBudget` drains on `var/national-fresh-20261009-01` (2026-10-09), filed
+as `athletic-rust-pipeline-q41j`. Measured on that run (8.9 GB store, 6.08 GiB frozen input):
+`report --print` peaks at 12.4 GiB, the offline `workbook` build at 17 GiB and the offline `verify`
+at 16.2 GiB, so both offline routes scale with the frozen input at roughly 2.7x, while the same seal
+against an endpoint that had served the whole run peaked at 65.8 GiB. `census-serve` takes
+`--memory-budget-gib N` (default 48, ceiling 1024) for exactly this: restart the endpoint with a
+budget above the observed peak — a restart after the run has finished burns no attempt — and seal
+through the ingress with the run's own open work measured. Both full materializations, the seal's
+store projection and the offline verifier's frozen-input reopen, stay tracked as the streaming
+repair in `athletic-rust-pipeline-q41j`. If the budget cannot be raised, read the verdict from the
+offline route (`census-service seal --store <run>` with the store's owner stopped) and record the
+run's own open work as unknown: only the ingress route measures it.
 
 Standalone `verify` reopens the immutable bundle's frozen input, verifies lineage, hashes and exact
 inventory, and compares every workbook row/cell and JSON/JSONL/CSV sidecar record. It does not open
@@ -744,9 +773,12 @@ A store admits exactly one census run. National submission binds a run manifest 
 season, revision, the Class-of-2027 cohort and the admitted jurisdiction scope — through the
 `Census.bind_run` handler before any jurisdiction fans out, and a store already bound to another
 run refuses terminally instead of adopting it. The binding lives in the store and survives restart.
-The publication's lineage carries that manifest, so a seal measures the same run it certifies: a
-journal measured for one season/revision cannot certify a publication of another, and a route that
-measured no journal names the run binding as an unmet item instead of defaulting it. The contact
+`JurisdictionCensus.run` and `.pass` refuse the same way against the bound manifest, so a stray
+revision cannot write stage state or observations into a store bound to a different run, and an
+unbound store still admits a qualification slice. The publication's lineage carries that manifest,
+so a seal measures the same run it certifies: a journal measured for one season/revision cannot
+certify a publication of another, and a route that measured no journal names the run binding as an
+unmet item instead of defaulting it. The contact
 school year must be the run's own. Only the Class-of-2027 cohort seals at all; any other
 `--grad-year` is refused at the boundary before a journal or a workbook is read, whether the request
 arrives through the CLI or the ingress.

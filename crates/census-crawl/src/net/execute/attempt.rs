@@ -5,7 +5,7 @@ use crate::net::cache::{replay_cache, CacheMeta};
 use crate::net::request::RequestBody;
 use crate::net::{FetchError, FetchOptions, FetchOutcome, Fetcher};
 use std::path::Path;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use tokio::sync::OwnedMutexGuard;
 use tracing::warn;
 
@@ -14,7 +14,6 @@ pub(super) struct FetchPlan<'a> {
     pub(super) url: &'a str,
     pub(super) payload: Option<&'a RequestBody>,
     pub(super) host: &'a str,
-    pub(super) crawl_delay: Option<Duration>,
     pub(super) family: Option<String>,
     pub(super) body_path: &'a Path,
     pub(super) meta_path: &'a Path,
@@ -31,6 +30,7 @@ impl Fetcher {
     ) -> Result<FetchOutcome, FetchError> {
         let mut current_url = plan.url.to_string();
         let original_url = plan.url.to_string();
+        let mut redirects: Vec<crate::net::RedirectHop> = Vec::new();
         let mut permit: Option<OwnedMutexGuard<()>> = None;
         for hop in 0..5 {
             let (host, origin) = super::request_target(&current_url)?;
@@ -39,16 +39,12 @@ impl Fetcher {
             if self.host_blocked(&host, &crate::net::now_iso8601()).await {
                 return Err(FetchError::Cooldown { host });
             }
-            let crawl_delay = match hop {
-                0 => plan.crawl_delay,
-                _ => self.robots_for(&origin, &host).await.crawl_delay,
-            };
             let _hop_permit = if hop == 0 || self.family_of(&host) == plan.family {
                 None
             } else {
                 self.family_permit_now(&host).await?
             };
-            let gate = self.host_gate(&host, crawl_delay).await;
+            let gate = self.host_gate(&host).await;
             drop(permit.take());
             permit = Some(gate.lock_owned().await);
             self.wait_turn(&host).await;
@@ -59,10 +55,16 @@ impl Fetcher {
             let status = response.status().as_u16();
             self.count_request(&host, status).await;
             match self.resolve_redirect_target(&current_url, &original_url, &response)? {
-                Some(next_url) => current_url = next_url.to_string(),
+                Some(next_url) => {
+                    redirects.push(crate::net::RedirectHop {
+                        status,
+                        url: next_url.to_string(),
+                    });
+                    current_url = next_url.to_string();
+                }
                 None => {
                     return self
-                        .handle_final_response(plan, &current_url, &host, response)
+                        .handle_final_response(plan, &current_url, &host, response, &redirects)
                         .await
                 }
             }
@@ -78,6 +80,7 @@ impl Fetcher {
         current_url: &str,
         current_host: &str,
         response: reqwest::Response,
+        redirects: &[crate::net::RedirectHop],
     ) -> Result<FetchOutcome, FetchError> {
         let status = response.status().as_u16();
         if let Some(kind) = blocking_kind(status) {
@@ -91,8 +94,8 @@ impl Fetcher {
             .await;
         }
         match status {
-            200 => self.process_ok(plan, response).await,
-            404 => self.handle_404(plan, response).await,
+            200 => self.process_ok(plan, response, redirects).await,
+            404 => self.handle_404(plan, response, redirects).await,
             304 => self.replay_cached(plan).await,
             _ => Err(self.status_error(status, plan).await),
         }
@@ -124,6 +127,13 @@ impl Fetcher {
                 detail: format!("redirect from {current_url} to {next} bypasses admission"),
             });
         }
+        if authentication_path(&next) {
+            return Err(FetchError::Policy {
+                detail: format!(
+                    "redirect from {current_url} to {next} enters an authentication path, so the requested resource was not served"
+                ),
+            });
+        }
         if next
             .host_str()
             .and_then(crate::registry::transport_for_host)
@@ -140,17 +150,19 @@ impl Fetcher {
         &self,
         plan: &FetchPlan<'_>,
         response: reqwest::Response,
+        redirects: &[crate::net::RedirectHop],
     ) -> Result<FetchOutcome, FetchError> {
-        cache_and_record(response, plan, 200, &self.stats).await
+        cache_and_record(response, plan, 200, &self.stats, redirects).await
     }
 
     async fn handle_404(
         &self,
         plan: &FetchPlan<'_>,
         response: reqwest::Response,
+        redirects: &[crate::net::RedirectHop],
     ) -> Result<FetchOutcome, FetchError> {
         let status = 404u16;
-        let outcome = cache_and_record(response, plan, status, &self.stats).await?;
+        let outcome = cache_and_record(response, plan, status, &self.stats, redirects).await?;
         if plan.options.allow_not_found {
             Ok(outcome)
         } else {
@@ -232,5 +244,17 @@ fn redirect_target(current_url: &str, location: &str) -> Result<url::Url, FetchE
         .map_err(|source| FetchError::InvalidUrl {
             url: current_url.to_string(),
             source,
+        })
+}
+
+fn authentication_path(url: &url::Url) -> bool {
+    url.path_segments()
+        .into_iter()
+        .flatten()
+        .any(|segment| {
+            matches!(
+                segment.to_ascii_lowercase().as_str(),
+                "login" | "log-in" | "signin" | "sign-in" | "auth" | "oauth" | "sso" | "wp-login.php"
+            )
         })
 }

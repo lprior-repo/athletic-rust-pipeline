@@ -1,5 +1,5 @@
 use super::*;
-use census_service::restate_services::{JurisdictionSummary, NationalFailure};
+use census_service::restate_services::{JurisdictionOwed, JurisdictionSummary, NationalFailure};
 
 fn summary(jurisdiction: UsJurisdiction, teams: usize) -> JurisdictionSummary {
     JurisdictionSummary {
@@ -27,12 +27,23 @@ fn blocked_summary(jurisdiction: UsJurisdiction, teams: usize) -> JurisdictionSu
     }
 }
 
+fn owed_row(jurisdiction: UsJurisdiction) -> JurisdictionOwed {
+    JurisdictionOwed {
+        identity: format!("jurisdiction:{}:2026-27:1", jurisdiction.code()),
+        jurisdiction,
+        stages_run: vec!["rosters".to_string()],
+        owed: vec!["rosters".to_string()],
+        reasons: vec!["rosters: committed=1 remaining=9".to_string()],
+    }
+}
+
 fn report(failures: Vec<NationalFailure>) -> NationalReport {
     NationalReport {
         season: SchoolYear::DEFAULT,
         revision: Revision(1),
         jurisdictions: vec![summary(UsJurisdiction::Wisconsin, 7)],
         failures,
+        owed: Vec::new(),
         rosters_total: 7,
         athletes_total: 14,
         class_of_2027_total: 7,
@@ -116,4 +127,18 @@ fn a_report_carrying_a_blocked_row_still_exits_successfully() {
     let mut report = report(Vec::new());
     report.jurisdictions = vec![blocked_summary(UsJurisdiction::Texas, 2423)];
     assert!(failure_exit(&report).is_ok());
+}
+
+#[test]
+fn a_report_that_still_owes_source_work_exits_non_zero() -> Result<(), Box<dyn std::error::Error>> {
+    let mut report = report(Vec::new());
+    report.owed.push(owed_row(UsJurisdiction::SouthDakota));
+    let error = match failure_exit(&report) {
+        Err(error) => error,
+        Ok(_) => return Err("owed source work returned success".into()),
+    };
+    if !error.to_string().contains("1 still owe source work") {
+        return Err(format!("unexpected message: {error}").into());
+    }
+    Ok(())
 }

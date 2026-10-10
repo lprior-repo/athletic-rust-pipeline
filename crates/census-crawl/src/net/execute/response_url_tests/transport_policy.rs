@@ -75,8 +75,6 @@ async fn serve_synthetic_redirect(
             .ok_or("missing request host")?;
         requests.push((path.to_string(), host.to_string()));
         let response = match path {
-            "/robots.txt" =>
-                "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_string(),
             "/start" => format!(
                 "HTTP/1.1 302 Found\r\nLocation: {destination_url}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
             ),
@@ -140,8 +138,6 @@ async fn serve_gated(
                 state.requests.push((path.clone(), host));
             }
             let response = match path.as_str() {
-                "/robots.txt" =>
-                    "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_string(),
                 "/start" => format!(
                     "HTTP/1.1 302 Found\r\nLocation: {destination_url}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
                 ),
@@ -237,7 +233,7 @@ fn authorized_browser_redirect_is_refused_before_direct_http_destination_dispatc
                     .iter()
                     .map(|(path, _)| path.as_str())
                     .collect::<Vec<_>>(),
-                ["/robots.txt", "/start"]
+                ["/start"]
             );
             match observation.outcome {
                 Err(FetchError::Policy { detail }) => {
@@ -277,7 +273,7 @@ fn authorized_http_redirect_still_dispatches_and_returns_destination_capture() -
                     .iter()
                     .map(|(path, _)| path.as_str())
                     .collect::<Vec<_>>(),
-                ["/robots.txt", "/start", "/robots.txt", "/destination"]
+                ["/start", "/destination"]
             );
             let destination_host = url::Url::parse(&observation.destination_url)?
                 .authority()
@@ -340,7 +336,7 @@ fn a_redirect_hop_to_a_host_under_cooldown_is_refused_before_dispatch() -> TestR
                     .iter()
                     .map(|(path, _)| path.as_str())
                     .collect::<Vec<_>>(),
-                ["/robots.txt", "/start"]
+                ["/start"]
             );
             check!(
                 matches!(outcome, Err(FetchError::Policy { .. })),
@@ -383,7 +379,7 @@ fn an_unlisted_redirect_destination_is_refused_before_contact() -> TestResult {
                     .iter()
                     .map(|(path, _)| path.as_str())
                     .collect::<Vec<_>>(),
-                ["/robots.txt", "/start"]
+                ["/start"]
             );
             check!(
                 matches!(outcome, Err(FetchError::Policy { .. })),
@@ -449,7 +445,7 @@ fn a_redirect_hop_to_an_origin_held_elsewhere_is_refused_before_contact() -> Tes
                     .iter()
                     .map(|(path, _)| path.as_str())
                     .collect::<Vec<_>>(),
-                ["/robots.txt", "/start"]
+                ["/start"]
             );
             Ok(())
         })
@@ -592,7 +588,7 @@ fn a_request_queued_behind_a_429_is_refused_at_the_last_admission_point() -> Tes
                         .iter()
                         .map(|(path, _)| path.as_str())
                         .collect::<Vec<_>>(),
-                    ["/robots.txt", "/first"]
+                    ["/first"]
                 );
             }
             server.abort();
@@ -654,7 +650,7 @@ fn fetchers_sharing_an_origin_budget_share_recorded_cooldowns() -> TestResult {
                         .iter()
                         .map(|(path, _)| path.as_str())
                         .collect::<Vec<_>>(),
-                    ["/robots.txt", "/limited"]
+                    ["/limited"]
                 );
             }
             server.abort();

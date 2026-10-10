@@ -11,7 +11,7 @@ use super::native_api;
 use super::native_process::Owned;
 use super::native_scenario::{Call, Facts, Site};
 use super::server::{Handshake, Release};
-use super::{OWNER_AGENT, TARGET};
+use super::{OWNER_AGENT, OWNER_START, TARGET};
 
 pub(super) async fn contend(
     directory: &Path,
@@ -33,7 +33,7 @@ pub(super) async fn contend(
 
     let owner_input = Input {
         origin: origin.to_string(),
-        paths: vec![TARGET.to_string()],
+        paths: vec![OWNER_START.to_string()],
     };
     let owner_key = "owner-acquire";
     let owner_submission = native_api::submit(
@@ -175,7 +175,7 @@ pub(super) async fn contend(
 
     let replay_input = Input {
         origin: origin.to_string(),
-        paths: vec![TARGET.to_string()],
+        paths: vec![OWNER_START.to_string()],
     };
     let replay_key = "owner-replay";
     let replay_submission = native_api::submit(

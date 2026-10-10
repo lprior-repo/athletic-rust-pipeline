@@ -106,17 +106,21 @@ fn derive_does_not_promote_or_merge_provider_owned_homonyms() -> TestResult {
     Ok(())
 }
 
-fn resolved_transfer(store: &Store) -> Result<ReviewCase, Box<dyn std::error::Error>> {
+fn reviewed_case(
+    store: &Store,
+    second_native_id: &str,
+    value: &str,
+    detail: &str,
+) -> Result<ReviewCase, Box<dyn std::error::Error>> {
     let (school_a, _) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "School A", "school a", None);
     let (school_b, _) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "School B", "school b", None);
     let first = athlete(&school_a, "111");
-    let second = athlete(&school_b, "111");
+    let second = athlete(&school_b, second_native_id);
     store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
     let members = vec![first.id.cast(), second.id.cast()];
     let subject = "Synthetic Runner";
-    let detail = "One primary provider identity observed across two schools";
     let evidence = store
         .athlete_identity_index()?
         .case_evidence(subject, detail, &members)?;
@@ -136,7 +140,7 @@ fn resolved_transfer(store: &Store) -> Result<ReviewCase, Box<dyn std::error::Er
         family: case.family.clone(),
         kind: "value_proposed".to_owned(),
         field: "identity".to_owned(),
-        value: "same_person".to_owned(),
+        value: value.to_owned(),
         accepted: true,
         confidence: 100,
         rationale: detail.to_owned(),
@@ -149,96 +153,69 @@ fn resolved_transfer(store: &Store) -> Result<ReviewCase, Box<dyn std::error::Er
     Ok(case)
 }
 
-fn resolved_separation(
-    store: &Store,
-    first_native_id: &str,
-    second_native_id: &str,
-) -> Result<ReviewCase, Box<dyn std::error::Error>> {
-    let (school_a, _) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "School A", "school a", None);
-    let (school_b, _) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "School B", "school b", None);
-    let first = athlete(&school_a, first_native_id);
-    let second = athlete(&school_b, second_native_id);
-    store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
-    let members = vec![first.id.cast(), second.id.cast()];
-    let subject = "Synthetic Runner";
-    let detail = "Distinct provider objects keep two subjects apart";
-    let evidence = store
-        .athlete_identity_index()?
-        .case_evidence(subject, detail, &members)?;
-    let mut case = ReviewCase::pending_with_evidence(
-        ATHLETE_IDENTITY_FAMILY,
-        first.id.as_str(),
-        subject,
-        detail,
-        evidence,
-    );
-    case.member_ids = members;
-    case.state = ReviewState::Resolved;
-    let verdict = ReviewVerdictRecord {
-        id: case.id.clone(),
-        case_id: case.id.clone(),
-        subject_id: case.subject_id.clone(),
-        family: case.family.clone(),
-        kind: "value_proposed".to_owned(),
-        field: "identity".to_owned(),
-        value: "different_person".to_owned(),
-        accepted: true,
-        confidence: 90,
-        rationale: detail.to_owned(),
-        reviewer: "deterministic fixture".to_owned(),
-        observed_at: "2026-09-26".to_owned(),
-        member_ids: case.member_ids.clone(),
-    };
-    store.replace(Table::ReviewCases, &case)?;
-    store.replace(Table::IdentityVerdicts, &verdict)?;
-    Ok(case)
+fn resolved_transfer(store: &Store) -> Result<ReviewCase, Box<dyn std::error::Error>> {
+    reviewed_case(
+        store,
+        "111",
+        "same_person",
+        "One primary provider identity observed across two schools",
+    )
 }
 
 #[test]
-fn accepted_separation_applies_once_and_survives_rederivation_and_reopen() -> TestResult {
+fn an_accepted_different_person_verdict_resolves_its_case_and_persists() -> TestResult {
     let directory = tempfile::tempdir()?;
-    let case;
-    {
-        let store = Store::open(directory.path())?;
-        case = resolved_separation(&store, "111", "222")?;
-        check!(eq; super::apply::apply_decisions(&store, "2026-09-26")?, 1);
-        let decisions = store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?;
-        check!(eq; decisions.len(), 1);
-        let decision = decisions.first().ok_or("missing fixture decision")?;
-        check!(eq; decision.kind, AppliedIdentityKind::DifferentPerson);
-        check!(eq; decision.case_id.as_deref(), Some(case.id.as_str()));
-        check!(eq; decision.canonical_id, None);
-        let cases = store.scan::<ReviewCase>(Table::ReviewCases)?;
-        check!(eq; cases.len(), 1);
-        check!(eq; cases.first().ok_or("missing fixture case")?.state, ReviewState::Resolved);
-        check!(eq; super::apply::apply_decisions(&store, "2026-09-27")?, 0);
-        store.flush()?;
-    }
     let store = Store::open(directory.path())?;
-    check!(eq; super::apply::apply_decisions(&store, "2026-09-28")?, 0);
+    let case = reviewed_case(
+        &store,
+        "222",
+        "different_person",
+        "Two primary provider identities observed across two schools",
+    )?;
+    check!(eq; super::apply::apply_decisions(&store, "2026-09-26")?, 1);
     let decisions = store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?;
-    check!(eq; decisions.len(), 1);
-    check!(eq; decisions.first().ok_or("missing fixture decision")?.kind, AppliedIdentityKind::DifferentPerson);
-    let cases = store.scan::<ReviewCase>(Table::ReviewCases)?;
-    check!(eq; cases.len(), 1);
-    check!(eq; cases.first().ok_or("missing fixture case")?.state, ReviewState::Resolved);
+    let decision = decisions.first().ok_or("missing separation decision")?;
+    check!(eq; decision.kind, AppliedIdentityKind::DifferentPerson);
+    check!(eq; decision.canonical_id, None);
+    check!(eq; decision.case_id.as_deref(), Some(case.id.as_str()));
+    check!(eq; store
+        .scan::<ReviewCase>(Table::ReviewCases)?
+        .iter()
+        .find(|held| held.id == case.id)
+        .map(|held| held.state),
+    Some(ReviewState::Resolved));
+    check!(eq; super::apply::apply_decisions(&store, "2026-09-27")?, 0);
+    check!(eq; store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?,
+    decisions);
+    let projection = store.athlete_identity_projection()?;
+    for member in &case.member_ids {
+        check!(eq; projection.status(member.as_str())?,
+        IdentityStatus::Verified);
+        check!(eq; projection.canonical_id(member.as_str()), member.as_str());
+    }
     Ok(())
 }
 
 #[test]
-fn separation_is_refused_when_both_members_share_the_provider_object() -> TestResult {
+fn a_different_person_verdict_cannot_separate_one_provider_object() -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path())?;
-    resolved_separation(&store, "111", "111")?;
+    let case = reviewed_case(
+        &store,
+        "111",
+        "different_person",
+        "One primary provider identity observed across two schools",
+    )?;
     check!(eq; super::apply::apply_decisions(&store, "2026-09-26")?, 0);
     check!(store
         .scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?
         .is_empty());
-    let cases = store.scan::<ReviewCase>(Table::ReviewCases)?;
-    check!(eq; cases.len(), 1);
-    check!(eq; cases.first().ok_or("missing fixture case")?.state, ReviewState::Retained);
+    check!(eq; store
+        .scan::<ReviewCase>(Table::ReviewCases)?
+        .iter()
+        .find(|held| held.id == case.id)
+        .map(|held| held.state),
+    Some(ReviewState::Retained));
     Ok(())
 }
 

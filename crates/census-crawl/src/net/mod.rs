@@ -17,12 +17,11 @@ mod latency;
 mod origin_locks;
 mod representation;
 mod request;
-mod robots;
 mod time;
 mod types;
 
 pub use time::{cooldown_until_iso8601, instant_iso8601, now_iso8601, today_iso};
-pub use types::{FetchError, FetchOptions, FetchOutcome, FetchStats, HostTraffic};
+pub use types::{FetchError, FetchOptions, FetchOutcome, FetchStats, HostTraffic, RedirectHop};
 
 pub use representation::RepresentationHeaders;
 pub(crate) use types::host_of;
@@ -30,7 +29,6 @@ pub(crate) use types::host_of;
 pub use client::PacingState;
 pub use origin_locks::origin_lock_file_name;
 use origin_locks::OriginLocks;
-use robots::RobotsPolicy;
 
 pub const DEFAULT_USER_AGENT: &str =
     "census-service/0.1 (independent HS track & field research collector; polite; contact: repo owner)";
@@ -56,8 +54,6 @@ pub struct Fetcher {
     family_parallelism: usize,
     pacing: Arc<PacingState>,
     authorized_hosts: Vec<String>,
-    robots: Mutex<HashMap<String, RobotsPolicy>>,
-    robots_gates: Mutex<HashMap<String, Arc<Mutex<()>>>>,
     stats: Mutex<FetchStats>,
     source: String,
     lane: Option<bridge::BrowserLane>,
