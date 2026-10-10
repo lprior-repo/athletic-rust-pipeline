@@ -62,6 +62,9 @@ backup/
 # Per-project environment file (Dolt connection config, GH#2520)
 .env
 
+# Live passive export (regenerable via `bd export`; the Dolt DB is the record, s5fj)
+issues.jsonl
+
 # Legacy files (from pre-Dolt versions)
 *.db
 *.db?*
