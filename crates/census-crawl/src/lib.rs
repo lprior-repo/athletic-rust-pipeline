@@ -159,6 +159,14 @@ pub struct UnresolvedCounters {
     pub labels: u64,
 }
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ResolutionCounters {
+    pub rows: u64,
+    pub resolved: u64,
+    pub unresolved: u64,
+    pub retained: u64,
+    pub quarantined: u64,
+}
 #[derive(Debug, Clone, Serialize)]
 pub struct AdapterReport {
     pub adapter: String,
@@ -172,6 +180,8 @@ pub struct AdapterReport {
     pub rejections: u64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub unresolved: Option<UnresolvedCounters>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub resolution: Option<ResolutionCounters>,
     pub unit: String,
     pub notes: Vec<String>,
     #[serde(default)]
@@ -191,6 +201,7 @@ impl AdapterReport {
             with_email: 0,
             rejections: 0,
             unresolved: None,
+            resolution: None,
             unit: unit.into(),
             notes: Vec::new(),
             disposition: CollectionDisposition::Unknown,
@@ -204,6 +215,7 @@ impl AdapterReport {
             && self
                 .unresolved
                 .is_none_or(|value| value.rows == 0 && value.labels == 0)
+            && self.resolution.is_none_or(|value| value.unresolved == 0)
             && self.unfinished.is_empty()
         {
             CollectionDisposition::Complete

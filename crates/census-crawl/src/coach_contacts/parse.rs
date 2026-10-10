@@ -57,31 +57,117 @@ pub fn parse_sport(label: &str) -> Option<(Sport, Gender)> {
     Some((sport, gender))
 }
 
+const NON_COACHING: [&str; 16] = [
+    "secretary",
+    "administrative assistant",
+    "admin assistant",
+    "athletic admin",
+    "athletic trainer",
+    "trainer",
+    "principal",
+    "superintendent",
+    "business manager",
+    "tech director",
+    "custodian",
+    "medical official",
+    "central office",
+    "assistant ad",
+    "district ad",
+    "office manager",
+];
+
+const NON_COACHING_EXACT: [&str; 5] = ["other", "none", "n/a", "na", "unknown"];
+
+const DIRECTOR_TITLES: [&str; 3] = [
+    "athletic director",
+    "athletics director",
+    "director of athletics",
+];
+
+const HEAD_TITLES: [&str; 3] = ["head coach", "co-head coach", "head varsity coach"];
+
+const ASSISTANT_TITLES: [&str; 6] = [
+    "assistant coach",
+    "asst coach",
+    "assistant varsity coach",
+    "varsity assistant coach",
+    "assistant coach varsity",
+    "coach assistant",
+];
+
+const DEDICATED_TITLES: [&str; 14] = [
+    "assistant",
+    "asst",
+    "varsity assistant",
+    "assistant varsity",
+    "throws",
+    "throw",
+    "distance",
+    "middle distance",
+    "sprints",
+    "sprint",
+    "hurdles",
+    "relays",
+    "jumps",
+    "jump",
+];
+
+const EVENT_TITLES: [&str; 14] = [
+    "pole vault",
+    "high jump",
+    "long jump",
+    "triple jump",
+    "shot put",
+    "discus",
+    "javelin",
+    "throws",
+    "jumps",
+    "jump",
+    "distance",
+    "sprints",
+    "hurdles",
+    "relays",
+];
+
 pub fn parse_role(label: &str) -> Option<CoachRole> {
     let lowered = label.to_ascii_lowercase();
-    const NON_COACHING: [&str; 8] = [
-        "secretary",
-        "administrative assistant",
-        "trainer",
-        "principal",
-        "superintendent",
-        "business manager",
-        "tech director",
-        "custodian",
-    ];
-    if NON_COACHING.iter().any(|token| lowered.contains(token)) {
+    let normalised = lowered.split_whitespace().collect::<Vec<_>>().join(" ");
+    if normalised.is_empty() || NON_COACHING_EXACT.contains(&normalised.as_str()) {
         return None;
     }
-    if lowered.contains("athletic director") || lowered.contains("activities director") {
+    if NON_COACHING.iter().any(|token| normalised.contains(token)) {
+        return None;
+    }
+    let assistant = ASSISTANT_TITLES
+        .iter()
+        .any(|title| normalised.contains(title));
+    let directed = DIRECTOR_TITLES
+        .iter()
+        .any(|title| normalised.contains(title));
+    let coached = normalised.contains("coach");
+    if coached && HEAD_TITLES.iter().any(|title| normalised.contains(title)) {
+        return Some(CoachRole::HeadCoach);
+    }
+    if directed
+        && !assistant
+        && !normalised.contains("assistant")
+        && !normalised.contains("asst")
+        && !normalised.contains("associate")
+    {
         return Some(CoachRole::AthleticDirector);
     }
-    if lowered.contains("coach") {
-        if lowered.contains("assistant") || lowered.contains("asst") {
-            return Some(CoachRole::AssistantCoach);
-        }
-        if lowered.contains("head") {
-            return Some(CoachRole::HeadCoach);
-        }
+    if coached && assistant {
+        return Some(CoachRole::AssistantCoach);
+    }
+    if coached && EVENT_TITLES.iter().any(|title| normalised.contains(title)) {
+        return Some(CoachRole::AssistantCoach);
+    }
+    if EVENT_TITLES.contains(&normalised.as_str())
+        || DEDICATED_TITLES.contains(&normalised.as_str())
+    {
+        return Some(CoachRole::AssistantCoach);
+    }
+    if coached {
         return Some(CoachRole::Unknown);
     }
     None

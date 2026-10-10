@@ -1,0 +1,32 @@
+{
+  "source": "coach_contacts",
+  "transport": "Csv",
+  "provider": "Researched official coach-contact dataset",
+  "admission": "artifact() - crates/census-crawl/src/registry/table/through_milesplit.rs:66-71; crates/census-crawl/src/registry/policy.rs:42-44",
+  "captured_from": "crates/census-crawl/tests/fixtures/coach_contacts_sample.csv (byte-identical copy, cmp clean)",
+  "note": "Documented sample of the researched coach-contact dataset, not the full artifact. sha256, byte and line counts measured 2026-10-09 in this worktree with sha256sum, wc -c and wc -l; the copy was verified byte-identical with cmp. The root sample stays in place: crates/census-crawl/src/coach_contacts/tests.rs:10 includes it by relative path and crates/census-service/tests/parity_national.rs:33 reads it from the fixtures dir.",
+  "fixtures": [
+    {
+      "file": "coach_contacts_sample.csv",
+      "original_path": "crates/census-crawl/tests/fixtures/coach_contacts_sample.csv",
+      "bytes": 2926,
+      "lines": 16,
+      "rows": 15,
+      "sha256": "27340d8a9b46c0ecae108e6b3d31d307e1edd3627ce1660001785573dfa65934",
+      "header_columns": ["school", "city", "state", "sport", "role", "coach_name", "public_professional_email", "ad_name", "ad_email", "source_url", "last_observed"],
+      "row_states": ["WI", "KS", "NE", "MI", "SD", "IL"],
+      "observed_on": "2026-09-19 (last_observed column on every row)",
+      "scope": "documented sample - 15 rows; the applicability prose attributes 6,215 rows to the 2026-09-21 research-workspace artifact (crates/census-crawl/src/applicability/table/prose.rs:97-100)"
+    }
+  ],
+  "underlying_artifact": {
+    "documented": "2026-09-21 research-workspace artifact, 6,215 rows for exactly the applicable jurisdictions (crates/census-crawl/src/applicability/table/prose.rs:97-100)",
+    "repo_records_found": [
+      "research/sources/coach-coverage-bundle-20261004/TAP-PLAN.md:23-27 (derivation contract; cites this fixture path)",
+      "research/sources/coach-coverage-bundle-20261004/TAP-PLAN.md:40 (51 extract_rows sources routing to the coach_contacts import)",
+      "research/sources/coach-coverage-bundle-20261004/TAP-REGISTRY.json (mech coach_contacts_csv; 20 entries at lines 28, 108, 228, 428, 508, 628, 1228, 1268, 1428, 1868, 1908, 2108, 2628, 2708, 2788, 3152, 3232, 3792, 3986, 4226)",
+      "research/sources/coach-coverage-bundle-20261004/state-work-orders/group-a.md, group-b.md, group-c.md"
+    ],
+    "artifact_hash": "absent - no sha256 or byte count for the 2026-09-21 artifact is recorded anywhere in this repository (worktree search for coach_contact_graph and 6,215 matched only prose.rs:97-98 and unrelated matrix rows; the bundle holds no coach-contacts CSV)"
+  }
+}

@@ -41,17 +41,7 @@ pub fn parse_sport_label(label: &str) -> Option<(Sport, Gender)> {
 }
 
 pub fn parse_coach_role(label: &str) -> Option<CoachRole> {
-    let lowered = label.trim().to_ascii_lowercase();
-    if !lowered.contains("coach") {
-        return None;
-    }
-    if lowered.contains("assistant") || lowered.contains("asst") {
-        return Some(CoachRole::AssistantCoach);
-    }
-    if lowered.contains("head") {
-        return Some(CoachRole::HeadCoach);
-    }
-    Some(CoachRole::Unknown)
+    crate::coach_contacts::parse_role(label)
 }
 
 const NON_DIRECTOR_TOKENS: [&str; 10] = [

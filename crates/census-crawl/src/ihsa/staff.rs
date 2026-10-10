@@ -65,35 +65,5 @@ pub fn parse_coach_title(title: &str) -> Option<(Sport, Gender)> {
 }
 
 pub fn parse_role(title: &str) -> Option<CoachRole> {
-    let lowered = title.to_ascii_lowercase();
-
-    const NON_COACHING: [&str; 8] = [
-        "secretary",
-        "administrative assistant",
-        "trainer",
-        "principal",
-        "superintendent",
-        "business manager",
-        "tech director",
-        "custodian",
-    ];
-    if NON_COACHING.iter().any(|token| lowered.contains(token)) {
-        return None;
-    }
-
-    if lowered.contains("athletic director") && !lowered.contains("assistant") {
-        return Some(CoachRole::AthleticDirector);
-    }
-
-    if lowered.contains("coach") {
-        if lowered.contains("assistant") || lowered.contains("asst") {
-            return Some(CoachRole::AssistantCoach);
-        }
-        if lowered.contains("head") {
-            return Some(CoachRole::HeadCoach);
-        }
-        return Some(CoachRole::Unknown);
-    }
-
-    None
+    crate::coach_contacts::parse_role(title)
 }

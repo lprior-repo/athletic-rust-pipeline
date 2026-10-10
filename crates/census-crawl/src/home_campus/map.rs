@@ -203,9 +203,5 @@ fn director(
 }
 
 fn role_of(value: &str) -> CoachRole {
-    match value.trim() {
-        "Head Coach" => CoachRole::HeadCoach,
-        "Assistant Coach" => CoachRole::AssistantCoach,
-        _ => CoachRole::Unknown,
-    }
+    crate::coach_contacts::parse_role(value).unwrap_or(CoachRole::Unknown)
 }

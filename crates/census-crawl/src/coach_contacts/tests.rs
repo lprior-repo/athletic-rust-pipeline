@@ -47,10 +47,61 @@ fn non_coaching_roles_are_not_imported() {
         parse_role("Varsity Assistant Coach - Girls Track & Field"),
         Some(CoachRole::AssistantCoach)
     );
+    assert_eq!(parse_role("Activities Director"), None);
+}
+
+#[test]
+fn listed_titles_map_to_the_run_role_vocabulary() {
+    assert_eq!(parse_role("Varsity Head Coach"), Some(CoachRole::HeadCoach));
+    assert_eq!(parse_role("Co-Head Coach"), Some(CoachRole::HeadCoach));
+    assert_eq!(parse_role("Girls Head Coach"), Some(CoachRole::HeadCoach));
+    assert_eq!(parse_role("Head coach"), Some(CoachRole::HeadCoach));
+    assert_eq!(parse_role("Head Coach "), Some(CoachRole::HeadCoach));
     assert_eq!(
-        parse_role("Activities Director"),
+        parse_role("Assistant Varsity Coach"),
+        Some(CoachRole::AssistantCoach)
+    );
+    assert_eq!(
+        parse_role("Varsity Assistant Coach"),
+        Some(CoachRole::AssistantCoach)
+    );
+    assert_eq!(parse_role("Assistant"), Some(CoachRole::AssistantCoach));
+    assert_eq!(
+        parse_role("Varsity Assistant"),
+        Some(CoachRole::AssistantCoach)
+    );
+    assert_eq!(parse_role("Throws Coach"), Some(CoachRole::AssistantCoach));
+    assert_eq!(
+        parse_role("Distance Coach"),
+        Some(CoachRole::AssistantCoach)
+    );
+    assert_eq!(
+        parse_role("Pole Vault Coach"),
+        Some(CoachRole::AssistantCoach)
+    );
+    assert_eq!(
+        parse_role("High Jump Coach"),
+        Some(CoachRole::AssistantCoach)
+    );
+    assert_eq!(parse_role("Jumps Coach"), Some(CoachRole::AssistantCoach));
+    assert_eq!(parse_role("Distance"), Some(CoachRole::AssistantCoach));
+    assert_eq!(parse_role("Sprints"), Some(CoachRole::AssistantCoach));
+    assert_eq!(
+        parse_role("Director of Athletics"),
         Some(CoachRole::AthleticDirector)
     );
+    assert_eq!(
+        parse_role("Athletics Director"),
+        Some(CoachRole::AthleticDirector)
+    );
+    assert_eq!(parse_role("Assistant Athletic Director"), None);
+    assert_eq!(parse_role("District AD"), None);
+    assert_eq!(parse_role("Athletic Admin"), None);
+    assert_eq!(parse_role("Coach"), Some(CoachRole::Unknown));
+    assert_eq!(parse_role("Volunteer Coach"), Some(CoachRole::Unknown));
+    assert_eq!(parse_role("MS Coach"), Some(CoachRole::Unknown));
+    assert_eq!(parse_role("Other"), None);
+    assert_eq!(parse_role("Medical Official"), None);
 }
 
 #[test]

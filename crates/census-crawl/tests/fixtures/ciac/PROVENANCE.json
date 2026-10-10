@@ -1,0 +1,23 @@
+{
+  "source": "ciac",
+  "provider": "CIAC sports directory (Connecticut)",
+  "transport": "Html",
+  "captured_from": "research/sources/coach-directories-national/samples/dir/CT__directory.html (byte-identical copy, cmp clean)",
+  "captured_on": "2026-09-22T03:57:49Z (research/sources/coach-directories-national/samples/CAPTURES.md row 125, line 131)",
+  "note": "Raw capture of the FusionPoint directory page, copied byte-exact and verified with sha256 and byte count. Wire bytes are the compressed transfer size (%{size_download}); on-disk bytes are after --compressed decoding (column semantics: CAPTURES.md:5). The measured fixture size equals the sample's on-disk column, consistent with a byte-exact copy.",
+  "fixtures": [
+    {
+      "file": "directory.html",
+      "url": "https://ciac.fpsports.org/Directory.aspx",
+      "http_status": 200,
+      "wire_bytes": 118390,
+      "bytes": 671535,
+      "lines": 328,
+      "sha256": "98a013fb3afe52de3354d570875e98108b683c904a2b75d3d4f509307a2fc1ec",
+      "research_sample": "research/sources/coach-directories-national/samples/dir/CT__directory.html",
+      "research_sample_sha256": "98a013fb3afe52de3354d570875e98108b683c904a2b75d3d4f509307a2fc1ec",
+      "robots": "none on the live host; robots.txt disallows only the Dashboard*/ScheduleByWeek/WebBot paths, and /Directory.aspx is allowed (research/sources/coach-directories-national/SOURCE_REPORT.md:291)",
+      "parser": "crates/census-crawl/src/ciac/pages.rs:100 requires the exact literal <table class='DirectoryStaffTable'>; this file contains 190 such literals (the bare substring occurs 192 times; the other two are the stylesheet selectors at lines 177 and 183). Each table is preceded by <div class='DirectoryDetail'><b>School</b>, and rows are shaped <td>Boys Cross Country</td><td>Head Coach</td><td>Name</td><td>tel:...</td>"
+    }
+  ]
+}

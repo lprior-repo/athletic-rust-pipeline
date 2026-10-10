@@ -1,0 +1,16 @@
+school,city,state,sport,role,coach_name,public_professional_email,ad_name,ad_email,source_url,last_observed
+Abbotsford,Abbotsford,WI,Boys Track and Field,Head Coach,JACOB KNAPMILLER,jknapmiller@abbotsford.k12.wi.us,Alex Larson,alarson@abbotsford.k12.wi.us,https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1,2026-09-19
+Abbotsford,Abbotsford,WI,Girls Cross Country,Head Coach,Dillon Novak,dnovak@abbotsford.k12.wi.us,Alex Larson,alarson@abbotsford.k12.wi.us,https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1,2026-09-19
+Abbotsford,Abbotsford,WI,Girls Track and Field,Head Coach,JACOB KNAPMILLER,jknapmiller@abbotsford.k12.wi.us,Alex Larson,alarson@abbotsford.k12.wi.us,https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1,2026-09-19
+Abbotsford,Abbotsford,WI,,Athletic Director,,,Alex Larson,alarson@abbotsford.k12.wi.us,https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1,2026-09-19
+Abilene HS,Abilene,KS,,Athletic Director,,,Derek Berns,dberns@abileneschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Adams Central,,NE,Cross-Country (Boys),Head Coach (Cross-Country (Boys)),Toni Fowler,,Alan Frank,,https://secure.nsaahome.org/nsaaforms/direxportscreen.php,2026-09-19
+Adams Central,,NE,Cross-Country (Girls),Head Coach (Cross-Country (Girls)),Toni Fowler,,Alan Frank,,https://secure.nsaahome.org/nsaaforms/direxportscreen.php,2026-09-19
+Adams Central,,NE,Track & Field (Boys),Head Coach (Track & Field (Boys)),Zeb Noyd,,Alan Frank,,https://secure.nsaahome.org/nsaaforms/direxportscreen.php,2026-09-19
+East Kentwood HS,Kentwood,MI,,Superintendent,,,Kevin Polston,kevin.polston@kentwoodps.org,https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351,2026-09-19
+East Kentwood HS,Kentwood,MI,,Principal,,,Omar Bakri,omar.bakri@kentwoodps.org,https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351,2026-09-19
+East Kentwood HS,Kentwood,MI,,Athletic Trainer,,,Mindy Langlois,mindy.langlois@kentwoodps.org,https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351,2026-09-19
+aberdeencentral,,SD,,Activities Director,,,Bo Beck,,https://www.gobound.com/sd/schools/aberdeencentral/directory/new,2026-09-19
+aberdeencentral,,SD,,Athletic Director,,,Bo Beck,,https://www.gobound.com/sd/schools/aberdeencentral/directory/new,2026-09-19
+Abingdon-Avon High School,Abingdon,IL,Boys Cross Country Head Coach,Boys Cross Country Head Coach,Mr. Barry Mink,bmink@atown276.net,Mr. Reid Kelso,rkelso@atown276.net,https://api.ihsa.org/v1/schools/0101/staff2,2026-09-19
+Abingdon-Avon High School,Abingdon,IL,Boys Track & Field Head Coach,Boys Track & Field Head Coach,Mr. Justin Rakestraw,jrakestraw@atown276.net,Mr. Reid Kelso,rkelso@atown276.net,https://api.ihsa.org/v1/schools/0101/staff2,2026-09-19

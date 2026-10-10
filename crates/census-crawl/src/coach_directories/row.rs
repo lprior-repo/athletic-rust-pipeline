@@ -244,13 +244,9 @@ pub(super) fn person_name(member: &StaffMember) -> String {
 }
 
 pub(super) fn coach_role(title: &str) -> CoachRole {
-    let lowered = title.to_ascii_lowercase();
-    if lowered.contains("head coach") {
-        CoachRole::HeadCoach
-    } else if lowered.contains("assistant coach") {
-        CoachRole::AssistantCoach
-    } else {
-        CoachRole::Unknown
+    match crate::coach_contacts::parse_role(title) {
+        Some(CoachRole::AthleticDirector) | None => CoachRole::Unknown,
+        Some(role) => role,
     }
 }
 
@@ -259,5 +255,12 @@ pub(super) fn is_former(title: &str) -> bool {
 }
 
 pub(super) fn is_director(title: &str) -> bool {
-    title.to_ascii_lowercase().contains("athletic director")
+    let normalised = title.to_ascii_lowercase();
+    [
+        "athletic director",
+        "athletics director",
+        "director of athletics",
+    ]
+    .iter()
+    .any(|director| normalised.contains(director))
 }
