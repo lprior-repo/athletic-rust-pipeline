@@ -176,7 +176,7 @@ fn historical_cached_entry_and_bundle_keep_the_observed_final_url_unknown() -> T
                     &cache.join(format!("{key}.meta.json")),
                     bytes,
                     &CacheMeta {
-        redirects: Vec::new(),
+                        redirects: Vec::new(),
                         representation: crate::net::RepresentationHeaders::default(),
                         url: url.to_string(),
                         method: "GET".into(),

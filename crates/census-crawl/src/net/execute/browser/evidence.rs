@@ -52,7 +52,7 @@ impl Fetcher {
             None => now_iso8601(),
         };
         let meta = CacheMeta {
-        redirects: Vec::new(),
+            redirects: Vec::new(),
             url: plan.url.to_string(),
             response_url: capture.response.response_url.map(|url| url.into_string()),
             method: plan.method.to_string(),
@@ -96,7 +96,7 @@ impl Fetcher {
             None => now_iso8601(),
         };
         let meta = CacheMeta {
-        redirects: Vec::new(),
+            redirects: Vec::new(),
             url: plan.url.to_string(),
             response_url: capture.response.response_url.map(|url| url.into_string()),
             method: plan.method.to_string(),

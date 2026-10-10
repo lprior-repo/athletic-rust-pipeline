@@ -54,7 +54,7 @@ pub(super) fn sheet(dataset: &Dataset) -> ReportResult<Vec<Vec<Cell>>> {
     rows.extend(
         ordered
             .into_iter()
-            .map(|(coach, _)| row_for(dataset, coach, &names)),
+            .map(|(coach, _)| row_for(dataset, coach, names)),
     );
     Ok(rows)
 }

@@ -28,8 +28,10 @@ fn is_documentation(path: &Path) -> bool {
     let Some(name) = path.file_name().map(|name| name.to_string_lossy()) else {
         return false;
     };
-    matches!(name.as_ref(), "README.md" | "capture.sh" | "PROVENANCE.json")
-        || name.ends_with(".request.json")
+    matches!(
+        name.as_ref(),
+        "README.md" | "capture.sh" | "PROVENANCE.json"
+    ) || name.ends_with(".request.json")
 }
 
 pub fn file_name(path: &Path) -> Result<String> {

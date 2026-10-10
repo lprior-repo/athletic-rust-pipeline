@@ -248,13 +248,10 @@ fn redirect_target(current_url: &str, location: &str) -> Result<url::Url, FetchE
 }
 
 fn authentication_path(url: &url::Url) -> bool {
-    url.path_segments()
-        .into_iter()
-        .flatten()
-        .any(|segment| {
-            matches!(
-                segment.to_ascii_lowercase().as_str(),
-                "login" | "log-in" | "signin" | "sign-in" | "auth" | "oauth" | "sso" | "wp-login.php"
-            )
-        })
+    url.path_segments().into_iter().flatten().any(|segment| {
+        matches!(
+            segment.to_ascii_lowercase().as_str(),
+            "login" | "log-in" | "signin" | "sign-in" | "auth" | "oauth" | "sso" | "wp-login.php"
+        )
+    })
 }

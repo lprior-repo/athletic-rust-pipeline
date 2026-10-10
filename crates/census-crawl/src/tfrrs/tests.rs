@@ -226,7 +226,8 @@ fn the_published_vocabulary_reads_the_hosts_tokens() -> TestResult {
     check!(eq; published_date(""), None);
     Ok(())
 }
-const LIVE_LIST: &str = include_str!("../../tests/fixtures/tfrrs/indiana_list_5489_live_shape.html");
+const LIVE_LIST: &str =
+    include_str!("../../tests/fixtures/tfrrs/indiana_list_5489_live_shape.html");
 
 #[test]
 fn the_live_list_shape_presents_the_same_rows_as_the_fixture() -> TestResult {
