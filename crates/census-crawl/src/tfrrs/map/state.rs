@@ -25,7 +25,7 @@ pub(in crate::tfrrs) struct Stats {
     pub(in crate::tfrrs) rows_without_mark: u64,
     pub(in crate::tfrrs) marks_unconverted: u64,
     pub(in crate::tfrrs) marks_converted: u64,
-    pub(in crate::tfrrs) grades_from_filter: u64,
+    pub(in crate::tfrrs) grade_less_with_filter: u64,
     pub(in crate::tfrrs) grades_conflicting_filter: u64,
     pub(in crate::tfrrs) genders_unknown: u64,
     pub(in crate::tfrrs) events_unmapped: u64,

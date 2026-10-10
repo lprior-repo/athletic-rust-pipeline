@@ -3,7 +3,7 @@ use crate::report::{Derivation, ReportResult};
 use rust_xlsxwriter::Workbook;
 use std::path::Path;
 
-use super::cells::{write_sheet, SheetLayout};
+use super::cells::{write_sheet, SheetChrome, SheetLayout};
 use dataset::Dataset;
 
 mod athletes;
@@ -50,7 +50,7 @@ impl Recruiting {
             SheetLayout {
                 name: athletes::TITLE,
                 widths: &athletes::WIDTHS,
-                autofilter: true,
+                chrome: SheetChrome::Filtered,
             },
             athletes::sheet(&self.dataset)?,
         )
@@ -63,7 +63,7 @@ impl Recruiting {
             SheetLayout {
                 name: prs::TITLE,
                 widths: &prs::WIDTHS,
-                autofilter: true,
+                chrome: SheetChrome::Filtered,
             },
             prs::sheet(&self.dataset.prs)?,
         )
@@ -76,7 +76,7 @@ impl Recruiting {
             SheetLayout {
                 name: coaches::TITLE,
                 widths: &coaches::WIDTHS,
-                autofilter: true,
+                chrome: SheetChrome::Filtered,
             },
             coaches::sheet(&self.dataset)?,
         )

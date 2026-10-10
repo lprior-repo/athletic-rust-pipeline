@@ -945,30 +945,34 @@ fn environmental_store_errors_classify_transient() {
 }
 
 #[test]
-fn identical_semantic_requests_with_same_generation_attach() {
-    let key_a = run_key("report", &["core"], DEFAULT_GENERATION);
-    let key_b = run_key("report", &["core"], DEFAULT_GENERATION);
+fn identical_semantic_requests_with_same_generation_attach() -> TestResult {
+    let legacy = ExportGeneration::default_generation();
+    let key_a = report_export_key("core", &legacy)?;
+    let key_b = report_export_key("core", &legacy)?;
     assert_eq!(
         key_a, key_b,
         "identical requests with same generation must share a key"
     );
     assert_eq!(key_a, "report:core:1");
 
-    let key_c = run_key("bests", &["all", "2027", "50"], DEFAULT_GENERATION);
-    let key_d = run_key("bests", &["all", "2027", "50"], DEFAULT_GENERATION);
+    let key_c = bests_export_key("all", "2027", "50", &legacy)?;
+    let key_d = bests_export_key("all", "2027", "50", &legacy)?;
     assert_eq!(key_c, key_d);
     assert_eq!(key_c, "bests:all:2027:50:1");
 
-    let key_e = run_key("consolidate", &[], DEFAULT_GENERATION);
-    let key_f = run_key("consolidate", &[], DEFAULT_GENERATION);
+    let key_e = consolidate_export_key(&legacy);
+    let key_f = consolidate_export_key(&legacy);
     assert_eq!(key_e, key_f);
     assert_eq!(key_e, "consolidate:1");
+    Ok(())
 }
 
 #[test]
-fn same_semantics_different_generation_produces_new_key() {
-    let key_default = run_key("report", &["core"], DEFAULT_GENERATION);
-    let key_new = run_key("report", &["core"], "2");
+fn same_semantics_different_generation_produces_new_key() -> TestResult {
+    let legacy = ExportGeneration::default_generation();
+    let fresh = ExportGeneration::parse("2")?;
+    let key_default = report_export_key("core", &legacy)?;
+    let key_new = report_export_key("core", &fresh)?;
     assert_ne!(
         key_default, key_new,
         "same semantic parts with different generation must produce different keys"
@@ -977,29 +981,50 @@ fn same_semantics_different_generation_produces_new_key() {
     assert_eq!(key_new, "report:core:2");
 
     assert_ne!(
-        run_key("bests", &["all", "2027", "50"], "1"),
-        run_key("bests", &["all", "2027", "50"], "abc-def"),
+        bests_export_key("all", "2027", "50", &legacy)?,
+        bests_export_key("all", "2027", "50", &ExportGeneration::parse("abc-def")?)?,
         "any two generation values must produce different keys"
     );
+    Ok(())
 }
 
 #[test]
-fn differing_semantic_parts_produce_different_keys() {
+fn differing_semantic_parts_produce_different_keys() -> TestResult {
+    let legacy = ExportGeneration::default_generation();
     assert_ne!(
-        run_key("report", &["core"], DEFAULT_GENERATION),
-        run_key("report", &["all_sources"], DEFAULT_GENERATION),
+        report_export_key("core", &legacy)?,
+        report_export_key("all_sources", &legacy)?,
         "different scope must produce different keys"
     );
 
     assert_ne!(
-        run_key("bests", &["all", "2027", "50"], DEFAULT_GENERATION),
-        run_key("bests", &["all", "2027", "100"], DEFAULT_GENERATION),
+        bests_export_key("all", "2027", "50", &legacy)?,
+        bests_export_key("all", "2027", "100", &legacy)?,
         "different limit must produce different keys"
     );
+    Ok(())
 }
 
 #[test]
-fn a_workbook_request_key_carries_every_selection_and_destination_field() {
+fn both_entries_share_one_generation_resolver() -> TestResult {
+    assert_eq!(
+        ExportGeneration::resolve(None)?.as_str(),
+        DEFAULT_GENERATION
+    );
+    assert_eq!(ExportGeneration::resolve(Some("2"))?.as_str(), "2");
+    check!(
+        ExportGeneration::resolve(Some("bad/generation")).is_err(),
+        "both entries reject the same malformed generations"
+    );
+    check!(
+        reject_offline_generation(None).is_ok() && reject_offline_generation(Some("2")).is_err(),
+        "both entries refuse offline generations with one message"
+    );
+    Ok(())
+}
+
+#[test]
+fn a_workbook_request_key_carries_every_selection_and_destination_field() -> TestResult {
     let request = WorkbookRequest {
         grad_year: Some(2027),
         limit: Some(50),
@@ -1007,7 +1032,8 @@ fn a_workbook_request_key_carries_every_selection_and_destination_field() {
         out: Some("/tmp/root-a".to_string()),
         school_year: Some(2026),
     };
-    let key = workbook_request_key(&request);
+    let legacy = ExportGeneration::default_generation();
+    let key = workbook_request_key(&request, &legacy)?;
     let segments: Vec<&str> = key.split(':').collect();
     assert_eq!(
         segments,
@@ -1015,12 +1041,12 @@ fn a_workbook_request_key_carries_every_selection_and_destination_field() {
         "the key is workbook:year:scope:limit:out:school-year:generation"
     );
     assert_eq!(
-        workbook_request_key(&request),
+        workbook_request_key(&request, &ExportGeneration::default_generation())?,
         key,
         "an identical request must reattach the same workflow"
     );
 
-    let changed = |edit: &dyn Fn(&mut WorkbookRequest)| {
+    let changed = |edit: &dyn Fn(&mut WorkbookRequest)| -> TestResult<String> {
         let mut other = WorkbookRequest {
             grad_year: request.grad_year,
             limit: request.limit,
@@ -1029,29 +1055,54 @@ fn a_workbook_request_key_carries_every_selection_and_destination_field() {
             school_year: request.school_year,
         };
         edit(&mut other);
-        workbook_request_key(&other)
+        Ok(workbook_request_key(
+            &other,
+            &ExportGeneration::default_generation(),
+        )?)
     };
-    assert_ne!(changed(&|r| r.grad_year = Some(2028)), key, "year");
+    assert_ne!(changed(&|r| r.grad_year = Some(2028))?, key, "year");
     assert_ne!(
-        changed(&|r| r.scope = Some("all_sources".to_string())),
+        changed(&|r| r.scope = Some("all_sources".to_string()))?,
         key,
         "scope"
     );
-    assert_ne!(changed(&|r| r.limit = None), key, "limit");
+    assert_ne!(changed(&|r| r.limit = None)?, key, "limit");
     assert_ne!(
-        changed(&|r| r.out = Some("/tmp/root-b".to_string())),
+        changed(&|r| r.out = Some("/tmp/root-b".to_string()))?,
         key,
         "out"
     );
-    assert_ne!(changed(&|r| r.school_year = Some(2025)), key, "school year");
+    assert_ne!(
+        changed(&|r| r.school_year = Some(2025))?,
+        key,
+        "school year"
+    );
 
-    let bare = workbook_request_key(&WorkbookRequest::default());
+    let bare = workbook_request_key(
+        &WorkbookRequest::default(),
+        &ExportGeneration::default_generation(),
+    )?;
     assert_eq!(bare, "workbook:all:all:all:.:unstated:1");
+
+    let mut colon = request.clone();
+    colon.out = Some("/tmp/a:b".to_string());
+    check!(
+        workbook_request_key(&colon, &legacy).is_err(),
+        "a colon in the output path must not silently shift the key segments"
+    );
+    colon.out = Some("/tmp/root-a".to_string());
+    colon.scope = Some("co:re".to_string());
+    check!(
+        workbook_request_key(&colon, &legacy).is_err(),
+        "a colon scope must not silently shift the key segments"
+    );
+    Ok(())
 }
 
 #[test]
-fn run_key_is_independent_of_wall_clock() {
-    let key = run_key("report", &["core"], DEFAULT_GENERATION);
+fn run_key_is_independent_of_wall_clock() -> TestResult {
+    let legacy = ExportGeneration::default_generation();
+    let key = report_export_key("core", &legacy)?;
     let segments: Vec<&str> = key.split(':').collect();
     assert_eq!(segments.len(), 3, "report:core:1 has exactly 3 segments");
     assert_eq!(
@@ -1061,7 +1112,7 @@ fn run_key_is_independent_of_wall_clock() {
     assert_eq!(segments[0], "report");
     assert_eq!(segments[1], "core");
 
-    let key2 = run_key("bests", &["all", "2027", "50"], "abc");
+    let key2 = bests_export_key("all", "2027", "50", &ExportGeneration::parse("abc")?)?;
     let segments2: Vec<&str> = key2.split(':').collect();
     assert_eq!(
         segments2.len(),
@@ -1073,11 +1124,12 @@ fn run_key_is_independent_of_wall_clock() {
         "the last segment must be the generation"
     );
 
-    let key3 = run_key("consolidate", &[], DEFAULT_GENERATION);
+    let key3 = consolidate_export_key(&legacy);
     let segments3: Vec<&str> = key3.split(':').collect();
     assert_eq!(segments3.len(), 2, "consolidate:1 has 2 segments");
     assert_eq!(segments3[0], "consolidate");
     assert_eq!(segments3[1], "1");
+    Ok(())
 }
 
 #[test]

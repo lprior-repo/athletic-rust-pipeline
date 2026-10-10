@@ -1,5 +1,6 @@
 use anyhow::{bail, Result};
 use census_report::report::Scope;
+use census_service::restate_services::{reject_offline_generation, ExportGeneration};
 use std::path::{Path, PathBuf};
 
 use crate::ingress;
@@ -63,6 +64,11 @@ pub enum CensusCommand {
     Coverage {
         #[command(flatten)]
         target: Target,
+        #[arg(
+            help = "Logical export generation selecting a fresh export run; omitted reuses the legacy generation 1 keys"
+        )]
+        #[arg(long, value_name = "GENERATION")]
+        generation: Option<String>,
     },
     #[command(
         about = "Build the census workbook (`.xlsx`) and its text sidecars: `Workbook/run` on the running deployment, or `census-service workbook` offline"
@@ -74,7 +80,7 @@ impl CensusCommand {
     pub fn run(self) -> Result<()> {
         match self {
             Self::CensusStatus { target } => status(target),
-            Self::Coverage { target } => coverage(target),
+            Self::Coverage { target, generation } => coverage(target, generation),
             Self::Export(request) => export(request),
         }
     }
@@ -105,6 +111,11 @@ pub struct ExportRequest {
     #[arg(help = "Cap the per-athlete best-mark sheet at N rows")]
     #[arg(long, value_name = "N")]
     limit: Option<usize>,
+    #[arg(
+        help = "Logical export generation selecting a fresh export run; omitted reuses the legacy generation 1 keys"
+    )]
+    #[arg(long, value_name = "GENERATION")]
+    generation: Option<String>,
 }
 
 pub fn status(target: Target) -> Result<()> {
@@ -114,16 +125,25 @@ pub fn status(target: Target) -> Result<()> {
     }
 }
 
-pub fn coverage(target: Target) -> Result<()> {
+pub fn coverage(target: Target, generation: Option<String>) -> Result<()> {
     match target.mode()? {
-        Mode::Offline(store) => offline::report(store, Scope::AllSources),
-        Mode::Ingress(origin) => service::coverage(origin),
+        Mode::Offline(store) => {
+            reject_offline_generation(generation.as_deref())?;
+            offline::report(store, Scope::AllSources)
+        }
+        Mode::Ingress(origin) => {
+            let resolved = ExportGeneration::resolve(generation.as_deref())?;
+            service::coverage(origin, &resolved)
+        }
     }
 }
 
 pub fn export(request: ExportRequest) -> Result<()> {
     match request.target.mode()? {
-        Mode::Offline(store) => offline::workbook(store, &request),
+        Mode::Offline(store) => {
+            reject_offline_generation(request.generation.as_deref())?;
+            offline::workbook(store, &request)
+        }
         Mode::Ingress(origin) => service::workbook(origin, &request),
     }
 }

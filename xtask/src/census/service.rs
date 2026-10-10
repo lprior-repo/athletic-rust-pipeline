@@ -30,13 +30,10 @@ pub(super) fn status(origin: &str) -> Result<()> {
     Ok(())
 }
 
-pub(super) fn coverage(origin: &str) -> Result<()> {
+pub(super) fn coverage(origin: &str, generation: &ExportGeneration) -> Result<()> {
     let (endpoint, client) = ingress::job_client(origin)?;
     ingress::announce(&endpoint, "Report", "run");
-    let key = report_export_key(
-        Scope::AllSources.as_str(),
-        &ExportGeneration::default_generation(),
-    );
+    let key = report_export_key(Scope::AllSources.as_str(), generation)?;
     let report = ReportIngressClient::from_client(client, key);
     let request = ReportRequest {
         scope: Some(Scope::AllSources.as_str().to_string()),
@@ -63,7 +60,8 @@ pub(super) fn workbook(origin: &str, options: &ExportRequest) -> Result<()> {
     let (endpoint, client) = ingress::job_client(origin)?;
     ingress::announce(&endpoint, "Workbook", "run");
     let request = workbook_request(options)?;
-    let key = workbook_request_key(&request);
+    let generation = ExportGeneration::resolve(options.generation.as_deref())?;
+    let key = workbook_request_key(&request, &generation)?;
     let workbook = WorkbookIngressClient::from_client(client, key);
     let response =
         ingress::block_on(workbook.run(Json(request)).call())?.map_err(ingress::error)?;
@@ -72,7 +70,7 @@ pub(super) fn workbook(origin: &str, options: &ExportRequest) -> Result<()> {
     Ok(())
 }
 
-fn workbook_request(options: &ExportRequest) -> Result<WorkbookRequest> {
+pub(super) fn workbook_request(options: &ExportRequest) -> Result<WorkbookRequest> {
     let scope = if options.core {
         Scope::Core
     } else {

@@ -5,7 +5,7 @@ use super::queues::{conflicts_sheet, review_sheet, CONFLICT_WIDTHS, REVIEW_WIDTH
 use super::schools::{schools_sheet, SCHOOL_WIDTHS};
 use super::sources::{sources_sheet, SOURCE_WIDTHS};
 use super::{millis, Family, ReportResult, RunFacts, Sheet, StoreRows, SubjectIndex};
-use crate::workbook::cells::Cell;
+use crate::workbook::cells::{Cell, SheetChrome};
 use std::time::Instant;
 
 fn built<T>(sheet: &'static str, build: impl FnOnce() -> T) -> T {
@@ -42,36 +42,36 @@ impl<'a, 'd> Inputs<'a, 'd> {
 
     fn schools(&self) -> ReportResult<Sheet> {
         let cells = built("Schools", || schools_sheet(self.rows.schools))?;
-        Ok(("Schools", cells, &SCHOOL_WIDTHS, true))
+        Ok(("Schools", cells, &SCHOOL_WIDTHS, SheetChrome::Filtered))
     }
 
     fn meets(&self) -> Sheet {
         let cells = built("Meets", || meets_sheet(self.rows.meets));
-        ("Meets", cells, &MEET_WIDTHS, true)
+        ("Meets", cells, &MEET_WIDTHS, SheetChrome::Filtered)
     }
 
     fn sources(&self) -> ReportResult<Sheet> {
         let cells = built("Sources", || sources_sheet(self.facts.all_sources))?;
-        Ok(("Sources", cells, &SOURCE_WIDTHS, true))
+        Ok(("Sources", cells, &SOURCE_WIDTHS, SheetChrome::Filtered))
     }
 
     fn coverage(&self) -> ReportResult<Sheet> {
         let cells = built("Coverage", || {
             coverage_sheet(self.facts.population.dataset())
         })?;
-        Ok(("Coverage", cells, &COVERAGE_WIDTHS, true))
+        Ok(("Coverage", cells, &COVERAGE_WIDTHS, SheetChrome::Filtered))
     }
 
     fn conflicts(&self) -> Sheet {
         let cells = built("Conflicts", || conflicts_sheet(self.conflicts, self.index));
-        ("Conflicts", cells, &CONFLICT_WIDTHS, true)
+        ("Conflicts", cells, &CONFLICT_WIDTHS, SheetChrome::Filtered)
     }
 
     fn review(&self) -> Sheet {
         let cells = built("Review", || {
             review_sheet(self.review, self.rows, self.index)
         });
-        ("Review", cells, &REVIEW_WIDTHS, true)
+        ("Review", cells, &REVIEW_WIDTHS, SheetChrome::Filtered)
     }
 }
 
@@ -86,6 +86,6 @@ pub(super) fn meta_sheets(
         inputs.coverage()?,
         inputs.conflicts(),
         inputs.review(),
-        ("Run Metrics", metrics, &METRIC_WIDTHS, false),
+        ("Run Metrics", metrics, &METRIC_WIDTHS, SheetChrome::Plain),
     ])
 }

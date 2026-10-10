@@ -1,5 +1,5 @@
 use crate::csv_safety::protect_owned;
-use crate::workbook::cells::{Cell, SheetWriter};
+use crate::workbook::cells::{Cell, SheetChrome, SheetWriter};
 use crate::workbook::{PerformanceProjection, PerformanceRow, ProjectedValue};
 use calamine::{open_workbook, Data, Range, Reader, Xlsx};
 use census_domain::model::{
@@ -516,7 +516,11 @@ fn write_partitioned_book(path: &Path, rows: &[PerformanceRow], per_sheet: usize
         for (offset, row) in chunk.iter().enumerate() {
             sheet.write_row(offset.saturating_add(1), &cells_of(row))?;
         }
-        sheet.finish(chunk.len().saturating_add(1), last_column, true)?;
+        sheet.finish(
+            chunk.len().saturating_add(1),
+            last_column,
+            SheetChrome::Filtered,
+        )?;
     }
     book.save(path)?;
     Ok(())
@@ -572,14 +576,44 @@ fn sequential_writers_flush_completed_rows_to_bounded_memory() -> TestResult {
     let widths = [18_u16, 18];
     let mut book = Workbook::new();
     let mut sheet = SheetWriter::start(&mut book, &path, "Mode", &widths)?;
-    sheet.write_row(5, &[Cell::text("fifth"), Cell::text("row")])?;
-    sheet.write_row(3, &[Cell::text("third"), Cell::text("row")])?;
-    sheet.finish(6, 1, false)?;
+    sheet.write_row(0, &[Cell::text("first"), Cell::text("row")])?;
+    let outcome = sheet.write_row(0, &[Cell::text("repeat"), Cell::text("row")]);
+    check!(
+        outcome.is_err(),
+        "rewriting a flushed row must fail instead of silently losing data"
+    );
+    sheet.write_row(1, &[Cell::text("second"), Cell::text("row")])?;
+    sheet.finish(2, 1, SheetChrome::Plain)?;
     book.save(&path)?;
 
     let mut book: Xlsx<_> = open_workbook(&path)?;
     let range = book.worksheet_range("Mode")?;
-    check!(eq; cell_text(&range, 5, 0), "fifth");
-    check!(eq; cell_text(&range, 3, 0), String::new());
+    check!(eq; cell_text(&range, 0, 0), "first");
+    check!(eq; cell_text(&range, 1, 0), "second");
+    Ok(())
+}
+
+#[test]
+fn finish_with_an_unwritten_row_count_fails() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let path = dir.path().join("count.xlsx");
+    let widths = [18_u16, 18];
+    let mut book = Workbook::new();
+    let mut sheet = SheetWriter::start(&mut book, &path, "Count", &widths)?;
+    sheet.write_row(0, &[Cell::text("only"), Cell::text("row")])?;
+    let error = match sheet.finish(2, 1, SheetChrome::Plain) {
+        Err(error) => error,
+        Ok(()) => {
+            return Err("finishing two rows after one write was accepted"
+                .to_string()
+                .into())
+        }
+    };
+    check!(
+        error
+            .to_string()
+            .contains("does not match the sequential writes"),
+        "the refusal names the row-count mismatch: {error}"
+    );
     Ok(())
 }

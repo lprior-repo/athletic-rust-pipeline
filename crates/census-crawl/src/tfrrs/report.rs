@@ -34,7 +34,7 @@ pub(super) fn note_rows(report: &mut AdapterReport, stats: &Stats) {
     ));
     report.note(format!(
         "skipped rows: {} without a team, {} without a season (the route states none), {} without an \
-         athlete, {} without a mark the reader can place, {} without a meet, {} without a date",
+         athlete, {} without any published mark, {} without a meet, {} without a date",
         stats.rows_without_team,
         stats.rows_without_season,
         stats.rows_without_athlete,
@@ -52,7 +52,7 @@ pub(super) fn note_rows(report: &mut AdapterReport, stats: &Stats) {
          unknown; the filter is a selection hint only), {} rows whose \
          filter disagrees with the year they print (the printed year wins), {} rows below high \
          school, {} rows whose gender the page does not state",
-        stats.grades_from_filter,
+        stats.grade_less_with_filter,
         stats.grades_conflicting_filter,
         stats.rows_below_high_school,
         stats.genders_unknown

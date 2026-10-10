@@ -51,7 +51,13 @@ pub(super) use row;
 pub(super) struct SheetLayout<'a> {
     pub(super) name: &'a str,
     pub(super) widths: &'a [u16],
-    pub(super) autofilter: bool,
+    pub(super) chrome: SheetChrome,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum SheetChrome {
+    Filtered,
+    Plain,
 }
 
 pub(super) fn write_sheet(
@@ -62,13 +68,14 @@ pub(super) fn write_sheet(
 ) -> ReportResult<()> {
     let mut writer = SheetWriter::start(book, path, layout.name, layout.widths)?;
     let last_column = writer.write_rows(&rows)?;
-    writer.finish(rows.len(), last_column, layout.autofilter)
+    writer.finish(rows.len(), last_column, layout.chrome)
 }
 
 pub(super) struct SheetWriter<'a> {
     sheet: &'a mut Worksheet,
     path: &'a Path,
     bold: Format,
+    next: usize,
 }
 
 impl<'a> SheetWriter<'a> {
@@ -82,6 +89,7 @@ impl<'a> SheetWriter<'a> {
             sheet: book.add_worksheet_with_constant_memory(),
             path,
             bold: Format::new().set_bold(),
+            next: 0,
         };
         writer.setup(name, widths)?;
         Ok(writer)
@@ -103,28 +111,50 @@ impl<'a> SheetWriter<'a> {
     }
 
     pub(super) fn write_row(&mut self, index: usize, cells: &[Cell]) -> ReportResult<()> {
-        let row = u32::try_from(index).map_err(|_| ReportError::Invariant {
-            detail: "row index does not fit u32".to_string(),
-        })?;
+        let row = self.check_row(index)?;
         for (column, cell) in cells.iter().enumerate() {
             let column = u16::try_from(column).map_err(|_| ReportError::Invariant {
                 detail: "column index does not fit u16".to_string(),
             })?;
             self.write_cell(row, column, cell)?;
         }
-        Ok(())
+        self.advance_row(index)
     }
 
     pub(super) fn write_strings(&mut self, index: usize, values: &[String]) -> ReportResult<()> {
-        let row = u32::try_from(index).map_err(|_| ReportError::Invariant {
-            detail: "row index does not fit u32".to_string(),
-        })?;
+        let row = self.check_row(index)?;
         for (column, value) in values.iter().enumerate() {
             let column = u16::try_from(column).map_err(|_| ReportError::Invariant {
                 detail: "column index does not fit u16".to_string(),
             })?;
             self.write_text(row, column, value)?;
         }
+        self.advance_row(index)
+    }
+
+    fn check_row(&self, index: usize) -> ReportResult<u32> {
+        if index != self.next {
+            return Err(ReportError::Invariant {
+                detail: "constant-memory worksheets require sequential row writes".to_string(),
+            });
+        }
+        u32::try_from(index).map_err(|_| ReportError::Invariant {
+            detail: "row index does not fit u32".to_string(),
+        })
+    }
+
+    fn advance_row(&mut self, index: usize) -> ReportResult<()> {
+        if index != self.next {
+            return Err(ReportError::Invariant {
+                detail: "the worksheet row count advanced past its writes".to_string(),
+            });
+        }
+        self.next = self
+            .next
+            .checked_add(1)
+            .ok_or_else(|| ReportError::Invariant {
+                detail: "the worksheet wrote more rows than it can count".to_string(),
+            })?;
         Ok(())
     }
 
@@ -132,9 +162,14 @@ impl<'a> SheetWriter<'a> {
         &mut self,
         rows: usize,
         last_column: usize,
-        autofilter: bool,
+        chrome: SheetChrome,
     ) -> ReportResult<()> {
-        if autofilter && rows > 0 {
+        if rows != self.next {
+            return Err(ReportError::Invariant {
+                detail: "the finished row count does not match the sequential writes".to_string(),
+            });
+        }
+        if chrome == SheetChrome::Filtered && rows > 0 {
             self.autofilter(rows, last_column)?;
         }
         self.freeze_header()

@@ -317,14 +317,12 @@ fn fixture_list_urls_with_year_segment_still_parse() -> TestResult {
 
 #[test]
 fn metric_field_mark_without_conv_produces_distance_metres() -> TestResult {
-    let row = crate::tfrrs::map::row::mark_of(&ParsedMark::Field("6.50m".to_string()), None);
-    check!(row.is_some(), "metric mark without Conv is not dropped");
-    match row.unwrap() {
-        Mark::DistanceMetres(cm) => {
-            check!(eq; cm, CentiMetres::new(650), "6.50m is 650 cm");
-        }
-        other => return Err(format!("expected DistanceMetres, got {other:?}").into()),
-    }
+    let mark = crate::tfrrs::map::row::mark_of(&ParsedMark::Field("6.50m".to_string()), None);
+    check!(eq;
+        mark,
+        Mark::DistanceMetres(CentiMetres::new(650)),
+        "6.50m is 650 cm"
+    );
     Ok(())
 }
 
@@ -340,9 +338,8 @@ fn metric_metres_function_parses_metric_tokens() -> TestResult {
 
 #[test]
 fn imperial_with_conv_still_works() -> TestResult {
-    let row = crate::tfrrs::map::row::mark_of(&ParsedMark::Field("7-2".to_string()), Some(2.18));
-    check!(row.is_some());
-    match row.unwrap() {
+    let mark = crate::tfrrs::map::row::mark_of(&ParsedMark::Field("7-2".to_string()), Some(2.18));
+    match mark {
         Mark::FieldImperial { feet_mark, .. } => {
             check!(eq; feet_mark, "7-2");
         }
@@ -406,8 +403,7 @@ fn metric_field_marks_keep_their_metres_without_a_conv_cell() -> TestResult {
         ("Javelin", "60.00m", 6000),
         ("Hammer", "65.00m", 6500),
     ] {
-        let mark = crate::tfrrs::map::row::mark_of(&ParsedMark::Field(token.to_string()), None)
-            .ok_or("metric marks normalize without a Conv cell")?;
+        let mark = crate::tfrrs::map::row::mark_of(&ParsedMark::Field(token.to_string()), None);
         check!(eq;
             mark,
             Mark::DistanceMetres(CentiMetres::new(centimetres)),
@@ -423,14 +419,18 @@ fn agreeing_conv_cells_keep_the_primary_published_mark() -> TestResult {
         crate::tfrrs::map::row::mark_of(&ParsedMark::Field("6.50m".to_string()), Some(6.50));
     check!(eq;
         metric,
-        Some(Mark::DistanceMetres(CentiMetres::new(650))),
+        Mark::DistanceMetres(CentiMetres::new(650)),
         "an agreeing Conv confirms the metric primary"
     );
     let imperial =
         crate::tfrrs::map::row::mark_of(&ParsedMark::Field("23' 11.5\"".to_string()), Some(7.30));
-    check!(
-        matches!(imperial, Some(Mark::FieldImperial { .. })),
-        "the captured long-jump imperial mark agrees with its Conv: {imperial:?}"
+    check!(eq;
+        imperial,
+        Mark::FieldImperial {
+            feet_mark: "23' 11.5\"".to_string(),
+            metres: CentiMetres::new(730),
+        },
+        "the captured long-jump imperial mark agrees with its Conv exactly"
     );
     Ok(())
 }
@@ -441,15 +441,116 @@ fn contradictory_conv_cells_withhold_the_numeric_mark() -> TestResult {
         crate::tfrrs::map::row::mark_of(&ParsedMark::Field("6.50m".to_string()), Some(7.30));
     check!(eq;
         metric,
-        Some(Mark::Raw("6.50m".to_string())),
+        Mark::Raw("6.50m".to_string()),
         "a contradicting Conv must not mint a false numeric best"
     );
     let imperial =
         crate::tfrrs::map::row::mark_of(&ParsedMark::Field("7-2".to_string()), Some(9.99));
     check!(eq;
         imperial,
-        Some(Mark::Raw("7-2".to_string())),
+        Mark::Raw("7-2".to_string()),
         "a contradicting Conv must not mint a false imperial numeric either"
+    );
+    Ok(())
+}
+
+#[test]
+fn conv_tolerance_boundary_agrees_at_two_centimetres() -> TestResult {
+    let agree =
+        crate::tfrrs::map::row::mark_of(&ParsedMark::Field("6.50m".to_string()), Some(6.52));
+    check!(eq;
+        agree,
+        Mark::DistanceMetres(CentiMetres::new(650)),
+        "a 2cm Conv difference still confirms the metric primary"
+    );
+    let contradict =
+        crate::tfrrs::map::row::mark_of(&ParsedMark::Field("6.50m".to_string()), Some(6.53));
+    check!(eq;
+        contradict,
+        Mark::Raw("6.50m".to_string()),
+        "a 3cm Conv difference withholds the numeric mark"
+    );
+    Ok(())
+}
+
+#[test]
+fn unparseable_time_tokens_are_retained_as_raw() -> TestResult {
+    let kept = crate::tfrrs::map::row::mark_of(&ParsedMark::Time("NT".to_string()), None);
+    check!(eq;
+        kept,
+        Mark::Raw("NT".to_string()),
+        "a published but unparseable time token survives as Raw instead of dropping the row"
+    );
+    let timed = crate::tfrrs::map::row::mark_of(&ParsedMark::Time("10.56".to_string()), None);
+    check!(eq;
+        timed,
+        Mark::TimeSeconds(ExactSeconds::parse("10.56")?),
+        "a parseable time mints its exact seconds"
+    );
+    Ok(())
+}
+
+fn time_row(name: &str, athlete_id: u64, mark: &str, year: YearToken) -> ParsedRow {
+    let mut row = metric_row(name, athlete_id, "6.50m", None, year);
+    row.mark = Some(ParsedMark::Time(mark.to_string()));
+    row
+}
+
+#[test]
+fn unparseable_time_rows_are_admitted_without_numeric_marks() -> TestResult {
+    let url = "https://indiana.tfrrs.org/lists/5489/HSR_All_School_Performance_List/2026/i";
+    let source = SourceRef::new("tfrrs_in", Some(url.to_string()));
+    let route = parse_list_path(url).ok_or("list route")?;
+    let context = ListContext {
+        page: Page {
+            source: &source,
+            observed_on: "2026-09-30",
+            performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 9, 30)
+                .ok_or("snapshot date")?,
+            jurisdiction: UsJurisdiction::Indiana,
+        },
+        list: &route,
+        filter: None,
+    };
+    let index = SchoolIndex::from_schools(&[]);
+    let mut absorb = Absorb::new(&index);
+    let page = ParsedList {
+        sections: vec![metric_section(
+            "60 Meters",
+            46,
+            vec![
+                time_row("John Doe", 9_000_011, "NT", YearToken::Junior),
+                time_row("Jane Roe", 9_000_012, "6.98", YearToken::Sophomore),
+            ],
+        )],
+    };
+    absorb.absorb_list(&context, &page)?;
+    check!(eq; absorb.stats.rows_absorbed, 2, "both rows are admitted");
+    check!(
+        eq; absorb.stats.marks_unconverted, 1,
+        "exactly the NT row lands in the unconverted bucket"
+    );
+    check!(
+        eq; absorb.stats.rows_without_mark, 0,
+        "no published mark is dropped as missing"
+    );
+    let marks: Vec<Mark> = absorb
+        .accumulator
+        .performances
+        .values()
+        .map(|performance| performance.mark.clone())
+        .collect();
+    check!(
+        marks.contains(&Mark::Raw("NT".to_string())),
+        "the NT row keeps its verbatim mark"
+    );
+    check!(eq;
+        marks
+            .iter()
+            .filter(|mark| !matches!(mark, Mark::Raw(_)))
+            .count(),
+        1,
+        "only the parseable row carries a numeric mark"
     );
     Ok(())
 }

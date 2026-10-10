@@ -9,7 +9,7 @@ use rust_xlsxwriter::Workbook;
 use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 
-use super::cells::{write_sheet, Cell, SheetLayout};
+use super::cells::{write_sheet, Cell, SheetChrome, SheetLayout};
 use super::millis;
 use std::time::Instant;
 
@@ -27,7 +27,7 @@ use sheets::meta_sheets;
 
 pub use queues::retained_records;
 
-type Sheet = (&'static str, Vec<Vec<Cell>>, &'static [u16], bool);
+type Sheet = (&'static str, Vec<Vec<Cell>>, &'static [u16], SheetChrome);
 
 pub(super) struct RunFacts<'a> {
     pub(super) population: &'a Derivation<'a>,
@@ -69,7 +69,7 @@ pub(super) fn write_meta_sheets(
 }
 
 fn write_meta_sheet(book: &mut Workbook, path: &Path, sheet: Sheet) -> ReportResult<()> {
-    let (name, cells, widths, autofilter) = sheet;
+    let (name, cells, widths, chrome) = sheet;
     let count = cells.len();
     let started = Instant::now();
     write_sheet(
@@ -78,7 +78,7 @@ fn write_meta_sheet(book: &mut Workbook, path: &Path, sheet: Sheet) -> ReportRes
         SheetLayout {
             name,
             widths,
-            autofilter,
+            chrome,
         },
         cells,
     )?;
@@ -132,7 +132,7 @@ fn write_contact_sheet(
             .ok_or_else(|| crate::report::ReportError::Invariant {
                 detail: "contact worksheet has no header".to_string(),
             })?;
-    writer.finish(rows.len(), last_column, true)
+    writer.finish(rows.len(), last_column, SheetChrome::Filtered)
 }
 
 pub(in crate::workbook) struct StoreRows<'d> {

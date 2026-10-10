@@ -11,14 +11,14 @@ use tokio::sync::Semaphore;
 
 use crate::census::CollectOptions;
 use census_store::clock::Clock;
-pub fn run_key(job: &str, parts: &[&str], generation: &str) -> String {
+pub(crate) fn run_key(job: &str, parts: &[&str], generation: &ExportGeneration) -> String {
     let mut key = job.to_string();
     for part in parts {
         key.push(':');
         key.push_str(part);
     }
     key.push(':');
-    key.push_str(generation);
+    key.push_str(generation.as_str());
     key
 }
 pub const DEFAULT_GENERATION: &str = "1";
@@ -36,6 +36,10 @@ pub enum ExportGenerationError {
     TooLong { value: usize },
     #[error("export generation {value:?} carries a character outside [A-Za-z0-9._-]")]
     InvalidChar { value: String },
+    #[error("export key part {value:?} must not contain ':'")]
+    InvalidKeyPart { value: String },
+    #[error("--generation {value:?} is live-Restate only")]
+    OfflineGeneration { value: String },
 }
 
 impl ExportGeneration {
@@ -60,13 +64,42 @@ impl ExportGeneration {
         Self(DEFAULT_GENERATION.to_string())
     }
 
+    pub fn resolve(flag: Option<&str>) -> Result<Self, ExportGenerationError> {
+        match flag {
+            Some(value) => Self::parse(value),
+            None => Ok(Self::default_generation()),
+        }
+    }
+
     pub fn as_str(&self) -> &str {
         &self.0
     }
 }
 
-pub fn report_export_key(scope: &str, generation: &ExportGeneration) -> String {
-    run_key("report", &[scope], generation.as_str())
+pub fn reject_offline_generation(flag: Option<&str>) -> Result<(), ExportGenerationError> {
+    match flag {
+        Some(value) => Err(ExportGenerationError::OfflineGeneration {
+            value: value.to_string(),
+        }),
+        None => Ok(()),
+    }
+}
+
+fn validate_key_part(part: &str) -> Result<(), ExportGenerationError> {
+    if part.is_empty() || part.contains(':') {
+        return Err(ExportGenerationError::InvalidKeyPart {
+            value: part.to_string(),
+        });
+    }
+    Ok(())
+}
+
+pub fn report_export_key(
+    scope: &str,
+    generation: &ExportGeneration,
+) -> Result<String, ExportGenerationError> {
+    validate_key_part(scope)?;
+    Ok(run_key("report", &[scope], generation))
 }
 
 pub fn bests_export_key(
@@ -74,15 +107,21 @@ pub fn bests_export_key(
     year: &str,
     limit: &str,
     generation: &ExportGeneration,
-) -> String {
-    run_key("bests", &[scope, year, limit], generation.as_str())
+) -> Result<String, ExportGenerationError> {
+    validate_key_part(scope)?;
+    validate_key_part(year)?;
+    validate_key_part(limit)?;
+    Ok(run_key("bests", &[scope, year, limit], generation))
 }
 
 pub fn consolidate_export_key(generation: &ExportGeneration) -> String {
-    run_key("consolidate", &[], generation.as_str())
+    run_key("consolidate", &[], generation)
 }
 
-pub fn workbook_request_key(request: &WorkbookRequest) -> String {
+pub fn workbook_request_key(
+    request: &WorkbookRequest,
+    generation: &ExportGeneration,
+) -> Result<String, ExportGenerationError> {
     let year = request
         .grad_year
         .map_or_else(|| "all".to_string(), |year| year.to_string());
@@ -94,11 +133,14 @@ pub fn workbook_request_key(request: &WorkbookRequest) -> String {
     let season = request
         .school_year
         .map_or_else(|| "unstated".to_string(), |season| season.to_string());
-    run_key(
+    for part in [year.as_str(), scope, limit.as_str(), out, season.as_str()] {
+        validate_key_part(part)?;
+    }
+    Ok(run_key(
         "workbook",
         &[&year, scope, &limit, out, &season],
-        DEFAULT_GENERATION,
-    )
+        generation,
+    ))
 }
 
 mod browser_session;

@@ -5,6 +5,9 @@ use census_report::export::ExportDataset;
 use census_report::report;
 use census_report::workbook;
 use census_service::census;
+use census_service::restate_services::{
+    reject_offline_generation, ConsolidatedTable, ExportGeneration,
+};
 use census_store::Store;
 use clap::Args;
 use std::path::PathBuf;
@@ -74,6 +77,11 @@ pub(super) struct RunArgs {
     #[arg(long)]
     out: Option<PathBuf>,
     #[arg(
+        help = "Logical export generation selecting a fresh report/bests/consolidate/workbook run; omitted reuses the legacy generation 1 keys"
+    )]
+    #[arg(long, value_name = "GENERATION")]
+    generation: Option<String>,
+    #[arg(
         help = "Ingress origin of the local Restate server. The local census deployment when omitted"
     )]
     #[arg(long, value_name = "ORIGIN")]
@@ -83,6 +91,7 @@ pub(super) struct RunArgs {
 pub(super) async fn run_cycle(cli: &Cli, args: &RunArgs) -> Result<()> {
     match cli.route(args.ingress.as_deref())? {
         Route::Offline(root) => {
+            reject_offline_generation(args.generation.as_deref())?;
             let root = root.to_path_buf();
             let store = tokio::task::spawn_blocking(move || Store::open(&root))
                 .await
@@ -214,7 +223,20 @@ async fn run_live(origin: &str, args: &RunArgs) -> Result<()> {
     let grad_year = school_year(args.grad_year)?;
     let contact_season = contact_school_year(args.school_year)?;
     let scope = scope_of(args.core);
-    let tables = live::consolidate(Some(origin)).await?;
+    let generation = ExportGeneration::resolve(args.generation.as_deref())?;
+    let tables = live::consolidate(Some(origin), &generation).await?;
+    print_consolidation(&tables);
+    println!("index\tskipped (offline stage: `index --store <dir>` with census-serve stopped)");
+
+    for scope in [report::Scope::AllSources, report::Scope::Core] {
+        publish_scope_live(origin, scope, &generation).await?;
+    }
+
+    publish_bests_and_workbook_live(origin, args, scope, grad_year, contact_season, &generation)
+        .await
+}
+
+fn print_consolidation(tables: &[ConsolidatedTable]) {
     println!(
         "consolidate\t{}",
         tables
@@ -223,13 +245,6 @@ async fn run_live(origin: &str, args: &RunArgs) -> Result<()> {
             .collect::<Vec<_>>()
             .join(" ")
     );
-    println!("index\tskipped (offline stage: `index --store <dir>` with census-serve stopped)");
-
-    for scope in [report::Scope::AllSources, report::Scope::Core] {
-        publish_scope_live(origin, scope).await?;
-    }
-
-    publish_bests_and_workbook_live(origin, args, scope, grad_year, contact_season).await
 }
 
 async fn gather_athleticnet(

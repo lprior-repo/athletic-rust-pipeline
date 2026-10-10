@@ -411,7 +411,7 @@ fn a_spill_budget_that_holds_no_row_or_no_range_is_rejected() -> TestResult {
     let dataset = ExportDataset::load(&store)?;
     let derivation = Derivation::of(&dataset, Scope::Core, None);
 
-    for (range_rows, max_ranges) in [(0, 64), (2, 0)] {
+    for (range_rows, max_ranges) in [(0, 64), (2, 0), (2, 65)] {
         let error = match PerformanceRows::with_ranges(&derivation, range_rows, max_ranges) {
             Ok(_) => {
                 return Err(format!(

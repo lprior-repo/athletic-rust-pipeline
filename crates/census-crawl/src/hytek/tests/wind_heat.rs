@@ -6,6 +6,12 @@ const WIND_POINTS_HEADER: &str =
 const POINTS_ONLY_HEADER: &str =
     "    Name                    Year School                  Finals  Points";
 const SEP: &str = "===========================================================================";
+const FLIGHT_POINTS_HEADER: &str =
+    "    Name                    Year School                  Finals  Flight Points";
+const HEAT_POINTS_HEADER: &str =
+    "    Name                    Year School                  Finals  H# Points";
+const TRAILING_HEAT_HEADER: &str =
+    "    Name                    Year School                  Finals  H#";
 
 fn wind_meet(rows: &[String]) -> Result<ParsedMeet, String> {
     let mut lines = vec![
@@ -154,10 +160,105 @@ fn contradictory_finals_marks_from_two_sources_share_one_context() -> TestResult
         check!(eq; right.heat, None);
         check!(eq; left.heat, right.heat, "one final is one context in both sources");
     }
+    check!(eq; first[1].mark, second[1].mark, "the runner-up mark agrees");
     check!(
         first[0].mark != second[0].mark,
         "the two sources genuinely contradict on the winning mark"
     );
-    check!(eq; first[1].mark, second[1].mark, "the runner-up mark agrees");
+    Ok(())
+}
+
+#[test]
+fn an_empty_heat_cell_with_points_stays_heatless() -> TestResult {
+    let rows = finals_rows(
+        HEAT_POINTS_HEADER,
+        &[
+            "  1 Heatless One             12 Test School               10.89       10   "
+                .to_string(),
+        ],
+    )?;
+    check!(eq; rows.len(), 1);
+    check!(
+        eq; rows[0].heat, None,
+        "an empty H# cell must not borrow the Points token"
+    );
+    check!(eq; rows[0].points, Some(10.0));
+    Ok(())
+}
+
+#[test]
+fn declared_flights_keep_their_alphabet_without_inventing_heats() -> TestResult {
+    let rows = finals_rows(
+        FLIGHT_POINTS_HEADER,
+        &[
+            "  1 Flight A                 12 Test School               10.89   A     10   "
+                .to_string(),
+            "  2 Flight Decimal           11 Test School               10.95   1.5    8   "
+                .to_string(),
+        ],
+    )?;
+    check!(eq; rows.len(), 2);
+    check!(
+        eq; rows[0].heat, Some("A".to_string()),
+        "a declared single-letter flight is kept"
+    );
+    check!(
+        eq; rows[1].heat, None,
+        "a decimal never becomes a flight"
+    );
+    check!(eq; rows[0].points, Some(10.0));
+    check!(eq; rows[1].points, Some(8.0));
+    Ok(())
+}
+
+#[test]
+fn a_digit_token_straddling_from_the_left_is_not_a_heat() -> TestResult {
+    let rows = finals_rows(
+        HEAT_POINTS_HEADER,
+        &[
+            "  1 Straddle Case            12 Test School               10.89 954     6    "
+                .to_string(),
+        ],
+    )?;
+    check!(eq; rows.len(), 1);
+    check!(
+        eq; rows[0].heat, None,
+        "a digit token starting left of the H# column must not be borrowed as heat"
+    );
+    check!(eq; rows[0].points, Some(6.0));
+    Ok(())
+}
+
+#[test]
+fn a_far_digit_past_a_trailing_heat_column_stays_unclaimed() -> TestResult {
+    let rows = finals_rows(
+        TRAILING_HEAT_HEADER,
+        &[
+            "  1 Far One                  12 Test School               10.89                                9    "
+                .to_string(),
+        ],
+    )?;
+    check!(eq; rows.len(), 1);
+    check!(
+        eq; rows[0].heat, None,
+        "a digit thirty columns past a trailing H# is not that heat"
+    );
+    Ok(())
+}
+
+#[test]
+fn a_long_digit_run_overflowing_its_heat_cell_stays_unclaimed() -> TestResult {
+    let rows = finals_rows(
+        TRAILING_HEAT_HEADER,
+        &[
+            "  1 Long Heat                12 Test School               10.89   1234    "
+                .to_string(),
+        ],
+    )?;
+    check!(eq; rows.len(), 1);
+    check!(
+        eq; rows[0].heat, None,
+        "a four-digit run wider than any heat cell is not a heat"
+    );
     Ok(())
 }

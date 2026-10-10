@@ -2,7 +2,7 @@ use crate::report::{Derivation, ReportError, ReportResult};
 use rust_xlsxwriter::Workbook;
 use std::path::Path;
 
-use super::cells::{Cell, SheetWriter};
+use super::cells::{Cell, SheetChrome, SheetWriter};
 
 mod join;
 mod rows;
@@ -133,14 +133,18 @@ impl PartitionLayout {
             filled = filled.saturating_add(1);
             *pending.next = pending.rows.next().transpose()?;
         }
-        sheet.finish(filled.saturating_add(HEADER_ROWS), self.last_column, true)?;
+        sheet.finish(
+            filled.saturating_add(HEADER_ROWS),
+            self.last_column,
+            SheetChrome::Filtered,
+        )?;
         Ok(filled)
     }
 
     fn write_empty(&self, book: &mut Workbook, path: &Path) -> ReportResult<()> {
         let mut sheet = SheetWriter::start(book, path, &sheet_name(0), &self.widths)?;
         sheet.write_row(0, &self.header)?;
-        sheet.finish(HEADER_ROWS, self.last_column, true)
+        sheet.finish(HEADER_ROWS, self.last_column, SheetChrome::Filtered)
     }
 }
 

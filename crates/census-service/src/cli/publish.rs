@@ -1,8 +1,11 @@
 use anyhow::{Context, Result};
+use census_domain::model::SchoolYear;
 use census_report::export::ExportDataset;
 use census_report::report::{self, Derivation};
 use census_report::{bests, workbook};
-use census_service::restate_services::{BestsReply, WorkbookReply, WorkbookRequest};
+use census_service::restate_services::{
+    reject_offline_generation, BestsReply, ExportGeneration, WorkbookReply, WorkbookRequest,
+};
 use census_store::Store;
 use clap::Args;
 use std::path::PathBuf;
@@ -62,6 +65,11 @@ pub(super) struct ReportArgs {
     #[arg(long)]
     core: bool,
     #[arg(
+        help = "Logical export generation selecting a fresh export run; omitted reuses the legacy generation 1 keys"
+    )]
+    #[arg(long, value_name = "GENERATION")]
+    generation: Option<String>,
+    #[arg(
         help = "Ingress origin of the local Restate server. The local census deployment when omitted"
     )]
     #[arg(long, value_name = "ORIGIN")]
@@ -75,9 +83,13 @@ pub(super) async fn run_census_report(cli: &Cli, args: &ReportArgs) -> Result<()
         report::Scope::AllSources
     };
     match cli.route(args.ingress.as_deref())? {
-        Route::Offline(root) => run_report(&Store::open(root)?, args.print, args.core),
+        Route::Offline(root) => {
+            reject_offline_generation(args.generation.as_deref())?;
+            run_report(&Store::open(root)?, args.print, args.core)
+        }
         Route::Ingress(origin) => {
-            let summary = live::report(Some(origin), scope).await?;
+            let generation = ExportGeneration::resolve(args.generation.as_deref())?;
+            let summary = live::report(Some(origin), scope, &generation).await?;
             println!("wrote {}", summary.json_path);
             println!("wrote {}", summary.csv_path);
             println!("scope={} totals={}", summary.scope, summary.totals);
@@ -101,6 +113,11 @@ pub(super) struct BestsArgs {
     #[arg(long)]
     all: bool,
     #[arg(
+        help = "Logical export generation selecting a fresh export run; omitted reuses the legacy generation 1 keys"
+    )]
+    #[arg(long, value_name = "GENERATION")]
+    generation: Option<String>,
+    #[arg(
         help = "Ingress origin of the local Restate server. The local census deployment when omitted"
     )]
     #[arg(long, value_name = "ORIGIN")]
@@ -114,20 +131,33 @@ pub(super) async fn run_bests(cli: &Cli, args: &BestsArgs) -> Result<()> {
         Some(school_year(args.grad_year)?)
     };
     match cli.route(args.ingress.as_deref())? {
-        Route::Offline(root) => run_bests_offline(&Store::open(root)?, args, grad_year),
-        Route::Ingress(origin) => {
-            let BestsReply {
-                cohort,
-                rows,
-                jsonl,
-                csv,
-            } = live::bests(Some(origin), report::Scope::Core, grad_year, args.limit).await?;
-            println!("cohort={cohort} rows={rows}");
-            println!("wrote {jsonl}");
-            println!("wrote {csv}");
-            Ok(())
+        Route::Offline(root) => {
+            reject_offline_generation(args.generation.as_deref())?;
+            run_bests_offline(&Store::open(root)?, args, grad_year)
         }
+        Route::Ingress(origin) => run_bests_live(origin, args, grad_year).await,
     }
+}
+
+async fn run_bests_live(origin: &str, args: &BestsArgs, grad_year: Option<i16>) -> Result<()> {
+    let generation = ExportGeneration::resolve(args.generation.as_deref())?;
+    let BestsReply {
+        cohort,
+        rows,
+        jsonl,
+        csv,
+    } = live::bests(
+        Some(origin),
+        report::Scope::Core,
+        grad_year,
+        args.limit,
+        &generation,
+    )
+    .await?;
+    println!("cohort={cohort} rows={rows}");
+    println!("wrote {jsonl}");
+    println!("wrote {csv}");
+    Ok(())
 }
 
 fn run_bests_offline(store: &Store, args: &BestsArgs, grad_year: Option<i16>) -> Result<()> {
@@ -171,6 +201,11 @@ pub(super) struct WorkbookArgs {
     #[arg(long)]
     core: bool,
     #[arg(
+        help = "Logical export generation selecting a fresh export run; omitted reuses the legacy generation 1 keys"
+    )]
+    #[arg(long, value_name = "GENERATION")]
+    generation: Option<String>,
+    #[arg(
         help = "Ingress origin of the local Restate server. The local census deployment when omitted"
     )]
     #[arg(long, value_name = "ORIGIN")]
@@ -182,6 +217,7 @@ pub(super) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
     let contact_season = contact_school_year(args.school_year)?;
     match cli.route(args.ingress.as_deref())? {
         Route::Offline(root) => {
+            reject_offline_generation(args.generation.as_deref())?;
             let options = workbook::Options {
                 grad_year: Some(grad_year),
                 out: args.out.clone(),
@@ -194,22 +230,30 @@ pub(super) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
             println!("wrote {}", path.display());
             Ok(())
         }
-        Route::Ingress(origin) => {
-            let request = WorkbookRequest {
-                grad_year: Some(grad_year),
-                limit: args.limit,
-                scope: Some(scope_of(args.core).as_str().to_string()),
-                out: args
-                    .out
-                    .as_ref()
-                    .map(|path| path.to_string_lossy().into_owned()),
-                school_year: Some(contact_season.get()),
-            };
-            let WorkbookReply { path, .. } = live::workbook(Some(origin), request).await?;
-            println!("wrote {path}");
-            Ok(())
-        }
+        Route::Ingress(origin) => run_workbook_live(origin, args, grad_year, contact_season).await,
     }
+}
+
+async fn run_workbook_live(
+    origin: &str,
+    args: &WorkbookArgs,
+    grad_year: i16,
+    contact_season: SchoolYear,
+) -> Result<()> {
+    let generation = ExportGeneration::resolve(args.generation.as_deref())?;
+    let request = WorkbookRequest {
+        grad_year: Some(grad_year),
+        limit: args.limit,
+        scope: Some(scope_of(args.core).as_str().to_string()),
+        out: args
+            .out
+            .as_ref()
+            .map(|path| path.to_string_lossy().into_owned()),
+        school_year: Some(contact_season.get()),
+    };
+    let WorkbookReply { path, .. } = live::workbook(Some(origin), request, &generation).await?;
+    println!("wrote {path}");
+    Ok(())
 }
 
 #[derive(Args, Debug)]

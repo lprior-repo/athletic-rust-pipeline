@@ -16,75 +16,51 @@ use super::national::{drive_jurisdiction, WorkflowFlags};
 use census_crawl::ingress::CurrentRoute;
 use census_service::ingress;
 
-fn export_generation() -> Result<ExportGeneration> {
-    match std::env::var("CENSUS_EXPORT_GENERATION") {
-        Err(std::env::VarError::NotPresent) => Ok(ExportGeneration::default_generation()),
-        Err(error) => Err(error).with_context(|| "reading CENSUS_EXPORT_GENERATION"),
-        Ok(value) => ExportGeneration::parse(&value)
-            .with_context(|| format!("parsing CENSUS_EXPORT_GENERATION {value:?}")),
-    }
+fn log_submit(message: &str, generation: &ExportGeneration, key: &str) {
+    tracing::info!(generation = generation.as_str(), key = key, "{message}");
 }
 
 fn consolidate_client(
     origin: Option<&str>,
-    generation: &ExportGeneration,
+    key: String,
 ) -> Result<ConsolidateIngressClient<CurrentRoute>> {
     Ok(ConsolidateIngressClient::from_client(
         ingress::job_client(ingress::origin(origin))?,
-        consolidate_export_key(generation),
+        key,
     ))
 }
 
-fn report_client(
-    origin: Option<&str>,
-    scope: report::Scope,
-    generation: &ExportGeneration,
-) -> Result<ReportIngressClient<CurrentRoute>> {
+fn report_client(origin: Option<&str>, key: String) -> Result<ReportIngressClient<CurrentRoute>> {
     Ok(ReportIngressClient::from_client(
         ingress::job_client(ingress::origin(origin))?,
-        report_export_key(scope.as_str(), generation),
+        key,
     ))
 }
 
-fn bests_client(
-    origin: Option<&str>,
-    scope: report::Scope,
-    grad_year: Option<i16>,
-    limit: Option<usize>,
-    generation: &ExportGeneration,
-) -> Result<BestsIngressClient<CurrentRoute>> {
-    let year = grad_year.map_or_else(|| "all".to_string(), |year| year.to_string());
-    let limit = limit.map_or_else(|| "all".to_string(), |limit| limit.to_string());
+fn bests_client(origin: Option<&str>, key: String) -> Result<BestsIngressClient<CurrentRoute>> {
     Ok(BestsIngressClient::from_client(
         ingress::job_client(ingress::origin(origin))?,
-        bests_export_key(scope.as_str(), &year, &limit, generation),
+        key,
     ))
 }
 
 fn workbook_client(
     origin: Option<&str>,
-    request: &WorkbookRequest,
+    key: String,
 ) -> Result<WorkbookIngressClient<CurrentRoute>> {
     Ok(WorkbookIngressClient::from_client(
         ingress::job_client(ingress::origin(origin))?,
-        workbook_request_key(request),
+        key,
     ))
 }
 
-pub(super) async fn consolidate(origin: Option<&str>) -> Result<Vec<ConsolidatedTable>> {
-    consolidate_with_generation(origin, &export_generation()?).await
-}
-
-pub(super) async fn consolidate_with_generation(
+pub(super) async fn consolidate(
     origin: Option<&str>,
     generation: &ExportGeneration,
 ) -> Result<Vec<ConsolidatedTable>> {
-    tracing::info!(
-        generation = generation.as_str(),
-        key = consolidate_export_key(generation).as_str(),
-        "submitting consolidate export"
-    );
-    let Json(ConsolidateReply { tables }) = consolidate_client(origin, generation)?
+    let key = consolidate_export_key(generation);
+    log_submit("submitting consolidate export", generation, key.as_str());
+    let Json(ConsolidateReply { tables }) = consolidate_client(origin, key)?
         .run(Json(ConsolidateRequest::default()))
         .call()
         .await
@@ -112,27 +88,14 @@ impl ReportSummary {
     }
 }
 
-pub(super) async fn report(origin: Option<&str>, scope: report::Scope) -> Result<ReportSummary> {
-    report_with_generation(origin, scope, &export_generation()?).await
-}
-
-pub(super) async fn report_with_generation(
+pub(super) async fn report(
     origin: Option<&str>,
     scope: report::Scope,
     generation: &ExportGeneration,
 ) -> Result<ReportSummary> {
-    tracing::info!(
-        generation = generation.as_str(),
-        key = report_export_key(scope.as_str(), generation).as_str(),
-        "submitting report export"
-    );
-    let Json(ReportReply {
-        scope,
-        json_path,
-        csv_path,
-        totals,
-        generated_on,
-    }) = report_client(origin, scope, generation)?
+    let key = report_export_key(scope.as_str(), generation)?;
+    log_submit("submitting report export", generation, key.as_str());
+    let Json(reply) = report_client(origin, key)?
         .run(Json(ReportRequest {
             scope: Some(scope.as_str().to_string()),
         }))
@@ -141,35 +104,47 @@ pub(super) async fn report_with_generation(
         .map_err(ingress::error)?
         .into_body()
         .map_err(ingress::error)?;
-    Ok(ReportSummary {
+    Ok(summarize_report(reply, generation))
+}
+
+fn bests_request(
+    scope: report::Scope,
+    grad_year: Option<i16>,
+    limit: Option<usize>,
+) -> BestsRequest {
+    BestsRequest {
+        scope: Some(scope.as_str().to_string()),
+        grad_year,
+        limit,
+    }
+}
+fn summarize_report(reply: ReportReply, generation: &ExportGeneration) -> ReportSummary {
+    let ReportReply {
+        scope,
+        json_path,
+        csv_path,
+        totals,
+        generated_on,
+    } = reply;
+    let summary = ReportSummary {
         scope,
         json_path,
         csv_path,
         totals,
         generation: generation.as_str().to_string(),
         generated_on,
-    })
-    .inspect(|summary| {
-        tracing::info!(
-            generation = summary.generation.as_str(),
-            generated_on = summary.generated_on.as_str(),
-            scope = summary.scope.as_str(),
-            json_path = summary.json_path.as_str(),
-            "report export complete"
-        );
-    })
+    };
+    tracing::info!(
+        generation = summary.generation.as_str(),
+        generated_on = summary.generated_on.as_str(),
+        scope = summary.scope.as_str(),
+        json_path = summary.json_path.as_str(),
+        "report export complete"
+    );
+    summary
 }
 
 pub(super) async fn bests(
-    origin: Option<&str>,
-    scope: report::Scope,
-    grad_year: Option<i16>,
-    limit: Option<usize>,
-) -> Result<BestsReply> {
-    bests_with_generation(origin, scope, grad_year, limit, &export_generation()?).await
-}
-
-pub(super) async fn bests_with_generation(
     origin: Option<&str>,
     scope: report::Scope,
     grad_year: Option<i16>,
@@ -178,17 +153,10 @@ pub(super) async fn bests_with_generation(
 ) -> Result<BestsReply> {
     let year = grad_year.map_or_else(|| "all".to_string(), |year| year.to_string());
     let limit_text = limit.map_or_else(|| "all".to_string(), |limit| limit.to_string());
-    tracing::info!(
-        generation = generation.as_str(),
-        key = bests_export_key(scope.as_str(), &year, &limit_text, generation).as_str(),
-        "submitting bests export"
-    );
-    let request = BestsRequest {
-        scope: Some(scope.as_str().to_string()),
-        grad_year,
-        limit,
-    };
-    let Json(reply) = bests_client(origin, scope, grad_year, limit, generation)?
+    let key = bests_export_key(scope.as_str(), &year, &limit_text, generation)?;
+    log_submit("submitting bests export", generation, key.as_str());
+    let request = bests_request(scope, grad_year, limit);
+    let Json(reply) = bests_client(origin, key)?
         .run(Json(request))
         .call()
         .await
@@ -201,8 +169,11 @@ pub(super) async fn bests_with_generation(
 pub(super) async fn workbook(
     origin: Option<&str>,
     request: WorkbookRequest,
+    generation: &ExportGeneration,
 ) -> Result<WorkbookReply> {
-    let Json(reply) = workbook_client(origin, &request)?
+    let key = workbook_request_key(&request, generation)?;
+    log_submit("submitting workbook export", generation, key.as_str());
+    let Json(reply) = workbook_client(origin, key)?
         .run(Json(request))
         .call()
         .await
@@ -259,36 +230,10 @@ pub(super) async fn drive_states(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use census_service::restate_services::reject_offline_generation;
     use census_service::restate_services::DEFAULT_GENERATION;
 
     type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
-
-    struct ExportGenerationGuard {
-        previous: Option<String>,
-    }
-
-    impl ExportGenerationGuard {
-        fn set(value: &str) -> Self {
-            let previous = std::env::var("CENSUS_EXPORT_GENERATION").ok();
-            std::env::set_var("CENSUS_EXPORT_GENERATION", value);
-            Self { previous }
-        }
-
-        fn clear() -> Self {
-            let previous = std::env::var("CENSUS_EXPORT_GENERATION").ok();
-            std::env::remove_var("CENSUS_EXPORT_GENERATION");
-            Self { previous }
-        }
-    }
-
-    impl Drop for ExportGenerationGuard {
-        fn drop(&mut self) {
-            match &self.previous {
-                Some(value) => std::env::set_var("CENSUS_EXPORT_GENERATION", value),
-                None => std::env::remove_var("CENSUS_EXPORT_GENERATION"),
-            }
-        }
-    }
 
     #[test]
     fn the_default_generation_matches_the_legacy_constant() -> TestResult {
@@ -307,19 +252,25 @@ mod tests {
     fn identical_semantic_requests_with_one_generation_share_retry_keys() -> TestResult {
         let generation = ExportGeneration::default_generation();
         assert_eq!(
-            report_export_key("core", &generation),
-            report_export_key("core", &generation)
+            report_export_key("core", &generation)?,
+            report_export_key("core", &generation)?
         );
-        assert_eq!(report_export_key("core", &generation), "report:core:1");
         assert_eq!(
-            bests_export_key("all", "2027", "50", &generation),
-            bests_export_key("all", "2027", "50", &generation)
+            report_export_key("core", &generation)?.as_str(),
+            "report:core:1"
+        );
+        assert_eq!(
+            bests_export_key("all", "2027", "50", &generation)?,
+            bests_export_key("all", "2027", "50", &generation)?
         );
         assert_eq!(
             consolidate_export_key(&generation),
             consolidate_export_key(&generation)
         );
-        assert_eq!(consolidate_export_key(&generation), "consolidate:1");
+        assert_eq!(
+            consolidate_export_key(&generation).as_str(),
+            "consolidate:1"
+        );
         Ok(())
     }
 
@@ -328,13 +279,13 @@ mod tests {
         let previous = ExportGeneration::default_generation();
         let next = ExportGeneration::parse("2")?;
         assert_ne!(
-            report_export_key("core", &previous),
-            report_export_key("core", &next)
+            report_export_key("core", &previous)?,
+            report_export_key("core", &next)?
         );
-        assert_eq!(report_export_key("core", &next), "report:core:2");
+        assert_eq!(report_export_key("core", &next)?.as_str(), "report:core:2");
         assert_ne!(
-            bests_export_key("core", "2027", "all", &previous),
-            bests_export_key("core", "2027", "all", &next)
+            bests_export_key("core", "2027", "all", &previous)?,
+            bests_export_key("core", "2027", "all", &next)?
         );
         assert_ne!(
             consolidate_export_key(&previous),
@@ -364,23 +315,81 @@ mod tests {
     }
 
     #[test]
-    fn the_environment_selector_drives_export_generation() -> TestResult {
-        {
-            let _guard = ExportGenerationGuard::clear();
-            assert_eq!(export_generation()?.as_str(), DEFAULT_GENERATION);
-        }
-        {
-            let _guard = ExportGenerationGuard::set("7");
-            assert_eq!(export_generation()?.as_str(), "7");
-            assert_eq!(
-                report_export_key("core", &export_generation()?),
-                "report:core:7"
-            );
-        }
-        {
-            let _guard = ExportGenerationGuard::set("bad/generation");
-            assert!(export_generation().is_err());
-        }
+    fn workbook_keys_follow_the_selected_generation() -> TestResult {
+        let request = WorkbookRequest {
+            grad_year: Some(2027),
+            limit: Some(50),
+            scope: Some("core".to_string()),
+            out: Some("/tmp/root-a".to_string()),
+            school_year: Some(2026),
+        };
+        let legacy = ExportGeneration::default_generation();
+        assert_eq!(
+            workbook_request_key(&request, &legacy)?.as_str(),
+            "workbook:2027:core:50:/tmp/root-a:2026:1"
+        );
+        let next = ExportGeneration::parse("2")?;
+        assert_eq!(
+            workbook_request_key(&request, &next)?.as_str(),
+            "workbook:2027:core:50:/tmp/root-a:2026:2"
+        );
+        assert_ne!(
+            workbook_request_key(&request, &legacy)?,
+            workbook_request_key(&request, &next)?,
+            "a fresh generation must not reattach the legacy workflow"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn the_generation_resolver_defaults_without_a_flag() -> TestResult {
+        assert_eq!(
+            ExportGeneration::resolve(None)?.as_str(),
+            DEFAULT_GENERATION
+        );
+        assert_eq!(ExportGeneration::resolve(Some("7"))?.as_str(), "7");
+        assert!(ExportGeneration::resolve(Some("bad/generation")).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn export_keys_refuse_colon_parts_on_every_builder() -> TestResult {
+        let generation = ExportGeneration::default_generation();
+        check!(
+            report_export_key("co:re", &generation).is_err(),
+            "a colon scope must not shift the report key segments"
+        );
+        check!(
+            report_export_key("", &generation).is_err(),
+            "an empty scope must not collapse the report key grammar"
+        );
+        check!(
+            bests_export_key("a:ll", "2027", "50", &generation).is_err(),
+            "a colon scope must not shift the bests key segments"
+        );
+        check!(
+            bests_export_key("all", "20:27", "50", &generation).is_err(),
+            "a colon year must not shift the bests key segments"
+        );
+        check!(
+            bests_export_key("all", "2027", "5:0", &generation).is_err(),
+            "a colon limit must not shift the bests key segments"
+        );
+        check!(
+            bests_export_key("all", "2027", "", &generation).is_err(),
+            "an empty limit must not collapse the bests key grammar"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn offline_routes_refuse_an_explicit_generation() -> TestResult {
+        assert!(reject_offline_generation(None).is_ok());
+        let refused = reject_offline_generation(Some("2"));
+        check!(
+            refused.is_err(),
+            "an offline route must not silently ignore a requested generation"
+        );
         Ok(())
     }
 }

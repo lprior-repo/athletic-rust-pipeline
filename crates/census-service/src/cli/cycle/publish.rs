@@ -8,6 +8,7 @@ use census_store::Store;
 
 use super::RunArgs;
 use crate::cli::live;
+use census_service::restate_services::ExportGeneration;
 
 pub(super) fn publish_scope_with(
     dataset: &ExportDataset,
@@ -52,8 +53,12 @@ pub(super) fn publish_bests_and_workbook_with(
     Ok(())
 }
 
-pub(super) async fn publish_scope_live(origin: &str, scope: report::Scope) -> Result<()> {
-    let summary = live::report(Some(origin), scope).await?;
+pub(super) async fn publish_scope_live(
+    origin: &str,
+    scope: report::Scope,
+    generation: &ExportGeneration,
+) -> Result<()> {
+    let summary = live::report(Some(origin), scope, generation).await?;
     println!(
         "report\t{}\tscope={} schools={} athletes={} profile_url={} multisource={}",
         summary.json_path,
@@ -73,6 +78,7 @@ pub(super) async fn publish_bests_and_workbook_live(
     scope: report::Scope,
     grad_year: i16,
     school_year: SchoolYear,
+    generation: &ExportGeneration,
 ) -> Result<()> {
     let workbook = WorkbookRequest {
         grad_year: Some(grad_year),
@@ -84,7 +90,7 @@ pub(super) async fn publish_bests_and_workbook_live(
         scope: Some(scope.as_str().to_string()),
         school_year: Some(school_year.get()),
     };
-    let WorkbookReply { path, .. } = live::workbook(Some(origin), workbook).await?;
+    let WorkbookReply { path, .. } = live::workbook(Some(origin), workbook, generation).await?;
     println!("workbook\t{path}");
     Ok(())
 }

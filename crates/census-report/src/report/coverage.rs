@@ -141,22 +141,29 @@ pub fn coverage_report(
     Ok(report)
 }
 
-fn pr_supported_athletes(dataset: &ExportDataset, grad_year: Option<i16>) -> HashSet<String> {
-    crate::bests::build_from_dataset(
+fn apply_pr_support(report: &mut CoverageReport, dataset: &ExportDataset, grad_year: Option<i16>) {
+    let bests = crate::bests::build_from_dataset(
         dataset,
         &crate::bests::Options {
             scope: Scope::AllSources,
             grad_year,
             limit: None,
         },
-    )
-    .iter()
-    .map(|selection| selection.athlete_id().as_str().to_string())
-    .collect()
+    );
+    let supported: HashSet<&str> = bests
+        .iter()
+        .map(|selection| selection.athlete_id().as_str())
+        .collect();
+    tally_pr_support(report, dataset, grad_year, &supported);
+    write_pr_gaps(report);
 }
 
-fn apply_pr_support(report: &mut CoverageReport, dataset: &ExportDataset, grad_year: Option<i16>) {
-    let supported = pr_supported_athletes(dataset, grad_year);
+fn tally_pr_support(
+    report: &mut CoverageReport,
+    dataset: &ExportDataset,
+    grad_year: Option<i16>,
+    supported: &HashSet<&str>,
+) {
     let school_state = state::school_state_index(dataset.schools.values());
     let athletes =
         super::derivation::collapse_athletes(&dataset.athletes, &dataset.canonical_aliases);
@@ -168,35 +175,39 @@ fn apply_pr_support(report: &mut CoverageReport, dataset: &ExportDataset, grad_y
             continue;
         }
         let bucket = state::jurisdiction_of(&school_state, athlete.school.as_str());
-        if let Some(row) = report
-            .jurisdictions
-            .iter_mut()
-            .find(|row| row.jurisdiction == bucket)
-        {
-            row.with_pr_support = row.with_pr_support.saturating_add(1);
-        }
-    }
-    for row in &report.jurisdictions {
-        refresh_pr_gap(row, &mut report.gaps);
+        bump_pr_support(report, bucket);
     }
 }
 
-fn refresh_pr_gap(row: &JurisdictionCoverage, gaps: &mut Vec<CoverageGap>) {
-    let count = row.with_performance.saturating_sub(row.with_pr_support);
-    if let Some(gap) = gaps
+fn bump_pr_support(report: &mut CoverageReport, bucket: JurisdictionBucket) {
+    if let Some(row) = report
+        .jurisdictions
         .iter_mut()
-        .find(|gap| gap.jurisdiction == row.jurisdiction && gap.class == GapClass::MissingPrSupport)
+        .find(|row| row.jurisdiction == bucket)
     {
-        gap.count = count;
-    } else if count > 0 {
-        gaps.push(CoverageGap {
-            jurisdiction: row.jurisdiction,
-            class: GapClass::MissingPrSupport,
-            unit: GapClass::MissingPrSupport.unit(),
-            count,
-        });
+        row.with_pr_support = row.with_pr_support.saturating_add(1);
     }
-    gaps.retain(|gap| gap.class != GapClass::MissingPrSupport || gap.count > 0);
+}
+
+fn write_pr_gaps(report: &mut CoverageReport) {
+    for row in &report.jurisdictions {
+        let count = row.with_performance.saturating_sub(row.with_pr_support);
+        match report.gaps.iter_mut().find(|gap| {
+            gap.jurisdiction == row.jurisdiction && gap.class == GapClass::MissingPrSupport
+        }) {
+            Some(gap) => gap.count = count,
+            None if count > 0 => report.gaps.push(CoverageGap {
+                jurisdiction: row.jurisdiction,
+                class: GapClass::MissingPrSupport,
+                unit: GapClass::MissingPrSupport.unit(),
+                count,
+            }),
+            None => {}
+        }
+    }
+    report
+        .gaps
+        .retain(|gap| gap.class != GapClass::MissingPrSupport || gap.count > 0);
 }
 
 fn add(total: &mut usize, value: usize) {

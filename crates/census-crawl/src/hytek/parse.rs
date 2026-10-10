@@ -1,6 +1,6 @@
 use crate::result_file::{ParsedRow, RelayLeg};
 use crate::{CrawlError, CrawlResult};
-use census_domain::model::{EventKind, Grade, TimingMethod};
+use census_domain::model::{EventKind, Grade, Mark, TimingMethod};
 use regex::Regex;
 use std::sync::LazyLock;
 
@@ -117,22 +117,19 @@ impl Section {
     fn heat(&self, tokens: &[Token<'_>]) -> Option<String> {
         ["H#", "Flight", "Lane"].iter().find_map(|label| {
             let column = self.column(label)?;
-            let edge = column.end.saturating_add(1);
-            let previous_end = self
+            let right = self
                 .columns
                 .iter()
-                .filter(|other| other.start < column.start)
-                .map(|other| other.end)
-                .max()
-                .unwrap_or_default();
-            let trailing = !self.columns.iter().any(|other| other.start > column.start);
+                .filter(|other| other.start > column.start)
+                .map(|other| other.start)
+                .min();
             tokens
                 .iter()
                 .filter(|token| {
                     token.start >= column.start
-                        && token.end <= edge
-                        && (token.end.saturating_add(1) >= column.end
-                            || (trailing && token.end > previous_end))
+                        && token.start <= column.end.saturating_add(HEAT_START_SLOP)
+                        && token.end <= token.start.saturating_add(MAX_HEAT_WIDTH)
+                        && right.is_none_or(|edge| token.end <= edge)
                         && heat_token(token.text)
                 })
                 .min_by_key(|token| column.end.abs_diff(token.end))
@@ -154,10 +151,18 @@ impl Section {
     }
 }
 
+const HEAT_START_SLOP: usize = 8;
+
+const MAX_HEAT_WIDTH: usize = 2;
+
 fn heat_token(text: &str) -> bool {
-    !text.is_empty()
-        && (text.chars().all(|ch| ch.is_ascii_digit())
-            || (text.len() == 1 && text.chars().all(|ch| ch.is_ascii_alphabetic())))
+    if text.is_empty() {
+        return false;
+    }
+    if text.chars().all(|ch| ch.is_ascii_digit()) {
+        return true;
+    }
+    text.len() == 1 && text.bytes().all(|byte| byte.is_ascii_alphabetic())
 }
 
 pub(super) fn starts_like_a_row(trimmed: &str) -> bool {
@@ -174,11 +179,7 @@ pub(super) fn parse_row(line: &str, kind: &EventKind, section: &Section) -> Opti
     let heat = section.heat(&tokens);
     let points = section.points(&tokens);
     let wind = section.wind(&tokens);
-    let timing = if time_is_hand(mark_text) {
-        Some(TimingMethod::Hand)
-    } else {
-        None
-    };
+    let timing = time_is_hand(mark_text).then_some(TimingMethod::Hand);
 
     Some(ParsedRow {
         place,
@@ -263,8 +264,7 @@ fn row_identity(
     let place = row_place(tokens, first_column_start);
     let name_start = section.column("Name").map(|column| column.start);
     let school_start = school_column_start(section, name_start)?;
-    let (mut school, mut name) =
-        school_and_name(line, tokens, section, school_start, name_start);
+    let (mut school, mut name) = school_and_name(line, tokens, section, school_start, name_start);
     let mut grade = row_grade(tokens, section);
     if name_start.is_none() {
         if let Some((athlete, row_grade, school_label)) = individual_identity(&school) {

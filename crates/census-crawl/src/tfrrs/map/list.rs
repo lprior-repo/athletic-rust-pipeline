@@ -131,11 +131,7 @@ impl<'a> Absorb<'a> {
             self.stats.rows_without_meet = self.stats.rows_without_meet.saturating_add(1);
             return None;
         };
-        let Some(mark) = row
-            .mark
-            .as_ref()
-            .and_then(|mark| mark_of(mark, row.conv_metres))
-        else {
+        let Some(mark) = row.mark.as_ref().map(|mark| mark_of(mark, row.conv_metres)) else {
             self.stats.rows_without_mark = self.stats.rows_without_mark.saturating_add(1);
             return None;
         };

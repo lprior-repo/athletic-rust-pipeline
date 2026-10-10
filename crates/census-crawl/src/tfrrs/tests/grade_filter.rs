@@ -40,6 +40,7 @@ struct CohortSnapshot {
     athletes: String,
     performances: String,
     observations: String,
+    raw_observations: String,
     grades_note: String,
     rows: u64,
 }
@@ -100,6 +101,7 @@ fn collect_snapshot(url: &str) -> TestResult<CohortSnapshot> {
                 athletes: normalized(&serde_json::to_string(&athletes)?),
                 performances: normalized(&serde_json::to_string(&performances)?),
                 observations: normalized(&serde_json::to_string(&observations)?),
+                raw_observations: serde_json::to_string(&observations)?,
                 grades_note,
                 rows: report.rows,
             })
@@ -142,6 +144,16 @@ fn tfrrs_grade_less_row_ignores_query_year_filter() -> TestResult {
         check!(
             !snapshot.athletes.contains("9076667"),
             "{label}: the grade-less pole-vault row stays out of canonical athletes"
+        );
+    }
+    check!(
+        !plain.raw_observations.contains("?year="),
+        "the unfiltered run records no filter in its provenance"
+    );
+    for (label, snapshot, filter) in [("JR", &junior, "?year=JR"), ("SR", &senior, "?year=SR")] {
+        check!(
+            snapshot.raw_observations.contains(filter),
+            "{label}: provenance keeps the request filter even though identities must not"
         );
     }
     Ok(())
