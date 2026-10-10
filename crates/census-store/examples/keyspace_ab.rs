@@ -156,7 +156,7 @@ fn stream_rows(
             batch.insert(space, key, value);
             held
         } else {
-            batch.remove(space, keyed(shape.table, shape.second, index));
+            batch.remove(space, keyed(shape.table, index, shape.second));
             0
         };
         if let Ok(size) = u64::try_from(held) {
@@ -178,7 +178,8 @@ fn point_reads(
     let start = Instant::now();
     for _ in 0..ID_SPAN {
         let id = rng().wrapping_rem(ID_SPAN);
-        if let Err(error) = snapshot.get(space, keyed(shape.table, shape.second, id)) {
+        let key = keyed(shape.table, id, shape.second);
+        if let Err(error) = snapshot.get(space, key) {
             return Err(fault("read error", error));
         }
     }

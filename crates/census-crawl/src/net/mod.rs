@@ -43,6 +43,7 @@ const REQUEST_TIMEOUT_SECS: u64 = 45;
 const MIN_AUTHORIZED_DELAY: Duration = Duration::from_millis(500);
 
 pub const BLOCK_COOLDOWN_SECONDS: u64 = 6 * 60 * 60;
+pub const SHORT_COOLDOWN_SECONDS: u64 = 60;
 
 pub const MAX_EVIDENCE_LOSSES: usize = 4096;
 
@@ -159,6 +160,9 @@ impl Fetcher {
         let host = host.trim().to_ascii_lowercase();
         let cooldown_until = match kind {
             AccessBlockKind::HumanRequired => None,
+            AccessBlockKind::RateLimited if retry_after_seconds.is_none() => {
+                Some(cooldown_until_iso8601(SHORT_COOLDOWN_SECONDS))
+            }
             _ => Some(cooldown_until_iso8601(
                 retry_after_seconds.map_or(BLOCK_COOLDOWN_SECONDS, |value| value),
             )),

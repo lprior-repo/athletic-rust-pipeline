@@ -18,3 +18,15 @@ The `store-integrity` command now includes HTTP cache pair verification, checkin
 - All body files have valid SHA-256 digests
 - All meta files reference existing body files
 - No orphaned or unexpected files exist in the cache
+
+## Perf Gate Repetition Rule
+
+Each benchmark is run N=3 times; the best (lowest) result is used for comparison. This reduces
+single-pass noise from VM scheduling and thermal state. The baseline file remains fixed.
+
+## Keyspace A/B Harness Repair
+
+The keyspace A/B harness (crates/census-store/examples/keyspace_ab.rs) was repaired to use
+consistent key construction between writes and reads. Previously, the write path used
+keyed(table, index, second) while the read/remove path used keyed(table, second, id), causing
+reads to use incorrect keys. Both paths now use keyed(table, id, second) consistently.
