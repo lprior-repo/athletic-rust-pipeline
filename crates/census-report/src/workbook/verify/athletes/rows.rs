@@ -30,9 +30,7 @@ impl Verifier<'_, '_> {
             Value::text(&athlete.canonical_name),
             Value::text(athlete.gender.stable_key()),
             Value::integer(i64::from(athlete.grad_year.get())),
-            Value::optional(
-                cells::newest_observation(athlete).map(|grade| grade.school_year.short()),
-            ),
+            Value::optional(cells::observed_season(athlete).map(|year| year.short())),
             Value::text(self.expectations.school_state(school)),
             Value::text(self.expectations.school_name(school)),
             Value::text(self.expectations.school_id(school)),

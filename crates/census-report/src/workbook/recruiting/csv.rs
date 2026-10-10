@@ -3,7 +3,7 @@ use std::path::Path;
 
 use census_domain::model::{CanonicalAthlete, CanonicalSchool, SchoolYear};
 
-use super::contact::{contacts, scoped, SchoolContacts};
+use super::contact::{attach_research, contacts, scoped, SchoolContacts};
 use crate::csv_safety::protect_owned;
 use crate::report::{Derivation, ReportError, ReportResult};
 
@@ -84,6 +84,15 @@ fn write_athletes(
     Ok(counts)
 }
 
+fn researched_contacts(
+    derivation: &Derivation<'_>,
+    school_year: SchoolYear,
+) -> BTreeMap<String, SchoolContacts> {
+    let mut contacts = contacts(derivation.coach_observations(), school_year);
+    attach_research(&mut contacts, derivation.schools(), school_year);
+    contacts
+}
+
 struct CsvProjection<'a> {
     schools: HashMap<&'a str, &'a CanonicalSchool>,
     contacts: BTreeMap<String, SchoolContacts>,
@@ -98,7 +107,7 @@ impl<'a> CsvProjection<'a> {
                 .iter()
                 .map(|school| (school.id.as_str(), school))
                 .collect(),
-            contacts: contacts(derivation.coach_observations(), school_year),
+            contacts: researched_contacts(derivation, school_year),
             school_address: crate::export::postal::athlete_address_index(
                 derivation.dataset(),
                 derivation.athletes(),

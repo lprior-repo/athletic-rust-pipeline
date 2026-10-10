@@ -7,12 +7,14 @@ mod tests;
 
 use std::collections::BTreeSet;
 
-use census_domain::model::{CanonicalAthlete, CanonicalCoach, Gender, SchoolYear, Sport};
+use census_domain::model::{
+    CanonicalAthlete, CanonicalCoach, ContactResearchOutcome, Gender, SchoolYear, Sport,
+};
 use heads::Outcome;
 
 pub(in crate::workbook) use normalise::{Named, Preferred};
 pub(in crate::workbook) use provenance::ContactProvenance;
-pub(in crate::workbook) use school::{contacts, SchoolContacts};
+pub(in crate::workbook) use school::{attach_research, contacts, SchoolContacts};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::workbook) enum ContactState {
@@ -24,6 +26,8 @@ pub(in crate::workbook) enum ContactState {
     AdNameOnly,
     ContactConflict,
     ContactResearchUnknown,
+    ContactResearchEmpty,
+    ContactResearchBlocked,
     ContactTenureConflict,
     ContactEvidenceInvalid,
 }
@@ -39,6 +43,8 @@ impl ContactState {
             Self::AdNameOnly => "ad_name_only",
             Self::ContactConflict => "contact_conflict",
             Self::ContactResearchUnknown => "contact_research_unknown",
+            Self::ContactResearchEmpty => "contact_research_empty",
+            Self::ContactResearchBlocked => "contact_research_blocked",
             Self::ContactTenureConflict => "contact_tenure_conflict",
             Self::ContactEvidenceInvalid => "contact_evidence_invalid",
         }
@@ -98,6 +104,7 @@ pub(in crate::workbook) struct ScopedContacts<'a> {
     director: &'a Outcome,
     assistants: &'a [Named],
     athlete: &'a CanonicalAthlete,
+    research: ContactResearchOutcome,
 }
 
 pub(in crate::workbook) fn scoped<'a>(
@@ -116,6 +123,9 @@ pub(in crate::workbook) fn scoped<'a>(
             .map(|school| school.assistants.as_slice())
             .map_or(&[][..], |value| value),
         athlete,
+        research: school.map_or(ContactResearchOutcome::Unattempted, |school| {
+            school.research.clone()
+        }),
     }
 }
 
@@ -189,8 +199,24 @@ impl ScopedContacts<'_> {
         Preferred::unnamed(
             self.director
                 .blocker()
-                .map_or(ContactState::ContactResearchUnknown, |value| value),
+                .map_or(self.research_state(), |value| value),
         )
+    }
+
+    fn research_state(&self) -> ContactState {
+        match self.research {
+            ContactResearchOutcome::CompletedEmpty => ContactState::ContactResearchEmpty,
+            ContactResearchOutcome::Blocked
+            | ContactResearchOutcome::Failed
+            | ContactResearchOutcome::Partial
+            | ContactResearchOutcome::Exhausted
+            | ContactResearchOutcome::Stale
+            | ContactResearchOutcome::Ambiguous
+            | ContactResearchOutcome::Conflict => ContactState::ContactResearchBlocked,
+            ContactResearchOutcome::Unattempted | ContactResearchOutcome::CompletedClaims => {
+                ContactState::ContactResearchUnknown
+            }
+        }
     }
 
     pub(in crate::workbook) fn track_names(&self) -> Option<String> {

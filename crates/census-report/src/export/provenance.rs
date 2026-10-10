@@ -5,8 +5,13 @@ use census_domain::model::{
 };
 
 pub fn coach_source(coach: &CanonicalCoach) -> (Option<&str>, Option<&str>) {
-    let newest = newest_coach_evidence(coach);
-    if let Some(evidence) = newest {
+    if let Some(fact) = newest_tenure_evidence(coach) {
+        return (
+            fact.source.url.as_deref(),
+            Some(fact.retrieved_at.as_str()).filter(|date| !date.trim().is_empty()),
+        );
+    }
+    if let Some(evidence) = newest_coach_evidence(coach) {
         return (
             evidence.source.url.as_deref(),
             Some(evidence.observed_on.as_str()).filter(|date| !date.is_empty()),
@@ -21,6 +26,25 @@ pub fn coach_source(coach: &CanonicalCoach) -> (Option<&str>, Option<&str>) {
             .max(),
         None,
     )
+}
+
+fn newest_tenure_evidence(coach: &CanonicalCoach) -> Option<&CoachTenureEvidence> {
+    coach
+        .tenure_evidence
+        .iter()
+        .filter(|fact| {
+            fact.source
+                .url
+                .as_deref()
+                .is_some_and(|url| !url.trim().is_empty())
+        })
+        .max_by_key(|fact| {
+            (
+                fact.retrieved_at.as_str(),
+                fact.source.url.as_deref(),
+                fact.source_sha256.as_str(),
+            )
+        })
 }
 
 fn newest_coach_evidence(coach: &CanonicalCoach) -> Option<&census_domain::model::Evidence> {

@@ -6,7 +6,7 @@ use std::io::Read;
 use std::path::Path;
 
 const MAX_ARTIFACT_BYTES: u64 = crate::export::MAX_FROZEN_INPUT_BYTES;
-pub(super) const MAX_BUNDLE_BYTES: u64 = 16 * 1024 * 1024 * 1024;
+pub(super) const MAX_BUNDLE_BYTES: u64 = 256 * 1024 * 1024 * 1024;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

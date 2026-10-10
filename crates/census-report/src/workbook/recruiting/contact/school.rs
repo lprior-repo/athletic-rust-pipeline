@@ -1,6 +1,9 @@
 use std::collections::BTreeMap;
 
-use census_domain::model::{CanonicalCoach, CoachRole, Gender, SchoolId, SchoolYear};
+use census_domain::model::{
+    CanonicalCoach, CanonicalSchool, CoachRole, ContactResearchOutcome, ContactResearchSubject,
+    Gender, SchoolId, SchoolYear,
+};
 
 use super::heads::{individuals, HeadScope, Heads};
 use super::{Named, Slot};
@@ -10,6 +13,7 @@ pub(in crate::workbook) struct SchoolContacts {
     pub(super) school: SchoolId,
     pub(in crate::workbook::recruiting) heads: Heads,
     pub(super) assistants: Vec<Named>,
+    pub(super) research: ContactResearchOutcome,
 }
 
 impl SchoolContacts {
@@ -91,8 +95,48 @@ impl<'a> Buckets<'a> {
             school: school.clone(),
             heads,
             assistants: individuals(&self.assistants, school_year),
+            research: ContactResearchOutcome::Unattempted,
         }
     }
+}
+
+pub(in crate::workbook) fn attach_research(
+    contacts: &mut BTreeMap<String, SchoolContacts>,
+    schools: &[CanonicalSchool],
+    school_year: SchoolYear,
+) {
+    for school in schools {
+        let outcome = research_outcome(school, school_year);
+        match contacts.entry(school.id.as_str().to_owned()) {
+            std::collections::btree_map::Entry::Occupied(mut slot) => {
+                slot.get_mut().research = outcome;
+            }
+            std::collections::btree_map::Entry::Vacant(slot)
+                if outcome != ContactResearchOutcome::Unattempted =>
+            {
+                slot.insert(SchoolContacts {
+                    school: school.id.clone(),
+                    heads: Heads::default(),
+                    assistants: Vec::new(),
+                    research: outcome,
+                });
+            }
+            std::collections::btree_map::Entry::Vacant(_) => {}
+        }
+    }
+}
+
+fn research_outcome(school: &CanonicalSchool, school_year: SchoolYear) -> ContactResearchOutcome {
+    school
+        .contact_research
+        .iter()
+        .filter(|research| research.school_year == school_year)
+        .filter_map(|research| match research.subject {
+            ContactResearchSubject::Program(_) => Some(research.outcome.clone()),
+            ContactResearchSubject::SchoolMailbox(_) => None,
+        })
+        .reduce(ContactResearchOutcome::combine)
+        .unwrap_or(ContactResearchOutcome::Unattempted)
 }
 
 fn role_slot(coach: &CanonicalCoach) -> Option<(Slot, Gender)> {

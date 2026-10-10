@@ -79,7 +79,7 @@ impl<W: Write> Write for BudgetWriter<W> {
         let requested = u64::try_from(bytes.len()).map_err(std::io::Error::other)?;
         if requested > self.remaining {
             return Err(std::io::Error::other(
-                "frozen export input exceeds 8 GiB budget",
+                "frozen export input exceeds its byte budget",
             ));
         }
         let written = self.inner.write(bytes)?;

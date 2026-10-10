@@ -293,6 +293,17 @@ against the frozen evidence, durably finalize the bundle, then atomically switch
 reference. Fence stale exporters; keep the previous valid bundle on failure. A file rename alone
 is not multi-artifact atomic publication. XLSX byte equality alone is not semantic correctness.
 
+Published cells distinguish an absent observation from a measured zero. A count column publishes its
+integer, including zero, because a count of zero is meaningful; a mark, measurement, profile URL,
+website or GPA column publishes blank until a compatible observation exists, and never a zero that
+reads as missing data. Columns whose blocking source is not yet collected stay in the Athletes sheet
+and `recruiting.csv` as blanks by stated decision, not as regressions: `1 Mile (s)` and `5000m (s)`
+(no mile or genuine track 5000 m mark in the seven collected states; cross-country surface marks
+publish under `XC (s)`), `School Athletics URL`/`athletics_website` (no school athletics website
+source), `Public Recruiting GPA` and `GPA Source` (no GPA source), and
+`Athletic.net URL`/`athleticnet_url` and `Other profile URLs` (no athletic.net profile capture).
+Filling one of these columns requires the named source, not a derived or default value.
+
 ## 10. Engineering standards (§37-§43)
 
 - **Zero code comments:** no line/block/doc comments or prose documentation attributes in

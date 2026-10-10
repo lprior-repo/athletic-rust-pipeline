@@ -714,7 +714,11 @@ renders into owned staging, hashes the exact artifact inventory, independently r
 workbook cell and sidecar record, and checks the source fence while switching `current` atomically.
 Completed generations live under `generations/<generation-digest>/`; failed staging and temporary
 pointers are removed without deleting completed or historical generations. Frozen inputs and
-individual artifacts are capped at 8 GiB; the complete artifact inventory is capped at 16 GiB.
+individual artifacts are capped at 200 GiB and the complete artifact inventory at 256 GiB (raised
+from 8/16 GiB on 2026-10-09: run 01's partial census already wrote a 6.08 GiB frozen input, 76% of
+the old bound, while a full 49-jurisdiction run adds complete rosters and the four-season results
+walk, so the old bound would have refused the product's own delivery — `athletic-rust-pipeline-ec2n`).
+The bound guards disk; the memory each readback route needs is recorded under the seal limit below.
 
 ```sh
 census-service workbook --ingress http://127.0.0.1:18095/ --out <publication-root> --grad-year 2027

@@ -1,10 +1,15 @@
 use census_domain::model::{
-    CanonicalAthlete, CanonicalCoach, CoachContactClaim, CoachContactProgram, CoachRole,
-    CoachTenure, CoachTenureEvidence, Gender, GradYear, SchoolId, SchoolYear, SourceIdentity,
+    CanonicalAthlete, CanonicalCoach, CanonicalSchool, CoachContactClaim, CoachContactProgram,
+    CoachRole, CoachTenure, CoachTenureEvidence, ContactResearch, ContactResearchOutcome,
+    ContactResearchSubject, Gender, GradYear, SchoolId, SchoolYear, SourceIdentity,
     SourceNamespace, SourceRef, Sport,
 };
+use census_domain::UsJurisdiction;
+use std::collections::BTreeMap;
 
-use super::{contacts, normalise::role_label, scoped, ContactState, Preferred, Slot};
+use super::{
+    attach_research, contacts, normalise::role_label, scoped, ContactState, Preferred, Slot,
+};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -225,6 +230,86 @@ fn personal_director_address_never_enters_a_professional_coach_column() -> TestR
     check!(eq; scope.professional_coach_email(), None);
     check!(eq; scope.director().ok_or("missing director")?.email, None);
     Ok(())
+}
+
+#[test]
+fn research_outcomes_distinguish_empty_blocked_and_unattempted() -> TestResult {
+    let athlete = athlete();
+    for (outcome, expected) in [
+        (
+            ContactResearchOutcome::CompletedEmpty,
+            ContactState::ContactResearchEmpty,
+        ),
+        (
+            ContactResearchOutcome::Blocked,
+            ContactState::ContactResearchBlocked,
+        ),
+        (
+            ContactResearchOutcome::Failed,
+            ContactState::ContactResearchBlocked,
+        ),
+        (
+            ContactResearchOutcome::Exhausted,
+            ContactState::ContactResearchBlocked,
+        ),
+        (
+            ContactResearchOutcome::Stale,
+            ContactState::ContactResearchBlocked,
+        ),
+        (
+            ContactResearchOutcome::CompletedClaims,
+            ContactState::ContactResearchUnknown,
+        ),
+        (
+            ContactResearchOutcome::Unattempted,
+            ContactState::ContactResearchUnknown,
+        ),
+    ] {
+        let mut bucket = BTreeMap::new();
+        attach_research(&mut bucket, &[researched_school(outcome.clone())?], year()?);
+        check!(eq; scoped(bucket.get(school().as_str()), &athlete).preferred().state, expected, "{outcome:?}");
+    }
+    let mut prior_season = BTreeMap::new();
+    attach_research(
+        &mut prior_season,
+        &[researched_school(ContactResearchOutcome::Blocked)?],
+        SchoolYear::new(2025).ok_or("invalid fixture season")?,
+    );
+    check!(eq; scoped(prior_season.get(school().as_str()), &athlete).preferred().state,
+    ContactState::ContactResearchUnknown);
+    check!(eq; scoped(None, &athlete).preferred().state,
+    ContactState::ContactResearchUnknown);
+    let coach = head("Named coach", Sport::OutdoorTrack, Gender::Boys)?;
+    let mut named = contacts(&[coach], year()?);
+    attach_research(
+        &mut named,
+        &[researched_school(ContactResearchOutcome::Blocked)?],
+        year()?,
+    );
+    check!(eq; scoped(named.get(school().as_str()), &athlete).preferred().state,
+    ContactState::CoachNameOnly);
+    Ok(())
+}
+
+fn researched_school(outcome: ContactResearchOutcome) -> TestResult<CanonicalSchool> {
+    let (mut record, _) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Synthetic School",
+        "synthetic school",
+        None,
+    );
+    record.id = school();
+    record.contact_research.push(ContactResearch {
+        school: school(),
+        subject: ContactResearchSubject::Program(CoachContactProgram::Team {
+            sport: Sport::OutdoorTrack,
+            gender: Gender::Boys,
+        }),
+        school_year: year()?,
+        outcome,
+        attempts: Vec::new(),
+    });
+    Ok(record)
 }
 
 #[test]

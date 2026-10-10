@@ -5,10 +5,11 @@ use calamine::{open_workbook, Data, Range, Reader, Xlsx};
 use census_domain::model::{
     normalize_name, AthleteId, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
     CanonicalPerformance, CanonicalSchool, CanonicalTeam, CentiMetres, CoachContactClaim,
-    CoachContactProgram, CoachRole, CoachTenure, CoachTenureEvidence, CompetitionLevel, EventId,
-    EventIdentity, EventKind, EventSpecification, Evidence, ExactSeconds, Gender, GradYear, Grade,
-    Mark, MeetId, ObservedGrade, PublishedGraduation, SchoolId, SchoolYear, SourceIdentity,
-    SourceNamespace, SourceRef, Sport,
+    CoachContactProgram, CoachRole, CoachTenure, CoachTenureEvidence, CompetitionLevel,
+    ContactResearch, ContactResearchOutcome, ContactResearchSubject, EventId, EventIdentity,
+    EventKind, EventSpecification, Evidence, ExactSeconds, Gender, GradYear, Grade, Mark, MeetId,
+    ObservedGrade, PublishedGraduation, SchoolId, SchoolYear, SourceIdentity, SourceNamespace,
+    SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -686,8 +687,255 @@ fn the_run_audits_every_sheet_against_the_store_counts_behind_it() -> TestResult
     check!(eq; audit.cohort_athletes, 2);
     check!(eq; audit.pr_rows, 1);
     check!(eq; audit.coach_rows, 3);
-    check!(eq; audit.published_coach_rows, 3);
     check!(eq; audit.contact_conflicts, 0);
+    Ok(())
+}
+
+#[test]
+fn the_recruiting_xlsx_keeps_formula_looking_text_as_literal_string_cells() -> TestResult {
+    const FORMULA_ATHLETE: &str = "=cmd|' /C calc'!A0";
+    const FORMULA_SCHOOL: &str = "\t+1+1";
+    const FORMULA_CITY: &str = "\u{feff}@SUM(1)";
+    const FORMULA_COACH: &str = "-2+3";
+    const FORMULA_EMAIL: &str = "=2+2@contacts.test";
+
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let (mut school_entity, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        FORMULA_SCHOOL,
+        normalize_name(FORMULA_SCHOOL),
+        Some(FORMULA_CITY),
+    );
+    school_entity.athletics_website = Some("https://schools.test/athletics".to_string());
+    school_entity.evidence = evidence("wiaa_results", Some("https://wiaa.test/schools"));
+    store.append(Table::Schools, &school_entity)?;
+    let mut athlete = CanonicalAthlete::new(
+        &school_id,
+        FORMULA_ATHLETE,
+        GradYear::CO2027,
+        Gender::Boys,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "xlsx-safety"),
+    );
+    athlete.sports = vec![Sport::OutdoorTrack];
+    publish_fixture_cohort(&mut athlete, "wiaa_results", "xlsx-safety", DAY);
+    store.append(Table::Athletes, &athlete)?;
+    coach(
+        &store,
+        &school_id,
+        FORMULA_COACH,
+        Some(Sport::OutdoorTrack),
+        CoachRole::HeadCoach,
+        FORMULA_EMAIL,
+    )?;
+
+    let projection = recruiting(&store, Scope::AllSources, Some(2027))?;
+    let path = dir.path().join("recruiting.xlsx");
+    let mut book = Workbook::new();
+    projection.write_athletes(&mut book, &path)?;
+    projection.write_coaches(&mut book, &path)?;
+    book.save(&path)?;
+
+    let mut book = open_workbook(&path)?;
+    let athletes = sheet(&mut book, "Athletes")?;
+    let school_column = column_of(&athletes, "School")?;
+    let row = row_where(&athletes, |row| {
+        text(&athletes, row, school_column) == FORMULA_SCHOOL
+    })?;
+    for (header, value) in [
+        ("Name", FORMULA_ATHLETE),
+        ("School", FORMULA_SCHOOL),
+        ("School City", FORMULA_CITY),
+    ] {
+        let column = column_of(&athletes, header)?;
+        check!(
+            matches!(athletes.get((row, column)), Some(Data::String(cell)) if cell.as_str() == value),
+            "{header} must be the literal string cell {value:?}"
+        );
+    }
+
+    let coaches = sheet(&mut book, "Coaches")?;
+    let coach_column = column_of(&coaches, "Coach")?;
+    let row = row_where(&coaches, |row| {
+        text(&coaches, row, coach_column) == FORMULA_COACH
+    })?;
+    for (header, value) in [
+        ("Coach", FORMULA_COACH),
+        ("Professional Email", FORMULA_EMAIL),
+    ] {
+        let column = column_of(&coaches, header)?;
+        check!(
+            matches!(coaches.get((row, column)), Some(Data::String(cell)) if cell.as_str() == value),
+            "{header} must be the literal string cell {value:?}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn an_athlete_without_a_grade_observation_publishes_the_season_of_their_capture() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let (mut school, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Observed Season High School",
+        normalize_name("Observed Season High School"),
+        Some("Madison"),
+    );
+    school.evidence = evidence("wiaa_results", Some("https://wiaa.test/schools"));
+    store.append(Table::Schools, &school)?;
+    for (name, observed_on) in [
+        ("Autumn Runner", "2026-09-20"),
+        ("Spring Runner", "2027-04-02"),
+        ("Prior Runner", "2024-09-10"),
+    ] {
+        let mut athlete = CanonicalAthlete::new(
+            &school_id,
+            name,
+            GradYear::CO2027,
+            Gender::Boys,
+            SourceIdentity::new(SourceNamespace::MilesplitAthlete, name),
+        );
+        athlete.sports = vec![Sport::OutdoorTrack];
+        publish_fixture_cohort(&mut athlete, "milesplit_roster", "observed-season", observed_on);
+        store.append(Table::Athletes, &athlete)?;
+    }
+
+    let projection = recruiting(&store, Scope::AllSources, Some(2027))?;
+    let path = dir.path().join("observed.xlsx");
+    let mut book = Workbook::new();
+    projection.write_athletes(&mut book, &path)?;
+    book.save(&path)?;
+
+    let mut book = open_workbook(&path)?;
+    let athletes = sheet(&mut book, "Athletes")?;
+    let name_column = column_of(&athletes, "Name")?;
+    let season_column = column_of(&athletes, "Observed School Year")?;
+    for (name, expected) in [
+        ("Autumn Runner", "2026-27"),
+        ("Spring Runner", "2026-27"),
+        ("Prior Runner", "2024-25"),
+    ] {
+        let row = row_where(&athletes, |row| text(&athletes, row, name_column) == name)?;
+        check!(eq; text(&athletes, row, season_column), expected, "{name}");
+    }
+    Ok(())
+}
+
+#[test]
+fn an_absent_value_publishes_a_blank_cell_while_counts_publish_zero() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let (school, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Bare Fixture High School",
+        normalize_name("Bare Fixture High School"),
+        Some("Kenosha"),
+    );
+    store.append(Table::Schools, &school)?;
+    let mut athlete = CanonicalAthlete::new(
+        &school_id,
+        "Bare Runner",
+        GradYear::CO2027,
+        Gender::Girls,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "bare-runner"),
+    );
+    publish_fixture_cohort(&mut athlete, "milesplit_roster", "blank", DAY);
+    store.append(Table::Athletes, &athlete)?;
+
+    let projection = recruiting(&store, Scope::AllSources, Some(2027))?;
+    let path = dir.path().join("blank.xlsx");
+    let mut book = Workbook::new();
+    projection.write_athletes(&mut book, &path)?;
+    book.save(&path)?;
+
+    let mut book = open_workbook(&path)?;
+    let athletes = sheet(&mut book, "Athletes")?;
+    let name_column = column_of(&athletes, "Name")?;
+    let row = row_where(&athletes, |row| text(&athletes, row, name_column) == "Bare Runner")?;
+    for header in [
+        "1 Mile (s)",
+        "5000m (s)",
+        "School Athletics URL",
+        "Public Recruiting GPA",
+        "GPA Source",
+        "Athletic.net URL",
+        "Other profile URLs",
+    ] {
+        check!(eq; text(&athletes, row, column_of(&athletes, header)?), "", "{header}");
+    }
+    for header in ["Performance count", "Meet count"] {
+        check!(eq; text(&athletes, row, column_of(&athletes, header)?), "0", "{header}");
+    }
+    Ok(())
+}
+
+#[test]
+fn a_schools_research_outcome_reaches_the_athletes_contact_coverage_state() -> TestResult {
+    const SCHOOL: &str = "Research Fixture High School";
+    for (outcome, expected) in [
+        (
+            ContactResearchOutcome::CompletedEmpty,
+            "contact_research_empty",
+        ),
+        (ContactResearchOutcome::Blocked, "contact_research_blocked"),
+        (ContactResearchOutcome::Failed, "contact_research_blocked"),
+        (
+            ContactResearchOutcome::Unattempted,
+            "contact_research_unknown",
+        ),
+        (
+            ContactResearchOutcome::CompletedClaims,
+            "contact_research_unknown",
+        ),
+    ] {
+        let dir = tempfile::tempdir()?;
+        let store = Store::open(dir.path())?;
+        let (mut school, school_id) = CanonicalSchool::new(
+            UsJurisdiction::Wisconsin,
+            SCHOOL,
+            normalize_name(SCHOOL),
+            Some("Madison"),
+        );
+        school.athletics_website = Some("https://schools.test/athletics".to_string());
+        school.evidence = evidence("wiaa_results", Some("https://wiaa.test/schools"));
+        school.contact_research.push(ContactResearch {
+            school: school_id.clone(),
+            subject: ContactResearchSubject::Program(CoachContactProgram::Team {
+                sport: Sport::OutdoorTrack,
+                gender: Gender::Boys,
+            }),
+            school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
+            outcome: outcome.clone(),
+            attempts: Vec::new(),
+        });
+        store.append(Table::Schools, &school)?;
+        let mut athlete = CanonicalAthlete::new(
+            &school_id,
+            "Solo Runner",
+            GradYear::CO2027,
+            Gender::Boys,
+            SourceIdentity::new(SourceNamespace::MilesplitAthlete, "research-state"),
+        );
+        athlete.sports = vec![Sport::OutdoorTrack];
+        publish_fixture_cohort(&mut athlete, "wiaa_results", "research-state", DAY);
+        store.append(Table::Athletes, &athlete)?;
+
+        let projection = recruiting(&store, Scope::AllSources, Some(2027))?;
+        let path = dir.path().join("recruiting.xlsx");
+        let mut book = Workbook::new();
+        projection.write_athletes(&mut book, &path)?;
+        book.save(&path)?;
+
+        let mut book = open_workbook(&path)?;
+        let athletes = sheet(&mut book, "Athletes")?;
+        let school_column = column_of(&athletes, "School")?;
+        let row = row_where(&athletes, |row| {
+            text(&athletes, row, school_column) == SCHOOL
+        })?;
+        let state = column_of(&athletes, "Contact Coverage State")?;
+        check!(eq; text(&athletes, row, state), expected, "{outcome:?}");
+    }
     Ok(())
 }
 

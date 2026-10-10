@@ -1,4 +1,4 @@
-use census_domain::model::{CanonicalAthlete, ObservedGrade, SourceNamespace};
+use census_domain::model::{CanonicalAthlete, ObservedGrade, SchoolYear, SourceNamespace};
 use std::collections::BTreeSet;
 
 use super::super::cells::Cell;
@@ -10,10 +10,20 @@ fn newest_observation(athlete: &CanonicalAthlete) -> Option<&ObservedGrade> {
         .max_by_key(|o| (o.school_year.get(), o.grade.get()))
 }
 
-pub(super) fn observed_school_year(athlete: &CanonicalAthlete) -> Cell {
+fn observed_season(athlete: &CanonicalAthlete) -> Option<SchoolYear> {
     newest_observation(athlete)
-        .map(|o| Cell::text(o.school_year.short()))
-        .map_or(Cell::Empty, |value| value)
+        .map(|observation| observation.school_year)
+        .or_else(|| {
+            athlete
+                .evidence
+                .iter()
+                .filter_map(|evidence| SchoolYear::from_date(&evidence.observed_on))
+                .max_by_key(|year| year.get())
+        })
+}
+
+pub(super) fn observed_school_year(athlete: &CanonicalAthlete) -> Cell {
+    observed_season(athlete).map_or(Cell::Empty, |year| Cell::text(year.short()))
 }
 
 pub(super) fn source_count(athlete: &CanonicalAthlete) -> usize {

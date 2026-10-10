@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::bests::{SharedSelection, SurfaceClass};
-use census_domain::model::{CanonicalAthlete, EventKind, ObservedGrade};
+use census_domain::model::{CanonicalAthlete, EventKind, ObservedGrade, SchoolYear};
 
 use super::super::canonical::Value;
 use super::super::labels;
@@ -11,6 +11,18 @@ pub(super) fn newest_observation(athlete: &CanonicalAthlete) -> Option<&Observed
         .observed_grades
         .iter()
         .max_by_key(|grade| (grade.school_year.get(), grade.grade.get()))
+}
+
+pub(super) fn observed_season(athlete: &CanonicalAthlete) -> Option<SchoolYear> {
+    newest_observation(athlete)
+        .map(|grade| grade.school_year)
+        .or_else(|| {
+            athlete
+                .evidence
+                .iter()
+                .filter_map(|evidence| SchoolYear::from_date(&evidence.observed_on))
+                .max_by_key(|year| year.get())
+        })
 }
 
 pub(super) fn flag(recorded: bool) -> Value {
