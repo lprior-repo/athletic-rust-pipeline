@@ -35,6 +35,7 @@ mod normalization;
 mod performance_identity;
 mod provenance;
 mod records;
+mod relay_result;
 mod review;
 mod run;
 mod school;
@@ -69,7 +70,7 @@ pub use fixed_mark::{CentiMetres, CentiPoints, ExactSeconds, TimeError};
 pub(crate) use identifiers::write_escaped;
 pub use identifiers::{
     tag, AthleteCandidateId, AthleteId, AthleteIndexId, CoachId, EventId, Id, IdTag, MeetId,
-    PerformanceId, SchoolId, TeamId,
+    PerformanceId, RelayId, SchoolId, TeamId,
 };
 pub use identity_application::{AcceptedAthleteIdentity, IdentityApplication};
 pub use identity_attestation::{AttestationError, AttestationQualification, IdentityAttestation};
@@ -98,6 +99,7 @@ pub use records::{
     IDENTITY_UNVERIFIED_FAMILY, MEMBER_SET_LABEL, SCHOOL_IDENTITY_FAMILY, UNRESOLVED_SCHOOL_FAMILY,
     UNRESOLVED_VENUE_FAMILY, UNSUPPORTED_GRADUATION_FAMILY,
 };
+pub use relay_result::{RelayMember, RelayResult};
 pub use review::{
     ReviewCaseFact, ReviewEvidenceFact, ReviewPacket, ReviewVerdict, ReviewVerdictKind,
     ReviewVerdictRecord, VerdictBatch,

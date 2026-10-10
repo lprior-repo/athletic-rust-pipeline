@@ -291,6 +291,9 @@ impl<'s> StoreSnapshot<'s> {
             Table::AthleteIdentityDecisions => {
                 self.consolidate::<census_domain::model::AppliedAthleteIdentity>(table, out_path)
             }
+            Table::RelayResults => {
+                self.consolidate::<census_domain::model::RelayResult>(table, out_path)
+            }
         }
     }
 }

@@ -19,6 +19,8 @@ pub mod tag {
     pub struct Event;
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
     pub struct Performance;
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+    pub struct Relay;
 }
 
 pub trait IdTag {
@@ -59,6 +61,10 @@ impl IdTag for tag::Event {
 
 impl IdTag for tag::Performance {
     const PREFIX: &'static str = "perf";
+}
+
+impl IdTag for tag::Relay {
+    const PREFIX: &'static str = "relay";
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
@@ -136,6 +142,7 @@ pub type AthleteCandidateId = Id<tag::AthleteCandidate>;
 pub type MeetId = Id<tag::Meet>;
 pub type EventId = Id<tag::Event>;
 pub type PerformanceId = Id<tag::Performance>;
+pub type RelayId = Id<tag::Relay>;
 
 const FRAMING_DELIMITERS: [u8; 3] = [0x1d, 0x1e, 0x1f];
 

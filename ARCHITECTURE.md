@@ -273,8 +273,11 @@ need; an athlete-keyed index does not inherently provide workbook display order.
 
 Every athlete/event with an observed comparable numeric mark must have an observed best in its
 compatible comparison class. Roster/profile-only athletes and no-result statuses retain explicit
-missing-result coverage, never invented PRs or inferred individual relay splits. Preserve published
-automatic/hand timing qualifiers when normalizing numeric times. An append-only correction may
+missing-result coverage, never invented PRs or inferred individual relay splits. A source-published
+relay result is retained as a typed relay result — team, event, published mark, place, round, timing
+and the member order the source published — and never decomposed into individual legs or attributed
+to an individual event. Preserve published automatic/hand timing qualifiers when normalizing numeric
+times. An append-only correction may
 refine a raw mark and unknown timing for the same natural identity, source owner, event and team;
 it must not downgrade measured marks, override known timing or delete original observations.
 

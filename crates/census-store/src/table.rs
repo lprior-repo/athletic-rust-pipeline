@@ -48,6 +48,7 @@ pub enum Table {
     SourceMeets,
     SourceObservations,
     AthleteIdentityDecisions,
+    RelayResults,
 }
 
 impl Table {
@@ -70,10 +71,11 @@ impl Table {
             Table::SourceMeets => "source_meets",
             Table::SourceObservations => "source_observations",
             Table::AthleteIdentityDecisions => "athlete_identity_decisions",
+            Table::RelayResults => "relay_results",
         }
     }
 
-    pub const ALL: [Table; 17] = [
+    pub const ALL: [Table; 18] = [
         Table::Schools,
         Table::Teams,
         Table::Coaches,
@@ -91,6 +93,7 @@ impl Table {
         Table::SourceMeets,
         Table::SourceObservations,
         Table::AthleteIdentityDecisions,
+        Table::RelayResults,
     ];
 
     pub fn from_wire(name: &str) -> Option<Self> {
@@ -107,7 +110,8 @@ impl Table {
             | Table::Events
             | Table::Performances
             | Table::SourceMeets
-            | Table::SourceObservations => StorageMode::ObservationLog,
+            | Table::SourceObservations
+            | Table::RelayResults => StorageMode::ObservationLog,
             Table::SourceIdentities
             | Table::Conflicts
             | Table::Coverage

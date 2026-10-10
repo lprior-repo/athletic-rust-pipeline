@@ -456,6 +456,7 @@ fn expected_observations(corpus: &Corpus) -> TestResult<Vec<(String, u64)>> {
         Table::SourceMeets,
         Table::SourceObservations,
         Table::AthleteIdentityDecisions,
+        Table::RelayResults,
     ]
     .into_iter()
     .map(|table| row(table, 0))

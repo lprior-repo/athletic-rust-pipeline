@@ -4,8 +4,8 @@ use serde_json::Value;
 use census_domain::model::{
     AppliedAthleteIdentity, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
     CanonicalPerformance, CanonicalSchool, CanonicalTeam, CollectionSnapshot, CoverageRow,
-    RetainedConflict, ReviewCase, ReviewVerdictRecord, SourceAccessCondition, SourceMeetRef,
-    SourceObjectIdentity, SourceObservation,
+    RelayResult, RetainedConflict, ReviewCase, ReviewVerdictRecord, SourceAccessCondition,
+    SourceMeetRef, SourceObjectIdentity, SourceObservation,
 };
 use census_store::Table;
 
@@ -37,6 +37,7 @@ fn validate_row(table: Table, index: usize, row: &Value) -> Result<(), JobError>
         Table::SourceMeets => decode_row::<SourceMeetRef>(table, index, row),
         Table::SourceObservations => decode_row::<SourceObservation>(table, index, row),
         Table::AthleteIdentityDecisions => decode_row::<AppliedAthleteIdentity>(table, index, row),
+        Table::RelayResults => decode_row::<RelayResult>(table, index, row),
     }
 }
 
