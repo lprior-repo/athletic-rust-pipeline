@@ -1,4 +1,5 @@
 use crate::report::ReportResult;
+use crate::workbook::recruiting::coalesce;
 use census_domain::model::SchoolYear;
 use census_store::Entity;
 use serde::Deserialize;
@@ -87,7 +88,7 @@ fn verify_decisions(path: &Path, inputs: &Inputs<'_>, found: &Audit) -> ReportRe
     expect_ids(
         path,
         "coaches",
-        &entity_ids(derivation.coach_observations()),
+        &entity_ids(&coalesce::claims(derivation.coach_observations())),
         &found.coaches,
     )?;
     expect_ids(

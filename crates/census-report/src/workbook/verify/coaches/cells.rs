@@ -1,9 +1,7 @@
 use super::super::canonical::Value;
 use super::super::expectations::Expectations;
 use crate::workbook::recruiting::coach_projection;
-use census_domain::model::{
-    CanonicalCoach, CoachRole, CoachTenure, SchoolYear, TenureAssessmentError,
-};
+use census_domain::model::{CanonicalCoach, CoachRole, SchoolYear};
 
 pub(super) fn values(expectations: &Expectations<'_>, coach: &CanonicalCoach) -> Vec<Value> {
     let school = coach.school.as_str();
@@ -45,7 +43,7 @@ fn contact_values(
         Value::optional(director.and_then(|row| row.email.as_deref())),
         Value::text(name_url),
         Value::text(name_at),
-        Value::text(tenure_label(coach, year)),
+        Value::text(coach_projection::tenure_label(coach, year)),
         Value::text(year.short()),
     ]
 }
@@ -76,16 +74,6 @@ fn director_values(director: Option<&crate::workbook::recruiting::contact::Named
         Value::optional(source.map(|source| source.source_sha256.as_str())),
         Value::optional(source.map(|source| source.observed_on.as_str())),
     ]
-}
-
-fn tenure_label(coach: &CanonicalCoach, school_year: SchoolYear) -> &'static str {
-    match coach.tenure_state(school_year) {
-        Ok(CoachTenure::Current { .. }) => "current_declared",
-        Ok(CoachTenure::Former { .. }) => "former_declared",
-        Ok(CoachTenure::Unknown) => "unknown",
-        Err(TenureAssessmentError::Conflict) => "tenure_conflict",
-        Err(TenureAssessmentError::InvalidEvidence { .. }) => "invalid_tenure_evidence",
-    }
 }
 
 pub(super) fn sport_label(coach: &CanonicalCoach) -> String {

@@ -163,6 +163,7 @@ fn roster_obligations(
                         windows: row.windows,
                         unreadable: false,
                         disposition: row.disposition,
+                        resolution: None,
                     },
                 )
             })?;

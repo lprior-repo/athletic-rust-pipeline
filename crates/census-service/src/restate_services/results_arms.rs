@@ -6,7 +6,9 @@ mod tfrrs;
 use std::sync::Arc;
 
 use census_crawl::net::Fetcher;
-use census_crawl::{AdapterContext, AdapterReport, CollectionDisposition, UnresolvedCounters};
+use census_crawl::{
+    AdapterContext, AdapterReport, CollectionDisposition, ResolutionCounters, UnresolvedCounters,
+};
 use census_domain::model::SourceMeetRef;
 use census_domain::UsJurisdiction;
 use census_store::Store;
@@ -91,6 +93,8 @@ pub struct ResultsSourceRows {
     pub unfinished: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub unresolved: Option<UnresolvedCounters>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub resolution: Option<ResolutionCounters>,
 }
 
 pub(super) async fn results_stage(
@@ -164,6 +168,7 @@ fn failed_source(slug: &str, meets: usize, error: HandlerError) -> ResultsSource
         notes: vec![source.to_string()],
         unfinished: Vec::new(),
         unresolved: None,
+        resolution: None,
     }
 }
 
@@ -186,6 +191,12 @@ fn source_rows(
                 .disposition
                 .is_complete()
                 .then_some(UnresolvedCounters { rows: 0, labels: 0 })
+        }),
+        resolution: report.resolution.or_else(|| {
+            report
+                .disposition
+                .is_complete()
+                .then_some(ResolutionCounters::default())
         }),
     })
 }

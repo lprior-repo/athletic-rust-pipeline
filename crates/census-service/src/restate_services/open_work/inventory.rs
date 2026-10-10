@@ -227,7 +227,8 @@ fn append_history(
         .filter(|kind| kind.requires(slug))
         .try_for_each(|kind| {
             window.years().try_for_each(|year| {
-                let (disposition, observations) = history::source(&entry.state, year, slug, kind)?;
+                let (disposition, observations, resolution) =
+                    history::source(&entry.state, year, slug, kind)?;
                 let mut row = obligation(
                     format!(
                         "{}/history/{year}/{}/{slug}",
@@ -237,6 +238,7 @@ fn append_history(
                     disposition,
                 );
                 row.observations = observations;
+                row.resolution = resolution;
                 row.windows = u64::from(disposition.is_complete());
                 push(rows, row)
             })

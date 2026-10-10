@@ -267,6 +267,7 @@ fn obligation(endpoint: String, disposition: Disposition) -> SourceObjectOpen {
         windows: 0,
         unreadable: false,
         disposition,
+        resolution: None,
     }
 }
 

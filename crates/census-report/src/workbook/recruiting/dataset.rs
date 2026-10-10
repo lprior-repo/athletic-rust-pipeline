@@ -6,6 +6,8 @@ use std::collections::BTreeMap;
 use super::contact::{attach_research, contacts, SchoolContacts};
 use super::facts::{kind_index, pr_index, school_index, tally, AthleteTally};
 
+use super::coalesce;
+
 #[derive(Debug, Clone, Copy)]
 pub(super) struct Reconciliation {
     pub(super) store_athletes: usize,
@@ -13,6 +15,7 @@ pub(super) struct Reconciliation {
     pub(super) cohort_athletes: usize,
     pub(super) pr_rows: usize,
     pub(super) coach_rows: usize,
+    pub(super) published_coach_rows: usize,
     pub(super) contact_conflicts: usize,
 }
 
@@ -23,7 +26,8 @@ pub(super) struct Dataset {
     pub(super) athletes: Vec<CanonicalAthlete>,
     pub(super) identities: std::sync::Arc<census_domain::model::AthleteIdentityProjection>,
     pub(super) schools: BTreeMap<census_domain::model::SchoolId, CanonicalSchool>,
-    pub(super) coaches: Vec<CanonicalCoach>,
+    pub(super) published_coaches: Vec<CanonicalCoach>,
+    pub(super) coach_spellings: BTreeMap<String, String>,
     pub(super) contacts: BTreeMap<String, SchoolContacts>,
     pub(super) tallies: BTreeMap<String, AthleteTally>,
     pub(super) prs: Vec<SharedSelection>,
@@ -67,7 +71,10 @@ impl Dataset {
             school_year: inputs.school_year,
             identities: inputs.derivation.dataset().identities(),
             schools: school_index(inputs.derivation.schools()),
-            coaches: inputs.derivation.coach_observations().to_vec(),
+            published_coaches: coalesce::claims(inputs.derivation.coach_observations()),
+            coach_spellings: super::coach_spelling::spellings(
+                inputs.derivation.coach_observations(),
+            ),
             tallies: tallies_of(inputs.derivation, &athletes),
             athletes,
             contacts,
@@ -137,6 +144,7 @@ impl<'a, 'd> Inputs<'a, 'd> {
             cohort_athletes: self.derivation.athletes().len(),
             pr_rows: self.prs.len(),
             coach_rows: self.derivation.coach_observations().len(),
+            published_coach_rows: coalesce::claims(self.derivation.coach_observations()).len(),
             contact_conflicts: contacts.values().map(|facts| facts.heads.conflicts()).sum(),
         }
     }

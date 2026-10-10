@@ -3,7 +3,7 @@ use super::super::{
     jobs::{self, adapter_context, AdapterScope},
 };
 use super::{delegated_source, failed_source, source_rows, ResultsArm, ResultsSourceRows};
-use census_crawl::{net::Fetcher, CollectionDisposition, UnresolvedCounters};
+use census_crawl::{net::Fetcher, CollectionDisposition, ResolutionCounters, UnresolvedCounters};
 use census_domain::model::SourceMeetRef;
 use census_store::Store;
 use futures::{stream, StreamExt, TryStreamExt};
@@ -89,7 +89,7 @@ async fn one(
     Ok(row)
 }
 
-fn merge(
+pub(super) fn merge(
     mut aggregate: ResultsSourceRows,
     row: ResultsSourceRows,
 ) -> Result<ResultsSourceRows, HandlerError> {
@@ -107,6 +107,7 @@ fn merge(
         .ok_or_else(|| jobs::invariant("result error counter overflow"))?;
     aggregate.withheld = sum_u64(aggregate.withheld, row.withheld)?;
     aggregate.unresolved = unresolved(aggregate.unresolved, row.unresolved)?;
+    aggregate.resolution = resolution(aggregate.resolution, row.resolution)?;
     aggregate.disposition = combine(aggregate.disposition, row.disposition);
     row.notes
         .into_iter()
@@ -161,6 +162,37 @@ fn unresolved(
             .labels
             .checked_add(right.labels)
             .ok_or_else(|| jobs::invariant("unresolved label counter overflow"))?,
+    }))
+}
+
+fn resolution(
+    left: Option<ResolutionCounters>,
+    right: Option<ResolutionCounters>,
+) -> Result<Option<ResolutionCounters>, HandlerError> {
+    let (Some(left), Some(right)) = (left, right) else {
+        return Ok(None);
+    };
+    Ok(Some(ResolutionCounters {
+        rows: left
+            .rows
+            .checked_add(right.rows)
+            .ok_or_else(|| jobs::invariant("resolution row counter overflow"))?,
+        resolved: left
+            .resolved
+            .checked_add(right.resolved)
+            .ok_or_else(|| jobs::invariant("resolution resolved counter overflow"))?,
+        unresolved: left
+            .unresolved
+            .checked_add(right.unresolved)
+            .ok_or_else(|| jobs::invariant("resolution unresolved counter overflow"))?,
+        retained: left
+            .retained
+            .checked_add(right.retained)
+            .ok_or_else(|| jobs::invariant("resolution retained counter overflow"))?,
+        quarantined: left
+            .quarantined
+            .checked_add(right.quarantined)
+            .ok_or_else(|| jobs::invariant("resolution quarantined counter overflow"))?,
     }))
 }
 

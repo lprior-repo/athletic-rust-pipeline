@@ -67,3 +67,129 @@ pub(in crate::workbook) fn capture(fact: Option<&CoachTenureEvidence>) -> [&str;
         None => ["", "", ""],
     }
 }
+
+pub(in crate::workbook) fn tenure_label(
+    coach: &CanonicalCoach,
+    school_year: SchoolYear,
+) -> &'static str {
+    use census_domain::model::{CoachTenure, TenureAssessmentError};
+    match coach.tenure_state(school_year) {
+        Ok(CoachTenure::Current { .. }) => "current_declared",
+        Ok(CoachTenure::Former { .. }) => "former_declared",
+        Ok(CoachTenure::Unknown) if coach.tenure_evidence.is_empty() => "unknown",
+        Ok(CoachTenure::Unknown) => "historical_evidence",
+        Err(TenureAssessmentError::Conflict) => "tenure_conflict",
+        Err(TenureAssessmentError::InvalidEvidence { .. }) => "invalid_tenure_evidence",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use census_domain::model::{
+        CoachRole, CoachTenure, CoachTenureEvidence, Gender, SchoolId, SchoolYear, SourceRef, Sport,
+    };
+
+    fn fixture_coach() -> CanonicalCoach {
+        let school = SchoolId::mint("sch", &["test coach fixture"]);
+        CanonicalCoach::new(
+            &school,
+            "Test Coach",
+            Some(Sport::OutdoorTrack),
+            Gender::Mixed,
+            CoachRole::HeadCoach,
+        )
+    }
+
+    fn tenure_evidence(tenure: CoachTenure, retrieved_at: &str) -> CoachTenureEvidence {
+        CoachTenureEvidence {
+            tenure,
+            source: SourceRef::new("test_source", None),
+            source_sha256: "00".repeat(32),
+            retrieved_at: retrieved_at.into(),
+            statement: "test statement".into(),
+            claim: None,
+        }
+    }
+
+    #[test]
+    fn current_tenure_labels_current_declared() {
+        let mut coach = fixture_coach();
+        coach.tenure_evidence.push(tenure_evidence(
+            CoachTenure::Current {
+                school_year: SchoolYear::DEFAULT,
+            },
+            "2026-09-01T00:00:00Z",
+        ));
+        assert_eq!(
+            tenure_label(&coach, SchoolYear::DEFAULT),
+            "current_declared"
+        );
+    }
+
+    #[test]
+    fn former_tenure_labels_former_declared() {
+        let mut coach = fixture_coach();
+        coach.tenure_evidence.push(tenure_evidence(
+            CoachTenure::Former {
+                last_school_year: Some(SchoolYear::DEFAULT),
+            },
+            "2026-09-01T00:00:00Z",
+        ));
+        assert_eq!(tenure_label(&coach, SchoolYear::DEFAULT), "former_declared");
+    }
+
+    #[test]
+    fn unknown_tenure_no_evidence_labels_unknown() {
+        let coach = fixture_coach();
+        assert_eq!(tenure_label(&coach, SchoolYear::DEFAULT), "unknown");
+    }
+
+    #[test]
+    fn unknown_tenure_with_evidence_labels_historical_evidence() {
+        let mut coach = fixture_coach();
+        coach.tenure_evidence.push(tenure_evidence(
+            CoachTenure::Unknown,
+            "2020-01-01T00:00:00Z",
+        ));
+        assert_eq!(
+            tenure_label(&coach, SchoolYear::DEFAULT),
+            "historical_evidence"
+        );
+    }
+
+    #[test]
+    fn conflicting_tenure_labels_tenure_conflict() {
+        let mut coach = fixture_coach();
+        coach.tenure_evidence.push(tenure_evidence(
+            CoachTenure::Current {
+                school_year: SchoolYear::DEFAULT,
+            },
+            "2026-09-01T00:00:00Z",
+        ));
+        coach.tenure_evidence.push(tenure_evidence(
+            CoachTenure::Former {
+                last_school_year: Some(SchoolYear::DEFAULT),
+            },
+            "2026-08-01T00:00:00Z",
+        ));
+        assert_eq!(tenure_label(&coach, SchoolYear::DEFAULT), "tenure_conflict");
+    }
+
+    #[test]
+    fn invalid_tenure_evidence_labels_invalid() {
+        let mut coach = fixture_coach();
+        let mut evidence = tenure_evidence(
+            CoachTenure::Current {
+                school_year: SchoolYear::DEFAULT,
+            },
+            "not-valid-rfc3339",
+        );
+        evidence.source_sha256 = "not-hex".into();
+        coach.tenure_evidence.push(evidence);
+        assert_eq!(
+            tenure_label(&coach, SchoolYear::DEFAULT),
+            "invalid_tenure_evidence"
+        );
+    }
+}

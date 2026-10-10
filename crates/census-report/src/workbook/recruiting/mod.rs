@@ -10,6 +10,7 @@ mod athletes;
 pub(in crate::workbook) mod coach_projection;
 pub(in crate::workbook) mod coach_spelling;
 mod coaches;
+pub(in crate::workbook) mod coalesce;
 mod columns;
 pub(in crate::workbook) mod contact;
 mod csv;
@@ -95,6 +96,7 @@ impl Recruiting {
             cohort_athletes = audit.cohort_athletes,
             pr_rows = audit.pr_rows,
             coach_rows = audit.coach_rows,
+            published_coach_rows = audit.published_coach_rows,
             contact_conflicts = audit.contact_conflicts,
             "recruiting projection counts"
         );

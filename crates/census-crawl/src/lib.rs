@@ -161,7 +161,7 @@ pub struct UnresolvedCounters {
     pub labels: u64,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ResolutionCounters {
     pub rows: u64,
     pub resolved: u64,
@@ -218,6 +218,7 @@ impl AdapterReport {
             && self
                 .unresolved
                 .is_none_or(|value| value.rows == 0 && value.labels == 0)
+            && self.resolution.is_none_or(|value| value.unresolved == 0)
             && self.unfinished.is_empty()
         {
             CollectionDisposition::Complete

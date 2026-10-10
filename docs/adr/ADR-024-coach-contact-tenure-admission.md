@@ -1,8 +1,12 @@
 # ADR-024 — Coach-contact tenure from a source-published staff listing
 
-**Status:** Accepted (2026-10-04). Implementation open: `athletic-rust-pipeline-2b1` (directory
-emission), `athletic-rust-pipeline-0hx` (claim binding), `athletic-rust-pipeline-df2` (research
-outcomes), `athletic-rust-pipeline-jb2` (cell traceability).
+**Status:** Accepted (2026-10-04). Implemented (2026-10-09): `athletic-rust-pipeline-2b1`
+(directory emission), `athletic-rust-pipeline-0hx` (claim binding), `athletic-rust-pipeline-df2`
+(research outcomes) and `athletic-rust-pipeline-jb2` (cell traceability) are closed. The workbook
+projection publishes a contact only for an eligible current claim and records the withholding state
+otherwise; a source listing that states no role, or a coach role whose level it does not state,
+still publishes nothing, so those rows stay observable as `no_current_claim` rather than silently
+blank.
 
 [ARCHITECTURE.md](../../ARCHITECTURE.md) §9 owns the binding contact-publication contract, §8 owns
 identity review. [ADR-011](ADR-011-census-seal.md) requires every accepted claim to resolve to

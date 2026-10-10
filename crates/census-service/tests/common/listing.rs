@@ -13,7 +13,7 @@ pub fn fixtures(source: &str) -> Result<Vec<PathBuf>> {
         let path = entry
             .with_context(|| format!("reading an entry of {}", dir.display()))?
             .path();
-        if path.is_file() {
+        if path.is_file() && !is_documentation(&path) {
             paths.push(path);
         }
     }
@@ -22,6 +22,16 @@ pub fn fixtures(source: &str) -> Result<Vec<PathBuf>> {
         bail!("no fixtures under {}", dir.display());
     }
     Ok(paths)
+}
+
+fn is_documentation(path: &Path) -> bool {
+    let Some(name) = path.file_name().map(|name| name.to_string_lossy()) else {
+        return false;
+    };
+    matches!(
+        name.as_ref(),
+        "README.md" | "capture.sh" | "PROVENANCE.json"
+    ) || name.ends_with(".request.json")
 }
 
 pub fn file_name(path: &Path) -> Result<String> {

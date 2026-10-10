@@ -124,8 +124,7 @@ impl<'a, 'd> Verifier<'a, 'd> {
 
 fn ordered<'a, 'd>(expectations: &'a Expectations<'d>) -> Vec<(&'a CanonicalCoach, SortKey)> {
     let mut ordered: Vec<(&CanonicalCoach, SortKey)> = expectations
-        .derivation
-        .coach_observations()
+        .coach_claims
         .iter()
         .map(|coach| (coach, sort_key(expectations, coach)))
         .collect();

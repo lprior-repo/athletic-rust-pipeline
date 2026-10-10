@@ -1,0 +1,23 @@
+{
+  "source": "riil",
+  "provider": "Rhode Island Interscholastic League directory",
+  "transport": "Html",
+  "captured_from": "research/sources/coach-directories-national/samples/dir/RI__directory.html (byte-identical copy, cmp clean)",
+  "captured_on": "2026-09-22T03:57:15Z (research/sources/coach-directories-national/samples/CAPTURES.md row 168, line 174)",
+  "note": "Raw capture of the riil.org FusionPoint directory page, copied byte-exact and verified with sha256 and byte count. Wire bytes are the compressed transfer size (%{size_download}); on-disk bytes are after --compressed decoding (column semantics: CAPTURES.md:5). The measured fixture size equals the sample's on-disk column, consistent with a byte-exact copy.",
+  "fixtures": [
+    {
+      "file": "directory.html",
+      "url": "https://riil.org/Directory.aspx",
+      "http_status": 200,
+      "wire_bytes": 37954,
+      "bytes": 199963,
+      "lines": 328,
+      "sha256": "36d1044df35e8dd6108ad664be4fd7acc68fab4717c60b7341a421a76b2da4d5",
+      "research_sample": "research/sources/coach-directories-national/samples/dir/RI__directory.html",
+      "research_sample_sha256": "36d1044df35e8dd6108ad664be4fd7acc68fab4717c60b7341a421a76b2da4d5",
+      "robots": "capture-time verdict recorded as unverified: 'Known blocks: unverified' (research/sources/coach-directories-national/SOURCE_REPORT.md:1121); no rate limit published in robots.txt for this host (SOURCE_REPORT.md:1120)",
+      "parser": "crates/census-crawl/src/riil/pages.rs:124 splits on <details (pages.rs:125) and requires </details> (pages.rs:127), the school name from <summary> (pages.rs:138-139) and a <table>...</table> block (pages.rs:160-163). This file contains 55 <details> sections, 55 <summary> names and 55 exact <table class='DirectoryStaffTable'> blocks; rows are shaped <td>Boys Indoor Track</td><td>Head Coach</td><td>Mark Letarte</td><td>tel:...</td>"
+    }
+  ]
+}

@@ -4,12 +4,19 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub enum CollectionDisposition {
     #[default]
+    #[serde(alias = "Unknown")]
     Unknown,
+    #[serde(alias = "Complete")]
     Complete,
+    #[serde(alias = "Partial")]
     Partial,
+    #[serde(alias = "Blocked")]
     Blocked,
+    #[serde(alias = "Failed")]
     Failed,
+    #[serde(alias = "Quarantined")]
     Quarantined,
+    #[serde(alias = "Exhausted")]
     Exhausted,
 }
 
