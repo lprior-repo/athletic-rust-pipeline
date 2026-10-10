@@ -265,6 +265,101 @@ fn an_over_bound_replace_batch_is_refused_before_a_single_row_is_encoded() -> Te
 }
 
 #[test]
+fn a_full_derived_map_refuses_one_more_incremental_row_before_encoding() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let mut batch = store.db.batch();
+    store.put_row_mark(&mut batch, Table::ReviewCases, MAX_ROWS_PER_TABLE - 1);
+    batch
+        .durability(Some(fjall::PersistMode::SyncData))
+        .commit()?;
+    store.replace_many(Table::ReviewCases, &[derived("case:1", 1)])?;
+    {
+        let (left, right) = (&rows_held(&store, Table::ReviewCases)?, &MAX_ROWS_PER_TABLE);
+        if left != right {
+            return Err(
+                format!("the last legal row is admitted — left={left:?} right={right:?}").into(),
+            );
+        }
+    }
+    match store.replace_many(Table::ReviewCases, &[derived("case:2", 2)]) {
+        Err(StoreError::TooManyRows { table, max }) => {
+            let (left, right) = (&table, &"review_cases");
+            if left != right {
+                return Err(format!("left={left:?} right={right:?}").into());
+            }
+            let (left, right) = (&max, &usize::try_from(MAX_ROWS_PER_TABLE)?);
+            if left != right {
+                return Err(format!("left={left:?} right={right:?}").into());
+            }
+        }
+        Err(error) => return Err(error.into()),
+        Ok(_) => return Err("expected the row ceiling to refuse the row past it".into()),
+    }
+    {
+        let (left, right) = (&rows_held(&store, Table::ReviewCases)?, &MAX_ROWS_PER_TABLE);
+        if left != right {
+            return Err(
+                format!("a refused row changes no mark — left={left:?} right={right:?}").into(),
+            );
+        }
+    }
+    {
+        let (left, right) = (&store.scan::<DerivedRow>(Table::ReviewCases)?.len(), &1);
+        if left != right {
+            return Err(
+                format!("a refused row is not written — left={left:?} right={right:?}").into(),
+            );
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn a_full_derived_map_refuses_one_more_batched_row_before_commit() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let mut batch = store.db.batch();
+    store.put_row_mark(&mut batch, Table::Coverage, MAX_ROWS_PER_TABLE);
+    batch
+        .durability(Some(fjall::PersistMode::SyncData))
+        .commit()?;
+    let mut batch = store.write_batch();
+    batch.replace_many(Table::Coverage, &[derived("wi", 1)])?;
+    match batch.commit() {
+        Err(StoreError::TooManyRows { table, max }) => {
+            let (left, right) = (&table, &"coverage");
+            if left != right {
+                return Err(format!("left={left:?} right={right:?}").into());
+            }
+            let (left, right) = (&max, &usize::try_from(MAX_ROWS_PER_TABLE)?);
+            if left != right {
+                return Err(format!("left={left:?} right={right:?}").into());
+            }
+        }
+        Err(error) => return Err(error.into()),
+        Ok(_) => return Err("expected the row ceiling to refuse the batched commit".into()),
+    }
+    {
+        let (left, right) = (&rows_held(&store, Table::Coverage)?, &MAX_ROWS_PER_TABLE);
+        if left != right {
+            return Err(
+                format!("a refused batch changes no mark — left={left:?} right={right:?}").into(),
+            );
+        }
+    }
+    {
+        let (left, right) = (&store.scan::<CoverageRow>(Table::Coverage)?.len(), &0);
+        if left != right {
+            return Err(
+                format!("a refused batch writes nothing — left={left:?} right={right:?}").into(),
+            );
+        }
+    }
+    Ok(())
+}
+
+#[test]
 fn an_append_to_a_derived_table_is_refused_and_record_routes_by_mode() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;

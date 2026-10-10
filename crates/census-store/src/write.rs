@@ -83,7 +83,10 @@ impl Store {
         let derived = self.derived_generation();
         let mut batch = self.db.batch();
         let staged = stage_derived(&mut batch, &self.entities, table, records, derived)?;
-        let rows = held.saturating_add(staged.added);
+        let rows = held
+            .checked_add(staged.added)
+            .ok_or(StoreError::CounterOverflow)?;
+        refuse_over_bound(table, rows)?;
         self.put_row_mark(&mut batch, table, rows);
         generation::write_entities(&mut batch, &self.meta, generation);
         batch

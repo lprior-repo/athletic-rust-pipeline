@@ -255,6 +255,7 @@ fn write_replacements(
         let rows = held
             .checked_add(staged.added)
             .ok_or(StoreError::CounterOverflow)?;
+        super::super::batch::refuse_over_bound(replacement.table, rows)?;
         store.put_row_mark(batch, replacement.table, rows);
     }
     Ok(())
