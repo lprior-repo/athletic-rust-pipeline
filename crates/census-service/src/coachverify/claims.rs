@@ -96,6 +96,18 @@ fn collect(
     }
 }
 
+pub(super) fn already_carries(text: &str, row: &RawContactRow) -> bool {
+    let flat = normalize(text);
+    let school = normalize(&row.school);
+    let person = [&row.coach_name, &row.ad_name]
+        .into_iter()
+        .find(|name| !name.trim().is_empty())
+        .map(|name| normalize(name));
+    !school.is_empty()
+        && contains(&flat, &school)
+        && person.is_some_and(|name| contains(&flat, &name))
+}
+
 fn contains(text: &str, value: &str) -> bool {
     !value.is_empty()
         && text.match_indices(value).any(|(start, _)| {

@@ -282,6 +282,7 @@ fn uncertain_or_failed_evidence_never_ships() {
     [
         Verdict::OkRoleContext,
         Verdict::RoleContradicted,
+        Verdict::AttributionRequired,
         Verdict::FetchFailed,
         Verdict::Empty,
         Verdict::Mismatch,
@@ -289,6 +290,36 @@ fn uncertain_or_failed_evidence_never_ships() {
     ]
     .into_iter()
     .for_each(|verdict| assert!(!verdict.shipped()));
+}
+
+#[test]
+fn a_body_that_already_carries_the_claimed_person_is_an_attribution_gap() -> TestResult {
+    let evidence = evaluate(
+        &fragment(),
+        &staff("<tr><td>Dana Reid</td></tr><script>window.staff=[]</script>"),
+    )?;
+    check!(eq; evidence.verdict(), Verdict::AttributionRequired);
+    Ok(())
+}
+
+#[test]
+fn a_body_without_the_claimed_person_stays_a_rendering_gap() -> TestResult {
+    let evidence = evaluate(
+        &fragment(),
+        &staff("<tr><td>Somebody Else</td></tr><script>window.staff=[]</script>"),
+    )?;
+    check!(eq; evidence.verdict(), Verdict::RenderRequired);
+    Ok(())
+}
+
+#[test]
+fn a_namesake_outside_the_rows_school_stays_unattributed() -> TestResult {
+    let evidence = evaluate(
+        &fragment(),
+        "<table><tr><td>Dana Reid</td></tr></table><script>window.staff=[]</script>",
+    )?;
+    check!(eq; evidence.verdict(), Verdict::RenderRequired);
+    Ok(())
 }
 
 #[test]

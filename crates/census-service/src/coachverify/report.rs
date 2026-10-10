@@ -8,7 +8,7 @@ use std::sync::LazyLock;
 
 pub fn audit_table(outcomes: &[FragmentOutcome]) -> String {
     let mut table = String::from(
-        "| fragment | rows | verified | role conveyed by page context | role contradicted | render-required | mismatch | empty | fetch failed | shipped share |\n|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n",
+        "| fragment | rows | verified | role conveyed by page context | role contradicted | attribution-required | render-required | mismatch | empty | fetch failed | shipped share |\n|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n",
     );
     let mut totals: BTreeMap<&'static str, usize> = BTreeMap::new();
     let mut rows_total = 0usize;
@@ -29,12 +29,13 @@ pub fn audit_table(outcomes: &[FragmentOutcome]) -> String {
         }
         let share = pct(shipped, total);
         table.push_str(&format!(
-            "| `{}` | {} | {} | {} | {} | {} | {} | {} | {} | {:.1} % |\n",
+            "| `{}` | {} | {} | {} | {} | {} | {} | {} | {} | {} | {:.1} % |\n",
             outcome.file,
             total,
             count(super::verdict::Verdict::Ok),
             count(super::verdict::Verdict::OkRoleContext),
             count(super::verdict::Verdict::RoleContradicted),
+            count(super::verdict::Verdict::AttributionRequired),
             count(super::verdict::Verdict::RenderRequired),
             count(super::verdict::Verdict::Mismatch),
             count(super::verdict::Verdict::Empty),
@@ -45,12 +46,16 @@ pub fn audit_table(outcomes: &[FragmentOutcome]) -> String {
     let shipped_total = totals.get("ok").map_or(0, |value| *value);
     let share = pct(shipped_total, rows_total);
     table.push_str(&format!(
-        "| **total ({})** | **{}** | **{}** | **{}** | **{}** | **{}** | **{}** | **{}** | **{}** | **{:.1} %** |\n",
+        "| **total ({})** | **{}** | **{}** | **{}** | **{}** | **{}** | **{}** | **{}** | **{}** | **{}** | **{:.1} %** |\n",
         outcomes.len(),
         rows_total,
         totals.get("ok").copied().map_or(0, |value| value),
         totals.get("ok_role_context").copied().map_or(0, |value| value),
         totals.get("role_contradicted").copied().map_or(0, |value| value),
+        totals
+            .get("attribution_required")
+            .copied()
+            .map_or(0, |value| value),
         totals.get("render_required").copied().map_or(0, |value| value),
         totals.get("mismatch").copied().map_or(0, |value| value),
         totals.get("empty").copied().map_or(0, |value| value),

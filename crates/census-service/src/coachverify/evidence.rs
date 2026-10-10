@@ -9,6 +9,7 @@ pub(super) struct RowEvidence {
     pub body: bool,
     pub failed: bool,
     pub script: bool,
+    pub attributed: bool,
     pub claims: Vec<ContactClaimEvidence>,
     required: usize,
     verified: [bool; 4],
@@ -32,6 +33,7 @@ impl RowEvidence {
     ) -> anyhow::Result<()> {
         self.body = true;
         self.script |= text.to_ascii_lowercase().contains("<script");
+        self.attributed |= claims::already_carries(text, row);
         self.required = [
             &row.coach_name,
             &row.public_professional_email,
@@ -77,6 +79,9 @@ impl RowEvidence {
             } else {
                 Verdict::Empty
             };
+        }
+        if self.attributed {
+            return Verdict::AttributionRequired;
         }
         if self.script {
             Verdict::RenderRequired

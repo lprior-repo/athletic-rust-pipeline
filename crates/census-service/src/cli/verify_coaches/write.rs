@@ -169,9 +169,13 @@ fn write_report(path: &Path, outcomes: &[FragmentOutcome]) -> Result<()> {
     body.push_str(
         "Every row below was re-fetched from its own `source_url` cells. `verified` means a value\n\
          cell appeared in the page *and* the role label was corroborated within its window;\n\
-         `role conveyed by page context` means the value appeared without that window; `render-required`\n\
-         means the page is a JavaScript shell, so no value is reachable without executing script.\n\
-         `fetch failed` counts pages the fetcher could not read at all —\n\
+         `role conveyed by page context` means the value appeared without that window;\n\
+         `attribution-required` means the page literally carries the row's own school and claimed\n\
+         person but no role-context window tied them to a claim, so the gap is attribution, not\n\
+         rendering; `render-required` means the page is a JavaScript shell that does not carry the\n\
+         person, so no value is reachable without executing script; `mismatch` means the page\n\
+         carries neither the row's school nor its claimed person. `fetch failed` counts pages the\n\
+         fetcher could not read at all —\n\
          those rows ship nowhere and the tallies say how many they are.\n\n",
     );
     body.push_str(&coachverify::audit_table(outcomes));
