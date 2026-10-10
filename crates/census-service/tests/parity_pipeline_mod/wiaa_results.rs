@@ -7,8 +7,8 @@ use census_crawl::result_file::ParsedMeet;
 use census_crawl::{hytek, raceday, wiaa_results};
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam, EventIdentity, EventSpecification, GradYear, SourceIdentity,
-    SourceNamespace, SourceRef, Sport,
+    CanonicalSchool, CanonicalTeam, EventIdentity, EventSpecification, GradYear, RelayResult,
+    SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
@@ -201,11 +201,16 @@ fn expected_ids_for(
                     artifact.file
                 );
             };
-            expected.teams.insert(
-                CanonicalTeam::mint(&school_id, sport, event.gender, school_year)
-                    .as_str()
-                    .to_string(),
-            );
+            let team_id = CanonicalTeam::mint(&school_id, sport, event.gender, school_year);
+            expected.teams.insert(team_id.as_str().to_string());
+            let relay = !row.legs.is_empty();
+            if relay {
+                expected.relay_results.insert(
+                    RelayResult::mint(&team_id, &expected_event.id, &expected_meet.id)
+                        .as_str()
+                        .to_string(),
+                );
+            }
             for (leg_position, member, grade) in super::wiaa_readback::members(row) {
                 let Some(grade) = grade else { continue };
                 if member.trim().is_empty() {
@@ -231,6 +236,9 @@ fn expected_ids_for(
                 let athlete_id =
                     CanonicalAthlete::mint(&school_id, member, grad_year, event.gender, &source);
                 expected.athletes.insert(athlete_id.as_str().to_string());
+                if relay {
+                    continue;
+                }
                 expected.performances.insert(
                     CanonicalPerformance::mint(
                         &athlete_id,

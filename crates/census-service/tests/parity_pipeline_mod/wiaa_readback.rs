@@ -4,7 +4,8 @@ use anyhow::{ensure, Context, Result};
 use census_crawl::result_file::{ParsedEvent, ParsedMeet, ParsedRow};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalTeam, Evidence,
-    EvidenceMethod, GradYear, Grade, SchoolYear, SourceNamespace, SourceObservation, Sport,
+    EvidenceMethod, GradYear, Grade, RelayResult, SchoolYear, SourceNamespace, SourceObservation,
+    Sport,
 };
 use census_store::{Store, Table};
 
@@ -26,6 +27,7 @@ pub fn assert_source_results(store: &Store, corpus: &Corpus) -> Result<()> {
         .into_iter()
         .map(|row| (row.source_key.clone(), row))
         .collect();
+    let relays: Vec<RelayResult> = store.scan::<RelayResult>(Table::RelayResults)?;
     let meets = store.scan::<CanonicalMeet>(Table::Meets)?;
     let events = store.scan::<CanonicalEvent>(Table::Events)?;
     for (url, published, sport) in &corpus.published_results {
@@ -70,9 +72,53 @@ pub fn assert_source_results(store: &Store, corpus: &Corpus) -> Result<()> {
                         continue;
                     }
                     let round = event.round.as_deref().map_or("<none>", |round| round);
-                    let mut key = format!("{url}:{}:{round}:{ordinal}", event.label);
-                    if let Some(position) = position {
+                    let row_key = format!("{url}:{}:{round}:{ordinal}", event.label);
+                    let mut key = row_key.clone();
+                    let leg_position = position.map(|position| {
                         key.push_str(&format!(":leg{position}"));
+                        position
+                    });
+                    if let Some(position) = leg_position {
+                        ensure!(
+                            !performances.contains_key(&key),
+                            "{key}: a relay entry slot minted an athlete-scoped performance"
+                        );
+                        let athlete = athletes
+                            .values()
+                            .find(|athlete| {
+                                athlete
+                                    .identities()
+                                    .any(|identity| identity.id.as_str() == key)
+                            })
+                            .with_context(|| format!("relay participant missing: {key}"))?;
+                        let (relay, member) = relays
+                            .iter()
+                            .filter(|relay| relay.meet == meet.id && relay.event == stored.id)
+                            .find_map(|relay| {
+                                relay
+                                    .members
+                                    .iter()
+                                    .find(|member| member.athlete.as_ref() == Some(&athlete.id))
+                                    .map(|member| (relay, member))
+                            })
+                            .with_context(|| format!("relay membership missing: {key}"))?;
+                        let team = teams.get(&relay.team).context("relay team")?;
+                        ensure!(
+                            member.order == u32::from(position)
+                                && member.name_as_published == name
+                                && relay.place == row.place
+                                && relay.mark == row.mark
+                                && relay.round.as_deref() == event.round.as_deref()
+                                && relay.source_key == row_key
+                                && athlete.canonical_name == name
+                                && athlete.gender == event.gender
+                                && Some(athlete.grad_year) == GradYear::of(grade, school_year)
+                                && athlete.school == team.school
+                                && team.school_year == school_year
+                                && team.sport == *sport,
+                            "{key}: retained relay membership, result or subject ownership changed"
+                        );
+                        continue;
                     }
                     let performance = performances
                         .get(&key)

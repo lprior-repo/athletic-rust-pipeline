@@ -3,8 +3,8 @@ use super::schools::Schools;
 use crate::{AdapterContext, CrawlResult};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CanonicalTeam, EventKind, Evidence, Gender, Grade, Mark, SchoolId, SchoolYear, SourceRef,
-    Sport,
+    CanonicalTeam, EventKind, Evidence, Gender, Grade, Mark, RelayResult, SchoolId, SchoolYear,
+    SourceRef, Sport,
 };
 use std::collections::HashMap;
 
@@ -39,6 +39,7 @@ pub(super) struct Accumulator {
     pub(super) athletes: HashMap<String, CanonicalAthlete>,
     pub(super) events: HashMap<String, CanonicalEvent>,
     pub(super) performances: HashMap<String, CanonicalPerformance>,
+    pub(super) relay_results: HashMap<String, RelayResult>,
     pub(super) unsupported: crate::cohort::UnsupportedCohortRows,
 }
 

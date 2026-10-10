@@ -51,6 +51,11 @@ pub fn assert_result_entities(store: &Store, corpus: &Corpus) -> Result<()> {
         .iter()
         .map(|row| row.id.as_str().to_string())
         .collect();
+    let relay_results: BTreeSet<String> = store
+        .scan::<census_domain::model::RelayResult>(Table::RelayResults)?
+        .iter()
+        .map(|row| row.id.as_str().to_string())
+        .collect();
 
     let mut expected_meets = ids_of(&corpus.meets, |row| row.id.as_str());
     expected_meets.extend(corpus.expected.meets.iter().cloned());
@@ -65,6 +70,11 @@ pub fn assert_result_entities(store: &Store, corpus: &Corpus) -> Result<()> {
         ("teams", &teams, &expected_teams),
         ("athletes", &athletes, &expected_athletes),
         ("performances", &performances, &corpus.expected.performances),
+        (
+            "relay_results",
+            &relay_results,
+            &corpus.expected.relay_results,
+        ),
     ] {
         ensure!(
             observed == expected,

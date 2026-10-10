@@ -1,9 +1,10 @@
+use super::entities::team_identities;
 use super::map::{AthleteRow, EventContext, Mapper, PerformanceRow};
 use super::parse::{finisher_grade, member_grade, parse_mark};
 use super::wire::{EventRow, EventSummary, FinisherRow, MeetRow};
 use census_domain::model::{
-    AthleteId, CanonicalEvent, CanonicalMeet, CompetitionLevel, Mark, SchoolId, SourceIdentity,
-    SourceNamespace, Sport,
+    AthleteId, CanonicalEvent, CanonicalMeet, CompetitionLevel, Mark, RelayMember, RelayResult,
+    SchoolId, SourceIdentity, SourceNamespace, Sport,
 };
 use census_domain::UsJurisdiction;
 mod events;
@@ -154,7 +155,7 @@ impl<'a> Mapper<'a> {
         else {
             return;
         };
-        self.team(
+        let team = self.team(
             &school,
             context.sport,
             context.event.gender,
@@ -162,10 +163,15 @@ impl<'a> Mapper<'a> {
             row.team.as_ref(),
             url,
         );
+        let mut members = Vec::new();
         for (leg_index, member) in row.members.iter().enumerate() {
             let Some(leg) = member.athlete.as_ref() else {
                 continue;
             };
+            let order = member
+                .order
+                .unwrap_or_else(|| u32::try_from(leg_index.saturating_add(1)).unwrap_or(u32::MAX));
+            let mut published = RelayMember::new(order, leg.name.clone().unwrap_or_default());
             let stored = self.athlete(
                 AthleteRow {
                     name: leg.name.as_deref(),
@@ -181,11 +187,40 @@ impl<'a> Mapper<'a> {
                 },
                 self.origin.evidence(url),
             );
-            if stored.is_none() {
-                self.stats.rows_no_grade = self.stats.rows_no_grade.saturating_add(1);
-            } else {
-                self.stats.legs = self.stats.legs.saturating_add(1);
+            match stored {
+                Some((athlete_id, _)) => {
+                    self.stats.legs = self.stats.legs.saturating_add(1);
+                    published = published.with_athlete(athlete_id);
+                }
+                None => {
+                    self.stats.rows_no_grade = self.stats.rows_no_grade.saturating_add(1);
+                }
             }
+            members.push(published);
         }
+        let Some(mark) = row.mark.as_deref().and_then(parse_mark) else {
+            self.stats.rows_no_mark = self.stats.rows_no_mark.saturating_add(1);
+            return;
+        };
+        let mut relay = RelayResult::new(
+            &team,
+            &context.event.id,
+            &context.meet.id,
+            mark,
+            format!("{url}:row:{row_index}"),
+        )
+        .with_place(row.place)
+        .with_round(context.event.round.clone())
+        .with_evidence(self.origin.evidence(url));
+        if let Some(identity) = team_identities(row.team.as_ref()).into_iter().next() {
+            relay = relay.with_source_team(identity);
+        }
+        for member in members {
+            relay = relay.with_member(member);
+        }
+        self.accumulated
+            .relay_results
+            .entry(relay.id.as_str().to_owned())
+            .or_insert(relay);
     }
 }

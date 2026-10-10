@@ -173,6 +173,7 @@ struct EntityCounts {
     athletes: usize,
     teams: usize,
     performances: usize,
+    relay_results: usize,
     unsupported_cohorts: usize,
 }
 
@@ -198,6 +199,11 @@ fn append_entities(
             ctx,
             Table::Performances,
             accumulated.performances.into_values(),
+        )?,
+        relay_results: append_rows(
+            ctx,
+            Table::RelayResults,
+            accumulated.relay_results.into_values(),
         )?,
         unsupported_cohorts: accumulated.unsupported.len(),
     };
@@ -260,8 +266,13 @@ fn note_artifacts(report: &mut AdapterReport, stats: &Stats) {
 
 fn note_entities(report: &mut AdapterReport, counts: &EntityCounts) {
     report.note(format!(
-        "canonical entities: meets {} events {} athletes {} teams {} performances {}",
-        counts.meets, counts.events, counts.athletes, counts.teams, counts.performances
+        "canonical entities: meets {} events {} athletes {} teams {} performances {} relay results {}",
+        counts.meets,
+        counts.events,
+        counts.athletes,
+        counts.teams,
+        counts.performances,
+        counts.relay_results
     ));
     report.note(format!(
         "unsupported cohort observations retained: {}",

@@ -1,6 +1,7 @@
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CanonicalTeam, Evidence, EvidenceMethod, RetainedConflict, ReviewCase, SourceObservation,
+    CanonicalTeam, Evidence, EvidenceMethod, RelayResult, RetainedConflict, ReviewCase,
+    SourceObservation,
 };
 use serde::Serialize;
 
@@ -48,6 +49,13 @@ impl CanonicalProjection for CanonicalAthlete {
 impl CanonicalProjection for CanonicalPerformance {
     fn canonicalize_sets(&mut self) {
         provenance(&mut self.evidence, &mut self.retained_conflicts);
+    }
+}
+
+impl CanonicalProjection for RelayResult {
+    fn canonicalize_sets(&mut self) {
+        self.members.sort_by_key(|member| member.order);
+        provenance(&mut self.evidence, &mut []);
     }
 }
 

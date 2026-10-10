@@ -20,6 +20,7 @@ pub(super) struct EntityCounts {
     pub(super) athletes: usize,
     pub(super) events: usize,
     pub(super) performances: usize,
+    pub(super) relay_results: usize,
     pub(super) unsupported_cohorts: usize,
 }
 
@@ -101,6 +102,13 @@ fn stage(
             batch,
             Table::Performances,
             drain(held.performances)?,
+            APPLICATION_PHASE,
+        )?,
+        relay_results: append_new(
+            ctx,
+            batch,
+            Table::RelayResults,
+            drain(held.relay_results)?,
             APPLICATION_PHASE,
         )?,
         unsupported_cohorts,

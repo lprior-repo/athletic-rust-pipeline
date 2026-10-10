@@ -2,8 +2,8 @@ use super::collect;
 use crate::ihsa::Options;
 use crate::{AdapterContext, AdapterReport};
 use census_domain::model::{
-    CanonicalAthlete, CanonicalMeet, CanonicalPerformance, CanonicalSchool, SchoolYear,
-    SourceNamespace,
+    CanonicalAthlete, CanonicalMeet, CanonicalPerformance, CanonicalSchool, ExactSeconds, Mark,
+    RelayResult, SchoolYear, SourceNamespace,
 };
 use census_store::{Store, Table};
 
@@ -243,6 +243,64 @@ fn walk_reads_the_captured_meet_and_the_six_lists() -> TestResult {
             check!(eq;
                 dual, 0,
                 "an unreviewed name match cannot combine independent source owners"
+            );
+            Ok(())
+        })
+}
+
+#[test]
+fn ihsa_relay_result_preserves_team_mark_place_and_member_order_without_individual_pr() -> TestResult
+{
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let harness = Harness::new()?;
+            let report = harness.run(&options()).await?;
+            check!(eq; report.errors, 0, "notes: {:?}", report.notes);
+            let relays = harness.scan::<RelayResult>(Table::RelayResults)?;
+            check!(eq;
+                relays.len(),
+                12,
+                "the 1A 4x800 final publishes twelve team results"
+            );
+            let winner = relays
+                .iter()
+                .find(|relay| relay.place == Some(1))
+                .ok_or("the winning 4x800 team keeps its place")?;
+            check!(eq;
+                winner.mark,
+                Mark::TimeSeconds(ExactSeconds::parse("471.37")?),
+                "7:51.37 in seconds"
+            );
+            check!(eq; winner.round.as_deref(), Some("Finals"));
+            check!(eq;
+                winner
+                    .members
+                    .iter()
+                    .map(|member| (member.order, member.name_as_published.as_str()))
+                    .collect::<Vec<_>>(),
+                vec![
+                    (1, "Joel White"),
+                    (2, "Julian Honeyville"),
+                    (3, "Blake Lindberg"),
+                    (4, "Evan White"),
+                ],
+                "the published leg order is retained"
+            );
+            check!(
+                winner.members.iter().all(|member| member.athlete.is_some()),
+                "source-owned legs link the recorded athlete"
+            );
+            check!(
+                winner.source_team.is_some(),
+                "the source team identity travels with the result"
+            );
+            let performances = harness.scan::<CanonicalPerformance>(Table::Performances)?;
+            check!(eq;
+                performances.len(),
+                20,
+                "relay team rows add no individual performances"
             );
             Ok(())
         })

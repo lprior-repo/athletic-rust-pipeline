@@ -45,6 +45,7 @@ pub struct ExpectedEntities {
     pub teams: BTreeSet<String>,
     pub athletes: BTreeSet<String>,
     pub performances: BTreeSet<String>,
+    pub relay_results: BTreeSet<String>,
 }
 
 impl Corpus {
@@ -150,6 +151,9 @@ impl ExpectedEntities {
         target
             .performances
             .extend(self.performances.iter().cloned());
+        target
+            .relay_results
+            .extend(self.relay_results.iter().cloned());
     }
 }
 

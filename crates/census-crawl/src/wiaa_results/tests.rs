@@ -372,3 +372,138 @@ fn state_title_rows_preserve_per_row_timing_classes() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn relay_entry_slots_do_not_become_unstated_running_legs() -> TestResult {
+    use census_domain::model::{
+        CanonicalPerformance, CanonicalSchool, CanonicalTeam, ExactSeconds, Mark, RelayResult,
+    };
+    use census_store::Store;
+    use std::time::Duration;
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let fetcher = crate::net::Fetcher::new(
+        store.http_cache_dir(),
+        None,
+        Duration::ZERO,
+        HashMap::new(),
+        Vec::new(),
+    )?
+    .with_source("wiaa_results")
+    .with_offline(true);
+    for name in [
+        "Homestead",
+        "Arrowhead",
+        "Monona Grove",
+        "Oshkosh North",
+        "Oak Creek",
+    ] {
+        let (school, _) =
+            CanonicalSchool::new(UsJurisdiction::Wisconsin, name, name.to_lowercase(), None);
+        store.append(census_store::Table::Schools, &school)?;
+    }
+    std::fs::create_dir_all(store.out_dir())?;
+    let url = "https://www.wiaawi.org/Portals/0/PDF/Results/Track/2025/d1boysstateresults.htm";
+    let archive = format!("<a href=\"{url}\">Boys</a>");
+    for (archive_url, _) in ARCHIVES {
+        seed_result_cache(&fetcher, archive_url, archive.as_bytes())?;
+    }
+    seed_result_cache(
+        &fetcher,
+        url,
+        include_bytes!("../../tests/fixtures/wiaa_results/d1boysstateresults-sections.htm"),
+    )?;
+    let context = AdapterContext {
+        fetcher: &fetcher,
+        store: &store,
+        refresh: false,
+        school_year: SchoolYear::new(2026).ok_or("2026 school year")?,
+        observed_on: "2026-09-19".into(),
+        performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 9, 19).ok_or("snapshot date")?,
+        recording: None,
+    };
+    let options = Options {
+        limit: None,
+        refresh: false,
+        observed_on: "2026-09-19".into(),
+        seasons: vec![2025],
+        states: vec![UsJurisdiction::Wisconsin],
+        school_names: Vec::new(),
+    };
+    let report = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async { collect(&context, &options).await })?;
+    check!(eq; report.errors, 0, "{report:?}");
+    let relays: Vec<RelayResult> = store.scan(census_store::Table::RelayResults)?;
+    check!(eq;
+        relays.len(),
+        5,
+        "one result per entered school, not one per entry slot: notes={:?}",
+        report.notes
+    );
+    let arrowhead_mark = Mark::TimeSeconds(ExactSeconds::parse("41.86")?);
+    let arrowhead = relays
+        .iter()
+        .find(|relay| relay.mark == arrowhead_mark)
+        .ok_or("the Arrowhead 41.86Q preliminary is a relay result")?;
+    check!(eq; arrowhead.place, Some(2));
+    check!(eq; arrowhead.round.as_deref(), Some("preliminaries"));
+    check!(eq;
+        arrowhead
+            .members
+            .iter()
+            .map(|member| (member.order, member.name_as_published.as_str()))
+            .collect::<Vec<_>>(),
+        vec![
+            (1, "Presley Bencz"),
+            (2, "Trey Resch"),
+            (3, "Harper Hughes"),
+            (4, "Ashton Baumann"),
+            (5, "Joel Siner"),
+            (6, "Caleb Hicks"),
+        ],
+        "all six published entry slots survive in published order"
+    );
+    check!(
+        arrowhead
+            .members
+            .iter()
+            .all(|member| member.athlete.is_some()),
+        "graded slots link the recorded athlete"
+    );
+    let members: Vec<_> = arrowhead
+        .members
+        .iter()
+        .filter_map(|member| member.athlete.clone())
+        .collect();
+    let performances: Vec<CanonicalPerformance> = store.scan(census_store::Table::Performances)?;
+    check!(
+        performances
+            .iter()
+            .all(|performance| !members.contains(&performance.athlete)),
+        "a teammate never inherits the team's relay mark: {performances:?}"
+    );
+    check!(
+        performances
+            .iter()
+            .all(|performance| performance.event != arrowhead.event),
+        "the relay event publishes no athlete-scoped performance"
+    );
+    check!(eq;
+        store.scan::<CanonicalTeam>(census_store::Table::Teams)?.len(),
+        5
+    );
+    let physical = store.stats()?.tables;
+    let replay = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async { collect(&context, &options).await })?;
+    check!(eq; replay.errors, 0, "{replay:?}");
+    check!(eq; store.stats()?.tables, physical);
+    check!(eq;
+        store.scan::<RelayResult>(census_store::Table::RelayResults)?,
+        relays
+    );
+    Ok(())
+}

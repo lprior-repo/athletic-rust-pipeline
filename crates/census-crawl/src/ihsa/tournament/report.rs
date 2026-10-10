@@ -41,14 +41,15 @@ pub(super) fn narrate(
         walked.resumed_lists
     ));
     report.note(format!(
-        "canonical: {} schools ({} minted here), {} meets, {} events, {} teams, {} athletes, {} performances",
+        "canonical: {} schools ({} minted here), {} meets, {} events, {} teams, {} athletes, {} performances, {} relay results",
         counts.schools,
         stats.schools_minted,
         counts.meets,
         counts.events,
         counts.teams,
         counts.athletes,
-        counts.performances
+        counts.performances,
+        counts.relay_results
     ));
     report.note(format!(
         "unsupported graduation inference: {} raw grade/year observations retained for review",

@@ -1,4 +1,4 @@
-use super::{performance_evidence, MeetContext, RowWriter};
+use super::{MeetContext, RowWriter};
 use crate::result_file::ParsedRow;
 use census_domain::model::{AthleteId, CanonicalPerformance, Grade, SourceIdentity, TeamId};
 
@@ -7,7 +7,6 @@ pub(super) struct MemberFacts {
     pub(super) source: SourceIdentity,
     pub(super) key: String,
     pub(super) grade: Grade,
-    pub(super) leg_position: Option<u8>,
 }
 
 pub(super) fn record_performance(
@@ -42,7 +41,7 @@ pub(super) fn record_performance(
             round: context.event.round.clone(),
             timing: row.timing.or(Some(context.timing)),
             observed_grade: Some(facts.grade),
-            evidence: vec![performance_evidence(context, row, facts.leg_position)],
+            evidence: vec![context.evidence.clone()],
             source_key: facts.key,
             source_athlete: Some(facts.source),
             retained_conflicts: Vec::new(),

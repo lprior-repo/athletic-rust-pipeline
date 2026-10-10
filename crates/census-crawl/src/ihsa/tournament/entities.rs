@@ -84,7 +84,7 @@ impl<'a> Mapper<'a> {
     }
 }
 
-fn team_identities(reference: Option<&TeamRef>) -> Vec<SourceIdentity> {
+pub(super) fn team_identities(reference: Option<&TeamRef>) -> Vec<SourceIdentity> {
     let Some(team) = reference else {
         return Vec::new();
     };

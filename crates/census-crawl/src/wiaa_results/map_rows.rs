@@ -5,8 +5,8 @@ use super::super::Stats;
 use super::{team_for, ArchiveArtifact, MeetContext, RowWriter};
 use crate::result_file::{ParsedEvent, ParsedRow};
 use census_domain::model::{
-    AthleteId, CanonicalAthlete, Evidence, GradYear, Grade, ObservedGrade, SchoolId,
-    SourceAthleteObservation, SourceIdentity, SourceNamespace, SourceRef, TeamId,
+    AthleteId, CanonicalAthlete, GradYear, Grade, ObservedGrade, RelayMember, RelayResult,
+    SchoolId, SourceAthleteObservation, SourceIdentity, SourceNamespace, SourceRef, TeamId,
 };
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
@@ -31,17 +31,6 @@ pub(super) fn record_row(
         return 0;
     };
 
-    let members: Vec<(Option<u8>, String, Option<Grade>)> = if row.legs.is_empty() {
-        vec![(None, row.name.clone(), row.grade)]
-    } else {
-        row.legs
-            .iter()
-            .map(|leg| (Some(leg.position), leg.name.clone(), leg.grade))
-            .collect()
-    };
-    if !row.legs.is_empty() {
-        writer.stats.relay_legs = writer.stats.relay_legs.saturating_add(row.legs.len());
-    }
     let team_id = team_for(
         &mut writer.accumulator.teams,
         &school_id,
@@ -50,9 +39,97 @@ pub(super) fn record_row(
         context.school_year,
         context.evidence,
     );
-    record_members(
-        writer, context, row, row_index, &school_id, &team_id, members,
+    if row.legs.is_empty() {
+        let Some(grade) = row.grade else {
+            return 0;
+        };
+        if row.name.trim().is_empty() {
+            return 0;
+        }
+        let key = source_key(context.artifact, context.event, row_index, None);
+        let Some((athlete_id, source_athlete)) = record_athlete(
+            writer,
+            context,
+            &school_id,
+            &row.name,
+            grade,
+            &key,
+            &row.school,
+        ) else {
+            return 0;
+        };
+        record_performance(
+            writer,
+            context,
+            row,
+            &team_id,
+            MemberFacts {
+                athlete: athlete_id,
+                source: source_athlete,
+                key,
+                grade,
+            },
+        );
+        return 1;
+    }
+    writer.stats.relay_legs = writer.stats.relay_legs.saturating_add(row.legs.len());
+    record_relay_team(writer, context, row, row_index, &school_id, &team_id)
+}
+
+fn record_relay_team(
+    writer: &mut RowWriter<'_>,
+    context: &MeetContext<'_>,
+    row: &ParsedRow,
+    row_index: usize,
+    school_id: &SchoolId,
+    team_id: &TeamId,
+) -> usize {
+    let mut relay = RelayResult::new(
+        team_id,
+        context.event_id,
+        &context.meet.id,
+        row.mark.clone(),
+        source_key(context.artifact, context.event, row_index, None),
     )
+    .with_place(row.place)
+    .with_round(context.event.round.clone())
+    .with_timing(row.timing.or(Some(context.timing)))
+    .with_evidence(context.evidence.clone());
+    let mut athlete_rows = 0usize;
+    for leg in &row.legs {
+        let mut member = RelayMember::new(u32::from(leg.position), leg.name.clone());
+        if leg.name.trim().is_empty() {
+            relay = relay.with_member(member);
+            continue;
+        }
+        let leg_key = source_key(
+            context.artifact,
+            context.event,
+            row_index,
+            Some(leg.position),
+        );
+        if let Some(grade) = leg.grade {
+            if let Some((athlete_id, _)) = record_athlete(
+                writer,
+                context,
+                school_id,
+                &leg.name,
+                grade,
+                &leg_key,
+                &row.school,
+            ) {
+                athlete_rows = athlete_rows.saturating_add(1);
+                member = member.with_athlete(athlete_id);
+            }
+        }
+        relay = relay.with_member(member);
+    }
+    writer
+        .accumulator
+        .relay_results
+        .entry(relay.source_key.clone())
+        .or_insert(relay);
+    athlete_rows
 }
 
 fn resolve_school(
@@ -78,53 +155,6 @@ fn resolve_school(
             },
         )
         .clone()
-}
-
-fn record_members(
-    writer: &mut RowWriter<'_>,
-    context: &MeetContext<'_>,
-    row: &ParsedRow,
-    row_index: usize,
-    school_id: &SchoolId,
-    team_id: &TeamId,
-    members: Vec<(Option<u8>, String, Option<Grade>)>,
-) -> usize {
-    let mut athlete_rows = 0usize;
-    for (leg_position, member_name, member_grade) in members {
-        let Some(grade) = member_grade else {
-            continue;
-        };
-        if member_name.trim().is_empty() {
-            continue;
-        }
-        let source_key = source_key(context.artifact, context.event, row_index, leg_position);
-        let Some((athlete_id, source_athlete)) = record_athlete(
-            writer,
-            context,
-            school_id,
-            &member_name,
-            grade,
-            &source_key,
-            &row.school,
-        ) else {
-            continue;
-        };
-        athlete_rows = athlete_rows.saturating_add(1);
-        record_performance(
-            writer,
-            context,
-            row,
-            team_id,
-            MemberFacts {
-                athlete: athlete_id,
-                source: source_athlete,
-                key: source_key,
-                grade,
-                leg_position,
-            },
-        );
-    }
-    athlete_rows
 }
 
 fn admit_athlete(
@@ -239,23 +269,4 @@ pub(super) fn source_key(
             row_index
         ),
     }
-}
-
-fn performance_evidence(
-    context: &MeetContext<'_>,
-    row: &ParsedRow,
-    leg_position: Option<u8>,
-) -> Evidence {
-    let mut evidence = context.evidence.clone();
-    if let Some(position) = leg_position {
-        evidence.note = Some(format!(
-            "relay leg {position} for {}{}; the published mark is the team's",
-            row.school,
-            row.heat
-                .as_deref()
-                .map(|heat| format!(" squad {heat}"))
-                .map_or(Default::default(), core::convert::identity)
-        ));
-    }
-    evidence
 }
