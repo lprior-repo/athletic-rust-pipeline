@@ -201,6 +201,7 @@ lane_tests() {
     cargo test --workspace --all-features --quiet
   fi
 }
+
 lane_bench_presence() {
   local targets
   targets="$(cargo metadata --no-deps --format-version 1 | jq '[.packages[].targets[] | select(.kind | index("bench"))] | length')" || return 1
@@ -210,6 +211,23 @@ lane_bench_presence() {
     printf 'no benchmark target exists: performance acceptance is blocked\n'
     if [ "$RELEASE" = 1 ]; then return 1; fi
     return 0
+  fi
+}
+
+
+lane_durability() {
+  if [ "$RELEASE" -eq 1 ]; then
+    local restat_bin=""
+    if [ -n "$RESTATE_SERVER_BIN" ]; then
+      restat_bin="$RESTATE_SERVER_BIN"
+    elif [ -f "$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10/restate-server" ]; then
+      restat_bin="$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10/restate-server"
+    fi
+    local env_args="SCRATCH_STORE=$PWD/var/durability-scratch"
+    if [ -n "$restat_bin" ]; then
+      env_args="$env_args RESTATE_SERVER_BIN=$restat_bin"
+    fi
+    eval "$env_args env -u CI tools/moon-local run pipeline:durability"
   fi
 }
 
@@ -362,6 +380,7 @@ main() {
   run_tool_lane cargo-geiger geiger lane_geiger
   run_tool_lane cargo-hack "feature powerset" lane_hack
   run_lane "bench presence" lane_bench_presence
+  run_lane durability lane_durability
   if [ "$FULL" = 1 ]; then
     run_lane perf lane_perf
   fi

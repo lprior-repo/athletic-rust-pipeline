@@ -8,7 +8,7 @@ mod tests;
 mod wire;
 
 pub(in crate::athleticnet) use collect::collect as collect_meets;
-pub(in crate::athleticnet) use map::absorb_meet;
+pub(in crate::athleticnet) use map::{absorb_meet, MeetMapContext};
 pub use read::{grade_of, jurisdiction_of, EventMetadata};
 pub use wire::{
     AllResults, EventDivisions, FlatEvent, FlatRow, MeetData, PublishedEvent, PublishedLeg,

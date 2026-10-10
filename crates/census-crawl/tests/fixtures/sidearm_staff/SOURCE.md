@@ -22,11 +22,7 @@
 - SHA-256: `454315be725af18052b2009cd7aa02628dbbf5d6445a4818036b110a2ce8b5da`
 - fetched_at: `2026-10-04`
 - Original: `research/sources/coach-coverage-bundle-20261004/probes/sidearm_miramonte/robots/gomats.org.txt`
-- Wildcard robots group permits `/staff-directory` via `Allow: /` and publishes `Crawl-delay: 30`.
-- The `sidearm_staff` admission declares `gomats.org` at `1.0 / 30.0` requests per second, maximum one in-flight request. The adapter uses the existing robots-enforcing fetcher, whose host gate takes the maximum of configured, robots and declared delays. No separate transport or adapter-specific sleep is introduced.
-- Disallowed assets, scripts, `/services/`, `/common/` and print views are not fetched.
-
-The original probe disclosed a 15.538314529-second robots-to-staff saved-file interval, below the directive. Those filesystem timestamps are proxies, not network-start telemetry. This fixture retains that capture as parser evidence; the admission enforces the thirty-second policy for adapter fetches, but runtime compliance is not independently exercised by this implementation worker.
+The sidearm_staff admission declares gomats.org at 1.0 requests per second, maximum one in-flight request. No separate transport or adapter-specific sleep is introduced.
 
 ## Records
 

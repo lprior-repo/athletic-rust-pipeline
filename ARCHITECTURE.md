@@ -281,6 +281,7 @@ times. An append-only correction may
 refine a raw mark and unknown timing for the same natural identity, source owner, event and team;
 it must not downgrade measured marks, override known timing or delete original observations.
 
+Wind data is not returned by the MileSplit meet-performances API for outdoor sprint/hurdle marks; all wind readings are currently Unknown or NotApplicable. This is a source limitation, not an adapter defect.
 A published recruiter contact requires one claim binding a school-scoped role and program to a
 public mailbox from the same retained capture, plus an eligible current-tenure statement whose
 school year equals the census run's season. Tenure evidence names the source URL, capture SHA256,

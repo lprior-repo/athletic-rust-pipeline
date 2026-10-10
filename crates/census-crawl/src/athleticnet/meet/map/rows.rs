@@ -2,7 +2,7 @@ use super::super::read::{grade_of, meet_mark};
 use super::super::store::{athlete, store, AthleteRow};
 use super::super::wire::{FlatRow, PublishedLeg};
 use super::{events::MetadataConflict, MeetCtx};
-use crate::athleticnet::map::{school_for, PerformanceInput};
+use crate::athleticnet::map::{school_for, PerformanceInput, SchoolResolveContext};
 use crate::athleticnet::parse::timing_of;
 use census_domain::model::{AthleteId, EventKind, Gender, Grade, Mark, SchoolId, SourceIdentity};
 use std::collections::BTreeMap;
@@ -169,17 +169,17 @@ impl MeetCtx<'_> {
             self.stats.rows_unknown_school = self.stats.rows_unknown_school.saturating_add(1);
             return None;
         };
-        school_for(
-            &team_id.to_string(),
-            Some(self.state),
-            &self.school_names,
-            self.index,
-            self.resolved,
-            self.source,
-            self.observed_on,
-            self.stats,
-            self.accumulated,
-        )
+        let mut context = SchoolResolveContext {
+            state: Some(self.state),
+            school_names: &self.school_names,
+            index: self.index,
+            resolved: self.resolved,
+            source: self.source,
+            observed_on: self.observed_on,
+            stats: self.stats,
+            accumulated: self.accumulated,
+        };
+        school_for(&team_id.to_string(), &mut context)
     }
 
     fn athlete_of(

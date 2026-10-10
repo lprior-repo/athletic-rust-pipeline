@@ -198,6 +198,9 @@ impl Store {
             Err(poisoned) => poisoned.into_inner(),
         }
     }
+    pub fn http_cache_integrity(&self) -> StoreResult<Vec<String>> {
+        backup::http_cache_integrity(self.root())
+    }
 }
 
 #[cfg(test)]

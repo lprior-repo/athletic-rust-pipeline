@@ -134,20 +134,23 @@ fn invalid_published_mass_refuses_numeric_projection_without_hiding_later_valid_
         "athleticnet",
         Some("https://www.athletic.net/TrackAndField/meet/634313".into()),
     );
+    let mut context = MeetMapContext {
+        source: &source,
+        index: &SchoolIndex::from_schools(&[]),
+        resolved: &mut HashMap::new(),
+        stats: &mut stats,
+        accumulated: &mut accumulated,
+    };
     match absorb_meet(
         &meet,
         &results,
         None,
-        &source,
         (
             OBSERVED_ON,
             OBSERVED_ON,
             chrono::NaiveDate::from_ymd_opt(2026, 9, 30).ok_or("snapshot date")?,
         ),
-        &SchoolIndex::from_schools(&[]),
-        &mut HashMap::new(),
-        &mut stats,
-        &mut accumulated,
+        &mut context,
     ) {
         Err(crate::CrawlError::Specification(SpecificationError::InvalidMass)) => {}
         outcome => return Err(format!("expected invalid mass, received {outcome:?}").into()),
@@ -181,20 +184,23 @@ fn contradictory_published_aliases_cannot_mint_a_numeric_event() -> TestResult {
         "athleticnet",
         Some("https://www.athletic.net/TrackAndField/meet/634313".into()),
     );
+    let mut context = MeetMapContext {
+        source: &source,
+        index: &SchoolIndex::from_schools(&[]),
+        resolved: &mut HashMap::new(),
+        stats: &mut Stats::default(),
+        accumulated: &mut accumulated,
+    };
     match absorb_meet(
         &meet,
         &results,
         None,
-        &source,
         (
             OBSERVED_ON,
             OBSERVED_ON,
             chrono::NaiveDate::from_ymd_opt(2026, 9, 30).ok_or("snapshot date")?,
         ),
-        &SchoolIndex::from_schools(&[]),
-        &mut HashMap::new(),
-        &mut Stats::default(),
-        &mut accumulated,
+        &mut context,
     ) {
         Err(crate::CrawlError::Specification(SpecificationError::ConflictingSpecification)) => {}
         outcome => {

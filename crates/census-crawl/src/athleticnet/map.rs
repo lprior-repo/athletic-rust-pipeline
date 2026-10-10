@@ -48,6 +48,16 @@ pub(super) struct Accumulator {
     pub(super) profile_observations: Vec<SourceObservation>,
     pub(super) profile_reviews: Vec<ReviewCase>,
 }
+pub(super) struct SchoolResolveContext<'a> {
+    pub(super) state: Option<UsJurisdiction>,
+    pub(super) school_names: &'a HashMap<String, &'a str>,
+    pub(super) index: &'a SchoolIndex,
+    pub(super) resolved: &'a mut HashMap<String, SchoolId>,
+    pub(super) source: &'a SourceRef,
+    pub(super) observed_on: &'a str,
+    pub(super) stats: &'a mut Stats,
+    pub(super) accumulated: &'a mut Accumulator,
+}
 
 pub(super) fn grade_in(observed: &[ObservedGrade], school_year: SchoolYear) -> Option<Grade> {
     observed
@@ -56,30 +66,24 @@ pub(super) fn grade_in(observed: &[ObservedGrade], school_year: SchoolYear) -> O
         .map(|observation| observation.grade)
 }
 
-#[allow(clippy::too_many_arguments)]
 pub(super) fn school_for(
     school_id: &str,
-    state: Option<UsJurisdiction>,
-    school_names: &HashMap<String, &str>,
-    index: &SchoolIndex,
-    resolved: &mut HashMap<String, SchoolId>,
-    source: &SourceRef,
-    observed_on: &str,
-    stats: &mut Stats,
-    accumulated: &mut Accumulator,
+    context: &mut SchoolResolveContext<'_>,
 ) -> Option<SchoolId> {
-    let state = state?;
+    let state = context.state?;
     let key = format!("{state}:{school_id}");
-    if let Some(id) = resolved.get(&key) {
+    if let Some(id) = context.resolved.get(&key) {
         return Some(id.clone());
     }
-    let Some(name) = school_names.get(school_id).map(|name| name.to_string()) else {
-        stats.rows_unknown_school = stats.rows_unknown_school.saturating_add(1);
+    let Some(name) = context.school_names.get(school_id).map(|name| name.to_string()) else {
+        context.stats.rows_unknown_school =
+            context.stats.rows_unknown_school.saturating_add(1);
         return None;
     };
-    if let Some((id, _)) = index.resolve(state, &name) {
-        stats.schools_resolved = stats.schools_resolved.saturating_add(1);
-        resolved.insert(key, id.clone());
+    if let Some((id, _)) = context.index.resolve(state, &name) {
+        context.stats.schools_resolved =
+            context.stats.schools_resolved.saturating_add(1);
+        context.resolved.insert(key, id.clone());
         return Some(id);
     }
     let (mut school, id) = CanonicalSchool::new(state, name.clone(), name.to_lowercase(), None);
@@ -90,17 +94,20 @@ pub(super) fn school_for(
         id: school_id.to_string(),
         url: None,
     });
-    school
-        .evidence
-        .push(Evidence::parsed(source.clone(), observed_on));
-    stats.schools_minted = stats.schools_minted.saturating_add(1);
-    let id = accumulated
+    school.evidence.push(Evidence::parsed(
+        context.source.clone(),
+        context.observed_on,
+    ));
+    context.stats.schools_minted =
+        context.stats.schools_minted.saturating_add(1);
+    let id = context
+        .accumulated
         .schools
         .entry(id.as_str().to_string())
         .or_insert(school)
         .id
         .clone();
-    resolved.insert(key, id.clone());
+    context.resolved.insert(key, id.clone());
     Some(id)
 }
 

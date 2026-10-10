@@ -1,10 +1,12 @@
 use super::budget;
+use super::map;
+use super::parse::{schedule_url, MeetRow, ScheduleSport};
 use super::projection::{self, Page};
 use super::receipt;
-use super::{schedule_url, stats_of, MeetRow, Options, ScheduleSport, ADAPTER_ID};
-use crate::{AdapterContext, AdapterReport, CollectionDisposition, CrawlError, CrawlResult};
+use super::results::walk::ResultsWalk;
 use futures::{stream, TryStreamExt};
-
+use super::{ADAPTER_ID, Options, stats_of};
+use crate::{AdapterContext, AdapterReport, CollectionDisposition, CrawlError, CrawlResult};
 pub(super) struct Walk {
     report: AdapterReport,
     completed: usize,
@@ -74,26 +76,27 @@ impl Walk {
             sport,
             year,
         };
-        self.apply_rows(ctx, options, &page, rows)
+        self.apply_rows(ctx, options, &page, rows).await
     }
 
-    fn apply_rows(
+    async fn apply_rows(
         &mut self,
         ctx: &AdapterContext<'_>,
         options: &Options,
         page: &Page<'_>,
         rows: Vec<MeetRow>,
     ) -> CrawlResult<()> {
-        rows.into_iter().enumerate().try_for_each(|(index, row)| {
+        for (index, row) in rows.into_iter().enumerate() {
             let ordinal = index
                 .checked_add(1)
                 .ok_or_else(|| budget::arithmetic("Wayzata row ordinal"))?;
             let located = Located { ordinal, row };
-            if let Err(error) = self.apply_row(ctx, options, page, located) {
+            if let Err(error) = self.apply_row(ctx, options, page, &located) {
                 self.failed(locator(page, ordinal), error)?;
             }
-            Ok(())
-        })
+            self.collect_results(ctx, &located).await?;
+        }
+        Ok(())
     }
 
     fn apply_row(
@@ -101,14 +104,14 @@ impl Walk {
         ctx: &AdapterContext<'_>,
         options: &Options,
         page: &Page<'_>,
-        located: Located,
+        located: &Located,
     ) -> CrawlResult<()> {
         receipt::retain_raw(ctx, page, located.ordinal, &located.row)?;
         let effect = receipt::projection_effect(ctx, options, page, located.ordinal)?;
         if ctx.effect_is_committed(&effect.operation, &effect.digest)? {
             return Ok(());
         }
-        let meet = projection::project(ctx, options, page, located.row)?;
+        let meet = projection::project(ctx, options, page, &located.row)?;
         if meet.is_some() && self.limited(options) {
             return self.owed(locator(page, located.ordinal));
         }
@@ -136,6 +139,17 @@ impl Walk {
             budget::reserve(&mut self.report.notes, 1, 6)?;
             self.report.note(budget::detail(&error)?);
         }
+        Ok(())
+    }
+
+    async fn collect_results(&mut self, ctx: &AdapterContext<'_>, located: &Located) -> CrawlResult<()> {
+        if located.row.slug.is_none() {
+            return Ok(());
+        }
+        let slug = located.row.slug.as_ref().unwrap();
+        let mut results = ResultsWalk::new();
+        results.collect_for_slug(ctx, slug, &located.row.name, &located.row.date).await?;
+        self.report.rows = budget::add(self.report.rows, results.collected as u64)?;
         Ok(())
     }
 

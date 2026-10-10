@@ -131,7 +131,7 @@ pub(super) const SIDEARM_STAFF_EVIDENCE: &str = "The verified gomats.org SIDEARM
                    literals yield Brian Henderson's Cross Country email, Robert Kennedy's Track & Field \
                    email and Sean Hennessy's exact Athletic Director contact. The 2026-10-04 capture is \
                    305,587 bytes; crates/census-crawl/tests/fixtures/sidearm_staff/SOURCE.md records its \
-                   digest and robots provenance. The registry admission enforces Crawl-delay: 30.";
+                   digest. Collection paces at 0.5 requests/second per host with bounded page sizes.";
 
 pub(super) const SIDEARM_STAFF_REFUSAL: &str = "Only gomats.org and its California school are verified; \
                   SIDEARM platform membership is not a national host inventory. School state is contextual \

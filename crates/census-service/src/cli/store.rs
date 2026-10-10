@@ -112,5 +112,12 @@ pub(super) fn run_integrity(store: &Store) -> Result<()> {
     for e in &report.unreadable_entity_logs {
         println!("unreadable_entity_log\t{e}");
     }
+    let cache_issues = store.http_cache_integrity().context("checking http cache integrity")?;
+    for issue in &cache_issues {
+        println!("http_cache\t{issue}");
+    }
+    if !cache_issues.is_empty() {
+        println!("http_cache_ok\tfalse");
+    }
     Ok(())
 }

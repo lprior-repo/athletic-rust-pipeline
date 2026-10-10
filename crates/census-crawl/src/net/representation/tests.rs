@@ -30,19 +30,28 @@ fn an_empty_representation_has_an_empty_identity() -> TestResult {
 
 #[test]
 fn a_prohibited_header_is_refused_rather_than_dropped() -> TestResult {
-    for name in ["Cookie", "Authorization", "cf-clearance", "User-Agent"] {
-        let refused =
-            match RepresentationHeaders::canonical(&[(name.to_string(), "value".to_string())]) {
-                Err(FetchError::Policy { detail }) => detail,
-                other => {
-                    return Err(format!("{name} must be refused by policy, got: {other:?}").into())
-                }
-            };
+    for name in ["Cookie", "Authorization", "cf-clearance"] {
+        let refused = match RepresentationHeaders::canonical(&[(name.to_string(), "value".to_string())]) {
+            Err(FetchError::Policy { detail }) => detail,
+            other => {
+                return Err(format!("{name} must be refused by policy, got: {other:?}").into())
+            }
+        };
         check!(
             refused.contains(name),
             "the refusal names {name}: {refused}"
         );
     }
+    Ok(())
+}
+
+#[test]
+fn user_agent_is_allowed_for_the_browser_lane() -> TestResult {
+    let result = RepresentationHeaders::canonical(&[("user-agent".to_string(), "Mozilla/5.0".to_string())]);
+    check!(
+        result.is_ok(),
+        "User-Agent must be allowed for browser lane: {result:?}"
+    );
     Ok(())
 }
 

@@ -8,6 +8,7 @@ use super::{
     content_digest, read_cache_file, CacheMeta, FetchError, MAX_BODY_BYTES, MAX_META_BYTES,
 };
 use std::path::{Path, PathBuf};
+const MAX_ARCHIVE_BYTES: u64 = 100 * 1024 * 1024;
 
 pub(super) fn write_preserved_cache(
     body_path: &Path,
@@ -51,9 +52,30 @@ pub(super) fn write_preserved_capture(
     let capture = Capture::from_meta(meta, meta_path)?;
     capture.verify_body(body, body_path)?;
     let archive = initialize_archive(root)?;
+    if !archive_within_budget(&archive, body) {
+        return Err(FetchError::Invariant {
+            detail: "archive budget exceeded".to_string(),
+        });
+    }
     with_stage(root, |stage| {
         preserve_capture(&archive, stage, "new", body, &capture)
     })
+}
+pub(super) fn archive_within_budget(archive: &Path, body: &[u8]) -> bool {
+    if !archive.exists() {
+        return (body.len() as u64) < MAX_ARCHIVE_BYTES;
+    }
+    let Ok(entries) = std::fs::read_dir(archive) else {
+        return true;
+    };
+    let mut total: u64 = 0;
+    for entry in entries.filter_map(|e| e.ok()) {
+        let Ok(metadata) = entry.metadata() else {
+            continue;
+        };
+        total = total.saturating_add(metadata.len());
+    }
+    total.saturating_add(body.len() as u64) <= MAX_ARCHIVE_BYTES
 }
 
 pub(super) fn replay_preserved_cache(

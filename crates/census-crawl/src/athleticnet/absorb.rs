@@ -4,7 +4,7 @@ mod rows;
 #[cfg(test)]
 mod tests;
 
-use super::map::{profile_url, school_for, Accumulator, Stats};
+use super::map::{profile_url, school_for, Accumulator, SchoolResolveContext, Stats};
 use super::parse::{gender_of, Bio};
 use super::{Scope, Target};
 use census_domain::model::{
@@ -199,17 +199,17 @@ struct Ctx<'a> {
 
 impl<'a> Ctx<'a> {
     fn canonical_school(&mut self, school_id: &str) -> Option<SchoolId> {
-        school_for(
-            school_id,
-            self.target.state,
-            &self.school_names,
-            self.index,
-            self.resolved,
-            self.source,
-            self.observed_on,
-            self.stats,
-            self.accumulated,
-        )
+        let mut context = SchoolResolveContext {
+            state: self.target.state,
+            school_names: &self.school_names,
+            index: self.index,
+            resolved: self.resolved,
+            source: self.source,
+            observed_on: self.observed_on,
+            stats: self.stats,
+            accumulated: self.accumulated,
+        };
+        school_for(school_id, &mut context)
     }
 
     fn athlete_id(

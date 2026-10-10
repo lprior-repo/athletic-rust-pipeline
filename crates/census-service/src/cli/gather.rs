@@ -82,12 +82,16 @@ pub(super) async fn run_teams(cli: &Cli, args: &TeamsArgs) -> Result<()> {
             let store = Store::open(root)?;
             let fetcher = build_fetcher(cli, &store)?;
             for jurisdiction in &jurisdictions {
-                let teams =
-                    census::collect_state_teams(&fetcher, &store, *jurisdiction, args.refresh)
-                        .await?;
-                println!("{}\tteams={}", jurisdiction.code(), teams.len());
-                for team in teams.iter().take(3) {
-                    println!("  {}\t{}\t{}", team.id, team.name, team.city_state);
+                match census::collect_state_teams(&fetcher, &store, *jurisdiction, args.refresh).await {
+                    Ok(teams) => {
+                        println!("{}\tteams={}", jurisdiction.code(), teams.len());
+                        for team in teams.iter().take(3) {
+                            println!("  {}\t{}\t{}", team.id, team.name, team.city_state);
+                        }
+                    }
+                    Err(error) => {
+                        eprintln!("{}\tteams=error\t{}", jurisdiction.code(), error);
+                    }
                 }
             }
             Ok(())

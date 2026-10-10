@@ -9,7 +9,7 @@ pub const MAX_REPRESENTATION_HEADERS: usize = 8;
 pub const MAX_REPRESENTATION_NAME_BYTES: usize = 64;
 pub const MAX_REPRESENTATION_VALUE_BYTES: usize = 1024;
 
-const ALLOWED_NAMES: [&str; 3] = ["accept", "accept-language", "anettokens"];
+const ALLOWED_NAMES: [&str; 4] = ["accept", "accept-language", "anettokens", "user-agent"];
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]

@@ -3,7 +3,7 @@ use super::super::parse::gender_of;
 use super::super::{
     grade_of, jurisdiction_of, AllResults, EventDivisions, EventMetadata, MeetData,
 };
-use super::map::absorb_meet;
+use super::map::{absorb_meet, MeetMapContext};
 use census_domain::model::{
     CompetitionLevel, EvidenceMethod, Gender, Mark, PerformanceId, SchoolYear, SourceNamespace,
     SourceRef, Sport, TimingMethod,
@@ -54,20 +54,23 @@ fn absorb(
     let mut accumulated = Accumulator::default();
     let mut stats = Stats::default();
     let source = SourceRef::new("athleticnet", None);
+    let mut context = MeetMapContext {
+        source: &source,
+        index: &SchoolIndex::from_schools(&[]),
+        resolved: &mut HashMap::new(),
+        stats: &mut stats,
+        accumulated: &mut accumulated,
+    };
     let (_, counts) = absorb_meet(
         meet,
         results,
         metadata,
-        &source,
         (
             OBSERVED_ON,
             OBSERVED_ON,
             chrono::NaiveDate::from_ymd_opt(2026, 9, 30).ok_or("snapshot date")?,
         ),
-        &SchoolIndex::from_schools(&[]),
-        &mut HashMap::new(),
-        &mut stats,
-        &mut accumulated,
+        &mut context,
     )?;
     Ok(Walk {
         meet: meet.clone(),

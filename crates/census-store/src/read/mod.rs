@@ -49,6 +49,7 @@ impl Store {
     }
 
     pub fn scan<T: Entity>(&self, table: Table) -> StoreResult<Vec<T>> {
+        self.flush()?;
         self.snapshot().scan(table)
     }
 

@@ -1,4 +1,4 @@
-use super::super::absorb_meet;
+use super::super::{absorb_meet, MeetMapContext};
 use super::{Captured, Documents, MeetRun, MeetUrls};
 use crate::athleticnet::meet::count::{note, MeetStats};
 use crate::athleticnet::meet::read::EventMetadata;
@@ -109,20 +109,23 @@ impl MeetRun {
         index: &SchoolIndex,
         performance_as_of: chrono::NaiveDate,
     ) -> CrawlResult<(u64, MeetStats)> {
+        let mut context = MeetMapContext {
+            source,
+            index,
+            resolved: &mut self.resolved,
+            stats: &mut self.stats,
+            accumulated: &mut self.accumulated,
+        };
         let (stored, counts) = absorb_meet(
             &documents.meet.document,
             &documents.results.document,
             documents.metadata.as_ref(),
-            source,
             (
                 &documents.meet.fetched_at,
                 &documents.results.fetched_at,
                 performance_as_of,
             ),
-            index,
-            &mut self.resolved,
-            &mut self.stats,
-            &mut self.accumulated,
+            &mut context,
         )?;
         self.report.note(format!(
             "meet {}: {counts}",

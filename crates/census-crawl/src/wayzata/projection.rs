@@ -16,13 +16,13 @@ pub(super) fn project(
     ctx: &AdapterContext<'_>,
     options: &Options,
     page: &Page<'_>,
-    row: MeetRow,
+    row: &MeetRow,
 ) -> CrawlResult<Option<CanonicalMeet>> {
     match ctx.assess_performance_date(&row.date) {
         PerformanceDateAssessment::Future => return Ok(None),
         PerformanceDateAssessment::Unknown => {
             return Err(CrawlError::PerformanceDateUnknown {
-                published: row.date,
+                published: row.date.clone(),
                 as_of: ctx.performance_as_of,
             })
         }
@@ -37,7 +37,7 @@ pub(super) fn project(
 }
 
 fn admitted_meet(
-    row: MeetRow,
+    row: &MeetRow,
     state: UsJurisdiction,
     page: &Page<'_>,
 ) -> CrawlResult<CanonicalMeet> {
@@ -51,11 +51,11 @@ fn admitted_meet(
         .parse::<u8>()
         .map_err(|_| schema(page, "published month is invalid"))?;
     let level = level_of(&row.name);
-    let mut meet = CanonicalMeet::new(Some(state), row.name, row.date, level);
-    meet.location = Some(row.location);
+    let mut meet = CanonicalMeet::new(Some(state), row.name.clone(), row.date.clone(), level);
+    meet.location = Some(row.location.clone());
     budget::reserve(&mut meet.sports, 1, 1)?;
     meet.sports.push(page.sport.sport_for(month));
-    decorate(&mut meet, row.slug, page)?;
+    decorate(&mut meet, row.slug.clone(), page)?;
     Ok(meet)
 }
 

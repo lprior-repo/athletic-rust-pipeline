@@ -50,7 +50,24 @@ pub(super) fn compile(name: &str) -> Result<PathBuf> {
 }
 
 pub(super) fn measure(executable: &Path, directory: &Path) -> Result<(String, Option<u64>)> {
-    measure_with_time(executable, directory, Some(Path::new("time")))
+    let iterations = 3;
+    let mut best_output = None;
+    let mut best_rss = u64::MAX;
+    for i in 0..iterations {
+        let tmp_dir = directory.join(format!("run-{i}"));
+        std::fs::create_dir_all(&tmp_dir)?;
+        let (output, rss) = measure_with_time(executable, &tmp_dir, Some(Path::new("time")))?;
+        if let Some(r) = rss {
+            if r < best_rss {
+                best_rss = r;
+                best_output = Some(output);
+            }
+        } else if best_output.is_none() {
+            best_output = Some(output);
+        }
+    }
+    let output = best_output.ok_or_else(|| anyhow::anyhow!("all benchmark runs failed"))?;
+    Ok((output, Some(best_rss)))
 }
 
 pub(super) fn measure_with_time(

@@ -14,17 +14,20 @@ use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
 use rows::Block;
 use std::collections::{BTreeMap, HashMap};
+pub(in crate::athleticnet) struct MeetMapContext<'a> {
+    pub(super) source: &'a SourceRef,
+    pub(super) index: &'a SchoolIndex,
+    pub(super) resolved: &'a mut HashMap<String, SchoolId>,
+    pub(super) stats: &'a mut Stats,
+    pub(super) accumulated: &'a mut Accumulator,
+}
 
 pub(in crate::athleticnet) fn absorb_meet(
     meet: &MeetData,
     results: &AllResults,
     metadata: Option<&EventMetadata>,
-    source: &SourceRef,
     timing: (&str, &str, chrono::NaiveDate),
-    index: &SchoolIndex,
-    resolved: &mut HashMap<String, SchoolId>,
-    stats: &mut Stats,
-    accumulated: &mut Accumulator,
+    context: &mut MeetMapContext<'_>,
 ) -> crate::CrawlResult<(u64, MeetStats)> {
     let mut counts = MeetStats::default();
     let (meet_observed_on, observed_on, performance_as_of) = timing;
@@ -44,18 +47,18 @@ pub(in crate::athleticnet) fn absorb_meet(
         place.state,
         &place.date,
         sport,
-        source,
+        context.source,
         meet_observed_on,
-        accumulated,
+        context.accumulated,
     );
     let mut ctx = MeetCtx {
-        source,
+        source: context.source,
         observed_on,
         performance_as_of,
-        index,
-        resolved,
-        stats,
-        accumulated,
+        index: context.index,
+        resolved: context.resolved,
+        stats: context.stats,
+        accumulated: context.accumulated,
         counts: &mut counts,
         metadata,
         state: place.state,
