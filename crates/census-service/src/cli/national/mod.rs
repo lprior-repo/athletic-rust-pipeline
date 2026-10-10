@@ -126,6 +126,14 @@ pub(super) struct NationalArgs {
         help = "Observation date recorded on every postal claim from that source, repeatable"
     )]
     evidence_dates: Vec<String>,
+    #[arg(
+        help = "Re-drive rounds for jurisdictions that still owe source work; each round re-runs owed stages and stops early when a round makes no progress. 0 disables re-driving"
+    )]
+    #[arg(long, default_value_t = 96)]
+    pass_budget: usize,
+    #[arg(help = "Durable delay in seconds between re-drive rounds")]
+    #[arg(long, default_value_t = 900)]
+    pass_delay_seconds: u64,
 }
 
 #[derive(Args, Debug, Clone)]

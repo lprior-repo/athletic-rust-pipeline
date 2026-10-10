@@ -19,6 +19,7 @@ fn physical_csv_capture_admits_published_past_and_retains_future_debt(
     let body = b"tenant,athleticlive_meet_id,name,state,start\ntimer,123,Published Meet,Illinois,2025-05-01\ntimer,124,Future Meet,Illinois,2027-05-01\n";
     std::fs::write(&input, body)?;
     let metadata = CacheMeta {
+        redirects: Vec::new(),
         url: "https://live.athletic.net/meets.csv".to_string(),
         method: "GET".to_string(),
         status: 200,

@@ -33,7 +33,6 @@ async fn serve(listener: TcpListener) -> TestResult {
         let (mut socket, _) = listener.accept().await?;
         let request = request_headers(&mut socket).await?;
         let response = match request.split_whitespace().nth(1).ok_or("missing request path")? {
-            "/robots.txt" => "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_string(),
             "/start" => "HTTP/1.1 302 Found\r\nLocation: /finish\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_string(),
             "/finish" if request.to_ascii_lowercase().contains("if-none-match: \"capture-v1\"") =>
                 "HTTP/1.1 304 Not Modified\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_string(),

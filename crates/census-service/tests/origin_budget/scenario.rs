@@ -7,7 +7,7 @@ use tokio::sync::{mpsc, watch};
 
 use super::process::{Outcome, Workflow};
 use super::server::{Handshake, Release};
-use super::{BODY, OWNER_AGENT, PROCESS_DEADLINE, TARGET};
+use super::{BODY, OWNER_AGENT, OWNER_START, PROCESS_DEADLINE, TARGET};
 
 #[derive(Debug, Serialize)]
 pub(super) struct Facts {
@@ -66,7 +66,13 @@ async fn contend(
     mut handshake: mpsc::Receiver<Handshake>,
     release: &watch::Sender<Release>,
 ) -> Result<Facts> {
-    workflows.push(Workflow::spawn(directory, binary, origin, "owner", TARGET)?);
+    workflows.push(Workflow::spawn(
+        directory,
+        binary,
+        origin,
+        "owner",
+        OWNER_START,
+    )?);
     let reached = tokio::time::timeout(PROCESS_DEADLINE, handshake.recv())
         .await?
         .ok_or_else(|| anyhow::anyhow!("owner target handshake channel closed"))?;
@@ -112,6 +118,7 @@ async fn contend(
     require_released(&lock_path)?;
     let cache = cache_facts(
         workflow(workflows, 0)?.store(),
+        &format!("{origin}{OWNER_START}"),
         &format!("{origin}{TARGET}"),
     )?;
     let replay_child = Workflow::spawn_replay(directory, binary, workflow(workflows, 0)?)?;
@@ -122,6 +129,7 @@ async fn contend(
         cache
             == cache_facts(
                 workflow(workflows, 0)?.store(),
+                &format!("{origin}{OWNER_START}"),
                 &format!("{origin}{TARGET}")
             )?,
         "cache replay changed original acquisition facts"
@@ -222,7 +230,7 @@ pub(super) fn require_released(path: &Path) -> Result<()> {
     }
 }
 
-pub(super) fn cache_facts(store: &Path, target: &str) -> Result<Value> {
+pub(super) fn cache_facts(store: &Path, requested: &str, served: &str) -> Result<Value> {
     let mut captures = Vec::new();
     for (index, entry) in std::fs::read_dir(store.join("http"))?.enumerate() {
         ensure!(index < 64, "cache root exceeded fixture bound");
@@ -236,7 +244,7 @@ pub(super) fn cache_facts(store: &Path, target: &str) -> Result<Value> {
         };
         let encoded = std::fs::read(&path)?;
         let metadata: Value = serde_json::from_slice(&encoded)?;
-        if field(&metadata, "url")?.as_str() != Some(target) {
+        if field(&metadata, "url")?.as_str() != Some(requested) {
             continue;
         }
         let body_path = path.with_file_name(format!("{key}.body"));
@@ -251,7 +259,7 @@ pub(super) fn cache_facts(store: &Path, target: &str) -> Result<Value> {
                 && field(&metadata, "bytes")?.as_u64() == Some(u64::try_from(body.len())?)
                 && field(&metadata, "content_digest")?.as_str()
                     == Some(super::certificate::digest(&body).as_str())
-                && field(&metadata, "response_url")?.as_str() == Some(target)
+                && field(&metadata, "response_url")?.as_str() == Some(served)
                 && field(&metadata, "content_type")?.as_str() == Some("text/plain"),
             "wrong complete capture metadata: {metadata}"
         );

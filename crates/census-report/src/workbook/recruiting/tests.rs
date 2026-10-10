@@ -797,7 +797,12 @@ fn an_athlete_without_a_grade_observation_publishes_the_season_of_their_capture(
             SourceIdentity::new(SourceNamespace::MilesplitAthlete, name),
         );
         athlete.sports = vec![Sport::OutdoorTrack];
-        publish_fixture_cohort(&mut athlete, "milesplit_roster", "observed-season", observed_on);
+        publish_fixture_cohort(
+            &mut athlete,
+            "milesplit_roster",
+            "observed-season",
+            observed_on,
+        );
         store.append(Table::Athletes, &athlete)?;
     }
 
@@ -852,7 +857,9 @@ fn an_absent_value_publishes_a_blank_cell_while_counts_publish_zero() -> TestRes
     let mut book = open_workbook(&path)?;
     let athletes = sheet(&mut book, "Athletes")?;
     let name_column = column_of(&athletes, "Name")?;
-    let row = row_where(&athletes, |row| text(&athletes, row, name_column) == "Bare Runner")?;
+    let row = row_where(&athletes, |row| {
+        text(&athletes, row, name_column) == "Bare Runner"
+    })?;
     for header in [
         "1 Mile (s)",
         "5000m (s)",

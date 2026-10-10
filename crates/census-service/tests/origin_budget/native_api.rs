@@ -135,7 +135,7 @@ pub(super) async fn attach(
 ) -> Result<Reply> {
     let value = request(
         client.get(format!(
-            "{ingress}/restate/attach/{}",
+            "{ingress}/restate/invocation/{}/attach",
             submitted.invocation_id
         )),
         path,

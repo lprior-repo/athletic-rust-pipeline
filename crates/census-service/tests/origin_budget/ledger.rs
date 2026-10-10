@@ -2,7 +2,7 @@ use anyhow::{ensure, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-use super::{CLOCK_TOLERANCE_MS, DELAY_MS, INFLIGHT_BUDGET, OWNER_AGENT, TARGET};
+use super::{CLOCK_TOLERANCE_MS, DELAY_MS, INFLIGHT_BUDGET, OWNER_AGENT, OWNER_START, TARGET};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(super) struct Request {
@@ -93,10 +93,10 @@ pub(super) fn qualify(requests: &[Request]) -> Result<Measurements> {
         .map(|request| request.path.as_str())
         .collect();
     ensure!(
-        paths == ["/robots.txt", TARGET],
+        paths == [OWNER_START, TARGET],
         "wrong exact physical ledger: {requests:?}"
     );
-    for request in requests {
+    for (request, expected_status) in requests.iter().zip([302_u16, 200]) {
         ensure!(
             request.method == "GET",
             "unexpected physical method: {request:?}"
@@ -106,16 +106,16 @@ pub(super) fn qualify(requests: &[Request]) -> Result<Measurements> {
             "rival emitted physical traffic: {request:?}"
         );
         ensure!(
-            request.response_status == 200 && request.end_ns >= request.start_ns,
+            request.response_status == expected_status && request.end_ns >= request.start_ns,
             "incomplete HTTP response: {request:?}"
         );
     }
     let first = requests
         .first()
-        .ok_or_else(|| anyhow::anyhow!("no robots request"))?;
+        .ok_or_else(|| anyhow::anyhow!("no first admission"))?;
     let last = requests
         .last()
-        .ok_or_else(|| anyhow::anyhow!("no target request"))?;
+        .ok_or_else(|| anyhow::anyhow!("no destination admission"))?;
     let spacing = last
         .start_ns
         .checked_sub(first.start_ns)

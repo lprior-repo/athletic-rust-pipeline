@@ -9,7 +9,7 @@ use tokio::sync::{mpsc, oneshot, watch};
 use tokio::task::JoinSet;
 
 use super::ledger::{self, Event, Request};
-use super::{BODY, OWNER_AGENT, TARGET};
+use super::{BODY, OWNER_AGENT, OWNER_START, TARGET};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Release {
@@ -250,18 +250,28 @@ async fn respond(
             .wait_for(|state| *state == Release::Released)
             .await?;
     }
-    let body = if path == "/robots.txt" {
-        "User-agent: *\r\nAllow: /\r\n"
+    let (status, response) = if path == OWNER_START {
+        (
+            302,
+            format!(
+                "HTTP/1.1 302 Found\r\nLocation: {TARGET}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+            ),
+        )
     } else {
-        BODY
+        (
+            200,
+            format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{BODY}",
+                BODY.len()
+            ),
+        )
     };
-    let response = format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len());
     socket.write_all(response.as_bytes()).await?;
     events
         .send(Event::End {
             connection,
             at_ns: u64::try_from(epoch.elapsed().as_nanos())?,
-            response_status: 200,
+            response_status: status,
         })
         .await?;
     Ok(())

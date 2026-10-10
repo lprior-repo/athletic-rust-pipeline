@@ -67,8 +67,21 @@ impl<'s> StoreSnapshot<'s> {
             .snapshot
             .get(self.journal, Store::journal_key(phase, key))
             .map_err(|source| StoreError::Read { source })?;
-        raw.map(|raw| super::decode_journal_payload(phase, key, raw.as_ref()))
-            .transpose()
+        let Some(raw) = raw else {
+            return Ok(None);
+        };
+        let row_key = Store::journal_key(phase, key);
+        super::decode_journal_entry(phase, key, raw.as_ref(), |index| {
+            let chunk_key = crate::journal::chunk_key(&row_key, index)?;
+            let chunk = self
+                .snapshot
+                .get(self.journal, chunk_key)
+                .map_err(|source| StoreError::Read { source })?;
+            chunk
+                .map(|chunk| super::decode_journal_chunk(phase, key, index, chunk.as_ref()))
+                .transpose()
+        })
+        .map(Some)
     }
 
     pub fn for_each_observation<T: Entity>(

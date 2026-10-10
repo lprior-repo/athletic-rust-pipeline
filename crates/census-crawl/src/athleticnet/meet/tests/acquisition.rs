@@ -23,6 +23,7 @@ fn seed_cache(
     let representation = RepresentationHeaders::canonical(&headers)?;
     let key = Fetcher::key_for("GET", url, &representation.identity());
     let meta = CacheMeta {
+        redirects: Vec::new(),
         url: url.to_string(),
         method: "GET".to_string(),
         representation,

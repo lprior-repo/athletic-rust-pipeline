@@ -153,10 +153,12 @@ pub use recording::{PreparedRecorded, Recorded, RecordedBatch, RecordedJournal, 
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct UnresolvedCounters {
+pub struct ResolutionCounters {
     pub rows: u64,
-    pub labels: u64,
+    pub resolved: u64,
+    pub unresolved: u64,
+    pub retained: u64,
+    pub quarantined: u64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -172,6 +174,8 @@ pub struct AdapterReport {
     pub rejections: u64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub unresolved: Option<UnresolvedCounters>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub resolution: Option<ResolutionCounters>,
     pub unit: String,
     pub notes: Vec<String>,
     #[serde(default)]
@@ -191,6 +195,7 @@ impl AdapterReport {
             with_email: 0,
             rejections: 0,
             unresolved: None,
+            resolution: None,
             unit: unit.into(),
             notes: Vec::new(),
             disposition: CollectionDisposition::Unknown,

@@ -23,15 +23,15 @@ fn fetcher_in(
 }
 
 #[test]
-fn turns_for_one_host_are_spaced_by_exactly_the_robots_delay() -> TestResult {
+fn turns_for_one_host_are_spaced_by_exactly_the_configured_delay() -> TestResult {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .start_paused(true)
         .build()?
         .block_on(async {
             let dir = tempfile::tempdir()?;
-            let fetcher = fetcher_in(dir.path(), Duration::from_millis(1), Vec::new())?;
-            fetcher.host_gate(HOST, Some(Duration::from_secs(3))).await;
+            let fetcher = fetcher_in(dir.path(), Duration::from_secs(3), Vec::new())?;
+            fetcher.host_gate(HOST).await;
 
             let start = tokio::time::Instant::now();
             fetcher.wait_turn(HOST).await;
@@ -44,7 +44,7 @@ fn turns_for_one_host_are_spaced_by_exactly_the_robots_delay() -> TestResult {
             check!(eq;
                 tokio::time::Instant::now().duration_since(start),
                 Duration::from_secs(3),
-                "the second turn must leave exactly the robots crawl-delay after the first"
+                "the second turn must leave exactly the configured spacing after the first"
             );
 
             fetcher.wait_turn(HOST).await;
@@ -65,8 +65,8 @@ fn a_partial_advance_leaves_the_next_turn_gated() -> TestResult {
         .build()?
         .block_on(async {
             let dir = tempfile::tempdir()?;
-            let fetcher = fetcher_in(dir.path(), Duration::from_millis(1), Vec::new())?;
-            fetcher.host_gate(HOST, Some(Duration::from_secs(3))).await;
+            let fetcher = fetcher_in(dir.path(), Duration::from_secs(3), Vec::new())?;
+            fetcher.host_gate(HOST).await;
             fetcher.wait_turn(HOST).await;
             let reserved_at = tokio::time::Instant::now();
 
@@ -109,9 +109,7 @@ fn an_authorized_host_is_never_paced_faster_than_the_policy_ceiling() -> TestRes
                 Duration::from_millis(1),
                 vec!["example.test".to_string()],
             )?;
-            fetcher
-                .host_gate(HOST, Some(Duration::from_millis(1)))
-                .await;
+            fetcher.host_gate(HOST).await;
 
             let start = tokio::time::Instant::now();
             fetcher.wait_turn(HOST).await;
@@ -134,9 +132,7 @@ fn a_registered_host_is_never_paced_faster_than_its_declared_rate() -> TestResul
         .block_on(async {
             let dir = tempfile::tempdir()?;
             let fetcher = fetcher_in(dir.path(), Duration::from_millis(1), Vec::new())?;
-            fetcher
-                .host_gate("www.wayzataresults.com", Some(Duration::from_millis(1)))
-                .await;
+            fetcher.host_gate("www.wayzataresults.com").await;
 
             let start = tokio::time::Instant::now();
             fetcher.wait_turn("www.wayzataresults.com").await;
@@ -198,7 +194,7 @@ fn a_task_waiting_in_queue_is_refused_after_cooldown_is_recorded() -> TestResult
         .block_on(async {
             let dir = tempfile::tempdir()?;
             let fetcher = fetcher_in(dir.path(), Duration::from_secs(1), Vec::new())?;
-            fetcher.host_gate(HOST, Some(Duration::from_secs(1))).await;
+            fetcher.host_gate(HOST).await;
 
             let first = Box::pin(fetcher.wait_turn(HOST));
             first.await;
@@ -235,12 +231,12 @@ fn two_fetchers_sharing_one_pacing_state_share_the_host_budget() -> TestResult {
         .block_on(async {
             let dir = tempfile::tempdir()?;
             let shared = Arc::new(PacingState::new());
-            let first = fetcher_in(dir.path(), Duration::from_millis(1), Vec::new())?
+            let first = fetcher_in(dir.path(), Duration::from_secs(3), Vec::new())?
                 .with_shared_pacing(Arc::clone(&shared));
-            let second = fetcher_in(dir.path(), Duration::from_millis(1), Vec::new())?
+            let second = fetcher_in(dir.path(), Duration::from_secs(3), Vec::new())?
                 .with_shared_pacing(Arc::clone(&shared));
-            first.host_gate(HOST, Some(Duration::from_secs(3))).await;
-            second.host_gate(HOST, Some(Duration::from_secs(3))).await;
+            first.host_gate(HOST).await;
+            second.host_gate(HOST).await;
 
             let start = tokio::time::Instant::now();
             first.wait_turn(HOST).await;
@@ -353,8 +349,8 @@ fn two_hosts_of_one_family_share_one_budget() -> TestResult {
                 Duration::from_millis(1),
                 &[("milesplit.com", Duration::from_secs(2))],
             )?;
-            fetcher.host_gate("tx.milesplit.com", None).await;
-            fetcher.host_gate("wi.milesplit.com", None).await;
+            fetcher.host_gate("tx.milesplit.com").await;
+            fetcher.host_gate("wi.milesplit.com").await;
 
             let start = tokio::time::Instant::now();
             fetcher.wait_turn("tx.milesplit.com").await;
@@ -388,8 +384,8 @@ fn a_host_outside_every_family_keeps_its_own_budget() -> TestResult {
                 Duration::from_millis(1),
                 &[("milesplit.com", Duration::from_secs(2))],
             )?;
-            fetcher.host_gate("tx.milesplit.com", None).await;
-            fetcher.host_gate("opentrack.test", None).await;
+            fetcher.host_gate("tx.milesplit.com").await;
+            fetcher.host_gate("opentrack.test").await;
 
             let start = tokio::time::Instant::now();
             fetcher.wait_turn("opentrack.test").await;
@@ -465,8 +461,8 @@ fn a_family_above_one_parallelism_gives_each_host_its_own_turn() -> TestResult {
                 &[("milesplit.com", Duration::from_secs(2))],
             )?
             .with_family_parallelism(2);
-            fetcher.host_gate("tx.milesplit.com", None).await;
-            fetcher.host_gate("wi.milesplit.com", None).await;
+            fetcher.host_gate("tx.milesplit.com").await;
+            fetcher.host_gate("wi.milesplit.com").await;
 
             let start = tokio::time::Instant::now();
             fetcher.wait_turn("tx.milesplit.com").await;

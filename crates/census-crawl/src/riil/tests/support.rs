@@ -50,6 +50,7 @@ pub(super) fn fetcher(store: &Store) -> anyhow::Result<Fetcher> {
 pub(super) fn seed(fetcher: &Fetcher, body: &[u8], fetched_at: &str) -> anyhow::Result<()> {
     let (body_path, meta_path) = fetcher.cache_paths(&Fetcher::key_for("GET", URL, ""));
     let meta = CacheMeta {
+        redirects: Vec::new(),
         representation: crate::net::RepresentationHeaders::default(),
         url: URL.to_string(),
         method: "GET".to_string(),

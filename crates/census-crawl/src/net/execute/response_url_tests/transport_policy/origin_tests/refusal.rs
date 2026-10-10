@@ -49,8 +49,6 @@ async fn serve_origin(
             .nth(1)
             .ok_or("missing request path")?;
         let response = match path {
-            "/robots.txt" =>
-                "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_string(),
             "/start" => format!(
                 "HTTP/1.1 302 Found\r\nLocation: {destination}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
             ),
@@ -103,7 +101,7 @@ async fn assert_origin_change_is_undispatched(change: OriginChange) -> TestResul
             )
         })
         .await??;
-    check!(eq; paths, ["/robots.txt", "/start"]);
+    check!(eq; paths, ["/start"]);
     check!(eq;
         source_connections, 0,
         "redirect contacted original listener"

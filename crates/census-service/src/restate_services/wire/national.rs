@@ -4,8 +4,16 @@ use census_reconcile::identity::Revision;
 use serde::{Deserialize, Serialize};
 
 use super::school_address_join::{SchoolAddressJoinReply, SchoolAddressJoinRequest};
-use super::HistoryWindow;
 use super::{default_concurrency, default_source_parallelism};
+use super::{HistoryWindow, JurisdictionOwed};
+
+fn default_pass_budget() -> usize {
+    96
+}
+
+fn default_pass_delay_seconds() -> u64 {
+    900
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NationalRequest {
@@ -28,6 +36,10 @@ pub struct NationalRequest {
     pub source_parallelism: usize,
     #[serde(default)]
     pub school_address: Option<SchoolAddressJoinRequest>,
+    #[serde(default = "default_pass_budget")]
+    pub pass_budget: usize,
+    #[serde(default = "default_pass_delay_seconds")]
+    pub pass_delay_seconds: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -56,6 +68,8 @@ pub struct NationalReport {
     pub revision: Revision,
     pub jurisdictions: Vec<JurisdictionSummary>,
     pub failures: Vec<NationalFailure>,
+    #[serde(default)]
+    pub owed: Vec<JurisdictionOwed>,
     pub rosters_total: usize,
     pub athletes_total: usize,
     pub class_of_2027_total: usize,

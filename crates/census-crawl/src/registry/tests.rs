@@ -119,11 +119,6 @@ fn every_admission_repeats_the_transport_bound() {
             entry.slug,
             entry.admission.origin
         );
-        assert!(
-            entry.admission.robots_crawl_delay_respected,
-            "{} declares that a published crawl-delay is ignored",
-            entry.slug
-        );
     }
 }
 

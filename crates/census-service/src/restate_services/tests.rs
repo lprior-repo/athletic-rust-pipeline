@@ -427,6 +427,8 @@ fn national_request(jurisdictions: Vec<UsJurisdiction>) -> TestResult<NationalRe
         authorized_hosts: Vec::new(),
         source_parallelism: census_crawl::net::DEFAULT_FAMILY_PARALLELISM,
         school_address: None,
+        pass_budget: 0,
+        pass_delay_seconds: 0,
     })
 }
 
@@ -660,7 +662,6 @@ static BROWSER_ONLY: SourceDescriptor = SourceDescriptor {
         origin: "browser-only.test",
         target_requests_per_second: 1.0,
         maximum_in_flight: NonZeroUsize::MIN,
-        robots_crawl_delay_respected: false,
     },
 };
 

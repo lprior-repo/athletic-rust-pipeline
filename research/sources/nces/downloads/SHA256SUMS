@@ -1,0 +1,15 @@
+# Expected digests for the NCES national-universe captures (recorded evidence, cross-checked across
+# the fixture SOURCE.md, probes 248/253 manifests and the generation manifest). Not recomputed
+# locally in the authoring session of 2026-10-09 (no shell): run `sha256sum -c SHA256SUMS` from the
+# cycle directory after fetching, and let _fetch.sh's own write replace this file with fresh sums.
+# Lines starting with # are ignored by sha256sum -c.
+365e79b35eb96b9faea53b33dfa56996865622d43271482edf9b8928b8f6daf1  robots.txt
+f40b12720589ef67fcea32a380db786c486bd54a664755473f2aa61adeb18748  pssdata.html
+b9c85d08071b9e85bca5678e56fc9d78da0af97774703e4f332775f58283f01f  pss2324_pu_csv.zip
+14a2f9e600a492940fd57646792b4b5163ea9d03b8015a7df1135066bcec3b8b  pss2324_pu.csv
+b5d8dc341ecdc85549ffa9ba5accf4c4ed4f2a7c4a78a5115bbd281ef3e23bc8  ccd_sch_029_2526_w_0a_050626.zip
+d1473136285b5994b73a1a8b640757811eb81e0ae770953bcf915ee8c422386e  ccd_sch_029_2526_w_0a_050626.csv
+c2c28b0bc969c08d7b807bb6c0b242060851f4e549e74056ab77c5aa8b3967b2  layout2023_24.pdf
+cd5160aac77b991f1ccda0d7ba9a2e17c26d3c8bb19fbdcd0f82702cf5b27d1a  Readme2023_24.pdf
+760b5de8180bb6a635671223ae9ec098259ef651b7083017b867325a27dca443  2023-24_PSS_Frame_Data.csv
+2736e0961918a556e5a18f688359fc57622092f815a2cc8f25a3205d748ec4f3  2023-24_PSS_Frame_File_Data_Dictionary.pdf

@@ -35,7 +35,6 @@ pub(super) const fn fetched(origin: &'static str, rps: f64) -> SourceAdmission {
         origin,
         target_requests_per_second: rps,
         maximum_in_flight: NonZeroUsize::MIN,
-        robots_crawl_delay_respected: true,
     }
 }
 

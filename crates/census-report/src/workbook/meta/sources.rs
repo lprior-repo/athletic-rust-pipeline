@@ -6,7 +6,7 @@ use crate::workbook::cells::{row, Cell};
 
 use super::sorted_counts;
 
-pub(super) const SOURCE_WIDTHS: [u16; 8] = [22, 46, 15, 62, 24, 10, 9, 11];
+pub(super) const SOURCE_WIDTHS: [u16; 7] = [22, 46, 15, 62, 24, 10, 9];
 
 pub(super) fn sources_sheet(census: &Census) -> ReportResult<Vec<Vec<Cell>>> {
     let mut cells = vec![source_header()];
@@ -26,7 +26,6 @@ fn source_header() -> Vec<Cell> {
         "Origin",
         "Requests/s",
         "In flight",
-        "Crawl delay",
     )
 }
 
@@ -56,11 +55,6 @@ fn descriptor_row(descriptor: &SourceDescriptor) -> ReportResult<Vec<Cell>> {
         Cell::text(admission.origin),
         Cell::Number(admission.target_requests_per_second),
         Cell::number(admission.maximum_in_flight.get())?,
-        Cell::text(if admission.robots_crawl_delay_respected {
-            "respected"
-        } else {
-            "not declared"
-        }),
     ))
 }
 

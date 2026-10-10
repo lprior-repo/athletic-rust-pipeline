@@ -30,6 +30,8 @@ pub struct CacheMeta {
     pub last_modified: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub content_type: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub redirects: Vec<super::RedirectHop>,
 }
 
 impl Fetcher {

@@ -48,6 +48,7 @@ fn seed(fetcher: &Fetcher, reference: &ResultSetRef, body: &[u8]) -> TestResult 
         &meta_path,
         body,
         &CacheMeta {
+        redirects: Vec::new(),
             representation: crate::net::RepresentationHeaders::default(),
             url,
             method: "GET".into(),

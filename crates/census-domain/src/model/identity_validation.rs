@@ -142,7 +142,7 @@ pub(super) fn validate(
         return Ok(Some(issue));
     }
     let facts = member_facts(index, &ids);
-    if disjoint_provider_objects(&facts) {
+    if decision.kind == AppliedIdentityKind::SamePerson && disjoint_provider_objects(&facts) {
         return Ok(Some(Issue::ConflictingProviderObjects));
     }
     Ok((!positive_identity(decision.kind, &facts))

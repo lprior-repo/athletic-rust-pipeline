@@ -192,14 +192,7 @@ async fn serve(
     status: Option<u16>,
     body: &[u8],
 ) -> Result<(), Box<dyn std::error::Error>> {
-    for (path, status, body) in [
-        (
-            "/robots.txt",
-            Some(200),
-            b"User-agent: *\r\nAllow: /\r\n".as_slice(),
-        ),
-        ("/Directory.aspx", status, body),
-    ] {
+    for (path, status, body) in [("/Directory.aspx", status, body)] {
         let (mut socket, _) = listener.accept().await?;
         let request = read_request(&mut socket).await?;
         check!(eq; request.split_whitespace().nth(1), Some(path));

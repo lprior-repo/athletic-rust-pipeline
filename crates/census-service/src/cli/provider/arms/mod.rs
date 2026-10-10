@@ -11,7 +11,7 @@ pub(super) use association_sources::{
 };
 pub(super) use meet_sources::{
     athleticlive_athletes_report, athleticlive_report, athleticlive_results_report,
-    athleticnet_report, milesplit_report, milesplit_results_report, wayzata_report,
+    athleticnet_report, milesplit_report, milesplit_results_report, tfrrs_report, wayzata_report,
 };
 pub(super) use native_associations::{
     bound_report, chsaa_report, home_campus_report, sidearm_staff_report, tssaa_report,

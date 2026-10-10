@@ -13,6 +13,7 @@ pub const DEFAULT_MAX_CONCURRENT: usize = 8;
 pub const MAX_CONCURRENT_CEILING: usize = 1024;
 pub const DEFAULT_DRAIN_TIMEOUT: Duration = Duration::from_secs(30);
 pub const DEFAULT_MEMORY_BUDGET_BYTES: u64 = 48 * 1024 * 1024 * 1024;
+pub const MEMORY_BUDGET_CEILING_GIB: u64 = 1024;
 
 pub use census_store::clock::{Clock, SystemClock};
 
@@ -22,7 +23,7 @@ pub use serve::{init_tracing, serve, serve_until};
 pub use stop::StopReason;
 
 const USAGE: &str = "census-serve [--listen ADDR] [--data-dir DIR] \
-                     [--max-concurrent N] [--drain-timeout SECONDS] \
+                     [--max-concurrent N] [--drain-timeout SECONDS] [--memory-budget-gib GIB] \
                      [--browser-profile DIR] [--browser-executable PATH] [--browser-headless] [--help]";
 
 #[cfg(test)]

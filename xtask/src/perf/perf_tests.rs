@@ -240,5 +240,40 @@ fn absent_or_pre_readback_capture_timing_scope_refuses_comparison() -> TestResul
     Ok(())
 }
 
+#[test]
+fn an_absent_perf_baseline_fails_release_and_skips_development() -> TestResult {
+    let script = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../tools/gate.sh");
+    let empty = tempfile::tempdir()?;
+    for (release, accepted, verdict) in [
+        (
+            "1",
+            false,
+            "FAIL: no performance baseline at tools/perf-baseline.json",
+        ),
+        (
+            "0",
+            true,
+            "SKIP: no performance baseline at tools/perf-baseline.json",
+        ),
+    ] {
+        let output = std::process::Command::new("bash")
+            .arg("-c")
+            .arg(
+                "source \"$GATE_SCRIPT\" && cd \"$EMPTY_DIR\" && RELEASE=\"$TARGET_RELEASE\" lane_perf",
+            )
+            .env("GATE_SCRIPT", &script)
+            .env("EMPTY_DIR", empty.path())
+            .env("TARGET_RELEASE", release)
+            .output()?;
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        check!(eq; output.status.success(), accepted, "release={release} stdout={stdout}");
+        check!(
+            stdout.contains(verdict),
+            "release={release} stdout={stdout}"
+        );
+    }
+    Ok(())
+}
+
 #[path = "memory_tests.rs"]
 mod memory_tests;

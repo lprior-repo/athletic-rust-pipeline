@@ -226,5 +226,50 @@ fn the_published_vocabulary_reads_the_hosts_tokens() -> TestResult {
     check!(eq; published_date(""), None);
     Ok(())
 }
+const LIVE_LIST: &str = include_str!("../../tests/fixtures/tfrrs/indiana_list_5489_live_shape.html");
+
+#[test]
+fn the_live_list_shape_presents_the_same_rows_as_the_fixture() -> TestResult {
+    let list = parse_list_page(LIVE_LIST);
+    check!(eq; list.sections.len(), 1);
+    let section = list.sections.first().ok_or("list section")?;
+    check!(eq; section.label, "60 Meters");
+    check!(eq; section.rows.len(), 2);
+    Ok(())
+}
+
+#[test]
+fn live_list_urls_without_year_segment_parse() -> TestResult {
+    let url = "https://indiana.tfrrs.org/lists/5489/HSR_All_School_Performance_List";
+    let path = parse_list_path(url).ok_or("list route")?;
+    check!(eq; path.id, "5489");
+    check!(eq; path.slug, "HSR_All_School_Performance_List");
+    check!(eq; path.season, None);
+    check!(classify(url).is_some());
+    Ok(())
+}
+
+#[test]
+fn live_list_urls_with_query_filters_parse() -> TestResult {
+    let url = "https://indiana.tfrrs.org/lists/5489/HSR_All_School_Performance_List?year=SR";
+    let path = parse_list_path(url).ok_or("list route")?;
+    check!(eq; path.id, "5489");
+    check!(eq; path.slug, "HSR_All_School_Performance_List");
+    check!(eq; path.season, None);
+    check!(eq; list_filter(url), Some(YearToken::Senior));
+    check!(classify(url).is_some());
+    Ok(())
+}
+
+#[test]
+fn fixture_list_urls_with_year_segment_still_parse() -> TestResult {
+    let url = "https://indiana.tfrrs.org/lists/5489/HSR_All_School_Performance_List/2026/i";
+    let path = parse_list_path(url).ok_or("list route")?;
+    check!(eq; path.id, "5489");
+    check!(eq; path.slug, "HSR_All_School_Performance_List");
+    check!(path.season.is_some());
+    check!(classify(url).is_some());
+    Ok(())
+}
 
 mod cohort;

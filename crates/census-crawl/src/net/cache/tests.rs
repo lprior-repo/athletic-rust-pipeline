@@ -5,6 +5,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn metadata(body: &[u8]) -> CacheMeta {
     CacheMeta {
+        redirects: Vec::new(),
         representation: RepresentationHeaders::default(),
         url: "https://example.test/capture".to_owned(),
         response_url: None,

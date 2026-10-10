@@ -8,7 +8,10 @@ use athleticnet_browser::BrowserSettings;
 use url::Url;
 
 use super::error::BootstrapError;
-use super::{DEFAULT_DRAIN_TIMEOUT, DEFAULT_MAX_CONCURRENT, MAX_CONCURRENT_CEILING};
+use super::{
+    DEFAULT_DRAIN_TIMEOUT, DEFAULT_MAX_CONCURRENT, DEFAULT_MEMORY_BUDGET_BYTES,
+    MAX_CONCURRENT_CEILING, MEMORY_BUDGET_CEILING_GIB,
+};
 
 const LANE_ORIGIN: &str = "https://www.athletic.net";
 
@@ -23,6 +26,7 @@ pub struct ServeOptions {
     pub data_dir: PathBuf,
     pub max_concurrent: usize,
     pub drain_timeout: Duration,
+    pub memory_budget_bytes: u64,
     pub lane: Option<BrowserSettings>,
 }
 
@@ -33,6 +37,7 @@ impl Default for ServeOptions {
             data_dir: PathBuf::from("var/census-service"),
             max_concurrent: DEFAULT_MAX_CONCURRENT,
             drain_timeout: DEFAULT_DRAIN_TIMEOUT,
+            memory_budget_bytes: DEFAULT_MEMORY_BUDGET_BYTES,
             lane: None,
         }
     }
@@ -128,6 +133,22 @@ fn apply_flag<I: Iterator<Item = String>>(
                 .parse()
                 .map_err(|source| BootstrapError::DrainTimeoutNotASeconds { raw, source })?;
             options.drain_timeout = Duration::from_secs(seconds);
+        }
+        "--memory-budget-gib" => {
+            let raw = value("--memory-budget-gib")?;
+            let gib: u64 = raw
+                .parse()
+                .map_err(|source| BootstrapError::MemoryBudgetNotAGib { raw, source })?;
+            if gib == 0 {
+                return Err(BootstrapError::MemoryBudgetIsZero);
+            }
+            if gib > MEMORY_BUDGET_CEILING_GIB {
+                return Err(BootstrapError::MemoryBudgetTooLarge {
+                    value: gib,
+                    ceiling: MEMORY_BUDGET_CEILING_GIB,
+                });
+            }
+            options.memory_budget_bytes = gib * 1024 * 1024 * 1024;
         }
         "--browser-profile" => lane.profile = Some(PathBuf::from(value("--browser-profile")?)),
         "--browser-executable" => {

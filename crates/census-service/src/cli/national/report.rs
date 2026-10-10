@@ -52,13 +52,14 @@ pub(crate) fn print_national(report: &NationalReport, json: bool) -> Result<()> 
         print_national_row(summary);
     }
     println!(
-        "total: rosters {} · committed {} · athletes {} · co2027 {} · jurisdictions done {} · failed {} · remaining {} · blocked {}",
+        "total: rosters {} · committed {} · athletes {} · co2027 {} · jurisdictions done {} · failed {} · owed {} · remaining {} · blocked {}",
         report.rosters_total,
         report.jurisdictions.iter().map(|s| s.rosters_committed).sum::<usize>(),
         report.athletes_total,
         report.class_of_2027_total,
         report.jurisdictions.len(),
         report.failures.len(),
+        report.owed.len(),
         owed_total(&report.jurisdictions),
         blocked_count(&report.jurisdictions),
     );
@@ -68,6 +69,19 @@ pub(crate) fn print_national(report: &NationalReport, json: bool) -> Result<()> 
             failure.jurisdiction.code(),
             failure.identity,
             failure.error
+        );
+    }
+    for owed in &report.owed {
+        println!(
+            "owed {} {} stages {} · {}",
+            owed.jurisdiction.code(),
+            owed.identity,
+            if owed.stages_run.is_empty() {
+                "none".to_string()
+            } else {
+                owed.stages_run.join(",")
+            },
+            owed.reasons.join(" | ")
         );
     }
     if let Some(join) = &report.school_address {
@@ -86,12 +100,13 @@ pub(crate) fn print_national(report: &NationalReport, json: bool) -> Result<()> 
 }
 
 pub(crate) fn failure_exit(report: &NationalReport) -> Result<()> {
-    if report.failures.is_empty() {
+    if report.failures.is_empty() && report.owed.is_empty() {
         return Ok(());
     }
     bail!(
-        "{} jurisdiction(s) failed; the `failed` rows above name each identity and its error",
-        report.failures.len()
+        "{} jurisdiction(s) failed and {} still owe source work; the `failed` and `owed` rows above name each identity, its error and its owed stages",
+        report.failures.len(),
+        report.owed.len()
     )
 }
 

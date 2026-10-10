@@ -206,3 +206,18 @@ pub(crate) async fn athleticnet_report(
     )
     .await?)
 }
+pub(crate) async fn tfrrs_report(
+    context: &AdapterContext<'_>,
+    args: &ProviderArgs,
+    observed_on: String,
+) -> Result<AdapterReport> {
+    Ok(providers::tfrrs::collect(
+        context,
+        &providers::tfrrs::Options {
+            urls: args.school_names.clone(),
+            limit: args.limit,
+            observed_on,
+        },
+    )
+    .await?)
+}

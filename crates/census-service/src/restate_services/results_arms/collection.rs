@@ -18,6 +18,9 @@ pub(super) async fn collect(
     input: (&[SourceMeetRef], HistoricalStageScope),
 ) -> Result<ResultsSourceRows, HandlerError> {
     let (selected, scope) = input;
+    if matches!(arm, ResultsArm::TfrrsResults) {
+        return super::tfrrs::collect(store, fetcher, scope).await;
+    }
     stream::iter(selected.iter().filter(|meet| eligible(arm, meet)))
         .map(Ok::<_, HandlerError>)
         .try_fold(delegated_source(slug), |aggregate, meet| async move {
@@ -37,6 +40,7 @@ fn eligible(arm: ResultsArm, meet: &SourceMeetRef) -> bool {
         ResultsArm::AthleticnetMeets => {
             meet.source == super::ATHLETICNET || super::meet_id_in(&meet.results_url).is_some()
         }
+        ResultsArm::TfrrsResults => false,
     }
 }
 
@@ -66,6 +70,13 @@ async fn one(
                 &at,
             )
             .await
+        }
+        ResultsArm::TfrrsResults => {
+            return Ok(failed_source(
+                slug,
+                1,
+                jobs::invariant("tfrrs should not reach one()"),
+            ))
         }
     };
     let mut row = match result {

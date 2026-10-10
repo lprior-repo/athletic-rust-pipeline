@@ -35,6 +35,7 @@ fn cache_replay_refuses_a_foreign_request_identity_and_separates_vary_accept() -
                 (requested, "GET", selected),
             ] {
                 let meta = CacheMeta {
+        redirects: Vec::new(),
                     url: url.into(),
                     method: method.into(),
                     representation,

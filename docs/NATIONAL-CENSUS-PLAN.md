@@ -281,7 +281,7 @@ These IDs denote corrections, not the separately dated source-audit findings in 
 | F01 | Exact public mailbox binds to permitted current role; no fabricated address |
 | F02 | Homonyms, transfers and reversible cross-source identities preserve attribution and contradictions |
 | F03 | Cohort evidence cannot establish identity by itself |
-| F04 | Partial/budget-limited work resumes under the same logical identity with apply-once effects |
+| F04 | Partial/budget-limited work resumes under the same logical identity with apply-once effects; a national submission re-drives owed jurisdictions through stage-resilient `pass` calls and reports each unfinished identity under `owed` instead of publishing it as done |
 | F05 | Exact mark/condition normalization and compatible PR winners agree across every projection |
 | F06 | Contacts distinguish current/former role, TF/XC and side/category; unknown is not both |
 | F07 | Source/program/season obligations and history remain explicit even with no accepted athletes |

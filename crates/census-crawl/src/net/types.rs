@@ -108,6 +108,12 @@ pub struct FetchOptions {
     pub headers: Vec<(String, String)>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RedirectHop {
+    pub status: u16,
+    pub url: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FetchOutcome {
     pub url: String,

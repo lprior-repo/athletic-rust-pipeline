@@ -93,6 +93,7 @@ const CLOCK_TOLERANCE_MS: u64 = 50;
 const INFLIGHT_BUDGET: usize = 1;
 const BODY: &str = "catalog08 physical owner acquisition\n";
 const OWNER_AGENT: &str = "CensusOriginBudgetQualification/owner";
+const OWNER_START: &str = "/owner-start";
 const TARGET: &str = "/owner-target";
 const PROCESS_DEADLINE: Duration = Duration::from_secs(30);
 

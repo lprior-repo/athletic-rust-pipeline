@@ -1,0 +1,31 @@
+{
+  "size": 50,
+  "track_total_hits": true,
+  "query": {
+    "bool": {
+      "filter": [
+        { "terms": { "lsa.keyword": ["Wisconsin", "Minnesota"] } },
+        { "range": { "sd": { "gte": "2025-08-01", "lt": "2025-12-01" } } }
+      ]
+    }
+  },
+  "_source": [
+    "i",
+    "ani",
+    "n",
+    "ln",
+    "ls",
+    "lsa",
+    "sd",
+    "sdy",
+    "ed",
+    "e",
+    "tna",
+    "us",
+    "o",
+    "mvs",
+    "xcp",
+    "sur",
+    "ua"
+  ]
+}

@@ -226,3 +226,15 @@ pub struct JurisdictionReport {
     pub history_window: HistoryWindow,
     pub completed_at: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JurisdictionOwed {
+    pub identity: String,
+    pub jurisdiction: UsJurisdiction,
+    #[serde(default)]
+    pub stages_run: Vec<String>,
+    #[serde(default)]
+    pub owed: Vec<String>,
+    #[serde(default)]
+    pub reasons: Vec<String>,
+}

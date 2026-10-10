@@ -12,8 +12,8 @@ use super::jobs;
 use super::jurisdiction::JurisdictionCensusClient;
 use super::school_address_join::SchoolAddressJoinClient;
 use super::wire::{
-    BindRunRequest, ConsolidateRequest, JurisdictionReport, JurisdictionSummary, NationalFailure,
-    NationalReport, NationalRequest, SchoolAddressJoinReply,
+    BindRunRequest, ConsolidateRequest, JurisdictionOwed, JurisdictionReport, JurisdictionSummary,
+    NationalFailure, NationalReport, NationalRequest, SchoolAddressJoinReply,
 };
 use super::{publish::ConsolidateClient, KEY_STATE};
 
@@ -142,11 +142,13 @@ fn assemble(
     revision: Revision,
     mut jurisdictions: Vec<JurisdictionSummary>,
     mut failures: Vec<NationalFailure>,
+    mut owed: Vec<JurisdictionOwed>,
     school_address: Option<SchoolAddressJoinReply>,
     today: String,
 ) -> NationalReport {
     jurisdictions.sort_by_key(|summary| summary.jurisdiction.code());
     failures.sort_by_key(|failure| failure.jurisdiction.code());
+    owed.sort_by_key(|owed| owed.jurisdiction.code());
     NationalReport {
         season,
         revision,
@@ -161,9 +163,115 @@ fn assemble(
             .sum(),
         jurisdictions,
         failures,
+        owed,
         school_address,
         today,
     }
+}
+
+async fn redrive(
+    ctx: &WorkflowContext<'_>,
+    request: &NationalRequest,
+    targets: &[(UsJurisdiction, String)],
+    jurisdictions: &mut Vec<JurisdictionSummary>,
+    failures: &mut Vec<NationalFailure>,
+) -> Result<Vec<JurisdictionOwed>, HandlerError> {
+    let mut owed: Vec<JurisdictionOwed> = Vec::new();
+    let mut pending: Vec<UsJurisdiction> = failures
+        .iter()
+        .map(|failure| failure.jurisdiction)
+        .collect();
+    let mut rounds: usize = 0;
+    while !pending.is_empty() && rounds < request.pass_budget {
+        rounds = rounds.saturating_add(1);
+        ctx.sleep(std::time::Duration::from_secs(request.pass_delay_seconds))
+            .await?;
+        let mut passes = DurableFuturesUnordered::new();
+        for jurisdiction in &pending {
+            passes.push(
+                ctx.object_client::<JurisdictionCensusClient>(target_key(targets, *jurisdiction)?)
+                    .pass(Json(request.for_jurisdiction(*jurisdiction)))
+                    .call(),
+            );
+        }
+        let mut next: Vec<UsJurisdiction> = Vec::new();
+        let mut no_progress: Vec<(UsJurisdiction, JurisdictionOwed)> = Vec::new();
+        while let Some((index, outcome)) = passes.next().await? {
+            let Some(jurisdiction) = pending.get(index).copied() else {
+                return Err(jobs::invariant(
+                    "the re-drive reported an index it never pushed",
+                ));
+            };
+            match outcome {
+                Ok(Json(pass)) if !pass.owed.is_empty() && !pass.stages_run.is_empty() => {
+                    next.push(jurisdiction);
+                }
+                Ok(Json(pass)) => no_progress.push((jurisdiction, pass)),
+                Err(error) => owed.push(JurisdictionOwed {
+                    identity: target_key(targets, jurisdiction)?,
+                    jurisdiction,
+                    stages_run: Vec::new(),
+                    owed: Vec::new(),
+                    reasons: vec![error.to_string()],
+                }),
+            }
+        }
+        let mut runs = DurableFuturesUnordered::new();
+        for (jurisdiction, _) in &no_progress {
+            runs.push(
+                ctx.object_client::<JurisdictionCensusClient>(target_key(targets, *jurisdiction)?)
+                    .run(Json(request.for_jurisdiction(*jurisdiction)))
+                    .call(),
+            );
+        }
+        let mut outcomes: Vec<Option<Result<Json<JurisdictionReport>, TerminalError>>> =
+            no_progress.iter().map(|_| None).collect();
+        while let Some((index, outcome)) = runs.next().await? {
+            let Some(slot) = outcomes.get_mut(index) else {
+                return Err(jobs::invariant(
+                    "the re-drive reported an index it never pushed",
+                ));
+            };
+            *slot = Some(outcome);
+        }
+        for (position, (jurisdiction, pass)) in no_progress.into_iter().enumerate() {
+            let Some(outcome) = outcomes.get_mut(position).and_then(Option::take) else {
+                return Err(jobs::invariant("the re-drive lost a jurisdiction outcome"));
+            };
+            let key = target_key(targets, jurisdiction)?;
+            match classify(jurisdiction, &key, outcome) {
+                Completion::Answered(summary) => {
+                    jurisdictions.retain(|existing| existing.jurisdiction != jurisdiction);
+                    failures.retain(|existing| existing.jurisdiction != jurisdiction);
+                    jurisdictions.push(summary);
+                }
+                Completion::Unanswered(failure) => {
+                    failures.retain(|existing| existing.jurisdiction != jurisdiction);
+                    failures.push(failure);
+                    owed.push(pass);
+                }
+            }
+        }
+        pending = next;
+        tracing::info!(
+            round = rounds,
+            owed = owed.len(),
+            pending = pending.len(),
+            "re-drove owed jurisdictions"
+        );
+    }
+    Ok(owed)
+}
+
+fn target_key(
+    targets: &[(UsJurisdiction, String)],
+    jurisdiction: UsJurisdiction,
+) -> Result<String, HandlerError> {
+    targets
+        .iter()
+        .find(|(candidate, _)| *candidate == jurisdiction)
+        .map(|(_, key)| key.clone())
+        .ok_or_else(|| jobs::invariant("a re-driven jurisdiction is not a run target"))
 }
 
 async fn bind_run(
@@ -235,7 +343,8 @@ impl NationalCensus {
                     .call(),
             );
         }
-        let (jurisdictions, failures) = collect_outcomes(&mut in_flight, &targets).await?;
+        let (mut jurisdictions, mut failures) = collect_outcomes(&mut in_flight, &targets).await?;
+        let owed = redrive(&ctx, &request, &targets, &mut jurisdictions, &mut failures).await?;
 
         let join = join_addresses(&ctx, &identity, &request).await?;
 
@@ -259,6 +368,7 @@ impl NationalCensus {
             request.revision,
             jurisdictions,
             failures,
+            owed,
             Some(join),
             today,
         );

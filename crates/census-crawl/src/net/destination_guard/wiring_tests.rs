@@ -37,10 +37,6 @@ fn ok(body: &str) -> String {
     )
 }
 
-fn robots() -> String {
-    ok("User-agent: *\r\nAllow: /\r\n")
-}
-
 fn redirect(location: &str) -> String {
     format!(
         "HTTP/1.1 302 Found\r\nLocation: {location}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
@@ -70,7 +66,7 @@ fn an_unauthorized_loopback_literal_never_opens_a_connection() -> TestResult {
             let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
             let address = listener.local_addr()?;
             let (fetcher, _dir) = fetcher_with(Vec::new())?;
-            let url = format!("http://127.0.0.1:{}/robots.txt", address.port());
+            let url = format!("http://127.0.0.1:{}/payload", address.port());
             let error = get(&fetcher, &url).await.err().ok_or("fetched")?;
             check!(matches!(error, FetchError::Policy { .. }), "{error:?}");
             assert_silent(&listener).await
@@ -86,7 +82,7 @@ fn a_localhost_domain_without_a_grant_never_opens_a_connection() -> TestResult {
             let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
             let address = listener.local_addr()?;
             let (fetcher, _dir) = fetcher_with(vec!["example.com".to_string()])?;
-            let url = format!("http://localhost:{}/robots.txt", address.port());
+            let url = format!("http://localhost:{}/payload", address.port());
             let error = get(&fetcher, &url).await.err().ok_or("fetched")?;
             check!(matches!(error, FetchError::Policy { .. }), "{error:?}");
             assert_silent(&listener).await
@@ -94,7 +90,7 @@ fn a_localhost_domain_without_a_grant_never_opens_a_connection() -> TestResult {
 }
 
 #[test]
-fn an_explicit_loopback_grant_admits_the_fixture_after_its_robots() -> TestResult {
+fn an_explicit_loopback_grant_admits_the_fixture() -> TestResult {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
@@ -107,7 +103,6 @@ fn an_explicit_loopback_grant_admits_the_fixture_after_its_robots() -> TestResul
                     let (mut socket, _) = listener.accept().await?;
                     let path = read_path(&mut socket).await?;
                     let response = match path.as_str() {
-                        "/robots.txt" => robots(),
                         "/payload" => ok("evidence"),
                         other => {
                             return Err::<Vec<String>, _>(
@@ -134,7 +129,7 @@ fn an_explicit_loopback_grant_admits_the_fixture_after_its_robots() -> TestResul
                 tokio::try_join!(server, requests)
             })
             .await??;
-            check!(eq; paths, ["/robots.txt", "/payload"]);
+            check!(eq; paths, ["/payload"]);
             Ok(())
         })
 }
@@ -156,7 +151,6 @@ fn a_same_host_redirect_is_followed_and_a_local_hop_is_refused() -> TestResult {
                     let (mut socket, _) = listener.accept().await?;
                     let path = read_path(&mut socket).await?;
                     let response = match path.as_str() {
-                        "/robots.txt" => robots(),
                         "/start" => redirect("/finish"),
                         "/finish" => ok("evidence"),
                         "/cross" => redirect(&hop),
@@ -192,7 +186,7 @@ fn a_same_host_redirect_is_followed_and_a_local_hop_is_refused() -> TestResult {
                 tokio::try_join!(server, requests)
             })
             .await??;
-            check!(eq; paths, ["/robots.txt", "/start", "/finish", "/cross"]);
+            check!(eq; paths, ["/start", "/finish", "/cross"]);
             assert_silent(&unlisted).await
         })
 }
@@ -204,7 +198,7 @@ fn a_cached_body_does_not_bypass_an_unauthorized_destination() -> TestResult {
         .build()?
         .block_on(async {
             let (fetcher, dir) = fetcher_with(Vec::new())?;
-            let url = "http://127.0.0.1:9/robots.txt";
+            let url = "http://127.0.0.1:9/payload";
             let cache = dir.path().join("http");
             std::fs::create_dir_all(&cache)?;
             use sha2::{Digest, Sha256};
@@ -248,8 +242,8 @@ fn non_http_schemes_and_credential_bearing_urls_are_refused() -> TestResult {
             let (fetcher, _dir) = fetcher_with(vec!["example.com".to_string()])?;
             for url in [
                 "file:///etc/passwd",
-                "ftp://example.com/robots.txt",
-                "http://user:secret@example.com/robots.txt",
+                "ftp://example.com/payload",
+                "http://user:secret@example.com/payload",
             ] {
                 let error = get(&fetcher, url).await.err().ok_or("fetched")?;
                 check!(

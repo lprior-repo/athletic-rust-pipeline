@@ -228,3 +228,8 @@ fn dur05_adapter_errors_are_preserved_in_results_source_rows() -> TestResult {
     check!(eq; rows.errors, 0);
     Ok(())
 }
+#[test]
+fn tfrrs_is_an_armed_results_source_for_applicable_states() -> TestResult {
+    check!(matches!(arm_for("tfrrs"), Some(ResultsArm::TfrrsResults)));
+    Ok(())
+}

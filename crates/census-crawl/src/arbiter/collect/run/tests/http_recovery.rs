@@ -19,7 +19,7 @@ async fn http_same_school_recovery(first: FirstPage, recording_route: bool) -> T
         }
         _ => serde_json::to_vec(&json!({"data": {"total": 2, "rows": [coach("Ada", "Lane")]}}))?,
     };
-    let mut replies = vec![robots()];
+    let mut replies = vec![];
     let later = matches!(first, FirstPage::LaterMalformed);
     let bad_url = if later {
         let full: Vec<_> = std::iter::once(coach("Ada", "Lane"))

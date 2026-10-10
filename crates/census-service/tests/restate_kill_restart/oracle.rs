@@ -115,7 +115,10 @@ pub(super) async fn attached_output(
     budget: Duration,
 ) -> Result<Value, String> {
     let attach = client
-        .get(format!("{}restate/attach/{invocation}", node.ingress))
+        .get(format!(
+            "{}restate/invocation/{invocation}/attach",
+            node.ingress
+        ))
         .send();
     let response = tokio::time::timeout(budget, attach)
         .await
