@@ -167,25 +167,46 @@ fn identical_bytes_at_a_second_path_are_one_archived_body() -> TestResult {
                 &labels_of(&labelled_schools(&doc, UsJurisdiction::Iowa)),
             )?;
             let first_path = stage_capture(&dir, "state-final.json", XC_STATE)?;
-            let copy_path = stage_capture(&dir, "state-final-copy.json", XC_STATE)?;
-            let options = resume_options(vec![first_path.clone(), copy_path.clone()]);
+            let options = resume_options(vec![first_path.clone()]);
 
-            let report = collect(&context(&store, &fetcher)?, &options).await?;
-            check!(eq; report.errors, 0, "{}", joined(&report));
+            let first = collect(&context(&store, &fetcher)?, &options).await?;
+            check!(eq; first.errors, 0, "{}", joined(&first));
             check!(eq;
                 captures(&store)?.len(),
                 1,
                 "identical bytes are archived once"
             );
+            let first_receipts = receipts(&store)?;
+            check!(eq; first_receipts.len(), 1);
+            let first_key = first_receipts.keys().next()
+                .ok_or("the first run must leave a receipt")?;
+
+            let copy_path = stage_capture(&dir, "state-final-renamed.json", XC_STATE)?;
+            let rename_options = resume_options(vec![copy_path.clone()]);
+
+            let second = collect(&context(&store, &fetcher)?, &rename_options).await?;
+            check!(eq; second.errors, 0, "{}", joined(&second));
             check!(eq;
-                receipts(&store)?.len(),
-                2,
-                "each path names its own receipt"
-            );
-            check!(eq;
-                receipts_of_path(&store, &copy_path)?.len(),
+                captures(&store)?.len(),
                 1,
-                "the copy's receipt is the copy's own"
+                "renamed capture still archived once"
+            );
+            let second_receipts = receipts(&store)?;
+            check!(eq;
+                second_receipts.len(),
+                1,
+                "same capture renamed resumes the existing completion without creating a second effect receipt"
+            );
+            let second_key = second_receipts.keys().next()
+                .ok_or("the second run must leave a receipt")?;
+            check!(
+                first_key == second_key,
+                "the receipt key is stable under local rename"
+            );
+            check!(
+                joined(&second).contains("captures already journaled"),
+                "the second run recognizes the existing completion: {}",
+                joined(&second)
             );
             Ok(())
         })

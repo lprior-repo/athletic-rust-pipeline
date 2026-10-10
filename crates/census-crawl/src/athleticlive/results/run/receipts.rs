@@ -70,7 +70,24 @@ fn require_shape(path: &str, key: &str, payload: &serde_json::Value) -> CrawlRes
             "ambiguous or incompatible LIVE projection receipt shape",
         ));
     }
-    let digest = census_domain::model::serialized_digest(payload).map_err(|error| {
+    let identity = json!({
+        "role":payload.get("role"),
+        "meet":payload.get("meet"),
+        "provider":payload.get("provider"),
+        "meet_name":payload.get("meet_name"),
+        "meet_date":payload.get("meet_date"),
+        "state":payload.get("state"),
+        "observed_on":payload.get("observed_on"),
+        "school_year":payload.get("school_year"),
+        "performance_as_of":payload.get("performance_as_of"),
+        "parser":payload.get("parser"),
+        "bytes":payload.get("bytes"),
+        "digest":payload.get("digest"),
+        "projection":payload.get("projection"),
+        "complete":payload.get("complete"),
+        "parsed":payload.get("parsed"),
+    });
+    let digest = census_domain::model::serialized_digest(&identity).map_err(|error| {
         crate::CrawlError::Invariant {
             detail: error.to_string(),
         }
@@ -109,26 +126,33 @@ pub(super) fn receipt(
     .map_err(|error| crate::CrawlError::Invariant {
         detail: error.to_string(),
     })?;
-    let payload = json!({
-        "path":path, "role":parsed.as_ref().and_then(|value| value.get("role")),
-        "meet":run.target.athleticlive_meet_id.to_string(), "provider":run.target.tenant,
+    let meet = run.target.athleticlive_meet_id.to_string();
+    let identity = json!({
+        "role":parsed.as_ref().and_then(|value| value.get("role")),
+        "meet":meet, "provider":run.target.tenant,
         "meet_name":run.target.name, "meet_date":run.target.date, "state":run.target.state,
         "observed_on":metadata.fetched_at, "school_year":run.school_year,
         "performance_as_of":run.performance_as_of, "parser":PARSER,
-        "bytes":metadata.bytes, "digest":metadata.content_digest, "metadata":metadata,
+        "bytes":metadata.bytes, "digest":metadata.content_digest,
         "projection":projected, "complete":complete, "parsed":parsed,
     });
-    let digest = census_domain::model::serialized_digest(&payload).map_err(|error| {
+    let identity_digest = census_domain::model::serialized_digest(&identity).map_err(|error| {
         crate::CrawlError::Invariant {
             detail: error.to_string(),
         }
     })?;
-    let role = payload
+    let role = identity
         .get("role")
         .and_then(serde_json::Value::as_str)
         .map_or("refused", |value| value);
+    let mut payload = identity.clone();
+    payload["path"] = json!(path);
+    payload["metadata"] = json!(metadata);
     Ok(EffectReceipt {
-        key: format!("{}:{role}:{digest}", run.target.athleticlive_meet_id),
+        key: format!(
+            "{}:{role}:{identity_digest}",
+            run.target.athleticlive_meet_id
+        ),
         payload,
     })
 }
