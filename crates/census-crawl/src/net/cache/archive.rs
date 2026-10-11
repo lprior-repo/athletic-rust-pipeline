@@ -65,17 +65,26 @@ pub(super) fn archive_within_budget(archive: &Path, body: &[u8]) -> bool {
     if !archive.exists() {
         return (body.len() as u64) < MAX_ARCHIVE_BYTES;
     }
+    let total = archive_bytes_used(archive);
+    total.saturating_add(body.len() as u64) <= MAX_ARCHIVE_BYTES
+}
+
+fn archive_bytes_used(archive: &Path) -> u64 {
     let Ok(entries) = std::fs::read_dir(archive) else {
-        return true;
+        return 0;
     };
     let mut total: u64 = 0;
     for entry in entries.filter_map(|e| e.ok()) {
-        let Ok(metadata) = entry.metadata() else {
-            continue;
-        };
-        total = total.saturating_add(metadata.len());
+        let path = entry.path();
+        if path.is_dir() {
+            total = total.saturating_add(archive_bytes_used(&path));
+        } else if path.is_file() {
+            if let Ok(metadata) = path.metadata() {
+                total = total.saturating_add(metadata.len());
+            }
+        }
     }
-    total.saturating_add(body.len() as u64) <= MAX_ARCHIVE_BYTES
+    total
 }
 
 pub(super) fn replay_preserved_cache(

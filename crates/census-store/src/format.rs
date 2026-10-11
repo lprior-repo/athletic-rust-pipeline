@@ -11,6 +11,7 @@ pub use migrate::MigrationReport;
 
 pub const STORE_SCHEMA_VERSION: u32 = 2;
 pub const KEY_FORMAT_VERSION: u32 = 1;
+pub const LIFECYCLE_REVISION: u32 = 2;
 
 pub const DEFAULT_CACHE_BYTES: u64 = 1024 * 1024 * 1024;
 
@@ -19,11 +20,13 @@ const KEY_FORMAT: &str = "schema:key_format";
 const CREATED_BY: &str = "schema:created_by";
 const CREATED_AT: &str = "schema:created_at";
 pub(super) const MIGRATING_TO: &str = "schema:migrating_to";
+pub(super) const LIFECYCLE_REVISION_KEY: &str = "schema:lifecycle_revision";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct StoreFormat {
     pub schema_version: Option<u32>,
     pub key_format: Option<u32>,
+    pub lifecycle_revision: Option<u32>,
     pub created_by: Option<String>,
     pub created_at: Option<String>,
     pub migration_target: Option<u32>,
@@ -98,6 +101,7 @@ pub(super) fn read_format(meta_keyspace: &Keyspace) -> StoreResult<StoreFormat> 
     Ok(StoreFormat {
         schema_version: meta::get_u32(meta_keyspace, STORE_VERSION)?,
         key_format: meta::get_u32(meta_keyspace, KEY_FORMAT)?,
+        lifecycle_revision: meta::get_u32(meta_keyspace, LIFECYCLE_REVISION_KEY)?,
         created_by: meta::get_text(meta_keyspace, CREATED_BY)?,
         created_at: meta::get_text(meta_keyspace, CREATED_AT)?,
         migration_target: meta::get_u32(meta_keyspace, MIGRATING_TO)?,
@@ -167,6 +171,12 @@ fn initialize(db: &Database, meta_keyspace: &Keyspace) -> StoreResult<()> {
         meta_keyspace,
         KEY_FORMAT,
         &KEY_FORMAT_VERSION.to_string(),
+    );
+    meta::put_text(
+        &mut batch,
+        meta_keyspace,
+        LIFECYCLE_REVISION_KEY,
+        &LIFECYCLE_REVISION.to_string(),
     );
     meta::put_text(
         &mut batch,

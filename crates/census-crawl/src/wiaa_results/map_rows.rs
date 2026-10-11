@@ -39,41 +39,42 @@ pub(super) fn record_row(
         context.school_year,
         context.evidence,
     );
-    if row.legs.is_empty() {
-        let Some(grade) = row.grade else {
-            return 0;
-        };
-        if row.name.trim().is_empty() {
-            return 0;
-        }
-        let key = source_key(context.artifact, context.event, row_index, None);
-        let Some((athlete_id, source_athlete)) = record_athlete(
-            writer,
-            context,
-            &school_id,
-            &row.name,
-            grade,
-            &key,
-            &row.school,
-        ) else {
-            return 0;
-        };
-        record_performance(
-            writer,
-            context,
-            row,
-            &team_id,
-            MemberFacts {
-                athlete: athlete_id,
-                source: source_athlete,
-                key,
-                grade,
-            },
-        );
-        return 1;
+    let team_row = row.name.trim().is_empty() && context.event.kind.is_relay();
+    if team_row || !row.legs.is_empty() {
+        writer.stats.relay_legs = writer.stats.relay_legs.saturating_add(row.legs.len());
+        return record_relay_team(writer, context, row, row_index, &school_id, &team_id);
     }
-    writer.stats.relay_legs = writer.stats.relay_legs.saturating_add(row.legs.len());
-    record_relay_team(writer, context, row, row_index, &school_id, &team_id)
+    let Some(grade) = row.grade else {
+        return 0;
+    };
+    if row.name.trim().is_empty() {
+        return 0;
+    }
+    let key = source_key(context.artifact, context.event, row_index, None);
+    let Some((athlete_id, source_athlete)) = record_athlete(
+        writer,
+        context,
+        &school_id,
+        &row.name,
+        grade,
+        &key,
+        &row.school,
+    ) else {
+        return 0;
+    };
+    record_performance(
+        writer,
+        context,
+        row,
+        &team_id,
+        MemberFacts {
+            athlete: athlete_id,
+            source: source_athlete,
+            key,
+            grade,
+        },
+    );
+    1
 }
 
 fn record_relay_team(

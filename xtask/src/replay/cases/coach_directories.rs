@@ -94,12 +94,9 @@ fn summary(capture: &Capture<'_>) -> Result<String> {
         &school_id,
         &coach_directories::summary_url(&summary.short_code),
         "2026-09-29T00:00:00Z",
-        SchoolYear::DEFAULT,
-        &digest,
-    )?;
+    );
     let expected = expected_contexts(capture)?;
     let mut contexts: Vec<String> = mapped
-        .coaches
         .iter()
         .map(|coach| {
             format!(
@@ -119,7 +116,7 @@ fn summary(capture: &Capture<'_>) -> Result<String> {
         summary.name,
         summary.staff.len(),
         summary.teams.len(),
-        mapped.coaches.len()
+        mapped.len()
     ))
 }
 

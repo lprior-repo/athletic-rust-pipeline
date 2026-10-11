@@ -1,6 +1,6 @@
 use census_domain::model::{
     normalize_name, Mark, RelayMember, RelayResult, RetainedConflict, SourceObservation,
-    RELAY_MEMBER_NAME_FAMILY,
+    RELAY_MEMBER_NAME_FAMILY, RELAY_RESULT_SCALAR_FAMILY,
 };
 
 use super::super::Entity;
@@ -22,17 +22,33 @@ impl Entity for RelayResult {
 
     fn merge(&mut self, other: Self) {
         if matches!(self.mark, Mark::Raw(_)) && !matches!(other.mark, Mark::Raw(_)) {
-            self.mark = other.mark;
+            self.mark = other.mark.clone();
         }
-        if self.place.is_none() {
-            self.place = other.place;
+        if self.mark != other.mark && !matches!(other.mark, Mark::Raw(_)) {
+            let conflict = scalar_conflict(self.id.as_str(), "mark", &self.mark, &other.mark);
+            record(&mut self.retained_conflicts, conflict);
         }
-        if self.round.is_none() {
-            self.round = other.round;
-        }
-        if self.timing.is_none() {
-            self.timing = other.timing;
-        }
+        self.place = merge_scalar(
+            self.id.as_str(),
+            &mut self.retained_conflicts,
+            "place",
+            self.place,
+            other.place,
+        );
+        self.round = merge_scalar(
+            self.id.as_str(),
+            &mut self.retained_conflicts,
+            "round",
+            self.round.clone(),
+            other.round,
+        );
+        self.timing = merge_scalar(
+            self.id.as_str(),
+            &mut self.retained_conflicts,
+            "timing",
+            self.timing,
+            other.timing,
+        );
         if self.source_team.is_none() {
             self.source_team = other.source_team;
         }
@@ -69,6 +85,22 @@ impl Entity for RelayResult {
     }
 }
 
+fn merge_scalar<T: Clone + PartialEq + std::fmt::Debug>(
+    entity_id: &str,
+    conflicts: &mut Vec<RetainedConflict>,
+    field: &'static str,
+    kept: Option<T>,
+    dropped: Option<T>,
+) -> Option<T> {
+    if let (Some(kept_value), Some(dropped_value)) = (&kept, &dropped) {
+        if kept_value != dropped_value {
+            let conflict = scalar_conflict(entity_id, field, kept_value, dropped_value);
+            record(conflicts, conflict);
+        }
+    }
+    kept.or(dropped)
+}
+
 fn record(conflicts: &mut Vec<RetainedConflict>, conflict: RetainedConflict) {
     if !conflicts.contains(&conflict) {
         conflicts.push(conflict);
@@ -77,6 +109,20 @@ fn record(conflicts: &mut Vec<RetainedConflict>, conflict: RetainedConflict) {
 
 fn same_spelling(left: &str, right: &str) -> bool {
     normalize_name(left) == normalize_name(right)
+}
+
+fn scalar_conflict(
+    relay_id: &str,
+    field: &'static str,
+    kept: &impl std::fmt::Debug,
+    dropped: &impl std::fmt::Debug,
+) -> RetainedConflict {
+    RetainedConflict::new(
+        RELAY_RESULT_SCALAR_FAMILY,
+        relay_id,
+        field,
+        format!("{field} kept {kept:?} dropped {dropped:?}"),
+    )
 }
 
 fn member_conflict(

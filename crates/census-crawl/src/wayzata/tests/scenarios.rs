@@ -52,6 +52,14 @@ impl Harness {
             body,
         )
     }
+    fn seed_results(&self, slug: &str, date: &str, body: &str) -> TestResult {
+        seed_cache(
+            &self.store.http_cache_dir(),
+            &format!("https://www.wayzataresults.com/links/{slug}"),
+            body,
+        )?;
+        Ok(())
+    }
 
     async fn run(
         &self,
@@ -75,6 +83,7 @@ impl Harness {
             limit,
             refresh: false,
             observed_on: Some("2030-10-01T00:00:00Z".to_string()),
+            results_enabled: false,
         };
         Ok(collect(&ctx, &options).await?)
     }

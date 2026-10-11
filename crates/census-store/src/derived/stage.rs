@@ -80,6 +80,9 @@ impl<'s> DerivedStage<'s> {
         self.refuse_unpartitioned(table)?;
         self.stage_table(table);
         for record in records {
+            if self.over_budget() {
+                self.flush()?;
+            }
             let value = serde_json::to_vec(record).map_err(|source| StoreError::Json {
                 detail: format!("table {} record is not encodable", table.file()),
                 source,
@@ -88,9 +91,6 @@ impl<'s> DerivedStage<'s> {
             self.buffered_bytes = self.buffered_bytes.saturating_add(value.len());
             self.buffered
                 .push((derived_key(table, self.generation, id.as_bytes()), value));
-            if self.over_budget() {
-                self.flush()?;
-            }
         }
         Ok(())
     }
@@ -101,6 +101,9 @@ impl<'s> DerivedStage<'s> {
         let prefix = derived_generation_prefix(table, self.base_derived_generation);
         let mut moved = 0_u64;
         for guard in self.store.entities.prefix(prefix.as_slice()) {
+            if self.over_budget() {
+                self.flush()?;
+            }
             let (key, value) = guard
                 .into_inner()
                 .map_err(|source| StoreError::Read { source })?;
@@ -114,9 +117,6 @@ impl<'s> DerivedStage<'s> {
             self.buffered
                 .push((derived_key(table, self.generation, id), value.to_vec()));
             moved = moved.checked_add(1).ok_or(StoreError::CounterOverflow)?;
-            if self.over_budget() {
-                self.flush()?;
-            }
         }
         Ok(moved)
     }
@@ -133,6 +133,7 @@ impl<'s> DerivedStage<'s> {
             digest,
         )?;
         let exclusivity = self.exclusivity.take();
+        let table_counts = self.count_generation_rows()?;
         let _appends = self.store.lock_appends();
         self.refuse_moved_inputs()?;
         if let receipt::Decision::Repeat(receipt) = receipt::decide(self.store, operation, digest)?
@@ -146,7 +147,7 @@ impl<'s> DerivedStage<'s> {
             });
         }
         let written = receipt::first(operation, digest, 0);
-        self.write_publication(operation, &written)?;
+        self.write_publication(operation, &written, &table_counts)?;
         drop(_appends);
         drop(exclusivity);
         Ok(Publication {
@@ -154,6 +155,16 @@ impl<'s> DerivedStage<'s> {
             generation: self.generation,
             reclaimed: reclaim_budgeted(self.store),
         })
+    }
+    fn count_generation_rows(&self) -> StoreResult<Vec<(Table, u64)>> {
+        self.tables
+            .iter()
+            .map(|table| {
+                let held =
+                    rows::count_generation(&self.store.entities, *table, self.generation)?;
+                Ok((*table, held))
+            })
+            .collect()
     }
 
     fn refuse_moved_inputs(&self) -> StoreResult<()> {
@@ -175,11 +186,15 @@ impl<'s> DerivedStage<'s> {
         })
     }
 
-    fn write_publication(&self, operation: &str, receipt: &Receipt) -> StoreResult<()> {
+    fn write_publication(
+        &self,
+        operation: &str,
+        receipt: &Receipt,
+        table_counts: &[(Table, u64)],
+    ) -> StoreResult<()> {
         let mut batch = self.store.db.batch();
-        for table in &self.tables {
-            let held = rows::count_generation(&self.store.entities, *table, self.generation)?;
-            self.store.put_row_mark(&mut batch, *table, held);
+        for (table, held) in table_counts {
+            self.store.put_row_mark(&mut batch, *table, *held);
         }
         let next_entities = self.store.generations.next_entities()?;
         generation::write_entities(&mut batch, &self.store.meta, next_entities);

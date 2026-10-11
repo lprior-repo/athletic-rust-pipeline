@@ -1,38 +1,20 @@
 mod collect;
-mod generic;
 mod map;
+mod generic;
 mod parse;
-mod probe;
-mod probe_utils;
-mod research_failure;
-mod row;
-mod source_research;
-mod staff;
-pub(crate) use generic::inspect_staff_links;
-pub(crate) use map::Capture as StaffCapture;
-pub(crate) use research_failure::{
-    fetch as contact_fetch_failure, status as contact_status_failure,
-};
-pub(crate) use source_research::{
-    persist_staff_attempt, persist_staff_capture, persist_unattempted, staff_capture,
-};
-pub(crate) use staff::{listing_appointment, PublishedListing};
-mod survey;
-#[cfg(test)]
-mod survey_tests;
 
 pub use collect::collect;
-pub use generic::{apply_school_mailbox_capture, research_school_mailboxes};
-pub use map::{
-    absorb_summary, coach_entities, directory_school, CoachCounters, CoachEmission,
-    DirectoryAdmission, EmissionScope,
+pub use generic::{
+    apply_school_mailbox_capture, contact_fetch_failure, contact_status_failure,
+    inspect_staff_links, listing_appointment, parse_state_filter, persist_staff_attempt,
+    persist_staff_capture, persist_unattempted, report_json, research_school_mailboxes,
+    selected_associations, survey, table_line, PublishedListing, StaffCapture, SurveyRecord,
 };
+pub use map::{absorb_summary, coach_entities, directory_school};
 pub use parse::{
     parse_directory, parse_summary, DirectoryPage, DirectorySchool, SchoolSummary, StaffMember,
     SummaryAddress, SummaryTel, TeamEntry,
 };
-pub use probe::{probe_one, report_json, sort_records, survey, table_line, ProbeRecord};
-pub use survey::{parse_state_filter, selected_associations, ASSOCIATIONS, VERIFIED};
 
 use census_domain::UsJurisdiction;
 use std::collections::BTreeMap;
@@ -87,10 +69,7 @@ pub fn summary_url(short_code: &str) -> String {
 pub(crate) fn classification(levels: &BTreeMap<String, serde_json::Value>) -> Option<String> {
     levels.iter().find_map(|(key, value)| {
         let lowered = key.to_ascii_lowercase();
-        let names_a_class = lowered.ends_with("class")
-            || lowered.ends_with("classification")
-            || lowered.ends_with("classifications");
-        if !names_a_class {
+        if !lowered.ends_with("classification") && !lowered.ends_with("classifications") {
             return None;
         }
         let text = value.as_str()?.trim();
@@ -113,7 +92,3 @@ pub(crate) fn nonempty(value: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests;
-
-#[cfg(test)]
-#[path = "tests/admission_regressions.rs"]
-mod admission_regressions;

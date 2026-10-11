@@ -2,6 +2,12 @@
 mod athlete_id_tests;
 #[path = "model_tests/corroboration.rs"]
 mod corroboration;
+#[path = "model_tests/engine_assessments.rs"]
+mod engine_assessments;
+#[path = "model_tests/engine_obligations.rs"]
+mod engine_obligations;
+#[path = "model_tests/engine_subjects.rs"]
+mod engine_subjects;
 #[path = "model_tests/event_tests.rs"]
 mod event_tests;
 #[path = "model_tests/framing.rs"]

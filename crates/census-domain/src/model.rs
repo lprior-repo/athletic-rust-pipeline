@@ -15,6 +15,15 @@ mod contact;
 mod contact_proof;
 mod contact_tenure;
 mod dates;
+mod engine_affiliation;
+mod engine_assessment;
+mod engine_capture;
+mod engine_claim;
+mod engine_coverage;
+mod engine_identity;
+mod engine_performance;
+mod engine_subject;
+mod engine_valid;
 mod event_identity;
 mod event_ontology;
 mod event_performance;
@@ -58,6 +67,20 @@ pub use contact_tenure::{
     assess_coach_tenure, validate_tenure_evidence, CoachContactClaim, CoachContactProgram,
     CoachTenure, CoachTenureEvidence, TenureAssessmentError, TenureValidation,
 };
+pub use engine_affiliation::{AppointmentRequest, AthleteAffiliation, CoachAppointment};
+pub use engine_assessment::{CohortAssessment, CohortVerdict, COHORT_ASSESSMENT_POLICY};
+pub use engine_capture::SourceCapture;
+pub use engine_claim::SourceClaim;
+pub use engine_coverage::{CoverageObligation, CoverageState, PendingObligation};
+pub use engine_identity::refuse_identity_loss;
+pub use engine_performance::{
+    Corroboration, PerformanceClaim, PerformanceRequest, MAX_FAMILY_BYTES, MAX_SOURCE_KEY_BYTES,
+};
+pub use engine_subject::SourceSubject;
+pub use engine_valid::{
+    MAX_CAPTURE_BYTES, MAX_DETAIL_BYTES, MAX_ENGINE_DIGEST_BYTES, MAX_LOGICAL_ID_BYTES,
+    MAX_MEMBERS_HINT, MAX_PROVIDER_ID_BYTES, MAX_URL_BYTES,
+};
 pub use event_identity::{EventIdentity, EventIdentityError};
 pub use event_ontology::{EventKind, SourceEventLabel};
 pub use event_performance::{CanonicalEvent, CanonicalPerformance, Mark, TimingMethod};
@@ -96,8 +119,9 @@ pub use records::{
     SourceEntityKind, SourceMeetRef, SourceObjectIdentity, SourceObservation,
     SourceSchoolObservation, ATHLETE_IDENTITY_FAMILY, COHORT_DECISION_FAMILIES,
     COHORT_EVIDENCE_FAMILY, COHORT_UNVERIFIED_FAMILY, CONTACT_CONFLICT_FAMILY,
-    IDENTITY_UNVERIFIED_FAMILY, MEMBER_SET_LABEL, RELAY_MEMBER_NAME_FAMILY, SCHOOL_IDENTITY_FAMILY,
-    UNRESOLVED_SCHOOL_FAMILY, UNRESOLVED_VENUE_FAMILY, UNSUPPORTED_GRADUATION_FAMILY,
+    IDENTITY_UNVERIFIED_FAMILY, MEMBER_SET_LABEL, RELAY_MEMBER_NAME_FAMILY,
+    RELAY_RESULT_SCALAR_FAMILY, SCHOOL_IDENTITY_FAMILY, UNRESOLVED_SCHOOL_FAMILY,
+    UNRESOLVED_VENUE_FAMILY, UNSUPPORTED_GRADUATION_FAMILY,
 };
 pub use relay_result::{RelayMember, RelayResult};
 pub use review::{

@@ -66,13 +66,16 @@ impl MeetRun {
         options: &Options,
         urls: &MeetUrls,
     ) -> CrawlResult<Option<Documents>> {
-        let Some(meet) = self.fetch::<MeetData>(ctx, options, &urls.meet, None).await else {
+        let Some(meet) = self
+            .fetch::<MeetData>(ctx, options, &urls.meet, None)
+            .await?
+        else {
             return Ok(None);
         };
         let token = meet.document.token.clone();
         let Some(results) = self
             .fetch::<AllResults>(ctx, options, &urls.results, token.as_deref())
-            .await
+            .await?
         else {
             return Ok(None);
         };
@@ -94,7 +97,10 @@ impl MeetRun {
         let Some(url) = urls.metadata.as_deref() else {
             return Ok(None);
         };
-        let Some(document) = self.fetch::<EventDivisions>(ctx, options, url, token).await else {
+        let Some(document) = self
+            .fetch::<EventDivisions>(ctx, options, url, token)
+            .await?
+        else {
             return Ok(None);
         };
         self.pending
@@ -149,7 +155,7 @@ impl MeetRun {
         options: &Options,
         url: &str,
         token: Option<&str>,
-    ) -> Option<Captured<T>> {
+    ) -> CrawlResult<Option<Captured<T>>> {
         let mut headers = vec![("Accept".to_string(), "application/json".to_string())];
         if let Some(token) = token {
             headers.push(("anettokens".to_string(), token.to_string()));
@@ -162,22 +168,25 @@ impl MeetRun {
         let fetched = match ctx.fetcher.get(url, &fetch_options).await {
             Ok(fetched) => fetched,
             Err(error) => {
+                if error.halts_object_walk() {
+                    return Err(error.into());
+                }
                 self.stats.fetches_failed = self.stats.fetches_failed.saturating_add(1);
                 self.report.note(format!("{url}: {error}"));
-                return None;
+                return Ok(None);
             }
         };
         match serde_json::from_slice(&fetched.body) {
-            Ok(document) => Some(Captured {
+            Ok(document) => Ok(Some(Captured {
                 document,
                 fetched_at: fetched.fetched_at,
-            }),
+            })),
             Err(error) => {
                 self.stats.fetches_failed = self.stats.fetches_failed.saturating_add(1);
                 self.report.note(format!(
                     "{url}: body is not the expected document ({error})"
                 ));
-                None
+                Ok(None)
             }
         }
     }

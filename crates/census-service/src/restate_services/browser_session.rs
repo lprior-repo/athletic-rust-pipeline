@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 
 use athleticnet_browser::clock::Clock as EngineClock;
@@ -17,6 +17,7 @@ pub struct BrowserSession {
     clock: Arc<dyn EngineClock>,
     manager: Arc<AsyncMutex<Option<Arc<BrowserManager>>>>,
     starting: Arc<AtomicBool>,
+    epoch: Arc<AtomicU64>,
 }
 
 impl BrowserSession {
@@ -26,6 +27,7 @@ impl BrowserSession {
             clock,
             manager: Arc::new(AsyncMutex::new(None)),
             starting: Arc::new(AtomicBool::new(false)),
+            epoch: Arc::new(AtomicU64::new(0)),
         }
     }
 
@@ -154,6 +156,7 @@ impl BrowserSession {
         ctx: ObjectContext<'_>,
     ) -> Result<Json<BrowserSessionStatus>, HandlerError> {
         let key = ctx.key().to_string();
+        let epoch = self.epoch.fetch_add(1, Ordering::SeqCst);
         if let Some(manager) = self.manager.lock().await.clone() {
             if manager.is_alive() {
                 return Err(TerminalError::new(
@@ -197,6 +200,7 @@ impl BrowserSession {
         ctx: ObjectContext<'_>,
     ) -> Result<Json<BrowserSessionDrain>, HandlerError> {
         let key = ctx.key().to_string();
+        self.epoch.fetch_add(1, Ordering::SeqCst);
         let Some(manager) = self.manager.lock().await.take() else {
             return Ok(Json(BrowserSessionDrain {
                 key,

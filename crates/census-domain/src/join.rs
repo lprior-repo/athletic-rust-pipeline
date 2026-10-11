@@ -50,8 +50,8 @@ where
     }
 
     // Phase 1: Sort both inputs using the external sort primitive
-    let left_sorted = external_sort(left, left_key_extractor, sort_dir)?;
-    let right_sorted = external_sort(right, right_key_extractor, sort_dir)?;
+    let left_sorted = external_sort(left, &left_key_extractor, sort_dir)?;
+    let right_sorted = external_sort(right, &right_key_extractor, sort_dir)?;
 
     // Phase 2: Merge join
     let mut left_index = 0;
@@ -74,8 +74,19 @@ where
                 right_index += 1;
             }
             std::cmp::Ordering::Equal => {
-                // Keys match; collect the join result
-                // For many-to-many, we need to collect all matches
+                // Collect all left matches
+                let mut left_matches = vec![];
+                while left_index < left_sorted.sorted.len() {
+                    let left_key = left_key_extractor(&left_sorted.sorted[left_index]);
+                    if left_key.compare(&right_key) == std::cmp::Ordering::Equal {
+                        left_matches.push(left_sorted.sorted[left_index].clone());
+                        left_index += 1;
+                    } else {
+                        break;
+                    }
+                }
+
+                // Collect all right matches
                 let mut right_matches = vec![];
                 while right_index < right_sorted.sorted.len() {
                     let right_key = right_key_extractor(&right_sorted.sorted[right_index]);
@@ -87,12 +98,12 @@ where
                     }
                 }
 
-                let left_value = left_sorted.sorted[left_index].clone();
-                for right_value in right_matches {
-                    joined.push((left_value.clone(), right_value));
+                // Join all left matches with all right matches
+                for left_value in left_matches {
+                    for right_value in &right_matches {
+                        joined.push((left_value.clone(), right_value.clone()));
+                    }
                 }
-
-                left_index += 1;
             }
         }
     }

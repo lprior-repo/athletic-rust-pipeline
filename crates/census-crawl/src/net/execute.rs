@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 use tracing::warn;
 
+mod admission;
 mod attempt;
 mod attempt_helper;
 mod body_reader;
@@ -156,6 +157,9 @@ impl Fetcher {
 
         let (host, origin) = request_target(url)?;
         self.origin_locks.ensure(&origin)?;
+        if let Some(refusal) = self.refused_admission(&host, url).await {
+            return Err(refusal);
+        }
         if self.host_blocked(&host, &super::now_iso8601()).await {
             return Err(FetchError::Cooldown { host: host.clone() });
         }

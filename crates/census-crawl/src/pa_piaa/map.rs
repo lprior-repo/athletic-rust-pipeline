@@ -17,12 +17,8 @@ pub fn map_directory_row(
         return None;
     }
     let normalized = normalize_name(name);
-    let (mut school, id) = CanonicalSchool::new(
-        UsJurisdiction::Pennsylvania,
-        name,
-        &normalized,
-        row.city.as_deref().and_then(nonempty).as_deref(),
-    );
+    let (mut school, id) = CanonicalSchool::new(UsJurisdiction::Pennsylvania, name, &normalized, None);
+    school.city = row.city.as_deref().and_then(nonempty);
     school.association = Some(ASSOCIATION.to_string());
     school.source_identities.push(
         SourceIdentity::new(
@@ -37,6 +33,10 @@ pub fn map_directory_row(
     ));
     Some((school, id))
 }
+
+/// PIAA publishes no coaches. Its details pages name a superintendent, a principal and an athletic
+/// director, and only the athletic-director post is a census role, so every contact this maps is an
+/// administrator: no sport, `Gender::Mixed`, `CoachRole::AthleticDirector`.
 pub fn map_contact_row(
     row: &ContactRow,
     school_id: &SchoolId,

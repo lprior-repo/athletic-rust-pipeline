@@ -27,7 +27,7 @@ struct Receipt {
     errors: usize,
 }
 
-pub(crate) fn team_index_report(
+pub fn team_index_report(
     store: &Store,
     jurisdiction: UsJurisdiction,
 ) -> CrawlResult<census_crawl::AdapterReport> {

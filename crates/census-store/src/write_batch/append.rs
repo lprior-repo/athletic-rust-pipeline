@@ -13,6 +13,8 @@ impl StoreBatch<'_> {
         if records.is_empty() {
             return Ok(());
         }
+        let count = u64::try_from(records.len()).map_err(|_| StoreError::CounterOverflow)?;
+        refuse_over_bound(table, count)?;
         let mut encoded = Vec::with_capacity(records.len());
         for record in records {
             let value = serde_json::to_vec(record).map_err(|source| StoreError::Json {

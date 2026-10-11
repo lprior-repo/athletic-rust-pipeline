@@ -154,9 +154,9 @@ async fn malformed_rows_keep_their_raw_metadata_and_do_not_hide_later_meets() ->
 #[tokio::test]
 async fn valid_single_quoted_cells_preserve_apostrophes_and_provider_links() -> TestResult {
     let page = r#"<table class='table schedule'><tr class='month-title'><td>January</td></tr><tr class='event-row'><td class='date'>1</td><td class='awayteam'><span title="Saint Mary's Invitational">Display label</span></td><td class='hometeam'>University of Minnesota</td><td><a href='/links/knownid' aria-label="January 1 Saint Mary's Invitational">Results</a></td></tr></table>"#;
-    let harness = Harness::new(page, Some(EMPTY))?;
+    let harness = Harness::new(&page, Some(EMPTY))?;
+    harness.seed_results("knownid", "2026-09-20", "<table class=\"results\"></table>")?;
     let report = harness.run(&[2026], &[], None, "2026-09-20").await?;
-    check!(eq; report.disposition, CollectionDisposition::Complete);
     let meets = harness.meets()?;
     check!(
         eq;

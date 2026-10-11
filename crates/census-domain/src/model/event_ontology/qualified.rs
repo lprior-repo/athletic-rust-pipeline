@@ -7,6 +7,15 @@ const MODIFIERS: &[&str] = &[
     "hurdle",
     "steeplechase",
     "walk",
+    "racewalk",
+    "lowhurdles",
+    "highhurdles",
+    "highhurdle",
+    "lowhurdle",
+    "steeple",
+    "racewalking",
+    "race walker",
+    "racewalker",
 ];
 
 struct Token<'a> {

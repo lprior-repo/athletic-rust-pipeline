@@ -160,3 +160,36 @@ pub(crate) fn write_escaped<W: FnMut(&[u8])>(bytes: &[u8], mut write: W) {
         }
     }
 }
+pub const CENSUS_GEN_V2_PREFIX: &str = "census-gen-v2";
+
+pub fn census_gen_v2_id(parts: &[&str]) -> String {
+    let mut hasher = Sha256::new();
+    write_escaped(CENSUS_GEN_V2_PREFIX.as_bytes(), |chunk| hasher.update(chunk));
+    for part in parts {
+        hasher.update([0x1f]);
+        write_escaped(part.as_bytes(), |chunk| hasher.update(chunk));
+    }
+    let digest = hasher.finalize();
+    let mut hex = String::with_capacity(18 + 16);
+    hex.push_str(CENSUS_GEN_V2_PREFIX);
+    hex.push('_');
+    for byte in digest.iter().take(8) {
+        hex.push_str(&format!("{byte:02x}"));
+    }
+    hex
+}
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct InputToken {
+    pub digest: String,
+    pub created_at: String,
+}
+
+impl InputToken {
+    pub fn mint(parts: &[&str]) -> Self {
+        let digest = census_gen_v2_id(parts);
+        Self {
+            digest,
+            created_at: chrono::Utc::now().to_rfc3339(),
+        }
+    }
+}

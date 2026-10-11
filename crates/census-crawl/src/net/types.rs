@@ -99,6 +99,10 @@ impl FetchError {
             | Self::Offline { .. } => false,
         }
     }
+
+    pub fn halts_object_walk(&self) -> bool {
+        self.retryable() || matches!(self, Self::BrowserLane { .. })
+    }
 }
 
 #[derive(Debug, Clone, Default)]

@@ -75,6 +75,7 @@ async fn walk_wayzata(
         limit: None,
         refresh: scope.refresh,
         observed_on: Some(context.observed_on.clone()),
+        results_enabled: false,
     };
     let report = census_crawl::wayzata::collect(context, &options)
         .await

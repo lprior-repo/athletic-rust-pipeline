@@ -1,7 +1,3 @@
-mod entities;
-
-use entities::unescape;
-
 use regex::Regex;
 use std::sync::LazyLock;
 
@@ -55,6 +51,8 @@ pub struct ContactRow {
     pub email: Option<String>,
 }
 
+/// The letter page renders one `<dl id="<PIAA id>" class="schoolBlock">` per member school whose
+/// name starts with that letter; the first non-empty `<dd>` is the single printed address line.
 pub fn parse_directory(body: &str) -> CrawlResult<Vec<SchoolRow>> {
     let block = pattern(BLOCK.as_ref(), "school block")?;
     let name = pattern(NAME.as_ref(), "school name")?;
@@ -65,15 +63,51 @@ pub fn parse_directory(body: &str) -> CrawlResult<Vec<SchoolRow>> {
         let (Some(school_id), Some(block_body)) = (captures.get(1), captures.get(2)) else {
             continue;
         };
-        if let Some(row) = parse_school_block(
-            school_id.as_str(),
-            block_body.as_str(),
-            name,
-            address,
-            split,
-        ) {
-            schools.push(row);
+        let school_id = school_id.as_str().to_string();
+        let Some(found) = name
+            .captures(block_body.as_str())
+            .and_then(|row| row.get(1))
+        else {
+            continue;
+        };
+        let school_name = clean(found.as_str());
+        if school_name.is_empty() {
+            continue;
         }
+        let mut row = SchoolRow {
+            detail_url: details_url(school_id.as_str()),
+            school_id,
+            name: school_name,
+            street: None,
+            city: None,
+            state: Some("PA".to_string()),
+            zip: None,
+        };
+        for cell in address
+            .captures_iter(block_body.as_str())
+            .filter_map(|cell| cell.get(1))
+        {
+            let line = clean(cell.as_str());
+            if line.is_empty() {
+                continue;
+            }
+            match split.captures(line.as_str()) {
+                Some(parts) => {
+                    let head = parts.get(1).map(|part| part.as_str()).unwrap_or("");
+                    let (street, city) = match head.rsplit_once(',') {
+                        Some((street, city)) => (street.trim(), city.trim()),
+                        None => (head.trim(), ""),
+                    };
+                    row.street = nonempty(street);
+                    row.city = nonempty(city);
+                    row.zip = parts.get(3).map(|part| part.as_str().to_string());
+                    row.state = parts.get(2).map(|part| part.as_str().to_string());
+                }
+                None if row.street.is_none() => row.street = Some(line),
+                None => {}
+            }
+        }
+        schools.push(row);
     }
     if schools.is_empty() {
         return Err(CrawlError::Invariant {
@@ -83,57 +117,9 @@ pub fn parse_directory(body: &str) -> CrawlResult<Vec<SchoolRow>> {
     Ok(schools)
 }
 
-fn parse_school_block(
-    school_id: &str,
-    block_body: &str,
-    name: &Regex,
-    address: &Regex,
-    split: &Regex,
-) -> Option<SchoolRow> {
-    let found = name.captures(block_body).and_then(|row| row.get(1))?;
-    let school_name = clean(found.as_str());
-    if school_name.is_empty() {
-        return None;
-    }
-    let mut row = SchoolRow {
-        detail_url: details_url(school_id),
-        school_id: school_id.to_string(),
-        name: school_name,
-        street: None,
-        city: None,
-        state: Some("PA".to_string()),
-        zip: None,
-    };
-    for cell in address
-        .captures_iter(block_body)
-        .filter_map(|cell| cell.get(1))
-    {
-        let line = clean(cell.as_str());
-        if line.is_empty() {
-            continue;
-        }
-        match split.captures(line.as_str()) {
-            Some(parts) => {
-                let head = parts
-                    .get(1)
-                    .map(|part| part.as_str())
-                    .map_or("", |value| value);
-                let (street, city) = match head.rsplit_once(',') {
-                    Some((street, city)) => (street.trim(), city.trim()),
-                    None => (head.trim(), ""),
-                };
-                row.street = nonempty(street);
-                row.city = nonempty(city);
-                row.zip = parts.get(3).map(|part| part.as_str().to_string());
-                row.state = parts.get(2).map(|part| part.as_str().to_string());
-            }
-            None if row.street.is_none() => row.street = Some(line),
-            None => {}
-        }
-    }
-    Some(row)
-}
-
+/// The details page prints its vCard contacts under `School Contacts`. PIAA publishes no coaches:
+/// the titles are Superintendent, Principal and Athletic Director, and only the athletic-director
+/// posts are kept.
 pub fn parse_details(body: &str) -> CrawlResult<DetailsPage> {
     let title = pattern(TITLE.as_ref(), "page title")?;
     let contacts = pattern(CONTACTS.as_ref(), "contact block")?;
@@ -141,42 +127,22 @@ pub fn parse_details(body: &str) -> CrawlResult<DetailsPage> {
     let parts = pattern(NAME_PARTS.as_ref(), "contact name")?;
     let contact_title = pattern(CONTACT_TITLE.as_ref(), "contact title")?;
     let mailto = pattern(MAILTO.as_ref(), "contact address")?;
-    let school_name = extract_school_name(title, body)?;
-    let contacts = parse_contact_block(body, contacts, card_start, parts, contact_title, mailto)?;
-    Ok(DetailsPage {
-        school_name,
-        contacts,
-    })
-}
-
-fn extract_school_name(title: &Regex, body: &str) -> CrawlResult<String> {
-    let name = title
+    let school_name = title
         .captures(body)
         .and_then(|found| found.get(1))
         .map(|found| clean(found.as_str()))
         .map(|name| {
             name.strip_suffix("- PIAA")
-                .map_or(name.as_str(), |value| value)
+                .unwrap_or(name.as_str())
                 .trim()
                 .to_string()
         })
-        .map_or(Default::default(), core::convert::identity);
-    if name.is_empty() {
+        .unwrap_or_default();
+    if school_name.is_empty() {
         return Err(CrawlError::Invariant {
             detail: "details page carries no title naming the school".to_string(),
         });
     }
-    Ok(name)
-}
-
-fn parse_contact_block(
-    body: &str,
-    contacts: &Regex,
-    card_start: &Regex,
-    parts: &Regex,
-    contact_title: &Regex,
-    mailto: &Regex,
-) -> CrawlResult<Vec<ContactRow>> {
     let mut rows: Vec<ContactRow> = Vec::new();
     for block in contacts
         .captures_iter(body)
@@ -188,10 +154,7 @@ fn parse_contact_block(
             .map(|found| found.start())
             .collect();
         for (index, start) in starts.iter().enumerate() {
-            let end = starts
-                .get(index.saturating_add(1))
-                .copied()
-                .map_or(block_body.len(), |value| value);
+            let end = starts.get(index + 1).copied().unwrap_or(block_body.len());
             let Some(card) = block_body.get(*start..end) else {
                 continue;
             };
@@ -227,7 +190,10 @@ fn parse_contact_block(
             });
         }
     }
-    Ok(rows)
+    Ok(DetailsPage {
+        school_name,
+        contacts: rows,
+    })
 }
 
 fn is_administrator_title(title: &str) -> bool {
@@ -256,4 +222,52 @@ fn clean(value: &str) -> String {
         .split_whitespace()
         .collect::<Vec<&str>>()
         .join(" ")
+}
+
+fn unescape(value: &str) -> String {
+    let mut out = String::with_capacity(value.len());
+    let mut rest = value;
+    while let Some((head, tail)) = rest.split_once('&') {
+        out.push_str(head);
+        match tail.split_once(';') {
+            Some((entity, after)) if entity.len() <= 10 && !entity.is_empty() => {
+                match decode(entity) {
+                    Some(character) => out.push(character),
+                    None => {
+                        out.push('&');
+                        out.push_str(entity);
+                        out.push(';');
+                    }
+                }
+                rest = after;
+            }
+            _ => {
+                out.push('&');
+                rest = tail;
+            }
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
+fn decode(entity: &str) -> Option<char> {
+    match entity {
+        "amp" => Some('&'),
+        "lt" => Some('<'),
+        "gt" => Some('>'),
+        "quot" => Some('"'),
+        "apos" | "#39" | "#x27" | "#X27" => Some('\''),
+        "nbsp" => Some('\u{a0}'),
+        _ => {
+            let digits = entity.strip_prefix('#')?;
+            let (radix, digits) = match digits.strip_prefix(['x', 'X']) {
+                Some(hex) => (16, hex),
+                None => (10, digits),
+            };
+            u32::from_str_radix(digits, radix)
+                .ok()
+                .and_then(char::from_u32)
+        }
+    }
 }

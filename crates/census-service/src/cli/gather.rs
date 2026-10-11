@@ -81,20 +81,44 @@ pub(super) async fn run_teams(cli: &Cli, args: &TeamsArgs) -> Result<()> {
         Route::Offline(root) => {
             let store = Store::open(root)?;
             let fetcher = build_fetcher(cli, &store)?;
+            let mut failed = Vec::new();
+            let mut incomplete = Vec::new();
             for jurisdiction in &jurisdictions {
                 match census::collect_state_teams(&fetcher, &store, *jurisdiction, args.refresh)
                     .await
                 {
                     Ok(teams) => {
-                        println!("{}\tteams={}", jurisdiction.code(), teams.len());
+                        let report = census::team_index_report(&store, *jurisdiction)?;
+                        println!(
+                            "{}\tteams={}\toutcome={:?}\terrors={}\tunfinished={}",
+                            jurisdiction.code(),
+                            teams.len(),
+                            report.disposition,
+                            report.errors,
+                            report.unfinished.len()
+                        );
                         for team in teams.iter().take(3) {
                             println!("  {}\t{}\t{}", team.id, team.name, team.city_state);
+                        }
+                        if !report.disposition.is_complete()
+                            || report.errors != 0
+                            || !report.unfinished.is_empty()
+                        {
+                            incomplete.push(jurisdiction.code().to_string());
                         }
                     }
                     Err(error) => {
                         eprintln!("{}\tteams=error\t{}", jurisdiction.code(), error);
+                        failed.push(jurisdiction.code().to_string());
                     }
                 }
+            }
+            if !failed.is_empty() || !incomplete.is_empty() {
+                return Err(anyhow::anyhow!(
+                    "team collection did not complete: failed [{}]; incomplete [{}]",
+                    failed.join(", "),
+                    incomplete.join(", ")
+                ));
             }
             Ok(())
         }

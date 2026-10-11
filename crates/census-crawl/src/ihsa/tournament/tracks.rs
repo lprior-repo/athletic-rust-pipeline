@@ -59,9 +59,11 @@ impl<'a> Mapper<'a> {
         context: &EventContext<'_>,
         url: &str,
     ) {
+        let relay_event = context.event.kind.is_relay() || summary.event_type == "RelayEvent";
         for (row_index, row) in summary.finishers.iter().enumerate() {
             self.stats.rows = self.stats.rows.saturating_add(1);
-            if row.members.is_empty() {
+            let named = finisher_name(row).is_some_and(|name| !name.trim().is_empty());
+            if row.members.is_empty() && (named || !relay_event) {
                 self.individual(row, context, url, row_index);
             } else {
                 self.relay(row, context, url, row_index);
@@ -82,9 +84,7 @@ impl<'a> Mapper<'a> {
             return;
         };
         let reference = row.athlete.as_ref();
-        let name = reference
-            .and_then(|who| who.name.as_deref())
-            .or(row.athlete_name.as_deref());
+        let name = finisher_name(row);
         let Some(subject) = self.athlete(
             AthleteRow {
                 name,
@@ -223,4 +223,11 @@ impl<'a> Mapper<'a> {
             .entry(relay.id.as_str().to_owned())
             .or_insert(relay);
     }
+}
+
+fn finisher_name(row: &FinisherRow) -> Option<&str> {
+    row.athlete
+        .as_ref()
+        .and_then(|who| who.name.as_deref())
+        .or(row.athlete_name.as_deref())
 }

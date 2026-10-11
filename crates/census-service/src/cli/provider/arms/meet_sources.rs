@@ -123,6 +123,7 @@ pub(crate) async fn wayzata_report(
             limit: args.limit,
             refresh: args.refresh,
             observed_on: Some(observed_on),
+            results_enabled: false,
         },
     )
     .await?)

@@ -26,7 +26,9 @@ pub use state::{
     Phase, RetainedFindings, SealCounts, SealError, SealEvidence, SealedCensus, SourceObject,
     WorkbookCheck,
 };
-pub(crate) use sweep::index::{inspect_rosters, team_index_report, RosterIndexEvidence};
+pub(crate) use sweep::index::{inspect_rosters, RosterIndexEvidence};
+
+pub use sweep::index::team_index_report;
 #[cfg(feature = "native-fault-injection")]
 pub use sweep::install_boundary_hook;
 pub use sweep::{collect_milesplit, collect_state_rosters, collect_state_teams};

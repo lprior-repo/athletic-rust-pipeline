@@ -192,6 +192,74 @@ pub struct StageOutcome {
     #[serde(default)]
     pub unfinished: Vec<String>,
 }
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StageProgress {
+    #[serde(default)]
+    pub teams: StageStatus,
+    #[serde(default)]
+    pub rosters: StageStatus,
+    #[serde(default)]
+    pub meets: StageStatus,
+    #[serde(default)]
+    pub results: StageStatus,
+    #[serde(default)]
+    pub contacts: StageStatus,
+    #[serde(default)]
+    pub publication: StageStatus,
+    #[serde(default)]
+    pub sequence: u64,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StageStatus {
+    #[default]
+    Pending,
+    Running,
+    Complete,
+    Failed {
+        #[serde(default)]
+        error: String,
+    },
+}
+
+impl StageProgress {
+    pub fn advance(&mut self, stage: &str, status: StageStatus) {
+        self.sequence += 1;
+        match stage {
+            "teams" => self.teams = status,
+            "rosters" => self.rosters = status,
+            "meets" => self.meets = status,
+            "results" => self.results = status,
+            "contacts" => self.contacts = status,
+            "publication" => self.publication = status,
+            _ => {}
+        }
+    }
+
+    pub fn pending(&self) -> Vec<&'static str> {
+        let mut stages = Vec::new();
+        if self.teams == StageStatus::Pending {
+            stages.push("teams");
+        }
+        if self.rosters == StageStatus::Pending {
+            stages.push("rosters");
+        }
+        if self.meets == StageStatus::Pending {
+            stages.push("meets");
+        }
+        if self.results == StageStatus::Pending {
+            stages.push("results");
+        }
+        if self.contacts == StageStatus::Pending {
+            stages.push("contacts");
+        }
+        if self.publication == StageStatus::Pending {
+            stages.push("publication");
+        }
+        stages
+    }
+}
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct JurisdictionState {

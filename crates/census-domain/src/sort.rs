@@ -47,7 +47,7 @@ pub struct SortResult<T> {
 /// External sort that uses disk-based spool files.
 pub fn external_sort<T, K, F>(
     input: &[T],
-    key_extractor: F,
+    key_extractor: &F,
     sort_dir: &Path,
 ) -> Result<SortResult<T>, DomainError>
 where
@@ -158,7 +158,7 @@ mod tests {
         let input = vec![10, 5, 20, 1, 15];
         let result = external_sort(
             &input,
-            |x| TestKey(*x),
+            &|x| TestKey(*x),
             Path::new("/tmp"),
         ).unwrap();
         assert_eq!(result.sorted, vec![1, 5, 10, 15, 20]);
@@ -169,7 +169,7 @@ mod tests {
         let input: Vec<i32> = vec![];
         let result = external_sort(
             &input,
-            |x| TestKey(*x as u64),
+            &|x| TestKey(*x as u64),
             Path::new("/tmp"),
         ).unwrap();
         assert!(result.sorted.is_empty());

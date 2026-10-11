@@ -128,6 +128,9 @@ async fn absorb_scope(
     let capture = match fetch(ctx, options, &url).await {
         Ok(capture) => capture,
         Err(error) => {
+            if error.halts_object_walk() {
+                return Err(error.into());
+            }
             record_failure(run, &url, &error.to_string())?;
             flush_batch(ctx, run)?;
             return Ok(false);

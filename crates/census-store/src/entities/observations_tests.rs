@@ -1,8 +1,9 @@
 use crate::{Entity, Store, Table};
 use census_domain::model::{
-    normalize_name, AthleteId, CanonicalSchool, EventId, Mark, MeetId, RelayMember, RelayResult,
-    SourceAthleteObservation, SourceIdentity, SourceNamespace, SourceObservation,
-    SourceSchoolObservation, TeamId, RELAY_MEMBER_NAME_FAMILY,
+    normalize_name, AthleteId, CanonicalSchool, EventId, ExactSeconds, Mark, MeetId, RelayMember,
+    RelayResult, SourceAthleteObservation, SourceIdentity, SourceNamespace, SourceObservation,
+    SourceSchoolObservation, TeamId, TimingMethod, RELAY_MEMBER_NAME_FAMILY,
+    RELAY_RESULT_SCALAR_FAMILY,
 };
 use census_domain::UsJurisdiction;
 
@@ -251,6 +252,134 @@ fn two_athlete_links_for_one_spelling_retain_the_contradiction() -> TestResult {
     check!(
         eq; held.retained_conflicts.len(), 1,
         "conflicting athlete links for one spelling are retained"
+    );
+    Ok(())
+}
+
+fn relay_team(place: Option<u16>) -> RelayResult {
+    RelayResult::new(
+        &TeamId::mint("team", &["a"]),
+        &EventId::mint("event", &["b"]),
+        &MeetId::mint("meet", &["c"]),
+        Mark::Raw("raw".to_string()),
+        "test:key",
+    )
+    .with_place(place)
+}
+
+#[test]
+fn a_matching_scalar_repeat_mints_no_conflict() -> TestResult {
+    let mut held = relay_team(Some(2))
+        .with_round(Some("preliminaries".to_string()))
+        .with_timing(Some(TimingMethod::Hand));
+    held.merge(
+        relay_team(Some(2))
+            .with_round(Some("preliminaries".to_string()))
+            .with_timing(Some(TimingMethod::Hand)),
+    );
+    check!(eq; held.place, Some(2));
+    check!(eq; held.round.as_deref(), Some("preliminaries"));
+    check!(eq; held.timing, Some(TimingMethod::Hand));
+    check!(
+        held.retained_conflicts.is_empty(),
+        "a repeat sighting of the same scalars mints no conflict: {:?}",
+        held.retained_conflicts
+    );
+    Ok(())
+}
+
+#[test]
+fn a_contradictory_place_keeps_the_first_and_retains_the_scalar_conflict() -> TestResult {
+    let mut held = relay_team(Some(2));
+    held.merge(relay_team(Some(5)));
+    check!(eq; held.place, Some(2), "the first sighting keeps the field");
+    check!(eq; held.retained_conflicts.len(), 1, "the dropped place is retained");
+    let conflict = &held.retained_conflicts[0];
+    check!(eq; conflict.family, RELAY_RESULT_SCALAR_FAMILY);
+    check!(eq; conflict.subject, "place");
+    check!(eq; conflict.subject_id, held.id.as_str());
+    check!(
+        conflict.detail.contains("kept Some(2)") && conflict.detail.contains("dropped Some(5)"),
+        "both places stay recoverable from the retained detail: {}",
+        conflict.detail
+    );
+    Ok(())
+}
+
+#[test]
+fn a_contradictory_round_retains_its_own_scalar_conflict() -> TestResult {
+    let mut held = relay_team(Some(1)).with_round(Some("preliminaries".to_string()));
+    held.merge(relay_team(Some(1)).with_round(Some("finals".to_string())));
+    check!(eq; held.round.as_deref(), Some("preliminaries"));
+    check!(eq; held.retained_conflicts.len(), 1);
+    check!(eq; held.retained_conflicts[0].subject, "round");
+    check!(
+        held.retained_conflicts[0].detail.contains("finals"),
+        "the dropped round stays recoverable: {}",
+        held.retained_conflicts[0].detail
+    );
+    Ok(())
+}
+
+#[test]
+fn a_contradictory_timing_retains_its_own_scalar_conflict() -> TestResult {
+    let mut held = relay_team(Some(1)).with_timing(Some(TimingMethod::Hand));
+    held.merge(relay_team(Some(1)).with_timing(Some(TimingMethod::Fat)));
+    check!(eq; held.timing, Some(TimingMethod::Hand));
+    check!(eq; held.retained_conflicts.len(), 1);
+    check!(eq; held.retained_conflicts[0].subject, "timing");
+    Ok(())
+}
+
+#[test]
+fn a_later_scalar_fills_an_empty_field_without_conflict() -> TestResult {
+    let mut held = relay_team(None);
+    held.merge(relay_team(Some(3)).with_timing(Some(TimingMethod::Fat)));
+    check!(eq; held.place, Some(3), "an empty scalar is filled, not contradicted");
+    check!(eq; held.timing, Some(TimingMethod::Fat));
+    check!(held.retained_conflicts.is_empty());
+    Ok(())
+}
+
+#[test]
+fn a_raw_mark_is_refined_by_a_known_mark_without_conflict() -> TestResult {
+    let mut held = relay_leg(1, "Jordan Blake");
+    let timed = RelayResult::new(
+        &TeamId::mint("team", &["a"]),
+        &EventId::mint("event", &["b"]),
+        &MeetId::mint("meet", &["c"]),
+        Mark::TimeSeconds(ExactSeconds::parse("41.86")?),
+        "test:key",
+    );
+    held.merge(timed);
+    check!(
+        eq; held.mark, Mark::TimeSeconds(ExactSeconds::parse("41.86")?),
+        "the raw mark is refined by the timed capture"
+    );
+    check!(
+        held.retained_conflicts.is_empty(),
+        "refining a raw mark is not a contradiction"
+    );
+    Ok(())
+}
+
+#[test]
+fn a_later_raw_mark_cannot_displace_a_known_mark() -> TestResult {
+    let mut held = RelayResult::new(
+        &TeamId::mint("team", &["a"]),
+        &EventId::mint("event", &["b"]),
+        &MeetId::mint("meet", &["c"]),
+        Mark::TimeSeconds(ExactSeconds::parse("41.86")?),
+        "test:key",
+    );
+    held.merge(relay_leg(1, "Jordan Blake"));
+    check!(
+        eq; held.mark, Mark::TimeSeconds(ExactSeconds::parse("41.86")?),
+        "a later raw capture cannot displace a known mark"
+    );
+    check!(
+        held.retained_conflicts.is_empty(),
+        "a raw later capture is not a contradiction"
     );
     Ok(())
 }

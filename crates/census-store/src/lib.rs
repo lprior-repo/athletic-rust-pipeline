@@ -21,6 +21,7 @@ mod backup;
 mod batch;
 pub mod clock;
 mod derived;
+mod engine;
 mod entities;
 mod error;
 mod fence;
@@ -47,6 +48,7 @@ mod write_batch;
 
 pub use backup::{BackupReport, IntegrityReport, IntegrityTable, RestoreReport};
 pub use derived::{DerivedStage, Publication, Reclaimed};
+pub use engine::{EngineDigest, EngineOperation};
 pub use error::{StoreError, StoreResult};
 pub use fence::FencedSnapshot;
 pub use format::{
@@ -206,6 +208,8 @@ impl Store {
 #[cfg(test)]
 #[path = "backup_tests.rs"]
 mod backup_tests;
+#[cfg(test)]
+mod engine_tests;
 #[cfg(test)]
 mod fs_tests;
 #[cfg(all(feature = "loom", test))]
