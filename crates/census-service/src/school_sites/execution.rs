@@ -1,7 +1,9 @@
 use super::{artifacts, owners, queue, Failure, PlannedSite, QueueStats, Report, SchoolSitesArgs};
 use anyhow::{Context, Result};
 use census_crawl::net::Fetcher;
-use census_crawl::school_sites::collect_contacts;
+use census_crawl::school_sites::{
+    collect_contacts, crawl_site, queue_key, QueueRow, Rules, SiteOutcome,
+};
 use census_crawl::{AdapterContext, AdapterReport};
 use census_domain::model::{CanonicalSchool, SchoolYear};
 use census_store::Store;
@@ -54,14 +56,14 @@ fn context<'a>(
     })
 }
 
-struct State {
+pub(super) struct State {
     report: Report,
     out: PathBuf,
     failure_bytes: usize,
 }
 
 impl State {
-    fn new(out: PathBuf, queue: QueueStats, planned: usize) -> Result<Self> {
+    pub(super) fn new(out: PathBuf, queue: QueueStats, planned: usize) -> Result<Self> {
         std::fs::create_dir_all(&out).with_context(|| format!("creating {}", out.display()))?;
         let report = Report {
             queue,
@@ -129,8 +131,11 @@ impl State {
     ) -> Result<()> {
         match owner {
             owners::Owner::Matched(mut school) => self.collect(ctx, site, &mut school).await,
-            owners::Owner::Missing => self.fail(site, "canonical owner/official website/jurisdiction was not discovered by a public source".to_owned()),
-            owners::Owner::Ambiguous => self.fail(site, "multiple canonical source-discovered schools match this queue subject".to_owned()),
+            owners::Owner::Missing => self.collect_missing(ctx, site).await,
+            owners::Owner::Ambiguous => self.fail(
+                site,
+                "multiple canonical source-discovered schools match this queue subject".to_owned(),
+            ),
         }
     }
 
@@ -147,6 +152,44 @@ impl State {
                 format!("canonical contact acquisition failed: {error}"),
             ),
         }
+    }
+
+    async fn collect_missing(
+        &mut self,
+        ctx: &AdapterContext<'_>,
+        site: &PlannedSite,
+    ) -> Result<()> {
+        let row = QueueRow {
+            state: site.state.code().to_owned(),
+            name: site.school.clone(),
+            website: site.website.clone(),
+        };
+        let rules = Rules::new()?;
+        let outcome = crawl_site(&rules, ctx.fetcher, &row, ctx.refresh).await?;
+        self.missing_site(site, &outcome)
+    }
+
+    pub(super) fn missing_site(&mut self, site: &PlannedSite, outcome: &SiteOutcome) -> Result<()> {
+        let record = artifacts::SiteRecord {
+            state: site.state.code().to_owned(),
+            school: site.school.clone(),
+            website: site.website.clone(),
+            pages: outcome.signals.pages.clone(),
+            page_evidence: outcome.pages.clone(),
+            requests: outcome.requests,
+            errors: outcome.errors,
+            note: outcome.note.clone(),
+        };
+        let path = self.out.join(format!(
+            "{}.json",
+            queue_key(site.state.code(), &site.school)
+        ));
+        artifacts::write_site(&path, &record)?;
+        bump(&mut self.report.requests, outcome.requests)?;
+        bump(&mut self.report.errors, outcome.errors)?;
+        bump(&mut self.report.crawled, 1)?;
+        bump(&mut self.report.empty, 1)?;
+        Ok(())
     }
 
     fn canonical(
@@ -215,7 +258,7 @@ impl State {
         bump(&mut self.report.errors, 1)
     }
 
-    fn finish(mut self) -> Result<Report> {
+    pub(super) fn finish(mut self) -> Result<Report> {
         self.report.failed = self.report.failures.len();
         artifacts::write_report(&self.out.join("report.json"), &self.report)?;
         Ok(self.report)

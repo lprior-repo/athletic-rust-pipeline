@@ -5,6 +5,7 @@ use std::time::Duration;
 use restate_sdk::prelude::HandlerError;
 
 use super::{admission, ledger};
+use crate::census::source_boundary;
 use crate::restate_services::{blocking, job_error, JobError, Jobs};
 
 mod config;
@@ -106,11 +107,11 @@ fn marker_worker(
 ) -> impl FnOnce() -> Result<(), BoundaryError> + Send + 'static {
     move || {
         let _admission = admission;
-        store.with_native_effect_checkpoint(|checkpoint| {
+        let armed = store.with_native_effect_checkpoint(|checkpoint| {
             let marker = marker.with_acknowledged_effects(checkpoint);
-            marker.publish(&directory)?;
-            marker.hold(timeout)
-        })?
+            marker.publish(&directory).map(|()| marker)
+        })?;
+        armed?.hold(timeout)
     }
 }
 
@@ -146,36 +147,60 @@ impl boundary::Hook for NativeBoundaryHook {
             let selection = cfg.select_point(&point);
             match selection {
                 config::Selection::Continue => Ok(()),
-                config::Selection::Hold(timeout) => {
-                    let directory = files::Directory::open(&path).map_err(|e| {
-                        census_crawl::CrawlError::Invariant {
-                            detail: e.to_string(),
-                        }
-                    })?;
-                    let identity = ledger::Identity {
-                        request_digest: "fault_injection".to_string(),
-                        observed_on: "fault_injection".to_string(),
-                    };
-                    let marker = marker::Marker::new_for_kind(
-                        &cfg.operation,
-                        cfg.attempt,
-                        point.kind(),
-                        &identity,
-                    )
-                    .map_err(|e| census_crawl::CrawlError::Invariant {
-                        detail: e.to_string(),
-                    })?;
-                    marker.publish(&directory).map_err(|e| {
-                        census_crawl::CrawlError::Invariant {
-                            detail: e.to_string(),
-                        }
-                    })?;
-                    tokio::time::sleep(timeout).await;
-                    Err(census_crawl::CrawlError::Invariant {
-                        detail: format!("boundary hook timeout at {}", point.kind()),
-                    })
-                }
+                config::Selection::Hold(timeout) => hold(&path, &cfg, point, timeout).await,
             }
         })
     }
+}
+
+async fn hold(
+    path: &std::path::Path,
+    cfg: &Config,
+    point: boundary::Point,
+    timeout: Duration,
+) -> Result<(), census_crawl::CrawlError> {
+    let Some(scope) = source_boundary::current() else {
+        return Err(census_crawl::CrawlError::Invariant {
+            detail: format!(
+                "boundary hook fired outside a scoped source acquisition at {}",
+                point.kind()
+            ),
+        });
+    };
+    if scope.operation != cfg.operation {
+        return Err(census_crawl::CrawlError::Invariant {
+            detail: format!(
+                "boundary scope operation {} does not match the armed operation {}",
+                scope.operation, cfg.operation
+            ),
+        });
+    }
+    let directory =
+        files::Directory::open(path).map_err(|e| census_crawl::CrawlError::Invariant {
+            detail: e.to_string(),
+        })?;
+    let identity = ledger::Identity {
+        request_digest: scope.request_digest.clone(),
+        observed_on: scope.observed_on.clone(),
+    };
+    let marker = marker::Marker::new_for_kind(&cfg.operation, cfg.attempt, point.kind(), &identity)
+        .map_err(|e| census_crawl::CrawlError::Invariant {
+            detail: e.to_string(),
+        })?;
+    scope
+        .store
+        .with_native_effect_checkpoint(|checkpoint| {
+            let marker = marker.with_acknowledged_effects(checkpoint);
+            marker.publish(&directory)
+        })
+        .map_err(|e| census_crawl::CrawlError::Invariant {
+            detail: format!("checkpoint: {}", e),
+        })?
+        .map_err(|e| census_crawl::CrawlError::Invariant {
+            detail: format!("marker: {}", e),
+        })?;
+    tokio::time::sleep(timeout).await;
+    Err(census_crawl::CrawlError::Invariant {
+        detail: format!("boundary hook timeout at {}", point.kind()),
+    })
 }

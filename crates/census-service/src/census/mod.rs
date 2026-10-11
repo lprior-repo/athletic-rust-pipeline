@@ -8,6 +8,8 @@ mod aggregate;
 mod meets;
 mod scope;
 pub mod seal;
+#[cfg(feature = "native-fault-injection")]
+pub(crate) mod source_boundary;
 mod state;
 mod sweep;
 

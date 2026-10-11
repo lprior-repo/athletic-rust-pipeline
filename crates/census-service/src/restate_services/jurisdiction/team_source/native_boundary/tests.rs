@@ -16,6 +16,7 @@ mod cancellation;
 mod config;
 mod control;
 mod markers;
+mod scope;
 
 struct Fixture {
     root: tempfile::TempDir,
@@ -53,6 +54,16 @@ fn configuration(attempt: u8, timeout: u64) -> Value {
 
 fn fixture(attempt: u8, timeout: u64) -> Result<Fixture, Box<dyn Error>> {
     Fixture::new(&serde_json::to_vec(&configuration(attempt, timeout))?)
+}
+
+fn point_fixture(kind: &str, timeout: u64) -> Result<Fixture, Box<dyn Error>> {
+    Fixture::new(&serde_json::to_vec(&json!({
+        "schema": 2,
+        "operation": OPERATION,
+        "attempt": 1,
+        "timeout_seconds": timeout,
+        "kind": kind,
+    }))?)
 }
 
 fn identity() -> ledger::Identity {

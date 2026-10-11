@@ -229,7 +229,32 @@ lane_durability() {
       echo "durability: Restate executable not executable: $restate_bin"
       return 1
     fi
-    SCRATCH_STORE="$PWD/var/durability-scratch" RESTATE_SERVER_BIN="$restate_bin" env -u CI tools/moon-local run pipeline:durability
+    local seam_bin="$PWD/target/moon-build/x86_64-unknown-linux-gnu/release/census-serve"
+    local plain_bin="$PWD/target/moon-portable/x86_64-unknown-linux-gnu/release/census-serve"
+    local vm_host="$PWD/target/moon-build/x86_64-unknown-linux-gnu/release/examples/qualification_native_vm"
+    local oracle_bin="$PWD/target/moon-build/x86_64-unknown-linux-gnu/release/examples/receipt-oracle"
+    local vm_captures="$PWD/var/native-vm-captures-sol-20261006.json"
+    if [ ! -x "$seam_bin" ] || [ ! -x "$vm_host" ]; then
+      env -u CI tools/moon-local run pipeline:build -- --release -p census-service \
+        --features native-fault-injection --bin census-serve --example qualification_native_vm || return 1
+    fi
+    if [ ! -x "$oracle_bin" ]; then
+      env -u CI tools/moon-local run pipeline:build -- --release -p census-store \
+        --features native-fault-injection --example receipt-oracle || return 1
+    fi
+    if [ ! -x "$plain_bin" ]; then
+      echo "durability: portable census-serve missing at $plain_bin; run pipeline:build-portable"
+      return 1
+    fi
+    if [ ! -f "$vm_captures" ]; then
+      echo "durability: native VM captures missing at $vm_captures"
+      return 1
+    fi
+    SCRATCH_STORE="$PWD/var/durability-scratch" RESTATE_SERVER_BIN="$restate_bin" \
+      SERVE_BINARY="$seam_bin" S04_V1_BINARY="$seam_bin" S04_V2_BINARY="$plain_bin" \
+      S06_RECEIPT_ORACLE_BINARY="$oracle_bin" \
+      CENSUS_NATIVE_VM_HOST="$vm_host" CENSUS_NATIVE_VM_CAPTURES="$vm_captures" \
+      env -u CI tools/moon-local run pipeline:durability
   fi
 }
 

@@ -39,3 +39,26 @@ pub(super) fn write_report(path: &Path, report: &Report) -> Result<()> {
         .flush()
         .with_context(|| format!("writing {}", path.display()))
 }
+
+#[derive(Debug, Serialize)]
+pub struct SiteRecord {
+    pub state: String,
+    pub school: String,
+    pub website: String,
+    pub pages: Vec<String>,
+    pub page_evidence: Vec<census_crawl::school_sites::PageEvidence>,
+    pub requests: usize,
+    pub errors: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+}
+
+pub(super) fn write_site(path: &Path, record: &SiteRecord) -> Result<()> {
+    let file =
+        std::fs::File::create(path).with_context(|| format!("creating {}", path.display()))?;
+    let mut writer = std::io::BufWriter::new(file);
+    serde_json::to_writer_pretty(&mut writer, record).context("encoding the school-site record")?;
+    writer
+        .flush()
+        .with_context(|| format!("writing {}", path.display()))
+}

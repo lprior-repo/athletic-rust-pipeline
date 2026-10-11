@@ -56,11 +56,16 @@ two guest lanes (03, 12) additionally read `CENSUS_NATIVE_VM_HOST` for the featu
 natural-midnight phase replays; without that host they resolve the example under the portable target
 tree, which `pipeline:build-portable` leaves empty, and fail before booting.
 
-`S04_V1_BINARY` and `S04_V2_BINARY` override scenario 04's pair directly. A gate that exports the
-feature build as `SERVE_BINARY` — which scenarios 02, 05, 06 and 11 need — must set them, or
-scenario 04 copies one binary into both roles and refuses the run ("V1 and V2 are the same binary"):
-the 2026-10-11 release pass exported the feature build as `S04_V1_BINARY` and the plain portable
-build as `S04_V2_BINARY`.
+`S04_V1_BINARY` and `S04_V2_BINARY` override scenario 04's pair directly; without the override
+scenario 04 takes V1 from the feature build in `target/moon-build` and V2 from the plain portable
+build, independent of `SERVE_BINARY`, so exporting the feature build for scenarios 02, 05, 06 and 11
+can no longer collapse the pair into one binary. The release gate's durability lane
+(`lane_durability` in `tools/gate.sh`) performs that wiring itself: it builds the feature endpoint
+and its `qualification_native_vm` example when either is missing, builds the
+`crates/census-store/examples/receipt-oracle.rs` reconciliation binary through
+`S06_RECEIPT_ORACLE_BINARY` when it is missing, then exports `SERVE_BINARY`, `S04_V1_BINARY`,
+`S04_V2_BINARY`, `S06_RECEIPT_ORACLE_BINARY`, `CENSUS_NATIVE_VM_HOST` and
+`CENSUS_NATIVE_VM_CAPTURES` for the lane.
 
 ## Current wrapper map
 
@@ -74,8 +79,8 @@ this directory. A narrower invoked test does not discharge the broader same-numb
 | 03 | `reboot-with-full-census` | Owned QEMU guest lane: sources `native-vm-qualification.sh` and drives the reboot phase with the staged feature-enabled endpoint and example; requires the VM tooling, images and deployment staging |
 | 04 | `rolling-upgrade` | Feature-enabled V1 → plain V2 upgrade with an in-flight paused parent: single-writer handoff, schema gate, pinned replay, one settlement, then the superseded deployment is retired |
 | 05 | `http-error-taxonomy` | Plain lane and real-Chromium lane against an owned local HTTP fault server (200, 429 + Retry-After, 500, challenge); requires the lane-origin seam endpoint and chromium |
-| 06 | `no-duplicate-evidence` | Kills and restarts the feature-enabled endpoint at reached durable-effect boundaries and requires exactly-once acknowledged observations, receipts and Fjall effects after replay |
-| 07 | `domain-dedup` | Native node + endpoint: two concurrent identical jurisdiction submissions under one explicit idempotency key admit one invocation with one settled outcome |
+| 06 | `no-duplicate-evidence` | Kills and restarts the feature-enabled endpoint at reached durable-effect boundaries and requires exactly-once acknowledged observations, receipts and Fjall effects after replay. Each reached kind runs `crates/census-store/examples/receipt-oracle.rs` (`S06_RECEIPT_ORACLE_BINARY`) against the stopped run's store: the oracle re-publishes the marker through its own `deny_unknown_fields` mirror, rejects placeholder identity, checks the sibling `boundary/` provenance, makes a cold `Store::backup` copy and compares marker acknowledgements with the copy's checkpoint, receipt and row digests, flags duplicate receipt content and repeated row identity, requires clean integrity and no staged `.pending` batches, and keeps the original store byte-identical as a witness. Its recorded limits: the invocation id is unbound, journal/meta/derived-generation and capture-cache effects are outside the checkpoint, and the 100000-row checkpoint cap refuses very large stores at checkpoint time instead of covering them |
+| 07 | `domain-dedup` | Native node + endpoint: two concurrent identical jurisdiction submissions under one explicit idempotency key admit one invocation with one settled outcome; the settle loop waits up to 1800x2s (measured 2026-10-11: a VT sweep on this host reached its terminal state after ~1080s) and records the terminal row in `settle-outcome.json`, where the documented incomplete-source refusal is recorded verbatim rather than converted into a pass — the sweep's completion remains the qualification/national acceptance |
 | 08 | `global-budget` | Native CLI origin-budget regression: three independent workflows share one working-directory origin lock under 1000ms pacing, two rivals are refused by owner PID, and the certificate's exact redirect chain, cache facts and pacing are re-checked |
 | 09 | `disk-full-fjall` | Private 64-MiB tmpfs with fail-closed cap/private-mount inspection; actual commit ENOSPC, exact acknowledged records/receipts, unchanged replay and new recovered writes; conditional namespace/tool skips |
 | 10 | `disk-full-restate` | Owned processes/private bounded mount; demands an actual OS disk-full log and acknowledged-work recovery |

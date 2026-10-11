@@ -31,6 +31,18 @@ impl BrowserSession {
         }
     }
 
+    fn begin_launch(&self) -> u64 {
+        self.epoch.fetch_add(1, Ordering::SeqCst).saturating_add(1)
+    }
+
+    fn launch_superseded(&self, epoch: u64) -> bool {
+        self.epoch.load(Ordering::SeqCst) != epoch
+    }
+
+    fn record_stop(&self) {
+        self.epoch.fetch_add(1, Ordering::SeqCst);
+    }
+
     fn foreign_origin_refusal(&self, request: &RequestSpec) -> Option<String> {
         let origin = &self.settings.source_origin;
         if same_origin(&request.url, origin) {
@@ -156,7 +168,7 @@ impl BrowserSession {
         ctx: ObjectContext<'_>,
     ) -> Result<Json<BrowserSessionStatus>, HandlerError> {
         let key = ctx.key().to_string();
-        let epoch = self.epoch.fetch_add(1, Ordering::SeqCst);
+        let epoch = self.begin_launch();
         if let Some(manager) = self.manager.lock().await.clone() {
             if manager.is_alive() {
                 return Err(TerminalError::new(
@@ -188,7 +200,7 @@ impl BrowserSession {
             self.starting.store(false, Ordering::SeqCst);
             TerminalError::new(format!("the browser lane could not start: {error}"))
         })?;
-        if self.epoch.load(Ordering::SeqCst) != epoch {
+        if self.launch_superseded(epoch) {
             self.starting.store(false, Ordering::SeqCst);
             let (_, error) = manager.shutdown().await;
             let detail = error.map_or_else(String::new, |error| {
@@ -212,7 +224,7 @@ impl BrowserSession {
         ctx: ObjectContext<'_>,
     ) -> Result<Json<BrowserSessionDrain>, HandlerError> {
         let key = ctx.key().to_string();
-        self.epoch.fetch_add(1, Ordering::SeqCst);
+        self.record_stop();
         let Some(manager) = self.manager.lock().await.take() else {
             return Ok(Json(BrowserSessionDrain {
                 key,

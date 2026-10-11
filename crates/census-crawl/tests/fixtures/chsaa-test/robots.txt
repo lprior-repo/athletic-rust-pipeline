@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# CHSAA/CHSAANow robots.txt (documented from prototype research, 2026-09-27)
+# The two disallowed paths are outside our crawl scope.
+Disallow: /history/champions/individual/totals/repeat/
+Disallow: /preview/

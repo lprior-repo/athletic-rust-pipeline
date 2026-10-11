@@ -226,10 +226,10 @@ impl Store {
             journal,
             meta: meta_keyspace,
             receipts,
-            sequences,
-            generations,
-            appends: std::sync::Mutex::new(()),
-            staging: std::sync::Mutex::new(()),
+            sequences: std::sync::Arc::new(sequences),
+            generations: std::sync::Arc::new(generations),
+            appends: std::sync::Arc::new(std::sync::Mutex::new(())),
+            staging: std::sync::Arc::new(std::sync::Mutex::new(())),
         };
         store.seed_row_marks()?;
         Ok(store)

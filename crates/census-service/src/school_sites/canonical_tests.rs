@@ -99,9 +99,19 @@ fn seed_cache(dir: &std::path::Path) -> TestResult {
 async fn source_bound_alias_acquires_mailbox_without_minting_unmatched_queue_population(
 ) -> TestResult {
     let year = SchoolYear::new(2026).ok_or("year")?;
-    let (_dir, store, fetcher, args) = setup(&["CAC", "Unpublished Queue School"], year)?;
+    let (dir, store, fetcher, args) = setup(&["CAC", "Unpublished Queue School"], year)?;
     let report = run(&fetcher, &args, &store).await?;
-    check!(eq; (report.planned, report.crawled, report.failed, report.emails), (2, 1, 1, 1));
+    check!(eq; (report.planned, report.crawled, report.failed, report.emails), (2, 2, 0, 1));
+    check!(eq; report.empty, 1);
+    check!(
+        report.failures.is_empty(),
+        "a missing canonical owner is crawled empty, not failed"
+    );
+    let record = dir
+        .path()
+        .join("out")
+        .join("AR__unpublished-queue-school.json");
+    check!(record.is_file(), "missing-owner site record was written");
     let schools: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
     check!(eq; schools.iter().map(|school| school.name.as_str()).collect::<Vec<_>>(), vec![NAME]);
     let school = schools.first().ok_or("retained school")?;
@@ -111,7 +121,6 @@ async fn source_bound_alias_acquires_mailbox_without_minting_unmatched_queue_pop
     check!(eq; claim.source.url.as_deref(), Some(URL));
     check!(eq; claim.source_sha256, format!("{:x}", Sha256::digest(CAPTURE)));
     check!(eq; claim.acquired_at.as_str(), "2026-10-07T12:34:56Z");
-    check!(eq; report.failures.first().map(|failure| failure.school.as_str()), Some("Unpublished Queue School"));
     Ok(())
 }
 

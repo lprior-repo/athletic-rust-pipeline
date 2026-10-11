@@ -177,5 +177,57 @@ fn unmapped_states_are_counted_not_crawled() -> TestResult {
     Ok(())
 }
 
+#[test]
+fn missing_owner_writes_an_empty_site_record() -> TestResult {
+    use super::execution::State;
+
+    let temp_dir = tempfile::tempdir()?;
+    let out = temp_dir.path().join("out");
+    std::fs::create_dir_all(&out)?;
+
+    let planned = site(
+        UsJurisdiction::Wisconsin,
+        "Fault Probe School",
+        "http://127.0.0.1:19505/home",
+    );
+
+    let mut state = State::new(out.clone(), QueueStats::default(), 1)?;
+
+    let home = "http://127.0.0.1:19505/home".to_string();
+    let mut signals = Signals::default();
+    signals.pages.push(home.clone());
+    let outcome = SiteOutcome {
+        signals,
+        requests: 4,
+        errors: 3,
+        note: Some("http status 429".to_string()),
+        pages: vec![PageEvidence {
+            url: home.clone(),
+            digest: "0".repeat(64),
+            fetched_at: "2026-10-11T00:00:00Z".to_string(),
+            status: 200,
+        }],
+    };
+
+    state.missing_site(&planned, &outcome)?;
+    let result = state.finish()?;
+
+    check!(eq; result.planned, 1);
+    check!(eq; result.crawled, 1);
+    check!(eq; result.empty, 1);
+    check!(eq; result.failed, 0);
+    check!(eq; result.failures.len(), 0);
+    check!(eq; result.requests, 4);
+    check!(eq; result.errors, 3);
+
+    let record: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(out.join("WI__fault-probe-school.json"))?)?;
+    check!(eq; record["pages"], serde_json::json!([home]));
+    check!(eq; record["page_evidence"].as_array().map(Vec::len), Some(1));
+    check!(eq; record["page_evidence"][0]["status"], 200);
+
+    Ok(())
+}
+
 #[path = "canonical_tests.rs"]
 mod canonical_tests;

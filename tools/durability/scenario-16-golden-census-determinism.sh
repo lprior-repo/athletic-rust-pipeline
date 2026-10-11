@@ -164,7 +164,8 @@ require_line replay-pa-piaa "$REPLAY_PA_PIAA" "^golden_directory_alpha_z[.]json 
 require_line replay-pa-piaa "$REPLAY_PA_PIAA" '^details_12048[.]html +details id=12048 school="A J McMullen School" contacts=1$'
 require_line replay-pa-piaa "$REPLAY_PA_PIAA" '^PROVENANCE[.]json +provenance 4 capture[(]s[)] match their recorded bytes and digest$'
 require_line replay-pa-piaa "$REPLAY_PA_PIAA" '^golden_details_12048[.]json +golden_details_12048 is a prototype record; the adapter.s golden test compares it$'
-require_line replay-pa-piaa "$REPLAY_PA_PIAA" '^9 capture[(]s[)] replayed for source pa_piaa$'
+require_line replay-pa-piaa "$REPLAY_PA_PIAA" '^robots[.]txt +robots `[*]` group holds [0-9]+ disallow[(]s[)], including /officials/directory/ and permitting /schools/$'
+require_line replay-pa-piaa "$REPLAY_PA_PIAA" '^10 capture[(]s[)] replayed for source pa_piaa$'
 capture_lines="$(grep -c -E '^(directory_alpha_|details_12048|PROVENANCE[.]json|golden_)' "$REPLAY_PA_PIAA" || true)"
 if [[ "$capture_lines" -ne 9 ]]; then
     printf 'FAIL: replay pa_piaa printed %s per-capture summaries instead of 9; log retained %s\n' "$capture_lines" "$REPLAY_PA_PIAA"

@@ -86,13 +86,14 @@ impl NationalCensus {
         let identity = require_identity(&ctx, &request)?;
 
         bind_run(&ctx, &request).await?;
-        let address = request.school_address.get_or_insert_with(Default::default);
-        let Json(digest) = ctx
-            .service_client::<super::census::CensusClient>()
-            .school_address_preflight(Json(address.clone()))
-            .call()
-            .await?;
-        address.expected_digest = Some(digest);
+        if let Some(address) = request.school_address.as_mut() {
+            let Json(digest) = ctx
+                .service_client::<super::census::CensusClient>()
+                .school_address_preflight(Json(address.clone()))
+                .call()
+                .await?;
+            address.expected_digest = Some(digest);
+        }
 
         let targets = targets(&request)?;
         let mut in_flight = DurableFuturesUnordered::new();
@@ -130,7 +131,7 @@ impl NationalCensus {
             jurisdictions,
             failures,
             owed,
-            Some(join),
+            join,
             today,
         );
         ctx.set(KEY_STATE, Json(report.clone()));

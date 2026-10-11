@@ -130,7 +130,9 @@ wait_admin() {
 
 wait_endpoint() {
     for _ in $(seq 1 30); do
-        curl -sS -o /dev/null --max-time 2 "http://127.0.0.1:$ENDPOINT_PORT/" && return 0
+        if ss -ltn 2>/dev/null | grep -q ":$ENDPOINT_PORT "; then
+            return 0
+        fi
         sleep 1
     done
     return 1

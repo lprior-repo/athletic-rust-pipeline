@@ -12,11 +12,10 @@ pub(super) async fn join_addresses(
     ctx: &WorkflowContext<'_>,
     identity: &WorkflowIdentity,
     request: &NationalRequest,
-) -> Result<SchoolAddressJoinReply, HandlerError> {
-    let mut school_address = Default::default();
-    if let Some(address) = request.school_address.clone() {
-        school_address = address;
-    }
+) -> Result<Option<SchoolAddressJoinReply>, HandlerError> {
+    let Some(school_address) = request.school_address.clone() else {
+        return Ok(None);
+    };
     let Json(join) = ctx
         .workflow_client::<SchoolAddressJoinClient>(format!(
             "{}:school-address-join",
@@ -34,7 +33,7 @@ pub(super) async fn join_addresses(
         refused = join.counters.refused,
         "joined school postal addresses for the run"
     );
-    Ok(join)
+    Ok(Some(join))
 }
 
 pub(super) fn assemble(

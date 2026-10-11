@@ -43,10 +43,25 @@ if [ "$RC" -ne 0 ]; then
     echo "FAIL: isolated Restate ENOSPC probe exited $RC"
     exit 1
 fi
+if grep -q '^SKIPPED:' "$TEST_DIR/probe.log"; then
+    exit 0
+fi
+if grep -q '^FAIL:' "$TEST_DIR/probe.log"; then
+    echo "FAIL: Restate ENOSPC probe reported a failure"
+    grep '^FAIL:' "$TEST_DIR/probe.log" | tail -3
+    exit 1
+fi
+for proof in \
+    'PROOF: acknowledged completed workflow ' \
+    'PROOF: bounded tmpfs filler returned ENOSPC' \
+    ' survived, duplicate refused, new workflow reproduced baseline output'; do
+    if ! grep -qF "$proof" "$TEST_DIR/probe.log"; then
+        echo "FAIL: Restate ENOSPC probe is missing proof: ${proof}"
+        exit 1
+    fi
+done
 if grep -qx 'PASS: acknowledged Restate workflow survives verified ENOSPC and restart' "$TEST_DIR/probe.log"; then
     echo "PASS: isolated Restate ENOSPC recovery"
-elif grep -q '^SKIPPED:' "$TEST_DIR/probe.log"; then
-    exit 0
 else
     echo "FAIL: Restate ENOSPC probe produced no verified result"
     exit 1

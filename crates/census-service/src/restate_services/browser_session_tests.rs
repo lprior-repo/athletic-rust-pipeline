@@ -161,3 +161,26 @@ fn an_unstarted_lane_reads_as_not_running_and_refuses_fetches() -> anyhow::Resul
             Ok(())
         })
 }
+
+#[test]
+fn a_launch_epoch_is_not_superseded_by_its_own_bump() -> anyhow::Result<()> {
+    let session = session()?;
+    let epoch = session.begin_launch();
+    anyhow::ensure!(
+        !session.launch_superseded(epoch),
+        "a start must not supersede its own launch epoch"
+    );
+    Ok(())
+}
+
+#[test]
+fn a_stop_during_a_launch_supersedes_the_launch_epoch() -> anyhow::Result<()> {
+    let session = session()?;
+    let epoch = session.begin_launch();
+    session.record_stop();
+    anyhow::ensure!(
+        session.launch_superseded(epoch),
+        "a stop recorded during the launch must supersede it"
+    );
+    Ok(())
+}

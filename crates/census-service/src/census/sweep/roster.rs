@@ -3,8 +3,15 @@ use census_crawl::net::{FetchOptions, Fetcher};
 use census_crawl::{CrawlError, CrawlResult};
 use census_store::{Application, Store};
 use futures::{stream, TryStreamExt};
+use std::future::Future;
 
 use super::{rosters_phase, units::RosterRun};
+#[cfg(feature = "native-fault-injection")]
+use crate::census::source_boundary;
+#[cfg(feature = "native-fault-injection")]
+use sha2::{Digest, Sha256};
+#[cfg(feature = "native-fault-injection")]
+use std::sync::Arc;
 
 mod commit;
 mod counts;
@@ -30,21 +37,63 @@ pub(super) async fn fetch_and_store(
     team: &TeamRef,
     run: &RosterRun<'_>,
 ) -> CrawlResult<Application> {
-    match milesplit::fetch_roster(
-        fetcher,
-        team,
-        &FetchOptions {
-            refresh: run.refresh,
-            allow_not_found: true,
-            headers: Vec::new(),
+    let body = async {
+        match milesplit::fetch_roster(
+            fetcher,
+            team,
+            &FetchOptions {
+                refresh: run.refresh,
+                allow_not_found: true,
+                headers: Vec::new(),
+            },
+            boundary_hook(run),
+        )
+        .await
+        {
+            Ok(read) => apply(store, team, run, &read).await,
+            Err(error) => Err(retain_error(store, team, run, error)),
+        }
+    };
+    scoped(store, team, run, body).await
+}
+
+#[cfg(feature = "native-fault-injection")]
+async fn scoped<T>(
+    store: &Store,
+    team: &TeamRef,
+    run: &RosterRun<'_>,
+    future: impl Future<Output = T>,
+) -> T {
+    let operation = format!(
+        "jurisdiction:{}:{}:{}/teams/milesplit",
+        run.site.jurisdiction().code(),
+        run.school_year.short(),
+        run.revision
+    );
+    let input = format!("{}\u{1f}{}\u{1f}{}", operation, team.id, run.observed_on);
+    let mut hasher = Sha256::new();
+    hasher.update(input.as_bytes());
+    let request_digest = format!("{:x}", hasher.finalize());
+    source_boundary::scope(
+        source_boundary::Scope {
+            store: Arc::new(store.clone()),
+            operation,
+            request_digest,
+            observed_on: run.observed_on.to_string(),
         },
-        boundary_hook(run),
+        future,
     )
     .await
-    {
-        Ok(read) => apply(store, team, run, &read).await,
-        Err(error) => Err(retain_error(store, team, run, error)),
-    }
+}
+
+#[cfg(not(feature = "native-fault-injection"))]
+async fn scoped<T>(
+    _store: &Store,
+    _team: &TeamRef,
+    _run: &RosterRun<'_>,
+    future: impl Future<Output = T>,
+) -> T {
+    future.await
 }
 
 #[tracing::instrument(skip_all, fields(team = team.id))]

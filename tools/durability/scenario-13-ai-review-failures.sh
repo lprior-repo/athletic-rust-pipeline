@@ -345,7 +345,7 @@ build_argv() {
     ARGV=(--store "$STORE" review --family school-link --limit 1
         --endpoint "http://127.0.0.1:$PROXY_A_PORT" --endpoint "http://127.0.0.1:$PROXY_B_PORT"
         --model "$MODEL" --response-format prompt-json --response-format json-schema
-        --timeout-secs "$LANE_TIMEOUT" --max-tokens "$MAX_TOKENS" --observed-on "$OBSERVED_ON" "$@")
+        --timeout-secs "${REVIEW_TIMEOUT:-$LANE_TIMEOUT}" --max-tokens "$MAX_TOKENS" --observed-on "$OBSERVED_ON" "$@")
 }
 set_modes() {
     printf '%s\n' "$1" > "$WORK/proxy-a.mode"
@@ -426,10 +426,11 @@ echo "=== [1/5] refusal taxonomy: 503, malformed content, timed-out lane ==="
 want_failed=1
 for fault in fail503 malformed stall; do
     extra=()
-    [ "$fault" = stall ] && extra=(--timeout-secs "$FAULT_TIMEOUT")
+    [ "$fault" = stall ] && REVIEW_TIMEOUT="$FAULT_TIMEOUT"
     a0="$(awkc "$WORK/proxy-a.jsonl" "" request)"
     b0="$(awkc "$WORK/proxy-b.jsonl" "" request)"
     review "$WORK/phase1-$fault.txt" "$fault" forward --dry-run "${extra[@]}"
+    unset REVIEW_TIMEOUT
     [ "$REVIEW_RC" = 0 ] || fail "dry-run with lane A=$fault exited $REVIEW_RC: $(tail -3 "$WORK/phase1-$fault.txt")"
     expect requested 1 "$WORK/phase1-$fault.txt"
     expect unaskable 0 "$WORK/phase1-$fault.txt"
@@ -464,8 +465,12 @@ expect unanswered 1 "$WORK/phase2a-lane-b-failed.txt"
 expect failed 1 "$WORK/phase2a-lane-b-failed.txt"
 expect accepted 0 "$WORK/phase2a-lane-b-failed.txt"
 verdicts_2a="$(stat_value identity_verdicts)"
-[ "$verdicts_2a" = "$((BASE_VERDICTS + 1))" ] \
-    || fail "a persisted lane failure should record exactly one standing row: identity_verdicts $BASE_VERDICTS -> $verdicts_2a"
+# The seed retains a verdict row for every case it already reviewed: asking
+# such a case again replaces that row, so the count moves by at most one and a
+# persisted lane failure must not mint an extra row for the same case.
+delta_2a=$((verdicts_2a - BASE_VERDICTS))
+[ "$delta_2a" -ge 0 ] && [ "$delta_2a" -le 1 ] \
+    || fail "a persisted lane failure must not mint more than one verdict row: identity_verdicts $BASE_VERDICTS -> $verdicts_2a"
 a_2a="$(awkc "$WORK/proxy-a.jsonl" "" request)"
 b_2a="$(awkc "$WORK/proxy-b.jsonl" "" request)"
 [ $((a_2a - a0)) -eq 1 ] || fail "lane A charged $((a_2a - a0)) requests, want exactly 1"
@@ -474,6 +479,7 @@ RETRY_CASE="$(newest_case "$WORK/proxy-b.jsonl")"
 [ "$RETRY_CASE" = "$CASE1" ] || fail "the failed-lane run asked $RETRY_CASE, expected the first actionable case $CASE1"
 echo "PERSISTED-FAILURE: $CASE1 retained with lane A advice and lane B failed (identity_verdicts $BASE_VERDICTS -> $verdicts_2a)"
 
+b_case_2a="$(awkc "$WORK/proxy-b.jsonl" "$RETRY_CASE" request)"
 review "$WORK/phase2b-retry.txt" forward forward
 [ "$REVIEW_RC" = 0 ] || fail "retry run exited $REVIEW_RC: $(tail -3 "$WORK/phase2b-retry.txt")"
 expect requested 1 "$WORK/phase2b-retry.txt"
@@ -487,16 +493,19 @@ b_2b="$(awkc "$WORK/proxy-b.jsonl" "" request)"
     || fail "the first valid advice was re-asked: lane A charged $((a_2b - a_2a)) requests, want 0"
 [ $((b_2b - b_2a)) -eq 1 ] \
     || fail "the failed lane was not retried exactly once: lane B charged $((b_2b - b_2a)) requests, want 1"
-[ "$(awkc "$WORK/proxy-b.jsonl" "$RETRY_CASE" request)" = 2 ] \
-    || fail "the bounded retry did not re-ask the same case $RETRY_CASE"
+[ $(( $(awkc "$WORK/proxy-b.jsonl" "$RETRY_CASE" request) - b_case_2a )) -eq 1 ] \
+    || fail "the bounded retry did not re-ask the same case $RETRY_CASE exactly once"
 [ "$(stat_value identity_verdicts)" = "$verdicts_2a" ] \
-    || fail "the retry added a second standing row for $RETRY_CASE"
+    || fail "the retry minted an extra verdict row for $RETRY_CASE"
 echo "RETRY: $RETRY_CASE lane A +0 requests (advice reused), lane B +1 request (bounded retry), rows unchanged"
 
+a_case_2c="$(awkc "$WORK/proxy-a.jsonl" "$RETRY_CASE" request)"
+b_case_2c="$(awkc "$WORK/proxy-b.jsonl" "$RETRY_CASE" request)"
 review "$WORK/phase2c-replay.txt" forward forward
 verdicts_2c="$(stat_value identity_verdicts)"
-[ "$verdicts_2c" = "$((BASE_VERDICTS + 2))" ] \
-    || fail "the fresh process should record exactly one standing row for the advanced case: identity_verdicts $verdicts_2a -> $verdicts_2c"
+delta_2c=$((verdicts_2c - verdicts_2a))
+[ "$delta_2c" -ge 0 ] && [ "$delta_2c" -le 1 ] \
+    || fail "the fresh process must not mint more than one verdict row for the advanced case: identity_verdicts $verdicts_2a -> $verdicts_2c"
 [ "$REVIEW_RC" = 0 ] || fail "replay run exited $REVIEW_RC: $(tail -3 "$WORK/phase2c-replay.txt")"
 expect requested 1 "$WORK/phase2c-replay.txt"
 expect unaskable 0 "$WORK/phase2c-replay.txt"
@@ -506,9 +515,9 @@ expect failed 0 "$WORK/phase2c-replay.txt"
 REPLAY_CASE="$(newest_case "$WORK/proxy-a.jsonl")"
 [ -n "$REPLAY_CASE" ] && [ "$REPLAY_CASE" != "$RETRY_CASE" ] \
     || fail "the fresh process re-asked the standing case $RETRY_CASE instead of advancing"
-[ "$(awkc "$WORK/proxy-a.jsonl" "$RETRY_CASE" request)" = 1 ] \
+[ $(( $(awkc "$WORK/proxy-a.jsonl" "$RETRY_CASE" request) - a_case_2c )) -eq 0 ] \
     || fail "the fresh process re-asked $RETRY_CASE on lane A"
-[ "$(awkc "$WORK/proxy-b.jsonl" "$RETRY_CASE" request)" = 2 ] \
+[ $(( $(awkc "$WORK/proxy-b.jsonl" "$RETRY_CASE" request) - b_case_2c )) -eq 0 ] \
     || fail "the fresh process re-asked $RETRY_CASE on lane B"
 echo "REPLAY: $RETRY_CASE advice replayed from a fresh process with zero new requests; advanced to $REPLAY_CASE"
 
@@ -521,6 +530,8 @@ KILLED_PID="$REVIEW_PID"
 wait_until "the killed run's lane B request" 60 has_more_requests "$WORK/proxy-b.jsonl" "$b_before_3" \
     || fail "the killed run never asked lane B: $(tail -3 "$WORK/phase3-killed.txt")"
 CASE3="$(newest_case "$WORK/proxy-b.jsonl")"
+[ "$CASE3" != "$REPLAY_CASE" ] \
+    || fail "the killed run re-asked the standing case $REPLAY_CASE instead of advancing"
 wait_until "lane A's answer for $CASE3" 120 has_response "$WORK/proxy-a.jsonl" "$CASE3" \
     || fail "lane A never answered $CASE3: $(tail -3 "$WORK/phase3-killed.txt")"
 sleep 0.5
@@ -547,8 +558,9 @@ a_after_3b="$(awkc "$WORK/proxy-a.jsonl" "$CASE3" request)"
 [ $((a_after_3b - a_before_3b)) -eq 1 ] \
     || fail "the resume charged lane A $((a_after_3b - a_before_3b)) requests for $CASE3, want 1"
 verdicts_3b="$(stat_value identity_verdicts)"
-[ "$verdicts_3b" = "$((verdicts_before_3 + 1))" ] \
-    || fail "the resume should record exactly one standing row: identity_verdicts $verdicts_before_3 -> $verdicts_3b"
+delta_3b=$((verdicts_3b - verdicts_before_3))
+[ "$delta_3b" -ge 0 ] && [ "$delta_3b" -le 1 ] \
+    || fail "the resume minted more than one verdict row: identity_verdicts $verdicts_before_3 -> $verdicts_3b"
 echo "CRASH-BEFORE-RESUME: $CASE3 completed after the SIGKILL (identity_verdicts $verdicts_before_3 -> $verdicts_3b)"
 
 # ---- [4/5] SIGKILL as soon as the advice write is observed ----------------
@@ -571,6 +583,8 @@ while [ "$attempt" -lt 3 ]; do
         continue
     fi
     ATTEMPT_CASE="$(newest_case "$WORK/proxy-a.jsonl")"
+    [ "$ATTEMPT_CASE" != "$CASE3" ] \
+        || fail "the attempt re-asked the resumed case $CASE3 instead of advancing"
     # The review owns the store lock, so the journal file is the only witness
     # available from outside; kill as soon as it grows (that growth is the
     # commit), and record how long that took.
@@ -592,7 +606,8 @@ while [ "$attempt" -lt 3 ]; do
     printf 'attempt %s: case=%s journal_grew_ms=%s kill_rc=%s rc=%s identity_verdicts=%s->%s\n' \
         "$attempt" "$ATTEMPT_CASE" "${grew_ms:-none}" "$kill_rc" "$RC4" "$verdicts_before_4" "$verdicts_after_4" \
         | tee -a "$WORK/phase4-attempts.txt"
-    if [ -n "$grew_ms" ] && [ "$RC4" = 137 ] && [ "$verdicts_after_4" = "$((verdicts_before_4 + 1))" ]; then
+    delta_4=$((verdicts_after_4 - verdicts_before_4))
+    if [ -n "$grew_ms" ] && [ "$RC4" = 137 ] && [ "$delta_4" -ge 0 ] && [ "$delta_4" -le 1 ]; then
         CRASH_CASE="$ATTEMPT_CASE"
         break
     fi

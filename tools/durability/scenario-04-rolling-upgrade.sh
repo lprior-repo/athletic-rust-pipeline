@@ -31,7 +31,7 @@ fi
 NODE="$RESTATE_SERVER_BIN"
 
 CLIENT="${BINARY:-$REPO_ROOT/target/moon-portable/x86_64-unknown-linux-gnu/release/census-service}"
-V2SRC="${S04_V2_BINARY:-${SERVE_BINARY:-$REPO_ROOT/target/moon-portable/x86_64-unknown-linux-gnu/release/census-serve}}"
+V2SRC="${S04_V2_BINARY:-$REPO_ROOT/target/moon-portable/x86_64-unknown-linux-gnu/release/census-serve}"
 V1SRC="${S04_V1_BINARY:-$REPO_ROOT/target/moon-build/x86_64-unknown-linux-gnu/release/census-serve}"
 [ -x "$CLIENT" ] || { echo "SKIPPED: census-service binary missing at $CLIENT"; exit 0; }
 [ -x "$V2SRC" ] || { echo "SKIPPED: census-serve (plain build) missing at $V2SRC"; exit 0; }

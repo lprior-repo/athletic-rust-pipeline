@@ -19,7 +19,7 @@ fn outcome() -> FetchOutcome {
 
 fn stats() -> Result<FetchStats> {
     Ok(FetchStats {
-        requests: 2,
+        requests: 1,
         bytes_downloaded: u64::try_from(HTML.len())?,
         ..FetchStats::default()
     })

@@ -9,7 +9,7 @@ use census_domain::model::RunManifest;
 use fjall::{Database, Keyspace, KeyspaceCreateOptions, PersistMode};
 use serde::Serialize;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 const DB_DIR: &str = "fjall";
 const ENTITIES: &str = "entities";
@@ -81,6 +81,7 @@ pub struct StoreStats {
     pub store_bytes: u64,
 }
 
+#[derive(Clone)]
 pub struct Store {
     root: PathBuf,
     db: Database,
@@ -88,10 +89,10 @@ pub struct Store {
     journal: Keyspace,
     meta: Keyspace,
     receipts: Keyspace,
-    sequences: sequences::Counters,
-    generations: generation::Generations,
-    appends: Mutex<()>,
-    staging: Mutex<()>,
+    sequences: Arc<sequences::Counters>,
+    generations: Arc<generation::Generations>,
+    appends: Arc<Mutex<()>>,
+    staging: Arc<Mutex<()>>,
 }
 
 fn ensure_dirs(root: &Path) -> StoreResult<()> {

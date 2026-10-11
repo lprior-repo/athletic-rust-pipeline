@@ -126,8 +126,8 @@ fn md_matrix(out: &mut String, doc: &Value) -> std::fmt::Result {
     writeln!(out, "| family | applicable | strategy | arm or gap |")?;
     writeln!(out, "|---|---|---|---|")?;
     for family in field(matrix, "families").as_array().into_iter().flatten() {
-        let arms = tally(field(family, "arms")).unwrap_or(0);
-        let detail = if arms > 0 {
+        let has_arms = tally(field(family, "arms")).is_some_and(|arms| arms > 0);
+        let detail = if has_arms {
             list(field(family, "arms"))
         } else {
             s(family, "gap_reason").to_string()

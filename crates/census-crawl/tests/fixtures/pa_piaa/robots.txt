@@ -1,0 +1,25 @@
+User-agent: *
+Disallow: /_mm/
+Disallow: /_notes/
+Disallow: /_baks/
+Disallow: /MMWIP/
+Disallow: /assets/
+Disallow: /account/
+Disallow: /blaze/
+Disallow: /admin/
+Disallow: /officials/forms/
+Disallow: /officials/directory/
+Disallow: /maint/
+Disallow: /error404.aspx
+Disallow: /kitchen-sink.aspx
+Disallow: /shop
+
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: SemrushBot-SA
+Disallow: /
