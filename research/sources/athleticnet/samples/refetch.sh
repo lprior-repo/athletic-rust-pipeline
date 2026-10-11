@@ -14,9 +14,6 @@ hdr=(-H "Accept: application/json, text/plain, */*" -H "Accept-Language: en-US,e
 ua=(-A "$UA")
 slp() { sleep 1.2; }
 
-# --- A. robots.txt ------------------------------------------------------------------
-curl -sS "${ua[@]}" -D "$OUT/atn-robots.headers" -o "$OUT/atn-robots.txt" "$BASE/robots.txt"; slp
-
 # --- B. anonymous JSON probes -------------------------------------------------------
 curl -sS "${ua[@]}" "${hdr[@]}" -H "Referer: $BASE/TrackAndField/rankings" \
   -D "$OUT/atn-probe-statescountries-anon.headers" \

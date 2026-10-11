@@ -1,9 +1,4 @@
 utc	http	transfer_bytes	on_disk_bytes	file	url
-2026-09-22T03:54:43Z	200	173	173	robots-oh-milesplit.txt	https://oh.milesplit.com/robots.txt
-2026-09-22T03:54:45Z	200	173	173	robots-www-milesplit.txt	https://www.milesplit.com/robots.txt
-2026-09-22T03:54:46Z	404	548	548	robots-js-sp-milesplit.txt	https://js.sp.milesplit.com/robots.txt
-2026-09-22T03:54:48Z	200	173	173	robots-ca-milesplit.txt	https://ca.milesplit.com/robots.txt
-2026-09-22T03:54:49Z	200	173	173	robots-tx-milesplit.txt	https://tx.milesplit.com/robots.txt
 2026-09-22T03:54:51Z	200	7915	7915	js-rankings.js	https://js.sp.milesplit.com/drivefaze/rankings.js?build=20260921153357
 2026-09-22T03:54:52Z	200	583	583	js-paywall.js	https://js.sp.milesplit.com/drivefaze/pro/paywall.js?build=20260921153357
 2026-09-22T03:54:54Z	200	4846	4846	js-ms18-teams-index.js	https://js.sp.milesplit.com/ms18/teams/index.js?build=20260921153357
@@ -34,8 +29,6 @@ utc	http	transfer_bytes	on_disk_bytes	file	url
 2026-09-22T03:59:09Z	200	11554	55517	athletes-www-searchform.html	https://www.milesplit.com/athletes
 2026-09-22T03:59:11Z	200	1349	5608	search-v2-athletes-www.json	https://www.milesplit.com/search/v2/athletes
 2026-09-22T03:59:19Z	400	23799	23799	search-v2-athletes-oh-notoken.json	https://oh.milesplit.com/search/v2/athletes
-2026-09-22T03:59:21Z	200	173	173	robots-mi-milesplit.txt	https://mi.milesplit.com/robots.txt
-2026-09-22T03:59:23Z	200	173	173	robots-wy-milesplit.txt	https://wy.milesplit.com/robots.txt
 2026-09-22T03:59:51Z	200	9440	40215	team-oh-10002-rankings.html	https://oh.milesplit.com/teams/10002-mason/rankings
 2026-09-22T03:59:53Z	200	10836	37101	meet-oh-770621-entries.html	https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026/entries
 2026-09-22T04:00:03Z	200	1503	8016	js-ms18-teams-rankings.js	https://js.sp.milesplit.com/ms18/teams/rankings.js?build=20260921153357

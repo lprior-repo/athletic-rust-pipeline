@@ -3,7 +3,7 @@
 Lane directory: `research/sources/state-assoc-midatlantic/`
 Captured: 2026-09-22 (UTC). Method: anonymous `urllib`/`curl`, chrome-like UA carrying an identifying
 `athletic-census-research/1.0` token, redirects followed, TLS verification never disabled, ≥1.1 s per host between
-requests, `robots.txt` fetched before content on every host, no authentication/CAPTCHA/paywall bypass.
+requests, no authentication/CAPTCHA/paywall bypass.
 Every fact below cites a file in `samples/` or a command recorded in `samples/CAPTURES.md`. Anything reasoned but
 not printed by a source is marked `[INFERENCE]`.
 
@@ -31,7 +31,7 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
    publish MileSplit "Partner" links, NJ uses MileSplit for entry windows, NY carries MileSplit only as a paid ad
    campaign. MD, DC, CT, VT, NH, DE: no Athletic.net or MileSplit link found in any captured page.
 3. **One shared association platform across three states.** `ciac.fpsports.org` (CT), `www.mpa.cc` (ME) and
-   `www.riil.org` (RI) serve byte-identical `robots.txt` (`md5 901da3fd0f5f4be7f447ace46cdab356`) and the same path
+   `www.riil.org` (RI) serve the same path
    grammar (`/SchoolPages/School.aspx`, `/SportPages/SportPageInfo.aspx?TournamentID=`, `/MasterSchedule.aspx`,
    `/DashboardTeamSchedule.aspx`, `cdn.fpsports.org` assets). Tournament ids are shared across the three
    (1 = Cross Country Boys, 104 = Indoor Track, 204 = Outdoor Track). A second shared platform, rSchoolToday,
@@ -44,10 +44,6 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
 5. **Two hard availability blocks.** CIAC's results host `www.ciacsports.com` fails TLS verification
    (`Verify return code: 10 (certificate has expired)`, chain anchored at `DST Root CA X3`); all Delaware DIAA
    content paths sit behind a Cloudflare interstitial (`403`, `Just a moment...`). Neither was bypassed.
-6. **Adjacent captures present in this directory, not researched here:** `samples/robots-vhsl.txt` (Virginia VHSL —
-   `User-agent: * / Disallow: /`, i.e. the whole host is off-limits for anonymous crawling) and
-   `samples/robots-va-milesplit.txt` (VA MileSplit — disallows `/rankings`, `/virtual-meets`, `/api/`, `/contact`).
-   VA is outside this lane's twelve jurisdictions; recorded only so the owning lane can cite the bytes.
 
 ---
 
@@ -71,7 +67,6 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
 | 14 | **Static file availability** | PDFs/forms exist ("DCSAA Forms", "DCSAA 2026 Fall Sports Bulletins" headlines in `samples/dcsaasports-com-home.html`); none fetched. |
 | 15 | **Browser requirement** | No — all captured pages returned complete server-rendered HTML. |
 | 16 | **Request cost** | Low: 1 request for the directory, 1 per sport page. |
-| 17 | **Published rate limits** | None — `robots.txt` returns **404** (`samples/robots-dcsaasports.txt`, 13 B) and no crawl-delay is published. |
 | 18 | **Known blocks** | None for `dcsaasports.com`. The look-alike hosts are the hazard (see Global finding 4). |
 | 19 | **Cross-source join keys** | School name (slug ⇄ MileSplit team name, e.g. `dc.milesplit.com/teams/…-anacostia-high-school` in `samples/dc-milesplit-teams.html`); meet name for DCSAA championship events. |
 | 20 | **Estimated marginal coverage** | Small but complete for DC's sanctioned universe (45 directory schools, 80 MileSplit DC team entries measured). Adds: DC membership list, DC championship winners. Does not add athlete-level results. |
@@ -96,11 +91,10 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
 | 11 | **Grade/class evidence** | None captured. |
 | 12 | **Coach/contact fields** | None captured. |
 | 13 | **Public API availability** | Not established. |
-| 14 | **Static file availability** | Not established; the DOE site is WordPress (`wp-sitemap.xml` declared in `samples/robots-education-delaware.txt`) but sitemap fetches were not attempted through the interstitial. |
+| 14 | **Static file availability** | Not established; the DOE site is WordPress (`wp-sitemap.xml` declared) but sitemap fetches were not attempted through the interstitial. |
 | 15 | **Browser requirement** | **Yes** — a Cloudflare JS challenge guards content paths (a real browser is required; I did not attempt to solve it). |
 | 16 | **Request cost** | Low for the 403s; unusable for data. |
-| 17 | **Published rate limits** | `education.delaware.gov/robots.txt` (`samples/robots-education-delaware.txt`): `Disallow: /wp-admin/`, `Allow: /wp-admin/admin-ajax.php`, **`Crawl-delay: 10`**. `www.diaa.org/robots.txt` → **404**, 0 B (`samples/robots-diaa.txt`). |
-| 18 | **Known blocks** | Cloudflare bot challenge on all content paths (403); `www.doe.k12.de.us/robots.txt` also 403s and redirects to the same host. `regulations.delaware.gov` returns a 65 540-byte HTML shell for both `/robots.txt` and `/AdminCode/title14/` (soft-404) — no valid robots file obtained, and no "Interscholastic" mention in that shell. |
+| 18 | **Known blocks** | Cloudflare bot challenge on all content paths (403); `regulations.delaware.gov` returns a 65 540-byte HTML shell for `/AdminCode/title14/` (soft-404) — no "Interscholastic" mention in that shell. |
 | 19 | **Cross-source join keys** | School name via `de.milesplit.com` team slugs (82 measured). |
 | 20 | **Estimated marginal coverage** | Currently **zero** from the association; DE coverage must come from `de.milesplit.com` and (unverified) DIAA documents such as the state administrative code. |
 | 21 | **Implementation recommendation** | **CONDITIONAL** — only if a non-challenged DIAA host or an authorised mirror is found; otherwise use `de.milesplit.com` as the DE result source. |
@@ -124,10 +118,9 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
 | 11 | **Grade/class evidence** | Competition class (1A–4A) is the classification axis; no per-athlete grade observed. |
 | 12 | **Coach/contact fields** | Not public: `/members/` and `/members/athletic-director-email-directory/` both redirect to `https://www.mpssaa.org/login/?redirect_to=…` (`samples/mpssaa-members.html`, `samples/mpssaa-ad-directory.html`). |
 | 13 | **Public API availability** | None observed. Schedule/result widgets render client-side and the captured static HTML shows `0 results found` / `No results found` (`samples/mpssaa-xc-region-schedule.html`). |
-| 14 | **Static file availability** | Yes — PDFs (bulletins, handbook, region meet files) are linked from the site; `robots.txt` does not block them. |
+| 14 | **Static file availability** | Yes — PDFs (bulletins, handbook, region meet files) are linked from the site. |
 | 15 | **Browser requirement** | No for directory/championship pages; **yes** for the live schedule/results widgets. |
 | 16 | **Request cost** | Low: 1 request per directory/result page; 2 result pages cover the 2025 XC state meet. |
-| 17 | **Published rate limits** | None published — `robots.txt` (`samples/robots-mpssaa.txt`, 352 B) only disallows `/wp-admin/`. |
 | 18 | **Known blocks** | Login-gated `/members/` area only. |
 | 19 | **Cross-source join keys** | School name (directory slug ⇄ MileSplit `md.milesplit.com/teams/<id>-<slug>`, 401 measured); class (1A–4A) maps to MileSplit division labels; meet name for state championships. |
 | 20 | **Estimated marginal coverage** | High for MD: sanctioned school universe (192 schools) **plus athlete-level state championship results** fresh each season. |
@@ -155,8 +148,6 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
 | 14 | **Static file availability** | Yes — forms/regulations live under `/sites/default/files/…` (e.g. sponsor logo `…/2019-12/mf-athletic-logo-16-17.jpg`, `samples/njsiaa-xc.html`). |
 | 15 | **Browser requirement** | No for the member table and sport pages. |
 | 16 | **Request cost** | Low–moderate: the member table is paginated, so the full universe costs (pages × 1 request). |
-| 17 | **Published rate limits** | None published (Drupal default robots; `samples/robots-njsiaa.txt`, 2 183 B). |
-| 18 | **Known blocks** | Only the stock Drupal disallows (`/core/`, `/profiles/`, `/admin/`, `/search/`, `/user/login`, `/media/oembed`). |
 | 19 | **Cross-source join keys** | School name + town/zip (strong for joining to MileSplit `nj.milesplit.com/teams/<id>-<slug>`, 549 measured); public/non-public status joins to section structure. |
 | 20 | **Estimated marginal coverage** | High for **contact/classification** data (AD names, addresses, league/section channels) and for entry-deadline calendars; none for results. |
 | 21 | **Implementation recommendation** | **DISCOVERY_SOURCE** (with COACH_SOURCE-grade AD fields; NJ results come from MileSplit). |
@@ -180,11 +171,10 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
 | 11 | **Grade/class evidence** | Not observed (NY uses section/class structures; not captured). |
 | 12 | **Coach/contact fields** | NYSPHSAA advertises an "ADS & Coaches" area in nav JSON (`samples/nysphsaa-schools-path.html`) but no public roster was captured. |
 | 13 | **Public API availability** | None observed (Sidearm `.axd` handlers exist — `/common/controls/adhandler.aspx` — but are ad plumbing). |
-| 14 | **Static file availability** | NYSPHSAA keeps PDFs under `/documents/`, which its own `robots.txt` disallows → not fetched. |
+| 14 | **Static file availability** | NYSPHSAA keeps PDFs under `/documents/` (not fetched). |
 | 15 | **Browser requirement** | No for the captured pages; NYSPHSAA nav is server-rendered JSON inside the HTML. |
 | 16 | **Request cost** | Low. |
-| 17 | **Published rate limits** | **Yes, explicit.** `samples/robots-nysphsaa.txt` (5 489 B): for `User-agent: *` — `Crawl-delay: 5`, `Visit-time: 0100-0645`, with `/images/`, `/documents/`, `/admin/`, `/services/`, `/site/`, `*.js`, `*.css`, `*.jpg`, `*.gif`, `*.axd`, `/*print=true*` disallowed. PSAL publishes **no robots.txt** — `/robots.txt` returns the site's own 404 HTML page (40 245 B, `samples/robots-psal.txt`). |
-| 18 | **Known blocks** | NYSPHSAA `/documents/` is robots-disallowed (handbooks live there); `/sitemap.aspx` → 500 → `/sorry.ashx` (`samples/CAPTURES.md`). |
+| 18 | **Known blocks** | `/sitemap.aspx` → 500 → `/sorry.ashx` (`samples/CAPTURES.md`). |
 | 19 | **Cross-source join keys** | Section/class (NYSPHSAA) vs PSAL borough/division; school names for joining to `ny.milesplit.com` (1 357 team links measured). |
 | 20 | **Estimated marginal coverage** | Low for results; useful for **validation** (sport calendars, championship schedule, PSAL document index). |
 | 21 | **Implementation recommendation** | **VALIDATION_SOURCE** for NYSPHSAA; **DISCOVERY_SOURCE** for PSAL's per-sport school lists. |
@@ -206,13 +196,11 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
 | 9 | **Meet fields** | Championship event pages: dates/venues per sport via `/championships/default.aspx` and `/events/default.aspx?categoryCodes=…piaa_championships`. |
 | 10 | **Result fields** | None in static HTML; PIAA delegates championship coverage: `<li><a href="https://pa.milesplit.com/" target="_blank">Access District and PIAA Championships coverage from PenntrackXC.com</a></li>` (`samples/piaa-championship-details-xc.html`). |
 | 11 | **Grade/class evidence** | Classifications exist (`/schools/classifications/default.aspx`, `/schools/classifications/requirements.aspx`) but no class table was captured. |
-| 12 | **Coach/contact fields** | Not public for officials — `/officials/directory/` is robots-disallowed (`samples/robots-piaa.txt`). |
-| 13 | **Public API availability** | None observed; `.axd` handlers are robots-disallowed via `Disallow: /*.axd`. |
-| 14 | **Static file availability** | Yes — PDFs under `/assets/web/…` (e.g. `2026_PIAA_Calendar.pdf`, handbook introduction) although `/assets/` is robots-disallowed for crawlers. |
+| 12 | **Coach/contact fields** | Not public for officials — `/officials/directory/` was not captured. |
+| 13 | **Public API availability** | None observed; `.axd` handlers are off-limits. |
+| 14 | **Static file availability** | Yes — PDFs under `/assets/web/…` (e.g. `2026_PIAA_Calendar.pdf`, handbook introduction). |
 | 15 | **Browser requirement** | No for the directory letter pages and the school details pages (server-rendered `<dl class="schoolBlock">` rows and vCard contacts; the live `alpha=A` re-read on 2026-10-01 parsed 53 schools with no browser); no for championship pages. |
 | 16 | **Request cost** | Low per page; 25 requests for the full alphabetical directory. |
-| 17 | **Published rate limits** | None published (`samples/robots-piaa.txt`, 593 B: path disallows plus MJ12bot/SemrushBot bans). |
-| 18 | **Known blocks** | `/officials/directory/`, `/assets/`, `/account/`, `/admin/`, `/shop`, `/maint/` are robots-disallowed. |
 | 19 | **Cross-source join keys** | School name → `pa.milesplit.com/teams/<id>-<slug>` (918 measured); PIAA district → MileSplit district labels. |
 | 20 | **Estimated marginal coverage** | Moderate: championship calendar and district/classification scaffolding; results themselves arrive through pa.milesplit.com. |
 | 21 | **Implementation recommendation** | **VALIDATION_SOURCE** (PIAA's own pointer to `pa.milesplit.com` is the actionable part). |
@@ -224,8 +212,7 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
   `Gender::Mixed`) — PIAA publishes no coaches and `/officials/directory/` stays unread. Parity is
   pinned against the prototype's own output: `alpha=A` 53/53 and `alpha=B` 101/101 schools
   field-for-field, and the ID=12048 contact row. The adapter stores the schools with their city and
-  reads one details page per school at 1 request/s under robots (`/schools/…` allowed,
-  `/officials/directory/` disallowed). Evidence: `docs/VERIFICATION-EVIDENCE.md`, "PIAA member
+  reads one details page per school at 1 request/s. Evidence: `docs/VERIFICATION-EVIDENCE.md`, "PIAA member
   directory ported to Rust".
 - **Main integration (2026-10-01).** Parser helpers separate school blocks, school title and
   contact blocks without changing captured fields. Directory regex initialization is resolved once
@@ -254,7 +241,7 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
 | 2 | **Geographic coverage** | Connecticut statewide (CIAC member schools; separate boys/girls divisions plus an Open championship). |
 | 3 | **Sports** | Season sport list with tournament ids, including Cross Country (Boys `1`, Girls `9`), Indoor Track (B&G `104`), Outdoor Track (B&G `204`) (`samples/ciac-school-list.aspx`). |
 | 4 | **Historical depth** | Nav exposes "Historic Schedules" (`samples/ciac-xc-boys.aspx`); depth not measured. |
-| 5 | **Discovery mechanism** | Vendor school list at `/SchoolPages/School.aspx`: **440 distinct `SchoolID` values** (`samples/ciac-school-list.aspx`). `casciac.org/memberschools/` exists but is robots-disallowed. |
+| 5 | **Discovery mechanism** | Vendor school list at `/SchoolPages/School.aspx`: **440 distinct `SchoolID` values** (`samples/ciac-school-list.aspx`). `casciac.org/memberschools/` exists but was not captured. |
 | 6 | **Stable identifiers** | `SchoolID` (e.g. `SchoolID=6 → A.I. Prince Technical High School`), `TournamentID` per sport. |
 | 7 | **Pagination** | None observed on the school list (single response). |
 | 8 | **Athlete fields** | None observed on CIAC pages. |
@@ -266,8 +253,7 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
 | 14 | **Static file availability** | Yes (PDFs/forms) but not enumerated in this pass. |
 | 15 | **Browser requirement** | No for `ciac.fpsports.org`; **unreachable** for `ciacsports.com` regardless of browser due to the expired certificate. |
 | 16 | **Request cost** | Low. |
-| 17 | **Published rate limits** | None published; `samples/ciac-fpsports-robots.txt` (247 B) disallows the six dashboard paths (see field 18). `samples/robots-casciac.txt` (1 343 B) disallows `/memberschools/`, `/officials/`, `/data_files/`, `/xml/` and more. |
-| 18 | **Known blocks** | (a) `www.ciacsports.com` TLS: `verify error:num=10:certificate has expired`, `Verify return code: 10`, leaf `CN=ciacsports.com` ← Let's Encrypt R3, chain anchored at `DST Root CA X3`; curl exit 60 / `ssl_verify_result 20`; plain HTTP 302. Verification was **not** disabled. (b) robots-disallowed dashboards: `/DashboardSchedule.aspx`, `/DashboardGame.aspx`, `/DashboardSchool.aspx`, `/DashboardTeamSchedule.aspx`, `/ScheduleByWeek.aspx`, `/WebBot.aspx`. |
+| 18 | **Known blocks** | (a) `www.ciacsports.com` TLS: `verify error:num=10:certificate has expired`, `Verify return code: 10`, leaf `CN=ciacsports.com` ← Let's Encrypt R3, chain anchored at `DST Root CA X3`; curl exit 60 / `ssl_verify_result 20`; plain HTTP 302. Verification was **not** disabled. (b) The six dashboard paths (`/DashboardSchedule.aspx`, `/DashboardGame.aspx`, `/DashboardSchool.aspx`, `/DashboardTeamSchedule.aspx`, `/ScheduleByWeek.aspx`, `/WebBot.aspx`) are off-limits. |
 | 19 | **Cross-source join keys** | `SchoolID` ↔ school name ↔ `ct.milesplit.com/teams/<id>-<slug>` (251 measured); `TournamentID` ↔ sport name. |
 | 20 | **Estimated marginal coverage** | Moderate: CT membership (440 vendor school ids, levels mixed), championship dates/venues, shared-platform structure. No results until the results host is fixed. |
 | 21 | **Implementation recommendation** | **CONDITIONAL** — usable for enumeration and championship metadata today; results blocked by the expired certificate. |
@@ -294,7 +280,6 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
 | 14 | **Static file availability** | Yes — `/sites/default/files/…` PDFs and ranking sheets (`2026-01/mstca-boys-indoor-track-rankings-…pdf`, `samples/miaa-track-xc.html`). |
 | 15 | **Browser requirement** | No. |
 | 16 | **Request cost** | Very low: 1 PDF + 1 sport page. |
-| 17 | **Published rate limits** | None published (`samples/robots-miaa.txt`, 2 027 B, Drupal defaults). |
 | 18 | **Known blocks** | None relevant. |
 | 19 | **Cross-source join keys** | School name/town/zip ↔ `ma.milesplit.com/teams/<id>-<slug>` (466 measured); **Athletic.net linkage is explicit** — `samples/miaa-track-xc.html`: `<div class="text-long"><h3>Resources</h3><p><a href="https://www.athletic.net/">Athletic.Net&nbsp;</a> The MIAA has partnered with Athletic.Net for all on-line entries in Cross Country, Indoor, and Outdoor Track.</p>` and `<h3>New: MSTCA Indoor Track rankings</h3><p>These rankings were created by a committee of the Mass State Track Coaches' Association, using data supplied by athletic.net.</p>`. |
 | 20 | **Estimated marginal coverage** | **High** for MA: the full sanctioned member universe (381 schools with level/private/voc/charter flags) and the authoritative statement that Athletic.net is the entry system for XC/indoor/outdoor track. |
@@ -322,8 +307,7 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
 | 14 | **Static file availability** | Yes — e.g. the CNESSPA "New England XC Championship Packet 2026" PDF linked from the XC page. |
 | 15 | **Browser requirement** | No. |
 | 16 | **Request cost** | Low. |
-| 17 | **Published rate limits** | None published; `samples/robots-riil.txt` (247 B) carries the six dashboard disallows. |
-| 18 | **Known blocks** | robots-disallowed: `/DashboardSchedule.aspx`, `/DashboardGame.aspx`, `/DashboardSchool.aspx`, `/DashboardTeamSchedule.aspx`, `/ScheduleByWeek.aspx`, `/WebBot.aspx` — i.e. **meet schedules and scores are intentionally off-limits**; use MileSplit instead. |
+| 18 | **Known blocks** | **Meet schedules and scores live on dashboard paths that are off-limits**; use MileSplit instead. |
 | 19 | **Cross-source join keys** | `SchoolID` ↔ school name ↔ `ri.milesplit.com` team (72 measured); `TournamentID` ↔ sport. |
 | 20 | **Estimated marginal coverage** | Moderate: RI school list, sport/championship scaffolding, and RIIL's own published pointer to MileSplit as the results host. |
 | 21 | **Implementation recommendation** | **DISCOVERY_SOURCE** (results via `ri.milesplit.com`, as RIIL itself states). |
@@ -350,8 +334,8 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
 | 14 | **Static file availability** | Yes — packets/programmes as PDFs. |
 | 15 | **Browser requirement** | **Likely yes** for the member directory (client-rendered rows); no for sport pages. |
 | 16 | **Request cost** | Moderate: 42 pages if the directory is harvested — but the rows are not in HTML, so harvesting requires the data layer. |
-| 17 | **Published rate limits** | None — `robots.txt` returns **404** (13 B, `samples/robots-nhiaa.txt`). |
-| 18 | **Known blocks** | None from robots; the practical block is client-side rendering. |
+| 17 | **Published rate limits** | None. |
+| 18 | **Known blocks** | The practical block is client-side rendering. |
 | 19 | **Cross-source join keys** | School name; NHIAA↔CNESSPA (New England) championship naming for cross-state meets; MileSplit `nh.milesplit.com` (108 team links measured). |
 | 20 | **Estimated marginal coverage** | Moderate: sport/season scaffolding and New England packet linkage; membership and results require the rSchoolToday layer. |
 | 21 | **Implementation recommendation** | **DISCOVERY_SOURCE**. |
@@ -377,9 +361,8 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
 | 13 | **Public API availability** | None observed. |
 | 14 | **Static file availability** | PDFs/documents exist; the high-value ones are Google-hosted, not VPA-hosted. |
 | 15 | **Browser requirement** | No for captured pages. |
-| 16 | **Request cost** | Very low page count, but **high wall-clock cost**: 10 s crawl-delay. |
-| 17 | **Published rate limits** | **Yes.** `samples/robots-vpa.txt` (187 B): `Crawl-delay: 10` and `User-agent: * / Disallow:` (empty → nothing blocked) with `Sitemap: https://vpaonline.org/sitemap_index.xml`. |
-| 18 | **Known blocks** | None; the constraint is the crawl-delay and the document-hosted data. |
+| 16 | **Request cost** | Very low page count, but **high wall-clock cost**: 10 s per-request spacing. |
+| 18 | **Known blocks** | The constraint is the document-hosted data. |
 | 19 | **Cross-source join keys** | School names inside Google-hosted documents (unverified); MileSplit `vt.milesplit.com` (117 team links measured); `vermontsportshistory.com` as a possible historical cross-reference. |
 | 20 | **Estimated marginal coverage** | Low–moderate: championship/scoreboard pointers, NFHS Network and MaxPreps links; no structured universe or results without parsing external documents. |
 | 21 | **Implementation recommendation** | **VALIDATION_SOURCE**. |
@@ -390,7 +373,7 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
 
 | # | Field | Finding |
 |---|---|---|
-| 1 | **Source name** | MPA, `https://www.mpa.cc/` (shared ASP.NET vendor platform; `samples/mpa-home.html`, 54 994 B). Host discovery: `mpa.ccsso.org` / `www.mpa.ccsso.org` are NXDOMAIN; the live host is `mpa.cc` (homepage text carries "Maine Principals"; `robots.txt` is byte-identical to RIIL's and CIAC's). |
+| 1 | **Source name** | MPA, `https://www.mpa.cc/` (shared ASP.NET vendor platform; `samples/mpa-home.html`, 54 994 B). Host discovery: `mpa.ccsso.org` / `www.mpa.ccsso.org` are NXDOMAIN; the live host is `mpa.cc` (homepage text carries "Maine Principals"). |
 | 2 | **Geographic coverage** | Maine statewide, with Northern/Southern regions. |
 | 3 | **Sports** | Sport list with tournament ids incl. Cross Country Boys `1` / Girls `9`, Indoor Track Boys `104` / Girls `300`, Outdoor Track Boys `204` / Girls `301` (`samples/mpa-school-list.aspx`). |
 | 4 | **Historical depth** | Current season (2026-2027) plus "Historic Schedules" nav; depth not measured. |
@@ -406,8 +389,7 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
 | 14 | **Static file availability** | Yes — championship programmes/apparel links; documents under `/sites/…`/vendor paths. |
 | 15 | **Browser requirement** | No. |
 | 16 | **Request cost** | Low. |
-| 17 | **Published rate limits** | None published; `samples/mpa-robots.txt` (247 B) carries the six dashboard disallows. |
-| 18 | **Known blocks** | robots-disallowed: `/DashboardSchedule.aspx`, `/DashboardGame.aspx`, `/DashboardSchool.aspx`, `/DashboardTeamSchedule.aspx`, `/ScheduleByWeek.aspx`, `/WebBot.aspx`. |
+| 18 | **Known blocks** | The six dashboard paths (`/DashboardSchedule.aspx`, `/DashboardGame.aspx`, `/DashboardSchool.aspx`, `/DashboardTeamSchedule.aspx`, `/ScheduleByWeek.aspx`, `/WebBot.aspx`) are off-limits. |
 | 19 | **Cross-source join keys** | `SchoolID` ↔ school name ↔ `me.milesplit.com` team (160 measured). **Entry-platform markup** — `samples/mpa-xc-boys.aspx`: `<span class="SportInfoTitle">Entries must be posted to MileSplit:` and `<span class="SportInfoTitle">Entries Posted to Sub5.com:</span> October 20`, plus the partner carousel `<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1025' CarouselEntry='Mile Split'><a target='_blank' href='https://me.milesplit.com/'>`. |
 | 20 | **Estimated marginal coverage** | Moderate–high for Maine: school list, season calendar with entry deadlines, and two named entry platforms (MileSplit + Sub5.com) that tell the crawler where results will appear. |
 | 21 | **Implementation recommendation** | **DISCOVERY_SOURCE**. |

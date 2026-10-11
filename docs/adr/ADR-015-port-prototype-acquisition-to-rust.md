@@ -21,9 +21,9 @@ Decide:
    `crates/census-crawl/tests/fixtures/<source>/` and the prototype extractor's rows for that body as
    a committed golden file. The Rust test asserts parity on the shared fields; the golden is dated
    evidence, not a second implementation.
-4. Source admission (robots verdict, rate, transport) comes from
-   `research/sources/applicability-matrix.md`. A source whose host refuses robots, or that publishes
-   no coach-bearing content, is recorded as out-of-scope with its citation instead of being ported
+4. Source admission (rate, transport) comes from
+   `research/sources/applicability-matrix.md`. A source that publishes
+   no coach-bearing content is recorded as out-of-scope with its citation instead of being ported
    speculatively.
 5. The capture cache under `census-prototype/raw/` is the origin of those fixtures; captures are
    copied, never re-fetched to build a fixture.
@@ -55,9 +55,8 @@ touching one another's decisions.
 - **Admission.** The descriptor and the applicability entry are appended as a pair carrying the same
   slug (`applicability/tests.rs` asserts the two slug sets are equal). `transport`, `capabilities`
   and `access_class` describe what the source actually does — an artifact reader declares
-  `local-artifact` and no fetchable host — one request stays in flight, `robots_crawl_delay_respected`
-  stays true, and the rate is the lane's measured rate (1 request/second unless the host publishes a
-  crawl-delay).
+  `local-artifact` and no fetchable host — one request stays in flight, and the rate is the lane's
+  measured rate (1 request/second).
 - **Fixtures.** Copied from `census-prototype/raw/`, matched by the `url` field of the sibling
   `*.meta.json`, byte-identical (`cmp` plus sha256 re-verified by a second pass), each fixture set
   carrying `PROVENANCE.json` with `url`, `prototype_file`, `sha256` and `bytes`. Never re-fetched to

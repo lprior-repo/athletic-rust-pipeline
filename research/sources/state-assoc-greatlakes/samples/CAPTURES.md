@@ -212,7 +212,6 @@ control):
 | `evidence/gaps/39/es-michiana-sample.json` | 5232 | Michiana Timing Elasticsearch sample (MI timer lane) |
 | `evidence/gaps/39/es-michiana-total.json` | 163 | Michiana total bucket count |
 | `evidence/gaps/39/fetch-log.jsonl` | 43680 | the 124-line MI fetch manifest itself (URL/status/bytes/sha256/ts per request) |
-| `evidence/gaps/39/live.michianatiming.com_robots.txt` | 192 | Michiana Timing robots.txt (pre-fetch compliance) |
 | `evidence/gaps/39/mhsaa_an_link_inventory.json` | 6574 | MHSAA to Athletic.net MeetID inventory for the 2026 tournament set (section 4) |
 | `evidence/gaps/39/milesplit-indoor-mits-meets.json` | 6569 | MileSplit MITS indoor meet list (cross-lane) |
 | `evidence/gaps/39/s-gke-usc1-nssi3-33.firebaseio.com_meet_12574_event_summary.json_ns_trackmeet-io` | 13831 | trackmeet.io Firebase event summary (MI timer lane) |
@@ -259,8 +258,6 @@ control):
 | `evidence/gaps/45/oatccc-Coaches_root.body` | 118 | OATCCC Coaches page body |
 | `evidence/gaps/45/oatccc-doc-1KrDtc5eRxffu7FONjVr3esEA3FTRe_Tz_lcWn6bcouo.txt` | 2999 | OATCCC published contact doc (district reps) |
 | `evidence/gaps/45/oatccc-doc-1Si1qAoTeQSVBpQmouvP-r_8OjnOO3BvO4Iv88m4oIGo.txt` | 2842 | OATCCC published contact doc (undifferentiated contacts) |
-| `evidence/gaps/45/oatccc-robots.body` | 146 | OATCCC robots.txt body |
-| `evidence/gaps/45/oatccc-robots.txt.body` | 146 | OATCCC robots.txt body (variant capture) |
 | `evidence/gaps/45/oatccc-sitemap-urls.txt` | 44596 | OATCCC sitemap URL list |
 | `evidence/gaps/45/otm-sample-result.body` | 10403 | timer sample result (Hy-Tek/PDF lane) |
 | `evidence/gaps/45/otm-timerhub.body` | 5323 | Ohio timer hub page |
@@ -308,20 +305,10 @@ Iowa schools). Listed because a name-based search for "ihsaa" lands here.
 | `tools/scratch-11/ighsau-xc-final-classes.pdf` | 182054 | IGHSAU XC final classes |
 | the rest of the Iowa lane's captures in `tools/scratch-11/`: `b-iahsaa.org_member-schools_.html` 268218, `b-ia-schools.html` 638229, `b-school-harlan_directory.html` 86258, `b-ames-directory.html` 81902, `p-ihsaa-school-ames.html` 205795, `bound-ia-schools.csv` 17786, `ihsaa-members-without-bound-track.csv` 3300, `bound-track-vs-ihsaa-join.csv` 16165, `ihsaa-members-missing-bound-track.csv` 1550, `ihsaa-members-no-bound-track-2025-26.txt` 2133, `ihsaa-no-bound-boystrack-2025-26.txt` 960, `ighsau-members-beds-2026-27.csv` 9773 | - | owner report [11]. `tools/iowa-11/` (11 files, 291140 B) is a **partly overlapping** copy: `ihsaa-members.csv`, `bound-ia-schools.csv`, `bound-ihsaa-boystrack-teams-2025-26.csv`, `ihsaa-track-class-2026.csv`, `ighsau-members-beds-2026-27.csv` plus 6 files not in scratch-11 |
 
-### B6. Cross-cutting (robots discipline, MileSplit sitemap, entries/timing probes)
+### B6. Cross-cutting (MileSplit sitemap, entries/timing probes)
 
 | Path (corpus-relative) | Bytes | What it is / what it backs |
 |---|---:|---|
-| `evidence/gaps/33/robots/il.txt` | 173 | MileSplit `il` robots.txt (pre-fetch compliance check; the 173 B shape cited in section 7) |
-| `evidence/gaps/33/robots/il.headers` | 203 | `il` robots.txt response headers |
-| `evidence/gaps/33/robots/in.txt` | 173 | MileSplit `in` robots.txt (pre-fetch compliance check; the 173 B shape cited in section 7) |
-| `evidence/gaps/33/robots/in.headers` | 203 | `in` robots.txt response headers |
-| `evidence/gaps/33/robots/mi.txt` | 173 | MileSplit `mi` robots.txt (pre-fetch compliance check; the 173 B shape cited in section 7) |
-| `evidence/gaps/33/robots/mi.headers` | 203 | `mi` robots.txt response headers |
-| `evidence/gaps/33/robots/oh.txt` | 173 | MileSplit `oh` robots.txt (pre-fetch compliance check; the 173 B shape cited in section 7) |
-| `evidence/gaps/33/robots/oh.headers` | 203 | `oh` robots.txt response headers |
-| `evidence/gaps/33/robots/wi.txt` | 173 | MileSplit `wi` robots.txt (pre-fetch compliance check; the 173 B shape cited in section 7) |
-| `evidence/gaps/33/robots/wi.headers` | 203 | `wi` robots.txt response headers |
 | `evidence/gaps/33/sitemap-window-summary-2026-09-20.json` | 3706 | MileSplit sitemap recency-window summary ([33]) |
 | `evidence/gaps/34/evidence-appendix.md` | 11692 | discovery-vs-validation appendix incl. join metrics ([34]) |
 | `evidence/gaps/34/fetch.log` | 4321 | [34] fetch log |

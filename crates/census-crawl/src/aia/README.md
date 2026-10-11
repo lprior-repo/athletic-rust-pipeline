@@ -12,7 +12,6 @@ collects no athletes and no results. `AIA_EVIDENCE`/`AIA_REFUSAL` in
 
 | Surface | URL | Notes |
 | --- | --- | --- |
-| Robots | `https://aiaonline.org/robots.txt` | `User-agent: *` / `Disallow:` — all paths allowed |
 | School search | `https://aiaonline.org/schools/search.json?q=<query>` | JSON array; at most 10 rows per query and 20 for an empty query, so there is no full inventory route |
 | School profile | `https://aiaonline.org/schools/<id>` | Server-rendered HTML: name, address, and one sport card per sport with the head coach's name |
 
@@ -51,7 +50,7 @@ cargo run -p census-service -- --store <dir> provider aia --limit 3 --observed-o
 
 ## Landing checklist
 
-- [x] real URLs and their robots status recorded here and in `research/sources/aia/SOURCE_REPORT.md`
+- [x] real URLs recorded here and in `research/sources/aia/SOURCE_REPORT.md`
 - [x] parsing and mapping asserted against live captures (`cargo test -p census-crawl --lib aia`)
 - [x] registered in the source registry and applicability table
       (`registry/table/through_milesplit.rs`, `applicability/table/data.rs`), and exposed as the

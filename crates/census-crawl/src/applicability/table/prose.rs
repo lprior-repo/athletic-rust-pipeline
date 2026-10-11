@@ -1,4 +1,4 @@
-pub(super) const AIA_EVIDENCE: &str = "`aia` AZ: aiaonline.org answers an all-paths-allowed robots and serves two public surfaces - \
+pub(super) const AIA_EVIDENCE: &str = "`aia` AZ: aiaonline.org serves two public surfaces - \
                    `/schools/search.json?q=` (at most 10 rows per query; an empty query returned 20 of the ~287 members, so \
                    discovery is a city/name sample, not the whole inventory) and server-rendered school profiles `/schools/<id>` \
                    whose sport cards name one head coach per sport and school (e.g. `Cross Country - Boy's`, \
@@ -77,7 +77,7 @@ pub(super) const CIAC_EVIDENCE: &str = "`coach-directories-national` CT: the Fus
 pub(super) const CIAC_REFUSAL: &str = "One league's directory: no other jurisdiction in the corpus publishes on this host, and the lane's \
                   rows for the rest name a different provider or none.";
 
-pub(super) const CHSAA_EVIDENCE: &str = "378 member schools with embedded JSON at chsaanow.com/schools/ (schoolCode, name, officialName, city, streetAddress, zipCode); per-school coach JSON at chsaanow.com/schools/<slug>/ with activityName and positions[].title (Head Coach/Assistant Coach). 378/378 have streetAddress, 376/378 have zipCode. robots.txt allows / with only /history/champions/individual/totals/repeat/ and /preview/ disallowed.";
+pub(super) const CHSAA_EVIDENCE: &str = "378 member schools with embedded JSON at chsaanow.com/schools/ (schoolCode, name, officialName, city, streetAddress, zipCode); per-school coach JSON at chsaanow.com/schools/<slug>/ with activityName and positions[].title (Head Coach/Assistant Coach). 378/378 have streetAddress, 376/378 have zipCode.";
 
 pub(super) const CHSAA_REFUSAL: &str =
     "One association's directory: no other jurisdiction in the corpus publishes on this host.";
@@ -100,7 +100,7 @@ pub(super) const COACH_CONTACTS_EVIDENCE: &str = "`coach_contact_graph` [29], `v
                    provider publishes one, and the page it was observed on.";
 
 pub(super) const COACH_CONTACTS_REFUSAL: &str = "`[coach-directories-national]` collected 22 tier-1 directories of 51: the rest are login-gated (MI \
-                  `my.mhsaa.com`, MS 403 WAF), client-rendered (PA, NH, TX `/files/` robots-disallowed), or publish names \
+                  `my.mhsaa.com`, MS 403 WAF), client-rendered (PA, NH, TX `/files/`), or publish names \
                   with no address anywhere (ND 0 emails, SD 4 coach emails from a prior study), and a directory the \
                   adapter cannot read is not a planned source.";
 
@@ -114,8 +114,7 @@ pub(super) const HOME_CAMPUS_EVIDENCE: &str = "Home Campus \
                    `athleticFaculties[] = {firstname, lastname, aft_name, email, work_phone}`; Arcadia (19) 24 coaches / \
                    6 faculty, Bolles (1872) 26 / 8, Abraham Clark (3374) 0 / 0. Captures live under \
                    `crates/census-crawl/tests/fixtures/home_campus/` and \
-                   `research/sources/coach-coverage-bundle-20261004/probes/home_campus/`; robots is the 24-byte \
-                   `Disallow:`-empty form and collection paces at 0.5 requests/second per host: a solo \
+                   `research/sources/coach-coverage-bundle-20261004/probes/home_campus/`; collection paces at 0.5 requests/second per host: a solo \
                    2026-10-04 run passed 1,101 requests at 1 rps, two concurrent runs at roughly twice \
                    that rate drew a `Human Verification` challenge, and the halved rate keeps two \
                    uncoordinated runs at the rate the host tolerated.";
@@ -250,18 +249,15 @@ pub(super) const STATE_ED_REFUSAL: &str = "Only New York has a state-agency capt
 pub(super) const TSSAA_EVIDENCE: &str = "`portal.tssaa.org/common/directory/?type=high` (41,350 bytes) lists the member schools and \
                    `?id=<n>` carries the per-school staff cards, captured for 456 schools (e.g. `id=3`, 79,409 bytes, \
                    sha256 `c69f3c2d…`); the prototype's Tennessee run counts 2,769 coach rows and 384 schools with a \
-                   Track/CrossCountry row. `portal.tssaa.org/robots.txt` allows `/common` and disallows the rest, so \
-                   this row plans the one path the host permits.";
+                   Track/CrossCountry row. The directory row reads `/common` only.";
 
-pub(super) const TSSAA_REFUSAL: &str = "One association's directory: no other jurisdiction publishes on this host, and every path outside \
-                  `/common` is robots-disallowed.";
+pub(super) const TSSAA_REFUSAL: &str = "One association's directory: no other jurisdiction publishes on this host, and the adapter reads `/common` only.";
 
 pub(super) const UHSAA_EVIDENCE: &str = "`uhsaa.org/school-directory-new/` lists the member schools (324 anchors over 162 distinct school ids in the 2026-10-04 capture; the adapter parses 162 links) and \
                    `school-directory/?id=<Name>&Reg=<Region>&schoolID=<ID>` carries each school's published name, street address, \
                    district, classification and region plus one head coach per sport with a `mailto:` address (e.g. Alta `schoolID=1`: \
                    Rebecca Bennion, XC and track; Murray `schoolID=73`: Diana Stewart XC and JennaBree Tollestrup track; Herriman \
-                   `schoolID=43`: Josh Pugel XC and Corey Wales track). `uhsaa.org/robots.txt` answers 200 with no relevant \
-                   disallow, and the captures live under `crates/census-crawl/tests/fixtures/uhsaa/` plus \
+                   `schoolID=43`: Josh Pugel XC and Corey Wales track). The captures live under `crates/census-crawl/tests/fixtures/uhsaa/` plus \
                    `research/sources/uhsaa/`. Schools publish one head coach per sport and no assistant coaches, and no coach phone.";
 
 pub(super) const UHSAA_REFUSAL: &str = "One association's site: it lists Utah member schools only, and every other jurisdiction's association \

@@ -182,21 +182,18 @@ team (measured 2026-10-05, `docs/VERIFICATION-EVIDENCE.md`), so the association
 offers this adapter no contact material — CT coach contacts come from the
 separate `ciac` adapter over `ciac.fpsports.org`.
 
-Robots policy is not published (403 with API Gateway body). Pacing follows the
+Pacing follows the
 registry's 1 request/s with one in-flight request, and the fetcher enforces it
 rather than trusting its caller:
 
 * `net::host_gate` floors a host's pace at the rate its registry row declares
   (`registry::declared_delay_for_host`), so a shorter `--delay-ms` or a test
-  default cannot exceed the published rate; the host's robots crawl-delay and the
-  500 ms authorized floor still apply, whichever is slowest.
+  default cannot exceed the published rate, and the 500 ms authorized floor still
+  applies.
 * A host inside a recorded access cooldown (a 403/429 that minted a
   `SourceAccessCondition`) refuses the request with `FetchError::Policy` instead
   of continuing to knock, so a rate-limited host is left alone for the recorded
   `Retry-After`/six-hour window.
-* `robots.txt` is read once per origin under the same host gate and paced like
-  any other request, so the first page request does not land in the same second
-  as the policy probe.
 * Pacing state (turn slots and the one-in-flight gates) belongs to the `Fetcher`;
   instances that share a host must share it with `Fetcher::with_shared_pacing`,
   which the service's per-jurisdiction fetchers must do when they are wired.

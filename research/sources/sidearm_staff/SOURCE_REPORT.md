@@ -6,17 +6,15 @@ Configured coverage: one host, one school, CA
 
 ## Endpoint and provenance
 
-`GET https://gomats.org/staff-directory` returns the server-rendered public directory anonymously. The verified 2026-10-04 probe retained HTTP 200 HTML, 305,587 bytes, SHA-256 `8b392547b16ad80dde77bd7941df182804d1c59ee6151308a8da40fdab99b4b8`. Main staged the byte-exact fixture at `crates/census-crawl/tests/fixtures/sidearm_staff/gomats.org__staff-directory__full.html`; its metadata and robots details are in the adjacent `SOURCE.md`.
+`GET https://gomats.org/staff-directory` returns the server-rendered public directory anonymously. The verified 2026-10-04 probe retained HTTP 200 HTML, 305,587 bytes, SHA-256 `8b392547b16ad80dde77bd7941df182804d1c59ee6151308a8da40fdab99b4b8`. Main staged the byte-exact fixture at `crates/census-crawl/tests/fixtures/sidearm_staff/gomats.org__staff-directory__full.html`; its metadata is in the adjacent `SOURCE.md`.
 
 The probe's findings are under `research/sources/coach-coverage-bundle-20261004/probes/sidearm_miramonte/`. The prior SRC-266 extraction demonstrated two XC/TF coach rows joined to the school's Athletic Director; it is precedent, not verification of this adapter.
 
-## Robots and admission
+## Admission
 
-`https://gomats.org/robots.txt`: HTTP 200, 6,001 bytes, SHA-256 `454315be725af18052b2009cd7aa02628dbbf5d6445a4818036b110a2ce8b5da`. Its wildcard group permits `/staff-directory` and declares `Crawl-delay: 30`.
+The registry uses the existing `fetched("gomats.org", 1.0 / 30.0)` admission (one request per 30 s), maximum one in-flight request. The existing fetcher takes the maximum of its configured and registry-declared delays; the adapter performs one normal `fetcher.get` for the directory. No JavaScript, profile pages, API endpoints or blocked assets are fetched.
 
-The registry uses the existing `fetched("gomats.org", CRAWL_DELAY_THIRTY_RPS)` admission, with `CRAWL_DELAY_THIRTY_RPS = 1.0 / 30.0`, maximum one in-flight request. The existing fetcher takes the maximum of its configured, robots and registry-declared delays; the adapter performs one normal `fetcher.get` for the directory. No JavaScript, profile pages, API endpoints or blocked assets are fetched.
-
-The original probe reported an approximately 15.5-second saved-file robots-to-page gap and explicitly did not claim compliance. The new admission declares thirty-second pacing; execution evidence must come from Main's smoke, not this historical capture.
+The new admission declares thirty-second pacing; execution evidence must come from Main's smoke, not this historical capture.
 
 ## Parser and mapping
 

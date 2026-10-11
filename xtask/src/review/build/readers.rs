@@ -66,21 +66,59 @@ pub(super) fn read_submission(path: &Path) -> Result<Option<Value>> {
     }
 }
 
-pub(super) fn read_services(path: &Path) -> Result<u64> {
+pub(super) fn read_services(path: &Path) -> Result<Option<u64>> {
     let Some(text) = read_optional(path)? else {
-        return Ok(0);
+        return Ok(None);
     };
     let Ok(value) = serde_json::from_str::<Value>(&text) else {
-        return Ok(0);
+        return Ok(None);
     };
     let Some(services) = value.get("services").and_then(Value::as_array) else {
-        return Ok(0);
+        return Ok(None);
     };
-    u64::try_from(services.len()).map_err(|_| anyhow::anyhow!("service count does not fit in u64"))
+    u64::try_from(services.len())
+        .map(Some)
+        .map_err(|_| anyhow::anyhow!("service count does not fit in u64"))
 }
 
 pub(super) fn drain_certificate(log: &str) -> Option<String> {
     log.lines()
         .find_map(|line| line.split("drained: ").nth(1))
         .map(|rest| format!("drained: {rest}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::read_services;
+
+    #[test]
+    fn a_registration_list_supplies_the_service_count() {
+        let Ok(dir) = tempfile::tempdir() else {
+            return;
+        };
+        let path = dir.path().join("registration.json");
+        let body = r#"{"services":[{"name":"a"},{"name":"b"},{"name":"c"}]}"#;
+        if std::fs::write(&path, body).is_err() {
+            return;
+        }
+        assert_eq!(read_services(&path).ok(), Some(Some(3)));
+    }
+
+    #[test]
+    fn a_missing_or_unshaped_registration_reads_as_unknown() {
+        let Ok(dir) = tempfile::tempdir() else {
+            return;
+        };
+        let missing = dir.path().join("registration.json");
+        assert_eq!(read_services(&missing).ok(), Some(None));
+        let path = dir.path().join("shaped.json");
+        if std::fs::write(&path, r#"{"services":"three"}"#).is_err() {
+            return;
+        }
+        assert_eq!(read_services(&path).ok(), Some(None));
+        if std::fs::write(&path, "{not json").is_err() {
+            return;
+        }
+        assert_eq!(read_services(&path).ok(), Some(None));
+    }
 }

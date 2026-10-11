@@ -93,10 +93,10 @@ fixture directory; `source-test state_ed` selects test function names containing
 - Read-only verification on 2026-10-06 (bead) / 2026-10-10 (this report): byte counts and
   sha256 values above were checked against the committed fixtures with `stat`/`sha256sum` only;
   the captures themselves were **not re-fetched** from `data.nysed.gov`.
-- No robots verdict for `data.nysed.gov` was captured in the corpus. The reader is a file reader
+- The reader is a file reader
   and makes no request; a fetching lane would need its own admission decision, recorded in the
   registry descriptor (`SOURCE.md:26-28`; scaffold checklist
-  `crates/census-crawl/src/state_ed/README.md:36-42` still open on real URLs + robots status).
+  `crates/census-crawl/src/state_ed/README.md:36-42` still open on real URLs).
 - The index capture's request path (`https://data.nysed.gov/analysis/`) is inferred from the
   page's own title and links — no sidecar recorded it (`SOURCE.md:9`). The applicability prose
   cites the anchor as `data.nysed.gov/lists.php?type=school`; that alias vs. the inferred
@@ -114,7 +114,7 @@ fixture directory; `source-test state_ed` selects test function names containing
       and full sha256 (all verified with `stat`/`sha256sum` on 2026-10-10)
 - [x] Reader contract bound to exact entry points, regexes, identity type, and enforcement lines
 - [x] Applicability claim and refusal pinned to registry + applicability table lines
-- [x] Limits stated: no re-fetch, no robots verdict, inferred index URL, undated captures
+- [x] Limits stated: no re-fetch, inferred index URL, undated captures
 - [ ] Import/readback and `source-test state_ed` execution deferred to Main's focused checks
 
 ## Open questions

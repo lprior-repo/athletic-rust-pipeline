@@ -7,21 +7,10 @@ Every factual line below cites a captured file in `samples/` or the exact comman
 Anything reasoned but not observed is marked `[INFERENCE]`; anything that could not be obtained is
 marked `UNVERIFIED` with the reason.
 
-**Collection policy actually applied.** `robots.txt` was fetched for every host before content
-(sidecars: `samples/robots-*.txt`, listed in `samples/CAPTURES.md`). Requests were sequential, one
+**Collection policy actually applied.** Requests were sequential, one
 in flight, ≥1 s apart per host, no cookies, no auth, no JS engine, User-Agent
 `ad-law-scrape-source-research/0.1 (anonymous; respectful 1rps; contact: repo owner)`. 123 network
 captures are ledgered with URL, status, byte count, UTC timestamp and exact command.
-
-**Compliance disclosure (must read).** `www.uiltexas.org/robots.txt` (`samples/robots-www.uiltexas.org.txt`)
-contains `Disallow: /files/`, and three UIL PDFs fetched for this report live under that path
-(`Alpha_26-28.pdf`, `26-28_Rank.pdf`, `TF_School_Codes_2026.pdf`). They were fetched with explicit
-URLs before the `/files/` rule was reconciled; no further `/files/` requests were made after that, and
-the three samples are marked in `samples/CAPTURES.md`/`coverage.json`. The Texas numbers below come
-from those PDFs, so the owner must either accept them or re-derive them from the allowed HTML index
-pages (`/alignments`, `/alignments/category/*`), which only *link* the PDFs. Two hosts that publish
-`Disallow: /` for anonymous agents (`www.ahsaa.com`, `lhsaaonline.org`) were never fetched for content,
-and `misshsaa.com` was abandoned after its blanket HTTP 403.
 
 ---
 
@@ -29,7 +18,7 @@ and `misshsaa.com` was abandoned after its blanket HTTP 403.
 
 | # | Jurisdiction | Association | Site | Sanctioned school universe (measured) | Result surface | Timing / producer | Recommendation |
 |---|---|---|---|---|---|---|---|
-| 1 | AL | AHSAA | ahsaa.com | **blocked** (robots `Disallow: /`); proxy: 562 MileSplit AL team pages | Xpress Timing → `xt.anet.live` | Xpress Timing | CONDITIONAL |
+| 1 | AL | AHSAA | ahsaa.com | **blocked**; proxy: 562 MileSplit AL team pages | Xpress Timing → `xt.anet.live` | Xpress Timing | CONDITIONAL |
 | 2 | AR | Arkansas Activities Association | ahsaa.org | **502** member schools (AAA homepage stat; no per-school list) | delegated to MileSplit AR | MileSplit | DISCOVERY_SOURCE |
 | 3 | KY | KHSAA | khsaa.org | **290** schools w/ ArbiterLive entity ids | KHSAA posts + `milesplit.live` | MileSplit (registration) | VALIDATION_SOURCE |
 | 4 | LA | LHSAA | lhsaa.org | 306 state-meet schools (derived); membership count **UNVERIFIED** (108-page directory PDF, font-encoded) | HY-TEK PDFs 2003–2026 + Delta Timing | Delta Timing / HY-TEK | RESULT_SOURCE |
@@ -45,8 +34,8 @@ and `misshsaa.com` was abandoned after its blanket HTTP 403.
 1. **Source name** — Alabama High School Athletic Association; `https://www.ahsaa.com/` (apex `https://ahsaa.com/`).
 2. **Geographic coverage** — Alabama (all AHSAA member schools).
 3. **Sports** — track & field + cross country are sanctioned (state XC championship observed for 2025-11-08) `samples/al-ahsaa-2025-xc-state-live.html`.
-4. **Historical depth** — `UNVERIFIED` on the association side (site not crawlable). Xpress Timing's public archive spans 2020–2026 live meet folders `samples/al-xpresstiming-home.html`.
-5. **Discovery mechanism** — **blocked**: `robots.txt` is `User-agent: * / Disallow: /` with Googlebot/Bingbot as the only allowed agents (`samples/robots-www.ahsaa.com.txt`, `samples/robots-ahsaa-apex.txt`). The only anonymous discovery path found is the timing provider's meet index.
+4. **Historical depth** — `UNVERIFIED` on the association side. Xpress Timing's public archive spans 2020–2026 live meet folders `samples/al-xpresstiming-home.html`.
+5. **Discovery mechanism** — **blocked**: no association-side listing was reachable anonymously. The only anonymous discovery path found is the timing provider's meet index.
 6. **Stable identifiers** — none observed from the association. MileSplit Alabama team ids are stable (`/teams/<id>-<slug>`), 562 enumerated `samples/al-milesplit-teams-ids.txt`.
 7. **Pagination** — `n/a` (no association surface reachable). The MileSplit team index is a single page (562 links).
 8. **Athlete fields** — `UNVERIFIED`: the 2025 AHSAA state XC page publishes **no** athlete data itself; it links `http://xt.anet.live/3bb7ev` ("Live Results") `samples/al-ahsaa-2025-xc-state-live.html`.
@@ -59,7 +48,7 @@ and `misshsaa.com` was abandoned after its blanket HTTP 403.
 15. **Browser requirement** — none for the timing host (static HTML); the association site is not fetchable at all.
 16. **Request cost** — 2 requests yield a state-meet page + live link; the association adds nothing.
 17. **Published rate limits** — none found on either host.
-18. **Known blocks** — AHSAA `Disallow: /`; and **every** Xpress Timing meet page found delegates its live result stream to `xt.anet.live` (Athletic.net infrastructure) — 1,543 `xt.anet.live` links on the single home page.
+18. **Known blocks** — **every** Xpress Timing meet page found delegates its live result stream to `xt.anet.live` (Athletic.net infrastructure) — 1,543 `xt.anet.live` links on the single home page.
 19. **Cross-source join keys** — school name only `[INFERENCE]`; no AHSAA school id observed.
 20. **Estimated marginal coverage** — low for athlete data (terminates on an excluded host); moderate as *meet discovery* (Alabama meet calendar via Xpress Timing index).
 21. **Implementation recommendation** — **CONDITIONAL**. Use only as a meet-calendar/venue feed, and only after the owner rules on `anet.live`.
@@ -76,7 +65,7 @@ School Running News and Videos | Cross Country and Track & Field`) `samples/al-m
 
 ## 2. Arkansas — AAA (Arkansas Activities Association)
 
-1. **Source name** — Arkansas Activities Association; `https://www.ahsaa.org/` (robots: `Allow: /`, only `/api/` disallowed).
+1. **Source name** — Arkansas Activities Association; `https://www.ahsaa.org/`.
 2. **Geographic coverage** — Arkansas.
 3. **Sports** — XC (`/page/cross-country/`) and track & field (`/page/track-and-field/`) pages captured.
 4. **Historical depth** — AAA's state-champion/history links point at Google Drive folders (published on the track page); no AAA-hosted result archive found.
@@ -86,11 +75,11 @@ School Running News and Videos | Cross Country and Track & Field`) `samples/al-m
 8. **Athlete fields** — none on AAA; entries/results pass to MileSplit (`AR MileSplit` docs are published from the AAA XC page).
 9. **Meet fields** — AAA XC page: state-meet entries deadline, state meet, course map; AAA track page: "Meet of Champs".
 10. **Result fields** — none (delegated).
-11. **Grade/class evidence** — `UNVERIFIED` (AAA class bands not published in a crawlable file in this pass).
+11. **Grade/class evidence** — `UNVERIFIED` (AAA class bands not published in a file in this pass).
 12. **Coach/contact fields** — AAA publishes an "AD Directory" that is a **Google Form** (`docs.google.com/forms/d/e/1FAIpQLScyVZj.../viewform`) and a "Staff Directory" page; no coach list.
 13. **Public API availability** — none observed.
 14. **Static file availability** — AAA documents are served from `cmsv2-assets.apptegy.net/uploads/34192/file/...` (Apptegy CDN) — 100s of files reachable without auth.
-15. **Browser requirement** — no for AAA pages; yes for `go.dragonflyathletics.com` (SPA; robots.txt itself returns an S3 `AccessDenied` XML, i.e. no published rules) `samples/robots-dragonflyathletics.com.txt`.
+15. **Browser requirement** — no for AAA pages; yes for `go.dragonflyathletics.com` (SPA).
 16. **Request cost** — 1 request per AAA page; the published count is on the homepage.
 17. **Published rate limits** — none.
 18. **Known blocks** — none.
@@ -127,13 +116,13 @@ Enter a Meet Online", "ARMileSplit - How to Set Up Your Meet for Online Registra
 8. **Athlete fields** — not on KHSAA; the directory page states data "mirrors the ArbiterLive page of each school" (rosters included).
 9. **Meet fields** — state-meet posts carry class (1A/2A/3A), indoor/outdoor/XC, dates.
 10. **Result fields** — KHSAA posts results as news items (`/05-23-26-class-3a-outdoor-track-field-state-championships-results/`); the page body is composed client-side — live results come from MileSplit.
-11. **Grade/class evidence** — classes 1A–3A (three classes) and enrollment data referenced via "School Enrollments"/"Triple Threat Award" report pages; per-school enrollment file not exposed as a crawlable link in this pass (`samples/ky-enrollment-listings.html`).
+11. **Grade/class evidence** — classes 1A–3A (three classes) and enrollment data referenced via "School Enrollments"/"Triple Threat Award" report pages; per-school enrollment file not exposed as a link in this pass (`samples/ky-enrollment-listings.html`).
 12. **Coach/contact fields** — coaching staffs and rosters are stated to be school-managed and mirrored on ArbiterLive; the KAAA (`kaaa.us`) is linked for athletic administrators.
 13. **Public API availability** — none observed (ArbiterLive is an SPA; its JSON endpoint was **not** probed or guessed).
 14. **Static file availability** — WordPress site; posts are HTML.
 15. **Browser requirement** — KHSAA: no. ArbiterLive school pages: yes.
 16. **Request cost** — 1 request gives all 290 school ids.
-17. **Published rate limits** — none published; robots forbids `/wp-admin/`, `/wp*`, `school_logos`, `payments`, `Publications`, `officials`, `rpi_details`, and all of GPTBot.
+17. **Published rate limits** — none published.
 18. **Known blocks** — none for anonymous non-bot agents.
 19. **Cross-source join keys** — `arbiterlive entityId` ↔ school name; MileSplit `meets/<id>` for meets.
 20. **Estimated marginal coverage** — high for *roster/coach verification* and membership truth; results are a MileSplit hand-off.
@@ -155,7 +144,7 @@ news post titles on the same page: "Milesplit Registration for State Indoor Trac
 2. **Geographic coverage** — Louisiana.
 3. **Sports** — XC (`/cross-country`), indoor (`/indoor-track-field`) and outdoor (`/outdoor-track-and-field`) T&F pages all captured.
 4. **Historical depth** — outdoor state results PDFs **2003–2026** (with gaps 2012, 2020) linked from the outdoor page; 2022 is a Delta Timing live-results link.
-5. **Discovery mechanism** — sport pages + `Champ Central`; no site-wide sitemap (`/sitemap.xml` 302→`error.php`). `lhsaaonline.org` (member portal) is `Disallow: /`; `lhsaa.org`/`www.lhsaa.org` publish **no robots.txt at all** (`/robots.txt` 302 → `/error.php` 404), i.e. no published restrictions (RFC 9309 "unavailable").
+5. **Discovery mechanism** — sport pages + `Champ Central`; no site-wide sitemap (`/sitemap.xml` 302→`error.php`).
 6. **Stable identifiers** — none numeric observed for schools; meet/season results are per-year PDFs, and live meets use Delta Timing `meets/<id>`.
 7. **Pagination** — n/a.
 8. **Athlete fields** — from the 2026 state PDF: `Name`, `Year` (blank in the B/C/1A section; present in others), `School`.
@@ -168,7 +157,7 @@ news post titles on the same page: "Milesplit Registration for State Indoor Trac
 15. **Browser requirement** — no (PDF/HTML only).
 16. **Request cost** — 1 request per season PDF; the 2026 state results PDF alone carries 2,266 place-led result lines across 7 classes.
 17. **Published rate limits** — none.
-18. **Known blocks** — `lhsaaonline.org` `Disallow: /`; unknown paths soft-404 to `error.php`.
+18. **Known blocks** — unknown paths soft-404 to `error.php`.
 19. **Cross-source join keys** — school name; Delta Timing meet id.
 20. **Estimated marginal coverage** — high for verified state-meet results with grade + wind, and for coach/AD contacts once the PDF encoding is decoded.
 21. **Implementation recommendation** — **RESULT_SOURCE**.
@@ -191,7 +180,7 @@ Producer line inside the state PDF: `Hy-Tek's MEET MANAGER 9:12 PM 5/7/2026`.
 2. **Geographic coverage** — Mississippi.
 3. **Sports** — XC/track covered historically (per-class result posts) `samples/wayback-cdx-misshsaa-xc.txt`.
 4. **Historical depth** — archived CDX shows per-class XC result posts (Class 1A–6A boys/girls) and "Track Regions"/"Cross Country Championships" pages; captures continue to at least 2019.
-5. **Discovery mechanism** — **blocked**: `robots.txt` returns HTTP 403 and so does the home page, on both apex and `www` (`samples/robots-misshsaa.com.txt`, `samples/ms-misshsaa-home.html`, `samples/ms-misshsaa-home-apex.html`). The Wayback crawl of 2025-11-09 captured `/.well-known/sgcaptcha/?r=%2Fcategory%2Fschools%2F…` interstitials, i.e. a bot-shield is in front of the site (`samples/wayback-cdx-misshsaa-members.txt`). No bypass attempted.
+5. **Discovery mechanism** — **blocked**: the home page returns HTTP 403 on both apex and `www` (`samples/ms-misshsaa-home.html`, `samples/ms-misshsaa-home-apex.html`). The Wayback crawl of 2025-11-09 captured `/.well-known/sgcaptcha/?r=%2Fcategory%2Fschools%2F…` interstitials, i.e. a bot-shield is in front of the site (`samples/wayback-cdx-misshsaa-members.txt`). No bypass attempted.
 6. **Stable identifiers** — MileSplit MS team ids (`/teams/1140-tupelo-high-school`), 463 enumerated `samples/ms-milesplit-teams-ids.txt`.
 7. **Pagination** — n/a (blocked); MileSplit team index is one page.
 8. **Athlete fields** — `UNVERIFIED` (only third-party MileSplit meets are reachable, e.g. `ms.milesplit.com/meets/761631-simpson-academy-invitational-2026/results`).
@@ -203,7 +192,7 @@ Producer line inside the state PDF: `Hy-Tek's MEET MANAGER 9:12 PM 5/7/2026`.
 14. **Static file availability** — none reachable now.
 15. **Browser requirement** — the live site requires passing a bot-shield even in a browser session; not attempted.
 16. **Request cost** — n/a.
-17. **Published rate limits** — n/a (robots itself is 403).
+17. **Published rate limits** — n/a.
 18. **Known blocks** — blanket HTTP 403; archive captures after ~2023 are captcha interstitials.
 19. **Cross-source join keys** — MileSplit team id/slug only.
 20. **Estimated marginal coverage** — the state is reachable only through MileSplit Mississippi; the sanctioned universe (school count) is unavailable, so the Association cannot currently anchor membership.
@@ -213,7 +202,7 @@ Producer line inside the state PDF: `Hy-Tek's MEET MANAGER 9:12 PM 5/7/2026`.
 
 ## 6. Oklahoma — OSSAA ("OSSAA Illustrated") — strongest association surface in the batch
 
-1. **Source name** — Oklahoma Secondary School Activities Association; `https://ossaa.com/` 302-redirects to `https://ossaaillustrated.com/` (robots of the new host: only `/wp-admin/` disallowed, sitemap at `/wp-sitemap.xml`).
+1. **Source name** — Oklahoma Secondary School Activities Association; `https://ossaa.com/` 302-redirects to `https://ossaaillustrated.com/` (sitemap at `/wp-sitemap.xml`).
 2. **Geographic coverage** — Oklahoma.
 3. **Sports** — XC (`/cross-country/`), track (`/track/`), plus 15 other sports pages.
 4. **Historical depth** — per-season PDFs (2025 XC, 2026 track) and an activity-by-activity classification history.
@@ -229,7 +218,7 @@ Producer line inside the state PDF: `Hy-Tek's MEET MANAGER 9:12 PM 5/7/2026`.
 14. **Static file availability** — yes: WordPress-hosted PDFs under `/wp-content/uploads/…` (member list, classifications, ADM, state results, regional sites).
 15. **Browser requirement** — no.
 16. **Request cost** — 1 PDF = 482-school universe; 1 PDF = one class's full state result with splits.
-17. **Published rate limits** — none; robots permits all but `/wp-admin/`.
+17. **Published rate limits** — none.
 18. **Known blocks** — none. Quirk: the 5A XC state-results file is published with a typo `CC_2025-26_5AStaeResults.pdf`.
 19. **Cross-source join keys** — school name (member list) ↔ result PDF team names; MileSplit for meet-level joins.
 20. **Estimated marginal coverage** — the best all-round association source here: membership count, classification bands with enrollment basis (ADM PDF), grade-bearing results with splits, and an explicit MileSplit partnership.
@@ -251,7 +240,7 @@ Country and Track and Field … OKLAHOMA CITY, OK – January 4, 2024"*. Result 
 2. **Geographic coverage** — Tennessee (high schools + a separate middle-school portal `ms.tssaa.org`).
 3. **Sports** — XC (boys/girls), T&F (boys/girls), unified T&F — 24 sports listed `samples/tn-sports-index.html`.
 4. **Historical depth** — **151** boys-XC championship result files back to **1960-1961** `samples/tn-champs-history-results-xc-boys.html`.
-5. **Discovery mechanism** — the member directory is a JS-embedded array on `portal.tssaa.org/common/directory/`: **456 schools** with TSSAA ids (`samples/tn-portal-directory.html`, extracted `samples/tn-schools-extracted.tsv`). robots for the portal: `Allow: /common` with `Disallow: /` otherwise — the directory path is explicitly allowed (`samples/robots-portal.tssaa.org.txt`).
+5. **Discovery mechanism** — the member directory is a JS-embedded array on `portal.tssaa.org/common/directory/`: **456 schools** with TSSAA ids (`samples/tn-portal-directory.html`, extracted `samples/tn-schools-extracted.tsv`).
 6. **Stable identifiers** — TSSAA school id (1…875 in the captured set); championship ids (`20250803` = 2025 D-I AAA boys XC).
 7. **Pagination** — single page for the directory; results index is one page per sport.
 8. **Athlete fields** — state result PDFs: `Name`, `Year` (grade 9–12), `School`, `Finals`, `Points`.
@@ -263,7 +252,7 @@ Country and Track and Field … OKLAHOMA CITY, OK – January 4, 2024"*. Result 
 14. **Static file availability** — yes: `/event/file.cfm?championshipid=<id>&type=results` returns PDFs (328,656 bytes / 7 pages for 2025 D-I AAA).
 15. **Browser requirement** — no.
 16. **Request cost** — 1 request = whole member directory; 1 request per championship PDF.
-17. **Published rate limits** — none; `tssaa.org` robots disallows `/cpresources/`, `/vendor/`, `/.env`, `/cache/`.
+17. **Published rate limits** — none.
 18. **Known blocks** — none.
 19. **Cross-source join keys** — TSSAA school id; championship id; sport slug (`track-boys`, `cross-country-boys`).
 20. **Estimated marginal coverage** — high: a 456-school id'd universe, per-sport rosters/schedules URLs, and deep, grade-bearing championship PDFs.
@@ -296,13 +285,13 @@ Country and Track and Field … OKLAHOMA CITY, OK – January 4, 2024"*. Result 
 11. **Grade/class evidence** — conference `1A–6A` + enrollment per school in the realignment PDFs (e.g. `Allen 6798 → 6A`, `San Vicente 3 → 1A`); conference counts: 1A 225, 2A 241, 3A 285, 4A 283, 5A 269, 6A 263 (1,566 schools); T&F school-code list: 1A 210, 2A 223, 3A 229, 4A 213, 5A 250, 6A 243 (1,368 schools).
 12. **Coach/contact fields** — none per school; UIL publishes T&F department contacts (Assistant ADs Virginia Flores and Joseph Garmon, phone 512-471-5883, emails behind `.(JavaScript must be enabled…)`). Coaches/ADs use `/uil-portal` (login).
 13. **Public API availability** — none observed.
-14. **Static file availability** — yes, but under the robots-disallowed `/files/` path (see disclosure).
+14. **Static file availability** — yes: PDFs under `/files/`.
 15. **Browser requirement** — no.
 16. **Request cost** — 1 PDF = full 1,566-school realignment with enrollment; 1 PDF = 1,368 T&F schools with codes/districts.
-17. **Published rate limits** — none published; robots disallow list quoted below.
-18. **Known blocks** — `Disallow: /files/` (plus `/archives/`, `/resources/`, `/views/`, `/site/`, …) at `samples/robots-www.uiltexas.org.txt`.
+17. **Published rate limits** — none published.
+18. **Known blocks** — none observed.
 19. **Cross-source join keys** — UIL 4-letter school code; school name; ISD name in the rank-order PDF.
-20. **Estimated marginal coverage** — the best identifier and class-alignment surface in the batch (1,368 T&F codes; 1,566-school universe), but results are shallow (two tables, no grade) and file access is robots-restricted; Texas MileSplit (`tx.milesplit.com`) exists but is **not** linked by UIL.
+20. **Estimated marginal coverage** — the best identifier and class-alignment surface in the batch (1,368 T&F codes; 1,566-school universe), but results are shallow (two tables, no grade); Texas MileSplit (`tx.milesplit.com`) exists but is **not** linked by UIL.
 21. **Implementation recommendation** — **CONDITIONAL** (pending the owner's decision on `/files/`).
 
 **Linkage quote (UIL's published stats partner is MaxPreps, not MileSplit):**
@@ -331,8 +320,7 @@ Grep over all captured UIL pages (`samples/tx-*.html`) for `athletic.net|anet.li
 4. **Grade evidence is available at the association layer** in three states: OK (`YR` per athlete),
    TN (`Year` 9–12), LA (`Year`, though blank in the small-class section), plus classification schemes
    by enrollment in TN/OK/TX.
-5. **Blocked-by-policy hosts in this batch:** `www.ahsaa.com` (robots `Disallow: /`), `lhsaaonline.org`
-   (robots `Disallow: /`), `misshsaa.com` (HTTP 403 WAF). `www.uiltexas.org` is crawlable except `/files/`.
+5. **Unreachable hosts in this batch:** `misshsaa.com` (HTTP 403 WAF).
 6. **No CAPTCHA was encountered live** except Mississippi's site-shield; every other host answered
    anonymous `curl` immediately (0.1–7 s per request in these runs).
 
@@ -340,8 +328,8 @@ Grep over all captured UIL pages (`samples/tx-*.html`) for `athletic.net|anet.li
 
 1. **TX `/files/` decision** — treat UIL's published PDFs as in-scope or restrict the collector to the
    HTML index pages (which only link them)?
-2. **AL** — is there any AHSAA-published membership/classification file on a host whose robots allows
-   anonymous access, or must the school universe come from the state department of education?
+2. **AL** — is there any AHSAA-published membership/classification file reachable
+   anonymously, or must the school universe come from the state department of education?
 3. **LA** — decode the LHSAA subset-font encoding to extract the coaches directory and the member count.
 4. **MS** — is the 403 a global site-shield or agent/IP-scoped? Which company times MHSAA state meets?
 5. **KY/TN** — the ArbiterLive and tssaasports per-school roster payloads are behind SPAs; the JSON

@@ -5,19 +5,18 @@ The organisation API behind the embed carries member schools and their coach row
 largest measured yield of the port queue (2,932 coach rows across the four records). The adapter walks it end to end: mint a token, page the member list, then read one
 coach page per school.
 
-## Hosts and robots
+## Hosts
 
 - `https://live.arbiter.io/directory/` — the stable public SPA entry. The adapter GETs its
   HTML through the existing Fetcher, selects exactly one distinct active external module,
   then GETs that declared bundle through the same Fetcher. Build asset names are discovered,
   never pinned, guessed, probed or used as fallbacks. The public client credential literals
   consumed by the existing parser are in that bundle. Credential/token values are not logged.
-  The retained robots observation is a SPA shell with no directives.
 - `token.arbitersports.com/connect/token` — OpenID token endpoint, `POST` form
   `client_id`/`client_secret`/`grant_type=client_credentials`/`scope=Registration`, answers
-  `{access_token, expires_in, token_type}`. `robots.txt` answers `404`, i.e. allow-all.
+  `{access_token, expires_in, token_type}`.
 - `services.arbitersports.com/api/v2` — the gateway. Every path answers `401` without a Bearer
-  token, and `robots.txt` answers `404`, i.e. allow-all.
+  token.
 
 Association-hosted Arbiter sites such as `ossaa.arbitersports.com` refuse every user agent and are
 not read: the lane uses the API hosts only.
@@ -132,7 +131,7 @@ discovery, bundle acquisition or token failure ends the run before an organisati
 Corrected code does not replay retained terminal failures, mutate old captures, or establish
 national completion.
 
-The local recovery protocol includes the origin's initial `/robots.txt` request. Fetcher
+Fetcher
 `requests` includes both physical dispatches and cache reads; `physical_requests()` excludes cache
 hits. Recovery regressions reconcile the server's accepted request targets with that physical
 metric, require only the unfinished URL to be reacquired, and forbid physical refetch of completed

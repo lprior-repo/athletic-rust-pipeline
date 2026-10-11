@@ -1,8 +1,0 @@
-User-agent: *
-Disallow: /brackets/
-Disallow: /teams/
-Disallow: /forms/
-Disallow: /contests/
-Disallow: /mobile/
-Disallow: /demo/
-Disallow: /dev/

@@ -26,12 +26,11 @@ publishes no coach email address, so it confirms rather than supplies contacts.
   `the_gobound_staff_walk_is_planned_for_iowa_and_south_dakota_only` asserts both states plan it as
   sweepable and that Nebraska and Minnesota do not.
 
-## Robots and admission
+## User agent and admission
 
-- `https://www.gobound.com/robots.txt` answers **403** to the `census-service` default user agent —
-  as does every content path — and 200 to a browser-class user agent. The fetched policy allows the
-  staff paths with `Crawl-Delay: 10` and disallows the `/*directory` paths; the adapter sends a
-  browser-class user agent as a per-request header and never fetches a directory path.
+- `https://www.gobound.com` answers **403** to the `census-service` default user agent — as does
+  every content path — and 200 to a browser-class user agent. The adapter sends a browser-class
+  user agent as a per-request header and never fetches a directory path.
 - The per-request user agent must keep the compact form
   `Mozilla/5.0 (…) Chrome/126.0 Safari/537.36 census-service/0.1`. Measured 2026-10-07 on
   `/ia/schools`: a parenthesized comment tail — `(independent HS track & field research collector;
@@ -41,8 +40,8 @@ publishes no coach email address, so it confirms rather than supplies contacts.
   there, which is why the constant carries no comment.
 - The descriptor admits `www.gobound.com` at `CRAWL_DELAY_TEN_RPS`, and the host table in
   `crates/census-crawl/src/lib.rs` records 10 s for both `gobound.com` and `www.gobound.com`. The
-  shared fetcher's host gate takes the maximum of configured, robots and declared delays, so the
-  published crawl delay is inherited without an adapter-local sleep.
+  shared fetcher's host gate takes the maximum of configured and declared delays, so the host
+  pacing is inherited without an adapter-local sleep.
 - Non-200 is absence, not an error: bound slugs without a school answer 404 with a byte-identical
   `Bound` title stub and contribute no rows.
 
@@ -112,6 +111,6 @@ which is its point — a body that stops parsing fails the verb rather than prin
   this wiring and cannot execute it.
 - Fixture captures come from the prototype crawl cache, which records no capture timestamp, so no
   freshness claim attaches to them; the `403`/`200` user-agent split was re-measured live on
-  2026-10-07 with `curl` against `/robots.txt` and a staff path.
-- The robots-observed interval and per-request pacing of a live collector run are counted in the
-  fetcher's own statistics, not re-measured here.
+  2026-10-07 with `curl` against a staff path.
+- The per-request pacing of a live collector run is counted in the fetcher's own statistics, not
+  re-measured here.

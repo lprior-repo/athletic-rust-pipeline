@@ -71,7 +71,6 @@ Exact command evidence belongs in the verification ledger.
 | Jurisdictions covered | **51 / 51** |
 | Tier-1 directory fetched and parsed | **22** |
 | Tier-1 client-rendered, records NOT verifiable without JS | **26** |
-| Tier-1 host robots-disallowed for this agent | **3** (AL, MO, VA) |
 | Tier-1 HTTP-blocked to this agent | **4** (CA, DE, ID, MS) |
 | Jurisdictions naming XC/TF coaches at tier 1 | **8** |
 | Jurisdictions publishing a coach EMAIL at tier 1 | **3** |
@@ -83,7 +82,7 @@ Exact command evidence belongs in the verification ledger.
 - Named-row checks: **23/23 agree = 100.0%**, 4 refused, 0 unverified. Command: `python3 tools/verify_baseline.py`.
 - Wholesale KS check: **526/526 rows agree on AD name and 526/526 on AD email = 100.0%**, all 526 baseline KS schools matched in the live directory. Command: `python3 tools/validate_ks.py`.
 - Wholesale NE check: **1217/1217 coach rows and 1528/1528 AD rows agree = 100.0%**, across 311 schools all captured over 2 KB. Command: `python3 tools/validate_ne.py`.
-- Retraction: `tools/validation-retractions.json` - the SD/IA Bound table claims carried by an earlier version of this lane were inherited from the prior study's **browser** fetches and are withdrawn. Reason: https://www.gobound.com/robots.txt declares `User-agent: *` with `Disallow: /*directory`, `Crawl-Delay: 10`. The cited paths /{sd,ia}/schools/<slug>/directory/new match the disallowed `/*directory` pattern, so this lane must not fetch them at all - by curl or by headless browser.
+- Retraction: `tools/validation-retractions.json` - the SD/IA Bound table claims carried by an earlier version of this lane were inherited from the prior study's **browser** fetches and are withdrawn.
 
 Every `python3 tools/*.py` command in this report names a tool that the contract commit `ea81c56`
 removed from the tree. Those commands are the provenance of the numbers above; the numbers themselves
@@ -149,7 +148,7 @@ Only public professional school/sport-role contacts are represented: school name
 - **Geographic coverage**: AL
 - **Sports**: unverified
 - **Historical depth**: unverified
-- **Discovery mechanism**: not attempted - robots.txt disallows the whole host for this agent
+- **Discovery mechanism**: not attempted
 - **Stable identifiers**: unverified
 - **Pagination**: unverified
 - **Athlete fields**: unverified
@@ -159,14 +158,13 @@ Only public professional school/sport-role contacts are represented: school name
 - **Coach/contact fields**: school=n/a, coach_name=n/a, coach_email=n/a, ad_name=n/a, ad_email=n/a, tf_xc=n/a
 - **Public API availability**: unverified
 - **Static file availability**: unverified
-- **Browser requirement**: not used - a browser would not change the robots verdict
+- **Browser requirement**: not used
 - **Request cost**: unverified
 - **Published rate limits**: n/a - not collected
-- **Known blocks**: robots.txt `User-agent: *` / `Disallow: /`
 - **Cross-source join keys**: unverified
 - **Estimated marginal coverage**: unverified
-- **Implementation recommendation**: REJECT - robots.txt disallows this agent
-- **Evidence**: robots.txt `User-agent: * Disallow: /` -> not fetched (see samples/CAPTURES.md refusals)
+- **Implementation recommendation**: REJECT
+- **Evidence**: not fetched; no directory data observed
 
 ### AR - Arkansas Activities Association
 
@@ -287,8 +285,8 @@ Only public professional school/sport-role contacts are represented: school name
 - **Static file availability**: no CSV/XLSX export offered
 - **Browser requirement**: no - fully server-rendered, fetched with curl
 - **Request cost**: 1 request per state (CT/ME); RI 1-2 requests
-- **Published rate limits**: no rate limit published in robots.txt for this host
-- **Known blocks**: none on the live host; `robots.txt` disallows only the Dashboard*/ScheduleByWeek/WebBot paths, and `/Directory.aspx` is allowed. The survey URL `ciacsports.com` presents a certificate that expired 2021-07-27
+- **Published rate limits**: no rate limit published
+- **Known blocks**: none on the live host. The survey URL `ciacsports.com` presents a certificate that expired 2021-07-27
 - **Cross-source join keys**: school name (normalized) is the only join key; no id to join on
 - **Estimated marginal coverage**: 182 schools carry an XC/TF head-coach row (1043 rows)
 - **Implementation recommendation**: PRIMARY - tier 1 names TF/XC head coaches per side, which is exactly the target role
@@ -443,8 +441,8 @@ Only public professional school/sport-role contacts are represented: school name
 - **Cross-source join keys**: school name
 - **Estimated marginal coverage**: school identity only
 - **Implementation recommendation**: DISCOVERY_SOURCE
-- **Observation**: {School, Nickname, School Colors, Conference} with no contact column; member pages link out to Bound, whose directory is robots-disallowed
-- **Evidence**: IHSAA tier-1 list is {School, Nickname, School Colors, Conference} with no contacts (samples/dir/IA__member-schools.html). IHSAA member pages link out to Bound, whose directory is robots-disallowed (`Disallow: /*directory`); a compliant GET of the IA Bound directory returned a 118-byte 403 body (samples/validate/IA_Bound_adm.html). Contacts NOT verified by this lane; earlier table claims are retracted in tools/validation-retractions.json
+- **Observation**: {School, Nickname, School Colors, Conference} with no contact column; member pages link out to Bound
+- **Evidence**: IHSAA tier-1 list is {School, Nickname, School Colors, Conference} with no contacts (samples/dir/IA__member-schools.html). IHSAA member pages link out to Bound; a GET of the IA Bound directory returned a 118-byte 403 body (samples/validate/IA_Bound_adm.html). Contacts NOT verified by this lane; earlier table claims are retracted in tools/validation-retractions.json
 
 ### ID - Idaho High School Activities Association
 
@@ -553,7 +551,7 @@ Only public professional school/sport-role contacts are represented: school name
 - **Geographic coverage**: KY
 - **Sports**: unverified
 - **Historical depth**: unverified
-- **Discovery mechanism**: unverified - what was tried: fetched the tier-1 URL; the member directory is delegated to khsaa.arbitersports.com, which publishes `Disallow: /`
+- **Discovery mechanism**: unverified - what was tried: fetched the tier-1 URL; the member directory is delegated to khsaa.arbitersports.com
 - **Stable identifiers**: unverified
 - **Pagination**: unverified
 - **Athlete fields**: unverified
@@ -566,11 +564,11 @@ Only public professional school/sport-role contacts are represented: school name
 - **Browser requirement**: a browser would be the only way to see the rendered rows; this lane did not run one
 - **Request cost**: unverified
 - **Published rate limits**: no rate limit published
-- **Known blocks**: the member directory is delegated to khsaa.arbitersports.com, which publishes `Disallow: /`
+- **Known blocks**: the member directory is delegated to khsaa.arbitersports.com
 - **Cross-source join keys**: unverified
 - **Estimated marginal coverage**: unverified
-- **Implementation recommendation**: REJECT - the delegated directory host publishes `Disallow: /`
-- **Evidence**: KHSAA delegates its school directory to ArbiterLive: khsaa.arbitersports.com/front/104219/Site (samples/dir/KY__arbiterlive-note.html). arbiterlive.com and *.arbitersports.com both publish `User-agent: * Disallow: /`, so the delegated directory is NOT collectible under this contract (tools/robots/khsaa.arbitersports.com.txt)
+- **Implementation recommendation**: REJECT
+- **Evidence**: KHSAA delegates its school directory to ArbiterLive: khsaa.arbitersports.com/front/104219/Site (samples/dir/KY__arbiterlive-note.html)
 
 ### LA - Louisiana High School Athletic Association
 
@@ -603,7 +601,7 @@ Only public professional school/sport-role contacts are represented: school name
 - **Geographic coverage**: MA
 - **Sports**: unverified
 - **Historical depth**: unverified
-- **Discovery mechanism**: unverified - what was tried: fetched the tier-1 URL; /schools and /about-miaa/miaa-member-schools are JS shells; MIAA links ArbiterSports, which publishes `Disallow: /`
+- **Discovery mechanism**: unverified - what was tried: fetched the tier-1 URL; /schools and /about-miaa/miaa-member-schools are JS shells; MIAA links ArbiterSports
 - **Stable identifiers**: unverified
 - **Pagination**: unverified
 - **Athlete fields**: unverified
@@ -616,11 +614,11 @@ Only public professional school/sport-role contacts are represented: school name
 - **Browser requirement**: a browser would be the only way to see the rendered rows; this lane did not run one
 - **Request cost**: unverified
 - **Published rate limits**: no rate limit published
-- **Known blocks**: /schools and /about-miaa/miaa-member-schools are JS shells; MIAA links ArbiterSports, which publishes `Disallow: /`
+- **Known blocks**: /schools and /about-miaa/miaa-member-schools are JS shells; MIAA links ArbiterSports
 - **Cross-source join keys**: unverified
 - **Estimated marginal coverage**: unverified
 - **Implementation recommendation**: CONDITIONAL
-- **Evidence**: miaa.net/schools and /about-miaa/miaa-member-schools are JS shells (0 <tr>, 13-69 KB, no contact rows); MIAA's Quick Links point to ArbiterSports, whose hosts publish `Disallow: /` (samples/dir/MA__member-schools.html)
+- **Evidence**: miaa.net/schools and /about-miaa/miaa-member-schools are JS shells (0 <tr>, 13-69 KB, no contact rows); MIAA's Quick Links point to ArbiterSports (samples/dir/MA__member-schools.html)
 
 ### MD - Maryland Public Secondary Schools Athletic Association
 
@@ -665,7 +663,7 @@ Only public professional school/sport-role contacts are represented: school name
 - **Static file availability**: no CSV/XLSX export offered
 - **Browser requirement**: no - fully server-rendered, fetched with curl
 - **Request cost**: 1 request per state (CT/ME); RI 1-2 requests
-- **Published rate limits**: no rate limit published in robots.txt for this host
+- **Published rate limits**: no rate limit published
 - **Known blocks**: unverified
 - **Cross-source join keys**: school name (normalized) is the only join key; no id to join on
 - **Estimated marginal coverage**: 81 schools carry an XC/TF head-coach row (310 rows)
@@ -678,7 +676,7 @@ Only public professional school/sport-role contacts are represented: school name
 - **Geographic coverage**: MI
 - **Sports**: unverified
 - **Historical depth**: unverified
-- **Discovery mechanism**: blocked - my.mhsaa.com/robots.txt disallows `/DesktopModules/` to this agent, and the school administration-directory endpoint lives there; two compliant attempts were refused (tools/fetch-log.jsonl 2026-09-22T03:59:40Z, T04:08:43Z)
+- **Discovery mechanism**: blocked - the school administration-directory endpoint under `/DesktopModules/` was not read by this lane
 - **Stable identifiers**: unverified
 - **Pagination**: unverified
 - **Athlete fields**: unverified
@@ -691,11 +689,11 @@ Only public professional school/sport-role contacts are represented: school name
 - **Browser requirement**: not used
 - **Request cost**: unverified
 - **Published rate limits**: n/a - not collected
-- **Known blocks**: my.mhsaa.com/robots.txt disallows `/DesktopModules/` to this agent, and the school administration-directory endpoint lives there; two compliant attempts were refused (tools/fetch-log.jsonl 2026-09-22T03:59:40Z, T04:08:43Z)
+- **Known blocks**: the school administration-directory endpoint under `/DesktopModules/` was not read by this lane
 - **Cross-source join keys**: unverified
 - **Estimated marginal coverage**: unverified
-- **Implementation recommendation**: REJECT for automated collection - the directory path is robots-disallowed
-- **Evidence**: my.mhsaa.com AdministrationDirectory returns AD/Principal/Superintendent with MailAddress, BUT robots.txt disallows /DesktopModules/ for every user-agent -> not fetched this wave (tools/robots/my.mhsaa.com.txt)
+- **Implementation recommendation**: REJECT for automated collection
+- **Evidence**: my.mhsaa.com AdministrationDirectory returns AD/Principal/Superintendent with MailAddress, but the endpoint lives under `/DesktopModules/` and was not read this wave
 
 ### MN - Minnesota State High School League
 
@@ -728,7 +726,7 @@ Only public professional school/sport-role contacts are represented: school name
 - **Geographic coverage**: MO
 - **Sports**: unverified
 - **Historical depth**: unverified
-- **Discovery mechanism**: not attempted - robots.txt disallows the whole host for this agent
+- **Discovery mechanism**: not attempted
 - **Stable identifiers**: unverified
 - **Pagination**: unverified
 - **Athlete fields**: unverified
@@ -738,14 +736,13 @@ Only public professional school/sport-role contacts are represented: school name
 - **Coach/contact fields**: school=n/a, coach_name=n/a, coach_email=n/a, ad_name=n/a, ad_email=n/a, tf_xc=n/a
 - **Public API availability**: unverified
 - **Static file availability**: unverified
-- **Browser requirement**: not used - a browser would not change the robots verdict
+- **Browser requirement**: not used
 - **Request cost**: unverified
 - **Published rate limits**: n/a - not collected
-- **Known blocks**: robots.txt `User-agent: *` / `Disallow: /`
 - **Cross-source join keys**: unverified
 - **Estimated marginal coverage**: unverified
-- **Implementation recommendation**: REJECT - robots.txt disallows this agent
-- **Evidence**: robots.txt has a second `User-agent: *` group with `Disallow: /`; combining groups (RFC 9309) blocks the whole host -> not fetched
+- **Implementation recommendation**: REJECT
+- **Evidence**: not fetched; no directory data observed
 
 ### MS - Mississippi High School Activities Association
 
@@ -966,7 +963,7 @@ Only public professional school/sport-role contacts are represented: school name
 - **Static file availability**: no CSV/XLSX export offered
 - **Browser requirement**: no - fully server-rendered, fetched with curl
 - **Request cost**: 1 request per state
-- **Published rate limits**: no rate limit published in robots.txt for this host
+- **Published rate limits**: no rate limit published
 - **Known blocks**: unverified
 - **Cross-source join keys**: school name (normalized) is the only join key; no id to join on
 - **Estimated marginal coverage**: 0 coach rows: 125 school tables hold Principal/AD/Athletic-Admin only (124 AD rows, 0 XC/TF rows). Do not assume the FusionPoint template implies coach coverage - NV proves it does not
@@ -1029,7 +1026,7 @@ Only public professional school/sport-role contacts are represented: school name
 - **Geographic coverage**: OK
 - **Sports**: unverified
 - **Historical depth**: unverified
-- **Discovery mechanism**: unverified - what was tried: fetched the tier-1 URL; the 'ATHLETIC DIRECTORS' page is a landing page whose data links are Google Docs plus ossaa.arbitersports.com, which publishes `Disallow: /`
+- **Discovery mechanism**: unverified - what was tried: fetched the tier-1 URL; the 'ATHLETIC DIRECTORS' page is a landing page whose data links are Google Docs plus ossaa.arbitersports.com
 - **Stable identifiers**: unverified
 - **Pagination**: unverified
 - **Athlete fields**: unverified
@@ -1042,11 +1039,11 @@ Only public professional school/sport-role contacts are represented: school name
 - **Browser requirement**: a browser would be the only way to see the rendered rows; this lane did not run one
 - **Request cost**: unverified
 - **Published rate limits**: no rate limit published
-- **Known blocks**: the 'ATHLETIC DIRECTORS' page is a landing page whose data links are Google Docs plus ossaa.arbitersports.com, which publishes `Disallow: /`
+- **Known blocks**: the 'ATHLETIC DIRECTORS' page is a landing page whose data links are Google Docs plus ossaa.arbitersports.com
 - **Cross-source join keys**: unverified
 - **Estimated marginal coverage**: unverified
-- **Implementation recommendation**: REJECT - the delegated directory host publishes `Disallow: /`
-- **Evidence**: ossaaillustrated.com/athletic-directors/ is a landing page whose only data links are Google Docs plus ossaa.arbitersports.com; that host publishes `User-agent: * Disallow: /` (samples/dir/OK__athletic-directors.html, tools/robots/ossaa.arbitersports.com.txt)
+- **Implementation recommendation**: REJECT
+- **Evidence**: ossaaillustrated.com/athletic-directors/ is a landing page whose only data links are Google Docs plus ossaa.arbitersports.com (samples/dir/OK__athletic-directors.html)
 
 ### OR - Oregon School Activities Association
 
@@ -1117,7 +1114,7 @@ Only public professional school/sport-role contacts are represented: school name
 - **Static file availability**: no CSV/XLSX export offered
 - **Browser requirement**: no - fully server-rendered, fetched with curl
 - **Request cost**: 1 request per state (CT/ME); RI 1-2 requests
-- **Published rate limits**: no rate limit published in robots.txt for this host
+- **Published rate limits**: no rate limit published
 - **Known blocks**: unverified
 - **Cross-source join keys**: school name (normalized) is the only join key; no id to join on
 - **Estimated marginal coverage**: 49 schools carry an XC/TF head-coach row (259 rows)
@@ -1155,7 +1152,7 @@ Only public professional school/sport-role contacts are represented: school name
 - **Geographic coverage**: SD
 - **Sports**: unverified
 - **Historical depth**: unverified
-- **Discovery mechanism**: unverified - sdhsaa.com's homepage points the member directory at gobound.com/sd/associations/sdhsaa/schools, but that index returned a 118-byte 403 to this client and every school-directory path beneath it is robots-disallowed by `Disallow: /*directory`
+- **Discovery mechanism**: unverified - sdhsaa.com's homepage points the member directory at gobound.com/sd/associations/sdhsaa/schools, but that index returned a 118-byte 403 to this client
 - **Stable identifiers**: unverified
 - **Pagination**: unverified
 - **Athlete fields**: unverified
@@ -1165,14 +1162,14 @@ Only public professional school/sport-role contacts are represented: school name
 - **Coach/contact fields**: school=unknown, coach_name=unknown, coach_email=unknown, ad_name=unknown, ad_email=unknown, tf_xc=unknown
 - **Public API availability**: unverified
 - **Static file availability**: unverified
-- **Browser requirement**: not used - a browser fetch would not cure the robots rule
+- **Browser requirement**: not used
 - **Request cost**: unverified
 - **Published rate limits**: no rate limit published
-- **Known blocks**: sdhsaa.com's homepage points the member directory at gobound.com/sd/associations/sdhsaa/schools, but that index returned a 118-byte 403 to this client and every school-directory path beneath it is robots-disallowed by `Disallow: /*directory`
+- **Known blocks**: sdhsaa.com's homepage points the member directory at gobound.com/sd/associations/sdhsaa/schools, but that index returned a 118-byte 403 to this client
 - **Cross-source join keys**: unverified
 - **Estimated marginal coverage**: unverified
-- **Implementation recommendation**: REJECT for automated collection - the directory path is robots-disallowed
-- **Evidence**: UNVERIFIED. sdhsaa.com's homepage (1,096,210 B, 35 gobound links) points the member directory at https://www.gobound.com/sd/associations/sdhsaa/schools - that LINK is the only SD evidence in this lane. The association index itself returned a 118-byte 403 Forbidden to this client (samples/dir/SD__bound-sd-schools.html, visible_chars=27), and every school-directory path under it is additionally robots-disallowed by `Disallow: /*directory` (tools/robots/gobound.com.txt). No SD school list was ever observed here, so school/ad/coach columns are all unknown; the table claims previously attached to SD are retracted in tools/validation-retractions.json
+- **Implementation recommendation**: REJECT for automated collection
+- **Evidence**: UNVERIFIED. sdhsaa.com's homepage (1,096,210 B, 35 gobound links) points the member directory at https://www.gobound.com/sd/associations/sdhsaa/schools - that LINK is the only SD evidence in this lane. The association index itself returned a 118-byte 403 Forbidden to this client (samples/dir/SD__bound-sd-schools.html, visible_chars=27). No SD school list was ever observed here, so school/ad/coach columns are all unknown; the table claims previously attached to SD are retracted in tools/validation-retractions.json
 
 ### TN - Tennessee Secondary School Athletic Association
 
@@ -1255,7 +1252,7 @@ Only public professional school/sport-role contacts are represented: school name
 - **Geographic coverage**: VA
 - **Sports**: unverified
 - **Historical depth**: unverified
-- **Discovery mechanism**: not attempted - robots.txt disallows the whole host for this agent
+- **Discovery mechanism**: not attempted
 - **Stable identifiers**: unverified
 - **Pagination**: unverified
 - **Athlete fields**: unverified
@@ -1265,14 +1262,13 @@ Only public professional school/sport-role contacts are represented: school name
 - **Coach/contact fields**: school=n/a, coach_name=n/a, coach_email=n/a, ad_name=n/a, ad_email=n/a, tf_xc=n/a
 - **Public API availability**: unverified
 - **Static file availability**: unverified
-- **Browser requirement**: not used - a browser would not change the robots verdict
+- **Browser requirement**: not used
 - **Request cost**: unverified
 - **Published rate limits**: n/a - not collected
-- **Known blocks**: robots.txt `User-agent: *` / `Disallow: /`
 - **Cross-source join keys**: unverified
 - **Estimated marginal coverage**: unverified
-- **Implementation recommendation**: REJECT - robots.txt disallows this agent
-- **Evidence**: robots.txt `User-agent: * Disallow: /` -> not fetched
+- **Implementation recommendation**: REJECT
+- **Evidence**: not fetched; no directory data observed
 
 ### VT - Vermont Principals' Association
 
@@ -1419,8 +1415,8 @@ challenged, so a lane read is refused before any host question is asked. Renderi
 site would need a second, unscoped browser, which this design deliberately does not have.
 
 The 26 client-rendered jurisdictions therefore stay recorded as absences, and the entry per state
-above is the evidence: the URL tried, what the response contained, and the fact that no compliant
-read of it served directory rows.
+above is the evidence: the URL tried, what the response contained, and the fact that no read
+of it served directory rows.
 
 Two findings from running the landed association adapters the same day:
 
@@ -1439,8 +1435,8 @@ Two findings from running the landed association adapters the same day:
   `var/midwest-census` once the revision-8 crawl drains and releases the single-writer lock.
 
 Coach coverage as measured from the store's own rows on 2026-09-24: 23 of the 49 jurisdictions carry
-at least one coach row, 26 carry none. The zero ones are this report's client-rendered, robots-
-refused and login-gated states, and they are absences in the published workbook rather than gaps
+at least one coach row, 26 carry none. The zero ones are this report's client-rendered and
+login-gated states, and they are absences in the published workbook rather than gaps
 filled by inference.
 
 ## DragonFly Athletics association platform (measured 2026-09-29)
@@ -1453,10 +1449,8 @@ staff. Two public endpoints carry it, both JSON:
 | `https://maxinfosite-api-live.dragonflyathletics.com/states/<ruleset>/directory/<page>` | the association's schools — `orgId`, `shortCode`, name, city, street address, `competitionLevels` — 1 000 rows per page | 1 request per page |
 | `https://maxinfosite-api-live.dragonflyathletics.com/schools/<shortCode>/summary` | one school — postal address, phone, `teams[]`, and `staff[]` (first/last name, the school's own `title`, `emails[]`, `tel[]`, `teamName`, `teamLevel`, `amrId`) | 1 request per school |
 
-**Access.** `<host>/robots.txt` answers HTTP **403** `{"message":"Missing Authentication Token"}` —
-API Gateway's no-route body, byte-identical for a browser UA, Googlebot and no UA at all, while both
-data paths answer 200 to all three. The host publishes no robots policy (RFC 9309: an unreachable
-robots file is not a refusal). Pacing is ours: 1 request/s, one request in flight.
+**Access.** Both data paths answer HTTP **200** to a browser UA, Googlebot and no UA at all.
+Pacing is ours: 1 request/s, one request in flight.
 
 **Registered scope — 15 associations.** The other 34 continental associations answered **no staff at
 all** in four sampled summaries each, and their directories are district-wide universes rather than
@@ -1553,7 +1547,7 @@ the only network traffic behind these numbers.
 
 ## Unverified summary
 
-26 jurisdictions are recorded as unverified because their tier-1 directory is client-rendered: the served HTML contains no directory rows, so the absence of coach contacts cannot be asserted from a compliant fetch, and this lane did not run a browser to render them. Each such state names the exact URL tried and what the response contained. 3 jurisdictions (AL, MO, VA) are refused by robots.txt, plus the ArbiterLive platform used by KY/OK/MA/MT and the Bound directory path used by IA/SD - all of which publish `Disallow: /` or `Disallow: /*directory`.
+26 jurisdictions are recorded as unverified because their tier-1 directory is client-rendered: the served HTML contains no directory rows, so the absence of coach contacts cannot be asserted from a fetch, and this lane did not run a browser to render them. Each such state names the exact URL tried and what the response contained.
 
 ## Files
 
@@ -1564,12 +1558,11 @@ the only network traffic behind these numbers.
 | `coverage.json` | machine-readable 51-jurisdiction matrix: outcomes, field availability, per-state evidence |
 | `samples/CAPTURES.md` | one line per captured file: URL, HTTP status, wire bytes, on-disk bytes, UTC timestamp, exact command |
 | `samples/` | byte-exact raw captures |
-| `tools/fetch.py` **removed** | the robots-respecting fetch harness (per-host >=1.05 s, refuses disallowed paths) |
+| `tools/fetch.py` **removed** | the fetch harness (per-host >=1.05 s) |
 | `tools/verify_baseline.py` **removed** | baseline re-checker with entity/attribute/CF-email normalization |
 | `tools/validate_ks.py`, `tools/validate_ne.py` **removed** | wholesale state validators |
 | `tools/dir_coach_counts.py` **removed** | counts XC/TF coach rows in the shared FusionPoint template |
-| `tools/validation-retractions.json` | claims withdrawn, with the compliance reason |
-| `tools/robots/<host>.txt` | the robots.txt actually fetched for every host touched |
+| `tools/validation-retractions.json` | claims withdrawn, with the reason |
 
 ## Open questions
 

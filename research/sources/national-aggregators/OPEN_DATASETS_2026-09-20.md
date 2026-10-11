@@ -16,8 +16,8 @@ families this lane owns, not as a current plan. The current multi-state database
 | GitHub `JPcheco/stonehill-tfrrs-scraper` published CSV | NO-LICENSE | 6,135,057 B `performances_normalized.csv` | Schema reference only; unlicensed, and the source named by this project's no-scraper direction means the code path is out of scope |
 | HuggingFace dataset search | — | 5 saved searches | No track & field / TFRRS / XC corpus exists |
 | Zenodo / Figshare / archive.org / data.gov CKAN | — | APIs reachable | Zenodo's 4.4M hits are papers, not data; Figshare returns no TF/XC sports datasets; `catalog.data.gov` CKAN API 404s; archive.org holds meet-day uploads only |
-| `stats.ncaa.org` | — | — | `robots.txt` `Disallow: /`; college-only even where reachable |
-| `opentrack.run` | — | — | robots response carried `cf-mitigated: challenge` (browser required); this lane's `SOURCE_REPORT.md` records it as REJECT |
+| `stats.ncaa.org` | — | — | College-only |
+| `opentrack.run` | — | — | `cf-mitigated: challenge` (browser required); this lane's `SOURCE_REPORT.md` records it as REJECT |
 | OpenSplitTime `api/v1/events` | — | 401 "You need to sign in" | Self-hostable OSS, no HS corpus; API is authenticated |
 
 Adversarial checks recorded in the same session:

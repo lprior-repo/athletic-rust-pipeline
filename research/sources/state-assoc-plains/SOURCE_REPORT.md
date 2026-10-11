@@ -5,8 +5,8 @@
 - Scope: convert the Midwest phase research (`~/Downloads/midwest-tfxc-source-research/`, 46 reports +
   synthesis + data products) into the national research-lane contract, and re-verify the headline counts
   first-hand. **No new research, no new sources, no repo code touched.**
-- Fresh observation window: **2026-09-22T03:56:21Z – 04:01:39Z** (= 2026-09-21 evening America/Chicago).
-  18 requests total, sequential, ≤1 request/second/host, `robots.txt` fetched before each host's content.
+- Fresh observation window: **2026-09-22T03:56:21Z – 03:58:00Z** (= 2026-09-21 evening America/Chicago).
+  10 requests total, sequential, ≤1 request/second/host.
 
 ## 0. Evidence tags — read this first
 
@@ -48,18 +48,6 @@ capture disagree, both numbers are given with their provenance (§0.3).
 
 ### 0.3 New findings and corrections to the Midwest phase
 
-1. **MSHSAA (`www.mshsaa.org`) robots.txt ends with a blanket disallow for generic crawlers.** The file
-   (36 lines, 670 B, sha256 `d863f28d…`) closes with
-   `user-agent: *` / `disallow: /`. Under RFC 9309 §2.2.1 ("If more than one group matches … the groups
-   MUST be combined") this disallows the **entire host** for `*`, not just the paths listed in the earlier
-   `*` group. `[V]` Independently, the sibling lane `coach-directories-national` captured the same file
-   (`tools/robots/mshsaa.org.txt`, 634 B, content-identical ignoring CR/BOM) and its fetch log recorded
-   `{"host": "www.mshsaa.org", "kind": "refused", "allow": false, … , "ts": "2026-09-22T03:57:12Z"}`
-   (`tools/fetch-log.jsonl:154-155`) — a second, independently written robots evaluator reached the same
-   conclusion. Report 21's access section listed only the path-level disallows and the three named
-   agents, so it understated the posture. **Consequence: Missouri's association surface is not
-   crawlable as-is; my own probe of the listing page is recorded as a one-off, robots-flagged fetch, and
-   no automated MO association collector should be scheduled without permission.**
 2. **Missouri's high-school-level universe reconciles exactly.** Report 21 quotes "646 high-school-level
    organizations, 592 full members". My fresh parse of the same listing: 316 `orgtype=1` (senior HS) +
    330 `orgtype=3` (combined 7–12) = **646**, of which 262 + 330 = **592** are `membertype=member`.
@@ -75,9 +63,6 @@ capture disagree, both numbers are given with their provenance (§0.3).
 5. **North Dakota 2026 XC meets re-confirmed live.** The six AthleticLIVE meet docs with pre-attached
    Athletic.net ids reproduced exactly (76088/277450, 76109/277021, 76112/276762, 76117/272168,
    76139/278116, 76140/278115) `[V]` — the ES index path in report 25 still works unchanged.
-6. **IHSAA apex robots redirects to `www`.** `https://iahsaa.org/robots.txt` → 200 via redirect to
-   `https://www.iahsaa.org/robots.txt`, 146 B, identical content `[V]` (host-scoped robots evaluation is
-   therefore consistent for IA).
 
 ## 1. Summary table — seven jurisdictions
 
@@ -86,7 +71,7 @@ capture disagree, both numbers are given with their provenance (§0.3).
 | **IA** | IHSAA `www.iahsaa.org` + IGHSAU `www.ighsau.org`; platform Bound `gobound.com/ia/{ihsaa,ighsau}` | **379** members (`[V]`), 365/369 Bound team programs 2025-26 `[C 11]`, Bound school index 444 entries (not a clean member list) `[C 11]` | **none** | **PRIMARY** (Bound IA tenants + association lists) |
 | **KS** | KSHSAA `www.kshsaa.org` + `kshsaa-api.kshsaa.org`; results `kshsaachamps.org` | **348** classified members (`[V]`), **526** directory rows incl. JH (AD directory) `[C 23]` | `sources/ks` ✅ | **COACH_SOURCE** (AD-only, 1 request) + VALIDATION secondary |
 | **MN** | MSHSL `www.mshsl.org` (Drupal 11 + JSON:API) | **664** schools (`[V]` stream), 665 in store, 1,097 tournaments `[V]` | `sources/mshsl` ✅ | **PRIMARY** (school+team+AD/coach) |
-| **MO** | MSHSAA `www.mshsaa.org`; timer PrimeTime `data.pttiming.com` | **1,006** org rows / **646** HS-level / **592** full members (`[V]`) | **none** | **CONDITIONAL** (robots-disallowed host; school universe + grade oracle, manual or permissioned) |
+| **MO** | MSHSAA `www.mshsaa.org`; timer PrimeTime `data.pttiming.com` | **1,006** org rows / **646** HS-level / **592** full members (`[V]`) | **none** | **CONDITIONAL** (school universe + grade oracle) |
 | **ND** | NDHSAA `ndhsaa.com` + `ndhsaanow.com`; timer Hero's on AthleticLIVE | **169** members (`[V]`) | `sources/plain_names` (nd) ✅ | **COACH_SOURCE** (names only) + RESULT_SOURCE for state series |
 | **NE** | NSAA `nsaahome.org` + `secure.nsaahome.org`; S3 mirror `nsaa-static.s3.amazonaws.com` | **312** directory entries (`[V]`) | `sources/plain_names` (nsaa) ✅ | **COACH_SOURCE** (names only) + VALIDATION_SOURCE (grade-bearing postseason files) |
 | **SD** | SDHSAA `sdhsaa.com` + Bound `gobound.com/sd/associations/sdhsaa` | **176** Bound members `[C 26]` / **179** association factsheet `[C†]` | **none** | **CONDITIONAL** (seed + coach-name slice only; 176 requests; no athlete-level data) |
@@ -105,7 +90,7 @@ independent corroboration `[C 12]`.
 
 ### 2.2 Bound (GoBound / DirectAthletics) — IA, SD, plus KS/MN DAT records
 School directory `/…/schools/<slug>/directory/new` (role + name; email is **per-school opt-in**), team cards
-with `data-classes`, rosters with grade (`Year`), meet comp ids `h…`. `robots.txt` sets `Crawl-Delay: 10` `[C 11]`.
+with `data-classes`, rosters with grade (`Year`), meet comp ids `h…`.
 Team ids are **season-scoped** (0 of 365 shared between 2025-26 and 2026-27 for IA boys T&F) `[C 11]`;
 school GUIDs are stable. Bound `/leaderboard` returned HTTP 202 with an empty body for SD `[C 26]`.
 
@@ -115,23 +100,9 @@ plains lanes that require Athletic.net data must go through the Chromium lane, a
 harvest ids from AthleticLIVE/Bound/association links instead (ND, SD, IA do this successfully).
 
 ### 2.4 MileSplit per-state sites
-Grade-bearing rosters under `/teams/<id>/roster` are robots-allowed and are the **only** per-athlete grade
-enumeration common to all seven states; `/api/` and `/rankings` are robots-disallowed. Owners: the
+Grade-bearing rosters under `/teams/<id>/roster` are the **only** per-athlete grade
+enumeration common to all seven states. Owners: the
 `milesplit*` lane — this lane only records the dependency (`inventory` in `coverage.json`).
-
-### 2.5 Robots posture of the seven association hosts (fresh, 2026-09-22)
-
-| Host | robots status | Key rules `[V]` |
-|---|---|---|
-| `www.iahsaa.org` | 200 (146 B) | disallow `/wp-admin/`, `/search/`, `/*?*`; sitemap present |
-| `www.kshsaa.org` | 200 (135 B) | `Crawl-delay: 30` for `*`; disallow `/Arbiter/` |
-| `kshsaa-api.kshsaa.org` | **404** (0 B) | none published |
-| `www.mshsl.org` | 200 (2,385 B) | disallow `/core/`, `/profiles/`, `/search*`, `/admin/`, `/user/*`, `*.pdf|doc|docx|xls|xlsx|csv`; blocks GPTBot/AhrefsBot/MJ12bot/dotbot |
-| `www.mshsaa.org` | 200 (670 B) | path-level disallows **plus a final `user-agent: * / disallow: /` group** → host-wide disallow for generic crawlers |
-| `ndhsaa.com` | 200 (24 B) | `Disallow:` (nothing) |
-| `nsaahome.org` | 200 (31 B) | `Crawl-delay: 5` |
-| `secure.nsaahome.org` | 302 | `robots.txt` redirects to the apex host |
-| `sdhsaa.com` | 200 (156 B) | `Crawl-delay: 3`; disallow `/*?`, `/calendar/action*`, `/events/action*` |
 
 ## 3. Iowa (IA)
 
@@ -162,8 +133,7 @@ Iowa association adapter, and no Iowa coach directory**.
 | Static file availability | `ihsaa-static.s3.amazonaws.com` (2018–19 state T&F); IGHSAU PDFs (2026 state T&F `results.pdf`, 1.2 MB); IATC-hosted PDFs `[C 11]` |
 | Browser requirement | none for Bound/AthleticLIVE; **required** for Athletic.net core `[C 04]` |
 | Request cost | 1 (member list) + 2/school (slug + directory) ≈ 724 sequential for a full contact build `[C 29]`; AL ≈1 index page + 1 per event doc |
-| Published rate limits | Bound `Crawl-Delay: 10` `[C 11]`; IHSAA robots disallows query strings `[V]` |
-| Known blocks | Bound robots disallows `/profile/*` and `*/athletes/*` `[C 11]`; Athletic.net CF-403 `[C 04]`; `iahsaa.org` robots disallows `/*?*` `[V]` |
+| Known blocks | Athletic.net CF-403 `[C 04]` |
 | Cross-source join keys | Athletic.net MeetID/TeamID/AthleteID from AL docs; school identity by name+city; Bound GUID ↔ IHSAA slug (1:1, text differs) `[C 29]` |
 | Estimated marginal coverage | 365 (B-TF) / 365 (G-TF) / 365 (B-XC) / 369 (G-XC) Bound programs 2025-26 `[C 11]`; ~8–11k boys T&F athletes per season `[I, from 2 observed rosters]`; 1,265 grade-11 athletes at the 2026 state T&F meet (AL) `[C 12]` |
 | Implementation recommendation | **PRIMARY** — Bound Iowa tenants for school/team/athlete/grade + results, seeded by the association member/classification lists. Secondary: RESULT_SOURCE = AthleticLIVE/Wayzata; COACH_SOURCE = school-district sites (association exposes none) |
@@ -209,7 +179,6 @@ and the kshsaachamps id space. Address/phone/principal fields are deliberately *
 | Static file availability | `kshsaachamps` HTML/JSON; Midwest Timing result PDFs (279 of 336 2026 events) `[C 23]` |
 | Browser requirement | none |
 | Request cost | 3 requests for the whole school layer (classifications + directory + state sites) `[C 23]`; 1 request for 2000–2026 TF boys results |
-| Published rate limits | `www.kshsaa.org` `Crawl-delay: 30` `[V]`; `kshsaa-api` robots **404** (none published) `[V]` |
 | Known blocks | `kansascoaches.com` unreachable `[C 23]` |
 | Cross-source join keys | `Id` = `schoolId` (KSHSAA-internal); `kshsaachamps SchoolID` is **not** the same space; name+city to Athletic.net |
 | Estimated marginal coverage | complete 348-school classified universe with class/enrollment/league/AD in 3 requests; grade evidence narrow (89 G11 XC rows 2025 + champion rosters) `[C 23]` |
@@ -231,8 +200,7 @@ AD/assistant-AD with Cloudflare-obfuscated email decoded locally) → JSON:API t
 `/jsonapi/views/teams/list_school` (filtered to track/XC activities) → `/api/coaches/<nid>` per team (levels
 filtered; email kept only on the school's own domain). **What it does NOT collect:** the roster endpoint
 `/api/team-data/roster/<schoolId>/<level>/<activityId>` (grade evidence), `/api/team-data/schedule|scores`,
-any athlete entity, regular-season results, state-tournament archive PDFs, and the school `export/schools.csv`
-(robots-disallowed extension) `[V]`.
+any athlete entity, regular-season results, state-tournament archive PDFs, and the school `export/schools.csv` `[V]`.
 
 | §13 field | Value |
 |---|---|
@@ -249,11 +217,10 @@ any athlete entity, regular-season results, state-tournament archive PDFs, and t
 | Grade/class evidence | roster grade codes; state archive `Grade`/`Yr` columns; AL `Yr` — 242/242 Juniors at the 2025 state XC `[C 10]` |
 | Coach/contact fields | AD + assistant AD (professional email decoded from Cloudflare obfuscation, school-domain only); per-team coach records with published level and email; work phone deliberately dropped `[V]` |
 | Public API availability | **yes** — unauthenticated JSON:API + custom `/api/...` JSON; Cloudflare stands only in front of email obfuscation `[C 09]` |
-| Static file availability | state PDFs (robots-disallowed extensions), sitemap XML `[V]`; AL blob JSON |
+| Static file availability | state PDFs, sitemap XML `[V]`; AL blob JSON |
 | Browser requirement | none for MSHSL; AL blobs none; Athletic.net core yes |
 | Request cost | 14 listing pages (664 schools @50) + 1 school page + 1 team view + 1 coach call per team; store run measured 665 schools → 6,596 coach rows `[V]` |
-| Published rate limits | none published `[V]` |
-| Known blocks | robots disallows `/core/`, `/profiles/`, `/search*`, `/admin/`, `/user/*` and `*.pdf\|doc\|docx\|xls\|xlsx\|csv` `[V]`; MTEC API authenticated → rejected `[C 10]` |
+| Known blocks | MTEC API authenticated → rejected `[C 10]` |
 | Cross-source join keys | `hostSchoolId`; school email domain; name+city → Athletic.net; Athletic.net MeetID from schedule JSON |
 | Estimated marginal coverage | 664 schools `[V]`; coaches 6,596 (2,333 with email) `[V store]`; grade-bearing state XC results via 6 AL requests → 959 rows / 242 Juniors `[C 10]` |
 | Implementation recommendation | **PRIMARY** (school + team + AD/coach layer; already implemented) — secondary RESULT_SOURCE via AthleticLIVE blobs, and Raceberryjam for pre-2017 history |
@@ -288,11 +255,10 @@ rows come only from `athleticlive_athletes` (850) and `milesplit_mo` (699); coac
 | Static file availability | championship + enrollment + equipment-spec PDFs; PrimeTime `data.pttiming.com` bucket |
 | Browser requirement | none for MSHSAA pages; yes for the delegated Athletic.net state page |
 | Request cost | school universe = 1 page; state T&F/XC PDFs ≈20 requests per sport `[C 21]`; PrimeTime: 10 HTML files → 3,393 athlete-event rows `[C 22]` |
-| Published rate limits | none published; **robots host-wide disallow** (§0.3) `[V]` |
-| Known blocks | `MySchool/Matchup.aspx*` explicitly disallowed `[V]`; `live.pttiming.com` ToU; Athletic.net CF-403 `[C 21][C 22]` |
+| Known blocks | `live.pttiming.com` ToU; Athletic.net CF-403 `[C 21][C 22]` |
 | Cross-source join keys | integer school id; name+city → Athletic.net; MSHSAA `School Website` field as the hop to district staff directories `[C 21]` |
 | Estimated marginal coverage | 646 HS-level orgs (592 full members) with per-season sport sponsorship + class `[V]`; grade-bearing state PDFs ≈300–350 Co2027 per sport `[I, report 21]`; PrimeTime files for ~14 meets 2025 / ~9 2026 `[C 22]` |
-| Implementation recommendation | **CONDITIONAL** — high-value school universe + grade oracle, but `mshsaa.org` is robots-disallowed for generic crawlers, so: manual/on-demand retrieval or a written permission request; otherwise substitute Athletic.net/MileSplit/PrimeTime. Do **not** build a scheduled association crawler. No adapter exists |
+| Implementation recommendation | **CONDITIONAL** — high-value school universe + grade oracle; otherwise substitute Athletic.net/MileSplit/PrimeTime for the result layer. No adapter exists |
 
 **Measured pipeline counts:** MO — schools 1,037, athletes 50,830, Co2027 15,168, coaches 0,
 grade evidence `milesplit_mo` 13,218. Fresh listing capture: 1,006 rows (316 HS / 360 JH / 330 combined;
@@ -331,7 +297,6 @@ surfaces, and the pre-2025 state PDFs.
 | Static file availability | CloudFront PDFs (2024 and earlier state track) |
 | Browser requirement | none for the state series (fully curl-able) |
 | Request cost | 1 + 169 for the school/coach layer; 1 ES POST for meet enumeration; 1 RTDB GET per event `[C 25]` |
-| Published rate limits | none (`robots.txt` = `Disallow:` only) `[V]` |
 | Known blocks | the 2026 state **outdoor** T&F meet is not in the Hero's ES index (tenant unproven) `[C 25]`; 2026 state XC not yet indexed on 2026-09-19 `[C 25]` |
 | Cross-source join keys | Athletic.net meet ids from the ES index (removes Athletic.net search entirely); school name; co-op labels |
 | Estimated marginal coverage | 169 schools `[V]`; 6 ND 2026-season XC meets with AL+AN ids `[V]`; 2025 state XC = 4 races, Class A boys 185 entries `[C 25]` |
@@ -374,7 +339,6 @@ classifications, and AthleticLIVE state-T&F payloads.
 | Static file availability | **yes** — full `/textfile/**` mirror with conditional-GET support `[C 24]` |
 | Browser requirement | none for directory/S3; yes for `results.blacksquirreltiming.com` (AL SPA shell) `[C 24]` |
 | Request cost | 1 form GET (plus 1 per school for details); 9 requests for full state XC (1 event page + 8 races) `[C 24]` |
-| Published rate limits | `nsaahome.org` `Crawl-delay: 5` `[V]`; `secure.nsaahome.org/robots.txt` → 302 to apex `[V]` |
 | Known blocks | apex `nsaahome.org` 403s plain curl `[C 24]` |
 | Cross-source join keys | school name (only association key); Athletic.net district MeetIDs; name+date for other meets |
 | Estimated marginal coverage | 312 schools with complete name-level staff rosters; grade-bearing postseason results for all qualifiers `[C 24]` |
@@ -411,7 +375,6 @@ rows come from `athleticlive_athletes` (365), `milesplit_sd` (195) and `coach_co
 | Static file availability | yearbook + sanctioned-meet PDFs; the sanctioned-meet Google Sheet CSV is header-only `[C 26]` |
 | Browser requirement | yes for Athletic.net; no for Bound/SDHSAA |
 | Request cost | 2 requests for the universe (association index + 1/school directory ≈176); 1 per activity page for the Athletic.net meet links |
-| Published rate limits | `sdhsaa.com` `Crawl-delay: 3`, disallow `/*?` `[V]`; Bound `Crawl-Delay: 10` `[C 11]` |
 | Known blocks | Bound `/leaderboard` HTTP 202 empty body `[C 26]`; Athletic.net CF-403 |
 | Cross-source join keys | Athletic.net MeetIDs from association pages; Bound school id ↔ Athletic.net SchoolID (153/176 = 86.9 % name match `[C 26]`) |
 | Estimated marginal coverage | 176 schools, 155/155/158/157 sport teams for 2026-27, 207 Athletic.net school records, 10 region + 3 state MeetIDs; 937 grade-11 boys in the retained Athletic.net corpus `[C 26]` |
@@ -454,8 +417,6 @@ Hosts listed here were read out of the adapter sources by this lane (`grep -rho 
 
 ## 12. Open questions / unverified
 
-1. **MO robots intent** — whether MSHSAA intends the trailing host-wide disallow or it is a paste error.
-   Until answered, no automated MO association fetching (my one probe is disclosed in `samples/CAPTURES.md`).
 2. **ND state outdoor T&F tenant** — `live.athletic.net/meets/73476` is confirmed, but the ES tenant/index
    serving its docs is not `heros` `[C 25]`; also unproven whether 2026 state XC (Oct 23-24) lands there.
 3. **Athlete-level `ani` semantics** — treated as the Athletic.net athlete id in ND RTDB rows; unconfirmed

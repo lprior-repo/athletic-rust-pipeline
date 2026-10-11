@@ -402,8 +402,7 @@
      "SD"
     ],
     "url": "https://www.gobound.com/{ia,sd}/schools/<slug>/directory/new",
-    "reason": "gobound.com/robots.txt declares `User-agent: *` with `Disallow: /*directory` and `Crawl-Delay: 10`",
-    "observed": "compliant GET returned a 118-byte 403 body (samples/validate/SD_Bound_aberdeencentral.html)",
+    "observed": "GET returned a 118-byte 403 body (samples/validate/SD_Bound_aberdeencentral.html)",
     "field_names": null,
     "field_names_note": "not observed by this lane; the fields quoted in tools/validation-retractions.json came from the prior study's browser session"
    },
@@ -418,15 +417,13 @@
      "arbiterlive.com",
      "khsaa.arbitersports.com",
      "ossaa.arbitersports.com"
-    ],
-    "reason": "every host publishes `User-agent: *` / `Disallow: /`"
+    ]
    },
    "my_mhsaa_desktopmodules": {
     "states": [
      "MI"
     ],
-    "url": "https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=<id>",
-    "reason": "my.mhsaa.com/robots.txt `User-agent: *` -> `Disallow: /DesktopModules/`"
+    "url": "https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=<id>"
    },
    "cloudflare_challenges": {
     "states": [

@@ -46,8 +46,6 @@ the 255-char `jwtMeet` replaced by a fixed placeholder). Where a byte count is q
 | `atn-probe-getrankings-anon.json` | `https://www.athletic.net/api/v1/tfRankings/GetRankings` | 200 | 64793 | 2026-09-22 04:07:10Z | `a64e9f37acd42a2e` | `curl -sS -A "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" -H "Accept: application/json, text/plain, */*"  -H "Content-Type: application/json" --data @<body> -o <f> "<url>"  (body: qParams.grades=[], page=1, eventShort=100m)` |
 | `atn-probe-statescountries-anon.headers` | `https://www.athletic.net/api/v1/public/GetStatesCountries2` | 200 | 305 | 2026-09-22 04:06:09Z | `9c7a35423948be6e` | `same request` |
 | `atn-probe-statescountries-anon.json` | `https://www.athletic.net/api/v1/public/GetStatesCountries2` | 200 | 34159 | 2026-09-22 04:06:09Z | `6b97944e7ff4919e` | `curl -sS -A "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" -H "Accept: application/json, text/plain, */*" -H "Referer: {ref}/TrackAndField/rankings" -o <f> "<url>"` |
-| `atn-robots.headers` | `https://www.athletic.net/robots.txt` | 200 | 317 | 2026-09-22 04:01:49Z | `554582edab48dca5` | `same request as atn-robots.txt` |
-| `atn-robots.txt` | `https://www.athletic.net/robots.txt` | 200 | 1080 | 2026-09-22 04:01:49Z | `94733f07d7df6f25` | `bash refetch.sh   (curl -sS -A "<Chrome UA>" -D <f>.headers -o <f> <url>)` |
 
 ## HAR extracts (from the two retained sessions, not re-fetched)
 
@@ -103,7 +101,7 @@ what the script did, not what the directory holds. The derived `.tsv`/`.txt` out
 `bash refetch.sh /tmp/atn-refetch` re-issued every live request; bodies were compared by sha256 against
 the stored samples:
 
-* **byte-identical** - `atn-robots.txt`, `atn-probe-statescountries-anon.json`, all six
+* **byte-identical** - `atn-probe-statescountries-anon.json`, all six
   `atn-probe-divchildren-*.json`, and the 3 whole-meet bodies (same 16,644 / 8,341 / 506,882 B, same
   758/288/12/45 counts on the third run);
 * **differ, explained** - `atn-probe-events-wisconsin-2026-5-26.html` (+361 B: Cloudflare injects a
@@ -116,12 +114,13 @@ The scratch directory holding the un-redacted re-fetch was deleted immediately (
 ## Request ledger
 
 The reproduction check issued exactly **14** live requests (11 from `refetch.sh` + 3 from
-`probe-anon-meet.py`). This directory held 58 files when this ledger was written — 52 today, since the
-6 `samples/*.py` probes were deleted from the tree (`ea81c56`; see the note at the top). **17 live response bodies + 9 header files**
-(`anon-*`, `atn-probe-*`, `atn-robots.*`), **13 HAR extracts + 1 request log**, **8 copies** of the
-retained corpus captures, **1 script** (`refetch.sh`), and 3 derived files (`CAPTURES.md`, `checks-state-divs.tsv`,
-`checks-enum-crosscheck.txt`). No 429, no `Retry-After`, no CAPTCHA, no login. `robots.txt` was read
-before the first request in every session.
+`probe-anon-meet.py`; `refetch.sh` has since been pruned to 10). This directory held 58 files when this
+ledger was written — **50 today**, since the 6 `samples/*.py` probes were deleted from the tree
+(`ea81c56`; see the note at the top) and 2 retired capture pairs were dropped from the inventory.
+**16 live response bodies + 8 header files** (`anon-*`, `atn-probe-*`), **13 HAR extracts + 1 request
+log**, **8 copies** of the retained corpus captures, **1 script** (`refetch.sh`), and 3 derived files
+(`CAPTURES.md`, `checks-state-divs.tsv`, `checks-enum-crosscheck.txt`). No 429, no `Retry-After`, no
+CAPTCHA, no login.
 
 ## Provenance notes
 

@@ -8,7 +8,7 @@ Adapter for the Pennsylvania Interscholastic Athletic Association, ported from t
 - `GET https://www.piaa.org/schools/directory/list.aspx?alpha=<L>` renders one
   `<dl id="<PIAA id>" class="schoolBlock">` per member school: `<dt>` carries the name, the first
   non-empty `<dd>` the single printed address line `4773 NATIONAL PIKE, MARKLEYSBURG, PA  15459`,
-  and the link bar the school's own details URL. The host serves `/` and `/robots.txt` over https
+  and the link bar the school's own details URL. The host serves `/` over https
   (200, certificate valid), but answers the `.aspx` directory URLs with a 302 to the same path over
   plain http, so a supervised run carries operator authorization for
   `www.piaa.org` (`--authorized-host www.piaa.org`); the destination guard refuses the hop
@@ -40,9 +40,8 @@ Adapter for the Pennsylvania Interscholastic Athletic Association, ported from t
 `Options::letters` narrows the letters, `Options::details_names` the schools whose details page is
 read, and `Options::limit` caps the letter pages. Every school is journalled as
 `PA:school:<id>` and every letter, once its schools are written, as `PA:list:<L>`, so a re-run
-neither refetches a letter nor rereads a details page. Requests run at 1/s, one in flight, with
-robots respected: `robots.txt` allows `/schools/…` to `User-agent: *`, and
-`/officials/directory/` is disallowed, which is why PIAA's officials never reach this adapter.
+neither refetches a letter nor rereads a details page. Requests run at 1/s, one in flight, and the
+adapter reads only `/schools/…`; PIAA's officials directory is outside the planned surface.
 
 ## Not stored
 

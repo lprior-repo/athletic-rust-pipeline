@@ -27,7 +27,7 @@ are parsed prototype outputs (reuse-only); `report.json` records are the 2026-09
 ccd 542 | any-coach 174 | TF/XC 164 | email 43 (8%). (`STATE-COVERAGE-MATRIX.md`)
 
 ### 2. Held evidence
-- A (corpus 2026-09-22): `research/sources/state-assoc-plains/samples/ndhsaa-schools-2026-09-22.html` 97,754 B — NDHSAA member-school index, **169 schools** (CAPTURES.md); `robots-ndhsaa.txt` 24 B; `athleticlive-heros-nd-xc-2026-09-22.json` 1,369 B — 6 ND XC meets (XC-only).
+- A (corpus 2026-09-22): `research/sources/state-assoc-plains/samples/ndhsaa-schools-2026-09-22.html` 97,754 B — NDHSAA member-school index, **169 schools** (CAPTURES.md); `athleticlive-heros-nd-xc-2026-09-22.json` 1,369 B — 6 ND XC meets (XC-only).
   `research/sources/coach-directories-national/samples/assoc-home/ND__ndhsaa.com.html` 104.9 KB on disk (30,222 wire B) — NDHSAA home; `samples/api/ND__*.js` bootstrap assets (CAPTURES.md rows 15–17).
 - B (prototype): raw host counts `ndhsaa.com` 171 responses, `www.ndhsaa.com` 3, `ndhsaa.finalforms.com` 1, `athleticlive.com` 4 (`coverage.md`, read :367–1024).
   `census-prototype/out/report.json`: `nd_ndhsaa` cache 97,754 B → 169 schools, 0 coaches (index only); `nd_dragonfly` 165,214 B → **548 schools / 527 with address**; `nd_milesplit` 74,423 B → 152 teams.
@@ -55,7 +55,7 @@ ccd 744 | any-coach 138 | TF/XC 135 | email 2 (0%).
 
 ### 2. Held evidence
 - Registry: SRC-222 (SDCCTFCA roster HELD, `extract/SRC-222/rows.csv` 57.5 KB), SRC-223 (SD DOE directory HELD, `extract/223-sd-edudir/rows.csv` 92.2 KB), SRC-224 (SDHSAA/Bound DERIVED — `probes/gobound/FINDINGS.md` 6.1 KB: gobound refused), SRC-225 (SDHSAA XC hub HELD), SRC-226 (track hub DERIVED), SRC-227 (cooperatives HELD), SRC-228 (SDCCTFCA membership HELD).
-- A: `state-assoc-plains/samples/sdhsaa-cross-country-2026-09-22.html` 509,970 B; `sdhsaa-cross-country-region-2026-09-22.html` 286,293 B; `robots-sdhsaa.txt` 156 B. `coach-directories-national/samples/assoc-home/SD__sdhsaa.com.html` 1.0 MB on disk (117,030 wire).
+- A: `state-assoc-plains/samples/sdhsaa-cross-country-2026-09-22.html` 509,970 B; `sdhsaa-cross-country-region-2026-09-22.html` 286,293 B. `coach-directories-national/samples/assoc-home/SD__sdhsaa.com.html` 1.0 MB on disk (117,030 wire).
 - B: raw `sdhsaa.com` 3 + `www.sdhsaa.com` 2 + `www.gobound.com` 2,470 (multi-state). `extra/SD-bound.jsonl` 566.8 KB = **560 lines** — gobound per-school staff pages (`/sd/sdhsaa/{boys,girls}{trackfield,crosscountry}/2026-27/<slug>/v/staff`) with TF/XC head+assistant coach rows, `coaches_withheld` counters; `SD-school-sites.jsonl` 4.3 KB.
 - C: `probes/227-sdhsaa-cooperatives/REPORT.md` 2.7 KB + `captures/` page 484,091 B + `extract/227-sdhsaa-cooperatives/qualified.json` 1.2 KB; `probes/228-sdhsca-membership/REPORT.md` 4.3 KB + `extract/228-sdhsca-membership/rows.csv` 59.5 KB; `var/tap-227-sdhsaa-cooperatives/` (4 store bodies `store/http/*.body` + 4 archive capture bodies under `archive/captures/*/bodies/`, `agreements.txt`, `terms.txt`); `var/tap-228-sdhsca/import-store/` (fjall + out; **286 coaches imported** per HELD-INVENTORY.md); `var/tap-223-sd-edudir/{store,import-store}` (3 http bodies under `store/http/`).
 ### 3. Fill plan
@@ -81,7 +81,7 @@ ccd 854 | any-coach 274 | TF/XC 173 | email 174 (20%).
 
 ### 2. Held evidence
 - Registry: none (no `"state":"MT"` in HELD-CLASSIFY.json).
-- A: `state-assoc-mountain/samples/`: `home-mhsa.html` 692,849 B; `mhsa-member-schools.html` 337,334; `mhsa-schools-directory.html` 301,211; `mhsa-enrollment-numbers.html` 336,030; `mhsa-cross-country.html` 331,265; `mhsa-track-field.html` 332,737; `mhsa-xc-postseason.html` 317,372; `mhsa-tf-postseason.html` 337,610; `mhsa-search-athleticnet.html` 290,542; `mhsa-enrollment-alpha.pdf` 135,327; `mhsa-enrollment-classification.pdf` 137,357; `mhsa-arbiter-directory.html` 4,278; `mhsa-state-meet-results-competitive.html` 23,473; `robots-arbiter-live.txt` 4,278; `robots-competitivetiming.txt` 40. `coach-directories-national/samples/assoc-home/MT__mhsa.org.html` 678.9 KB on disk (136,340 wire).
+- A: `state-assoc-mountain/samples/`: `home-mhsa.html` 692,849 B; `mhsa-member-schools.html` 337,334; `mhsa-schools-directory.html` 301,211; `mhsa-enrollment-numbers.html` 336,030; `mhsa-cross-country.html` 331,265; `mhsa-track-field.html` 332,737; `mhsa-xc-postseason.html` 317,372; `mhsa-tf-postseason.html` 337,610; `mhsa-search-athleticnet.html` 290,542; `mhsa-enrollment-alpha.pdf` 135,327; `mhsa-enrollment-classification.pdf` 137,357; `mhsa-arbiter-directory.html` 4,278; `mhsa-state-meet-results-competitive.html` 23,473. `coach-directories-national/samples/assoc-home/MT__mhsa.org.html` 678.9 KB on disk (136,340 wire).
 - B: raw `www.mhsa.org` 2. `report.json`: `mt_mhsa` cache 289,162 B → **0 schools parsed**; `mt_dragonfly` 360,977 B → **358 schools / 310 addresses**; `mt_milesplit`. `extra/MT-dragonfly.jsonl` 391.4 KB; `MT-arbiter.jsonl` 197.8 KB = **220 lines** — Arbiter org 4497 children + AD rows (names, phone, enrollment; **no emails**); `MT-school-sites.jsonl` 1.9 KB.
 - C: none today (arbiter adapter fixtures live in `crates/census-crawl/src/arbiter/`, README lists MHSA org 4497 = 215 schools).
 ### 3. Fill plan
@@ -106,7 +106,7 @@ ccd 820 | any-coach 234 | TF/XC 208 | email 136 (17%).
 
 ### 2. Held evidence
 - Registry: none.
-- A: `state-assoc-mountain/samples/`: `home-idhsaa.html` 45,804 B; `idhsaa-directory.html` 252,565; `idhsaa-coaches.html` 52,554; `idhsaa-cross-country.html` 41,643; `idhsaa-track-field.html` 43,453; `idhsaa-athletic-directors.html` 43,970; `athleticnet-idhsaa-xc-state-263030.html` 9,292; `robots-idhsaa.txt`. `coach-directories-national/samples/assoc-home/ID__idhsaa.org.html` 44.7 KB on disk (12,313 wire); `samples/api/ID__*.js` 56,879 + 44,371 B.
+- A: `state-assoc-mountain/samples/`: `home-idhsaa.html` 45,804 B; `idhsaa-directory.html` 252,565; `idhsaa-coaches.html` 52,554; `idhsaa-cross-country.html` 41,643; `idhsaa-track-field.html` 43,453; `idhsaa-athletic-directors.html` 43,970; `athleticnet-idhsaa-xc-state-263030.html` 9,292. `coach-directories-national/samples/assoc-home/ID__idhsaa.org.html` 44.7 KB on disk (12,313 wire); `samples/api/ID__*.js` 56,879 + 44,371 B.
 - B: raw `www.idhsaa.org` 354 responses. `report.json`: `id_idhsaa` cache 253,833 B → **177 schools** with AD name/phone/email — emails are JS-obfuscated (`document.write(window.atob('…'))`, sample decoded `lewisn@aberdeen58.org`); `id_dragonfly` 363,858 B → **461 schools / 449 addresses**; `id_milesplit`. `extra/ID-dragonfly.jsonl` 392.8 KB; `ID-school-sites.jsonl` 2.4 KB.
 - C: none today.
 ### 3. Fill plan
@@ -156,7 +156,7 @@ ccd 1121 | any-coach 146 | TF/XC 145 | email 4 (0%).
 
 ### 2. Held evidence
 - Registry: SRC-164 (UHSAA profiles HELD), SRC-165–168 (USBE DERIVED), SRC-169 (realignment HELD), SRC-170 (sanctioned events DERIVED), SRC-171 (participation matrix HELD), SRC-172 (UCCTCA DERIVED), SRC-173 (coach-assoc reps DERIVED), SRC-174 (Pine View DERIVED).
-- A: `state-assoc-mountain/samples/`: `home-uhsaa.html` 547,726 B; `uhsaa-school-directory.html` 483,588; `uhsaa-school-alta.html` 456,682; `uhsaa-teams-xc-boys.html` 405,876; `uhsaa-cross-country.html` 456,073; `uhsaa-track-and-field.html` 456,597; `uhsaa-participation-numbers.pdf` 312,115; `uhsaa-realignment-2025-27.pdf` 533,693; `runnercard-meet-1001674.html` 86,565; `runnercard-uhsaa-state-results.html` 913; `robots-uhsaa.txt` 1,181. `coach-directories-national/samples/assoc-home/UT__uhsaa.org.html` 534.9 KB on disk (157,713 wire).
+- A: `state-assoc-mountain/samples/`: `home-uhsaa.html` 547,726 B; `uhsaa-school-directory.html` 483,588; `uhsaa-school-alta.html` 456,682; `uhsaa-teams-xc-boys.html` 405,876; `uhsaa-cross-country.html` 456,073; `uhsaa-track-and-field.html` 456,597; `uhsaa-participation-numbers.pdf` 312,115; `uhsaa-realignment-2025-27.pdf` 533,693; `runnercard-meet-1001674.html` 86,565; `runnercard-uhsaa-state-results.html` 913. `coach-directories-national/samples/assoc-home/UT__uhsaa.org.html` 534.9 KB on disk (157,713 wire).
 - B: raw `uhsaa.org` 328 + `www.uhsaa.org` 2. `report.json`: `ut_uhsaa` cache 483,323 B → **162 schools, 0 addresses**; `ut_milesplit`. `extra/UT-school-sites.jsonl` 9.3 KB = 9 lines (Bingham, Herriman, North Sanpete, Riverton, Taylorsville… school-site coach/email probes).
 - C: `var/tap-uhsaa-20261004{,b,c,d}/store/http/` — 8 unique bodies total (`c75cbdcf`, `ed48031a`, `fa086d7f`, `9ea7d897` in a+b; c adds `2771755324`, `578ce667`, `37d1a87a`; d adds `7d5d7506`), per-school profile pages (meta read: `https://uhsaa.org/school-directory/?id=American%20Fork&Reg=3&schoolID=3`, 458,535 B); out CSVs per tap: `canonical-schools.csv` 618–804 B, `canonical-coaches.csv` 998 B–2.9 KB (only a few schools resolved; scratch/unmerged).
 ### 3. Fill plan
@@ -182,7 +182,7 @@ ccd 746 | any-coach 100 | TF/XC 97 | email 4 (1%).
 
 ### 2. Held evidence
 - Registry: SRC-175 (Southern NV TF/XC association HELD `extract/SRC-175/{REPORT.md 11.4 KB, rows.csv 58.8 KB}`), SRC-176 (NV DOE DERIVED), SRC-177 (Washoe school-sites DERIVED), SRC-178 (S. NV Track coaches CSV HELD, rows 30.7 KB), SRC-179 (S. NV XC coaches CSV HELD, rows 25.9 KB), SRC-180 (private dir DERIVED), SRC-181 (North Valleys DERIVED), SRC-182 (NIAA publications DERIVED — `niaa-members.html` corpus exists, prestosports route not captured).
-- A: `state-assoc-westcoast/samples/`: `niaa-home.html` 40.8 KB; `niaa-members.html` 27.2 KB; `niaa-xc.html` 22.2 KB; `niaa-xc2.html` 36.0 KB; `niaa-xc-archive.html` 104.8 KB; `niaa-finalforms-state-schools.html` 136.4 KB; `niaa-finalforms-p9.html` 103.0 KB; `niaa-coaches.html` **0 B**; `niaa-sports-track.html` / `track2` **0 B**; `robots-niaa*.txt`. `coach-directories-national/samples/assoc-home/NV__niaa.org.html` 193.7 KB on disk (31,840 wire).
+- A: `state-assoc-westcoast/samples/`: `niaa-home.html` 40.8 KB; `niaa-members.html` 27.2 KB; `niaa-xc.html` 22.2 KB; `niaa-xc2.html` 36.0 KB; `niaa-xc-archive.html` 104.8 KB; `niaa-finalforms-state-schools.html` 136.4 KB; `niaa-finalforms-p9.html` 103.0 KB; `niaa-coaches.html` **0 B**; `niaa-sports-track.html` / `track2` **0 B**. `coach-directories-national/samples/assoc-home/NV__niaa.org.html` 193.7 KB on disk (31,840 wire).
 - B: raw `niaa.finalforms.com` 234 responses; `niaa.com` 10; `niaa.finalforms.com`. `report.json`: `nv_finalforms` p1–p9 (p1 141,373 B → **15 schools / 14 addresses**; 9 pages ≈ ~130 schools total); `nv_milesplit`. `extra/NV-school-sites.jsonl` 6.3 KB.
 - C: extract CSVs SRC-175/178/179 (58.8+30.7+25.9 KB) — Southern Nevada coach rosters.
 ### 3. Fill plan
@@ -207,7 +207,7 @@ ccd 927 | any-coach 195 | TF/XC 89 | email 159 (17%).
 
 ### 2. Held evidence
 - Registry: none.
-- A: `state-assoc-mountain/samples/`: `home-nmact.html` 599,330 B (nav variant 63,216 B overwritten); `nmaa-member-schools.html` 598,393; `nmaa-cross-country.html` 251,988; `nmaa-track-and-field.html` 258,853; `nmaa-for-coaches.html` 177,116; `nmaa-for-athletic-directors.html` 190,511; `nmaa-records.html` 613,634; `nmaa-section4-classification.pdf` 394,730; `nmaa-2025-cc-results.pdf` 357,394; `nmaa-2026-4a5a-boys-rosters.pdf` 486,524; `nmaa-2026-4a5a-final-results.pdf` 167,903; `robots-nmact.txt`. `coach-directories-national/samples/assoc-home/NM__nmact.org.html` 585.3 KB on disk (63,216 wire).
+- A: `state-assoc-mountain/samples/`: `home-nmact.html` 599,330 B (nav variant 63,216 B overwritten); `nmaa-member-schools.html` 598,393; `nmaa-cross-country.html` 251,988; `nmaa-track-and-field.html` 258,853; `nmaa-for-coaches.html` 177,116; `nmaa-for-athletic-directors.html` 190,511; `nmaa-records.html` 613,634; `nmaa-section4-classification.pdf` 394,730; `nmaa-2025-cc-results.pdf` 357,394; `nmaa-2026-4a5a-boys-rosters.pdf` 486,524; `nmaa-2026-4a5a-final-results.pdf` 167,903. `coach-directories-national/samples/assoc-home/NM__nmact.org.html` 585.3 KB on disk (63,216 wire).
 - B: raw `www.nmact.org` 4; `nmact.finalforms.com` 6; `nmaa.finalforms.com` 4; `nm.finalforms.com` 6. `report.json`: `nm_nmact` cache 599,315 B → **162 schools / 151 with address+city+zip**; `nm_dragonfly` 463,104 B → **751 schools / 741 addresses**; `nm_milesplit`. `extra/NM-dragonfly.jsonl` 479.8 KB; `NM-school-sites.jsonl` 13.0 KB.
 - C: none today.
 ### 3. Fill plan
@@ -233,7 +233,7 @@ ccd 1300 | any-coach 303 | TF/XC 284 | email 293 (23%) — richest of this group
 
 ### 2. Held evidence
 - Registry: SRC-146 HELD+ADAPTER (`osaa-schools.html` 31.1 KB, `osaa-schools-full-members.html` 57.1 KB, `osaa-home.html` 212.7 KB; `research/sources/osaa/SOURCE_REPORT.md` 2.7 KB), SRC-149 HELD+ADAPTER (`osaa-coaches.html` 101.0 KB), SRC-147/148/150/151/152/153/154 DERIVED.
-- A: `state-assoc-westcoast/samples/`: `osaa-home.html` 212.7 KB; `osaa-schools.html` 31.1 KB; `osaa-schools-full-members.html` 57.1 KB; `osaa-coaches.html` 101.0 KB; `osaa-school-347.html` 95.5 KB (per-school profile sample); `osaa-xc-results.html` 38.6 KB; `osaa-gxc.html` 52.8 KB; `osaa-participation.html` 45.3 KB; `osaa-participation-2025-26-fall.xlsx` 45.9 KB; `robots-osaa.txt` 143 B. `coach-directories-national/samples/assoc-home/OR__osaa.org.html` 213.3 KB on disk (18,902 wire).
+- A: `state-assoc-westcoast/samples/`: `osaa-home.html` 212.7 KB; `osaa-schools.html` 31.1 KB; `osaa-schools-full-members.html` 57.1 KB; `osaa-coaches.html` 101.0 KB; `osaa-school-347.html` 95.5 KB (per-school profile sample); `osaa-xc-results.html` 38.6 KB; `osaa-gxc.html` 52.8 KB; `osaa-participation.html` 45.3 KB; `osaa-participation-2025-26-fall.xlsx` 45.9 KB. `coach-directories-national/samples/assoc-home/OR__osaa.org.html` 213.3 KB on disk (18,902 wire).
 - B: raw `www.osaa.org` 302 responses. `report.json`: `or_osaa` cache 59,051 B → **299 full-member schools** (index only); `or_milesplit`. `extra/OR-schools.jsonl` 289.8 KB = **298 lines** — per-school OSAA profile bodies (~95–110 KB each) with coach rows incl. **emails for ADs** and TF/XC head coaches (sample: Adrian track `george.ellsworth@adriansd.org`); `OR-school-sites.jsonl` 14.9 KB.
 ### 3. Fill plan
 | Held body | Route | Reach |
@@ -257,7 +257,7 @@ ccd 1356 | any-coach 528 | TF/XC 1 | email 525 (39%).
 
 ### 2. Held evidence
 - Registry: SRC-239 (KSDE directory HELD, `probes/239-ks-directory/captures/` 252.5 KB), SRC-240 (KSHSAA leagues HELD, `probes/ks-kshsaa/raw/directory-search-name-a.json` 489,295 B), SRC-241 (KCCTFCA HELD, `probes/kcctfca/FINDINGS.md` 11.9 KB), SRC-242 (approved schools HELD), SRC-243 (KSDE annual PDFs DERIVED), SRC-244 (KCCTFCA winter clinic HELD), SRC-245 (Flint Hills DERIVED), SRC-246 (KCAA on AthleticNET ADAPTER+DERIVED).
-- A: `state-assoc-plains/samples/kshsaa-publicclassifications-2026-09-22.json` 31,885 B — 348 classified schools (36/36/36/64/64/112 per CAPTURES.md); `robots-kshsaa.txt` 135; `robots-kshsaa-api.txt`. `coach-directories-national/samples/dir/KS__kshsaa-api-letter-a.html` 123,646 wire (489,381) — full directory search name/a; `assoc-home/KS__kshsaa.org.html` 790 wire (1,304).
+- A: `state-assoc-plains/samples/kshsaa-publicclassifications-2026-09-22.json` 31,885 B — 348 classified schools (36/36/36/64/64/112 per CAPTURES.md). `coach-directories-national/samples/dir/KS__kshsaa-api-letter-a.html` 123,646 wire (489,381) — full directory search name/a; `assoc-home/KS__kshsaa.org.html` 790 wire (1,304).
 - B: raw `kshsaa-api.kshsaa.org` 5. `report.json`: `ks_kshsaa` 489,375 B → **526 schools with address+city+zip, 526 AD-coach rows, TF/XC 0**; `ks_milesplit`. `extra/KS-school-sites.jsonl` 3.3 KB.
 - C: `var/tap-239-ks-directory/` — `report.body` 185 B (302 redirect), `report.headers` (Location `/Directory_Rpts/Oops.aspx`), `report-form.txt` 128.7 KB (KSDE search form), `store/`; bundle probe raw JSON 489,295 B; KCCTFCA winter-clinic/awards pages in `probes/kcctfca/`.
 ### 3. Fill plan
@@ -283,7 +283,7 @@ ccd 701 | any-coach 268 | TF/XC 43 | email 1 (0%) — worst email cell in this g
 
 ### 2. Held evidence
 - Registry: none.
-- A: `state-assoc-southeast/samples/`: `home-wvssac.html` 680.5 KB; `school-directory-wvssac.html` 266.3 KB; `classifications-wvssac.html` 267.9 KB; `classifications-2025-27-wvssac.pdf` 123.2 KB; `cross-country-wvssac.html` 417.2 KB; `track-wvssac.html` 418.5 KB; `programs-wvssac.html` 280.3 KB; `wpjson-page-8039-wvssac.json` 4.2 KB; `wpjson-search-track-wvssac.json` 2 B (empty); `wvmetronews-track-roundup-wvssac.html` 95.7 KB; `robots-wvssac.txt` 13 B. `coach-directories-national/samples/assoc-home/WV__wvssac.org.html` 680.6 KB on disk (136,475 wire).
+- A: `state-assoc-southeast/samples/`: `home-wvssac.html` 680.5 KB; `school-directory-wvssac.html` 266.3 KB; `classifications-wvssac.html` 267.9 KB; `classifications-2025-27-wvssac.pdf` 123.2 KB; `cross-country-wvssac.html` 417.2 KB; `track-wvssac.html` 418.5 KB; `programs-wvssac.html` 280.3 KB; `wpjson-page-8039-wvssac.json` 4.2 KB; `wpjson-search-track-wvssac.json` 2 B (empty); `wvmetronews-track-roundup-wvssac.html` 95.7 KB. `coach-directories-national/samples/assoc-home/WV__wvssac.org.html` 680.6 KB on disk (136,475 wire).
 - B: raw `www.wvssac.org` 21. `report.json`: `wv_wvssac` 274,397 B → **0 schools** (classifications page, role "files"); `wv_milesplit`. `extra/WV-arbiter.jsonl` 172.8 KB = **271 lines** — Arbiter org 4223 children (200/page) + AD rows, names/phone/enrollment, **no emails**; `WV-school-sites.jsonl` 700 B (1 row: Greenbrier East with `jhodge@k12.wv.us`).
 - C: none today (arbiter README registers WVSSAC org 4223 = 269 schools).
 ### 3. Fill plan
@@ -309,7 +309,7 @@ ccd 238 | any-coach 175 | TF/XC 58 | email 175 (74%) — best email coverage of 
 
 ### 2. Held evidence
 - Registry: none.
-- A: `state-assoc-midatlantic/samples/`: `diaa-home.html` 5.6 KB (Cloudflare block); `delaware-edu-diaa.html` 5.6 KB; `delaware-admincode-title14.html` 64.0 KB + `delaware-admincode-1001.shtml` 64.0 KB (regulation text); `de-milesplit-home.html` 106.3 KB; `de-milesplit-teams.html` 51.1 KB; `robots-education-delaware.txt` 311 B; `robots-diaa.txt` 0 B. `coach-directories-national/samples/assoc-home/DE__diaa.org.html` 403 (3,218 wire / 5,531). Raw `diaa-schools.rst7.rschooltoday.com` 12 responses.
+- A: `state-assoc-midatlantic/samples/`: `diaa-home.html` 5.6 KB (Cloudflare block); `delaware-edu-diaa.html` 5.6 KB; `delaware-admincode-title14.html` 64.0 KB + `delaware-admincode-1001.shtml` 64.0 KB (regulation text); `de-milesplit-home.html` 106.3 KB; `de-milesplit-teams.html` 51.1 KB. `coach-directories-national/samples/assoc-home/DE__diaa.org.html` 403 (3,218 wire / 5,531). Raw `diaa-schools.rst7.rschooltoday.com` 12 responses.
 - B: raw `diaa.finalforms.com` 6. `report.json`: `de_diaa` = **RuntimeError "offline and not cached: https://www.diaa.org/"** (coverage.md :63); `de_dragonfly` 112,667 B → **320 schools / 314 addresses**; `de_milesplit`. `extra/DE-dragonfly.jsonl` 319.6 KB; `DE-diaa-ad-directory.jsonl` 71.5 KB = **114 lines** — `education.delaware.gov/diaa/governance/organization/ad_directory/` AD rows with **emails** (sample `lamontz.hayman@redclay.k12.de.us`); `DE-school-sites.jsonl` 4.3 KB.
 - C: none today.
 ### 3. Fill plan
@@ -334,7 +334,7 @@ ccd 247 | any-coach 82 | TF/XC 34 | email 79 (32%).
 
 ### 2. Held evidence
 - Registry: none.
-- A: `state-assoc-midatlantic/samples/`: `dcsaasports-com-home.html` 726.9 KB; `dcsaasports-home.html` 159.1 KB; `dcsaasports-school-directory.html` 294.1 KB; `dcsaasports-about.html` 213.1 KB; `dcsaasports-otf.html` 321.4 KB; `dcsaasports-boys-xc.html` 318.3 KB; `dcsaa-home.html` 107.3 KB; `dcsaa-robots-404-check.txt` 109.3 KB; `robots-dcsaasports.txt` 13 B; `sitemap-osse-dc.xml` 556.3 KB; `dc-milesplit-teams.html` 51.8 KB. `coach-directories-national/samples/assoc-home/DC__dcsaasports.org.html` 159.1 KB? on-disk not listed here (wire 26,335 / 162,889); `DC__dcsaa.org.html` MISSING.
+- A: `state-assoc-midatlantic/samples/`: `dcsaasports-com-home.html` 726.9 KB; `dcsaasports-home.html` 159.1 KB; `dcsaasports-school-directory.html` 294.1 KB; `dcsaasports-about.html` 213.1 KB; `dcsaasports-otf.html` 321.4 KB; `dcsaasports-boys-xc.html` 318.3 KB; `dcsaa-home.html` 107.3 KB; `sitemap-osse-dc.xml` 556.3 KB; `dc-milesplit-teams.html` 51.8 KB. `coach-directories-national/samples/assoc-home/DC__dcsaasports.org.html` 159.1 KB? on-disk not listed here (wire 26,335 / 162,889); `DC__dcsaa.org.html` MISSING.
 - B: raw `www.dcsaasports.com` 81 + `dcsaasports.com` 1 + `dcsaasports.rst7.rschooltoday.com` 2. `report.json`: `dc_dcsaasports` 301,245 B → **49 schools / 47 addresses**, AD name + email (sample `micheal.reid@k12.dc.gov`); `dc_dragonfly` 60,395 B → **112 schools / 103 addresses**; `dc_milesplit`. `extra/DC-dragonfly.jsonl` 81.6 KB; `DC-dcsaa.jsonl` 30.8 KB = **44 lines** — school-directory coach rows incl. XC/Track emails (Ballou: `Julius.West3@k12.dc.gov`); `DC-school-sites.jsonl` 27.9 KB.
 ### 3. Fill plan
 | Held body | Route | Reach |
@@ -359,7 +359,7 @@ ccd 316 | any-coach 55 | TF/XC 49 | email 0 (0%).
 
 ### 2. Held evidence
 - Registry: none.
-- A: `state-assoc-midatlantic/samples/`: `riil-home.html` 106.3 KB; `riil-school-list.aspx` 107.0 KB; `riil-xc-boys.aspx` 94.0 KB; `sitemap-riil.xml` 1.2 KB; `ri-milesplit-teams.html` 47.2 KB; `robots-riil.txt` 247 B. `coach-directories-national/samples/assoc-home/RI__riil.org.html` 106.2 KB on disk (24,863 wire).
+- A: `state-assoc-midatlantic/samples/`: `riil-home.html` 106.3 KB; `riil-school-list.aspx` 107.0 KB; `riil-xc-boys.aspx` 94.0 KB; `sitemap-riil.xml` 1.2 KB; `ri-milesplit-teams.html` 47.2 KB. `coach-directories-national/samples/assoc-home/RI__riil.org.html` 106.2 KB on disk (24,863 wire).
 - B: raw `riil.org` 7. `report.json`: `ri_riil` 111,222 B → **128 school pages, 0 coaches** (school list only); `ri_riil_directory` 201,040 B → **55 schools / 349 coaches / 258 TF-XC** (rich!); `ri_milesplit`. `extra/`: **no RI file exists** (confirmed against full `extra/` listing — no `RI-school-sites.jsonl`).
 - C: none today.
 ### 3. Fill plan
@@ -384,7 +384,7 @@ ccd 518 | any-coach 90 | TF/XC 61 | email 3 (1%).
 
 ### 2. Held evidence
 - Registry: none.
-- A: `state-assoc-midatlantic/samples/`: `nhiaa-home.html` 658.7 KB; `nhiaa-about-schools.html` 287.7 KB; `nhiaa-member-directory.html` 365.1 KB; `nhiaa-member-directory-p42.html` 354.0 KB; `nhiaa-boys-xc.html` 302.6 KB; `sitemap-nhiaa.xml` 47.1 KB; `nh-milesplit-teams.html` 58.9 KB; `robots-nhiaa.txt` 13 B. `coach-directories-national/samples/assoc-home/NH__nhiaa.org.html` 658.7 KB on disk (133,203 wire).
+- A: `state-assoc-midatlantic/samples/`: `nhiaa-home.html` 658.7 KB; `nhiaa-about-schools.html` 287.7 KB; `nhiaa-member-directory.html` 365.1 KB; `nhiaa-member-directory-p42.html` 354.0 KB; `nhiaa-boys-xc.html` 302.6 KB; `sitemap-nhiaa.xml` 47.1 KB; `nh-milesplit-teams.html` 58.9 KB. `coach-directories-national/samples/assoc-home/NH__nhiaa.org.html` 658.7 KB on disk (133,203 wire).
 - B: raw `www.nhiaa.org` 1. `report.json`: `nh_nhiaa` 293,677 B → **0 schools parsed**; `nh_milesplit`. `extra/NH-arbiter.jsonl` 83.8 KB = **90 lines** — Arbiter org 2132 (89 schools; XC head coaches per school, names only, no emails — sample Alvirne/Bedford/Berlin); `NH-school-sites.jsonl` 3.5 KB.
 - C: none today (arbiter README: NHIAA org 2132 = 89; test `the_schools_page_carries_all_89_nhiaa_schools`).
 ### 3. Fill plan
@@ -409,7 +409,7 @@ ccd 306 | any-coach 8 | TF/XC 3 | email 4 (1%) — lowest any-coach of the group
 
 ### 2. Held evidence
 - Registry: SRC-082 HELD+ADAPTER (VPA `vpa-divisional-alignments.html` 120.6 KB; `vpa-home.html` 183.6 KB), SRC-083/084/085 DERIVED (AOE), SRC-090 HELD+ADAPTER (`vt-milesplit-teams.html` 61.8 KB), SRC-094 DERIVED (NEPSAC), SRC-095 composite (NEPSTA) DERIVED.
-- A: `state-assoc-midatlantic/samples/`: `vpa-home.html` 183.6 KB; `vpa-divisional-alignments.html` 120.6 KB; `vpa-tournaments.html` 137.3 KB; `vpa-tournament-pairings.html` 142.8 KB; `vpa-scoreboard.html` 125.2 KB; `sitemap-vpa.xml` 1.0 KB; `sitemap-vpa-page.xml` 27.9 KB; `vt-milesplit-teams.html` 61.8 KB; `robots-vpa.txt` 187 B. `coach-directories-national/samples/assoc-home/VT__vpaonline.org.html` 183.6 KB on disk (44,501 wire); `samples/dir/VT__membership.html` (referenced in `private_assoc/README.md`).
+- A: `state-assoc-midatlantic/samples/`: `vpa-home.html` 183.6 KB; `vpa-divisional-alignments.html` 120.6 KB; `vpa-tournaments.html` 137.3 KB; `vpa-tournament-pairings.html` 142.8 KB; `vpa-scoreboard.html` 125.2 KB; `sitemap-vpa.xml` 1.0 KB; `sitemap-vpa-page.xml` 27.9 KB; `vt-milesplit-teams.html` 61.8 KB. `coach-directories-national/samples/assoc-home/VT__vpaonline.org.html` 183.6 KB on disk (44,501 wire); `samples/dir/VT__membership.html` (referenced in `private_assoc/README.md`).
 - B: raw `vpaonline.org` 12 + `www.vpaonline.org` 8. `report.json`: `vt_vpa` 131,115 B → **6 garbage rows** (nav cells: "Streaming, NFHS" etc.); `vt_milesplit`. `extra/VT-school-sites.jsonl` 4.8 KB.
 - C: none today.
 ### 3. Fill plan
@@ -434,7 +434,7 @@ ccd 598 | any-coach 150 | TF/XC 81 | email 3 (1%).
 
 ### 2. Held evidence
 - Registry: none.
-- A: `state-assoc-midatlantic/samples/`: `mpa-home.html` 53.7 KB; `mpa-school-list.aspx` 98.3 KB; `mpa-xc-boys.aspx` 66.5 KB; `mpa-outdoor-track.aspx` 52.7 KB; `sitemap-mpa.xml` 1.2 KB; `mpa-robots.txt` 247 B; `mpaonline-home.html` 626 B; `me-milesplit-teams.html` 74.7 KB. `coach-directories-national/samples/assoc-home/ME__mpa.cc.html` **MISSING (0 wire)**, `ME__maineprincipalsassociation.com.html` **MISSING (0 wire)**.
+- A: `state-assoc-midatlantic/samples/`: `mpa-home.html` 53.7 KB; `mpa-school-list.aspx` 98.3 KB; `mpa-xc-boys.aspx` 66.5 KB; `mpa-outdoor-track.aspx` 52.7 KB; `sitemap-mpa.xml` 1.2 KB; `mpaonline-home.html` 626 B; `me-milesplit-teams.html` 74.7 KB. `coach-directories-national/samples/assoc-home/ME__mpa.cc.html` **MISSING (0 wire)**, `ME__maineprincipalsassociation.com.html` **MISSING (0 wire)**.
 - B: raw `www.mpa.cc` 14. `report.json`: `me_mpa` 102,465 B → **152 schools** (list); `me_mpa_directory` 288,570 B → **147 schools / 472 coaches / 310 TF-XC**; `me_milesplit`. `extra/ME-school-sites.jsonl` 3.9 KB.
 - C: none today.
 ### 3. Fill plan

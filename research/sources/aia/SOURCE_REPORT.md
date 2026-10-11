@@ -15,26 +15,15 @@
 
 - School search JSON: `https://aiaonline.org/schools/search.json?q={query}`
 - School profile: `https://aiaonline.org/schools/{id}` (HTML, Vue.js SSR)
-- Robots: `https://aiaonline.org/robots.txt` (allows all paths)
 
 ## Capture Date
 
 2026-10-04
 
-## Robots Status
-
-```
-User-agent: *
-Disallow:
-```
-
-All paths allowed. No restrictions observed.
-
 ## URLs Capped and Captured as Fixtures
 
 | URL | Fixture File | Status | Byte Count | SHA256 |
 |-----|--------------|--------|------------|--------|
-| `https://aiaonline.org/robots.txt` | `tests/fixtures/aia/robots.txt` | 200 | 24 | `e5c4b844…` |
 | `https://aiaonline.org/schools/search.json?q=chandler` | `tests/fixtures/aia/search_chandler.json` | 200 | 3,809 | `888c7992…` |
 | `https://aiaonline.org/schools/100` | `tests/fixtures/aia/school_100_chandler.html` | 200 | 105,424 | `f59ff639…` |
 | `https://aiaonline.org/schools/68` | `tests/fixtures/aia/school_68_seton.html` | 200 | 91,648 | `54333200…` |

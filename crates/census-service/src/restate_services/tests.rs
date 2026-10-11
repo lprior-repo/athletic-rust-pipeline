@@ -1170,7 +1170,7 @@ fn classification_survives_through_job_error() {
     use super::job_error;
 
     let terminal = job_error(JobError::Terminal {
-        message: "robots.txt disallowed".to_string(),
+        message: "terminal refusal".to_string(),
     });
     assert!(
         format!("{terminal:?}").contains("Terminal"),

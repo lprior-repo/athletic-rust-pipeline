@@ -1,8 +1,0 @@
-
-User-agent: *
-
-Disallow: /Error/
-Disallow: /error/
-
-Sitemap: https://www.fieldlevel.com/sitemap.xml
-

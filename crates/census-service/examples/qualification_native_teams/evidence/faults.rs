@@ -31,7 +31,7 @@ pub(super) fn checks(faults: &Faults, cold: Option<&Snapshot>) -> Result<Vec<Val
     };
     Ok(permanent.into_iter().chain(interrupted).chain([
         oracle("permanent_fetch_network_response_refusal", false,
-            json!({"status":"UNPROVEN", "reason":"fixed serving-owner budget refusal is not an HTTP/auth/robots/publisher response"})),
+            json!({"status":"UNPROVEN", "reason":"fixed serving-owner budget refusal is not an HTTP/auth/publisher response"})),
         oracle("full_machine_reset_and_real_clock_fault_qualification", false,
             json!({"status":"UNPROVEN", "reason":"endpoint TERM/restart with native owner retained is not machine-reset or clock-fault evidence"})),
         oracle("fresh_positive_source_acquisition_qualification", false,

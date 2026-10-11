@@ -8,7 +8,7 @@
     "rule": "every count below names the local sample file it was measured from; counts were re-derived from disk on 2026-09-22 (see SOURCE_REPORT.md § Reproduction)"
   },
   "FL": {
-    "association": {"name": "Florida High School Athletic Association", "host": "fhsaa.com", "platform": "SIDEARM on IIS/ASP.NET", "robots_file": "samples/robots-fhsaa.txt", "robots_verdict": "allow-with-crawl-delay", "crawl_delay_seconds": 5, "disallowed_paths": ["/images/", "/documents/", "/admin/", "/services/", "/site/", "/*.js$", "/*.css$", "/*.jpg$", "/*.gif$", "/*.axd", "/*print=true*"]},
+    "association": {"name": "Florida High School Athletic Association", "host": "fhsaa.com", "platform": "SIDEARM on IIS/ASP.NET"},
     "enumerates": {
       "member_schools": {"count": 880, "surface": "https://fhsaa.homecampus.com/widget/school/directory (section_id=10)", "sample": "samples/homecampus-school-directory.html", "command": "grep -c 'id=\"school-button-' homecampus-school-directory.html", "cross_check": "FHSAA's own membership page states 'over 850 member combination/senior high schools and middles schools' (samples/membership-fhsaa.html)", "caveat": "widget mixes middle and senior high schools; per-level split not measured"},
       "coach_ad_contacts": {"count": 1, "unit": "school sampled, not the universe", "surface": "https://fhsaa.homecampus.com/widget/get-school-details/<id>/details", "sample": "samples/homecampus-school-details-2397.json", "fields": {"athleticFaculties": ["id", "firstname", "lastname", "aft_name", "work_extension", "work_phone", "email"], "coaches": ["id", "user_id", "firstname", "lastname", "aft_name", "email", "sport", "sport_id", "level_id", "level_name", "na_coach"]}, "measured": {"athleticFaculties_rows": 1, "coaches_rows": 5, "coaches_with_null_name": 5}, "note": "requires X-Requested-With: XMLHttpRequest (403 without; both attempts recorded in CAPTURES.md)"},
@@ -19,10 +19,10 @@
       "regular-season meets (no FHSAA surface lists them; only state-series/tournament artifacts)",
       "numeric grade (9-12) anywhere in captured surfaces",
       "school level (middle vs senior high) in the widget",
-      "/documents/** PDFs (robots-disallowed, includes the Hy-Tek school-codes file and state-series documents)"
+      "/documents/** PDFs (includes the Hy-Tek school-codes file and state-series documents)"
     ],
     "result_sources": [
-      {"name": "TFRRS", "host": "florida.tfrrs.org", "robots": "comment-only", "sample": "samples/tfrrs-fl-list-5587-4a-region-1.html", "rows": 1469, "grade_field": "Year = FR/SO/JR/SR", "class_labels": {"JR": 487, "SR": 529, "SO": 291, "FR": 167}, "athlete_id_example": "https://florida.tfrrs.org/athletes/8405585/Creekside/_Josh_Howell", "caveat": "list page contains 0 team anchors and 0 meet anchors; names are plain text"},
+      {"name": "TFRRS", "host": "florida.tfrrs.org", "sample": "samples/tfrrs-fl-list-5587-4a-region-1.html", "rows": 1469, "grade_field": "Year = FR/SO/JR/SR", "class_labels": {"JR": 487, "SR": 529, "SO": 291, "FR": 167}, "athlete_id_example": "https://florida.tfrrs.org/athletes/8405585/Creekside/_Josh_Howell", "caveat": "list page contains 0 team anchors and 0 meet anchors; names are plain text"},
       {"name": "Half Mile Timing", "url": "http://live.halfmiletiming.com/", "role": "live T&F results (linked by FHSAA)"},
       {"name": "PrimeTime Timing", "url": "https://live.pttiming.com/xc-ptt.html?mid=8269", "role": "live XC results (linked by FHSAA)"}
     ],
@@ -30,7 +30,7 @@
     "recommendation": "PRIMARY + RESULT_SOURCE"
   },
   "GA": {
-    "association": {"name": "Georgia High School Association", "host": "ghsa.net", "platform": "Drupal 7", "robots_file": "samples/robots-ghsa.txt", "robots_verdict": "allow-with-crawl-delay", "crawl_delay_seconds": 10},
+    "association": {"name": "Georgia High School Association", "host": "ghsa.net", "platform": "Drupal 7"},
     "enumerates": {
       "member_schools_dropdown": {"count": 457, "surface": "https://www.ghsa.net/school-directory", "sample": "samples/school-directory-ghsa.html", "command": "grep -o '<option' school-directory-ghsa.html | wc -l  # 458 incl. placeholder", "id_range": "6..713"},
       "member_schools_pdf": {"count": 456, "surface": "https://www.ghsa.net/ghsa-directory-feed/pdf", "sample": "samples/ghsa-directory-feed.pdf", "file_facts": {"pages": 338, "bytes": 644097}, "class_distribution": {"A": 72, "AA": 85, "AAA": 62, "AAAA": 60, "AAAAA": 61, "AAAAAA": 64, "AAAAAAA": 52}},
@@ -51,7 +51,7 @@
     "milesplit_link_verbatim": "<a href=\"http://ga.milesplit.com/\" title=\"\">MileSplitGA</a> and <a href=\"http://ga.milesplit.com/stats\" title=\"\">State Rankings</a> (cross-country page); workflow page /report-regionarea-track-winners-milesplit-2027-04-24-000000"
   },
   "NC": {
-    "association": {"name": "North Carolina High School Athletic Association", "host": "nchsaa.org", "platform": "WordPress 7.1 + SportsPress 2.7.31", "robots_file": "samples/robots-nchsaa.txt", "robots_verdict": "allow-all"},
+    "association": {"name": "North Carolina High School Athletic Association", "host": "nchsaa.org", "platform": "WordPress 7.1 + SportsPress 2.7.31"},
     "enumerates": {
       "member_schools": {"count": 451, "surface": "https://www.nchsaa.org/schools/", "sample": "samples/schools-nchsaa.html", "fields": ["school_name", "region", "classification", "conference", "football_only_conference"], "example_row": {"school_name": "A.C. Reynolds High School", "region": "8", "classification": "6A", "conference": "Mountain 5A/6A", "football_only_conference": ""}},
       "conference_administrators": {"count": 77, "fields": ["conference", "administrator", "email"], "example": {"conference": "Albemarle (AAC) 2A", "administrator": "Sonya Rinehart", "email": "srinehart@ecps.k12.nc.us"}},
@@ -67,7 +67,7 @@
     "milesplit_link_verbatim": "<a href=\"http://nc.milesplit.com/rankings\">…</a> (site-wide footer)"
   },
   "SC": {
-    "association": {"name": "South Carolina High School League", "host": "schsl.org", "platform": "WordPress 7.1.1", "robots_file": "samples/robots-schsl.txt", "robots_verdict": "allow-all-except-wp-admin"},
+    "association": {"name": "South Carolina High School League", "host": "schsl.org", "platform": "WordPress 7.1.1"},
     "enumerates": {
       "classified_schools": {"count": 229, "surface": "https://schsl.org/archives/17912 (2026-2028 SCHSL Reclassification)", "sample": "samples/reclassification-2026-2028-schsl.html", "per_class": {"5A": 35, "4A": 45, "3A": 35, "2A": 44, "1A": 70}, "non_football_marked": 21, "marker_verbatim": "**Denotes Schools Not Playing Football", "source_data_quality": "Class 4A Region 1 contains the verbatim token 'Westsid' (typo in the published post)"}
     },
@@ -79,19 +79,19 @@
     "athletic_net_references_found": 0
   },
   "VA": {
-    "association": {"name": "Virginia High School League", "host": "vhsl.org", "robots_file": "../state-assoc-midatlantic/samples/robots-vhsl.txt (sibling-lane capture)", "robots_verdict": "DISALLOW-ALL for User-agent: *", "requests_issued_by_this_lane": 0},
+    "association": {"name": "Virginia High School League", "host": "vhsl.org", "requests_issued_by_this_lane": 0},
     "enumerates": {
       "state_meet": {"count": 1, "surface": "https://va.milesplit.com/meets/742518", "sample": "samples/vhsl-class5-state-meet-va-milesplit.html", "fields": {"meet_name": "VHSL Class 5 State Championships 2026", "dates": "Jun 05, 2026 / Jun 06, 2026", "venue": "Todd Stadium", "city_state": "Newport News, VA", "host": "Hosted by VHSL", "level": "State", "timing_provider": "Timing/Results Tidewater Timing Company"}}
     },
-    "does_not_enumerate": ["school universe (association site crawl-disallowed; MileSplit /teams is JS-loaded: 208,364-byte page with 0 team anchors)", "athlete results (no results page sampled in this lane)", "coach contacts (/contact disallowed by MileSplit robots)"],
-    "result_sources": [{"name": "MileSplit VA / MileStat", "host": "va.milesplit.com", "robots_file": "../state-assoc-midatlantic/samples/robots-va-milesplit.txt", "restrictions": ["/rankings", "/virtual-meets", "/api/", "/contact"], "notes": ["http://milestat.com/ 301-redirects to va.milesplit.com", "https://www.milestat.com/ fails TLS from curl 8.21.0 (recorded in CAPTURES.md)", "https://va.milesplit.com/meets returns 404"]}],
+    "does_not_enumerate": ["school universe (MileSplit /teams is JS-loaded: 208,364-byte page with 0 team anchors)", "athlete results (no results page sampled in this lane)", "coach contacts (/contact)"],
+    "result_sources": [{"name": "MileSplit VA / MileStat", "host": "va.milesplit.com", "notes": ["http://milestat.com/ 301-redirects to va.milesplit.com", "https://www.milestat.com/ fails TLS from curl 8.21.0 (recorded in CAPTURES.md)", "https://va.milesplit.com/meets returns 404"]}],
     "timing_provider_observed": "Tidewater Timing Company (VHSL Class 5 state meet page)",
     "gaps": ["any VHSL-side school or coach enumeration", "VA team universe (JS-only)", "grade fields for VA results"],
     "recommendation": "CONDITIONAL (third-party surfaces only)",
     "athletic_net_references_found": 0
   },
   "WV": {
-    "association": {"name": "West Virginia Secondary School Activities Commission", "host": "wvssac.org", "platform": "WordPress on rschooltoday", "robots_file": "samples/robots-wvssac.txt", "robots_verdict": "no robots.txt published (404)"},
+    "association": {"name": "West Virginia Secondary School Activities Commission", "host": "wvssac.org", "platform": "WordPress on rschooltoday"},
     "enumerates": {
       "classified_schools": {"count": 119, "surface": "https://assets-rst7.rschooltoday.com/rst7files/uploads/sites/588/2026/07/03113435/Classifications-25-27.pdf", "sample": "samples/classifications-2025-27-wvssac.pdf", "per_class": {"AAAA": 20, "AAA": 28, "AA": 32, "A": 39}, "fields": ["rank_in_class", "school_name", "enrollment"], "enrollment_range": [7, 1753], "band_labels_verbatim": ["\"AAAA\" SCHOOLS (1050 or more)", "\"AAA\" SCHOOLS (625 to 1049)", "\"AA\" Schools (351 to 624)", "\"A\" SCHOOLS (350 or Less)"], "class_A_id_gaps": [26, 30, 38, 40, 41, 44, 45, 46]},
       "season_documents": {"count": 7, "unit": "program/packet links on /school-resources/programs/", "sample": "samples/programs-wvssac.html", "note": "none are T&F/XC result files"}

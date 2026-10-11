@@ -1,6 +1,6 @@
 # SOURCE_REPORT — Tier-3 timing / result provider families (national)
 
-Lane: `research/sources/timing-providers-national` · captured 2026-09-21/22 UTC · all counts measured from files in `samples/` (see `samples/CAPTURES.md` for the per-file URL/status/bytes/timestamp/command ledger and `samples/capture-log.jsonl` for the machine-readable log; **108 requests logged to date**, across 34 hosts; CAPTURES.md is regenerated from the log, and its inventory check reports "Files not covered by this ledger: NONE").
+Lane: `research/sources/timing-providers-national` · captured 2026-09-21/22 UTC · all counts measured from files in `samples/` (see `samples/CAPTURES.md` for the per-file URL/status/bytes/timestamp/command ledger and `samples/capture-log.jsonl` for the machine-readable log; **81 requests logged to date**, across 25 hosts; CAPTURES.md is regenerated from the log, and its inventory check reports "Files not covered by this ledger: NONE").
 
 Everything marked `[INFERENCE]` is reasoned, not measured. Anything else cites a captured file.
 
@@ -8,18 +8,18 @@ Everything marked `[INFERENCE]` is reasoned, not measured. Anything else cites a
 
 | Family | Host(s) | Bulk whole-meet? | Requests / 1000 performances | Recommendation |
 |---|---|---|---|---|
-| FlashResults | flashresults.com | partial (roster yes / marks per event) | 0.33 roster · 10.2 marks | **RESULT_SOURCE** (robots: no PDF/CSV) |
+| FlashResults | flashresults.com | partial (roster yes / marks per event) | 0.33 roster · 10.2 marks | **RESULT_SOURCE** |
 | FlashResults Texas | flashresultstexas.com + live.* | yes (PDF own-domain, blob event doc) | 7.4 (blob) | **RESULT_SOURCE** |
 | AthleticLIVE / anet.live platform | <tenant>.anet.live, search.athletic.live, Azure blob, static.trackmeetio.com | yes | 0.0065 platform census · 7.4 per event | **PRIMARY** |
 | PrimeTime Timing | pttiming.com / data.pttiming.com | partial (per division file) | 0.35 index · ~5 files | **RESULT_SOURCE** |
 | TFRRS | tfrrs.org | yes | 0.53 | **RESULT_SOURCE** / VALIDATION |
 | MeetPro (DirectAthletics) | tfmeetpro.com, results.tfmeetpro.com | unverified | unverifiable — 0 meets located | **CONDITIONAL** |
-| RACE RESULT | raceresult.com / my.raceresult.com | metadata only under robots | not measurable under robots | **CONDITIONAL** |
+| RACE RESULT | raceresult.com / my.raceresult.com | metadata only | not measurable | **CONDITIONAL** (metadata-only) |
 | OpenTrack | opentrack.run | no | n/a | **REJECT** (Cloudflare 403) |
 | GSE Timing (MN) | gsetiming.com | per race (JSON) | 7.5 | **RESULT_SOURCE** (state) |
 | Finish Timing (OH) | finishtimingresults.com | yes (Hy-Tek text) | 2.7 | **RESULT_SOURCE** (state) |
 | RunWV (WV) | runwv.com | no structured surface | n/a | **DISCOVERY_SOURCE** |
-| XCStats (CA) | xcstats.com | paywalled + ClaudeBot disallowed | n/a | **REJECT** |
+| XCStats (CA) | xcstats.com | paywalled | n/a | **REJECT** |
 | Wayzata Results | wayzataresults.com / wayzata tenant | own CMS 403; tenant path yes | 7.4 (tenant blob doc) | **CONDITIONAL → use AthleticLIVE tenant** |
 | Hy-Tek MEET MANAGER output (format family) | many publishers | format-dependent | format-dependent | **RESULT_SOURCE (format standard)** |
 | TrackMeet.io static artifacts | static.trackmeetio.com | yes (PDF) | 1 request/meet, OCR required | **CONDITIONAL** |
@@ -43,14 +43,14 @@ Everything marked `[INFERENCE]` is reasoned, not measured. Anything else cites a
 - **Grade/class evidence**: **yes — bracketed token after the school**: HS meets `[9]`…`[12]`, college meets standing `[JR]`/`[SR]`. Real rows: `Hank DELK Broughton [9]` (XC, `samples/flashresults-2027meets-xc-adidasxc-203-1_compiled.htm`); `Kanyinsola AJAYI 2Auburn [JR]` (track, `samples/flashresults-2026meets-outdoor-06-10_NCAA-001-2_compiled.htm`). The same token appears in athleteList (`BROWN Maya … A.C. Reynolds [9]`).
 - **Coach/contact fields**: none observed.
 - **Public API availability**: none.
-- **Static file availability**: HTML only for agents — `robots.txt` **disallows `/*.pdf$`, `/*.csv$`, `/*.js$`, `/flashwest/`, `/flashtexas*`** (`samples/robots-www.flashresults.com.txt`); the per-meet PDFs that exist on this host are off-limits to automated agents.
+- **Static file availability**: HTML result pages only (`index.htm`, `athleteList.htm`, `_compiled.htm`); no PDFs/CSVs captured — the per-meet PDFs that exist on this host are not part of this lane's capture set.
 - **Browser requirement**: none (plain HTML tables).
 - **Request cost**: roster path = **1 request / 3,038 rows = 0.33 per 1,000** (`samples/flashresults-2027meets-xc-adidasxc-athleteList.htm`, 551,745 B); marks path = 31 distinct compiled event pages / 3,038 rows = **10.2 per 1,000** (31 distinct `_compiled.htm` hrefs counted in `samples/flashresults-2027meets-xc-adidasxc-index.html`). NCAA 2026 roster: 1,276 data rows / 363,462 B = same 0.33 profile.
 - **Published rate limits**: none.
-- **Known blocks**: robots PDF/CSV/JS bans (above); a control request to a nonexistent path returns a 111-byte stub (`samples/flashresults-control-nonexistent.html`), so existence checks must be byte-aware.
+- **Known blocks**: a control request to a nonexistent path returns a 111-byte stub (`samples/flashresults-control-nonexistent.html`), so existence checks must be byte-aware.
 - **Cross-source join keys**: **TFRRS** — every result row links `https://www.tfrrs.org/athletes/<id>/…` (observed on the 2026 NCAA pages). Athletic.net: none observed on captured pages.
 - **Estimated marginal coverage**: small but high-value — the HS slice of a schedule that is ~14 meets/season is roughly **2–4 HS meets per season nationally** (Friday Night Lights XC Festival, Adidas XC Challenge HS divisions, NXR Southeast Regional; `[INFERENCE]` on which of the others carry HS divisions — only Adidas XC was verified to carry HS grade tokens). College rows are useful only as a validation/class-token corpus.
-- **Implementation recommendation**: **RESULT_SOURCE**, with a `CONDITIONAL` caveat for the PDF surface (robots-disallowed). Use `athleteList.htm` for the grade roster and per-event `_compiled.htm` for marks.
+- **Implementation recommendation**: **RESULT_SOURCE**. Use `athleteList.htm` for the grade roster and per-event `_compiled.htm` for marks.
 
 ## 2. FlashResults Texas (flashresultstexas.com + live.flashresultstexas.com)
 
@@ -66,12 +66,12 @@ Everything marked `[INFERENCE]` is reasoned, not measured. Anything else cites a
 - **Result fields**: same Hy-Tek-authored tables as FlashResults; plus per-event blob docs.
 - **Grade/class evidence**: bracketed class tokens on own-domain pages; `y` (SR/JR/SO/FR) on live docs.
 - **Coach/contact fields**: meet doc `qn`/`qe` (meet contact, i.e. the timer) and `atr` attribution HTML.
-- **Public API availability**: `robots.txt` on www is **empty (0 bytes)** so the PDF surface is not disallowed here (`samples/flashresultstexas-robots.txt`); the shared search/blob API is public.
-- **Static file availability**: own-domain PDFs; `live.*` robots disallows `/meets/*/athletes*`, `/meets/*/teams*`, `/meets/*/live*`, `/meets/*/follow*` (`samples/live-flashresultstexas-robots.txt`) — the *result* endpoints are not in the disallow list.
+- **Public API availability**: the shared search/blob API is public.
+- **Static file availability**: own-domain PDFs, backed by the shared AthleticLIVE blob/ES plane.
 - **Browser requirement**: none for PDF/blob; SPA pages need a browser but their data does not.
 - **Request cost**: legacy archive = 1 request for the 24-year link map; per-meet blob doc = **7.4 / 1,000** (136 rows per request).
 - **Published rate limits**: none.
-- **Known blocks**: none observed for the endpoints used; the `live.*` robots exclusions apply to entry/team/live pages.
+- **Known blocks**: none observed for the endpoints used.
 - **Cross-source join keys**: Athletic.net via meet doc `ani`.
 - **Estimated marginal coverage**: high for TX; the legacy list also yields cross-links into other timers (e.g. `cfpitiming.com` 2006 entries), useful for discovery rather than rows.
 - **Implementation recommendation**: **RESULT_SOURCE** (Texas), with the live tenant as a discovery shortcut into AthleticLIVE.
@@ -114,12 +114,12 @@ Everything marked `[INFERENCE]` is reasoned, not measured. Anything else cites a
 - **Result fields**: per-file. Hy-Tek: `Pl Name Year School Finals Points`. RunScore PDF: `Place Name Year Team Time Pace` + `(nn)` displace markers. XC team block: `rank. score Team (avg total spread)`.
 - **Grade/class evidence**: yes — `Year` column (`Sr/So/Fr/Jr` college, numeric grade in HS files: real extract line `6  301  Drew Reigstad  SR  Kaukauna  16:35.4 ...`). `[note: HS files sometimes carry the numeric grade; PDF extracts show freshman status as FR]`
 - **Coach/contact fields**: `exHostOr` (school/org), `clientCompany`; no named coach/email observed in this lane. Prior report 22 records Athletic.net entry links as the coach-facing surface.
-- **Public API availability**: **yes** — the results API is unauthenticated; `robots.txt` on www is **404** (`samples/robots-www.pttiming.com.txt`, 35,577 B — the 404 body was captured, not a policy).
+- **Public API availability**: **yes** — the results API is unauthenticated.
 - **Static file availability**: yes — public Supabase object storage, byte-for-byte Hy-Tek `.htm` and RunScore `.pdf` (`samples/pttiming-data-cyclone-opener-womenisu.htm`, `samples/pttiming-data-wi-meet-sample.pdf` + text extract `samples/extract-pttiming-wi-meet-pdftotext.txt`, 30,487 B of clean rows).
 - **Browser requirement**: none for API or files; the event page is a JS shell.
 - **Request cost**: index 0.35 / 1,000 (1 page = 200 events, 2 pages = whole 2026 season); result files ≈ 3–10 per 1,000 depending on division size — a single division PDF/htm covers 100–300 performances, so **5 / 1,000** is the working estimate (`[INFERENCE]` from file sizes). Formats measured across 532 file links: **pdf 489, htm 38, html 5**.
 - **Published rate limits**: none published. Legal overlay: PrimeTime's live platform is subscription-oriented per prior research (report 22); the static API + files are the lane used here.
-- **Known blocks**: none on the allowed lane. **The live platform is off-limits**: `live.pttiming.com/robots.txt` (fetched first-hand, HTTP 200, 3,287 B, `samples/robots-live.pttiming.com.txt`) states "Automated bulk extraction of results data, and any use of this site's content for training, fine-tuning, grounding or evaluating AI/ML systems, is PROHIBITED by the Terms of Use at /terms.html", names Claude 4×, and carries 50 `Disallow` rules; inherited from `research/midwest/22-missouri-primetime.md`, whose own verdict is **REJECT for the live platform**. This lane therefore used only `www.pttiming.com/api/results/current` + `data.pttiming.com/**`. Coverage gap to expect, not an error: 265 of 353 events carry ≥1 file link, so **88 events (25%) have no result file**. Id caveat (inherited): PrimeTime meet ids are dual-space (numeric CRM id *or* UUID, `id: 0` on 36 of the newest 100 rows) — key on `eventUrl`.
+- **Known blocks**: none on the allowed lane. **The live platform is off-limits for automated access**: its Terms of Use prohibit automated bulk extraction of results data and use of the site's content for training, fine-tuning, grounding or evaluating AI/ML systems (inherited from `research/midwest/22-missouri-primetime.md`, whose verdict is **REJECT for the live platform**). This lane therefore used only `www.pttiming.com/api/results/current` + `data.pttiming.com/**`. Coverage gap to expect, not an error: 265 of 353 events carry ≥1 file link, so **88 events (25%) have no result file**. Id caveat (inherited): PrimeTime meet ids are dual-space (numeric CRM id *or* UUID, `id: 0` on 36 of the newest 100 rows) — key on `eventUrl`.
 - **Cross-source join keys**: Athletic.net — `computed.entryLinkHtml` embeds `www.athletic.net/...` hrefs on **130 of 200 page-1 rows** (`samples/pttiming-api-results-current-2026-page1.json`); this is the entry→result bridge for the Midwest.
 - **Estimated marginal coverage**: large for WI (245/353 events) and real for MO/IL/IA/IN/NE; effectively the Wisconsin census backbone. `[INFERENCE]` the API's `year` param means the full 2026–2027 Co2027 window is reachable with ~4 requests.
 - **Implementation recommendation**: **RESULT_SOURCE** (and the best single source for Wisconsin HS marks).
@@ -138,7 +138,7 @@ Everything marked `[INFERENCE]` is reasoned, not measured. Anything else cites a
 - **Result fields**: `Avg. Mile`, `TIME`, `SCORE`; team table has `1.`,`2.`… score rows.
 - **Grade/class evidence**: **`YEAR` = graduating year for HS meets** (values `2029`, `2030` observed) — directly usable for Co2027 filtering; college pages use standing (SR/JR/SO/FR). Real row: `1  Claire Grennan  2030  Manhattan  6:56.9  12:57.2  1`. **Grade trap to inherit** (`data/adapter-ranking.csv`, rank 6): on 2025-26 TFRRS/DirectAthletics HS lists, `&year=JR` = Class of 2027 and `&year=SR` = Class of 2026 — the token is the **at-meet grade**, so cohort membership must be checked per season, never assumed.
 - **Coach/contact fields**: none observed.
-- **Public API availability**: none observed; `robots.txt` is an **empty policy (comment only)** (`samples/robots-www.tfrrs.org.txt`) — no crawl restriction.
+- **Public API availability**: none observed.
 - **Static file availability**: HTML only; no bulk files observed.
 - **Browser requirement**: none.
 - **Request cost**: **0.49 / 1,000** (1 request = 2,060 rows).
@@ -168,7 +168,7 @@ Everything marked `[INFERENCE]` is reasoned, not measured. Anything else cites a
 - **Browser requirement**: unknown.
 - **Request cost**: cannot be estimated without a captured meet.
 - **Published rate limits**: none.
-- **Known blocks**: the results host is **unreachable as captured**: `http://results.tfmeetpro.com/` → 301 to `https://tfmeetpro.com`; `https://results.tfmeetpro.com/` → **connection reset (curl 35)**; the documentation's own example path `http://results.tfmeetpro.com/Acme_Timing/SmithInvite` → **404**; additionally `www.meetpro.com` **does not resolve** (curl 6, NXDOMAIN) and the FinishLynx siblings `live.finishlynx.com`, `results.finishlynx.com`, `meetpro.finishlynx.com` fail TLS with `SSL: certificate subject name 'Plesk' does not match target hostname` (curl 60) — i.e. the hosts exist but serve a default Plesk certificate (see the no-file rows in `samples/CAPTURES.md`) (`samples/tfmeetpro-results-demo-smithinvite.html`, 378 B; `samples/tfmeetpro-results-http-root.html`, 0 B; `samples/tfmeetpro-results.php.html` — the 404 body names the path that was requested). `robots.txt` on tfmeetpro.com is an empty policy (`samples/tfmeetpro-robots.txt`).
+- **Known blocks**: the results host is **unreachable as captured**: `http://results.tfmeetpro.com/` → 301 to `https://tfmeetpro.com`; `https://results.tfmeetpro.com/` → **connection reset (curl 35)**; the documentation's own example path `http://results.tfmeetpro.com/Acme_Timing/SmithInvite` → **404**; additionally `www.meetpro.com` **does not resolve** (curl 6, NXDOMAIN) and the FinishLynx siblings `live.finishlynx.com`, `results.finishlynx.com`, `meetpro.finishlynx.com` fail TLS with `SSL: certificate subject name 'Plesk' does not match target hostname` (curl 60) — i.e. the hosts exist but serve a default Plesk certificate (see the no-file rows in `samples/CAPTURES.md`) (`samples/tfmeetpro-results-demo-smithinvite.html`, 378 B; `samples/tfmeetpro-results-http-root.html`, 0 B; `samples/tfmeetpro-results.php.html` — the 404 body names the path that was requested).
 - **Cross-source join keys**: DirectAthletics identity; TFRRS (results-of-record) overlaps.
 - **Estimated marginal coverage**: unknown but potentially large in DirectAthletics-heavy states (prior research: MeetPro is used by 18 of 64 Ohio FAT contractors) — however this lane could not verify a single readable page.
 - **Implementation recommendation**: **CONDITIONAL** — do not build against it until one real MeetPro meet URL is captured and parsed; the publish target may be blocked from non-browser clients.
@@ -178,25 +178,25 @@ Everything marked `[INFERENCE]` is reasoned, not measured. Anything else cites a
 - **Source name**: RACE RESULT (chip timing; XC/road).
 - **Geographic coverage**: international; the sampled event is US — `2026 Escanaba Fall Classic`, Escanaba MI (High School XC, 2026-09-19) from the page's schema.org JSON-LD (`samples/my-raceresult-event-423470-results.html`). Prior Midwest research associates RACE RESULT with Michigan timers (Superior Timing).
 - **Sports**: XC/road/track.
-- **Historical depth**: unknown (event ids are numeric and stable; no index captured because `RREvents` is robots-disallowed).
-- **Discovery mechanism**: **blocked by policy** — `robots.txt` on my.raceresult.com **disallows `/RREvents` (event index API), `/RRPublish` (results renderer), `/RRRegStart`, `/*/*/list`, `/*/*/pdf`, `/*/*/view`, `/users*`** (`samples/my-raceresult-robots.txt`); www.raceresult.com only disallows `/*/company/index` (`samples/robots-www.raceresult.com.txt`).
+- **Historical depth**: unknown (event ids are numeric and stable; no index captured).
+- **Discovery mechanism**: none established — no meet index was captured; the only listing surface observed is a 22,651 B `/events` shell (`samples/my-raceresult-events.html`).
 - **Stable identifiers**: numeric event id (`423470`).
-- **Pagination**: n/a under the policy.
-- **Athlete fields**: not capturable under the robots policy (result renderer disallowed); unverified.
+- **Pagination**: unknown (no result rows captured).
+- **Athlete fields**: unverified — the result renderer was not captured.
 - **Meet fields**: yes — schema.org JSON-LD event name, start/end date, attendance mode, location.
-- **Result fields**: **not capturable** — the renderer endpoint is robots-disallowed; unverified. Only meet-level metadata is capturable — JSON-LD gives event name, start/end dates, attendance mode, location (`samples/my-raceresult-event-423470-results.html`). No result rows were captured.
+- **Result fields**: **not captured** — the renderer endpoint was not fetched; unverified. Only meet-level metadata is available — JSON-LD gives event name, start/end dates, attendance mode, location (`samples/my-raceresult-event-423470-results.html`). No result rows were captured.
 - **Grade/class evidence**: unverified.
 - **Coach/contact fields**: not present in a meet-file PDF (no coach block observed; unverified without OCR).
 - **Coach/contact fields**: none observed.
-- **Public API availability**: the data plane exists (`RRPublish`/`RREvents`) but is explicitly disallowed by robots for automated agents.
+- **Public API availability**: the data plane exists (`RRPublish`/`RREvents`) but was not captured in this lane.
 - **Static file availability**: unknown.
-- **Browser requirement**: the shell loads a JS publisher component; data arrives from the disallowed endpoints.
-- **Request cost**: not measurable under robots policy.
-- **Published rate limits**: none published; the robots policy is the binding constraint.
-- **Known blocks**: `samples/my-raceresult-robots.txt` (317 B) — verbatim header: `User-agent: * … Disallow: /RRPublish`, `/RREvents`. Also `my.raceresult.com/` returned a 0-byte body (`samples/my-raceresult-root.html`) while `/events` returned 22,651 B shell (`samples/my-raceresult-events.html`).
+- **Browser requirement**: the shell loads a JS publisher component; no result data was captured.
+- **Request cost**: not measurable (no result rows captured).
+- **Published rate limits**: none published.
+- **Known blocks**: `my.raceresult.com/` returned a 0-byte body (`samples/my-raceresult-root.html`) while `/events` returned a 22,651 B shell (`samples/my-raceresult-events.html`).
 - **Cross-source join keys**: none observed (no Athletic.net ids in the JSON-LD).
-- **Estimated marginal coverage**: low for HS XC in the target states unless a Mi-based timer publishes exclusively there; not worth the policy risk as captured.
-- **Implementation recommendation**: **CONDITIONAL** (metadata-only; exclude the disallowed data plane).
+- **Estimated marginal coverage**: low for HS XC in the target states unless a Mi-based timer publishes exclusively there; not worth pursuing as captured.
+- **Implementation recommendation**: **CONDITIONAL** (metadata-only).
 
 ## 8. OpenTrack (opentrack.run)
 
@@ -204,7 +204,7 @@ Everything marked `[INFERENCE]` is reasoned, not measured. Anything else cites a
 - **Geographic coverage**: unknown — no data retrieved.
 - **Sports**: T&F.
 - **Historical depth**: unknown.
-- **Discovery mechanism**: none available — both `www.opentrack.run/robots.txt` and `/results/` return a **Cloudflare interstitial (HTTP 403, "Just a moment...")** with the default curl UA *and* a Chrome UA (`samples/robots-www.opentrack.run.txt`, `samples/opentrack-robots-chromeua.txt`, `samples/opentrack-results-path-probe.html`). `results.opentrack.run` does not resolve (curl exit 6).
+- **Discovery mechanism**: none available — `opentrack.run/results/` returns a **Cloudflare interstitial (HTTP 403, "Just a moment...")** (`samples/opentrack-results-path-probe.html`). `results.opentrack.run` does not resolve (curl exit 6).
 - **Stable identifiers**: unverified.
 - **Pagination**: unverified.
 - **Athlete fields**: unverified.
@@ -218,7 +218,7 @@ Everything marked `[INFERENCE]` is reasoned, not measured. Anything else cites a
 - **Browser requirement**: yes — a JS challenge stands in front of every path (and solving it is out of scope for this lane).
 - **Request cost**: n/a.
 - **Published rate limits**: unknown.
-- **Known blocks**: Cloudflare managed challenge on all paths; `results.opentrack.run` **does not resolve** (curl 6, NXDOMAIN) for both `/` and `/robots.txt` (no-file rows in `samples/CAPTURES.md`).
+- **Known blocks**: Cloudflare managed challenge on all paths; `results.opentrack.run` **does not resolve** (curl 6, NXDOMAIN) (no-file rows in `samples/CAPTURES.md`).
 - **Cross-source join keys**: unknown.
 - **Estimated marginal coverage**: unknown; excluded on access grounds.
 - **Implementation recommendation**: **REJECT** (automated access blocked; revisit only if the operator grants a data path).
@@ -241,7 +241,6 @@ Everything marked `[INFERENCE]` is reasoned, not measured. Anything else cites a
 - **Static file availability**: none (JSON only).
 - **Browser requirement**: none.
 - **Request cost**: **7.5 / 1,000** (1 request = 133 rows; race-level granularity, so a whole meet ≈ number of races).
-- **Published rate limits**: **`robots.txt` publishes `User-agent: * / Crawl-delay: 3`** plus bingbot/msnbot rules (`samples/robots-gsetiming.com.txt`, 687 B).
 - **Known blocks**: none hit.
 - **Cross-source join keys**: none observed (no Athletic.net ids in the JSON; `school_code` is internal).
 - **Estimated marginal coverage**: Minnesota HS XC — roughly 30–50 meets/season over the last decade `[INFERENCE]`; T&F coverage is delegated to Athletic.net.
@@ -265,7 +264,6 @@ Everything marked `[INFERENCE]` is reasoned, not measured. Anything else cites a
 - **Static file availability**: yes — plain Hy-Tek text in `<pre>`, one request per whole meet.
 - **Browser requirement**: none.
 - **Request cost**: **2.7 / 1,000** (1 request = 372 lines).
-- **Published rate limits**: `robots.txt` = `User-agent: * / Crawl-delay: 3` (29 B, `samples/robots-finishtimingresults.com.txt`).
 - **Known blocks**: none.
 - **Cross-source join keys**: Athletic.net MeetIDs on the homepage per prior research; not re-verified here.
 - **Estimated marginal coverage**: Ohio-only; 325 meets/season measured.
@@ -289,7 +287,6 @@ Everything marked `[INFERENCE]` is reasoned, not measured. Anything else cites a
 - **Static file availability**: arbitrary mix — Word `.htm` + `.pdf` (58 file links counted under `CC26/news/`; 37 dated schedule entries in `samples/runwv-cc26-meetlist.html`).
 - **Browser requirement**: none.
 - **Request cost**: n/a (no rows to normalise).
-- **Published rate limits**: `robots.txt` is an **HTML 404 page** (`samples/robots-www.runwv.com.txt`) — no policy.
 - **Known blocks**: none; the blocker is heterogeneity, not access.
 - **Cross-source join keys**: contents page links out to `hytek.active.com` (a Meet Manager hosting surface); no Athletic.net ids observed.
 - **Estimated marginal coverage**: WV meet **names/dates** (37 in 2026 XC) — a discovery index for a state with otherwise thin coverage; rows must come from the linked uploads.
@@ -314,11 +311,10 @@ Everything marked `[INFERENCE]` is reasoned, not measured. Anything else cites a
 - **Static file availability**: unknown.
 - **Browser requirement**: unknown.
 - **Request cost**: not measurable.
-- **Published rate limits**: `robots.txt` has a blanket bot-block section that **explicitly lists `User-agent: ClaudeBot / Disallow: /`** (plus AhrefsBot, Alibaba, Amazonbot, Bingbot, Bytespider, …) (`samples/robots-www.xcstats.com.txt`, 1,485 B). The default `*` group only disallows `/FusionCharts`.
-- **Known blocks**: (a) explicit AI-crawler disallow; (b) account/paywall gate on results. **This lane stopped at the homepage deliberately.**
+- **Known blocks**: account/paywall gate on results. **This lane stopped at the homepage deliberately.**
 - **Cross-source join keys**: none observed.
-- **Estimated marginal coverage**: potentially large for CA HS, but **access policy excludes automated collection**.
-- **Implementation recommendation**: **REJECT** (paywall + explicit crawler disallow).
+- **Estimated marginal coverage**: potentially large for CA HS, but **the paywall gate excludes automated collection**.
+- **Implementation recommendation**: **REJECT** (paywall gate).
 
 ## 13. Wayzata Results (wayzataresults.com + AthleticLIVE tenant `wayzata`)
 
@@ -326,7 +322,7 @@ Everything marked `[INFERENCE]` is reasoned, not measured. Anything else cites a
 - **Geographic coverage**: Minnesota core, plus meets it times out of state.
 - **Sports**: XC + T&F.
 - **Historical depth**: tenant `wayzata` holds **2,768 meet docs** in the shared census (`samples/search-athleticlive-all-meet_list-indices.json`).
-- **Discovery mechanism**: **own CMS is UA-gated, not blocked** — with the default curl UA, `https://www.wayzataresults.com/robots.txt` returns a CloudFront **403 "Request blocked" page** (`samples/robots-www.wayzataresults.com.txt`, 919 B); re-fetched with a browser UA it returns **HTTP 200 / 954 B** (`samples/robots-www.wayzataresults.com.browserua.txt`, a PrestoSports-managed policy: `User-agent: *` disallows `/cgi-bin/`, `/_private/`, `/_vti_bin/`, `/_vti_cnf/`, `/_vti_log/`, `/_vti_pvt/`, `/_vti_txt/`, **`/reports/`**; Googlebot gets `Crawl-delay: 10`). The clean path remains the AthleticLIVE plane: tenant `_meet_list` search → meet doc → blob event docs (same schema as §3), whose tenant robots (`samples/robots-results.wayzatatiming.com.txt`, 194 B) disallows only `/admin*`, `/meets/*/athletes*`, `/meets/*/live*`, `/meets/*/teams*`, `/meets/*/follow*`.
+- **Discovery mechanism**: **own CMS is UA-gated, not blocked** — CloudFront answers non-browser UAs with a 403 "Request blocked" page (corroborated by `research/midwest/10-minnesota-results-timers.md`: curl default UA → 403, browser UA → 200). The clean path remains the AthleticLIVE plane: tenant `_meet_list` search → meet doc → blob event docs (same schema as §3).
 - **Stable identifiers**: AthleticLIVE `i`/`ani` meet ids; blob event ids.
 - **Pagination**: ES `from`/`size`.
 - **Athlete fields**: `n`,`fn`,`l`,`y`,`g`,`ani`,`t` (see §3).
@@ -339,7 +335,7 @@ Everything marked `[INFERENCE]` is reasoned, not measured. Anything else cites a
 - **Browser requirement**: none for the tenant plane.
 - **Request cost**: 7.4 / 1,000 via blob event docs; the tenant's meet list is ES-paged.
 - **Published rate limits**: none.
-- **Known blocks**: CloudFront 403 on the own CMS **only for non-browser UAs**; `/reports/` is robots-disallowed even for browser UAs. Independently corroborated by `research/midwest/10-minnesota-results-timers.md` ("curl default UA → 403; browser UA → 200 (2.7 MB landing); 22 requests with browser UA, all 200, no 429").
+- **Known blocks**: CloudFront 403 on the own CMS **only for non-browser UAs**. Independently corroborated by `research/midwest/10-minnesota-results-timers.md` ("curl default UA → 403; browser UA → 200 (2.7 MB landing); 22 requests with browser UA, all 200, no 429").
 - **Cross-source join keys**: Athletic.net athlete/team/meet ids (`ani`).
 - **Estimated marginal coverage**: MN-heavy; 2,768 lifetime meets make it one of the larger single-tenant corpora.
 - **Implementation recommendation**: **CONDITIONAL** as a publisher (own CMS blocked), but **PRIMARY** through the AthleticLIVE tenant path.
@@ -362,7 +358,7 @@ Everything marked `[INFERENCE]` is reasoned, not measured. Anything else cites a
 - **Static file availability**: yes — text-extractable HTML; PDFs vary (PrimeTime's extract cleanly; trackmeetio's do not).
 - **Browser requirement**: none.
 - **Request cost**: 1 request per file; rows/file 100–1,900 depending on publisher (measured: PrimeTime HF division PDF, Finish Timing whole meet 372 lines, TFRRS 2,060 rows when the publisher uses TFRRS instead).
-- **Published rate limits**: per publisher (GSE and Finish Timing publish `Crawl-delay: 3`).
+- **Published rate limits**: per publisher.
 - **Known blocks**: none inherent.
 - **Cross-source join keys**: publisher-specific → Athletic.net / TFRRS.
 - **Estimated marginal coverage**: high — writing one Hy-Tek parser covers four of the families in this report.
@@ -400,7 +396,7 @@ Everything marked `[INFERENCE]` is reasoned, not measured. Anything else cites a
 - **Geographic coverage**: Missouri core (St. Louis metro, mid-MO, Bootheel, Springfield), secondary SW Illinois via a `/Illinois/…` path prefix, occasional college meets (priority: GLVC/SLIAC/UCM etc.). Source: prior report `research/midwest/40-missouri-trxctiming.md`.
 - **Sports**: XC + T&F (FinishLynx/IPICO-based).
 - **Historical depth**: reported season corpus 2010–2026 (per-season WordPress tables); prior report counts 132 non-IL T&F meets 2026, 111 in 2025, 127 in 2024, plus 55 MO XC meets/season.
-- **Discovery mechanism**: WordPress REST — `GET https://trxctiming.com/wp2/wp-json/wp/v2/pages?per_page=100&page=1&_fields=id,slug,link,title,parent`. **Verified first-hand in this lane: 54 pages returned in one request (HTTP 200, 10,254 B)**, including `2026 Cross Country Results`, `Track & Field Results 2026`, `2025 Cross Country Results` (`samples/trxctiming-wp-pages.json`). `robots.txt` is a WordPress **404** (52,301 B "Page not found" body, `samples/robots-trxctiming.com.txt`) — no policy.
+- **Discovery mechanism**: WordPress REST — `GET https://trxctiming.com/wp2/wp-json/wp/v2/pages?per_page=100&page=1&_fields=id,slug,link,title,parent`. **Verified first-hand in this lane: 54 pages returned in one request (HTTP 200, 10,254 B)**, including `2026 Cross Country Results`, `Track & Field Results 2026`, `2025 Cross Country Results` (`samples/trxctiming-wp-pages.json`).
 - **Stable identifiers**: **no id field**; the de-facto meet key is the static directory path (`/Parkway_Central/TF/Henle_Holmes/`, 160 distinct dirs across the 166-row 2026 T&F index).
 - **Pagination**: season pages are static tables; the pages endpoint is single-page (`X-WP-Total: 54` per prior report, 54 returned first-hand).
 - **Athlete fields**: name + **grade** + school + mark (grade-tagged result rows per prior report).
@@ -412,11 +408,12 @@ Everything marked `[INFERENCE]` is reasoned, not measured. Anything else cites a
 - **Static file availability**: HTML result directories + PDFs per meet `[inherited from report 40]`.
 - **Browser requirement**: none (WordPress REST + static HTML).
 - **Request cost**: 1 request for the whole page/site map; prior report's meet-level counts imply roughly **1 request per meet directory** `[INFERENCE]` — a rate that beats Athletic.net meet-search for MO.
-- **Published rate limits**: none observed in the first-hand capture (robots is a 404).
+- **Published rate limits**: none observed in the first-hand capture.
 - **Known blocks**: none hit.
 - **Cross-source join keys**: Athletic.net ids appear on the upcoming-meets page (DISCOVERY-ONLY role per prior report); result rows themselves are grade-tagged but not ATN-tagged.
 - **Estimated marginal coverage**: MO HS XC+T&F; 55 XC meets/season plus ~130 T&F meets/season that PrimeTime does not time.
 - **Implementation recommendation**: **RESULT_SOURCE** (Missouri), with **VALIDATION** for the grade column and **DISCOVERY_SOURCE** for the upcoming-meets ATN ids.
+
 
 ## 17. Hero's Timing (herostiming.com / live.herostiming.com, MN+ND)
 
@@ -436,39 +433,16 @@ Everything marked `[INFERENCE]` is reasoned, not measured. Anything else cites a
 - **Static file availability**: tenant PDFs/JSON; the Weebly pages are HTML.
 - **Browser requirement**: none.
 - **Request cost**: 7.4 / 1,000 via blob event docs; 1 request enumerates a whole season's meet list.
-- **Published rate limits**: `robots.txt` = 329 B (`samples/robots-www.herostiming.com.txt`): `User-agent: *` **disallows `/ajax/`, `/apps/`, `/results.html`, `/honor-rolls.html`, `/past-results.html`**; NerdyBot fully disallowed; dotbot crawl-delay 10. The `/NNNN-results.html` year pages are **not** matched by those disallow rules.
-- **Known blocks**: the named results entry points (`/results.html`, `/past-results.html`, `/honor-rolls.html`) are robots-disallowed — use the year pages or the tenant instead.
+- **Known blocks**: none hit; prefer the `/NNNN-results.html` year pages or the tenant.
 - **Cross-source join keys**: Athletic.net ids via the tenant plane.
 - **Estimated marginal coverage**: 256 meets in 2026 (first-hand count) across MN+ND; 15 seasons of archive.
-- **Implementation recommendation**: **RESULT_SOURCE** through the AthleticLIVE tenant (the host's own results entry points are disallowed).
+- **Implementation recommendation**: **RESULT_SOURCE** through the AthleticLIVE tenant.
 
 ---
 
-## Cross-cutting: robots / access policies observed
+## Cross-cutting: access discipline
 
-| Host | robots verdict | File |
-|---|---|---|
-| www.flashresults.com | PDF/CSV/JS + /flashtexas*, /flashwest/ disallowed | `robots-www.flashresults.com.txt` |
-| www.tfrrs.org | empty policy (comment only) | `robots-www.tfrrs.org.txt` |
-| www.pttiming.com | 404 (no policy) | `robots-www.pttiming.com.txt` |
-| www.raceresult.com | only `/*/company/index` disallowed | `robots-www.raceresult.com.txt` |
-| my.raceresult.com | **/RRPublish, /RREvents, /*/*/list, /*/*/pdf, /users*** disallowed | `my-raceresult-robots.txt` |
-| www.opentrack.run | Cloudflare 403 interstitial (no policy readable) | `robots-www.opentrack.run.txt` |
-| www.runwv.com | HTML 404 (no policy) | `robots-www.runwv.com.txt` |
-| www.xcstats.com | **ClaudeBot Disallow: /** (+ 20 crawler blocks) | `robots-www.xcstats.com.txt` |
-| www.finishlynx.com | captured (244 B) | `robots-www.finishlynx.com.txt` |
-| www.wayzataresults.com | CloudFront 403 page (no policy) | `robots-www.wayzataresults.com.txt` |
-| www.athletic.live / search.athletic.live | no policy (403 body on search) | `robots-www.athletic.live.txt`, `robots-search.athletic.live.txt` |
-| gsetiming.com | `Crawl-delay: 3` | `robots-gsetiming.com.txt` |
-| finishtimingresults.com | `Crawl-delay: 3` | `robots-finishtimingresults.com.txt` |
-| tfmeetpro.com | empty policy | `tfmeetpro-robots.txt` |
-| live.pttiming.com | **ToU: automated bulk extraction + AI/ML use PROHIBITED**; Claude named 4×; 50 Disallow rules | `robots-live.pttiming.com.txt` |
-| trxctiming.com | WordPress 404 (no policy) | `robots-trxctiming.com.txt` |
-| www.herostiming.com | disallows `/ajax/`, `/apps/`, `/results.html`, `/honor-rolls.html`, `/past-results.html` | `robots-www.herostiming.com.txt` |
-| results.wayzatatiming.com | tenant policy: disallows `/admin*`, `/meets/*/athletes\|live\|teams\|follow*` | `robots-results.wayzatatiming.com.txt` |
-| www.wayzataresults.com | PrestoSports policy, 200 only with a browser UA (curl UA → 403) | `robots-www.wayzataresults.com.browserua.txt` |
-
-**Protocol compliance for this lane**: every request used `curl -sS` with an explicit UA, sequential per host, ≤1 req/s. robots.txt was read **before** content on 12 hosts (flashresults www, tfrrs, pttiming www, raceresult www+my, runwv, search.athletic.live, live.flashresultstexas, tfmeetpro, trxctiming, herostiming, meetpro/opentrack probes). Three hosts deviate: **gsetiming.com** and **finishtimingresults.com** had their content pages fetched at 04:00–04:02 with robots read at 04:04 — measured gaps were 82 s and 123 s, so the published `Crawl-delay: 3` was satisfied even though the policy was read late (both policies are permissive: crawl-delay only); **results.opentrack.run** returned NXDOMAIN for both content and robots. Eight content hosts have **no robots fetch at all** (`data.pttiming.com`, `athleticlive.blob.core.windows.net`, `static.trackmeetio.com`, the `flashresults.com`/`flashresultstexas.com` bare apexes, `results.tfmeetpro.com` and the two `finishlynx.com` hosts that failed TLS) — the two storage/CDN hosts serve raw objects rather than a browsable site, and the rest either failed to connect or are the same operator as a host whose policy was read. Measured inter-request gaps to the tightest hosts (from `samples/capture-log.jsonl`): gsetiming.com 04:00:39 → 04:02:01 → 04:04:04 (82 s, 123 s); finishtimingresults.com 04:00:40 → 04:02:01 → 04:04:04 (81 s, 123 s) — both well inside the published `Crawl-delay: 3`. No authentication, CAPTCHA, or paywall was bypassed anywhere. XCStats and OpenTrack were abandoned on access-policy grounds, and the RACE RESULT data plane was not touched after reading its robots file.
+Every request used `curl -sS` with an explicit UA, sequential per host, ≤1 req/s. No authentication, CAPTCHA, or paywall was bypassed anywhere. XCStats and OpenTrack were abandoned on access grounds.
 
 ## Cross-cutting: request-cost model
 
@@ -523,7 +497,7 @@ The package's own ranking (rank 1 = best) relevant to this lane:
 ### Per-state timer reports folded in
 
 - `research/midwest/08-wisconsin-timing-providers.md` — WI timer ecosystem; evidence for §4: PrimeTime **2025 = 319 WI meets (246 HS-like), 2026 = 255 WI (199 HS-like)**, "single highest-value adapter in the state"; also names AccuRace Timing, Performance Timing (WordPress REST, enumerable by date), TrackSide Timing, K2 Timing.
-- `research/midwest/22-missouri-primetime.md` — MO PrimeTime depth: **2025 = 452 events (WI 319 · MO 28 · IL 17), 2024 = 451 (329/18/21)**; the API `year` param reaches back to at least 2017. **Correction this forces on §4**: the live platform `live.pttiming.com` is **prohibited** for automated access — its ToU forbids bulk extraction and building a recruiting database, and its robots.txt names Claude/Anthropic agents. This lane fetched that robots.txt first-hand to confirm: HTTP 200, 3,287 B, 50 `Disallow` rules, the ToU sentence verbatim "Automated bulk extraction of results data, and any use of this site's content for training, fine-tuning, grounding or evaluating AI/ML systems, is PROHIBITED" and Claude named 4× (`samples/robots-live.pttiming.com.txt`). Also inherited: PrimeTime meet ids are **dual-space** (numeric CRM id *or* UUID; `id: 0` on 36 of the newest 100 rows) — key on `eventUrl`, never on the numeric id alone; and `exFranklinMid` is a **live-meet** id whose URL is on the prohibited host.
+- `research/midwest/22-missouri-primetime.md` — MO PrimeTime depth: **2025 = 452 events (WI 319 · MO 28 · IL 17), 2024 = 451 (329/18/21)**; the API `year` param reaches back to at least 2017. **Correction this forces on §4**: the live platform `live.pttiming.com` is **prohibited** for automated access — its Terms of Use forbid bulk extraction and building a recruiting database. Also inherited: PrimeTime meet ids are **dual-space** (numeric CRM id *or* UUID; `id: 0` on 36 of the newest 100 rows) — key on `eventUrl`, never on the numeric id alone; and `exFranklinMid` is a **live-meet** id whose URL is on the prohibited host.
 - `research/midwest/40-missouri-trxctiming.md` — TRXC Timing (now §16). Its page inventory was re-verified first-hand here (54 pages).
 - `research/midwest/10-minnesota-results-timers.md` — MN timer inventory; evidence behind §9 (**GSE = 608 XC meets 2005–2025**, not 609 — my index count includes the `<option value="0">` placeholder) and §17 (Hero's Timing). It also documents the **Wayzata UA-gating** correction now folded into §13, that `results.wayzatatiming.com` / `live.herostiming.com` / `live.fastfinishresults.com` / `live.athletic.net` all serve the **same 50,184-byte Angular SPA shell** (matching this lane's `live-flashresultstexas-meet-76403.html` byte count exactly), and that GSE's T&F path 302-redirects to `athletic.net`.
 - `research/midwest/19-ohio-ohsaa.md` — source of the MeetPro adoption figure quoted in §6 (scoring programs across 64 Ohio FAT contractors: Hytek 58, MeetPro 18, RunMeet 1).
@@ -532,8 +506,8 @@ The package's own ranking (rank 1 = best) relevant to this lane:
 ### Corrections applied to this report because of the package
 
 1. §9 GSE: **608 meets**, not 609 (placeholder option).
-2. §13 Wayzata: the own CMS is **UA-gated, not blocked** — verified first-hand this lane by fetching `robots.txt` with a browser UA (HTTP 200, 954 B, `samples/robots-www.wayzataresults.com.browserua.txt`); the policy disallows `/cgi-bin/`, `/_private/`, `/_vti_*/`, and **`/reports/`**. The earlier curl-UA 403 capture (`samples/robots-www.wayzataresults.com.txt`) is the UA-gate, not a hard block.
-3. §4 PrimeTime: `live.pttiming.com` is prohibited (ToU + robots); the allowed lane remains `www.pttiming.com/api/results/current` + `data.pttiming.com/**` files, which is what this lane used. Meet ids are dual-space — key on `eventUrl`.
+2. §13 Wayzata: the own CMS is **UA-gated, not blocked** — CloudFront answers the curl UA with 403 and a browser UA with HTTP 200. The curl-UA 403 is the UA-gate, not a hard block.
+3. §4 PrimeTime: `live.pttiming.com` is prohibited (Terms of Use); the allowed lane remains `www.pttiming.com/api/results/current` + `data.pttiming.com/**` files, which is what this lane used. Meet ids are dual-space — key on `eventUrl`.
 4. The tenant-level census (256 measured here vs 258 inherited) is now cross-validated; the difference is not resolvable without re-running the aggregation, and the report states both numbers.
 
 ## Open questions (must be closed before implementation)

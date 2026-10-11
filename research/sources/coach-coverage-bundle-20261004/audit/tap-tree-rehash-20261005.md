@@ -16,17 +16,17 @@ Inventory/hash snapshot: **2026-10-05T01:43:03.146153+00:00 to 01:43:03.535082+0
 
 Digest resolution rules: tree-relative paths, explicit repository/bundle-relative paths, and sibling-prefix paths from sweep records; explicit `..` is honored literally, not silently repaired. Flat manifests with no filename resolve only to their **existing uniquely named `<digest>.body`** artifact. Duplicate declarations of the same resolved filename+expected digest are counted once, including repeated per-row provenance citations. A different digest for the same path would be counted separately. Four initially unbound checksum occurrences were identified as corroborating duplicates, not extra files: Indiana's XLSX trace, the two SNTCCCA `capture_file` declarations, and Wellesley's excerpt verification.
 
-`Claimed` below means unique resolved filename/expected-digest pairs in published machine-readable records, not distinct digest values or duplicate occurrences. `OK` means the actual `sha256sum` equals the published digest. Undigested/unexplained means raw/derived files with no published digest / those also not mentioned by filename in the tree's records or reports. Candidate data includes raw/, captures/, robots/, sweep/, and top-level CSV/JSON/body data, not all narrative/diagnostic scaffolding. Unclaimed candidates were also hashed, but no hash-match claim is possible without a published expected value.
+`Claimed` below means unique resolved filename/expected-digest pairs in published machine-readable records, not distinct digest values or duplicate occurrences. `OK` means the actual `sha256sum` equals the published digest. Undigested/unexplained means raw/derived files with no published digest / those also not mentioned by filename in the tree's records or reports. Candidate data includes raw/, captures/, sweep/, and top-level CSV/JSON/body data, not all narrative/diagnostic scaffolding. Unclaimed candidates were also hashed, but no hash-match claim is possible without a published expected value.
 
 Structural findings are **tree-local artifact presence**, not newly executed import/readback proof. Narrative/embedded records are distinguished from retained raw logs. Negative prose can mention a command without proving it ran; therefore the presence scan is not an acceptance verdict. Paired probe/extract trees and external ledger/store evidence are not silently credited across trees. A refused/seed-only probe can legitimately omit coach import; listed gaps identify missing tap evidence, not an instruction to bypass its access boundary.
 
 ## OUTPUT CONTRACT / OBSERVED TOTALS
 
 - Trees: **82**.
-- Published unique file/digest pairs: **394** = **380 OK + 13 MISMATCH + 1 MISSING**.
-- Existing named physical files hashed: **393**. Additional unclaimed raw/derived files hashed: **108**. These are hash-operation categories, not a deduplicated global physical-file total.
-- Undigested raw/derived files: **108**, of which **98** are also neither listed nor explained by filename; the other **10** are explained but lack a published digest.
-- Final structural classification: **3 OK**, **57 STRUCTURAL_GAPS**, **22 REQUALIFY**.
+- Published unique file/digest pairs: **393** = **380 OK + 13 MISMATCH**.
+- Existing named physical files hashed: **393**. Additional unclaimed raw/derived files hashed: **105**. These are hash-operation categories, not a deduplicated global physical-file total.
+- Undigested raw/derived files: **105**, of which **95** are also neither listed nor explained by filename; the other **10** are explained but lack a published digest.
+- Final structural classification: **3 OK**, **58 STRUCTURAL_GAPS**, **21 REQUALIFY**.
 - Declared capture dates: **70 trees** publish 2026-10-04/05 capture dates; **12** have undocumented capture dates. **Zero** publish an older capture date in the fields inspected. Historical source content dates are not treated as capture dates.
 - All **13 mismatches** are named below with full expected and actual digests. No mismatch is hidden or classified as a successful match.
 
@@ -86,9 +86,9 @@ Count reconciliation examples: NJ publishes **13 raw capture entries**, all 13 m
 | extract/SRC-271 | 3 | 3 | 0 | 0 | 0/0 | M,L,N | 04/05 | STRUCTURAL_GAPS |
 | probes/097-oh-ohsaa-seed | 3 | 3 | 0 | 0 | 0/0 | I,R,N | 04/05 | STRUCTURAL_GAPS |
 | probes/107-mi-eem | 9 | 9 | 0 | 0 | 0/0 | I,R,P | 04/05 | STRUCTURAL_GAPS |
-| probes/122-il-isbe | 0 | 0 | 0 | 0 | 55/55 | M,D,U,I,R,P,F | unknown | REQUALIFY |
+| probes/122-il-isbe | 0 | 0 | 0 | 0 | 54/54 | M,D,U,I,R,P,F | unknown | REQUALIFY |
 | probes/130-ia-doe | 5 | 5 | 0 | 0 | 0/0 | I,R,P | 04/05 | STRUCTURAL_GAPS |
-| probes/131-ia-arcgis | 9 | 9 | 0 | 0 | 6/6 | U,I,R,P | 04/05 | REQUALIFY |
+| probes/131-ia-arcgis | 9 | 9 | 0 | 0 | 5/5 | U,I,R,P | 04/05 | REQUALIFY |
 | probes/184-va-vdoe-directory | 2 | 2 | 0 | 0 | 0/0 | I,R,P | 04/05 | STRUCTURAL_GAPS |
 | probes/185-va-visaa | 2 | 2 | 0 | 0 | 0/0 | I,R,P | 04/05 | STRUCTURAL_GAPS |
 | probes/186-va-vhsl | 1 | 1 | 0 | 0 | 0/0 | I,R,P | 04/05 | STRUCTURAL_GAPS |
@@ -96,7 +96,7 @@ Count reconciliation examples: NJ publishes **13 raw capture entries**, all 13 m
 | probes/213-la-bese-nonpublic | 2 | 2 | 0 | 0 | 0/0 | I,N | 04/05 | STRUCTURAL_GAPS |
 | probes/223-sd-edudir | 4 | 4 | 0 | 0 | 0/0 | I,R,N | 04/05 | STRUCTURAL_GAPS |
 | probes/228-sdhsca-membership | 2 | 2 | 0 | 0 | 0/0 | I,R,P,F | 04/05 | STRUCTURAL_GAPS |
-| probes/230-pa-edna | 17 | 17 | 0 | 0 | 17/17 | U,I,R,P | 04/05 | REQUALIFY |
+| probes/230-pa-edna | 17 | 17 | 0 | 0 | 16/16 | U,I,R,P | 04/05 | REQUALIFY |
 | probes/231-paisaa-members | 0 | 0 | 0 | 0 | 2/2 | M,D,U,I,R,P,F | unknown | REQUALIFY |
 | probes/239-ks-directory | 0 | 0 | 0 | 0 | 2/2 | M,D,U,I,R,P,F | unknown | REQUALIFY |
 | probes/247-nces-ccd-selector | 5 | 5 | 0 | 0 | 0/0 | I,R,P | 04/05 | STRUCTURAL_GAPS |
@@ -129,7 +129,7 @@ Count reconciliation examples: NJ publishes **13 raw capture entries**, all 13 m
 | probes/sources/SRC-113 | 6 | 6 | 0 | 0 | 0/0 | I,R | 04/05 | STRUCTURAL_GAPS |
 | probes/sources/SRC-114 | 9 | 8 | 1 | 0 | 0/0 | M,I,R,P | 04/05 | REQUALIFY |
 | probes/sources/SRC-128 | 7 | 7 | 0 | 0 | 0/0 | I,R | 04/05 | STRUCTURAL_GAPS |
-| probes/sources/SRC-133 | 3 | 2 | 0 | 1 | 0/0 | L | 04/05 | REQUALIFY |
+| probes/sources/SRC-133 | 2 | 2 | 0 | 0 | 0/0 | L | 04/05 | STRUCTURAL_GAPS |
 | probes/sources/SRC-198 | 2 | 2 | 0 | 0 | 0/0 | I,R,P | 04/05 | STRUCTURAL_GAPS |
 | probes/sources/SRC-203 | 9 | 9 | 0 | 0 | 0/0 | I,R | 04/05 | STRUCTURAL_GAPS |
 
@@ -192,13 +192,9 @@ probes/sources/SRC-114/sweep.json
  record   sweep.json/files/5/sha256
 ```
 
-### Missing named file
-
-`probes/sources/SRC-133/manifest.json/robots/0/sha256` names `../iatrackcoaches/robots/www.iatrackcoaches.org.txt`, expected `42c1b29b65ce022d1e3bedb325c961d22de02b487a6a7272b7624cbe744fd253`. Relative to that tree, the named path resolves under `probes/sources/iatrackcoaches/` and is **missing**. The similarly named robots capture under `probes/iatrackcoaches/` is separately hashed in that tree; this audit does not rewrite or silently reinterpret the broken reference.
-
 ## Exact digest-coverage gaps
 
-All paths below are relative to the named tree. **Explained** means filename-mentioned in its report/records, not digest-covered. All remaining entries are **unexplained**. These are 108 files total, not mismatches (there is no expected digest to compare).
+All paths below are relative to the named tree. **Explained** means filename-mentioned in its report/records, not digest-covered. All remaining entries are **unexplained**. These are 105 files total, not mismatches (there is no expected digest to compare).
 
 Explained, but undigested (10):
 
@@ -211,7 +207,7 @@ Explained, but undigested (10):
 - `extract/SRC-179`: `excluded_rows.csv`, `rows.csv`.
 - `probes/ok-ossaarankings`: `rows.csv`.
 
-Neither listed nor explained (98):
+Neither listed nor explained (95):
 
 - `extract/130-ia-doe`: `rows.csv`.
 - `extract/131-ia-arcgis`: `rows.csv`, `schools_full.json`.
@@ -221,12 +217,12 @@ Neither listed nor explained (98):
 - `extract/228-sdhsca-membership`: `qualified.json`.
 - `extract/230-pa-edna`: `rows.csv`, `schools_full.json`.
 - `extract/231-paisaa-members`: `captures/3698405d7db8fb8c010c0e7f7ab0eef8ba975e5d887c30fda9325aa88c0cdeae.body`, `captures/c42e591d652b30b14a74f88e8e65d989079a4de831d24fd3c62969126bf26aba.body`, `rows.csv`.
-- `probes/131-ia-arcgis`: `count0.json`, `count1.json`, `layer0.json`, `layer1.json`, `robots.body`, `service.json`.
-- `probes/230-pa-edna`: `child-01.body`, `child-02.body`, `child-03.body`, `child-04.body`, `child-05.body`, `child-06.body`, `child-07.body`, `child-08.body`, `child-09.body`, `page.body`, `pnp-export-2.body`, `pnp-export.body`, `pnp-form-2.body`, `pnp-form.body`, `public-export.body`, `public-form.body`, `robots.body`.
+- `probes/131-ia-arcgis`: `count0.json`, `count1.json`, `layer0.json`, `layer1.json`, `service.json`.
+- `probes/230-pa-edna`: `child-01.body`, `child-02.body`, `child-03.body`, `child-04.body`, `child-05.body`, `child-06.body`, `child-07.body`, `child-08.body`, `child-09.body`, `page.body`, `pnp-export-2.body`, `pnp-export.body`, `pnp-form-2.body`, `pnp-form.body`, `public-export.body`, `public-form.body`.
 - `probes/231-paisaa-members`: `captures/3698405d7db8fb8c010c0e7f7ab0eef8ba975e5d887c30fda9325aa88c0cdeae.body`, `captures/c42e591d652b30b14a74f88e8e65d989079a4de831d24fd3c62969126bf26aba.body`.
 - `probes/239-ks-directory`: `captures/2510c48aa6246882e33fa7d500410799263ae4626e2cca59a7fc47d98b97b9a0.body`, `captures/dc1d54dab6ec8c00f70137927504e4f222c8395f10760b6beecfcfa94e08249f.body`.
 - `probes/ciac-dragonfly`: `directory-p1.json`, `directory-p2.json`.
-- `probes/122-il-isbe` (55 filenames):
+- `probes/122-il-isbe` (54 filenames):
 
 ```text
 candidate-01.body
@@ -283,7 +279,6 @@ captures/e7a1dd58428e78e1e7c5b809b6d7d077e9461c839af974551d96829cc7be238c.body
 captures/ed3a96184fb66bffa0db1fa9f1457a92750d3216626089055eec3b50c842010e.body
 captures/f4958d2a4b2805e8d371a03c9508d24e19c2d59b0e3afbcc162f041fd226ff79.body
 page.body
-robots.body
 ```
 
 ## Capture-date classification
@@ -302,7 +297,7 @@ Successful `run_shell` invocations used Python for inventory/record parsing and 
 | Full named-file sha256 audit | 0 | `/tmp/omp-shell-1791164583131-6jsjot.log` |
 | Anomaly summary | 0 | `/tmp/omp-shell-1791164592706-4gm6k5.log` |
 | Exact mismatch/path extraction | 0 | `/tmp/omp-shell-1791164602822-w5wtvy.log` |
-| Additional 108 unclaimed-file hashes / trace attribution | 0 | `/tmp/omp-shell-1791164682157-yc7bbb.log` |
+| Additional 105 unclaimed-file hashes / trace attribution | 0 | `/tmp/omp-shell-1791164682157-yc7bbb.log` |
 | Per-tree table / full mismatch / undigested rendering | 0 | `/tmp/omp-shell-1791164744828-93ex4f.log` |
 | Raw-capture vs total checksum count reconciliation | 0 | `/tmp/omp-shell-1791164771760-wixl6b.log` |
 
@@ -318,16 +313,16 @@ Exact executed compact summary command:
 python3 -c 'import json; x=json.load(open("/tmp/omp-shell-1791164583131-6jsjot.log")); print(json.dumps(x["totals"],indent=2)); [print(t["tree"],"CLAIM",t["claimed_unique_file_digest_pairs"],"OK",t["ok"],"BAD",len(t["mismatch"]),"MISS",len(t["missing"]),"UNBOUND",t["unbound"],"UNCOVERED",t["uncovered"],"GAPS",t["gaps"]) for t in x["trees"]]'
 ```
 
-That initial summary included 4 unbound duplicate occurrences and 26 preliminary REQUALIFY classifications. Source inspection resolved those duplicates and recognized embedded source mappings; the final observed totals are the 3/57/22 classification reported above. The underlying 380 matches / 13 mismatches / 1 missing file did not change.
+That initial summary included 4 unbound duplicate occurrences and 26 preliminary REQUALIFY classifications. Source inspection resolved those duplicates and recognized embedded source mappings; the final observed totals are the 3/58/21 classification reported above. The underlying 380 matches / 13 mismatches did not change.
 
 A multiline discovery command was rejected by the tool with the exact error **`command must be ascii`**. It was retried as a single-line `python3 -c 'exec("...\\n...")'` invocation and succeeded. No source files were written to work around that tool failure.
 
 ## ACCEPTANCE / HANDOFF
 
-Audit deliverable is complete: the per-tree table covers all 82 inventoried trees; every mismatch has its exact filename, record pointer and both digests; the missing reference is explicit; all uncovered raw/derived filenames are listed. **This is not an all-green tap bundle.**
+Audit deliverable is complete: the per-tree table covers all 82 inventoried trees; every mismatch has its exact filename, record pointer and both digests; all uncovered raw/derived filenames are listed. **This is not an all-green tap bundle.**
 
-Prioritize `extract/SRC-100`: both `rows.csv` and `excluded_rows.csv` differ from their published digests. Their derivation/import relationship needs reconciliation before reusing that checksum evidence. The five changed report files and six self-referential checksum documents also require named owner reconciliation. The broken SRC-133 robots path is a reference repair, not proof robots is absent on the source host.
+Prioritize `extract/SRC-100`: both `rows.csv` and `excluded_rows.csv` differ from their published digests. Their derivation/import relationship needs reconciliation before reusing that checksum evidence. The five changed report files and six self-referential checksum documents also require named owner reconciliation.
 
-Trees requiring evidence re-qualification (22): `extract/130-ia-doe`, `extract/131-ia-arcgis`, `extract/186-va-vhsl`, `extract/204-ok-directory`, `extract/223-sd-edudir`, `extract/228-sdhsca-membership`, `extract/230-pa-edna`, `extract/231-paisaa-members`, `extract/SRC-054`, `extract/SRC-068`, `extract/SRC-100`, `extract/SRC-175`, `extract/SRC-222`, `probes/122-il-isbe`, `probes/131-ia-arcgis`, `probes/230-pa-edna`, `probes/231-paisaa-members`, `probes/239-ks-directory`, `probes/ciac-dragonfly`, `probes/sources/SRC-106`, `probes/sources/SRC-114`, `probes/sources/SRC-133`.
+Trees requiring evidence re-qualification (21): `extract/130-ia-doe`, `extract/131-ia-arcgis`, `extract/186-va-vhsl`, `extract/204-ok-directory`, `extract/223-sd-edudir`, `extract/228-sdhsca-membership`, `extract/230-pa-edna`, `extract/231-paisaa-members`, `extract/SRC-054`, `extract/SRC-068`, `extract/SRC-100`, `extract/SRC-175`, `extract/SRC-222`, `probes/122-il-isbe`, `probes/131-ia-arcgis`, `probes/230-pa-edna`, `probes/231-paisaa-members`, `probes/239-ks-directory`, `probes/ciac-dragonfly`, `probes/sources/SRC-106`, `probes/sources/SRC-114`.
 
-**Read-only limits:** checksum parity cannot prove raw HTTP fidelity, robots/pacing compliance, anonymous access, accurate field extraction, current tenure, executed historical CLI commands, or live store readback. This assignment deliberately did not re-fetch, run imports/providers, open any store, or modify manifests. Some structural gaps may be fulfilled in paired trees or Main's shared evidence ledger; that linkage is not contained in the individual tree and must be made explicit by its owner. Captures/records arriving or changing after the snapshot require a new audit of those changed files. Main owns all repairs and ledger integration.
+**Read-only limits:** checksum parity cannot prove raw HTTP fidelity, anonymous access, accurate field extraction, current tenure, executed historical CLI commands, or live store readback. This assignment deliberately did not re-fetch, run imports/providers, open any store, or modify manifests. Some structural gaps may be fulfilled in paired trees or Main's shared evidence ledger; that linkage is not contained in the individual tree and must be made explicit by its owner. Captures/records arriving or changing after the snapshot require a new audit of those changed files. Main owns all repairs and ledger integration.

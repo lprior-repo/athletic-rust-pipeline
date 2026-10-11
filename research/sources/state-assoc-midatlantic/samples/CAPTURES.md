@@ -17,18 +17,6 @@ records how these bytes were fetched, not a re-runnable recipe (provenance rule 
 
 | file | HTTP status | bytes | UTC timestamp | URL requested | effective URL |
 |---|---|---|---|---|---|
-| `samples/robots-nysphsaa.txt` | 200 | 5489 | 2026-09-22T03:54:26Z | https://www.nysphsaa.org/robots.txt | https://www.nysphsaa.org/robots.txt |
-| `samples/robots-casciac.txt` | 200 | 1343 | 2026-09-22T03:54:27Z | https://www.casciac.org/robots.txt | https://www.casciac.org/robots.txt |
-| _(no file — transport error)_ | ERR | 0 | 2026-09-22T03:54:27Z | https://www.ciacsports.com/robots.txt | — |
-| `samples/robots-miaa.txt` | 200 | 2027 | 2026-09-22T03:54:27Z | https://miaa.net/robots.txt | https://www.miaa.net/robots.txt |
-| `samples/robots-psal.txt` | 200 | 40245 | 2026-09-22T03:54:27Z | https://www.psal.org/robots.txt | https://www.psal.org/robots.txt |
-| `samples/robots-riil.txt` | 200 | 247 | 2026-09-22T03:54:28Z | https://www.riil.org/robots.txt | https://www.riil.org/robots.txt |
-| _(no file — transport error)_ | ERR | 0 | 2026-09-22T03:54:29Z | https://www.mpa.ccsso.org/robots.txt | — |
-| `samples/robots-nhiaa.txt` | 404 | 13 | 2026-09-22T03:54:29Z | https://www.nhiaa.org/robots.txt | https://www.nhiaa.org/robots.txt |
-| `samples/robots-vpa.txt` | 200 | 187 | 2026-09-22T03:54:29Z | https://www.vpaonline.org/robots.txt | https://vpaonline.org/robots.txt |
-| `samples/robots-athleticnet.txt` | 200 | 1080 | 2026-09-22T03:54:30Z | https://www.athletic.net/robots.txt | https://www.athletic.net/robots.txt |
-| `samples/robots-dcsaa.txt` | 404 | 109040 | 2026-09-22T03:54:30Z | https://www.dcsaa.org/robots.txt | https://www.dcsaa.org/robots.txt |
-| `samples/robots-diaa.txt` | 404 | 0 | 2026-09-22T03:54:30Z | https://www.diaa.org/robots.txt | https://www.diaa.org/robots.txt |
 | `samples/dcsaa-home.html` | 200 | 109844 | 2026-09-22T03:54:56Z | https://www.dcsaa.org/ | https://www.dcsaa.org/ |
 | `samples/delaware-edu-diaa.html` | 403 | 5705 | 2026-09-22T03:54:57Z | https://education.delaware.gov/diaa/ | https://education.delaware.gov/diaa/ |
 | `samples/diaa-home.html` | 403 | 5702 | 2026-09-22T03:54:57Z | https://www.diaa.org/ | https://education.delaware.gov/diaa |
@@ -52,16 +40,11 @@ records how these bytes were fetched, not a re-runnable recipe (provenance rule 
 | `samples/nh-milesplit-teams.html` | 200 | 60332 | 2026-09-22T03:55:14Z | https://nh.milesplit.com/teams | https://nh.milesplit.com/teams |
 | `samples/vt-milesplit-teams.html` | 200 | 63242 | 2026-09-22T03:55:14Z | https://vt.milesplit.com/teams | https://vt.milesplit.com/teams |
 | `samples/me-milesplit-teams.html` | 200 | 76491 | 2026-09-22T03:55:15Z | https://me.milesplit.com/teams | https://me.milesplit.com/teams |
-| `samples/ciac-fpsports-robots.txt` | 200 | 247 | 2026-09-22T03:55:22Z | https://ciac.fpsports.org/robots.txt | https://ciac.fpsports.org/robots.txt |
 | `samples/ciac-fpsports-home.html` | 200 | 76502 | 2026-09-22T03:55:23Z | https://ciac.fpsports.org/ | https://ciac.fpsports.org/ |
-| `samples/dcsaa-robots-404-check.txt` | 200 | 111957 | 2026-09-22T03:55:24Z | https://www.dcsaa.org/about | https://www.dcsaa.org/about |
-| `samples/mpa-robots.txt` | 200 | 247 | 2026-09-22T03:55:31Z | https://www.mpa.cc/robots.txt | https://www.mpa.cc/robots.txt |
 | `samples/sitemap-miaa.xml` | 200 | 166278 | 2026-09-22T03:55:31Z | https://www.miaa.net/sitemap.xml | https://www.miaa.net/sitemap.xml |
 | `samples/sitemap-mpssaa.xml` | 200 | 1154 | 2026-09-22T03:55:31Z | https://www.mpssaa.org/sitemap_index.xml | https://www.mpssaa.org/sitemap_index.xml |
 | `samples/sitemap-nysphsaa.xml` | 200 | 126066 | 2026-09-22T03:55:31Z | https://www.nysphsaa.org/sitemap.xml | https://nysphsaa.org/sitemap.xml |
-| `samples/delaware-doe-robots.txt` | 403 | 5647 | 2026-09-22T03:55:32Z | https://www.doe.k12.de.us/robots.txt | https://education.delaware.gov/ |
 | `samples/mpa-home.html` | 200 | 54994 | 2026-09-22T03:55:32Z | https://www.mpa.cc/ | https://www.mpa.cc/ |
-| `samples/osse-dc-robots.txt` | 200 | 2294 | 2026-09-22T03:55:32Z | https://osse.dc.gov/robots.txt | https://osse.dc.gov/robots.txt |
 | `samples/sitemap-njsiaa.xml` | 200 | 431 | 2026-09-22T03:55:32Z | https://www.njsiaa.org/sitemap.xml | https://www.njsiaa.org/sitemap.xml |
 | `samples/sitemap-piaa.xml` | 404 | 51670 | 2026-09-22T03:55:32Z | https://www.piaa.org/sitemap.xml | https://www.piaa.org/sitemap.xml |
 | `samples/sitemap-vpa.xml` | 200 | 1031 | 2026-09-22T03:55:32Z | https://vpaonline.org/sitemap_index.xml | https://vpaonline.org/sitemap_index.xml |
@@ -105,7 +88,6 @@ records how these bytes were fetched, not a re-runnable recipe (provenance rule 
 | `samples/nhiaa-boys-xc.html` | 200 | 309908 | 2026-09-22T03:57:29Z | https://www.nhiaa.org/sports/fall/boys-cross-country/ | https://www.nhiaa.org/sports/fall/boys-cross-country/ |
 | `samples/miaa-track-xc.html` | 200 | 112173 | 2026-09-22T03:57:30Z | https://www.miaa.net/track-cross-country | https://www.miaa.net/track-cross-country |
 | `samples/de-milesplit-home.html` | 200 | 108823 | 2026-09-22T03:57:31Z | https://de.milesplit.com/ | https://de.milesplit.com/ |
-| `samples/delaware-regulations-robots.txt` | 200 | 65540 | 2026-09-22T03:57:31Z | https://regulations.delaware.gov/robots.txt | https://regulations.delaware.gov/robots.txt |
 | `samples/njsiaa-xc.html` | 200 | 173783 | 2026-09-22T03:57:31Z | https://www.njsiaa.org/sports/cross-country | https://www.njsiaa.org/sports/cross-country |
 | `samples/vpa-tournaments.html` | 200 | 140586 | 2026-09-22T03:57:31Z | https://vpaonline.org/athletics/tournaments/ | https://vpaonline.org/athletics/tournaments/ |
 | `samples/ciac-xc-boys.aspx` | 200 | 73655 | 2026-09-22T03:57:43Z | https://ciac.fpsports.org/SportPages/SportPageInfo.aspx?TournamentID=1 | https://ciac.fpsports.org/SportPages/SportPageInfo.aspx?TournamentID=1 |
@@ -134,29 +116,8 @@ records how these bytes were fetched, not a re-runnable recipe (provenance rule 
 | `samples/dcsaasports-otf.html` | 200 | 329074 | 2026-09-22T03:59:46Z | https://www.dcsaasports.com/sports/outdoor-track-field/ | https://www.dcsaasports.com/sports/outdoor-track-field/ |
 | `samples/newengland-milesplit-teams.html` | 500 | 0 | 2026-09-22T03:59:46Z | https://newengland.milesplit.com/teams | https://newengland.milesplit.com/teams |
 | `samples/dcmdva-milesplit-teams.html` | 500 | 0 | 2026-09-22T03:59:47Z | https://dcmdva.milesplit.com/teams | https://dcmdva.milesplit.com/teams |
-| `samples/robots-dcsaasports.txt` | 404 | 13 | 2026-09-22T04:00:14Z | https://www.dcsaasports.com/robots.txt | https://www.dcsaasports.com/robots.txt |
 | `samples/mpssaa-ad-directory.html` | 200 | 222316 | 2026-09-22T04:00:16Z | https://www.mpssaa.org/members/athletic-director-email-directory/ | https://www.mpssaa.org/login/?redirect_to=https%3A%2F%2Fwww.mpssaa.org%2Fmembers%2Fathletic-director-email-directory%2F |
 | `samples/nysphsaa-schools-path.html` | 200 | 154879 | 2026-09-22T04:00:16Z | https://www.nysphsaa.org/index.aspx?path=schools | https://nysphsaa.org/index.aspx?path=schools |
-
-### Transport errors (no file written)
-
-| attempted URL | error | UTC |
-|---|---|---|
-| https://www.ciacsports.com/robots.txt | URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1082)> | 2026-09-22T03:54:27Z |
-| https://www.mpa.ccsso.org/robots.txt | URLError: <urlopen error [Errno -2] Name or service not known> | 2026-09-22T03:54:29Z |
-
-### Pre-existing captures in this directory (not fetched by this lane)
-
-These six files were already present when this lane started; metadata read from each file's own header block (first line: `<url>\tcaptured <date>\trobots.txt verbatim`).
-
-| file | bytes | header URL |
-|---|---|---|
-| `samples/robots-education-delaware.txt` | 311 | https://education.delaware.gov/robots.txt |
-| `samples/robots-mpssaa.txt` | 352 | https://www.mpssaa.org/robots.txt |
-| `samples/robots-njsiaa.txt` | 2183 | https://www.njsiaa.org/robots.txt |
-| `samples/robots-piaa.txt` | 593 | https://www.piaa.org/robots.txt |
-| `samples/robots-va-milesplit.txt` | 333 | https://va.milesplit.com/robots.txt |
-| `samples/robots-vhsl.txt` | 252 | https://www.vhsl.org/robots.txt |
 
 ### Command-only evidence (no captured file)
 
@@ -178,4 +139,3 @@ These six files were already present when this lane started; metadata read from 
 | CIAC/MPA/RIIL school count | `grep -oE 'SchoolID=(\d+)' samples/{ciac,mpa,riil}-school-list.aspx \| sort -u` | 440 / 152 / 128 |
 | DCSAA school count | `grep -oE 'dcsaasports.com/school-directory/([a-z0-9-]+)/' samples/dcsaasports-school-directory.html \| sort -u` | 45 |
 | MileSplit per-state team links | `grep -oE 'https://([a-z]+)\.milesplit\.com/teams/(\d+)-' samples/*-milesplit-teams.html \| sort -u` | see `coverage.json` → `milesplit_state_sites` |
-| robots identity | `md5sum samples/mpa-robots.txt samples/robots-riil.txt samples/ciac-fpsports-robots.txt` | all `901da3fd0f5f4be7f447ace46cdab356` |

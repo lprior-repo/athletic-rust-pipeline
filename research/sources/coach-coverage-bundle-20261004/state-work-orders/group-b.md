@@ -31,7 +31,7 @@ Created 2026-10-04 by `StateOrderB2`. This file is a read-only synthesis: **no n
 - **Proto rollup**: 1155 schools / 1698 tf_xc / 1698 head / 791 admins.
 - **Tier C, today (highest-value)**:
   - `extract/SRC-100/` — OATCCC "2026 Members" Google Sheet: `rows.csv` 143.7 KB = **2,154 data rows** (2,141 importable; 13 excluded), `excluded_rows.csv`, `sweep.json`, `REPORT.md`, `captures/` (4 files incl. the 75,095 B CSV export). Main import: rows=2141, **schools=630**, coaches=0, with_email=0 (school observations only; sheet publishes no role/email).
-  - `var/tap-097-oh-ohsaa/`, `var/tap-101-oh-oeds/`; `probes/oh-ohsaa/` (manifest+raw+transport+robots), `probes/097-oh-ohsaa-seed/` (REPORT+manifest+captures), `extract/097-oh-ohsaa-seed/`.
+  - `var/tap-097-oh-ohsaa/`, `var/tap-101-oh-oeds/`; `probes/oh-ohsaa/` (manifest+raw+transport), `probes/097-oh-ohsaa-seed/` (REPORT+manifest+captures), `extract/097-oh-ohsaa-seed/`.
 - **Tier B, prototype**: `officials.myohsaa.org` **1,564 responses**; `oatccc.com` 6; OH derived rows in `coaches.jsonl`. Wired adapters: `oh_ohsaa_enrollment` (OHSAA enrollment table), `oh_myohsaa_sports`, `oh_myohsaa_ad`, `oh_milesplit` (discovery-only).
 - **Tier A, corpus (midwest root)**: `.../research/midwest/evidence/gaps/45/` — `ohsaa-enrollment.html` **228,567 B = 815 OHSAA school rows** (school universe/denominator); `myohsaa-*-ad.body` ×15 + `myohsaa-*-si.body` ×15 (~10 KB each; AD + sports-info payload samples for OhsaaSchoolIds 100, 102, 105, 106, 112, 828, 892, 977, 1026, 1036, 1752, 9483, 9823, 1000018, 1000027) + `myohsaa-sample-summary.json` 7,577 B + `myohsaa-sample-selection.json`; `oatccc-doc-*.txt` ×2 (district reps 2,999 B; contacts 2,842 B); `oatccc-sitemap-urls.txt` 44,596 B; `tools/ohio-independent/raw/**` 98 files / 9,960,957 B incl. `ohsaa-state-tf-2026.pdf` 816,147 B. Index: `state-assoc-greatlakes/samples/CAPTURES.md` §B4.
 - **Fixtures**: `crates/census-service/tests/fixtures/ohsaa/*.html` (7 files; portal shapes + malformed/no-result negatives).
@@ -61,7 +61,7 @@ OATCCC rows carry **no role/email** → school observations only. myOHSAA bodies
 ### 2. Held-evidence inventory
 - **Proto rollup**: 3074 / 4923 / 972 / 974.
 - **Tier B**: `www.ghsa.net` 6 responses. Wired adapters: `ga_ghsa_pdf` (GHSA directory feed PDF), `ga_dragonfly` + `ga_dragonfly_p2` + `ga_dragonfly_p3` (maxinfosite GHSA directory pages 1–3), `ga_milesplit` (discovery-only).
-- **Tier A, corpus** (`state-assoc-southeast/samples/`, verified listing): `ghsa-directory-feed.pdf` (+ `.meta.txt`), `home-ghsa.html`, `school-directory-ghsa.html`, `coaching-ghsa.html`, `cross-country-ghsa.html`, `track-field-ghsa.html`, `state-championships-ghsa.html`, `ghsa-xc-state-meet-results.html`, `ghsa-state-track-meet-results.html`, `ghsa-results-records.html`, `prior-years-results-ghsa.html`, `hytek-codes-ghsa.html`, `maxpreps-stats-ghsa.html`, `ghsa-2026-girls-6a-track-results.pdf`, `robots-ghsa.txt` (~16 files).
+- **Tier A, corpus** (`state-assoc-southeast/samples/`, verified listing): `ghsa-directory-feed.pdf` (+ `.meta.txt`), `home-ghsa.html`, `school-directory-ghsa.html`, `coaching-ghsa.html`, `cross-country-ghsa.html`, `track-field-ghsa.html`, `state-championships-ghsa.html`, `ghsa-xc-state-meet-results.html`, `ghsa-state-track-meet-results.html`, `ghsa-results-records.html`, `prior-years-results-ghsa.html`, `hytek-codes-ghsa.html`, `maxpreps-stats-ghsa.html`, `ghsa-2026-girls-6a-track-results.pdf` (~16 files).
 - **Tier C**: none for GA today.
 - **Registry**: none.
 
@@ -145,7 +145,7 @@ The NCHSAA schools + AD bodies are held; the 2,343 proto tf_xc rows vs matrix tf
 ### 2. Held-evidence inventory
 - **Proto rollup**: 848 / 4 / 4 / 831 (admin-heavy).
 - **Tier B**: `www.mshsl.org` **750 responses**. Wired: `mn_mshsl` + `mn_mshsl_p2`…`p14` (schools pages 0–13), `mn_mshsl_school` (per-school detail, ex. adrian-high-school), `mn_milesplit` (discovery-only).
-- **Tier A, corpus**: plains tree — `mshsl-sitemap-page1-2026-09-22.xml`, `robots-mshsl.txt`; SOURCE_REPORT (`state-assoc-plains/SOURCE_REPORT.md`): **664 schools `[V]` stream**, 665 in store, 1,097 tournaments, Drupal 11 + JSON:API, PRIMARY "school+team+AD/coach", adapter `sources/mshsl` ✅.
+- **Tier A, corpus**: plains tree — `mshsl-sitemap-page1-2026-09-22.xml`; SOURCE_REPORT (`state-assoc-plains/SOURCE_REPORT.md`): **664 schools `[V]` stream**, 665 in store, 1,097 tournaments, Drupal 11 + JSON:API, PRIMARY "school+team+AD/coach", adapter `sources/mshsl` ✅.
 - **Fixtures**: `crates/census-service/tests/fixtures/mshsl/**` **11 files / 68,672 B**.
 - **Registry/code**: `crates/census-crawl/src/registry/table/from_mshsl.rs`.
 - **Tier C**: none for MN today.
@@ -172,7 +172,7 @@ Proto `tfxc 4` understates: state-summary shows 831 admin/school rows while the 
 ### 2. Held-evidence inventory
 - **Proto rollup**: 2056 / 1492 / 821 / 562.
 - **Tier B**: `portal.tssaa.org` **915 responses**; `tssaa.org` 2. Wired: `tn_tssaa` (portal.tssaa.org/common/directory/), `tn_dragonfly` + `tn_dragonfly_p2`, `tn_milesplit` (discovery-only).
-- **Tier A, corpus** (southcentral): `tn-coaches.html`, `tn-portal-directory.html`, `tn-directory.html`, `tn-classification.html`, `tn-schools-extracted.tsv`, `tn-2025-xc-d1aaa-results.html`, `tn-champ-result-2025-d1aaa.pdf` (+`.cfm`), `tn-champs-*.html` ×5, `tn-milesplit-start.html`, `tn-sports-index.html`, `tn-track-field.html`, `tn-track-boys.html`, `tn-xc-boys.html`, `robots-portal.tssaa.org.txt`; assoc-home `TN__tssaa.org.html`. SOURCE_REPORT: **456 schools with TSSAA ids**, 151 championship PDFs since 1960-61 (AllTrax/HY-TEK).
+- **Tier A, corpus** (southcentral): `tn-coaches.html`, `tn-portal-directory.html`, `tn-directory.html`, `tn-classification.html`, `tn-schools-extracted.tsv`, `tn-2025-xc-d1aaa-results.html`, `tn-champ-result-2025-d1aaa.pdf` (+`.cfm`), `tn-champs-*.html` ×5, `tn-milesplit-start.html`, `tn-sports-index.html`, `tn-track-field.html`, `tn-track-boys.html`, `tn-xc-boys.html`; assoc-home `TN__tssaa.org.html`. SOURCE_REPORT: **456 schools with TSSAA ids**, 151 championship PDFs since 1960-61 (AllTrax/HY-TEK).
 - **Tier C**: none for TN today.
 - **Registry**: none.
 
@@ -200,9 +200,9 @@ The 915-body TSSAA portal capture is the strongest single held body in this grou
 ### 2. Held-evidence inventory
 - **Proto rollup**: 2148 / 8 / 0 / 1544 (AD-heavy; `head_coaches 0`).
 - **Tier B**: `www.piaa.org` **1,475 responses**. Wired: `pa_piaa`, `pa_piaa_b`…`pa_piaa_y` (alpha batches A–Y incl. details), `pa_piaa_details` (ex. ID=12048), `pa_milesplit` (discovery-only).
-- **Tier A, corpus** (midatlantic): `piaa-school-directory.html`, `piaa-school-directory-a.html`, `piaa-membership.html`, `piaa-sitemap.aspx.html`, `piaa-championship-details-xc.html`, `piaa-xc-championships.html`, `pa-milesplit-teams.html`, `robots-piaa.txt`; assoc-home `PA__piaa.org.html`.
+- **Tier A, corpus** (midatlantic): `piaa-school-directory.html`, `piaa-school-directory-a.html`, `piaa-membership.html`, `piaa-sitemap.aspx.html`, `piaa-championship-details-xc.html`, `piaa-xc-championships.html`, `pa-milesplit-teams.html`; assoc-home `PA__piaa.org.html`.
 - **Fixtures**: `crates/census-crawl/tests/fixtures/pa_piaa/` (`directory_alpha_a.html` 78.2 KB + alpha_b/z + `PROVENANCE.json` 2.2 KB).
-- **Tier C, today**: `probes/230-pa-edna/` (17 bodies: `pnp-export-2.body` 732.3 KB, `public-export.body`, forms/children/robots), `probes/231-paisaa-members/` (2 captures; page 53,322 B), `probes/234-tfcaofgp-handbook/`, `probes/235-fsl-athletics/`; `extract/230-pa-edna/schools_full.json` 3.3 MB, `extract/231-paisaa-members/rows.csv` 2.9 KB (**25 rows**), `extract/234-tfcaofgp-handbook/rows.csv` 965 B, `extract/235-fsl-athletics/qualified.json` 497 B; `var/tap-230-pa-edna/`, `var/tap-231-paisaa/`, `var/tap-231-paisaa-members/`, `var/tap-234-tfcaofgp/`, `var/tap-234-tfcaofgp-handbook/`, `var/tap-235-fsl-athletics/`.
+- **Tier C, today**: `probes/230-pa-edna/` (17 bodies: `pnp-export-2.body` 732.3 KB, `public-export.body`, forms/children), `probes/231-paisaa-members/` (2 captures; page 53,322 B), `probes/234-tfcaofgp-handbook/`, `probes/235-fsl-athletics/`; `extract/230-pa-edna/schools_full.json` 3.3 MB, `extract/231-paisaa-members/rows.csv` 2.9 KB (**25 rows**), `extract/234-tfcaofgp-handbook/rows.csv` 965 B, `extract/235-fsl-athletics/qualified.json` 497 B; `var/tap-230-pa-edna/`, `var/tap-231-paisaa/`, `var/tap-231-paisaa-members/`, `var/tap-234-tfcaofgp/`, `var/tap-234-tfcaofgp-handbook/`, `var/tap-235-fsl-athletics/`.
 - **Registry**: SRC-229…SRC-238 (10). HELD: 229 (PIAA, HELD+ADAPTER), 230, 231, 233 (PNP export), 234, 235. DERIVED: 232 (public EdNA form), 236 (Inter-Academic), 237 (`ptfca.org`), 238 (PCL `aopathletics.org`).
 
 ### 3. Fill plan
@@ -229,8 +229,8 @@ PA is the strongest school/email state here (1432 any, 1415 email) but `tfxc 1` 
 ### 2. Held-evidence inventory
 - **Proto rollup**: 1112 / 26 / 12 / 23.
 - **Tier B**: `www.mshsaa.org` 1 response; `www.mtccca.org` **10** + `mtccca.org` **6** responses. Wired: `mo_mshsaa` (HTML SchoolListing) + `mo_mshsaa_wayback` (web.archive.org SchoolListing 2025) + `mo_milesplit` (discovery-only).
-- **Tier A, corpus**: plains tree — `mshsaa-school-listing-2026-09-22.html` **704.5 KB**, `robots-mshsaa.txt` (blanket `Disallow: /` for `*`). SOURCE_REPORT (`state-assoc-plains/SOURCE_REPORT.md`): **1,006 org rows / 646 HS-level / 592 full members `[V]`**, no coach source, CONDITIONAL (robots-disallowed host).
-- **Tier C, today**: `probes/sources/SRC-198/FINDINGS.md` 5.1 KB + robots/manifest/sweep — coaches route (`/MySchool/Coaches.aspx?alg=11&s=85`) **robots-refused** (merged-group `Disallow: /`; refusal independently on record from 2026-09-22 `coach-directories-national/samples/CAPTURES.md` and `tools/fetch-log.jsonl`). A wave-2 bare `mshsaa` adapter was removed by Main as a misread (see FINDINGS §5).
+- **Tier A, corpus**: plains tree — `mshsaa-school-listing-2026-09-22.html` **704.5 KB**. SOURCE_REPORT (`state-assoc-plains/SOURCE_REPORT.md`): **1,006 org rows / 646 HS-level / 592 full members `[V]`**, no coach source.
+- **Tier C, today**: `probes/sources/SRC-198/FINDINGS.md` 5.1 KB + manifest/sweep — coaches route (`/MySchool/Coaches.aspx?alg=11&s=85`) **refused** (refusal independently on record from 2026-09-22 `coach-directories-national/samples/CAPTURES.md` and `tools/fetch-log.jsonl`). A wave-2 bare `mshsaa` adapter was removed by Main as a misread (see FINDINGS §5).
 - **Registry**: SRC-195…SRC-202 (8). HELD+ADAPTER: 195 (school listing). HELD: 198. ADAPTER+DERIVED: 199. DERIVED: 196 (`mtccca.org`), 197 (`moqualityschools.com`, 265 nonpublic stated), 200/201 (DESE), 202 (`mocsaa.com`).
 
 ### 3. Fill plan
@@ -241,10 +241,10 @@ PA is the strongest school/email state here (1432 any, 1415 email) but `tfxc 1` 
 | `moqualityschools.com` (unheld) | future nonpublic seed | 265 nonpublic stated |
 
 ### 4. True missing
-`mtccca.org` live membership list (only proto responses held) · `moqualityschools.com/member-listing1.html` · `mocsaa.com` · `dese.mo.gov` + `apps.dese.mo.gov` · `www.mshsaa.org` coach routes (robots `Disallow: /`; documented refusal — do not fetch).
+`mtccca.org` live membership list (only proto responses held) · `moqualityschools.com/member-listing1.html` · `mocsaa.com` · `dese.mo.gov` + `apps.dese.mo.gov` · `www.mshsaa.org` coach routes (documented refusal — do not fetch).
 
 ### 5. Notes
-MO is the worst-covered state in this group (any 21/2488). Live MSHSAA crawling is refused by robots; the school universe must come from the wayback adapter + held listing. Email held: 14 schools only.
+MO is the worst-covered state in this group (any 21/2488). Live MSHSAA crawling is refused; the school universe must come from the wayback adapter + held listing. Email held: 14 schools only.
 
 ---
 
@@ -256,8 +256,8 @@ MO is the worst-covered state in this group (any 21/2488). Live MSHSAA crawling 
 ### 2. Held-evidence inventory
 - **Proto rollup**: 831 / 16 / 5 / 42.
 - **Tier B**: `www.ossaa.com` 4, `ossaa.com` 2, `ossaaillustrated.com` 2, `oklahoma.gov` 6 responses. Wired: `ok_ossaa_pdf` (member PDF), `ok_milesplit` (discovery-only).
-- **Tier A, corpus**: southcentral tree — `ok-memberschools-2025-26.pdf` **164.9 KB** (+ `.txt`), `ok-classifications-2025-26.pdf`, `ok-athletic-directors.html`, `ok-cross-country.html`, `ok-track.html`, `ok-state-champions.html`, `ok-cc-2025-6a-state-results.pdf`, `ok-xc-page-links-note.txt`, robots (`www.ossaa.com` 302, `ossaaillustrated.com` 200). SOURCE_REPORT: **482 member schools (PDF)**, PRIMARY.
-- **Tier C, today**: `probes/204-ok-directory/` (REPORT 3.5 KB; `extract/204-ok-directory/schools_full.json` **1.5 MB**), `probes/ok-ossaarankings/` (FINDINGS 4.7 KB; rows.csv 268 B; manifest/transport/raw/robots; SHA256SUMS), `probes/206-ok-xctf-coaches/` (`ohstrack.com`: **24 advisory rows, 172 evidence candidates** incl. 123 HOF honorees; SSL cert mismatch on HTTPS, HTTP robots 200/138 B empty Disallow; 9 requests exit 0), `probes/210-ok-christian-academy/`; `var/tap-204-ok-directory/`, `var/tap-ok-20261004/`.
+- **Tier A, corpus**: southcentral tree — `ok-memberschools-2025-26.pdf` **164.9 KB** (+ `.txt`), `ok-classifications-2025-26.pdf`, `ok-athletic-directors.html`, `ok-cross-country.html`, `ok-track.html`, `ok-state-champions.html`, `ok-cc-2025-6a-state-results.pdf`, `ok-xc-page-links-note.txt`. SOURCE_REPORT: **482 member schools (PDF)**, PRIMARY.
+- **Tier C, today**: `probes/204-ok-directory/` (REPORT 3.5 KB; `extract/204-ok-directory/schools_full.json` **1.5 MB**), `probes/ok-ossaarankings/` (FINDINGS 4.7 KB; rows.csv 268 B; manifest/transport/raw; SHA256SUMS), `probes/206-ok-xctf-coaches/` (`ohstrack.com`: **24 advisory rows, 172 evidence candidates** incl. 123 HOF honorees; SSL cert mismatch on HTTPS; 9 requests exit 0), `probes/210-ok-christian-academy/`; `var/tap-204-ok-directory/`, `var/tap-ok-20261004/`.
 - **Registry**: SRC-203…SRC-211 (9). HELD: 203 (OSSAARankings school tree + team pages: `Head Coach : <name>` server-rendered, no emails; route verdict "needs-adapter"), 204 (state directory). DERIVED: 205 (`ncpsa.org/directory/oklahoma/`, 55 private stated), 206 (`ohstrack.com`), 207 (OCCTCA board PDF), 208 (OSSAA classifications), 209 (`heartlandathletics`), 210 (`ocacademy.org`), 211 (`opsac.org`).
 
 ### 3. Fill plan
@@ -284,7 +284,7 @@ OK coach **names** are anonymously available (Head Coach label) but **no emails 
 ### 2. Held-evidence inventory
 - **Proto rollup**: 549 / 2189 / 1045 / 14.
 - **Tier B**: `www.iahsaa.org` **241 responses**. Wired: `ia_iahsaa` (member-schools), `ia_milesplit` (discovery-only). SOURCE_REPORT (plains): **379 members `[V]`**, 365/369 Bound team programs 2025-26, Bound school index 444; associations publish **no coach/AD contacts**; Bound directory sample: 63 coach rows (3 with email), 20 AD rows (2 with email) across 5 schools.
-- **Tier A, corpus**: plains tree — `iahsaa-member-schools-2026-09-22.html`, `robots-iahsaa.txt`/`robots-iahsaa-apex.txt`. Midwest corpus `tools/scratch-11/` (Iowa lane; index `state-assoc-greatlakes/samples/CAPTURES.md` §B5-IA): `ihsaa-members.csv` 26,522 B (**379 rows**), `p-ihsaa-track.html` 244,246 B, `p-ihsaa-xc.html` 245,203 B, `p-ihsaa-track-class.html` 236,876 B, `b-iahsaa.org_member-schools_.html` 268,218 B, `b-ia-schools.html` 638,229 B, `b-school-harlan_directory.html` 86,258 B, `b-ames-directory.html` 81,902 B, `p-ihsaa-school-ames.html` 205,795 B, `bound-ia-schools.csv` 17,786 B, `bound-track-vs-ihsaa-join.csv` 16,165 B, `ihsaa-members-without-bound-track.csv` 3,300 B, `ihsaa-members-missing-bound-track.csv` 1,550 B, `ihsaa-members-no-bound-track-2025-26.txt` 2,133 B, `ihsaa-no-bound-boystrack-2025-26.txt` 960 B, **IGHSAU** `ighsau-beds-alpha-2026-27.pdf` 69,599 B + `ighsau-tf-final-classes.pdf` 283,865 B + `ighsau-xc-final-classes.pdf` 182,054 B; plus `tools/iowa-11/`.
+- **Tier A, corpus**: plains tree — `iahsaa-member-schools-2026-09-22.html`. Midwest corpus `tools/scratch-11/` (Iowa lane; index `state-assoc-greatlakes/samples/CAPTURES.md` §B5-IA): `ihsaa-members.csv` 26,522 B (**379 rows**), `p-ihsaa-track.html` 244,246 B, `p-ihsaa-xc.html` 245,203 B, `p-ihsaa-track-class.html` 236,876 B, `b-iahsaa.org_member-schools_.html` 268,218 B, `b-ia-schools.html` 638,229 B, `b-school-harlan_directory.html` 86,258 B, `b-ames-directory.html` 81,902 B, `p-ihsaa-school-ames.html` 205,795 B, `bound-ia-schools.csv` 17,786 B, `bound-track-vs-ihsaa-join.csv` 16,165 B, `ihsaa-members-without-bound-track.csv` 3,300 B, `ihsaa-members-missing-bound-track.csv` 1,550 B, `ihsaa-members-no-bound-track-2025-26.txt` 2,133 B, `ihsaa-no-bound-boystrack-2025-26.txt` 960 B, **IGHSAU** `ighsau-beds-alpha-2026-27.pdf` 69,599 B + `ighsau-tf-final-classes.pdf` 283,865 B + `ighsau-xc-final-classes.pdf` 182,054 B; plus `tools/iowa-11/`.
 - **Tier C, today**: `probes/130-ia-doe/` (REPORT 3.9 KB; `extract/130-ia-doe/rows.csv` **170.3 KB**), `probes/131-ia-arcgis/` (11 bodies; `extract/131-ia-arcgis/schools_full.json` **911.1 KB**; `query-0-0.geojson` 600.7 KB), `probes/ia-ihsaa/` (`rows.csv` 26.7 KB, `school-import.csv`, `provenance.csv`), `probes/iatrackcoaches/` (FINDINGS 7.8 KB; `seeds.json` 11.9 KB; `officers.json`), `probes/gobound/FINDINGS.md` 6.1 KB (refused/blocked), `probes/sources/SRC-128/FINDINGS.md` 6.3 KB, `probes/sources/SRC-133/board.json` 1.2 KB; `var/tap-130-ia-doe/`, `var/tap-131-ia-arcgis/`, `var/tap-ia-20261004/`, `var/tap-115-iatccc/`.
 - **Registry**: SRC-128…SRC-135 (8). HELD+ADAPTER: 128. HELD: 130, 131, 132 (IATC), 133 (IATC board). ADAPTER+DERIVED: 129 (Bound). DERIVED: 134 (IHSAA committees), 135 (`ighsau.org`).
 
@@ -313,7 +313,7 @@ IA has a large proto tf_xc row count (2,189) but only 366 schools and 11 email s
 ### 2. Held-evidence inventory
 - **Proto rollup**: 450 / 211 / 5 / 240.
 - **Tier B**: `www.mpssaa.org` **203 responses**. Wired: `md_mpssaa` (school-directory), `md_mpssaa_school` (per-school AD, ex. `/school-directory/aberdeen/`), `md_dragonfly` (MPSSAA directory/1), `md_milesplit` (discovery-only).
-- **Tier A, corpus** (midatlantic): `mpssaa-ad-directory.html`, `mpssaa-members.html`, `mpssaa-school-directory.html`, `mpssaa-cross-country.html`, `mpssaa-fall-championships.html`, `mpssaa-xc-2025-results.html`, `mpssaa-xc-region-schedule.html`, `sitemap-mpssaa.xml`, `sitemap-mpssaa-page.xml`, `sitemap-mpssaa-school.xml`, `md-milesplit-teams.html`, `robots-mpssaa.txt`; assoc-home `MD__mpssaa.org.html`.
+- **Tier A, corpus** (midatlantic): `mpssaa-ad-directory.html`, `mpssaa-members.html`, `mpssaa-school-directory.html`, `mpssaa-cross-country.html`, `mpssaa-fall-championships.html`, `mpssaa-xc-2025-results.html`, `mpssaa-xc-region-schedule.html`, `sitemap-mpssaa.xml`, `sitemap-mpssaa-page.xml`, `sitemap-mpssaa-school.xml`, `md-milesplit-teams.html`; assoc-home `MD__mpssaa.org.html`.
 - **Tier C**: none for MD today.
 - **Registry**: none.
 
@@ -340,7 +340,7 @@ Proto rollup shows 211 tf_xc and 240 admins for 450 schools vs matrix tfxc 45 �
 ### 2. Held-evidence inventory
 - **Proto rollup**: 622 / 407 / 17 / 42.
 - **Tier B**: `mstca.org` 4 + `www.mstca.org` 4 responses; MA derived rows in `coaches.jsonl`. Wired: `ma_miaa_members` (`miaa.net/media/824` membership PDF), `ma_milesplit` (discovery-only).
-- **Tier A, corpus** (midatlantic): `miaa-member-schools.html`, `miaa-school-list.pdf`, `miaa-track-xc.html`, `miaa-scores.html`, `sitemap-miaa.xml`, `robots-miaa.txt`, `ma-milesplit-teams.html`; assoc-home `MA__miaa.net.html`. ALL-STATE note: MIAA listing = 32-page PDF, landing says updated 2024-07-18; profile pages show principal + AD, not track coaches.
+- **Tier A, corpus** (midatlantic): `miaa-member-schools.html`, `miaa-school-list.pdf`, `miaa-track-xc.html`, `miaa-scores.html`, `sitemap-miaa.xml`, `ma-milesplit-teams.html`; assoc-home `MA__miaa.net.html`. ALL-STATE note: MIAA listing = 32-page PDF, landing says updated 2024-07-18; profile pages show principal + AD, not track coaches.
 - **Tier C, today**: `extract/SRC-068/` — MSTCA members via Sanity API `n3gp1igb`: `rows.csv` 55.4 KB = **153 rows (154 lines)**, `excluded_rows.csv` (147 school-less), 7 raw JSON captures, `REPORT.md` 15.5 KB, `sweep.json`. Slice = members `[0...300]` of **1,417 total**; emails: 300/300 filled, **145 are `unknown@mstca.org` placeholders**; no role/sport fields. Main import: rows=153, **schools=104**, coaches=0.
 - **Registry**: SRC-068…SRC-075, 088, 092, 095 (11). HELD: 068 (MSTCA), 069/070/071 (MIAA, HELD+ADAPTER / DERIVED), 075 (MIAA T&XC). ADAPTER: 088 (MilesSplit MA, HELD+ADAPTER). DERIVED: 072 (DESE), 073/074 (MassGIS), 092 (NEPSAC), 095 (NEPSTA composite).
 
@@ -368,8 +368,8 @@ MSTCA rows have **no role** → school observations only; 48.3% of captured emai
 ### 2. Held-evidence inventory
 - **Proto rollup**: 579 / 642 / 641 / 255.
 - **Tier B**: `ciac.fpsports.org` 9 responses. Wired: `ct_ciac_fpsports` (SchoolPages/School.aspx), `ct_ciac_directory` (Directory.aspx), `ct_milesplit` (discovery-only).
-- **Tier C, today**: `probes/ciac-fpsports/` — `directory.html` **657.3 KB** + `manifest.json` 4.3 KB + `robots.txt`; `probes/ciac-dragonfly/` — `directory-p1.json` 277.7 KB, `directory-p2.json` (audit row notes "undated capture records" for this tree).
-- **Tier A, corpus** (midatlantic): `ciac-school-list.aspx`, `ciac-fpsports-home.html`, `ciac-xc-boys.aspx`, `ciac-outdoor-track.aspx`, `casciac-home.html` (splash; `sitemap-casciac.xml` is a 404 page), `sitemap-ciac.xml`, `ct-milesplit-teams.html`, `robots-casciac.txt`.
+- **Tier C, today**: `probes/ciac-fpsports/` — `directory.html` **657.3 KB** + `manifest.json` 4.3 KB; `probes/ciac-dragonfly/` — `directory-p1.json` 277.7 KB, `directory-p2.json` (audit row notes "undated capture records" for this tree).
+- **Tier A, corpus** (midatlantic): `ciac-school-list.aspx`, `ciac-fpsports-home.html`, `ciac-xc-boys.aspx`, `ciac-outdoor-track.aspx`, `casciac-home.html` (splash; `sitemap-casciac.xml` is a 404 page), `sitemap-ciac.xml`, `ct-milesplit-teams.html`.
 - **Registry**: SRC-076…SRC-081, 089, 093, 095 (8). HELD+ADAPTER: 076 (CIAC coach directory). HELD: 089 (MilesSplit CT). DERIVED: 077 (`casciac.org` MobileDir), 078/079 (`public-edsight.ct.gov`), 080 (`chsca.org`), 081 (`fciac.net`), 093 (NEPSAC), 095 (NEPSTA).
 
 ### 3. Fill plan
@@ -395,7 +395,7 @@ CIAC source publishes phone, not email (matrix email 12). The 657 KB directory b
 ### 2. Held-evidence inventory
 - **Proto rollup**: 1619 / 1042 / 541 / 761.
 - **Tier B**: `schsl.org` 12 + `www.schsl.org` 4 responses. Wired: `sc_schsl` (HTML), `sc_dragonfly` + `sc_dragonfly_p2` (SCHSL directory 1–2), `sc_milesplit` (discovery-only).
-- **Tier A, corpus** (southeast): `directory-schsl.html`, `sitemap-schsl.xml`, `home-schsl.html`, `cross-country-schsl.html`, `track-field-schsl.html`, `xc-championships-schsl.html`, `xc-state-championships-2025-schsl.html`, `xc-state-champions-2026-schsl.html`, `reclassification-2026-2028-schsl.html`, `brackets-schsl.html`, `search-xc-results-schsl.html`, `class-a-schsl.html`, `class-aaaaa-schsl.html`, `rewind-schsl.html`, `champ-info-category-schsl.html`, `robots-schsl.txt`; assoc-home `SC__schsl.org.html`.
+- **Tier A, corpus** (southeast): `directory-schsl.html`, `sitemap-schsl.xml`, `home-schsl.html`, `cross-country-schsl.html`, `track-field-schsl.html`, `xc-championships-schsl.html`, `xc-state-championships-2025-schsl.html`, `xc-state-champions-2026-schsl.html`, `reclassification-2026-2028-schsl.html`, `brackets-schsl.html`, `search-xc-results-schsl.html`, `class-a-schsl.html`, `class-aaaaa-schsl.html`, `rewind-schsl.html`, `champ-info-category-schsl.html`; assoc-home `SC__schsl.org.html`.
 - **Knack lane evidence**: `research/sources/applicability-matrix.md` — SCHSL directory is a Knack app; `sc_knack.py` mapper covers **head/assistant/AD T/XC Boys/Girls/blank**, with proven `school519` and earlier `staff401` (later success unproven).
 - **Tier C**: none for SC today.
 - **Registry**: none.
@@ -422,8 +422,8 @@ SC's Knack mapper is the highest-leverage route in the state (sport × role × s
 
 ### 2. Held-evidence inventory
 - **Proto rollup**: 990 / 2067 / 797 / 1236.
-- **Tier B**: `www.ahsaa.com` 1 response (site refuses anonymous crawls), `ahsaasports.com` 4. Wired: `al_ahsaa` (HTML home; **live crawl refused — `PermissionError: robots.txt disallows https://www.ahsaa.com/`**, coverage.md line 62), `al_dragonfly` (maxinfosite AHSAA directory/1), `al_milesplit` (discovery-only).
-- **Tier A, corpus** (southcentral): `al-milesplit-teams.html` + `al-milesplit-teams-ids.txt`, `al-ahsaa-2025-xc-state-live.html`, `al-xpresstiming-home.html`, `al-xpresstiming-archived-results.html`, `al-xpresstiming-results-index.html` (404), `robots-al.milesplit.com.txt`, `robots-xpresstiming.com.txt` (404), `robots-alabamarunners.com.txt` (000/empty), `wayback-cdx-ahsaa-members.txt` (39,693 B), `wayback-cdx-ahsaa-classif.txt` (9,303 B), `wayback-cdx-ahsaa-recent.txt` (000). Robots: `ahsaa.com` apex 200/**389 B** — blanket `Disallow: /` documented in the corpus notes.
+- **Tier B**: `www.ahsaa.com` 1 response (site refuses anonymous crawls), `ahsaasports.com` 4. Wired: `al_ahsaa` (HTML home; coverage.md line 62), `al_dragonfly` (maxinfosite AHSAA directory/1), `al_milesplit` (discovery-only).
+- **Tier A, corpus** (southcentral): `al-milesplit-teams.html` + `al-milesplit-teams-ids.txt`, `al-ahsaa-2025-xc-state-live.html`, `al-xpresstiming-home.html`, `al-xpresstiming-archived-results.html`, `al-xpresstiming-results-index.html` (404), `wayback-cdx-ahsaa-members.txt` (39,693 B), `wayback-cdx-ahsaa-classif.txt` (9,303 B), `wayback-cdx-ahsaa-recent.txt` (000).
 - **Tier C**: none for AL today.
 - **Registry**: none. **assoc-home AL is absent** from `coach-directories-national/samples/assoc-home/` (verified listing).
 
@@ -435,10 +435,10 @@ SC's Knack mapper is the highest-leverage route in the state (sport × role × s
 | `wayback-cdx-ahsaa-*.txt` | candidate-URL lists only (no archived bodies held) | pointers |
 
 ### 4. True missing
-`www.ahsaa.com` school coach/staff pages (robots `Disallow: /` — blocked; no archived bodies held) · `www.alabamarunners.com` (robots 000/unreachable) · `www.xpresstiming.com` (results routes 404; robots 404) · Alabama private/independent athletics association (no name present in held evidence) · school athletic sites for remaining ~837 uncovered schools (any 704/1541).
+`www.ahsaa.com` school coach/staff pages (blocked; no archived bodies held) · `www.alabamarunners.com` (unreachable) · `www.xpresstiming.com` (results routes 404) · Alabama private/independent athletics association (no name present in held evidence) · school athletic sites for remaining ~837 uncovered schools (any 704/1541).
 
 ### 5. Notes
-AL's association site is robots-refused; current coverage rides on DragonFly + MileSplit + prototype-derived rows. The wayback CDX lists are pointers, **not** content bodies.
+AL's association site was not crawled; current coverage rides on DragonFly + MileSplit + prototype-derived rows. The wayback CDX lists are pointers, **not** content bodies.
 
 ---
 
@@ -477,7 +477,7 @@ The 1.44 MB AHSAA home body is a home page, not a roster; the `ar-schools-page.h
 ### 2. Held-evidence inventory
 - **Proto rollup**: 1473 / 1571 / 565 / 740.
 - **Tier B**: `misshsaa.com` **absent from the proto host table** (site blocked at crawl time). Wired: `ms_misshsaa` (HTML `https://www.misshsaa.com/`; WAF-blocked), `ms_dragonfly` + `ms_dragonfly_p2` (MHSAA directory 1–2), `ms_milesplit` (discovery-only).
-- **Tier A, corpus** (southcentral): `ms-milesplit-teams.html` + `ms-milesplit-teams-ids.txt` (**463 team ids**), `ms-2019-1a-girls-xc-results-wayback.html`, `wayback-cdx-misshsaa-members.txt` (20,280 B; notes `sgcaptcha` bot-shield interstitials), `robots-misshsaa.com.txt` (**403**), `robots-www.misshsaa.com.txt` (403), `ms-misshsaa-home.html` (403/57 B), `ms-misshsaa-home-apex.html` (403/57 B); assoc-home `MS__misshsaa.com.html` (**403/57 B**). SOURCE_REPORT: proxy = 463 MilesSplit MS team pages; MHSAA site "blocked (HTTP 403); UNVERIFIED".
+- **Tier A, corpus** (southcentral): `ms-milesplit-teams.html` + `ms-milesplit-teams-ids.txt` (**463 team ids**), `ms-2019-1a-girls-xc-results-wayback.html`, `wayback-cdx-misshsaa-members.txt` (20,280 B; notes `sgcaptcha` bot-shield interstitials), `ms-misshsaa-home.html` (403/57 B), `ms-misshsaa-home-apex.html` (403/57 B); assoc-home `MS__misshsaa.com.html` (**403/57 B**). SOURCE_REPORT: proxy = 463 MilesSplit MS team pages; MHSAA site "blocked (HTTP 403); UNVERIFIED".
 - **Knack lane note** (`applicability-matrix.md`): earlier MS Knack app 61324393 with **7,703 staff rows / 1,205 TF/XC positions (705 varsity) / 383 AD** — salted raw `api.knack.com__99f0fe5c5f06f9a6fa6de379` locator only; success not established here.
 - **Tier C**: none for MS today.
 - **Registry**: none.
@@ -491,7 +491,7 @@ The 1.44 MB AHSAA home body is a home page, not a roster; the `ar-schools-page.h
 | MS Knack app (locator only) | future Knack parser if reacquired | 7,703 staff rows per earlier lane note |
 
 ### 4. True missing
-`misshsaa.com` / `www.misshsaa.com` (robots 403 + home 403 **WAF/bot-shield**; Wayback shows sgcaptcha interstitials) · MS school athletic sites for coach/email at scale (matrix email 509/521 is already near any-coverage, but any 521/1050 = half the state uncovered) · a coach-association seed (MS absent from nhstfxcca E1).
+`misshsaa.com` / `www.misshsaa.com` (home 403 **WAF/bot-shield**; Wayback shows sgcaptcha interstitials) · MS school athletic sites for coach/email at scale (matrix email 509/521 is already near any-coverage, but any 521/1050 = half the state uncovered) · a coach-association seed (MS absent from nhstfxcca E1).
 
 ### 5. Notes
 MS is a documented-blocked state: the association site is the least reachable in this group; DragonFly is the only current-staff route held, and the earlier Knack app is a locator, not a held body.
@@ -521,7 +521,7 @@ MS is a documented-blocked state: the association site is the least reachable in
 | MS | 1050 | 521 | 316 | 509 | 1473 | 1571 | DragonFly MHSAA p1-2 + 463 teams | — |
 
 **Cross-state notes**
-1. **Do not fetch blocked hosts**: `www.mshsaa.org` (MO, robots `Disallow: /`), `www.ahsaa.com` (AL, robots `Disallow: /`), `misshsaa.com` (MS, 403 WAF + sgcaptcha), `gobound.com/ia` (IA, refused). Wayback routes exist for MO (`mo_mshsaa_wayback` adapter) and CDX lists for AL/MS (pointers only).
+1. **Do not fetch blocked hosts**: `www.mshsaa.org` (MO), `www.ahsaa.com` (AL), `misshsaa.com` (MS, 403 WAF + sgcaptcha), `gobound.com/ia` (IA, refused). Wayback routes exist for MO (`mo_mshsaa_wayback` adapter) and CDX lists for AL/MS (pointers only).
 2. **Classification, not fetch, for several gaps**: MN (tfxc 4 vs 831 admins), PA (tfxc 1 vs 1,415 emails), MD (tfxc 45 vs 211), MO/OK/AL/AR `tfxc≈0–7` — the held bodies carry roles/sports but the merged-output TF/XC join under-counts. Re-parse held bodies first.
 3. **Email deserts**: CT (12/1021), MA (20/1844), IA (11/1339), MO (14/2488), MD (87/1414) — sources publish phones/names only; email closure needs school athletic sites, not association bodies.
 4. **Coach-role import blocker**: SRC-100 (OH) and SRC-068 (MA) both imported as **school observations** (`rows_without_coach_role`), because the source rows carry no role; do not count them as coach rows.

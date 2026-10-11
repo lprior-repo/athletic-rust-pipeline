@@ -217,19 +217,19 @@ lane_bench_presence() {
 
 lane_durability() {
   if [ "$RELEASE" -eq 1 ]; then
-    local restat_bin="${RESTATE_SERVER_BIN:-}"
-    if [ -z "$restat_bin" ] && [ -f "$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10/restate-server" ]; then
-      restat_bin="$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10/restate-server"
+    local restate_bin="${RESTATE_SERVER_BIN:-}"
+    if [ -z "$restate_bin" ] && [ -f "$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10/restate-server" ]; then
+      restate_bin="$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10/restate-server"
     fi
-    if [ -z "$restat_bin" ]; then
+    if [ -z "$restate_bin" ]; then
       echo "durability: no Restate executable found"
       return 1
     fi
-    if [ ! -x "$restat_bin" ]; then
-      echo "durability: Restate executable not executable: $restat_bin"
+    if [ ! -x "$restate_bin" ]; then
+      echo "durability: Restate executable not executable: $restate_bin"
       return 1
     fi
-    SCRATCH_STORE="$PWD/var/durability-scratch" RESTATE_SERVER_BIN="$restat_bin" env -u CI tools/moon-local run pipeline:durability
+    SCRATCH_STORE="$PWD/var/durability-scratch" RESTATE_SERVER_BIN="$restate_bin" env -u CI tools/moon-local run pipeline:durability
   fi
 }
 

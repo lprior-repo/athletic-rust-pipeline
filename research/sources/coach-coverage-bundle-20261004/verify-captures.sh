@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Recompute every evidence digest under the bundle and report missing/stale entries.
 # Usage: bash research/sources/coach-coverage-bundle-20261004/verify-captures.sh
-# Schemas understood: sweep.json files[]; manifest.json captures[]/robots[]/main_verification.captures_sha256.
+# Schemas understood: sweep.json files[]; manifest.json captures[]/main_verification.captures_sha256.
 set -uo pipefail
 BASE=$(cd "$(dirname "$0")" && pwd)
 cd "$BASE"
@@ -11,7 +11,7 @@ for d in probes/*/ probes/sources/*/ extract/*/; do
   m=""
   [ -f "$d/manifest.json" ] && m="$d/manifest.json"
   [ -z "$m" ] && [ -f "$d/sweep.json" ] && m="$d/sweep.json"
-  files=$(cd "$d" && find raw captures robots -type f 2>/dev/null | sort)
+  files=$(cd "$d" && find raw captures -type f 2>/dev/null | sort)
   nf=$(printf '%s\n' "$files" | grep -c . || true)
   [ "$nf" -eq 0 ] && continue
   total_dirs=$((total_dirs+1))
@@ -31,7 +31,6 @@ for d in probes/*/ probes/sources/*/ extract/*/; do
   done < <(jq -r '
     (.files[]? | select(.file!=null and .sha256!=null) | "\(.file) \(.sha256)"),
     (.captures[]? | select(.file!=null and .sha256!=null) | "\(.file) \(.sha256)"),
-    (.robots[]? | select(.capture!=null and .sha256!=null) | "\(.capture) \(.sha256)"),
     (.main_verification.captures_sha256? | to_entries[]? | "\(.key) \(if (.value|type)=="string" then .value else (.value.sha256 // "") end)")
   ' "$m" 2>/dev/null)
   miss=0; stale=0

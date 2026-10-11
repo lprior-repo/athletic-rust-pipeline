@@ -366,11 +366,12 @@ workload measured 12,796 KiB (sha `22de9cfb…`, 94,530-line corpus), 11,676 KiB
 100,547 lines), 12,472 KiB and 12,856 KiB (the two release gates on this tree) while the Valgrind
 allocation count moved by 0.06% (`112472` / `112401`), so a 5% bound on its smallest case sits
 inside the measurement's own spread, and even the 1 MiB floor sat inside the 1,180 KiB the four
-recordings span. Peak RSS therefore floors its bound at 20% of the recorded baseline with a 1 MiB
-absolute minimum (`peak_rss_floor`), clamped so the floor never exceeds the recorded baseline
-itself — 2,335 KiB at the current baseline, which still fails the pathological regressions the
-metric exists for; the DHAT allocation counts and bytes keep the exact requested tolerance because
-they repeated to 0.1%.
+recordings span. Peak RSS therefore floors its bound at a seventh of the recorded baseline with a
+1 MiB absolute minimum (`peak_rss_floor`), clamped so the floor never exceeds the recorded baseline
+itself — 1,668 KiB at the current baseline, which covers the 10.1% the four recordings actually
+spread while still failing the pathological regressions the metric exists for and halving the
+masked window the earlier fifth allowed on the largest cases; the DHAT allocation counts and bytes
+keep the exact requested tolerance because they repeated to 0.1%.
 Wall time and throughput carry the third floor, from the `census/school_index/build_index` micro
 case (16 schools per iteration). Its production path is unchanged since the baseline — the only
 working-tree delta in `crates/census-domain/src/school_index.rs` is a test module relocated to

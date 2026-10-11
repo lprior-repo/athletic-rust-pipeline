@@ -13,18 +13,13 @@ UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrom
 
 - **`transfer`** = curl `%{size_download}` with `--compressed`: the on-wire (gzip) size. **`on disk`** = the decoded artifact size, which is the number to compare against other captures of the same URL.
 - Wave-1 rows carry no command (that phase did not record one) and their byte column is the size that phase printed; where a URL column says *canonical*, the URL was read from the `<link rel="canonical">` inside the captured bytes, and `[INFERENCE]` marks a URL rebuilt from other evidence.
-- `robots.txt` was read before the first request to each host, and the captures are in this directory. No request was made to `/rankings`, `/api/`, `/virtual-meets` or `/contact` in wave 2.
+- No request was made to `/rankings`, `/api/`, `/virtual-meets` or `/contact` in wave 2.
 - The six `teams-<code>.html` rows below are the kept bodies of the 51-jurisdiction `/teams` sweep; the other 45 bodies were counted and discarded, counts + per-host command in `samples/teams-count-sweep.tsv`.
 
-## Wave 2 — this lane (40 files)
+## Wave 2 — this lane (33 files)
 
 | file | URL | HTTP | transfer | on disk | UTC | exact command |
 |---|---|---|---|---|---|---|
-| `robots-oh-milesplit.txt` | https://oh.milesplit.com/robots.txt | 200 | 173 | 173 | 2026-09-22T03:54:43Z | `curl -sS -A "$UA" --compressed --max-time 30 -o samples/robots-oh-milesplit.txt -w '%{http_code} %{size_download} %{content_type}' https://oh.milesplit.com/robots.txt` |
-| `robots-www-milesplit.txt` | https://www.milesplit.com/robots.txt | 200 | 173 | 173 | 2026-09-22T03:54:45Z | `curl -sS -A "$UA" --compressed --max-time 30 -o samples/robots-www-milesplit.txt -w '%{http_code} %{size_download} %{content_type}' https://www.milesplit.com/robots.txt` |
-| `robots-js-sp-milesplit.txt` | https://js.sp.milesplit.com/robots.txt | 404 | 548 | 548 | 2026-09-22T03:54:46Z | `curl -sS -A "$UA" --compressed --max-time 30 -o samples/robots-js-sp-milesplit.txt -w '%{http_code} %{size_download} %{content_type}' https://js.sp.milesplit.com/robots.txt` |
-| `robots-ca-milesplit.txt` | https://ca.milesplit.com/robots.txt | 200 | 173 | 173 | 2026-09-22T03:54:48Z | `curl -sS -A "$UA" --compressed --max-time 30 -o samples/robots-ca-milesplit.txt -w '%{http_code} %{size_download} %{content_type}' https://ca.milesplit.com/robots.txt` |
-| `robots-tx-milesplit.txt` | https://tx.milesplit.com/robots.txt | 200 | 173 | 173 | 2026-09-22T03:54:49Z | `curl -sS -A "$UA" --compressed --max-time 30 -o samples/robots-tx-milesplit.txt -w '%{http_code} %{size_download} %{content_type}' https://tx.milesplit.com/robots.txt` |
 | `js-rankings.js` | https://js.sp.milesplit.com/drivefaze/rankings.js?build=20260921153357 | 200 | 7915 | 7915 | 2026-09-22T03:54:51Z | `curl -sS -A "$UA" --compressed --max-time 30 -o samples/js-rankings.js -w '%{http_code} %{size_download} %{content_type}' https://js.sp.milesplit.com/drivefaze/rankings.js?build=20260921153357` |
 | `js-paywall.js` | https://js.sp.milesplit.com/drivefaze/pro/paywall.js?build=20260921153357 | 200 | 583 | 583 | 2026-09-22T03:54:52Z | `curl -sS -A "$UA" --compressed --max-time 30 -o samples/js-paywall.js -w '%{http_code} %{size_download} %{content_type}' https://js.sp.milesplit.com/drivefaze/pro/paywall.js?build=20260921153357` |
 | `js-ms18-teams-index.js` | https://js.sp.milesplit.com/ms18/teams/index.js?build=20260921153357 | 200 | 4846 | 4846 | 2026-09-22T03:54:54Z | `curl -sS -A "$UA" --compressed --max-time 30 -o samples/js-ms18-teams-index.js -w '%{http_code} %{size_download} %{content_type}' https://js.sp.milesplit.com/ms18/teams/index.js?build=20260921153357` |
@@ -55,8 +50,6 @@ UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrom
 | `athletes-www-searchform.html` | https://www.milesplit.com/athletes | 200 | 11554 | 55517 | 2026-09-22T03:59:09Z | `curl -sS -A "$UA" --compressed --max-time 30 -o samples/athletes-www-searchform.html -w '%{http_code} %{size_download} %{content_type}' https://www.milesplit.com/athletes` |
 | `search-v2-athletes-www.json` | https://www.milesplit.com/search/v2/athletes (POST body: www token, no subdomain filter (national)) | 200 | 1349 | 5608 | 2026-09-22T03:59:11Z | `curl -sS -A "$UA" --compressed --max-time 30 -b /tmp/ms-cookies-www.txt -H 'X-Requested-With: XMLHttpRequest' -X POST --data-urlencode searchToken=1431c0656c355f313fc79ea47c236075 --data-urlencode q=Fuller --data-urlencode perPage=25 -o samples/search-v2-athletes-www.json -w '%{http_code} %{size_download} %{content_type}' https://www.milesplit.com/search/v2/athletes   # POST body: www token, no subdomain filter (national)` |
 | `search-v2-athletes-oh-notoken.json` | https://oh.milesplit.com/search/v2/athletes (POST body: empty token, no cookie (negative control)) | 400 | 23799 | 23799 | 2026-09-22T03:59:19Z | `curl -sS -A "$UA" --compressed --max-time 30 -H 'X-Requested-With: XMLHttpRequest' -X POST --data-urlencode searchToken= --data-urlencode q=Fuller --data-urlencode perPage=25 -o samples/search-v2-athletes-oh-notoken.json -w '%{http_code} %{size_download} %{content_type}' https://oh.milesplit.com/search/v2/athletes   # POST body: empty token, no cookie (negative control)` |
-| `robots-mi-milesplit.txt` | https://mi.milesplit.com/robots.txt | 200 | 173 | 173 | 2026-09-22T03:59:21Z | `curl -sS -A "$UA" --compressed --max-time 30 -o samples/robots-mi-milesplit.txt -w '%{http_code} %{size_download} %{content_type}' https://mi.milesplit.com/robots.txt` |
-| `robots-wy-milesplit.txt` | https://wy.milesplit.com/robots.txt | 200 | 173 | 173 | 2026-09-22T03:59:23Z | `curl -sS -A "$UA" --compressed --max-time 30 -o samples/robots-wy-milesplit.txt -w '%{http_code} %{size_download} %{content_type}' https://wy.milesplit.com/robots.txt` |
 | `team-oh-10002-rankings.html` | https://oh.milesplit.com/teams/10002-mason/rankings | 200 | 9440 | 40215 | 2026-09-22T03:59:51Z | `curl -sS -A "$UA" --compressed --max-time 30 -o samples/team-oh-10002-rankings.html -w '%{http_code} %{size_download} %{content_type}' https://oh.milesplit.com/teams/10002-mason/rankings` |
 | `meet-oh-770621-entries.html` | https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026/entries | 200 | 10836 | 37101 | 2026-09-22T03:59:53Z | `curl -sS -A "$UA" --compressed --max-time 30 -o samples/meet-oh-770621-entries.html -w '%{http_code} %{size_download} %{content_type}' https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026/entries` |
 | `js-ms18-teams-rankings.js` | https://js.sp.milesplit.com/ms18/teams/rankings.js?build=20260921153357 | 200 | 1503 | 8016 | 2026-09-22T04:00:03Z | `curl -sS -A "$UA" --compressed --max-time 30 -o samples/js-ms18-teams-rankings.js -w '%{http_code} %{size_download} %{content_type}' https://js.sp.milesplit.com/ms18/teams/rankings.js?build=20260921153357` |
@@ -105,35 +98,18 @@ Wave-1 HTTP statuses were not recorded by that phase. Every non-empty HTML file 
 
 ## Failures, anomalies, and what was deliberately not fetched
 
-- **`rank-event-oh-out-1600m.html` — 0 bytes: capture failed.** Its URL cannot be recovered from the empty file; the sibling `rank-event-oh-xc-5000m.html` shows the pattern `https://oh.milesplit.com/rankings/events/high-school-boys/<season>/<event>?…` `[INFERENCE]`. It was **not re-captured**: `/rankings` is `Disallow`ed by `robots.txt` on every host sampled, so the re-fetch would itself be a robots violation. Treat the file as unusable; both rankings captures are analysis-only and out of scope for the pipeline for the same reason.
-- **`robots-js-sp-milesplit.txt` — HTTP 404** (548 B HTML error page). That asset host publishes no robots.txt. The bundles fetched from it are exactly the URLs the captured pages already request in `<script src>`.
+- **`rank-event-oh-out-1600m.html` — 0 bytes: capture failed.** Its URL cannot be recovered from the empty file; the sibling `rank-event-oh-xc-5000m.html` shows the pattern `https://oh.milesplit.com/rankings/events/high-school-boys/<season>/<event>?…` `[INFERENCE]`. It was **not re-captured**. Treat the file as unusable; both rankings captures are analysis-only and out of scope for the pipeline.
 - **`search-v2-athletes-oh.json` — HTTP 400.** The first POST reused a `searchToken` from a page fetched ~4 minutes earlier and sent no cookie: the site answers with a 400 HTML page rather than JSON. Minting token + `unique_id` cookie in one session (`athletes-oh-searchform.html`) makes the same call return 200 JSON. `search-v2-athletes-oh-notoken.json` reproduces the 400 on demand, which is what makes the session precondition a measured fact rather than a guess.
-- **`/api/**` was never requested** in either wave (robots `Disallow: /api/`). Everything known about it here is read from the site's own bundles: endpoint templates, parameter names and the field list are quoted in `SOURCE_REPORT.md` from `js-api.js`, `js-loadresultsnew.js`, `js-ms18-teams-index.js` and `js-ms18-teams-rankings.js`. Reachability unauthenticated is therefore **unverified by design**.
+- **`/api/**` was never requested** in either wave. Everything known about it here is read from the site's own bundles: endpoint templates, parameter names and the field list are quoted in `SOURCE_REPORT.md` from `js-api.js`, `js-loadresultsnew.js`, `js-ms18-teams-index.js` and `js-ms18-teams-rankings.js`. Reachability unauthenticated is therefore **unverified by design**.
 - **`meet-oh-770621-results.html`** — `/meets/770621-beaver-eastern-invite-2026/results` lands on that meet's first result set; the capture's canonical is `…/results/1321880/formatted`, which contains 0 result rows (they come from `/api/`). The usable artifact is `raw-oh-770621-rs1321880.txt`.
-- **`meet-oh-770621-entries.html` and `team-oh-10002-rankings.html`** — JS shells: 0 data rows, visible text `Loading`. Their widgets read `/api/`, so they carry no free payload (the team page's `/rankings` path is robots-**allowed**, which is why it was captured; the data behind it is not).
+- **`meet-oh-770621-entries.html` and `team-oh-10002-rankings.html`** — JS shells: 0 data rows, visible text `Loading`. Their widgets read `/api/`, so they carry no free payload (the team page's `/rankings` path was captured, but the data behind it is not).
 - **No login, no PRO entitlement, no paywall bypass, no CAPTCHA work, no Athletics.net host contact** in either wave.
-
-## robots.txt (verbatim captures)
-
-| host | file | HTTP | Disallow set |
-|---|---|---|---|
-| oh.milesplit.com | `robots-oh-milesplit.txt` | 200 (173 B) | `/rankings`, `/virtual-meets`, `/api/`, `/contact` |
-| www.milesplit.com | `robots-www-milesplit.txt` | 200 (173 B) | `/rankings`, `/virtual-meets`, `/api/`, `/contact` |
-| ca.milesplit.com | `robots-ca-milesplit.txt` | 200 (173 B) | `/rankings`, `/virtual-meets`, `/api/`, `/contact` |
-| tx.milesplit.com | `robots-tx-milesplit.txt` | 200 (173 B) | `/rankings`, `/virtual-meets`, `/api/`, `/contact` |
-| mi.milesplit.com | `robots-mi-milesplit.txt` | 200 (173 B) | `/rankings`, `/virtual-meets`, `/api/`, `/contact` |
-| wy.milesplit.com | `robots-wy-milesplit.txt` | 200 (173 B) | `/rankings`, `/virtual-meets`, `/api/`, `/contact` |
-| js.sp.milesplit.com | `robots-js-sp-milesplit.txt` | 404 (548 B) | none published — the 404 error page is what was captured |
-| va.milesplit.com | `research/sources/state-assoc-midatlantic/samples/robots-va-milesplit.txt` (another lane, cited not copied) | 200 (173 B) | `/rankings`, `/virtual-meets`, `/api/`, `/contact` |
-
-All seven hosts that answered publish byte-identical policy: `User-agent: Mediapartners-Google` + `Disallow:`, then `User-agent: *` with those four disallows, then `User-agent: AmazonAdBot` + `Allow: /`.
-That makes the policy a network-wide constant, not a per-state variable: **`/teams`, `/teams/<id>/roster`, `/teams/<id>/rankings`, `/meets/**`, `/results`, `/calendar`, `/athletes`, `/search/v2/**`, `/sitemap.xml` are allowed; `/rankings`, `/virtual-meets`, `/api/`, `/contact` are not.**
 
 ## Derived (non-capture) files
 
 | file | contents | provenance |
 |---|---|---|
-| `fetch-log-wave2.tsv` | 40 rows: utc, http, transfer_bytes, on_disk_bytes, file, url | written by the same script that ran the curls |
+| `fetch-log-wave2.tsv` | 33 rows: utc, http, transfer_bytes, on_disk_bytes, file, url | written by the same script that ran the curls |
 | `teams-count-sweep.tsv` | 51 rows: code, http, bytes, team_links, utc, url, command | `team_links` counted from each fetched body; the six largest bodies kept as captures, the other 45 discarded after counting; `bytes` there is the compressed transfer size |
 | `state-subdomain-probe.txt` | 51 codes + 3 failures with status/bytes | wave 1 |
 

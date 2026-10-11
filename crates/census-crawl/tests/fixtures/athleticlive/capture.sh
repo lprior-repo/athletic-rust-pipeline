@@ -4,12 +4,9 @@
 # Run from the repository root:
 #   bash crates/census-crawl/tests/fixtures/athleticlive/capture.sh
 #
-# 14 requests, >=2 s apart, sequential, no crawling. Writes raw response bodies,
+# 10 requests, >=2 s apart, sequential, no crawling. Writes raw response bodies,
 # one meta json per capture, a JSONL ledger, a derived meet-harvest CSV and a
 # ready-to-replay results manifest.
-#
-# robots.txt is captured as provenance only. This pipeline no longer gates on
-# robots admission (owner directive 2026-10-10); the engineered rate limits stay.
 set -euo pipefail
 
 D="crates/census-crawl/tests/fixtures/athleticlive"
@@ -101,12 +98,6 @@ expect200() {
     exit 1
   fi
 }
-
-echo "== robots.txt (provenance only; any status is recorded, not gated)"
-capture GET robots-search-athletic-live.txt "$SEARCH/robots.txt"
-capture GET robots-www-athletic-live.txt "https://www.athletic.live/robots.txt"
-capture GET robots-blob-athletic-live.txt "$BLOB/robots.txt"
-capture GET robots-rtdb-firebaseio.txt "$RTDB/robots.txt"
 
 echo "== two-state meet listing (Wisconsin + Minnesota, 2025-08-01 .. 2025-12-01)"
 capture POST meet-list-wi-mn-2025.json "$SEARCH/*_meet_list/_search" \
@@ -209,6 +200,4 @@ echo "== digests"
 sha256sum "$D"/captures.log "$D"/PROVENANCE.json "$D"/harvest-wi-mn-2025.csv \
   "$D"/manifest-meet-55746.json "$D"/meet-list-wi-mn-2025.json "$D"/meet-doc-55746.json \
   "$D"/event-summary-meet-55746.json "$D"/athlete-list-meet-55746.json \
-  "$D"/robots-search-athletic-live.txt "$D"/robots-www-athletic-live.txt \
-  "$D"/robots-blob-athletic-live.txt "$D"/robots-rtdb-firebaseio.txt \
   "$D"/*.meta.json | sort -k2

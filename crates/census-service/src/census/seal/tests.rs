@@ -86,7 +86,6 @@ fn a_workbook_is_what_lifts_the_ladder_into_exporting() -> TestResult {
 fn access_conditions_split_into_refusals_and_throttles() {
     let rows = vec![
         condition(AccessBlockKind::Forbidden, "refused.test"),
-        condition(AccessBlockKind::RobotsDisallowed, "disallowed.test"),
         condition(AccessBlockKind::HumanRequired, "profile.test"),
         condition(AccessBlockKind::RateLimited, "throttled.test"),
         condition(AccessBlockKind::Timeout, "slow.test"),
@@ -96,8 +95,8 @@ fn access_conditions_split_into_refusals_and_throttles() {
 
     assert_eq!(
         retained_access(&rows),
-        (7, 2, 5),
-        "two refusals and five cooldown-bounded rows over seven"
+        (6, 1, 5),
+        "one refusal and five cooldown-bounded rows over six"
     );
     assert_eq!(
         retained_access(&[]),

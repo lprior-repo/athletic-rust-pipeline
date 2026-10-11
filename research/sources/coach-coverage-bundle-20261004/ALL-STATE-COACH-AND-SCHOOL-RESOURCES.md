@@ -8024,7 +8024,7 @@ RUST INGESTION PLAN
 5. PDFs: extract text with layout retained, remove repeat headers, preserve conference/district context across pages and validate against visible sample rows. Keep PDF URL, page and season as provenance. Do not scrape individual athlete results as an alternative to school/coach data.
 6. Parse official school athletics pages last, following verified school-site links. Use coaching title plus nearby sport section and campus identity. Example fixtures: Community ISD (Finalsite cards), Cypress Creek (WordPress seasonal lists), Winter Springs (HTML tables). A school staff email is evidence only when paired with a relevant adult coaching assignment.
 7. Build explicit quality flags: current_official, current_association, historical, undated, dynamic_uninspected, unknown_school_level, vacancy, ambiguous_school_match and conflicts. An award or clinic appearance can corroborate identity but should not overwrite a current school staff listing.
-8. Apply per-domain low concurrency, caching and retry/backoff. Check current robots/terms and licensing before production extraction. Never use account-gated/member data or paid exports without authorized access and use rights. Do not guess professional emails; do not collect home addresses/personal phone fields.
+8. Apply per-domain low concurrency, caching and retry/backoff. Check current terms and licensing before production extraction. Never use account-gated/member data or paid exports without authorized access and use rights. Do not guess professional emails; do not collect home addresses/personal phone fields.
 
 COVERAGE GAPS / STOPPING POINT
 - No exhaustive current coach census or documented bulk coach API was verified for any of these states. Direct publicly visible coach fields were verified for one CA and one FL school in Home Campus and several official-school fixtures.
@@ -8642,7 +8642,7 @@ Observed read routes from public code: /widget/schools/get with school,section_i
 Shared response renderer supports sport/role/name/email. Do not infer NJ completeness from CA, fabricate IDs, or access hidden-from-directory records. Not a documented supported API.
 
 RUST HANDOFF CHECKLIST
-- Build source-specific read adapters with reqwest, scraper and serde_json; render JS only when needed. Respect robots/terms, caching, conditional GET, backoff and small per-origin concurrency.
+- Build source-specific read adapters with reqwest, scraper and serde_json; render JS only when needed. Respect terms, caching, conditional GET, backoff and small per-origin concurrency.
 - Stop adapters on 401/403/login/CAPTCHA/access restrictions. No proxies or identity rotation to bypass. Continue through unrelated permitted sources.
 - Extract PDF locally with source URL/hash/page number. Date the document itself, not filename folder or search crawl. Use CSV/XLSX/shapefile readers preserving leading-zero IDs.
 - Separate School, Person and CoachingAppointment. One coach may cover several genders/sports/seasons or co-op schools.
@@ -9401,7 +9401,7 @@ IMPLEMENTATION HANDOFF
 4. Normalize target labels: BXC/GXC, Boys/Girls Cross Country, Cross-Country, Track & Field, Track and Field and boys/girls Track. Keep coed and unspecified gender explicit. Never turn a meet contact, athletic director, clinic speaker, official or association officer into a head coach without direct role evidence.
 5. Favor season-labelled school/association profiles. Keep dated award/clinic material as supporting evidence. Record conflicts instead of silently selecting the first email/name. Recheck assignments with recent staff pages when sources disagree.
 6. Adapters: ordinary GET and HTML parsing for OSAA/UHSAA/AIA school pages; CSV parsing for SNTCCCA; XLSX parsing for NDE; structured browser-assisted extraction only when genuinely needed for dynamic widgets. For PDFs use positional extraction when columns collapse, not whitespace guessing. Build fixture tests with one school containing all four sports, one combined coach, one blank coach field, and one private school.
-7. Crawl politely: honor published restrictions and robots, identify the client, bound concurrency per host, cache responses, apply backoff and conditional requests, and stop on authorization barriers. A public webpage is not permission to bypass login, CAPTCHA, rate limits or contractual restrictions. AIA authenticated directory and blocked Bound are not targets for bypass.
+7. Crawl politely: honor published restrictions, identify the client, bound concurrency per host, cache responses, apply backoff and conditional requests, and stop on authorization barriers. A public webpage is not permission to bypass login, CAPTCHA, rate limits or contractual restrictions. AIA authenticated directory and blocked Bound are not targets for bypass.
 8. School-site enrichment is necessary for coach email completeness. Follow verified institution domains and actual athletics/staff navigation; avoid guessed email patterns or inferred private contact details. Grand County, Pine View, Seattle and Washoe are verified examples of source variation.
 9. Evaluate coverage per physical state, school, sport, team gender and season. Compare the seeded school population against observed program flags. A contact directory may omit nonmembers; participation matrix missingness is not a reliable negative. The same source organization with three URLs is still one source system.
 
@@ -9516,7 +9516,7 @@ SCRAPER BOUNDARIES AND QUALITY GATES
 - Prefer official school pages for current employment; dated association PDFs provide discovery/corroboration.
 - No documented public statewide coach JSON API was verified for these states. ASPX/CFM page routes and public report forms are website endpoints, not promised supported APIs.
 - Dynamic Bound, AthleticNET, KSHSAA React and School Finder pages need a public rendered-page validation step. Do not claim their hidden APIs, export permissions or auth status have been tested.
-- Respect robots/terms, cache responses, limit per-host concurrency, honor Retry-After, and stop at login/CAPTCHA/access controls. No bypass, credential entry, bulk email guessing or outreach is part of this task.
+- Respect terms, cache responses, limit per-host concurrency, honor Retry-After, and stop at login/CAPTCHA/access controls. No bypass, credential entry, bulk email guessing or outreach is part of this task.
 - For PDFs, inspect extraction quality before row parsing. Reject corrupted text, capture page provenance and verify OCR against a representative sample. Preserve empty fields instead of inventing emails.
 - Completeness metrics should report coverage of target schools/programs with verified current coaches, not just rows downloaded. Explicitly count missing sport evidence, stale role, inaccessible source and ambiguous school matches.
 - Re-fetch current season hubs and compare hashes/dates before relying on saved files. Publication dates in search can be wrong; use displayed document dates when available.

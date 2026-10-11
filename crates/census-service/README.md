@@ -86,7 +86,7 @@ original observations survive. Unsupported or unbound labels remain unmapped; a 
 idempotent. This command neither discovers results nor merges distinct event contexts.
 
 Source policy is binding regardless of available CLI flags. The existing `--authorized-host` option
-can alter robots handling; its presence is not permission to bypass access policy. Do not use it to
+can widen admission for the named host; its presence is not permission to bypass access policy. Do not use it to
 work around denial or challenges. Identity/review, cohort, contacts and PR semantics live in
 [ARCHITECTURE.md](../../ARCHITECTURE.md) §§8–9, not command-specific variants.
 

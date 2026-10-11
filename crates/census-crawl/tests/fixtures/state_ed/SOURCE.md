@@ -23,6 +23,6 @@ re-serialized.
 - `profile_kingston.html` — `<title>A A KINGSTON MIDDLE SCHOOL | NYSED Data Site</title>`, with the
   page's own `AT A GLANCE 2024-25` section. It is served from `profile.php?instid=800000038718`, so a
   profile is addressed by a 12-digit NYSED institution id that the index page supplies.
-- No robots verdict for `data.nysed.gov` was captured in the corpus. The reader is a file reader and
+- The reader is a file reader and
   makes no request; a fetching lane would need its own admission decision, which the registry
   descriptor for `state_ed` records.

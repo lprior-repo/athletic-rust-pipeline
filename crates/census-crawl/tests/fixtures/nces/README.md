@@ -22,5 +22,5 @@ has been tested against the live surface.
 ## Provenance
 
 Add a `SOURCE.md` next to the captures when a file needs more than its name to be read later: the
-request path, the capture date, and the robots status. `.md` files are documentation, not test
+request path and the capture date. `.md` files are documentation, not test
 input, and the fixture test skips them.

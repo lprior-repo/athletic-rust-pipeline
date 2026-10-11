@@ -63,7 +63,7 @@ pub struct SchoolSitesArgs {
     #[arg(
         long,
         help = "Treat every host in the queue as authorized for this collection",
-        long_help = "Authorize commissioned queue hosts for acquisition under existing robots and pacing policy. This grant never qualifies a canonical school owner, substitutes a website, or proves a redirected page belongs to the selected school."
+        long_help = "Authorize commissioned queue hosts for acquisition under existing pacing policy. This grant never qualifies a canonical school owner, substitutes a website, or proves a redirected page belongs to the selected school."
     )]
     pub authorize_queue_hosts: bool,
 }

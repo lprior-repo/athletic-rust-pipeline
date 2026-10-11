@@ -1,11 +1,9 @@
 {
   "lane": "state-assoc-mountain",
-  "captured_utc_window": ["2026-09-22T03:54:26Z", "2026-09-22T04:10:23Z"],
-  "captured_utc_window_note": "first and last timestamps in samples/.captures.tsv (the harness log, 128 rows); the six AIA PDF/extract files in samples/ predate the harness log and are listed as derived in samples/CAPTURES.md",
+  "captured_utc_window": ["2026-09-22T03:54:52Z", "2026-09-22T04:10:23Z"],
+  "captured_utc_window_note": "first and last timestamps in samples/.captures.tsv (the harness log, 107 rows); the six AIA PDF/extract files in samples/ predate the harness log and are listed as derived in samples/CAPTURES.md",
   "policy": {
     "fetch": "anonymous curl only, <=1 req/s per host (probe.sh sleeps 1.2 s)",
-    "robots_checked_first": true,
-    "robots_disallowed_paths_not_fetched": ["https://uhsaa.org/v2/historical-cross-country-results/", "https://uhsaa.org/v2/historical-track-field-results/", "https://uhsaa.org/v2/**"],
     "auth_or_paywall_bypassed": false
   },
   "jurisdictions": {
@@ -69,7 +67,7 @@
     "WY": {
       "association": "WHSAA",
       "enumerates_school_universe": {"yes": "count only", "count": 70, "classes": {"4A": 16, "3A": 16, "2A": 18, "1A": 20}, "names_published": false, "mechanism": "forms/2026-28ADMs.pdf (single page of class counts)", "sample": "samples/whsaa-2026-28-adms.pdf"},
-      "unreachable": {"https://www.whsaa.org/schools/": 403, "https://www.whsaa.org/archives/": 403, "https://www.whsaa.org/track/": 403, "https://www.whsaa.org/whsaa/members.html": 404, "https://www.whsaa.org/xc/": 404, "robots": "https://www.whsaa.org/robots.txt 404 (no published policy)"},
+      "unreachable": {"https://www.whsaa.org/schools/": 403, "https://www.whsaa.org/archives/": 403, "https://www.whsaa.org/track/": 403, "https://www.whsaa.org/whsaa/members.html": 404, "https://www.whsaa.org/xc/": 404},
       "enumerates_sport_participation": {"yes": false},
       "enumerates_athletes": {"yes": false},
       "enumerates_coaches_ad": {"yes": false},
@@ -82,6 +80,6 @@
     "jurisdictions_with_athlete_level_grade_data": ["NM"],
     "jurisdictions_with_coach_or_ad_contacts": ["AZ", "ID", "UT"],
     "jurisdictions_with_zero_anonymously_reachable_result_data": ["WY"],
-    "samples_files": 125
+    "samples_files": 108
   }
 }

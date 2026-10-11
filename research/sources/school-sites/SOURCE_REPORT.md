@@ -28,16 +28,15 @@ slice before `--limit` truncates. Site artifacts are resumed by file presence; `
 
 ## Politeness and admission
 
-One `Fetcher` for the run: 1,000 ms default per-host delay (`--delay-ms`), per-host `robots.txt`
-enforced with the 64 KiB cap, per-origin advisory `flock` so a second process cannot double a host's
-rate, and the response cache under the store's HTTP root, which is also what `verify-coaches`
-reads. There is no registry descriptor: the host set is per-school and unbounded, so acquisition
-authority is the queue itself.
+One `Fetcher` for the run: 1,000 ms default per-host delay (`--delay-ms`), per-origin advisory
+`flock` so a second process cannot double a host's rate, and the response cache under the store's
+HTTP root, which is also what `verify-coaches` reads. There is no registry descriptor: the host set
+is per-school and unbounded, so acquisition authority is the queue itself.
 
 School hosts redirect constantly (`http`→`https`, apex→`www`, school→district/platform), and a
 cross-origin redirect is refused without a grant. `--authorize-queue-hosts` grants the base domain
 of every host in the queue for that collection; granted hosts stay capped at 2 rps and every other
-check (private address, robots, pacing) still binds. The flag is the operator's statement that the
+check (private address, pacing) still binds. The flag is the operator's statement that the
 queued sites were commissioned, matching `verify-coaches --authorize-cited-hosts`.
 
 ## Extraction

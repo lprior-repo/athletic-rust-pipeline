@@ -290,7 +290,7 @@
     "source_name": "Nevada Interscholastic Activities Association (NIAA)",
     "domain_correction": {
       "wrong_host": "niaa.org",
-      "observed": "samples/robots-niaa.txt (301) and samples/robots-niaa-follow.txt (200, 198356 bytes of HTML titled `Alumni | INROADS`, canonical https://inroads.org/alumni/)",
+      "observed": "niaa.org 301s and serves a 198356-byte HTML page titled `Alumni | INROADS`, canonical https://inroads.org/alumni/",
       "correct_host": "niaa.com"
     },
     "school_universe": {

@@ -8,7 +8,6 @@ values recorded here; nothing was reformatted or re-serialized.
 |---|---|---|---|---|
 |`directory_id3.html`|`portal.tssaa.org__7e2c78a9fba681cba03b6ed2`|`https://portal.tssaa.org/common/directory/?id=3`|200, 79,409|`c69f3c2dac4363451b6e7fc23b772bcfa0cd46e468113e79d1edf177d2c71266`|
 |`directory_id407.html`|`portal.tssaa.org__07f0c7f079ec6b33f05ce9a3`|`https://portal.tssaa.org/common/directory/?id=407`|200, 47,128|`1f83922a760d68c8634bb4f3236c74e0bbe4e5dfa72296c94644bf1d47b8d0db`|
-|`robots.txt`|`portal.tssaa.org__d3f882eba7739af362f02bfb`|`https://portal.tssaa.org/robots.txt`|200, 68|`0f8048a5371ac652f9edff9eea146cd16d76aa9f26fe3a92d5b4c499582719d5`|
 |`directory_id157.html`|`var/midwest-census/http/078e90211a0d5d3319742c16aa84949c.body`|`https://portal.tssaa.org/common/directory/?id=157`|200, 114,053; captured 2026-09-22T16:10:49Z|`2f920f31115b5e96e2a1155747022e96baf54d41069c52a16701a3fb814a6453`|
 
 ## What the captures pin
@@ -25,10 +24,6 @@ values recorded here; nothing was reformatted or re-serialized.
 - `directory_id407.html` — school id 407, `<h2>Redemption School of Worship`, and no
   `staffPerson` rows at all. It still carries the school list (below). Its capture proves that a
   school page with no coach rows is a normal page, not a failure.
-- `robots.txt` — `User-Agent: *`, `Allow: /common`, `Allow: /access/attendance`, `Disallow: /`.
-  The directory under `/common/directory/` is inside the allowed prefix, so these captures sit in an
-  allowed path; the file is a fixture because it is a real served response for this host, and no test
-  may treat it as a directory page.
 - **The school list.** Every school page embeds the same JavaScript literal array — 456 entries of
   the form `{id: '1', name: 'Adamsville High School (Adamsville, TN)'}` — which the table is built
   from at runtime. The array is site-wide data inside a page response, so the reader treats it as the
@@ -37,7 +32,7 @@ values recorded here; nothing was reformatted or re-serialized.
 
 ## Corpus shape (measured 2026-09-30, read-only)
 
-460 files match `census-prototype/raw/portal.tssaa.org__[0-9a-f]*`:
+459 files match `census-prototype/raw/portal.tssaa.org__[0-9a-f]*`:
 
 - **456 school pages** — 455 carry a `.meta.json` sidecar naming `?id=<n>`; the 456th
   (`portal.tssaa.org__61c3c684588ad668f3d2992f`, 73,070 bytes, one `<h2>` and 16 tables) has no
@@ -46,12 +41,8 @@ values recorded here; nothing was reformatted or re-serialized.
 - **3 HTML shells** — `portal.tssaa.org__6cfb724b…` and `portal.tssaa.org__9c683375…` (41,350 bytes
   each) and `portal.tssaa.org__c1170274…` (47,104 bytes): no `<h2>`, no `<table>`, no school name.
   They are not school pages and carry no id.
-- **1 robots response** — the 68-byte `robots.txt` above (the file the corpus stored without a
-  sidecar, although its content identifies it).
-
 Totals over the 456 school pages: 14,962 `staffPerson` rows, and 405 pages whose cards include a
-Track & Field or Cross Country header. The school array appears in every file except the robots
-response. The school-list table has no static school-list data rows or `?id=<digits>` anchors;
+Track & Field or Cross Country header. The school array appears in every file. The school-list table has no static school-list data rows or `?id=<digits>` anchors;
 the embedded array supplies the machine-readable list and the sidecar supplies a detail's owner ID.
 Staff and administration tables do have static data rows, including ordinary rows without the
 `staffPerson` class. The id157 fixture retains its sportless athletic director separately from its

@@ -5,14 +5,6 @@ Capture date: 2026-10-04. User-Agent:
 Every file is the response body exactly as served (a plain `GET`; the details JSON carries the
 directory's own XHR context), and the bytes and sha256 below were measured on the committed files.
 
-## robots.txt
-
-`https://www.cifsshome.org/robots.txt` — 200, 24 bytes, sha256
-`e5c4b84484ee4216e9373be99380320c25dd94805f99f0a805846f087636553f`. The whole body is
-`User-agent: *\nDisallow:` — nothing disallowed. `www.cifnshome.org` and `www.fhsaahome.org` serve
-the identical 24 bytes; copies of all three sit under
-`research/sources/coach-coverage-bundle-20261004/probes/home_campus/robots/`.
-
 ## Directory Sections
 
 `widget/school/directory?section=<n>` — one

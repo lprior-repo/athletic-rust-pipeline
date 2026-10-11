@@ -22,6 +22,6 @@ passes here has been tested against the live surface.
 
 ## Provenance
 
-`SOURCE.md` next to the captures records the request path, capture date, robots status and the
+`SOURCE.md` next to the captures records the request path, capture date and the
 sha256 of every file. `.md` files are documentation, not test input, and the fixture test skips
 them.

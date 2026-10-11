@@ -132,7 +132,7 @@
         {"target": "sport80", "url": "https://usatf.sport80.com/register/membership?id_add_on=941", "meaning": "JO XC registration path (no results link on the XC event page)", "sample": "samples/usatf-aau/usatf-junior-olympic-xc.html"}
       ]
     },
-    "aau": {"source_name": "AAU", "hosts": ["www.aausports.org", "aausports.org", "aautrackandfield.org"], "observed": {"aausports_robots": {"status": 404, "bytes": 0, "sample": "samples/usatf-aau/other-www.aausports.org_robots.txt"}, "sports_track_field": {"status": 403, "bytes": 5787, "sample": "samples/usatf-aau/aau-sports-track.html"}, "redirect_chain": ["aautrackandfield.org -> 301", "aausports.org/track-and-field -> 403"]}, "schema": null},
+    "aau": {"source_name": "AAU", "hosts": ["www.aausports.org", "aausports.org", "aautrackandfield.org"], "observed": {"sports_track_field": {"status": 403, "bytes": 5787, "sample": "samples/usatf-aau/aau-sports-track.html"}, "redirect_chain": ["aautrackandfield.org -> 301", "aausports.org/track-and-field -> 403"]}, "schema": null},
     "cross_country_ratings": {
       "source_name": "Cross Country Ratings",
       "hosts": ["www.crosscountryratings.com"],
@@ -147,9 +147,9 @@
       "runner_page_fields": {"source": "samples/other-databases/ccr-runner.html", "observed": {"name": "Kuma Gutema", "grade_word": "Junior", "town": "Sioux City, North", "class_of": "Class of 2028", "season": "2026 Season", "marks": ["14:30.8", "14:53.2", "14:59.2", "15:16.7", "15:21.3", "15:27.1", "15:29.7", "15:33.7"]}}
     },
     "screened_rejects": {
-      "ncsa_sports": {"robots": {"status": 200, "bytes": 2673, "sample": "samples/other-databases/other-www.ncsasports.org_robots.txt"}, "reason": "recruiting profiles behind a paywall; no grade/meet-result surface in anonymous pages"},
-      "fieldlevel": {"robots": {"status": 200, "bytes": 110, "sample": "samples/other-databases/other-www.fieldlevel.com_robots.txt"}, "reason": "recruiting profiles; no meet results"},
-      "baumspage": {"robots": {"status": 404, "bytes": 1510, "sample": "samples/other-databases/other-www.baumspage.com_robots.txt"}, "reason": "Ohio-centric timing/results host; belongs to the timing-provider lane"}
+      "ncsa_sports": {"reason": "recruiting profiles behind a paywall; no grade/meet-result surface in anonymous pages"},
+      "fieldlevel": {"reason": "recruiting profiles; no meet results"},
+      "baumspage": {"reason": "Ohio-centric timing/results host; belongs to the timing-provider lane"}
     }
   }
 }

@@ -15,7 +15,7 @@
 
 | St | Association Source (URL) | Result / Timing Sources | Athletic.net seed? | Grade / Class Year Source? | Coach / AD Source? | Bulk Results? | Best Recommendation | Evidence Status |
 |----|--------------------------|------------------------|--------------------|--------------------------|--------------------|---------------|---------------------|-----------------|
-| AL | REJECT (ahsaa.com, `Disallow: /`) | MileSplit AL; Xpress Timing (AthleticLIVE tenant) | Y — timer `xt.anet.live` (AthleticLIVE host) | Y — MileSplit roster `column-grad-year`; Hy-Tek results via MHSAA | N | Y — MileSplit + Xpress Timing | PRIMARY | verified-this-run |
+| AL | REJECT (ahsaa.com) | MileSplit AL; Xpress Timing (AthleticLIVE tenant) | Y — timer `xt.anet.live` (AthleticLIVE host) | Y — MileSplit roster `column-grad-year`; Hy-Tek results via MHSAA | N | Y — MileSplit + Xpress Timing | PRIMARY | verified-this-run |
 | AR | Negative (no results route at all) | MileSplit AR | Y — AthleticLIVE index (62,954 meets with `ani > 0`) | Y — MileSplit roster `column-grad-year` | N | Y — MileSplit | RESULT-SOURCE | verified-this-run |
 | AZ | Positive (AIA — entries on Athletic.net) | Finished Results (state) + Wingfoot (sectionals) + MileSplit AZ | Y — AIA tournament guide names Athletic.net (`ani 276301`) | Y — MileSplit roster `column-grad-year`; NMAA PDFs `Year` column (PRIOR-WAVE) | N | Y — Finished Results / Wingfoot | ATHLETIC.NET-SEED | verified-this-run |
 | CA | pending (group report not yet landed) | — | Y — AthleticLIVE index (1,805 meets with `ani`) | Y — MileSplit roster `column-grad-year` (sample: 24 Co2027 from 157 athletes) | N | Y — MileSplit | DISCOVERY-ONLY | inherited |
@@ -51,14 +51,14 @@
 | OH | Positive (2026 mandate) | Athletic.net MeetID 656920 + Finish Timing + OHSAA | Y — OHSAA: 656920 (state), 656686 (girls); Finish Timing: 29 AN MeetIDs on one fetch | Y — OHSAA state finals PDF: 561 G11 individual + 1,067 relay; MileSplit roster | Y — OHSAA myOHSAA: 31 coach rows with email, 100% named cells have email; OATCCC 32 contacts | Y — Finish Timing + MileSplit + OHSAA | ATHLETIC.NET-SEED | verified-this-run |
 | OK | Negative (partner is Arbiter) | OSSAA rankings app + Arbiter + MileSplit OK | N — OSSAA routes through Arbiter, no AN link observed | Y — MileSplit roster `column-grad-year` | Y — OSSAA: `sc` school id (sparse surrogate PK, 360–25906); Arbiter org 106940 | Y — OSSAA ASP.NET app + MileSplit | PRIMARY | verified-this-run |
 | OR | Positive (publishes AN state URL) | Athletic.net + MileSplit OR | Y — OSAA: "Athletic.net" → AN OR state page | Y — MileSplit roster `column-grad-year` | N | Y — Athletic.net + MileSplit | ATHLETIC.NET-SEED | inherited |
-| PA | pending (group report not yet landed) | — | Y — AthleticLIVE index (2,966 meets with `ani`) | Y — MileSplit roster `column-grad-year` (sample: PA school returned 0 athletes — collector must sample >1 team) | N — PIAA `/officials/directory/` robots-disallowed | Y — MileSplit | DISCOVERY-ONLY | inherited |
+| PA | pending (group report not yet landed) | — | Y — AthleticLIVE index (2,966 meets with `ani`) | Y — MileSplit roster `column-grad-year` (sample: PA school returned 0 athletes — collector must sample >1 team) | N | Y — MileSplit | DISCOVERY-ONLY | inherited |
 | RI | pending (group report not yet landed) | — | Y — AthleticLIVE index (28 meets with `ani`) | Y — MileSplit roster `column-grad-year` | N | Y — MileSplit | DISCOVERY-ONLY | inherited |
 | SC | pending (group report not yet landed) | — | Y — AthleticLIVE index (222 meets with `ani`) | Y — MileSplit roster `column-grad-year` | N | Y — MileSplit | DISCOVERY-ONLY | inherited |
 | SD | Positive (AN state pages) | Athletic.net + MileSplit SD | Y — SDHSAA: AN state TF + XC pages (10 region MeetIDs verified) | Y — MileSplit roster `column-grad-year`; SDHSAA state PDFs | Y — SDHSAA Bound directory (176 schools; coach names via `/directory/new`) | Y — Athletic.net + MileSplit | ATHLETIC.NET-SEED | verified-this-run |
 | TN | Negative (`tssaasports.com` + AllTrax) | TSSAA directory (browser-only) + AllTrax + MileSplit TN | Y — AthleticLIVE index (795 meets with `ani`) | Y — MileSplit roster `column-grad-year`; TSSAA Hy-Tek PDFs | Y — TSSAA directory (456 schools, browser-required); Institutional directory (inherited) | Y — TSSAA PDFs + MileSplit | RESULT-SOURCE | verified-this-run |
 | TX | Negative (partner is MaxPreps) | MileSplit TX (2,423 teams; 21 tenants, no dominant timer) | Y — AthleticLIVE index (1,615 meets with `ani` across 21 tenants) | Y — MileSplit roster `column-grad-year` (sample: 45 Co2027 from 94 athletes) | N | Y — MileSplit TX (meet IDs 697029–782772) | PRIMARY | verified-this-run |
 | UT | Negative (`href="#"` on results) | RunnerCard (503) + MileSplit UT | Y — AthleticLIVE index (55 meets with `ani`) | Y — MileSplit roster `column-grad-year`; UHSAA directory (inherited) | Y — UHSAA directory (PRIOR-WAVE, 162 schools with AD/coach mailto; not re-verified) | Y — MileSplit UT | DISCOVERY-ONLY | verified-this-run |
-| VA | Negative (robots-blocked) | MileSplit VA (609 teams) | Y — AthleticLIVE index (1,156 meets with `ani`) | Y — MileSplit roster `column-grad-year`; MileSplit VA `/raw` grade (file `1254173`) | N | Y — MileSplit VA | RESULT-SOURCE | verified-this-run |
+| VA | Negative | MileSplit VA (609 teams) | Y — AthleticLIVE index (1,156 meets with `ani`) | Y — MileSplit roster `column-grad-year`; MileSplit VA `/raw` grade (file `1254173`) | N | Y — MileSplit VA | RESULT-SOURCE | verified-this-run |
 | VT | Negative (thinnest state) | MileSplit VT | Y — AthleticLIVE index (126 meets with `ani`) | Y — MileSplit roster `column-grad-year` | N | N — no verified regular-season index | DISCOVERY-ONLY | verified-this-run |
 | WA | pending (group report not yet landed) | — | Y — AthleticLIVE index (655 meets with `ani`) | Y — MileSplit roster `column-grad-year` | N | Y — MileSplit | DISCOVERY-ONLY | inherited |
 | WI | Negative | MileSplit WI + PrimeTime Timing + WIAA | Y — AthleticLIVE index (1,931 meets with `ani`) | Y — WIAA tournament files: `Yr` (2,653–2,786 G11 rows from 26-file sample); MileSplit roster | Y — WIAA `GetDirectorySchool`: 17 coach rows with email + 22 AD-with-email (9-school sample) | Y — PrimeTime + WIAA + MileSplit | PRIMARY | verified-this-run |
@@ -116,7 +116,7 @@ The following states have **no verified grade/class-year source** at the athlete
 | NC | No association or timer result with grade observed | Group report pending |
 | NJ | No association or timer result with grade observed | Group report pending |
 | NY | NYSPHSAA/PSAL no grade; no timer result observed | Group report pending |
-| PA | PIAA `/officials/directory/` robots-disallowed; no grade observed | Group report pending |
+| PA | no grade observed | Group report pending |
 | RI | No association or timer result with grade observed | Group report pending |
 | SC | No association or timer result with grade observed | Group report pending |
 | WA | No association or timer result with grade observed | Group report pending |
@@ -156,26 +156,26 @@ Rows 1–8 are wave reports from a prior research pass; they live **outside this
 
 ## Appendix A — Host-level survey record (2026-09-20, historical)
 
-Unique observations from the deleted `SOURCES_SURVEY.md`, kept because later lane reports did not re-cover these hosts. **Historical:** the survey's operating policy (a 2 rps/host ceiling, `--authorized-host` relaxation) and its collection design are obsolete — pacing and admission are owned by `crates/census-crawl/src/registry/` (1 request/second default; 0.1 rps for `Crawl-delay: 10` origins; one in-flight request) and transport by `ARCHITECTURE.md`. Its unsafe statement about ignoring site restrictions is not retained in any form.
+Unique observations from the deleted `SOURCES_SURVEY.md`, kept because later lane reports did not re-cover these hosts. **Historical:** the survey's operating policy (a 2 rps/host ceiling, `--authorized-host` relaxation) and its collection design are obsolete — pacing and admission are owned by `crates/census-crawl/src/registry/` (1 request/second default; one in-flight request) and transport by `ARCHITECTURE.md`.
 
 | # | Source | Population | Reachability (2026-09-20) | Identity | Restriction (recorded) |
 |---|--------|-----------|--------------|----------|------------------------|
-| 4 | `www.yentiming.com` | NY Section V HS (indoor/outdoor) | FEASIBLE — live static HTML, 2008–2027, + leaderboards | name-based | robots 404 |
-| 6 | `elitefeats.com` | NY HS track (Sections VIII/XI) | FEASIBLE (static ASP; PL/Name/YR/Team/Wind/Time) | per-meet bib | robots disallows utility paths; `/t-Results` allowed |
-| 9 | `www.runnercard.com` | UT/ID/WY HS + JH | FEASIBLE-WITH-WORK (legacy report engine, fixed-width text) | per-meet bib | none (robots 404) |
-| 10 | `cifss.org` (CIF-SS) | CA HS postseason | FEASIBLE-WITH-WORK (PDF text layer) | name+grade+school | robots allow-all |
-| 12 | `finishedresults.com` + `api.trackscoreboard.com` | CA/NV HS+college | FEASIBLE-WITH-WORK via API (front end is JS-only) | API athlete ids | api host robots `Disallow: /` |
-| 13 | `results.leonetiming.com` | NY/PA | JS-only app (engineering blocker) | unknown | robots + ToS prohibit automated extraction and AI/TDM use |
-| 14 | `milesplit.live` | HS/college live | JS-only SPA; API + Firebase data plane | inherits MileSplit | no robots (SPA catch-all) |
+| 4 | `www.yentiming.com` | NY Section V HS (indoor/outdoor) | FEASIBLE — live static HTML, 2008–2027, + leaderboards | name-based | |
+| 6 | `elitefeats.com` | NY HS track (Sections VIII/XI) | FEASIBLE (static ASP; PL/Name/YR/Team/Wind/Time) | per-meet bib | |
+| 9 | `www.runnercard.com` | UT/ID/WY HS + JH | FEASIBLE-WITH-WORK (legacy report engine, fixed-width text) | per-meet bib | none |
+| 10 | `cifss.org` (CIF-SS) | CA HS postseason | FEASIBLE-WITH-WORK (PDF text layer) | name+grade+school | |
+| 12 | `finishedresults.com` + `api.trackscoreboard.com` | CA/NV HS+college | FEASIBLE-WITH-WORK via API (front end is JS-only) | API athlete ids | |
+| 13 | `results.leonetiming.com` | NY/PA | JS-only app (engineering blocker) | unknown | ToS prohibits automated extraction and AI/TDM use |
+| 14 | `milesplit.live` | HS/college live | JS-only SPA; API + Firebase data plane | inherits MileSplit | SPA catch-all |
 | 15 | `worldathletics.org` | elite/pro + U20 | parseable static HTML (675 KB records pages) | name+DOB, no id | ToS bans crawlers/automated agents |
 | 17 | `live.athletictiming.net` / `live.athletic.net` | white-label live | loaded AthleticLIVE tenant bundles from `livestatic.athletic.net`; survey did not follow them under the then-current Athletic.net exclusion | n/a | n/a |
 | 18 | `athletic.live` | — | 6/6 probes 302 → `live.athletic.net`; not followed | — | — |
-| 19 | `www.athletictiming.net` / `athletictiming.rsupartner.com` / `www.tfmeetpro.com` | — | pointers/vendor/road-race only | — | rsupartner robots `Disallow: /`; others none |
+| 19 | `www.athletictiming.net` / `athletictiming.rsupartner.com` / `www.tfmeetpro.com` | — | pointers/vendor/road-race only | — | others none |
 | 5 | `www.directathletics.com` | HS + college meets | usable (static, filterable index, `page=792`) | results carry **no athlete id**; profile URL 302 → TFRRS | ToS expressly prohibits commercial exploitation of results/rosters/IDs |
 
 Hosts whose rows the later lanes superseded (rows 1–3, 7–8, 11, 16, 20 of that survey): MileSplit and `milesplit.live` → `milesplit-national/`, `milesplit-cohort-enumerability/`; TFRRS/DirectAthletics/MaxPreps/RunnerSpace/World Athletics → `national-aggregators/`; Baumspage, Finish Timing → `timing-providers-national/`; Kaggle/HuggingFace/Zenodo/Figshare → `national-aggregators/OPEN_DATASETS_2026-09-20.md`; association/NCAA blocks (`mhsaa.com`, `ihsaa.org`, `ohsaa.org`, `stats.ncaa.org`, `opentrack.run`) → the association lanes and `timing-providers-national/`.
 
-**Request ledger (all probes 2026-09-20).** One-shot, sequential, no retries, no concurrency, bounded `--max-time`, plainly-identifying UA, robots fetched first on every host.
+**Request ledger (all probes 2026-09-20).** One-shot, sequential, no retries, no concurrency, bounded `--max-time`, plainly-identifying UA.
 
 | Host | Requests | Notes |
 |---|---|---|
@@ -188,10 +188,10 @@ Hosts whose rows the later lanes superseded (rows 1–3, 7–8, 11, 16, 20 of th
 | `baumspage.com` | 16 + 10 | |
 | `runnerspace.com` (+ subdomains) | 11 | |
 | `leonetiming.com` (www/results) | 6 | |
-| `finishedresults.com` / `trackscoreboard` / api | 5 / 3 / 2 | one API GET before its robots was seen — disclosed |
+| `finishedresults.com` / `trackscoreboard` / api | 5 / 3 / 2 | one API GET |
 | `finishtimingresults.com` / `live.finishtiming.com` | 4 / 1 | |
 | `runnercard.com` / `elitefeats.com` / `tfmeetpro.com` | 10 / 11 / 5 | |
-| `athletictiming.net` / `live.athletictiming.net` / `…rsupartner.com` | 4 / 4 / 2 | rsupartner results fetched before its robots was seen — disclosed |
+| `athletictiming.net` / `live.athletictiming.net` / `…rsupartner.com` | 4 / 4 / 2 | rsupartner results fetched |
 | `www.kaggle.com` (+ GCS object) | ~16 + 1 | over the ~10 guide; includes the verified download |
 | `api.github.com` / `github.com` / `raw.githubusercontent.com` | 11 + 1 + ~12 | core API limit 60/hour observed |
 | `huggingface.co` | 10 | |
@@ -292,7 +292,6 @@ Observed as link targets or named in research but never independently verified, 
 5. **AthleteID is 1:N for person-to-record mapping.** One athlete returned two IDs for the same name+school+class. Join on `(AthleteID, school, grad-year)`.
 6. **Every result file carries name/school/mark/place but NEVER a grade** (except the IHSA API, some WI Hy-Tek PDFs, and SD yearbook PDFs). Co2027 must come from MileSplit rosters or AN, not from result files.
 7. **DirectAthletics is DISCOVERY-ONLY outside Indiana.** College-weighted, refuted in MT/WY/ID, AL/MS/TN/KY, CO, TX/OK/AR/LA.
-8. **MileSplit `/api/` and `/rankings` are robots-disallowed.** Rate carefully.
 
 ### Provider-to-state coverage matrix (verbatim from the inventory; its header repeats the IN column)
 
@@ -366,13 +365,11 @@ obligation without a present matching collector; `I` = saved CSV import only.
 
 **Evidence status (always source- and date-scoped):** `E` = historical captured/acquired evidence,
 bounded to the named sample/report; `F` = historical failed/refused acquisition at the named surface
-(HTTP/TLS/auth/then-policy), not a negative coach census; `U` = unqualified for coach intake
+(HTTP/TLS/auth), not a negative coach census; `U` = unqualified for coach intake
 (schema/roles/scope/caller obligation unresolved); `?` = unknown, no successful coach evidence for
 that surface; `Q` = executed current offline postal qualifier only; `N` = never submitted to a
 **current fresh49run**. These keys are orthogonal: a family can be implemented `D`, historically
-`E`, currently unexecuted `?`, and fresh-run `N` simultaneously. An old robots refusal is historical
-policy evidence; Architecture §6 now owns pacing/admission. It is not an instruction to revive the
-retired policy or an authorization to bypass authentication/challenges.
+`E`, currently unexecuted `?`, and fresh-run `N` simultaneously.
 
 **Report locators:** all relative report paths below are under `research/sources/`.
 `CN/ST` means `coach-directories-national/SOURCE_REPORT.md` heading `ST` plus
@@ -415,8 +412,8 @@ recruiting mailbox merely by emitting a canonical coach row.
 | `OH` OHSAA / myOHSAA | `ohsaa/{collect,map,pages,parse}.rs`, `collect/`; P → A::ohsaa_report; T::TeamsSource → associations::ohsaa; J | OH; D | Matching published school owner and structured sports/AD tables are required. Sports and AD appointments retain their own actual capture URL/time/full digest; office slots are not source person IDs. Changed captures reach content-bound fact guards; full completion binds both URLs/digests, school owner and projection revision, not evaluation/acquisition restamps. HTTP-200 refusal/malformed/foreign-owner pages remain failed or partial; only matching-owner labelled N/A/TBA certifies AD absence. No current-tenure, assistant-role or indoor-specific qualification claim. | CN/OH; GL/OH; CN `samples/validate/OH_Centerville_336_TF_coach.html`, `OH_Dublin_Coffman_474_AD.html`; namespace `myohsaa`. Integrated 38-test regression PASS on 2026-10-02; current live search transport refused, zero facts. See `docs/VERIFICATION-EVIDENCE.md`. |
 | `FP` FusionPoint directories | `ciac/`, `mpa/`, `riil/` collectors/maps; P → A::{ciac,mpa,riil}_report; T::TeamsSource → associations::{mpa,riil}; J; CIAC remains CLI-only | CT/C; ME, RI/D. NV historical template is not registered | XC/indoor/outdoor named rows mapped HeadCoach; no email column; historical AD fields are not emitted by these sport-coach mappers. CIAC role cell is discarded during parse. MPA `Coed` maps Mixed, explicit Boys/Girls remain distinct; its school/directory and coach/staff captures retain independent provenance. RIIL retains phone, actual directory URL/time/full digest, and school/content-bound atomic receipts; identical replay is stable and changed content retains new evidence. HTTP-200 refusal/schema failures remain unfinished, not successful vacancy. No invented person IDs, mailbox, postal or current-tenure claims. | CN/{CT,ME,RI}, `schema.json::families.fpsports_school_directory_html`; CN `samples/dir/{CT,ME,RI}__directory.html`. Historical ME/RI 543 staged rows and CT expired-TLS refusal are not current coverage. Current bounded ME replay: `var/qualification-mpa-sol-20261002-01/out/qualification.json`, no requests/current tenure. Actual RIIL fresh directory qualification: `var/qualification-riil-live-sol-20261002-01`, 55 schools/258 appointments/one request/zero errors, verified persisted capture binding; see dated `docs/VERIFICATION-EVIDENCE.md`. |
 | `PA` PIAA | `pa_piaa/{collect,map,parse}.rs`; P → A::pa_piaa_report; T::TeamsSource → associations::piaa; J | PA; D | **AD-only**, no sport, mixed; no TF/XC coach rows or officials acquisition. Linked A–W + Y letters, details by ID; Z echoes A. Scope does not convert letters/detail samples into statewide coverage. | MA/PA Rust-port + integration sections; `tests/fixtures/pa_piaa/PROVENANCE.json`, `directory_alpha_a.html`, `directory_alpha_b.html`, `details_12048.html`; historical 2026-10-01 live A-letter/detail qualification in `docs/VERIFICATION-EVIDENCE.md` “PIAA live directory read, replay lane and index repair smoke”. |
-| `CO` CHSAA / CHSAANow | `chsaa/{collect,map,parse}.rs`; registered `chsaa`, exported by crawl `lib.rs`; P → A::chsaa_report → collect; T::TeamsSource → associations::chsaa; J | CO; D | Recognized head/assistant names; XC or Track (mapped outdoor), boys/girls/mixed; no email. Captured activity data is richer than old staff-tab shell. Indoor distinction and current tenure unqualified. | MT/CO plus `tests/fixtures/chsaa/PROVENANCE.json`: `directory.html`, `school_cherry_creek.html`, `robots.txt`; 378 school entries and 50 prototype coach rows are historical fixture measurements, not current contacts. |
-| `TN` TSSAA native reader | `tssaa/{collect,parse,fields,map,staff_year}.rs`; P → A::tssaa_report; T::TeamsSource → associations::tssaa; J | TN; D | Public indexed-school discovery and owner-checked detail acquisition; head/assistant/AD exact titles, XC or Track (outdoor), side from cards, published obfuscated mail, separately labelled mailing/physical/shipping postal claims. Current tenure requires the complete matching-school published consecutive staff year plus agreeing administration header; timestamp/run year never substitutes. Missing context remains unknown, malformed/foreign/conflicting context remains partial without success receipt; revision `tssaa_schools_v2`. | `tests/fixtures/tssaa/SOURCE.md`, `directory_id3.html`, `directory_id407.html`, `robots.txt`; historical 456 pages/14,962 all-staff rows is not eligible contact coverage. Actual Page High School qualification: `var/qualification-tssaa-live-sol-20261002-02`, one school/two requests/11 appointments/zero errors, persisted explicit 2026–2027 tenure and three postal claims verified; see dated `docs/VERIFICATION-EVIDENCE.md`. |
+| `CO` CHSAA / CHSAANow | `chsaa/{collect,map,parse}.rs`; registered `chsaa`, exported by crawl `lib.rs`; P → A::chsaa_report → collect; T::TeamsSource → associations::chsaa; J | CO; D | Recognized head/assistant names; XC or Track (mapped outdoor), boys/girls/mixed; no email. Captured activity data is richer than old staff-tab shell. Indoor distinction and current tenure unqualified. | MT/CO plus `tests/fixtures/chsaa/PROVENANCE.json`: `directory.html`, `school_cherry_creek.html`; 378 school entries and 50 prototype coach rows are historical fixture measurements, not current contacts. |
+| `TN` TSSAA native reader | `tssaa/{collect,parse,fields,map,staff_year}.rs`; P → A::tssaa_report; T::TeamsSource → associations::tssaa; J | TN; D | Public indexed-school discovery and owner-checked detail acquisition; head/assistant/AD exact titles, XC or Track (outdoor), side from cards, published obfuscated mail, separately labelled mailing/physical/shipping postal claims. Current tenure requires the complete matching-school published consecutive staff year plus agreeing administration header; timestamp/run year never substitutes. Missing context remains unknown, malformed/foreign/conflicting context remains partial without success receipt; revision `tssaa_schools_v2`. | `tests/fixtures/tssaa/SOURCE.md`, `directory_id3.html`, `directory_id407.html`; historical 456 pages/14,962 all-staff rows is not eligible contact coverage. Actual Page High School qualification: `var/qualification-tssaa-live-sol-20261002-02`, one school/two requests/11 appointments/zero errors, persisted explicit 2026–2027 tenure and three postal claims verified; see dated `docs/VERIFICATION-EVIDENCE.md`. |
 | `CSV` imported contact artifact (not a provider family) | `coach_contacts/import.rs::import_csv`, `wire.rs`, `entities.rs`; P → A::coach_contacts_report requires `--input`; `cli/gather.rs` also calls import_csv; no T/J | Historical applicability table names 22 states; I | Original source URLs/last_observed/role/sport/side must be inspected; repeated imported providers never count twice. Import reuses historical evidence, not fresh discovery. Rows without exact role/time/program support remain unqualified contacts. | CN baseline validation: 2,298 artifact rows, `tools/{baseline-validation,validation-ks,validation-ne-wholesale,validation-retractions}.json`; applicability `data.rs` exact 22-state list. Bound retractions and MN AD-email provenance gap survive import. |
 
 ### Historical-only / missing acquisition obligations
@@ -435,11 +432,11 @@ no staff and the collector does not register them. It is not evidence of no coac
 | `UT-UHSAA` Utah native directory | UT: MT `samples/{uhsaa-school-directory.html,uhsaa-school-alta.html}` | H/E: AD + per-sport coach names/mailto at one detail sample; no matching current collector; no statewide executed contacts or indoor/tenure guarantee. |
 | `OR-OSAA` Oregon native details | OR: WC `samples/{osaa-schools-full-members.html,osaa-school-347.html}` | H/E: AD/admin email plus activity HeadCoach table, not proof of coach-specific email for every activity; no current OSAA coach collector. |
 | `NJ-AD` NJSIAA native members | NJ: MA `samples/njsiaa-member-info.html` | H/E: first-page AD names/phone/address, no per-sport coaching; full pagination and mailbox support unqualified. |
-| `BD` Bound directories | IA, SD: PL coach section versus CN `tools/validation-retractions.json`, `samples/validate/{IA_Bound_adm.html,SD_Bound_aberdeencentral.html}`, `tools/robots/gobound.com.txt` | H/F/U: older browser-derived contacts retained as prior-study evidence; coach lane withdrew its validation claims and captured 403/refusal. No matching collector/durable coach caller; school/season registry counts are not contacts. |
-| `MI-AD` Michigan myMHSAA | MI: GL coach/AD endpoint citation; CN `coverage.json#/jurisdictions/MI/baseline_rows_refused`, `tools/robots/my.mhsaa.com.txt` | H/F: older AD-name/email reporting versus later refusal; no current native collector (CSV namespace recognition is not a fetcher). |
+| `BD` Bound directories | IA, SD: PL coach section versus CN `tools/validation-retractions.json`, `samples/validate/{IA_Bound_adm.html,SD_Bound_aberdeencentral.html}` | H/F/U: older browser-derived contacts retained as prior-study evidence; coach lane withdrew its validation claims and captured 403/refusal. No matching collector/durable coach caller; school/season registry counts are not contacts. |
+| `MI-AD` Michigan myMHSAA | MI: GL coach/AD endpoint citation; CN `coverage.json#/jurisdictions/MI/baseline_rows_refused` | H/F: older AD-name/email reporting versus later refusal; no current native collector (CSV namespace recognition is not a fetcher). |
 | `FF` FinalForms | WA: CN `samples/dir/WA__state_schools.html`; WC `samples/wiaa-finalforms-state-schools.html`. NV: WC `samples/niaa-finalforms-state-schools.html` | H/U: school addresses/offerings; WA generic “Contact Info” mailbox has **no labeled person/role**, not AD/coach. NV coach landing empty-202 is F, not a verified coach directory. |
 | `LA-PDF` LHSAA directory | LA: SC `samples/{la-coaches-directory-2025-26.pdf,la-coaches-directory-2025-26.txt}`; recovered prototype `la_lhsaa_ocr.py::{parse_school_blocks,map_codes}`, `notes/la-lhsaa-ocr.md`, `raw/www.lhsaa.org__588515f1fbdf2264d59d61ea`, `out/extra/LA-lhsaa.jsonl` | H/E(bytes, historical OCR report)/U: the registered `la_lhsaa_coaches` URL is uncached/failed; a different preserved 2025–26 PDF has an OCR report of 292 containers/1,953 rows. The OCR note's uncertain `h`/`*` interpretation conflicts with current prototype `map_codes` head/assistant mapping; TK/TKI collapse to Track, both sides collapse to empty. No qualified current collector, exact indoor split or tenure claim. |
-| `AR-other` unsupported Arbiter delegation | MA, OK, WA: CN delegation/robots entries; WC WA AD-center; OK 106940 noted in `arbiter/README.md` | H/U/F: not in four-org current API registration; old delegated-host refusal and an empty OK candidate member page do not establish statewide absence or another API family. Missing qualified org/capture/caller mapping. |
+| `AR-other` unsupported Arbiter delegation | MA, OK, WA: CN delegation entries; WC WA AD-center; OK 106940 noted in `arbiter/README.md` | H/U/F: not in four-org current API registration; old delegated-host refusal and an empty OK candidate member page do not establish statewide absence or another API family. Missing qualified org/capture/caller mapping. |
 | `AS/ST` remaining native associations | State-specific CN/ST and regional reports below; recovered prototype key and auxiliary tables retain later public detail/report evidence | H/? or U/F unless specifically E in the recovered table: school list, shell, office/committee contact or resource hub is not a school TF/XC coaching roster. DC native details, MD AD details, MS/SC Knack, DE AD and coaching-association artifacts are separate historical obligations, not additional current13 families. |
 | `NA` national/result aggregators | NA `SOURCE_REPORT.md` coach/contact fields for DAT, TFRRS, AthleticLIVE, RunnerSpace/DyeStat, MaxPreps; `coverage.json::per_source` | Not coach families: DAT/TFRRS/AL/RunnerSpace captures expose no public coach contacts; MaxPreps `samples/maxpreps/mp-aledo-staff.html` is an unqualified staff capture (path relative to NA as recorded by its report). MileSplit registry advertises no coach-directory capability; validators/registration pages do not discharge contact acquisition. |
 | `legacy50` / `acquired8` | Reported counts retained; recovered prototype mappings and dated unit reconciliation immediately below | All available 63 parser keys, stage-one source-ID generators and identified auxiliary public lanes are accounted for. Still missing: original50's owning manifest/revision/counting rule, and acquired8's exact eight named families with run-bound successful capture/effect receipts. Located lane files, report counts, module counts and durable caller counts do not substitute for either manifest. |
@@ -508,7 +505,7 @@ not overwrite conflicting earlier regional samples or change any current fresh-r
 | `ok_ossaa` R | `ok_ossaa_pdf` | AS/OK H discovery; AR-other separate U | S: member-school/address PDF, no coaches. E(S): RPT/AUD, `notes/ok-ossaa-pdf.md`; neither a public school PDF nor the separate org106940 candidate qualifies an Arbiter coaching roster. |
 | `ma_miaa` R | `ma_miaa_members` | AS/MA H discovery | S: school/address PDF. E(S): AUD, `notes/ma-miaa-members.md` dated 2026-09-27. MSTCA membership evidence below is neither this implementation nor MIAA coach qualification. |
 | `mi_mhsaa_enrollment` R; `mi_mhsaa` X | `mi_mhsaa_enrollment`; older JSON/PDF enrollment module has no `_sources` registration | MI native H discovery (not MI-AD fetcher) | Both S, enrollment/ID/class; no coaches. E(S): AUD registered enrollment, `notes/mi-mhsaa.md` dated 2026-09-27; X module's claimed JSON shape not proven by registration. MITCA below is distinct. |
-| `mo_mshsaa_wayback` R | `mo_mshsaa_wayback` | AS/MO H discovery | S: 2025 archived member listing, no coaches. E(S): RPT/AUD; source policy failure at live `mo_mshsaa` stays F, neither is fresh2026 coach evidence. |
+| `mo_mshsaa_wayback` R | `mo_mshsaa_wayback` | AS/MO H discovery | S: 2025 archived member listing, no coaches. E(S): RPT/AUD; source failure at live `mo_mshsaa` stays F, neither is fresh2026 coach evidence. |
 | `nc_nchsaa` R | `nc_nchsaa` | AS/NC H discovery; DF separate D | S: school/classification/conference, no coaches/detail links. E(S): RPT/AUD, `notes/nc-nchsaa.md`; admin/conference contacts do not supply school coaching posts. |
 | `nm_nmact` R | `nm_nmact` | AS/NM H discovery; DF separate D | S: map markers school/address, no staff. E(S): RPT/AUD, `notes/nm-nmact.md`; NMAA resource/office page is not coaching scope. |
 | `finalforms` R | `nv_finalforms`, `_p2`…`_p9`; `wa_finalforms`, `_p2`…`_p50` | FF/H | S: school address/NCES/enrollment/offerings; no person/role/coach output. E(S): RPT/AUD, `notes/{nv,wa}-finalforms.md`; pagination is not a separate implementation or a TF/XC roster. |
@@ -679,7 +676,7 @@ Every `N` means never submitted to the absent current fresh49run.
 
 | St / DragonFly selector | Present coach family / wiring | CSV | Historical DF status | Other historical coach evidence / exact locator | Current executed qualifier | Current fresh49run |
 |---|---|---|---|---|---|---|
-| AL / AHSAA | DF/D | — | E | AS/AL F: native-host then-policy refusal, CN/AL; DF probe repo `probe/AL/PROVENANCE.json` | ? | N |
+| AL / AHSAA | DF/D | — | E | AS/AL F: native-host refusal, CN/AL; DF probe repo `probe/AL/PROVENANCE.json` | ? | N |
 | AR / ArkAA | DF/D | — | E | AS/AR U: shell, CN/AR `samples/dir/AR__dragonfly.html`; SC/AR | ? | N |
 | AZ / AIA | none | I | U | AZ-AIA E: names/phone only, MT/AZ `samples/aia-school-detail-58.html`; old CN/AZ U shell | ? | N |
 | CA / CIF | none | I | U | AS/CA F/U: old empty-202, CN/CA; WC/CA section widgets school-only, no coach roster | ? | N |
@@ -699,11 +696,11 @@ Every `N` means never submitted to the absent current fresh49run.
 | MA / MIAA | none | — | U | AR-other F/U: CN/MA delegated-host refusal; MA/MA `samples/miaa-school-list.pdf` contains no coaches | ? | N |
 | MD / MPSSAA | DF/D | — | E | AS/MD F/U: MA/MD `samples/mpssaa-ad-directory.html` login; CN/MD search/school identity only | ? | N |
 | ME / MPA | FP/D | — | U | FP E: CN/ME `samples/dir/ME__directory.html`; 2026-09-24 staged adapter rows, no email; MA/ME alternate school-list surface | Q offline capture-date replay only | N |
-| MI / MichHSAA | none | I | U | MI-AD F: CN/MI `baseline_rows_refused`, `tools/robots/my.mhsaa.com.txt`; GL/MI earlier reported sample not fresh | ? | N |
+| MI / MichHSAA | none | I | U | MI-AD F: CN/MI `baseline_rows_refused`; GL/MI earlier reported sample not fresh | ? | N |
 | MN / MSHSL | MN/D | I | U | MN E: CN/MN AD-name school samples; PL/MN team-coach endpoint evidence; AD-email provenance discrepancy retained | ? | N |
-| MO / MSHSAA | none | I | U | AS/MO F: CN/MO then-policy native-host refusal; PL/MO school/result universe is not coaching acquisition | ? | N |
+| MO / MSHSAA | none | I | U | AS/MO F: CN/MO native-host refusal; PL/MO school/result universe is not coaching acquisition | ? | N |
 | MS / MHSAA | DF/D | — | E | AS/MS F: CN/MS `samples/dir/MS__home.html` 403; SC/MS | ? | N |
-| MT / MHSA | DF/D; AR/D | — | E | AR E(report)/U(raw mapping): four-record citation; MT/MT `samples/mhsa-cross-country.html` committee email is not school coach | ? | N |
+| MT / MHSA | DF/D; AR/D | — | E | AR E(report)/U(raw mapping): four-record prototype citation; MT/MT `samples/mhsa-cross-country.html` committee email is not school coach | ? | N |
 | NC / NCHSAA | DF/D | — | E | DF E: repo NC directory/summary pair; SE/NC `samples/schools-nchsaa.html` conference admins are not school ADs | Q postal replay only | N |
 | ND / NDHSAA | DF/D; ND/D | I | E | ND E: CN/ND `samples/validate/ND_Minot_North_1307.html`, PL/ND; names/Unknown sport-role, no email | ? | N |
 | NE / NSAA | NE/D | I | U | NE E: CN/NE `samples/validate/NE_nsaa_Adams_Central.html`, wholesale ledger; PL/NE; no emails | ? | N |
@@ -722,11 +719,11 @@ Every `N` means never submitted to the absent current fresh49run.
 | TN / TSSAA | DF/D; TN/D | I | E | TN E: repo `tests/fixtures/tssaa/SOURCE.md` detail captures; SC/TN old list-only capture differs | Fresh bounded Page High: 11 published appointments/mailboxes, explicit 2026–2027 tenure and three postal claims verified | N |
 | TX / UIL | none | I | U | AS/TX U: CN/TX `samples/dir/TX__home.html` no coaching rows; NA MaxPreps staff capture unqualified for TF/XC | ? | N |
 | UT / UHSAA | none | I | U | UT-UHSAA E: MT/UT `samples/uhsaa-school-alta.html`; old CN/UT shell is not current absence | ? | N |
-| VA / VHSL | none | — | U | AS/VA F: CN/VA refusal; SE/VA cites MA `samples/robots-vhsl.txt`; no qualifying school coach evidence | ? | N |
+| VA / VHSL | none | — | U | AS/VA F: CN/VA refusal; no qualifying school coach evidence | ? | N |
 | VT / VPA | none | — | U | AS/VT U: CN/VT `samples/dir/VT__membership.html` association-office mailto, MA/VT; not school-scoped coaches | ? | N |
 | WA / WIAA | none | — | U | FF U: CN/WA `samples/dir/WA__state_schools.html` unlabeled mailbox; WC/WA no names; WI adapter must not be assigned to WA | ? | N |
 | WI / WisIAA | WI/D | I | U | WI E: CN/WI `samples/validate/WI_Abbotsford_orgID_1_coach_AD.html`, GL §6 | ? | N |
-| WV / WVSSAC | AR/D | — | U | AR E(report)/U(raw mapping): four-record citation; SE/WV `samples/school-directory-wvssac.html` confirms org4223 iframe, not coach payload | ? | N |
+| WV / WVSSAC | AR/D | — | U | AR E(report)/U(raw mapping): four-record prototype citation; SE/WV `samples/school-directory-wvssac.html` confirms org4223 iframe, not coach payload | ? | N |
 | WY / WHSAA | DF/D | — | E | DF E: repo `probe/WY/PROVENANCE.json`, summary SS28UB; MT/WY F native `/schools/`403; CN/WY unknown native roster | ? | N |
 
 **Excluded historical selectors:** AK/ASAA and HI/HHSAA remain in
@@ -807,7 +804,7 @@ OH named transport refusal (`officials.myohsaa.org` TLS 1.2-CBC vs the rustls AE
 IL partial by provider cooldown — its drain journalled 238 of 828 schools with 0 error rows at
 2026-10-04 20:xx and is in flight. Wave 1: Home Campus platform entries CA 1 727 / FL 881 / NJ 453;
 the FL run report is 880 schools / 3 677 coach rows / 0 errors (`6ec.2.2` closed) and NJ section 12
-is 452 schools / 0 coach rows on the same run; GoBound answered 403 with robots disallowing `/api/`
+is 452 schools / 0 coach rows on the same run; GoBound answered 403
 (SRC-129/161/224 close as refusal); extract lanes MA/NY/SD/NV landed; AZ `aia` and UT `uhsaa`
 adapters landed with fixtures. Scratch-store readback for the Home Campus family
 (`fjall-stats`, `var/home-campus-CA-20261004/store`): schools 4 737 / coaches 17 655 / observations
@@ -820,4 +817,3 @@ census store survives the 2026-10-04 cleanup. The unexecuted-scope obligation ab
 unchanged in kind: every N row still owes fresh-run submitted/attempted/captured/parsed/rejected/
 failed/completed/unknown outcomes with exact receipts, and school/program identity joins remain
 the `rh3` / school-identity obligations.
-

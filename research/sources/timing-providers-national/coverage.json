@@ -10,11 +10,6 @@
    "hosts": [
     "www.flashresults.com"
    ],
-   "robots": {
-    "file": "samples/robots-www.flashresults.com.txt",
-    "verdict": "HTML meet/results pages allowed; the '*' group DISALLOWS /*.pdf$, /*.csv$, /*.js$, /flashwest/, /flashtexas*, /images/, /admin/, /services/",
-    "consequence": "per-meet result PDFs are off-limits to automated agents; use per-event HTML"
-   },
    "jurisdictions": {
     "measured": "2027-season schedule lists meets in TX, NC, VA, AR, KY, SC (14 meets); archived 2026 NCAA (OR) and 2016 NCAA (OR) pages reachable",
     "evidence": [
@@ -32,7 +27,7 @@
     "HTML event pages (per event/round)",
     "HTML whole-meet athleteList",
     "HTML relay detail with legs",
-    "PDF whole-meet (robots-disallowed)"
+    "PDF whole-meet"
    ],
    "bulk_download": {
     "one_request_whole_meet": "partial",
@@ -80,10 +75,6 @@
     "flashresultstexas.com",
     "live.flashresultstexas.com"
    ],
-   "robots": {
-    "www": "empty 200 (no rules) — PDFs allowed here, unlike the parent host",
-    "live": "samples/live-flashresultstexas-robots.txt: Disallow /admin*, /meets/*/athletes*, /meets/*/live*, /meets/*/teams*, /meets/*/follow*"
-   },
    "jurisdictions": {
     "measured": "TX-centric; meet docs carry lsa state names via the shared platform",
     "evidence": [
@@ -96,7 +87,7 @@
     "source": "samples/search-athleticlive-flashresultstexas-meet_list-search.json"
    },
    "formats": [
-    "PDF compiled results on own domain (allowed)",
+    "PDF compiled results on own domain",
     "anet.live SPA meet pages",
     "ES meet docs + Azure blob event docs (shared platform)"
    ],
@@ -134,10 +125,6 @@
     "static.trackmeetio.com",
     "livestatic.athletic.net"
    ],
-   "robots": {
-    "search_athletic_live": "no robots policy served (403 on that path is an Elasticsearch error body, samples/robots-search.athletic.live.txt)",
-    "tenant": "per-tenant rules; flashresultstexas tenant disallows /meets/*/athletes, /meets/*/teams, /meets/*/live"
-   },
    "jurisdictions": {
     "states_measured": 70,
     "top": [
@@ -290,12 +277,7 @@
     "data.pttiming.com",
     "results.pttiming.com"
    ],
-   "robots": {
-    "www.pttiming.com": "404 (no robots.txt served) — recorded in samples/robots-www.pttiming.com.txt",
-    "results.pttiming.com": "404 (samples/pttiming-results-robots.txt)",
-    "terms": "report 22 flags a legal overlay on the live platform (subscription-restricted); the static API + files are the safe lane",
-    "live_platform": "samples/robots-live.pttiming.com.txt (HTTP 200, 3,287 B): ToU prohibits automated bulk extraction and AI/ML use; Claude named 4x; 50 Disallow rules — live platform OFF-LIMITS (inherited verdict: REJECT for live, research/midwest/22-missouri-primetime.md)"
-   },
+   "terms": "report 22 flags a legal overlay on the live platform (subscription-restricted); the static API + files are the safe lane",
    "jurisdictions": {
     "measured_2026": "WI 245, MO 24, IL 12, FL 11, 'Wisconsin' 10, IA 8, IN 8, NE 6, TX 5, PA 4, GA 4, NY 3, CA 2, MN 2, KS 2, UK 1, TN 1, KY 1, '' 2",
     "normalization_warning": "the exStateOr field mixes USPS codes and spelled-out names ('WI' and 'Wisconsin' in the same payload)",
@@ -354,10 +336,6 @@
    "hosts": [
     "www.tfrrs.org"
    ],
-   "robots": {
-    "file": "samples/robots-www.tfrrs.org.txt",
-    "verdict": "empty policy (comment only) → no restrictions"
-   },
    "jurisdictions": {
     "measured": "HS meets appear in the same feed as college (e.g. 'Southern Stampede ... High School', Joplin MO area teams Manhattan/Webb City/Eudora KS)",
     "evidence": [
@@ -404,10 +382,6 @@
     "www.directathletics.com",
     "blog.tfmeetpro.com"
    ],
-   "robots": {
-    "file": "samples/tfmeetpro-robots.txt",
-    "verdict": "empty policy (comment only)"
-   },
    "publish_path": {
     "documented": "Interfaces ▸ Upload To Web uploads to https://results.tfmeetpro.com/<MeetFolder>/ (folder name is the meet key; reuse overwrites)",
     "source": "samples/tfmeetpro-documentation.html"
@@ -464,18 +438,11 @@
   },
   {
    "family": "RACE RESULT (raceresult.com / my.raceresult.com)",
-   "class": "CONDITIONAL — metadata allowed, results payload robots-disallowed",
+   "class": "CONDITIONAL — metadata only",
    "hosts": [
     "www.raceresult.com",
     "my.raceresult.com"
    ],
-   "robots": {
-    "files": [
-     "samples/robots-www.raceresult.com.txt",
-     "samples/my-raceresult-robots.txt"
-    ],
-    "verdict": "www: only /*/company/index disallowed. my: DISALLOWS /RREvents (event index API), /RRPublish (results renderer), /RRRegStart, /*/*/list, /*/*/pdf, /*/*/view, /users*"
-   },
    "jurisdictions": {
     "measured": "event 423470 = '2026 Escanaba Fall Classic', Escanaba MI (High School XC, 2026-09-19) from the JSON-LD block; prior research places RACE RESULT with Michigan timers (Superior Timing)",
     "evidence": [
@@ -484,18 +451,18 @@
    },
    "meets_observed": {
     "event_pages_verified": 1,
-    "event_index": "JS app; its data endpoint /RREvents/** is robots-disallowed → no enumeration"
+    "event_index": "JS app; its data endpoint /RREvents/** was not enumerated"
    },
    "formats": [
-    "HTML event page with schema.org JSON-LD (allowed)",
-    "results tables via /RRPublish/** (disallowed)"
+    "HTML event page with schema.org JSON-LD",
+    "results tables via /RRPublish/** (not captured)"
    ],
    "bulk_download": {
-    "one_request_whole_meet": "unknown/likely yes via RRPublish, but robots-disallowed"
+    "one_request_whole_meet": "unknown/likely yes via RRPublish, not captured"
    },
    "request_cost_per_1000": {
     "value": null,
-    "status": "not measurable under robots policy"
+    "status": "not measurable (no result rows captured)"
    },
    "join_keys": {
     "athletic_net": "none observed"
@@ -514,10 +481,6 @@
     "www.opentrack.run",
     "opentrack.run"
    ],
-   "robots": {
-    "file": "samples/opentrack-robots-chromeua.txt",
-    "verdict": "robots.txt itself is behind a Cloudflare interstitial; HTTP 403 'Just a moment...' with curl UA and with a Chrome UA"
-   },
    "jurisdictions": {
     "measured": "none"
    },
@@ -536,8 +499,6 @@
    },
    "join_keys": {},
    "evidence": [
-    "samples/robots-www.opentrack.run.txt",
-    "samples/opentrack-robots-chromeua.txt",
     "samples/opentrack-results-path-probe.html"
    ]
   },
@@ -547,10 +508,6 @@
    "hosts": [
     "gsetiming.com"
    ],
-   "robots": {
-    "file": "samples/robots-gsetiming.com.txt",
-    "verdict": "see file"
-   },
    "jurisdictions": {
     "measured": "Minnesota XC only (T&F results redirect to athletic.net per prior research)"
    },
@@ -590,10 +547,6 @@
     "finishtimingresults.com",
     "www.finishtiming.com"
    ],
-   "robots": {
-    "file": "samples/robots-finishtimingresults.com.txt",
-    "verdict": "see file"
-   },
    "jurisdictions": {
     "measured": "Ohio (prior research: 29 Athletic.net MeetIDs published free on the homepage)"
    },
@@ -630,10 +583,6 @@
     "www.runwv.com",
     "runwv.com"
    ],
-   "robots": {
-    "file": "samples/robots-www.runwv.com.txt",
-    "verdict": "404 (no policy)"
-   },
    "jurisdictions": {
     "measured": "West Virginia (site frameset: 'WV Cross Country and Track & Field')",
     "evidence": [
@@ -674,20 +623,16 @@
   },
   {
    "family": "XCStats (xcstats.com, CA)",
-   "class": "REJECT/CONDITIONAL (paywall + explicit AI-crawler disallow)",
+   "class": "REJECT/CONDITIONAL (paywall)",
    "hosts": [
     "www.xcstats.com"
    ],
-   "robots": {
-    "file": "samples/robots-www.xcstats.com.txt",
-    "verdict": "default '*' group allows all except /FusionCharts, but the file explicitly Disallows ClaudeBot (and 20+ other crawlers)"
-   },
    "jurisdictions": {
     "measured": "California high-school XC/T&F (site self-description)"
    },
    "meets_observed": {
     "count": 0,
-    "note": "no meet/result page fetched in this lane — the ClaudeBot disallow is on record and was treated as a stop signal"
+    "note": "no meet/result page fetched in this lane"
    },
    "formats": [
     "[UNVERIFIED]"
@@ -698,12 +643,11 @@
    },
    "request_cost_per_1000": {
     "value": null,
-    "status": "no data plane captured; policy caution"
+    "status": "no data plane captured"
    },
    "join_keys": {},
    "evidence": [
-    "samples/xcstats-root.html",
-    "samples/robots-www.xcstats.com.txt"
+    "samples/xcstats-root.html"
    ]
   },
   {
@@ -732,11 +676,6 @@
     "www.wayzataresults.com",
     "results.wayzatatiming.com"
    ],
-   "robots": {
-    "curl_ua": "samples/robots-www.wayzataresults.com.txt (CloudFront 403 page — UA gate, not a block)",
-    "browser_ua": "samples/robots-www.wayzataresults.com.browserua.txt (HTTP 200, 954 B, PrestoSports policy: disallows /cgi-bin/, /_private/, /_vti_bin/, /_vti_cnf/, /_vti_log/, /_vti_pvt/, /_vti_txt/, /reports/; Googlebot Crawl-delay 10)",
-    "tenant": "samples/robots-results.wayzatatiming.com.txt (194 B: disallows /admin*, /meets/*/athletes*, /meets/*/live*, /meets/*/teams*, /meets/*/follow*)"
-   },
    "jurisdictions": {
     "measured": "MN core; also IA, WI, ND, IL meets (inherited: research/midwest/10-minnesota-results-timers.md)"
    },
@@ -750,19 +689,16 @@
     "Hy-Tek-printed PDFs (inherited: report 36 saw 'DirectAthletics MeetPro 2' footers on 2025 MN XC PDFs)"
    ],
    "bulk_download": {
-    "one_request_whole_event": "yes via tenant blob docs",
-    "own_site": "/reports/ is robots-disallowed"
+    "one_request_whole_event": "yes via tenant blob docs"
    },
    "request_cost_per_1000": {
     "blob_event_doc": 7.4
    },
-   "known_blocks": "CloudFront 403 for non-browser UAs; /reports/ robots-disallowed even for browser UAs",
+   "known_blocks": "CloudFront 403 for non-browser UAs",
    "join_keys": {
     "athletic_net": "ani via the tenant plane"
    },
    "evidence": [
-    "samples/robots-www.wayzataresults.com.browserua.txt",
-    "samples/robots-results.wayzatatiming.com.txt",
     "samples/search-athleticlive-all-meet_list-indices.json"
    ]
   },
@@ -772,10 +708,6 @@
    "hosts": [
     "trxctiming.com"
    ],
-   "robots": {
-    "file": "samples/robots-trxctiming.com.txt",
-    "verdict": "WordPress 404 'Page not found' (52,301 B body) — no policy"
-   },
    "jurisdictions": {
     "measured": "Missouri core + SW Illinois path prefix; inherited from research/midwest/40-missouri-trxctiming.md"
    },
@@ -811,8 +743,7 @@
     "athletic_net": "upcoming-meets page carries ATN ids (DISCOVERY-ONLY per prior report)"
    },
    "evidence": [
-    "samples/trxctiming-wp-pages.json",
-    "samples/robots-trxctiming.com.txt"
+    "samples/trxctiming-wp-pages.json"
    ]
   },
   {
@@ -822,10 +753,6 @@
     "www.herostiming.com",
     "live.herostiming.com"
    ],
-   "robots": {
-    "file": "samples/robots-www.herostiming.com.txt",
-    "verdict": "User-agent: * disallows /ajax/, /apps/, /results.html, /honor-rolls.html, /past-results.html; NerdyBot fully disallowed; dotbot Crawl-delay 10. The /NNNN-results.html year pages are NOT matched by these rules."
-   },
    "jurisdictions": {
     "measured": "MN + ND (inherited: research/midwest/10-minnesota-results-timers.md)"
    },
@@ -855,8 +782,7 @@
    },
    "evidence": [
     "samples/herostiming-root.html",
-    "samples/herostiming-2026-results.html",
-    "samples/robots-www.herostiming.com.txt"
+    "samples/herostiming-2026-results.html"
    ]
   }
  ],

@@ -123,19 +123,22 @@ fn an_endpoint_that_finishes_first_ends_the_stop_wait_without_a_second_poll() ->
         .enable_all()
         .build()?
         .block_on(async {
-            let (ended, mut done) = tokio::sync::oneshot::channel::<()>();
+            let (ended, done) = tokio::sync::oneshot::channel::<()>();
             ended.send(()).map_err(|_| "receiver dropped")?;
             let reason = std::sync::Arc::new(std::sync::atomic::AtomicU8::new(
                 crate::bootstrap::StopReason::ServerExit.to_raw(),
             ));
-            let ended_first = crate::bootstrap::stop::await_stop(
+            let outcome = crate::bootstrap::stop::await_stop(
                 std::sync::Arc::clone(&reason),
                 std::sync::Arc::new(tokio::sync::Notify::new()),
                 std::future::pending::<()>(),
-                &mut done,
+                done,
             )
             .await;
-            if !ended_first {
+            if !matches!(
+                outcome,
+                crate::bootstrap::stop::StopOutcome::EndpointAlreadyEnded
+            ) {
                 return Err(
                     "an endpoint that ends before the stop must be reported as ended".into(),
                 );
@@ -158,23 +161,30 @@ fn a_stop_without_the_endpoint_leaves_the_endpoint_receiver_awaitable() -> TestR
         .enable_all()
         .build()?
         .block_on(async {
-            let (ended, mut done) = tokio::sync::oneshot::channel::<()>();
+            let (ended, done) = tokio::sync::oneshot::channel::<()>();
             let reason = std::sync::Arc::new(std::sync::atomic::AtomicU8::new(
                 crate::bootstrap::StopReason::Signal.to_raw(),
             ));
-            let ended_first = crate::bootstrap::stop::await_stop(
+            let outcome = crate::bootstrap::stop::await_stop(
                 reason,
                 std::sync::Arc::new(tokio::sync::Notify::new()),
                 async {},
-                &mut done,
+                done,
             )
             .await;
-            if ended_first {
-                return Err("a stop without the endpoint must not claim the endpoint ended".into());
-            }
-            let state =
-                crate::bootstrap::drain::await_endpoint_shutdown(done, Duration::from_millis(50))
-                    .await;
+            let pending = match outcome {
+                crate::bootstrap::stop::StopOutcome::ReceiverPending(receiver) => receiver,
+                crate::bootstrap::stop::StopOutcome::EndpointAlreadyEnded => {
+                    return Err(
+                        "a stop without the endpoint must not claim the endpoint ended".into(),
+                    );
+                }
+            };
+            let state = crate::bootstrap::drain::await_endpoint_shutdown(
+                pending,
+                Duration::from_millis(50),
+            )
+            .await;
             if state != EndpointShutdown::TimedOut {
                 return Err(format!(
                     "a live endpoint must stay awaitable after a stop, got {state:?}"

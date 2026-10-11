@@ -667,9 +667,23 @@ fn collect_stores_the_requested_school_and_its_coach_rows_from_the_cache() -> Te
         report
             .notes
             .iter()
-            .any(|note| note.contains("coach row(s)")),
+            .any(|note| note.contains("1 school(s) processed") && note.contains("16 coach row(s)")),
         "the report states what it processed: {:?}",
         report.notes
+    );
+    let receipt_keys = store.journal_keys("coach_directories_schools_v4")?;
+    check!(
+        receipt_keys.is_empty(),
+        "an unresolved contact route must not mint a v4 completion receipt: {:?}",
+        receipt_keys
+    );
+    let effect_keys = store.journal_keys("crawl_effect_receipts_v1")?;
+    check!(
+        effect_keys
+            .iter()
+            .any(|key| key.starts_with("coach_directories_prefix_v1:")),
+        "the incomplete school is retained through its prefix receipt: {:?}",
+        effect_keys
     );
 
     let schools = store.scan::<CanonicalSchool>(census_store::Table::Schools)?;

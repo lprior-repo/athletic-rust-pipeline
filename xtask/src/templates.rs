@@ -88,8 +88,7 @@ pub(crate) fn adapter_readme(name: &str) -> String {
 ## Purpose
 
 One paragraph on the public surface this adapter collects, the authority or association it belongs
-to, and the canonical entities it feeds (schools, coaches, athletes, results). Record the real URLs
-and their `robots.txt` status here once the walk exists.
+to, and the canonical entities it feeds (schools, coaches, athletes, results). Record the real URLs here once the walk exists.
 
 ## Entry points
 
@@ -120,7 +119,7 @@ same command spelled out. Both run nextest with a `test({name})` filter over the
 
 ## Before this adapter lands
 
-- [ ] real URLs and their robots status written into this README
+- [ ] real URLs written into this README
 - [ ] parsing and mapping asserted against captured fixtures
 - [ ] registered in `census.rs`, or exposed as a `provider {name}` CLI subcommand
 - [ ] rows and journal entries appended through the page `AdapterContext::write_batch` hands out,
@@ -155,7 +154,7 @@ has been tested against the live surface.
 ## Provenance
 
 Add a `SOURCE.md` next to the captures when a file needs more than its name to be read later: the
-request path, the capture date, and the robots status. `.md` files are documentation, not test
+request path and the capture date. `.md` files are documentation, not test
 input, and the fixture test skips them.
 "#
     )

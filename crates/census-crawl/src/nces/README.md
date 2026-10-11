@@ -12,7 +12,7 @@ into one `SchoolDirectoryEntry`:
 
 Both are **artifact** readers (`admission.origin` = `local-artifact`): the operator downloads the
 file and hands the extracted CSV to the `census-service school-address` verb, which reads it from
-disk. The reader makes no request, so no robots verdict applies. The CCD member is a ZIP; the
+disk. The reader makes no request. The CCD member is a ZIP; the
 operator decompresses it outside the process:
 
 ```console

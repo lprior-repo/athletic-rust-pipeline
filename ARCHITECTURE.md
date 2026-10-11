@@ -120,9 +120,7 @@ on the original request's scheme, parsed hostname and effective port, or match a
 hostname grant. A same-host scheme or port change is not implicitly authorized. DNS/private-address
 and browser-lane validation remain independent checks before dispatch.
 
-Robots.txt is read for pacing only: a `Crawl-delay` published for `User-agent: *` paces that host,
-while an absent, unreadable or non-200 robots.txt publishes no policy and never blocks a request.
-Redirect admission is per origin, not per path: a same-origin hop is followed without a robots path
+Redirect admission is per origin, not per path: a same-origin hop is followed without a path
 check, so the caller that admits a URL also admits its redirect destinations and must refuse a hop
 into a login, authentication or otherwise disallowed path itself (record the chain and stop). No
 CAPTCHA, authentication or paywall circumvention, browser-identity spoofing, proxy evasion, cookie

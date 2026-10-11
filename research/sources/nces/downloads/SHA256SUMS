@@ -3,7 +3,6 @@
 # locally in the authoring session of 2026-10-09 (no shell): run `sha256sum -c SHA256SUMS` from the
 # cycle directory after fetching, and let _fetch.sh's own write replace this file with fresh sums.
 # Lines starting with # are ignored by sha256sum -c.
-365e79b35eb96b9faea53b33dfa56996865622d43271482edf9b8928b8f6daf1  robots.txt
 f40b12720589ef67fcea32a380db786c486bd54a664755473f2aa61adeb18748  pssdata.html
 b9c85d08071b9e85bca5678e56fc9d78da0af97774703e4f332775f58283f01f  pss2324_pu_csv.zip
 14a2f9e600a492940fd57646792b4b5163ea9d03b8015a7df1135066bcec3b8b  pss2324_pu.csv

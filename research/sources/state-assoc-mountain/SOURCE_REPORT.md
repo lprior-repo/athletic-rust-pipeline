@@ -1,8 +1,7 @@
 # SOURCE_REPORT — state high-school association sources, Mountain region
 
 Lane: `research/sources/state-assoc-mountain/` (AZ, CO, ID, MT, NM, UT, WY).
-All captures are anonymous `curl` at <=1 req/s per host (azpreps365.com publishes
-`Crawl-Delay: 10`, honoured with 11 s spacing). Every sample below is in `samples/` and is
+All captures are anonymous `curl` at <=1 req/s per host. Every sample below is in `samples/` and is
 listed with URL, status, bytes, UTC timestamp and exact command in `samples/CAPTURES.md`.
 
 Field contract (objective §13): Source name; Geographic coverage; Sports; Historical depth;
@@ -72,10 +71,7 @@ Machine-readable companions: `schema.json` (observed keys + one real example eac
 - **Browser requirement**: none for HTML/JSON/PDF; the azpreps365 result picker submits a plain
   GET (`<form method="GET" action="https://www.aiaonline.org/story">`, option value = story id).
 - **Request cost**: XC state results PDF is 22.4 MB for one season (43 pages); all other captures
-  <=300 KB. `azpreps365.com` requires >=10 s between requests.
-- **Published rate limits**: `azpreps365.com/robots.txt` = "User-agent: * / Crawl-Delay: 10"
-  (`samples/azpreps365-robots.txt`); `aiaonline.org/robots.txt` = "User-agent: * / Disallow:"
-  (`samples/robots-aiaonline.txt`).
+  <=300 KB.
 - **Known blocks**: 20-row cap on `/schools/search.json` with no paging parameter; state meet
   XC results are one large PDF, not per-event files.
 - **Cross-source join keys**: school full name + mascot + city/state/zip
@@ -165,11 +161,6 @@ Machine-readable companions: `schema.json` (observed keys + one real example eac
   is present in the HTML. Staff-tab content requires the SPA fetch.
 - **Request cost**: 1 request for all 378 schools; 1 request per school detail page (378 total,
   ≈7 min at 1 rps); staff tab = extra per-school fetch (endpoint not captured).
-- **Published rate limits**: `chsaanow.com/robots.txt` = `Allow: /` for `User-agent: *` with only
-  `/history/champions/individual/totals/repeat/` and `/preview/` disallowed, plus named AI crawlers
-  blocked (GPTBot, ClaudeBot, anthropic-ai, CCBot, PerplexityBot, …);
-  `schools.chsaa.org/robots.txt` disallows `/api/`, `/dashboard/`, `/login`, `/logout`,
-  `/compliance`, `/report/` (`samples/robots-chsaanow.txt`, `samples/robots-schools-chsaa.txt`).
 - **Known blocks**: `schools.chsaa.org` redirects anonymous requests to
   `https://schools.chsaa.org/login?callbackUrl=%2Fdashboard` — the School Center is
   authentication-only and was not touched. Staff-directory contents are behind a client-side fetch.
@@ -195,8 +186,6 @@ Machine-readable companions: `schema.json` (observed keys + one real example eac
   - The TFMeetPro event page repeats "Timing: Rapid Results Timing" in its Meet Officials block
     (`samples/tfmeetpro-state-xc-4a.html`).
   - TF state championships: PDF produced by Rapid Results Timing on a Hy-Tek Meet Manager licence.
-  - `results.tfmeetpro.com/robots.txt` was not readable: `curl: (35) Recv failure: Connection reset
-    by peer` (`samples/robots-tfmeetpro.txt.curlerr`); the plain-HTTP results pages answer 200.
 - **Published Athletic.net / MileSplit links (markup quoted verbatim)**:
   - MileSplit is a CHSAA corporate partner; the site payload carries
     `{"id":"cG9zdDo3NjQ4NA==","name":"MileSplit","logoUrl":"https://chsaa-media.sfo3.cdn.digitaloceanspaces.com/wp-content/uploads/2026/03/20192411/MileSplit_Logo.png","logoAlt":"MileSplit CO Logo","websiteUrl":"https://co.milesplit.com/","showOnFrontPage":false}`
@@ -265,8 +254,6 @@ Machine-readable companions: `schema.json` (observed keys + one real example eac
   "Track & Field, Cross Country Results, Statistics", body contains `cloudflare` + `challenge`
   (`samples/athleticnet-idhsaa-xc-state-263030.html`).
 - **Request cost**: 1 request for the full directory; sport pages are <50 KB.
-- **Published rate limits**: `idhsaa.org/robots.txt` = "User-agent: *" with no Disallow lines
-  (`samples/robots-idhsaa.txt`).
 - **Known blocks**: `/rosters` 404; directory headline count (173) disagrees with the rendered table
   (174 rows); state results sit behind Athletic.net's Cloudflare.
 - **Cross-source join keys**: school name; class/district; Athletic.net meet ids
@@ -346,11 +333,6 @@ Machine-readable companions: `schema.json` (observed keys + one real example eac
 - **Browser requirement**: yes for the member directory (Arbiter SPA) and for Competitive Timing
   results (Next.js client render); no for the MHSA pages and PDFs.
 - **Request cost**: low (pages ≤340 KB; PDFs 135-137 KB).
-- **Published rate limits**: **no robots.txt** — `https://www.mhsa.org/robots.txt` returns
-  `404 Not Found` (13 B, `samples/robots-mhsa.txt`); `https://assets-rst7.rschooltoday.com/robots.txt`
-  also 404 (13 B, `samples/robots-rst7-assets.txt`); `competitivetiming.com/robots.txt` =
-  "User-agent: * / Allow: / / Disallow: /admin" (`samples/robots-competitivetiming.txt`).
-  Absence of a robots file means no published policy — the lane kept the global 1 req/s cap.
 - **Known blocks**: MHSA directory behind ArbiterSports JS; Competitive Timing results client-rendered;
   no on-site athlete-level results at all.
 - **Cross-source join keys**: school name + class; Arbiter org `4497`; Athletic.net meet/team ids.
@@ -430,9 +412,6 @@ Machine-readable companions: `schema.json` (observed keys + one real example eac
 - **Browser requirement**: none for the PDFs; the member-school list and Heyzine "championship
   program" flip-books (`https://heyzine.com/flip-book/da170f00d8.html`) need a browser.
 - **Request cost**: rosters 486 KB, TF final results 168 KB, XC results 357 KB (106 pages).
-- **Published rate limits**: `nmact.org/robots.txt` = "User-Agent: * / Disallow:" (allow all,
-  `samples/robots-nmact.txt`); `liverunningresults.com/robots.txt` returns **404** (13 B,
-  `samples/robots-liverunningresults.txt`).
 - **Known blocks**: the live-results host carries a licence restriction — "The results listed on this
   website are for the NON-COMMERCIAL use of the race participants and the host. … It is a violation of
   United States Copyright laws to use any results on this site for commercial purposes without the
@@ -479,8 +458,8 @@ Machine-readable companions: `schema.json` (observed keys + one real example eac
   (`samples/uhsaa-track-field.html`).
 - **Historical depth**: every sport page offers "View All Past Results" →
   `https://uhsaa.org/v2/historical-cross-country-results/` and
-  `https://uhsaa.org/v2/historical-track-field-results/` — **these paths are disallowed by the site's
-  own robots.txt (`Disallow: /v2/`) and were therefore NOT fetched**. The timer's public archive goes
+  `https://uhsaa.org/v2/historical-track-field-results/` — **these paths were NOT fetched**. The
+  timer's public archive goes
   back to 2015 ("RESULTS | 2026 | 2025 | 2024 | 2023 | 2022 | 2021 | 2020 | 2019 | 2018 | 2017 | More
   Results | 2016 | 2015", `samples/runnercard-meet-1001674.html`).
 - **Discovery mechanism**: `/school-directory-new/` renders the complete member list server-side —
@@ -520,13 +499,8 @@ Machine-readable companions: `schema.json` (observed keys + one real example eac
   accordions render `href="#"` placeholders and are JS-driven.
 - **Request cost**: 1 request for all 162 school directory entries; 1 request per school detail page
   (162 total ≈ 3 min at 1 rps); `ParticipationNumbers.pdf` 312 KB; alignment PDF 534 KB.
-- **Published rate limits**: `uhsaa.org/robots.txt` returns 200 (1181 B,
-  `samples/robots-uhsaa.txt`) with `User-agent: *` and 30 `Disallow:` lines but **no `Crawl-delay`**
-  — the rules cover `/administrator/`, `/media/`, `/mlr/`, `/phpGrid/`, `/js/`, and **`/v2/`**, which
-  is the rule that excludes the historical-results indexes. RunnerCard's `robots.txt` is **404**
-  (`samples/robots-runnercard.txt`, 431 B), i.e. no published policy.
-- **Known blocks**: (a) robots-aware exclusion — the historical-results indexes live under `/v2/`
-  which the site's robots.txt disallows; (b) **the Utah results host is down**: both
+- **Known blocks**: (a) the historical-results indexes under `/v2/` were not fetched; (b) **the Utah
+  results host is down**: both
   `http://results.runnercard.com/Results/results.jsp?meetid=1001674` attempts returned
   **503 "No server is available to handle this request"** (107 B each,
   `samples/runnercard-results-jsp.html`, `samples/runnercard-results-jsp-retry.html`), and the
@@ -606,9 +580,6 @@ Machine-readable companions: `schema.json` (observed keys + one real example eac
 - **Browser requirement**: not tested beyond the 403s; the site is plain static HTML, so no JS
   dependency was observed on the pages that did return 200.
 - **Request cost**: very low (homepage 21.5 KB; ADMs PDF 785 KB).
-- **Published rate limits**: **no robots.txt** — `https://www.whsaa.org/robots.txt` returns
-  **404 Not Found** (1094 B error page, `samples/robots-whsaa.txt`). No published policy; the lane
-  kept 1 req/s.
 - **Known blocks**: (a) `/schools/`, `/track/`, `/archives/` return **403 Forbidden** from the Plesk
   front end (directory URLs without a default document are refused rather than listed);
   (b) unknown paths return a 404 HTML error page with the server banner "Web Server at whsaa.org";

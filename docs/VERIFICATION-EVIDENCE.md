@@ -8,8 +8,8 @@ lowest whole-process peak RSS; that run's Criterion output supplies the per-iter
 throughput numbers. Per-case peak RSS (GNU time `-v`) and heap allocation counts/bytes (Valgrind
 DHAT) are then measured once per case (`xtask/src/perf/bench/memory.rs`), so those three metrics are
 single samples of noisy statistics. `perf check` fails a regression beyond the requested tolerance
-(default 5%), with the sample-maximum tail floored at 20%, peak RSS floored at 20% of its recorded
-baseline with a 1 MiB minimum, and wall time/throughput floored at each case's recorded tail-to-mean
+(default 5%), with the sample-maximum tail floored at 20%, peak RSS floored at a seventh of its
+recorded baseline with a 1 MiB minimum, and wall time/throughput floored at each case's recorded tail-to-mean
 spread, capped at the same 20%; `xtask/README.md` records the measurements behind all three floors.
 The baseline file remains fixed.
 
@@ -58,9 +58,8 @@ tasks pass (tests 3m51s, report-test 4m02s).
   the bytes' SHA-256 and the recorded `content_digest`; orphaned, missing, mismatched and
   unexpected entries are reported. Regressions: `backup::http_cache::tests` (7 cases).
 - Access-condition accounting (`crates/census-service/src/census/seal.rs`): `retained_access`
-  counts `Forbidden` and `HumanRequired` as refusals; `RobotsDisallowed` is cooldown-bounded
-  (robots is pacing, not an admission gate). Test:
-  `census::seal::tests::access_conditions_split_into_refusals_and_throttles` — (7, 2, 5).
+  counts `Forbidden` as the one refusal and the five remaining kinds as cooldown-bounded. Test:
+  `census::seal::tests::access_conditions_split_into_refusals_and_throttles` — (6, 1, 5).
 - Consolidate fault (`crates/census-service/src/restate_services/jobs.rs`): behind
   `native-fault-injection` the fault fires on a non-empty `ATHLETIC_FAULT_EXIT_AFTER_CONSOLIDATE`
   environment variable; the unused in-process injector and its atomic were removed.
@@ -93,8 +92,7 @@ rendered templates) and `contract` (0 known deviations).
 
 ## 2026-10-11 Release Gate Pass
 
-`env -u CI tools/moon-local run pipeline:gate -- --release` ran three times on this date against the
-same working tree, with the seam endpoint exported as `SERVE_BINARY`
+`env -u CI tools/moon-local run pipeline:gate -- --release` ran three times on this date, with the seam endpoint exported as `SERVE_BINARY`
 (`target/moon-build/x86_64-unknown-linux-gnu/release/census-serve`), `SCRATCH_STORE=var/durability-scratch`,
 `RESTATE_SERVER_BIN` at the verified 1.7.10 node, and — from the third run — `S04_V1_BINARY` and
 `S04_V2_BINARY` set to the feature and plain builds so scenario 04 receives two distinct endpoint
@@ -110,19 +108,19 @@ perf: PASS
 gate: FAIL -> durability
 ```
 
-The first run on the same tree failed five lanes; each repair below was verified on its own before
-the next full run.
+The three preserved summaries are, in order, `gate: FAIL -> panic extraction (all targets) ratchet
+durability perf` (run 1), `gate: FAIL -> ratchet durability` (run 2) and `gate: FAIL -> durability`
+(run 3). Repairs between the runs, with the artifact that shows each:
 
 | Lane | Failure | Repair | Verification |
 |---|---|---|---|
-| tests | `fjall_restate_e2e_run` discovery failed once because a previous run's node still held endpoint port 18095 | none in code; the lane was repeated after that node was stopped | both later full runs pass the lane unchanged |
-| panic extraction | 37 all-target diagnostics from `unwrap`/`expect`/`panic` constructs in test and toolkit sources | `census-reconcile/tests/{adversarial_identity,versioned_derivation,workflow_identity}.rs`, `census-review/tests/deterministic_lane.rs`, `census-service/src/cli/live_tests.rs`, `census-service/src/restate_services/tests.rs` and `census-store/src/engine_tests.rs` return `Err`/`check!`; four style-lint sites in meeting, WIAA readback, archive capacity and TFRRS sources rewritten; `workflow_identity.rs` then dropped a redundant `to_string()` inside `format!` | `pipeline:xtask -- panic-extraction` exits 0 (2,075 Rust files, 3 rendered templates); a focused `pipeline:tests -E` over the six surfaces passed 276 tests; the third run's lane PASSes |
-| ratchet | `clippy::indexing_slicing` 0 -> 3 in production crates | `census-crawl/src/convert.rs` reads through `get(..read)`; `athleticlive/results/run/receipts.rs` inserts receipt fields through `as_object_mut()` | `pipeline:lint-src -- -D clippy::indexing_slicing` reports zero |
-| ratchet | 91 restriction-lint diagnostics in `xtask/src/review/**` plus two files above the 300-line budget | all twelve files burned down (render.rs 38, applicability.rs 13, watch.rs 9, sheets.rs 6, arms.rs 5, frame.rs 5, readback.rs 4, build.rs 4, sidecars.rs 3, families.rs 2, hash.rs 1, input.rs 1); `bootstrap/serve.rs` 306 -> 270 by moving `await_stop` to `bootstrap/stop.rs` and `await_endpoint_shutdown` with `ENDPOINT_SHUTDOWN_GRACE` to `bootstrap/drain.rs`; `perf/compare.rs` 317 -> 300 by extracting the jitter floors into `perf/compare/floor.rs` | `pipeline:lint-src` with the gate's full restriction set exits 0; `pipeline:tests -E 'package(xtask) | package(census-service) | package(census-reconcile)'` reports 1,044 passed; the third run's ratchet PASSes under its touched-source measurement |
-| durability | `bootstrap/serve.rs` polled the completed endpoint channel a second time whenever the endpoint exited first, panicking in `oneshot::Receiver::poll` and losing the drain certificate; scenario-11's settle budget and inspection call were also wrong | `await_stop` reports whether the endpoint ended first and the supervisor stops polling the receiver; two new cases in `bootstrap/serve_tests.rs`; scenario-11 settles on journal growth or successful completion and calls the no-input inspection handler with `GET`; scenario-07 makes the same call the same way | a direct `ATHLETIC_FAULT_HTTP_EXIT` trigger removed the `census-serve` pid and appended `drained: accepted=3 completed=3`; scenario-11 PASSes (resume journal 7 -> 52 across 7 growth observations, resumed endpoint `accepted=15 cancelled=0 panicked=0`); scenarios 01, 08, 09, 10, 14, 15, 16, 17 and 18 PASS |
-| perf | `census/school_index/normalize_label` peak RSS read 12,472 then 12,856 KiB against a recorded 11,676 KiB; `census/school_index/build_index` wall time read 2.206 µs against 2.068 µs while three isolated criterion runs of the unchanged case measured 1.7404, 1.7357 and 1.7951 µs | peak RSS floors at 20% of the recorded baseline with a 1 MiB absolute minimum, clamped so the floor never exceeds the baseline (`perf/compare/floor.rs`); wall time and throughput floor at each case's recorded tail-to-mean spread, capped at the same 20% (`case_timing_floor`); the recorded baseline stays fixed | `pipeline:xtask -- perf check` reports `no regression detected`; `xtask/README.md` records the measurements behind all three floors; the third run's perf lane PASSes |
+| panic extraction (all targets) | exactly one all-target diagnostic in run 1: `clippy::to_string_in_format_args` on `census-reconcile/tests/workflow_identity.rs:26` (`all-target lint diagnostics: 1`) | `workflow_identity.rs` dropped the redundant `to_string()` inside `format!`; the converted surfaces (`census-reconcile/tests/{adversarial_identity,versioned_derivation,workflow_identity}.rs`, `census-review/tests/deterministic_lane.rs`, `census-service/src/cli/live_tests.rs`, `census-store/src/engine_tests.rs`) return `Err`/`check!` instead of assert-family constructs | runs 2 and 3 report `--- panic extraction (all targets): PASS` with 2,075 and 2,076 Rust files plus 3 rendered templates |
+| ratchet | run 1: `clippy census_service clippy::arithmetic_side_effects: 0 -> 1`, `bootstrap/serve.rs (306)` and `perf/compare.rs (311)`; run 2: the same two files at `(306)` and `(317)` plus `xtask` lint growth (`arithmetic_side_effects: 0 -> 29`, `as_conversions: 0 -> 1`, `indexing_slicing: 0 -> 13`, `let_underscore_must_use: 0 -> 37`, `string_slice: 0 -> 11`) | `bootstrap/serve.rs` 306 -> 271 (`wc -l`) by moving `await_stop` to `bootstrap/stop.rs` and `await_endpoint_shutdown` with `ENDPOINT_SHUTDOWN_GRACE` to `bootstrap/drain.rs`; `perf/compare.rs` 317 -> 300 by extracting the jitter floors into `perf/compare/floor.rs`; `census-crawl/src/convert.rs` reads through `get(..read)` and `athleticlive/results/run/receipts.rs` inserts receipt fields through `as_object_mut()` | the third run reports `--- ratchet: PASS`; the two touched files measure 271 and 300 lines on disk |
+| durability | `bootstrap/serve.rs` polled the endpoint channel a second time whenever the endpoint exited first, panicking in `oneshot::Receiver::poll` and losing the drain certificate; scenario-11's settle budget and inspection call were wrong; runs 1 and 2 shipped the same endpoint binary in both scenario-04 slots | `await_stop` returns the endpoint receiver only through `StopOutcome::ReceiverPending`; two new cases in `bootstrap/serve_tests.rs`; scenario-11 proves resumability by journal growth, refuses a resumed invocation whose terminal result is `failure`, and probes the no-input inspection handler with `GET`; scenario-07 makes the same call the same way; the third run provisioned `S04_V1_BINARY`/`S04_V2_BINARY` with distinct artifacts | all three runs report `Total: 10 PASS, 6 FAIL, 2 SKIPPED (18 scenarios)`; the `ATHLETIC_FAULT_HTTP_EXIT` trigger appends `drained: accepted=6 completed=6 cancelled=0 timed_out=0 aborted=0 panicked=0` with `ACCOUNTING: accepted=6 vs exclusive_terminal=6`; scenario-11 PASSes with resume journal `7 -> 52` across 7 growth observations and a resumed drain of `accepted=15 completed=15`, and its final line reports `settlement inside this lane's window: false` (jurisdiction settlement is not among the scenario's obligations — see [NATIONAL-CENSUS-FAULTS.md](NATIONAL-CENSUS-FAULTS.md)) |
+| perf | run 1: `xtask: perf check: regression detected` — `census/school_index/normalize_label: peak RSS regression: baseline=11676 current=12856`; `xtask/README.md` records the four recordings on this tree (12,796 and 11,676 KiB, then the release gates' 12,472 and 12,856 KiB, a 10.1% spread) and the wall-time readings (2.206 µs against the recorded 2.068 µs while three isolated runs of the unchanged case measured 1.7404, 1.7357 and 1.7951 µs) | peak RSS floors at a seventh of the recorded baseline with a 1 MiB absolute minimum, clamped so the floor never exceeds the baseline (`xtask/src/perf/compare/floor.rs`); wall time and throughput floor at each case's recorded tail-to-mean spread, capped at the same 20% (`case_timing_floor`); the recorded baseline stays fixed | runs 2 and 3 report `perf check: no regression detected` and `--- perf: PASS`; `xtask/README.md` records the measurements behind all three floors |
 
-The single remaining lane failure is the durability lane, and every scenario behind it is owned:
+The single remaining lane failure is the durability lane, and every scenario behind it is owned
+(all five owner beads are open — `bd show puaf ap4m i90l i6yv ziu1`, 2026-10-11):
 
 | Scenario | Observed in the third run | Owner |
 |---|---|---|

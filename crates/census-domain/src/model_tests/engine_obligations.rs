@@ -101,7 +101,6 @@ fn coverage_blocks_cover_every_access_kind_without_becoming_complete() -> TestRe
     for kind in [
         AccessBlockKind::Forbidden,
         AccessBlockKind::RateLimited,
-        AccessBlockKind::RobotsDisallowed,
         AccessBlockKind::Timeout,
         AccessBlockKind::Unavailable,
         AccessBlockKind::BrowserUnavailable,

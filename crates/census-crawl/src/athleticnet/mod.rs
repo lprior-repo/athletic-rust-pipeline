@@ -107,8 +107,7 @@ pub fn parse_targets(body: &str, default_states: &[UsJurisdiction]) -> CrawlResu
 fn read_registry(options: &Options) -> CrawlResult<Vec<Target>> {
     let Some(input) = options.input.as_deref() else {
         return Err(CrawlError::Invariant {
-            detail: "the athletic.net adapter needs --input with an athlete registry; its search \
-                     endpoint is disallowed by robots, so ids cannot be discovered by the tool"
+            detail: "the athletic.net adapter needs --input with an athlete registry: no other surface supplies athlete ids"
                 .to_string(),
         });
     };

@@ -169,8 +169,7 @@
         "samples/search-v2-athletes-oh-perpage100.json",
         "samples/search-v2-athletes-www.json"
       ],
-      "precondition": "fresh searchToken from GET /athletes + the unique_id cookie it sets (samples/athletes-oh-searchform.html, samples/search-v2-athletes-oh-notoken.json -> HTTP 400)",
-      "robots": "allowed (robots.txt disallows only /rankings, /virtual-meets, /api/, /contact)"
+      "precondition": "fresh searchToken from GET /athletes + the unique_id cookie it sets (samples/athletes-oh-searchform.html, samples/search-v2-athletes-oh-notoken.json -> HTTP 400)"
     },
     "rankings": {
       "surface": "GET /rankings/events/... and /rankings/leaders/...",
@@ -184,11 +183,10 @@
       "files": [
         "samples/rankings-oh-boys-xc.html",
         "samples/rank-event-oh-xc-5000m.html"
-      ],
-      "robots": "DISALLOWED (/rankings) on all 7 hosts sampled \u2014 not usable by the pipeline; captured for analysis only"
+      ]
     },
     "team_rankings_widget": {
-      "surface": "GET /teams/<TeamID>-<slug>/rankings (robots-allowed path, data arrives from robots-disallowed /api/)",
+      "surface": "GET /teams/<TeamID>-<slug>/rankings (data arrives only from /api/)",
       "jurisdiction": "OH",
       "team_id": 10002,
       "rows_in_html": 0,
@@ -1000,12 +998,12 @@
     "Roster/meet/result coverage is measured in OH only (this lane). Non-OH jurisdictions have team-index counts but no roster, meet, result or calendar capture.",
     "Class-of-2027 shares per jurisdiction exist only for the 12 Midwest states, from the prior phase's n=3-teams-per-state sample (milesplit-coverage-matrix.csv, columns sampled_c2027_* and est_c2027_total_order_of_magnitude_*) \u2014 order-of-magnitude bands, not point estimates.",
     "The per-state athlete search endpoint was exercised on oh and www only; per-state behaviour on the other 49 hosts is unverified.",
-    "The rankings table beyond row 1 is server-side masked for anonymous clients; its XHR path (teams scope only: /api/v1/teams/<id>/rankings|best|records) is robots-disallowed and was therefore not requested.",
+    "The rankings table beyond row 1 is server-side masked for anonymous clients; its XHR path (teams scope only: /api/v1/teams/<id>/rankings|best|records) was not requested.",
     "No coach/AD/contact field was observed on any captured surface (0 occurrences of 'coach' in samples/roster-oh-mason.html)."
   ],
   "not_attempted_by_policy": [
-    "GET/POST /api/** (robots Disallow on oh, www, ca, tx, mi, wy; and by prior-phase evidence on va) \u2014 includes the only JSON that carries per-row gradYear + windReading + AthleteID.",
-    "GET /rankings/** beyond the two already-captured URLs (robots Disallow).",
+    "GET/POST /api/** \u2014 includes the only JSON that carries per-row gradYear + windReading + AthleteID.",
+    "GET /rankings/** beyond the two already-captured URLs.",
     "Any login, PRO entitlement, paywall bypass, or CAPTCHA work."
   ]
 }

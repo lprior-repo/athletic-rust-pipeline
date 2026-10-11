@@ -40,24 +40,8 @@ authentication and **not** a paywall: no credential, cookie, login or CAPTCHA wa
 supplied, and no challenge was solved. The gate was observed, recorded, and only then was a
 stock browser UA string sent. The 403 bodies are retained in `samples/` as proof.
 
-## robots.txt policy actually applied
-
-| Host family | robots.txt | Rule honoured |
-|---|---|---|
-| `*.osaa.org` | 200, 143 B | `Disallow: /brackets/ /teams/ /contests/ /forms/ /mobile/ /demo/ /dev/` - **none of these paths were fetched**. `/schools/`, `/activities/`, `/coaches` only. |
-| `www.cifstate.org`, `*.cif{ccs,cs,ncs,ns,sds}.org`, `www.niaa.com` | 200, 954 B (PrestoSports boilerplate) | `Crawl-Delay: 10` for `*`; `Disallow: /cgi-bin/ /_private/ /_vti_bin/ /_vti_cnf/ /_vti_log/ /_vti_pvt/ /_vti_txt/ /reports/ /admin/ /action/`. Requests to these hosts were spaced >=10 s apart and no `/reports/`, `/admin/` or `/action/` path was fetched. |
-| `www.cif-la.org` | 200, 54 B | `Disallow: /apps/email/*`, `Crawl-delay: 5` |
-| `www.cifsf.org` | 200, 171 B | Yoast block: `Disallow:` (nothing) |
-| `www.cifss.org` | 200, 167 B after 301 | nothing disallowed |
-| `www.cifsjs.org` | 200, 47 016 B **HTML** | Site serves its SPA shell for `/robots.txt`; **no robots.txt exists**. |
-| `hhsaa.org` | 200, 204 B | Whole policy is commented out => nothing disallowed |
-| `www.wiaa.com` | **404** | No robots.txt exists |
-| `asaa.org` | 200, 109 B | `Disallow: /wp-admin/` only (respecting `Allow: /wp-admin/admin-ajax.php`) |
-| `cifoakland.org` | 302 -> `ousd.org/oal` | Association site is a redirect to the host school district |
-| `niaa.org` | 301 -> off-domain | **Not Nevada's site.** See note in the report. |
-
 Request pacing: never more than 1 request/second anywhere; PrestoSports hosts were paced at
->=10 s. See also the `Crawl-delay` column in the table below.
+>=10 s.
 
 ## Captures
 
@@ -131,36 +115,6 @@ Request pacing: never more than 1 request/second anywhere; PrestoSports hosts we
 | `osaa-schools.html` | `https://www.osaa.org/schools` | 200 | 31821 | research | 2026-09-22T03:54:48Z |  |
 | `osaa-xc-results.html` | `https://www.osaa.org/activities/bxc-gxc/results` | 200 | 39550 | research | 2026-09-22T03:55:51Z | Live Results -> live.athletictiming.net/meets/58997 |
 | `ousd-oal.html` | `https://www.ousd.org/oal` | 200 | 88241 | research | 2026-09-22T03:56:45Z | Oakland Athletics League (OUSD-hosted) |
-| `robots-asaa.txt` | `https://asaa.org/robots.txt` | 200 | 109 | research | 2026-09-22T03:54:03Z | ASAA robots; only /wp-admin disallowed; sitemap declared |
-| `robots-cif-la.txt` | `https://www.cif-la.org/robots.txt` | 200 | 54 | research | 2026-09-22T03:54:17Z | LA City Section; Disallow /apps/email/*; Crawl-delay 5 |
-| `robots-cifccs-browserua.txt` | `https://www.cifccs.org/robots.txt` | 200 | 954 | chrome | 2026-09-22T03:54:23Z | CCS robots (Presto) |
-| `robots-cifccs.txt` | `https://www.cifccs.org/robots.txt` | 403 | 919 | research | 2026-09-22T03:54:17Z | 403 at research UA |
-| `robots-cifcs-browserua.txt` | `https://www.cifcs.org/robots.txt` | 200 | 954 | chrome | 2026-09-22T03:54:27Z | Central Section robots (Presto) |
-| `robots-cifcs.txt` | `https://www.cifcs.org/robots.txt` | 403 | 919 | research | 2026-09-22T03:54:17Z | 403 |
-| `robots-cifncs-browserua.txt` | `https://www.cifncs.org/robots.txt` | 200 | 954 | chrome | 2026-09-22T03:54:27Z | NCS robots (Presto) |
-| `robots-cifncs.txt` | `https://www.cifncs.org/robots.txt` | 403 | 919 | research | 2026-09-22T03:54:17Z | 403 |
-| `robots-cifns-browserua.txt` | `https://www.cifns.org/robots.txt` | 200 | 954 | chrome | 2026-09-22T03:54:27Z | Northern Section robots (Presto) |
-| `robots-cifns.txt` | `https://www.cifns.org/robots.txt` | 403 | 919 | research | 2026-09-22T03:54:17Z | 403 |
-| `robots-cifoakland.txt` | `https://www.cifoakland.org/robots.txt` | 302 | 247 | research | 2026-09-22T03:54:18Z | 302 -> ousd.org/oal (Oakland Athletics League hosted by OUSD) |
-| `robots-cifsds-browserua.txt` | `https://www.cifsds.org/robots.txt` | 200 | 954 | chrome | 2026-09-22T03:54:27Z | San Diego Section robots (Presto) |
-| `robots-cifsds.txt` | `https://www.cifsds.org/robots.txt` | 403 | 919 | research | 2026-09-22T03:54:18Z | 403 |
-| `robots-cifsf.txt` | `https://www.cifsf.org/robots.txt` | 200 | 171 | research | 2026-09-22T03:54:18Z | SF Section; Yoast block, sitemap_index.xml |
-| `robots-cifsjs.txt` | `https://www.cifsjs.org/robots.txt` | 200 | 47016 | research | 2026-09-22T03:54:18Z | NOT a robots.txt: 47016-byte HTML page (SPA fallback) |
-| `robots-cifss-browserua.txt` | `https://www.cifss.org/robots.txt` | 200 | 167 | chrome | 2026-09-22T03:54:27Z | Southern Section robots after redirect |
-| `robots-cifss.txt` | `https://www.cifss.org/robots.txt` | 301 | 162 | research | 2026-09-22T03:54:18Z | 301 -> nginx |
-| `robots-cifstate-bare.txt` | `https://cifstate.org/robots.txt` | 403 | 919 | research | 2026-09-22T03:54:07Z | same at bare host |
-| `robots-cifstate-browserua.txt` | `https://www.cifstate.org/robots.txt` | 200 | 954 | chrome | 2026-09-22T03:54:23Z | CIF state robots (PrestoSports); Crawl-Delay 10, Disallow /reports/ /admin/ /action/ |
-| `robots-cifstate.txt` | `https://www.cifstate.org/robots.txt` | 403 | 919 | research | 2026-09-22T03:54:03Z | CloudFront 403 at research UA |
-| `robots-hhsaa-follow.txt` | `https://hhsaa.org/robots.txt` | 200 | 204 | research | 2026-09-22T03:54:07Z | HHSAA robots: entire block commented out => nothing disallowed |
-| `robots-hhsaa.txt` | `https://www.hhsaa.org/robots.txt` | 302 | 0 | research | 2026-09-22T03:54:03Z | 302 |
-| `robots-niaa-com-browserua.txt` | `https://www.niaa.com/robots.txt` | 200 | 954 | chrome | 2026-09-22T03:54:23Z | real NIAA robots.txt (PrestoSports) |
-| `robots-niaa-com.txt` | `https://www.niaa.com/robots.txt` | 403 | 919 | research | 2026-09-22T03:54:17Z | CloudFront 403: UA-gated WAF |
-| `robots-niaa-follow.txt` | `https://niaa.org/robots.txt` | 200 | 198356 | research | 2026-09-22T03:54:07Z | FOLLOW redirects: niaa.org serves inroads.org (unrelated org). niaa.org is dead for NV. |
-| `robots-niaa-root.txt` | `https://www.niaa.org/robots.txt` | 200 | 198356 | research | 2026-09-22T03:54:12Z | same inroads.org content via www; confirms niaa.org misdirection |
-| `robots-niaa.txt` | `https://www.niaa.org/robots.txt` | 301 | 167 | research | 2026-09-22T03:54:03Z | 301 -> niaa.org is NOT Nevada; redirects off-domain (see robots-niaa-follow.txt) |
-| `robots-osaa.txt` | `https://www.osaa.org/robots.txt` | 200 | 143 | research | 2026-09-22T03:54:03Z | OSAA robots; Disallow /teams/ /contests/ /brackets/ /forms/ /mobile/ /demo/ /dev/ |
-| `robots-wiaa-www.txt` | `https://wiaa.com/robots.txt` | 404 | 13 | research | 2026-09-22T03:54:08Z | no robots.txt (apex) |
-| `robots-wiaa.txt` | `https://www.wiaa.com/robots.txt` | 404 | 13 | research | 2026-09-22T03:54:04Z | no robots.txt |
 | `wiaa-events.html` | `https://www.wiaa.com/events/` | 200 | 394986 | research | 2026-09-22T03:59:15Z | wpanetwork.com/wiaa/brackets/tournament.php |
 | `wiaa-finalforms-p2.html` | `https://wiaa.finalforms.com/state_schools?page=2&state_schools.athletic_association_member_status_in=member&state_schools.is_archived_eq=false` | 200 | 145215 | research | 2026-09-22T03:55:37Z | 15 rows |
 | `wiaa-finalforms-p51.html` | `https://wiaa.finalforms.com/state_schools?page=51&state_schools.athletic_association_member_status_in=member&state_schools.is_archived_eq=false` | 200 | 91128 | research | 2026-09-22T03:55:39Z | 2 rows => terminal page |
@@ -170,4 +124,4 @@ Request pacing: never more than 1 request/second anywhere; PrestoSports hosts we
 | `wiaa-xc-state-2026.html` | `https://www.wiaa.com/events/2026-state-cross-country/` | 200 | 295213 | research | 2026-09-22T03:55:22Z |  |
 | `wpanetwork-xc.html` | `https://www.wpanetwork.com/wiaa/brackets/tournament.php` | 200 | 8215 | research | 2026-09-22T04:00:07Z | WPA Network bracket index (xajax); team brackets, not a timing provider |
 
-**Total: 105 capture files, 14,615,289 bytes.**
+**Total: 75 capture files, 14,156,081 bytes.**

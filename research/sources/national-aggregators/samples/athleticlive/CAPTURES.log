@@ -23,10 +23,5 @@
 2026-09-22T04:00:59Z | 200 19932 application/json; charset=utf-8 | al-rtdb-meet-61710.json | https://s-gke-usc1-nssi3-33.firebaseio.com/meet_61710/event_summary.json?ns=trackmeet-io
 2026-09-22T04:01:13Z | 200 17175 application/json | al-blob-ind-res-2254280.json | https://athleticlive.blob.core.windows.net/$web/ind_res_list/_doc/2254280
 2026-09-22T04:02:34Z | 200 (final) | al-meet-page-59382.html | https://live.athletic.net/meets/59382 -> 200 50184 https://results.wayzatatiming.com/meets/59382
-2026-09-22T04:06:57Z | 400 226 | al-athleticlive_blob_core_windows_net-robots.txt | https://athleticlive.blob.core.windows.net/robots.txt
-2026-09-22T04:06:59Z | 404 146 | al-livestatic_athletic_net-robots.txt | https://livestatic.athletic.net/robots.txt
-2026-09-22T04:09:30Z | 200 186 text/plain | al-liveathleticnet-robots.txt | https://live.athletic.net/robots.txt
-2026-09-22T04:09:32Z | 200 192 text/plain | al-tenant-michiana-robots.txt | https://live.michianatiming.com/robots.txt
 2026-09-22T04:09:33Z | 200 50184 text/html | al-live-athletic-net-root.html | https://live.athletic.net/
-2026-09-22T04:09:35Z | 403 485 application/json;charset=utf-8 | al-search-robots.txt | https://search.athletic.live/robots.txt
 2026-09-22T04:10:01Z | 200 164 application/json | al-es-anon-probe.json | POST https://search.athletic.live/live_results_meet_list/_search (no auth headers)

@@ -127,7 +127,7 @@ fn memory_regressions_fail_independently_for_each_budget() -> Result<()> {
     let mut old = measurement(Some(100.0), 1.0);
     old.peak_rss_kib = Some(12000);
     let mut current = old.clone();
-    current.peak_rss_kib = Some(14401);
+    current.peak_rss_kib = Some(13715);
     check!(gate_error(old, current)?.contains("peak RSS regression"));
     Ok(())
 }
@@ -138,8 +138,8 @@ fn peak_rss_jitter_floor_absorbs_remeasurement_noise() -> Result<()> {
         (11676, true),
         (12472, true),
         (12856, true),
-        (14011, true),
-        (14012, false),
+        (13344, true),
+        (13345, false),
     ] {
         let mut old = measurement(Some(100.0), 1.0);
         old.peak_rss_kib = Some(11676);
@@ -286,10 +286,10 @@ fn integer_memory_budget_preserves_exact_boundary_above_float_precision() -> Res
     let mut old = measurement(Some(100.0), 1.0);
     old.peak_rss_kib = Some(72_057_594_037_928_040);
     let mut current = old.clone();
-    current.peak_rss_kib = Some(86_469_112_845_513_648);
+    current.peak_rss_kib = Some(82_351_536_043_346_331);
     check_throughput(&baseline(old.clone()), &groups(current.clone()), 0.05)?;
     let mut beyond = old.clone();
-    beyond.peak_rss_kib = Some(86_469_112_845_513_649);
+    beyond.peak_rss_kib = Some(82_351_536_043_346_332);
     check!(gate_error(old, beyond)?.contains("peak RSS regression"));
     Ok(())
 }

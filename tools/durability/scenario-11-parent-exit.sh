@@ -348,6 +348,10 @@ for ITERATION in $(seq 1 300); do
         RESUMED_JOURNAL="$OBSERVED"
     fi
     if [ "$RESUME_TICKS" -ge 3 ] && [ "$ITERATION" -ge 50 ]; then
+        jq -e --arg id "$INVOCATION" \
+            'all(.rows[] | select(.id == $id); .completion_result != "failure")' \
+            "$WORK/invocations-resumed.json" >/dev/null \
+            || { echo "FAIL: the resumed invocation recorded a failure"; cat "$WORK/invocations-resumed.json"; exit 1; }
         echo "RESUME: durable progress on the restarted endpoint, journal $PRE_TRIGGER_JOURNAL -> $RESUMED_JOURNAL across $RESUME_TICKS growth observations"
         RESUME_PROVEN=true
         break

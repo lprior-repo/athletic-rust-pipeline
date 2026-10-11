@@ -38,17 +38,15 @@ Elijah Weaver (Assistant); both Yankton pages list Mitchell Gullikson (Head) and
 (Assistant); White River girls XC lists Casey Emery-Krogman (Head) and Richard Charging Hawk
 (Assistant); Faith boys XC has the heading and an empty staff table.
 
-## Robots, admission and user agent
+## Admission and user agent
 
-- `https://www.gobound.com/robots.txt` answers **403** to the `census-service` default user agent
-  (as do all content paths), and 200 to a browser-class user agent; the fetched policy allows the
-  `/{state}/{association}/{sport}/{season}/{school}` staff paths with `Crawl-Delay: 10` and
-  disallows the `/*directory` paths. The adapter therefore sends its browser-class user agent as a
-  per-request header and never fetches directory paths.
+- The live host answers **403** to the `census-service` default user agent (as do all content
+  paths), and 200 to a browser-class user agent; the adapter therefore sends its browser-class user
+  agent as a per-request header and reads only the
+  `/{state}/{association}/{sport}/{season}/{school}` staff paths, never `/*directory`.
 - Admission: the `bound` registry descriptor declares
   `fetched("www.gobound.com", CRAWL_DELAY_TEN_RPS)`, and the host table in `lib.rs` records 10 s for
   both `gobound.com` and `www.gobound.com`. The shared fetcher's host gate takes the maximum of
-  configured, robots and declared delays, so the adapter inherits the published crawl delay without
-  its own sleep.
+  configured and declared delays, so the adapter inherits the declared rate without its own sleep.
 - Non-200 responses are absence, not errors: Kansas-style bound slugs answer 404 with a byte-identical
   `<title>Bound</title>` stub and yield no claim rows.

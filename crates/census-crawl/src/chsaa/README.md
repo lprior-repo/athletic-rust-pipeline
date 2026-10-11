@@ -29,10 +29,7 @@ Adapter for the Colorado High School Activities Association, ported from the pro
 
 ## Registered scope
 
-Slug `chsaa`, host `chsaanow.com`, `TransportKind::Html`, 1 request/s, one in flight, robots
-respected. `robots.txt` allows `/` for `User-agent: *` and disallows only
-`/history/champions/individual/totals/repeat/`, `/history/champions/individual/totals/repeat/*` and
-`/preview/`; the one `Crawl-delay: 10` applies to PetalBot, not to the wildcard agent.
+Slug `chsaa`, host `chsaanow.com`, `TransportKind::Html`, 1 request/s, one in flight.
 
 ## Not stored
 

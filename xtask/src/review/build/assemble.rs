@@ -1,4 +1,4 @@
-use super::format::{s, u};
+use super::format::{count, number, s, u_opt};
 use super::model::{Curated, Facts};
 use serde_json::{json, Map, Value};
 
@@ -24,7 +24,7 @@ pub(super) fn assemble(
         "verdict": s(meta, "verdict"),
         "verdict_scope": s(meta, "verdict_scope"),
         "reviewer": reviewer,
-        "scope": scope(meta, facts, run_rel, u(matrix, "jurisdiction_count")),
+        "scope": scope(meta, facts, run_rel, u_opt(matrix, "jurisdiction_count")),
         "verification": verification(meta, facts),
         "known_denominators": Value::Object(denominators(meta, matrix, facts)),
         "missing_skills": meta.get("missing_skills").cloned().map_or(Value::Null, core::convert::identity),
@@ -44,7 +44,7 @@ fn denominators(meta: &Value, matrix: &Value, facts: &Facts) -> Map<String, Valu
     let mut denominators = Map::new();
     denominators.insert(
         "jurisdictions_scope".to_string(),
-        json!({"value": u(matrix, "jurisdiction_count"), "method": "UsJurisdiction::CENSUS_SCOPE"}),
+        json!({"value": count(matrix, "jurisdiction_count"), "method": "UsJurisdiction::CENSUS_SCOPE"}),
     );
     denominators.insert(
         "school_directory_generation".to_string(),
@@ -77,9 +77,9 @@ fn denominators(meta: &Value, matrix: &Value, facts: &Facts) -> Map<String, Valu
 fn source_matrix(matrix: &Value) -> Value {
     json!({
         "provenance": matrix.get("matrix_provenance").cloned().map_or(Value::Null, core::convert::identity),
-        "registered_families": u(matrix, "registered_families"),
-        "armed_families": u(matrix, "armed_families"),
-        "gap_families": u(matrix, "gap_families"),
+        "registered_families": count(matrix, "registered_families"),
+        "armed_families": count(matrix, "armed_families"),
+        "gap_families": count(matrix, "gap_families"),
         "arms_not_registered": matrix.get("arms_not_registered").cloned().map_or(Value::Null, core::convert::identity),
         "families": matrix.get("families").cloned().map_or(Value::Null, core::convert::identity)
     })
@@ -99,12 +99,12 @@ fn run_evidence(facts: &Facts) -> Value {
     })
 }
 
-fn scope(meta: &Value, facts: &Facts, run_rel: &str, jurisdiction_count: u64) -> Value {
+fn scope(meta: &Value, facts: &Facts, run_rel: &str, jurisdiction_count: Option<u64>) -> Value {
     json!({
-        "cohort": u(meta, "cohort"),
+        "cohort": count(meta, "cohort"),
         "season": s(meta, "season"),
-        "revision": u(meta, "revision"),
-        "jurisdictions": jurisdiction_count,
+        "revision": count(meta, "revision"),
+        "jurisdictions": number(jurisdiction_count),
         "surfaces": meta.get("surfaces").cloned().map_or(Value::Null, core::convert::identity),
         "as_of": facts.run_start.get("submit").cloned().map_or(Value::Null, Value::String),
         "run_identity": facts.submission.as_ref().and_then(|s| s.get("run_identity")).cloned().map_or(Value::Null, core::convert::identity),

@@ -93,11 +93,11 @@ recorded URL + HTTP status + bytes + `sha256` in
 | WA | `https://eds.ospi.k12.wa.us/DirectoryEDS.aspx` | HTML table (319 LEA rows, 299 contacts) | 571,249 B / `0d2c3d3fe7a7b27f773746ff63f2f22c010192de694d77a999b430be9cefcf2e` (SRC-143 `rows-meta.json`) | No — HTML only |
 | NV | `https://doe.nv.gov/school-and-district-information` → `https://webapp-strapi-paas-prod-nde-001.azurewebsites.net/uploads/school_directory_9b69a05740.xlsx` | XLSX, sheet `NDE Public School List SY26-27`, 782 rows, Name/City/State columns | landing 239,943 B / `9323cc914aef32edb1d113829fc0959a46addde2fd556646c5c9d35fb116888b`; xlsx 302,305 B / `4bd8907ff64225a70ed9e75b164d91769ca37cc83fd7ece272f18de68eb9adf2` (SRC-176 `manifest.json`) | No — convert XLSX→CSV; upload file name is hash-suffixed and rotates (resolve from the landing page) |
 | IN | `https://www.in.gov/doe/it/data-center-and-reports/` → `https://www.in.gov/doe/files/2025-2026-school-directory-2026-03-23.xlsx` | XLSX, sheets `SCHL` (1,962) / `NPSCHL` (420) / `CORP` (460); CITY/STATE/ZIP/PHONE/HOMEPAGE present | 447,924 B / `f750228cd81eecf99ce92b5aa7a3e014a7e4e2de68e2229163fdb6086e4221b0` (SRC-113 `rows-meta.json`); URL re-verified today (200, xlsx; CORP sheet spot-read) | No — convert XLSX→CSV; the file name carries a date stamp (rotates) |
-| IL | `https://www.isbe.net/Pages/Data-Analysis-Directories.aspx` → `https://www.isbe.net/Documents/2025-26-Directory-Ed-Entities.xlsx` (robots disallows `/_layouts/`, so use the `/Documents/` path) | XLSX, 7 entity sheets; FacilityName/City present, state fixed IL | 1,454,854 B / `75d14e57a40f164504c6a9a63d1a376708851cbe32b5e5331699bf52cf7fd6a7` (SRC-122 `rows-meta.json`, two identical URLs) | No — convert XLSX→CSV and inject the literal `STATE` column |
+| IL | `https://www.isbe.net/Pages/Data-Analysis-Directories.aspx` → `https://www.isbe.net/Documents/2025-26-Directory-Ed-Entities.xlsx` | XLSX, 7 entity sheets; FacilityName/City present, state fixed IL | 1,454,854 B / `75d14e57a40f164504c6a9a63d1a376708851cbe32b5e5331699bf52cf7fd6a7` (SRC-122 `rows-meta.json`, two identical URLs) | No — convert XLSX→CSV and inject the literal `STATE` column |
 | OH | `https://oeds.education.ohio.gov/DataExtract/GetRequestOrgExtract` (advertised from `https://oeds.education.ohio.gov/dataextract`) | **CSV** 28,536 rows, header on physical line 2; city embedded in `ORG MAILING ADDRESS` (`"<street>, <City>, Ohio, <ZIP>"`); columns `ORGANIZATION NAME`, `ORGANIZATION TYPE`, e-mail columns | 8,471,875 B / `360a3738fd4908994b63875995c6b302e68dd15959ae92b115f3891d9299c2fc` (SRC-101 `rows-meta.json`; a parameterless capture also returned HTTP 500 at 14,695 B) | **No, twice**: (a) 8,471,875 B > 8 MiB Page budget → `Capacity`; (b) no literal `NAME`/`CITY` headers → `the state education agency directory file has no NAME column`. Requires a derived, sharded CSV |
 | NY | `https://data.nysed.gov/` (index/profile pages, `?instid=`) — the reader's native shape; institutional directory also at `https://www.oms.nysed.gov/sedref/home.html` and `https://www.p12.nysed.gov/irs/schoolDirectory/` | HTML | SEDREF home 20,829 B / `2eedfed3ef3ed75e40628fab0f293d6d353bc116abf797a318bc69c2569402f5`; p12 school directory 15,419 B / `74475582fd4f9585ebc02ee6becd619e6eeb8bac7f4b3bea774664b9c77d2e77` (SRC-049 `manifest.json`); portal query app only 302s (`…/sedrefpublic/SED.sed_inst_qry_vw$.startup`) | Yes, via `--state-ed-index` + `--state-ed-profile` captures; no bulk CSV exists |
 | KS | `https://uapps.ksde.gov/directory_rpts/default.aspx` (hub in the source guide: `https://ksde.gov/data-and-reporting/directories`) | ASP.NET form; default view has 0 data rows; a POSTed "excel" report returned 4,852 B `text/html`, not a workbook | index 259,943 B / `6ac7f323ff56bfc640bf14acb111808e738fc3f335d43727ec87c66f58748fe8` (SRC-239 `manifest.json`) | No — interactive form; needs a posted report and its own capture contract |
-| PA | `https://www.edna.pa.gov/Screens/Extracts/wfExtracts.aspx` (+ `wfExtractEntitiesAdmin.aspx`, `wfExtractRelatedEntities.aspx`) | ASP.NET extract portal; robots 404 (default-permit under RFC 9309) | extracts landing 10,405 B / `21f9293bcd017a089cb015c957bb9de06421cec7ac9255b2acf7166ebd7d70dd`; entities page 47,434 B / `ebd8cae4ef26ccf72ce3b308d55a8d59288cee871a3d3ea3655c0694fef17f3d` (SRC-230 manifest) | No — posted extract; no static bulk file |
+| PA | `https://www.edna.pa.gov/Screens/Extracts/wfExtracts.aspx` (+ `wfExtractEntitiesAdmin.aspx`, `wfExtractRelatedEntities.aspx`) | ASP.NET extract portal | extracts landing 10,405 B / `21f9293bcd017a089cb015c957bb9de06421cec7ac9255b2acf7166ebd7d70dd`; entities page 47,434 B / `ebd8cae4ef26ccf72ce3b308d55a8d59288cee871a3d3ea3655c0694fef17f3d` (SRC-230 manifest) | No — posted extract; no static bulk file |
 
 **Finding.** None of the eight publishes a static UTF-8 CSV whose header is the literal
 `NAME,CITY,STATE` trio, so `--state-ed-tabular` cannot consume any of them *as downloaded*. Three
@@ -181,9 +181,7 @@ sha256sum "$D"/*.html > "$D/SHA256SUMS"
 * **state-ed tabular lanes cannot own identities** (§1.2). If owned state records are required, the
   NYSED index/profile path is the only admitted shape today; anything else needs a reader change,
   which must be bead-scoped rather than smuggled in as "just a CSV".
-* Served robots status (for the record only — policy ignored per owner directive, spacing retained):
-  NV/NDE 200 policy (SRC-176), IL `www.isbe.net` disallows `/_layouts/`, KS and PA robots 404
-  (default-permit). Keep ≥1s spacing and the identifying UA in every capture regardless.
+* Keep ≥1s spacing and the identifying UA in every capture.
 
 ---
 
@@ -197,5 +195,5 @@ sha256sum "$D"/*.html > "$D/SHA256SUMS"
   as HTML / XLSX / CSV-with-mismatch / form, and convert only where the trio can be produced.
 * Conversion commands in §3.2 are unexecuted here (no shell); they are the spec for the coder, not a
   verified run. Nothing was downloaded under `research/sources/state-ed/downloads/` in this session.
-* `crates/census-crawl/src/state_ed/README.md` is still the scaffold text (no real URLs/robots status
+* `crates/census-crawl/src/state_ed/README.md` is still the scaffold text (no real URLs
   recorded); that file is outside this report's ownership and was not edited.

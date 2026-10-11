@@ -51,16 +51,7 @@ pub(super) fn build_families(
         families.push(family_entry(entry, arms, strategies));
     }
 
-    let mut seen = IndexMap::new();
-    for f in families {
-        let slug = f
-            .get("slug")
-            .and_then(Value::as_str)
-            .map_or_else(|| "unknown".to_string(), |s| s.to_string());
-        seen.insert(slug, f);
-    }
-
-    let mut result: Vec<Value> = seen.into_values().collect();
+    let mut result = merge_families(families);
     result.sort_by(|a, b| {
         let sa = a
             .get("slug")
@@ -74,6 +65,32 @@ pub(super) fn build_families(
     });
 
     result
+}
+
+fn merge_families(families: Vec<Value>) -> Vec<Value> {
+    let mut seen: IndexMap<String, Value> = IndexMap::new();
+    for family in families {
+        let slug = family
+            .get("slug")
+            .and_then(Value::as_str)
+            .map_or_else(|| "unknown".to_string(), |s| s.to_string());
+        if let Some(existing) = seen.get_mut(&slug) {
+            merge_applicable(existing, &family);
+        } else {
+            seen.insert(slug, family);
+        }
+    }
+    seen.into_values().collect()
+}
+
+fn merge_applicable(existing: &mut Value, family: &Value) {
+    let mut names = applicable_names(existing);
+    names.extend(applicable_names(family));
+    names.sort();
+    names.dedup();
+    if let Value::Object(fields) = existing {
+        fields.insert("applicable".to_string(), json!(names));
+    }
 }
 
 fn family_entry(entry: &Value, arms: &Arms, strategies: &IndexMap<String, String>) -> Value {
@@ -152,4 +169,42 @@ fn determine_arms(slug: &str, arms: &Arms) -> Vec<String> {
         .filter(|(_, table)| table.iter().any(|(s, _)| s == slug))
         .map(|(name, _)| (*name).to_string())
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::merge_families;
+    use serde_json::{json, Value};
+
+    fn applicable(family: &Value) -> Option<&Value> {
+        family.get("applicable")
+    }
+
+    #[test]
+    fn duplicate_slugs_union_and_dedup_their_applicable_jurisdictions() {
+        let merged = merge_families(vec![
+            json!({"slug": "coaches", "applicable": ["AZ", "CA"], "strategy": "engineering_gap"}),
+            json!({"slug": "coaches", "applicable": ["CA", "OR"], "strategy": "engineering_gap"}),
+            json!({"slug": "results", "applicable": ["CA"], "strategy": "results"}),
+        ]);
+        assert_eq!(merged.len(), 2, "duplicate slugs collapse into one family");
+        let Some(coaches) = merged
+            .iter()
+            .find(|family| family.get("slug").and_then(Value::as_str) == Some("coaches"))
+        else {
+            return;
+        };
+        assert_eq!(
+            applicable(coaches),
+            Some(&json!(["AZ", "CA", "OR"])),
+            "duplicate slugs union their jurisdictions and drop repeats"
+        );
+        let Some(results) = merged
+            .iter()
+            .find(|family| family.get("slug").and_then(Value::as_str) == Some("results"))
+        else {
+            return;
+        };
+        assert_eq!(applicable(results), Some(&json!(["CA"])));
+    }
 }

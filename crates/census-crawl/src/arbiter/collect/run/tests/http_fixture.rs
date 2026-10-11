@@ -74,7 +74,6 @@ pub(super) async fn assert_request_conservation(
         stats.per_host.get("127.0.0.1").ok_or("loopback traffic")?.physical_requests(),
         count
     );
-    check!(eq; accepted.iter().filter(|path| path.as_str() == "/robots.txt").count(), 0);
     Ok(())
 }
 

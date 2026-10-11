@@ -13,7 +13,7 @@ mod storage;
 pub(super) use samples::latest_sample;
 
 use assemble::assemble;
-use format::{s, u};
+use format::{display, s, shown, tally};
 use input::{read_curated, read_facts};
 use render::render_md;
 use storage::{relative, write_json};
@@ -49,14 +49,10 @@ pub(super) fn run(dir: &Path, run_dir: &Path, reviewed_at: Option<&str>) -> Resu
     );
     println!(
         "families={} armed={} findings={} gates={} verdict={}",
-        u(source_matrix, "registered_families"),
-        u(source_matrix, "armed_families"),
-        doc.get("findings")
-            .and_then(serde_json::Value::as_array)
-            .map_or(0, Vec::len),
-        doc.get("gates")
-            .and_then(serde_json::Value::as_array)
-            .map_or(0, Vec::len),
+        display(source_matrix.get("registered_families")),
+        display(source_matrix.get("armed_families")),
+        shown(doc.get("findings").and_then(tally)),
+        shown(doc.get("gates").and_then(tally)),
         s(&doc, "verdict")
     );
     Ok(())

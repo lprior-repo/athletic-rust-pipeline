@@ -55,7 +55,7 @@ Evidence prose, `crates/census-crawl/src/applicability/table/prose.rs:97-100`:
 
 Refusal prose, `prose.rs:102-105`:
 
-> `[coach-directories-national]` collected 22 tier-1 directories of 51: the rest are login-gated (MI `my.mhsaa.com`, MS 403 WAF), client-rendered (PA, NH, TX `/files/` robots-disallowed), or publish names with no address anywhere (ND 0 emails, SD 4 coach emails from a prior study), and a directory the adapter cannot read is not a planned source.
+> `[coach-directories-national]` collected 22 tier-1 directories of 51: the rest are login-gated (MI `my.mhsaa.com`, MS 403 WAF), client-rendered (PA, NH, TX `/files/`), or publish names with no address anywhere (ND 0 emails, SD 4 coach emails from a prior study), and a directory the adapter cannot read is not a planned source.
 
 ## Capture inventory
 

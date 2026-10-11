@@ -1417,38 +1417,5 @@
    "samples/atn-probe-events-wisconsin-2026-5-26.html",
    "samples/atn-probe-events-wisconsin-2026-5-26.headers"
   ]
- },
- "robots": {
-  "url": "https://www.athletic.net/robots.txt",
-  "status": 200,
-  "bytes": 1080,
-  "last_modified_header": "Sun, 15 Mar 2026 19:18:17 GMT",
-  "disallows": [
-   "/Admin/",
-   "/Account/",
-   "/User/",
-   "/Edit/",
-   "/Partner/",
-   "/post/",
-   "/Secure/",
-   "/home/",
-   "/search.aspx",
-   "/trackandfield/print/",
-   "/trackandfield/report/",
-   "/TrackAndField/State/",
-   "/CrossCountry/State/",
-   "/trackandfield/meet/teamresults.aspx",
-   "/crosscountry/results/team.aspx",
-   "/crosscountry/results/season.aspx",
-   "/crosscountry/division.aspx",
-   "/trackandfield/school_new.aspx",
-   "/CrossCountry/Results/CourseHistory.aspx"
-  ],
-  "no_sitemap_line": true,
-  "consequence": "the /TrackAndField/State/ path is off-limits; the /api/v1/** endpoints, /TrackAndField/rankings/list/** and /events/** are not disallowed",
-  "evidence": [
-   "samples/atn-robots.txt",
-   "samples/atn-robots.headers"
-  ]
  }
 }

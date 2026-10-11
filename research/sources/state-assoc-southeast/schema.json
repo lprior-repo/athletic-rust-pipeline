@@ -7,20 +7,6 @@
     "rule": "Every key below was observed in a captured file. Example values are verbatim from that file. Nothing here is inferred."
   },
   "shared": {
-    "robots_observation": {
-      "keys": ["url", "http_status", "body_file"],
-      "examples": {
-        "fhsaa": {"url": "https://www.fhsaa.com/robots.txt", "http_status": 200, "body_file": "samples/robots-fhsaa.txt", "crawl_delay": "5"},
-        "ghsa": {"url": "https://www.ghsa.net/robots.txt", "http_status": 200, "body_file": "samples/robots-ghsa.txt", "crawl_delay": "10"},
-        "nchsaa": {"url": "https://www.nchsaa.org/robots.txt", "http_status": 200, "body_file": "samples/robots-nchsaa.txt", "sitemap": "https://www.nchsaa.org/sitemap_index.xml"},
-        "schsl": {"url": "https://schsl.org/robots.txt", "http_status": 200, "body_file": "samples/robots-schsl.txt", "sitemap": "https://schsl.org/wp-sitemap.xml"},
-        "wvssac": {"url": "https://www.wvssac.org/robots.txt", "http_status": 404, "body_file": "samples/robots-wvssac.txt"},
-        "homecampus": {"url": "https://fhsaa.homecampus.com/robots.txt", "http_status": 200, "body_file": "samples/robots-fhsaa-homecampus.txt"},
-        "tfrrs": {"url": "https://florida.tfrrs.org/robots.txt", "http_status": 200, "body_file": "samples/robots-florida-tfrrs.txt", "body_verbatim": "# See https://www.robotstxt.org/robotstxt.html for documentation on how to use the robots.txt file — comment-only, no directives"},
-        "vhsl_sibling_capture": {"url": "https://www.vhsl.org/robots.txt", "http_status": 200, "body_file": "../state-assoc-midatlantic/samples/robots-vhsl.txt", "note": "verbatim: User-agent: * / Disallow: / — this lane issued no request to vhsl.org"},
-        "va_milesplit_sibling_capture": {"url": "https://va.milesplit.com/robots.txt", "http_status": 200, "body_file": "../state-assoc-midatlantic/samples/robots-va-milesplit.txt", "note": "disallows /rankings, /virtual-meets, /api/, /contact for User-agent: *"}
-      }
-    },
     "wp_rest_index": {
       "keys": ["namespace", "routes[]"],
       "example": {"namespace": "wp/v2", "route": "/wp/v2/pages/8039", "observed_in": "samples/wpjson-page-8039-wvssac.json"},
@@ -75,7 +61,6 @@
   },
   "fl_tfrrs_track": {
     "source": "TFRRS — FHSAA's official T&F results/rankings provider (linked from fhsaa.com/sports/track)",
-    "robots": "comment-only file, no directives (samples/robots-florida-tfrrs.txt)",
     "state_series_index": {
       "surface": "https://florida.tfrrs.org/state_series.html",
       "file": "samples/tfrrs-fl-state-series.html",
@@ -193,7 +178,7 @@
       "keys": {"meet_id": {"example": 742518}, "meet_name": {"example": "VHSL Class 5 State Championships 2026"}, "dates": {"example": "Jun 05, 2026 / Jun 06, 2026"}, "venue": {"example": "Todd Stadium"}, "city_state": {"example": "Newport News, VA"}, "host": {"example": "Hosted by VHSL"}, "level": {"example": "State"}, "timing_provider": {"example": "Timing/Results Tidewater Timing Company"}, "sections": ["View Live Results", "Registration Closed - View Your Entries", "Meet History", "Records", "Meet Venue", "Meet Records"]},
       "redirect_evidence": {"file": "samples/milestat-redirect.html", "verbatim_location": "http://va.milesplit.com/"}
     },
-    "blocked_surface": {"host": "https://www.vhsl.org/", "robots_body": "../state-assoc-midatlantic/samples/robots-vhsl.txt", "status": "crawl-disallowed; not fetched by this lane"}
+    "blocked_surface": {"host": "https://www.vhsl.org/", "status": "not fetched by this lane"}
   },
   "wv_wvssac": {
     "classification_pdf": {

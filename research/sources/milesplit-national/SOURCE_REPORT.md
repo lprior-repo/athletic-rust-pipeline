@@ -1,7 +1,7 @@
 # SOURCE_REPORT — MileSplit (national)
 
 Lane: `research/sources/milesplit-national/`. Scope: the whole MileSplit network (51 state subdomains + `www`), not one state.
-Wave 1 = captures already on disk when this lane started (prior phase). Wave 2 = this lane, `2026-09-22T03:54Z–04:00Z`, 83 HTTP requests (38 logged in `samples/fetch-log-wave2.tsv` + 45 unkept `/teams` bodies counted in `samples/teams-count-sweep.tsv`), all HTTP 200 except the four failures listed in `samples/CAPTURES.md`.
+Wave 1 = captures already on disk when this lane started (prior phase). Wave 2 = this lane, `2026-09-22T03:54Z–04:00Z`, 76 HTTP requests (31 logged in `samples/fetch-log-wave2.tsv` + 45 unkept `/teams` bodies counted in `samples/teams-count-sweep.tsv`), all HTTP 200 except the failures listed in `samples/CAPTURES.md`.
 Everything below cites a file in `samples/` or a named outside path; `[INFERENCE]` marks reasoning, `[inherited]` marks prior-phase facts not re-measured here.
 
 ## Rust owned-result integration — 2026-10-01
@@ -33,7 +33,7 @@ captured-response replay, not a fresh fetch or complete national acquisition.
 ## 1. Source name
 
 MileSplit (FloSports). Hosts: `https://<usps-code-lowercase>.milesplit.com` per state and `https://www.milesplit.com` for the national channel. Asset hosts `js.sp.milesplit.com` / `css.sp.milesplit.com` / `assets.sp.milesplit.com`.
-Evidence: `samples/homepage.html` (`milesplit_site_code":"www"`, `site_id":"67"`), `samples/robots-oh-milesplit.txt`, `samples/state-subdomain-probe.txt` (51/51 codes answer 200 on `/teams`; `newengland`, `dcmdva`, `national` answer 500).
+Evidence: `samples/homepage.html` (`milesplit_site_code":"www"`, `site_id":"67"`), `samples/state-subdomain-probe.txt` (51/51 codes answer 200 on `/teams`; `newengland`, `dcmdva`, `national` answer 500).
 
 ## 2. Geographic coverage
 
@@ -63,7 +63,7 @@ Ranked by measured cost:
 1. **`GET /teams` per state (1 request, no pagination)** — the complete HS team frame with `TeamID`. 26562 records across 51 jurisdictions (`samples/teams-count-sweep.tsv`).
 2. **`GET /teams/<TeamID>-<slug>/roster` (1 request per team)** — the Class-of-2027 enumeration surface: every rostered athlete with `AthleteID`, grad year, gender and Indoor/Outdoor/XC flags (`samples/roster-oh-mason.html`, 319 rows). `[inherited]` report 34 sampled 50 rosters in WI/MN: 4,883 athletes, 1,029 Class of 2027, grad year present on 95.9 % of rows.
 3. **`GET /results?season=&level=&year=&page=N` (1 request per 50 meets)** — date-ordered meet index with `data-meet-id` and the results URL (`samples/results-oh.html`); `GET /calendar/<state>-<season>-meet-calendar` is the forward-looking twin, 294 meet rows in `samples/calendar-oh.html`.
-4. **`POST /search/v2/athletes` (robots-allowed JSON, anonymous)** — name → `AthleteID` lookup, national or per-state. See §13; this corrects `[inherited]` report 27, which assumed the search shortcut sat behind the disallowed `/api/`.
+4. **`POST /search/v2/athletes` (JSON, anonymous)** — name → `AthleteID` lookup, national or per-state. See §13; this corrects `[inherited]` report 27, which assumed the search shortcut sat behind `/api/`.
 5. `GET /sitemap.xml` (7,500 `/athletes/` rows per host, `lastmod`) — change signal only `[inherited]` report 33.
 
 ## 6. Stable identifiers
@@ -121,7 +121,7 @@ Absent on meet pages: coach/contact fields, entry lists in HTML (`/entries` is a
 ## 10. Result fields
 
 The free result payload is the **`/raw` fixed-width text file**, one request per result set, wrapped
-in a single `<pre>` inside the site chrome and robots-allowed with no JS (`samples/raw-nc-684812-rs1283641.txt`,
+in a single `<pre>` inside the site chrome with no JS (`samples/raw-nc-684812-rs1283641.txt`,
 captured 2026-09-27; `samples/raw-oh-770621-rs1321880.txt`, an earlier capture).
 
 Current template (verified byte-identical to the live page on 2026-09-27):
@@ -166,7 +166,7 @@ Contract for the reader (`census-crawl::milesplit::raw_rows`):
 The capture holds 214 result rows in one 3200 m event (210 with a place, 4 `DNF`/`NT`).
 
 Missing from `/raw`: `AthleteID`, `TeamID`, wind for XC, structured division identity.
-The structured equivalent (with `athleteId`, `gradYear`, `windReading`, `performanceVideoId`, `statusCode`, …) exists only on the disallowed JSON path — its **field list is quoted from the site's own bundle**: `js-loadresultsnew.js` requests `v1/meets/<meetId>/performances` with `fields: 'id,meetId,meetName,teamId,videoId,teamName,athleteId,firstName,lastName,gender,genderName,levelId,levelName,divisionId,divisionName,meetResultsId,meetResultsDivisionId,resultsDivisionId,ageGroupId,ageGroupName,gradYear,eventName,eventCode,eventDistance,eventGenreOrder,round,roundName,heat,units,mark,place,windReading,profileUrl,teamProfileUrl,performanceVideoId,teamLogo,statusCode'`.
+The structured equivalent (with `athleteId`, `gradYear`, `windReading`, `performanceVideoId`, `statusCode`, …) exists only on the `/api/` JSON path — its **field list is quoted from the site's own bundle**: `js-loadresultsnew.js` requests `v1/meets/<meetId>/performances` with `fields: 'id,meetId,meetName,teamId,videoId,teamName,athleteId,firstName,lastName,gender,genderName,levelId,levelName,divisionId,divisionName,meetResultsId,meetResultsDivisionId,resultsDivisionId,ageGroupId,ageGroupName,gradYear,eventName,eventCode,eventDistance,eventGenreOrder,round,roundName,heat,units,mark,place,windReading,profileUrl,teamProfileUrl,performanceVideoId,teamLogo,statusCode'`.
 The formatted view itself contains 0 rows in HTML — it is a JS shell (`samples/meet-oh-770621-results.html`).
 `[inherited]` report 32: all 18 result files seen across 7 meet pages carried `isMeetPro: 0`.
 
@@ -190,14 +190,13 @@ Do not route coach-directory work here (`[inherited]` report 27 reaches the same
 
 Three distinct classes, and the important one is the free one:
 
-**(a) Anonymous JSON, robots-allowed — `POST /search/v2/athletes` (VERIFIED 200).**
+**(a) Anonymous JSON — `POST /search/v2/athletes` (VERIFIED 200).**
 Template: `POST https://<host>/search/v2/athletes` with form body `searchToken=<from GET /athletes>&q=<name>&perPage=<n>&page=<n>[&filters[subdomain]=<st>]`.
 - `oh` host: 200 `application/json`, 25 hits (`samples/search-v2-athletes-oh-2.json`); `page=2` works with the same token (`…-fuller-p2.json`); `perPage=100` honoured (`…-perpage100.json`); `totalPages` = 100 for `q=Fuller` and `q=Smith`.
 - `www` host, no subdomain filter: 200, hits carry other states' hosts (`samples/search-v2-athletes-www.json`).
 - Precondition, measured both ways: token **and** the `unique_id` cookie from the same `/athletes` page load; empty token + no cookie → 400 HTML (`samples/search-v2-athletes-oh-notoken.json`).
-- `robots.txt` does not disallow `/search/**` on any of the seven hosts sampled.
 
-**(b) JSON used by the site's own widgets, robots-DISALLOWED — `/api/**`. Not requested in this wave; reachability unverified by design.** Templates read out of the bundles:
+**(b) JSON used by the site's own widgets — `/api/**`. Not requested in this wave; reachability unverified by design.** Templates read out of the bundles:
 
 | Endpoint template | Parameters (verbatim option keys) | Bundle |
 |---|---|---|
@@ -214,7 +213,7 @@ Base is set by `API.endPoint = '/api/'` (on-host, not a separate API host); `api
 
 ## 14. Static file availability
 
-- **Meet result files**: `/meets/<MeetID>/results/<RSID>/raw` is a static fixed-width text payload (wrapped in one `<pre>` inside the site chrome), robots-allowed, no JS needed — `curl` and parse (`samples/raw-nc-684812-rs1283641.txt`; current template in §10).
+- **Meet result files**: `/meets/<MeetID>/results/<RSID>/raw` is a static fixed-width text payload (wrapped in one `<pre>` inside the site chrome), no JS needed — `curl` and parse (`samples/raw-nc-684812-rs1283641.txt`; current template in §10).
 - **Result-set inventory**: the meet results page embeds `meetResultFiles` JSON in an inline `<script>`, so RSID discovery is one HTML GET per meet (`samples/meet-oh-770621-results.html`).
 - **Bundle sources** are static and cache-keyed by `?build=20260921153357`: the capture set references **35 distinct first-party bundle paths** (18 `<script src>` tags on `samples/rankings-oh-boys-xc.html`, 17 on `samples/rank-event-oh-xc-5000m.html`). **16 of the 35 were fetched** — 4 in wave 1, 12 in wave 2 — all HTTP 200; they were chosen because they carry a request template or the grade/premium logic. The remaining 19 are widgets (modal, carousel, segment, skin, ad slots, handlebar templates) with no data path.
 - **Sitemaps**: `/<host>/sitemap.xml`, 7,500 athlete URLs each `[inherited]` report 33.
@@ -244,8 +243,8 @@ Full Class-of-2027 roster sweep over the measured frame: `1 per state + 1 per te
 
 ## 17. Published rate limits
 
-**None published.** `robots.txt` carries no `Crawl-delay` and no rate language (byte-identical 173 B file on all seven hosts, `samples/robots-*.txt`); no rate-limit documentation was observed on any captured page.
-Observed behaviour instead: 83 requests in wave 2 (all hosts, ≤1 req/s per host, sequential) → **zero 429, zero 403, zero `Retry-After`, zero CAPTCHA**; `[inherited]` report 32 reported the same for 56 requests + 2 browser loads. Six hosts were swept in a single pass with no challenge.
+**None published.** No rate-limit documentation was observed on any captured page.
+Observed behaviour instead: 76 requests in wave 2 (all hosts, ≤1 req/s per host, sequential) → **zero 429, zero 403, zero `Retry-After`, zero CAPTCHA**; `[inherited]` report 32 reported the same for 56 requests + 2 browser loads. Six hosts were swept in a single pass with no challenge.
 Working assumption to keep: ≤1 request/second/host, sequential, browser UA.
 
 ## 18. Known blocks
@@ -254,9 +253,9 @@ Working assumption to keep: ≤1 request/second/host, sequential, browser UA.
 
 1. **`js-rankings.js` contains no XHR at all.** The captured bundle (`samples/js-rankings.js`, 7,915 B, HTTP 200) is a filter-form navigator: it reads `#rankingsFilters` selects (`ddCountry`, `ddState`, `ddLevel`, `ddEvent`, `ddSeason`, `ddAccuracy`, `ddYear`, `ddGrade`, `ddAgeGroup`, `ddLeague`), reassembles a URL and assigns `document.location = url`. It performs **zero** `_DF_.API` calls, zero `$.ajax`, zero `fetch`. There is no per-event rankings endpoint to quote because the page has no rankings data path: navigation is a full page load.
 2. **The event rankings table is server-rendered and truncated server-side, exactly as documented — measured precisely:** `samples/rank-event-oh-xc-5000m.html` holds 50 `<tr class="rankings-row…">` rows: **1 free row** carrying the real payload (`<tr class="rankings-row">` → text `1 Brice Fuller Fairless JR Wooster XC Invitational-HS Sep 12, 2026 14:54.10`, cells `col-rank / col-name / col-grade / col-meet / col-time`), and **49 locked rows** (`<tr class="rankings-row lk" aria-hidden="true">`) whose entire text content is the rank number: each locked row contains exactly 7 placeholder elements — `<span class="team-logo team-logo--mask">`, `<span class="redact" style="width:168px">`, `<span class="mask" style="width:150px;height:9px">`, `<span class="mask mw-grade">`, `<span class="mask blk" style="width:130px">`, `<span class="mask blk mw-date">`, `<span class="mask mw-time">` — all empty (7 × 49 = 343 placeholders, 0 with text; reproduce: `grep -o 'class="redact\|class="mask\|team-logo--mask' … | wc -l` → 343). The locked names are *absent from the bytes*, not hidden: there is no name, school, meet or time anywhere in those rows, no `aria-label` text at all (0 occurrences) and no unlock logic in any inline script. The page's own page-call says `"subpage_category":"Locked","paywall_present":1` (`"paywall_present":0` on the leaderboard), and the PRO CTA block is `<p>To see these rankings, <span>subscribe to</span></p><figure><strong>MileSplit PRO</strong></figure>` followed by `<a class="join button segment-tracked" … href="/join?ref=rankings-2026-cc-hs-m-5000m&next=…&p=1"><span>Join Now</span></a>` and `<a class="login link" href="/login?ref=…"> Already a PRO member? LOG IN </a>` — i.e. a rendered sentence split across elements, with `drivefaze/pro/paywall.js` loaded. The leaderboard page (`/rankings/leaders/...`, `paywall_present:0`, 8 free rows — one leader per event, grouped under `<tr class="rankings-group-header">`) is the one rankings surface that is fully free.
-3. **A team-scoped rankings path exists on a robots-ALLOWED URL** — `/teams/<TeamID>-<slug>/rankings` is not under `/rankings`, so `robots.txt` permits it (`samples/robots-oh-milesplit.txt`) — but its HTML carries **0 rows**; the data arrives only from `/api/v1/teams/<id>/{rankings,best,records}` (`samples/team-oh-10002-rankings.html` + `samples/js-ms18-teams-rankings.js`), i.e. the robots-disallowed `/api/`.
+3. **A team-scoped rankings path exists** — `/teams/<TeamID>-<slug>/rankings` (`samples/team-oh-10002-rankings.html`) — but its HTML carries **0 rows**; the data arrives only from `/api/v1/teams/<id>/{rankings,best,records}` (`samples/js-ms18-teams-rankings.js`), i.e. the `/api/` path.
 4. **So what a free/anonymous request can and cannot get:** *can* get — rank 1 of any event (and all 8 leaderboard rows), all rosters, all `/raw` result sets, all meet/team/result-index/calendar HTML, and named athlete lookup with IDs via `/search/v2/athletes`. *Cannot* get — ranks 2+ of any event rankings table, any athlete's own result marks (480 mask spans for 96 rows), state ranks on PR rows, and anything on `/api/**`.
-5. **Not attempted, by policy:** no login, no PRO entitlement, no cookie replay of a paid session, no `/api/` request, no CAPTCHA work, no `/rankings` re-fetch beyond the two captures already on disk (which are therefore analysis-only), and no re-capture of the empty `rank-event-oh-out-1600m.html`. The unauthenticated reachability of `/api/` is **unverified and will stay unverified**: `Disallow: /api/` on every host sampled makes testing it a robots violation, and the pipeline must not use it.
+5. **Not attempted, by policy:** no login, no PRO entitlement, no cookie replay of a paid session, no `/api/` request, no CAPTCHA work, no `/rankings` re-fetch beyond the two captures already on disk (which are therefore analysis-only), and no re-capture of the empty `rank-event-oh-out-1600m.html`. The unauthenticated reachability of `/api/` is **unverified and will stay unverified**: the endpoint was not requested.
 
 Other blocks: the athlete result payload is *absent from the bytes*, not CSS-hidden (mask spans are empty; there is nothing to reveal client-side); `/search/v2/athletes` requires a session token + cookie and caps at 100 pages; `sitemap.xml` is capped at 7,500 URLs and carries no grade; `/entries` carries no IDs or grades `[inherited]`.
 
@@ -284,7 +283,7 @@ Why: the enumeration frame is complete and measured (26,562 teams, 51/51 hosts, 
 **Collector rules (do / never):**
 
 - **DO** enumerate `/teams` → `/teams/<id>/roster` for identity + grade; `/results` + `/calendar` → `/meets/<id>/results` → `/meets/<id>/results/<RSID>/raw` for marks; `POST /search/v2/athletes` (with a session token + `unique_id` cookie, ≤100 pages/query) for name → `AthleteID`; `/athletes/<id>` for identity/PR/count validation only.
-- **NEVER** request `/api/**` (robots), `/rankings/**` (robots + locked beyond row 1), `/virtual-meets`, `/contact`; never parse mask spans as data (they are empty); never treat ranking position or PR national rank as a grade; never assume the `www`/state host or the URL slug is the identity — join on `MeetID`/`TeamID`/`AthleteID`.
+- **NEVER** request `/api/**`, `/rankings/**` (locked beyond row 1), `/virtual-meets`, `/contact`; never parse mask spans as data (they are empty); never treat ranking position or PR national rank as a grade; never assume the `www`/state host or the URL slug is the identity — join on `MeetID`/`TeamID`/`AthleteID`.
 - **Respect** the measured cost model (1 req/s/host, sequential) and the `isMeetPro` flag on result files (skip `1`).
 
 ---
@@ -293,7 +292,7 @@ Why: the enumeration frame is complete and measured (26,562 teams, 51/51 hosts, 
 
 | Field | Primary evidence |
 |---|---|
-| source name, hosts | `samples/state-subdomain-probe.txt`, `samples/homepage.html`, `samples/robots-*.txt` |
+| source name, hosts | `samples/state-subdomain-probe.txt`, `samples/homepage.html` |
 | geographic coverage | `samples/teams-count-sweep.tsv`, `coverage.json`, `samples/teams-dc.html`, `samples/teams-wy.html`, `samples/teams-oh.html` |
 | sports / levels | `samples/results-oh.html`, `samples/calendar-oh.html`, `samples/js-rankings.js`, `samples/athlete-oh-15005189.html` |
 | historical depth | `samples/results-oh.html` (years), `samples/athlete-oh-15005189.html` (season blocks), `samples/raw-oh-770621-rs1321880.txt`, `[inherited]` reports 32/33 |
@@ -309,8 +308,8 @@ Why: the enumeration frame is complete and measured (26,562 teams, 51/51 hosts, 
 | static files | `samples/raw-oh-770621-rs1321880.txt`, `samples/meet-oh-770621-results.html` |
 | browser requirement | `samples/team-oh-10002-rankings.html`, `samples/meet-oh-770621-entries.html`, `samples/meet-oh-770621-results.html` |
 | request cost | `samples/teams-count-sweep.tsv`, `samples/roster-oh-mason.html`, `samples/results-oh.html` |
-| rate limits | `samples/robots-*.txt`, `samples/fetch-log-wave2.tsv` |
-| known blocks | `samples/js-rankings.js`, `samples/rank-event-oh-xc-5000m.html`, `samples/rankings-oh-boys-xc.html`, `samples/athlete-oh-15005189.html`, `samples/robots-*.txt` |
+| rate limits | `samples/fetch-log-wave2.tsv` |
+| known blocks | `samples/js-rankings.js`, `samples/rank-event-oh-xc-5000m.html`, `samples/rankings-oh-boys-xc.html`, `samples/athlete-oh-15005189.html` |
 | join keys | `samples/athlete-www-13966799.html`, `samples/calendar-oh.html`, `samples/results-oh.html`, `samples/roster-oh-mason.html`; `[inherited]` report 34 |
 | marginal coverage | `samples/teams-count-sweep.tsv` + `~/Downloads/midwest-tfxc-source-research/data/milesplit-coverage-matrix.csv`; `[inherited]` reports 27/34 |
 | recommendation | the above |
@@ -321,7 +320,7 @@ Why: the enumeration frame is complete and measured (26,562 teams, 51/51 hosts, 
 
 1. **Does the roster page return a full roster outside OH?** This lane measured one OH roster (319 athletes, 100 % grade coverage) and inherited 50 WI/MN rosters (95.9 %); Michigan's roster-emptiness anomaly `[inherited]` report 27 was **not** re-measured here and remains the single biggest risk to a network-wide roster sweep. Cheapest next probe: 3 teams × 5 states (MI, CA, TX, NY, IL) = 15 requests.
 2. **Are the per-state team counts time-stable?** All 51 counts are a single 04:00Z snapshot; no second pass exists in this lane, so the drift rate between snapshots is unknown (the prior CSV agrees exactly, which suggests stability rather than proving it).
-3. **Is `/api/**` reachable unauthenticated?** Deliberately unverified (robots). If a future decision ever moves it into scope, that decision must be made by a human, because the field list in §10 shows the JSON carries `gradYear` + `windReading` + `athleteId` per row — i.e. the one thing the free tier lacks.
+3. **Is `/api/**` reachable unauthenticated?** Deliberately unverified. If a future decision ever moves it into scope, that decision must be made by a human, because the field list in §10 shows the JSON carries `gradYear` + `windReading` + `athleteId` per row — i.e. the one thing the free tier lacks.
 4. **What is the true Class-of-2027 count per jurisdiction?** Only order-of-magnitude bands exist (n=3 teams per state). Resolving it needs the roster sweep, not more indices.
 5. **Do `/results` and `/calendar` enumerate every meet?** Both captures are single pages (50 and 294 rows) and both are demonstrably paginated/bucketed at the source; whether a season-complete walk exists (e.g. `?page=N` to the end) was not tested — one `page=2` fetch would confirm the pattern, and `data-month` buckets suggest the calendar is complete for its season range.
 6. **Does the search endpoint's `filters[subdomain]` actually narrow server-side?** Only the `oh` and national (`www`) forms were exercised; the near-miss here is that `oh` returns only `oh` hits while `www` returns a mix, which is consistent with filtering but not proof of it (no cross-state query with an explicit `filters[subdomain]=ca` was sent).

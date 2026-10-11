@@ -1,7 +1,7 @@
 {
   "lane": "milesplit-cohort-enumerability",
   "question": "Can MileSplit supply Class-of-2027 athlete identities without Athletic.net?",
-  "verdict": "YES — the roster path (/teams then /teams/<id>/roster) is robots-allowed on every host, HTML-only, carries a grad-year cell on every athlete row of a populated roster, needs no login or paywall, and enumerates a state's whole team universe with one request for the index",
+  "verdict": "YES — the roster path (/teams then /teams/<id>/roster) is HTML-only, carries a grad-year cell on every athlete row of a populated roster, needs no login or paywall, and enumerates a state's whole team universe with one request for the index",
   "recommendation": "PRIMARY for class-of-2027 identity, grade and school attribution; RESULT_SOURCE (/raw result files) and DISCOVERY_SOURCE (/teams, /results, /calendar, /search/v2/athletes) as declared secondary roles",
   "observed_on": "2026-09-22",
   "evidence_kinds": {
@@ -37,15 +37,8 @@
       "full_13_state_midwest": 7258,
       "wall_clock_at_1_rps": "≈2 hours"
     },
-    "meet_result_path": "blocked as a grade source — /raw is HTML-wrapped, the Yr column is present only when the timer's file carried it, and profileUrl (the athlete-ID join) exists only on the robots-disallowed /api/ endpoint",
+    "meet_result_path": "blocked as a grade source — /raw is HTML-wrapped, the Yr column is present only when the timer's file carried it, and profileUrl (the athlete-ID join) exists only on the /api/ endpoint",
     "athlete_profile_path": "1 request per athlete — validation only, not enumeration"
-  },
-  "robots": {
-    "bytes": 173,
-    "identical_across_hosts": true,
-    "disallowed": ["/rankings", "/virtual-meets", "/api/", "/contact"],
-    "allowed_used_here": ["/teams", "/teams/<id>/roster", "/athletes/<id>", "/meets/<id>", "/meets/<id>/results", "/results", "/search/v2/athletes", "/sitemap.xml"],
-    "crawl_delay": null
   },
   "rates_observed": {
     "requests": "30+ across 7 hosts at <=1 request/second, sequential, browser user agent",

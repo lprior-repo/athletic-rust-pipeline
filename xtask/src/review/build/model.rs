@@ -32,7 +32,7 @@ pub(super) struct Facts {
     pub(super) run_start: BTreeMap<String, String>,
     pub(super) binaries: Map<String, Value>,
     pub(super) submission: Option<Value>,
-    pub(super) deployment_services: u64,
+    pub(super) deployment_services: Value,
     pub(super) generation: Generation,
     pub(super) frame: Value,
     pub(super) sample: Option<Value>,

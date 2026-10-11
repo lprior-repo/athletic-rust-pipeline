@@ -1,8 +1,7 @@
 # `nces` captures
 
 Both files are byte-exact windows cut from artifacts NCES published; nothing here is reformatted,
-prettified or re-serialized. Neither reader makes a request, so no robots verdict applies to these
-captures.
+prettified or re-serialized. Neither reader makes a request.
 
 |Fixture|Window|Digests|
 |---|---|---|

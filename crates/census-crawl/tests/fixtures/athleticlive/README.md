@@ -12,15 +12,14 @@ From the repository root (relative `captures` paths are opened against the CWD):
 
     bash crates/census-crawl/tests/fixtures/athleticlive/capture.sh
 
-14 requests (15 if the POST listing is refused and the GET fallback runs),
+10 requests (11 if the POST listing is refused and the GET fallback runs),
 sequential, >=2 s apart, no crawling, no retries. The script refuses to
 overwrite an existing capture set unless passed `--overwrite`. It writes the
 bodies, the metas, `captures.log` (JSONL), `PROVENANCE.json`, the derived harvest
 CSV and the derived replay manifest, then prints the request tally and a
 `sha256sum` line per file.
 
-`robots.txt` is captured for provenance only: this pipeline no longer gates on
-robots admission (owner directive 2026-10-10). The engineered rate limits
+The engineered rate limits
 (sequential requests, >=2 s spacing, bounded page sizes) stay in force.
 
 ## Inventory
@@ -38,7 +37,6 @@ robots admission (owner directive 2026-10-10). The engineered rate limits
 | `athlete-list-meet-55746.json` | response | athlete seed discovery for the fixture meet |
 | `harvest-wi-mn-2025.csv` | derived | published-meet CSV shape parsed by `athleticlive::parse_meets_csv` |
 | `manifest-meet-55746.json` | derived | `athleticlive_results --input` |
-| `robots-*.txt` | response | provenance only |
 | `<file>.meta.json` | derived | per capture: url, method, status, bytes, `content_digest`, `fetched_at`, `content_type`, plus the evidence aliases `sha256` / `fetched_at_utc` / `time_seconds` |
 | `captures.log` | derived | JSONL ledger: one row per request plus `derived:true` rows |
 | `PROVENANCE.json` | derived | the ledger plus the generator command |
@@ -155,6 +153,3 @@ summary, all six event documents and the first athlete page.
   `sha256sum` per file. `fetch` timestamps are the only run-dependent values.
 - Live responses churn (`ua`, counts, page order), so a re-capture is a new
   evidence set, not a byte-identical replay; the metas pin what was read when.
-- `search.athletic.live` serves no robots policy (403 ES error body) and the
-  blob/RTDB roots publish none; the captured `robots-*.txt` files record that as
-  bytes, and admission no longer depends on them.

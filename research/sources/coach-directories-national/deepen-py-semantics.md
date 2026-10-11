@@ -13,7 +13,7 @@ with its executed evidence in `docs/VERIFICATION-EVIDENCE.md`).
 | Input rows | `out/schools.jsonl` (stage one), filtered by `--state` (upper-cased) |
 | URL selection | every non-empty value of `--url-field` (comma-separated fields), de-duplicated in first-seen order; `--urls-file` and `--only-urls` bypass the table; `--limit` truncates after de-duplication |
 | Join | per URL, `{name, association_id, state}` taken from the stage-one row that named it |
-| Fetch | `Fetcher` (pacing, robots, cache); `--xhr` adds `X-Requested-With: XMLHttpRequest`, `--refresh` bypasses the cache, `--offline` is cache-only |
+| Fetch | `Fetcher` (pacing, cache); `--xhr` adds `X-Requested-With: XMLHttpRequest`, `--refresh` bypasses the cache, `--offline` is cache-only |
 | Concurrency | `ThreadPoolExecutor(max_workers=args.workers)`, default 8, preserving result order |
 | Per-URL record | `{url, status, bytes, join, schools, coaches}` on success |
 | Failure records | `{url, status: HTTP code or exception class name, error: str(error)[:200]}`; an empty body is `status: "empty"`; a parser exception is `status: "parse-failed"` with `"ClassName: message"[:200]` |

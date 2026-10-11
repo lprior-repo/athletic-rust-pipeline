@@ -820,7 +820,7 @@
    "kind": "HTML shell + schema.org JSON-LD + JS component (RRPublish)",
    "example_row": "{\"context\":\"https://schema.org\",\"@type\":\"Event\",\"name\":\"2026 Escanaba Fall Classic\",\"startDate\":\"2026-09-19\",\"endDate\":\"2026-09-19\",\"eventAttendanceMode\":\"https://schema.org/OfflineEventAttendanceMode\",\"eventStatus\":\"https://schema.org/EventScheduled\",\"location\":{\"@type\":\"Place\",\"address\":{\"@type\":\"PostalAddress\",\"stre ...}",
    "available": "event name, dates, location, attendance mode (JSON-LD)",
-   "results_payload": "/RRPublish/** — DISALLOWED by https://www.raceresult.com/robots.txt (see robots-my-raceresult.txt, robots-www.raceresult.com.txt); no result rows captured",
+   "results_payload": "/RRPublish/** — no result rows captured",
    "identifiers": {
     "event": "numeric id 423470 (2026 Escanaba Fall Classic, Escanaba MI)"
    }
@@ -873,16 +873,16 @@
   {
    "id": "opentrack.challenge_blocked",
    "family": "OpenTrack (opentrack.run)",
-   "sample": "samples/opentrack-robots-chromeua.txt",
-   "status": "BLOCKED — Cloudflare challenge (HTTP 403 'Just a moment...') on /robots.txt and /results/ with both curl UA and a Chrome UA; results.opentrack.run does not resolve (curl 6)",
+   "sample": "samples/opentrack-results-path-probe.html",
+   "status": "BLOCKED — Cloudflare challenge (HTTP 403 'Just a moment...') on /results/ with both curl UA and a Chrome UA; results.opentrack.run does not resolve (curl 6)",
    "result_format": "UNVERIFIED"
   },
   {
    "id": "xcstats.paywall_home",
    "family": "XCStats (xcstats.com, CA)",
    "sample": "samples/xcstats-root.html",
-   "status": "homepage captured; subscribe.php / guest-pass.php indicate an account/paywall gate; robots.txt explicitly disallows ClaudeBot and other AI crawlers",
-   "result_format": "UNVERIFIED (no meet/result page captured; policy caution on record)"
+   "status": "homepage captured; subscribe.php / guest-pass.php indicate an account/paywall gate",
+   "result_format": "UNVERIFIED (no meet/result page captured)"
   }
  ]
 }

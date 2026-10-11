@@ -176,13 +176,13 @@ observations and acknowledgement receipts rather than relying on later canonical
 Request pacing has two independent dials, and both default to the polite setting:
 
 - Per-source spacing. Each host (or, for a single-lane source family, the family as a whole) leaves
-  its configured delay between turns. `--delay-ms` overrides the default host delay; a source's own
-  robots `crawl-delay` raises it, an authorized host never drops below 500 ms, and a family budget in
-  `default_family_delays` holds across that family's hosts. Raising concurrency never shortens this.
+  its configured delay between turns. `--delay-ms` overrides the default host delay, an authorized
+  host never drops below 500 ms, and a family budget in `default_family_delays` holds across that
+  family's hosts. Raising concurrency never shortens this.
 - `--source-parallelism <N>` accepts 1–64. Above the default of 1, a source family admits N requests
   in flight and each host retains its own spacing slot. At 1 the family keeps one slot and one turn.
   Hosts outside a registered family retain their own slot. This raises a family's ceiling, not its
-  rate; it never overrides robots or an access condition. A serving owner fixes the normalized
+  rate; it never overrides an access condition. A serving owner fixes the normalized
   budget on its first fetcher request. A different budget for later acquisition is a terminal policy
   refusal, not another independent family budget. Settled logical operations remain replayable
   without resetting their acquisition authority.
@@ -267,7 +267,7 @@ its district or platform host), so a run that intends to follow them passes
 `--authorize-queue-hosts`: it authorizes the base domain of every host in the queue for this
 collection, exactly as `verify-coaches --authorize-cited-hosts` does for cited hosts. Without the
 flag a cross-origin redirect is refused and the site is reported under `failed` with its fetch
-error. `--delay-ms`, robots and the per-host origin locks still bound every request.
+error. `--delay-ms` and the per-host origin locks still bound every request.
 
 The crawl is a static read that executes no JavaScript. A staff page that builds its directory
 client-side therefore yields no coach rows, and the gate labels any candidate row from such a page
@@ -481,7 +481,7 @@ Attempt progress preserves actual adapter reports and failure reasons separately
 counts are adapter processing counts for that attempt, not cumulative or unique school/contact
 populations; missing reports remain unknown. Never sum overlapping retry reports to certify census
 coverage. Unique retained populations and relationships require entity/source receipt reconciliation.
-These mechanisms do not authorize robots, access-refusal or challenge bypasses.
+These mechanisms do not authorize access-refusal or challenge bypasses.
 
 MileSplit whole-meet evidence uses `milesplit_owned_capture_v1` for original byte chunks and
 `milesplit_owned_meet_v3` for owner-bound interpretation with qualified hurdle labels and combined

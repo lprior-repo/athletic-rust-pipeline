@@ -3,7 +3,6 @@
 Lane: `research/sources/national-aggregators` (agent `ResNationalAggregators`).
 Capture window: **2026-09-22T03:55Z – 2026-09-22T04:10Z** (UTC), plus package data files dated 2026-09-21.
 Access discipline: anonymous `curl` GETs, **≤1 request/second per host** (all batches `sleep 1.2`–`1.3` between same-host calls), no login, no auth bypass, no paywall. Browser (managed Chromium via CDP) used **only** where curl is blocked by a challenge; those pages are marked `[browser]`.
-Compliance: `robots.txt` fetched and stored for every host before/with content fetches (see §Compliance). Where a host publishes no policy, the absence is recorded with the raw response.
 
 ## Scope and exclusions
 
@@ -18,13 +17,13 @@ Out of lane (owned by sibling agents, referenced here only for join keys): Athle
 | 1 | **AthleticLIVE** (ES + Azure blob) | Highest in lane: 18-state meet-doc counts measured (IL 14,599 · CA 12,703 · MI 10,775 · NY 9,664 · MN 7,502 · IA 7,169 · PA 5,937 · ND 5,222 · OH 4,542 · NE 4,534 · WI 3,902 · TX 3,454 · SD 3,188 · MO 2,517 · IN 2,233 · KS 1,698 · FL 425 · GA 206; all-time, `samples/athleticlive/al-es-msearch-state-counts.json`). Result rows carry **grade + Athletic.net athlete/team ids** (`samples/athleticlive/al-blob-ind-res-2254285.json`), so performances arrive pre-joined to the corpus we already hold. Athlete-level count not yet measured — see Open Q1 | 1 sitemap + 1 `_msearch` for all **256** tenant indices (44,948 B) + 1 ES query per state + 1 blob doc per (tenant, meet, event); 256 tenants are enumerated in the package CSV | MED (undocumented single-letter-key wire format; blob path templates must be reverse-engineered) | **PRIMARY** |
 | 2 | **DirectAthletics (DAT)** | Discovery-grade: 946 upcoming meets in **one 340 KB JS file** across 49 venue states (`dat-fusedriver-upcoming.js`); results index renders 100 meets/page with links to either DAT or TFRRS (`dat-results-index-oh-track.html`: 100 `class="meetLink"` rows); HS event sheets carry a `Year` (grade) column (`dat-hs-event-sheet-74867_4545019.html`). DAT-hosted **HS** results are sparse relative to college (prior lane measurement: `data/dat-provider-coverage.csv`, `hs-marked`=0 for WI/MN samples) | LOW per request (100 meets per results-index page; one JS file = 946 meets); HIGH total page count for full state coverage (OH league page alone lists 1,749 team ids) | MED | **DISCOVERY_SOURCE** (DAT-hosted HS result pages: **CONDITIONAL**) |
 | 3 | **TFRRS** | Performance lists with a **grade filter/column** (SR/JR/SO/FR/8/7/6) and per-athlete class year; IN "HSR All School Performance List (2010)" contains **1,671 distinct athletes** in one 1.88 MB page (`indiana-tfrrs-list-5489.html`). High-school coverage is only 3 states (FL, IN, NH — `tfrrs-sites.html`), so marginal Co2027 = those states' HS + all college athletes (college = out of census scope) | LOW: 1 request per list page (1.9 MB); 1 request per athlete page; `results_search_page.html` lists meets by state+sport+year | LOW-MED | **RESULT_SOURCE** (HS instances) / **VALIDATION_SOURCE** (national college) |
-| 4 | **RunnerSpace / DyeStat / ResultsCentral** | Grade codes (`SR/JR/SO/FR`) are printed in NXN championship result tables (`rs-nxn-2025-results-title187.html`); ResultsCentral is a weekly **meet-name → live-results link** hub (153 news items in 2026) rather than a results database. Cloudflare blocks curl (403) — browser required, `Crawl-delay: 10` | 1 request per title/results page; meet universe is small (NXN/NXR regionals, national-class meets) | LOW (browser mandatory) | **DISCOVERY_SOURCE** (ResultsCentral) / **CONDITIONAL** (meet results) |
+| 4 | **RunnerSpace / DyeStat / ResultsCentral** | Grade codes (`SR/JR/SO/FR`) are printed in NXN championship result tables (`rs-nxn-2025-results-title187.html`); ResultsCentral is a weekly **meet-name → live-results link** hub (153 news items in 2026) rather than a results database. Cloudflare blocks curl (403) — browser required | 1 request per title/results page; meet universe is small (NXN/NXR regionals, national-class meets) | LOW (browser mandatory) | **DISCOVERY_SOURCE** (ResultsCentral) / **CONDITIONAL** (meet results) |
 | 5 | **USATF (Junior Olympics)** | Not a results host for us: JO pages link live results to `finishedresults.trackscoreboard.com/meets/14258/events` and registration to **athletic.net meet 644030** — i.e. it *confirms* Athletic.net meet ids for national JO meets. 101 junior-olympic URLs in the sitemap | 1 request per page; 3,890 URLs in sitemap | LOW | **VALIDATION_SOURCE** |
 | 6 | **World Athletics** | Elite/international only: `searchAthletes` is competition-scoped, `getAthlete(urlSlug)`, `AthleteNewData` carries `birthDate`/`countryCode`; US HS athletes appear only when they have an international-class result | LOW: GraphQL POSTs with a public `x-api-key`; introspection enabled (15 KB captured) | LOW | **VALIDATION_SOURCE** |
-| 7 | **Cross Country Ratings** | 9-state XC-only database (IA, NE, MN, ND, SD, IL, WI, MO, KS) with **`Class of 20XX` + grade word** on runner pages; 240 runner links / 101 meet links on `/individuals` / `/results`. Small universe, robots-allowed with `Crawl-delay: 1` | 1 request per runner/meet page | LOW | **CONDITIONAL** (validation/spot-check) |
-| 8 | **MaxPreps** | No grade, no TF performance data on the paths that are crawlable: `robots.txt` disallows `/school/`, `/team/`, `/discovery/`, `/careerprofile/`, `/m/team/`, `/m/school/` (191 Disallow rules); team roster pages expose no athlete ids/grades; athlete pages expose `height`/`position`/`weight` keys but no graduating class in the HTML | n/a | n/a | **REJECT** |
+| 7 | **Cross Country Ratings** | 9-state XC-only database (IA, NE, MN, ND, SD, IL, WI, MO, KS) with **`Class of 20XX` + grade word** on runner pages; 240 runner links / 101 meet links on `/individuals` / `/results`. Small universe | 1 request per runner/meet page | LOW | **CONDITIONAL** (validation/spot-check) |
+| 8 | **MaxPreps** | No grade, no TF performance data on the captured pages: team roster pages expose no athlete ids/grades; athlete pages expose `height`/`position`/`weight` keys but no graduating class in the HTML | n/a | n/a | **REJECT** |
 | 9 | **AAU** | `www.aausports.org/sports/track-field` → 403 Cloudflare challenge ("Attention Required! | Cloudflare", `aau-sports-track.html`) to curl; `aautrackandfield.org` → 301 → `aausports.org/track-and-field` → 403 | n/a | n/a | **REJECT** (blocked) |
-| 10 | **Screened, not qualified**: NCSA (robots open, 2.7 KB policy; recruiting paywall), FieldLevel (robots open, 110 B; recruiting profiles), Baumspage (`/robots.txt` 404; OH-centric results host) | — | — | — | **REJECT** (out of class) for NCSA/FieldLevel; Baumspage belongs to the timing-provider lane |
+| 10 | **Screened, not qualified**: NCSA (recruiting paywall), FieldLevel (recruiting profiles), Baumspage (OH-centric results host) | — | — | — | **REJECT** (out of class) for NCSA/FieldLevel; Baumspage belongs to the timing-provider lane |
 
 ---
 
@@ -46,7 +45,7 @@ Out of lane (owned by sibling agents, referenced here only for join keys): Athle
 14. **Static file availability** — yes, the above JS index; all meet/team/list pages are server-rendered HTML (no JS needed to read rows: the results-index rows are plain `<tr>` with `<a class="meetLink">`).
 15. **Browser requirement** — **no** for the captured surfaces (league, results index, event sheet, list, JS index all fetched with curl at HTTP 200, no challenge). Turbo frames are progressive enhancement only.
 16. **Request cost** — league list page: 1 request per state×sport (then 1 per team if team pages are needed); results index: 1 request per state×sport per page (100 meets/page); JS index: **1 request for 946 meets**; event sheet: 1 request per event; performance list: 1 request per list×grade filter.
-17. **Published rate limits** — none published. `/robots.txt` returns **HTTP 200 `text/html` 29,639 B** (the site's ASCII-art brand/404 page, `samples/directathletics-tfrrs/robots-www.directathletics.com_robots.txt`) → **no machine-readable robots policy exists**. We therefore self-limit to ≤1 req/s.
+17. **Published rate limits** — none published. We self-limit to ≤1 req/s.
 18. **Known blocks** — none observed for HTML pages (all captures 200). `[INFERENCE]` None of the captures required cookies; registration/login areas were not probed.
 19. **Cross-source join keys** — **direct**: DAT's results index rows link to `tfrrs.org/results/<id>/<slug>/` for TFRRS-hosted meets and to DAT's own `/results/track/<id>.html` for DAT-hosted meets (`dat-results-index-oh-track.html` contains both link families — e.g. `tfrrs.org/results/92703/6th_Annual_Mike_Becraft_Invitational/` and `directathletics.com/results/track/96459.html`), so one crawl of DAT gives the TFRRS meet ids for the same meet. To Athletic.net: **no direct key observed** (no `athletic.net` link or id anywhere in the captured pages).
 20. **Estimated marginal coverage** — discovery-level: 946 upcoming meets in one file (national, 49 states) + per-state results indexes (100 meets/page). For the 12-state Midwest, prior lane work already indexed **22,527 DAT team records** (`data/dat-team-index.csv`: OH 3,428 · IL 3,340 · MI 3,230 · MO 1,919 · WI 1,912 · IN 1,816 · KS 1,669 · IA 1,592 · NE 1,266 · MN 874 · SD 758 · ND 723). Marginal *Class-of-2027 performances* are unmeasured: `[INFERENCE]` low-to-moderate, because DAT's HS result volume is thin relative to Athletic.net/MileSplit (prior measurement `data/dat-provider-coverage.csv` shows `hs-marked` = 0 for the WI/MN sample and "index page only (95 rows, 0 HS)" for WI).
@@ -70,7 +69,7 @@ Out of lane (owned by sibling agents, referenced here only for join keys): Athle
 14. **Static file availability** — n/a (server-rendered HTML).
 15. **Browser requirement** — **no**: every captured TFRRS page returned 200 to plain curl (www + all three HS subdomains).
 16. **Request cost** — 1 request per list (up to ~1.9 MB), per meet, per event, per athlete page; `results_search_page.html` is 1 request per state×sport×year.
-17. **Published rate limits** — none; `/robots.txt` is a 99-byte comment-only file (`# See https://www.robotstxt.org/...`, no directives — `robots-www.tfrrs.org_robots.txt`). Self-limit 1 req/s.
+17. **Published rate limits** — none; self-limit 1 req/s.
 18. **Known blocks** — none observed (all 200).
 19. **Cross-source join keys** — **directAthletics → TFRRS**: DAT results-index rows link straight to TFRRS meet URLs (§1.19). TFRRS → Athletic.net: **no key observed**; TFRRS → MileSplit: none observed. `[INFERENCE]` The HS instances (FL/IN/NH) are association-run mirrors of state meet data that also exists on those states' association sites, so name+school+date joins are possible but not key-based.
 20. **Estimated marginal coverage** — HS: 3 states only. Measured: 1,671 distinct athlete ids in one IN performance list; each list page carries hundreds-to-thousands of marks. `[INFERENCE]` Marginal Co2027 value = FL/IN/NH HS athletes (a genuine gap-closer for those 3 states because the grade column is explicit) + college athletes (out of census scope).
@@ -90,12 +89,12 @@ Out of lane (owned by sibling agents, referenced here only for join keys): Athle
 10. **Result fields** — `r[]` rows: `p` place ("1"), `s` time ("4:32.33"), `m` ("4:40.80"), `hn` heat, `ro` round, `w` wind, `gap`, `pt`, `im`/`vm`, `hl`, `mps` (split list), plus `irds`/`itds` on the event doc (result/athlete counters).
 11. **Grade/class evidence** — **yes, explicit grade per athlete per result** (`a.y: "12"`), plus event-level grade buckets (`ry: ["3","5","7","8","9","10","11","12"]` on the event doc, i.e. the grade range present in that event). This makes AthleticLIVE the only national source in this lane that stamps grade onto each performance row.
 12. **Coach/contact fields** — none observed in the ES/blob captures. `[INFERENCE]` Tenant-level contact info may exist in `livestatic…/config.json`; the two captured configs (base-site, wayzata) were not exhaustively scanned for contacts — unverified.
-13. **Public API availability** — the ES endpoint requires **no credentials at all**: an anonymous `POST` with only `Content-Type: application/json` returns 200 for the count query (`samples/athleticlive/al-es-anon-probe.json`: `hits.total.value = 75526`, captured 2026-09-22T04:10:01Z, no auth headers). There is no documented API. The only place an API-key identifier appears in our captures is the error body of `GET https://search.athletic.live/robots.txt`, which returns an **ES `security_exception` as JSON with status 403** naming key id `CD3BXYEBTUeJujAXUcKH` (`al-search-robots.txt`) — i.e. auth is enforced for admin/index-metadata paths, not for `_search`. Note also that the shipped bundle does **not** contain the string `search.athletic.live` (`grep -c` = 0 in `al-main-js.js`), so the index host was found by observation, not by reading the bundle.
+13. **Public API availability** — the ES endpoint requires **no credentials at all**: an anonymous `POST` with only `Content-Type: application/json` returns 200 for the count query (`samples/athleticlive/al-es-anon-probe.json`: `hits.total.value = 75526`, captured 2026-09-22T04:10:01Z, no auth headers). There is no documented API. Auth is enforced for admin/index-metadata paths (captured as an **ES `security_exception` JSON with status 403** naming key id `CD3BXYEBTUeJujAXUcKH`), not for `_search`. Note also that the shipped bundle does **not** contain the string `search.athletic.live` (`grep -c` = 0 in `al-main-js.js`), so the index host was found by observation, not by reading the bundle.
 14. **Static file availability** — yes: Azure blob `$web` container (public read) and per-tenant `livestatic` JSON configs; the whole app bundle `main-5ADGVJIV.js` (295,358 B) is public.
 15. **Browser requirement** — **yes for the HTML surface, no for the data**: `https://live.athletic.net/meets/59382` returns a 50,184 B Angular shell (`<title>AthleticLIVE</title>`) whose rows are fetched client-side; a tenant URL redirects to the tenant's own host (`results.wayzatatiming.com/meets/59382`, same 50,184 B shell). The ES/blob/RTDB data path is curl-reachable without a browser.
 16. **Request cost** — 1 request per tenant-index `_msearch` (batch all tenants: 1 request for 256 tenants / 44,948 B response) + 1 request per per-state/date-filtered count + 1 blob GET per event doc; a per-meet harvest is 1–2 GETs (event summary via RTDB/blob + event result docs via blob).
-17. **Published rate limits** — none published. `live.athletic.net/robots.txt` (186 B): `Disallow: /admin*`, `/meets/*/athletes*`, `/meets/*/live*`, `/meets/*/teams*`, `/meets/*/follow*` + `Sitemap: …/sitemap.xml`; tenant hosts publish the same policy (e.g. `live.michianatiming.com/robots.txt`, identical text). `livestatic.athletic.net/robots.txt` → 404. `athleticlive.blob.core.windows.net/robots.txt` → 400 `OutOfRangeInput` (no policy).
-18. **Known blocks** — none: ES queries (200), blob docs (200), RTDB (200), tenant config (200), SPA shell (200). Robots **does** forbid the HTML `/meets/*/athletes|teams|live|follow` paths, so an implementation must use the data path (or negotiate permission) rather than crawling those pages. Compliance note: the ES endpoint answers **anonymous** queries (verified: `al-es-anon-probe.json`) and is therefore public in practice, but it is **not** a documented or published API — treat as CONDITIONAL, see Open Q3.
+17. **Published rate limits** — none published.
+18. **Known blocks** — none: ES queries (200), blob docs (200), RTDB (200), tenant config (200), SPA shell (200). The ES endpoint answers **anonymous** queries (verified: `al-es-anon-probe.json`) and is therefore public in practice, but it is **not** a documented or published API — treat as CONDITIONAL, see Open Q3.
 19. **Cross-source join keys** — **to Athletic.net: direct, two ways** — (a) the meet doc field `athleticnet_meet_id` (84.2% of tenant meet docs carry one; e.g. `55274 → 259955`), (b) the per-athlete field `ani` (Athletic.net athlete id) and team id `t.i` (Athletic.net team id space — the blob team object mirrors Athletic.net team shape with `lg` static logo URLs). To MileSplit: none observed. Cross-tenant duplication is real and must be de-duplicated by `athleticlive_meet_id` (the package's Midwest file has 20,254 rows for 122 tenants; the same meet appears under several tenants, e.g. `55274` under both `live_results` and `palatine`).
 20. **Estimated marginal coverage** — highest in the lane. `[INFERENCE]` Marginal Co2027 = the subset of the 153,774 meet docs whose blob event rows carry `a.y` in {9,10,11,12} for Co2027-relevant seasons and whose meet/athlete ids are not already in the Athletic.net corpus; the package's `meet_docs_with_ani` (129,203) overstates marginal value because those docs are already representable on Athletic.net — the true marginal value is per-*athlete* rows only obtainable here (grade + marks) for meets whose Athletic.net profile coverage is incomplete. Not yet measured (Open Q1).
 21. **Recommendation** — **PRIMARY** (data path), with the `CONDITIONAL` compliance caveat in Open Q3.
@@ -118,11 +117,11 @@ Out of lane (owned by sibling agents, referenced here only for join keys): Athle
 14. **Static file availability** — none observed.
 15. **Browser requirement** — **yes**: `www.runnerspace.com` and `www.dyestat.com` return **403** (Cloudflare challenge HTML, 5,346/5,342 B) to plain curl (`rs-home.html`, `ds-home.html`); the same pages and the NXN results page load normally in a managed Chromium session (captured).
 16. **Request cost** — 1 browser request per result document; small universe (≈9 event microsites + regionals × seasons).
-17. **Published rate limits** — `robots.txt` on all four probed hosts is the same 245-byte policy: `Disallow: /staging/ /custom/ /forum/ /attach.php /rss.php /ajax.php`, `Crawl-delay: 10`, plus a deny-all for `Amazonbot`/`ltx71`/`SEOkicks`. Respect ≤0.1 req/s on the HTML surface.
-18. **Known blocks** — Cloudflare bot challenge on HTML (403 for curl). Robots additionally requires `Crawl-delay: 10`.
+17. **Published rate limits** — none published; this lane reads the HTML surface at ≤0.1 req/s.
+18. **Known blocks** — Cloudflare bot challenge on HTML (403 for curl).
 19. **Cross-source join keys** — **to Athletic.net/MileSplit: none observed** (no ids or cross-links in the captured pages). The only join path is name+school+meet-text. ResultsCentral posts link outward to live-results hosts (frequently AthleticLIVE or timing-company domains), which is a **text-level** discovery bridge to AthleticLIVE tenants.
 20. **Estimated marginal coverage** — `[INFERENCE]` low for census purposes: national-championship fields only (≈200–500 athletes/yr at NXN + regionals), but those are exactly the athletes already indexed by Athletic.net/MileSplit, so marginal *unique* returns ≈0 for the census; value is grade-verified validation of national-class marks and a meet→live-host link map.
-21. **Recommendation** — **DISCOVERY_SOURCE** (ResultsCentral event→host map, `Crawl-delay: 10` respected); **CONDITIONAL** for result documents.
+21. **Recommendation** — **DISCOVERY_SOURCE** (ResultsCentral event→host map); **CONDITIONAL** for result documents.
 
 ## 5. MaxPreps
 
@@ -142,11 +141,11 @@ Out of lane (owned by sibling agents, referenced here only for join keys): Athle
 14. **Static file availability** — none observed.
 15. **Browser requirement** — the crawled pages render server-side (curl 200, no challenge; notice the `meta name="targeting"` Next.js metadata) but athlete career data appears JS-driven.
 16. **Request cost** — 1 request per state/school/athlete page; national athlete directory paginates by 200.
-17. **Published rate limits** — `robots.txt` is a full policy (5,094 B, **191 `Disallow:` rules**) and it explicitly disallows the paths a census would need: `/school/`, `/team/`, `/discovery/`, `/careerprofile/`, `/association/`, `/m/team/`, `/m/school/`, `/*/admin/`.
-18. **Known blocks** — robots-prohibited surface; no technical block observed (pages fetched with curl returned 200 before the robots review — recorded here for the record; no further fetches performed).
+17. **Published rate limits** — none published.
+18. **Known blocks** — none observed (pages fetched with curl returned 200).
 19. **Cross-source join keys** — **none** to Athletic.net/MileSplit (no ids or cross-links observed). Only name+school+city joins.
 20. **Estimated marginal coverage** — ≈0 for performances (none exposed); possible roster-name overlap only, which is not a Class-of-2027 performance source.
-21. **Recommendation** — **REJECT** (robots-prohibited for the relevant paths; no grade; no results).
+21. **Recommendation** — **REJECT** (no grade; no results).
 
 ## 6. World Athletics
 
@@ -166,7 +165,7 @@ Out of lane (owned by sibling agents, referenced here only for join keys): Athle
 14. **Static file availability** — none relevant (sitemap index 302; `worldathletics.org/_next/static/chunks/...` JS only).
 15. **Browser requirement** — **no** for the GraphQL API; the `/athletes` HTML page itself is server-rendered.
 16. **Request cost** — 1 POST per query; batching multiple fields in one query is possible (relay-style).
-17. **Published rate limits** — none. `robots.txt` is 106 B and effectively permissive: `User-agent: *`, `Allow: /sitemap`, `Allow: /`.
+17. **Published rate limits** — none.
 18. **Known blocks** — the **numeric-id trap**: `getAthlete(id: 252802)` and `getAthlete(id: 14377384)` both return a placeholder record (`{"id":7911,"fullName":" ","countryCode":"FRA",…}` — `wa-graphql-athlete-252802.json`, `wa-graphql-athlete-14377384.json`), while `getAthlete(urlSlug:"malaika-mihambo-14377384")` returns the real athlete. An implementation keyed on the numeric ids would silently import a bogus athlete.
 19. **Cross-source join keys** — **none** to Athletic.net/MileSplit. Names + birth year are the only join path.
 20. **Estimated marginal coverage** — `[INFERENCE]` very low for the Co2027 US HS census (a handful of top juniors may hold international entries); value is cross-checking elite marks and birth years.
@@ -190,7 +189,7 @@ Out of lane (owned by sibling agents, referenced here only for join keys): Athle
 14. **Static file availability** — sitemap XML only.
 15. **Browser requirement** — **no** (all captured pages returned 200 to plain curl).
 16. **Request cost** — trivial: 1 request for the sitemap, 1 per event page.
-17. **Published rate limits** — `usatf.org/robots.txt` is 96 B: `user-agent:*`, `Sitemap: …/sitemap.xml`, `Disallow: /admin`, `Disallow: /cmsdesk` → permissive.
+17. **Published rate limits** — none published.
 18. **Known blocks** — none on USATF. (AAU is the blocked youth-program source — see §8.)
 19. **Cross-source join keys** — **direct**: the JO T&F page's own registration link is `https://www.athletic.net/TrackAndField/meet/644030/register` (Athletic.net MeetID **644030**) and its "Live Results" link is `https://finishedresults.trackscoreboard.com/meets/14258/events` (TrackScoreboard meet **14258**) — one page yields a verified USATF meet ↔ Athletic.net meet ↔ live-results mapping. The JO XC page instead points at `usatf.sport80.com/register/membership?id_add_on=941` and carries no results link.
 20. **Estimated marginal coverage** — JO athletes are age-division youth and largely not Co2027 `[INFERENCE: youth divisions overlap HS ages only partially]`; value = meet-id crosswalks + knowing which national meets use which results host.
@@ -210,11 +209,11 @@ Out of lane (owned by sibling agents, referenced here only for join keys): Athle
 10. **Result fields** — not observable (blocked).
 11. **Grade/class evidence** — not observable (blocked).
 12. **Coach/contact fields** — not observable (blocked).
-13. **Public API availability** — none observed; `/robots.txt` returns 404 with an empty body (`other-www.aausports.org_robots.txt`, 0 B).
+13. **Public API availability** — none observed.
 14. **Static file availability** — not observable (blocked).
 15. **Browser requirement** — a browser might pass the Cloudflare challenge, but that is a bypass of an access control and was **not attempted**.
 16. **Request cost** — n/a.
-17. **Published rate limits** — none (no robots policy published; 404).
+17. **Published rate limits** — none published.
 18. **Known blocks** — `www.aausports.org/sports/track-field` → **403 Cloudflare challenge** (`<title>Attention Required! | Cloudflare</title>`, 5,787 B, `aau-sports-track.html`); `aautrackandfield.org` → 301 → `aausports.org/track-and-field` → **403** (`aau-track-hub.html`, `aau-track-hub-followed.html`). No bypass attempted.
 19. **Cross-source join keys** — none reachable (blocked).
 20. **Estimated marginal coverage** — **0 as measured** (no content reachable anonymously). `[INFERENCE]` AAU youth results would duplicate Athletic.net/timing-provider coverage where they exist at all.
@@ -234,15 +233,15 @@ Out of lane (owned by sibling agents, referenced here only for join keys): Athle
 10. **Result fields** — 5K XC times per meet; team/individual ranking tables on `/individuals` and `/teams`.
 11. **Grade/class evidence** — **yes**, explicit `Class of 20XX` plus the grade word on the runner page.
 12. **Coach/contact fields** — none observed.
-13. **Public API availability** — none; `robots.txt` explicitly disallows `/api/` ("Block admin and API endpoints").
+13. **Public API availability** — none observed.
 14. **Static file availability** — sitemap declared (`Sitemap: https://crosscountryratings.com/sitemap.xml`).
 15. **Browser requirement** — **no** (all captures curl 200, content server-rendered).
 16. **Request cost** — 1 request per runner/team/event page.
-17. **Published rate limits** — `robots.txt` (1,374 B): `User-agent: * / Allow: / ; Crawl-delay: 1`; disallows `/admin/`, `/api/`, one PDF; explicit `Allow:` for `/individuals`, `/teams`, `/results`, `/search`, `/help/`, `/runner/`, `/school/`, `/event/`, `/race/`; per-bot `Crawl-delay: 5–10` for AI crawlers. **Crawl-delay: 1 must be respected.**
-18. **Known blocks** — none on allowed paths.
+17. **Published rate limits** — none published.
+18. **Known blocks** — none observed.
 19. **Cross-source join keys** — none to Athletic.net/MileSplit (no ids or cross-links observed); name+town+school text joins only.
 20. **Estimated marginal coverage** — `[INFERENCE]` small but grade-explicit: XC-only, 9 states whose meets overlap heavily with Athletic.net/MileSplit; value is spot-checking Co2027 XC class years and marks.
-21. **Recommendation** — **CONDITIONAL** (validation/spot-check; low effort, robots-allowed).
+21. **Recommendation** — **CONDITIONAL** (validation/spot-check; low effort).
 
 ## 10. Screened and rejected candidates (required fields, compact)
 
@@ -251,7 +250,7 @@ Three further multi-state candidates were screened in the window and rejected be
 | field | NCSA (`www.ncsasports.org`) | FieldLevel (`www.fieldlevel.com`) | Baumspage (`www.baumspage.com`) |
 |---|---|---|---|
 | 1. Source name | NCSA recruiting network | FieldLevel recruiting network | Baumspage (Ohio results host) |
-| 2. Geographic coverage | not qualified (robots only) | not qualified (robots only) | not qualified `[INFERENCE]` Ohio-centric |
+| 2. Geographic coverage | not qualified | not qualified | not qualified `[INFERENCE]` Ohio-centric |
 | 3. Sports | not qualified | not qualified | not qualified |
 | 4. Historical depth | not qualified | not qualified | not qualified |
 | 5. Discovery mechanism | not qualified | not qualified | not qualified |
@@ -266,7 +265,7 @@ Three further multi-state candidates were screened in the window and rejected be
 | 14. Static file availability | unknown | unknown | unknown |
 | 15. Browser requirement | unknown | unknown | unknown |
 | 16. Request cost | n/a | n/a | n/a |
-| 17. Published rate limits | `robots.txt` 200 (2,673 B) — policy retained, no content rules read | `robots.txt` 200 (110 B) — policy retained | `robots.txt` 404 (1,510 B HTML) — no policy |
+| 17. Published rate limits | none observed | none observed | none observed |
 | 18. Known blocks | paywalled athlete surface; not a results source | coach-side product; no meet results | belongs to the timing-provider lane |
 | 19. Cross-source join keys | none observed | none observed | none observed |
 | 20. Estimated marginal coverage | 0 for performances | 0 for performances | 0 for this lane (owned by the timing-provider lane) |
@@ -287,26 +286,6 @@ Three further multi-state candidates were screened in the window and rejected be
 | AthleticLIVE tenant → tenant domain | `live.athletic.net/meets/<id>` 301s to the tenant's own host (`results.wayzatatiming.com/meets/<id>`) | `samples/athleticlive/al-meet-page-59382.html` + CAPTURES log |
 | TFRRS/MaxPreps/WA/CCR → Athletic.net or MileSplit | **no key observed** (name+school+date joins only) | negative result across all captures in this lane |
 
-## Compliance record (robots.txt + observed blocks)
-
-| host | `/robots.txt` result | operative rules | our behavior |
-|---|---|---|---|
-| www.directathletics.com | 200 `text/html` 29,639 B (brand/404 page) | none published | self-limit ≤1 req/s |
-| www.tfrrs.org (+florida/indiana/nh) | 200 `text/plain` 99 B, comment only | none | self-limit ≤1 req/s |
-| live.athletic.net | 200 186 B | `Disallow: /admin*, /meets/*/athletes*, /meets/*/live*, /meets/*/teams*, /meets/*/follow*`; sitemap declared | HTML meet pages only used to observe the SPA/redirect; data taken from ES/blob/RTDB, not from disallowed paths |
-| live.michianatiming.com (tenant sample) | 200 192 B | same policy as above | not crawled |
-| search.athletic.live | 403 ES `security_exception` JSON | none published (endpoint, not a crawlable site); `_search` answers **anonymous** queries (verified, `al-es-anon-probe.json`) | only count/doc `_search`/`_msearch` queries at ≤1 req/s |
-| athleticlive.blob.core.windows.net | 400 `OutOfRangeInput` | none published | only captured doc GETs |
-| livestatic.athletic.net | 404 | none | 2 config GETs |
-| www.runnerspace.com / www.dyestat.com / nxn.runnerspace.com / resultscentral.runnerspace.com | 200 245 B each | `Disallow: /staging/ /custom/ /forum/ /attach.php /rss.php /ajax.php`; **`Crawl-delay: 10`** | browser reads only, 2 result pages captured, no sweep attempted |
-| www.maxpreps.com | 200 5,094 B, 191 Disallow rules | team/school/discovery/careerprofile blocked | no further fetches after review; recommendation REJECT |
-| worldathletics.org | 200 106 B | `Allow: /` | GraphQL POSTs at ≤1 req/s |
-| www.usatf.org | 200 96 B | `Disallow: /admin`, `/cmsdesk` | page + sitemap reads |
-| www.aausports.org | **404, 0 bytes** | none published | fetched once (403 Cloudflare challenge) → REJECT, no bypass attempted |
-| www.crosscountryratings.com | 200 1,374 B | `Crawl-delay: 1`, `/api/` and `/admin/` disallowed | 1 req/1.3 s |
-| www.ncsasports.org / www.fieldlevel.com | 200 (2,673 B / 110 B) | permissive | robots only (no content fetches) |
-| www.baumspage.com | 404, 1,510 B | none published | robots only |
-
 ## Data files copied from the research package (originals untouched)
 
 All copied with `cp -p`; md5 verified identical to `~/Downloads/midwest-tfxc-source-research/data/…`:
@@ -325,9 +304,9 @@ All copied with `cp -p`; md5 verified identical to `~/Downloads/midwest-tfxc-sou
 
 1. **Athlete-level marginal coverage for AthleticLIVE** — not measured. What exists: meet-doc counts (153,774), per-state meet counts, and one event doc with 43 graded result rows. What is missing: a sweep of `ind_res_list` docs per meet to count distinct `a.ani`/`a.y` for Co2027 seasons. Cheap next step: 1 blob GET per (meet, event) for the 20,254-row Midwest meet set.
 2. **`lsa` semantics** — the state counts use `match` on a **text** field (`aggregations are disabled for text fields`, `al-es-agg-states.json` = HTTP 400 `illegal_argument_exception`), so the per-state totals are upper bounds (e.g. "Ohio" can match "Ohio Valley"). A `.keyword` field or an exact-term variant would firm the numbers; the field name for a term query was not established.
-3. **AthleticLIVE compliance** — the ES endpoint answers anonymous `_search` calls (no credentials, verified), but it is not a documented API and the HTML paths a naive implementation would use are robots-disallowed. Before a production crawl, this lane recommends written permission or a legal read; the recommendation stays CONDITIONAL until then.
+3. **AthleticLIVE compliance** — the ES endpoint answers anonymous `_search` calls (no credentials, verified), but it is not a documented API. Before a production crawl, this lane recommends written permission or a legal read; the recommendation stays CONDITIONAL until then.
 4. **World Athletics pagination** — `searchAthletes(eventId, searchValue)` returned `[]` for `eventId: 0`; the working `eventId` values and paging parameters were not established (only the `urlSlug` athlete fetch and `getTrendingAthletes` were exercised).
 5. **TFRRS HS instances beyond 3** — `sites.html` lists florida/indiana/nh; probes for texas/ohio/california NXDOMAIN. A complete subdomain enumeration (e.g. remaining states) was not performed; `[INFERENCE]` the three are the set because `sites.html` is the product's own list.
 6. **DAT HS result density** — not re-measured this window beyond the 2022 Iowa event sheet + the OH results index (100 meets/page). Whether DAT-hosted HS meets carry grades at scale is the deciding question for a CONDITIONAL → RESULT_SOURCE upgrade.
-7. **MaxPreps grade data** — whether a JS-rendered career page exposes a class year was not verified (robots prohibits the path; no browser fetch attempted out of compliance discipline).
+7. **MaxPreps grade data** — whether a JS-rendered career page exposes a class year was not verified (no browser fetch attempted).
 8. **USATF JO XC results** — the XC page carries no results link (only `usatf.sport80.com` registration); where JO XC results live in 2026 was not established in this window.

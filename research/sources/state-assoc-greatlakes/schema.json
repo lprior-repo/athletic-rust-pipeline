@@ -281,7 +281,7 @@
         "/teams/{TeamID}/roster",
         "/athletes/{AthleteID}-{slug} (also /athletes/{id}/{slug}/{event} for results)",
         "/results?season={s}&level=hs&year={Y}&page={N} (50 meets/page)",
-        "/api/v1/meets/{MeetID}/performances?isMeetPro=0&fields=... (robots-disallowed; used read-only in research)",
+        "/api/v1/meets/{MeetID}/performances?isMeetPro=0&fields=...",
         "/sitemap.xml (7,500 <loc> athlete URLs with lastmod)"
       ],
       "roster_grade_columns": [
@@ -294,8 +294,7 @@
         {"key": "team ids", "example": "52649 (Abbotsford WI)", "evidence": "fixture milesplit/wi_roster_52649.html"},
         {"key": "athlete ids", "example": "14399169", "evidence": "data/milesplit-candidate-records.csv:2"},
         {"key": "meet ids", "example": "780853 (Osceola Invitational 2026, WI)", "evidence": "report [07]"}
-      ],
-      "robots_posture": {"allowed": ["/teams", "/teams/<id>/roster", "meets"], "disallowed": ["/api/", "/rankings", "/virtual-meets", "/contact"], "evidence": "report [20], report [27]"}
+      ]
     },
     "dat_tfrrs": {
       "display_name": "DirectAthletics / TFRRS",

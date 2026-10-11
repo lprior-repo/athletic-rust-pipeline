@@ -13,15 +13,8 @@
 - Original: `research/sources/coach-coverage-bundle-20261004/probes/sidearm_miramonte/raw/gomats.org__staff-directory__full.html`
 - Fixture staged byte-exact by Main; no reserialization, HTML normalization or email rewriting.
 
-## Robots and pacing
+## Pacing
 
-- URL: `https://gomats.org/robots.txt`
-- HTTP status: 200
-- Content type: `text/plain; charset=utf-8`
-- Bytes: 6,001
-- SHA-256: `454315be725af18052b2009cd7aa02628dbbf5d6445a4818036b110a2ce8b5da`
-- fetched_at: `2026-10-04`
-- Original: `research/sources/coach-coverage-bundle-20261004/probes/sidearm_miramonte/robots/gomats.org.txt`
 The sidearm_staff admission declares gomats.org at 1.0 requests per second, maximum one in-flight request. No separate transport or adapter-specific sleep is introduced.
 
 ## Records

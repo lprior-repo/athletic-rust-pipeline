@@ -19,43 +19,34 @@ For each table row, the exact acquisition command is the following recipe with t
 date -u +%Y-%m-%dT%H:%M:%S.%NZ && curl --proto '=https' --max-time 60 --max-filesize 4194304 --dump-header research/sources/identity-lineage-20261007/captures/HEADER --output research/sources/identity-lineage-20261007/captures/BODY --write-out 'status=%{http_code} bytes=%{size_download} url=%{url_effective} redirect=%{redirect_url} ip=%{remote_ip} ssl=%{ssl_verify_result}\n' 'URL' && date -u +%Y-%m-%dT%H:%M:%S.%NZ
 ```
 
-The executed command spelled `--output` as `-o`. Preserve the quoted URL substitution, especially AthleticLIVE's literal `$web` path. The first Loyola and FlashResults robots commands instead used `--write-out '%{json}\n'`; this changes only diagnostic output, not captured bytes. No redirect target was requested implicitly. Completed-response UTC instants below are local acquisition observations, not HTTP `Date`, provider publication dates, upstream fetch timestamps, or inferred fixture timestamps. Acquisitions occurred **after** the requested 2026-10-07 as-of date; underlying 2026 result dates do not turn these into as-of captures.
+The executed command spelled `--output` as `-o`. Preserve the quoted URL substitution, especially AthleticLIVE's literal `$web` path. The first Loyola and FlashResults commands instead used `--write-out '%{json}\n'`; this changes only diagnostic output, not captured bytes. No redirect target was requested implicitly. Completed-response UTC instants below are local acquisition observations, not HTTP `Date`, provider publication dates, upstream fetch timestamps, or inferred fixture timestamps. Acquisitions occurred **after** the requested 2026-10-07 as-of date; underlying 2026 result dates do not turn these into as-of captures.
 
 All 50 raw files, including headers and empty failure artifacts, are individually SHA-256 recorded in `captures/SHA256SUMS`. That manifest supplies the full raw-body digest for every table row; checksums cover bytes, not reader-rendered text. The raw files totaled **7,600,958 bytes** before adding the checksum manifest.
 
 | Body in `captures/` | Exact URL | Observed completion UTC | HTTP / body bytes | Explicit delay prefix |
 |---|---|---|---|---|
-| `loyola-robots.txt` | https://athletics.loyolahs.edu/robots.txt | 2026-10-08T03:16:22.559052414Z | 200 / 6001 | none |
-| `flashresults-robots.txt` | https://www.flashresults.com/robots.txt | 2026-10-08T03:16:22.612059452Z | 200 / 4640 | none |
-| `loyola-xc-roster.html` | https://athletics.loyolahs.edu/sports/cross-country/roster | 2026-10-08T03:16:46.969835819Z | 200 / 1020497 | none; noncompliant delay |
-| `loyola-allyn.html` | https://athletics.loyolahs.edu/sports/cross-country/roster/christopher-allyn/2540 | 2026-10-08T03:17:20.102214799Z | 200 / 261326 | none; noncompliant delay |
+| `loyola-xc-roster.html` | https://athletics.loyolahs.edu/sports/cross-country/roster | 2026-10-08T03:16:46.969835819Z | 200 / 1020497 | none |
+| `loyola-allyn.html` | https://athletics.loyolahs.edu/sports/cross-country/roster/christopher-allyn/2540 | 2026-10-08T03:17:20.102214799Z | 200 / 261326 | none |
 | `flashresults-adidas-hs.htm` | https://www.flashresults.com/2027_Meets/xc/adidasXC/203-1_compiled.htm | 2026-10-08T03:17:12.788349681Z | 200 / 101497 | none |
-| `gomats-robots.txt` | https://gomats.org/robots.txt | 2026-10-08T03:18:36.336439079Z | 200 / 6001 | none |
-| `tfrrs-robots.txt` | https://www.tfrrs.org/robots.txt | 2026-10-08T03:18:36.302654196Z | 200 / 99 | none |
-| `ihsa-robots.txt` | https://api.ihsa.org/robots.txt | 2026-10-08T03:18:57.855151926Z | 403 / 153 | none |
-| `athleticlive-robots.txt` | https://athleticlive.blob.core.windows.net/robots.txt | 2026-10-08T03:18:57.929963512Z | 400 / 226 | none |
 | `tfrrs-stampede.html` | https://www.tfrrs.org/results/xc/27822/Southern_Stampede_Cross_Country_Meet_-_High_School_ | 2026-10-08T03:18:57.910012862Z | 200 / 815035 | none |
 | `gomats-xc.html` | https://gomats.org/sports/cross-country | 2026-10-08T03:19:28.220289216Z | 200 / 632484 | 30 seconds |
 | `ihsa-2790204.json` | https://api.ihsa.org/v1/track-field/events/2790204/summary | 2026-10-08T03:19:49.701479307Z | 403 / 153 | none |
 | `athleticlive-2790204.json` | https://athleticlive.blob.core.windows.net/$web/ind_res_list/_doc/2790204 | 2026-10-08T03:19:49.814249856Z | 200 / 23628 | none |
 | `gomats-xc-roster.html` | https://gomats.org/sports/cross-country/roster/2026 | 2026-10-08T03:20:41.241667791Z | 200 / 1192221 | 30 seconds |
-| `stx-robots.txt` | https://stxsports.net/robots.txt | 2026-10-08T03:21:28.344515607Z | 200 / 6001 | none |
 | `stx-home.html` | https://stxsports.net/ | 2026-10-08T03:22:17.345308161Z | 200 / 446786 | 30 seconds |
 | `stx-xc-roster.html` | https://stxsports.net/sports/cross-country/roster | 2026-10-08T03:22:59.387147108Z | 200 / 1760042 | 30 seconds |
 | `stx-adams.html` | https://stxsports.net/sports/cross-country/roster/parker-adams/9734 | 2026-10-08T03:24:15.787103660Z | 200 / 318897 | 30 seconds |
-| `jesuittrack-robots.txt` | https://www.jesuittrack.org/robots.txt | 2026-10-08T03:25:44.638030987Z | 200 / 30 | none |
 | `jesuittrack-home.html` | https://www.jesuittrack.org/ | 2026-10-08T03:26:04.532811597Z | 200 / 66297 | 10 seconds |
-| `jesuithighschool-robots.txt` | https://www.jesuithighschool.org/robots.txt | 2026-10-08T03:26:49.635965855Z | 200 / 118 | none |
 | `jesuithighschool-xc.html` | https://www.jesuithighschool.org/cross-country | 2026-10-08T03:27:00.198641612Z | 301 / 154 | 2 seconds |
 | `jesuithighschool-teams.html` | https://www.jesuithighschool.org/student-life/athletics/teams-seasons | 2026-10-08T03:27:09.328552259Z | 200 / 815097 | 2 seconds |
 
-Failed-policy attempts, with no response/acquisition instant: `https://www.greatoakxc.com/robots.txt` started 2026-10-08T03:25:44.429359853Z; `https://www.newburyparkcrosscountry.net/robots.txt` started 2026-10-08T03:26:43.668688099Z; `https://www.yorkxc.com/robots.txt` started 2026-10-08T03:26:43.668685349Z. All returned curl exit 6, `Could not resolve host`, HTTP 000, zero bytes. Their empty `*-robots.headers` are retained. No homepage requests, DNS circumvention, or alternate-host identity assumptions followed.
+### Admission observations
 
-### Admission observations and disclosed lapse
+The first Loyola roster and bio acquisitions are preserved as **non-admission-certified exploratory negatives**, never certified positives. This was disclosed to Main. No promising positive binding was found that justified a certified replacement acquisition.
 
-Loyola, Miramonte, and St. Xavier expose identical SIDEARM wildcard robots groups with `Allow: /` and **Crawl-delay: 30**, while disallowing assets, `/common/`, `/documents/`, `/admin/`, `/services/`, `/site/`, `/hidden/`, and certain file/query patterns. The roster/bio paths themselves are not disallowed. The first Loyola roster request started 03:16:45.343005689Z, about 23.0 seconds after the robots start; its bio request started 03:17:12.483463532Z, about 27.1 seconds after the roster start. Both violate the observed 30-second delay. They are preserved as **non-admission-certified exploratory negatives**, never certified positives. Dispatch preceded inspection of the relevant wildcard group. This was disclosed to Main. Later SIDEARM requests explicitly waited 30 seconds. No promising positive binding was found to re-acquire compliantly.
+IHSA event summary returned 403; no successful fresh IHSA result acquisition or bypass is claimed. Requests to that host stopped after the denied summary.
 
-FlashResults' wildcard policy permits the requested HTML result path; it does not publish a crawl delay and disallows unrelated asset/PDF/CSV/private-result paths. TFRRS' robots body contains only a documentation comment, no restrictions or delay. AthleticLIVE blob robots returned HTTP 400 XML, not a policy; the repository's missing/non-200 robots rule was used for its known public result object. IHSA robots and event summary returned 403; no usable IHSA policy, successful fresh IHSA result acquisition, or bypass is claimed. Requests to that host stopped after the denied summary. JesuitTrack's wildcard policy declares a 10-second delay, observed before its homepage. Modern Jesuit school's robots disallow `/bin`, `/bin/`, `/secure/`; the two published athletics paths are outside those exclusions and no crawl delay is published. Its same-host 301 was followed by a separate bounded request after inspection, not automatic curl redirection.
+The Jesuit XC URL's same-host 301 was followed by a separate bounded request after inspection, not automatic curl redirection.
 
 Reader-only search/scouting attempts were not retained as raw source captures and are **not admission-certified evidence**. No uniform compliance claim covers that exploratory search history.
 
@@ -63,14 +54,14 @@ Reader-only search/scouting attempts were not retained as raw source captures an
 
 | Examined document / producer rationale | What was actually published | Why it cannot qualify |
 |---|---|---|
-| Loyola High School Los Angeles official athletics roster and Christopher Allyn bio; school-primary SIDEARM publishing, not an independently identified timing producer | 2026 XC roster; Christopher Allyn, sophomore; `data-player-id="2540"`; corresponding local biography URL | No Athletic.net, MileSplit, TFRRS, or DirectAthletics provider reference in either raw page. SIDEARM 2540 is not an admitted provider-person key. Acquisition also has the disclosed delay violation. |
+| Loyola High School Los Angeles official athletics roster and Christopher Allyn bio; school-primary SIDEARM publishing, not an independently identified timing producer | 2026 XC roster; Christopher Allyn, sophomore; `data-player-id="2540"`; corresponding local biography URL | No Athletic.net, MileSplit, TFRRS, or DirectAthletics provider reference in either raw page. SIDEARM 2540 is not an admitted provider-person key. |
 | Miramonte official athletics program and 2026 roster; school-primary SIDEARM publishing | Mia Abram, sophomore; `data-player-id="5694"`; `/sports/cross-country/roster/mia-abram/5694` | Entire raw roster has no reference to those four providers. Local player ID and school/cohort/name do not establish a binding. |
 | St. Xavier official school athletics homepage, 2026 XC roster and Parker Adams bio; school-primary SIDEARM publishing | Parker Adams, sophomore; `data-player-id="9734"`; matching school biography URL | Entire roster and biography have no reference to those four providers. No admissible person key to compare to timing evidence. |
 | TFRRS Southern Stampede High School XC results; page names **Midwest Timing & Results** as timing producer, TFRRS/DirectAthletics as publishing platform | September 19, 2026; Payton Chapelle, **2027**, Eudora, 14:41.4; explicit `https://www.directathletics.com/athletes/track/9450666.html` | This is a real timing-side `DirectAthleticsAthlete(9450666)` candidate, not `TfrrsAthlete(9450666)`. No captured independent Eudora school roster publishes that person key. Producer independence from a missing school document cannot be certified. |
 | FlashResults adidas XC Challenge HS result; independently produced timing page | Actual result date September 18–19, 2026, HS grades and marks | No admitted provider-person links on this HS result. The URL's `2027_Meets` folder is not graduation-year evidence. College links elsewhere in the existing provider report do not establish a high-school positive. |
 | JesuitTrack historical team homepage; self-described school team archive | Explicitly an archive for **2000–2011**, with Athletic.net division rankings and **school** records `SchoolID=739`; links to the modern school | No provider-person link, current roster, or requested-date evidence. Team/division IDs are not athlete IDs. The historical host's current school-authoritative ownership is not independently certified. |
 | Modern Jesuit High School published XC URL and explicit redirect target | XC URL redirects to general athletics teams/seasons page. Static markup inspection found no provider references or anchor matching XC/roster/provider searches | No independently published roster-person binding in the acquired response. Static inspection is not evidence about unexecuted browser rendering or unrequested CMS services. No browser/UI execution is claimed. |
-| Great Oak, Newbury Park, York team-domain leads | Robots requests all failed DNS | No site authority, roster, policy, or provider key could be established. No alternative identity inferred. |
+| Great Oak, Newbury Park, York team-domain leads | All requests failed DNS | No site authority, roster, or provider key could be established. No alternative identity inferred. |
 | IHSA live endpoint | HTTP 403 | No fresh event bytes. Historical copy is analyzed only as a mirrored negative below. |
 
 Additional reader-tool queries, exact attempted URLs and observations:
@@ -128,9 +119,7 @@ Builds, tests, gates, actual identity graduation, browser rendering, and live cr
 
 [BLOCKED] high captures/tfrrs-stampede.html:777 — Independent school-primary document publishing the same provider-person key as the real Class-2027 timer row is missing — `xmllint --html --recover --xpath '//a[@href="https://www.directathletics.com/athletes/track/9450666.html"]/ancestor::tr[1]' P/tfrrs-stampede.html` printed Payton Chapelle / 2027 / Eudora; complete-school-response provider grep returned No matches found; zero qualified positive pairs.
 
-[OPEN] medium captures/loyola-robots.txt:332 — Two initial Loyola acquisitions violated published 30-second crawl delay; bytes retained and excluded from admission-certified positives — acquisition recipe/table: robots start 03:16:22.340332520Z, roster start 03:16:45.343005689Z, bio start 03:17:12.483463532Z; start gaps ~23.0s / ~27.1s, not 30s. Historical noncompliance cannot be retroactively fixed; later SIDEARM requests explicitly waited 30 seconds.
-
-[BLOCKED] medium captures/ihsa-2790204.json:1 — Fresh IHSA event and readable robots policy unavailable; historical capture lacks known local acquisition instant — table's exact curl requests printed HTTP 403 / 153 bytes for both robots and event; `cmp` exited 0 for preserved historical copy; upstream fetch timestamps are not acquisition metadata.
+[BLOCKED] medium captures/ihsa-2790204.json:1 — Fresh IHSA event unavailable; historical capture lacks known local acquisition instant — the table's exact curl request printed HTTP 403 / 153 bytes for the event; `cmp` exited 0 for preserved historical copy; upstream fetch timestamps are not acquisition metadata.
 
 [FIXED] informational captures/athleticlive-2790204.json:1 — Mirrored negative is established from genuine explicit numeric person/upstream object keys rather than name matching — final `/usr/bin/jq -e -s` command above printed true, exit 0; both sides remain CandidateOnly. This records completed evidence qualification, not a production-code fix.
 

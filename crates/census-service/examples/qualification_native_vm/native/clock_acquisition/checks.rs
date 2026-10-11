@@ -26,7 +26,7 @@ pub(super) fn capture(capture: &FetchOutcome, stats: &FetchStats) -> Result<(usi
             && stats.conditional_304 == 0
             && stats.errors == 0
             && stats.bytes_downloaded == u64::try_from(capture.bytes)?,
-        "acquisition must contain one robots policy request and one new full-body response: {stats:?}"
+        "acquisition must contain exactly two physical requests and one new full-body response: {stats:?}"
     );
     let html = std::str::from_utf8(&capture.body).context("RIIL directory is not UTF-8")?;
     ensure!(

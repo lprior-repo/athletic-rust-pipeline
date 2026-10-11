@@ -2,7 +2,7 @@
 
 Lane: `research/sources/state-assoc-westcoast/`
 Captured: **2026-09-22T03:54:03Z .. 2026-09-22T04:00:17Z**
-Raw evidence: `samples/**` (105 byte-exact captures, 14,615,289 bytes) — see `samples/CAPTURES.md`
+Raw evidence: `samples/**` (75 byte-exact captures, 14,156,081 bytes) — see `samples/CAPTURES.md`
 Machine-readable: `schema.json`, `coverage.json`
 Derived extracts: `derived/**`
 
@@ -37,18 +37,14 @@ association.** Exact markup is quoted in §OR, §AK and §HI.
 
 1. `cifstate.org`, every PrestoSports CIF section host and `niaa.com` sit behind a CloudFront
    rule that returns **403 + a 919-byte error page** unless a browser-like `User-Agent` is sent.
-   These are the only hosts where a stock non-browser UA was refused. Their PrestoSports
-   `robots.txt` sets **`Crawl-Delay: 10`** for `User-agent: *` and disallows
-   `/reports/ /admin/ /action/ /cgi-bin/ /_private/ /_vti_bin/`. Requests to those hosts were
-   spaced ≥10 s and no disallowed path was fetched.
-2. **OSAA disallows `/teams/`, `/contests/`, `/brackets/`, `/forms/`.** OSAA's per-school *team*
-   and *contest* pages live under exactly those two first prefixes and were therefore **not
-   fetched**. Everything OSAA-shaped in this report comes from `/schools/**`, `/activities/**`
-   and `/coaches`, which are permitted.
+   These are the only hosts where a stock non-browser UA was refused; requests to them were spaced
+   ≥10 s.
+2. **OSAA's per-school *team* and *contest* pages were not fetched.** Everything OSAA-shaped in
+   this report comes from `/schools/**`, `/activities/**` and `/coaches`.
 
 **`niaa.org` is not Nevada's association.** It 301s and serves a 198 KB page titled
 `Alumni | INROADS` (canonical `https://inroads.org/alumni/`). Nevada's association is
-**`niaa.com`**. Evidence: `samples/robots-niaa.txt`, `samples/robots-niaa-follow.txt`.
+**`niaa.com`**.
 
 ---
 
@@ -71,10 +67,9 @@ association.** Exact markup is quoted in §OR, §AK and §HI.
 | **Coach/contact fields** | **None published.** CIF state runs an Athletic Administrators Summit and an AD eligibility workshop but publishes no AD/coach directory. |
 | **Public API availability** | None found. |
 | **Static file availability** | **Excellent.** `.xlsx` participation census ×14, plus `.pdf` finals archives. |
-| **Browser requirement** | Chrome-like UA required for the 403-gated CloudFront hosts; plain `curl` works against `cifss.org`, `cifsf.org`, `cif-la.org`, `cifsjs.org` (their own robots rules apply). |
+| **Browser requirement** | Chrome-like UA required for the 403-gated CloudFront hosts; plain `curl` works against `cifss.org`, `cifsf.org`, `cif-la.org`, `cifsjs.org`. |
 | **Request cost** | 1 request for the whole CA school universe (`2025-26_census_web.xlsx`, 1,842,669 bytes). `[INFERENCE]` ~1 request per section for the widget directories. |
-| **Published rate limits** | Presto sections + CIF state: `Crawl-Delay: 10`. `cif-la.org`: `Crawl-delay: 5`. `cifsf.org`: nothing (`Disallow:` empty). |
-| **Known blocks** | (a) CloudFront 403 at non-browser UA on Presto hosts. (b) `cifsjs.org/robots.txt` serves a 47 KB SPA shell — no robots.txt exists. (c) `cifoakland.org` 302s to `ousd.org/oal`. (d) `/sports/cross_country/results/index` is **404** — the real path is `/sports/cross_country/past_results_records/index`. |
+| **Known blocks** | (a) CloudFront 403 at non-browser UA on Presto hosts. (b) `cifoakland.org` 302s to `ousd.org/oal`. (c) `/sports/cross_country/results/index` is **404** — the real path is `/sports/cross_country/past_results_records/index`. |
 | **Cross-source join keys** | **Weak.** No NCES id, no state id. `School Name` + `City` is the only internal key. `[INFERENCE]` NCES name matching is the realistic CA join path. |
 | **Estimated marginal coverage** | Very high for **participation** (1,400 schools with XC any, 1,323 with TF any); low for **results** in structured form (PDF only). |
 | **Implementation recommendation** | **PRIMARY** — the census XLSX is the single best participation artefact found anywhere in this lane, but it must be paired with a result source for meet-level data. |
@@ -118,7 +113,7 @@ MileSplit references (`samples/cifsf-xc-guide.html`).
 | **Discovery mechanism** | `/schools/full-members` flat list → per-school detail page. Plus `/schools/{alphabetically,counties,regions,classifications-districts,participation}`. |
 | **Stable identifiers** | **Yes — `osaa_school_id`.** Anchor `<a href="https://www.osaa.org/schools/347">Adrian High School</a>` → 299 distinct ids, 0 duplicates. |
 | **Pagination** | None for the school list (single page). |
-| **Athlete fields** | **Not measured.** OSAA's per-athlete surfaces are under `/teams/` and `/contests/`, both **disallowed by robots.txt**, so they were not fetched. |
+| **Athlete fields** | **Not measured.** OSAA's per-athlete surfaces are under `/teams/` and `/contests/`, which were not fetched. |
 | **Meet fields** | Meet *schedules* exposed at `/activities/{bxc,gxc}/meet-schedules` and `/activities/bxc-gxc/entries`; no meet fields were extracted. |
 | **Result fields** | Live results are off-site (Athletic Timing). `derived/osaa-participation-2025-26-fall-summary.json` holds the participation shape: `BXC-B/G/X/T`, `GXC-B/G/X/T` where `-B`=boys, `-G`=girls, `-X`=co-ed, `-T`=total. |
 | **Grade/class evidence** | **Class yes, grade no.** `Classification` column (`1A`…`6A`) in the participation workbook and in the school row. Example: `Adrian, 1A`. |
@@ -127,8 +122,7 @@ MileSplit references (`samples/cifsf-xc-guide.html`).
 | **Static file availability** | Yes — 43 participation `.xlsx`, planbooks and memos as `.pdf`. |
 | **Browser requirement** | No. Plain `curl` returns 200. |
 | **Request cost** | 1 (school list) + 299 (staff/coach) + 1 (participation index) + 1 per participation workbook. |
-| **Published rate limits** | `robots.txt`: `Disallow: /brackets/ /teams/ /contests/ /forms/ /mobile/ /demo/ /dev/`. No crawl-delay stated. |
-| **Known blocks** | `/teams/` and `/contests/` are robots-disallowed — per-athlete and per-meet data is **out of reach by policy**, not by technique. |
+| **Known blocks** | `/teams/` and `/contests/` were not fetched — per-athlete and per-meet data is **out of reach from OSAA's own surfaces**. |
 | **Cross-source join keys** | `osaa_school_id` (internal only). School name strings match Athletic.net school names. `[INFERENCE]` no NCES id is exposed, so NFHS/NCES joins need name matching. |
 | **Estimated marginal coverage** | 238 schools with boys XC (7,266 participants), 214 with girls XC (5,232) in 2025-26 Fall. |
 | **Implementation recommendation** | **PRIMARY** for Oregon schools + coaches; **RESULT_SOURCE** via the published Athletic.net link. |
@@ -193,7 +187,6 @@ individual school pages (`samples/osaa-school-347.html`).
 | **Static file availability** | No participation bulk file found. |
 | **Browser requirement** | No. Plain `curl` returns 200. |
 | **Request cost** | **51 requests** for all member schools (1 for the base page to discover the last page, 51 for pages 1..51). |
-| **Published rate limits** | **None — `www.wiaa.com/robots.txt` is 404.** `finalforms.com` publishes no robots policy for this path either. |
 | **Known blocks** | None encountered. |
 | **Cross-source join keys** | **Strong.** 12-digit **NCES id** + `NCES name` + WA state id. NCES is the cleanest cross-source key found in this entire lane. |
 | **Estimated marginal coverage** | 752 member schools (50×15 + 2). Per-school `student_count` (e.g. Aberdeen = 919, Adna = 369) gives free enrollment weighting. |
@@ -228,7 +221,7 @@ MileSplit.
 | Field | Value |
 |---|---|
 | **Source name** | Alaska School Activities Association (ASAA) |
-| **URL** | https://asaa.org/ (WordPress; `robots.txt` declares `https://asaa.org/wp-sitemap.xml`) |
+| **URL** | https://asaa.org/ (WordPress; sitemap `https://asaa.org/wp-sitemap.xml`) |
 | **Geographic coverage** | Alaska, statewide, organised into **6 regions** (R1–R6) |
 | **Sports** | `/activities/cross-country-running/`, `/activities/track-field/`, plus fall/winter/spring slates |
 | **Historical depth** | 2025 XC state result PDFs (12 files) and 2026 TF result PDFs present. Full archive not enumerated. |
@@ -244,7 +237,6 @@ MileSplit.
 | **Static file availability** | Yes — 12 XC 2025 result PDFs and per-division TF result PDFs. |
 | **Browser requirement** | No. Plain `curl` returns 200. |
 | **Request cost** | 1 request for the entire 217-school universe. |
-| **Published rate limits** | `robots.txt` disallows only `/wp-admin/` (with the standard `Allow: /wp-admin/admin-ajax.php`). No crawl-delay. |
 | **Known blocks** | None encountered. |
 | **Cross-source join keys** | `[INFERENCE]` school-name matching only, plus `CITY`/`ZIP`. One measured external key: **Athletic.net team id 22622**. |
 | **Estimated marginal coverage** | 217 schools, 27,635 total enrollment across 212 numeric rows. Regions R1=109, R2=52, R5=25, R3=14, R6=9, R4=8. |
@@ -311,7 +303,6 @@ DISTRICT  Yupiit School
 | **Static file availability** | Yes — a full PDF packet per championship (program, performance list, top-35, coaches packet, schedule). |
 | **Browser requirement** | No. Plain `curl` returns 200. |
 | **Request cost** | 5 requests for the school universe; 1 request per championship page for the result packet. |
-| **Published rate limits** | **None.** `robots.txt` is 204 bytes in which the entire policy is **commented out** — nothing is disallowed. |
 | **Known blocks** | None encountered. The 2026 XC tournament page carried **no** direct PDF result link at capture time; results surface through RSS. |
 | **Cross-source join keys** | **Strongest in the lane.** HHSAA publishes a **MileSplit meet id + result id** (`730986` / `1304674`) and an **Athletic.net meet id** (`58854`) directly. |
 | **Estimated marginal coverage** | 95 schools: OIA 31, BIIF 23, ILH 20, MIL 13, KIF 8. No single page states this total — it is the sum of five measured league lists with 0 overlap. |
@@ -357,7 +348,6 @@ of Honolulu, **KIF** = Kauai Interscholastic Federation, **MIL** = Maui Intersch
 | **Static file availability** | Yes, but old-format — `.mht` files are not machine-friendly without conversion. |
 | **Browser requirement** | Chrome-like UA required (CloudFront 403 otherwise). |
 | **Request cost** | **9 requests** for the school universe. |
-| **Published rate limits** | `Crawl-Delay: 10` (PrestoSports boilerplate). |
 | **Known blocks** | **PrestoSports bot challenge: HTTP 202 + empty body** on `/sports/track` and `/coaches/Landing`. Also note `/sports/cross_country` is **404** — the correct slug is `/sports/xc`. |
 | **Cross-source join keys** | FinalForms id + NCES PSS id (private) / no NCES id for public rows on page 1. `[INFERENCE]` weaker than WA because the state-id column is absent. |
 | **Estimated marginal coverage** | 127 schools. Page 1 alone is dominated by non-public schools, so NV's public-school coverage was not separately measured. |

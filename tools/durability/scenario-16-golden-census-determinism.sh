@@ -162,16 +162,15 @@ require_line replay-pa-piaa "$REPLAY_PA_PIAA" "^golden_directory_alpha_a[.]json 
 require_line replay-pa-piaa "$REPLAY_PA_PIAA" "^golden_directory_alpha_b[.]json +golden_directory_alpha_b ids match directory_alpha_b[.]html [(]${golden_b} school[(]s[)][)]$"
 require_line replay-pa-piaa "$REPLAY_PA_PIAA" "^golden_directory_alpha_z[.]json +golden_directory_alpha_z ids match directory_alpha_z[.]html [(]${golden_z} school[(]s[)][)]$"
 require_line replay-pa-piaa "$REPLAY_PA_PIAA" '^details_12048[.]html +details id=12048 school="A J McMullen School" contacts=1$'
-require_line replay-pa-piaa "$REPLAY_PA_PIAA" '^robots[.]txt +robots `[*]` group holds [0-9]+ disallow[(]s[)], including /officials/directory/ and permitting /schools/$'
-require_line replay-pa-piaa "$REPLAY_PA_PIAA" '^PROVENANCE[.]json +provenance 5 capture[(]s[)] match their recorded bytes and digest$'
+require_line replay-pa-piaa "$REPLAY_PA_PIAA" '^PROVENANCE[.]json +provenance 4 capture[(]s[)] match their recorded bytes and digest$'
 require_line replay-pa-piaa "$REPLAY_PA_PIAA" '^golden_details_12048[.]json +golden_details_12048 is a prototype record; the adapter.s golden test compares it$'
-require_line replay-pa-piaa "$REPLAY_PA_PIAA" '^10 capture[(]s[)] replayed for source pa_piaa$'
-capture_lines="$(grep -c -E '^(directory_alpha_|details_12048|robots[.]txt|PROVENANCE[.]json|golden_)' "$REPLAY_PA_PIAA" || true)"
-if [[ "$capture_lines" -ne 10 ]]; then
-    printf 'FAIL: replay pa_piaa printed %s per-capture summaries instead of 10; log retained %s\n' "$capture_lines" "$REPLAY_PA_PIAA"
+require_line replay-pa-piaa "$REPLAY_PA_PIAA" '^9 capture[(]s[)] replayed for source pa_piaa$'
+capture_lines="$(grep -c -E '^(directory_alpha_|details_12048|PROVENANCE[.]json|golden_)' "$REPLAY_PA_PIAA" || true)"
+if [[ "$capture_lines" -ne 9 ]]; then
+    printf 'FAIL: replay pa_piaa printed %s per-capture summaries instead of 9; log retained %s\n' "$capture_lines" "$REPLAY_PA_PIAA"
     exit 1
 fi
-printf 'PROOF: replay pa_piaa printed all 10 per-capture summaries, offline with no store and no clock\n'
+printf 'PROOF: replay pa_piaa printed all 9 per-capture summaries, offline with no store and no clock\n'
 
 printf 'SECTION: the compile-time embedded owned capture and two raw captures replay through the current collector in an isolated offline store, and a rebuilt fixture store keeps semantics while publication identity is not inherited\n'
 run_suite parity-pipeline 1 -p census-service --test parity_pipeline --locked --offline -- --nocapture

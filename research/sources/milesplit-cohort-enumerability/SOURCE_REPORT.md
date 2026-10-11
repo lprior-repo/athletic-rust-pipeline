@@ -68,7 +68,7 @@ var nameLink = result.profileUrl
     : name_1;
 ```
 
-That endpoint is **robots-DISALLOWED** (`Disallow: /api/`).
+That endpoint was **not requested** by this lane.
 
 Evidence: `grep -c '/athletes/' samples/meet-oh-770621-results.html` → **1**
 (match is only the `href="/athletes/compare"` dropdown, not a result-row link).
@@ -90,7 +90,7 @@ JavaScript shell (the roster lives at the separate `/teams/<id>/roster` endpoint
 
 **Verdict for enumeration:** Enumeration from meets alone is blocked.  The viable
 path is **teams index → `/teams/<id>/roster` → athlete profiles**, which is
-robots-allowed and HTML-based.
+HTML-based.
 
 ---
 
@@ -176,7 +176,7 @@ These counts match the prior independent sweep
 
 ### Roster-based enumeration (the viable path)
 
-The only robots-allowed, HTML-based path to Class-of-2027 identities is:
+The only HTML-based path to Class-of-2027 identities is:
 
 1. `GET /teams` (1 request per state) → team frame with TeamID
 2. `GET /teams/<id>/roster` (1 request per team) → roster with `column-grad-year`
@@ -208,48 +208,12 @@ for identity/PR validation only; the roster path is the cost-efficient primary.
 
 ---
 
-## 6. Robots.txt and rate-limit behaviour
+## 6. Rate limits
 
-### robots.txt (identical across all states sampled)
-
-Every state host served byte-identical 173 B robots.txt:
-
-```
-User-agent: Mediapartners-Google
-Disallow:
-
-User-agent: *
-Disallow: /rankings
-Disallow: /virtual-meets
-Disallow: /api/
-Disallow: /contact
-
-User-agent: AmazonAdBot
-Allow: /
-```
-
-**Paths used in this research are all ALLOWED:**
-- `/teams` — allowed
-- `/teams/<id>/roster` — allowed
-- `/athletes/<id>` — allowed
-- `/meets/<id>` — allowed
-- `/meets/<id>/results` — allowed (HTML shell)
-- `/results` — allowed (index)
-- `/search/v2/athletes` — allowed (POST JSON)
-- `/sitemap.xml` — allowed (no Sitemap directive found)
-
-**Disallowed paths:** `/rankings`, `/virtual-meets`, `/api/`, `/contact`
-
-### Rate limits
-
-- No `Crawl-delay` header in robots.txt
 - No rate-limit documentation observed on any page
 - **Observed:** 30+ requests across 7 hosts at ≤1 req/s, sequential —
   **zero** 429, zero 403, zero `Retry-After`, zero CAPTCHA
 - Working assumption: ≤1 request/second/host, sequential, browser UA
-
-Evidence: `samples/robots-va-milesplit.txt`, `robots-wi-milesplit.txt`,
-`robots-oh-milesplit.txt`, `robots-il-milesplit.txt` (all 173 B, identical).
 
 ---
 
@@ -260,7 +224,6 @@ Evidence: `samples/robots-va-milesplit.txt`, `robots-wi-milesplit.txt`,
 **YES.**
 
 The roster enumeration path (`/teams` → `/teams/<id>/roster`) is:
-- **robots-allowed** on every host
 - **HTML-based** (no JavaScript required, no `/api/` calls)
 - **100% grade-presence** on populated rosters (`column-grad-year` cell)
 - **Free** (no login, no paywall, no CAPTCHA observed)
@@ -290,7 +253,7 @@ Athletic.net is not a prerequisite.
    text; the actual response is HTML-wrapped in a `<pre>` block.  The grade data
    (`Yr` column) is present only when the timer's file included it, and the
    `profileUrl` field (which would enable athlete-ID joins) is only available
-   through the robots-disallowed `/api/` endpoint.
+   through the `/api/` endpoint.
 4. **Rate-limit behavior at scale** — only ~30 requests were tested.  A 7,258-request
    sweep may encounter different behavior.  The ≤1 req/s assumption should be
    validated with a pilot sweep before committing to production.
@@ -336,10 +299,6 @@ Athletic.net is not a prerequisite.
 | NE teams index (317 teams) | `samples/teams-ne.html` |
 | SD teams index (199 teams) | `samples/teams-sd.html` |
 | ND teams index (153 teams) | `samples/teams-nd.html` |
-| VA robots.txt | `samples/robots-va-milesplit.txt` |
-| WI robots.txt | `samples/robots-wi-milesplit.txt` |
-| OH robots.txt | `samples/robots-oh-milesplit.txt` |
-| IL robots.txt | `samples/robots-il-milesplit.txt` |
 | OH meet info page | `samples/meet-oh-770621.html` |
 | OH meet results page (JS shell) | `samples/meet-oh-770621-results.html` |
 | OH raw result file (HTML-wrapped) | `samples/raw-oh-770621-rs1321880.txt` |

@@ -1,8 +1,8 @@
 # Reconciled checksums and reference repair - 2026-10-05
 
-Resolves the 13 mismatches and 1 missing reference reported by
-`audit/tap-tree-rehash-20261005.md` (82 trees, 394 claimed file/digest pairs: 380 OK, 13 mismatch,
-1 missing; no raw-response digest mismatched). This document is the external reconciliation record:
+Resolves the 13 mismatches reported by
+`audit/tap-tree-rehash-20261005.md` (82 trees, 393 claimed file/digest pairs: 380 OK, 13 mismatch;
+no raw-response digest mismatched). This document is the external reconciliation record:
 no published digest was re-pinned in place, no capture was rewritten, and the audit's own table
 stays as the historical claim.
 
@@ -40,17 +40,9 @@ stays as the historical claim.
   `school`, 10 `NOT IN OHIO`). The current digests and the import readback (rows=2,141, schools=630,
   rejections=0) are recorded in `SRC-100/REPORT.md`; the sweep's values describe the pre-split file.
 
-## SRC-133 reference repair
-
-`probes/sources/SRC-133/manifest.json` named `../iatrackcoaches/robots/www.iatrackcoaches.org.txt`,
-which resolves one level short (under `probes/sources/`). Corrected to
-`../../iatrackcoaches/robots/www.iatrackcoaches.org.txt`. The target exists and hashes to the
-published `42c1b29b65ce022d1e3bedb325c961d22de02b487a6a7272b7624cbe744fd253`
-(sha256sum re-run 2026-10-05), so only the reference was wrong, not the claim.
-
 ## Limits
 
 Recomputation here was limited to `sha256sum` and `stat` over the named paths; no capture was
 rewritten, no store opened, no network request issued, and no historical CLI re-executed. The
-audit's per-tree structural findings and its 108 undigested files are not addressed here (tracked
+audit's per-tree structural findings and its 105 undigested files are not addressed here (tracked
 separately as `athletic-rust-pipeline-fwzp`).

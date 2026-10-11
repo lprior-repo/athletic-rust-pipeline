@@ -93,21 +93,33 @@ async fn wait_for_ctrl_c() -> Result<(), BootstrapError> {
         })
 }
 
+#[derive(Debug)]
+pub(super) enum StopOutcome {
+    EndpointAlreadyEnded,
+    ReceiverPending(tokio::sync::oneshot::Receiver<()>),
+}
+
 pub(super) async fn await_stop(
     reason: Arc<AtomicU8>,
     over_budget: Arc<tokio::sync::Notify>,
     shutdown: impl Future<Output = ()> + Send + 'static,
-    endpoint_done: &mut tokio::sync::oneshot::Receiver<()>,
-) -> bool {
-    tokio::select! {
+    endpoint_done: tokio::sync::oneshot::Receiver<()>,
+) -> StopOutcome {
+    let mut endpoint_done = endpoint_done;
+    let ended_first = tokio::select! {
         () = stop_watch(Arc::clone(&reason), shutdown) => false,
         () = over_budget.notified() => {
             reason.store(StopReason::MemoryBudget.to_raw(), Ordering::SeqCst);
             false
         }
-        _ = &mut *endpoint_done => {
+        _ = &mut endpoint_done => {
             reason.store(StopReason::ServerExit.to_raw(), Ordering::SeqCst);
             true
         }
+    };
+    if ended_first {
+        StopOutcome::EndpointAlreadyEnded
+    } else {
+        StopOutcome::ReceiverPending(endpoint_done)
     }
 }

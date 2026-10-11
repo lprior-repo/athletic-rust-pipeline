@@ -19,7 +19,7 @@ use super::drain::{
 };
 use super::error::BootstrapError;
 use super::options::ServeOptions;
-use super::stop::{await_stop, StopReason};
+use super::stop::{await_stop, StopOutcome, StopReason};
 
 pub async fn serve(options: ServeOptions) -> Result<DrainReport> {
     serve_until(options, std::future::pending::<()>()).await
@@ -50,7 +50,7 @@ pub(super) async fn supervise(
     }
     let reason = Arc::new(AtomicU8::new(StopReason::ServerExit.to_raw()));
     let over_budget = Arc::new(tokio::sync::Notify::new());
-    let (cancel, mut endpoint_done) = spawn_endpoint(&region, &store, &options, listener, lane)?;
+    let (cancel, endpoint_done) = spawn_endpoint(&region, &store, &options, listener, lane)?;
     region
         .spawn(super::guard::watch_memory(
             options.memory_budget_bytes,
@@ -65,18 +65,19 @@ pub(super) async fn supervise(
         "census service listening"
     );
 
-    let endpoint_ended = await_stop(
+    let stop_outcome = await_stop(
         Arc::clone(&reason),
         Arc::clone(&over_budget),
         shutdown,
-        &mut endpoint_done,
+        endpoint_done,
     )
     .await;
     cancel.send(()).ok();
-    let endpoint_shutdown = if endpoint_ended {
-        EndpointShutdown::Completed
-    } else {
-        await_endpoint_shutdown(endpoint_done, ENDPOINT_SHUTDOWN_GRACE).await
+    let endpoint_shutdown = match stop_outcome {
+        StopOutcome::EndpointAlreadyEnded => EndpointShutdown::Completed,
+        StopOutcome::ReceiverPending(receiver) => {
+            await_endpoint_shutdown(receiver, ENDPOINT_SHUTDOWN_GRACE).await
+        }
     };
     let counted = region
         .drain(options.drain_timeout)

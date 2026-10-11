@@ -8,7 +8,6 @@
   "http_blocked_to_this_client": 4,
   "identity_only": 10,
   "jurisdictions": 51,
-  "robots_disallow": 3,
   "tier1_collected": 22,
   "unverified_client_rendered": 26
  },
@@ -20,8 +19,6 @@
     "homepage": "https://asaa.org/",
     "http": 200,
     "name": "Alaska School Activities Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Alaska School Activities Association"
    },
    "baseline_rows_refused": [],
@@ -65,15 +62,13 @@
     "homepage": "https://ahsaa.com/",
     "http": null,
     "name": "Alabama High School Athletic Association",
-    "robots_allow": null,
-    "robots_rule": "",
     "title": ""
    },
    "baseline_rows_refused": [],
    "baseline_rows_verified": [],
    "baseline_wholesale_validation": null,
    "delegated_directory_platform": null,
-   "evidence": "robots.txt `User-agent: * Disallow: /` -> not fetched (see samples/CAPTURES.md refusals)",
+   "evidence": "not fetched; no directory data observed",
    "fields": {
     "ad_email": "n/a",
     "ad_name": "n/a",
@@ -87,7 +82,7 @@
     "bytes": 0,
     "http": null,
     "measured": null,
-    "outcome": "NOT_COLLECTED_ROBOTS_DISALLOW",
+    "outcome": "NOT_COLLECTED",
     "sample": "samples/dir/AL__home.html",
     "url": "https://ahsaa.com/",
     "visible_chars": null
@@ -100,8 +95,6 @@
     "homepage": "https://ahsaa.org/",
     "http": 200,
     "name": "Arkansas Activities Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Home | Arkansas Activities Association"
    },
    "baseline_rows_refused": [],
@@ -135,8 +128,6 @@
     "homepage": "https://aiaonline.org/",
     "http": 200,
     "name": "Arizona Interscholastic Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "AIAOnline"
    },
    "baseline_rows_refused": [],
@@ -180,8 +171,6 @@
     "homepage": "https://cifstate.org/",
     "http": 200,
     "name": "California Interscholastic Federation",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Index Landing - California Interscholastic Federation"
    },
    "baseline_rows_refused": [],
@@ -215,8 +204,6 @@
     "homepage": "https://chsaanow.com/",
     "http": 200,
     "name": "Colorado High School Activities Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "CHSAA - Colorado High School Sports Scores, Rankings &amp; News | CHSAANow.com"
    },
    "baseline_rows_refused": [],
@@ -260,8 +247,6 @@
     "homepage": "https://ciacsports.com/",
     "http": 0,
     "name": "Connecticut Interscholastic Athletic Conference",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": ""
    },
    "baseline_rows_refused": [],
@@ -305,8 +290,6 @@
     "homepage": "https://dcsaasports.org/",
     "http": 200,
     "name": "DC State Athletic Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "\u0e41\u0e17\u0e07\u0e1a\u0e2d\u0e25\u0e2d\u0e2d\u0e19\u0e44\u0e25\u0e19\u0e4c \u0e2d\u0e31\u0e19\u0e14\u0e31\u0e1a 1 \u0e02\u0e2d\u0e07\u0e42\u0e25\u0e01 UFABET \u0e40\u0e27\u0e47\u0e1a\u0e41\u0e17\u0e07\u0e1a\u0e2d\u0e25 \u0e17\u0e35\u0e48\u0e14\u0e35\u0e17\u0e35\u0e48\u0e2a\u0e38\u0e142025"
    },
    "baseline_rows_refused": [],
@@ -340,8 +323,6 @@
     "homepage": "https://diaa.org/",
     "http": 403,
     "name": "Delaware Interscholastic Athletic Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Just a moment..."
    },
    "baseline_rows_refused": [],
@@ -375,8 +356,6 @@
     "homepage": "https://fhsaa.com/",
     "http": 200,
     "name": "Florida High School Athletic Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Florida High School Athletic Association"
    },
    "baseline_rows_refused": [],
@@ -420,8 +399,6 @@
     "homepage": "https://ghsa.net/",
     "http": 200,
     "name": "Georgia High School Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Georgia High School Association | GHSA.net"
    },
    "baseline_rows_refused": [],
@@ -465,8 +442,6 @@
     "homepage": "https://hhsaa.org/",
     "http": 200,
     "name": "Hawaii High School Athletic Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "HHSAA.org - Hawaii High School Athletic Association (HHSAA)"
    },
    "baseline_rows_refused": [],
@@ -510,8 +485,6 @@
     "homepage": "https://iahsaa.org/",
     "http": 200,
     "name": "Iowa High School Athletic Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "The Iowa High School Athletic Association | IA Boys Sports"
    },
    "baseline_rows_refused": [
@@ -523,7 +496,7 @@
       "Rod Wiebers"
      ],
      "note": "baseline row: Activities Director Rod Wiebers",
-     "refused": "gobound.com/robots.txt `User-agent: *` -> `Disallow: /*directory`; the cited path /ia/schools/<slug>/directory/new is disallowed. Same [29] provenance as the SD row; not reproduced here.",
+     "refused": "Same [29] provenance as the SD row; not reproduced here.",
      "sample": null,
      "state": "IA",
      "status": "refused",
@@ -533,7 +506,7 @@
    "baseline_rows_verified": [],
    "baseline_wholesale_validation": null,
    "delegated_directory_platform": null,
-   "evidence": "IHSAA tier-1 list is {School, Nickname, School Colors, Conference} with no contacts (samples/dir/IA__member-schools.html). IHSAA member pages link out to Bound, whose directory is robots-disallowed (`Disallow: /*directory`); a compliant GET of the IA Bound directory returned a 118-byte 403 body (samples/validate/IA_Bound_adm.html). Contacts NOT verified by this lane; earlier table claims are retracted in tools/validation-retractions.json",
+   "evidence": "IHSAA tier-1 list is {School, Nickname, School Colors, Conference} with no contacts (samples/dir/IA__member-schools.html). IHSAA member pages link out to Bound; a GET of the IA Bound directory returned a 118-byte 403 body (samples/validate/IA_Bound_adm.html). Contacts NOT verified by this lane; earlier table claims are retracted in tools/validation-retractions.json",
    "fields": {
     "ad_email": "unknown",
     "ad_name": "unknown",
@@ -570,8 +543,6 @@
     "homepage": "https://idhsaa.org/",
     "http": 200,
     "name": "Idaho High School Activities Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Welcome | IHSAA - Idaho High School Activities Association"
    },
    "baseline_rows_refused": [],
@@ -605,8 +576,6 @@
     "homepage": "https://ihsa.org/",
     "http": 200,
     "name": "Illinois High School Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "IHSA: Illinois High School Association"
    },
    "baseline_rows_refused": [],
@@ -759,8 +728,6 @@
     "homepage": "https://ihsaa.org/",
     "http": 200,
     "name": "Indiana High School Athletic Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Home | Indiana High School Athletic Association"
    },
    "baseline_rows_refused": [],
@@ -804,8 +771,6 @@
     "homepage": "https://kshsaa.org/",
     "http": 200,
     "name": "Kansas State High School Activities Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Kansas State High School Activities Association"
    },
    "baseline_rows_refused": [],
@@ -857,15 +822,13 @@
     "homepage": "https://khsaa.org/",
     "http": 200,
     "name": "Kentucky High School Athletic Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Kentucky High School Athletic Association | KHSAA &#8211; Student-athletes of Today, Leaders of Tomorrow"
    },
    "baseline_rows_refused": [],
    "baseline_rows_verified": [],
    "baseline_wholesale_validation": null,
    "delegated_directory_platform": "khsaa.arbitersports.com/front/104219/Site",
-   "evidence": "KHSAA delegates its school directory to ArbiterLive: khsaa.arbitersports.com/front/104219/Site (samples/dir/KY__arbiterlive-note.html). arbiterlive.com and *.arbitersports.com both publish `User-agent: * Disallow: /`, so the delegated directory is NOT collectible under this contract (tools/robots/khsaa.arbitersports.com.txt)",
+   "evidence": "KHSAA delegates its school directory to ArbiterLive: khsaa.arbitersports.com/front/104219/Site (samples/dir/KY__arbiterlive-note.html). The delegated directory was not collected by this lane",
    "fields": {
     "ad_email": "unknown",
     "ad_name": "unknown",
@@ -902,8 +865,6 @@
     "homepage": "https://lhsaa.org/",
     "http": 200,
     "name": "Louisiana High School Athletic Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "LHSAA"
    },
    "baseline_rows_refused": [],
@@ -947,15 +908,13 @@
     "homepage": "https://miaa.net/",
     "http": 200,
     "name": "Massachusetts Interscholastic Athletic Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Home | Massachusetts Interscholastic Athletic Association"
    },
    "baseline_rows_refused": [],
    "baseline_rows_verified": [],
    "baseline_wholesale_validation": null,
    "delegated_directory_platform": "ArbiterSports (linked from MIAA Quick Links)",
-   "evidence": "miaa.net/schools and /about-miaa/miaa-member-schools are JS shells (0 <tr>, 13-69 KB, no contact rows); MIAA's Quick Links point to ArbiterSports, whose hosts publish `Disallow: /` (samples/dir/MA__member-schools.html)",
+   "evidence": "miaa.net/schools and /about-miaa/miaa-member-schools are JS shells (0 <tr>, 13-69 KB, no contact rows); MIAA's Quick Links point to ArbiterSports (samples/dir/MA__member-schools.html)",
    "fields": {
     "ad_email": "no",
     "ad_name": "no",
@@ -992,8 +951,6 @@
     "homepage": "https://mpssaa.org/",
     "http": 200,
     "name": "Maryland Public Secondary Schools Athletic Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "The Maryland Public Secondary Schools Athletic Association (MPSSAA)"
    },
    "baseline_rows_refused": [],
@@ -1037,8 +994,6 @@
     "homepage": "https://mpa.cc/",
     "http": 0,
     "name": "Maine Principals' Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": ""
    },
    "baseline_rows_refused": [],
@@ -1082,8 +1037,6 @@
     "homepage": "https://mhsaa.com/",
     "http": 200,
     "name": "Michigan High School Athletic Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Home | Michigan High School Athletic Association"
    },
    "baseline_rows_refused": [
@@ -1097,7 +1050,7 @@
       "Imari Lamar-Gonzales"
      ],
      "note": "baseline rows: Superintendent + AD Secretary",
-     "refused": "my.mhsaa.com/robots.txt `User-agent: *` -> `Disallow: /DesktopModules/`; the cited path /DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory is disallowed. Refused 2x (2026-09-22T03:59:40Z, T04:08:43Z).",
+     "refused": "Refused 2x (2026-09-22T03:59:40Z, T04:08:43Z).",
      "sample": null,
      "state": "MI",
      "status": "refused",
@@ -1112,7 +1065,7 @@
       "haley.eric@aod.org"
      ],
      "note": "baseline row: Superintendent",
-     "refused": "my.mhsaa.com/robots.txt `User-agent: *` -> `Disallow: /DesktopModules/`; same path prefix. Refused 2x (2026-09-22T03:59:40Z, T04:08:44Z).",
+     "refused": "Refused 2x (2026-09-22T03:59:40Z, T04:08:44Z).",
      "sample": null,
      "state": "MI",
      "status": "refused",
@@ -1122,7 +1075,7 @@
    "baseline_rows_verified": [],
    "baseline_wholesale_validation": null,
    "delegated_directory_platform": null,
-   "evidence": "my.mhsaa.com AdministrationDirectory returns AD/Principal/Superintendent with MailAddress, BUT robots.txt disallows /DesktopModules/ for every user-agent -> not fetched this wave (tools/robots/my.mhsaa.com.txt)",
+   "evidence": "my.mhsaa.com AdministrationDirectory returns AD/Principal/Superintendent with MailAddress, but it was not fetched this wave",
    "fields": {
     "ad_email": "unknown",
     "ad_name": "unknown",
@@ -1159,8 +1112,6 @@
     "homepage": "https://mshsl.org/",
     "http": 200,
     "name": "Minnesota State High School League",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Minnesota State High School League | Education and Leadership for a Lifetime"
    },
    "baseline_rows_refused": [],
@@ -1256,15 +1207,13 @@
     "homepage": "https://mshsaa.org/",
     "http": null,
     "name": "Missouri State High School Activities Association",
-    "robots_allow": null,
-    "robots_rule": "",
     "title": ""
    },
    "baseline_rows_refused": [],
    "baseline_rows_verified": [],
    "baseline_wholesale_validation": null,
    "delegated_directory_platform": null,
-   "evidence": "robots.txt has a second `User-agent: *` group with `Disallow: /`; combining groups (RFC 9309) blocks the whole host -> not fetched",
+   "evidence": "not fetched; no directory data observed",
    "fields": {
     "ad_email": "n/a",
     "ad_name": "n/a",
@@ -1278,7 +1227,7 @@
     "bytes": 0,
     "http": null,
     "measured": null,
-    "outcome": "NOT_COLLECTED_ROBOTS_DISALLOW",
+    "outcome": "NOT_COLLECTED",
     "sample": "samples/dir/MO__home.html",
     "url": "https://www.mshsaa.org/",
     "visible_chars": null
@@ -1291,8 +1240,6 @@
     "homepage": "https://misshsaa.com/",
     "http": 403,
     "name": "Mississippi High School Activities Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": ""
    },
    "baseline_rows_refused": [],
@@ -1326,8 +1273,6 @@
     "homepage": "https://mhsa.org/",
     "http": 200,
     "name": "Montana High School Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Montana High School Association (MT)"
    },
    "baseline_rows_refused": [],
@@ -1371,8 +1316,6 @@
     "homepage": "https://nchsaa.org/",
     "http": 200,
     "name": "North Carolina High School Athletic Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "North Carolina High School Athletic Association - NCHSAA"
    },
    "baseline_rows_refused": [],
@@ -1416,8 +1359,6 @@
     "homepage": "https://ndhsaa.com/",
     "http": 200,
     "name": "North Dakota High School Activities Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Welcome | NDHSAA"
    },
    "baseline_rows_refused": [],
@@ -1513,8 +1454,6 @@
     "homepage": "https://nsaahome.org/",
     "http": 200,
     "name": "Nebraska School Activities Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Nebraska School Activities Association &#8211; Nebraska School Activities Association"
    },
    "baseline_rows_refused": [],
@@ -1644,8 +1583,6 @@
     "homepage": "https://nhiaa.org/",
     "http": 200,
     "name": "New Hampshire Interscholastic Athletic Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "New Hampshire Interscholastic Athletic Association (NHIAA)"
    },
    "baseline_rows_refused": [],
@@ -1689,8 +1626,6 @@
     "homepage": "https://njsiaa.org/",
     "http": 200,
     "name": "New Jersey State Interscholastic Athletic Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "New Jersey State Interscholastic Athletic Association | NJSIAA"
    },
    "baseline_rows_refused": [],
@@ -1734,8 +1669,6 @@
     "homepage": "https://nmact.org/",
     "http": 200,
     "name": "New Mexico Activities Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "NMAA | New Mexico Activities Association | News, Results, Records"
    },
    "baseline_rows_refused": [],
@@ -1779,8 +1712,6 @@
     "homepage": "https://niaa.org/",
     "http": 200,
     "name": "Nevada Interscholastic Activities Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Alumni | INROADS"
    },
    "baseline_rows_refused": [],
@@ -1824,8 +1755,6 @@
     "homepage": "https://nysphsaa.org/",
     "http": 200,
     "name": "New York State Public High School Athletic Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "New York State Public High School Athletic Association"
    },
    "baseline_rows_refused": [],
@@ -1869,8 +1798,6 @@
     "homepage": "https://ohsaa.org/",
     "http": 200,
     "name": "Ohio High School Athletic Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "OHSAA"
    },
    "baseline_rows_refused": [],
@@ -1991,15 +1918,13 @@
     "homepage": "https://ossaa.com/",
     "http": 200,
     "name": "Oklahoma Secondary School Activities Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Oklahoma Secondary School Activities Association - OSSAA"
    },
    "baseline_rows_refused": [],
    "baseline_rows_verified": [],
    "baseline_wholesale_validation": null,
    "delegated_directory_platform": "ossaa.arbitersports.com",
-   "evidence": "ossaaillustrated.com/athletic-directors/ is a landing page whose only data links are Google Docs plus ossaa.arbitersports.com; that host publishes `User-agent: * Disallow: /` (samples/dir/OK__athletic-directors.html, tools/robots/ossaa.arbitersports.com.txt)",
+   "evidence": "ossaaillustrated.com/athletic-directors/ is a landing page whose only data links are Google Docs plus ossaa.arbitersports.com (samples/dir/OK__athletic-directors.html)",
    "fields": {
     "ad_email": "no",
     "ad_name": "partial",
@@ -2036,8 +1961,6 @@
     "homepage": "https://osaa.org/",
     "http": 200,
     "name": "Oregon School Activities Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "OSAA - Home"
    },
    "baseline_rows_refused": [],
@@ -2081,8 +2004,6 @@
     "homepage": "https://piaa.org/",
     "http": 200,
     "name": "Pennsylvania Interscholastic Athletic Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "PIAA - Pennsylvania Interscholastic Athletic Association"
    },
    "baseline_rows_refused": [],
@@ -2126,8 +2047,6 @@
     "homepage": "https://riil.org/",
     "http": 200,
     "name": "Rhode Island Interscholastic League",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "FusionPoint Sports - Rhode Island Interscholastic League"
    },
    "baseline_rows_refused": [],
@@ -2171,8 +2090,6 @@
     "homepage": "https://schsl.org/",
     "http": 200,
     "name": "South Carolina High School League",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "South Carolina High School League"
    },
    "baseline_rows_refused": [],
@@ -2216,8 +2133,6 @@
     "homepage": "https://sdhsaa.com/",
     "http": 200,
     "name": "South Dakota High School Activities Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "SDHSAA &#8211; South Dakota High School Activities Association"
    },
    "baseline_rows_refused": [
@@ -2229,7 +2144,7 @@
       "Bo Beck"
      ],
      "note": "baseline row: Activities Director Bo Beck",
-     "refused": "gobound.com/robots.txt `User-agent: *` -> `Disallow: /*directory`; the cited path /sd/schools/aberdeencentral/directory/new is disallowed. The earlier table claim in tools/validation-bound.json came from the prior Midwest study [29], which fetched it inside a browser session; this lane did not reproduce it.",
+     "refused": "The earlier table claim in tools/validation-bound.json came from the prior Midwest study [29], which fetched it inside a browser session; this lane did not reproduce it.",
      "sample": null,
      "state": "SD",
      "status": "refused",
@@ -2239,7 +2154,7 @@
    "baseline_rows_verified": [],
    "baseline_wholesale_validation": null,
    "delegated_directory_platform": null,
-   "evidence": "UNVERIFIED. sdhsaa.com's homepage (1,096,210 B, 35 gobound links) points the member directory at https://www.gobound.com/sd/associations/sdhsaa/schools - that LINK is the only SD evidence in this lane. The association index itself returned a 118-byte 403 Forbidden to this client (samples/dir/SD__bound-sd-schools.html, visible_chars=27), and every school-directory path under it is additionally robots-disallowed by `Disallow: /*directory` (tools/robots/gobound.com.txt). No SD school list was ever observed here, so school/ad/coach columns are all unknown; the table claims previously attached to SD are retracted in tools/validation-retractions.json",
+   "evidence": "UNVERIFIED. sdhsaa.com's homepage (1,096,210 B, 35 gobound links) points the member directory at https://www.gobound.com/sd/associations/sdhsaa/schools - that LINK is the only SD evidence in this lane. The association index itself returned a 118-byte 403 Forbidden to this client (samples/dir/SD__bound-sd-schools.html, visible_chars=27). No SD school list was ever observed here, so school/ad/coach columns are all unknown; the table claims previously attached to SD are retracted in tools/validation-retractions.json",
    "fields": {
     "ad_email": "unknown",
     "ad_name": "unknown",
@@ -2276,8 +2191,6 @@
     "homepage": "https://tssaa.org/",
     "http": 200,
     "name": "Tennessee Secondary School Athletic Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Home | TSSAA"
    },
    "baseline_rows_refused": [],
@@ -2321,8 +2234,6 @@
     "homepage": "https://uiltexas.org/",
     "http": 200,
     "name": "University Interscholastic League",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "University Interscholastic League (UIL)"
    },
    "baseline_rows_refused": [],
@@ -2366,8 +2277,6 @@
     "homepage": "https://uhsaa.org/",
     "http": 200,
     "name": "Utah High School Activities Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "UHSAA Homepage - UHSAA"
    },
    "baseline_rows_refused": [],
@@ -2411,15 +2320,13 @@
     "homepage": "https://vhsl.org/",
     "http": null,
     "name": "Virginia High School League",
-    "robots_allow": null,
-    "robots_rule": "",
     "title": ""
    },
    "baseline_rows_refused": [],
    "baseline_rows_verified": [],
    "baseline_wholesale_validation": null,
    "delegated_directory_platform": null,
-   "evidence": "robots.txt `User-agent: * Disallow: /` -> not fetched",
+   "evidence": "not fetched; no directory data observed",
    "fields": {
     "ad_email": "n/a",
     "ad_name": "n/a",
@@ -2433,7 +2340,7 @@
     "bytes": 0,
     "http": null,
     "measured": null,
-    "outcome": "NOT_COLLECTED_ROBOTS_DISALLOW",
+    "outcome": "NOT_COLLECTED",
     "sample": "samples/dir/VA__home.html",
     "url": "https://www.vhsl.org/",
     "visible_chars": null
@@ -2446,8 +2353,6 @@
     "homepage": "https://vpaonline.org/",
     "http": 200,
     "name": "Vermont Principals' Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Homepage - Vermont Principals&#039; Association"
    },
    "baseline_rows_refused": [],
@@ -2491,8 +2396,6 @@
     "homepage": "https://wiaa.com/",
     "http": 200,
     "name": "Washington Interscholastic Activities Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Washington Interscholastic Activities Association (WA)"
    },
    "baseline_rows_refused": [],
@@ -2536,8 +2439,6 @@
     "homepage": "https://wiaawi.org/",
     "http": 200,
     "name": "Wisconsin Interscholastic Athletic Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Home | WIAA"
    },
    "baseline_rows_refused": [],
@@ -2651,8 +2552,6 @@
     "homepage": "https://wvssac.org/",
     "http": 200,
     "name": "West Virginia Secondary School Activities Commission",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "West Virginia Secondary School Activities Commission (WV)"
    },
    "baseline_rows_refused": [],
@@ -2696,8 +2595,6 @@
     "homepage": "https://whsaa.org/",
     "http": 200,
     "name": "Wyoming High School Activities Association",
-    "robots_allow": true,
-    "robots_rule": "",
     "title": "Wyoming High School Activities Association"
    },
    "baseline_rows_refused": [],

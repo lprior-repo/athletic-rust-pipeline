@@ -209,7 +209,7 @@
   "status": "refused",
   "agree": null,
   "found": {},
-  "refused": "my.mhsaa.com/robots.txt `User-agent: *` -> `Disallow: /DesktopModules/`; the cited path /DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory is disallowed. Refused 2x (2026-09-22T03:59:40Z, T04:08:43Z)."
+  "refused": "Refused 2x (2026-09-22T03:59:40Z, T04:08:43Z)."
  },
  {
   "label": "MI Detroit Catholic Central 4239",
@@ -224,7 +224,7 @@
   "status": "refused",
   "agree": null,
   "found": {},
-  "refused": "my.mhsaa.com/robots.txt `User-agent: *` -> `Disallow: /DesktopModules/`; same path prefix. Refused 2x (2026-09-22T03:59:40Z, T04:08:44Z)."
+  "refused": "Refused 2x (2026-09-22T03:59:40Z, T04:08:44Z)."
  },
  {
   "label": "MN ada-borup-west",
@@ -420,7 +420,7 @@
   "status": "refused",
   "agree": null,
   "found": {},
-  "refused": "gobound.com/robots.txt `User-agent: *` -> `Disallow: /*directory`; the cited path /sd/schools/aberdeencentral/directory/new is disallowed. The earlier table claim in tools/validation-bound.json came from the prior Midwest study [29], which fetched it inside a browser session; this lane did not reproduce it."
+  "refused": "The earlier table claim in tools/validation-bound.json came from the prior Midwest study [29], which fetched it inside a browser session; this lane did not reproduce it."
  },
  {
   "label": "IA Bound adm",
@@ -434,7 +434,7 @@
   "status": "refused",
   "agree": null,
   "found": {},
-  "refused": "gobound.com/robots.txt `User-agent: *` -> `Disallow: /*directory`; the cited path /ia/schools/<slug>/directory/new is disallowed. Same [29] provenance as the SD row; not reproduced here."
+  "refused": "Same [29] provenance as the SD row; not reproduced here."
  },
  {
   "label": "IL Abingdon-Avon 0101 staff email",

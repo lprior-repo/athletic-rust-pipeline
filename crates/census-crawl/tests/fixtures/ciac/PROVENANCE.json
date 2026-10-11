@@ -16,7 +16,6 @@
       "sha256": "98a013fb3afe52de3354d570875e98108b683c904a2b75d3d4f509307a2fc1ec",
       "research_sample": "research/sources/coach-directories-national/samples/dir/CT__directory.html",
       "research_sample_sha256": "98a013fb3afe52de3354d570875e98108b683c904a2b75d3d4f509307a2fc1ec",
-      "robots": "none on the live host; robots.txt disallows only the Dashboard*/ScheduleByWeek/WebBot paths, and /Directory.aspx is allowed (research/sources/coach-directories-national/SOURCE_REPORT.md:291)",
       "parser": "crates/census-crawl/src/ciac/pages.rs:100 requires the exact literal <table class='DirectoryStaffTable'>; this file contains 190 such literals (the bare substring occurs 192 times; the other two are the stylesheet selectors at lines 177 and 183). Each table is preceded by <div class='DirectoryDetail'><b>School</b>, and rows are shaped <td>Boys Cross Country</td><td>Head Coach</td><td>Name</td><td>tel:...</td>"
     }
   ]

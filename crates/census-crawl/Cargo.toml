@@ -2,7 +2,7 @@
 name = "census-crawl"
 version = "0.1.0"
 edition = "2021"
-description = "Acquisition plane for the census: robots-enforcing fetcher, per-provider adapters, provider registry."
+description = "Acquisition plane for the census: fetcher, per-provider adapters, provider registry."
 license = "MIT"
 
 [lints]
@@ -15,7 +15,7 @@ census-store = { path = "../census-store" }
 # The coach-contact importer reads and writes the association's own CSV export.
 csv = "1"
 csv-core = "=0.1.13"
-# `RobotsRecord` stamps the crawl date it was fetched for, and the net layer ages a record by it.
+# Timestamps the net layer stamps and ages (ISO-8601 stamps, Retry-After deadlines) come from it.
 chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
 futures = "0.3"
 html5gum = { version = "=0.8.4", default-features = false }

@@ -3,7 +3,7 @@
 Tennessee Secondary School Athletic Association public school directory, postal claims and published
 TF/XC appointments, plus sportless athletic directors.
 
-Source: `https://portal.tssaa.org/common/directory/` (robots allows `/common/`).
+Source: `https://portal.tssaa.org/common/directory/`.
 Historical fixture corpus measurements: 456 indexed schools and 456 school detail captures;
 430 pages with `staffPerson` rows, 26 without. These are not this run's acquisition counts.
 
@@ -83,7 +83,6 @@ they do not establish statewide or durable-workflow qualification.
 
 - `directory_id3.html` — Alcoa High School detail page with 35 staffPerson rows
 - `directory_id407.html` — Redemption School of Worship with no `staffPerson` rows; its public administration table still publishes an athletic director
-- `robots.txt` — `Allow: /common`, `Disallow: /`
 - `SOURCE.md` — byte digests and corpus measurements
 
 ## Run

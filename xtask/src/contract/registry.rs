@@ -135,7 +135,7 @@ const NON_ADAPTERS: [(&str, &str); 23] = [
     ("hytek", "parses Hy-Tek Meet Manager result files"),
     (
         "private_assoc",
-        "reads association membership listings the operator supplies: no capture and no robots verdict exist for the association hosts, so it has no descriptor and is reachable only through the corpus verb",
+        "reads association membership listings the operator supplies: no capture exists for the association hosts, so it has no descriptor and is reachable only through the corpus verb",
     ),
     ("raceday", "parses RaceDay Scoring result exports"),
     (

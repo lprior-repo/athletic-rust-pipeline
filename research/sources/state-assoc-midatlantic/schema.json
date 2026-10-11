@@ -8,7 +8,6 @@
       "source": "District of Columbia State Athletic Association (DCSAA)",
       "host": "https://www.dcsaasports.com/",
       "identity_evidence": "samples/dcsaasports-com-home.html title = 'The District of Columbia State Athletic Association'",
-      "robots": {"status": 404, "bytes": 13, "file": "samples/robots-dcsaasports.txt", "note": "no robots.txt published -> no host-level Crawl-delay"},
       "identifiers": {
         "school_directory_slug": {"example": "anacostia-high-school", "url_shape": "https://www.dcsaasports.com/school-directory/<slug>/", "evidence": "samples/dcsaasports-school-directory.html"},
         "sport_page_path": {"example": "/sports/outdoor-track-field/", "evidence": "samples/dcsaasports-com-home.html"},
@@ -23,11 +22,8 @@
     },
     "DE": {
       "source": "Delaware Interscholastic Athletic Association (DIAA) [name expansion INFERENCE from path /diaa]",
-      "host_chain": ["https://www.diaa.org/ -> HTTP 302 -> https://education.delaware.gov/diaa", "https://www.doe.k12.de.us/robots.txt -> HTTP 403 -> effective https://education.delaware.gov/"],
+      "host_chain": ["https://www.diaa.org/ -> HTTP 302 -> https://education.delaware.gov/diaa"],
       "blocked": {"status": 403, "bytes": 5659, "body": "Cloudflare 'Just a moment...' interstitial", "file": "samples/diaa-home.html", "transport": "both urllib and curl, HTTP/2, chrome-like UA; not bypassed"},
-      "robots": {"file": "samples/robots-education-delaware.txt", "bytes": 311, "directives": "User-agent: * / Disallow: /wp-admin/ / Allow: /wp-admin/admin-ajax.php / Crawl-delay: 10 / Sitemap: https://education.delaware.gov/wp-sitemap.xml", "note": "robots.txt itself is served 200 while content paths are challenged"},
-      "host_without_robots": {"url": "https://www.diaa.org/robots.txt", "status": 404, "bytes": 0, "file": "samples/robots-diaa.txt"},
-      "regulations_host": {"url": "https://regulations.delaware.gov/robots.txt", "status": 200, "bytes": 65540, "file": "samples/delaware-regulations-robots.txt", "note": "body is the site HTML shell (identical byte count to /AdminCode/title14/), i.e. soft-404; no valid robots.txt obtained for this host"},
       "identifiers": {
         "milesplit_team_id": {"example": "alexis-i-dupont-high-school", "url_shape": "https://de.milesplit.com/teams/<id>-<slug>", "evidence": "samples/de-milesplit-teams.html"}
       },
@@ -36,7 +32,6 @@
     "MD": {
       "source": "Maryland Public Secondary Schools Athletic Association (MPSSAA)",
       "host": "https://www.mpssaa.org/",
-      "robots": {"file": "samples/robots-mpssaa.txt", "bytes": 352, "directives": "User-agent: * / Disallow: /wp-admin/ / Allow: /wp-admin/admin-ajax.php / Sitemap: https://www.mpssaa.org/sitemap_index.xml", "note": "pre-existing capture in this lane directory; robots excludes nothing needed for school/result pages"},
       "identifiers": {
         "school_directory_slug": {"example": "aberdeen", "url_shape": "https://www.mpssaa.org/school-directory/<slug>/", "evidence": "samples/mpssaa-school-directory.html"},
         "county_aggregate_slug": {"example": "kent-county", "evidence": "samples/mpssaa-school-directory.html"},
@@ -53,7 +48,6 @@
     "NJ": {
       "source": "New Jersey State Interscholastic Athletic Association (NJSIAA)",
       "host": "https://www.njsiaa.org/",
-      "robots": {"file": "samples/robots-njsiaa.txt", "bytes": 2183, "directives": "Drupal default; Disallow /core/, /profiles/, /admin/, /search/, /user/login etc.", "note": "pre-existing capture; content paths of interest are allowed"},
       "identifiers": {
         "member_row": {"columns": ["School", "Title", "Address", "Phone", "Ath. Dir."], "example": "Abraham Clark High School | 122 East 6th Avenue | Roselle, NJ 07203 | 908-298-2022 | Dr. Edwin Griffin", "url": "https://www.njsiaa.org/schools/member-information", "evidence": "samples/njsiaa-member-info.html"},
         "sport_path": {"examples": ["/sports/cross-country", "/sports/track-field-indoor", "/sports/track-field-outdoor"], "evidence": "samples/njsiaa-sports.html"}
@@ -67,10 +61,6 @@
     "NY": {
       "sources": ["New York State Public High School Athletic Association (NYSPHSAA)", "Public Schools Athletic League (PSAL, NYC)"],
       "hosts": ["https://www.nysphsaa.org/", "https://www.psal.org/"],
-      "robots": {
-        "nysphsaa": {"file": "samples/robots-nysphsaa.txt", "bytes": 5489, "directives": "no blanket * ban; User-agent: * disallows /images/, /documents/, /admin/, /services/, /site/, *.js, *.css, *.jpg, *.gif, *.axd, /*print=true*, Crawl-delay: 5, Visit-time: 0100-0645", "consequence": "NYSPHSAA /documents/ (handbooks, PDFs) is robots-disallowed"},
-        "psal": {"status": "no robots.txt (request returns the site 404 HTML page)", "file": "samples/robots-psal.txt", "bytes": 40245}
-      },
       "identifiers": {
         "nysphsaa_sport_path": {"examples": ["/index.aspx?path=cross", "/index.aspx?path=itrack", "/index.aspx?path=otrack"], "evidence": "samples/nysphsaa-home.html"},
         "psal_sport_code": {"example": "033", "map_observed": {"001": "Basketball", "005": "Football", "030": "Outdoor Track", "033": "Cross Country", "035": "Indoor Track", "012": "Soccer", "017": "Wrestling"}, "url_shape": "https://www.psal.org/sports/sport.aspx?spCode=<code>&flag=All", "evidence": "samples/psal-home.html"},
@@ -84,7 +74,6 @@
     "PA": {
       "source": "Pennsylvania Interscholastic Athletic Association (PIAA)",
       "host": "https://www.piaa.org/",
-      "robots": {"file": "samples/robots-piaa.txt", "bytes": 593, "directives": "Disallow /_mm/, /_notes/, /_baks/, /MMWIP/, /assets/, /account/, /blaze/, /admin/, /officials/forms/, /officials/directory/, /maint/, /error404.aspx/, /kitchen-sink.aspx/, /shop; MJ12bot, SemrushBot disallowed", "consequence": "PIAA officials directory is robots-disallowed"},
       "identifiers": {
         "directory_alpha_path": {"example": "/schools/directory/list.aspx?alpha=A", "letters_seen": ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","Y"], "evidence": "samples/piaa-school-directory-a.html"},
         "championship_detail_path": {"example": "/sports/championship_details.aspx?sport=crscountry", "note": "the requested /sports/crscountry/championships/default.aspx redirects here", "evidence": "samples/piaa-xc-championships.html"},
@@ -102,10 +91,6 @@
         "live_platform": {"url": "https://ciac.fpsports.org/", "status": 200, "bytes": 76502, "file": "samples/ciac-fpsports-home.html", "discovery": "linked from the casciac.org splash page image map as alt='CIAC Website'", "splash_file": "samples/casciac-home.html"},
         "casciac": {"url": "https://www.casciac.org/", "status": 200, "bytes": 1320, "file": "samples/casciac-home.html"}
       },
-      "robots": {
-        "ciac_fpsports": {"file": "samples/ciac-fpsports-robots.txt", "bytes": 247, "directives": "User-agent: * disallows /DashboardSchedule.aspx, /DashboardGame.aspx, /DashboardSchool.aspx, /DashboardTeamSchedule.aspx, /ScheduleByWeek.aspx, /WebBot.aspx", "md5": "901da3fd0f5f4be7f447ace46cdab356"},
-        "casciac": {"file": "samples/robots-casciac.txt", "bytes": 1343, "directives": "Disallow /memberschools/, /officials/, /data_files/, /xml/ ..."}
-      },
       "identifiers": {
         "sport_tournament_id": {"map_observed": {"1": "Cross Country (Boys)", "9": "Cross Country (Girls)", "104": "Indoor Track (B&G)", "204": "Outdoor Track (B&G)", "100": "Boys Basketball", "200": "Baseball"}, "url_shape": "https://ciac.fpsports.org/SportPages/SportPageInfo.aspx?TournamentID=<id>", "evidence": "samples/ciac-school-list.aspx"},
         "school_id": {"example": "SchoolID=6 -> A.I. Prince Technical High School", "url_shape": "/SchoolPages/School.aspx?...SchoolID=<n>", "evidence": "samples/ciac-school-list.aspx"}
@@ -117,7 +102,6 @@
     "MA": {
       "source": "Massachusetts Interscholastic Athletic Association (MIAA)",
       "host": "https://www.miaa.net/",
-      "robots": {"file": "samples/robots-miaa.txt", "bytes": 2027, "directives": "Drupal default (Disallow /core/, /profiles/, /admin/, /search/, /user/login, /media/oembed)"},
       "identifiers": {
         "member_school_list_document": {"url": "https://www.miaa.net/media/824", "resolves_to": "https://www.miaa.net/sites/default/files/2024-05/miaa-member-school-list.pdf", "bytes": 123825, "file": "samples/miaa-school-list.pdf", "document_header": "MIAA Member School List — March 27, 2026"},
         "sport_path": {"examples": ["/track-cross-country", "/scores", "/tournaments", "/tournament-formats"]},
@@ -133,7 +117,6 @@
     "RI": {
       "source": "Rhode Island Interscholastic League (RIIL)",
       "host": "https://www.riil.org/",
-      "robots": {"file": "samples/robots-riil.txt", "bytes": 247, "directives": "Disallow /DashboardSchedule.aspx, /DashboardGame.aspx, /DashboardSchool.aspx, /DashboardTeamSchedule.aspx, /ScheduleByWeek.aspx, /WebBot.aspx; SemrushBot disallowed", "md5": "901da3fd0f5f4be7f447ace46cdab356", "consequence": "team-level schedule/score dashboards are off-limits; SchoolPages/School.aspx and SportPages/SportPageInfo.aspx remain allowed"},
       "identifiers": {
         "school_id": {"example": "SchoolID=1 -> Achievement First (PVD) High School", "evidence": "samples/riil-school-list.aspx"},
         "sport_tournament_id": {"map_observed": {"1": "Cross Country - Boys", "310": "Cross Country - Girls", "104": "Indoor Track - Boys", "1024": "Indoor Track - Girls", "204": "Outdoor Track - Boys", "1021": "Outdoor Track - Girls"}}
@@ -146,7 +129,6 @@
     "NH": {
       "source": "New Hampshire Interscholastic Athletic Association (NHIAA)",
       "host": "https://www.nhiaa.org/",
-      "robots": {"status": 404, "bytes": 13, "file": "samples/robots-nhiaa.txt", "note": "no robots.txt published -> no host-level restrictions"},
       "identifiers": {
         "member_directory_page": {"url_shape": "https://www.nhiaa.org/member-directory/page/<n>/", "pages_seen": [1, 2, 3, 42], "evidence": "samples/nhiaa-member-directory.html, samples/nhiaa-member-directory-p42.html"},
         "sport_path": {"examples": ["/sports/fall/boys-cross-country/", "/sports/fall/girls-cross-country/", "/sports/winter/boys-indoor-track/", "/sports/winter/girls-indoor-track/", "/sports/spring/boys-outdoor-track/", "/sports/spring/girls-outdoor-track/"], "evidence": "samples/sitemap-nhiaa.xml"},
@@ -161,7 +143,6 @@
     "VT": {
       "source": "Vermont Principals' Association (VPA)",
       "host": "https://vpaonline.org/",
-      "robots": {"file": "samples/robots-vpa.txt", "bytes": 187, "directives": "Crawl-delay: 10; User-agent: * Disallow: (empty = allow all); Sitemap: https://vpaonline.org/sitemap_index.xml", "consequence": "crawl-delay 10 s is the binding constraint for this host"},
       "identifiers": {
         "athletics_paths": {"examples": ["/athletics/scoreboard/", "/athletics/tournaments/", "/athletics/tournament-pairings/", "/athletics/divisional-alignments/", "/athletics/sports-rankings/", "/athletics/"], "evidence": "samples/sitemap-vpa-page.xml"},
         "scoreboard_document": {"example": "https://docs.google.com/spreadsheets/d/17w5IYbT7P4yJx6xDjCefbRqamG2GeKDx6pl18zYYbVY/edit?usp=sharing", "evidence": "samples/vpa-scoreboard.html"}
@@ -175,8 +156,7 @@
     "ME": {
       "source": "Maine Principals' Association (MPA)",
       "host": "https://www.mpa.cc/",
-      "discovery_evidence": "candidate hosts mpa.ccsso.org / www.mpa.ccsso.org are NXDOMAIN; Wikipedia infobox (action=raw) lists website http://www.mpa.cc/ ; mpa.cc robots.txt is byte-identical to the CIAC/RIIL vendor robots and the homepage carries 'Maine Principals'",
-      "robots": {"file": "samples/mpa-robots.txt", "bytes": 247, "directives": "same vendor policy: Disallow /DashboardSchedule.aspx, /DashboardGame.aspx, /DashboardSchool.aspx, /DashboardTeamSchedule.aspx, /ScheduleByWeek.aspx, /WebBot.aspx", "md5": "901da3fd0f5f4be7f447ace46cdab356"},
+      "discovery_evidence": "candidate hosts mpa.ccsso.org / www.mpa.ccsso.org are NXDOMAIN; Wikipedia infobox (action=raw) lists website http://www.mpa.cc/ ; the homepage carries 'Maine Principals'",
       "identifiers": {
         "school_id": {"example": "SchoolID=25 -> Ashland District School", "evidence": "samples/mpa-school-list.aspx"},
         "sport_tournament_id": {"map_observed": {"1": "Cross Country (Boys)", "9": "Cross Country (Girls)", "104": "Indoor Track (Boys)", "300": "Indoor Track (Girls)", "204": "Outdoor Track (Boys)", "301": "Outdoor Track (Girls)"}}
@@ -190,7 +170,7 @@
   "cross_source": {
     "shared_state_association_platform": {
       "members": ["ciac.fpsports.org", "www.mpa.cc", "www.riil.org"],
-      "evidence": ["robots.txt md5 901da3fd0f5f4be7f447ace46cdab356 on all three", "identical path grammar /SchoolPages/School.aspx, /SportPages/SportPageInfo.aspx?TournamentID=, /MasterSchedule.aspx, /DashboardTeamSchedule.aspx, cdn.fpsports.org assets"],
+      "evidence": ["identical path grammar /SchoolPages/School.aspx, /SportPages/SportPageInfo.aspx?TournamentID=, /MasterSchedule.aspx, /DashboardTeamSchedule.aspx, cdn.fpsports.org assets"],
       "note": "TournamentID numbering is shared across the three sites (1 = Cross Country Boys, 104 = Indoor Track, 204 = Outdoor Track), with per-site girls' ids"
     },
     "rschooltoday": {"members": ["www.nhiaa.org", "www.dcsaasports.com"], "evidence": ["assets-rst7.rschooltoday.com asset references in samples/nhiaa-member-directory.html and samples/dcsaasports-com-home.html"]},

@@ -49,7 +49,7 @@
       {"kind": "raw result file column", "key": "Yr", "example": "8", "file": "samples/raw-oh-770621-rs1321880.txt", "note": "header row: \"     Athlete                   Yr Team                                          Mark      H#\"; the column is present or absent depending on the timing file (prior-phase evidence: 5/6 files, research/report 32)"},
       {"kind": "roster ranking row (masked)", "key": "col-grade", "example": "JR", "file": "samples/rank-event-oh-xc-5000m.html"}
     ],
-    "paywalled_grade_field_names": {"note": "the JSON the site's own widgets request names the field; the wire form was not requested (robots Disallow /api/)", "names": ["gradYear", "hsGraduationYear"], "evidence": ["samples/js-loadresultsnew.js fields: '...gradYear,...'", "samples/js-ms18-teams-rankings.js performance_1.hsGraduationYear"]}
+    "paywalled_grade_field_names": {"note": "the JSON the site's own widgets request names the field; the wire form was not requested", "names": ["gradYear", "hsGraduationYear"], "evidence": ["samples/js-loadresultsnew.js fields: '...gradYear,...'", "samples/js-ms18-teams-rankings.js performance_1.hsGraduationYear"]}
   },
 
   "meet_info_page": {
@@ -86,7 +86,7 @@
       {"key": "meetResultParams.followedTeamIds", "example": []},
       {"key": "meetResultParams.teamLogoFallback", "example": "https://assets.sp.milesplit.com/images/milesplit-favicon.png"},
       {"key": "meetResultFiles", "example": [{"id": 1321880, "name": "Results", "isMeetPro": 0}]},
-      {"key": "rows_in_html", "example": 0, "note": "the formatted page is a JS shell; rows come only from /api/v1/meets/<id>/performances (robots-disallowed)"}
+      {"key": "rows_in_html", "example": 0, "note": "the formatted page is a JS shell; rows come only from /api/v1/meets/<id>/performances"}
     ]
   },
 
@@ -157,7 +157,7 @@
   "rankings_leaderboard_row": {
     "surface": "GET https://oh.milesplit.com/rankings/leaders/high-school-boys/cross-country?year=2026&accuracy=fat&grade=all&conversion=n&page=1",
     "file": "samples/rankings-oh-boys-xc.html",
-    "note": "ROBOTS-DISALLOWED path (/rankings). Captured for analysis only; the pipeline must not request it.",
+    "note": "Captured for analysis only.",
     "fields": [
       {"key": "row_class", "example": "rankings-row"},
       {"key": "col-event.anchor.text", "example": "5K"},
@@ -177,13 +177,13 @@
   "rankings_event_row": {
     "surface": "GET https://oh.milesplit.com/rankings/events/high-school-boys/cross-country/5000m?year=2026&accuracy=fat&grade=all&conversion=n&page=1",
     "file": "samples/rank-event-oh-xc-5000m.html",
-    "note": "ROBOTS-DISALLOWED path (/rankings). Captured for analysis only.",
+    "note": "Captured for analysis only.",
     "fields": [
       {"key": "rank", "example": "1", "container": "<td class=\"col-rank\"><span class=\"rank-num\">1</span></td>"},
       {"key": "free_row", "example": {"rank": "1", "athlete": {"text": "Brice Fuller", "url": "https://oh.milesplit.com/athletes/15005189-brice-fuller"}, "team": {"text": "Fairless", "url": "https://oh.milesplit.com/teams/9573-fairless"}, "grade": "JR", "meet": {"text": "Wooster XC Invitational-HS", "url": "/meets/771577"}, "date": "Sep 12, 2026", "mark": "14:54.10"}},
       {"key": "locked_row", "example": {"row": "<tr class=\"rankings-row lk\" aria-hidden=\"true\">", "rank_cell": "<td class=\"col-rank\"><span class=\"rank-num dim\">2</span></td>", "placeholders": ["<span class=\"team-logo team-logo--mask\" aria-hidden=\"true\"></span>", "<span class=\"redact\" style=\"width:168px\"></span>", "<span class=\"mask\" style=\"width:150px;height:9px\"></span>", "<span class=\"mask mw-grade\"></span>", "<span class=\"mask blk\" style=\"width:130px\"></span>", "<span class=\"mask blk mw-date\"></span>", "<span class=\"mask mw-time\"></span>"]}, "note": "schematic, assembled from the 7 exact placeholder strings above; rank number is free, athlete/team/grade/meet/date/mark are empty spans — the values are absent from the bytes"},
       {"key": "paywall_flag", "example": {"page_category": "Rankings", "subpage_category": "Locked", "paywall_present": 1, "event_code": "5000m"}, "container": "Segment inline args JSON.parse(...)"},
-      {"key": "cta_text", "rendered_text": "To see these rankings, subscribe to MileSplit PRO / Join Now / Already a PRO member? LOG IN", "fragments": ["<p>To see these rankings, <span>subscribe to</span></p>", "<figure><strong>MileSplit PRO</strong></figure>", "<a class=\"join button segment-tracked\" data-segment=\"{&quot;event_fired&quot;:&quot;Link Clicked&quot;,&quot;name&quot;:&quot;Join Now - Rankings&quot;}\" href=\"/join?ref=rankings-2026-cc-hs-m-5000m&next=…&p=1\"><span>Join Now</span></a>", "<a class=\"login link\" href=\"/login?ref=rankings-2026-cc-hs-m-5000m&next=…\"> Already a PRO member? LOG IN </a>"], "container": "div.pro-cta--ab > div.pro-cta-variant.pro-cta--legacy", "note": "the sentence is split across elements, so it is not a single searchable substring in the capture; /join and /login targets are robots-allowed but were never requested (no auth attempts in this lane). The same block carries the A/B experiment hook: new Drivefaze.Cointoss('mile_pro_cta_contextual', {variationId: parseInt('0',10), toggleVariation:false})"}
+      {"key": "cta_text", "rendered_text": "To see these rankings, subscribe to MileSplit PRO / Join Now / Already a PRO member? LOG IN", "fragments": ["<p>To see these rankings, <span>subscribe to</span></p>", "<figure><strong>MileSplit PRO</strong></figure>", "<a class=\"join button segment-tracked\" data-segment=\"{&quot;event_fired&quot;:&quot;Link Clicked&quot;,&quot;name&quot;:&quot;Join Now - Rankings&quot;}\" href=\"/join?ref=rankings-2026-cc-hs-m-5000m&next=…&p=1\"><span>Join Now</span></a>", "<a class=\"login link\" href=\"/login?ref=rankings-2026-cc-hs-m-5000m&next=…\"> Already a PRO member? LOG IN </a>"], "container": "div.pro-cta--ab > div.pro-cta-variant.pro-cta--legacy", "note": "the sentence is split across elements, so it is not a single searchable substring in the capture; /join and /login targets were never requested (no auth attempts in this lane). The same block carries the A/B experiment hook: new Drivefaze.Cointoss('mile_pro_cta_contextual', {variationId: parseInt('0',10), toggleVariation:false})"}
     ],
     "count_in_capture": {"rows": 50, "rows_with_data": 1, "rows_locked": 49, "redact_spans": 49, "mask_spans_in_rows": 245}
   },
@@ -191,7 +191,6 @@
   "athlete_search_json": {
     "surface": "POST https://<code>.milesplit.com/search/v2/athletes (and https://www.milesplit.com/search/v2/athletes)",
     "files": ["samples/search-v2-athletes-oh-2.json", "samples/search-v2-athletes-oh-fuller-p2.json", "samples/search-v2-athletes-oh-perpage100.json", "samples/search-v2-athletes-www.json"],
-    "robots": "allowed on every host sampled (robots.txt disallows only /rankings, /virtual-meets, /api/, /contact)",
     "request_fields": [
       {"key": "searchToken", "example": "6c89da652151bb31cd3e7fe634afb717", "source": "hidden input on GET /athletes (samples/athletes-oh-searchform.html)"},
       {"key": "q", "example": "Fuller"},

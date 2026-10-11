@@ -1,4 +1,4 @@
-use super::format::{dash, list, object_entries, s, short, u};
+use super::format::{dash, display, list, object_entries, s, short, shown, tally, u_opt};
 use serde_json::Value;
 use std::fmt::Write as _;
 
@@ -54,10 +54,10 @@ fn md_scope(out: &mut String, doc: &Value) -> std::fmt::Result {
     writeln!(
         out,
         "- Cohort {}, season {}, revision {}, {} jurisdictions, surfaces {}\n",
-        u(scope, "cohort"),
+        shown(u_opt(scope, "cohort")),
         s(scope, "season"),
-        u(scope, "revision"),
-        u(scope, "jurisdictions"),
+        shown(u_opt(scope, "revision")),
+        shown(u_opt(scope, "jurisdictions")),
         list(field(scope, "surfaces"))
     )?;
     writeln!(
@@ -86,22 +86,16 @@ fn md_run(out: &mut String, doc: &Value) -> std::fmt::Result {
         generation
             .get("corpus")
             .map_or_else(String::new, Value::to_string),
-        u(run, "deployment_services")
+        display(run.get("deployment_services"))
     )?;
     let sample = field(run, "latest_progress");
     writeln!(
         out,
         "- Latest sample ({}): sweeps owed {} of {}, source objects owed {}",
         s(sample, "sampled_at"),
-        sample
-            .get("sweeps_owed")
-            .map_or_else(|| "?".to_string(), Value::to_string),
-        sample
-            .get("sweeps_total")
-            .map_or_else(|| "?".to_string(), Value::to_string),
-        sample
-            .get("source_objects_owed")
-            .map_or_else(|| "?".to_string(), Value::to_string)
+        display(sample.get("sweeps_owed")),
+        display(sample.get("sweeps_total")),
+        display(sample.get("source_objects_owed"))
     )?;
     writeln!(
         out,
@@ -116,12 +110,10 @@ fn md_matrix(out: &mut String, doc: &Value) -> std::fmt::Result {
     writeln!(
         out,
         "- {} registered families, {} with a durable arm, {} explicit engineering gaps, {} arm slugs outside the registry\n",
-        u(matrix, "registered_families"),
-        u(matrix, "armed_families"),
-        u(matrix, "gap_families"),
-        field(matrix, "arms_not_registered")
-            .as_array()
-            .map_or(0, Vec::len)
+        shown(u_opt(matrix, "registered_families")),
+        shown(u_opt(matrix, "armed_families")),
+        shown(u_opt(matrix, "gap_families")),
+        shown(tally(field(matrix, "arms_not_registered")))
     )?;
     if field(matrix, "provenance").is_object() {
         writeln!(
@@ -134,7 +126,7 @@ fn md_matrix(out: &mut String, doc: &Value) -> std::fmt::Result {
     writeln!(out, "| family | applicable | strategy | arm or gap |")?;
     writeln!(out, "|---|---|---|---|")?;
     for family in field(matrix, "families").as_array().into_iter().flatten() {
-        let arms = field(family, "arms").as_array().map_or(0, Vec::len);
+        let arms = tally(field(family, "arms")).unwrap_or(0);
         let detail = if arms > 0 {
             list(field(family, "arms"))
         } else {
@@ -144,7 +136,7 @@ fn md_matrix(out: &mut String, doc: &Value) -> std::fmt::Result {
             out,
             "| {} | {} | {} | {} |",
             s(family, "slug"),
-            field(family, "applicable").as_array().map_or(0, Vec::len),
+            shown(tally(field(family, "applicable"))),
             s(family, "strategy"),
             detail
         )?;
@@ -244,8 +236,8 @@ fn md_readback(out: &mut String, doc: &Value) -> std::fmt::Result {
             out,
             "- sheet `{}`: rows {}, cells {}, semantic digest `{}…`",
             s(sheet, "name"),
-            u(sheet, "rows"),
-            u(sheet, "cells"),
+            shown(u_opt(sheet, "rows")),
+            shown(u_opt(sheet, "cells")),
             short(s(sheet, "semantic_sha256"))
         )?;
     }

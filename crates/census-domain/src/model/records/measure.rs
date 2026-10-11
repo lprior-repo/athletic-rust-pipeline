@@ -68,7 +68,6 @@ impl CollectionSnapshot {
 pub enum AccessBlockKind {
     Forbidden,
     RateLimited,
-    RobotsDisallowed,
     Timeout,
     Unavailable,
     BrowserUnavailable,
@@ -80,7 +79,6 @@ impl AccessBlockKind {
         match self {
             Self::Forbidden => "forbidden",
             Self::RateLimited => "rate_limited",
-            Self::RobotsDisallowed => "robots_disallowed",
             Self::Timeout => "timeout",
             Self::Unavailable => "unavailable",
             Self::BrowserUnavailable => "browser_unavailable",

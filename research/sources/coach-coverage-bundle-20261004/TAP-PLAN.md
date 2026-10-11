@@ -7,7 +7,7 @@ Inputs (moved into the repo 2026-10-04):
 | `COACH-SCHOOL-RESOURCES-COMPLETE.json` | 278 sources; 25 requested states; 75 prioritized (3 per state) entries |
 | `ALL-STATE-COACH-AND-SCHOOL-RESOURCES.md` | Human-readable companion report |
 | `TAP-REGISTRY.json` | One disposition + staffing entry per source (generated 2026-10-04) |
-| `research/sources/coach-directories-national/coverage.json` | Repo's 51-jurisdiction tier-1 survey (field inventory, robots, render behavior) |
+| `research/sources/coach-directories-national/coverage.json` | Repo's 51-jurisdiction tier-1 survey (field inventory, render behavior) |
 
 Beads: epic `athletic-rust-pipeline-6ec`; children `.1` (wave 0), `.2`-`.5` (wave 1), `.6` (wave 2 backlog).
 Fixed on this path: `[bug] athletic-rust-pipeline-0fp` - `xtask new-source` emitted non-compiling
@@ -19,7 +19,7 @@ census-crawl` clean, both wave-1 adapters scaffolded from the fixed tool.
 A resource counts as tapped only when all five exist:
 
 1. **Capture evidence** - raw bytes as served under `probes|extract|captures`, with a manifest
-   (url, http status, bytes, sha256, fetched_at, robots status).
+   (url, http status, bytes, sha256, fetched_at).
 2. **Derivation** - rows in the `CoachContactRow` CSV schema (see
    `crates/census-crawl/tests/fixtures/coach_contacts_sample.csv`) or an adapter run report; every
    row traceable to a capture fragment.
@@ -29,7 +29,7 @@ A resource counts as tapped only when all five exist:
    `Coaches` sheet); counts recorded.
 5. **Dated evidence** in `docs/VERIFICATION-EVIDENCE.md` with exact commands and limits.
 
-No capture, no row. Robots first; <=1 req/s; anonymous access only.
+No capture, no row. <=1 req/s; anonymous access only.
 
 ## Registry dispositions (278)
 
@@ -88,8 +88,8 @@ then compile and fixture-test.
 school-details JSON answer 200 with the browser-equivalent `X-Requested-With: XMLHttpRequest` +
 `Referer` headers (CA 1,727 / FL 881 / NJ 453 directory entries; coach JSON carries
 sport/role/name/email), so SRC-017/034/096 move on to an extraction/adapter slice; GoBound answers
-403 on every tenant route and its robots disallows `/api/` and the directory families, so
-SRC-129/161/224 close as a platform refusal with substitutes named. `6ec.3` (MA/NY/SD/NV extraction),
+403 on every tenant route, so SRC-129/161/224 close as a platform refusal with substitutes named.
+`6ec.3` (MA/NY/SD/NV extraction),
 `6ec.4` (`aia` AZ) and `6ec.5` (`uhsaa` UT) landed with their own dated evidence.
 
 ## Wave 2+ - backlog (`6ec.6`)

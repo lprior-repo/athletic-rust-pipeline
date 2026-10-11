@@ -51,7 +51,7 @@
       {"name": "North Coast Section", "abbrev": "NCS", "url": "https://www.cifncs.org/", "publishes_school_list": true, "directory_endpoint": "https://www.cifncshome.org/widget/school/directory", "directory_schools": 179, "census_schools": 175, "platform": "PrestoSports"},
       {"name": "Northern Section", "abbrev": "CIFNS", "url": "https://www.cifns.org/", "publishes_school_list": true, "directory_endpoint": "https://www.cifns.org/governance/directory/home", "bulk_pdf": "https://www.cifns.org/landing/26-27_School_Member_List.pdf", "census_schools": 67, "platform": "PrestoSports"},
       {"name": "Oakland Section", "abbrev": "CIF-OAK", "url": "https://www.cifoakland.org/", "redirects_to": "https://www.ousd.org/oal", "publishes_school_list": false, "census_schools": 29, "platform": "Oakland Unified School District site"},
-      {"name": "Sac-Joaquin Section", "abbrev": "SJS", "url": "https://www.cifsjs.org/", "publishes_school_list": false, "directory_endpoint": "https://www.cifsjs.org/member-schools", "directory_static_html_school_names": 0, "census_schools": 201, "platform": "custom (serves SPA shell for /robots.txt)"},
+      {"name": "Sac-Joaquin Section", "abbrev": "SJS", "url": "https://www.cifsjs.org/", "publishes_school_list": false, "directory_endpoint": "https://www.cifsjs.org/member-schools", "directory_static_html_school_names": 0, "census_schools": 201, "platform": "custom (SPA shell)"},
       {"name": "San Diego Section", "abbrev": "CIFSDS", "url": "https://www.cifsds.org/", "publishes_school_list": true, "directory_endpoint": "https://www.cifsds.org/school-resources/CIF_School_Directory", "secondary_endpoint": "https://www.cifsds.org/information/directory", "census_schools": 129, "platform": "PrestoSports"},
       {"name": "San Francisco Section", "abbrev": "CIFSF", "url": "https://www.cifsf.org/", "publishes_school_list": true, "directory_endpoint": "https://www.cifsf.org/schools/high-schools/", "census_schools": 18, "platform": "WordPress + Yoast"},
       {"name": "Southern Section", "abbrev": "CIFSS", "url": "https://www.cifss.org/", "publishes_school_list": "partial", "directory_endpoint": "https://cifss.org/directory/", "directory_static_html_school_names": 0, "directory_render": "SearchWP live search (client-side)", "census_schools": 542, "platform": "WordPress"}
@@ -77,8 +77,7 @@
       "primary": "https://www.osaa.org/schools/full-members",
       "auth_required": false,
       "requests_to_enumerate_all": 1,
-      "stable_id": "https://www.osaa.org/schools/{osaa_school_id}",
-      "robots_constraint": "osaa.org/robots.txt Disallows /teams/, /contests/, /brackets/, /forms/, /mobile/, /demo/, /dev/ - the school list is NOT under any of those, but per-school TEAM pages are (/teams/) and were therefore not fetched"
+      "stable_id": "https://www.osaa.org/schools/{osaa_school_id}"
     },
     "coach_fields": {
       "names": "yes",
@@ -150,7 +149,7 @@
       "auth_required": false,
       "requests_to_enumerate_all": 1,
       "public_api": "https://asaa.org/wp-json/wp/v2/pages/19 (WordPress REST, page id 19)",
-      "sitemap": "https://asaa.org/wp-sitemap.xml (declared in robots.txt)"
+      "sitemap": "https://asaa.org/wp-sitemap.xml"
     },
     "coach_fields": {
       "names": "no",
@@ -205,7 +204,7 @@
     "url": "https://www.niaa.com/",
     "domain_correction": {
       "niaa.org_is_not_the_NIAA": true,
-      "evidence": "samples/robots-niaa-follow.txt - niaa.org 301s and serves a 198356-byte page titled `Alumni | INROADS` with canonical https://inroads.org/alumni/"
+      "evidence": "niaa.org 301s and serves a 198356-byte page titled `Alumni | INROADS` with canonical https://inroads.org/alumni/"
     },
     "school_count": 127,
     "school_count_source": "samples/niaa-finalforms-state-schools.html (page text `127 Records`, last page link = 9) + samples/niaa-finalforms-p9.html (7 rows); 8*15 + 7 = 127",

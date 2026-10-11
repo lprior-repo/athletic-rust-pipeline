@@ -1,6 +1,6 @@
 {
   "lane": "milesplit-cohort-enumerability",
-  "scope": "MileSplit record shapes that decide whether class-of-2027 athletes can be enumerated from the network without Athletic.net: athlete profile, team index, roster, meet/result pages, the raw result file, and robots.txt",
+  "scope": "MileSplit record shapes that decide whether class-of-2027 athletes can be enumerated from the network without Athletic.net: athlete profile, team index, roster, meet/result pages, and the raw result file",
   "observed_on": "2026-09-22",
   "conventions": {
     "example": "A real value observed in the cited evidence. null means the key was documented but no example value was retained; see the field's note.",
@@ -110,39 +110,12 @@
       "correction": "the earlier MileSplit report described this payload as static fixed-width text; the retained capture is HTML",
       "size_example_bytes": 47564,
       "grade_column": "Yr — present only when the timer's file carried it (prior report: 5 of 6 files)",
-      "profile_url_field": "available only through the robots-disallowed /api/ endpoint, so /raw carries no athlete-ID join",
+      "profile_url_field": "available only through the /api/ endpoint, so /raw carries no athlete-ID join",
       "evidence": ["samples/raw-oh-770621-rs1321880.txt", "prior samples/js-loadresultsnew.js"]
-    },
-    "robots": {
-      "bytes": 173,
-      "identical_across_sampled_hosts": true,
-      "user_agents": {
-        "Mediapartners-Google": "Disallow:",
-        "*": ["/rankings", "/virtual-meets", "/api/", "/contact"],
-        "AmazonAdBot": "Allow: /"
-      },
-      "crawl_delay": null,
-      "sitemap_directive": null,
-      "allowed_paths_used_here": [
-        "/teams",
-        "/teams/<id>/roster",
-        "/athletes/<id>",
-        "/meets/<id>",
-        "/meets/<id>/results",
-        "/results",
-        "/search/v2/athletes",
-        "/sitemap.xml"
-      ],
-      "evidence": [
-        "samples/robots-va-milesplit.txt",
-        "samples/robots-wi-milesplit.txt",
-        "samples/robots-oh-milesplit.txt",
-        "samples/robots-il-milesplit.txt"
-      ]
     }
   },
   "cross_source_identifiers": {
-    "athlete": "MileSplit numeric athlete id; joins to Athletic.net only via the disallowed /api/ or by name+school+state matching",
+    "athlete": "MileSplit numeric athlete id; joins to Athletic.net only via /api/ or by name+school+state matching",
     "team": "MileSplit numeric team id from the state /teams index",
     "meet": "MileSplit numeric meet id from the state calendar",
     "state_host": "the subdomain (oh, wi, va, …) names the jurisdiction"

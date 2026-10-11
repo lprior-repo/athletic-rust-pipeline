@@ -51,9 +51,7 @@
       "symbolic_target": null,
       "is_ancestor_of_main": false,
       "tree_equals_main": false,
-      "commits_outside_main": [
-        "4d0b962c0fd9fa1754bef073de5cc9975fe9a640 DragonFly coach directories: NC/GA/IN adapter, fixture records, and the robots-verdict cutover"
-      ],
+      "commits_outside_main": [],
       "semantic_review_family": "adapters_spine"
     },
     {
@@ -223,9 +221,7 @@
       "symbolic_target": null,
       "is_ancestor_of_main": false,
       "tree_equals_main": false,
-      "commits_outside_main": [
-        "4d0b962c0fd9fa1754bef073de5cc9975fe9a640 DragonFly coach directories: NC/GA/IN adapter, fixture records, and the robots-verdict cutover"
-      ],
+      "commits_outside_main": [],
       "semantic_review_family": "adapters_spine"
     },
     {
@@ -777,7 +773,6 @@
       "parents": [
         "1db915740a139b9568e7a5609a7a6466d241770a"
       ],
-      "subject": "DragonFly coach directories: NC/GA/IN adapter, fixture records, and the robots-verdict cutover",
       "history_disposition": "included-main-history"
     },
     {
@@ -785,7 +780,6 @@
       "parents": [
         "1db915740a139b9568e7a5609a7a6466d241770a"
       ],
-      "subject": "DragonFly coach directories: NC/GA/IN adapter, fixture records, and the robots-verdict cutover",
       "history_disposition": "divergent-explicit-disposition-required"
     },
     {
@@ -7423,22 +7417,6 @@
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
       {
-        "path": "research/sources/athleticnet/samples/atn-robots.headers",
-        "snapshot_delta": "A",
-        "snapshot_blob": "7bede80adf6d4e0636000c78bb016fc791cc28b1",
-        "frozen_main_blob": "7bede80adf6d4e0636000c78bb016fc791cc28b1",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/athleticnet/samples/atn-robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "6687d227e4693f34cd2ed8a16dfec91e23c75d46",
-        "frozen_main_blob": "6687d227e4693f34cd2ed8a16dfec91e23c75d46",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
         "path": "research/sources/athleticnet/samples/checks-enum-crosscheck.txt",
         "snapshot_delta": "A",
         "snapshot_blob": "27a2c5968959179baba61bd41ea4d538d47f3e72",
@@ -12167,38 +12145,6 @@
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
       {
-        "path": "research/sources/milesplit-cohort-enumerability/samples/robots-il-milesplit.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "frozen_main_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/milesplit-cohort-enumerability/samples/robots-oh-milesplit.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "frozen_main_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/milesplit-cohort-enumerability/samples/robots-va-milesplit.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "frozen_main_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/milesplit-cohort-enumerability/samples/robots-wi-milesplit.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "frozen_main_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
         "path": "research/sources/milesplit-cohort-enumerability/samples/roster-in-adams-central.html",
         "snapshot_delta": "A",
         "snapshot_blob": "935707247d197f300e1c4e3653f46e29f259c893",
@@ -12599,62 +12545,6 @@
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
       {
-        "path": "research/sources/milesplit-national/samples/robots-ca-milesplit.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "frozen_main_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/milesplit-national/samples/robots-js-sp-milesplit.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e35d76e0ef729e9332e09d5696c8bb243c4c0b35",
-        "frozen_main_blob": "e35d76e0ef729e9332e09d5696c8bb243c4c0b35",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/milesplit-national/samples/robots-mi-milesplit.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "frozen_main_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/milesplit-national/samples/robots-oh-milesplit.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "frozen_main_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/milesplit-national/samples/robots-tx-milesplit.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "frozen_main_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/milesplit-national/samples/robots-www-milesplit.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "frozen_main_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/milesplit-national/samples/robots-wy-milesplit.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "frozen_main_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
         "path": "research/sources/milesplit-national/samples/roster-oh-mason.html",
         "snapshot_delta": "A",
         "snapshot_blob": "4386a5fc75958e252b098fd65ccd56da8a08be33",
@@ -12911,14 +12801,6 @@
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
       {
-        "path": "research/sources/national-aggregators/samples/athleticlive/al-athleticlive_blob_core_windows_net-robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "089d6bc9c621820fb5d65ac8e7fd8556a921c4bc",
-        "frozen_main_blob": "089d6bc9c621820fb5d65ac8e7fd8556a921c4bc",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
         "path": "research/sources/national-aggregators/samples/athleticlive/al-blob-ind-res-2254280.json",
         "snapshot_delta": "A",
         "snapshot_blob": "8257c3324b25b755167473fb6375e1de19a97f48",
@@ -13063,22 +12945,6 @@
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
       {
-        "path": "research/sources/national-aggregators/samples/athleticlive/al-liveathleticnet-robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "8f2b19f7ad415559e98c50af1e87ed47c1de7eab",
-        "frozen_main_blob": "8f2b19f7ad415559e98c50af1e87ed47c1de7eab",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/national-aggregators/samples/athleticlive/al-livestatic_athletic_net-robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "53ada59e9e44b8c1389b254786ee3c314a75afd2",
-        "frozen_main_blob": "53ada59e9e44b8c1389b254786ee3c314a75afd2",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
         "path": "research/sources/national-aggregators/samples/athleticlive/al-main-js.js",
         "snapshot_delta": "A",
         "snapshot_blob": "687c6dea0e13443ef156bf7f9d4b40c6402dfb57",
@@ -13099,14 +12965,6 @@
         "snapshot_delta": "A",
         "snapshot_blob": "9e8e4c86d70f3f38f7d8ee78d41adfc741e945ca",
         "frozen_main_blob": "9e8e4c86d70f3f38f7d8ee78d41adfc741e945ca",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/national-aggregators/samples/athleticlive/al-search-robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "84a8bf9adb838e68af110dc39cd8345d04f7d576",
-        "frozen_main_blob": "84a8bf9adb838e68af110dc39cd8345d04f7d576",
         "disposition": "retained-exact-current",
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
@@ -13147,14 +13005,6 @@
         "snapshot_delta": "A",
         "snapshot_blob": "72068415ec648c990bb6e8c05d4f9e2b4dfe711f",
         "frozen_main_blob": "72068415ec648c990bb6e8c05d4f9e2b4dfe711f",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/national-aggregators/samples/athleticlive/al-tenant-michiana-robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e3b76b7765c0ae2e2992974bad7e43115ac6c633",
-        "frozen_main_blob": "e3b76b7765c0ae2e2992974bad7e43115ac6c633",
         "disposition": "retained-exact-current",
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
@@ -13259,22 +13109,6 @@
         "snapshot_delta": "A",
         "snapshot_blob": "934f258bd875added37ad43086b48aeb5225d614",
         "frozen_main_blob": "934f258bd875added37ad43086b48aeb5225d614",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/national-aggregators/samples/directathletics-tfrrs/robots-www.directathletics.com_robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "5ab4153a9bf3fd6cf5c12395b9bd6b651e4e4283",
-        "frozen_main_blob": "5ab4153a9bf3fd6cf5c12395b9bd6b651e4e4283",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/national-aggregators/samples/directathletics-tfrrs/robots-www.tfrrs.org_robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "c19f78ab6836efd56c42aa56457d58871d9e2782",
-        "frozen_main_blob": "c19f78ab6836efd56c42aa56457d58871d9e2782",
         "disposition": "retained-exact-current",
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
@@ -13399,14 +13233,6 @@
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
       {
-        "path": "research/sources/national-aggregators/samples/maxpreps/mp-robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "c5d7beec6803c834f56c922c7b504b81d7cef119",
-        "frozen_main_blob": "c5d7beec6803c834f56c922c7b504b81d7cef119",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
         "path": "research/sources/national-aggregators/samples/maxpreps/mp-state-tx-track.html",
         "snapshot_delta": "A",
         "snapshot_blob": "8502378680a81e33d3da9451b50498d6761beebf",
@@ -13479,38 +13305,6 @@
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
       {
-        "path": "research/sources/national-aggregators/samples/other-databases/other-www.baumspage.com_robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "d21bfdc0631a44657a212d5524e8d21eafd2177e",
-        "frozen_main_blob": "d21bfdc0631a44657a212d5524e8d21eafd2177e",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/national-aggregators/samples/other-databases/other-www.crosscountryratings.com_robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "aa32666f69084bfa50beb94176b8dd1d4e55a5ef",
-        "frozen_main_blob": "aa32666f69084bfa50beb94176b8dd1d4e55a5ef",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/national-aggregators/samples/other-databases/other-www.fieldlevel.com_robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "2c88dcda27ffa0bd4bfb7269ff879ddabd362983",
-        "frozen_main_blob": "2c88dcda27ffa0bd4bfb7269ff879ddabd362983",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/national-aggregators/samples/other-databases/other-www.ncsasports.org_robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "2abe116f066fac80eed7ecbdfc738d8eb77a6fbf",
-        "frozen_main_blob": "2abe116f066fac80eed7ecbdfc738d8eb77a6fbf",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
         "path": "research/sources/national-aggregators/samples/runnerspace-dyestat/CAPTURES.log",
         "snapshot_delta": "A",
         "snapshot_blob": "bc11cd9b773859efc9bebfd5cbc4584ed31762b5",
@@ -13559,38 +13353,6 @@
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
       {
-        "path": "research/sources/national-aggregators/samples/runnerspace-dyestat/rs-robots-nxn.runnerspace.com_robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "126ab160794768c6a45263c939047d8c3dfb2a9b",
-        "frozen_main_blob": "126ab160794768c6a45263c939047d8c3dfb2a9b",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/national-aggregators/samples/runnerspace-dyestat/rs-robots-resultscentral.runnerspace.com_robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "126ab160794768c6a45263c939047d8c3dfb2a9b",
-        "frozen_main_blob": "126ab160794768c6a45263c939047d8c3dfb2a9b",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/national-aggregators/samples/runnerspace-dyestat/rs-robots-www.dyestat.com_robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "126ab160794768c6a45263c939047d8c3dfb2a9b",
-        "frozen_main_blob": "126ab160794768c6a45263c939047d8c3dfb2a9b",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/national-aggregators/samples/runnerspace-dyestat/rs-robots-www.runnerspace.com_robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "126ab160794768c6a45263c939047d8c3dfb2a9b",
-        "frozen_main_blob": "126ab160794768c6a45263c939047d8c3dfb2a9b",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
         "path": "research/sources/national-aggregators/samples/usatf-aau/CAPTURES.log",
         "snapshot_delta": "A",
         "snapshot_blob": "bd0532cf8629cbd02ffb9b9ffdc2214f5d746fcf",
@@ -13627,22 +13389,6 @@
         "snapshot_delta": "A",
         "snapshot_blob": "d4b73027b4952196e31004ad6e57161d1fb1b19e",
         "frozen_main_blob": "d4b73027b4952196e31004ad6e57161d1fb1b19e",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/national-aggregators/samples/usatf-aau/other-www.aausports.org_robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/national-aggregators/samples/usatf-aau/other-www.usatf.org_robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "37f8a0ea2f750de485e1ea07cf8320ee6a734313",
-        "frozen_main_blob": "37f8a0ea2f750de485e1ea07cf8320ee6a734313",
         "disposition": "retained-exact-current",
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
@@ -13871,14 +13617,6 @@
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
       {
-        "path": "research/sources/national-aggregators/samples/world-athletics/wa-robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "33ef4b26ef6a804cd745f2149d15507de167a1a2",
-        "frozen_main_blob": "33ef4b26ef6a804cd745f2149d15507de167a1a2",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
         "path": "research/sources/national-aggregators/samples/world-athletics/wa-sitemap-index.xml",
         "snapshot_delta": "A",
         "snapshot_blob": "c1101eb8397a4b3367ee22f17dc30f88952d6a38",
@@ -13899,14 +13637,6 @@
         "snapshot_delta": "A",
         "snapshot_blob": "8cfb83c715e744e162f35347fb7a8230c3bfd0a2",
         "frozen_main_blob": "8cfb83c715e744e162f35347fb7a8230c3bfd0a2",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-midatlantic/samples/ciac-fpsports-robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "3c01fd6f4060976211ad0bfed6be63ab57e9ef58",
-        "frozen_main_blob": "3c01fd6f4060976211ad0bfed6be63ab57e9ef58",
         "disposition": "retained-exact-current",
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
@@ -13963,14 +13693,6 @@
         "snapshot_delta": "A",
         "snapshot_blob": "1ba7be0fb136d4fd3a24bce8822b44694762cd06",
         "frozen_main_blob": "1ba7be0fb136d4fd3a24bce8822b44694762cd06",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-midatlantic/samples/dcsaa-robots-404-check.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "81ebf8cd1ce805784f8fa1ae1cd14d3d6382c5f1",
-        "frozen_main_blob": "81ebf8cd1ce805784f8fa1ae1cd14d3d6382c5f1",
         "disposition": "retained-exact-current",
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
@@ -14055,26 +13777,10 @@
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
       {
-        "path": "research/sources/state-assoc-midatlantic/samples/delaware-doe-robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "79410b3d5421fbffa835d69706958a20b0671e7c",
-        "frozen_main_blob": "79410b3d5421fbffa835d69706958a20b0671e7c",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
         "path": "research/sources/state-assoc-midatlantic/samples/delaware-edu-diaa.html",
         "snapshot_delta": "A",
         "snapshot_blob": "5b19aa8d2f53b1763530c74f374df08cb54ebdbb",
         "frozen_main_blob": "5b19aa8d2f53b1763530c74f374df08cb54ebdbb",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-midatlantic/samples/delaware-regulations-robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "913a944b90b6ceda2d44dcff9226d138855b33be",
-        "frozen_main_blob": "913a944b90b6ceda2d44dcff9226d138855b33be",
         "disposition": "retained-exact-current",
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
@@ -14163,14 +13869,6 @@
         "snapshot_delta": "A",
         "snapshot_blob": "3f67d7fa15fe475305476e9f8a3da8a29e9c6cae",
         "frozen_main_blob": "3f67d7fa15fe475305476e9f8a3da8a29e9c6cae",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-midatlantic/samples/mpa-robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "3c01fd6f4060976211ad0bfed6be63ab57e9ef58",
-        "frozen_main_blob": "3c01fd6f4060976211ad0bfed6be63ab57e9ef58",
         "disposition": "retained-exact-current",
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
@@ -14431,14 +14129,6 @@
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
       {
-        "path": "research/sources/state-assoc-midatlantic/samples/osse-dc-robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "462cda683decb2d1a73b4cb8effa9445ca080537",
-        "frozen_main_blob": "462cda683decb2d1a73b4cb8effa9445ca080537",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
         "path": "research/sources/state-assoc-midatlantic/samples/pa-milesplit-teams.html",
         "snapshot_delta": "A",
         "snapshot_blob": "07bce4a796c6a338aec9f63222d6bc7c592c1c33",
@@ -14563,142 +14253,6 @@
         "snapshot_delta": "A",
         "snapshot_blob": "7c2c03c0217629a589a4fc7d049984a996eea274",
         "frozen_main_blob": "7c2c03c0217629a589a4fc7d049984a996eea274",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-midatlantic/samples/robots-athleticnet.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "6687d227e4693f34cd2ed8a16dfec91e23c75d46",
-        "frozen_main_blob": "6687d227e4693f34cd2ed8a16dfec91e23c75d46",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-midatlantic/samples/robots-casciac.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "bf9bc6187f12adfcec098afd1f5e706f9ecf0e71",
-        "frozen_main_blob": "bf9bc6187f12adfcec098afd1f5e706f9ecf0e71",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-midatlantic/samples/robots-dcsaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "0e513c96e11dd938bd549de4a40a9f48e203298b",
-        "frozen_main_blob": "0e513c96e11dd938bd549de4a40a9f48e203298b",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-midatlantic/samples/robots-dcsaasports.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "3b8195e0c878aad4b1d587cbc275098096031870",
-        "frozen_main_blob": "3b8195e0c878aad4b1d587cbc275098096031870",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-midatlantic/samples/robots-diaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-midatlantic/samples/robots-education-delaware.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "cb09bc3c1c176fde0779b6c4c61fbaf170b13353",
-        "frozen_main_blob": "cb09bc3c1c176fde0779b6c4c61fbaf170b13353",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-midatlantic/samples/robots-miaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "3ad8e2e8dec097f3224437b559c394dc9f6479a1",
-        "frozen_main_blob": "3ad8e2e8dec097f3224437b559c394dc9f6479a1",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-midatlantic/samples/robots-mpssaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "f6fab4d3b4eee347ec6bc5133ce241cb814e8cdf",
-        "frozen_main_blob": "f6fab4d3b4eee347ec6bc5133ce241cb814e8cdf",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-midatlantic/samples/robots-nhiaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "3b8195e0c878aad4b1d587cbc275098096031870",
-        "frozen_main_blob": "3b8195e0c878aad4b1d587cbc275098096031870",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-midatlantic/samples/robots-njsiaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "7dd4ceb4ae9a1a1958edce9dee2cde7026926745",
-        "frozen_main_blob": "7dd4ceb4ae9a1a1958edce9dee2cde7026926745",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-midatlantic/samples/robots-nysphsaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "eaa3a5c80bf68868e5b1793222c9ffa57cf55751",
-        "frozen_main_blob": "eaa3a5c80bf68868e5b1793222c9ffa57cf55751",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-midatlantic/samples/robots-piaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "4745037953365ae97d36afec57d36507fe5ea2a6",
-        "frozen_main_blob": "4745037953365ae97d36afec57d36507fe5ea2a6",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-midatlantic/samples/robots-psal.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "91d44e9afe932f45cd743b3fe9eab5cab43a4f9f",
-        "frozen_main_blob": "91d44e9afe932f45cd743b3fe9eab5cab43a4f9f",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-midatlantic/samples/robots-riil.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "3c01fd6f4060976211ad0bfed6be63ab57e9ef58",
-        "frozen_main_blob": "3c01fd6f4060976211ad0bfed6be63ab57e9ef58",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-midatlantic/samples/robots-va-milesplit.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "f56ba7134eac191b25da58a9949efba4f877e3dc",
-        "frozen_main_blob": "f56ba7134eac191b25da58a9949efba4f877e3dc",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-midatlantic/samples/robots-vhsl.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "86c9a8a8e6ae449209897ee7a4c15f8a9e50cfa3",
-        "frozen_main_blob": "86c9a8a8e6ae449209897ee7a4c15f8a9e50cfa3",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-midatlantic/samples/robots-vpa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "6f8ba5677aeb781ca9518fa87f24bad09a4d0b83",
-        "frozen_main_blob": "6f8ba5677aeb781ca9518fa87f24bad09a4d0b83",
         "disposition": "retained-exact-current",
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
@@ -15296,22 +14850,6 @@
       },
       {
         "path": "research/sources/state-assoc-mountain/samples/azpreps365-results-xc-boys.html.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/azpreps365-robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "cb0d941fd0ed16399906faa97d944f46601a95be",
-        "frozen_main_blob": "cb0d941fd0ed16399906faa97d944f46601a95be",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/azpreps365-robots.txt.curlerr",
         "snapshot_delta": "A",
         "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
         "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
@@ -16199,270 +15737,6 @@
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
       {
-        "path": "research/sources/state-assoc-mountain/samples/robots-aiaonline.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "eb0536286f3081c6c0646817037faf5446e3547d",
-        "frozen_main_blob": "eb0536286f3081c6c0646817037faf5446e3547d",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-aiaonline.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-arbiter-live.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "d5615b9d489aefd2344a7703904291a56899eb7f",
-        "frozen_main_blob": "d5615b9d489aefd2344a7703904291a56899eb7f",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-arbiter-live.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-calamo.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "5a1ec9808a71ee7e36c830271cc5a8c42036b739",
-        "frozen_main_blob": "5a1ec9808a71ee7e36c830271cc5a8c42036b739",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-calamo.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-chsaanow.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "c0980e2a134e4e056e654430a3a20ee5ef9feb58",
-        "frozen_main_blob": "c0980e2a134e4e056e654430a3a20ee5ef9feb58",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-chsaanow.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-co-milesplit.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "frozen_main_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-co-milesplit.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-competitivetiming.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "b222e967900698039547163a2e7e5aa0cf8f12e4",
-        "frozen_main_blob": "b222e967900698039547163a2e7e5aa0cf8f12e4",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-competitivetiming.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-idhsaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "7d329b1db3f0b9383f111d23fc0c945b7e957017",
-        "frozen_main_blob": "7d329b1db3f0b9383f111d23fc0c945b7e957017",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-idhsaa.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-liverunningresults.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "3b8195e0c878aad4b1d587cbc275098096031870",
-        "frozen_main_blob": "3b8195e0c878aad4b1d587cbc275098096031870",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-liverunningresults.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-mhsa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "3b8195e0c878aad4b1d587cbc275098096031870",
-        "frozen_main_blob": "3b8195e0c878aad4b1d587cbc275098096031870",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-mhsa.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-nmact.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "0ad279c73692eed60c7ecc269726c10f3327fd0c",
-        "frozen_main_blob": "0ad279c73692eed60c7ecc269726c10f3327fd0c",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-nmact.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-rapidresultslive.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "7a72e371102167bdd3dfc952ea72e5a73e17e5c8",
-        "frozen_main_blob": "7a72e371102167bdd3dfc952ea72e5a73e17e5c8",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-rapidresultslive.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-rst7-assets.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "3b8195e0c878aad4b1d587cbc275098096031870",
-        "frozen_main_blob": "3b8195e0c878aad4b1d587cbc275098096031870",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-rst7-assets.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-runnercard.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "cf17772e9f677d54b657e0ad09e4302d923279e9",
-        "frozen_main_blob": "cf17772e9f677d54b657e0ad09e4302d923279e9",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-runnercard.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-schools-chsaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "7b06c15bebb4fb5baf0c77ffb09a83438e40a1e5",
-        "frozen_main_blob": "7b06c15bebb4fb5baf0c77ffb09a83438e40a1e5",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-schools-chsaa.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-tfmeetpro.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "52fda38fed51713d33bffcc48fc7a1c9e97b5535",
-        "frozen_main_blob": "52fda38fed51713d33bffcc48fc7a1c9e97b5535",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-uhsaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "a58bccc762bab2ee6c144a9418ff840db7f90903",
-        "frozen_main_blob": "a58bccc762bab2ee6c144a9418ff840db7f90903",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-uhsaa.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-whsaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "f03984f275ae99968838a3e406fa69a4b72ade40",
-        "frozen_main_blob": "f03984f275ae99968838a3e406fa69a4b72ade40",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-mountain/samples/robots-whsaa.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
         "path": "research/sources/state-assoc-mountain/samples/runnercard-ip-fallback.html.curlerr",
         "snapshot_delta": "A",
         "snapshot_blob": "86f27381c8bc59874ae134d18435735dcae556eb",
@@ -16931,86 +16205,6 @@
         "snapshot_delta": "A",
         "snapshot_blob": "f058f9f25c54af16b4985834e684bccbabd79b8a",
         "frozen_main_blob": "f058f9f25c54af16b4985834e684bccbabd79b8a",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-plains/samples/robots-iahsaa-apex.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "f477858c33e3af75d4117c69f64d2f992031e71e",
-        "frozen_main_blob": "f477858c33e3af75d4117c69f64d2f992031e71e",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-plains/samples/robots-iahsaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "f477858c33e3af75d4117c69f64d2f992031e71e",
-        "frozen_main_blob": "f477858c33e3af75d4117c69f64d2f992031e71e",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-plains/samples/robots-kshsaa-api.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-plains/samples/robots-kshsaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "daeb0e42e38aab6453b72327df82fafade7ccc67",
-        "frozen_main_blob": "daeb0e42e38aab6453b72327df82fafade7ccc67",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-plains/samples/robots-mshsaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "a9cee9d4910bc2edccf2d79415822f95f3ffcb01",
-        "frozen_main_blob": "a9cee9d4910bc2edccf2d79415822f95f3ffcb01",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-plains/samples/robots-mshsl.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e0b7d2b03965e2ab4abc6f76d801e6770d2f5597",
-        "frozen_main_blob": "e0b7d2b03965e2ab4abc6f76d801e6770d2f5597",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-plains/samples/robots-ndhsaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "eb0536286f3081c6c0646817037faf5446e3547d",
-        "frozen_main_blob": "eb0536286f3081c6c0646817037faf5446e3547d",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-plains/samples/robots-nsaahome.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "a0de8e2f0c83c4fdae758bf79e558a9e9940bf93",
-        "frozen_main_blob": "a0de8e2f0c83c4fdae758bf79e558a9e9940bf93",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-plains/samples/robots-sdhsaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "87f26b21a845286650ca8eeb2bff62d2472fc45a",
-        "frozen_main_blob": "87f26b21a845286650ca8eeb2bff62d2472fc45a",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-plains/samples/robots-secure-nsaahome.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
         "disposition": "retained-exact-current",
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
@@ -18016,382 +17210,6 @@
       },
       {
         "path": "research/sources/state-assoc-southcentral/samples/ok-xc-page-links-note.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-ahsaa-apex.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "ab35ca9bcb73ad1d7274171e08a96b443ab5cf27",
-        "frozen_main_blob": "ab35ca9bcb73ad1d7274171e08a96b443ab5cf27",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-ahsaa-apex.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-al.milesplit.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "frozen_main_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-al.milesplit.com.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-alabamarunners.com.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "5e54c7e675265dd6bd36e7b6c660a1ae877cdab0",
-        "frozen_main_blob": "5e54c7e675265dd6bd36e7b6c660a1ae877cdab0",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-dragonflyathletics.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "511e073cda8efe5ac926f4fc9e08bd46adc9d95f",
-        "frozen_main_blob": "511e073cda8efe5ac926f4fc9e08bd46adc9d95f",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-dragonflyathletics.com.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-khsaa.org.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "648a6938c20fb7b66e8ab8a357c461bd5234decc",
-        "frozen_main_blob": "648a6938c20fb7b66e8ab8a357c461bd5234decc",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-khsaa.org.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-la.milesplit.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "frozen_main_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-la.milesplit.com.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-lhsaa.org.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "ffabc61a6e53757dec1cbe792fc8165b22586188",
-        "frozen_main_blob": "ffabc61a6e53757dec1cbe792fc8165b22586188",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-lhsaa.org.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-lhsaaonline.org.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "70c2374d7b6ba4aaca3d91abbe29d86659bdd4e5",
-        "frozen_main_blob": "70c2374d7b6ba4aaca3d91abbe29d86659bdd4e5",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-lhsaaonline.org.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-live.arbiter.io.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "d5615b9d489aefd2344a7703904291a56899eb7f",
-        "frozen_main_blob": "d5615b9d489aefd2344a7703904291a56899eb7f",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-live.arbiter.io.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-misshsaa.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "284790f9925cd863aa35fbaa42b72acf10408a3b",
-        "frozen_main_blob": "284790f9925cd863aa35fbaa42b72acf10408a3b",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-misshsaa.com.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-ms.milesplit.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "frozen_main_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-ms.milesplit.com.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-ossaa-redirect-head.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "f27b62c8248751fc311fd0aac9dc9dc1e8af148c",
-        "frozen_main_blob": "f27b62c8248751fc311fd0aac9dc9dc1e8af148c",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-ossaa-redirect-head.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-ossaaillustrated.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "655babecb83cacb5c1779ed50b46ce2278a80394",
-        "frozen_main_blob": "655babecb83cacb5c1779ed50b46ce2278a80394",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-ossaaillustrated.com.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-portal.tssaa.org.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "efe9f72223e409c9e1b15dc6214938a14312c9c9",
-        "frozen_main_blob": "efe9f72223e409c9e1b15dc6214938a14312c9c9",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-portal.tssaa.org.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-tssaa.org.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "8355490ab43fb233e3fec00d4ecdbabe8cf258ef",
-        "frozen_main_blob": "8355490ab43fb233e3fec00d4ecdbabe8cf258ef",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-tssaa.org.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-tx.milesplit.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "frozen_main_blob": "4f141f3020c19386773d0c42d5fde0f205186bcf",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-tx.milesplit.com.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-web.archive.org.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "53ada59e9e44b8c1389b254786ee3c314a75afd2",
-        "frozen_main_blob": "53ada59e9e44b8c1389b254786ee3c314a75afd2",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-web.archive.org.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-www.ahsaa.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "ab35ca9bcb73ad1d7274171e08a96b443ab5cf27",
-        "frozen_main_blob": "ab35ca9bcb73ad1d7274171e08a96b443ab5cf27",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-www.ahsaa.com.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-www.ahsaa.org.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "aa86ef5aa13cc77e7809d824390d7c62e614895b",
-        "frozen_main_blob": "aa86ef5aa13cc77e7809d824390d7c62e614895b",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-www.ahsaa.org.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-www.lhsaa.org.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-www.lhsaa.org.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-www.misshsaa.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "284790f9925cd863aa35fbaa42b72acf10408a3b",
-        "frozen_main_blob": "284790f9925cd863aa35fbaa42b72acf10408a3b",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-www.misshsaa.com.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-www.ossaa.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "f27b62c8248751fc311fd0aac9dc9dc1e8af148c",
-        "frozen_main_blob": "f27b62c8248751fc311fd0aac9dc9dc1e8af148c",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-www.ossaa.com.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-www.uiltexas.org.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "8191b780193e95fcae2219a114527f727539afb3",
-        "frozen_main_blob": "8191b780193e95fcae2219a114527f727539afb3",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-www.uiltexas.org.txt.curlerr",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-xpresstiming.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "ba4bd8c10794ed814a672687870def85da5e6ca0",
-        "frozen_main_blob": "ba4bd8c10794ed814a672687870def85da5e6ca0",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southcentral/samples/robots-xpresstiming.com.txt.curlerr",
         "snapshot_delta": "A",
         "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
         "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
@@ -19695,126 +18513,6 @@
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
       {
-        "path": "research/sources/state-assoc-southeast/samples/robots-fhsaa-homecampus.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "eb0536286f3081c6c0646817037faf5446e3547d",
-        "frozen_main_blob": "eb0536286f3081c6c0646817037faf5446e3547d",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southeast/samples/robots-fhsaa-homecampus.txt.meta.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "ef669f5d6bfd4637c56113066119be5c5776826f",
-        "frozen_main_blob": "ef669f5d6bfd4637c56113066119be5c5776826f",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southeast/samples/robots-fhsaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "eaa3a5c80bf68868e5b1793222c9ffa57cf55751",
-        "frozen_main_blob": "eaa3a5c80bf68868e5b1793222c9ffa57cf55751",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southeast/samples/robots-fhsaa.txt.meta.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "b8fce00c2238b42283e6a30a379193aaea640b80",
-        "frozen_main_blob": "b8fce00c2238b42283e6a30a379193aaea640b80",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southeast/samples/robots-florida-tfrrs.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "c19f78ab6836efd56c42aa56457d58871d9e2782",
-        "frozen_main_blob": "c19f78ab6836efd56c42aa56457d58871d9e2782",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southeast/samples/robots-florida-tfrrs.txt.meta.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "01b8c921b89f09328dc8e4a7228c078ae6fa43d5",
-        "frozen_main_blob": "01b8c921b89f09328dc8e4a7228c078ae6fa43d5",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southeast/samples/robots-ghsa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "a2ee32ec39f95ebfc8f8149680e7d6b6ed0482b3",
-        "frozen_main_blob": "a2ee32ec39f95ebfc8f8149680e7d6b6ed0482b3",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southeast/samples/robots-ghsa.txt.meta.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "abda76b16485570b386c91fa47496b91b2bdd6cc",
-        "frozen_main_blob": "abda76b16485570b386c91fa47496b91b2bdd6cc",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southeast/samples/robots-milestat.txt.meta.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southeast/samples/robots-nchsaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "1b602f403b52beec2e441e5dc9ddff81c9ffbc58",
-        "frozen_main_blob": "1b602f403b52beec2e441e5dc9ddff81c9ffbc58",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southeast/samples/robots-nchsaa.txt.meta.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "4ea7f54ddcb77056241bb378d356f90c4f8d64d8",
-        "frozen_main_blob": "4ea7f54ddcb77056241bb378d356f90c4f8d64d8",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southeast/samples/robots-schsl.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "0f00a811a21c37ba006c19f567e766d24320769f",
-        "frozen_main_blob": "0f00a811a21c37ba006c19f567e766d24320769f",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southeast/samples/robots-schsl.txt.meta.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "fa93485f1ef7cd6c9d36081ce4a24748d6e976b5",
-        "frozen_main_blob": "fa93485f1ef7cd6c9d36081ce4a24748d6e976b5",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southeast/samples/robots-wvssac.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "3b8195e0c878aad4b1d587cbc275098096031870",
-        "frozen_main_blob": "3b8195e0c878aad4b1d587cbc275098096031870",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-southeast/samples/robots-wvssac.txt.meta.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "3bc22df0a9846ea3c445dbc4ecbb6f7c88c1d48c",
-        "frozen_main_blob": "3bc22df0a9846ea3c445dbc4ecbb6f7c88c1d48c",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
         "path": "research/sources/state-assoc-southeast/samples/school-directory-ghsa.html",
         "snapshot_delta": "A",
         "snapshot_blob": "25ef8bc80f6bb6ff569216f0ca576b8a8c20c570",
@@ -20943,246 +19641,6 @@
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
       {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-asaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "3b6c8813a30efa69154709f9956e2f41297e4917",
-        "frozen_main_blob": "3b6c8813a30efa69154709f9956e2f41297e4917",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-cif-la.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "884390bae686450232f2ff986652bf584f1fb0df",
-        "frozen_main_blob": "884390bae686450232f2ff986652bf584f1fb0df",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-cifccs-browserua.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "96046546eb3a8525027350c9ea400b6ea92ee8ea",
-        "frozen_main_blob": "96046546eb3a8525027350c9ea400b6ea92ee8ea",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-cifccs.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "61b449fc4412b4f1cd4661ee964ddad42c7632ab",
-        "frozen_main_blob": "61b449fc4412b4f1cd4661ee964ddad42c7632ab",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-cifcs-browserua.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "96046546eb3a8525027350c9ea400b6ea92ee8ea",
-        "frozen_main_blob": "96046546eb3a8525027350c9ea400b6ea92ee8ea",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-cifcs.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "f0e75a7463479938d8ce5f48060ef7bbf7628423",
-        "frozen_main_blob": "f0e75a7463479938d8ce5f48060ef7bbf7628423",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-cifncs-browserua.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "96046546eb3a8525027350c9ea400b6ea92ee8ea",
-        "frozen_main_blob": "96046546eb3a8525027350c9ea400b6ea92ee8ea",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-cifncs.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "fca1f38ab4e0f65c80df0da0da534047fc99797e",
-        "frozen_main_blob": "fca1f38ab4e0f65c80df0da0da534047fc99797e",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-cifns-browserua.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "96046546eb3a8525027350c9ea400b6ea92ee8ea",
-        "frozen_main_blob": "96046546eb3a8525027350c9ea400b6ea92ee8ea",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-cifns.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "856ce91811cfe3ccf49e47d8fb381cde68ef5e1b",
-        "frozen_main_blob": "856ce91811cfe3ccf49e47d8fb381cde68ef5e1b",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-cifoakland.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "5ce29da910f7e87423c614944bc7d86bd5266fa1",
-        "frozen_main_blob": "5ce29da910f7e87423c614944bc7d86bd5266fa1",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-cifsds-browserua.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "96046546eb3a8525027350c9ea400b6ea92ee8ea",
-        "frozen_main_blob": "96046546eb3a8525027350c9ea400b6ea92ee8ea",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-cifsds.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "3684032994651a182a1cfffeb4dd4612629d4b8c",
-        "frozen_main_blob": "3684032994651a182a1cfffeb4dd4612629d4b8c",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-cifsf.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "2a517e3e3e81209d3576238bcbbcb85d0719aa0f",
-        "frozen_main_blob": "2a517e3e3e81209d3576238bcbbcb85d0719aa0f",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-cifsjs.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "0e100236a4de7e16f0f8445e049b89480f3117ab",
-        "frozen_main_blob": "0e100236a4de7e16f0f8445e049b89480f3117ab",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-cifss-browserua.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "fdc7695fd5ea5fc06aa886ce6fa93dd1c87ded0f",
-        "frozen_main_blob": "fdc7695fd5ea5fc06aa886ce6fa93dd1c87ded0f",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-cifss.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "9b09d6332fc74ec57c306abdf93b5e8a21e51b0f",
-        "frozen_main_blob": "9b09d6332fc74ec57c306abdf93b5e8a21e51b0f",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-cifstate-bare.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "f72f69dce0c603d51f14efc86baca9aefb7c2aab",
-        "frozen_main_blob": "f72f69dce0c603d51f14efc86baca9aefb7c2aab",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-cifstate-browserua.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "96046546eb3a8525027350c9ea400b6ea92ee8ea",
-        "frozen_main_blob": "96046546eb3a8525027350c9ea400b6ea92ee8ea",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-cifstate.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "f8debec21ce09dd458ef4b046e2f66c0523c5f21",
-        "frozen_main_blob": "f8debec21ce09dd458ef4b046e2f66c0523c5f21",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-hhsaa-follow.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "085187fa58b1631e955f5d514d895a7721466797",
-        "frozen_main_blob": "085187fa58b1631e955f5d514d895a7721466797",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-hhsaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-niaa-com-browserua.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "96046546eb3a8525027350c9ea400b6ea92ee8ea",
-        "frozen_main_blob": "96046546eb3a8525027350c9ea400b6ea92ee8ea",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-niaa-com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "a37bfdbfe9daa06406ecfc2f296f178629d156de",
-        "frozen_main_blob": "a37bfdbfe9daa06406ecfc2f296f178629d156de",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-niaa-follow.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "93e8a6911815bda847a67595d61c203a31d47c76",
-        "frozen_main_blob": "93e8a6911815bda847a67595d61c203a31d47c76",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-niaa-root.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "148d0bde05e88403a8d2fd89bdc2f826825cdc27",
-        "frozen_main_blob": "148d0bde05e88403a8d2fd89bdc2f826825cdc27",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-niaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "54b6469522707546ee9fbe9c490ab90c16ef4e93",
-        "frozen_main_blob": "54b6469522707546ee9fbe9c490ab90c16ef4e93",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-osaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "37f7ff0b2dc131792695dcc1575949194d0a2c27",
-        "frozen_main_blob": "37f7ff0b2dc131792695dcc1575949194d0a2c27",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-wiaa-www.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "3b8195e0c878aad4b1d587cbc275098096031870",
-        "frozen_main_blob": "3b8195e0c878aad4b1d587cbc275098096031870",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/state-assoc-westcoast/samples/robots-wiaa.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "3b8195e0c878aad4b1d587cbc275098096031870",
-        "frozen_main_blob": "3b8195e0c878aad4b1d587cbc275098096031870",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
         "path": "research/sources/state-assoc-westcoast/samples/wiaa-events.html",
         "snapshot_delta": "A",
         "snapshot_blob": "5b4f26f2095dd20ed209b7065bf1b341c613ca58",
@@ -21463,14 +19921,6 @@
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
       {
-        "path": "research/sources/timing-providers-national/samples/flashresultstexas-robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "frozen_main_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
         "path": "research/sources/timing-providers-national/samples/flashresultstexas-root.html",
         "snapshot_delta": "A",
         "snapshot_blob": "70e7ec70cb72265908bebc9147bc8106caae9f41",
@@ -21519,14 +19969,6 @@
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
       {
-        "path": "research/sources/timing-providers-national/samples/live-flashresultstexas-robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "0acc7def47f0e8b4c3414ef727742b666e77e922",
-        "frozen_main_blob": "0acc7def47f0e8b4c3414ef727742b666e77e922",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
         "path": "research/sources/timing-providers-national/samples/live-flashresultstexas-sitemap.xml",
         "snapshot_delta": "A",
         "snapshot_blob": "0cc17e6b779898da2080e0ea0ad4e2a1f0023262",
@@ -21559,14 +20001,6 @@
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
       {
-        "path": "research/sources/timing-providers-national/samples/my-raceresult-robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "7a8fbd1b1b49ac9095b576a612e3f8749bf58c9e",
-        "frozen_main_blob": "7a8fbd1b1b49ac9095b576a612e3f8749bf58c9e",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
         "path": "research/sources/timing-providers-national/samples/my-raceresult-root.html",
         "snapshot_delta": "A",
         "snapshot_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
@@ -21579,14 +20013,6 @@
         "snapshot_delta": "A",
         "snapshot_blob": "e39f912acaec161833d1c245dd676199dc192965",
         "frozen_main_blob": "e39f912acaec161833d1c245dd676199dc192965",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/timing-providers-national/samples/opentrack-robots-chromeua.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "41c1e339ab9c5a6760943f5f4f6235bf330147bb",
-        "frozen_main_blob": "41c1e339ab9c5a6760943f5f4f6235bf330147bb",
         "disposition": "retained-exact-current",
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
@@ -21663,14 +20089,6 @@
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
       {
-        "path": "research/sources/timing-providers-national/samples/pttiming-results-robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "ab54a89838eda85ce9b9cbc5821829daf13988cb",
-        "frozen_main_blob": "ab54a89838eda85ce9b9cbc5821829daf13988cb",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
         "path": "research/sources/timing-providers-national/samples/raceresult-en-us-home.html",
         "snapshot_delta": "A",
         "snapshot_blob": "691bcc93ed8ac54190a9f2ae9a34ca0387f7080d",
@@ -21699,150 +20117,6 @@
         "snapshot_delta": "A",
         "snapshot_blob": "20027cfb169beeaad7b65b57da16d040bebc4a08",
         "frozen_main_blob": "20027cfb169beeaad7b65b57da16d040bebc4a08",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/timing-providers-national/samples/robots-finishtimingresults.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "2b63b4f6164d3d0a77b5d95bff0d2be302fd385f",
-        "frozen_main_blob": "2b63b4f6164d3d0a77b5d95bff0d2be302fd385f",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/timing-providers-national/samples/robots-gsetiming.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "552227dc975ab2864f858079bfa8bd46233037ee",
-        "frozen_main_blob": "552227dc975ab2864f858079bfa8bd46233037ee",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/timing-providers-national/samples/robots-live.pttiming.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "99a8ef904c90b4cd3f02a8602bc89a87e5d7a2b5",
-        "frozen_main_blob": "99a8ef904c90b4cd3f02a8602bc89a87e5d7a2b5",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/timing-providers-national/samples/robots-results.wayzatatiming.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "8d9b82092bf579ba4b383889c96a4a01b2b11c05",
-        "frozen_main_blob": "8d9b82092bf579ba4b383889c96a4a01b2b11c05",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/timing-providers-national/samples/robots-search.athletic.live.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "84a8bf9adb838e68af110dc39cd8345d04f7d576",
-        "frozen_main_blob": "84a8bf9adb838e68af110dc39cd8345d04f7d576",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/timing-providers-national/samples/robots-trxctiming.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "49c27aa039c3a3b68c58f2edf1e6302c1220e55e",
-        "frozen_main_blob": "49c27aa039c3a3b68c58f2edf1e6302c1220e55e",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/timing-providers-national/samples/robots-www.athletic.live.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "52b8c9bea8f56bf47571cfaa422efd4b9067d933",
-        "frozen_main_blob": "52b8c9bea8f56bf47571cfaa422efd4b9067d933",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/timing-providers-national/samples/robots-www.finishlynx.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "357ca778cef10ff0e03c2ca6cd3b9697c31c4714",
-        "frozen_main_blob": "357ca778cef10ff0e03c2ca6cd3b9697c31c4714",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/timing-providers-national/samples/robots-www.flashresults.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "37f8f95c8cdf06d3385270f075954aa0c5e913cf",
-        "frozen_main_blob": "37f8f95c8cdf06d3385270f075954aa0c5e913cf",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/timing-providers-national/samples/robots-www.herostiming.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "482b62650871334ed3e515b835a92dfd25f7bb6c",
-        "frozen_main_blob": "482b62650871334ed3e515b835a92dfd25f7bb6c",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/timing-providers-national/samples/robots-www.opentrack.run.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "9d34ad4c7bb51902b54ebb174d63ea2e893e1731",
-        "frozen_main_blob": "9d34ad4c7bb51902b54ebb174d63ea2e893e1731",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/timing-providers-national/samples/robots-www.pttiming.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "c057e1df76a8476a882b61b9aebab6e083e6f9ce",
-        "frozen_main_blob": "c057e1df76a8476a882b61b9aebab6e083e6f9ce",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/timing-providers-national/samples/robots-www.raceresult.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "184110bc2b6377aa700d5cd37e9672fda0727977",
-        "frozen_main_blob": "184110bc2b6377aa700d5cd37e9672fda0727977",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/timing-providers-national/samples/robots-www.runwv.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "31915501cb211c6a40df6656c3d595d1f7867b11",
-        "frozen_main_blob": "31915501cb211c6a40df6656c3d595d1f7867b11",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/timing-providers-national/samples/robots-www.tfrrs.org.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "c19f78ab6836efd56c42aa56457d58871d9e2782",
-        "frozen_main_blob": "c19f78ab6836efd56c42aa56457d58871d9e2782",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/timing-providers-national/samples/robots-www.wayzataresults.com.browserua.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "96046546eb3a8525027350c9ea400b6ea92ee8ea",
-        "frozen_main_blob": "96046546eb3a8525027350c9ea400b6ea92ee8ea",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/timing-providers-national/samples/robots-www.wayzataresults.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "044ec5c856f99aaa5511acd8b74c87f87ecd79ae",
-        "frozen_main_blob": "044ec5c856f99aaa5511acd8b74c87f87ecd79ae",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
-        "path": "research/sources/timing-providers-national/samples/robots-www.xcstats.com.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "a82823e8c9b4edbd57a64ff3d7db57bab7935716",
-        "frozen_main_blob": "a82823e8c9b4edbd57a64ff3d7db57bab7935716",
         "disposition": "retained-exact-current",
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
@@ -22015,14 +20289,6 @@
         "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
       },
       {
-        "path": "research/sources/timing-providers-national/samples/tfmeetpro-robots.txt",
-        "snapshot_delta": "A",
-        "snapshot_blob": "c19f78ab6836efd56c42aa56457d58871d9e2782",
-        "frozen_main_blob": "c19f78ab6836efd56c42aa56457d58871d9e2782",
-        "disposition": "retained-exact-current",
-        "rationale": "Exact captured or documentary blob is retained at frozen main; no missing payload."
-      },
-      {
         "path": "research/sources/timing-providers-national/samples/tfmeetpro-root.html",
         "snapshot_delta": "A",
         "snapshot_blob": "533d88f98729eee031dcbd5faa1b7046929c158a",
@@ -22182,8 +20448,6 @@
         "research/sources/athleticnet/samples/atn-probe-getrankings-anon.json",
         "research/sources/athleticnet/samples/atn-probe-statescountries-anon.headers",
         "research/sources/athleticnet/samples/atn-probe-statescountries-anon.json",
-        "research/sources/athleticnet/samples/atn-robots.headers",
-        "research/sources/athleticnet/samples/atn-robots.txt",
         "research/sources/athleticnet/samples/checks-enum-crosscheck.txt",
         "research/sources/athleticnet/samples/checks-state-divs.tsv",
         "research/sources/athleticnet/samples/har-atn-request-log.tsv",
@@ -22775,10 +21039,6 @@
         "research/sources/milesplit-cohort-enumerability/samples/meet-oh-770621-results.html",
         "research/sources/milesplit-cohort-enumerability/samples/meet-oh-770621.html",
         "research/sources/milesplit-cohort-enumerability/samples/raw-oh-770621-rs1321880.txt",
-        "research/sources/milesplit-cohort-enumerability/samples/robots-il-milesplit.txt",
-        "research/sources/milesplit-cohort-enumerability/samples/robots-oh-milesplit.txt",
-        "research/sources/milesplit-cohort-enumerability/samples/robots-va-milesplit.txt",
-        "research/sources/milesplit-cohort-enumerability/samples/robots-wi-milesplit.txt",
         "research/sources/milesplit-cohort-enumerability/samples/roster-in-adams-central.html",
         "research/sources/milesplit-cohort-enumerability/samples/roster-oh-mason.html",
         "research/sources/milesplit-cohort-enumerability/samples/roster-va-abingdon.html",
@@ -22829,13 +21089,6 @@
         "research/sources/milesplit-national/samples/raw-nc-684812-rs1283641.txt",
         "research/sources/milesplit-national/samples/raw-oh-770621-rs1321880.txt",
         "research/sources/milesplit-national/samples/results-oh.html",
-        "research/sources/milesplit-national/samples/robots-ca-milesplit.txt",
-        "research/sources/milesplit-national/samples/robots-js-sp-milesplit.txt",
-        "research/sources/milesplit-national/samples/robots-mi-milesplit.txt",
-        "research/sources/milesplit-national/samples/robots-oh-milesplit.txt",
-        "research/sources/milesplit-national/samples/robots-tx-milesplit.txt",
-        "research/sources/milesplit-national/samples/robots-www-milesplit.txt",
-        "research/sources/milesplit-national/samples/robots-wy-milesplit.txt",
         "research/sources/milesplit-national/samples/roster-oh-mason.html",
         "research/sources/milesplit-national/samples/search-v2-athletes-oh-2.headers",
         "research/sources/milesplit-national/samples/search-v2-athletes-oh-2.json",
@@ -22868,7 +21121,6 @@
         "research/sources/national-aggregators/data/source-coverage-matrix.csv",
         "research/sources/national-aggregators/samples/athleticlive/CAPTURES.log",
         "research/sources/national-aggregators/samples/athleticlive/CAPTURES.md",
-        "research/sources/national-aggregators/samples/athleticlive/al-athleticlive_blob_core_windows_net-robots.txt",
         "research/sources/national-aggregators/samples/athleticlive/al-blob-ind-res-2254280.json",
         "research/sources/national-aggregators/samples/athleticlive/al-blob-ind-res-2254285-headers.txt",
         "research/sources/national-aggregators/samples/athleticlive/al-blob-ind-res-2254285.json",
@@ -22887,18 +21139,14 @@
         "research/sources/national-aggregators/samples/athleticlive/al-es-sample-2026.json",
         "research/sources/national-aggregators/samples/athleticlive/al-es-total.json",
         "research/sources/national-aggregators/samples/athleticlive/al-live-athletic-net-root.html",
-        "research/sources/national-aggregators/samples/athleticlive/al-liveathleticnet-robots.txt",
-        "research/sources/national-aggregators/samples/athleticlive/al-livestatic_athletic_net-robots.txt",
         "research/sources/national-aggregators/samples/athleticlive/al-main-js.js",
         "research/sources/national-aggregators/samples/athleticlive/al-meet-page-59382.html",
         "research/sources/national-aggregators/samples/athleticlive/al-rtdb-meet-61710.json",
-        "research/sources/national-aggregators/samples/athleticlive/al-search-robots.txt",
         "research/sources/national-aggregators/samples/athleticlive/al-sitemap.xml",
         "research/sources/national-aggregators/samples/athleticlive/al-sitemap.xml-headers.txt",
         "research/sources/national-aggregators/samples/athleticlive/al-spa-tenant-list.txt",
         "research/sources/national-aggregators/samples/athleticlive/al-tenant-config-base.json",
         "research/sources/national-aggregators/samples/athleticlive/al-tenant-config-wayzata.json",
-        "research/sources/national-aggregators/samples/athleticlive/al-tenant-michiana-robots.txt",
         "research/sources/national-aggregators/samples/directathletics-tfrrs/CAPTURES.log",
         "research/sources/national-aggregators/samples/directathletics-tfrrs/CAPTURES.md",
         "research/sources/national-aggregators/samples/directathletics-tfrrs/dat-fusedriver-upcoming.js",
@@ -22912,8 +21160,6 @@
         "research/sources/national-aggregators/samples/directathletics-tfrrs/indiana-tfrrs-home.html",
         "research/sources/national-aggregators/samples/directathletics-tfrrs/indiana-tfrrs-list-5489.html",
         "research/sources/national-aggregators/samples/directathletics-tfrrs/nh-tfrrs-home.html",
-        "research/sources/national-aggregators/samples/directathletics-tfrrs/robots-www.directathletics.com_robots.txt",
-        "research/sources/national-aggregators/samples/directathletics-tfrrs/robots-www.tfrrs.org_robots.txt",
         "research/sources/national-aggregators/samples/directathletics-tfrrs/tfrrs-athlete-8429704.html",
         "research/sources/national-aggregators/samples/directathletics-tfrrs/tfrrs-event-96753-5981923.html",
         "research/sources/national-aggregators/samples/directathletics-tfrrs/tfrrs-result-96753.html",
@@ -22929,7 +21175,6 @@
         "research/sources/national-aggregators/samples/maxpreps/mp-home.html",
         "research/sources/national-aggregators/samples/maxpreps/mp-mobile-team-aliedo.html",
         "research/sources/national-aggregators/samples/maxpreps/mp-oh-track-athletes.html",
-        "research/sources/national-aggregators/samples/maxpreps/mp-robots.txt",
         "research/sources/national-aggregators/samples/maxpreps/mp-state-tx-track.html",
         "research/sources/national-aggregators/samples/maxpreps/mp-track-field.html",
         "research/sources/national-aggregators/samples/maxpreps/mp-tx-track-schools.html",
@@ -22939,27 +21184,17 @@
         "research/sources/national-aggregators/samples/other-databases/ccr-individuals.html",
         "research/sources/national-aggregators/samples/other-databases/ccr-results.html",
         "research/sources/national-aggregators/samples/other-databases/ccr-runner.html",
-        "research/sources/national-aggregators/samples/other-databases/other-www.baumspage.com_robots.txt",
-        "research/sources/national-aggregators/samples/other-databases/other-www.crosscountryratings.com_robots.txt",
-        "research/sources/national-aggregators/samples/other-databases/other-www.fieldlevel.com_robots.txt",
-        "research/sources/national-aggregators/samples/other-databases/other-www.ncsasports.org_robots.txt",
         "research/sources/national-aggregators/samples/runnerspace-dyestat/CAPTURES.log",
         "research/sources/national-aggregators/samples/runnerspace-dyestat/CAPTURES.md",
         "research/sources/national-aggregators/samples/runnerspace-dyestat/ds-home.html",
         "research/sources/national-aggregators/samples/runnerspace-dyestat/rs-home.html",
         "research/sources/national-aggregators/samples/runnerspace-dyestat/rs-nxn-2025-results-title187.html",
         "research/sources/national-aggregators/samples/runnerspace-dyestat/rs-resultscentral-home.html",
-        "research/sources/national-aggregators/samples/runnerspace-dyestat/rs-robots-nxn.runnerspace.com_robots.txt",
-        "research/sources/national-aggregators/samples/runnerspace-dyestat/rs-robots-resultscentral.runnerspace.com_robots.txt",
-        "research/sources/national-aggregators/samples/runnerspace-dyestat/rs-robots-www.dyestat.com_robots.txt",
-        "research/sources/national-aggregators/samples/runnerspace-dyestat/rs-robots-www.runnerspace.com_robots.txt",
         "research/sources/national-aggregators/samples/usatf-aau/CAPTURES.log",
         "research/sources/national-aggregators/samples/usatf-aau/CAPTURES.md",
         "research/sources/national-aggregators/samples/usatf-aau/aau-sports-track.html",
         "research/sources/national-aggregators/samples/usatf-aau/aau-track-hub-followed.html",
         "research/sources/national-aggregators/samples/usatf-aau/aau-track-hub.html",
-        "research/sources/national-aggregators/samples/usatf-aau/other-www.aausports.org_robots.txt",
-        "research/sources/national-aggregators/samples/usatf-aau/other-www.usatf.org_robots.txt",
         "research/sources/national-aggregators/samples/usatf-aau/usatf-home.html",
         "research/sources/national-aggregators/samples/usatf-aau/usatf-jo-live-finishedresults.html",
         "research/sources/national-aggregators/samples/usatf-aau/usatf-jo-tf.html",
@@ -22988,11 +21223,9 @@
         "research/sources/national-aggregators/samples/world-athletics/wa-graphql-trending.json",
         "research/sources/national-aggregators/samples/world-athletics/wa-graphql-with-key.json",
         "research/sources/national-aggregators/samples/world-athletics/wa-home.html",
-        "research/sources/national-aggregators/samples/world-athletics/wa-robots.txt",
         "research/sources/national-aggregators/samples/world-athletics/wa-sitemap-index.xml",
         "research/sources/state-assoc-midatlantic/samples/casciac-home.html",
         "research/sources/state-assoc-midatlantic/samples/ciac-fpsports-home.html",
-        "research/sources/state-assoc-midatlantic/samples/ciac-fpsports-robots.txt",
         "research/sources/state-assoc-midatlantic/samples/ciac-outdoor-track.aspx",
         "research/sources/state-assoc-midatlantic/samples/ciac-school-list.aspx",
         "research/sources/state-assoc-midatlantic/samples/ciac-xc-boys.aspx",
@@ -23000,7 +21233,6 @@
         "research/sources/state-assoc-midatlantic/samples/dc-milesplit-teams.html",
         "research/sources/state-assoc-midatlantic/samples/dcmdva-milesplit-teams.html",
         "research/sources/state-assoc-midatlantic/samples/dcsaa-home.html",
-        "research/sources/state-assoc-midatlantic/samples/dcsaa-robots-404-check.txt",
         "research/sources/state-assoc-midatlantic/samples/dcsaasports-about.html",
         "research/sources/state-assoc-midatlantic/samples/dcsaasports-boys-xc.html",
         "research/sources/state-assoc-midatlantic/samples/dcsaasports-com-home.html",
@@ -23011,9 +21243,7 @@
         "research/sources/state-assoc-midatlantic/samples/de-milesplit-teams.html",
         "research/sources/state-assoc-midatlantic/samples/delaware-admincode-1001.shtml",
         "research/sources/state-assoc-midatlantic/samples/delaware-admincode-title14.html",
-        "research/sources/state-assoc-midatlantic/samples/delaware-doe-robots.txt",
         "research/sources/state-assoc-midatlantic/samples/delaware-edu-diaa.html",
-        "research/sources/state-assoc-midatlantic/samples/delaware-regulations-robots.txt",
         "research/sources/state-assoc-midatlantic/samples/diaa-home.html",
         "research/sources/state-assoc-midatlantic/samples/ma-milesplit-teams.html",
         "research/sources/state-assoc-midatlantic/samples/md-milesplit-teams.html",
@@ -23025,7 +21255,6 @@
         "research/sources/state-assoc-midatlantic/samples/miaa-track-xc.html",
         "research/sources/state-assoc-midatlantic/samples/mpa-home.html",
         "research/sources/state-assoc-midatlantic/samples/mpa-outdoor-track.aspx",
-        "research/sources/state-assoc-midatlantic/samples/mpa-robots.txt",
         "research/sources/state-assoc-midatlantic/samples/mpa-school-list.aspx",
         "research/sources/state-assoc-midatlantic/samples/mpa-xc-boys.aspx",
         "research/sources/state-assoc-midatlantic/samples/mpaonline-home.html",
@@ -23058,7 +21287,6 @@
         "research/sources/state-assoc-midatlantic/samples/nysphsaa-schools.html",
         "research/sources/state-assoc-midatlantic/samples/nysphsaa-sitemap.aspx",
         "research/sources/state-assoc-midatlantic/samples/nysphsaa-xc.html",
-        "research/sources/state-assoc-midatlantic/samples/osse-dc-robots.txt",
         "research/sources/state-assoc-midatlantic/samples/pa-milesplit-teams.html",
         "research/sources/state-assoc-midatlantic/samples/piaa-championship-details-xc.html",
         "research/sources/state-assoc-midatlantic/samples/piaa-home.html",
@@ -23075,23 +21303,6 @@
         "research/sources/state-assoc-midatlantic/samples/riil-home.html",
         "research/sources/state-assoc-midatlantic/samples/riil-school-list.aspx",
         "research/sources/state-assoc-midatlantic/samples/riil-xc-boys.aspx",
-        "research/sources/state-assoc-midatlantic/samples/robots-athleticnet.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-casciac.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-dcsaa.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-dcsaasports.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-diaa.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-education-delaware.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-miaa.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-mpssaa.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-nhiaa.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-njsiaa.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-nysphsaa.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-piaa.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-psal.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-riil.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-va-milesplit.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-vhsl.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-vpa.txt",
         "research/sources/state-assoc-midatlantic/samples/sitemap-casciac.xml",
         "research/sources/state-assoc-midatlantic/samples/sitemap-ciac.xml",
         "research/sources/state-assoc-midatlantic/samples/sitemap-miaa.xml",
@@ -23167,8 +21378,6 @@
         "research/sources/state-assoc-mountain/samples/azpreps365-results-tf-boys.html.curlerr",
         "research/sources/state-assoc-mountain/samples/azpreps365-results-xc-boys.html",
         "research/sources/state-assoc-mountain/samples/azpreps365-results-xc-boys.html.curlerr",
-        "research/sources/state-assoc-mountain/samples/azpreps365-robots.txt",
-        "research/sources/state-assoc-mountain/samples/azpreps365-robots.txt.curlerr",
         "research/sources/state-assoc-mountain/samples/chsaa-media-tf-state-results-5a-2026.pdf",
         "research/sources/state-assoc-mountain/samples/chsaa-media-tf-state-results-5a-2026.pdf.curlerr",
         "research/sources/state-assoc-mountain/samples/chsaa-news-state-champions.html",
@@ -23279,39 +21488,6 @@
         "research/sources/state-assoc-mountain/samples/nmaa-section4-classification.pdf.curlerr",
         "research/sources/state-assoc-mountain/samples/nmaa-track-and-field.html",
         "research/sources/state-assoc-mountain/samples/nmaa-track-and-field.html.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-aiaonline.txt",
-        "research/sources/state-assoc-mountain/samples/robots-aiaonline.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-arbiter-live.txt",
-        "research/sources/state-assoc-mountain/samples/robots-arbiter-live.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-calamo.txt",
-        "research/sources/state-assoc-mountain/samples/robots-calamo.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-chsaanow.txt",
-        "research/sources/state-assoc-mountain/samples/robots-chsaanow.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-co-milesplit.txt",
-        "research/sources/state-assoc-mountain/samples/robots-co-milesplit.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-competitivetiming.txt",
-        "research/sources/state-assoc-mountain/samples/robots-competitivetiming.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-idhsaa.txt",
-        "research/sources/state-assoc-mountain/samples/robots-idhsaa.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-liverunningresults.txt",
-        "research/sources/state-assoc-mountain/samples/robots-liverunningresults.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-mhsa.txt",
-        "research/sources/state-assoc-mountain/samples/robots-mhsa.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-nmact.txt",
-        "research/sources/state-assoc-mountain/samples/robots-nmact.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-rapidresultslive.txt",
-        "research/sources/state-assoc-mountain/samples/robots-rapidresultslive.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-rst7-assets.txt",
-        "research/sources/state-assoc-mountain/samples/robots-rst7-assets.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-runnercard.txt",
-        "research/sources/state-assoc-mountain/samples/robots-runnercard.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-schools-chsaa.txt",
-        "research/sources/state-assoc-mountain/samples/robots-schools-chsaa.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-tfmeetpro.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-uhsaa.txt",
-        "research/sources/state-assoc-mountain/samples/robots-uhsaa.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-whsaa.txt",
-        "research/sources/state-assoc-mountain/samples/robots-whsaa.txt.curlerr",
         "research/sources/state-assoc-mountain/samples/runnercard-ip-fallback.html.curlerr",
         "research/sources/state-assoc-mountain/samples/runnercard-meet-1001674.html",
         "research/sources/state-assoc-mountain/samples/runnercard-meet-1001674.html.curlerr",
@@ -23371,16 +21547,6 @@
         "research/sources/state-assoc-plains/samples/ndhsaa-schools-2026-09-22.html",
         "research/sources/state-assoc-plains/samples/nsaa-directory-form-2026-09-22.html",
         "research/sources/state-assoc-plains/samples/probe-2026-09-22.log",
-        "research/sources/state-assoc-plains/samples/robots-iahsaa-apex.txt",
-        "research/sources/state-assoc-plains/samples/robots-iahsaa.txt",
-        "research/sources/state-assoc-plains/samples/robots-kshsaa-api.txt",
-        "research/sources/state-assoc-plains/samples/robots-kshsaa.txt",
-        "research/sources/state-assoc-plains/samples/robots-mshsaa.txt",
-        "research/sources/state-assoc-plains/samples/robots-mshsl.txt",
-        "research/sources/state-assoc-plains/samples/robots-ndhsaa.txt",
-        "research/sources/state-assoc-plains/samples/robots-nsaahome.txt",
-        "research/sources/state-assoc-plains/samples/robots-sdhsaa.txt",
-        "research/sources/state-assoc-plains/samples/robots-secure-nsaahome.txt",
         "research/sources/state-assoc-plains/samples/sdhsaa-cross-country-2026-09-22.html",
         "research/sources/state-assoc-plains/samples/sdhsaa-cross-country-region-2026-09-22.html",
         "research/sources/state-assoc-southcentral/samples/.captures.tsv",
@@ -23507,53 +21673,6 @@
         "research/sources/state-assoc-southcentral/samples/ok-track.html.curlerr",
         "research/sources/state-assoc-southcentral/samples/ok-xc-page-links-note.txt",
         "research/sources/state-assoc-southcentral/samples/ok-xc-page-links-note.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-ahsaa-apex.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-ahsaa-apex.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-al.milesplit.com.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-al.milesplit.com.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-alabamarunners.com.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-dragonflyathletics.com.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-dragonflyathletics.com.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-khsaa.org.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-khsaa.org.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-la.milesplit.com.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-la.milesplit.com.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-lhsaa.org.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-lhsaa.org.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-lhsaaonline.org.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-lhsaaonline.org.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-live.arbiter.io.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-live.arbiter.io.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-misshsaa.com.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-misshsaa.com.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-ms.milesplit.com.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-ms.milesplit.com.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-ossaa-redirect-head.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-ossaa-redirect-head.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-ossaaillustrated.com.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-ossaaillustrated.com.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-portal.tssaa.org.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-portal.tssaa.org.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-tssaa.org.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-tssaa.org.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-tx.milesplit.com.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-tx.milesplit.com.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-web.archive.org.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-web.archive.org.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-www.ahsaa.com.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-www.ahsaa.com.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-www.ahsaa.org.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-www.ahsaa.org.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-www.lhsaa.org.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-www.lhsaa.org.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-www.misshsaa.com.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-www.misshsaa.com.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-www.ossaa.com.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-www.ossaa.com.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-www.uiltexas.org.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-www.uiltexas.org.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-xpresstiming.com.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-xpresstiming.com.txt.curlerr",
         "research/sources/state-assoc-southcentral/samples/tn-2025-xc-d1aaa-results.html",
         "research/sources/state-assoc-southcentral/samples/tn-2025-xc-d1aaa-results.html.curlerr",
         "research/sources/state-assoc-southcentral/samples/tn-champ-result-2025-d1aaa.cfm",
@@ -23716,21 +21835,6 @@
         "research/sources/state-assoc-southeast/samples/record-books-nchsaa.html.meta.txt",
         "research/sources/state-assoc-southeast/samples/rewind-schsl.html",
         "research/sources/state-assoc-southeast/samples/rewind-schsl.html.meta.txt",
-        "research/sources/state-assoc-southeast/samples/robots-fhsaa-homecampus.txt",
-        "research/sources/state-assoc-southeast/samples/robots-fhsaa-homecampus.txt.meta.txt",
-        "research/sources/state-assoc-southeast/samples/robots-fhsaa.txt",
-        "research/sources/state-assoc-southeast/samples/robots-fhsaa.txt.meta.txt",
-        "research/sources/state-assoc-southeast/samples/robots-florida-tfrrs.txt",
-        "research/sources/state-assoc-southeast/samples/robots-florida-tfrrs.txt.meta.txt",
-        "research/sources/state-assoc-southeast/samples/robots-ghsa.txt",
-        "research/sources/state-assoc-southeast/samples/robots-ghsa.txt.meta.txt",
-        "research/sources/state-assoc-southeast/samples/robots-milestat.txt.meta.txt",
-        "research/sources/state-assoc-southeast/samples/robots-nchsaa.txt",
-        "research/sources/state-assoc-southeast/samples/robots-nchsaa.txt.meta.txt",
-        "research/sources/state-assoc-southeast/samples/robots-schsl.txt",
-        "research/sources/state-assoc-southeast/samples/robots-schsl.txt.meta.txt",
-        "research/sources/state-assoc-southeast/samples/robots-wvssac.txt",
-        "research/sources/state-assoc-southeast/samples/robots-wvssac.txt.meta.txt",
         "research/sources/state-assoc-southeast/samples/school-directory-ghsa.html",
         "research/sources/state-assoc-southeast/samples/school-directory-ghsa.html.meta.txt",
         "research/sources/state-assoc-southeast/samples/school-directory-wvssac.html",
@@ -23872,36 +21976,6 @@
         "research/sources/state-assoc-westcoast/samples/osaa-schools.html",
         "research/sources/state-assoc-westcoast/samples/osaa-xc-results.html",
         "research/sources/state-assoc-westcoast/samples/ousd-oal.html",
-        "research/sources/state-assoc-westcoast/samples/robots-asaa.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cif-la.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifccs-browserua.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifccs.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifcs-browserua.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifcs.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifncs-browserua.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifncs.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifns-browserua.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifns.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifoakland.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifsds-browserua.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifsds.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifsf.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifsjs.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifss-browserua.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifss.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifstate-bare.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifstate-browserua.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifstate.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-hhsaa-follow.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-hhsaa.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-niaa-com-browserua.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-niaa-com.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-niaa-follow.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-niaa-root.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-niaa.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-osaa.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-wiaa-www.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-wiaa.txt",
         "research/sources/state-assoc-westcoast/samples/wiaa-events.html",
         "research/sources/state-assoc-westcoast/samples/wiaa-finalforms-p2.html",
         "research/sources/state-assoc-westcoast/samples/wiaa-finalforms-p51.html",
@@ -23937,22 +22011,18 @@
         "research/sources/timing-providers-national/samples/flashresults-schedule.htm",
         "research/sources/timing-providers-national/samples/flashresults-sitemap-probe.xml",
         "research/sources/timing-providers-national/samples/flashresultstexas-results.htm",
-        "research/sources/timing-providers-national/samples/flashresultstexas-robots.txt",
         "research/sources/timing-providers-national/samples/flashresultstexas-root.html",
         "research/sources/timing-providers-national/samples/gsetiming-adv_source-race7784.json",
         "research/sources/timing-providers-national/samples/gsetiming-cc_rslts-index.html",
         "research/sources/timing-providers-national/samples/herostiming-2026-results.html",
         "research/sources/timing-providers-national/samples/herostiming-root.html",
         "research/sources/timing-providers-national/samples/live-flashresultstexas-meet-76403.html",
-        "research/sources/timing-providers-national/samples/live-flashresultstexas-robots.txt",
         "research/sources/timing-providers-national/samples/live-flashresultstexas-sitemap.xml",
         "research/sources/timing-providers-national/samples/my-raceresult-event-423470-results.html",
         "research/sources/timing-providers-national/samples/my-raceresult-event-423470.html",
         "research/sources/timing-providers-national/samples/my-raceresult-events.html",
-        "research/sources/timing-providers-national/samples/my-raceresult-robots.txt",
         "research/sources/timing-providers-national/samples/my-raceresult-root.html",
         "research/sources/timing-providers-national/samples/opentrack-results-path-probe.html",
-        "research/sources/timing-providers-national/samples/opentrack-robots-chromeua.txt",
         "research/sources/timing-providers-national/samples/pttiming-api-results-current-2026-page1.json",
         "research/sources/timing-providers-national/samples/pttiming-api-results-current-2026-page2.json",
         "research/sources/timing-providers-national/samples/pttiming-api-results-current-2026-page3.json",
@@ -23962,29 +22032,10 @@
         "research/sources/timing-providers-national/samples/pttiming-data-cyclone-opener-womenisu.htm",
         "research/sources/timing-providers-national/samples/pttiming-data-wi-meet-sample.pdf",
         "research/sources/timing-providers-national/samples/pttiming-event-2910.html",
-        "research/sources/timing-providers-national/samples/pttiming-results-robots.txt",
         "research/sources/timing-providers-national/samples/raceresult-en-us-home.html",
         "research/sources/timing-providers-national/samples/raceresult-home.html",
         "research/sources/timing-providers-national/samples/raceresult-root-followed.html",
         "research/sources/timing-providers-national/samples/raceresult-root.html",
-        "research/sources/timing-providers-national/samples/robots-finishtimingresults.com.txt",
-        "research/sources/timing-providers-national/samples/robots-gsetiming.com.txt",
-        "research/sources/timing-providers-national/samples/robots-live.pttiming.com.txt",
-        "research/sources/timing-providers-national/samples/robots-results.wayzatatiming.com.txt",
-        "research/sources/timing-providers-national/samples/robots-search.athletic.live.txt",
-        "research/sources/timing-providers-national/samples/robots-trxctiming.com.txt",
-        "research/sources/timing-providers-national/samples/robots-www.athletic.live.txt",
-        "research/sources/timing-providers-national/samples/robots-www.finishlynx.com.txt",
-        "research/sources/timing-providers-national/samples/robots-www.flashresults.com.txt",
-        "research/sources/timing-providers-national/samples/robots-www.herostiming.com.txt",
-        "research/sources/timing-providers-national/samples/robots-www.opentrack.run.txt",
-        "research/sources/timing-providers-national/samples/robots-www.pttiming.com.txt",
-        "research/sources/timing-providers-national/samples/robots-www.raceresult.com.txt",
-        "research/sources/timing-providers-national/samples/robots-www.runwv.com.txt",
-        "research/sources/timing-providers-national/samples/robots-www.tfrrs.org.txt",
-        "research/sources/timing-providers-national/samples/robots-www.wayzataresults.com.browserua.txt",
-        "research/sources/timing-providers-national/samples/robots-www.wayzataresults.com.txt",
-        "research/sources/timing-providers-national/samples/robots-www.xcstats.com.txt",
         "research/sources/timing-providers-national/samples/runwv-cc26-contents.html",
         "research/sources/timing-providers-national/samples/runwv-cc26-index.html",
         "research/sources/timing-providers-national/samples/runwv-cc26-meetlist.html",
@@ -24006,7 +22057,6 @@
         "research/sources/timing-providers-national/samples/tfmeetpro-results-demo-smithinvite.html",
         "research/sources/timing-providers-national/samples/tfmeetpro-results-http-root.html",
         "research/sources/timing-providers-national/samples/tfmeetpro-results.php.html",
-        "research/sources/timing-providers-national/samples/tfmeetpro-robots.txt",
         "research/sources/timing-providers-national/samples/tfmeetpro-root.html",
         "research/sources/timing-providers-national/samples/tfrrs-results.rss",
         "research/sources/timing-providers-national/samples/tfrrs-root.html",
@@ -24215,8 +22265,6 @@
         "research/sources/athleticnet/samples/atn-probe-getrankings-anon.json",
         "research/sources/athleticnet/samples/atn-probe-statescountries-anon.headers",
         "research/sources/athleticnet/samples/atn-probe-statescountries-anon.json",
-        "research/sources/athleticnet/samples/atn-robots.headers",
-        "research/sources/athleticnet/samples/atn-robots.txt",
         "research/sources/athleticnet/samples/checks-enum-crosscheck.txt",
         "research/sources/athleticnet/samples/checks-state-divs.tsv",
         "research/sources/athleticnet/samples/har-atn-request-log.tsv",
@@ -24808,10 +22856,6 @@
         "research/sources/milesplit-cohort-enumerability/samples/meet-oh-770621-results.html",
         "research/sources/milesplit-cohort-enumerability/samples/meet-oh-770621.html",
         "research/sources/milesplit-cohort-enumerability/samples/raw-oh-770621-rs1321880.txt",
-        "research/sources/milesplit-cohort-enumerability/samples/robots-il-milesplit.txt",
-        "research/sources/milesplit-cohort-enumerability/samples/robots-oh-milesplit.txt",
-        "research/sources/milesplit-cohort-enumerability/samples/robots-va-milesplit.txt",
-        "research/sources/milesplit-cohort-enumerability/samples/robots-wi-milesplit.txt",
         "research/sources/milesplit-cohort-enumerability/samples/roster-in-adams-central.html",
         "research/sources/milesplit-cohort-enumerability/samples/roster-oh-mason.html",
         "research/sources/milesplit-cohort-enumerability/samples/roster-va-abingdon.html",
@@ -24862,13 +22906,6 @@
         "research/sources/milesplit-national/samples/raw-nc-684812-rs1283641.txt",
         "research/sources/milesplit-national/samples/raw-oh-770621-rs1321880.txt",
         "research/sources/milesplit-national/samples/results-oh.html",
-        "research/sources/milesplit-national/samples/robots-ca-milesplit.txt",
-        "research/sources/milesplit-national/samples/robots-js-sp-milesplit.txt",
-        "research/sources/milesplit-national/samples/robots-mi-milesplit.txt",
-        "research/sources/milesplit-national/samples/robots-oh-milesplit.txt",
-        "research/sources/milesplit-national/samples/robots-tx-milesplit.txt",
-        "research/sources/milesplit-national/samples/robots-www-milesplit.txt",
-        "research/sources/milesplit-national/samples/robots-wy-milesplit.txt",
         "research/sources/milesplit-national/samples/roster-oh-mason.html",
         "research/sources/milesplit-national/samples/search-v2-athletes-oh-2.headers",
         "research/sources/milesplit-national/samples/search-v2-athletes-oh-2.json",
@@ -24901,7 +22938,6 @@
         "research/sources/national-aggregators/data/source-coverage-matrix.csv",
         "research/sources/national-aggregators/samples/athleticlive/CAPTURES.log",
         "research/sources/national-aggregators/samples/athleticlive/CAPTURES.md",
-        "research/sources/national-aggregators/samples/athleticlive/al-athleticlive_blob_core_windows_net-robots.txt",
         "research/sources/national-aggregators/samples/athleticlive/al-blob-ind-res-2254280.json",
         "research/sources/national-aggregators/samples/athleticlive/al-blob-ind-res-2254285-headers.txt",
         "research/sources/national-aggregators/samples/athleticlive/al-blob-ind-res-2254285.json",
@@ -24920,18 +22956,14 @@
         "research/sources/national-aggregators/samples/athleticlive/al-es-sample-2026.json",
         "research/sources/national-aggregators/samples/athleticlive/al-es-total.json",
         "research/sources/national-aggregators/samples/athleticlive/al-live-athletic-net-root.html",
-        "research/sources/national-aggregators/samples/athleticlive/al-liveathleticnet-robots.txt",
-        "research/sources/national-aggregators/samples/athleticlive/al-livestatic_athletic_net-robots.txt",
         "research/sources/national-aggregators/samples/athleticlive/al-main-js.js",
         "research/sources/national-aggregators/samples/athleticlive/al-meet-page-59382.html",
         "research/sources/national-aggregators/samples/athleticlive/al-rtdb-meet-61710.json",
-        "research/sources/national-aggregators/samples/athleticlive/al-search-robots.txt",
         "research/sources/national-aggregators/samples/athleticlive/al-sitemap.xml",
         "research/sources/national-aggregators/samples/athleticlive/al-sitemap.xml-headers.txt",
         "research/sources/national-aggregators/samples/athleticlive/al-spa-tenant-list.txt",
         "research/sources/national-aggregators/samples/athleticlive/al-tenant-config-base.json",
         "research/sources/national-aggregators/samples/athleticlive/al-tenant-config-wayzata.json",
-        "research/sources/national-aggregators/samples/athleticlive/al-tenant-michiana-robots.txt",
         "research/sources/national-aggregators/samples/directathletics-tfrrs/CAPTURES.log",
         "research/sources/national-aggregators/samples/directathletics-tfrrs/CAPTURES.md",
         "research/sources/national-aggregators/samples/directathletics-tfrrs/dat-fusedriver-upcoming.js",
@@ -24945,8 +22977,6 @@
         "research/sources/national-aggregators/samples/directathletics-tfrrs/indiana-tfrrs-home.html",
         "research/sources/national-aggregators/samples/directathletics-tfrrs/indiana-tfrrs-list-5489.html",
         "research/sources/national-aggregators/samples/directathletics-tfrrs/nh-tfrrs-home.html",
-        "research/sources/national-aggregators/samples/directathletics-tfrrs/robots-www.directathletics.com_robots.txt",
-        "research/sources/national-aggregators/samples/directathletics-tfrrs/robots-www.tfrrs.org_robots.txt",
         "research/sources/national-aggregators/samples/directathletics-tfrrs/tfrrs-athlete-8429704.html",
         "research/sources/national-aggregators/samples/directathletics-tfrrs/tfrrs-event-96753-5981923.html",
         "research/sources/national-aggregators/samples/directathletics-tfrrs/tfrrs-result-96753.html",
@@ -24962,7 +22992,6 @@
         "research/sources/national-aggregators/samples/maxpreps/mp-home.html",
         "research/sources/national-aggregators/samples/maxpreps/mp-mobile-team-aliedo.html",
         "research/sources/national-aggregators/samples/maxpreps/mp-oh-track-athletes.html",
-        "research/sources/national-aggregators/samples/maxpreps/mp-robots.txt",
         "research/sources/national-aggregators/samples/maxpreps/mp-state-tx-track.html",
         "research/sources/national-aggregators/samples/maxpreps/mp-track-field.html",
         "research/sources/national-aggregators/samples/maxpreps/mp-tx-track-schools.html",
@@ -24972,27 +23001,17 @@
         "research/sources/national-aggregators/samples/other-databases/ccr-individuals.html",
         "research/sources/national-aggregators/samples/other-databases/ccr-results.html",
         "research/sources/national-aggregators/samples/other-databases/ccr-runner.html",
-        "research/sources/national-aggregators/samples/other-databases/other-www.baumspage.com_robots.txt",
-        "research/sources/national-aggregators/samples/other-databases/other-www.crosscountryratings.com_robots.txt",
-        "research/sources/national-aggregators/samples/other-databases/other-www.fieldlevel.com_robots.txt",
-        "research/sources/national-aggregators/samples/other-databases/other-www.ncsasports.org_robots.txt",
         "research/sources/national-aggregators/samples/runnerspace-dyestat/CAPTURES.log",
         "research/sources/national-aggregators/samples/runnerspace-dyestat/CAPTURES.md",
         "research/sources/national-aggregators/samples/runnerspace-dyestat/ds-home.html",
         "research/sources/national-aggregators/samples/runnerspace-dyestat/rs-home.html",
         "research/sources/national-aggregators/samples/runnerspace-dyestat/rs-nxn-2025-results-title187.html",
         "research/sources/national-aggregators/samples/runnerspace-dyestat/rs-resultscentral-home.html",
-        "research/sources/national-aggregators/samples/runnerspace-dyestat/rs-robots-nxn.runnerspace.com_robots.txt",
-        "research/sources/national-aggregators/samples/runnerspace-dyestat/rs-robots-resultscentral.runnerspace.com_robots.txt",
-        "research/sources/national-aggregators/samples/runnerspace-dyestat/rs-robots-www.dyestat.com_robots.txt",
-        "research/sources/national-aggregators/samples/runnerspace-dyestat/rs-robots-www.runnerspace.com_robots.txt",
         "research/sources/national-aggregators/samples/usatf-aau/CAPTURES.log",
         "research/sources/national-aggregators/samples/usatf-aau/CAPTURES.md",
         "research/sources/national-aggregators/samples/usatf-aau/aau-sports-track.html",
         "research/sources/national-aggregators/samples/usatf-aau/aau-track-hub-followed.html",
         "research/sources/national-aggregators/samples/usatf-aau/aau-track-hub.html",
-        "research/sources/national-aggregators/samples/usatf-aau/other-www.aausports.org_robots.txt",
-        "research/sources/national-aggregators/samples/usatf-aau/other-www.usatf.org_robots.txt",
         "research/sources/national-aggregators/samples/usatf-aau/usatf-home.html",
         "research/sources/national-aggregators/samples/usatf-aau/usatf-jo-live-finishedresults.html",
         "research/sources/national-aggregators/samples/usatf-aau/usatf-jo-tf.html",
@@ -25021,11 +23040,9 @@
         "research/sources/national-aggregators/samples/world-athletics/wa-graphql-trending.json",
         "research/sources/national-aggregators/samples/world-athletics/wa-graphql-with-key.json",
         "research/sources/national-aggregators/samples/world-athletics/wa-home.html",
-        "research/sources/national-aggregators/samples/world-athletics/wa-robots.txt",
         "research/sources/national-aggregators/samples/world-athletics/wa-sitemap-index.xml",
         "research/sources/state-assoc-midatlantic/samples/casciac-home.html",
         "research/sources/state-assoc-midatlantic/samples/ciac-fpsports-home.html",
-        "research/sources/state-assoc-midatlantic/samples/ciac-fpsports-robots.txt",
         "research/sources/state-assoc-midatlantic/samples/ciac-outdoor-track.aspx",
         "research/sources/state-assoc-midatlantic/samples/ciac-school-list.aspx",
         "research/sources/state-assoc-midatlantic/samples/ciac-xc-boys.aspx",
@@ -25033,7 +23050,6 @@
         "research/sources/state-assoc-midatlantic/samples/dc-milesplit-teams.html",
         "research/sources/state-assoc-midatlantic/samples/dcmdva-milesplit-teams.html",
         "research/sources/state-assoc-midatlantic/samples/dcsaa-home.html",
-        "research/sources/state-assoc-midatlantic/samples/dcsaa-robots-404-check.txt",
         "research/sources/state-assoc-midatlantic/samples/dcsaasports-about.html",
         "research/sources/state-assoc-midatlantic/samples/dcsaasports-boys-xc.html",
         "research/sources/state-assoc-midatlantic/samples/dcsaasports-com-home.html",
@@ -25044,9 +23060,7 @@
         "research/sources/state-assoc-midatlantic/samples/de-milesplit-teams.html",
         "research/sources/state-assoc-midatlantic/samples/delaware-admincode-1001.shtml",
         "research/sources/state-assoc-midatlantic/samples/delaware-admincode-title14.html",
-        "research/sources/state-assoc-midatlantic/samples/delaware-doe-robots.txt",
         "research/sources/state-assoc-midatlantic/samples/delaware-edu-diaa.html",
-        "research/sources/state-assoc-midatlantic/samples/delaware-regulations-robots.txt",
         "research/sources/state-assoc-midatlantic/samples/diaa-home.html",
         "research/sources/state-assoc-midatlantic/samples/ma-milesplit-teams.html",
         "research/sources/state-assoc-midatlantic/samples/md-milesplit-teams.html",
@@ -25058,7 +23072,6 @@
         "research/sources/state-assoc-midatlantic/samples/miaa-track-xc.html",
         "research/sources/state-assoc-midatlantic/samples/mpa-home.html",
         "research/sources/state-assoc-midatlantic/samples/mpa-outdoor-track.aspx",
-        "research/sources/state-assoc-midatlantic/samples/mpa-robots.txt",
         "research/sources/state-assoc-midatlantic/samples/mpa-school-list.aspx",
         "research/sources/state-assoc-midatlantic/samples/mpa-xc-boys.aspx",
         "research/sources/state-assoc-midatlantic/samples/mpaonline-home.html",
@@ -25091,7 +23104,6 @@
         "research/sources/state-assoc-midatlantic/samples/nysphsaa-schools.html",
         "research/sources/state-assoc-midatlantic/samples/nysphsaa-sitemap.aspx",
         "research/sources/state-assoc-midatlantic/samples/nysphsaa-xc.html",
-        "research/sources/state-assoc-midatlantic/samples/osse-dc-robots.txt",
         "research/sources/state-assoc-midatlantic/samples/pa-milesplit-teams.html",
         "research/sources/state-assoc-midatlantic/samples/piaa-championship-details-xc.html",
         "research/sources/state-assoc-midatlantic/samples/piaa-home.html",
@@ -25108,23 +23120,6 @@
         "research/sources/state-assoc-midatlantic/samples/riil-home.html",
         "research/sources/state-assoc-midatlantic/samples/riil-school-list.aspx",
         "research/sources/state-assoc-midatlantic/samples/riil-xc-boys.aspx",
-        "research/sources/state-assoc-midatlantic/samples/robots-athleticnet.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-casciac.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-dcsaa.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-dcsaasports.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-diaa.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-education-delaware.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-miaa.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-mpssaa.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-nhiaa.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-njsiaa.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-nysphsaa.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-piaa.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-psal.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-riil.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-va-milesplit.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-vhsl.txt",
-        "research/sources/state-assoc-midatlantic/samples/robots-vpa.txt",
         "research/sources/state-assoc-midatlantic/samples/sitemap-casciac.xml",
         "research/sources/state-assoc-midatlantic/samples/sitemap-ciac.xml",
         "research/sources/state-assoc-midatlantic/samples/sitemap-miaa.xml",
@@ -25200,8 +23195,6 @@
         "research/sources/state-assoc-mountain/samples/azpreps365-results-tf-boys.html.curlerr",
         "research/sources/state-assoc-mountain/samples/azpreps365-results-xc-boys.html",
         "research/sources/state-assoc-mountain/samples/azpreps365-results-xc-boys.html.curlerr",
-        "research/sources/state-assoc-mountain/samples/azpreps365-robots.txt",
-        "research/sources/state-assoc-mountain/samples/azpreps365-robots.txt.curlerr",
         "research/sources/state-assoc-mountain/samples/chsaa-media-tf-state-results-5a-2026.pdf",
         "research/sources/state-assoc-mountain/samples/chsaa-media-tf-state-results-5a-2026.pdf.curlerr",
         "research/sources/state-assoc-mountain/samples/chsaa-news-state-champions.html",
@@ -25312,39 +23305,6 @@
         "research/sources/state-assoc-mountain/samples/nmaa-section4-classification.pdf.curlerr",
         "research/sources/state-assoc-mountain/samples/nmaa-track-and-field.html",
         "research/sources/state-assoc-mountain/samples/nmaa-track-and-field.html.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-aiaonline.txt",
-        "research/sources/state-assoc-mountain/samples/robots-aiaonline.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-arbiter-live.txt",
-        "research/sources/state-assoc-mountain/samples/robots-arbiter-live.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-calamo.txt",
-        "research/sources/state-assoc-mountain/samples/robots-calamo.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-chsaanow.txt",
-        "research/sources/state-assoc-mountain/samples/robots-chsaanow.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-co-milesplit.txt",
-        "research/sources/state-assoc-mountain/samples/robots-co-milesplit.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-competitivetiming.txt",
-        "research/sources/state-assoc-mountain/samples/robots-competitivetiming.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-idhsaa.txt",
-        "research/sources/state-assoc-mountain/samples/robots-idhsaa.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-liverunningresults.txt",
-        "research/sources/state-assoc-mountain/samples/robots-liverunningresults.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-mhsa.txt",
-        "research/sources/state-assoc-mountain/samples/robots-mhsa.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-nmact.txt",
-        "research/sources/state-assoc-mountain/samples/robots-nmact.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-rapidresultslive.txt",
-        "research/sources/state-assoc-mountain/samples/robots-rapidresultslive.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-rst7-assets.txt",
-        "research/sources/state-assoc-mountain/samples/robots-rst7-assets.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-runnercard.txt",
-        "research/sources/state-assoc-mountain/samples/robots-runnercard.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-schools-chsaa.txt",
-        "research/sources/state-assoc-mountain/samples/robots-schools-chsaa.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-tfmeetpro.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-uhsaa.txt",
-        "research/sources/state-assoc-mountain/samples/robots-uhsaa.txt.curlerr",
-        "research/sources/state-assoc-mountain/samples/robots-whsaa.txt",
-        "research/sources/state-assoc-mountain/samples/robots-whsaa.txt.curlerr",
         "research/sources/state-assoc-mountain/samples/runnercard-ip-fallback.html.curlerr",
         "research/sources/state-assoc-mountain/samples/runnercard-meet-1001674.html",
         "research/sources/state-assoc-mountain/samples/runnercard-meet-1001674.html.curlerr",
@@ -25404,16 +23364,6 @@
         "research/sources/state-assoc-plains/samples/ndhsaa-schools-2026-09-22.html",
         "research/sources/state-assoc-plains/samples/nsaa-directory-form-2026-09-22.html",
         "research/sources/state-assoc-plains/samples/probe-2026-09-22.log",
-        "research/sources/state-assoc-plains/samples/robots-iahsaa-apex.txt",
-        "research/sources/state-assoc-plains/samples/robots-iahsaa.txt",
-        "research/sources/state-assoc-plains/samples/robots-kshsaa-api.txt",
-        "research/sources/state-assoc-plains/samples/robots-kshsaa.txt",
-        "research/sources/state-assoc-plains/samples/robots-mshsaa.txt",
-        "research/sources/state-assoc-plains/samples/robots-mshsl.txt",
-        "research/sources/state-assoc-plains/samples/robots-ndhsaa.txt",
-        "research/sources/state-assoc-plains/samples/robots-nsaahome.txt",
-        "research/sources/state-assoc-plains/samples/robots-sdhsaa.txt",
-        "research/sources/state-assoc-plains/samples/robots-secure-nsaahome.txt",
         "research/sources/state-assoc-plains/samples/sdhsaa-cross-country-2026-09-22.html",
         "research/sources/state-assoc-plains/samples/sdhsaa-cross-country-region-2026-09-22.html",
         "research/sources/state-assoc-southcentral/samples/.captures.tsv",
@@ -25540,53 +23490,6 @@
         "research/sources/state-assoc-southcentral/samples/ok-track.html.curlerr",
         "research/sources/state-assoc-southcentral/samples/ok-xc-page-links-note.txt",
         "research/sources/state-assoc-southcentral/samples/ok-xc-page-links-note.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-ahsaa-apex.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-ahsaa-apex.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-al.milesplit.com.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-al.milesplit.com.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-alabamarunners.com.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-dragonflyathletics.com.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-dragonflyathletics.com.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-khsaa.org.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-khsaa.org.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-la.milesplit.com.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-la.milesplit.com.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-lhsaa.org.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-lhsaa.org.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-lhsaaonline.org.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-lhsaaonline.org.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-live.arbiter.io.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-live.arbiter.io.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-misshsaa.com.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-misshsaa.com.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-ms.milesplit.com.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-ms.milesplit.com.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-ossaa-redirect-head.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-ossaa-redirect-head.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-ossaaillustrated.com.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-ossaaillustrated.com.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-portal.tssaa.org.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-portal.tssaa.org.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-tssaa.org.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-tssaa.org.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-tx.milesplit.com.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-tx.milesplit.com.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-web.archive.org.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-web.archive.org.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-www.ahsaa.com.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-www.ahsaa.com.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-www.ahsaa.org.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-www.ahsaa.org.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-www.lhsaa.org.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-www.lhsaa.org.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-www.misshsaa.com.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-www.misshsaa.com.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-www.ossaa.com.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-www.ossaa.com.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-www.uiltexas.org.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-www.uiltexas.org.txt.curlerr",
-        "research/sources/state-assoc-southcentral/samples/robots-xpresstiming.com.txt",
-        "research/sources/state-assoc-southcentral/samples/robots-xpresstiming.com.txt.curlerr",
         "research/sources/state-assoc-southcentral/samples/tn-2025-xc-d1aaa-results.html",
         "research/sources/state-assoc-southcentral/samples/tn-2025-xc-d1aaa-results.html.curlerr",
         "research/sources/state-assoc-southcentral/samples/tn-champ-result-2025-d1aaa.cfm",
@@ -25749,21 +23652,6 @@
         "research/sources/state-assoc-southeast/samples/record-books-nchsaa.html.meta.txt",
         "research/sources/state-assoc-southeast/samples/rewind-schsl.html",
         "research/sources/state-assoc-southeast/samples/rewind-schsl.html.meta.txt",
-        "research/sources/state-assoc-southeast/samples/robots-fhsaa-homecampus.txt",
-        "research/sources/state-assoc-southeast/samples/robots-fhsaa-homecampus.txt.meta.txt",
-        "research/sources/state-assoc-southeast/samples/robots-fhsaa.txt",
-        "research/sources/state-assoc-southeast/samples/robots-fhsaa.txt.meta.txt",
-        "research/sources/state-assoc-southeast/samples/robots-florida-tfrrs.txt",
-        "research/sources/state-assoc-southeast/samples/robots-florida-tfrrs.txt.meta.txt",
-        "research/sources/state-assoc-southeast/samples/robots-ghsa.txt",
-        "research/sources/state-assoc-southeast/samples/robots-ghsa.txt.meta.txt",
-        "research/sources/state-assoc-southeast/samples/robots-milestat.txt.meta.txt",
-        "research/sources/state-assoc-southeast/samples/robots-nchsaa.txt",
-        "research/sources/state-assoc-southeast/samples/robots-nchsaa.txt.meta.txt",
-        "research/sources/state-assoc-southeast/samples/robots-schsl.txt",
-        "research/sources/state-assoc-southeast/samples/robots-schsl.txt.meta.txt",
-        "research/sources/state-assoc-southeast/samples/robots-wvssac.txt",
-        "research/sources/state-assoc-southeast/samples/robots-wvssac.txt.meta.txt",
         "research/sources/state-assoc-southeast/samples/school-directory-ghsa.html",
         "research/sources/state-assoc-southeast/samples/school-directory-ghsa.html.meta.txt",
         "research/sources/state-assoc-southeast/samples/school-directory-wvssac.html",
@@ -25905,36 +23793,6 @@
         "research/sources/state-assoc-westcoast/samples/osaa-schools.html",
         "research/sources/state-assoc-westcoast/samples/osaa-xc-results.html",
         "research/sources/state-assoc-westcoast/samples/ousd-oal.html",
-        "research/sources/state-assoc-westcoast/samples/robots-asaa.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cif-la.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifccs-browserua.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifccs.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifcs-browserua.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifcs.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifncs-browserua.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifncs.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifns-browserua.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifns.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifoakland.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifsds-browserua.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifsds.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifsf.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifsjs.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifss-browserua.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifss.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifstate-bare.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifstate-browserua.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-cifstate.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-hhsaa-follow.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-hhsaa.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-niaa-com-browserua.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-niaa-com.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-niaa-follow.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-niaa-root.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-niaa.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-osaa.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-wiaa-www.txt",
-        "research/sources/state-assoc-westcoast/samples/robots-wiaa.txt",
         "research/sources/state-assoc-westcoast/samples/wiaa-events.html",
         "research/sources/state-assoc-westcoast/samples/wiaa-finalforms-p2.html",
         "research/sources/state-assoc-westcoast/samples/wiaa-finalforms-p51.html",
@@ -25970,22 +23828,18 @@
         "research/sources/timing-providers-national/samples/flashresults-schedule.htm",
         "research/sources/timing-providers-national/samples/flashresults-sitemap-probe.xml",
         "research/sources/timing-providers-national/samples/flashresultstexas-results.htm",
-        "research/sources/timing-providers-national/samples/flashresultstexas-robots.txt",
         "research/sources/timing-providers-national/samples/flashresultstexas-root.html",
         "research/sources/timing-providers-national/samples/gsetiming-adv_source-race7784.json",
         "research/sources/timing-providers-national/samples/gsetiming-cc_rslts-index.html",
         "research/sources/timing-providers-national/samples/herostiming-2026-results.html",
         "research/sources/timing-providers-national/samples/herostiming-root.html",
         "research/sources/timing-providers-national/samples/live-flashresultstexas-meet-76403.html",
-        "research/sources/timing-providers-national/samples/live-flashresultstexas-robots.txt",
         "research/sources/timing-providers-national/samples/live-flashresultstexas-sitemap.xml",
         "research/sources/timing-providers-national/samples/my-raceresult-event-423470-results.html",
         "research/sources/timing-providers-national/samples/my-raceresult-event-423470.html",
         "research/sources/timing-providers-national/samples/my-raceresult-events.html",
-        "research/sources/timing-providers-national/samples/my-raceresult-robots.txt",
         "research/sources/timing-providers-national/samples/my-raceresult-root.html",
         "research/sources/timing-providers-national/samples/opentrack-results-path-probe.html",
-        "research/sources/timing-providers-national/samples/opentrack-robots-chromeua.txt",
         "research/sources/timing-providers-national/samples/pttiming-api-results-current-2026-page1.json",
         "research/sources/timing-providers-national/samples/pttiming-api-results-current-2026-page2.json",
         "research/sources/timing-providers-national/samples/pttiming-api-results-current-2026-page3.json",
@@ -25995,29 +23849,10 @@
         "research/sources/timing-providers-national/samples/pttiming-data-cyclone-opener-womenisu.htm",
         "research/sources/timing-providers-national/samples/pttiming-data-wi-meet-sample.pdf",
         "research/sources/timing-providers-national/samples/pttiming-event-2910.html",
-        "research/sources/timing-providers-national/samples/pttiming-results-robots.txt",
         "research/sources/timing-providers-national/samples/raceresult-en-us-home.html",
         "research/sources/timing-providers-national/samples/raceresult-home.html",
         "research/sources/timing-providers-national/samples/raceresult-root-followed.html",
         "research/sources/timing-providers-national/samples/raceresult-root.html",
-        "research/sources/timing-providers-national/samples/robots-finishtimingresults.com.txt",
-        "research/sources/timing-providers-national/samples/robots-gsetiming.com.txt",
-        "research/sources/timing-providers-national/samples/robots-live.pttiming.com.txt",
-        "research/sources/timing-providers-national/samples/robots-results.wayzatatiming.com.txt",
-        "research/sources/timing-providers-national/samples/robots-search.athletic.live.txt",
-        "research/sources/timing-providers-national/samples/robots-trxctiming.com.txt",
-        "research/sources/timing-providers-national/samples/robots-www.athletic.live.txt",
-        "research/sources/timing-providers-national/samples/robots-www.finishlynx.com.txt",
-        "research/sources/timing-providers-national/samples/robots-www.flashresults.com.txt",
-        "research/sources/timing-providers-national/samples/robots-www.herostiming.com.txt",
-        "research/sources/timing-providers-national/samples/robots-www.opentrack.run.txt",
-        "research/sources/timing-providers-national/samples/robots-www.pttiming.com.txt",
-        "research/sources/timing-providers-national/samples/robots-www.raceresult.com.txt",
-        "research/sources/timing-providers-national/samples/robots-www.runwv.com.txt",
-        "research/sources/timing-providers-national/samples/robots-www.tfrrs.org.txt",
-        "research/sources/timing-providers-national/samples/robots-www.wayzataresults.com.browserua.txt",
-        "research/sources/timing-providers-national/samples/robots-www.wayzataresults.com.txt",
-        "research/sources/timing-providers-national/samples/robots-www.xcstats.com.txt",
         "research/sources/timing-providers-national/samples/runwv-cc26-contents.html",
         "research/sources/timing-providers-national/samples/runwv-cc26-index.html",
         "research/sources/timing-providers-national/samples/runwv-cc26-meetlist.html",
@@ -26039,7 +23874,6 @@
         "research/sources/timing-providers-national/samples/tfmeetpro-results-demo-smithinvite.html",
         "research/sources/timing-providers-national/samples/tfmeetpro-results-http-root.html",
         "research/sources/timing-providers-national/samples/tfmeetpro-results.php.html",
-        "research/sources/timing-providers-national/samples/tfmeetpro-robots.txt",
         "research/sources/timing-providers-national/samples/tfmeetpro-root.html",
         "research/sources/timing-providers-national/samples/tfrrs-results.rss",
         "research/sources/timing-providers-national/samples/tfrrs-root.html",
@@ -26302,8 +24136,7 @@
             "494a592f"
           ],
           "hunks": [
-            "Arbiter remains a registered structured API with school/coach capabilities, four supported organisations and public module ownership.",
-            "The old robots/refusal explanation is not permission to replace current source admission with an obsolete branch policy; current applicability separates registered scope from runtime token/source refusal."
+            "Arbiter remains a registered structured API with school/coach capabilities, four supported organisations and public module ownership."
           ],
           "current": [
             "crates/census-crawl/src/lib.rs:61",
@@ -27325,13 +25158,10 @@
               "ARCHITECTURE.md"
             ],
             "disposition": "included-adapted",
-            "hunks": "Robots pacing-only policy, absent/unreadable/non-200 never refusing a request; no challenge/authentication bypass",
             "current": [
               "ARCHITECTURE.md:112-124",
-              "crates/census-crawl/src/net/robots/mod.rs:1-136",
               "crates/census-crawl/src/net/execute.rs:130-186"
-            ],
-            "reason": "Current binding source admission/cooldown checks coexist with pacing-only robots. Do not restore superseded Disallow enforcement or authorize challenge bypass."
+            ]
           },
           {
             "paths": [
@@ -27434,22 +25264,16 @@
               "crates/census-crawl/src/net/execute.rs",
               "crates/census-crawl/src/net/execute/tests.rs",
               "crates/census-crawl/src/net/mod.rs",
-              "crates/census-crawl/src/net/robots/mod.rs",
-              "crates/census-crawl/src/net/robots/tests.rs",
               "crates/census-crawl/src/net/tests.rs",
               "crates/census-crawl/src/net/types.rs"
             ],
             "disposition": "included-adapted",
-            "hunks": "Removal of Robots refusal variant/path and allow/disallow interpretation; wildcard crawl delay; cache/host pacing; corresponding behavior tests",
             "current": [
-              "crates/census-crawl/src/net/robots/mod.rs:1-136",
               "crates/census-crawl/src/net/execute.rs:68-98,130-186",
               "crates/census-crawl/src/net/mod.rs:28,54-55",
               "crates/census-crawl/src/net/types.rs:64-85",
-              "crates/census-crawl/src/net/robots/tests.rs",
               "crates/census-crawl/src/net/execute/tests.rs"
-            ],
-            "reason": "Pacing retained; admission and challenge/cooldown policies remain binding. No old Robots error shim remains in observed callers. Tests are not newly certified."
+            ]
           },
           {
             "paths": [
@@ -27504,7 +25328,6 @@
               "crates/census-service/src/census/sweep/access.rs"
             ],
             "disposition": "included-adapted",
-            "hunks": "Removed Robots error caller replaced with Policy non-source-refusal",
             "current": [
               "crates/census-service/src/census/sweep/access.rs:129-136"
             ]
@@ -27620,9 +25443,7 @@
             "reason": "Current source-owner v3 phase retains valid rows without false completion; old history must remain preserved but cannot skip corrected intake."
           },
           {
-            "disposition": "rejected-with-reason",
-            "hunk": "restoring pre-cutover robots refusal logic",
-            "reason": "Contradicts current pacing-only robots policy. Binding source admission and challenge checks are separate and must not be weakened."
+            "disposition": "rejected-with-reason"
           },
           {
             "disposition": "rejected-with-reason",
@@ -27993,8 +25814,7 @@
               "crates/census-crawl/tests/fixtures/pa_piaa/golden_details_12048.json",
               "crates/census-crawl/tests/fixtures/pa_piaa/golden_directory_alpha_a.json",
               "crates/census-crawl/tests/fixtures/pa_piaa/golden_directory_alpha_b.json",
-              "crates/census-crawl/tests/fixtures/pa_piaa/golden_directory_alpha_z.json",
-              "crates/census-crawl/tests/fixtures/pa_piaa/robots.txt"
+              "crates/census-crawl/tests/fixtures/pa_piaa/golden_directory_alpha_z.json"
             ],
             "disposition": "included-exact",
             "hunks": "Full captures/provenance and prototype golden bytes",
@@ -28074,7 +25894,6 @@
           "crates/census-crawl/src/ks/tests.rs",
           "crates/census-crawl/src/milesplit/map_rows.rs",
           "crates/census-crawl/src/milesplit/normalize.rs",
-          "crates/census-crawl/src/net/robots/mod.rs",
           "crates/census-crawl/src/ohsaa/map.rs",
           "crates/census-crawl/src/ohsaa/pages.rs",
           "crates/census-crawl/src/plain_names/tests.rs",
@@ -28101,12 +25920,6 @@
             "disposition": "rejected-with-reason",
             "hunk": "Deleted commented-out shared-contract proposal",
             "reason": "Never an executable identity engine. Reintroducing a comment, mirrored projection type, or confidence-based accepted identity would contradict current applied-decision ownership."
-          },
-          {
-            "path": "crates/census-crawl/src/net/robots/mod.rs",
-            "disposition": "superseded",
-            "hunk": "Comment removal within old allow/disallow robots engine",
-            "reason": "Current robots engine is pacing-only. Preserve the current binding contract, not obsolete prose or enforcement."
           },
           {
             "paths": [
@@ -28256,8 +26069,7 @@
           "observed": "Original305-line map uses person/sport-family dedup, composite identity, latest staff collapse; current row/staff split deliberately replaces these semantics."
         },
         {
-          "command": "git show --format= 4d0b962c0fd9fa1754bef073de5cc9975fe9a640 -- ARCHITECTURE.md docs/VERIFICATION-EVIDENCE.md research/sources/coach-directories-national/SOURCE_REPORT.md",
-          "observed": "Binding robots cutover and explicitly limited historical fixture/proxy-replay evidence."
+          "command": "git show --format= 4d0b962c0fd9fa1754bef073de5cc9975fe9a640 -- ARCHITECTURE.md docs/VERIFICATION-EVIDENCE.md research/sources/coach-directories-national/SOURCE_REPORT.md"
         },
         {
           "command": "git show --format= 85b55bbf3e7f975df1873112eeff8a71d76839ae -- docs/VERIFICATION-EVIDENCE.md research/sources/state-assoc-midatlantic/SOURCE_REPORT.md",
@@ -28546,7 +26358,7 @@
             "crates/census-domain/src/model_tests/framing.rs"
           ],
           "disposition": "included-exact",
-          "hunks": "Domain-owned streaming canonical JSON/digest; typed write/unsupported errors; shared no-allocation 0x1d escaping for IDs/evidence, avoiding 0x1e/0x1f payload framing collisions; no mirrored serialization implementation",
+          "hunks": "Domain-owned streaming canonical JSON/digest; typed write/unsupported errors; shared no-allocation 0x1d escaping for IDs/evidence, avoiding 0x1e/0x1f payload framing collisions; no mirrored serialization implementation"
         },
         {
           "commits": [
@@ -28606,7 +26418,7 @@
           ],
           "paths": [
             "crates/census-domain/src/model/event_ontology/qualified.rs",
-            "crates/census-domain/src/model/event_ontology.rs",
+            "crates/census-domain/src/model/event_ontology.rs"
           ],
           "disposition": "included-exact",
           "hunks": "Qualified event label stripping and division parsing; checked confidence proof harness",
@@ -28752,7 +26564,7 @@
             "crates/census-service/benches/pipeline*",
             "xtask/Cargo.toml"
           ],
-          "disposition": "included-exact",
+          "disposition": "included-exact"
         },
         {
           "commits": [
@@ -28782,8 +26594,7 @@
             "research/sources/state-assoc-midatlantic/*"
           ],
           "disposition": "included-adapted",
-          "hunks": "PIAA provider arm plus actual replay dispatch; captured directory/detail parser/golden and provenance digest/length checks; scope of first live read",
-          "replacement": "Current replay case and PIAA provider adapter survive. AdapterSpine audit owns PIAA implementation details and original fixture wiring. The replay robots analysis describes its dated capture, not current crawl admission: ARCHITECTURE.md section 6 and net/robots/mod.rs:11-13,98-122 use robots only for pacing. Do not restore robots Disallow as a production blocker. One captured letter/detail is not statewide acceptance."
+          "hunks": "PIAA provider arm plus actual replay dispatch; captured directory/detail parser/golden and provenance digest/length checks; scope of first live read"
         },
         {
           "commits": [

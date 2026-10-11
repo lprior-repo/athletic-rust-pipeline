@@ -3,8 +3,7 @@
 ## Purpose
 
 One paragraph on the public surface this adapter collects, the authority or association it belongs
-to, and the canonical entities it feeds (schools, coaches, athletes, results). Record the real URLs
-and their `robots.txt` status here once the walk exists.
+to, and the canonical entities it feeds (schools, coaches, athletes, results). Record the real URLs here once the walk exists.
 
 ## Entry points
 
@@ -35,7 +34,7 @@ same command spelled out. Both run nextest with a `test(state_ed)` filter over t
 
 ## Before this adapter lands
 
-- [ ] real URLs and their robots status written into this README
+- [ ] real URLs written into this README
 - [ ] parsing and mapping asserted against captured fixtures
 - [ ] registered in `census.rs`, or exposed as a `provider state_ed` CLI subcommand
 - [ ] rows and journal entries appended through the page `AdapterContext::write_batch` hands out,

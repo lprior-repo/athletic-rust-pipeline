@@ -23,10 +23,7 @@ quoted from repo-held evidence and cross-checked across independent documents.
 | 6 | `https://nces.ed.gov/surveys/pss/zip/pss2324_pu_csv.zip` | `application/x-zip-compressed` | archive member: `pss2324_pu.csv (37.7MB)` |
 
 The file list is client-rendered (1); the JSON API (2,3) is the deterministic resolver. Both ZIP URLs
-named in the codebase README resolve today with the expected member names. `nces.ed.gov/robots.txt`
-served 200 / 348 bytes / `sha256=365e79b35eb96b9faea53b33dfa56996865622d43271482edf9b8928b8f6daf1`
-(SRC-253 manifest, 2026-10-05); per the owner directive the fetcher ignores the policy but keeps the
-engineered spacing (see §5.1).
+named in the codebase README resolve today with the expected member names.
 
 ---
 
@@ -216,24 +213,21 @@ UA='census-service/0.1 (independent HS track & field research collector; polite;
 ROOT=research/sources/nces/downloads/2025-26
 mkdir -p "$ROOT"
 
-# 1 — NCES policy: recorded, not enforced (owner directive), but never hammered.
-sleep 1.1; curl -fsSL --max-time 120 -A "$UA" -o "$ROOT/robots.txt" https://nces.ed.gov/robots.txt
-
-# 2 — resolve the current school-directory ZIP (do not trust the pinned name once a new cycle ships)
+# 1 — resolve the current school-directory ZIP (do not trust the pinned name once a new cycle ships)
 sleep 1.1; curl -fsSL --max-time 120 -A "$UA" \
   -o "$ROOT/ccd-file-api.json" https://nces.ed.gov/ccd/datatables/api/File/2/0/40/0/0/0
 # expected: level=School, component=Directory, fileURL=.../ccd_sch_029_2526_w_0a_050626.zip
 
-# 3 — the ZIP itself (spacing >= 1s between every request)
+# 2 — the ZIP itself (spacing >= 1s between every request)
 sleep 1.1; curl -fL --max-time 300 -A "$UA" \
   -o "$ROOT/ccd_sch_029_2526_w_0a_050626.zip" \
   https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2526_w_0a_050626.zip
 
-# 4 — extract, never feed the ZIP to the verb
+# 3 — extract, never feed the ZIP to the verb
 unzip -p "$ROOT/ccd_sch_029_2526_w_0a_050626.zip" ccd_sch_029_2526_w_0a_050626.csv \
   > "$ROOT/ccd_sch_029_2526_w_0a_050626.csv"
 
-# 5 — PSS (latest cycle is 2023-24 until spring 2027)
+# 4 — PSS (latest cycle is 2023-24 until spring 2027)
 sleep 1.1; curl -fsSL --max-time 120 -A "$UA" -o "$ROOT/pssdata.html" \
   https://nces.ed.gov/surveys/pss/pssdata.asp
 sleep 1.1; curl -fL --max-time 300 -A "$UA" -o "$ROOT/pss2324_pu_csv.zip" \

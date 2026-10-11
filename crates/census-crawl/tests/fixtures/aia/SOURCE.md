@@ -4,20 +4,10 @@ Live captures from `aiaonline.org`, fetched 2026-10-04.
 
 | Fixture | URL | Bytes | SHA256 |
 |---------|-----|-------|--------|
-| `robots.txt` | `https://aiaonline.org/robots.txt` | 24 | `e5c4b84484ee4216e9373be99380320c25dd94805f99f0a805846f087636553f` |
 | `search_chandler.json` | `https://aiaonline.org/schools/search.json?q=chandler` | 3,809 | `888c7992fdb82fff4c9578b9a6b9c1669ac470536df0cb4092989a743b90f7c6` |
 | `school_100_chandler.html` | `https://aiaonline.org/schools/100` | 105,424 | `f59ff639d66ee87552a40522d12dfd81d0f21f84bd309095077e49e98814dacc` |
 | `school_68_seton.html` | `https://aiaonline.org/schools/68` | 91,648 | `54333200ebc546e0c72df61c2b5253a0339e4edfa85f0875018cb722343205d4` |
 | `school_116_hamilton.html` | `https://aiaonline.org/schools/116` | 94,785 | `a68acf0879997b221699d170b40ed4cd74f77119dec100e38f18ae4d06110d1e` |
-
-## Robots status
-
-```
-User-agent: *
-Disallow:
-```
-
-All paths allowed.
 
 ## Markup the parser anchors on
 

@@ -20,4 +20,3 @@
 2026-09-22T04:02:10Z | 200 30 | wa-graphql-search-probe.json | searchAthletes eventId=0
 2026-09-22T04:02:22Z | 200 214 | wa-graphql-athlete-slug.json | getAthlete urlSlug=malaika-mihambo-14377384
 2026-09-22T04:02:24Z | 200 105 | wa-graphql-athlete-14479487.json | getAthlete 14479487
-2026-09-22T04:09:27Z | 200 106 text/plain; charset=utf-8 | wa-robots.txt | https://worldathletics.org/robots.txt

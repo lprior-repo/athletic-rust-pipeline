@@ -6,17 +6,6 @@ Every file is the response body exactly as served by `uhsaa.org` (a plain `GET`,
 re-serialization); bytes and sha256 below were measured with `sha256sum` and `wc -c` on the
 committed files.
 
-## robots.txt
-
-Fetched: https://uhsaa.org/robots.txt — 200, 1181 bytes,
-sha256 `1414d91a2b81cecf2555af4fbfa52128004b9b679a9809ae61cdb38b1ebf59c8`.
-The directory and profile paths the adapter reads carry no disallow. Disallowed prefixes include
-`/administrator/`, `/cache/`, `/cli/`, `/components/`, `/images/`, `/includes/`, `/installation/`,
-`/language/`, `/libraries/`, `/logs/`, `/media/`, `/modules/`, `/portal/`, `/plugins/`, `/site/`,
-`/templates/`, `/tmp/`, `/new/`, `/mlr/`, `/machform/`, `/portal2/`, `/phpgridnew/`, `/phpGrid2/`,
-`/phpGrid/`, `/realignmentcalc/`, `/realignmentRegionCreator/`, `/vendor/`, `/js/`,
-`/backuphomepages/`, `/v2/`.
-
 ## Directory Page
 
 `directory.html` — https://uhsaa.org/school-directory-new/ — 200, 484,909 bytes,
@@ -24,7 +13,7 @@ sha256 `3ed900a99bd11aa577bf15fe975a0920748780756c94ec19f04c28a214152d41`.
 The school tiles are `<a href="../school-directory/?id=<Name>&Reg=<Region>&schoolID=<ID>" title="<School>"
 class="portfolio-item" data-school="<Name>" data-category="<Classification>">` (both quote styles occur).
 The capture carries 324 anchors over 162 distinct school ids; `<v2/teams/...>` links beside them are
-robots-disallowed and unread.
+unread.
 
 ## School Profile Pages
 

@@ -21,7 +21,7 @@ history):
 |CAPE, Council for American Private Education|`https://www.cape-ed.org/schools/`|
 |NASSP, National Association of Secondary School Principals|`https://www.nassp.org/schools/`|
 
-## Evidence: no capture and no robots verdict
+## Evidence: no listing capture
 
 Searched on 2026-09-30, in this worktree and the research tree beside it:
 
@@ -36,12 +36,8 @@ Searched on 2026-09-30, in this worktree and the research tree beside it:
   line 504, `research/sources/state-assoc-westcoast/samples/osaa-coaches.html` line 912). That path
   is the prototype tree's file; ADR-020 §6 deletes it from this tree, so a reader re-running the
   search finds it there or in git history, not here.
-- robots: every `robots*` file under both trees belongs to another host (the hundreds of
-  `research/sources/*/samples/robots-*.txt`), `coach-directories-national/tools/robots/` lists no
-  NAIS/CAPE/NASSP host, and no `nais.org/robots.txt` / `cape-ed.org/robots.txt` /
-  `nassp.org/robots.txt` string occurs anywhere under `/home/lewis/src/ad-law-scrape`.
 
-So **no capture of a NAIS, CAPE or NASSP listing exists, and no robots verdict exists for any of the
+So **no capture of a NAIS, CAPE or NASSP listing exists for any of the
 three hosts.** `crates/census-crawl/tests/fixtures/private_assoc/` therefore holds no capture and no
 `SOURCE.md`, and nothing may be hand-written into it (contract §3: byte-exact captures only). The
 directory carries only its `README.md`, the contract file `cargo xtask replay` skips: `cargo xtask
@@ -124,7 +120,7 @@ env -u CI tools/moon-local run pipeline:xtask -- replay private_assoc
 
 ## Before this adapter lands
 
-- [x] evidence recorded: no capture and no robots verdict, with the paths searched
+- [x] evidence recorded: no listing capture, with the paths searched
 - [x] reader and ledger asserted (in-module `tests.rs`, service-side `private_assoc_directory_properties`)
 - [x] parser-only placement: no descriptor, no fetch, no `AdapterContext` write; the corpus verb is the
       only caller

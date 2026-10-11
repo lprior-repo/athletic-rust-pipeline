@@ -16,7 +16,6 @@ impl ClosePriority {
             AccessBlockKind::BrowserUnavailable => Some(Self::BrowserUnavailable),
             AccessBlockKind::RateLimited => Some(Self::RateLimited),
             AccessBlockKind::Forbidden
-            | AccessBlockKind::RobotsDisallowed
             | AccessBlockKind::Timeout
             | AccessBlockKind::Unavailable => None,
         }
@@ -73,7 +72,6 @@ impl Fetcher {
                 }
             }
             AccessBlockKind::Forbidden
-            | AccessBlockKind::RobotsDisallowed
             | AccessBlockKind::Timeout
             | AccessBlockKind::Unavailable => FetchError::Policy {
                 detail: Self::closure_detail(closing),
@@ -117,7 +115,6 @@ impl Fetcher {
             AccessBlockKind::BrowserUnavailable => Self::lane_detail(closing),
             AccessBlockKind::RateLimited => Self::cooldown_detail(closing),
             AccessBlockKind::Forbidden
-            | AccessBlockKind::RobotsDisallowed
             | AccessBlockKind::Timeout
             | AccessBlockKind::Unavailable => Self::fallback_detail(closing),
         }

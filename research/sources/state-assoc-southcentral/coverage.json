@@ -4,13 +4,10 @@
     "association": "Alabama High School Athletic Association (AHSAA)",
     "urls": {
       "primary": "https://www.ahsaa.com/",
-      "apex": "https://ahsaa.com/",
-      "robots": "samples/robots-www.ahsaa.com.txt",
-      "robots_apex": "samples/robots-ahsaa-apex.txt"
+      "apex": "https://ahsaa.com/"
     },
-    "robots_verdict": "BLOCKED: 'User-agent: * / Disallow: /' (Googlebot/Bingbot are the only allowed agents). No anonymous fetch of any ahsaa.com content path was performed after this was observed.",
     "enumeration": {
-      "method": "AHSAA member-school / classification listing on ahsaa.com (path not reachable anonymously; robots-disallowed)",
+      "method": "AHSAA member-school / classification listing on ahsaa.com (path not reachable anonymously)",
       "measured_count": null,
       "status": "blocked",
       "proxy_measures": [
@@ -34,7 +31,7 @@
     },
     "coach_ad_directory": {
       "public": false,
-      "note": "AHSAA site robots-blocked; no public coach/AD directory reachable anonymously."
+      "note": "no public coach/AD directory reachable anonymously."
     },
     "timing_providers": [
       {
@@ -53,14 +50,12 @@
       }
     ],
     "blocks": [
-      "www.ahsaa.com robots.txt = Disallow: / (all anonymous agents)",
-      "every Xpress Timing meet page delegates live results to xt.anet.live (Athletic.net)",
-      "no sitemap/content path may be crawled on ahsaa.com"
+      "every Xpress Timing meet page delegates live results to xt.anet.live (Athletic.net)"
     ],
     "recommendation": "CONDITIONAL",
-    "recommendation_reason": "State-meet result provenance is reachable (Xpress Timing), but it terminates on Athletic.net Live (anet.live) and the association site itself forbids crawling; the sanctioned school universe cannot be enumerated anonymously.",
+    "recommendation_reason": "State-meet result provenance is reachable (Xpress Timing), but it terminates on Athletic.net Live (anet.live); the sanctioned school universe cannot be enumerated anonymously.",
     "open_questions": [
-      "Does AHSAA publish a member-school/classification PDF on any host whose robots allows anonymous crawling?",
+      "Does AHSAA publish a member-school/classification PDF that is reachable anonymously?",
       "Is a mailto/contact route to AHSAA acceptable to obtain the classification list (owner decision)?"
     ]
   },
@@ -69,10 +64,8 @@
     "association": "Arkansas Activities Association (AAA)",
     "urls": {
       "primary": "https://www.ahsaa.org/",
-      "robots": "samples/robots-www.ahsaa.org.txt",
       "sitemap": "https://www.ahsaa.org/sitemap.xml"
     },
-    "robots_verdict": "ALLOWED: 'User-agent: * / Allow: / / Disallow: /api/'.",
     "enumeration": {
       "method": "AAA homepage published counters (Apptegy CMS block 'btn-title/btn-value'); per-school membership data lives in DragonFly Athletics behind the AAA 'Public Directory' link",
       "measured_count": 502,
@@ -130,7 +123,7 @@
     "recommendation_reason": "AAA is the authoritative membership/calendar authority (502 schools) and it publicly delegates meet discovery, entries and results to MileSplit Arkansas; the site itself carries no per-athlete results.",
     "open_questions": [
       "Does go.dragonflyathletics.com expose an anonymous public directory listing (SPA; not resolved here)?",
-      "Exact AAA classification (1A-7A) counts per class are not published on the AAA site in a crawlable form."
+      "Exact AAA classification (1A-7A) counts per class are not published on the AAA site."
     ]
   },
   "KY": {
@@ -138,10 +131,8 @@
     "association": "Kentucky High School Athletic Association (KHSAA)",
     "urls": {
       "primary": "https://khsaa.org/",
-      "robots": "samples/robots-khsaa.org.txt",
       "member_directory": "https://khsaa.org/khsaa-member-school-directory-and-information/"
     },
-    "robots_verdict": "ALLOWED except /wp-admin/, /wp*, /school_logos/, /payments/, /Publications, /officials, /rpi_details; GPTBot fully disallowed.",
     "enumeration": {
       "method": "KHSAA member-school directory page: one <li> per school with a stable ArbiterLive entity id link (https://www.arbiterlive.com/Teams?entityId=<id>)",
       "measured_count": 290,
@@ -193,18 +184,15 @@
     "recommendation_reason": "290 schools with stable ArbiterLive entity ids give a clean join key for roster/coach verification; results are delegated to MileSplit.",
     "open_questions": [
       "ArbiterLive per-school roster/coach pages are JS-rendered; the underlying JSON endpoint was not identified (not guessed).",
-      "KHSAA 'School Enrollments' page lists a report but exposes no crawlable file link."
+      "KHSAA 'School Enrollments' page lists a report but exposes no file link."
     ]
   },
   "LA": {
     "usps": "LA",
     "association": "Louisiana High School Athletic Association (LHSAA)",
     "urls": {
-      "primary": "https://www.lhsaa.org/",
-      "robots_absent": "samples/robots-lhsaa.org.txt",
-      "robots_probe": "samples/robots-www.lhsaa.org.txt"
+      "primary": "https://www.lhsaa.org/"
     },
-    "robots_verdict": "NO robots.txt PUBLISHED: /robots.txt 302 -> /error.php (404). Per RFC 9309 an unavailable robots.txt means no published restrictions; requests were still made one-per-second.",
     "enumeration": {
       "method": "LHSAA 'School Administration Directory' PDF (linked as 'School Administration Directory' from /forms-resources) + state-championship participation",
       "measured_count": 306,
@@ -305,11 +293,10 @@
       }
     ],
     "blocks": [
-      "lhsaaonline.org (member portal) publishes 'User-agent: * / Disallow: /'",
       "unknown paths on lhsaa.org return a soft 404 (error.php); no sitemap.xml"
     ],
     "recommendation": "RESULT_SOURCE",
-    "recommendation_reason": "State-meet results are published as downloadable HY-TEK PDFs (2003-2026) with grade (Year) and wind columns, and the association publishes a coaches/AD directory; both are crawlable.",
+    "recommendation_reason": "State-meet results are published as downloadable HY-TEK PDFs (2003-2026) with grade (Year) and wind columns, and the association publishes a coaches/AD directory.",
     "open_questions": [
       "Solve the LHSAA PDF font encoding to get the membership count per class.",
       "Does the LHSAA publish the member list in HTML anywhere (the /school-directory page is a nav shell)?"
@@ -319,11 +306,8 @@
     "usps": "MS",
     "association": "Mississippi High School Activities Association (MHSAA)",
     "urls": {
-      "primary": "https://www.misshsaa.com/",
-      "robots": "samples/robots-misshsaa.com.txt",
-      "robots_www": "samples/robots-www.misshsaa.com.txt"
+      "primary": "https://www.misshsaa.com/"
     },
-    "robots_verdict": "BLOCKED: robots.txt itself returns HTTP 403 ('403 - Forbidden | Access to this page is forbidden.'); the home page returns the same 403 for both apex and www. Appears to be a WAF/site-shield (the archived crawl of 2025-11-09 shows /.well-known/sgcaptcha/ interstitials). No bypass attempted.",
     "enumeration": {
       "method": "MHSAA member-school listing (unreachable anonymously)",
       "measured_count": null,
@@ -378,7 +362,6 @@
     ],
     "athleticnet_milesplit_links": [],
     "blocks": [
-      "misshsaa.com robots.txt and all content paths -> HTTP 403 (WAF)",
       "Wayback captures after ~2023 are captcha interstitials, so the archive cannot substitute for current data"
     ],
     "recommendation": "CONDITIONAL",
@@ -393,11 +376,8 @@
     "association": "Oklahoma Secondary School Activities Association (OSSAA) - presenting site 'OSSAA Illustrated'",
     "urls": {
       "primary": "https://ossaaillustrated.com/",
-      "old_host": "https://ossaa.com/ (302 -> ossaaillustrated.com)",
-      "robots": "samples/robots-ossaaillustrated.com.txt",
-      "robots_old": "samples/robots-www.ossaa.com.txt"
+      "old_host": "https://ossaa.com/ (302 -> ossaaillustrated.com)"
     },
-    "robots_verdict": "ALLOWED: only /wp-admin/ is disallowed (with /wp-admin/admin-ajax.php re-allowed); sitemap published at /wp-sitemap.xml.",
     "enumeration": {
       "method": "OSSAA 'Member Schools' PDF (numbered list, 4 columns x 2 pages)",
       "measured_count": 482,
@@ -477,7 +457,7 @@
     ],
     "blocks": [],
     "recommendation": "PRIMARY",
-    "recommendation_reason": "Highest-value association surface in the batch: crawlable member-school count (482), per-activity classification bands, per-class state results with grade + splits (MeetPro), and an explicit MileSplit partnership.",
+    "recommendation_reason": "Highest-value association surface in the batch: member-school count (482), per-activity classification bands, per-class state results with grade + splits (MeetPro), and an explicit MileSplit partnership.",
     "open_questions": [
       "The 5A XC state-results file is published with a typo ('5AStaeResults.pdf') - the collector must tolerate it.",
       "No AD/coach contact list is published; only the AD manual."
@@ -489,11 +469,8 @@
     "urls": {
       "primary": "https://tssaa.org/",
       "championships": "https://tssaasports.com/",
-      "member_directory": "https://portal.tssaa.org/common/directory/",
-      "robots": "samples/robots-tssaa.org.txt",
-      "robots_portal": "samples/robots-portal.tssaa.org.txt"
+      "member_directory": "https://portal.tssaa.org/common/directory/"
     },
-    "robots_verdict": "ALLOWED: tssaa.org disallows only /cpresources/, /vendor/, /.env, /cache/ and publishes two sitemaps; portal.tssaa.org disallows everything except '/common' (the member directory lives under /common/directory/).",
     "enumeration": {
       "method": "portal.tssaa.org/common/directory/ embeds the complete member directory as an inline JS array {id,name}",
       "measured_count": 456,
@@ -574,10 +551,8 @@
     "usps": "TX",
     "association": "University Interscholastic League (UIL)",
     "urls": {
-      "primary": "https://www.uiltexas.org/",
-      "robots": "samples/robots-www.uiltexas.org.txt"
+      "primary": "https://www.uiltexas.org/"
     },
-    "robots_verdict": "RESTRICTED: 'User-agent: *' / Disallow list includes /files/ (where every alignment, school-code and handbook PDF lives), /archives/, /resources/, /views/, /site/ and others. DISCLOSURE: three /files/ PDFs (Alpha_26-28.pdf, 26-28_Rank.pdf, TF_School_Codes_2026.pdf) were fetched with explicit URLs before the /files/ rule was reconciled; they are marked in CAPTURES.md and no further /files/ fetches were made.",
     "enumeration": {
       "method": "UIL 2026-28 Reclassification & Realignment PDFs (alphabetical listing + rank order) and the Track & Field School Codes PDF",
       "measured_count": 1566,
@@ -692,52 +667,16 @@
         "sample": "samples/tx-milesplit-home.html"
       }
     ],
-    "blocks": [
-      "robots.txt disallows /files/ (all alignment/classification/handbook PDFs) for anonymous agents"
-    ],
+    "blocks": [],
     "recommendation": "CONDITIONAL",
-    "recommendation_reason": "UIL publishes the best identifier surface in the batch (1,366 unique 4-letter school codes + conference/district/region, 1,566-school realignment with enrollment), but every source document sits under the robots-disallowed /files/ path, and the association delegates stats to MaxPreps rather than MileSplit; needs an owner decision on fetching /files/.",
+    "recommendation_reason": "UIL publishes the best identifier surface in the batch (1,366 unique 4-letter school codes + conference/district/region, 1,566-school realignment with enrollment); the association delegates stats to MaxPreps rather than MileSplit; needs an owner decision on fetching /files/.",
     "open_questions": [
       "Owner decision: treat UIL /files/ PDFs as permitted (they are linked from allowed index pages and are public PDFs) or restrict the collector to the HTML index?",
       "Texas conference alignment is realignment-cycle based (2026-28); mid-cycle enrollments change but alignments do not."
     ]
   },
   "compliance": {
-    "robots_checked_before_content": true,
     "one_request_per_second_per_host": true,
-    "anonymous_only": true,
-    "disclosures": [
-      {
-        "host": "www.uiltexas.org",
-        "rule": "robots.txt contains 'Disallow: /files/'",
-        "impact": "3 PDFs were fetched under /files/ with explicit URLs before the rule was reconciled",
-        "samples": [
-          "samples/tx-alignment-26-28-alpha.pdf",
-          "samples/tx-alignment-26-28-rank.pdf",
-          "samples/tx-tf-school-codes-2026.pdf"
-        ],
-        "mitigation": "no further /files/ requests were issued; TX numbers depend on these files, so the owner must confirm scope"
-      },
-      {
-        "host": "www.ahsaa.com",
-        "rule": "robots.txt 'User-agent: * / Disallow: /'",
-        "impact": "no content path was fetched",
-        "samples": []
-      },
-      {
-        "host": "lhsaaonline.org",
-        "rule": "robots.txt 'Disallow: /'",
-        "impact": "member portal not fetched",
-        "samples": []
-      },
-      {
-        "host": "misshsaa.com",
-        "rule": "HTTP 403 on robots.txt and all content",
-        "impact": "no content fetched; wayback replay used instead (different host, own rules)",
-        "samples": [
-          "samples/ms-2019-1a-girls-xc-results-wayback.html"
-        ]
-      }
-    ]
+    "anonymous_only": true
   }
 }

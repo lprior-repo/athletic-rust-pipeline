@@ -16,7 +16,7 @@ reproduction recipe. What remains runnable here is the retained evidence: `sampl
 |---|---|
 | **Lane** | `research/sources/athleticnet` |
 | **Generated** | 2026-09-21 (probe captures 2026-09-22 UTC) |
-| **Samples** | 52 files on disk, 2.07 MiB (58 at capture time; the 6 `samples/*.py` probes were deleted by `ea81c56`) — 17 live response bodies + 9 header files, 13 HAR extracts + request log, 8 copies of retained corpus captures, `refetch.sh`, 3 derived; every one listed in `samples/CAPTURES.md` |
+| **Samples** | 50 files on disk, 2.07 MiB (58 at capture time; 8 deleted since — the 6 `samples/*.py` probes by `ea81c56` and 2 retired capture pairs) — 16 live response bodies + 8 header files, 13 HAR extracts + 1 request log, 8 copies of retained corpus captures, `refetch.sh`, 3 derived; every one listed in `samples/CAPTURES.md` |
 | **Machine-readable** | `schema.json` (76 verified identifier examples), `coverage.json` (52 state rows + accounting + entitlement + request model + handoffs) |
 | **Credentials** | none persisted; `jwtTFTopReport` values and `set-cookie` lines are masked by `samples/redact-samples.py` (idempotent, verified by hash) |
 
@@ -102,9 +102,8 @@ Five distinct routes, in decreasing order of cost:
 5. **External handoff**. State associations, AthleticLIVE timing tenants and timer sites publish Athletic.net
    URLs/ids directly — see the handoff section §21.
 
-Search is **not** available to this lane: no search XHR was captured, and `/search.aspx` is disallowed by
-robots (`samples/atn-robots.txt` line 37). A school-name → `IDSchool` resolver therefore has to be built from
-the division tree plus team pages, or captured from the browser's own search UI.
+Search is **not** available to this lane: no search XHR was captured. A school-name → `IDSchool` resolver
+therefore has to be built from the division tree plus team pages, or captured from the browser's own search UI.
 
 ## 6. Stable identifiers
 
@@ -266,9 +265,9 @@ server-minted `jwtTFTopReport` inside `GetRankings` responses (masked in our sam
 
 ## 14. Static file availability
 
-No static bulk files: no sitemap line in `robots.txt` (`samples/atn-robots.txt`, 1,080 B), no CSV/JSON dump
-endpoint captured, no public data directory. The only "static" artifacts are the SPA bundles. The one bulk
-export that exists (`DownloadRankings`) is role-entitled and anonymous-403.
+No static bulk files: no sitemap, no CSV/JSON dump endpoint captured, no public data directory. The only
+"static" artifacts are the SPA bundles. The one bulk export that exists (`DownloadRankings`) is role-entitled
+and anonymous-403.
 
 ## 15. Browser requirement
 
@@ -347,8 +346,8 @@ Derived trade-offs (all measured, no extrapolation):
 
 ## 17. Published rate limits
 
-**None published and none observed.** `robots.txt` carries no `Crawl-delay` and no sitemap. No
-`RateLimit-*`/`Retry-After` header appeared on any captured response (all headers are in `samples/*.headers`).
+**None published and none observed.** No `RateLimit-*`/`Retry-After` header appeared on any captured response
+(all headers are in `samples/*.headers`).
 Responses are Cloudflare-fronted (`cf-cache-status: DYNAMIC` for API calls). Working self-imposed rule for this
 lane: **≤1 request/second/host**, which is what the probe captures in `samples/CAPTURES.md` were taken at.
 No throttle, 429 or `Retry-After` was observed at that rate (21 requests total across this lane's probes;
@@ -362,11 +361,6 @@ The corpus asserts no measured throttle either; the only related instruction is 
   is the only way to get a state's season map and full tree in one call.
 * Blurring: anonymous ranking rows past rank 5 are masked (see §15/§11); the mask is signalled in-band by
   `settings.blurAfterDepth` and per row by `blurred`/`AthleteID: 0`.
-* `robots.txt` (`samples/atn-robots.txt`) disallows `/TrackAndField/State/`, `/CrossCountry/State/`,
-  `/trackandfield/print/`, `/trackandfield/report/`, `/search.aspx`, `/Admin/`, `/Account/`, `/User/`,
-  `/Edit/`, `/Partner/`, `/Secure/`, `/home/`, plus several legacy `.aspx` paths. The `/api/v1/**`,
-  `/TrackAndField/rankings/list/**`, `/TrackAndField/meet/**`, `/team/**`, `/athlete/**` and `/events/**`
-  paths we use are **not** disallowed. `robots.txt` last-modified 2026-03-15, cached `max-age=31536000`.
 * Captcha/paywall: none encountered. The only paywall-like wall is the entitlement blur, which is bypassed by a
   normal signed-in browser session — no credential sharing or authentication bypass was attempted.
 

@@ -252,10 +252,6 @@ the aggregate.
 
 | File | Method | URL | Expected |
 |---|---|---|---|
-| `robots-search-athletic-live.txt` | GET | `https://search.athletic.live/robots.txt` | 403 ES error body; no policy published |
-| `robots-www-athletic-live.txt` | GET | `https://www.athletic.live/robots.txt` | no policy; status recorded |
-| `robots-blob-athletic-live.txt` | GET | `https://athleticlive.blob.core.windows.net/robots.txt` | no policy; status recorded |
-| `robots-rtdb-firebaseio.txt` | GET | `https://s-gke-usc1-nssi3-33.firebaseio.com/robots.txt` | no policy; status recorded |
 | `meet-list-wi-mn-2025.json` | POST | `https://search.athletic.live/*_meet_list/_search` (body `meet-list-wi-mn-2025.request.json`) | 200; `hits.total.value` 553 on 2026-10-09 `[V]`; ≤ 50 docs (`size` 50) |
 | `meet-doc-55746.json` | POST | same pattern (body `meet-doc-55746.request.json`, `size` 2) | 200; first hit is meet 55746 (asserted) |
 | `event-summary-meet-55746.json` | GET | `…/meet_55746/event_summary.json?ns=trackmeet-io` | 200; 6 individual events `[V]`; `type == object` asserted |
@@ -270,17 +266,10 @@ summary is an object with ≥ 1 individual event, that every fetched document ca
 capture set unless passed `--overwrite`. Because live responses churn (`ua`, counts, page order),
 a re-capture is a new evidence set; the metas pin what was read when.
 
-## 8. robots.txt
+## 8. Rate limits
 
-Captured as bytes and digest in the fixture set above, together with the status that each host
-actually serves. `search.athletic.live` answers the path with an Elasticsearch `security_exception`
-body (403) and neither the blob store nor the RTDB publishes a policy `[V]`; the sibling lane recorded
-the same for `www.athletic.live`
-(`research/sources/national-aggregators/samples/athleticlive/al-athleticlive_blob_core_windows_net-robots.txt`,
-`al-liveathleticnet-robots.txt`, `al-search-robots.txt`, `samples/CAPTURES.md`). Per the owner directive
-of 2026-10-10 this pipeline no longer gates admission on robots; the engineered rate limits stay:
-sequential requests, ≥ 2 s spacing in the capture script, bounded page sizes (`size` ≤ 50 for listings,
-the collector's own 2000-row athlete page), no retries, no crawl of the SPA.
+Engineering rules for this lane: sequential requests, ≥ 2 s spacing in the capture script, bounded page
+sizes (`size` ≤ 50 for listings, the collector's own 2000-row athlete page), no retries, no crawl of the SPA.
 
 ## 9. Open gaps
 
@@ -306,7 +295,7 @@ the collector's own 2000-row athlete page), no retries, no crawl of the SPA.
 
 - `research/sources/timing-providers-national/SOURCE_REPORT.md` §3 and `ATHLETICLIVE_DATA_MODEL.md` —
   platform census (256 tenants / 153,774 meet docs), row-key decode, request-cost model, earlier
-  ES/blob/RTDB samples under `samples/` (including `robots-search.athletic.live.txt`).
+  ES/blob/RTDB samples under `samples/`.
 - `research/sources/national-aggregators/schema.json` (the `athleticlive` block, from `:67`) — hosts,
   identifier shapes, meet/event/result field inventories; `data/athleticlive-tenant-inventory.csv`.
 - `research/sources/state-assoc-plains/SOURCE_REPORT.md` — an ND tenant (`heros`) listing capture using

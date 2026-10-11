@@ -1,3 +1,4 @@
+use super::format::number;
 use super::frame::frame_counts;
 use super::latest_sample;
 use super::model::{Curated, Facts, Generation};
@@ -64,7 +65,7 @@ pub(super) fn read_facts(dir: &Path, run_dir: &Path) -> Result<Facts> {
         run_start: read_kv(&run_dir.join("run-start.txt"))?,
         binaries: read_binaries(&run_dir.join("binary-sha256.txt"))?,
         submission: read_submission(&run_dir.join("national-submit.log"))?,
-        deployment_services: read_services(&run_dir.join("registration.json"))?,
+        deployment_services: number(read_services(&run_dir.join("registration.json"))?),
         generation,
         frame: frame_counts(&run_dir.join("school-address/current/school_directory.csv"))?,
         sample: progress.as_deref().and_then(latest_sample),
@@ -73,4 +74,51 @@ pub(super) fn read_facts(dir: &Path, run_dir: &Path) -> Result<Facts> {
         store_bytes: store_bytes(run_dir)?,
         readback: read_optional_json(&dir.join("readback.json"))?,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::read_matrix;
+
+    fn write_matrix(dir: &std::path::Path, body: &str) -> bool {
+        let matrix = dir.join("matrix");
+        std::fs::create_dir_all(&matrix).is_ok()
+            && std::fs::write(matrix.join("static-matrix.json"), body).is_ok()
+    }
+
+    #[test]
+    fn a_non_object_matrix_is_rejected() {
+        let Ok(dir) = tempfile::tempdir() else {
+            return;
+        };
+        if !write_matrix(dir.path(), "[1,2]") {
+            return;
+        }
+        assert!(
+            read_matrix(dir.path()).is_err(),
+            "a non-object matrix must be refused instead of silently read as empty"
+        );
+    }
+
+    #[test]
+    fn a_null_matrix_becomes_an_empty_object_carrying_provenance() {
+        let Ok(dir) = tempfile::tempdir() else {
+            return;
+        };
+        if !write_matrix(dir.path(), "null") {
+            return;
+        }
+        let Ok(value) = read_matrix(dir.path()) else {
+            return;
+        };
+        assert_eq!(value.as_object().map(serde_json::Map::len), Some(1));
+        let provenance_path = value
+            .get("matrix_provenance")
+            .and_then(|provenance| provenance.get("path"))
+            .and_then(serde_json::Value::as_str);
+        assert!(
+            provenance_path.is_some_and(|path| path.ends_with("matrix/static-matrix.json")),
+            "the provenance names the matrix file: {provenance_path:?}"
+        );
+    }
 }

@@ -16,11 +16,6 @@ Coverage: CIF sections 1-9 and 13 (CA), FHSAA section 10 (FL), NJSIAA section 12
 - Full-page directory variants exist (`/widget/school/directory?section=<n>` rendered) but carry no
   more than the buttons
 
-## robots.txt
-
-`https://www.cifsshome.org/robots.txt` — 200, 24 bytes, sha256
-`e5c4b84484ee4216e9373be99380320c25dd94805f99f0a805846f087636553f`; body is
-`User-agent: *\nDisallow:`. `www.cifnshome.org` and `www.fhsaahome.org` serve the identical bytes.
 Collection paces at one request per second per host (the registry's declared `cifsshome.org`
 policy).
 
@@ -38,7 +33,7 @@ byte-for-byte copies of the probe captures; their sha256 and per-file detail liv
    sha256 `0667c404…`; `details_1872.json` (Bolles, FL) — 8,062 bytes, sha256 `5dafbbea…`;
    `details_3374.json` (Abraham Clark, NJ) — 958 bytes, sha256 `6c63554f…`.
 4. The wider probe, including the CA section sweep (1,727 buttons over sections 1-9 and 13), the
-   NCS section-7 page (75,199 bytes), the `403` bodies and three robots copies:
+   NCS section-7 page (75,199 bytes), the `403` bodies:
    `research/sources/coach-coverage-bundle-20261004/probes/home_campus/` with 28 captures hashed in
    `manifest.json.main_verification.captures_sha256` and the narrative in `FINDINGS.md`.
 

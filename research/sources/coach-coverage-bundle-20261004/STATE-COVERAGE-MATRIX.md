@@ -120,7 +120,7 @@ AZ/IN/KY/CO are running under `var/fresh-<ST>-20261005/`.
 ## 2026-10-05 fresh-fetch lanes (board v3)
 
 Four fresh lanes were opened after the held wells were exhausted. All use anonymous access, a
-descriptive `census-service/0.1 …` UA, >=1.1s per host, robots checked where rules exist.
+descriptive `census-service/0.1 …` UA, >=1.1s per host.
 
 1. **FinalForms state tenants** (`var/finalforms-fresh-20261005/`). 44 live tenants detected by
    homepage title (bogus tenants answer 200 with "Technical Default Installation (DO NOT USE)").

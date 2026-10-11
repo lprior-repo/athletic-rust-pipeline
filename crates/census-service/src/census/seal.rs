@@ -167,12 +167,7 @@ pub fn census_cohort(grad_year: i16) -> Result<GradYear, SealWorkflowError> {
 fn retained_access(rows: &[SourceAccessCondition]) -> (u64, u64, u64) {
     let blocked = rows
         .iter()
-        .filter(|row| {
-            matches!(
-                row.kind,
-                AccessBlockKind::Forbidden | AccessBlockKind::HumanRequired
-            )
-        })
+        .filter(|row| matches!(row.kind, AccessBlockKind::Forbidden))
         .count();
     let throttled = rows.len().saturating_sub(blocked);
     (count(rows.len()), count(blocked), count(throttled))

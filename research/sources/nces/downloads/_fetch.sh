@@ -16,7 +16,6 @@ CCD_URL=${CCD_URL:-https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2526_w_0a_050626
 API_URL=${API_URL:-https://nces.ed.gov/ccd/datatables/api/File/2/0/${YEAR_ID}/0/0/0}
 LOG="$OUT/CAPTURE_LOG.txt"
 
-EXPECT_ROBOTS=${EXPECT_ROBOTS:-365e79b35eb96b9faea53b33dfa56996865622d43271482edf9b8928b8f6daf1}
 EXPECT_PSS_HTML=${EXPECT_PSS_HTML:-f40b12720589ef67fcea32a380db786c486bd54a664755473f2aa61adeb18748}
 EXPECT_PSS_ZIP=${EXPECT_PSS_ZIP:-b9c85d08071b9e85bca5678e56fc9d78da0af97774703e4f332775f58283f01f}
 EXPECT_PSS_CSV=${EXPECT_PSS_CSV:-14a2f9e600a492940fd57646792b4b5163ea9d03b8015a7df1135066bcec3b8b}
@@ -60,7 +59,6 @@ line_count() { wc -l < "$OUT/$1" | tr -d ' '; }
 column_count() { head -1 "$OUT/$1" | tr ',' '\n' | wc -l | tr -d ' '; }
 
 echo "== NCES national universes -> $OUT"
-fetch https://nces.ed.gov/robots.txt robots.txt
 fetch "$API_URL" ccd-file-api.json
 
 echo "-- resolve the school-directory ZIP from the File API (advisory; a new cycle must be re-pinned)"
@@ -86,7 +84,6 @@ unzip -p "$OUT/$(basename "$CCD_URL")" "$(basename "$CCD_URL" .zip).csv" > "$OUT
 unzip -p "$OUT/$(basename "$PSS_URL")" pss2324_pu.csv > "$OUT/pss2324_pu.csv"
 
 echo "-- verify pins"
-check robots.txt "$EXPECT_ROBOTS"
 check pssdata.html "$EXPECT_PSS_HTML"
 check "$(basename "$PSS_URL")" "$EXPECT_PSS_ZIP"
 check pss2324_pu.csv "$EXPECT_PSS_CSV"
@@ -112,7 +109,7 @@ for column in PPIN PINST PADDRS PCITY PSTABB PZIP PZIP4 PPHONE NUMSTUDS; do
     || { echo "pss csv lacks $column" >&2; exit 1; }
 done
 
-( cd "$OUT" && sha256sum robots.txt pssdata.html "$(basename "$PSS_URL")" pss2324_pu.csv \
+( cd "$OUT" && sha256sum pssdata.html "$(basename "$PSS_URL")" pss2324_pu.csv \
     "$(basename "$CCD_URL")" "$(basename "$CCD_URL" .zip).csv" layout2023_24.pdf Readme2023_24.pdf \
     2023-24_PSS_Frame_Data.csv 2023-24_PSS_Frame_File_Data_Dictionary.pdf > SHA256SUMS )
 

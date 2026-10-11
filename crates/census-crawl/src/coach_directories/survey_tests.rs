@@ -1,4 +1,5 @@
 mod collect;
+mod probe_selection;
 mod research;
 
 use super::probe_utils::{round_half_even, sample_rows};
@@ -10,7 +11,7 @@ use super::{
 use crate::net::cache::{content_digest, write_cache, CacheMeta};
 use crate::net::Fetcher;
 use census_domain::UsJurisdiction;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::time::Duration;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -331,50 +332,6 @@ fn sample_rows_forty_step_ten() {
     assert_eq!(sampled[1].short_code.as_deref(), Some("S10"));
     assert_eq!(sampled[2].short_code.as_deref(), Some("S20"));
     assert_eq!(sampled[3].short_code.as_deref(), Some("S30"));
-}
-
-#[test]
-fn classified_subset_is_preferred_for_sampling() {
-    let mut rows = Vec::new();
-    for i in 0..10 {
-        let mut row = super::parse::DirectorySchool {
-            short_code: Some(format!("N{i}")),
-            name: Some(format!("No Levels {i}")),
-            ..Default::default()
-        };
-        if i < 4 {
-            row.competition_levels = BTreeMap::from([(
-                "nchsaaClassification".to_string(),
-                serde_json::Value::String("6A".to_string()),
-            )]);
-            row.short_code = Some(format!("L{i}"));
-        }
-        rows.push(row);
-    }
-    let classified: Vec<&super::parse::DirectorySchool> = rows
-        .iter()
-        .filter(|row| !row.competition_levels.is_empty())
-        .collect();
-    assert_eq!(classified.len(), 4);
-    let sampled = sample_rows(&classified);
-    assert_eq!(sampled.len(), 4);
-    assert_eq!(sampled[0].short_code.as_deref(), Some("L0"));
-    assert_eq!(sampled[1].short_code.as_deref(), Some("L1"));
-    assert_eq!(sampled[2].short_code.as_deref(), Some("L2"));
-    assert_eq!(sampled[3].short_code.as_deref(), Some("L3"));
-}
-
-#[test]
-fn rows_without_short_code_are_skipped_in_summary_pass() {
-    let row = super::parse::DirectorySchool {
-        short_code: None,
-        name: Some("No Code".to_string()),
-        ..Default::default()
-    };
-    let rows = vec![row];
-    let sampled = sample_rows(&rows);
-    assert_eq!(sampled.len(), 1);
-    assert!(sampled[0].short_code.is_none());
 }
 
 #[test]
