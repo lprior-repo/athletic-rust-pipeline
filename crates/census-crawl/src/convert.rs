@@ -95,7 +95,9 @@ pub fn converter_files_capped<A: AsRef<OsStr>>(
 
 pub fn read_file_capped(path: &Path, max_bytes: usize) -> CrawlResult<Vec<u8>> {
     let file = std::fs::File::open(path).map_err(|error| converter_io(path, error))?;
-    let mut reader = file.take(max_bytes.saturating_add(1) as u64);
+    let take =
+        u64::try_from(max_bytes.saturating_add(1)).map_err(|_| converter_bytes(max_bytes))?;
+    let mut reader = file.take(take);
     let mut collected = Vec::new();
     reader
         .read_to_end(&mut collected)
@@ -134,7 +136,10 @@ fn read_capped(
         collected
             .try_reserve(read)
             .map_err(|_| std::io::Error::other("converter output reservation failed"))?;
-        collected.extend_from_slice(&chunk[..read]);
+        let filled = chunk
+            .get(..read)
+            .ok_or_else(|| std::io::Error::other("converter read exceeded its buffer"))?;
+        collected.extend_from_slice(filled);
     }
 }
 
@@ -154,7 +159,8 @@ fn supervise(
         }
         if let Some((path, limit)) = watch {
             let held = std::fs::metadata(path).map_or(0, |meta| meta.len());
-            if held > limit as u64 {
+            let capped = u64::try_from(limit).map_err(|_| converter_bytes(limit))?;
+            if held > capped {
                 terminate(child, command)?;
                 return Err(converter_bytes(limit));
             }

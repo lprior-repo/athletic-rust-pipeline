@@ -73,6 +73,15 @@ pub enum FetchError {
     Invariant { detail: String },
     #[error("policy: {detail}")]
     Policy { detail: String },
+    #[error(
+        "archive capacity exhausted for {archive}: {used} of {capacity} bytes used and the next capture needs {requested} more"
+    )]
+    ArchiveCapacity {
+        archive: PathBuf,
+        used: u64,
+        requested: u64,
+        capacity: u64,
+    },
     #[error("offline and not cached: {url}")]
     Offline { url: String },
 }
@@ -96,12 +105,17 @@ impl FetchError {
             | Self::Client { .. }
             | Self::Policy { .. }
             | Self::Invariant { .. }
+            | Self::ArchiveCapacity { .. }
             | Self::Offline { .. } => false,
         }
     }
 
     pub fn halts_object_walk(&self) -> bool {
-        self.retryable() || matches!(self, Self::BrowserLane { .. })
+        self.retryable()
+            || matches!(
+                self,
+                Self::BrowserLane { .. } | Self::ArchiveCapacity { .. }
+            )
     }
 }
 

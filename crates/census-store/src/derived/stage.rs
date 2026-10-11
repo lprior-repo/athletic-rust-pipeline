@@ -160,8 +160,7 @@ impl<'s> DerivedStage<'s> {
         self.tables
             .iter()
             .map(|table| {
-                let held =
-                    rows::count_generation(&self.store.entities, *table, self.generation)?;
+                let held = rows::count_generation(&self.store.entities, *table, self.generation)?;
                 Ok((*table, held))
             })
             .collect()

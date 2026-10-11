@@ -431,6 +431,17 @@ mutable successes. Real non-success bodies reaching the body reader are archived
 reusable success-cache entries. Early refusals with no obtained body remain explicitly uncaptured.
 The current optional String representation refuses unrepresentable response headers rather than
 inventing their values. Bodies are bounded at 32 MiB and encoded capture metadata at 64 KiB.
+Archive capacity is one shared, serialized admission rather than a per-request check: every
+publication path (successful cache write, refusal capture, and replay-driven preservation of a
+previous capture) holds the exclusive `<cache-root>/archive-capacity.lock`, inventories the real
+archive, reserves the net-new content and metadata bytes, and only then publishes. Already
+archived content addresses reserve nothing, so replaying an existing capture never fails on a
+near-limit archive, and two concurrent writers cannot both be admitted against a budget only one
+of them fits. `CENSUS_ARCHIVE_CAPACITY_BYTES` configures the bound (default 100 MiB); exhaustion
+is the typed `FetchError::ArchiveCapacity` outcome naming the archive, used bytes, requested bytes
+and capacity, it stops intake for the run, and it never deletes or rewrites existing evidence.
+Inventory is fail-closed: an unreadable archive directory, a symbolic link, or an entry that is
+neither a regular file nor a directory refuses accounting instead of under-reporting usage.
 304 reuse verifies the planned metadata and bounded body under the same publication lock; it cannot
 overwrite a newer refresh. Contending downloads retain their own archive before lock refusal.
 Quarantine and failed staging directories are retained and synchronized; preserve them for operator

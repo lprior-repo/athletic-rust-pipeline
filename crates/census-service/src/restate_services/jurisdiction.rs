@@ -5,18 +5,17 @@ use tokio::sync::Mutex;
 
 use census_crawl::net::bridge::BrowserLane;
 use census_crawl::net::{Fetcher, PacingState};
-use census_domain::model::{RunManifest, SchoolYear};
-use census_reconcile::identity::{Revision, WorkflowIdentity};
+use census_reconcile::identity::WorkflowIdentity;
 use census_store::clock::Clock;
 use census_store::Store;
 
+#[cfg(test)]
+use census_domain::model::{RunManifest, SchoolYear};
+#[cfg(test)]
+use census_reconcile::identity::Revision;
+
 use super::jobs;
-use super::results_arms::ResultsStageOutcome;
-use super::wire::{
-    JurisdictionOwed, JurisdictionReport, JurisdictionRequest, JurisdictionState, TeamsFailure,
-    TeamsStage,
-};
-use crate::census::{MeetCensus, StateProgress};
+use super::wire::{JurisdictionOwed, JurisdictionReport, JurisdictionRequest, JurisdictionState};
 
 #[cfg(test)]
 mod binding_tests;
@@ -24,6 +23,7 @@ mod pipeline;
 mod report;
 mod stage_runs;
 mod stages;
+mod state;
 #[cfg(test)]
 mod state_tests;
 mod team_collection;
@@ -31,6 +31,12 @@ mod team_collection;
 mod team_collection_tests;
 pub(crate) mod team_source;
 pub use team_source::{TeamsSource, TeamsSourceClient, TeamsSourceIngressClient};
+
+#[allow(unused_imports)]
+pub(super) use state::{
+    bind_history_window, bound_run_refusal, owed_work, roster_stage_owed, stage_owed,
+    teams_failure, Stage,
+};
 
 type CachedFetcher = Option<(Vec<String>, usize, Arc<Fetcher>)>;
 
@@ -135,194 +141,6 @@ impl JurisdictionCensus {
             }
         }
         Ok((ran, failures))
-    }
-}
-
-#[derive(Clone, Copy)]
-enum Stage {
-    Teams,
-    Rosters,
-    Meets,
-    Results,
-}
-
-impl Stage {
-    fn name(self) -> &'static str {
-        match self {
-            Self::Teams => "teams",
-            Self::Rosters => "rosters",
-            Self::Meets => "meets",
-            Self::Results => "results",
-        }
-    }
-}
-
-pub(super) fn roster_stage_owed(state: &JurisdictionState) -> bool {
-    match state.rosters.as_ref() {
-        None => true,
-        Some(progress) => !progress.is_terminal(),
-    }
-}
-
-pub(super) fn bound_run_refusal(
-    manifest: Option<&RunManifest>,
-    season: SchoolYear,
-    revision: Revision,
-) -> Option<String> {
-    let manifest = manifest?;
-    let bound = manifest.run;
-    (bound.season() != season || bound.revision() != revision.get()).then(|| {
-        format!(
-            "this store carries census run {}-{} ({} jurisdictions, cohort {}) and refuses jurisdiction work for {}-{}: submit the bound revision or start a fresh store root",
-            bound.season().get(),
-            bound.revision(),
-            manifest.jurisdictions.len(),
-            manifest.cohort,
-            season.get(),
-            revision.get()
-        )
-    })
-}
-
-fn stage_owed(stage: Stage, state: &JurisdictionState, request: &JurisdictionRequest) -> bool {
-    match stage {
-        Stage::Teams => state.teams.is_resumable(),
-        Stage::Rosters => roster_stage_owed(state),
-        Stage::Meets => !state.history.meets_terminal(&request.history),
-        Stage::Results => !state.history.results_terminal(&request.history),
-    }
-}
-
-pub(super) fn owed_work(
-    state: &JurisdictionState,
-    request: &JurisdictionRequest,
-) -> (Vec<String>, Vec<String>) {
-    let mut owed: Vec<String> = Vec::new();
-    let mut reasons: Vec<String> = Vec::new();
-    for stage in [Stage::Teams, Stage::Rosters, Stage::Meets, Stage::Results] {
-        if !stage_owed(stage, state, request) {
-            continue;
-        }
-        owed.push(stage.name().to_string());
-        reasons.push(match stage {
-            Stage::Teams => teams_reason(&state.teams),
-            Stage::Rosters => rosters_reason(state.rosters.as_ref()),
-            Stage::Meets => meets_reason(state, request),
-            Stage::Results => results_reason(state, request),
-        });
-    }
-    if let Some(plan) = state.plan.as_ref() {
-        for refused in &plan.refused {
-            reasons.push(format!("refused {}: {}", refused.slug, refused.reason));
-        }
-    }
-    (owed, reasons)
-}
-
-fn teams_reason(stage: &TeamsStage) -> String {
-    match stage {
-        TeamsStage::Owed => "teams: no attempt recorded".to_string(),
-        TeamsStage::Completed(completed) => {
-            format!("teams: retained {} records", completed.outcome().records)
-        }
-        TeamsStage::Failed(TeamsFailure::ActionTerminal { at, code, message }) => {
-            format!("teams: terminal action at {at} code {code}: {message}")
-        }
-        TeamsStage::Failed(TeamsFailure::IncompleteOutcome { at, outcome })
-        | TeamsStage::Failed(TeamsFailure::SourceFailures { at, outcome, .. }) => format!(
-            "teams: incomplete at {at}: records={} errors={}",
-            outcome.records,
-            outcome.errors.len()
-        ),
-    }
-}
-
-fn rosters_reason(progress: Option<&StateProgress>) -> String {
-    match progress {
-        None => "rosters: no outcome recorded".to_string(),
-        Some(progress) => format!(
-            "rosters: committed={} remaining={} skipped={} errors={} blocked={}",
-            progress.rosters_committed,
-            progress.rosters_remaining,
-            progress.rosters_skipped,
-            progress.errors.len(),
-            progress.blocked
-        ),
-    }
-}
-
-fn meets_reason(state: &JurisdictionState, request: &JurisdictionRequest) -> String {
-    let mut parts: Vec<String> = Vec::new();
-    for year in request.history.years() {
-        if state
-            .history
-            .meets
-            .get(&year)
-            .is_some_and(MeetCensus::is_terminal)
-        {
-            continue;
-        }
-        match state.history.meets.get(&year) {
-            Some(meet) => parts.push(format!(
-                "{year}:pages={} rows={} truncated={} repeated={}",
-                meet.pages, meet.rows, meet.truncated, meet.repeated
-            )),
-            None => parts.push(format!("{year}:absent")),
-        }
-    }
-    format!("meets: {}", parts.join(" "))
-}
-
-fn results_reason(state: &JurisdictionState, request: &JurisdictionRequest) -> String {
-    let mut parts: Vec<String> = Vec::new();
-    for year in request.history.years() {
-        if state
-            .history
-            .results
-            .get(&year)
-            .is_some_and(ResultsStageOutcome::is_terminal)
-        {
-            continue;
-        }
-        match state.history.results.get(&year) {
-            Some(outcome) => parts.push(format!(
-                "{year}:sources={} pending={}",
-                outcome.per_source.len(),
-                outcome.pending.len()
-            )),
-            None => parts.push(format!("{year}:absent")),
-        }
-    }
-    format!("results: {}", parts.join(" "))
-}
-
-fn bind_history_window(
-    state: &mut JurisdictionState,
-    window: super::wire::HistoryWindow,
-) -> Result<(), HandlerError> {
-    if state.history_window.is_some_and(|bound| bound != window) {
-        return Err(jobs::invariant(
-            "history scope changed within an existing logical run",
-        ));
-    }
-    state.history_window = Some(window);
-    Ok(())
-}
-
-fn teams_failure(failure: &TeamsFailure) -> HandlerError {
-    match failure {
-        TeamsFailure::ActionTerminal { at, code, message } => TerminalError::new_with_code(
-            *code,
-            format!("teams stage remains incomplete after terminal action at {at}: {message}"),
-        )
-        .into(),
-        TeamsFailure::IncompleteOutcome { at, outcome }
-        | TeamsFailure::SourceFailures { at, outcome, .. } => TerminalError::new(format!(
-            "teams stage remains incomplete at {at}: retained {} records with source errors: {}",
-            outcome.records,
-            outcome.errors.join("; ")
-        ))
-        .into(),
     }
 }
 

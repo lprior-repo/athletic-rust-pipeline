@@ -36,41 +36,48 @@ pub(super) fn require_owner(
     Ok(())
 }
 
-fn require_shape(path: &str, key: &str, payload: &serde_json::Value) -> CrawlResult<()> {
-    let meet = payload
+fn receipt_owner(payload: &serde_json::Value) -> Option<&str> {
+    payload
         .get("meet")
         .and_then(serde_json::Value::as_str)
-        .filter(|value| !value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit()));
-    let projection = payload
+        .filter(|value| !value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit()))
+}
+
+fn receipt_projection(payload: &serde_json::Value) -> Option<&str> {
+    payload
         .get("projection")
         .and_then(serde_json::Value::as_str)
-        .filter(|value| value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit()));
-    if meet.is_none()
-        || projection.is_none()
-        || payload.get("parser").and_then(serde_json::Value::as_str) != Some(PARSER)
-        || payload
+        .filter(|value| value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit()))
+}
+
+fn receipt_fields_present(
+    meet: Option<&str>,
+    projection: Option<&str>,
+    payload: &serde_json::Value,
+) -> bool {
+    meet.is_some()
+        && projection.is_some()
+        && payload.get("parser").and_then(serde_json::Value::as_str) == Some(PARSER)
+        && payload
             .get("complete")
             .and_then(serde_json::Value::as_bool)
-            .is_none()
-        || payload
+            .is_some()
+        && payload
             .pointer("/metadata/url")
             .and_then(serde_json::Value::as_str)
-            .is_none()
-        || payload
+            .is_some()
+        && payload
             .get("path")
             .and_then(serde_json::Value::as_str)
-            .is_none()
-        || payload
+            .is_some()
+        && payload
             .get("provider")
             .and_then(serde_json::Value::as_str)
-            .is_none()
-    {
-        return Err(super::schema(
-            path,
-            "ambiguous or incompatible LIVE projection receipt shape",
-        ));
-    }
-    let identity = json!({
+            .is_some()
+}
+
+fn receipt_identity(payload: &serde_json::Value) -> serde_json::Value {
+    json!({
         "role":payload.get("role"),
         "meet":payload.get("meet"),
         "provider":payload.get("provider"),
@@ -86,12 +93,27 @@ fn require_shape(path: &str, key: &str, payload: &serde_json::Value) -> CrawlRes
         "projection":payload.get("projection"),
         "complete":payload.get("complete"),
         "parsed":payload.get("parsed"),
-    });
-    let digest = census_domain::model::serialized_digest(&identity).map_err(|error| {
+    })
+}
+
+fn receipt_digest(payload: &serde_json::Value) -> CrawlResult<String> {
+    census_domain::model::serialized_digest(&receipt_identity(payload)).map_err(|error| {
         crate::CrawlError::Invariant {
             detail: error.to_string(),
         }
-    })?;
+    })
+}
+
+fn require_shape(path: &str, key: &str, payload: &serde_json::Value) -> CrawlResult<()> {
+    let meet = receipt_owner(payload);
+    let projection = receipt_projection(payload);
+    if !receipt_fields_present(meet, projection, payload) {
+        return Err(super::schema(
+            path,
+            "ambiguous or incompatible LIVE projection receipt shape",
+        ));
+    }
+    let digest = receipt_digest(payload)?;
     let role = payload
         .get("role")
         .and_then(serde_json::Value::as_str)
@@ -146,8 +168,11 @@ pub(super) fn receipt(
         .and_then(serde_json::Value::as_str)
         .map_or("refused", |value| value);
     let mut payload = identity.clone();
-    payload["path"] = json!(path);
-    payload["metadata"] = json!(metadata);
+    let fields = payload
+        .as_object_mut()
+        .ok_or_else(|| super::schema(path, "receipt identity is not an object"))?;
+    fields.insert("path".to_string(), json!(path));
+    fields.insert("metadata".to_string(), json!(metadata));
     Ok(EffectReceipt {
         key: format!(
             "{}:{role}:{identity_digest}",

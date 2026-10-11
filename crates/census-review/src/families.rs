@@ -44,12 +44,11 @@ impl ReviewFamily {
         }
     }
 
-    pub const fn askable() -> [Self; 4] {
+    pub const fn askable() -> [Self; 3] {
         [
             Self::SchoolJurisdiction,
             Self::MeetJurisdiction,
             Self::AthleteIdentity,
-            Self::SchoolLink,
         ]
     }
 

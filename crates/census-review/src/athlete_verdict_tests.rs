@@ -261,15 +261,26 @@ fn a_verdict_that_names_another_case_decides_nothing() {
 
 #[test]
 fn identity_advice_uses_only_the_declared_answer_vocabulary() {
-    for answer in [
-        "SAME PERSON",
-        " Different-Person ",
-        "insufficient evidence",
-        "sameperson",
+    for (answer, expected) in [
+        ("SAME PERSON", AthleteVerdict::SamePerson),
+        (" Different-Person ", AthleteVerdict::DifferentPerson),
+        (
+            "insufficient evidence",
+            AthleteVerdict::InsufficientEvidence,
+        ),
+        ("sameperson", AthleteVerdict::SamePerson),
     ] {
         assert_eq!(
             read(&proposal(answer), &packet()),
-            Err(Refusal::InvalidValue)
+            Ok(expected),
+            "the spelling {answer:?} names one of the three answers the packet declares"
+        );
+    }
+    for answer in ["same_person_maybe", "twins", "identical"] {
+        assert_eq!(
+            read(&proposal(answer), &packet()),
+            Err(Refusal::InvalidValue),
+            "the answer {answer:?} is outside the declared vocabulary"
         );
     }
 }

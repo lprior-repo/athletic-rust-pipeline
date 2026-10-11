@@ -184,7 +184,11 @@ fn a_family_parses_from_the_cli_spelling() {
     );
     assert_eq!(ReviewFamily::SchoolLink.field(), "identity");
     assert_eq!(ReviewFamily::parse("cohort"), None);
-    assert_eq!(ReviewFamily::askable().len(), 4);
+    assert_eq!(ReviewFamily::askable().len(), 3);
+    assert!(
+        !ReviewFamily::askable().contains(&ReviewFamily::SchoolLink),
+        "school links are mapped by the school-directory rules, not asked about"
+    );
     assert!(
         ReviewFamily::askable().contains(&ReviewFamily::AthleteIdentity),
         "the lane must offer the athlete family, or it is asked about by nobody"

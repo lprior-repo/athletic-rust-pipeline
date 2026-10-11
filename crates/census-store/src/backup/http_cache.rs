@@ -5,6 +5,7 @@ use std::fs;
 use std::path::Path;
 
 const DIGEST_BYTES: usize = 64;
+const ARCHIVE_CAPACITY_LOCK: &str = "archive-capacity.lock";
 
 pub(crate) fn http_cache_integrity(root: &Path) -> crate::StoreResult<Vec<String>> {
     let http = root.join("http");
@@ -34,7 +35,7 @@ fn check_live_entries(http: &Path, issues: &mut Vec<String>) -> crate::StoreResu
             issues.push(format!("http: unexpected entry {name}"));
             continue;
         }
-        if name.ends_with(".json.lock") {
+        if name.ends_with(".json.lock") || name == ARCHIVE_CAPACITY_LOCK {
             continue;
         }
         if let Some(key) = name.strip_suffix(".body") {

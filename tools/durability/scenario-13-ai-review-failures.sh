@@ -413,17 +413,17 @@ kill -0 "$PROXY_A_PID" 2>/dev/null || fail "proxy lane A exited at startup: $(ca
 kill -0 "$PROXY_B_PID" 2>/dev/null || fail "proxy lane B exited at startup: $(cat "$WORK/proxy-b.log")"
 set_modes forward forward
 SERVER_OK=true
-curl -sS --max-time 30 "http://127.0.0.1:$PROXY_A_PORT/v1/models" > "$WORK/models-lane-a.json" 2> "$WORK/models-lane-a.err" || SERVER_OK=false
-curl -sS --max-time 30 "http://127.0.0.1:$PROXY_B_PORT/v1/models" > "$WORK/models-lane-b.json" 2> "$WORK/models-lane-b.err" || SERVER_OK=false
-if [ "$SERVER_OK" = true ]; then
-    echo "PROXIES: both lanes forward to reachable model servers"
-else
-    echo "PROXIES: model servers unreachable through the proxies (see models-lane-*.err); healthy-lane phases will not run"
+curl -sS --fail --max-time 30 "http://127.0.0.1:$PROXY_A_PORT/v1/models" > "$WORK/models-lane-a.json" 2> "$WORK/models-lane-a.err" || SERVER_OK=false
+curl -sS --fail --max-time 30 "http://127.0.0.1:$PROXY_B_PORT/v1/models" > "$WORK/models-lane-b.json" 2> "$WORK/models-lane-b.err" || SERVER_OK=false
+if [ "$SERVER_OK" != true ]; then
+    echo "SKIPPED: an approved local model server is unreachable through its proxy; see $WORK/models-lane-a.err and $WORK/models-lane-b.err"
+    exit 0
 fi
+echo "PROXIES: both lanes forward to reachable model servers"
 
 # ---- [1/5] refusal taxonomy (dry-run; nothing persists) -------------------
 echo "=== [1/5] refusal taxonomy: 503, malformed content, timed-out lane ==="
-if [ "$SERVER_OK" = true ]; then want_failed=1; else want_failed=2; fi
+want_failed=1
 for fault in fail503 malformed stall; do
     extra=()
     [ "$fault" = stall ] && extra=(--timeout-secs "$FAULT_TIMEOUT")
@@ -511,11 +511,6 @@ REPLAY_CASE="$(newest_case "$WORK/proxy-a.jsonl")"
 [ "$(awkc "$WORK/proxy-b.jsonl" "$RETRY_CASE" request)" = 2 ] \
     || fail "the fresh process re-asked $RETRY_CASE on lane B"
 echo "REPLAY: $RETRY_CASE advice replayed from a fresh process with zero new requests; advanced to $REPLAY_CASE"
-
-if [ "$SERVER_OK" != true ]; then
-    echo "SKIPPED: model servers $TARGET_A and $TARGET_B unreachable through the proxies: only the refusal taxonomy above was exercised; the healthy-lane retry, crash-before-write and crash-after-write phases did not run"
-    exit 0
-fi
 
 # ---- [3/5] SIGKILL before the first advice write --------------------------
 echo "=== [3/5] SIGKILL before the first advice write ==="

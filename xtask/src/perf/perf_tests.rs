@@ -84,6 +84,70 @@ fn sample_tail_floor_does_not_absorb_a_mean_shaped_regression() -> TestResult {
 }
 
 #[test]
+fn a_noisy_case_accepts_wall_time_drift_inside_its_recorded_tail_spread() -> TestResult {
+    let mut noisy = measurement(Some(100.0), 1.0);
+    noisy.tail_time_seconds = Some(1.087);
+    let baseline = baseline(noisy);
+    let current = groups(measurement(Some(100.0), 1.067));
+    check_throughput(&baseline, &current, 0.05)?;
+    Ok(())
+}
+
+#[test]
+fn a_noisy_case_still_fails_drift_beyond_its_recorded_tail_spread() -> TestResult {
+    let mut noisy = measurement(Some(100.0), 1.0);
+    noisy.tail_time_seconds = Some(1.087);
+    let baseline = baseline(noisy);
+    let current = groups(measurement(Some(100.0), 1.12));
+    let error = check_throughput(&baseline, &current, 0.05)
+        .err()
+        .ok_or("a wall-time regression beyond the recorded tail spread was accepted")?;
+    check!(format!("{error:#}").contains("wall time regression"));
+    Ok(())
+}
+
+#[test]
+fn the_recorded_tail_floor_is_capped_at_the_jitter_ceiling() -> TestResult {
+    let mut noisy = measurement(Some(100.0), 1.0);
+    noisy.tail_time_seconds = Some(1.5);
+    let baseline = baseline(noisy);
+    let current = groups(measurement(Some(100.0), 1.25));
+    let error = check_throughput(&baseline, &current, 0.05)
+        .err()
+        .ok_or("the tail-derived floor must not exceed the jitter ceiling")?;
+    check!(format!("{error:#}").contains("wall time regression"));
+    Ok(())
+}
+
+#[test]
+fn a_small_peak_rss_baseline_keeps_the_absolute_floor() -> TestResult {
+    let mut light = measurement(Some(100.0), 1.0);
+    light.peak_rss_kib = Some(2048);
+    let baseline = baseline(light);
+    let mut at_floor = measurement(Some(100.0), 1.0);
+    at_floor.peak_rss_kib = Some(3071);
+    check_throughput(&baseline, &groups(at_floor), 0.05)?;
+    let mut beyond = measurement(Some(100.0), 1.0);
+    beyond.peak_rss_kib = Some(3073);
+    let error = check_throughput(&baseline, &groups(beyond), 0.05)
+        .err()
+        .ok_or("the absolute peak-RSS floor was not enforced")?;
+    check!(format!("{error:#}").contains("peak RSS regression"));
+    Ok(())
+}
+
+#[test]
+fn a_stable_case_keeps_the_requested_wall_time_tolerance() -> TestResult {
+    let baseline = baseline(measurement(Some(100.0), 1.0));
+    let current = groups(measurement(Some(100.0), 1.067));
+    let error = check_throughput(&baseline, &current, 0.05)
+        .err()
+        .ok_or("a wall-time rise beyond the tolerance was accepted for a stable case")?;
+    check!(format!("{error:#}").contains("wall time regression"));
+    Ok(())
+}
+
+#[test]
 fn missing_or_null_rates_refuse_comparison_with_other_metrics_complete() -> TestResult {
     for raw in [
         r#"{"wall_time_seconds":1,"tail_time_seconds":1,"peak_rss_kib":100,"allocation_count":100,"allocated_bytes":100}"#,

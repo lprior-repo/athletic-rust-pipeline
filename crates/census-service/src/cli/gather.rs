@@ -9,8 +9,11 @@ use std::path::Path;
 
 use super::live::{self, jurisdiction_request};
 use super::national::WorkflowFlags;
-use super::source::print_blocked_hosts;
 use super::{build_fetcher, resolve_states, school_year, Cli, Route};
+
+#[path = "gather_collect.rs"]
+mod gather_collect;
+pub(super) use gather_collect::{run_collect, CollectArgs};
 
 #[derive(Args, Debug)]
 pub(super) struct TeamsArgs {
@@ -78,73 +81,90 @@ fn meets_line(report: &JurisdictionReport) -> Result<String> {
 pub(super) async fn run_teams(cli: &Cli, args: &TeamsArgs) -> Result<()> {
     let jurisdictions = resolve_states(args.all_states, &args.states)?;
     match cli.route(args.flags.ingress.as_deref())? {
-        Route::Offline(root) => {
-            let store = Store::open(root)?;
-            let fetcher = build_fetcher(cli, &store)?;
-            let mut failed = Vec::new();
-            let mut incomplete = Vec::new();
-            for jurisdiction in &jurisdictions {
-                match census::collect_state_teams(&fetcher, &store, *jurisdiction, args.refresh)
-                    .await
-                {
-                    Ok(teams) => {
-                        let report = census::team_index_report(&store, *jurisdiction)?;
-                        println!(
-                            "{}\tteams={}\toutcome={:?}\terrors={}\tunfinished={}",
-                            jurisdiction.code(),
-                            teams.len(),
-                            report.disposition,
-                            report.errors,
-                            report.unfinished.len()
-                        );
-                        for team in teams.iter().take(3) {
-                            println!("  {}\t{}\t{}", team.id, team.name, team.city_state);
-                        }
-                        if !report.disposition.is_complete()
-                            || report.errors != 0
-                            || !report.unfinished.is_empty()
-                        {
-                            incomplete.push(jurisdiction.code().to_string());
-                        }
-                    }
-                    Err(error) => {
-                        eprintln!("{}\tteams=error\t{}", jurisdiction.code(), error);
-                        failed.push(jurisdiction.code().to_string());
-                    }
-                }
+        Route::Offline(root) => teams_offline(cli, args, &jurisdictions, root).await,
+        Route::Ingress(origin) => teams_ingress(cli, args, &jurisdictions, origin).await,
+    }
+}
+
+async fn teams_offline(
+    cli: &Cli,
+    args: &TeamsArgs,
+    jurisdictions: &[UsJurisdiction],
+    root: &Path,
+) -> Result<()> {
+    let store = Store::open(root)?;
+    let fetcher = build_fetcher(cli, &store)?;
+    let mut failed = Vec::new();
+    let mut incomplete = Vec::new();
+    for jurisdiction in jurisdictions {
+        match census::collect_state_teams(&fetcher, &store, *jurisdiction, args.refresh).await {
+            Ok(teams) => summarize_teams(&store, *jurisdiction, &teams, &mut incomplete)?,
+            Err(error) => {
+                eprintln!("{}\tteams=error\t{}", jurisdiction.code(), error);
+                failed.push(jurisdiction.code().to_string());
             }
-            if !failed.is_empty() || !incomplete.is_empty() {
-                return Err(anyhow::anyhow!(
-                    "team collection did not complete: failed [{}]; incomplete [{}]",
-                    failed.join(", "),
-                    incomplete.join(", ")
-                ));
-            }
-            Ok(())
-        }
-        Route::Ingress(origin) => {
-            let season = SchoolYear::new(args.season)
-                .ok_or_else(|| anyhow::anyhow!("--season {} is not a school year", args.season))?;
-            let requests = jurisdictions
-                .iter()
-                .map(|jurisdiction| {
-                    jurisdiction_request(
-                        *jurisdiction,
-                        season,
-                        &args.flags,
-                        live::JurisdictionRun {
-                            refresh: args.refresh,
-                            limit_per_state: None,
-                            concurrency: 4,
-                            authorized_hosts: cli.authorized_hosts.clone(),
-                            source_parallelism: cli.source_parallelism,
-                        },
-                    )
-                })
-                .collect::<Result<Vec<_>>>()?;
-            live::drive_states(origin, requests, args.flags.rounds(), teams_line).await
         }
     }
+    if !failed.is_empty() || !incomplete.is_empty() {
+        return Err(anyhow::anyhow!(
+            "team collection did not complete: failed [{}]; incomplete [{}]",
+            failed.join(", "),
+            incomplete.join(", ")
+        ));
+    }
+    Ok(())
+}
+
+fn summarize_teams(
+    store: &Store,
+    jurisdiction: UsJurisdiction,
+    teams: &[census_crawl::milesplit::TeamRef],
+    incomplete: &mut Vec<String>,
+) -> Result<()> {
+    let report = census::team_index_report(store, jurisdiction)?;
+    println!(
+        "{}\tteams={}\toutcome={:?}\terrors={}\tunfinished={}",
+        jurisdiction.code(),
+        teams.len(),
+        report.disposition,
+        report.errors,
+        report.unfinished.len()
+    );
+    for team in teams.iter().take(3) {
+        println!("  {}\t{}\t{}", team.id, team.name, team.city_state);
+    }
+    if !report.disposition.is_complete() || report.errors != 0 || !report.unfinished.is_empty() {
+        incomplete.push(jurisdiction.code().to_string());
+    }
+    Ok(())
+}
+
+async fn teams_ingress(
+    cli: &Cli,
+    args: &TeamsArgs,
+    jurisdictions: &[UsJurisdiction],
+    origin: &str,
+) -> Result<()> {
+    let season = SchoolYear::new(args.season)
+        .ok_or_else(|| anyhow::anyhow!("--season {} is not a school year", args.season))?;
+    let requests = jurisdictions
+        .iter()
+        .map(|jurisdiction| {
+            jurisdiction_request(
+                *jurisdiction,
+                season,
+                &args.flags,
+                live::JurisdictionRun {
+                    refresh: args.refresh,
+                    limit_per_state: None,
+                    concurrency: 4,
+                    authorized_hosts: cli.authorized_hosts.clone(),
+                    source_parallelism: cli.source_parallelism,
+                },
+            )
+        })
+        .collect::<Result<Vec<_>>>()?;
+    live::drive_states(origin, requests, args.flags.rounds(), teams_line).await
 }
 
 pub(super) async fn run_meets(cli: &Cli, args: &MeetsArgs) -> Result<()> {
@@ -197,100 +217,6 @@ pub(super) async fn run_meets(cli: &Cli, args: &MeetsArgs) -> Result<()> {
                 })
                 .collect::<Result<Vec<_>>>()?;
             live::drive_states(origin, requests, args.flags.rounds(), meets_line).await
-        }
-    }
-}
-
-#[derive(Args, Debug)]
-pub(super) struct CollectArgs {
-    #[arg(
-        help = "Comma-separated state codes (`WI,MN` is one example; every USPS code is accepted). Default: WI"
-    )]
-    #[arg(long, value_delimiter = ',')]
-    states: Vec<UsJurisdiction>,
-    #[arg(
-        help = "Walk the census run scope: the 48 continental states plus DC (ADR-009). Cannot be combined with `--states`"
-    )]
-    #[arg(long)]
-    all_states: bool,
-    #[arg(help = "Cap the number of rosters fetched per state (for smoke runs)")]
-    #[arg(long)]
-    limit_per_state: Option<usize>,
-    #[arg(help = "Concurrent in-flight requests per state (per-host politeness still applies)")]
-    #[arg(long, default_value_t = 4)]
-    concurrency: usize,
-    #[arg(help = "How many state hosts to walk simultaneously")]
-    #[arg(long, default_value_t = 4)]
-    state_concurrency: usize,
-    #[arg(help = "Ignore caches and re-fetch (paced at the registry rate)")]
-    #[arg(long)]
-    refresh: bool,
-    #[arg(
-        help = "School year the rosters belong to, as its starting calendar year (2026 = 2026-27)"
-    )]
-    #[arg(long, default_value_t = 2026)]
-    school_year: i16,
-    #[arg(help = "ISO date stamped into evidence (defaults to today)")]
-    #[arg(long)]
-    observed_on: Option<String>,
-    #[command(flatten)]
-    flags: WorkflowFlags,
-}
-
-fn collect_options(args: &CollectArgs) -> Result<census::CollectOptions> {
-    Ok(census::CollectOptions {
-        jurisdictions: resolve_states(args.all_states, &args.states)?,
-        limit_per_state: args.limit_per_state,
-        concurrency: args.concurrency,
-        state_concurrency: args.state_concurrency,
-        refresh: args.refresh,
-        school_year: SchoolYear::new(args.school_year).ok_or_else(|| {
-            anyhow::anyhow!("--school-year {} is not a school year", args.school_year)
-        })?,
-        observed_on: match args.observed_on.clone() {
-            Some(value) => value,
-            None => census_crawl::net::today_iso(),
-        },
-        revision: std::num::NonZeroU32::new(args.flags.revision)
-            .ok_or_else(|| anyhow::anyhow!("--revision must be greater than zero"))?,
-    })
-}
-
-pub(super) async fn run_collect(cli: &Cli, args: &CollectArgs) -> Result<()> {
-    let options = collect_options(args)?;
-    match cli.route(args.flags.ingress.as_deref())? {
-        Route::Offline(root) => {
-            let store = Store::open(root)?;
-            let fetcher = build_fetcher(cli, &store)?.with_source("milesplit");
-            let outcome = census::collect_milesplit(&fetcher, &store, &options).await;
-            print_blocked_hosts(&fetcher).await;
-            let report = outcome.context("milesplit collection")?;
-            println!("{}", serde_json::to_string_pretty(&report)?);
-            Ok(())
-        }
-        Route::Ingress(origin) => {
-            let requests = options
-                .jurisdictions
-                .iter()
-                .map(|jurisdiction| {
-                    jurisdiction_request(
-                        *jurisdiction,
-                        options.school_year,
-                        &args.flags,
-                        live::JurisdictionRun {
-                            refresh: options.refresh,
-                            limit_per_state: options.limit_per_state,
-                            concurrency: options.concurrency,
-                            authorized_hosts: cli.authorized_hosts.clone(),
-                            source_parallelism: cli.source_parallelism,
-                        },
-                    )
-                })
-                .collect::<Result<Vec<_>>>()?;
-            live::drive_states(origin, requests, args.flags.rounds(), |report| {
-                serde_json::to_string_pretty(report).context("encoding one state's report")
-            })
-            .await
         }
     }
 }

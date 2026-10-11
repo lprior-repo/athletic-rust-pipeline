@@ -5,8 +5,8 @@ use super::stop::StopReason;
 
 #[cfg(test)]
 use crate::spawn::Spawner;
-#[cfg(test)]
 use std::time::Duration;
+
 #[cfg(test)]
 use tokio::task::JoinSet;
 
@@ -57,4 +57,22 @@ pub(super) async fn drain(
     let region = Spawner::adopting(tasks).map_err(count_error)?;
     let counted = region.drain(timeout).await.map_err(count_error)?;
     Ok(DrainReport::from_counted(counted))
+}
+
+pub(super) const ENDPOINT_SHUTDOWN_GRACE: Duration = Duration::from_secs(10);
+
+pub(super) async fn await_endpoint_shutdown(
+    endpoint_done: tokio::sync::oneshot::Receiver<()>,
+    grace: Duration,
+) -> EndpointShutdown {
+    match tokio::time::timeout(grace, endpoint_done).await {
+        Ok(Ok(())) | Ok(Err(_)) => EndpointShutdown::Completed,
+        Err(_) => {
+            tracing::warn!(
+                grace_seconds = grace.as_secs_f64(),
+                "the endpoint did not finish within the shutdown grace; closing effect admission"
+            );
+            EndpointShutdown::TimedOut
+        }
+    }
 }

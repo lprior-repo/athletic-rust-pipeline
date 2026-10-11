@@ -218,8 +218,7 @@ echo "TeamsSource invocations for $TEAM_KEY: $TEAMS_COUNT"
 echo "ASSERTION: exactly 1 TeamsSource invocation — PASS"
 
 # Assert: TeamsSource inspection shows settled, one completed attempt, records >= 1
-curl -fsS --max-time 10 -X POST "http://127.0.0.1:$INGRESS_PORT/TeamsSource/${KEY_ENC}/inspection" \
-    -H 'content-type: application/json' -H 'accept: application/json' \
+curl -fsS --max-time 10 "http://127.0.0.1:$INGRESS_PORT/TeamsSource/${KEY_ENC}/inspection" \
     > "$WORK/teams-inspection.json"
 cat "$WORK/teams-inspection.json"
 jq -e '.outcome.progress | length == 1' "$WORK/teams-inspection.json" >/dev/null \

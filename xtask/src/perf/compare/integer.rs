@@ -34,15 +34,24 @@ impl Tolerance {
         self.fraction
     }
 
-    pub(super) fn integer_exceeded(&self, baseline: u64, current: u64) -> Result<bool> {
+    pub(super) fn integer_exceeded_with_floor(
+        &self,
+        baseline: u64,
+        current: u64,
+        floor: u64,
+    ) -> Result<bool> {
         let extra = u128::from(baseline)
             .checked_mul(self.numerator)
             .context("memory tolerance numerator overflowed")?
             .checked_div(self.denominator)
             .context("memory tolerance denominator is zero")?;
-        let limit = u128::from(baseline)
+        let percentage = u128::from(baseline)
             .checked_add(extra)
             .context("memory tolerance limit overflowed")?;
-        Ok(u128::from(current) > limit)
+        let bounded_floor = u128::from(floor.min(baseline));
+        let floored = u128::from(baseline)
+            .checked_add(bounded_floor)
+            .context("memory tolerance floor overflowed")?;
+        Ok(u128::from(current) > percentage.max(floored))
     }
 }

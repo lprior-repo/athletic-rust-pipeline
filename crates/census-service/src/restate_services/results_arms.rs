@@ -1,14 +1,13 @@
 mod collection;
 mod meet_pages;
 mod outcomes;
+mod rows;
 mod selection;
 mod tfrrs;
 use std::sync::Arc;
 
 use census_crawl::net::Fetcher;
-use census_crawl::{
-    AdapterContext, AdapterReport, CollectionDisposition, ResolutionCounters, UnresolvedCounters,
-};
+use census_crawl::{AdapterContext, AdapterReport, ResolutionCounters, UnresolvedCounters};
 use census_domain::model::SourceMeetRef;
 use census_domain::UsJurisdiction;
 use census_store::Store;
@@ -16,9 +15,12 @@ use restate_sdk::prelude::{HandlerError, Json};
 use serde::{Deserialize, Serialize};
 
 use super::job_error;
-use super::jobs::{assert_some_stage_arms, collect_error, rows_written};
+use super::jobs::{assert_some_stage_arms, collect_error};
 use super::{history_stage::HistoricalStageScope, source_selection::SourceSelection};
 use outcomes::{delegated_source, source_complete};
+
+pub(super) use census_crawl::CollectionDisposition;
+pub(super) use rows::{failed_source, source_rows};
 
 const MILESPLIT: &str = "milesplit";
 const ATHLETICNET: &str = "athleticnet";
@@ -82,7 +84,7 @@ pub struct ResultsSourceRows {
     pub meets: usize,
     pub rows: Option<usize>,
     #[serde(default)]
-    pub disposition: census_crawl::CollectionDisposition,
+    pub disposition: CollectionDisposition,
     #[serde(default)]
     pub errors: u64,
     #[serde(default)]
@@ -154,51 +156,6 @@ async fn collect_source(
         return Ok(delegated_source(slug));
     };
     collection::collect(slug, arm, store, fetcher, (selected, scope)).await
-}
-
-fn failed_source(slug: &str, meets: usize, error: HandlerError) -> ResultsSourceRows {
-    let source: &dyn std::error::Error = error.as_ref();
-    ResultsSourceRows {
-        slug: slug.to_string(),
-        meets,
-        rows: None,
-        disposition: CollectionDisposition::Failed,
-        errors: 1,
-        withheld: None,
-        notes: vec![source.to_string()],
-        unfinished: Vec::new(),
-        unresolved: None,
-        resolution: None,
-    }
-}
-
-fn source_rows(
-    slug: &str,
-    meets: usize,
-    report: AdapterReport,
-) -> Result<ResultsSourceRows, HandlerError> {
-    Ok(ResultsSourceRows {
-        slug: slug.to_string(),
-        meets,
-        rows: Some(rows_written(&report)?),
-        disposition: report.disposition,
-        errors: report.errors,
-        withheld: Some(report.rejections),
-        notes: report.notes,
-        unfinished: report.unfinished,
-        unresolved: report.unresolved.or_else(|| {
-            report
-                .disposition
-                .is_complete()
-                .then_some(UnresolvedCounters { rows: 0, labels: 0 })
-        }),
-        resolution: report.resolution.or_else(|| {
-            report
-                .disposition
-                .is_complete()
-                .then_some(ResolutionCounters::default())
-        }),
-    })
 }
 
 async fn milesplit_results(

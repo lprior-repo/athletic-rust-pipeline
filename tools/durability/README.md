@@ -36,6 +36,32 @@ Choose a fresh owned scratch root per evidence run. The runner exports `SCRATCH_
 `/tmp`; override it if that is tmpfs or shared. A scenario may additionally require namespace tools,
 mount, curl, jq, timeout or the test harness's own prerequisites.
 
+Every seam-dependent host scenario (02, 05, 06 and 11) probes the endpoint named by `SERVE_BINARY`,
+which defaults to the plain portable `census-serve`. A release run must point it at the
+feature-enabled build, and scenario 04 reads that build from `target/moon-build` for V1 while
+`SERVE_BINARY` stays the plain V2:
+
+```sh
+env -u CI tools/moon-local run pipeline:build -- --release -p census-service \
+  --features native-fault-injection --bin census-serve --example qualification_native_vm
+SERVE_BINARY="$PWD/target/moon-build/x86_64-unknown-linux-gnu/release/census-serve" \
+  SCRATCH_STORE="$PWD/var/durability-scratch" RESTATE_SERVER_BIN=<verified-server-path> \
+  env -u CI tools/moon-local run pipeline:durability
+```
+
+Without that endpoint the seam scenarios skip or fail on the missing seam instead of exercising it,
+so a release pass exports `SERVE_BINARY` for the whole gate, not only for the durability lane. The
+two guest lanes (03, 12) additionally read `CENSUS_NATIVE_VM_HOST` for the feature-built
+`qualification_native_vm` example and `CENSUS_NATIVE_VM_CAPTURES` for the live public captures their
+natural-midnight phase replays; without that host they resolve the example under the portable target
+tree, which `pipeline:build-portable` leaves empty, and fail before booting.
+
+`S04_V1_BINARY` and `S04_V2_BINARY` override scenario 04's pair directly. A gate that exports the
+feature build as `SERVE_BINARY` — which scenarios 02, 05, 06 and 11 need — must set them, or
+scenario 04 copies one binary into both roles and refuses the run ("V1 and V2 are the same binary"):
+the 2026-10-11 release pass exported the feature build as `S04_V1_BINARY` and the plain portable
+build as `S04_V2_BINARY`.
+
 ## Current wrapper map
 
 Static implementation inventory, not observed PASS results. Files are `scenario-NN-<name>.sh` in
@@ -45,17 +71,17 @@ this directory. A narrower invoked test does not discharge the broader same-numb
 |---|---|---|
 | 01 | `endpoint-kill` | Runs service `restate_kill_restart` integration tests |
 | 02 | `restate-kill-during-fanout` | Feature-enabled endpoint holds a reserved teams source (`jurisdiction:VT:2026-27:2/teams/milesplit`), SIGKILLs native Restate mid-fan-out, restarts from the same base-dir and requires every pre-kill invocation id to survive; the boundary directory must be a process-owned 0700 directory (the script chmods it) and the reservation marker appears within seconds of submission; skips without the feature-enabled endpoint, chromium, curl/python3/ss or free ports |
-| 03 | `reboot-with-full-census` | Explicit skip: isolated machine reboot missing |
-| 04 | `rolling-upgrade` | Explicit skip: distinct V1→V2 upgrade missing |
-| 05 | `http-error-taxonomy` | Explicit skip: real browser HTTP fault-server scenario missing |
-| 06 | `no-duplicate-evidence` | Explicit skip: reached production commit/lost-ack injection missing |
-| 07 | `domain-dedup` | Explicit skip: concurrent cross-workflow source-unit scenario missing |
-| 08 | `global-budget` | Explicit skip: multi-endpoint physical origin-budget scenario missing |
+| 03 | `reboot-with-full-census` | Owned QEMU guest lane: sources `native-vm-qualification.sh` and drives the reboot phase with the staged feature-enabled endpoint and example; requires the VM tooling, images and deployment staging |
+| 04 | `rolling-upgrade` | Feature-enabled V1 → plain V2 upgrade with an in-flight paused parent: single-writer handoff, schema gate, pinned replay, one settlement, then the superseded deployment is retired |
+| 05 | `http-error-taxonomy` | Plain lane and real-Chromium lane against an owned local HTTP fault server (200, 429 + Retry-After, 500, challenge); requires the lane-origin seam endpoint and chromium |
+| 06 | `no-duplicate-evidence` | Kills and restarts the feature-enabled endpoint at reached durable-effect boundaries and requires exactly-once acknowledged observations, receipts and Fjall effects after replay |
+| 07 | `domain-dedup` | Native node + endpoint: two concurrent identical jurisdiction submissions under one explicit idempotency key admit one invocation with one settled outcome |
+| 08 | `global-budget` | Native CLI origin-budget regression: three independent workflows share one working-directory origin lock under 1000ms pacing, two rivals are refused by owner PID, and the certificate's exact redirect chain, cache facts and pacing are re-checked |
 | 09 | `disk-full-fjall` | Private 64-MiB tmpfs with fail-closed cap/private-mount inspection; actual commit ENOSPC, exact acknowledged records/receipts, unchanged replay and new recovered writes; conditional namespace/tool skips |
 | 10 | `disk-full-restate` | Owned processes/private bounded mount; demands an actual OS disk-full log and acknowledged-work recovery |
-| 11 | `parent-exit` | Explicit skip: `ATHLETIC_FAULT_HTTP_EXIT` seam missing |
-| 12 | `cross-midnight` | Explicit skip: isolated clock fault missing |
-| 13 | `ai-review-failures` | Runs `census-review` HTTP transport tests; does not prove advice-checkpoint crash recovery |
+| 11 | `parent-exit` | Real parent HTTP trigger with an owned source reservation stopped mid-work; requires drain/reap accounting, no orphans and durable resumability, using the `ATHLETIC_FAULT_HTTP_EXIT` seam. Resume is accepted on the original invocation's journal growing across repeated inventories (or on completion with success); jurisdiction settlement inside the lane's bounded window is checked and echoed as evidence when reached, and its completion remains the qualification/national acceptance |
+| 12 | `cross-midnight` | Owned QEMU guest lane: two live HTTPS acquisitions across a natural guest midnight with journal readback; requires the VM tooling and staged feature-enabled artifacts |
+| 13 | `ai-review-failures` | Runs `census-review` HTTP transport tests plus the owned fault-proxy review phases; requires the approved local model servers at the two lane targets and skips when either proxy's upstream is unreachable |
 | 14 | `seal-refuses` | Empty-store CLI refusal names the jurisdiction, source-object and run-binding items with their exact details; does not exercise every unmet acceptance item |
 | 15 | `full-backup-restore` | Runs service `backup_restore` integration tests; not Restate recovery |
 | 16 | `golden-census-determinism` | Runs exact `rebuilding_the_fixture_store_reproduces_semantics_not_publication_identity` regression and retains its log; not full frozen real-capture/advice replay |
@@ -65,6 +91,11 @@ this directory. A narrower invoked test does not discharge the broader same-numb
 Scenario 10 also uses `restate-enospc-probe.sh`; its current helper prerequisites include Python.
 That existing harness implementation is not permission to implement census pipeline logic in Python.
 Do not convert a missing tool or inaccessible fault seam into simulated success.
+
+Handler calls from these wrappers follow the ingress contract: handlers with no input (`state`,
+`progress`, `inspection`) are invoked with `GET` and no body or `content-type`, because a JSON
+content-type on them is rejected with `400 input validation error: Expected body and content-type
+to be empty`; handlers that take input (`bind_run`, source submissions) use `POST` with a JSON body.
 
 Scenario 09 creates a fresh store child within its private capped mount. The probe rejects
 preexisting stores, inherited host mounts, missing size/isolation evidence and non-ENOSPC

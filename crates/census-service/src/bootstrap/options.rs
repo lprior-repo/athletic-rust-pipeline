@@ -167,7 +167,7 @@ fn parse_memory_budget(raw: String, options: &mut ServeOptions) -> Result<(), Bo
             ceiling: MEMORY_BUDGET_CEILING_GIB,
         });
     }
-    options.memory_budget_bytes = gib * 1024 * 1024 * 1024;
+    options.memory_budget_bytes = gib.saturating_mul(1024 * 1024 * 1024);
     Ok(())
 }
 

@@ -141,7 +141,6 @@ impl Fetcher {
         let cached = read_cache(&body_path, &meta_path, method, url, &representation)?;
         if let Some((meta, body)) = cached.as_ref() {
             if options.refresh {
-                // refresh requested; fall through to network
             } else if let Some(outcome) = self
                 .cached_outcome(method, url, meta, options, body.clone())
                 .await?
@@ -246,6 +245,10 @@ fn request_target(url: &str) -> Result<(String, String), FetchError> {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+#[path = "execute/attempt_helper_tests.rs"]
+mod attempt_helper_tests;
 
 #[cfg(test)]
 #[path = "execute/conditional_capture_tests.rs"]

@@ -163,41 +163,7 @@ impl<'a> Mapper<'a> {
             row.team.as_ref(),
             url,
         );
-        let mut members = Vec::new();
-        for (leg_index, member) in row.members.iter().enumerate() {
-            let Some(leg) = member.athlete.as_ref() else {
-                continue;
-            };
-            let order = member
-                .order
-                .unwrap_or_else(|| u32::try_from(leg_index.saturating_add(1)).unwrap_or(u32::MAX));
-            let mut published = RelayMember::new(order, leg.name.clone().unwrap_or_default());
-            let stored = self.athlete(
-                AthleteRow {
-                    name: leg.name.as_deref(),
-                    grade: member_grade(member),
-                    gender: context.event.gender,
-                    school: &school,
-                    sport: context.sport,
-                    school_year: context.school_year,
-                    net_id: leg.athletic_net_id,
-                    live_id: leg.athletic_live_id,
-                    entry: None,
-                    source_key: format!("{url}:row:{row_index}:leg:{leg_index}"),
-                },
-                self.origin.evidence(url),
-            );
-            match stored {
-                Some((athlete_id, _)) => {
-                    self.stats.legs = self.stats.legs.saturating_add(1);
-                    published = published.with_athlete(athlete_id);
-                }
-                None => {
-                    self.stats.rows_no_grade = self.stats.rows_no_grade.saturating_add(1);
-                }
-            }
-            members.push(published);
-        }
+        let members = self.relay_members(row, context, url, row_index, &school);
         let Some(mark) = row.mark.as_deref().and_then(parse_mark) else {
             self.stats.rows_no_mark = self.stats.rows_no_mark.saturating_add(1);
             return;
@@ -222,6 +188,56 @@ impl<'a> Mapper<'a> {
             .relay_results
             .entry(relay.id.as_str().to_owned())
             .or_insert(relay);
+    }
+
+    fn relay_members(
+        &mut self,
+        row: &FinisherRow,
+        context: &EventContext<'_>,
+        url: &str,
+        row_index: usize,
+        school: &SchoolId,
+    ) -> Vec<RelayMember> {
+        let mut members = Vec::new();
+        for (leg_index, member) in row.members.iter().enumerate() {
+            let Some(leg) = member.athlete.as_ref() else {
+                continue;
+            };
+            let fallback = u32::try_from(leg_index.saturating_add(1))
+                .map_or(u32::MAX, core::convert::identity);
+            let order = member.order.map_or(fallback, core::convert::identity);
+            let name = leg
+                .name
+                .clone()
+                .map_or(String::new(), core::convert::identity);
+            let mut published = RelayMember::new(order, name);
+            let stored = self.athlete(
+                AthleteRow {
+                    name: leg.name.as_deref(),
+                    grade: member_grade(member),
+                    gender: context.event.gender,
+                    school,
+                    sport: context.sport,
+                    school_year: context.school_year,
+                    net_id: leg.athletic_net_id,
+                    live_id: leg.athletic_live_id,
+                    entry: None,
+                    source_key: format!("{url}:row:{row_index}:leg:{leg_index}"),
+                },
+                self.origin.evidence(url),
+            );
+            match stored {
+                Some((athlete_id, _)) => {
+                    self.stats.legs = self.stats.legs.saturating_add(1);
+                    published = published.with_athlete(athlete_id);
+                }
+                None => {
+                    self.stats.rows_no_grade = self.stats.rows_no_grade.saturating_add(1);
+                }
+            }
+            members.push(published);
+        }
+        members
     }
 }
 

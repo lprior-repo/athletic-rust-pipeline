@@ -114,7 +114,7 @@ pub(super) fn admissions() -> Result<Check> {
     Ok(Check::violated(5, NAME, detail, failures))
 }
 
-const NON_ADAPTERS: [(&str, &str); 22] = [
+const NON_ADAPTERS: [(&str, &str); 23] = [
     (
         "applicability",
         "the per-jurisdiction source table the planner reads: data, with no origin to admit",
@@ -193,6 +193,10 @@ const NON_ADAPTERS: [(&str, &str); 22] = [
     (
         "lib",
         "the crate root: the module list itself, not an adapter",
+    ),
+    (
+        "convert",
+        "runs one external converter process under a byte cap and a deadline for the readers that need it; it admits no origin of its own",
     ),
 ];
 

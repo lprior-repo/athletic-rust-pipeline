@@ -116,13 +116,66 @@ fn compatible_positive_memory_metrics_at_budget_boundary_pass() -> Result<()> {
 }
 
 #[test]
-fn memory_just_above_tolerance_fails_independently_for_each_budget() -> Result<()> {
-    for label in ["peak RSS", "allocation count", "allocated bytes"] {
-        let old = measurement(Some(100.0), 1.0);
+fn memory_regressions_fail_independently_for_each_budget() -> Result<()> {
+    for label in ["allocation count", "allocated bytes"] {
+        let mut old = measurement(Some(100.0), 1.0);
+        set_memory(&mut old, label, Some(12000))?;
         let mut current = old.clone();
-        set_memory(&mut current, label, Some(106))?;
+        set_memory(&mut current, label, Some(12601))?;
         check!(gate_error(old, current)?.contains(&format!("{label} regression")));
     }
+    let mut old = measurement(Some(100.0), 1.0);
+    old.peak_rss_kib = Some(12000);
+    let mut current = old.clone();
+    current.peak_rss_kib = Some(14401);
+    check!(gate_error(old, current)?.contains("peak RSS regression"));
+    Ok(())
+}
+
+#[test]
+fn peak_rss_jitter_floor_absorbs_remeasurement_noise() -> Result<()> {
+    for (current, accepted) in [
+        (11676, true),
+        (12472, true),
+        (12856, true),
+        (14011, true),
+        (14012, false),
+    ] {
+        let mut old = measurement(Some(100.0), 1.0);
+        old.peak_rss_kib = Some(11676);
+        let mut measured = old.clone();
+        measured.peak_rss_kib = Some(current);
+        check!(eq; check_throughput(&baseline(old), &groups(measured), 0.05).is_ok(), accepted, "{current}");
+    }
+    Ok(())
+}
+
+#[test]
+fn peak_rss_jitter_floor_never_exceeds_the_baseline_measurement() -> Result<()> {
+    for (current, accepted) in [(199, true), (200, true), (201, false)] {
+        let mut old = measurement(Some(100.0), 1.0);
+        old.peak_rss_kib = Some(100);
+        let mut measured = old.clone();
+        measured.peak_rss_kib = Some(current);
+        check!(eq; check_throughput(&baseline(old), &groups(measured), 0.05).is_ok(), accepted, "{current}");
+    }
+    Ok(())
+}
+
+#[test]
+fn allocation_budgets_keep_the_exact_percentage_without_a_floor() -> Result<()> {
+    for label in ["allocation count", "allocated bytes"] {
+        let mut old = measurement(Some(100.0), 1.0);
+        set_memory(&mut old, label, Some(12000))?;
+        let mut measured = old.clone();
+        set_memory(&mut measured, label, Some(12800))?;
+        check!(gate_error(old, measured)?.contains(&format!("{label} regression")));
+    }
+    let mut old = measurement(Some(100.0), 1.0);
+    old.peak_rss_kib = Some(12000);
+    let mut measured = old.clone();
+    measured.peak_rss_kib = Some(12800);
+    check_throughput(&baseline(old), &groups(measured), 0.05)?;
     Ok(())
 }
 
@@ -220,8 +273,8 @@ fn absent_old_or_unknown_memory_backend_refuses_comparison_even_against_itself()
 }
 
 #[test]
-fn integer_memory_budget_preserves_exact_five_percent_above_float_precision() -> Result<()> {
-    for label in ["peak RSS", "allocation count", "allocated bytes"] {
+fn integer_memory_budget_preserves_exact_boundary_above_float_precision() -> Result<()> {
+    for label in ["allocation count", "allocated bytes"] {
         let mut old = measurement(Some(100.0), 1.0);
         let mut current = old.clone();
         set_memory(&mut old, label, Some(72_057_594_037_928_040))?;
@@ -230,6 +283,14 @@ fn integer_memory_budget_preserves_exact_five_percent_above_float_precision() ->
         set_memory(&mut current, label, Some(75_660_473_739_824_443))?;
         check!(gate_error(old, current)?.contains(&format!("{label} regression")));
     }
+    let mut old = measurement(Some(100.0), 1.0);
+    old.peak_rss_kib = Some(72_057_594_037_928_040);
+    let mut current = old.clone();
+    current.peak_rss_kib = Some(86_469_112_845_513_648);
+    check_throughput(&baseline(old.clone()), &groups(current.clone()), 0.05)?;
+    let mut beyond = old.clone();
+    beyond.peak_rss_kib = Some(86_469_112_845_513_649);
+    check!(gate_error(old, beyond)?.contains("peak RSS regression"));
     Ok(())
 }
 

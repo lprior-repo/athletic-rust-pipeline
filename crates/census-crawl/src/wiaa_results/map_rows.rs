@@ -19,12 +19,7 @@ pub(super) fn record_row(
     row: &ParsedRow,
     row_index: usize,
 ) -> usize {
-    writer.stats.rows = writer.stats.rows.saturating_add(1);
-    if row.grade.is_some() {
-        writer.stats.rows_with_grade = writer.stats.rows_with_grade.saturating_add(1);
-    }
-    if row.school.trim().is_empty() {
-        writer.stats.rows_without_school = writer.stats.rows_without_school.saturating_add(1);
+    if !account_row(writer, row) {
         return 0;
     }
     let Some(school_id) = resolve_school(row, writer.index, writer.resolved, writer.stats) else {
@@ -44,6 +39,29 @@ pub(super) fn record_row(
         writer.stats.relay_legs = writer.stats.relay_legs.saturating_add(row.legs.len());
         return record_relay_team(writer, context, row, row_index, &school_id, &team_id);
     }
+    record_individual(writer, context, row, row_index, &school_id, &team_id)
+}
+
+fn account_row(writer: &mut RowWriter<'_>, row: &ParsedRow) -> bool {
+    writer.stats.rows = writer.stats.rows.saturating_add(1);
+    if row.grade.is_some() {
+        writer.stats.rows_with_grade = writer.stats.rows_with_grade.saturating_add(1);
+    }
+    if row.school.trim().is_empty() {
+        writer.stats.rows_without_school = writer.stats.rows_without_school.saturating_add(1);
+        return false;
+    }
+    true
+}
+
+fn record_individual(
+    writer: &mut RowWriter<'_>,
+    context: &MeetContext<'_>,
+    row: &ParsedRow,
+    row_index: usize,
+    school_id: &SchoolId,
+    team_id: &TeamId,
+) -> usize {
     let Some(grade) = row.grade else {
         return 0;
     };
@@ -54,7 +72,7 @@ pub(super) fn record_row(
     let Some((athlete_id, source_athlete)) = record_athlete(
         writer,
         context,
-        &school_id,
+        school_id,
         &row.name,
         grade,
         &key,
@@ -66,7 +84,7 @@ pub(super) fn record_row(
         writer,
         context,
         row,
-        &team_id,
+        team_id,
         MemberFacts {
             athlete: athlete_id,
             source: source_athlete,

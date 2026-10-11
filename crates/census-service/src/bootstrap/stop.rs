@@ -92,3 +92,22 @@ async fn wait_for_ctrl_c() -> Result<(), BootstrapError> {
             source,
         })
 }
+
+pub(super) async fn await_stop(
+    reason: Arc<AtomicU8>,
+    over_budget: Arc<tokio::sync::Notify>,
+    shutdown: impl Future<Output = ()> + Send + 'static,
+    endpoint_done: &mut tokio::sync::oneshot::Receiver<()>,
+) -> bool {
+    tokio::select! {
+        () = stop_watch(Arc::clone(&reason), shutdown) => false,
+        () = over_budget.notified() => {
+            reason.store(StopReason::MemoryBudget.to_raw(), Ordering::SeqCst);
+            false
+        }
+        _ = &mut *endpoint_done => {
+            reason.store(StopReason::ServerExit.to_raw(), Ordering::SeqCst);
+            true
+        }
+    }
+}

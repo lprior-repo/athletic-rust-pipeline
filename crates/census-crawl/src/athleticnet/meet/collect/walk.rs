@@ -28,7 +28,14 @@ impl MeetRun {
             if urls.journaled(&self.done) {
                 continue;
             }
-            let Some(documents) = self.documents(ctx, options, &urls).await? else {
+            let documents = match self.documents(ctx, options, &urls).await {
+                Ok(documents) => documents,
+                Err(error) => {
+                    self.flush(ctx)?;
+                    return Err(error);
+                }
+            };
+            let Some(documents) = documents else {
                 continue;
             };
             let (stored, counts) =

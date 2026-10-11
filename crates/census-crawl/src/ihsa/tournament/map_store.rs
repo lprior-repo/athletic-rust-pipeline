@@ -54,18 +54,19 @@ fn stage(
     batch: &mut RowBatch<'_>,
     held: super::map::Accumulator,
 ) -> CrawlResult<EntityCounts> {
-    let schools = drain(held.schools)?;
-    let athletes = drain(held.athletes)?;
-    let (cases, unsupported) = held.unsupported.into_parts();
-    let unsupported_cohorts = cases.len();
-    append_new(ctx, batch, Table::ReviewCases, cases, APPLICATION_PHASE)?;
-    append_new(
-        ctx,
-        batch,
-        Table::SourceObservations,
+    let super::map::Accumulator {
+        schools,
+        meets,
+        teams,
+        athletes,
+        events,
+        performances,
+        relay_results,
         unsupported,
-        APPLICATION_PHASE,
-    )?;
+    } = held;
+    let schools = drain(schools)?;
+    let athletes = drain(athletes)?;
+    let unsupported_cohorts = stage_review(ctx, batch, unsupported)?;
     append_new(
         ctx,
         batch,
@@ -75,44 +76,44 @@ fn stage(
     )?;
     Ok(EntityCounts {
         schools: append_new(ctx, batch, Table::Schools, schools, APPLICATION_PHASE)?,
-        meets: append_new(
-            ctx,
-            batch,
-            Table::Meets,
-            drain(held.meets)?,
-            APPLICATION_PHASE,
-        )?,
-        teams: append_new(
-            ctx,
-            batch,
-            Table::Teams,
-            drain(held.teams)?,
-            APPLICATION_PHASE,
-        )?,
+        meets: append_new(ctx, batch, Table::Meets, drain(meets)?, APPLICATION_PHASE)?,
+        teams: append_new(ctx, batch, Table::Teams, drain(teams)?, APPLICATION_PHASE)?,
         athletes: append_new(ctx, batch, Table::Athletes, athletes, APPLICATION_PHASE)?,
-        events: append_new(
-            ctx,
-            batch,
-            Table::Events,
-            drain(held.events)?,
-            APPLICATION_PHASE,
-        )?,
+        events: append_new(ctx, batch, Table::Events, drain(events)?, APPLICATION_PHASE)?,
         performances: append_new(
             ctx,
             batch,
             Table::Performances,
-            drain(held.performances)?,
+            drain(performances)?,
             APPLICATION_PHASE,
         )?,
         relay_results: append_new(
             ctx,
             batch,
             Table::RelayResults,
-            drain(held.relay_results)?,
+            drain(relay_results)?,
             APPLICATION_PHASE,
         )?,
         unsupported_cohorts,
     })
+}
+
+fn stage_review(
+    ctx: &AdapterContext<'_>,
+    batch: &mut RowBatch<'_>,
+    unsupported: crate::cohort::UnsupportedCohortRows,
+) -> CrawlResult<usize> {
+    let (cases, unsupported) = unsupported.into_parts();
+    let unsupported_cohorts = cases.len();
+    append_new(ctx, batch, Table::ReviewCases, cases, APPLICATION_PHASE)?;
+    append_new(
+        ctx,
+        batch,
+        Table::SourceObservations,
+        unsupported,
+        APPLICATION_PHASE,
+    )?;
+    Ok(unsupported_cohorts)
 }
 
 fn observations(

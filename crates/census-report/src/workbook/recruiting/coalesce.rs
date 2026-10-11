@@ -12,8 +12,11 @@ pub(in crate::workbook) fn claims(observations: &[CanonicalCoach]) -> Vec<Canoni
                 output.push(observation.clone());
             }
             std::collections::hash_map::Entry::Occupied(occupied) => {
-                let index = *occupied.get();
-                output[index].merge(observation.clone());
+                let position = *occupied.get();
+                let Some(held) = output.get_mut(position) else {
+                    continue;
+                };
+                held.merge(observation.clone());
             }
         }
     }

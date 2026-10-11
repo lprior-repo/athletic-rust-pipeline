@@ -1,16 +1,7 @@
-use athleticnet_browser::clock::SystemClock;
-use athleticnet_browser::BrowserSettings;
-
-use crate::spawn::Spawner;
-use census_crawl::net::bridge::BrowserLane;
-use census_store::Store;
-use std::sync::Arc;
-
 use restate_sdk::prelude::*;
-use tokio::sync::Semaphore;
 
 use crate::census::CollectOptions;
-use census_store::clock::Clock;
+
 pub(crate) fn run_key(job: &str, parts: &[&str], generation: &ExportGeneration) -> String {
     let mut key = job.to_string();
     for part in parts {
@@ -145,6 +136,7 @@ pub fn workbook_request_key(
 
 mod browser_session;
 mod census;
+mod endpoint;
 mod history_stage;
 mod ingest;
 mod ingest_post;
@@ -196,6 +188,9 @@ pub use browser_session::{
     BrowserSessionStatus, DrainCounts, SESSION_KEY,
 };
 pub use census::{Census, CensusClient, CensusIngressClient};
+pub use endpoint::{
+    build_endpoint, validate_concurrency, ConcurrencyTooLarge, MAX_ENDPOINT_CONCURRENCY,
+};
 pub use ingest::{Ingest, IngestClient, IngestIngressClient};
 pub use jobs::apply_observations;
 pub use jurisdiction::{
@@ -255,70 +250,12 @@ pub(super) fn options_for_request(
 
 pub(super) use journaled::{journaled_today, journaled_today_workflow};
 
-use limits::census_service;
-
-pub const MAX_ENDPOINT_CONCURRENCY: usize = Semaphore::MAX_PERMITS;
-
-#[derive(Debug, thiserror::Error)]
-#[error("max-concurrent {value} is outside 1..={ceiling}")]
-pub struct ConcurrencyTooLarge {
-    pub value: usize,
-    pub ceiling: usize,
-}
-
-pub fn validate_concurrency(max_concurrent: usize) -> Result<usize, ConcurrencyTooLarge> {
-    if max_concurrent == 0 || max_concurrent > MAX_ENDPOINT_CONCURRENCY {
-        return Err(ConcurrencyTooLarge {
-            value: max_concurrent,
-            ceiling: MAX_ENDPOINT_CONCURRENCY,
-        });
-    }
-    Ok(max_concurrent)
-}
-
-#[tracing::instrument(skip_all, fields(max_concurrent))]
-pub fn build_endpoint(
-    store: Arc<Store>,
-    max_concurrent: usize,
-    region: Arc<Spawner>,
-    serves_lane: Option<BrowserSettings>,
-    uses_lane: Option<BrowserLane>,
-) -> Result<Endpoint, ConcurrencyTooLarge> {
-    let max_concurrent = validate_concurrency(max_concurrent)?;
-    let clock: Arc<dyn Clock> = Arc::new(census_store::clock::SystemClock);
-    let load = Arc::new(Semaphore::new(max_concurrent));
-    let jobs = Jobs::new(Arc::clone(&store), load, Arc::clone(&region));
-    let jurisdiction = JurisdictionCensus::new(Arc::clone(&store), Arc::clone(&clock), uses_lane);
-    let mut builder = Endpoint::builder()
-        .bind(census_service(Census::new(
-            Arc::clone(&store),
-            Arc::clone(&clock),
-            jobs.clone(),
-        )))
-        .bind(census_service(Consolidate::new(jobs.clone())))
-        .bind(census_service(Report::new(jobs.clone())))
-        .bind(census_service(Bests::new(jobs.clone())))
-        .bind(census_service(Workbook::new(jobs.clone())))
-        .bind(census_service(SchoolAddressJoin::new(jobs.clone())))
-        .bind(census_service(Ingest::new(
-            Arc::clone(&store),
-            Arc::clone(&clock),
-            Arc::clone(&region),
-        )))
-        .bind(census_service(Sweep::new(
-            Arc::clone(&store),
-            Arc::clone(&clock),
-            Arc::clone(&region),
-        )))
-        .bind(census_service(TeamsSource::new(jurisdiction.clone(), jobs)))
-        .bind(census_service(jurisdiction))
-        .bind(census_service(NationalCensus::new(clock)));
-    if let Some(settings) = serves_lane {
-        builder = builder.bind(BrowserSession::new(settings, Arc::new(SystemClock)));
-    }
-    let endpoint = builder.build();
-    Ok(endpoint)
-}
+#[cfg(test)]
+use crate::spawn::Spawner;
+#[cfg(test)]
+use census_store::Store;
+#[cfg(test)]
+use std::sync::Arc;
 
 #[cfg(test)]
 mod tests;

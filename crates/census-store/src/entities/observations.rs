@@ -21,13 +21,7 @@ impl Entity for RelayResult {
     }
 
     fn merge(&mut self, other: Self) {
-        if matches!(self.mark, Mark::Raw(_)) && !matches!(other.mark, Mark::Raw(_)) {
-            self.mark = other.mark.clone();
-        }
-        if self.mark != other.mark && !matches!(other.mark, Mark::Raw(_)) {
-            let conflict = scalar_conflict(self.id.as_str(), "mark", &self.mark, &other.mark);
-            record(&mut self.retained_conflicts, conflict);
-        }
+        merge_relay_mark(self, &other);
         self.place = merge_scalar(
             self.id.as_str(),
             &mut self.retained_conflicts,
@@ -56,32 +50,44 @@ impl Entity for RelayResult {
             .retained_conflicts
             .into_iter()
             .for_each(|conflict| record(&mut self.retained_conflicts, conflict));
-        other.members.into_iter().for_each(|member| {
-            let order = member.order;
-            match self.members.iter_mut().find(|held| held.order == order) {
-                None => self.members.push(member),
-                Some(held) => {
-                    if same_spelling(&held.name_as_published, &member.name_as_published) {
-                        if held.athlete.is_none() {
-                            held.athlete = member.athlete;
-                        } else if let (Some(kept), Some(incoming)) =
-                            (&held.athlete, &member.athlete)
-                        {
-                            if kept != incoming {
-                                let conflict =
-                                    member_conflict(self.id.as_str(), order, held, &member);
-                                record(&mut self.retained_conflicts, conflict);
-                            }
-                        }
-                    } else {
-                        let conflict = member_conflict(self.id.as_str(), order, held, &member);
-                        record(&mut self.retained_conflicts, conflict);
-                    }
-                }
-            }
-        });
+        absorb_relay_members(self, other.members);
         self.members.sort_by_key(|member| member.order);
         super::union_vec(&mut self.evidence, other.evidence);
+    }
+}
+
+fn merge_relay_mark(entity: &mut RelayResult, other: &RelayResult) {
+    if matches!(entity.mark, Mark::Raw(_)) && !matches!(other.mark, Mark::Raw(_)) {
+        entity.mark = other.mark.clone();
+    }
+    if entity.mark != other.mark && !matches!(other.mark, Mark::Raw(_)) {
+        let conflict = scalar_conflict(entity.id.as_str(), "mark", &entity.mark, &other.mark);
+        record(&mut entity.retained_conflicts, conflict);
+    }
+}
+
+fn absorb_relay_members(entity: &mut RelayResult, members: Vec<RelayMember>) {
+    for member in members {
+        let order = member.order;
+        match entity.members.iter_mut().find(|held| held.order == order) {
+            None => entity.members.push(member),
+            Some(held) => {
+                if same_spelling(&held.name_as_published, &member.name_as_published) {
+                    if held.athlete.is_none() {
+                        held.athlete = member.athlete;
+                    } else if let (Some(kept), Some(incoming)) = (&held.athlete, &member.athlete) {
+                        if kept != incoming {
+                            let conflict =
+                                member_conflict(entity.id.as_str(), order, held, &member);
+                            record(&mut entity.retained_conflicts, conflict);
+                        }
+                    }
+                } else {
+                    let conflict = member_conflict(entity.id.as_str(), order, held, &member);
+                    record(&mut entity.retained_conflicts, conflict);
+                }
+            }
+        }
     }
 }
 
@@ -94,7 +100,7 @@ fn merge_scalar<T: Clone + PartialEq + std::fmt::Debug>(
 ) -> Option<T> {
     if let (Some(kept_value), Some(dropped_value)) = (&kept, &dropped) {
         if kept_value != dropped_value {
-            let conflict = scalar_conflict(entity_id, field, kept_value, dropped_value);
+            let conflict = scalar_conflict(entity_id, field, &kept, &dropped);
             record(conflicts, conflict);
         }
     }

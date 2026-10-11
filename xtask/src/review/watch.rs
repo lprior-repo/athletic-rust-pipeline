@@ -202,7 +202,7 @@ fn rfc3339_now() -> Result<String> {
 }
 
 fn rfc3339(unix_secs: u64) -> String {
-    let days = (unix_secs / 86_400) as i64;
+    let days = unix_secs / 86_400;
     let of_day = unix_secs % 86_400;
     let (year, month, day) = civil_from_days(days);
     format!(
@@ -213,91 +213,42 @@ fn rfc3339(unix_secs: u64) -> String {
     )
 }
 
-fn civil_from_days(days: i64) -> (i64, u32, u32) {
-    let shifted = days + 719_468;
+fn civil_from_days(days: u64) -> (u64, u64, u64) {
+    let shifted = days.saturating_add(719_468);
     let era = shifted.div_euclid(146_097);
     let day_of_era = shifted.rem_euclid(146_097);
-    let year_of_era =
-        (day_of_era - day_of_era / 1460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
-    let year = year_of_era + era * 400;
-    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
-    let month_prime = (5 * day_of_year + 2) / 153;
-    let day = day_of_year - (153 * month_prime + 2) / 5 + 1;
+    let year_of_era = day_of_era
+        .saturating_sub(day_of_era / 1460)
+        .saturating_add(day_of_era / 36_524)
+        .saturating_sub(day_of_era / 146_096)
+        / 365;
+    let year = year_of_era.saturating_add(era.saturating_mul(400));
+    let day_of_year = day_of_era.saturating_sub(
+        year_of_era
+            .saturating_mul(365)
+            .saturating_add(year_of_era / 4)
+            .saturating_sub(year_of_era / 100),
+    );
+    let month_prime = day_of_year.saturating_mul(5).saturating_add(2) / 153;
+    let day = day_of_year
+        .saturating_sub(month_prime.saturating_mul(153).saturating_add(2) / 5)
+        .saturating_add(1);
     let month = if month_prime < 10 {
-        month_prime + 3
+        month_prime.saturating_add(3)
     } else {
-        month_prime - 9
+        month_prime.saturating_sub(9)
     };
     (
-        if month <= 2 { year + 1 } else { year },
-        month as u32,
-        day as u32,
+        if month <= 2 {
+            year.saturating_add(1)
+        } else {
+            year
+        },
+        month,
+        day,
     )
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn epoch_formats_as_utc() {
-        assert_eq!(rfc3339(0), "1970-01-01T00:00:00Z");
-        assert_eq!(rfc3339(1_000_000_000), "2001-09-09T01:46:40Z");
-        assert_eq!(rfc3339(1_600_000_000), "2020-09-13T12:26:40Z");
-    }
-
-    #[test]
-    fn leap_day_formats() {
-        assert_eq!(rfc3339(1_582_934_400), "2020-02-29T00:00:00Z");
-    }
-
-    #[test]
-    fn the_admin_query_endpoint_joins_once() {
-        assert_eq!(
-            admin_query_endpoint("http://127.0.0.1:19095/"),
-            "http://127.0.0.1:19095/query"
-        );
-        assert_eq!(
-            admin_query_endpoint("http://127.0.0.1:19095"),
-            "http://127.0.0.1:19095/query"
-        );
-    }
-
-    #[test]
-    fn the_written_block_round_trips_through_the_review_parser() {
-        let summary = json!({
-            "sampled_at": "2026-10-09T16:11:17Z",
-            "season": "2026-27",
-            "revision": 1,
-            "jurisdiction_sweeps": 49,
-            "jurisdiction_total": 49,
-            "source_objects_owed": 63605,
-            "silent_sources": 0,
-            "unreadable": 0,
-            "invocations": Value::Null,
-            "owed_sets": [
-                {"count": 7, "stages": "rosters, meets_history, results_history"},
-                {"count": 40, "stages": "teams, rosters, meets_history"}
-            ]
-        });
-        let block = block_text(&summary);
-        assert!(!block.contains("null"));
-        assert!(!block.contains('"'));
-        let parsed = crate::review::build::latest_sample(&block)
-            .map_or(Value::Null, core::convert::identity);
-        assert_eq!(
-            parsed.get("sampled_at"),
-            Some(&json!("2026-10-09T16:11:17Z"))
-        );
-        assert_eq!(parsed.get("sweeps_owed"), Some(&json!(49)));
-        assert_eq!(parsed.get("sweeps_total"), Some(&json!(49)));
-        assert_eq!(parsed.get("source_objects_owed"), Some(&json!(63605)));
-        assert_eq!(parsed.get("invocations"), Some(&Value::Null));
-        assert_eq!(parsed.pointer("/owed_sets/0/count"), Some(&json!(7)));
-        assert_eq!(parsed.pointer("/owed_sets/1/count"), Some(&json!(40)));
-        assert_eq!(
-            parsed.pointer("/owed_sets/1/stages"),
-            Some(&json!("teams, rosters, meets_history"))
-        );
-    }
-}
+#[path = "watch_tests.rs"]
+mod tests;

@@ -50,10 +50,21 @@ impl AthleteVerdict {
     }
 
     pub fn parse(value: &str) -> Option<Self> {
-        match value {
-            "same_person" => Some(Self::SamePerson),
-            "different_person" => Some(Self::DifferentPerson),
-            "insufficient_evidence" => Some(Self::InsufficientEvidence),
+        let mut normalized = [0u8; 32];
+        let mut len = 0usize;
+        for byte in value.trim().bytes() {
+            let byte = match byte {
+                b'-' | b'_' | b' ' | b'\t' | b'\n' | b'\r' => continue,
+                byte => byte.to_ascii_lowercase(),
+            };
+            let slot = normalized.get_mut(len)?;
+            *slot = byte;
+            len = len.saturating_add(1);
+        }
+        match normalized.get(..len)? {
+            b"sameperson" => Some(Self::SamePerson),
+            b"differentperson" => Some(Self::DifferentPerson),
+            b"insufficientevidence" => Some(Self::InsufficientEvidence),
             _ => None,
         }
     }

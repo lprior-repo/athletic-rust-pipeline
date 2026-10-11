@@ -74,9 +74,8 @@ pub fn assert_source_results(store: &Store, corpus: &Corpus) -> Result<()> {
                     let round = event.round.as_deref().map_or("<none>", |round| round);
                     let row_key = format!("{url}:{}:{round}:{ordinal}", event.label);
                     let mut key = row_key.clone();
-                    let leg_position = position.map(|position| {
+                    let leg_position = position.inspect(|position| {
                         key.push_str(&format!(":leg{position}"));
-                        position
                     });
                     if let Some(position) = leg_position {
                         ensure!(

@@ -110,11 +110,10 @@ async fn discover_lists(
     let text = page.text();
     let chunks = text.split("href=\"");
     for chunk in chunks.skip(1) {
-        let parts: Vec<&str> = chunk.splitn(2, "\"").collect();
-        if parts.is_empty() {
-            continue;
-        }
-        let href = parts[0];
+        let href = chunk
+            .split('"')
+            .next()
+            .map_or(chunk, core::convert::identity);
         if href.starts_with("/lists/") {
             urls.push(format!("https://{host}{href}"));
         }

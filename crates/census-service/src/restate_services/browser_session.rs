@@ -188,6 +188,18 @@ impl BrowserSession {
             self.starting.store(false, Ordering::SeqCst);
             TerminalError::new(format!("the browser lane could not start: {error}"))
         })?;
+        if self.epoch.load(Ordering::SeqCst) != epoch {
+            self.starting.store(false, Ordering::SeqCst);
+            let (_, error) = manager.shutdown().await;
+            let detail = error.map_or_else(String::new, |error| {
+                format!("; the launched manager reported: {error}")
+            });
+            return Err(TerminalError::new(format!(
+                "the browser launch was superseded by a stop before it could be installed, so the \
+                 launched process was shut down instead of installed{detail}"
+            ))
+            .into());
+        }
         *self.manager.lock().await = Some(Arc::new(manager));
         self.starting.store(false, Ordering::SeqCst);
         Ok(Json(self.reading(&key).await))

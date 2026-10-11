@@ -108,6 +108,12 @@ fn medley_relay_and_modifier_labels_never_fall_back_to_a_distance(
         "200 Meter Hurdles",
         "3000m Race Walk",
         "3000 Meter Race Walk",
+        "3000m Race Walking",
+        "3000 Meter Race Walking",
+        "3000m Racewalker",
+        "3000m Race Walkers",
+        "200 Meter Hurdling",
+        "3000m Walking",
     ] {
         let got = EventKind::from_source_label(label);
         check!(
@@ -126,6 +132,12 @@ fn medley_relay_and_modifier_labels_never_fall_back_to_a_distance(
         "200 Meter Hurdles",
         "3000m Race Walk",
         "3000 Meter Race Walk",
+        "3000m Race Walking",
+        "3000 Meter Race Walking",
+        "3000m Racewalker",
+        "3000m Race Walkers",
+        "200 Meter Hurdling",
+        "3000m Walking",
     ] {
         check!(
             matches!(

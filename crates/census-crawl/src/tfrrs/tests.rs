@@ -631,8 +631,8 @@ fn metric_marks_without_conv_mint_exact_canonical_distance() -> TestResult {
         .filter_map(|athlete| {
             athlete
                 .observed_grades
-                .iter()
-                .find_map(|grade| Some(grade.grade.get()))
+                .first()
+                .map(|grade| grade.grade.get())
         })
         .collect();
     grades.sort();

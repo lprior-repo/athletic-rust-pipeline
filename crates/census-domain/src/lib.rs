@@ -11,15 +11,6 @@ pub mod jurisdiction;
 pub mod model;
 pub mod school_directory;
 pub mod school_index;
-pub mod sort;
-pub mod join;
-pub mod incidence;
-pub mod label_propagation;
-pub mod projection;
-pub mod alias_union;
-pub mod performance_join;
-pub mod pr_reducer;
-pub mod verifier;
 
 pub use core_scope::{is_core_source, NON_CORE_SOURCE_IDS};
 pub use error::DomainError;

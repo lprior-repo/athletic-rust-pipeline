@@ -95,9 +95,10 @@ if ! jq -e --arg binary "$BINARY" --arg hash "$BINARY_HASH" --arg ledger "$LEDGE
         all(.[]; .working_directory == $work))
     and ([.facts.owner.store, .facts.rivals[].store] | (unique | length) == 3)
     and (.facts.rivals | length == 2 and all(.[]; refused($certificate.origin; $certificate.facts.owner.pid)))
-    and (.requests | length == 2 and map(.path) == ["/robots.txt", "/owner-target"]
+    and (.requests | length == 2 and map(.path) == ["/owner-start", "/owner-target"]
+        and map(.response_status) == [302, 200]
         and all(.[]; .method == "GET" and .user_agent == "CensusOriginBudgetQualification/owner"
-            and .response_status == 200 and .end_ns >= .start_ns))
+            and .end_ns >= .start_ns))
     and .measurements.max_inflight == 1 and .measurements.max_burst == 1
     and .measurements.burst_window_ns == 950000000
     and .measurements.min_spacing_ns >= 950000000
@@ -106,8 +107,9 @@ if ! jq -e --arg binary "$BINARY" --arg hash "$BINARY_HASH" --arg ledger "$LEDGE
     and .measurements.admission_intervals == 1
     and .measurements.admissions_per_second <= (1000 / 950)
     and .facts.cache.metadata.status == 200 and .facts.cache.metadata.method == "GET"
-    and .facts.cache.metadata.url == (.origin + "/owner-target")
-    and .facts.cache.metadata.response_url == .facts.cache.metadata.url
+    and .facts.cache.metadata.url == (.origin + "/owner-start")
+    and .facts.cache.metadata.response_url == (.origin + "/owner-target")
+    and .facts.cache.metadata.redirects == [{status: 302, url: .facts.cache.metadata.response_url}]
     and .facts.cache.body_sha256 == .facts.cache.metadata.content_digest
     and (.facts.cache.metadata.fetched_at | type == "string" and length > 0)
 ' "$CERTIFICATE" >/dev/null; then
@@ -138,5 +140,5 @@ if ! jq -e --arg body "$BODY_HASH" --arg meta "$META_HASH" \
 fi
 
 echo "PROOF: $CERTIFICATE"
-echo "PASS: three independent native CLI acquisition workflows shared one origin; two typed owner-PID refusals emitted zero physical traffic; observed robots/target 200 admissions met 1000ms pacing (50ms clock tolerance), peak in-flight 1 and burst 1; owner lock released and cache replay preserved exact capture facts"
+echo "PASS: three independent native CLI acquisition workflows shared one origin; two typed owner-PID refusals emitted zero physical traffic; observed start-redirect/target admissions met 1000ms pacing (50ms clock tolerance), peak in-flight 1 and burst 1; owner lock released and cache replay preserved exact capture facts"
 echo "SCOPE: one-host CLI workflows with a common production var/locks root; no multiple serving Restate endpoints or distributed coordination claim"

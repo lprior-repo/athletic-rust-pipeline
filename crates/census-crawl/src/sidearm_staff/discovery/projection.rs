@@ -161,9 +161,9 @@ fn owned_coaches(
         .filter_map(|row| {
             super::super::map::coach_entity(school_id, row, facts).map(|mut coach| {
                 let listing = crate::coach_directories::PublishedListing {
-                    role: row.role.to_string(),
-                    program: row.sport.to_string(),
-                    source: SOURCE_ID.to_string(),
+                    role: &row.role,
+                    program: &row.sport,
+                    source: SOURCE_ID,
                     school_year,
                 };
                 let retained = crate::coach_directories::StaffCapture {
@@ -172,7 +172,7 @@ fn owned_coaches(
                     sha256: &capture.content_digest,
                 };
                 if let Some(evidence) =
-                    crate::coach_directories::listing_appointment(&coach, &listing, &retained)?
+                    crate::coach_directories::listing_appointment(&coach, listing, retained)?
                 {
                     coach.tenure_evidence.push(evidence);
                 }

@@ -35,7 +35,9 @@ pub(super) fn record_quarantines(
                 .map_err(|_| invariant("quarantine locator allocation"))?;
             report.unfinished.push(url.clone());
             report.note(format!("quarantined meet page {url}: {reason}"));
-            let counters = report.resolution.unwrap_or(ResolutionCounters::default());
+            let counters = report
+                .resolution
+                .map_or(Default::default(), core::convert::identity);
             let quarantined = counters
                 .quarantined
                 .checked_add(1)

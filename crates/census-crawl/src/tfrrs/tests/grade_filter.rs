@@ -89,14 +89,15 @@ fn collect_snapshot(url: &str) -> TestResult<CohortSnapshot> {
             let mut performances = store.scan::<CanonicalPerformance>(Table::Performances)?;
             performances.sort_by(|left, right| left.id.as_str().cmp(right.id.as_str()));
             let mut observations = store.scan::<SourceObservation>(Table::SourceObservations)?;
-            observations
-                .sort_by_key(|observation| serde_json::to_string(observation).unwrap_or_default());
+            observations.sort_by_key(|observation| {
+                serde_json::to_string(observation).map_or(String::new(), |value| value)
+            });
             let grades_note = report
                 .notes
                 .iter()
                 .find(|note| note.contains("grade-less rows naming"))
                 .cloned()
-                .unwrap_or_default();
+                .map_or(String::new(), |note| note);
             Ok(CohortSnapshot {
                 athletes: normalized(&serde_json::to_string(&athletes)?),
                 performances: normalized(&serde_json::to_string(&performances)?),
@@ -174,7 +175,7 @@ fn tfrrs_published_row_grade_survives_any_query_year_filter() -> TestResult {
         .iter()
         .find(|athlete| {
             serde_json::to_string(athlete)
-                .unwrap_or_default()
+                .map_or(String::new(), |value| value)
                 .contains("9072031")
         })
         .ok_or("the published sophomore control is admitted")?;

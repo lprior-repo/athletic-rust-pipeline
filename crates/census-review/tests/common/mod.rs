@@ -9,6 +9,8 @@ use census_domain::UsJurisdiction;
 use census_review::Adjudication;
 use census_store::{Store, Table};
 
+pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 pub fn identity_case() -> ReviewCase {
     ReviewCase::pending(
         ATHLETE_IDENTITY_FAMILY,
@@ -39,7 +41,7 @@ pub fn packet_for(case: &ReviewCase, positive: bool, flags: &[&str]) -> ReviewPa
         packet = packet.with_evidence(ReviewEvidenceFact::new(
             "census",
             "flag",
-            "shared_source_identity: one provider id is on both rows",
+            "identity_corroborated: one provider id is on both rows",
         ));
     }
     for flag in flags {
@@ -63,12 +65,11 @@ pub fn proposal(case: &ReviewCase, answer: &str) -> ReviewVerdict {
     }
 }
 
-pub fn school_id(store: &Store, name: &str) -> SchoolId {
-    let (school, id) = CanonicalSchool::new(UsJurisdiction::Wisconsin, name, normalize_name(name));
-    store
-        .append(Table::Schools, &school)
-        .expect("school appends");
-    id
+pub fn school_id(store: &Store, name: &str) -> TestResult<SchoolId> {
+    let (school, id) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, name, normalize_name(name), None);
+    store.append(Table::Schools, &school)?;
+    Ok(id)
 }
 
 pub fn athlete_row(
@@ -78,18 +79,25 @@ pub fn athlete_row(
     gender: Gender,
     object: &str,
     grade: u8,
-) -> CanonicalAthlete {
+) -> TestResult<CanonicalAthlete> {
     let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, object);
     let mut athlete = CanonicalAthlete::new(school, name, GradYear::CO2027, gender, source);
+    athlete
+        .evidence
+        .push(census_domain::model::Evidence::parsed(
+            SourceRef::new(
+                "captured_roster",
+                Some(format!("https://wi.milesplit.com/athletes/{object}")),
+            ),
+            "2026-09-22",
+        ));
     athlete.observed_grades.push(ObservedGrade {
-        grade: Grade::new(grade).expect("fixture grade"),
-        school_year: SchoolYear::new(2025).expect("2025 is a season"),
+        grade: Grade::new(grade).ok_or("fixture grade")?,
+        school_year: SchoolYear::new(2025).ok_or("2025 is a season")?,
         source: SourceRef::new("wiaa_results", None),
     });
-    store
-        .append(Table::Athletes, &athlete)
-        .expect("athlete appends");
-    athlete
+    store.append(Table::Athletes, &athlete)?;
+    Ok(athlete)
 }
 
 pub fn rationale_of(adjudication: Adjudication) -> Option<&'static str> {

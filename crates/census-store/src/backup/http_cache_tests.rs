@@ -65,6 +65,7 @@ fn a_healthy_cache_reports_no_issues() -> TestResult {
     write_archived_capture(&http, &hex(body), &meta)?;
     std::fs::create_dir_all(http.join("quarantine"))?;
     std::fs::write(http.join("livekey.meta.json.lock"), b"")?;
+    std::fs::write(http.join("archive-capacity.lock"), b"")?;
     let issues = http_cache_integrity(root.path())?;
     check!(issues.is_empty(), "healthy cache produced: {issues:?}");
     Ok(())

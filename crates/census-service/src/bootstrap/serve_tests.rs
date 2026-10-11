@@ -64,7 +64,9 @@ fn an_endpoint_that_finishes_inside_the_grace_reports_a_clean_shutdown() -> Test
         .block_on(async {
             let (ended, done) = tokio::sync::oneshot::channel::<()>();
             ended.send(()).map_err(|_| "receiver dropped")?;
-            let state = super::await_endpoint_shutdown(done, Duration::from_millis(50)).await;
+            let state =
+                crate::bootstrap::drain::await_endpoint_shutdown(done, Duration::from_millis(50))
+                    .await;
             if state != EndpointShutdown::Completed {
                 return Err(
                     format!("an endpoint at rest must report Completed, got {state:?}").into(),
@@ -81,7 +83,9 @@ fn an_endpoint_that_outlasts_the_grace_is_reported_and_the_drain_proceeds() -> T
         .build()?
         .block_on(async {
             let (ended, done) = tokio::sync::oneshot::channel::<()>();
-            let state = super::await_endpoint_shutdown(done, Duration::from_millis(50)).await;
+            let state =
+                crate::bootstrap::drain::await_endpoint_shutdown(done, Duration::from_millis(50))
+                    .await;
             if state != EndpointShutdown::TimedOut {
                 return Err(format!(
                     "a live endpoint must not block admission forever, got {state:?}"
@@ -101,12 +105,83 @@ fn an_endpoint_task_that_vanishes_without_signalling_still_ends_the_wait() -> Te
         .block_on(async {
             let (ended, done) = tokio::sync::oneshot::channel::<()>();
             drop(ended);
-            let state = super::await_endpoint_shutdown(done, Duration::from_secs(30)).await;
+            let state =
+                crate::bootstrap::drain::await_endpoint_shutdown(done, Duration::from_secs(30))
+                    .await;
             if state != EndpointShutdown::Completed {
                 return Err(
                     format!("a vanished endpoint task ends the wait, got {state:?}").into(),
                 );
             }
+            Ok(())
+        })
+}
+
+#[test]
+fn an_endpoint_that_finishes_first_ends_the_stop_wait_without_a_second_poll() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (ended, mut done) = tokio::sync::oneshot::channel::<()>();
+            ended.send(()).map_err(|_| "receiver dropped")?;
+            let reason = std::sync::Arc::new(std::sync::atomic::AtomicU8::new(
+                crate::bootstrap::StopReason::ServerExit.to_raw(),
+            ));
+            let ended_first = crate::bootstrap::stop::await_stop(
+                std::sync::Arc::clone(&reason),
+                std::sync::Arc::new(tokio::sync::Notify::new()),
+                std::future::pending::<()>(),
+                &mut done,
+            )
+            .await;
+            if !ended_first {
+                return Err(
+                    "an endpoint that ends before the stop must be reported as ended".into(),
+                );
+            }
+            let recorded = crate::bootstrap::StopReason::from_raw(
+                reason.load(std::sync::atomic::Ordering::SeqCst),
+            );
+            if recorded != crate::bootstrap::StopReason::ServerExit {
+                return Err(
+                    format!("an endpoint exit must record ServerExit, got {recorded:?}").into(),
+                );
+            }
+            Ok(())
+        })
+}
+
+#[test]
+fn a_stop_without_the_endpoint_leaves_the_endpoint_receiver_awaitable() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (ended, mut done) = tokio::sync::oneshot::channel::<()>();
+            let reason = std::sync::Arc::new(std::sync::atomic::AtomicU8::new(
+                crate::bootstrap::StopReason::Signal.to_raw(),
+            ));
+            let ended_first = crate::bootstrap::stop::await_stop(
+                reason,
+                std::sync::Arc::new(tokio::sync::Notify::new()),
+                async {},
+                &mut done,
+            )
+            .await;
+            if ended_first {
+                return Err("a stop without the endpoint must not claim the endpoint ended".into());
+            }
+            let state =
+                crate::bootstrap::drain::await_endpoint_shutdown(done, Duration::from_millis(50))
+                    .await;
+            if state != EndpointShutdown::TimedOut {
+                return Err(format!(
+                    "a live endpoint must stay awaitable after a stop, got {state:?}"
+                )
+                .into());
+            }
+            drop(ended);
             Ok(())
         })
 }

@@ -3,7 +3,10 @@ use super::{GroupMeasurement, Meta, PerfBaseline, Throughput};
 use anyhow::{bail, Context, Result};
 use std::collections::BTreeMap;
 
+mod floor;
 mod integer;
+
+use floor::{case_timing_floor, peak_rss_floor, TAIL_JITTER_FLOOR};
 
 pub(super) const CAPTURE_EXPORT_WORKLOAD: &str =
     "pipeline/capture_export/captured_live_wiaa_co2027";
@@ -197,8 +200,6 @@ fn positive_metric(id: &str, label: &str, value: f64) -> Result<()> {
     Ok(())
 }
 
-const TAIL_JITTER_FLOOR: f64 = 0.2;
-
 fn compare_benchmark(
     id: &str,
     baseline: &GroupMeasurement,
@@ -206,20 +207,19 @@ fn compare_benchmark(
     tolerance: &integer::Tolerance,
     failures: &mut Vec<String>,
 ) -> Result<()> {
+    let baseline_tail = required_float(baseline.tail_time_seconds)?;
+    let timing_floor = case_timing_floor(baseline.wall_time_seconds, baseline_tail);
     compare_cost(
         id,
         "wall time",
         (baseline.wall_time_seconds, current.wall_time_seconds),
-        tolerance.fraction(),
+        tolerance.fraction().max(timing_floor),
         failures,
     );
     compare_cost(
         id,
         "tail time",
-        (
-            required_float(baseline.tail_time_seconds)?,
-            required_float(current.tail_time_seconds)?,
-        ),
+        (baseline_tail, required_float(current.tail_time_seconds)?),
         tolerance.fraction().max(TAIL_JITTER_FLOOR),
         failures,
     );
@@ -227,7 +227,7 @@ fn compare_benchmark(
     match (baseline.throughput, current.throughput) {
         (Some(Throughput::Elements(old)), Some(Throughput::Elements(new)))
         | (Some(Throughput::Bytes(old)), Some(Throughput::Bytes(new))) => {
-            if new < old * (1.0 - tolerance.fraction()) {
+            if new < old * (1.0 - tolerance.fraction().max(timing_floor)) {
                 failures.push(format!(
                     "{id}: throughput regression: baseline={old} current={new}"
                 ));
@@ -246,22 +246,29 @@ fn compare_memory(
     tolerance: &integer::Tolerance,
     failures: &mut Vec<String>,
 ) -> Result<()> {
-    for (label, old, new) in [
-        ("peak RSS", baseline.peak_rss_kib, current.peak_rss_kib),
+    for (label, old, new, floor) in [
+        (
+            "peak RSS",
+            baseline.peak_rss_kib,
+            current.peak_rss_kib,
+            peak_rss_floor(required_integer(baseline.peak_rss_kib)?),
+        ),
         (
             "allocation count",
             baseline.allocation_count,
             current.allocation_count,
+            0,
         ),
         (
             "allocated bytes",
             baseline.allocated_bytes,
             current.allocated_bytes,
+            0,
         ),
     ] {
         let baseline = required_integer(old)?;
         let current = required_integer(new)?;
-        if tolerance.integer_exceeded(baseline, current)? {
+        if tolerance.integer_exceeded_with_floor(baseline, current, floor)? {
             failures.push(format!(
                 "{id}: {label} regression: baseline={baseline} current={current}"
             ));

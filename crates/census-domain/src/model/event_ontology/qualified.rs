@@ -5,8 +5,10 @@ const MODIFIERS: &[&str] = &[
     "medley",
     "hurdles",
     "hurdle",
+    "hurdling",
     "steeplechase",
     "walk",
+    "walking",
     "racewalk",
     "lowhurdles",
     "highhurdles",
@@ -14,8 +16,21 @@ const MODIFIERS: &[&str] = &[
     "lowhurdle",
     "steeple",
     "racewalking",
-    "race walker",
     "racewalker",
+    "racewalkers",
+];
+
+const MODIFIER_PHRASES: &[(&str, &str)] = &[
+    ("race", "walk"),
+    ("race", "walking"),
+    ("race", "walker"),
+    ("race", "walkers"),
+    ("steeple", "chase"),
+    ("steeple", "chasing"),
+    ("low", "hurdle"),
+    ("low", "hurdles"),
+    ("high", "hurdle"),
+    ("high", "hurdles"),
 ];
 
 struct Token<'a> {
@@ -24,7 +39,19 @@ struct Token<'a> {
 }
 
 pub(super) fn candidates(label: &str) -> Vec<String> {
-    let tokens: Vec<Token<'_>> = label
+    let tokens = tokenize(label);
+    let kept = kept_tokens(&tokens);
+    let modifier_ranges = modifier_runs(&modifier_flags(&kept));
+    let mut candidates = Vec::new();
+    if !kept.is_empty() {
+        candidates.push(render(&kept));
+    }
+    window_candidates(&kept, &modifier_ranges, &mut candidates);
+    candidates
+}
+
+fn tokenize(label: &str) -> Vec<Token<'_>> {
+    label
         .split_whitespace()
         .map(|text| Token {
             text,
@@ -34,33 +61,56 @@ pub(super) fn candidates(label: &str) -> Vec<String> {
                 .map(|ch| ch.to_ascii_lowercase())
                 .collect(),
         })
-        .collect();
-    let kept: Vec<&Token<'_>> = tokens
+        .collect()
+}
+
+fn kept_tokens<'a>(tokens: &'a [Token<'a>]) -> Vec<&'a Token<'a>> {
+    tokens
         .iter()
         .enumerate()
-        .filter_map(|(index, token)| {
-            let before = index.checked_sub(1).and_then(|i| tokens.get(i));
-            let after = index.checked_add(1).and_then(|i| tokens.get(i));
-            let phrase = LABEL_PHRASES.iter().any(|(left, right)| {
-                (token.cleaned == *left && after.is_some_and(|next| next.cleaned == *right))
-                    || (token.cleaned == *right && before.is_some_and(|prev| prev.cleaned == *left))
-            });
-            (!phrase
-                && !LABEL_QUALIFIERS.contains(&token.cleaned.as_str())
-                && !division_code(token.text))
-            .then_some(token)
-        })
-        .collect();
-    let modifier_ranges: Vec<(usize, usize)> = kept
-        .iter()
+        .filter_map(|(index, token)| contextual(tokens, index, token).then_some(token))
+        .collect()
+}
+
+fn contextual(tokens: &[Token<'_>], index: usize, token: &Token<'_>) -> bool {
+    let before = index.checked_sub(1).and_then(|i| tokens.get(i));
+    let after = index.checked_add(1).and_then(|i| tokens.get(i));
+    let phrase = LABEL_PHRASES.iter().any(|(left, right)| {
+        (token.cleaned == *left && after.is_some_and(|next| next.cleaned == *right))
+            || (token.cleaned == *right && before.is_some_and(|prev| prev.cleaned == *left))
+    });
+    !phrase && !LABEL_QUALIFIERS.contains(&token.cleaned.as_str()) && !division_code(token.text)
+}
+
+fn modifier_flags(kept: &[&Token<'_>]) -> Vec<bool> {
+    kept.iter()
         .enumerate()
-        .filter(|(_, token)| MODIFIERS.contains(&token.cleaned.as_str()))
-        .map(|(index, _)| (index, index.saturating_add(1)))
-        .collect();
-    let mut candidates = Vec::new();
-    if !kept.is_empty() {
-        candidates.push(render(&kept));
-    }
+        .map(|(index, token)| modifier_at(kept, index, token))
+        .collect()
+}
+
+fn modifier_at(kept: &[&Token<'_>], index: usize, token: &Token<'_>) -> bool {
+    MODIFIERS.contains(&token.cleaned.as_str())
+        || kept
+            .get(index.saturating_add(1))
+            .is_some_and(|next| phrase_pair(token, next))
+        || index
+            .checked_sub(1)
+            .and_then(|previous| kept.get(previous))
+            .is_some_and(|previous| phrase_pair(previous, token))
+}
+
+fn phrase_pair(left: &Token<'_>, right: &Token<'_>) -> bool {
+    MODIFIER_PHRASES
+        .iter()
+        .any(|(modifier, head)| left.cleaned == *modifier && right.cleaned == *head)
+}
+
+fn window_candidates(
+    kept: &[&Token<'_>],
+    modifier_ranges: &[(usize, usize)],
+    candidates: &mut Vec<String>,
+) {
     for width in (1..=kept.len().min(4)).rev() {
         for (start, window) in kept.windows(width).enumerate() {
             if width == kept.len() {
@@ -77,7 +127,20 @@ pub(super) fn candidates(label: &str) -> Vec<String> {
             }
         }
     }
-    candidates
+}
+
+fn modifier_runs(flags: &[bool]) -> Vec<(usize, usize)> {
+    let mut ranges: Vec<(usize, usize)> = Vec::new();
+    for (index, flagged) in flags.iter().enumerate() {
+        if !flagged {
+            continue;
+        }
+        match ranges.last_mut() {
+            Some((_, after)) if *after == index => *after = index.saturating_add(1),
+            _ => ranges.push((index, index.saturating_add(1))),
+        }
+    }
+    ranges
 }
 
 fn render(tokens: &[&Token<'_>]) -> String {

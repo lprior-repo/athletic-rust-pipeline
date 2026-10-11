@@ -7,16 +7,19 @@ use census_domain::model::{
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 
-pub fn season() -> census_domain::model::SchoolYear {
-    census_domain::model::SchoolYear::new(2026).expect("2026 starts a season")
+pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+pub fn season() -> TestResult<census_domain::model::SchoolYear> {
+    match census_domain::model::SchoolYear::new(2026) {
+        Some(season) => Ok(season),
+        None => Err("2026 starts a season".into()),
+    }
 }
 
-pub fn school_in(store: &Store, state: UsJurisdiction, name: &str) -> SchoolId {
-    let (school, id) = CanonicalSchool::new(state, name, normalize_name(name));
-    store
-        .append(Table::Schools, &school)
-        .expect("school appends");
-    id
+pub fn school_in(store: &Store, state: UsJurisdiction, name: &str) -> TestResult<SchoolId> {
+    let (school, id) = CanonicalSchool::new(state, name, normalize_name(name), None);
+    store.append(Table::Schools, &school)?;
+    Ok(id)
 }
 
 pub fn athlete_in(
@@ -26,20 +29,18 @@ pub fn athlete_in(
     year: GradYear,
     gender: Gender,
     object: &str,
-) -> CanonicalAthlete {
+) -> TestResult<CanonicalAthlete> {
     let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, object);
     let athlete = CanonicalAthlete::new(school, name, year, gender, source);
-    store
-        .append(Table::Athletes, &athlete)
-        .expect("athlete appends");
-    athlete
+    store.append(Table::Athletes, &athlete)?;
+    Ok(athlete)
 }
 
-pub fn stored_case(store: &Store, subject: &str) -> ReviewCase {
-    store
-        .scan::<ReviewCase>(Table::ReviewCases)
-        .expect("cases scan")
+pub fn stored_case(store: &Store, subject: &str) -> TestResult<ReviewCase> {
+    let case = store
+        .scan::<ReviewCase>(Table::ReviewCases)?
         .into_iter()
         .find(|case| case.subject_id == subject)
-        .expect("the subject keeps a case")
+        .ok_or("the subject keeps a case")?;
+    Ok(case)
 }

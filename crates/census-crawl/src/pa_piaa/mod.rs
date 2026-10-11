@@ -6,8 +6,6 @@ pub const HOST: &str = "https://www.piaa.org";
 pub const SOURCE_ID: &str = "pa_piaa";
 pub const ASSOCIATION: &str = "PIAA";
 
-/// The letters the site links. `X` and `Z` are printed without links, and the site answers
-/// `alpha=Z` with the A group, so a loop over these 24 letters is the whole directory.
 pub const LETTERS: [char; 24] = [
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
     'T', 'U', 'V', 'W', 'Y',

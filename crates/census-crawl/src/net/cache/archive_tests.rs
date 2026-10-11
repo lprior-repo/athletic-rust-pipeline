@@ -293,6 +293,7 @@ fn body_storage_is_shared_read_only_and_replacement_never_mutates_the_old_inode(
     Ok(())
 }
 
+mod capacity;
 mod captured_smoke;
 mod failures;
 mod quarantine_crashes;

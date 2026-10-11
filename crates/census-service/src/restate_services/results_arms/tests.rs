@@ -244,7 +244,7 @@ fn resolution_counters_are_captured_and_survive_serialization() -> TestResult {
     let source =
         source_rows("milesplit", 1, report).map_err(crate::restate_services::tests::sdk_error)?;
     check!(source.resolution.is_some());
-    let resolution = source.resolution.unwrap();
+    let resolution = source.resolution.ok_or("counters are present")?;
     check!(eq; resolution.rows, 100);
     check!(eq; resolution.resolved, 5);
     check!(eq; resolution.unresolved, 1);
@@ -253,7 +253,8 @@ fn resolution_counters_are_captured_and_survive_serialization() -> TestResult {
     let json = serde_json::to_string(&source)?;
     let restored: ResultsSourceRows = serde_json::from_str(&json)?;
     check!(restored.resolution.is_some());
-    check!(eq; restored.resolution.unwrap().unresolved, 1);
+    let restored_resolution = restored.resolution.ok_or("counters survive json")?;
+    check!(eq; restored_resolution.unresolved, 1);
     Ok(())
 }
 
@@ -341,7 +342,7 @@ fn resolution_counter_merge_overflow_returns_invariant() -> TestResult {
     };
     let result = collection::merge(left, right);
     check!(result.is_err());
-    let error = result.err().unwrap();
+    let error = result.err().ok_or("the merge reports an invariant")?;
     check!(format!("{error:?}").contains("resolution row counter overflow"));
     Ok(())
 }

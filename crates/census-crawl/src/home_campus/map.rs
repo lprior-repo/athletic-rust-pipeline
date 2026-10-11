@@ -203,5 +203,5 @@ fn director(
 }
 
 fn role_of(value: &str) -> CoachRole {
-    crate::coach_contacts::parse_role(value).unwrap_or(CoachRole::Unknown)
+    crate::coach_contacts::parse_role(value).map_or(CoachRole::Unknown, |role| role)
 }

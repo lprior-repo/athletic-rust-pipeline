@@ -25,7 +25,6 @@ fn wayzata_schedule_retains_unknown_venue_rows_without_inventing_canonical_geogr
                 limit: None,
                 refresh: false,
                 observed_on: Some(OBSERVED_ON.to_string()),
-                results_enabled: false,
             };
             let report = wayzata::collect(&context(&fetcher, &store)?, &options).await?;
             anyhow::ensure!(

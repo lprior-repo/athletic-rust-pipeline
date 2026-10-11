@@ -172,11 +172,11 @@ pub(crate) enum PerfCommand {
     )]
     Record,
     #[command(
-        about = "Re-run all three benchmark targets, reject ID or measurement mismatches, and fail regressions beyond the tolerance (default 5%; the sample-maximum tail bound is floored at 20%)"
+        about = "Re-run all three benchmark targets, reject ID or measurement mismatches, and fail regressions beyond the tolerance (default 5%; the sample-maximum tail bound is floored at 20%, the GNU time peak-RSS bound at 20% of its recorded baseline (1 MiB minimum) and the wall-time/throughput bounds at the case's recorded tail-to-mean spread, capped at the same 20%)"
     )]
     Check {
         #[arg(
-            help = "Override the default 5% regression tolerance (e.g. `--tolerance 0.1` for 10%; the sample-maximum tail bound is floored at 20%)"
+            help = "Override the default 5% regression tolerance (e.g. `--tolerance 0.1` for 10%; the sample-maximum tail bound is floored at 20%, the GNU time peak-RSS bound at 20% of its recorded baseline (1 MiB minimum) and the wall-time/throughput bounds at the case's recorded tail-to-mean spread, capped at the same 20%)"
         )]
         #[arg(long, default_value_t = 0.05)]
         tolerance: f64,

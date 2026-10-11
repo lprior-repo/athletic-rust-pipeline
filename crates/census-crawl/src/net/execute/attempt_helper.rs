@@ -13,11 +13,35 @@ pub(super) fn blocking_kind(status: u16) -> Option<AccessBlockKind> {
 }
 
 pub(super) fn retry_after_secs(response: &reqwest::Response) -> Option<u64> {
-    response
+    let value = response
         .headers()
-        .get(reqwest::header::RETRY_AFTER)
-        .and_then(|value| value.to_str().ok())
-        .and_then(|value| value.trim().parse::<u64>().ok())
+        .get(reqwest::header::RETRY_AFTER)?
+        .to_str()
+        .ok()?;
+    retry_after_delay(value.trim(), chrono::Utc::now())
+}
+
+pub(super) fn retry_after_delay(value: &str, now: chrono::DateTime<chrono::Utc>) -> Option<u64> {
+    if let Ok(seconds) = value.parse::<u64>() {
+        return Some(seconds);
+    }
+    let deadline = parse_http_date(value)?;
+    let remaining = deadline.signed_duration_since(now).num_seconds().max(0);
+    u64::try_from(remaining).ok()
+}
+
+fn parse_http_date(value: &str) -> Option<chrono::DateTime<chrono::Utc>> {
+    [
+        "%a, %d %b %Y %H:%M:%S GMT",
+        "%A, %d-%b-%y %H:%M:%S GMT",
+        "%a %b %e %H:%M:%S %Y",
+    ]
+    .iter()
+    .find_map(|format| {
+        chrono::NaiveDateTime::parse_from_str(value, format)
+            .ok()
+            .map(|parsed| parsed.and_utc())
+    })
 }
 
 use crate::net::execute::attempt::FetchPlan;

@@ -62,9 +62,8 @@ impl Fetcher {
 
     fn refusal_for(url: &str, closing: &SourceAccessCondition) -> FetchError {
         match closing.kind {
-            AccessBlockKind::RateLimited => FetchError::RateLimited {
-                url: url.to_string(),
-                retry_after_secs: closing.retry_after_seconds,
+            AccessBlockKind::RateLimited => FetchError::Cooldown {
+                host: closing.host.clone(),
             },
             AccessBlockKind::HumanRequired | AccessBlockKind::BrowserUnavailable => {
                 FetchError::BrowserLane {
@@ -98,7 +97,10 @@ impl Fetcher {
         format!(
             "admission closed for {} until {}",
             closing.host,
-            closing.cooldown_until.as_deref().unwrap_or("cooldown")
+            closing
+                .cooldown_until
+                .as_deref()
+                .map_or("cooldown", |value| value)
         )
     }
     fn fallback_detail(closing: &SourceAccessCondition) -> String {
@@ -128,7 +130,9 @@ mod tests {
     use std::collections::HashMap;
     use std::time::Duration;
 
-    fn fetcher_in(dir: &std::path::Path) -> Fetcher {
+    type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+    fn fetcher_in(dir: &std::path::Path) -> TestResult<Fetcher> {
         Fetcher::new(
             dir.join("http"),
             None,
@@ -136,16 +140,16 @@ mod tests {
             HashMap::new(),
             Vec::new(),
         )
-        .expect("fetcher")
+        .map_err(Into::into)
     }
 
     const HOST: &str = "www.example.test";
     const URL: &str = "https://www.example.test/teams/1/roster";
 
     #[tokio::test]
-    async fn a_human_required_row_closes_admission_without_a_physical_request() {
-        let dir = tempfile::tempdir().expect("temp dir");
-        let fetcher = fetcher_in(dir.path());
+    async fn a_human_required_row_closes_admission_without_a_physical_request() -> TestResult {
+        let dir = tempfile::tempdir()?;
+        let fetcher = fetcher_in(dir.path())?;
         fetcher
             .record_access_condition(
                 HOST,
@@ -159,54 +163,54 @@ mod tests {
         let refusal = fetcher
             .refused_admission(HOST, URL)
             .await
-            .expect("human verification closes admission");
-        assert!(!refusal.retryable());
-        assert!(matches!(refusal, FetchError::BrowserLane { .. }));
+            .ok_or("human verification closes admission")?;
+        check!(!refusal.retryable());
+        check!(matches!(refusal, FetchError::BrowserLane { .. }));
         let after = fetcher.stats().await;
-        assert_eq!(before.requests, after.requests);
-        assert_eq!(before.cache_hits, after.cache_hits);
-        assert_eq!(fetcher.access_conditions().await.len(), 1);
+        check!(eq; before.requests, after.requests);
+        check!(eq; before.cache_hits, after.cache_hits);
+        check!(eq; fetcher.access_conditions().await.len(), 1);
+        Ok(())
     }
 
     #[tokio::test]
-    async fn a_rate_limited_row_refuses_with_the_retryable_verdict() {
-        let dir = tempfile::tempdir().expect("temp dir");
-        let fetcher = fetcher_in(dir.path());
+    async fn a_rate_limited_row_refuses_with_the_retryable_verdict() -> TestResult {
+        let dir = tempfile::tempdir()?;
+        let fetcher = fetcher_in(dir.path())?;
         fetcher
             .record_access_condition(HOST, AccessBlockKind::RateLimited, 429, Some(120), "slow")
             .await;
         let refusal = fetcher
             .refused_admission(HOST, URL)
             .await
-            .expect("a cooldown closes admission");
-        assert!(refusal.retryable());
-        assert!(matches!(
+            .ok_or("a cooldown closes admission")?;
+        check!(refusal.retryable());
+        check!(matches!(
             refusal,
-            FetchError::RateLimited {
-                retry_after_secs: Some(120),
-                ..
-            }
+            FetchError::Cooldown { ref host } if host == HOST
         ));
+        Ok(())
     }
 
     #[tokio::test]
-    async fn a_forbidden_page_never_closes_the_host() {
-        let dir = tempfile::tempdir().expect("temp dir");
-        let fetcher = fetcher_in(dir.path());
+    async fn a_forbidden_page_never_closes_the_host() -> TestResult {
+        let dir = tempfile::tempdir()?;
+        let fetcher = fetcher_in(dir.path())?;
         fetcher
             .record_access_condition(HOST, AccessBlockKind::Forbidden, 403, None, "one page")
             .await;
-        assert!(fetcher.refused_admission(HOST, URL).await.is_none());
-        assert!(fetcher
+        check!(fetcher.refused_admission(HOST, URL).await.is_none());
+        check!(fetcher
             .refused_admission("other.example.test", URL)
             .await
             .is_none());
+        Ok(())
     }
 
     #[tokio::test]
-    async fn a_missing_lane_row_closes_admission_for_its_host_only() {
-        let dir = tempfile::tempdir().expect("temp dir");
-        let fetcher = fetcher_in(dir.path());
+    async fn a_missing_lane_row_closes_admission_for_its_host_only() -> TestResult {
+        let dir = tempfile::tempdir()?;
+        let fetcher = fetcher_in(dir.path())?;
         fetcher
             .record_access_condition(
                 HOST,
@@ -219,18 +223,19 @@ mod tests {
         let refusal = fetcher
             .refused_admission(HOST, URL)
             .await
-            .expect("a missing lane closes admission");
-        assert!(!refusal.retryable());
-        assert!(fetcher
+            .ok_or("a missing lane closes admission")?;
+        check!(!refusal.retryable());
+        check!(fetcher
             .refused_admission("other.example.test", URL)
             .await
             .is_none());
+        Ok(())
     }
 
     #[tokio::test]
-    async fn human_verification_outranks_a_cooldown() {
-        let dir = tempfile::tempdir().expect("temp dir");
-        let fetcher = fetcher_in(dir.path());
+    async fn human_verification_outranks_a_cooldown() -> TestResult {
+        let dir = tempfile::tempdir()?;
+        let fetcher = fetcher_in(dir.path())?;
         fetcher
             .record_access_condition(HOST, AccessBlockKind::RateLimited, 429, Some(60), "slow")
             .await;
@@ -246,8 +251,9 @@ mod tests {
         let refusal = fetcher
             .refused_admission(HOST, URL)
             .await
-            .expect("a closing row exists");
-        assert!(matches!(refusal, FetchError::BrowserLane { .. }));
-        assert!(!refusal.retryable());
+            .ok_or("a closing row exists")?;
+        check!(matches!(refusal, FetchError::BrowserLane { .. }));
+        check!(!refusal.retryable());
+        Ok(())
     }
 }

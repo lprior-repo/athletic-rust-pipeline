@@ -1,6 +1,6 @@
 use super::archive_io::{
-    create_directory, freeze_file, invalid, lock_cache, present, publish_once, replace_cache,
-    sync_directory, with_stage, write_file,
+    create_directory, freeze_file, invalid, io_error, lock_cache, present, publish_once,
+    replace_cache, sync_directory, with_stage, write_file,
 };
 use super::capture::Capture;
 use super::quarantine::{quarantine_pair, Damage};
@@ -8,7 +8,32 @@ use super::{
     content_digest, read_cache_file, CacheMeta, FetchError, MAX_BODY_BYTES, MAX_META_BYTES,
 };
 use std::path::{Path, PathBuf};
-const MAX_ARCHIVE_BYTES: u64 = 100 * 1024 * 1024;
+
+#[path = "archive/admission.rs"]
+pub(super) mod admission;
+pub(super) use admission::ArchiveAdmission;
+
+fn archived_body_path(archive: &Path, content_digest: &str) -> PathBuf {
+    archive
+        .join("bodies")
+        .join(format!("{content_digest}.body"))
+}
+
+fn needs_publication(path: &Path) -> Result<bool, FetchError> {
+    match std::fs::symlink_metadata(path) {
+        Ok(metadata) if metadata.is_file() => Ok(false),
+        Ok(_) => Ok(true),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(true),
+        Err(error) => Err(io_error(path, error)),
+    }
+}
+
+fn archived_meta_path(archive: &Path, content_digest: &str, metadata_digest: &str) -> PathBuf {
+    archive
+        .join("captures")
+        .join(content_digest)
+        .join(format!("{metadata_digest}.meta.json"))
+}
 
 pub(super) fn write_preserved_cache(
     body_path: &Path,
@@ -20,16 +45,18 @@ pub(super) fn write_preserved_cache(
     let capture = Capture::from_meta(meta, meta_path)?;
     capture.verify_body(body, body_path)?;
     let archive = initialize_archive(root)?;
+    let mut admission = ArchiveAdmission::begin(root, &archive)?;
     with_stage(root, |stage| {
         let lock = match lock_cache(meta_path) {
             Ok(lock) => lock,
             Err(error) => {
-                preserve_capture(&archive, stage, "new", body, &capture)?;
+                preserve_capture(&archive, stage, "new", body, &capture, &mut admission)?;
                 return Err(error);
             }
         };
-        preserve_previous(&archive, stage, body_path, meta_path)?;
-        let archived_body = preserve_capture(&archive, stage, "new", body, &capture)?;
+        preserve_previous(&archive, stage, body_path, meta_path, &mut admission)?;
+        let archived_body =
+            preserve_capture(&archive, stage, "new", body, &capture, &mut admission)?;
         let result = replace_cache(
             stage,
             &archived_body,
@@ -52,39 +79,10 @@ pub(super) fn write_preserved_capture(
     let capture = Capture::from_meta(meta, meta_path)?;
     capture.verify_body(body, body_path)?;
     let archive = initialize_archive(root)?;
-    if !archive_within_budget(&archive, body) {
-        return Err(FetchError::Invariant {
-            detail: "archive budget exceeded".to_string(),
-        });
-    }
+    let mut admission = ArchiveAdmission::begin(root, &archive)?;
     with_stage(root, |stage| {
-        preserve_capture(&archive, stage, "new", body, &capture)
+        preserve_capture(&archive, stage, "new", body, &capture, &mut admission)
     })
-}
-pub(super) fn archive_within_budget(archive: &Path, body: &[u8]) -> bool {
-    if !archive.exists() {
-        return (body.len() as u64) < MAX_ARCHIVE_BYTES;
-    }
-    let total = archive_bytes_used(archive);
-    total.saturating_add(body.len() as u64) <= MAX_ARCHIVE_BYTES
-}
-
-fn archive_bytes_used(archive: &Path) -> u64 {
-    let Ok(entries) = std::fs::read_dir(archive) else {
-        return 0;
-    };
-    let mut total: u64 = 0;
-    for entry in entries.filter_map(|e| e.ok()) {
-        let path = entry.path();
-        if path.is_dir() {
-            total = total.saturating_add(archive_bytes_used(&path));
-        } else if path.is_file() {
-            if let Ok(metadata) = path.metadata() {
-                total = total.saturating_add(metadata.len());
-            }
-        }
-    }
-    total
 }
 
 pub(super) fn replay_preserved_cache(
@@ -108,8 +106,9 @@ pub(super) fn replay_preserved_cache(
         return Ok(None);
     }
     let archive = initialize_archive(root)?;
+    let mut admission = ArchiveAdmission::begin(root, &archive)?;
     with_stage(root, |stage| {
-        preserve_previous(&archive, stage, body_path, meta_path)
+        preserve_previous(&archive, stage, body_path, meta_path, &mut admission)
     })?;
     drop(lock);
     Ok(Some(body))
@@ -152,6 +151,7 @@ fn preserve_previous(
     stage: &Path,
     body_path: &Path,
     meta_path: &Path,
+    admission: &mut ArchiveAdmission,
 ) -> Result<(), FetchError> {
     let presence = (present(body_path)?, present(meta_path)?);
     match presence {
@@ -169,7 +169,7 @@ fn preserve_previous(
     }
     match read_previous(body_path, meta_path)? {
         Ok((capture, body)) => {
-            preserve_capture(archive, stage, "old", &body, &capture)?;
+            preserve_capture(archive, stage, "old", &body, &capture, admission)?;
         }
         Err(reason) => {
             quarantine_pair(stage, body_path, meta_path, presence, reason)?;
@@ -220,16 +220,34 @@ fn verified_body(path: &Path, capture: &Capture) -> Result<Vec<u8>, FetchError> 
     Ok(body)
 }
 
-fn preserve_capture(
+pub(super) fn preserve_capture(
     archive: &Path,
     stage: &Path,
     label: &str,
     body: &[u8],
     capture: &Capture,
+    admission: &mut ArchiveAdmission,
 ) -> Result<PathBuf, FetchError> {
     let digest = &capture.meta.content_digest;
-    let archived_body = archive.join("bodies").join(format!("{digest}.body"));
-    if !present(&archived_body)? {
+    let archived_body = archived_body_path(archive, digest);
+    let body_present = present(&archived_body)?;
+    let captures = archive.join("captures").join(digest);
+    let metadata_digest = content_digest(&capture.encoded);
+    let archived_meta = archived_meta_path(archive, digest, &metadata_digest);
+    let meta_needed = needs_publication(&archived_meta)?;
+    let body_bytes = u64::try_from(body.len())
+        .map_err(|_| invalid(archive, "capture body exceeds the archive accounting range"))?;
+    let meta_bytes = u64::try_from(capture.encoded.len()).map_err(|_| {
+        invalid(
+            archive,
+            "capture metadata exceeds the archive accounting range",
+        )
+    })?;
+    admission.reserve_capture_sizes(
+        (!body_present).then_some(body_bytes),
+        meta_needed.then_some(meta_bytes),
+    )?;
+    if !body_present {
         let staged_body = stage.join(format!("{label}.body"));
         write_file(&staged_body, body)?;
         freeze_file(&staged_body)?;
@@ -243,10 +261,7 @@ fn preserve_capture(
     }
     freeze_file(&archived_body)?;
     sync_directory(&archive.join("bodies"))?;
-    let captures = archive.join("captures").join(digest);
     create_directory(&captures)?;
-    let metadata_digest = content_digest(&capture.encoded);
-    let archived_meta = captures.join(format!("{metadata_digest}.meta.json"));
     if !present(&archived_meta)? {
         let staged_meta = stage.join(format!("{label}.meta.json"));
         write_file(&staged_meta, &capture.encoded)?;

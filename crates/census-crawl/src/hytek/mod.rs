@@ -2,6 +2,7 @@ mod columns;
 mod identity;
 mod map;
 mod parse;
+mod parse_rows;
 
 pub use crate::result_file::{ParsedEvent, ParsedMeet, ParsedRow, RelayLeg};
 use crate::{CrawlError, CrawlResult};

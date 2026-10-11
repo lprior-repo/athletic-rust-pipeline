@@ -3,7 +3,6 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::Arc;
-use std::time::Duration;
 
 use anyhow::Result;
 use restate_sdk::http_server::HttpServer;
@@ -15,12 +14,12 @@ use crate::spawn::Spawner;
 use census_crawl::net::bridge::BrowserLane;
 use census_store::Store;
 
-use super::drain::{count_error, DrainReport, EndpointShutdown};
+use super::drain::{
+    await_endpoint_shutdown, count_error, DrainReport, EndpointShutdown, ENDPOINT_SHUTDOWN_GRACE,
+};
 use super::error::BootstrapError;
 use super::options::ServeOptions;
-use super::stop::{stop_watch, StopReason};
-
-pub(super) const ENDPOINT_SHUTDOWN_GRACE: Duration = Duration::from_secs(10);
+use super::stop::{await_stop, StopReason};
 
 pub async fn serve(options: ServeOptions) -> Result<DrainReport> {
     serve_until(options, std::future::pending::<()>()).await
@@ -66,7 +65,7 @@ pub(super) async fn supervise(
         "census service listening"
     );
 
-    await_stop(
+    let endpoint_ended = await_stop(
         Arc::clone(&reason),
         Arc::clone(&over_budget),
         shutdown,
@@ -74,7 +73,11 @@ pub(super) async fn supervise(
     )
     .await;
     cancel.send(()).ok();
-    let endpoint_shutdown = await_endpoint_shutdown(endpoint_done, ENDPOINT_SHUTDOWN_GRACE).await;
+    let endpoint_shutdown = if endpoint_ended {
+        EndpointShutdown::Completed
+    } else {
+        await_endpoint_shutdown(endpoint_done, ENDPOINT_SHUTDOWN_GRACE).await
+    };
     let counted = region
         .drain(options.drain_timeout)
         .await
@@ -100,39 +103,6 @@ fn lane_client(options: &ServeOptions) -> Result<Option<BrowserLane>, BootstrapE
         detail: error.to_string(),
     })?;
     Ok(Some(BrowserLane::over(client)))
-}
-
-async fn await_stop(
-    reason: Arc<AtomicU8>,
-    over_budget: Arc<tokio::sync::Notify>,
-    shutdown: impl Future<Output = ()> + Send + 'static,
-    endpoint_done: &mut tokio::sync::oneshot::Receiver<()>,
-) {
-    tokio::select! {
-        () = stop_watch(Arc::clone(&reason), shutdown) => {}
-        () = over_budget.notified() => {
-            reason.store(StopReason::MemoryBudget.to_raw(), Ordering::SeqCst);
-        }
-        _ = &mut *endpoint_done => {
-            reason.store(StopReason::ServerExit.to_raw(), Ordering::SeqCst);
-        }
-    }
-}
-
-async fn await_endpoint_shutdown(
-    endpoint_done: tokio::sync::oneshot::Receiver<()>,
-    grace: Duration,
-) -> EndpointShutdown {
-    match tokio::time::timeout(grace, endpoint_done).await {
-        Ok(Ok(())) | Ok(Err(_)) => EndpointShutdown::Completed,
-        Err(_) => {
-            tracing::warn!(
-                grace_seconds = grace.as_secs_f64(),
-                "the endpoint did not finish within the shutdown grace; closing effect admission"
-            );
-            EndpointShutdown::TimedOut
-        }
-    }
 }
 
 async fn bind_listener(

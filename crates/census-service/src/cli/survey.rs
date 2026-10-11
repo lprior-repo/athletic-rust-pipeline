@@ -25,8 +25,7 @@ pub(super) struct SurveyArgs {
 }
 
 pub(super) async fn run_survey(cli: &Cli, store: &Store, args: &SurveyArgs) -> Result<()> {
-    let wanted = parse_state_filter(args.states.as_deref().map_or("", |value| value))
-        .context("parsing jurisdiction filter")?;
+    let wanted = parse_state_filter(args.states.as_deref().map_or("", |value| value));
     let associations = selected_associations(&wanted);
     let fetcher = super::build_fetcher(cli, store)?.with_source(SOURCE_ID.to_string());
     let fetcher = if args.offline {
