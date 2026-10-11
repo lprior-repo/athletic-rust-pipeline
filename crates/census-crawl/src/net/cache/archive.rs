@@ -138,7 +138,7 @@ fn cache_root<'a>(body_path: &'a Path, meta_path: &Path) -> Result<&'a Path, Fet
     }
 }
 
-fn initialize_archive(root: &Path) -> Result<PathBuf, FetchError> {
+pub(super) fn initialize_archive(root: &Path) -> Result<PathBuf, FetchError> {
     let archive = root.join("archive");
     create_directory(&archive)?;
     create_directory(&archive.join("bodies"))?;
@@ -243,10 +243,9 @@ pub(super) fn preserve_capture(
             "capture metadata exceeds the archive accounting range",
         )
     })?;
-    admission.reserve_capture_sizes(
-        (!body_present).then_some(body_bytes),
-        meta_needed.then_some(meta_bytes),
-    )?;
+    let reserved_body = (!body_present).then_some(body_bytes);
+    let reserved_meta = meta_needed.then_some(meta_bytes);
+    admission.reserve_capture_sizes(digest, &metadata_digest, reserved_body, reserved_meta)?;
     if !body_present {
         let staged_body = stage.join(format!("{label}.body"));
         write_file(&staged_body, body)?;
@@ -254,6 +253,7 @@ pub(super) fn preserve_capture(
         publish_once(&staged_body, &archived_body)?;
     }
     if verified_body(&archived_body, capture)? != body {
+        admission.release_capture_sizes(digest, &metadata_digest, reserved_body, reserved_meta)?;
         return Err(invalid(
             &archived_body,
             "archive body differs from the captured bytes",
@@ -268,9 +268,13 @@ pub(super) fn preserve_capture(
         freeze_file(&staged_meta)?;
         publish_once(&staged_meta, &archived_meta)?;
     }
-    verify_metadata(&archived_meta, &capture.encoded)?;
+    if let Err(error) = verify_metadata(&archived_meta, &capture.encoded) {
+        admission.release_capture_sizes(digest, &metadata_digest, reserved_body, reserved_meta)?;
+        return Err(error);
+    }
     freeze_file(&archived_meta)?;
     sync_directory(&captures)?;
+    admission.settle_capture_sizes(digest, &metadata_digest, reserved_body, reserved_meta)?;
     Ok(archived_body)
 }
 

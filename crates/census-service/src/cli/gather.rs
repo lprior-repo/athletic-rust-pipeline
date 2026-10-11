@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use census_crawl::CollectionDisposition;
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use census_service::census;
@@ -94,49 +95,86 @@ async fn teams_offline(
 ) -> Result<()> {
     let store = Store::open(root)?;
     let fetcher = build_fetcher(cli, &store)?;
-    let mut failed = Vec::new();
-    let mut incomplete = Vec::new();
+    let mut outcomes = TeamsOutcomes::default();
     for jurisdiction in jurisdictions {
-        match census::collect_state_teams(&fetcher, &store, *jurisdiction, args.refresh).await {
-            Ok(teams) => summarize_teams(&store, *jurisdiction, &teams, &mut incomplete)?,
+        let collected = census::collect_state_teams(&fetcher, &store, *jurisdiction, args.refresh)
+            .await
+            .and_then(|teams| {
+                census::team_index_report(&store, *jurisdiction).map(|report| (teams, report))
+            });
+        match collected {
+            Ok((teams, report)) => {
+                println!(
+                    "{}",
+                    outcomes.record_report(
+                        *jurisdiction,
+                        teams.len(),
+                        report.disposition,
+                        report.errors,
+                        report.unfinished.len(),
+                    )
+                );
+                for team in teams.iter().take(3) {
+                    println!("  {}\t{}\t{}", team.id, team.name, team.city_state);
+                }
+            }
             Err(error) => {
                 eprintln!("{}\tteams=error\t{}", jurisdiction.code(), error);
-                failed.push(jurisdiction.code().to_string());
+                println!("{}", outcomes.record_failure(*jurisdiction));
             }
         }
     }
-    if !failed.is_empty() || !incomplete.is_empty() {
-        return Err(anyhow::anyhow!(
-            "team collection did not complete: failed [{}]; incomplete [{}]",
-            failed.join(", "),
-            incomplete.join(", ")
-        ));
-    }
-    Ok(())
+    outcomes.finish()
 }
 
-fn summarize_teams(
-    store: &Store,
-    jurisdiction: UsJurisdiction,
-    teams: &[census_crawl::milesplit::TeamRef],
-    incomplete: &mut Vec<String>,
-) -> Result<()> {
-    let report = census::team_index_report(store, jurisdiction)?;
-    println!(
-        "{}\tteams={}\toutcome={:?}\terrors={}\tunfinished={}",
-        jurisdiction.code(),
-        teams.len(),
-        report.disposition,
-        report.errors,
-        report.unfinished.len()
-    );
-    for team in teams.iter().take(3) {
-        println!("  {}\t{}\t{}", team.id, team.name, team.city_state);
+#[derive(Debug, Default)]
+pub(super) struct TeamsOutcomes {
+    failed: Vec<String>,
+    incomplete: Vec<String>,
+}
+
+impl TeamsOutcomes {
+    pub(super) fn record_report(
+        &mut self,
+        jurisdiction: UsJurisdiction,
+        teams: usize,
+        disposition: CollectionDisposition,
+        errors: u64,
+        unfinished: usize,
+    ) -> String {
+        if !disposition.is_complete() || errors != 0 || unfinished != 0 {
+            self.incomplete.push(jurisdiction.code().to_string());
+        }
+        format!(
+            "{}\tteams={}\toutcome={:?}\terrors={}\tunfinished={}",
+            jurisdiction.code(),
+            teams,
+            disposition,
+            errors,
+            unfinished
+        )
     }
-    if !report.disposition.is_complete() || report.errors != 0 || !report.unfinished.is_empty() {
-        incomplete.push(jurisdiction.code().to_string());
+
+    pub(super) fn record_failure(&mut self, jurisdiction: UsJurisdiction) -> String {
+        let code = jurisdiction.code().to_string();
+        let line = format!(
+            "{code}\tteams=error\toutcome={:?}",
+            CollectionDisposition::Failed
+        );
+        self.failed.push(code);
+        line
     }
-    Ok(())
+
+    pub(super) fn finish(&self) -> Result<()> {
+        if self.failed.is_empty() && self.incomplete.is_empty() {
+            return Ok(());
+        }
+        Err(anyhow::anyhow!(
+            "team collection did not complete: failed [{}]; incomplete [{}]",
+            self.failed.join(", "),
+            self.incomplete.join(", ")
+        ))
+    }
 }
 
 async fn teams_ingress(

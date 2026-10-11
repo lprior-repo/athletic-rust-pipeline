@@ -6,6 +6,7 @@ use serde::Deserialize;
 use std::io::{self, Write};
 use std::path::Path;
 
+#[derive(Clone)]
 pub(super) struct Capture {
     pub(super) meta: CacheMeta,
     pub(super) encoded: Vec<u8>,

@@ -35,9 +35,6 @@ pub(super) fn replay(capture: &Capture<'_>) -> Result<String> {
             page.contacts.len()
         ));
     }
-    if file == "robots.txt" {
-        return robots(body);
-    }
     if file == "PROVENANCE.json" {
         return provenance(capture, body);
     }
@@ -48,54 +45,6 @@ pub(super) fn replay(capture: &Capture<'_>) -> Result<String> {
         return golden(capture, name, body);
     }
     unmapped("pa_piaa", file)
-}
-
-fn robots(body: &str) -> Result<String> {
-    let mut agents: Vec<&str> = Vec::new();
-    let mut wildcard = false;
-    let mut saw_rule = false;
-    let mut disallows: Vec<&str> = Vec::new();
-    for raw in body.lines() {
-        let line = raw.trim();
-        if line.is_empty() || line.starts_with('#') {
-            continue;
-        }
-        let Some((field, value)) = line.split_once(':') else {
-            continue;
-        };
-        let value = value.trim();
-        if field.trim().eq_ignore_ascii_case("user-agent") {
-            if saw_rule {
-                agents.clear();
-                wildcard = false;
-                saw_rule = false;
-            }
-            agents.push(value);
-            wildcard = wildcard || value == "*";
-            continue;
-        }
-        saw_rule = true;
-        if wildcard && field.trim().eq_ignore_ascii_case("disallow") && !value.is_empty() {
-            disallows.push(value);
-        }
-    }
-    if agents.is_empty() {
-        bail!("robots.txt names no user agent group: the file did not parse");
-    }
-    let blocked = |path: &str| disallows.iter().any(|entry| path.starts_with(*entry));
-    if blocked("/") {
-        bail!("robots.txt disallows the whole site for `*`: the directory pages this adapter reads are not permitted");
-    }
-    if !blocked("/officials/directory/") {
-        bail!("robots.txt no longer disallows /officials/directory/: the adapter's exclusion is stale");
-    }
-    if blocked("/schools/directory/list.aspx") {
-        bail!("robots.txt disallows /schools/: the directory pages this adapter reads are no longer permitted");
-    }
-    Ok(format!(
-        "robots `*` group holds {} disallow(s), including /officials/directory/ and permitting /schools/",
-        disallows.len()
-    ))
 }
 
 fn provenance(capture: &Capture<'_>, body: &str) -> Result<String> {
