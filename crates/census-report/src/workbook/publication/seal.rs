@@ -1,13 +1,13 @@
 use super::invariant;
 use super::manifest::Manifest;
-use crate::export::ExportDataset;
+use crate::export::DatasetLineage;
 use crate::report::{ReportResult, Scope};
 use crate::workbook::Options;
 use census_domain::model::GradYear;
 
 pub(super) fn binding(
     manifest: &Manifest,
-    current: &ExportDataset,
+    current: &DatasetLineage,
     scope: Scope,
     cohort: GradYear,
 ) -> ReportResult<()> {
@@ -44,10 +44,8 @@ fn complete_selection(selection: &Options, scope: Scope, cohort: GradYear) -> Re
     Ok(())
 }
 
-fn same_run(manifest: &Manifest, current: &ExportDataset) -> ReportResult<()> {
-    if manifest.lineage.run != current.lineage.run
-        || manifest.lineage.cohort != current.lineage.cohort
-    {
+fn same_run(manifest: &Manifest, current: &DatasetLineage) -> ReportResult<()> {
+    if manifest.lineage.run != current.run || manifest.lineage.cohort != current.cohort {
         return Err(invariant(
             "publication is stale or belongs to a different census run".to_string(),
         ));
@@ -55,8 +53,8 @@ fn same_run(manifest: &Manifest, current: &ExportDataset) -> ReportResult<()> {
     Ok(())
 }
 
-fn run_school_year(selection: &Options, current: &ExportDataset) -> ReportResult<()> {
-    let Some(run) = current.lineage.run else {
+fn run_school_year(selection: &Options, current: &DatasetLineage) -> ReportResult<()> {
+    let Some(run) = current.run else {
         return Ok(());
     };
     if selection.school_year != run.season() {
@@ -66,11 +64,10 @@ fn run_school_year(selection: &Options, current: &ExportDataset) -> ReportResult
             run.season().get()
         )));
     }
-    if current.lineage.cohort != Some(GradYear::CO2027) {
+    if current.cohort != Some(GradYear::CO2027) {
         return Err(invariant(format!(
             "the store's run manifest certifies cohort {}, not {}",
             current
-                .lineage
                 .cohort
                 .map_or_else(|| "nothing".to_string(), |bound| bound.to_string()),
             GradYear::CO2027
@@ -79,12 +76,11 @@ fn run_school_year(selection: &Options, current: &ExportDataset) -> ReportResult
     Ok(())
 }
 
-fn same_evidence(manifest: &Manifest, current: &ExportDataset) -> ReportResult<()> {
-    if manifest.lineage.store_identity != current.lineage.store_identity
-        || manifest.lineage.source_digest != current.lineage.source_digest
-        || manifest.lineage.input_digest != current.lineage.input_digest
-        || manifest.lineage.schema_revision != current.lineage.schema_revision
-        || manifest.lineage.policy_revision != current.lineage.policy_revision
+fn same_evidence(manifest: &Manifest, current: &DatasetLineage) -> ReportResult<()> {
+    if manifest.lineage.store_identity != current.store_identity
+        || manifest.lineage.source_digest != current.source_digest
+        || manifest.lineage.schema_revision != current.schema_revision
+        || manifest.lineage.policy_revision != current.policy_revision
     {
         return Err(invariant(
             "publication is stale or belongs to different source evidence".to_string(),

@@ -10,7 +10,8 @@ pub(super) mod index;
 
 use emit::{emit_school, process_school, SchoolJob};
 
-const BOUND_UA: &str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36 census-service/0.1";
+const BOUND_UA: &str =
+    "Mozilla/5.0 AppleWebKit/537.36 Chrome/126.0 Safari/537.36 census-service/0.1";
 
 #[derive(Debug, Clone, Default)]
 pub struct Options {
@@ -84,18 +85,12 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     let mut report = AdapterReport::new(SOURCE_ID, "schools");
     let before = ctx.fetcher.stats().await;
 
-    let observed_on = if options.observed_on.is_empty() {
-        ctx.observed_on.clone()
-    } else {
-        options.observed_on.clone()
-    };
-
     let mut totals = Totals::default();
     for source in &BOUND {
         if !options.states.is_empty() && !options.states.contains(&source.state) {
             continue;
         }
-        walk_state(ctx, source, options, &observed_on, &mut totals, &mut report).await?;
+        walk_state(ctx, source, options, &mut totals, &mut report).await?;
     }
 
     let after = ctx.fetcher.stats().await;
@@ -111,7 +106,6 @@ async fn walk_state(
     ctx: &AdapterContext<'_>,
     source: &Bound,
     options: &Options,
-    observed_on: &str,
     totals: &mut Totals,
     report: &mut AdapterReport,
 ) -> CrawlResult<()> {
@@ -147,8 +141,7 @@ async fn walk_state(
         None => slugified.matched,
     };
 
-    let (school_tally, coach_tally) =
-        sweep(ctx, source, &matched, &entries, observed_on, report).await?;
+    let (school_tally, coach_tally) = sweep(ctx, source, &matched, &entries, report).await?;
 
     report.rows = report
         .rows
@@ -171,7 +164,6 @@ async fn sweep(
     source: &Bound,
     matched: &[(String, String)],
     entries: &[(&str, Sport, Gender)],
-    observed_on: &str,
     report: &mut AdapterReport,
 ) -> CrawlResult<(usize, usize)> {
     let mut school_tally = 0usize;
@@ -184,7 +176,7 @@ async fn sweep(
             state_code: source.state_code,
             state: source.state,
         };
-        let extract = process_school(ctx, &job, source.association, entries, observed_on).await?;
+        let extract = process_school(ctx, &job, source.association, entries).await?;
 
         let Some(extract) = extract else {
             report.note(format!(

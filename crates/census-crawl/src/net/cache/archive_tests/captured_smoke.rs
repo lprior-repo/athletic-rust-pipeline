@@ -32,6 +32,20 @@ fn captured_nc_directory_and_summary_fixtures_survive_synthetic_cache_refresh() 
         original.etag = None;
         original.last_modified = None;
         write_cache(&body_path, &meta_path, raw, &original)?;
+        let archived_meta = archive_meta(root.path(), &original)?;
+        let first_metadata = std::fs::read(&archived_meta)?;
+        let first_bodies = file_names(&root.path().join("archive/bodies"))?;
+        let first_captures = file_names(archived_meta.parent().ok_or("capture parent")?)?;
+        write_cache(&body_path, &meta_path, raw, &original)?;
+        check!(eq; file_names(&root.path().join("archive/bodies"))?, first_bodies);
+        check!(eq; file_names(archived_meta.parent().ok_or("capture parent")?)?, first_captures);
+        check!(eq; std::fs::read(&archived_meta)?, first_metadata);
+        check!(eq; file_names(&root.path().join("archive/reservations"))?.len(), 0);
+        eprintln!(
+            "archive smoke: key={key} digest={expected_digest} first_body_bytes={} first_metadata_bytes={} second_net_new_bytes=0 outstanding_reservations=0",
+            raw.len(),
+            first_metadata.len()
+        );
         let mut refreshed_raw = raw.to_vec();
         refreshed_raw.push(b'\n');
         let mut refreshed = original.clone();

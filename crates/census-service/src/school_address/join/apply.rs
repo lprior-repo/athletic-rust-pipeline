@@ -1,14 +1,14 @@
 use std::collections::BTreeSet;
 
-use census_domain::model::{CanonicalSchool, ReviewCase, SourceNamespace};
+use census_domain::model::{CanonicalSchool, ReviewCase};
 use census_domain::school_directory::{
-    AttestedRecord, DirectoryIndex, LinkDecision, LinkRule, ReviewReason, SourceLabel,
-    StateRecordId, MAX_CO_OP_MEMBERS,
+    DirectoryIndex, LinkDecision, LinkRule, ReviewReason, MAX_CO_OP_MEMBERS,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, StoreResult, Table};
 
-use super::lanes::{ASSOCIATION_PREFIX, STATE_ED};
+use super::attest::owned_record;
+use super::lanes::ASSOCIATION_PREFIX;
 use super::support::{
     allocation, bump, bump_review_reason, parse_key_label, reason_name, row, rule_name,
 };
@@ -55,6 +55,8 @@ impl<'a> Job<'a> {
             association,
             association_problem,
             attested: Vec::new(),
+            postal_present: false,
+            postal_provider: None,
         })
     }
 
@@ -106,8 +108,7 @@ impl<'a> Job<'a> {
         bump(&mut self.counters.review_filed)
     }
 
-    pub(super) fn visit(&mut self, school: &CanonicalSchool) -> StoreResult<()> {
-        bump(&mut self.counters.scanned)?;
+    pub(super) fn visit_school(&mut self, school: &CanonicalSchool) -> StoreResult<()> {
         let Some(state) = school.state else {
             bump(&mut self.counters.missing_state)?;
             let mut row = row(school, None, "missing_state");
@@ -166,7 +167,13 @@ impl<'a> Job<'a> {
                 let mut row = row(school, Some(state), "review");
                 row.reason = Some(reason_name(&reason).to_string());
                 row.candidates = labels.clone();
-                row.detail = member.map(member_detail);
+                row.detail = match member {
+                    Some(member) => Some(member_detail(member)),
+                    None => match self.gap_reason(school, state, None) {
+                        "no_match" => None,
+                        reason => Some(reason.to_string()),
+                    },
+                };
                 self.outcomes.push(row);
                 self.file_review(school, &reason, &labels)
             }
@@ -174,13 +181,13 @@ impl<'a> Job<'a> {
                 let Some(member) = member else {
                     bump(&mut self.counters.no_match)?;
                     let mut row = row(school, Some(state), "no_match");
-                    row.reason = Some("no_match".to_string());
+                    row.reason = Some(self.gap_reason(school, state, None).to_string());
                     self.outcomes.push(row);
                     return Ok(());
                 };
                 bump(&mut self.counters.co_op_declined)?;
                 let mut row = row(school, Some(state), "co_op_declined");
-                row.reason = Some("no_match".to_string());
+                row.reason = Some(self.gap_reason(school, state, Some(member)).to_string());
                 row.detail = Some(member_detail(member));
                 self.outcomes.push(row);
                 Ok(())
@@ -191,33 +198,28 @@ impl<'a> Job<'a> {
     fn attest(&mut self, school: &CanonicalSchool, state: UsJurisdiction) -> StoreResult<()> {
         self.attested.clear();
         for identity in &school.source_identities {
-            let label = match &identity.namespace {
-                SourceNamespace::SchoolDirectory {
-                    provider,
-                    state: owner_state,
-                } if provider == STATE_ED => SourceLabel::StateEducationAgency {
-                    state: *owner_state,
-                },
-                SourceNamespace::AssociationSchool { association } => {
-                    if self.association.as_deref() != Some(association.as_str()) {
-                        continue;
+            let record =
+                owned_record(identity, state, self.association.as_deref()).map_err(|error| {
+                    census_store::StoreError::Invariant {
+                        detail: format!(
+                            "school {} has an invalid directory identity: {error}",
+                            school.id.as_str()
+                        ),
                     }
-                    SourceLabel::AthleticAssociation { state }
-                }
-                _ => continue,
-            };
-            let Ok(id) = StateRecordId::parse(&identity.id) else {
+                })?;
+            let Some(record) = record else {
                 continue;
             };
             self.attested
                 .try_reserve(1)
                 .map_err(|error| allocation(error.to_string()))?;
-            self.attested.push(AttestedRecord { label, id });
+            self.attested.push(record);
         }
         Ok(())
     }
 
     pub(super) fn push_change(&mut self, clone: CanonicalSchool) -> StoreResult<()> {
+        self.record_postal(&clone);
         if self.mode == Mode::Apply {
             self.pending.push(clone);
             if self.pending.len() == WRITE_CHUNK {

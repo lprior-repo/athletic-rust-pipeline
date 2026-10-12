@@ -114,7 +114,12 @@ impl DirectoryRun<'_> {
         let Some(owner) = &self.owner else {
             return Ok(());
         };
-        let coach = coach_from_row(&owner.school.id, row, self.capture);
+        let mut coach = coach_from_row(&owner.school.id, row, self.capture);
+        crate::coach_directories::record_capture_appointments(
+            std::slice::from_mut(&mut coach),
+            self.capture,
+            "riil",
+        )?;
         let before = self.report.errors;
         publish(
             self.ctx,

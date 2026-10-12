@@ -3,7 +3,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use census_store::{clock::SystemClock, Store};
-use tokio::sync::Semaphore;
 
 use super::super::wait_configured;
 use super::{fixture, identity, read_marker, write_new, TestResult, OPERATION};
@@ -16,23 +15,25 @@ pub(super) struct Runtime {
     pub(super) source: TeamsSource,
     pub(super) jobs: Jobs,
     pub(super) region: Arc<Spawner>,
-    pub(super) load: Arc<Semaphore>,
 }
 
 pub(super) fn runtime() -> Result<Runtime, Box<dyn Error>> {
     let root = tempfile::tempdir()?;
     let store = Arc::new(Store::open(root.path())?);
     let region = Arc::new(Spawner::with_capacity(2));
-    let load = Arc::new(Semaphore::new(2));
-    let owner = JurisdictionCensus::new(Arc::clone(&store), Arc::new(SystemClock), None);
-    let jobs = Jobs::new(store, Arc::clone(&load), Arc::clone(&region));
+    let owner = JurisdictionCensus::new(
+        Arc::clone(&store),
+        Arc::new(SystemClock),
+        None,
+        Arc::new(crate::spawn::Spawner::new()),
+    );
+    let jobs = Jobs::new(store, Arc::clone(&region));
     let source = TeamsSource::new(owner, jobs.clone());
     Ok(Runtime {
         _root: root,
         source,
         jobs,
         region,
-        load,
     })
 }
 
@@ -68,7 +69,7 @@ fn unrelated_operations_and_later_reserved_attempts_ignore_owned_marker_artifact
                     &identity(),
                 )
                 .await?;
-                check!(eq; runtime.load.available_permits(), 2);
+                check!(eq; runtime.region.coordinator().remaining().slots.stages, 2);
                 check!(eq; std::fs::read(fixture.marker())?,
     b"retained unrelated authority");
                 check!(eq; std::fs::read(fixture.pending())?,
@@ -118,9 +119,17 @@ fn exact_reserved_attempt_publishes_original_identity_before_failed_hold_expiry(
     .err()
     .map(|error| error.kind()),
 Some(std::io::ErrorKind::NotFound));
-            check!(eq; runtime.load.available_permits(), 2);
-            check!(eq; runtime.region.drain(Duration::from_secs(5)).await?,
-completed(2));
+            check!(eq; runtime.region.coordinator().remaining().slots.stages, 2);
+            check!(
+                eq;
+                runtime.region.drain(Duration::from_secs(5)).await?,
+                TaskReport {
+                    accepted: 2,
+                    completed: 2,
+                    failed: 1,
+                    ..TaskReport::default()
+                }
+            );
             Ok(())
         })
 }
@@ -154,9 +163,17 @@ fn malformed_present_config_fails_even_for_an_unrelated_source_without_publishin
     .err()
     .map(|error| error.kind()),
 Some(std::io::ErrorKind::NotFound));
-            check!(eq; runtime.load.available_permits(), 2);
-            check!(eq; runtime.region.drain(Duration::from_secs(5)).await?,
-completed(1));
+            check!(eq; runtime.region.coordinator().remaining().slots.stages, 2);
+            check!(
+                eq;
+                runtime.region.drain(Duration::from_secs(5)).await?,
+                TaskReport {
+                    accepted: 1,
+                    completed: 1,
+                    failed: 1,
+                    ..TaskReport::default()
+                }
+            );
             Ok(())
         })
 }
@@ -170,5 +187,7 @@ pub(super) fn completed(count: u64) -> TaskReport {
         remaining: 0,
         aborted: 0,
         panicked: 0,
+        failed: 0,
+        still_running: 0,
     }
 }

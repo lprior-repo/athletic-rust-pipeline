@@ -57,3 +57,27 @@ Since the contract prohibits bypassing access blocks, OSAA cannot be tapped with
 - [ ] Rows.csv or adapter not produced (no content available)
 - [ ] Import/readback deferred to Main if adapter is later feasible
 - [x] Dated evidence provided in this report with exact URLs and statuses
+
+## 2026-10-12 qualification correction
+
+The blanket-access conclusion above is historical and is not the current coach-lane refusal.
+The Oregon bead records the owner's 2026-10-07 observation: `/schools/full-members` returned
+HTTP 200 with 300 member-school links and `robots.txt` returned HTTP 200. That observation is
+not re-probed here. Retained `state-assoc-westcoast/samples/osaa-school-347.html` contains
+Adrian's school staff and activity head-coach tables; its SHA-256, measured with `sha256sum`,
+is `b44dac9d956cbdad802464b2002d82d75434d305bb34d56f479b1b71d4502a7d`.
+It carries published AD mailbox text and TF/XC coach names. Oregon is therefore not described
+as a source that never published contacts or as an authenticated-only site.
+
+The current refusal is an engineering gap: Oregon has no wired durable OSAA coach arm.
+`coach_contacts` is a registered candidate but is not dispatched by the durable teams arm
+table. The prototype's 298-profile output is held research, not fresh-run execution or an
+admissible current-run contact import. The state obligation records
+`or_missing_coach_sources` and the work order's remaining-source inventory, stays nonterminal,
+and names the missing durable frontier in `arm_basis`. No operator acceptance is manufactured.
+
+The close/reopen scenario writes the exact obligation and jurisdiction decision to an isolated
+temporary Fjall store, flushes and reopens it, and checks refusal preservation and idempotent
+rebind. No historical run state is changed, no service is restarted and no live crawl occurs.
+Main owns this round's exact command/result evidence; this source qualification does not
+claim that an unexecuted scenario passed or that a live Restate restart was exercised.

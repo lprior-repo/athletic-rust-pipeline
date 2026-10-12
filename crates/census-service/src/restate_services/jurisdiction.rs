@@ -16,7 +16,11 @@ use census_reconcile::identity::Revision;
 
 use super::jobs;
 use super::wire::{JurisdictionOwed, JurisdictionReport, JurisdictionRequest, JurisdictionState};
+use crate::spawn::Spawner;
 
+mod athleticlive;
+#[cfg(test)]
+mod athleticlive_tests;
 #[cfg(test)]
 mod binding_tests;
 mod pipeline;
@@ -34,8 +38,8 @@ pub use team_source::{TeamsSource, TeamsSourceClient, TeamsSourceIngressClient};
 
 #[allow(unused_imports)]
 pub(super) use state::{
-    bind_history_window, bound_run_refusal, owed_work, roster_stage_owed, stage_owed,
-    teams_failure, Stage,
+    bind_history_window, bound_run_refusal, coach_lane_owed, owed_work, roster_stage_owed,
+    stage_owed, teams_failure, Stage,
 };
 
 type CachedFetcher = Option<(Vec<String>, usize, Arc<Fetcher>)>;
@@ -48,10 +52,16 @@ pub struct JurisdictionCensus {
     fetcher: Arc<Mutex<CachedFetcher>>,
     pacing: Arc<PacingState>,
     source_parallelism: Arc<OnceLock<usize>>,
+    region: Arc<Spawner>,
 }
 
 impl JurisdictionCensus {
-    pub fn new(store: Arc<Store>, clock: Arc<dyn Clock>, lane: Option<BrowserLane>) -> Self {
+    pub fn new(
+        store: Arc<Store>,
+        clock: Arc<dyn Clock>,
+        lane: Option<BrowserLane>,
+        region: Arc<Spawner>,
+    ) -> Self {
         Self {
             store,
             clock,
@@ -59,7 +69,12 @@ impl JurisdictionCensus {
             fetcher: Arc::new(Mutex::new(None)),
             pacing: Arc::new(PacingState::new()),
             source_parallelism: Arc::new(OnceLock::new()),
+            region,
         }
+    }
+
+    pub(super) fn region(&self) -> Arc<Spawner> {
+        Arc::clone(&self.region)
     }
 
     async fn run_owed_stages(
@@ -72,6 +87,7 @@ impl JurisdictionCensus {
         let today = super::journaled_today(ctx, &self.clock).await?;
         bind_history_window(state, request.history)?;
         self.record_plan(ctx, request, state, &today).await?;
+        self.athleticlive_owed(ctx, request, state, &today).await?;
         stream::iter([Stage::Teams, Stage::Rosters, Stage::Meets, Stage::Results])
             .map(Ok::<_, HandlerError>)
             .try_fold((state, Vec::new()), |(state, mut ran), stage| {
@@ -130,6 +146,9 @@ impl JurisdictionCensus {
         self.record_plan(ctx, request, state, &today).await?;
         let mut ran: Vec<String> = Vec::new();
         let mut failures: Vec<String> = Vec::new();
+        if let Err(error) = self.athleticlive_owed(ctx, request, state, &today).await {
+            failures.push(format!("athleticlive_manifest stage failed: {error:?}"));
+        }
         for stage in [Stage::Teams, Stage::Rosters, Stage::Meets, Stage::Results] {
             if !stage_owed(stage, state, request) {
                 continue;
@@ -155,6 +174,16 @@ impl JurisdictionCensus {
     )
 )]
 impl JurisdictionCensus {
+    #[handler]
+    #[tracing::instrument(skip_all)]
+    async fn athleticlive_manifest(
+        &self,
+        ctx: ObjectContext<'_>,
+        Json(request): Json<super::wire::AthleticLiveManifestRequest>,
+    ) -> Result<Json<super::wire::AthleticLiveObligation>, HandlerError> {
+        self.register_athleticlive(&ctx, request).await.map(Json)
+    }
+
     #[handler]
     async fn state(
         &self,

@@ -36,6 +36,16 @@ impl DrainState {
     }
 }
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct AttemptState {
+    pub ceiling: u8,
+    pub sources: u64,
+    pub settled: u64,
+    pub reserved: u64,
+    pub recorded: u64,
+    pub unknown: u64,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

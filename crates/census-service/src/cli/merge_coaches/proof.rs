@@ -2,13 +2,23 @@ use super::{MergePass, Row, RowKey};
 use anyhow::{bail, Result};
 use census_domain::model::{verify_contact_proof, ContactClaimEvidence, RawContactRow};
 use census_service::coachverify;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
 
 pub(super) fn read_fragment_claims(
     csv_files: &[PathBuf],
 ) -> Result<BTreeMap<PathBuf, Vec<ContactClaimEvidence>>> {
     let mut claims_by_file: BTreeMap<PathBuf, Vec<ContactClaimEvidence>> = BTreeMap::new();
+    let mut bytes = 0u64;
+    for path in csv_files {
+        let size = std::fs::metadata(coachverify::evidence_path(path))?.len();
+        bytes = bytes
+            .checked_add(size)
+            .ok_or_else(|| anyhow::anyhow!("merged evidence byte count overflow"))?;
+        if bytes > 256 * 1024 * 1024 {
+            bail!("merged evidence bytes {bytes} exceeds 268435456");
+        }
+    }
     for path in csv_files {
         let sidecar = coachverify::evidence_path(path);
         if !sidecar.is_file() {
@@ -26,39 +36,81 @@ pub(super) fn read_fragment_claims(
 
 fn covering_proof(
     row: &Row,
-    claims: &[ContactClaimEvidence],
-) -> Result<Vec<ContactClaimEvidence>, String> {
+    claims: &coachverify::ContactEvidenceIndex<'_>,
+) -> Result<Result<Vec<ContactClaimEvidence>, census_domain::model::ContactProofError>> {
     let raw = raw_contact_row(row);
-    let covering = coachverify::claims_for_row(claims, &raw);
-    verify_contact_proof(&raw, &covering, row.verified_proof_digest.trim())
-        .map(|_| covering)
-        .map_err(|error| error.to_string())
+    let covering = claims.claims_for_row(&raw)?;
+    Ok(verify_contact_proof(&raw, &covering, row.verified_proof_digest.trim()).map(|_| covering))
 }
 
 pub(super) fn verify_kept_proofs(
     pass: &mut MergePass,
     claims_by_file: &BTreeMap<PathBuf, Vec<ContactClaimEvidence>>,
-) -> Vec<ContactClaimEvidence> {
+) -> Result<Vec<ContactClaimEvidence>> {
+    check_kept_budget(pass)?;
+    let mut indexes = HashMap::new();
+    indexes.try_reserve(claims_by_file.len())?;
+    for (path, claims) in claims_by_file {
+        indexes.insert(path, coachverify::ContactEvidenceIndex::build(claims)?);
+    }
     let mut evidence: Vec<ContactClaimEvidence> = Vec::new();
     let mut unproven: Vec<(RowKey, String)> = Vec::new();
+    unproven.try_reserve(pass.kept.len())?;
+    let empty = coachverify::ContactEvidenceIndex::build(&[])?;
     for (key, row) in &pass.kept {
         let claims = match pass
             .origins
             .get(key)
-            .and_then(|origin| claims_by_file.get(&origin.file))
+            .and_then(|origin| indexes.get(&origin.file))
         {
-            Some(claims) => claims.as_slice(),
-            None => &[],
+            Some(claims) => claims,
+            None => &empty,
         };
-        match covering_proof(row, claims) {
-            Ok(covering) => evidence.extend(covering),
-            Err(reason) => unproven.push((key.clone(), reason)),
+        match covering_proof(row, claims)? {
+            Ok(covering) => {
+                let count = evidence
+                    .len()
+                    .checked_add(covering.len())
+                    .ok_or_else(|| anyhow::anyhow!("merged evidence count overflow"))?;
+                if count > 1_000_000 {
+                    bail!("merged evidence claims {count} exceeds 1000000");
+                }
+                evidence.try_reserve(covering.len())?;
+                evidence.extend(covering);
+            }
+            Err(reason) => unproven.push((key.clone(), reason.to_string())),
         }
     }
     for (key, reason) in unproven {
         reject_unproven(pass, &key, &reason);
     }
-    evidence
+    Ok(evidence)
+}
+
+fn check_kept_budget(pass: &MergePass) -> Result<()> {
+    if pass.kept.len() > 1_000_000 {
+        bail!("merged contact rows {} exceeds 1000000", pass.kept.len());
+    }
+    let mut bytes = 0usize;
+    let mut work = 0usize;
+    for row in pass.kept.values() {
+        let record = row
+            .to_fields()
+            .into_iter()
+            .fold(0usize, |count, field| count.saturating_add(field.len()));
+        if record > 1_048_576 {
+            bail!("merged contact record bytes {record} exceeds 1048576");
+        }
+        bytes = bytes.saturating_add(record);
+        if bytes > 268_435_456 {
+            bail!("merged contact bytes {bytes} exceeds 268435456");
+        }
+        work = work.saturating_add(row.source_url.split_whitespace().count().saturating_mul(6));
+        if work > 8_000_000 {
+            bail!("merged contact queries {work} exceeds 8000000");
+        }
+    }
+    Ok(())
 }
 
 fn reject_unproven(pass: &mut MergePass, key: &RowKey, reason: &str) {

@@ -8,6 +8,7 @@ mod fallible_checks;
 pub mod bests;
 mod csv_safety;
 pub mod export;
+mod grouping;
 pub mod report;
 pub mod school_contacts;
 pub mod workbook;

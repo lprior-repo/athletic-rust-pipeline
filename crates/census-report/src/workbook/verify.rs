@@ -17,6 +17,7 @@ mod prs;
 mod reach;
 mod read;
 mod report;
+mod xlsx;
 
 #[derive(Debug)]
 pub struct VerifiedWorkbook {
@@ -39,7 +40,7 @@ pub fn verify_frozen(
     prs::verify(&mut book, &expectations, &mut findings)?;
     coaches::verify(&mut book, &expectations, &mut findings)?;
     meta::verify(&mut book, &expectations, &mut findings)?;
-    let rows = findings.finish()?;
+    let rows = findings.finish(path)?;
     Ok(VerifiedWorkbook {
         sheets: count(book.names().len())?,
         rows: count(rows)?,

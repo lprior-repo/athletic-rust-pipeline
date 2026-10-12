@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use census_domain::model::{AccessBlockKind, CensusRun, GradYear, SourceAccessCondition};
 
 use super::{CensusState, SealEvidence, SealedCensus};
-use census_report::export::ExportDataset;
 use census_report::report::{self, Derivation, Scope};
 use census_store::{Store, StoreStats, Table};
 
@@ -13,8 +12,6 @@ pub mod workbook;
 pub enum SealWorkflowError {
     #[error("coverage report failed: {0}")]
     Coverage(String),
-    #[error("census build failed: {0}")]
-    CensusBuild(String),
     #[error("store operation failed: {0}")]
     Store(String),
     #[error("workbook inspection failed: {0}")]
@@ -88,9 +85,16 @@ fn bound_display(bound: Option<CensusRun>) -> String {
 
 pub fn seal(store: &Store, request: &SealRequest) -> Result<SealOutcome, SealWorkflowError> {
     let cohort = census_cohort(request.grad_year)?;
-    let dataset = ExportDataset::load(store)
-        .map_err(|error| SealWorkflowError::CensusBuild(error.to_string()))?;
-    bound_run(&dataset, request.run)?;
+    bound_run(store, request.run)?;
+    let Some(path) = workbook_path(store, request.workbook.as_deref())
+        .map_err(|error| SealWorkflowError::Workbook(error.to_string()))?
+    else {
+        return Err(SealWorkflowError::WorkbookMissing);
+    };
+    let inspection = inspect_workbook(&path, store, cohort, request.scope)
+        .map_err(|error| SealWorkflowError::Workbook(error.to_string()))?;
+    let dataset = inspection.dataset;
+    let workbook = inspection.check;
     let coverage = report::coverage_report(&dataset, Some(cohort.get()))
         .map_err(|error| SealWorkflowError::Coverage(error.to_string()))?;
     let derivation = Derivation::of(&dataset, request.scope, Some(cohort.get()));
@@ -100,14 +104,6 @@ pub fn seal(store: &Store, request: &SealRequest) -> Result<SealOutcome, SealWor
         .map_err(|error| SealWorkflowError::Store(error.to_string()))?;
     let cases = &dataset.review_cases;
     let access = &dataset.source_access;
-
-    let Some(path) = workbook_path(store, request.workbook.as_deref())
-        .map_err(|error| SealWorkflowError::Workbook(error.to_string()))?
-    else {
-        return Err(SealWorkflowError::WorkbookMissing);
-    };
-    let workbook = inspect_workbook(&path, &dataset, cohort, request.scope)
-        .map_err(|error| SealWorkflowError::Workbook(error.to_string()))?;
     let evidence = assemble(&coverage, &census, &stats, cases, access, request, workbook);
 
     let mut state = reached_phase(&stats, &path)
@@ -139,19 +135,20 @@ pub fn seal(store: &Store, request: &SealRequest) -> Result<SealOutcome, SealWor
     })
 }
 
-fn bound_run(
-    dataset: &ExportDataset,
-    measured: Option<CensusRun>,
-) -> Result<(), SealWorkflowError> {
+fn bound_run(store: &Store, measured: Option<CensusRun>) -> Result<(), SealWorkflowError> {
     let Some(measured) = measured else {
         return Ok(());
     };
-    if dataset.lineage.run == Some(measured) {
+    let bound = store
+        .run_manifest()
+        .map_err(|error| SealWorkflowError::Store(error.to_string()))?
+        .map(|manifest| manifest.run);
+    if bound == Some(measured) {
         return Ok(());
     }
     Err(SealWorkflowError::RunMismatch {
         measured,
-        bound: bound_display(dataset.lineage.run),
+        bound: bound_display(bound),
     })
 }
 
@@ -214,3 +211,6 @@ pub(crate) fn count(value: usize) -> u64 {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod probe;

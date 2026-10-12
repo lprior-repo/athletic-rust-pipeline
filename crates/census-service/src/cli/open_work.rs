@@ -52,11 +52,10 @@ pub(super) async fn run_open_work(cli: &Cli, args: &OpenWorkArgs) -> Result<()> 
         println!("{}", serde_json::to_string_pretty(&reply)?);
         return Ok(());
     }
-    print_open_work(&reply);
-    Ok(())
+    print_open_work(&reply)
 }
 
-fn print_open_work(reply: &OpenWorkReply) {
+fn print_open_work(reply: &OpenWorkReply) -> Result<()> {
     println!("season {} revision {}", reply.season, reply.revision);
     println!(
         "jurisdiction sweeps owed: {} of {}",
@@ -87,10 +86,14 @@ fn print_open_work(reply: &OpenWorkReply) {
     for row in &reply.endpoints {
         let unreadable = if row.unreadable { " (unreadable)" } else { "" };
         println!(
-            "  {} observations {} windows {}{unreadable}",
-            row.endpoint, row.observations, row.windows
+            "  {} observations {} windows {} disposition {:?}{unreadable}",
+            row.endpoint, row.observations, row.windows, row.disposition
         );
+        if let Some(outcome) = &row.teams_source {
+            println!("    teams source: {}", serde_json::to_string(outcome)?);
+        }
     }
+    Ok(())
 }
 
 fn count(value: Option<u64>) -> String {

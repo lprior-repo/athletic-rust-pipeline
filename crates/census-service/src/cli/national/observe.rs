@@ -67,13 +67,13 @@ pub(crate) async fn drive_jurisdiction(
         .await
         .map_err(ingress::error)?;
     let handle = submitted.invocation_handle();
-    println!(
+    eprintln!(
         "{} submitted as invocation {}",
         identity.as_str(),
         handle.invocation_id()
     );
     if matches!(submitted.send_status(), SendStatus::PreviouslyAccepted) {
-        println!(
+        eprintln!(
             "note: {} already had a run — restate deduplicated this submission",
             identity.as_str()
         );

@@ -2,7 +2,7 @@ use crate::report::{xlsx_error, ReportError, ReportResult};
 use rust_xlsxwriter::{Format, Workbook, Worksheet};
 use std::path::Path;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub(super) enum Cell {
     Text(String),
     Number(f64),
@@ -66,9 +66,37 @@ pub(super) fn write_sheet(
     layout: SheetLayout<'_>,
     rows: Vec<Vec<Cell>>,
 ) -> ReportResult<()> {
+    write_sheet_rows(
+        book,
+        path,
+        layout,
+        rows.into_iter().map(Ok::<Vec<Cell>, ReportError>),
+    )
+}
+
+pub(super) fn write_sheet_rows<I>(
+    book: &mut Workbook,
+    path: &Path,
+    layout: SheetLayout<'_>,
+    rows: I,
+) -> ReportResult<()>
+where
+    I: IntoIterator<Item = ReportResult<Vec<Cell>>>,
+{
     let mut writer = SheetWriter::start(book, path, layout.name, layout.widths)?;
-    let last_column = writer.write_rows(&rows)?;
-    writer.finish(rows.len(), last_column, layout.chrome)
+    let mut written: usize = 0;
+    let mut last_column: usize = 0;
+    for row in rows {
+        let cells = row?;
+        last_column = last_column.max(cells.len().saturating_sub(1));
+        writer.write_row(written, &cells)?;
+        written = written
+            .checked_add(1)
+            .ok_or_else(|| ReportError::Invariant {
+                detail: "the worksheet wrote more rows than it can count".to_string(),
+            })?;
+    }
+    writer.finish(written, last_column, layout.chrome)
 }
 
 pub(super) struct SheetWriter<'a> {
@@ -173,19 +201,6 @@ impl<'a> SheetWriter<'a> {
             self.autofilter(rows, last_column)?;
         }
         self.freeze_header()
-    }
-
-    fn write_rows(&mut self, rows: &[Vec<Cell>]) -> ReportResult<usize> {
-        let last_column = rows
-            .iter()
-            .map(Vec::len)
-            .max()
-            .map_or(1, |value| value)
-            .saturating_sub(1);
-        for (index, cells) in rows.iter().enumerate() {
-            self.write_row(index, cells)?;
-        }
-        Ok(last_column)
     }
 
     fn write_cell(&mut self, row: u32, column: u16, cell: &Cell) -> ReportResult<()> {

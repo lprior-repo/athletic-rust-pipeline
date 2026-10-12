@@ -49,6 +49,9 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         }
     }
     run.finish()?;
+    if run.blocked > 0 {
+        run.report.disposition = crate::CollectionDisposition::Blocked;
+    }
     let after = ctx.fetcher.stats().await;
     run.report.requests = after
         .physical_requests()
@@ -66,6 +69,14 @@ impl Run<'_> {
         let capture = match self.ctx.fetcher.get(url, &fetch).await {
             Ok(capture) => capture,
             Err(error) => {
+                if matches!(error, FetchError::Cooldown { .. }) {
+                    self.blocked =
+                        self.blocked
+                            .checked_add(1)
+                            .ok_or_else(|| CrawlError::Arithmetic {
+                                detail: "IHSA cooldown counter overflow".to_string(),
+                            })?;
+                }
                 fail(&mut self.report, url, error)?;
                 return Ok(None);
             }

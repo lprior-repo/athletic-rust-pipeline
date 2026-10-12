@@ -48,8 +48,24 @@ pub(super) fn require_identity(
     ctx: &WorkflowContext<'_>,
     request: &NationalRequest,
 ) -> Result<WorkflowIdentity, HandlerError> {
-    let identity =
-        WorkflowIdentity::national(request.season, request.revision, &request.jurisdictions);
+    let identity = match ctx.key().rsplit_once(":resume:") {
+        Some((_, suffix)) => {
+            let ordinal = suffix.parse::<std::num::NonZeroU32>().map_err(|error| {
+                TerminalError::new(format!(
+                    "request identity has an invalid resume ordinal: {error}"
+                ))
+            })?;
+            WorkflowIdentity::national_resume(
+                request.season,
+                request.revision,
+                &request.jurisdictions,
+                ordinal,
+            )
+        }
+        None => {
+            WorkflowIdentity::national(request.season, request.revision, &request.jurisdictions)
+        }
+    };
     if ctx.key() != identity.as_str() {
         return Err(TerminalError::new(format!(
             "request identity {} does not match workflow id {}",

@@ -47,6 +47,24 @@ impl WorkflowIdentity {
         )
     }
 
+    pub fn national_resume(
+        season: SchoolYear,
+        revision: Revision,
+        jurisdictions: &[UsJurisdiction],
+        ordinal: std::num::NonZeroU32,
+    ) -> Self {
+        Self::join(
+            "national",
+            &[
+                &season.short(),
+                &scope_digest(jurisdictions),
+                &revision.to_string(),
+                "resume",
+                &ordinal.to_string(),
+            ],
+        )
+    }
+
     pub fn jurisdiction(
         jurisdiction: UsJurisdiction,
         season: SchoolYear,

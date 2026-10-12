@@ -18,8 +18,10 @@ pub(super) async fn collect(
     input: (&[SourceMeetRef], HistoricalStageScope),
 ) -> Result<ResultsSourceRows, HandlerError> {
     let (selected, scope) = input;
-    if matches!(arm, ResultsArm::TfrrsResults) {
-        return super::tfrrs::collect(store, fetcher, scope).await;
+    match arm {
+        ResultsArm::TfrrsResults => return super::tfrrs::collect(store, fetcher, scope).await,
+        ResultsArm::IhsaTournament => return ihsa_tournament(slug, store, fetcher, scope).await,
+        ResultsArm::MilesplitResults | ResultsArm::AthleticnetMeets => {}
     }
     stream::iter(selected.iter().filter(|meet| eligible(arm, meet)))
         .map(Ok::<_, HandlerError>)
@@ -40,7 +42,7 @@ fn eligible(arm: ResultsArm, meet: &SourceMeetRef) -> bool {
         ResultsArm::AthleticnetMeets => {
             meet.source == super::ATHLETICNET || super::meet_id_in(&meet.results_url).is_some()
         }
-        ResultsArm::TfrrsResults => false,
+        ResultsArm::TfrrsResults | ResultsArm::IhsaTournament => false,
     }
 }
 
@@ -71,11 +73,11 @@ async fn one(
             )
             .await
         }
-        ResultsArm::TfrrsResults => {
+        ResultsArm::TfrrsResults | ResultsArm::IhsaTournament => {
             return Ok(failed_source(
                 slug,
                 1,
-                jobs::invariant("tfrrs should not reach one()"),
+                jobs::invariant("source-index result arm should not reach one()"),
             ))
         }
     };
@@ -87,6 +89,31 @@ async fn one(
         append(&mut row.unfinished, meet.results_url.clone())?;
     }
     Ok(row)
+}
+
+async fn ihsa_tournament(
+    slug: &str,
+    store: &Arc<Store>,
+    fetcher: &Arc<Fetcher>,
+    scope: HistoricalStageScope,
+) -> Result<ResultsSourceRows, HandlerError> {
+    let options = census_crawl::ihsa::Options {
+        refresh: scope.refresh,
+        observed_on: scope.observed_on.to_string(),
+        states: vec![scope.jurisdiction],
+        ..Default::default()
+    };
+    let adapter = AdapterScope {
+        season: super::super::meets_arms::season_of(scope.year)?,
+        refresh: scope.refresh,
+        at: &options.observed_on,
+        as_of: scope.window.as_of(),
+    };
+    let context = adapter_context(store, fetcher, adapter, None);
+    match census_crawl::ihsa::tournament::collect(&context, &options).await {
+        Ok(report) => source_rows(slug, 0, report),
+        Err(error) => Ok(failed_source(slug, 0, error.into())),
+    }
 }
 
 pub(super) fn merge(

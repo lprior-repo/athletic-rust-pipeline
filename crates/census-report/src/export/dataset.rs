@@ -8,12 +8,43 @@ use census_domain::model::{
 use census_store::Store;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 mod frozen;
 mod read;
 
+pub use frozen::{CancelOutcome, FrozenRoot};
+
 pub(crate) const MAX_FROZEN_INPUT_BYTES: u64 = 200 * 1024 * 1024 * 1024;
+
+static RESIDENT_GENERATIONS: AtomicU64 = AtomicU64::new(0);
+static PEAK_RESIDENT_GENERATIONS: AtomicU64 = AtomicU64::new(0);
+static DECODED_GENERATIONS: AtomicU64 = AtomicU64::new(0);
+
+pub fn resident_generations() -> u64 {
+    RESIDENT_GENERATIONS.load(Ordering::Relaxed)
+}
+
+pub fn peak_resident_generations() -> u64 {
+    PEAK_RESIDENT_GENERATIONS.load(Ordering::Relaxed)
+}
+
+pub fn decoded_generations() -> u64 {
+    DECODED_GENERATIONS.load(Ordering::Relaxed)
+}
+
+fn note_generation() {
+    let resident = RESIDENT_GENERATIONS
+        .fetch_add(1, Ordering::Relaxed)
+        .saturating_add(1);
+    PEAK_RESIDENT_GENERATIONS.fetch_max(resident, Ordering::Relaxed);
+    DECODED_GENERATIONS.fetch_add(1, Ordering::Relaxed);
+}
+
+fn release_generation() {
+    RESIDENT_GENERATIONS.fetch_sub(1, Ordering::Relaxed);
+}
 
 #[derive(Serialize)]
 pub struct ExportDataset {
@@ -57,6 +88,23 @@ pub struct DatasetLineage {
 
 pub fn store_identity(store: &Store) -> ReportResult<String> {
     frozen::store_identity(store)
+}
+
+pub fn store_lineage(store: &Store) -> ReportResult<DatasetLineage> {
+    let snapshot = store.snapshot();
+    frozen::lineage(store, &snapshot)
+}
+
+pub fn freeze_v2(store: &Store, job: &str) -> ReportResult<FrozenRoot> {
+    frozen::freeze_v2(store, job)
+}
+
+pub fn cancel_freeze_v2(store: &Store, job: &str) -> ReportResult<CancelOutcome> {
+    frozen::cancel_freeze_v2(store, job)
+}
+
+pub fn to_export_dataset(root: &FrozenRoot, store: &Store) -> ReportResult<ExportDataset> {
+    frozen::to_export_dataset(root, store)
 }
 
 #[derive(Deserialize)]
@@ -119,6 +167,12 @@ fn team_map(rows: Vec<CanonicalTeam>) -> BTreeMap<TeamId, CanonicalTeam> {
         .collect()
 }
 
+impl Drop for ExportDataset {
+    fn drop(&mut self) {
+        release_generation();
+    }
+}
+
 impl ExportDataset {
     pub fn load(store: &Store) -> ReportResult<Self> {
         let snapshot = store.snapshot();
@@ -169,6 +223,7 @@ impl ExportDataset {
             lineage,
             identity_projection,
         };
+        note_generation();
         frozen::bind(&mut dataset)?;
         Ok(dataset)
     }

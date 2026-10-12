@@ -1,9 +1,21 @@
 use crate::replay::{unmapped, Capture};
 use anyhow::{Context, Result};
-use census_crawl::athleticnet::{AllResults, EventDivisions, MeetData};
+use census_crawl::athleticnet::{AllResults, Bio, EventDivisions, MeetData};
 
 pub(super) fn document(capture: &Capture<'_>) -> Result<String> {
     let (file, body) = (capture.file, capture.body);
+    if file.starts_with("bio_") {
+        let bio: Bio = decode(file, "athlete bio document", body)?;
+        return Ok(format!(
+            "athlete_bio id={} tf_results={} xc_results={} grades={} meets={} seasons={}",
+            bio.athlete.id,
+            bio.results_tf.as_ref().map_or(0, Vec::len),
+            bio.results_xc.as_ref().map_or(0, Vec::len),
+            bio.grades.as_ref().map_or(0, |grades| grades.len()),
+            bio.meets.len(),
+            bio.seasons.len()
+        ));
+    }
     if file.ends_with("_allresults.json") {
         let results: AllResults = decode(file, "results document", body)?;
         let rows: usize = results.blocks.iter().map(|block| block.results.len()).sum();

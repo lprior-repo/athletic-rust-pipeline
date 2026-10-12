@@ -35,6 +35,13 @@ pub(in crate::restate_services) fn roster_stage_owed(state: &JurisdictionState) 
     }
 }
 
+pub(in crate::restate_services) fn coach_lane_owed(state: &JurisdictionState) -> bool {
+    match state.coach_lane.as_ref() {
+        None => true,
+        Some(lane) => !lane.is_terminal(),
+    }
+}
+
 pub(in crate::restate_services) fn bound_run_refusal(
     manifest: Option<&RunManifest>,
     season: SchoolYear,
@@ -85,6 +92,21 @@ pub(in crate::restate_services) fn owed_work(
             Stage::Meets => meets_reason(state, request),
             Stage::Results => results_reason(state, request),
         });
+    }
+    if coach_lane_owed(state) {
+        owed.push("coach_lane".to_string());
+        reasons.push(coach_lane_reason(state));
+    }
+    match state.athleticlive.as_ref() {
+        Some(lane) if !lane.is_terminal() => {
+            owed.push("athleticlive_manifest".to_string());
+            reasons.push(lane.reason());
+        }
+        None if super::athleticlive::ledger::applicable(request) => {
+            owed.push("athleticlive_manifest".to_string());
+            reasons.push(super::athleticlive::ledger::missing_reason(request));
+        }
+        Some(_) | None => {}
     }
     if let Some(plan) = state.plan.as_ref() {
         for refused in &plan.refused {
@@ -169,6 +191,18 @@ fn results_reason(state: &JurisdictionState, request: &JurisdictionRequest) -> S
         }
     }
     format!("results: {}", parts.join(" "))
+}
+
+fn coach_lane_reason(state: &JurisdictionState) -> String {
+    match state.coach_lane.as_ref() {
+        None => "coach_lane: no obligation recorded".to_string(),
+        Some(lane) => format!(
+            "coach_lane: {} under arm {} (updated {})",
+            lane.status().slug(),
+            lane.arm_name(),
+            lane.updated_on()
+        ),
+    }
 }
 
 pub(in crate::restate_services) fn bind_history_window(

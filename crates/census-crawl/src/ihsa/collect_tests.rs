@@ -206,6 +206,7 @@ fn a_recorded_host_cooldown_leaves_the_walk_open() -> TestResult {
                 .await;
 
             let report = run.run().await?;
+            check!(eq; report.disposition, crate::CollectionDisposition::Blocked);
             check!(eq; report.rows, 0, "no school completes inside a recorded cooldown");
             check!(eq; run.journalled()?, HashSet::new(),
                 "cooldown-blocked schools must stay open for the next run");

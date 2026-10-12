@@ -1,7 +1,7 @@
 use super::{expected, TestResult};
 use calamine::{open_workbook, Reader, Xlsx};
-use census_domain::model::{normalize_name, CanonicalSchool};
-use census_domain::school_directory::SchoolDirectoryEntry;
+use census_domain::model::{normalize_name, CanonicalSchool, SourceIdentity, SourceNamespace};
+use census_domain::school_directory::{DirectoryKey, SchoolDirectoryEntry};
 use census_domain::UsJurisdiction;
 use census_service::school_address::SchoolAddressArgs;
 use census_store::{Store, Table};
@@ -35,8 +35,15 @@ pub(super) fn args(out: &Path) -> SchoolAddressArgs {
 pub(super) fn seed(store: &Store, entries: &[SchoolDirectoryEntry]) -> TestResult {
     for entry in entries {
         let name = entry.name().ok_or("missing source school name")?.as_str();
-        let (school, _) =
+        let (mut school, _) =
             CanonicalSchool::new(UsJurisdiction::NewJersey, name, normalize_name(name), None);
+        let DirectoryKey::Nces(id) = entry.key() else {
+            return Err("tuple fixture requires a published NCES key".into());
+        };
+        school.source_identities.push(SourceIdentity::new(
+            SourceNamespace::school_directory("nces-ccd", UsJurisdiction::NewJersey),
+            id.as_str(),
+        ));
         store.append(Table::Schools, &school)?;
     }
     Ok(())

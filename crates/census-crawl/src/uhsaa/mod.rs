@@ -5,10 +5,16 @@ pub mod parse;
 #[path = "tests.rs"]
 mod tests;
 
+#[cfg(test)]
+mod capture_tests;
+
+mod owner;
+mod published;
+pub use published::parse_school_list;
+
 use census_domain::UsJurisdiction;
 
-pub use map::school_entities;
-pub use map::ProfileFacts;
+pub use map::map_capture;
 pub use map::SchoolExtract;
 pub use parse::parse_coaches_from_profile;
 pub use parse::parse_directory_links;

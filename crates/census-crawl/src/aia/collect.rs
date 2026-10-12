@@ -65,6 +65,15 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         .await?;
     if options.school_names.is_empty() {
         owe(&mut run.report, format!("{HOST}/schools"))?;
+        run.report.rejections =
+            run.report
+                .rejections
+                .checked_add(1)
+                .ok_or_else(|| CrawlError::Arithmetic {
+                    detail: "AIA refusal counter overflow".to_string(),
+                })?;
+        run.report.note("full inventory refused: 16 sampled city searches are capped at 10 schools per query; no exhaustive AIA directory is qualified");
+        run.report.disposition = crate::CollectionDisposition::Blocked;
     }
     if run.report.unfinished.is_empty() {
         run.report.finish_frontier();
@@ -169,14 +178,14 @@ impl Run<'_> {
             Ok(profile) => profile,
             Err(error) => return fail(&mut self.report, &url, error),
         };
-        self.project(row, profile, (&url, &capture.fetched_at))
+        self.project(row, profile, &capture)
     }
 
     fn project(
         &mut self,
         row: &ParsedRow,
         profile: SchoolProfile,
-        source: (&str, &str),
+        source: &crate::net::FetchOutcome,
     ) -> CrawlResult<()> {
         let owner = SchoolProfile {
             info: profile.info,
@@ -187,15 +196,15 @@ impl Run<'_> {
             &row.school_id,
             row.city.as_deref(),
             &owner,
-            source.1,
+            &source.fetched_at,
         );
         let written = publish_school(
             self.ctx,
-            ("aia", source.0),
+            ("aia", &source.url),
             (
                 &SourceNamespace::association_school(ASSOCIATION),
                 &extract.school,
-                source.1,
+                &source.fetched_at,
             ),
             &mut self.report,
         )?;
@@ -205,8 +214,17 @@ impl Run<'_> {
             .saturating_add(u64::try_from(written).map_err(|_| CrawlError::Arithmetic {
                 detail: "school count".into(),
             })?);
-        profile
-            .coaches
+        self.project_coaches(row, &owner, profile.coaches, source)
+    }
+
+    fn project_coaches(
+        &mut self,
+        row: &ParsedRow,
+        owner: &SchoolProfile,
+        coaches: Vec<super::parse::CoachRow>,
+        source: &FetchOutcome,
+    ) -> CrawlResult<()> {
+        coaches
             .into_iter()
             .enumerate()
             .try_for_each(|(ordinal, coach)| {
@@ -214,16 +232,34 @@ impl Run<'_> {
                     info: owner.info.clone(),
                     coaches: vec![coach],
                 };
-                let extract = school_entities(
+                let mut extract = school_entities(
                     &row.name,
                     &row.school_id,
                     row.city.as_deref(),
                     &selected,
-                    source.1,
+                    &source.fetched_at,
                 );
+                for row in &selected.coaches {
+                    for coach in &mut extract.coaches {
+                        crate::coach_directories::record_appointment(
+                            coach,
+                            Some(crate::coach_directories::PublishedListing {
+                                role: &row.role,
+                                program: &row.sport_label,
+                                source: "aia",
+                                school_year: self.ctx.school_year,
+                            }),
+                            crate::coach_directories::StaffCapture {
+                                url: &source.url,
+                                observed_on: &source.fetched_at,
+                                sha256: &source.content_digest,
+                            },
+                        )?;
+                    }
+                }
                 publish(
                     self.ctx,
-                    ("aia", &format!("{}#coach={ordinal}", source.0)),
+                    ("aia", &format!("{}#coach={ordinal}", source.url)),
                     Table::Coaches,
                     &extract.coaches,
                     &mut self.report,

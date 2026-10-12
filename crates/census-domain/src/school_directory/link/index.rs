@@ -100,7 +100,7 @@ impl DirectoryIndex {
         self.link(name, name, city, state, &[], attested)
     }
 
-    fn select<'a>(
+    pub(super) fn select<'a>(
         &'a self,
         form: &MatchForm,
         state: UsJurisdiction,

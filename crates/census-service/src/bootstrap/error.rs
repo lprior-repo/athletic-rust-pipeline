@@ -72,14 +72,14 @@ pub enum BootstrapError {
     StoreOpen {
         path: PathBuf,
         #[source]
-        source: StoreError,
+        source: Box<StoreError>,
     },
     #[error("joining the store bootstrap task failed: {reason}")]
     StoreTask { state: DrainState, reason: String },
     #[error("persisting the store during shutdown failed: {source}")]
     StoreFlush {
         #[source]
-        source: StoreError,
+        source: Box<StoreError>,
     },
     #[error("subscribing to {signal} failed: {source}")]
     Signal {
@@ -90,7 +90,12 @@ pub enum BootstrapError {
     #[error("task supervision failed: {source}")]
     TaskSupervision {
         #[source]
-        source: crate::spawn::SpawnError,
+        source: Box<crate::spawn::SpawnError>,
+    },
+    #[error("reading the durable source attempt state failed: {source}")]
+    SourceAttempts {
+        #[source]
+        source: Box<crate::restate_services::JobError>,
     },
     #[error("the browser lane's origin {origin} is not a URL: {source}")]
     LaneOriginUnusable {

@@ -8,13 +8,21 @@ use census_reconcile::identity::{admitted_scope, WorkflowIdentity};
 use census_store::clock::Clock;
 
 use super::jurisdiction::JurisdictionCensusClient;
-use super::wire::{ConsolidateRequest, NationalReport, NationalRequest};
-use super::{publish::ConsolidateClient, KEY_STATE};
+use super::wire::{NationalReport, NationalRequest};
+use super::KEY_STATE;
 
 mod classification;
 mod contact_phase;
+mod publication;
+mod reconciliation;
 mod redrive;
 mod report;
+
+#[cfg(test)]
+mod publication_tests;
+
+#[cfg(test)]
+mod reconciliation_tests;
 
 pub(super) use super::jobs;
 #[allow(unused_imports)]
@@ -25,11 +33,17 @@ use report::{assemble, join_addresses};
 #[derive(Clone)]
 pub struct NationalCensus {
     clock: Arc<dyn Clock>,
+    jobs: super::publish::Jobs,
+    review_lanes: Result<[census_review::ModelClient; 2], String>,
 }
 
 impl NationalCensus {
-    pub fn new(clock: Arc<dyn Clock>) -> Self {
-        Self { clock }
+    pub fn new(clock: Arc<dyn Clock>, jobs: super::publish::Jobs) -> Self {
+        Self {
+            clock,
+            jobs,
+            review_lanes: reconciliation::model_lanes(),
+        }
     }
 }
 
@@ -112,19 +126,9 @@ impl NationalCensus {
 
         let contact_at = super::journaled_today_workflow(&ctx, &self.clock).await?;
         let contacts = contact_phase::collect(&ctx, &request, &targets, &contact_at).await?;
-        ctx.set(contact_phase::KEY_CONTACTS, Json(contacts));
-
-        let Json(consolidated) = ctx
-            .workflow_client::<ConsolidateClient>(format!("{}:consolidate", identity.as_str()))
-            .run(Json(ConsolidateRequest { tables: Vec::new() }))
-            .call()
-            .await?;
-        tracing::info!(
-            tables = consolidated.tables.len(),
-            "merged table snapshots for the run"
-        );
 
         let today = super::journaled_today_workflow(&ctx, &self.clock).await?;
+        reconciliation::run(self, &ctx, &identity, request.season, &today).await?;
         let report = assemble(
             request.season,
             request.revision,
@@ -134,7 +138,12 @@ impl NationalCensus {
             join,
             today,
         );
+        let ready = publication::ready(&request, &report, &contacts);
+        ctx.set(contact_phase::KEY_CONTACTS, Json(contacts));
         ctx.set(KEY_STATE, Json(report.clone()));
+        if ready {
+            publication::publish(&ctx, &identity, &request).await?;
+        }
         Ok(Json(report))
     }
 

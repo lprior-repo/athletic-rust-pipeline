@@ -11,7 +11,7 @@ use serde_json::Value;
 struct Projection<'a> {
     ctx: &'a AdapterContext<'a>,
     section: &'a Section,
-    source: (&'a str, &'a str),
+    source: &'a crate::net::FetchOutcome,
     profile: &'a SchoolProfile,
     report: &'a mut AdapterReport,
 }
@@ -19,7 +19,7 @@ struct Projection<'a> {
 pub(super) fn project(
     ctx: &AdapterContext<'_>,
     section: &Section,
-    source: (&str, &str),
+    source: &crate::net::FetchOutcome,
     parsed: (&SchoolProfile, &Value),
     report: &mut AdapterReport,
 ) -> CrawlResult<()> {
@@ -33,11 +33,11 @@ pub(super) fn project(
     let extract = school_entities(&projection.facts(), &[], &[]);
     let written = publish_school(
         ctx,
-        (SOURCE_ID, source.0),
+        (SOURCE_ID, &source.url),
         (
             &SourceNamespace::association_school(section.association),
             &extract.school,
-            source.1,
+            &source.fetched_at,
         ),
         projection.report,
     )?;
@@ -63,8 +63,8 @@ impl Projection<'_> {
             zip: &self.profile.zip,
             league: &self.profile.league,
             phone: &self.profile.phone,
-            url: self.source.0,
-            observed_on: self.source.1,
+            url: &self.source.url,
+            observed_on: &self.source.fetched_at,
         }
     }
 
@@ -72,12 +72,12 @@ impl Projection<'_> {
         let Some(rows) = parsed.get("coaches").and_then(Value::as_array) else {
             return fail(
                 self.report,
-                &format!("{}#coaches", self.source.0),
+                &format!("{}#coaches", self.source.url),
                 "missing coach array",
             );
         };
         rows.iter().enumerate().try_for_each(|(ordinal, value)| {
-            let locator = format!("{}#coaches={ordinal}", self.source.0);
+            let locator = format!("{}#coaches={ordinal}", self.source.url);
             let row = match decode_coach(value.clone()) {
                 Ok(row) => row,
                 Err(error) => return fail(self.report, &locator, error),
@@ -88,7 +88,8 @@ impl Projection<'_> {
             {
                 return fail(self.report, &locator, "missing sport appointment fields");
             }
-            let extract = school_entities(&self.facts(), std::slice::from_ref(&row), &[]);
+            let mut extract = school_entities(&self.facts(), std::slice::from_ref(&row), &[]);
+            self.appointments(&mut extract.coaches, &row.role, &row.sport)?;
             self.report.with_email = self.report.with_email.saturating_add(
                 u64::try_from(
                     extract
@@ -114,18 +115,19 @@ impl Projection<'_> {
         let Some(rows) = parsed.get("athleticFaculties").and_then(Value::as_array) else {
             return fail(
                 self.report,
-                &format!("{}#athleticFaculties", self.source.0),
+                &format!("{}#athleticFaculties", self.source.url),
                 "missing faculty array",
             );
         };
         rows.iter().enumerate().try_for_each(|(ordinal, value)| {
-            let locator = format!("{}#athleticFaculties={ordinal}", self.source.0);
+            let locator = format!("{}#athleticFaculties={ordinal}", self.source.url);
             let row = match decode_faculty(value.clone()) {
                 Ok(row) if !row.name.trim().is_empty() && !row.role.trim().is_empty() => row,
                 Ok(_) => return fail(self.report, &locator, "missing faculty appointment fields"),
                 Err(error) => return fail(self.report, &locator, error),
             };
-            let extract = school_entities(&self.facts(), &[], std::slice::from_ref(&row));
+            let mut extract = school_entities(&self.facts(), &[], std::slice::from_ref(&row));
+            self.appointments(&mut extract.coaches, &row.role, &self.profile.name)?;
             self.report.with_email = self.report.with_email.saturating_add(
                 u64::try_from(
                     extract
@@ -146,4 +148,32 @@ impl Projection<'_> {
             .map(|_| ())
         })
     }
+
+    fn appointments(
+        &self,
+        coaches: &mut [census_domain::model::CanonicalCoach],
+        role: &str,
+        program: &str,
+    ) -> CrawlResult<()> {
+        for coach in coaches {
+            crate::coach_directories::record_appointment(
+                coach,
+                Some(crate::coach_directories::PublishedListing {
+                    role,
+                    program,
+                    source: SOURCE_ID,
+                    school_year: self.ctx.school_year,
+                }),
+                crate::coach_directories::StaffCapture {
+                    url: &self.source.url,
+                    observed_on: &self.source.fetched_at,
+                    sha256: &self.source.content_digest,
+                },
+            )?;
+        }
+        Ok(())
+    }
 }
+
+#[cfg(test)]
+mod tests;

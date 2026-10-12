@@ -1,8 +1,12 @@
-use super::{seed_cache, TestResult, OBSERVED_ON};
+use super::{seed_cache, seed_capture, seed_post_json, TestResult, OBSERVED_ON};
 use crate::net::Fetcher;
+use crate::wayzata::results::{LANE_PHASE, RESULTS_HOST};
 use crate::wayzata::{collect, schedule_url, Options, ScheduleSport};
 use crate::{AdapterContext, AdapterReport};
-use census_domain::model::{CanonicalMeet, SchoolYear};
+use census_domain::model::{
+    normalize_name, CanonicalAthlete, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
+    SchoolYear,
+};
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use std::collections::HashMap;
@@ -10,6 +14,7 @@ use std::collections::HashMap;
 mod dates;
 mod frontier;
 mod geography;
+mod results;
 
 const EMPTY: &str = "<table class=\"schedule\"></table>";
 const FETCHED: &str = "2026-09-20T14:39:00Z";
@@ -22,6 +27,14 @@ struct Harness {
 
 impl Harness {
     fn new(track: &str, xc: Option<&str>) -> TestResult<Self> {
+        Self::with_hosts(track, xc, Vec::new())
+    }
+
+    fn new_lane(track: &str, xc: Option<&str>) -> TestResult<Self> {
+        Self::with_hosts(track, xc, vec![RESULTS_HOST.to_string()])
+    }
+
+    fn with_hosts(track: &str, xc: Option<&str>, hosts: Vec<String>) -> TestResult<Self> {
         let root = tempfile::tempdir()?;
         let store = Store::open(root.path().join("store"))?;
         let fetcher = Fetcher::new(
@@ -29,7 +42,7 @@ impl Harness {
             None,
             std::time::Duration::ZERO,
             HashMap::new(),
-            Vec::new(),
+            hosts,
         )?
         .with_offline(true);
         let harness = Self {
@@ -50,6 +63,30 @@ impl Harness {
             &schedule_url(sport, year),
             body,
         )
+    }
+
+    fn seed_capture(&self, url: &str, body: &str) -> TestResult {
+        seed_capture(&self.store.http_cache_dir(), url, body, FETCHED, None)
+    }
+
+    fn seed_redirect(&self, url: &str, destination: &str, body: &str) -> TestResult {
+        seed_capture(
+            &self.store.http_cache_dir(),
+            url,
+            body,
+            FETCHED,
+            Some(destination),
+        )
+    }
+
+    fn seed_post_json(&self, url: &str, request: &str, body: &str) -> TestResult {
+        seed_post_json(&self.store.http_cache_dir(), url, request, body)
+    }
+
+    fn seed_school(&self, name: &str, state: UsJurisdiction) -> TestResult {
+        let school = CanonicalSchool::new(state, name, normalize_name(name), None).0;
+        self.store.append(Table::Schools, &school)?;
+        Ok(())
     }
 
     async fn run(
@@ -82,6 +119,18 @@ impl Harness {
         let mut meets: Vec<CanonicalMeet> = self.store.scan(Table::Meets)?;
         meets.sort_by(|left, right| left.name.cmp(&right.name));
         Ok(meets)
+    }
+
+    fn athletes(&self) -> TestResult<Vec<CanonicalAthlete>> {
+        Ok(self.store.scan(Table::Athletes)?)
+    }
+
+    fn performances(&self) -> TestResult<Vec<CanonicalPerformance>> {
+        Ok(self.store.scan(Table::Performances)?)
+    }
+
+    fn ledger(&self) -> TestResult<Vec<serde_json::Value>> {
+        Ok(self.store.journal_payloads(LANE_PHASE)?)
     }
 
     fn raw(&self) -> TestResult<Vec<serde_json::Value>> {

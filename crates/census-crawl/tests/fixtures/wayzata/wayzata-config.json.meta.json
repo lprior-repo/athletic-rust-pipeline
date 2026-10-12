@@ -1,0 +1,13 @@
+{
+ "bytes": 2500,
+ "content_digest": "a89786e48531da1a754b751d12f0372cd3226e20437f8d362bbe1d22b2d3c8a9",
+ "content_type": "application/json",
+ "fetched_at": "2026-10-11T18:51:00Z",
+ "fetched_at_utc": "2026-10-11T18:51:00Z",
+ "file": "wayzata-config.json",
+ "method": "GET",
+ "note": "tenant config: machineName wayzata, elasticSearchIndex wayzata, esReportIndex wayzata_reports",
+ "sha256": "a89786e48531da1a754b751d12f0372cd3226e20437f8d362bbe1d22b2d3c8a9",
+ "status": 200,
+ "url": "https://livestatic.athletic.net/assets/sites/wayzata/config.json"
+}

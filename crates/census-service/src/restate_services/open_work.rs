@@ -1,18 +1,21 @@
 use census_crawl::CollectionDisposition as Disposition;
+use census_domain::model::CoachLaneStatus;
 use census_domain::{model::SchoolYear, UsJurisdiction};
 use census_reconcile::identity::{Revision, WorkflowIdentity};
 use futures::{stream, StreamExt, TryStreamExt};
 use restate_sdk::prelude::*;
 
-use super::ingest::IngestClient;
 use super::jurisdiction::JurisdictionCensusClient;
 use super::wire::{
-    JurisdictionOpen, JurisdictionState, OpenWorkReply, OpenWorkRequest, SourceObjectOpen,
+    JurisdictionOpen, JurisdictionState, OpenWorkReply, OpenWorkRequest, SourceObjectInventory,
+    SourceObjectOpen, SourcePlan,
 };
 use crate::census::JurisdictionStages;
 
+mod athleticlive;
 mod history;
 mod inventory;
+mod source_objects;
 mod store_evidence;
 #[cfg(test)]
 mod tests;
@@ -38,23 +41,37 @@ pub(super) async fn measure(
     if !evidence.matches(season, revision) {
         return Err(TerminalError::new("open-work evidence belongs to another run").into());
     }
+    if request.source_objects.len() > MAX_ENDPOINTS {
+        return Err(capacity());
+    }
     let jurisdictions = read_jurisdictions(ctx, season, revision, evidence).await?;
-    let mut endpoints = read_source_objects(ctx, &request.source_objects).await?;
+    let keys = source_objects::keys(&request.source_objects, evidence)?;
+    let mut endpoints = source_objects::read(ctx, keys).await?;
+    let source_inventory = source_objects::class_counts(&endpoints)?;
     inventory::append(ctx, &jurisdictions, &mut endpoints).await?;
     evidence
         .objects
         .iter()
         .try_for_each(|row| push(&mut endpoints, row.clone()))?;
-    reply(season, revision, jurisdictions, endpoints, evidence)
+    reply(
+        season,
+        revision,
+        jurisdictions,
+        endpoints,
+        evidence,
+        source_inventory,
+    )
 }
 
 fn reply(
     season: SchoolYear,
     revision: Revision,
-    jurisdictions: Vec<ReadJurisdiction>,
-    endpoints: Vec<SourceObjectOpen>,
+    mut jurisdictions: Vec<ReadJurisdiction>,
+    mut endpoints: Vec<SourceObjectOpen>,
     evidence: &StoreEvidence,
+    source_inventory: SourceObjectInventory,
 ) -> Result<OpenWorkReply, HandlerError> {
+    athleticlive::project(&mut jurisdictions, &mut endpoints)?;
     let measured = jurisdictions.iter().all(|entry| !entry.row.unreadable);
     let window = jurisdictions
         .first()
@@ -71,7 +88,9 @@ fn reply(
             count(
                 jurisdictions
                     .iter()
-                    .filter(|entry| !entry.row.stages.terminal())
+                    .filter(|entry| {
+                        !entry.row.stages.terminal() || entry.row.athleticlive_manifest.is_some()
+                    })
                     .count(),
             )
         })
@@ -96,6 +115,7 @@ fn reply(
         revision: revision.get(),
         jurisdiction_sweeps,
         source_objects,
+        source_object_inventory: evidence.bound.then_some(source_inventory),
         silent_sources,
         endpoints,
         jurisdictions: rows,
@@ -139,7 +159,8 @@ async fn read_jurisdictions(
             };
             inventory::validate(&state)?;
             rows.push(ReadJurisdiction { row: JurisdictionOpen { jurisdiction, identity: identity.as_str().to_string(),
-                stages: stages_of(&state, evidence.contacts(jurisdiction), evidence.publication, evidence.rosters(jurisdiction))?, unreadable }, state });
+                stages: stages_of(&state, evidence.contacts(jurisdiction), evidence.publication, evidence.rosters(jurisdiction))?, unreadable,
+                athleticlive_manifest: None, athleticlive_manifest_reason: None }, state });
             Ok(rows)
         }).await
 }
@@ -198,7 +219,7 @@ pub(super) fn collection_is_complete(
         && state
             .plan
             .as_ref()
-            .is_some_and(|plan| plan.refused.is_empty())
+            .is_some_and(|plan| refusals_settled(jurisdiction, state, plan))
         && state.teams.is_completed()
         && state
             .rosters
@@ -206,6 +227,32 @@ pub(super) fn collection_is_complete(
             .is_some_and(crate::census::StateProgress::is_terminal)
         && history::status(state, history::Kind::Meets)?.is_complete()
         && history::status(state, history::Kind::Results)?.is_complete())
+}
+
+fn refusals_settled(
+    jurisdiction: UsJurisdiction,
+    state: &JurisdictionState,
+    plan: &SourcePlan,
+) -> bool {
+    plan.refused
+        .iter()
+        .all(|entry| accepted_coach_refusal(jurisdiction, state, entry.slug.as_str()))
+}
+
+fn accepted_coach_refusal(
+    jurisdiction: UsJurisdiction,
+    state: &JurisdictionState,
+    slug: &str,
+) -> bool {
+    let Some(recorded) = crate::restate_services::wire::coach_lanes::refusal_slug(jurisdiction)
+    else {
+        return false;
+    };
+    slug == recorded
+        && state
+            .coach_lane
+            .as_ref()
+            .is_some_and(|lane| lane.status() == CoachLaneStatus::AcceptedRefusal)
 }
 
 pub(super) fn complete(completed: bool) -> Disposition {
@@ -216,50 +263,6 @@ pub(super) fn complete(completed: bool) -> Disposition {
     }
 }
 
-#[tracing::instrument(skip_all)]
-async fn read_source_objects(
-    ctx: &Context<'_>,
-    endpoints: &[String],
-) -> Result<Vec<SourceObjectOpen>, HandlerError> {
-    if endpoints.len() > MAX_ENDPOINTS
-        || endpoints
-            .iter()
-            .any(|endpoint| endpoint.len() > MAX_ENDPOINTS)
-    {
-        return Err(capacity());
-    }
-    let mut rows = Vec::new();
-    rows.try_reserve_exact(endpoints.len())
-        .map_err(|_| capacity())?;
-    stream::iter(endpoints)
-        .map(Ok::<_, HandlerError>)
-        .try_fold(rows, |mut rows, endpoint| async move {
-            let mut row = obligation(endpoint.clone(), Disposition::Unknown);
-            match ctx
-                .object_client::<IngestClient>(endpoint.as_str())
-                .state()
-                .call()
-                .await
-            {
-                Ok(Json(state)) if state.endpoint == *endpoint => {
-                    row.observations = state.total_observations;
-                    row.windows = state.completed_windows();
-                }
-                Ok(_) => {
-                    tracing::warn!(endpoint, "foreign ingest source object");
-                    row.unreadable = true;
-                }
-                Err(error) => {
-                    tracing::warn!(%error, endpoint, "unreadable ingest source object");
-                    row.unreadable = true;
-                }
-            }
-            rows.push(row);
-            Ok(rows)
-        })
-        .await
-}
-
 fn obligation(endpoint: String, disposition: Disposition) -> SourceObjectOpen {
     SourceObjectOpen {
         endpoint,
@@ -268,6 +271,7 @@ fn obligation(endpoint: String, disposition: Disposition) -> SourceObjectOpen {
         unreadable: false,
         disposition,
         resolution: None,
+        teams_source: None,
     }
 }
 

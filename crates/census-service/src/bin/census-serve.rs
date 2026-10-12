@@ -26,13 +26,22 @@ fn main() -> ExitCode {
     match serve(options).await {
         Ok(report) => {
             println!(
-                "drained: accepted={} completed={} cancelled={} timed_out={} aborted={} panicked={}",
+                "drained: accepted={} completed={} cancelled={} timed_out={} aborted={} panicked={} failed={} still_running={} remaining={} attempts_reserved={} attempts_recorded={} attempts_unknown={} sources={} sources_settled={} attempt_ceiling={}",
                 report.accepted,
                 report.completed,
                 report.cancelled,
                 report.timed_out,
                 report.aborted,
-                report.panicked
+                report.panicked,
+                report.failed,
+                report.still_running,
+                report.remaining,
+                report.attempts.reserved,
+                report.attempts.recorded,
+                report.attempts.unknown,
+                report.attempts.sources,
+                report.attempts.settled,
+                report.attempts.ceiling
             );
             ExitCode::SUCCESS
         }

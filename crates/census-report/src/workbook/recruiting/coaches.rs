@@ -42,7 +42,7 @@ pub(super) const WIDTHS: [u16; 29] = [
 ];
 type SortKey = (String, String, String, String, String);
 
-pub(super) fn sheet(dataset: &Dataset) -> ReportResult<Vec<Vec<Cell>>> {
+pub(super) fn rows(dataset: &Dataset) -> impl Iterator<Item = ReportResult<Vec<Cell>>> + '_ {
     let names = &dataset.coach_spellings;
     let mut ordered: Vec<_> = dataset
         .published_coaches
@@ -50,13 +50,12 @@ pub(super) fn sheet(dataset: &Dataset) -> ReportResult<Vec<Vec<Cell>>> {
         .map(|coach| (coach, sort_key(dataset, coach)))
         .collect();
     ordered.sort_by(|left, right| left.1.cmp(&right.1));
-    let mut rows = vec![HEADERS.iter().map(|header| Cell::text(*header)).collect()];
-    rows.extend(
+    let header = HEADERS.iter().map(|header| Cell::text(*header)).collect();
+    std::iter::once(Ok(header)).chain(
         ordered
             .into_iter()
-            .map(|(coach, _)| row_for(dataset, coach, names)),
-    );
-    Ok(rows)
+            .map(move |(coach, _)| Ok(row_for(dataset, coach, names))),
+    )
 }
 
 fn sort_key(dataset: &Dataset, coach: &CanonicalCoach) -> SortKey {

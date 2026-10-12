@@ -1,10 +1,17 @@
 mod append;
+mod budget;
+#[cfg(test)]
+mod byte_tests;
 mod commit;
 mod conditional;
 mod journal;
 
 use super::Store;
 use super::Table;
+pub use budget::{
+    ObservationBudget, ObservationChunk, MAX_OBSERVATION_BATCH_BYTES, MAX_OBSERVATION_BATCH_ROWS,
+    MAX_OBSERVATION_RECORD_BYTES,
+};
 pub use conditional::ConditionalBatch;
 
 struct Page {

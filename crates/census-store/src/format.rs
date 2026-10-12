@@ -216,7 +216,7 @@ impl Store {
         let (db, entities, journal, meta_keyspace, receipts) =
             super::open_keyspaces(&root, cache_bytes)?;
         open_format(&root, &db, [&entities, &journal, &receipts], &meta_keyspace)?;
-        super::read::sweep_stale_temporaries(&root)?;
+        super::read::sweep_stale_temporaries(&root, &meta_keyspace)?;
         let generations = generation::Generations::seeded(&meta_keyspace)?;
         let sequences = super::sequences::Counters::seeded(&db, &entities, &meta_keyspace)?;
         let store = Self {

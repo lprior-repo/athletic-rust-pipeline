@@ -55,7 +55,7 @@ pub(super) fn write_meta_sheets(
     })?;
     let cohort = cohort_of(facts.population.dataset(), facts.population.scope());
     let names = school_name_index(rows.schools);
-    let conflicts = step("conflicts", || conflict_families(&rows, &cohort, &names));
+    let conflicts = step("conflicts", || conflict_families(&rows, &cohort, &names))?;
     let review = step("review", || review_families(&rows, &cohort, &names))?;
     let metrics = step("metrics", || metrics_sheet(&facts, &rows, &conflicts))?;
     let index = SubjectIndex::of(&rows);

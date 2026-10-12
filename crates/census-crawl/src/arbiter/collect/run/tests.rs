@@ -224,3 +224,46 @@ fn apply_recorded(store: &Store, recorded: &crate::recording::Recorded) -> TestR
     }
     Ok(())
 }
+
+pub(super) fn member_capture(
+    row: &OrgSchool,
+    url: &str,
+    acquired_at: &str,
+) -> crate::CrawlResult<crate::net::FetchOutcome> {
+    let contact = row.primary_contact.as_ref().map(|contact| {
+        json!({
+            "firstName": contact.first_name,
+            "lastName": contact.last_name,
+            "roleName": contact.role_name,
+        })
+    });
+    let body = serde_json::to_vec(&json!({
+        "name": row.name,
+        "publicId": row.public_id,
+        "orgId": row.org_id,
+        "phone": row.phone,
+        "enrollment": row.enrollment,
+        "primaryContact": contact,
+    }))
+    .map_err(|source| crate::CrawlError::Decode {
+        url: url.to_owned(),
+        source,
+    })?;
+    let fetched_at = if chrono::DateTime::parse_from_rfc3339(acquired_at).is_ok() {
+        acquired_at.to_owned()
+    } else {
+        format!("{acquired_at}T00:00:00Z")
+    };
+    Ok(crate::net::FetchOutcome {
+        url: url.to_owned(),
+        response_url: None,
+        method: "GET".to_owned(),
+        status: 200,
+        content_digest: crate::net::cache::content_digest(&body),
+        bytes: body.len(),
+        fetched_at,
+        from_cache: true,
+        content_type: Some("application/json".to_owned()),
+        body,
+    })
+}

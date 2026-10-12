@@ -20,6 +20,7 @@ native_vm_inputs() {
     SERVE=$(realpath -e -- "${SERVE_BINARY:-$REPO_ROOT/target/moon-portable/x86_64-unknown-linux-gnu/release/census-serve}")
     NODE=$(realpath -e -- "${RESTATE_SERVER_BIN:-${RESTATE_BINARY:-$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10/restate-server}}")
     TOOLS=$(realpath -e -- "$HOME/.local/share/athletic-rust-pipeline/qemu/11.1.1")
+    export LD_LIBRARY_PATH="$TOOLS/prefix/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
     IMAGE=$(realpath -e -- "$HOME/.local/share/athletic-rust-pipeline/images/Arch-Linux-x86_64-cloudimg-20261001.604814.qcow2")
     [[ -n "${CENSUS_NATIVE_VM_CAPTURES:-}" ]] || native_vm_fail 'CENSUS_NATIVE_VM_CAPTURES is required'
     CAPTURES=$(realpath -e -- "$CENSUS_NATIVE_VM_CAPTURES")

@@ -9,7 +9,7 @@ use serde_json::{json, Value};
 use std::error::Error;
 use std::sync::{mpsc::SyncSender, Arc};
 use std::time::Duration;
-use tokio::sync::{oneshot, Semaphore};
+use tokio::sync::oneshot;
 
 const WAIT: Duration = Duration::from_secs(5);
 
@@ -18,22 +18,24 @@ struct Fixture {
     store: Arc<Store>,
     source: TeamsSource,
     region: Arc<Spawner>,
-    load: Arc<Semaphore>,
 }
 
 fn fixture() -> Result<Fixture, Box<dyn Error>> {
     let root = tempfile::tempdir()?;
     let store = Arc::new(Store::open(root.path())?);
     let region = Arc::new(Spawner::with_capacity(2));
-    let load = Arc::new(Semaphore::new(2));
-    let owner = JurisdictionCensus::new(Arc::clone(&store), Arc::new(SystemClock), None);
-    let jobs = Jobs::new(Arc::clone(&store), Arc::clone(&load), Arc::clone(&region));
+    let owner = JurisdictionCensus::new(
+        Arc::clone(&store),
+        Arc::new(SystemClock),
+        None,
+        Arc::new(crate::spawn::Spawner::new()),
+    );
+    let jobs = Jobs::new(Arc::clone(&store), Arc::clone(&region));
     Ok(Fixture {
         _root: root,
         store,
         source: TeamsSource::new(owner, jobs),
         region,
-        load,
     })
 }
 
@@ -152,10 +154,10 @@ fn cancelled_registration_caller_keeps_same_key_closed_until_worker_completion()
             let next = Arc::new(next);
             check!(eq; key(&next), operation);
             let suspended = cancel_suspended_registration(&fixture, first).await?;
-            check!(eq; fixture.load.available_permits(), 1);
+            check!(eq; fixture.region.coordinator().remaining().slots.stages, 1);
             let mut waiting = Box::pin(fixture.source.admit(&operation));
             check!(futures::poll!(waiting.as_mut()).is_pending());
-            check!(eq; fixture.load.available_permits(), 0);
+            check!(eq; fixture.region.coordinator().remaining().slots.stages, 0);
             assert_no_registration(&fixture.store, &operation, &next)?;
             suspended.release.send(())?;
             let registered = tokio::time::timeout(WAIT, suspended.completed).await??;
@@ -166,7 +168,7 @@ fn cancelled_registration_caller_keeps_same_key_closed_until_worker_completion()
                     .await?
                     .map_err(|error| std::io::Error::other(error.to_string()))?,
             );
-            check!(eq; fixture.load.available_permits(), 1);
+            check!(eq; fixture.region.coordinator().remaining().slots.stages, 1);
             let replay = blocking(
                 Arc::clone(&fixture.region),
                 admission::registration_worker(
@@ -179,7 +181,7 @@ fn cancelled_registration_caller_keeps_same_key_closed_until_worker_completion()
             .await?;
             assert_original_reservation(&fixture.store, &operation, &next, &replay, &expected)?;
             drop(admission);
-            check!(eq; fixture.load.available_permits(), 2);
+            check!(eq; fixture.region.coordinator().remaining().slots.stages, 2);
             let report = fixture.region.drain(WAIT).await?;
             check!(eq; report,
             TaskReport {
@@ -189,7 +191,9 @@ fn cancelled_registration_caller_keeps_same_key_closed_until_worker_completion()
                 timed_out: 0,
                 remaining: 0,
                 aborted: 0,
-                panicked: 0
+                panicked: 0,
+                failed: 0,
+                still_running: 0
             });
             Ok(())
         })

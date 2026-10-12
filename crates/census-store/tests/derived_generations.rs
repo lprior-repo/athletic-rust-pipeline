@@ -1,6 +1,6 @@
 use census_domain::model::{normalize_name, CanonicalSchool};
 use census_domain::UsJurisdiction;
-use census_store::{Application, Entity, Reclaimed, Store, StoreError, Table};
+use census_store::{Application, DerivedStage, Entity, Reclaimed, Store, StoreError, Table};
 use serde::{Deserialize, Serialize};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
@@ -28,6 +28,15 @@ fn row(id: &str, note: u32) -> Row {
     }
 }
 
+fn stage_required_tables(stage: &mut DerivedStage<'_>, populated: &[Table]) -> TestResult {
+    for table in Table::ALL {
+        if table.generation_partitioned() && !populated.contains(&table) {
+            stage.replace_many::<Row>(table, &[])?;
+        }
+    }
+    Ok(())
+}
+
 fn published(
     store: &Store,
     table: Table,
@@ -36,6 +45,7 @@ fn published(
     digest: &str,
 ) -> TestResult<u64> {
     let mut stage = store.stage_derived()?;
+    stage_required_tables(&mut stage, &[table])?;
     stage.replace_many(table, rows)?;
     Ok(stage.publish(operation, digest)?.generation)
 }
@@ -66,6 +76,7 @@ fn one_stage_holds_one_row_per_id_and_the_last_write_wins() -> TestResult {
     let store = Store::open(dir.path())?;
     let publication = {
         let mut stage = store.stage_derived()?;
+        stage_required_tables(&mut stage, &[Table::Coverage])?;
         stage.replace_many(Table::Coverage, &[row("wi", 1), row("mn", 2), row("wi", 7)])?;
         stage.publish("derive:coverage:duplicate-id", "digest-duplicate-id")?
     };
@@ -90,6 +101,7 @@ fn a_published_generation_is_invisible_until_publish_and_durable_across_reopen()
     let store = Store::open(root)?;
     {
         let mut stage = store.stage_derived()?;
+        stage_required_tables(&mut stage, &[Table::Coverage])?;
         stage.replace_many(Table::Coverage, &[row("wi", 1), row("mn", 1)])?;
         if !store.scan::<Row>(Table::Coverage)?.is_empty() {
             return Err("a staged generation is invisible until it is published".into());
@@ -253,6 +265,7 @@ fn a_generation_staged_against_moved_evidence_is_refused() -> TestResult {
     let base_evidence = store.evidence_generation();
     let outcome = {
         let mut stage = store.stage_derived()?;
+        stage_required_tables(&mut stage, &[Table::Coverage])?;
         stage.replace_many(Table::Coverage, &[row("mn", 9)])?;
         store.append(Table::Schools, &school)?;
         stage.publish("derive:coverage:2", "digest-2")
@@ -320,6 +333,7 @@ fn publishing_reclaims_the_generation_it_supersedes() -> TestResult {
     )?;
     let second = {
         let mut stage = store.stage_derived()?;
+        stage_required_tables(&mut stage, &[Table::Coverage])?;
         stage.replace_many(Table::Coverage, &[row("wi", 1)])?;
         stage.publish("derive:coverage:2", "digest-2")?
     };
@@ -454,6 +468,7 @@ fn carry_forward_moves_the_current_generation_into_the_next() -> TestResult {
     let moved = {
         let mut stage = store.stage_derived()?;
         let moved = stage.carry_forward(Table::Coverage)?;
+        stage_required_tables(&mut stage, &[Table::Coverage])?;
         stage.replace_many(Table::Coverage, &[row("oh", 3)])?;
         {
             let (left, right) = (
@@ -543,8 +558,28 @@ fn a_generation_larger_than_one_staging_batch_publishes_whole() -> TestResult {
             return Err(format!("left={left:?} right={right:?}").into());
         }
     }
-    if !store.integrity()?.ok {
-        return Err("the published generation is sound".into());
+    if serde_json::to_vec(&scanned)? != serde_json::to_vec(&rows)? {
+        return Err("every published row must read back byte-exactly".into());
+    }
+    let report = store.integrity()?;
+    if report.ok
+        || !report.corruptions.is_empty()
+        || !report.unreadable_journals.is_empty()
+        || !report.unreadable_entity_logs.is_empty()
+        || report
+            .tables
+            .iter()
+            .any(|table| table.expected != table.actual || !table.details.is_empty())
+    {
+        return Err(format!("the generation must be structurally sound without certifying an undecoded suffix: {report:?}").into());
+    }
+    let limit = "payload decode stopped at the ADR-036 integrity profile window (25000 records or 67108864 bytes): content past it is not decoded";
+    if report.decode_limits != [limit] {
+        return Err(format!(
+            "the bounded payload decode must report its exact refusal: {:?}",
+            report.decode_limits
+        )
+        .into());
     }
     Ok(())
 }

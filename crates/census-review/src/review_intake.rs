@@ -1,76 +1,71 @@
 use std::collections::BTreeMap;
+use std::ops::ControlFlow;
 
-use census_domain::model::{RetainedConflict, ReviewCase, ReviewState};
+use census_domain::model::{ReviewCase, ReviewState};
 use census_store::{Store, StoreResult, Table};
 
 use crate::review_budget::{encoded_size, Budget};
 use crate::{ReviewFamily, ReviewOptions, CHECKPOINT_CASES};
+
+#[path = "review_intake_index.rs"]
+mod index;
+pub(super) use index::CorpusIndex;
 
 pub(super) struct Intake {
     pub(super) cases: Vec<(ReviewCase, ReviewFamily)>,
     pub(super) cursor: Option<String>,
 }
 
-#[derive(Clone, Copy)]
-enum Selection {
-    Advice,
-    Revocation,
-}
-
 pub(super) fn next(
     store: &Store,
+    index: &mut CorpusIndex<'_, '_>,
     options: &ReviewOptions,
     after: Option<&str>,
-) -> StoreResult<Intake> {
-    select(store, options, after, Selection::Advice)
-}
-
-pub(super) fn next_for_revocation(
-    store: &Store,
-    options: &ReviewOptions,
-    after: Option<&str>,
-) -> StoreResult<Intake> {
-    select(store, options, after, Selection::Revocation)
-}
-
-fn select(
-    store: &Store,
-    options: &ReviewOptions,
-    after: Option<&str>,
-    selection: Selection,
 ) -> StoreResult<Intake> {
     let snapshot = store.snapshot();
     let mut rows = BTreeMap::new();
     let mut bytes = 0_usize;
-    snapshot.for_each_merged(Table::ReviewCases, |case: ReviewCase| {
-        if actionable(&case, options, selection) {
+    snapshot.for_each_merged_after(Table::ReviewCases, after, |case: ReviewCase| {
+        #[cfg(test)]
+        tests::decoded()?;
+        if actionable(&case, options) {
             admit(&mut rows, &mut bytes, case, after)?;
         }
-        Ok(())
+        Ok(if rows.len() == CHECKPOINT_CASES {
+            ControlFlow::Break(())
+        } else {
+            ControlFlow::Continue(())
+        })
     })?;
-    snapshot.for_each_merged(Table::Conflicts, |conflict: RetainedConflict| {
-        let case = ReviewCase::pending(
-            &conflict.family,
-            conflict.subject_id.as_str(),
-            conflict.subject.as_str(),
-            conflict.detail.as_str(),
-        );
-        if actionable(&case, options, selection) {
+    index.prepare()?;
+    for (id, conflict_id) in index.conflicts_after(after)? {
+        if rows.len() == CHECKPOINT_CASES
+            && rows.last_key_value().is_some_and(|(last, _)| id >= last)
+        {
+            break;
+        }
+        let case = index.conflict_case(conflict_id)?;
+        if actionable(&case, options) {
             admit(&mut rows, &mut bytes, case, after)?;
         }
-        Ok(())
-    })?;
+    }
     let cursor = rows.last_key_value().map(|(id, _)| id.clone());
-    snapshot.for_each_merged(Table::ReviewCases, |case: ReviewCase| {
-        if rows.contains_key(&case.id) {
-            if actionable(&case, options, selection) {
-                rows.insert(case.id.clone(), case);
+    let ids: Vec<_> = rows.keys().cloned().collect();
+    for id in ids {
+        if let Some(case) = snapshot.get_merged::<ReviewCase>(Table::ReviewCases, &id)? {
+            #[cfg(test)]
+            tests::decoded()?;
+            if actionable(&case, options) {
+                rows.insert(id, case);
             } else {
-                rows.remove(&case.id);
+                rows.remove(&id);
             }
         }
-        Ok(())
-    })?;
+    }
+    finish(rows, cursor)
+}
+
+fn finish(rows: BTreeMap<String, ReviewCase>, cursor: Option<String>) -> StoreResult<Intake> {
     let mut budget = Budget::default();
     let cases = rows
         .into_values()
@@ -84,12 +79,8 @@ fn select(
     Ok(Intake { cases, cursor })
 }
 
-fn actionable(case: &ReviewCase, options: &ReviewOptions, selection: Selection) -> bool {
-    let selected_state = match selection {
-        Selection::Advice => !matches!(case.state, ReviewState::Resolved | ReviewState::Superseded),
-        Selection::Revocation => case.state != ReviewState::Superseded,
-    };
-    selected_state
+fn actionable(case: &ReviewCase, options: &ReviewOptions) -> bool {
+    !matches!(case.state, ReviewState::Resolved | ReviewState::Superseded)
         && ReviewFamily::from_label(&case.family)
             .is_some_and(|family| options.families.contains(&family))
 }
@@ -123,3 +114,12 @@ fn admit(
     rows.insert(case.id.clone(), case);
     Ok(())
 }
+
+#[cfg(test)]
+pub(super) fn decoded() -> StoreResult<()> {
+    tests::decoded()
+}
+
+#[cfg(test)]
+#[path = "review_intake_tests.rs"]
+mod tests;

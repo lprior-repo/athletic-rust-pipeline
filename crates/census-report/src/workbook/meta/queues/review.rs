@@ -189,4 +189,36 @@ mod tests {
         check!(eq; family.findings, 2);
         Ok(())
     }
+
+    #[test]
+    fn parity_grouping_review_rows_keep_the_cohort_input_ordinals_of_each_finding() -> TestResult {
+        let first = athlete("2001");
+        let mut confirmed = athlete("2002");
+        confirmed.published_graduations.push(PublishedGraduation {
+            grad_year: GradYear::CO2027,
+            source: SourceRef::id("owned-api"),
+        });
+        let last = athlete("2003");
+        let expected = vec![first.id.to_string(), last.id.to_string()];
+        let family = cohort_unverified(&[first, confirmed, last], &HashMap::new());
+        check!(eq; family.findings, 2, "one finding per unverified input");
+        check!(
+            eq;
+            family.rows.len(),
+            family.findings,
+            "each finding emits exactly one retained row"
+        );
+        let emitted: Vec<String> = family
+            .rows
+            .iter()
+            .map(|row| row.subject_id.clone())
+            .collect();
+        check!(
+            eq;
+            emitted,
+            expected,
+            "the retained rows keep their cohort input ordinals"
+        );
+        Ok(())
+    }
 }

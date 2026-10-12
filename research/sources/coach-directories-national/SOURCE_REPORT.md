@@ -1569,3 +1569,28 @@ the only network traffic behind these numbers.
 1. `tools/validate_ne.py` (removed by `ea81c56`) re-fetches every school on each run (it does not skip a school whose capture already exists), so a re-run costs the full 311 requests again (~5.5 minutes wall clock). With the validator gone this is closed, not pending: reviving the wholesale NE check means writing a new validator, and it should skip a school whose capture already exists.
 2. The 26 client-rendered jurisdictions need a headless browser to distinguish "no coach directory" from "directory rendered client-side". That is a policy decision, not a data question.
 3. MN's baseline AD emails are real-looking but are not served by the MSHSL school page; where the prior study obtained them is unresolved.
+
+## NY and CT coach-lane qualification — 2026-10-12
+
+The held state work orders remain the route-selection basis: `group-a.md` NY and
+`group-b.md` CT under `research/sources/coach-coverage-bundle-20261004/state-work-orders/`.
+This round made no network requests and imported no historical population.
+
+- NY: the selected `milesplit` arm is wired, but held NYSPHSAA/PSAL/team-index
+  bodies and the work order do not qualify a current role-bound public mailbox.
+  The `ny_missing_coach_sources` refusal preserves the exact work-order missing
+  set. Name/URL discovery is not contact coverage.
+- CT: `ciac` can parse the held FusionPoint directory, whose source URL is
+  `https://ciac.fpsports.org/Directory.aspx?SchoolLevelID=1`. The retained
+  `probes/ciac-fpsports/raw/directory-SchoolLevelID-1.adapter.body` has SHA256
+  `a872654b3c9450a484c6f68ae75f9bd32c2523af0f7a2c118f8bb823f1cfc634`.
+  It publishes phone, not email; the adapter emits no page-bound current-tenure
+  claim. Directory rows therefore cannot close the role/tenure/mailbox
+  obligation. `ct_missing_coach_sources` retains the work-order missing set.
+
+Focused adapter execution:
+`env -u CI tools/moon-local run pipeline:tests-scoped -- -p census-crawl -E 'test(ciac::) or test(home_campus::) or test(aia::) or test(milesplit::)'`
+ran 242 tests, all passed (Moon task `240762b6`).
+This is offline parser evidence, not live source accessibility, a real owner
+acceptance of either refusal, or national-run completion. Recorded refusals
+remain owed until real evidence arms the lane or an owner explicitly accepts.

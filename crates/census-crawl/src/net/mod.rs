@@ -19,6 +19,10 @@ mod origin_locks;
 mod representation;
 mod request;
 mod time;
+
+#[cfg(test)]
+#[path = "time_tests.rs"]
+mod time_tests;
 mod types;
 
 pub use time::{cooldown_until_iso8601, instant_iso8601, now_iso8601, today_iso};

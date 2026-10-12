@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use census_reconcile::identity::Revision;
@@ -220,11 +220,28 @@ pub(super) async fn drive_states(
     line: impl Fn(&JurisdictionReport) -> Result<String>,
 ) -> Result<()> {
     let ingestion = ingress::client(origin)?;
+    let mut failed = Vec::new();
     for request in requests {
         let report = drive_jurisdiction(&ingestion, request, rounds).await?;
         println!("{}", line(&report)?);
+        if report
+            .plan
+            .refused
+            .iter()
+            .any(|r| r.reason != "no run stage sweeps this source per jurisdiction")
+            || !report.rosters.errors.is_empty()
+            || report.rosters.blocked
+        {
+            failed.push(report.jurisdiction.code().to_string());
+        }
     }
-    Ok(())
+    if failed.is_empty() {
+        return Ok(());
+    }
+    bail!(
+        "team collection did not complete: failed [{}]",
+        failed.join(", ")
+    )
 }
 
 #[cfg(test)]

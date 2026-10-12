@@ -58,7 +58,10 @@ replace the full gate: `env -u CI tools/moon-local run pipeline:gate -- --releas
 acceptance entrypoint for the policy, security, feature-powerset, benchmark-presence and measured
 performance lanes; it carries no proof lane, so kernel coverage must be reported by name rather than
 inferred from a passing release run. The whole-workspace mutation lane was retired by owner decision
-(bead `5rtr`). A scoped report
+(bead `5rtr`). Run one assigned release-debt component without the umbrella via `env -u CI tools/moon-local
+run pipeline:gate -- --release --lane <contract|panic-extraction|scan|ratchet|durability|perf>`. Ratchet
+still measures strict Clippy and production scan; selectors do not waive release prerequisites or permit
+baseline updates, and a single lane pass is not a release pass. A scoped report
 test, cached task result, successful build or benchmark scaffold is not national-census or
 native-recovery acceptance. Manual tasks are excluded from automatic CI; `env -u CI` is required
 when any `CI` value is present, including `CI=false`.
@@ -137,6 +140,7 @@ tools/moon-local run pipeline:tests -- -E 'binary(restate_kill_restart)'
 | `pipeline:fmt-write` | Manual uncached source formatting; run only when intentionally formatting owned changes |
 | `pipeline:g1-audit` | Manual uncached retained search audit |
 | `pipeline:durability` / `pipeline:backup-drill` | Manual uncached existing fault/backup wrappers, bound to portable Moon binaries; require owned scratch/stopped stores |
+| `pipeline:native-resources` | Manual uncached `tools/durability/native-resources.sh`: verifies the pinned Restate/QEMU/image/guest-capture resources, prepares owned scratch disks and probes the isolation mechanisms the native fault scenarios need; `--certificate <path>` records the observed identities |
 
 The full test task is deliberately uncached because native fault/recovery checks observe processes,
 ports and durable state not represented by source hashes. Running it does not by itself certify all

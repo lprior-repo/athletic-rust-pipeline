@@ -109,12 +109,13 @@ async fn process_school(
         name: entry.name.clone(),
         school_id: entry.school_id.clone(),
     };
-    let extract = captured_school_entities(
+    let mut extract = captured_school_entities(
         &parsed,
         &super::pages::parse_staff_table(body),
         directory,
         &staff,
     );
+    crate::coach_directories::record_capture_appointments(&mut extract.coaches, &staff, "mpa")?;
     persist_school(ctx, &url, &extract, &directory.fetched_at, report)
 }
 

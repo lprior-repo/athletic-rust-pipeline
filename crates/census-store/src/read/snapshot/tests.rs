@@ -85,24 +85,62 @@ fn an_absent_snapshot_reads_as_an_empty_table() -> TestResult {
 #[test]
 fn the_sweep_reclaims_a_temporary_in_out_as_well_as_in_entities() -> TestResult {
     let dir = tempfile::tempdir()?;
+    let store = crate::Store::open(dir.path())?;
     let entities = dir.path().join("entities");
     std::fs::create_dir_all(&entities)?;
     let out = dir.path().join("out");
     std::fs::create_dir_all(&out)?;
     let staged = [
-        entities.join(".schools.jsonl.4242.0.part"),
-        out.join(".best-results-co2027.jsonl.4242.1.part"),
+        entities.join(".schools.jsonl.4294967295.0.part"),
+        out.join(".best-results-co2027.jsonl.4294967295.1.part"),
     ];
     for path in &staged {
         std::fs::write(path, b"half a file")?;
     }
     let keep = out.join("best-results-co2027.jsonl");
     std::fs::write(&keep, b"{}\n")?;
-    check!(eq; sweep_stale_temporaries(dir.path())?, 2);
+    check!(eq; sweep_stale_temporaries(dir.path(), &store.meta)?, 2);
     check!(
         staged.iter().all(|path| !path.exists()),
         "both temporaries are reclaimed"
     );
     check!(keep.exists(), "the published sidecar is untouched");
+    Ok(())
+}
+
+#[test]
+fn reclamation_retains_live_owner_scratch_and_foreign_part_files() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = crate::Store::open(dir.path())?;
+    let out = dir.path().join("out");
+    let live = out.join(format!(".schools.jsonl.{}.0.part", std::process::id()));
+    let foreign = out.join(".foreign.part");
+    std::fs::write(&live, b"paused live writer")?;
+    std::fs::write(&foreign, b"not store-owned scratch")?;
+    check!(eq; sweep_stale_temporaries(dir.path(), &store.meta)?, 0);
+    check!(eq; std::fs::read(live)?, b"paused live writer");
+    check!(eq; std::fs::read(foreign)?, b"not store-owned scratch");
+    Ok(())
+}
+
+#[test]
+fn owner_dead_scratch_reclamation_resumes_in_bounded_byte_slices() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = crate::Store::open(dir.path())?;
+    let paths: Vec<_> = (0..3)
+        .map(|index| {
+            store
+                .out_dir()
+                .join(format!(".rows.jsonl.4294967295.{index}.part"))
+        })
+        .collect();
+    for path in &paths {
+        std::fs::File::create(path)?.set_len(8 * 1024 * 1024)?;
+    }
+    check!(eq; store.reclaim_owner_dead_scratch()?, 2);
+    check!(eq; paths.iter().filter(|path| path.exists()).count(), 1);
+    check!(eq; store.reclaim_owner_dead_scratch()?, 1);
+    check!(paths.iter().all(|path| !path.exists()));
+    check!(eq; store.reclaim_owner_dead_scratch()?, 0);
     Ok(())
 }

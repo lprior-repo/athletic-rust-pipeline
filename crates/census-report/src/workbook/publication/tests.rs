@@ -397,23 +397,23 @@ fn a_seal_is_bound_to_the_run_and_cohort_the_store_declares() -> TestResult {
     seed(&store, "Bound High School")?;
     bind_census_run(&store)?;
     let workbook = build_for_season(&store, &directory.path().join("publication"), 2026)?;
-    let dataset = ExportDataset::load(&store)?;
+    let lineage = crate::export::store_lineage(&store)?;
     check!(eq;
-        dataset.lineage.run.as_ref().map(|run| run.revision()),
+        lineage.run.as_ref().map(|run| run.revision()),
         Some(1),
         "the export names the run the store was bound to"
     );
-    check!(eq; dataset.lineage.cohort, Some(GradYear::CO2027));
+    check!(eq; lineage.cohort, Some(GradYear::CO2027));
 
-    verify_for_seal(
+    open_publication(
         &workbook,
-        &dataset,
+        &lineage,
         crate::report::Scope::AllSources,
         GradYear::CO2027,
     )?;
 
     let later = GradYear::new(2028).ok_or("2028 is a cohort year")?;
-    match verify_for_seal(&workbook, &dataset, crate::report::Scope::AllSources, later) {
+    match open_publication(&workbook, &lineage, crate::report::Scope::AllSources, later) {
         Err(error) => check!(
             error
                 .to_string()
@@ -435,15 +435,15 @@ fn a_publication_of_another_stores_run_cannot_seal_this_census() -> TestResult {
 
     let loose = Store::open(directory.path().join("loose"))?;
     seed(&loose, "Loose High School")?;
-    let dataset = ExportDataset::load(&loose)?;
+    let lineage = crate::export::store_lineage(&loose)?;
     check!(
-        dataset.lineage.run.is_none(),
+        lineage.run.is_none(),
         "a store no national run admitted carries no run"
     );
 
-    match verify_for_seal(
+    match open_publication(
         &workbook,
-        &dataset,
+        &lineage,
         crate::report::Scope::AllSources,
         GradYear::CO2027,
     ) {
@@ -473,10 +473,10 @@ fn a_publication_of_another_cohort_never_seals_this_census() -> TestResult {
             school_year: SchoolYear::new(2026).ok_or("2026 is a school year")?,
         },
     )?;
-    let dataset = ExportDataset::load(&store)?;
+    let lineage = crate::export::store_lineage(&store)?;
     let later = GradYear::new(2028).ok_or("2028 is a cohort year")?;
 
-    match verify_for_seal(&workbook, &dataset, crate::report::Scope::AllSources, later) {
+    match open_publication(&workbook, &lineage, crate::report::Scope::AllSources, later) {
         Err(error) => check!(
             error
                 .to_string()
@@ -487,9 +487,9 @@ fn a_publication_of_another_cohort_never_seals_this_census() -> TestResult {
             return Err("a publication restricted to 2028 cannot certify the 2027 census".into())
         }
     }
-    match verify_for_seal(
+    match open_publication(
         &workbook,
-        &dataset,
+        &lineage,
         crate::report::Scope::AllSources,
         GradYear::CO2027,
     ) {
@@ -516,10 +516,10 @@ fn a_publication_assessed_in_another_school_year_cannot_seal_the_run() -> TestRe
             school_year: SchoolYear::new(2027).ok_or("2027 is a school year")?,
         },
     )?;
-    let dataset = ExportDataset::load(&store)?;
-    match verify_for_seal(
+    let lineage = crate::export::store_lineage(&store)?;
+    match open_publication(
         &workbook,
-        &dataset,
+        &lineage,
         crate::report::Scope::AllSources,
         GradYear::CO2027,
     ) {
@@ -556,10 +556,10 @@ fn a_store_bound_to_another_cohort_cannot_receive_the_census_seal() -> TestResul
             school_year: SchoolYear::new(2026).ok_or("2026 is a school year")?,
         },
     )?;
-    let dataset = ExportDataset::load(&store)?;
-    check!(eq; dataset.lineage.cohort, Some(GradYear::new(2028).ok_or("2028 is a cohort year")?));
+    let lineage = crate::export::store_lineage(&store)?;
+    check!(eq; lineage.cohort, Some(GradYear::new(2028).ok_or("2028 is a cohort year")?));
     let later = GradYear::new(2028).ok_or("2028 is a cohort year")?;
-    match verify_for_seal(&workbook, &dataset, crate::report::Scope::AllSources, later) {
+    match open_publication(&workbook, &lineage, crate::report::Scope::AllSources, later) {
         Err(error) => check!(
             error
                 .to_string()
@@ -590,16 +590,16 @@ fn a_publication_of_another_runs_revision_cannot_seal_this_census() -> TestResul
         cohort: GradYear::CO2027,
         jurisdictions: vec![UsJurisdiction::Wisconsin],
     })?;
-    let dataset = ExportDataset::load(&measured)?;
+    let lineage = crate::export::store_lineage(&measured)?;
     check!(eq;
-        dataset.lineage.run.as_ref().map(|run| run.revision()),
+        lineage.run.as_ref().map(|run| run.revision()),
         Some(2),
         "the measured store carries its own run revision"
     );
 
-    match verify_for_seal(
+    match open_publication(
         &workbook,
-        &dataset,
+        &lineage,
         crate::report::Scope::AllSources,
         GradYear::CO2027,
     ) {

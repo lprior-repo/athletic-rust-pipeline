@@ -9,7 +9,7 @@ use pattern::{
     aria, classes, date_cell, day, link, name_cell, row, tags, title, value, venue_cell,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum ScheduleSport {
     Track,
     CrossCountry,

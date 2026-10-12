@@ -17,12 +17,14 @@ mod execution;
 mod operation;
 pub(crate) use operation::contacts_key;
 mod ledger;
+mod ledger_io;
+pub(crate) use ledger::durable_attempts;
 #[cfg(feature = "native-fault-injection")]
 pub(crate) mod native_boundary;
 #[cfg(feature = "native-fault-injection")]
 pub use native_boundary::NATIVE_BOUNDARY_HOOK;
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 
 #[derive(Clone)]
 pub struct TeamsSource {
@@ -246,7 +248,10 @@ impl TeamsSource {
         &self,
         ctx: SharedObjectContext<'_>,
     ) -> Result<Json<Option<TeamsSourceOutcome>>, HandlerError> {
-        let outcome = ledger::status(&self.owner.store, ctx.key(), None).map_err(job_error)?;
+        let outcome = self
+            .ledger_status(ctx.key().to_string(), None)
+            .await
+            .map_err(job_error)?;
         Ok(Json(outcome))
     }
 
@@ -255,8 +260,10 @@ impl TeamsSource {
         &self,
         ctx: SharedObjectContext<'_>,
     ) -> Result<Json<Vec<TeamsAttemptProgress>>, HandlerError> {
-        let inspection =
-            ledger::inspection(&self.owner.store, ctx.key(), None).map_err(job_error)?;
+        let inspection = self
+            .ledger_inspection(ctx.key().to_string())
+            .await
+            .map_err(job_error)?;
         let progress = match inspection {
             TeamsSourceInspection::Unsettled { progress } => progress,
             TeamsSourceInspection::Settled { outcome } => match outcome {
@@ -274,8 +281,10 @@ impl TeamsSource {
         &self,
         ctx: SharedObjectContext<'_>,
     ) -> Result<Json<TeamsSourceInspection>, HandlerError> {
-        let inspection =
-            ledger::inspection(&self.owner.store, ctx.key(), None).map_err(job_error)?;
+        let inspection = self
+            .ledger_inspection(ctx.key().to_string())
+            .await
+            .map_err(job_error)?;
         Ok(Json(inspection))
     }
 }

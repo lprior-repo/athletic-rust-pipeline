@@ -9,12 +9,15 @@ use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 
 pub(in crate::workbook::verify) fn copy_bundle(path: &Path, target: &Path) -> TestResult<PathBuf> {
-    std::fs::create_dir_all(target)?;
-    for entry in std::fs::read_dir(path.parent().ok_or("generation")?)? {
+    let generation = path.parent().ok_or("generation")?;
+    let name = generation.file_name().ok_or("generation name")?;
+    let copy = target.join("generations").join(name);
+    std::fs::create_dir_all(&copy)?;
+    for entry in std::fs::read_dir(generation)? {
         let entry = entry?;
-        std::fs::copy(entry.path(), target.join(entry.file_name()))?;
+        std::fs::copy(entry.path(), copy.join(entry.file_name()))?;
     }
-    Ok(target.join("workbook.xlsx"))
+    Ok(copy.join("workbook.xlsx"))
 }
 
 pub(in crate::workbook::verify) fn alter_sheet(
@@ -129,7 +132,8 @@ pub(in crate::workbook::verify) fn rejected_by_all(
     for result in [
         verify_frozen(path, dataset, options).map(|_| ()),
         publication::verify_published(path).map(|_| ()),
-        publication::verify_for_seal(path, dataset, options.scope, GradYear::CO2027).map(|_| ()),
+        publication::open_publication(path, &dataset.lineage, options.scope, GradYear::CO2027)
+            .map(|_| ()),
     ] {
         let error = match result {
             Err(error) => error.to_string(),

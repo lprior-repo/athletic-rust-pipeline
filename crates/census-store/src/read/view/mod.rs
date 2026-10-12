@@ -2,8 +2,18 @@ use crate::keys::Layout;
 use crate::{Store, StoreError, StoreResult};
 use fjall::{Readable, Snapshot};
 
+mod bounded;
+#[path = "../keyed.rs"]
+mod keyed;
 mod merge;
+mod object;
+mod object_read;
+mod object_wire;
 mod operations;
+
+pub use bounded::{ReadBudget, ReadCounts};
+pub use object::{JournalDigest, JournalEntry, JournalObject, JournalRecord, JournalRecords};
+
 pub struct StoreSnapshot<'s> {
     snapshot: Snapshot,
     entities: &'s fjall::Keyspace,

@@ -22,6 +22,10 @@ pub struct JurisdictionOpen {
     pub identity: String,
     pub stages: JurisdictionStages,
     pub unreadable: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub athleticlive_manifest: Option<super::AthleticLiveObligation>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub athleticlive_manifest_reason: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -34,6 +38,16 @@ pub struct SourceObjectOpen {
     pub disposition: census_crawl::CollectionDisposition,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub resolution: Option<census_crawl::ResolutionCounters>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub teams_source: Option<super::TeamsSourceOutcome>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SourceObjectInventory {
+    pub objects: u64,
+    pub accepted_observations: u64,
+    pub accepted_nothing: u64,
+    pub unreadable: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -42,6 +56,8 @@ pub struct OpenWorkReply {
     pub revision: u32,
     pub jurisdiction_sweeps: Option<u64>,
     pub source_objects: Option<u64>,
+    #[serde(default)]
+    pub source_object_inventory: Option<SourceObjectInventory>,
     #[serde(default)]
     pub silent_sources: Vec<String>,
     pub jurisdictions: Vec<JurisdictionOpen>,

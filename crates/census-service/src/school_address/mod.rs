@@ -9,6 +9,7 @@ mod preflight;
 mod print;
 mod publish;
 mod read;
+pub mod replay;
 mod report;
 
 pub use generation_error::GenerationError;
@@ -108,7 +109,7 @@ pub fn run(args: &SchoolAddressArgs) -> Result<()> {
     let now = run_month(args)?;
     preflight::check(args)?;
     let lanes = read::lanes(args)?;
-    let mut corpus = pipeline::collapse(&lanes);
+    let mut corpus = pipeline::collapse(&lanes)?;
     let phases = geocode::apply(args, &mut corpus)?;
     let changes = pipeline::diff(args, &corpus.entries)?;
     let (ledger, schedule) = pipeline::schedule(args, &lanes, now)?;

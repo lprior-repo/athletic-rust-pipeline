@@ -1,0 +1,267 @@
+▮▮▮▮ pipeline:fmt (c5b4771e)
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-domain/src/school_directory/tests/nces_join_tests.rs:1:
+-use crate::school_directory::{CityName, DirectoryIndex, IdentifiedKey, LinkDecision, NcesSchoolId, PostalAddress, SchoolDirectoryEntry, SchoolName, SourceLabel, StreetLine};
++use crate::school_directory::{
++    CityName, DirectoryIndex, IdentifiedKey, LinkDecision, NcesSchoolId, PostalAddress,
++    SchoolDirectoryEntry, SchoolName, SourceLabel, StreetLine,
++};
+ use crate::UsJurisdiction;
+ 
+ #[test]
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-domain/src/school_directory/tests/nces_join_tests.rs:5:
+ fn nces_without_city_corroboration_never_links() -> super::TestResult {
+-    let address = PostalAddress::of(Some(StreetLine::parse("1 Main St")?), None, Some(CityName::parse("Springfield")?), Some(UsJurisdiction::Ohio), None).ok_or("missing address")?;
+-    let entry = SchoolDirectoryEntry::identified(IdentifiedKey::Nces(NcesSchoolId::parse("390000000001")?), SourceLabel::Ccd, Some(SchoolName::parse("Springfield High School")?)).with_address(Some(address));
++    let address = PostalAddress::of(
++        Some(StreetLine::parse("1 Main St")?),
++        None,
++        Some(CityName::parse("Springfield")?),
++        Some(UsJurisdiction::Ohio),
++        None,
++    )
++    .ok_or("missing address")?;
++    let entry = SchoolDirectoryEntry::identified(
++        IdentifiedKey::Nces(NcesSchoolId::parse("390000000001")?),
++        SourceLabel::Ccd,
++        Some(SchoolName::parse("Springfield High School")?),
++    )
++    .with_address(Some(address));
+     let index = DirectoryIndex::build(&[entry]);
+     for city in [None, Some("Columbus")] {
+         let decision = index.link_name("Springfield High School", city, UsJurisdiction::Ohio, &[]);
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/school_address/join/apply.rs:192:
+     fn attest(&mut self, school: &CanonicalSchool, state: UsJurisdiction) -> StoreResult<()> {
+         self.attested.clear();
+         for identity in &school.source_identities {
+-            let record = owned_record(identity, state, self.association.as_deref()).map_err(|error| {
+-                census_store::StoreError::Invariant {
+-                    detail: format!("school {} has an invalid directory identity: {error}", school.id.as_str()),
+-                }
+-            })?;
++            let record =
++                owned_record(identity, state, self.association.as_deref()).map_err(|error| {
++                    census_store::StoreError::Invariant {
++                        detail: format!(
++                            "school {} has an invalid directory identity: {error}",
++                            school.id.as_str()
++                        ),
++                    }
++                })?;
+             let Some(record) = record else {
+                 continue;
+             };
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/school_address/join/attest.rs:1:
+ use census_domain::model::{SourceIdentity, SourceNamespace};
+-use census_domain::school_directory::{AttestedRecord, DirectoryError, IdentifiedKey, NcesSchoolId, PssId, SourceLabel, StateRecordId};
++use census_domain::school_directory::{
++    AttestedRecord, DirectoryError, IdentifiedKey, NcesSchoolId, PssId, SourceLabel, StateRecordId,
++};
+ use census_domain::UsJurisdiction;
+ 
+-pub(super) fn owned_record(identity: &SourceIdentity, state: UsJurisdiction, association: Option<&str>) -> Result<Option<AttestedRecord>, DirectoryError> {
++pub(super) fn owned_record(
++    identity: &SourceIdentity,
++    state: UsJurisdiction,
++    association: Option<&str>,
++) -> Result<Option<AttestedRecord>, DirectoryError> {
+     let (label, key) = match &identity.namespace {
+-        SourceNamespace::SchoolDirectory { provider, state: owner_state } if *owner_state == state => match provider.as_str() {
+-            "nces-ccd" => (SourceLabel::Ccd, IdentifiedKey::Nces(NcesSchoolId::parse(&identity.id)?)),
+-            "nces-pss" => (SourceLabel::Pss, IdentifiedKey::Pss(PssId::parse(&identity.id)?)),
+-            "state-ed" => (SourceLabel::StateEducationAgency { state }, IdentifiedKey::StateRecord { state, id: StateRecordId::parse(&identity.id)? }),
++        SourceNamespace::SchoolDirectory {
++            provider,
++            state: owner_state,
++        } if *owner_state == state => match provider.as_str() {
++            "nces-ccd" => (
++                SourceLabel::Ccd,
++                IdentifiedKey::Nces(NcesSchoolId::parse(&identity.id)?),
++            ),
++            "nces-pss" => (
++                SourceLabel::Pss,
++                IdentifiedKey::Pss(PssId::parse(&identity.id)?),
++            ),
++            "state-ed" => (
++                SourceLabel::StateEducationAgency { state },
++                IdentifiedKey::StateRecord {
++                    state,
++                    id: StateRecordId::parse(&identity.id)?,
++                },
++            ),
+             _ => return Ok(None),
+         },
+-        SourceNamespace::AssociationSchool { association: owner } if association == Some(owner.as_str()) => (SourceLabel::AthleticAssociation { state }, IdentifiedKey::StateRecord { state, id: StateRecordId::parse(&identity.id)? }),
++        SourceNamespace::AssociationSchool { association: owner }
++            if association == Some(owner.as_str()) =>
++        {
++            (
++                SourceLabel::AthleticAssociation { state },
++                IdentifiedKey::StateRecord {
++                    state,
++                    id: StateRecordId::parse(&identity.id)?,
++                },
++            )
++        }
+         _ => return Ok(None),
+     };
+     Ok(Some(AttestedRecord { label, key }))
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/school_address/join/nces_tests.rs:3:
+ 
+ #[test]
+ fn nces_name_only_or_conflicting_city_never_fills_a_postal_gap() -> TestResult {
+-    let entries = [entry("390000000001", "Springfield High School", "Springfield", UsJurisdiction::Ohio, "1 Main St")?];
++    let entries = [entry(
++        "390000000001",
++        "Springfield High School",
++        "Springfield",
++        UsJurisdiction::Ohio,
++        "1 Main St",
++    )?];
+     let index = DirectoryIndex::build(&entries);
+     for city in [None, Some("Columbus")] {
+         let dir = tempfile::tempdir()?;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/school_address/join/nces_tests.rs:10:
+         let store = Store::open(dir.path())?;
+-        let (school, _) = CanonicalSchool::new(UsJurisdiction::Ohio, "Springfield High School", "springfield high school", city);
++        let (school, _) = CanonicalSchool::new(
++            UsJurisdiction::Ohio,
++            "Springfield High School",
++            "springfield high school",
++            city,
++        );
+         store.append(Table::Schools, &school)?;
+-        let (counts, outcomes) = process(&store, &index, &lanes(Some("https://nces.ed.gov/ccd.csv"), Some("2026-10-04")), Mode::Apply)?;
+-        println!("city={city:?} linked={} no_match={}", counts.linked, counts.no_match);
++        let (counts, outcomes) = process(
++            &store,
++            &index,
++            &lanes(Some("https://nces.ed.gov/ccd.csv"), Some("2026-10-04")),
++            Mode::Apply,
++        )?;
++        println!(
++            "city={city:?} linked={} no_match={}",
++            counts.linked, counts.no_match
++        );
+         check!(eq; counts.linked, 0);
+         check!(eq; counts.no_match, 1);
+         check!(eq; outcomes.first().and_then(|row| row.reason.as_deref()), Some("no_match"));
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/school_address/join/nces_tests.rs:22:
+ 
+ #[test]
+ fn pss_name_only_or_conflicting_city_never_links() -> TestResult {
+-    let public = entry("390000000001", "Springfield High School", "Springfield", UsJurisdiction::Ohio, "1 Main St")?;
+-    let private = SchoolDirectoryEntry::identified(IdentifiedKey::Pss(PssId::parse("A2380006")?), SourceLabel::Pss, public.name().cloned()).with_address(public.address().cloned()).with_grades(public.grades());
++    let public = entry(
++        "390000000001",
++        "Springfield High School",
++        "Springfield",
++        UsJurisdiction::Ohio,
++        "1 Main St",
++    )?;
++    let private = SchoolDirectoryEntry::identified(
++        IdentifiedKey::Pss(PssId::parse("A2380006")?),
++        SourceLabel::Pss,
++        public.name().cloned(),
++    )
++    .with_address(public.address().cloned())
++    .with_grades(public.grades());
+     let index = DirectoryIndex::build(&[private]);
+     for city in [None, Some("Columbus")] {
+         let decision = index.link_name("Springfield High School", city, UsJurisdiction::Ohio, &[]);
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/school_address/join/nces_tests.rs:52:
+     }
+     store.append_many(Table::Schools, &schools.into_values().collect::<Vec<_>>())?;
+     let overrides = Overrides {
+-        urls: BTreeMap::from([("nces-ccd".to_string(), "https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2526_w_0a_050626.zip".to_string()), ("nces-pss".to_string(), "https://nces.ed.gov/surveys/pss/zip/pss2324_pu_csv.zip".to_string())]),
+-        dates: BTreeMap::from([("nces-ccd".to_string(), "2026-10-04".to_string()), ("nces-pss".to_string(), "2026-10-04".to_string())]),
++        urls: BTreeMap::from([
++            (
++                "nces-ccd".to_string(),
++                "https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2526_w_0a_050626.zip".to_string(),
++            ),
++            (
++                "nces-pss".to_string(),
++                "https://nces.ed.gov/surveys/pss/zip/pss2324_pu_csv.zip".to_string(),
++            ),
++        ]),
++        dates: BTreeMap::from([
++            ("nces-ccd".to_string(), "2026-10-04".to_string()),
++            ("nces-pss".to_string(), "2026-10-04".to_string()),
++        ]),
+     };
+-    let report = join_generation(&store, &root.join("school-address"), Some(&dir.path().join("out")), overrides, Mode::DryRun)?;
+-    println!("retained generation projected without preexisting NCES claims: {}", serde_json::to_string(&report.counters)?);
++    let report = join_generation(
++        &store,
++        &root.join("school-address"),
++        Some(&dir.path().join("out")),
++        overrides,
++        Mode::DryRun,
++    )?;
++    println!(
++        "retained generation projected without preexisting NCES claims: {}",
++        serde_json::to_string(&report.counters)?
++    );
+     let outcomes = std::fs::read_to_string(&report.outcomes)?;
+     let mut reasons = BTreeMap::<String, u64>::new();
+     for line in outcomes.lines() {
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/school_address/join/nces_tests.rs:65:
+         let counter = reasons.entry(reason).or_default();
+         *counter = counter.checked_add(1).ok_or("reason counter overflow")?;
+     }
+-    println!("retained generation gap reasons: {}", serde_json::to_string(&reasons)?);
++    println!(
++        "retained generation gap reasons: {}",
++        serde_json::to_string(&reasons)?
++    );
+     let generation = crate::school_address::verify_current(&root.join("school-address"))?;
+-    let entries: Vec<SchoolDirectoryEntry> = serde_json::from_slice(generation.artifact("school_directory.json")?)?;
++    let entries: Vec<SchoolDirectoryEntry> =
++        serde_json::from_slice(generation.artifact("school_directory.json")?)?;
+     check!(eq; entries.iter().filter(|entry| matches!(entry.key(), DirectoryKey::Nces(_))).count(), 100307);
+     check!(eq; entries.iter().filter(|entry| matches!(entry.key(), DirectoryKey::Pss(_))).count(), 22385);
+     Ok(())
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/school_address/join/postal.rs:6:
+ use super::Job;
+ 
+ fn has_street(school: &CanonicalSchool) -> bool {
+-    school.postal_addresses.iter().any(|claim| claim.address().line1().is_some())
++    school
++        .postal_addresses
++        .iter()
++        .any(|claim| claim.address().line1().is_some())
+ }
+ 
+ impl Job<'_> {
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/school_address/join/postal.rs:47:
+         if self.postal_present {
+             return;
+         }
+-        let Some(claim) = school.postal_addresses.iter().find(|claim| claim.address().line1().is_some()) else {
++        let Some(claim) = school
++            .postal_addresses
++            .iter()
++            .find(|claim| claim.address().line1().is_some())
++        else {
+             return;
+         };
+         self.postal_present = true;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/school_address/join.rs:12:
+ 
+ mod apply;
+ mod attest;
+-mod postal;
+ mod generation;
+ mod lanes;
+ mod link;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/school_address/join.rs:19:
++mod postal;
+ mod support;
+ 
+ pub(crate) use generation::join_generation_pinned;
+▮▮▮▮ pipeline:fmt (1s 720ms, c5b4771e)
+Error: task_runner::run_failed
+
+  × Task pipeline:fmt failed to run.
+  ╰─▶ Process tools/moon-cargo failed: exit code 1
+

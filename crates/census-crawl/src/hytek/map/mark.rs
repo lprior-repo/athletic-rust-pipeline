@@ -86,7 +86,7 @@ pub fn parse_field_mark(token: &str) -> Option<Mark> {
         let feet: f64 = feet.trim().parse().ok()?;
         let inches: f64 = inches.trim().parse().ok()?;
         let metres = (feet * 12.0 + inches) * 0.0254;
-        if !(0.0..12.0).contains(&inches) || feet < 0.0 || !metres.is_finite() {
+        if !(0.0..12.0).contains(&inches) || feet < 0.0 || !metres.is_finite() || metres <= 0.0 {
             return None;
         }
         return Some(Mark::FieldImperial {
@@ -103,7 +103,7 @@ pub fn parse_field_mark(token: &str) -> Option<Mark> {
             inches_text.parse().ok()?
         };
         let metres = (feet * 12.0 + inches) * 0.0254;
-        if !(0.0..12.0).contains(&inches) || !metres.is_finite() {
+        if !(0.0..12.0).contains(&inches) || !metres.is_finite() || metres <= 0.0 {
             return None;
         }
         return Some(Mark::FieldImperial {

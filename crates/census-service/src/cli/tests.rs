@@ -156,3 +156,6 @@ fn a_cli_built_fetcher_refuses_an_origin_another_run_holds() -> TestResult {
     }
     Ok(())
 }
+
+#[path = "teams_tests.rs"]
+mod teams;

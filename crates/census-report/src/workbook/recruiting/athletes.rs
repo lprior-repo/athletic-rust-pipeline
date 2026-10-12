@@ -17,18 +17,19 @@ use cells::{
 };
 use census_domain::model::CanonicalAthlete;
 
-pub(super) fn sheet(dataset: &Dataset) -> ReportResult<Vec<Vec<Cell>>> {
+pub(super) fn rows(dataset: &Dataset) -> impl Iterator<Item = ReportResult<Vec<Cell>>> + '_ {
     let mut ordered: Vec<(&CanonicalAthlete, (String, String, String))> = dataset
         .athletes
         .iter()
         .map(|athlete| (athlete, display_key(dataset, athlete)))
         .collect();
     ordered.sort_by(|left, right| left.1.cmp(&right.1));
-    let mut rows = vec![HEADERS.iter().map(|header| Cell::text(*header)).collect()];
-    for (athlete, _) in ordered {
-        rows.push(row_for(dataset, athlete)?);
-    }
-    Ok(rows)
+    let header = HEADERS.iter().map(|header| Cell::text(*header)).collect();
+    std::iter::once(Ok(header)).chain(
+        ordered
+            .into_iter()
+            .map(move |(athlete, _)| row_for(dataset, athlete)),
+    )
 }
 
 fn display_key(dataset: &Dataset, athlete: &CanonicalAthlete) -> (String, String, String) {

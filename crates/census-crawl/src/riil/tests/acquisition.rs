@@ -26,7 +26,11 @@ fn historical_capture_replay_preserves_freshness_and_physical_rows(
         assert_evidence(coach.evidence.first().ok_or("coach capture evidence")?, DIRECTORY, ACQUIRED_AT)?;
         check!(eq; coach.professional_email, None);
         check!(eq; coach.personal_email, None);
-        check!(eq; coach.tenure_evidence, Vec::new());
+        let fact = coach.tenure_evidence.first().ok_or("explicit captured tenure")?;
+        check!(eq; fact.tenure, census_domain::model::CoachTenure::Unknown);
+        check!(eq; fact.source.url.as_deref(), Some(URL));
+        check!(eq; fact.source_sha256, crate::net::cache::content_digest(DIRECTORY.as_bytes()));
+        check!(eq; fact.retrieved_at, ACQUIRED_AT);
     }
     let sources = observations::<SourceObservation>(&reopened, Table::SourceObservations)?;
     let SourceObservation::School(source) = sources.first().ok_or("source observation")? else {

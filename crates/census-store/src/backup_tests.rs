@@ -895,3 +895,63 @@ fn restore_refuses_a_tampered_link_entry() -> TestResult {
     check!(!restored.exists(), "a refused restore publishes nothing");
     Ok(())
 }
+
+#[test]
+fn copied_generation_promotion_reopens_with_replay_receipts() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let source = dir.path().join("source");
+    let destination = dir.path().join("backup");
+    {
+        let store = Store::open(&source)?;
+        let mut batch = store.write_batch();
+        batch.append_many(Table::Schools, &[school("Generation One")])?;
+        check!(batch.commit_once("generation-one", "digest-one")?.written());
+    }
+    Store::backup(&source, &destination)?;
+    {
+        let before = Store::open(&destination)?;
+        check!(eq; before.count(Table::Schools)?, 1);
+        check!(eq; before.receipt_count()?, 1);
+        println!(
+            "pre: schools={} receipts={} operation=generation-one",
+            before.count(Table::Schools)?,
+            before.receipt_count()?
+        );
+    }
+    {
+        let store = Store::open(&source)?;
+        let mut batch = store.write_batch();
+        batch.append_many(Table::Schools, &[school("Generation Two")])?;
+        check!(batch.commit_once("generation-two", "digest-two")?.written());
+    }
+    Store::backup(&source, &destination)?;
+    let after = Store::open(&destination)?;
+    check!(eq; after.count(Table::Schools)?, 2);
+    check!(eq; after.receipt_count()?, 2);
+    check!(after.integrity()?.ok);
+    let mut replay = after.write_batch();
+    replay.append_many(Table::Schools, &[school("Generation One")])?;
+    check!(replay
+        .commit_once("generation-one", "digest-one")?
+        .repeated());
+    let boundary = chrono::Utc::now()
+        .date_naive()
+        .succ_opt()
+        .ok_or("day overflow")?
+        .to_string();
+    let pruned = after.prune_receipts(&ReplayFrontier {
+        at: boundary,
+        witnesses: vec![ReplayWitness {
+            invocation: "paused-lost-ack".into(),
+            operation: "generation-one".into(),
+        }],
+    })?;
+    check!(eq; pruned.removed, 1);
+    check!(eq; pruned.witnesses_kept, 1);
+    check!(eq; after.count(Table::Schools)?, 2);
+    check!(after.receipt("generation-one")?.is_some());
+    check!(after.receipt("generation-two")?.is_none());
+    println!("post: schools={} receipts_before_prune=2 replay=Repeated removed={} active_witnesses={} receipts_after_prune={}",
+        after.count(Table::Schools)?, pruned.removed, pruned.witnesses_kept, after.receipt_count()?);
+    Ok(())
+}

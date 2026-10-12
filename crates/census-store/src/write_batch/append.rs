@@ -5,7 +5,7 @@ use crate::batch::{refuse_derived_append, refuse_observation_replacement};
 use super::super::batch::refuse_over_bound;
 use super::super::keys::observation_id;
 use super::super::{StorageMode, StoreError, StoreResult, Table};
-use super::{Page, Replacement, StoreBatch};
+use super::{ObservationBudget, Page, Replacement, StoreBatch};
 
 impl StoreBatch<'_> {
     pub fn append_many<T: Serialize>(&mut self, table: Table, records: &[T]) -> StoreResult<()> {
@@ -15,20 +15,56 @@ impl StoreBatch<'_> {
         }
         let count = u64::try_from(records.len()).map_err(|_| StoreError::CounterOverflow)?;
         refuse_over_bound(table, count)?;
-        let mut encoded = Vec::with_capacity(records.len());
-        for record in records {
-            let value = serde_json::to_vec(record).map_err(|source| StoreError::Json {
-                detail: "serializing a batched observation".to_string(),
-                source,
+        let (held_rows, held_bytes) =
+            self.pages
+                .iter()
+                .try_fold((0usize, 0usize), |(rows, bytes), page| {
+                    page.records
+                        .iter()
+                        .try_fold((rows, bytes), |(rows, bytes), (_, value)| {
+                            Ok::<_, StoreError>((
+                                rows.checked_add(1).ok_or(StoreError::CounterOverflow)?,
+                                bytes
+                                    .checked_add(value.len())
+                                    .ok_or(StoreError::CounterOverflow)?,
+                            ))
+                        })
+                })?;
+        ObservationBudget::admit(records, held_rows, held_bytes)?;
+        let mut encoded = Vec::new();
+        encoded
+            .try_reserve_exact(records.len())
+            .map_err(|_| StoreError::Refused {
+                detail: "allocating admitted observation rows".to_string(),
             })?;
+        let mut remaining = super::MAX_OBSERVATION_BATCH_BYTES
+            .checked_sub(held_bytes)
+            .ok_or(StoreError::CounterOverflow)?;
+        for record in records {
+            let value = super::budget::encode(record, remaining)?;
+            remaining = remaining
+                .checked_sub(value.len())
+                .ok_or(StoreError::CounterOverflow)?;
             encoded.push((observation_id(&value)?, value));
         }
         match self.pages.iter_mut().find(|page| page.table == table) {
-            Some(page) => page.records.extend(encoded),
-            None => self.pages.push(Page {
-                table,
-                records: encoded,
-            }),
+            Some(page) => {
+                page.records
+                    .try_reserve(encoded.len())
+                    .map_err(|_| StoreError::Refused {
+                        detail: "allocating admitted observation page".to_string(),
+                    })?;
+                page.records.extend(encoded);
+            }
+            None => {
+                self.pages.try_reserve(1).map_err(|_| StoreError::Refused {
+                    detail: "allocating admitted observation table".to_string(),
+                })?;
+                self.pages.push(Page {
+                    table,
+                    records: encoded,
+                });
+            }
         }
         Ok(())
     }

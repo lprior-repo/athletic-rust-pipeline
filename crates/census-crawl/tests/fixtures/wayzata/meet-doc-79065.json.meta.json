@@ -1,0 +1,13 @@
+{
+ "bytes": 2137,
+ "content_digest": "2c0eb5f95590573efbbc63c41dee96dcdfe4d21ea5a59bab9e1425c4ab8e21f6",
+ "content_type": "application/json",
+ "fetched_at": "2026-10-11T18:51:00Z",
+ "fetched_at_utc": "2026-10-11T18:51:00Z",
+ "file": "meet-doc-79065.json",
+ "method": "POST",
+ "note": "term {i:79065}; hits carry _index wayzata_meet_list (tenant wayzata) and ani (Athletic.net meet id)",
+ "sha256": "2c0eb5f95590573efbbc63c41dee96dcdfe4d21ea5a59bab9e1425c4ab8e21f6",
+ "status": 200,
+ "url": "https://search.athletic.live/wayzata_meet_list/_search"
+}

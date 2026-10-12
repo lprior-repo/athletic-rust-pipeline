@@ -18,6 +18,34 @@ change its clock, fill production filesystems, kill shared GPU servers or open a
 second owner. The limited tmpfs mounts used by ENOSPC injectors are deliberate fault media, not
 power-loss/reboot evidence. Tests/scripts may not edit project sources or manifests.
 
+## Owned native resources
+
+`tools/durability/native-resources.sh` (Moon:
+`env -u CI tools/moon-local run pipeline:native-resources`) verifies the pinned prerequisites every
+fault lane consumes and prepares the owned scratch disks they write into. It reads no shared
+service, mounts nothing outside a private namespace and never sets the host clock. It fails closed
+(exit 1) when a pinned artifact, prerequisite tool or isolation capability is missing, and names
+the scenarios that capability blocks.
+
+| Resource | Pin and expected identity |
+|---|---|
+| Restate server | **1.7.10** at `$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10/restate-server` (override `RESTATE_SERVER_BIN`); executable, ≤512 MiB, `--version` recorded, resolved parent must be the pinned install directory |
+| QEMU prefix | **11.1.1** at `…/qemu/11.1.1/prefix/usr/bin/{qemu-system-x86_64,qemu-img}` plus `…/prefix/usr/share/qemu/bios-256k.bin` (≤512 MiB / ≤32 MiB); `--version` must name 11.1.1. The prefix carries its own runtime libraries (`…/prefix/usr/lib`: `libcapstone.so.5`, `libaio.so.1`), which the host loader cannot find, so `native-resources.sh` and `native-vm-qualification.sh` prepend that directory to `LD_LIBRARY_PATH` before invoking or measuring the binaries |
+| Staged packages | `…/qemu/11.1.1/pkgs/SHA256SUMS.txt` must verify under `sha256sum --check --strict`; staged archives absent from that manifest are reported and recorded with their observed hashes |
+| Guest image | `…/images/Arch-Linux-x86_64-cloudimg-20261001.604814.qcow2` (≤8 GiB) against `images/SHA256SUMS.txt` and the pinned digest `360f0fa4…e87` |
+| Guest captures | `CENSUS_NATIVE_VM_CAPTURES`, default `var/native-vm-captures-sol-20261006.json` (≤32 MiB) with its four manifest-bound capture files |
+| Scratch disks | `SCRATCH_STORE`, default `var/durability-scratch`, plus `tmp/`; owned, non-symlink, on local disk; a bounded `FAULT_MEDIA_MIB` (64) sparse probe proves the medium without allocating it |
+| Isolation | `unshare --user --map-root-user --mount --propagation private` must work and a 64 MiB tmpfs must mount inside it — the ENOSPC media of scenarios 09 and 10; `/proc/sys/kernel/random/uuid` mints VM session tokens; `pgrep`, `ss` and `/proc/<pid>/{cmdline,environ}` capture owned-PID identity |
+| Clock | The host clock is read-only: the verifier records the observed host UTC instant and never sets it; scenario 12 owns the guest-only midnight lane and scenario 03 the guest reboot lane |
+| Guest disks | The persistent artifact parent `$HOME/.cache/cen-native-vm` (owned, non-symlink, mode 0700) that `native-vm-qualification.sh` allocates its `run-*/machine` roots under |
+
+`--certificate <fresh-path>` additionally writes a schema-1 certificate of those observed
+identities (paths, bytes, SHA-256, versions, tool paths, unlisted packages, scratch filesystem) and
+refuses to overwrite an existing file, so a re-run needs a fresh owned path. Keep it with the run's
+other evidence. Without it the verifier prints the same `RESOURCE:` lines and exits. Verified
+resource identities are prerequisites, not scenario results: the certificate proves what the lanes
+would consume, never that a lane ran.
+
 ## Invocation and configuration
 
 ```sh
@@ -30,11 +58,25 @@ SCRATCH_STORE="$PWD/var/durability-scratch" \
   env -u CI tools/moon-local run pipeline:durability -- scenario-01-endpoint-kill
 ```
 
+Verify the pinned resources and prepare that scratch root first:
+
+```sh
+env -u CI tools/moon-local run pipeline:native-resources
+```
+
 Choose a fresh owned scratch root per evidence run. The runner exports `SCRATCH_STORE`, `TMPDIR`,
 `BINARY`, `SERVE_BINARY`, `RESTATE_BINARY`, `RESTATE_SERVER_BIN`, `CORPUS_FIXTURE`, `ADMIN_PORT`,
 `SERVICE_PORT`, `REPO_ROOT`, `BINARY_AVAILABLE` and `RESTATE_AVAILABLE`. Default scratch is under
 `/tmp`; override it if that is tmpfs or shared. A scenario may additionally require namespace tools,
 mount, curl, jq, timeout or the test harness's own prerequisites.
+
+The release gate passes `ADMIN_PORT=19405` and `SERVICE_PORT=9405` unless the caller supplies
+alternatives. It refuses malformed, duplicate, occupied, default-runner (`19095`/`9080`),
+live-census (`18095`/`19095`) and shared-model (`15192`) ports before building or starting a
+scenario. Each invocation receives a fresh `run-XXXXXXXX` child beneath the owned, non-symlink
+`var/durability-scratch` parent; prior run artifacts remain untouched. A skipped scenario still
+fails the runner and therefore the release lane. The guard tests verify these preconditions only,
+not native durability.
 
 Every seam-dependent host scenario (02, 05, 06 and 11) probes the endpoint named by `SERVE_BINARY`,
 which defaults to the plain portable `census-serve`. A release run must point it at the

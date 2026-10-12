@@ -1,0 +1,9 @@
+▮▮▮▮ pipeline:check (97e382e4)
+    Checking census-service v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service)
+    Checking xtask v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/xtask)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.48s
+▮▮▮▮ pipeline:check (2s 587ms, 97e382e4)
+
+Tasks: 1 completed
+ Time: 5s 776ms
+

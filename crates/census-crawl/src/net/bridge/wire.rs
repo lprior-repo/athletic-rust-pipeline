@@ -12,17 +12,9 @@ pub struct RequestSpec {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case", tag = "action")]
+#[serde(rename_all = "snake_case", tag = "action", deny_unknown_fields)]
 pub enum Action {
-    Fetch { body: Option<SearchBody> },
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct SearchBody {
-    pub q: String,
-    pub fq: String,
-    pub start: u32,
+    Fetch {},
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]

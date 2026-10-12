@@ -198,11 +198,16 @@ impl Fetcher {
         let failed = status >= 400 && !(status == 404 && plan.options.allow_not_found);
         {
             let mut stats = self.stats.lock().await;
-            stats.requests = stats.requests.saturating_add(1);
             stats.bytes_downloaded = stats.bytes_downloaded.saturating_add(downloaded);
-            let entry = stats.per_host.entry(plan.host.to_string()).or_default();
-            entry.requests = entry.requests.saturating_add(1);
-            entry.bytes = entry.bytes.saturating_add(downloaded);
+            if let Some(entry) = stats.per_host.get_mut(plan.host) {
+                entry.bytes = entry.bytes.saturating_add(downloaded);
+            } else {
+                stats
+                    .per_host
+                    .entry(plan.host.to_string())
+                    .or_default()
+                    .bytes = downloaded;
+            }
             if failed {
                 stats.errors = stats.errors.saturating_add(1);
             }

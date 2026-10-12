@@ -26,6 +26,9 @@ fn drain_reaps_and_counts_a_task_that_finishes_inside_the_deadline() -> TestResu
             check!(eq; counted.completed, 1);
             check!(eq; counted.timed_out, 0);
             check!(eq; counted.aborted, 0);
+            check!(eq; counted.failed, 0);
+            check!(eq; counted.still_running, 0);
+            check!(eq; counted.disjoint_total(), 1);
             Ok(())
         })
 }
@@ -44,6 +47,8 @@ fn drain_aborts_and_counts_what_outlives_the_deadline() -> TestResult {
             check!(eq; counted.timed_out, 1);
             check!(eq; counted.remaining, 0, "the abort reclaimed the task");
             check!(eq; counted.aborted, 1, "the reaped cancellation is the abort");
+            check!(eq; counted.still_running, 0);
+            check!(eq; counted.disjoint_total(), 1);
             Ok(())
         })
 }
@@ -61,6 +66,8 @@ fn drain_counts_a_panicking_task_as_panicked() -> TestResult {
             let counted = spawner.drain(Duration::from_secs(5)).await?;
             check!(eq; counted.panicked, 1);
             check!(eq; counted.completed, 0);
+            check!(eq; counted.failed, 0, "a panic is not a business failure");
+            check!(eq; counted.disjoint_total(), 1);
             Ok(())
         })
 }
@@ -81,6 +88,11 @@ fn blocking_returns_the_jobs_value_and_the_jobs_error() -> TestResult {
             let counted = spawner.drain(Duration::from_secs(5)).await?;
             check!(eq; counted.accepted, 2);
             check!(eq; counted.completed, 2);
+            check!(eq;
+                counted.failed, 1,
+                "the blocking job's own error is a diagnostic within completed joins"
+            );
+            check!(eq; counted.disjoint_total(), 2);
             Ok(())
         })
 }
@@ -115,6 +127,7 @@ fn a_running_blocking_job_is_waited_for_and_counted_as_completed() -> TestResult
                 "a blocking job that started before the deadline runs to completion"
             );
             check!(eq; counted.aborted, 0);
+            check!(eq; counted.still_running, 0, "the settle released the retained slot");
             check!(eq; outcome, Outcome::Ok(1));
             Ok(())
         })
@@ -163,6 +176,8 @@ fn blocking_classifies_a_panicking_job_as_panicked() -> TestResult {
             check!(eq; outcome, Outcome::Panicked);
             let counted = spawner.drain(Duration::from_secs(5)).await?;
             check!(eq; counted.panicked, 1, "the region counts the same panic");
+            check!(eq; counted.failed, 0);
+            check!(eq; counted.disjoint_total(), 1);
             Ok(())
         })
 }
@@ -248,6 +263,9 @@ fn a_drain_counts_finished_work_and_the_deadline_separately() -> TestResult {
             check!(eq; counted.timed_out, 1);
             check!(eq; counted.remaining, 0, "the abort reclaimed the pending task");
             check!(eq; counted.aborted, 1);
+            check!(eq; counted.still_running, 0);
+            check!(eq; counted.failed, 0);
+            check!(eq; counted.disjoint_total(), 2);
             Ok(())
         })
 }
@@ -305,6 +323,31 @@ fn the_default_region_admits_its_capacity_and_refuses_the_next_task() -> TestRes
             check!(eq; counted.timed_out, capacity);
             check!(eq; counted.remaining, 0);
             check!(eq; counted.aborted, capacity);
+            check!(eq; counted.still_running, 0);
+            Ok(())
+        })
+}
+
+#[test]
+fn an_immediate_deadline_aborts_every_admitted_async_task() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()?
+        .block_on(async {
+            let spawner = Spawner::new();
+            for _ in 0..DEFAULT_CAPACITY {
+                spawner.spawn(pending())?;
+            }
+            let counted = spawner.drain(Duration::ZERO).await?;
+            let capacity = u64::try_from(DEFAULT_CAPACITY)?;
+            check!(eq; counted.accepted, capacity);
+            check!(eq; counted.timed_out, capacity);
+            check!(eq; counted.aborted, capacity);
+            check!(eq; counted.cancelled, 0);
+            check!(eq; counted.remaining, 0);
+            check!(eq; counted.still_running, 0);
+            check!(eq; counted.disjoint_total(), capacity);
             Ok(())
         })
 }
@@ -318,4 +361,97 @@ fn counts_saturate_instead_of_wrapping() {
         u64::MAX,
         "a count at its ceiling stays there"
     );
+}
+
+#[test]
+fn drain_separates_cancelled_before_effect_from_reaped_abort() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let started = Spawner::new();
+            let (ran, began) = oneshot::channel::<()>();
+            started.spawn(async move {
+                let _ = ran.send(());
+                pending::<()>().await;
+            })?;
+            began.await?;
+            let counted = started.drain(Duration::from_millis(1)).await?;
+            check!(eq; counted.accepted, 1);
+            check!(eq;
+                counted.aborted, 1,
+                "an effect that began and was reclaimed is reaped, not cancelled"
+            );
+            check!(eq; counted.cancelled, 0);
+            check!(eq; counted.completed, 0);
+            check!(eq; counted.still_running, 0);
+            check!(eq; counted.disjoint_total(), 1);
+            Ok(())
+        })
+}
+
+#[test]
+fn drain_reports_a_started_blocking_effect_as_still_running_until_it_settles() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()?
+        .block_on(async {
+            let spawner = Spawner::new();
+            let (started, began) = oneshot::channel();
+            let (release, released) = std::sync::mpsc::channel();
+            let caller = spawner.blocking(move || {
+                let _ = started.send(());
+                released.recv().map(|()| 7)
+            });
+            tokio::pin!(caller);
+            tokio::select! {
+                outcome = &mut caller => return Err(format!("effect finished before release: {outcome:?}").into()),
+                result = began => result?,
+            }
+            let grace = Duration::from_millis(1);
+            let mut draining = Box::pin(spawner.drain(grace));
+            tokio::select! {
+                biased;
+                report = &mut draining => return Err(format!("a running blocking effect escaped the drain: {report:?}").into()),
+                () = std::future::ready(()) => {}
+            }
+            tokio::time::advance(grace).await;
+            tokio::select! {
+                biased;
+                report = &mut draining => return Err(format!("a running blocking effect escaped the deadline reap: {report:?}").into()),
+                () = std::future::ready(()) => {}
+            }
+            drop(draining);
+            let retained = spawner.lock().ledger.report();
+            check!(eq;
+                retained.still_running, 1,
+                "a started blocking effect is retained, not cancelled"
+            );
+            check!(eq; retained.cancelled, 0);
+            check!(eq; retained.aborted, 0);
+            check!(eq; retained.completed, 0);
+            check!(eq; retained.timed_out, 1);
+            tokio::select! {
+                biased;
+                outcome = &mut caller => return Err(format!("the retained effect was not left running: {outcome:?}").into()),
+                () = std::future::ready(()) => {}
+            }
+            release.send(())?;
+            let (outcome, report) = tokio::join!(caller, spawner.drain(Duration::from_secs(5)));
+            check!(eq; outcome, Outcome::Ok(7), "the retained effect delivered its value");
+            let report = report?;
+            check!(eq; report.accepted, 1);
+            check!(eq;
+                report.completed, 1,
+                "the retained effect settled exactly once, as completed"
+            );
+            check!(eq; report.still_running, 0, "settling releases the retained slot");
+            check!(eq; report.timed_out, 1, "the earlier deadline stays a diagnostic");
+            check!(eq; report.aborted, 0);
+            check!(eq; report.cancelled, 0);
+            check!(eq; report.failed, 0);
+            check!(eq; report.disjoint_total(), 1);
+            Ok(())
+        })
 }

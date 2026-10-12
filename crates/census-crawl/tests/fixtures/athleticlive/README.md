@@ -153,3 +153,41 @@ summary, all six event documents and the first athlete page.
   `sha256sum` per file. `fetch` timestamps are the only run-dependent values.
 - Live responses churn (`ua`, counts, page order), so a re-capture is a new
   evidence set, not a byte-identical replay; the metas pin what was read when.
+
+## Durable manifest obligation
+
+`durable-ia-manifest.json` is an offline registration fixture for
+`JurisdictionCensus/athleticlive_manifest`. It references the retained
+`athleticlive_results/event-doc-2150205.json`, not a newly fetched body.
+The body is byte-identical to
+`research/sources/timing-providers-national/samples/athleticlive-blob-ind_res_list-2150205.json`:
+159,531 bytes, SHA-256
+`d9a828d6ca14a531e93044b6f49ebcf84476e544c5d046cfc78c4a6521eb31e7`.
+Its producer metadata comes from that bundle's capture ledger:
+GET, HTTP 200, event document 2150205, captured
+`2026-09-22T03:59:19Z`. The manifest identifies the existing Iowa meet 58504.
+This single-event fixture is not an exhaustive statewide discovery manifest.
+
+Registration freezes every referenced capture into the store's immutable,
+content-addressed archive and persists the frozen manifest body, digest and
+history window under the logical jurisdiction key. Re-registering the same
+manifest does not create another obligation or another archive body. Execution
+uses the frozen body and held captures, with durable begin/finish receipts; it
+never discovers or fetches AthleticLIVE objects. A source with missing or
+unqualified captures stays explicitly refused and owed, rather than becoming an
+empty successful sweep. This dedicated obligation is not a generic sweep arm.
+
+The applicability registry names AL, IA, IL, IN, KS, MI, MN, MO, ND, NE, OH and
+WI. Without a registered qualified manifest, each receives the persisted reason:
+
+> `<STATE>: no qualified retained AthleticLIVE manifest is registered for this
+> jurisdiction run; operator captures with physical producer metadata are
+> required; no live discovery or invented objects`
+
+The durable test arms Iowa from this fixture and independently reopens its real
+Fjall store to read back 136 performances, one meet, the archived capture and
+the final obligation. A separate test reopens all twelve exact missing-manifest
+refusals and proves registration is idempotent. The planned Wisconsin/Minnesota
+capture script above is not execution evidence; bodies absent from the retained
+capture set are not fabricated to make another state qualify. These tests use
+owned temporary stores, not the live national run under `var/`.

@@ -1,0 +1,27 @@
+Executor: IaCoachLane / Sol / openai-codex/gpt-6.1-sol
+Cwd: /home/lewis/src/ad-law-scrape/athletic-rust-pipeline
+COMMAND: env -u CI tools/moon-local run pipeline:check
+EXIT: 1 (nested Cargo exited 101)
+▮▮▮▮ pipeline:check (2802feab)
+    Checking census-domain v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-domain)
+    Checking census-service v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service)
+    Checking xtask v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/xtask)
+error[E0599]: no method named `cloned` found for enum `std::option::Option<GradeSpan>` in the current scope
+  --> crates/census-service/src/school_address/join/nces_tests.rs:26:209
+   |
+26 | ...ned()).with_grades(public.grades().cloned());
+   |                                       ^^^^^^ `std::option::Option<GradeSpan>` is not an iterator
+   |
+help: call `.into_iter()` first
+   |
+26 |     let private = SchoolDirectoryEntry::identified(IdentifiedKey::Pss(PssId::parse("A2380006")?), SourceLabel::Pss, public.name().cloned()).with_address(public.address().cloned()).with_grades(public.grades().into_iter().cloned());
+   |                                                                                                                                                                                                                 ++++++++++++
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `census-service` (lib test) due to 1 previous error
+▮▮▮▮ pipeline:check (3s 409ms, 2802feab)
+Error: task_runner::run_failed
+
+  × Task pipeline:check failed to run.
+  ╰─▶ Process tools/moon-cargo failed: exit code 101
+Wall time: 7.46 seconds

@@ -2,7 +2,6 @@ use std::collections::BTreeSet;
 
 use crate::UsJurisdiction;
 
-use super::super::key::IdentifiedKey;
 use super::super::label::SourceLabel;
 use super::{AttestedRecord, IndexEntry, MatchForm};
 
@@ -11,12 +10,9 @@ pub(super) fn corroborated(
     city: Option<&MatchForm>,
     attested: &[AttestedRecord],
 ) -> bool {
-    let IdentifiedKey::StateRecord { id, .. } = &entry.key else {
-        return true;
-    };
     if attested
         .iter()
-        .any(|record| &record.id == id && record.label == entry.source)
+        .any(|record| record.key == entry.key && record.label == entry.source)
     {
         return true;
     }

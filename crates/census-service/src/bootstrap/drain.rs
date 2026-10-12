@@ -1,3 +1,9 @@
+use std::time::Duration;
+
+use census_store::Store;
+
+use crate::outcome::AttemptState;
+use crate::restate_services::jurisdiction::team_source::durable_attempts;
 use crate::spawn::{SpawnError, TaskReport};
 
 use super::error::BootstrapError;
@@ -5,7 +11,6 @@ use super::stop::StopReason;
 
 #[cfg(test)]
 use crate::spawn::Spawner;
-use std::time::Duration;
 
 #[cfg(test)]
 use tokio::task::JoinSet;
@@ -22,10 +27,13 @@ pub struct DrainReport {
     pub accepted: u64,
     pub completed: u64,
     pub cancelled: u64,
-    pub timed_out: u64,
-    pub remaining: u64,
     pub aborted: u64,
     pub panicked: u64,
+    pub failed: u64,
+    pub still_running: u64,
+    pub timed_out: u64,
+    pub remaining: u64,
+    pub attempts: AttemptState,
     pub stop_reason: StopReason,
     pub endpoint_shutdown: EndpointShutdown,
 }
@@ -36,17 +44,35 @@ impl DrainReport {
             accepted: counted.accepted,
             completed: counted.completed,
             cancelled: counted.cancelled,
-            timed_out: counted.timed_out,
-            remaining: counted.remaining,
             aborted: counted.aborted,
             panicked: counted.panicked,
+            failed: counted.failed,
+            still_running: counted.still_running,
+            timed_out: counted.timed_out,
+            remaining: counted.remaining,
             ..Self::default()
         }
+    }
+
+    pub fn disjoint_total(&self) -> u64 {
+        self.completed
+            .saturating_add(self.cancelled)
+            .saturating_add(self.aborted)
+            .saturating_add(self.panicked)
+            .saturating_add(self.still_running)
     }
 }
 
 pub(super) fn count_error(error: SpawnError) -> BootstrapError {
-    BootstrapError::TaskSupervision { source: error }
+    BootstrapError::TaskSupervision {
+        source: Box::new(error),
+    }
+}
+
+pub(super) fn attempt_state(store: &Store) -> Result<AttemptState, BootstrapError> {
+    durable_attempts(store).map_err(|source| BootstrapError::SourceAttempts {
+        source: Box::new(source),
+    })
 }
 
 #[cfg(test)]

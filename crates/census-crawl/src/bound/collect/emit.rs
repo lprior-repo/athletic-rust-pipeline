@@ -1,9 +1,9 @@
-use super::super::map::{school_entities, ProfileFacts, SchoolExtract};
+use super::super::map::{map_role, school_entities, ProfileFacts, SchoolExtract};
 use super::super::parse::{parse, CoachRow};
 use super::super::{school_namespace, HOST};
 use super::{bound_fetch_options_permissive, index::slugify};
 use crate::{AdapterContext, CrawlError, CrawlResult};
-use census_domain::model::{Gender, Sport};
+use census_domain::model::{Gender, SchoolYear, Sport};
 use census_domain::UsJurisdiction;
 use census_store::Table;
 
@@ -18,6 +18,9 @@ pub(in crate::bound) struct SchoolJob<'a> {
 
 struct StaffPage {
     url: String,
+    sha256: String,
+    fetched_at: String,
+    program: String,
     sport: Sport,
     gender: Gender,
     coaches: Vec<CoachRow>,
@@ -28,11 +31,10 @@ pub(in crate::bound) async fn process_school(
     job: &SchoolJob<'_>,
     association: &str,
     entries: &[(&str, Sport, Gender)],
-    observed_on: &str,
 ) -> CrawlResult<Option<SchoolExtract>> {
     let pages = fetch_pages(ctx, job, association, entries).await;
     let key = format!("{}/{}", job.state_code, job.slug);
-    Ok(merge_pages(job, &key, &pages, observed_on))
+    merge_pages(job, &key, &pages, ctx.school_year)
 }
 
 async fn fetch_pages(
@@ -69,7 +71,10 @@ async fn fetch_pages(
         }
 
         pages.push(StaffPage {
-            url,
+            url: outcome.url,
+            sha256: outcome.content_digest,
+            fetched_at: outcome.fetched_at,
+            program: format!("{} {SEASON}", parsed.page.title_sport),
             sport,
             gender,
             coaches: parsed.coaches,
@@ -83,8 +88,8 @@ fn merge_pages(
     job: &SchoolJob<'_>,
     key: &str,
     pages: &[StaffPage],
-    observed_on: &str,
-) -> Option<SchoolExtract> {
+    school_year: SchoolYear,
+) -> CrawlResult<Option<SchoolExtract>> {
     let mut coaches = Vec::new();
     let mut school_extract: Option<SchoolExtract> = None;
 
@@ -93,17 +98,37 @@ fn merge_pages(
             name: job.name,
             key,
             url: &page.url,
-            observed_on,
+            observed_on: &page.fetched_at,
             state: job.state,
         };
         let mut extract = school_entities(&facts, &page.coaches, page.sport, page.gender);
+        for (coach, row) in extract.coaches.iter_mut().zip(
+            page.coaches
+                .iter()
+                .filter(|row| map_role(&row.role).is_some()),
+        ) {
+            crate::coach_directories::record_appointment(
+                coach,
+                Some(crate::coach_directories::PublishedListing {
+                    role: &row.role,
+                    program: &page.program,
+                    source: super::super::SOURCE_ID,
+                    school_year,
+                }),
+                crate::coach_directories::StaffCapture {
+                    url: &page.url,
+                    observed_on: &page.fetched_at,
+                    sha256: &page.sha256,
+                },
+            )?;
+        }
         coaches.append(&mut extract.coaches);
         if school_extract.is_none() {
             school_extract = Some(extract);
         }
     }
 
-    school_extract.map(|extract| SchoolExtract { coaches, ..extract })
+    Ok(school_extract.map(|extract| SchoolExtract { coaches, ..extract }))
 }
 
 pub(in crate::bound) fn title_matches_slug(slug: &str, title_school: &str) -> bool {

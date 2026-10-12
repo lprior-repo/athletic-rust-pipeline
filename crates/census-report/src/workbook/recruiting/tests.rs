@@ -441,8 +441,8 @@ fn verified_publication(store: &Store, expected_athletes: u64) -> TestResult {
         scope: crate::report::Scope::AllSources,
         school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
     };
-    let published = crate::workbook::build(store, &options)?;
     let dataset = crate::export::ExportDataset::load(store)?;
+    let published = crate::workbook::build(store, &options)?;
     let verified = crate::workbook::verify::verify_frozen(&published, &dataset, &options)?;
     check!(eq; verified.mapped_athletes, expected_athletes);
     Ok(())

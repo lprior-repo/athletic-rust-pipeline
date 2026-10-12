@@ -24,8 +24,11 @@ const TRAILING_TOKENS: [&str; 18] = [
 
 pub(super) fn variants_of(original: &MatchForm, base: &MatchForm) -> Vec<MatchForm> {
     let expanded = expand(base);
-    let mut out: Vec<MatchForm> = Vec::with_capacity(3);
+    let mut out: Vec<MatchForm> = Vec::with_capacity(4);
     push_variant(&mut out, original, &expanded);
+    if let Some(initialism) = initialism_variant(base) {
+        push_variant(&mut out, original, &initialism);
+    }
     for candidate in [strip_trailing(&expanded), strip_structural(&expanded)]
         .into_iter()
         .flatten()
@@ -88,6 +91,33 @@ fn expand(form: &MatchForm) -> MatchForm {
         index = index.saturating_add(1);
     }
     MatchForm::of(&out.join(" "))
+}
+
+pub(super) fn initialism_variant(form: &MatchForm) -> Option<MatchForm> {
+    let tokens: Vec<&str> = form
+        .as_str()
+        .split(' ')
+        .filter(|token| !token.is_empty())
+        .collect();
+    if tokens.is_empty() {
+        return None;
+    }
+    let first = tokens.first()?;
+    if first.len() > 2 {
+        return None;
+    }
+    let letters: Vec<String> = first.chars().map(|ch| ch.to_string()).collect();
+    let capacity = letters.len().checked_add(tokens.len().saturating_sub(1))?;
+    let mut expanded: Vec<String> = Vec::with_capacity(capacity);
+    expanded.extend(letters);
+    for token in tokens.iter().skip(1) {
+        expanded.push(token.to_string());
+    }
+    let candidate = MatchForm::of(&expanded.join(" "));
+    if candidate == *form {
+        return None;
+    }
+    Some(candidate)
 }
 
 pub(super) fn directory_numbered_suffix(name: &str) -> bool {

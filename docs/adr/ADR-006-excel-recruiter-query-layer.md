@@ -19,6 +19,11 @@ source references, coverage limits and historical affiliation. Independently rea
 the artifacts before publication and sealing. Verify semantic records and PR winners; byte-identical
 XLSX files alone do not establish correctness.
 
+Coach observation claims are grouped by school, then role, program and owner, and budgeted per owner
+and per school before any claim or contact is adapted for a working sheet. A group over its budget is
+refused whole with a typed error naming the group and the observed claim count; it is never truncated,
+and rows reach the worksheet as a stream, so no sheet materialises its cells first.
+
 Core evidence scope is an independence diagnostic excluding Athletic.net and its AthleticLIVE
 derivative, not the default product population. Its filtered evidence must not be confused with
 geographic or cohort eligibility.

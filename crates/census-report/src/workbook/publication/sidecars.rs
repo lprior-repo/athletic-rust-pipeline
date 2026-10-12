@@ -1,6 +1,6 @@
 use crate::export::ExportDataset;
 use crate::report::{io_error, Derivation, ReportError, ReportResult};
-use crate::workbook::recruiting::coalesce;
+use crate::workbook::recruiting::bounded::{bounded_claims, WORKBOOK_GROUP_BUDGET};
 use crate::workbook::Censuses;
 use census_domain::model::{CanonicalPerformance, SchoolYear};
 use census_store::Entity;
@@ -53,7 +53,7 @@ pub(in crate::workbook) fn write_sidecars(
         &directory.join("recruiting.csv"),
     )?;
     crate::school_contacts::write_csv(directory, population.schools(), school_year)?;
-    let coaches = coalesce::claims(derivation.coach_observations());
+    let coaches = bounded_claims(derivation.coach_observations(), WORKBOOK_GROUP_BUDGET)?;
     write_json(
         &directory.join("audit.json"),
         &audit(dataset, derivation, &coaches, school_year),

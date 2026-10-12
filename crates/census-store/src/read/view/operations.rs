@@ -2,9 +2,9 @@ use crate::read::snapshot::{open_snapshot_writer, publish_atomically};
 use crate::{Entity, StoreError, StoreResult, Table, MAX_ROWS_PER_TABLE};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam, CollectionSnapshot, CoverageRow, RetainedConflict, ReviewCase,
-    ReviewVerdictRecord, SourceAccessCondition, SourceMeetRef, SourceObjectIdentity,
-    SourceObservation,
+    CanonicalSchool, CanonicalTeam, CoachLaneObligation, CollectionSnapshot, CoverageRow,
+    RetainedConflict, ReviewCase, ReviewVerdictRecord, SourceAccessCondition, SourceMeetRef,
+    SourceObjectIdentity, SourceObservation,
 };
 use fjall::Readable;
 use sha2::{Digest, Sha256};
@@ -223,6 +223,7 @@ impl<'s> StoreSnapshot<'s> {
             Table::RelayResults => {
                 self.consolidate::<census_domain::model::RelayResult>(table, out_path)
             }
+            Table::CoachLanes => self.consolidate::<CoachLaneObligation>(table, out_path),
         }
     }
 }

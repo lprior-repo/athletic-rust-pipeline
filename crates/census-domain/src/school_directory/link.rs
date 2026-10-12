@@ -3,7 +3,6 @@ use std::collections::BTreeMap;
 use crate::UsJurisdiction;
 
 use super::address::PostalAddress;
-use super::ids::StateRecordId;
 use super::key::IdentifiedKey;
 use super::label::SourceLabel;
 use super::name::MatchForm;
@@ -41,7 +40,7 @@ pub struct LinkMatch {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AttestedRecord {
     pub label: SourceLabel,
-    pub id: StateRecordId,
+    pub key: IdentifiedKey,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -82,4 +81,5 @@ struct Form {
 
 mod attest;
 mod forms;
+mod gap;
 mod index;

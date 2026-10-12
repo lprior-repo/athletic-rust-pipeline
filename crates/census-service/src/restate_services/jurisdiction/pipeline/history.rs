@@ -23,7 +23,7 @@ impl JurisdictionCensus {
         today: &str,
     ) -> Result<(), HandlerError> {
         let observed_on = acquisition_date(today)?;
-        let sources = history_sources(state)?;
+        let sources = meet_history_sources(state)?;
         stream::iter(request.history.years())
             .map(Ok::<_, HandlerError>)
             .try_fold(state, |state, year| {
@@ -133,6 +133,25 @@ fn history_sources(state: &JurisdictionState) -> Result<SourceSelection, Handler
     SourceSelection::parse(&plan.sweepable)
 }
 
+fn meet_history_sources(state: &JurisdictionState) -> Result<SourceSelection, HandlerError> {
+    let plan = state
+        .plan
+        .as_ref()
+        .ok_or_else(|| jobs::invariant("history ran before the source plan"))?;
+    let selected = plan
+        .sweepable
+        .iter()
+        .cloned()
+        .chain(
+            plan.refused
+                .iter()
+                .filter(|source| census_crawl::registry::descriptor(&source.slug).is_some())
+                .map(|source| source.slug.clone()),
+        )
+        .collect::<Vec<_>>();
+    SourceSelection::parse(&selected)
+}
+
 fn acquisition_date(today: &str) -> Result<chrono::NaiveDate, HandlerError> {
     chrono::NaiveDate::parse_from_str(today, "%Y-%m-%d")
         .map_err(|error| jobs::invariant(&format!("invalid journaled acquisition date: {error}")))
@@ -180,4 +199,44 @@ fn bind_acquired_results(
             source.unresolved = acquired.unresolved;
             Ok(())
         })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::restate_services::wire::{RefusedSource, SourcePlan};
+
+    #[test]
+    fn refused_history_sources_are_disposed_without_changing_result_selection(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let state = JurisdictionState {
+            plan: Some(SourcePlan {
+                sweepable: vec!["milesplit".into()],
+                refused: vec![
+                    RefusedSource {
+                        slug: "athleticlive".into(),
+                        reason: "missing producer capture".into(),
+                        kind: crate::restate_services::plan::RefusalKind::EngineeringGap,
+                    },
+                    RefusedSource {
+                        slug: "wi_missing_coach_sources".into(),
+                        reason: "supplemental coach obligation, not a registry family".into(),
+                        kind: crate::restate_services::plan::RefusalKind::EngineeringGap,
+                    },
+                ],
+                fingerprint: String::new(),
+            }),
+            ..JurisdictionState::default()
+        };
+        let meets =
+            meet_history_sources(&state).map_err(crate::restate_services::tests::sdk_error)?;
+        check!(eq; meets.iter().map(|source| source.slug).collect::<Vec<_>>(),
+            vec!["athleticlive", "milesplit"]);
+        let results = history_sources(&state).map_err(crate::restate_services::tests::sdk_error)?;
+        check!(eq; results.iter().map(|source| source.slug).collect::<Vec<_>>(),
+            vec!["milesplit"]);
+        check!(eq; state.plan.ok_or("plan retained")?.refused.first()
+            .ok_or("refusal retained")?.reason, "missing producer capture");
+        Ok(())
+    }
 }

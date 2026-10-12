@@ -1,0 +1,12 @@
+{
+ "bytes": 46848,
+ "content_digest": "37331af8b692966a2e4c66c449e173b6f68e2ca889c324ab8728f7747458d4fe",
+ "content_type": "application/json",
+ "fetched_at": "2026-10-11T18:51:00Z",
+ "fetched_at_utc": "2026-10-11T18:51:00Z",
+ "file": "ind-res-list-2930235.json",
+ "method": "GET",
+ "sha256": "37331af8b692966a2e4c66c449e173b6f68e2ca889c324ab8728f7747458d4fe",
+ "status": 200,
+ "url": "https://athleticlive.blob.core.windows.net/$web/ind_res_list/_doc/2930235"
+}

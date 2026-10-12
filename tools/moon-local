@@ -2,6 +2,13 @@
 set -euo pipefail
 root=$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")
 cd "$root"
+# Moon injects MOON_TARGET into every task process; re-entering this wrapper from inside a task starts
+# a second Moon whose tool fingerprint lands too late for the outer run's task hashes. Only the gate
+# task nests Moon runs, for its durability lane's own builds and fault scenarios.
+if [[ -n "${MOON_TARGET:-}" && "${MOON_TARGET}" != pipeline:gate ]]; then
+  printf 'tools/moon-local: refusing a nested Moon run inside task %s; only pipeline:gate may nest\n' "$MOON_TARGET" >&2
+  exit 2
+fi
 export MOON_SKIP_SYNC_WORKSPACE=true
 export RUSTC_WRAPPER=
 cargo_bin=$(rustup which cargo)

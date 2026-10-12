@@ -17,6 +17,8 @@ pub enum IdentityError {
     Evidence(#[from] CanonicalJsonError),
     #[error("identity context references missing subject {0}")]
     UnknownSubject(String),
+    #[error("identity projection references missing decision {0}")]
+    UnknownDecision(String),
     #[error("identity context repeats source subject {0}")]
     DuplicateSubject(String),
     #[error("identity review records repeat id {0}")]

@@ -263,7 +263,22 @@ async fn team_object(
         .call()
         .await
     {
-        Ok(Json(Some(TeamsSourceOutcome::Completed { outcome, .. }))) => {
+        Ok(Json(Some(outcome))) => project_team_outcome(&mut row, outcome)?,
+        Ok(Json(None)) => {}
+        Err(error) => {
+            tracing::warn!(%error, key, "unreadable teams source obligation");
+            row.unreadable = true;
+        }
+    }
+    Ok(row)
+}
+
+pub(super) fn project_team_outcome(
+    row: &mut SourceObjectOpen,
+    outcome: TeamsSourceOutcome,
+) -> Result<(), HandlerError> {
+    match &outcome {
+        TeamsSourceOutcome::Completed { outcome, .. } => {
             row.disposition = if outcome.errors.is_empty() && outcome.unfinished.is_empty() {
                 outcome.disposition
             } else {
@@ -272,20 +287,10 @@ async fn team_object(
             row.observations = count(outcome.records)?;
             row.windows = u64::from(row.disposition.is_complete());
         }
-        Ok(Json(Some(TeamsSourceOutcome::Terminal { .. }))) => {
-            row.disposition = Disposition::Failed
-        }
-        Ok(Json(Some(TeamsSourceOutcome::Exhausted { .. }))) => {
-            row.disposition = Disposition::Exhausted
-        }
-        Ok(Json(Some(TeamsSourceOutcome::Interrupted { .. }))) => {
-            row.disposition = Disposition::Partial
-        }
-        Ok(Json(None)) => {}
-        Err(error) => {
-            tracing::warn!(%error, key, "unreadable teams source obligation");
-            row.unreadable = true;
-        }
+        TeamsSourceOutcome::Terminal { .. } => row.disposition = Disposition::Failed,
+        TeamsSourceOutcome::Exhausted { .. } => row.disposition = Disposition::Exhausted,
+        TeamsSourceOutcome::Interrupted { .. } => row.disposition = Disposition::Partial,
     }
-    Ok(row)
+    row.teams_source = Some(outcome);
+    Ok(())
 }

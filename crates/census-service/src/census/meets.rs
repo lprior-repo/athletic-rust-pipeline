@@ -10,10 +10,12 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use tracing::info;
 
+mod fragment;
 mod progress;
 mod request;
 mod walk;
 
+pub use fragment::collect_state_meet_fragment;
 pub use progress::DiscoveryDisposition;
 pub use request::MeetWalkRequest;
 

@@ -1,6 +1,6 @@
 use anyhow::{anyhow, bail, Context, Result};
 use census_crawl::directory::{ReadOutcome, RowIssue};
-use census_crawl::{nces, private_assoc, state_ed, tssaa, CrawlError, CrawlResult};
+use census_crawl::{nces, private_assoc, state_ed, tssaa, uhsaa, CrawlError, CrawlResult};
 use census_domain::school_directory::{
     Baseline, IdentifiedKey, ScheduleLedger, ScheduleSource, SchoolDirectoryEntry,
 };
@@ -95,7 +95,7 @@ pub(super) fn read_ledger(path: &Path) -> Result<ScheduleLedger> {
 
 fn read_association_directory(pair: &str) -> Result<LaneRead> {
     let (slug, path) = pair.split_once('=').ok_or_else(|| {
-        anyhow!("--association-directory requires SLUG=PATH, got {pair:?}; admitted slugs: tssaa")
+        anyhow!("--association-directory requires SLUG=PATH, got {pair:?}; admitted slugs: tssaa, uhsaa")
     })?;
     if slug.is_empty()
         || slug.len() > 64
@@ -104,12 +104,13 @@ fn read_association_directory(pair: &str) -> Result<LaneRead> {
         })
     {
         bail!(
-            "--association-directory slug {slug:?} must be 1–64 bytes of [a-z0-9_-]; admitted slugs: tssaa"
+            "--association-directory slug {slug:?} must be 1–64 bytes of [a-z0-9_-]; admitted slugs: tssaa, uhsaa"
         );
     }
-    let reader = match slug {
+    let reader: fn(&str) -> CrawlResult<ReadOutcome> = match slug {
         "tssaa" => tssaa::parse_school_list,
-        _ => bail!("--association-directory unknown slug {slug:?}; admitted slugs: tssaa"),
+        "uhsaa" => uhsaa::parse_school_list,
+        _ => bail!("--association-directory unknown slug {slug:?}; admitted slugs: tssaa, uhsaa"),
     };
     read_lane_with_token(
         Path::new(path),

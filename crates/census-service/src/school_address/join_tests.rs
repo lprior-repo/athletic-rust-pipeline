@@ -21,6 +21,11 @@ type ClaimRow = (String, String, String, Option<String>);
 const CAPTURE_SHA: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const GENERATION: &str = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 
+#[path = "join/nces_replay_tests.rs"]
+mod nces_replay_tests;
+#[path = "join/nces_tests.rs"]
+mod nces_tests;
+
 fn span(low: u8, high: u8) -> Result<GradeSpan, Box<dyn std::error::Error>> {
     Ok(GradeSpan::new(
         Grade::Numbered(NumberedGrade::new(low)?),
@@ -873,7 +878,9 @@ fn a_city_only_association_entry_attaches_its_identity_without_a_claim() -> Test
     )?;
     check!(eq; counters.linked, 1);
     check!(eq; counters.refused, 0);
-    check!(eq; outcomes.len(), 0);
+    check!(eq; outcomes.len(), 1);
+    check!(eq; outcomes.first().and_then(|row| row.reason.as_deref()), Some("no_published_street"));
+    check!(eq; counters.postal_remaining, 1);
 
     let merged = merged_school(&store)?;
     check!(eq; merged.postal_addresses.len(), 0);
@@ -1069,7 +1076,7 @@ fn a_co_op_school_links_each_independently_qualifying_member() -> TestResult {
         Table::Schools,
         &co_op_school(
             "Franklin County Coop",
-            "Winchester",
+            "Franklin",
             &[
                 "Centennial High School",
                 "Page High School",
@@ -1146,7 +1153,7 @@ fn a_co_op_member_tie_files_one_review_and_attaches_nothing() -> TestResult {
         Table::Schools,
         &co_op_school(
             "Franklin County Coop",
-            "Winchester",
+            "Riverside",
             &["Riverside High School"],
         )?,
     )?;

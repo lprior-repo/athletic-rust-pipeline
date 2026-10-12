@@ -1,5 +1,7 @@
 mod tenure;
-pub(crate) use tenure::{listing_appointment, PublishedListing};
+pub(crate) use tenure::{
+    listing_appointment, record_appointment, record_capture_appointments, PublishedListing,
+};
 
 use super::map::{Capture, Row};
 use crate::CrawlResult;

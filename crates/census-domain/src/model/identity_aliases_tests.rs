@@ -3,6 +3,9 @@ use super::*;
 #[path = "identity_aliases_tests/cen14_captures.rs"]
 mod cen14_captures;
 
+#[path = "identity_aliases_tests/transitions.rs"]
+mod transitions;
+
 fn candidate(name: &str) -> AthleteCandidateId {
     AthleteCandidateId::mint("can", &[name])
 }
@@ -14,9 +17,9 @@ fn joining_in_either_order_roots_at_the_smaller_candidate() -> Result<(), Box<dy
     let right = candidate("beta");
     let smaller = left.clone().min(right.clone());
     let mut forward = IdentityAliases::default();
-    forward.join(&left, &right)?;
+    let _transition = forward.join(&left, &right)?;
     let mut backward = IdentityAliases::default();
-    backward.join(&right, &left)?;
+    let _transition = backward.join(&right, &left)?;
     check!(eq; forward.root(&left)?.as_str(), smaller.as_str());
     check!(eq; backward.root(&left)?.as_str(), smaller.as_str());
     check!(eq; forward.flattened()?, backward.flattened()?);
@@ -34,8 +37,8 @@ fn a_smaller_candidate_joined_last_becomes_the_single_root(
         smaller = smaller.min(other.clone());
     }
     let mut aliases = IdentityAliases::default();
-    aliases.join(&second, &third)?;
-    aliases.join(&first, &third)?;
+    let _transition = aliases.join(&second, &third)?;
+    let _transition = aliases.join(&first, &third)?;
     for member in [&first, &second, &third] {
         check!(eq; aliases.root(member)?.as_str(), smaller.as_str());
     }
@@ -54,7 +57,7 @@ fn every_join_preserves_the_strictly_decreasing_parent_invariant(
     let mut aliases = IdentityAliases::default();
     for (index, left) in members.iter().enumerate() {
         for right in members.iter().skip(index.saturating_add(1)) {
-            aliases.join(left, right)?;
+            let _transition = aliases.join(left, right)?;
         }
     }
     let expected = members
@@ -230,6 +233,7 @@ fn transitive_disjoint_provider_objects_retain_every_member_without_aliases_in_b
             check!(eq; projection.status(member.id.as_str())?, IdentityStatus::RetainedConflict);
             check!(eq; projection.canonical_id(member.id.as_str()), member.id.as_str());
         }
+        check!(eq; projection.alias_transitions().len(), 0);
         check!(eq; projection.rejected_applications().get(
             &IdentityDecisionIssue::ConflictingApplications
         ), Some(&1));

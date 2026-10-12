@@ -98,11 +98,11 @@ impl Run<'_> {
             detail: "member page size".into(),
         })?;
         let origin = (url.as_str(), HOST);
-        let stamp = capture.fetched_at.as_str();
+        let capture = &capture;
         stream::iter(&parsed.rows)
             .map(Ok::<_, CrawlError>)
             .try_fold(&mut *self, |run, row| async move {
-                run.project((state, org, row), origin, stamp).await?;
+                run.project((state, org, row), origin, capture).await?;
                 Ok(run)
             })
             .await?;
@@ -125,7 +125,8 @@ impl Run<'_> {
         base: &str,
     ) -> CrawlResult<()> {
         let ctx = self.ctx;
-        self.project((state, org, row), (base, HOST), &ctx.observed_on)
+        let capture = tests::member_capture(row, base, &ctx.observed_on)?;
+        self.project((state, org, row), (base, HOST), &capture)
             .await
     }
 
@@ -138,16 +139,17 @@ impl Run<'_> {
         origin: (&str, &str),
     ) -> CrawlResult<()> {
         let ctx = self.ctx;
-        self.project((state, org, row), origin, &ctx.observed_on)
-            .await
+        let capture = tests::member_capture(row, origin.0, &ctx.observed_on)?;
+        self.project((state, org, row), origin, &capture).await
     }
 
     async fn project(
         &mut self,
         subject: (UsJurisdiction, &str, &OrgSchool),
         origin: (&str, &str),
-        stamp: &str,
+        capture: &FetchOutcome,
     ) -> CrawlResult<()> {
+        let stamp = capture.fetched_at.as_str();
         let (state, org, row) = subject;
         let locator = format!("{}#school={:?}", origin.0, row.public_id);
         if self
@@ -163,7 +165,7 @@ impl Run<'_> {
         };
         let errors = self.tally.errors;
         let written = self.persist_owner(&school, &locator, stamp)?;
-        let primary = primary_coaches(row, &id, origin.0, stamp);
+        let primary = primary_coaches(row, &id, capture, self.ctx.school_year)?;
         self.tally.coaches = self.tally.coaches.saturating_add(self.persist_rows(
             &locator,
             Table::Coaches,
@@ -246,12 +248,29 @@ pub(in crate::arbiter) fn completion_key(
 fn primary_coaches(
     row: &OrgSchool,
     id: &census_domain::model::SchoolId,
-    url: &str,
-    stamp: &str,
-) -> Vec<CanonicalCoach> {
-    row.primary_contact
-        .as_ref()
-        .and_then(|contact| map_primary_contact(contact, id, url, stamp))
-        .into_iter()
-        .collect()
+    capture: &FetchOutcome,
+    school_year: census_domain::model::SchoolYear,
+) -> CrawlResult<Vec<CanonicalCoach>> {
+    let Some(contact) = row.primary_contact.as_ref() else {
+        return Ok(Vec::new());
+    };
+    let Some(mut coach) = map_primary_contact(contact, id, &capture.url, &capture.fetched_at)
+    else {
+        return Ok(Vec::new());
+    };
+    crate::coach_directories::record_appointment(
+        &mut coach,
+        Some(crate::coach_directories::PublishedListing {
+            role: &contact.role_name,
+            program: &row.name,
+            source: crate::arbiter::SOURCE_ID,
+            school_year,
+        }),
+        crate::coach_directories::StaffCapture {
+            url: &capture.url,
+            observed_on: &capture.fetched_at,
+            sha256: &capture.content_digest,
+        },
+    )?;
+    Ok(vec![coach])
 }

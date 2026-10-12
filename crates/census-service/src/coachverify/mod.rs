@@ -1,15 +1,18 @@
 mod claims;
 mod evidence;
 mod fetch;
+mod index;
+mod limits;
 mod output;
 mod report;
 mod spans;
 mod verdict;
 
 pub use fetch::{body_text, GateOptions};
+pub use index::ContactEvidenceIndex;
 pub use output::{
-    claims_for_row, evidence_path, fragment_file_name, read_evidence_jsonl, read_fragment,
-    read_fragment_evidence, verify_fragment, write_fragment,
+    evidence_path, fragment_file_name, read_evidence_jsonl, read_fragment, verify_fragment,
+    write_evidence_jsonl, write_fragment,
 };
 pub use report::{audit_table, cited_hosts, write_audit_csv, write_manifest, write_state_union};
 pub use verdict::{reconcile, FragmentOutcome, Reconcile, RowOutcome, Verdict};

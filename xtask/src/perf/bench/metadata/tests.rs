@@ -30,10 +30,11 @@ fn missing_or_zero_declared_throughput_refuses_measurement_collection() -> Resul
         Some(Throughput::Bytes(0)),
     ] {
         let declarations = BTreeMap::from([("group/benchmark".into(), amount)]);
+        let tails = BTreeMap::from([("group/benchmark".to_owned(), 1.0)]);
         let error = super::super::parse_measurement(
             "test group/benchmark ... bench: 1 s/iter",
             &declarations,
-            Some(100),
+            &tails,
         )
         .err()
         .ok_or_else(|| anyhow!("missing or zero declared throughput was measured"))?;

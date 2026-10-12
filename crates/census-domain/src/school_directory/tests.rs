@@ -26,3 +26,6 @@ mod review_regressions;
 
 #[path = "tests/boundary_regressions.rs"]
 mod boundary_regressions;
+
+#[path = "tests/nces_join_tests.rs"]
+mod nces_join_tests;

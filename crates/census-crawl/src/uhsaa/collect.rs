@@ -1,4 +1,4 @@
-use super::{parse, school_entities, Options, ProfileFacts, SchoolExtract, ASSOCIATION, HOST};
+use super::{map_capture, parse, Options, SchoolExtract, ASSOCIATION, HOST};
 use crate::net::{FetchOptions, FetchOutcome};
 use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_domain::UsJurisdiction;
@@ -6,7 +6,7 @@ use census_store::Table;
 use futures::{stream, StreamExt, TryStreamExt};
 
 const DIRECTORY: &str = "https://uhsaa.org/school-directory-new/";
-const PHASE: &str = "uhsaa_projection_v2";
+const PHASE: &str = "uhsaa_projection_v3";
 
 #[tracing::instrument(skip(ctx, options))]
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
@@ -75,6 +75,9 @@ async fn walk(
     })
     .await?;
     report.finish_frontier();
+    if report.rejections > 0 {
+        report.disposition = crate::CollectionDisposition::Blocked;
+    }
     Ok(report)
 }
 
@@ -90,7 +93,13 @@ fn directory_links(
             return Ok(None);
         }
     };
-    let links = parse::parse_directory_links(html);
+    let links = match super::published::read(html) {
+        Ok(published) => published.links,
+        Err(error) => {
+            fail(report, DIRECTORY, error.to_string())?;
+            return Ok(None);
+        }
+    };
     if links.is_empty() {
         fail(report, DIRECTORY, "no validated school links".to_string())?;
         return Ok(None);
@@ -120,37 +129,13 @@ async fn refresh_school(
     let Some(capture) = get(ctx, &url, fetch, report).await? else {
         return Ok(());
     };
-    let html = match std::str::from_utf8(&capture.body) {
-        Ok(html) => html,
+    let extract = match map_capture(link, &capture) {
+        Ok(extract) => extract,
         Err(error) => {
             fail(report, &url, error.to_string())?;
             return Ok(());
         }
     };
-    let profile = parse::parse_school_profile(html);
-    if profile.name.is_empty()
-        || census_domain::model::normalize_name(&profile.name)
-            != census_domain::model::normalize_name(&link.name)
-    {
-        fail(
-            report,
-            &url,
-            "profile has no matching published school owner".to_string(),
-        )?;
-        return Ok(());
-    }
-    let extract = school_entities(
-        &ProfileFacts {
-            name: &profile.name,
-            address: &profile.address,
-            district: &profile.district,
-            classification: &profile.classification,
-            region: &profile.region,
-            url: &capture.url,
-            observed_on: &capture.fetched_at,
-        },
-        &profile.coaches,
-    );
     persist_profile(ctx, &url, &extract, &capture, report)
 }
 
@@ -163,7 +148,8 @@ fn persist_profile(
 ) -> CrawlResult<()> {
     if !extract.coaches.is_empty() {
         owe(report, url)?;
-        report.note("appointment season is not published; tenure remains unknown");
+        report.rejections = report.rejections.checked_add(1).ok_or_else(counter_error)?;
+        report.note("source qualification refused: appointment season is not published; tenure remains unknown");
     }
     emit_school(ctx, extract, capture)?;
     crate::coach_directories::persist_staff_capture(

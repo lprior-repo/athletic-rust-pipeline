@@ -6,7 +6,7 @@ use super::wire::TeamRef;
 
 static TEAM_ROW_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
     Regex::new(
-        r#"(?s)<tr>\s*<td>\s*<a href="(https?://[a-z]{2}\.milesplit\.com/teams/(\d+)-([^"]+))">\s*([^<]+?)\s*</a>\s*</td>\s*<td>\s*([^<]*?)\s*</td>"#,
+        r#"(?s)<tr>\s*<td>\s*<a href="(https?://(?:[a-z]{2}|www)\.milesplit\.com/teams/(\d+)(?:-([^"]+))?)">\s*([^<]+?)\s*</a>\s*</td>\s*<td>\s*([^<]*?)\s*</td>"#,
     )
 });
 

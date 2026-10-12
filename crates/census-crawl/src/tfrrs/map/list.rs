@@ -111,7 +111,12 @@ impl<'a> Absorb<'a> {
             self.stats.rows_without_team = self.stats.rows_without_team.saturating_add(1);
             return None;
         };
-        let Some(sport) = context.list.season.and_then(|season| season.sport) else {
+        let Some(sport) = context
+            .list
+            .season
+            .and_then(|season| season.sport)
+            .filter(|sport| *sport != Sport::Unknown)
+        else {
             self.stats.rows_without_season = self.stats.rows_without_season.saturating_add(1);
             return None;
         };
@@ -243,7 +248,7 @@ impl<'a> Absorb<'a> {
                 path: Some(facts.team.path.as_str()),
             },
         );
-        let meet_id = self.meet_for(context.page, facts.meet, facts.date);
+        let meet_id = self.meet_for(context.page, facts.meet, facts.date, facts.sport)?;
         let (event, _) = self.event_for(context.page, section, &meet_id, gender)?;
         let (athlete_id, source_athlete) = self.athlete_for(
             context.page,

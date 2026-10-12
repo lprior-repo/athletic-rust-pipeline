@@ -166,10 +166,10 @@ pub use wire::{
     JurisdictionReport, JurisdictionRequest, JurisdictionState, JurisdictionSummary,
     NationalFailure, NationalReport, NationalRequest, OpenWorkReply, OpenWorkRequest,
     RefusedSource, ReportReply, ReportRequest, SchoolAddressJoinReply, SchoolAddressJoinRequest,
-    SealItem, SealRef, SealReply, SealRequest, SourceObjectOpen, SourcePlan, StageOutcome,
-    StatusReply, SweepReport, SweepRequest, TableCount, TeamsAttemptProgress, TeamsFailure,
-    TeamsSourceFailure, TeamsSourceInspection, TeamsSourceOutcome, TeamsSourceRequest, TeamsStage,
-    WindowRequest, WorkbookReply, WorkbookRequest,
+    SealItem, SealRef, SealReply, SealRequest, SourceObjectInventory, SourceObjectOpen, SourcePlan,
+    StageOutcome, StatusReply, SweepReport, SweepRequest, TableCount, TeamsAttemptProgress,
+    TeamsFailure, TeamsSourceFailure, TeamsSourceInspection, TeamsSourceOutcome,
+    TeamsSourceRequest, TeamsStage, WindowRequest, WorkbookReply, WorkbookRequest,
 };
 
 pub use plan::{

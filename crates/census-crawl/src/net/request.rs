@@ -1,4 +1,5 @@
 use super::cache::CacheMeta;
+use super::representation::{validate_user_agent, USER_AGENT_NAME};
 use super::{FetchError, FetchOptions, FetchOutcome, Fetcher, REQUEST_TIMEOUT_SECS};
 
 #[derive(Debug, Clone)]
@@ -71,6 +72,11 @@ pub(super) fn build_request<'a>(
     cached: Option<&'a CacheMeta>,
     refresh: bool,
 ) -> Result<reqwest::RequestBuilder, FetchError> {
+    for (name, value) in headers {
+        if name.trim().eq_ignore_ascii_case(USER_AGENT_NAME) {
+            validate_user_agent(value)?;
+        }
+    }
     let mut request = match method {
         "POST" => client.post(url),
         _ => client.get(url),
@@ -106,3 +112,6 @@ pub(super) fn build_request<'a>(
     }
     Ok(request)
 }
+
+#[cfg(test)]
+mod tests;

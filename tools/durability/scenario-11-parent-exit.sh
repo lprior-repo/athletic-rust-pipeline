@@ -252,23 +252,45 @@ echo "DRAIN CERTIFICATE: $DRAIN"
 echo "$DRAIN" > "$WORK/drain-certificate.txt"
 
 validate_drain_certificate() {
-python3 - "$1" <<'PY'
+python3 - "$1" "$2" <<'PY'
 import re, sys
 drain = open(sys.argv[1]).read().strip()
-accepted = int(re.search(r'accepted=(\d+)', drain).group(1))
-completed = int(re.search(r'completed=(\d+)', drain).group(1))
-cancelled = int(re.search(r'cancelled=(\d+)', drain).group(1))
-timed_out = int(re.search(r'timed_out=(\d+)', drain).group(1))
-aborted = int(re.search(r'aborted=(\d+)', drain).group(1))
-panicked = int(re.search(r'panicked=(\d+)', drain).group(1))
-accounted = completed + cancelled + aborted + panicked
-print(f"ACCOUNTING: accepted={accepted} vs exclusive_terminal={accounted} (completed={completed} cancelled={cancelled} aborted={aborted} panicked={panicked})")
-print(f"DEADLINE: timed_out={timed_out} is an overlapping subset of accepted={accepted}, not a terminal bucket")
+log = open(sys.argv[2], errors="replace").read().splitlines()
+reports = [line for line in log if "report=DrainReport {" in line]
+if not reports:
+    print("FAIL: drain report line absent from the endpoint log")
+    sys.exit(1)
+report = reports[-1]
+def field(name):
+    match = re.search(rf'\b{name}: (\d+)', report)
+    if not match:
+        print(f"FAIL: drain report lacks {name}")
+        sys.exit(1)
+    return int(match.group(1))
+accepted = field('accepted')
+completed = field('completed')
+cancelled = field('cancelled')
+aborted = field('aborted')
+panicked = field('panicked')
+failed = field('failed')
+still_running = field('still_running')
+remaining = field('remaining')
+timed_out = field('timed_out')
+certificate = int(re.search(r'accepted=(\d+)', drain).group(1))
+if certificate != accepted:
+    print(f"FAIL: certificate accepted={certificate} disagrees with the report accepted={accepted}")
+    sys.exit(1)
+accounted = completed + failed + cancelled + aborted + panicked
+print(f"ACCOUNTING: accepted={accepted} vs exclusive_terminal={accounted} (completed={completed} failed={failed} cancelled={cancelled} aborted={aborted} panicked={panicked})")
+print(f"RESIDENCY: still_running={still_running} remaining={remaining} timed_out={timed_out} is an overlapping subset of accepted={accepted}, not a terminal bucket")
 if timed_out > accepted:
     print("FAIL: deadline subset exceeds accepted work")
     sys.exit(1)
 if accepted != accounted:
     print("FAIL: exclusive outcome accounting mismatch")
+    sys.exit(1)
+if still_running != 0 or remaining != 0:
+    print("FAIL: drained endpoint retained unaccounted work")
     sys.exit(1)
 if accepted < 1:
     print("FAIL: accepted should be >= 1")
@@ -279,7 +301,7 @@ if panicked != 0:
 print("PASS: exclusive outcome accounting verified")
 PY
 }
-validate_drain_certificate "$WORK/drain-certificate.txt"
+validate_drain_certificate "$WORK/drain-certificate.txt" "$WORK/endpoint.log"
 
 SERVE_EXIT=0
 wait "$SERVE_PID" || SERVE_EXIT=$?
@@ -387,7 +409,7 @@ DRAIN2=$(grep -a 'drained: accepted=' "$WORK/endpoint-second.log" | tail -1 || t
 [ -n "$DRAIN2" ] || { echo "FAIL: resumed endpoint exited without a drain certificate"; exit 1; }
 echo "RESUME DRAIN CERTIFICATE: $DRAIN2"
 echo "$DRAIN2" > "$WORK/resume-drain-certificate.txt"
-validate_drain_certificate "$WORK/resume-drain-certificate.txt"
+validate_drain_certificate "$WORK/resume-drain-certificate.txt" "$WORK/endpoint-second.log"
 if pgrep -f -- "--data-dir $DATA" >/dev/null 2>&1 || pgrep -f "$WORK/browser-profile" >/dev/null 2>&1; then
     echo "FAIL: owned child processes survived the resumed endpoint drain"
     exit 1

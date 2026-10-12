@@ -13,9 +13,19 @@ const CAPTURE_FIXTURE: &str =
 const FAILURE_FIXTURE: &str =
     include_str!("../../../../../fixtures/wire/athleticnet-browser-failure.json");
 
+fn current_profile_request() -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    let mut request: serde_json::Value = serde_json::from_str(CENSUS_BIO_REQUEST)?;
+    let action = request
+        .get_mut("action")
+        .and_then(serde_json::Value::as_object_mut)
+        .ok_or("captured request action")?;
+    check!(eq; action.remove("body"), None);
+    Ok(request)
+}
+
 #[test]
-fn the_census_mirror_decodes_the_fixture() -> TestResult {
-    let spec: RequestSpec = serde_json::from_str(CENSUS_BIO_REQUEST)?;
+fn the_census_profile_request_preserves_the_captured_url() -> TestResult {
+    let spec: RequestSpec = serde_json::from_value(current_profile_request()?)?;
     let value_of = |name: &str| -> Option<String> {
         let (_, query) = spec.url.split_once('?')?;
         query
@@ -34,18 +44,36 @@ fn the_census_mirror_decodes_the_fixture() -> TestResult {
         spec.semantic_url, spec.url,
         "the census cites the address it asked for"
     );
-    check!(matches!(spec.action, Action::Fetch { body: None }));
+    check!(matches!(spec.action, Action::Fetch {}));
     Ok(())
 }
 
 #[test]
-fn the_census_mirror_re_encodes_the_fixture_byte_for_byte() -> TestResult {
-    let spec: RequestSpec = serde_json::from_str(CENSUS_BIO_REQUEST)?;
-    check!(eq;
-        serde_json::to_string_pretty(&spec)?,
-        CENSUS_BIO_REQUEST.trim_end(),
-        "the mirror is the contract: a field added, renamed, reordered or dropped fails here"
-    );
+fn the_census_profile_request_encodes_without_a_body() -> TestResult {
+    let current = current_profile_request()?;
+    let spec: RequestSpec = serde_json::from_value(current.clone())?;
+    check!(eq; serde_json::to_value(&spec)?, current);
+    check!(eq; serde_json::to_value(&spec.action)?, serde_json::json!({"action": "fetch"}));
+    Ok(())
+}
+
+#[test]
+fn obsolete_search_body_is_rejected_before_dispatch() -> TestResult {
+    for body in [
+        serde_json::json!({"q": "*", "fq": "type:athlete", "start": 0}),
+        serde_json::Value::Null,
+    ] {
+        let mut request: serde_json::Value = serde_json::from_str(CENSUS_BIO_REQUEST)?;
+        let action = request
+            .get_mut("action")
+            .and_then(serde_json::Value::as_object_mut)
+            .ok_or("captured request action")?;
+        action.insert("body".into(), body);
+        let decoded = serde_json::from_value::<RequestSpec>(request);
+        let error = decoded.err().ok_or("obsolete search body was accepted")?;
+        check!(eq; error.classify(), serde_json::error::Category::Data);
+        check!(error.to_string().contains("body"));
+    }
     Ok(())
 }
 
@@ -218,7 +246,7 @@ async fn the_lane_refuses_a_non_http_scheme_before_any_ingress_call() -> TestRes
         let spec = RequestSpec {
             url: url.to_string(),
             semantic_url: url.to_string(),
-            action: Action::Fetch { body: None },
+            action: Action::Fetch {},
             headers: crate::net::RepresentationHeaders::default(),
         };
         match lane.answer(&spec).await {

@@ -4,22 +4,47 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use chrono::{DateTime, FixedOffset};
+
 use super::errors::{io_err, refused};
 use super::files::sync_directories;
+use super::MANIFEST_PATH;
 use crate::fs::fsync_dir;
-use crate::StoreResult;
+use crate::{StoreError, StoreResult};
 
 const STAGING_ATTEMPTS: usize = 4;
 
 pub(super) struct Generation {
     path: PathBuf,
     to: PathBuf,
-    prefix: String,
     published: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum PromotionStep {
+    Exchange,
+    Promotion,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub(super) struct Recovered {
+    pub staging_removed: u64,
+    pub restored: bool,
+    pub trashes_removed: u64,
 }
 
 impl Generation {
     pub(super) fn create(to: &Path, prefix: &str) -> StoreResult<Self> {
+        let recovered = recover(to, prefix)?;
+        if recovered.restored || recovered.staging_removed > 0 || recovered.trashes_removed > 0 {
+            tracing::warn!(
+                "recovered {} before staging a new generation: staging_removed={} trashes_removed={} restored={}",
+                to.display(),
+                recovered.staging_removed,
+                recovered.trashes_removed,
+                recovered.restored
+            );
+        }
         let parent = parent_of(to);
         for _ in 0..STAGING_ATTEMPTS {
             let candidate = parent.join(format!("{prefix}{}", unique_token()));
@@ -28,7 +53,6 @@ impl Generation {
                     return Ok(Self {
                         path: candidate,
                         to: to.to_path_buf(),
-                        prefix: prefix.to_string(),
                         published: false,
                     });
                 }
@@ -46,45 +70,194 @@ impl Generation {
         &self.path
     }
 
-    pub(super) fn publish(mut self) -> StoreResult<()> {
-        sync_directories(&self.path)?;
-        let superseded = self.move_superseded_aside()?;
-        if let Err(source) = fs::rename(&self.path, &self.to) {
-            if let Some(trash) = &superseded {
-                if let Err(error) = fs::rename(trash, &self.to) {
-                    tracing::error!(
-                        "could not put {} back at {}: {error}; the superseded generation is intact there",
-                        trash.display(),
-                        self.to.display()
-                    );
-                }
-            }
-            return Err(io_err(&self.to, source));
-        }
-        self.published = true;
-        fsync_dir(parent_of(&self.to))?;
-        if let Some(trash) = superseded {
-            if let Err(error) = fs::remove_dir_all(&trash) {
-                tracing::warn!(
-                    "published {}, but the superseded generation at {} could not be removed: {error}",
-                    self.to.display(),
-                    trash.display()
-                );
-            }
-        }
-        Ok(())
+    pub(super) fn publish(self) -> StoreResult<()> {
+        self.publish_with(&mut promote)
     }
 
-    fn move_superseded_aside(&self) -> StoreResult<Option<PathBuf>> {
-        match fs::symlink_metadata(&self.to) {
-            Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
-            Err(source) => Err(io_err(&self.to, source)),
-            Ok(_) => {
-                let trash =
-                    parent_of(&self.to).join(format!("{}old.{}", self.prefix, unique_token()));
-                fs::rename(&self.to, &trash).map_err(|source| io_err(&self.to, source))?;
-                Ok(Some(trash))
-            }
+    pub(super) fn publish_with(
+        mut self,
+        rename: &mut impl FnMut(PromotionStep, &Path, &Path) -> io::Result<()>,
+    ) -> StoreResult<()> {
+        sync_directories(&self.path)?;
+        let step = match fs::symlink_metadata(&self.to) {
+            Ok(_) => PromotionStep::Exchange,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => PromotionStep::Promotion,
+            Err(source) => return Err(io_err(&self.to, source)),
+        };
+        rename(step, &self.path, &self.to).map_err(|source| io_err(&self.to, source))?;
+        fsync_dir(parent_of(&self.to))?;
+        if step == PromotionStep::Exchange {
+            discard(&self.path);
+        }
+        self.published = true;
+        Ok(())
+    }
+}
+
+pub(super) fn promote(step: PromotionStep, from: &Path, to: &Path) -> io::Result<()> {
+    match step {
+        PromotionStep::Promotion => fs::rename(from, to),
+        PromotionStep::Exchange => exchange(from, to),
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn exchange(from: &Path, to: &Path) -> io::Result<()> {
+    rustix::fs::renameat_with(
+        rustix::fs::CWD,
+        from,
+        rustix::fs::CWD,
+        to,
+        rustix::fs::RenameFlags::EXCHANGE,
+    )
+    .map_err(io::Error::from)
+}
+
+#[cfg(not(target_os = "linux"))]
+fn exchange(_from: &Path, _to: &Path) -> io::Result<()> {
+    Err(io::Error::new(
+        io::ErrorKind::Unsupported,
+        "atomic directory exchange is required to replace a backup generation",
+    ))
+}
+
+pub(super) fn recover(to: &Path, prefix: &str) -> StoreResult<Recovered> {
+    let parent = parent_of(to);
+    let listing = match fs::read_dir(parent) {
+        Ok(listing) => listing,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Recovered::default()),
+        Err(source) => return Err(io_err(parent, source)),
+    };
+    let trash_prefix = format!("{prefix}old.");
+    let (staging, trashes) = collect_generations(parent, listing, prefix, &trash_prefix)?;
+    let mut recovered = Recovered::default();
+    recovered = clear_staging(staging, recovered)?;
+    if trashes.is_empty() {
+        return Ok(recovered);
+    }
+    if fs::symlink_metadata(to).is_ok() {
+        if to.join(MANIFEST_PATH).is_file() {
+            recovered = clear_trashes(trashes, recovered)?;
+        } else {
+            recovered = handle_partial_trashes(to, trashes, recovered)?;
+        }
+        return Ok(recovered);
+    }
+    recovered = restore_from_trashes(to, trashes, recovered)?;
+    Ok(recovered)
+}
+
+fn collect_generations(
+    parent: &Path,
+    listing: fs::ReadDir,
+    prefix: &str,
+    trash_prefix: &str,
+) -> StoreResult<(Vec<PathBuf>, Vec<PathBuf>)> {
+    let mut staging = Vec::new();
+    let mut trashes = Vec::new();
+    for entry in listing {
+        let entry = entry.map_err(|source| io_err(parent, source))?;
+        let name = entry.file_name().to_string_lossy().to_string();
+        if name.starts_with(trash_prefix) {
+            trashes.push(entry.path());
+        } else if name.starts_with(prefix) {
+            staging.push(entry.path());
+        }
+    }
+    Ok((staging, trashes))
+}
+
+fn clear_staging(staging: Vec<PathBuf>, recovered: Recovered) -> StoreResult<Recovered> {
+    let mut result = recovered;
+    for path in staging {
+        discard(&path);
+        result.staging_removed = count(result.staging_removed)?;
+    }
+    Ok(result)
+}
+
+fn clear_trashes(trashes: Vec<PathBuf>, recovered: Recovered) -> StoreResult<Recovered> {
+    let mut result = recovered;
+    for path in trashes {
+        discard(&path);
+        result.trashes_removed = count(result.trashes_removed)?;
+    }
+    Ok(result)
+}
+
+fn handle_partial_trashes(
+    to: &Path,
+    trashes: Vec<PathBuf>,
+    recovered: Recovered,
+) -> StoreResult<Recovered> {
+    let (empty, kept): (Vec<PathBuf>, Vec<PathBuf>) =
+        trashes.into_iter().partition(|path| is_empty_dir(path));
+    let mut result = recovered;
+    for path in empty {
+        discard(&path);
+        result.trashes_removed = count(result.trashes_removed)?;
+    }
+    if !kept.is_empty() {
+        tracing::warn!(
+            "{} holds no published generation and {} displaced generation(s) beside it are \
+             kept for an operator: clear that path before publishing into it again",
+            to.display(),
+            kept.len()
+        );
+    }
+    Ok(result)
+}
+
+fn restore_from_trashes(
+    to: &Path,
+    mut trashes: Vec<PathBuf>,
+    recovered: Recovered,
+) -> StoreResult<Recovered> {
+    trashes.sort_by(|left, right| {
+        written_at(right)
+            .cmp(&written_at(left))
+            .then_with(|| right.file_name().cmp(&left.file_name()))
+    });
+    let Some(source) = trashes.first().cloned() else {
+        return Ok(recovered);
+    };
+    let parent = parent_of(to);
+    fs::rename(&source, to).map_err(|error| io_err(&source, error))?;
+    let mut result = recovered;
+    result.restored = true;
+    for path in trashes {
+        if path == source {
+            continue;
+        }
+        discard(&path);
+        result.trashes_removed = count(result.trashes_removed)?;
+    }
+    fsync_dir(parent)?;
+    Ok(result)
+}
+
+fn written_at(generation: &Path) -> Option<DateTime<FixedOffset>> {
+    let text = fs::read_to_string(generation.join(MANIFEST_PATH)).ok()?;
+    let manifest: serde_json::Value = serde_json::from_str(&text).ok()?;
+    let recorded = manifest.get("written_at")?.as_str()?;
+    DateTime::parse_from_rfc3339(recorded).ok()
+}
+
+fn is_empty_dir(path: &Path) -> bool {
+    match fs::read_dir(path) {
+        Ok(mut listing) => listing.next().is_none(),
+        Err(_) => false,
+    }
+}
+
+fn count(value: u64) -> StoreResult<u64> {
+    value.checked_add(1).ok_or(StoreError::CounterOverflow)
+}
+
+fn discard(path: &Path) {
+    if let Err(error) = fs::remove_dir_all(path) {
+        if error.kind() != io::ErrorKind::NotFound {
+            tracing::warn!("could not remove {}: {error}", path.display());
         }
     }
 }
@@ -120,3 +293,7 @@ fn unique_token() -> String {
         .map_or(0, |since| since.as_nanos());
     format!("{}.{nanos}.{count}", std::process::id())
 }
+
+#[cfg(test)]
+#[path = "generation_tests.rs"]
+mod generation_tests;

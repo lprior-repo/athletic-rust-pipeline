@@ -1,4 +1,4 @@
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Barrier;
 use std::time::Duration;
 
@@ -110,8 +110,12 @@ fn reserve_then_push(
         let slot = match path {
             SpawnPath::Async => spawner.admit()?,
             SpawnPath::Blocking => runtime
-                .block_on(Arc::clone(&spawner.permits).acquire_owned())
-                .map_err(|_| SpawnError::RegionClosed)?,
+                .block_on(
+                    spawner
+                        .coordinator
+                        .reserve(crate::admission::WORK_CLASS_BLOCKING),
+                )
+                .map_err(SpawnError::from)?,
         };
         assert!(acquired.send(()).is_ok());
         barrier.wait();
@@ -124,7 +128,7 @@ fn reserve_then_push(
                 }
             }
             SpawnPath::Blocking => {
-                Ok(spawner.push_blocking(move || ran.store(true, Ordering::SeqCst), slot))
+                Ok(spawner.push_blocking(move |_counters| ran.store(true, Ordering::SeqCst), slot))
             }
         }
     })
@@ -179,6 +183,7 @@ fn cancelling_deadline_reap_keeps_started_blocking_effect_and_certificate() -> T
                 accepted: 1,
                 completed: 1,
                 timed_out: 1,
+                still_running: 0,
                 ..TaskReport::default()
             });
             Ok(())

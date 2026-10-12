@@ -39,7 +39,9 @@ pub struct IngestRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RecordedIngestRequest {
-    pub recorded: census_crawl::Recorded,
+    pub spool_identity: String,
+    pub fragment: usize,
+    pub spool: census_crawl::recording::spool::FragmentSummary,
     pub operation_id: String,
     #[serde(default)]
     pub cursor: Option<String>,
@@ -98,4 +100,12 @@ pub struct SweepReport {
     pub pruned_receipts: u64,
     #[serde(default)]
     pub undated_receipts: u64,
+    #[serde(default)]
+    pub replay_witnesses_kept: u64,
+    #[serde(default)]
+    pub replay_witnesses_missing: u64,
+    #[serde(default)]
+    pub replay_frontier_advanced: bool,
+    #[serde(default)]
+    pub receipt_pruning_failure: Option<super::super::sweep::ReceiptPruneFailure>,
 }

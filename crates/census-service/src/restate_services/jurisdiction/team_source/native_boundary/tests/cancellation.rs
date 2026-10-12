@@ -74,14 +74,14 @@ fn cancelled_caller_cannot_release_source_or_capacity_while_marker_worker_surviv
             let runtime = runtime()?;
             let fixture = fixture(1, 60)?;
             let suspended = cancel_marker_caller(&runtime, fixture.armed()?.directory).await?;
-            check!(eq; runtime.load.available_permits(), 1);
+            check!(eq; runtime.region.coordinator().remaining().slots.stages, 1);
             check!(eq; std::fs::symlink_metadata(fixture.marker())
     .err()
     .map(|error| error.kind()),
 Some(std::io::ErrorKind::NotFound));
             let mut waiting = Box::pin(runtime.source.admit(OPERATION));
             check!(futures::poll!(waiting.as_mut()).is_pending());
-            check!(eq; runtime.load.available_permits(), 0);
+            check!(eq; runtime.region.coordinator().remaining().slots.stages, 0);
             suspended.release.send(())?;
             let outcome = tokio::time::timeout(DEADLINE, suspended.finished).await??;
             check!(matches!(outcome, Err(BoundaryError::HoldExpired { operation, attempt: 1, seconds: 0 }) if operation == OPERATION),
@@ -94,9 +94,9 @@ Some(std::io::ErrorKind::NotFound));
             check!(eq; serde_json::from_value::<census_store::NativeEffectCheckpoint>(
                 marker.get("acknowledged_effects").ok_or("original source checkpoint missing after caller cancellation")?.clone())?,
                 runtime.jobs.store().native_effect_checkpoint()?);
-            check!(eq; runtime.load.available_permits(), 1);
+            check!(eq; runtime.region.coordinator().remaining().slots.stages, 1);
             drop(admission);
-            check!(eq; runtime.load.available_permits(), 2);
+            check!(eq; runtime.region.coordinator().remaining().slots.stages, 2);
             check!(eq; runtime.region.drain(DEADLINE).await?, completed(1));
             Ok(())
         })

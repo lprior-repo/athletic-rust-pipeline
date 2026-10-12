@@ -17,8 +17,8 @@ mod walk;
 
 use walk::{absorb_targets, flush_batch};
 
-pub(super) const PROFILE_PARSE_VERSION: u32 = 3;
-pub(super) const PROFILE_ATTEMPT_PHASE: &str = "athleticnet_profile_attempts_v3";
+pub(super) const PROFILE_PARSE_VERSION: u32 = 4;
+pub(super) const PROFILE_ATTEMPT_PHASE: &str = "athleticnet_profile_attempts_v4";
 
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     if !options.meets.is_empty() {

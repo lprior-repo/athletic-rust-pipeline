@@ -65,6 +65,16 @@ tasks:
       cache: false
       runInCI: true
       mutex: rust-build
+  tests-scoped:
+    command: 'tools/moon-cargo nextest run --config .cargo/fast-iteration.toml --all-features --locked --offline --no-fail-fast --test-threads=16'
+    toolchains: [system]
+    env: *iterationEnvironment
+    inputs: *rustCacheInputs
+    options:
+      shell: false
+      cache: false
+      runInCI: false
+      mutex: rust-build
   check:
     command: 'tools/moon-cargo --config .cargo/fast-iteration.toml check --workspace --all-targets --all-features --locked --offline'
     toolchains: [system]
@@ -189,6 +199,11 @@ tasks:
       CARGO_TARGET_DIR: 'target/fast-iteration'
       CARGO_BUILD_JOBS: '16'
       RUSTC_WRAPPER: ''
+    inputs: *rustCacheInputs
+    options: *manualRustTask
+  native-resources:
+    command: 'tools/durability/native-resources.sh'
+    toolchains: [system]
     inputs: *rustCacheInputs
     options: *manualRustTask
   backup-drill:

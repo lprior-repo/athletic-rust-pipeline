@@ -2,6 +2,7 @@ use census_domain::model::serialized_digest;
 use census_store::{Store, StoreSnapshot};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
+use crate::outcome::AttemptState;
 use crate::restate_services::support::JobError;
 use crate::restate_services::wire::{
     StageOutcome, TeamsAttemptProgress, TeamsSourceInspection, TeamsSourceOutcome,
@@ -151,6 +152,37 @@ pub(super) fn inspection(
             progress: history.progress,
         },
     })
+}
+
+pub(crate) fn durable_attempts(store: &Store) -> Result<AttemptState, JobError> {
+    let snapshot = store.snapshot();
+    let keys = store.journal_keys(PHASE)?;
+    let mut operations: Vec<String> = keys
+        .iter()
+        .filter_map(|key| key.strip_suffix("/identity").map(str::to_string))
+        .collect();
+    operations.sort_unstable();
+    let mut state = AttemptState {
+        ceiling: MAX_ATTEMPTS,
+        ..AttemptState::default()
+    };
+    for key in operations {
+        let identity: Identity = read(&snapshot, &format!("{key}/identity"))?
+            .ok_or_else(|| terminal("teams source attempt state has no identity"))?;
+        let history = history::read(&snapshot, &key, &identity)?;
+        state.sources = state.sources.saturating_add(1);
+        state.reserved = state.reserved.saturating_add(u64::from(history.attempt));
+        for progress in &history.progress {
+            if !matches!(progress, TeamsAttemptProgress::Unknown { .. }) {
+                state.recorded = state.recorded.saturating_add(1);
+            }
+        }
+        if validated_settled(&snapshot, &key, &history, false)?.is_some() {
+            state.settled = state.settled.saturating_add(1);
+        }
+    }
+    state.unknown = state.reserved.saturating_sub(state.recorded);
+    Ok(state)
 }
 
 pub(super) fn finish(

@@ -18,6 +18,13 @@ impl Ingest {
         if request.rows.len() > MAX_ROWS_PER_REQUEST {
             return Err(TerminalError::new("raw ingest row capacity exceeded").into());
         }
+        let request = super::blocking(Arc::clone(&self.region), move || {
+            census_store::ObservationBudget::admit(&request.rows, 0, 0)
+                .map_err(crate::restate_services::JobError::from)?;
+            Ok::<_, crate::restate_services::JobError>(request)
+        })
+        .await
+        .map_err(super::job_error)?;
         let mut state = self.load_object(ctx).await?;
         super::recorded::admit(&request.operation_id, request.cursor.as_deref())?;
         let today = super::super::journaled_today(ctx, &self.clock).await?;

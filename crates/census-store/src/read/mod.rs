@@ -9,15 +9,21 @@ use super::{Consolidated, Entity, Store, StoreError, StoreResult, StoreStats, Ta
 mod directory;
 mod identity;
 #[cfg(test)]
+mod journal_object_tests;
+#[cfg(test)]
 mod journal_snapshot_tests;
 mod snapshot;
+mod source_objects;
 mod view;
 
 pub(crate) use directory::directory_bytes;
 pub use identity::build_athlete_identity_projection;
 pub(crate) use snapshot::sweep_stale_temporaries;
 pub use snapshot::{csv_failure, publish_atomically, read_rows, write_snapshot_rows};
-pub use view::StoreSnapshot;
+pub use view::{
+    JournalDigest, JournalEntry, JournalObject, JournalRecord, JournalRecords, ReadBudget,
+    ReadCounts, StoreSnapshot,
+};
 
 impl Store {
     pub(super) fn last_sequence(entities: &Keyspace, table: Table) -> StoreResult<Option<u64>> {
@@ -99,25 +105,7 @@ impl Store {
         phase: &str,
         key: &str,
     ) -> StoreResult<Option<serde_json::Value>> {
-        let Some(raw) = self
-            .journal
-            .get(Self::journal_key(phase, key))
-            .map_err(|source| StoreError::Read { source })?
-        else {
-            return Ok(None);
-        };
-        let row_key = Self::journal_key(phase, key);
-        decode_journal_entry(phase, key, raw.as_ref(), |index| {
-            let chunk_key = super::journal::chunk_key(&row_key, index)?;
-            let chunk = self
-                .journal
-                .get(&chunk_key)
-                .map_err(|source| StoreError::Read { source })?;
-            chunk
-                .map(|chunk| decode_journal_chunk(phase, key, index, chunk.as_ref()))
-                .transpose()
-        })
-        .map(Some)
+        self.snapshot().journal_payload(phase, key)
     }
 
     pub fn journal_keys(&self, phase: &str) -> StoreResult<HashSet<String>> {

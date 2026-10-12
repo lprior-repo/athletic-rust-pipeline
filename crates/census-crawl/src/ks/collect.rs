@@ -52,7 +52,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
                         if options.limit.is_some_and(|limit| ordinal >= limit) {
                             return owe(&mut report, format!("{url}#school={}", record.identifier));
                         }
-                        collect_record(ctx, &record, (&url, &capture.fetched_at), &mut report)
+                        collect_record(ctx, &record, &capture, &mut report)
                     })?
             }
             Ok(_) => fail(&mut report, &url, "missing school array")?,
@@ -61,6 +61,13 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         Err(error) => fail(&mut report, &url, error)?,
     }
     owe(&mut report, KSHSAA_API)?;
+    report.rejections = report
+        .rejections
+        .checked_add(1)
+        .ok_or_else(|| CrawlError::Arithmetic {
+            detail: "KSHSAA refusal counter overflow".to_string(),
+        })?;
+    report.note("full inventory refused: the qualified capture and collector cover only letter a; the remaining KSHSAA directory is not qualified");
     let after = ctx.fetcher.stats().await;
     report.requests = after
         .physical_requests()
@@ -72,9 +79,10 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
 fn collect_record(
     ctx: &AdapterContext<'_>,
     record: &KshsaaRecord,
-    provenance: (&str, &str),
+    capture: &crate::net::FetchOutcome,
     report: &mut AdapterReport,
 ) -> CrawlResult<()> {
+    let provenance = (capture.url.as_str(), capture.fetched_at.as_str());
     let Some((school, school_id)) = parse_school(record, provenance.0, provenance.1) else {
         report.rejections = report.rejections.saturating_add(1);
         return owe(
@@ -82,7 +90,23 @@ fn collect_record(
             format!("{}#school={}", provenance.0, record.identifier),
         );
     };
-    let coach = parse_ad_coach(record, &school_id, provenance.0, provenance.1);
+    let mut coach = parse_ad_coach(record, &school_id, provenance.0, provenance.1);
+    for coach in coach.as_mut_slice() {
+        crate::coach_directories::record_appointment(
+            coach,
+            Some(crate::coach_directories::PublishedListing {
+                role: "AD",
+                program: &record.school_name,
+                source: "ks",
+                school_year: ctx.school_year,
+            }),
+            crate::coach_directories::StaffCapture {
+                url: &capture.url,
+                observed_on: &capture.fetched_at,
+                sha256: &capture.content_digest,
+            },
+        )?;
+    }
     let locator = format!("{}#school={}", provenance.0, record.identifier);
     let written = persist_school(
         ctx,

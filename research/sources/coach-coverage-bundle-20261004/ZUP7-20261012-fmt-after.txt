@@ -1,0 +1,2883 @@
+▮▮▮▮ pipeline:fmt (58770f97)
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/aia/collect.rs:65:
+         .await?;
+     if options.school_names.is_empty() {
+         owe(&mut run.report, format!("{HOST}/schools"))?;
+-        run.report.rejections = run.report.rejections.checked_add(1).ok_or_else(|| {
+-            CrawlError::Arithmetic {
+-                detail: "AIA refusal counter overflow".to_string(),
+-            }
+-        })?;
++        run.report.rejections =
++            run.report
++                .rejections
++                .checked_add(1)
++                .ok_or_else(|| CrawlError::Arithmetic {
++                    detail: "AIA refusal counter overflow".to_string(),
++                })?;
+         run.report.note("full inventory refused: 16 sampled city searches are capped at 10 schools per query; no exhaustive AIA directory is qualified");
+         run.report.disposition = crate::CollectionDisposition::Blocked;
+     }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/athleticlive/results/manifest/frozen.rs:19:
+     let body = admission::read(input)?;
+     let options = parse_manifest(&body, &ctx.observed_on)?;
+     let mut envelope: Envelope = serde_json::from_str(&body).map_err(schema)?;
+-    let mut jurisdictions: Vec<_> = options.iter().filter_map(|option| option.meet.as_ref().map(|meet| meet.state)).collect();
++    let mut jurisdictions: Vec<_> = options
++        .iter()
++        .filter_map(|option| option.meet.as_ref().map(|meet| meet.state))
++        .collect();
+     jurisdictions.sort_unstable();
+     jurisdictions.dedup();
+     for entry in &mut envelope.meets {
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/athleticlive/results/manifest/frozen.rs:26:
+         freeze_entry(ctx, entry)?;
+     }
+     let body = serde_json::to_string(&envelope).map_err(schema)?;
+-    admission::limit("LIVE frozen manifest bytes", body.len(), admission::MAX_BYTES)?;
++    admission::limit(
++        "LIVE frozen manifest bytes",
++        body.len(),
++        admission::MAX_BYTES,
++    )?;
+     Ok(FrozenManifest {
+         digest: crate::net::cache::content_digest(body.as_bytes()),
+         body,
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/athleticlive/results/manifest/frozen.rs:36:
+ 
+ fn freeze_entry(ctx: &AdapterContext<'_>, entry: &mut CaptureEntry) -> CrawlResult<()> {
+     let mut metadata = std::collections::BTreeMap::new();
+-    for path in entry.documents.iter_mut().chain(entry.summary.iter_mut()).chain(entry.standings.iter_mut().map(|row| &mut row.path)) {
++    for path in entry
++        .documents
++        .iter_mut()
++        .chain(entry.summary.iter_mut())
++        .chain(entry.standings.iter_mut().map(|row| &mut row.path))
++    {
+         let meta = entry.captures.get(path).ok_or_else(|| CrawlError::Schema {
+             url: path.clone(),
+             detail: "capture has no physical producer metadata".into(),
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/athleticlive/results/manifest/frozen.rs:43:
+         })?;
+         let captured = crate::athleticlive::capture::freeze(ctx, path, Some(meta), 1024 * 1024)?;
+-        *path = captured.path.into_os_string().into_string().map_err(|_| CrawlError::Invariant {
+-            detail: "immutable capture path is not UTF-8".into(),
+-        })?;
++        *path =
++            captured
++                .path
++                .into_os_string()
++                .into_string()
++                .map_err(|_| CrawlError::Invariant {
++                    detail: "immutable capture path is not UTF-8".into(),
++                })?;
+         metadata.insert(path.clone(), meta.clone());
+     }
+     entry.captures = metadata;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/athleticlive/results/manifest/frozen.rs:52:
+ }
+ 
+ fn schema(error: serde_json::Error) -> CrawlError {
+-    CrawlError::Invariant { detail: format!("LIVE frozen manifest: {error}") }
++    CrawlError::Invariant {
++        detail: format!("LIVE frozen manifest: {error}"),
++    }
+ }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/athleticlive/results/manifest.rs:7:
+ use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
+ 
+ mod admission;
+-mod selection;
+ mod frozen;
++mod selection;
+ pub use frozen::{freeze_manifest, FrozenManifest};
+ 
+ #[derive(Debug, Deserialize)]
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/athleticlive/results.rs:10:
+ #[cfg(test)]
+ mod tests;
+ 
+-pub use manifest::{collect_manifest, collect_manifest_body, freeze_manifest, FrozenManifest, ManifestOptions};
++pub use manifest::{
++    collect_manifest, collect_manifest_body, freeze_manifest, FrozenManifest, ManifestOptions,
++};
+ use run::Run;
+ 
+ const RETIRED_PHASE: &str = "athleticlive_results_v2";
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/ihsa/collect.rs:70:
+             Ok(capture) => capture,
+             Err(error) => {
+                 if matches!(error, FetchError::Cooldown { .. }) {
+-                    self.blocked = self.blocked.checked_add(1).ok_or_else(|| {
+-                        CrawlError::Arithmetic {
+-                            detail: "IHSA cooldown counter overflow".to_string(),
+-                        }
+-                    })?;
++                    self.blocked =
++                        self.blocked
++                            .checked_add(1)
++                            .ok_or_else(|| CrawlError::Arithmetic {
++                                detail: "IHSA cooldown counter overflow".to_string(),
++                            })?;
+                 }
+                 fail(&mut self.report, url, error)?;
+                 return Ok(None);
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/ks/collect.rs:61:
+         Err(error) => fail(&mut report, &url, error)?,
+     }
+     owe(&mut report, KSHSAA_API)?;
+-    report.rejections = report.rejections.checked_add(1).ok_or_else(|| CrawlError::Arithmetic {
+-        detail: "KSHSAA refusal counter overflow".to_string(),
+-    })?;
++    report.rejections = report
++        .rejections
++        .checked_add(1)
++        .ok_or_else(|| CrawlError::Arithmetic {
++            detail: "KSHSAA refusal counter overflow".to_string(),
++        })?;
+     report.note("full inventory refused: the qualified capture and collector cover only letter a; the remaining KSHSAA directory is not qualified");
+     report.disposition = crate::CollectionDisposition::Blocked;
+     let after = ctx.fetcher.stats().await;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/net/execute/source_header_tests.rs:9:
+         "https://www.cifsshome.org/widget/get-school-details/3374/details",
+         &[
+             ("x-requested-with", "XMLHttpRequest"),
+-            ("referer", "https://www.cifsshome.org/widget/school/directory?section=12"),
++            (
++                "referer",
++                "https://www.cifsshome.org/widget/school/directory?section=12",
++            ),
+         ],
+     )
+ }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/net/execute/source_header_tests.rs:34:
+                 Duration::from_millis(1),
+                 HashMap::new(),
+                 Vec::new(),
+-            )?.with_offline(true);
++            )?
++            .with_offline(true);
+             let options = FetchOptions {
+-                headers: headers.iter().map(|(name, value)| (name.to_string(), value.to_string())).collect(),
++                headers: headers
++                    .iter()
++                    .map(|(name, value)| (name.to_string(), value.to_string()))
++                    .collect(),
+                 ..FetchOptions::default()
+             };
+             let result = fetcher.get(url, &options).await;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/net/execute/source_header_tests.rs:43:
+-            check!(matches!(result, Err(FetchError::Offline { .. })), "legitimate source representation must reach offline lookup: {result:?}");
++            check!(
++                matches!(result, Err(FetchError::Offline { .. })),
++                "legitimate source representation must reach offline lookup: {result:?}"
++            );
+             check!(eq; fetcher.stats().await.physical_requests(), 0);
+             Ok(())
+         })
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/net/execute/source_header_tests.rs:49:
+ #[test]
+ fn ca_and_nj_ajax_representations_replay_recorded_school_details() -> TestResult {
+     for (id, section, body) in [
+-        (19, 1, include_str!("../../../tests/fixtures/home_campus/details_19.json")),
+-        (3374, 12, include_str!("../../../tests/fixtures/home_campus/details_3374.json")),
++        (
++            19,
++            1,
++            include_str!("../../../tests/fixtures/home_campus/details_19.json"),
++        ),
++        (
++            3374,
++            12,
++            include_str!("../../../tests/fixtures/home_campus/details_3374.json"),
++        ),
+     ] {
+         let url = format!("https://www.cifsshome.org/widget/get-school-details/{id}/details");
+         let headers = vec![
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/net/execute/source_header_tests.rs:57:
+             ("x-requested-with".into(), "XMLHttpRequest".into()),
+-            ("referer".into(), format!("https://www.cifsshome.org/widget/school/directory?section={section}")),
++            (
++                "referer".into(),
++                format!("https://www.cifsshome.org/widget/school/directory?section={section}"),
++            ),
+         ];
+         let captured = replay(&url, headers, body)?;
+         let details = crate::home_campus::parse::parse_school_details(&captured)
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/net/execute/source_header_tests.rs:69:
+ fn nh_bearer_representation_replays_recorded_children_without_storing_credential() -> TestResult {
+     let url = "https://services.arbitersports.com/api/v2/organization/public/2132/children?&pageSize=200&pageNumber=1";
+     let body = include_str!("../../../tests/fixtures/arbiter/nh_children_p1.body");
+-    let captured = replay(url, vec![("Authorization".into(), "Bearer recorded-test-credential".into())], body)?;
++    let captured = replay(
++        url,
++        vec![(
++            "Authorization".into(),
++            "Bearer recorded-test-credential".into(),
++        )],
++        body,
++    )?;
+     let page = crate::arbiter::parse::parse_org_schools(&captured, url)?;
+     check!(eq; page.rows.len(), 89);
+     Ok(())
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/net/execute/source_header_tests.rs:76:
+ }
+ 
+-fn replay(url: &str, headers: Vec<(String, String)>, body: &str) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
++fn replay(
++    url: &str,
++    headers: Vec<(String, String)>,
++    body: &str,
++) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+     use crate::net::cache::{content_digest, write_cache, CacheMeta};
+-    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+-        let root = tempfile::tempdir()?;
+-        let fetcher = Fetcher::new(root.path().join("http"), None, Duration::from_millis(1), HashMap::new(), Vec::new())?.with_offline(true);
+-        let representation = super::representation::canonical_request(url, &headers)?;
+-        let key = Fetcher::key_for("GET", url, &representation.identity());
+-        let (body_path, meta_path) = fetcher.cache_paths(&key);
+-        let meta = CacheMeta {
+-            url: url.into(),
+-            method: "GET".into(),
+-            status: 200,
+-            representation,
+-            content_digest: content_digest(body.as_bytes()),
+-            bytes: body.len(),
+-            fetched_at: "2026-10-09T00:00:00Z".into(),
+-            ..CacheMeta::default()
+-        };
+-        write_cache(&body_path, &meta_path, body.as_bytes(), &meta)?;
+-        let journal = std::fs::read_to_string(&meta_path)?;
+-        check!(!journal.contains("recorded-test-credential"));
+-        let captured = fetcher.get(url, &FetchOptions { headers, ..FetchOptions::default() }).await?;
+-        check!(captured.from_cache);
+-        check!(eq; captured.body, body.as_bytes());
+-        check!(eq; fetcher.stats().await.physical_requests(), 0);
+-        Ok(String::from_utf8(captured.body)?)
+-    })
++    tokio::runtime::Builder::new_current_thread()
++        .enable_all()
++        .build()?
++        .block_on(async {
++            let root = tempfile::tempdir()?;
++            let fetcher = Fetcher::new(
++                root.path().join("http"),
++                None,
++                Duration::from_millis(1),
++                HashMap::new(),
++                Vec::new(),
++            )?
++            .with_offline(true);
++            let representation = super::representation::canonical_request(url, &headers)?;
++            let key = Fetcher::key_for("GET", url, &representation.identity());
++            let (body_path, meta_path) = fetcher.cache_paths(&key);
++            let meta = CacheMeta {
++                url: url.into(),
++                method: "GET".into(),
++                status: 200,
++                representation,
++                content_digest: content_digest(body.as_bytes()),
++                bytes: body.len(),
++                fetched_at: "2026-10-09T00:00:00Z".into(),
++                ..CacheMeta::default()
++            };
++            write_cache(&body_path, &meta_path, body.as_bytes(), &meta)?;
++            let journal = std::fs::read_to_string(&meta_path)?;
++            check!(!journal.contains("recorded-test-credential"));
++            let captured = fetcher
++                .get(
++                    url,
++                    &FetchOptions {
++                        headers,
++                        ..FetchOptions::default()
++                    },
++                )
++                .await?;
++            check!(captured.from_cache);
++            check!(eq; captured.body, body.as_bytes());
++            check!(eq; fetcher.stats().await.physical_requests(), 0);
++            Ok(String::from_utf8(captured.body)?)
++        })
+ }
+ 
+ #[test]
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/net/execute/source_header_tests.rs:113:
+         "https://services.arbitersports.com:9443/api/v2/organization/public/2132/children",
+         "https://www.cifsshome.org/widget/get-school-details/3374/details",
+     ] {
+-        let headers = vec![("Authorization".into(), "Bearer recorded-test-credential".into())];
++        let headers = vec![(
++            "Authorization".into(),
++            "Bearer recorded-test-credential".into(),
++        )];
+         let refused = super::representation::canonical_request(url, &headers);
+-        check!(matches!(refused, Err(FetchError::Policy { .. })), "{url}: {refused:?}");
+-        check!(matches!(crate::net::RepresentationHeaders::canonical(&headers), Err(FetchError::Policy { .. })));
++        check!(
++            matches!(refused, Err(FetchError::Policy { .. })),
++            "{url}: {refused:?}"
++        );
++        check!(matches!(
++            crate::net::RepresentationHeaders::canonical(&headers),
++            Err(FetchError::Policy { .. })
++        ));
+     }
+     let headers = vec![
+         ("x-requested-with".into(), "XMLHttpRequest".into()),
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/net/execute/source_header_tests.rs:123:
+-        ("referer".into(), "https://foreign.example/widget/school/directory".into()),
++        (
++            "referer".into(),
++            "https://foreign.example/widget/school/directory".into(),
++        ),
+     ];
+-    check!(matches!(super::representation::canonical_request("https://www.cifsshome.org/widget/get-school-details/3374/details", &headers), Err(FetchError::Policy { .. })));
++    check!(matches!(
++        super::representation::canonical_request(
++            "https://www.cifsshome.org/widget/get-school-details/3374/details",
++            &headers
++        ),
++        Err(FetchError::Policy { .. })
++    ));
+     Ok(())
+ }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/net/representation/source_policy.rs:32:
+         {
+             name == "authorization"
+                 && value.strip_prefix("Bearer ").is_some_and(|token| {
+-                    !token.is_empty()
+-                        && token.bytes().all(|byte| byte.is_ascii_graphic())
++                    !token.is_empty() && token.bytes().all(|byte| byte.is_ascii_graphic())
+                 })
+         }
+         _ => false,
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/net/representation.rs:2:
+ 
+ use super::FetchError;
+ 
++mod source_policy;
+ #[cfg(test)]
+ mod tests;
+-mod source_policy;
+ 
+ pub const MAX_REPRESENTATION_HEADERS: usize = 8;
+ pub const MAX_REPRESENTATION_NAME_BYTES: usize = 64;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/net/representation.rs:49:
+         Self::canonical_for(None, source)
+     }
+ 
+-    pub(crate) fn for_request(
+-        url: &str,
+-        source: &[(String, String)],
+-    ) -> Result<Self, FetchError> {
++    pub(crate) fn for_request(url: &str, source: &[(String, String)]) -> Result<Self, FetchError> {
+         Self::canonical_for(Some(url), source)
+     }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/net/representation.rs:59:
+-    fn canonical_for(
+-        url: Option<&str>,
+-        source: &[(String, String)],
+-    ) -> Result<Self, FetchError> {
++    fn canonical_for(url: Option<&str>, source: &[(String, String)]) -> Result<Self, FetchError> {
+         if source.len() > MAX_REPRESENTATION_HEADERS {
+             return Err(FetchError::Policy {
+                 detail: format!(
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/recording/spool.rs:12:
+ 
+ impl std::fmt::Debug for Spool {
+     fn fmt(&self, output: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+-        output.debug_struct("Spool").field("identity", &self.identity).finish()
++        output
++            .debug_struct("Spool")
++            .field("identity", &self.identity)
++            .finish()
+     }
+ }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/recording/spool.rs:30:
+         rows: &[RecordedBatch],
+         journal: &[RecordedJournal],
+     ) -> CrawlResult<()> {
+-        let incoming = rows.iter().try_fold(0usize, |count, batch| budget::add(count, batch.len()))?;
++        let incoming = rows
++            .iter()
++            .try_fold(0usize, |count, batch| budget::add(count, batch.len()))?;
+         if incoming > MAX_OBSERVATION_BATCH_ROWS {
+-            return Err(budget::resource("meet fragment atomic rows", incoming, MAX_OBSERVATION_BATCH_ROWS));
++            return Err(budget::resource(
++                "meet fragment atomic rows",
++                incoming,
++                MAX_OBSERVATION_BATCH_ROWS,
++            ));
+         }
+-        let held = state.recorded.rows.iter().try_fold(0usize, |count, batch| budget::add(count, batch.len()))?;
++        let held = state
++            .recorded
++            .rows
++            .iter()
++            .try_fold(0usize, |count, batch| budget::add(count, batch.len()))?;
+         let combined = Combined {
+             rows: state.recorded.rows.iter().chain(rows).collect(),
+             journal: state.recorded.journal.iter().chain(journal).collect(),
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/recording/spool.rs:45:
+         {
+             self.flush(state)?;
+         }
+-        let unit = Combined { rows: rows.iter().collect(), journal: journal.iter().collect(), effects: &[] };
++        let unit = Combined {
++            rows: rows.iter().collect(),
++            journal: journal.iter().collect(),
++            effects: &[],
++        };
+         ObservationBudget::request_bytes(&unit)?;
+         Ok(())
+     }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/recording/spool.rs:57:
+         ObservationBudget::request_bytes(&state.recorded)?;
+         let key = fragment_key(&self.identity, state.fragments);
+         if let Some(previous) = self.store.journal_payload(FRAGMENT_PHASE, &key)? {
+-            let previous: Recorded = serde_json::from_value(previous).map_err(|source| CrawlError::Decode {
+-                url: key.clone(), source,
+-            })?;
++            let previous: Recorded =
++                serde_json::from_value(previous).map_err(|source| CrawlError::Decode {
++                    url: key.clone(),
++                    source,
++                })?;
+             if previous != state.recorded {
+-                return Err(CrawlError::Invariant { detail: format!("meet fragment identity changed: {key}") });
++                return Err(CrawlError::Invariant {
++                    detail: format!("meet fragment identity changed: {key}"),
++                });
+             }
+         } else {
+-            self.store.journal_done(FRAGMENT_PHASE, &key, &state.recorded)?;
++            self.store
++                .journal_done(FRAGMENT_PHASE, &key, &state.recorded)?;
+         }
+         state.fragments = budget::add(state.fragments, 1)?;
+         state.recorded = Recorded::default();
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/recording.rs:87:
+ 
+     pub fn finish_fragments(&self) -> crate::CrawlResult<usize> {
+         let mut state = self.state();
+-        let spool = self.spool.as_ref().ok_or_else(|| crate::CrawlError::Invariant {
+-            detail: "recording has no durable fragment spool".into(),
+-        })?;
++        let spool = self
++            .spool
++            .as_ref()
++            .ok_or_else(|| crate::CrawlError::Invariant {
++                detail: "recording has no durable fragment spool".into(),
++            })?;
+         spool.flush(&mut state)?;
+         Ok(state.fragments)
+     }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/wayzata/walk/fragment.rs:18:
+             let body = validate_page(&fetched, &url)?;
+             let rows = super::super::parse::rows(body, *year)?;
+             if offset >= rows.len() {
+-                offset = offset.checked_sub(rows.len()).ok_or_else(|| budget::arithmetic("Wayzata fragment cursor"))?;
++                offset = offset
++                    .checked_sub(rows.len())
++                    .ok_or_else(|| budget::arithmetic("Wayzata fragment cursor"))?;
+                 continue;
+             }
+-            let row = rows.get(offset).ok_or_else(|| budget::arithmetic("Wayzata fragment row"))?;
+-            let page = Page { fetched: &fetched, sport, year: *year };
+-            let row_ordinal = offset.checked_add(1).ok_or_else(|| budget::arithmetic("Wayzata fragment ordinal"))?;
++            let row = rows
++                .get(offset)
++                .ok_or_else(|| budget::arithmetic("Wayzata fragment row"))?;
++            let page = Page {
++                fetched: &fetched,
++                sport,
++                year: *year,
++            };
++            let row_ordinal = offset
++                .checked_add(1)
++                .ok_or_else(|| budget::arithmetic("Wayzata fragment ordinal"))?;
+             walk.pages = 1;
+             match walk.apply_row(ctx, options, &page, row_ordinal, row).await {
+                 Ok(Some(meet)) if walk.lane.dispatch() => {
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/wiaa_results/run/fragment.rs:1:
++use super::super::{archive_artifacts, stats_of, ArchiveArtifact, Options, ARCHIVES};
+ use super::{append_entities, consolidated_schools, finish_report, process_artifact, ArtifactRun};
+ use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
+-use super::super::{archive_artifacts, stats_of, ArchiveArtifact, Options, ARCHIVES};
+ use census_domain::model::Sport;
+ use std::collections::HashSet;
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/wiaa_results/run/fragment.rs:42:
+         let fetched = ctx.fetcher.get(url, &ctx.fetch_options()).await?;
+         let artifacts = archive_artifacts(&fetched.text())?;
+         if artifacts.is_empty() {
+-            report.unfinished.push(format!("{url}: no recognized result artifact catalogue"));
++            report
++                .unfinished
++                .push(format!("{url}: no recognized result artifact catalogue"));
+         }
+         for artifact in artifacts {
+             if (!options.seasons.is_empty() && !options.seasons.contains(&artifact.year))
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/wiaa_results/run.rs:5:
+ use census_store::Table;
+ use std::collections::{HashMap, HashSet};
+ 
++mod fragment;
+ #[path = "run_artifacts.rs"]
+ mod run_artifacts;
+ #[path = "run_receipts.rs"]
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/wiaa_results/run.rs:11:
+ mod run_receipts;
+ #[path = "run_report.rs"]
+ mod run_report;
+-mod fragment;
+ pub use fragment::collect_fragment;
+ 
+ use run_artifacts::process_artifact;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/src/wiaa_results/run.rs:205:
+ }
+ 
+ fn count_add(left: usize, right: usize) -> CrawlResult<usize> {
+-    left.checked_add(right).ok_or_else(|| CrawlError::Arithmetic {
+-        detail: "WIAA fragment count overflow".into(),
+-    })
++    left.checked_add(right)
++        .ok_or_else(|| CrawlError::Arithmetic {
++            detail: "WIAA fragment count overflow".into(),
++        })
+ }
+ 
+ fn append_entities(
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/tests/teams_source_errors.rs:71:
+ fn ct_recorded_directory_keeps_every_named_school_table() -> TestResult {
+     let html = match std::env::var("CENSUS_CIAC_REPLAY") {
+         Ok(path) => std::fs::read_to_string(path)?,
+-        Err(std::env::VarError::NotPresent) => include_str!("fixtures/ciac/directory.html").to_string(),
++        Err(std::env::VarError::NotPresent) => {
++            include_str!("fixtures/ciac/directory.html").to_string()
++        }
+         Err(error) => return Err(error.into()),
+     };
+     let published = html.matches("<table class='DirectoryStaffTable'>").count();
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/tests/teams_source_errors.rs:78:
+     check!(published > 0, "a replay must publish school tables");
+     let parsed = census_crawl::ciac::parse_directory(&html);
+     check!(eq; parsed.len(), published);
+-    let empty: Vec<_> = parsed.iter().filter(|(_, table)| table.rows.is_empty()).map(|(name, _)| name.as_str()).collect();
+-    eprintln!("published={published}; retained={}; no published named sport staff={empty:?}", parsed.len());
++    let empty: Vec<_> = parsed
++        .iter()
++        .filter(|(_, table)| table.rows.is_empty())
++        .map(|(name, _)| name.as_str())
++        .collect();
++    eprintln!(
++        "published={published}; retained={}; no published named sport staff={empty:?}",
++        parsed.len()
++    );
+     Ok(())
+ }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/tests/teams_source_refusals/fixture.rs:16:
+     pub(super) fn new() -> TestResult<Self> {
+         let root = tempfile::tempdir()?;
+         let store = Store::open(root.path().join("store"))?;
+-        let fetcher = Fetcher::new(root.path().join("http"), None, Duration::from_millis(1), HashMap::new(), Vec::new())?.with_offline(true);
+-        Ok(Self { _root: root, store, fetcher })
++        let fetcher = Fetcher::new(
++            root.path().join("http"),
++            None,
++            Duration::from_millis(1),
++            HashMap::new(),
++            Vec::new(),
++        )?
++        .with_offline(true);
++        Ok(Self {
++            _root: root,
++            store,
++            fetcher,
++        })
+     }
+ 
+     pub(super) fn context(&self) -> TestResult<AdapterContext<'_>> {
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/tests/teams_source_refusals/fixture.rs:38:
+         hasher.update([0x1f]);
+         hasher.update(url.as_bytes());
+         hasher.update([0x1f]);
+-        let key: String = hasher.finalize().iter().take(16).map(|byte| format!("{byte:02x}")).collect();
++        let key: String = hasher
++            .finalize()
++            .iter()
++            .take(16)
++            .map(|byte| format!("{byte:02x}"))
++            .collect();
+         let cache = self.fetcher.cache_dir();
+         std::fs::write(cache.join(format!("{key}.body")), body)?;
+-        std::fs::write(cache.join(format!("{key}.meta.json")), serde_json::to_vec(&serde_json::json!({
+-            "url": url, "method": "GET", "status": 200,
+-            "content_digest": format!("{:x}", Sha256::digest(body.as_bytes())),
+-            "bytes": body.len(), "fetched_at": "2026-10-09T00:00:00Z",
+-        }))?)?;
++        std::fs::write(
++            cache.join(format!("{key}.meta.json")),
++            serde_json::to_vec(&serde_json::json!({
++                "url": url, "method": "GET", "status": 200,
++                "content_digest": format!("{:x}", Sha256::digest(body.as_bytes())),
++                "bytes": body.len(), "fetched_at": "2026-10-09T00:00:00Z",
++            }))?,
++        )?;
+         Ok(())
+     }
+ }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/tests/teams_source_refusals.rs:10:
+ #[tokio::test]
+ async fn az_capped_city_queries_refuse_full_inventory_without_live_fetch() -> TestResult {
+     let fixture = Fixture::new()?;
+-    fixture.seed("https://aiaonline.org/schools/search.json?q=chandler", include_str!("fixtures/aia/search_chandler.json"))?;
++    fixture.seed(
++        "https://aiaonline.org/schools/search.json?q=chandler",
++        include_str!("fixtures/aia/search_chandler.json"),
++    )?;
+     for (id, body) in [
+         (68, include_str!("fixtures/aia/school_68_seton.html")),
+         (100, include_str!("fixtures/aia/school_100_chandler.html")),
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/tests/teams_source_refusals.rs:21:
+     let report = aia::collect(&fixture.context()?, &aia::Options::default()).await?;
+     check!(eq; report.disposition, CollectionDisposition::Blocked);
+     check!(eq; report.rejections, 1);
+-    check!(report.notes.iter().any(|note| note.contains("capped") && note.contains("full inventory")));
++    check!(report
++        .notes
++        .iter()
++        .any(|note| note.contains("capped") && note.contains("full inventory")));
+     check!(!report.unfinished.is_empty());
+     check!(eq; fixture.fetcher.stats().await.physical_requests(), 0);
+     Ok(())
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/tests/teams_source_refusals.rs:30:
+ #[tokio::test]
+ async fn ks_letter_a_capture_is_not_certified_as_full_inventory() -> TestResult {
+     let fixture = Fixture::new()?;
+-    fixture.seed("https://kshsaa-api.kshsaa.org/directory/search/name/a/", include_str!("fixtures/ks/kshsaa_directory_a.json"))?;
++    fixture.seed(
++        "https://kshsaa-api.kshsaa.org/directory/search/name/a/",
++        include_str!("fixtures/ks/kshsaa_directory_a.json"),
++    )?;
+     let report = ks::collect(&fixture.context()?, &ks::Options::default()).await?;
+     check!(eq; report.disposition, CollectionDisposition::Blocked);
+     check!(eq; report.rejections, 1);
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/tests/teams_source_refusals.rs:37:
+-    check!(report.notes.iter().any(|note| note.contains("letter a") && note.contains("full inventory")));
++    check!(report
++        .notes
++        .iter()
++        .any(|note| note.contains("letter a") && note.contains("full inventory")));
+     check!(!report.unfinished.is_empty());
+     check!(eq; fixture.fetcher.stats().await.physical_requests(), 0);
+     Ok(())
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/tests/teams_source_refusals.rs:47:
+     check!(eq; report.disposition, CollectionDisposition::Blocked);
+     check!(eq; report.rows, 0);
+     check!(eq; report.rejections, 1);
+-    check!(report.notes.iter().any(|note| note.contains("association-owned") && note.contains("frontier")));
++    check!(report
++        .notes
++        .iter()
++        .any(|note| note.contains("association-owned") && note.contains("frontier")));
+     check!(!report.unfinished.is_empty());
+     check!(eq; fixture.fetcher.stats().await.physical_requests(), 0);
+     Ok(())
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl/tests/teams_source_refusals.rs:59:
+     let directory = include_str!("fixtures/uhsaa/directory.html");
+     fixture.seed("https://uhsaa.org/school-directory-new/", directory)?;
+     let links = uhsaa::parse::parse_directory_links(directory);
+-    let alta = links.iter().find(|link| link.name == "Alta Hawks").ok_or("recorded Alta link")?;
+-    let path = alta.url.strip_prefix("../").ok_or("relative Alta profile link")?;
+-    fixture.seed(&format!("https://uhsaa.org/{path}"), include_str!("fixtures/uhsaa/profile-alta.html"))?;
+-    let report = uhsaa::collect(&fixture.context()?, &uhsaa::Options {
+-        school_names: vec!["Alta Hawks".into()],
+-        ..uhsaa::Options::default()
+-    }).await?;
++    let alta = links
++        .iter()
++        .find(|link| link.name == "Alta Hawks")
++        .ok_or("recorded Alta link")?;
++    let path = alta
++        .url
++        .strip_prefix("../")
++        .ok_or("relative Alta profile link")?;
++    fixture.seed(
++        &format!("https://uhsaa.org/{path}"),
++        include_str!("fixtures/uhsaa/profile-alta.html"),
++    )?;
++    let report = uhsaa::collect(
++        &fixture.context()?,
++        &uhsaa::Options {
++            school_names: vec!["Alta Hawks".into()],
++            ..uhsaa::Options::default()
++        },
++    )
++    .await?;
+     check!(eq; report.disposition, CollectionDisposition::Blocked);
+     check!(report.rows > 0);
+-    check!(report.notes.iter().any(|note| note.contains("appointment season is not published")));
++    check!(report
++        .notes
++        .iter()
++        .any(|note| note.contains("appointment season is not published")));
+     check!(!report.unfinished.is_empty());
+     check!(eq; fixture.fetcher.stats().await.physical_requests(), 0);
+     Ok(())
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/athlete_cluster_findings_tests/groups.rs:51:
+             .or_insert_with(Vec::new)
+             .push(row);
+     }
+-    Ok(grouped.into_values().filter(|rows| rows.len() > 1).collect())
++    Ok(grouped
++        .into_values()
++        .filter(|rows| rows.len() > 1)
++        .collect())
+ }
+ 
+ fn disposition(rows: &[&CanonicalAthlete]) -> TestResult<(bool, bool, bool)> {
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/athlete_cluster_findings_tests/groups.rs:79:
+ }
+ 
+ fn counts(groups: &[Vec<&CanonicalAthlete>]) -> TestResult<Counts> {
+-    let (mut rows, mut disjoint, mut contradictory, mut admissible) = (0usize, 0usize, 0usize, 0usize);
++    let (mut rows, mut disjoint, mut contradictory, mut admissible) =
++        (0usize, 0usize, 0usize, 0usize);
+     for group in groups {
+         let (separate, conflict, merge) = disposition(group)?;
+-        rows = rows.checked_add(group.len()).ok_or("source count overflow")?;
+-        disjoint = disjoint.checked_add(usize::from(separate)).ok_or("disjoint count overflow")?;
+-        contradictory = contradictory.checked_add(usize::from(conflict)).ok_or("contradictory count overflow")?;
+-        admissible = admissible.checked_add(usize::from(merge)).ok_or("admissible count overflow")?;
++        rows = rows
++            .checked_add(group.len())
++            .ok_or("source count overflow")?;
++        disjoint = disjoint
++            .checked_add(usize::from(separate))
++            .ok_or("disjoint count overflow")?;
++        contradictory = contradictory
++            .checked_add(usize::from(conflict))
++            .ok_or("contradictory count overflow")?;
++        admissible = admissible
++            .checked_add(usize::from(merge))
++            .ok_or("admissible count overflow")?;
+     }
+     Ok((groups.len(), rows, disjoint, contradictory, admissible))
+ }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/athlete_cluster_findings_tests.rs:2:
+ 
+ use census_domain::model::{
+     AppliedAthleteIdentity, CanonicalAthlete, CanonicalSchool, IdentityApplication,
+-    IdentityProjectionBuilder, IdentityStatus, ReviewCase, ReviewState, ReviewVerdictRecord, SchoolId,
++    IdentityProjectionBuilder, IdentityStatus, ReviewCase, ReviewState, ReviewVerdictRecord,
++    SchoolId,
+ };
+ use census_domain::UsJurisdiction;
+ use census_store::{Store, Table};
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/lib.rs:72:
+         return Ok(ReviewReport::default());
+     }
+     let checkpoints = stream::try_unfold(
+-        (None::<String>, 0_usize, ReviewReport::default(), review_intake::CorpusIndex::new(cache_snapshot)),
++        (
++            None::<String>,
++            0_usize,
++            ReviewReport::default(),
++            review_intake::CorpusIndex::new(cache_snapshot),
++        ),
+         |(after, index, mut report, mut corpus)| async move {
+             if report.requested >= options.limit {
+                 return Ok::<_, census_store::StoreError>(None);
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/review_intake.rs:31:
+         if actionable(&case, options) {
+             admit(&mut rows, &mut bytes, case, after)?;
+         }
+-        Ok(if rows.len() == CHECKPOINT_CASES { ControlFlow::Break(()) } else { ControlFlow::Continue(()) })
++        Ok(if rows.len() == CHECKPOINT_CASES {
++            ControlFlow::Break(())
++        } else {
++            ControlFlow::Continue(())
++        })
+     })?;
+     index.prepare()?;
+     for (id, conflict_id) in index.conflicts_after(after)? {
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/review_intake.rs:38:
+-        if rows.len() == CHECKPOINT_CASES && rows.last_key_value().is_some_and(|(last, _)| id >= last) {
++        if rows.len() == CHECKPOINT_CASES
++            && rows.last_key_value().is_some_and(|(last, _)| id >= last)
++        {
+             break;
+         }
+         let case = index.conflict_case(conflict_id)?;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/review_intake.rs:61:
+ 
+ fn finish(rows: BTreeMap<String, ReviewCase>, cursor: Option<String>) -> StoreResult<Intake> {
+     let mut budget = Budget::default();
+-    let cases = rows.into_values().map(|case| {
+-        budget.charge(&case)?;
+-        let family = ReviewFamily::from_label(&case.family)
+-            .ok_or_else(|| crate::consensus::invariant("selected review family disappeared"))?;
+-        Ok((case, family))
+-    }).collect::<StoreResult<_>>()?;
++    let cases = rows
++        .into_values()
++        .map(|case| {
++            budget.charge(&case)?;
++            let family = ReviewFamily::from_label(&case.family)
++                .ok_or_else(|| crate::consensus::invariant("selected review family disappeared"))?;
++            Ok((case, family))
++        })
++        .collect::<StoreResult<_>>()?;
+     Ok(Intake { cases, cursor })
+ }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/review_intake.rs:90:
+             return Ok(());
+         }
+         if let Some((_, removed)) = rows.pop_last() {
+-            *bytes = bytes.checked_sub(encoded_size(&removed)?)
++            *bytes = bytes
++                .checked_sub(encoded_size(&removed)?)
+                 .ok_or(census_store::StoreError::CounterOverflow)?;
+         }
+     }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/review_intake.rs:98:
+     let mut budget = Budget::default();
+     budget.add(*bytes)?;
+     budget.add(size)?;
+-    *bytes = bytes.checked_add(size).ok_or(census_store::StoreError::CounterOverflow)?;
++    *bytes = bytes
++        .checked_add(size)
++        .ok_or(census_store::StoreError::CounterOverflow)?;
+     rows.insert(case.id.clone(), case);
+     Ok(())
+ }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/review_intake_index.rs:1:
+ use census_domain::model::{RetainedConflict, ReviewCase};
+-use census_store::{StoreError, StoreResult, StoreSnapshot, Table, MAX_ID_BYTES, MAX_ROWS_PER_TABLE};
++use census_store::{
++    StoreError, StoreResult, StoreSnapshot, Table, MAX_ID_BYTES, MAX_ROWS_PER_TABLE,
++};
+ 
+ pub(crate) struct CorpusIndex<'a, 's> {
+     snapshot: &'a StoreSnapshot<'s>,
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/review_intake_index.rs:8:
+ 
+ impl<'a, 's> CorpusIndex<'a, 's> {
+     pub(crate) fn new(snapshot: &'a StoreSnapshot<'s>) -> Self {
+-        Self { snapshot, conflicts: None }
++        Self {
++            snapshot,
++            conflicts: None,
++        }
+     }
+ 
+     pub(super) fn prepare(&mut self) -> StoreResult<()> {
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/review_intake_index.rs:19:
+     }
+ 
+     pub(super) fn conflicts_after(&self, after: Option<&str>) -> StoreResult<&[(String, String)]> {
+-        let conflicts = self.conflicts.as_deref().ok_or_else(|| crate::consensus::invariant("conflict index disappeared"))?;
+-        let start = after.map_or(0, |after| conflicts.partition_point(|(id, _)| id.as_str() <= after));
++        let conflicts = self
++            .conflicts
++            .as_deref()
++            .ok_or_else(|| crate::consensus::invariant("conflict index disappeared"))?;
++        let start = after.map_or(0, |after| {
++            conflicts.partition_point(|(id, _)| id.as_str() <= after)
++        });
+         conflicts.get(start..).ok_or(StoreError::CounterOverflow)
+     }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/review_intake_index.rs:27:
+     pub(super) fn conflict_case(&self, id: &str) -> StoreResult<ReviewCase> {
+-        let conflict = self.snapshot.get_merged::<RetainedConflict>(Table::Conflicts, id)?
+-            .ok_or_else(|| crate::consensus::invariant("indexed conflict disappeared from captured snapshot"))?;
++        let conflict = self
++            .snapshot
++            .get_merged::<RetainedConflict>(Table::Conflicts, id)?
++            .ok_or_else(|| {
++                crate::consensus::invariant("indexed conflict disappeared from captured snapshot")
++            })?;
+         Ok(case(&conflict))
+     }
+ }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/review_intake_index.rs:33:
+ 
+ pub(super) fn case(conflict: &RetainedConflict) -> ReviewCase {
+-    ReviewCase::pending(&conflict.family, &conflict.subject_id, &conflict.subject, &conflict.detail)
++    ReviewCase::pending(
++        &conflict.family,
++        &conflict.subject_id,
++        &conflict.subject,
++        &conflict.detail,
++    )
+ }
+ 
+ fn read_conflicts(snapshot: &StoreSnapshot<'_>) -> StoreResult<Vec<(String, String)>> {
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/review_intake_index.rs:39:
+     let mut rows = Vec::new();
+     let mut bytes = 0_u64;
+     let key_bytes = u64::try_from(MAX_ID_BYTES).map_err(|_| StoreError::CounterOverflow)?;
+-    let max = key_bytes.checked_mul(2).and_then(|bytes| bytes.checked_add(128))
+-        .and_then(|bytes| bytes.checked_mul(MAX_ROWS_PER_TABLE)).ok_or(StoreError::CounterOverflow)?;
++    let max = key_bytes
++        .checked_mul(2)
++        .and_then(|bytes| bytes.checked_add(128))
++        .and_then(|bytes| bytes.checked_mul(MAX_ROWS_PER_TABLE))
++        .ok_or(StoreError::CounterOverflow)?;
+     snapshot.for_each_merged(Table::Conflicts, |conflict: RetainedConflict| {
+         #[cfg(test)]
+         super::tests::decoded()?;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/review_intake_index.rs:47:
+         let case = case(&conflict);
+-        let size = case.id.len().checked_add(conflict.id.len()).ok_or(StoreError::CounterOverflow)?;
+-        bytes = bytes.checked_add(u64::try_from(size).map_err(|_| StoreError::CounterOverflow)?).ok_or(StoreError::CounterOverflow)?;
++        let size = case
++            .id
++            .len()
++            .checked_add(conflict.id.len())
++            .ok_or(StoreError::CounterOverflow)?;
++        bytes = bytes
++            .checked_add(u64::try_from(size).map_err(|_| StoreError::CounterOverflow)?)
++            .ok_or(StoreError::CounterOverflow)?;
+         if bytes > max {
+-            return Err(crate::consensus::invariant("conflict index exceeds bounded key bytes"));
++            return Err(crate::consensus::invariant(
++                "conflict index exceeds bounded key bytes",
++            ));
+         }
+-        rows.try_reserve(1).map_err(|error| crate::consensus::invariant(format!("cannot reserve conflict index: {error}")))?;
++        rows.try_reserve(1).map_err(|error| {
++            crate::consensus::invariant(format!("cannot reserve conflict index: {error}"))
++        })?;
+         rows.push((case.id, conflict.id));
+         Ok(())
+     })?;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/review_intake_tests.rs:12:
+ 
+ pub(super) fn decoded() -> StoreResult<()> {
+     DECODES.with(|count| {
+-        count.set(count.get().checked_add(1).ok_or(StoreError::CounterOverflow)?);
++        count.set(
++            count
++                .get()
++                .checked_add(1)
++                .ok_or(StoreError::CounterOverflow)?,
++        );
+         Ok(())
+     })
+ }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/review_intake_tests.rs:23:
+         .enable_all()
+         .build()?
+         .block_on(async {
+-            let clients = [client("http://127.0.0.1:18081")?, client("http://127.0.0.1:18082")?];
++            let clients = [
++                client("http://127.0.0.1:18081")?,
++                client("http://127.0.0.1:18082")?,
++            ];
+             for size in [1_000, 10_000, 100_000] {
+                 let dir = tempfile::tempdir()?;
+                 let store = Store::open(dir.path())?;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/review_intake_tests.rs:30:
+-                let rows: Vec<_> = (0..size).map(|index| {
+-                    let mut row = ReviewCase::pending(ReviewFamily::SchoolJurisdiction.label(), format!("school-{index:06}"), "school", "missing state");
+-                    if index % 2 == 0 {
+-                        row.state = ReviewState::Resolved;
+-                    }
+-                    row
+-                }).collect();
++                let rows: Vec<_> = (0..size)
++                    .map(|index| {
++                        let mut row = ReviewCase::pending(
++                            ReviewFamily::SchoolJurisdiction.label(),
++                            format!("school-{index:06}"),
++                            "school",
++                            "missing state",
++                        );
++                        if index % 2 == 0 {
++                            row.state = ReviewState::Resolved;
++                        }
++                        row
++                    })
++                    .collect();
+                 for chunk in rows.chunks(256) {
+                     store.replace_many(Table::ReviewCases, chunk)?;
+                 }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/review_intake_tests.rs:40:
+                 for limit in [0, 25] {
+                     DECODES.with(|count| count.set(0));
+-                    let options = ReviewOptions { families: vec![ReviewFamily::SchoolJurisdiction], limit, dry_run: false };
+-                    crate::revocation::invalidate(&store, &options, [&clients[0], &clients[1]], "work-bound").await?;
++                    let options = ReviewOptions {
++                        families: vec![ReviewFamily::SchoolJurisdiction],
++                        limit,
++                        dry_run: false,
++                    };
++                    crate::revocation::invalidate(
++                        &store,
++                        &options,
++                        [&clients[0], &clients[1]],
++                        "work-bound",
++                    )
++                    .await?;
+                     let decodes = DECODES.with(Cell::get);
+                     eprintln!("corpus={size} limit={limit} case_or_subject_decodes={decodes}");
+                     check!(eq; decodes, 0, "inactive cases must not enter revocation selection");
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/review_intake_tests.rs:61:
+         .map(|id| RetainedConflict::new(family.label(), id, "school", "missing state"))
+         .collect();
+     store.replace_many(Table::Conflicts, &conflicts)?;
+-    let cases: Vec<_> = conflicts.iter().map(|conflict| {
+-        let mut case = ReviewCase::pending(&conflict.family, &conflict.subject_id, &conflict.subject, &conflict.detail);
+-        case.state = match case.subject_id.as_str() {
+-            "resolved" => ReviewState::Resolved,
+-            "superseded" => ReviewState::Superseded,
+-            _ => ReviewState::Retained,
+-        };
+-        case
+-    }).collect();
++    let cases: Vec<_> = conflicts
++        .iter()
++        .map(|conflict| {
++            let mut case = ReviewCase::pending(
++                &conflict.family,
++                &conflict.subject_id,
++                &conflict.subject,
++                &conflict.detail,
++            );
++            case.state = match case.subject_id.as_str() {
++                "resolved" => ReviewState::Resolved,
++                "superseded" => ReviewState::Superseded,
++                _ => ReviewState::Retained,
++            };
++            case
++        })
++        .collect();
+     store.replace_many(Table::ReviewCases, &cases)?;
+-    let foreign = ReviewCase::pending(ReviewFamily::MeetJurisdiction.label(), "venue", "meet", "missing state");
++    let foreign = ReviewCase::pending(
++        ReviewFamily::MeetJurisdiction.label(),
++        "venue",
++        "meet",
++        "missing state",
++    );
+     store.replace(Table::ReviewCases, &foreign)?;
+-    let options = ReviewOptions { families: vec![family], limit: 256, dry_run: true };
++    let options = ReviewOptions {
++        families: vec![family],
++        limit: 256,
++        dry_run: true,
++    };
+     let snapshot = store.snapshot();
+     let mut corpus = super::CorpusIndex::new(&snapshot);
+     let intake = super::next(&store, &mut corpus, &options, None)?;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/review_intake_tests.rs:80:
+-    let mut expected: Vec<_> = cases.into_iter().filter(|case| case.state == ReviewState::Retained).map(|case| (case, family)).collect();
++    let mut expected: Vec<_> = cases
++        .into_iter()
++        .filter(|case| case.state == ReviewState::Retained)
++        .map(|case| (case, family))
++        .collect();
+     expected.sort_by(|(left, _), (right, _)| left.id.cmp(&right.id));
+     let selected: Vec<_> = intake.cases.iter().map(|(case, _)| case).collect();
+     let expected_rows: Vec<_> = expected.iter().map(|(case, _)| case).collect();
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/review_intake_tests.rs:84:
+     let bytes = serde_json::to_vec(&selected)?;
+     check!(eq; bytes, serde_json::to_vec(&expected_rows)?);
+     check!(eq; census_domain::model::serialized_digest(&selected)?, "648c85d874bbdc2b0d4bedbc7638f6311c92edd977d95eb1b9b6b966d183a3ff");
+-    eprintln!("selection_fixture_digest={}", census_domain::model::serialized_digest(&selected)?);
++    eprintln!(
++        "selection_fixture_digest={}",
++        census_domain::model::serialized_digest(&selected)?
++    );
+     Ok(())
+ }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/review_intake_tests.rs:93:
+     let dir = tempfile::tempdir()?;
+     let store = Store::open(dir.path())?;
+     let family = ReviewFamily::SchoolJurisdiction;
+-    let cases: Vec<_> = (0..1_000).map(|index| ReviewCase::pending(family.label(), format!("school-{index:06}"), "school", "missing state")).collect();
++    let cases: Vec<_> = (0..1_000)
++        .map(|index| {
++            ReviewCase::pending(
++                family.label(),
++                format!("school-{index:06}"),
++                "school",
++                "missing state",
++            )
++        })
++        .collect();
+     for chunk in cases.chunks(256) {
+         store.replace_many(Table::ReviewCases, chunk)?;
+     }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/review_intake_tests.rs:100:
+-    store.replace(Table::Conflicts, &census_domain::model::RetainedConflict::new(family.label(), "zzz", "school", "missing state"))?;
++    store.replace(
++        Table::Conflicts,
++        &census_domain::model::RetainedConflict::new(
++            family.label(),
++            "zzz",
++            "school",
++            "missing state",
++        ),
++    )?;
+     let snapshot = store.snapshot();
+     let mut corpus = super::CorpusIndex::new(&snapshot);
+-    let options = ReviewOptions { families: vec![family], limit: 25, dry_run: false };
++    let options = ReviewOptions {
++        families: vec![family],
++        limit: 25,
++        dry_run: false,
++    };
+     let mut after = None;
+     let mut selected = Vec::new();
+     for expected_decodes in [513, 512] {
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/revocation.rs:69:
+ ) -> StoreResult<HashMap<String, ReviewVerdictRecord>> {
+     let mut standing = HashMap::new();
+     for (case, _) in chunk {
+-        if let Some(row) = snapshot.get_merged::<ReviewVerdictRecord>(Table::IdentityVerdicts, &case.id)? {
++        if let Some(row) =
++            snapshot.get_merged::<ReviewVerdictRecord>(Table::IdentityVerdicts, &case.id)?
++        {
+             if active_model_advice(&row) {
+                 budget.charge(&row)?;
+                 standing.insert(row.id.clone(), row);
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/revocation.rs:176:
+ ) -> StoreResult<()> {
+     let snapshot = store.snapshot();
+     let mut chunk = Vec::new();
+-    chunk.try_reserve_exact(crate::CHECKPOINT_CASES)
++    chunk
++        .try_reserve_exact(crate::CHECKPOINT_CASES)
+         .map_err(|error| invariant(format!("cannot reserve active advice checkpoint: {error}")))?;
+     let mut budget = Budget::default();
+     let mut checkpoint = 0_usize;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/revocation.rs:188:
+             return Ok(());
+         };
+         let Some(family) = ReviewFamily::from_label(&case.family)
+-            .filter(|family| options.families.contains(family)) else {
++            .filter(|family| options.families.contains(family))
++        else {
+             return Ok(());
+         };
+         if case.state == ReviewState::Superseded {
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/revocation.rs:198:
+         chunk.push((case, family));
+         if chunk.len() == crate::CHECKPOINT_CASES {
+             invalidate_chunk(store, &chunk, clients, observed_at, checkpoint)?;
+-            checkpoint = checkpoint.checked_add(1).ok_or(census_store::StoreError::CounterOverflow)?;
++            checkpoint = checkpoint
++                .checked_add(1)
++                .ok_or(census_store::StoreError::CounterOverflow)?;
+             chunk.clear();
+             budget = Budget::default();
+         }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review/src/revocation.rs:217:
+         return Ok(Some(case));
+     }
+     let conflict_id = format!("{}:{}", row.family, row.subject_id);
+-    let Some(conflict) = snapshot.get_merged::<RetainedConflict>(Table::Conflicts, &conflict_id)? else {
++    let Some(conflict) = snapshot.get_merged::<RetainedConflict>(Table::Conflicts, &conflict_id)?
++    else {
+         return Ok(None);
+     };
+-    let case = ReviewCase::pending(&conflict.family, &conflict.subject_id, &conflict.subject, &conflict.detail);
++    let case = ReviewCase::pending(
++        &conflict.family,
++        &conflict.subject_id,
++        &conflict.subject,
++        &conflict.detail,
++    );
+     Ok((case.id == row.id).then_some(case))
+ }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/ingest_post.rs:74:
+     pub chunk: census_store::ObservationChunk,
+ }
+ 
+-pub(super) fn admit_recorded(
+-    recorded: &Recorded,
+-) -> census_store::StoreResult<Vec<RecordedChunk>> {
++pub(super) fn admit_recorded(recorded: &Recorded) -> census_store::StoreResult<Vec<RecordedChunk>> {
+     census_store::ObservationBudget::admit(
+         recorded.rows.iter().flat_map(|batch| &batch.rows),
+         0,
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/ingest_post.rs:83:
+         0,
+     )?;
+-    let work = recorded.rows.len().checked_add(recorded.journal.len())
++    let work = recorded
++        .rows
++        .len()
++        .checked_add(recorded.journal.len())
+         .and_then(|work| work.checked_add(recorded.effects.len()))
+         .ok_or(census_store::StoreError::CounterOverflow)?;
+     if work > census_crawl::recording::MAX_RECORDED_WORK {
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/ingest_post.rs:97:
+     let mut manifest = Vec::new();
+     for (batch, rows) in recorded.rows.iter().enumerate() {
+         for chunk in census_store::ObservationBudget::chunks(&rows.rows)? {
+-            manifest.try_reserve(1).map_err(|_| census_store::StoreError::Refused {
+-                detail: "allocating bounded recorded ingest manifest".to_string(),
+-            })?;
++            manifest
++                .try_reserve(1)
++                .map_err(|_| census_store::StoreError::Refused {
++                    detail: "allocating bounded recorded ingest manifest".to_string(),
++                })?;
+             manifest.push(RecordedChunk { batch, chunk });
+         }
+     }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/ingest_post.rs:141:
+             }],
+             ..Recorded::default()
+         };
+-        assert!(matches!(admit_recorded(&recorded), Err(census_store::StoreError::RowTooLarge { max: 1_048_576, .. })));
++        assert!(matches!(
++            admit_recorded(&recorded),
++            Err(census_store::StoreError::RowTooLarge { max: 1_048_576, .. })
++        ));
+     }
+ 
+     #[test]
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/ingest_post.rs:149:
+         let row = serde_json::json!({"id":"s1", "payload":"x".repeat(524_288)});
+         let recorded = Recorded {
+             rows: vec![
+-                census_crawl::RecordedBatch { table: census_store::Table::Schools, rows: vec![row.clone(); 8] },
+-                census_crawl::RecordedBatch { table: census_store::Table::Meets, rows: vec![row; 8] },
++                census_crawl::RecordedBatch {
++                    table: census_store::Table::Schools,
++                    rows: vec![row.clone(); 8],
++                },
++                census_crawl::RecordedBatch {
++                    table: census_store::Table::Meets,
++                    rows: vec![row; 8],
++                },
+             ],
+             ..Recorded::default()
+         };
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/ingest_post.rs:157:
+-        assert!(matches!(admit_recorded(&recorded), Err(census_store::StoreError::BudgetExceeded { what: "observation batch bytes", available: 8_388_608, .. })));
++        assert!(matches!(
++            admit_recorded(&recorded),
++            Err(census_store::StoreError::BudgetExceeded {
++                what: "observation batch bytes",
++                available: 8_388_608,
++                ..
++            })
++        ));
+     }
+ 
+     #[test]
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/ingest_post.rs:161:
+-    fn recorded_manifests_reproduce_bounded_row_references_without_changing_payloads() -> Result<(), Box<dyn std::error::Error>> {
++    fn recorded_manifests_reproduce_bounded_row_references_without_changing_payloads(
++    ) -> Result<(), Box<dyn std::error::Error>> {
+         let recorded = Recorded {
+             rows: vec![
+-                census_crawl::RecordedBatch { table: census_store::Table::Schools, rows: vec![serde_json::json!({"id":"é\\n"})] },
+-                census_crawl::RecordedBatch { table: census_store::Table::Meets, rows: vec![serde_json::json!({"id":"m1"}), serde_json::json!({"id":"m2"})] },
++                census_crawl::RecordedBatch {
++                    table: census_store::Table::Schools,
++                    rows: vec![serde_json::json!({"id":"é\\n"})],
++                },
++                census_crawl::RecordedBatch {
++                    table: census_store::Table::Meets,
++                    rows: vec![
++                        serde_json::json!({"id":"m1"}),
++                        serde_json::json!({"id":"m2"}),
++                    ],
++                },
+             ],
+             ..Recorded::default()
+         };
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/ingest_post.rs:172:
+         assert_eq!(manifest.len(), 2);
+         for entry in manifest {
+             let batch = recorded.rows.get(entry.batch).ok_or("batch missing")?;
+-            let rows = batch.rows.get(entry.chunk.rows.clone()).ok_or("rows missing")?;
+-            let bytes: usize = rows.iter().map(serde_json::to_vec).collect::<Result<Vec<_>, _>>()?.iter().map(Vec::len).sum();
++            let rows = batch
++                .rows
++                .get(entry.chunk.rows.clone())
++                .ok_or("rows missing")?;
++            let bytes: usize = rows
++                .iter()
++                .map(serde_json::to_vec)
++                .collect::<Result<Vec<_>, _>>()?
++                .iter()
++                .map(Vec::len)
++                .sum();
+             assert_eq!(bytes, entry.chunk.encoded_bytes);
+             assert_eq!(entry.chunk.rows, 0..batch.rows.len());
+             assert!(bytes <= census_store::MAX_OBSERVATION_BATCH_BYTES);
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/ingest_post.rs:192:
+             }],
+             ..Recorded::default()
+         };
+-        assert!(matches!(admit_recorded(&recorded), Err(census_store::StoreError::BudgetExceeded { what: "observation request bytes", available: 8_388_608, .. })));
++        assert!(matches!(
++            admit_recorded(&recorded),
++            Err(census_store::StoreError::BudgetExceeded {
++                what: "observation request bytes",
++                available: 8_388_608,
++                ..
++            })
++        ));
+     }
+ }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/ledger.rs:1:
++use crate::restate_services::{
++    wire::{AthleticLiveObligation, JurisdictionRequest, StageOutcome},
++    JobError,
++};
+ use census_crawl::athleticlive::FrozenManifest;
+-use census_store::Store;
+-use crate::restate_services::{JobError, wire::{AthleticLiveObligation, JurisdictionRequest, StageOutcome}};
+ use census_reconcile::identity::WorkflowIdentity;
++use census_store::Store;
+ use serde::de::DeserializeOwned;
+ 
+ pub(super) const PHASE: &str = "athleticlive_manifest_obligation_v1";
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/ledger.rs:8:
+ 
+ pub(super) fn key(request: &JurisdictionRequest) -> String {
+-    format!("{}/athleticlive_manifest", WorkflowIdentity::jurisdiction(request.jurisdiction, request.season, request.revision).as_str())
++    format!(
++        "{}/athleticlive_manifest",
++        WorkflowIdentity::jurisdiction(request.jurisdiction, request.season, request.revision)
++            .as_str()
++    )
+ }
+ 
+ pub(in crate::restate_services::jurisdiction) fn applicable(request: &JurisdictionRequest) -> bool {
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/ledger.rs:14:
+-    census_crawl::applicability::table().iter().any(|row| row.slug == "athleticlive" && row.jurisdictions.contains(&request.jurisdiction))
++    census_crawl::applicability::table()
++        .iter()
++        .any(|row| row.slug == "athleticlive" && row.jurisdictions.contains(&request.jurisdiction))
+ }
+ 
+-pub(in crate::restate_services::jurisdiction) fn missing_reason(request: &JurisdictionRequest) -> String {
++pub(in crate::restate_services::jurisdiction) fn missing_reason(
++    request: &JurisdictionRequest,
++) -> String {
+     format!("{}: no qualified retained AthleticLIVE manifest is registered for this jurisdiction run; operator captures with physical producer metadata are required; no live discovery or invented objects", request.jurisdiction.code())
+ }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/ledger.rs:21:
+-pub(super) fn status(store: &Store, request: &JurisdictionRequest) -> Result<Option<AthleticLiveObligation>, JobError> {
++pub(super) fn status(
++    store: &Store,
++    request: &JurisdictionRequest,
++) -> Result<Option<AthleticLiveObligation>, JobError> {
+     read(store, &format!("{}/status", key(request)))
+ }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/ledger.rs:25:
+-pub(super) fn bind(store: &Store, request: &JurisdictionRequest) -> Result<Option<AthleticLiveObligation>, JobError> {
+-    if !applicable(request) { return Ok(None); }
+-    if let Some(status) = status(store, request)? { return Ok(Some(status)); }
+-    let status = AthleticLiveObligation::Refused { reason: missing_reason(request) };
++pub(super) fn bind(
++    store: &Store,
++    request: &JurisdictionRequest,
++) -> Result<Option<AthleticLiveObligation>, JobError> {
++    if !applicable(request) {
++        return Ok(None);
++    }
++    if let Some(status) = status(store, request)? {
++        return Ok(Some(status));
++    }
++    let status = AthleticLiveObligation::Refused {
++        reason: missing_reason(request),
++    };
+     store.journal_done(PHASE, &format!("{}/status", key(request)), &status)?;
+     Ok(Some(status))
+ }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/ledger.rs:32:
+ 
+-pub(super) fn register(store: &Store, request: &JurisdictionRequest, frozen: FrozenManifest) -> Result<AthleticLiveObligation, JobError> {
+-    if !applicable(request) { return Err(error("AthleticLIVE is not applicable to this jurisdiction")); }
++pub(super) fn register(
++    store: &Store,
++    request: &JurisdictionRequest,
++    frozen: FrozenManifest,
++) -> Result<AthleticLiveObligation, JobError> {
++    if !applicable(request) {
++        return Err(error("AthleticLIVE is not applicable to this jurisdiction"));
++    }
+     if !frozen.jurisdictions.contains(&request.jurisdiction) {
+         return refuse(store, request, format!("{}: retained AthleticLIVE manifest contains no published meet for this jurisdiction", request.jurisdiction.code()));
+     }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/ledger.rs:38:
+     if let Some(existing) = status(store, request)? {
+         if let Some(digest) = existing.digest() {
+-            if digest != frozen.digest { return Err(error("AthleticLIVE manifest digest changed within this logical obligation")); }
++            if digest != frozen.digest {
++                return Err(error(
++                    "AthleticLIVE manifest digest changed within this logical obligation",
++                ));
++            }
+             return Ok(existing);
+         }
+     }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/ledger.rs:44:
+-    let status = AthleticLiveObligation::Armed { digest: frozen.digest.clone() };
++    let status = AthleticLiveObligation::Armed {
++        digest: frozen.digest.clone(),
++    };
+     let mut batch = store.write_batch();
+-    batch.journal_done(PHASE, &format!("{}/manifest", key(request)), &(request.history, frozen))?;
++    batch.journal_done(
++        PHASE,
++        &format!("{}/manifest", key(request)),
++        &(request.history, frozen),
++    )?;
+     batch.journal_done(PHASE, &format!("{}/status", key(request)), &status)?;
+     batch.commit()?;
+     Ok(status)
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/ledger.rs:50:
+ }
+ 
+-pub(super) fn refuse(store: &Store, request: &JurisdictionRequest, reason: String) -> Result<AthleticLiveObligation, JobError> {
++pub(super) fn refuse(
++    store: &Store,
++    request: &JurisdictionRequest,
++    reason: String,
++) -> Result<AthleticLiveObligation, JobError> {
+     if status(store, request)?.is_some_and(|state| state.digest().is_some()) {
+-        return Err(error("registered AthleticLIVE manifest cannot be replaced by a refusal"));
++        return Err(error(
++            "registered AthleticLIVE manifest cannot be replaced by a refusal",
++        ));
+     }
+     let status = AthleticLiveObligation::Refused { reason };
+     store.journal_done(PHASE, &format!("{}/status", key(request)), &status)?;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/ledger.rs:58:
+     Ok(status)
+ }
+ 
+-pub(super) fn manifest(store: &Store, request: &JurisdictionRequest) -> Result<FrozenManifest, JobError> {
+-    let (window, manifest): (crate::restate_services::wire::HistoryWindow, FrozenManifest) = read(store, &format!("{}/manifest", key(request)))?.ok_or_else(|| error("armed AthleticLIVE manifest is absent"))?;
+-    if window != request.history { return Err(error("AthleticLIVE manifest history scope changed within logical obligation")); }
++pub(super) fn manifest(
++    store: &Store,
++    request: &JurisdictionRequest,
++) -> Result<FrozenManifest, JobError> {
++    let (window, manifest): (crate::restate_services::wire::HistoryWindow, FrozenManifest) =
++        read(store, &format!("{}/manifest", key(request)))?
++            .ok_or_else(|| error("armed AthleticLIVE manifest is absent"))?;
++    if window != request.history {
++        return Err(error(
++            "AthleticLIVE manifest history scope changed within logical obligation",
++        ));
++    }
+     Ok(manifest)
+ }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/ledger.rs:67:
+-pub(super) fn begin(store: &Store, request: &JurisdictionRequest) -> Result<Option<(String, u8)>, JobError> {
+-    let Some(status) = bind(store, request)? else { return Ok(None); };
+-    if status.is_terminal() { return Ok(None); }
++pub(super) fn begin(
++    store: &Store,
++    request: &JurisdictionRequest,
++) -> Result<Option<(String, u8)>, JobError> {
++    let Some(status) = bind(store, request)? else {
++        return Ok(None);
++    };
++    if status.is_terminal() {
++        return Ok(None);
++    }
+     let (digest, previous) = match status {
+         AthleticLiveObligation::Refused { .. } => return Ok(None),
+         AthleticLiveObligation::Armed { digest } => (digest, 0),
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/ledger.rs:73:
+         AthleticLiveObligation::Running { digest, attempt } => return Ok(Some((digest, attempt))),
+-        AthleticLiveObligation::Finished { digest, attempt, .. } => (digest, attempt),
++        AthleticLiveObligation::Finished {
++            digest, attempt, ..
++        } => (digest, attempt),
+     };
+-    let Some(attempt) = previous.checked_add(1).filter(|attempt| *attempt <= 3) else { return Ok(None); };
+-    let status = AthleticLiveObligation::Running { digest: digest.clone(), attempt };
++    let Some(attempt) = previous.checked_add(1).filter(|attempt| *attempt <= 3) else {
++        return Ok(None);
++    };
++    let status = AthleticLiveObligation::Running {
++        digest: digest.clone(),
++        attempt,
++    };
+     let mut batch = store.write_batch();
+-    batch.journal_done(PHASE, &format!("{}/attempt/{attempt}/begin", key(request)), &status)?;
++    batch.journal_done(
++        PHASE,
++        &format!("{}/attempt/{attempt}/begin", key(request)),
++        &status,
++    )?;
+     batch.journal_done(PHASE, &format!("{}/status", key(request)), &status)?;
+     batch.commit()?;
+     Ok(Some((digest, attempt)))
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/ledger.rs:83:
+ }
+ 
+-pub(super) fn finish(store: &Store, request: &JurisdictionRequest, reserved: (String, u8), outcome: StageOutcome) -> Result<AthleticLiveObligation, JobError> {
+-    let status = status(store, request)?.ok_or_else(|| error("AthleticLIVE completion has no reservation"))?;
+-    if let AthleticLiveObligation::Finished { digest, attempt, .. } = &status {
+-        if digest == &reserved.0 && attempt == &reserved.1 { return Ok(status); }
++pub(super) fn finish(
++    store: &Store,
++    request: &JurisdictionRequest,
++    reserved: (String, u8),
++    outcome: StageOutcome,
++) -> Result<AthleticLiveObligation, JobError> {
++    let status = status(store, request)?
++        .ok_or_else(|| error("AthleticLIVE completion has no reservation"))?;
++    if let AthleticLiveObligation::Finished {
++        digest, attempt, ..
++    } = &status
++    {
++        if digest == &reserved.0 && attempt == &reserved.1 {
++            return Ok(status);
++        }
+     }
+-    if !matches!(&status, AthleticLiveObligation::Running { digest, attempt } if digest == &reserved.0 && attempt == &reserved.1) {
+-        return Err(error("AthleticLIVE completion differs from reserved manifest/attempt"));
++    if !matches!(&status, AthleticLiveObligation::Running { digest, attempt } if digest == &reserved.0 && attempt == &reserved.1)
++    {
++        return Err(error(
++            "AthleticLIVE completion differs from reserved manifest/attempt",
++        ));
+     }
+-    let status = AthleticLiveObligation::Finished { digest: reserved.0, attempt: reserved.1, outcome };
++    let status = AthleticLiveObligation::Finished {
++        digest: reserved.0,
++        attempt: reserved.1,
++        outcome,
++    };
+     let mut batch = store.write_batch();
+-    batch.journal_done(PHASE, &format!("{}/attempt/{}/finish", key(request), reserved.1), &status)?;
++    batch.journal_done(
++        PHASE,
++        &format!("{}/attempt/{}/finish", key(request), reserved.1),
++        &status,
++    )?;
+     batch.journal_done(PHASE, &format!("{}/status", key(request)), &status)?;
+     batch.commit()?;
+     Ok(status)
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/ledger.rs:99:
+ }
+ 
+ fn read<T: DeserializeOwned>(store: &Store, key: &str) -> Result<Option<T>, JobError> {
+-    store.journal_payload(PHASE, key)?.map(|payload| serde_json::from_value(payload).map_err(|source| error(&format!("AthleticLIVE journal {key}: {source}")))).transpose()
++    store
++        .journal_payload(PHASE, key)?
++        .map(|payload| {
++            serde_json::from_value(payload)
++                .map_err(|source| error(&format!("AthleticLIVE journal {key}: {source}")))
++        })
++        .transpose()
+ }
+ 
+ pub(super) fn error(message: &str) -> JobError {
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/ledger.rs:106:
+-    JobError::Terminal { message: message.into() }
++    JobError::Terminal {
++        message: message.into(),
++    }
+ }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests/fixtures.rs:1:
+ use super::*;
+ 
+-pub(super) const XC: &str = include_str!("../../../../../../census-crawl/tests/fixtures/athleticlive_results/event-doc-2150205.json");
+-const MANIFEST: &str = include_str!("../../../../../../census-crawl/tests/fixtures/athleticlive/durable-ia-manifest.json");
++pub(super) const XC: &str = include_str!(
++    "../../../../../../census-crawl/tests/fixtures/athleticlive_results/event-doc-2150205.json"
++);
++const MANIFEST: &str = include_str!(
++    "../../../../../../census-crawl/tests/fixtures/athleticlive/durable-ia-manifest.json"
++);
+ 
+-pub(super) fn request(jurisdiction: UsJurisdiction) -> Result<JurisdictionRequest, Box<dyn std::error::Error>> {
++pub(super) fn request(
++    jurisdiction: UsJurisdiction,
++) -> Result<JurisdictionRequest, Box<dyn std::error::Error>> {
+     Ok(JurisdictionRequest {
+-        jurisdiction, season: SchoolYear::new(2026).ok_or("season")?, revision: Revision(1),
+-        history: HistoryWindow::cohort("2026-10-12")?, refresh: false, limit_per_state: None,
+-        concurrency: 1, observed_on: None, authorized_hosts: Vec::new(), source_parallelism: 1,
++        jurisdiction,
++        season: SchoolYear::new(2026).ok_or("season")?,
++        revision: Revision(1),
++        history: HistoryWindow::cohort("2026-10-12")?,
++        refresh: false,
++        limit_per_state: None,
++        concurrency: 1,
++        observed_on: None,
++        authorized_hosts: Vec::new(),
++        source_parallelism: 1,
+     })
+ }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests/fixtures.rs:14:
+ pub(super) fn manifest(source: &tempfile::TempDir) -> Result<String, Box<dyn std::error::Error>> {
+-    let path = source.path().join("event.json").to_string_lossy().into_owned();
++    let path = source
++        .path()
++        .join("event.json")
++        .to_string_lossy()
++        .into_owned();
+     std::fs::write(&path, XC)?;
+     let mut manifest: Value = serde_json::from_str(MANIFEST)?;
+     let entry = manifest.pointer_mut("/meets/0").ok_or("manifest meet")?;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests/fixtures.rs:19:
+-    let old_path = entry.pointer("/documents/0").and_then(Value::as_str).ok_or("manifest path")?.to_string();
+-    let metadata = entry["captures"].as_object_mut().ok_or("metadata")?.remove(&old_path).ok_or("physical producer metadata")?;
++    let old_path = entry
++        .pointer("/documents/0")
++        .and_then(Value::as_str)
++        .ok_or("manifest path")?
++        .to_string();
++    let metadata = entry["captures"]
++        .as_object_mut()
++        .ok_or("metadata")?
++        .remove(&old_path)
++        .ok_or("physical producer metadata")?;
+     entry["documents"] = json!([path]);
+     entry["captures"] = json!({path:metadata});
+     let input = source.path().join("manifest.json");
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests/fixtures.rs:26:
+ }
+ 
+ pub(super) fn seed_schools(store: &Store) -> TestResult {
+-    let document = census_crawl::athleticlive::parse_event_document(&census_crawl::athleticlive::event_doc_url(2_150_205), XC)?;
++    let document = census_crawl::athleticlive::parse_event_document(
++        &census_crawl::athleticlive::event_doc_url(2_150_205),
++        XC,
++    )?;
+     let mut names = std::collections::BTreeSet::new();
+     for row in document.rows {
+         let athlete = row.athlete.ok_or("fixture athlete")?;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests/fixtures.rs:34:
+         names.insert(team.school_name().ok_or("fixture school")?.to_string());
+     }
+     for name in names {
+-        let (school, _) = CanonicalSchool::new(UsJurisdiction::Iowa, &name, normalize_name(&name), None);
++        let (school, _) =
++            CanonicalSchool::new(UsJurisdiction::Iowa, &name, normalize_name(&name), None);
+         store.append(Table::Schools, &school)?;
+     }
+     Ok(())
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests/fixtures.rs:41:
+ }
+ 
+-pub(super) fn state(store: &Store, request: &JurisdictionRequest) -> Result<JurisdictionState, Box<dyn std::error::Error>> {
++pub(super) fn state(
++    store: &Store,
++    request: &JurisdictionRequest,
++) -> Result<JurisdictionState, Box<dyn std::error::Error>> {
+     Ok(JurisdictionState {
+-        identity: census_reconcile::identity::WorkflowIdentity::jurisdiction(request.jurisdiction, request.season, request.revision).as_str().into(),
++        identity: census_reconcile::identity::WorkflowIdentity::jurisdiction(
++            request.jurisdiction,
++            request.season,
++            request.revision,
++        )
++        .as_str()
++        .into(),
+         athleticlive: ledger::bind(store, request)?,
+-        plan: Some(SourcePlan::of(&crate::restate_services::plan::plan(request.jurisdiction, crate::restate_services::plan::BrowserLaneState::Absent), "fixture".into())),
++        plan: Some(SourcePlan::of(
++            &crate::restate_services::plan::plan(
++                request.jurisdiction,
++                crate::restate_services::plan::BrowserLaneState::Absent,
++            ),
++            "fixture".into(),
++        )),
+         ..JurisdictionState::default()
+     })
+ }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests.rs:1:
+ use super::*;
+ use crate::restate_services::wire::{HistoryWindow, SourcePlan};
+-use census_domain::{UsJurisdiction, model::{SchoolYear, CanonicalSchool, CanonicalMeet, CanonicalPerformance, normalize_name}};
++use census_domain::{
++    model::{normalize_name, CanonicalMeet, CanonicalPerformance, CanonicalSchool, SchoolYear},
++    UsJurisdiction,
++};
+ use census_reconcile::identity::Revision;
+ use census_store::Table;
+ use serde_json::{json, Value};
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests.rs:11:
+ type TestResult = Result<(), Box<dyn std::error::Error>>;
+ 
+ #[test]
+-fn athleticlive_all_twelve_missing_manifests_persist_exact_refusals_and_rebind_once() -> TestResult {
++fn athleticlive_all_twelve_missing_manifests_persist_exact_refusals_and_rebind_once() -> TestResult
++{
+     let root = tempfile::tempdir()?;
+-    let jurisdictions = census_crawl::applicability::table().iter().find(|row| row.slug == "athleticlive").ok_or("applicability")?.jurisdictions;
++    let jurisdictions = census_crawl::applicability::table()
++        .iter()
++        .find(|row| row.slug == "athleticlive")
++        .ok_or("applicability")?
++        .jurisdictions;
+     assert_eq!(jurisdictions.len(), 12);
+     {
+         let store = Store::open(root.path())?;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests.rs:22:
+             let first = ledger::bind(&store, &request)?.ok_or("obligation")?;
+             let again = ledger::bind(&store, &request)?.ok_or("rebind")?;
+             assert_eq!(serde_json::to_value(&first)?, serde_json::to_value(again)?);
+-            let AthleticLiveObligation::Refused { reason } = first else { return Err("missing manifest armed".into()); };
++            let AthleticLiveObligation::Refused { reason } = first else {
++                return Err("missing manifest armed".into());
++            };
+             assert_eq!(reason, format!("{}: no qualified retained AthleticLIVE manifest is registered for this jurisdiction run; operator captures with physical producer metadata are required; no live discovery or invented objects", jurisdiction.code()));
+             let state = state(&store, &request)?;
+             let (owed, reasons) = super::super::owed_work(&state, &request);
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests.rs:36:
+     for jurisdiction in jurisdictions {
+         let request = request(*jurisdiction)?;
+         let status = ledger::status(&store, &request)?.ok_or("persisted refusal")?;
+-        assert!(matches!(status, AthleticLiveObligation::Refused { reason } if reason == ledger::missing_reason(&request)));
++        assert!(
++            matches!(status, AthleticLiveObligation::Refused { reason } if reason == ledger::missing_reason(&request))
++        );
+     }
+     assert_eq!(store.journal_keys(ledger::PHASE)?.len(), 12);
+     assert!(ledger::bind(&store, &request(UsJurisdiction::California)?)?.is_none());
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests.rs:44:
+ }
+ 
+ #[test]
+-fn athleticlive_fixture_is_armed_archived_executed_and_reopened_without_duplicate_effects() -> TestResult {
++fn athleticlive_fixture_is_armed_archived_executed_and_reopened_without_duplicate_effects(
++) -> TestResult {
+     let root = tempfile::tempdir()?;
+     let source = tempfile::tempdir()?;
+     let request = request(UsJurisdiction::Iowa)?;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests.rs:56:
+         assert!(matches!(first, AthleticLiveObligation::Armed { .. }));
+         let retained = ledger::manifest(&store, &request)?;
+         let archived: Value = serde_json::from_str(&retained.body)?;
+-        let capture = archived.pointer("/meets/0/documents/0").and_then(Value::as_str).ok_or("frozen capture path")?;
++        let capture = archived
++            .pointer("/meets/0/documents/0")
++            .and_then(Value::as_str)
++            .ok_or("frozen capture path")?;
+         assert_eq!(std::fs::read(capture)?, XC.as_bytes());
+         let before = store.journal_keys(ledger::PHASE)?;
+         let rebound = register(&store, &request, &input, "2026-10-13")?;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests.rs:63:
+         assert_eq!(serde_json::to_value(first)?, serde_json::to_value(rebound)?);
+         assert_eq!(store.journal_keys(ledger::PHASE)?, before);
+-        assert_eq!(serde_json::to_value(ledger::manifest(&store, &request)?)?, serde_json::to_value(retained)?);
++        assert_eq!(
++            serde_json::to_value(ledger::manifest(&store, &request)?)?,
++            serde_json::to_value(retained)?
++        );
+         let state = state(&store, &request)?;
+-        assert!(super::super::owed_work(&state, &request).0.iter().any(|value| value == "athleticlive_manifest"));
++        assert!(super::super::owed_work(&state, &request)
++            .0
++            .iter()
++            .any(|value| value == "athleticlive_manifest"));
+         store.flush()?;
+     }
+     source.close()?;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests.rs:71:
+     {
+         let store = Store::open(root.path())?;
+         let result = execute(&store, &request, "2026-10-12")?.ok_or("executed obligation")?;
+-        let AthleticLiveObligation::Finished { attempt, outcome, .. } = result else { return Err("collector did not finish".into()); };
++        let AthleticLiveObligation::Finished {
++            attempt, outcome, ..
++        } = result
++        else {
++            return Err("collector did not finish".into());
++        };
+         assert_eq!(attempt, 1);
+         assert_eq!(outcome.records, 136);
+-        assert!(outcome.notes.iter().any(|note| note.contains("requests: 0 by construction")));
++        assert!(outcome
++            .notes
++            .iter()
++            .any(|note| note.contains("requests: 0 by construction")));
+         assert_eq!(store.scan::<CanonicalMeet>(Table::Meets)?.len(), 1);
+         let rows = store.scan::<CanonicalPerformance>(Table::Performances)?;
+         assert_eq!(rows.len(), 136);
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests.rs:81:
+-        assert!(rows.iter().all(|row| row.source_key.starts_with("athleticlive:2150205:")));
+-        assert_eq!(store.journal_keys("athleticlive_results_capture_v1")?.len(), 1);
+-        assert_eq!(store.journal_keys("athleticlive_results_effect_v2")?.len(), 1);
++        assert!(rows
++            .iter()
++            .all(|row| row.source_key.starts_with("athleticlive:2150205:")));
++        assert_eq!(
++            store.journal_keys("athleticlive_results_capture_v1")?.len(),
++            1
++        );
++        assert_eq!(
++            store.journal_keys("athleticlive_results_effect_v2")?.len(),
++            1
++        );
+         let before = store.journal_keys(ledger::PHASE)?;
+         let state = state(&store, &request)?;
+         let (_, reasons) = super::super::owed_work(&state, &request);
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests.rs:88:
+             assert!(reasons.iter().any(|reason| reason.contains("records=136")));
+         }
+         let _ = execute(&store, &request, "2026-10-13")?;
+-        assert_eq!(store.scan::<CanonicalPerformance>(Table::Performances)?.len(), 136);
+-        assert_eq!(store.journal_keys("athleticlive_results_effect_v2")?.len(), 1);
++        assert_eq!(
++            store
++                .scan::<CanonicalPerformance>(Table::Performances)?
++                .len(),
++            136
++        );
++        assert_eq!(
++            store.journal_keys("athleticlive_results_effect_v2")?.len(),
++            1
++        );
+         if state.athleticlive.as_ref().ok_or("progress")?.is_terminal() {
+             assert_eq!(store.journal_keys(ledger::PHASE)?, before);
+         }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests.rs:96:
+         store.flush()?;
+     }
+     let store = Store::open(root.path())?;
+-    assert_eq!(store.scan::<CanonicalPerformance>(Table::Performances)?.len(), 136);
+-    assert!(matches!(ledger::status(&store, &request)?, Some(AthleticLiveObligation::Finished { .. })));
++    assert_eq!(
++        store
++            .scan::<CanonicalPerformance>(Table::Performances)?
++            .len(),
++        136
++    );
++    assert!(matches!(
++        ledger::status(&store, &request)?,
++        Some(AthleticLiveObligation::Finished { .. })
++    ));
+     Ok(())
+ }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests.rs:110:
+     let request = request(UsJurisdiction::Iowa)?;
+     let input = manifest(&source)?;
+     let mut envelope: Value = serde_json::from_str(&std::fs::read_to_string(&input)?)?;
+-    let broken_path = source.path().join("malformed.json").to_string_lossy().into_owned();
++    let broken_path = source
++        .path()
++        .join("malformed.json")
++        .to_string_lossy()
++        .into_owned();
+     let broken = "{not JSON";
+     std::fs::write(&broken_path, broken)?;
+     let entry = envelope.pointer_mut("/meets/0").ok_or("entry")?;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests.rs:117:
+-    entry["documents"].as_array_mut().ok_or("documents")?.insert(0, json!(broken_path));
++    entry["documents"]
++        .as_array_mut()
++        .ok_or("documents")?
++        .insert(0, json!(broken_path));
+     entry["captures"][&broken_path] = json!({"url":"https://athleticlive.blob.core.windows.net/$web/ind_res_list/_doc/9999999", "method":"GET", "status":200, "content_digest":format!("{:x}", Sha256::digest(broken.as_bytes())), "bytes":broken.len(), "fetched_at":"2026-09-22T03:59:19Z"});
+     std::fs::write(&input, envelope.to_string())?;
+     register(&store, &request, &input, "2026-10-12")?;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests.rs:121:
+     let outcome = execute(&store, &request, "2026-10-12")?.ok_or("progress")?;
+     assert!(!outcome.is_terminal());
+-    let AthleticLiveObligation::Finished { outcome, .. } = outcome else { return Err("no finish receipt".into()); };
++    let AthleticLiveObligation::Finished { outcome, .. } = outcome else {
++        return Err("no finish receipt".into());
++    };
+     assert_eq!(outcome.records, 136);
+     assert!(!outcome.errors.is_empty());
+     assert_eq!(outcome.disposition, CollectionDisposition::Partial);
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests.rs:127:
+     assert!(!outcome.unfinished.is_empty());
+-    assert_eq!(store.scan::<CanonicalPerformance>(Table::Performances)?.len(), 136);
++    assert_eq!(
++        store
++            .scan::<CanonicalPerformance>(Table::Performances)?
++            .len(),
++        136
++    );
+     let state = state(&store, &request)?;
+     let (owed, reasons) = super::super::owed_work(&state, &request);
+     assert!(owed.iter().any(|stage| stage == "athleticlive_manifest"));
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests.rs:132:
+-    assert!(reasons.iter().any(|reason| reason.contains("records=136") && reason.contains("unfinished=")));
+-    assert_eq!(store.journal_keys("athleticlive_results_capture_v1")?.len(), 2);
++    assert!(reasons
++        .iter()
++        .any(|reason| reason.contains("records=136") && reason.contains("unfinished=")));
++    assert_eq!(
++        store.journal_keys("athleticlive_results_capture_v1")?.len(),
++        2
++    );
+     Ok(())
+ }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests.rs:140:
+     let state: JurisdictionState = serde_json::from_value(old)?;
+     assert!(state.athleticlive.is_none());
+     let mut state = state;
+-    state.athleticlive = Some(AthleticLiveObligation::Armed { digest:"d9a828d6ca14a531e93044b6f49ebcf84476e544c5d046cfc78c4a6521eb31e7".into() });
++    state.athleticlive = Some(AthleticLiveObligation::Armed {
++        digest: "d9a828d6ca14a531e93044b6f49ebcf84476e544c5d046cfc78c4a6521eb31e7".into(),
++    });
+     let encoded = serde_json::to_value(&state)?;
+     let decoded: JurisdictionState = serde_json::from_value(encoded.clone())?;
+     assert_eq!(serde_json::to_value(decoded)?, encoded);
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive/tests.rs:147:
+     #[derive(serde::Deserialize)]
+-    struct PreviousState { identity: String }
++    struct PreviousState {
++        identity: String,
++    }
+     let previous: PreviousState = serde_json::from_value(encoded)?;
+     assert_eq!(previous.identity, "historical");
+     Ok(())
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive.rs:1:
+ use super::JurisdictionCensus;
++use crate::restate_services::wire::{
++    AthleticLiveManifestRequest, AthleticLiveObligation, JurisdictionRequest, JurisdictionState,
++    StageOutcome,
++};
+ use crate::restate_services::{blocking, job_error, JobError};
+-use crate::restate_services::wire::{AthleticLiveManifestRequest, AthleticLiveObligation, JurisdictionRequest, JurisdictionState, StageOutcome};
+-use census_crawl::{AdapterContext, CollectionDisposition, net::Fetcher};
++use census_crawl::{net::Fetcher, AdapterContext, CollectionDisposition};
+ use census_store::Store;
+ use restate_sdk::prelude::*;
+ use std::sync::Arc;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive.rs:11:
+ mod tests;
+ 
+ impl JurisdictionCensus {
+-    pub(super) async fn bind_athleticlive(&self, ctx: &ObjectContext<'_>, request: &JurisdictionRequest, state: &mut JurisdictionState, today: &str) -> Result<(), HandlerError> {
++    pub(super) async fn bind_athleticlive(
++        &self,
++        ctx: &ObjectContext<'_>,
++        request: &JurisdictionRequest,
++        state: &mut JurisdictionState,
++        today: &str,
++    ) -> Result<(), HandlerError> {
+         let store = Arc::clone(&self.store);
+         let request = request.clone();
+-        state.athleticlive = blocking(self.region(), move || ledger::bind(&store, &request)).await.map_err(job_error)?;
++        state.athleticlive = blocking(self.region(), move || ledger::bind(&store, &request))
++            .await
++            .map_err(job_error)?;
+         bind_plan(state);
+         self.save(ctx, state, today);
+         Ok(())
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive.rs:21:
+     }
+ 
+-    pub(super) async fn register_athleticlive(&self, ctx: &ObjectContext<'_>, request: AthleticLiveManifestRequest) -> Result<AthleticLiveObligation, HandlerError> {
++    pub(super) async fn register_athleticlive(
++        &self,
++        ctx: &ObjectContext<'_>,
++        request: AthleticLiveManifestRequest,
++    ) -> Result<AthleticLiveObligation, HandlerError> {
+         self.require_bound_run(&request.jurisdiction)?;
+-        if ctx.key() != census_reconcile::identity::WorkflowIdentity::jurisdiction(request.jurisdiction.jurisdiction, request.jurisdiction.season, request.jurisdiction.revision).as_str() {
+-            return Err(TerminalError::new("AthleticLIVE manifest request does not match jurisdiction object key").into());
++        if ctx.key()
++            != census_reconcile::identity::WorkflowIdentity::jurisdiction(
++                request.jurisdiction.jurisdiction,
++                request.jurisdiction.season,
++                request.jurisdiction.revision,
++            )
++            .as_str()
++        {
++            return Err(TerminalError::new(
++                "AthleticLIVE manifest request does not match jurisdiction object key",
++            )
++            .into());
+         }
+         let store = Arc::clone(&self.store);
+         let scope = request.jurisdiction.clone();
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive.rs:30:
+         let input = request.input;
+         let today = crate::restate_services::journaled_today(ctx, &self.clock).await?;
+         let at = today.clone();
+-        let outcome = blocking(self.region(), move || register(&store, &scope, &input, &at)).await.map_err(job_error)?;
++        let outcome = blocking(self.region(), move || register(&store, &scope, &input, &at))
++            .await
++            .map_err(job_error)?;
+         let mut state = self.load_object(ctx).await?;
+         state.athleticlive = Some(outcome.clone());
+         bind_plan(&mut state);
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive.rs:38:
+         Ok(outcome)
+     }
+ 
+-    pub(super) async fn athleticlive_owed(&self, ctx: &ObjectContext<'_>, request: &JurisdictionRequest, state: &mut JurisdictionState, today: &str) -> Result<(), HandlerError> {
+-        if !state.athleticlive.as_ref().is_some_and(|lane| lane.digest().is_some() && !lane.is_terminal()) { return Ok(()); }
++    pub(super) async fn athleticlive_owed(
++        &self,
++        ctx: &ObjectContext<'_>,
++        request: &JurisdictionRequest,
++        state: &mut JurisdictionState,
++        today: &str,
++    ) -> Result<(), HandlerError> {
++        if !state
++            .athleticlive
++            .as_ref()
++            .is_some_and(|lane| lane.digest().is_some() && !lane.is_terminal())
++        {
++            return Ok(());
++        }
+         let store = Arc::clone(&self.store);
+         let region = self.region();
+         let request = request.clone();
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive.rs:46:
+         let at = today.to_string();
+-        let Json(outcome) = ctx.run(move || async move {
+-            blocking(region, move || execute(&store, &request, &at)).await.map(Json).map_err(job_error)
+-        }).await?;
++        let Json(outcome) = ctx
++            .run(move || async move {
++                blocking(region, move || execute(&store, &request, &at))
++                    .await
++                    .map(Json)
++                    .map_err(job_error)
++            })
++            .await?;
+         state.athleticlive = outcome;
+         self.save(ctx, state, today);
+         Ok(())
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive.rs:53:
+     }
+ }
+ 
+-pub(super) fn register(store: &Store, request: &JurisdictionRequest, input: &str, at: &str) -> Result<AthleticLiveObligation, JobError> {
+-    if !ledger::applicable(request) { return Err(ledger::error("AthleticLIVE is not applicable to this jurisdiction")); }
++pub(super) fn register(
++    store: &Store,
++    request: &JurisdictionRequest,
++    input: &str,
++    at: &str,
++) -> Result<AthleticLiveObligation, JobError> {
++    if !ledger::applicable(request) {
++        return Err(ledger::error(
++            "AthleticLIVE is not applicable to this jurisdiction",
++        ));
++    }
+     let fetcher = offline_fetcher(store)?;
+     let context = context(store, &fetcher, request, at)?;
+     match census_crawl::athleticlive::freeze_manifest(&context, input) {
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive.rs:61:
+         Ok(frozen) => ledger::register(store, request, frozen),
+-        Err(error) => ledger::refuse(store, request, format!("{}: retained AthleticLIVE manifest cannot qualify: {error}", request.jurisdiction.code())),
++        Err(error) => ledger::refuse(
++            store,
++            request,
++            format!(
++                "{}: retained AthleticLIVE manifest cannot qualify: {error}",
++                request.jurisdiction.code()
++            ),
++        ),
+     }
+ }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive.rs:66:
+-pub(super) fn execute(store: &Store, request: &JurisdictionRequest, at: &str) -> Result<Option<AthleticLiveObligation>, JobError> {
+-    let Some(reserved) = ledger::begin(store, request)? else { return ledger::status(store, request); };
++pub(super) fn execute(
++    store: &Store,
++    request: &JurisdictionRequest,
++    at: &str,
++) -> Result<Option<AthleticLiveObligation>, JobError> {
++    let Some(reserved) = ledger::begin(store, request)? else {
++        return ledger::status(store, request);
++    };
+     let manifest = ledger::manifest(store, request)?;
+-    if manifest.digest != reserved.0 { return Err(ledger::error("AthleticLIVE frozen manifest differs from reserved digest")); }
++    if manifest.digest != reserved.0 {
++        return Err(ledger::error(
++            "AthleticLIVE frozen manifest differs from reserved digest",
++        ));
++    }
+     let fetcher = offline_fetcher(store)?;
+     let context = context(store, &fetcher, request, at)?;
+     let options = census_crawl::athleticlive::ManifestOptions {
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive.rs:73:
+-        observed_on: at.into(), states: vec![request.jurisdiction], ..Default::default()
++        observed_on: at.into(),
++        states: vec![request.jurisdiction],
++        ..Default::default()
+     };
+-    let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(|source| ledger::error(&source.to_string()))?;
+-    let result = runtime.block_on(census_crawl::athleticlive::collect_manifest_body(&context, &options, &ledger::key(request), &manifest.body));
++    let runtime = tokio::runtime::Builder::new_current_thread()
++        .enable_all()
++        .build()
++        .map_err(|source| ledger::error(&source.to_string()))?;
++    let result = runtime.block_on(census_crawl::athleticlive::collect_manifest_body(
++        &context,
++        &options,
++        &ledger::key(request),
++        &manifest.body,
++    ));
+     let outcome = match result {
+         Ok(report) => StageOutcome {
+-            records: usize::try_from(report.rows).map_err(|_| ledger::error("AthleticLIVE row counter overflow"))?,
+-            at: at.into(), errors: if report.errors > 0 || report.rejections > 0 { vec![format!("{} errors, {} rejected; unresolved {:?}", report.errors, report.rejections, report.unresolved)] } else { Vec::new() },
+-            notes: report.notes, disposition: report.disposition, unfinished: report.unfinished,
++            records: usize::try_from(report.rows)
++                .map_err(|_| ledger::error("AthleticLIVE row counter overflow"))?,
++            at: at.into(),
++            errors: if report.errors > 0 || report.rejections > 0 {
++                vec![format!(
++                    "{} errors, {} rejected; unresolved {:?}",
++                    report.errors, report.rejections, report.unresolved
++                )]
++            } else {
++                Vec::new()
++            },
++            notes: report.notes,
++            disposition: report.disposition,
++            unfinished: report.unfinished,
+         },
+-        Err(error) => StageOutcome { records: 0, at: at.into(), errors: vec![error.to_string()], notes: Vec::new(), disposition: CollectionDisposition::Failed, unfinished: vec![ledger::key(request)] },
++        Err(error) => StageOutcome {
++            records: 0,
++            at: at.into(),
++            errors: vec![error.to_string()],
++            notes: Vec::new(),
++            disposition: CollectionDisposition::Failed,
++            unfinished: vec![ledger::key(request)],
++        },
+     };
+     ledger::finish(store, request, reserved, outcome).map(Some)
+ }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive.rs:87:
+ 
+ fn offline_fetcher(store: &Store) -> Result<Fetcher, JobError> {
+-    Fetcher::new(store.http_cache_dir(), None, std::time::Duration::from_millis(1), std::collections::HashMap::new(), Vec::new()).map_err(|source| ledger::error(&source.to_string()))
++    Fetcher::new(
++        store.http_cache_dir(),
++        None,
++        std::time::Duration::from_millis(1),
++        std::collections::HashMap::new(),
++        Vec::new(),
++    )
++    .map_err(|source| ledger::error(&source.to_string()))
+ }
+ 
+-fn context<'a>(store: &'a Store, fetcher: &'a Fetcher, request: &JurisdictionRequest, at: &str) -> Result<AdapterContext<'a>, JobError> {
++fn context<'a>(
++    store: &'a Store,
++    fetcher: &'a Fetcher,
++    request: &JurisdictionRequest,
++    at: &str,
++) -> Result<AdapterContext<'a>, JobError> {
+     Ok(AdapterContext {
+-        store, fetcher, refresh: false, school_year: request.season, observed_on: at.into(),
++        store,
++        fetcher,
++        refresh: false,
++        school_year: request.season,
++        observed_on: at.into(),
+         performance_as_of: request.history.as_of(),
+         recording: None,
+     })
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive.rs:98:
+ }
+ 
+ fn bind_plan(state: &mut JurisdictionState) {
+-    let Some(lane) = state.athleticlive.as_ref() else { return; };
+-    let Some(plan) = state.plan.as_mut() else { return; };
+-    plan.refused.retain(|refusal| refusal.slug != "athleticlive");
++    let Some(lane) = state.athleticlive.as_ref() else {
++        return;
++    };
++    let Some(plan) = state.plan.as_mut() else {
++        return;
++    };
++    plan.refused
++        .retain(|refusal| refusal.slug != "athleticlive");
+     if let AthleticLiveObligation::Refused { reason } = lane {
+-        plan.refused.push(crate::restate_services::wire::RefusedSource { slug: "athleticlive".into(), reason: reason.clone(), kind: crate::restate_services::plan::RefusalKind::EngineeringGap });
++        plan.refused
++            .push(crate::restate_services::wire::RefusedSource {
++                slug: "athleticlive".into(),
++                reason: reason.clone(),
++                kind: crate::restate_services::plan::RefusalKind::EngineeringGap,
++            });
+     }
+ }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive_tests.rs:1:
+ use crate::restate_services::plan::{plan, BrowserLaneState};
+-use crate::restate_services::wire::{HistoryWindow, JurisdictionRequest, JurisdictionState, SourcePlan};
++use crate::restate_services::wire::{
++    HistoryWindow, JurisdictionRequest, JurisdictionState, SourcePlan,
++};
+ use census_domain::{model::SchoolYear, UsJurisdiction};
+ use census_reconcile::identity::Revision;
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive_tests.rs:20:
+         source_parallelism: 1,
+     };
+     let state = JurisdictionState {
+-        plan: Some(SourcePlan::of(&plan(request.jurisdiction, BrowserLaneState::Absent), "fixture".into())),
++        plan: Some(SourcePlan::of(
++            &plan(request.jurisdiction, BrowserLaneState::Absent),
++            "fixture".into(),
++        )),
+         ..JurisdictionState::default()
+     };
+     let (owed, _) = super::owed_work(&state, &request);
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/athleticlive_tests.rs:27:
+-    assert!(owed.iter().any(|stage| stage == "athleticlive_manifest"), "AthleticLIVE manifest obligation absent: {owed:?}");
++    assert!(
++        owed.iter().any(|stage| stage == "athleticlive_manifest"),
++        "AthleticLIVE manifest obligation absent: {owed:?}"
++    );
+     Ok(())
+ }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/stage_runs.rs:76:
+         let source = stream::try_unfold(Some(0usize), |next| {
+             let fetcher = Arc::clone(&fetcher);
+             async move {
+-            let Some(ordinal) = next else { return Ok(None) };
+-            let outcome = self.acquire_meet_fragment(ctx, Arc::clone(&fetcher), scope, (slug, ordinal)).await?;
+-            self.post_meet_fragments(ctx, &outcome, (slug, scope)).await?;
+-            let next = outcome.next;
+-            Ok::<_, HandlerError>(Some((outcome.census, next)))
++                let Some(ordinal) = next else { return Ok(None) };
++                let outcome = self
++                    .acquire_meet_fragment(ctx, Arc::clone(&fetcher), scope, (slug, ordinal))
++                    .await?;
++                self.post_meet_fragments(ctx, &outcome, (slug, scope))
++                    .await?;
++                let next = outcome.next;
++                Ok::<_, HandlerError>(Some((outcome.census, next)))
+             }
+         })
+         .try_fold(MeetCensus::default(), |census, next| {
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/stage_runs.rs:87:
+-            futures::future::ready(super::super::meets_arms::absorb_fragment(slug, census, next))
++            futures::future::ready(super::super::meets_arms::absorb_fragment(
++                slug, census, next,
++            ))
+         })
+         .await?;
+         let endpoint = ingest_post::endpoint_of(slug, scope.jurisdiction);
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/stage_runs.rs:105:
+     ) -> Result<super::super::meets_arms::MeetsStageOutcome, HandlerError> {
+         let store = Arc::clone(&self.store);
+         let region = self.region();
+-        let identity = format!("{}/{}/{}/{}/{}", ctx.key(), step.0, scope.year, scope.observed_on, step.1);
++        let identity = format!(
++            "{}/{}/{}/{}/{}",
++            ctx.key(),
++            step.0,
++            scope.year,
++            scope.observed_on,
++            step.1
++        );
+         let source = (step.0.to_string(), step.1);
+         let handle = tokio::runtime::Handle::current();
+-        let Json(outcome) = ctx.run(move || async move {
+-            super::super::blocking(region, move || {
+-                handle.block_on(super::super::meets_arms::collect_fragment(store, fetcher, scope, source, identity))
+-                    .map_err(|error| super::super::JobError::Terminal { message: format!("{error:?}") })
+-            }).await.map_err(super::super::job_error)
+-        })
+-        .retry_policy(RunRetryPolicy::new().max_attempts(1))
+-        .await?;
++        let Json(outcome) = ctx
++            .run(move || async move {
++                super::super::blocking(region, move || {
++                    handle
++                        .block_on(super::super::meets_arms::collect_fragment(
++                            store, fetcher, scope, source, identity,
++                        ))
++                        .map_err(|error| super::super::JobError::Terminal {
++                            message: format!("{error:?}"),
++                        })
++                })
++                .await
++                .map_err(super::super::job_error)
++            })
++            .retry_policy(RunRetryPolicy::new().max_attempts(1))
++            .await?;
+         Ok(outcome)
+     }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/stage_runs.rs:127:
+     ) -> Result<(), HandlerError> {
+         use futures::{stream, StreamExt, TryStreamExt};
+         let endpoint = ingest_post::endpoint_of(source.0, source.1.jurisdiction);
+-        stream::iter(0..outcome.fragments).map(Ok::<_, HandlerError>).try_for_each(|index| {
+-            let endpoint = &endpoint;
+-            async move {
+-                let store = Arc::clone(&self.store);
+-                let region = self.region();
+-                let key = census_crawl::recording::spool::fragment_key(&outcome.identity, index);
+-                let operation_id = key.clone();
+-                let recorded = super::super::blocking(region, move || {
+-                    let payload = store.journal_payload(census_crawl::recording::spool::FRAGMENT_PHASE, &key)?
+-                        .ok_or_else(|| super::super::JobError::Terminal { message: format!("missing durable meet fragment {key}") })?;
+-                    serde_json::from_value::<census_crawl::Recorded>(payload)
+-                        .map_err(|error| super::super::JobError::Terminal { message: error.to_string() })
+-                }).await.map_err(super::super::job_error)?;
+-                ctx.object_client::<super::super::ingest::IngestClient>(endpoint)
+-                    .recorded(Json(super::super::wire::ingest::RecordedIngestRequest { recorded, operation_id, cursor: None }))
+-                    .call().await?;
+-                Ok(())
+-            }
+-        }).await
++        stream::iter(0..outcome.fragments)
++            .map(Ok::<_, HandlerError>)
++            .try_for_each(|index| {
++                let endpoint = &endpoint;
++                async move {
++                    let store = Arc::clone(&self.store);
++                    let region = self.region();
++                    let key =
++                        census_crawl::recording::spool::fragment_key(&outcome.identity, index);
++                    let operation_id = key.clone();
++                    let recorded = super::super::blocking(region, move || {
++                        let payload = store
++                            .journal_payload(census_crawl::recording::spool::FRAGMENT_PHASE, &key)?
++                            .ok_or_else(|| super::super::JobError::Terminal {
++                                message: format!("missing durable meet fragment {key}"),
++                            })?;
++                        serde_json::from_value::<census_crawl::Recorded>(payload).map_err(|error| {
++                            super::super::JobError::Terminal {
++                                message: error.to_string(),
++                            }
++                        })
++                    })
++                    .await
++                    .map_err(super::super::job_error)?;
++                    ctx.object_client::<super::super::ingest::IngestClient>(endpoint)
++                        .recorded(Json(super::super::wire::ingest::RecordedIngestRequest {
++                            recorded,
++                            operation_id,
++                            cursor: None,
++                        }))
++                        .call()
++                        .await?;
++                    Ok(())
++                }
++            })
++            .await
+     }
+ }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/team_source/ledger_io/tests.rs:16:
+     let store = Arc::new(Store::open(root.path())?);
+     let region = Arc::new(Spawner::with_capacity(1));
+     let load = Arc::new(Semaphore::new(1));
+-    let owner = JurisdictionCensus::new(Arc::clone(&store), Arc::new(SystemClock), None, Arc::new(crate::spawn::Spawner::new()));
++    let owner = JurisdictionCensus::new(
++        Arc::clone(&store),
++        Arc::new(SystemClock),
++        None,
++        Arc::new(crate::spawn::Spawner::new()),
++    );
+     let jobs = Jobs::new(Arc::clone(&store), Arc::clone(&load), Arc::clone(&region));
+     let source = TeamsSource::new(owner, jobs);
+     let request = Arc::new(request()?);
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/team_source/ledger_io/tests.rs:85:
+     let store = Arc::new(Store::open(root.path())?);
+     let region = Arc::new(Spawner::with_capacity(1));
+     let load = Arc::new(Semaphore::new(1));
+-    let owner = JurisdictionCensus::new(Arc::clone(&store), Arc::new(SystemClock), None, Arc::new(crate::spawn::Spawner::new()));
++    let owner = JurisdictionCensus::new(
++        Arc::clone(&store),
++        Arc::new(SystemClock),
++        None,
++        Arc::new(crate::spawn::Spawner::new()),
++    );
+     let jobs = Jobs::new(Arc::clone(&store), Arc::clone(&load), Arc::clone(&region));
+     let source = TeamsSource::new(owner, jobs);
+     let request = Arc::new(request()?);
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/team_source/native_boundary/tests/control.rs:24:
+     let store = Arc::new(Store::open(root.path())?);
+     let region = Arc::new(Spawner::with_capacity(2));
+     let load = Arc::new(Semaphore::new(2));
+-    let owner = JurisdictionCensus::new(Arc::clone(&store), Arc::new(SystemClock), None, Arc::new(crate::spawn::Spawner::new()));
++    let owner = JurisdictionCensus::new(
++        Arc::clone(&store),
++        Arc::new(SystemClock),
++        None,
++        Arc::new(crate::spawn::Spawner::new()),
++    );
+     let jobs = Jobs::new(store, Arc::clone(&load), Arc::clone(&region));
+     let source = TeamsSource::new(owner, jobs.clone());
+     Ok(Runtime {
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/jurisdiction/team_source/tests/registration_cancellation.rs:26:
+     let store = Arc::new(Store::open(root.path())?);
+     let region = Arc::new(Spawner::with_capacity(2));
+     let load = Arc::new(Semaphore::new(2));
+-    let owner = JurisdictionCensus::new(Arc::clone(&store), Arc::new(SystemClock), None, Arc::new(crate::spawn::Spawner::new()));
++    let owner = JurisdictionCensus::new(
++        Arc::clone(&store),
++        Arc::new(SystemClock),
++        None,
++        Arc::new(crate::spawn::Spawner::new()),
++    );
+     let jobs = Jobs::new(Arc::clone(&store), Arc::clone(&load), Arc::clone(&region));
+     Ok(Fixture {
+         _root: root,
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/meets_arms/tests.rs:102:
+                 observed_on: chrono::NaiveDate::parse_from_str("2026-10-08", "%Y-%m-%d")?,
+             };
+             let Json(outcome) = collect_fragment(
+-                Arc::clone(&store), fetcher, scope,
++                Arc::clone(&store),
++                fetcher,
++                scope,
+                 ("coach_directories".to_string(), 0),
+                 "unselected-index-test".to_string(),
+             )
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/meets_arms/tests.rs:109:
+-                .await
+-                .map_err(crate::restate_services::tests::sdk_error)?;
++            .await
++            .map_err(crate::restate_services::tests::sdk_error)?;
+             check!(eq; outcome.census, MeetCensus::default());
+             check!(eq; store.walk_table(census_store::Table::SourceMeets)?.rows, 0);
+             check!(eq; outcome.fragments, 0);
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/meets_arms/walks.rs:27:
+     match step.0 {
+         MeetsArm::MilesplitIndex => {
+             let options = context.fetch_options();
+-            let pages = std::num::NonZeroU32::new(1).ok_or_else(|| super::super::jobs::invariant("zero fragment page budget"))?;
++            let pages = std::num::NonZeroU32::new(1)
++                .ok_or_else(|| super::super::jobs::invariant("zero fragment page budget"))?;
+             let request = MeetWalkRequest::new(scope.jurisdiction, scope.year, &at, &options)
+                 .with_page_budget(pages)
+                 .map_err(|error| super::super::job_error(collect_error(error)))?;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/meets_arms/walks.rs:34:
+             let census = census::collect_state_meets(fetcher, store, &request, Some(recording))
+                 .await
+                 .map_err(|error| super::super::job_error(collect_error(error)))?;
+-            let more = census.frontiers.iter().any(|frontier| {
+-                frontier.disposition == census::DiscoveryDisposition::Partial
+-            }) && census.frontiers.iter().all(|frontier| frontier.failure.is_none());
++            let more = census
++                .frontiers
++                .iter()
++                .any(|frontier| frontier.disposition == census::DiscoveryDisposition::Partial)
++                && census
++                    .frontiers
++                    .iter()
++                    .all(|frontier| frontier.failure.is_none());
+             Ok((census, more))
+         }
+         MeetsArm::WiaaResults => walk_wiaa(&context, scope, step.1).await,
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/meets_arms/walks.rs:72:
+         .iter()
+         .any(|source| source.slug == "wayzata")
+     {
+-        return Ok((super::failed_census(
+-            "wayzata", scope, "source geography does not admit this jurisdiction".to_string(),
+-        ), false));
++        return Ok((
++            super::failed_census(
++                "wayzata",
++                scope,
++                "source geography does not admit this jurisdiction".to_string(),
++            ),
++            false,
++        ));
+     }
+     let options = census_crawl::wayzata::Options {
+         years: vec![source_year(scope.year)?],
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/meets_arms.rs:2:
+ mod tests;
+ mod walks;
+ 
+-use super::jobs;
+ use super::history_stage::HistoricalStageScope;
++use super::jobs;
+ use crate::census::{MeetCensus, MeetSourceRows};
+ use census_crawl::{net::Fetcher, AdapterReport, CollectionDisposition, Recording};
+ use census_domain::model::SchoolYear;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/meets_arms.rs:48:
+     identity: String,
+ ) -> Result<Json<MeetsStageOutcome>, HandlerError> {
+     const PHASE: &str = "meet_fragment_outcomes_v1";
+-    if let Some(previous) = store.journal_payload(PHASE, &identity).map_err(store_error)? {
+-        return serde_json::from_value(previous).map(Json).map_err(|error| {
+-            jobs::invariant(&format!("decoding durable meet fragment: {error}"))
+-        });
++    if let Some(previous) = store
++        .journal_payload(PHASE, &identity)
++        .map_err(store_error)?
++    {
++        return serde_json::from_value(previous)
++            .map(Json)
++            .map_err(|error| jobs::invariant(&format!("decoding durable meet fragment: {error}")));
+     }
+     let (slug, ordinal) = source;
+     let Some(arm) = arm_for(&slug) else {
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/meets_arms.rs:58:
+         jobs::assert_some_stage_arms(&slug)?;
+         return Ok(Json(MeetsStageOutcome {
+-            census: MeetCensus::default(), identity, fragments: 0, next: None,
++            census: MeetCensus::default(),
++            identity,
++            fragments: 0,
++            next: None,
+         }));
+     };
+     let recording = Recording::spooled(store.as_ref().clone(), identity.clone());
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/meets_arms.rs:64:
+-    let (census, more) = match walks::fragment(&store, &fetcher, scope, (arm, ordinal), &recording).await {
+-        Ok(outcome) => outcome,
+-        Err(error) => (failed_census(&slug, scope, format!("{error:?}")), false),
+-    };
+-    let fragments = recording.finish_fragments().map_err(|error| {
+-        super::job_error(jobs::collect_error(error))
+-    })?;
++    let (census, more) =
++        match walks::fragment(&store, &fetcher, scope, (arm, ordinal), &recording).await {
++            Ok(outcome) => outcome,
++            Err(error) => (failed_census(&slug, scope, format!("{error:?}")), false),
++        };
++    let fragments = recording
++        .finish_fragments()
++        .map_err(|error| super::job_error(jobs::collect_error(error)))?;
+     let next = if more {
+-        Some(ordinal.checked_add(1).ok_or_else(|| jobs::invariant("meet fragment cursor overflow"))?)
++        Some(
++            ordinal
++                .checked_add(1)
++                .ok_or_else(|| jobs::invariant("meet fragment cursor overflow"))?,
++        )
+     } else {
+         None
+     };
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/meets_arms.rs:76:
+-    let outcome = MeetsStageOutcome { census, identity, fragments, next };
+-    store.journal_done(PHASE, &outcome.identity, &outcome).map_err(store_error)?;
++    let outcome = MeetsStageOutcome {
++        census,
++        identity,
++        fragments,
++        next,
++    };
++    store
++        .journal_done(PHASE, &outcome.identity, &outcome)
++        .map_err(store_error)?;
+     Ok(Json(outcome))
+ }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/meets_arms.rs:90:
+         return Ok(next);
+     }
+     census.rows = add(census.rows, next.rows)?;
+-    let Some(mut source) = next.sources.pop() else { return Ok(census) };
++    let Some(mut source) = next.sources.pop() else {
++        return Ok(census);
++    };
+     if let Some(previous) = census.sources.pop() {
+         source.rows = add(previous.rows, source.rows)?;
+         source.withheld = match (previous.withheld, source.withheld) {
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/meets_arms.rs:97:
+-            (Some(left), Some(right)) => Some(left.checked_add(right).ok_or_else(|| jobs::invariant("meet withheld count overflow"))?),
++            (Some(left), Some(right)) => Some(
++                left.checked_add(right)
++                    .ok_or_else(|| jobs::invariant("meet withheld count overflow"))?,
++            ),
+             _ => None,
+         };
+         source.errors.extend(previous.errors);
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/meets_arms.rs:200:
+         ..MeetCensus::default()
+     }
+ }
+-
+ 
+ pub(super) fn season_of(year: u16) -> Result<SchoolYear, HandlerError> {
+     let start_year = i16::try_from(year).map_err(|_| not_a_season(year))?;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/wire/athleticlive.rs:4:
+ #[derive(Debug, Clone, Serialize, Deserialize)]
+ #[serde(tag = "status", rename_all = "snake_case")]
+ pub enum AthleticLiveObligation {
+-    Refused { reason: String },
+-    Armed { digest: String },
+-    Running { digest: String, attempt: u8 },
+-    Finished { digest: String, attempt: u8, outcome: StageOutcome },
++    Refused {
++        reason: String,
++    },
++    Armed {
++        digest: String,
++    },
++    Running {
++        digest: String,
++        attempt: u8,
++    },
++    Finished {
++        digest: String,
++        attempt: u8,
++        outcome: StageOutcome,
++    },
+ }
+ 
+ impl AthleticLiveObligation {
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/restate_services/wire/athleticlive.rs:27:
+     pub(crate) fn digest(&self) -> Option<&str> {
+         match self {
+             Self::Refused { .. } => None,
+-            Self::Armed { digest } | Self::Running { digest, .. } | Self::Finished { digest, .. } => Some(digest),
++            Self::Armed { digest }
++            | Self::Running { digest, .. }
++            | Self::Finished { digest, .. } => Some(digest),
+         }
+     }
+ }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/school_address/join/nces_replay_tests.rs:87:
+             continue;
+         }
+         check!(eq; gap_ids.insert(row.school_id.clone()), true);
+-        if previously_linked.contains(&row.school_id) && row.reason.as_deref() == Some("ambiguous") {
++        if previously_linked.contains(&row.school_id) && row.reason.as_deref() == Some("ambiguous")
++        {
+             println!(
+                 "historical link becomes ambiguous: {}",
+                 serde_json::to_string(&row)?
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service/src/school_address/join/nces_replay_tests.rs:94:
+             );
+-            check!(matches!(row.detail.as_deref(), Some("conflicting_city" | "missing_city_corroboration" | "missing_published_city")));
++            check!(matches!(
++                row.detail.as_deref(),
++                Some("conflicting_city" | "missing_city_corroboration" | "missing_published_city")
++            ));
+         }
+         let reason = row.reason.or(row.detail).ok_or("gap lacks a reason")?;
+         if previously_linked.contains(&row.school_id) {
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-store/src/lib.rs:75:
+     MAX_ROWS_PER_TABLE,
+ };
+ pub use write_batch::{
+-    ConditionalBatch, ObservationBudget, ObservationChunk, StoreBatch,
+-    MAX_OBSERVATION_BATCH_BYTES, MAX_OBSERVATION_BATCH_ROWS, MAX_OBSERVATION_RECORD_BYTES,
++    ConditionalBatch, ObservationBudget, ObservationChunk, StoreBatch, MAX_OBSERVATION_BATCH_BYTES,
++    MAX_OBSERVATION_BATCH_ROWS, MAX_OBSERVATION_RECORD_BYTES,
+ };
+ 
+ #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-store/src/read/view/../keyed.rs:15:
+         }
+         if table.generation_partitioned() {
+             let key = derived_key(table, self.derived_generation, id.as_bytes());
+-            return self.snapshot.get(self.entities, &key)
++            return self
++                .snapshot
++                .get(self.entities, &key)
+                 .map_err(|source| StoreError::Read { source })?
+                 .map(|raw| {
+                     let mut row: T = merge::decode(table, &key, &raw)?;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-store/src/read/view/../keyed.rs:22:
+                     row.publish();
+                     Ok(row)
+-                }).transpose();
++                })
++                .transpose();
+         }
+         let mut prefix = self.layout().prefix(table);
+         prefix.extend_from_slice(id.as_bytes());
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-store/src/read/view/../keyed.rs:30:
+         let max = usize::try_from(MAX_ROWS_PER_TABLE).map_err(|_| StoreError::CounterOverflow)?;
+         for (index, guard) in self.snapshot.prefix(self.entities, &prefix).enumerate() {
+             merge::check_limit(index, max, table)?;
+-            let (key, raw) = guard.into_inner().map_err(|source| StoreError::Read { source })?;
+-            let (_, stored_id, _) = view_observation_key(&key).ok_or_else(|| invalid("malformed keyed observation"))?;
++            let (key, raw) = guard
++                .into_inner()
++                .map_err(|source| StoreError::Read { source })?;
++            let (_, stored_id, _) =
++                view_observation_key(&key).ok_or_else(|| invalid("malformed keyed observation"))?;
+             if stored_id != id.as_bytes() {
+                 continue;
+             }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-store/src/read/view/../keyed.rs:54:
+         mut visit: impl FnMut(T) -> StoreResult<ControlFlow<()>>,
+     ) -> StoreResult<u64> {
+         if !table.generation_partitioned() {
+-            return Err(invalid("cursor reads require a generation-partitioned table"));
++            return Err(invalid(
++                "cursor reads require a generation-partitioned table",
++            ));
+         }
+         if let Some(id) = after {
+             check_cursor(id)?;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-store/src/read/view/../keyed.rs:65:
+             None => Bound::Included(prefix.clone()),
+         };
+         let mut end = prefix;
+-        let separator = end.last_mut().ok_or_else(|| invalid("empty table prefix"))?;
+-        *separator = separator.checked_add(1).ok_or(StoreError::CounterOverflow)?;
++        let separator = end
++            .last_mut()
++            .ok_or_else(|| invalid("empty table prefix"))?;
++        *separator = separator
++            .checked_add(1)
++            .ok_or(StoreError::CounterOverflow)?;
+         let max = usize::try_from(MAX_ROWS_PER_TABLE).map_err(|_| StoreError::CounterOverflow)?;
+         let mut visited = 0_u64;
+-        for (index, guard) in self.snapshot.range(self.entities, (start, Bound::Excluded(end))).enumerate() {
++        for (index, guard) in self
++            .snapshot
++            .range(self.entities, (start, Bound::Excluded(end)))
++            .enumerate()
++        {
+             merge::check_limit(index, max, table)?;
+-            let (key, raw) = guard.into_inner().map_err(|source| StoreError::Read { source })?;
++            let (key, raw) = guard
++                .into_inner()
++                .map_err(|source| StoreError::Read { source })?;
+             let mut row: T = merge::decode(table, &key, &raw)?;
+             row.publish();
+             visited = visited.checked_add(1).ok_or(StoreError::CounterOverflow)?;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-store/src/read/view/../keyed.rs:84:
+ }
+ 
+ fn check_cursor(id: &str) -> StoreResult<()> {
+-    let max = MAX_ID_BYTES.checked_add(128).ok_or(StoreError::CounterOverflow)?;
++    let max = MAX_ID_BYTES
++        .checked_add(128)
++        .ok_or(StoreError::CounterOverflow)?;
+     if id.len() > max {
+-        return Err(invalid("cursor exceeds the bounded derived identifier ceiling"));
++        return Err(invalid(
++            "cursor exceeds the bounded derived identifier ceiling",
++        ));
+     }
+     Ok(())
+ }
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-store/src/read/view/../keyed.rs:93:
+ 
+ fn invalid(detail: &str) -> StoreError {
+-    StoreError::Invariant { detail: detail.to_string() }
++    StoreError::Invariant {
++        detail: detail.to_string(),
++    }
+ }
+ 
+ #[cfg(test)]
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-store/src/read/view/../keyed_tests.rs:1:
+ use std::ops::ControlFlow;
+ 
+-use census_domain::model::{ReviewCase, ReviewState, RetainedConflict};
++use census_domain::model::{RetainedConflict, ReviewCase, ReviewState};
+ 
+ use crate::{Store, StoreError, Table};
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-store/src/read/view/../keyed_tests.rs:10:
+ fn keyed_review_reads_and_cursor_stop_preserve_captured_generation() -> TestResult {
+     let dir = tempfile::tempdir()?;
+     let store = Store::open(dir.path())?;
+-    let mut cases: Vec<_> = ["a", "a:b", "a\0b", "🦀", "z"].into_iter()
+-        .map(|id| ReviewCase::pending("fixture", id, "subject", "detail")).collect();
++    let mut cases: Vec<_> = ["a", "a:b", "a\0b", "🦀", "z"]
++        .into_iter()
++        .map(|id| ReviewCase::pending("fixture", id, "subject", "detail"))
++        .collect();
+     cases.sort_by(|left, right| left.id.cmp(&right.id));
+     store.replace_many(Table::ReviewCases, &cases)?;
+     let snapshot = store.snapshot();
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-store/src/read/view/../keyed_tests.rs:23:
+     let mut visited = Vec::new();
+     for _ in &cases {
+         let after = cursor.clone();
+-        let count = snapshot.for_each_merged_after(Table::ReviewCases, after.as_deref(), |case: ReviewCase| {
+-            cursor = Some(case.id.clone());
+-            visited.push(case);
+-            Ok(ControlFlow::Break(()))
+-        })?;
++        let count = snapshot.for_each_merged_after(
++            Table::ReviewCases,
++            after.as_deref(),
++            |case: ReviewCase| {
++                cursor = Some(case.id.clone());
++                visited.push(case);
++                Ok(ControlFlow::Break(()))
++            },
++        )?;
+         check!(eq; count, 1);
+     }
+     check!(eq; serde_json::to_vec(&visited)?, serde_json::to_vec(&cases)?);
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-store/src/read/view/../keyed_tests.rs:46:
+     let first = RetainedConflict::new("fixture", "a", "subject", "first");
+     let latest = RetainedConflict::new("fixture", "a", "subject", "last");
+     store.append(Table::Schools, &first)?;
+-    store.append(Table::Schools, &RetainedConflict::new("fixture", "a\0b", "subject", "foreign"))?;
++    store.append(
++        Table::Schools,
++        &RetainedConflict::new("fixture", "a\0b", "subject", "foreign"),
++    )?;
+     let snapshot = store.snapshot();
+     store.append(Table::Schools, &latest)?;
+     check!(eq; snapshot.get_merged::<RetainedConflict>(Table::Schools, &first.id)?, Some(first.clone()));
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-store/src/read/view/../keyed_tests.rs:53:
+     check!(eq; store.snapshot().get_merged::<RetainedConflict>(Table::Schools, &first.id)?, Some(latest));
+-    check!(matches!(snapshot.for_each_merged_after::<RetainedConflict>(Table::Schools, None, |_| Ok(ControlFlow::Continue(()))), Err(StoreError::Invariant { detail }) if detail == "cursor reads require a generation-partitioned table"));
++    check!(
++        matches!(snapshot.for_each_merged_after::<RetainedConflict>(Table::Schools, None, |_| Ok(ControlFlow::Continue(()))), Err(StoreError::Invariant { detail }) if detail == "cursor reads require a generation-partitioned table")
++    );
+     Ok(())
+ }
+ 
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-store/src/write_batch/mod.rs:1:
+ mod append;
+ mod budget;
++#[cfg(test)]
++mod byte_tests;
+ mod commit;
+ mod conditional;
+ mod journal;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-store/src/write_batch/mod.rs:6:
+-#[cfg(test)]
+-mod byte_tests;
+ 
+ use super::Store;
+ use super::Table;
+Diff in /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-store/src/write_batch/mod.rs:11:
+-pub use conditional::ConditionalBatch;
+ pub use budget::{
+-    ObservationBudget, ObservationChunk, MAX_OBSERVATION_BATCH_BYTES,
+-    MAX_OBSERVATION_BATCH_ROWS, MAX_OBSERVATION_RECORD_BYTES,
++    ObservationBudget, ObservationChunk, MAX_OBSERVATION_BATCH_BYTES, MAX_OBSERVATION_BATCH_ROWS,
++    MAX_OBSERVATION_RECORD_BYTES,
+ };
++pub use conditional::ConditionalBatch;
+ 
+ struct Page {
+     table: Table,
+▮▮▮▮ pipeline:fmt (1s 720ms, 58770f97)
+Error: task_runner::run_failed
+
+  × Task pipeline:fmt failed to run.
+  ╰─▶ Process tools/moon-cargo failed: exit code 1
+

@@ -5,12 +5,14 @@ use census_domain::school_index::SchoolIndex;
 use census_store::Table;
 use std::collections::{HashMap, HashSet};
 
+mod fragment;
 #[path = "run_artifacts.rs"]
 mod run_artifacts;
 #[path = "run_receipts.rs"]
 mod run_receipts;
 #[path = "run_report.rs"]
 mod run_report;
+pub use fragment::collect_fragment;
 
 use run_artifacts::process_artifact;
 use run_report::{note_artifacts, note_entities, note_resolution};
@@ -35,7 +37,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         }
     }
 
-    let counts = append_entities(ctx, run.accumulated, run.pending)?;
+    let counts = run.counts;
     finish_report(
         ctx,
         &mut report,
@@ -97,6 +99,7 @@ struct ArtifactRun {
     resolved: HashMap<String, Option<SchoolId>>,
     stats: Stats,
     accumulated: Accumulator,
+    counts: EntityCounts,
     visited: HashSet<String>,
     done: HashSet<String>,
     projection_context: String,
@@ -111,6 +114,7 @@ impl ArtifactRun {
             resolved: HashMap::new(),
             stats: Stats::default(),
             accumulated: Accumulator::default(),
+            counts: EntityCounts::default(),
             visited: HashSet::new(),
             done,
             projection_context,
@@ -165,12 +169,19 @@ async fn collect_archive(
         }
         run.stats.artifacts_seen = run.stats.artifacts_seen.saturating_add(1);
         process_artifact(ctx, report, run, &artifact, sport).await?;
+        let counts = append_entities(
+            ctx,
+            std::mem::take(&mut run.accumulated),
+            std::mem::take(&mut run.pending),
+        )?;
+        run.counts.absorb(counts)?;
         run.visited.insert(artifact.url);
     }
     Ok(())
 }
 
-struct EntityCounts {
+#[derive(Default)]
+pub(super) struct EntityCounts {
     meets: usize,
     events: usize,
     athletes: usize,
@@ -180,7 +191,27 @@ struct EntityCounts {
     unsupported_cohorts: usize,
 }
 
-fn append_entities(
+impl EntityCounts {
+    pub(super) fn absorb(&mut self, extra: Self) -> CrawlResult<()> {
+        self.meets = count_add(self.meets, extra.meets)?;
+        self.events = count_add(self.events, extra.events)?;
+        self.athletes = count_add(self.athletes, extra.athletes)?;
+        self.teams = count_add(self.teams, extra.teams)?;
+        self.performances = count_add(self.performances, extra.performances)?;
+        self.relay_results = count_add(self.relay_results, extra.relay_results)?;
+        self.unsupported_cohorts = count_add(self.unsupported_cohorts, extra.unsupported_cohorts)?;
+        Ok(())
+    }
+}
+
+fn count_add(left: usize, right: usize) -> CrawlResult<usize> {
+    left.checked_add(right)
+        .ok_or_else(|| CrawlError::Arithmetic {
+            detail: "WIAA fragment count overflow".into(),
+        })
+}
+
+pub(super) fn append_entities(
     ctx: &AdapterContext<'_>,
     accumulated: Accumulator,
     pending: Vec<(String, serde_json::Value)>,

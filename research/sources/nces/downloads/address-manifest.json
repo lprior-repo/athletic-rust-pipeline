@@ -1,0 +1,20 @@
+{
+  "schema_revision": 1,
+  "month": "2026-10",
+  "captures": [
+    {
+      "format": "nces-ccd",
+      "path": "2025-26/ccd_sch_029_2526_w_0a_050626.csv",
+      "url": "https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2526_w_0a_050626.zip",
+      "retrieved_at": "2026-09-28",
+      "sha256": "d1473136285b5994b73a1a8b640757811eb81e0ae770953bcf915ee8c422386e"
+    },
+    {
+      "format": "nces-pss",
+      "path": "2025-26/pss2324_pu.csv",
+      "url": "https://nces.ed.gov/surveys/pss/zip/pss2324_pu_csv.zip",
+      "retrieved_at": "2026-09-28",
+      "sha256": "14a2f9e600a492940fd57646792b4b5163ea9d03b8015a7df1135066bcec3b8b"
+    }
+  ]
+}

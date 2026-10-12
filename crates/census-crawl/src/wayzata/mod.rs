@@ -6,9 +6,11 @@ mod map;
 mod parse;
 mod projection;
 mod receipt;
+mod results;
 mod walk;
 pub use map::{level_of, venue_state};
 pub use parse::{schedule_rows, schedule_url, MeetRow, ScheduleSport};
+pub use walk::collect_fragment;
 
 #[cfg(test)]
 use serde_json::json;
@@ -38,7 +40,8 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         options.jurisdictions.len(),
         census_domain::UsJurisdiction::ALL.len(),
     )?;
-    let walk = walk::Walk::new();
+    let lane = results::Lane::of(ctx);
+    let walk = walk::Walk::new(lane);
     let walk = walk.run(ctx, options, &years).await?;
     walk.finish(ctx, before).await
 }

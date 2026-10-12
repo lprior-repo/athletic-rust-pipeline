@@ -1,0 +1,58 @@
+▮▮▮▮ pipeline:tests (9094a1eb)
+   Compiling census-review v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-review)
+error[E0425]: cannot find function `next_for_revocation` in module `crate::review_intake`
+   --> crates/census-review/src/revocation.rs:174:39
+    |
+174 |                 crate::review_intake::next_for_revocation(store, options, after.as_deref())?;
+    |                                       ^^^^^^^^^^^^^^^^^^^ not found in `crate::review_intake`
+
+error[E0061]: this function takes 4 arguments but 3 arguments were supplied
+  --> crates/census-review/src/lib.rs:80:26
+   |
+80 |             let intake = review_intake::next(store, options, after.as_deref())?;
+   |                          ^^^^^^^^^^^^^^^^^^^        ------- argument #2 of type `&mut CorpusIndex<'_, '_>` is missing
+   |
+note: function defined here
+  --> crates/census-review/src/review_intake.rs:19:15
+   |
+19 | pub(super) fn next(
+   |               ^^^^
+20 |     store: &Store,
+21 |     index: &mut CorpusIndex<'_, '_>,
+   |     -------------------------------
+help: provide the argument
+   |
+80 |             let intake = review_intake::next(store, /* &mut CorpusIndex<'_, '_> */, options, after.as_deref())?;
+   |                                                     +++++++++++++++++++++++++++++++
+
+Some errors have detailed explanations: E0061, E0425.
+For more information about an error, try `rustc --explain E0061`.
+error: could not compile `census-review` (lib) due to 2 previous errors
+warning: build failed, waiting for other jobs to finish...
+error[E0061]: this function takes 4 arguments but 3 arguments were supplied
+  --> crates/census-review/src/review_intake_tests.rs:77:18
+   |
+77 |     let intake = super::next(&store, &options, None)?;
+   |                  ^^^^^^^^^^^         -------- argument #2 of type `&mut CorpusIndex<'_, '_>` is missing
+   |
+note: function defined here
+  --> crates/census-review/src/review_intake.rs:19:15
+   |
+19 | pub(super) fn next(
+   |               ^^^^
+20 |     store: &Store,
+21 |     index: &mut CorpusIndex<'_, '_>,
+   |     -------------------------------
+help: provide the argument
+   |
+77 |     let intake = super::next(&store, /* &mut CorpusIndex<'_, '_> */, &options, None)?;
+   |                                      +++++++++++++++++++++++++++++++
+
+error: could not compile `census-review` (lib test) due to 3 previous errors
+error: command `/home/lewis/.rustup/toolchains/nightly-2026-04-27-x86_64-unknown-linux-gnu/bin/cargo test --no-run --message-format json-render-diagnostics --workspace --all-features --locked --offline --config .cargo/fast-iteration.toml` exited with code 101
+▮▮▮▮ pipeline:tests (827ms, 9094a1eb)
+Error: task_runner::run_failed
+
+  × Task pipeline:tests failed to run.
+  ╰─▶ Process tools/moon-cargo failed: exit code 101
+

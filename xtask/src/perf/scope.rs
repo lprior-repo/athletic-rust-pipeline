@@ -1,8 +1,8 @@
 use super::compare::CAPTURE_EXPORT_WORKLOAD;
 use anyhow::{bail, Result};
 
-const CRITERION_SCOPE: &str = "criterion-per-iteration/v1;memory=whole-process-single-criterion-test/gnu-time-rss-kib+dhat-heap-json-v2-tbk-tb/v1";
-const CAPTURE_SCOPE: &str = "capture-publication-independent-readback/v1;memory=whole-process-single-criterion-test/gnu-time-rss-kib+dhat-heap-json-v2-tbk-tb/v1";
+pub(super) const CRITERION_SCOPE: &str = "criterion-per-iteration/v1;memory=whole-process-single-criterion-test/gnu-time-rss-kib+dhat-heap-json-v2-tbk-tb/v1";
+pub(super) const CAPTURE_SCOPE: &str = "capture-publication-independent-readback/v1;memory=whole-process-single-criterion-test/gnu-time-rss-kib+dhat-heap-json-v2-tbk-tb/v1";
 
 pub(super) fn expected(id: &str) -> &'static str {
     if id == CAPTURE_EXPORT_WORKLOAD {

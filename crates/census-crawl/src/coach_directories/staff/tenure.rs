@@ -68,7 +68,7 @@ pub(crate) fn listing_appointment(
         listing.school_year,
     );
     let evidence = bound_evidence(
-        contact_claim(coach, claim_program),
+        Some(contact_claim(coach, claim_program)),
         tenure,
         statement(coach, role, program, capture)?,
         capture,
@@ -79,8 +79,85 @@ pub(crate) fn listing_appointment(
     Ok(Some(evidence))
 }
 
+pub(crate) fn record_appointment(
+    coach: &mut CanonicalCoach,
+    listing: Option<PublishedListing<'_>>,
+    capture: Capture<'_>,
+) -> CrawlResult<()> {
+    if let Some(listing) = listing {
+        let source = listing.source;
+        if let Some(evidence) = listing_appointment(coach, listing, capture)? {
+            return record_evidence(coach, evidence);
+        }
+        return record_unknown(coach, capture, source);
+    }
+    let source = coach
+        .evidence
+        .iter()
+        .find(|evidence| evidence.source.url.as_deref() == Some(capture.url))
+        .map_or(super::super::SOURCE_ID, |evidence| {
+            evidence.source.id.as_str()
+        });
+    let evidence = unknown_appointment(coach, capture, source)?;
+    record_evidence(coach, evidence)
+}
+
+pub(crate) fn record_capture_appointments(
+    coaches: &mut [CanonicalCoach],
+    capture: &crate::net::FetchOutcome,
+    source: &str,
+) -> CrawlResult<()> {
+    let binding = Capture {
+        url: &capture.url,
+        observed_on: &capture.fetched_at,
+        sha256: &capture.content_digest,
+    };
+    for coach in coaches {
+        if coach.tenure_evidence.is_empty() {
+            record_unknown(coach, binding, source)?;
+        }
+    }
+    Ok(())
+}
+
+fn record_unknown(
+    coach: &mut CanonicalCoach,
+    capture: Capture<'_>,
+    source: &str,
+) -> CrawlResult<()> {
+    let evidence = unknown_appointment(coach, capture, source)?;
+    record_evidence(coach, evidence)
+}
+
+fn unknown_appointment(
+    coach: &CanonicalCoach,
+    capture: Capture<'_>,
+    source: &str,
+) -> CrawlResult<CoachTenureEvidence> {
+    if capture.url.trim().is_empty() {
+        return Err(invalid_claim(capture, "tenure evidence has no source URL"));
+    }
+    let evidence = bound_evidence(
+        appointment_program(coach).map(|program| contact_claim(coach, program)),
+        CoachTenure::Unknown,
+        "Published identity does not establish a current appointment.".to_owned(),
+        capture,
+        source,
+    );
+    validate_tenure_evidence(&evidence)
+        .map_err(|error| invalid_claim(capture, &error.to_string()))?;
+    Ok(evidence)
+}
+
+fn record_evidence(coach: &mut CanonicalCoach, evidence: CoachTenureEvidence) -> CrawlResult<()> {
+    if !coach.tenure_evidence.contains(&evidence) {
+        crate::directory::acquisition::bounded(&mut coach.tenure_evidence, evidence)?;
+    }
+    Ok(())
+}
+
 fn bound_evidence(
-    claim: CoachContactClaim,
+    claim: Option<CoachContactClaim>,
     tenure: CoachTenure,
     statement: String,
     capture: Capture<'_>,
@@ -92,7 +169,7 @@ fn bound_evidence(
         source_sha256: capture.sha256.to_owned(),
         retrieved_at: capture.observed_on.to_owned(),
         statement,
-        claim: Some(claim),
+        claim,
     }
 }
 

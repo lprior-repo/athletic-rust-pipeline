@@ -4,6 +4,7 @@ use std::path::Path;
 use census_domain::model::{CanonicalAthlete, CanonicalSchool};
 
 use crate::report::ReportResult;
+use crate::workbook::recruiting::bounded::{bounded_contacts, WORKBOOK_GROUP_BUDGET};
 use crate::workbook::recruiting::contact::{self, SchoolContacts};
 use crate::workbook::recruiting::profiles::profiles_of;
 
@@ -64,14 +65,18 @@ struct Projection<'a, 'd> {
 
 impl<'a, 'd> Projection<'a, 'd> {
     fn of(inputs: &'a Inputs<'d>) -> ReportResult<Self> {
+        crate::grouping::Admission::new("recruiting schools").rows(inputs.derivation.schools())?;
         let schools = inputs
             .derivation
             .schools()
             .iter()
             .map(|school| (school.id.as_str(), school))
             .collect();
-        let contacts =
-            contact::contacts(inputs.derivation.coach_observations(), inputs.school_year);
+        let contacts = bounded_contacts(
+            inputs.derivation.coach_observations(),
+            inputs.school_year,
+            WORKBOOK_GROUP_BUDGET,
+        )?;
         let school_address = crate::workbook::verify::postal::athlete_address_index(
             inputs.dataset,
             inputs.derivation.athletes(),

@@ -1,6 +1,6 @@
 use census_domain::model::{EventKind, Gender, Grade, Mark, TimingMethod};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
 pub struct ParsedMeet {
     pub name: String,
     pub date: String,
@@ -11,7 +11,7 @@ pub struct ParsedMeet {
     pub rows_skipped: usize,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
 pub struct ParsedEvent {
     pub label: String,
     pub kind: EventKind,
@@ -21,7 +21,7 @@ pub struct ParsedEvent {
     pub rows: Vec<ParsedRow>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
 pub struct ParsedRow {
     pub place: Option<u16>,
     pub name: String,
@@ -35,7 +35,7 @@ pub struct ParsedRow {
     pub legs: Vec<RelayLeg>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
 pub struct RelayLeg {
     pub position: u8,
     pub name: String,

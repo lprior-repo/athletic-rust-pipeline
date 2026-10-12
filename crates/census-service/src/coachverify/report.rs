@@ -1,6 +1,5 @@
 use crate::coachverify::evidence_path;
 use crate::coachverify::verdict::{FragmentOutcome, RowOutcome};
-use census_domain::model::ContactClaimEvidence;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
@@ -142,12 +141,17 @@ pub fn write_state_union(
     use anyhow::Context;
     std::fs::create_dir_all(dir).with_context(|| format!("create staging dir {dir:?}"))?;
     let mut by_state: BTreeMap<String, Vec<&RowOutcome>> = BTreeMap::new();
+    let mut row_count = 0usize;
     for outcome in outcomes {
         for row in outcome.shipped() {
-            by_state
+            row_count = row_count.saturating_add(1);
+            super::limits::check("contact rows", row_count, super::limits::MAX_ROWS)?;
+            super::limits::row_bytes(&row.row)?;
+            let rows = by_state
                 .entry(row.row.state.trim().to_ascii_uppercase())
-                .or_default()
-                .push(row);
+                .or_default();
+            rows.try_reserve(1)?;
+            rows.push(row);
         }
     }
     let mut counts = BTreeMap::new();
@@ -157,9 +161,10 @@ pub fn write_state_union(
             continue;
         }
         let path = dir.join(format!("{state}.csv"));
-        let claims: Vec<&ContactClaimEvidence> =
-            rows.iter().flat_map(|row| &row.evidence).collect();
-        census_store::read::write_snapshot_rows(&evidence_path(&path), &claims)?;
+        super::output::write_evidence_jsonl(
+            &evidence_path(&path),
+            rows.iter().flat_map(|row| &row.evidence),
+        )?;
         census_store::read::publish_atomically(&path, |temporary| {
             write_state_file_body(temporary, &path, &rows)
         })?;
@@ -173,9 +178,11 @@ fn write_state_file_body(
     published: &Path,
     rows: &[&RowOutcome],
 ) -> census_store::StoreResult<()> {
-    let mut writer = csv::WriterBuilder::new()
-        .from_path(temporary)
-        .map_err(|error| census_store::read::csv_failure(published, error))?;
+    let file = std::fs::File::create(temporary).map_err(|source| census_store::StoreError::Io {
+        path: published.to_path_buf(),
+        source,
+    })?;
+    let mut writer = csv::WriterBuilder::new().from_writer(super::limits::LimitedWriter::new(file));
     writer
         .write_record(
             census_domain::model::CONTACT_COLUMNS

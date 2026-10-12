@@ -76,7 +76,7 @@ impl Series<'_, '_> {
     fn sheets(&self) -> ReportResult<Vec<Sheet>> {
         let cohort = cohort_of(self.dataset, self.scope);
         let names = school_name_index(self.population.schools());
-        let conflicts = conflict_families(self.rows, &cohort, &names);
+        let conflicts = conflict_families(self.rows, &cohort, &names)?;
         let review = review_families(self.rows, &cohort, &names)?;
         let [mailboxes, research] =
             contacts::expected(self.population.schools(), self.school_year)?;

@@ -10,6 +10,7 @@ mod fallible_checks;
 #[path = "../tests/common/capture_cache.rs"]
 pub(crate) mod capture_cache;
 
+pub mod admission;
 pub mod bootstrap;
 pub mod census;
 pub mod coachverify;

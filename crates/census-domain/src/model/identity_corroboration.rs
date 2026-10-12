@@ -133,6 +133,9 @@ fn corroborated_by(facts: &[&IdentityFact], key: PersonKey) -> bool {
 }
 
 fn independent_claims(first: &IdentityFact, second: &IdentityFact, key: PersonKey) -> bool {
+    if first.shares_primary(second) {
+        return true;
+    }
     match (first.attested.get(&key), second.attested.get(&key)) {
         (Some(left), Some(right)) => left
             .iter()

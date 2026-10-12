@@ -18,6 +18,7 @@ pub(super) fn read(store: &Store) -> StoreResult<Option<RunManifest>> {
 }
 
 pub(super) fn write(store: &Store, manifest: &RunManifest) -> StoreResult<()> {
+    let _binding = store.lock_appends();
     if let Some(retained) = read(store)? {
         if retained == *manifest {
             return Ok(());

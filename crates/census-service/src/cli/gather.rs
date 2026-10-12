@@ -1,5 +1,4 @@
 use anyhow::{Context, Result};
-use census_crawl::CollectionDisposition;
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use census_service::census;
@@ -15,6 +14,14 @@ use super::{build_fetcher, resolve_states, school_year, Cli, Route};
 #[path = "gather_collect.rs"]
 mod gather_collect;
 pub(super) use gather_collect::{run_collect, CollectArgs};
+
+#[path = "teams_outcomes.rs"]
+mod teams_outcomes;
+#[cfg(test)]
+pub(super) use teams_outcomes::TeamsCollectionError;
+pub(super) use teams_outcomes::TeamsOutcomes;
+#[path = "teams_ingress.rs"]
+mod teams_ingress;
 
 #[derive(Args, Debug)]
 pub(super) struct TeamsArgs {
@@ -36,6 +43,9 @@ pub(super) struct TeamsArgs {
     #[arg(help = "Ignore caches and re-read every page (paced at the registry rate)")]
     #[arg(long)]
     refresh: bool,
+    #[arg(help = "Print a JSON report with every jurisdiction's outcome, including failures")]
+    #[arg(long)]
+    json: bool,
     #[command(flatten)]
     flags: WorkflowFlags,
 }
@@ -104,77 +114,27 @@ async fn teams_offline(
             });
         match collected {
             Ok((teams, report)) => {
-                println!(
-                    "{}",
-                    outcomes.record_report(
-                        *jurisdiction,
-                        teams.len(),
-                        report.disposition,
-                        report.errors,
-                        report.unfinished.len(),
-                    )
-                );
-                for team in teams.iter().take(3) {
-                    println!("  {}\t{}\t{}", team.id, team.name, team.city_state);
+                let line = outcomes.record_report(*jurisdiction, report);
+                if !args.json {
+                    println!("{line}");
+                    for team in teams.iter().take(3) {
+                        println!("  {}\t{}\t{}", team.id, team.name, team.city_state);
+                    }
                 }
             }
             Err(error) => {
                 eprintln!("{}\tteams=error\t{}", jurisdiction.code(), error);
-                println!("{}", outcomes.record_failure(*jurisdiction));
+                let line = outcomes.record_failure(*jurisdiction, &error);
+                if !args.json {
+                    println!("{line}");
+                }
             }
         }
     }
+    if args.json {
+        println!("{}", outcomes.json()?);
+    }
     outcomes.finish()
-}
-
-#[derive(Debug, Default)]
-pub(super) struct TeamsOutcomes {
-    failed: Vec<String>,
-    incomplete: Vec<String>,
-}
-
-impl TeamsOutcomes {
-    pub(super) fn record_report(
-        &mut self,
-        jurisdiction: UsJurisdiction,
-        teams: usize,
-        disposition: CollectionDisposition,
-        errors: u64,
-        unfinished: usize,
-    ) -> String {
-        if !disposition.is_complete() || errors != 0 || unfinished != 0 {
-            self.incomplete.push(jurisdiction.code().to_string());
-        }
-        format!(
-            "{}\tteams={}\toutcome={:?}\terrors={}\tunfinished={}",
-            jurisdiction.code(),
-            teams,
-            disposition,
-            errors,
-            unfinished
-        )
-    }
-
-    pub(super) fn record_failure(&mut self, jurisdiction: UsJurisdiction) -> String {
-        let code = jurisdiction.code().to_string();
-        let line = format!(
-            "{code}\tteams=error\toutcome={:?}",
-            CollectionDisposition::Failed
-        );
-        self.failed.push(code);
-        line
-    }
-
-    pub(super) fn finish(&self) -> Result<()> {
-        if self.failed.is_empty() && self.incomplete.is_empty() {
-            return Ok(());
-        }
-        Err(anyhow::anyhow!(
-            "team collection did not complete: failed [{}]; incomplete [{}]",
-            self.failed.join(", "),
-            self.incomplete.join(", ")
-        ))
-    }
 }
 
 async fn teams_ingress(
@@ -202,7 +162,7 @@ async fn teams_ingress(
             )
         })
         .collect::<Result<Vec<_>>>()?;
-    live::drive_states(origin, requests, args.flags.rounds(), teams_line).await
+    teams_ingress::drive(origin, requests, args.flags.rounds(), args.json).await
 }
 
 pub(super) async fn run_meets(cli: &Cli, args: &MeetsArgs) -> Result<()> {

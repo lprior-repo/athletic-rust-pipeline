@@ -10,8 +10,8 @@ pub fn today_iso() -> String {
 
 pub fn cooldown_until_iso8601(seconds: u64) -> String {
     let seconds = i64::try_from(seconds).map_or(i64::MAX, |value| value);
-    chrono::Utc::now()
-        .checked_add_signed(chrono::Duration::seconds(seconds))
+    chrono::TimeDelta::try_seconds(seconds)
+        .and_then(|delta| chrono::Utc::now().checked_add_signed(delta))
         .map_or(chrono::DateTime::<chrono::Utc>::MAX_UTC, |value| value)
         .to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }

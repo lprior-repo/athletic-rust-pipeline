@@ -11,9 +11,11 @@ use super::GenerationError;
 pub(crate) use census_domain::model::SCHOOL_IDENTITY_FAMILY;
 
 mod apply;
+mod attest;
 mod generation;
 mod lanes;
 mod link;
+mod postal;
 mod support;
 
 pub(crate) use generation::join_generation_pinned;
@@ -112,6 +114,16 @@ pub struct Counters {
     pub already_linked: u64,
     #[serde(default)]
     pub backfilled: u64,
+    #[serde(default)]
+    pub postal_gaps: u64,
+    #[serde(default)]
+    pub postal_filled: u64,
+    #[serde(default)]
+    pub postal_remaining: u64,
+    #[serde(default)]
+    pub ccd_filled: u64,
+    #[serde(default)]
+    pub pss_filled: u64,
     pub websites: u64,
     pub review: u64,
     pub no_match: u64,
@@ -143,6 +155,8 @@ pub struct OutcomeRow {
     pub reason: Option<String>,
     pub detail: Option<String>,
     pub candidates: Vec<String>,
+    #[serde(default)]
+    pub postal_gap: bool,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -200,6 +214,8 @@ struct Job<'a> {
     association: Option<String>,
     association_problem: Option<String>,
     attested: Vec<AttestedRecord>,
+    postal_present: bool,
+    postal_provider: Option<&'static str>,
 }
 
 pub fn process(

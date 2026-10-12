@@ -41,6 +41,18 @@ pub(crate) fn derived(id: &str, note: u32) -> DerivedRow {
     }
 }
 
+pub(crate) fn stage_required_tables(
+    stage: &mut DerivedStage<'_>,
+    populated: &[Table],
+) -> StoreResult<()> {
+    for table in Table::ALL {
+        if table.generation_partitioned() && !populated.contains(&table) {
+            stage.replace_many::<DerivedRow>(table, &[])?;
+        }
+    }
+    Ok(())
+}
+
 pub(crate) fn generation_rows(store: &Store, table: Table, generation: u64) -> TestResult<u64> {
     let prefix = crate::keys::derived_generation_prefix(table, generation);
     let mut held = 0_u64;
@@ -57,5 +69,6 @@ mod derived_publication;
 mod derived_rows;
 mod journal_limits;
 mod observation_laws;
+mod run_binding;
 mod sequence_bounds;
 mod snapshot_publication;

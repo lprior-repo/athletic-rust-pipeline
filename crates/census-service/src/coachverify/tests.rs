@@ -599,3 +599,160 @@ fn a_stalled_coach_converter_refuses_at_its_deadline_and_leaves_no_scratch_files
     std::fs::remove_file(&converter)?;
     Ok(())
 }
+
+#[test]
+fn reconciliation_opens_sidecar_once() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let path = dir.path().join("contacts.csv");
+    let evidence = evaluate(
+        &fragment(),
+        &staff("<tr><td>Dana Reid Head XC Coach dana@example.org</td></tr>"),
+    )?;
+    let outcome = RowOutcome {
+        row: fragment(),
+        verdict: evidence.verdict(),
+        evidence: evidence.claims,
+    };
+    let mut rows = Vec::new();
+    for index in 0..32 {
+        let mut unique = outcome.clone();
+        unique.row.school = format!("School {index}");
+        for claim in &mut unique.evidence {
+            claim.school = unique.row.school.clone();
+        }
+        rows.push(unique);
+    }
+    write_fragment(&path, &rows)?;
+    let verified = FragmentOutcome {
+        file: "WI.csv".to_string(),
+        rows,
+        counts: Default::default(),
+    };
+    super::output::metrics::OPENS.with(|count| count.set(0));
+    super::output::metrics::COMPARISONS.with(|count| count.set(0));
+    let result = reconcile(&path, &[verified]);
+    let opens = super::output::metrics::OPENS.with(|count| count.get());
+    let comparisons = super::output::metrics::COMPARISONS.with(|count| count.get());
+    println!("CONTACT-11 R=32 opens={opens} comparisons={comparisons}");
+    check!(eq; opens, 1);
+    check!(eq; comparisons, 64);
+    let report = result?;
+    check!(eq; report.published, 32);
+    check!(eq; report.unmatched_total(), 0);
+    Ok(())
+}
+
+#[test]
+fn contact_existing_fixture_digest() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let path = dir.path().join("contacts.csv");
+    let evidence = evaluate(
+        &fragment(),
+        &staff("<tr><td>Dana Reid Head XC Coach dana@example.org</td></tr>"),
+    )?;
+    let outcome = RowOutcome {
+        row: fragment(),
+        verdict: evidence.verdict(),
+        evidence: evidence.claims,
+    };
+    write_fragment(&path, std::slice::from_ref(&outcome))?;
+    let mut hasher = Sha256::new();
+    hasher.update(std::fs::read(&path)?);
+    hasher.update(std::fs::read(evidence_path(&path))?);
+    let digest = format!("{:x}", hasher.finalize());
+    println!("CONTACT-11 contact fixture sha256={digest}");
+    check!(eq; digest, "5a9681333926d40f83dedeb228f8c64591d74c944a89f257a95a633ba23b9c2a");
+    Ok(())
+}
+
+#[test]
+fn indexed_evidence_preserves_duplicate_urls_claims_and_order() -> TestResult {
+    let mut row = fragment();
+    let url = row.source_urls.first().ok_or("source URL")?.clone();
+    row.source_urls.push(url);
+    let evidence = evaluate(
+        &row,
+        &staff("<tr><td>Dana Reid Head XC Coach dana@example.org</td></tr>"),
+    )?;
+    let claims: Vec<_> = evidence.claims.iter().cycle().take(256).cloned().collect();
+    let index = super::ContactEvidenceIndex::build(&claims)?;
+    check!(eq; index.claims_for_row(&row)?, claims);
+    Ok(())
+}
+
+#[test]
+fn evidence_read_refuses_an_oversized_record_before_parsing() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let path = dir.path().join("oversized.evidence.jsonl");
+    std::fs::write(&path, vec![b' '; 1_048_577])?;
+    let error = match read_evidence_jsonl(&path) {
+        Err(error) => error,
+        Ok(_) => return Err("oversized evidence accepted".into()),
+    };
+    check!(eq; error.root_cause().to_string(), "contact record bytes: 1048577 exceeds 1048576");
+    Ok(())
+}
+
+#[test]
+fn evidence_read_reports_a_malformed_later_record() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let path = dir.path().join("malformed.evidence.jsonl");
+    let evidence = evaluate(
+        &fragment(),
+        &staff("<tr><td>Dana Reid Head XC Coach dana@example.org</td></tr>"),
+    )?;
+    let claim = evidence.claims.first().ok_or("claim")?;
+    let body = format!("{}\n{{\n", serde_json::to_string(claim)?);
+    std::fs::write(&path, body)?;
+    let error = match read_evidence_jsonl(&path) {
+        Err(error) => error,
+        Ok(_) => return Err("malformed later evidence discarded".into()),
+    };
+    check!(error.to_string().contains("parse evidence"));
+    Ok(())
+}
+
+#[test]
+fn reconciliation_keeps_distinct_subjects_at_one_program() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let path = dir.path().join("contacts.csv");
+    let evidence = evaluate(
+        &fragment(),
+        &staff("<tr><td>Dana Reid Head XC Coach dana@example.org</td></tr>"),
+    )?;
+    let first = RowOutcome {
+        row: fragment(),
+        verdict: evidence.verdict(),
+        evidence: evidence.claims,
+    };
+    let mut second = first.clone();
+    second.row.coach_name = "Casey Reid".to_string();
+    for claim in &mut second.evidence {
+        claim.person = second.row.coach_name.clone();
+        if claim.field == ContactProofField::CoachName {
+            claim.value = second.row.coach_name.clone();
+        }
+    }
+    let verified = FragmentOutcome {
+        file: "WI.csv".to_string(),
+        rows: vec![first, second],
+        counts: Default::default(),
+    };
+    write_fragment(&path, &verified.rows)?;
+    let report = reconcile(&path, &[verified])?;
+    check!(eq; report.verified, 2);
+    check!(eq; report.published, 2);
+    check!(eq; report.unmatched_total(), 0);
+    check!(eq; report.tampered_total(), 0);
+    Ok(())
+}
+
+#[test]
+fn reconciliation_work_budget_is_a_reported_error() -> TestResult {
+    let mut work = 8_000_000;
+    let error = super::limits::charge_work(&mut work, &fragment(), 2)
+        .err()
+        .ok_or("work limit was not enforced")?;
+    check!(eq; error.to_string(), "contact reconciliation work: 8000008 exceeds 8000000");
+    Ok(())
+}

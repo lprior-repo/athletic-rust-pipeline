@@ -27,6 +27,16 @@ impl<'a> MeetWalkRequest<'a> {
         }
     }
 
+    pub(super) fn fragment(&self) -> Self {
+        Self {
+            jurisdiction: self.jurisdiction,
+            year: self.year,
+            observed_on: self.observed_on,
+            options: self.options,
+            page_budget: 1,
+        }
+    }
+
     pub fn with_page_budget(mut self, pages: NonZeroU32) -> CrawlResult<Self> {
         if pages.get() > MAX_PAGES_PER_INVOCATION {
             return Err(invalid("meet invocation exceeds its fixed page budget"));

@@ -2,8 +2,11 @@ use census_domain::model::{compute_contact_proof, ContactClaimEvidence, RawConta
 use std::collections::BTreeMap;
 use std::path::Path;
 
-fn row_identity(row: &RawContactRow) -> Vec<String> {
-    let mut urls: Vec<&str> = row.source_urls.iter().map(String::as_str).collect();
+fn row_identity(row: &RawContactRow) -> anyhow::Result<Vec<String>> {
+    super::limits::row_bytes(row)?;
+    let mut urls = Vec::new();
+    urls.try_reserve(row.source_urls.len())?;
+    urls.extend(row.source_urls.iter().map(String::as_str));
     urls.sort_unstable();
     urls.dedup();
     let fields = [
@@ -17,12 +20,16 @@ fn row_identity(row: &RawContactRow) -> Vec<String> {
         &row.last_observed,
     ];
     let emails = [&row.public_professional_email, &row.ad_email];
-    fields
-        .iter()
-        .map(|value| crate::coachverify::normalize(value))
-        .chain(emails.iter().map(|s| (*s).to_string()))
-        .chain(urls.into_iter().map(str::to_string))
-        .collect()
+    let mut identity = Vec::new();
+    identity.try_reserve(10usize.saturating_add(urls.len()))?;
+    identity.extend(
+        fields
+            .iter()
+            .map(|value| crate::coachverify::normalize(value)),
+    );
+    identity.extend(emails.iter().map(|value| (*value).to_string()));
+    identity.extend(urls.into_iter().map(str::to_string));
+    Ok(identity)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -81,27 +88,8 @@ pub struct RowOutcome {
 }
 
 impl RowOutcome {
-    pub fn identity(&self) -> Vec<String> {
-        let mut urls: Vec<&str> = self.row.source_urls.iter().map(String::as_str).collect();
-        urls.sort_unstable();
-        urls.dedup();
-        let fields = [
-            &self.row.school,
-            &self.row.city,
-            &self.row.state,
-            &self.row.sport,
-            &self.row.role,
-            &self.row.coach_name,
-            &self.row.ad_name,
-            &self.row.last_observed,
-        ];
-        let emails = [&self.row.public_professional_email, &self.row.ad_email];
-        fields
-            .iter()
-            .map(|value| crate::coachverify::normalize(value))
-            .chain(emails.iter().map(|s| (*s).to_string()))
-            .chain(urls.into_iter().map(str::to_string))
-            .collect()
+    pub fn identity(&self) -> anyhow::Result<Vec<String>> {
+        row_identity(&self.row)
     }
 }
 
@@ -152,9 +140,26 @@ impl Reconcile {
 }
 
 pub fn reconcile(published: &Path, outcomes: &[FragmentOutcome]) -> anyhow::Result<Reconcile> {
-    let mut verified_map: BTreeMap<Vec<String>, String> = BTreeMap::new();
+    let mut verified_map: std::collections::HashMap<Vec<String>, String> =
+        std::collections::HashMap::new();
+    let verified_count = outcomes.iter().try_fold(0usize, |count, outcome| {
+        count
+            .checked_add(outcome.rows.len())
+            .ok_or_else(|| anyhow::anyhow!("verified row count overflow"))
+    })?;
+    super::limits::check(
+        "verified contact rows",
+        verified_count,
+        super::limits::MAX_ROWS,
+    )?;
+    verified_map.try_reserve(verified_count)?;
+    let mut bytes = 0usize;
+    let mut work = 0usize;
     for outcome in outcomes.iter().flat_map(FragmentOutcome::shipped) {
-        let identity = outcome.identity();
+        bytes = bytes.saturating_add(super::limits::row_bytes(&outcome.row)?);
+        super::limits::check("verified contact bytes", bytes, super::limits::MAX_BYTES)?;
+        super::limits::charge_work(&mut work, &outcome.row, outcome.evidence.len())?;
+        let identity = outcome.identity()?;
         let digest = compute_contact_proof(&outcome.row, &outcome.evidence)
             .map_err(|e| anyhow::anyhow!("proof computation: {e}"))?;
         verified_map.insert(identity, digest);
@@ -164,11 +169,13 @@ pub fn reconcile(published: &Path, outcomes: &[FragmentOutcome]) -> anyhow::Resu
         files: outcomes.len(),
         ..Default::default()
     };
-    let published_rows = super::read_fragment(published)?;
-    report.published = published_rows.len();
-    for row in published_rows {
-        let evidence = super::read_fragment_evidence(published, &row)?;
-        match verified_map.get(&row_identity(&row)) {
+    let claims = super::read_evidence_jsonl(&super::evidence_path(published))?;
+    let evidence_index = super::ContactEvidenceIndex::build(&claims)?;
+    super::output::for_each_fragment_row(published, |row| {
+        report.published = report.published.saturating_add(1);
+        let evidence = evidence_index.claims_for_row(&row)?;
+        super::limits::charge_work(&mut work, &row, evidence.len())?;
+        match verified_map.get(&row_identity(&row)?) {
             Some(stored_digest) => {
                 let recomputed = compute_contact_proof(&row, &evidence)
                     .map_err(|e| anyhow::anyhow!("proof recomputation: {e}"))?;
@@ -182,7 +189,8 @@ pub fn reconcile(published: &Path, outcomes: &[FragmentOutcome]) -> anyhow::Resu
                 *count = count.saturating_add(1);
             }
         }
-    }
+        Ok(())
+    })?;
     let tampered = report.tampered_total();
     if tampered > 0 {
         anyhow::bail!("proof digest mismatch: {tampered} tampered rows detected");

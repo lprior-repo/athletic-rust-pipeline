@@ -51,9 +51,8 @@ impl Fetcher {
             if self.host_blocked(&host, &crate::net::now_iso8601()).await {
                 return Err(FetchError::Cooldown { host });
             }
-            let response = self.dispatch_at(&current_url, plan).await?;
+            let response = self.dispatch_at(&current_url, &host, plan).await?;
             let status = response.status().as_u16();
-            self.count_request(&host, status).await;
             match self.resolve_redirect_target(&current_url, &original_url, &response)? {
                 Some(next_url) => {
                     redirects.push(crate::net::RedirectHop {
@@ -203,14 +202,14 @@ impl Fetcher {
         }
     }
 
-    pub(super) async fn count_request(&self, host: &str, status: u16) {
-        if status == 200 || status == 404 {
-            return;
-        }
+    pub(super) async fn count_attempt(&self, host: &str) {
         let mut stats = self.stats.lock().await;
         stats.requests = stats.requests.saturating_add(1);
-        let entry = stats.per_host.entry(host.to_string()).or_default();
-        entry.requests = entry.requests.saturating_add(1);
+        if let Some(entry) = stats.per_host.get_mut(host) {
+            entry.requests = entry.requests.saturating_add(1);
+        } else {
+            stats.per_host.entry(host.to_string()).or_default().requests = 1;
+        }
     }
 
     pub(super) async fn record_transport(
@@ -280,3 +279,7 @@ fn authentication_path(url: &url::Url) -> bool {
         )
     })
 }
+
+#[cfg(test)]
+#[path = "attempt_accounting_tests.rs"]
+mod attempt_accounting_tests;

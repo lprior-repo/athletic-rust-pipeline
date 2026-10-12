@@ -1,0 +1,12 @@
+{
+ "bytes": 2076,
+ "content_digest": "1dcdc4e0719e4164b1115c5d2530c2991a31df6b63ebf55c09ddb6dad05b618c",
+ "content_type": "application/json",
+ "fetched_at": "2026-10-11T18:51:00Z",
+ "fetched_at_utc": "2026-10-11T18:51:00Z",
+ "file": "event-summary-meet-79065.json",
+ "method": "GET",
+ "sha256": "1dcdc4e0719e4164b1115c5d2530c2991a31df6b63ebf55c09ddb6dad05b618c",
+ "status": 200,
+ "url": "https://s-gke-usc1-nssi3-33.firebaseio.com/meet_79065/event_summary.json?ns=trackmeet-io"
+}

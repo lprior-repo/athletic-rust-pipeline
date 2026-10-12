@@ -168,7 +168,7 @@ impl Run<'_> {
         projection::project(
             self.ctx,
             section,
-            (&capture.url, &capture.fetched_at),
+            capture,
             (&profile, &parsed),
             &mut self.report,
         )

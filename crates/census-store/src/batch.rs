@@ -8,6 +8,9 @@ use super::keys::{
 };
 use super::{StorageMode, StoreError, StoreResult, Table, MAX_ROWS_PER_TABLE};
 
+#[cfg(test)]
+mod tests;
+
 pub(super) fn refuse_over_bound(table: Table, rows: u64) -> StoreResult<()> {
     if rows > MAX_ROWS_PER_TABLE {
         return Err(StoreError::TooManyRows {
@@ -153,13 +156,18 @@ fn stage_map(
     for value in records {
         let id = observation_id(&value)?;
         let key = observation_key(table, &id, DERIVED_SEQUENCE);
+        #[cfg(test)]
+        tests::point_read()?;
         let held = entities
             .get(&key)
             .map_err(|source| StoreError::Read { source })?
             .is_some();
         let first_named = staged.named.insert(id);
         if first_named && !held {
-            staged.added = staged.added.saturating_add(1);
+            staged.added = staged
+                .added
+                .checked_add(1)
+                .ok_or(StoreError::CounterOverflow)?;
         }
         batch.insert(entities, key, value);
     }
@@ -176,20 +184,76 @@ fn drop_foreign_batch(
     if named.is_empty() {
         return Ok(());
     }
-    let prefix = observation_prefix(table);
-    for guard in entities.prefix(prefix.as_slice()) {
-        let key = guard.key().map_err(|source| StoreError::Read { source })?;
-        let (_, id, sequence) =
-            super::keys::view_observation_key(&key).ok_or_else(|| StoreError::Invariant {
-                detail: format!("table {} holds a malformed observation key", table.file()),
-            })?;
-        if sequence == DERIVED_SEQUENCE {
+    let mut ordered = Vec::new();
+    ordered
+        .try_reserve_exact(named.len())
+        .map_err(|_| StoreError::Refused {
+            detail: "allocating derived map cleanup prefixes".into(),
+        })?;
+    ordered.extend(named.iter().map(String::as_str));
+    ordered.sort_unstable();
+    let mut covered: Option<&str> = None;
+    let mut visits = 0;
+    let mut prefix = cleanup_prefix(table)?;
+    let table_bytes = prefix.len();
+    for id in ordered {
+        if covered.is_some_and(|prior| {
+            id.strip_prefix(prior)
+                .is_some_and(|suffix| suffix.starts_with('\0'))
+        }) {
             continue;
         }
-        let id = String::from_utf8_lossy(id).into_owned();
-        if named.contains(&id) {
-            batch.remove(entities, key);
+        covered = Some(id);
+        prefix.truncate(table_bytes);
+        prefix.extend_from_slice(id.as_bytes());
+        prefix.push(0);
+        for guard in entities.prefix(prefix.as_slice()) {
+            charge_cleanup(&mut visits)?;
+            let key = guard.key().map_err(|source| StoreError::Read { source })?;
+            #[cfg(test)]
+            tests::key_visit()?;
+            let (_, id, sequence) =
+                super::keys::view_observation_key(&key).ok_or_else(|| StoreError::Invariant {
+                    detail: format!("table {} holds a malformed observation key", table.file()),
+                })?;
+            if sequence == DERIVED_SEQUENCE {
+                continue;
+            }
+            let id = std::str::from_utf8(id).map_err(|_| StoreError::Invariant {
+                detail: format!("table {} holds a non-utf8 map id", table.file()),
+            })?;
+            #[cfg(test)]
+            tests::comparison()?;
+            if named.contains(id) {
+                batch.remove(entities, key);
+            }
         }
     }
+    Ok(())
+}
+
+fn cleanup_prefix(table: Table) -> StoreResult<Vec<u8>> {
+    let mut prefix = observation_prefix(table);
+    let extra = crate::MAX_ID_BYTES
+        .checked_add(1)
+        .ok_or(StoreError::CounterOverflow)?;
+    prefix
+        .try_reserve_exact(extra)
+        .map_err(|_| StoreError::Refused {
+            detail: "allocating derived map cleanup key buffer".into(),
+        })?;
+    Ok(prefix)
+}
+
+fn charge_cleanup(visits: &mut u64) -> StoreResult<()> {
+    let next = visits.checked_add(1).ok_or(StoreError::CounterOverflow)?;
+    if next > MAX_ROWS_PER_TABLE {
+        return Err(StoreError::BudgetExceeded {
+            what: "derived map cleanup key visits",
+            needed: next,
+            available: MAX_ROWS_PER_TABLE,
+        });
+    }
+    *visits = next;
     Ok(())
 }

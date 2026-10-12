@@ -146,6 +146,7 @@ impl<'s> DerivedStage<'s> {
                 reclaimed: reclaim_budgeted(self.store),
             });
         }
+        self.refuse_missing_required_tables()?;
         let written = receipt::first(operation, digest, 0);
         self.write_publication(operation, &written, &table_counts)?;
         drop(_appends);
@@ -156,6 +157,7 @@ impl<'s> DerivedStage<'s> {
             reclaimed: reclaim_budgeted(self.store),
         })
     }
+
     fn count_generation_rows(&self) -> StoreResult<Vec<(Table, u64)>> {
         self.tables
             .iter()
@@ -164,6 +166,25 @@ impl<'s> DerivedStage<'s> {
                 Ok((*table, held))
             })
             .collect()
+    }
+
+    fn refuse_missing_required_tables(&self) -> StoreResult<()> {
+        let missing: Vec<&str> = Table::ALL
+            .into_iter()
+            .filter(|table| table.generation_partitioned() && !self.tables.contains(table))
+            .map(Table::file)
+            .collect();
+        if missing.is_empty() {
+            return Ok(());
+        }
+        Err(StoreError::PublicationRefused {
+            detail: format!(
+                "the manifest for generation {} omits required derived table(s) {}: a promoted \
+                 generation must declare every generation-partitioned table it makes current",
+                self.generation,
+                missing.join(", ")
+            ),
+        })
     }
 
     fn refuse_moved_inputs(&self) -> StoreResult<()> {

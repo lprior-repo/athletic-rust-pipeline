@@ -294,6 +294,13 @@ revisions, scope, cohort, as-of time, record IDs, counts, hashes and lengths. In
 against the frozen evidence, durably finalize the bundle, then atomically switch its publication
 reference. Fence stale exporters; keep the previous valid bundle on failure. A file rename alone
 is not multi-artifact atomic publication. XLSX byte equality alone is not semantic correctness.
+A generation is verified against its own frozen input: independent readback and seal reopen
+`<generation>/frozen-input.json` rather than a fresh store snapshot, because publishing advances the
+store sequence and a later reload would report the recorded captured sequence as a defect. Only a
+workbook inside an owned `<root>/generations/<digest>/` carries the publication root a seal consults;
+copies used as evidence keep that layout. The pipeline holds at most one complete generation resident
+at a time, publication included: validating a staged generation binds it to the already-resident
+input instead of decoding a second copy.
 
 Published cells distinguish an absent observation from a measured zero. A count column publishes its
 integer, including zero, because a count of zero is meaningful; a mark, measurement, profile URL,

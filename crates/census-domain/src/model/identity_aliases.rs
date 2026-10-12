@@ -11,19 +11,20 @@ impl IdentityAliases {
         &mut self,
         left: &AthleteCandidateId,
         right: &AthleteCandidateId,
-    ) -> Result<(), IdentityError> {
+    ) -> Result<Option<(AthleteCandidateId, AthleteCandidateId)>, IdentityError> {
         let left = self.root(left)?;
         let right = self.root(right)?;
         if left == right {
-            return Ok(());
+            return Ok(None);
         }
         let (child, parent) = if left > right {
             (left, right)
         } else {
             (right, left)
         };
+        let transition = (child.clone(), parent.clone());
         self.parents.insert(child.clone(), parent.clone());
-        Ok(())
+        Ok(Some(transition))
     }
 
     pub(super) fn root<'a>(

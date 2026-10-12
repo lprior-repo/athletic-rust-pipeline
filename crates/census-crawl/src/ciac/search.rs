@@ -34,10 +34,12 @@ pub(super) async fn collect_directory(
         }) {
             return owe(report, format!("{url}#school={name}"));
         }
-        super::collect::emit_school(
-            ctx,
-            &school_entities(name, table, &capture.fetched_at),
-            report,
-        )
+        let mut extract = school_entities(name, table, &capture.fetched_at);
+        crate::coach_directories::record_capture_appointments(
+            &mut extract.coaches,
+            &capture,
+            "ciac",
+        )?;
+        super::collect::emit_school(ctx, &extract, report)
     })
 }

@@ -15,13 +15,14 @@ mod results;
 mod standings;
 mod wire;
 
-pub use docs::parse_event_document;
+pub use docs::{parse_event_document, parse_event_summary};
 pub use meets::build_meets;
 pub use parse::{implausible_year, infer_level, parse_meets_csv, MeetRow};
 pub use results::{
-    collect as collect_results, collect_manifest, ManifestOptions, ResultOptions, StandingsCapture,
+    collect as collect_results, collect_manifest, collect_manifest_body, freeze_manifest,
+    FrozenManifest, ManifestOptions, ResultOptions, StandingsCapture,
 };
-pub use wire::event_doc_url;
+pub use wire::{event_doc_url, event_summary_url};
 
 #[derive(Debug, Clone, Default)]
 pub struct Options {

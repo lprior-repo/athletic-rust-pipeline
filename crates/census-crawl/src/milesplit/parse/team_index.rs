@@ -98,6 +98,18 @@ impl Run {
     }
 
     fn accept(&mut self, fields: Fields<'_>) -> CrawlResult<()> {
+        if let Some(country) = fields.city.rsplit(',').next().map(str::trim) {
+            if fields.city.contains(',')
+                && country.len() == 3
+                && country.bytes().all(|byte| byte.is_ascii_uppercase())
+                && country != "USA"
+            {
+                return Err(schema(&format!(
+                    "foreign-directory team {} publishes location {:?}, country {country}",
+                    fields.id, fields.city
+                )));
+            }
+        }
         let requested = self
             .retained
             .checked_add(fields.bytes()?)
@@ -182,7 +194,7 @@ fn fields(row: &str) -> CrawlResult<Fields<'_>> {
     Ok(Fields {
         url: value(&capture, 1)?,
         id: value(&capture, 2)?,
-        slug: value(&capture, 3)?,
+        slug: capture.get(3).map_or("", |value| value.as_str().trim()),
         name: value(&capture, 4)?,
         city: value(&capture, 5)?,
     })

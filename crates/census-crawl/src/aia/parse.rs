@@ -20,6 +20,7 @@ pub struct SchoolInfo {
 pub struct CoachRow {
     pub sport_label: String,
     pub name: String,
+    pub role: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -130,14 +131,18 @@ pub(super) fn parse_coach_rows(document: &str) -> Vec<CoachRow> {
         if sport_label.is_empty() {
             continue;
         }
-        if let Some(name) = head_coach(side) {
-            rows.push(CoachRow { sport_label, name });
+        if let Some((name, role)) = head_coach(side) {
+            rows.push(CoachRow {
+                sport_label,
+                name,
+                role,
+            });
         }
     }
     rows
 }
 
-fn head_coach(side: &str) -> Option<String> {
+fn head_coach(side: &str) -> Option<(String, String)> {
     let mut rest = side;
     while let Some(start) = rest.find(TEXT_MARK) {
         let after = rest.get(start.saturating_add(TEXT_MARK.len())..)?;
@@ -151,7 +156,7 @@ fn head_coach(side: &str) -> Option<String> {
                         && !name.is_empty()
                         && !is_placeholder_name(&name)
                     {
-                        return Some(name);
+                        return Some((name, decode(role_rest.get(..role_end)?.trim())));
                     }
                 }
             }

@@ -19,6 +19,7 @@ pub(super) struct ReadArtifact<'a> {
 }
 
 pub(super) fn record_parsed_artifact(
+    ctx: &crate::AdapterContext<'_>,
     report: &mut AdapterReport,
     run: &mut ArtifactRun,
     read: ReadArtifact<'_>,
@@ -46,6 +47,8 @@ pub(super) fn record_parsed_artifact(
             resolved: &mut run.resolved,
             stats: &mut run.stats,
             accumulator: &mut run.accumulated,
+            ctx,
+            counts: &mut run.counts,
         },
     ) {
         Ok(rows) => rows,
@@ -60,6 +63,11 @@ pub(super) fn record_parsed_artifact(
     {
         return Ok(());
     }
+    stage_parsed_artifact(run, read, rows);
+    Ok(())
+}
+
+fn stage_parsed_artifact(run: &mut ArtifactRun, read: ReadArtifact<'_>, rows: usize) {
     run.pending.push((
         read.projection_key,
         json!({
@@ -75,7 +83,6 @@ pub(super) fn record_parsed_artifact(
             "date_assessment": format!("{:?}", read.date_assessment),
         }),
     ));
-    Ok(())
 }
 
 fn count_parsed_artifact(run: &mut ArtifactRun, read: &ReadArtifact<'_>) {

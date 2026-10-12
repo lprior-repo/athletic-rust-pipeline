@@ -5,7 +5,7 @@ use census_domain::model::SchoolYear;
 use std::time::Duration;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
-const ARCHIVE_HTML: &str = r#"
+pub(super) const ARCHIVE_HTML: &str = r#"
         <h3><strong>2025 Track &amp; Field State Results</strong></h3>
         <ul><li>Division 1 - <a href="/Portals/0/PDF/Results/Track/2025/d1boysstateresults.htm">Boys</a>
         | <a href="https://www.wiaawi.org/Portals/0/PDF/Results/Track/2025/d1girlsstateresults.htm">Girls</a></li></ul>
@@ -147,7 +147,11 @@ fn meet_levels_come_from_the_published_name() {
     assert_eq!(level_of("Dual Meet"), CompetitionLevel::Unknown);
 }
 
-fn seed_result_cache(fetcher: &crate::net::Fetcher, url: &str, body: &[u8]) -> TestResult {
+pub(super) fn seed_result_cache(
+    fetcher: &crate::net::Fetcher,
+    url: &str,
+    body: &[u8],
+) -> TestResult {
     use crate::net::cache::{content_digest, write_cache, CacheMeta};
     let representation = crate::net::RepresentationHeaders::canonical(&[])?;
     let key = crate::net::Fetcher::key_for("GET", url, &representation.identity());

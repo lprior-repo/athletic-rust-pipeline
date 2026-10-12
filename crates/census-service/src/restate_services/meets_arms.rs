@@ -1,19 +1,24 @@
+mod diagnostics;
+mod prerequisites;
 #[cfg(test)]
 mod tests;
 mod walks;
 
+use super::history_stage::HistoricalStageScope;
 use super::jobs;
-use super::{history_stage::HistoricalStageScope, source_selection::SourceSelection};
 use crate::census::{MeetCensus, MeetSourceRows};
-use census_crawl::{net::Fetcher, AdapterReport, CollectionDisposition, Recorded, Recording};
+use census_crawl::{net::Fetcher, AdapterReport, CollectionDisposition, Recording};
 use census_domain::model::SchoolYear;
 use census_store::Store;
 use restate_sdk::prelude::{HandlerError, Json, TerminalError};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
+pub(super) use walks::required;
+
 pub(super) const MEETS_ARMS: &[(&str, MeetsArm)] = &[
     (crate::census::SOURCE, MeetsArm::MilesplitIndex),
+    ("athleticnet", MeetsArm::AthleticnetHistoricalDiscovery),
     ("wiaa_results", MeetsArm::WiaaResults),
     ("wayzata", MeetsArm::Wayzata),
 ];
@@ -21,18 +26,15 @@ pub(super) const MEETS_ARMS: &[(&str, MeetsArm)] = &[
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(super) struct MeetsStageOutcome {
     pub census: MeetCensus,
-    pub recorded: Vec<RecordedSource>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub(super) struct RecordedSource {
-    pub slug: String,
-    pub recorded: Recorded,
+    pub identity: String,
+    pub spool: census_crawl::recording::spool::FragmentSummary,
+    pub next: Option<usize>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum MeetsArm {
     MilesplitIndex,
+    AthleticnetHistoricalDiscovery,
     WiaaResults,
     Wayzata,
 }
@@ -44,49 +46,106 @@ pub(super) fn arm_for(slug: &str) -> Option<MeetsArm> {
         .map(|(_, arm)| *arm)
 }
 
-pub(super) async fn meets_stage(
+pub(super) async fn collect_fragment(
     store: Arc<Store>,
     fetcher: Arc<Fetcher>,
     scope: HistoricalStageScope,
-    sources: SourceSelection,
+    source: (String, usize),
+    identity: String,
 ) -> Result<Json<MeetsStageOutcome>, HandlerError> {
-    use futures::{stream, StreamExt, TryStreamExt};
-    stream::iter(sources.iter())
-        .map(Ok::<_, HandlerError>)
-        .try_fold(
-            MeetsStageOutcome {
-                census: MeetCensus::default(),
-                recorded: Vec::new(),
-            },
-            |outcome, source| collect_source(&store, &fetcher, scope, source.slug, outcome),
+    const PHASE: &str = "meet_fragment_outcomes_v1";
+    if let Some(previous) = store
+        .journal_payload(PHASE, &identity)
+        .map_err(store_error)?
+    {
+        return serde_json::from_value(previous)
+            .map(Json)
+            .map_err(|error| jobs::invariant(&format!("decoding durable meet fragment: {error}")));
+    }
+    let (slug, ordinal) = source;
+    let recording = Recording::spooled(store.as_ref().clone(), identity.clone());
+    let collected = match arm_for(&slug) {
+        Some(arm) => walks::fragment(&store, &fetcher, scope, (arm, ordinal), &recording).await,
+        None => walks::unarmed(&store, &fetcher, scope, &slug, &recording).await,
+    };
+    let (census, more) = match collected {
+        Ok(outcome) => outcome,
+        Err(error) => (failed_census(&slug, scope, format!("{error:?}")), false),
+    };
+    let census = diagnostics::bounded_census(&store, census, &identity, ordinal)?;
+    let spool = recording
+        .finish_fragments()
+        .map_err(|error| super::job_error(jobs::collect_error(error)))?;
+    let next = if more {
+        Some(
+            ordinal
+                .checked_add(1)
+                .ok_or_else(|| jobs::invariant("meet fragment cursor overflow"))?,
         )
-        .await
-        .map(Json)
+    } else {
+        None
+    };
+    let outcome = MeetsStageOutcome {
+        census,
+        identity,
+        spool,
+        next,
+    };
+    store
+        .journal_done(PHASE, &outcome.identity, &outcome)
+        .map_err(store_error)?;
+    Ok(Json(outcome))
 }
 
-async fn collect_source(
-    store: &Arc<Store>,
-    fetcher: &Arc<Fetcher>,
-    scope: HistoricalStageScope,
+pub(super) fn absorb_fragment(
     slug: &str,
-    mut outcome: MeetsStageOutcome,
-) -> Result<MeetsStageOutcome, HandlerError> {
-    let Some(arm) = arm_for(slug) else {
-        jobs::assert_some_stage_arms(slug)?;
-        return Ok(outcome);
+    mut census: MeetCensus,
+    mut next: MeetCensus,
+) -> Result<MeetCensus, HandlerError> {
+    if slug == crate::census::SOURCE {
+        next.pages = add(census.pages, next.pages)?;
+        next.fetched = add(census.fetched, next.fetched)?;
+        next.seen = add(census.seen, next.seen)?;
+        return Ok(next);
+    }
+    census.rows = add(census.rows, next.rows)?;
+    let Some(mut source) = next.sources.pop() else {
+        return Ok(census);
     };
-    let recording = Recording::new();
-    let walked = walks::armed(store, fetcher, scope, arm, &recording).await;
-    take_recorded(slug, recording.drain(), &mut outcome.recorded)?;
-    let census = match walked {
-        Ok(census) => census,
-        Err(error) => {
-            let source: &dyn std::error::Error = error.as_ref();
-            failed_census(slug, scope, source.to_string())
+    if let Some(previous) = census.sources.pop() {
+        source.rows = add(previous.rows, source.rows)?;
+        source.withheld = match (previous.withheld, source.withheld) {
+            (Some(left), Some(right)) => Some(
+                left.checked_add(right)
+                    .ok_or_else(|| jobs::invariant("meet withheld count overflow"))?,
+            ),
+            _ => None,
+        };
+        source.unresolved = match (previous.unresolved, source.unresolved) {
+            (Some(left), Some(right)) => Some(census_crawl::UnresolvedCounters {
+                rows: left
+                    .rows
+                    .checked_add(right.rows)
+                    .ok_or_else(|| jobs::invariant("meet unresolved rows overflow"))?,
+                labels: left
+                    .labels
+                    .checked_add(right.labels)
+                    .ok_or_else(|| jobs::invariant("meet unresolved labels overflow"))?,
+            }),
+            _ => None,
+        };
+        if source.errors.is_empty() {
+            source.errors = previous.errors;
         }
-    };
-    outcome.census = absorb(outcome.census, census)?;
-    Ok(outcome)
+        if source.unfinished.is_empty() {
+            source.unfinished = previous.unfinished;
+        }
+        if !source.errors.is_empty() || !source.unfinished.is_empty() {
+            source.disposition = CollectionDisposition::Partial;
+        }
+    }
+    census.sources.push(source);
+    Ok(census)
 }
 
 pub(super) fn absorb(
@@ -182,27 +241,6 @@ pub(super) fn failed_census(
     }
 }
 
-fn take_recorded(
-    slug: &str,
-    walked: Recorded,
-    recorded: &mut Vec<RecordedSource>,
-) -> Result<(), HandlerError> {
-    if walked.is_empty() {
-        return Ok(());
-    }
-    if recorded.len() >= MEETS_ARMS.len() {
-        return Err(jobs::invariant("meet recording source ceiling"));
-    }
-    recorded
-        .try_reserve(1)
-        .map_err(|_| jobs::invariant("meet recording allocation"))?;
-    recorded.push(RecordedSource {
-        slug: slug.to_string(),
-        recorded: walked,
-    });
-    Ok(())
-}
-
 pub(super) fn season_of(year: u16) -> Result<SchoolYear, HandlerError> {
     let start_year = i16::try_from(year).map_err(|_| not_a_season(year))?;
     SchoolYear::new(start_year).ok_or_else(|| not_a_season(year))
@@ -210,4 +248,8 @@ pub(super) fn season_of(year: u16) -> Result<SchoolYear, HandlerError> {
 
 pub(super) fn not_a_season(year: u16) -> HandlerError {
     TerminalError::new(format!("season year {year} is not a school year")).into()
+}
+
+fn store_error(error: census_store::StoreError) -> HandlerError {
+    super::job_error(super::JobError::from(error))
 }

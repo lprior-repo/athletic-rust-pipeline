@@ -2,7 +2,8 @@ use super::entity::push_identity;
 use super::state::{Absorb, Page};
 use crate::tfrrs::parse::{ParsedMeet, ParsedSection, PublishedDate};
 use census_domain::model::{
-    CanonicalMeet, CompetitionLevel, EventId, EventKind, Evidence, Gender, MeetId, SourceNamespace,
+    CanonicalMeet, CompetitionLevel, EventId, EventKind, Evidence, Gender, MeetId,
+    RetainedConflict, SourceNamespace, Sport,
 };
 
 impl<'a> Absorb<'a> {
@@ -11,7 +12,8 @@ impl<'a> Absorb<'a> {
         page: Page<'_>,
         published: &ParsedMeet,
         date: &PublishedDate,
-    ) -> MeetId {
+        sport: Sport,
+    ) -> crate::CrawlResult<MeetId> {
         let id = CanonicalMeet::mint(Some(page.jurisdiction), &date.iso, &published.name, None);
         let meet = self
             .accumulator
@@ -40,7 +42,8 @@ impl<'a> Absorb<'a> {
                 published.path.clone(),
             );
         }
-        id
+        retain_sport(meet, sport)?;
+        Ok(id)
     }
     pub(super) fn event_for(
         &mut self,
@@ -57,4 +60,28 @@ impl<'a> Absorb<'a> {
         let id = super::events::retain(&mut self.accumulator, minted, page, &section.label)?;
         Ok((id, kind))
     }
+}
+
+fn retain_sport(meet: &mut CanonicalMeet, sport: Sport) -> crate::CrawlResult<()> {
+    if sport == Sport::Unknown {
+        return Err(crate::CrawlError::Invariant {
+            detail: "TFRRS publication does not establish meet sport".to_string(),
+        });
+    }
+    if !meet.sports.contains(&sport) {
+        meet.sports.push(sport);
+        meet.sports.sort();
+    }
+    if meet.sports.len() > 1 {
+        let detail = format!(
+            "TFRRS publications disagree on meet sport: {:?}",
+            meet.sports
+        );
+        let conflict = RetainedConflict::new("Meet sport", meet.id.as_str(), &meet.name, &detail);
+        if !meet.retained_conflicts.contains(&conflict) {
+            meet.retained_conflicts.push(conflict);
+        }
+        return Err(crate::CrawlError::Invariant { detail });
+    }
+    Ok(())
 }

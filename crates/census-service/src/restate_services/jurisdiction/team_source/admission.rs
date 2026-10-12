@@ -1,15 +1,16 @@
 use std::sync::Arc;
 
+use crate::admission::Reservation;
 use census_store::Store;
 use restate_sdk::prelude::TerminalError;
-use tokio::sync::{Mutex, OwnedMutexGuard, OwnedSemaphorePermit};
+use tokio::sync::{Mutex, OwnedMutexGuard};
 
 use super::{ledger, TeamsSource};
 use crate::restate_services::wire::TeamsSourceRequest;
 use crate::restate_services::JobError;
 
 pub(super) struct WorkAdmission {
-    _work: OwnedSemaphorePermit,
+    _work: Reservation,
     _source: OwnedMutexGuard<()>,
 }
 

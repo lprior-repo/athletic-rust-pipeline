@@ -134,7 +134,7 @@ impl Fetcher {
         timeout_secs: u64,
     ) -> Result<FetchOutcome, FetchError> {
         self.destination.validate_url(url)?;
-        let representation = representation::canonical_request(&options.headers)?;
+        let representation = representation::canonical_request(url, &options.headers)?;
         let extra = representation::cache_extra(body.as_ref(), &representation);
         let key = Self::key_for(method, url, &extra);
         let (body_path, meta_path) = self.cache_paths(&key);
@@ -259,3 +259,6 @@ mod response_url_tests;
 
 #[cfg(test)]
 mod acquisition_regressions;
+
+#[cfg(test)]
+mod source_header_tests;

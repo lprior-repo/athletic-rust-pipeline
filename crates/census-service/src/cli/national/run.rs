@@ -15,6 +15,8 @@ use crate::cli::Cli;
 use census_service::ingress;
 use census_service::school_address::{parse_source_pairs, Overrides};
 
+mod resume;
+
 pub(crate) async fn attach_existing(
     ingestion: &Ingress,
     identity: &WorkflowIdentity,
@@ -38,7 +40,8 @@ pub(crate) async fn submit_national(
             if matches!(submitted.send_status(), SendStatus::PreviouslyAccepted) {
                 println!(
                     "note: {} already had a run — restate deduplicated this submission, so a changed \
-                     parameter was not applied; bump --revision to start a different run",
+                     parameter was not applied; use a new --resume ordinal to re-drive owed work \
+                     without changing --revision or resetting source attempts",
                     identity.as_str()
                 );
             }
@@ -80,16 +83,21 @@ fn school_address_request(args: &NationalArgs) -> Result<Option<SchoolAddressJoi
 pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
     let (season, revision) = (args.flags.season()?, args.flags.revision());
     let jurisdictions = crate::cli::within_census_scope(&args.states)?;
-    let identity = WorkflowIdentity::national(season, revision, &jurisdictions);
+    let identity = resume::identity(season, revision, &jurisdictions, args.resume);
     let origin = cli.service_origin("national", args.flags.ingress())?;
     let ingestion = ingress::client(origin)?;
+    let history = if args.resume.is_some() {
+        resume::history(&ingestion, season, revision, &jurisdictions).await?
+    } else {
+        census_service::restate_services::HistoryWindow::cohort(
+            &chrono::Utc::now().date_naive().to_string(),
+        )
+        .map_err(anyhow::Error::msg)?
+    };
     let request = NationalRequest {
         season,
         revision,
-        history: census_service::restate_services::HistoryWindow::cohort(
-            &chrono::Utc::now().date_naive().to_string(),
-        )
-        .map_err(anyhow::Error::msg)?,
+        history,
         jurisdictions: jurisdictions.clone(),
         refresh: args.refresh,
         limit_per_state: args.limit_per_state,
@@ -168,7 +176,7 @@ pub(crate) async fn run_national_report(cli: &Cli, args: &NationalReportArgs) ->
     let jurisdictions = crate::cli::within_census_scope(&args.states)?;
     let season = named_season(args.season)?;
     let revision = Revision(args.revision);
-    let identity = WorkflowIdentity::national(season, revision, &jurisdictions);
+    let identity = resume::identity(season, revision, &jurisdictions, args.resume);
     let origin = cli.service_origin("national-report", args.ingress.as_deref())?;
     let ingestion = ingress::client(origin)?;
     let national = NationalCensusIngressClient::from_client(ingestion, identity.as_str());

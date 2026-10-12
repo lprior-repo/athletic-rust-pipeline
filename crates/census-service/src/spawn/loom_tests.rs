@@ -62,6 +62,9 @@ fn run_permutation() -> TestResult {
     check!(eq; report.completed, 1);
     check!(eq; report.panicked, 1);
     check!(eq; report.cancelled, 0);
+    check!(eq; report.aborted, 0);
+    check!(eq; report.failed, 0);
+    check!(eq; report.still_running, 0);
     check!(eq; report.timed_out, 0);
     check!(eq; report.remaining, 0);
     held.ledger = Ledger::default();
@@ -72,9 +75,10 @@ fn run_permutation() -> TestResult {
 fn check_identity(region: &Mutex<Region>) -> TestResult {
     let held = region.lock().map_err(|_| "region lock poisoned")?;
     let report = held.ledger.report();
+    let counted = report.disjoint_total().saturating_add(held.in_flight);
     check!(eq;
         report.accepted,
-        report.completed + report.cancelled + report.panicked + report.aborted + held.in_flight,
+        counted,
         "an accepted unit was counted twice, or dropped"
     );
     Ok(())

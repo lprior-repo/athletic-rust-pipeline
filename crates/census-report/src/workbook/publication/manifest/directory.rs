@@ -1,5 +1,6 @@
+use super::super::sidecars;
 use super::artifact::{hash_artifact, MAX_BUNDLE_BYTES};
-use super::{artifact_names, invariant, sidecars, Manifest};
+use super::{artifact_names, invariant, Manifest};
 use crate::report::{io_error, ReportResult};
 use std::path::Path;
 

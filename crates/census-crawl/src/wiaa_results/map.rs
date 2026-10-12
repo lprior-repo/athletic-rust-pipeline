@@ -51,6 +51,7 @@ pub(super) fn absorb(
     for event in &read.parsed.events {
         let projected = project_event(&read, &mut writer, &meet, (&evidence, timing), event);
         outcome = outcome.and_then(|count| projected.map(|rows| count.saturating_add(rows)));
+        writer.flush()?;
     }
     outcome
 }
@@ -79,13 +80,20 @@ fn project_event(
         observed_on: read.observed_on,
         event_id: &event_id,
     };
-    Ok(event
+    event
         .rows
         .iter()
         .enumerate()
-        .fold(0usize, |count, (index, row)| {
-            count.saturating_add(record_row(writer, &context, row, index))
-        }))
+        .try_fold(0usize, |count, (index, row)| {
+            census_store::ObservationBudget::record_bytes(row)?;
+            let added = record_row(writer, &context, row, index);
+            writer.flush()?;
+            count
+                .checked_add(added)
+                .ok_or_else(|| crate::CrawlError::Arithmetic {
+                    detail: "WIAA projected source row count overflow".into(),
+                })
+        })
 }
 
 pub(super) struct RowWriter<'a> {
@@ -93,6 +101,46 @@ pub(super) struct RowWriter<'a> {
     pub(super) resolved: &'a mut HashMap<String, Option<SchoolId>>,
     pub(super) stats: &'a mut Stats,
     pub(super) accumulator: &'a mut Accumulator,
+    pub(super) ctx: &'a crate::AdapterContext<'a>,
+    pub(super) counts: &'a mut super::run::EntityCounts,
+}
+
+impl RowWriter<'_> {
+    pub(super) fn flush(&mut self) -> crate::CrawlResult<()> {
+        #[cfg(test)]
+        {
+            let rows = [
+                self.accumulator.meets.len(),
+                self.accumulator.events.len(),
+                self.accumulator.teams.len(),
+                self.accumulator.athletes.len(),
+                self.accumulator.performances.len(),
+                self.accumulator.relay_results.len(),
+                self.accumulator.undated.len(),
+            ]
+            .into_iter()
+            .try_fold(0usize, |sum, count| {
+                sum.checked_add(count)
+                    .ok_or_else(|| crate::CrawlError::Arithmetic {
+                        detail: "WIAA accumulator probe overflow".into(),
+                    })
+            })?;
+            let bytes = census_store::ObservationBudget::request_bytes(&(
+                &self.accumulator.meets,
+                &self.accumulator.events,
+                &self.accumulator.teams,
+                &self.accumulator.athletes,
+                &self.accumulator.performances,
+                &self.accumulator.relay_results,
+                &self.accumulator.undated,
+            ))?;
+            self.stats.peak_accumulated_rows = self.stats.peak_accumulated_rows.max(rows);
+            self.stats.peak_accumulated_bytes = self.stats.peak_accumulated_bytes.max(bytes);
+        }
+        let counts =
+            super::run::append_entities(self.ctx, std::mem::take(self.accumulator), Vec::new())?;
+        self.counts.absorb(counts)
+    }
 }
 
 struct MeetContext<'a> {

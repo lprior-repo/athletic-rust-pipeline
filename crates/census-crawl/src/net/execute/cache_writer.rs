@@ -1,7 +1,7 @@
 use super::attempt::FetchPlan;
 use super::body_reader::read_checked_body;
 use crate::net::cache::{write_archive, write_cache, CacheMeta};
-use crate::net::{host_of, now_iso8601, FetchError, FetchOutcome, FetchStats, RedirectHop};
+use crate::net::{now_iso8601, FetchError, FetchOutcome, FetchStats, RedirectHop};
 use std::path::Path;
 use tokio::sync::Mutex;
 
@@ -61,7 +61,15 @@ pub(super) async fn cache_and_record(
 ) -> Result<FetchOutcome, crate::net::FetchError> {
     let outcome = record_response(response, plan, status, redirects).await?;
     let downloaded = u64::try_from(outcome.bytes).map_or(u64::MAX, |value| value);
-    record_request_stats(stats, plan.url, downloaded).await;
+    record_download_stats(
+        stats,
+        outcome
+            .response_url
+            .as_deref()
+            .map_or(plan.url, core::convert::identity),
+        downloaded,
+    )
+    .await;
     Ok(outcome)
 }
 
@@ -85,13 +93,20 @@ fn header_value(
         .transpose()
 }
 
-pub(super) async fn record_request_stats(stats: &Mutex<FetchStats>, url: &str, bytes: u64) {
+pub(super) async fn record_download_stats(stats: &Mutex<FetchStats>, url: &str, bytes: u64) {
+    let parsed = reqwest::Url::parse(url);
+    let host = parsed
+        .as_ref()
+        .ok()
+        .and_then(reqwest::Url::host_str)
+        .map_or(url, core::convert::identity);
     let mut stats = stats.lock().await;
-    stats.requests = stats.requests.saturating_add(1);
     stats.bytes_downloaded = stats.bytes_downloaded.saturating_add(bytes);
-    let entry = stats.per_host.entry(host_of(url)).or_default();
-    entry.requests = entry.requests.saturating_add(1);
-    entry.bytes = entry.bytes.saturating_add(bytes);
+    if let Some(entry) = stats.per_host.get_mut(host) {
+        entry.bytes = entry.bytes.saturating_add(bytes);
+    } else {
+        stats.per_host.entry(host.to_string()).or_default().bytes = bytes;
+    }
 }
 
 #[cfg(test)]

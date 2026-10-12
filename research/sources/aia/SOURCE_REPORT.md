@@ -130,3 +130,22 @@ For XC/TF specifically, the same coach typically appears for both cross country 
 - City-based search queries are used to enumerate schools (e.g., "phoenix", "tucson", "chandler"); the query list is a fixed sample because no endpoint returns the full inventory.
 - Sport labels use AIA's naming convention (`Cross Country - Boy's`, `Track - Girl's`) which is mapped to census domain `Sport` and `Gender` types.
 - XC and TF coaches are often the same person at the same school - the adapter captures each published card as its own row.
+
+## Arizona durable coach-lane qualification — 2026-10-12
+
+The real held profiles publish TF/XC head-coach names; the search JSON alone
+does not. The existing `aia` arm remains sweepable for that discovery. Public
+coach mailboxes are not present in the qualified profile fixtures, and the
+administrative email directory requires login. No authentication bypass or
+negative population finding follows from that limitation.
+
+`az_missing_coach_sources` preserves the exact Arizona work-order missing set
+under `research/sources/coach-coverage-bundle-20261004/state-work-orders/group-a.md`.
+It is a recorded refusal, not an owner acceptance: the lane stays owed.
+The capture corpus was not changed, and this round made no network requests.
+
+Focused adapter execution:
+`env -u CI tools/moon-local run pipeline:tests-scoped -- -p census-crawl -E 'test(ciac::) or test(home_campus::) or test(aia::) or test(milesplit::)'`
+ran 242 tests, all passed (Moon task `240762b6`), including AIA's search,
+school-profile and published coach-row fixtures. Parser success does not
+certify current-role/mailbox evidence or national contact coverage.

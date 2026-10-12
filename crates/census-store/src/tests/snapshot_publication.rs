@@ -91,12 +91,16 @@ fn opening_a_store_reclaims_what_a_dead_writer_left_behind() -> TestResult {
 #[test]
 fn the_sweep_only_removes_snapshot_temporaries() -> TestResult {
     let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
     std::fs::create_dir_all(dir.path().join("entities"))?;
     let keep = dir.path().join("entities").join("notes.txt");
     std::fs::write(&keep, b"keep me")?;
-    let part = dir.path().join("entities").join(".schools.jsonl.1.0.part");
+    let part = dir
+        .path()
+        .join("entities")
+        .join(".schools.jsonl.4294967295.0.part");
     std::fs::write(&part, b"partial")?;
-    check!(eq; sweep_stale_temporaries(dir.path())?, 1);
+    check!(eq; sweep_stale_temporaries(dir.path(), &store.meta)?, 1);
     check!(!part.exists());
     check!(keep.exists());
     Ok(())
@@ -105,6 +109,7 @@ fn the_sweep_only_removes_snapshot_temporaries() -> TestResult {
 #[test]
 fn a_store_without_an_entities_directory_sweeps_nothing() -> TestResult {
     let dir = tempfile::tempdir()?;
-    check!(eq; sweep_stale_temporaries(dir.path())?, 0);
+    let store = Store::open(dir.path())?;
+    check!(eq; sweep_stale_temporaries(dir.path(), &store.meta)?, 0);
     Ok(())
 }

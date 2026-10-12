@@ -7,7 +7,9 @@ use crate::athleticlive_athletes::MeetTarget;
 use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 
 mod admission;
+mod frozen;
 mod selection;
+pub use frozen::{freeze_manifest, FrozenManifest};
 
 #[derive(Debug, Deserialize)]
 struct ManifestEnvelope<'a> {
@@ -15,7 +17,7 @@ struct ManifestEnvelope<'a> {
     meets: Vec<&'a serde_json::value::RawValue>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, Deserialize)]
 pub struct CaptureEntry {
     pub athleticlive_meet_id: u64,
     pub tenant: String,
@@ -32,7 +34,7 @@ pub struct CaptureEntry {
     pub captures: std::collections::BTreeMap<String, crate::net::cache::CacheMeta>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, Deserialize)]
 pub struct StandingsEntry {
     pub run_id: String,
     pub path: String,
@@ -137,7 +139,16 @@ pub async fn collect_manifest(
         detail: "athleticlive_results requires --input <manifest.json>: this route reads operator captures and issues no request".into(),
     })?;
     let body = admission::read(input)?;
-    let entries = parse_manifest(&body, &options.observed_on)?;
+    collect_manifest_body(ctx, options, input, &body).await
+}
+
+pub async fn collect_manifest_body(
+    ctx: &AdapterContext<'_>,
+    options: &ManifestOptions,
+    input: &str,
+    body: &str,
+) -> CrawlResult<AdapterReport> {
+    let entries = parse_manifest(body, &options.observed_on)?;
     let (entries, unfinished, accounting) = selection::select(input, options, entries)?;
     let mut report = AdapterReport::new(SOURCE_ID, "result rows");
     report.unfinished = unfinished;

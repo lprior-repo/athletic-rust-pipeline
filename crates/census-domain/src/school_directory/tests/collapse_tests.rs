@@ -64,13 +64,13 @@ fn rows_sharing_a_key_collapse_into_one_entry() -> TestResult {
     let first = census_entry("010001000001", "600 E Alabama Ave", "Albertville")?;
     let second = census_entry("010001000001", "600 East Alabama Avenue", "Albertville")?;
 
-    let outcome = collapse_entries(vec![first.clone(), second.clone()]);
+    let outcome = collapse_entries(vec![first.clone(), second.clone()])?;
     check!(eq; outcome.entries.len(), 1);
     check!(outcome.notes.is_empty());
     let entry = outcome.entries.first().ok_or("entry")?;
     check!(eq; entry.sources().len(), 1);
 
-    let reversed = collapse_entries(vec![second, first]);
+    let reversed = collapse_entries(vec![second, first])?;
     check!(eq; reversed, outcome);
     check!(eq; entry
         .address()
@@ -86,7 +86,7 @@ fn a_uniquely_matching_weak_row_is_absorbed_into_the_identified_school() -> Test
     let outcome = collapse_entries(vec![
         census.clone(),
         association_entry(Some("Albertville"))?,
-    ]);
+    ])?;
 
     check!(eq; outcome.entries.len(), 1);
     check!(outcome.notes.is_empty());
@@ -106,7 +106,7 @@ fn an_ambiguous_weak_row_survives_with_a_note() -> TestResult {
         first.clone(),
         association_entry(Some("Albertville"))?,
         second.clone(),
-    ]);
+    ])?;
 
     check!(eq; outcome.entries.len(), 3);
     check!(eq; outcome.notes.len(), 1);
@@ -121,7 +121,7 @@ fn an_ambiguous_weak_row_survives_with_a_note() -> TestResult {
 fn an_unmatched_weak_row_is_never_forced_onto_a_neighbour() -> TestResult {
     let census = census_entry("010001000001", "600 E Alabama Ave", "Albertville")?;
     let elsewhere = association_entry(Some("Boaz"))?;
-    let outcome = collapse_entries(vec![census.clone(), elsewhere.clone()]);
+    let outcome = collapse_entries(vec![census.clone(), elsewhere.clone()])?;
 
     check!(eq; outcome.entries.len(), 2);
     check!(outcome.notes.is_empty());
@@ -147,7 +147,7 @@ fn a_weak_row_without_a_locality_does_not_guess() -> TestResult {
             state: UsJurisdiction::Alabama,
         },
     )?;
-    let outcome = collapse_entries(vec![census, unlocated]);
+    let outcome = collapse_entries(vec![census, unlocated])?;
     check!(eq; outcome.entries.len(), 2);
     Ok(())
 }
@@ -159,14 +159,14 @@ fn collapse_is_order_independent_and_idempotent() -> TestResult {
         association_entry(Some("Albertville"))?,
         census_entry("010001000001", "600 E Alabama Ave", "Albertville")?,
     ];
-    let forward = collapse_entries(rows.clone());
+    let forward = collapse_entries(rows.clone())?;
     let mut reversed = rows;
     reversed.reverse();
-    let backward = collapse_entries(reversed);
+    let backward = collapse_entries(reversed)?;
 
     check!(eq; forward, backward);
 
-    let settled: CollapseOutcome = collapse_entries(forward.entries.clone());
+    let settled: CollapseOutcome = collapse_entries(forward.entries.clone())?;
     check!(eq; settled.entries, forward.entries);
     check!(eq; settled.notes, forward.notes);
     Ok(())
@@ -174,7 +174,7 @@ fn collapse_is_order_independent_and_idempotent() -> TestResult {
 
 #[test]
 fn a_weak_key_that_no_identified_row_claims_stays_standalone() -> TestResult {
-    let outcome = collapse_entries(vec![association_entry(Some("Albertville"))?]);
+    let outcome = collapse_entries(vec![association_entry(Some("Albertville"))?])?;
     check!(eq; outcome.entries.len(), 1);
     check!(outcome.notes.is_empty());
     let key = outcome.entries.first().ok_or("entry")?.key();
@@ -185,5 +185,52 @@ fn a_weak_key_that_no_identified_row_claims_stays_standalone() -> TestResult {
         Some(&city("Albertville")?),
         Some(UsJurisdiction::Alabama),
     )?,),);
+    Ok(())
+}
+
+#[test]
+fn weak_merge_comparisons_scale_with_s_and_w() -> TestResult {
+    for size in [256usize, 512] {
+        let mut rows = Vec::new();
+        for index in 0..size {
+            let school = name(&format!("School {index}"))?;
+            rows.push(SchoolDirectoryEntry::identified(
+                IdentifiedKey::Nces(NcesSchoolId::parse(&format!("{index:012}"))?),
+                SourceLabel::Ccd,
+                Some(school.clone()),
+            ));
+            rows.push(SchoolDirectoryEntry::weak(
+                school,
+                None,
+                None,
+                SourceLabel::AthleticAssociation {
+                    state: UsJurisdiction::Alabama,
+                },
+            )?);
+        }
+        crate::school_directory::collapse::metrics::COMPARISONS.with(|count| count.set(0));
+        let outcome = collapse_entries(rows)?;
+        let comparisons =
+            crate::school_directory::collapse::metrics::COMPARISONS.with(|count| count.get());
+        println!("CONTACT-11 S={size} W={size} comparisons={comparisons}");
+        check!(eq; outcome.entries.len(), size);
+        check!(comparisons <= size.saturating_mul(4));
+    }
+    Ok(())
+}
+
+#[test]
+fn collapse_existing_fixture_digest() -> TestResult {
+    use sha2::{Digest, Sha256};
+    let rows = vec![
+        census_entry("010001000002", "600 E Alabama Ave", "Albertville")?,
+        association_entry(Some("Albertville"))?,
+        census_entry("010001000001", "600 E Alabama Ave", "Albertville")?,
+        association_entry(Some("Boaz"))?,
+    ];
+    let outcome = collapse_entries(rows)?;
+    let digest = format!("{:x}", Sha256::digest(serde_json::to_vec(&outcome)?));
+    println!("CONTACT-11 collapse fixture sha256={digest}");
+    check!(eq; digest, "be9a19d78c49472c18ebb446faf258355174cac6ecdbcd873659b3375b4c0994");
     Ok(())
 }

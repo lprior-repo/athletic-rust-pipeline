@@ -305,6 +305,90 @@ target/debug/census-service verify-coaches --fragments var/<run>/union \
   --reconcile var/<run>/coach-contacts.csv
 ```
 
+## Outbound request identity
+
+Two identities leave this process, and different layers own them.
+
+The **transport identity** is the client-level `User-Agent`: `net/mod.rs` `DEFAULT_USER_AGENT`, replaced per
+run by `--user-agent` (`crates/census-service/src/cli/mod.rs`) and applied once in `net/client.rs` with
+`reqwest::Client::builder().user_agent(..)`. It is not a representation value, is not part of any cache
+identity, and is deliberately unchanged by the current policy.
+
+The **representation identity** is a `user-agent` entry a caller declares in `FetchOptions.headers`. It is
+not arbitrary text. `net/representation.rs` `validate_user_agent` accepts only a compact agent identifier —
+non-empty, at most `MAX_USER_AGENT_BYTES` (200 bytes), printable ASCII, a single line, and free of
+parenthesized comment forms. The declared value is part of the representation cache identity
+(`identity()`), and one rule is enforced at three sites: `RepresentationHeaders::canonical`,
+`net/request.rs` `build_request`, and the browser-lane dispatch in `net/execute/browser.rs`. A value
+outside the rule is refused fail-closed with `FetchError::Policy` naming the offending value; nothing is
+trimmed, rewritten, or silently dropped. Comment forms are refused because a long parenthesized comment
+`User-Agent` is answered with 403 by `www.gobound.com`, so the one declared value in the crate,
+`bound/collect.rs` `BOUND_UA`, is comment-free; its compacted form has not been measured against the live
+host yet.
+
+The browser lane cannot carry a declared `User-Agent` at all: the engine sends its own identity, so a
+browser-lane request that declares one is refused before the lane is consulted rather than dispatched with
+a value that would silently diverge. Tests: `net::representation::tests` `*user_agent*` and
+`net::request::tests` `*user_agent*` for the HTTP lane, and
+`net::execute::browser::user_agent_policy_tests::a_declared_user_agent_is_refused_before_the_lane_is_asked`
+for the browser lane.
+
+## Retry-After handling
+
+`Retry-After` is parsed in both RFC 9110 §10.2.3 representations — delta-seconds and HTTP-date (IMF-fixdate,
+RFC 850 and asctime) — by `net/execute/attempt_helper.rs`, and what reaches the access-condition record is a
+checked deadline bounded by `MAX_RETRY_AFTER_SECONDS` (86 400). Four outcomes stay distinct and are never
+conflated: the header is absent, unparsable (refused), a valid delta, or a valid date. A date at or before
+`now` is an immediate deadline (`retry_after_seconds = 0`), not an absent header, and sub-second clock skew
+truncates to the same immediate deadline. A valid future date is honoured as its own deadline, so a 429
+whose `Retry-After` is ten minutes out records ten minutes rather than the 60 s
+`SHORT_COOLDOWN_SECONDS` policy default, which applies only when the header is absent or refused. A delta
+or date beyond `MAX_RETRY_AFTER_SECONDS` is refused (logged at `warn`) instead of parking a host
+indefinitely. Tests: `net::execute::attempt_helper_tests` `retry_after_*` and
+`net::execute::response_url_tests::retry_after_a_future_http_date_is_honoured_end_to_end`.
+
+## Outbound request identity
+
+Two identities leave this process, and different layers own them.
+
+The **transport identity** is the client-level `User-Agent`: `net/mod.rs` `DEFAULT_USER_AGENT`, replaced per
+run by `--user-agent` (`crates/census-service/src/cli/mod.rs`) and applied once in `net/client.rs` with
+`reqwest::Client::builder().user_agent(..)`. It is not a representation value, is not part of any cache
+identity, and is deliberately unchanged by the current policy.
+
+The **representation identity** is a `user-agent` entry a caller declares in `FetchOptions.headers`. It is
+not arbitrary text. `net/representation.rs` `validate_user_agent` accepts only a compact agent identifier —
+non-empty, at most `MAX_USER_AGENT_BYTES` (200 bytes), printable ASCII, a single line, and free of
+parenthesized comment forms. The declared value is part of the representation cache identity
+(`identity()`), and one rule is enforced at three sites: `RepresentationHeaders::canonical`,
+`net/request.rs` `build_request`, and the browser-lane dispatch in `net/execute/browser.rs`. A value
+outside the rule is refused fail-closed with `FetchError::Policy` naming the offending value; nothing is
+trimmed, rewritten, or silently dropped. Comment forms are refused because a long parenthesized comment
+`User-Agent` is answered with 403 by `www.gobound.com`, so the one declared value in the crate,
+`bound/collect.rs` `BOUND_UA`, is comment-free; its compacted form has not been measured against the live
+host yet.
+
+The browser lane cannot carry a declared `User-Agent` at all: the engine sends its own identity, so a
+browser-lane request that declares one is refused before the lane is consulted rather than dispatched with
+a value that would silently diverge. Tests: `net::representation::tests` `*user_agent*` and
+`net::request::tests` `*user_agent*` for the HTTP lane, and
+`net::execute::browser::user_agent_policy_tests::a_declared_user_agent_is_refused_before_the_lane_is_asked`
+for the browser lane.
+
+## Retry-After handling
+
+`Retry-After` is parsed in both RFC 9110 §10.2.3 representations — delta-seconds and HTTP-date (IMF-fixdate,
+RFC 850 and asctime) — by `net/execute/attempt_helper.rs`, and what reaches the access-condition record is a
+checked deadline bounded by `MAX_RETRY_AFTER_SECONDS` (86 400). Four outcomes stay distinct and are never
+conflated: the header is absent, unparsable (refused), a valid delta, or a valid date. A date at or before
+`now` is an immediate deadline (`retry_after_seconds = 0`), not an absent header, and sub-second clock skew
+truncates to the same immediate deadline. A valid future date is honoured as its own deadline, so a 429
+whose `Retry-After` is ten minutes out records ten minutes rather than the 60 s
+`SHORT_COOLDOWN_SECONDS` policy default, which applies only when the header is absent or refused. A delta
+or date beyond `MAX_RETRY_AFTER_SECONDS` is refused (logged at `warn`) instead of parking a host
+indefinitely. Tests: `net::execute::attempt_helper_tests` `retry_after_*` and
+`net::execute::response_url_tests::retry_after_a_future_http_date_is_honoured_end_to_end`.
+
 ## Browser lane
 
 Start the endpoint with a dedicated `--browser-profile <dir>` and an allowed browser executable.
@@ -348,6 +432,23 @@ an additional completion bucket. Async survivors are aborted and reaped; started
 are awaited even beyond the deadline. Successful drain reports satisfy
 `accepted = completed + cancelled + aborted + panicked`, with no remaining owned tasks.
 Cancelled drain callers retain the region for a subsequent drain; admission never reopens.
+## Admission coordinator
+
+The `Coordinator` grants an atomic envelope of retained bytes, work units, slots, and work class.
+It returns `Granted(Reservation)`, `Deferred(reason)`, or `Refused(capacity error)`.
+Reservations are private and non-Clone; dropping a reservation updates accounting and wakes
+eligible waiters.
+
+Work is admitted through profiles. `WORK_CLASS_NORMAL` requests 1 work unit, 1 KiB of bytes, and
+1 slot. `WORK_CLASS_BLOCKING` requests 1 work unit, 4 KiB of bytes, and 1 slot. Giant records that
+cannot fit within the configured byte budget are refused rather than deferred.
+
+Zero or overflow configurations are rejected at construction. Waiter queues are bounded; when
+full, new waiters are refused with `WaitersFull` rather than enqueued. This prevents unbounded
+waiter growth under heavy load.
+
+All arithmetic is checked; overflow in capacity configuration, reservation accounting, or waiter
+tracking produces a typed `DepartureReason` rather than silent truncation.
 
 The endpoint's own shutdown is the SDK's: `restate-sdk` waits up to ten seconds for open connections
 to close before region admission closes. This ordering prevents shutdown refusal from becoming a
@@ -431,6 +532,13 @@ mutable successes. Real non-success bodies reaching the body reader are archived
 reusable success-cache entries. Early refusals with no obtained body remain explicitly uncaptured.
 The current optional String representation refuses unrepresentable response headers rather than
 inventing their values. Bodies are bounded at 32 MiB and encoded capture metadata at 64 KiB.
+Observation ingestion carries its own explicit ceilings ahead of staging: 1 MiB per encoded
+observation record, 8 MiB cumulative observation bytes and 4096 observation rows per
+batch/request, counted over borrowed records before any encoded-row vector is allocated and then
+rechecked against the actual encoded bytes. The sender runs the same admission before serializing
+a fragment, so an oversized fragment is refused before it is posted; the descriptors a batch
+carries (batch index, contiguous row range, encoded byte count) are deterministic functions of the
+unchanged payload, and no `Recorded` wire field, digest or journal semantic changed for this bound.
 Archive capacity is one shared, serialized admission rather than a per-request check: every
 publication path (successful cache write, refusal capture, and replay-driven preservation of a
 previous capture) holds the exclusive `<cache-root>/archive-capacity.lock`, inventories the real
@@ -527,6 +635,19 @@ store and no clock: `--now YYYY-MM` is the caller's month, and the lane digest i
 capture digest every claim will carry. Nothing here invents a capture URL or an observation date —
 without both, a matching school stays unlinked and is reported `evidence_missing`.
 
+### Captured-input replay
+
+`env -u CI tools/moon-local run pipeline:xtask -- replay school_address` verifies the committed
+CCD/PSS windows and the exact retained profile bytes twice through the existing corpus path and
+compares all six generated artifacts, so two runs over the same tree must print the same bytes.
+`--manifest <path>` selects an explicit input manifest and `--out <dir>` its output directory
+(default `target/address-replay`); both flags are rejected for every other replay source. Manifest
+paths resolve relative to the manifest and each entry pins URL, retrieval date (nullable) and
+SHA256. Retained raw bytes live under `<out>/captures/<manifest-sha256>/<capture-sha256>` beside
+`manifest.json`, and the generation lane binds the manifest digest into its identity.
+`Replay::apply` rechecks the retained manifest digest and every retained capture hash before the
+pinned join; corruption is refused before any postal claim is credited.
+
 Build the corpus from the real captures (the CCD reader documents its own fetch because a `.zip`
 passed straight to the verb is refused):
 
@@ -554,6 +675,17 @@ CCD school jurisdiction prefers the source's physical `LSTATE` to its administra
 is not a geographic exclusion when the same row publishes an in-scope physical state.
 NCES school keys are unchanged. Address selection still retains one owned physical or mailing
 tuple and its explicit kind; jurisdiction selection does not splice address components.
+CCD/PSS candidates now join through the same jurisdiction, school-level and deterministic-name
+ladder as every other directory source and additionally require exact normalized city agreement or
+an exact source-owned label/key; fuzzy and name-only admission are gone. On the retained generation
+`bbad80e3…` (CCD 100,307 and PSS 22,385 entries, observed 2026-10-04) the join links 11,348 of
+17,517 scanned schools (10,328 CCD, 1,020 PSS) and leaves 6,169 postal gaps. The 755 previously
+admitted name-only links are dropped with explicit reasons — 464 conflicting city, 290 missing city
+corroboration, 1 ambiguous tie — and each dropped school still appears as an outcome row, so a
+refused link is never a silent absence. Missing-city backfills carry the typed CCD/PSS identity with
+its namespace, source id, URL, capture digest and date, remain idempotent on replay, and are counted
+per school (`postal_gaps`, `postal_filled`, `postal_remaining`, `ccd_filled`, `pss_filled`).
+Streetless and city-only claims stay gaps and are not promoted into postal claims.
 
 The 2026-10-08 code-only replay of these retained files produced 122,518 all-grade school records
 across the 49 approved jurisdictions: 100,133 CCD physical-address records and 22,385 PSS
@@ -690,6 +822,21 @@ fsync each newly created directory's parent before the verb acknowledges success
 drop the new directory entry; [FJALL_BACKUP.md](FJALL_BACKUP.md) states the filesystem requirement
 for directory fsync.
 
+A settled national run chains its artifacts itself. Once no national failure or owed jurisdiction
+remains, every admitted jurisdiction's roster summary is unblocked and complete (`remaining=0`,
+`skipped=0`, `committed=total`) with cardinalities matching the admitted scope, and every admitted
+jurisdiction's contacts are Complete, the run releases `Consolidate` and awaits its durable
+completion before releasing `Report`, `Bests` and `Workbook` in order, each on its original artifact
+workflow identity (`<national identity>:consolidate`, `:report`, `:bests`, `:workbook`). Workbook
+success releases `Census.publication` with the run's own cohort, season, revision and workbook path.
+A pending child replays its original durable call and a resumed national invocation reuses every
+completed artifact instead of minting a new job. Only a terminal failure whose message contains
+`the census seal refused: ` starts one fresh measurement invocation under
+`<identity>:seal:<round>` — bounded rounds, the full message retained as `publication_refusal` — and
+any other terminal error propagates. The manual `workbook`/`seal` verbs below are unchanged and are
+not required for a national run's publication; an incomplete census or contact result keeps its
+existing report behavior and does not release publication.
+
 An explicit offline `index --store <dir> --school-year <yyyy>` still re-derives mutable projections;
 those separately replaced tables are not the workbook's publication boundary and are not a
 prerequisite for retained-data export. The index verb requires the run's contact school year
@@ -797,8 +944,18 @@ arrives through the CLI or the ingress.
 Seal uses the same complete bundle oracle, refuses limited/non-Class-of-2027 or stale-source
 publications, and fences the live source before atomically recording `out/seal.json`. Supply the
 actual `--season`, `--revision` and all applicable repeated `--source-object <key>` values: defaults
-or an incomplete object list are not the run's denominator. Current open-work heuristics remain
-narrower than the complete source-obligation contract. Missing offline measurements remain unknown
+or an incomplete object list are not the run's denominator. The store cannot enumerate the object
+keys a caller chose, so omitting the flag leaves the count unmeasured rather than reporting zero,
+and repeated keys measure exactly the objects supplied; when an omitted-key enumeration cannot be
+completed the command refuses instead of reporting a partial or zero count, while an explicit key
+list is still served if that same enumeration would refuse. The additive
+`source_object_inventory` block reports `objects`, `accepted_observations`, `accepted_nothing` and
+`unreadable` for the store's recorded endpoint-credit keys (including zero-credit objects, without a
+schema revision), and a supplied object keeps its existing Unknown disposition. Existing
+`source_objects` stays `Some(0)` only for a complete measured run inventory and `None` without a
+bound store or complete plans/history, so the two fields cannot silently disagree about what was
+measured. Current open-work heuristics remain narrower than the complete source-obligation
+contract. Missing offline measurements remain unknown
 and must refuse rather than default to zero. Full bundle readback is not national coverage,
 fresh-source qualification or all-native-fault certification.
 
@@ -827,6 +984,11 @@ census-service --store var/<store> store-backup --to var/backups/<name>
 census-service --store var/<store> store-migrate
 census-service --store var/<store> store-integrity
 census-service --store var/<store> fjall-stats
+
+`Store::scan(table)` returns a read-only vector from the latest snapshot without invoking a
+synchronous durability flush. Read consistency is provided by the snapshot's sequence watermark,
+not by flushing the write buffer. Calling `Store::flush()` after a scan is required only when a
+durable restart boundary is needed, not to stabilize what scan returns.
 ```
 
 `store-migrate` rewrites derived tables under generation partitions, collapses map tables to one row

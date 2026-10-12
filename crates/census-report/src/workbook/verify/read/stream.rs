@@ -1,9 +1,10 @@
+use crate::report::artifact_corrupt;
 use calamine::{Cell, DataRef, XlsxCellReader};
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
-use super::{unreadable, visit_row, Budget, ReportError, ReportResult, Shape, SparseRow, Value};
+use super::{unreadable, visit_row, Budget, ReportResult, Shape, SparseRow, Value};
 
 struct ReadScope<'a> {
     path: &'a Path,
@@ -38,7 +39,9 @@ fn declared_shape(
     let dimensions = reader.dimensions();
     let rows = extent(dimensions.end.0);
     let columns = extent(dimensions.end.1);
-    scope.budget.validate(scope.name, rows, columns)?;
+    scope
+        .budget
+        .envelope(scope.path, scope.name, rows, columns)?;
     Ok(rows)
 }
 
@@ -92,12 +95,13 @@ fn position(cell: &Cell<DataRef<'_>>, scope: &ReadScope<'_>) -> ReportResult<(us
     let row = usize::try_from(cell.get_position().0).map_or(usize::MAX, |value| value);
     let column = usize::try_from(cell.get_position().1).map_or(usize::MAX, |value| value);
     if row >= scope.budget.rows || column >= scope.budget.columns {
-        return Err(ReportError::Invariant {
-            detail: format!(
+        return Err(artifact_corrupt(
+            scope.path,
+            format!(
                 "sheet {} contains an out-of-budget cell at {row},{column}",
                 scope.name
             ),
-        });
+        ));
     }
     Ok((row, column))
 }

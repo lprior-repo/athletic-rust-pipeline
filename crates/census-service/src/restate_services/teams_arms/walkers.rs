@@ -152,6 +152,28 @@ pub(super) async fn walk_ihsa(crawl: Crawl<'_>) -> Result<AdapterReport, super::
         .map_err(collect_error)?;
     Ok(report)
 }
+pub(super) async fn walk_ihsa_tournament(
+    crawl: Crawl<'_>,
+) -> Result<AdapterReport, super::super::JobError> {
+    let Crawl {
+        jurisdiction,
+        refresh,
+        at,
+        ..
+    } = crawl;
+    let options = census_crawl::ihsa::Options {
+        limit: None,
+        refresh,
+        observed_on: at.to_string(),
+        states: vec![jurisdiction],
+        school_names: Vec::new(),
+    };
+    let context = context(crawl);
+    let report = census_crawl::ihsa::tournament::collect(&context, &options)
+        .await
+        .map_err(collect_error)?;
+    Ok(report)
+}
 
 pub(super) async fn walk_ks(crawl: Crawl<'_>) -> Result<AdapterReport, super::super::JobError> {
     let Crawl {

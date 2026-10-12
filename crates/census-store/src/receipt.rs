@@ -1,16 +1,18 @@
-use chrono::NaiveDate;
-use fjall::PersistMode;
 use serde::{Deserialize, Serialize};
 
 use super::clock::{Clock, SystemClock};
-use super::meta;
 use super::{Store, StoreError, StoreResult};
+
+mod credit;
+mod frontier;
 
 pub(crate) mod scan;
 
 pub const MAX_OPERATION_BYTES: usize = 512;
 
 pub const MAX_DIGEST_BYTES: usize = 256;
+
+pub const MAX_FRONTIER_WITNESSES: usize = 4096;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Receipt {
@@ -22,16 +24,23 @@ pub struct Receipt {
     pub credited: bool,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ReplayWitness {
+    pub invocation: String,
+    pub operation: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ReplayFrontier {
+    pub at: String,
+    #[serde(default)]
+    pub witnesses: Vec<ReplayWitness>,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Credit {
     pub credited: u64,
     pub total: u64,
-}
-
-const CREDIT_PREFIX: &str = "endpoint_credit/";
-
-fn credit_key(endpoint: &str) -> String {
-    format!("{CREDIT_PREFIX}{endpoint}")
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -91,55 +100,6 @@ impl Store {
             .len()
             .map_err(|source| StoreError::Read { source })?;
         u64::try_from(count).map_err(|_| StoreError::CounterOverflow)
-    }
-
-    pub fn credit_observations(&self, endpoint: &str, operation: &str) -> StoreResult<Credit> {
-        if endpoint.is_empty() {
-            return Err(StoreError::Refused {
-                detail: "crediting an unnamed endpoint would total into nothing".to_string(),
-            });
-        }
-        let _appends = self.lock_appends();
-        let receipt = self
-            .receipt(operation)?
-            .ok_or_else(|| StoreError::Refused {
-                detail: format!(
-                "operation {operation} has no receipt: observations are credited only after they \
-                 are applied"
-            ),
-            })?;
-        let key = credit_key(endpoint);
-        let standing = meta::get_u64(&self.meta, &key)?.map_or(0, core::convert::identity);
-        if receipt.credited {
-            return Ok(Credit {
-                credited: 0,
-                total: standing,
-            });
-        }
-        let credited = receipt.appended;
-        let total = standing
-            .checked_add(credited)
-            .ok_or(StoreError::CounterOverflow)?;
-        let marked = Receipt {
-            credited: true,
-            ..receipt
-        };
-        let value = serde_json::to_vec(&marked).map_err(|source| StoreError::Json {
-            detail: "serializing a credited receipt".to_string(),
-            source,
-        })?;
-        let mut batch = self.db.batch();
-        batch.insert(&self.receipts, operation.as_bytes(), value);
-        meta::put_text(&mut batch, &self.meta, &key, &total.to_string());
-        batch
-            .durability(Some(PersistMode::SyncData))
-            .commit()
-            .map_err(|source| StoreError::Write { source })?;
-        Ok(Credit { credited, total })
-    }
-
-    pub fn endpoint_credit(&self, endpoint: &str) -> StoreResult<u64> {
-        Ok(meta::get_u64(&self.meta, &credit_key(endpoint))?.map_or(0, core::convert::identity))
     }
 }
 
@@ -203,44 +163,10 @@ pub(super) fn first(operation: &str, digest: &str, appended: u64) -> Receipt {
 pub struct Pruned {
     pub removed: u64,
     pub undated: u64,
-}
-
-impl Store {
-    pub fn prune_receipts(&self, before: &str) -> StoreResult<Pruned> {
-        let boundary =
-            NaiveDate::parse_from_str(before, "%Y-%m-%d").map_err(|_| StoreError::Refused {
-                detail: format!("retention boundary {before} is not a YYYY-MM-DD day"),
-            })?;
-        let _appends = self.lock_appends();
-        let mut pruned = Pruned::default();
-        let mut doomed: Vec<Vec<u8>> = Vec::new();
-        for guard in self.receipts.iter() {
-            let (key, raw) = guard
-                .into_inner()
-                .map_err(|source| StoreError::Read { source })?;
-            let receipt: Receipt =
-                serde_json::from_slice(raw.as_ref()).map_err(|source| StoreError::Decode {
-                    key: format!("receipts/{}", String::from_utf8_lossy(&key)),
-                    source,
-                })?;
-            match NaiveDate::parse_from_str(&receipt.at, "%Y-%m-%d") {
-                Ok(stamped) if stamped < boundary => doomed.push(key.to_vec()),
-                Ok(_) => {}
-                Err(_) => pruned.undated = pruned.undated.saturating_add(1),
-            }
-        }
-        if doomed.is_empty() {
-            return Ok(pruned);
-        }
-        pruned.removed = u64::try_from(doomed.len()).map_err(|_| StoreError::CounterOverflow)?;
-        let mut batch = self.db.batch();
-        for key in doomed {
-            batch.remove(&self.receipts, key);
-        }
-        batch
-            .durability(Some(PersistMode::SyncData))
-            .commit()
-            .map_err(|source| StoreError::Write { source })?;
-        Ok(pruned)
-    }
+    #[serde(default)]
+    pub witnesses_kept: u64,
+    #[serde(default)]
+    pub witnesses_missing: u64,
+    #[serde(default)]
+    pub frontier_advanced: bool,
 }

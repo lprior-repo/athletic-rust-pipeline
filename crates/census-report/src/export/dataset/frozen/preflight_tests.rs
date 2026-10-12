@@ -1,0 +1,59 @@
+use super::super::{decoded_generations, ExportDataset};
+use crate::report::ReportError;
+use census_domain::model::CanonicalSchool;
+use census_domain::UsJurisdiction;
+use census_store::{Store, Table};
+
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+
+#[test]
+fn stale_job_is_refused_before_a_complete_generation_is_decoded() -> TestResult {
+    let temporary = tempfile::tempdir()?;
+    let store = Store::open(temporary.path().join("store"))?;
+    let job = "preflight-stale-job";
+    let captured = ExportDataset::for_job(&store, job)?;
+    let lineage = captured.lineage.clone();
+    drop(captured);
+    let archive = store.out_dir().join("export-inputs").join(format!(
+        "{}.json",
+        census_domain::model::serialized_digest(&job)?
+    ));
+    let retained_bytes = std::fs::read(&archive)?;
+    let (school, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Later School", "later", None);
+    store.append(Table::Schools, &school)?;
+    let decoded = decoded_generations();
+    let error = match ExportDataset::for_job(&store, job) {
+        Err(error) => error,
+        Ok(_) => return Err("stale job decoded and reopened".into()),
+    };
+    check!(
+        matches!(error, ReportError::Invariant { ref detail } if detail.contains("stale or foreign"))
+    );
+    check!(eq; decoded_generations(), decoded);
+    check!(eq; std::fs::read(&archive)?, retained_bytes);
+    check!(eq; ExportDataset::reopen_frozen(&archive)?.lineage, lineage);
+    Ok(())
+}
+
+#[test]
+fn unsupported_lineage_is_refused_before_malformed_table_rows_are_decoded() -> TestResult {
+    let temporary = tempfile::tempdir()?;
+    let store = Store::open(temporary.path().join("store"))?;
+    let archive = temporary.path().join("frozen.json");
+    ExportDataset::load(&store)?.save_frozen(&archive)?;
+    let mut value: serde_json::Value = serde_json::from_slice(&std::fs::read(&archive)?)?;
+    value["lineage"]["policy_revision"] = serde_json::json!(0);
+    value["data"]["athletes"] = serde_json::json!(["not an athlete"]);
+    let retained = serde_json::to_vec(&value)?;
+    std::fs::write(&archive, &retained)?;
+    let error = match ExportDataset::reopen_frozen(&archive) {
+        Err(error) => error,
+        Ok(_) => return Err("unsupported archive reopened".into()),
+    };
+    check!(
+        matches!(error, ReportError::Invariant { ref detail } if detail == "unsupported or malformed frozen export lineage")
+    );
+    check!(eq; std::fs::read(&archive)?, retained);
+    Ok(())
+}

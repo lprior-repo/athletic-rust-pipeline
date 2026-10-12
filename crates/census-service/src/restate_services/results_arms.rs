@@ -1,3 +1,5 @@
+mod budget;
+mod capture;
 mod collection;
 mod meet_pages;
 mod outcomes;
@@ -34,6 +36,7 @@ pub(super) const RESULTS_ARMS: &[(&str, ResultsArm)] = &[
     (MILESPLIT, ResultsArm::MilesplitResults),
     (ATHLETICNET, ResultsArm::AthleticnetMeets),
     (TFRRS, ResultsArm::TfrrsResults),
+    ("ihsa", ResultsArm::IhsaTournament),
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -41,6 +44,7 @@ pub(super) enum ResultsArm {
     MilesplitResults,
     AthleticnetMeets,
     TfrrsResults,
+    IhsaTournament,
 }
 
 pub(super) fn arm_for(slug: &str) -> Option<ResultsArm> {
@@ -106,7 +110,7 @@ pub(super) async fn results_stage(
     sources: SourceSelection,
 ) -> Result<Json<ResultsStageOutcome>, HandlerError> {
     use futures::{stream, StreamExt, TryStreamExt};
-    let selected = selection::select(&store, scope)?;
+    let selected = selection::select(&store, scope).await?;
     let required_sources =
         sources
             .iter()
@@ -137,7 +141,9 @@ pub(super) async fn results_stage(
 }
 
 fn required(source: &census_crawl::SourceDescriptor) -> bool {
-    source.capabilities.bulk_results || source.capabilities.pr_evidence
+    arm_for(source.slug).is_some()
+        || source.capabilities.bulk_results
+        || source.capabilities.pr_evidence
 }
 
 fn required_slug(source: &'static census_crawl::SourceDescriptor) -> Option<&'static str> {
@@ -263,3 +269,6 @@ mod tests;
 
 #[cfg(test)]
 mod replay_tests;
+
+#[cfg(test)]
+mod capture_tests;

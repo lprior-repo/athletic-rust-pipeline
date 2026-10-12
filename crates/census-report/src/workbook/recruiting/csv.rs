@@ -3,7 +3,8 @@ use std::path::Path;
 
 use census_domain::model::{CanonicalAthlete, CanonicalSchool, SchoolYear};
 
-use super::contact::{attach_research, contacts, scoped, SchoolContacts};
+use super::bounded::{bounded_contacts, WORKBOOK_GROUP_BUDGET};
+use super::contact::{attach_research, scoped, SchoolContacts};
 use crate::csv_safety::protect_owned;
 use crate::report::{Derivation, ReportError, ReportResult};
 
@@ -87,10 +88,14 @@ fn write_athletes(
 fn researched_contacts(
     derivation: &Derivation<'_>,
     school_year: SchoolYear,
-) -> BTreeMap<String, SchoolContacts> {
-    let mut contacts = contacts(derivation.coach_observations(), school_year);
+) -> ReportResult<BTreeMap<String, SchoolContacts>> {
+    let mut contacts = bounded_contacts(
+        derivation.coach_observations(),
+        school_year,
+        WORKBOOK_GROUP_BUDGET,
+    )?;
     attach_research(&mut contacts, derivation.schools(), school_year);
-    contacts
+    Ok(contacts)
 }
 
 struct CsvProjection<'a> {
@@ -101,13 +106,14 @@ struct CsvProjection<'a> {
 
 impl<'a> CsvProjection<'a> {
     fn new(derivation: &'a Derivation<'_>, school_year: SchoolYear) -> ReportResult<Self> {
+        crate::grouping::Admission::new("recruiting schools").rows(derivation.schools())?;
         Ok(Self {
             schools: derivation
                 .schools()
                 .iter()
                 .map(|school| (school.id.as_str(), school))
                 .collect(),
-            contacts: researched_contacts(derivation, school_year),
+            contacts: researched_contacts(derivation, school_year)?,
             school_address: crate::export::postal::athlete_address_index(
                 derivation.dataset(),
                 derivation.athletes(),

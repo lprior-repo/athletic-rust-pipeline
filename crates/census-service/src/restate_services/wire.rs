@@ -1,4 +1,4 @@
-use census_domain::model::SchoolYear;
+use census_domain::model::{CoachLaneObligation, CoachLaneStage, SchoolYear};
 use census_domain::UsJurisdiction;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -18,7 +18,9 @@ pub use ingest::{
 
 pub(super) mod open;
 
-pub use open::{JurisdictionOpen, OpenWorkReply, OpenWorkRequest, SourceObjectOpen};
+pub use open::{
+    JurisdictionOpen, OpenWorkReply, OpenWorkRequest, SourceObjectInventory, SourceObjectOpen,
+};
 
 pub(super) mod plan;
 
@@ -36,7 +38,7 @@ pub(super) mod national;
 
 pub use national::{
     ContactStatus, ContactSummary, JurisdictionSummary, NationalFailure, NationalReport,
-    NationalRequest,
+    NationalRequest, SourceStageOutcome,
 };
 
 mod teams;
@@ -46,7 +48,13 @@ pub use teams_sources::{
     TeamsAttemptProgress, TeamsSourceFailure, TeamsSourceInspection, TeamsSourceOutcome,
     TeamsSourceRequest,
 };
+mod athleticlive;
+pub use athleticlive::{AthleticLiveManifestRequest, AthleticLiveObligation};
 
+pub(super) mod coach_lanes;
+
+#[cfg(test)]
+mod coach_lane_tests;
 #[cfg(test)]
 mod teams_tests;
 
@@ -179,6 +187,17 @@ impl NationalRequest {
     }
 }
 
+impl ContactStatus {
+    pub fn coach_lane_stage(self) -> CoachLaneStage {
+        match self {
+            ContactStatus::Complete | ContactStatus::Partial => CoachLaneStage::CompleteWithGaps,
+            ContactStatus::Terminal | ContactStatus::Interrupted => CoachLaneStage::Blocked,
+            ContactStatus::Exhausted => CoachLaneStage::Exhausted,
+            ContactStatus::HandlerFailed => CoachLaneStage::Failed,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StageOutcome {
     pub records: usize,
@@ -210,6 +229,10 @@ pub struct JurisdictionState {
     pub history_window: Option<HistoryWindow>,
     #[serde(default)]
     pub updated_at: Option<String>,
+    #[serde(default)]
+    pub coach_lane: Option<CoachLaneObligation>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub athleticlive: Option<AthleticLiveObligation>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

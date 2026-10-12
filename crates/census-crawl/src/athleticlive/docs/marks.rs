@@ -71,6 +71,13 @@ pub(super) fn mark_contradiction<'a>(
     }
 }
 
+fn combined(kind: &EventKind) -> bool {
+    matches!(
+        kind,
+        EventKind::Pentathlon | EventKind::Heptathlon | EventKind::Decathlon
+    )
+}
+
 fn valid_mark(value: &Value) -> bool {
     match value {
         Value::Bool(valid) => *valid,
@@ -79,17 +86,24 @@ fn valid_mark(value: &Value) -> bool {
 }
 
 fn published_mark(kind: &EventKind, text: &str) -> Option<Mark> {
+    if combined(kind) {
+        return crate::hytek::parse_points(text);
+    }
     if kind.is_field() {
         crate::hytek::parse_field_mark(text)
     } else {
         crate::hytek::parse_time(text).map(Mark::TimeSeconds)
     }
 }
+
 fn numeric_contradiction(
     kind: &EventKind,
     published: Option<&str>,
     integer: Option<&Value>,
 ) -> bool {
+    if combined(kind) {
+        return false;
+    }
     let Some(display) = published.and_then(|text| published_mark(kind, text)) else {
         return false;
     };
@@ -122,6 +136,9 @@ fn numeric_contradiction(
 pub(super) fn canonical_mark(kind: &EventKind, mark_int: &Value) -> Option<Mark> {
     let micros = value_u64(mark_int)?;
     if micros == 0 {
+        return None;
+    }
+    if combined(kind) {
         return None;
     }
     if kind.is_field() {

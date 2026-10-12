@@ -134,19 +134,8 @@ impl Run<'_> {
             Ok(rows) => rows,
             Err(error) => return fail(&mut self.report, url, error),
         };
-        rows.iter().try_for_each(|row| {
-            let Some(coach) = map_coach_row(row, &id, url, &capture.fetched_at) else {
-                return Ok(());
-            };
-            persist(
-                self.ctx,
-                (SOURCE_ID, url),
-                Table::Coaches,
-                std::slice::from_ref(&coach),
-                &mut self.report,
-            )
-            .map(|_| ())
-        })?;
+        rows.iter()
+            .try_for_each(|row| self.emit_coach(&id, url, capture, row))?;
         self.processed = self.processed.saturating_add(1);
         self.report.rows = self
             .report
@@ -155,5 +144,39 @@ impl Run<'_> {
                 detail: "school count".into(),
             })?);
         Ok(())
+    }
+
+    fn emit_coach(
+        &mut self,
+        id: &census_domain::model::SchoolId,
+        url: &str,
+        capture: &crate::net::FetchOutcome,
+        row: &super::parse::SchoolCoachRow,
+    ) -> CrawlResult<()> {
+        let Some(mut coach) = map_coach_row(row, id, url, &capture.fetched_at) else {
+            return Ok(());
+        };
+        crate::coach_directories::record_appointment(
+            &mut coach,
+            Some(crate::coach_directories::PublishedListing {
+                role: &row.title,
+                program: &row.activity_name,
+                source: SOURCE_ID,
+                school_year: self.ctx.school_year,
+            }),
+            crate::coach_directories::StaffCapture {
+                url: &capture.url,
+                observed_on: &capture.fetched_at,
+                sha256: &capture.content_digest,
+            },
+        )?;
+        persist(
+            self.ctx,
+            (SOURCE_ID, url),
+            Table::Coaches,
+            std::slice::from_ref(&coach),
+            &mut self.report,
+        )
+        .map(|_| ())
     }
 }

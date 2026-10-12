@@ -6,7 +6,6 @@ use restate_sdk::prelude::*;
 use crate::spawn::Spawner;
 use census_store::clock::Clock;
 use census_store::Store;
-use chrono::{Days, NaiveDate};
 
 use super::ingest::IngestClient;
 use super::jobs::write_sweep_report;
@@ -16,18 +15,7 @@ use super::{job_error, MAX_SWEEP_ENDPOINTS, MAX_SWEEP_WINDOWS, STOP_SIGNAL};
 mod blocking_prune_receipts;
 mod blocking_write_report;
 
-pub const REPLAY_RETENTION_DAYS: u64 = 365;
-
-fn retention_boundary(today: &str) -> Result<String, HandlerError> {
-    let day = NaiveDate::parse_from_str(today, "%Y-%m-%d")
-        .map_err(|_| TerminalError::new(format!("sweep day {today} is not a YYYY-MM-DD day")))?;
-    let boundary = day
-        .checked_sub_days(Days::new(REPLAY_RETENTION_DAYS))
-        .ok_or_else(|| {
-            TerminalError::new("retention boundary underflows the calendar".to_string())
-        })?;
-    Ok(boundary.to_string())
-}
+pub use blocking_prune_receipts::ReceiptPruneFailure;
 
 fn check_ceilings(request: &SweepRequest) -> Result<(), HandlerError> {
     if request.windows > MAX_SWEEP_WINDOWS {
@@ -110,13 +98,11 @@ impl Sweep {
         let (windows_observed, interrupted) =
             Self::wait_windows(&ctx, request.windows, request.window_seconds).await?;
         let (endpoints, stale) = Self::observe_endpoints(&ctx, &request.endpoints).await?;
-        let boundary = retention_boundary(&today)?;
-        let Json(pruned) = ctx
+        let Json(pruning) = ctx
             .run(|| async move {
-                blocking_prune_receipts::blocking_prune_receipts(
+                blocking_prune_receipts::sweep_receipts(
                     Arc::clone(&self.region),
                     Arc::clone(&self.store),
-                    boundary,
                 )
                 .await
                 .map(Json)
@@ -131,8 +117,12 @@ impl Sweep {
             stale,
             today: today.clone(),
             report_path: None,
-            pruned_receipts: pruned.removed,
-            undated_receipts: pruned.undated,
+            pruned_receipts: pruning.pruned.removed,
+            undated_receipts: pruning.pruned.undated,
+            replay_witnesses_kept: pruning.pruned.witnesses_kept,
+            replay_witnesses_missing: pruning.pruned.witnesses_missing,
+            replay_frontier_advanced: pruning.pruned.frontier_advanced,
+            receipt_pruning_failure: pruning.failure,
         };
         let written = ctx
             .run(|| async move {
@@ -217,6 +207,6 @@ impl Sweep {
 }
 
 #[cfg(test)]
-#[path = "dur10_retention_test.rs"]
-mod dur10_retention_test;
+#[path = "receipt_frontier_tests.rs"]
+mod receipt_frontier_tests;
 mod wait_windows_tests;

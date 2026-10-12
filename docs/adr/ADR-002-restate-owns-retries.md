@@ -12,7 +12,9 @@ remaining budget and replay safety independently of the orchestrator.
 
 Restate is the sole automatic retry owner, with at most **three total attempts** per failed external
 operation. HTTP, browser, adapter and model transports make one attempt per call. A journaled
-physical action must not add an independent retry budget.
+physical action must not add an independent retry budget. Census and national reconciliation journaled
+actions set `RunRetryPolicy::max_attempts(1)`: their outer handler invocation policies retain the
+three-attempt ceiling, and an inner action cannot multiply that budget.
 
 Retries retain logical operation identity and budget across restart. Exhaustion is retained as an
 explicit failure; it is never evidence of athlete absence or `NO_MATCH`. Independent source work

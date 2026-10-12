@@ -20,6 +20,7 @@ mod records;
 mod review_budget;
 mod review_checkpoint;
 mod review_intake;
+mod review_lanes;
 mod review_process;
 mod review_subjects;
 mod revocation;
@@ -37,6 +38,7 @@ pub use athlete_verdict::AthleteVerdict;
 pub use families::{ReviewFamily, ReviewOptions};
 pub use model::{ModelClient, ModelError, ModelOptions, ModelResponseFormat};
 pub use records::ReviewReport;
+pub use review_lanes::run_lanes_after;
 pub use verdicts::{triage, validate, Adjudication, Admitted, Refusal};
 
 const CHECKPOINT_CASES: usize = 256;
@@ -72,12 +74,17 @@ pub async fn run_lanes(
         return Ok(ReviewReport::default());
     }
     let checkpoints = stream::try_unfold(
-        (None::<String>, 0_usize, ReviewReport::default()),
-        |(after, index, mut report)| async move {
+        (
+            None::<String>,
+            0_usize,
+            ReviewReport::default(),
+            review_intake::CorpusIndex::new(cache_snapshot),
+        ),
+        |(after, index, mut report, mut corpus)| async move {
             if report.requested >= options.limit {
                 return Ok::<_, census_store::StoreError>(None);
             }
-            let intake = review_intake::next(store, options, after.as_deref())?;
+            let intake = review_intake::next(store, &mut corpus, options, after.as_deref())?;
             let Some(cursor) = intake.cursor else {
                 return Ok(None);
             };
@@ -96,7 +103,7 @@ pub async fn run_lanes(
             let next = index
                 .checked_add(1)
                 .ok_or(census_store::StoreError::CounterOverflow)?;
-            Ok(Some((report.clone(), (Some(cursor), next, report))))
+            Ok(Some((report.clone(), (Some(cursor), next, report, corpus))))
         },
     );
     let report = checkpoints

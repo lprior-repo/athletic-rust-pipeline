@@ -116,6 +116,16 @@ enum Command {
             help = "Fixture directory under the crate's `tests/fixtures/`, e.g. `wiaa`, `mshsl`, `wiaa_results`"
         )]
         name: String,
+        #[arg(
+            long,
+            help = "Input manifest for the `school_address` replay; defaults to the committed `school_address_replay/manifest.json`. Rejected for every other source"
+        )]
+        manifest: Option<PathBuf>,
+        #[arg(
+            long,
+            help = "Output directory for the `school_address` replay; defaults to `target/address-replay`. Rejected for every other source"
+        )]
+        out: Option<PathBuf>,
     },
     #[command(flatten)]
     Census(census::CensusCommand),
@@ -182,7 +192,11 @@ fn run() -> Result<()> {
         Command::SourceTest { source } => helpers::source_test(&source),
         Command::SourceTests => helpers::source_tests(),
         Command::SourceFixture { source } => source_fixture::list(&source),
-        Command::Replay { name } => replay::run(&name),
+        Command::Replay {
+            name,
+            manifest,
+            out,
+        } => replay::run(&name, manifest.as_deref(), out.as_deref()),
         Command::Census(command) => command.run(),
         Command::Review(command) => command.run(),
         Command::Bench { args } => helpers::bench(&args),

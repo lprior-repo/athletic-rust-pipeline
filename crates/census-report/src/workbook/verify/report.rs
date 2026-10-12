@@ -1,5 +1,6 @@
 use super::canonical::Value;
-use crate::report::{ReportError, ReportResult};
+use crate::report::{semantic_mismatch, ReportResult};
+use std::path::Path;
 
 const MAX_FINDINGS: usize = 64;
 
@@ -23,7 +24,7 @@ impl Findings {
         self.rows = self.rows.saturating_add(count);
     }
 
-    pub(super) fn finish(self) -> ReportResult<usize> {
+    pub(super) fn finish(self, path: &Path) -> ReportResult<usize> {
         if self.total == 0 {
             tracing::info!(rows = self.rows, "frozen workbook readback verified");
             return Ok(self.rows);
@@ -40,7 +41,7 @@ impl Findings {
                 self.total.saturating_sub(self.items.len())
             ));
         }
-        Err(ReportError::Invariant { detail })
+        Err(semantic_mismatch(path, detail))
     }
 
     fn push(&mut self, message: String) {

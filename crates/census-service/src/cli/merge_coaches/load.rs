@@ -1,5 +1,5 @@
 use super::patterns::url_find;
-use super::Row;
+use super::{Row, RowKey};
 use census_domain::model::{CONTACT_COLUMNS, CONTACT_PROOF_COLUMN};
 use std::path::Path;
 
@@ -27,30 +27,34 @@ pub(super) fn from_fields(fields: Vec<String>) -> Row {
     }
 }
 
-pub(super) fn to_fields(row: &Row) -> Vec<String> {
-    vec![
-        row.school.clone(),
-        row.city.clone(),
-        row.state.clone(),
-        row.sport.clone(),
-        row.role.clone(),
-        row.coach_name.clone(),
-        row.public_professional_email.clone(),
-        row.ad_name.clone(),
-        row.ad_email.clone(),
-        row.source_url.clone(),
-        row.last_observed.clone(),
-        row.verified_proof_digest.clone(),
+pub(super) fn to_fields(row: &Row) -> [&str; 12] {
+    [
+        &row.school,
+        &row.city,
+        &row.state,
+        &row.sport,
+        &row.role,
+        &row.coach_name,
+        &row.public_professional_email,
+        &row.ad_name,
+        &row.ad_email,
+        &row.source_url,
+        &row.last_observed,
+        &row.verified_proof_digest,
     ]
 }
 
-pub(super) fn dedupe_key(row: &Row) -> (String, String, String, String) {
-    (
+pub(super) fn dedupe_key(row: &Row) -> RowKey {
+    [
         row.school.trim().to_lowercase(),
         row.state.trim().to_ascii_uppercase(),
         row.sport.trim().to_lowercase(),
         row.role.trim().to_lowercase(),
-    )
+        row.coach_name.trim().to_lowercase(),
+        row.ad_name.trim().to_lowercase(),
+        row.public_professional_email.trim().to_string(),
+        row.ad_email.trim().to_string(),
+    ]
 }
 
 fn validate_header(record: &[String]) -> Result<(), String> {

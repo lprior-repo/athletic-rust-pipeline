@@ -6,7 +6,6 @@ use census_domain::model::{
     RunManifest, SchoolYear, SourceAccessCondition, SourceIdentity, SourceNamespace, SourceRef,
 };
 use census_domain::UsJurisdiction;
-use census_report::export::ExportDataset;
 use census_report::report::Scope;
 use census_store::{Store, StoreStats, Table};
 use std::path::Path;
@@ -156,8 +155,8 @@ fn a_complete_frozen_bundle_is_the_seal_certificate() -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = populated_store(directory.path())?;
     let path = census_report::workbook::build(&store, &full_options()?)?;
-    let current = ExportDataset::load(&store)?;
-    let check = inspect_workbook(&path, &current, GradYear::CO2027, Scope::AllSources)?;
+    let inspection = inspect_workbook(&path, &store, GradYear::CO2027, Scope::AllSources)?;
+    let check = inspection.check;
     check!(eq; check.mapped_athletes, 1);
     check!(
         check.export_verified
@@ -188,8 +187,7 @@ fn a_limited_bundle_cannot_certify_the_whole_cohort() -> TestResult {
         ..full_options()?
     };
     let path = census_report::workbook::build(&store, &options)?;
-    let current = ExportDataset::load(&store)?;
-    let error = match inspect_workbook(&path, &current, GradYear::CO2027, Scope::AllSources) {
+    let error = match inspect_workbook(&path, &store, GradYear::CO2027, Scope::AllSources) {
         Err(error) => error,
         Ok(_) => return Err("limited bundle certified the whole cohort".into()),
     };
@@ -209,8 +207,7 @@ fn new_source_evidence_invalidates_the_old_seal_candidate() -> TestResult {
         None,
     );
     store.append(Table::Schools, &school)?;
-    let current = ExportDataset::load(&store)?;
-    let error = match inspect_workbook(&path, &current, GradYear::CO2027, Scope::AllSources) {
+    let error = match inspect_workbook(&path, &store, GradYear::CO2027, Scope::AllSources) {
         Err(error) => error,
         Ok(_) => return Err("stale bundle certified".into()),
     };

@@ -123,9 +123,11 @@ pub fn parse_directory(html: &str) -> Vec<(String, SchoolTable)> {
         let Some(table_html) = from_table.get(..end) else {
             continue;
         };
-        if let Some(school_table) = parse_table(table_html) {
-            results.push((name, school_table));
-        }
+        let school_table = match parse_table(table_html) {
+            Some(table) => table,
+            None => SchoolTable { rows: Vec::new() },
+        };
+        results.push((name, school_table));
     }
 
     results

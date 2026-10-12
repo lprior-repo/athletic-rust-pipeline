@@ -52,16 +52,12 @@ impl JurisdictionCensus {
         sources: SourceSelection,
     ) -> Result<MeetCensus, HandlerError> {
         use futures::{stream, StreamExt, TryStreamExt};
-        stream::iter(
-            sources
-                .iter()
-                .filter(|source| super::super::meets_arms::arm_for(source.slug).is_some()),
-        )
-        .map(Ok::<_, HandlerError>)
-        .try_fold(MeetCensus::default(), |census, source| {
-            self.meet_source(ctx, Arc::clone(&fetcher), scope, (source.slug, census))
-        })
-        .await
+        stream::iter(selected_meet_sources(sources))
+            .map(Ok::<_, HandlerError>)
+            .try_fold(MeetCensus::default(), |census, source| {
+                self.meet_source(ctx, Arc::clone(&fetcher), scope, (source.slug, census))
+            })
+            .await
     }
 
     async fn meet_source(
@@ -71,48 +67,126 @@ impl JurisdictionCensus {
         scope: HistoricalStageScope,
         step: (&str, MeetCensus),
     ) -> Result<MeetCensus, HandlerError> {
+        use futures::{stream, TryStreamExt};
         let (slug, census) = step;
-        let selected = SourceSelection::parse(&[slug.to_string()])?;
+        let base = census_domain::model::serialized_digest(&(
+            ctx.key(),
+            slug,
+            scope.year,
+            scope.observed_on,
+            &scope.window,
+            scope.refresh,
+        ))
+        .map_err(|error| jobs::invariant(&format!("digesting meet fragment identity: {error}")))?;
+        let source = stream::try_unfold(Some(0usize), |next| {
+            let fetcher = Arc::clone(&fetcher);
+            let base = base.as_str();
+            async move {
+                let Some(ordinal) = next else { return Ok(None) };
+                let outcome = self
+                    .acquire_meet_fragment(ctx, fetcher, scope, (slug, ordinal, base))
+                    .await?;
+                self.post_meet_fragments(ctx, &outcome, (slug, scope))
+                    .await?;
+                let next = outcome.next;
+                Ok::<_, HandlerError>(Some((outcome.census, next)))
+            }
+        })
+        .try_fold(MeetCensus::default(), |census, next| {
+            futures::future::ready(super::super::meets_arms::absorb_fragment(
+                slug, census, next,
+            ))
+        })
+        .await?;
+        let endpoint = ingest_post::endpoint_of(slug, scope.jurisdiction);
+        let window = ingest_post::window_of(&scope.window.as_of().to_string())?;
+        ctx.object_client::<super::super::ingest::IngestClient>(&endpoint)
+            .complete_window(Json(super::super::wire::ingest::WindowRequest { window }))
+            .call()
+            .await?;
+        super::super::meets_arms::absorb(census, source)
+    }
+
+    async fn acquire_meet_fragment(
+        &self,
+        ctx: &ObjectContext<'_>,
+        fetcher: Arc<Fetcher>,
+        scope: HistoricalStageScope,
+        step: (&str, usize, &str),
+    ) -> Result<super::super::meets_arms::MeetsStageOutcome, HandlerError> {
         let store = Arc::clone(&self.store);
+        let region = self.region();
+        let identity = format!("meet/{}/{}", step.2, step.1);
+        let source = (step.0.to_string(), step.1);
+        let handle = tokio::runtime::Handle::current();
         let Json(outcome) = ctx
-            .run(move || jobs::meets_stage(store, fetcher, scope, selected))
+            .run(move || async move {
+                super::super::blocking(region, move || {
+                    handle
+                        .block_on(super::super::meets_arms::collect_fragment(
+                            store, fetcher, scope, source, identity,
+                        ))
+                        .map_err(|error| super::super::JobError::Terminal {
+                            message: format!("{error:?}"),
+                        })
+                })
+                .await
+                .map_err(super::super::job_error)
+            })
             .retry_policy(RunRetryPolicy::new().max_attempts(1))
             .await?;
-        self.post_meet_recordings(ctx, outcome.recorded, scope)
-            .await?;
-        super::super::meets_arms::absorb(census, outcome.census)
+        Ok(outcome)
     }
 
-    async fn post_meet_recordings(
+    async fn post_meet_fragments(
         &self,
         ctx: &ObjectContext<'_>,
-        recorded: Vec<super::super::meets_arms::RecordedSource>,
-        scope: HistoricalStageScope,
+        outcome: &super::super::meets_arms::MeetsStageOutcome,
+        source: (&str, HistoricalStageScope),
     ) -> Result<(), HandlerError> {
         use futures::{stream, StreamExt, TryStreamExt};
-        let window = ingest_post::window_of(&scope.window.as_of().to_string())?;
-        stream::iter(recorded)
+        let endpoint = ingest_post::endpoint_of(source.0, source.1.jurisdiction);
+        let store = Arc::clone(&self.store);
+        let identity = outcome.identity.clone();
+        let summary = outcome.spool.clone();
+        super::super::blocking(self.region(), move || {
+            census_crawl::recording::spool::verify_reference(&store, &identity, &summary)
+                .map_err(jobs::collect_error)
+        })
+        .await
+        .map_err(super::super::job_error)?;
+        stream::iter(0..outcome.spool.fragments)
             .map(Ok::<_, HandlerError>)
-            .try_for_each(|source| self.post_meet_source(ctx, source, &window, scope.jurisdiction))
+            .try_for_each(|index| {
+                let endpoint = &endpoint;
+                async move {
+                    let key =
+                        census_crawl::recording::spool::fragment_key(&outcome.identity, index);
+                    let operation_id = key.clone();
+                    ctx.object_client::<super::super::ingest::IngestClient>(endpoint)
+                        .recorded(Json(super::super::wire::ingest::RecordedIngestRequest {
+                            spool_identity: outcome.identity.clone(),
+                            fragment: index,
+                            spool: outcome.spool.clone(),
+                            operation_id,
+                            cursor: None,
+                        }))
+                        .call()
+                        .await?;
+                    Ok(())
+                }
+            })
             .await
     }
-
-    async fn post_meet_source(
-        &self,
-        ctx: &ObjectContext<'_>,
-        source: super::super::meets_arms::RecordedSource,
-        window: &str,
-        jurisdiction: census_domain::UsJurisdiction,
-    ) -> Result<(), HandlerError> {
-        let endpoint = ingest_post::endpoint_of(&source.slug, jurisdiction);
-        let journaled = source.recorded.journal.len();
-        let posted = ingest_post::post(ctx, &endpoint, window, source.recorded).await?;
-        tracing::info!(
-            endpoint = endpoint.as_str(),
-            posted,
-            journaled,
-            "atomically routed source facts and frontier through its owning ingest object"
-        );
-        Ok(())
-    }
 }
+
+fn selected_meet_sources(
+    sources: SourceSelection,
+) -> impl Iterator<Item = &'static census_crawl::SourceDescriptor> {
+    sources
+        .iter()
+        .filter(|source| super::super::meets_arms::required(source))
+}
+
+#[cfg(test)]
+mod tests;

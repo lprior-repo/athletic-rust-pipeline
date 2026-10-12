@@ -1,6 +1,6 @@
 use crate::report::{io_error, ReportError, ReportResult};
 use serde::{de::DeserializeOwned, Serialize};
-use std::io::{BufReader, BufWriter, Write};
+use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::Path;
 
 const MAX_INPUT_BYTES: u64 = super::super::MAX_FROZEN_INPUT_BYTES;
@@ -43,7 +43,11 @@ fn encode_and_sync(
 }
 
 pub(super) fn remove_owned<T>(path: &Path, result: ReportResult<T>) -> ReportResult<T> {
-    let cleanup = std::fs::remove_file(path).map_err(|source| io_error(path, source));
+    let cleanup = match std::fs::remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(source) => Err(io_error(path, source)),
+    };
     match (result, cleanup) {
         (result, Ok(())) => result,
         (Ok(_), Err(cleanup)) => Err(cleanup),
@@ -55,6 +59,10 @@ pub(super) fn remove_owned<T>(path: &Path, result: ReportResult<T>) -> ReportRes
 }
 
 pub(super) fn read_json<T: DeserializeOwned>(path: &Path) -> ReportResult<T> {
+    decode_json(path, open_json(path)?)
+}
+
+pub(super) fn open_json(path: &Path) -> ReportResult<BufReader<std::fs::File>> {
     let metadata = std::fs::symlink_metadata(path).map_err(|source| io_error(path, source))?;
     if !metadata.file_type().is_file() || metadata.len() > MAX_INPUT_BYTES {
         return Err(ReportError::Invariant {
@@ -62,7 +70,11 @@ pub(super) fn read_json<T: DeserializeOwned>(path: &Path) -> ReportResult<T> {
         });
     }
     let file = std::fs::File::open(path).map_err(|source| io_error(path, source))?;
-    serde_json::from_reader(BufReader::new(file)).map_err(|source| ReportError::Decode {
+    Ok(BufReader::new(file))
+}
+
+pub(super) fn decode_json<T: DeserializeOwned>(path: &Path, reader: impl Read) -> ReportResult<T> {
+    serde_json::from_reader(reader).map_err(|source| ReportError::Decode {
         path: path.to_path_buf(),
         line: 0,
         source,

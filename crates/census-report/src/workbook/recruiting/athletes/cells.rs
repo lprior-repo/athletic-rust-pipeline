@@ -141,7 +141,39 @@ fn append_qualified_mark(text: &mut String, pr: &SharedSelection) {
         text.push_str(", ");
         text.push_str(&context);
     }
+    append_specification(text, &pr.source.specification);
     text.push(']');
+}
+
+fn append_specification(
+    text: &mut String,
+    specification: &census_domain::model::EventSpecification,
+) {
+    if let Some(mass) = specification.implement {
+        text.push_str(", implement ");
+        text.push_str(&mass.micrograms().to_string());
+        text.push_str(" ug");
+    }
+    if let Some(hurdles) = specification.hurdles {
+        text.push_str(", hurdle height ");
+        text.push_str(&hurdles.height_micrometres.to_string());
+        text.push_str(" um");
+        if let Some(spacing) = hurdles.spacing_micrometres {
+            text.push_str(", hurdle spacing ");
+            text.push_str(&spacing.to_string());
+            text.push_str(" um");
+        }
+    }
+    if let Some(track) = specification.indoor_track {
+        text.push_str(", indoor track length ");
+        text.push_str(&track.length_micrometres.to_string());
+        text.push_str(" um, banking ");
+        text.push_str(match track.banking {
+            census_domain::model::TrackBanking::Flat => "flat",
+            census_domain::model::TrackBanking::Banked => "banked",
+            census_domain::model::TrackBanking::Unknown => "unknown",
+        });
+    }
 }
 
 pub(super) fn participation_metrics(

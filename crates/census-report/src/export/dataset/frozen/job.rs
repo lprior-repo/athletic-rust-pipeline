@@ -1,3 +1,4 @@
+use super::super::{freeze_v2, to_export_dataset};
 use super::{invalid, io_error, store_identity, ExportDataset, ReportResult, Store};
 use std::path::{Path, PathBuf};
 
@@ -10,29 +11,8 @@ pub(in crate::export::dataset) fn capture(store: &Store, job: &str) -> ReportRes
     census_store::fs::create_dir_all_synced(&directory)
         .map_err(|source| io_error(&directory, source))?;
     let lock_path = directory.join(format!("{digest}.lock"));
-    let _lock = capture_lock(&lock_path)?;
+    let _lock = super::capture_lock(&lock_path)?;
     capture_locked(store, job, &directory, &digest)
-}
-
-fn capture_lock(lock_path: &Path) -> ReportResult<std::fs::File> {
-    let lock = std::fs::OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .truncate(false)
-        .open(lock_path)
-        .map_err(|source| io_error(lock_path, source))?;
-    lock.try_lock().map_err(|error| {
-        let source = match error {
-            std::fs::TryLockError::WouldBlock => std::io::Error::new(
-                std::io::ErrorKind::WouldBlock,
-                "export input is already being captured",
-            ),
-            std::fs::TryLockError::Error(source) => source,
-        };
-        io_error(lock_path, source)
-    })?;
-    Ok(lock)
 }
 
 fn capture_locked(
@@ -59,9 +39,8 @@ fn create_job(
     digest: &str,
     archive: &Path,
 ) -> ReportResult<ExportDataset> {
-    let mut dataset = ExportDataset::load(store)?;
-    dataset.lineage.export_job = Some(job.to_string());
-    super::bind(&mut dataset)?;
+    let root = freeze_v2(store, job)?;
+    let dataset = to_export_dataset(&root, store)?;
     let temporary = temporary_path(directory, digest)?;
     dataset.save_frozen(&temporary)?;
     let publication = std::fs::hard_link(&temporary, archive)
@@ -77,16 +56,31 @@ fn reopen_job(
     directory: &Path,
     archive: &Path,
 ) -> ReportResult<ExportDataset> {
-    let retained = ExportDataset::reopen_frozen(archive)?;
-    ensure_store(&retained, store)?;
-    if retained.lineage.export_job.as_deref() != Some(job) {
+    let retained = super::archive::reopen(archive, |lineage| preflight(store, job, lineage))?;
+    retained.ensure_current(store)?;
+    sync_directory(directory)?;
+    Ok(retained)
+}
+
+fn preflight(store: &Store, job: &str, lineage: &super::DatasetLineage) -> ReportResult<()> {
+    if lineage.store_identity != store_identity(store)? {
+        return Err(invalid("frozen input belongs to a different census store"));
+    }
+    if lineage.export_job.as_deref() != Some(job) {
         return Err(invalid(
             "retained export input belongs to a different logical job",
         ));
     }
-    retained.ensure_current(store)?;
-    sync_directory(directory)?;
-    Ok(retained)
+    let current = super::lineage(store, &store.snapshot())?;
+    if lineage.source_digest != current.source_digest
+        || lineage.run != current.run
+        || lineage.cohort != current.cohort
+    {
+        return Err(invalid(
+            "stale or foreign export input cannot publish changed source evidence",
+        ));
+    }
+    Ok(())
 }
 
 pub(in crate::export::dataset) fn ensure_store(

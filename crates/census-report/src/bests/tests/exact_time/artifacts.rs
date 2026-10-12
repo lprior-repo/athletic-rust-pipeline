@@ -59,7 +59,13 @@ fn assert_xlsx(store: &Store, out: &Path, expected: &str, normalized: f64) -> Te
         school_year: census_domain::model::SchoolYear::new(2026).ok_or("fixture season")?,
     };
     let workbook_path = crate::workbook::build(store, &options)?;
-    crate::workbook::verify::verify_frozen(&workbook_path, &ExportDataset::load(store)?, &options)?;
+    let frozen = ExportDataset::reopen_frozen(
+        &workbook_path
+            .parent()
+            .ok_or("generation")?
+            .join("frozen-input.json"),
+    )?;
+    crate::workbook::verify::verify_frozen(&workbook_path, &frozen, &options)?;
     let mut workbook: Xlsx<_> = open_workbook(workbook_path)?;
     let range = workbook.worksheet_range("PRs")?;
     let mut rows = range.rows();

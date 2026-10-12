@@ -1,4 +1,4 @@
-use crate::report::{io_error, ReportError, ReportResult};
+use crate::report::{artifact_corrupt, io_error, verifier_input, ReportError, ReportResult};
 use calamine::{Reader, Xlsx};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs::File;
@@ -8,8 +8,12 @@ use std::path::{Path, PathBuf};
 use super::canonical::{cell_at, Value};
 use super::expectations::Expectations;
 use super::report::Findings;
+use super::xlsx::{self, Profile};
 
+mod rows;
 mod stream;
+
+use rows::Rows;
 
 pub(super) const EXCEL_ROWS_PER_SHEET: usize = 1_048_576;
 
@@ -22,16 +26,33 @@ pub(super) struct Budget {
 }
 
 impl Budget {
-    fn validate(self, name: &str, rows: usize, columns: usize) -> ReportResult<()> {
+    fn usable(self) -> ReportResult<()> {
+        if self.rows == 0 || self.columns == 0 {
+            return Err(verifier_input(
+                "the readback budget asks for no rows or no columns",
+            ));
+        }
+        if self.rows > EXCEL_ROWS_PER_SHEET || self.columns > EXCEL_COLUMNS_PER_SHEET {
+            return Err(verifier_input(format!(
+                "the readback budget of {} rows by {} columns runs past the Excel envelope of \
+                 {EXCEL_ROWS_PER_SHEET} rows by {EXCEL_COLUMNS_PER_SHEET} columns",
+                self.rows, self.columns
+            )));
+        }
+        Ok(())
+    }
+
+    fn envelope(self, path: &Path, name: &str, rows: usize, columns: usize) -> ReportResult<()> {
         if rows > self.rows || columns > self.columns {
-            return Err(ReportError::Invariant {
-                detail: format!(
+            return Err(artifact_corrupt(
+                path,
+                format!(
                     "sheet {name} declares {rows} rows by {columns} columns, beyond the {} row by \
                      {} column readback budget; the frozen readback reads every cell and never \
                      samples or strides",
                     self.rows, self.columns
                 ),
-            });
+            ));
         }
         Ok(())
     }
@@ -42,24 +63,60 @@ pub(super) struct Shape {
     pub(super) rows: usize,
 }
 
+#[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum Readback {
+    InlineProfile,
+    LegacySharedStrings,
+}
+
+enum Lane {
+    Profile(xlsx::Archive),
+    Legacy(Xlsx<BufReader<File>>),
+}
+
 pub(super) struct Book {
     path: PathBuf,
-    workbook: Xlsx<BufReader<File>>,
+    names: Vec<String>,
+    lane: Lane,
 }
 
 impl Book {
     pub(super) fn open(path: &Path) -> ReportResult<Self> {
-        let file = File::open(path).map_err(|source| io_error(path, source))?;
-        let workbook =
-            Xlsx::new(BufReader::new(file)).map_err(|source| unreadable(path, source))?;
+        let archive = xlsx::Archive::open(path, Profile::inline())?;
+        let names = archive.sheet_names()?;
+        if archive.uses_shared_strings() {
+            tracing::warn!(
+                path = %path.display(),
+                "the workbook stores shared strings; the inline-string profile refuses it and the \
+                 legacy shared-string lane reads it instead"
+            );
+            let file = File::open(path).map_err(|source| io_error(path, source))?;
+            let workbook =
+                Xlsx::new(BufReader::new(file)).map_err(|source| unreadable(path, source))?;
+            return Ok(Self {
+                path: path.to_path_buf(),
+                names,
+                lane: Lane::Legacy(workbook),
+            });
+        }
         Ok(Self {
             path: path.to_path_buf(),
-            workbook,
+            names,
+            lane: Lane::Profile(archive),
         })
     }
 
+    #[cfg(test)]
+    pub(super) fn readback(&self) -> Readback {
+        match self.lane {
+            Lane::Profile(_) => Readback::InlineProfile,
+            Lane::Legacy(_) => Readback::LegacySharedStrings,
+        }
+    }
+
     pub(super) fn names(&self) -> Vec<String> {
-        self.workbook.sheet_names().to_vec()
+        self.names.clone()
     }
 
     pub(super) fn read(
@@ -68,14 +125,23 @@ impl Book {
         budget: Budget,
         mut visit: impl FnMut(&SparseRow),
     ) -> ReportResult<Option<Shape>> {
-        if !self.names().iter().any(|sheet| sheet == name) {
+        budget.usable()?;
+        if !self.names.iter().any(|sheet| sheet == name) {
             return Ok(None);
         }
-        let mut reader = self
-            .workbook
-            .worksheet_cells_reader(name)
-            .map_err(|source| unreadable(&self.path, source))?;
-        stream::read(&mut reader, &self.path, name, budget, &mut visit).map(Some)
+        match &mut self.lane {
+            Lane::Profile(archive) => {
+                let mut rows = Rows::new(&mut visit);
+                let written = archive.read_sheet(name, budget.rows, budget.columns, &mut rows)?;
+                Ok(written.map(|rows| Shape { rows }))
+            }
+            Lane::Legacy(workbook) => {
+                let mut reader = workbook
+                    .worksheet_cells_reader(name)
+                    .map_err(|source| unreadable(&self.path, source))?;
+                stream::read(&mut reader, &self.path, name, budget, &mut visit).map(Some)
+            }
+        }
     }
 }
 
@@ -189,12 +255,13 @@ pub(super) fn verify_inventory(
 }
 
 fn unreadable(path: &Path, source: calamine::XlsxError) -> ReportError {
-    ReportError::Invariant {
-        detail: format!(
+    artifact_corrupt(
+        path,
+        format!(
             "reading the frozen workbook {} with a strict reader: {source}",
             path.display()
         ),
-    }
+    )
 }
 
 #[cfg(test)]

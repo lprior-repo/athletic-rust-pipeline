@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
-use census_domain::model::{ReviewCase, ReviewState, ReviewVerdictRecord};
+use census_domain::model::{RetainedConflict, ReviewCase, ReviewState, ReviewVerdictRecord};
 use census_store::{Application, Store, StoreResult, Table};
-use futures::stream::{self, TryStreamExt};
 use serde::Serialize;
 
 use crate::consensus::{invariant, lane_binding, replay_matches, POLICY};
@@ -68,16 +67,17 @@ fn read_active_advice(
     chunk: &[(ReviewCase, ReviewFamily)],
     budget: &mut Budget,
 ) -> StoreResult<HashMap<String, ReviewVerdictRecord>> {
-    let ids: std::collections::HashSet<_> =
-        chunk.iter().map(|(case, _)| case.id.as_str()).collect();
     let mut standing = HashMap::new();
-    snapshot.for_each_merged(Table::IdentityVerdicts, |row: ReviewVerdictRecord| {
-        if ids.contains(row.id.as_str()) && active_model_advice(&row) {
-            budget.charge(&row)?;
-            standing.insert(row.id.clone(), row);
+    for (case, _) in chunk {
+        if let Some(row) =
+            snapshot.get_merged::<ReviewVerdictRecord>(Table::IdentityVerdicts, &case.id)?
+        {
+            if active_model_advice(&row) {
+                budget.charge(&row)?;
+                standing.insert(row.id.clone(), row);
+            }
         }
-        Ok(())
-    })?;
+    }
     Ok(standing)
 }
 
@@ -167,21 +167,71 @@ pub(super) async fn invalidate(
     clients: [&ModelClient; 2],
     observed_at: &str,
 ) -> StoreResult<()> {
-    stream::try_unfold(
-        (None::<String>, 0_usize),
-        |(after, checkpoint)| async move {
-            let intake =
-                crate::review_intake::next_for_revocation(store, options, after.as_deref())?;
-            let Some(cursor) = intake.cursor else {
-                return Ok::<_, census_store::StoreError>(None);
-            };
-            invalidate_chunk(store, &intake.cases, clients, observed_at, checkpoint)?;
-            let next = checkpoint
+    futures::future::ready(invalidate_active(store, options, clients, observed_at)).await
+}
+
+fn invalidate_active(
+    store: &Store,
+    options: &ReviewOptions,
+    clients: [&ModelClient; 2],
+    observed_at: &str,
+) -> StoreResult<()> {
+    let snapshot = store.snapshot();
+    let mut chunk = Vec::new();
+    chunk
+        .try_reserve_exact(crate::CHECKPOINT_CASES)
+        .map_err(|error| invariant(format!("cannot reserve active advice checkpoint: {error}")))?;
+    let mut budget = Budget::default();
+    let mut checkpoint = 0_usize;
+    snapshot.for_each_merged(Table::IdentityVerdicts, |row: ReviewVerdictRecord| {
+        if !active_model_advice(&row) {
+            return Ok(());
+        }
+        let Some(case) = advice_case(&snapshot, &row)? else {
+            return Ok(());
+        };
+        let Some(family) = ReviewFamily::from_label(&case.family)
+            .filter(|family| options.families.contains(family))
+        else {
+            return Ok(());
+        };
+        if case.state == ReviewState::Superseded {
+            return Ok(());
+        }
+        budget.charge(&case)?;
+        chunk.push((case, family));
+        if chunk.len() == crate::CHECKPOINT_CASES {
+            invalidate_chunk(store, &chunk, clients, observed_at, checkpoint)?;
+            checkpoint = checkpoint
                 .checked_add(1)
                 .ok_or(census_store::StoreError::CounterOverflow)?;
-            Ok(Some(((), (Some(cursor), next))))
-        },
-    )
-    .try_fold((), |(), ()| futures::future::ready(Ok(())))
-    .await
+            chunk.clear();
+            budget = Budget::default();
+        }
+        Ok(())
+    })?;
+    invalidate_chunk(store, &chunk, clients, observed_at, checkpoint)
+}
+
+fn advice_case(
+    snapshot: &census_store::StoreSnapshot<'_>,
+    row: &ReviewVerdictRecord,
+) -> StoreResult<Option<ReviewCase>> {
+    if let Some(case) = snapshot.get_merged(Table::ReviewCases, &row.id)? {
+        #[cfg(test)]
+        crate::review_intake::decoded()?;
+        return Ok(Some(case));
+    }
+    let conflict_id = format!("{}:{}", row.family, row.subject_id);
+    let Some(conflict) = snapshot.get_merged::<RetainedConflict>(Table::Conflicts, &conflict_id)?
+    else {
+        return Ok(None);
+    };
+    let case = ReviewCase::pending(
+        &conflict.family,
+        &conflict.subject_id,
+        &conflict.subject,
+        &conflict.detail,
+    );
+    Ok((case.id == row.id).then_some(case))
 }

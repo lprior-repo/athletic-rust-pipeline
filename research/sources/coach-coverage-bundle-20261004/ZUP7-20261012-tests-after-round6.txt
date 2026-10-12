@@ -1,0 +1,122 @@
+▮▮▮▮ pipeline:tests (b17f7482)
+   Compiling census-crawl v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl)
+   Compiling census-report v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-report)
+   Compiling census-reconcile v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-reconcile)
+   Compiling census-service v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service)
+   Compiling xtask v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/xtask)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 16.05s
+────────────
+ Nextest run ID 76511039-ee4c-4731-b936-9e0095e0bc89 with nextest profile: default
+    Starting 105 tests across 69 binaries (3597 tests skipped)
+        PASS [   0.005s] (  1/105) census-service restate_services::wire::coach_lanes::ct::tests::coach_lane_ct_arm_is_wired_in_the_teams_arms_table
+        PASS [   0.005s] (  2/105) census-service restate_services::wire::coach_lanes::ca::tests::coach_lane_ca_true_missing_reason_is_the_work_order_line
+        PASS [   0.005s] (  3/105) census-service restate_services::wire::coach_lanes::ct::tests::coach_lane_ct_arm_agrees_with_the_probe_manifest
+        PASS [   0.005s] (  4/105) census-service restate_services::wire::coach_lanes::ca::tests::coach_lane_ca_evidence_digest_is_the_sha256_of_the_capture
+        PASS [   0.006s] (  5/105) census-service restate_services::wire::coach_lanes::az::tests::coach_lane_az_refusal_is_recorded_in_the_durable_plan_path
+        PASS [   0.006s] (  6/105) census-service restate_services::wire::coach_lanes::ca::tests::coach_lane_ca_arms_with_the_held_home_campus_capture
+        PASS [   0.006s] (  7/105) census-service restate_services::wire::coach_lanes::ca::tests::coach_lane_ca_arm_is_wired_into_the_plan_and_the_engine_arm_table
+        PASS [   0.006s] (  8/105) census-service restate_services::wire::coach_lanes::az::tests::coach_lane_az_records_the_true_missing_refusal_without_closing
+        PASS [   0.006s] (  9/105) census-service restate_services::wire::coach_lanes::ca::tests::coach_lane_ca_stale_capture_records_a_blocked_refusal_without_closing
+        PASS [   0.007s] ( 10/105) census-service restate_services::wire::coach_lanes::az::tests::coach_lane_az_true_missing_reason_is_the_work_order_line
+        PASS [   0.009s] ( 11/105) census-service restate_services::wire::coach_lanes::ca::tests::coach_lane_bind_leaves_excluded_jurisdictions_unwired
+        PASS [   0.005s] ( 12/105) census-service restate_services::wire::coach_lanes::ct::tests::coach_lane_ct_true_missing_reason_is_the_work_order_line
+        PASS [   0.005s] ( 13/105) census-service restate_services::wire::coach_lanes::fl::tests::coach_lane_fl_arm_is_wired_into_the_plan_and_the_engine_arm_table
+        PASS [   0.010s] ( 14/105) census-service restate_services::wire::coach_lanes::ca::tests::coach_lane_ca_arming_refuses_an_arm_outside_the_plan_sweepable_set
+        PASS [   0.005s] ( 15/105) census-service restate_services::wire::coach_lanes::fl::tests::coach_lane_fl_arms_with_the_held_home_campus_capture
+        PASS [   0.005s] ( 16/105) census-service restate_services::wire::coach_lanes::fl::tests::coach_lane_fl_evidence_digest_is_the_sha256_of_the_capture
+        PASS [   0.010s] ( 17/105) census-service restate_services::wire::coach_lanes::ca::tests::coach_lane_ca_refusal_is_recorded_in_the_durable_plan_path
+        PASS [   0.004s] ( 18/105) census-service restate_services::wire::coach_lanes::ia::tests::coach_lane_ia_lane_records_the_refusal_without_closing_the_row
+        PASS [   0.005s] ( 19/105) census-service restate_services::wire::coach_lanes::ct::tests::coach_lane_ct_stale_capture_records_a_blocked_refusal_without_closing
+        PASS [   0.010s] ( 20/105) census-service restate_services::wire::coach_lanes::ct::tests::coach_lane_ct_arms_on_the_retained_ciac_capture
+        PASS [   0.011s] ( 21/105) census-service restate_services::wire::coach_lanes::az::tests::coach_lane_az_arm_is_the_wired_aia_source
+        PASS [   0.006s] ( 22/105) census-service restate_services::wire::coach_lanes::fl::tests::coach_lane_fl_stale_capture_records_a_blocked_refusal_without_closing
+        PASS [   0.006s] ( 23/105) census-service restate_services::wire::coach_lanes::fl::tests::coach_lane_fl_refusal_is_recorded_in_the_durable_plan_path
+        PASS [   0.005s] ( 24/105) census-service restate_services::wire::coach_lanes::ia::tests::coach_lane_ia_owner_acceptance_closes_the_row
+        PASS [   0.004s] ( 25/105) census-service restate_services::wire::coach_lanes::ia::tests::coach_lane_ia_registry_refusal_is_idempotent_and_surfaces_the_exact_reason
+        PASS [   0.004s] ( 26/105) census-service restate_services::wire::coach_lanes::indiana::tests::coach_lane_in_true_missing_reason_is_the_work_order_line
+        PASS [   0.005s] ( 27/105) census-service restate_services::wire::coach_lanes::ia::tests::coach_lane_ia_records_the_work_order_true_missing_reason
+        PASS [   0.005s] ( 28/105) census-service restate_services::wire::coach_lanes::indiana::tests::coach_lane_in_arm_is_not_claimed_sweepable_by_an_arming_lane
+        PASS [   0.005s] ( 29/105) census-service restate_services::wire::coach_lanes::la::tests::coach_lane_la_refusal_is_recorded_in_the_durable_plan_path
+        PASS [   0.005s] ( 30/105) census-service restate_services::wire::coach_lanes::la::tests::coach_lane_la_arm_is_the_wired_milesplit_source
+        PASS [   0.006s] ( 31/105) census-service restate_services::wire::coach_lanes::indiana::tests::coach_lane_in_refusal_is_recorded_in_the_durable_plan_path
+        PASS [   0.005s] ( 32/105) census-service restate_services::wire::coach_lanes::la::tests::coach_lane_la_true_missing_reason_is_the_work_order_line
+        PASS [   0.004s] ( 33/105) census-service restate_services::wire::coach_lanes::ma::tests::coach_lane_ma_lane_records_the_refusal_without_closing_the_row
+        PASS [   0.011s] ( 34/105) census-service restate_services::wire::coach_lanes::fl::tests::coach_lane_fl_true_missing_reason_is_the_work_order_line
+        PASS [   0.007s] ( 35/105) census-service restate_services::wire::coach_lanes::indiana::tests::coach_lane_in_records_the_true_missing_refusal_without_closing
+        PASS [   0.004s] ( 36/105) census-service restate_services::wire::coach_lanes::mi::tests::coach_lane_mi_arm_is_not_claimed_sweepable_by_an_arming_lane
+        PASS [   0.008s] ( 37/105) census-service restate_services::wire::coach_lanes::la::tests::coach_lane_la_records_the_true_missing_refusal_without_closing
+        PASS [   0.007s] ( 38/105) census-service restate_services::wire::coach_lanes::ma::tests::coach_lane_ma_lane_matches_the_shared_registry_signature
+        PASS [   0.005s] ( 39/105) census-service restate_services::wire::coach_lanes::ma::tests::coach_lane_ma_records_the_work_order_true_missing_reason
+        PASS [   0.007s] ( 40/105) census-service restate_services::wire::coach_lanes::ma::tests::coach_lane_ma_owner_acceptance_closes_the_row
+        PASS [   0.020s] ( 41/105) census-service restate_services::wire::coach_lanes::ct::tests::coach_lane_ct_evidence_digest_is_the_sha256_of_the_capture
+        PASS [   0.005s] ( 42/105) census-service restate_services::wire::coach_lanes::mo::tests::coach_lane_mo_lane_records_the_refusal_without_closing_the_row
+        PASS [   0.005s] ( 43/105) census-service restate_services::wire::coach_lanes::mo::tests::coach_lane_mo_lane_matches_the_shared_registry_signature
+        PASS [   0.005s] ( 44/105) census-service restate_services::wire::coach_lanes::mo::tests::coach_lane_mo_records_the_work_order_true_missing_reason
+        PASS [   0.005s] ( 45/105) census-service restate_services::wire::coach_lanes::mo::tests::coach_lane_mo_owner_acceptance_closes_the_row
+        PASS [   0.007s] ( 46/105) census-service restate_services::wire::coach_lanes::mi::tests::coach_lane_mi_records_the_true_missing_refusal_without_closing
+        PASS [   0.007s] ( 47/105) census-service restate_services::wire::coach_lanes::mi::tests::coach_lane_mi_refusal_is_recorded_in_the_durable_plan_path
+        PASS [   0.004s] ( 48/105) census-service restate_services::wire::coach_lanes::nj::tests::coach_lane_nj_true_missing_reason_is_the_work_order_line
+        PASS [   0.004s] ( 49/105) census-service restate_services::wire::coach_lanes::nv::tests::coach_lane_nv_accepted_refusal_closes_the_lane_with_the_explicit_event
+        PASS [   0.005s] ( 50/105) census-service restate_services::wire::coach_lanes::nv::tests::coach_lane_nv_arm_route_admits_no_coach_lane
+        PASS [   0.005s] ( 51/105) census-service restate_services::wire::coach_lanes::nv::tests::coach_lane_nv_refusal_is_recorded_in_the_durable_plan_path
+        PASS [   0.009s] ( 52/105) census-service restate_services::wire::coach_lanes::mi::tests::coach_lane_mi_true_missing_reason_is_the_work_order_line
+        PASS [   0.008s] ( 53/105) census-service restate_services::wire::coach_lanes::nj::tests::coach_lane_nj_arm_is_the_wired_home_campus_source
+        PASS [   0.004s] ( 54/105) census-service restate_services::wire::coach_lanes::ny::tests::coach_lane_ny_true_missing_reason_is_the_work_order_line
+        PASS [   0.006s] ( 55/105) census-service restate_services::wire::coach_lanes::nv::tests::coach_lane_nv_remainder_is_the_work_order_true_missing
+        PASS [   0.005s] ( 56/105) census-service restate_services::wire::coach_lanes::ny::tests::coach_lane_ny_refusal_is_recorded_in_the_durable_plan_path
+        PASS [   0.008s] ( 57/105) census-service restate_services::wire::coach_lanes::nv::tests::coach_lane_nv_records_the_work_order_refusal_without_closing
+        PASS [   0.005s] ( 58/105) census-service restate_services::wire::coach_lanes::ok::tests::coach_lane_ok_lane_matches_the_shared_registry_signature
+        PASS [   0.006s] ( 59/105) census-service restate_services::wire::coach_lanes::ny::tests::coach_lane_ny_records_the_true_missing_refusal_without_closing
+        PASS [   0.009s] ( 60/105) census-service restate_services::wire::coach_lanes::nj::tests::coach_lane_nj_refusal_is_recorded_in_the_durable_plan_path
+        PASS [   0.018s] ( 61/105) census-service restate_services::wire::coach_lanes::ia::tests::coach_lane_ia_persisted_refusal_survives_reopen_and_remains_visible
+        PASS [   0.011s] ( 62/105) census-service restate_services::wire::coach_lanes::nj::tests::coach_lane_nj_records_the_true_missing_refusal_without_closing
+        PASS [   0.005s] ( 63/105) census-service restate_services::wire::coach_lanes::ok::tests::coach_lane_ok_lane_records_the_refusal_without_closing_the_row
+        PASS [   0.005s] ( 64/105) census-service restate_services::wire::coach_lanes::ok::tests::coach_lane_ok_records_the_work_order_true_missing_reason
+        PASS [   0.009s] ( 65/105) census-service restate_services::wire::coach_lanes::ny::tests::coach_lane_ny_arm_is_the_wired_milesplit_source
+        PASS [   0.005s] ( 66/105) census-service restate_services::wire::coach_lanes::or::tests::coach_lane_or_accepted_refusal_closes_the_lane_with_the_explicit_event
+        PASS [   0.006s] ( 67/105) census-service restate_services::wire::coach_lanes::ok::tests::coach_lane_ok_owner_acceptance_closes_the_row
+        PASS [   0.006s] ( 68/105) census-service restate_services::wire::coach_lanes::or::tests::coach_lane_or_records_the_work_order_refusal_without_closing
+        PASS [   0.006s] ( 69/105) census-service restate_services::wire::coach_lanes::or::tests::coach_lane_or_registered_route_is_not_a_wired_arm
+        PASS [   0.005s] ( 70/105) census-service restate_services::wire::coach_lanes::sd::tests::coach_lane_sd_arms_on_the_retained_bound_captures
+        PASS [   0.004s] ( 71/105) census-service restate_services::wire::coach_lanes::sd::tests::coach_lane_sd_remainder_is_the_work_order_true_missing
+        PASS [   0.004s] ( 72/105) census-service restate_services::wire::coach_lanes::tx::tests::coach_lane_tx_arm_is_not_claimed_sweepable_by_an_arming_lane
+        PASS [   0.009s] ( 73/105) census-service restate_services::wire::coach_lanes::or::tests::coach_lane_or_refusal_is_recorded_in_the_durable_plan_path
+        PASS [   0.005s] ( 74/105) census-service restate_services::wire::coach_lanes::sd::tests::coach_lane_sd_stale_capture_records_a_blocked_refusal_without_closing
+        PASS [   0.008s] ( 75/105) census-service restate_services::wire::coach_lanes::or::tests::coach_lane_or_remainder_is_the_work_order_true_missing
+        PASS [   0.008s] ( 76/105) census-service restate_services::wire::coach_lanes::registry_tests::coach_registry_failed_binding_leaves_serialized_plan_unchanged
+        PASS [   0.007s] ( 77/105) census-service restate_services::wire::coach_lanes::sd::tests::coach_lane_sd_arm_is_wired_into_the_plan_and_the_engine_arm_table
+        PASS [   0.006s] ( 78/105) census-service restate_services::wire::coach_lanes::sd::tests::coach_lane_sd_refusal_is_recorded_in_the_durable_plan_path
+        PASS [   0.008s] ( 79/105) census-service restate_services::wire::coach_lanes::sd::tests::coach_lane_sd_capture_digests_match_the_held_fixtures
+        PASS [   0.006s] ( 80/105) census-service restate_services::wire::coach_lanes::tx::tests::coach_lane_tx_records_the_true_missing_refusal_without_closing
+        PASS [   0.009s] ( 81/105) census-service restate_services::wire::coach_lanes::registry_tests::every_in_scope_jurisdiction_coach_lane_is_armed_or_refused_by_name
+        PASS [   0.006s] ( 82/105) census-service restate_services::wire::coach_lanes::tx::tests::coach_lane_tx_refusal_is_recorded_in_the_durable_plan_path
+        PASS [   0.005s] ( 83/105) census-service restate_services::wire::coach_lanes::va::tests::coach_lane_va_records_the_true_missing_refusal_without_closing
+        PASS [   0.005s] ( 84/105) census-service restate_services::wire::coach_lanes::ut::tests::coach_lane_ut_stale_capture_records_a_blocked_refusal_without_closing
+        PASS [   0.006s] ( 85/105) census-service restate_services::wire::coach_lanes::ut::tests::coach_lane_ut_refusal_is_recorded_in_the_durable_plan_path
+        PASS [   0.007s] ( 86/105) census-service restate_services::wire::coach_lanes::ut::tests::coach_lane_ut_arm_is_wired_into_the_plan_and_the_engine_arm_table
+        PASS [   0.008s] ( 87/105) census-service restate_services::wire::coach_lanes::tx::tests::coach_lane_tx_true_missing_reason_is_the_work_order_line
+        PASS [   0.007s] ( 88/105) census-service restate_services::wire::coach_lanes::va::tests::coach_lane_va_arm_is_the_wired_milesplit_source
+        PASS [   0.005s] ( 89/105) census-service restate_services::wire::coach_lanes::vt::tests::coach_lane_vt_accepted_refusal_closes_the_lane_with_the_explicit_event
+        PASS [   0.006s] ( 90/105) census-service restate_services::wire::coach_lanes::va::tests::coach_lane_va_refusal_is_recorded_in_the_durable_plan_path
+        PASS [   0.006s] ( 91/105) census-service restate_services::wire::coach_lanes::va::tests::coach_lane_va_true_missing_reason_is_the_work_order_line
+        PASS [   0.009s] ( 92/105) census-service restate_services::wire::coach_lanes::ut::tests::coach_lane_ut_remainder_is_the_work_order_true_missing
+        PASS [   0.004s] ( 93/105) census-service restate_services::wire::coach_lanes::vt::tests::coach_lane_vt_arm_route_admits_no_coach_lane
+        PASS [   0.010s] ( 94/105) census-service restate_services::wire::coach_lanes::ut::tests::coach_lane_ut_arms_on_the_retained_uhsaa_captures
+        PASS [   0.005s] ( 95/105) census-service restate_services::wire::coach_lanes::vt::tests::coach_lane_vt_refusal_is_recorded_in_the_durable_plan_path
+        PASS [   0.004s] ( 96/105) census-service restate_services::wire::coach_lanes::wa::tests::coach_lane_wa_refusal_is_recorded_in_the_durable_plan_path
+        PASS [   0.004s] ( 97/105) census-service restate_services::wire::coach_lanes::wa::tests::coach_lane_wa_true_missing_reason_is_the_work_order_line
+        PASS [   0.006s] ( 98/105) census-service restate_services::wire::coach_lanes::vt::tests::coach_lane_vt_remainder_is_the_work_order_true_missing
+        PASS [   0.006s] ( 99/105) census-service restate_services::wire::coach_lanes::wa::tests::coach_lane_wa_records_the_true_missing_refusal_without_closing
+        PASS [   0.008s] (100/105) census-service restate_services::wire::coach_lanes::vt::tests::coach_lane_vt_records_the_work_order_refusal_without_closing
+        PASS [   0.008s] (101/105) census-service restate_services::wire::coach_lanes::wa::tests::coach_lane_wa_arm_is_the_wired_milesplit_source
+        PASS [   0.025s] (102/105) census-service restate_services::wire::coach_lanes::registry_tests::coach_registry_group_a_rebind_and_reopen_preserve_exact_decisions
+        PASS [   0.026s] (103/105) census-service restate_services::wire::coach_lanes::registry_tests::coach_registry_group_c_rebind_and_reopen_preserve_exact_decisions
+        PASS [   0.029s] (104/105) census-service restate_services::wire::coach_lanes::registry_tests::coach_registry_group_b_rebind_and_reopen_preserve_exact_decisions
+        PASS [   0.035s] (105/105) census-service restate_services::wire::coach_lanes::ut::tests::coach_lane_ut_capture_digests_match_the_held_fixtures
+────────────
+     Summary [   0.071s] 105 tests run: 105 passed, 3597 skipped
+▮▮▮▮ pipeline:tests (16s 413ms, b17f7482)
+
+Tasks: 1 completed
+ Time: 19s 205ms
+

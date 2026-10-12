@@ -35,74 +35,36 @@ fn reject_flat_artifacts(root: &Path) -> ReportResult<()> {
 }
 
 fn validate_layout(root: &Path) -> ReportResult<()> {
-    for (name, directory) in [("generations", true), ("current", false)] {
-        let path = root.join(name);
-        match std::fs::symlink_metadata(&path) {
-            Ok(metadata)
-                if if directory {
-                    metadata.file_type().is_dir()
-                } else {
-                    metadata.file_type().is_symlink()
-                } => {}
-            Ok(_) => {
-                return Err(invariant(format!(
-                    "invalid publication layout at {}",
-                    path.display()
-                )))
-            }
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-            Err(source) => return Err(io_error(&path, source)),
+    let path = root.join("generations");
+    match std::fs::symlink_metadata(&path) {
+        Ok(metadata) if metadata.file_type().is_dir() => Ok(()),
+        Ok(_) => Err(invariant(format!(
+            "invalid publication layout at {}",
+            path.display()
+        ))),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(source) => Err(io_error(&path, source)),
+    }
+}
+
+pub(super) fn finish<T>(result: ReportResult<T>, root: &Path, stage: &Path) -> ReportResult<T> {
+    match result {
+        Ok(value) => Ok(value),
+        Err(
+            error @ ReportError::Publication(
+                super::PublicationError::PublicationDurabilityUncertain { .. },
+            ),
+        ) => Err(error),
+        Err(error) => {
+            let cleanup = std::fs::remove_dir_all(stage);
+            let cleanup = match cleanup {
+                Ok(()) => super::sync_directory(root),
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+                Err(source) => Err(io_error(stage, source)),
+            };
+            combine(Err(error), cleanup)
         }
     }
-    Ok(())
-}
-
-pub(super) fn sweep(root: &Path, identity: &str) -> ReportResult<()> {
-    let entries = std::fs::read_dir(root).map_err(|source| io_error(root, source))?;
-    let stage_prefix = format!(".staging.{identity}.");
-    let pointer_prefix = format!(".current.{identity}.");
-    for (index, entry) in entries.enumerate() {
-        if index >= 8192 {
-            return Err(invariant(
-                "publication root exceeds the 8192-entry maintenance budget".into(),
-            ));
-        }
-        let entry = entry.map_err(|source| io_error(root, source))?;
-        let name = entry.file_name();
-        let Some(name) = name.to_str() else { continue };
-        let staging = owned(name, &stage_prefix, "");
-        let pointer = owned(name, &pointer_prefix, ".tmp");
-        if staging || pointer {
-            remove(&entry.path(), staging)?;
-        }
-    }
-    super::sync_directory(root)
-}
-
-fn owned(name: &str, prefix: &str, suffix: &str) -> bool {
-    let Some(rest) = name
-        .strip_prefix(prefix)
-        .and_then(|rest| rest.strip_suffix(suffix))
-    else {
-        return false;
-    };
-    let Some((pid, time)) = rest.split_once('.') else {
-        return false;
-    };
-    pid.parse::<u32>().is_ok() && time.parse::<u128>().is_ok()
-}
-
-pub(super) fn finish<T>(
-    result: ReportResult<T>,
-    root: &Path,
-    stage: &Path,
-    pointer: &Path,
-) -> ReportResult<T> {
-    let stage_cleanup = remove(stage, true);
-    let pointer_cleanup = remove(pointer, false);
-    let cleanup =
-        combine(stage_cleanup, pointer_cleanup).and_then(|()| super::sync_directory(root));
-    combine(result, cleanup)
 }
 
 fn combine<T>(result: ReportResult<T>, cleanup: ReportResult<()>) -> ReportResult<T> {
@@ -113,18 +75,5 @@ fn combine<T>(result: ReportResult<T>, cleanup: ReportResult<()>) -> ReportResul
             operation: Box::new(operation),
             cleanup: Box::new(cleanup),
         }),
-    }
-}
-
-fn remove(path: &Path, directory: bool) -> ReportResult<()> {
-    let result = if directory {
-        std::fs::remove_dir_all(path)
-    } else {
-        std::fs::remove_file(path)
-    };
-    match result {
-        Ok(()) => Ok(()),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
-        Err(source) => Err(io_error(path, source)),
     }
 }

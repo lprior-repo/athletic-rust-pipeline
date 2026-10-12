@@ -54,13 +54,17 @@ pub fn serialized_digest<T: Serialize + ?Sized>(value: &T) -> Result<String, Can
     Ok(format!("{:x}", writer.0.finalize()))
 }
 
-#[cfg(test)]
-pub(crate) fn serialized_bytes<T: Serialize + ?Sized>(
-    value: &T,
-) -> Result<Vec<u8>, CanonicalJsonError> {
+pub fn serialized_bytes<T: Serialize + ?Sized>(value: &T) -> Result<Vec<u8>, CanonicalJsonError> {
     let mut bytes = Vec::new();
     serialize_into(&mut bytes, value)?;
     Ok(bytes)
+}
+
+pub fn write_serialized<W: io::Write, T: Serialize + ?Sized>(
+    writer: &mut W,
+    value: &T,
+) -> Result<(), CanonicalJsonError> {
+    serialize_into(writer, value)
 }
 
 fn serialize_into<W: io::Write, T: Serialize + ?Sized>(

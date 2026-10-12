@@ -1,0 +1,82 @@
+▮▮▮▮ pipeline:tests (0849de60)
+    Blocking waiting for file lock on build directory
+   Compiling census-crawl v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl)
+   Compiling census-report v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-report)
+   Compiling census-reconcile v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-reconcile)
+   Compiling census-service v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service)
+error[E0308]: mismatched types
+    --> crates/census-service/src/restate_services/national/reconciliation.rs:61:13
+     |
+  61 |     ctx.set(name, reply);
+     |         --- ^^^^ expected `&str`, found `String`
+     |         |
+     |         arguments to this method are incorrect
+     |
+note: method defined here
+    --> /cache/cargo-shared/registry/src/index.crates.io-1949cf8c6b5b557f/restate-sdk-0.12.0/src/context/mod.rs:1131:8
+     |
+1131 |     fn set<T: Serialize + 'static>(&self, key: &str, t: T) {
+     |        ^^^
+help: consider borrowing here
+     |
+  61 |     ctx.set(&name, reply);
+     |             +
+
+error[E0308]: mismatched types
+   --> crates/census-service/src/restate_services/national/reconciliation.rs:117:5
+    |
+117 | /     ctx.run(move || async move {
+118 | |         let permit = jobs.permit().await?;
+119 | |         let store = Arc::clone(jobs.store());
+120 | |         blocking(Arc::clone(jobs.region()), move || {
+...   |
+126 | |         }).await.map_err(job_error)
+127 | |     }).name(format!("identity:advice:{checkpoint}")).retry_policy(RunRetryPolicy::new().max_attempts(3)).await
+    | |______________________________________________________________________________________________________________^ expected `restate_sdk::errors::HandlerError`, found `restate_sdk::errors::TerminalError`
+    |
+    = note: expected enum `Result<_, restate_sdk::errors::HandlerError>`
+               found enum `Result<_, restate_sdk::errors::TerminalError>`
+
+error[E0061]: this function takes 2 arguments but 1 argument was supplied
+  --> crates/census-service/src/restate_services/endpoint.rs:79:30
+   |
+79 |         .bind(census_service(NationalCensus::new(clock)));
+   |                              ^^^^^^^^^^^^^^^^^^^------- argument #2 of type `Jobs` is missing
+   |
+note: associated function defined here
+  --> crates/census-service/src/restate_services/national.rs:41:12
+   |
+41 |     pub fn new(clock: Arc<dyn Clock>, jobs: super::publish::Jobs) -> Self {
+   |            ^^^                        --------------------------
+help: provide the argument
+   |
+79 |         .bind(census_service(NationalCensus::new(clock, /* Jobs */)));
+   |                                                       ++++++++++++
+
+Some errors have detailed explanations: E0061, E0308.
+For more information about an error, try `rustc --explain E0061`.
+error: could not compile `census-service` (lib) due to 3 previous errors
+warning: build failed, waiting for other jobs to finish...
+error[E0308]: mismatched types
+   --> crates/census-service/src/restate_services/national/reconciliation.rs:117:5
+    |
+117 | /     ctx.run(move || async move {
+118 | |         let permit = jobs.permit().await?;
+119 | |         let store = Arc::clone(jobs.store());
+120 | |         blocking(Arc::clone(jobs.region()), move || {
+...   |
+126 | |         }).await.map_err(job_error)
+127 | |     }).name(format!("identity:advice:{checkpoint}")).retry_policy(RunRetryPolicy::new().max_attempts(3)).await
+    | |______________________________________________________________________________________________________________^ expected `restate_sdk::errors::HandlerError`, found `restate_sdk::errors::TerminalError`
+    |
+    = note: expected enum `std::result::Result<_, restate_sdk::errors::HandlerError>`
+               found enum `std::result::Result<_, restate_sdk::errors::TerminalError>`
+
+error: could not compile `census-service` (lib test) due to 3 previous errors
+error: command `/home/lewis/.rustup/toolchains/nightly-2026-04-27-x86_64-unknown-linux-gnu/bin/cargo test --no-run --message-format json-render-diagnostics --workspace --all-features --locked --offline --config .cargo/fast-iteration.toml` exited with code 101
+▮▮▮▮ pipeline:tests (17s 209ms, 0849de60)
+Error: task_runner::run_failed
+
+  × Task pipeline:tests failed to run.
+  ╰─▶ Process tools/moon-cargo failed: exit code 101
+

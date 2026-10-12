@@ -16,7 +16,9 @@ pub(crate) use research_failure::{
 pub(crate) use source_research::{
     persist_staff_attempt, persist_staff_capture, persist_unattempted, staff_capture,
 };
-pub(crate) use staff::{listing_appointment, PublishedListing};
+pub(crate) use staff::{
+    listing_appointment, record_appointment, record_capture_appointments, PublishedListing,
+};
 mod survey;
 #[cfg(test)]
 mod survey_tests;

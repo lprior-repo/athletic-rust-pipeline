@@ -1,9 +1,9 @@
 use anyhow::{ensure, Context, Result};
 use census_domain::model::{
     AppliedAthleteIdentity, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
-    CanonicalPerformance, CanonicalSchool, CanonicalTeam, CollectionSnapshot, CoverageRow,
-    RelayResult, RetainedConflict, ReviewCase, ReviewVerdictRecord, SourceAccessCondition,
-    SourceMeetRef, SourceObjectIdentity, SourceObservation,
+    CanonicalPerformance, CanonicalSchool, CanonicalTeam, CoachLaneObligation, CollectionSnapshot,
+    CoverageRow, RelayResult, RetainedConflict, ReviewCase, ReviewVerdictRecord,
+    SourceAccessCondition, SourceMeetRef, SourceObjectIdentity, SourceObservation,
 };
 use census_store::{Entity, StoreError, StoreSnapshot, Table};
 use serde_json::{json, Value};
@@ -81,6 +81,7 @@ fn table_rows(snapshot: &StoreSnapshot<'_>, table: Table) -> Result<Vec<Value>> 
         Table::SourceObservations => rows::<SourceObservation>(snapshot, table),
         Table::AthleteIdentityDecisions => rows::<AppliedAthleteIdentity>(snapshot, table),
         Table::RelayResults => rows::<RelayResult>(snapshot, table),
+        Table::CoachLanes => rows::<CoachLaneObligation>(snapshot, table),
     }
 }
 

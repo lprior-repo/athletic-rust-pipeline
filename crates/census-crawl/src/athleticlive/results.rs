@@ -10,7 +10,9 @@ mod run;
 #[cfg(test)]
 mod tests;
 
-pub use manifest::{collect_manifest, ManifestOptions};
+pub use manifest::{
+    collect_manifest, collect_manifest_body, freeze_manifest, FrozenManifest, ManifestOptions,
+};
 use run::Run;
 
 const RETIRED_PHASE: &str = "athleticlive_results_v2";

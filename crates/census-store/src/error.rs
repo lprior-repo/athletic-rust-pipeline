@@ -91,6 +91,144 @@ pub enum StoreError {
     NotGenerationTable { table: &'static str },
     #[error("derived publication refused: {detail}")]
     PublicationRefused { detail: String },
+    #[error("record of {bytes} bytes exceeds the {max}-byte ceiling")]
+    RowTooLarge { bytes: usize, max: usize },
+    #[error("budget exceeded: {what} would require {needed} but only {available} is available")]
+    BudgetExceeded {
+        what: &'static str,
+        needed: u64,
+        available: u64,
+    },
+    #[error("table {table} requires partitioning before a {operation} operation")]
+    NeedsPartition {
+        table: &'static str,
+        operation: &'static str,
+    },
+    #[error("unit of {bytes} bytes exceeds the supported {max}-byte ceiling")]
+    UnsupportedUnitSize { bytes: usize, max: usize },
+    #[error("{kind} record {digest} conflicts with its immutable request")]
+    RecordConflict { kind: &'static str, digest: String },
+    #[error("{kind} record {digest} expected revision {expected}, found {actual}")]
+    RecordRevision {
+        kind: &'static str,
+        digest: String,
+        expected: u64,
+        actual: u64,
+    },
+    #[error("{kind} record {digest} expected state {expected}, found {actual}")]
+    RecordState {
+        kind: &'static str,
+        digest: String,
+        expected: String,
+        actual: String,
+    },
+    #[error("{kind} record {digest} is missing")]
+    RecordMissing { kind: &'static str, digest: String },
+    #[error("lease for {digest} expected epoch {expected}, found {actual:?}")]
+    LeaseMismatch {
+        digest: String,
+        expected: u64,
+        actual: Option<u64>,
+    },
+    #[error("lease for {digest} at epoch {epoch} has expired")]
+    LeaseExpired { digest: String, epoch: u64 },
+    #[error("disk reservation requires {needed} bytes but only {available} bytes are available")]
+    DiskBudgetExceeded { needed: u64, available: u64 },
+    #[error("input {digest} moved from its accepted generation")]
+    InputMoved { digest: String },
+    #[error("publication root changed from {expected} to {actual}")]
+    CurrentRootChanged { expected: String, actual: String },
+    #[error("lease {digest} at epoch {epoch} is no longer owned")]
+    LeaseLost { digest: String, epoch: u64 },
+    #[error("unsupported artifact format {format}")]
+    UnsupportedFormat { format: String },
+    #[error("artifact {digest} is corrupt or incomplete")]
+    CorruptArtifact { digest: String },
+    #[error("verification failed for {digest}")]
+    VerificationFailed { digest: String },
+    #[error("publication {digest} durability is uncertain")]
+    PublicationDurabilityUncertain { digest: String },
+    #[error("record revision or lease epoch counter exhausted")]
+    CounterExhausted,
+    #[error("registered-object collection is disabled until all producers atomically register references and pins")]
+    ReferenceAccountingIncomplete,
+    #[error("journal object {object} bound to {phase}/{key} has no manifest")]
+    JournalManifestMissing {
+        phase: String,
+        key: String,
+        object: String,
+    },
+    #[error("journal descriptor for {phase}/{key} is {state}, not ready")]
+    JournalNotReady {
+        phase: String,
+        key: String,
+        state: String,
+    },
+    #[error("journal descriptor for {phase}/{key} is invalid: {detail}")]
+    JournalDescriptor {
+        phase: String,
+        key: String,
+        detail: String,
+    },
+    #[error("journal object bound to {phase}/{key} is missing index page {page}")]
+    JournalIndexMissing {
+        phase: String,
+        key: String,
+        page: usize,
+    },
+    #[error(
+        "journal object bound to {phase}/{key} declares {declared} index pages but storage holds page {page}"
+    )]
+    JournalIndexExtra {
+        phase: String,
+        key: String,
+        page: usize,
+        declared: usize,
+    },
+    #[error("journal object bound to {phase}/{key} is missing chunk {index}")]
+    JournalChunkMissing {
+        phase: String,
+        key: String,
+        index: usize,
+    },
+    #[error(
+        "journal object bound to {phase}/{key} declares {declared} chunks but storage holds chunk {index}"
+    )]
+    JournalChunkExtra {
+        phase: String,
+        key: String,
+        index: usize,
+        declared: usize,
+    },
+    #[error(
+        "journal object bound to {phase}/{key} chunk {index} is {observed} bytes where its descriptor binds {declared}"
+    )]
+    JournalChunkLength {
+        phase: String,
+        key: String,
+        index: usize,
+        declared: usize,
+        observed: usize,
+    },
+    #[error(
+        "journal object bound to {phase}/{key} chunk {index} digests to {computed} where its descriptor binds {declared}"
+    )]
+    JournalChunkDigest {
+        phase: String,
+        key: String,
+        index: usize,
+        declared: String,
+        computed: String,
+    },
+    #[error(
+        "journal object bound to {phase}/{key} digests to {computed} where its alias binds {declared}"
+    )]
+    JournalObjectDigest {
+        phase: String,
+        key: String,
+        declared: String,
+        computed: String,
+    },
 }
 
 pub type StoreResult<T> = std::result::Result<T, StoreError>;

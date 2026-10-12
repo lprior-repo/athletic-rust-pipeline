@@ -23,6 +23,7 @@ pub(super) const TEAMS_ARMS: &[(&str, TeamsArm)] = &[
     ("mshsl", TeamsArm::MshslSchools),
     ("plain_names", TeamsArm::PlainNamesDirectories),
     ("ihsa", TeamsArm::IhsaSchools),
+    ("ihsa_tournament", TeamsArm::IhsaTournament),
     ("ks", TeamsArm::KsDirectory),
     ("coach_directories", TeamsArm::CoachDirectories),
     ("arbiter_orgs", TeamsArm::ArbiterOrgs),
@@ -62,8 +63,8 @@ pub(super) enum TeamsArm {
     TssaaSchools,
     Bound,
     DiscoveredStaff,
+    IhsaTournament,
 }
-
 pub(super) fn arm_for(slug: &str) -> Option<TeamsArm> {
     TEAMS_ARMS
         .iter()
@@ -104,6 +105,7 @@ async fn dispatch(
         TeamsArm::MshslSchools => walk_mshsl(crawl).await,
         TeamsArm::PlainNamesDirectories => walk_plain_names(crawl).await,
         TeamsArm::IhsaSchools => walk_ihsa(crawl).await,
+        TeamsArm::IhsaTournament => walk_ihsa_tournament(crawl).await,
         TeamsArm::KsDirectory => walk_ks(crawl).await,
         TeamsArm::CoachDirectories => walk_coach_directories(crawl).await,
         TeamsArm::ArbiterOrgs => walk_arbiter_orgs(crawl).await,
@@ -130,6 +132,119 @@ fn as_job(result: CrawlResult<AdapterReport>) -> Result<AdapterReport, super::Jo
 
 mod walkers;
 use walkers::{
-    walk_arbiter_orgs, walk_coach_directories, walk_ihsa, walk_ks, walk_milesplit, walk_mshsl,
-    walk_plain_names, walk_wiaa,
+    walk_arbiter_orgs, walk_coach_directories, walk_ihsa, walk_ihsa_tournament, walk_ks,
+    walk_milesplit, walk_mshsl, walk_plain_names, walk_wiaa,
 };
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    type TestResult = Result<(), Box<dyn std::error::Error>>;
+
+    #[test]
+    fn ihsa_tournament_arm_is_registered_and_sweepable_for_il() {
+        let arm = arm_for("ihsa_tournament");
+        assert!(
+            arm.is_some(),
+            "ihsa_tournament must be registered in the durable arm table"
+        );
+        assert!(
+            matches!(arm, Some(TeamsArm::IhsaTournament)),
+            "arm_for must return the tournament arm variant"
+        );
+    }
+
+    #[test]
+    fn ihsa_tournament_arm_is_distinct_from_directory_arm() {
+        let directory = arm_for("ihsa");
+        let tournament = arm_for("ihsa_tournament");
+        assert!(directory.is_some(), "ihsa directory arm must be registered");
+        assert!(
+            tournament.is_some(),
+            "ihsa_tournament arm must be registered"
+        );
+        assert_ne!(
+            directory, tournament,
+            "directory and tournament arms must be distinct variants"
+        );
+        assert!(
+            matches!(directory, Some(TeamsArm::IhsaSchools)),
+            "ihsa slug must map to IhsaSchools"
+        );
+        assert!(
+            matches!(tournament, Some(TeamsArm::IhsaTournament)),
+            "ihsa_tournament slug must map to IhsaTournament"
+        );
+    }
+
+    #[test]
+    fn ihsa_tournament_slug_is_sweepable_under_il_plan() {
+        assert!(
+            TEAMS_ARMS
+                .iter()
+                .any(|(slug, arm)| *slug == "ihsa_tournament" && *arm == TeamsArm::IhsaTournament),
+            "the ihsa_tournament entry must be in the sweepable arms table"
+        );
+    }
+
+    #[test]
+    fn ihsa_tournament_pass_attempts_its_sources_and_records_the_outcome() -> TestResult {
+        use census_domain::model::SchoolYear;
+        use census_store::Store;
+        use std::sync::Arc;
+
+        let dir = tempfile::tempdir()?;
+        let store_path = dir.path().join("store");
+        let store = Arc::new(Store::open(&store_path)?);
+
+        let cache_path = dir.path().join("http");
+        let fetcher = Arc::new(census_crawl::net::Fetcher::new(
+            &cache_path,
+            None,
+            std::time::Duration::from_millis(1),
+            std::collections::HashMap::new(),
+            Vec::new(),
+        )?);
+
+        let spawner = Arc::new(crate::spawn::Spawner::new());
+        let runtime = SourceRuntime {
+            store: &store,
+            fetcher: &fetcher,
+            region: &spawner,
+        };
+
+        let scope = super::super::jobs::AdapterScope {
+            season: SchoolYear::new(2025).ok_or("school year 2025")?,
+            refresh: false,
+            at: "2026-09-20",
+            as_of: chrono::NaiveDate::from_ymd_opt(2026, 9, 22).ok_or("as of date")?,
+        };
+
+        let result = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(team_source(
+                runtime,
+                census_domain::UsJurisdiction::Illinois,
+                scope,
+                "ihsa_tournament",
+            ));
+
+        check!(
+            result.is_ok(),
+            "an unreachable source is a typed outcome, not a job failure"
+        );
+        let report = result?.ok_or("must produce a report")?;
+        check!(eq; report.adapter, "ihsa");
+        check!(eq; report.unit, "performances");
+        check!(
+            report.requests >= 1,
+            "the pass must attempt its sources: {report:?}"
+        );
+        check!(
+            report.rows + report.errors > 0,
+            "the outcome is recorded either way: {report:?}"
+        );
+        Ok(())
+    }
+}

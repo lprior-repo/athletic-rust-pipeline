@@ -105,8 +105,10 @@ async fn drain_after_shutdown(
     check!(eq; report.panicked, 0,
     "a task panicked during drain: {report:?}");
     check!(eq; report.accepted,
-    report.completed + report.cancelled + report.aborted + report.panicked,
+    report.disjoint_total(),
     "accepted work was lost or counted twice: {report:?}");
+    check!(eq; report.attempts.ceiling, 3,
+    "the certificate must bridge the durable source attempt ceiling: {report:?}");
     let connection = tokio::time::timeout(
         Duration::from_secs(5),
         tokio::net::TcpStream::connect(listen),

@@ -147,7 +147,11 @@ fn cen12_nces_parser_join_and_published_workbook_keep_exact_declared_tuples() ->
         dates: BTreeMap::from([("nces-ccd".into(), "2026-10-07".into())]),
     };
     let joined = join_generation(&store, &generation, None, overrides, Mode::Apply)?;
-    check!(eq; joined.counters.linked, 7);
+    check!(eq; joined.counters.linked, 0);
+    check!(eq; joined.counters.already_linked, 7);
+    check!(eq; joined.counters.backfilled, 7);
+    check!(eq; joined.counters.postal_filled, 6);
+    check!(eq; joined.counters.postal_remaining, 1);
     check!(eq; joined.counters.refused, 0);
     let schools = store.scan::<CanonicalSchool>(Table::Schools)?;
     for entry in parsed.entries() {
@@ -161,6 +165,10 @@ fn cen12_nces_parser_join_and_published_workbook_keep_exact_declared_tuples() ->
             .ok_or("partial source tuple not joined")?;
         check!(eq; components(claim.address()), components(entry.address().ok_or("source tuple absent")?));
         check!(eq; claim.owner().namespace, census_domain::model::SourceNamespace::school_directory("nces-ccd", UsJurisdiction::NewJersey));
+        check!(eq; claim.source_label(), &census_domain::school_directory::SourceLabel::Ccd);
+        check!(eq; claim.evidence().source.id.as_str(), "nces-ccd");
+        check!(eq; claim.evidence().observed_on.as_str(), "2026-10-07");
+        check!(eq; claim.evidence().source.url.as_deref(), Some("https://nces.ed.gov/ccd/tuple-regression.csv"));
     }
     let path = census_report::workbook::build(
         &store,

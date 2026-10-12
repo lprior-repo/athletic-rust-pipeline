@@ -1,12 +1,12 @@
-use super::{RankingsQParamsInner, RankingsQuery, RequestBody};
+use super::{RankingsQParamsInner, RankingsQuery};
 use crate::protocol::RankingsCapture;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case", tag = "action")]
+#[serde(rename_all = "snake_case", tag = "action", deny_unknown_fields)]
 pub enum RequestAction {
-    Fetch { body: Option<SearchBody> },
+    Fetch {},
     Rankings(RankingsAction),
 }
 
@@ -32,10 +32,10 @@ pub struct RequestSpec {
 }
 
 impl RequestSpec {
-    pub fn body(&self) -> Option<RequestBody<'_>> {
+    pub fn body(&self) -> Option<RankingsQuery<'_>> {
         match &self.action {
-            RequestAction::Fetch { body } => body.as_ref().map(RequestBody::Search),
-            RequestAction::Rankings(action) => Some(RequestBody::Rankings(RankingsQuery {
+            RequestAction::Fetch {} => None,
+            RequestAction::Rankings(action) => Some(RankingsQuery {
                 report_type: "div",
                 mode: "list",
                 div_list_id: action.list_id,
@@ -46,7 +46,7 @@ impl RequestSpec {
                 qualifying_list_key: "",
                 version: 2,
                 debug: "",
-            })),
+            }),
         }
     }
 }
@@ -57,12 +57,4 @@ fn rankings_q_params(grade: &Option<u8>, page: u32) -> RankingsQParamsInner<'_> 
         None => &[],
     };
     RankingsQParamsInner { grades, page }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct SearchBody {
-    pub q: String,
-    pub fq: String,
-    pub start: u32,
 }

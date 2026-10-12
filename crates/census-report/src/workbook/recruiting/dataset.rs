@@ -3,10 +3,9 @@ use crate::report::{Derivation, ReportResult, Scope};
 use census_domain::model::{CanonicalAthlete, CanonicalCoach, CanonicalSchool, SchoolYear};
 use std::collections::BTreeMap;
 
-use super::contact::{attach_research, contacts, SchoolContacts};
+use super::bounded::{bounded_claims, bounded_contacts, WORKBOOK_GROUP_BUDGET};
+use super::contact::{attach_research, SchoolContacts};
 use super::facts::{kind_index, pr_index, school_index, tally, AthleteTally};
-
-use super::coalesce;
 
 #[derive(Debug, Clone, Copy)]
 pub(super) struct Reconciliation {
@@ -42,18 +41,26 @@ impl Dataset {
         school_year: census_domain::model::SchoolYear,
         prs: Vec<SharedSelection>,
     ) -> ReportResult<Self> {
+        crate::grouping::Admission::new("recruiting schools").rows(derivation.schools())?;
         let athletes = derivation.athletes().to_vec();
         let school_address =
             crate::export::postal::athlete_address_index(derivation.dataset(), &athletes)?;
         let inputs = Inputs::new(derivation, school_year, prs);
-        let mut contacts = contacts(derivation.coach_observations(), school_year);
+        let mut contacts = bounded_contacts(
+            derivation.coach_observations(),
+            school_year,
+            WORKBOOK_GROUP_BUDGET,
+        )?;
         attach_research(&mut contacts, derivation.schools(), school_year);
-        let audit = inputs.audit(&contacts);
+        let published_coaches =
+            bounded_claims(derivation.coach_observations(), WORKBOOK_GROUP_BUDGET)?;
+        let audit = inputs.audit(&contacts, published_coaches.len());
         Ok(Self::assemble(
             inputs,
             athletes,
             school_address,
             contacts,
+            published_coaches,
             audit,
         ))
     }
@@ -63,6 +70,7 @@ impl Dataset {
         athletes: Vec<CanonicalAthlete>,
         school_address: BTreeMap<String, String>,
         contacts: BTreeMap<String, SchoolContacts>,
+        published_coaches: Vec<CanonicalCoach>,
         audit: Reconciliation,
     ) -> Self {
         Self {
@@ -71,7 +79,7 @@ impl Dataset {
             school_year: inputs.school_year,
             identities: inputs.derivation.dataset().identities(),
             schools: school_index(inputs.derivation.schools()),
-            published_coaches: coalesce::claims(inputs.derivation.coach_observations()),
+            published_coaches,
             coach_spellings: super::coach_spelling::spellings(
                 inputs.derivation.coach_observations(),
             ),
@@ -137,14 +145,18 @@ impl<'a, 'd> Inputs<'a, 'd> {
         }
     }
 
-    fn audit(&self, contacts: &BTreeMap<String, SchoolContacts>) -> Reconciliation {
+    fn audit(
+        &self,
+        contacts: &BTreeMap<String, SchoolContacts>,
+        published_coach_rows: usize,
+    ) -> Reconciliation {
         Reconciliation {
             store_athletes: self.derivation.dataset().athletes.len(),
             scoped_athletes: self.derivation.scoped_athletes(),
             cohort_athletes: self.derivation.athletes().len(),
             pr_rows: self.prs.len(),
             coach_rows: self.derivation.coach_observations().len(),
-            published_coach_rows: coalesce::claims(self.derivation.coach_observations()).len(),
+            published_coach_rows,
             contact_conflicts: contacts.values().map(|facts| facts.heads.conflicts()).sum(),
         }
     }

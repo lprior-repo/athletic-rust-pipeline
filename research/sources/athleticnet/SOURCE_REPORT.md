@@ -105,6 +105,11 @@ Five distinct routes, in decreasing order of cost:
 Search is **not** available to this lane: no search XHR was captured. A school-name → `IDSchool` resolver
 therefore has to be built from the division tree plus team pages, or captured from the browser's own search UI.
 
+Current execution policy (hs2z): athlete search is robots-disallowed and is not a discovery route. The browser
+and crawl request contracts reject the retired search body. Athlete IDs are discovered from captured whole-meet
+results (route 3 above), rankings rows, and qualified public source handoffs, never through a search exception.
+The historical browser request fixture is retained unchanged; current GET actions carry no body.
+
 ## 6. Stable identifiers
 
 Full table with one real example each, the file it came from, its JSON path and its join role: `schema.json`

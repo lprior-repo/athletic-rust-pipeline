@@ -105,7 +105,7 @@ pub(super) async fn emit_staff(
         complete &= emit_category(
             ctx,
             record,
-            (owner.0, owner.1, &capture.fetched_at),
+            (owner.0, capture),
             (category, rows),
             &mut coaches,
             report,
@@ -122,14 +122,14 @@ pub(super) async fn emit_staff(
 async fn emit_category(
     ctx: &AdapterContext<'_>,
     record: &SchoolRecord,
-    owner: (&SchoolId, &str, &str),
+    owner: (&SchoolId, &FetchOutcome),
     category: (&str, &[Value]),
     coaches: &mut Vec<CanonicalCoach>,
     report: &mut AdapterReport,
 ) -> CrawlResult<bool> {
     let mut complete = true;
     for (ordinal, value) in category.1.iter().enumerate() {
-        let locator = format!("{}#category={}&row={ordinal}", owner.1, category.0);
+        let locator = format!("{}#category={}&row={ordinal}", owner.1.url, category.0);
         match serde_json::from_value::<StaffPerson>(value.clone()) {
             Ok(person) => {
                 let emission = emit_person(ctx, record, owner, &person, report).await?;
@@ -161,11 +161,11 @@ enum Reveal {
 async fn emit_person(
     ctx: &AdapterContext<'_>,
     record: &SchoolRecord,
-    owner: (&SchoolId, &str, &str),
+    owner: (&SchoolId, &FetchOutcome),
     person: &StaffPerson,
     report: &mut AdapterReport,
 ) -> CrawlResult<PersonEmission> {
-    let locator = format!("{}#person={}", owner.1, person.person_id);
+    let locator = format!("{}#person={}", owner.1.url, person.person_id);
     if person.name.trim().is_empty() || person.default_title.trim().is_empty() {
         fail(report, &locator, "missing staff name or title")?;
         return Ok(PersonEmission {
@@ -173,12 +173,26 @@ async fn emit_person(
             reached: false,
         });
     }
-    let Some(mut coach) = parse_coach(person, owner.0, owner.1, owner.2) else {
+    let Some(mut coach) = parse_coach(person, owner.0, &owner.1.url, &owner.1.fetched_at) else {
         return Ok(PersonEmission {
             coach: None,
             reached: true,
         });
     };
+    crate::coach_directories::record_appointment(
+        &mut coach,
+        Some(crate::coach_directories::PublishedListing {
+            role: &person.default_title,
+            program: &person.default_title,
+            source: "ihsa",
+            school_year: ctx.school_year,
+        }),
+        crate::coach_directories::StaffCapture {
+            url: &owner.1.url,
+            observed_on: &owner.1.fetched_at,
+            sha256: &owner.1.content_digest,
+        },
+    )?;
     let mut reached = true;
     if person.has_email == Some(true) {
         let url = format!(

@@ -3,13 +3,15 @@ use crate::report::{Derivation, ReportResult};
 use rust_xlsxwriter::Workbook;
 use std::path::Path;
 
-use super::cells::{write_sheet, SheetChrome, SheetLayout};
+use super::cells::{write_sheet_rows, SheetChrome, SheetLayout};
 use dataset::Dataset;
 
 mod athletes;
+pub(in crate::workbook) mod bounded;
 pub(in crate::workbook) mod coach_projection;
 pub(in crate::workbook) mod coach_spelling;
 mod coaches;
+#[cfg(test)]
 pub(in crate::workbook) mod coalesce;
 mod columns;
 pub(in crate::workbook) mod contact;
@@ -44,7 +46,7 @@ impl Recruiting {
     }
 
     pub(super) fn write_athletes(&self, book: &mut Workbook, path: &Path) -> ReportResult<()> {
-        write_sheet(
+        write_sheet_rows(
             book,
             path,
             SheetLayout {
@@ -52,12 +54,12 @@ impl Recruiting {
                 widths: &athletes::WIDTHS,
                 chrome: SheetChrome::Filtered,
             },
-            athletes::sheet(&self.dataset)?,
+            athletes::rows(&self.dataset),
         )
     }
 
     pub(super) fn write_prs(&self, book: &mut Workbook, path: &Path) -> ReportResult<()> {
-        write_sheet(
+        write_sheet_rows(
             book,
             path,
             SheetLayout {
@@ -65,12 +67,12 @@ impl Recruiting {
                 widths: &prs::WIDTHS,
                 chrome: SheetChrome::Filtered,
             },
-            prs::sheet(&self.dataset.prs)?,
+            prs::rows(&self.dataset.prs),
         )
     }
 
     pub(super) fn write_coaches(&self, book: &mut Workbook, path: &Path) -> ReportResult<()> {
-        write_sheet(
+        write_sheet_rows(
             book,
             path,
             SheetLayout {
@@ -78,7 +80,7 @@ impl Recruiting {
                 widths: &coaches::WIDTHS,
                 chrome: SheetChrome::Filtered,
             },
-            coaches::sheet(&self.dataset)?,
+            coaches::rows(&self.dataset),
         )
     }
 

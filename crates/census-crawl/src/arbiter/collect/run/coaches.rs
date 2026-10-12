@@ -105,8 +105,7 @@ impl Run<'_> {
         let count = u64::try_from(parsed.rows.len()).map_err(|_| CrawlError::Arithmetic {
             detail: "coach page size".into(),
         })?;
-        let malformed =
-            self.write_coach_rows(parsed.rows, school, &url, &capture.fetched_at, walk)?;
+        let malformed = self.write_coach_rows(parsed.rows, school, &capture, walk)?;
         self.advance(
             (page.1, count, parsed.total),
             (&url, &capture),
@@ -119,10 +118,11 @@ impl Run<'_> {
         &mut self,
         rows: Vec<CrawlResult<crate::arbiter::parse::CoachRow>>,
         school: &CanonicalSchool,
-        url: &str,
-        observed_on: &str,
+        capture: &crate::net::FetchOutcome,
         walk: &mut CoachWalk,
     ) -> CrawlResult<bool> {
+        let url = capture.url.as_str();
+        let observed_on = capture.fetched_at.as_str();
         let mut malformed = false;
         rows.into_iter()
             .enumerate()
@@ -130,7 +130,21 @@ impl Run<'_> {
                 let locator = format!("{url}#row={ordinal}");
                 match row {
                     Ok(row) => {
-                        if let Some(coach) = map_coach_row(&row, &school.id, url, observed_on) {
+                        if let Some(mut coach) = map_coach_row(&row, &school.id, url, observed_on) {
+                            crate::coach_directories::record_appointment(
+                                &mut coach,
+                                Some(crate::coach_directories::PublishedListing {
+                                    role: &row.position,
+                                    program: &row.sport,
+                                    source: crate::arbiter::SOURCE_ID,
+                                    school_year: self.ctx.school_year,
+                                }),
+                                crate::coach_directories::StaffCapture {
+                                    url,
+                                    observed_on,
+                                    sha256: &capture.content_digest,
+                                },
+                            )?;
                             let errors = self.tally.errors;
                             walk.admitted = walk.admitted.saturating_add(self.persist_rows(
                                 &locator,

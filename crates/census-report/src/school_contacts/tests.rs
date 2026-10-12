@@ -18,6 +18,32 @@ fn year() -> Result<SchoolYear, Box<dyn std::error::Error>> {
     SchoolYear::new(2026).ok_or_else(|| "year".into())
 }
 
+#[test]
+fn oversized_school_group_is_refused_before_contact_projection() -> TestResult {
+    let mut school = school();
+    school.name = "x".repeat(1_048_577);
+    for result in [
+        mailbox_rows(std::slice::from_ref(&school), year()?),
+        research_rows(std::slice::from_ref(&school), year()?),
+    ] {
+        let error = match result {
+            Err(ReportError::Grouping(error)) => error,
+            Err(other) => return Err(format!("unexpected refusal: {other}").into()),
+            Ok(_) => return Err("oversized school was projected".into()),
+        };
+        check!(matches!(
+            error,
+            crate::grouping::GroupingError::BudgetExceeded {
+                stage: "school contacts",
+                resource: "encoded row bytes",
+                available: 1_048_576,
+                ..
+            }
+        ));
+    }
+    Ok(())
+}
+
 fn record(
     school: &CanonicalSchool,
     outcome: ContactResearchOutcome,

@@ -1,6 +1,4 @@
-use super::super::archive::{
-    initialize_archive, preserve_capture, ArchiveAdmission,
-};
+use super::super::archive::{initialize_archive, preserve_capture, ArchiveAdmission};
 use super::*;
 use std::sync::{Arc, Barrier};
 
@@ -15,6 +13,20 @@ fn test_stage(root: &Path, name: &str) -> TestResult<PathBuf> {
     Ok(stage)
 }
 
+fn archive_once(
+    root: &Path,
+    archive: &Path,
+    stage_name: u32,
+    body: &[u8],
+    capture: &capture::Capture,
+    capacity: u64,
+) -> TestResult {
+    let mut admission = ArchiveAdmission::begin_with_capacity(root, archive, capacity)?;
+    let stage = test_stage(root, &format!("stage-{stage_name}"))?;
+    preserve_capture(archive, &stage, "new", body, capture, &mut admission)?;
+    Ok(())
+}
+
 #[test]
 fn concurrent_identical_reservations_are_deduplicated() -> TestResult {
     let root = tempfile::tempdir()?;
@@ -27,58 +39,34 @@ fn concurrent_identical_reservations_are_deduplicated() -> TestResult {
     let barrier = Arc::new(Barrier::new(2));
     let results = std::thread::scope(|scope| {
         let mut handles = Vec::new();
-        for thread_id in [1, 2] {
+        for thread_id in [1_u32, 2] {
             let barrier = Arc::clone(&barrier);
             let archive = archive.clone();
             let capture = capture.clone();
+            let root_dir = root.path().to_path_buf();
             handles.push(scope.spawn(move || {
                 barrier.wait();
-                let root = root.path();
-                let mut admission = ArchiveAdmission::begin_with_capacity(
-                    root,
-                    &archive,
-                    capacity,
-                )?;
-                let stage = test_stage(
-                    root,
-                    &format!("stage-{thread_id}"),
-                )?;
-                let digest = capture.meta.content_digest.clone();
-                let meta_digest = content_digest(&capture.encoded);
-                let result = preserve_capture(
-                    &archive,
-                    &stage,
-                    "new",
-                    body,
-                    &capture,
-                    &mut admission,
-                );
-                (thread_id, result)
+                archive_once(&root_dir, &archive, thread_id, body, &capture, capacity)
+                    .map_err(|error| error.to_string())
             }));
         }
         handles
             .into_iter()
-            .map(|handle| handle.join().map_err(|_| "thread panicked".to_string()))
+            .map(|handle| match handle.join() {
+                Ok(result) => result,
+                Err(_) => Err("thread panicked".to_string()),
+            })
             .collect::<Vec<_>>()
     });
     for result in results {
-        let (thread_id, capture_result) =
-            result.map_err(std::io::Error::other)?;
-        match capture_result {
-            Ok(_) => {}
-            Err(error) => {
-                return Err(
-                    format!("thread {thread_id}: {error}").into(),
-                );
-            }
-        }
+        result.map_err(std::io::Error::other)?;
     }
     assert_capture(root.path(), body, &capture.meta)?;
     Ok(())
 }
 
 #[test]
-fn failed_reservation_is_released_for_later_readers() -> TestResult {
+fn published_capture_with_stale_reservation_is_recovered_on_restart() -> TestResult {
     let root = tempfile::tempdir()?;
     let archive = initialize_archive(root.path())?;
     let first_body = b"first raw body";
@@ -87,44 +75,39 @@ fn failed_reservation_is_released_for_later_readers() -> TestResult {
     let second = test_capture(root.path(), second_body)?;
     let first_needed = first_body.len() as u64 + first.encoded.len() as u64;
     let second_needed = second_body.len() as u64 + second.encoded.len() as u64;
-    let capacity = first_needed + second_needed - 1;
-    let first_digest = first.meta.content_digest.clone();
-    let first_meta_digest = content_digest(&first.encoded);
-    let second_digest = second.meta.content_digest.clone();
-    let second_meta_digest = content_digest(&second.encoded);
+    let capacity = first_needed + second_needed;
     let mut first_admission =
         ArchiveAdmission::begin_with_capacity(root.path(), &archive, capacity)?;
-    first_admission.reserve_capture_sizes(
-        &first_digest,
-        &first_meta_digest,
+    let first_stage = test_stage(root.path(), "stage-first")?;
+    preserve_capture(
+        &archive,
+        &first_stage,
+        "new",
+        first_body,
+        &first,
+        &mut first_admission,
+    )?;
+    drop(first_admission);
+    let mut abandoned = ArchiveAdmission::begin_with_capacity(root.path(), &archive, capacity)?;
+    abandoned.reserve_capture_sizes(
+        &first.meta.content_digest,
+        &content_digest(&first.encoded),
         Some(first_body.len() as u64),
         Some(first.encoded.len() as u64),
     )?;
-    drop(first_admission);
+    drop(abandoned);
     let mut second_admission =
         ArchiveAdmission::begin_with_capacity(root.path(), &archive, capacity)?;
     let second_stage = test_stage(root.path(), "stage-second")?;
-    let result = preserve_capture(
+    preserve_capture(
         &archive,
         &second_stage,
         "new",
         second_body,
         &second,
         &mut second_admission,
-    );
-    drop(second_admission);
-    match result {
-        Ok(_) => {
-            assert_capture(root.path(), second_body, &second.meta)?;
-        }
-        Err(FetchError::ArchiveCapacity { .. }) => {
-            return Err(
-                "second capture was refused despite released reservation"
-                    .into(),
-            );
-        }
-        Err(error) => return Err(error.into()),
-    }
+    )?;
+    assert_capture(root.path(), second_body, &second.meta)?;
     Ok(())
 }
 #[test]
@@ -150,22 +133,80 @@ fn reserved_bytes_are_counted_and_refuse_competing_captures() -> TestResult {
         Some(first_body.len() as u64),
         Some(first.encoded.len() as u64),
     )?;
-    drop(first_admission);
-    let mut second_admission =
-        ArchiveAdmission::begin_with_capacity(root.path(), &archive, capacity)?;
-    let result = second_admission.reserve_capture_sizes(
+    let result = first_admission.reserve_capture_sizes(
         &second_digest,
         &second_meta_digest,
         Some(second_body.len() as u64),
         Some(second.encoded.len() as u64),
     );
-    drop(second_admission);
+    drop(first_admission);
     match result {
         Err(FetchError::ArchiveCapacity { .. }) => Ok(()),
-        Ok(_) => Err(
-            "second reservation was admitted despite insufficient capacity"
-                .into(),
-        ),
+        Ok(_) => Err("second reservation was admitted despite insufficient capacity".into()),
         Err(error) => Err(error.into()),
     }
 }
+
+#[test]
+fn repeated_in_flight_archive_key_reserves_its_bytes_only_once() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let archive = initialize_archive(root.path())?;
+    let body = b"single reservation";
+    let capture = test_capture(root.path(), body)?;
+    let body_bytes = u64::try_from(body.len())?;
+    let meta_bytes = u64::try_from(capture.encoded.len())?;
+    let capacity = body_bytes
+        .checked_add(meta_bytes)
+        .ok_or("capacity overflow")?;
+    let digest = content_digest(&capture.encoded);
+    let mut admission = ArchiveAdmission::begin_with_capacity(root.path(), &archive, capacity)?;
+    admission.reserve_capture_sizes(
+        &capture.meta.content_digest,
+        &digest,
+        Some(body_bytes),
+        Some(meta_bytes),
+    )?;
+    admission.reserve_capture_sizes(
+        &capture.meta.content_digest,
+        &digest,
+        Some(body_bytes),
+        Some(meta_bytes),
+    )?;
+    check!(eq; file_names(&archive.join("reservations"))?.len(), 1);
+    admission.finish_capture(&capture.meta.content_digest, &digest)?;
+    check!(eq; file_names(&archive.join("reservations"))?.len(), 0);
+    Ok(())
+}
+
+#[test]
+fn failed_staged_write_releases_reservation_before_admission_is_dropped() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let archive = initialize_archive(root.path())?;
+    let body = b"failed staged capture";
+    let capture = test_capture(root.path(), body)?;
+    let capacity = u64::try_from(body.len())?
+        .checked_add(u64::try_from(capture.encoded.len())?)
+        .ok_or("capacity overflow")?;
+    let mut admission = ArchiveAdmission::begin_with_capacity(root.path(), &archive, capacity)?;
+    let stage = test_stage(root.path(), "stage-obstructed")?;
+    let obstruction = stage.join("new.body");
+    std::fs::write(&obstruction, b"retained interrupted bytes")?;
+    let result = preserve_capture(&archive, &stage, "new", body, &capture, &mut admission);
+    check!(matches!(result, Err(FetchError::Cache { path, source })
+        if path == obstruction && source.kind() == ErrorKind::AlreadyExists));
+    check!(eq; std::fs::read(obstruction)?, b"retained interrupted bytes");
+    check!(eq; file_names(&archive.join("reservations"))?.len(), 0);
+    let retry_stage = test_stage(root.path(), "stage-retry")?;
+    preserve_capture(
+        &archive,
+        &retry_stage,
+        "new",
+        body,
+        &capture,
+        &mut admission,
+    )?;
+    assert_capture(root.path(), body, &capture.meta)?;
+    Ok(())
+}
+
+mod recovery;

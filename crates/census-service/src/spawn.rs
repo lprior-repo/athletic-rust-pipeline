@@ -1,16 +1,21 @@
 use std::future::Future;
-use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use tokio::sync::{oneshot, watch, OwnedSemaphorePermit, Semaphore, TryAcquireError};
+use tokio::sync::{watch, Semaphore};
 use tokio::task::JoinSet;
 
-use crate::outcome::{DrainState, Outcome};
+use crate::admission::{
+    Coordinator, DepartureReason, Reservation, TryResult, WorkClass, WORK_CLASS_NORMAL,
+};
+#[cfg(test)]
+use crate::outcome::Outcome;
+#[cfg(test)]
+use tokio::sync::oneshot;
 
+mod blocking;
 mod drain;
 mod ledger;
-use ledger::Ledger;
+use ledger::{Counters, Ledger};
 
 pub const DEFAULT_CAPACITY: usize = 500;
 
@@ -19,10 +24,22 @@ pub struct TaskReport {
     pub accepted: u64,
     pub completed: u64,
     pub cancelled: u64,
-    pub timed_out: u64,
-    pub remaining: u64,
     pub aborted: u64,
     pub panicked: u64,
+    pub failed: u64,
+    pub still_running: u64,
+    pub timed_out: u64,
+    pub remaining: u64,
+}
+
+impl TaskReport {
+    pub fn disjoint_total(&self) -> u64 {
+        self.completed
+            .saturating_add(self.cancelled)
+            .saturating_add(self.aborted)
+            .saturating_add(self.panicked)
+            .saturating_add(self.still_running)
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -33,33 +50,39 @@ pub enum SpawnError {
     RegionFull { capacity: usize },
     #[error("the task region's capacity is closed")]
     RegionClosed,
+    #[error("admission refused: {0}")]
+    Admission(DepartureReason),
 }
 
-enum Completion<T, E> {
-    Returned(Result<T, E>),
-    Panicked,
+impl From<DepartureReason> for SpawnError {
+    fn from(reason: DepartureReason) -> Self {
+        match reason {
+            DepartureReason::RegionClosed => Self::RegionClosed,
+            reason => Self::Admission(reason),
+        }
+    }
 }
 
 #[derive(Default)]
 struct Region {
     tasks: JoinSet<()>,
     ledger: Ledger,
-    blocking: Arc<AtomicUsize>,
     closed: bool,
     aborting: bool,
+    adopted: Option<Reservation>,
 }
 
 impl Region {
     fn reap_finished(&mut self) {
-        while let Some(joined) = self.tasks.try_join_next() {
-            self.ledger.classify(DrainState::from_join(joined));
+        while let Some(joined) = self.tasks.try_join_next_with_id() {
+            self.ledger.classify_join(joined);
         }
     }
 }
 
 pub struct Spawner {
     capacity: usize,
-    permits: Arc<Semaphore>,
+    coordinator: Coordinator,
     region: Mutex<Region>,
     draining: tokio::sync::Mutex<()>,
     stopping: watch::Sender<bool>,
@@ -77,10 +100,10 @@ impl Spawner {
     }
 
     pub fn with_capacity(capacity: usize) -> Self {
-        let bound = capacity.clamp(1, Semaphore::MAX_PERMITS);
+        let permits = capacity.clamp(1, Semaphore::MAX_PERMITS);
         Self {
-            capacity: bound,
-            permits: Arc::new(Semaphore::new(bound)),
+            capacity: permits,
+            coordinator: Coordinator::runtime(narrow_bound(permits)),
             region: Mutex::new(Region::default()),
             draining: tokio::sync::Mutex::new(()),
             stopping: watch::Sender::new(false),
@@ -90,19 +113,42 @@ impl Spawner {
     pub fn adopting(tasks: JoinSet<()>) -> Result<Self, SpawnError> {
         let held = narrow(tasks.len())?;
         let capacity = DEFAULT_CAPACITY.max(tasks.len());
+        let coordinator = Coordinator::runtime(narrow(capacity)?);
+        let adopted = if held == 0 {
+            None
+        } else {
+            let mut profile = WORK_CLASS_NORMAL;
+            profile.resources.bytes = profile
+                .resources
+                .bytes
+                .checked_mul(held)
+                .ok_or(SpawnError::TaskCountOverflow)?;
+            profile.resources.work = held;
+            profile.resources.slots.tasks = held;
+            match coordinator.try_reserve_profile(profile) {
+                TryResult::Granted(reservation) => Some(reservation),
+                TryResult::Deferred(reason) | TryResult::Refused(reason) => {
+                    return Err(reason.into())
+                }
+            }
+        };
         Ok(Self {
             capacity,
-            permits: Arc::new(Semaphore::new(capacity.saturating_sub(tasks.len()))),
+            coordinator,
             region: Mutex::new(Region {
                 tasks,
                 ledger: Ledger::holding(held),
-                blocking: Arc::new(AtomicUsize::new(0)),
                 closed: false,
                 aborting: false,
+                adopted,
             }),
             draining: tokio::sync::Mutex::new(()),
             stopping: watch::Sender::new(false),
         })
+    }
+
+    pub fn coordinator(&self) -> &Coordinator {
+        &self.coordinator
     }
 
     pub fn stopping(&self) -> watch::Receiver<bool> {
@@ -118,69 +164,34 @@ impl Spawner {
         self.push_async(task, slot)
     }
 
-    #[tracing::instrument(skip_all)]
-    pub async fn blocking<T, E, F>(&self, job: F) -> Outcome<T, E>
-    where
-        F: FnOnce() -> Result<T, E> + Send + 'static,
-        T: Send + 'static,
-        E: Send + 'static,
-    {
-        {
-            let region = self.lock();
-            if region.closed {
-                tracing::error!(
-                    capacity = self.capacity,
-                    "the task region is closed; the blocking job was not run"
-                );
-                return Outcome::Cancelled;
-            }
-        }
-        let Ok(slot) = Arc::clone(&self.permits).acquire_owned().await else {
-            tracing::error!(
-                capacity = self.capacity,
-                "the task region's capacity is closed; the blocking job was not run"
-            );
-            return Outcome::Cancelled;
-        };
-        let (tx, rx) = oneshot::channel();
-        if !self.push_blocking(
-            move || match catch_unwind(AssertUnwindSafe(job)) {
-                Ok(result) => publish(tx, Completion::Returned(result)),
-                Err(payload) => {
-                    publish(tx, Completion::Panicked);
-                    resume_unwind(payload);
-                }
-            },
-            slot,
-        ) {
-            return Outcome::Cancelled;
-        }
-        match rx.await {
-            Ok(Completion::Returned(Ok(value))) => Outcome::Ok(value),
-            Ok(Completion::Returned(Err(error))) => Outcome::Err(error),
-            Ok(Completion::Panicked) => Outcome::Panicked,
-            Err(_) => Outcome::Cancelled,
+    fn admit(&self) -> Result<Reservation, SpawnError> {
+        match self.coordinator.try_reserve_profile(WORK_CLASS_NORMAL) {
+            TryResult::Granted(reservation) => Ok(reservation),
+            TryResult::Deferred(_) => Err(SpawnError::RegionFull {
+                capacity: self.capacity,
+            }),
+            TryResult::Refused(reason) => Err(reason.into()),
         }
     }
 
-    fn admit(&self) -> Result<OwnedSemaphorePermit, SpawnError> {
-        let acquired = Arc::clone(&self.permits).try_acquire_owned();
-        match acquired {
-            Ok(slot) => Ok(slot),
-            Err(TryAcquireError::NoPermits) => {
-                tracing::warn!(
-                    capacity = self.capacity,
-                    "the task region is at capacity; refusing to supervise more work"
-                );
-                Err(SpawnError::RegionFull {
+    pub fn spawn_with<F, B>(&self, profile: WorkClass, build: B) -> Result<(), SpawnError>
+    where
+        F: Future<Output = ()> + Send + 'static,
+        B: FnOnce() -> F,
+    {
+        let reservation = match self.coordinator.try_reserve_profile(profile) {
+            TryResult::Granted(reservation) => reservation,
+            TryResult::Deferred(_) => {
+                return Err(SpawnError::RegionFull {
                     capacity: self.capacity,
                 })
             }
-            Err(TryAcquireError::Closed) => Err(SpawnError::RegionClosed),
-        }
+            TryResult::Refused(reason) => return Err(reason.into()),
+        };
+        self.push_async(build(), reservation)
     }
 
-    fn push_async<F>(&self, task: F, slot: OwnedSemaphorePermit) -> Result<(), SpawnError>
+    fn push_async<F>(&self, task: F, slot: Reservation) -> Result<(), SpawnError>
     where
         F: Future<Output = ()> + Send + 'static,
     {
@@ -189,14 +200,14 @@ impl Spawner {
             return Err(SpawnError::RegionClosed);
         }
         region.reap_finished();
-        region.tasks.spawn(holding_slot(slot, task));
+        region.tasks.spawn(supervised(slot, task));
         region.ledger.accept();
         Ok(())
     }
 
-    fn push_blocking<F>(&self, job: F, slot: OwnedSemaphorePermit) -> bool
+    fn push_blocking<F>(&self, job: F, slot: Reservation) -> bool
     where
-        F: FnOnce() + Send + 'static,
+        F: FnOnce(Arc<Counters>) + Send + 'static,
     {
         let mut region = self.lock();
         if region.closed {
@@ -204,13 +215,13 @@ impl Spawner {
             return false;
         }
         region.reap_finished();
-        let blocking = Arc::clone(&region.blocking);
-        blocking.fetch_add(1, Ordering::AcqRel);
-        region.tasks.spawn_blocking(move || {
+        let counters = Arc::new(Counters::default());
+        let witness = Arc::clone(&counters);
+        let task = region.tasks.spawn_blocking(move || {
             let _slot = slot;
-            let _owing = BlockingGuard(blocking);
-            job();
+            job(counters);
         });
+        region.ledger.track_blocking(task.id(), witness);
         region.ledger.accept();
         true
     }
@@ -223,15 +234,7 @@ impl Spawner {
     }
 }
 
-struct BlockingGuard(Arc<AtomicUsize>);
-
-impl Drop for BlockingGuard {
-    fn drop(&mut self) {
-        self.0.fetch_sub(1, Ordering::AcqRel);
-    }
-}
-
-async fn holding_slot<F>(slot: OwnedSemaphorePermit, task: F)
+async fn supervised<F>(slot: Reservation, task: F)
 where
     F: Future<Output = ()>,
 {
@@ -243,12 +246,12 @@ fn narrow(count: usize) -> Result<u64, SpawnError> {
     u64::try_from(count).map_err(|_| SpawnError::TaskCountOverflow)
 }
 
-fn publish<T, E>(tx: oneshot::Sender<Completion<T, E>>, completion: Completion<T, E>) {
-    if tx.send(completion).is_err() {
-        tracing::debug!("a region job finished with no caller waiting for its value");
-    }
+fn narrow_bound(permits: usize) -> u64 {
+    u64::try_from(permits).map_or(u64::MAX, core::convert::identity)
 }
 
+#[cfg(test)]
+mod accounting_tests;
 #[cfg(test)]
 mod admission_tests;
 #[cfg(all(feature = "loom", test))]

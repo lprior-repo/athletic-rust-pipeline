@@ -1,0 +1,17 @@
+▮▮▮▮ pipeline:tests (9088af06)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.12s
+────────────
+ Nextest run ID 9677406b-933a-407e-ad2f-03518de97c05 with nextest profile: default
+    Starting 5 tests across 69 binaries (3697 tests skipped)
+        PASS [   0.004s] (1/5) census-service restate_services::wire::coach_lanes::registry_tests::coach_registry_failed_binding_leaves_serialized_plan_unchanged
+        PASS [   0.006s] (2/5) census-service restate_services::wire::coach_lanes::registry_tests::every_in_scope_jurisdiction_coach_lane_is_armed_or_refused_by_name
+        PASS [   0.017s] (3/5) census-service restate_services::wire::coach_lanes::registry_tests::coach_registry_group_a_rebind_and_reopen_preserve_exact_decisions
+        PASS [   0.017s] (4/5) census-service restate_services::wire::coach_lanes::registry_tests::coach_registry_group_b_rebind_and_reopen_preserve_exact_decisions
+        PASS [   0.018s] (5/5) census-service restate_services::wire::coach_lanes::registry_tests::coach_registry_group_c_rebind_and_reopen_preserve_exact_decisions
+────────────
+     Summary [   0.019s] 5 tests run: 5 passed, 3697 skipped
+▮▮▮▮ pipeline:tests (400ms, 9088af06)
+
+Tasks: 1 completed
+ Time: 3s 73ms
+

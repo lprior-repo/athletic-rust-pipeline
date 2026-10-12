@@ -1,5 +1,7 @@
 use super::*;
 use census_service::restate_services::{JurisdictionOwed, JurisdictionSummary, NationalFailure};
+#[path = "tests/resume.rs"]
+mod resume;
 
 fn summary(jurisdiction: UsJurisdiction, teams: usize) -> JurisdictionSummary {
     JurisdictionSummary {

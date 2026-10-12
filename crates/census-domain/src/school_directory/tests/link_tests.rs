@@ -315,7 +315,7 @@ fn alias_links() -> TestResult {
 }
 
 #[test]
-fn a_state_unique_name_links_across_city_variants() -> TestResult {
+fn a_state_unique_name_without_city_agreement_stays_unmatched() -> TestResult {
     let index = DirectoryIndex::build(&[nces_entry(
         "390000000012",
         "Rochester High School",
@@ -332,17 +332,7 @@ fn a_state_unique_name_links_across_city_variants() -> TestResult {
         &[],
         &[],
     );
-    let LinkDecision::Linked(hit) = decision else {
-        return Err("expected a link".into());
-    };
-    check!(eq;
-        hit.key,
-        IdentifiedKey::Nces(NcesSchoolId::parse("390000000012")?)
-    );
-    check!(eq;
-        hit.address.as_ref().and_then(PostalAddress::city).map(CityName::as_str),
-        Some("Rochester Hills")
-    );
+    check!(eq; decision, LinkDecision::NoMatch);
     Ok(())
 }
 
@@ -645,7 +635,10 @@ fn an_attested_association_record_links_across_cities() -> TestResult {
     )?]);
     let attested = [AttestedRecord {
         label: association(UsJurisdiction::Tennessee),
-        id: StateRecordId::parse("3")?,
+        key: IdentifiedKey::StateRecord {
+            state: UsJurisdiction::Tennessee,
+            id: StateRecordId::parse("3")?,
+        },
     }];
     let decision = index.link(
         "Alcoa High School",
@@ -682,7 +675,10 @@ fn an_attestation_under_another_label_never_links_across_cities() -> TestResult 
         label: SourceLabel::StateEducationAgency {
             state: UsJurisdiction::Tennessee,
         },
-        id: StateRecordId::parse("3")?,
+        key: IdentifiedKey::StateRecord {
+            state: UsJurisdiction::Tennessee,
+            id: StateRecordId::parse("3")?,
+        },
     }];
     let decision = index.link(
         "Alcoa High School",
@@ -1343,5 +1339,80 @@ fn a_recorded_article_qualifier_still_links_its_base_name() -> TestResult {
     );
     check!(eq; hit.rule, LinkRule::CoreName);
     check!(eq; hit.matched_form, "academy of arts");
+    Ok(())
+}
+#[test]
+fn leading_initialism_links_via_expanded_variant() -> TestResult {
+    let index = DirectoryIndex::build(&[nces_entry(
+        "390000000020",
+        "A. C. Reynolds High School",
+        "Asheville",
+        UsJurisdiction::NorthCarolina,
+        "1 Rocket Drive",
+        (9, 12),
+    )?]);
+    let decision = index.link(
+        "A.C. Reynolds High School",
+        "ac reynolds high school",
+        Some("Asheville"),
+        UsJurisdiction::NorthCarolina,
+        &[],
+        &[],
+    );
+    let LinkDecision::Linked(hit) = decision else {
+        return Err("expected initialism bridge to link".into());
+    };
+    check!(eq;
+        hit.key,
+        IdentifiedKey::Nces(NcesSchoolId::parse("390000000020")?)
+    );
+    Ok(())
+}
+#[test]
+fn leading_initialism_requires_city_corroboration() -> TestResult {
+    let index = DirectoryIndex::build(&[nces_entry(
+        "390000000021",
+        "A. C. Reynolds High School",
+        "Asheville",
+        UsJurisdiction::NorthCarolina,
+        "1 Rocket Drive",
+        (9, 12),
+    )?]);
+    let decision = index.link(
+        "A.C. Reynolds High School",
+        "ac reynolds high school",
+        Some("Winston-Salem"),
+        UsJurisdiction::NorthCarolina,
+        &[],
+        &[],
+    );
+    check!(eq; decision, LinkDecision::NoMatch);
+    Ok(())
+}
+#[test]
+fn direct_initialism_form_still_links() -> TestResult {
+    let index = DirectoryIndex::build(&[nces_entry(
+        "390000000022",
+        "A.C. Reynolds High School",
+        "Asheville",
+        UsJurisdiction::NorthCarolina,
+        "1 Rocket Drive",
+        (9, 12),
+    )?]);
+    let decision = index.link(
+        "A.C. Reynolds High School",
+        "ac reynolds high school",
+        Some("Asheville"),
+        UsJurisdiction::NorthCarolina,
+        &[],
+        &[],
+    );
+    let LinkDecision::Linked(hit) = decision else {
+        return Err("expected direct initialism match".into());
+    };
+    check!(eq;
+        hit.key,
+        IdentifiedKey::Nces(NcesSchoolId::parse("390000000022")?)
+    );
     Ok(())
 }

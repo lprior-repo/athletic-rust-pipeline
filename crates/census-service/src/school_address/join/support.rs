@@ -73,6 +73,7 @@ pub(super) fn row(
         reason: None,
         detail: None,
         candidates: Vec::new(),
+        postal_gap: false,
     }
 }
 

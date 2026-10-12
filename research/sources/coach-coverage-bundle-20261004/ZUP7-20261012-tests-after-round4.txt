@@ -1,0 +1,54 @@
+▮▮▮▮ pipeline:tests (fee7adf3)
+    Blocking waiting for file lock on build directory
+   Compiling census-service v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service)
+error[E0283]: type annotations needed
+  --> crates/census-service/src/restate_services/ingest/raw.rs:24:13
+   |
+24 |             Ok(request)
+   |             ^^ cannot infer type of the type parameter `E` declared on the enum `Result`
+   |
+   = note: the type must implement `Into<JobError>`
+note: required by a bound in `blocking`
+  --> crates/census-service/src/restate_services/support.rs:98:8
+   |
+94 | pub async fn blocking<T, E, F>(spawner: Arc<Spawner>, job: F) -> Result<T, JobError>
+   |              -------- required by a bound in this function
+...
+98 |     E: Into<JobError> + Send + 'static,
+   |        ^^^^^^^^^^^^^^ required by this bound in `blocking`
+help: consider specifying the generic arguments
+   |
+24 |             Ok::<IngestRequest, E>(request)
+   |               ++++++++++++++++++++
+
+For more information about this error, try `rustc --explain E0283`.
+error: could not compile `census-service` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error[E0283]: type annotations needed
+  --> crates/census-service/src/restate_services/ingest/raw.rs:24:13
+   |
+24 |             Ok(request)
+   |             ^^ cannot infer type of the type parameter `E` declared on the enum `Result`
+   |
+   = note: the type must implement `Into<restate_services::support::JobError>`
+note: required by a bound in `restate_services::support::blocking`
+  --> crates/census-service/src/restate_services/support.rs:98:8
+   |
+94 | pub async fn blocking<T, E, F>(spawner: Arc<Spawner>, job: F) -> Result<T, JobError>
+   |              -------- required by a bound in this function
+...
+98 |     E: Into<JobError> + Send + 'static,
+   |        ^^^^^^^^^^^^^^ required by this bound in `blocking`
+help: consider specifying the generic arguments
+   |
+24 |             Ok::<IngestRequest, E>(request)
+   |               ++++++++++++++++++++
+
+error: could not compile `census-service` (lib test) due to 1 previous error
+error: command `/home/lewis/.rustup/toolchains/nightly-2026-04-27-x86_64-unknown-linux-gnu/bin/cargo test --no-run --message-format json-render-diagnostics --workspace --all-features --locked --offline --config .cargo/fast-iteration.toml` exited with code 101
+▮▮▮▮ pipeline:tests (2s 269ms, fee7adf3)
+Error: task_runner::run_failed
+
+  × Task pipeline:tests failed to run.
+  ╰─▶ Process tools/moon-cargo failed: exit code 101
+

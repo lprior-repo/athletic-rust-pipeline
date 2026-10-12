@@ -17,6 +17,7 @@ pub(crate) struct StoreEvidence {
     revision: Revision,
     pub(super) bound: bool,
     pub(super) objects: Vec<SourceObjectOpen>,
+    pub(super) source_keys: StoreResult<Vec<String>>,
     pub(super) publication: Disposition,
     contacts: Vec<ContactTally>,
     rosters: Vec<RosterTally>,
@@ -93,6 +94,7 @@ pub(crate) fn inspect_store(
         revision,
         bound,
         objects: Vec::new(),
+        source_keys: store.source_object_keys(super::MAX_OBJECTS, super::MAX_ENDPOINTS),
         publication: Disposition::Unknown,
         contacts,
         rosters: Vec::new(),
@@ -164,6 +166,7 @@ fn roster_obligations(
                         unreadable: false,
                         disposition: row.disposition,
                         resolution: None,
+                        teams_source: None,
                     },
                 )
             })?;

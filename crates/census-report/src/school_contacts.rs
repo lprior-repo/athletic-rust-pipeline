@@ -53,6 +53,7 @@ pub fn mailbox_rows(
     schools: &[CanonicalSchool],
     year: SchoolYear,
 ) -> ReportResult<Vec<Vec<String>>> {
+    crate::grouping::Admission::new("school contacts").rows(schools)?;
     let mut rows = vec![MAILBOX_HEADERS.map(str::to_owned).to_vec()];
     for school in ordered(schools) {
         for purpose in [
@@ -69,6 +70,7 @@ pub fn research_rows(
     schools: &[CanonicalSchool],
     year: SchoolYear,
 ) -> ReportResult<Vec<Vec<String>>> {
+    crate::grouping::Admission::new("school contacts").rows(schools)?;
     let mut rows = vec![RESEARCH_HEADERS.map(str::to_owned).to_vec()];
     for school in ordered(schools) {
         let programs = programs().map(Subject::Program);

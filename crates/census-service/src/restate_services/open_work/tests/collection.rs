@@ -1,4 +1,5 @@
 use super::*;
+use census_domain::model::CoachLaneAcceptance;
 
 fn completed_collection() -> Result<JurisdictionState, Box<dyn std::error::Error>> {
     let mut state = independent_stages_completed(completed_teams())?;
@@ -137,5 +138,51 @@ fn cen05_skipped_rosters_and_engineering_gaps_cannot_publish_completion() -> Tes
     check!(
         !collection_is_complete(UsJurisdiction::Wisconsin, &no_inventory).map_err(handler_error)?
     );
+    Ok(())
+}
+
+#[test]
+fn jpx41_an_accepted_coach_refusal_settles_the_plan_but_a_recorded_one_does_not() -> TestResult {
+    let jurisdiction = UsJurisdiction::Oregon;
+    let slug = crate::restate_services::wire::coach_lanes::refusal_slug(jurisdiction)
+        .ok_or("oregon has no coach-lane refusal slug")?
+        .to_string();
+    let mut state = completed_collection()?;
+    let season = SchoolYear::new(2026).ok_or("invalid school year")?;
+    let mut bound = state.plan.clone().ok_or("missing source plan")?;
+    state.coach_lane = crate::restate_services::wire::coach_lanes::bind(
+        &mut bound,
+        jurisdiction,
+        season,
+        1,
+        "2026-10-12",
+    )
+    .map_err(|error| format!("binding the oregon coach lane failed: {error}"))?;
+    bound.refused.clear();
+    bound.refused.push(RefusedSource {
+        slug: slug.clone(),
+        reason: "unwired coach source".to_string(),
+        kind: crate::restate_services::plan::RefusalKind::EngineeringGap,
+    });
+    check!(!refusals_settled(jurisdiction, &state, &bound));
+    let lane = state
+        .coach_lane
+        .take()
+        .ok_or("oregon coach lane was not bound")?;
+    let acceptance = CoachLaneAcceptance::new("census-ops", "jpx4.accepted_refusal", "2026-10-12")
+        .map_err(|error| format!("building the owner acceptance failed: {error}"))?;
+    state.coach_lane = Some(
+        lane.accept_refusal(acceptance)
+            .map_err(|error| format!("accepting the oregon refusal failed: {error}"))?,
+    );
+    check!(refusals_settled(jurisdiction, &state, &bound));
+    let mut unrelated = bound.clone();
+    unrelated.refused.push(RefusedSource {
+        slug: "an_unwired_source".to_string(),
+        reason: "unwired source".to_string(),
+        kind: crate::restate_services::plan::RefusalKind::EngineeringGap,
+    });
+    check!(!refusals_settled(jurisdiction, &state, &unrelated));
+    check!(!refusals_settled(UsJurisdiction::Wisconsin, &state, &bound));
     Ok(())
 }

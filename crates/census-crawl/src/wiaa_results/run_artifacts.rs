@@ -44,6 +44,7 @@ pub(super) async fn process_artifact(
         return Ok(());
     };
     record_parsed_artifact(
+        ctx,
         report,
         run,
         ReadArtifact {

@@ -2,24 +2,28 @@ use super::budget;
 use super::parse::{schedule_url, MeetRow, ScheduleSport};
 use super::projection::{self, Page};
 use super::receipt;
+use super::results::{self, Lane, Totals};
 use super::{stats_of, Options, ADAPTER_ID};
 use crate::{AdapterContext, AdapterReport, CollectionDisposition, CrawlError, CrawlResult};
+use census_domain::model::CanonicalMeet;
 use futures::{stream, TryStreamExt};
+mod fragment;
+pub use fragment::collect_fragment;
+
 pub(super) struct Walk {
     report: AdapterReport,
+    lane: Lane,
+    results: Totals,
     completed: usize,
     pages: u64,
 }
 
-struct Located {
-    ordinal: usize,
-    row: MeetRow,
-}
-
 impl Walk {
-    pub(super) fn new() -> Self {
+    pub(super) fn new(lane: Lane) -> Self {
         Self {
             report: AdapterReport::new(ADAPTER_ID, "meet-schedule rows"),
+            lane,
+            results: Totals::default(),
             completed: 0,
             pages: 0,
         }
@@ -88,29 +92,40 @@ impl Walk {
             let ordinal = index
                 .checked_add(1)
                 .ok_or_else(|| budget::arithmetic("Wayzata row ordinal"))?;
-            let located = Located { ordinal, row };
-            if let Err(error) = self.apply_row(ctx, options, page, &located) {
-                self.failed(locator(page, ordinal), error)?;
+            let locate = locator(page, ordinal);
+            match self.apply_row(ctx, options, page, ordinal, &row).await {
+                Ok(Some(meet)) => {
+                    if self.lane.dispatch() {
+                        if let Err(error) = self.read_results(ctx, options, page, &row, &meet).await
+                        {
+                            self.failed(locate, error)?;
+                        }
+                    }
+                }
+                Ok(None) => {}
+                Err(error) => self.failed(locate, error)?,
             }
         }
         Ok(())
     }
 
-    fn apply_row(
+    async fn apply_row(
         &mut self,
         ctx: &AdapterContext<'_>,
         options: &Options,
         page: &Page<'_>,
-        located: &Located,
-    ) -> CrawlResult<()> {
-        receipt::retain_raw(ctx, page, located.ordinal, &located.row)?;
-        let effect = receipt::projection_effect(ctx, options, page, located.ordinal)?;
-        if ctx.effect_is_committed(&effect.operation, &effect.digest)? {
-            return Ok(());
-        }
-        let meet = projection::project(ctx, options, page, &located.row)?;
+        ordinal: usize,
+        row: &MeetRow,
+    ) -> CrawlResult<Option<CanonicalMeet>> {
+        receipt::retain_raw(ctx, page, ordinal, row)?;
+        let effect = receipt::projection_effect(ctx, options, page, ordinal)?;
+        let meet = projection::project(ctx, options, page, row)?;
         if meet.is_some() && self.limited(options) {
-            return self.owed(locator(page, located.ordinal));
+            self.owed(locator(page, ordinal))?;
+            return Ok(None);
+        }
+        if ctx.effect_is_committed(&effect.operation, &effect.digest)? {
+            return Ok(meet);
         }
         if receipt::commit_projection(ctx, &effect, meet.as_ref())? && meet.is_some() {
             self.completed = self
@@ -118,6 +133,26 @@ impl Walk {
                 .checked_add(1)
                 .ok_or_else(|| budget::arithmetic("Wayzata completed rows"))?;
             self.report.rows = budget::add(self.report.rows, 1)?;
+        }
+        Ok(meet)
+    }
+
+    async fn read_results(
+        &mut self,
+        ctx: &AdapterContext<'_>,
+        options: &Options,
+        page: &Page<'_>,
+        row: &MeetRow,
+        meet: &CanonicalMeet,
+    ) -> CrawlResult<()> {
+        let harvest = results::harvest(ctx, options, page, row, meet).await?;
+        self.results.record(&harvest)?;
+        self.report.errors = budget::add(self.report.errors, harvest.errors)?;
+        if let Some(refusal) = &harvest.refusal {
+            self.note_text(refusal.clone())?;
+        }
+        for locator in harvest.owed {
+            self.owed(locator)?;
         }
         Ok(())
     }
@@ -133,8 +168,16 @@ impl Walk {
         self.owed(locator)?;
         self.report.errors = budget::add(self.report.errors, 1)?;
         if self.report.notes.len() < 5 {
+            let detail = budget::detail(&error)?;
+            self.note_text(detail)?;
+        }
+        Ok(())
+    }
+
+    fn note_text(&mut self, text: String) -> CrawlResult<()> {
+        if self.report.notes.len() < 5 {
             budget::reserve(&mut self.report.notes, 1, 6)?;
-            self.report.note(budget::detail(&error)?);
+            self.report.note(text);
         }
         Ok(())
     }
@@ -149,10 +192,18 @@ impl Walk {
         self.report.requests = budget::delta(after.0, before.0)?;
         self.report.from_cache = budget::delta(after.1, before.1)?;
         budget::reserve(&mut self.report.notes, 1, 6)?;
-        self.report.note(format!(
-            "schedules: {} pages read; schedule metadata only, no performance/result projection",
-            self.pages
-        ));
+        let detail = match self.lane.off_reason() {
+            Some(reason) => format!(
+                "schedules: {} pages read; schedule metadata only, no performance/result projection; {reason}",
+                self.pages
+            ),
+            None => format!(
+                "schedules: {} pages read; {}",
+                self.pages,
+                self.results.note()
+            ),
+        };
+        self.report.note(detail);
         if self.report.unfinished.is_empty() {
             self.report.finish_frontier();
         }

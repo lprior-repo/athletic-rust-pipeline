@@ -1,4 +1,5 @@
 use super::*;
+use crate::tests::stage_required_tables;
 use serde::{Deserialize, Serialize};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -114,6 +115,7 @@ fn a_published_generation_replaces_the_rows_it_does_not_stage() -> TestResult {
     let held = vec![row("mn", "covered"), row("wi", "covered")];
     {
         let mut stage = store.stage_derived()?;
+        stage_required_tables(&mut stage, &[Table::Coverage])?;
         stage.replace_many(Table::Coverage, &held)?;
         let publication = stage.publish("derive:coverage:1", "digest-1")?;
         check!(
@@ -125,6 +127,7 @@ fn a_published_generation_replaces_the_rows_it_does_not_stage() -> TestResult {
     check!(eq; count(&store, Table::Coverage)?, 2);
     {
         let mut stage = store.stage_derived()?;
+        stage_required_tables(&mut stage, &[Table::Coverage])?;
         stage.replace_many(Table::Coverage, &[row("wi", "covered")])?;
         check!(
             eq;
@@ -147,6 +150,7 @@ fn a_published_generation_replaces_the_rows_it_does_not_stage() -> TestResult {
     check!(eq; count(&store, Table::Coverage)?, 1);
     {
         let mut stage = store.stage_derived()?;
+        stage_required_tables(&mut stage, &[Table::Coverage])?;
         stage.replace_many(Table::Coverage, &Vec::<Row>::new())?;
         let publication = stage.publish("derive:coverage:3", "digest-3")?;
         check!(

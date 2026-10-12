@@ -9,6 +9,7 @@ mod athlete;
 mod canonical_json;
 mod classification;
 mod coach;
+mod coach_lane;
 mod cohort;
 mod collision;
 mod contact;
@@ -52,9 +53,17 @@ mod school_address;
 mod school_contact;
 
 pub use athlete::{AthleteCandidateKey, CanonicalAthlete};
-pub use canonical_json::{serialized_digest, CanonicalJsonError};
+pub use canonical_json::{
+    serialized_bytes, serialized_digest, write_serialized, CanonicalJsonError,
+};
 pub use classification::{CanonicalTeam, CompetitionLevel, Gender, Sport};
 pub use coach::{CanonicalCoach, CoachRole};
+pub use coach_lane::{
+    CoachLaneAcceptance, CoachLaneError, CoachLaneEvidence, CoachLaneMailbox, CoachLaneMatrix,
+    CoachLaneObligation, CoachLaneRefusal, CoachLaneResolution, CoachLaneRole, CoachLaneStage,
+    CoachLaneStatus, CoachLaneTenure, PendingCoachLane, COACH_LANE_ID_PREFIX,
+    COACH_LANE_MAX_ARM_BYTES, COACH_LANE_MAX_FRESHNESS_DAYS,
+};
 pub use cohort::{GradYear, Grade, ObservedGrade, PublishedGraduation, SchoolYear};
 pub use collision::{id_collision, CANONICAL_ID_COLLISION_FAMILY};
 pub use contact::{is_consumer_domain, published_email, MailboxKind};
@@ -103,7 +112,9 @@ pub use identity_decision::{
     ATHLETE_IDENTITY_POLICY,
 };
 pub use identity_index::{AthleteIdentityIndex, IdentityError};
-pub use identity_projection::{AthleteIdentityProjection, IdentityProjectionBuilder};
+pub use identity_projection::{
+    AthleteIdentityProjection, IdentityAliasTransition, IdentityProjectionBuilder,
+};
 pub use identity_validation::{IdentityDecisionIssue, VerdictKind};
 pub use meet::{CanonicalMeet, MEET_STATE_UNRESOLVED};
 pub use natural_key::NaturalKey;

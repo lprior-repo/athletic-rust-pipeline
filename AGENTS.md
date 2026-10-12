@@ -1,8 +1,8 @@
 # AGENTS.md — repository working instructions
 
-Read this file, [ARCHITECTURE.md](ARCHITECTURE.md), then the
-[decision register](docs/adr/README.md) before changing the repository. The product is a fresh,
-public-source-discovered Class-of-2027 TF/XC census; Excel is output, not population intake.
+Read this file, then [ARCHITECTURE.md](ARCHITECTURE.md) before changing the repository. The product
+is a fresh, public-source-discovered Class-of-2027 TF/XC census; Excel is output, not population
+intake.
 
 ## Startup — every session and after context reset
 
@@ -13,30 +13,6 @@ skill rather than silently proceeding:
 2. `holzman-rust` — bounded resources, checked arithmetic, complete errors and measured performance.
 3. `async-rust-reviewer` — spawn ownership, cancellation, replay and drain accounting.
 4. `scott-ddd-refactor` — constrained types, exhaustive states and explicit transitions.
-
-## One authoritative home per subject
-
-| Subject | Read |
-|---|---|
-| Product scope, crate boundaries, safety/source policy and release requirements | `ARCHITECTURE.md` |
-| Decision rationale and supersession | `docs/adr/README.md` and its individual ADRs |
-| Active delivery order, F01–F15 and named regression acceptance | `docs/NATIONAL-CENSUS-PLAN.md` |
-| The 17 required native fault scenarios | `docs/NATIONAL-CENSUS-FAULTS.md` |
-| Domain representations, semantic gaps and publication contracts | `ARCHITECTURE.md` sections 8–9 |
-| Adapter integration and source qualification | `xtask/README.md`, `research/sources/<name>/SOURCE_REPORT.md` |
-| Physical storage, keyspaces and snapshots | `docs/FJALL_BACKUP.md`, `crates/census-store/src/table.rs` |
-| Implemented durable handlers and replay boundaries | `docs/OPERATIONS.md`, `crates/census-service/src/restate_services/` |
-| Operating the census, run identity, reattach/dedup and admin-API inspection | `docs/OPERATIONS.md` |
-| External Restate vendor documentation | `docs/restate/README.md` |
-| Backup/restore and deployment | `docs/FJALL_BACKUP.md`, `docs/deployment-lifecycle.md` |
-| Test/gate and benchmark procedures | `tools/gate.sh`, `xtask/README.md` |
-| Dated command evidence and limitations | the verification ledger (removed 2026-10-09) |
-| Developer verbs and native entry points | `xtask/README.md`, `crates/census-service/README.md` |
-
-Keep implementation facts, target requirements and historical results distinct. Edit the owning
-document instead of creating a second architecture, handoff, status or execution plan. ADRs explain
-why; references explain current APIs; evidence records what actually ran. Preserve unique source
-captures and audit evidence. Scraped Restate references are external material, not project policy.
 
 ## Developer commands — Moon only
 
@@ -65,7 +41,6 @@ Use `pipeline:fetch` to populate locked dependencies, `pipeline:fmt-write` only 
 formatting owned source, and `pipeline:bench -- --bench <target> -- <Criterion-args>` for measurements.
 The optimized portable binaries live in `target/moon-portable/x86_64-unknown-linux-gnu/release/`.
 Runtime census/Restate/admin commands still execute the actual binaries; they are not Cargo builds.
-Historical evidence and external vendor references retain their original commands, not current policy.
 The passing Moon iteration CI is narrower than `pipeline:gate -- --release`; never substitute it
 for release, proof, security or all seventeen fault obligations.
 
@@ -81,7 +56,7 @@ Tearing down a previous run, in this order:
 
 1. `kill -TERM <census-serve pid>` and wait for exit. Read the drain certificate it appends to
    `var/<run>/serve.log` (`drained: accepted=… completed=… cancelled=… timed_out=… aborted=…
-   panicked=…`) and keep it as evidence of what was stopped.
+   panicked=…`).
 2. `kill -TERM <restate-server pid>` for each node and wait; the node config's `shutdown-timeout`
    bounds that wait.
 3. Confirm nothing listens on the run's ports and that no `restate-server` or `census-serve`
@@ -106,10 +81,6 @@ Starting a fresh run:
    observe it through the admin query API and `census-service open-work`, never by opening the store
    from a second process.
 
-Vendor Restate reference material is local under `docs/restate/`; it is external documentation, not
-project policy. `docs/OPERATIONS.md` owns runnable procedures and `docs/deployment-lifecycle.md` owns
-registration, immutability and handover rules.
-
 ## Ownership
 
 [Architecture §4](ARCHITECTURE.md#4-crate-layout-17) defines crate responsibilities. Main owns
@@ -120,34 +91,34 @@ implementation, caller migration and verification.
 
 Do not overwrite unrelated local work. Coordinate all writers; synchronize incoming changes while
 preserving user edits. The database permits one owning process; use the documented ingress path
-beside a serving census rather than opening its store from another process. Historical stores,
-exports and seals are preserved and are not fresh-run acceptance evidence.
+beside a serving census rather than opening its store from another process.
 
 ## Implementation discipline
 
 The binding engineering rules are [Architecture §10](ARCHITECTURE.md#10-engineering-standards-37-43),
 including zero project-code comments, constrained domain types, no project-owned unsafe or
-input-triggered panics, complete outcomes, size budgets and Rust-only pipeline logic. Rationale goes
-in documentation, never source comments or documentation attributes.
+input-triggered panics, complete outcomes, size budgets and Rust-only pipeline logic.
 
 Reuse the existing implementation and conventions. Freeze shared interfaces before parallel work.
 Migrate all callers and remove superseded execution paths; do not add compatibility shims, mirrored
 types, duplicate business rules or source-specific identity exceptions. Persisted historical shape
-handling must follow its explicit ADR/migration contract, not an improvised fallback.
+handling must follow its explicit migration contract, not an improvised fallback.
 
 ## Delegation
 
 Keep 2–3 useful workers during implementation when independent work exists; never create filler.
-The owner-directed allocation is one `gpu5090-coder` and two `deepseek-flash` evidence workers.
+The owner-directed allocation is one `gpu5090-coder` and two `deepseek-flash` workers.
 Keep the coding job coherent and non-overlapping; at most one coding job per GPU. Main owns shared
-contracts, identity acceptance and durability. Flash handles specific evidence collection and
-fixture repair, not production coding or repeated architecture audits.
+contracts, identity acceptance and durability. Flash handles specific investigation and fixture
+repair, not production coding or repeated architecture audits.
 
-**Hard agent policy:** never spawn `luna-*`, any `gpu3090-*` worker (retired by owner direction
-2026-10-07) or the unnamed/default `task` worker (its default model
-is forbidden). Always name an allowed agent explicitly: `gpu5090-coder`,
-`deepseek-flash`, `scout`, `reviewer`, `security-reviewer`, `sonic` or `sol-reviewer`. Workers may not edit
-outside ownership, change interfaces silently or reactivate finished peers.
+**Hard agent policy:** never spawn `luna-*` or the unnamed/default `task` worker (its default model
+is forbidden). Always name an allowed agent explicitly: `gpu5090-coder`, `gpu3090-coder`,
+`gpu5090-reviewer`, `gpu3090-reviewer`, `deepseek-flash`, `scout`, `reviewer`, `security-reviewer`,
+`sonic` or `sol-reviewer`. The RTX 3090 coder and reviewer are active again by owner direction
+2026-10-12; their ancestor `.omp/agents/` definitions were re-enabled. Keep at most one coding job
+per GPU. Workers may not edit outside ownership, change interfaces silently or reactivate finished
+peers.
 
 The owner has authorized `sol-reviewer` for SOL-only delivery. Its repository definition is
 `.agents/sol-reviewer.md`; OMP discovers the existing definition in the ancestor `.omp/agents/`.
@@ -163,31 +134,28 @@ no-build/no-test rule during concurrent edits still apply.
    every check until all F01–F15 work is finished or weaken a failing gate.
 4. Exercise the real changed surface: CLI, native Restate, source parser or artifact readback as
    applicable. Give every discovered consumer-visible defect a regression.
-5. Update the owning docs and dated evidence. Record exact commands/results, tested scope and
-   remaining blockers. Run the required release gates before claiming delivery.
+5. Run the required release gates before claiming delivery.
 
 A qualification slice is not the national census. Staffing changes do not reduce scope. Measure
 verified completions and escaped defects, not agent activity or files changed. Accuracy, data-loss
-and recovery failures block release; old evidence, simulated faults and passing builds do not
-certify unexercised behavior.
+and recovery failures block release; simulated faults and passing builds do not certify unexercised
+behavior.
 
 ## Adding work
 
-- **Adapter:** use `env -u CI tools/moon-local run pipeline:xtask -- new-source <name>`, captured fixtures under
-  `crates/census-crawl/tests/fixtures/<name>/`, and
-  `research/sources/<name>/SOURCE_REPORT.md`; follow `xtask/README.md`'s scaffolding and replay
-  boundaries for qualification.
-- **Workflow:** use the logical identities and retry ownership in `docs/OPERATIONS.md`;
-  never mint a new job because an attempt failed.
+- **Adapter:** use `env -u CI tools/moon-local run pipeline:xtask -- new-source <name>` with
+  captured fixtures under `crates/census-crawl/tests/fixtures/<name>/`.
+- **Workflow:** use the existing logical identities and retry ownership; never mint a new job
+  because an attempt failed.
 - **Benchmark:** follow `xtask/README.md`'s measurement and perf commands; no optimization claim
-  without representative evidence.
+  without a measurement.
 - **Fixture:** deterministic and isolated; no external network or real Restate unless explicitly
   exercising the separately documented native integration lane. Never commit private workbook data.
 
 ## Handoff (§15)
 
 Use: **TASK / OWNERSHIP / DO NOT MODIFY / INPUT CONTRACT / OUTPUT CONTRACT / ACCEPTANCE / HANDOFF**.
-Report changed files, exact commands and observed results, evidence limits and remaining blockers.
+Report changed files, exact commands and observed results, and remaining blockers.
 Workers do not commit; Main owns verified integration and landing.
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:970c3bf2 -->

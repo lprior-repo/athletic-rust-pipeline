@@ -13,15 +13,24 @@ impl TeamsSource {
         crate::restate_services::limits::validate_source_parallelism(
             request.jurisdiction.source_parallelism,
         )?;
-        if let Some(outcome) =
-            ledger::status(&self.owner.store, ctx.key(), Some(&request)).map_err(job_error)?
+        let request = Arc::new(request);
+        if let Some(outcome) = self
+            .ledger_status(ctx.key().to_string(), Some(Arc::clone(&request)))
+            .await
+            .map_err(job_error)?
         {
             return Ok(Json(outcome));
         }
-        let request = Arc::new(request);
         let admission = Arc::new(self.admit(ctx.key()).await?);
-        let registered = self.register(&ctx, &request, &admission).await?;
-        let reserved = ledger::begin(&self.owner.store, ctx.key(), &request, &registered)
+        let registered = Arc::new(self.register(&ctx, &request, &admission).await?);
+        let reserved = self
+            .begin_attempt(
+                ctx.key().to_string(),
+                Arc::clone(&request),
+                Arc::clone(&registered),
+                Arc::clone(&admission),
+            )
+            .await
             .map_err(job_error)?;
         self.execute_reserved(&ctx, &request, admission, &registered, reserved)
             .await
@@ -52,7 +61,11 @@ impl TeamsSource {
         )
         .await?;
         let result = self.acquire(request, observed_on).await;
-        match ledger::finish(&self.owner.store, ctx.key(), attempt, result).map_err(job_error)? {
+        match self
+            .finish_attempt(ctx.key().to_string(), attempt, result, _admission)
+            .await
+            .map_err(job_error)?
+        {
             ledger::Completion::Settled(outcome) => Ok(Json(outcome)),
             ledger::Completion::Retry(error) => Err(job_error(error)),
         }

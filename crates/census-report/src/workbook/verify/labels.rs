@@ -243,6 +243,33 @@ pub(super) fn qualified_mark(pr: &SharedSelection) -> String {
         text.push_str(", ");
         text.push_str(&context);
     }
+    append_specification(&mut text, &pr.source.specification);
     text.push(']');
     text
+}
+
+fn append_specification(
+    text: &mut String,
+    specification: &census_domain::model::EventSpecification,
+) {
+    if let Some(implement) = specification.implement {
+        text.push_str(&format!(", implement {} ug", implement.micrograms()));
+    }
+    if let Some(hurdle) = specification.hurdles {
+        text.push_str(&format!(", hurdle height {} um", hurdle.height_micrometres));
+        if let Some(spacing) = hurdle.spacing_micrometres {
+            text.push_str(&format!(", hurdle spacing {spacing} um"));
+        }
+    }
+    if let Some(track) = specification.indoor_track {
+        let banking = match track.banking {
+            census_domain::model::TrackBanking::Flat => "flat",
+            census_domain::model::TrackBanking::Banked => "banked",
+            census_domain::model::TrackBanking::Unknown => "unknown",
+        };
+        text.push_str(&format!(
+            ", indoor track length {} um, banking {banking}",
+            track.length_micrometres
+        ));
+    }
 }

@@ -86,6 +86,14 @@ pub struct ContactSummary {
     pub source_rows: Option<usize>,
     pub errors: Option<usize>,
     pub unfinished: Option<usize>,
+    #[serde(default)]
+    pub sources: Vec<SourceStageOutcome>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SourceStageOutcome {
+    pub slug: String,
+    pub outcome: super::StageOutcome,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]

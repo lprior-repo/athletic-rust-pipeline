@@ -9,6 +9,7 @@ use census_crawl::{default_family_delays, default_host_delays};
 
 use super::JurisdictionCensus;
 use crate::restate_services::plan::{compute_plan_fingerprint, plan as planned, BrowserLaneState};
+use crate::restate_services::wire::coach_lanes;
 use crate::restate_services::wire::{JurisdictionRequest, JurisdictionState, SourcePlan};
 use crate::restate_services::KEY_STATE;
 
@@ -151,15 +152,24 @@ impl JurisdictionCensus {
         let fingerprint =
             compute_plan_fingerprint(request.jurisdiction, request.season, request.revision, lane);
         if let Some(existing) = &state.plan {
-            return guard_fingerprint(&existing.fingerprint, &fingerprint);
+            guard_fingerprint(&existing.fingerprint, &fingerprint)?;
+            return self.bind_athleticlive(ctx, request, state, today).await;
         }
-        state.plan = Some(SourcePlan::of(
-            &planned(request.jurisdiction, lane),
-            fingerprint,
-        ));
+        let mut plan = SourcePlan::of(&planned(request.jurisdiction, lane), fingerprint);
+        if let Some(obligation) = coach_lanes::bind(
+            &mut plan,
+            request.jurisdiction,
+            request.season,
+            request.revision.get(),
+            today,
+        )
+        .map_err(|error| super::jobs::invariant(&format!("coach lane bind: {error}")))?
+        {
+            state.coach_lane = Some(obligation);
+        }
+        state.plan = Some(plan);
         state.identity = ctx.key().to_string();
-        self.save(ctx, state, today);
-        Ok(())
+        self.bind_athleticlive(ctx, request, state, today).await
     }
 }
 

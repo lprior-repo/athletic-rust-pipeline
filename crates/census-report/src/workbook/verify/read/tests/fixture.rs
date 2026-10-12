@@ -59,17 +59,15 @@ pub(in crate::workbook::verify) fn publication(
         school_year: SchoolYear::new(2026).ok_or("fixture season")?,
     };
     let path = crate::workbook::build(&store, &options)?;
-    let dataset = ExportDataset::reopen_frozen(
-        &path.parent().ok_or("generation")?.join("frozen-input.json"),
-    )?;
-    crate::workbook::verify::verify_frozen(&path, &dataset, &options)?;
     crate::workbook::publication::verify_published(&path)?;
-    crate::workbook::publication::verify_for_seal(
+    let opened = crate::workbook::publication::open_publication(
         &path,
-        &dataset,
+        &crate::export::store_lineage(&store)?,
         options.scope,
         GradYear::CO2027,
     )?;
+    let dataset = opened.dataset;
+    crate::workbook::verify::verify_frozen(&path, &dataset, &options)?;
     Ok((path, dataset, options))
 }
 

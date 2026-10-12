@@ -46,6 +46,7 @@ UPDATE=0
 ALLOW_INCREASE=0
 FULL=0
 RELEASE=0
+LANE=
 
 # The nightly feature allowlist (Holzman pinned-nightly policy). `-Zallow-features` is
 # crate-graph-wide rather than per-crate, so it carries two kinds of name. Ours are the two features
@@ -215,8 +216,50 @@ lane_bench_presence() {
 }
 
 
+durability_ports() {
+  local admin="$1" service="$2" port listeners
+  for port in "$admin" "$service"; do
+    if [[ ! "$port" =~ ^[1-9][0-9]{0,4}$ ]] || (( port < 1024 || port > 65535 )); then
+      printf 'durability: invalid port: %s\n' "$port" >&2
+      return 1
+    fi
+    case "$port" in
+      19095|9080|18095|15192)
+        printf 'durability: forbidden port: %s\n' "$port" >&2
+        return 1
+        ;;
+    esac
+  done
+  if [ "$admin" = "$service" ]; then
+    printf 'durability: duplicate ports: %s\n' "$admin" >&2
+    return 1
+  fi
+  listeners="$(ss -H -ltn)" || {
+    printf 'durability: cannot inspect listening ports\n' >&2
+    return 1
+  }
+  for port in "$admin" "$service"; do
+    if printf '%s\n' "$listeners" | grep -qE ":${port}([[:space:]]|$)"; then
+      printf 'durability: occupied port: %s\n' "$port" >&2
+      return 1
+    fi
+  done
+}
+
+durability_scratch() {
+  local parent="$PWD/var/durability-scratch"
+  mkdir -p -m 700 -- "$parent" || return 1
+  if [[ ! -d "$parent" || ! -O "$parent" || -L "$parent" ]]; then
+    printf 'durability: scratch parent must be an owned non-symlink directory: %s\n' "$parent" >&2
+    return 1
+  fi
+  mktemp -d "$parent/run-XXXXXXXX"
+}
+
 lane_durability() {
   if [ "$RELEASE" -eq 1 ]; then
+    local admin_port="${ADMIN_PORT:-19405}" service_port="${SERVICE_PORT:-9405}"
+    durability_ports "$admin_port" "$service_port" || return 1
     local restate_bin="${RESTATE_SERVER_BIN:-}"
     if [ -z "$restate_bin" ] && [ -f "$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10/restate-server" ]; then
       restate_bin="$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10/restate-server"
@@ -250,7 +293,11 @@ lane_durability() {
       echo "durability: native VM captures missing at $vm_captures"
       return 1
     fi
-    SCRATCH_STORE="$PWD/var/durability-scratch" RESTATE_SERVER_BIN="$restate_bin" \
+    local scratch
+    scratch="$(durability_scratch)" || return 1
+    printf 'durability: scratch %s admin=%s service=%s\n' "$scratch" "$admin_port" "$service_port"
+    SCRATCH_STORE="$scratch" RESTATE_SERVER_BIN="$restate_bin" \
+      ADMIN_PORT="$admin_port" SERVICE_PORT="$service_port" \
       SERVE_BINARY="$seam_bin" S04_V1_BINARY="$seam_bin" S04_V2_BINARY="$plain_bin" \
       S06_RECEIPT_ORACLE_BINARY="$oracle_bin" \
       CENSUS_NATIVE_VM_HOST="$vm_host" CENSUS_NATIVE_VM_CAPTURES="$vm_captures" \
@@ -294,6 +341,36 @@ summary() {
   fi
   printf 'gate: FAIL -> %s\n' "${FAILURES[*]}"
   exit 1
+}
+
+lane_ratchet() {
+  local tmp="$1"
+  measure_clippy "$tmp/clippy.json" > "$tmp/clippy.tsv" || {
+    jq -r 'select(.reason=="compiler-message") | .message.rendered // empty' "$tmp/clippy.json"
+    return 1
+  }
+  cargo run -q -p xtask -- scan > "$tmp/scan.json" || return 1
+  cargo run -q -p xtask -- ratchet "$BASELINE" "$tmp/clippy.tsv" "$tmp/scan.json"
+}
+
+selected_main() {
+  if ! command -v jq > /dev/null 2>&1; then
+    printf 'jq is required: the clippy and scan lanes feed the debt ratchet through it\n' >&2
+    FAILURES+=("jq")
+    summary
+  fi
+  local tmp
+  tmp=$(mktemp -d) || exit 1
+  trap 'rm -rf "$tmp"' EXIT
+  case "$LANE" in
+    contract) run_lane "architecture contract" cargo run -q -p xtask -- contract ;;
+    panic-extraction) run_lane "panic extraction (all targets)" lane_no_panic_extraction ;;
+    scan) run_lane "production scan (forbidden constructs + size budgets)" cargo run -q -p xtask -- scan ;;
+    ratchet) run_lane "debt ratchet" lane_ratchet "$tmp" ;;
+    durability) run_lane durability lane_durability ;;
+    perf) run_lane perf lane_perf ;;
+  esac
+  summary
 }
 
 main() {
@@ -419,14 +496,34 @@ main() {
 # the working directory, parses the command line and runs the lanes.
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   cd "$(dirname "$(readlink -f "$0")")/.." || exit 2
-  for arg in "$@"; do
-    case "$arg" in
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
       --update-baseline) UPDATE=1 ;;
       --allow-increase) ALLOW_INCREASE=1 ;;
       --full) FULL=1 ;;
       --release) RELEASE=1; FULL=1 ;;
-      *) printf 'unknown argument: %s\n' "$arg" >&2; exit 2 ;;
+      --lane)
+        if [ -n "$LANE" ] || [ "$#" -lt 2 ]; then
+          printf 'exactly one lane name is required after --lane\n' >&2
+          exit 2
+        fi
+        shift
+        LANE="$1"
+        case "$LANE" in
+          contract|panic-extraction|scan|ratchet|durability|perf) ;;
+          *) printf 'unknown lane: %s\n' "$LANE" >&2; exit 2 ;;
+        esac
+        ;;
+      *) printf 'unknown argument: %s\n' "$1" >&2; exit 2 ;;
     esac
+    shift
   done
+  if [ -n "$LANE" ]; then
+    if [ "$UPDATE" = 1 ] || [ "$ALLOW_INCREASE" = 1 ]; then
+      printf '%s\n' '--lane cannot be combined with baseline updates' >&2
+      exit 2
+    fi
+    selected_main
+  fi
   main
 fi

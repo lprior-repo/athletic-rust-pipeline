@@ -1,4 +1,4 @@
-use super::{invariant, sidecars};
+use super::invariant;
 use crate::export::{DatasetLineage, ExportDataset};
 use crate::report::{io_error, ReportResult, Scope};
 use crate::workbook::Options;
@@ -9,6 +9,8 @@ use std::path::{Path, PathBuf};
 
 mod artifact;
 mod directory;
+#[cfg(test)]
+mod tests;
 use artifact::{hash_artifact, Artifact};
 pub(super) use directory::verify_directory;
 
@@ -159,26 +161,48 @@ pub struct VerifiedPublication {
     pub workbook: crate::workbook::verify::VerifiedWorkbook,
 }
 
+pub struct OpenedPublication {
+    pub dataset: ExportDataset,
+    pub generation_digest: String,
+    pub workbook: crate::workbook::verify::VerifiedWorkbook,
+}
+
 pub fn verify_published(path: &Path) -> ReportResult<VerifiedPublication> {
-    let (manifest, workbook) = verified(path)?;
+    let (directory, manifest) = preflight(path)?;
+    let dataset = decode(&directory, &manifest)?;
+    let workbook = verify_against(&directory, &manifest, &dataset)?;
     Ok(VerifiedPublication {
         generation_digest: manifest.generation_digest,
         workbook,
     })
 }
 
-pub fn verify_for_seal(
+pub fn open_publication(
     path: &Path,
-    current: &ExportDataset,
+    store_lineage: &DatasetLineage,
     scope: Scope,
     cohort: GradYear,
-) -> ReportResult<VerifiedPublication> {
-    let (manifest, workbook) = verified(path)?;
-    super::seal::binding(&manifest, current, scope, cohort)?;
-    Ok(VerifiedPublication {
+) -> ReportResult<OpenedPublication> {
+    super::incident::check_workbook(path)?;
+    let (directory, manifest) = preflight(path)?;
+    super::seal::binding(&manifest, store_lineage, scope, cohort)?;
+    let dataset = decode(&directory, &manifest)?;
+    let workbook = verify_against(&directory, &manifest, &dataset)?;
+    Ok(OpenedPublication {
+        dataset,
         generation_digest: manifest.generation_digest,
         workbook,
     })
+}
+
+fn decode(directory: &Path, manifest: &Manifest) -> ReportResult<ExportDataset> {
+    let dataset = ExportDataset::reopen_frozen(&directory.join("frozen-input.json"))?;
+    if dataset.lineage != manifest.lineage {
+        return Err(invariant(
+            "manifest and frozen input lineage disagree".to_string(),
+        ));
+    }
+    Ok(dataset)
 }
 
 pub(super) fn verify_prepared(
@@ -206,7 +230,7 @@ pub(super) fn verify_prepared(
     Ok(())
 }
 
-fn verified(path: &Path) -> ReportResult<(Manifest, crate::workbook::verify::VerifiedWorkbook)> {
+fn preflight(path: &Path) -> ReportResult<(PathBuf, Manifest)> {
     if path.file_name().and_then(|name| name.to_str()) != Some("workbook.xlsx") {
         return Err(invariant(
             "verification requires a manifested generation workbook".to_string(),
@@ -216,16 +240,17 @@ fn verified(path: &Path) -> ReportResult<(Manifest, crate::workbook::verify::Ver
         .parent()
         .ok_or_else(|| invariant("workbook has no generation directory".to_string()))?;
     let manifest = verify_directory(directory)?;
-    let dataset = ExportDataset::reopen_frozen(&directory.join("frozen-input.json"))?;
-    if dataset.lineage != manifest.lineage {
-        return Err(invariant(
-            "manifest and frozen input lineage disagree".to_string(),
-        ));
-    }
+    Ok((directory.to_path_buf(), manifest))
+}
+
+fn verify_against(
+    directory: &Path,
+    manifest: &Manifest,
+    dataset: &ExportDataset,
+) -> ReportResult<crate::workbook::verify::VerifiedWorkbook> {
     let options = manifest.selection.options()?;
-    super::verify_sidecars::verify(directory, &dataset, &options)?;
-    let workbook = crate::workbook::verify::verify_frozen(path, &dataset, &options)?;
-    Ok((manifest, workbook))
+    super::verify_sidecars::verify(directory, dataset, &options)?;
+    crate::workbook::verify::verify_frozen(&directory.join("workbook.xlsx"), dataset, &options)
 }
 
 fn artifact_names(grad_year: Option<i16>) -> Vec<String> {

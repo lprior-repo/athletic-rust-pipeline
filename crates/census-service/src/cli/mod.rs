@@ -184,6 +184,7 @@ pub(super) async fn run() -> Result<()> {
 
 fn init_tracing() {
     tracing_subscriber::fmt()
+        .with_writer(std::io::stderr)
         .with_env_filter(
             match tracing_subscriber::EnvFilter::try_from_default_env() {
                 Ok(value) => value,

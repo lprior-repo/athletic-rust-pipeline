@@ -1,0 +1,13 @@
+{
+ "bytes": 431223,
+ "content_digest": "ff11168e2132ab5664cbeefd2120b7ec76f430b77f29b45f5d9527c1a5dd08e3",
+ "content_type": "text/html",
+ "fetched_at": "2026-10-11T18:51:00Z",
+ "fetched_at_utc": "2026-10-11T18:51:00Z",
+ "file": "xc_2026_schedule.full.html",
+ "method": "GET",
+ "note": "full capture; 110 /links/{slug} meet links present",
+ "sha256": "ff11168e2132ab5664cbeefd2120b7ec76f430b77f29b45f5d9527c1a5dd08e3",
+ "status": 200,
+ "url": "https://www.wayzataresults.com/sports/xc/2026/schedule"
+}

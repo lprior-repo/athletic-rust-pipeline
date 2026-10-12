@@ -201,6 +201,7 @@ impl Run<'_> {
                 outcome = Outcome::Partial;
             }
         });
+        crate::coach_directories::record_capture_appointments(&mut coaches, &capture, SOURCE_ID)?;
         if !outcome.is_terminal() {
             self.owe(&url)?;
             self.report

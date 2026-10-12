@@ -31,6 +31,11 @@ pub fn milesplit_roster(corpus: &mut Corpus) -> Result<()> {
                     | "oh_results_index.html"
                     | "oh_roster_10002_mason.html"
                     | "al_teams_index.html"
+                    | "dc_team_www.html"
+                    | "la_team_www.html"
+                    | "tx_team_id_only.html"
+                    | "ma_team_foreign.html"
+                    | "sd_teams_foreign.html"
             )
         {
             continue;

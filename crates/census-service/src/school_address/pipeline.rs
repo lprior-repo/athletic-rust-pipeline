@@ -17,7 +17,7 @@ pub(super) struct Corpus {
     pub(super) merge_rows: Vec<String>,
 }
 
-pub(super) fn collapse(lanes: &[LaneRead]) -> Corpus {
+pub(super) fn collapse(lanes: &[LaneRead]) -> Result<Corpus> {
     let skipped: usize = lanes.iter().map(|lane| lane.report.skipped).sum();
     let notes: usize = lanes.iter().map(|lane| lane.report.notes).sum();
     let rows: Vec<SchoolDirectoryEntry> = lanes
@@ -25,7 +25,7 @@ pub(super) fn collapse(lanes: &[LaneRead]) -> Corpus {
         .flat_map(|lane| lane.entries.iter().cloned())
         .collect();
     let raw = rows.len();
-    let collapsed = collapse_entries(rows);
+    let collapsed = collapse_entries(rows)?;
     let merges = collapsed.notes.len();
     let merge_rows: Vec<String> = collapsed
         .notes
@@ -39,14 +39,14 @@ pub(super) fn collapse(lanes: &[LaneRead]) -> Corpus {
             format!("{} -> {}", note.weak.label(), candidates.join(","))
         })
         .collect();
-    Corpus {
+    Ok(Corpus {
         entries: collapsed.entries,
         rows: raw,
         skipped,
         notes,
         merges,
         merge_rows,
-    }
+    })
 }
 
 pub(super) fn diff(

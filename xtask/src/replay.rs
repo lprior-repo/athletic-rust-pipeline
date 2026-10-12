@@ -1,4 +1,5 @@
 mod cases;
+mod school_address;
 
 use crate::paths;
 use crate::source_fixture;
@@ -9,7 +10,13 @@ use std::path::{Path, PathBuf};
 
 pub(super) type Captures = BTreeMap<String, String>;
 
-pub fn run(name: &str) -> Result<()> {
+pub fn run(name: &str, manifest: Option<&Path>, out: Option<&Path>) -> Result<()> {
+    if name == "school_address" {
+        return school_address::run(manifest, out);
+    }
+    if manifest.is_some() || out.is_some() {
+        bail!("--manifest and --out are only accepted for the `school_address` replay source");
+    }
     let dir = paths::fixtures_dir().join(name);
     if !dir.is_dir() {
         return source_fixture::absent(name, &dir);

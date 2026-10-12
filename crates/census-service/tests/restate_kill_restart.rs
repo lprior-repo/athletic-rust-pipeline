@@ -11,6 +11,8 @@ use census_domain::model::{
 use census_domain::UsJurisdiction;
 use census_reconcile::identity::{Revision, WorkflowIdentity};
 use census_store::{Store, Table};
+#[cfg(feature = "native-fault-injection")]
+use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 use std::net::{SocketAddr, TcpListener};
 use std::os::unix::process::ExitStatusExt;
@@ -36,6 +38,23 @@ const KILL_DELAY: Duration = Duration::from_millis(300);
 const READY_BUDGET: Duration = Duration::from_secs(60);
 const RUN_BUDGET: Duration = Duration::from_secs(300);
 const POLL_INTERVAL: Duration = Duration::from_millis(250);
+
+#[cfg(feature = "native-fault-injection")]
+const CONSOLIDATE_BOUNDARY_ENVIRONMENT: &str = "CENSUS_NATIVE_CONSOLIDATE_BOUNDARY";
+#[cfg(feature = "native-fault-injection")]
+const CONSOLIDATE_MARKER_ENVIRONMENT: &str = "CENSUS_NATIVE_CONSOLIDATE_MARKER";
+#[cfg(feature = "native-fault-injection")]
+const CONSOLIDATE_HOLD_ENVIRONMENT: &str = "CENSUS_NATIVE_CONSOLIDATE_HOLD_MILLIS";
+#[cfg(feature = "native-fault-injection")]
+const CONSOLIDATE_BOUNDARY_PHASE: &str = "consolidate_durable_before_reply";
+#[cfg(feature = "native-fault-injection")]
+const CONSOLIDATE_OPERATION_PREFIX: &str = "consolidate:";
+#[cfg(feature = "native-fault-injection")]
+const CONSOLIDATE_HOLD_MILLIS: &str = "60000";
+#[cfg(feature = "native-fault-injection")]
+const BOUNDARY_SCHOOLS: usize = 8;
+#[cfg(feature = "native-fault-injection")]
+const BOUNDARY_ATHLETES_PER_SCHOOL: usize = 3;
 
 fn evidence() -> Evidence {
     Evidence::parsed(SourceRef::id(SOURCE_ID), MEET_DATE)
@@ -223,11 +242,16 @@ struct Endpoint {
 
 impl Endpoint {
     fn start(data_dir: &Path, port: u16) -> TestResult<Endpoint> {
+        Self::spawn(data_dir, port, &[])
+    }
+
+    fn spawn(data_dir: &Path, port: u16, environment: &[(&str, &str)]) -> TestResult<Endpoint> {
         let binary = env!("CARGO_BIN_EXE_census-serve");
         let listen = SocketAddr::from(([127, 0, 0, 1], port));
         let log_path = data_dir.join(format!("census-serve-{port}.log"));
         let log = std::fs::File::create(&log_path)?;
         let child = Command::new(binary)
+            .envs(environment.iter().copied())
             .arg("--listen")
             .arg(listen.to_string())
             .arg("--data-dir")
@@ -569,6 +593,63 @@ fn add_athlete(
     Ok(())
 }
 
+#[cfg(feature = "native-fault-injection")]
+fn consolidate_key() -> TestResult<String> {
+    Ok(
+        WorkflowIdentity::national(season()?, REVISION, &UsJurisdiction::CENSUS_SCOPE)
+            .as_str()
+            .to_string(),
+    )
+}
+
+#[cfg(feature = "native-fault-injection")]
+async fn wait_for_consolidate_marker(path: &Path, deadline: Instant) -> Option<serde_json::Value> {
+    while Instant::now() < deadline {
+        if let Ok(bytes) = std::fs::read(path) {
+            if let Ok(marker) = serde_json::from_slice::<serde_json::Value>(&bytes) {
+                return Some(marker);
+            }
+        }
+        tokio::time::sleep(POLL_INTERVAL).await;
+    }
+    None
+}
+
+#[cfg(feature = "native-fault-injection")]
+fn require_bound_snapshots(marker: &serde_json::Value, out: &Path) -> TestResult<usize> {
+    let entries = marker
+        .get("tables")
+        .and_then(serde_json::Value::as_array)
+        .ok_or("the reached-boundary artifact carries no table inventory")?;
+    let mut with_rows = 0;
+    for entry in entries {
+        let table = entry
+            .get("table")
+            .and_then(serde_json::Value::as_str)
+            .ok_or("the reached-boundary inventory names no table")?;
+        let digest = entry
+            .get("digest")
+            .and_then(serde_json::Value::as_str)
+            .ok_or("the reached-boundary inventory carries no digest")?;
+        let bytes = std::fs::read(out.join(format!("{table}.jsonl")))?;
+        let durable = format!("{:x}", Sha256::digest(&bytes));
+        check!(
+            eq;
+            durable,
+            digest,
+            "the reached boundary must bind the durable bytes of {table}"
+        );
+        if entry
+            .get("rows")
+            .and_then(serde_json::Value::as_u64)
+            .is_some_and(|rows| rows > 0)
+        {
+            with_rows += 1;
+        }
+    }
+    Ok(with_rows)
+}
+
 #[test]
 fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() -> TestResult {
     tokio::runtime::Builder::new_multi_thread()
@@ -869,6 +950,183 @@ fn b_restate_server_sigkill_resumes_workflow() -> TestResult {
     readback::verify_reply_tables(&output, &out)?;
     readback::verify_snapshots(&out, &corpus)?;
     Ok(())
+        })
+}
+#[cfg(feature = "native-fault-injection")]
+#[test]
+fn c_consolidate_boundary_crash_replays_the_committed_snapshots() -> TestResult {
+    tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(4)
+        .enable_all()
+        .build()?
+        .block_on(async {
+            server_binary().ok_or_else(|| {
+                format!("no restate-server found: set {SERVER_ENV} or install one")
+            })?;
+
+            let root = tempfile::TempDir::new()?;
+            let data_dir = root.path().join("census");
+            std::fs::create_dir_all(&data_dir)?;
+
+            let corpus = synthetic_corpus(BOUNDARY_SCHOOLS, BOUNDARY_ATHLETES_PER_SCHOOL)?;
+            {
+                let store = Store::open(&data_dir)?;
+                corpus.append(&store)?;
+            }
+
+            let node = Node::start(root.path())?;
+            let client = reqwest::Client::builder()
+                .timeout(Duration::from_secs(5))
+                .build()?;
+            wait_for_node(&client, &node).await?;
+
+            let key = consolidate_key()?;
+            let operation = format!("{CONSOLIDATE_OPERATION_PREFIX}{key}");
+            let path_run = format!("Consolidate/{key}/run");
+            let request = serde_json::json!({ "tables": [] });
+            let marker_path = data_dir.join("consolidate-boundary.json");
+            let marker_argument = marker_path
+                .to_str()
+                .ok_or("the reached-boundary marker path is not utf-8")?
+                .to_string();
+            let endpoint_port = free_port()?;
+            let mut endpoint = Endpoint::spawn(
+                &data_dir,
+                endpoint_port,
+                &[
+                    (CONSOLIDATE_BOUNDARY_ENVIRONMENT, operation.as_str()),
+                    (CONSOLIDATE_MARKER_ENVIRONMENT, marker_argument.as_str()),
+                    (CONSOLIDATE_HOLD_ENVIRONMENT, CONSOLIDATE_HOLD_MILLIS),
+                ],
+            )?;
+            register(&client, &node, &endpoint).await?;
+
+            let submission = {
+                let client = client.clone();
+                let ingress = node.ingress.clone();
+                let path = path_run.clone();
+                let body = request.clone();
+                tokio::spawn(async move {
+                    client
+                        .post(format!("{ingress}{path}"))
+                        .json(&body)
+                        .send()
+                        .await
+                        .map(|response| response.status().as_u16())
+                        .map_err(|error| error.to_string())
+                })
+            };
+            let invocation =
+                poll_consolidate(&client, &node, None, Instant::now() + READY_BUDGET).await?;
+            let marker_deadline = Instant::now() + READY_BUDGET;
+            let Some(reached) = wait_for_consolidate_marker(&marker_path, marker_deadline).await
+            else {
+                let message = format!(
+                    "the endpoint never reached the consolidate boundary for {operation}: log\n{}",
+                    endpoint.log()
+                );
+                return Err(message.into());
+            };
+            let killed_pid = endpoint.guard.child.id();
+            let phase = reached.get("phase").and_then(serde_json::Value::as_str);
+            let named = reached.get("operation").and_then(serde_json::Value::as_str);
+            let reach_pid = reached.get("pid").and_then(serde_json::Value::as_u64);
+            check!(eq; phase, Some(CONSOLIDATE_BOUNDARY_PHASE),
+    "the reached boundary must name its phase");
+            check!(eq; named, Some(operation.as_str()),
+    "the reached boundary must name the armed operation");
+            check!(eq; reach_pid, Some(u64::from(killed_pid)),
+    "the reached boundary must be the endpoint process that was killed");
+            let out = data_dir.join("out");
+            let bound = require_bound_snapshots(&reached, &out).map_err(|reason| {
+                format!("{reason}\n{}", oracle::failure_logs(&endpoint, &node))
+            })?;
+            check!(
+                bound >= 1,
+                "the reached boundary must bind a snapshot with rows"
+            );
+            eprintln!("note: reached consolidate crash boundary: {reached}");
+
+            endpoint.guard.kill_hard()?;
+            submission.abort();
+            match submission.await {
+                Ok(Ok(status)) => {
+                    let message = format!("the invocation answered {status} before the kill");
+                    return Err(message.into());
+                }
+                Ok(Err(error)) => {
+                    eprintln!("note: the ingress caller failed at the boundary kill: {error}")
+                }
+                Err(error) if error.is_cancelled() => {
+                    eprintln!("note: the ingress caller was cancelled at the boundary kill")
+                }
+                Err(error) => return Err(format!("submission task panicked: {error}").into()),
+            }
+            let resume_deadline = Instant::now() + RUN_BUDGET;
+            let paused = poll_consolidate(&client, &node, Some("paused"), resume_deadline).await?;
+            check!(eq; invocation, paused,
+    "the invocation that paused after the boundary kill is not the one that was in flight: \
+     expected {invocation}, found {paused}");
+
+            let mut endpoint = Endpoint::spawn(&data_dir, endpoint_port, &[])?;
+            let restarted_pid = endpoint.guard.child.id();
+            check!(
+                restarted_pid != killed_pid,
+                "the replay must run on a restarted endpoint process, not the killed {killed_pid}"
+            );
+            eprintln!(
+                "note: endpoint crash/restart: killed_pid={killed_pid}, restarted_pid={restarted_pid}"
+            );
+            register(&client, &node, &endpoint).await?;
+
+            let attaching = reqwest::Client::builder().build()?;
+            let repeat = tokio::time::timeout(
+                RUN_BUDGET,
+                invoke(&attaching, &node, &path_run, Some(request.clone())),
+            )
+            .await;
+            match repeat {
+                Ok(Err(error)) => check!(
+                    error.contains("409") && error.contains("already invoked"),
+                    "the repeat was not refused as an existing invocation: {error}"
+                ),
+                Ok(Ok(reply)) => {
+                    return Err(format!("the repeat answered a second execution: {reply}").into())
+                }
+                Err(error) => return Err(format!("the repeat never answered: {error}").into()),
+            }
+            eprintln!("note: the repeat was refused as an existing invocation, so nothing forked");
+
+            resume(&client, &node, &paused).await?;
+            eprintln!("note: the boundary-held invocation {paused} was resumed unarmed");
+
+            let terminal = oracle::require_completed_success(
+                &client,
+                &node,
+                &paused,
+                Instant::now() + RUN_BUDGET,
+            )
+            .await
+            .map_err(|reason| format!("{reason}\n{}", oracle::failure_logs(&endpoint, &node)))?;
+            eprintln!("note: the replayed invocation reached {terminal}");
+            let output = oracle::attached_output(&client, &node, &paused, Duration::from_secs(60))
+                .await
+                .map_err(|reason| {
+                    format!("{reason}\n{}", oracle::failure_logs(&endpoint, &node))
+                })?;
+
+            endpoint.guard.stop_gracefully();
+            let store = Store::open(&data_dir)?;
+            readback::verify_physical_observations(&store, &corpus)?;
+            readback::verify_reply_tables(&output, &out)?;
+            readback::verify_snapshots(&out, &corpus)?;
+            let replayed = require_bound_snapshots(&reached, &out).map_err(|reason| {
+                format!("{reason}\n{}", oracle::failure_logs(&endpoint, &node))
+            })?;
+            check!(eq; replayed, bound, "the replay must return the committed bytes");
+
+            drop(node);
+            Ok(())
         })
 }
 

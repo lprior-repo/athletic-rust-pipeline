@@ -15,6 +15,8 @@ use super::{school_name_index, Family, QueueRow, StoreRows, SubjectIndex};
 mod conflicts;
 mod review;
 
+pub(super) mod bounded;
+
 use conflicts::{athlete_identity, cohort_evidence, contact_conflicts, school_identity};
 use review::{cohort_unverified, identity_unverified, unresolved_schools, unresolved_venues};
 
@@ -147,13 +149,14 @@ pub(in crate::workbook) fn conflict_families(
     rows: &StoreRows,
     cohort: &[CanonicalAthlete],
     names: &HashMap<&str, &str>,
-) -> Vec<Family> {
-    vec![
+) -> ReportResult<Vec<Family>> {
+    bounded::conflicts(rows, cohort)?;
+    Ok(vec![
         cohort_evidence(cohort, names),
         athlete_identity(cohort, names),
         school_identity(rows.schools),
         contact_conflicts(rows, names),
-    ]
+    ])
 }
 
 pub(in crate::workbook) fn review_families(
@@ -161,6 +164,7 @@ pub(in crate::workbook) fn review_families(
     cohort: &[CanonicalAthlete],
     names: &HashMap<&str, &str>,
 ) -> ReportResult<Vec<Family>> {
+    bounded::inputs(rows)?;
     Ok(vec![
         cohort_unverified(cohort, names),
         identity_unverified(rows, cohort, names)?,
@@ -225,7 +229,7 @@ pub fn retained_records(
     let cohort = cohort_of(dataset, Scope::AllSources);
     let names = school_name_index(rows.schools);
     Ok(RetainedRecords {
-        conflicts: labelled(conflict_families(&rows, &cohort, &names)),
+        conflicts: labelled(conflict_families(&rows, &cohort, &names)?),
         reviews: labelled(review_families(&rows, &cohort, &names)?),
     })
 }

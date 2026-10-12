@@ -9,6 +9,7 @@ pub(super) const SCHOOL_WIDTHS: [u16; 24] = [
 ];
 
 pub(super) fn schools_sheet(schools: &[CanonicalSchool]) -> ReportResult<Vec<Vec<Cell>>> {
+    crate::grouping::Admission::new("schools").rows(schools)?;
     let mut cells = vec![school_header()];
     let mut sorted: Vec<&CanonicalSchool> = schools.iter().collect();
     sorted.sort_by(|left, right| {

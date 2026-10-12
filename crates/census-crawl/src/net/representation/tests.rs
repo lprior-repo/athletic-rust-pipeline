@@ -47,13 +47,101 @@ fn a_prohibited_header_is_refused_rather_than_dropped() -> TestResult {
 }
 
 #[test]
-fn user_agent_is_allowed_for_the_browser_lane() -> TestResult {
+fn a_compact_user_agent_is_allowed() -> TestResult {
     let result =
         RepresentationHeaders::canonical(&[("user-agent".to_string(), "Mozilla/5.0".to_string())]);
     check!(
         result.is_ok(),
-        "User-Agent must be allowed for browser lane: {result:?}"
+        "a compact User-Agent must be allowed: {result:?}"
     );
+    Ok(())
+}
+
+#[test]
+fn a_compact_user_agent_is_part_of_the_declared_identity() -> TestResult {
+    let headers = RepresentationHeaders::canonical(&[(
+        "User-Agent".to_string(),
+        "Mozilla/5.0 Chrome/126.0 census-service/0.1".to_string(),
+    )])?;
+    check!(eq;
+        headers.entries(),
+        [(
+            "user-agent".to_string(),
+            "Mozilla/5.0 Chrome/126.0 census-service/0.1".to_string()
+        )]
+        .as_slice()
+    );
+    check!(eq;
+        headers.identity(),
+        "user-agent=Mozilla/5.0 Chrome/126.0 census-service/0.1\u{1f}"
+    );
+    Ok(())
+}
+
+#[test]
+fn a_comment_form_user_agent_is_refused_and_the_refusal_names_the_value() -> TestResult {
+    for value in [
+        "census-service/0.1 (independent HS track & field research collector; polite; contact: repo owner)",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36 census-service/0.1",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36",
+    ] {
+        let refused = match RepresentationHeaders::canonical(&[(
+            "user-agent".to_string(),
+            value.to_string(),
+        )]) {
+            Err(FetchError::Policy { detail }) => detail,
+            other => {
+                return Err(format!("{value} must be refused by policy, got: {other:?}").into())
+            }
+        };
+        check!(
+            refused.contains("parenthesized comment form"),
+            "the refusal states the compact agent rule: {refused}"
+        );
+        check!(
+            refused.contains(value),
+            "the refusal names the offending value {value}: {refused}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn an_empty_oversized_multiline_padded_or_non_printable_user_agent_is_refused() -> TestResult {
+    let over = "v".repeat(MAX_USER_AGENT_BYTES + 1);
+    for value in [
+        "".to_string(),
+        " ".to_string(),
+        " Mozilla/5.0".to_string(),
+        "Mozilla/5.0 ".to_string(),
+        "Mozilla/5.0\r\nAccept: text/html".to_string(),
+        "M\u{f6}bius/5.0".to_string(),
+        "Mozilla\u{7f}/5.0".to_string(),
+        over,
+    ] {
+        let refused =
+            match RepresentationHeaders::canonical(&[("user-agent".to_string(), value.clone())]) {
+                Err(FetchError::Policy { detail }) => detail,
+                other => {
+                    return Err(
+                        format!("{value:?} must be refused by policy, got: {other:?}").into(),
+                    )
+                }
+            };
+        check!(
+            refused.contains(&format!("{value:?}")),
+            "the refusal names the offending value {value:?}: {refused}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn a_user_agent_at_the_compact_ceiling_is_allowed() -> TestResult {
+    let at_ceiling = "v".repeat(MAX_USER_AGENT_BYTES);
+    let headers =
+        RepresentationHeaders::canonical(&[("user-agent".to_string(), at_ceiling.clone())])?;
+    check!(eq; headers.entries(), [("user-agent".to_string(), at_ceiling)].as_slice());
     Ok(())
 }
 

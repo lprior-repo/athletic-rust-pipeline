@@ -38,6 +38,26 @@ pub struct IntegrityReport {
     pub tables: Vec<IntegrityTable>,
     pub unreadable_journals: Vec<String>,
     pub unreadable_entity_logs: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub corruptions: Vec<IntegrityCorruption>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub decode_limits: Vec<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CorruptionClass {
+    Undecodable,
+    Truncated,
+    Oversized,
+    DigestMismatch,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct IntegrityCorruption {
+    pub class: CorruptionClass,
+    pub subject: String,
+    pub detail: String,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

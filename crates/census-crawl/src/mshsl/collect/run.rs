@@ -153,18 +153,50 @@ impl<'a> MshslRun<'a> {
             .saturating_add(u64::try_from(written).map_err(|_| CrawlError::Arithmetic {
                 detail: "school count".into(),
             })?);
-        let ads = ad_coaches(
+        let mut ads = ad_coaches(
             &detail,
             &id,
             &provider_key(row, &detail),
             url,
             &capture.fetched_at,
         );
+        self.ad_appointments(&mut ads, &detail, capture)?;
         self.publish_coaches(url, &ads)?;
         let Some(key) = detail.school_id.as_deref() else {
             return owe(&mut self.report, url);
         };
         super::teams::collect(self, (key, &id), &school_domains(&detail)).await
+    }
+
+    fn ad_appointments(
+        &self,
+        coaches: &mut [census_domain::model::CanonicalCoach],
+        detail: &super::super::parse::SchoolDetail,
+        capture: &crate::net::FetchOutcome,
+    ) -> CrawlResult<()> {
+        for coach in coaches {
+            let row = detail.admin.iter().find(|row| {
+                super::super::map::ad_role(&row.role) == Some(coach.role)
+                    && super::super::text::strip_honorific(&row.name) == coach.name
+            });
+            crate::coach_directories::record_appointment(
+                coach,
+                row.zip(detail.name.as_deref()).map(|(row, program)| {
+                    crate::coach_directories::PublishedListing {
+                        role: &row.role,
+                        program,
+                        source: SOURCE_ID,
+                        school_year: self.ctx.school_year,
+                    }
+                }),
+                crate::coach_directories::StaffCapture {
+                    url: &capture.url,
+                    observed_on: &capture.fetched_at,
+                    sha256: &capture.content_digest,
+                },
+            )?;
+        }
+        Ok(())
     }
 
     pub(super) fn publish_coaches(

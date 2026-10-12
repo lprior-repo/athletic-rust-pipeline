@@ -177,6 +177,24 @@ fn marks_parse_from_published_notation() -> TestResult {
 }
 
 #[test]
+fn zero_field_marks_refuse_while_positive_marks_parse() -> TestResult {
+    check!(eq; parse_field_mark("0-0"), None);
+    check!(eq; parse_field_mark("0' 0\""), None);
+    check!(eq; parse_field_mark("0"), None);
+    check!(eq; parse_field_mark("0.0"), None);
+    match parse_field_mark("0-11") {
+        Some(Mark::FieldImperial { metres, .. }) => {
+            check!(
+                (metres.value() - 28).abs() < 1,
+                "0'11\" is 0.2794 m, got {metres}"
+            );
+        }
+        other => return Err(format!("expected an imperial field mark, got {other:?}").into()),
+    }
+    Ok(())
+}
+
+#[test]
 fn header_lines_yield_the_meet_name_date_and_timer() -> TestResult {
     let meet = parse_html(DASH)?;
     check!(eq; meet.name, "WIAA Track & Field State Championships");

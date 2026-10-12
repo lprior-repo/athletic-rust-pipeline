@@ -4,7 +4,7 @@ use crate::mshsl::map::coach_entities;
 use crate::mshsl::teams::{parse_team_nodes, team_sport, CoachRecord, TeamCoaches, TeamNode};
 use crate::mshsl::{COACH_API_PREFIX, TEAMS_VIEW_URL};
 use crate::{CrawlError, CrawlResult};
-use census_domain::model::SchoolId;
+use census_domain::model::{CanonicalCoach, SchoolId, SchoolYear};
 use futures::{stream, StreamExt, TryStreamExt};
 use serde_json::Value;
 
@@ -103,12 +103,40 @@ async fn team(
                 api_url: url.clone(),
                 records: vec![record],
             };
-            let coaches = coach_entities(
+            let mut coaches = coach_entities(
                 std::slice::from_ref(&teams),
                 school_id,
                 domains,
                 &capture.fetched_at,
             );
+            record_appointments(run.ctx.school_year, &mut coaches, &teams, &capture)?;
             run.publish_coaches(&locator, &coaches)
         })
+}
+
+fn record_appointments(
+    school_year: SchoolYear,
+    coaches: &mut [CanonicalCoach],
+    teams: &TeamCoaches,
+    capture: &crate::net::FetchOutcome,
+) -> CrawlResult<()> {
+    for record in &teams.records {
+        for coach in &mut *coaches {
+            crate::coach_directories::record_appointment(
+                coach,
+                Some(crate::coach_directories::PublishedListing {
+                    role: &record.level,
+                    program: &teams.node.alias,
+                    source: super::super::SOURCE_ID,
+                    school_year,
+                }),
+                crate::coach_directories::StaffCapture {
+                    url: &capture.url,
+                    observed_on: &capture.fetched_at,
+                    sha256: &capture.content_digest,
+                },
+            )?;
+        }
+    }
+    Ok(())
 }

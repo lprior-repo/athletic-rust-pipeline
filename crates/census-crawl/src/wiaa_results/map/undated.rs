@@ -11,6 +11,7 @@ const MAX_UNDATED_PARTICIPANTS: usize = 250_000;
 pub(super) fn retain(read: &AbsorbedMeet<'_>, writer: &mut RowWriter<'_>) -> CrawlResult<()> {
     for event in &read.parsed.events {
         for (ordinal, row) in event.rows.iter().enumerate() {
+            census_store::ObservationBudget::record_bytes(row)?;
             let individual = row
                 .legs
                 .is_empty()
@@ -22,6 +23,7 @@ pub(super) fn retain(read: &AbsorbedMeet<'_>, writer: &mut RowWriter<'_>) -> Cra
             );
             for member in members {
                 retain_member(read, writer, event, row, ordinal, member)?;
+                writer.flush()?;
             }
         }
     }
@@ -37,9 +39,8 @@ fn retain_member(
     member: (Option<u8>, &str, Option<Grade>),
 ) -> CrawlResult<()> {
     let requested = writer
-        .accumulator
-        .undated
-        .len()
+        .stats
+        .undated_participants
         .checked_add(1)
         .ok_or_else(|| CrawlError::Arithmetic {
             detail: "WIAA undated participant count overflow".into(),
@@ -75,6 +76,7 @@ fn retain_member(
         .accumulator
         .undated
         .push(SourceObservation::Athlete(observation));
+    writer.stats.undated_participants = requested;
     Ok(())
 }
 

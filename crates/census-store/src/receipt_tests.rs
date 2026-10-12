@@ -57,6 +57,30 @@ fn apply(
     batch.commit_once(operation, digest)
 }
 
+fn day(offset: i64) -> TestResult<String> {
+    let today = NaiveDate::parse_from_str(&SystemClock.today(), "%Y-%m-%d")?;
+    let moved = if offset < 0 {
+        today - chrono::Days::new(u64::try_from(-offset)?)
+    } else {
+        today + chrono::Days::new(u64::try_from(offset)?)
+    };
+    Ok(moved.to_string())
+}
+
+fn frontier(at: &str) -> ReplayFrontier {
+    ReplayFrontier {
+        at: at.to_string(),
+        witnesses: Vec::new(),
+    }
+}
+
+fn witness(invocation: &str, operation: &str) -> ReplayWitness {
+    ReplayWitness {
+        invocation: invocation.to_string(),
+        operation: operation.to_string(),
+    }
+}
+
 #[test]
 fn a_replay_of_one_operation_writes_nothing() -> TestResult {
     let dir = tempfile::tempdir()?;
@@ -227,18 +251,25 @@ fn an_operation_with_no_rows_still_has_a_receipt() -> TestResult {
 fn receipts_older_than_the_policy_day_are_removed_and_newer_ones_kept() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
-    let today = SystemClock.today();
-    let yesterday =
-        (NaiveDate::parse_from_str(&today, "%Y-%m-%d")? - chrono::Days::new(1)).to_string();
+    let yesterday = day(-1)?;
+    let tomorrow = day(1)?;
     apply(&store, "old-operation", "digest-old", "unit-old")?;
-    let kept = store.prune_receipts(&yesterday)?;
-    check!(eq; kept, Pruned::default(), "nothing older than yesterday");
+    let kept = store.prune_receipts(&frontier(&yesterday))?;
+    check!(
+        eq;
+        kept,
+        Pruned {
+            frontier_advanced: true,
+            ..Pruned::default()
+        },
+        "nothing older than yesterday"
+    );
     check!(store.receipt("old-operation")?.is_some());
-    let tomorrow =
-        (NaiveDate::parse_from_str(&today, "%Y-%m-%d")? + chrono::Days::new(1)).to_string();
-    let pruned = store.prune_receipts(&tomorrow)?;
+    let pruned = store.prune_receipts(&frontier(&tomorrow))?;
     check!(eq; pruned.removed, 1);
     check!(eq; pruned.undated, 0);
+    check!(eq; pruned.witnesses_kept, 0, "a frontier with no witnesses retains none");
+    check!(eq; pruned.witnesses_missing, 0);
     check!(store.receipt("old-operation")?.is_none());
     check!(eq; store.receipt_count()?, 0);
     let reapplied = apply(&store, "old-operation", "digest-old", "unit-old")?;
@@ -260,12 +291,182 @@ fn a_boundary_that_is_not_a_day_is_refused() -> TestResult {
         "digest-a",
         "unit-0",
     )?;
-    let refused = store.prune_receipts("last tuesday");
+    let refused = store.prune_receipts(&frontier("last tuesday"));
     check!(
         matches!(refused, Err(StoreError::Refused { .. })),
         "an unreadable boundary is refused rather than guessed at: {refused:?}"
     );
     check!(eq; store.receipt_count()?, 1, "a refused prune removed nothing");
+    check!(
+        store.receipt_frontier()?.is_none(),
+        "a refused prune advances no frontier"
+    );
+    Ok(())
+}
+
+#[test]
+fn a_witness_retains_its_receipt_past_the_day_boundary() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let tomorrow = day(1)?;
+    apply(
+        &store,
+        "wiaa_schools_wi:w39:schools:0",
+        "digest-a",
+        "unit-0",
+    )?;
+    apply(
+        &store,
+        "wiaa_schools_wi:w39:schools:1",
+        "digest-b",
+        "unit-1",
+    )?;
+    let pruned = store.prune_receipts(&ReplayFrontier {
+        at: tomorrow,
+        witnesses: vec![witness("invocation-7", "wiaa_schools_wi:w39:schools:1")],
+    })?;
+    check!(eq; pruned.removed, 1, "the receipt no active invocation names is past the boundary");
+    check!(eq; pruned.witnesses_kept, 1);
+    check!(eq; pruned.witnesses_missing, 0);
+    check!(
+        store.receipt("wiaa_schools_wi:w39:schools:1")?.is_some(),
+        "the witness an active invocation names is retained"
+    );
+    check!(store.receipt("wiaa_schools_wi:w39:schools:0")?.is_none());
+    check!(eq; store.receipt_count()?, 1);
+    Ok(())
+}
+
+#[test]
+fn a_witness_with_no_standing_receipt_is_reported() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let yesterday = day(-1)?;
+    apply(
+        &store,
+        "wiaa_schools_wi:w39:schools:0",
+        "digest-a",
+        "unit-0",
+    )?;
+    let pruned = store.prune_receipts(&ReplayFrontier {
+        at: yesterday,
+        witnesses: vec![
+            witness("invocation-7", "wiaa_schools_wi:w39:schools:0"),
+            witness("invocation-8", "never-applied"),
+        ],
+    })?;
+    check!(eq; pruned.removed, 0);
+    check!(eq; pruned.witnesses_kept, 1);
+    check!(
+        eq;
+        pruned.witnesses_missing,
+        1,
+        "an invocation whose witness is gone is reported, not assumed recoverable"
+    );
+    check!(store.receipt("wiaa_schools_wi:w39:schools:0")?.is_some());
+    Ok(())
+}
+
+#[test]
+fn a_frontier_that_moves_backwards_is_refused() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let yesterday = day(-1)?;
+    let tomorrow = day(1)?;
+    apply(&store, "old-operation", "digest-old", "unit-old")?;
+    store.prune_receipts(&frontier(&tomorrow))?;
+    let refused = store.prune_receipts(&frontier(&yesterday));
+    check!(
+        matches!(refused, Err(StoreError::Refused { .. })),
+        "a frontier behind the standing one re-opens a window this store already pruned: {refused:?}"
+    );
+    check!(eq; store.receipt_frontier()?.ok_or("standing frontier")?.at, tomorrow);
+    let same = store.prune_receipts(&frontier(&tomorrow))?;
+    check!(
+        !same.frontier_advanced,
+        "pruning again against the standing day advances nothing"
+    );
+    check!(eq; same.removed, 0);
+    Ok(())
+}
+
+#[test]
+fn the_consumed_frontier_survives_reopening_with_its_witnesses() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let tomorrow = day(1)?;
+    {
+        let store = Store::open(dir.path())?;
+        apply(&store, "old-operation", "digest-old", "unit-old")?;
+        let pruned = store.prune_receipts(&ReplayFrontier {
+            at: tomorrow.clone(),
+            witnesses: vec![witness("invocation-7", "old-operation")],
+        })?;
+        check!(eq; pruned.removed, 0);
+        check!(eq; pruned.witnesses_kept, 1);
+    }
+    let store = Store::open(dir.path())?;
+    let standing = store.receipt_frontier()?.ok_or("standing frontier")?;
+    check!(eq; standing.at, tomorrow);
+    check!(eq; standing.witnesses.len(), 1, "the witness set is part of the durable frontier");
+    check!(eq; standing.witnesses.first().map(|witness| witness.operation.as_str()), Some("old-operation"));
+    let refused = store.prune_receipts(&frontier(&day(-1)?));
+    check!(
+        matches!(refused, Err(StoreError::Refused { .. })),
+        "the standing frontier survives the reopen, so a day behind it is still refused: {refused:?}"
+    );
+    Ok(())
+}
+
+#[test]
+fn a_witness_the_store_cannot_record_is_refused_before_pruning() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let tomorrow = day(1)?;
+    apply(
+        &store,
+        "wiaa_schools_wi:w39:schools:0",
+        "digest-a",
+        "unit-0",
+    )?;
+    let long = "o".repeat(MAX_OPERATION_BYTES + 1);
+    let cases = [
+        (
+            witness("", "wiaa_schools_wi:w39:schools:0"),
+            "a witness naming no invocation",
+        ),
+        (witness("invocation-7", ""), "a witness naming no operation"),
+        (
+            witness(long.as_str(), "wiaa_schools_wi:w39:schools:0"),
+            "an invocation past the id ceiling",
+        ),
+        (
+            witness("invocation-7", long.as_str()),
+            "an operation past the id ceiling",
+        ),
+    ];
+    for (case, why) in cases {
+        let refused = store.prune_receipts(&ReplayFrontier {
+            at: tomorrow.clone(),
+            witnesses: vec![case],
+        });
+        check!(
+            matches!(refused, Err(StoreError::Refused { .. })),
+            "{why} is refused before anything is pruned: {refused:?}"
+        );
+    }
+    check!(eq; store.receipt_count()?, 1, "a refused prune removed nothing");
+    let too_many: Vec<ReplayWitness> = (0..=MAX_FRONTIER_WITNESSES)
+        .map(|index| witness("invocation-7", &format!("op-{index}")))
+        .collect();
+    let refused = store.prune_receipts(&ReplayFrontier {
+        at: tomorrow,
+        witnesses: too_many,
+    });
+    check!(
+        matches!(refused, Err(StoreError::Refused { .. })),
+        "a witness set past the ceiling is refused, so one prune cannot carry unbounded input: {refused:?}"
+    );
+    check!(eq; store.receipt_count()?, 1);
     Ok(())
 }
 
@@ -351,5 +552,21 @@ fn an_operation_without_a_receipt_is_never_credited() -> TestResult {
         "an empty endpoint is refused rather than totalled into nothing: {unnamed:?}"
     );
     check!(eq; store.endpoint_credit("wiaa_schools")?, 0);
+    Ok(())
+}
+
+#[test]
+fn an_incomplete_replay_frontier_cannot_delete_other_recovery_receipts() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    apply(&store, "lost-ack", "digest-old", "unit-old")?;
+    let pruned = store.prune_receipts(&ReplayFrontier {
+        at: day(1)?,
+        witnesses: vec![witness("active-invocation", "missing-recovery-witness")],
+    })?;
+    check!(eq; pruned.witnesses_missing, 1);
+    check!(eq; pruned.removed, 0, "an incomplete frontier must retain every receipt");
+    check!(store.receipt("lost-ack")?.is_some());
+    check!(store.receipt_frontier()?.is_none());
     Ok(())
 }

@@ -34,10 +34,10 @@ impl Row {
     pub(super) fn from_fields(fields: Vec<String>) -> Self {
         load::from_fields(fields)
     }
-    pub(super) fn to_fields(&self) -> Vec<String> {
+    pub(super) fn to_fields(&self) -> [&str; 12] {
         load::to_fields(self)
     }
-    pub(super) fn dedupe_key(&self) -> (String, String, String, String) {
+    pub(super) fn dedupe_key(&self) -> RowKey {
         load::dedupe_key(self)
     }
     pub(super) fn normalize(&mut self) {
@@ -84,9 +84,9 @@ pub(super) fn run_merge_coaches(args: &MergeCoachesArgs) -> Result<()> {
     let csv_files = collect_csv_files(&args.fragments)?;
     let mut pass = process_files(&csv_files)?;
     let claims_by_file = read_fragment_claims(&csv_files)?;
-    let evidence = verify_kept_proofs(&mut pass, &claims_by_file);
+    let evidence = verify_kept_proofs(&mut pass, &claims_by_file)?;
     write_merged_csv(&pass.kept, args)?;
-    census_store::read::write_snapshot_rows(
+    census_service::coachverify::write_evidence_jsonl(
         &census_service::coachverify::evidence_path(&args.out),
         &evidence,
     )?;
@@ -163,7 +163,7 @@ fn process_files(csv_files: &[PathBuf]) -> Result<MergePass> {
             } else {
                 counts.duplicates = counts.duplicates.saturating_add(1);
                 if let Some(existing) = pass.kept.get(&key) {
-                    if pick_richer(&row, existing) {
+                    if newer_observation(&row, existing) {
                         pass.kept.insert(key.clone(), row);
                         pass.origins.insert(key, origin);
                     }
@@ -174,7 +174,7 @@ fn process_files(csv_files: &[PathBuf]) -> Result<MergePass> {
     Ok(pass)
 }
 
-type RowKey = (String, String, String, String);
+type RowKey = [String; 8];
 
 type KeptRows = BTreeMap<RowKey, Row>;
 
@@ -198,16 +198,11 @@ fn collect_csv_files(frag_dir: &Path) -> Result<Vec<PathBuf>> {
     Ok(csv_files)
 }
 
-fn pick_richer(new: &Row, existing: &Row) -> bool {
-    let new_has_email = !new.public_professional_email.trim().is_empty();
-    let old_has_email = !existing.public_professional_email.trim().is_empty();
-    (new_has_email && !old_has_email) || new.last_observed.trim() > existing.last_observed.trim()
+fn newer_observation(new: &Row, existing: &Row) -> bool {
+    new.last_observed.trim() > existing.last_observed.trim()
 }
 
-fn write_merged_csv(
-    kept: &BTreeMap<(String, String, String, String), Row>,
-    args: &MergeCoachesArgs,
-) -> Result<()> {
+fn write_merged_csv(kept: &KeptRows, args: &MergeCoachesArgs) -> Result<()> {
     let published = &args.out;
     census_store::read::publish_atomically(published, |temporary| {
         write_merged_body(temporary, published, kept)
@@ -218,7 +213,7 @@ fn write_merged_csv(
 fn write_merged_body(
     temporary: &std::path::Path,
     published: &std::path::Path,
-    kept: &BTreeMap<(String, String, String, String), Row>,
+    kept: &KeptRows,
 ) -> census_store::StoreResult<()> {
     let mut writer = csv::Writer::from_path(temporary)
         .map_err(|error| census_store::read::csv_failure(published, error))?;

@@ -1,0 +1,152 @@
+▮▮▮▮ pipeline:tests (55eb823e)
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+warning: unused import: `AthleticLiveManifestRequest`
+  --> crates/census-service/src/restate_services/wire.rs:52:24
+   |
+52 | pub use athleticlive::{AthleticLiveManifestRequest, AthleticLiveObligation};
+   |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `digest` is never used
+  --> crates/census-service/src/restate_services/wire/athleticlive.rs:27:19
+   |
+13 | impl AthleticLiveObligation {
+   | --------------------------- method in this implementation
+...
+27 |     pub(crate) fn digest(&self) -> Option<&str> {
+   |                   ^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `AthleticLiveManifestRequest` is never constructed
+  --> crates/census-service/src/restate_services/wire/athleticlive.rs:36:12
+   |
+36 | pub struct AthleticLiveManifestRequest {
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `region` is never read
+  --> crates/census-service/src/restate_services/jurisdiction.rs:54:5
+   |
+47 | pub struct JurisdictionCensus {
+   |            ------------------ field in this struct
+...
+54 |     region: Arc<Spawner>,
+   |     ^^^^^^
+   |
+   = note: `JurisdictionCensus` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+
+warning: method `region` is never used
+  --> crates/census-service/src/restate_services/jurisdiction.rs:75:19
+   |
+57 | impl JurisdictionCensus {
+   | ----------------------- method in this implementation
+...
+75 |     pub(super) fn region(&self) -> Arc<Spawner> {
+   |                   ^^^^^^
+
+warning: `census-service` (lib) generated 5 warnings (run `cargo fix --lib -p census-service` to apply 1 suggestion)
+warning: `census-service` (lib test) generated 5 warnings (5 duplicates)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.96s
+────────────
+ Nextest run ID f6fe13d1-1b7e-490f-8837-34a11095356b with nextest profile: default
+    Starting 5 tests across 69 binaries (3678 tests skipped)
+        FAIL [   0.009s] (1/5) census-service restate_services::wire::coach_lanes::registry_tests::every_in_scope_jurisdiction_coach_lane_is_armed_or_refused_by_name
+  stdout ───
+
+    running 1 test
+    test restate_services::wire::coach_lanes::registry_tests::every_in_scope_jurisdiction_coach_lane_is_armed_or_refused_by_name ... FAILED
+
+    failures:
+
+    failures:
+        restate_services::wire::coach_lanes::registry_tests::every_in_scope_jurisdiction_coach_lane_is_armed_or_refused_by_name
+
+    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 533 filtered out; finished in 0.00s
+
+  stderr ───
+    Error: "AL has no registered coach decision"
+
+        FAIL [   0.009s] (2/5) census-service restate_services::wire::coach_lanes::registry_tests::coach_registry_failed_binding_leaves_serialized_plan_unchanged
+  stdout ───
+
+    running 1 test
+    test restate_services::wire::coach_lanes::registry_tests::coach_registry_failed_binding_leaves_serialized_plan_unchanged ... FAILED
+
+    failures:
+
+    failures:
+        restate_services::wire::coach_lanes::registry_tests::coach_registry_failed_binding_leaves_serialized_plan_unchanged
+
+    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 533 filtered out; finished in 0.00s
+
+  stderr ───
+    Error: CheckFailure("left=[123, 34, 115, 119, 101, 101, 112, 97, 98, 108, 101, 34, 58, 91, 93, 44, 34, 114, 101, 102, 117, 115, 101, 100, 34, 58, 91, 123, 34, 115, 108, 117, 103, 34, 58, 34, 99, 97, 95, 109, 105, 115, 115, 105, 110, 103, 95, 99, 111, 97, 99, 104, 95, 115, 111, 117, 114, 99, 101, 115, 34, 44, 34, 114, 101, 97, 115, 111, 110, 34, 58, 34, 67, 73, 70, 32, 79, 97, 107, 108, 97, 110, 100, 32, 83, 101, 99, 116, 105, 111, 110, 32, 40, 96, 99, 105, 102, 111, 97, 107, 108, 97, 110, 100, 46, 111, 114, 103, 96, 41, 59, 32, 80, 114, 101, 112, 67, 97, 108, 84, 114, 97, 99, 107, 32, 83, 67, 86, 65, 76, 32, 40, 96, 108, 121, 110, 98, 114, 111, 111, 107, 115, 112, 111, 114, 116, 115, 46, 112, 114, 101, 112, 99, 97, 108, 116, 114, 97, 99, 107, 46, 99, 111, 109, 96, 41, 59, 32, 85, 83, 65, 84, 70, 32, 80, 97, 99, 105, 102, 105, 99, 32, 40, 96, 112, 97, 117, 115, 97, 116, 102, 46, 111, 114, 103, 96, 41, 59, 32, 67, 97, 108, 105, 102, 111, 114, 110, 105, 97, 32, 67, 111, 97, 99, 104, 101, 115, 32, 65, 115, 115, 111, 99, 105, 97, 116, 105, 111, 110, 59, 32, 67, 73, 70, 45, 83, 83, 32, 112, 101, 114, 45, 115, 99, 104, 111, 111, 108, 32, 100, 101, 116, 97, 105, 108, 115, 32, 101, 110, 100, 112, 111, 105, 110, 116, 32, 40, 52, 48, 53, 115, 32, 116, 111, 100, 97, 121, 41, 59, 32, 67, 73, 70, 45, 83, 83, 32, 100, 105, 114, 101, 99, 116, 111, 114, 121, 32, 115, 101, 99, 116, 105, 111, 110, 115, 32, 50, 45, 49, 51, 32, 40, 52, 48, 53, 115, 32, 116, 111, 100, 97, 121, 41, 46, 34, 44, 34, 107, 105, 110, 100, 34, 58, 34, 101, 110, 103, 105, 110, 101, 101, 114, 105, 110, 103, 95, 103, 97, 112, 34, 125, 93, 44, 34, 102, 105, 110, 103, 101, 114, 112, 114, 105, 110, 116, 34, 58, 34, 34, 125] right=[123, 34, 115, 119, 101, 101, 112, 97, 98, 108, 101, 34, 58, 91, 93, 44, 34, 114, 101, 102, 117, 115, 101, 100, 34, 58, 91, 93, 44, 34, 102, 105, 110, 103, 101, 114, 112, 114, 105, 110, 116, 34, 58, 34, 34, 125]")
+
+        FAIL [   0.012s] (3/5) census-service restate_services::wire::coach_lanes::registry_tests::coach_registry_group_c_rebind_and_reopen_preserve_exact_decisions
+  stdout ───
+
+    running 1 test
+    test restate_services::wire::coach_lanes::registry_tests::coach_registry_group_c_rebind_and_reopen_preserve_exact_decisions ... FAILED
+
+    failures:
+
+    failures:
+        restate_services::wire::coach_lanes::registry_tests::coach_registry_group_c_rebind_and_reopen_preserve_exact_decisions
+
+    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 533 filtered out; finished in 0.01s
+
+  stderr ───
+    Error: "ND has no registered coach decision"
+
+        FAIL [   0.012s] (4/5) census-service restate_services::wire::coach_lanes::registry_tests::coach_registry_group_b_rebind_and_reopen_preserve_exact_decisions
+  stdout ───
+
+    running 1 test
+    test restate_services::wire::coach_lanes::registry_tests::coach_registry_group_b_rebind_and_reopen_preserve_exact_decisions ... FAILED
+
+    failures:
+
+    failures:
+        restate_services::wire::coach_lanes::registry_tests::coach_registry_group_b_rebind_and_reopen_preserve_exact_decisions
+
+    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 533 filtered out; finished in 0.01s
+
+  stderr ───
+    Error: "OH has no registered coach decision"
+
+        FAIL [   0.015s] (5/5) census-service restate_services::wire::coach_lanes::registry_tests::coach_registry_group_a_rebind_and_reopen_preserve_exact_decisions
+  stdout ───
+
+    running 1 test
+    test restate_services::wire::coach_lanes::registry_tests::coach_registry_group_a_rebind_and_reopen_preserve_exact_decisions ... FAILED
+
+    failures:
+
+    failures:
+        restate_services::wire::coach_lanes::registry_tests::coach_registry_group_a_rebind_and_reopen_preserve_exact_decisions
+
+    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 533 filtered out; finished in 0.01s
+
+  stderr ───
+    Error: "IL has no registered coach decision"
+
+────────────
+     Summary [   0.017s] 5 tests run: 0 passed, 5 failed, 3678 skipped
+        FAIL [   0.009s] (1/5) census-service restate_services::wire::coach_lanes::registry_tests::every_in_scope_jurisdiction_coach_lane_is_armed_or_refused_by_name
+        FAIL [   0.009s] (2/5) census-service restate_services::wire::coach_lanes::registry_tests::coach_registry_failed_binding_leaves_serialized_plan_unchanged
+        FAIL [   0.012s] (3/5) census-service restate_services::wire::coach_lanes::registry_tests::coach_registry_group_c_rebind_and_reopen_preserve_exact_decisions
+        FAIL [   0.012s] (4/5) census-service restate_services::wire::coach_lanes::registry_tests::coach_registry_group_b_rebind_and_reopen_preserve_exact_decisions
+        FAIL [   0.015s] (5/5) census-service restate_services::wire::coach_lanes::registry_tests::coach_registry_group_a_rebind_and_reopen_preserve_exact_decisions
+error: test run failed
+▮▮▮▮ pipeline:tests (13s 292ms, 55eb823e)
+Error: task_runner::run_failed
+
+  × Task pipeline:tests failed to run.
+  ╰─▶ Process tools/moon-cargo failed: exit code 100
+

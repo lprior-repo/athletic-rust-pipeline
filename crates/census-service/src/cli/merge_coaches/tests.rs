@@ -498,7 +498,8 @@ fn proven_digest(
     let mut row = make_row(fields.to_vec());
     row.normalize();
     let raw = raw_contact_row(&row);
-    let covering = census_service::coachverify::claims_for_row(claims, &raw);
+    let covering =
+        census_service::coachverify::ContactEvidenceIndex::build(claims)?.claims_for_row(&raw)?;
     Ok(census_domain::model::compute_contact_proof(
         &raw, &covering,
     )?)
@@ -680,7 +681,7 @@ fn merge_round_trip_keeps_every_row_importable_and_distinct() -> TestResult {
     let mut reader = csv::ReaderBuilder::new()
         .has_headers(true)
         .from_path(out.path())?;
-    let mut seen: BTreeSet<(String, String, String, String)> = BTreeSet::new();
+    let mut seen: BTreeSet<RowKey> = BTreeSet::new();
     let mut data_rows = 0usize;
     for record in reader.records() {
         let record = record?;
@@ -697,109 +698,13 @@ fn merge_round_trip_keeps_every_row_importable_and_distinct() -> TestResult {
             "merged row {data_rows} duplicates an earlier row after round-trip: {row:?}",
         );
     }
-    check!(eq; data_rows, 3, "two states, one deduped pair");
+    check!(eq; data_rows, 4, "different mailbox identities remain distinct across two states");
     let report = std::fs::read_to_string(report.path())?;
     check!(
         report.contains("WI") && report.contains("MN"),
         "the report accounts for both states: {report}"
     );
     Ok(())
-}
-
-#[test]
-fn dedupe_keeps_richer_row() {
-    let mut row1 = make_row(vec![
-        "School",
-        "City",
-        "OH",
-        "Cross Country",
-        "Head Coach",
-        "Coach",
-        "",
-        "",
-        "",
-        "https://school.edu",
-        "2026-09-22",
-    ]);
-    let mut row2 = make_row(vec![
-        "School",
-        "City",
-        "OH",
-        "Cross Country",
-        "Head Coach",
-        "Coach B",
-        "coach@school.edu",
-        "",
-        "",
-        "https://school.edu",
-        "2026-09-22",
-    ]);
-    row1.normalize();
-    row2.normalize();
-    let key = row1.dedupe_key();
-    assert_eq!(key, row2.dedupe_key());
-    assert!(
-        pick_richer(&row2, &row1),
-        "the row that publishes a professional email is the richer one"
-    );
-    assert!(
-        !pick_richer(&row1, &row2),
-        "a row without an email never replaces the row that publishes one"
-    );
-    let kept = if pick_richer(&row2, &row1) {
-        &row2
-    } else {
-        &row1
-    };
-    assert_eq!(kept.coach_name, "Coach B");
-}
-
-#[test]
-fn dedupe_keeps_newer_row() {
-    let mut row1 = make_row(vec![
-        "School",
-        "City",
-        "OH",
-        "Cross Country",
-        "Head Coach",
-        "Coach",
-        "coach@school.edu",
-        "",
-        "",
-        "https://school.edu",
-        "2026-09-21",
-    ]);
-    let mut row2 = make_row(vec![
-        "School",
-        "City",
-        "OH",
-        "Cross Country",
-        "Head Coach",
-        "Coach B",
-        "coach2@school.edu",
-        "",
-        "",
-        "https://school.edu",
-        "2026-09-22",
-    ]);
-    row1.normalize();
-    row2.normalize();
-    let key = row1.dedupe_key();
-    assert_eq!(key, row2.dedupe_key());
-    assert!(
-        pick_richer(&row2, &row1),
-        "the later observation wins when both publish an email"
-    );
-    assert!(
-        !pick_richer(&row1, &row2),
-        "an older observation never replaces a newer one"
-    );
-    let kept = if pick_richer(&row2, &row1) {
-        &row2
-    } else {
-        &row1
-    };
-    assert_eq!(kept.coach_name, "Coach B");
 }
 
 fn verified_director(state: &str, school: &str) -> census_service::coachverify::FragmentOutcome {
@@ -1181,5 +1086,130 @@ fn merge_rejects_rows_whose_proof_does_not_verify() -> TestResult {
         report.contains("proof digest mismatch"),
         "the report names the digest mismatch: {report}"
     );
+    Ok(())
+}
+
+fn verified_program_coach(
+    person: &str,
+    email: &str,
+    observed: &str,
+) -> Result<census_service::coachverify::FragmentOutcome, Box<dyn std::error::Error>> {
+    let mut outcome = verified_combined("OH", "Program High School");
+    let subject = outcome.rows.first_mut().ok_or("missing fixture row")?;
+    subject.row.coach_name = person.to_string();
+    subject.row.public_professional_email = email.to_string();
+    subject.row.ad_name.clear();
+    subject.row.ad_email.clear();
+    subject.row.last_observed = observed.to_string();
+    subject.evidence.retain(|claim| {
+        matches!(
+            claim.field,
+            ContactProofField::CoachName | ContactProofField::PublicProfessionalEmail
+        )
+    });
+    for claim in &mut subject.evidence {
+        claim.person = person.to_string();
+        claim.value = if claim.field == ContactProofField::CoachName {
+            person.to_string()
+        } else {
+            email.to_string()
+        };
+        claim.claimed_observed_on = observed.to_string();
+        claim.span = format!("<span>{}</span>", claim.value);
+    }
+    Ok(outcome)
+}
+
+#[test]
+fn merge_coaches_keeps_distinct_subjects_at_one_program() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let union = dir.path().join("union");
+    let outcomes = vec![
+        verified_program_coach("Dana Reed", "staff@example.org", "2026-09-21")?,
+        verified_program_coach("Sam Ellery", "staff@example.org", "2026-09-21")?,
+        verified_program_coach("Dana Reed", "staff@example.org", "2026-09-22")?,
+    ];
+    census_service::coachverify::write_state_union(&union, &outcomes)?;
+    let out = dir.path().join("coach-contacts.csv");
+    run_merge_coaches(&MergeCoachesArgs {
+        fragments: union,
+        out: out.clone(),
+        report: dir.path().join("merge.md"),
+    })?;
+    let published = census_service::coachverify::read_fragment(&out)?;
+    println!("program subjects: input=3 published={}", published.len());
+    check!(eq; published.len(), 2, "two subjects survive; one true duplicate collapses");
+    check!(published
+        .iter()
+        .any(|row| { row.coach_name == "Dana Reed" && row.last_observed == "2026-09-22" }));
+    check!(published.iter().any(|row| row.coach_name == "Sam Ellery"));
+    let reconciliation = census_service::coachverify::reconcile(&out, &outcomes)?;
+    check!(eq; reconciliation.published, 2);
+    check!(eq; reconciliation.unmatched_total(), 0);
+    check!(eq; reconciliation.tampered_total(), 0);
+    Ok(())
+}
+
+fn verified_subject_variant(
+    variant: usize,
+) -> Result<census_service::coachverify::FragmentOutcome, Box<dyn std::error::Error>> {
+    let mut outcome = verified_combined("OH", "Program High School");
+    let subject = outcome.rows.first_mut().ok_or("missing fixture row")?;
+    match variant {
+        1 => subject.row.coach_name = "Sam Ellery".to_string(),
+        2 => subject.row.public_professional_email = "alternate@example.org".to_string(),
+        3 => subject.row.ad_name = "Casey Hart".to_string(),
+        4 => subject.row.ad_email = "director@example.org".to_string(),
+        _ => {}
+    }
+    let url = format!("https://example.org/staff/{variant}");
+    subject.row.source_urls = vec![url.clone()];
+    for claim in &mut subject.evidence {
+        let (value, person) = match claim.field {
+            ContactProofField::CoachName => (&subject.row.coach_name, &subject.row.coach_name),
+            ContactProofField::PublicProfessionalEmail => (
+                &subject.row.public_professional_email,
+                &subject.row.coach_name,
+            ),
+            ContactProofField::AdName => (&subject.row.ad_name, &subject.row.ad_name),
+            ContactProofField::AdEmail => (&subject.row.ad_email, &subject.row.ad_name),
+        };
+        claim.value = value.clone();
+        claim.person = person.clone();
+        claim.source_url = url.clone();
+        claim.span = format!("<span>{value}</span>");
+    }
+    Ok(outcome)
+}
+
+#[test]
+fn merge_keeps_each_subject_identity_component() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let union = dir.path().join("union");
+    let outcomes = (0..5)
+        .map(verified_subject_variant)
+        .collect::<Result<Vec<_>, _>>()?;
+    census_service::coachverify::write_state_union(&union, &outcomes)?;
+    let fragment = union.join("OH.csv");
+    let first = csv::Reader::from_path(&fragment)?
+        .records()
+        .next()
+        .transpose()?
+        .ok_or("missing fixture record")?;
+    let append = std::fs::OpenOptions::new().append(true).open(&fragment)?;
+    let mut writer = csv::Writer::from_writer(append);
+    writer.write_record(&first)?;
+    writer.flush()?;
+    let out = dir.path().join("coach-contacts.csv");
+    run_merge_coaches(&MergeCoachesArgs {
+        fragments: union,
+        out: out.clone(),
+        report: dir.path().join("merge.md"),
+    })?;
+    let published = census_service::coachverify::read_fragment(&out)?;
+    check!(eq; published.len(), 5, "all four subject fields distinguish rows; exact duplicates collapse");
+    let reconciliation = census_service::coachverify::reconcile(&out, &outcomes)?;
+    check!(eq; reconciliation.unmatched_total(), 0);
+    check!(eq; reconciliation.tampered_total(), 0);
     Ok(())
 }

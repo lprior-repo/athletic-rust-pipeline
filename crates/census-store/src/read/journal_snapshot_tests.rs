@@ -79,3 +79,31 @@ fn journal_payloads_keep_one_sequence_while_an_atomic_batch_changes_multiple_key
     }
     Ok(())
 }
+
+#[test]
+fn latest_legacy_journal_read_waits_for_one_commit_boundary() -> Result<(), Box<dyn Error>> {
+    let root = tempfile::tempdir()?;
+    let store = Store::open(root.path())?;
+    let first = json!({"blob": "a".repeat(2_000_000)});
+    let second = json!({"blob": "b".repeat(2_000_000)});
+    store.journal_done("snapshot_boundary", "latest", &first)?;
+    let held = store.lock_appends();
+    let (sender, receiver) = std::sync::mpsc::channel();
+    std::thread::scope(|scope| -> Result<(), Box<dyn Error>> {
+        let reader =
+            scope.spawn(|| sender.send(store.journal_payload("snapshot_boundary", "latest")));
+        check!(
+            matches!(
+                receiver.recv_timeout(std::time::Duration::from_secs(2)),
+                Err(std::sync::mpsc::RecvTimeoutError::Timeout)
+            ),
+            "the latest journal reader bypassed the snapshot commit boundary"
+        );
+        store.journal_done("snapshot_boundary", "latest", &second)?;
+        drop(held);
+        let observed = receiver.recv_timeout(std::time::Duration::from_secs(60))??;
+        check!(eq; observed, Some(second));
+        reader.join().map_err(|_| "journal reader failed")??;
+        Ok(())
+    })
+}

@@ -1,3 +1,4 @@
+use census_domain::model::{CoachLaneError, CoachLaneRefusal, SourceRef};
 use serde::{Deserialize, Serialize};
 
 use crate::restate_services::plan::{owed, sweepable, UnitDisposition};
@@ -39,6 +40,22 @@ impl SourcePlan {
                     | crate::restate_services::plan::RefusalKind::EngineeringGap
             )
         })
+    }
+
+    pub fn coach_lane_refusals(
+        &self,
+        observed_on: &str,
+    ) -> Result<Vec<CoachLaneRefusal>, CoachLaneError> {
+        self.refused
+            .iter()
+            .map(|refused| {
+                CoachLaneRefusal::new(
+                    SourceRef::id(refused.slug.clone()),
+                    refused.reason.clone(),
+                    observed_on,
+                )
+            })
+            .collect()
     }
 }
 

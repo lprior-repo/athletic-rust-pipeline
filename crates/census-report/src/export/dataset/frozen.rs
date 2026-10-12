@@ -1,13 +1,46 @@
-use super::{DatasetLineage, ExportDataset, Loaded};
+use super::{DatasetLineage, ExportDataset};
 use crate::report::{io_error, ReportError, ReportResult};
 use census_store::clock::{Clock, SystemClock};
 use census_store::{Store, StoreSnapshot, Table};
+use codec::FrozenCodecError;
 use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize};
 use std::collections::BTreeMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 mod io;
 pub(super) mod job;
+
+mod archive;
+mod budget;
+mod capture;
+mod chunks;
+mod codec;
+#[cfg(test)]
+mod fixtures;
+mod freeze;
+mod inventory;
+mod legacy;
+mod line;
+mod manifest;
+mod materialize;
+mod objects;
+mod reader;
+mod recover;
+mod references;
+mod root;
+mod stream;
+mod token;
+mod verify;
+
+#[cfg(test)]
+mod freeze_recovery_tests;
+#[cfg(test)]
+mod freeze_v2_tests;
+#[cfg(test)]
+mod preflight_tests;
+
+pub use freeze::CancelOutcome;
+pub use root::FrozenRoot;
 
 const SCHEMA_REVISION: u32 = 1;
 const POLICY_REVISION: u32 = 7;
@@ -33,11 +66,33 @@ struct Frozen<'a> {
     data: &'a ExportDataset,
 }
 
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Archived {
-    lineage: DatasetLineage,
-    data: Loaded,
+pub(super) fn freeze_v2(store: &Store, job: &str) -> ReportResult<FrozenRoot> {
+    freeze::freeze(store, job)
+}
+
+pub(super) fn cancel_freeze_v2(store: &Store, job: &str) -> ReportResult<CancelOutcome> {
+    freeze::cancel(store, job)
+}
+
+pub(super) fn to_export_dataset(root: &FrozenRoot, store: &Store) -> ReportResult<ExportDataset> {
+    let manifest = root.manifest();
+    if manifest.lineage.store_identity != store_identity(store)? {
+        return Err(invalid("a frozen root belongs to a different census store"));
+    }
+    let objects_dir = objects::directory(root.directory());
+    verify::verify_root(&objects_dir, root.manifest_digest(), manifest)?;
+    let dataset = ExportDataset::from_loaded(
+        materialize::read_all(&objects_dir, manifest)?,
+        manifest.lineage.clone(),
+    )?;
+    if dataset.lineage.input_digest != manifest.lineage.input_digest
+        || dataset.lineage.input_generation != manifest.lineage.input_generation
+    {
+        return Err(invalid(
+            "a frozen root does not reproduce the dataset input digest",
+        ));
+    }
+    Ok(dataset)
 }
 
 pub(super) fn lineage(store: &Store, snapshot: &StoreSnapshot<'_>) -> ReportResult<DatasetLineage> {
@@ -95,6 +150,7 @@ pub(super) fn archive_digest(dataset: &ExportDataset) -> ReportResult<String> {
         data: dataset,
     })
 }
+
 pub(super) fn save(dataset: &ExportDataset, path: &Path) -> ReportResult<()> {
     if digest(dataset)? != dataset.lineage.input_digest
         || generation(&dataset.lineage)? != dataset.lineage.input_generation
@@ -113,23 +169,7 @@ pub(super) fn save(dataset: &ExportDataset, path: &Path) -> ReportResult<()> {
 }
 
 pub(super) fn reopen(path: &Path) -> ReportResult<ExportDataset> {
-    let archived: Archived = io::read_json(path)?;
-    let expected = archived.lineage.clone();
-    if expected.schema_revision != SCHEMA_REVISION
-        || expected.policy_revision != POLICY_REVISION
-        || !hex_digest(&expected.store_identity)
-        || !hex_digest(&expected.source_digest)
-        || census_domain::model::SchoolYear::from_date(&expected.generated_on).is_none()
-    {
-        return Err(invalid("unsupported or malformed frozen export lineage"));
-    }
-    let dataset = ExportDataset::from_loaded(archived.data, archived.lineage)?;
-    if dataset.lineage != expected {
-        return Err(invalid(
-            "frozen export input digest does not match its retained data",
-        ));
-    }
-    Ok(dataset)
+    archive::reopen(path, |_| Ok(()))
 }
 
 fn generation(lineage: &DatasetLineage) -> ReportResult<String> {
@@ -195,9 +235,37 @@ fn hex_digest(value: &str) -> bool {
     value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
 }
 
+pub(super) fn capture_lock(lock_path: &Path) -> ReportResult<std::fs::File> {
+    let lock = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(lock_path)
+        .map_err(|source| io_error(lock_path, source))?;
+    lock.try_lock().map_err(|error| {
+        let source = match error {
+            std::fs::TryLockError::WouldBlock => std::io::Error::new(
+                std::io::ErrorKind::WouldBlock,
+                "export input is already being captured",
+            ),
+            std::fs::TryLockError::Error(source) => source,
+        };
+        io_error(lock_path, source)
+    })?;
+    Ok(lock)
+}
+
 fn invalid(detail: &str) -> ReportError {
     ReportError::Invariant {
         detail: detail.to_string(),
+    }
+}
+
+fn codec_error(error: FrozenCodecError) -> ReportError {
+    ReportError::ArtifactCorrupt {
+        path: PathBuf::new(),
+        detail: format!("frozen codec: {error}"),
     }
 }
 

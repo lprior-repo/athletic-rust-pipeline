@@ -1,8 +1,13 @@
 use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
 
-use crate::StoreResult;
+use crate::{StoreError, StoreResult};
 
 use super::io_failure;
+
+const MAX_SWEEP_KEYS: usize = 4096;
+const MAX_SWEEP_BYTES: u64 = 16 * 1024 * 1024;
+const MAX_SWEEP_TIME: Duration = Duration::from_millis(10);
 
 pub(super) fn temporary_path(path: &Path) -> PathBuf {
     use std::sync::atomic::{AtomicU64, Ordering};
@@ -18,31 +23,101 @@ pub(super) fn temporary_path(path: &Path) -> PathBuf {
     path.with_file_name(format!(".{name}.{}.{sequence}.part", std::process::id()))
 }
 
-pub(crate) fn sweep_stale_temporaries(root: &Path) -> StoreResult<usize> {
+pub(crate) fn sweep_stale_temporaries(root: &Path, meta: &fjall::Keyspace) -> StoreResult<usize> {
+    for prefix in [
+        b"records/".as_slice(),
+        b"publication/".as_slice(),
+        b"lease/".as_slice(),
+    ] {
+        if let Some(guard) = meta.prefix(prefix).next() {
+            guard.key().map_err(|source| StoreError::Read { source })?;
+            return Ok(0);
+        }
+    }
+    let started = Instant::now();
+    let mut bytes = 0_u64;
+    let mut examined = 0_usize;
+    [root.join("entities"), root.join("out")]
+        .iter()
+        .try_fold(0_usize, |removed, directory| {
+            removed
+                .checked_add(sweep_temporaries(
+                    directory,
+                    started,
+                    &mut bytes,
+                    &mut examined,
+                )?)
+                .ok_or(StoreError::CounterOverflow)
+        })
+}
+
+fn sweep_temporaries(
+    directory: &Path,
+    started: Instant,
+    bytes: &mut u64,
+    examined: &mut usize,
+) -> StoreResult<usize> {
+    let metadata = match std::fs::symlink_metadata(directory) {
+        Ok(metadata) if metadata.is_dir() => metadata,
+        Ok(_) => return Ok(0),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(0),
+        Err(source) => return Err(io_failure(directory, source)),
+    };
+    if metadata.file_type().is_symlink() {
+        return Ok(0);
+    }
+    let entries = std::fs::read_dir(directory).map_err(|source| io_failure(directory, source))?;
     let mut removed = 0_usize;
-    for directory in [root.join("entities"), root.join("out")] {
-        removed = removed.saturating_add(sweep_temporaries(&directory)?);
+    for entry in entries {
+        if *examined >= MAX_SWEEP_KEYS || started.elapsed() >= MAX_SWEEP_TIME {
+            break;
+        }
+        *examined = examined.checked_add(1).ok_or(StoreError::CounterOverflow)?;
+        let entry = entry.map_err(|source| io_failure(directory, source))?;
+        if !owner_dead(&entry.file_name().to_string_lossy()) {
+            continue;
+        }
+        let path = entry.path();
+        let metadata =
+            std::fs::symlink_metadata(&path).map_err(|source| io_failure(&path, source))?;
+        if !metadata.is_file() || metadata.file_type().is_symlink() {
+            continue;
+        }
+        let next = bytes
+            .checked_add(metadata.len())
+            .ok_or(StoreError::CounterOverflow)?;
+        if next > MAX_SWEEP_BYTES {
+            continue;
+        }
+        match std::fs::remove_file(&path) {
+            Ok(()) => {
+                *bytes = next;
+                removed = removed.checked_add(1).ok_or(StoreError::CounterOverflow)?;
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(source) => return Err(io_failure(&path, source)),
+        }
     }
     Ok(removed)
 }
 
-fn sweep_temporaries(directory: &Path) -> StoreResult<usize> {
-    let entries = match std::fs::read_dir(directory) {
-        Ok(entries) => entries,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(0),
-        Err(source) => return Err(io_failure(directory, source)),
+fn owner_dead(name: &str) -> bool {
+    let Some(stem) = name.strip_suffix(".part") else {
+        return false;
     };
-    let mut removed = 0_usize;
-    for entry in entries {
-        let entry = entry.map_err(|source| io_failure(directory, source))?;
-        let name = entry.file_name();
-        let name = name.to_string_lossy();
-        if !name.starts_with('.') || !name.ends_with(".part") {
-            continue;
-        }
-        let path = entry.path();
-        std::fs::remove_file(&path).map_err(|source| io_failure(&path, source))?;
-        removed = removed.saturating_add(1);
+    let mut parts = stem.rsplitn(3, '.');
+    let (Some(sequence), Some(pid), Some(target)) = (parts.next(), parts.next(), parts.next())
+    else {
+        return false;
+    };
+    if sequence.parse::<u64>().is_err() || !target.starts_with('.') || target.len() < 2 {
+        return false;
     }
-    Ok(removed)
+    let Ok(pid) = pid.parse::<u32>() else {
+        return false;
+    };
+    if pid == 0 || !Path::new("/proc/self").is_dir() {
+        return false;
+    }
+    matches!(std::fs::symlink_metadata(format!("/proc/{pid}")), Err(error) if error.kind() == std::io::ErrorKind::NotFound)
 }

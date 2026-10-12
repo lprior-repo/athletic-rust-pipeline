@@ -1,5 +1,6 @@
 use super::FetchPlan;
 use crate::net::bridge::{BrowserCapture, BrowserError, Verdict};
+use crate::net::execute::attempt_helper::recorded_millis;
 use crate::net::{FetchError, FetchOutcome, Fetcher};
 use census_domain::model::AccessBlockKind;
 
@@ -11,7 +12,7 @@ impl Fetcher {
     ) -> Result<FetchOutcome, FetchError> {
         self.archive_refusal_capture(plan, capture, capture.response.status)
             .await;
-        let waited = capture.retry_after_ms.map(|ms| ms / 1_000);
+        let waited = capture.retry_after_ms.and_then(recorded_millis);
         let detail = match waited {
             Some(seconds) => format!(
                 "the source answered {} with human verification, asking for {seconds}s",

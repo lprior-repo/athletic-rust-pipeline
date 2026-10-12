@@ -1,0 +1,88 @@
+▮▮▮▮ pipeline:tests (72801077)
+   Compiling census-service v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service)
+error[E0425]: cannot find function `meets_stage` in module `jobs`
+  --> crates/census-service/src/restate_services/jurisdiction/stage_runs.rs:78:32
+   |
+78 |             .run(move || jobs::meets_stage(store, fetcher, scope, selected))
+   |                                ^^^^^^^^^^^ not found in `jobs`
+
+error[E0425]: cannot find type `RecordedSource` in module `super::super::meets_arms`
+  --> crates/census-service/src/restate_services/jurisdiction/stage_runs.rs:89:49
+   |
+89 |         recorded: Vec<super::super::meets_arms::RecordedSource>,
+   |                                                 ^^^^^^^^^^^^^^ not found in `super::super::meets_arms`
+
+error[E0425]: cannot find type `RecordedSource` in module `super::super::meets_arms`
+   --> crates/census-service/src/restate_services/jurisdiction/stage_runs.rs:103:43
+    |
+103 |         source: super::super::meets_arms::RecordedSource,
+    |                                           ^^^^^^^^^^^^^^ not found in `super::super::meets_arms`
+
+error[E0425]: cannot find function `meets_stage` in module `crate::restate_services::meets_arms`
+  --> crates/census-service/src/restate_services/jurisdiction/stage_runs/tests.rs:57:70
+   |
+57 |             let Json(outcome) = crate::restate_services::meets_arms::meets_stage(
+   |                                                                      ^^^^^^^^^^^ not found in `crate::restate_services::meets_arms`
+
+error[E0433]: cannot find type `SourceSelection` in this scope
+   --> crates/census-service/src/restate_services/meets_arms/tests.rs:104:28
+    |
+104 |             let selected = SourceSelection::parse(&["coach_directories".to_string()])
+    |                            ^^^^^^^^^^^^^^^ use of undeclared type `SourceSelection`
+    |
+help: consider importing this struct
+    |
+  1 + use crate::restate_services::source_selection::SourceSelection;
+    |
+
+error[E0599]: `restate_sdk::errors::HandlerError` doesn't implement `std::fmt::Display`
+  --> crates/census-service/src/restate_services/meets_arms.rs:66:58
+   |
+66 |         Err(error) => (failed_census(&slug, scope, error.to_string()), false),
+   |                                                          ^^^^^^^^^ method cannot be called on `restate_sdk::errors::HandlerError` due to unsatisfied trait bounds
+   |
+  ::: /cache/cargo-shared/registry/src/index.crates.io-1949cf8c6b5b557f/restate-sdk-0.12.0/src/errors.rs:65:1
+   |
+65 | pub struct HandlerError(pub(crate) HandlerErrorInner);
+   | ----------------------- doesn't satisfy `_: Display` or `restate_sdk::errors::HandlerError: ToString`
+   |
+   = note: the following trait bounds were not satisfied:
+           `restate_sdk::errors::HandlerError: std::fmt::Display`
+           which is required by `restate_sdk::errors::HandlerError: ToString`
+
+error[E0061]: this function takes 1 argument but 2 arguments were supplied
+  --> crates/census-service/src/restate_services/endpoint.rs:79:30
+   |
+79 |         .bind(census_service(NationalCensus::new(clock, jobs)));
+   |                              ^^^^^^^^^^^^^^^^^^^        ---- unexpected argument #2 of type `Jobs`
+   |
+note: associated function defined here
+  --> crates/census-service/src/restate_services/national.rs:35:12
+   |
+35 |     pub fn new(clock: Arc<dyn Clock>) -> Self {
+   |            ^^^
+help: remove the extra argument
+   |
+79 -         .bind(census_service(NationalCensus::new(clock, jobs)));
+79 +         .bind(census_service(NationalCensus::new(clock)));
+   |
+
+Some errors have detailed explanations: E0061, E0425, E0599.
+For more information about an error, try `rustc --explain E0061`.
+error: could not compile `census-service` (lib) due to 5 previous errors
+warning: build failed, waiting for other jobs to finish...
+error[E0425]: cannot find function `meets_stage` in this scope
+   --> crates/census-service/src/restate_services/meets_arms/tests.rs:106:33
+    |
+106 |             let Json(outcome) = meets_stage(Arc::clone(&store), fetcher, scope, selected)
+    |                                 ^^^^^^^^^^^ not found in this scope
+
+Some errors have detailed explanations: E0061, E0425, E0433, E0599.
+error: could not compile `census-service` (lib test) due to 8 previous errors
+error: command `/home/lewis/.rustup/toolchains/nightly-2026-04-27-x86_64-unknown-linux-gnu/bin/cargo test --no-run --message-format json-render-diagnostics --workspace --all-features --locked --offline --config .cargo/fast-iteration.toml` exited with code 101
+▮▮▮▮ pipeline:tests (3s 869ms, 72801077)
+Error: task_runner::run_failed
+
+  × Task pipeline:tests failed to run.
+  ╰─▶ Process tools/moon-cargo failed: exit code 101
+

@@ -6,6 +6,8 @@ pub(super) const MAX_PAGE_ROWS: usize = 4096;
 pub(super) const MAX_ROW_BYTES: usize = 64 * 1024;
 pub(super) const MAX_FIELD_BYTES: usize = 4096;
 pub(super) const MAX_UNFINISHED: usize = 100_000;
+pub(super) const MAX_RESULT_DOCUMENTS: usize = 8192;
+pub(super) const MAX_RESULT_REFUSALS: usize = 5;
 
 pub(super) fn resource(resource: &'static str, requested: usize, limit: usize) -> CrawlError {
     CrawlError::Resource {

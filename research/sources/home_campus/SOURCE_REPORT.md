@@ -120,3 +120,53 @@ the published rows are out of scope; NJ's section carries no coach rows at all. 
 and then flagged, a later ~60-request burst was refused, and two concurrent runs (~2 rps aggregate)
 re-armed it at 18:04, so collection for this host runs at 0.5 rps per run and resumes from the fetch
 cache. No national census claim follows from this report.
+
+## 2026-10-12 coach-lane qualification
+
+The durable California plan keeps `home_campus` sweepable, but its coach obligation now records
+`Blocked` with `ca_missing_coach_sources`, not a terminal arm. The historical
+`var/home-campus-CA-20261004/pass2.log` has 1,717 schools and 6,758 email-bearing rows; its
+SHA-256 is `b1658ef1f62f9373fca3b4a1c4bd24b6c87a1e46818bea3ead435374c9da5cd4`.
+Those aggregate counts contain no page-bound role, tenure or mailbox claim and execute no
+obligation for a fresh run. The obligation retains that precise deficiency and capture reference
+in `arm_basis`; historical counts are not imported as current completion.
+
+New Jersey keeps `home_campus` sweepable and records `nj_missing_coach_sources`. The held
+section-12 directory admits 452 school buttons, but the captured Abraham Clark details publish
+empty coach and faculty arrays. The retained details fixture's SHA-256 is
+`6c63554f9f89ccb1af1c30369e987295da327e3f187d3cbdc31a64dacbc7d9b6`.
+The later successful school-inventory walk is distinct from the earlier 405 attempt; neither
+proves current TF/XC mailbox coverage. A refused lane is not accepted by an operator merely
+because it is recorded, and both states remain coach-owed under jpx4.1.
+
+No live crawl was performed for this qualification. Any later execution uses the existing
+origin admission, sequential section/detail collector and per-state school limit; no separate
+CA/NJ fan-out, fallback or source budget is introduced.
+
+Acceptance commands and their observed outputs are handed to Main, the evidence owner for this
+round. Close/reopen scenarios retain the obligation table and serialized jurisdiction decision,
+rebind without changing the decision, and leave the coach table empty. They certify only what
+their executed results demonstrate, not a live Restate restart or a national acquisition.
+
+## Florida coach-lane qualification — 2026-10-12
+
+The aggregate `var/home-campus-CA-20261004/fl.log` is historical execution
+evidence, not a per-school contact capture. `jq -e
+'{adapter,rows,with_email,notes,has_contact_rows:has("coaches"),has_tenure:has("tenure"),has_source_url:has("source_url")}'
+var/home-campus-CA-20261004/fl.log` printed 880 school rows, 3677 email rows,
+and `false` for all three provenance fields. `sha256sum` printed
+`34d59e4eb1529b93a64be617e3d84847838c61d9ae86fe2b4a89bbedba0129b9`.
+Hashing this log cannot establish a school's current role/tenure/mailbox claim.
+The maintained Bolles fixture publishes contacts, but the current mapper does
+not attach page-bound current-tenure evidence to them.
+
+Route selection reuses `home_campus`; `fl_missing_coach_sources` records the
+exact Florida work-order missing set rather than treating the log as closure.
+The refusal is not owner-accepted and the lane remains owed.
+No historical store was opened, no network request was made, and no current
+source accessibility or national-run completion is certified.
+
+Focused adapter command:
+`env -u CI tools/moon-local run pipeline:tests-scoped -- -p census-crawl -E 'test(ciac::) or test(home_campus::) or test(aia::) or test(milesplit::)'`
+ran 242 tests, all passed (Moon task `240762b6`), including the Florida
+880-school directory and Bolles published-contact fixture cases.

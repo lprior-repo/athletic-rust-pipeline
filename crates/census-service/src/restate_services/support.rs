@@ -18,6 +18,17 @@ impl From<StoreError> for JobError {
     fn from(error: StoreError) -> Self {
         let message = error.to_string();
         match error {
+            StoreError::RecordConflict { .. } | StoreError::RecordState { .. } => {
+                Self::Terminal { message }
+            }
+            StoreError::RecordRevision { .. }
+            | StoreError::RecordMissing { .. }
+            | StoreError::LeaseMismatch { .. }
+            | StoreError::LeaseExpired { .. }
+            | StoreError::LeaseLost { .. }
+            | StoreError::CurrentRootChanged { .. }
+            | StoreError::PublicationDurabilityUncertain { .. }
+            | StoreError::JournalNotReady { .. } => Self::Transient { message },
             StoreError::Open { .. }
             | StoreError::Flush { .. }
             | StoreError::Read { .. }
@@ -33,12 +44,32 @@ impl From<StoreError> for JobError {
             | StoreError::TooManyRows { .. }
             | StoreError::JournalTooLarge { .. }
             | StoreError::CounterOverflow
+            | StoreError::ReferenceAccountingIncomplete
             | StoreError::Refused { .. }
             | StoreError::Identity(_)
             | StoreError::FormatNewer { .. }
             | StoreError::MigrationRequired { .. }
             | StoreError::SchemaUnknown { .. }
             | StoreError::NotGenerationTable { .. }
+            | StoreError::RowTooLarge { .. }
+            | StoreError::BudgetExceeded { .. }
+            | StoreError::NeedsPartition { .. }
+            | StoreError::UnsupportedUnitSize { .. }
+            | StoreError::JournalManifestMissing { .. }
+            | StoreError::JournalDescriptor { .. }
+            | StoreError::JournalIndexMissing { .. }
+            | StoreError::JournalIndexExtra { .. }
+            | StoreError::JournalChunkMissing { .. }
+            | StoreError::JournalChunkExtra { .. }
+            | StoreError::JournalChunkLength { .. }
+            | StoreError::JournalChunkDigest { .. }
+            | StoreError::JournalObjectDigest { .. }
+            | StoreError::CorruptArtifact { .. }
+            | StoreError::UnsupportedFormat { .. }
+            | StoreError::VerificationFailed { .. }
+            | StoreError::CounterExhausted
+            | StoreError::DiskBudgetExceeded { .. }
+            | StoreError::InputMoved { .. }
             | StoreError::Invariant { .. } => Self::Terminal { message },
         }
     }

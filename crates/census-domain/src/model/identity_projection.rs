@@ -13,6 +13,7 @@ mod components;
 pub struct AthleteIdentityProjection {
     statuses: BTreeMap<AthleteCandidateId, IdentityStatus>,
     aliases: BTreeMap<AthleteCandidateId, AthleteCandidateId>,
+    transitions: Vec<IdentityAliasTransition>,
     rejected_applications: BTreeMap<IdentityDecisionIssue, u64>,
 }
 
@@ -33,10 +34,59 @@ impl AthleteIdentityProjection {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct IdentityAliasTransition {
+    decision_id: String,
+    subject: AthleteCandidateId,
+    canonical: AthleteCandidateId,
+}
+
+impl IdentityAliasTransition {
+    pub fn decision_id(&self) -> &str {
+        &self.decision_id
+    }
+
+    pub fn subject(&self) -> &str {
+        self.subject.as_str()
+    }
+
+    pub fn prior_canonical_id(&self) -> &str {
+        self.subject.as_str()
+    }
+
+    pub fn canonical_id(&self) -> &str {
+        self.canonical.as_str()
+    }
+}
+
+impl AthleteIdentityProjection {
+    pub fn alias_transitions(&self) -> &[IdentityAliasTransition] {
+        &self.transitions
+    }
+
+    pub fn replay_without(
+        index: AthleteIdentityIndex,
+        cases: &[ReviewCase],
+        verdicts: &[ReviewVerdictRecord],
+        decisions: &[AppliedAthleteIdentity],
+        excluded: &str,
+    ) -> Result<Self, IdentityError> {
+        if !decisions.iter().any(|decision| decision.id == excluded) {
+            return Err(IdentityError::UnknownDecision(excluded.to_owned()));
+        }
+        let mut builder = IdentityProjectionBuilder::new(index, cases, verdicts)?;
+        for decision in decisions.iter().filter(|decision| decision.id != excluded) {
+            builder.consider(decision)?;
+        }
+        builder.finish()
+    }
+}
+
 pub struct IdentityProjectionBuilder<'a> {
     pub(super) index: AthleteIdentityIndex,
     pub(super) reviews: ReviewBindings<'a>,
     aliases: IdentityAliases,
+    transitions: Vec<IdentityAliasTransition>,
     different: Vec<Vec<AthleteCandidateId>>,
     rejected: BTreeMap<IdentityDecisionIssue, u64>,
 }
@@ -53,6 +103,7 @@ impl<'a> IdentityProjectionBuilder<'a> {
             index,
             reviews,
             aliases: IdentityAliases::default(),
+            transitions: Vec::new(),
             different: Vec::new(),
             rejected: BTreeMap::new(),
         })
@@ -70,13 +121,7 @@ impl<'a> IdentityProjectionBuilder<'a> {
         }
         match decision.kind {
             AppliedIdentityKind::SourceBound => {}
-            AppliedIdentityKind::SamePerson => {
-                if let Some(first) = decision.members.first() {
-                    for member in decision.members.iter().skip(1) {
-                        self.aliases.join(&first.subject, &member.subject)?;
-                    }
-                }
-            }
+            AppliedIdentityKind::SamePerson => self.join_members(decision)?,
             AppliedIdentityKind::DifferentPerson => self.different.push(
                 decision
                     .members
@@ -94,6 +139,24 @@ impl<'a> IdentityProjectionBuilder<'a> {
             fact.authorized = true;
         }
         Ok(None)
+    }
+
+    fn join_members(&mut self, decision: &AppliedAthleteIdentity) -> Result<(), IdentityError> {
+        let Some(first) = decision.members.first() else {
+            return Ok(());
+        };
+        for member in decision.members.iter().skip(1) {
+            if let Some((subject, canonical)) =
+                self.aliases.join(&first.subject, &member.subject)?
+            {
+                self.transitions.push(IdentityAliasTransition {
+                    decision_id: decision.id.clone(),
+                    subject,
+                    canonical,
+                });
+            }
+        }
+        Ok(())
     }
 
     pub(super) fn decision_issue(
@@ -114,9 +177,15 @@ impl<'a> IdentityProjectionBuilder<'a> {
         }))
     }
 
-    pub fn finish(self) -> Result<AthleteIdentityProjection, IdentityError> {
+    pub fn finish(mut self) -> Result<AthleteIdentityProjection, IdentityError> {
         let mut aliases = self.aliases.flattened()?;
         let conflicts = self.conflicting_roots(&aliases)?;
+        self.transitions.retain(|transition| {
+            let root = aliases
+                .get(transition.subject.as_str())
+                .map_or(&transition.subject, |root| root);
+            !conflicts.contains(root)
+        });
         aliases.retain(|_, root| !conflicts.contains(root));
         let mut rejected = self.rejected;
         if !conflicts.is_empty() {
@@ -129,6 +198,7 @@ impl<'a> IdentityProjectionBuilder<'a> {
             statuses,
             aliases,
             rejected_applications: rejected,
+            transitions: self.transitions,
         })
     }
 }

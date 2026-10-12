@@ -6,8 +6,10 @@ use census_domain::model::SchoolYear;
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::labels;
-use crate::workbook::recruiting::coalesce;
-use crate::workbook::recruiting::contact::{self, attach_research, SchoolContacts};
+use crate::workbook::recruiting::bounded::{
+    bounded_claims, bounded_contacts, WORKBOOK_GROUP_BUDGET,
+};
+use crate::workbook::recruiting::contact::{attach_research, SchoolContacts};
 
 pub(super) const DATA_ROWS_PER_SHEET: usize = 1_000_000;
 
@@ -44,14 +46,19 @@ impl<'a> Expectations<'a> {
     pub(super) fn of(dataset: &'a ExportDataset, options: &Options) -> ReportResult<Self> {
         let school_year = options.school_year;
         let derivation = Derivation::of(dataset, options.scope, options.grad_year);
+        crate::grouping::Admission::new("recruiting schools").rows(derivation.schools())?;
         let school_address = super::postal::athlete_address_index(dataset, derivation.athletes())?;
         let bests = selected_bests(dataset, options);
         let schools = schools(derivation.schools());
         let pr_index = index(&bests);
         let tallies = tallies(&derivation);
-        let mut contacts = contact::contacts(derivation.coach_observations(), school_year);
+        let mut contacts = bounded_contacts(
+            derivation.coach_observations(),
+            school_year,
+            WORKBOOK_GROUP_BUDGET,
+        )?;
         attach_research(&mut contacts, derivation.schools(), school_year);
-        let coach_claims = coalesce::claims(derivation.coach_observations());
+        let coach_claims = bounded_claims(derivation.coach_observations(), WORKBOOK_GROUP_BUDGET)?;
         let coach_spellings =
             crate::workbook::recruiting::coach_spelling::spellings(derivation.coach_observations());
         Ok(Self {

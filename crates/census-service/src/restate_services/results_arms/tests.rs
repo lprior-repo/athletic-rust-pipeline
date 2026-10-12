@@ -5,6 +5,9 @@ use census_domain::model::SourceMeetRef;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+#[path = "tests/ihsa.rs"]
+mod ihsa;
+
 fn scope(year: u16) -> TestResult<HistoricalStageScope> {
     Ok(HistoricalStageScope {
         jurisdiction: UsJurisdiction::Wisconsin,

@@ -35,6 +35,21 @@ pub fn validate_concurrency(max_concurrent: usize) -> Result<usize, ConcurrencyT
     Ok(max_concurrent)
 }
 
+fn configure_stages(region: &Spawner, max_concurrent: usize) -> Result<(), ConcurrencyTooLarge> {
+    region
+        .coordinator()
+        .configure_stages(
+            u64::try_from(max_concurrent).map_err(|_| ConcurrencyTooLarge {
+                value: max_concurrent,
+                ceiling: MAX_ENDPOINT_CONCURRENCY,
+            })?,
+        )
+        .map_err(|_| ConcurrencyTooLarge {
+            value: max_concurrent,
+            ceiling: MAX_ENDPOINT_CONCURRENCY,
+        })
+}
+
 #[tracing::instrument(skip_all, fields(max_concurrent))]
 pub fn build_endpoint(
     store: Arc<Store>,
@@ -45,9 +60,14 @@ pub fn build_endpoint(
 ) -> Result<Endpoint, ConcurrencyTooLarge> {
     let max_concurrent = validate_concurrency(max_concurrent)?;
     let clock: Arc<dyn Clock> = Arc::new(census_store::clock::SystemClock);
-    let load = Arc::new(Semaphore::new(max_concurrent));
-    let jobs = Jobs::new(Arc::clone(&store), load, Arc::clone(&region));
-    let jurisdiction = JurisdictionCensus::new(Arc::clone(&store), Arc::clone(&clock), uses_lane);
+    configure_stages(&region, max_concurrent)?;
+    let jobs = Jobs::new(Arc::clone(&store), Arc::clone(&region));
+    let jurisdiction = JurisdictionCensus::new(
+        Arc::clone(&store),
+        Arc::clone(&clock),
+        uses_lane,
+        Arc::clone(&region),
+    );
     let mut builder = Endpoint::builder()
         .bind(census_service(Census::new(
             Arc::clone(&store),
@@ -69,9 +89,12 @@ pub fn build_endpoint(
             Arc::clone(&clock),
             Arc::clone(&region),
         )))
-        .bind(census_service(TeamsSource::new(jurisdiction.clone(), jobs)))
+        .bind(census_service(TeamsSource::new(
+            jurisdiction.clone(),
+            jobs.clone(),
+        )))
         .bind(census_service(jurisdiction))
-        .bind(census_service(NationalCensus::new(clock)));
+        .bind(census_service(NationalCensus::new(clock, jobs)));
     if let Some(settings) = serves_lane {
         builder = builder.bind(BrowserSession::new(settings, Arc::new(SystemClock)));
     }

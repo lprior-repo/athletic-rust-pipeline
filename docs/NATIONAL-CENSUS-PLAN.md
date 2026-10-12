@@ -116,6 +116,71 @@ digests, coverage and PR winners. Flush and independently verify before atomic f
 Failed/stale exporters retain the previous valid bundle. Define spill, MVCC, receipt and old-generation
 retention with explicit resource budgets; no naked live-directory copy or unbounded memory cache.
 
+### Workbook publication fencing and recovery
+
+The workbook publisher persists a request keyed by canonical publication namespace, frozen input
+generation and recipe. Its expected `current` root is captured on the first attempt and is never
+refreshed by a failed compare-and-set. `current` must be an owned relative
+`generations/<lowercase-sha256>` symlink selecting a real, independently verified directory.
+Rendering, artifact hashing, semantic readback, bottom-up file/directory finalization, immutable
+no-replace installation and generation-directory fsync run outside both publication fences. Open
+directory read pins retain the verified bundles while the publisher makes its small fenced writes.
+Managed bundles receive full frozen-input, semantic sidecar and workbook verification before
+installation. Publication and recovery pins recheck their exact manifest, inventory and artifact
+digests against the immutable generation identity without reopening a second complete dataset.
+Standalone readback and sealing still perform semantic verification.
+
+The lock order is **namespace publication lock → append/input fence → Intent SyncData commit →
+same-filesystem atomic symlink rename → publication-directory fsync → Published and receipt
+SyncData commit**. No path acquires those locks in reverse order. The input fence binds lease epoch,
+store/run lineage, frozen-input token and recipe; it compares the captured evidence/derived
+generations and the small run-manifest binding rather than hashing tables while locked. This is a
+conservative aggregate-generation fence: a dedicated audited per-input-table semantic-revision API
+is not claimed. The full input digest is checked against a captured snapshot before rendering and
+again after rendering, outside both fences.
+The run-manifest digest is also captured outside both locks. `Store::bind_run` / `run::write`
+permit only the initial absent-to-bound transition and refuse changes to an existing binding.
+Consequently the append-fenced check compares that preflight digest with the persisted request and
+checks existence of the existing `run-manifest` meta key: it detects a first binding racing preflight
+without rereading or hashing even a large run manifest while fenced. This depends on that immutable
+binding contract; a future mutable run API must supply its own audited revision rather than weakening
+the guard.
+The frozen-input token binds store identity, semantic input generation, run and cohort, not the
+physical snapshot sequence. Publication bookkeeping may advance that sequence without changing
+the input. A render interrupted before Intent can therefore rebuild from the same semantic input
+on restart without refreshing the persisted expected root. A Requested record must pass the input
+fence before its first Intent even when a verified desired bundle is already visible.
+Publication writes do not change the input counters. The measured `critical_section_us` tracing
+field includes lock acquisition, recovery's small state writes and publication fsync/receipt costs;
+these operations are not described as free.
+
+Intent is **not** a success receipt. The gn1j output/receipt coupling is satisfied by durable Intent,
+explicit uncertainty and the recovery matrix, not by claiming that Fjall and the filesystem share
+one fused transaction. After a successful rename, any directory-fsync or receipt failure returns
+`PublicationDurabilityUncertain`, retains Intent and both generations, and never rolls back a
+visible verified bundle. A successful reply names the actual receipted bundle through its canonical
+generation workbook path, including historical idempotent success.
+
+Recovery independently validates and pins retained roots outside the locks, then checks the pointer
+and active record again under the namespace lock before any other publisher proceeds:
+
+| Durable state and selected root | Typed result and policy |
+|---|---|
+| Intent; desired verified bundle selected | Fsync publication directory, commit Published + receipt; `DesiredPublished` |
+| Intent; expected root still selected | Recheck input/lease; retry the same Intent (`ExpectedRetried`) or mark it `Superseded` (`ExpectedSuperseded`) |
+| Intent; another verified root selected | Do not overwrite it; mark the historical Intent Superseded; `AnotherRootSelected` |
+| Pointer missing, corrupt or not owned | Validate retained roots, preserve all evidence; `RecoveryRequired`; operator must explicitly repair the pointer, no automatic choice |
+| Published receipt; later verified root selected | `HistoricalSuccess`; never restore the historical root |
+| Published receipt; receipted bundle missing/corrupt | Persist an integrity incident, preserve the bad bytes and old accepted output; `IntegrityIncident`; publication and sealing remain blocked until explicit operator remediation |
+
+The first filesystem qualification is Linux on a local Unix filesystem supporting safe no-replace
+directory installation, exclusive/shared file locks, relative symlinks, same-filesystem atomic
+rename and file/directory fsync. Unsupported filesystem operations fail closed. Network filesystems,
+cross-filesystem publication and Windows have no copy, delete, or no-op-fsync fallback. Cold backups
+must include publication requests, active intents, receipts, retained bundles and integrity-incident
+evidence; the new records live in the existing Fjall meta keyspace, and directory evidence remains
+inside the publication root.
+
 ### Required workbook information
 
 These are semantic requirements, not a claim that today's sheet/column layout implements them:
@@ -363,3 +428,113 @@ identity/cohort/contact correctness, exact mark precision and affiliation, compl
 recoverable shared export inputs, bounded derivation, full artifact verification and atomic promotion.
 A completed large export is timing/output evidence, not proof of those invariants. Historic seals,
 parser replays and narrower fixture passes do not certify the fresh national run.
+
+## 11. Coach-lane obligation semantics — 49 rows
+
+The run scope has exactly one durable coach-lane obligation row per jurisdiction, per season and per
+revision, stored in the derived-map table `coach_lanes` (`Table::CoachLanes`) under the row id
+`coach_lane:<state code>:<season>:<revision>`. A lane is not a source sweep, a source outcome or a
+contacts stage. It is the per-jurisdiction performance obligation to either produce per-school coach
+role/tenure/mailbox evidence or to carry an owner-accepted refusal reason, and it stays owed until
+one of those two holds.
+
+| Field group | Required content |
+|---|---|
+| Identity | Row id, jurisdiction, season, revision |
+| Arm | Selected arm name and the recorded basis for selecting it |
+| Status | One typed status from the lattice below |
+| Refusal | Source reference, reason and observed date when a source outcome or a source plan refused |
+| Acceptance | Actor, event and date of the explicit acceptance that closed the lane |
+| Evidence | Per-school output/evidence digest, school and contact counts, observation date and optional source URL when armed |
+| Resolution | Role, tenure and mailbox resolution state, retrieval date, freshness days and evidence detail |
+
+The status lattice is total. `pending`, `blocked`, `failed`, `exhausted`, `successful_empty` and
+`complete_with_gaps` are non-terminal and remain owed; `armed` and `accepted_refusal` are the only
+terminal states. A row leaves the non-terminal set only by arming with per-school evidence or by
+accepting a recorded refusal. A coarse contacts stage maps onto recorded, non-terminal statuses
+(`complete`/`partial` to `complete_with_gaps`, `terminal`/`interrupted` to `blocked`, `exhausted` to
+`exhausted`, `handler_failed` to `failed`) and never onto a terminal one. Source outcomes map the
+same way: a completed run with zero retained rows records `successful_empty`, a terminal or
+interrupted source records `blocked`, an exhausted source records `exhausted`, and a source plan
+that refuses a source records `blocked` with the plan's refusal reason.
+
+Closure rule. A merely recorded outcome cannot close a lane: a source that completes with zero
+retained rows, a source plan that refuses a source, a blocked/exhausted/interrupted source, and a
+coarse contacts stage each record a candidate status and, when available, a refusal — nothing more.
+The durable jurisdiction object reports `coach_lane` under `owed` with the row's status and arm
+until the row is armed or its refusal carries an explicit acceptance. An `armed` row requires
+non-zero school and contact counts, a 64-hex output digest, a valid observation date and a valid
+resolution state. An `accepted_refusal` row requires a recorded refusal with a non-empty reason plus
+the acceptance actor, event and date, and carries no evidence.
+
+Matrix requirement. Every run closes with exactly 49 rows, each `armed` or `accepted_refusal`; a
+missing row, a duplicate row, a row outside `CENSUS_SCOPE`, a row that is still non-terminal, an
+armed row without per-school evidence and a refusal without a reason each fail. This matrix is the
+strongest form of "all 49 obligations terminal" in stage 7, and it is distinct from coverage or
+population accounting: a closed lane is an obligation verdict, not evidence that a state's schools
+or athletes were fully observed.
+
+### 11.1. Group A coach-lane rows — implemented with held evidence, 2026-10-11
+
+Per-state lane modules live in `crates/census-service/src/restate_services/wire/coach_lanes/`. `bind`
+records each row's missing-source refusal in the durable `SourcePlan` refused set and returns the
+obligation stored on `JurisdictionState::coach_lane`; an armed row must name a slug the plan sweeps,
+and a capture older than 400 days at lane creation records a `blocked` refusal instead of arming.
+These rows are implemented against held evidence with unit tests, not live-run evidence.
+
+| State | Row | Arm | Evidence | Held capture | sha256 | Freshness |
+|---|---|---|---|---|---|---|
+| CA | `armed` (role derived, tenure unknown, mailbox published) | `home_campus` | 1717 schools / 6758 coach rows, all with email, 0 errors | `var/home-campus-CA-20261004/pass2.log` | `b1658ef1f62f9373fca3b4a1c4bd24b6c87a1e46818bea3ead435374c9da5cd4` | 7 days at 2026-10-11 |
+| FL | `armed` (role derived, tenure unknown, mailbox published; capture store holds no request metadata, so the origin is unverified and no source URL is claimed) | `home_campus` | 880 schools / 3677 coach rows, all with email, 0 errors | `var/home-campus-CA-20261004/fl.log` | `34d59e4eb1529b93a64be617e3d84847838c61d9ae86fe2b4a89bbedba0129b9` | 7 days at 2026-10-11 |
+| NY | recorded refusal, still owed until an owner acceptance exists | `milesplit` | work-order true-missing set recorded as `ny_missing_coach_sources` | — | — | — |
+| TX | recorded refusal, still owed until an owner acceptance exists | `coach_contacts` | work-order true-missing set recorded as `tx_missing_coach_sources` | — | — | — |
+
+The freshness bound is exercised at both ends: 2027-11-08 (400 days) still arms, 2027-11-09 (401
+days) records the refusal. TX and NY close only through an explicit owner acceptance.
+
+### 11.2 Coach-lane rows — MO, OK, IA, MA, CT (CoachArmsC) — held evidence, 2026-10-11
+
+- CT `armed` — arm `ciac` (a wired teams arm and the plan's sweepable slug for CT); evidence is the retained capture `research/sources/coach-coverage-bundle-20261004/probes/ciac-fpsports/raw/directory-SchoolLevelID-1.adapter.body`, 673123 bytes, sha256 `a872654b3c9450a484c6f68ae75f9bd32c2523af0f7a2c118f8bb823f1cfc634`, retrieved_on 2026-10-04, 184 schools / 1033 coach rows, resolution published/current/directory-only (the directory publishes phone, not email); the row arms only while the capture is at most 400 days old (boundary 2027-11-08) and CT's remaining sources stay refused as `ct_missing_coach_sources`; module `wire/coach_lanes/ct.rs`, tests `coach_lane_ct_arms_on_the_retained_ciac_capture` and `coach_lane_ct_evidence_digest_is_the_sha256_of_the_capture` (the digest above is asserted byte-for-byte against the held file), `coach_lane_ct_arm_agrees_with_the_probe_manifest`, `coach_lane_ct_arm_is_wired_in_the_teams_arms_table`, `coach_lane_ct_true_missing_reason_is_the_work_order_line`, `coach_lane_ct_stale_capture_records_a_blocked_refusal_without_closing`.
+- MO `blocked` with recorded refusal, terminal as `accepted_refusal` on the owner's explicit acceptance — arm `mtccca`; refusal `mo_missing_coach_sources` carries the work order's line for Missouri (`group-b.md:244`) verbatim; module `wire/coach_lanes/mo.rs`, tests `coach_lane_mo_records_the_work_order_true_missing_reason`, `coach_lane_mo_lane_records_the_refusal_without_closing_the_row`, `coach_lane_mo_owner_acceptance_closes_the_row`, `coach_lane_mo_lane_matches_the_shared_registry_signature`.
+- OK `blocked` with recorded refusal, terminal as `accepted_refusal` on the owner's explicit acceptance — arm `ossaarankings`; refusal `ok_missing_coach_sources` carries the work order's line for Oklahoma (`group-b.md:272`) verbatim; module `wire/coach_lanes/ok.rs`, tests `coach_lane_ok_records_the_work_order_true_missing_reason`, `coach_lane_ok_lane_records_the_refusal_without_closing_the_row`, `coach_lane_ok_owner_acceptance_closes_the_row`, `coach_lane_ok_lane_matches_the_shared_registry_signature`.
+- IA `blocked` with recorded refusal, terminal as `accepted_refusal` on the owner's explicit acceptance — arm `bound`; refusal `ia_missing_coach_sources` carries the work order's line for Iowa (`group-b.md:301`) verbatim; module `wire/coach_lanes/ia.rs`, tests `coach_lane_ia_records_the_work_order_true_missing_reason`, `coach_lane_ia_lane_records_the_refusal_without_closing_the_row`, `coach_lane_ia_owner_acceptance_closes_the_row`, `coach_lane_ia_lane_matches_the_shared_registry_signature`.
+- MA `blocked` with recorded refusal, terminal as `accepted_refusal` on the owner's explicit acceptance — arm `mstca`; refusal `ma_missing_coach_sources` carries the work order's line for Massachusetts (`group-b.md:356`) verbatim; module `wire/coach_lanes/ma.rs`, tests `coach_lane_ma_records_the_work_order_true_missing_reason`, `coach_lane_ma_lane_records_the_refusal_without_closing_the_row`, `coach_lane_ma_owner_acceptance_closes_the_row`, `coach_lane_ma_lane_matches_the_shared_registry_signature`.
+
+### 11.3 Group A coach-lane rows — MI, WA, AZ, VA, NJ, IN, LA (CoachArmsB) — held evidence, 2026-10-11
+
+All seven rows record a `blocked` refusal and stay owed until an explicit owner acceptance exists; none arms, because no wired coach arm for these states retains per-school coach role/mailbox evidence and each held source is school-level, name-only or empty. Arms and refusal slugs: MI `coach_contacts` / `mi_missing_coach_sources`; WA `milesplit` / `wa_missing_coach_sources`; AZ `aia` / `az_missing_coach_sources`; VA `milesplit` / `va_missing_coach_sources`; NJ `home_campus` / `nj_missing_coach_sources`; IN `coach_contacts` / `in_missing_coach_sources`; LA `milesplit` / `la_missing_coach_sources`. Each refusal reason is the byte-exact `group-a.md` "True missing" line for that state, asserted against the work-order file by each module's `coach_lane_<st>_true_missing_reason_is_the_work_order_line` test, and each row is registered in `wire/coach_lanes.rs` with `kind: RefusalKind::EngineeringGap` so the slug also lands in the durable `SourcePlan` refused set.
+
+- MI `blocked` with recorded refusal — arm `coach_contacts` (the registry's Michigan coach-mailbox surface, refused by the plan as an engineering gap); the held MHSAA bodies are school-level coaching-tab HTML and the MITCA probe rows are name-only, so no retained body carries per-school coach mailboxes; module `wire/coach_lanes/mi.rs`, tests `coach_lane_mi_records_the_true_missing_refusal_without_closing`, `coach_lane_mi_true_missing_reason_is_the_work_order_line`, `coach_lane_mi_refusal_is_recorded_in_the_durable_plan_path`, `coach_lane_mi_arm_is_not_claimed_sweepable_by_an_arming_lane`.
+- WA `blocked` with recorded refusal — arm `milesplit` (the only Washington surface the plan sweeps with names); the held finalforms rows carry athletic-director names without coach emails and the association bodies are directory/state-partition links; module `wire/coach_lanes/wa.rs`, tests `coach_lane_wa_records_the_true_missing_refusal_without_closing`, `coach_lane_wa_true_missing_reason_is_the_work_order_line`, `coach_lane_wa_refusal_is_recorded_in_the_durable_plan_path`, `coach_lane_wa_arm_is_the_wired_milesplit_source`.
+- AZ `blocked` with recorded refusal — arm `aia` (wired and sweepable for Arizona); the held AIA search JSON is school-level with no per-school coach rows, `extract/158-aia-json` is empty and the authenticated admin email directory is restricted; module `wire/coach_lanes/az.rs`, tests `coach_lane_az_records_the_true_missing_refusal_without_closing`, `coach_lane_az_true_missing_reason_is_the_work_order_line`, `coach_lane_az_refusal_is_recorded_in_the_durable_plan_path`, `coach_lane_az_arm_is_the_wired_aia_source`.
+- VA `blocked` with recorded refusal — arm `milesplit`; the held VDOE and VISAA bodies are school lists only and the VHSL `qualified.json` body is partial; module `wire/coach_lanes/va.rs`, tests `coach_lane_va_records_the_true_missing_refusal_without_closing`, `coach_lane_va_true_missing_reason_is_the_work_order_line`, `coach_lane_va_refusal_is_recorded_in_the_durable_plan_path`, `coach_lane_va_arm_is_the_wired_milesplit_source`.
+- NJ `blocked` with recorded refusal — arm `home_campus` (wired and sweepable for New Jersey); the held `var/home-campus-NJ-20261004/run.log` records processed 0 schools (0 coach rows, 0 with email, 1 error: http status 405 for the cifsshome directory endpoint), the NJSIAA bodies are AD and school rows and the GMC TCA extract is effectively empty; module `wire/coach_lanes/nj.rs`, tests `coach_lane_nj_records_the_true_missing_refusal_without_closing`, `coach_lane_nj_true_missing_reason_is_the_work_order_line`, `coach_lane_nj_refusal_is_recorded_in_the_durable_plan_path`, `coach_lane_nj_arm_is_the_wired_home_campus_source`.
+- IN `blocked` with recorded refusal — arm `coach_contacts` (refused by the plan as an engineering gap); `extract/SRC-114/rows.csv` is a 108 B header-only body, the Indiana DOE extract is a school roster without coach columns and the IATCCC tap retained robots only; module `wire/coach_lanes/in.rs`, tests `coach_lane_in_records_the_true_missing_refusal_without_closing`, `coach_lane_in_true_missing_reason_is_the_work_order_line`, `coach_lane_in_refusal_is_recorded_in_the_durable_plan_path`, `coach_lane_in_arm_is_not_claimed_sweepable_by_an_arming_lane`.
+- LA `blocked` with recorded refusal — arm `milesplit`; the held LHSAA registered-coaches extract (SRC-215, 2025-09-22) carries XC coach names without mailboxes for the completed season and the coaches-directory PDF route (SRC-212) is a documented text-extraction refusal; module `wire/coach_lanes/la.rs`, tests `coach_lane_la_records_the_true_missing_refusal_without_closing`, `coach_lane_la_true_missing_reason_is_the_work_order_line`, `coach_lane_la_refusal_is_recorded_in_the_durable_plan_path`, `coach_lane_la_arm_is_the_wired_milesplit_source`.
+
+### 11.4 Group C coach-lane rows — OR, SD, UT, NV, VT (CoachArmsD) — held evidence, 2026-10-11
+
+Modules live in `crates/census-service/src/restate_services/wire/coach_lanes/` and are registered in the shared
+`LANES` table (`bind` records each row's missing-source refusal in the durable `SourcePlan` refused set with
+`RefusalKind::EngineeringGap` and returns the obligation stored on `JurisdictionState::coach_lane`; an armed row must
+name a slug the plan sweeps, and a capture older than 400 days at lane creation records a `blocked` refusal instead of
+arming). These rows are implemented against held evidence with unit tests, not live-run evidence.
+
+- SD `armed` — arm `bound` (a wired teams arm, `TEAMS_ARMS` → `TeamsArm::Bound`, and the plan's sweepable South Dakota slug); evidence `crates/census-crawl/tests/fixtures/bound/staff-yankton-sd-girls-xc.html`, 49,944 bytes, sha256 `3bdab3bd25bbc3ae5ff06c308922b7bd8480a303877abbfcd3aecf32cd5dc93f`, with the Yankton boys (49,884 B, `55f0a5027ed504c15a2003c8a0eb3de48cee35cff9f615c05ca9972f9d076ccc`), White River girls (49,705 B, `d8d0353e15399fae06426ff15d7ed27834b59be0f255003bc1d3eb42967064f5`) and Faith boys empty-staff (48,167 B, `c4a3d7b76a7d4bebd45ca04e039d6071b7f26f35191fed845ee57d37c76efcf2`) captures enumerated in the resolution note; 3 schools / 6 coach rows (Head Coach and Assistant Coach rows across the Yankton and White River pages), retrieved_on 2026-10-07 (the crawl cache records no fetch timestamp, so the documented offline replay date is claimed), resolution published/current/unpublished because the GoBound staff table publishes role and name but no mailbox; the capture's provenance table in `crates/census-crawl/tests/fixtures/bound/SOURCE.md` carries the same bytes and digests; the row arms only while the capture is at most 400 days old (boundary 2027-11-11) and the remaining work-order gaps stay refused as `sd_missing_coach_sources`; module `wire/coach_lanes/sd.rs`, tests `coach_lane_sd_arms_on_the_retained_bound_captures`, `coach_lane_sd_capture_digests_match_the_held_fixtures`, `coach_lane_sd_arm_is_wired_into_the_plan_and_the_engine_arm_table`, `coach_lane_sd_stale_capture_records_a_blocked_refusal_without_closing`, `coach_lane_sd_remainder_is_the_work_order_true_missing`, `coach_lane_sd_refusal_is_recorded_in_the_durable_plan_path`.
+- UT `armed` — arm `uhsaa` (a wired teams arm, `TEAMS_ARMS` → `TeamsArm::UhsaaDirectory`, and the plan's sweepable Utah slug); evidence `crates/census-crawl/tests/fixtures/uhsaa/directory.html`, 484,909 bytes, sha256 `3ed900a99bd11aa577bf15fe975a0920748780756c94ec19f04c28a214152d41` (324 anchors over 162 distinct school ids), with the Alta (458,367 B, `6cf4845fab4f61e2a13322411764547d0e344b63e7ee55b71c97008a8e7418bf`), Murray (456,574 B, `fa37204cfce4e2db4db79d8c7742e52db1903f06bad2c519e435d55025f45d42`) and Herriman (456,554 B, `aba002e9700ac87449f8f65cbabc192769cb1fccc5912aa3200b2371628b6367`) profile captures enumerated in the resolution note; 162 schools / 12 per-sport TF/XC coach rows (five coaches, XC and track for boys and girls), retrieved_on 2026-10-04 per `crates/census-crawl/tests/fixtures/uhsaa/SOURCE.md`, resolution published/current/published (the profiles carry `mailto:` addresses); the row arms only while the capture is at most 400 days old (boundary 2027-11-08) and the remaining work-order gaps stay refused as `ut_missing_coach_sources`; module `wire/coach_lanes/ut.rs`, tests `coach_lane_ut_arms_on_the_retained_uhsaa_captures`, `coach_lane_ut_capture_digests_match_the_held_fixtures`, `coach_lane_ut_arm_is_wired_into_the_plan_and_the_engine_arm_table`, `coach_lane_ut_stale_capture_records_a_blocked_refusal_without_closing`, `coach_lane_ut_remainder_is_the_work_order_true_missing`, `coach_lane_ut_refusal_is_recorded_in_the_durable_plan_path`.
+- OR `blocked` with recorded refusal, terminal as `accepted_refusal` on the owner's explicit acceptance — arm `coach_contacts` (the registry's Oregon coach surface, refused by the plan as an engineering gap: the 298-profile corpus lives in the prototype JSONL, not in a durable jurisdiction research frontier); refusal `or_missing_coach_sources` carries the work order's three Oregon true-missing bullets verbatim; module `wire/coach_lanes/or.rs`, tests `coach_lane_or_records_the_work_order_refusal_without_closing`, `coach_lane_or_refusal_is_recorded_in_the_durable_plan_path`, `coach_lane_or_accepted_refusal_closes_the_lane_with_the_explicit_event`, `coach_lane_or_registered_route_is_not_a_wired_arm`, `coach_lane_or_remainder_is_the_work_order_true_missing`.
+- NV `blocked` with recorded refusal, terminal as `accepted_refusal` on the owner's explicit acceptance — arm `niaa` (Nevada has no registered coach-capable descriptor at all; `niaa-coaches.html` was captured at 0 B and the Southern Nevada coach CSVs are extract artifacts); refusal `nv_missing_coach_sources` carries the work order's three Nevada true-missing bullets verbatim; module `wire/coach_lanes/nv.rs`, tests `coach_lane_nv_records_the_work_order_refusal_without_closing`, `coach_lane_nv_refusal_is_recorded_in_the_durable_plan_path`, `coach_lane_nv_accepted_refusal_closes_the_lane_with_the_explicit_event`, `coach_lane_nv_arm_route_admits_no_coach_lane`, `coach_lane_nv_remainder_is_the_work_order_true_missing`.
+- VT `blocked` with recorded refusal, terminal as `accepted_refusal` on the owner's explicit acceptance — arm `vpa` (no registered coach-capable descriptor; the held VPA bodies parse as tournament/scoreboard/alignment navigation and the only coach-ish lane is the 4.8 KB school-sites probe); refusal `vt_missing_coach_sources` carries the work order's three Vermont true-missing bullets verbatim; module `wire/coach_lanes/vt.rs`, tests `coach_lane_vt_records_the_work_order_refusal_without_closing`, `coach_lane_vt_refusal_is_recorded_in_the_durable_plan_path`, `coach_lane_vt_accepted_refusal_closes_the_lane_with_the_explicit_event`, `coach_lane_vt_arm_route_admits_no_coach_lane`, `coach_lane_vt_remainder_is_the_work_order_true_missing`.
+
+The freshness bound is exercised at both ends for the two armed rows: SD 2027-11-11 (400 days) still arms and 2027-11-12 (401 days) records the refusal; UT 2027-11-08 (400 days) still arms and 2027-11-09 (401 days) records the refusal. OR, NV and VT close only through an explicit owner acceptance (`accepted(season, revision, observed_on)` = record then `CoachLaneAcceptance { actor: "census-ops", event: "jpx4.accepted_refusal" }`); recording a refusal alone leaves the row owed.
+
+### 11.5 Coach-lane qualification correction — 2026-10-12
+
+NY, AZ, CT and FL retain nonterminal, named work-order refusals until explicit owner acceptance or a real
+qualified arm. CT's phone-only CIAC directory and FL's aggregate home_campus log do not supply per-school
+current role/tenure/mailbox proof; initial plan binding must not arm from either. CA never arms from the
+2026-10-04 pass2.log totals (1,717 schools / 6,758 email rows) or any historical count: those are capture
+evidence, not fresh-run closure evidence, so CA records the nonterminal `ca_missing_coach_sources` refusal
+with the historical path, hash and deficiency retained in `arm_basis`. Capture counts and historical hashes
+remain preserved but are never fresh-run closure evidence. Qualification and reopen commands live in the
+bead-close handoffs; current source limitations live in the owning `SOURCE_REPORT.md` files.

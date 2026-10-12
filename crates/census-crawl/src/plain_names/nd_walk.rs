@@ -48,30 +48,48 @@ pub(super) async fn visit(
         ),
         report,
     )?;
-    let coaches = project(ctx, report, (&url, &capture.fetched_at), body, &canonical.1)?;
+    let coaches = project(ctx, report, &capture, body, &canonical.1)?;
     Ok((written, coaches))
 }
 
 fn project(
     ctx: &AdapterContext<'_>,
     report: &mut AdapterReport,
-    source: (&str, &str),
+    source: &crate::net::FetchOutcome,
     body: &str,
     id: &census_domain::model::SchoolId,
 ) -> CrawlResult<usize> {
     let staff = match parse_nd_staff(body) {
         Ok(staff) => staff,
         Err(error) => {
-            fail(report, source.0, error)?;
+            fail(report, &source.url, error)?;
             return Ok(0);
         }
     };
-    let ads = staff
+    let ads = persist_administrators(ctx, report, source, id, &staff)?;
+    let offerings = match parse_nd_offerings(body) {
+        Ok(offerings) => offerings,
+        Err(error) => {
+            fail(report, &source.url, error)?;
+            return Ok(ads);
+        }
+    };
+    offerings
         .iter()
         .enumerate()
-        .try_fold(0usize, |written, (ordinal, entry)| {
-            let locator = format!("{}#staff={ordinal}", source.0);
-            let rows = nd_ad_coaches(std::slice::from_ref(entry), id, source.0, source.1);
+        .try_fold(ads, |written, (ordinal, offering)| {
+            let locator = format!("{}#offering={ordinal}", source.url);
+            let mut rows = nd_sport_coaches(
+                std::slice::from_ref(offering),
+                id,
+                &source.url,
+                &source.fetched_at,
+            );
+            crate::coach_directories::record_capture_appointments(
+                &mut rows,
+                source,
+                super::ND_ADAPTER_ID,
+            )?;
             persist(
                 ctx,
                 (super::ND_ADAPTER_ID, &locator),
@@ -80,20 +98,32 @@ fn project(
                 report,
             )
             .map(|rows| written.saturating_add(rows))
-        })?;
-    let offerings = match parse_nd_offerings(body) {
-        Ok(offerings) => offerings,
-        Err(error) => {
-            fail(report, source.0, error)?;
-            return Ok(ads);
-        }
-    };
-    offerings
+        })
+}
+
+fn persist_administrators(
+    ctx: &AdapterContext<'_>,
+    report: &mut AdapterReport,
+    source: &crate::net::FetchOutcome,
+    id: &census_domain::model::SchoolId,
+    staff: &[super::nd::NdStaffRole],
+) -> CrawlResult<usize> {
+    staff
         .iter()
         .enumerate()
-        .try_fold(ads, |written, (ordinal, offering)| {
-            let locator = format!("{}#offering={ordinal}", source.0);
-            let rows = nd_sport_coaches(std::slice::from_ref(offering), id, source.0, source.1);
+        .try_fold(0usize, |written, (ordinal, entry)| {
+            let locator = format!("{}#staff={ordinal}", source.url);
+            let mut rows = nd_ad_coaches(
+                std::slice::from_ref(entry),
+                id,
+                &source.url,
+                &source.fetched_at,
+            );
+            crate::coach_directories::record_capture_appointments(
+                &mut rows,
+                source,
+                super::ND_ADAPTER_ID,
+            )?;
             persist(
                 ctx,
                 (super::ND_ADAPTER_ID, &locator),

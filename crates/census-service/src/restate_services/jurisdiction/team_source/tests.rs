@@ -11,11 +11,13 @@ use census_store::Store;
 
 type TestResult = Result<(), Box<dyn Error>>;
 
+mod durable_attempts;
+pub(crate) mod national_resume;
 mod registration;
 mod registration_cancellation;
 mod settlement;
 
-fn request() -> Result<TeamsSourceRequest, Box<dyn Error>> {
+pub(super) fn request() -> Result<TeamsSourceRequest, Box<dyn Error>> {
     Ok(TeamsSourceRequest {
         jurisdiction: JurisdictionRequest {
             jurisdiction: UsJurisdiction::Ohio,

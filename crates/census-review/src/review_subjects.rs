@@ -16,13 +16,14 @@ pub(super) fn selected<T: Entity>(
     if ids.is_empty() {
         return Ok(rows);
     }
-    snapshot.for_each_merged(table, |row: T| {
-        if ids.contains(row.entity_id()) {
+    for id in ids {
+        if let Some(row) = snapshot.get_merged::<T>(table, id)? {
+            #[cfg(test)]
+            crate::review_intake::decoded()?;
             budget.charge(&row)?;
             rows.insert(row.entity_id().to_string(), row);
         }
-        Ok(())
-    })?;
+    }
     Ok(rows)
 }
 
@@ -46,6 +47,8 @@ pub(super) fn athletes(
     drop(subjects);
     let mut rows = Vec::new();
     snapshot.for_each_merged(Table::Athletes, |row: CanonicalAthlete| {
+        #[cfg(test)]
+        crate::review_intake::decoded()?;
         if keys.contains(&key(&row)) {
             budget.charge(&row)?;
             rows.push(row);

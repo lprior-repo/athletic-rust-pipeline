@@ -36,6 +36,8 @@ Accepted policy is not proof of implementation or successful execution.
 | [027](ADR-027-cold-backup-carries-store-relative-links.md) | A cold backup carries the store's relative links (the publication pointer included) as links and refuses escapes; the manifest records the link target and restore recreates it | Accepted 2026-10-07; implemented under `dtdq` |
 | [028](ADR-028-window-accounting-and-bounded-labels.md) | Window completion is counted exactly and only a bounded label ring is retained; identifier bytes are limited | Accepted 2026-10-07; implemented under `hfhk.39`/`hfhk.40`; clause 5 superseded by 029 |
 | [029](ADR-029-receipt-keyed-observation-credit.md) | Credited observations are keyed by the operation receipt and totalled per endpoint in one atomic batch; the object state mirrors the store total | Accepted 2026-10-08; closes `hfhk.40` |
+| [035](ADR-035-cbc-tls-acquisition-lane.md) | CBC-compatible acquisition lane for AEAD-incompatible hosts | Accepted 2026-10-10 |
+| [036](ADR-036-spec-20261010-decision-gates.md) | SPEC-20261010 owner gates a-g: test-profile limits with fail-closed refusal; 16 GiB incremental application-owned envelope; typed refusal for oversized identity components; streamed audit codec; typed refusal at sheet ceilings; immutable-conversion archive policy; inline-string-only XLSX profile | Accepted 2026-10-11; closes `zzq8`, `s0ly`, `ysru` |
 
 Changes record explicit supersession rather than silently rewriting prior decisions. Source-specific
 research and dated command results belong in their evidence references, not additional ADR copies.

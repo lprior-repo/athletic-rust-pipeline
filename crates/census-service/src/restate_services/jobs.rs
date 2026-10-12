@@ -4,23 +4,31 @@ use std::sync::Arc;
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use restate_sdk::prelude::{HandlerError, Json, TerminalError};
+use serde_json::Value;
+
 #[cfg(feature = "native-fault-injection")]
-fn trigger_consolidate_fault() -> Option<StoreError> {
-    let requested = std::env::var_os("ATHLETIC_FAULT_EXIT_AFTER_CONSOLIDATE")?;
+pub(crate) mod consolidate_boundary;
+
+#[cfg(feature = "native-fault-injection")]
+const ORDINARY_ERROR_ENVIRONMENT: &str = "ATHLETIC_FAULT_EXIT_AFTER_CONSOLIDATE";
+
+#[cfg(feature = "native-fault-injection")]
+fn injected_consolidate_error() -> Option<StoreError> {
+    let requested = std::env::var_os(ORDINARY_ERROR_ENVIRONMENT)?;
     if requested.is_empty() {
         return None;
     }
-    tracing::info!("fault: exiting after consolidate, before acknowledgement");
+    tracing::info!("fault: injecting the ordinary consolidate error before acknowledgement");
     Some(StoreError::Invariant {
-        detail: "fault injection: exit after consolidate".to_string(),
+        detail: "fault injection: the ordinary consolidate error fired before acknowledgement"
+            .to_string(),
     })
 }
 
 #[cfg(not(feature = "native-fault-injection"))]
-fn trigger_consolidate_fault() -> Option<StoreError> {
+fn injected_consolidate_error() -> Option<StoreError> {
     None
 }
-use serde_json::Value;
 
 use crate::census::{self, CollectOptions, StateProgress};
 use census_crawl::net::Fetcher;
@@ -78,10 +86,21 @@ pub(super) fn consolidate_tables(
             Ok(out)
         },
     )?;
-    if let Some(error) = trigger_consolidate_fault() {
+    if let Some(error) = injected_consolidate_error() {
         return Err(error);
     }
     Ok(out)
+}
+
+#[cfg(feature = "native-fault-injection")]
+pub(super) fn consolidate_armed(
+    store: &Store,
+    tables: &[Table],
+    operation: &str,
+) -> Result<Vec<ConsolidatedTable>, JobError> {
+    let consolidated = consolidate_tables(store, tables)?;
+    consolidate_boundary::reached(store, operation, &consolidated)?;
+    Ok(consolidated)
 }
 
 pub(super) fn build_report(store: &Store, scope: Scope) -> ReportResult<ReportReply> {
@@ -148,7 +167,6 @@ pub(super) fn write_sweep_report(
     Ok(path)
 }
 
-pub(super) use super::meets_arms::meets_stage;
 pub(super) use super::results_arms::results_stage;
 
 #[derive(Clone, Copy)]

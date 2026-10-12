@@ -7,6 +7,7 @@ pub(super) fn is_validator(name: &str) -> bool {
 }
 
 pub(super) fn canonical_request(
+    url: &str,
     headers: &[(String, String)],
 ) -> Result<RepresentationHeaders, FetchError> {
     if headers.len() > MAX_REPRESENTATION_HEADERS {
@@ -15,7 +16,7 @@ pub(super) fn canonical_request(
         });
     }
     if headers.iter().all(|(name, _)| !is_validator(name)) {
-        return RepresentationHeaders::canonical(headers);
+        return RepresentationHeaders::for_request(url, headers);
     }
     let mut selected = Vec::with_capacity(headers.len());
     for (name, value) in headers {
@@ -33,7 +34,7 @@ pub(super) fn canonical_request(
             selected.push((name.clone(), value.clone()));
         }
     }
-    RepresentationHeaders::canonical(&selected)
+    RepresentationHeaders::for_request(url, &selected)
 }
 
 pub(super) fn cache_extra(

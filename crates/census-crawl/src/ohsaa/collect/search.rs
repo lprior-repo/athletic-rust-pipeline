@@ -22,6 +22,10 @@ pub(super) async fn resolve_schools(
     };
     if rows.is_empty() {
         owe(report, &format!("{HOST}{SEARCH_PATH}"))?;
+        if options.school_names.is_empty() {
+            report.rejections = report.rejections.checked_add(1).ok_or_else(counter_error)?;
+            report.note("full inventory refused: no configured school names or association-owned OHSAA school frontier; the search form is not an exhaustive directory");
+        }
     }
     if let Some(limit) = options.limit {
         rows.iter().skip(limit).try_for_each(|row| {

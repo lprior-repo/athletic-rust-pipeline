@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use census_store::clock::{Clock, SystemClock};
 
-use super::{narrow, DrainState, Ledger, Region, SpawnError, Spawner, TaskReport};
+use super::{narrow, narrow_bound, Ledger, Region, SpawnError, Spawner, TaskReport};
 
 struct Draining<'a> {
     owner: &'a Spawner,
@@ -13,7 +13,7 @@ impl<'a> Draining<'a> {
     fn new(owner: &'a Spawner) -> Self {
         let mut region = owner.lock();
         region.closed = true;
-        owner.permits.close();
+        owner.coordinator.close();
         owner.stopping.send_replace(true);
         Self {
             owner,
@@ -30,6 +30,8 @@ impl<'a> Draining<'a> {
 
 impl Drop for Draining<'_> {
     fn drop(&mut self) {
+        let remaining = narrow_bound(self.region.tasks.len());
+        self.region.ledger.set_remaining(remaining);
         *self.owner.lock() = std::mem::take(&mut self.region);
     }
 }
@@ -45,6 +47,7 @@ impl Spawner {
             abort_and_reap(region).await?;
         }
         drain_until(region, deadline).await?;
+        drop(region.adopted.take());
         let report = region.ledger.report();
         region.ledger = Ledger::default();
         region.aborting = false;
@@ -59,15 +62,18 @@ async fn drain_until(
     while !region.tasks.is_empty() {
         let joined = match deadline {
             Some(deadline) => {
-                match tokio::time::timeout_at(deadline, region.tasks.join_next()).await {
+                match tokio::time::timeout_at(deadline, region.tasks.join_next_with_id()).await {
                     Ok(joined) => joined,
                     Err(_) => return abort_and_reap(region).await,
                 }
             }
-            None => region.tasks.join_next().await,
+            None => region.tasks.join_next_with_id().await,
         };
         match joined {
-            Some(joined) => region.ledger.classify(DrainState::from_join(joined)),
+            Some(joined) => {
+                region.ledger.classify_join(joined);
+                region.ledger.set_remaining(narrow(region.tasks.len())?);
+            }
             None => break,
         }
     }
@@ -85,8 +91,12 @@ async fn abort_and_reap(region: &mut Region) -> Result<(), SpawnError> {
         region.aborting = true;
         region.tasks.abort_all();
     }
-    while let Some(joined) = region.tasks.join_next().await {
-        region.ledger.classify_reaped(DrainState::from_join(joined));
+    reap(region).await
+}
+
+async fn reap(region: &mut Region) -> Result<(), SpawnError> {
+    while let Some(joined) = region.tasks.join_next_with_id().await {
+        region.ledger.classify_join(joined);
         region.ledger.set_remaining(narrow(region.tasks.len())?);
     }
     Ok(())

@@ -15,7 +15,7 @@ use std::collections::HashMap;
 pub use archive::{archive_artifacts, ArchiveArtifact};
 pub use classify::{artifact_format, level_of, school_year_for, ArtifactFormat};
 pub use parse::parse_result_body;
-pub use run::collect;
+pub use run::{collect, collect_fragment};
 
 pub const ARCHIVES: [(&str, Sport); 4] = [
     (
@@ -72,6 +72,11 @@ struct Stats {
     pdf_tool_failures: usize,
     pdf_layouts: std::collections::BTreeMap<String, usize>,
     rows: usize,
+    undated_participants: usize,
+    #[cfg(test)]
+    peak_accumulated_rows: usize,
+    #[cfg(test)]
+    peak_accumulated_bytes: usize,
     rows_with_grade: usize,
     rows_without_school: usize,
     relay_legs: usize,
@@ -90,3 +95,6 @@ async fn stats_of(ctx: &AdapterContext<'_>) -> (u64, u64) {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod streaming_tests;

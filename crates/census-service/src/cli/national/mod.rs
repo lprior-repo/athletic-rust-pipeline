@@ -22,7 +22,7 @@ pub(super) struct WorkflowFlags {
     #[arg(long, value_name = "ORIGIN")]
     pub(super) ingress: Option<String>,
     #[arg(
-        help = "Run revision. A run that already exists is reattached to, and this is the deliberate way to invalidate completed work: the identity a run is addressed by carries the season, the run scope the parameters admit and this revision, so the same parameters reproduce their run while a changed jurisdiction set derives an identity of its own instead of re-attaching to another scope"
+        help = "Run revision. A run that already exists is reattached to, and this is the deliberate way to invalidate completed work: the identity a run is addressed by carries the season, the run scope the parameters admit and this revision, so the same parameters reproduce their run while a changed jurisdiction set derives an identity of its own instead of re-attaching to another scope. Use `national --resume ORDINAL` to re-drive owed work without changing the revision"
     )]
     #[arg(long, default_value_t = 1)]
     pub(super) revision: u32,
@@ -89,6 +89,11 @@ fn named_season(year: i16) -> Result<SchoolYear> {
 pub(super) struct NationalArgs {
     #[command(flatten)]
     flags: RunFlags,
+    #[arg(
+        help = "Resume owed work in a new parent invocation for the same run and revision; reuse an ordinal to reattach without resetting source attempts"
+    )]
+    #[arg(long, value_name = "ORDINAL")]
+    resume: Option<std::num::NonZeroU32>,
     #[arg(
         help = "Jurisdictions to cover. Absent means the 48 contiguous states and the District of Columbia (49 jurisdictions)"
     )]
@@ -173,6 +178,11 @@ pub(super) struct NationalReportArgs {
     #[arg(help = "Run revision")]
     #[arg(long, default_value_t = 1)]
     revision: u32,
+    #[arg(
+        help = "Resume owed work in a new parent invocation for the same run and revision; reuse an ordinal to reattach without resetting source attempts"
+    )]
+    #[arg(long, value_name = "ORDINAL")]
+    resume: Option<std::num::NonZeroU32>,
     #[arg(
         help = "Jurisdictions the run covered. Absent means the 48 contiguous states and the District of Columbia (49 jurisdictions)",
         long_help = "Jurisdictions the run covered. Absent means the 48 contiguous states and the District of Columbia (49 jurisdictions).\n\nThe set is part of the run's identity, so the report of a run submitted with `--states` is only reachable with the same list."

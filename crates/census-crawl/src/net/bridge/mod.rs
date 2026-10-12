@@ -7,7 +7,7 @@ mod tests;
 pub use self::lane::{validate_origin, BrowserLane};
 pub use self::wire::{
     Action, BrowserCapture, BrowserError, BrowserFailure, BrowserOutcome, BrowserResponse,
-    RankingPageObservation, RankingsCapture, RequestSpec, SearchBody, Verdict,
+    RankingPageObservation, RankingsCapture, RequestSpec, Verdict,
 };
 
 pub(super) const SESSION_OBJECT: &str = "BrowserSession";

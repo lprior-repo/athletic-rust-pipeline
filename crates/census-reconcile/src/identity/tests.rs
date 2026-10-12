@@ -116,3 +116,40 @@ fn every_jurisdiction_fits_the_identity_ceiling() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn a_resume_addresses_a_new_parent_for_the_same_run_and_scope() -> TestResult {
+    let states = [UsJurisdiction::Wisconsin, UsJurisdiction::Iowa];
+    let ordinal = std::num::NonZeroU32::new(7).ok_or("fixture ordinal")?;
+    let resumed = WorkflowIdentity::national_resume(season()?, Revision(1), &states, ordinal);
+    let original = WorkflowIdentity::national(season()?, Revision(1), &states);
+    check!(eq; resumed.as_str(), format!("{}:resume:7", original.as_str()));
+    let reversed = [
+        UsJurisdiction::Iowa,
+        UsJurisdiction::Wisconsin,
+        UsJurisdiction::Iowa,
+    ];
+    check!(eq; resumed, WorkflowIdentity::national_resume(season()?, Revision(1), &reversed, ordinal));
+    check!(ne; resumed, WorkflowIdentity::national_resume(season()?, Revision(1), &states, std::num::NonZeroU32::new(8).ok_or("next ordinal")?));
+    check!(ne; resumed, WorkflowIdentity::national_resume(season()?, Revision(2), &states, ordinal));
+    check!(ne; resumed, WorkflowIdentity::national_resume(season()?, Revision(1), &[UsJurisdiction::Iowa], ordinal));
+    Ok(())
+}
+
+#[test]
+fn the_maximum_resume_ordinal_is_not_truncated_and_fits_the_identity_ceiling() -> TestResult {
+    let ordinal = std::num::NonZeroU32::new(u32::MAX).ok_or("maximum ordinal")?;
+    for year in [SchoolYear::MIN_START_YEAR, SchoolYear::MAX_START_YEAR] {
+        let school_year = SchoolYear::new(year).ok_or("boundary season")?;
+        for states in [
+            UsJurisdiction::CENSUS_SCOPE.as_slice(),
+            &[UsJurisdiction::Alaska],
+        ] {
+            let identity =
+                WorkflowIdentity::national_resume(school_year, Revision(u32::MAX), states, ordinal);
+            check!(identity.as_str().len() <= MAX_IDENTITY_BYTES);
+            check!(identity.as_str().ends_with(":4294967295:resume:4294967295"));
+        }
+    }
+    Ok(())
+}

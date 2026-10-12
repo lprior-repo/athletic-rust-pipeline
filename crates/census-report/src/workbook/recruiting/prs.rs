@@ -38,23 +38,9 @@ pub(super) const WIDTHS: [u16; 26] = [
     30, 24,
 ];
 
-pub(super) fn sheet(prs: &[SharedSelection]) -> ReportResult<Vec<Vec<Cell>>> {
-    let count = prs
-        .len()
-        .checked_add(1)
-        .ok_or_else(|| ReportError::Invariant {
-            detail: "PR sheet row count overflow".into(),
-        })?;
-    let mut rows = Vec::new();
-    rows.try_reserve(count)
-        .map_err(|error| ReportError::Invariant {
-            detail: format!("reserving PR sheet rows: {error}"),
-        })?;
-    rows.push(HEADERS.iter().map(|header| Cell::text(*header)).collect());
-    prs.iter().try_fold(rows, |mut rows, pr| {
-        rows.push(cells(pr)?);
-        Ok(rows)
-    })
+pub(super) fn rows(prs: &[SharedSelection]) -> impl Iterator<Item = ReportResult<Vec<Cell>>> + '_ {
+    let header = HEADERS.iter().map(|header| Cell::text(*header)).collect();
+    std::iter::once(Ok(header)).chain(prs.iter().map(cells))
 }
 
 fn cells(pr: &SharedSelection) -> ReportResult<Vec<Cell>> {

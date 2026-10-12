@@ -2,14 +2,18 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use restate_sdk::prelude::*;
-use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 
+use crate::admission::{Reservation, WORK_CLASS_STAGE};
 use crate::spawn::Spawner;
 use census_domain::model::SchoolYear;
 use census_report::{bests, workbook};
 use census_store::Store;
 
-use super::jobs::{build_bests, build_report, build_workbook, consolidate_tables};
+#[cfg(not(feature = "native-fault-injection"))]
+use super::jobs::consolidate_tables;
+use super::jobs::{build_bests, build_report, build_workbook};
+#[cfg(feature = "native-fault-injection")]
+use super::jobs::{consolidate_armed, consolidate_boundary};
 use super::wire::{
     BestsReply, BestsRequest, ConsolidateReply, ConsolidateRequest, ReportReply, ReportRequest,
     WorkbookReply, WorkbookRequest,
@@ -19,17 +23,12 @@ use super::{blocking, job_error, resolve_scope, resolve_tables, JobError};
 #[derive(Clone)]
 pub struct Jobs {
     store: Arc<Store>,
-    load: Arc<Semaphore>,
     region: Arc<Spawner>,
 }
 
 impl Jobs {
-    pub fn new(store: Arc<Store>, load: Arc<Semaphore>, region: Arc<Spawner>) -> Self {
-        Self {
-            store,
-            load,
-            region,
-        }
+    pub fn new(store: Arc<Store>, region: Arc<Spawner>) -> Self {
+        Self { store, region }
     }
 
     pub(super) fn store(&self) -> &Arc<Store> {
@@ -40,11 +39,12 @@ impl Jobs {
         &self.region
     }
 
-    pub(super) async fn permit(&self) -> Result<OwnedSemaphorePermit, TerminalError> {
-        Arc::clone(&self.load)
-            .acquire_owned()
+    pub(super) async fn permit(&self) -> Result<Reservation, TerminalError> {
+        self.region
+            .coordinator()
+            .reserve(WORK_CLASS_STAGE)
             .await
-            .map_err(|_| TerminalError::new("service is shutting down"))
+            .map_err(|error| TerminalError::new(format!("stage admission: {error}")))
     }
 }
 
@@ -79,14 +79,22 @@ impl Consolidate {
         Json(request): Json<ConsolidateRequest>,
     ) -> Result<Json<ConsolidateReply>, HandlerError> {
         let tables = resolve_tables(&request.tables)?;
+        #[cfg(feature = "native-fault-injection")]
+        let operation = consolidate_boundary::operation(ctx.key());
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
         let permit = self.jobs.permit().await?;
         let reply = ctx
             .run(move || async move {
                 let _permit = permit;
-                blocking(region, move || consolidate_tables(&store, &tables))
-                    .await
+                #[cfg(feature = "native-fault-injection")]
+                let outcome = blocking(region, move || {
+                    consolidate_armed(&store, &tables, &operation)
+                })
+                .await;
+                #[cfg(not(feature = "native-fault-injection"))]
+                let outcome = blocking(region, move || consolidate_tables(&store, &tables)).await;
+                outcome
                     .map(|tables| Json(ConsolidateReply { tables }))
                     .map_err(job_error)
             })
@@ -266,3 +274,6 @@ impl Workbook {
         Ok(reply)
     }
 }
+
+#[cfg(test)]
+mod admission_tests;

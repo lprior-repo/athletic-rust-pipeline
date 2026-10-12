@@ -191,3 +191,45 @@ fn the_table_holds_cases_that_group_and_cases_that_do_not() -> TestResult {
     cases.len());
     Ok(())
 }
+
+#[test]
+fn parity_grouping_keeps_group_order_findings_and_input_ordinals() -> TestResult {
+    let west = school("Review Order High School");
+    let rows = vec![
+        athlete("Zoe Zulu", &west, Gender::Boys, 2027)?,
+        athlete("Zoe Zulu", &west, Gender::Girls, 2027)?,
+        athlete("Amy Alpha", &west, Gender::Boys, 2027)?,
+        athlete("Amy Alpha", &west, Gender::Girls, 2027)?,
+        athlete("Amy Alpha", &west, Gender::Unknown, 2027)?,
+    ];
+    let family = family_of(&rows);
+    check!(eq; family.findings, 2, "one finding per colliding identity key");
+    check!(eq; family.rows.len(), 5, "one emitted row per colliding input row");
+    let emitted: Vec<&str> = family
+        .rows
+        .iter()
+        .map(|row| row.subject_id.as_str())
+        .collect();
+    let expected: Vec<&str> = rows
+        .iter()
+        .filter(|row| row.canonical_name == "Amy Alpha")
+        .chain(rows.iter().filter(|row| row.canonical_name == "Zoe Zulu"))
+        .map(|row| row.id.as_str())
+        .collect();
+    check!(
+        eq;
+        emitted,
+        expected,
+        "the identity key orders the groups and the input order orders the rows"
+    );
+    let mut writer_ids: Vec<String> = family
+        .rows
+        .iter()
+        .map(|row| row.subject_id.clone())
+        .collect();
+    writer_ids.sort();
+    let mut key_ids = retained_by_key(&rows);
+    key_ids.sort();
+    check!(eq; writer_ids, key_ids, "the groups are exactly the key collisions");
+    Ok(())
+}

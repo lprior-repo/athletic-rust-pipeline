@@ -15,7 +15,8 @@ use census_crawl::net::bridge::BrowserLane;
 use census_store::Store;
 
 use super::drain::{
-    await_endpoint_shutdown, count_error, DrainReport, EndpointShutdown, ENDPOINT_SHUTDOWN_GRACE,
+    attempt_state, await_endpoint_shutdown, count_error, DrainReport, EndpointShutdown,
+    ENDPOINT_SHUTDOWN_GRACE,
 };
 use super::error::BootstrapError;
 use super::options::ServeOptions;
@@ -86,10 +87,13 @@ pub(super) async fn supervise(
     let mut report = DrainReport::from_counted(counted);
     report.stop_reason = StopReason::from_raw(reason.load(Ordering::SeqCst));
     report.endpoint_shutdown = endpoint_shutdown;
+    report.attempts = attempt_state(&store)?;
 
     let finalized = store.flush();
     drop(store);
-    finalized.map_err(|source| BootstrapError::StoreFlush { source })?;
+    finalized.map_err(|source| BootstrapError::StoreFlush {
+        source: Box::new(source),
+    })?;
     tracing::info!(?report, "census service stopped");
     Ok(report)
 }
@@ -198,7 +202,7 @@ async fn open_store(region: &Spawner, data_dir: PathBuf) -> Result<Arc<Store>, B
             })?;
             let store = Store::open(&data_dir).map_err(|source| BootstrapError::StoreOpen {
                 path: data_dir,
-                source,
+                source: Box::new(source),
             })?;
             Ok(Arc::new(store))
         })

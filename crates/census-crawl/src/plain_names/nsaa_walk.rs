@@ -31,23 +31,23 @@ pub(super) async fn visit(
         fail(report, &url, "requested school block is absent")?;
         return Ok((0, 0));
     };
-    project(ctx, report, (&url, &capture.fetched_at), entry)
+    project(ctx, report, &capture, entry)
 }
 
 fn project(
     ctx: &AdapterContext<'_>,
     report: &mut AdapterReport,
-    source: (&str, &str),
+    source: &crate::net::FetchOutcome,
     entry: &NsaaSchool,
 ) -> CrawlResult<(usize, usize)> {
-    let (canonical, id) = parse_nsaa_school(entry, source.0, source.1);
+    let (canonical, id) = parse_nsaa_school(entry, &source.url, &source.fetched_at);
     let written = school(
         ctx,
-        (super::NSAA_ADAPTER_ID, source.0),
+        (super::NSAA_ADAPTER_ID, &source.url),
         (
             &SourceNamespace::association_school(super::NSAA_ADAPTER_ID),
             &canonical,
-            source.1,
+            &source.fetched_at,
         ),
         report,
     )?;
@@ -56,7 +56,7 @@ fn project(
         .iter()
         .enumerate()
         .try_fold(0usize, |written, (ordinal, role)| {
-            let locator = format!("{}#role={ordinal}", source.0);
+            let locator = format!("{}#role={ordinal}", source.url);
             let selected = NsaaSchool {
                 name: entry.name.clone(),
                 city: entry.city.clone(),
@@ -64,13 +64,18 @@ fn project(
                 homepage: entry.homepage.clone(),
                 roles: vec![role.clone()],
             };
-            let rows = match nsaa_coaches(&selected, &id, source.0, source.1) {
+            let mut rows = match nsaa_coaches(&selected, &id, &source.url, &source.fetched_at) {
                 Ok(rows) => rows,
                 Err(error) => {
                     fail(report, &locator, error)?;
                     return Ok(written);
                 }
             };
+            crate::coach_directories::record_capture_appointments(
+                &mut rows,
+                source,
+                super::NSAA_ADAPTER_ID,
+            )?;
             persist(
                 ctx,
                 (super::NSAA_ADAPTER_ID, &locator),

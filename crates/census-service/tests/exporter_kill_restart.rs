@@ -187,7 +187,7 @@ fn spawn_workbook(data_dir: &Path, out_path: &Path) -> TestResult<ChildGuard> {
         .arg("--store")
         .arg(data_dir)
         .stdout(Stdio::null())
-        .stderr(Stdio::null())
+        .stderr(Stdio::inherit())
         .spawn()?;
     Ok(ChildGuard { child })
 }

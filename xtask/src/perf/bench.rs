@@ -1,13 +1,16 @@
 mod dhat;
 mod memory;
 mod metadata;
+mod policy;
 pub(super) mod runtime;
 mod tail;
 
+#[cfg(test)]
+mod tests;
+
 use super::{GroupMeasurement, Throughput};
 use anyhow::{bail, Context, Result};
-use std::borrow::Cow;
-use std::collections::{btree_map::Entry, BTreeMap};
+use std::collections::BTreeMap;
 
 pub fn run_benchmarks() -> Result<BTreeMap<String, GroupMeasurement>> {
     let mut groups = BTreeMap::new();
@@ -23,27 +26,58 @@ pub fn run_benchmarks() -> Result<BTreeMap<String, GroupMeasurement>> {
 fn measure_target(name: &str) -> Result<BTreeMap<String, GroupMeasurement>> {
     let executable = runtime::compile(name)?;
     let directory = tempfile::tempdir().context("creating benchmark measurement directory")?;
-    let (output, rss, criterion_root) = runtime::measure(&executable, directory.path())?;
-    let declarations = metadata::read(&criterion_root)?;
-    let tails = tail::read(&criterion_root)?;
-    let mut groups = parse_measurement(&output, &declarations, rss)?;
-    if !groups.keys().eq(tails.keys()) {
-        bail!("Criterion results and tail samples must contain the same benchmark IDs");
+    let mut trials = Vec::new();
+    for trial in runtime::measure_trials(&executable, directory.path())? {
+        trials.push(read_trial(name, &trial)?);
     }
+    let mut groups = select_timing(name, trials)?;
     for (id, measurement) in &mut groups {
         let memory = memory::measure(&executable, directory.path(), id)?;
         measurement.peak_rss_kib = Some(memory.peak_rss_kib);
         measurement.allocation_count = Some(memory.allocation_count);
         measurement.allocated_bytes = Some(memory.allocated_bytes);
         measurement.timing_scope = Some(super::scope::expected(id).to_owned());
-        measurement.tail_time_seconds = Some(
-            *tails
-                .get(id)
-                .with_context(|| format!("missing tail samples for {id}"))?,
-        );
         super::compare::validate_measurement(id, measurement, "recorded")?;
     }
     Ok(groups)
+}
+
+fn read_trial(target: &str, trial: &runtime::Trial) -> Result<BTreeMap<String, GroupMeasurement>> {
+    let declarations = metadata::read(&trial.criterion)
+        .with_context(|| format!("{target}: reading trial criterion declarations"))?;
+    let tails = tail::read(&trial.criterion)
+        .with_context(|| format!("{target}: reading trial criterion tail samples"))?;
+    parse_measurement(&trial.output, &declarations, &tails)
+        .with_context(|| format!("{target}: parsing trial results"))
+}
+
+fn select_timing(
+    target: &str,
+    trials: Vec<BTreeMap<String, GroupMeasurement>>,
+) -> Result<BTreeMap<String, GroupMeasurement>> {
+    let mut remaining = trials.into_iter();
+    let mut selected = match remaining.next() {
+        Some(first) => first,
+        None => bail!("{target}: no benchmark trial was measured"),
+    };
+    if selected.is_empty() {
+        bail!("{target}: benchmark trials measured no benchmark");
+    }
+    for trial in remaining {
+        if trial.len() != selected.len() {
+            bail!("{target}: benchmark trials must publish the same benchmark IDs");
+        }
+        for (id, measurement) in trial {
+            let current = selected.get_mut(&id).ok_or_else(|| {
+                anyhow::anyhow!("{target}: benchmark trials must publish the same benchmark IDs")
+            })?;
+            let policy = policy::declared(&id)?;
+            if policy.is_faster(measurement.wall_time_seconds, current.wall_time_seconds) {
+                *current = measurement;
+            }
+        }
+    }
+    Ok(selected)
 }
 
 pub(crate) fn parse_bencher_line(line: &str) -> Result<(String, f64)> {
@@ -60,84 +94,115 @@ pub(crate) fn parse_bencher_line(line: &str) -> Result<(String, f64)> {
     Ok((id.to_owned(), parse_timing(timing)?))
 }
 
-fn parse_timing(timing: &str) -> Result<f64> {
-    let mut fields = timing.split_whitespace();
-    let number = fields.next().context("missing benchmark timing")?;
-    let multiplier = match fields.next() {
-        Some("ns") => 1.0,
-        Some("µs" | "μs") => 1_000.0,
-        Some("ms") => 1_000_000.0,
-        Some("s") => 1_000_000_000.0,
-        _ => bail!("unsupported benchmark time unit: {timing}"),
-    };
-    if fields.next().is_some() {
-        bail!("unexpected benchmark timing fields: {timing}");
-    }
-    let number = if number.contains(',') {
-        Cow::Owned(number.replace(',', ""))
-    } else {
-        Cow::Borrowed(number)
-    };
-    let nanos = number.parse::<f64>().context("invalid benchmark timing")? * multiplier;
-    if !nanos.is_finite() || nanos <= 0.0 {
-        bail!("benchmark timing must be finite and positive: {timing}");
-    }
-    Ok(nanos)
-}
-
-fn parse_measurement(
+pub(crate) fn parse_measurement(
     output: &str,
     declarations: &BTreeMap<String, Option<Throughput<u64>>>,
-    rss: Option<u64>,
+    tails: &BTreeMap<String, f64>,
 ) -> Result<BTreeMap<String, GroupMeasurement>> {
-    let mut result = BTreeMap::new();
-    for line in output
-        .lines()
-        .filter(|line| line.starts_with("test ") && line.contains("bench:"))
-    {
-        let (id, nanos) = parse_bencher_line(line)?;
-        let amount = declarations
-            .get(&id)
-            .with_context(|| format!("missing Criterion metadata for {id}"))?;
-        let amount = amount
-            .as_ref()
-            .with_context(|| format!("benchmark {id} must declare a throughput amount"))?;
-        if amount.value() == 0 {
-            bail!("benchmark {id} throughput must be positive");
+    let mut measured = BTreeMap::new();
+    for line in output.lines().filter(|line| line.starts_with("test ")) {
+        let (id, duration) = parse_bencher_line(line)?;
+        let declaration = declarations.get(&id).ok_or_else(|| {
+            anyhow::anyhow!("trial result {id} has no criterion declaration in this trial")
+        })?;
+        let tail_time_seconds = tails.get(&id).copied().ok_or_else(|| {
+            anyhow::anyhow!("trial result {id} has no tail samples in this trial")
+        })?;
+        let wall_time_seconds = duration / 1_000_000_000.0;
+        let throughput = match declaration {
+            Some(declared) => {
+                let rate = measured_rate(declared.value(), wall_time_seconds)?;
+                Some(declared.map(|_| rate))
+            }
+            None => None,
+        };
+        if measured
+            .insert(
+                id,
+                GroupMeasurement {
+                    wall_time_seconds,
+                    tail_time_seconds: Some(tail_time_seconds),
+                    throughput,
+                    timing_scope: None,
+                    peak_rss_kib: None,
+                    allocation_count: None,
+                    allocated_bytes: None,
+                },
+            )
+            .is_some()
+        {
+            bail!("bencher output has duplicate benchmark results");
         }
-        insert_measurement(&mut result, id, timing_measurement(nanos, *amount, rss)?)?;
     }
-    if result.is_empty() || !result.keys().eq(declarations.keys()) {
-        bail!("Criterion results and metadata must contain the same nonempty benchmark IDs");
-    }
-    Ok(result)
+    verify_declarations(&measured, declarations, tails)?;
+    Ok(measured)
 }
 
-fn timing_measurement(
-    nanos: f64,
-    amount: Throughput<u64>,
-    rss: Option<u64>,
-) -> Result<GroupMeasurement> {
-    let seconds = nanos / 1e9;
-    if seconds <= 0.0 {
-        bail!("benchmark timing underflow");
+fn verify_declarations(
+    measured: &BTreeMap<String, GroupMeasurement>,
+    declarations: &BTreeMap<String, Option<Throughput<u64>>>,
+    tails: &BTreeMap<String, f64>,
+) -> Result<()> {
+    if measured.is_empty() {
+        bail!("bencher output has no benchmark results");
     }
-    let numeric = serde_json::Number::from(amount.value())
+    for id in measured.keys() {
+        let declared = declarations
+            .get(id)
+            .ok_or_else(|| anyhow::anyhow!("measured benchmark {id} is not declared"))?;
+        let declared = declared
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("measured benchmark {id} declares no throughput"))?;
+        if declared.value() == 0 {
+            bail!("measured benchmark {id} declares a zero throughput");
+        }
+        if !tails.contains_key(id) {
+            bail!("measured benchmark {id} has no tail samples");
+        }
+    }
+    if measured.len() != declarations.len() || measured.len() != tails.len() {
+        bail!("trial results and criterion samples must describe the same benchmarks");
+    }
+    Ok(())
+}
+
+fn measured_rate(amount: u64, seconds: f64) -> Result<f64> {
+    let amount = serde_json::Number::from(amount)
         .as_f64()
-        .context("Criterion throughput amount cannot be converted")?;
-    let throughput = amount.map(|_| numeric / seconds);
-    if !throughput.value().is_finite() || throughput.value() <= 0.0 {
-        bail!("invalid benchmark throughput");
+        .context("benchmark throughput amount is not representable")?;
+    Ok(amount / seconds)
+}
+
+fn parse_timing(raw: &str) -> Result<f64> {
+    let text = raw.trim();
+    let (number, multiplier) = match ["ns", "µs", "μs", "ms", "s"]
+        .into_iter()
+        .find_map(|unit| text.strip_suffix(unit).map(|head| (head.trim_end(), unit)))
+    {
+        Some(parts) => parts,
+        None => bail!("missing time unit: {raw}"),
+    };
+    let (digits, sign) = number
+        .strip_prefix('-')
+        .map_or_else(|| (number, 1), |rest| (rest, -1));
+    let value = digits
+        .chars()
+        .filter(|character| *character != ',')
+        .collect::<String>()
+        .parse::<f64>()
+        .map_err(|error| anyhow::anyhow!("invalid bencher time {raw}: {error}"))?;
+    let multiplier = match multiplier {
+        "ns" => 1.0,
+        "µs" | "μs" => 1_000.0,
+        "ms" => 1_000_000.0,
+        "s" => 1_000_000_000.0,
+        _ => bail!("unsupported bencher time unit: {raw}"),
+    };
+    let number = f64::from(sign) * value * multiplier;
+    if !number.is_finite() || number <= 0.0 {
+        bail!("bencher time must be positive: {raw}");
     }
-    Ok(GroupMeasurement {
-        throughput: Some(throughput),
-        peak_rss_kib: rss,
-        allocation_count: None,
-        allocated_bytes: None,
-        tail_time_seconds: None,
-        timing_scope: None,
-        wall_time_seconds: seconds,
-    })
+    Ok(number)
 }
 
 fn insert_measurement(
@@ -145,15 +210,8 @@ fn insert_measurement(
     id: String,
     measurement: GroupMeasurement,
 ) -> Result<()> {
-    match groups.entry(id) {
-        Entry::Vacant(entry) => {
-            entry.insert(measurement);
-        }
-        Entry::Occupied(entry) => bail!("duplicate benchmark result for {}", entry.key()),
+    if groups.insert(id.clone(), measurement).is_some() {
+        bail!("duplicate benchmark result {id}");
     }
     Ok(())
 }
-
-#[cfg(test)]
-#[path = "bench/tests.rs"]
-mod tests;

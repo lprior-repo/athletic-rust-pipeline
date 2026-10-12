@@ -1,0 +1,13 @@
+{
+ "bytes": 119871,
+ "content_digest": "a8166e6935a76fd72c6b2c6a30023135895bb683524aff25fb0ea18c7a0dedeb",
+ "content_type": "text/html",
+ "fetched_at": "2026-10-11T18:51:00Z",
+ "fetched_at_utc": "2026-10-11T18:51:00Z",
+ "file": "meet-page-76408-postload.html",
+ "method": "GET",
+ "note": "chromium headless rendered DOM after load; AthleticLIVE SPA shell, no server-side results",
+ "sha256": "a8166e6935a76fd72c6b2c6a30023135895bb683524aff25fb0ea18c7a0dedeb",
+ "status": 200,
+ "url": "https://results.wayzatatiming.com/meets/76408"
+}

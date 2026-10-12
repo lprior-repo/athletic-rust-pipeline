@@ -51,7 +51,9 @@ impl Ctx<'_> {
         gender: Gender,
     ) -> crate::CrawlResult<()> {
         let source_key = format!("athleticnet:{}-{}", self.target.athlete_id, row.id);
-        let label = row.distance.map(|distance| format!("{distance}m"));
+        let label = row
+            .distance
+            .map(|distance| format!("Cross Country {distance}m"));
         let labels = [label.as_deref().map_or("", core::convert::identity)];
         store_performance(
             self.accumulated,

@@ -1,9 +1,10 @@
 use super::*;
-use crate::tests::{derived, generation_rows, DerivedRow, TestResult};
+use crate::tests::{derived, generation_rows, stage_required_tables, DerivedRow, TestResult};
 use crate::{generation, meta};
 
 fn publish(store: &Store, rows: &[DerivedRow], operation: &str) -> TestResult {
     let mut stage = store.stage_derived()?;
+    stage_required_tables(&mut stage, &[Table::ReviewCases])?;
     stage.replace_many(Table::ReviewCases, rows)?;
     stage.publish(operation, "digest-one")?;
     Ok(())
@@ -60,7 +61,8 @@ fn publication_reclaims_the_generation_the_pointer_left_behind() -> TestResult {
     check!(eq; generation_rows(&store, Table::ReviewCases, 2)?, 1);
     check!(
         eq;
-        meta::get_u64(&store.meta, generation::DERIVED_RECLAIM_FROM)?.map_or(0, |from| from),
+        meta::get_u64(&store.meta, generation::DERIVED_RECLAIM_FROM)?
+            .map_or(0, core::convert::identity),
         2,
         "the reclaim pointer follows the generations that are gone"
     );
@@ -74,5 +76,31 @@ fn reclaim_of_a_store_with_nothing_superseded_reports_complete() -> TestResult {
     let reclaimed = store.reclaim_derived_generations(u64::MAX)?;
     check!(reclaimed.complete);
     check!(eq; reclaimed.rows, 0);
+    Ok(())
+}
+
+#[test]
+fn a_slow_reader_keeps_its_generation_across_repeated_publication() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let first = vec![derived("held", 1)];
+    publish(&store, &first, "publish:held")?;
+    let reader = store.snapshot();
+    for generation in 2..10 {
+        publish(
+            &store,
+            &[derived("held", generation)],
+            &format!("publish:{generation}"),
+        )?;
+        check!(eq; serde_json::to_value(reader.scan::<DerivedRow>(Table::ReviewCases)?)?, serde_json::json!([{"id": "held", "note": 1}]));
+        check!(eq; serde_json::to_value(store.scan::<DerivedRow>(Table::ReviewCases)?)?, serde_json::json!([{"id": "held", "note": generation}]));
+    }
+    check!(matches!(
+        store.reclaim_registered_objects(),
+        Err(StoreError::ReferenceAccountingIncomplete)
+    ));
+    drop(reader);
+    check!(store.reclaim_derived_generations(64)?.complete);
+    check!(eq; serde_json::to_value(store.scan::<DerivedRow>(Table::ReviewCases)?)?, serde_json::json!([{"id": "held", "note": 9}]));
     Ok(())
 }

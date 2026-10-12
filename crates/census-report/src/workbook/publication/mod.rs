@@ -4,99 +4,26 @@ use crate::report::{io_error, ReportError, ReportResult};
 use census_store::Store;
 use std::path::{Path, PathBuf};
 
+mod binding;
+mod checkpoint;
+mod incident;
+mod install;
 mod lifecycle;
 mod manifest;
+mod pointer;
+mod protocol;
+mod recovery;
 mod seal;
 mod sidecars;
+mod stage;
 mod verify_sidecars;
-pub use manifest::{current_workbook, verify_for_seal, verify_published, VerifiedPublication};
+pub use manifest::{
+    current_workbook, open_publication, verify_published, OpenedPublication, VerifiedPublication,
+};
+pub use protocol::{PublicationError, RecoveryOutcome};
+pub use recovery::recover_publication;
 pub(super) use sidecars::write_sidecars;
-
-pub(super) struct Stage<'s> {
-    root: PathBuf,
-    directory: PathBuf,
-    pointer: PathBuf,
-    _lock: std::fs::File,
-    store: &'s Store,
-}
-
-impl<'s> Stage<'s> {
-    pub(super) fn begin(
-        dataset: &ExportDataset,
-        store: &'s Store,
-        options: &Options,
-    ) -> ReportResult<Self> {
-        dataset.ensure_current(store)?;
-        let root = match options.out.clone() {
-            Some(value) => value,
-            None => store.out_dir().join("publication"),
-        };
-        let lock = lock_publication(&root)?;
-        fence(&root, dataset)?;
-        lifecycle::sweep(&root, &dataset.lineage.store_identity)?;
-        let nonce = staging_nonce(&dataset.lineage.store_identity)?;
-        let directory = root.join(format!(".staging.{nonce}"));
-        let pointer = root.join(format!(".current.{nonce}.tmp"));
-        std::fs::create_dir(&directory).map_err(|source| io_error(&directory, source))?;
-        Ok(Self {
-            root,
-            directory,
-            pointer,
-            _lock: lock,
-            store,
-        })
-    }
-
-    pub(super) fn publish(
-        self,
-        dataset: &ExportDataset,
-        options: &Options,
-        render: impl FnOnce(&Path) -> ReportResult<()>,
-    ) -> ReportResult<PathBuf> {
-        let result = render(&self.directory).and_then(|()| self.commit(dataset, options));
-        lifecycle::finish(result, &self.root, &self.directory, &self.pointer)
-    }
-
-    fn commit(&self, dataset: &ExportDataset, options: &Options) -> ReportResult<PathBuf> {
-        let manifest = manifest::Manifest::capture(&self.directory, dataset, options)?;
-        sidecars::write_json(&self.directory.join("manifest.json"), &manifest)?;
-        sync_directory(&self.directory)?;
-        manifest::verify_prepared(&self.directory, dataset, options)?;
-        fence(&self.root, dataset)?;
-        let target = self
-            .root
-            .join("generations")
-            .join(&manifest.generation_digest);
-        self.retain_generation(&target, &manifest.generation_digest)?;
-        sync_directory(&self.root.join("generations"))?;
-        self.switch_pointer(dataset, &manifest.generation_digest)?;
-        Ok(target.join("workbook.xlsx"))
-    }
-
-    fn retain_generation(&self, target: &Path, digest: &str) -> ReportResult<()> {
-        if target.exists() {
-            let retained = manifest::verify_directory(target)?;
-            if retained.generation_digest != digest {
-                return Err(invariant("publication generation collision".to_string()));
-            }
-            std::fs::remove_dir_all(&self.directory)
-                .map_err(|source| io_error(&self.directory, source))?;
-        } else {
-            std::fs::rename(&self.directory, target).map_err(|source| io_error(target, source))?;
-        }
-        Ok(())
-    }
-
-    fn switch_pointer(&self, dataset: &ExportDataset, digest: &str) -> ReportResult<()> {
-        std::os::unix::fs::symlink(Path::new("generations").join(digest), &self.pointer)
-            .map_err(|source| io_error(&self.pointer, source))?;
-        let source_fence = self.store.fenced_snapshot();
-        dataset.ensure_snapshot(source_fence.view())?;
-        std::fs::rename(&self.pointer, self.root.join("current"))
-            .map_err(|source| io_error(&self.root.join("current"), source))?;
-        sync_directory(&self.root)
-    }
-}
+pub(super) use stage::Stage;
 
 fn staging_nonce(store_identity: &str) -> ReportResult<String> {
     let time = std::time::SystemTime::now()
@@ -180,3 +107,15 @@ pub(super) fn invariant(detail: String) -> ReportError {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod fence_tests;
+
+#[cfg(test)]
+mod recovery_tests;
+
+#[cfg(test)]
+mod crash_tests;
+
+#[cfg(test)]
+mod input_tests;

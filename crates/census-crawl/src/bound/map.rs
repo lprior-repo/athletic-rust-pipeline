@@ -58,7 +58,7 @@ pub fn school_entities(
     }
 }
 
-fn map_role(text: &str) -> Option<CoachRole> {
+pub(super) fn map_role(text: &str) -> Option<CoachRole> {
     let lower = text.to_lowercase();
     if lower == "head coach" || lower == "co-head coach" {
         Some(CoachRole::HeadCoach)

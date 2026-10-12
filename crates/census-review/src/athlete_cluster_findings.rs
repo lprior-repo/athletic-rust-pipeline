@@ -1,9 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use census_domain::model::{
-    person_key, AthleteCandidateId, CanonicalAthlete, CanonicalSchool, CaseEvidence, ReviewCase,
-    ReviewVerdictKind, ReviewVerdictRecord, SchoolId, SourceNamespace, ATHLETE_IDENTITY_FAMILY,
-    MEMBER_SET_LABEL,
+    person_key, AthleteCandidateId, CanonicalAthlete, CanonicalSchool, CaseEvidence, Gender,
+    ReviewCase, ReviewVerdictKind, ReviewVerdictRecord, SchoolId, SourceNamespace,
+    ATHLETE_IDENTITY_FAMILY, MEMBER_SET_LABEL,
 };
 use census_store::{StoreResult, StoreSnapshot, Table};
 
@@ -46,7 +46,6 @@ impl<'a> Row<'a> {
     fn agrees_with(&self, other: &Self) -> bool {
         self.athlete.canonical_name == other.athlete.canonical_name
             && self.athlete.grad_year == other.athlete.grad_year
-            && self.athlete.gender == other.athlete.gender
             && !self.cohort.conflicts_with(&other.cohort)
     }
 }
@@ -136,7 +135,6 @@ impl Span<'_> {
     }
 
     pub(super) fn hard_contradiction(&self) -> Option<HardContradiction> {
-        let first = self.rows.first()?;
         if self
             .rows
             .iter()
@@ -149,11 +147,15 @@ impl Span<'_> {
         {
             return Some(HardContradiction::GradYearEvidenceDiffers);
         }
-        self.rows
+        let has_boys = self
+            .rows
             .iter()
-            .skip(1)
-            .any(|row| first.athlete.gender != row.athlete.gender)
-            .then_some(HardContradiction::GenderDiffers)
+            .any(|row| row.athlete.gender == Gender::Boys);
+        let has_girls = self
+            .rows
+            .iter()
+            .any(|row| row.athlete.gender == Gender::Girls);
+        (has_boys && has_girls).then_some(HardContradiction::GenderDiffers)
     }
 
     pub(super) fn case(&self) -> Option<ReviewCase> {
@@ -239,3 +241,7 @@ impl Alias<'_> {
         Some(case)
     }
 }
+
+#[cfg(test)]
+#[path = "athlete_cluster_findings_tests.rs"]
+mod tests;

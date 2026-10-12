@@ -1,6 +1,5 @@
 use super::archive_io::{
-    create_directory, freeze_file, invalid, io_error, lock_cache, present, publish_once,
-    replace_cache, sync_directory, with_stage, write_file,
+    create_directory, invalid, io_error, lock_cache, present, replace_cache, with_stage,
 };
 use super::capture::Capture;
 use super::quarantine::{quarantine_pair, Damage};
@@ -13,6 +12,10 @@ use std::path::{Path, PathBuf};
 pub(super) mod admission;
 pub(super) use admission::ArchiveAdmission;
 
+mod inventory;
+mod publication;
+mod reservations;
+pub(super) use publication::preserve_capture;
 fn archived_body_path(archive: &Path, content_digest: &str) -> PathBuf {
     archive
         .join("bodies")
@@ -218,77 +221,4 @@ fn verified_body(path: &Path, capture: &Capture) -> Result<Vec<u8>, FetchError> 
         })?;
     capture.verify_body(&body, path)?;
     Ok(body)
-}
-
-pub(super) fn preserve_capture(
-    archive: &Path,
-    stage: &Path,
-    label: &str,
-    body: &[u8],
-    capture: &Capture,
-    admission: &mut ArchiveAdmission,
-) -> Result<PathBuf, FetchError> {
-    let digest = &capture.meta.content_digest;
-    let archived_body = archived_body_path(archive, digest);
-    let body_present = present(&archived_body)?;
-    let captures = archive.join("captures").join(digest);
-    let metadata_digest = content_digest(&capture.encoded);
-    let archived_meta = archived_meta_path(archive, digest, &metadata_digest);
-    let meta_needed = needs_publication(&archived_meta)?;
-    let body_bytes = u64::try_from(body.len())
-        .map_err(|_| invalid(archive, "capture body exceeds the archive accounting range"))?;
-    let meta_bytes = u64::try_from(capture.encoded.len()).map_err(|_| {
-        invalid(
-            archive,
-            "capture metadata exceeds the archive accounting range",
-        )
-    })?;
-    let reserved_body = (!body_present).then_some(body_bytes);
-    let reserved_meta = meta_needed.then_some(meta_bytes);
-    admission.reserve_capture_sizes(digest, &metadata_digest, reserved_body, reserved_meta)?;
-    if !body_present {
-        let staged_body = stage.join(format!("{label}.body"));
-        write_file(&staged_body, body)?;
-        freeze_file(&staged_body)?;
-        publish_once(&staged_body, &archived_body)?;
-    }
-    if verified_body(&archived_body, capture)? != body {
-        admission.release_capture_sizes(digest, &metadata_digest, reserved_body, reserved_meta)?;
-        return Err(invalid(
-            &archived_body,
-            "archive body differs from the captured bytes",
-        ));
-    }
-    freeze_file(&archived_body)?;
-    sync_directory(&archive.join("bodies"))?;
-    create_directory(&captures)?;
-    if !present(&archived_meta)? {
-        let staged_meta = stage.join(format!("{label}.meta.json"));
-        write_file(&staged_meta, &capture.encoded)?;
-        freeze_file(&staged_meta)?;
-        publish_once(&staged_meta, &archived_meta)?;
-    }
-    if let Err(error) = verify_metadata(&archived_meta, &capture.encoded) {
-        admission.release_capture_sizes(digest, &metadata_digest, reserved_body, reserved_meta)?;
-        return Err(error);
-    }
-    freeze_file(&archived_meta)?;
-    sync_directory(&captures)?;
-    admission.settle_capture_sizes(digest, &metadata_digest, reserved_body, reserved_meta)?;
-    Ok(archived_body)
-}
-
-fn verify_metadata(path: &Path, encoded: &[u8]) -> Result<(), FetchError> {
-    if !present(path)? {
-        return Err(invalid(path, "capture metadata is missing"));
-    }
-    let stored = read_cache_file(path, MAX_META_BYTES, Some(encoded.len()))?
-        .ok_or_else(|| invalid(path, "archive metadata does not match its declared size"))?;
-    if stored != encoded {
-        return Err(invalid(
-            path,
-            "archive metadata does not match its content address",
-        ));
-    }
-    Ok(())
 }

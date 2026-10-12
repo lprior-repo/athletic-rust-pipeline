@@ -142,7 +142,7 @@ async fn contend(
         .as_str()
         .ok_or_else(|| anyhow::anyhow!("capture timestamp missing"))?;
     for outcome in [&owner, &replay] {
-        ensure!(outcome.stdout.contains(digest) && outcome.stdout.contains(&format!("fetched_at={fetched_at}")),
+        ensure!(outcome.stderr.contains(digest) && outcome.stderr.contains(&format!("fetched_at={fetched_at}")),
             "completed/cache outcome did not retain exact digest and capture timestamp: {outcome:?}");
     }
     Ok(Facts {
@@ -173,7 +173,9 @@ fn refusal(outcome: &Outcome, origin: &str, owner_pid: u32) -> Result<()> {
     let holder = outcome
         .stderr
         .trim()
-        .strip_prefix(&prefix)
+        .lines()
+        .next_back()
+        .and_then(|text| text.strip_prefix(&prefix))
         .and_then(|text| text.strip_suffix(')'))
         .ok_or_else(|| anyhow::anyhow!("not the typed OriginHeld CLI error: {outcome:?}"))?;
     let record: Value = serde_json::from_str(holder)?;
@@ -183,7 +185,7 @@ fn refusal(outcome: &Outcome, origin: &str, owner_pid: u32) -> Result<()> {
         "OriginHeld named incorrect owner: {outcome:?}"
     );
     ensure!(
-        !outcome.stdout.contains("source fetched"),
+        outcome.stdout.trim().is_empty() && !outcome.stderr.contains("source fetched"),
         "refusal reported silent fetch success: {outcome:?}"
     );
     Ok(())
@@ -191,13 +193,19 @@ fn refusal(outcome: &Outcome, origin: &str, owner_pid: u32) -> Result<()> {
 
 fn successful(outcome: &Outcome, cached: bool) -> Result<()> {
     ensure!(
-        outcome.exit_code == 0 && outcome.stderr.trim().is_empty(),
+        outcome.exit_code == 0 && outcome.stdout.trim().is_empty(),
         "owner/replay failed: {outcome:?}"
     );
+    let receipt = outcome
+        .stderr
+        .trim()
+        .lines()
+        .next_back()
+        .ok_or_else(|| anyhow::anyhow!("completed/cache receipt absent: {outcome:?}"))?;
     ensure!(
-        outcome.stdout.contains("source fetched")
-            && outcome.stdout.contains("status=200")
-            && outcome.stdout.contains(&format!("from_cache={cached}")),
+        receipt.contains(" INFO source fetched ")
+            && receipt.contains("status=200")
+            && receipt.contains(&format!("from_cache={cached}")),
         "wrong completed/cache outcome: {outcome:?}"
     );
     Ok(())

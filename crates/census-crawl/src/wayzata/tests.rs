@@ -6,6 +6,15 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 const TRACK_2026: &str = include_str!("../../tests/fixtures/wayzata/track_2026_schedule.html");
 const XC_2026: &str = include_str!("../../tests/fixtures/wayzata/xc_2026_schedule.html");
+const FULL_XC_2026: &str = include_str!("../../tests/fixtures/wayzata/xc_2026_schedule.full.html");
+const MEET_DOC_79065: &str = include_str!("../../tests/fixtures/wayzata/meet-doc-79065.json");
+const EVENT_SUMMARY_79065: &str =
+    include_str!("../../tests/fixtures/wayzata/event-summary-meet-79065.json");
+const RESULT_DOCUMENT_2930238: &str =
+    include_str!("../../tests/fixtures/wayzata/ind-res-list-2930238.json");
+const RESULT_DOCUMENT_2930235: &str =
+    include_str!("../../tests/fixtures/wayzata/ind-res-list-2930235.json");
+const SEEDED_AT: &str = "2026-09-20T14:39:00Z";
 const OBSERVED_ON: &str = "2026-09-20";
 
 mod scenarios;
@@ -88,7 +97,7 @@ fn a_track_row_lands_in_the_season_its_month_belongs_to() {
 }
 
 fn seed_cache(cache_dir: &std::path::Path, url: &str, body: &str) -> TestResult {
-    seed_cache_at(cache_dir, url, body, "2026-09-20T14:39:00Z")
+    seed_capture(cache_dir, url, body, SEEDED_AT, None)
 }
 
 fn seed_cache_at(
@@ -97,28 +106,55 @@ fn seed_cache_at(
     body: &str,
     fetched_at: &str,
 ) -> TestResult {
-    use sha2::{Digest, Sha256};
-    let mut hasher = Sha256::new();
-    hasher.update(b"GET");
-    hasher.update([0x1f]);
-    hasher.update(url.as_bytes());
-    hasher.update([0x1f]);
-    let key: String = hasher.finalize()[..16]
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect();
-    let meta = json!({
-        "url": url,
-        "method": "GET",
-        "status": 200,
-        "content_digest": format!("{:x}", Sha256::digest(body.as_bytes())),
-        "bytes": body.len(),
-        "fetched_at": fetched_at,
-    });
+    seed_capture(cache_dir, url, body, fetched_at, None)
+}
+
+fn seed_capture(
+    cache_dir: &std::path::Path,
+    url: &str,
+    body: &str,
+    fetched_at: &str,
+    response_url: Option<&str>,
+) -> TestResult {
+    let key = crate::net::Fetcher::key_for("GET", url, "");
+    let meta = capture_meta("GET", url, body, fetched_at, response_url);
     std::fs::write(
         cache_dir.join(format!("{key}.meta.json")),
         serde_json::to_string(&meta)?,
     )?;
     std::fs::write(cache_dir.join(format!("{key}.body")), body)?;
     Ok(())
+}
+
+fn seed_post_json(cache_dir: &std::path::Path, url: &str, request: &str, body: &str) -> TestResult {
+    let key = crate::net::Fetcher::key_for("POST", url, request);
+    let meta = capture_meta("POST", url, body, SEEDED_AT, None);
+    std::fs::write(
+        cache_dir.join(format!("{key}.meta.json")),
+        serde_json::to_string(&meta)?,
+    )?;
+    std::fs::write(cache_dir.join(format!("{key}.body")), body)?;
+    Ok(())
+}
+
+fn capture_meta(
+    method: &str,
+    url: &str,
+    body: &str,
+    fetched_at: &str,
+    response_url: Option<&str>,
+) -> serde_json::Value {
+    use sha2::{Digest, Sha256};
+    let mut meta = json!({
+        "url": url,
+        "method": method,
+        "status": 200,
+        "content_digest": format!("{:x}", Sha256::digest(body.as_bytes())),
+        "bytes": body.len(),
+        "fetched_at": fetched_at,
+    });
+    if let (Some(destination), Some(record)) = (response_url, meta.as_object_mut()) {
+        record.insert("response_url".to_string(), json!(destination));
+    }
+    meta
 }

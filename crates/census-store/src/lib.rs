@@ -39,6 +39,7 @@ mod native_effect_checkpoint;
 mod native_worker_boundary;
 pub mod read;
 mod receipt;
+mod records;
 mod rows;
 mod run;
 mod sequences;
@@ -59,13 +60,24 @@ pub use inspect::StoreInspection;
 #[cfg(feature = "native-fault-injection")]
 pub use native_effect_checkpoint::{NativeEffectCheckpoint, NativeEffectRow};
 pub use read::{build_athlete_identity_projection, StoreSnapshot};
-pub use receipt::{Application, Credit, Pruned, Receipt, MAX_DIGEST_BYTES, MAX_OPERATION_BYTES};
+pub use receipt::{
+    Application, Credit, Pruned, Receipt, ReplayFrontier, ReplayWitness, MAX_DIGEST_BYTES,
+    MAX_FRONTIER_WITNESSES, MAX_OPERATION_BYTES,
+};
+pub use records::publish;
+pub use records::{
+    BuildRecord, BuildState, FailureKind, InputRecord, InputState, LeaseMode, LeaseRecord,
+    PublishRecord, PublishState, Transitioned, UnitRecord, UnitState,
+};
 pub use rows::TableWalk;
 pub use table::{
     Entity, StorageMode, Table, MAX_ID_BYTES, MAX_JOURNAL_KEY_BYTES, MAX_JOURNAL_VALUE_BYTES,
     MAX_ROWS_PER_TABLE,
 };
-pub use write_batch::{ConditionalBatch, StoreBatch};
+pub use write_batch::{
+    ConditionalBatch, ObservationBudget, ObservationChunk, StoreBatch, MAX_OBSERVATION_BATCH_BYTES,
+    MAX_OBSERVATION_BATCH_ROWS, MAX_OBSERVATION_RECORD_BYTES,
+};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Consolidated {
@@ -219,6 +231,8 @@ mod loom_tests;
 mod marks_tests;
 #[cfg(test)]
 mod receipt_tests;
+#[cfg(test)]
+mod records_tests;
 #[cfg(test)]
 mod replace_tests;
 #[cfg(test)]

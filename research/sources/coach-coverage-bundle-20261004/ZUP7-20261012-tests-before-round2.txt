@@ -1,0 +1,91 @@
+▮▮▮▮ pipeline:tests (a6b3581e)
+    Blocking waiting for file lock on build directory
+   Compiling census-crawl v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-crawl)
+warning: unused import: `AthleticLiveManifestRequest`
+  --> crates/census-service/src/restate_services/wire.rs:52:24
+   |
+52 | pub use athleticlive::{AthleticLiveManifestRequest, AthleticLiveObligation};
+   |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `digest` is never used
+  --> crates/census-service/src/restate_services/wire/athleticlive.rs:27:19
+   |
+13 | impl AthleticLiveObligation {
+   | --------------------------- method in this implementation
+...
+27 |     pub(crate) fn digest(&self) -> Option<&str> {
+   |                   ^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `AthleticLiveManifestRequest` is never constructed
+  --> crates/census-service/src/restate_services/wire/athleticlive.rs:36:12
+   |
+36 | pub struct AthleticLiveManifestRequest {
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `region` is never read
+  --> crates/census-service/src/restate_services/jurisdiction.rs:54:5
+   |
+47 | pub struct JurisdictionCensus {
+   |            ------------------ field in this struct
+...
+54 |     region: Arc<Spawner>,
+   |     ^^^^^^
+   |
+   = note: `JurisdictionCensus` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+
+warning: method `region` is never used
+  --> crates/census-service/src/restate_services/jurisdiction.rs:75:19
+   |
+57 | impl JurisdictionCensus {
+   | ----------------------- method in this implementation
+...
+75 |     pub(super) fn region(&self) -> Arc<Spawner> {
+   |                   ^^^^^^
+
+warning: field `region` is never read
+  --> crates/census-service/src/restate_services/jurisdiction.rs:54:5
+   |
+47 | pub struct JurisdictionCensus {
+   |            ------------------ field in this struct
+...
+54 |     region: Arc<Spawner>,
+   |     ^^^^^^
+   |
+   = note: `JurisdictionCensus` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `digest` is never used
+  --> crates/census-service/src/restate_services/wire/athleticlive.rs:27:19
+   |
+13 | impl AthleticLiveObligation {
+   | --------------------------- method in this implementation
+...
+27 |     pub(crate) fn digest(&self) -> Option<&str> {
+   |                   ^^^^^^
+
+warning: `census-service` (lib) generated 5 warnings (run `cargo fix --lib -p census-service` to apply 1 suggestion)
+warning: `census-service` (lib test) generated 5 warnings (3 duplicates)
+   Compiling census-service v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service)
+error[E0583]: file not found for module `fixture`
+ --> crates/census-crawl/tests/teams_source_refusals.rs:5:1
+  |
+5 | mod fixture;
+  | ^^^^^^^^^^^^
+  |
+  = help: to create the module `fixture`, create file "crates/census-crawl/tests/fixture.rs" or "crates/census-crawl/tests/fixture/mod.rs"
+  = note: if there is a `mod fixture` elsewhere in the crate already, import it with `use crate::...` instead
+
+For more information about this error, try `rustc --explain E0583`.
+error: could not compile `census-crawl` (test "teams_source_refusals") due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: command `/home/lewis/.rustup/toolchains/nightly-2026-04-27-x86_64-unknown-linux-gnu/bin/cargo test --no-run --message-format json-render-diagnostics --workspace --all-features --locked --offline --config .cargo/fast-iteration.toml` exited with code 101
+▮▮▮▮ pipeline:tests (1s 75ms, a6b3581e)
+Error: task_runner::run_failed
+
+  × Task pipeline:tests failed to run.
+  ╰─▶ Process tools/moon-cargo failed: exit code 101
+

@@ -1,6 +1,6 @@
 use census_domain::model::{
-    AppliedAthleteIdentity, CollectionSnapshot, CoverageRow, RetainedConflict, ReviewCase,
-    ReviewVerdictRecord, SourceAccessCondition, SourceObjectIdentity,
+    AppliedAthleteIdentity, CoachLaneObligation, CollectionSnapshot, CoverageRow, RetainedConflict,
+    ReviewCase, ReviewVerdictRecord, SourceAccessCondition, SourceObjectIdentity,
 };
 
 use crate::{Entity, StoreError, StoreResult, Table};
@@ -15,6 +15,7 @@ pub(super) fn fold(table: Table, prior: Option<&[u8]>, value: &[u8]) -> StoreRes
         Table::SourceAccess => fold_rows::<SourceAccessCondition>(prior, value),
         Table::IdentityVerdicts => fold_rows::<ReviewVerdictRecord>(prior, value),
         Table::AthleteIdentityDecisions => fold_rows::<AppliedAthleteIdentity>(prior, value),
+        Table::CoachLanes => fold_rows::<CoachLaneObligation>(prior, value),
         _ => Err(StoreError::Invariant {
             detail: format!("table {} is not stored as derived rows", table.file()),
         }),
