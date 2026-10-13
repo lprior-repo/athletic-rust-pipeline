@@ -10,7 +10,7 @@ fn archive_dirs(root: &Path) -> TestResult<PathBuf> {
 }
 
 fn archive_stage(root: &Path, name: &str) -> TestResult<PathBuf> {
-    let stage = root.join(name);
+    let stage = root.join(format!(".capture-stage-{name}"));
     std::fs::create_dir(&stage)?;
     Ok(stage)
 }
@@ -171,5 +171,83 @@ fn concurrent_publishers_share_one_capacity_budget() -> TestResult {
     }
     check!(eq; published, 1, "the shared budget admits one capture");
     check!(eq; refused, 1, "the second capture is refused, not oversubscribed");
+    Ok(())
+}
+
+#[test]
+fn a_retained_stage_charges_archive_capacity_so_the_cap_still_refuses() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let archive = archive_dirs(root.path())?;
+    let body = b"first capture body";
+    let capture = capture_of(root.path(), body)?;
+    let needed = needed_bytes(body, &capture);
+    let mut admission = ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed)?;
+    let stage = archive_stage(root.path(), "stage-first")?;
+    preserve_capture(&archive, &stage, "new", body, &capture, &mut admission)?;
+    drop(admission);
+    let second_body = b"second capture body that will fail to publish";
+    let second = capture_of(root.path(), second_body)?;
+    let second_needed = needed_bytes(second_body, &second);
+    let mut admission2 =
+        ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed + second_needed)?;
+    let second_stage = archive_stage(root.path(), "stage-fail")?;
+    let stage_body = second_stage.join("new.body");
+    std::fs::write(&stage_body, second_body)?;
+    let stage_meta = second_stage.join("new.meta.json");
+    std::fs::write(&stage_meta, &second.encoded)?;
+    admission2.finish_capture(
+        &second.meta.content_digest,
+        "0000000000000000000000000000000000000000000000000000000000000000",
+    )?;
+    drop(admission2);
+    let third_body = b"third body";
+    let third = capture_of(root.path(), third_body)?;
+    let mut admission3 =
+        ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed + second_needed)?;
+    let third_stage = archive_stage(root.path(), "stage-third")?;
+    let outcome = preserve_capture(&archive, &third_stage, "new", third_body, &third, &mut admission3);
+    let Err(FetchError::ArchiveCapacity { .. }) = outcome else {
+        return Err("a retained stage must charge capacity and refuse the next capture at the cap".into());
+    };
+    check!(second_stage.join("new.body").exists());
+    check!(second_stage.join("new.meta.json").exists());
+    Ok(())
+}
+
+#[test]
+fn a_stage_under_capacity_is_still_admitted_and_published() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let archive = archive_dirs(root.path())?;
+    let body = b"under capacity body";
+    let capture = capture_of(root.path(), body)?;
+    let needed = needed_bytes(body, &capture);
+    let mut admission = ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed * 2)?;
+    let stage = archive_stage(root.path(), "stage-admitted")?;
+    preserve_capture(&archive, &stage, "new", body, &capture, &mut admission)?;
+    assert_capture(root.path(), body, &capture.meta)?;
+    Ok(())
+}
+
+#[test]
+fn capacity_accounting_is_exact_across_repeated_cycles_without_drift_or_double_charge() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let archive = archive_dirs(root.path())?;
+    let body = b"repeated capture";
+    let capture = capture_of(root.path(), body)?;
+    let needed = needed_bytes(body, &capture);
+    for cycle in 0..3 {
+        let mut admission = ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed)?;
+        let stage = archive_stage(root.path(), &format!("stage-cycle-{cycle}"))?;
+        preserve_capture(&archive, &stage, "new", body, &capture, &mut admission)?;
+        drop(admission);
+    }
+    let mut final_admission = ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed)?;
+    let final_stage = archive_stage(root.path(), "stage-final")?;
+    let extra_body = b"extra capture";
+    let extra = capture_of(root.path(), extra_body)?;
+    let outcome = preserve_capture(&archive, &final_stage, "new", extra_body, &extra, &mut final_admission);
+    let Err(FetchError::ArchiveCapacity { .. }) = outcome else {
+        return Err("accounting drifted: an extra capture should have been refused".into());
+    };
     Ok(())
 }

@@ -13,6 +13,7 @@ const ARCHIVE_LOCK_NAME: &str = "archive-capacity.lock";
 
 pub(in crate::net::cache) struct ArchiveAdmission {
     _lock: File,
+    root: PathBuf,
     archive: PathBuf,
     capacity: u64,
 }
@@ -34,10 +35,11 @@ impl ArchiveAdmission {
             .map_err(|error| io_error(&lock_path, error))?;
         lock.lock().map_err(|error| io_error(&lock_path, error))?;
         create_directory(&archive.join("reservations"))?;
-        archive_bytes_used(archive)?;
+        archive_bytes_used(root, archive)?;
         recover_reservations(archive)?;
         Ok(Self {
             _lock: lock,
+            root: root.to_path_buf(),
             archive: archive.to_path_buf(),
             capacity,
         })
@@ -86,7 +88,7 @@ impl ArchiveAdmission {
     }
 
     fn check_capacity(&self, additional: u64) -> Result<(), FetchError> {
-        let used = archive_bytes_used(&self.archive)?;
+        let used = archive_bytes_used(&self.root, &self.archive)?;
         let reserved = reservation_bytes(&self.archive)?;
         let projected = used
             .checked_add(reserved)
