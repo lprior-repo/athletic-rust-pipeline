@@ -71,7 +71,7 @@ impl<'store> StoreBatch<'store> {
         prepared.commit_staged(once, batch)
     }
 
-    fn commit_staged(
+    pub(super) fn commit_staged(
         self,
         once: Option<(&str, &str)>,
         mut batch: OwnedWriteBatch,

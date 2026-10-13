@@ -5,6 +5,9 @@ mod byte_tests;
 mod commit;
 mod conditional;
 mod journal;
+mod revision;
+
+pub use revision::{RevisionedApplication, StoreRevision};
 
 use super::Store;
 use super::Table;

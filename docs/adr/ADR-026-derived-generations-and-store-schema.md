@@ -120,3 +120,43 @@ and both generations, the `store-migrate` verb, and error classification treatin
 publication or a moved-evidence decision as retriable). Dated command evidence is in
 the verification ledger (removed 2026-10-09); the fault matrix remains owned by
 [NATIONAL-CENSUS-FAULTS.md](../NATIONAL-CENSUS-FAULTS.md).
+
+## 2026-10-13: snapshot-bound application continuation
+
+School-address application reads school ownership and current review-case presence together. An
+entity-only fence cannot express the complete dependency: a replacement must target the derived
+partition that supplied the decision. `StoreSnapshot::revision()` therefore exposes an opaque,
+nonserializable token binding the originating store instance, evidence generation and derived
+partition. Store clones share the same instance identity; another open instance cannot supply a
+token merely because its numeric coordinates match.
+
+`StoreBatch::commit_once_at_revision` checks that origin and both coordinates under append
+serialization before checking a historical receipt. Effects, a versioned application witness and
+receipt commit together with `SyncData`. The returned `RevisionedApplication` contains the existing
+`Application` outcome and the exact revision captured before releasing the lock. A successful
+first application advances continuation only by its own write; a strict repeat returns the
+unchanged accepted coordinates. It cannot refresh an already-stale decision across another writer.
+The existing commit APIs and their repeat-before-evidence-check behavior remain unchanged.
+
+The address join uses one initial snapshot for both review presence and school iteration, and
+commits each complete school/co-op mutation group before continuing to an independent target.
+A concurrent entity mutation or derived publication refuses the next stale group, preserving
+prior committed targets. A later invocation takes a fresh view and recomputes the ordinary report;
+it never skips a whole generation or replays an old report over newly discovered schools.
+Review-containing application identities bind the physical derived partition. If a later partition
+omits a previously applied Pending case, fresh recomputation can insert that genuinely missing
+case without duplicating unchanged school observations. Existing decided cases remain present.
+
+This adds ephemeral API types and a versioned journal payload, without changing persisted Receipt,
+physical store schema, public workflow wires, source qualification or census acceptance. Legacy
+facts are retained without fabricated application receipts. Resource admission is fail-closed for
+a whole target; it does not split an inseparable co-op group to bypass byte ceilings. Diagnostic
+report files remain recomputable outputs rather than the transaction's durable authority.
+
+The school-address application v1 scope and witness records declare serialized fields in lexical
+key order, including nested lane and effect bindings. Their streaming typed JSON digests therefore
+match digests recomputed from the journal's retained JSON values. The effects array preserves
+first-occurrence School append order; only the scope's lane-reference set is sorted. This is a
+local v1 witness encoding contract, not a change to the shared `serialized_digest` helper or
+existing payload encodings. Retained-witness regression checks bind these bytes to actual receipt
+keys and fail if a field-order change silently changes that contract.

@@ -21,25 +21,33 @@ pub struct StoreSnapshot<'s> {
     root: &'s std::path::Path,
     derived_generation: u64,
     evidence_generation: u64,
+    revision: crate::StoreRevision<'s>,
 }
 
 impl<'s> StoreSnapshot<'s> {
     pub(crate) fn new(
         snapshot: Snapshot,
-        entities: &'s fjall::Keyspace,
-        journal: &'s fjall::Keyspace,
-        root: &'s std::path::Path,
+        store: &'s Store,
         derived_generation: u64,
         evidence_generation: u64,
     ) -> Self {
         Self {
             snapshot,
-            entities,
-            journal,
-            root,
+            entities: &store.entities,
+            journal: &store.journal,
+            root: &store.root,
             derived_generation,
             evidence_generation,
+            revision: crate::StoreRevision::captured(
+                store,
+                evidence_generation,
+                derived_generation,
+            ),
         }
+    }
+
+    pub fn revision(&self) -> crate::StoreRevision<'s> {
+        self.revision
     }
 
     pub fn sequence(&self) -> u64 {
