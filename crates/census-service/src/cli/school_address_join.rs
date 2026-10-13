@@ -85,7 +85,7 @@ fn parse_acquisitions(
             Some((p, rest)) => (p.to_string(), rest.to_string()),
             None => (source.clone(), String::new()),
         };
-        let entry = acquisitions.len() as u32;
+        let entry = u32::try_from(acquisitions.len()).unwrap_or(u32::MAX);
         let retrieved_at = date_pairs.get(&source).cloned();
         acquisitions.push(Acquisition {
             entry,

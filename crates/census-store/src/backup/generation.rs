@@ -29,7 +29,7 @@ fn normalize_path_str(path: &str) -> String {
             continue;
         }
         if comp == ".." {
-            if result.is_empty() || result.last() == Some(&".." as &&str) {
+            if result.is_empty() || result.last() == Some(&"..") {
                 result.push("..");
             } else {
                 result.pop();
@@ -53,10 +53,10 @@ pub(super) fn destination_prefix(base: &str, to: &Path) -> String {
     let raw = normalized.as_os_str().as_encoded_bytes();
     hasher.update(raw);
     let result = hasher.finalize();
-    let hash_hex = format!(
-        "{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
-        result[0], result[1], result[2], result[3], result[4], result[5], result[6], result[7]
-    );
+    let mut hash_hex = String::with_capacity(16);
+    for byte in result.iter().take(8) {
+        hash_hex.push_str(&format!("{byte:02x}"));
+    }
     format!("{base}{hash_hex}.")
 }
 

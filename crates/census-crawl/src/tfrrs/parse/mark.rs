@@ -36,7 +36,7 @@ pub fn is_track_size_conversion(note: &str) -> bool {
 }
 
 pub fn converted_from(note: &str) -> Option<ParsedMark> {
-    let start = find_ascii_ci(note, "converted from")? + "converted from".len();
+    let start = find_ascii_ci(note, "converted from")?.saturating_add("converted from".len());
     let token = note.get(start..)?.split_whitespace().next()?.trim_end_matches('.');
     if clock_seconds(token).is_some() {
         Some(ParsedMark::Time(token.to_string()))
@@ -53,7 +53,8 @@ fn find_ascii_ci(haystack: &str, needle: &str) -> Option<usize> {
     if pat.is_empty() || pat.len() > hay.len() {
         return None;
     }
-    (0..=hay.len() - pat.len()).find(|&index| hay[index..index + pat.len()].eq_ignore_ascii_case(pat))
+    hay.windows(pat.len())
+        .position(|window| window.eq_ignore_ascii_case(pat))
 }
 
 fn reads_as_mark(token: &str) -> bool {

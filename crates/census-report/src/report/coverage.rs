@@ -294,22 +294,23 @@ impl CoverageReport {
                 row.source_population.accepted,
                 row.source_population.withheld,
             ];
-            for (index, value) in stages.into_iter().enumerate() {
+            for ((sum, measured), value) in sums.iter_mut().zip(measured.iter_mut()).zip(stages) {
                 match value {
-                    Some(value) => sums[index] = sums[index].saturating_add(value),
-                    None => measured[index] = false,
+                    Some(value) => *sum = sum.saturating_add(value),
+                    None => *measured = false,
                 }
             }
         }
-        for (index, total) in global.into_iter().enumerate() {
+        for ((total, sum), (measured, stage)) in global
+            .into_iter()
+            .zip(sums.iter())
+            .zip(measured.iter().zip(population::STAGES.iter()))
+        {
             if let Some(total) = total {
-                if measured[index] && sums[index] > total {
+                if *measured && *sum > total {
                     return Err(ReportError::Invariant {
                         detail: format!(
-                            "source population reconciliation failed: rows sum {} > published {} for stage {}",
-                            sums[index],
-                            total,
-                            population::STAGES[index]
+                            "source population reconciliation failed: rows sum {sum} > published {total} for stage {stage}"
                         ),
                     });
                 }
@@ -380,7 +381,8 @@ fn state_histogram(rows: &[JurisdictionCoverage]) -> BTreeMap<String, usize> {
     let mut counts: BTreeMap<String, usize> = BTreeMap::new();
     for row in rows {
         let key = state_slug(row.state).to_string();
-        *counts.entry(key).or_insert(0) += 1;
+        let entry = counts.entry(key).or_insert(0);
+        *entry = entry.saturating_add(1);
     }
     counts
 }

@@ -152,7 +152,7 @@ impl Span<'_> {
             return Some(HardContradiction::GradYearEvidenceDiffers);
         }
         if self.rows.iter().enumerate().any(|(i, row)| {
-            self.rows.iter().skip(i + 1).any(|other| !row.gender_compatible(other))
+            self.rows.iter().skip(i.saturating_add(1)).any(|other| !row.gender_compatible(other))
         }) {
             return Some(HardContradiction::GenderDiffers);
         }
