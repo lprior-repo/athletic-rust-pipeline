@@ -370,3 +370,4 @@ fn a_restricted_bundle_inspects_under_its_own_seal_scope() -> TestResult {
 }
 
 mod measured_zero;
+mod scoped_coverage;

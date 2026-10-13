@@ -1,7 +1,7 @@
 use super::*;
 use calamine::{open_workbook, Reader, Xlsx};
 
-const LIFECYCLE: &str = "source lifecycle: 7 registered -> 7 -> 6 attempted -> 5 captured -> 4 parsed -> 3 accepted -> 2 withheld";
+const LIFECYCLE: &str = "global retained source lifecycle: registered=7,applicable=7,attempted=6,captured=5,parsed=4,accepted=3,withheld=2";
 const CONTACT: &str = "contact attempts: 0 attempted (0 reached, 0 failed, 0 blocked, 0 successful-empty, 0 accepted refusal, 0 exhausted) + 48 never attempted";
 
 pub(super) fn coverage_cells(workbook: &Path) -> TestResult<Vec<Vec<Data>>> {

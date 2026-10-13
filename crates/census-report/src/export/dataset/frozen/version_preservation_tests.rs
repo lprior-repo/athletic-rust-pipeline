@@ -77,6 +77,13 @@ fn historical_policy_preserves_every_retained_state_across_refusal_and_reopen() 
 }
 
 #[test]
+fn policy_fifteen_schema_three_roots_are_preserved_in_every_state_and_after_reopen() -> TestResult {
+    STATES
+        .into_iter()
+        .try_for_each(|state| preserved(VersionCase::PolicyFifteen, state))
+}
+
+#[test]
 fn historical_token_protocol_preserves_every_retained_state_across_refusal_and_reopen() -> TestResult
 {
     STATES

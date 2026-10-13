@@ -98,21 +98,32 @@ pub fn seal(store: &Store, request: &SealRequest) -> Result<SealOutcome, SealWor
         .map_err(|error| SealWorkflowError::Workbook(error.to_string()))?;
     let dataset = inspection.dataset;
     let workbook = inspection.check;
-    let coverage = report::coverage_report(&dataset, Some(cohort.get()))
-        .map_err(|error| SealWorkflowError::Coverage(error.to_string()))?;
     let derivation = Derivation::of(
         &dataset,
         request.scope,
         Some(cohort.get()),
         &request.jurisdictions,
     );
+    let selected_coverage = report::coverage_report_for_derivation(&derivation)
+        .map_err(|error| SealWorkflowError::Coverage(error.to_string()))?;
+    let retained_coverage = report::coverage_report(&dataset, Some(cohort.get()))
+        .map_err(|error| SealWorkflowError::Coverage(error.to_string()))?;
     let census = report::build_census(&derivation, &store.out_dir());
     let stats = store
         .stats()
         .map_err(|error| SealWorkflowError::Store(error.to_string()))?;
     let cases = &dataset.review_cases;
     let access = &dataset.source_access;
-    let evidence = assemble(&coverage, &census, &stats, cases, access, request, workbook);
+    let evidence = assemble(
+        &selected_coverage,
+        &retained_coverage,
+        &census,
+        &stats,
+        cases,
+        access,
+        request,
+        workbook,
+    );
 
     let recorded = recorded_seal(store)
         .map_err(|error| SealWorkflowError::SealRecording(error.to_string()))?;
