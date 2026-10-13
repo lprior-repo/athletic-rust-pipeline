@@ -110,6 +110,36 @@ fn validate_date(source: &str, value: &str) -> Result<(), JoinError> {
     })
 }
 
+fn matching_acquisitions<'a>(
+    lane: &crate::school_address::LaneReport,
+    overrides: &'a Overrides,
+) -> Vec<&'a Acquisition> {
+    overrides
+        .acquisitions
+        .iter()
+        .filter(|acq| {
+            if acq.provider != lane.source {
+                return false;
+            }
+            if acq.path.is_empty() {
+                return true;
+            }
+            let acq_path = acq.path
+                .strip_prefix(&format!("{}@", lane.source))
+                .unwrap_or(&acq.path);
+            let acq_canonicalized = match std::fs::canonicalize(acq_path) {
+                Ok(p) => p,
+                Err(_) => std::path::PathBuf::from(acq_path),
+            };
+            let lane_canonicalized = match std::fs::canonicalize(&lane.path) {
+                Ok(p) => p,
+                Err(_) => std::path::PathBuf::from(&lane.path),
+            };
+            acq_canonicalized == lane_canonicalized
+        })
+        .collect()
+}
+
 fn match_acquisitions_to_lanes(
     report: &Report,
     overrides: &Overrides,
@@ -122,30 +152,7 @@ fn match_acquisitions_to_lanes(
             continue;
         }
 
-        let matching_acqs: Vec<&Acquisition> = overrides
-            .acquisitions
-            .iter()
-            .filter(|acq| {
-                if acq.provider != lane.source {
-                    return false;
-                }
-                if acq.path.is_empty() {
-                    return true;
-                }
-                let acq_path = acq.path
-                    .strip_prefix(&format!("{}@", lane.source))
-                    .unwrap_or(&acq.path);
-                let acq_canonicalized = match std::fs::canonicalize(acq_path) {
-                    Ok(p) => p,
-                    Err(_) => std::path::PathBuf::from(acq_path),
-                };
-                let lane_canonicalized = match std::fs::canonicalize(&lane.path) {
-                    Ok(p) => p,
-                    Err(_) => std::path::PathBuf::from(&lane.path),
-                };
-                acq_canonicalized == lane_canonicalized
-            })
-            .collect();
+        let matching_acqs: Vec<&Acquisition> = matching_acquisitions(lane, overrides);
 
         for acq in &matching_acqs {
             matched_entries.insert(acq.entry);
