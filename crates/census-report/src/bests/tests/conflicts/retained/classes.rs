@@ -37,9 +37,9 @@ fn assert_class_quarantine(
             let observations = [order[0].clone(), order[1].clone(), duplicate.clone()];
             let mut dataset = reloaded_dataset(seed, &observations)?;
             retained_conflict(&dataset, &pair[0].id)?;
-            check!(eq; selected(&dataset), Vec::new());
+            check!(eq; selected(&dataset)?, Vec::new());
             dataset.performances.reverse();
-            check!(eq; selected(&dataset), Vec::new());
+            check!(eq; selected(&dataset)?, Vec::new());
 
             let mut clean = duplicate;
             clean.id = Id::mint("perf", &["clean_other_context_comparison_class"]);
@@ -53,9 +53,9 @@ fn assert_class_quarantine(
                 clean.clone(),
             ];
             let mut dataset = reloaded_dataset(seed, &observations)?;
-            let rows = selected(&dataset);
+            let rows = selected(&dataset)?;
             dataset.performances.reverse();
-            check!(eq; selected(&dataset), rows);
+            check!(eq; selected(&dataset)?, rows);
             check!(eq; rows.len(), 1);
             check!(eq; rows[0].source.performance_id, clean.id);
             check!(eq; rows[0].result.value, expected);
@@ -97,9 +97,9 @@ fn unresolvable_retained_conflict_still_quarantines_comparable_duplicates() -> T
             let observations = [order[0].clone(), order[1].clone(), duplicate.clone()];
             let mut dataset = reloaded_dataset(&seed, &observations)?;
             retained_conflict(&dataset, &pair[0].id)?;
-            check!(eq; selected(&dataset), Vec::new());
+            check!(eq; selected(&dataset)?, Vec::new());
             dataset.performances.reverse();
-            check!(eq; selected(&dataset), Vec::new());
+            check!(eq; selected(&dataset)?, Vec::new());
 
             let mut clean = duplicate;
             clean.id = Id::mint("perf", &["clean_after_unresolvable_conflict"]);
@@ -113,7 +113,7 @@ fn unresolvable_retained_conflict_still_quarantines_comparable_duplicates() -> T
                 clean.clone(),
             ];
             let dataset = reloaded_dataset(&seed, &observations)?;
-            let rows = selected(&dataset);
+            let rows = selected(&dataset)?;
             check!(eq; rows.len(), 1);
             check!(eq; rows[0].source.performance_id, clean.id);
             check!(eq; rows[0].result.value, 52_000_000_000);
@@ -143,9 +143,9 @@ fn retained_conflict_does_not_quarantine_another_athlete_in_the_same_context() -
         .try_for_each(|order| -> TestResult {
             let observations = [order[0].clone(), order[1].clone(), clean.clone()];
             let mut dataset = reloaded_dataset(&seed, &observations)?;
-            let rows = selected(&dataset);
+            let rows = selected(&dataset)?;
             dataset.performances.reverse();
-            check!(eq; selected(&dataset), rows);
+            check!(eq; selected(&dataset)?, rows);
             check!(eq; rows.len(), 1);
             check!(eq; rows[0].source.performance_id, clean.id);
             check!(eq; rows[0].result.value, 51_000_000_000);

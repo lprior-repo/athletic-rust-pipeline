@@ -14,7 +14,7 @@ fn key_construction_outdoor() -> TestResult {
     let event = test_event(EventKind::Track100m, &meet.id)?;
     perf.event = event.id.clone();
 
-    let result = crate::bests::PrKey::from_performance(&perf, &event, Some(&meet), measure);
+    let result = crate::bests::PrKey::from_performance(&perf, &event, Some(&meet), measure)?;
     let key = result.ok_or("outdoor performance has no PR key")?;
     check!(matches!(
         key.surface,
@@ -47,7 +47,7 @@ fn key_excluded_unresolved_surface() -> TestResult {
         &event,
         Some(&meet),
         crate::bests::Measure::Time,
-    );
+    )?;
     check!(result.is_none());
     Ok(())
 }
@@ -65,7 +65,7 @@ fn key_no_meet_is_excluded() -> TestResult {
     perf.event = event.id.clone();
 
     let result =
-        crate::bests::PrKey::from_performance(&perf, &event, None, crate::bests::Measure::Time);
+        crate::bests::PrKey::from_performance(&perf, &event, None, crate::bests::Measure::Time)?;
     check!(result.is_none());
     Ok(())
 }
@@ -92,7 +92,7 @@ fn cross_country_keys_separate_courses_but_share_measured_distance() -> TestResu
         }),
         ..EventSpecification::default()
     };
-    let event = CanonicalEvent::new(
+    let event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &meet.id,
             kind: EventKind::CrossCountry,
@@ -101,14 +101,14 @@ fn cross_country_keys_separate_courses_but_share_measured_distance() -> TestResu
             round: None,
         },
         specification.clone(),
-    )?;
+    )?);
     perf.event = event.id.clone();
     let first = crate::bests::PrKey::from_performance(
         &perf,
         &event,
         Some(&meet),
         crate::bests::Measure::Time,
-    )
+    )?
     .ok_or("first distance key")?;
     let first_course = first.same_course(&event).ok_or("first course key")?;
     specification
@@ -116,7 +116,7 @@ fn cross_country_keys_separate_courses_but_share_measured_distance() -> TestResu
         .as_mut()
         .ok_or("course context")?
         .course = Some(CourseIdentity::new("B", "1")?);
-    let event = CanonicalEvent::new(
+    let event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &meet.id,
             kind: EventKind::CrossCountry,
@@ -125,14 +125,14 @@ fn cross_country_keys_separate_courses_but_share_measured_distance() -> TestResu
             round: None,
         },
         specification,
-    )?;
+    )?);
     perf.event = event.id.clone();
     let second = crate::bests::PrKey::from_performance(
         &perf,
         &event,
         Some(&meet),
         crate::bests::Measure::Time,
-    )
+    )?
     .ok_or("second distance key")?;
     let second_course = second.same_course(&event).ok_or("second course key")?;
     check!(eq; first, second);
@@ -147,7 +147,7 @@ fn cross_country_keys_separate_courses_but_share_measured_distance() -> TestResu
             &event,
             Some(&meet),
             crate::bests::Measure::Time,
-        )
+        )?
     );
     Ok(())
 }

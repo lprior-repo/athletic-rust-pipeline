@@ -131,6 +131,8 @@ fn streams_of(dataset: &ExportDataset) -> TestResult<Streams> {
         &mut lanes,
         &mut legacy,
     )?;
+    let mut relays = dataset.relays.clone();
+    push_stream(&mut entries, StreamKind::Relays, &mut relays, &mut legacy)?;
     let legacy = legacy.finish()?;
     Ok(Streams { entries, legacy })
 }

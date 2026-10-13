@@ -64,7 +64,10 @@ pub(super) fn validate_binding(
         .join("generations")
         .join(digest.as_str())
         .join("manifest.json");
-    let manifest: manifest::Manifest = super::sidecars::read_json(&path)?;
+    let directory = path
+        .parent()
+        .ok_or_else(|| super::invariant("manifest has no generation directory".into()))?;
+    let manifest = manifest::verify_directory(directory)?;
     if manifest.lineage.store_identity != input.lineage.as_str()
         || super::binding::input_token(&manifest.lineage)? != input.token
         || super::binding::recipe(&manifest.lineage, &manifest.selection()?)? != input.recipe

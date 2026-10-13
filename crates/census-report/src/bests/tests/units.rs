@@ -15,7 +15,7 @@ fn selection_skips_distance_reports_for_timed_events() -> TestResult {
     );
     dataset.performances = vec![incompatible, valid.clone()];
 
-    let rows = selected(&dataset);
+    let rows = selected(&dataset)?;
 
     check!(eq; rows.len(), 1);
     check!(eq; rows[0].source.performance_id, valid.id);
@@ -41,7 +41,7 @@ fn selection_skips_time_reports_for_combined_events() -> TestResult {
     );
     dataset.performances = vec![incompatible, valid.clone()];
 
-    let rows = selected(&dataset);
+    let rows = selected(&dataset)?;
 
     check!(eq; rows.len(), 1);
     check!(eq; rows[0].source.performance_id, valid.id);
@@ -67,7 +67,7 @@ fn selection_skips_points_reports_for_ordinary_field_events() -> TestResult {
     );
     dataset.performances = vec![incompatible, valid.clone()];
 
-    let rows = selected(&dataset);
+    let rows = selected(&dataset)?;
 
     check!(eq; rows.len(), 1);
     check!(eq; rows[0].source.performance_id, valid.id);
@@ -94,7 +94,7 @@ fn selection_publishes_no_pr_when_only_incompatible_marks_exist() -> TestResult 
         let mut dataset = selection_dataset(kind)?;
         dataset.performances = vec![reported(&dataset, "historical_incompatible", mark)];
 
-        check!(eq; selected(&dataset), Vec::new());
+        check!(eq; selected(&dataset)?, Vec::new());
     }
     Ok(())
 }

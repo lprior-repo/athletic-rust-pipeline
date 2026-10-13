@@ -170,7 +170,8 @@ fn parity_grouping_streams_the_coaches_sheet_as_the_retained_vector_writer() -> 
 
     let dataset = crate::export::ExportDataset::load(&store)?;
     let derivation = Derivation::of(&dataset, Scope::AllSources, None);
-    let projection = Recruiting::of(&derivation, school_year, Vec::new())?;
+    let admission = crate::report::EventAdmission::of(&dataset)?;
+    let projection = Recruiting::of(&derivation, school_year, Vec::new(), &admission)?;
 
     let streaming_path = dir.path().join("streaming.xlsx");
     let mut book = Workbook::new();

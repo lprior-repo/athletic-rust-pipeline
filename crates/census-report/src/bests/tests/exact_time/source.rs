@@ -53,7 +53,7 @@ pub(super) fn store_with_source_reports(
         )?;
         meet.sports = vec![Sport::OutdoorTrack];
         let specification = EventSpecification::from_published_label(&event.label, &event.kind)?;
-        let canonical_event = CanonicalEvent::new(
+        let canonical_event = crate::test_events::owned(CanonicalEvent::new(
             EventIdentity {
                 meet: &meet.id,
                 kind: event.kind,
@@ -62,7 +62,7 @@ pub(super) fn store_with_source_reports(
                 round: event.round.as_deref(),
             },
             specification,
-        )?;
+        )?);
         let mut performance = reported(&seed, &format!("source:{date}:{raw}"), row.mark);
         performance.meet = meet.id.clone();
         performance.event = canonical_event.id.clone();

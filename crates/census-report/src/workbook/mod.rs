@@ -9,6 +9,7 @@ mod cells;
 pub mod meta;
 
 mod performances;
+mod relays;
 pub use meta::retained_records;
 pub use performances::{PerformanceProjection, PerformanceRow, ProjectedValue};
 mod recruiting;
@@ -69,7 +70,8 @@ fn write_artifacts(
     options: &Options,
     censuses: &Censuses,
 ) -> ReportResult<()> {
-    let bests = select_bests(dataset, options);
+    let admission = crate::report::EventAdmission::of(dataset)?;
+    let bests = select_bests(&admission, options)?;
     let cohort = match options.grad_year.map(|year| format!("co{year}")) {
         Some(value) => value,
         None => "all".to_string(),
@@ -77,28 +79,29 @@ fn write_artifacts(
     bests::write(directory, &bests, &cohort)?;
     dataset.save_frozen(&directory.join("frozen-input.json"))?;
 
-    render_artifacts(directory, dataset, options, censuses, bests)
+    publication::write_json(&directory.join("event-catalog.json"), &admission.audit())?;
+    render_artifacts(directory, dataset, options, censuses, bests, &admission)
 }
 
 fn select_bests(
-    dataset: &crate::export::ExportDataset,
+    admission: &crate::report::EventAdmission<'_>,
     options: &Options,
-) -> Vec<bests::SharedSelection> {
+) -> ReportResult<Vec<bests::SharedSelection>> {
     let started = Instant::now();
-    let rows = bests::build_from_dataset(
-        dataset,
+    let rows = bests::build_admitted(
+        admission,
         &bests::Options {
             scope: options.scope,
             grad_year: options.grad_year,
             limit: options.limit,
         },
-    );
+    )?;
     tracing::info!(
         rows = rows.len(),
         ms = millis(started),
         "workbook build step: bests"
     );
-    rows
+    Ok(rows)
 }
 
 fn render_artifacts(
@@ -107,11 +110,13 @@ fn render_artifacts(
     options: &Options,
     censuses: &Censuses,
     bests: Vec<bests::SharedSelection>,
+    admission: &crate::report::EventAdmission<'_>,
 ) -> ReportResult<()> {
     let path = directory.join("workbook.xlsx");
     let derivation = Derivation::of(dataset, options.scope, options.grad_year);
     let started = Instant::now();
-    let recruiting = recruiting::Recruiting::of(&derivation, options.school_year, bests)?;
+    let recruiting =
+        recruiting::Recruiting::of(&derivation, options.school_year, bests, admission)?;
     tracing::info!(ms = millis(started), "workbook build step: recruiting");
     let population = Derivation::of(dataset, options.scope, None);
     let views = Views::of(
@@ -120,8 +125,10 @@ fn render_artifacts(
         &derivation,
         &population,
         options.school_year,
+        admission,
     );
     write_workbook(&path, views)?;
+    relays::write_sidecars(directory, &derivation, admission)?;
     publication::write_sidecars(
         directory,
         dataset,
@@ -140,6 +147,7 @@ struct Views<'a> {
     derivation: &'a Derivation<'a>,
     population: &'a Derivation<'a>,
     school_year: census_domain::model::SchoolYear,
+    admission: &'a crate::report::EventAdmission<'a>,
 }
 
 impl<'a> Views<'a> {
@@ -149,6 +157,7 @@ impl<'a> Views<'a> {
         derivation: &'a Derivation<'a>,
         population: &'a Derivation<'a>,
         school_year: census_domain::model::SchoolYear,
+        admission: &'a crate::report::EventAdmission<'a>,
     ) -> Self {
         Self {
             core: &censuses.core,
@@ -157,6 +166,7 @@ impl<'a> Views<'a> {
             derivation,
             population,
             school_year,
+            admission,
         }
     }
 }
@@ -177,6 +187,7 @@ fn write_workbook(path: &Path, views: Views<'_>) -> ReportResult<()> {
 fn write_objective_sheets(book: &mut Workbook, path: &Path, views: Views<'_>) -> ReportResult<()> {
     write_recruiting_sheets(book, path, views.recruiting)?;
     write_performance_sheets(book, path, views.derivation)?;
+    relays::write_sheet(book, path, views.derivation, views.admission)?;
     write_coach_sheet(book, path, views.recruiting)?;
     views.recruiting.trace_counts();
     let started = Instant::now();
@@ -190,6 +201,7 @@ fn write_objective_sheets(book: &mut Workbook, path: &Path, views: Views<'_>) ->
             all_sources: views.all_sources,
             bests: views.recruiting.selected_prs(),
             school_year: views.school_year,
+            admission: views.admission,
         },
     )?;
     tracing::info!(ms = millis(started), "workbook build step: meta sheets");

@@ -344,7 +344,7 @@ fn seed_complete(store: &Store) -> TestResult {
     meet.sports = vec![Sport::OutdoorTrack];
     store.append(Table::Meets, &meet)?;
 
-    let event = CanonicalEvent::new(
+    let event = crate::test_events::owned(CanonicalEvent::new(
         census_domain::model::EventIdentity {
             meet: &meet.id,
             kind: census_domain::model::EventKind::Track100m,
@@ -353,7 +353,7 @@ fn seed_complete(store: &Store) -> TestResult {
             round: None,
         },
         EventSpecification::default(),
-    )?;
+    )?);
     let team = census_domain::model::TeamId::mint("tm", &[school_id.as_str(), "boys", "track"]);
     store.append(Table::Events, &event)?;
 

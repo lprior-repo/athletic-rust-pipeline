@@ -118,7 +118,7 @@ fn seed_performance(
     )?;
     meet.sports.push(Sport::OutdoorTrack);
     store.append(Table::Meets, &meet)?;
-    let event = CanonicalEvent::new(
+    let event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &meet.id,
             kind: EventKind::Track400m,
@@ -127,7 +127,7 @@ fn seed_performance(
             round: None,
         },
         EventSpecification::default(),
-    )?;
+    )?);
     store.append(Table::Events, &event)?;
     let mut performance = CanonicalPerformance::new(
         PerformanceIdentity {

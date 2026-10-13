@@ -19,7 +19,7 @@ fn cen8_distance_fastest_and_same_course_cross_dates_are_separate_policies() -> 
             event_with_specification(&meet, "Boys Cross Country", Gender::Boys, specification)?;
         add(&mut data, meet, event, time)?;
     }
-    let rows = selections(&data);
+    let rows = selections(&data)?;
     let fastest = rows
         .iter()
         .find(|row| row.key.comparison == ComparisonPolicy::ObservedFastest)
@@ -197,7 +197,7 @@ fn cen8_three_miles_short_unknown_and_conditions_cannot_enter_standard_five_km_s
     let unknown = meet("no_distance", Sport::CrossCountry, "2025-10-01");
     let unknown_event = event(&unknown, "Boys Cross Country")?;
     add(&mut data, unknown, unknown_event, "600")?;
-    let rows = selections(&data);
+    let rows = selections(&data)?;
     let times: Vec<_> = rows.iter().map(|row| &row.result.mark).collect();
     check!(
         eq;

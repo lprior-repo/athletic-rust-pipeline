@@ -6,7 +6,7 @@ pub(super) fn apply_pr_support(
     report: &mut CoverageReport,
     dataset: &ExportDataset,
     grad_year: Option<i16>,
-) {
+) -> super::ReportResult<()> {
     let bests = crate::bests::build_from_dataset(
         dataset,
         &crate::bests::Options {
@@ -14,7 +14,7 @@ pub(super) fn apply_pr_support(
             grad_year,
             limit: None,
         },
-    );
+    )?;
     let supported: HashSet<&str> = bests
         .iter()
         .filter(|selection| selection.result.adjustment_kind.is_none())
@@ -22,6 +22,7 @@ pub(super) fn apply_pr_support(
         .collect();
     tally_pr_support(report, dataset, grad_year, &supported);
     write_pr_gaps(report);
+    Ok(())
 }
 
 fn tally_pr_support(

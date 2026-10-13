@@ -74,10 +74,11 @@ pub(super) struct Series<'a, 'd> {
 
 impl Series<'_, '_> {
     fn sheets(&self) -> ReportResult<Vec<Sheet>> {
+        let admission = crate::report::EventAdmission::of(self.dataset)?;
         let cohort = cohort_of(self.dataset, self.scope);
         let names = school_name_index(self.population.schools());
         let conflicts = conflict_families(self.rows, &cohort, &names)?;
-        let review = review_families(self.rows, &cohort, &names)?;
+        let review = review_families(self.rows, &cohort, &names, &admission)?;
         let [mailboxes, research] =
             contacts::expected(self.population.schools(), self.school_year)?;
         Ok(vec![

@@ -11,7 +11,7 @@ pub(super) fn assert_artifacts(
 ) -> TestResult {
     let (expected, normalized) = expected;
     let dataset = ExportDataset::load(store)?;
-    let rows = selected(&dataset);
+    let rows = selected(&dataset)?;
     let selected = rows.first().ok_or("missing selected PR")?;
     check!(eq; rows.len(), 1);
     check!(eq; selected.result.value, nanos);

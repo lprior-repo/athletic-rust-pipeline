@@ -44,6 +44,7 @@ pub(super) fn cancel(store: &Store, job: &str) -> ReportResult<CancelOutcome> {
     let Some(retained) = root::read_retained(&directory)? else {
         return Ok(CancelOutcome::Absent);
     };
+    ensure_retirable(&directory, &retained)?;
     recover::cancel_attempt(store, &directory, &retained)
 }
 

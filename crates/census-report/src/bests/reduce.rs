@@ -6,7 +6,7 @@ use reports::{CompetitionContext, ContextIntegrity, ReportGroup, RetainedContext
 use super::key::{should_replace, MarkOrdering, PrKey};
 use super::selection::{Population, SharedSelection};
 use super::{is_relay, Measure, Options, Parents};
-use crate::report::{Derivation, Scope};
+use crate::report::{Derivation, EventAdmission, ReportResult, Scope};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, EventSpecification,
     SourceIdentity,
@@ -16,8 +16,16 @@ use std::collections::{BTreeMap, HashMap};
 pub fn build_from_dataset(
     dataset: &crate::export::ExportDataset,
     options: &Options,
-) -> Vec<SharedSelection> {
-    let derivation = Derivation::of(dataset, options.scope, options.grad_year);
+) -> ReportResult<Vec<SharedSelection>> {
+    let admission = EventAdmission::of(dataset)?;
+    build_admitted(&admission, options)
+}
+
+pub(crate) fn build_admitted(
+    admission: &EventAdmission<'_>,
+    options: &Options,
+) -> ReportResult<Vec<SharedSelection>> {
+    let derivation = Derivation::of(admission.dataset(), options.scope, options.grad_year);
     let parents = Parents::of(&derivation);
     let retained = RetainedContexts::of(derivation.performances(), &parents);
     let mut slots: HashMap<PrKey, PrSlot<'_>> = HashMap::new();
@@ -26,15 +34,15 @@ pub fn build_from_dataset(
         .iter()
         .copied()
         .for_each(|performance| {
-            fold(&mut slots, performance, &parents, &retained);
+            fold(&mut slots, performance, &parents, &retained, admission);
         });
-    super::selection::publish(
+    Ok(super::selection::publish(
         slots
             .into_iter()
             .filter_map(|(key, slot)| close(key, slot, &parents, derivation.scope()))
             .collect(),
         options.limit,
-    )
+    ))
 }
 
 struct PrSlot<'a> {
@@ -67,12 +75,16 @@ impl<'a> Candidate<'a> {
     fn resolve(
         performance: &'a CanonicalPerformance,
         parents: &Parents<'a>,
+        admission: &EventAdmission<'_>,
     ) -> Option<(PrKey, Self)> {
         let athlete = parents.athlete(performance.athlete.as_str())?;
-        let (measure, value) = eligible_measure(performance, parents)?;
+        let kind = admission.included_kind(&performance.event)?;
+        let (measure, value) = eligible_measure(performance, kind)?;
         let meet = parents.meet(performance.meet.as_str());
         let event = parents.canonical_event(performance.event.as_str())?;
-        let key = PrKey::from_athlete(performance, event, meet, measure, &athlete.id)?;
+        let disposition = admission.disposition(&event.id)?;
+        let key =
+            PrKey::from_admitted(performance, event, meet, measure, &athlete.id, disposition)?;
         Some((
             key,
             Self {
@@ -124,8 +136,9 @@ fn fold<'a>(
     performance: &'a CanonicalPerformance,
     parents: &Parents<'a>,
     retained: &RetainedContexts<'a>,
+    admission: &EventAdmission<'_>,
 ) {
-    let Some((key, candidate)) = Candidate::resolve(performance, parents) else {
+    let Some((key, candidate)) = Candidate::resolve(performance, parents, admission) else {
         return;
     };
     let integrity = retained.integrity(&candidate);
@@ -214,9 +227,8 @@ fn resolve_school(team_id: &census_domain::model::TeamId, parents: &Parents<'_>)
 
 fn eligible_measure(
     performance: &CanonicalPerformance,
-    parents: &Parents<'_>,
+    kind: &census_domain::model::EventKind,
 ) -> Option<(Measure, i64)> {
-    let kind = parents.event(performance.event.as_str())?;
     if is_relay(kind) || !performance.mark_compatible(kind) {
         return None;
     }

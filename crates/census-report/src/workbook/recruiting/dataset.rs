@@ -40,12 +40,14 @@ impl Dataset {
         derivation: &Derivation<'_>,
         school_year: census_domain::model::SchoolYear,
         prs: Vec<SharedSelection>,
+        admission: &crate::report::EventAdmission<'_>,
     ) -> ReportResult<Self> {
+        admission.ensure_dataset(derivation.dataset())?;
         crate::grouping::Admission::new("recruiting schools").rows(derivation.schools())?;
         let athletes = derivation.athletes().to_vec();
         let school_address =
             crate::export::postal::athlete_address_index(derivation.dataset(), &athletes)?;
-        let inputs = Inputs::new(derivation, school_year, prs);
+        let inputs = Inputs::new(derivation, school_year, prs, admission);
         let mut contacts = bounded_contacts(
             derivation.coach_observations(),
             school_year,
@@ -83,7 +85,7 @@ impl Dataset {
             coach_spellings: super::coach_spelling::spellings(
                 inputs.derivation.coach_observations(),
             ),
-            tallies: tallies_of(inputs.derivation, &athletes),
+            tallies: tallies_of(inputs.derivation, &athletes, inputs.admission),
             athletes,
             contacts,
             pr_index: pr_index(&inputs.prs),
@@ -130,6 +132,7 @@ struct Inputs<'a, 'd> {
     derivation: &'a Derivation<'d>,
     school_year: SchoolYear,
     prs: Vec<SharedSelection>,
+    admission: &'a crate::report::EventAdmission<'d>,
 }
 
 impl<'a, 'd> Inputs<'a, 'd> {
@@ -137,11 +140,13 @@ impl<'a, 'd> Inputs<'a, 'd> {
         derivation: &'a Derivation<'d>,
         school_year: SchoolYear,
         prs: Vec<SharedSelection>,
+        admission: &'a crate::report::EventAdmission<'d>,
     ) -> Self {
         Self {
             derivation,
             school_year,
             prs,
+            admission,
         }
     }
 
@@ -165,8 +170,9 @@ impl<'a, 'd> Inputs<'a, 'd> {
 fn tallies_of(
     derivation: &Derivation<'_>,
     athletes: &[CanonicalAthlete],
+    admission: &crate::report::EventAdmission<'_>,
 ) -> BTreeMap<String, AthleteTally> {
-    let kinds = kind_index(derivation.events());
+    let kinds = kind_index(derivation.events(), admission);
     tally(
         athletes,
         derivation.performances(),

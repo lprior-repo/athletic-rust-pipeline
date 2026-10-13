@@ -190,3 +190,6 @@ fn policy_ten_roots_are_preserved_across_all_record_states_and_reopen() -> TestR
         .into_iter()
         .try_for_each(|state| preserved(VersionCase::PriorParentScopePolicy, state))
 }
+
+#[path = "version_preservation_tests/cancellation.rs"]
+mod cancellation;

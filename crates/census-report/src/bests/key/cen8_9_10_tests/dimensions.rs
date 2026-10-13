@@ -13,7 +13,7 @@ fn cen10_throw_mass_known_unknown_and_category_have_exact_slots() -> TestResult 
         let event = event(&meet, label)?;
         add(&mut data, meet, event, mark)?;
     }
-    let rows = selections(&data);
+    let rows = selections(&data)?;
     let mut winners: Vec<_> = rows
         .iter()
         .map(|row| {
@@ -63,7 +63,7 @@ fn cen10_hurdle_height_spacing_and_unknown_specs_do_not_merge() -> TestResult {
         let event = event(&meet, label)?;
         add(&mut data, meet, event, time)?;
     }
-    let rows = selections(&data);
+    let rows = selections(&data)?;
     let winner = |height: Option<u32>, spacing: Option<u64>| {
         rows.iter().find(|row| {
             row.source.specification.hurdles

@@ -42,7 +42,7 @@ fn selection_keeps_conversion_and_actual_reports_of_one_race_distinct() -> TestR
     conversion.round = Some("1".to_string());
     dataset.performances = vec![actual.clone(), conversion.clone()];
 
-    let rows = selected(&dataset);
+    let rows = selected(&dataset)?;
 
     check!(eq; rows.len(), 2);
     let converted_row = rows
@@ -93,7 +93,7 @@ fn unknown_conversion_basis_is_unqualified_and_kept_apart_from_known_conversions
     let unknown = converted(&dataset, "unknown_conversion", None, seconds("9:15.75")?);
     dataset.performances = vec![unknown.clone()];
 
-    let rows = selected(&dataset);
+    let rows = selected(&dataset)?;
 
     check!(eq; rows.len(), 1);
     check!(eq; rows[0].key.comparison, ComparisonPolicy::UnqualifiedAdjustment);
@@ -112,7 +112,7 @@ fn unknown_conversion_basis_is_unqualified_and_kept_apart_from_known_conversions
     );
     dataset.performances = vec![unknown, known];
 
-    let rows = selected(&dataset);
+    let rows = selected(&dataset)?;
 
     check!(eq; rows.len(), 2);
     check!(ne; rows[0].key, rows[1].key);
@@ -147,9 +147,9 @@ fn contested_actuals_still_conflict_beside_a_conversion() -> TestResult {
     );
     dataset.performances = vec![slower.clone(), faster.clone(), conversion.clone()];
 
-    let forward = selected(&dataset);
+    let forward = selected(&dataset)?;
     dataset.performances.reverse();
-    check!(eq; selected(&dataset), forward);
+    check!(eq; selected(&dataset)?, forward);
 
     check!(eq; forward.len(), 1);
     let converted_row = forward
@@ -196,7 +196,7 @@ fn a_conversion_elsewhere_stays_bound_to_its_own_meet_and_source() -> TestResult
     dataset.events.push(other_event);
     dataset.performances = vec![actual, conversion.clone()];
 
-    let rows = selected(&dataset);
+    let rows = selected(&dataset)?;
 
     check!(eq; rows.len(), 2);
     let converted_row = rows
@@ -224,7 +224,7 @@ fn conversion_source_survives_selection_beside_the_note() -> TestResult {
     ));
     performance.round = Some("1".to_string());
     dataset.performances = vec![performance.clone()];
-    let rows = selected(&dataset);
+    let rows = selected(&dataset)?;
     check!(eq; rows.len(), 1);
     check!(eq; rows[0].result.adjustment_note, Some(TRACK_SIZE_NOTE.to_string()));
     check!(eq; rows[0].result.adjustment_source, Some(source));

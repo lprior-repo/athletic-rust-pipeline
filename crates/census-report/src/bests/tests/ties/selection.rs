@@ -6,7 +6,7 @@ pub(super) fn assert_winner(
     dataset: &ExportDataset,
     expected: &Observation,
 ) -> TestResult<SharedSelection> {
-    let rows = selected(dataset);
+    let rows = selected(dataset)?;
     check!(eq; rows.len(), 1);
     let row = rows.into_iter().next().ok_or("missing tie winner")?;
     let performance = &expected.performance;
@@ -147,7 +147,7 @@ pub(super) fn reverse_meet_order(
 }
 
 fn rebind_event(observation: &mut Observation, case: &NumericCase) -> TestResult {
-    let event = CanonicalEvent::new(
+    let event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &observation.meet.id,
             kind: case.kind.clone(),
@@ -156,7 +156,7 @@ fn rebind_event(observation: &mut Observation, case: &NumericCase) -> TestResult
             round: None,
         },
         EventSpecification::default(),
-    )?;
+    )?);
     observation.event.id = event.id;
     observation.event.meet = observation.meet.id.clone();
     observation.performance.meet = observation.meet.id.clone();
@@ -296,7 +296,7 @@ fn shared_selection_tie_preference_cannot_revive_a_retained_conflict_context() -
                 dataset
                     .performances
                     .retain(|performance| performance.id != clean.performance.id);
-                check!(eq; selected(&dataset), Vec::new());
+                check!(eq; selected(&dataset)?, Vec::new());
                 Ok(())
             })
     })

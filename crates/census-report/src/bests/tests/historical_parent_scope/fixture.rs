@@ -277,7 +277,7 @@ fn competition(case: Case) -> TestResult<(CanonicalMeet, CanonicalEvent)> {
     } else {
         "wiaa_results"
     })];
-    let mut event = CanonicalEvent::new(
+    let mut event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &meet.id,
             kind: EventKind::Track400m,
@@ -286,7 +286,7 @@ fn competition(case: Case) -> TestResult<(CanonicalMeet, CanonicalEvent)> {
             round: None,
         },
         EventSpecification::default(),
-    )?;
+    )?);
     event.evidence = vec![evidence(if case == Case::NonCoreEvent {
         "athleticlive_results"
     } else {

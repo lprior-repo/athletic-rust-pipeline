@@ -1,5 +1,4 @@
-use crate::bests::SharedSelection;
-use crate::report::{Census, Derivation, ReportResult};
+use crate::report::{Derivation, ReportResult};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, ReviewCase,
     ReviewVerdictRecord,
@@ -29,14 +28,8 @@ pub use queues::retained_records;
 
 type Sheet = (&'static str, Vec<Vec<Cell>>, &'static [u16], SheetChrome);
 
-pub(super) struct RunFacts<'a> {
-    pub(super) population: &'a Derivation<'a>,
-    pub(super) recruiting: &'a Derivation<'a>,
-    pub(super) core: &'a Census,
-    pub(super) all_sources: &'a Census,
-    pub(super) bests: &'a [SharedSelection],
-    pub(super) school_year: census_domain::model::SchoolYear,
-}
+mod run_facts;
+pub(super) use run_facts::RunFacts;
 
 fn step<T>(name: &'static str, build: impl FnOnce() -> T) -> T {
     let started = Instant::now();
@@ -56,7 +49,9 @@ pub(super) fn write_meta_sheets(
     let cohort = cohort_of(facts.population.dataset(), facts.population.scope());
     let names = school_name_index(rows.schools);
     let conflicts = step("conflicts", || conflict_families(&rows, &cohort, &names))?;
-    let review = step("review", || review_families(&rows, &cohort, &names))?;
+    let review = step("review", || {
+        review_families(&rows, &cohort, &names, facts.admission)
+    })?;
     let metrics = step("metrics", || metrics_sheet(&facts, &rows, &conflicts))?;
     let index = SubjectIndex::of(&rows);
     let inputs = sheets::Inputs::of(&facts, &rows, &conflicts, &review, &index);

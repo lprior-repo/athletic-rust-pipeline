@@ -124,7 +124,7 @@ fn seed(store: &Store, fixture: &Fixture) -> TestResult<String> {
     meet.evidence.push(observation());
     store.append(Table::Meets, &meet)?;
 
-    let mut event = CanonicalEvent::new(
+    let mut event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &meet_id,
             kind: fixture.kind.clone(),
@@ -133,7 +133,7 @@ fn seed(store: &Store, fixture: &Fixture) -> TestResult<String> {
             round: Some("Finals"),
         },
         EventSpecification::default(),
-    )?;
+    )?);
     let event_id = event.id.clone();
     event.evidence.push(observation());
     store.append(Table::Events, &event)?;
@@ -453,7 +453,7 @@ fn a_performance_the_store_cannot_join_is_still_written() -> TestResult {
         "Unreported Invitational",
         None,
     );
-    let event = CanonicalEvent::new(
+    let event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &meet,
             kind: EventKind::Track800m,
@@ -462,7 +462,7 @@ fn a_performance_the_store_cannot_join_is_still_written() -> TestResult {
             round: None,
         },
         EventSpecification::default(),
-    )?;
+    )?);
     let performance = CanonicalPerformance {
         id: CanonicalPerformance::mint(&athlete, &meet, &event.id, "2026-04-30", "test:orphan"),
         athlete: athlete.clone(),

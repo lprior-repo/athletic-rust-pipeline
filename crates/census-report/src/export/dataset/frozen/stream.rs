@@ -16,10 +16,11 @@ pub enum StreamKind {
     IdentityDecisions,
     CoverageRows,
     CoachLanes,
+    Relays,
 }
 
 impl StreamKind {
-    pub const ALL: [StreamKind; 14] = [
+    pub const ALL: [StreamKind; 15] = [
         StreamKind::Athletes,
         StreamKind::Schools,
         StreamKind::Teams,
@@ -34,6 +35,7 @@ impl StreamKind {
         StreamKind::IdentityDecisions,
         StreamKind::CoverageRows,
         StreamKind::CoachLanes,
+        StreamKind::Relays,
     ];
 
     pub const fn index(self) -> usize {
@@ -52,6 +54,7 @@ impl StreamKind {
             Self::IdentityDecisions => 11,
             Self::CoverageRows => 12,
             Self::CoachLanes => 13,
+            Self::Relays => 14,
         }
     }
 
@@ -71,6 +74,7 @@ impl StreamKind {
             Self::IdentityDecisions => "identity_decisions",
             Self::CoverageRows => "coverage_rows",
             Self::CoachLanes => "coach_lanes",
+            Self::Relays => "relays",
         }
     }
 

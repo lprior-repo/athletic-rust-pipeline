@@ -22,7 +22,7 @@ pub use manifest::{
 };
 pub use protocol::{PublicationError, RecoveryOutcome};
 pub use recovery::recover_publication;
-pub(super) use sidecars::write_sidecars;
+pub(super) use sidecars::{write_json, write_sidecars};
 pub(super) use stage::Stage;
 
 fn staging_nonce(store_identity: &str) -> ReportResult<String> {
@@ -125,3 +125,6 @@ mod coverage_tests;
 
 #[cfg(test)]
 mod pinned_run_publication_tests;
+
+#[cfg(test)]
+mod catalog_tests;

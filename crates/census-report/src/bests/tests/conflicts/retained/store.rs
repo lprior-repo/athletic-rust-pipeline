@@ -14,7 +14,7 @@ pub(super) fn reloaded_dataset(
     store.append_many(Table::Events, &seed.events)?;
     store.append_many(Table::Performances, observations)?;
     let before = ExportDataset::load(&store)?;
-    let selection = selected(&before);
+    let selection = selected(&before)?;
     original_observations(&store, observations)?;
     store.flush()?;
     drop(store);
@@ -22,7 +22,7 @@ pub(super) fn reloaded_dataset(
     let reopened = Store::open(directory.path())?;
     let after = ExportDataset::load(&reopened)?;
     check!(eq; after.performances, before.performances);
-    check!(eq; selected(&after), selection);
+    check!(eq; selected(&after)?, selection);
     original_observations(&reopened, observations)?;
     Ok(after)
 }

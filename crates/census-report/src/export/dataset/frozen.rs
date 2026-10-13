@@ -54,9 +54,9 @@ mod preflight_tests;
 pub use freeze::CancelOutcome;
 pub use root::FrozenRoot;
 
-const SCHEMA_REVISION: u32 = 2;
-const POLICY_REVISION: u32 = 13;
-const INPUT_TABLES: [Table; 15] = [
+const SCHEMA_REVISION: u32 = 3;
+const POLICY_REVISION: u32 = 14;
+const INPUT_TABLES: [Table; 16] = [
     Table::Schools,
     Table::Teams,
     Table::Coaches,
@@ -72,6 +72,7 @@ const INPUT_TABLES: [Table; 15] = [
     Table::SourceMeets,
     Table::Coverage,
     Table::CoachLanes,
+    Table::RelayResults,
 ];
 
 #[derive(Serialize)]
@@ -254,4 +255,13 @@ where
     Ok(BTreeMap::<String, T>::deserialize(deserializer)?
         .into_values()
         .collect())
+}
+
+pub(super) fn ensure_semantic_policy(lineage: &DatasetLineage) -> ReportResult<()> {
+    if lineage.schema_revision != SCHEMA_REVISION || lineage.policy_revision != POLICY_REVISION {
+        return Err(invalid(
+            "retained export input uses an incompatible recruiting policy or schema",
+        ));
+    }
+    Ok(())
 }

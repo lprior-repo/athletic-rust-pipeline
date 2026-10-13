@@ -1,3 +1,4 @@
+mod catalog;
 mod classification;
 mod compatibility;
 mod tie;
@@ -7,8 +8,8 @@ pub use compatibility::ComparisonPolicy;
 pub use tie::{tie_break_preferred, MarkOrdering};
 
 use census_domain::model::{
-    CanonicalEvent, CanonicalMeet, CanonicalPerformance, EventId, EventKind, EventSpecification,
-    Sport,
+    CanonicalEvent, CanonicalMeet, CanonicalPerformance, CatalogError, EventDisposition, EventId,
+    EventKind, EventSpecification, RecruitingCatalogV1, Sport,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize)]
@@ -77,7 +78,7 @@ impl PrKey {
         event: &CanonicalEvent,
         meet: Option<&CanonicalMeet>,
         measure: crate::bests::Measure,
-    ) -> Option<Self> {
+    ) -> Result<Option<Self>, CatalogError> {
         Self::from_athlete(performance, event, meet, measure, &performance.athlete)
     }
 
@@ -87,6 +88,26 @@ impl PrKey {
         meet: Option<&CanonicalMeet>,
         measure: crate::bests::Measure,
         athlete: &census_domain::model::AthleteId,
+    ) -> Result<Option<Self>, CatalogError> {
+        let surface = meet.map_or(SurfaceClass::Unresolved, SurfaceClass::resolve);
+        let disposition = RecruitingCatalogV1::new().classify(event, catalog::sport(surface))?;
+        Ok(Self::from_admitted(
+            performance,
+            event,
+            meet,
+            measure,
+            athlete,
+            &disposition,
+        ))
+    }
+
+    pub(super) fn from_admitted(
+        performance: &CanonicalPerformance,
+        event: &CanonicalEvent,
+        meet: Option<&CanonicalMeet>,
+        measure: crate::bests::Measure,
+        athlete: &census_domain::model::AthleteId,
+        disposition: &EventDisposition,
     ) -> Option<Self> {
         let meet = meet?;
         let surface = SurfaceClass::resolve(meet);
@@ -97,11 +118,7 @@ impl PrKey {
         {
             return None;
         }
-        let resolved = event.resolved_source_kind();
-        let kind = resolved
-            .as_ref()
-            .map_or(&event.kind, core::convert::identity);
-        Self::base(performance, kind, surface, measure, athlete).qualify(event)
+        catalog::included_key(performance, event, surface, measure, athlete, disposition)
     }
 
     fn base(
@@ -111,7 +128,6 @@ impl PrKey {
         measure: crate::bests::Measure,
         athlete: &census_domain::model::AthleteId,
     ) -> Self {
-        let contextual = matches!(kind, EventKind::Unmapped { .. });
         Self {
             athlete_id: athlete.clone(),
             event_kind: kind.clone(),
@@ -119,7 +135,7 @@ impl PrKey {
             wind_class: classify_wind(surface, kind, performance.wind_mps),
             timing: resolve_timing(&performance.mark, performance.timing),
             measure,
-            context: contextual.then(|| performance.event.clone()),
+            context: None,
             specification: EventSpecification::default(),
             comparison: ComparisonPolicy::Standard,
             adjustment: performance

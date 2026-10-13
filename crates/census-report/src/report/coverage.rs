@@ -150,6 +150,7 @@ pub struct JurisdictionCoverage {
 #[derive(Debug, Clone, Serialize)]
 pub struct CoverageReport {
     pub grad_year: Option<i16>,
+    pub event_catalog: crate::report::EventCounts,
     pub jurisdictions: Vec<JurisdictionCoverage>,
     pub gaps: Vec<CoverageGap>,
     pub read: CoverageTotals,
@@ -178,10 +179,12 @@ pub fn coverage_report(
     dataset: &ExportDataset,
     grad_year: Option<i16>,
 ) -> ReportResult<CoverageReport> {
+    let admission = crate::report::EventAdmission::of(dataset)?;
     let outcome = classify::run(dataset, grad_year);
     let state_counts = state_histogram(&outcome.jurisdictions);
     let mut report = CoverageReport {
         grad_year,
+        event_catalog: admission.counts().clone(),
         notes: notes::coverage_notes(dataset, grad_year, &outcome),
         jurisdictions: outcome.jurisdictions,
         gaps: outcome.gaps,
@@ -195,7 +198,7 @@ pub fn coverage_report(
         scope_filtered: outcome.scope_filtered,
         accepted_cohort: outcome.accepted_cohort,
     };
-    pr_support::apply_pr_support(&mut report, dataset, grad_year);
+    pr_support::apply_pr_support(&mut report, dataset, grad_year)?;
     report.reconcile()?;
     Ok(report)
 }

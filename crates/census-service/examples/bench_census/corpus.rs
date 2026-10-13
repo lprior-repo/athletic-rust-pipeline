@@ -180,6 +180,25 @@ fn event_of(meet_id: &MeetId, kind: &EventKind, gender: Gender) -> Result<Canoni
         },
         EventSpecification::default(),
     )?;
+    let label = event.kind.stable_key();
+    let label = label
+        .strip_prefix("Track")
+        .or_else(|| label.strip_prefix("Relay"))
+        .map_or(label.as_ref(), |value| value)
+        .to_owned();
+    let owner = census_domain::model::SourceRef::new(
+        "synthetic_event_fixture",
+        Some("https://example.test/synthetic/results".into()),
+    );
+    event
+        .source_labels
+        .push(census_domain::model::SourceEventLabel {
+            source: owner.clone(),
+            label,
+        });
+    event
+        .evidence
+        .push(census_domain::model::Evidence::parsed(owner, "2025-03-01"));
     event.evidence.push(evidence());
     Ok(event)
 }

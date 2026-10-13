@@ -67,7 +67,7 @@ fn contested_store() -> TestResult<(tempfile::TempDir, Store)> {
     );
     meet.sports.push(Sport::OutdoorTrack);
     store.append(Table::Meets, &meet)?;
-    let event = CanonicalEvent::new(
+    let event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &meet.id,
             kind: EventKind::Track400m,
@@ -76,7 +76,7 @@ fn contested_store() -> TestResult<(tempfile::TempDir, Store)> {
             round: None,
         },
         EventSpecification::default(),
-    )?;
+    )?);
     store.append(Table::Events, &event)?;
     for (label, seconds) in [("contest-first", "50.00"), ("contest-second", "51.00")] {
         store.append(
@@ -103,7 +103,7 @@ fn published_bests(store: &Store) -> TestResult<Vec<crate::bests::SharedSelectio
             grad_year: Some(2027),
             limit: None,
         },
-    ))
+    )?)
 }
 
 #[test]
@@ -280,7 +280,7 @@ fn unresolvable_marks_report_missing_pr_support() -> TestResult {
     );
     meet.sports.push(Sport::OutdoorTrack);
     store.append(Table::Meets, &meet)?;
-    let event = CanonicalEvent::new(
+    let event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &meet.id,
             kind: EventKind::Track400m,
@@ -289,7 +289,7 @@ fn unresolvable_marks_report_missing_pr_support() -> TestResult {
             round: None,
         },
         EventSpecification::default(),
-    )?;
+    )?);
     store.append(Table::Events, &event)?;
     store.append(
         Table::Performances,
@@ -308,7 +308,7 @@ fn unresolvable_marks_report_missing_pr_support() -> TestResult {
         "Vanished Invitational",
         None,
     );
-    let ghost = CanonicalEvent::new(
+    let ghost = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &vanished,
             kind: EventKind::Track100m,
@@ -317,7 +317,7 @@ fn unresolvable_marks_report_missing_pr_support() -> TestResult {
             round: None,
         },
         EventSpecification::default(),
-    )?;
+    )?);
     store.append(Table::Events, &ghost)?;
     store.append(
         Table::Performances,

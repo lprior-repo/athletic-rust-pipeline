@@ -167,7 +167,7 @@ fn run_bests_offline(store: &Store, args: &BestsArgs, grad_year: Option<i16>) ->
         limit: args.limit,
     };
     let dataset = ExportDataset::load(store).context("reading export dataset for best marks")?;
-    let rows = bests::build_from_dataset(&dataset, &options);
+    let rows = bests::build_from_dataset(&dataset, &options)?;
     let cohort = cohort_label(grad_year);
     let (jsonl, csv) =
         bests::write(&store.out_dir(), &rows, &cohort).context("writing the best-mark sidecars")?;

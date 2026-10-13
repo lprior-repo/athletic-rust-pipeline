@@ -181,3 +181,10 @@ pub use region_membership::{
     RegionStatementV1, RegionSubjectV1, MAX_REGION_ASSERTIONS, MAX_REGION_CONSTITUENTS,
     MAX_REGION_JURISDICTIONS, MAX_REGION_PAYLOAD_BYTES, REGION_MEMBERSHIP_CONTRACT_VERSION,
 };
+
+mod recruiting_catalog;
+pub use recruiting_catalog::{
+    CatalogError, EventDisposition, EventExclusionReason, EventResolutionReason,
+    RecruitingCatalogV1, CATALOG_V1_MAX_AGGREGATE_LABEL_BYTES, CATALOG_V1_MAX_LABEL_BYTES,
+    CATALOG_V1_MAX_SOURCE_LABELS,
+};

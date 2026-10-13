@@ -118,7 +118,7 @@ async fn execute(surface: Option<Value>, status: Option<&str>, numeric_best: boo
             grad_year: Some(2027),
             limit: None,
         },
-    );
+    )?;
     let expected_ids = if numeric_best {
         vec![performance.id.to_string()]
     } else {

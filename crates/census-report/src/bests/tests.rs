@@ -13,6 +13,7 @@ use census_store::{Store, Table};
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 mod adjustment;
+mod catalog;
 mod classification;
 mod conflicts;
 mod exact_time;
@@ -206,7 +207,7 @@ fn reported(dataset: &ExportDataset, label: &str, mark: Mark) -> CanonicalPerfor
 }
 
 fn test_event(kind: EventKind, meet: &MeetId) -> TestResult<CanonicalEvent> {
-    Ok(CanonicalEvent::new(
+    Ok(crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet,
             kind,
@@ -215,10 +216,10 @@ fn test_event(kind: EventKind, meet: &MeetId) -> TestResult<CanonicalEvent> {
             round: None,
         },
         EventSpecification::default(),
-    )?)
+    )?))
 }
 
-fn selected(dataset: &ExportDataset) -> Vec<SharedSelection> {
+fn selected(dataset: &ExportDataset) -> crate::report::ReportResult<Vec<SharedSelection>> {
     build_from_dataset(
         dataset,
         &Options {

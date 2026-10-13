@@ -140,7 +140,7 @@ fn converted_marks_carry_labels_but_never_count_as_pr_support() -> TestResult {
             grad_year: Some(2027),
             limit: None,
         },
-    );
+    )?;
     check!(eq; bests.len(), 2);
     let converted_row = bests
         .iter()
@@ -241,7 +241,7 @@ fn conversion_events(
     store: &Store,
     meet: &CanonicalMeet,
 ) -> TestResult<(CanonicalEvent, CanonicalEvent)> {
-    let distance = CanonicalEvent::new(
+    let distance = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &meet.id,
             kind: EventKind::Track3200m,
@@ -250,9 +250,9 @@ fn conversion_events(
             round: None,
         },
         EventSpecification::default(),
-    )?;
+    )?);
     store.append(Table::Events, &distance)?;
-    let mile = CanonicalEvent::new(
+    let mile = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &meet.id,
             kind: EventKind::Track1600m,
@@ -261,7 +261,7 @@ fn conversion_events(
             round: None,
         },
         EventSpecification::default(),
-    )?;
+    )?);
     store.append(Table::Events, &mile)?;
     Ok((distance, mile))
 }

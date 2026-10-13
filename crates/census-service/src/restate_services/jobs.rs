@@ -121,7 +121,7 @@ pub(super) fn build_report(store: &Store, scope: Scope) -> ReportResult<ReportRe
 
 pub(super) fn build_bests(store: &Store, options: &bests::Options) -> ReportResult<BestsReply> {
     let dataset = ExportDataset::load(store)?;
-    let rows = bests::build_from_dataset(&dataset, options);
+    let rows = bests::build_from_dataset(&dataset, options)?;
     let cohort = cohort_label(options.grad_year);
     let (jsonl, csv_path) = bests::write(&store.out_dir(), &rows, &cohort)?;
     Ok(BestsReply {

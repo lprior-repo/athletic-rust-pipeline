@@ -27,8 +27,8 @@ fn assert_frozen(path: &Path, fixture: &Fixture, scope: Scope) -> TestResult {
         .parent()
         .ok_or("missing historical-parent generation")?;
     let dataset = ExportDataset::reopen_frozen(&generation.join("frozen-input.json"))?;
-    check!(eq; dataset.lineage.schema_revision, 2);
-    check!(eq; dataset.lineage.policy_revision, 13);
+    check!(eq; dataset.lineage.schema_revision, 3);
+    check!(eq; dataset.lineage.policy_revision, 14);
     check!(eq; dataset.athletes.len(), 2);
     check!(eq; dataset.performances.len(), 2);
     check!(eq; dataset.canonical_aliases.len(), 0);
@@ -38,7 +38,7 @@ fn assert_frozen(path: &Path, fixture: &Fixture, scope: Scope) -> TestResult {
     if fixture.case.has_pr(scope) {
         assert_selection(&dataset, fixture, scope)?;
     } else {
-        check!(eq; build_from_dataset(&dataset, &options(scope)), Vec::new());
+        check!(eq; build_from_dataset(&dataset, &options(scope))?, Vec::new());
     }
     let verified = crate::workbook::verify::verify_frozen(
         path,

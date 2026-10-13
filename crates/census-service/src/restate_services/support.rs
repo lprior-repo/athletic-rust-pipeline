@@ -91,6 +91,16 @@ impl From<ReportError> for JobError {
         let message = error.to_string();
         match error {
             ReportError::Store(source) => Self::from(source),
+            ReportError::Catalog { source, .. } => match source {
+                census_domain::model::CatalogError::LabelCountExceeded
+                | census_domain::model::CatalogError::LabelBytesExceeded
+                | census_domain::model::CatalogError::AggregateLabelBytesExceeded
+                | census_domain::model::CatalogError::AggregateLabelBytesOverflow
+                | census_domain::model::CatalogError::InvalidLabel => Self::Terminal { message },
+                census_domain::model::CatalogError::ResourceExhausted => {
+                    Self::Transient { message }
+                }
+            },
             ReportError::Invariant { .. } | ReportError::Cleanup { .. } => {
                 Self::Terminal { message }
             }
@@ -98,6 +108,9 @@ impl From<ReportError> for JobError {
         }
     }
 }
+
+#[cfg(test)]
+mod catalog_tests;
 
 pub fn job_error(error: JobError) -> HandlerError {
     match error {

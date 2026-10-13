@@ -16,6 +16,7 @@ pub(in crate::workbook) mod postal;
 mod prs;
 mod reach;
 mod read;
+mod relays;
 mod report;
 mod xlsx;
 
@@ -36,6 +37,7 @@ pub fn verify_frozen(
     let mut findings = report::Findings::default();
     read::verify_inventory(&book, &expectations, &mut findings);
     performances::verify(&mut book, &expectations, &mut findings)?;
+    relays::verify(&mut book, &expectations, &mut findings)?;
     athletes::verify(&mut book, &expectations, &mut findings)?;
     prs::verify(&mut book, &expectations, &mut findings)?;
     coaches::verify(&mut book, &expectations, &mut findings)?;

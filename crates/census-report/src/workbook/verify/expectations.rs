@@ -34,6 +34,7 @@ pub(super) struct Expectations<'a> {
     pub(super) derivation: Derivation<'a>,
     pub(super) coach_claims: Vec<census_domain::model::CanonicalCoach>,
     pub(super) bests: Vec<SharedSelection>,
+    pub(super) admission: crate::report::EventAdmission<'a>,
     pub(super) contacts: BTreeMap<String, SchoolContacts>,
     pub(super) school_address: BTreeMap<String, String>,
     schools: BTreeMap<String, School>,
@@ -44,14 +45,15 @@ pub(super) struct Expectations<'a> {
 
 impl<'a> Expectations<'a> {
     pub(super) fn of(dataset: &'a ExportDataset, options: &Options) -> ReportResult<Self> {
+        let admission = crate::report::EventAdmission::of(dataset)?;
         let school_year = options.school_year;
         let derivation = Derivation::of(dataset, options.scope, options.grad_year);
         crate::grouping::Admission::new("recruiting schools").rows(derivation.schools())?;
         let school_address = super::postal::athlete_address_index(dataset, derivation.athletes())?;
-        let bests = selected_bests(dataset, options);
+        let bests = selected_bests(dataset, options)?;
         let schools = schools(derivation.schools());
         let pr_index = index(&bests);
-        let tallies = tallies(&derivation);
+        let tallies = tallies(&derivation, &admission);
         let mut contacts = bounded_contacts(
             derivation.coach_observations(),
             school_year,
@@ -67,6 +69,7 @@ impl<'a> Expectations<'a> {
             derivation,
             coach_claims,
             bests,
+            admission,
             contacts,
             school_address,
             schools,
@@ -120,7 +123,11 @@ impl<'a> Expectations<'a> {
     }
 
     pub(super) fn sheet_names(&self) -> Vec<String> {
-        let mut names = vec![labels::ATHLETES.to_string(), labels::PRS.to_string()];
+        let mut names = vec![
+            labels::ATHLETES.to_string(),
+            labels::PRS.to_string(),
+            "Relays".to_string(),
+        ];
         names.extend(performance_sheet_names(
             self.derivation.performances().len(),
         ));
@@ -130,7 +137,10 @@ impl<'a> Expectations<'a> {
     }
 }
 
-fn selected_bests(dataset: &ExportDataset, options: &Options) -> Vec<SharedSelection> {
+fn selected_bests(
+    dataset: &ExportDataset,
+    options: &Options,
+) -> ReportResult<Vec<SharedSelection>> {
     bests::build_from_dataset(
         dataset,
         &bests::Options {
@@ -182,7 +192,10 @@ fn index(prs: &[SharedSelection]) -> BTreeMap<String, Vec<usize>> {
     index
 }
 
-fn tallies(derivation: &Derivation<'_>) -> BTreeMap<String, Tally> {
+fn tallies(
+    derivation: &Derivation<'_>,
+    admission: &crate::report::EventAdmission<'_>,
+) -> BTreeMap<String, Tally> {
     let cohort: BTreeSet<&str> = derivation
         .athletes()
         .iter()
@@ -192,7 +205,7 @@ fn tallies(derivation: &Derivation<'_>) -> BTreeMap<String, Tally> {
         .iter()
         .map(|athlete| ((*athlete).to_string(), Tally::default()))
         .collect();
-    tally_performances(&mut tallies, &cohort, derivation);
+    tally_performances(&mut tallies, &cohort, derivation, admission);
     tallies
 }
 
@@ -200,8 +213,17 @@ fn tally_performances(
     tallies: &mut BTreeMap<String, Tally>,
     cohort: &BTreeSet<&str>,
     derivation: &Derivation<'_>,
+    admission: &crate::report::EventAdmission<'_>,
 ) {
     for performance in derivation.performances() {
+        let Some(event) = admission.event(&performance.event) else {
+            continue;
+        };
+        if derivation.scope().primary_evidence(event).is_none()
+            || admission.included_kind(&performance.event).is_none()
+        {
+            continue;
+        }
         let subject = performance.athlete.as_str();
         let athlete = derivation
             .athlete_aliases()

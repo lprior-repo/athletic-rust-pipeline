@@ -82,7 +82,7 @@ fn declare_controlled_indoor_context(store: &Store) -> TestResult {
                 grad_year: Some(2027),
                 limit: None,
             }
-        )
+        )?
         .is_empty(),
         "an unqualified meet surface must not publish any PR"
     );
@@ -161,7 +161,7 @@ fn assert_artifacts(
             grad_year: Some(2027),
             limit: None,
         },
-    );
+    )?;
     check!(eq; bests.len(), 1, "valid published field control: events={:?}; meets={:?}",
         dataset.events, dataset.meets);
     let valid = rows

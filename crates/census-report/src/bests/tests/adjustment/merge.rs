@@ -26,10 +26,10 @@ fn equal_originals_keep_adjusted_reports_uncontested_and_select_the_better_conve
     );
     dataset.performances = vec![slower, faster.clone()];
     let original = dataset.performances.clone();
-    let rows = selected(&dataset);
+    let rows = selected(&dataset)?;
     check!(eq; dataset.performances, original);
     dataset.performances.reverse();
-    check!(eq; selected(&dataset), rows);
+    check!(eq; selected(&dataset)?, rows);
     check!(eq; rows.len(), 1);
     check!(eq; rows[0].source.performance_id, faster.id);
     check!(eq; rows[0].result.value, 49_000_000_000);
@@ -58,9 +58,9 @@ fn different_originals_contest_equal_adjusted_reports_and_allow_only_a_clean_con
         seconds("49.00")?,
     );
     dataset.performances = vec![first, second];
-    check!(eq; selected(&dataset), Vec::new());
+    check!(eq; selected(&dataset)?, Vec::new());
     dataset.performances.reverse();
-    check!(eq; selected(&dataset), Vec::new());
+    check!(eq; selected(&dataset)?, Vec::new());
     let mut fallback = converted(
         &dataset,
         "different_original_fallback",
@@ -69,9 +69,9 @@ fn different_originals_contest_equal_adjusted_reports_and_allow_only_a_clean_con
     );
     fallback.date = "2025-03-02".into();
     dataset.performances.push(fallback.clone());
-    let rows = selected(&dataset);
+    let rows = selected(&dataset)?;
     dataset.performances.reverse();
-    check!(eq; selected(&dataset), rows);
+    check!(eq; selected(&dataset)?, rows);
     check!(eq; rows.len(), 1);
     check!(eq; rows[0].source.performance_id, fallback.id);
     check!(eq; rows[0].result.value, 52_000_000_000);
@@ -104,9 +104,9 @@ fn missing_or_nonnumeric_originals_compare_adjusted_candidate_values() -> TestRe
             seconds("49.00")?,
         );
         dataset.performances = vec![first, second];
-        check!(eq; selected(&dataset), Vec::new());
+        check!(eq; selected(&dataset)?, Vec::new());
         dataset.performances.reverse();
-        check!(eq; selected(&dataset), Vec::new());
+        check!(eq; selected(&dataset)?, Vec::new());
         Ok(())
     })
 }
@@ -136,10 +136,10 @@ fn retained_context_conflict_poisoning_crosses_actual_and_adjusted_keys_and_clea
     );
     dataset.performances = vec![actual, duplicate, conversion];
     let original = dataset.performances.clone();
-    check!(eq; selected(&dataset), Vec::new());
+    check!(eq; selected(&dataset)?, Vec::new());
     check!(eq; dataset.performances, original);
     dataset.performances.reverse();
-    check!(eq; selected(&dataset), Vec::new());
+    check!(eq; selected(&dataset)?, Vec::new());
     Ok(())
 }
 
@@ -192,9 +192,9 @@ fn retained_context_conflict_leaves_distinct_converted_competition_contexts_elig
             let mut clean = converted(&dataset, "clean_conversion_context", Some(seconds("53.00")?), seconds("52.00")?);
             separate_context(&mut dataset, &mut clean, context)?;
             dataset.performances = vec![actual, contested, clean.clone()];
-            let rows = selected(&dataset);
+            let rows = selected(&dataset)?;
             dataset.performances.reverse();
-            check!(eq; selected(&dataset), rows);
+            check!(eq; selected(&dataset)?, rows);
             check!(eq; rows.len(), 1);
             check!(eq; rows[0].source.performance_id, clean.id);
             check!(eq; rows[0].result.value, 52_000_000_000);

@@ -25,7 +25,7 @@ pub fn build_publication(
             grad_year: Some(constants::COHORT),
             limit: None,
         },
-    );
+    )?;
     assertions::assert_source_bests(&rows)?;
 
     let publication_root = root.join("publication");
