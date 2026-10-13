@@ -51,7 +51,7 @@ pub(super) fn read(
                 Completion::Retry(JobError::Transient { message }) => {
                     history.transient = Some(message)
                 }
-                Completion::Retry(JobError::Terminal { .. }) => {
+                Completion::Retry(JobError::Terminal { .. } | JobError::Resource { .. }) => {
                     return Err(terminal("terminal teams source outcome cannot be retried"));
                 }
             }

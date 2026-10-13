@@ -4,10 +4,16 @@ use restate_sdk::prelude::*;
 
 use crate::outcome::Outcome;
 use crate::spawn::Spawner;
-use census_report::report::ReportError;
+use census_report::report::{ExportResourceError, ReportError};
 use census_store::StoreError;
 #[derive(Debug, thiserror::Error)]
 pub enum JobError {
+    #[error("{message}")]
+    Resource {
+        #[source]
+        source: ExportResourceError,
+        message: String,
+    },
     #[error("{message}")]
     Transient { message: String },
     #[error("{message}")]
@@ -55,6 +61,9 @@ impl From<StoreError> for JobError {
 impl From<ReportError> for JobError {
     fn from(error: ReportError) -> Self {
         let message = error.to_string();
+        if let Some(source) = error.resource().copied() {
+            return Self::Resource { source, message };
+        }
         match error {
             ReportError::Store(source) => Self::from(source),
             ReportError::Catalog { source, .. } => match source {
@@ -82,6 +91,9 @@ pub fn job_error(error: JobError) -> HandlerError {
     match error {
         JobError::Transient { message } => HandlerError::from(TransientFailure { message }),
         JobError::Terminal { message } => HandlerError::from(TerminalError::new(message)),
+        JobError::Resource { message, .. } => {
+            HandlerError::from(TerminalError::new_with_code(413, message))
+        }
     }
 }
 

@@ -174,13 +174,13 @@ enum ReuseFailure {
 
 impl From<ReportError> for ReuseFailure {
     fn from(error: ReportError) -> Self {
-        Self::Retire(error)
+        Self::from(super::verification_error::VerificationError::from(error))
     }
 }
 
 impl From<super::verification_error::VerificationError> for ReuseFailure {
     fn from(error: super::verification_error::VerificationError) -> Self {
-        if error.preserves_version() {
+        if error.preserves_retained() {
             Self::Preserve(error.into())
         } else {
             Self::Retire(error.into())
@@ -190,12 +190,7 @@ impl From<super::verification_error::VerificationError> for ReuseFailure {
 
 impl ReuseFailure {
     fn from_codec(error: FrozenCodecError) -> Self {
-        match error {
-            unsupported @ FrozenCodecError::UnsupportedVersion { .. } => {
-                Self::Preserve(codec_error(unsupported))
-            }
-            other => Self::Retire(codec_error(other)),
-        }
+        Self::from(super::verification_error::VerificationError::from(error))
     }
 }
 

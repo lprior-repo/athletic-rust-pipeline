@@ -5,7 +5,7 @@ use census_domain::UsJurisdiction;
 use census_domain::model::{AccessBlockKind, CensusRun, GradYear, SourceAccessCondition};
 
 use super::{CensusState, SealEvidence, SealedCensus};
-use census_report::report::{self, Derivation, Scope};
+use census_report::report::{self, CoverageReport, Derivation, Scope};
 use census_store::{Store, StoreStats, Table};
 
 pub mod workbook;
@@ -75,6 +75,11 @@ impl SealOutcome {
     }
 }
 
+struct SealCoverage<'a> {
+    selected: &'a CoverageReport,
+    retained: &'a CoverageReport,
+}
+
 fn run_display(run: &CensusRun) -> String {
     format!("{}-{}", run.season().get(), run.revision())
 }
@@ -115,8 +120,10 @@ pub fn seal(store: &Store, request: &SealRequest) -> Result<SealOutcome, SealWor
     let cases = &dataset.review_cases;
     let access = &dataset.source_access;
     let evidence = assemble(
-        &selected_coverage,
-        &retained_coverage,
+        SealCoverage {
+            selected: &selected_coverage,
+            retained: &retained_coverage,
+        },
         &census,
         &stats,
         cases,

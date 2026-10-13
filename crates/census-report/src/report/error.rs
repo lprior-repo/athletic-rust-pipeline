@@ -1,8 +1,11 @@
+use super::ExportResourceError;
 use std::fmt;
 use std::path::Path;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ReportError {
+    #[error("{code}: {0}", code = .0.code())]
+    Resource(#[from] ExportResourceError),
     #[error("recruiting event {event} was refused: {source}")]
     Catalog {
         event: census_domain::model::EventId,
@@ -79,6 +82,17 @@ impl fmt::Display for CorruptionClass {
 }
 
 impl ReportError {
+    pub fn resource(&self) -> Option<&ExportResourceError> {
+        let mut error = self;
+        loop {
+            match error {
+                Self::Resource(source) => return Some(source),
+                Self::Cleanup { operation, .. } => error = operation,
+                _ => return None,
+            }
+        }
+    }
+
     pub fn corruption(&self) -> Option<CorruptionClass> {
         match self {
             Self::ArtifactCorrupt { .. } => Some(CorruptionClass::ArtifactCorrupt),

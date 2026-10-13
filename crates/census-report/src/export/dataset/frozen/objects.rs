@@ -2,7 +2,7 @@ use super::codec::{
     count, is_digest, sha256_hex, CHUNK_BYTES_LIMIT, INVENTORY_BYTES_LIMIT, MANIFEST_BYTES_LIMIT,
 };
 use super::{codec_error, invalid};
-use crate::report::{io_error, ReportError, ReportResult};
+use crate::report::{io_error, ExportResourceError, ReportError, ReportResult};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -56,10 +56,19 @@ fn reuse(path: &Path, digest: &str, length: u64) -> ReportResult<()> {
     if !metadata.file_type().is_file() || metadata.len() != length {
         return Err(no_replace(path, digest));
     }
-    if sha256_hex(&read_path(path, length)?) != digest {
+    if sha256_hex(&read_expected_length(path, digest, length)?) != digest {
         return Err(no_replace(path, digest));
     }
     Ok(())
+}
+
+fn read_expected_length(path: &Path, digest: &str, length: u64) -> ReportResult<Vec<u8>> {
+    match read_path(path, length) {
+        Err(ReportError::Resource(ExportResourceError::RowTooLarge { .. })) => {
+            Err(no_replace(path, digest))
+        }
+        result => result,
+    }
 }
 
 pub(super) fn read(directory: &Path, digest: &str, ceiling: u64) -> ReportResult<Vec<u8>> {
@@ -74,10 +83,12 @@ pub(super) fn read(directory: &Path, digest: &str, ceiling: u64) -> ReportResult
         return Err(artifact(&path, "a frozen object must be a regular file"));
     }
     if metadata.len() > ceiling {
-        return Err(artifact(
-            &path,
-            &format!("the frozen object exceeds its {ceiling}-byte ceiling"),
-        ));
+        return Err(ExportResourceError::RowTooLarge {
+            what: "frozen object",
+            bytes: metadata.len(),
+            max: ceiling,
+        }
+        .into());
     }
     let bytes = read_path(&path, ceiling)?;
     if sha256_hex(&bytes) != digest {
@@ -98,8 +109,14 @@ fn read_path(path: &Path, ceiling: u64) -> ReportResult<Vec<u8>> {
     file.take(limit)
         .read_to_end(&mut bytes)
         .map_err(|source| io_error(path, source))?;
-    if count(bytes.len()).map_err(codec_error)? > ceiling {
-        return Err(artifact(path, "the frozen object grew past its ceiling"));
+    let size = count(bytes.len()).map_err(codec_error)?;
+    if size > ceiling {
+        return Err(ExportResourceError::RowTooLarge {
+            what: "frozen object",
+            bytes: size,
+            max: ceiling,
+        }
+        .into());
     }
     Ok(bytes)
 }
@@ -181,3 +198,11 @@ pub(super) fn artifact(path: &Path, detail: &str) -> ReportError {
         detail: detail.to_string(),
     }
 }
+
+#[cfg(test)]
+#[path = "object_size_tests.rs"]
+mod object_size_tests;
+
+#[cfg(test)]
+#[path = "object_reuse_length_tests.rs"]
+mod object_reuse_length_tests;

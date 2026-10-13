@@ -1093,3 +1093,97 @@ The collision-bound scenarios must therefore be re-run after that run finishes o
     worktree lane. All five P2 beads stay open until their lane evidence above is complete and the
     deferred lanes have run.
 
+
+## 2026-10-13: scoped Coverage follow-up and format-admission preservation
+
+- Base: `05736d4b88d143752e0745a952eb7aff1a9c0a9a`, including owner fixture repair
+  `503482bc7466c36931566cfb15365799f7713d1d`. PR23 was closed as superseded; no duplicate
+  fixture repair was merged over the owner's changes.
+- Existing fixture repairs independently rechecked with
+  `env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:tests-scoped -- -p census-service --test parity_pipeline --test cen17_status --test workbook_shape`:
+  13 run, 13 passed, 0 skipped (nextest `db5e0f66-4060-4499-8972-0172eed28b1e`).
+  The source tree additionally held the private SealCoverage argument grouping and store-only
+  admission regression tests; those do not alter these fixture expectations.
+- Format-admission regression before the production repair:
+  `env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:tests-scoped -- -p census-store --lib -E 'test(format::migrate::exact_tests::admission)'`:
+  8 run, 3 passed, 5 failed, 446 filtered. Failures demonstrated lifecycle-version admission,
+  marker-hidden schema/key refusal classification, and current-schema marker reinterpretation.
+- After the production classifier repair, the full store library suite ran with
+  `env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:tests-scoped -- -p census-store --lib`:
+  454 run, 453 passed, 1 failed, 0 skipped. All eight new admission tests passed, including raw
+  entity/journal/metadata/receipt preservation and supported historical resumes. The remaining
+  `backup_tests::backup_refuses_a_socket_in_the_store_tree` failed at Unix socket setup with
+  OS error 1, PermissionDenied. An isolated outside-sandbox retry also failed at that boundary.
+  This is a failed environmental lane, not a passing suite or a skipped gate.
+- On a host permitting local Unix sockets, repeat that same full-store command. Earlier report
+  publication crash cases also require that capability; run
+  `env -u CI tools/moon-local run pipeline:tests-scoped -- -p census-report --lib -E 'test(workbook::publication::crash_tests)'`.
+  Full release, proof, native fault and performance qualification remain separate obligations.
+- No production store, live census, native Restate service, historical workbook, credential,
+  performance baseline, or enforced gate was modified by these checks.
+
+## 2026-10-13: export resource classification, CLI and handler boundary
+
+- Base remains `05736d4b88d143752e0745a952eb7aff1a9c0a9a`. Before the resource mapper
+  repair, `pipeline:tests-scoped -- -p census-report --lib -E 'test(export_resource_limits_are_not_artifact_corruption)'`
+  ran one test and failed: the deterministic limit was reported as `ArtifactCorrupt`.
+- Two initial integration builds failed before tests ran because the pinned Restate SDK's
+  `HandlerError` does not implement Display. Tests now read its supported `AsRef<dyn Error>`
+  boundary; no dependency or production API was changed to accommodate the tests.
+- After repair, the exact command
+  `env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:tests-scoped -- -p census-report -p census-service --lib --test export_resource_contract -E 'test(export_resource) + test(census::seal::tests)'`
+  ran 41 tests: 41 passed, 1356 filtered/skipped by the focused selection, nextest run
+  `46327ee6-0ea0-4974-bb3f-789412ac6d71`. Formatting through `pipeline:fmt-write` succeeded.
+- Assertions cover all three resource variants and exact fields, unchanged corruption mapping,
+  real cursor refusal before row callbacks, preserved cursor input record/root, primary versus
+  secondary cleanup, a single stable diagnostic code through CLI anyhow context, supervised
+  blocking propagation, terminal handler code 413, and existing serialized attempt shape.
+  The seal suite exercises selected versus retained Coverage after the private argument grouping.
+- This focused pass does not establish bounded decoded allocations, whole-process RSS,
+  durable operator resumption after changing limits, or complete frozen recovery preservation.
+  Those are separate acceptance surfaces; no bounded-memory issue is closed by this result.
+
+### Retained-input recovery regression (same repair)
+
+- Before the preservation repair, the new real-object matrix command
+  `env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:tests-scoped -- -p census-report --lib -E 'test(resource_preservation)'`
+  ran 6 tests: 1 passed, 5 failed, 626 filtered. Failures observed removed root files,
+  replacement capture, cancellation/sweep and changed binding state after resource refusal.
+- After the three-file freeze/recover/verification-error repair,
+  `env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:tests-scoped -- -p census-report --lib -E 'test(resource_preservation) + test(version_preservation) + test(historical_policy)'`
+  ran 25 tests: 25 passed, 607 filtered, nextest `cab0f0b3-f75e-4345-b6e0-6c7e3a75e1ae`.
+  The resource matrix covers eight inner-limit cases across five retained states, both resume
+  and cancel, twice before and twice after reopening. Binding has separate live-lease coverage.
+  Witnesses compare retained pointer bytes, all immutable object bytes, both input records,
+  leases and store sequence. Existing historical/future-version and missing-object controls pass.
+- The supplemental physical-size baseline command
+  `env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:tests-scoped -- -p census-report --lib -E 'test(physical_resource_preservation)'`
+  ran 9 tests: 4 passed, 5 failed, 632 filtered. It demonstrates that the object-reader's
+  separate size checks still classify admission limits as corruption before the supplemental
+  repair. Exact-ceiling, invalid-name, nonregular-file, wrong-hash and bounded descriptor-length
+  controls distinguish resource refusal from existing integrity failures.
+- After the physical-reader repair and expected-immutable-length review correction, the full
+  report library command
+  `env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:tests-scoped -- -p census-report --lib`
+  ran 645 tests: 641 passed, 4 failed, 0 skipped; nextest
+  `1bf8066b-6af1-4334-87de-cac91b35d81c`. All new resource, preservation, physical-object,
+  expected-length and historical/future-version tests passed. The four failures are the existing
+  publication-fence abort/kill tests, each failing Unix socket setup with OS error 1,
+  PermissionDenied. No failing case was removed, ignored, or marked passed.
+- Static re-review identified that immutable object reuse reads with an expected content length,
+  whereas public object reads use resource ceilings. A narrow reuse-owned helper retains the
+  existing no-replacement invariant refusal on growth, while resource reads expose typed size
+  refusal. Deterministic tests exercise growth after observing an exact metadata length, exact
+  reuse, same-length wrong hash, I/O and overflow propagation. No timing-sensitive race fixture
+  or unexecuted concurrency proof is claimed.
+- Final basic checks on the integrated source all completed with exit 0:
+  `env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:fmt`,
+  `env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:check`, and
+  `env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:lint-src`.
+  No Rust compiler or source-Clippy warning appeared in those logs. Moon could not connect to
+  its optional remote service and completed these checks locally. Full release, proof and native
+  qualification remain not run; the five environment-dependent test failures above remain open.
+- Changed-surface review covered the exact report error/codec/object/freeze/recovery boundaries,
+  all production JobError matches, service contract tests, store classifier/migration controls,
+  and private seal assembly grouping. No broad re-audit or global readiness certification is
+  implied. The immutable-length finding was repaired before publication.

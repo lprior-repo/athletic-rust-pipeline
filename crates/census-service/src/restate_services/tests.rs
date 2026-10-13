@@ -1250,7 +1250,9 @@ fn snapshot_revision_movement_remains_retryable_through_address_join() -> TestRe
     let error = JobError::from(crate::school_address::JoinError::Store(source));
     match error {
         JobError::Transient { message } => check!(eq; message, expected),
-        JobError::Terminal { .. } => return Err("revision movement became terminal".into()),
+        JobError::Terminal { .. } | JobError::Resource { .. } => {
+            return Err("revision movement became terminal".into())
+        }
     }
     Ok(())
 }
@@ -1265,6 +1267,7 @@ fn foreign_snapshot_origin_is_terminal_through_address_join() -> TestResult {
     match error {
         JobError::Terminal { message } => check!(eq; message, expected),
         JobError::Transient { .. } => return Err("foreign origin became retryable".into()),
+        JobError::Resource { .. } => return Err("foreign origin became a resource refusal".into()),
     }
     Ok(())
 }
@@ -1289,6 +1292,9 @@ fn malformed_or_missing_store_lineage_is_terminal_without_retrying_identity_crea
         match JobError::from(source) {
             JobError::Terminal { message } => check!(eq; message, expected),
             JobError::Transient { .. } => return Err("lineage refusal became retryable".into()),
+            JobError::Resource { .. } => {
+                return Err("lineage refusal became a resource refusal".into())
+            }
         }
     }
     Ok(())
