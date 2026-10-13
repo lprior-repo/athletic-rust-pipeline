@@ -18,16 +18,19 @@ moon="$root/tools/moon-local"
 
 declare -A lane=(
   [crawl-tfrrs]="pipeline:tests-scoped -- -p census-crawl -E test(conversion)+test(tfrrs)"
-  [report-selection]="pipeline:tests-scoped -- -p census-report -E test(ties)+test(adjustment)"
+  [report-selection]="pipeline:tests-scoped -- -p census-report -E test(ties)+test(adjust)"
   [reconcile-identity]="pipeline:tests-scoped -- -p census-reconcile -E test(supersed)"
   [domain-identity]="pipeline:tests-scoped -- -p census-domain -E test(identity)"
   [service-capture]="pipeline:tests-scoped -- -p census-service -E test(capture)+test(replay)"
   [service-provenance]="pipeline:tests-scoped -- -p census-service -E test(provenance)"
   [coach-lane-fixtures]="pipeline:tests-scoped -- -p census-service -E test(coach_lane)"
+  # Named, not pattern-matched: the conversion readback is the acceptance this harness exists for, so a
+  # rename must fail the lane loudly instead of silently emptying it.
+  [conversion-readback]="pipeline:tests-scoped -- -p census-report -E test(a_provider_adjusted_track_size_mark)+test(legacy_performance_without_adjustment_provenance)"
   [xtask-ratchet]="pipeline:tests-scoped -- -p xtask -E test(ratchet)+test(baseline)"
   [gate-ratchet]="pipeline:gate -- --lane ratchet"
 )
-fast=(crawl-tfrrs report-selection reconcile-identity domain-identity service-capture service-provenance coach-lane-fixtures xtask-ratchet)
+fast=(crawl-tfrrs report-selection conversion-readback reconcile-identity domain-identity service-capture service-provenance coach-lane-fixtures xtask-ratchet)
 selected=()
 with_gate=0
 with_fresh=0
@@ -49,10 +52,15 @@ run_lane() {
   output=$(env -u CI "$moon" run "${argv[@]}" 2>&1)
   status=$?
   summary=$(printf '%s\n' "$output" | grep -E 'Summary \[' | tail -n 1)
-  if (( status == 0 )); then
+  local ran=0
+  if [[ "$summary" =~ \]\ ([0-9]+)\ tests?\ run ]]; then ran="${BASH_REMATCH[1]}"; fi
+  if (( status == 0 )) && (( ran > 0 )); then
     printf 'PASS %s: %s\n' "$name" "${summary:-no summary line}"
   else
     printf 'FAIL %s (exit %d): %s\n' "$name" "$status" "${summary:-no summary line}"
+    if (( status == 0 )); then
+      printf '%s\n' 'the lane selected no tests: a renamed or narrowed filter must not read as a pass'
+    fi
     printf '%s\n' "$output" | grep -E 'FAIL|error\[|^error' | head -n 12
     failures+=("$name")
   fi
