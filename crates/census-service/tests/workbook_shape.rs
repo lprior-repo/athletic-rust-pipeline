@@ -171,6 +171,7 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory(
         "Athletes",
         "PRs",
         "Performances_001",
+        "Relays",
         "Coaches",
         "Schools",
         "Meets",
