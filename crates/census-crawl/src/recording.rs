@@ -4,6 +4,8 @@ use census_store::Table;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::CrawlResult;
+
 mod apply;
 #[cfg(test)]
 mod apply_tests;
@@ -83,11 +85,30 @@ impl Recording {
         Self::default()
     }
 
-    pub fn spooled(store: census_store::Store, identity: String) -> Self {
-        Self {
+    pub fn spooled(store: census_store::Store, identity: String) -> CrawlResult<Self> {
+        let spool = spool::Spool { store, identity };
+        let recording = Self {
             state: Mutex::new(RecordingState::default()),
-            spool: Some(spool::Spool { store, identity }),
+            spool: Some(spool),
+        };
+        {
+            let mut state = recording.state();
+            if let Some(spool) = &recording.spool {
+                spool.reconstruct(&mut state)?;
+            }
         }
+        Ok(recording)
+    }
+    pub fn fragments(&self) -> usize {
+        self.state().fragments
+    }
+
+    pub fn fragment_bytes(&self) -> usize {
+        self.state().fragment_bytes
+    }
+
+    pub fn fragment_rows(&self) -> usize {
+        self.state().fragment_rows
     }
 
     pub(crate) fn fragment_identity(&self) -> Option<&str> {
