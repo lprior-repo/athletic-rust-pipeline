@@ -5,6 +5,7 @@ mod generation;
 mod http_cache;
 mod integrity;
 mod manifest;
+mod registry;
 mod restore;
 mod tree;
 

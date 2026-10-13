@@ -319,12 +319,18 @@ fn malformed_unknown_and_oversized_records_refuse_distinctly_without_writes() ->
     bytes.push(b' ');
     inject(&store, &id, &bytes)?;
     let before = Witness::capture(&store)?;
-    match store.profile(&id) {
-        Err(StoreError::ProfileRegistry(ProfileRegistryError::Oversized { bytes, max })) => {
-            equal(max, MAX_PROFILE_RECORD_BYTES)?;
-            equal(bytes, max.checked_add(1).ok_or("ceiling")?)?;
+    for result in [
+        store.profile(&id).map(|_| ()),
+        store.snapshot().profile(&id).map(|_| ()),
+        store.register_profile(&profile).map(|_| ()),
+    ] {
+        match result {
+            Err(StoreError::ProfileRegistry(ProfileRegistryError::Oversized { bytes, max })) => {
+                equal(max, MAX_PROFILE_RECORD_BYTES)?;
+                equal(bytes, max.checked_add(1).ok_or("ceiling")?)?;
+            }
+            other => return Err(format!("oversized={other:?}").into()),
         }
-        other => return Err(format!("oversized={other:?}").into()),
     }
     equal(Witness::capture(&store)?, before)
 }
