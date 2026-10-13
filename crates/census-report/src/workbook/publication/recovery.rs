@@ -5,6 +5,7 @@ use std::path::Path;
 
 pub(super) struct Prepared {
     active: Option<Intent>,
+    requested: Option<Intent>,
     observed: Result<Root, String>,
     diagnostics: Vec<String>,
     integrity: Option<Digest>,
@@ -14,9 +15,15 @@ pub(super) struct Prepared {
 
 pub(super) fn prepare(store: &Store, root: &Path, namespace: &Digest) -> ReportResult<Prepared> {
     let active = store.publication_active(namespace)?;
+    let requested = if active.is_none() {
+        store.publication_requested(namespace)?
+    } else {
+        None
+    };
     let observed = pointer::read(root).map_err(|error| error.to_string());
     let mut prepared = Prepared {
         active,
+        requested,
         observed,
         diagnostics: Vec::new(),
         integrity: None,
@@ -70,6 +77,9 @@ pub(super) fn reconcile(
     }
     if !prepared.diagnostics.is_empty() {
         return Err(required(root, prepared, prepared.diagnostics.join("; ")));
+    }
+    if let Some(intent) = &prepared.requested {
+        return reconcile_requested(store, root, intent, &Root::Absent, &prepared.run_manifest);
     }
     let selected = prepared
         .observed
@@ -137,7 +147,9 @@ fn dispatch_intent_recovery(
         State::Intent { .. } => {
             reconcile_intent(store, root, intent, selected, desired, run_manifest)
         }
-        State::Requested => Ok(RecoveryOutcome::NoIntent),
+        State::Requested => {
+            reconcile_requested(store, root, intent, selected, run_manifest)
+        }
     }
 }
 fn required(root: &Path, prepared: &Prepared, detail: String) -> crate::report::ReportError {
@@ -242,6 +254,31 @@ fn another(selected: &Root, desired: &Digest) -> ReportResult<RecoveryOutcome> {
         Root::Absent => Err(super::invariant(
             "superseded publication has no selected root".into(),
         )),
+    }
+}
+pub(super) fn reconcile_requested(
+    store: &Store,
+    _root: &Path,
+    intent: &Intent,
+    _selected: &Root,
+    _run_manifest: &Option<Digest>,
+) -> ReportResult<RecoveryOutcome> {
+    match store.publication_lease(&intent.request.identity) {
+        Err(census_store::StoreError::LeaseExpired { .. }) => {
+            store.publication_rebind_lease(&intent.request)?;
+            let updated = store
+                .publication_read(&intent.request.identity)?
+                .ok_or_else(|| super::invariant("publication request disappeared".into()))?;
+            if updated.state == State::Requested {
+                Ok(RecoveryOutcome::NoIntent)
+            } else {
+                Ok(RecoveryOutcome::ExpectedSuperseded {
+                    bundle: updated.request.identity.clone(),
+                })
+            }
+        }
+        Err(error) => Err(error.into()),
+        Ok(_) => Ok(RecoveryOutcome::NoIntent),
     }
 }
 

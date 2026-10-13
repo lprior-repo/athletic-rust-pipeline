@@ -1,4 +1,6 @@
 use super::*;
+use census_store::publish::{Root, State};
+
 pub(in crate::workbook) struct Stage<'s> {
     root: PathBuf,
     directory: PathBuf,
@@ -27,22 +29,26 @@ impl<'s> Stage<'s> {
         if let Some(retained) = store.publication_read(&identity)? {
             recovery::include_history(&mut prepared, &root, &retained);
         }
-        fence(&root, dataset)?;
-        let _namespace = lock_publication(&root)?;
+    fence(&root, dataset)?;
+    let _namespace = lock_publication(&root)?;
+    let request = match store.publication_read(&identity)? {
+        Some(retained) => retained,
+        None => {
+            let lease_epoch = store.publication_lease(&identity)?;
+            store.publication_request(census_store::publish::Request {
+                namespace: namespace.clone(),
+                identity,
+                expected: pointer::read(&root)?,
+                input,
+                lease_epoch,
+            })?
+        }
+    };
+    if matches!(request.state, State::Requested) {
+        recovery::reconcile_requested(store, &root, &request, &Root::Absent, &prepared.run_manifest)?;
+    } else {
         recovery::reconcile(store, &root, &namespace, &prepared)?;
-        let request = match store.publication_read(&identity)? {
-            Some(retained) => retained,
-            None => {
-                let lease_epoch = store.publication_lease(&identity)?;
-                store.publication_request(census_store::publish::Request {
-                    namespace,
-                    identity,
-                    expected: pointer::read(&root)?,
-                    input,
-                    lease_epoch,
-                })?
-            }
-        };
+    }
         let nonce = staging_nonce(&dataset.lineage.store_identity)?;
         let directory = root.join(format!(".staging.{nonce}"));
         std::fs::create_dir(&directory).map_err(|source| io_error(&directory, source))?;
@@ -60,7 +66,16 @@ impl<'s> Stage<'s> {
         options: &Options,
         render: impl FnOnce(&Path) -> ReportResult<()>,
     ) -> ReportResult<PathBuf> {
-        let result = render(&self.directory).and_then(|()| self.commit(dataset, options));
+        let result = render(&self.directory)
+            .and_then(|()| {
+                self.store
+                    .publication_lease_renew(
+                        &self.request.request.identity,
+                        self.request.request.lease_epoch,
+                    )
+                    .map_err(Into::into)
+            })
+            .and_then(|()| self.commit(dataset, options));
         lifecycle::finish(result, &self.root, &self.directory)
     }
 
