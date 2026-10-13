@@ -1,0 +1,23 @@
+{
+  "adapter": "home_campus",
+  "rows": 1717,
+  "requests": 1101,
+  "from_cache": 626,
+  "errors": 0,
+  "with_email": 6758,
+  "rejections": 0,
+  "unit": "schools",
+  "notes": [
+    "section 1 (CA) parsed 572 schools",
+    "section 2 (CA) parsed 32 schools",
+    "section 3 (CA) parsed 132 schools",
+    "section 4 (CA) parsed 161 schools",
+    "section 5 (CA) parsed 203 schools",
+    "section 6 (CA) parsed 173 schools",
+    "section 7 (CA) parsed 179 schools",
+    "section 8 (CA) parsed 74 schools",
+    "section 9 (CA) parsed 151 schools",
+    "section 13 (CA) parsed 40 schools",
+    "processed 1717 schools (6758 coach_rows, 6758 with email, 0 errors)"
+  ]
+}

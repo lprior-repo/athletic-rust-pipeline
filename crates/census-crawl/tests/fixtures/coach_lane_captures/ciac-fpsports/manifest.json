@@ -1,0 +1,86 @@
+{
+  "platform": "FusionPoint Sports (CIAC tenant)",
+  "hosts": [
+    "ciac.fpsports.org"
+  ],
+  "bundle_source_ids": [
+    "SRC-076",
+    "SRC-077"
+  ],
+  "states": [
+    "CT"
+  ],
+  "fetched_at": "2026-10-04",
+  "fetcher": {
+    "user_agent": "census-service/0.1 (independent HS track & field research collector; polite; contact: repo owner)",
+    "pacing": "one request per second per host; one request suffices for the whole state directory",
+    "robots_allowed": true,
+    "robots_note": "robots.txt disallows /DashboardSchedule.aspx, /DashboardGame.aspx, /DashboardSchool.aspx, /DashboardTeamSchedule.aspx, /ScheduleByWeek.aspx and /WebBot.aspx for all agents, and everything for SemrushBot; /Directory.aspx is not disallowed"
+  },
+  "robots": [
+    {
+      "host": "ciac.fpsports.org",
+      "url": "https://ciac.fpsports.org/robots.txt",
+      "http_status": 200,
+      "content_type": "text/plain",
+      "bytes": 247,
+      "sha256": "62ec9588a984f4e56f02c8dd6296cbf7e4dff510ca5c2968ac804c708217de1c",
+      "capture": "robots/ciac.fpsports.org.txt"
+    }
+  ],
+  "captures": [
+    {
+      "file": "raw/directory-SchoolLevelID-1.adapter.body",
+      "source_url": "https://ciac.fpsports.org/Directory.aspx?SchoolLevelID=1",
+      "response_url": "https://ciac.fpsports.org/Directory.aspx?SchoolLevelID=1",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 673123,
+      "sha256": "a872654b3c9450a484c6f68ae75f9bd32c2523af0f7a2c118f8bb823f1cfc634",
+      "fetched_at": "2026-10-04T19:35:33Z",
+      "robots_allowed": true,
+      "notes": "The adapter's own archived response (var/ct-run-20261004/store/http/archive); all 190 DirectoryStaffTable blocks and the 184 non-empty school tables are parsed from this body"
+    },
+    {
+      "file": "directory.html",
+      "source_url": "https://ciac.fpsports.org/Directory.aspx?SchoolLevelID=1",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 673123,
+      "sha256": "f8585e6e617a1f4d4680cd56a751c1c074243db9d94246b831fd6340d6935f50",
+      "fetched_at": "2026-10-04",
+      "robots_allowed": true,
+      "notes": "Independent capture taken before the fix; same byte count as the adapter body but a different sha256 because the ASP.NET page embeds per-request viewstate values. Used to confirm the markup the parser expects (190 tables, 3 826 Head Coach mentions)"
+    }
+  ],
+  "level_note": "The directory's level selector serves SchoolLevelID=1 (High School), 2 (Middle School) and 3 (Elementary School); the adapter pins level 1. Observed: 1 = 673 117 B (190 tables, 184 parsed schools), 2 = 192 669 B, 3 = 260 762 B; the bare /Directory.aspx also answered 200 with the same 190 tables.",
+  "adapter_run": {
+    "slug": "ciac",
+    "commands": [
+      "./target/debug/census-service --store var/ct-smoke-20261004/store provider ciac --limit 3",
+      "./target/debug/census-service --store var/ct-run-20261004/store provider ciac",
+      "./target/debug/census-service --store var/ct-run-20261004/store fjall-stats"
+    ],
+    "observed": "Smoke: parsed 184 school tables, 3 schools, 4 coach rows, 1 request, 0 errors. Full: 184 schools, 1 033 coach rows, 1 request, 0 errors. Readback: schools 184, coaches 1 033, observations 1 217; school-names wrote 184 CT names.",
+    "limit_note": "The whole state arrives in one response, so the full run needed no pagination."
+  },
+  "derivation": "provider ciac parsed this body into 184 school tables and emitted 184 schools with 1 033 TF/XC coach rows; every row cites https://ciac.fpsports.org/Directory.aspx.",
+  "result": "tap verified - the ciac adapter reads the live FusionPoint host the bundle recorded, with no parser change",
+  "main_verification": {
+    "verified_on": "2026-10-04",
+    "verifier": "Main (sha256sum)",
+    "captures_sha256": {
+      "raw/directory-SchoolLevelID-1.adapter.body": {
+        "sha256": "a872654b3c9450a484c6f68ae75f9bd32c2523af0f7a2c118f8bb823f1cfc634",
+        "bytes": 673123
+      },
+      "robots/ciac.fpsports.org.txt": {
+        "sha256": "62ec9588a984f4e56f02c8dd6296cbf7e4dff510ca5c2968ac804c708217de1c",
+        "bytes": 247
+      }
+    }
+  },
+  "sha256_note": "sha256 computed by Main 2026-10-04 (sha256sum) over every retained capture; see main_verification.captures_sha256."
+}

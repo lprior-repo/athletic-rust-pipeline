@@ -17,7 +17,7 @@ pub(super) const CT_CAPTURE_BYTES: u64 = 673_123;
 #[cfg(test)]
 const CT_CAPTURE_FILE: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/../../research/sources/coach-coverage-bundle-20261004/probes/ciac-fpsports/raw/directory-SchoolLevelID-1.adapter.body"
+    "/../census-crawl/tests/fixtures/coach_lane_captures/ciac-fpsports/raw/directory-SchoolLevelID-1.adapter.body"
 );
 const CT_ARM_BASIS: &str = "the registered ciac arm parses the 2026-10-04 FusionPoint directory into coach-name and role rows with phone numbers, not coach mailboxes or page-bound current-tenure evidence, so the held capture cannot arm the lane:";
 
@@ -63,7 +63,7 @@ mod tests {
     const STALE_ON: &str = "2027-11-09";
     const CIAC_MANIFEST: &str = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../research/sources/coach-coverage-bundle-20261004/probes/ciac-fpsports/manifest.json"
+        "/../census-crawl/tests/fixtures/coach_lane_captures/ciac-fpsports/manifest.json"
     ));
     const WORK_ORDER: &str = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),

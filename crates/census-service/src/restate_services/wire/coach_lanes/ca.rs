@@ -12,6 +12,9 @@ pub(super) const CA_CAPTURE_PATH: &str = "var/home-campus-CA-20261004/pass2.log"
 #[cfg(test)]
 pub(super) const CA_CAPTURE_DIGEST: &str =
     "b1658ef1f62f9373fca3b4a1c4bd24b6c87a1e46818bea3ead435374c9da5cd4";
+#[cfg(test)]
+const CA_CAPTURE_FILE: &str =
+    "crates/census-crawl/tests/fixtures/coach_lane_captures/home-campus-CA-20261004/pass2.log";
 
 const CA_ARM_BASIS: &str = "home_campus is wired and remains sweepable, but var/home-campus-CA-20261004/pass2.log sha256 b1658ef1f62f9373fca3b4a1c4bd24b6c87a1e46818bea3ead435374c9da5cd4 records historical totals only (1717 schools, 6758 email rows); it supplies neither this run's executed obligation nor page-bound current role/tenure/mailbox proof, so those counts cannot arm or close a fresh coach lane";
 
@@ -118,10 +121,10 @@ mod tests {
     #[test]
     fn coach_lane_ca_evidence_digest_is_the_sha256_of_the_capture() -> TestResult {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-        let bytes = std::fs::read(root.join(CA_CAPTURE_PATH))?;
+        let bytes = std::fs::read(root.join(CA_CAPTURE_FILE))?;
         check!(eq; bytes.len(), CAPTURE_BYTES);
         check!(eq; format!("{:x}", Sha256::digest(&bytes)).as_str(), CA_CAPTURE_DIGEST);
-        check!(eq; capture_digest(CA_CAPTURE_PATH)?, CA_CAPTURE_DIGEST);
+        check!(eq; capture_digest(CA_CAPTURE_FILE)?, CA_CAPTURE_DIGEST);
         Ok(())
     }
 

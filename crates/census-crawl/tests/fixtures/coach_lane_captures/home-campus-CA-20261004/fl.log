@@ -1,0 +1,14 @@
+{
+  "adapter": "home_campus",
+  "rows": 880,
+  "requests": 881,
+  "from_cache": 0,
+  "errors": 0,
+  "with_email": 3677,
+  "rejections": 0,
+  "unit": "schools",
+  "notes": [
+    "section 10 (FL) parsed 880 schools",
+    "processed 880 schools (3677 coach_rows, 3677 with email, 0 errors)"
+  ]
+}

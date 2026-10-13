@@ -1,0 +1,79 @@
+{
+  "source": "coach-lane retained captures",
+  "bead": "athletic-rust-pipeline-yor5 (TEST-FIXTURE-01)",
+  "staged": "2026-10-12",
+  "note": "Minimal authentic inputs for the census-service coach-lane tests in crates/census-service/src/restate_services/wire/coach_lanes/{ct,ca,fl}.rs. Each file below is a byte-exact copy of the developer-local retained input: nothing else from the ignored trees research/sources/coach-coverage-bundle-20261004/probes/ and var/ is committed, no capture was re-fetched, reserialized or normalized, and no hash or size was weakened. The ignored originals remain in place. No .gitignore change was needed because the fixture tree is inside the tracked crates/census-crawl/tests/fixtures/ tree.",
+  "staging_verification": {
+    "method": "cp from the retained original, cmp byte-equality, then wc -c and sha256sum on the staged copy",
+    "run": "2026-10-12, workspace /home/lewis/src/ad-law-scrape/athletic-rust-pipeline",
+    "measured": [
+      {"file": "ciac-fpsports/manifest.json", "bytes": 4360, "sha256": "00ca97c98b906d084e4f533cf00ff74f58a64701321484b13e3cf2e185e1f949"},
+      {"file": "ciac-fpsports/raw/directory-SchoolLevelID-1.adapter.body", "bytes": 673123, "sha256": "a872654b3c9450a484c6f68ae75f9bd32c2523af0f7a2c118f8bb823f1cfc634"},
+      {"file": "home-campus-CA-20261004/pass2.log", "bytes": 665, "sha256": "b1658ef1f62f9373fca3b4a1c4bd24b6c87a1e46818bea3ead435374c9da5cd4"},
+      {"file": "home-campus-CA-20261004/fl.log", "bytes": 294, "sha256": "34d59e4eb1529b93a64be617e3d84847838c61d9ae86fe2b4a89bbedba0129b9"}
+    ]
+  },
+  "readers": {
+    "wire/coach_lanes/ct.rs": [
+      "ciac-fpsports/raw/directory-SchoolLevelID-1.adapter.body via CT_CAPTURE_FILE",
+      "ciac-fpsports/manifest.json via include_str!(CIAC_MANIFEST)"
+    ],
+    "wire/coach_lanes/ca.rs": [
+      "home-campus-CA-20261004/pass2.log via CA_CAPTURE_FILE"
+    ],
+    "wire/coach_lanes/fl.rs": [
+      "home-campus-CA-20261004/fl.log via FL_CAPTURE_FILE"
+    ]
+  },
+  "published_paths_unchanged": "CT_CAPTURE_PATH, CA_ARM_BASIS, FL_CAPTURE_PATH and CT_SOURCE_URL keep citing the historical retained locations (research/... or var/...) in the published arm/refusal basis; only the test readers were repointed, so no serialized obligation or refusal string changes.",
+  "fixtures": [
+    {
+      "file": "ciac-fpsports/raw/directory-SchoolLevelID-1.adapter.body",
+      "role": "Connecticut coach-lane capture",
+      "source_url": "https://ciac.fpsports.org/Directory.aspx?SchoolLevelID=1",
+      "captured_from": "research/sources/coach-coverage-bundle-20261004/probes/ciac-fpsports/raw/directory-SchoolLevelID-1.adapter.body (byte-identical copy)",
+      "fetched_at": "2026-10-04T19:35:33Z",
+      "bytes": 673123,
+      "sha256": "a872654b3c9450a484c6f68ae75f9bd32c2523af0f7a2c118f8bb823f1cfc634",
+      "enforced_by": "coach_lane_ct_evidence_digest_is_the_sha256_of_the_capture (byte count and sha256)",
+      "note": "The adapter's own archived FusionPoint response: 190 DirectoryStaffTable blocks, 184 schools, 1033 coach rows, phone numbers only. Not interchangeable with crates/census-crawl/tests/fixtures/ciac/directory.html (671535 bytes, sha256 98a013fb3afe52de3354d570875e98108b683c904a2b75d3d4f509307a2fc1ec, the 2026-09-22 bare Directory.aspx page) nor with the probe's separate directory.html capture (673123 bytes, sha256 f8585e6e617a1f4d4680cd56a751c1c074243db9d94246b831fd6340d6935f50): the same route answered different per-request viewstate bytes."
+    },
+    {
+      "file": "ciac-fpsports/manifest.json",
+      "role": "Connecticut probe manifest",
+      "captured_from": "research/sources/coach-coverage-bundle-20261004/probes/ciac-fpsports/manifest.json (byte-identical copy)",
+      "bytes": 4360,
+      "sha256": "00ca97c98b906d084e4f533cf00ff74f58a64701321484b13e3cf2e185e1f949",
+      "declares": {
+        "raw/directory-SchoolLevelID-1.adapter.body": {
+          "bytes": 673123,
+          "sha256": "a872654b3c9450a484c6f68ae75f9bd32c2523af0f7a2c118f8bb823f1cfc634"
+        },
+        "directory.html": {
+          "bytes": 673123,
+          "sha256": "f8585e6e617a1f4d4680cd56a751c1c074243db9d94246b831fd6340d6935f50"
+        }
+      },
+      "enforced_by": "coach_lane_ct_held_directory_agrees_with_the_probe_manifest (the CT capture digest, the raw body path, the source URL, 184 schools, coach rows and 2026-10-04 are each asserted present)",
+      "note": "The probe's 2026-10-04 record; its main_verification block records the same body digest and bytes, so the CT lane constants stay bound to the probe record rather than to a re-derivation."
+    },
+    {
+      "file": "home-campus-CA-20261004/pass2.log",
+      "role": "California historical run report",
+      "captured_from": "var/home-campus-CA-20261004/pass2.log (byte-identical copy)",
+      "bytes": 665,
+      "sha256": "b1658ef1f62f9373fca3b4a1c4bd24b6c87a1e46818bea3ead435374c9da5cd4",
+      "enforced_by": "coach_lane_ca_evidence_digest_is_the_sha256_of_the_capture (byte count, direct sha256 and capture_digest helper); also asserted by the CA arm-basis content checks",
+      "note": "home_campus pass-2 aggregate: 1717 schools, 6758 email rows, 1101 requests, 626 from cache, 0 errors; section notes list CA sections 1-9 and 13. Historical totals only; the report supplies no page-bound current role, tenure or mailbox evidence."
+    },
+    {
+      "file": "home-campus-CA-20261004/fl.log",
+      "role": "Florida historical run report",
+      "captured_from": "var/home-campus-CA-20261004/fl.log (byte-identical copy)",
+      "bytes": 294,
+      "sha256": "34d59e4eb1529b93a64be617e3d84847838c61d9ae86fe2b4a89bbedba0129b9",
+      "enforced_by": "coach_lane_fl_evidence_digest_is_the_sha256_of_the_capture (byte count, direct sha256 and capture_digest helper); also asserted by the FL arm-basis content checks",
+      "note": "home_campus run aggregate: 880 schools, 3677 email rows, 881 requests, 0 errors; section 10 (FL). Historical totals only; the report supplies no page-bound role, tenure or source-origin evidence."
+    }
+  ]
+}

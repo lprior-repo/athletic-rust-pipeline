@@ -10,6 +10,9 @@ pub(super) const FL_TRUE_MISSING: &str = "FHSAA XC/TF classification news files 
 pub(super) const FL_CAPTURE_PATH: &str = "var/home-campus-CA-20261004/fl.log";
 pub(super) const FL_CAPTURE_DIGEST: &str =
     "34d59e4eb1529b93a64be617e3d84847838c61d9ae86fe2b4a89bbedba0129b9";
+#[cfg(test)]
+const FL_CAPTURE_FILE: &str =
+    "crates/census-crawl/tests/fixtures/coach_lane_captures/home-campus-CA-20261004/fl.log";
 
 const FL_ARM_BASIS: &str = "the wired home_campus arm parses FHSAA school profiles, but the retained 2026-10-04 fl.log is an aggregate report of 880 schools and 3677 email rows, not page-bound role, current-tenure or source-origin evidence, so it cannot arm the lane:";
 
@@ -107,10 +110,10 @@ mod tests {
     #[test]
     fn coach_lane_fl_evidence_digest_is_the_sha256_of_the_capture() -> TestResult {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-        let bytes = std::fs::read(root.join(FL_CAPTURE_PATH))?;
+        let bytes = std::fs::read(root.join(FL_CAPTURE_FILE))?;
         check!(eq; bytes.len(), CAPTURE_BYTES);
         check!(eq; format!("{:x}", Sha256::digest(&bytes)).as_str(), FL_CAPTURE_DIGEST);
-        check!(eq; capture_digest(FL_CAPTURE_PATH)?, FL_CAPTURE_DIGEST);
+        check!(eq; capture_digest(FL_CAPTURE_FILE)?, FL_CAPTURE_DIGEST);
         Ok(())
     }
 
