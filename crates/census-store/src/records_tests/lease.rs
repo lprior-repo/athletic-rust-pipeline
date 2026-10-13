@@ -152,9 +152,7 @@ fn publication_lease_rebind_acquires_fresh_epoch_on_expired_fence() -> TestResul
     ));
     let mut rebound = request.clone();
     rebound.request.lease_epoch = updated.request.lease_epoch;
-    check!(store
-        .publication_fence(&rebound.request, &None)
-        .is_ok());
+    check!(store.publication_fence(&rebound.request, &None).is_ok());
     store.lease_release(&identity, updated.request.lease_epoch)?;
     Ok(())
 }
