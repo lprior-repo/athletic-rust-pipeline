@@ -17,6 +17,7 @@ pub(super) enum VersionCase {
     HistoricalPolicy,
     PolicyThirteen,
     PolicyFourteen,
+    PolicyFifteen,
     CodecTwo,
     PreviousPolicy,
     PriorAffiliationPolicy,
@@ -36,6 +37,7 @@ impl VersionCase {
             | Self::HistoricalPolicy
             | Self::PolicyThirteen
             | Self::PolicyFourteen
+            | Self::PolicyFifteen
             | Self::PreviousPolicy
             | Self::PriorAffiliationPolicy
             | Self::PriorParentScopePolicy => "manifest lineage",
@@ -151,19 +153,29 @@ fn change_manifest(manifest: &mut FrozenManifest, case: VersionCase) -> TestResu
             manifest.input_token.semantic_policy = 8;
         }
         VersionCase::HistoricalPolicy => {
-            check!(eq; manifest.lineage.policy_revision, 15);
+            check!(eq; manifest.lineage.policy_revision, 16);
             manifest.lineage.policy_revision = 7;
             manifest.input_token.semantic_policy = 7;
         }
         VersionCase::PolicyFourteen => {
             check!(eq; manifest.lineage.schema_revision, 3);
-            check!(eq; manifest.lineage.policy_revision, 15);
+            check!(eq; manifest.lineage.policy_revision, 16);
             manifest.lineage.policy_revision = 14;
             manifest.input_token.semantic_policy = 14;
         }
+        VersionCase::PolicyFifteen => {
+            check!(eq; manifest.lineage.schema_revision, 3);
+            check!(eq; manifest.lineage.policy_revision, 16);
+            check!(eq; manifest.codec_revision, 3);
+            check!(eq; manifest.input_token.protocol, 3);
+            check!(eq; manifest.streams.len(), 15);
+            check!(eq; manifest.source_fingerprints.len(), 16);
+            manifest.lineage.policy_revision = 15;
+            manifest.input_token.semantic_policy = 15;
+        }
         VersionCase::PolicyThirteen => {
             check!(eq; manifest.lineage.schema_revision, 3);
-            check!(eq; manifest.lineage.policy_revision, 15);
+            check!(eq; manifest.lineage.policy_revision, 16);
             manifest.lineage.schema_revision = 2;
             manifest.lineage.policy_revision = 13;
             manifest.input_token.logical_schema = 2;
@@ -174,17 +186,17 @@ fn change_manifest(manifest: &mut FrozenManifest, case: VersionCase) -> TestResu
             manifest.codec_revision = 2;
         }
         VersionCase::PreviousPolicy => {
-            check!(eq; manifest.lineage.policy_revision, 15);
+            check!(eq; manifest.lineage.policy_revision, 16);
             manifest.lineage.policy_revision = 8;
             manifest.input_token.semantic_policy = 8;
         }
         VersionCase::PriorAffiliationPolicy => {
-            check!(eq; manifest.lineage.policy_revision, 15);
+            check!(eq; manifest.lineage.policy_revision, 16);
             manifest.lineage.policy_revision = 9;
             manifest.input_token.semantic_policy = 9;
         }
         VersionCase::PriorParentScopePolicy => {
-            check!(eq; manifest.lineage.policy_revision, 15);
+            check!(eq; manifest.lineage.policy_revision, 16);
             manifest.lineage.policy_revision = 10;
             manifest.input_token.semantic_policy = 10;
         }

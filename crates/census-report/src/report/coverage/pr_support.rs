@@ -26,7 +26,7 @@ pub(super) fn apply_pr_support(
     Ok(())
 }
 
-fn tally_pr_support(
+pub(super) fn tally_pr_support(
     report: &mut CoverageReport,
     dataset: &ExportDataset,
     grad_year: Option<i16>,
@@ -57,7 +57,7 @@ fn bump_pr_support(report: &mut CoverageReport, bucket: JurisdictionBucket) {
     }
 }
 
-fn write_pr_gaps(report: &mut CoverageReport) {
+pub(super) fn write_pr_gaps(report: &mut CoverageReport) {
     for row in &report.jurisdictions {
         let count = row.with_performance.saturating_sub(row.with_pr_support);
         match report.gaps.iter_mut().find(|gap| {

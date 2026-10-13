@@ -2,7 +2,8 @@ use super::super::is_core_evidenced;
 use super::contact::ContactPlane;
 use super::gaps;
 use super::population;
-use super::reads::{self, Published, Tables};
+use super::reads::{self, Published};
+use super::scan::Scanned;
 use super::state::{
     bucket_mut, in_requested_year, jurisdiction_of, school_state_index, Bucket, BucketMap, Outcome,
     SchoolSets,
@@ -10,67 +11,10 @@ use super::state::{
 use super::{athletes, CoverageGap, JurisdictionCoverage};
 use crate::export::ExportDataset;
 use census_domain::model::{
-    CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CoachRole, CoverageRow, EventKind, Sport,
+    CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, CoachRole, CoverageRow, Sport,
 };
 use census_domain::{JurisdictionBucket, UsJurisdiction};
-use std::collections::{BTreeMap, HashMap, HashSet};
-
-struct Scanned<'a> {
-    schools: Vec<CanonicalSchool>,
-    coaches: &'a [CanonicalCoach],
-    meets: &'a [CanonicalMeet],
-    athletes: Vec<CanonicalAthlete>,
-    aliases: &'a HashMap<String, String>,
-    performances: &'a [CanonicalPerformance],
-    event_ids: HashSet<String>,
-    unmapped_event_ids: HashSet<String>,
-}
-
-impl<'a> Scanned<'a> {
-    fn of(dataset: &'a ExportDataset) -> Self {
-        let (event_ids, unmapped_event_ids) = event_indices(dataset);
-        Self {
-            schools: dataset.schools.values().cloned().collect(),
-            coaches: &dataset.coaches,
-            meets: &dataset.meets,
-            athletes: super::super::derivation::collapse_athletes(
-                &dataset.athletes,
-                &dataset.canonical_aliases,
-            ),
-            aliases: &dataset.canonical_aliases,
-            performances: &dataset.performances,
-            event_ids,
-            unmapped_event_ids,
-        }
-    }
-
-    fn tables(&self) -> Tables<'_> {
-        Tables {
-            schools: &self.schools,
-            athletes: &self.athletes,
-            aliases: self.aliases,
-            coaches: self.coaches,
-            meets: self.meets,
-            performances: self.performances,
-        }
-    }
-}
-
-fn event_indices(dataset: &ExportDataset) -> (HashSet<String>, HashSet<String>) {
-    let event_ids = dataset
-        .events
-        .iter()
-        .map(|event| event.id.as_str().to_string())
-        .collect();
-    let unmapped = dataset
-        .events
-        .iter()
-        .filter(|event| matches!(event.kind, EventKind::Unmapped { .. }))
-        .map(|event| event.id.as_str().to_string())
-        .collect();
-    (event_ids, unmapped)
-}
+use std::collections::{BTreeMap, HashMap};
 
 pub(super) fn run(dataset: &ExportDataset, grad_year: Option<i16>) -> Outcome {
     let scanned = Scanned::of(dataset);
@@ -92,7 +36,7 @@ pub(super) fn run(dataset: &ExportDataset, grad_year: Option<i16>) -> Outcome {
     let rows: &[CoverageRow] = &dataset.coverage_evidence.rows;
     let mut contact_plane = ContactPlane::of(&dataset.coverage_evidence.coach_lanes);
     contact_plane.declare_scope(UsJurisdiction::CENSUS_SCOPE.iter().copied());
-    let (jurisdictions, gaps) = publish(buckets, rows, &contact_plane);
+    let (jurisdictions, gaps) = publish(buckets, rows, &contact_plane, jurisdiction_buckets());
     let source_population = population::totals(rows).population(rows.len());
     let contact = contact_plane.totals();
     let terminal_failures = compute_terminal_failures(dataset);
@@ -118,7 +62,7 @@ pub(super) fn run(dataset: &ExportDataset, grad_year: Option<i16>) -> Outcome {
     }
 }
 
-fn classify_population<'a>(
+pub(super) fn classify_population<'a>(
     scanned: &'a Scanned<'_>,
     placement: &athletes::Placement<'_, '_>,
     buckets: &mut BucketMap,
@@ -161,7 +105,7 @@ fn performance_tallies<'a>(
         .map(|athlete| athlete.id.as_str())
         .collect();
     athletes::tally_performances(
-        scanned.performances,
+        scanned.performances.iter(),
         &athlete_ids,
         &scanned.event_ids,
         &scanned.unmapped_event_ids,
@@ -169,7 +113,7 @@ fn performance_tallies<'a>(
     )
 }
 
-fn seed_buckets() -> BucketMap {
+pub(super) fn seed_buckets() -> BucketMap {
     let mut buckets = BucketMap::new();
     for bucket in jurisdiction_buckets() {
         buckets.insert(bucket, Bucket::default());
@@ -185,7 +129,11 @@ fn jurisdiction_buckets() -> impl Iterator<Item = JurisdictionBucket> {
         .chain(std::iter::once(JurisdictionBucket::Unplaced))
 }
 
-fn classify_schools(schools: &[CanonicalSchool], sets: &SchoolSets<'_>, buckets: &mut BucketMap) {
+pub(super) fn classify_schools(
+    schools: &[CanonicalSchool],
+    sets: &SchoolSets<'_>,
+    buckets: &mut BucketMap,
+) {
     for school in schools {
         let bucket = bucket_mut(buckets, JurisdictionBucket::from(school.state));
         bump(&mut bucket.row.schools);
@@ -205,7 +153,7 @@ fn classify_schools(schools: &[CanonicalSchool], sets: &SchoolSets<'_>, buckets:
     }
 }
 
-fn classify_coaches<'a>(
+pub(super) fn classify_coaches<'a>(
     coaches: &'a [CanonicalCoach],
     school_state: &HashMap<&str, Option<UsJurisdiction>>,
     buckets: &mut BucketMap,
@@ -242,7 +190,7 @@ fn classify_coach_program<'a>(coach: &'a CanonicalCoach, sets: &mut SchoolSets<'
     }
 }
 
-fn classify_meets(meets: &[CanonicalMeet], buckets: &mut BucketMap) {
+pub(super) fn classify_meets(meets: &[CanonicalMeet], buckets: &mut BucketMap) {
     for meet in meets {
         bump(
             &mut bucket_mut(buckets, JurisdictionBucket::from(meet.state))
@@ -252,7 +200,7 @@ fn classify_meets(meets: &[CanonicalMeet], buckets: &mut BucketMap) {
     }
 }
 
-fn count_core(
+pub(super) fn count_core(
     athletes: &[CanonicalAthlete],
     school_state: &HashMap<&str, Option<UsJurisdiction>>,
     grad_year: Option<i16>,
@@ -267,15 +215,16 @@ fn count_core(
     }
 }
 
-fn publish(
+pub(super) fn publish(
     mut buckets: BucketMap,
     rows: &[CoverageRow],
     contact: &ContactPlane,
+    published: impl IntoIterator<Item = JurisdictionBucket>,
 ) -> (Vec<JurisdictionCoverage>, Vec<CoverageGap>) {
     let mut jurisdictions =
         Vec::with_capacity(UsJurisdiction::CENSUS_SCOPE.len().saturating_add(1));
     let mut gap_rows = Vec::new();
-    for bucket in jurisdiction_buckets() {
+    for bucket in published {
         let (mut row, counters) = buckets
             .remove(&bucket)
             .map_or(Default::default(), core::convert::identity)
@@ -299,7 +248,7 @@ fn bump(counter: &mut usize) {
     *counter = counter.saturating_add(1);
 }
 
-fn compute_terminal_failures(dataset: &ExportDataset) -> BTreeMap<String, usize> {
+pub(super) fn compute_terminal_failures(dataset: &ExportDataset) -> BTreeMap<String, usize> {
     let mut failures: BTreeMap<String, usize> = BTreeMap::new();
     for condition in &dataset.source_access {
         if condition.is_blocking(dataset.lineage.generated_on.as_str()) {

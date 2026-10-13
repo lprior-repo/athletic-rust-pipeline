@@ -62,7 +62,7 @@ fn reconstructed_revision_one_policy_thirteen_inventory_survives_new_atomic_swit
         current_manifest
             .pointer("/lineage/policy_revision")
             .and_then(Value::as_u64),
-        Some(15)
+        Some(16)
     );
     assert_eq!(reconstructed::bytes(&legacy)?, historical);
     super::super::manifest::verify_directory(&legacy)?;

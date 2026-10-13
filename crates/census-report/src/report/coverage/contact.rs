@@ -75,7 +75,7 @@ pub(super) struct ContactPlane {
 }
 
 impl ContactPlane {
-    pub(super) fn of(lanes: &[CoachLaneObligation]) -> Self {
+    pub(super) fn of<'a>(lanes: impl IntoIterator<Item = &'a CoachLaneObligation>) -> Self {
         let mut counts: BTreeMap<JurisdictionBucket, ContactCounts> = BTreeMap::new();
         for lane in lanes {
             let bucket = JurisdictionBucket::from(lane.jurisdiction());

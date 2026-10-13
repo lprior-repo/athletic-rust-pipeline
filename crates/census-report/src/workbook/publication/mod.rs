@@ -129,3 +129,6 @@ mod pinned_run_publication_tests;
 
 #[cfg(test)]
 mod catalog_tests;
+
+#[cfg(test)]
+mod scoped_coverage_tests;

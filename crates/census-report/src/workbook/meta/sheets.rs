@@ -57,7 +57,12 @@ impl<'a, 'd> Inputs<'a, 'd> {
 
     fn coverage(&self) -> ReportResult<Sheet> {
         let cells = built("Coverage", || {
-            coverage_sheet(self.facts.population.dataset())
+            coverage_sheet(&crate::report::Derivation::of(
+                self.facts.population.dataset(),
+                self.facts.population.scope(),
+                Some(census_domain::model::GradYear::CO2027.get()),
+                self.facts.population.jurisdictions(),
+            ))
         })?;
         Ok(("Coverage", cells, &COVERAGE_WIDTHS, SheetChrome::Filtered))
     }

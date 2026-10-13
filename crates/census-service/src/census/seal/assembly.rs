@@ -9,7 +9,8 @@ use census_report::report::{Census, CoverageReport};
 use census_store::{StoreStats, Table};
 
 pub(super) fn assemble(
-    coverage: &CoverageReport,
+    selected_coverage: &CoverageReport,
+    retained_coverage: &CoverageReport,
     census: &Census,
     stats: &StoreStats,
     cases: &[ReviewCase],
@@ -23,8 +24,8 @@ pub(super) fn assemble(
         .map_or(Default::default(), core::convert::identity);
     SealEvidence {
         open: open_work(cases, journal),
-        counts: seal_counts(census, coverage),
-        retained: retained_findings(coverage, stats, access, request),
+        counts: seal_counts(census, selected_coverage),
+        retained: retained_findings(retained_coverage, selected_coverage, stats, access, request),
         workbook,
         observed_on: census.generated_on.clone(),
         run: request.run,
@@ -42,25 +43,26 @@ fn open_work(cases: &[ReviewCase], journal: JournalCounts) -> OpenWork {
 
 fn seal_counts(census: &Census, coverage: &CoverageReport) -> SealCounts {
     SealCounts {
-        jurisdiction_buckets: count(census.by_state.len()),
+        jurisdiction_buckets: count(coverage.jurisdictions.len()),
         schools: count(coverage.read.schools),
         meets: count(coverage.read.meets),
-        athletes: count(census.totals.athletes),
+        athletes: count(coverage.read.athletes),
         class_of_2027: count(census.totals.class_of_2027),
         cohort_performances: count(coverage.read.performances),
-        coaches: count(census.totals.coaches),
+        coaches: count(coverage.read.coaches),
     }
 }
 
 fn retained_findings(
-    coverage: &CoverageReport,
+    retained_coverage: &CoverageReport,
+    selected_coverage: &CoverageReport,
     stats: &StoreStats,
     access: &[SourceAccessCondition],
     request: &SealRequest,
 ) -> RetainedFindings {
     let (access_conditions, blocked_hosts, throttled_hosts) = retained_access(access);
     RetainedFindings {
-        gaps: coverage
+        gaps: retained_coverage
             .gaps
             .iter()
             .map(|gap| GapTally {
@@ -79,6 +81,6 @@ fn retained_findings(
             .map_or(Vec::new(), |journal| journal.silent_sources.clone()),
         source_failures: request.source_failures,
         observations: stats.observations,
-        calculations: count(coverage.read.performances),
+        calculations: count(selected_coverage.read.performances),
     }
 }

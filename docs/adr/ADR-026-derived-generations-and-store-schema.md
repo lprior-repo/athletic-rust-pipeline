@@ -312,3 +312,41 @@ remain reusable. Old interpretation receipts remain retained and cannot stand in
 completion. AthleticLIVE's historical v2 ownership claims remain a separately decoded read-only
 ownership constraint under their frozen v4 parser; they never establish v3 effect completion.
 MileSplit owned v1 through v4 retain payload-digest validation and explicit migration recognition.
+
+### 2026-10-13: scoped publication Coverage and policy 16
+
+The catalog correction above landed as policy 15. Scoped publication Coverage changes the
+meaning of selected population counts, requested-jurisdiction source-stage denominators and
+contact totals, so newly derived publication inputs use semantic policy 16. Logical schema 3,
+frozen codec 3, token protocol 3, publication manifest revision 2, physical store schema 2 and
+key format 1 remain unchanged. The frozen input still retains both coverage-evidence arrays and
+typed relay results. Its fifteen streams and sixteen source fingerprints are shape counts,
+not policy revisions, and do not advance at this cutover.
+
+Workbook Coverage, independent readback and seal use the same immutable derivation for requested
+evidence scope, cohort and jurisdiction selection. Empty jurisdiction selection means the existing
+49-jurisdiction census scope; workbook limits do not reduce Coverage population denominators.
+Historical result-parent evidence remains retained. Raw observations, retained global gaps and
+event-admission diagnostics remain explicitly disclosed rather than disappearing with a selected
+population. The legacy global Coverage API and the cohort-free census sidecars retain their
+existing semantics; they do not become recruiting-cohort projections.
+
+Policy 8 through 15 roots and archives remain historical artifacts. In particular, policy 15
+retains its schema-3 coverage and relay shape; it is not recast as a schema-2 archive or decoded
+through policy 16. Reopen, resume and cancellation refuse unsupported lineage before retirement,
+lease release, sweeping or replacement. Repeated refusal and store reopen preserve original
+bytes, root markers, input records and leases across missing, Requested, Freezing, Frozen and
+Abandoned states. Existing older-schema and missing-coverage representations remain preserved.
+
+The policy revision is bound into frozen generation identity, the existing token and publication
+recipe, and publication manifests retain that lineage. A supported publication must use an
+explicitly selected policy-16 generation with its own input and recipe identity. Retained source
+observations may supply that new derivation; no prior root is retagged, hydrated from current
+coverage or overwritten in place, and no historical workbook is recertified under the new meaning.
+The regression matrix adds policy 15, including nonempty retained coverage rows, coach lanes and
+typed relay members in their published order, while keeping every policy-8-through-14 case.
+
+This semantic cutover does not migrate physical stores, change source interpretation identities,
+alter acquisition workflows or claim release qualification. Main's integration must run the
+focused frozen/history/publication regressions, scoped Coverage readback and seal regressions,
+and the required Moon gates before delivery.
