@@ -37,7 +37,7 @@ fn captured_staff_pages() -> Result<Vec<(String, PathBuf)>, Box<dyn std::error::
 #[test]
 fn parse_coaches_from_staff_page() -> Fallible {
     let html = fixture("staff-siouxcenter-ia-girls-xc.html")?;
-    let parsed = parse(&html);
+    let parsed = parse(&html)?;
     check!(
         eq;
         parsed.page.title_school,
@@ -70,7 +70,7 @@ fn parse_coaches_from_staff_page() -> Fallible {
 #[test]
 fn parse_coaches_from_sd_staff_page() -> Fallible {
     let html = fixture("staff-yankton-sd-girls-xc.html")?;
-    let parsed = parse(&html);
+    let parsed = parse(&html)?;
     check!(
         eq;
         parsed.page.title_school,
@@ -87,7 +87,7 @@ fn parse_coaches_from_sd_staff_page() -> Fallible {
 #[test]
 fn parse_coaches_from_boys_page() -> Fallible {
     let html = fixture("staff-yankton-sd-boys-xc.html")?;
-    let parsed = parse(&html);
+    let parsed = parse(&html)?;
     check!(
         eq;
         parsed.page.title_school,
@@ -125,7 +125,7 @@ fn title_matches_resolved_slug_not_corpus_name() -> Fallible {
 #[test]
 fn different_school_page_yields_its_own_coaches() -> Fallible {
     let html = fixture("staff-whiteriver-sd-girls-xc.html")?;
-    let parsed = parse(&html);
+    let parsed = parse(&html)?;
     check!(
         eq;
         parsed.page.title_school,
@@ -146,7 +146,7 @@ fn different_school_page_yields_its_own_coaches() -> Fallible {
 #[test]
 fn empty_staff_page_yields_no_coaches() -> Fallible {
     let html = fixture("staff-faith-sd-boys-xc-empty-staff.html")?;
-    let parsed = parse(&html);
+    let parsed = parse(&html)?;
     check!(
         eq;
         parsed.page.title_school,
@@ -163,7 +163,7 @@ fn empty_staff_page_yields_no_coaches() -> Fallible {
 #[test]
 fn non_coach_role_is_skipped() -> Fallible {
     let html = fixture("staff-non-coach-role.html")?;
-    let parsed = parse(&html);
+    let parsed = parse(&html)?;
     check!(
         !parsed.coaches.is_empty(),
         "expected the coach row from a page that also lists a non-coach role"
@@ -185,7 +185,7 @@ fn every_captured_staff_page_parses() -> Fallible {
     check!(files.len() >= 6, "expected at least 6 staff page fixtures");
     for (name, path) in files {
         let document = std::fs::read_to_string(&path)?;
-        let parsed = parse(&document);
+        let parsed = parse(&document)?;
         check!(
             !parsed.page.title_school.is_empty(),
             "{name} parsed to empty title school"
@@ -195,6 +195,21 @@ fn every_captured_staff_page_parses() -> Fallible {
             "{name} has coaches but no title school"
         );
     }
+    Ok(())
+}
+
+#[test]
+fn an_oversized_staff_table_is_refused_not_truncated() -> Fallible {
+    let mut html = String::from("<html><body>Coaching Staff<table>");
+    for n in 0..20_001 {
+        html.push_str(&format!("<tr><td>Head Coach</td><td>Coach {n}</td></tr>"));
+    }
+    html.push_str("</table></body></html>");
+    let outcome = parse(&html);
+    let Err(crate::CrawlError::Schema { detail, .. }) = outcome else {
+        return Err("an oversized staff table must be refused".into());
+    };
+    check!(detail.contains("exceeds"));
     Ok(())
 }
 

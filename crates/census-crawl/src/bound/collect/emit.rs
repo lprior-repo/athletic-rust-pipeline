@@ -32,7 +32,7 @@ pub(in crate::bound) async fn process_school(
     association: &str,
     entries: &[(&str, Sport, Gender)],
 ) -> CrawlResult<Option<SchoolExtract>> {
-    let pages = fetch_pages(ctx, job, association, entries).await;
+    let pages = fetch_pages(ctx, job, association, entries).await?;
     let key = format!("{}/{}", job.state_code, job.slug);
     merge_pages(job, &key, &pages, ctx.school_year)
 }
@@ -42,7 +42,7 @@ async fn fetch_pages(
     job: &SchoolJob<'_>,
     association: &str,
     entries: &[(&str, Sport, Gender)],
-) -> Vec<StaffPage> {
+) -> CrawlResult<Vec<StaffPage>> {
     let mut pages = Vec::new();
 
     for &(sport_slug, sport, gender) in entries {
@@ -62,7 +62,7 @@ async fn fetch_pages(
         }
 
         let html = String::from_utf8_lossy(&outcome.body);
-        let parsed = parse(&html);
+        let parsed = parse(&html)?;
 
         if !parsed.page.title_school.is_empty()
             && !title_matches_slug(job.slug, &parsed.page.title_school)
@@ -81,7 +81,7 @@ async fn fetch_pages(
         });
     }
 
-    pages
+    Ok(pages)
 }
 
 fn merge_pages(

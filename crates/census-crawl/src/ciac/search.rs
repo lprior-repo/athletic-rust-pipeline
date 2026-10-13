@@ -22,7 +22,7 @@ pub(super) async fn collect_directory(
         Ok(body) => body,
         Err(error) => return fail(report, &url, error),
     };
-    let parsed = parse_directory(body);
+    let parsed = parse_directory(body)?;
     if parsed.is_empty()
         || body.matches("<table class='DirectoryStaffTable'>").count() != parsed.len()
     {

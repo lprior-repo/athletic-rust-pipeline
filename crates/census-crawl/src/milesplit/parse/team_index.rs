@@ -1,4 +1,4 @@
-use super::{team_row_regex, TeamRef};
+use super::{html_unescape, team_row_regex, TeamRef};
 use crate::{CollectionDisposition, CrawlError, CrawlResult};
 use regex::{Captures, Regex};
 use std::sync::LazyLock;
@@ -98,15 +98,16 @@ impl Run {
     }
 
     fn accept(&mut self, fields: Fields<'_>) -> CrawlResult<()> {
-        if let Some(country) = fields.city.rsplit(',').next().map(str::trim) {
-            if fields.city.contains(',')
+        let city = html_unescape(fields.city);
+        if let Some(country) = city.rsplit(',').next().map(str::trim) {
+            if city.contains(',')
                 && country.len() == 3
                 && country.bytes().all(|byte| byte.is_ascii_uppercase())
                 && country != "USA"
             {
                 return Err(schema(&format!(
                     "foreign-directory team {} publishes location {:?}, country {country}",
-                    fields.id, fields.city
+                    fields.id, city
                 )));
             }
         }
@@ -133,7 +134,7 @@ impl Run {
             slug: fields.slug.to_string(),
             url: fields.url.to_string(),
             name: fields.name.to_string(),
-            city_state: fields.city.to_string(),
+            city_state: city,
         });
         self.retained = requested;
         Ok(())

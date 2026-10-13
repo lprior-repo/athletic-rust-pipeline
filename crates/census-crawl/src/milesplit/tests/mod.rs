@@ -294,3 +294,41 @@ fn an_empty_known_roster_is_a_named_gap_not_negative_identity_evidence() -> Test
     } if rejected.is_empty()));
     Ok(())
 }
+
+#[test]
+fn encoded_foreign_locations_refuse_like_their_literal_country() -> TestResult {
+    let row = |id: &str, city: &str| {
+        format!(
+            "<table><tbody><tr><td><a href=\"https://wi.milesplit.com/teams/{id}-foreign\">Foreign</a></td><td>{city}</td></tr></tbody></table>"
+        )
+    };
+    let foreign = [
+        "Toronto, ON, CAN",
+        "Toronto, ON, &#67;&#65;&#78;",
+        "Toronto, ON, &#x43;&#x41;&#x4E;",
+        "Toronto, ON, &#X43;&#X41;&#X4E;",
+    ];
+    for (n, city) in foreign.iter().enumerate() {
+        let id = format!("90{:03}", n + 1);
+        let read = parse_team_index(&row(&id, city))?;
+        check!(read.teams.is_empty());
+        check!(eq; read.errors, 1);
+        check!(eq; read.unfinished.len(), 1);
+        check!(read.unfinished[0].contains("CAN"));
+        check!(eq; read.disposition, crate::CollectionDisposition::Quarantined);
+    }
+    let domestic = [
+        ("Madison, WI, USA", "Madison, WI, USA"),
+        ("Madison, WI, &#85;&#83;&#65;", "Madison, WI, USA"),
+        ("Madison, WI, &#x55;&#x53;&#x41;", "Madison, WI, USA"),
+    ];
+    for (n, (city, retained)) in domestic.iter().enumerate() {
+        let id = format!("91{:03}", n + 1);
+        let read = parse_team_index(&row(&id, city))?;
+        check!(eq; read.errors, 0);
+        check!(eq; read.teams.len(), 1);
+        check!(eq; read.teams[0].city_state, *retained);
+        check!(eq; read.disposition, crate::CollectionDisposition::Complete);
+    }
+    Ok(())
+}

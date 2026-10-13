@@ -6,25 +6,27 @@ fn fixture_directory() -> &'static str {
 }
 
 #[test]
-fn parse_directory_returns_schools() {
-    let parsed = pages::parse_directory(fixture_directory());
+fn parse_directory_returns_schools() -> Result<(), Box<dyn std::error::Error>> {
+    let parsed = pages::parse_directory(fixture_directory())?;
     assert!(
         parsed.len() > 100,
         "should parse more than 100 schools, got {}",
         parsed.len()
     );
+    Ok(())
 }
 
 #[test]
-fn parse_directory_contains_abbott_tech() {
-    let parsed = pages::parse_directory(fixture_directory());
+fn parse_directory_contains_abbott_tech() -> Result<(), Box<dyn std::error::Error>> {
+    let parsed = pages::parse_directory(fixture_directory())?;
     let names: Vec<&str> = parsed.iter().map(|(name, _)| name.as_str()).collect();
     assert!(names.contains(&"Abbott Tech"), "should contain Abbott Tech");
+    Ok(())
 }
 
 #[test]
-fn parsed_schools_have_coach_rows() {
-    let parsed = pages::parse_directory(fixture_directory());
+fn parsed_schools_have_coach_rows() -> Result<(), Box<dyn std::error::Error>> {
+    let parsed = pages::parse_directory(fixture_directory())?;
     let schools_with_rows: Vec<_> = parsed
         .iter()
         .filter(|(_, table)| !table.rows.is_empty())
@@ -34,6 +36,7 @@ fn parsed_schools_have_coach_rows() {
         "more than 100 schools should have coach rows, got {}",
         schools_with_rows.len()
     );
+    Ok(())
 }
 
 #[test]
@@ -157,8 +160,8 @@ fn school_entities_captures_non_xc_tf_rows() {
 }
 
 #[test]
-fn fixture_has_182_schools_with_xc_tf_rows() {
-    let parsed = pages::parse_directory(fixture_directory());
+fn fixture_has_182_schools_with_xc_tf_rows() -> Result<(), Box<dyn std::error::Error>> {
+    let parsed = pages::parse_directory(fixture_directory())?;
     let schools_with_xc_tf: Vec<_> = parsed
         .iter()
         .filter(|(_, table)| {
@@ -173,25 +176,27 @@ fn fixture_has_182_schools_with_xc_tf_rows() {
         "should have ~182 schools with XC/TF rows, got {}",
         schools_with_xc_tf.len()
     );
+    Ok(())
 }
 
 #[test]
-fn fixture_has_xc_tf_coach_rows_counting_over_1000() {
-    let parsed = pages::parse_directory(fixture_directory());
+fn fixture_has_xc_tf_coach_rows_counting_over_1000() -> Result<(), Box<dyn std::error::Error>> {
+    let parsed = pages::parse_directory(fixture_directory())?;
     let total_rows: usize = parsed.iter().map(|(_, t)| t.rows.len()).sum();
     assert!(
         total_rows > 1000,
         "should have 1000+ XC/TF coach rows total, got {}",
         total_rows
     );
+    Ok(())
 }
 
 #[test]
-fn abbott_tech_has_bcx_coach_mario_longo() {
-    let parsed = pages::parse_directory(fixture_directory());
+fn abbott_tech_has_bcx_coach_mario_longo() -> Result<(), Box<dyn std::error::Error>> {
+    let parsed = pages::parse_directory(fixture_directory())?;
     let entry = parsed.iter().find(|(name, _)| name == "Abbott Tech");
     let Some((_, table)) = entry else {
-        panic!("Abbott Tech not found");
+        return Err("Abbott Tech not found".into());
     };
     let cx_coaches: Vec<_> = table
         .rows
@@ -201,14 +206,15 @@ fn abbott_tech_has_bcx_coach_mario_longo() {
     assert!(!cx_coaches.is_empty(), "should have Boys Cross Country row");
     let name = cx_coaches[0].1.as_str();
     assert_eq!(name, "Mario Longo");
+    Ok(())
 }
 
 #[test]
-fn abbott_tech_has_girls_cx_coach() {
-    let parsed = pages::parse_directory(fixture_directory());
+fn abbott_tech_has_girls_cx_coach() -> Result<(), Box<dyn std::error::Error>> {
+    let parsed = pages::parse_directory(fixture_directory())?;
     let entry = parsed.iter().find(|(name, _)| name == "Abbott Tech");
     let Some((_, table)) = entry else {
-        panic!("Abbott Tech not found");
+        return Err("Abbott Tech not found".into());
     };
     let gc = table
         .rows
@@ -216,4 +222,43 @@ fn abbott_tech_has_girls_cx_coach() {
         .filter(|(sport, _)| sport == "Girls Cross Country")
         .collect::<Vec<_>>();
     assert!(!gc.is_empty(), "should have Girls Cross Country row");
+    Ok(())
+}
+
+#[test]
+fn an_oversized_staff_table_is_refused_not_truncated() -> Result<(), Box<dyn std::error::Error>> {
+    let mut table = String::from("<table class='DirectoryStaffTable'>");
+    for n in 0..20_001 {
+        table.push_str(&format!(
+            "<tr><td>Boys Cross Country</td><td>Role</td><td>Coach {n}</td></tr>"
+        ));
+    }
+    table.push_str("</table>");
+    let outcome = pages::parse_table(&table);
+    let Err(crate::CrawlError::Schema { detail, .. }) = outcome else {
+        return Err("an oversized staff table must be refused".into());
+    };
+    assert!(detail.contains("exceeds"));
+    Ok(())
+}
+
+#[test]
+fn a_directory_accumulating_past_the_row_budget_is_refused(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut html = String::new();
+    for t in 0..2 {
+        html.push_str("<div class='DirectoryDetail'><b>Overflow High</b></div><table class='DirectoryStaffTable'>");
+        for n in 0..10_001 {
+            html.push_str(&format!(
+                "<tr><td>Girls Cross Country</td><td>Role</td><td>Coach {t}-{n}</td></tr>"
+            ));
+        }
+        html.push_str("</table>");
+    }
+    let outcome = pages::parse_directory(&html);
+    let Err(crate::CrawlError::Schema { detail, .. }) = outcome else {
+        return Err("a directory past the row budget must be refused".into());
+    };
+    assert!(detail.contains("exceeds"));
+    Ok(())
 }

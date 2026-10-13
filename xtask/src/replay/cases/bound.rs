@@ -7,7 +7,7 @@ pub(super) fn replay(capture: &Capture<'_>) -> Result<String> {
     if !file.starts_with("staff-") || !file.ends_with(".html") {
         return unmapped("bound", file);
     }
-    let parsed = bound::parse(body);
+    let parsed = bound::parse(body)?;
     let coaches = parsed.coaches.len();
     if file.contains("empty-staff") {
         if coaches != 0 {
