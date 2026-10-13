@@ -1,4 +1,5 @@
 use super::lists_a_test;
+use std::os::unix::fs::PermissionsExt;
 
 type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
 
@@ -146,5 +147,239 @@ fn durability_guard_refuses_an_occupied_port_before_resources() -> TestResult {
         "{stdout}\n{stderr}"
     );
     check!(eq; stdout, "");
+    Ok(())
+}
+
+struct GateCase {
+    root: tempfile::TempDir,
+    bin: std::path::PathBuf,
+    json: std::path::PathBuf,
+    log: std::path::PathBuf,
+    exit: String,
+}
+
+fn repo_path(relative: &str) -> std::path::PathBuf {
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(relative)
+}
+
+fn real_cargo() -> Result<String, Box<dyn std::error::Error>> {
+    let path = std::env::var("PATH")?;
+    for entry in path.split(':').skip(1) {
+        let candidate = std::path::Path::new(entry).join("cargo");
+        if candidate.is_file() {
+            return Ok(candidate.display().to_string());
+        }
+    }
+    Err("no cargo outside the stub directory".into())
+}
+
+fn clippy_rows() -> Result<serde_json::Map<String, serde_json::Value>, Box<dyn std::error::Error>> {
+    let text = std::fs::read_to_string(repo_path("../tools/quality-baseline.json"))?;
+    let value: serde_json::Value = serde_json::from_str(&text)?;
+    Ok(value["clippy"]
+        .as_object()
+        .ok_or("the baseline records no clippy debt")?
+        .clone())
+}
+
+fn clippy_json(rows: &serde_json::Map<String, serde_json::Value>, finish: Option<bool>) -> Result<String, Box<dyn std::error::Error>> {
+    let mut lines = Vec::new();
+    for (key, count) in rows {
+        let (target, code) = key
+            .split_once('\t')
+            .ok_or("baseline clippy keys are `target<TAB>lint`")?;
+        for _ in 0..count.as_u64().ok_or("baseline clippy counts are numbers")? {
+            lines.push(
+                serde_json::json!({
+                    "reason": "compiler-message",
+                    "target": { "name": target },
+                    "message": {
+                        "level": "error",
+                        "code": { "code": code },
+                        "rendered": "injected diagnostic"
+                    }
+                })
+                .to_string(),
+            );
+        }
+    }
+    if let Some(success) = finish {
+        lines.push(
+            serde_json::json!({ "reason": "build-finished", "success": success }).to_string(),
+        );
+    }
+    Ok(lines.join("\n"))
+}
+
+fn gate_case(payload: &str, exit: &str) -> Result<GateCase, Box<dyn std::error::Error>> {
+    let root = tempfile::tempdir()?;
+    let bin = root.path().join("bin");
+    std::fs::create_dir(&bin)?;
+    let stub = bin.join("cargo");
+    let real = real_cargo()?;
+    std::fs::write(
+        &stub,
+        format!(
+            "#!/usr/bin/env bash\nprintf '%s\\n' \"$*\" >> \"$STUB_LOG\"\n\
+             for a in \"$@\"; do\n\
+             \x20 if [ \"$a\" = clippy ]; then cat \"$STUB_JSON\"; exit \"$STUB_EXIT\"; fi\n\
+             \x20 if [ \"$a\" = scan ]; then exit 1; fi\n\
+             done\n\
+             exec {real} \"$@\"\n"
+        ),
+    )?;
+    std::fs::set_permissions(&stub, std::fs::Permissions::from_mode(0o755))?;
+    let json = root.path().join("clippy.json");
+    std::fs::write(&json, payload)?;
+    let log = root.path().join("cargo.log");
+    std::fs::write(&log, "")?;
+    Ok(GateCase {
+        root,
+        bin,
+        json,
+        log,
+        exit: exit.to_string(),
+    })
+}
+
+fn run_sourced(
+    case: &GateCase,
+    script: &str,
+) -> Result<std::process::Output, Box<dyn std::error::Error>> {
+    Ok(std::process::Command::new("bash")
+        .args(["-c", script])
+        .current_dir(case.root.path())
+        .env("GATE_SCRIPT", repo_path("../tools/gate.sh"))
+        .env("STUB_JSON", &case.json)
+        .env("STUB_EXIT", &case.exit)
+        .env("STUB_LOG", &case.log)
+        .env("PATH", format!("{}:{}", case.bin.display(), std::env::var("PATH")?))
+        .output()?)
+}
+
+fn invocations(case: &GateCase) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    Ok(std::fs::read_to_string(&case.log)?
+        .lines()
+        .map(str::to_string)
+        .collect())
+}
+
+#[test]
+fn ratchet_measurement_emits_a_tally_only_for_a_complete_success() -> TestResult {
+    let rows = clippy_rows()?;
+    let expected: std::collections::BTreeSet<String> = rows
+        .iter()
+        .map(|(key, count)| format!("{key}\t{count}"))
+        .collect();
+    let script = "source \"$GATE_SCRIPT\"\n\
+                  tmp=$(mktemp -d)\n\
+                  measure_clippy \"$tmp/clippy.json\" > \"$tmp/clippy.tsv\"\n\
+                  status=$?\n\
+                  sort \"$tmp/clippy.tsv\"\n\
+                  exit $status";
+    let complete = gate_case(&clippy_json(&rows, Some(true))?, "0")?;
+    let output = run_sourced(&complete, script)?;
+    let stdout = String::from_utf8(output.stdout)?;
+    let measured: std::collections::BTreeSet<String> =
+        stdout.lines().map(str::to_string).collect();
+    check!(eq; output.status.code(), Some(0), "{stdout}");
+    check!(eq; measured, expected, "{stdout}");
+
+    for (payload, exit, diagnostic) in [
+        (
+            clippy_json(&rows, Some(false))?,
+            "101",
+            "strict clippy exited 101",
+        ),
+        (
+            clippy_json(&rows, Some(false))?,
+            "0",
+            "did not report a successful build-finished record",
+        ),
+        (
+            clippy_json(&rows, Some(true))?,
+            "101",
+            "strict clippy exited 101",
+        ),
+        (
+            clippy_json(&rows, None)?,
+            "0",
+            "did not report a successful build-finished record",
+        ),
+        ("{\"reason\": \"compil".to_string(), "0", "did not report"),
+    ] {
+        let case = gate_case(&payload, exit)?;
+        let output = run_sourced(&case, script)?;
+        let stdout = String::from_utf8(output.stdout)?;
+        let stderr = String::from_utf8(output.stderr)?;
+        check!(output.status.code().is_some_and(|code| code != 0), "{stdout}\n{stderr}");
+        check!(stderr.contains(diagnostic), "{stdout}\n{stderr}");
+        check!(eq; stdout.trim(), "", "{stdout}");
+    }
+    Ok(())
+}
+
+#[test]
+fn ratchet_lane_never_compares_without_a_complete_measurement() -> TestResult {
+    let rows = clippy_rows()?;
+    let script = "source \"$GATE_SCRIPT\"\ntmp=$(mktemp -d)\nlane_ratchet \"$tmp\"";
+    let broken = gate_case(&clippy_json(&rows, Some(false))?, "101")?;
+    let output = run_sourced(&broken, script)?;
+    let stdout = String::from_utf8(output.stdout)?;
+    let stderr = String::from_utf8(output.stderr)?;
+    check!(output.status.code().is_some_and(|code| code != 0), "{stdout}\n{stderr}");
+    check!(stderr.contains("strict clippy exited 101"), "{stdout}\n{stderr}");
+    let attempted = invocations(&broken)?;
+    check!(!attempted.iter().any(|line| line.contains("scan")), "{attempted:?}");
+    check!(!attempted.iter().any(|line| line.contains("ratchet")), "{attempted:?}");
+
+    let complete = gate_case(&clippy_json(&rows, Some(true))?, "0")?;
+    let output = run_sourced(&complete, script)?;
+    let stderr = String::from_utf8(output.stderr)?;
+    check!(!stderr.contains("exited 101"), "{stderr}");
+    check!(
+        !stderr.contains("did not report a successful build-finished record"),
+        "{stderr}"
+    );
+    let attempted = invocations(&complete)?;
+    check!(attempted.iter().any(|line| line.contains("scan")), "{attempted:?}");
+    Ok(())
+}
+
+#[test]
+fn baseline_update_refuses_an_incomplete_measurement() -> TestResult {
+    let rows = clippy_rows()?;
+    let root = tempfile::tempdir()?;
+    let tools = root.path().join("tools");
+    std::fs::create_dir(&tools)?;
+    std::fs::copy(repo_path("../tools/gate.sh"), tools.join("gate.sh"))?;
+    let baseline = tools.join("quality-baseline.json");
+    std::fs::copy(repo_path("../tools/quality-baseline.json"), &baseline)?;
+    let before = std::fs::read(&baseline)?;
+
+    let case = gate_case(&clippy_json(&rows, Some(false))?, "101")?;
+    let output = std::process::Command::new("bash")
+        .arg(tools.join("gate.sh"))
+        .arg("--update-baseline")
+        .current_dir(root.path())
+        .env("STUB_JSON", &case.json)
+        .env("STUB_EXIT", &case.exit)
+        .env("STUB_LOG", &case.log)
+        .env("PATH", format!("{}:{}", case.bin.display(), std::env::var("PATH")?))
+        .output()?;
+    let stdout = String::from_utf8(output.stdout)?;
+    let stderr = String::from_utf8(output.stderr)?;
+    check!(eq; output.status.code(), Some(1), "{stdout}\n{stderr}");
+    check!(
+        stdout.contains("refusing to refresh the baseline from an incomplete measurement"),
+        "{stdout}\n{stderr}"
+    );
+    check!(!stdout.contains("baseline update: PASS"), "{stdout}");
+    check!(eq; std::fs::read(&baseline)?, before);
+    let attempted = invocations(&case)?;
+    check!(
+        !attempted.iter().any(|line| line.contains("quality-baseline")),
+        "{attempted:?}"
+    );
     Ok(())
 }

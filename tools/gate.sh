@@ -309,9 +309,10 @@ lane_durability() {
 #
 # The raw JSON lands in a file first. An empty tally is a legitimate result on a clean tree, so
 # "clippy counted no diagnostics" and "clippy never ran" would otherwise look identical to the
-# ratchet — and the second one must never pass. The `build-finished` record is the proof that the
-# compiler actually ran; `pipefail` (set at the top) is what makes a `jq` that cannot parse its
-# input fail this function instead of quietly emitting nothing.
+# ratchet — and the second one must never pass. Two independent contracts say the run completed:
+# cargo's own exit status, and a `build-finished` record whose `success` is exactly `true`. The
+# tally pipeline runs only after both hold, so the ratchet and the baseline updater never compare
+# debt against a failed or aborted collection.
 measure_clippy() {
   local raw="$1"
   # Cargo replays no diagnostics for units it did not recompile, so a warm target directory measures
@@ -322,10 +323,25 @@ measure_clippy() {
   # `-c` keeps that list honest while a deletion is in flight: a path that `git ls-files` still
   # reports but the worktree no longer holds has no unit to re-check and must not fail the lane.
   git ls-files -z '*.rs' | xargs -0 touch -c
+  # Cargo's exit status is the measurement's status, and it is captured explicitly: JSON processing
+  # can succeed on a failed run (`build-finished` with `success:false` is still a record), so the
+  # status is checked before anything reads the tally.
+  local clippy_status=0
   cargo -Zallow-features="$FEATURE_ALLOWLIST" clippy --workspace --lib --bins --examples --all-features \
-    --message-format=json -- "${LINT_SET[@]}" 2>/dev/null > "$raw"
-  if ! grep -q '"reason":"build-finished"' "$raw"; then
-    printf 'clippy produced no build-finished record: the measurement did not run, so its count is not evidence\n' >&2
+    --message-format=json -- "${LINT_SET[@]}" 2>/dev/null > "$raw" || clippy_status=$?
+  if [ "$clippy_status" -ne 0 ]; then
+    printf 'strict clippy exited %s: the compiler run failed, so its tally is not evidence\n' "$clippy_status" >&2
+    return 1
+  fi
+  # Completion is a separate contract from the exit status: every `build-finished` record must say
+  # `success:true`, and a missing, malformed or contradictory record fails even when cargo returned
+  # zero. `jq` prints one line per record, so absence, a parse error and `"false"` all compare
+  # unequal to `true`.
+  local completion
+  completion=$(jq -r 'select(.reason=="build-finished") | (.success | tostring)' "$raw" 2>/dev/null)
+  if [ "$completion" != "true" ]; then
+    printf 'clippy did not report a successful build-finished record (got: %s)\n' \
+      "${completion:-<missing or unparseable>}" >&2
     return 1
   fi
   jq -r 'select(.reason=="compiler-message") | select(.message.level=="error")
@@ -401,16 +417,21 @@ main() {
   # A measurement that did not run leaves `$tmp/clippy.tsv` empty, which the ratchet reads as "no
   # clippy debt" — so the lane itself takes the failure here; the gate cannot print PASS with
   # `clippy` in FAILURES, whatever the ratchet concludes from the empty tally.
+  local clippy_measured=0
   if measure_clippy "$tmp/clippy.json" > "$tmp/clippy.tsv"; then
+    clippy_measured=1
     sed 's/^/  /' "$tmp/clippy.tsv"
     printf '  total diagnostics: %s\n' "$(awk '{s+=$3} END {print s+0}' "$tmp/clippy.tsv")"
   else
     printf -- '--- strict clippy: FAIL (the measurement did not run)\n'
+    jq -r 'select(.reason=="compiler-message") | .message.rendered // empty' "$tmp/clippy.json" 2>/dev/null | sed 's/^/  /'
     FAILURES+=("clippy")
   fi
 
   printf '\n=== production scan (forbidden constructs + size budgets) ===\n'
+  local scan_measured=0
   if cargo run -q -p xtask -- scan > "$tmp/scan.json"; then
+    scan_measured=1
     jq -r '.crates | to_entries[] | "  \(.key): expect=\(.value.expect) unwrap=\(.value.unwrap) unsafe=\(.value.unsafe) assert=\(.value.assert_family) panic=\(.value.panic) indexing=\(.value.indexing) as=\(.value.as_cast) prod_lines=\(.value.production_lines)"' "$tmp/scan.json"
     jq -r '"  structure: files>300=\(.structure.files_over_300_lines | length) fns>60=\(.structure.functions_over_60_lines) fns>25logical=\(.structure.functions_over_25_logical_lines)"' "$tmp/scan.json"
     jq -r '.structure.functions_over_60_sites[]? | "  over the one-page budget: \(.)"' "$tmp/scan.json"
@@ -458,7 +479,11 @@ main() {
     printf '\n=== baseline update ===\n'
     local extra=()
     [ "$ALLOW_INCREASE" = 1 ] && extra+=(--allow-increase)
-    if cargo run -q -p xtask -- quality-baseline "$BASELINE" "$tmp/clippy.tsv" "$tmp/scan.json" "${extra[@]}"; then
+    if [ "$clippy_measured" = 0 ] || [ "$scan_measured" = 0 ]; then
+      printf -- '--- baseline update: FAIL (refusing to refresh the baseline from an incomplete measurement: clippy=%s scan=%s)\n' \
+        "$clippy_measured" "$scan_measured"
+      FAILURES+=("baseline update")
+    elif cargo run -q -p xtask -- quality-baseline "$BASELINE" "$tmp/clippy.tsv" "$tmp/scan.json" "${extra[@]}"; then
       printf -- '--- baseline update: PASS\n'
     else
       printf -- '--- baseline update: FAIL\n'
@@ -470,6 +495,10 @@ main() {
   printf '\n=== debt ratchet ===\n'
   if [ ! -f "$BASELINE" ]; then
     printf 'no baseline at %s: run tools/gate.sh --update-baseline once\n' "$BASELINE"
+    FAILURES+=("ratchet")
+  elif [ "$clippy_measured" = 0 ] || [ "$scan_measured" = 0 ]; then
+    printf -- '--- ratchet: FAIL (accepted-debt comparison needs complete measurements: clippy=%s scan=%s)\n' \
+      "$clippy_measured" "$scan_measured"
     FAILURES+=("ratchet")
   elif cargo run -q -p xtask -- ratchet "$BASELINE" "$tmp/clippy.tsv" "$tmp/scan.json"; then
     printf -- '--- ratchet: PASS\n'
