@@ -1,13 +1,13 @@
 use super::*;
 
 #[test]
-fn recruiting_policy_fourteen_has_a_distinct_recipe_from_all_prior_integration_policies(
+fn recruiting_policy_fifteen_has_a_distinct_recipe_from_all_prior_integration_policies(
 ) -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path().join("store"))?;
     let current = ExportDataset::load(&store)?;
     check!(eq; current.lineage.schema_revision, 3);
-    check!(eq; current.lineage.policy_revision, 14);
+    check!(eq; current.lineage.policy_revision, 15);
     let options = Options {
         grad_year: Some(2027),
         out: None,
@@ -16,7 +16,7 @@ fn recruiting_policy_fourteen_has_a_distinct_recipe_from_all_prior_integration_p
         school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
     };
     let current_recipe = binding::recipe(&current.lineage, &options)?;
-    [8, 9, 10, 11, 12, 13]
+    [8, 9, 10, 11, 12, 13, 14]
         .into_iter()
         .try_for_each(|policy| -> TestResult {
             let mut prior = current.lineage.clone();

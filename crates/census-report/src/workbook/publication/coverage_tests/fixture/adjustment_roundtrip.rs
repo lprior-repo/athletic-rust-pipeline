@@ -183,6 +183,9 @@ fn sidecar_forgeries_are_refused(captured: &Captured) -> TestResult {
         .parent()
         .ok_or("publication directory missing")?;
     for name in [
+        "event-catalog.json",
+        "relay-dispositions.json",
+        "relays.jsonl",
         "census-core.json",
         "census-all-sources.json",
         "recruiting.csv",
@@ -264,7 +267,7 @@ fn adjusted_bests_and_nonempty_coverage_survive_json_chunks_publication_and_live
     drop(live);
     let manifest = captured.frozen.manifest();
     check!(eq; manifest.lineage.schema_revision, 3);
-    check!(eq; manifest.lineage.policy_revision, 14);
+    check!(eq; manifest.lineage.policy_revision, 15);
     check!(eq; manifest.streams.len(), 15);
     check!(eq; manifest.source_fingerprints.len(), 16);
     check!(eq; manifest.lineage, captured.dataset.lineage);

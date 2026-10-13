@@ -3,7 +3,7 @@ use super::super::{generation, INPUT_TABLES, POLICY_REVISION};
 use super::*;
 use crate::export::ExportDataset;
 
-const PRIOR_POLICIES: [u32; 6] = [8, 9, 10, 11, 12, 13];
+const PRIOR_POLICIES: [u32; 7] = [8, 9, 10, 11, 12, 13, 14];
 const PRIOR_STATES: [Option<InputState>; 5] = [
     None,
     Some(InputState::Requested),
@@ -13,9 +13,9 @@ const PRIOR_STATES: [Option<InputState>; 5] = [
 ];
 
 fn prior_manifest(current: &FrozenManifest, policy: u32) -> TestResult<FrozenManifest> {
-    check!(eq; POLICY_REVISION, 14);
+    check!(eq; POLICY_REVISION, 15);
     check!(eq; current.lineage.schema_revision, 3);
-    check!(eq; current.lineage.policy_revision, 14);
+    check!(eq; current.lineage.policy_revision, 15);
     let mut prior = current.clone();
     prior.lineage.policy_revision = policy;
     prior.lineage.input_generation = generation(&prior.lineage)?;
@@ -37,7 +37,7 @@ fn install_prior_policy(
     check!(matches!(
         FrozenManifest::decode(&encoded),
         Err(FrozenCodecError::UnsupportedVersion { what: "manifest lineage", ref found, ref supported })
-            if found.contains(&expected) && supported == "schema revision 3 policy revision 14"
+            if found.contains(&expected) && supported == "schema revision 3 policy revision 15"
     ));
     let manifest_digest = objects::install(&objects::directory(directory), &encoded)?;
     check!(eq; objects::read(&objects::directory(directory), &manifest_digest, objects::MANIFEST_CEILING)?, encoded);
@@ -63,7 +63,7 @@ fn refused_prior_policy(store: &Store, job: &str, policy: u32) -> TestResult {
         Err(ReportError::ArtifactCorrupt { ref detail, .. })
             if detail.contains("unsupported manifest lineage")
                 && detail.contains(&expected)
-                && detail.contains("schema revision 3 policy revision 14")
+                && detail.contains("schema revision 3 policy revision 15")
     ));
     Ok(())
 }
@@ -94,7 +94,7 @@ fn policy_preserved(policy: u32, state: Option<InputState>) -> TestResult {
 }
 
 #[test]
-fn policy_fourteen_preserves_prior_policies_eight_through_thirteen_in_every_retained_state(
+fn policy_fifteen_preserves_prior_policies_eight_through_fourteen_in_every_retained_state(
 ) -> TestResult {
     PRIOR_POLICIES.into_iter().try_for_each(|policy| {
         PRIOR_STATES
@@ -115,6 +115,19 @@ fn prior_archive(
     policy: u32,
     coverage: PriorCoverage,
 ) -> TestResult<Vec<u8>> {
+    if policy == 14 {
+        let data = serialized_bytes(dataset)?;
+        let mut lineage = dataset.lineage.clone();
+        lineage.policy_revision = policy;
+        lineage.input_digest = sha256_hex(&data);
+        lineage.input_generation = generation(&lineage)?;
+        return Ok(format!(
+            "{{\"lineage\":{},\"data\":{}}}",
+            String::from_utf8(serialized_bytes(&lineage)?)?,
+            String::from_utf8(data)?
+        )
+        .into_bytes());
+    }
     check!(dataset.relays.is_empty());
     let encoded = serialized_bytes(dataset)?;
     let prefix = encoded
@@ -165,8 +178,15 @@ fn archive_preserved(policy: u32, coverage: PriorCoverage) -> TestResult {
     let seeded = seeded_store()?;
     let store = seeded.store;
     let dataset = ExportDataset::load(&store)?;
-    check!(eq; dataset.lineage.policy_revision, 14);
+    check!(eq; dataset.lineage.policy_revision, 15);
     let retained = prior_archive(&dataset, &store, policy, coverage)?;
+    if policy == 14 {
+        let shape: serde_json::Value = serde_json::from_slice(&retained)?;
+        check!(eq; shape.pointer("/lineage/schema_revision"), Some(&serde_json::json!(3)));
+        check!(eq; shape.pointer("/lineage/policy_revision"), Some(&serde_json::json!(14)));
+        check!(eq; shape.pointer("/data/relays"), Some(&serde_json::to_value(&dataset.relays)?));
+        check!(eq; shape.pointer("/data/coverage_evidence"), Some(&serde_json::to_value(&dataset.coverage_evidence)?));
+    }
     let path = seeded.directory.path().join("prior-policy.json");
     std::fs::write(&path, &retained)?;
     let sequence = store.snapshot().sequence();
@@ -192,15 +212,14 @@ fn archive_preserved(policy: u32, coverage: PriorCoverage) -> TestResult {
 }
 
 #[test]
-fn policy_fourteen_refuses_prior_full_coverage_archives_and_preserves_their_bytes() -> TestResult {
+fn policy_fifteen_refuses_prior_full_coverage_archives_and_preserves_their_bytes() -> TestResult {
     PRIOR_POLICIES
         .into_iter()
         .try_for_each(|policy| archive_preserved(policy, PriorCoverage::Captured))
 }
 
 #[test]
-fn policy_fourteen_refuses_main_policy_eight_archive_before_missing_coverage_decode() -> TestResult
-{
+fn policy_fifteen_refuses_main_policy_eight_archive_before_missing_coverage_decode() -> TestResult {
     archive_preserved(8, PriorCoverage::Missing)
 }
 
@@ -255,7 +274,7 @@ fn main_style_preserved(state: Option<InputState>) -> TestResult {
 }
 
 #[test]
-fn policy_fourteen_refuses_main_policy_eight_missing_coverage_manifest_without_retirement(
+fn policy_fifteen_refuses_main_policy_eight_missing_coverage_manifest_without_retirement(
 ) -> TestResult {
     PRIOR_STATES.into_iter().try_for_each(main_style_preserved)
 }

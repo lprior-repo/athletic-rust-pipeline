@@ -98,6 +98,10 @@ pub(in crate::workbook::verify) fn recapture(
 ) -> TestResult {
     let manifest_path = path.parent().ok_or("generation")?.join("manifest.json");
     let mut manifest: Value = serde_json::from_slice(&std::fs::read(&manifest_path)?)?;
+    let revision = manifest
+        .get("schema_revision")
+        .and_then(Value::as_u64)
+        .ok_or("manifest schema revision")?;
     let bytes = std::fs::read(path)?;
     let artifact = manifest
         .pointer_mut("/artifacts/workbook.xlsx")
@@ -111,7 +115,7 @@ pub(in crate::workbook::verify) fn recapture(
         serde_json::to_string(&Some(options.school_year))?
     );
     let digest_input = format!(
-        "[1,{},{},{}]",
+        "[{revision},{},{},{}]",
         serde_json::to_string(&dataset.lineage)?,
         selection,
         serde_json::to_string(manifest.get("artifacts").ok_or("artifacts")?)?

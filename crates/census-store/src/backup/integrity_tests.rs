@@ -290,3 +290,33 @@ fn integrity_resolves_ready_aliases_instead_of_only_decoding_the_descriptor() ->
     check!(eq; findings(&report, CorruptionClass::Truncated).len(), 1);
     Ok(())
 }
+
+#[test]
+fn every_retained_owned_interpretation_phase_checks_its_payload_digest() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let store = Store::open(directory.path())?;
+    let payload = json!({"row": "owned interpretation"});
+    let valid = census_domain::model::serialized_digest(&payload)?;
+    let phases = [
+        "milesplit_owned_meet_v1",
+        "milesplit_owned_meet_v2",
+        "milesplit_owned_meet_v3",
+        "milesplit_owned_meet_v4",
+    ];
+    for phase in phases {
+        store.journal_done(phase, &owned_locator(&valid), &payload)?;
+    }
+    check!(store.integrity()?.ok);
+    let invalid = "0".repeat(64);
+    for phase in phases {
+        store.journal_done(phase, &owned_locator(&invalid), &payload)?;
+    }
+    let report = store.integrity()?;
+    let mismatches = findings(&report, CorruptionClass::DigestMismatch);
+    check!(eq; mismatches.len(), phases.len());
+    for phase in phases {
+        let subject = format!("journal/{phase}/{}", owned_locator(&invalid));
+        check!(mismatches.iter().any(|finding| finding.subject == subject));
+    }
+    Ok(())
+}

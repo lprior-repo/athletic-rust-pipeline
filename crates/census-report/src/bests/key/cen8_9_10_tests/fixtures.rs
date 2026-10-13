@@ -65,7 +65,7 @@ pub(super) fn event_with_specification(
         "gl": gender.stable_key(), "xc": meet.sports.contains(&Sport::CrossCountry), "r": []}})
         .to_string();
     let doc = census_crawl::athleticlive::parse_event_document(&url, &body)?;
-    let mut event = crate::test_events::owned(CanonicalEvent::new(
+    let mut event = CanonicalEvent::new(
         EventIdentity {
             meet: &meet.id,
             kind: doc.kind(),
@@ -74,7 +74,7 @@ pub(super) fn event_with_specification(
             round: None,
         },
         specification,
-    )?);
+    )?;
     let source = SourceRef::new("athleticlive_results", Some(url));
     event.source_labels.push(SourceEventLabel {
         source: source.clone(),

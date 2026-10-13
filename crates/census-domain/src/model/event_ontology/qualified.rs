@@ -25,6 +25,9 @@ const MODIFIERS: &[&str] = &[
     "ambulatory",
     "paraambulatory",
     "para",
+    "xc",
+    "crosscountry",
+    "crosscountryrace",
 ];
 
 const MODIFIER_PHRASES: &[(&str, &str)] = &[
@@ -43,6 +46,7 @@ const MODIFIER_PHRASES: &[(&str, &str)] = &[
     ("hand", "cycle"),
     ("hand", "cycles"),
     ("para", "ambulatory"),
+    ("cross", "country"),
 ];
 
 struct Token<'a> {
@@ -134,7 +138,8 @@ fn window_candidates(
             let discards_modifier = modifier_ranges
                 .iter()
                 .any(|(first, after)| *first < start || *after > start.saturating_add(width));
-            if compact_len >= 3 && !discards_modifier {
+            let short_xc = window.first().is_some_and(|token| token.cleaned == "xc");
+            if (compact_len >= 3 || short_xc) && !discards_modifier {
                 candidates.push(render(window));
             }
         }

@@ -287,11 +287,16 @@ fn competition(case: Case) -> TestResult<(CanonicalMeet, CanonicalEvent)> {
         },
         EventSpecification::default(),
     )?);
-    event.evidence = vec![evidence(if case == Case::NonCoreEvent {
+    let observation = evidence(if case == Case::NonCoreEvent {
         "athleticlive_results"
     } else {
         "wiaa_results"
-    })];
+    });
+    event
+        .source_labels
+        .iter_mut()
+        .for_each(|label| label.source = observation.source.clone());
+    event.evidence = vec![observation];
     Ok((meet, event))
 }
 

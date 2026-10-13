@@ -195,6 +195,38 @@ fn explicit_excluded_disciplines_never_inherit_ordinary_running_substrings() -> 
 }
 
 #[test]
+fn hand_cycling_phrase_keeps_separate_excluded_disciplines() -> TestResult {
+    for (label, reason) in [
+        ("Hand Cycling 5000m", EventExclusionReason::Handcycle),
+        ("5000m Hand Cycling", EventExclusionReason::Handcycle),
+        ("Hand-Cycling 5000m", EventExclusionReason::Handcycle),
+        ("Cycling 5000m", EventExclusionReason::UnrelatedSport),
+        (
+            "Hand Cycling Cycling 5000m",
+            EventExclusionReason::MultipleExcludedDisciplines,
+        ),
+        (
+            "Cycling Hand Cycling 5000m",
+            EventExclusionReason::MultipleExcludedDisciplines,
+        ),
+        (
+            "Hand Cycling Soccer 5000m",
+            EventExclusionReason::MultipleExcludedDisciplines,
+        ),
+    ] {
+        let event = owned(unmapped(label), &[label])?;
+        let before = serialized_bytes(&event)?;
+        assert_eq!(
+            RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack)?,
+            EventDisposition::Excluded(reason),
+            "{label}"
+        );
+        assert_eq!(serialized_bytes(&event)?, before);
+    }
+    Ok(())
+}
+
+#[test]
 fn mixed_event_declarations_do_not_depend_on_source_assertion_order() -> TestResult {
     for labels in [
         vec!["100m", "Wheelchair 100m"],
@@ -502,15 +534,93 @@ fn xc_preserves_actual_three_mile_distance_and_refuses_order_sensitive_track_fal
     assert_eq!(context.distance.unit, crate::model::DistanceUnit::Miles);
     assert_eq!(context.distance.thousandths(), 3000);
     let event = owned(EventKind::Track5000m, &["5k XC"])?;
-    assert!(matches!(
+    assert_eq!(
         RecruitingCatalogV1::new().classify(&event, Sport::CrossCountry)?,
-        EventDisposition::Unresolved(_)
-    ));
+        EventDisposition::Unresolved(EventResolutionReason::ContradictoryDeclarations)
+    );
     let event = owned(EventKind::CrossCountry, &["XC 5k"])?;
     assert_eq!(
         RecruitingCatalogV1::new().classify(&event, Sport::CrossCountry)?,
         EventDisposition::Included(EventKind::CrossCountry)
     );
+    Ok(())
+}
+
+#[test]
+fn exact_xc_anchors_preserve_distance_in_both_label_orders() -> TestResult {
+    for (label, unit, thousandths) in [
+        ("XC 3 Miles", crate::model::DistanceUnit::Miles, 3000),
+        ("3 Miles XC", crate::model::DistanceUnit::Miles, 3000),
+        ("XC 5k", crate::model::DistanceUnit::Metres, 5_000_000),
+        ("5k XC", crate::model::DistanceUnit::Metres, 5_000_000),
+        ("XC 5000m", crate::model::DistanceUnit::Metres, 5_000_000),
+        ("5000m XC", crate::model::DistanceUnit::Metres, 5_000_000),
+        (
+            "5000m Cross Country",
+            crate::model::DistanceUnit::Metres,
+            5_000_000,
+        ),
+        (
+            "5000m CrossCountry",
+            crate::model::DistanceUnit::Metres,
+            5_000_000,
+        ),
+        (
+            "5000m CrossCountryRace",
+            crate::model::DistanceUnit::Metres,
+            5_000_000,
+        ),
+    ] {
+        assert_eq!(EventKind::from_source_label(label), EventKind::CrossCountry);
+        let event = owned(EventKind::CrossCountry, &[label])?;
+        let before = serialized_bytes(&event)?;
+        assert_eq!(
+            RecruitingCatalogV1::new().classify(&event, Sport::CrossCountry)?,
+            EventDisposition::Included(EventKind::CrossCountry),
+            "{label}"
+        );
+        let context = event
+            .resolved_specification()?
+            .cross_country
+            .ok_or("published XC distance")?;
+        assert_eq!(context.distance.unit, unit, "{label}");
+        assert_eq!(context.distance.thousandths(), thousandths, "{label}");
+        assert_eq!(serialized_bytes(&event)?, before);
+        let event = owned(EventKind::Track5000m, &[label])?;
+        assert_eq!(
+            RecruitingCatalogV1::new().classify(&event, Sport::CrossCountry)?,
+            EventDisposition::Unresolved(EventResolutionReason::ContradictoryDeclarations),
+            "{label}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn xc_anchor_boundaries_do_not_rescue_unknown_or_conflicting_labels() -> TestResult {
+    for label in [
+        "XCish 5000m",
+        "preXC 5000m",
+        "5000m XCish",
+        "5000m preXC",
+        "XC 5000m mystery",
+        "mystery 5000m XC",
+        "X-C 5000m",
+        "XC-5000m",
+        "XC 5k Hurdles",
+        "Hurdles 5k XC",
+        "XC 5000m 100m",
+        "100m 5000m XC",
+    ] {
+        let event = owned(EventKind::CrossCountry, &[label])?;
+        assert!(
+            matches!(
+                RecruitingCatalogV1::new().classify(&event, Sport::CrossCountry)?,
+                EventDisposition::Unresolved(_)
+            ),
+            "{label}"
+        );
+    }
     Ok(())
 }
 

@@ -126,12 +126,12 @@ async fn collect_wiaa_results(
 
 async fn assert_result_replay(store: &Store, context: &AdapterContext<'_>) -> Result<()> {
     let observations = store.snapshot().tables_digest(&Table::ALL)?;
-    let receipts = store.journal_payloads("wiaa_results_projection_v2")?;
+    let receipts = store.journal_payloads("wiaa_results_projection_v3")?;
     let report = wiaa_results::collect(context, &result_options()).await?;
     ensure!(report.requests == 0, "WIAA replay reacquired an artifact");
     ensure!(
         store.snapshot().tables_digest(&Table::ALL)? == observations
-            && store.journal_payloads("wiaa_results_projection_v2")? == receipts,
+            && store.journal_payloads("wiaa_results_projection_v3")? == receipts,
         "WIAA replay duplicated physical source observations or projection receipts"
     );
     Ok(())

@@ -53,7 +53,7 @@ impl RecruitingCatalogV1 {
     fn identity(&self) -> CatalogIdentity<'static> {
         CatalogIdentity {
             version: self.version,
-            grammar: "ascii_delimited_tokens_exact_aliases_v1",
+            grammar: "ascii_delimited_tokens_typed_context_xc_anchors_v3",
             coherence: "all_owned_assertions_canonical_kind_sport_category_v1",
             max_source_labels: CATALOG_V1_MAX_SOURCE_LABELS,
             max_label_bytes: CATALOG_V1_MAX_LABEL_BYTES,

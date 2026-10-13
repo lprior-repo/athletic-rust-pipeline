@@ -10,7 +10,7 @@ fn historical_publication_policy_is_refused(revision: u32) -> TestResult {
     let temporary = tempfile::tempdir()?;
     let store = Store::open(temporary.path().join("store"))?;
     let current = ExportDataset::load(&store)?;
-    check!(eq; current.lineage.policy_revision, 14);
+    check!(eq; current.lineage.policy_revision, 15);
     let archive = temporary.path().join(format!("revision-{revision}.json"));
     current.save_frozen(&archive)?;
     let mut historical: serde_json::Value = serde_json::from_slice(&std::fs::read(&archive)?)?;

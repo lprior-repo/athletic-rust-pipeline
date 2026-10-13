@@ -45,7 +45,7 @@ pub struct Options {
     pub school_names: Vec<String>,
 }
 
-const PARSE_VERSION: u32 = 8;
+const PARSE_VERSION: u32 = 9;
 
 #[derive(Debug, Default)]
 struct Accumulator {

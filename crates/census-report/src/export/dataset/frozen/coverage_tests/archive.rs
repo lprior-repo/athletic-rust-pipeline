@@ -98,8 +98,9 @@ fn schema_two_archives_require_both_coverage_arrays_and_reject_null() -> TestRes
 }
 
 fn old_schema_archive(dataset: &ExportDataset, store: &Store) -> TestResult<Vec<u8>> {
+    check!(dataset.relays.is_empty());
     let suffix = format!(
-        ",\"coverage_evidence\":{}}}",
+        ",\"coverage_evidence\":{},\"relays\":[]}}",
         String::from_utf8(serialized_bytes(&dataset.coverage_evidence)?)?
     );
     let encoded = serialized_bytes(dataset)?;
@@ -146,6 +147,7 @@ fn valid_schema_one_archive_without_coverage_is_preserved_and_refused_after_reop
     let value: Value = serde_json::from_slice(&retained)?;
     let data = value.get("data").ok_or("historical data missing")?;
     check!(data.get("coverage_evidence").is_none());
+    check!(data.get("relays").is_none());
     let lineage: DatasetLineage = serde_json::from_value(
         value
             .get("lineage")

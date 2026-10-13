@@ -100,7 +100,12 @@ fn cross_country(label: &str) -> bool {
 fn excluded(label: &str) -> Option<Ex> {
     let direct = EXCLUSIONS.iter().filter_map(|(alias, reason)| {
         tokens(label)
-            .any(|word| discipline(word, alias))
+            .zip(std::iter::once(None).chain(tokens(label).map(Some)))
+            .any(|(word, previous)| {
+                discipline(word, alias)
+                    && !(word.eq_ignore_ascii_case("cycling")
+                        && previous.is_some_and(|previous| previous.eq_ignore_ascii_case("hand")))
+            })
             .then_some(*reason)
     });
     let paired = PAIRS
