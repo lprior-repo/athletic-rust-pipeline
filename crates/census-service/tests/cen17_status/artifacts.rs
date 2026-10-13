@@ -20,9 +20,23 @@ use std::path::Path;
 
 const TEST_CAPTURED_AT: &str = "2026-09-22T12:00:00Z";
 
+enum FixtureLabels {
+    Captured,
+    Qualified,
+}
+
 #[tokio::test]
 async fn offline_owned_result_parser_retains_invalid_athletes_without_publishing_stale_bests(
 ) -> TestResult {
+    run_artifact_fixture(FixtureLabels::Qualified).await
+}
+
+#[tokio::test]
+async fn captured_unknown_event_labels_retain_marks_without_publishing_bests() -> TestResult {
+    run_artifact_fixture(FixtureLabels::Captured).await
+}
+
+async fn run_artifact_fixture(labels: FixtureLabels) -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path().join("store"))?;
     let target = target(FIELD)?;
@@ -54,7 +68,11 @@ async fn offline_owned_result_parser_retains_invalid_athletes_without_publishing
     let mut options = ResultOptions::for_meet(target, OBSERVED_ON);
     [("valid.json", valid), ("invalid.json", invalid)]
         .into_iter()
-        .try_for_each(|(name, body)| -> TestResult {
+        .try_for_each(|(name, mut body)| -> TestResult {
+            if matches!(labels, FixtureLabels::Qualified) {
+                super::fixtures::set(&mut body, "/_source/n", json!("Girls High Jump"))?;
+                super::fixtures::set(&mut body, "/_source/sn", json!("Girls High Jump"))?;
+            }
             let (path, metadata) = write_capture(dir.path(), name, &body)?;
             options.documents.push(path.clone());
             options.capture_metadata.insert(path, metadata);
@@ -68,7 +86,37 @@ async fn offline_owned_result_parser_retains_invalid_athletes_without_publishing
     assert_preserved_statuses(&performances)?;
     census_service::census::consolidate(&store)?;
     declare_controlled_indoor_context(&store)?;
+    if matches!(labels, FixtureLabels::Captured) {
+        return assert_catalog_refusal(&store);
+    }
     assert_artifacts(&store, dir.path(), &athletes, &performances)?;
+    Ok(())
+}
+
+fn assert_catalog_refusal(store: &Store) -> TestResult {
+    use census_domain::model::{EventDisposition, EventResolutionReason};
+    let dataset = ExportDataset::load(store)?;
+    let admission = report::EventAdmission::of(&dataset)?;
+    check!(eq; dataset.events.len(), 2);
+    for event in &dataset.events {
+        check!(eq; event.division.as_deref(), Some("MITS"));
+        check!(event
+            .source_labels
+            .iter()
+            .any(|label| label.label.contains("MITS")));
+        check!(eq; admission.disposition(&event.id), Some(&EventDisposition::Unresolved(
+            EventResolutionReason::UnknownOrMixedSourceLabels)));
+    }
+    check!(bests::build_from_dataset(
+        &dataset,
+        &bests::Options {
+            scope: Scope::AllSources,
+            grad_year: Some(2027),
+            limit: None,
+            jurisdictions: Vec::new(),
+        }
+    )?
+    .is_empty());
     Ok(())
 }
 

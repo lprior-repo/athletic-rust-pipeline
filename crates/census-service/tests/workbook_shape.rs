@@ -171,6 +171,7 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory(
         "Athletes",
         "PRs",
         "Performances_001",
+        "Relays",
         "Coaches",
         "Schools",
         "Meets",
@@ -188,6 +189,13 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory(
         .map(String::as_str)
         .collect::<std::collections::BTreeSet<_>>(),
     expected);
+
+    let relays = book.worksheet_range("Relays")?;
+    check!(eq; relays.height(), 1, "individual marks must not manufacture relay rows");
+    check!(eq; relays.width(), 12);
+    let relay_headers = relays.rows().next().ok_or("missing relay headers")?;
+    check!(eq; relay_headers.first().map(ToString::to_string), Some("Relay ID".to_string()));
+    check!(eq; relay_headers.last().map(ToString::to_string), Some("Source Team".to_string()));
 
     let dataset = ExportDataset::load(&store)?;
     let bests = bests::build_from_dataset(

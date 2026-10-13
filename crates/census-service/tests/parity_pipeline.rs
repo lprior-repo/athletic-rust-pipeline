@@ -63,10 +63,7 @@ fn rebuilding_the_fixture_store_reproduces_semantics_not_publication_identity() 
                         == second.publication.workbook.mapped_athletes,
                 "rebuilding the same source corpus changed the verified published record population"
             );
-            ensure!(
-                first.artifacts == second.artifacts,
-                "rebuilding the same source corpus changed workbook cells or published sidecar facts"
-            );
+            first.artifacts.compare(&second.artifacts)?;
             ensure!(
                 first.publication.generation_digest != second.publication.generation_digest,
                 "a rebuilt store must not inherit the earlier store's publication identity"

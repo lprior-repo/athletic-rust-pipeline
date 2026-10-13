@@ -12,6 +12,31 @@ pub struct Semantics {
     csv: BTreeMap<String, Vec<Vec<String>>>,
 }
 
+impl Semantics {
+    pub fn compare(&self, other: &Self) -> Result<()> {
+        for (name, rows) in &self.workbook {
+            let next = other.workbook.get(name).context("missing rebuilt sheet")?;
+            for (index, (left, right)) in rows.iter().zip(next).enumerate() {
+                if left != right {
+                    bail!("workbook {name} row {index} changed: {left:?} versus {right:?}");
+                }
+            }
+        }
+        for (name, value) in &self.sidecars {
+            if other.sidecars.get(name) != Some(value) {
+                bail!(
+                    "sidecar {name} changed: {value:?} versus {:?}",
+                    other.sidecars.get(name)
+                );
+            }
+        }
+        if self != other {
+            bail!("rebuilt publication changed artifact names, row counts or CSV facts");
+        }
+        Ok(())
+    }
+}
+
 pub fn read(workbook: &Path) -> Result<Semantics> {
     let directory = workbook
         .parent()
@@ -77,7 +102,7 @@ fn read_json(path: &Path) -> Result<Value> {
                     .with_context(|| format!("missing lineage field {field}"))?;
             }
         }
-        Some("audit.json") => {
+        Some("audit.json" | "event-catalog.json") => {
             value
                 .as_object_mut()
                 .context("publication audit object")?
@@ -94,6 +119,33 @@ fn read_json(path: &Path) -> Result<Value> {
         _ => {}
     }
     Ok(value)
+}
+
+#[test]
+fn catalog_generation_is_identity_but_catalog_facts_remain_semantics() -> Result<()> {
+    let directory = tempfile::tempdir()?;
+    for name in ["event-catalog.json", "audit.json"] {
+        let path = directory.path().join(name);
+        std::fs::write(
+            &path,
+            br#"{"input_generation":"first","counts":{"included":1}}"#,
+        )?;
+        let first = read_json(&path)?;
+        std::fs::write(
+            &path,
+            br#"{"input_generation":"second","counts":{"included":1}}"#,
+        )?;
+        check!(eq; first, read_json(&path)?);
+        std::fs::write(
+            &path,
+            br#"{"input_generation":"second","counts":{"included":2}}"#,
+        )?;
+        check!(
+            first != read_json(&path)?,
+            "catalog counts cannot be normalized away"
+        );
+    }
+    Ok(())
 }
 
 fn read_workbook(path: &Path) -> Result<BTreeMap<String, Vec<Vec<Data>>>> {
