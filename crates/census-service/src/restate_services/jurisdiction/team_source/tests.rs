@@ -15,6 +15,7 @@ mod durable_attempts;
 pub(crate) mod national_resume;
 mod registration;
 mod registration_cancellation;
+mod replay;
 mod settlement;
 
 pub(super) fn request() -> Result<TeamsSourceRequest, Box<dyn Error>> {

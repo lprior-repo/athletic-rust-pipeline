@@ -41,7 +41,7 @@ impl Census {
         let revision = census_reconcile::identity::Revision(request.revision);
         let store = Arc::clone(&self.store);
         let region = Arc::clone(self.jobs.region());
-        let permit = self.jobs.permit().await?;
+        let permit = self.jobs.permit_control().await?;
         super::blocking(region, move || {
             let _permit = permit;
             super::open_work::inspect_store(&store, season, revision)
@@ -84,7 +84,7 @@ impl Census {
         let journal = super::open_work::measure(ctx, &query, &evidence).await?;
         let store = Arc::clone(self.jobs.store());
         let region = Arc::clone(self.jobs.region());
-        let permit = self.jobs.permit().await?;
+        let permit = self.jobs.permit_control().await?;
         let store_seal = requests::store_request(request, &journal, run);
         let reply = ctx
             .run(move || async move {
@@ -226,7 +226,7 @@ impl Census {
         let jurisdictions = requests::admitted_jurisdictions(&request.jurisdictions)?;
         let store = Arc::clone(&self.store);
         let region = Arc::clone(self.jobs.region());
-        let permit = self.jobs.permit().await?;
+        let permit = self.jobs.permit_control().await?;
         let result = super::blocking(region, move || {
             let _permit = permit;
             let identity = store_identity(&store).map_err(|error| JobError::Terminal {

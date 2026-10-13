@@ -8,7 +8,7 @@ mod tests;
 
 pub use evidence::{
     AcceptanceItem, GapTally, OpenWork, RetainedFindings, SealCounts, SealEvidence, SealedCensus,
-    WorkbookCheck,
+    Verification, WorkbookCheck,
 };
 pub use open::{
     owed_cohort_decisions, owed_identity_candidates, owed_jurisdictions, owed_source_objects,

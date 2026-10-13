@@ -86,7 +86,7 @@ impl Store {
         }
         Ok(Some(lease))
     }
-    pub(super) fn lease_check(&self, digest: &str, epoch: u64) -> StoreResult<()> {
+    pub(crate) fn lease_check(&self, digest: &str, epoch: u64) -> StoreResult<()> {
         let lease = self.lease_read(digest)?;
         let actual = lease.as_ref().map(|lease| lease.epoch);
         if actual != Some(epoch) || epoch == 0 {
@@ -130,6 +130,15 @@ impl Store {
             });
         }
         self.check_lease_capacity()?;
+        self.lease_epoch_stage(digest, owner, expires_at, batch)
+    }
+    fn lease_epoch_stage(
+        &self,
+        digest: &str,
+        owner: &str,
+        expires_at: &str,
+        batch: &mut fjall::OwnedWriteBatch,
+    ) -> StoreResult<u64> {
         let current =
             meta::get_u64(&self.meta, "lease_epoch_counter")?.map_or(0, core::convert::identity);
         let epoch = current.checked_add(1).ok_or(StoreError::CounterExhausted)?;
@@ -142,6 +151,36 @@ impl Store {
         }
         meta::put_text(batch, &self.meta, "lease_epoch_counter", &epoch.to_string());
         batch.insert(&self.meta, lease_key(digest).as_bytes(), encode(&lease)?);
+        Ok(epoch)
+    }
+    pub(super) fn lease_succeed_expired(
+        &self,
+        digest: &str,
+        owner: &str,
+        expires_at: &str,
+    ) -> StoreResult<u64> {
+        check_digest(digest)?;
+        let mut batch = self.db.batch();
+        let held = self.lease_read(digest)?;
+        if let Some(held) = &held {
+            if expiry(&held.expires_at)? > Utc::now() {
+                return Err(StoreError::LeaseMismatch {
+                    digest: digest.into(),
+                    expected: 0,
+                    actual: Some(held.epoch),
+                });
+            }
+            batch.remove(&self.meta, lease_key(digest).as_bytes());
+        }
+        let epoch = if held.is_some() {
+            self.lease_epoch_stage(digest, owner, expires_at, &mut batch)?
+        } else {
+            self.lease_stage(digest, owner, expires_at, &mut batch)?
+        };
+        batch
+            .durability(Some(fjall::PersistMode::SyncData))
+            .commit()
+            .map_err(|source| StoreError::Write { source })?;
         Ok(epoch)
     }
     pub fn lease_acquire(&self, digest: &str, owner: &str, expires_at: &str) -> StoreResult<u64> {

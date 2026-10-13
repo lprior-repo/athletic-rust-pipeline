@@ -144,3 +144,126 @@ fn owner_dead_scratch_reclamation_resumes_in_bounded_byte_slices() -> TestResult
     check!(eq; store.reclaim_owner_dead_scratch()?, 0);
     Ok(())
 }
+#[test]
+fn sweep_reclaims_oversized_abandoned_temporary_larger_than_sixteen_mib() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = crate::Store::open(dir.path())?;
+    let oversized = store.out_dir().join(".huge.jsonl.4294967295.0.part");
+    std::fs::File::create(&oversized)?.set_len(20 * 1024 * 1024)?;
+    check!(oversized.exists());
+    let live = store
+        .out_dir()
+        .join(format!(".keep.jsonl.{}.0.part", std::process::id()));
+    std::fs::write(&live, b"live owner")?;
+    check!(eq; store.reclaim_owner_dead_scratch()?, 1);
+    check!(!oversized.exists(), "oversized temporary is reclaimed");
+    check!(live.exists(), "live owner temporary is untouched");
+    Ok(())
+}
+
+#[test]
+fn verify_layout_reports_an_empty_store_as_uninspected() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = crate::Store::open(dir.path())?;
+    check!(
+        !store.snapshot().verify_layout()?,
+        "an empty store holds no writer layout to inspect"
+    );
+    Ok(())
+}
+
+#[test]
+fn verify_layout_accepts_a_real_writer_layout() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = crate::Store::open(dir.path())?;
+    let schools = [school("Alpha"), school("Beta")];
+    store.append_many(crate::Table::Schools, &schools)?;
+    check!(store.snapshot().verify_layout()?);
+    Ok(())
+}
+
+#[test]
+fn verify_layout_rejects_non_ascii_observation_id() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = crate::Store::open(dir.path())?;
+    let mut key = crate::keys::observation_prefix(crate::Table::Schools);
+    key.extend_from_slice(b"bad-\xFF");
+    key.push(0);
+    key.extend_from_slice(&0_u64.to_be_bytes());
+    store
+        .entities
+        .insert(key, serde_json::to_vec(&school("Bad"))?)?;
+    let result = store.snapshot().verify_layout();
+    match result {
+        Err(crate::StoreError::Invariant { detail }) => {
+            check!(
+                detail.contains("non-ascii observation id"),
+                "non-ascii id must be rejected: {detail}"
+            );
+        }
+        other => return Err(format!("expected invariant, got {other:?}").into()),
+    }
+    Ok(())
+}
+
+#[test]
+fn verify_layout_covers_generation_partitioned_rows() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = crate::Store::open(dir.path())?;
+    let key = crate::keys::derived_key(crate::Table::Conflicts, 1, b"conflict-1");
+    store.entities.insert(
+        key.clone(),
+        serde_json::to_vec(&serde_json::json!({"id": "conflict-1"}))?,
+    )?;
+    check!(store.snapshot().verify_layout()?);
+    store
+        .entities
+        .insert(key, serde_json::to_vec(&serde_json::json!({"id": ""}))?)?;
+    let result = store.snapshot().verify_layout();
+    match result {
+        Err(crate::StoreError::Invariant { detail }) => {
+            check!(
+                detail.contains("observation id must not be empty"),
+                "a derived row with an empty id must be rejected: {detail}"
+            );
+        }
+        other => return Err(format!("expected invariant, got {other:?}").into()),
+    }
+    Ok(())
+}
+
+#[test]
+fn verify_layout_rejects_corrupt_entity_value() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = crate::Store::open(dir.path())?;
+    let key = crate::keys::observation_key(crate::Table::Schools, "bad-value", 0);
+    store.entities.insert(key, b"not json")?;
+    let result = store.snapshot().verify_layout();
+    match result {
+        Err(crate::StoreError::Json { .. }) => {}
+        other => return Err(format!("expected json error, got {other:?}").into()),
+    }
+    Ok(())
+}
+
+#[test]
+fn verify_layout_rejects_malformed_observation_id_in_value() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = crate::Store::open(dir.path())?;
+    let key = crate::keys::observation_key(crate::Table::Schools, "good-key", 0);
+    let bad_value = serde_json::json!({"id": ""});
+    store
+        .entities
+        .insert(key, serde_json::to_vec(&bad_value)?)?;
+    let result = store.snapshot().verify_layout();
+    match result {
+        Err(crate::StoreError::Invariant { detail }) => {
+            check!(
+                detail.contains("observation id must not be empty"),
+                "empty id in value must be rejected: {detail}"
+            );
+        }
+        other => return Err(format!("expected invariant, got {other:?}").into()),
+    }
+    Ok(())
+}

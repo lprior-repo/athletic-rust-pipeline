@@ -26,7 +26,7 @@ pub(super) fn validate(
             .ok_or_else(|| CrawlError::Invariant {
                 detail: "owned result-set index does not address a retained source row".into(),
             })?;
-        super::map_rows::record_source(writer, context, row);
+        super::map_rows::record_source(writer, context, row)?;
         retain(writer, context, row, assessment)
     })?;
     Err(unknown(context))

@@ -57,10 +57,10 @@ fn evidence() -> SealEvidence {
             rows: 4_407_653,
             digests: vec!["0f1e".to_string()],
             mapped_athletes: 307_653,
-            counts_reconciled: true,
-            coverage_reconciled: true,
-            metrics_reconciled: true,
-            export_verified: true,
+            counts_reconciled: Verification::Verified,
+            coverage_reconciled: Verification::Verified,
+            metrics_reconciled: Verification::Verified,
+            export_verified: Verification::Verified,
             discrepancies: Vec::new(),
         },
         observed_on: "2026-09-22".to_string(),
@@ -315,34 +315,140 @@ fn a_census_that_claims_work_but_proves_nothing_is_refused() {
     assert_eq!(empty.open_items(), Vec::new());
     assert!(seal_from_export(empty).is_ok());
 }
+#[test]
+fn a_satisfied_conflicts_retained_item_seals() {
+    let mut satisfied = evidence();
+    satisfied.retained.conflicts = 12;
+    let open = satisfied.open_items();
+    assert!(
+        !open.contains(&AcceptanceItem::ConflictsRetained),
+        "retained conflicts should not be open"
+    );
+    assert!(
+        seal_from_export(satisfied).is_ok(),
+        "a seal with retained conflicts should be granted"
+    );
+}
+
+#[test]
+fn an_unmet_conflicts_retained_item_refuses_the_seal() {
+    let mut unmet = evidence();
+    unmet.retained.conflicts = 0;
+    let open = unmet.open_items();
+    assert!(
+        open.contains(&AcceptanceItem::ConflictsRetained),
+        "zero retained conflicts should be open"
+    );
+    assert!(matches!(
+        seal_from_export(unmet),
+        Err(SealError::ItemUnmet {
+            item: AcceptanceItem::ConflictsRetained,
+            ..
+        })
+    ));
+}
+
+#[test]
+fn a_satisfied_retries_represented_item_seals() {
+    let mut satisfied = evidence();
+    satisfied.retained.access_conditions = 5;
+    satisfied.retained.blocked_hosts = 2;
+    satisfied.retained.throttled_hosts = 3;
+    let open = satisfied.open_items();
+    assert!(
+        !open.contains(&AcceptanceItem::RetriesRepresented),
+        "retained access conditions should not be open"
+    );
+    assert!(
+        seal_from_export(satisfied).is_ok(),
+        "a seal with retained access conditions should be granted"
+    );
+}
+
+#[test]
+fn an_unmet_retries_represented_item_refuses_the_seal() {
+    let mut unmet = evidence();
+    unmet.retained.access_conditions = 0;
+    unmet.retained.blocked_hosts = 0;
+    unmet.retained.throttled_hosts = 0;
+    let open = unmet.open_items();
+    assert!(
+        open.contains(&AcceptanceItem::RetriesRepresented),
+        "zero retained access conditions should be open"
+    );
+    assert!(matches!(
+        seal_from_export(unmet),
+        Err(SealError::ItemUnmet {
+            item: AcceptanceItem::RetriesRepresented,
+            ..
+        })
+    ));
+}
+
+#[test]
+fn an_empty_evidence_set_refuses_all_declared_items() {
+    let empty = SealEvidence {
+        open: OpenWork::default(),
+        counts: SealCounts::default(),
+        retained: RetainedFindings::default(),
+        workbook: WorkbookCheck::default(),
+        observed_on: "2026-01-01".to_string(),
+        run: None,
+    };
+    let open = empty.open_items();
+    let expected = [
+        AcceptanceItem::JurisdictionSweepsTerminal,
+        AcceptanceItem::SourceObjectsTerminal,
+        AcceptanceItem::CohortDecisionsTerminal,
+        AcceptanceItem::IdentityCandidatesTerminal,
+        AcceptanceItem::WorkbookCountsReconcile,
+        AcceptanceItem::CoverageReportReconciles,
+        AcceptanceItem::RunMetricsReconcile,
+        AcceptanceItem::ExportVerified,
+        AcceptanceItem::RunBound,
+    ];
+    for item in expected {
+        assert!(
+            open.contains(&item),
+            "empty evidence should have {item:?} open"
+        );
+    }
+    assert!(matches!(
+        seal_from_export(empty),
+        Err(SealError::ItemUnmet {
+            item: AcceptanceItem::JurisdictionSweepsTerminal,
+            ..
+        })
+    ));
+}
 
 #[test]
 fn an_unreconciled_workbook_refuses_the_seal() {
     let cases = [
         (
             WorkbookCheck {
-                counts_reconciled: false,
+                counts_reconciled: Verification::Failed,
                 ..evidence().workbook
             },
             AcceptanceItem::WorkbookCountsReconcile,
         ),
         (
             WorkbookCheck {
-                coverage_reconciled: false,
+                coverage_reconciled: Verification::Failed,
                 ..evidence().workbook
             },
             AcceptanceItem::CoverageReportReconciles,
         ),
         (
             WorkbookCheck {
-                metrics_reconciled: false,
+                metrics_reconciled: Verification::Failed,
                 ..evidence().workbook
             },
             AcceptanceItem::RunMetricsReconcile,
         ),
         (
             WorkbookCheck {
-                export_verified: false,
+                export_verified: Verification::Failed,
                 ..evidence().workbook
             },
             AcceptanceItem::ExportVerified,
@@ -364,6 +470,36 @@ fn an_unreconciled_workbook_refuses_the_seal() {
             Err(SealError::ItemUnmet { item: named, .. }) if named == item
         ));
     }
+}
+
+#[test]
+fn an_unmeasured_workbook_item_refuses_the_seal_and_reads_as_unmeasured() {
+    let mut packet = evidence();
+    packet.workbook = WorkbookCheck {
+        counts_reconciled: Verification::NotMeasured,
+        coverage_reconciled: Verification::NotMeasured,
+        metrics_reconciled: Verification::NotMeasured,
+        export_verified: Verification::NotMeasured,
+        ..evidence().workbook
+    };
+    assert_eq!(
+        packet.open_items(),
+        vec![
+            AcceptanceItem::WorkbookCountsReconcile,
+            AcceptanceItem::CoverageReportReconciles,
+            AcceptanceItem::RunMetricsReconcile,
+            AcceptanceItem::ExportVerified,
+        ]
+    );
+    for item in packet.open_items() {
+        let detail = packet.detail(item);
+        assert!(detail.contains("not measured"), "{detail}");
+        assert!(!detail.contains("do not reconcile"), "{detail}");
+    }
+    assert!(matches!(
+        seal_from_export(packet),
+        Err(SealError::ItemUnmet { .. })
+    ));
 }
 
 #[test]
@@ -608,13 +744,6 @@ fn every_required_stage_and_refusal_blocks_jurisdiction_completion() -> TestResu
         ),
         (
             JurisdictionStages {
-                refused_sources: 1,
-                ..complete
-            },
-            "refused_sources",
-        ),
-        (
-            JurisdictionStages {
                 owed_rosters: 1,
                 ..complete
             },
@@ -635,6 +764,25 @@ fn every_required_stage_and_refusal_blocks_jurisdiction_completion() -> TestResu
         check!(eq; owed_jurisdictions(&[complete, stage]), 1);
         Ok(())
     })
+}
+#[test]
+fn fully_settled_fixture_is_terminal_with_nonzero_refusals() -> TestResult {
+    use census_crawl::CollectionDisposition::Complete;
+    let stages = JurisdictionStages {
+        teams: Complete,
+        rosters: Complete,
+        meets: Complete,
+        results: Complete,
+        contacts: Complete,
+        publication: Complete,
+        refused_sources: 1,
+        owed_rosters: 0,
+        owed_results: 0,
+    };
+    check!(stages.terminal());
+    check!(eq; stages.owing(), Vec::<&str>::new());
+    check!(eq; owed_jurisdictions(&[stages]), 0);
+    Ok(())
 }
 
 #[test]

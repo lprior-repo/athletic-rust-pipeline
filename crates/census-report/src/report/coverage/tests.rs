@@ -13,9 +13,11 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 mod counts;
 mod gaps;
+mod lifecycle;
 mod published_cohort;
 mod reconcile;
 mod scope;
+mod stages;
 
 fn coverage_of(store: &Store, grad_year: Option<i16>) -> TestResult<CoverageReport> {
     let dataset = crate::export::ExportDataset::load(store)?;

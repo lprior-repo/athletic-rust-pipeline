@@ -14,6 +14,7 @@ impl<'a> Draining<'a> {
         let mut region = owner.lock();
         region.closed = true;
         owner.coordinator.close();
+        owner.blocking.close();
         owner.stopping.send_replace(true);
         Self {
             owner,

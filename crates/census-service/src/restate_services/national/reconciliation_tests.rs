@@ -39,7 +39,20 @@ async fn b1ui_national_applies_source_identity_before_publication() -> TestResul
 async fn u4al_national_records_review_verdicts_without_manual_review() -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = Arc::new(Store::open(directory.path())?);
-    fixtures::seed(&store)?;
+    let athletes = fixtures::seed(&store)?;
+    let generic: Vec<_> = athletes
+        .iter()
+        .map(|athlete| {
+            ReviewCase::minted(
+                "Athlete identity",
+                athlete.id.as_str(),
+                &athlete.canonical_name,
+                "unresolved generic identity obligation",
+            )
+        })
+        .collect();
+    check!(eq; generic.len(), 2);
+    store.replace_many(Table::ReviewCases, &generic)?;
     drive(Arc::clone(&store)).await?;
     let verdicts = store.scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)?;
     check!(eq; verdicts.iter().filter(|row| row.accepted && row.value == "same_person").count(), 1);
@@ -120,7 +133,7 @@ async fn u4al_national_visits_all_review_checkpoints_and_replays_without_new_job
         .filter(|name| name.starts_with("identity:"))
         .map(String::as_str)
         .collect();
-    check!(eq; stages, vec!["identity:index", "identity:rules", "identity:advice:0", "identity:advice:1", "identity:advice:2", "identity:apply"]);
+    check!(eq; stages, vec!["identity:rules", "identity:advice:0", "identity:advice:1", "identity:advice:2", "identity:reconcile"]);
     let mut cursors = Vec::new();
     for entry in journal.entries.iter().filter(|entry| entry.kind == 0x0403) {
         if entry.text(1)? == "identity:advice" {
@@ -192,6 +205,24 @@ async fn drive(store: Arc<Store>) -> TestResult<Journal> {
             let verdicts = store.scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)?;
             let decisions = store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?;
             let receipts = store.receipt_count()?;
+            let generation = store.evidence_generation();
+            let coverage = store.scan::<census_domain::model::CoverageRow>(Table::Coverage)?;
+            let sweeps: Vec<_> = coverage
+                .iter()
+                .filter(|row| {
+                    row.scope == census_domain::model::CoverageScope::Jurisdiction
+                        && census_domain::UsJurisdiction::CENSUS_SCOPE
+                            .iter()
+                            .any(|jurisdiction| jurisdiction.code() == row.subject)
+                })
+                .collect();
+            check!(eq; sweeps.len(), 49);
+            for row in sweeps {
+                check!(eq; row.metrics.len(), 3);
+                check!(eq; row.metrics.get("registered"), Some(&1));
+                check!(eq; row.metrics.get("applicable"), Some(&1));
+                check!(eq; row.metrics.get("attempted"), Some(&1));
+            }
             let replay = journal.step(&client, &url).await?;
             check!(!replay.iter().any(|entry| entry.kind == 0x0411));
             check!(eq; journal.entries, entries);
@@ -199,6 +230,8 @@ async fn drive(store: Arc<Store>) -> TestResult<Journal> {
             check!(eq; store.scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)?, verdicts);
             check!(eq; store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?, decisions);
             check!(eq; store.receipt_count()?, receipts);
+            check!(eq; store.evidence_generation(), generation);
+            check!(eq; store.scan::<census_domain::model::CoverageRow>(Table::Coverage)?, coverage);
             journal.release()?;
             journal.drive(&client, &url).await?;
             check!(journal.output.is_some());

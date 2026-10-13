@@ -6,18 +6,23 @@ use std::collections::{BTreeMap, HashSet};
 
 mod athletes;
 mod classify;
+mod contact;
 mod gaps;
+mod population;
 mod reads;
 mod state;
 
 pub(crate) use state::{in_requested_year, jurisdiction_of, school_state_index};
 
+pub use contact::ContactCounts;
 pub use gaps::{CoverageGap, GapClass};
 
 use state::Outcome;
 
 #[cfg(test)]
 mod tests;
+
+pub use census_domain::model::AccessBlockKind;
 
 pub const UNKNOWN_JURISDICTION: &str = JurisdictionBucket::UNPLACED_CODE;
 
@@ -30,6 +35,72 @@ pub struct CoverageTotals {
     pub performances: usize,
 }
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
+pub struct SourcePopulation {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub registered: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub applicable: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub attempted: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub captured: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parsed: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub accepted: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub withheld: Option<usize>,
+}
+
+impl SourcePopulation {
+    pub fn is_measured(&self) -> bool {
+        self.registered.is_some()
+            && self.applicable.is_some()
+            && self.attempted.is_some()
+            && self.captured.is_some()
+            && self.parsed.is_some()
+            && self.accepted.is_some()
+            && self.withheld.is_some()
+    }
+
+    pub fn reconcile(&self) -> ReportResult<()> {
+        let ordered = [
+            ("registered", self.registered),
+            ("attempted", self.attempted),
+            ("captured", self.captured),
+            ("parsed", self.parsed),
+            ("accepted", self.accepted),
+        ];
+        for pair in ordered.windows(2) {
+            let [(previous_name, previous), (next_name, next)] = pair else {
+                continue;
+            };
+            if let (Some(previous), Some(next)) = (previous, next) {
+                if previous < next {
+                    return Err(ReportError::Invariant {
+                        detail: format!(
+                            "source population {previous_name} {previous} < {next_name} {next}"
+                        ),
+                    });
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum JurisdictionCoverageState {
+    #[default]
+    Unresearched,
+    Pending,
+    Complete,
+    Blocked,
+    RetainedGap,
+}
+
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct JurisdictionCoverage {
     pub jurisdiction: JurisdictionBucket,
@@ -37,7 +108,7 @@ pub struct JurisdictionCoverage {
     pub schools_with_athletes: usize,
     pub athletes: usize,
     pub athletes_core: usize,
-    pub core_share_pct: u32,
+    pub core_share_pct: Option<u32>,
     pub boys: usize,
     pub girls: usize,
     pub unknown_gender: usize,
@@ -62,6 +133,15 @@ pub struct JurisdictionCoverage {
     pub meets: usize,
     pub performances: usize,
     pub sources: BTreeMap<String, usize>,
+    pub state: JurisdictionCoverageState,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub blocked_kind: Option<AccessBlockKind>,
+    pub source_population: SourcePopulation,
+    pub contact: ContactCounts,
+    pub terminal_failures: BTreeMap<String, usize>,
+    pub raw_observations: usize,
+    pub scope_filtered: usize,
+    pub accepted_cohort: usize,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -72,9 +152,23 @@ pub struct CoverageReport {
     pub read: CoverageTotals,
     pub off_cohort_athletes: usize,
     pub notes: Vec<String>,
+    pub source_population: SourcePopulation,
+    pub state_counts: BTreeMap<String, usize>,
+    pub contact: ContactCounts,
+    pub terminal_failures: BTreeMap<String, usize>,
+    pub raw_observations: usize,
+    pub scope_filtered: usize,
+    pub accepted_cohort: usize,
 }
 
 impl CoverageReport {
+    pub fn publish_coverage_rows(
+        store: &census_store::Store,
+        evidence: &[census_domain::model::CoverageRow],
+    ) -> ReportResult<usize> {
+        population::publish_coverage_rows(store, evidence)
+    }
+
     pub fn published_totals(&self) -> CoverageTotals {
         let mut totals = CoverageTotals::default();
         for row in &self.jurisdictions {
@@ -88,17 +182,140 @@ impl CoverageReport {
     }
 
     pub fn reconcile(&self) -> ReportResult<()> {
+        self.reconcile_lifecycle()?;
+        self.reconcile_contact()?;
+        self.reconcile_totals()
+    }
+
+    fn reconcile_lifecycle(&self) -> ReportResult<()> {
         let published = self.published_totals();
-        if published == self.read {
-            return Ok(());
+        if published != self.read {
+            return Err(ReportError::Invariant {
+                detail: format!(
+                    "coverage reconciliation failed: read {} but the rows publish {}",
+                    totals_text(&self.read),
+                    totals_text(&published)
+                ),
+            });
         }
-        Err(ReportError::Invariant {
-            detail: format!(
-                "coverage reconciliation failed: read {} but the rows publish {}",
-                totals_text(&self.read),
-                totals_text(&published)
-            ),
-        })
+
+        if self.raw_observations < self.scope_filtered {
+            return Err(ReportError::Invariant {
+                detail: format!(
+                    "lifecycle reconciliation failed: raw_observations {} < scope_filtered {}",
+                    self.raw_observations, self.scope_filtered
+                ),
+            });
+        }
+        if self.scope_filtered < self.accepted_cohort {
+            return Err(ReportError::Invariant {
+                detail: format!(
+                    "lifecycle reconciliation failed: scope_filtered {} < accepted_cohort {}",
+                    self.scope_filtered, self.accepted_cohort
+                ),
+            });
+        }
+        Ok(())
+    }
+
+    fn reconcile_contact(&self) -> ReportResult<()> {
+        let contact_total = self
+            .contact
+            .reached
+            .saturating_add(self.contact.failed)
+            .saturating_add(self.contact.blocked);
+        if self.contact.attempted < contact_total {
+            return Err(ReportError::Invariant {
+                detail: format!(
+                    "contact reconciliation failed: attempted {} < reached+failed+blocked {}",
+                    self.contact.attempted, contact_total
+                ),
+            });
+        }
+        if self.contact.terminal() > self.contact.attempted {
+            return Err(ReportError::Invariant {
+                detail: format!(
+                    "contact reconciliation failed: terminal {} > attempted {}",
+                    self.contact.terminal(),
+                    self.contact.attempted
+                ),
+            });
+        }
+        Ok(())
+    }
+
+    fn reconcile_totals(&self) -> ReportResult<()> {
+        let declared: usize = self.state_counts.values().sum();
+        if declared != self.jurisdictions.len() {
+            return Err(ReportError::Invariant {
+                detail: format!(
+                    "coverage state reconciliation failed: {} declared states for {} jurisdiction rows",
+                    declared,
+                    self.jurisdictions.len()
+                ),
+            });
+        }
+        for row in &self.jurisdictions {
+            let state = state_slug(row.state);
+            if !self.state_counts.contains_key(state) {
+                return Err(ReportError::Invariant {
+                    detail: format!(
+                        "coverage state reconciliation failed: row {} is absent from the declared states",
+                        row.jurisdiction.code()
+                    ),
+                });
+            }
+            row.source_population.reconcile()?;
+        }
+        self.population_totals()?;
+        self.source_population.reconcile()?;
+        Ok(())
+    }
+
+    fn population_totals(&self) -> ReportResult<()> {
+        let global = [
+            self.source_population.registered,
+            self.source_population.applicable,
+            self.source_population.attempted,
+            self.source_population.captured,
+            self.source_population.parsed,
+            self.source_population.accepted,
+            self.source_population.withheld,
+        ];
+        let mut sums = [0usize; 7];
+        let mut measured = [true; 7];
+        for row in &self.jurisdictions {
+            let stages = [
+                row.source_population.registered,
+                row.source_population.applicable,
+                row.source_population.attempted,
+                row.source_population.captured,
+                row.source_population.parsed,
+                row.source_population.accepted,
+                row.source_population.withheld,
+            ];
+            for (index, value) in stages.into_iter().enumerate() {
+                match value {
+                    Some(value) => sums[index] = sums[index].saturating_add(value),
+                    None => measured[index] = false,
+                }
+            }
+        }
+        for (index, total) in global.into_iter().enumerate() {
+            if let Some(total) = total {
+                if measured[index] && sums[index] > total {
+                    return Err(ReportError::Invariant {
+                        detail: format!(
+                            "source population reconciliation failed: rows sum {} > published {} for stage {}",
+                            sums[index],
+                            total,
+                            population::STAGES[index]
+                        ),
+                    });
+                }
+            }
+        }
+        Ok(())
     }
 
     pub fn reconciliation_lines(&self) -> Vec<String> {
@@ -123,11 +340,22 @@ impl CoverageReport {
     }
 }
 
+pub(super) fn state_slug(state: JurisdictionCoverageState) -> &'static str {
+    match state {
+        JurisdictionCoverageState::Unresearched => "unresearched",
+        JurisdictionCoverageState::Pending => "pending",
+        JurisdictionCoverageState::Complete => "complete",
+        JurisdictionCoverageState::Blocked => "blocked",
+        JurisdictionCoverageState::RetainedGap => "retained_gap",
+    }
+}
+
 pub fn coverage_report(
     dataset: &ExportDataset,
     grad_year: Option<i16>,
 ) -> ReportResult<CoverageReport> {
     let outcome = classify::run(dataset, grad_year);
+    let state_counts = state_histogram(&outcome.jurisdictions);
     let mut report = CoverageReport {
         grad_year,
         notes: coverage_notes(dataset, grad_year, &outcome),
@@ -135,10 +363,26 @@ pub fn coverage_report(
         gaps: outcome.gaps,
         read: outcome.read,
         off_cohort_athletes: outcome.off_cohort_athletes,
+        source_population: outcome.source_population,
+        state_counts,
+        contact: outcome.contact,
+        terminal_failures: outcome.terminal_failures,
+        raw_observations: outcome.raw_observations,
+        scope_filtered: outcome.scope_filtered,
+        accepted_cohort: outcome.accepted_cohort,
     };
     apply_pr_support(&mut report, dataset, grad_year);
     report.reconcile()?;
     Ok(report)
+}
+
+fn state_histogram(rows: &[JurisdictionCoverage]) -> BTreeMap<String, usize> {
+    let mut counts: BTreeMap<String, usize> = BTreeMap::new();
+    for row in rows {
+        let key = state_slug(row.state).to_string();
+        *counts.entry(key).or_insert(0) += 1;
+    }
+    counts
 }
 
 fn apply_pr_support(report: &mut CoverageReport, dataset: &ExportDataset, grad_year: Option<i16>) {
@@ -235,6 +479,7 @@ fn coverage_notes(
     )];
     append_population_notes(&mut notes, outcome, &cohort);
     append_placement_notes(&mut notes, outcome);
+    append_lifecycle_notes(&mut notes, outcome);
     notes
 }
 
@@ -271,4 +516,60 @@ fn append_placement_notes(notes: &mut Vec<String>, outcome: &Outcome) {
             "{unplaceable} cohort athletes carry no placeable jurisdiction and publish in the {UNKNOWN_JURISDICTION} row"
         ));
     }
+}
+
+fn append_lifecycle_notes(notes: &mut Vec<String>, outcome: &Outcome) {
+    let population = &outcome.source_population;
+    if let Some(registered) = population.registered {
+        notes.push(format!(
+            "source lifecycle: {registered} registered -> {} -> {} attempted -> {} captured -> {} parsed -> {} accepted -> {} withheld",
+            stage_text(population.applicable),
+            stage_text(population.attempted),
+            stage_text(population.captured),
+            stage_text(population.parsed),
+            stage_text(population.accepted),
+            stage_text(population.withheld)
+        ));
+    } else {
+        notes.push(
+            "source lifecycle: unmeasured — the run has published no CoverageRow population for this store"
+                .to_string(),
+        );
+    }
+
+    let contact = &outcome.contact;
+    let contact_total = contact.attempted.saturating_add(contact.never_attempted);
+    if contact_total > 0 {
+        notes.push(format!(
+            "contact attempts: {} attempted ({} reached, {} failed, {} blocked, {} successful-empty, {} accepted refusal, {} exhausted) + {} never attempted",
+            contact.attempted,
+            contact.reached,
+            contact.failed,
+            contact.blocked,
+            contact.successful_empty,
+            contact.accepted_refusal,
+            contact.exhausted,
+            contact.never_attempted
+        ));
+    }
+
+    if outcome.raw_observations > 0 {
+        notes.push(format!(
+            "coverage denominators: {} raw observations -> {} scope-filtered -> {} accepted cohort",
+            outcome.raw_observations, outcome.scope_filtered, outcome.accepted_cohort
+        ));
+    }
+
+    if !outcome.terminal_failures.is_empty() {
+        let failures: Vec<String> = outcome
+            .terminal_failures
+            .iter()
+            .map(|(reason, count)| format!("{} ({})", reason, count))
+            .collect();
+        notes.push(format!("terminal failures: {}", failures.join(", ")));
+    }
+}
+
+fn stage_text(stage: Option<usize>) -> String {
+    stage.map_or_else(|| "unmeasured".to_string(), |value| value.to_string())
 }

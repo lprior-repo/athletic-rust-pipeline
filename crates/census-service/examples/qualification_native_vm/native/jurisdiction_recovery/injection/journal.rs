@@ -13,43 +13,69 @@ pub(super) struct Registration {
 }
 
 pub(super) fn registration(entries: &[Value]) -> Result<Option<(Registration, Value)>> {
-    let Some(command) = entries.get(1) else {
-        return Ok(None);
-    };
-    let entry = journal::decode(
-        command
-            .get("entry_json")
-            .context("registration command JSON absent")?,
-    )?;
-    let run = entry
-        .pointer("/Command/Run")
-        .context("first source effect is not registration Run")?;
-    ensure!(
-        input::text(command, "entry_type")? == "Command: Run",
-        "registration command type differs"
-    );
-    let completion = run
-        .get("completion_id")
-        .and_then(Value::as_u64)
-        .context("registration completion ID absent")?;
-    ensure!(
-        u32::try_from(completion).is_ok(),
-        "registration completion ID outside protocol budget"
-    );
-    let found = entries.iter().skip(2).try_fold(None, |found, row| -> Result<_> {
-        let entry = journal::decode(row.get("entry_json").context("registration journal JSON absent")?)?;
-        let Some(run) = entry.pointer("/Notification/Completion/Run") else { return Ok(found); };
-        if run.get("completion_id").and_then(Value::as_u64) != Some(completion) {
-            return Ok(found);
+    let mut resolved = None;
+    for command in entries.iter().skip(1) {
+        let Ok(entry) = journal::decode(
+            command
+                .get("entry_json")
+                .context("registration command JSON absent")?,
+        ) else {
+            continue;
+        };
+        let Some(run) = entry.pointer("/Command/Run") else {
+            continue;
+        };
+        if input::text(command, "entry_type")? != "Command: Run" {
+            continue;
         }
-        ensure!(found.is_none(), "duplicate journaled source registration completion");
-        ensure!(input::text(row, "entry_type")? == "Notification: Run", "registration notification type differs");
-        let bytes = success(run)?;
-        let identity: Registration = serde_json::from_slice(&bytes).context("journaled source registration malformed")?;
-        validate(&identity)?;
-        Ok(Some((identity, json!({"command":journal::reference(command)?,"completion":journal::reference(row)?}))))
-    })?;
-    Ok(found)
+        let Some(completion) = run.get("completion_id").and_then(Value::as_u64) else {
+            continue;
+        };
+        ensure!(
+            u32::try_from(completion).is_ok(),
+            "registration completion ID outside protocol budget"
+        );
+        let mut candidate = None;
+        for row in entries.iter().skip(1) {
+            let entry = journal::decode(
+                row.get("entry_json")
+                    .context("registration journal JSON absent")?,
+            )?;
+            let Some(run) = entry.pointer("/Notification/Completion/Run") else {
+                continue;
+            };
+            if run.get("completion_id").and_then(Value::as_u64) != Some(completion) {
+                continue;
+            }
+            ensure!(
+                input::text(row, "entry_type")? == "Notification: Run",
+                "registration notification type differs"
+            );
+            let bytes = success(run)?;
+            if bytes == b"null" {
+                continue;
+            }
+            let identity: Registration = serde_json::from_slice(&bytes)
+                .context("journaled source registration malformed")?;
+            validate(&identity)?;
+            ensure!(
+                candidate.is_none(),
+                "duplicate journaled source registration completion"
+            );
+            candidate = Some((
+                identity,
+                json!({"command":journal::reference(command)?,"completion":journal::reference(row)?}),
+            ));
+        }
+        if let Some(pair) = candidate {
+            ensure!(
+                resolved.is_none(),
+                "duplicate journaled source registration"
+            );
+            resolved = Some(pair);
+        }
+    }
+    Ok(resolved)
 }
 
 fn success(run: &Value) -> Result<Vec<u8>> {

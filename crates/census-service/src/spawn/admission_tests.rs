@@ -18,9 +18,78 @@ enum DrainCaller {
     Cancelled,
 }
 
+enum PreAdmitted {
+    Async(Reservation),
+    Blocking(tokio::sync::OwnedSemaphorePermit),
+}
+
 #[test]
 fn preadmitted_async_push_is_rejected_during_active_drain() -> TestResult {
     run_admission_race(SpawnPath::Async, DrainCaller::Active)
+}
+
+#[tokio::test]
+async fn a_saturated_blocking_lane_defers_the_next_effect_until_the_holder_releases() -> TestResult
+{
+    let spawner = Spawner::with_capacity(1);
+    check!(eq; spawner.blocking.available_permits(), 1);
+    let order = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let (release, released) = oneshot::channel();
+    let (attempted, attempt) = oneshot::channel();
+    let holder = {
+        let order = Arc::clone(&order);
+        spawner.blocking(move || {
+            order
+                .lock()
+                .map_err(|_| "log poisoned".to_string())?
+                .push(1);
+            released
+                .blocking_recv()
+                .map_err(|_| "the holder lost its release".to_string())?;
+            Ok::<_, String>(1)
+        })
+    };
+    let follower = {
+        let order = Arc::clone(&order);
+        let spawner = &spawner;
+        async move {
+            if attempted.send(()).is_err() {
+                return Err("nobody awaited the attempt".to_string());
+            }
+            let outcome = spawner
+                .blocking(move || {
+                    order
+                        .lock()
+                        .map_err(|_| "log poisoned".to_string())?
+                        .push(2);
+                    Ok::<_, String>(2)
+                })
+                .await;
+            Ok::<_, String>(outcome)
+        }
+    };
+    let driver = {
+        let spawner = &spawner;
+        async move {
+            if attempt.await.is_err() {
+                return Err("the follower never attempted".to_string());
+            }
+            if spawner.blocking.available_permits() != 0 {
+                return Err("a held lane still offered permits".to_string());
+            }
+            release
+                .send(())
+                .map_err(|_| "the holder vanished".to_string())?;
+            Ok(())
+        }
+    };
+    let (held, queued, driven) = tokio::join!(holder, follower, driver);
+    check!(eq; driven, Ok(()));
+    check!(eq; held, crate::outcome::Outcome::Ok(1));
+    check!(eq; queued, Ok(crate::outcome::Outcome::Ok(2)));
+    check!(eq; *order.lock().map_err(|_| "log poisoned")?, vec![1, 2]);
+    check!(eq; spawner.blocking.available_permits(), 1);
+    Ok(())
 }
 
 #[test]
@@ -107,28 +176,31 @@ fn reserve_then_push(
     let runtime = tokio::runtime::Handle::current();
     std::thread::spawn(move || {
         let _entered = runtime.enter();
-        let slot = match path {
-            SpawnPath::Async => spawner.admit()?,
-            SpawnPath::Blocking => runtime
-                .block_on(
-                    spawner
-                        .coordinator
-                        .reserve(crate::admission::WORK_CLASS_BLOCKING),
-                )
-                .map_err(SpawnError::from)?,
+        let preadmitted = match path {
+            SpawnPath::Async => PreAdmitted::Async(spawner.admit()?),
+            SpawnPath::Blocking => PreAdmitted::Blocking(
+                runtime
+                    .block_on(spawner.acquire_blocking())
+                    .ok_or(SpawnError::RegionClosed)?,
+            ),
         };
         assert!(acquired.send(()).is_ok());
         barrier.wait();
-        match path {
-            SpawnPath::Async => {
-                match spawner.push_async(async move { ran.store(true, Ordering::SeqCst) }, slot) {
+        match preadmitted {
+            PreAdmitted::Async(slot) => {
+                match spawner.push_async(
+                    async move { ran.store(true, Ordering::SeqCst) },
+                    slot,
+                    None,
+                ) {
                     Ok(()) => Ok(true),
                     Err(SpawnError::RegionClosed) => Ok(false),
                     Err(error) => Err(error),
                 }
             }
-            SpawnPath::Blocking => {
-                Ok(spawner.push_blocking(move |_counters| ran.store(true, Ordering::SeqCst), slot))
+            PreAdmitted::Blocking(permit) => {
+                Ok(spawner
+                    .push_blocking(move |_counters| ran.store(true, Ordering::SeqCst), permit))
             }
         }
     })

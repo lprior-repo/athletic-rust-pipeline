@@ -14,7 +14,7 @@ pub(super) fn source_complete(source: &ResultsSourceRows) -> bool {
         && source.resolution.is_some_and(|value| value.unresolved == 0)
 }
 
-pub(super) fn delegated_source(slug: &str) -> ResultsSourceRows {
+pub(in crate::restate_services) fn delegated_source(slug: &str) -> ResultsSourceRows {
     ResultsSourceRows {
         slug: slug.to_string(),
         meets: 0,

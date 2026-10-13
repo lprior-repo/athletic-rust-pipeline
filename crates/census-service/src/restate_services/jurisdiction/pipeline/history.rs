@@ -189,6 +189,18 @@ fn bind_acquired_results(
             source.errors = u64::try_from(acquired.errors.len())
                 .map_err(|_| jobs::invariant("acquisition error count overflow"))?;
             source.notes = acquired.notes.clone();
+            source.resolution = if acquired.disposition.is_complete()
+                && acquired.unfinished.is_empty()
+                && acquired.errors.is_empty()
+                && acquired.withheld == Some(0)
+                && acquired
+                    .unresolved
+                    .is_some_and(|value| value.rows == 0 && value.labels == 0)
+            {
+                Some(census_crawl::ResolutionCounters::default())
+            } else {
+                None
+            };
             source
                 .notes
                 .try_reserve(acquired.errors.len())
@@ -237,6 +249,42 @@ mod tests {
             vec!["milesplit"]);
         check!(eq; state.plan.ok_or("plan retained")?.refused.first()
             .ok_or("refusal retained")?.reason, "missing producer capture");
+        Ok(())
+    }
+    #[test]
+    fn delegated_results_reach_terminal_when_acquisition_is_complete(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        use crate::census::{MeetCensus, MeetSourceRows};
+        use crate::restate_services::results_arms::outcomes::delegated_source;
+        use census_crawl::{CollectionDisposition, UnresolvedCounters};
+        let mut outcome = crate::restate_services::results_arms::ResultsStageOutcome {
+            required_sources: vec!["wiaa_results".into()],
+            per_source: vec![delegated_source("wiaa_results")],
+            pending: Vec::new(),
+        };
+        check!(!outcome.is_terminal());
+        let acquired = MeetSourceRows {
+            slug: "wiaa_results".into(),
+            rows: 42,
+            disposition: CollectionDisposition::Complete,
+            unresolved: Some(UnresolvedCounters { rows: 0, labels: 0 }),
+            withheld: Some(0),
+            ..MeetSourceRows::default()
+        };
+        let meets = Some(&MeetCensus {
+            sources: vec![acquired],
+            ..MeetCensus::default()
+        });
+        bind_acquired_results(&mut outcome, meets)
+            .map_err(|error| format!("bind failed: {error:?}"))?;
+        let wiaa = outcome
+            .per_source
+            .iter()
+            .find(|s| s.slug == "wiaa_results")
+            .ok_or("missing wiaa_results")?;
+        check!(wiaa.resolution.is_some());
+        check!(eq; wiaa.rows, Some(42));
+        check!(outcome.is_terminal());
         Ok(())
     }
 }

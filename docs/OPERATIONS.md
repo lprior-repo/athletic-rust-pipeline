@@ -833,7 +833,14 @@ A pending child replays its original durable call and a resumed national invocat
 completed artifact instead of minting a new job. Only a terminal failure whose message contains
 `the census seal refused: ` starts one fresh measurement invocation under
 `<identity>:seal:<round>` — bounded rounds, the full message retained as `publication_refusal` — and
-any other terminal error propagates. The manual `workbook`/`seal` verbs below are unchanged and are
+any other terminal error propagates. Every handler that can return an already-durable outcome
+gatekeeps on live durable state only through a journaled step: the state read that decides the
+outcome is itself recorded (for example `TeamsSource` records its ledger-status read in a `ctx.run`
+before branching), and a side effect that needs live process state is performed inside the journaled
+`ctx.run` (for example `BrowserSession.fetch` acquires its manager inside the Run), so a replayed
+invocation consumes its recorded steps and returns the recorded outcome without a live manager,
+without executing new work and without minting a second attempt or reservation. The manual
+`workbook`/`seal` verbs below are unchanged and are
 not required for a national run's publication; an incomplete census or contact result keeps its
 existing report behavior and does not release publication.
 

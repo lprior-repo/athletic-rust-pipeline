@@ -44,8 +44,8 @@ fn reduction_selects_the_faster_result_without_inventing_a_team_school() -> Test
         "2025-03-01",
     );
     slower.athlete = athlete.id.clone();
-    slower.meet = meet.id;
-    slower.event = event.id;
+    slower.meet = meet.id.clone();
+    slower.event = event.id.clone();
     slower.source_athlete = athlete.source.clone();
     let mut faster = slower.clone();
     faster.id = Id::mint("perf", &["faster"]);
@@ -286,4 +286,277 @@ fn reduce_relay_excluded() {
 fn reduce_non_relay_included() {
     let kind = EventKind::Track100m;
     assert!(!crate::bests::is_relay(&kind));
+}
+#[test]
+fn f08_transfers_retain_performance_time_affiliation() -> TestResult {
+    use crate::report::Scope;
+    use census_domain::model::GradYear;
+    use census_store::{Store, Table};
+
+    let (old_school, old_school_id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Old High School",
+        "old high school",
+        None,
+    );
+    let (new_school, new_school_id) = CanonicalSchool::new(
+        UsJurisdiction::Illinois,
+        "New High School",
+        "new high school",
+        None,
+    );
+
+    let mut athlete = CanonicalAthlete::new(
+        &new_school_id,
+        "Transferred runner",
+        GradYear::CO2027,
+        Gender::Boys,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "2001"),
+    );
+    athlete
+        .published_graduations
+        .push(census_domain::model::PublishedGraduation {
+            grad_year: GradYear::CO2027,
+            source: census_domain::model::SourceRef::new(
+                "synthetic_published_roster",
+                Some("https://example.invalid/roster/2001".to_owned()),
+            ),
+        });
+
+    let old_team: TeamId = Id::mint("team", &["old_team"]);
+    let team_old = census_domain::model::CanonicalTeam {
+        id: old_team.clone(),
+        school: old_school_id.clone(),
+        sport: Sport::OutdoorTrack,
+        gender: Gender::Boys,
+        school_year: census_domain::model::SchoolYear::new(2024).ok_or("invalid year")?,
+        level: None,
+        source_identities: vec![],
+        evidence: vec![],
+        retained_conflicts: vec![],
+    };
+
+    let meet = test_meet(vec![Sport::OutdoorTrack]);
+    let event = test_event(EventKind::Track100m, &meet.id)?;
+    let mut performance = test_performance(
+        EventKind::Track100m,
+        Mark::TimeSeconds(ExactSeconds::parse("10.50")?),
+        Some(TimingMethod::Fat),
+        Some(1.0),
+        "2024-05-15",
+    );
+    performance.id = Id::mint("perf", &["old_school_perf"]);
+    performance.athlete = athlete.id.clone();
+    performance.meet = meet.id.clone();
+    performance.event = event.id.clone();
+    performance.team = old_team.clone();
+    performance.source_athlete = athlete.source.clone();
+
+    let directory = tempfile::tempdir()?;
+    let store = Store::open(directory.path())?;
+    store.append(Table::Schools, &old_school)?;
+    store.append(Table::Schools, &new_school)?;
+    store.append(Table::Athletes, &athlete)?;
+    store.append(Table::Meets, &meet)?;
+    store.append(Table::Events, &event)?;
+    store.append(Table::Performances, &performance)?;
+    store.append(Table::Teams, &team_old)?;
+
+    let dataset = crate::export::ExportDataset::load(&store)?;
+    let selected = crate::bests::build_from_dataset(
+        &dataset,
+        &crate::bests::Options {
+            scope: Scope::AllSources,
+            grad_year: Some(2027),
+            limit: None,
+        },
+    );
+
+    check!(eq; selected.len(), 1);
+    check!(
+        eq;
+        selected[0].athlete.school,
+        Some("Old High School".to_string()),
+        "PR should attribute to performance-time school"
+    );
+    check!(
+        eq;
+        selected[0].athlete.athlete_school,
+        "Old High School".to_string(),
+        "athlete_school should reflect performance-time affiliation"
+    );
+    Ok(())
+}
+
+#[test]
+fn f09_prelim_final_attempt_facts_are_retained() -> TestResult {
+    use crate::report::Scope;
+    use census_domain::model::GradYear;
+    use census_store::{Store, Table};
+
+    let (school, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Synthetic school",
+        "synthetic school",
+        None,
+    );
+    let mut athlete = CanonicalAthlete::new(
+        &school_id,
+        "Synthetic runner",
+        GradYear::CO2027,
+        Gender::Boys,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "3001"),
+    );
+    athlete
+        .published_graduations
+        .push(census_domain::model::PublishedGraduation {
+            grad_year: GradYear::CO2027,
+            source: census_domain::model::SourceRef::new(
+                "synthetic_published_roster",
+                Some("https://example.invalid/roster/3001".to_owned()),
+            ),
+        });
+
+    let meet = test_meet(vec![Sport::OutdoorTrack]);
+    let prelim_event = test_event(EventKind::Track100m, &meet.id)?;
+    let final_event = test_event(EventKind::Track100m, &meet.id)?;
+
+    let mut prelim = test_performance(
+        EventKind::Track100m,
+        Mark::TimeSeconds(ExactSeconds::parse("10.90")?),
+        Some(TimingMethod::Fat),
+        Some(1.0),
+        "2025-03-01",
+    );
+    prelim.id = Id::mint("perf", &["prelim"]);
+    prelim.athlete = athlete.id.clone();
+    prelim.meet = meet.id.clone();
+    prelim.event = prelim_event.id.clone();
+    prelim.source_athlete = athlete.source.clone();
+    prelim.heat = Some("Prelim 3".to_string());
+    prelim.round = Some("Preliminary".to_string());
+
+    let mut final_perf = test_performance(
+        EventKind::Track100m,
+        Mark::TimeSeconds(ExactSeconds::parse("10.80")?),
+        Some(TimingMethod::Fat),
+        Some(1.0),
+        "2025-03-01",
+    );
+    final_perf.id = Id::mint("perf", &["final"]);
+    final_perf.athlete = athlete.id.clone();
+    final_perf.meet = meet.id.clone();
+    final_perf.event = final_event.id.clone();
+    final_perf.source_athlete = athlete.source.clone();
+    final_perf.heat = Some("Final".to_string());
+    final_perf.round = Some("Final".to_string());
+
+    let directory = tempfile::tempdir()?;
+    let store = Store::open(directory.path())?;
+    store.append(Table::Schools, &school)?;
+    store.append(Table::Athletes, &athlete)?;
+    store.append(Table::Meets, &meet)?;
+    store.append(Table::Events, &prelim_event)?;
+    store.append(Table::Events, &final_event)?;
+    store.append(Table::Performances, &prelim)?;
+    store.append(Table::Performances, &final_perf)?;
+
+    let dataset = crate::export::ExportDataset::load(&store)?;
+    let selected = crate::bests::build_from_dataset(
+        &dataset,
+        &crate::bests::Options {
+            scope: Scope::AllSources,
+            grad_year: Some(2027),
+            limit: None,
+        },
+    );
+
+    check!(eq; selected.len(), 1);
+    check!(eq; selected[0].result.value, 10_800_000_000);
+    check!(
+        eq;
+        selected[0].meet.round,
+        Some("Final".to_string()),
+        "Final round fact should be retained"
+    );
+    check!(
+        eq;
+        selected[0].meet.heat,
+        Some("Final".to_string()),
+        "Final heat fact should be retained"
+    );
+    check!(eq; selected[0].population.marks, 2);
+    Ok(())
+}
+
+#[test]
+fn canary22_no_invented_individual_pr_from_relay_membership() -> TestResult {
+    use crate::report::Scope;
+    use census_domain::model::GradYear;
+    use census_store::{Store, Table};
+
+    let (school, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Synthetic school",
+        "synthetic school",
+        None,
+    );
+    let mut athlete = CanonicalAthlete::new(
+        &school_id,
+        "Synthetic relay runner",
+        GradYear::CO2027,
+        Gender::Boys,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "4001"),
+    );
+    athlete
+        .published_graduations
+        .push(census_domain::model::PublishedGraduation {
+            grad_year: GradYear::CO2027,
+            source: census_domain::model::SourceRef::new(
+                "synthetic_published_roster",
+                Some("https://example.invalid/roster/4001".to_owned()),
+            ),
+        });
+
+    let meet = test_meet(vec![Sport::OutdoorTrack]);
+    let relay_event = test_event(EventKind::Relay4x400, &meet.id)?;
+
+    let mut relay_perf = test_performance(
+        EventKind::Relay4x400,
+        Mark::TimeSeconds(ExactSeconds::parse_clock("3:15.00")?),
+        Some(TimingMethod::Fat),
+        None,
+        "2025-04-01",
+    );
+    relay_perf.id = Id::mint("perf", &["relay"]);
+    relay_perf.athlete = athlete.id.clone();
+    relay_perf.meet = meet.id.clone();
+    relay_perf.event = relay_event.id.clone();
+    relay_perf.source_athlete = athlete.source.clone();
+
+    let directory = tempfile::tempdir()?;
+    let store = Store::open(directory.path())?;
+    store.append(Table::Schools, &school)?;
+    store.append(Table::Athletes, &athlete)?;
+    store.append(Table::Meets, &meet)?;
+    store.append(Table::Events, &relay_event)?;
+    store.append(Table::Performances, &relay_perf)?;
+
+    let dataset = crate::export::ExportDataset::load(&store)?;
+    let selected = crate::bests::build_from_dataset(
+        &dataset,
+        &crate::bests::Options {
+            scope: Scope::AllSources,
+            grad_year: Some(2027),
+            limit: None,
+        },
+    );
+
+    check!(
+        eq;
+        selected.len(),
+        0,
+        "Relay performance should not generate individual 400m PR"
+    );
+    Ok(())
 }

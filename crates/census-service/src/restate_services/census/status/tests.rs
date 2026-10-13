@@ -1,5 +1,5 @@
 use super::super::Census;
-use crate::admission::WORK_CLASS_STAGE;
+use crate::admission::WORK_CLASS_CONTROL;
 use crate::restate_services::Jobs;
 use crate::spawn::{Spawner, TaskReport};
 use census_store::{clock::SystemClock, Store};
@@ -7,6 +7,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
+
+const CONTROL_HOLDERS: usize = 64;
 
 #[tokio::test(flavor = "current_thread")]
 async fn status_filesystem_walk_runs_on_the_blocking_region() -> TestResult {
@@ -18,7 +20,10 @@ async fn status_filesystem_walk_runs_on_the_blocking_region() -> TestResult {
     let region = Arc::new(Spawner::with_capacity(1));
     let jobs = Jobs::new(Arc::clone(&store), Arc::clone(&region));
     let census = Census::new(store, Arc::new(SystemClock), jobs);
-    let held = region.coordinator().reserve(WORK_CLASS_STAGE).await?;
+    let mut held = Vec::new();
+    for _ in 0..CONTROL_HOLDERS {
+        held.push(region.coordinator().reserve(WORK_CLASS_CONTROL).await?);
+    }
     let mut pending = Box::pin(census.status_stats());
     check!(futures::poll!(pending.as_mut()).is_pending());
     drop(held);

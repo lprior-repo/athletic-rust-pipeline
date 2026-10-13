@@ -35,6 +35,10 @@ pub struct SelectionMeet {
     pub name: String,
     pub meet_id: census_domain::model::MeetId,
     pub meet_state: MeetState,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub heat: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub round: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]

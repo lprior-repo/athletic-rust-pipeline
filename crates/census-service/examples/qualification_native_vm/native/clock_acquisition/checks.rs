@@ -21,7 +21,7 @@ pub(super) fn capture(capture: &FetchOutcome, stats: &FetchStats) -> Result<(usi
         "capture SHA256 mismatch"
     );
     ensure!(
-        stats.physical_requests() >= 1
+        stats.physical_requests() == 1
             && stats.cache_hits == 0
             && stats.conditional_304 == 0
             && stats.errors == 0

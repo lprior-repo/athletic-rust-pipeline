@@ -1,0 +1,12 @@
+# Raw NCES capture bytes are operator-fetched scratch (placement and pins: ../HANDOFF.md):
+# regenerable with _fetch.sh and verified by verify.sh, so the 40-90 MB payloads stay out of git.
+# Keep the scripts, the pin table, the handoff and the address manifest tracked.
+*.csv
+*.zip
+*.sas7bdat
+*.pdf
+*.docx
+*.xlsx
+*.html
+ccd-file-api.json
+CAPTURE_LOG.txt

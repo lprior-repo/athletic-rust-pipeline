@@ -6,8 +6,8 @@ use crate::{StoreError, StoreResult};
 use super::io_failure;
 
 const MAX_SWEEP_KEYS: usize = 4096;
-const MAX_SWEEP_BYTES: u64 = 16 * 1024 * 1024;
 const MAX_SWEEP_TIME: Duration = Duration::from_millis(10);
+const MAX_SWEEP_BYTES: u64 = 16 * 1024 * 1024;
 
 pub(super) fn temporary_path(path: &Path) -> PathBuf {
     use std::sync::atomic::{AtomicU64, Ordering};
@@ -69,7 +69,10 @@ fn sweep_temporaries(
     let entries = std::fs::read_dir(directory).map_err(|source| io_failure(directory, source))?;
     let mut removed = 0_usize;
     for entry in entries {
-        if *examined >= MAX_SWEEP_KEYS || started.elapsed() >= MAX_SWEEP_TIME {
+        if *examined >= MAX_SWEEP_KEYS
+            || started.elapsed() >= MAX_SWEEP_TIME
+            || *bytes >= MAX_SWEEP_BYTES
+        {
             break;
         }
         *examined = examined.checked_add(1).ok_or(StoreError::CounterOverflow)?;
@@ -83,15 +86,10 @@ fn sweep_temporaries(
         if !metadata.is_file() || metadata.file_type().is_symlink() {
             continue;
         }
-        let next = bytes
-            .checked_add(metadata.len())
-            .ok_or(StoreError::CounterOverflow)?;
-        if next > MAX_SWEEP_BYTES {
-            continue;
-        }
+        let size = metadata.len();
         match std::fs::remove_file(&path) {
             Ok(()) => {
-                *bytes = next;
+                *bytes = bytes.checked_add(size).ok_or(StoreError::CounterOverflow)?;
                 removed = removed.checked_add(1).ok_or(StoreError::CounterOverflow)?;
             }
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}

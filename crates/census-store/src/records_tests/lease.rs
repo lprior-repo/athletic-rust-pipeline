@@ -1,4 +1,6 @@
 use super::*;
+use crate::publish::{Digest, InputFence, Intent, Request, Root};
+use crate::LeaseRecord;
 #[test]
 fn lease_acquired_once() -> TestResult {
     let (_dir, store) = store()?;
@@ -101,5 +103,118 @@ fn an_expired_lease_keeps_owner_dead_scratch_until_explicit_release() -> TestRes
     check!(eq; store.reclaim_owner_dead_scratch()?, 1);
     check!(!scratch.exists());
     check!(eq; store.reclaim_owner_dead_scratch()?, 0);
+    Ok(())
+}
+fn publication_id() -> String {
+    id('b')
+}
+fn publication_request(store: &Store, identity: &str) -> StoreResult<Intent> {
+    let epoch = store.lease_acquire(identity, "workbook-publication", "2999-12-31")?;
+    store.publication_request(Request {
+        namespace: Digest::parse(&id('c'))?,
+        identity: Digest::parse(identity)?,
+        expected: Root::Absent,
+        input: InputFence {
+            lineage: Digest::parse(&id('d'))?,
+            token: Digest::parse(&id('e'))?,
+            recipe: Digest::parse(&id('f'))?,
+            run_manifest: None,
+            evidence_generation: 0,
+            derived_generation: 0,
+        },
+        lease_epoch: epoch,
+    })
+}
+#[test]
+fn publication_lease_rebind_acquires_fresh_epoch_on_expired_fence() -> TestResult {
+    let (_dir, store) = store()?;
+    let identity = publication_id();
+    let request = publication_request(&store, &identity)?;
+    store.meta.remove(format!("lease/{identity}").as_bytes())?;
+    let expired = LeaseRecord::new(
+        "workbook-publication",
+        "2000-01-01",
+        request.request.lease_epoch,
+        &identity,
+    )?;
+    store
+        .meta
+        .insert(format!("lease/{identity}"), serde_json::to_vec(&expired)?)?;
+    check!(matches!(
+        store.lease_check(&identity, request.request.lease_epoch),
+        Err(StoreError::LeaseExpired { epoch, .. }) if epoch == request.request.lease_epoch
+    ));
+    let updated = store.publication_rebind_lease(&request.request)?;
+    check!(updated.request.lease_epoch > request.request.lease_epoch);
+    check!(matches!(
+        store.publication_fence(&request.request, &None),
+        Err(StoreError::LeaseMismatch { .. })
+    ));
+    let mut rebound = request.clone();
+    rebound.request.lease_epoch = updated.request.lease_epoch;
+    check!(store
+        .publication_fence(&rebound.request, &None)
+        .is_ok());
+    store.lease_release(&identity, updated.request.lease_epoch)?;
+    Ok(())
+}
+#[test]
+fn publication_rebind_preserves_retained_state_and_content() -> TestResult {
+    let (_dir, store) = store()?;
+    let identity = publication_id();
+    let request = publication_request(&store, &identity)?;
+    store.meta.remove(format!("lease/{identity}").as_bytes())?;
+    let expired = LeaseRecord::new(
+        "workbook-publication",
+        "2000-01-01",
+        request.request.lease_epoch,
+        &identity,
+    )?;
+    store
+        .meta
+        .insert(format!("lease/{identity}"), serde_json::to_vec(&expired)?)?;
+    let updated = store.publication_rebind_lease(&request.request)?;
+    check!(eq; updated.request.namespace, request.request.namespace);
+    check!(eq; updated.request.identity, request.request.identity);
+    check!(eq; updated.request.expected, request.request.expected);
+    check!(eq; updated.request.input, request.request.input);
+    check!(updated.request.lease_epoch != request.request.lease_epoch);
+    check!(eq; updated.state, request.state);
+    store.lease_release(&identity, updated.request.lease_epoch)?;
+    Ok(())
+}
+#[test]
+fn publication_rebind_refuses_mismatched_owner_content() -> TestResult {
+    let (_dir, store) = store()?;
+    let identity = publication_id();
+    let request = publication_request(&store, &identity)?;
+    store.meta.remove(format!("lease/{identity}").as_bytes())?;
+    let expired = LeaseRecord::new(
+        "workbook-publication",
+        "2000-01-01",
+        request.request.lease_epoch,
+        &identity,
+    )?;
+    store
+        .meta
+        .insert(format!("lease/{identity}"), serde_json::to_vec(&expired)?)?;
+    let other = Request {
+        namespace: request.request.namespace.clone(),
+        identity: request.request.identity.clone(),
+        expected: request.request.expected.clone(),
+        input: InputFence {
+            lineage: Digest::parse(&id('1'))?,
+            ..request.request.input
+        },
+        lease_epoch: request.request.lease_epoch,
+    };
+    check!(matches!(
+        store.publication_rebind_lease(&other),
+        Err(StoreError::RecordConflict {
+            kind: "publication",
+            ..
+        })
+    ));
+    store.lease_release(&identity, request.request.lease_epoch)?;
     Ok(())
 }

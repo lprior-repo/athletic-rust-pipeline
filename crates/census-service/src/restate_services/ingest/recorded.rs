@@ -1,9 +1,9 @@
 use super::{blocking, job_error, Credit, Ingest};
-use crate::admission::{Charged, WORK_CLASS_STAGE};
 use crate::restate_services::{
     jobs::collect_error,
     wire::{IngestReply, RecordedIngestRequest},
 };
+use crate::spawn::{Charged, WORK_CLASS_INGEST};
 use census_store::Application;
 use restate_sdk::prelude::*;
 use std::sync::Arc;
@@ -84,21 +84,10 @@ impl Ingest {
     ) -> Result<Charged<census_crawl::PreparedRecorded>, HandlerError> {
         admit_reference(&identity, index, &spool, &operation)?;
         let store = Arc::clone(&self.store);
-        let mut profile = WORK_CLASS_STAGE;
-        profile.resources.work = profile
-            .resources
-            .work
-            .checked_add(
-                u64::try_from(spool.fragments)
-                    .map_err(|_| TerminalError::new("ingest work exceeds u64"))?,
-            )
-            .ok_or_else(|| {
-                TerminalError::new("ingest work accounting overflow; acquisition remains owed")
-            })?;
         let permit = self
             .region
             .coordinator()
-            .reserve(profile)
+            .reserve(WORK_CLASS_INGEST)
             .await
             .map_err(|error| TerminalError::new(format!("ingest admission: {error}")))?;
         blocking(Arc::clone(&self.region), move || {

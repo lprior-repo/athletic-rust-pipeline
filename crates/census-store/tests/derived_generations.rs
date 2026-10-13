@@ -455,6 +455,50 @@ fn reclaim_honours_its_budget_and_finishes_on_the_next_call() -> TestResult {
 }
 
 #[test]
+fn unreclaimed_staging_generations_are_reported_and_reclaimed() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let seed: Vec<Row> = (0..4)
+        .map(|index| row(&format!("seed-{index}"), 0))
+        .collect();
+    {
+        let store = Store::open(dir.path())?;
+        published(&store, Table::Coverage, &seed, "op:seed", "digest:seed")?;
+    }
+    if !Store::inspect(dir.path())?
+        .unreclaimed_staging()?
+        .is_empty()
+    {
+        return Err("a published store with nothing staged reports no unreclaimed staging".into());
+    }
+    let abandoned: Vec<Row> = (0..26_000)
+        .map(|index| row(&format!("abandoned-{index:05}"), 1))
+        .collect();
+    let abandoned_generation = {
+        let store = Store::open(dir.path())?;
+        let mut stage = store.stage_derived()?;
+        let generation = stage.generation();
+        stage.replace_many(Table::Coverage, &abandoned)?;
+        generation
+    };
+    if Store::inspect(dir.path())?.unreclaimed_staging()? != vec![abandoned_generation] {
+        return Err(
+            "an abandoned stage that flushed its batches is unreclaimed staging evidence".into(),
+        );
+    }
+    {
+        let store = Store::open(dir.path())?;
+        store.reclaim_derived_generations(u64::MAX)?;
+    }
+    if !Store::inspect(dir.path())?
+        .unreclaimed_staging()?
+        .is_empty()
+    {
+        return Err("a reclaim removes the abandoned stage's rows".into());
+    }
+    Ok(())
+}
+
+#[test]
 fn carry_forward_moves_the_current_generation_into_the_next() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;

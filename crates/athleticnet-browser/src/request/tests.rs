@@ -92,6 +92,10 @@ fn same_origin_holds_scheme_host_and_port_together() -> Result<(), Box<dyn std::
         "an unconfigured port is foreign"
     );
     check!(
+        !verdict("https://user:pass@www.athletic.net/api/v1/x")?,
+        "userinfo never shares the profile origin, however the host resolves"
+    );
+    check!(
         !verdict("https://evil.example/api/v1/x")?,
         "another host is foreign"
     );

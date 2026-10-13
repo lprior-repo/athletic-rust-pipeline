@@ -12,7 +12,6 @@ const PENDING: &str = "teams-source-reservation-reached.json.pending";
 
 pub fn verify(args: &Args, log: &mut Vec<String>) -> Result<Verdict, Fault> {
     let mut limits = Vec::new();
-    let mut orphan_flags = Vec::new();
 
     log.push(format!(
         "INFO: receipt oracle for kind={} operation={} invocation={}",
@@ -167,6 +166,22 @@ pub fn verify(args: &Args, log: &mut Vec<String>) -> Result<Verdict, Fault> {
         )),
         Err(error) => limits.push(format!("http cache integrity unavailable: {error}")),
     }
+    let layout_verified = match copy.snapshot().verify_layout() {
+        Ok(verified) => verified,
+        Err(error) => {
+            return Err(Fault::verify(format!(
+                "store layout is unreadable: {error}"
+            )))
+        }
+    };
+    if layout_verified {
+        log.push("INFO: writer layout verified across every entity table".to_string());
+    } else {
+        limits.push(
+            "layout unverified: the store copy holds no entity rows and no journal entries, so no writer layout was inspected"
+                .to_string(),
+        );
+    }
     drop(copy);
 
     let store_after = walk(&args.store)?;
@@ -184,18 +199,15 @@ pub fn verify(args: &Args, log: &mut Vec<String>) -> Result<Verdict, Fault> {
     log.push("INFO: witness store unchanged by readback".to_string());
 
     match Store::inspect_with(&copy_dir, DEFAULT_CACHE_BYTES) {
-        Ok(inspection) => {
-            let published = inspection.derived_generation();
-            match inspection.next_staging_generation() {
-                Ok(next) if next > published => orphan_flags.push(format!(
-                    "derived staging generation {next} exceeds the published generation {published}"
-                )),
-                Ok(_) => {}
-                Err(error) => {
-                    limits.push(format!("derived staging generation unreadable: {error}"))
-                }
+        Ok(inspection) => match inspection.unreclaimed_staging() {
+            Ok(outstanding) if outstanding.is_empty() => {}
+            Ok(outstanding) => {
+                return Err(Fault::verify(format!(
+                    "derived staging generations {outstanding:?} hold rows that no publication made current and no reclaim removed"
+                )));
             }
-        }
+            Err(error) => limits.push(format!("derived staging generations unreadable: {error}")),
+        },
         Err(error) => limits.push(format!("store inspection unavailable: {error}")),
     }
 
@@ -241,13 +253,9 @@ pub fn verify(args: &Args, log: &mut Vec<String>) -> Result<Verdict, Fault> {
         &marker_checkpoint,
         &checkpoint_copy,
         &marker_operations,
-        &mut orphan_flags,
         &mut limits,
     )?;
 
-    for flag in &orphan_flags {
-        log.push(format!("FLAG: {flag}"));
-    }
     for limit in &limits {
         log.push(format!("LIMIT: {limit}"));
     }
@@ -261,9 +269,9 @@ pub fn verify(args: &Args, log: &mut Vec<String>) -> Result<Verdict, Fault> {
         rows_new,
         receipts_new,
         integrity_ok: integrity.ok,
+        layout_verified,
         copy_dir,
         limits,
-        orphan_flags,
         marker_sha,
     };
     report::publish(args, &verdict, log)?;

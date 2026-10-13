@@ -190,3 +190,77 @@ fn a_refinement_under_another_team_keeps_original_mark_and_timing() -> TestResul
     check!(eq; raw.timing, Some(TimingMethod::Unknown));
     Ok(())
 }
+
+#[test]
+fn same_identity_individual_scalars_retain_conflicts_and_immutable_observations() -> TestResult {
+    let mut first = performance("scalar-conflict", identity("111"))?;
+    first.place = Some(1);
+    first.observed_grade = Some(census_domain::model::Grade::new(11).ok_or("grade")?);
+    let mut revisions = Vec::new();
+    let mut marked = first.clone();
+    marked.mark = Mark::TimeSeconds(ExactSeconds::parse("11.12")?);
+    revisions.push(marked);
+    let mut timed = first.clone();
+    timed.timing = Some(TimingMethod::Hand);
+    revisions.push(timed);
+    let mut placed = first.clone();
+    placed.place = Some(2);
+    revisions.push(placed);
+    let mut graded = first.clone();
+    graded.observed_grade = Some(census_domain::model::Grade::new(10).ok_or("grade")?);
+    revisions.push(graded);
+    for other in revisions {
+        for (kept, incoming) in [
+            (first.clone(), other.clone()),
+            (other.clone(), first.clone()),
+        ] {
+            let mut merged = kept.clone();
+            merged.merge(incoming.clone());
+            check!(eq; merged.retained_conflicts.len(), 1);
+            let conflict = merged
+                .retained_conflicts
+                .first()
+                .ok_or("visible scalar conflict")?;
+            check!(eq; conflict.family, "Individual result scalar");
+            check!(eq; conflict.subject_id, kept.id.as_str());
+            check!(conflict.detail.contains(&format!(
+                "{:?}",
+                (&kept.mark, kept.timing, kept.place, kept.observed_grade)
+            )));
+            check!(conflict.detail.contains(&format!(
+                "{:?}",
+                (
+                    &incoming.mark,
+                    incoming.timing,
+                    incoming.place,
+                    incoming.observed_grade
+                )
+            )));
+            let expected = merged.clone();
+            merged.merge(incoming.clone());
+            merged.merge(kept.clone());
+            check!(eq; merged, expected);
+            let mut reversed = incoming.clone();
+            reversed.merge(kept.clone());
+            check!(eq; reversed.retained_conflicts, expected.retained_conflicts);
+            let dir = tempfile::tempdir()?;
+            let store = Store::open(dir.path())?;
+            store.append_many(Table::Performances, &[kept.clone(), incoming.clone()])?;
+            let canonical: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
+            check!(eq; canonical.len(), 1);
+            check!(eq; canonical.first().ok_or("canonical row")?.retained_conflicts.len(), 1);
+            let mut physical = Vec::new();
+            store.snapshot().for_each_observation(
+                Table::Performances,
+                |row: CanonicalPerformance| {
+                    physical.push(row);
+                    Ok(())
+                },
+            )?;
+            check!(eq; physical.len(), 2);
+            check!(physical.contains(&kept));
+            check!(physical.contains(&incoming));
+        }
+    }
+    Ok(())
+}

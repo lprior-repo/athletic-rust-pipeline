@@ -3,8 +3,8 @@ use std::sync::Arc;
 
 use restate_sdk::prelude::*;
 
-use crate::admission::{Reservation, WORK_CLASS_STAGE};
 use crate::spawn::Spawner;
+use crate::spawn::{Reservation, WORK_CLASS_CONTROL, WORK_CLASS_STAGE};
 use census_domain::model::SchoolYear;
 use census_report::{bests, workbook};
 use census_store::Store;
@@ -46,6 +46,14 @@ impl Jobs {
             .await
             .map_err(|error| TerminalError::new(format!("stage admission: {error}")))
     }
+
+    pub(super) async fn permit_control(&self) -> Result<Reservation, TerminalError> {
+        self.region
+            .coordinator()
+            .reserve(WORK_CLASS_CONTROL)
+            .await
+            .map_err(|error| TerminalError::new(format!("control admission: {error}")))
+    }
 }
 
 #[derive(Clone)]
@@ -83,7 +91,7 @@ impl Consolidate {
         let operation = consolidate_boundary::operation(ctx.key());
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
-        let permit = self.jobs.permit().await?;
+        let permit = self.jobs.permit_control().await?;
         let reply = ctx
             .run(move || async move {
                 let _permit = permit;
@@ -137,7 +145,7 @@ impl Report {
         let scope = resolve_scope(request.scope.as_deref())?;
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
-        let permit = self.jobs.permit().await?;
+        let permit = self.jobs.permit_control().await?;
         let reply = ctx
             .run(move || async move {
                 let _permit = permit;
@@ -189,7 +197,7 @@ impl Bests {
         };
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
-        let permit = self.jobs.permit().await?;
+        let permit = self.jobs.permit_control().await?;
         let reply = ctx
             .run(move || async move {
                 let _permit = permit;
@@ -260,7 +268,7 @@ impl Workbook {
         let job = format!("workbook:{}", ctx.key());
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
-        let permit = self.jobs.permit().await?;
+        let permit = self.jobs.permit_control().await?;
         let reply = ctx
             .run(move || async move {
                 let _permit = permit;

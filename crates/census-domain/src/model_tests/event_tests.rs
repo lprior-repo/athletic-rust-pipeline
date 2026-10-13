@@ -138,6 +138,17 @@ fn medley_relay_and_modifier_labels_never_fall_back_to_a_distance(
         "3000m Race Walkers",
         "200 Meter Hurdling",
         "3000m Walking",
+        "Wheelchair 100m",
+        "Men Wheelchair 100 M",
+        "100m Wheelchair",
+        "Wheelchair 800 Meter",
+        "Wheel-Chair 400m",
+        "Handcycle 5k",
+        "Hand Cycle 5k",
+        "Handcycles 5k",
+        "Ambulatory 100m",
+        "Para 100m",
+        "Para-Ambulatory 200m",
     ] {
         check!(
             matches!(

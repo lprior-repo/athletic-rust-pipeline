@@ -8,7 +8,7 @@ mod scheduling;
 mod ticket;
 
 pub const MAX_WAITERS: usize = 256;
-pub const MAX_ORIGIN_WAITERS: usize = 16;
+pub const MAX_ORIGIN_WAITERS: usize = 64;
 pub const MAX_BYPASSES: u8 = 8;
 const RESERVE_BYTES: u64 = 4 * 1024 * 1024;
 

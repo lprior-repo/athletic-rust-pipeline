@@ -28,5 +28,63 @@
       "research/sources/coach-coverage-bundle-20261004/state-work-orders/group-a.md, group-b.md, group-c.md"
     ],
     "artifact_hash": "absent - no sha256 or byte count for the 2026-09-21 artifact is recorded anywhere in this repository (worktree search for coach_contact_graph and 6,215 matched only prose.rs:97-98 and unrelated matrix rows; the bundle holds no coach-contacts CSV)"
+  },
+  "page_captures": {
+    "directory": "pages/",
+    "captured_on": "2026-10-12",
+    "capture_clock": "/proc/driver/rtc 20:48:19 before the batch, 20:49:07 after it (2026-10-12)",
+    "channel": "the capturing session's read tool (native and raw methods); it reported the effective URL, Content-Type, method and any failure note, and refused 403/404 pages as Method failed. No shell was available there, so no curl, sha256sum or wc ran at capture time.",
+    "bodies": [
+      {
+        "file": "pages/coach_contacts_pages_2026-10-12.csv",
+        "derived": true,
+        "rows": 19,
+        "columns": 11,
+        "observed_on": "2026-10-12 (last_observed column on every row)",
+        "byte_count_tool_report": 3609,
+        "sha256": null,
+        "note": "rows derived from the captured pages below; same 11-column header as coach_contacts_sample.csv, so import_csv reads it unchanged"
+      },
+      {
+        "file": "pages/capture-manifest-2026-10-12.json",
+        "derived": false,
+        "outcomes_recorded": ["contacts", "no_contact_published", "blocked", "failed", "completed_empty"],
+        "captures": 13,
+        "not_attempted_links": 7,
+        "policy_excluded_signals": 9,
+        "cfemail_payloads": 4,
+        "byte_count_tool_report": 15298,
+        "sha256": null
+      },
+      {
+        "file": "pages/coach_records_wayzata_cross-country-running-boys_2026-10-12.json",
+        "derived": false,
+        "url": "https://www.mshsl.org/api/coaches/589008",
+        "content_type": "application/json",
+        "records": 9,
+        "published_level_records": 5,
+        "byte_count_tool_report": 1969,
+        "sha256": null
+      },
+      {
+        "file": "pages/coach_records_wayzata_cross-country-running-girls_2026-10-12.json",
+        "derived": false,
+        "url": "https://www.mshsl.org/api/coaches/589009",
+        "content_type": "application/json",
+        "records": 8,
+        "published_level_records": 5,
+        "byte_count_tool_report": 1830,
+        "sha256": null
+      }
+    ],
+    "digest_status": "unmeasured: no sha256 exists for any file in this set, and the byte counts above are the write tool's own report rather than wc -c output. capture-manifest-2026-10-12.json was written once and then corrected by one character and re-validated as JSON, so its stored byte count must be re-measured. Owner command: sha256sum and wc -c over pages/*, then re-fetch the two mshsl.org/api/coaches/ URLs and the two directory pages and diff.",
+    "tests": [
+      "crates/census-crawl/src/coach_contacts/tests_pages.rs: captured_team_payloads_project_exactly_into_the_derived_rows (the CSV is the exact published-level projection of the two persisted bodies)",
+      "crates/census-crawl/src/coach_contacts/tests_pages.rs: captured_page_outcomes_decide_whether_rows_exist (a non-contacts outcome can never yield a row; blocked/failed/completed_empty/no_contact_published are all present)",
+      "crates/census-crawl/src/coach_contacts/tests_pages.rs: wiaa_addresses_decode_from_the_captured_payloads (each WIAA mailbox is decoded from both the captured email-protection href and the data-cfemail attribute)",
+      "crates/census-crawl/src/coach_contacts/tests_pages.rs: captured_page_rows_import_and_unpublished_levels_stay_out (the fresh rows import with zero errors; unpublished levels and non-coaching office roles stay out)"
+    ],
+    "report": "research/sources/coach_contacts/SOURCE_REPORT.md, section 'Live page capture, 2026-10-12 (qualified public school/team links)'",
+    "note": "The page bodies are evidence for the derived rows only; no fetcher in this crate reads this directory. The WIAA body (177.5 KB) and the MSHSL teams frontier (847 lines) were read but not persisted, and the capture manifest names the exact raw line ranges and URLs that were read."
   }
 }

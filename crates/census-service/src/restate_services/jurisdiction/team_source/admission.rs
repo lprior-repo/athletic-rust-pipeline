@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::admission::Reservation;
+use crate::spawn::Reservation;
 use census_store::Store;
 use restate_sdk::prelude::TerminalError;
 use tokio::sync::{Mutex, OwnedMutexGuard};

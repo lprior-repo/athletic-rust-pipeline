@@ -117,8 +117,8 @@ sample (scope in Known limits).
 - Write: `stage_verified_contacts`
   (`crates/census-crawl/src/coach_contacts/artifact/write.rs:13`);
   `MANIFEST_FORMAT_VERSION: u32 = 1` (`artifact.rs:25`).
-- This fixture is the raw-import lane only: it commits the 11-column CSV and no
-  artifact trio. No `contacts.csv`, `contacts.csv.evidence.jsonl` or
+- The committed fixture is the raw-import lane only: it commits the 11-column CSV
+  and no artifact trio. No `contacts.csv`, `contacts.csv.evidence.jsonl` or
   `manifest.json` exists under `crates/census-crawl/tests/fixtures/coach_contacts/`,
   so the digest-checked verified read path cannot be exercised from this fixture.
 
@@ -211,20 +211,139 @@ Six schools in six states (WI, KS, NE, MI, SD, IL); `last_observed` is
   (prose.rs:97-100); refusal prose records 22 of 51 tier-1 directories
   collected and names the blockers (prose.rs:102-105).
 
+## Live page capture, 2026-10-12 (qualified public school/team links)
+
+A second capture lane was walked on 2026-10-12 with one rule: follow only the
+public links the provider itself publishes (school page -> team page -> the team
+staff endpoint those pages call, plus the school page's own athletics-site
+link), bound the walk to one school page per host plus the cross-country team
+pair of one school, and write down both the walked and the unwalked frontier.
+Fixtures:
+
+- `crates/census-crawl/tests/fixtures/coach_contacts/pages/coach_contacts_pages_2026-10-12.csv`
+  - 19 data rows, 3609 bytes, the same 11-column header as the sample
+  (`last_observed` is `2026-10-12` on every row).
+- `.../pages/capture-manifest-2026-10-12.json` - 15298 bytes: every URL read,
+  its method, Content-Type, outcome, row count, the not-attempted frontier, the
+  addresses deliberately excluded from the rows, and the obfuscated payloads
+  behind each decoded WIAA address.
+- `.../pages/coach_records_wayzata_cross-country-running-boys_2026-10-12.json`
+  (1969 bytes) and `...coach_records_wayzata_cross-country-running-girls_2026-10-12.json`
+  (1830 bytes) - the live `application/json` team-staff bodies, persisted whole.
+
+Capture clock: `read /proc/driver/rtc` reported `20:48:19 2026-10-12` before the
+batch and `20:49:07 2026-10-12` after it. Channel: the session's read tool
+(`native` and `raw` methods). That channel prints no numeric HTTP status for a
+successful read - success is reported as `Method: native|raw` with the effective
+URL and Content-Type, and refusal as `Method: failed` with the status in the
+notes (`Failed to fetch URL (HTTP 403)`, `... (HTTP 404)`). No shell was
+available in the capturing session, so no `curl`, `sha256sum` or `wc` ran there:
+byte counts are the write tool's own report, **the digests are unmeasured**, and
+the owner command is `sha256sum` + `wc -c` over the five files above plus a
+re-fetch of `https://www.mshsl.org/api/coaches/589008` and `.../589009` diffed
+against the persisted bodies (both answered as a single-line JSON body, so a
+diff is meaningful).
+
+### Pages reached, by outcome
+
+| page as captured | outcome | rows |
+| --- | --- | --- |
+| `schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1` (Abbotsford, WI) | contacts | 4 |
+| `secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central` (NE) | contacts | 5 |
+| `www.mshsl.org/api/coaches/589008` (Wayzata boys cross country, 2026) | contacts | 5 |
+| `www.mshsl.org/api/coaches/589009` (Wayzata girls cross country, 2026) | contacts | 5 |
+| `www.mshsl.org/schools/wayzata-high-school` | no contact published | 0 |
+| `www.mshsl.org/jsonapi/views/teams/list_school?views-argument[]=611&...` | no contact published | 0 |
+| `.../cross-country-running-boys/2026`, `.../cross-country-running-girls/2026` | no contact published | 0 |
+| `www.wayzatatrojans.org` -> `www.wayzataathletics.com/` | no contact published | 0 |
+| `www.wayzataathletics.com/coaches-resources/` | no contact published | 0 |
+| `api.ihsa.org/v1/schools/0101/staff2` | blocked (live HTTP 403) | 0 |
+| `www.mshsl.org/schools/no-such-school-9tq-probe` | failed (live HTTP 404) | 0 |
+| `...GetDirectorySchool?orgID=999999` | completed empty (0 administrators, 0 coaches, 0 teams) | 0 |
+
+Five outcomes are distinguished, and `coach_contacts/tests_pages.rs` fails if a
+capture that published no conforming contact ever yields a row
+(`captured_page_outcomes_decide_whether_rows_exist`) or if a contacts capture
+yields none. A page the session could not read (403/404) is recorded as blocked
+or failed - never as "no contact"; a record that is empty is recorded as
+completed-empty, not as a blocked read.
+
+### Contact signals, exactly as published
+
+- Abbotsford (WIAA `orgID=1`): Head Coaches table - Boys Track and Field (JACOB
+  KNAPMILLER), Girls Track and Field (JACOB KNAPMILLER), Girls Cross Country
+  (Dillon Novak); School Administrators - Athletic Director Alex Larson. The
+  page obfuscates addresses; each row's address is decoded from both the
+  `email-protection#` href and the `data-cfemail` attribute of the captured row,
+  and `wiaa_addresses_decode_from_the_captured_payloads` asserts both decodings
+  equal the CSV value. The page lists no Boys Cross Country coach row and no
+  Boys Cross Country team row, so no boys cross-country row is derived from it.
+- Adams Central (NSAA): Cross-Country (Boys) and Cross-Country (Girls) Toni
+  Fowler, Track & Field (Boys) Zeb Noyd, Track & Field (Girls) Toni Fowler,
+  Athletic Director / Activities Director Alan Frank. The page publishes **no
+  mailbox anywhere**, so every NE row's email column is empty: the row exists
+  because the role and the name are published, not because an address was
+  invented.
+- Wayzata (MSHSL `www.mshsl.org/api/coaches/<nid>`): 5 of the 9 boys records and
+  5 of the 8 girls records survive `is_published_level` (`mshsl/teams.rs:151`).
+  Brandon Heebink and Roberta Granberg are published Assistant Coaches whose
+  `field_email` is `null` and whose CSV mailbox is empty. The 7 records the lane
+  refuses - 6 `Non-MSHSL Coach` and 1 `MSHSL Sub-Coach`, three of which do
+  publish school-domain addresses - are listed by name, level, address and page
+  under `policy_excluded_signals`, so the refusal is auditable rather than
+  silent. The school page's own administration block is still obfuscated, so no
+  `ad_name`/`ad_email` is asserted on the Wayzata rows.
+
+### Freshness measured against the committed sample
+
+- Abbotsford reproduces the 2026-09-19 sample rows exactly (3 coach rows plus the
+  AD row) and its identity block is unchanged (`Level High School`,
+  `WIAA District 2 - Northeast`, `Enrollment (2026-2027) 214`,
+  `City Abbotsford`, `Member Since N/A`).
+- Adams Central gained a `Track & Field (Girls)` row (Toni Fowler) that the
+  2026-09-19 sample does not carry, and the city the sample left empty is
+  published today as Hastings.
+- The two MSHSL cross-country team payloads are new evidence for a school whose
+  sibling fixture (`tests/fixtures/mshsl/coach_records_wayzata_track_boys.json`,
+  2026-09-20) covers track and field only.
+- `api.ihsa.org/v1/schools/0101/staff2` is the `source_url` of the sample's two
+  Illinois rows and answered HTTP 403 on 2026-10-12. Recorded as an observation
+  about the endpoint today, not as a statement about the researched dataset.
+
+### Known limits of this capture
+
+1. The WIAA body is 177.5 KB and is not persisted. Its rows rest on verbatim raw
+   line reads of the live body (505-560 identity, 744-800 administrators,
+   930-946 boys track and field, 963-980 girls cross country, 1005-1024 girls
+   track and field) plus the decoded payloads recorded in the manifest.
+2. No session-local digest or byte count exists for any body (no shell in the
+   capturing session); the counts quoted are the write tool's.
+3. The MSHSL school page's administration block is obfuscated and undecoded, so
+   the Wayzata rows carry no school-level contact.
+4. The two MSHSL team pages are server-rendered shells that publish no staff: a
+   team page without a staff list is not evidence that the team has no coach,
+   and the staff was taken from the endpoint those pages call.
+5. The walked frontier is one school page per host plus one school's
+   cross-country team pair; every other school, team and site page is named in
+   `not_attempted` and was not read.
+
 ## Known limits
 
-1. This fixture is a 15-row documented sample, not the 6,215-row artifact; it
-   cannot stand in for the artifact's jurisdiction coverage.
+1. The committed sample is a 15-row documented sample, not the 6,215-row
+   artifact; it cannot stand in for the artifact's jurisdiction coverage.
 2. Sample states (6) are a subset of the applicable 22; there are no MN/OH/TX/MO
-   and no other rows here.
+   and no other rows in the sample. The 2026-10-12 page capture adds MN and NE
+   rows from the pages themselves, which is not the same thing as artifact
+   coverage.
 3. No artifact trio is committed, so the digest-checked verified read/write path
    is not exercisable from this fixture.
 4. Artifact hash absent: no sha256 or byte count for the 2026-09-21 artifact is
    recorded in the repository (searched as described above). Any claim about the
    artifact's exact bytes is unverifiable from this worktree.
-5. Dates: `last_observed` is 2026-09-19 on every row while the artifact is
-   documented as 2026-09-21 (prose.rs:98); the sample carries no tenure
-   guarantee.
+5. Dates: the sample's `last_observed` is 2026-09-19 on every row while the
+   artifact is documented as 2026-09-21 (prose.rs:98); the sample carries no
+   tenure guarantee, and the 2026-10-12 page capture shows both how fast a
+   directory gains a row (NE) and how fast an endpoint can refuse one (IL 403).
 6. Non-coaching rows: the MI block (Superintendent/Principal/Athletic Trainer)
    is filtered by role at import (tests.rs:37), so imported rows are fewer than
    15.

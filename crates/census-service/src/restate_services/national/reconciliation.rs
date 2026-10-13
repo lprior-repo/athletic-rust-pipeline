@@ -29,10 +29,9 @@ pub(super) async fn run(
     season: SchoolYear,
     observed_at: &str,
 ) -> Result<(), HandlerError> {
-    derive(national, ctx, identity, season, observed_at, "index").await?;
     rules(national, ctx, observed_at).await?;
     advice(national, ctx, observed_at).await?;
-    derive(national, ctx, identity, season, observed_at, "apply").await
+    derive(national, ctx, identity, season, observed_at, "reconcile").await
 }
 
 #[tracing::instrument(skip_all)]
@@ -50,7 +49,7 @@ async fn derive(
     let name = format!("identity:{stage}");
     let reply = ctx
         .run(move || async move {
-            let permit = jobs.permit().await?;
+            let permit = jobs.permit_control().await?;
             let store = Arc::clone(jobs.store());
             blocking(Arc::clone(jobs.region()), move || {
                 let _permit = permit;
@@ -84,7 +83,7 @@ async fn rules(
     let at = observed_at.to_owned();
     let reply = ctx
         .run(move || async move {
-            let permit = jobs.permit().await?;
+            let permit = jobs.permit_control().await?;
             let store = Arc::clone(jobs.store());
             blocking(Arc::clone(jobs.region()), move || {
                 let _permit = permit;
@@ -142,7 +141,7 @@ async fn checkpoint_advice(
     let at = observed_at.to_owned();
     let runtime = tokio::runtime::Handle::current();
     ctx.run(move || async move {
-        let permit = jobs.permit().await?;
+        let permit = jobs.permit_control().await?;
         let store = Arc::clone(jobs.store());
         blocking(Arc::clone(jobs.region()), move || {
             let _permit = permit;

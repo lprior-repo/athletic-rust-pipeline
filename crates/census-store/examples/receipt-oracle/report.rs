@@ -13,9 +13,9 @@ pub struct Verdict {
     pub rows_new: u64,
     pub receipts_new: usize,
     pub integrity_ok: bool,
+    pub layout_verified: bool,
     pub copy_dir: PathBuf,
     pub limits: Vec<String>,
-    pub orphan_flags: Vec<String>,
     pub marker_sha: String,
 }
 
@@ -26,7 +26,6 @@ pub fn write_json(path: &Path, value: &serde_json::Value) -> Result<(), Fault> {
 }
 
 pub fn publish(args: &Args, verdict: &Verdict, log: &mut Vec<String>) -> Result<(), Fault> {
-    let orphan_flag_count = verdict.orphan_flags.len();
     write_json(
         &args.evidence.join("receipt-oracle.json"),
         &json!({
@@ -47,8 +46,7 @@ pub fn publish(args: &Args, verdict: &Verdict, log: &mut Vec<String>) -> Result<
             "rows_new": verdict.rows_new,
             "receipts_new": verdict.receipts_new,
             "integrity_ok": verdict.integrity_ok,
-            "orphan_flag_count": orphan_flag_count,
-            "orphan_flags": verdict.orphan_flags,
+            "layout_verified": verdict.layout_verified,
             "limits": verdict.limits,
         }),
     )?;

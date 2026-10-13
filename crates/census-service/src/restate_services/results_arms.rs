@@ -2,7 +2,7 @@ mod budget;
 mod capture;
 mod collection;
 mod meet_pages;
-mod outcomes;
+pub(in crate::restate_services) mod outcomes;
 mod rows;
 mod selection;
 mod tfrrs;

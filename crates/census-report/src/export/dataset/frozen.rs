@@ -81,7 +81,7 @@ pub(super) fn to_export_dataset(root: &FrozenRoot, store: &Store) -> ReportResul
     }
     let objects_dir = objects::directory(root.directory());
     verify::verify_root(&objects_dir, root.manifest_digest(), manifest)?;
-    let dataset = ExportDataset::from_loaded(
+    let mut dataset = ExportDataset::from_loaded(
         materialize::read_all(&objects_dir, manifest)?,
         manifest.lineage.clone(),
     )?;
@@ -92,6 +92,7 @@ pub(super) fn to_export_dataset(root: &FrozenRoot, store: &Store) -> ReportResul
             "a frozen root does not reproduce the dataset input digest",
         ));
     }
+    dataset.coverage_evidence = Some(super::coverage_evidence(&store.snapshot())?);
     Ok(dataset)
 }
 

@@ -233,52 +233,8 @@ fn compatible_event_refinement(left: &CanonicalEvent, right: &CanonicalEvent) ->
                 && left.source_bound_kind(&left.kind)))
 }
 
-impl Entity for CanonicalPerformance {
-    fn entity_id(&self) -> &str {
-        self.id.as_str()
-    }
-
-    fn merge(&mut self, other: Self) {
-        let found = collision(self.id.as_str(), self, &other);
-        other
-            .retained_conflicts
-            .into_iter()
-            .for_each(|conflict| record(&mut self.retained_conflicts, conflict));
-        if let Some(conflict) = found {
-            record(&mut self.retained_conflicts, conflict);
-            return;
-        }
-        if matches!(self.mark, census_domain::model::Mark::Raw(_))
-            && !matches!(other.mark, census_domain::model::Mark::Raw(_))
-            && self.event == other.event
-            && self.team == other.team
-        {
-            self.mark = other.mark;
-        }
-        if self.wind_mps.is_none() {
-            self.wind_mps = other.wind_mps;
-        }
-        if self.place.is_none() {
-            self.place = other.place;
-        }
-        if self.observed_grade.is_none() {
-            self.observed_grade = other.observed_grade;
-        }
-        if matches!(
-            self.timing,
-            None | Some(census_domain::model::TimingMethod::Unknown)
-        ) && other.timing.is_some()
-            && self.event == other.event
-            && self.team == other.team
-        {
-            self.timing = other.timing;
-        }
-        if self.source_athlete.is_none() {
-            self.source_athlete = other.source_athlete;
-        }
-        union_vec(&mut self.evidence, other.evidence);
-    }
-}
+#[path = "canonical_performance.rs"]
+mod performance;
 
 #[cfg(test)]
 #[path = "canonical_tests.rs"]

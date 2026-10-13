@@ -394,6 +394,7 @@ dependencies = [
  "census-domain",
  "census-review",
  "census-store",
+ "chrono",
  "csv",
  "fjall",
  "proptest",

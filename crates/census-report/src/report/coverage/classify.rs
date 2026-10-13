@@ -1,5 +1,7 @@
 use super::super::is_core_evidenced;
+use super::contact::ContactPlane;
 use super::gaps;
+use super::population;
 use super::reads::{self, Published, Tables};
 use super::state::{
     bucket_mut, in_requested_year, jurisdiction_of, school_state_index, Bucket, BucketMap, Outcome,
@@ -9,10 +11,10 @@ use super::{athletes, CoverageGap, JurisdictionCoverage};
 use crate::export::ExportDataset;
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CoachRole, EventKind, Sport,
+    CoachRole, CoverageRow, EventKind, Sport,
 };
 use census_domain::{JurisdictionBucket, UsJurisdiction};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 struct Scanned<'a> {
     schools: Vec<CanonicalSchool>,
@@ -87,7 +89,27 @@ pub(super) fn run(dataset: &ExportDataset, grad_year: Option<i16>) -> Outcome {
     classify_schools(&scanned.schools, &sets, &mut buckets);
     classify_meets(scanned.meets, &mut buckets);
     count_core(&scanned.athletes, &school_state, grad_year, &mut buckets);
-    let (jurisdictions, gaps) = publish(buckets);
+    let rows: &[CoverageRow] = dataset
+        .coverage_evidence
+        .as_ref()
+        .map_or(&[], |evidence| evidence.rows.as_slice());
+    let mut contact_plane = ContactPlane::of(
+        dataset
+            .coverage_evidence
+            .as_ref()
+            .map_or(&[], |evidence| evidence.coach_lanes.as_slice()),
+    );
+    contact_plane.declare_scope(UsJurisdiction::CENSUS_SCOPE.iter().copied());
+    let (jurisdictions, gaps) = publish(buckets, rows, &contact_plane);
+    let source_population = population::totals(rows).population(rows.len());
+    let contact = contact_plane.totals();
+    let terminal_failures = compute_terminal_failures(dataset);
+
+    let raw_observations = dataset.athletes.len();
+
+    let scope_filtered = reads.published.athletes;
+
+    let accepted_cohort = jurisdictions.iter().map(|row| row.athletes_core).sum();
 
     Outcome {
         jurisdictions,
@@ -95,6 +117,12 @@ pub(super) fn run(dataset: &ExportDataset, grad_year: Option<i16>) -> Outcome {
         read: reads.published,
         outside_scope: reads.outside,
         off_cohort_athletes,
+        source_population,
+        contact,
+        terminal_failures,
+        raw_observations,
+        scope_filtered,
+        accepted_cohort,
     }
 }
 
@@ -247,15 +275,28 @@ fn count_core(
     }
 }
 
-fn publish(mut buckets: BucketMap) -> (Vec<JurisdictionCoverage>, Vec<CoverageGap>) {
+fn publish(
+    mut buckets: BucketMap,
+    rows: &[CoverageRow],
+    contact: &ContactPlane,
+) -> (Vec<JurisdictionCoverage>, Vec<CoverageGap>) {
     let mut jurisdictions =
         Vec::with_capacity(UsJurisdiction::CENSUS_SCOPE.len().saturating_add(1));
     let mut gap_rows = Vec::new();
     for bucket in jurisdiction_buckets() {
-        let (row, counters) = buckets
+        let (mut row, counters) = buckets
             .remove(&bucket)
             .map_or(Default::default(), core::convert::identity)
             .finish(bucket);
+        let scoped = match bucket {
+            JurisdictionBucket::Jurisdiction(jurisdiction) => {
+                population::jurisdiction_rows(rows, jurisdiction)
+            }
+            JurisdictionBucket::Unplaced => Vec::new(),
+        };
+        row.source_population = population::totals(scoped.iter().copied()).population(scoped.len());
+        row.contact = contact.for_bucket(bucket);
+        row.state = contact.state(bucket);
         gap_rows.extend(gaps::rows(&row, &counters));
         jurisdictions.push(row);
     }
@@ -264,4 +305,15 @@ fn publish(mut buckets: BucketMap) -> (Vec<JurisdictionCoverage>, Vec<CoverageGa
 
 fn bump(counter: &mut usize) {
     *counter = counter.saturating_add(1);
+}
+
+fn compute_terminal_failures(dataset: &ExportDataset) -> BTreeMap<String, usize> {
+    let mut failures = BTreeMap::new();
+    for condition in &dataset.source_access {
+        if condition.is_blocking(dataset.lineage.generated_on.as_str()) {
+            let key = format!("{}:{}", condition.source, condition.kind.slug());
+            *failures.entry(key).or_insert(0) += 1;
+        }
+    }
+    failures
 }

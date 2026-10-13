@@ -68,6 +68,8 @@ fn selection_meet(meet: &str) -> SelectionMeet {
         name: meet.to_string(),
         meet_id: Id::mint("meet", &["csv_safety"]),
         meet_state: MeetState::Placed(UsJurisdiction::Wisconsin),
+        heat: None,
+        round: None,
     }
 }
 

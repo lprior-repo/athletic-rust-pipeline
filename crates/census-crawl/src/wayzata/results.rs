@@ -125,8 +125,15 @@ pub(super) async fn harvest(
         .iter()
         .find(|note| note.starts_with("capture refused:"))
         .cloned();
-    let identity = captures.identity(slug, meet, state, &resolved, &documents);
-    let payload = captures.payload(page, slug, meet, state, &resolved, &documents, &report);
+    let ledger = captures::LedgerInputs {
+        slug,
+        meet,
+        state,
+        resolved: &resolved,
+        documents: &documents,
+    };
+    let identity = captures.identity(&ledger);
+    let payload = captures.payload(page, &ledger, &report);
     retain(ctx, &identity, &payload)?;
     Ok(Harvest {
         documents: u64::try_from(captures.cached.len())

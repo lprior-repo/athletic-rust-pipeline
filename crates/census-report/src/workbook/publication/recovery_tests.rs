@@ -12,8 +12,18 @@ struct Fixture {
     later: Digest,
     intent: Intent,
 }
+enum Lease {
+    Retained,
+    Expiring,
+}
 impl Fixture {
     fn new() -> TestResult<Self> {
+        Self::build(Lease::Retained)
+    }
+    fn expiring() -> TestResult<Self> {
+        Self::build(Lease::Expiring)
+    }
+    fn build(lease: Lease) -> TestResult<Self> {
         let temp = tempfile::tempdir()?;
         let store = Store::open(temp.path().join("store"))?;
         let options = super::fence_tests::options(None)?;
@@ -34,16 +44,24 @@ impl Fixture {
         let later = install_bundle(&store, &root, &temp.path().join("later"), &later_options)?;
         let namespace = binding::namespace(&root)?;
         let identity = binding::digest(&("matrix", &namespace))?;
-        let epoch = store.publication_lease(&identity)?;
+        let expected = pointer::read(&root)?;
+        let input = binding::input(&dataset, &store, &desired_options)?;
+        let run_manifest = binding::run_manifest(&store)?;
+        let epoch = match lease {
+            Lease::Retained => store.publication_lease(&identity)?,
+            Lease::Expiring => {
+                store.lease_acquire(identity.as_str(), "workbook-publication", &expiring_at()?)?
+            }
+        };
         let request = store.publication_request(Request {
             namespace,
             identity,
-            expected: pointer::read(&root)?,
-            input: binding::input(&dataset, &store, &desired_options)?,
+            expected,
+            input,
             lease_epoch: epoch,
         })?;
         let intent = store
-            .publication_fence(&request.request, &binding::run_manifest(&store)?)?
+            .publication_fence(&request.request, &run_manifest)?
             .begin(&request, &desired)?;
         Ok(Self {
             _temp: temp,
@@ -258,5 +276,56 @@ fn publication_integrity_incident_blocks_opening_an_otherwise_valid_seal_generat
         ReportError::Publication(PublicationError::IntegrityIncident { bundle, .. })
             if bundle == f.desired
     ));
+    f.preserved()
+}
+fn expiring_at() -> TestResult<String> {
+    chrono::Utc::now()
+        .checked_add_signed(chrono::Duration::seconds(2))
+        .map(|at| at.to_rfc3339())
+        .ok_or_else(|| "the publication lease expiry overflowed the calendar".into())
+}
+fn await_lease_expiry(store: &Store, identity: &Digest) -> TestResult {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
+    loop {
+        match store.publication_lease(identity) {
+            Err(census_store::StoreError::LeaseExpired { .. }) => return Ok(()),
+            Err(error) => {
+                return Err(format!("the publication lease never expired: {error}").into())
+            }
+            Ok(_) if std::time::Instant::now() < deadline => {
+                std::thread::sleep(std::time::Duration::from_millis(25));
+            }
+            Ok(_) => return Err("the publication lease never expired before the deadline".into()),
+        }
+    }
+}
+#[test]
+fn publication_recovery_expired_lease_rebinds_and_completes() -> TestResult {
+    let f = Fixture::expiring()?;
+    await_lease_expiry(&f.store, &f.intent.request.identity)?;
+    check!(eq; recover_publication(&f.store, &f.root)?, RecoveryOutcome::ExpectedRetried { bundle: f.desired.clone() });
+    check!(eq; pointer::read(&f.root)?, Root::Bundle(f.desired.clone()));
+    let retained = f
+        .store
+        .publication_read(&f.intent.request.identity)?
+        .ok_or("intent")?;
+    check!(retained.request.lease_epoch > f.intent.request.lease_epoch);
+    check!(eq; retained.request.identity, f.intent.request.identity);
+    check!(eq; retained.state, State::Published { receipt: f.desired.clone() });
+    f.preserved()
+}
+#[test]
+fn publication_recovery_expired_lease_retains_prior_epoch_evidence() -> TestResult {
+    let f = Fixture::expiring()?;
+    let original_epoch = f.intent.request.lease_epoch;
+    await_lease_expiry(&f.store, &f.intent.request.identity)?;
+    recover_publication(&f.store, &f.root)?;
+    let retained = f
+        .store
+        .publication_read(&f.intent.request.identity)?
+        .ok_or("intent")?;
+    check!(retained.request.lease_epoch > original_epoch);
+    check!(eq; retained.request.namespace, f.intent.request.namespace);
+    check!(eq; retained.request.input, f.intent.request.input);
     f.preserved()
 }

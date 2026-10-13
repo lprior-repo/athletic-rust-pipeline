@@ -39,8 +39,18 @@ pub(super) struct SchoolSets<'a> {
     pub(super) with_coach_email: BTreeSet<&'a str>,
 }
 
+use super::ContactCounts;
+use super::SourcePopulation;
+
 pub(super) struct Outcome {
     pub(super) jurisdictions: Vec<JurisdictionCoverage>,
+
+    pub(super) source_population: SourcePopulation,
+    pub(super) contact: ContactCounts,
+    pub(super) terminal_failures: BTreeMap<String, usize>,
+    pub(super) raw_observations: usize,
+    pub(super) scope_filtered: usize,
+    pub(super) accepted_cohort: usize,
     pub(super) gaps: Vec<CoverageGap>,
     pub(super) read: CoverageTotals,
     pub(super) outside_scope: CoverageTotals,
@@ -71,13 +81,11 @@ pub(crate) fn in_requested_year(athlete: &CanonicalAthlete, grad_year: Option<i1
     grad_year.is_none_or(|year| athlete.grad_year.get() == year)
 }
 
-pub(super) fn share_pct(part: usize, whole: usize) -> u32 {
+pub(super) fn share_pct(part: usize, whole: usize) -> Option<u32> {
     let part = u64::try_from(part).map_or(u64::MAX, std::convert::identity);
     let whole = u64::try_from(whole).map_or(u64::MAX, std::convert::identity);
     let percent = part
         .checked_mul(100)
-        .and_then(|scaled| scaled.checked_div(whole));
-    percent.map_or(0, |value| {
-        u32::try_from(value).map_or(u32::MAX, std::convert::identity)
-    })
+        .and_then(|scaled| scaled.checked_div(whole))?;
+    Some(u32::try_from(percent).map_or(u32::MAX, std::convert::identity))
 }

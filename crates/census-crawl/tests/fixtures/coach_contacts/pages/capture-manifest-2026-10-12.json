@@ -1,0 +1,237 @@
+{
+  "source": "coach_contacts",
+  "captured_on": "2026-10-12",
+  "capture_channel": "read tool only (native and raw methods); this session had no shell, so no curl/sha256sum was available",
+  "clock_evidence": {
+    "file": "/proc/driver/rtc",
+    "before_first_write": "20:48:19 2026-10-12",
+    "after_last_live_read": "20:49:07 2026-10-12",
+    "note": "read /proc/driver/rtc immediately before the first write..fetch and immediately after the last live read of this capture batch"
+  },
+  "digest_status": "unmeasured: no shell in this session, so the persisted bodies have no session-local sha256 or byte count beyond the byte counts the write tool reported (1969 and 1830 for the two JSON bodies, 3609 for the CSV). Owner command: sha256sum crates/census-crawl/tests/fixtures/coach_contacts/pages/* and wc -c crates/census-crawl/tests/fixtures/coach_contacts/pages/*, then re-fetch https://www.mshsl.org/api/coaches/589008 and .../589009 and compare byte for byte (both endpoints answered with a single-line application/json body on 2026-10-12, so a diff is meaningful).",
+  "csv": "coach_contacts_pages_2026-10-12.csv",
+  "outcome_vocabulary": {
+    "contacts": "the page was read and at least one conforming TF/XC or athletics-director signal was extracted into the CSV",
+    "no_contact_published": "the page was read and published no conforming contact; distinct from not_attempted",
+    "blocked": "the request was refused (403/WAF)",
+    "failed": "the request failed (HTTP 404)",
+    "completed_empty": "the page answered but the record it addresses is empty"
+  },
+  "captures": [
+    {
+      "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1",
+      "school": "Abbotsford",
+      "method": "native + raw",
+      "content_type": "text/html",
+      "outcome": "contacts",
+      "route": "staff-page",
+      "rows": 4,
+      "persisted": "no (1687-line body; raw lines read verbatim: 505-560 identity, 744-800 administrators, 930-946 boys TF, 963-980 girls CC, 1005-1024 girls TF)",
+      "note": "Head Coaches table: Boys Track and Field (JACOB KNAPMILLER, Head Coach), Girls Track and Field (JACOB KNAPMILLER, Head Coach), Girls Cross Country (Dillon Novak, Head Coach). School Administrators: Athletic Director Alex Larson. Addresses are Cloudflare-obfuscated; decoded from the captured payloads (see cfemail_payloads). School Teams table lists Girls Cross Country but no Boys Cross Country, and the Head Coaches table has no Boys Cross Country row, so no boys cross-country row is derived. Superintendent (Ryan Bargender) and Principal (Melissa Pilgrim) are published but are not admitted roles."
+    },
+    {
+      "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central",
+      "school": "Adams Central",
+      "method": "native",
+      "content_type": "text/html",
+      "outcome": "contacts",
+      "route": "staff-page",
+      "rows": 5,
+      "mailboxes_published": false,
+      "persisted": "no (the body is already cached at tests/fixtures/plain_names/nsaa_school_get_adams_central.html, 2026-09-20)",
+      "note": "Roles published with names and no mailbox anywhere on the page: Cross-Country (Boys) Toni Fowler, Cross-Country (Girls) Toni Fowler, Track & Field (Boys) Zeb Noyd, Track & Field (Girls) Toni Fowler, Athletic Director and Activities Director Alan Frank. Every email field on these rows is empty because the page publishes none; no address is inferred from the name. The published address block names the city (Hastings) that the 2026-09-19 sample left empty."
+    },
+    {
+      "url": "https://www.mshsl.org/api/coaches/589008",
+      "school": "Wayzata High School",
+      "method": "raw",
+      "content_type": "application/json",
+      "outcome": "contacts",
+      "route": "staff-api",
+      "rows": 5,
+      "persisted": "coach_records_wayzata_cross-country-running-boys_2026-10-12.json",
+      "note": "9 records; 5 pass is_published_level (Head Coach Mark Popp, Assistant Coaches Brandon Heebink, Kyle Rasmussen, Aaron Berndt, Jerry Popp). Brandon Heebink has field_email null, so the row carries an empty mailbox. The 4 excluded records (Chad Bartels, Matthew Klein, Missa Morey, Tyler Morey) are all coach_level Non-MSHSL Coach."
+    },
+    {
+      "url": "https://www.mshsl.org/api/coaches/589009",
+      "school": "Wayzata High School",
+      "method": "raw",
+      "content_type": "application/json",
+      "outcome": "contacts",
+      "route": "staff-api",
+      "rows": 5,
+      "persisted": "coach_records_wayzata_cross-country-running-girls_2026-10-12.json",
+      "note": "8 records; 5 pass is_published_level (Head Coach Kalsey Beach, Assistant Coaches Melissa Vanderlinde, Katie Dillon, Roberta Granberg, Libby Seering). Roberta Granberg has field_email null. The 3 excluded records are Denise Lutgen-Gallaty and Brooke Benson (Non-MSHSL Coach) and Alyssa Buckner (MSHSL Sub-Coach)."
+    },
+    {
+      "url": "https://www.mshsl.org/schools/wayzata-high-school",
+      "school": "Wayzata High School",
+      "method": "native",
+      "content_type": "text/html",
+      "outcome": "no_contact_published",
+      "route": "frontier",
+      "rows": 0,
+      "note": "School identity (ISD 284, Plymouth MN 55446-1600), team links and an Administration block whose addresses are Cloudflare-obfuscated. No TF/XC staff and no decoded address: the school-level administration payloads were not captured, so no ad_name/ad_email is asserted on the Wayzata rows."
+    },
+    {
+      "url": "https://www.mshsl.org/jsonapi/views/teams/list_school?views-argument[]=611&fields[node--participant]=title,path,drupal_internal__nid",
+      "school": "Wayzata High School",
+      "method": "native",
+      "content_type": "application/json",
+      "outcome": "no_contact_published",
+      "route": "frontier",
+      "rows": 0,
+      "persisted": "no (847 lines)",
+      "note": "Frontier endpoint: enumerates the school's team nodes (title, path alias, drupal_internal__nid). Only the two cross-country nodes were followed (589008 boys, 589009 girls); the track-and-field nodes were not followed in this capture. Carries no contact itself."
+    },
+    {
+      "url": "https://www.mshsl.org/schools/wayzata-high-school/cross-country-running-boys/2026",
+      "school": "Wayzata High School",
+      "method": "native",
+      "content_type": "text/html",
+      "outcome": "no_contact_published",
+      "route": "team-page",
+      "rows": 0,
+      "note": "Server-rendered team page (season 2026): school identity and outbound links only. The staff is client-side; it comes from /api/coaches/<team nid>, captured separately. A team page that carries no staff is not evidence that the team has no coach."
+    },
+    {
+      "url": "https://www.mshsl.org/schools/wayzata-high-school/cross-country-running-girls/2026",
+      "school": "Wayzata High School",
+      "method": "native",
+      "content_type": "text/html",
+      "outcome": "no_contact_published",
+      "route": "team-page",
+      "rows": 0,
+      "note": "Same shape as the boys team page."
+    },
+    {
+      "url": "https://www.wayzatatrojans.org",
+      "effective_url": "https://www.wayzataathletics.com/",
+      "school": "Wayzata High School",
+      "method": "native",
+      "content_type": "text/html",
+      "outcome": "no_contact_published",
+      "route": "school-site",
+      "rows": 0,
+      "note": "The school page's \"Visit Wayzata High School Website\" link redirects to the school athletics site (rst7 / RschoolToday). The landing page publishes schedules, tickets and news; no coach contact."
+    },
+    {
+      "url": "https://www.wayzataathletics.com/coaches-resources/",
+      "school": "Wayzata High School",
+      "method": "native",
+      "content_type": "text/html",
+      "outcome": "no_contact_published",
+      "route": "school-site",
+      "rows": 0,
+      "note": "One hop deeper on the school-owned site (the link the landing page offers for coaches): the page exists and is empty of staff."
+    },
+    {
+      "url": "https://api.ihsa.org/v1/schools/0101/staff2",
+      "school": "Abingdon-Avon High School",
+      "method": "native",
+      "content_type": "text/html",
+      "outcome": "blocked",
+      "route": "probe",
+      "rows": 0,
+      "note": "Live 2026-10-12: Method failed, \"Failed to fetch URL (HTTP 403)\". This is the source_url the 2026-09-19 sample records for its two Illinois rows (Mr. Barry Mink, Mr. Justin Rakestraw), so the sample's address pattern cannot be re-derived from the live endpoint today."
+    },
+    {
+      "url": "https://www.mshsl.org/schools/no-such-school-9tq-probe",
+      "school": "",
+      "method": "native",
+      "content_type": "text/html",
+      "outcome": "failed",
+      "route": "probe",
+      "rows": 0,
+      "note": "Live 2026-10-12: Method failed, \"Failed to fetch URL (HTTP 404)\". Recorded so that a page that cannot be read is distinguishable from a page that published nothing."
+    },
+    {
+      "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=999999",
+      "school": "",
+      "method": "native",
+      "content_type": "text/html",
+      "outcome": "completed_empty",
+      "route": "probe",
+      "rows": 0,
+      "note": "Live 2026-10-12: the page answers with an empty record (0 administrators, 0 coaches, 0 teams for an unassigned orgID). The empty record is the honest outcome; it produces no rows."
+    }
+  ],
+  "not_attempted": [
+    "the other WIAA member schools (the directory letters B-Z): one school page per host was the bound for this capture",
+    "the other NSAA member schools in the bulk export select list (312 listed, Adams Central read): not attempted",
+    "the track-and-field team nodes of Wayzata High School (the teams view was read; only the two cross-country nodes were followed)",
+    "the remaining team nodes of every other school in the MSHSL teams frontier",
+    "www.wayzataathletics.com pages other than the landing page and /coaches-resources/",
+    "api.ihsa.org: not retried after the 403, and no alternate IHSA host was tried",
+    "any school-owned athletics site other than Wayzata's (the school-link hop is per school, and one hop per school was the bound)"
+  ],
+  "cfemail_payloads": [
+    {
+      "page": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1",
+      "school": "Abbotsford",
+      "sport": "Boys Track and Field",
+      "role": "Head Coach",
+      "contact_id": "3390",
+      "column": "public_professional_email",
+      "href_hex": "b6dcddd8d7c6dbdfdadad3c4f6d7d4d4d9c2c5d0d9c4d298dd878498c1df98c3c5",
+      "attr_hex": "8be1e0e5eafbe6e2e7e7eef9cbeae9e9e4fff8ede4f9efa5e0bab9a5fce2a5fef8",
+      "address": "jknapmiller@abbotsford.k12.wi.us"
+    },
+    {
+      "page": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1",
+      "school": "Abbotsford",
+      "sport": "Girls Cross Country",
+      "role": "Head Coach",
+      "contact_id": "391908",
+      "column": "public_professional_email",
+      "href_hex": "13777d7c657278537271717c6760757c61773d7822213d647a3d6660",
+      "attr_hex": "680c06071e090328090a0a071c1b0e071a0c4603595a461f01461d1b",
+      "address": "dnovak@abbotsford.k12.wi.us"
+    },
+    {
+      "page": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1",
+      "school": "Abbotsford",
+      "sport": "Girls Track and Field",
+      "role": "Head Coach",
+      "contact_id": "3390",
+      "column": "public_professional_email",
+      "href_hex": "bad0d1d4dbcad7d3d6d6dfc8fadbd8d8d5cec9dcd5c8de94d18b8894cdd394cfc9",
+      "attr_hex": "1379787d72637e7a7f7f7661537271717c6760757c61773d7822213d647a3d6660",
+      "address": "jknapmiller@abbotsford.k12.wi.us"
+    },
+    {
+      "page": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1",
+      "school": "Abbotsford",
+      "sport": "Athletic Director",
+      "role": "Athletic Director",
+      "contact_id": "388174",
+      "column": "ad_email",
+      "href_hex": "096865687b7a666749686b6b667d7a6f667b6d2762383b277e60277c7a",
+      "attr_hex": "0b6a676a797864654b6a6969647f786d64796f25603a39257c62257e78",
+      "address": "alarson@abbotsford.k12.wi.us"
+    }
+  ],
+  "policy_excluded_signals": [
+    {"school": "Wayzata High School", "name": "Chad Bartels", "level": "Non-MSHSL Coach", "email": "chad.bartels@wayzataschools.org", "page": "https://www.mshsl.org/api/coaches/589008"},
+    {"school": "Wayzata High School", "name": "Matthew Klein", "level": "Non-MSHSL Coach", "email": "klein.matthew28@gmail.com", "page": "https://www.mshsl.org/api/coaches/589008"},
+    {"school": "Wayzata High School", "name": "Missa Morey", "level": "Non-MSHSL Coach", "email": null, "page": "https://www.mshsl.org/api/coaches/589008"},
+    {"school": "Wayzata High School", "name": "Tyler Morey", "level": "Non-MSHSL Coach", "email": null, "page": "https://www.mshsl.org/api/coaches/589008"},
+    {"school": "Wayzata High School", "name": "Denise Lutgen-Gallaty", "level": "Non-MSHSL Coach", "email": "denise.lutgengallaty@wayzataschools.org", "page": "https://www.mshsl.org/api/coaches/589009"},
+    {"school": "Wayzata High School", "name": "Brooke Benson", "level": "Non-MSHSL Coach", "email": "Brooke.benson@wayzataschools.org", "page": "https://www.mshsl.org/api/coaches/589009"},
+    {"school": "Wayzata High School", "name": "Alyssa Buckner", "level": "MSHSL Sub-Coach", "email": "alyssa.polovitz@gmail.com", "page": "https://www.mshsl.org/api/coaches/589009"},
+    {"school": "Abbotsford", "name": "Ryan Bargender", "level": "Superintendent", "email": null, "page": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"},
+    {"school": "Abbotsford", "name": "Melissa Pilgrim", "level": "Principal", "email": null, "page": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"}
+  ],
+  "freshness": [
+    "WIAA Abbotsford: the 2026-09-19 sample rows (3 coach rows plus the AD row) reproduce exactly on 2026-10-12, and the school identity block is unchanged (Level High School, WIAA District 2 Northeast, Enrollment (2026-2027) 214, City Abbotsford, Member Since N/A).",
+    "NSAA Adams Central: the 2026-09-19 sample carried Cross-Country (Boys), Cross-Country (Girls) and Track & Field (Boys). The live 2026-10-12 page adds Track & Field (Girls) Toni Fowler, which the sample did not carry.",
+    "MSHSL Wayzata cross-country: no 2026-09-19/20 sample rows exist for these two teams; the sibling fixture coach_records_wayzata_track_boys.json covers boys track and field, so these two team payloads are new evidence for the same school."
+  ],
+  "known_limits": [
+    "No session-local sha256 or byte count for any body (no shell).",
+    "The WIAA body is 177.5 KB and was not persisted; only the verbatim raw line ranges above were read, and the CSV rows are the projection of those lines plus the decoded payloads.",
+    "The school-level administration addresses on the MSHSL school page remain obfuscated and undecoded, so the Wayzata rows carry no ad_name/ad_email.",
+    "The NSAA page publishes no mailbox for any of its TF/XC or AD rows, so every NE row carries an empty mailbox: the publisher's silence, not a collection failure.",
+    "The IHSA staff endpoint that the 2026-09-19 sample used for its two Illinois rows returned HTTP 403 on 2026-10-12."
+  ]
+}

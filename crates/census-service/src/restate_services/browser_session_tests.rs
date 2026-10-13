@@ -8,6 +8,9 @@ use url::Url;
 
 use super::*;
 
+#[path = "browser_session_replay_tests.rs"]
+mod replay;
+
 fn settings() -> anyhow::Result<BrowserSettings> {
     Ok(BrowserSettings {
         cdp_endpoint: None,
@@ -162,25 +165,61 @@ fn an_unstarted_lane_reads_as_not_running_and_refuses_fetches() -> anyhow::Resul
         })
 }
 
-#[test]
-fn a_launch_epoch_is_not_superseded_by_its_own_bump() -> anyhow::Result<()> {
+#[tokio::test]
+async fn a_launch_is_not_superseded_by_its_own_epoch_bump() -> anyhow::Result<()> {
     let session = session()?;
-    let epoch = session.begin_launch();
+    let epoch = session
+        .begin_launch()
+        .await
+        .map_err(|error| anyhow::anyhow!("the launch could not begin: {error:?}"))?;
     anyhow::ensure!(
-        !session.launch_superseded(epoch),
+        session.lane.lock().await.epoch == epoch,
         "a start must not supersede its own launch epoch"
     );
     Ok(())
 }
 
-#[test]
-fn a_stop_during_a_launch_supersedes_the_launch_epoch() -> anyhow::Result<()> {
+#[tokio::test]
+async fn a_start_waits_for_an_in_flight_launch_instead_of_bumping_its_epoch() -> anyhow::Result<()>
+{
     let session = session()?;
-    let epoch = session.begin_launch();
-    session.record_stop();
+    let held = session.launch_admission().await;
+    let mut waiting = Box::pin(session.launch_admission());
     anyhow::ensure!(
-        session.launch_superseded(epoch),
+        futures::poll!(waiting.as_mut()).is_pending(),
+        "a second start must wait for the in-flight launch instead of launching beside it"
+    );
+    anyhow::ensure!(
+        session.lane.lock().await.epoch == 0,
+        "a waiting start must not bump the in-flight launch epoch"
+    );
+    drop(held);
+    waiting.await;
+    anyhow::ensure!(
+        session.lane.lock().await.epoch == 0,
+        "the epoch moves only when a launch actually begins"
+    );
+    Ok(())
+}
+
+#[tokio::test]
+async fn a_stop_during_a_launch_supersedes_it_without_installing_a_manager() -> anyhow::Result<()> {
+    let session = session()?;
+    let epoch = session
+        .begin_launch()
+        .await
+        .map_err(|error| anyhow::anyhow!("the launch could not begin: {error:?}"))?;
+    anyhow::ensure!(
+        session.record_stop().await.is_none(),
+        "a stop during a launch has no installed manager to drain"
+    );
+    anyhow::ensure!(
+        session.lane.lock().await.epoch != epoch,
         "a stop recorded during the launch must supersede it"
+    );
+    anyhow::ensure!(
+        session.lane.lock().await.manager.is_none(),
+        "a superseded launch must not leave a manager installed"
     );
     Ok(())
 }

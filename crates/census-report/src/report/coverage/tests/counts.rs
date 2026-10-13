@@ -11,7 +11,7 @@ fn a_jurisdiction_row_carries_the_counted_columns() -> TestResult {
     check!(eq; wi.schools_with_athletes, 1);
     check!(eq; wi.athletes, 2);
     check!(eq; wi.athletes_core, 1);
-    check!(eq; wi.core_share_pct, 50);
+    check!(eq; wi.core_share_pct, Some(50));
     check!(eq; wi.boys, 1);
     check!(eq; wi.girls, 1);
     check!(eq; wi.grad_verified, 1);
@@ -43,7 +43,7 @@ fn a_jurisdiction_row_carries_the_counted_columns() -> TestResult {
     let ks = row(&report, "KS")?;
     check!(eq; ks.schools, 1);
     check!(eq; ks.athletes, 0);
-    check!(eq; ks.core_share_pct, 0);
+    check!(eq; ks.core_share_pct, None);
 
     let unplaced = row(&report, "UNKNOWN")?;
     check!(eq; unplaced.schools, 0);
@@ -90,11 +90,41 @@ fn a_mirror_result_plane_row_is_counted_but_never_core() -> TestResult {
     let ohio = row(&report, "OH")?;
     check!(eq; ohio.athletes, 2);
     check!(eq; ohio.athletes_core, 1);
-    check!(eq; ohio.core_share_pct, 50);
+    check!(eq; ohio.core_share_pct, Some(50));
     check!(eq; ohio.sources.get("athleticlive_results"), Some(&1));
     check!(eq; ohio.sources.get("ohsaa_results"), Some(&1));
 
     let core = census_of(&store, crate::report::Scope::Core)?;
     check!(eq; core.totals.athletes, 1);
+    Ok(())
+}
+
+#[test]
+fn coverage_notes_include_lifecycle_information() -> TestResult {
+    let (_dir, store) = fixture_store()?;
+
+    let report = coverage_of(&store, Some(2027))?;
+
+    let has_source_lifecycle = report
+        .notes
+        .iter()
+        .any(|note| note.contains("source lifecycle:"));
+    let has_contact_attempts = report
+        .notes
+        .iter()
+        .any(|note| note.contains("contact attempts:"));
+    let has_coverage_denominators = report
+        .notes
+        .iter()
+        .any(|note| note.contains("coverage denominators:"));
+
+    check!(has_source_lifecycle, "missing source lifecycle note");
+    check!(has_contact_attempts, "missing contact attempts note");
+    check!(
+        has_coverage_denominators,
+        "missing coverage denominators note"
+    );
+
+    report.reconcile()?;
     Ok(())
 }

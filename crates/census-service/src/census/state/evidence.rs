@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 mod recorded;
 
-pub use recorded::{GapTally, OpenWork, RetainedFindings, SealCounts, WorkbookCheck};
+pub use recorded::{GapTally, OpenWork, RetainedFindings, SealCounts, Verification, WorkbookCheck};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -99,22 +99,30 @@ impl SealEvidence {
         if self.retained.observations == 0 && self.counts.athletes > 0 {
             open.push(AcceptanceItem::EvidenceDurable);
         }
+        if self.retained.conflicts == 0 && self.counts.athletes > 0 {
+            open.push(AcceptanceItem::ConflictsRetained);
+        }
         if self.retained.calculations == 0 && self.counts.cohort_performances > 0 {
             open.push(AcceptanceItem::CalculationsReproducible);
+        }
+        if self.retained.access_conditions == 0 && self.counts.schools > 0 {
+            open.push(AcceptanceItem::RetriesRepresented);
         }
         if self.workbook.mapped_athletes < self.counts.class_of_2027 {
             open.push(AcceptanceItem::WorkbookMapped);
         }
-        if !self.workbook.counts_reconciled {
+        if self.workbook.counts_reconciled != Verification::Verified {
             open.push(AcceptanceItem::WorkbookCountsReconcile);
         }
-        if !self.workbook.coverage_reconciled {
+        if self.workbook.coverage_reconciled != Verification::Verified {
             open.push(AcceptanceItem::CoverageReportReconciles);
         }
-        if !self.workbook.metrics_reconciled {
+        if self.workbook.metrics_reconciled != Verification::Verified {
             open.push(AcceptanceItem::RunMetricsReconcile);
         }
-        if !self.workbook.export_verified || !self.workbook.discrepancies.is_empty() {
+        if self.workbook.export_verified != Verification::Verified
+            || !self.workbook.discrepancies.is_empty()
+        {
             open.push(AcceptanceItem::ExportVerified);
         }
         if self.run.is_none() {
@@ -175,19 +183,51 @@ impl SealEvidence {
                 "{} of {} cohort athletes appear in the workbook",
                 self.workbook.mapped_athletes, self.counts.class_of_2027
             ),
-            AcceptanceItem::WorkbookCountsReconcile => format!(
-                "the workbook's meta sheets do not reconcile with the store: it names {} of {} cohort athletes",
-                self.workbook.mapped_athletes, self.counts.class_of_2027
-            ),
-            AcceptanceItem::CoverageReportReconciles => {
-                "the coverage report does not reconcile".to_string()
-            }
-            AcceptanceItem::RunMetricsReconcile => "the run metrics do not reconcile".to_string(),
-            AcceptanceItem::ExportVerified => format!(
-                "{} export discrepancies: {}",
-                self.workbook.discrepancies.len(),
-                self.workbook.discrepancies.join("; ")
-            ),
+            AcceptanceItem::WorkbookCountsReconcile => match self.workbook.counts_reconciled {
+                Verification::Verified => format!(
+                    "the workbook's meta sheets reconcile with the store: it names {} of {} cohort athletes",
+                    self.workbook.mapped_athletes, self.counts.class_of_2027
+                ),
+                Verification::Failed => format!(
+                    "the workbook's meta sheets do not reconcile with the store: it names {} of {} cohort athletes",
+                    self.workbook.mapped_athletes, self.counts.class_of_2027
+                ),
+                Verification::NotMeasured => {
+                    "the workbook's meta-sheet reconciliation was not measured".to_string()
+                }
+            },
+            AcceptanceItem::CoverageReportReconciles => match self.workbook.coverage_reconciled {
+                Verification::Verified => "the coverage report reconciles".to_string(),
+                Verification::Failed => "the coverage report does not reconcile".to_string(),
+                Verification::NotMeasured => {
+                    "coverage-report reconciliation was not measured".to_string()
+                }
+            },
+            AcceptanceItem::RunMetricsReconcile => match self.workbook.metrics_reconciled {
+                Verification::Verified => "the run metrics reconcile".to_string(),
+                Verification::Failed => "the run metrics do not reconcile".to_string(),
+                Verification::NotMeasured => {
+                    "run-metric reconciliation was not measured".to_string()
+                }
+            },
+            AcceptanceItem::ExportVerified => match self.workbook.export_verified {
+                Verification::Failed if self.workbook.discrepancies.is_empty() => {
+                    "the final export verification failed".to_string()
+                }
+                Verification::Failed => format!(
+                    "{} export discrepancies: {}",
+                    self.workbook.discrepancies.len(),
+                    self.workbook.discrepancies.join("; ")
+                ),
+                Verification::NotMeasured => {
+                    "final export verification was not measured".to_string()
+                }
+                Verification::Verified => format!(
+                    "{} export discrepancies: {}",
+                    self.workbook.discrepancies.len(),
+                    self.workbook.discrepancies.join("; ")
+                ),
+            },
             _ => "no workbook measurement for this item".to_string(),
         }
     }

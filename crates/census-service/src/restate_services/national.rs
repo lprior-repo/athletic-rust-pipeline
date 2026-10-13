@@ -13,20 +13,22 @@ use super::KEY_STATE;
 
 mod classification;
 mod contact_phase;
+mod coverage;
 mod publication;
 mod reconciliation;
 mod redrive;
 mod report;
 
 #[cfg(test)]
-mod publication_tests;
+pub(crate) mod publication_tests;
 
 #[cfg(test)]
 mod reconciliation_tests;
 
 pub(super) use super::jobs;
-#[allow(unused_imports)]
-pub(super) use classification::{classify, collect_outcomes, Completion};
+pub(super) use classification::collect_outcomes;
+#[cfg(test)]
+pub(super) use classification::{classify, Completion};
 use redrive::{bind_run, redrive, require_identity};
 use report::{assemble, join_addresses};
 
@@ -138,6 +140,7 @@ impl NationalCensus {
             join,
             today,
         );
+        coverage::publish(&self.jobs, &ctx, &targets, &report).await?;
         let ready = publication::ready(&request, &report, &contacts);
         ctx.set(contact_phase::KEY_CONTACTS, Json(contacts));
         ctx.set(KEY_STATE, Json(report.clone()));

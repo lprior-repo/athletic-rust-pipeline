@@ -26,7 +26,7 @@ pub use state::{
     owed_cohort_decisions, owed_identity_candidates, owed_jurisdictions, owed_source_objects,
     silent_source_objects, AcceptanceItem, CensusState, GapTally, JurisdictionStages, OpenWork,
     Phase, RetainedFindings, SealCounts, SealError, SealEvidence, SealedCensus, SourceObject,
-    WorkbookCheck,
+    Verification, WorkbookCheck,
 };
 pub(crate) use sweep::index::{inspect_rosters, RosterIndexEvidence};
 

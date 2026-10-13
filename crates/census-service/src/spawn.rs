@@ -4,9 +4,10 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use tokio::sync::{watch, Semaphore};
 use tokio::task::JoinSet;
 
-use crate::admission::{
-    Coordinator, DepartureReason, Reservation, TryResult, WorkClass, WORK_CLASS_NORMAL,
+pub use crate::admission::{
+    Charged, Reservation, WORK_CLASS_CONTROL, WORK_CLASS_INGEST, WORK_CLASS_STAGE,
 };
+use crate::admission::{Coordinator, DepartureReason, TryResult, WorkClass, WORK_CLASS_NORMAL};
 #[cfg(test)]
 use crate::outcome::Outcome;
 #[cfg(test)]
@@ -83,6 +84,7 @@ impl Region {
 pub struct Spawner {
     capacity: usize,
     coordinator: Coordinator,
+    blocking: Arc<Semaphore>,
     region: Mutex<Region>,
     draining: tokio::sync::Mutex<()>,
     stopping: watch::Sender<bool>,
@@ -104,6 +106,7 @@ impl Spawner {
         Self {
             capacity: permits,
             coordinator: Coordinator::runtime(narrow_bound(permits)),
+            blocking: Arc::new(Semaphore::new(permits)),
             region: Mutex::new(Region::default()),
             draining: tokio::sync::Mutex::new(()),
             stopping: watch::Sender::new(false),
@@ -135,6 +138,7 @@ impl Spawner {
         Ok(Self {
             capacity,
             coordinator,
+            blocking: Arc::new(Semaphore::new(capacity)),
             region: Mutex::new(Region {
                 tasks,
                 ledger: Ledger::holding(held),
@@ -151,6 +155,10 @@ impl Spawner {
         &self.coordinator
     }
 
+    pub(crate) async fn acquire_blocking(&self) -> Option<tokio::sync::OwnedSemaphorePermit> {
+        Arc::clone(&self.blocking).acquire_owned().await.ok()
+    }
+
     pub fn stopping(&self) -> watch::Receiver<bool> {
         self.stopping.subscribe()
     }
@@ -161,7 +169,18 @@ impl Spawner {
         F: Future<Output = ()> + Send + 'static,
     {
         let slot = self.admit()?;
-        self.push_async(task, slot)
+        let permit = self.try_acquire_blocking()?;
+        self.push_async(task, slot, Some(permit))
+    }
+
+    fn try_acquire_blocking(&self) -> Result<tokio::sync::OwnedSemaphorePermit, SpawnError> {
+        match Arc::clone(&self.blocking).try_acquire_owned() {
+            Ok(permit) => Ok(permit),
+            Err(_) if self.lock().closed => Err(SpawnError::RegionClosed),
+            Err(_) => Err(SpawnError::RegionFull {
+                capacity: self.capacity,
+            }),
+        }
     }
 
     fn admit(&self) -> Result<Reservation, SpawnError> {
@@ -188,10 +207,15 @@ impl Spawner {
             }
             TryResult::Refused(reason) => return Err(reason.into()),
         };
-        self.push_async(build(), reservation)
+        self.push_async(build(), reservation, None)
     }
 
-    fn push_async<F>(&self, task: F, slot: Reservation) -> Result<(), SpawnError>
+    fn push_async<F>(
+        &self,
+        task: F,
+        slot: Reservation,
+        permit: Option<tokio::sync::OwnedSemaphorePermit>,
+    ) -> Result<(), SpawnError>
     where
         F: Future<Output = ()> + Send + 'static,
     {
@@ -200,12 +224,12 @@ impl Spawner {
             return Err(SpawnError::RegionClosed);
         }
         region.reap_finished();
-        region.tasks.spawn(supervised(slot, task));
+        region.tasks.spawn(supervised(slot, task, permit));
         region.ledger.accept();
         Ok(())
     }
 
-    fn push_blocking<F>(&self, job: F, slot: Reservation) -> bool
+    fn push_blocking<F>(&self, job: F, permit: tokio::sync::OwnedSemaphorePermit) -> bool
     where
         F: FnOnce(Arc<Counters>) + Send + 'static,
     {
@@ -218,7 +242,7 @@ impl Spawner {
         let counters = Arc::new(Counters::default());
         let witness = Arc::clone(&counters);
         let task = region.tasks.spawn_blocking(move || {
-            let _slot = slot;
+            let _permit = permit;
             job(counters);
         });
         region.ledger.track_blocking(task.id(), witness);
@@ -234,11 +258,15 @@ impl Spawner {
     }
 }
 
-async fn supervised<F>(slot: Reservation, task: F)
-where
+async fn supervised<F>(
+    slot: Reservation,
+    task: F,
+    permit: Option<tokio::sync::OwnedSemaphorePermit>,
+) where
     F: Future<Output = ()>,
 {
     let _slot = slot;
+    let _permit = permit;
     task.await;
 }
 

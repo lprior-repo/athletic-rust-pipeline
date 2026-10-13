@@ -14,11 +14,7 @@ impl TeamsSource {
             request.jurisdiction.source_parallelism,
         )?;
         let request = Arc::new(request);
-        if let Some(outcome) = self
-            .ledger_status(ctx.key().to_string(), Some(Arc::clone(&request)))
-            .await
-            .map_err(job_error)?
-        {
+        if let Some(outcome) = self.journaled_status(&ctx, &request).await? {
             return Ok(Json(outcome));
         }
         let admission = Arc::new(self.admit(ctx.key()).await?);
@@ -34,6 +30,25 @@ impl TeamsSource {
             .map_err(job_error)?;
         self.execute_reserved(&ctx, &request, admission, &registered, reserved)
             .await
+    }
+
+    async fn journaled_status(
+        &self,
+        ctx: &ObjectContext<'_>,
+        request: &Arc<TeamsSourceRequest>,
+    ) -> Result<Option<TeamsSourceOutcome>, HandlerError> {
+        let operation = ctx.key().to_string();
+        let request = Arc::clone(request);
+        let Json(outcome) = ctx
+            .run(move || async move {
+                self.ledger_status(operation, Some(request))
+                    .await
+                    .map(Json)
+                    .map_err(job_error)
+            })
+            .retry_policy(RunRetryPolicy::new().max_attempts(1))
+            .await?;
+        Ok(outcome)
     }
 
     async fn execute_reserved(

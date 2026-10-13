@@ -12,7 +12,7 @@ pub(super) fn record_row(
     context: &MeetContext<'_>,
     row: &OwnedPerformance,
 ) -> CrawlResult<usize> {
-    let (name, evidence) = record_source(writer, context.source, row);
+    let (name, evidence) = record_source(writer, context.source, row)?;
     if !super::dates::admit(writer, context.source, row)? {
         return Ok(0);
     }
@@ -39,14 +39,24 @@ pub(super) fn record_source(
     writer: &mut RowWriter<'_>,
     context: &SourceContext<'_>,
     row: &OwnedPerformance,
-) -> (String, Evidence) {
+) -> CrawlResult<(String, Evidence)> {
     bump(&mut writer.stats.rows);
     let name = format!("{} {}", row.first_name.trim(), row.last_name.trim());
+    let observation = owned::observation(context, row, name.trim());
+    let source_key = owned::source_key(row);
+    let key = match writer.accumulated.observations.get(&source_key) {
+        Some(held) if held != &observation => census_domain::model::serialized_digest(&observation)
+            .map_err(|source| CrawlError::Canonical {
+                table: "source_observations".into(),
+                source,
+            })?,
+        _ => source_key,
+    };
     writer
         .accumulated
         .observations
-        .entry(owned::source_key(row))
-        .or_insert_with(|| owned::observation(context, row, name.trim()));
+        .entry(key)
+        .or_insert(observation);
     let evidence = owned::evidence(context, row);
     let schools = writer.schools;
     let reasons = retention_reasons(
@@ -68,7 +78,7 @@ pub(super) fn record_source(
             "reasons": reasons, "evidence": evidence,
         }),
     );
-    (name, evidence)
+    Ok((name, evidence))
 }
 
 fn retention_reasons(
@@ -206,10 +216,18 @@ fn record_performance(
     performance
         .evidence
         .extend([evidence, context.metadata.clone()]);
+    let key = match writer.accumulated.performances.get(performance.id.as_str()) {
+        Some(held) if held != &performance => census_domain::model::serialized_digest(&performance)
+            .map_err(|source| CrawlError::Canonical {
+                table: "performances".into(),
+                source,
+            })?,
+        _ => performance.id.as_str().to_string(),
+    };
     writer
         .accumulated
         .performances
-        .entry(performance.id.as_str().into())
+        .entry(key)
         .or_insert(performance);
     Ok(())
 }
@@ -259,3 +277,7 @@ fn retain_event_failure(
 fn bump(counter: &mut usize) {
     *counter = counter.saturating_add(1);
 }
+
+#[cfg(test)]
+#[path = "map_rows_tests.rs"]
+mod tests;

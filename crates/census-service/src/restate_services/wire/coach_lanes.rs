@@ -44,10 +44,13 @@ pub(super) struct Lane {
 pub(in crate::restate_services) fn refusal_slug(
     jurisdiction: UsJurisdiction,
 ) -> Option<&'static str> {
-    LANES
+    if let Some(row) = LANES.iter().find(|row| row.jurisdiction == jurisdiction) {
+        return Some(row.refusal.0);
+    }
+    missing::LANES
         .iter()
         .find(|row| row.jurisdiction == jurisdiction)
-        .map(|row| row.refusal.0)
+        .map(|row| row.slug)
 }
 
 pub(super) const LANES: &[Lane] = &[

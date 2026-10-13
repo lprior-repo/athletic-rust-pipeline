@@ -69,3 +69,29 @@ fn restore_refuses_a_symlinked_backup_root() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn backup_refuses_a_symlinked_destination_without_writing_through_it() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let source = root.path().join("source");
+    let external = root.path().join("external");
+    let destination = root.path().join("destination");
+    fs::create_dir(&external)?;
+    let store = Store::open(&source)?;
+    fs::write(source.join("http/capture"), b"retained evidence")?;
+    drop(store);
+    symlink(&external, &destination)?;
+    let result = Store::backup(&source, &destination);
+    if !result.is_err() {
+        return Err(format!("symlinked destination: expected refusal, got {result:?}").into());
+    }
+    let written: Vec<_> = fs::read_dir(&external)?.collect();
+    if !written.is_empty() {
+        return Err(format!(
+            "backup wrote {} entries through the symlink at {external:?}",
+            written.len()
+        )
+        .into());
+    }
+    Ok(())
+}

@@ -43,6 +43,44 @@ impl Store {
         write(self, &intent, None)?;
         Ok(intent)
     }
+    pub fn publication_rebind_lease(&self, request: &Request) -> StoreResult<Intent> {
+        let _writes = self.lock_appends();
+        self.rebind_lease(request)
+    }
+    fn rebind_lease(&self, request: &Request) -> StoreResult<Intent> {
+        let retained = self
+            .publication_read(&request.identity)?
+            .ok_or_else(|| missing(request))?;
+        if retained.request.namespace != request.namespace
+            || retained.request.input != request.input
+        {
+            return Err(StoreError::RecordConflict {
+                kind: "publication",
+                digest: request.identity.as_str().into(),
+            });
+        }
+        let expires = chrono::Utc::now()
+            .checked_add_signed(chrono::Duration::minutes(30))
+            .ok_or(StoreError::CounterOverflow)?
+            .to_rfc3339();
+        let epoch = self.lease_succeed_expired(
+            request.identity.as_str(),
+            "workbook-publication",
+            &expires,
+        )?;
+        let updated = Intent {
+            request: Request {
+                namespace: retained.request.namespace.clone(),
+                identity: retained.request.identity.clone(),
+                expected: retained.request.expected.clone(),
+                input: retained.request.input.clone(),
+                lease_epoch: epoch,
+            },
+            state: retained.state.clone(),
+        };
+        write(self, &updated, Some(&updated.request.namespace))?;
+        Ok(updated)
+    }
     pub fn publication_lease(&self, identity: &Digest) -> StoreResult<u64> {
         if let Some(lease) = self.lease_read(identity.as_str())? {
             self.lease_check(identity.as_str(), lease.epoch)?;
@@ -61,11 +99,19 @@ impl Store {
     ) -> StoreResult<PublicationFence<'_>> {
         let writes = self.lock_appends();
         check_input(self, &request.input, run_manifest)?;
-        self.lease_check(request.identity.as_str(), request.lease_epoch)?;
+        match self.lease_check(request.identity.as_str(), request.lease_epoch) {
+            Ok(()) => {}
+            Err(StoreError::LeaseExpired { .. }) => {
+                self.rebind_lease(request)?;
+            }
+            Err(other) => return Err(other),
+        }
         let retained = self
             .publication_read(&request.identity)?
             .ok_or_else(|| missing(request))?;
-        if retained.request != *request {
+        if retained.request.namespace != request.namespace
+            || retained.request.input != request.input
+        {
             return Err(StoreError::RecordConflict {
                 kind: "publication",
                 digest: request.identity.as_str().into(),
@@ -128,6 +174,12 @@ fn check_input(
     }
     Ok(())
 }
+fn request_matches(a: &Request, b: &Request) -> bool {
+    a.namespace == b.namespace
+        && a.identity == b.identity
+        && a.expected == b.expected
+        && a.input == b.input
+}
 fn missing(request: &Request) -> StoreError {
     StoreError::RecordMissing {
         kind: "publication",
@@ -154,7 +206,13 @@ fn mark(store: &Store, intent: &Intent, state: State) -> StoreResult<Intent> {
     let retained = store
         .publication_read(&intent.request.identity)?
         .ok_or_else(|| missing(&intent.request))?;
-    if retained != *intent {
+    if !request_matches(&retained.request, &intent.request) {
+        return Err(StoreError::RecordConflict {
+            kind: "publication",
+            digest: intent.request.identity.as_str().into(),
+        });
+    }
+    if retained.state != intent.state {
         return Err(StoreError::RecordConflict {
             kind: "publication",
             digest: intent.request.identity.as_str().into(),
@@ -175,7 +233,7 @@ fn mark(store: &Store, intent: &Intent, state: State) -> StoreResult<Intent> {
         }
     }
     let next = Intent {
-        request: intent.request.clone(),
+        request: retained.request.clone(),
         state,
     };
     write(store, &next, Some(&next.request.namespace))?;

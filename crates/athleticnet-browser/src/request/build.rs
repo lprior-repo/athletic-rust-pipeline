@@ -27,7 +27,11 @@ pub fn rankings_spec(origin: &Url, action: RankingsAction) -> Result<RequestSpec
 }
 
 pub fn same_origin(url: &Url, origin: &Url) -> bool {
-    url.scheme() == origin.scheme() && url.host() == origin.host() && url.port() == origin.port()
+    url.username().is_empty()
+        && url.password().is_none()
+        && url.scheme() == origin.scheme()
+        && url.host() == origin.host()
+        && url.port() == origin.port()
 }
 
 pub fn endpoint(origin: &Url, path: &str) -> Result<Url> {

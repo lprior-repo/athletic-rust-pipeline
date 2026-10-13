@@ -249,7 +249,7 @@ impl TeamsSource {
         ctx: SharedObjectContext<'_>,
     ) -> Result<Json<Option<TeamsSourceOutcome>>, HandlerError> {
         let outcome = self
-            .ledger_status(ctx.key().to_string(), None)
+            .ledger_status_observed(ctx.key().to_string(), None)
             .await
             .map_err(job_error)?;
         Ok(Json(outcome))
@@ -261,7 +261,7 @@ impl TeamsSource {
         ctx: SharedObjectContext<'_>,
     ) -> Result<Json<Vec<TeamsAttemptProgress>>, HandlerError> {
         let inspection = self
-            .ledger_inspection(ctx.key().to_string())
+            .ledger_inspection_observed(ctx.key().to_string())
             .await
             .map_err(job_error)?;
         let progress = match inspection {
@@ -282,7 +282,7 @@ impl TeamsSource {
         ctx: SharedObjectContext<'_>,
     ) -> Result<Json<TeamsSourceInspection>, HandlerError> {
         let inspection = self
-            .ledger_inspection(ctx.key().to_string())
+            .ledger_inspection_observed(ctx.key().to_string())
             .await
             .map_err(job_error)?;
         Ok(Json(inspection))

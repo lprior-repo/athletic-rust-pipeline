@@ -10,7 +10,7 @@ use crate::restate_services::wire::{RefusedSource, SourcePlan};
 pub(super) struct RefusedLane {
     pub(super) jurisdiction: UsJurisdiction,
     arm: &'static str,
-    slug: &'static str,
+    pub(super) slug: &'static str,
     reason: &'static str,
     kind: RefusalKind,
 }

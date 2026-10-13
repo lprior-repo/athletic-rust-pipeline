@@ -5,7 +5,7 @@ use fjall::{Database, Keyspace};
 
 use super::format::{open_format, read_format, StoreFormat, DEFAULT_CACHE_BYTES};
 use super::keys::Layout;
-use super::rows::{count_rows, walk_keys, TableWalk};
+use super::rows::{count_generation, count_rows, walk_keys, TableWalk};
 use super::{generation, meta, Store, StoreResult, Table};
 
 pub struct StoreInspection {
@@ -96,6 +96,39 @@ impl StoreInspection {
                 ),
             }
         })
+    }
+
+    pub fn unreclaimed_staging(&self) -> StoreResult<Vec<u64>> {
+        let next = self.next_staging_generation()?;
+        let stored =
+            meta::get_u64(&self.meta, generation::DERIVED_RECLAIM_FROM)?.ok_or_else(|| {
+                super::StoreError::SchemaUnknown {
+                    detail: format!(
+                        "{} is missing from a versioned store",
+                        generation::DERIVED_RECLAIM_FROM
+                    ),
+                }
+            })?;
+        let start = stored.min(self.derived_generation);
+        let mut outstanding = Vec::new();
+        for generation in start..next {
+            if generation == self.derived_generation {
+                continue;
+            }
+            let mut held = 0_u64;
+            for table in Table::ALL {
+                if !table.generation_partitioned() {
+                    continue;
+                }
+                held = held
+                    .checked_add(count_generation(&self.entities, table, generation)?)
+                    .ok_or(super::StoreError::CounterOverflow)?;
+            }
+            if held > 0 {
+                outstanding.push(generation);
+            }
+        }
+        Ok(outstanding)
     }
 
     pub fn disk_space(&self) -> StoreResult<u64> {

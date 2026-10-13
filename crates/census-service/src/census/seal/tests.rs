@@ -1,6 +1,6 @@
 use super::workbook::inspect_workbook;
 use super::{reached_phase, retained_access};
-use crate::census::{AcceptanceItem, Phase};
+use crate::census::{AcceptanceItem, Phase, Verification};
 use census_domain::model::{
     AccessBlockKind, CanonicalAthlete, CanonicalSchool, CensusRun, Evidence, Gender, GradYear,
     RunManifest, SchoolYear, SourceAccessCondition, SourceIdentity, SourceNamespace, SourceRef,
@@ -159,10 +159,10 @@ fn a_complete_frozen_bundle_is_the_seal_certificate() -> TestResult {
     let check = inspection.check;
     check!(eq; check.mapped_athletes, 1);
     check!(
-        check.export_verified
-            && check.counts_reconciled
-            && check.coverage_reconciled
-            && check.metrics_reconciled
+        check.export_verified == Verification::Verified
+            && check.counts_reconciled == Verification::Verified
+            && check.coverage_reconciled == Verification::Verified
+            && check.metrics_reconciled == Verification::Verified
     );
     let manifest: serde_json::Value = serde_json::from_slice(&std::fs::read(
         path.parent()

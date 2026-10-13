@@ -22,6 +22,8 @@ impl Candidate<'_> {
             name: self.meet.map_or_else(String::new, |meet| meet.name.clone()),
             meet_id: self.performance.meet.clone(),
             meet_state: MeetState::from(self.meet.and_then(|meet| meet.state)),
+            heat: self.performance.heat.clone(),
+            round: self.performance.round.clone(),
         }
     }
 
@@ -46,18 +48,29 @@ impl Candidate<'_> {
 
     pub(super) fn athlete(&self, parents: &Parents<'_>) -> SelectionAthlete {
         let athlete = self.athlete;
+        let historical_school = resolve_school(&self.performance.team, parents);
+        let historical_state = parents
+            .team(self.performance.team.as_str())
+            .and_then(|team| parents.school(team.school.as_str()))
+            .and_then(|school| school.state);
         SelectionAthlete {
             name: athlete.canonical_name.clone(),
             gender: athlete.gender,
             grad_year: athlete.grad_year.get(),
             profile_url: athlete.public_profile_urls.first().cloned(),
-            school: resolve_school(&self.performance.team, parents),
-            athlete_school: athlete.school.as_str().to_string(),
-            athlete_state: JurisdictionBucket::from(
-                parents
-                    .school(athlete.school.as_str())
-                    .and_then(|school| school.state),
-            ),
+            school: historical_school.clone(),
+            athlete_school: match historical_school {
+                Some(school) => school,
+                None => athlete.school.as_str().to_string(),
+            },
+            athlete_state: match historical_state {
+                Some(state) => JurisdictionBucket::from(state),
+                None => JurisdictionBucket::from(
+                    parents
+                        .school(athlete.school.as_str())
+                        .and_then(|school| school.state),
+                ),
+            },
         }
     }
 }

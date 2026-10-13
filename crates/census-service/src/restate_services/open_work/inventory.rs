@@ -47,8 +47,18 @@ pub(super) fn plan_covers(
         return false;
     };
     let required = census_crawl::applicability::applicable_sources(jurisdiction);
+    let registry_sweepable = plan
+        .sweepable
+        .iter()
+        .filter(|slug| registry::descriptor(slug.as_str()).is_some())
+        .count();
+    let registry_refused = plan
+        .refused
+        .iter()
+        .filter(|row| registry::descriptor(&row.slug).is_some())
+        .count();
     !plan.fingerprint.is_empty()
-        && plan.sweepable.len().checked_add(plan.refused.len()) == Some(required.len())
+        && registry_sweepable.checked_add(registry_refused) == Some(required.len())
         && required.iter().all(|source| {
             plan.sweepable
                 .iter()

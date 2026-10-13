@@ -18,6 +18,13 @@ const MODIFIERS: &[&str] = &[
     "racewalking",
     "racewalker",
     "racewalkers",
+    "wheelchair",
+    "wheelchairs",
+    "handcycle",
+    "handcycles",
+    "ambulatory",
+    "paraambulatory",
+    "para",
 ];
 
 const MODIFIER_PHRASES: &[(&str, &str)] = &[
@@ -31,6 +38,11 @@ const MODIFIER_PHRASES: &[(&str, &str)] = &[
     ("low", "hurdles"),
     ("high", "hurdle"),
     ("high", "hurdles"),
+    ("wheel", "chair"),
+    ("wheel", "chairs"),
+    ("hand", "cycle"),
+    ("hand", "cycles"),
+    ("para", "ambulatory"),
 ];
 
 struct Token<'a> {

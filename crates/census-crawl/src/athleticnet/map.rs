@@ -188,28 +188,34 @@ pub(super) fn store_performance(
         &input.date,
         &input.source_key,
     );
-    accumulated
-        .performances
-        .entry(performance_id.as_str().to_string())
-        .or_insert_with(|| CanonicalPerformance {
-            id: performance_id,
-            athlete: input.athlete.clone(),
-            team: team_id,
-            event,
-            meet: input.meet.id.clone(),
-            date: input.date,
-            mark: input.mark,
-            wind_mps: input.wind_mps,
-            place: input.place.and_then(|place| place.trim().parse().ok()),
-            heat: None,
-            round: input.round,
-            timing: input.timing,
-            observed_grade: input.grade,
-            evidence: vec![Evidence::parsed(source.clone(), observed_on)],
-            source_key: input.source_key,
-            source_athlete: Some(input.source_athlete),
-            retained_conflicts: Vec::new(),
-        });
+    let performance = CanonicalPerformance {
+        id: performance_id,
+        athlete: input.athlete.clone(),
+        team: team_id,
+        event,
+        meet: input.meet.id.clone(),
+        date: input.date,
+        mark: input.mark,
+        wind_mps: input.wind_mps,
+        place: input.place.and_then(|place| place.trim().parse().ok()),
+        heat: None,
+        round: input.round,
+        timing: input.timing,
+        observed_grade: input.grade,
+        evidence: vec![Evidence::parsed(source.clone(), observed_on)],
+        source_key: input.source_key,
+        source_athlete: Some(input.source_athlete),
+        retained_conflicts: Vec::new(),
+    };
+    let key = match accumulated.performances.get(performance.id.as_str()) {
+        Some(held) if held != &performance => census_domain::model::serialized_digest(&performance)
+            .map_err(|source| crate::CrawlError::Canonical {
+                table: "performances".into(),
+                source,
+            })?,
+        _ => performance.id.as_str().to_string(),
+    };
+    accumulated.performances.entry(key).or_insert(performance);
     Ok(())
 }
 
@@ -254,3 +260,7 @@ pub(super) fn admit_date(input: &PerformanceInput<'_>) -> crate::CrawlResult<boo
         }),
     }
 }
+
+#[cfg(test)]
+#[path = "map_tests.rs"]
+mod tests;

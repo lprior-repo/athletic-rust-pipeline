@@ -7,7 +7,7 @@ use census_report::report::Scope;
 use census_report::workbook::publication::open_publication;
 use census_store::Store;
 
-use crate::census::WorkbookCheck;
+use crate::census::{Verification, WorkbookCheck};
 
 pub struct Inspection {
     pub dataset: ExportDataset,
@@ -35,10 +35,10 @@ pub fn inspect_workbook(
             rows,
             digests: vec![generation_digest],
             mapped_athletes,
-            counts_reconciled: true,
-            coverage_reconciled: true,
-            metrics_reconciled: true,
-            export_verified: true,
+            counts_reconciled: Verification::Verified,
+            coverage_reconciled: Verification::Verified,
+            metrics_reconciled: Verification::Verified,
+            export_verified: Verification::Verified,
             discrepancies: Vec::new(),
         },
     })

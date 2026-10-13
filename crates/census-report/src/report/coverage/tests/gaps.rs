@@ -124,7 +124,7 @@ fn an_empty_store_publishes_every_jurisdiction_with_a_gap() -> TestResult {
     check!(report
         .jurisdictions
         .iter()
-        .all(|row| row.athletes == 0 && row.schools == 0 && row.core_share_pct == 0));
+        .all(|row| row.athletes == 0 && row.schools == 0 && row.core_share_pct.is_none()));
     check!(report
         .jurisdictions
         .iter()

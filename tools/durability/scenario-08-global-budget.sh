@@ -72,7 +72,7 @@ fi
 if ! jq -e --arg binary "$BINARY" --arg hash "$BINARY_HASH" --arg ledger "$LEDGER_HASH" --arg work "$WORK" '
     def positive_pid: type == "number" and . > 0 and . == floor;
     def refused($origin; $pid):
-        .exit_code == 1 and (.stderr | rtrimstr("\n") |
+        .exit_code == 1 and (.stderr | rtrimstr("\n") | split("\n") | last |
             ltrimstr("Error: origin " + $origin + " is held by another census-service process (holder: ") |
             rtrimstr(")") | fromjson | .pid == $pid and .origin == $origin);
     . as $certificate |

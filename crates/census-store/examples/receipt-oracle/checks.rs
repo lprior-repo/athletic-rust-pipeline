@@ -173,7 +173,6 @@ pub fn new_counts(
     marker: &NativeEffectCheckpoint,
     copy: &NativeEffectCheckpoint,
     marker_operations: &BTreeSet<String>,
-    orphan_flags: &mut Vec<String>,
     limits: &mut Vec<String>,
 ) -> Result<(u64, usize), Fault> {
     let rows_new = u64::try_from(copy.rows.len().saturating_sub(marker.rows.len()))
@@ -186,9 +185,9 @@ pub fn new_counts(
         .map(|receipt| receipt.appended)
         .sum();
     if rows_new > appended_new {
-        orphan_flags.push(format!(
+        return Err(Fault::verify(format!(
             "{rows_new} observation rows appeared across the copy while new receipts append only {appended_new}"
-        ));
+        )));
     }
     if copy.rows.len() >= CHECKPOINT_ROW_CAP || marker.rows.len() >= CHECKPOINT_ROW_CAP {
         limits.push(format!(

@@ -18,6 +18,14 @@ pub(super) struct CapturedResults {
     refusals: Vec<String>,
 }
 
+pub(super) struct LedgerInputs<'a> {
+    pub(super) slug: &'a str,
+    pub(super) meet: &'a CanonicalMeet,
+    pub(super) state: UsJurisdiction,
+    pub(super) resolved: &'a ResolvedMeet,
+    pub(super) documents: &'a [Value],
+}
+
 impl CapturedResults {
     pub(super) async fn fetch(
         ctx: &AdapterContext<'_>,
@@ -99,14 +107,14 @@ impl CapturedResults {
         Ok((result_options, documents))
     }
 
-    pub(super) fn identity(
-        &self,
-        slug: &str,
-        meet: &CanonicalMeet,
-        state: UsJurisdiction,
-        resolved: &ResolvedMeet,
-        documents: &[Value],
-    ) -> Value {
+    pub(super) fn identity(&self, inputs: &LedgerInputs<'_>) -> Value {
+        let LedgerInputs {
+            slug,
+            meet,
+            state,
+            resolved,
+            documents,
+        } = *inputs;
         json!({
             "role": "results_ledger",
             "revision": REVISION,
@@ -128,13 +136,16 @@ impl CapturedResults {
     pub(super) fn payload(
         &self,
         page: &Page<'_>,
-        slug: &str,
-        meet: &CanonicalMeet,
-        state: UsJurisdiction,
-        resolved: &ResolvedMeet,
-        documents: &[Value],
+        inputs: &LedgerInputs<'_>,
         report: &AdapterReport,
     ) -> Value {
+        let LedgerInputs {
+            slug,
+            meet,
+            state,
+            resolved,
+            documents,
+        } = *inputs;
         json!({
             "role": "results_ledger",
             "revision": REVISION,

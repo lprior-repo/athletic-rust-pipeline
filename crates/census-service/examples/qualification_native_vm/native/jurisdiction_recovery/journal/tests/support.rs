@@ -113,6 +113,10 @@ fn append_source(
     )
 }
 
+fn row(id: &str, index: u64, kind: &str, entry: Value) -> Value {
+    json!({"id":id,"index":index,"version":2,"entry_type":kind,"entry_json":entry})
+}
+
 fn push(entries: &mut Vec<Value>, kind: &str, entry: Value) -> Result<()> {
     entries.push(row(
         "inv_parent",

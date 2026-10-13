@@ -15,7 +15,7 @@ pub(super) const COVERAGE_WIDTHS: [u16; 29] = [
 #[derive(Clone, Copy)]
 enum Column {
     Count(fn(&JurisdictionCoverage) -> usize),
-    Percent(fn(&JurisdictionCoverage) -> u32),
+    Percent(fn(&JurisdictionCoverage) -> Option<u32>),
 }
 
 const COLUMNS: [(&str, Column); 27] = [
@@ -104,7 +104,10 @@ fn jurisdiction_row(jurisdiction: &JurisdictionCoverage) -> ReportResult<Vec<Cel
     for (_, column) in COLUMNS {
         cells.push(match column {
             Column::Count(read) => Cell::number(read(jurisdiction))?,
-            Column::Percent(read) => Cell::Number(f64::from(read(jurisdiction))),
+            Column::Percent(read) => read(jurisdiction).map_or_else(
+                || Cell::text("unmeasured"),
+                |value| Cell::Number(f64::from(value)),
+            ),
         });
     }
     Ok(cells)

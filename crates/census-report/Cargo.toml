@@ -27,6 +27,7 @@ thiserror = "2"
 tracing = "0.1"
 
 [dev-dependencies]
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 fjall = "=3.1.10"
 proptest = "1"
 tempfile = "3"

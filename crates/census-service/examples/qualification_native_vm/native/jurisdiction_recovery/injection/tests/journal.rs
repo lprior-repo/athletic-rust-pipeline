@@ -57,12 +57,11 @@ fn registration_waits_for_matching_completion_and_refuses_duplicate_authority() 
 }
 
 #[test]
-fn registration_refuses_nonregistration_first_effect_and_failed_result() -> Result<()> {
+fn registration_ignores_nonregistration_first_effect_and_refuses_failed_result() -> Result<()> {
     let mut entries = entries()?;
     let command = entries.get_mut(1).context("fixture Run absent")?;
     command["entry_json"] = json!({"Command":{"Sleep":{"completion_id":1}}});
-    assert!(failure(journal::registration(&entries))?
-        .contains("first source effect is not registration Run"));
+    assert!(journal::registration(&entries)?.is_none());
     let mut entries = self::entries()?;
     let completion = entries.get_mut(2).context("fixture completion absent")?;
     completion["entry_json"]["Notification"]["Completion"]["Run"]["result"] =
@@ -70,6 +69,22 @@ fn registration_refuses_nonregistration_first_effect_and_failed_result() -> Resu
     assert!(
         failure(journal::registration(&entries))?.contains("registration did not journal success")
     );
+    Ok(())
+}
+
+#[test]
+fn registration_follows_a_null_payload_run_to_the_journaled_authority() -> Result<()> {
+    let mut entries = entries()?;
+    let null_command = json!({"index":90,"version":2,"id":"inv_child","entry_type":"Command: Run","entry_json":{"Command":{"Run":{"completion_id":90}}}});
+    let null_completion = json!({"index":91,"version":2,"id":"inv_child","entry_type":"Notification: Run","entry_json":{"Notification":{"Completion":{"Run":{"completion_id":90,"result":{"Success":[110,117,108,108]}}}}}});
+    entries.insert(1, null_completion);
+    entries.insert(1, null_command);
+    let (identity, references) = journal::registration(&entries)?.context("registration absent")?;
+    assert_eq!(
+        references,
+        json!({"command":{"invocation_id":"inv_child","index":1,"version":2},"completion":{"invocation_id":"inv_child","index":2,"version":2}})
+    );
+    assert_eq!(identity.observed_on, "2026-10-02");
     Ok(())
 }
 

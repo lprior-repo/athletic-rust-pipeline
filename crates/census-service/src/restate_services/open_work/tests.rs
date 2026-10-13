@@ -105,6 +105,72 @@ fn every_calendar_year_and_unresolved_result_locator_remains_owed() -> TestResul
     check!(eq; history::status(&state, history::Kind::Meets).map_err(handler_error)?, Disposition::Unknown);
     Ok(())
 }
+#[test]
+fn missing_lane_jurisdiction_refusal_settles() -> TestResult {
+    use census_domain::model::{
+        CoachLaneObligation, CoachLaneRefusal, CoachLaneResolution, CoachLaneStage,
+        PendingCoachLane, SchoolYear, SourceRef,
+    };
+    let jurisdiction = UsJurisdiction::Colorado;
+    let slug = "co_missing_coach_sources";
+    let recorded =
+        CoachLaneRefusal::new(SourceRef::id(slug), "missing coach sources", "2026-10-07")?;
+    let pending = CoachLaneObligation::pending(PendingCoachLane {
+        jurisdiction,
+        season: SchoolYear::DEFAULT,
+        revision: 1,
+        arm: "chsaa".into(),
+        arm_basis: "fixture".into(),
+        observed_on: "2026-10-07".into(),
+    })?;
+    let blocked = pending.record(
+        CoachLaneStage::Blocked,
+        Some(recorded),
+        CoachLaneResolution::unresolved("2026-10-07"),
+    )?;
+    let settled = blocked.accept_refusal(census_domain::model::CoachLaneAcceptance::new(
+        "fixture",
+        "refusal recorded",
+        "2026-10-07",
+    )?)?;
+    let state = JurisdictionState {
+        plan: Some(SourcePlan {
+            sweepable: vec!["milesplit".into()],
+            refused: vec![RefusedSource {
+                slug: slug.into(),
+                reason: "missing coach sources".into(),
+                kind: crate::restate_services::plan::RefusalKind::EngineeringGap,
+            }],
+            fingerprint: "fixture".into(),
+        }),
+        coach_lane: Some(settled),
+        ..JurisdictionState::default()
+    };
+    let plan = state.plan.as_ref().ok_or("missing plan")?;
+    let all_settled = plan
+        .refused
+        .iter()
+        .all(|entry| accepted_coach_refusal(jurisdiction, &state, entry.slug.as_str()));
+    check!(all_settled);
+    Ok(())
+}
+#[test]
+fn meets_requirement_and_credit_use_one_family_set() -> TestResult {
+    use crate::restate_services::meets_arms;
+    let sources = census_crawl::registry::descriptors();
+    for source in sources {
+        let walks_required = meets_arms::required(source);
+        let history_required = history::Kind::Meets.requires(source.slug);
+        check!(
+            walks_required == history_required,
+            "family {} disagrees: walks={} history={}",
+            source.slug,
+            walks_required,
+            history_required
+        );
+    }
+    Ok(())
+}
 
 #[test]
 fn omitted_source_or_refusal_cannot_certify_the_registry_inventory() -> TestResult {

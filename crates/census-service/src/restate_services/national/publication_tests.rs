@@ -4,7 +4,7 @@ use restate_sdk::prelude::*;
 use std::sync::Arc;
 use std::time::Duration;
 
-pub(super) mod codec;
+pub(crate) mod codec;
 mod fixtures;
 pub(super) mod journal;
 mod resume;

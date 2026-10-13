@@ -280,8 +280,9 @@ certificate = int(re.search(r'accepted=(\d+)', drain).group(1))
 if certificate != accepted:
     print(f"FAIL: certificate accepted={certificate} disagrees with the report accepted={accepted}")
     sys.exit(1)
-accounted = completed + failed + cancelled + aborted + panicked
+accounted = completed + cancelled + aborted + panicked
 print(f"ACCOUNTING: accepted={accepted} vs exclusive_terminal={accounted} (completed={completed} failed={failed} cancelled={cancelled} aborted={aborted} panicked={panicked})")
+print(f"DIAGNOSTIC: failed={failed} is a separate business-failure diagnostic, not a terminal bucket (a failed spawn joins as completed; see spawn/ledger.rs)")
 print(f"RESIDENCY: still_running={still_running} remaining={remaining} timed_out={timed_out} is an overlapping subset of accepted={accepted}, not a terminal bucket")
 if timed_out > accepted:
     print("FAIL: deadline subset exceeds accepted work")

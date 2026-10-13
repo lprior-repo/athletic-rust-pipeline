@@ -1,4 +1,3 @@
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 
 use athleticnet_browser::clock::Clock as EngineClock;
@@ -7,17 +6,31 @@ use athleticnet_browser::request::{same_origin, RequestSpec};
 use athleticnet_browser::{BrowserManager, BrowserOutcome, BrowserSettings, BrowserStatus};
 use restate_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
-use tokio::sync::Mutex as AsyncMutex;
+use tokio::sync::{Mutex as AsyncMutex, OwnedMutexGuard};
 
 pub const SESSION_KEY: &str = "profile-0";
+
+fn sanitized_url(url: &url::Url) -> String {
+    let mut clean = url.clone();
+    let _ = clean.set_username("");
+    let _ = clean.set_password(None);
+    clean.set_query(None);
+    clean.set_fragment(None);
+    clean.to_string()
+}
+
+#[derive(Default)]
+struct Lane {
+    epoch: u64,
+    manager: Option<Arc<BrowserManager>>,
+}
 
 #[derive(Clone)]
 pub struct BrowserSession {
     settings: Arc<BrowserSettings>,
     clock: Arc<dyn EngineClock>,
-    manager: Arc<AsyncMutex<Option<Arc<BrowserManager>>>>,
-    starting: Arc<AtomicBool>,
-    epoch: Arc<AtomicU64>,
+    lane: Arc<AsyncMutex<Lane>>,
+    admission: Arc<AsyncMutex<()>>,
 }
 
 impl BrowserSession {
@@ -25,25 +38,46 @@ impl BrowserSession {
         Self {
             settings: Arc::new(settings),
             clock,
-            manager: Arc::new(AsyncMutex::new(None)),
-            starting: Arc::new(AtomicBool::new(false)),
-            epoch: Arc::new(AtomicU64::new(0)),
+            lane: Arc::new(AsyncMutex::new(Lane::default())),
+            admission: Arc::new(AsyncMutex::new(())),
         }
     }
 
-    fn begin_launch(&self) -> u64 {
-        self.epoch.fetch_add(1, Ordering::SeqCst).saturating_add(1)
+    async fn launch_admission(&self) -> OwnedMutexGuard<()> {
+        Arc::clone(&self.admission).lock_owned().await
     }
 
-    fn launch_superseded(&self, epoch: u64) -> bool {
-        self.epoch.load(Ordering::SeqCst) != epoch
+    async fn begin_launch(&self) -> Result<u64, HandlerError> {
+        let mut lane = self.lane.lock().await;
+        if let Some(manager) = &lane.manager {
+            if manager.is_alive() {
+                return Err(TerminalError::new(
+                    "the browser lane is already started in this endpoint process: one process \
+                     owns the profile and a second manager is a corruption path, not a second \
+                     lane; stop the lane before starting it again",
+                )
+                .into());
+            }
+        }
+        lane.manager = None;
+        lane.epoch = lane.epoch.saturating_add(1);
+        Ok(lane.epoch)
     }
 
-    fn record_stop(&self) {
-        self.epoch.fetch_add(1, Ordering::SeqCst);
+    async fn record_stop(&self) -> Option<Arc<BrowserManager>> {
+        let mut lane = self.lane.lock().await;
+        lane.epoch = lane.epoch.saturating_add(1);
+        lane.manager.take()
     }
 
     fn foreign_origin_refusal(&self, request: &RequestSpec) -> Option<String> {
+        if !request.url.username().is_empty() || request.url.password().is_some() {
+            return Some(format!(
+                "the browser lane refuses a credentialed request: userinfo never reaches a page, \
+                 a capture or a receipt ({})",
+                sanitized_url(&request.url)
+            ));
+        }
         let origin = &self.settings.source_origin;
         if same_origin(&request.url, origin) {
             return None;
@@ -52,12 +86,12 @@ impl BrowserSession {
             "the browser lane is bound to {origin} and refuses {}: a request must share the \
              configured source origin's scheme, host and port, so a foreign scheme or host never \
              reaches a page, a capture or a receipt",
-            request.url
+            sanitized_url(&request.url)
         ))
     }
 
     async fn live(&self) -> Result<Arc<BrowserManager>, HandlerError> {
-        self.manager.lock().await.clone().ok_or_else(|| {
+        self.lane.lock().await.manager.clone().ok_or_else(|| {
             TerminalError::new(
                 "the browser lane is not started in this endpoint process; \
                  start it before fetching through it",
@@ -67,7 +101,7 @@ impl BrowserSession {
     }
 
     async fn reading(&self, key: &str) -> BrowserSessionStatus {
-        let Some(manager) = self.manager.lock().await.clone() else {
+        let Some(manager) = self.lane.lock().await.manager.clone() else {
             return BrowserSessionStatus {
                 key: key.to_string(),
                 running: false,
@@ -135,7 +169,7 @@ impl From<DrainReport> for DrainCounts {
 )]
 impl BrowserSession {
     #[handler]
-    #[tracing::instrument(skip_all, fields(profile = ctx.key(), url = %request.url))]
+    #[tracing::instrument(skip_all, fields(profile = ctx.key(), url = %sanitized_url(&request.url)))]
     async fn fetch(
         &self,
         ctx: SharedObjectContext<'_>,
@@ -144,9 +178,11 @@ impl BrowserSession {
         if let Some(refusal) = self.foreign_origin_refusal(&request) {
             return Err(TerminalError::new(refusal).into());
         }
-        let manager = self.live().await?;
         let outcome = ctx
-            .run(move || async move { Ok::<_, HandlerError>(Json(manager.fetch(request).await)) })
+            .run(move || async move {
+                let manager = self.live().await?;
+                Ok::<_, HandlerError>(Json(manager.fetch(request).await))
+            })
             .retry_policy(RunRetryPolicy::new().max_attempts(1))
             .await?;
         Ok(outcome)
@@ -168,28 +204,8 @@ impl BrowserSession {
         ctx: ObjectContext<'_>,
     ) -> Result<Json<BrowserSessionStatus>, HandlerError> {
         let key = ctx.key().to_string();
-        let epoch = self.begin_launch();
-        if let Some(manager) = self.manager.lock().await.clone() {
-            if manager.is_alive() {
-                return Err(TerminalError::new(
-                    "the browser lane is already started in this endpoint process: one process \
-                     owns the profile and a second manager is a corruption path, not a second \
-                     lane; stop the lane before starting it again",
-                )
-                .into());
-            }
-        }
-        if self
-            .starting
-            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
-            .is_err()
-        {
-            return Err(TerminalError::new(
-                "a browser launch is already in progress in this endpoint process: one process \
-                 owns the profile and a second manager is a corruption path, not a second lane",
-            )
-            .into());
-        }
+        let _admission = self.launch_admission().await;
+        let epoch = self.begin_launch().await?;
         let settings = Arc::clone(&self.settings);
         let clock = Arc::clone(&self.clock);
         let launched = match settings.cdp_endpoint.clone() {
@@ -197,23 +213,24 @@ impl BrowserSession {
             None => BrowserManager::launch((*settings).clone(), clock).await,
         };
         let manager = launched.map_err(|error| {
-            self.starting.store(false, Ordering::SeqCst);
             TerminalError::new(format!("the browser lane could not start: {error}"))
         })?;
-        if self.launch_superseded(epoch) {
-            self.starting.store(false, Ordering::SeqCst);
-            let (_, error) = manager.shutdown().await;
+        let mut lane = self.lane.lock().await;
+        if lane.epoch != epoch {
+            drop(lane);
+            let (report, error) = manager.shutdown().await;
             let detail = error.map_or_else(String::new, |error| {
                 format!("; the launched manager reported: {error}")
             });
             return Err(TerminalError::new(format!(
                 "the browser launch was superseded by a stop before it could be installed, so the \
-                 launched process was shut down instead of installed{detail}"
+                 launched process was shut down instead of installed with drain {:?}{detail}",
+                DrainCounts::from(report)
             ))
             .into());
         }
-        *self.manager.lock().await = Some(Arc::new(manager));
-        self.starting.store(false, Ordering::SeqCst);
+        lane.manager = Some(Arc::new(manager));
+        drop(lane);
         Ok(Json(self.reading(&key).await))
     }
 
@@ -224,8 +241,7 @@ impl BrowserSession {
         ctx: ObjectContext<'_>,
     ) -> Result<Json<BrowserSessionDrain>, HandlerError> {
         let key = ctx.key().to_string();
-        self.record_stop();
-        let Some(manager) = self.manager.lock().await.take() else {
+        let Some(manager) = self.record_stop().await else {
             return Ok(Json(BrowserSessionDrain {
                 key,
                 drain: DrainCounts::default(),

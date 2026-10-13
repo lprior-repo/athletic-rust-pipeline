@@ -8,7 +8,7 @@ use super::{header, sorted_counts, Expect, Sheet};
 #[derive(Clone, Copy)]
 enum Column {
     Count(fn(&JurisdictionCoverage) -> usize),
-    Percent(fn(&JurisdictionCoverage) -> u32),
+    Percent(fn(&JurisdictionCoverage) -> Option<u32>),
 }
 
 const COLUMNS: [(&str, Column); 27] = [
@@ -95,7 +95,10 @@ fn jurisdiction_row(jurisdiction: &JurisdictionCoverage) -> ReportResult<Vec<Exp
     for (_, column) in COLUMNS {
         row.push(match column {
             Column::Count(read) => Expect::count(read(jurisdiction))?,
-            Column::Percent(read) => Expect::Number(f64::from(read(jurisdiction))),
+            Column::Percent(read) => read(jurisdiction).map_or_else(
+                || Expect::text("unmeasured"),
+                |value| Expect::Number(f64::from(value)),
+            ),
         });
     }
     Ok(row)

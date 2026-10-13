@@ -5,8 +5,8 @@ mod reservation;
 
 pub use charged::Charged;
 pub use classes::{
-    Class, Resources, SlotVector, WorkClass, WORK_CLASS_BLOCKING, WORK_CLASS_BROWSER,
-    WORK_CLASS_CONTROL, WORK_CLASS_DRAIN, WORK_CLASS_NORMAL, WORK_CLASS_STAGE,
+    Class, Resources, SlotVector, WorkClass, WORK_CLASS_BROWSER, WORK_CLASS_CONTROL,
+    WORK_CLASS_DRAIN, WORK_CLASS_INGEST, WORK_CLASS_NORMAL, WORK_CLASS_STAGE,
 };
 pub use coordinator::{Coordinator, WaitTicket, MAX_BYPASSES, MAX_ORIGIN_WAITERS, MAX_WAITERS};
 pub use reservation::Reservation;

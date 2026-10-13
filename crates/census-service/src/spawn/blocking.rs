@@ -29,14 +29,10 @@ impl Spawner {
                 return Outcome::Cancelled;
             }
         }
-        let Ok(slot) = self
-            .coordinator
-            .reserve(crate::admission::WORK_CLASS_BLOCKING)
-            .await
-        else {
+        let Some(permit) = self.acquire_blocking().await else {
             tracing::error!(
                 capacity = self.capacity,
-                "blocking admission refused; work remains owed"
+                "the blocking lane is closed; the blocking job was not run"
             );
             return Outcome::Cancelled;
         };
@@ -55,7 +51,7 @@ impl Spawner {
                 }
             }
         };
-        if !self.push_blocking(run, slot) {
+        if !self.push_blocking(run, permit) {
             return Outcome::Cancelled;
         }
         match rx.await {

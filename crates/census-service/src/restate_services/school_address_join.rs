@@ -72,7 +72,7 @@ impl SchoolAddressJoin {
             urls: request.urls,
             dates: request.dates,
         };
-        let permit = self.jobs.permit().await?;
+        let permit = self.jobs.permit_control().await?;
         let reply = ctx
             .run(move || async move {
                 let _permit = permit;

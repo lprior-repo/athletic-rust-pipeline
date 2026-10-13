@@ -48,6 +48,65 @@ fn replay_verifies_fragment_digest_and_the_journaled_reference() -> TestResult {
 }
 
 #[test]
+fn a_restarted_session_reproduces_the_recorded_prefix_and_extends_it() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let first = Recording::spooled(store.clone(), "restart/0".into());
+    let mut batch = RowSink::Record {
+        store: &store,
+        recording: &first,
+    }
+    .write_batch();
+    batch.append_many(Table::Meets, &[json!({"id": "prefix"})])?;
+    batch.commit()?;
+    let prefix = first.finish_fragments()?;
+    check!(eq; prefix.fragments, 1);
+    let recorded_prefix = read_fragment(&store, "restart/0", 0)?;
+
+    let restarted = Recording::spooled(store.clone(), "restart/0".into());
+    let mut batch = RowSink::Record {
+        store: &store,
+        recording: &restarted,
+    }
+    .write_batch();
+    batch.append_many(Table::Meets, &[json!({"id": "prefix"})])?;
+    batch.commit()?;
+    check!(
+        eq; restarted.finish_fragments()?, prefix,
+        "a restarted session must re-derive the recorded prefix unchanged"
+    );
+    check!(eq; read_fragment(&store, "restart/0", 0)?, recorded_prefix);
+    verify_reference(&store, "restart/0", &prefix)?;
+
+    let mut batch = RowSink::Record {
+        store: &store,
+        recording: &restarted,
+    }
+    .write_batch();
+    batch.append_many(Table::Meets, &[json!({"id": "extended"})])?;
+    batch.commit()?;
+    let extended = restarted.finish_fragments()?;
+    check!(eq; extended.fragments, 2);
+    verify_reference(&store, "restart/0", &extended)?;
+    check!(eq; read_fragment(&store, "restart/0", 0)?, recorded_prefix);
+
+    let divergent = Recording::spooled(store.clone(), "restart/0".into());
+    let mut batch = RowSink::Record {
+        store: &store,
+        recording: &divergent,
+    }
+    .write_batch();
+    batch.append_many(Table::Meets, &[json!({"id": "diverged"})])?;
+    batch.commit()?;
+    check!(matches!(
+        divergent.finish_fragments(),
+        Err(CrawlError::Invariant { .. })
+    ));
+    check!(verify_reference(&store, "restart/0", &extended).is_ok());
+    Ok(())
+}
+
+#[test]
 fn oversized_atomic_fragment_is_refused_before_any_fragment_can_be_sent() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;

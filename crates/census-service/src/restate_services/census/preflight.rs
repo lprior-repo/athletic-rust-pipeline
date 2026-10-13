@@ -17,7 +17,7 @@ impl Census {
         let generation =
             SchoolAddressJoin::generation_path(self.store.root(), request.generation.as_deref());
         let region = Arc::clone(self.jobs.region());
-        let permit = self.jobs.permit().await?;
+        let permit = self.jobs.permit_control().await?;
         let overrides = Overrides {
             urls: request.urls,
             dates: request.dates,

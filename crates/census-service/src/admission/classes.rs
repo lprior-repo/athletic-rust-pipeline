@@ -82,7 +82,13 @@ impl WorkClass {
     }
 
     pub(super) fn validate(self) -> Result<(), DepartureReason> {
-        if self.resources.bytes == 0 || self.resources.work == 0 {
+        let resources = self.resources;
+        let empty = resources.bytes == 0
+            && resources.work == 0
+            && resources.slots.tasks == 0
+            && resources.slots.stages == 0
+            && resources.slots.browser == 0;
+        if empty {
             return Err(DepartureReason::EmptyEnvelope);
         }
         Ok(())
@@ -98,12 +104,12 @@ pub const WORK_CLASS_NORMAL: WorkClass = WorkClass::work(
         browser: 0,
     },
 );
-pub const WORK_CLASS_BLOCKING: WorkClass = WorkClass::work(
-    4096,
-    1,
+pub const WORK_CLASS_INGEST: WorkClass = WorkClass::work(
+    0,
+    0,
     SlotVector {
-        tasks: 1,
-        stages: 0,
+        tasks: 0,
+        stages: 1,
         browser: 0,
     },
 );

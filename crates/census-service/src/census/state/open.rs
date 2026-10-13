@@ -28,7 +28,6 @@ impl JurisdictionStages {
         .all(census_crawl::CollectionDisposition::is_complete)
             && self.owed_rosters == 0
             && self.owed_results == 0
-            && self.refused_sources == 0
     }
 
     pub fn owing(self) -> Vec<&'static str> {
@@ -48,7 +47,6 @@ impl JurisdictionStages {
                     || (*name == "results_history" && self.owed_results > 0)
             })
             .map(|(_, name)| name)
-            .chain((self.refused_sources > 0).then_some("refused_sources"))
             .collect()
     }
 }

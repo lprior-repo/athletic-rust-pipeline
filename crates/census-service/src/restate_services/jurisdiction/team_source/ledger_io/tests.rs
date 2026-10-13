@@ -71,7 +71,7 @@ async fn teams_source_ledger_work_runs_on_the_blocking_region() -> TestResult {
     drop(admitted);
     check!(eq; region.coordinator().remaining().slots.stages, 1);
     check!(eq; serde_json::to_value(source.ledger_status(operation.clone(), None).await?)?, serde_json::to_value(Some(outcome))?);
-    let inspection = source.ledger_inspection(operation.clone()).await?;
+    let inspection = source.ledger_inspection_observed(operation.clone()).await?;
     check!(eq; serde_json::to_value(inspection)?, serde_json::to_value(ledger::inspection(&store, &operation, None)?)?);
     check!(eq; region.drain(Duration::from_secs(5)).await?, TaskReport {
         accepted: 5,
@@ -113,7 +113,7 @@ async fn offloaded_ledger_errors_retain_the_synchronous_error_and_release_admiss
         .ledger_status(operation.clone(), Some(Arc::clone(&request)))
         .await;
     check!(matches!(result, Err(JobError::Terminal { message }) if message == expected));
-    let result = source.ledger_inspection(operation.clone()).await;
+    let result = source.ledger_inspection_observed(operation.clone()).await;
     check!(matches!(result, Err(JobError::Terminal { message }) if message == expected));
     let admitted = Arc::new(
         source
@@ -146,6 +146,59 @@ async fn offloaded_ledger_errors_retain_the_synchronous_error_and_release_admiss
         accepted: 4,
         completed: 4,
         failed: 4,
+        ..TaskReport::default()
+    });
+    Ok(())
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn inspection_reads_run_on_the_control_class_while_the_work_plane_is_saturated() -> TestResult
+{
+    let root = tempfile::tempdir()?;
+    let store = Arc::new(Store::open(root.path())?);
+    let region = Arc::new(Spawner::with_capacity(1));
+    let owner = JurisdictionCensus::new(
+        Arc::clone(&store),
+        Arc::new(SystemClock),
+        None,
+        Arc::new(crate::spawn::Spawner::new()),
+    );
+    let jobs = Jobs::new(Arc::clone(&store), Arc::clone(&region));
+    let source = TeamsSource::new(owner, jobs);
+    let request = Arc::new(request()?);
+    let operation = key(&request);
+    let registered = Arc::new(ledger::register(&store, &operation, &request)?);
+    let ledger::Admission::Reserved { attempt, .. } = source
+        .begin_attempt(
+            operation.clone(),
+            Arc::clone(&request),
+            registered,
+            Arc::new(
+                source
+                    .admit(&operation)
+                    .await
+                    .map_err(crate::restate_services::tests::sdk_error)?,
+            ),
+        )
+        .await?
+    else {
+        return Err("source settled without an attempt".into());
+    };
+    check!(eq; attempt, 1);
+    let held = region.coordinator().reserve(WORK_CLASS_STAGE).await?;
+    let mut work = Box::pin(source.ledger_status(operation.clone(), Some(Arc::clone(&request))));
+    check!(futures::poll!(work.as_mut()).is_pending());
+    let observed = source
+        .ledger_status_observed(operation.clone(), None)
+        .await?;
+    check!(eq; serde_json::to_value(&observed)?, serde_json::to_value(ledger::status(&store, &operation, None)?)?);
+    let inspection = source.ledger_inspection_observed(operation.clone()).await?;
+    check!(eq; serde_json::to_value(&inspection)?, serde_json::to_value(ledger::inspection(&store, &operation, None)?)?);
+    drop(held);
+    check!(work.await?.is_none());
+    check!(eq; region.drain(Duration::from_secs(5)).await?, TaskReport {
+        accepted: 4,
+        completed: 4,
         ..TaskReport::default()
     });
     Ok(())

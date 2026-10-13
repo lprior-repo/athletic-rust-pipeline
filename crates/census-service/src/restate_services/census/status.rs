@@ -10,7 +10,7 @@ impl Census {
         let region = Arc::clone(self.jobs.region());
         let permit = self
             .jobs
-            .permit()
+            .permit_control()
             .await
             .map_err(|error| JobError::Terminal {
                 message: error.to_string(),

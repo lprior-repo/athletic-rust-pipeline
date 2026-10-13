@@ -38,6 +38,7 @@ Accepted policy is not proof of implementation or successful execution.
 | [029](ADR-029-receipt-keyed-observation-credit.md) | Credited observations are keyed by the operation receipt and totalled per endpoint in one atomic batch; the object state mirrors the store total | Accepted 2026-10-08; closes `hfhk.40` |
 | [035](ADR-035-cbc-tls-acquisition-lane.md) | CBC-compatible acquisition lane for AEAD-incompatible hosts | Accepted 2026-10-10 |
 | [036](ADR-036-spec-20261010-decision-gates.md) | SPEC-20261010 owner gates a-g: test-profile limits with fail-closed refusal; 16 GiB incremental application-owned envelope; typed refusal for oversized identity components; streamed audit codec; typed refusal at sheet ceilings; immutable-conversion archive policy; inline-string-only XLSX profile | Accepted 2026-10-11; closes `zzq8`, `s0ly`, `ysru` |
+| [037](ADR-037-blocking-lane-admission.md) | Blocking work has its own lane: a `Spawner` semaphore bounded by capacity, never a charge on the shared admission pool, so a holder's reservation cannot collide with its nested work | Accepted 2026-10-12; repairs the stalled national run at `var/national-fresh-20261012-04` |
 
 Changes record explicit supersession rather than silently rewriting prior decisions. Source-specific
 research and dated command results belong in their evidence references, not additional ADR copies.

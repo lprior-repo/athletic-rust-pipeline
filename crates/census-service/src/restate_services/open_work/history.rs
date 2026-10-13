@@ -17,14 +17,15 @@ impl Kind {
         }
     }
     pub(super) fn requires(self, slug: &str) -> bool {
-        registry::descriptor(slug).is_none_or(|source| match self {
-            Self::Meets => {
-                source.capabilities.meet_discovery || meets_arms::arm_for(slug).is_some()
-            }
+        let Some(source) = registry::descriptor(slug) else {
+            return true;
+        };
+        match self {
+            Self::Meets => meets_arms::required(source),
             Self::Results => {
                 source.capabilities.bulk_results || results_arms::arm_for(slug).is_some()
             }
-        })
+        }
     }
 }
 

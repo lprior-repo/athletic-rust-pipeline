@@ -33,12 +33,32 @@ fn profile(bytes: u64, slots: u64) -> WorkClass {
 }
 
 #[test]
-fn zero_resource_envelope_is_refused() -> TestResult {
+fn empty_resource_envelope_is_refused() -> TestResult {
     let coordinator = coordinator(1024, 1, 4)?;
     check!(matches!(
-        coordinator.try_reserve_profile(profile(0, 0)),
+        coordinator.try_reserve_profile(WorkClass::work(0, 0, SlotVector::default())),
         TryResult::Refused(DepartureReason::EmptyEnvelope)
     ));
+    Ok(())
+}
+
+#[test]
+fn an_ingest_step_is_admitted_while_every_stage_work_unit_is_spent() -> TestResult {
+    let coordinator = coordinator(12 * 1024 * 1024 * 1024, 500, 64)?;
+    let mut stages = Vec::new();
+    for _ in 0..10 {
+        stages.push(grant(coordinator.try_reserve_profile(WORK_CLASS_STAGE))?);
+    }
+    check!(eq; coordinator.remaining().work, 0);
+    check!(matches!(
+        coordinator.try_reserve_profile(WORK_CLASS_STAGE),
+        TryResult::Deferred(DepartureReason::NoWork)
+    ));
+    let step = grant(coordinator.try_reserve_profile(WORK_CLASS_INGEST))?;
+    drop(step);
+    drop(stages);
+    check!(eq; coordinator.remaining().work, 1_000_000);
+    check!(eq; coordinator.remaining().bytes, 12 * 1024 * 1024 * 1024);
     Ok(())
 }
 
@@ -51,6 +71,22 @@ fn dropped_waiter_reclaims_queue_capacity_immediately() -> TestResult {
     drop(next);
     drop(held);
     check!(eq; coordinator.remainder_bytes(), 1024);
+    Ok(())
+}
+
+#[tokio::test]
+async fn a_blocking_job_runs_while_its_caller_holds_the_only_task_slot() -> TestResult {
+    let spawner = Spawner::with_capacity(1);
+    let held = grant(spawner.coordinator().try_reserve_profile(WORK_CLASS_NORMAL))?;
+    let outcome = tokio::time::timeout(
+        std::time::Duration::from_secs(5),
+        spawner.blocking(|| Ok::<_, ()>(7)),
+    )
+    .await
+    .map_err(|_| "a blocking job nested under the last task slot never ran")?;
+    check!(matches!(outcome, crate::outcome::Outcome::Ok(7)));
+    drop(held);
+    check!(eq; spawner.coordinator().remaining().slots.tasks, 1);
     Ok(())
 }
 
@@ -187,7 +223,7 @@ fn dropping_delivered_grants_restores_all_resources() -> TestResult {
 
 #[test]
 fn waiter_descriptors_have_global_and_class_origin_caps() -> TestResult {
-    let coordinator = coordinator(1024, 1, 32)?;
+    let coordinator = coordinator(1024, 1, (2 * MAX_ORIGIN_WAITERS) as u64)?;
     let held = grant(coordinator.try_reserve())?;
     let mut tickets = Vec::new();
     for _ in 0..MAX_ORIGIN_WAITERS {
@@ -211,6 +247,34 @@ fn waiter_descriptors_have_global_and_class_origin_caps() -> TestResult {
     drop(tickets);
     drop(held);
     check!(eq; coordinator.remainder_bytes(), 1024);
+    Ok(())
+}
+
+#[test]
+fn driver_lane_is_admitted_while_the_work_lane_is_protected() -> TestResult {
+    let coordinator = coordinator(4096, 16, MAX_WAITERS as u64)?;
+    let held = grant(coordinator.try_reserve_profile(profile(1024, 1)))?;
+    let starving = coordinator.try_enqueue(profile(4096, 1))?;
+    for _ in 0..MAX_BYPASSES {
+        drop(grant(coordinator.try_reserve_profile(profile(1024, 1)))?);
+    }
+    check!(matches!(
+        coordinator.try_reserve_profile(profile(1024, 1)),
+        TryResult::Deferred(DepartureReason::Fairness)
+    ));
+    let mut waiting = vec![starving];
+    for _ in 1..MAX_ORIGIN_WAITERS {
+        waiting.push(coordinator.try_enqueue(profile(512, 0))?);
+    }
+    check!(matches!(
+        coordinator.try_enqueue(profile(512, 0)),
+        Err(DepartureReason::OriginWaitersFull)
+    ));
+    let driver = grant(coordinator.try_reserve_profile(WORK_CLASS_CONTROL))?;
+    drop(driver);
+    drop(waiting);
+    drop(held);
+    check!(eq; coordinator.remainder_bytes(), 4096);
     Ok(())
 }
 
