@@ -60,7 +60,7 @@ fn the_ladder_stops_at_the_first_artifact_the_store_lacks() -> TestResult {
         (stats_with(1, 2, 3, 9), Phase::ResolvingGaps),
     ];
     for (stats, expected) in phases {
-        let state = reached_phase(&stats, &absent)?;
+        let state = reached_phase(&stats, &absent, &super::SealEvidence::default())?;
         check!(eq; state.phase(), expected);
         check!(state.sealed().is_none(), "a walked ladder is not sealed");
     }
@@ -72,7 +72,11 @@ fn a_workbook_is_what_lifts_the_ladder_into_exporting() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path().join("store"))?;
     let path = census_report::workbook::build(&store, &full_options()?)?;
-    let state = reached_phase(&stats_with(1, 2, 3, 9), &path)?;
+    let state = reached_phase(
+        &stats_with(1, 2, 3, 9),
+        &path,
+        &super::SealEvidence::default(),
+    )?;
     check!(eq;
         state.phase(),
         Phase::Exporting,
@@ -322,3 +326,5 @@ fn a_bound_run_reaches_the_evidence_and_the_seal_record() -> TestResult {
     check!(eq; outcome.recorded, None);
     Ok(())
 }
+
+mod measured_zero;
