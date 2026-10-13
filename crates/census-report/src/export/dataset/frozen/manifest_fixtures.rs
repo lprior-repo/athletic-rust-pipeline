@@ -37,6 +37,7 @@ impl Streams {
 pub(super) fn fixture() -> TestResult<Fixture> {
     let seeded = seeded_store()?;
     let store = seeded.store;
+    store.store_identity()?;
     let (dataset, streams, manifest, encoded) = {
         let snapshot = store.snapshot();
         let dataset = ExportDataset::from_snapshot(&store, &snapshot)?;

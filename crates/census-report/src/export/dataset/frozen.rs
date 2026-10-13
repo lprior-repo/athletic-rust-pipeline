@@ -21,6 +21,8 @@ mod freeze;
 mod inventory;
 mod legacy;
 mod line;
+#[cfg(test)]
+mod lineage_tests;
 mod manifest;
 mod materialize;
 mod objects;
@@ -51,7 +53,7 @@ pub use freeze::CancelOutcome;
 pub use root::FrozenRoot;
 
 const SCHEMA_REVISION: u32 = 2;
-const POLICY_REVISION: u32 = 12;
+const POLICY_REVISION: u32 = 13;
 const INPUT_TABLES: [Table; 15] = [
     Table::Schools,
     Table::Teams,
@@ -106,7 +108,8 @@ pub(super) fn to_export_dataset(root: &FrozenRoot, store: &Store) -> ReportResul
 }
 
 pub(super) fn lineage(store: &Store, snapshot: &StoreSnapshot<'_>) -> ReportResult<DatasetLineage> {
-    let store_identity = store_identity(store)?;
+    snapshot.ensure_origin(store)?;
+    let store_identity = String::from(snapshot.store_identity()?);
     let bound = store.run_manifest()?;
     if let Some(manifest) = &bound {
         if manifest.store_identity != store_identity {
@@ -200,45 +203,7 @@ fn digest(value: &impl Serialize) -> ReportResult<String> {
 }
 
 pub(super) fn store_identity(store: &Store) -> ReportResult<String> {
-    let path = store.root().join(".export-lineage.lock");
-    let lock = std::fs::OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .truncate(false)
-        .open(&path)
-        .map_err(|source| io_error(&path, source))?;
-    lock.lock().map_err(|source| io_error(&path, source))?;
-    let identity = retained_identity(store)?;
-    if !hex_digest(&identity) {
-        return Err(invalid("malformed persisted export store identity"));
-    }
-    Ok(identity)
-}
-
-fn retained_identity(store: &Store) -> ReportResult<String> {
-    let retained = store.journal_payloads("export-lineage-v1")?;
-    match retained.as_slice() {
-        [] => create_identity(store),
-        [value] => value
-            .as_str()
-            .ok_or_else(|| invalid("malformed durable export store identity"))
-            .map(str::to_string),
-        _ => Err(invalid("multiple durable export store identities")),
-    }
-}
-
-fn create_identity(store: &Store) -> ReportResult<String> {
-    let created = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_err(|error| invalid(&format!("creating export store identity: {error}")))?;
-    let identity = digest(&(
-        store.root().display().to_string(),
-        created.as_secs(),
-        created.subsec_nanos(),
-    ))?;
-    store.journal_done("export-lineage-v1", "store-identity", &identity)?;
-    Ok(identity)
+    Ok(store.store_identity()?.into())
 }
 
 fn hex_digest(value: &str) -> bool {

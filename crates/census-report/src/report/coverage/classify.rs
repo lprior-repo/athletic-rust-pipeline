@@ -300,11 +300,12 @@ fn bump(counter: &mut usize) {
 }
 
 fn compute_terminal_failures(dataset: &ExportDataset) -> BTreeMap<String, usize> {
-    let mut failures = BTreeMap::new();
+    let mut failures: BTreeMap<String, usize> = BTreeMap::new();
     for condition in &dataset.source_access {
         if condition.is_blocking(dataset.lineage.generated_on.as_str()) {
             let key = format!("{}:{}", condition.source, condition.kind.slug());
-            *failures.entry(key).or_insert(0) += 1;
+            let entry = failures.entry(key).or_insert(0);
+            *entry = entry.saturating_add(1);
         }
     }
     failures

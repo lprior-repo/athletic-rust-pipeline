@@ -78,7 +78,7 @@ fn ct_recorded_directory_keeps_every_named_school_table() -> TestResult {
     };
     let published = html.matches("<table class='DirectoryStaffTable'>").count();
     check!(published > 0, "a replay must publish school tables");
-    let parsed = census_crawl::ciac::parse_directory(&html);
+    let parsed = census_crawl::ciac::parse_directory(&html)?;
     check!(eq; parsed.len(), published);
     let empty: Vec<_> = parsed
         .iter()

@@ -113,10 +113,10 @@ rather than minted as a director, and the member row itself is still written (se
 
 A row whose person name is empty, whose position is not an identifiable coaching role, whose sport
 is outside Cross Country and Track, or whose level label states a division other than varsity (`Coed
-Unified`, `Coed Middle School`, `Boys JV` — matched as a substring, so `Varsity` and `- Varsity`
-both count) is dropped without a coach row and without an absence claim: the endpoint is partial
+Unified`, `Coed Middle School`, `Boys JV`, `Junior Varsity` — sub-varsity prefixes like Junior and JV
+are excluded; absent or unparsable levels are rejected; `Varsity` and `- Varsity` are admitted) is
+dropped without a coach row and without an absence claim: the endpoint is partial
 across sports by design, so a missing row is not evidence of no coach.
-
 Every member row with a name is written as a canonical school plus a source observation keyed by
 the source namespace; the contact only decides whether an athletic-director coach row is written
 alongside it. Coach completion is keyed by jurisdiction, organisation and public school owner,

@@ -21,17 +21,24 @@ pub(super) struct StageTotals {
 
 impl StageTotals {
     pub(super) fn observe(&mut self, row: &CoverageRow) {
-        for (index, key) in STAGES.iter().enumerate() {
+        for ((sum, declared), key) in self
+            .sums
+            .iter_mut()
+            .zip(self.declared.iter_mut())
+            .zip(STAGES.iter())
+        {
             if let Some(value) = row.metrics.get(*key) {
                 let value = usize::try_from(*value).map_or(usize::MAX, std::convert::identity);
-                self.sums[index] = self.sums[index].saturating_add(value);
-                self.declared[index] = self.declared[index].saturating_add(1);
+                *sum = sum.saturating_add(value);
+                *declared = declared.saturating_add(1);
             }
         }
     }
 
     fn measured(&self, index: usize, rows: usize) -> Option<usize> {
-        (rows > 0 && self.declared[index] == rows).then_some(self.sums[index])
+        let sum = self.sums.get(index).copied()?;
+        let declared = self.declared.get(index).copied()?;
+        (rows > 0 && declared == rows).then_some(sum)
     }
 
     pub(super) fn population(&self, rows: usize) -> SourcePopulation {

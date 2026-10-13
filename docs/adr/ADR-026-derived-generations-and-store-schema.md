@@ -121,6 +121,87 @@ publication or a moved-evidence decision as retriable). Dated command evidence i
 the verification ledger (removed 2026-10-09); the fault matrix remains owned by
 [NATIONAL-CENSUS-FAULTS.md](../NATIONAL-CENSUS-FAULTS.md).
 
+## 2026-10-13: snapshot-bound application continuation
+
+School-address application reads school ownership and current review-case presence together. An
+entity-only fence cannot express the complete dependency: a replacement must target the derived
+partition that supplied the decision. `StoreSnapshot::revision()` therefore exposes an opaque,
+nonserializable token binding the originating store instance, evidence generation and derived
+partition. Store clones share the same instance identity; another open instance cannot supply a
+token merely because its numeric coordinates match.
+
+`StoreBatch::commit_once_at_revision` checks that origin and both coordinates under append
+serialization before checking a historical receipt. Effects, a versioned application witness and
+receipt commit together with `SyncData`. The returned `RevisionedApplication` contains the existing
+`Application` outcome and the exact revision captured before releasing the lock. A successful
+first application advances continuation only by its own write; a strict repeat returns the
+unchanged accepted coordinates. It cannot refresh an already-stale decision across another writer.
+The existing commit APIs and their repeat-before-evidence-check behavior remain unchanged.
+
+The address join uses one initial snapshot for both review presence and school iteration, and
+commits each complete school/co-op mutation group before continuing to an independent target.
+A concurrent entity mutation or derived publication refuses the next stale group, preserving
+prior committed targets. A later invocation takes a fresh view and recomputes the ordinary report;
+it never skips a whole generation or replays an old report over newly discovered schools.
+Review-containing application identities bind the physical derived partition. If a later partition
+omits a previously applied Pending case, fresh recomputation can insert that genuinely missing
+case without duplicating unchanged school observations. Existing decided cases remain present.
+
+This adds ephemeral API types and a versioned journal payload, without changing persisted Receipt,
+physical store schema, public workflow wires, source qualification or census acceptance. Legacy
+facts are retained without fabricated application receipts. Resource admission is fail-closed for
+a whole target; it does not split an inseparable co-op group to bypass byte ceilings. Diagnostic
+report files remain recomputable outputs rather than the transaction's durable authority.
+
+The school-address application v1 scope and witness records declare serialized fields in lexical
+key order, including nested lane and effect bindings. Their streaming typed JSON digests therefore
+match digests recomputed from the journal's retained JSON values. The effects array preserves
+first-occurrence School append order; only the scope's lane-reference set is sorted. This is a
+local v1 witness encoding contract, not a change to the shared `serialized_digest` helper or
+existing payload encodings. Retained-witness regression checks bind these bytes to actual receipt
+keys and fail if a field-order change silently changes that contract.
+
+## 2026-10-13: store-owned stable lineage and pinned identity reads
+
+`census-store` owns the existing `export-lineage-v1/store-identity` journal record. The domain
+`StoreIdentity` validates exactly 64 ASCII hexadecimal bytes and preserves their spelling,
+including previously accepted uppercase identities. It is not interchangeable with the
+lowercase-only publication digest. Existing publication and frozen-v2 lowercase checks remain.
+
+`Store::store_identity` serializes check/create with the owning store's append mutex and commits
+a genuinely absent identity through the existing inline `SyncData` journal operation. It retains
+the original creation digest inputs and journal envelope. Reading an existing canonical record
+performs no write and does not refresh its timestamp. Moving or reopening a store adopts that
+same identity rather than deriving a replacement from its new path. No physical schema, key
+format, receipt, run manifest or publication-policy revision changes for this ownership move.
+The old optional `.export-lineage.lock` file is left untouched and is no longer needed.
+
+Identity inspection uses one pinned view, examines at most two physical records under the phase,
+and checks the sole value against the existing journal byte ceiling before parsing. Multiple,
+foreign-key, malformed or chunk/object/alias representations refuse without replacement. The
+canonical inline interpretation intentionally closes an older reader's accidental acceptance of
+a sole payload under an unrelated key. Supported canonical historical envelopes remain unchanged;
+refusal is not permission to rewrite unsupported retained bytes.
+
+`StoreSnapshot::store_identity` reads only that snapshot and never initializes or takes the
+append mutex. Snapshot-based report derivation requires identity initialization before capturing
+the view. A snapshot predating initialization remains missing even after a live writer creates
+the record. `StoreSnapshot::ensure_origin` reuses the opaque instance capability from
+`StoreRevision`, without imposing current-generation equality: a same-origin historical view
+remains usable, while another store's view is refused before report row decoding. This also
+permits report derivation from an initialized `FencedSnapshot` without reentering its mutex.
+
+All report capture and reconciliation-stage entry points initialize outside the snapshot/fence;
+report serialization adapters no longer own identity persistence. The generic journal API is not
+a separate identity owner. Deliberate raw journal corruption remains an integrity refusal, not a
+supported identity transition. Live run-manifest metadata is still read separately by existing
+lineage/token code; this change does not claim all run metadata is snapshot-pinned.
+
+This is a prerequisite for installation/profile contracts. It does not register those contracts,
+enroll reusable production, migrate a historical corpus or relax fresh-qualification and release
+requirements. Source evidence and derived generations do not move merely because identity is
+initialized, although the global storage sequence can advance for that durable journal write.
+
 ## Integration amendment: retained identity closure and atomic provenance (2026-10-13)
 
 A retained machine-generated identity finding may be superseded only by one current, admissible,

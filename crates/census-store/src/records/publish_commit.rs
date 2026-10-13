@@ -19,6 +19,7 @@ fn record_key(identity: &Digest) -> String {
 fn active_key(namespace: &Digest) -> String {
     format!("publication/v1/active/{}", namespace.as_str())
 }
+const MAX_RETAINED_REQUESTS: usize = 4096;
 
 impl Store {
     pub fn publication_read(&self, identity: &Digest) -> StoreResult<Option<Intent>> {
@@ -26,6 +27,24 @@ impl Store {
     }
     pub fn publication_active(&self, namespace: &Digest) -> StoreResult<Option<Intent>> {
         read(self, &active_key(namespace))
+    }
+    pub fn publication_requested(&self, namespace: &Digest) -> StoreResult<Option<Intent>> {
+        let mut requested = None;
+        for guard in self
+            .meta
+            .prefix(b"publication/v1/request/")
+            .take(MAX_RETAINED_REQUESTS)
+        {
+            let value = guard
+                .value()
+                .map_err(|source| StoreError::Read { source })?;
+            let intent: Intent = decode("publication/v1/request", value.as_ref())?;
+            if intent.request.namespace == *namespace && intent.state == State::Requested {
+                requested = Some(intent);
+                break;
+            }
+        }
+        Ok(requested)
     }
     pub fn publication_request(&self, request: Request) -> StoreResult<Intent> {
         let _writes = self.lock_appends();
@@ -132,6 +151,13 @@ impl Store {
     pub fn publication_mark(&self, intent: &Intent, state: State) -> StoreResult<Intent> {
         let _writes = self.lock_appends();
         mark(self, intent, state)
+    }
+    pub fn publication_lease_renew(&self, identity: &Digest, epoch: u64) -> StoreResult<()> {
+        let expires = chrono::Utc::now()
+            .checked_add_signed(chrono::Duration::minutes(30))
+            .ok_or(StoreError::CounterOverflow)?
+            .to_rfc3339();
+        self.lease_renew(identity.as_str(), epoch, &expires)
     }
 }
 

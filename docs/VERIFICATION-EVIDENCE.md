@@ -1060,3 +1060,36 @@ The collision-bound scenarios must therefore be re-run after that run finishes o
   the scenario asserts `true`. Raising the migration's window is an ADR-036 decision, not a silent
   harness fix.
 
+## v20–v29 P2 repair acceptance (2026-10-13, revision f39d8c52 + ea242008)
+
+  The five v20–v29 P2 repairs (TFRRS-CONVERSION-01 `u5kk`, GATE-RATCHET-01 `hvcx`,
+  IDENTITY-CASE-01 `eq42`, ADDRESS-CAPTURE-01 `qg3z`, ADDRESS-CAPTURE-02 `rpnh`) and the
+  TEST-FIXTURE-01 prerequisite (`yor5`) are verified through `tools/p2-acceptance.sh`, which runs every
+  lane through `tools/moon-local` only. Observed on the working tree whose integration commit is
+  f39d8c52 (the earlier session's full pass: `pipeline:tests` 4244 passed / 4 skipped,
+  `pipeline:lint-src` clean) and whose acceptance-runner commit is ea242008:
+
+  - `report-selection` (`pipeline:tests-scoped -- -p census-report -E 'test(ties) + test(adjustment)'`):
+    28 tests run, 28 passed, 513 skipped. Covers the adjusted-versus-actual mark retention
+    (`a_track_size_conversion_keeps_the_original_and_the_adjusted_mark`,
+    `an_unreadable_conversion_original_keeps_the_note_and_the_unknown_basis`) plus the selection and
+    workbook tie/forgery expectations.
+  - `xtask-ratchet` (`pipeline:tests-scoped -- -p xtask -E 'test(ratchet)'`): 3 tests run, 3 passed,
+    278 skipped. Covers the strict-clippy measurement path that must not report success without a
+    complete measurement.
+  - `reconcile-identity` (`pipeline:tests-scoped -- -p census-reconcile -E 'test(supersed)'`): 3 tests
+    run, 3 passed, 59 skipped.
+  - `domain-identity` (`pipeline:tests-scoped -- -p census-domain -E 'test(identity)'`): 35 tests run,
+    35 passed, 322 skipped.
+  - TEST-FIXTURE-01 tracking evidence (static): `git ls-files` lists all five
+    `crates/census-crawl/tests/fixtures/coach_lane_captures/**` files and
+    `research/sources/coach-coverage-bundle-20261004/state-work-orders/{group-a,group-b,group-c}.md`;
+    `git check-ignore` reports none of the three work orders ignored (exit 1, no output); commit
+    524717c2 contains exactly the five fixture files plus the CA/CT/FL reader repoint (8 files,
+    554 insertions).
+  - Deferred while wave-1 workers hold the crates: `crawl-tfrrs`, `service-capture`,
+    `service-provenance`, `coach-lane-fixtures` (census-crawl / census-service under edit), the slow
+    `--gate` selected strict-ratchet lane (`pipeline:gate -- --lane ratchet`) and the `--fresh`
+    worktree lane. All five P2 beads stay open until their lane evidence above is complete and the
+    deferred lanes have run.
+

@@ -133,6 +133,30 @@ identity, real Coverage-sheet readback after mutation and reopen, each table's i
 fence, and historical-state preservation. A source change or this record is not evidence that those
 checks or release requirements passed.
 
+## Deterministic equal-mark amendment — 2026-10-13
+
+Publication semantic policy revision 9 selects an equal numeric mark by earliest known exact
+performance date, then ascending stable performance ID. A known date must have exactly the ASCII
+YYYY-MM-DD form and be a valid calendar date. Partial years, missing dates and malformed dates
+remain unknown and follow known dates; they are never expanded to an invented day. When both
+dates are unknown, only stable performance ID decides. Meet ID is not a tie-break key. An
+identical ordering key does not replace itself. Time, distance and score comparison directions,
+comparison classes, source scope and retained-context conflict quarantine remain unchanged.
+
+The current retained evidence model has no qualified source-authority ranking. Policy 9 therefore
+assigns equal provenance preference to all otherwise eligible candidates. Parsed/Fetched/Derived
+are evidence-processing methods, not authority tiers; provider names and capture recency do not
+establish quality. This is the documented uniform preference for current data, not a claim that
+stronger source-quality adjudication is implemented. A future quality preference requires retained
+qualification evidence and a separate semantic-policy revision.
+
+All consumers use the shared best-mark reducer. Historical policy-8 and earlier inputs and
+publication generations remain byte-preserved and are refused by the current verifier. No retry
+rewrites an old archive under the new tie rule. Logical schema remains 2 and physical codec/token
+protocol remains 2. Regression obligations include input-order/replay invariance, exact and unknown
+dates, stable-ID ties, unchanged numeric comparisons and workbook/recruiting agreement with the
+same frozen selected performance and source provenance.
+
 ## Consequences
 
 Scope, cohort and evidence semantics are the derivation's, not each sheet's; a sheet that wants a
@@ -141,8 +165,44 @@ filter pass per derivation, measured per [xtask procedures](../../xtask/README.m
 pass is O(rows) over borrowed rows and does not re-decode. Fixtures and tests build derivations from
 a dataset instead of asserting on store states that bypass the derivation.
 
+
+## Historical PR affiliation completeness amendment — 2026-10-13
+
+Publication semantic policy revision 10 never fills a missing performance-time school or state
+from the athlete's current school. The shared best-mark reducer follows only the performance's
+team and that team's retained school. Missing parents produce an unknown historical school/state;
+a retained historical school with unknown state keeps its name and the Unknown jurisdiction bucket.
+This does not discard a valid mark or change its athlete, team, meet, source or selected-result
+identity. Current recruiting-directory affiliation and population membership are unchanged.
+
+All PR projections, sorted selections, CSV/JSONL output and workbook readback consume that shared
+result. Policy-9 and earlier inputs/generations remain byte-preserved historical evidence and are
+refused by the current verifier rather than relabeled or rewritten. Logical export schema 2,
+manifest codec 2 and token protocol 2 remain unchanged. Dated current-school affiliation and
+configurable profile membership remain separate, unfinished end-vision requirements.
+
+## Historical parent geography amendment — 2026-10-13
+
+Publication semantic policy revision 11 separates population geography from historical result
+parents. An admitted athlete's retained performance may name a school or meet outside the
+population geography. The shared derivation exposes borrowed historical-school and historical-meet
+views to both PR selection and performance projection; Core still requires Core-evidenced meet
+metadata. Missing parents stay unknown, and neither historical affiliation nor venue changes the
+athlete's population membership or current recruiting-directory join.
+
+This restores comparable bests whose eligible out-of-geography meet context was previously hidden,
+as well as their actual venue and historical school metadata. Directory schools, population
+jurisdiction denominators, outside-scope notes and current-school contacts retain their existing
+scope. Referenced historical parents remain in the frozen evidence even when they are absent from
+the current directory. Census, coverage and workbook method notes distinguish excluded population
+counts from retained historical metadata. Policy-10 and earlier artifacts are retained and refused for current-policy
+acceptance without rewriting. Frozen logical schema, manifest codec and token protocol remain 2.
+Configurable profiles and dated current affiliation are still separate unfinished requirements.
+
 ## 2026-10-13: concurrent policy integration
 
-The PR9/PR10 lineage and independently updated main both allocated schema 2 / policy 8 to different contracts. This integration allocates policy 12, beyond policies 9, 10, and 11 already used by other branches. It combines retained-context conflict quarantine, required frozen coverage and coach-lane evidence, and adjustment-aware comparison and publication. Schema 2 remains: coverage arrays remain required and the adjustment field is optional with an absent default.
+The PR9/PR10 lineage and independently updated main both allocated schema 2 / policy 8 to different contracts. Pushed commit `e0d062ac` allocated schema 2 / policy 12 for retained-context conflict quarantine, required frozen coverage and coach-lane evidence, and adjustment-aware comparison and publication. Policy 12 remains a distinct historical contract; its captures cannot be assumed to include later best-mark semantics.
 
-Generation, frozen token, and publication recipe identities bind the combined policy. Prior policies, including both independent schema-2/policy-8 representations, are refused before current decoding or recovery. Refusal preserves archived bytes, objects, root markers, retained records and leases in every historical state. There is no in-place migration, retagging, or hydration from current coverage. New acceptance requires an explicitly selected current generation. Future branch integration must reconcile semantics rather than replace this revision with a smaller independently allocated constant.
+This main integration allocates **policy 13**. It combines policy 12's integrity and coverage contracts with earliest-known-date best-mark tie selection, historical performance affiliation, and retained historical result-parent geography from the independently allocated policies 9, 10, and 11. These changes can alter selected winners and their published parents, so keeping policy 12 would silently reinterpret an already issued input. Schema 2 remains: coverage arrays remain required and the adjustment field is optional with an absent default. Manifest codec 2, token protocol 2 and the physical Fjall schema remain unchanged.
+
+Generation, frozen token, and publication recipe identities bind policy 13. Prior policies, including both independent schema-2/policy-8 representations and pushed schema-2/policy-12 inputs, are refused before current decoding or recovery. Refusal preserves archived bytes, objects, root markers, retained records and leases in every historical state. There is no in-place migration, retagging, or hydration from current coverage. New acceptance requires an explicitly selected current generation. Future branch integration must reconcile semantics rather than replace this revision with a smaller independently allocated constant.

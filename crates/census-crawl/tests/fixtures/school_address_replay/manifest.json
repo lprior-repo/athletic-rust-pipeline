@@ -4,21 +4,21 @@
   "captures": [
     {
       "format": "nces-ccd",
-      "path": "../nces/ccd_sch_029_2526_head.csv",
+      "path": "nces/ccd_sch_029_2526_head.csv",
       "url": "https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2526_w_0a_050626.zip",
       "retrieved_at": "2026-09-28",
       "sha256": "e01af083baa57b60f37571f9607aa8ebe9b225712563ec9f10fd8809fab661c8"
     },
     {
       "format": "nces-pss",
-      "path": "../nces/pss2324_pu_head.csv",
+      "path": "nces/pss2324_pu_head.csv",
       "url": "https://nces.ed.gov/surveys/pss/zip/pss2324_pu_csv.zip",
       "retrieved_at": "2026-09-28",
       "sha256": "2df29d5c9f669b698ac8b7471297ecc0ac1c9fbc103a1b4914462a7d61fabca6"
     },
     {
       "format": "state-ed-profile",
-      "path": "../state_ed/profile_kingston.html",
+      "path": "state_ed/profile_kingston.html",
       "url": "https://data.nysed.gov/profile.php?instid=800000038718",
       "retrieved_at": null,
       "sha256": "6d720faec71b6dbf30eddb8045262e78daf62931d805a2a501f9eefa12442830"

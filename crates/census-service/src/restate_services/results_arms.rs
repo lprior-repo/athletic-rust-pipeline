@@ -141,9 +141,7 @@ pub(super) async fn results_stage(
 }
 
 fn required(source: &census_crawl::SourceDescriptor) -> bool {
-    arm_for(source.slug).is_some()
-        || source.capabilities.bulk_results
-        || source.capabilities.pr_evidence
+    arm_for(source.slug).is_some() || source.capabilities.bulk_results
 }
 
 fn required_slug(source: &'static census_crawl::SourceDescriptor) -> Option<&'static str> {

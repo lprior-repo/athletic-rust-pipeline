@@ -1,3 +1,5 @@
+mod lineage_derive_tests;
+
 use census_domain::model::{
     AppliedAthleteIdentity, AppliedIdentityKind, CanonicalAthlete, CanonicalSchool, Evidence,
     Gender, GradYear, IdentityStatus, ReviewCase, ReviewState, ReviewVerdictRecord, SourceIdentity,

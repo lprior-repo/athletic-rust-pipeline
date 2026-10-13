@@ -1,6 +1,7 @@
 mod capture;
 
 use capture::{hex, io, load, preserve, publish, refused, MAX_CAPTURE_BYTES};
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use census_store::Store;
@@ -10,6 +11,8 @@ use super::{JoinError, JoinReport, Overrides, Report, SchoolAddressArgs};
 
 const MAX_MANIFEST_BYTES: u64 = 64 * 1024;
 const MAX_CAPTURES: usize = 256;
+
+type AcquisitionProvenance = BTreeMap<(String, String), (String, Option<String>)>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ReplayError {
@@ -100,6 +103,10 @@ impl Replay {
         &self.digest
     }
 
+    pub fn archive(&self) -> &Path {
+        &self.archive
+    }
+
     pub fn overrides(&self) -> &Overrides {
         &self.overrides
     }
@@ -115,14 +122,11 @@ impl Replay {
     }
 }
 
-fn ensure_contained(out: &Path, archive: &Path) -> Result<(), ReplayError> {
-    let root = std::fs::canonicalize(out).map_err(|source| io(out, source))?;
-    let directory = std::fs::canonicalize(archive).map_err(|source| io(archive, source))?;
-    if !directory.starts_with(&root) {
-        return Err(refused(
-            archive,
-            "retained capture directory escapes the output root",
-        ));
+fn ensure_contained(root: &Path, path: &Path, detail: &str) -> Result<(), ReplayError> {
+    let canonical_root = std::fs::canonicalize(root).map_err(|source| io(root, source))?;
+    let canonical_path = std::fs::canonicalize(path).map_err(|source| io(path, source))?;
+    if !canonical_path.starts_with(&canonical_root) {
+        return Err(refused(path, detail));
     }
     Ok(())
 }
@@ -139,34 +143,21 @@ pub fn run(manifest_path: &Path, out: &Path) -> Result<Replay, ReplayError> {
             "expected schema 1 and 1..=256 captures",
         ));
     }
-    let mut args = arguments(out, manifest.month);
-    let mut acquisitions = Vec::new();
-    let mut seen: std::collections::BTreeMap<PathBuf, (String, Option<String>)> =
-        std::collections::BTreeMap::new();
     let base = manifest_path
         .parent()
         .ok_or_else(|| refused(manifest_path, "no manifest parent"))?;
     let archive = out.join("captures").join(hex(&bytes));
     std::fs::create_dir_all(&archive).map_err(|source| io(&archive, source))?;
-    ensure_contained(out, &archive)?;
+    ensure_contained(
+        out,
+        &archive,
+        "retained capture directory escapes the output root",
+    )?;
     preserve(&archive.join("manifest.json"), &bytes)?;
-
-    for (i, capture) in manifest.captures.iter().enumerate() {
-        let path = base.join(&capture.path);
-        retain_acquisition_provenance(&mut seen, &path, capture)?;
-        let entry =
-            u32::try_from(i).map_err(|_| refused(&path, "too many captures for u32 index"))?;
-        stage_capture(
-            capture,
-            &path,
-            &archive,
-            entry,
-            &mut args,
-            &mut acquisitions,
-        )?;
-    }
-
+    let mut args = arguments(out, manifest.month);
+    let acquisitions = stage_captures(base, &manifest.captures, &archive, &mut args)?;
     let overrides = Overrides::from_acquisitions(acquisitions)?;
+    preserve(&archive.join(".complete"), b"")?;
     super::run(&args)?;
     let generation = super::verify_current(out).map_err(JoinError::from)?;
     let report: Report = serde_json::from_slice(
@@ -184,34 +175,34 @@ pub fn run(manifest_path: &Path, out: &Path) -> Result<Replay, ReplayError> {
     })
 }
 
-fn retain_acquisition_provenance(
-    seen: &mut std::collections::BTreeMap<PathBuf, (String, Option<String>)>,
-    path: &Path,
-    capture: &Capture,
-) -> Result<(), ReplayError> {
-    let canonical = std::fs::canonicalize(path).map_err(|source| io(path, source))?;
-    let tuple = (capture.url.clone(), capture.retrieved_at.clone());
-    match seen.get(&canonical) {
-        Some(existing) if *existing != tuple => {
-            let differs = match (existing.0 != tuple.0, existing.1 != tuple.1) {
-                (true, true) => "url and date",
-                (true, false) => "url",
-                (false, true) => "date",
-                (false, false) => "provenance",
-            };
+fn stage_captures(
+    base: &Path,
+    captures: &[Capture],
+    archive: &Path,
+    args: &mut SchoolAddressArgs,
+) -> Result<Vec<super::Acquisition>, ReplayError> {
+    let mut acquisitions = Vec::new();
+    acquisitions
+        .try_reserve_exact(captures.len())
+        .map_err(|error| refused(archive, &error.to_string()))?;
+    let mut seen = AcquisitionProvenance::new();
+    for (i, capture) in captures.iter().enumerate() {
+        if capture.path.is_absolute() {
             return Err(refused(
-                path,
-                &format!(
-                    "capture acquisition conflict: different provenance tuples for the same body ({differs} differ)"
-                ),
+                &capture.path,
+                "capture path must be relative to the source root",
             ));
         }
-        Some(_) => {}
-        None => {
-            seen.insert(canonical, tuple);
-        }
+        let path = base.join(&capture.path);
+        let canonical = std::fs::canonicalize(&path).map_err(|source| io(&path, source))?;
+        ensure_contained(base, &canonical, "capture escapes the declared source root")?;
+        let entry =
+            u32::try_from(i).map_err(|_| refused(&path, "too many captures for u32 index"))?;
+        acquisitions.push(stage_capture(
+            capture, &canonical, archive, entry, args, &mut seen,
+        )?);
     }
-    Ok(())
+    Ok(acquisitions)
 }
 
 fn stage_capture(
@@ -220,8 +211,8 @@ fn stage_capture(
     archive: &Path,
     entry: u32,
     args: &mut SchoolAddressArgs,
-    acquisitions: &mut Vec<super::Acquisition>,
-) -> Result<(), ReplayError> {
+    seen: &mut AcquisitionProvenance,
+) -> Result<super::Acquisition, ReplayError> {
     let bytes = load(path, MAX_CAPTURE_BYTES)?;
     let digest = hex(&bytes);
     if digest != capture.sha256 {
@@ -233,20 +224,48 @@ fn stage_capture(
             ),
         ));
     }
+    retain_acquisition_provenance(seen, path, capture, &digest)?;
     let staged = archive.join(digest);
-    let provider = capture.format.provider();
-
-    acquisitions.push(super::Acquisition {
+    preserve(&staged, &bytes)?;
+    capture.format.add(args, staged.clone())?;
+    Ok(super::Acquisition {
         entry,
-        provider: provider.to_string(),
+        provider: capture.format.provider().to_string(),
         path: staged.display().to_string(),
         url: capture.url.clone(),
         retrieved_at: capture.retrieved_at.clone(),
-    });
+    })
+}
 
-    preserve(&staged, &bytes)?;
-    capture.format.add(args, staged)?;
-    Ok(())
+fn retain_acquisition_provenance(
+    seen: &mut AcquisitionProvenance,
+    path: &Path,
+    capture: &Capture,
+    digest: &str,
+) -> Result<(), ReplayError> {
+    let key = (capture.format.provider().to_string(), digest.to_string());
+    let tuple = (capture.url.clone(), capture.retrieved_at.clone());
+    match seen.get(&key) {
+        Some(existing) if *existing != tuple => {
+            let differs = match (existing.0 != tuple.0, existing.1 != tuple.1) {
+                (true, true) => "url and date",
+                (true, false) => "url",
+                (false, true) => "date",
+                (false, false) => "provenance",
+            };
+            Err(refused(
+                path,
+                &format!(
+                    "capture acquisition conflict: different provenance tuples for the same body ({differs} differ)"
+                ),
+            ))
+        }
+        Some(_) => Ok(()),
+        None => {
+            seen.insert(key, tuple);
+            Ok(())
+        }
+    }
 }
 
 fn arguments(out: &Path, month: String) -> SchoolAddressArgs {

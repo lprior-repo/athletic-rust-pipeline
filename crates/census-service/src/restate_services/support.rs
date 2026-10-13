@@ -35,8 +35,11 @@ impl From<StoreError> for JobError {
             | StoreError::Write { .. }
             | StoreError::Io { .. }
             | StoreError::PublicationRefused { .. }
-            | StoreError::EvidenceMoved { .. } => Self::Transient { message },
+            | StoreError::EvidenceMoved { .. }
+            | StoreError::RevisionMoved { .. } => Self::Transient { message },
             StoreError::Decode { .. }
+            | StoreError::StoreIdentity(_)
+            | StoreError::StoreLineage(_)
             | StoreError::Json { .. }
             | StoreError::SnapshotRow { .. }
             | StoreError::ObservationReplacement { .. }
@@ -70,6 +73,7 @@ impl From<StoreError> for JobError {
             | StoreError::CounterExhausted
             | StoreError::DiskBudgetExceeded { .. }
             | StoreError::InputMoved { .. }
+            | StoreError::RevisionOriginMismatch { .. }
             | StoreError::Invariant { .. } => Self::Terminal { message },
         }
     }

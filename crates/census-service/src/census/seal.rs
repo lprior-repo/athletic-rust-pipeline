@@ -106,14 +106,14 @@ pub fn seal(store: &Store, request: &SealRequest) -> Result<SealOutcome, SealWor
     let access = &dataset.source_access;
     let evidence = assemble(&coverage, &census, &stats, cases, access, request, workbook);
 
-    let mut state = reached_phase(&stats, &path)
-        .map_err(|error| SealWorkflowError::PhaseDetection(error.to_string()))?;
     let recorded = recorded_seal(store)
         .map_err(|error| SealWorkflowError::SealRecording(error.to_string()))?;
     let source_fence = store.fenced_snapshot();
     dataset
         .ensure_snapshot(source_fence.view())
         .map_err(|error| SealWorkflowError::Workbook(error.to_string()))?;
+    let mut state = reached_phase(&stats, &path, &evidence)
+        .map_err(|error| SealWorkflowError::PhaseDetection(error.to_string()))?;
     let refusal = state
         .seal(evidence.clone())
         .err()

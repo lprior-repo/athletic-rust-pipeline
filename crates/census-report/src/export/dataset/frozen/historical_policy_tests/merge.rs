@@ -3,7 +3,7 @@ use super::super::{generation, INPUT_TABLES, POLICY_REVISION};
 use super::*;
 use crate::export::ExportDataset;
 
-const PRIOR_POLICIES: [u32; 4] = [8, 9, 10, 11];
+const PRIOR_POLICIES: [u32; 5] = [8, 9, 10, 11, 12];
 const PRIOR_STATES: [Option<InputState>; 5] = [
     None,
     Some(InputState::Requested),
@@ -13,9 +13,9 @@ const PRIOR_STATES: [Option<InputState>; 5] = [
 ];
 
 fn prior_manifest(current: &FrozenManifest, policy: u32) -> TestResult<FrozenManifest> {
-    check!(eq; POLICY_REVISION, 12);
+    check!(eq; POLICY_REVISION, 13);
     check!(eq; current.lineage.schema_revision, 2);
-    check!(eq; current.lineage.policy_revision, 12);
+    check!(eq; current.lineage.policy_revision, 13);
     let mut prior = current.clone();
     prior.lineage.policy_revision = policy;
     prior.lineage.input_generation = generation(&prior.lineage)?;
@@ -37,7 +37,7 @@ fn install_prior_policy(
     check!(matches!(
         FrozenManifest::decode(&encoded),
         Err(FrozenCodecError::UnsupportedVersion { what: "manifest lineage", ref found, ref supported })
-            if found.contains(&expected) && supported == "schema revision 2 policy revision 12"
+            if found.contains(&expected) && supported == "schema revision 2 policy revision 13"
     ));
     let manifest_digest = objects::install(&objects::directory(directory), &encoded)?;
     check!(eq; objects::read(&objects::directory(directory), &manifest_digest, objects::MANIFEST_CEILING)?, encoded);
@@ -63,7 +63,7 @@ fn refused_prior_policy(store: &Store, job: &str, policy: u32) -> TestResult {
         Err(ReportError::ArtifactCorrupt { ref detail, .. })
             if detail.contains("unsupported manifest lineage")
                 && detail.contains(&expected)
-                && detail.contains("schema revision 2 policy revision 12")
+                && detail.contains("schema revision 2 policy revision 13")
     ));
     Ok(())
 }
@@ -94,7 +94,7 @@ fn policy_preserved(policy: u32, state: Option<InputState>) -> TestResult {
 }
 
 #[test]
-fn policy_twelve_preserves_prior_policies_eight_through_eleven_in_every_retained_state(
+fn policy_thirteen_preserves_prior_policies_eight_through_twelve_in_every_retained_state(
 ) -> TestResult {
     PRIOR_POLICIES.into_iter().try_for_each(|policy| {
         PRIOR_STATES
@@ -152,7 +152,7 @@ fn archive_preserved(policy: u32, coverage: PriorCoverage) -> TestResult {
     let seeded = seeded_store()?;
     let store = seeded.store;
     let dataset = ExportDataset::load(&store)?;
-    check!(eq; dataset.lineage.policy_revision, 12);
+    check!(eq; dataset.lineage.policy_revision, 13);
     let retained = prior_archive(&dataset, &store, policy, coverage)?;
     let path = seeded.directory.path().join("prior-policy.json");
     std::fs::write(&path, &retained)?;
@@ -179,14 +179,15 @@ fn archive_preserved(policy: u32, coverage: PriorCoverage) -> TestResult {
 }
 
 #[test]
-fn policy_twelve_refuses_prior_full_coverage_archives_and_preserves_their_bytes() -> TestResult {
+fn policy_thirteen_refuses_prior_full_coverage_archives_and_preserves_their_bytes() -> TestResult {
     PRIOR_POLICIES
         .into_iter()
         .try_for_each(|policy| archive_preserved(policy, PriorCoverage::Captured))
 }
 
 #[test]
-fn policy_twelve_refuses_main_policy_eight_archive_before_missing_coverage_decode() -> TestResult {
+fn policy_thirteen_refuses_main_policy_eight_archive_before_missing_coverage_decode() -> TestResult
+{
     archive_preserved(8, PriorCoverage::Missing)
 }
 
@@ -240,7 +241,7 @@ fn main_style_preserved(state: Option<InputState>) -> TestResult {
 }
 
 #[test]
-fn policy_twelve_refuses_main_policy_eight_missing_coverage_manifest_without_retirement(
+fn policy_thirteen_refuses_main_policy_eight_missing_coverage_manifest_without_retirement(
 ) -> TestResult {
     PRIOR_STATES.into_iter().try_for_each(main_style_preserved)
 }

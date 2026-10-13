@@ -1,5 +1,5 @@
 use super::*;
-use census_store::publish::{Digest, Intent, Request, Root, State};
+use census_store::publish::{Digest, InputFence, Intent, Request, Root, State};
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 struct Fixture {
@@ -329,4 +329,150 @@ fn publication_recovery_expired_lease_retains_prior_epoch_evidence() -> TestResu
     check!(eq; retained.request.namespace, f.intent.request.namespace);
     check!(eq; retained.request.input, f.intent.request.input);
     f.preserved()
+}
+
+#[test]
+fn publication_recovery_requested_expired_lease_is_repaired() -> TestResult {
+    let temp = tempfile::tempdir()?;
+    let store = Store::open(temp.path().join("store"))?;
+    let root = temp.path().join("publication");
+    std::fs::create_dir_all(root.join("generations"))?;
+    let namespace = binding::namespace(&root)?;
+    let identity = binding::digest(&("matrix", &namespace))?;
+    let expires = chrono::Utc::now()
+        .checked_add_signed(chrono::Duration::seconds(1))
+        .ok_or("expiry overflow")?
+        .to_rfc3339();
+    let epoch = store.lease_acquire(identity.as_str(), "workbook-publication", &expires)?;
+    let request = store.publication_request(census_store::publish::Request {
+        namespace,
+        identity,
+        expected: Root::Absent,
+        input: InputFence {
+            lineage: binding::digest(&("lineage"))?,
+            token: binding::digest(&("token"))?,
+            recipe: binding::digest(&("recipe"))?,
+            run_manifest: None,
+            evidence_generation: store.evidence_generation(),
+            derived_generation: store.derived_generation(),
+        },
+        lease_epoch: epoch,
+    })?;
+    std::thread::sleep(std::time::Duration::from_secs(2));
+    let outcome = recover_publication(&store, &root)?;
+    check!(eq; outcome, RecoveryOutcome::NoIntent);
+    let retained = store
+        .publication_read(&request.request.identity)?
+        .ok_or("request missing after recovery")?;
+    check!(eq; retained.state, State::Requested);
+    check!(retained.request.lease_epoch > request.request.lease_epoch);
+    Ok(())
+}
+
+#[test]
+fn publication_recovery_intent_expired_lease_fences_stale_worker() -> TestResult {
+    let f = Fixture::expiring()?;
+    await_lease_expiry(&f.store, &f.intent.request.identity)?;
+    let outcome = recover_publication(&f.store, &f.root)?;
+    check!(eq; outcome, RecoveryOutcome::ExpectedRetried { bundle: f.desired.clone() });
+    check!(eq; pointer::read(&f.root)?, Root::Bundle(f.desired.clone()));
+    let retained = f
+        .store
+        .publication_read(&f.intent.request.identity)?
+        .ok_or("intent missing after recovery")?;
+    check!(eq; retained.state, State::Published {
+        receipt: f.desired.clone(),
+    });
+    check!(retained.request.lease_epoch > f.intent.request.lease_epoch);
+    f.preserved()
+}
+
+#[test]
+fn publication_recovery_requested_expired_competing_workers_fenced() -> TestResult {
+    let temp = tempfile::tempdir()?;
+    let store = Store::open(temp.path().join("store"))?;
+    let root = temp.path().join("publication");
+    std::fs::create_dir_all(root.join("generations"))?;
+    let namespace = binding::namespace(&root)?;
+    let identity = binding::digest(&("matrix", &namespace))?;
+    let epoch = store.lease_acquire(identity.as_str(), "workbook-publication", &expiring_at()?)?;
+    let request = store.publication_request(census_store::publish::Request {
+        namespace,
+        identity,
+        expected: Root::Absent,
+        input: InputFence {
+            lineage: binding::digest(&("lineage"))?,
+            token: binding::digest(&("token"))?,
+            recipe: binding::digest(&("recipe"))?,
+            run_manifest: None,
+            evidence_generation: store.evidence_generation(),
+            derived_generation: store.derived_generation(),
+        },
+        lease_epoch: epoch,
+    })?;
+    await_lease_expiry(&store, &request.request.identity)?;
+    recover_publication(&store, &root)?;
+    let retained = store
+        .publication_read(&request.request.identity)?
+        .ok_or("request missing after recovery")?;
+    check!(retained.request.lease_epoch > request.request.lease_epoch);
+    match store.publication_fence(&request.request, &None) {
+        Err(census_store::StoreError::RecordConflict { .. }) => {}
+        Err(error) => return Err(format!("expected RecordConflict, got: {error:?}").into()),
+        Ok(_) => return Err("expected RecordConflict, got a successful fence".into()),
+    }
+    Ok(())
+}
+
+#[test]
+fn publication_lease_renew_advances_expiry_not_epoch() -> TestResult {
+    let f = Fixture::new()?;
+    let identity = f.intent.request.identity.as_str();
+    let epoch = f.intent.request.lease_epoch;
+    let lease_before = f.store.get_lease_record(identity)?.ok_or("lease missing")?;
+    let expires_before = lease_before.expires_at().to_string();
+    f.store
+        .publication_lease_renew(&f.intent.request.identity, epoch)?;
+    let lease_after = f
+        .store
+        .get_lease_record(identity)?
+        .ok_or("lease missing after renew")?;
+    check!(eq; lease_after.epoch(), epoch);
+    check!(lease_after.expires_at() > expires_before.as_str());
+    check!(lease_after.revision() > lease_before.revision());
+    f.preserved()
+}
+
+#[test]
+fn publication_requested_same_identity_retry_after_recovery() -> TestResult {
+    let temp = tempfile::tempdir()?;
+    let store = Store::open(temp.path().join("store"))?;
+    let root = temp.path().join("publication");
+    std::fs::create_dir_all(root.join("generations"))?;
+    let namespace = binding::namespace(&root)?;
+    let identity = binding::digest(&("matrix", &namespace))?;
+    let epoch = store.lease_acquire(identity.as_str(), "workbook-publication", &expiring_at()?)?;
+    let request = store.publication_request(census_store::publish::Request {
+        namespace,
+        identity,
+        expected: Root::Absent,
+        input: InputFence {
+            lineage: binding::digest(&("lineage"))?,
+            token: binding::digest(&("token"))?,
+            recipe: binding::digest(&("recipe"))?,
+            run_manifest: None,
+            evidence_generation: store.evidence_generation(),
+            derived_generation: store.derived_generation(),
+        },
+        lease_epoch: epoch,
+    })?;
+    await_lease_expiry(&store, &request.request.identity)?;
+    recover_publication(&store, &root)?;
+    let retained = store
+        .publication_read(&request.request.identity)?
+        .ok_or("request missing after recovery")?;
+    check!(retained.request.lease_epoch > request.request.lease_epoch);
+    let fence = store.publication_fence(&retained.request, &None)?;
+    check!(eq; fence.intent().request.lease_epoch, retained.request.lease_epoch);
+    Ok(())
 }

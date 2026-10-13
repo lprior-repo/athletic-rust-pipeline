@@ -200,7 +200,7 @@ fn school_address_replay_acquisition_conflict_different_date_same_body() -> Test
 }
 
 #[test]
-fn school_address_replay_identical_acquisition_tuples_dedup() -> TestResult {
+fn school_address_replay_identical_acquisition_tuples_retain_all_records() -> TestResult {
     let dir = TempDir::new()?;
     let mut value = manifest(dir.path())?;
     let captures = value["captures"].as_array_mut().ok_or("no captures")?;
@@ -236,15 +236,15 @@ fn school_address_replay_null_date_stays_unknown() -> TestResult {
     let out = dir.path().join("corpus");
     let replayed = replay::run(&dir.path().join("manifest.json"), &out)?;
 
-    let state_ed_acqs = replayed
+    let pss_acqs = replayed
         .overrides()
         .acquisitions()
         .ok_or("replay must retain acquisition records")?
         .iter()
-        .filter(|acq| acq.provider == "state-ed")
+        .filter(|acq| acq.provider == "nces-pss")
         .collect::<Vec<_>>();
-    check!(eq; state_ed_acqs.len(), 1);
-    check!(eq; state_ed_acqs[0].retrieved_at, None);
+    check!(eq; pss_acqs.len(), 1);
+    check!(eq; pss_acqs[0].retrieved_at, None);
     Ok(())
 }
 
@@ -261,7 +261,7 @@ fn identical_duplicate_acquisitions_preserve_records_and_apply_once() -> TestRes
     let input = dir.path().join("manifest.json");
     std::fs::write(&input, serde_json::to_vec(&value)?)?;
     let replayed = replay::run(&input, &dir.path().join("corpus"))?;
-    let acquisitions = &replayed
+    let acquisitions = replayed
         .overrides()
         .acquisitions()
         .ok_or("replay must retain acquisition records")?;
@@ -300,55 +300,6 @@ fn identical_duplicate_acquisitions_preserve_records_and_apply_once() -> TestRes
     check!(eq; again.counters.already_linked, 1);
     check!(eq; again.counters.refused, 0);
     check!(eq; serde_json::to_vec(&store.scan::<CanonicalSchool>(Table::Schools)?)?, before);
-    check!(eq; replayed.overrides().acquisitions().ok_or("replay must retain acquisition records")?.len(), 4);
-    Ok(())
-}
-
-#[test]
-fn different_acquisitions_of_identical_bytes_remain_ambiguous() -> TestResult {
-    let dir = TempDir::new()?;
-    let mut value = manifest(dir.path())?;
-    let captures = value
-        .get_mut("captures")
-        .and_then(serde_json::Value::as_array_mut)
-        .ok_or("no captures")?;
-    let mut distinct = captures.first().cloned().ok_or("no CCD capture")?;
-    let source = distinct
-        .get("path")
-        .and_then(serde_json::Value::as_str)
-        .ok_or("no CCD path")?;
-    let copied = dir.path().join("second-acquisition.csv");
-    std::fs::copy(source, &copied)?;
-    *distinct.get_mut("path").ok_or("no path field")? = serde_json::to_value(&copied)?;
-    *distinct.get_mut("retrieved_at").ok_or("no date field")? =
-        serde_json::Value::String("2026-09-29".to_string());
-    captures.push(distinct);
-    let input = dir.path().join("manifest.json");
-    std::fs::write(&input, serde_json::to_vec(&value)?)?;
-    let replayed = replay::run(&input, &dir.path().join("corpus"))?;
-    check!(eq; replayed.overrides().acquisitions().ok_or("replay must retain acquisition records")?.len(), 4);
-    let store = Store::open(dir.path().join("store"))?;
-    let (school, _) = CanonicalSchool::new(
-        UsJurisdiction::Alabama,
-        "Albertville High School",
-        census_domain::model::normalize_name("Albertville High School"),
-        Some("Albertville"),
-    );
-    store.append(Table::Schools, &school)?;
-    let report = replayed.apply(&store)?;
-    let lanes = report.lanes.lanes("nces-ccd");
-    check!(eq; lanes.len(), 2);
-    check!(eq; lanes.iter().map(|lane| lane.observed_on.as_deref()).collect::<Vec<_>>(), vec![Some("2026-09-28"), Some("2026-09-29")]);
-    check!(eq; report.counters.linked, 0);
-    check!(eq; report.counters.refused, 1);
-    check!(eq; report.counters.postal_filled, 0);
-    let schools = store.scan::<CanonicalSchool>(Table::Schools)?;
-    check!(eq; schools.first().ok_or("no school")?.postal_addresses.len(), 0);
-    let outcomes = std::fs::read_to_string(&report.outcomes)?;
-    check!(outcomes.contains("several captures of nces-ccd"));
-    let again = replayed.apply(&store)?;
-    check!(eq; again.counters.linked, 0);
-    check!(eq; again.counters.refused, 1);
     check!(eq; replayed.overrides().acquisitions().ok_or("replay must retain acquisition records")?.len(), 4);
     Ok(())
 }
@@ -416,5 +367,291 @@ fn legacy_selector_artifact_retains_bytes_and_applies_the_same_capture_once() ->
     check!(eq; again.counters.already_linked, 1);
     check!(eq; serde_json::to_vec(&store.scan::<CanonicalSchool>(Table::Schools)?)?, before);
     check!(eq; std::fs::read(path)?, retained);
+    Ok(())
+}
+
+#[test]
+fn school_address_replay_conflict_known_vs_null_date_both_orders() -> TestResult {
+    use sha2::{Digest, Sha256};
+    let dir = TempDir::new()?;
+    let root = dir.path().join("root");
+    std::fs::create_dir_all(&root)?;
+    let body = b"identical school directory payload for two captures";
+    let path_a = root.join("first.csv");
+    let path_b = root.join("second.csv");
+    std::fs::write(&path_a, body)?;
+    std::fs::write(&path_b, body)?;
+    let digest = format!("{:x}", Sha256::digest(body));
+
+    let manifest_path = root.join("manifest.json");
+    let out = dir.path().join("corpus");
+    std::fs::write(
+        &manifest_path,
+        serde_json::json!({
+            "schema_revision": 1,
+            "month": "2026-10",
+            "captures": [
+                {
+                    "format": "state-ed-index",
+                    "path": "first.csv",
+                    "url": "https://example.com/source",
+                    "retrieved_at": "2026-09-28",
+                    "sha256": digest
+                },
+                {
+                    "format": "state-ed-index",
+                    "path": "second.csv",
+                    "url": "https://example.com/source",
+                    "retrieved_at": null,
+                    "sha256": digest
+                }
+            ]
+        })
+        .to_string(),
+    )?;
+
+    let error = match replay::run(&manifest_path, &out) {
+        Err(error) => error,
+        Ok(_) => return Err("known vs null date accepted".into()),
+    };
+    match error {
+        replay::ReplayError::Refused { detail, .. } => {
+            check!(detail.contains("capture acquisition conflict"));
+            check!(detail.contains("date"));
+        }
+        other => return Err(format!("wrong error: {other}").into()),
+    }
+
+    std::fs::write(
+        &manifest_path,
+        serde_json::json!({
+            "schema_revision": 1,
+            "month": "2026-10",
+            "captures": [
+                {
+                    "format": "state-ed-index",
+                    "path": "second.csv",
+                    "url": "https://example.com/source",
+                    "retrieved_at": null,
+                    "sha256": digest
+                },
+                {
+                    "format": "state-ed-index",
+                    "path": "first.csv",
+                    "url": "https://example.com/source",
+                    "retrieved_at": "2026-09-28",
+                    "sha256": digest
+                }
+            ]
+        })
+        .to_string(),
+    )?;
+
+    let error = match replay::run(&manifest_path, &out) {
+        Err(error) => error,
+        Ok(_) => return Err("null vs known date accepted".into()),
+    };
+    match error {
+        replay::ReplayError::Refused { detail, .. } => {
+            check!(detail.contains("capture acquisition conflict"));
+            check!(detail.contains("date"));
+        }
+        other => return Err(format!("wrong error: {other}").into()),
+    }
+    Ok(())
+}
+
+#[test]
+fn school_address_replay_conflict_two_known_dates() -> TestResult {
+    use sha2::{Digest, Sha256};
+    let dir = TempDir::new()?;
+    let root = dir.path().join("root");
+    std::fs::create_dir_all(&root)?;
+    let body = b"identical school directory payload for two captures";
+    let path_a = root.join("first.csv");
+    let path_b = root.join("second.csv");
+    std::fs::write(&path_a, body)?;
+    std::fs::write(&path_b, body)?;
+    let digest = format!("{:x}", Sha256::digest(body));
+
+    let manifest_path = root.join("manifest.json");
+    let out = dir.path().join("corpus");
+    std::fs::write(
+        &manifest_path,
+        serde_json::json!({
+            "schema_revision": 1,
+            "month": "2026-10",
+            "captures": [
+                {
+                    "format": "state-ed-index",
+                    "path": "first.csv",
+                    "url": "https://example.com/source",
+                    "retrieved_at": "2026-09-28",
+                    "sha256": digest
+                },
+                {
+                    "format": "state-ed-index",
+                    "path": "second.csv",
+                    "url": "https://example.com/source",
+                    "retrieved_at": "2026-09-30",
+                    "sha256": digest
+                }
+            ]
+        })
+        .to_string(),
+    )?;
+
+    let error = match replay::run(&manifest_path, &out) {
+        Err(error) => error,
+        Ok(_) => return Err("two known dates accepted".into()),
+    };
+    match error {
+        replay::ReplayError::Refused { detail, .. } => {
+            check!(detail.contains("capture acquisition conflict"));
+            check!(detail.contains("date"));
+        }
+        other => return Err(format!("wrong error: {other}").into()),
+    }
+    Ok(())
+}
+
+#[test]
+fn school_address_replay_identical_tuples_accepted() -> TestResult {
+    use std::path::Path;
+    let dir = TempDir::new()?;
+    let source = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../census-crawl/tests/fixtures/school_address_replay");
+    let root = dir.path().join("root");
+    std::fs::create_dir_all(root.join("nces"))?;
+    std::fs::create_dir_all(root.join("state_ed"))?;
+    std::fs::copy(source.join("manifest.json"), root.join("manifest.json"))?;
+    std::fs::copy(
+        source.join("nces/ccd_sch_029_2526_head.csv"),
+        root.join("nces/ccd_sch_029_2526_head.csv"),
+    )?;
+    std::fs::copy(
+        source.join("nces/pss2324_pu_head.csv"),
+        root.join("nces/pss2324_pu_head.csv"),
+    )?;
+    std::fs::copy(
+        source.join("state_ed/profile_kingston.html"),
+        root.join("state_ed/profile_kingston.html"),
+    )?;
+
+    let body = std::fs::read(root.join("nces/ccd_sch_029_2526_head.csv"))?;
+    let copy_path = root.join("nces/ccd_sch_029_2526_head_copy.csv");
+    std::fs::write(&copy_path, &body)?;
+
+    let manifest_path = root.join("manifest.json");
+    let mut value: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&manifest_path)?)?;
+    let captures = value["captures"].as_array_mut().ok_or("no captures")?;
+    let ccd_capture = captures[0].clone();
+    let mut copy = ccd_capture;
+    copy["path"] = serde_json::json!("nces/ccd_sch_029_2526_head_copy.csv");
+    captures.push(copy);
+    std::fs::write(&manifest_path, serde_json::to_vec(&value)?)?;
+
+    let out = dir.path().join("corpus");
+    let replayed = replay::run(&manifest_path, &out)?;
+
+    check!(eq; replayed.overrides().acquisitions().ok_or("replay must retain acquisition records")?.len(), 4);
+    let ccd_acqs = replayed
+        .overrides()
+        .acquisitions()
+        .ok_or("replay must retain acquisition records")?
+        .iter()
+        .filter(|acq| acq.provider == "nces-ccd")
+        .collect::<Vec<_>>();
+    check!(eq; ccd_acqs.len(), 2);
+    for acq in ccd_acqs {
+        check!(eq; acq.url, "https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2526_w_0a_050626.zip");
+        check!(eq; acq.retrieved_at.as_deref(), Some("2026-09-28"));
+    }
+    Ok(())
+}
+
+#[test]
+fn school_address_replay_distinct_provenance_preserved_through_readback() -> TestResult {
+    use std::path::Path;
+    let dir = TempDir::new()?;
+    let source = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../census-crawl/tests/fixtures/school_address_replay");
+    let root = dir.path().join("root");
+    std::fs::create_dir_all(root.join("nces"))?;
+    std::fs::create_dir_all(root.join("state_ed"))?;
+    std::fs::copy(source.join("manifest.json"), root.join("manifest.json"))?;
+    std::fs::copy(
+        source.join("nces/ccd_sch_029_2526_head.csv"),
+        root.join("nces/ccd_sch_029_2526_head.csv"),
+    )?;
+    std::fs::copy(
+        source.join("nces/pss2324_pu_head.csv"),
+        root.join("nces/pss2324_pu_head.csv"),
+    )?;
+    std::fs::copy(
+        source.join("state_ed/profile_kingston.html"),
+        root.join("state_ed/profile_kingston.html"),
+    )?;
+
+    let out = dir.path().join("corpus");
+    let replayed = replay::run(&root.join("manifest.json"), &out)?;
+
+    check!(eq; replayed.overrides().acquisitions().ok_or("replay must retain acquisition records")?.len(), 3);
+
+    let ccd_acq = replayed
+        .overrides()
+        .acquisitions()
+        .ok_or("replay must retain acquisition records")?
+        .iter()
+        .find(|acq| acq.provider == "nces-ccd")
+        .ok_or("no CCD acquisition")?;
+    check!(eq; ccd_acq.url, "https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2526_w_0a_050626.zip");
+    check!(eq; ccd_acq.retrieved_at.as_deref(), Some("2026-09-28"));
+
+    let pss_acq = replayed
+        .overrides()
+        .acquisitions()
+        .ok_or("replay must retain acquisition records")?
+        .iter()
+        .find(|acq| acq.provider == "nces-pss")
+        .ok_or("no PSS acquisition")?;
+    check!(eq; pss_acq.url, "https://nces.ed.gov/surveys/pss/zip/pss2324_pu_csv.zip");
+    check!(eq; pss_acq.retrieved_at.as_deref(), Some("2026-09-28"));
+
+    let state_acq = replayed
+        .overrides()
+        .acquisitions()
+        .ok_or("replay must retain acquisition records")?
+        .iter()
+        .find(|acq| acq.provider == "state-ed")
+        .ok_or("no state-ed acquisition")?;
+    check!(eq; state_acq.url, "https://data.nysed.gov/profile.php?instid=800000038718");
+    check!(eq; state_acq.retrieved_at, None);
+
+    let store = Store::open(dir.path().join("store"))?;
+    let (school, _) = CanonicalSchool::new(
+        UsJurisdiction::Alabama,
+        "Albertville High School",
+        "albertville high school",
+        Some("Albertville"),
+    );
+    store.append(Table::Schools, &school)?;
+
+    let report = replayed.apply(&store)?;
+    check!(eq; (report.counters.linked, report.counters.no_match), (1, 0));
+
+    let schools = store.scan::<CanonicalSchool>(Table::Schools)?;
+    let school = schools
+        .iter()
+        .find(|s| s.name == "Albertville High School")
+        .ok_or("school absent")?;
+    let claim = school
+        .postal_addresses
+        .first()
+        .ok_or("postal claim absent")?;
+    check!(eq; claim.evidence().source.url.as_deref(), Some("https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2526_w_0a_050626.zip"));
+    check!(eq; claim.evidence().observed_on.as_str(), "2026-09-28");
+
     Ok(())
 }

@@ -65,7 +65,7 @@ pub fn map_coach_row(
     if role == CoachRole::AthleticDirector {
         return None;
     }
-    if !row.level.is_empty() && !row.level.to_ascii_lowercase().contains("varsity") {
+    if !level_is_varsity(&row.level) {
         return None;
     }
     let (sport, gender) = classify_sport_gender(&row.sport, &row.level)?;
@@ -124,4 +124,22 @@ fn classify_role(label: &str) -> Option<CoachRole> {
         Some(CoachRole::Unknown) | None => None,
         role => role,
     }
+}
+
+fn level_is_varsity(level: &str) -> bool {
+    let trimmed = level.trim();
+    if trimmed.is_empty() {
+        return false;
+    }
+    let lowered = trimmed.to_ascii_lowercase();
+    if lowered.starts_with("junior") || lowered.starts_with("jv") {
+        return false;
+    }
+    if lowered.contains("freshman")
+        || lowered.contains("middle school")
+        || lowered.contains("junior high")
+    {
+        return false;
+    }
+    lowered.contains("varsity")
 }

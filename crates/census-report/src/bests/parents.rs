@@ -16,9 +16,9 @@ pub(crate) struct Parents<'a> {
 impl<'a> Parents<'a> {
     pub(crate) fn of(derivation: &'a Derivation<'_>) -> Self {
         Self {
-            athletes: index(derivation.athletes(), |athlete| athlete.id.as_str()),
+            athletes: index(derivation.athletes().iter(), |athlete| athlete.id.as_str()),
             aliases: derivation.athlete_aliases(),
-            meets: index(derivation.meets(), |meet| meet.id.as_str()),
+            meets: index(derivation.historical_meets(), |meet| meet.id.as_str()),
             events: derivation
                 .events()
                 .iter()
@@ -30,7 +30,7 @@ impl<'a> Parents<'a> {
                 .values()
                 .map(|team| (team.id.as_str(), team))
                 .collect(),
-            schools: index(derivation.schools(), |school| school.id.as_str()),
+            schools: index(derivation.historical_schools(), |school| school.id.as_str()),
         }
     }
 
@@ -60,6 +60,9 @@ impl<'a> Parents<'a> {
     }
 }
 
-fn index<'a, T>(rows: &'a [T], id: impl Fn(&'a T) -> &'a str) -> HashMap<&'a str, &'a T> {
-    rows.iter().map(|row| (id(row), row)).collect()
+fn index<'a, T>(
+    rows: impl Iterator<Item = &'a T>,
+    id: impl Fn(&'a T) -> &'a str,
+) -> HashMap<&'a str, &'a T> {
+    rows.map(|row| (id(row), row)).collect()
 }

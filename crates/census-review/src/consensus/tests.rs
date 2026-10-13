@@ -1,6 +1,7 @@
 mod aggregate_output;
 mod cancellation;
 mod checkpoints;
+mod failed_lane;
 mod format_change;
 mod lanes;
 mod reopened_receipt;
@@ -157,41 +158,6 @@ fn disagreement_insufficient_missing_and_malformed_advice_never_resolve_a_case()
     "WI");
                 check!(eq; fixture.store.receipt_count()?, 1);
             }
-            Ok(())
-        })
-}
-
-#[test]
-fn one_failed_lane_retains_the_successful_advice_and_the_failure_without_acceptance() -> TestResult
-{
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(async {
-            let (fixture, case) = Fixture::school()?;
-            let (endpoint, server) = lane(vec![batch(&case, "value_proposed", "state", "WI")])?;
-            let dead = {
-                let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
-                format!("http://{}", listener.local_addr()?)
-            };
-            let report = run_lanes(
-                &fixture.store,
-                &[client(&endpoint)?, client(&dead)?],
-                &options(),
-                "failure",
-            )
-            .await?;
-            server.join().map_err(|_| "successful lane panicked")??;
-            check!(eq; report.requested, 1);
-            check!(eq; report.failed, 1);
-            check!(eq; report.unanswered, 1);
-            check!(eq; report.accepted, 0);
-            check!(eq; state(&fixture.store)?, ReviewState::Retained);
-            let audit = audit(&fixture.store)?;
-            check!(eq; audit["outcome"], "lane_failed");
-            check!(eq; audit["lanes"][0]["status"], "answered");
-            check!(eq; audit["lanes"][0]["batch"]["verdicts"][0]["value"], "WI");
-            check!(eq; audit["lanes"][1]["status"], "failed");
             Ok(())
         })
 }

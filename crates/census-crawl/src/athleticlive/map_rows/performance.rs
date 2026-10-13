@@ -5,6 +5,7 @@ use census_domain::model::{
     CanonicalPerformance, Evidence, Grade, Mark, PerformanceIdentity, PerformanceResult,
     RetainedConflict, TimingMethod,
 };
+use census_store::Entity;
 
 pub(super) struct PerformanceFacts {
     pub(super) mark: Mark,
@@ -31,11 +32,20 @@ pub(super) fn write_performance(
     let mut performance = mint(context, mapped, facts, &source_key)?;
     annotate(&mut performance, context, mapped, facts)?;
     reserve_performances(writer, performance.id.as_str())?;
-    writer
-        .accumulator
-        .performances
-        .entry(performance.id.as_str().into())
-        .or_insert(performance);
+    let key = performance.id.as_str().into();
+    if let Some(existing) = writer.accumulator.performances.get_mut(&key) {
+        let is_identical = existing.mark == performance.mark
+            && existing.adjustment == performance.adjustment
+            && existing.wind_mps == performance.wind_mps
+            && existing.place == performance.place
+            && existing.timing == performance.timing
+            && existing.observed_grade == performance.observed_grade;
+        if !is_identical {
+            existing.merge(performance);
+        }
+    } else {
+        writer.accumulator.performances.insert(key, performance);
+    }
     if facts.contradiction.is_some() {
         writer.stats.rows_conflicting_status =
             writer.stats.rows_conflicting_status.saturating_add(1);

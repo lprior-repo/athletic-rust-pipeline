@@ -249,4 +249,40 @@ impl Store {
             .commit()
             .map_err(|source| StoreError::Write { source })
     }
+    pub fn lease_renew(&self, digest: &str, epoch: u64, expires_at: &str) -> StoreResult<()> {
+        check_digest(digest)?;
+        let _appends = self.lock_appends();
+        let actual = self.lease_read(digest)?.map(|lease| lease.epoch);
+        if actual != Some(epoch) {
+            return Err(StoreError::LeaseMismatch {
+                digest: digest.into(),
+                expected: epoch,
+                actual,
+            });
+        }
+        if expiry(expires_at)? <= Utc::now() {
+            return Err(StoreError::LeaseExpired {
+                digest: digest.into(),
+                epoch,
+            });
+        }
+        let mut lease = self
+            .lease_read(digest)?
+            .ok_or_else(|| StoreError::LeaseLost {
+                digest: digest.into(),
+                epoch,
+            })?;
+        lease.expires_at = expires_at.into();
+        let revision = lease
+            .revision
+            .checked_add(1)
+            .ok_or(StoreError::CounterExhausted)?;
+        lease.revision = revision;
+        let mut batch = self.db.batch();
+        batch.insert(&self.meta, lease_key(digest).as_bytes(), encode(&lease)?);
+        batch
+            .durability(Some(fjall::PersistMode::SyncData))
+            .commit()
+            .map_err(|source| StoreError::Write { source })
+    }
 }

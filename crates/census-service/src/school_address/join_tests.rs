@@ -25,6 +25,8 @@ const GENERATION: &str = "ffffffffffffffffffffffffffffffffffffffffffffffffffffff
 mod nces_replay_tests;
 #[path = "join/nces_tests.rs"]
 mod nces_tests;
+#[path = "join/receipt_tests.rs"]
+mod receipt_tests;
 
 fn span(low: u8, high: u8) -> Result<GradeSpan, Box<dyn std::error::Error>> {
     Ok(GradeSpan::new(

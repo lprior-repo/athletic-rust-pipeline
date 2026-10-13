@@ -75,19 +75,19 @@ fn reduction_selects_the_faster_result_without_inventing_a_team_school() -> Test
 }
 
 #[test]
-fn reduce_equal_value_picks_later_date() {
+fn reduce_equal_value_picks_earlier_exact_date() {
     assert!(crate::bests::key::should_replace(
         1094,
         1094,
-        crate::bests::key::MarkOrdering::new("2025-06-15", "meet_b", "perf_2"),
-        crate::bests::key::MarkOrdering::new("2025-03-15", "meet_a", "perf_1"),
+        crate::bests::key::MarkOrdering::new("2025-03-15", "perf_1"),
+        crate::bests::key::MarkOrdering::new("2025-06-15", "perf_2"),
         move |c, i| crate::bests::Measure::Time.better(c, i),
     ));
     assert!(!crate::bests::key::should_replace(
         1094,
         1094,
-        crate::bests::key::MarkOrdering::new("2025-03-15", "meet_a", "perf_1"),
-        crate::bests::key::MarkOrdering::new("2025-06-15", "meet_b", "perf_2"),
+        crate::bests::key::MarkOrdering::new("2025-06-15", "perf_2"),
+        crate::bests::key::MarkOrdering::new("2025-03-15", "perf_1"),
         move |c, i| crate::bests::Measure::Time.better(c, i),
     ));
 }
@@ -183,7 +183,7 @@ fn key_separates_wind_assisted_and_legal_results() -> TestResult {
 }
 
 #[test]
-fn reduce_same_meet_different_dates_picks_later() -> TestResult {
+fn same_meet_different_dates_retain_the_same_comparison_key() -> TestResult {
     let meet = test_parent_meet(
         vec![Sport::OutdoorTrack],
         Some(UsJurisdiction::Wisconsin),

@@ -9,6 +9,7 @@ use std::collections::{HashMap, HashSet};
 
 mod aliases;
 mod cohort;
+mod historical;
 mod population;
 pub(super) use aliases::collapse_athletes;
 pub(crate) use cohort::candidates as cohort_candidates;

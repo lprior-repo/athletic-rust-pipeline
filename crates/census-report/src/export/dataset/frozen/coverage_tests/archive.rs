@@ -113,6 +113,7 @@ fn old_schema_archive(dataset: &ExportDataset, store: &Store) -> TestResult<Vec<
         .collect();
     let mut lineage = dataset.lineage.clone();
     lineage.schema_revision = 1;
+    lineage.policy_revision = 8;
     let historical_tables = super::super::INPUT_TABLES
         .get(..13)
         .ok_or("historical table contract missing")?;
@@ -152,7 +153,7 @@ fn valid_schema_one_archive_without_coverage_is_preserved_and_refused_after_reop
             .clone(),
     )?;
     check!(eq; lineage.schema_revision, 1);
-    check!(eq; lineage.policy_revision, 12);
+    check!(eq; lineage.policy_revision, 8);
     check!(eq; super::super::generation(&lineage)?, lineage.input_generation);
     let path = seeded.directory.path().join("schema-one.json");
     std::fs::write(&path, &retained)?;

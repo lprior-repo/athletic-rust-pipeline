@@ -31,3 +31,20 @@ A seal certifies the declared scope and disclosed limits, not Internet-wide exha
 run. [OPERATIONS.md](../OPERATIONS.md) owns current seal commands and limitations;
 [the delivery plan](../NATIONAL-CENSUS-PLAN.md) owns missing oracle/integration work, including
 refusal for every unmet acceptance item. Implementation heuristics are not this decision's proof.
+
+## Evidence-driven diagnostic phase amendment — 2026-10-13
+
+After current-publication inspection, run binding and source-fence validation, the assembled
+acceptance packet drives the diagnostic phase. When every existing `SealEvidence::open_items`
+condition is satisfied, walk the normal ordered transitions through Exporting even if optional
+review, snapshot or result tables are empty. Only the existing `CensusState::seal` transition may
+create Complete, and it independently rechecks the same acceptance packet. Incomplete evidence
+retains the existing diagnostic artifact ladder and refusal. Positive counts cannot clear owed or
+unknown work. The fourteen acceptance conditions and v7 seal representation remain unchanged.
+
+This corrects a phase-inference false negative; it does not certify that the current acceptance
+policy or source graph fulfills the entire end-vision specification. In particular, capability-only
+source obligations and credited Ingest endpoints still require qualified terminal evidence. Test
+fixtures that supply synthetic journal counts at the public seal boundary demonstrate that boundary
+only. Actual workflow qualification requires measured source-plan, capture, traversal and completion
+evidence; zero rows, completed window labels or a synthetic journal cannot substitute for it.

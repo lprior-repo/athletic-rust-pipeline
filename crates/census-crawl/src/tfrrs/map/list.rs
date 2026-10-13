@@ -9,6 +9,7 @@ use census_domain::model::{
     Adjustment, AthleteId, CanonicalPerformance, EventId, Evidence, EvidenceMethod, Gender, Grade,
     Mark, MeetId, SchoolId, SchoolYear, SourceIdentity, Sport, TeamId,
 };
+use census_store::Entity;
 
 struct RowMints {
     team: TeamId,
@@ -209,6 +210,15 @@ impl<'a> Absorb<'a> {
         }
     }
 
+    fn same_observation(existing: &CanonicalPerformance, candidate: &CanonicalPerformance) -> bool {
+        existing.mark == candidate.mark
+            && existing.adjustment == candidate.adjustment
+            && existing.wind_mps == candidate.wind_mps
+            && existing.place == candidate.place
+            && existing.timing == candidate.timing
+            && existing.observed_grade == candidate.observed_grade
+    }
+
     fn mint_row(
         &mut self,
         context: &ListContext<'_>,
@@ -256,10 +266,14 @@ impl<'a> Absorb<'a> {
             source_athlete: Some(mints.source_athlete),
             retained_conflicts: Vec::new(),
         };
-        self.accumulator
-            .performances
-            .entry(id.as_str().to_string())
-            .or_insert(performance);
+        let key = id.as_str().to_string();
+        if let Some(existing) = self.accumulator.performances.get_mut(&key) {
+            if !Self::same_observation(existing, &performance) {
+                existing.merge(performance);
+            }
+        } else {
+            self.accumulator.performances.insert(key, performance);
+        }
         Ok(Some(()))
     }
 

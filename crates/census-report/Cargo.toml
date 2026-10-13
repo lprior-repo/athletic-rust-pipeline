@@ -17,6 +17,7 @@ census-review = { path = "../census-review" }
 census-store = { path = "../census-store" }
 # The seal command reads the exported workbook back, so the reader is a runtime dependency.
 calamine = "=0.36.1"
+chrono = { version = "0.4", default-features = false, features = ["std"] }
 csv = "1"
 rust_xlsxwriter = { version = "=0.99.1", features = ["constant_memory"] }
 rustix = { version = "1", features = ["fs"] }

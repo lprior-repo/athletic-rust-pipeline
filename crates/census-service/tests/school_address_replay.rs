@@ -2,6 +2,10 @@
 #[path = "../../../tools/fallible_checks.rs"]
 mod fallible_checks;
 
+#[path = "school_address_replay/containment.rs"]
+mod containment;
+#[path = "school_address_replay/merge_guards.rs"]
+mod merge_guards;
 #[path = "school_address_replay/rejections.rs"]
 mod rejections;
 
@@ -21,11 +25,17 @@ fn fixture() -> PathBuf {
 
 fn manifest(dir: &Path) -> TestResult<serde_json::Value> {
     let mut value: serde_json::Value = serde_json::from_slice(&std::fs::read(fixture())?)?;
-    let captures = value["captures"].as_array_mut().ok_or("no captures")?;
     let base = fixture().parent().ok_or("no fixture parent")?.to_path_buf();
+    let captures = value["captures"].as_array_mut().ok_or("no captures")?;
     for capture in captures {
         let relative = capture["path"].as_str().ok_or("no capture path")?;
-        capture["path"] = serde_json::to_value(base.join(relative))?;
+        let source = base.join(relative);
+        let target = dir.join(relative);
+        if let Some(parent) = target.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        std::fs::copy(&source, &target)?;
+        capture["path"] = serde_json::to_value(relative)?;
     }
     std::fs::write(dir.join("manifest.json"), serde_json::to_vec(&value)?)?;
     Ok(value)
@@ -71,7 +81,7 @@ fn school_address_replay_preserves_the_same_corpus_bytes_and_capture_provenance(
     let captures = std::fs::read_dir(out.join("captures"))?.collect::<Result<Vec<_>, _>>()?;
     check!(eq; captures.len(), 1);
     let archive = captures.first().ok_or("no archive")?.path();
-    check!(eq; std::fs::read_dir(archive)?.count(), 4);
+    check!(eq; std::fs::read_dir(archive)?.count(), 5);
     Ok(())
 }
 

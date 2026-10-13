@@ -162,9 +162,7 @@ fn a_read_manifest_and_index_keep_their_chunks_when_live_rows_are_overwritten() 
     stage_under(&store, &second, &first.id)?;
     let captured = crate::read::StoreSnapshot::new(
         snapshot,
-        &store.entities,
-        &store.journal,
-        store.root(),
+        &store,
         store.derived_generation(),
         store.evidence_generation(),
     );

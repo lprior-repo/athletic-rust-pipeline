@@ -14,7 +14,7 @@ const DIRECTORY_ROW_LIMIT: usize = 20_000;
 
 #[test]
 fn an_unterminated_title_tag_names_no_school_and_carries_no_coaches() -> TestResult {
-    let parsed = bound::parse("<title>Central High | Track");
+    let parsed = bound::parse("<title>Central High | Track")?;
     check!(
         parsed.page.title_school.is_empty(),
         "an unterminated <title> must not name a school: {:?}",
@@ -38,7 +38,7 @@ fn attribute_soup_around_a_coaching_row_retains_exactly_the_published_coach() ->
         "<td><span class=\"name\">Jo Smith</span></td>",
         "</tr></table>"
     );
-    let parsed = bound::parse(html);
+    let parsed = bound::parse(html)?;
     check!(
         eq;
         parsed.coaches.len(),
@@ -56,7 +56,7 @@ fn oversized_nested_tag_soup_names_no_school_and_carries_no_coaches() -> TestRes
     for _ in 0..20_000 {
         html.push_str("<div class='DirectoryDetail'><span data-x='1'><b>");
     }
-    let parsed = bound::parse(&html);
+    let parsed = bound::parse(&html)?;
     check!(
         parsed.page.title_school.is_empty(),
         "nested tag soup must not name a school"
@@ -75,7 +75,7 @@ fn a_truncated_staff_row_is_dropped_while_the_complete_row_survives() -> TestRes
         "<tr><td>Boys Cross Country</td><td>Coach</td><td>Jo Smith</td></tr>",
         "<tr><td>Boys Cross Country</td><td>Coach</td><td>Ka"
     );
-    let table = match ciac::pages::parse_table(html) {
+    let table = match ciac::pages::parse_table(html)? {
         Some(table) => table,
         None => return Err("a complete published row must still parse".into()),
     };
@@ -94,11 +94,11 @@ fn a_truncated_staff_row_is_dropped_while_the_complete_row_survives() -> TestRes
 #[test]
 fn a_header_only_or_entirely_truncated_table_carries_no_rows() -> TestResult {
     check!(
-        ciac::pages::parse_table("<tr><th>Sport</th><th>Coach</th></tr>").is_none(),
+        ciac::pages::parse_table("<tr><th>Sport</th><th>Coach</th></tr>")?.is_none(),
         "a header-only table must not carry a coach row"
     );
     check!(
-        ciac::pages::parse_table("<tr><td>Boys Cross Country</td><td>Coach</td><td>").is_none(),
+        ciac::pages::parse_table("<tr><td>Boys Cross Country</td><td>Coach</td><td>")?.is_none(),
         "a table truncated before any complete row must carry no rows"
     );
     Ok(())
@@ -112,7 +112,7 @@ fn directory_tables_are_read_at_their_published_shape_only() -> TestResult {
         "<tr><td>Boys Cross Country</td><td>Coach</td><td>Jo Smith</td></tr>",
         "</table>"
     );
-    let results = ciac::parse_directory(published);
+    let results = ciac::parse_directory(published)?;
     check!(
         eq;
         results.len(),
@@ -130,7 +130,7 @@ fn directory_tables_are_read_at_their_published_shape_only() -> TestResult {
         "</table>"
     );
     check!(
-        ciac::parse_directory(attributed).is_empty(),
+        ciac::parse_directory(attributed)?.is_empty(),
         "only the exact published class tag is recognized, not an attributed variant"
     );
     Ok(())
@@ -145,11 +145,11 @@ fn an_unattributed_staff_table_admits_no_rows_at_any_size() -> TestResult {
     }
     html.push_str("</table>");
     check!(
-        ciac::parse_directory(&html).is_empty(),
+        ciac::parse_directory(&html)?.is_empty(),
         "a table without a published school name must not be admitted"
     );
     check!(
-        ciac::pages::parse_table(&html).is_none(),
+        ciac::pages::parse_table(&html)?.is_none(),
         "cells carrying no published text must not become rows"
     );
     Ok(())

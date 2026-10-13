@@ -355,3 +355,36 @@ fn tfrrs_is_an_armed_results_source_for_applicable_states() -> TestResult {
     check!(matches!(arm_for("tfrrs"), Some(ResultsArm::TfrrsResults)));
     Ok(())
 }
+
+#[test]
+fn pr_evidence_without_declaring_family_is_not_required() -> TestResult {
+    let pr_only = census_crawl::SourceDescriptor {
+        slug: "pr-only-fixture",
+        provider: "pr evidence without a declaring family",
+        transport: census_crawl::TransportKind::Html,
+        capabilities: census_crawl::SourceCapabilities {
+            athlete_discovery: false,
+            athlete_profile: false,
+            meet_discovery: false,
+            bulk_results: false,
+            grade_evidence: false,
+            graduation_evidence: false,
+            school_evidence: false,
+            coach_directory: false,
+            public_professional_contact: false,
+            pr_evidence: true,
+        },
+        admission: census_crawl::SourceAdmission {
+            origin: "pr-only-fixture.test",
+            target_requests_per_second: 1.0,
+            maximum_in_flight: std::num::NonZeroUsize::MIN,
+        },
+    };
+    check!(!super::required(&pr_only));
+    check!(arm_for(pr_only.slug).is_none());
+    for descriptor in census_crawl::descriptors() {
+        let declared = arm_for(descriptor.slug).is_some() || descriptor.capabilities.bulk_results;
+        check!(eq; super::required(descriptor), declared);
+    }
+    Ok(())
+}

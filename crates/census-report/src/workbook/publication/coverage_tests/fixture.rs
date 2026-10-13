@@ -141,8 +141,8 @@ fn seed_performance(
             team: &team.id,
             mark: Mark::TimeSeconds(ExactSeconds::parse("50.00")?),
             wind_mps: None,
-            place: Some(1),
             adjustment: None,
+            place: Some(1),
         },
     )?;
     performance.timing = Some(TimingMethod::Fat);

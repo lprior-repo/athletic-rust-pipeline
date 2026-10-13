@@ -1,5 +1,8 @@
+use crate::{CrawlError, CrawlResult};
 use census_domain::model::Gender;
 use census_domain::model::Sport;
+
+const MAX_SOURCE_ROWS: usize = 20_000;
 
 #[derive(Debug, Clone)]
 pub struct CoachRow {
@@ -92,7 +95,7 @@ fn is_header_row(role_text: &str) -> bool {
     lower == "position" || lower == "name" || lower == "level" || lower.contains("level")
 }
 
-pub fn parse(html: &str) -> ParseResult {
+pub fn parse(html: &str) -> CrawlResult<ParseResult> {
     let mut result = ParseResult {
         page: parse_title(html),
         ..ParseResult::default()
@@ -120,6 +123,12 @@ pub fn parse(html: &str) -> ParseResult {
             if map_role(&role_text).is_none() {
                 continue;
             }
+            if result.coaches.len() >= MAX_SOURCE_ROWS {
+                return Err(CrawlError::Schema {
+                    url: super::HOST.to_string(),
+                    detail: format!("GoBound staff table exceeds {MAX_SOURCE_ROWS} coach rows"),
+                });
+            }
             result.coaches.push(CoachRow {
                 role: role_text,
                 name,
@@ -127,7 +136,7 @@ pub fn parse(html: &str) -> ParseResult {
         }
     }
 
-    result
+    Ok(result)
 }
 
 pub fn parse_sport_label(label: &str) -> Option<Sport> {

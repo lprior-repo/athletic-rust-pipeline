@@ -99,6 +99,7 @@ pub fn store_identity(store: &Store) -> ReportResult<String> {
 }
 
 pub fn store_lineage(store: &Store) -> ReportResult<DatasetLineage> {
+    store.store_identity()?;
     let snapshot = store.snapshot();
     frozen::lineage(store, &snapshot)
 }
@@ -191,6 +192,7 @@ impl Drop for ExportDataset {
 
 impl ExportDataset {
     pub fn load(store: &Store) -> ReportResult<Self> {
+        store.store_identity()?;
         let snapshot = store.snapshot();
         Self::from_snapshot(store, &snapshot)
     }
@@ -199,6 +201,7 @@ impl ExportDataset {
         store: &Store,
         snapshot: &census_store::StoreSnapshot<'_>,
     ) -> ReportResult<Self> {
+        snapshot.ensure_origin(store)?;
         let loaded = read::all(snapshot)?;
         Self::from_loaded(loaded, frozen::lineage(store, snapshot)?)
     }

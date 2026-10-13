@@ -1,4 +1,7 @@
 use super::map::SchoolTable;
+use crate::{CrawlError, CrawlResult};
+
+const MAX_SOURCE_ROWS: usize = 20_000;
 
 pub fn parse_sport_label(label: &str) -> Option<census_domain::model::Sport> {
     let l = label.trim().to_ascii_lowercase();
@@ -54,7 +57,7 @@ pub(super) fn is_placeholder_name(name: &str) -> bool {
     )
 }
 
-pub fn parse_table(table_html: &str) -> Option<SchoolTable> {
+pub fn parse_table(table_html: &str) -> CrawlResult<Option<SchoolTable>> {
     let mut rows: Vec<(String, String)> = Vec::new();
 
     for chunk in table_html.split_inclusive("</tr>") {
@@ -64,7 +67,9 @@ pub fn parse_table(table_html: &str) -> Option<SchoolTable> {
         let Some(open) = chunk.find("<tr") else {
             continue;
         };
-        let row = chunk.get(open..)?;
+        let Some(row) = chunk.get(open..) else {
+            continue;
+        };
 
         if row.contains("<th>") {
             continue;
@@ -86,21 +91,28 @@ pub fn parse_table(table_html: &str) -> Option<SchoolTable> {
             continue;
         }
 
+        if rows.len() >= MAX_SOURCE_ROWS {
+            return Err(CrawlError::Schema {
+                url: super::HOST.to_string(),
+                detail: format!("CIAC staff table exceeds {MAX_SOURCE_ROWS} coach rows"),
+            });
+        }
         rows.push((sport, name));
     }
 
     if rows.is_empty() {
-        return None;
+        return Ok(None);
     }
 
-    Some(SchoolTable { rows })
+    Ok(Some(SchoolTable { rows }))
 }
 
-pub fn parse_directory(html: &str) -> Vec<(String, SchoolTable)> {
+pub fn parse_directory(html: &str) -> CrawlResult<Vec<(String, SchoolTable)>> {
     const OPENING: &str = "<table class='DirectoryStaffTable'>";
     const CLOSING: &str = "</table>";
 
     let mut results: Vec<(String, SchoolTable)> = Vec::new();
+    let mut total_rows: usize = 0;
 
     for table_match in html.match_indices(OPENING) {
         let table_start = table_match.0;
@@ -123,14 +135,25 @@ pub fn parse_directory(html: &str) -> Vec<(String, SchoolTable)> {
         let Some(table_html) = from_table.get(..end) else {
             continue;
         };
-        let school_table = match parse_table(table_html) {
+        let school_table = match parse_table(table_html)? {
             Some(table) => table,
             None => SchoolTable { rows: Vec::new() },
         };
+        total_rows = total_rows
+            .checked_add(school_table.rows.len())
+            .ok_or_else(|| CrawlError::Arithmetic {
+                detail: "CIAC directory row accounting overflowed".to_string(),
+            })?;
+        if total_rows > MAX_SOURCE_ROWS {
+            return Err(CrawlError::Schema {
+                url: super::HOST.to_string(),
+                detail: format!("CIAC directory exceeds {MAX_SOURCE_ROWS} coach rows"),
+            });
+        }
         results.push((name, school_table));
     }
 
-    results
+    Ok(results)
 }
 
 fn find_school_name(html: &str, table_pos: usize) -> String {
