@@ -9,6 +9,7 @@ use census_domain::model::{
     Adjustment, AthleteId, CanonicalPerformance, EventId, Evidence, EvidenceMethod, Gender, Grade,
     Mark, MeetId, SchoolId, SchoolYear, SourceIdentity, Sport, TeamId,
 };
+use census_store::Entity;
 
 struct RowMints {
     team: TeamId,
@@ -259,10 +260,20 @@ impl<'a> Absorb<'a> {
             source_athlete: Some(mints.source_athlete),
             retained_conflicts: Vec::new(),
         };
-        self.accumulator
-            .performances
-            .entry(id.as_str().to_string())
-            .or_insert(performance);
+        let key = id.as_str().to_string();
+        if let Some(existing) = self.accumulator.performances.get_mut(&key) {
+            let is_identical = existing.mark == performance.mark
+                && existing.adjustment == performance.adjustment
+                && existing.wind_mps == performance.wind_mps
+                && existing.place == performance.place
+                && existing.timing == performance.timing
+                && existing.observed_grade == performance.observed_grade;
+            if !is_identical {
+                existing.merge(performance);
+            }
+        } else {
+            self.accumulator.performances.insert(key, performance);
+        }
         Ok(Some(()))
     }
 
