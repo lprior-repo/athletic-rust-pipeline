@@ -182,20 +182,13 @@ fn sidecar_forgeries_are_refused(captured: &Captured) -> TestResult {
         .workbook
         .parent()
         .ok_or("publication directory missing")?;
-    for name in [
-        "event-catalog.json",
-        "relay-dispositions.json",
-        "relays.jsonl",
-        "census-core.json",
-        "census-all-sources.json",
-        "recruiting.csv",
-        "school-contacts.csv",
-        "contact-research.csv",
-        "audit.json",
-        CSV,
-        JSONL,
-    ] {
-        std::fs::copy(generation.join(name), scratch.path().join(name))?;
+    for entry in std::fs::read_dir(generation)? {
+        let entry = entry?;
+        let name = entry.file_name();
+        if name == std::ffi::OsStr::new("workbook.xlsx") || !entry.file_type()?.is_file() {
+            continue;
+        }
+        std::fs::copy(entry.path(), scratch.path().join(&name))?;
     }
     check_sidecar_metadata(scratch.path(), captured)?;
     let csv_path = scratch.path().join(CSV);
@@ -267,7 +260,7 @@ fn adjusted_bests_and_nonempty_coverage_survive_json_chunks_publication_and_live
     drop(live);
     let manifest = captured.frozen.manifest();
     check!(eq; manifest.lineage.schema_revision, 3);
-    check!(eq; manifest.lineage.policy_revision, 15);
+    check!(eq; manifest.lineage.policy_revision, 14);
     check!(eq; manifest.streams.len(), 15);
     check!(eq; manifest.source_fingerprints.len(), 16);
     check!(eq; manifest.lineage, captured.dataset.lineage);

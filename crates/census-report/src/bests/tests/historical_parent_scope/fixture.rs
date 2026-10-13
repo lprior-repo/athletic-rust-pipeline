@@ -1,7 +1,7 @@
 use super::*;
 use census_domain::model::{
     CanonicalCoach, CanonicalTeam, CoachRole, CompetitionLevel, Evidence, PublishedGraduation,
-    SchoolYear, SourceRef,
+    SchoolYear, SourceEventLabel, SourceRef,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -277,7 +277,12 @@ fn competition(case: Case) -> TestResult<(CanonicalMeet, CanonicalEvent)> {
     } else {
         "wiaa_results"
     })];
-    let mut event = crate::test_events::owned(CanonicalEvent::new(
+    let owner = if case == Case::NonCoreEvent {
+        "athleticlive_results"
+    } else {
+        "wiaa_results"
+    };
+    let mut event = CanonicalEvent::new(
         EventIdentity {
             meet: &meet.id,
             kind: EventKind::Track400m,
@@ -286,17 +291,12 @@ fn competition(case: Case) -> TestResult<(CanonicalMeet, CanonicalEvent)> {
             round: None,
         },
         EventSpecification::default(),
-    )?);
-    let observation = evidence(if case == Case::NonCoreEvent {
-        "athleticlive_results"
-    } else {
-        "wiaa_results"
-    });
-    event
-        .source_labels
-        .iter_mut()
-        .for_each(|label| label.source = observation.source.clone());
-    event.evidence = vec![observation];
+    )?;
+    event.source_labels = vec![SourceEventLabel {
+        source: SourceRef::new(owner, Some(RESULT_URL.into())),
+        label: "400m".into(),
+    }];
+    event.evidence = vec![evidence(owner)];
     Ok((meet, event))
 }
 
