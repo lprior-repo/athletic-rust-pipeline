@@ -5,6 +5,8 @@ use fjall::{Readable, Snapshot};
 mod bounded;
 #[path = "../keyed.rs"]
 mod keyed;
+mod legacy;
+mod legacy_wire;
 mod lineage;
 mod merge;
 mod object;
@@ -70,32 +72,6 @@ impl<'s> StoreSnapshot<'s> {
         Layout {
             derived_generation: self.derived_generation,
         }
-    }
-
-    pub fn journal_payload(
-        &self,
-        phase: &str,
-        key: &str,
-    ) -> StoreResult<Option<serde_json::Value>> {
-        let raw = self
-            .snapshot
-            .get(self.journal, Store::journal_key(phase, key))
-            .map_err(|source| StoreError::Read { source })?;
-        let Some(raw) = raw else {
-            return Ok(None);
-        };
-        let row_key = Store::journal_key(phase, key);
-        super::decode_journal_entry(phase, key, raw.as_ref(), |index| {
-            let chunk_key = crate::journal::chunk_key(&row_key, index)?;
-            let chunk = self
-                .snapshot
-                .get(self.journal, chunk_key)
-                .map_err(|source| StoreError::Read { source })?;
-            chunk
-                .map(|chunk| super::decode_journal_chunk(phase, key, index, chunk.as_ref()))
-                .transpose()
-        })
-        .map(Some)
     }
 
     pub fn verify_layout(&self) -> StoreResult<bool> {

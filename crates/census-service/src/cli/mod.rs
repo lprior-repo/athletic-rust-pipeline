@@ -13,6 +13,7 @@ mod profile;
 mod provider;
 mod publish;
 mod qa_reports;
+mod retained_capture;
 mod retained_events;
 mod retained_marks;
 mod review;
@@ -142,6 +143,9 @@ pub(super) fn run() -> Result<()> {
     if let Command::Profile(args) = &cli.command {
         return profile::run(&cli, args);
     }
+    if let Command::VerifyRetainedCapture(args) = &cli.command {
+        return retained_capture::run(&cli, args);
+    }
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()?
@@ -153,8 +157,8 @@ async fn run_async(cli: Cli) -> Result<()> {
         args.validate_configuration()?;
     }
     match &cli.command {
-        Command::Profile(_) => {
-            anyhow::bail!("profile commands are routed synchronously before the runtime starts")
+        Command::Profile(_) | Command::VerifyRetainedCapture(_) => {
+            anyhow::bail!("offline diagnostic commands are routed before the runtime starts")
         }
         Command::Review(args) => {
             let prepared = args.prepare()?;
