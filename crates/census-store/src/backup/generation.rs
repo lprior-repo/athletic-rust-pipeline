@@ -5,12 +5,21 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use chrono::{DateTime, FixedOffset};
+use sha2::{Digest, Sha256};
 
 use super::errors::{io_err, refused};
 use super::files::sync_directories;
 use super::MANIFEST_PATH;
 use crate::fs::fsync_dir;
 use crate::{StoreError, StoreResult};
+pub(super) fn destination_prefix(base: &str, to: &Path) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(to.to_string_lossy().as_bytes());
+    let result = hasher.finalize();
+    let hash_hex = format!("{:02x}{:02x}{:02x}{:02x}", result[0], result[1], result[2], result[3]);
+    format!("{base}{hash_hex}.")
+}
+
 
 const STAGING_ATTEMPTS: usize = 4;
 
@@ -36,6 +45,7 @@ pub(super) struct Recovered {
 impl Generation {
     pub(super) fn create(to: &Path, prefix: &str) -> StoreResult<Self> {
         let recovered = recover(to, prefix)?;
+        let prefix = destination_prefix(prefix, to);
         if recovered.restored || recovered.staging_removed > 0 || recovered.trashes_removed > 0 {
             tracing::warn!(
                 "recovered {} before staging a new generation: staging_removed={} trashes_removed={} restored={}",
@@ -122,6 +132,7 @@ fn exchange(_from: &Path, _to: &Path) -> io::Result<()> {
 }
 
 pub(super) fn recover(to: &Path, prefix: &str) -> StoreResult<Recovered> {
+    let prefix = destination_prefix(prefix, to);
     let parent = parent_of(to);
     let listing = match fs::read_dir(parent) {
         Ok(listing) => listing,
@@ -129,7 +140,7 @@ pub(super) fn recover(to: &Path, prefix: &str) -> StoreResult<Recovered> {
         Err(source) => return Err(io_err(parent, source)),
     };
     let trash_prefix = format!("{prefix}old.");
-    let (staging, trashes) = collect_generations(parent, listing, prefix, &trash_prefix)?;
+    let (staging, trashes) = collect_generations(parent, listing, &prefix, &trash_prefix)?;
     let mut recovered = Recovered::default();
     recovered = clear_staging(staging, recovered)?;
     if trashes.is_empty() {

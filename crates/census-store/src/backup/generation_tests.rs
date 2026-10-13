@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use super::super::manifest::write_manifest;
 use super::super::{Manifest, MANIFEST_PATH, MANIFEST_VERSION, STAGING_PREFIX};
-use super::{parent_of, promote, recover, Generation, PromotionStep, Recovered};
+use super::{destination_prefix, parent_of, promote, recover, Generation, PromotionStep, Recovered};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -29,7 +29,8 @@ fn generation_at(path: &Path, marker: &str, written_at: &str) -> TestResult {
 }
 
 fn displace(to: &Path, token: &str) -> TestResult<PathBuf> {
-    let trash = parent_of(to).join(format!("{STAGING_PREFIX}old.{token}"));
+    let prefix = destination_prefix(STAGING_PREFIX, to);
+    let trash = parent_of(to).join(format!("{prefix}old.{token}"));
     fs::rename(to, &trash)?;
     Ok(trash)
 }
@@ -40,7 +41,8 @@ fn abandoned_staging(
     marker: &str,
     written_at: &str,
 ) -> TestResult<PathBuf> {
-    let staging = parent_of(to).join(format!("{STAGING_PREFIX}{token}"));
+    let prefix = destination_prefix(STAGING_PREFIX, to);
+    let staging = parent_of(to).join(format!("{prefix}{token}"));
     generation_at(&staging, marker, written_at)?;
     Ok(staging)
 }
@@ -288,7 +290,8 @@ fn recovery_discards_an_empty_displaced_directory_beside_a_destination() -> Test
     let to = dir.path().join("restored");
     fs::create_dir_all(&to)?;
     fs::write(to.join("fjall-stand-in"), b"store")?;
-    let empty = parent_of(&to).join(format!("{STAGING_PREFIX}old.empty"));
+    let prefix = destination_prefix(STAGING_PREFIX, &to);
+    let empty = parent_of(&to).join(format!("{prefix}old.empty"));
     fs::create_dir_all(&empty)?;
     let recovered = recover(&to, STAGING_PREFIX)?;
     check!(!recovered.restored);
@@ -379,4 +382,97 @@ fn process_death_at_the_exchange_boundary_keeps_one_canonical_generation() -> Te
         check!(eq; leftovers(dir.path())?, Vec::<String>::new());
     }
     Ok(())
+}
+
+
+#[test]
+fn sibling_destinations_share_a_parent_without_crosstalk() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let to_a = dir.path().join("backup-alpha");
+    let to_b = dir.path().join("backup-beta");
+    generation_at(&to_a, "alpha-old", OLD_AT)?;
+    generation_at(&to_b, "beta-old", OLD_AT)?;
+    let prefix_a = destination_prefix(STAGING_PREFIX, &to_a);
+    let prefix_b = destination_prefix(STAGING_PREFIX, &to_b);
+    check!(prefix_a != prefix_b, "destination prefixes must differ");
+    let staging_a = abandoned_staging_with_prefix(&to_a, "a-stage", "alpha-new", NEW_AT, &prefix_a)?;
+    let staging_b = abandoned_staging_with_prefix(&to_b, "b-stage", "beta-new", NEW_AT, &prefix_b)?;
+    let recovered_a = recover(&to_a, STAGING_PREFIX)?;
+    check!(eq; recovered_a.staging_removed, 1);
+    check!(eq; recovered_a.trashes_removed, 0);
+    check!(eq; marker(&to_a)?, vec!["alpha-old".to_string()]);
+    check!(
+        staging_b.exists(),
+        "recovering A must not delete B's staging directory"
+    );
+    let recovered_b = recover(&to_b, STAGING_PREFIX)?;
+    check!(eq; recovered_b.staging_removed, 1);
+    check!(eq; recovered_b.trashes_removed, 0);
+    check!(eq; marker(&to_b)?, vec!["beta-old".to_string()]);
+    check!(!staging_a.exists());
+    Ok(())
+}
+
+#[test]
+fn recovering_one_sibling_preserves_the_others_only_old_generation() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let to_a = dir.path().join("backup-alpha");
+    let to_b = dir.path().join("backup-beta");
+    generation_at(&to_a, "alpha-old", OLD_AT)?;
+    generation_at(&to_b, "beta-old", OLD_AT)?;
+    let prefix_a = destination_prefix(STAGING_PREFIX, &to_a);
+    let prefix_b = destination_prefix(STAGING_PREFIX, &to_b);
+    let trash_a = displace_with_prefix(&to_a, "a-old", &prefix_a)?;
+    generation_at(&to_a, "alpha-new", NEW_AT)?;
+    check!(trash_a.exists());
+    let recovered_a = recover(&to_a, STAGING_PREFIX)?;
+    check!(eq; recovered_a.trashes_removed, 1);
+    check!(eq; recovered_a.staging_removed, 0);
+    check!(
+        to_b.join(MANIFEST_PATH).is_file(),
+        "recovery of A must not affect B's published generation"
+    );
+    let recovered_b = recover(&to_b, STAGING_PREFIX)?;
+    check!(eq; recovered_b.trashes_removed, 0);
+    check!(eq; recovered_b.staging_removed, 0);
+    check!(eq; recovered_b.restored, false);
+    check!(eq; marker(&to_b)?, vec!["beta-old".to_string()]);
+    Ok(())
+}
+
+#[test]
+fn recovery_preserves_an_artifact_without_a_known_owner() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let to = dir.path().join("backup");
+    generation_at(&to, "live", OLD_AT)?;
+    let orphan = dir.path().join("foreign-staging");
+    fs::create_dir_all(&orphan)?;
+    fs::write(orphan.join("foreign.txt"), b"foreign")?;
+    let recovered = recover(&to, STAGING_PREFIX)?;
+    check!(eq; recovered.staging_removed, 0);
+    check!(eq; recovered.trashes_removed, 0);
+    check!(
+        orphan.exists(),
+        "an artifact with no known owner must be preserved"
+    );
+    check!(orphan.join("foreign.txt").is_file());
+    Ok(())
+}
+
+fn abandoned_staging_with_prefix(
+    to: &Path,
+    token: &str,
+    marker: &str,
+    written_at: &str,
+    prefix: &str,
+) -> TestResult<PathBuf> {
+    let staging = parent_of(to).join(format!("{prefix}{token}"));
+    generation_at(&staging, marker, written_at)?;
+    Ok(staging)
+}
+
+fn displace_with_prefix(to: &Path, token: &str, prefix: &str) -> TestResult<PathBuf> {
+    let trash = parent_of(to).join(format!("{prefix}old.{token}"));
+    fs::rename(to, &trash)?;
+    Ok(trash)
 }
