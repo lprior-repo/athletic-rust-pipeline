@@ -109,7 +109,15 @@ pub(super) fn read_format(meta_keyspace: &Keyspace) -> StoreResult<StoreFormat> 
 }
 
 fn classify(format: &StoreFormat) -> Verdict {
+    if let Some(verdict) = unsupported_version(format) {
+        return verdict;
+    }
     if let Some(target) = format.migration_target {
+        if format.schema_version == Some(STORE_SCHEMA_VERSION) {
+            return Verdict::Unknown(format!(
+                "current schema retains an inconsistent migration target {target}"
+            ));
+        }
         return Verdict::Migrate(format!(
             "an earlier migration to version {target} did not finish; run the store migration to resume it"
         ));
@@ -132,23 +140,34 @@ fn classify(format: &StoreFormat) -> Verdict {
     }
 }
 
+fn unsupported_version(format: &StoreFormat) -> Option<Verdict> {
+    [
+        (
+            "schema version",
+            format.schema_version,
+            STORE_SCHEMA_VERSION,
+        ),
+        ("key format", format.key_format, KEY_FORMAT_VERSION),
+        (
+            "lifecycle revision",
+            format.lifecycle_revision,
+            LIFECYCLE_REVISION,
+        ),
+    ]
+    .into_iter()
+    .find_map(|(what, found, supported)| match found {
+        Some(found) if found > supported => Some(Verdict::Newer {
+            what,
+            found,
+            supported,
+        }),
+        _ => None,
+    })
+}
+
 fn classify_versioned(format: &StoreFormat, version: u32, key_format: u32) -> Verdict {
     if format.created_by.is_none() || format.created_at.is_none() {
         return Verdict::Unknown("creation lineage rows are missing".to_string());
-    }
-    if version > STORE_SCHEMA_VERSION {
-        return Verdict::Newer {
-            what: "schema version",
-            found: version,
-            supported: STORE_SCHEMA_VERSION,
-        };
-    }
-    if key_format > KEY_FORMAT_VERSION {
-        return Verdict::Newer {
-            what: "key format",
-            found: key_format,
-            supported: KEY_FORMAT_VERSION,
-        };
     }
     if version < STORE_SCHEMA_VERSION || key_format < KEY_FORMAT_VERSION {
         return Verdict::Migrate(format!(

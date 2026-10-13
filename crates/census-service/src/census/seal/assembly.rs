@@ -1,6 +1,6 @@
 use census_domain::model::{ReviewCase, SourceAccessCondition};
 
-use super::{count, retained_access, table_rows, JournalCounts, SealRequest};
+use super::{count, retained_access, table_rows, JournalCounts, SealCoverage, SealRequest};
 use crate::census::{
     owed_cohort_decisions, owed_identity_candidates, GapTally, OpenWork, RetainedFindings,
     SealCounts, SealEvidence, WorkbookCheck,
@@ -9,8 +9,7 @@ use census_report::report::{Census, CoverageReport};
 use census_store::{StoreStats, Table};
 
 pub(super) fn assemble(
-    selected_coverage: &CoverageReport,
-    retained_coverage: &CoverageReport,
+    coverage: SealCoverage<'_>,
     census: &Census,
     stats: &StoreStats,
     cases: &[ReviewCase],
@@ -24,8 +23,8 @@ pub(super) fn assemble(
         .map_or(Default::default(), core::convert::identity);
     SealEvidence {
         open: open_work(cases, journal),
-        counts: seal_counts(census, selected_coverage),
-        retained: retained_findings(retained_coverage, selected_coverage, stats, access, request),
+        counts: seal_counts(census, coverage.selected),
+        retained: retained_findings(coverage.retained, coverage.selected, stats, access, request),
         workbook,
         observed_on: census.generated_on.clone(),
         run: request.run,

@@ -10,6 +10,7 @@ use crate::{generation, meta, Store, StoreError, Table};
 
 use super::tests::{erase_current_schema, raw_import, TestResult};
 
+mod admission;
 mod owned;
 mod owned_duplicates;
 mod preservation;

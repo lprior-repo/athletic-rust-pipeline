@@ -350,3 +350,23 @@ This semantic cutover does not migrate physical stores, change source interpreta
 alter acquisition workflows or claim release qualification. Main's integration must run the
 focused frozen/history/publication regressions, scoped Coverage readback and seal regressions,
 and the required Moon gates before delivery.
+
+### 2026-10-13: format admission before migration dispatch
+
+Physical schema 2, key format 1 and lifecycle revision 2 remain unchanged. Open and offline
+migration first reject any unsupported newer schema, key format or lifecycle revision, even
+when a retained migration marker is present. A marker cannot grant permission to interpret a
+newer store using an older implementation. Missing historical lifecycle metadata remains
+supported without synthesizing or replacing that metadata.
+
+A current schema-2 store with any migration marker is inconsistent and is refused as unknown
+schema state. The supported migration publishes schema 2 and removes its marker in one durable
+batch; there is no valid schema-2/marker-1 or schema-2/marker-2 resume point. Re-running the
+exact-time converter in that state could otherwise rewrite retained marks. Valid pre-versioned,
+schema-0 and schema-1 marker-1/marker-2 resume states retain their existing migration contract.
+Refusal preserves entity, journal, receipt and metadata rows; mutable engine recovery files are
+not claimed to be byte-identical after opening the database engine.
+
+This admission repair does not enable reusable production enrollment, allocate a new physical
+schema, or authorize conversion of a production store. A future lifecycle transition still needs
+its own explicit physical compatibility barrier and stage-specific migration dispatch.

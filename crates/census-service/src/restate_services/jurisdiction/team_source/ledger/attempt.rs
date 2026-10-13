@@ -36,7 +36,9 @@ impl Attempt {
 fn failure(error: JobError, progress: Option<StageOutcome>) -> AttemptOutcome {
     match error {
         JobError::Transient { message } => AttemptOutcome::Transient { message, progress },
-        JobError::Terminal { message } => AttemptOutcome::Terminal { message, progress },
+        JobError::Terminal { message } | JobError::Resource { message, .. } => {
+            AttemptOutcome::Terminal { message, progress }
+        }
     }
 }
 
@@ -83,5 +85,26 @@ pub(super) fn progress(attempt: u8, outcome: &AttemptOutcome) -> TeamsAttemptPro
             outcome: progress.clone(),
             message: message.clone(),
         },
+    }
+}
+
+#[cfg(test)]
+mod resource_tests {
+    use super::*;
+    use census_report::report::{ExportResourceError, ReportError};
+
+    #[test]
+    fn export_resource_failure_is_terminal_in_the_existing_attempt_wire() {
+        let source = ExportResourceError::BudgetExceeded {
+            what: "frozen json depth",
+            needed: 65,
+            available: 64,
+        };
+        let outcome = failure(JobError::from(ReportError::Resource(source)), None);
+        assert!(matches!(
+            outcome,
+            AttemptOutcome::Terminal { message, progress: None }
+                if message == "export-budget-exceeded: frozen json depth needs 65 against an available 64"
+        ));
     }
 }

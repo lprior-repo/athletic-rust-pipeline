@@ -21,10 +21,18 @@ impl From<VerificationError> for ReportError {
 }
 
 impl VerificationError {
-    pub(super) fn preserves_version(&self) -> bool {
-        matches!(
-            self,
-            Self::Codec(FrozenCodecError::UnsupportedVersion { .. })
-        )
+    pub(super) fn preserves_retained(&self) -> bool {
+        match self {
+            Self::Codec(
+                FrozenCodecError::UnsupportedVersion { .. }
+                | FrozenCodecError::RowTooLarge { .. }
+                | FrozenCodecError::BudgetExceeded { .. }
+                | FrozenCodecError::NeedsPartition { .. },
+            ) => true,
+            Self::Codec(
+                FrozenCodecError::CorruptArtifact { .. } | FrozenCodecError::Encoding { .. },
+            ) => false,
+            Self::Report(error) => error.resource().is_some(),
+        }
     }
 }

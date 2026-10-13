@@ -108,3 +108,29 @@ envelope, with rejected candidates and their evidence retained.
 - Beads: `zzq8`, `s0ly`, `ysru` (this decision); `cnng` (epic); `4jdn` (deferred).
 - Gap map: `var/spec-20261010/gap-map.md`.
 - Owner approval recorded 2026-10-11 for all seven gates in one decision session.
+
+## Resource-refusal classification and retained inputs (2026-10-13)
+
+The gate-a limits are admission boundaries, not evidence that an artifact is corrupt. Report
+boundaries preserve `RowTooLarge`, `BudgetExceeded`, and `NeedsPartition` as typed resource
+refusals with the observed quantity and applicable ceiling. Their diagnostic codes are
+`export-row-too-large`, `export-budget-exceeded`, and `export-needs-partition`. CLI context and
+nested cleanup retain the primary diagnostic and every secondary cleanup error.
+
+The report-to-`JobError` boundary maps a primary resource refusal to terminal handler status 413,
+so a deterministic limit does not enter automatic transient retries. Existing success/request
+wire formats and serialized team-attempt outcomes are unchanged. This does not add the same
+status contract to seal or open-work wrappers, which retain their existing diagnostic behavior.
+
+A resource-refused retained frozen input must keep its root pointer, immutable objects, input
+record, lease and sequence unchanged during resume, cancellation and binding. This applies to
+missing-record, Requested, Freezing, Frozen and Abandoned states. Missing record state does not
+authorize replacing a root that could not be verified within the supported envelope. Primary
+resource errors nested inside Cleanup receive the same protection. Actual format/integrity
+errors continue through their existing refusal or retirement paths; unknown versions keep
+existing read-only preservation semantics.
+
+This error and preservation correction changes no store, frozen codec, token, lineage or
+semantic-policy version. It does not establish bounded decoded allocations or whole-process
+memory, and terminal reporting does not itself implement durable resumption after an operator
+changes resource limits. Those acceptance requirements remain open.

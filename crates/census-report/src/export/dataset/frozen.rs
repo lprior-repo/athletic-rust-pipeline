@@ -1,5 +1,5 @@
 use super::{DatasetLineage, ExportDataset};
-use crate::report::{io_error, ReportError, ReportResult};
+use crate::report::{io_error, ExportResourceError, ReportError, ReportResult};
 use census_store::clock::{Clock, SystemClock};
 use census_store::{Store, StoreSnapshot, Table};
 use codec::FrozenCodecError;
@@ -50,6 +50,8 @@ mod freeze_v2_tests;
 mod historical_policy_tests;
 #[cfg(test)]
 mod preflight_tests;
+#[cfg(test)]
+mod resource_tests;
 
 pub use freeze::CancelOutcome;
 pub use root::FrozenRoot;
@@ -241,9 +243,27 @@ fn invalid(detail: &str) -> ReportError {
 }
 
 fn codec_error(error: FrozenCodecError) -> ReportError {
-    ReportError::ArtifactCorrupt {
-        path: PathBuf::new(),
-        detail: format!("frozen codec: {error}"),
+    match error {
+        FrozenCodecError::RowTooLarge { what, bytes, max } => {
+            ExportResourceError::RowTooLarge { what, bytes, max }.into()
+        }
+        FrozenCodecError::BudgetExceeded {
+            what,
+            needed,
+            available,
+        } => ExportResourceError::BudgetExceeded {
+            what,
+            needed,
+            available,
+        }
+        .into(),
+        FrozenCodecError::NeedsPartition { what, bytes, max } => {
+            ExportResourceError::NeedsPartition { what, bytes, max }.into()
+        }
+        other => ReportError::ArtifactCorrupt {
+            path: PathBuf::new(),
+            detail: format!("frozen codec: {other}"),
+        },
     }
 }
 
@@ -265,3 +285,12 @@ pub(super) fn ensure_semantic_policy(lineage: &DatasetLineage) -> ReportResult<(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod resource_classification_tests;
+
+#[cfg(test)]
+mod resource_preservation_tests;
+
+#[cfg(test)]
+mod physical_resource_preservation_tests;

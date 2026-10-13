@@ -24,7 +24,7 @@ pub(super) fn recover(
     let objects_dir = objects::directory(directory);
     let manifest = open_manifest(&objects_dir, &retained.manifest)?;
     if let Err(error) = verify::verify_record(&objects_dir, &retained.manifest, &manifest, record) {
-        if error.preserves_version() {
+        if error.preserves_retained() {
             return Err(error.into());
         }
         return Err(abandoned(store, directory, retained, record, error.into()));
@@ -112,6 +112,9 @@ pub(super) fn ensure_identity(store: &Store, manifest: &FrozenManifest) -> Repor
 }
 
 pub(super) fn retire_pointer(directory: &Path, error: ReportError) -> ReportError {
+    if error.resource().is_some() {
+        return error;
+    }
     match root::remove_retained(directory) {
         Ok(()) => error,
         Err(cleanup) => ReportError::Cleanup {
@@ -147,6 +150,9 @@ fn complete(store: &Store, staged: &Staged) -> ReportResult<()> {
 }
 
 fn retire(store: &Store, staged: &Staged, error: ReportError) -> ReportError {
+    if error.resource().is_some() {
+        return error;
+    }
     match retire_attempt(store, staged) {
         Ok(()) => error,
         Err(cleanup) => ReportError::Cleanup {
@@ -210,6 +216,9 @@ fn abandoned(
     record: &InputRecord,
     error: ReportError,
 ) -> ReportError {
+    if error.resource().is_some() {
+        return error;
+    }
     let cleanup =
         abandon(store, &retained.attempt, record).and_then(|()| root::remove_retained(directory));
     match cleanup {

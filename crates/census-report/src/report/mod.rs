@@ -5,8 +5,10 @@ use std::collections::BTreeMap;
 use std::fmt;
 
 mod error;
+mod resource;
 pub(crate) use error::{artifact_corrupt, io_error, semantic_mismatch, verifier_input, xlsx_error};
 pub use error::{CorruptionClass, ReportError, ReportResult};
+pub use resource::ExportResourceError;
 
 #[cfg(test)]
 use census_store::{Store, Table};
