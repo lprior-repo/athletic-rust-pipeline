@@ -11,8 +11,11 @@ mod artifact;
 mod directory;
 #[cfg(test)]
 mod tests;
+mod validate;
+mod verify;
 use artifact::{hash_artifact, Artifact};
 pub(super) use directory::verify_directory;
+pub(super) use verify::verify_prepared;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -130,10 +133,10 @@ pub fn current_workbook(root: &Path) -> ReportResult<PathBuf> {
 pub(super) fn current_generation(root: &Path) -> ReportResult<(PathBuf, Manifest)> {
     let pointer = root.join("current");
     let relative = std::fs::read_link(&pointer).map_err(|source| io_error(&pointer, source))?;
-    validate_pointer(&relative)?;
+    validate::validate_pointer(&relative)?;
     let generations = root.join("generations");
     let directory = root.join(relative);
-    validate_generation_paths(&generations, &directory)?;
+    validate::validate_generation_paths(&generations, &directory)?;
     let directory =
         std::fs::canonicalize(&directory).map_err(|source| io_error(&directory, source))?;
     let manifest = verify_directory(&directory)?;
@@ -145,36 +148,6 @@ pub(super) fn current_generation(root: &Path) -> ReportResult<(PathBuf, Manifest
         ));
     }
     Ok((directory, manifest))
-}
-
-fn validate_pointer(relative: &Path) -> ReportResult<()> {
-    let mut components = relative.components();
-    let valid = components.next()
-        == Some(std::path::Component::Normal(std::ffi::OsStr::new(
-            "generations",
-        )))
-        && components
-            .next()
-            .is_some_and(|part| matches!(part, std::path::Component::Normal(_)))
-        && components.next().is_none();
-    if !valid {
-        return Err(invariant(
-            "publication pointer escapes its generation directory".to_string(),
-        ));
-    }
-    Ok(())
-}
-
-fn validate_generation_paths(generations: &Path, directory: &Path) -> ReportResult<()> {
-    for path in [generations, directory] {
-        let metadata = std::fs::symlink_metadata(path).map_err(|source| io_error(path, source))?;
-        if !metadata.file_type().is_dir() {
-            return Err(invariant(
-                "publication generation must be a real directory".to_string(),
-            ));
-        }
-    }
-    Ok(())
 }
 
 #[derive(Debug)]
@@ -190,9 +163,9 @@ pub struct OpenedPublication {
 }
 
 pub fn verify_published(path: &Path) -> ReportResult<VerifiedPublication> {
-    let (directory, manifest) = preflight(path)?;
-    let dataset = decode(&directory, &manifest)?;
-    let workbook = verify_against(&directory, &manifest, &dataset)?;
+    let (directory, manifest) = verify::preflight(path)?;
+    let dataset = verify::decode(&directory, &manifest)?;
+    let workbook = verify::verify_against(&directory, &manifest, &dataset)?;
     Ok(VerifiedPublication {
         generation_digest: manifest.generation_digest,
         workbook,
@@ -206,10 +179,10 @@ pub fn open_publication(
     cohort: GradYear,
 ) -> ReportResult<OpenedPublication> {
     super::incident::check_workbook(path)?;
-    let (directory, manifest) = preflight(path)?;
+    let (directory, manifest) = verify::preflight(path)?;
     super::seal::binding(&manifest, store_lineage, scope, cohort)?;
-    let dataset = decode(&directory, &manifest)?;
-    let workbook = verify_against(&directory, &manifest, &dataset)?;
+    let dataset = verify::decode(&directory, &manifest)?;
+    let workbook = verify::verify_against(&directory, &manifest, &dataset)?;
     Ok(OpenedPublication {
         dataset,
         generation_digest: manifest.generation_digest,
@@ -225,74 +198,16 @@ pub fn open_publication_for_seal(
     jurisdictions: &[census_domain::UsJurisdiction],
 ) -> ReportResult<OpenedPublication> {
     super::incident::check_workbook(path)?;
-    let (directory, manifest) = preflight(path)?;
+    let (directory, manifest) = verify::preflight(path)?;
     super::seal::binding(&manifest, store_lineage, scope, cohort)?;
     super::seal::require_selection(&manifest, jurisdictions)?;
-    let dataset = decode(&directory, &manifest)?;
-    let workbook = verify_against(&directory, &manifest, &dataset)?;
+    let dataset = verify::decode(&directory, &manifest)?;
+    let workbook = verify::verify_against(&directory, &manifest, &dataset)?;
     Ok(OpenedPublication {
         dataset,
         generation_digest: manifest.generation_digest,
         workbook,
     })
-}
-
-fn decode(directory: &Path, manifest: &Manifest) -> ReportResult<ExportDataset> {
-    let dataset = ExportDataset::reopen_frozen(&directory.join("frozen-input.json"))?;
-    if dataset.lineage != manifest.lineage {
-        return Err(invariant(
-            "manifest and frozen input lineage disagree".to_string(),
-        ));
-    }
-    Ok(dataset)
-}
-
-pub(super) fn verify_prepared(
-    directory: &Path,
-    dataset: &ExportDataset,
-    options: &Options,
-) -> ReportResult<()> {
-    let manifest = verify_directory(directory)?;
-    if manifest.lineage != dataset.lineage || manifest.selection != Selection::of(options) {
-        return Err(invariant(
-            "prepared publication differs from its captured input or selection".to_string(),
-        ));
-    }
-    let frozen = manifest
-        .artifacts
-        .get("frozen-input.json")
-        .ok_or_else(|| invariant("publication lacks its frozen input".to_string()))?;
-    if frozen.sha256 != dataset.archive_digest()? {
-        return Err(invariant(
-            "retained frozen bytes differ from the captured export input".to_string(),
-        ));
-    }
-    super::verify_sidecars::verify(directory, dataset, options)?;
-    crate::workbook::verify::verify_frozen(&directory.join("workbook.xlsx"), dataset, options)?;
-    Ok(())
-}
-
-fn preflight(path: &Path) -> ReportResult<(PathBuf, Manifest)> {
-    if path.file_name().and_then(|name| name.to_str()) != Some("workbook.xlsx") {
-        return Err(invariant(
-            "verification requires a manifested generation workbook".to_string(),
-        ));
-    }
-    let directory = path
-        .parent()
-        .ok_or_else(|| invariant("workbook has no generation directory".to_string()))?;
-    let manifest = verify_directory(directory)?;
-    Ok((directory.to_path_buf(), manifest))
-}
-
-fn verify_against(
-    directory: &Path,
-    manifest: &Manifest,
-    dataset: &ExportDataset,
-) -> ReportResult<crate::workbook::verify::VerifiedWorkbook> {
-    let options = manifest.selection.options()?;
-    super::verify_sidecars::verify(directory, dataset, &options)?;
-    crate::workbook::verify::verify_frozen(&directory.join("workbook.xlsx"), dataset, &options)
 }
 
 fn artifact_names(revision: u32, grad_year: Option<i16>) -> ReportResult<Vec<String>> {

@@ -293,15 +293,14 @@ impl<'a> Decode<'a> {
             }
             Some(OBJECT_ALIAS_TYPE) => self.object_alias(phase, locator, &parsed, subject),
             _ => {
-                match parsed.get("payload") {
-                    Some(payload) => self.digest(phase, locator, payload, subject),
-                    None => {
-                        self.note(
-                            CorruptionClass::Undecodable,
-                            subject,
-                            "the journal entry carries no payload".to_string(),
-                        );
-                    }
+                if let Some(payload) = parsed.get("payload") {
+                    self.digest(phase, locator, payload, subject);
+                } else {
+                    self.note(
+                        CorruptionClass::Undecodable,
+                        subject,
+                        "the journal entry carries no payload".to_string(),
+                    );
                 }
                 Ok(())
             }
@@ -447,17 +446,15 @@ impl<'a> Decode<'a> {
             );
             return None;
         }
-        let envelope: Value = match serde_json::from_slice(raw) {
-            Ok(envelope) => envelope,
-            Err(source) => {
+        let envelope: Value = serde_json::from_slice(raw)
+            .inspect_err(|source| {
                 self.note(
                     CorruptionClass::Undecodable,
                     std::mem::take(subject),
                     format!("chunk {index} envelope: {source}"),
                 );
-                return None;
-            }
-        };
+            })
+            .ok()?;
         if envelope.get("type").and_then(Value::as_str) != Some(CHUNK_TYPE) {
             self.note(
                 CorruptionClass::Undecodable,
@@ -512,15 +509,14 @@ impl<'a> Decode<'a> {
                 return;
             }
         };
-        match entry.get("payload") {
-            Some(payload) => self.digest(phase, locator, payload, subject),
-            None => {
-                self.note(
-                    CorruptionClass::Undecodable,
-                    subject,
-                    "the journal entry carries no payload".to_string(),
-                );
-            }
+        if let Some(payload) = entry.get("payload") {
+            self.digest(phase, locator, payload, subject);
+        } else {
+            self.note(
+                CorruptionClass::Undecodable,
+                subject,
+                "the journal entry carries no payload".to_string(),
+            );
         }
     }
 
