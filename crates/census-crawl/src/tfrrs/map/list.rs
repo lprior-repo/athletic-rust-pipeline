@@ -213,6 +213,15 @@ impl<'a> Absorb<'a> {
         }
     }
 
+    fn same_observation(existing: &CanonicalPerformance, candidate: &CanonicalPerformance) -> bool {
+        existing.mark == candidate.mark
+            && existing.adjustment == candidate.adjustment
+            && existing.wind_mps == candidate.wind_mps
+            && existing.place == candidate.place
+            && existing.timing == candidate.timing
+            && existing.observed_grade == candidate.observed_grade
+    }
+
     fn mint_row(
         &mut self,
         context: &ListContext<'_>,
@@ -262,13 +271,7 @@ impl<'a> Absorb<'a> {
         };
         let key = id.as_str().to_string();
         if let Some(existing) = self.accumulator.performances.get_mut(&key) {
-            let is_identical = existing.mark == performance.mark
-                && existing.adjustment == performance.adjustment
-                && existing.wind_mps == performance.wind_mps
-                && existing.place == performance.place
-                && existing.timing == performance.timing
-                && existing.observed_grade == performance.observed_grade;
-            if !is_identical {
+            if !Self::same_observation(existing, &performance) {
                 existing.merge(performance);
             }
         } else {
