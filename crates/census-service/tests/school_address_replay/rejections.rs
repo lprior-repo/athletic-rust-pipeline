@@ -35,7 +35,7 @@ fn school_address_replay_refuses_changed_capture_hash_before_publishing() -> Tes
 fn school_address_replay_refuses_a_missing_capture_and_an_unadmitted_format() -> TestResult {
     let dir = TempDir::new()?;
     let mut value = manifest(dir.path())?;
-    value["captures"][0]["path"] = dir.path().join("absent.csv").display().to_string().into();
+    value["captures"][0]["path"] = "absent.csv".into();
     std::fs::write(
         dir.path().join("manifest.json"),
         serde_json::to_vec(&value)?,
