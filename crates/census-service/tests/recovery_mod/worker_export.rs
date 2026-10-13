@@ -84,7 +84,7 @@ fn export(store: &Store) -> super::TestResult<Export> {
         })
         .collect();
     let dataset = ExportDataset::load(store)?;
-    let derivation = Derivation::of(&dataset, report::Scope::AllSources, None);
+    let derivation = Derivation::of(&dataset, report::Scope::AllSources, None, &[]);
     let census = report::build_census(&derivation, &store.out_dir());
     let mut projected = serde_json::to_value(&census)?;
     if let Some(object) = projected.as_object_mut() {

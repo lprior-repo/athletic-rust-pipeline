@@ -103,9 +103,13 @@ pub(super) fn consolidate_armed(
     Ok(consolidated)
 }
 
-pub(super) fn build_report(store: &Store, scope: Scope) -> ReportResult<ReportReply> {
+pub(super) fn build_report(
+    store: &Store,
+    scope: Scope,
+    jurisdictions: &[census_domain::UsJurisdiction],
+) -> ReportResult<ReportReply> {
     let dataset = ExportDataset::load(store)?;
-    let derivation = Derivation::of(&dataset, scope, None);
+    let derivation = Derivation::of(&dataset, scope, None, jurisdictions);
     let census = report::build_census(&derivation, &store.out_dir());
     let (json_path, csv_path) = report::write_census(store, &census, scope)?;
     Ok(ReportReply {
@@ -138,7 +142,7 @@ pub(super) fn build_workbook(
     job: &str,
 ) -> ReportResult<WorkbookReply> {
     let dataset = ExportDataset::for_job(store, job)?;
-    let censuses = workbook::Censuses::of(&dataset, &store.out_dir());
+    let censuses = workbook::Censuses::of(&dataset, &store.out_dir(), &options.jurisdictions);
     let path = workbook::build_from(&dataset, store, options, &censuses)?;
     Ok(WorkbookReply {
         path: path.display().to_string(),

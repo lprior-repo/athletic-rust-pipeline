@@ -18,6 +18,7 @@ fn publication_options(directory: &Path, scope: Scope) -> TestResult<crate::work
         out: Some(directory.join("publication")),
         limit: None,
         scope,
+        jurisdictions: Vec::new(),
         school_year: SchoolYear::new(2026).ok_or("invalid synthetic publication year")?,
     })
 }

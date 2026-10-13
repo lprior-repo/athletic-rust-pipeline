@@ -87,6 +87,7 @@ fn selected_bests(dataset: &ExportDataset) -> crate::report::ReportResult<Vec<Sh
             scope: Scope::AllSources,
             grad_year: Some(2027),
             limit: None,
+            jurisdictions: Vec::new(),
         },
     )
 }
@@ -177,7 +178,7 @@ fn stale_input_refused(mutation: Mutation) -> TestResult {
         ExportDataset::for_job(&captured.store, JOB),
         Err(ReportError::Invariant { ref detail }) if detail.contains("stale or foreign")
     ));
-    let censuses = crate::workbook::Censuses::of(&captured.dataset, &captured.store.out_dir());
+    let censuses = crate::workbook::Censuses::of(&captured.dataset, &captured.store.out_dir(), &[]);
     check!(matches!(
         crate::workbook::build_from(
             &captured.dataset,

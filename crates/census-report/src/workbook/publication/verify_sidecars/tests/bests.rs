@@ -18,6 +18,7 @@ fn bests_options(options: &Options) -> crate::bests::Options {
         scope: options.scope,
         grad_year: options.grad_year,
         limit: options.limit,
+        jurisdictions: options.jurisdictions.clone(),
     }
 }
 
@@ -100,6 +101,7 @@ fn valid_best_results_sidecars_pass_and_forgeries_fail() -> TestResult {
         limit: None,
         scope: crate::report::Scope::AllSources,
         school_year: census_domain::model::SchoolYear::new(2026).ok_or("invalid fixture season")?,
+        jurisdictions: Vec::new(),
     };
     let rows = build_from_dataset(&dataset, &bests_options(&options))?;
     check!(eq; rows.len(), 1);

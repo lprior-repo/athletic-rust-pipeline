@@ -20,18 +20,18 @@ fn the_default_generation_matches_the_legacy_constant() -> TestResult {
 #[test]
 fn identical_semantic_requests_with_one_generation_share_retry_keys() -> TestResult {
     let generation = ExportGeneration::default_generation();
-    let core = report_export_key("core", &generation)?;
-    if core != report_export_key("core", &generation)? {
+    let core = report_export_key("core", &[], &generation)?;
+    if core != report_export_key("core", &[], &generation)? {
         return Err(format!("report key: {}", core.as_str()).into());
     }
-    if core.as_str() != "report:core:1" {
+    if core.as_str() != "report:core:all:1" {
         return Err(format!("report key: {}", core.as_str()).into());
     }
-    let bests = bests_export_key("all", "2027", "50", &generation)?;
-    if bests != bests_export_key("all", "2027", "50", &generation)? {
+    let bests = bests_export_key("all", "2027", "50", &[], &generation)?;
+    if bests != bests_export_key("all", "2027", "50", &[], &generation)? {
         return Err(format!("bests key: {}", bests.as_str()).into());
     }
-    if bests.as_str() != "bests:all:2027:50:1" {
+    if bests.as_str() != "bests:all:2027:50:all:1" {
         return Err(format!("bests key: {}", bests.as_str()).into());
     }
     let consolidate = consolidate_export_key(&generation);
@@ -48,20 +48,20 @@ fn identical_semantic_requests_with_one_generation_share_retry_keys() -> TestRes
 fn a_fresh_generation_produces_fresh_export_keys() -> TestResult {
     let previous = ExportGeneration::default_generation();
     let next = ExportGeneration::parse("2")?;
-    let previous_report = report_export_key("core", &previous)?;
-    if previous_report == report_export_key("core", &next)? {
+    let previous_report = report_export_key("core", &[], &previous)?;
+    if previous_report == report_export_key("core", &[], &next)? {
         return Err(format!("report key: {}", previous_report.as_str()).into());
     }
-    let next_report = report_export_key("core", &next)?;
-    if next_report.as_str() != "report:core:2" {
+    let next_report = report_export_key("core", &[], &next)?;
+    if next_report.as_str() != "report:core:all:2" {
         return Err(format!("report key: {}", next_report.as_str()).into());
     }
-    let previous_bests = bests_export_key("core", "2027", "all", &previous)?;
-    if previous_bests == bests_export_key("core", "2027", "all", &next)? {
+    let previous_bests = bests_export_key("core", "2027", "all", &[], &previous)?;
+    if previous_bests == bests_export_key("core", "2027", "all", &[], &next)? {
         return Err(format!("bests key: {}", previous_bests.as_str()).into());
     }
-    let next_bests = bests_export_key("core", "2027", "all", &next)?;
-    if next_bests.as_str() != "bests:core:2027:all:2" {
+    let next_bests = bests_export_key("core", "2027", "all", &[], &next)?;
+    if next_bests.as_str() != "bests:core:2027:all:all:2" {
         return Err(format!("bests key: {}", next_bests.as_str()).into());
     }
     let previous_consolidate = consolidate_export_key(&previous);
@@ -109,15 +109,16 @@ fn workbook_keys_follow_the_selected_generation() -> TestResult {
         scope: Some("core".to_string()),
         out: Some("/tmp/root-a".to_string()),
         school_year: Some(2026),
+        jurisdictions: Vec::new(),
     };
     let legacy = ExportGeneration::default_generation();
     let workbook_legacy = workbook_request_key(&request, &legacy)?;
-    if workbook_legacy.as_str() != "workbook:2027:core:50:/tmp/root-a:2026:1" {
+    if workbook_legacy.as_str() != "workbook:2027:core:50:all:/tmp/root-a:2026:1" {
         return Err(format!("workbook key: {}", workbook_legacy.as_str()).into());
     }
     let next = ExportGeneration::parse("2")?;
     let workbook_next = workbook_request_key(&request, &next)?;
-    if workbook_next.as_str() != "workbook:2027:core:50:/tmp/root-a:2026:2" {
+    if workbook_next.as_str() != "workbook:2027:core:50:all:/tmp/root-a:2026:2" {
         return Err(format!("workbook key: {}", workbook_next.as_str()).into());
     }
     if workbook_legacy == workbook_next {
@@ -146,35 +147,35 @@ fn the_generation_resolver_defaults_without_a_flag() -> TestResult {
 fn export_keys_refuse_colon_parts_on_every_builder() -> TestResult {
     let generation = ExportGeneration::default_generation();
     check!(
-        report_export_key("co:re", &generation).is_err(),
+        report_export_key("co:re", &[], &generation).is_err(),
         "a colon scope must not shift the report key segments"
     );
     check!(
-        report_export_key("", &generation).is_err(),
+        report_export_key("", &[], &generation).is_err(),
         "an empty scope must not collapse the report key grammar"
     );
     check!(
-        bests_export_key("a:ll", "2027", "50", &generation).is_err(),
+        bests_export_key("a:ll", "2027", "50", &[], &generation).is_err(),
         "a colon scope must not shift the bests key segments"
     );
     check!(
-        bests_export_key("all", "20:27", "50", &generation).is_err(),
+        bests_export_key("all", "20:27", "50", &[], &generation).is_err(),
         "a colon year must not shift the bests key segments"
     );
     check!(
-        bests_export_key("all", "2027", "5:0", &generation).is_err(),
+        bests_export_key("all", "2027", "5:0", &[], &generation).is_err(),
         "a colon limit must not shift the bests key segments"
     );
     check!(
-        bests_export_key("all", "2027", "", &generation).is_err(),
+        bests_export_key("all", "2027", "", &[], &generation).is_err(),
         "an empty limit must not collapse the bests key grammar"
     );
     check!(
-        bests_export_key("", "2027", "50", &generation).is_err(),
+        bests_export_key("", "2027", "50", &[], &generation).is_err(),
         "an empty scope must not collapse the bests key grammar"
     );
     check!(
-        bests_export_key("all", "", "50", &generation).is_err(),
+        bests_export_key("all", "", "50", &[], &generation).is_err(),
         "an empty year must not collapse the bests key grammar"
     );
     Ok(())

@@ -41,23 +41,6 @@ directory fsync is honoured; a filesystem that acknowledges or silently discards
 (some network and overlay filesystems) is outside the supported contract, and the documented reboot
 qualification is what establishes it for the filesystems actually used.
 
-Immutable query profiles and regional descriptors/chunks live in Fjall metadata and are carried by
-this physical copy. Staged backup/restore validation also checks retained registry keys and payloads
-before promotion. Generic integrity checks both metadata families through one captured view, using
-fixed ceilings of 25,000 physical records and 64 MiB of key-plus-value bytes. Unsupported versions or
-a closed metadata window make verification incomplete; they are not automatically byte corruption.
-Even `integrity_complete` retains these metadata ceilings. An incomplete result requires a separately
-implemented, authorized resumable metadata continuation; repeatedly restarting the same window cannot
-certify the suffix. No metadata continuation is currently supplied.
-
-A retained-only check cannot infer a profile or descriptor/chunk set that has disappeared completely.
-For operational qualification, retain an explicit expected StoreIdentity plus every selected exact
-ProfileId, regional full reference and payload before backup; compare them after restore and another
-reopen. Entity table counts and generic `ok` do not certify this expected-reference completeness.
-Full restore preserves existing StoreIdentity spelling and installation-bound selections at its new
-path. An independent installation with equivalent semantic registry contents remains foreign. Neither
-backup, restore nor registry integrity initializes a missing historical lineage record.
-
 Native Restate's durable directory is **separate** and not included. Nor are arbitrary external raw
 capture paths. Inventory every referenced evidence object and run/decision/artifact manifest before
 calling a backup complete. If `http/` holds the only retained source bytes, it is evidence, not an

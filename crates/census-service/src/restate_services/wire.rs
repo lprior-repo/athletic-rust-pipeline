@@ -90,9 +90,12 @@ pub struct ConsolidateReply {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReportRequest {
     #[serde(default)]
     pub scope: Option<String>,
+    #[serde(default)]
+    pub jurisdictions: Vec<UsJurisdiction>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -105,6 +108,7 @@ pub struct ReportReply {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct BestsRequest {
     #[serde(default)]
     pub scope: Option<String>,
@@ -112,6 +116,8 @@ pub struct BestsRequest {
     pub grad_year: Option<i16>,
     #[serde(default)]
     pub limit: Option<usize>,
+    #[serde(default)]
+    pub jurisdictions: Vec<UsJurisdiction>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -123,6 +129,7 @@ pub struct BestsReply {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct WorkbookRequest {
     #[serde(default)]
     pub grad_year: Option<i16>,
@@ -134,6 +141,8 @@ pub struct WorkbookRequest {
     pub out: Option<String>,
     #[serde(default)]
     pub school_year: Option<i16>,
+    #[serde(default)]
+    pub jurisdictions: Vec<UsJurisdiction>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

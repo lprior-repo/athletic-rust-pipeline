@@ -8,7 +8,12 @@ impl Store {
         let _appends = self.lock_appends();
         let id = profile.id().map_err(ProfileRegistryError::Canonical)?;
         let record_key = key(&id);
-        if let Some(held) = read::retained(&self.db.snapshot(), &self.meta, &id)? {
+        if let Some(retained) = self
+            .meta
+            .get(record_key.as_bytes())
+            .map_err(|source| StoreError::Read { source })?
+        {
+            let held = read::decode(&id, retained.as_ref())?;
             if &held != profile {
                 return Err(ProfileRegistryError::ImmutableConflict { id }.into());
             }

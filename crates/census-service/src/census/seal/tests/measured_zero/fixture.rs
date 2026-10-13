@@ -73,6 +73,7 @@ impl Fixture {
         SealRequest {
             grad_year: 2027,
             scope: Scope::AllSources,
+            jurisdictions: Vec::new(),
             workbook: Some(self.path.clone()),
             write,
             journal: Some(JournalCounts {
@@ -163,6 +164,7 @@ impl Fixture {
             &self.store,
             GradYear::CO2027,
             Scope::AllSources,
+            &[],
         )?;
         check!(eq; inspection.check.mapped_athletes, 0);
         check!(eq; inspection.check.export_verified, Verification::Verified);

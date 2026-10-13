@@ -21,15 +21,25 @@ pub(super) struct Selection {
     grad_year: Option<i16>,
     limit: Option<usize>,
     school_year: Option<SchoolYear>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    jurisdictions: Vec<String>,
 }
 
 impl Selection {
     fn of(options: &Options) -> Self {
+        let mut jurisdictions: Vec<String> = options
+            .jurisdictions
+            .iter()
+            .map(|jurisdiction| jurisdiction.code().to_string())
+            .collect();
+        jurisdictions.sort();
+        jurisdictions.dedup();
         Self {
             scope: options.scope.as_str().to_string(),
             grad_year: options.grad_year,
             limit: options.limit,
             school_year: Some(options.school_year),
+            jurisdictions,
         }
     }
 
@@ -42,12 +52,24 @@ impl Selection {
         let school_year = self.school_year.ok_or_else(|| {
             invariant("the publication manifest carries no contact school year".to_string())
         })?;
+        let jurisdictions = self
+            .jurisdictions
+            .iter()
+            .map(|code| {
+                census_domain::UsJurisdiction::from_code(code).ok_or_else(|| {
+                    invariant(format!(
+                        "the publication manifest carries an unknown jurisdiction {code:?}"
+                    ))
+                })
+            })
+            .collect::<ReportResult<Vec<_>>>()?;
         Ok(Options {
             scope,
             grad_year: self.grad_year,
             limit: self.limit,
             school_year,
             out: None,
+            jurisdictions,
         })
     }
 }
@@ -186,6 +208,26 @@ pub fn open_publication(
     super::incident::check_workbook(path)?;
     let (directory, manifest) = preflight(path)?;
     super::seal::binding(&manifest, store_lineage, scope, cohort)?;
+    let dataset = decode(&directory, &manifest)?;
+    let workbook = verify_against(&directory, &manifest, &dataset)?;
+    Ok(OpenedPublication {
+        dataset,
+        generation_digest: manifest.generation_digest,
+        workbook,
+    })
+}
+
+pub fn open_publication_for_seal(
+    path: &Path,
+    store_lineage: &DatasetLineage,
+    scope: Scope,
+    cohort: GradYear,
+    jurisdictions: &[census_domain::UsJurisdiction],
+) -> ReportResult<OpenedPublication> {
+    super::incident::check_workbook(path)?;
+    let (directory, manifest) = preflight(path)?;
+    super::seal::binding(&manifest, store_lineage, scope, cohort)?;
+    super::seal::require_selection(&manifest, jurisdictions)?;
     let dataset = decode(&directory, &manifest)?;
     let workbook = verify_against(&directory, &manifest, &dataset)?;
     Ok(OpenedPublication {

@@ -211,8 +211,9 @@ fn unsupported_graduation(rows: &StoreRows) -> Family {
 pub(in crate::workbook) fn cohort_of(
     dataset: &crate::export::ExportDataset,
     scope: Scope,
+    jurisdictions: &[census_domain::UsJurisdiction],
 ) -> Vec<CanonicalAthlete> {
-    crate::report::cohort_candidates(dataset, scope, Some(GradYear::CO2027.get()))
+    crate::report::cohort_candidates(dataset, scope, Some(GradYear::CO2027.get()), jurisdictions)
 }
 
 fn queue_row(id: &str, subject: String, detail: String) -> QueueRow {
@@ -226,11 +227,12 @@ fn queue_row(id: &str, subject: String, detail: String) -> QueueRow {
 pub fn retained_records(
     dataset: &crate::export::ExportDataset,
     school_year: census_domain::model::SchoolYear,
+    jurisdictions: &[census_domain::UsJurisdiction],
 ) -> ReportResult<RetainedRecords> {
     let admission = crate::report::EventAdmission::of(dataset)?;
-    let derivation = crate::report::Derivation::of(dataset, Scope::AllSources, None);
+    let derivation = crate::report::Derivation::of(dataset, Scope::AllSources, None, jurisdictions);
     let rows = StoreRows::of(&derivation, school_year)?;
-    let cohort = cohort_of(dataset, Scope::AllSources);
+    let cohort = cohort_of(dataset, Scope::AllSources, jurisdictions);
     let names = school_name_index(rows.schools);
     Ok(RetainedRecords {
         conflicts: labelled(conflict_families(&rows, &cohort, &names)?),

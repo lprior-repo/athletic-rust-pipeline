@@ -321,8 +321,8 @@ fn capture(store: &Store, history_id: &SchoolId) -> TestResult<ReadModel> {
         .ok_or("missing merged history school")?
         .clone();
     let dataset = ExportDataset::load(store)?;
-    let core = Derivation::of(&dataset, Scope::Core, None);
-    let all_sources = Derivation::of(&dataset, Scope::AllSources, None);
+    let core = Derivation::of(&dataset, Scope::Core, None, &[]);
+    let all_sources = Derivation::of(&dataset, Scope::AllSources, None, &[]);
     Ok(ReadModel {
         tables: stats.tables,
         observations: stats.observations,
@@ -339,6 +339,7 @@ fn capture(store: &Store, history_id: &SchoolId) -> TestResult<ReadModel> {
                 scope: Scope::Core,
                 grad_year: Some(2027),
                 limit: None,
+                jurisdictions: Vec::new(),
             },
         )?)?,
         counts: census::consolidate(store)?,

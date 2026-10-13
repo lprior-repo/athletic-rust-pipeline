@@ -261,6 +261,17 @@ pub(super) fn resolve_restriction(
     }
 }
 
+pub(super) fn restriction_display(jurisdictions: &[UsJurisdiction]) -> String {
+    if jurisdictions.is_empty() {
+        return "all".to_string();
+    }
+    jurisdictions
+        .iter()
+        .map(|jurisdiction| jurisdiction.code())
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
 pub(crate) fn within_census_scope(states: &[UsJurisdiction]) -> Result<Vec<UsJurisdiction>> {
     states
         .iter()

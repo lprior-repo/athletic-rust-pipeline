@@ -58,7 +58,7 @@ impl Oracle {
             dataset.athletes.len() == 185 && dataset.performances.len() == 185,
             "canonical row loss or duplication"
         );
-        let derived = Derivation::of(dataset, Scope::AllSources, Some(2027));
+        let derived = Derivation::of(dataset, Scope::AllSources, Some(2027), &[]);
         ensure!(
             derived.athletes().len() == 60 && derived.performances().len() == 60,
             "cohort census mismatch"

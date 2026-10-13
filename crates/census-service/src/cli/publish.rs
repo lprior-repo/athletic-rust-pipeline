@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use census_domain::model::SchoolYear;
+use census_domain::UsJurisdiction;
 use census_report::export::ExportDataset;
 use census_report::report::{self, Derivation};
 use census_report::{bests, workbook};
@@ -10,7 +11,10 @@ use census_store::Store;
 use clap::Args;
 use std::path::PathBuf;
 
-use super::{cohort_label, contact_school_year, live, school_year, scope_of, Cli, Route};
+use super::{
+    cohort_label, contact_school_year, live, resolve_restriction, restriction_display, school_year,
+    scope_of, Cli, Route,
+};
 
 pub(super) fn run_consolidate(store: &Store) -> Result<()> {
     let counts = census_service::census::consolidate(store)?;
@@ -35,14 +39,20 @@ fn print_totals(census: &report::Census) {
     );
 }
 
-pub(super) fn run_report(store: &Store, print: bool, core: bool) -> Result<()> {
+pub(super) fn run_report(
+    store: &Store,
+    print: bool,
+    core: bool,
+    jurisdictions: &[UsJurisdiction],
+) -> Result<()> {
     let scope = if core {
         report::Scope::Core
     } else {
         report::Scope::AllSources
     };
     let dataset = ExportDataset::load(store)?;
-    let derivation = Derivation::of(&dataset, scope, None);
+    println!("jurisdictions={}", restriction_display(jurisdictions));
+    let derivation = Derivation::of(&dataset, scope, None, jurisdictions);
     let census = report::build_census(&derivation, &store.out_dir());
     let (json_path, csv_path) = report::write_census(store, &census, scope)?;
     println!("wrote {}", json_path.display());
@@ -65,6 +75,14 @@ pub(super) struct ReportArgs {
     #[arg(long)]
     core: bool,
     #[arg(
+        help = "Restrict the publication to these jurisdictions (default: every census jurisdiction)"
+    )]
+    #[arg(long, value_delimiter = ',')]
+    states: Vec<UsJurisdiction>,
+    #[arg(help = "Publish every census jurisdiction explicitly")]
+    #[arg(long)]
+    all_states: bool,
+    #[arg(
         help = "Logical export generation selecting a fresh export run; omitted reuses the legacy generation 1 keys"
     )]
     #[arg(long, value_name = "GENERATION")]
@@ -82,17 +100,23 @@ pub(super) async fn run_census_report(cli: &Cli, args: &ReportArgs) -> Result<()
     } else {
         report::Scope::AllSources
     };
+    let jurisdictions = if args.all_states || !args.states.is_empty() {
+        resolve_restriction(args.all_states, &args.states)?
+    } else {
+        Vec::new()
+    };
     match cli.route(args.ingress.as_deref())? {
         Route::Offline(root) => {
             reject_offline_generation(args.generation.as_deref())?;
-            run_report(&Store::open(root)?, args.print, args.core)
+            run_report(&Store::open(root)?, args.print, args.core, &jurisdictions)
         }
         Route::Ingress(origin) => {
             let generation = ExportGeneration::resolve(args.generation.as_deref())?;
-            let summary = live::report(Some(origin), scope, &generation).await?;
+            let summary = live::report(Some(origin), scope, &jurisdictions, &generation).await?;
             println!("wrote {}", summary.json_path);
             println!("wrote {}", summary.csv_path);
             println!("scope={} totals={}", summary.scope, summary.totals);
+            println!("jurisdictions={}", restriction_display(&jurisdictions));
             if args.print {
                 println!("{}", serde_json::to_string_pretty(&summary.totals)?);
             }
@@ -113,6 +137,14 @@ pub(super) struct BestsArgs {
     #[arg(long)]
     all: bool,
     #[arg(
+        help = "Restrict the publication to these jurisdictions (default: every census jurisdiction)"
+    )]
+    #[arg(long, value_delimiter = ',')]
+    states: Vec<UsJurisdiction>,
+    #[arg(help = "Publish every census jurisdiction explicitly")]
+    #[arg(long)]
+    all_states: bool,
+    #[arg(
         help = "Logical export generation selecting a fresh export run; omitted reuses the legacy generation 1 keys"
     )]
     #[arg(long, value_name = "GENERATION")]
@@ -130,16 +162,26 @@ pub(super) async fn run_bests(cli: &Cli, args: &BestsArgs) -> Result<()> {
     } else {
         Some(school_year(args.grad_year)?)
     };
+    let jurisdictions = if args.all_states || !args.states.is_empty() {
+        resolve_restriction(args.all_states, &args.states)?
+    } else {
+        Vec::new()
+    };
     match cli.route(args.ingress.as_deref())? {
         Route::Offline(root) => {
             reject_offline_generation(args.generation.as_deref())?;
-            run_bests_offline(&Store::open(root)?, args, grad_year)
+            run_bests_offline(&Store::open(root)?, args, grad_year, &jurisdictions)
         }
-        Route::Ingress(origin) => run_bests_live(origin, args, grad_year).await,
+        Route::Ingress(origin) => run_bests_live(origin, args, grad_year, &jurisdictions).await,
     }
 }
 
-async fn run_bests_live(origin: &str, args: &BestsArgs, grad_year: Option<i16>) -> Result<()> {
+async fn run_bests_live(
+    origin: &str,
+    args: &BestsArgs,
+    grad_year: Option<i16>,
+    jurisdictions: &[UsJurisdiction],
+) -> Result<()> {
     let generation = ExportGeneration::resolve(args.generation.as_deref())?;
     let BestsReply {
         cohort,
@@ -151,20 +193,28 @@ async fn run_bests_live(origin: &str, args: &BestsArgs, grad_year: Option<i16>) 
         report::Scope::Core,
         grad_year,
         args.limit,
+        jurisdictions,
         &generation,
     )
     .await?;
     println!("cohort={cohort} rows={rows}");
+    println!("jurisdictions={}", restriction_display(jurisdictions));
     println!("wrote {jsonl}");
     println!("wrote {csv}");
     Ok(())
 }
 
-fn run_bests_offline(store: &Store, args: &BestsArgs, grad_year: Option<i16>) -> Result<()> {
+fn run_bests_offline(
+    store: &Store,
+    args: &BestsArgs,
+    grad_year: Option<i16>,
+    jurisdictions: &[UsJurisdiction],
+) -> Result<()> {
     let options = bests::Options {
         scope: report::Scope::Core,
         grad_year,
         limit: args.limit,
+        jurisdictions: jurisdictions.to_vec(),
     };
     let dataset = ExportDataset::load(store).context("reading export dataset for best marks")?;
     let rows = bests::build_from_dataset(&dataset, &options)?;
@@ -172,6 +222,7 @@ fn run_bests_offline(store: &Store, args: &BestsArgs, grad_year: Option<i16>) ->
     let (jsonl, csv) =
         bests::write(&store.out_dir(), &rows, &cohort).context("writing the best-mark sidecars")?;
     println!("cohort={cohort} rows={}", rows.len());
+    println!("jurisdictions={}", restriction_display(jurisdictions));
     println!("wrote {}", jsonl.display());
     println!("wrote {}", csv.display());
     Ok(())
@@ -201,6 +252,14 @@ pub(super) struct WorkbookArgs {
     #[arg(long)]
     core: bool,
     #[arg(
+        help = "Restrict the publication to these jurisdictions (default: every census jurisdiction)"
+    )]
+    #[arg(long, value_delimiter = ',')]
+    states: Vec<UsJurisdiction>,
+    #[arg(help = "Publish every census jurisdiction explicitly")]
+    #[arg(long)]
+    all_states: bool,
+    #[arg(
         help = "Logical export generation selecting a fresh export run; omitted reuses the legacy generation 1 keys"
     )]
     #[arg(long, value_name = "GENERATION")]
@@ -215,6 +274,12 @@ pub(super) struct WorkbookArgs {
 pub(super) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
     let grad_year = school_year(args.grad_year)?;
     let contact_season = contact_school_year(args.school_year)?;
+    let jurisdictions = if args.all_states || !args.states.is_empty() {
+        resolve_restriction(args.all_states, &args.states)?
+    } else {
+        Vec::new()
+    };
+    println!("jurisdictions={}", restriction_display(&jurisdictions));
     match cli.route(args.ingress.as_deref())? {
         Route::Offline(root) => {
             reject_offline_generation(args.generation.as_deref())?;
@@ -223,6 +288,7 @@ pub(super) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
                 out: args.out.clone(),
                 limit: args.limit,
                 scope: scope_of(args.core),
+                jurisdictions,
                 school_year: contact_season,
             };
             let store = Store::open(root)?;
@@ -230,7 +296,9 @@ pub(super) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
             println!("wrote {}", path.display());
             Ok(())
         }
-        Route::Ingress(origin) => run_workbook_live(origin, args, grad_year, contact_season).await,
+        Route::Ingress(origin) => {
+            run_workbook_live(origin, args, grad_year, contact_season, &jurisdictions).await
+        }
     }
 }
 
@@ -239,6 +307,7 @@ async fn run_workbook_live(
     args: &WorkbookArgs,
     grad_year: i16,
     contact_season: SchoolYear,
+    jurisdictions: &[UsJurisdiction],
 ) -> Result<()> {
     let generation = ExportGeneration::resolve(args.generation.as_deref())?;
     let request = WorkbookRequest {
@@ -250,6 +319,7 @@ async fn run_workbook_live(
             .as_ref()
             .map(|path| path.to_string_lossy().into_owned()),
         school_year: Some(contact_season.get()),
+        jurisdictions: jurisdictions.to_vec(),
     };
     let WorkbookReply { path, .. } = live::workbook(Some(origin), request, &generation).await?;
     println!("wrote {path}");

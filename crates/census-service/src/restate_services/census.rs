@@ -84,7 +84,8 @@ impl Census {
         let store = Arc::clone(self.jobs.store());
         let region = Arc::clone(self.jobs.region());
         let permit = self.jobs.permit_control().await?;
-        let store_seal = requests::store_request(request, &journal, run);
+        let jurisdictions = super::normalize_jurisdictions(&request.jurisdictions)?;
+        let store_seal = requests::store_request(request, &journal, run, jurisdictions);
         let reply = ctx
             .run(move || async move {
                 super::blocking(region, move || {

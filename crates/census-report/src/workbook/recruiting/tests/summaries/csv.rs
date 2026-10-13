@@ -10,6 +10,7 @@ fn rows(fixture: &Fixture) -> TestResult<(::csv::StringRecord, Vec<::csv::String
             scope: Scope::AllSources,
             grad_year: Some(2027),
             limit: None,
+            jurisdictions: Vec::new(),
         },
     )?;
     let (_, path) = bests::write(fixture.dir.path(), &selected, "xc-context-fixture")?;

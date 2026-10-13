@@ -12,7 +12,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 fn census_of(store: &Store, scope: Scope) -> TestResult<Census> {
     let dataset = crate::export::ExportDataset::load(store)?;
     Ok(build_census(
-        &Derivation::of(&dataset, scope, None),
+        &Derivation::of(&dataset, scope, None, &[]),
         &store.out_dir(),
     ))
 }

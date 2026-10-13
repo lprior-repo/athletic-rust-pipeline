@@ -5,8 +5,6 @@ use super::{
 use serde::Serialize;
 
 mod aliases;
-mod coherence;
-use coherence::{coherent_components, coherent_pairs, distance_quantity, excluded_coherence};
 mod disposition;
 mod policy;
 
@@ -121,6 +119,183 @@ struct CatalogIdentity<'a> {
     qualifiers: &'a [&'a str],
     units: &'a [&'a str],
     separators: &'a str,
+}
+
+fn coherent_components(label: &str, kind: &EventKind) -> Result<bool, CatalogError> {
+    aliases::tokens(label).try_fold(true, |coherent, word| {
+        let component = EventKind::from_source_label(word);
+        let matches = match component {
+            EventKind::Unmapped { .. } if distance_quantity(word) => coherent_distance(word, kind)?,
+            EventKind::Unmapped { .. } => true,
+            _ => component == *kind || distance_component(kind, &component),
+        };
+        Ok(coherent && matches)
+    })
+}
+
+fn excluded_coherence(
+    event: &CanonicalEvent,
+    reason: EventExclusionReason,
+) -> Result<EventDisposition, CatalogError> {
+    if matches!(
+        event.resolved_specification(),
+        Err(super::SpecificationError::ConflictingSpecification)
+    ) {
+        return Ok(EventDisposition::Unresolved(
+            EventResolutionReason::ContradictoryDeclarations,
+        ));
+    }
+    let mut kind = None;
+    for label in &event.source_labels {
+        let mut preceding: Option<&str> = None;
+        for word in aliases::tokens(&label.label) {
+            let unit = aliases::member(word, policy::UNITS)
+                && preceding.is_some_and(|previous| {
+                    previous
+                        .bytes()
+                        .all(|byte| byte.is_ascii_digit() || byte == b'.')
+                        || previous.eq_ignore_ascii_case("two")
+                });
+            preceding = Some(word);
+            if unit {
+                continue;
+            }
+            let component = aliases::excluded_component(word);
+            if let Some(component) = component {
+                if kind.as_ref().is_some_and(|old| old != &component) {
+                    return Ok(EventDisposition::Unresolved(
+                        EventResolutionReason::ContradictoryDeclarations,
+                    ));
+                }
+                kind = Some(component);
+            }
+        }
+        let mut buffer = String::new();
+        for (left, right) in
+            aliases::tokens(&label.label).zip(aliases::tokens(&label.label).skip(1))
+        {
+            if !(left
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || byte == b'.')
+                || left.eq_ignore_ascii_case("two"))
+                || !aliases::member(right, policy::UNITS)
+            {
+                continue;
+            }
+            let bytes = left
+                .len()
+                .checked_add(right.len())
+                .ok_or(CatalogError::AggregateLabelBytesOverflow)?;
+            buffer.clear();
+            buffer
+                .try_reserve(bytes)
+                .map_err(|_| CatalogError::ResourceExhausted)?;
+            buffer.push_str(left);
+            buffer.push_str(right);
+            let component = EventKind::from_source_label(&buffer);
+            if kind.as_ref().is_some_and(|old| old != &component) {
+                return Ok(EventDisposition::Unresolved(
+                    EventResolutionReason::ContradictoryDeclarations,
+                ));
+            }
+            kind = Some(component);
+        }
+    }
+    Ok(EventDisposition::Excluded(reason))
+}
+
+fn coherent_pairs(label: &str, kind: &EventKind) -> Result<bool, CatalogError> {
+    let mut buffer = String::new();
+    for (left, right) in aliases::tokens(label).zip(aliases::tokens(label).skip(1)) {
+        let bytes = left
+            .len()
+            .checked_add(right.len())
+            .ok_or(CatalogError::AggregateLabelBytesOverflow)?;
+        buffer.clear();
+        buffer
+            .try_reserve(bytes)
+            .map_err(|_| CatalogError::ResourceExhausted)?;
+        buffer.push_str(left);
+        buffer.push_str(right);
+        let component = EventKind::from_source_label(&buffer);
+        match component {
+            EventKind::Unmapped { .. } if distance_quantity(&buffer) => {
+                if !coherent_distance(&buffer, kind)? {
+                    return Ok(false);
+                }
+            }
+            EventKind::Unmapped { .. } => {}
+            _ if component == *kind || distance_component(kind, &component) => {}
+            _ => return Ok(false),
+        }
+    }
+    Ok(true)
+}
+
+fn distance_quantity(word: &str) -> bool {
+    aliases::quantity(word)
+        && word
+            .find(|ch: char| !ch.is_ascii_digit() && ch != '.')
+            .and_then(|end| word.get(end..))
+            .is_some_and(|unit| {
+                aliases::member(
+                    unit,
+                    &[
+                        "m", "meter", "meters", "metre", "metres", "k", "km", "mile", "miles",
+                    ],
+                )
+            })
+}
+
+fn coherent_distance(word: &str, kind: &EventKind) -> Result<bool, CatalogError> {
+    let suffix = match kind {
+        EventKind::CrossCountry | EventKind::SprintMedley | EventKind::DistanceMedley => {
+            return Ok(true)
+        }
+        EventKind::Track2000mSteeplechase | EventKind::Track3000mSteeplechase => "steeplechase",
+        _ if kind.is_hurdles() => "hurdles",
+        _ => return Ok(false),
+    };
+    let bytes = word
+        .len()
+        .checked_add(suffix.len())
+        .ok_or(CatalogError::AggregateLabelBytesOverflow)?;
+    let mut qualified = String::new();
+    qualified
+        .try_reserve(bytes)
+        .map_err(|_| CatalogError::ResourceExhausted)?;
+    qualified.push_str(word);
+    qualified.push_str(suffix);
+    Ok(EventKind::from_source_label(&qualified) == *kind)
+}
+
+fn distance_component(kind: &EventKind, component: &EventKind) -> bool {
+    match kind {
+        EventKind::Track55mHurdles => component == &EventKind::Track55m,
+        EventKind::Track60mHurdles => component == &EventKind::Track60m,
+        EventKind::Track100mHurdles => component == &EventKind::Track100m,
+        EventKind::Track400mHurdles => component == &EventKind::Track400m,
+        EventKind::Track3000mSteeplechase => component == &EventKind::Track3000m,
+        EventKind::CrossCountry | EventKind::SprintMedley | EventKind::DistanceMedley => {
+            matches!(
+                component,
+                EventKind::Track55m
+                    | EventKind::Track60m
+                    | EventKind::Track100m
+                    | EventKind::Track200m
+                    | EventKind::Track400m
+                    | EventKind::Track800m
+                    | EventKind::Track1000m
+                    | EventKind::Track1500m
+                    | EventKind::Track1600m
+                    | EventKind::Track1Mile
+                    | EventKind::Track3000m
+                    | EventKind::Track3200m
+                    | EventKind::Track5000m
+            )
+        }
+        _ => false,
+    }
 }
 
 #[cfg(test)]

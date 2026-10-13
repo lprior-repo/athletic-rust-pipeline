@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use census_domain::model::GradYear;
 use census_report::export::{store_lineage, ExportDataset};
 use census_report::report::Scope;
-use census_report::workbook::publication::open_publication;
+use census_report::workbook::publication::open_publication_for_seal;
 use census_store::Store;
 
 use crate::census::{Verification, WorkbookCheck};
@@ -19,9 +19,10 @@ pub fn inspect_workbook(
     store: &Store,
     cohort: GradYear,
     scope: Scope,
+    jurisdictions: &[census_domain::UsJurisdiction],
 ) -> Result<Inspection> {
     let lineage = store_lineage(store).context("measuring the store's current generation")?;
-    let opened = open_publication(path, &lineage, scope, cohort)
+    let opened = open_publication_for_seal(path, &lineage, scope, cohort, jurisdictions)
         .context("verifying the complete current census publication")?;
     let dataset = opened.dataset;
     let sheets = opened.workbook.sheets;

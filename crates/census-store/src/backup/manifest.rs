@@ -81,9 +81,8 @@ fn link_entry(_root: &Path, link: &Path) -> StoreResult<ManifestEntry> {
 }
 
 pub(super) fn table_row_counts(root: &Path) -> StoreResult<BTreeMap<String, u64>> {
-    let (db, entities, _journal, meta, _receipts) =
+    let (db, entities, _journal, _meta, _receipts) =
         crate::open_keyspaces(root, crate::format::DEFAULT_CACHE_BYTES)?;
-    super::registry::require(&db.snapshot(), &meta)?;
     let mut counts = BTreeMap::new();
     for table in Table::ALL {
         let mut rows = count_prefix(&entities, &keys::observation_prefix(table))?;

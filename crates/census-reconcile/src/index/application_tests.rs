@@ -322,6 +322,7 @@ fn publish_checked_retained_supersession(
 fn supersede_obsolete_retained_identity_case_when_new_policy_resolves_cluster() -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path())?;
+
     let (school_a, _) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "School A", "school a", None);
     let (school_b, _) =
@@ -329,6 +330,7 @@ fn supersede_obsolete_retained_identity_case_when_new_policy_resolves_cluster() 
     let first = athlete(&school_a, "111");
     let second = athlete(&school_b, "111");
     store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
+
     let members = vec![first.id.cast(), second.id.cast()];
     let subject = "Synthetic Runner";
     let evidence =
@@ -351,6 +353,7 @@ fn supersede_obsolete_retained_identity_case_when_new_policy_resolves_cluster() 
         member_ids: members.clone(),
     };
     store.replace(Table::ReviewCases, &old_case)?;
+
     let new_evidence =
         store
             .athlete_identity_index()?
@@ -381,6 +384,7 @@ fn supersede_obsolete_retained_identity_case_when_new_policy_resolves_cluster() 
     };
     store.replace(Table::ReviewCases, &new_case)?;
     store.replace(Table::IdentityVerdicts, &verdict)?;
+
     let applied = super::apply::apply_decisions(&store, "2026-09-26")?;
     check!(eq; applied, 1, "new resolved case should be applied");
     publish_checked_retained_supersession(&store, &old_case, &new_case, "2026-09-26")?;
@@ -395,11 +399,13 @@ fn supersede_obsolete_retained_identity_case_when_new_policy_resolves_cluster() 
         ReviewState::Superseded,
         "old retained case should be superseded"
     );
+
     let decisions = store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?;
     check!(eq; decisions.len(), 1);
     let decision = decisions.first().ok_or("missing decision")?;
     check!(eq; decision.kind, AppliedIdentityKind::SamePerson);
     check!(eq; decision.case_id.as_deref(), Some(new_case.id.as_str()));
+
     let projection = store.athlete_identity_projection()?;
     for member in &members {
         check!(eq; projection.status(member.as_str())?, IdentityStatus::Verified);
@@ -649,6 +655,7 @@ fn genuine_gender_conflict_still_blocks_supersession() -> TestResult {
     let (subject_binding, _) = binding.rsplit_once(":p").ok_or("case policy missing")?;
     retained_case.id = format!("{subject_binding}:p1:{digest}");
     store.replace(Table::ReviewCases, &retained_case)?;
+
     let new_evidence = store.athlete_identity_index()?.case_evidence(
         subject,
         "gender conflict detail",
@@ -850,6 +857,7 @@ fn operator_retained_case_in_same_cluster_is_not_superseded() -> TestResult {
         member_ids: operator_case.member_ids.clone(),
     };
     store.replace(Table::IdentityVerdicts, &operator_verdict)?;
+
     let new_evidence =
         store
             .athlete_identity_index()?
@@ -892,6 +900,7 @@ fn operator_retained_case_in_same_cluster_is_not_superseded() -> TestResult {
         ReviewState::Retained,
         "operator retained case should not be superseded"
     );
+
     let new_state = store
         .snapshot()
         .get_merged::<ReviewCase>(Table::ReviewCases, &new_case.id)?

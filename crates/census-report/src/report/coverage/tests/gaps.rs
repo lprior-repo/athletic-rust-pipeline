@@ -102,6 +102,7 @@ fn published_bests(store: &Store) -> TestResult<Vec<crate::bests::SharedSelectio
             scope: crate::report::Scope::AllSources,
             grad_year: Some(2027),
             limit: None,
+            jurisdictions: Vec::new(),
         },
     )?)
 }

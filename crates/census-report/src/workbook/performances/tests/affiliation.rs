@@ -116,7 +116,7 @@ fn printed_school(store: &Store) -> TestResult<String> {
 
 fn current_school(store: &Store) -> TestResult<String> {
     let dataset = ExportDataset::load(store)?;
-    let derivation = Derivation::of(&dataset, Scope::Core, None);
+    let derivation = Derivation::of(&dataset, Scope::Core, None, &[]);
     Ok(derivation
         .athletes()
         .first()

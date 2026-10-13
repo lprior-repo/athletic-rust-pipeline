@@ -33,10 +33,11 @@ pub(super) fn status(origin: &str) -> Result<()> {
 pub(super) fn coverage(origin: &str, generation: &ExportGeneration) -> Result<()> {
     let (endpoint, client) = ingress::job_client(origin)?;
     ingress::announce(&endpoint, "Report", "run");
-    let key = report_export_key(Scope::AllSources.as_str(), generation)?;
+    let key = report_export_key(Scope::AllSources.as_str(), &[], generation)?;
     let report = ReportIngressClient::from_client(client, key);
     let request = ReportRequest {
         scope: Some(Scope::AllSources.as_str().to_string()),
+        jurisdictions: Vec::new(),
     };
     let response = ingress::block_on(report.run(Json(request)).call())?.map_err(ingress::error)?;
     let Json(reply) = response.into_body().map_err(ingress::error)?;
@@ -85,6 +86,7 @@ pub(super) fn workbook_request(options: &ExportRequest) -> Result<WorkbookReques
             .as_deref()
             .map(|path| path.display().to_string()),
         school_year: Some(school_year_i16(options.school_year)?),
+        jurisdictions: Vec::new(),
     })
 }
 

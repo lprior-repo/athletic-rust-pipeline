@@ -34,6 +34,7 @@ fn altered_metadata_cells_are_rejected() -> TestResult {
         out: None,
         limit: None,
         scope: crate::report::Scope::AllSources,
+        jurisdictions: Vec::new(),
         school_year: census_domain::model::SchoolYear::new(2026).ok_or("invalid fixture season")?,
     };
     let good = crate::workbook::build(&store, &options)?;

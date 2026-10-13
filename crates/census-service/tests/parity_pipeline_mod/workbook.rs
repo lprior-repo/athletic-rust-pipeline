@@ -24,6 +24,7 @@ pub fn build_publication(
             scope: Scope::Core,
             grad_year: Some(constants::COHORT),
             limit: None,
+            jurisdictions: Vec::new(),
         },
     )?;
     assertions::assert_source_bests(&rows)?;
@@ -36,6 +37,7 @@ pub fn build_publication(
             out: Some(publication_root),
             limit: None,
             scope: Scope::Core,
+            jurisdictions: Vec::new(),
             school_year: constants::SCHOOL_YEAR,
         },
     )?;

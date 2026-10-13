@@ -192,7 +192,6 @@ fn a_missing_manifest_at_the_frontier_stops_reconstruction() -> TestResult {
     batch.commit()?;
     first.finish_fragments()?;
 
-    // Reconstruction stops at the missing manifest for fragment 1
     let restarted = Recording::spooled(store.clone(), "gap/0".into())?;
     check!(eq; restarted.fragments(), 1);
     Ok(())
@@ -212,7 +211,6 @@ fn repeated_restarts_are_idempotent() -> TestResult {
     batch.commit()?;
     first.finish_fragments()?;
 
-    // Each restart reconstructs the same verified prefix
     for _ in 0..3 {
         let restarted = Recording::spooled(store.clone(), "idempotent/0".into())?;
         check!(eq; restarted.fragments(), 1);
@@ -234,7 +232,6 @@ fn an_incomplete_torn_tail_is_truncated() -> TestResult {
     batch.commit()?;
     first.finish_fragments()?;
 
-    // Reconstruction stops at the missing manifest for fragment 1
     let restarted = Recording::spooled(store.clone(), "torn/0".into())?;
     check!(eq; restarted.fragments(), 1);
 

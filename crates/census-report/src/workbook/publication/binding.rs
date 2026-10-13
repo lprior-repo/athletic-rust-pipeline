@@ -58,11 +58,19 @@ pub(super) fn recipe(
     lineage: &crate::export::DatasetLineage,
     options: &Options,
 ) -> ReportResult<Digest> {
+    let mut jurisdictions: Vec<&str> = options
+        .jurisdictions
+        .iter()
+        .map(|jurisdiction| jurisdiction.code())
+        .collect();
+    jurisdictions.sort_unstable();
+    jurisdictions.dedup();
     digest(&(
         options.scope.as_str(),
         options.grad_year,
         options.limit,
         options.school_year,
+        jurisdictions,
         lineage.schema_revision,
         lineage.policy_revision,
     ))

@@ -18,7 +18,9 @@ use super::wire::{
     BestsReply, BestsRequest, ConsolidateReply, ConsolidateRequest, ReportReply, ReportRequest,
     WorkbookReply, WorkbookRequest,
 };
-use super::{blocking, job_error, resolve_scope, resolve_tables, JobError};
+use super::{
+    blocking, job_error, normalize_jurisdictions, resolve_scope, resolve_tables, JobError,
+};
 
 #[derive(Clone)]
 pub struct Jobs {
@@ -143,13 +145,14 @@ impl Report {
         Json(request): Json<ReportRequest>,
     ) -> Result<Json<ReportReply>, HandlerError> {
         let scope = resolve_scope(request.scope.as_deref())?;
+        let jurisdictions = normalize_jurisdictions(&request.jurisdictions)?;
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
         let permit = self.jobs.permit_control().await?;
         let reply = ctx
             .run(move || async move {
                 let _permit = permit;
-                blocking(region, move || build_report(&store, scope))
+                blocking(region, move || build_report(&store, scope, &jurisdictions))
                     .await
                     .map(Json)
                     .map_err(job_error)
@@ -194,6 +197,7 @@ impl Bests {
             scope: resolve_scope(request.scope.as_deref())?,
             grad_year: request.grad_year,
             limit: request.limit,
+            jurisdictions: normalize_jurisdictions(&request.jurisdictions)?,
         };
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
@@ -263,6 +267,7 @@ impl Workbook {
             out: request.out.map(PathBuf::from),
             limit: request.limit,
             scope: resolve_scope(request.scope.as_deref())?,
+            jurisdictions: normalize_jurisdictions(&request.jurisdictions)?,
             school_year,
         };
         let job = format!("workbook:{}", ctx.key());

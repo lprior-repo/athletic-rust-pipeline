@@ -62,7 +62,10 @@ pub(super) fn values(row: &RelaySelection<'_>) -> ReportResult<[String; 12]> {
         result
             .place
             .map_or_else(String::new, |value| value.to_string()),
-        result.round.clone().map_or_else(String::new, |value| value),
+        result
+            .round
+            .as_deref()
+            .map_or_else(String::new, str::to_owned),
         result
             .timing
             .map_or_else(String::new, |value| value.stable_key().to_owned()),

@@ -130,6 +130,7 @@ fn publish_and_readback(
         out: Some(directory.path().join("publication")),
         limit: None,
         scope: Scope::AllSources,
+        jurisdictions: Vec::new(),
         school_year: SchoolYear::new(2026).ok_or("workbook tie season")?,
     };
     let path = crate::workbook::build(&store, &options)?;

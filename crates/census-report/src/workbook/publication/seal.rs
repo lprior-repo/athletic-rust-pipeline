@@ -25,6 +25,32 @@ pub(super) fn binding(
     Ok(())
 }
 
+pub(super) fn require_selection(
+    manifest: &Manifest,
+    jurisdictions: &[census_domain::UsJurisdiction],
+) -> ReportResult<()> {
+    let selection = manifest.selection()?;
+    let mut expected: Vec<&str> = jurisdictions
+        .iter()
+        .map(|jurisdiction| jurisdiction.code())
+        .collect();
+    expected.sort_unstable();
+    expected.dedup();
+    let mut published: Vec<&str> = selection
+        .jurisdictions
+        .iter()
+        .map(|jurisdiction| jurisdiction.code())
+        .collect();
+    published.sort_unstable();
+    published.dedup();
+    if published != expected {
+        return Err(invariant(
+            "seal requires the publication's jurisdictions to match the sealed scope".to_string(),
+        ));
+    }
+    Ok(())
+}
+
 fn complete_selection(selection: &Options, scope: Scope, cohort: GradYear) -> ReportResult<()> {
     if selection.limit.is_some() {
         return Err(invariant(

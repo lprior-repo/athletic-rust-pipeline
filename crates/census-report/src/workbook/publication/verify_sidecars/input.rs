@@ -22,7 +22,12 @@ impl<'a> Inputs<'a> {
             dataset,
             admission,
             options,
-            derivation: Derivation::of(dataset, options.scope, options.grad_year),
+            derivation: Derivation::of(
+                dataset,
+                options.scope,
+                options.grad_year,
+                &options.jurisdictions,
+            ),
             school_year,
             out_root,
         })

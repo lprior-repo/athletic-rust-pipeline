@@ -13,6 +13,7 @@ pub(super) fn apply_pr_support(
             scope: Scope::AllSources,
             grad_year,
             limit: None,
+            jurisdictions: Vec::new(),
         },
     )?;
     let supported: HashSet<&str> = bests

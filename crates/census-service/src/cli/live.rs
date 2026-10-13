@@ -91,13 +91,15 @@ impl ReportSummary {
 pub(super) async fn report(
     origin: Option<&str>,
     scope: report::Scope,
+    jurisdictions: &[census_domain::UsJurisdiction],
     generation: &ExportGeneration,
 ) -> Result<ReportSummary> {
-    let key = report_export_key(scope.as_str(), generation)?;
+    let key = report_export_key(scope.as_str(), jurisdictions, generation)?;
     log_submit("submitting report export", generation, key.as_str());
     let Json(reply) = report_client(origin, key)?
         .run(Json(ReportRequest {
             scope: Some(scope.as_str().to_string()),
+            jurisdictions: jurisdictions.to_vec(),
         }))
         .call()
         .await
@@ -111,13 +113,16 @@ fn bests_request(
     scope: report::Scope,
     grad_year: Option<i16>,
     limit: Option<usize>,
+    jurisdictions: &[census_domain::UsJurisdiction],
 ) -> BestsRequest {
     BestsRequest {
         scope: Some(scope.as_str().to_string()),
         grad_year,
         limit,
+        jurisdictions: jurisdictions.to_vec(),
     }
 }
+
 fn summarize_report(reply: ReportReply, generation: &ExportGeneration) -> ReportSummary {
     let ReportReply {
         scope,
@@ -149,13 +154,20 @@ pub(super) async fn bests(
     scope: report::Scope,
     grad_year: Option<i16>,
     limit: Option<usize>,
+    jurisdictions: &[census_domain::UsJurisdiction],
     generation: &ExportGeneration,
 ) -> Result<BestsReply> {
     let year = grad_year.map_or_else(|| "all".to_string(), |year| year.to_string());
     let limit_text = limit.map_or_else(|| "all".to_string(), |limit| limit.to_string());
-    let key = bests_export_key(scope.as_str(), &year, &limit_text, generation)?;
+    let key = bests_export_key(
+        scope.as_str(),
+        &year,
+        &limit_text,
+        jurisdictions,
+        generation,
+    )?;
     log_submit("submitting bests export", generation, key.as_str());
-    let request = bests_request(scope, grad_year, limit);
+    let request = bests_request(scope, grad_year, limit, jurisdictions);
     let Json(reply) = bests_client(origin, key)?
         .run(Json(request))
         .call()
