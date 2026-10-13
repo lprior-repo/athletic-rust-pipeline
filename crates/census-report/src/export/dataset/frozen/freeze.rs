@@ -129,6 +129,7 @@ fn retained_root(
     retained: &Retained,
 ) -> ReportResult<FrozenRoot> {
     let Some(record) = store.get_input_record(&retained.attempt)? else {
+        ensure_retirable(directory, retained)?;
         root::remove_retained(directory)?;
         return fresh(store, job, directory);
     };
@@ -138,6 +139,7 @@ fn retained_root(
             recover::recover(store, directory, retained, &record)
         }
         InputState::Abandoned => {
+            ensure_retirable(directory, retained)?;
             root::remove_retained(directory)?;
             fresh(store, job, directory)
         }
@@ -194,8 +196,7 @@ fn reusable(
     record: &InputRecord,
 ) -> Result<FrozenRoot, ReuseFailure> {
     let objects_dir = objects::directory(directory);
-    let encoded = objects::read(&objects_dir, &retained.manifest, objects::MANIFEST_CEILING)?;
-    let manifest = FrozenManifest::decode(&encoded).map_err(ReuseFailure::from_codec)?;
+    let manifest = retained_manifest(&objects_dir, retained)?;
     recover::ensure_job(&manifest, job)?;
     recover::ensure_identity(store, &manifest)?;
     verify::verify_record(&objects_dir, &retained.manifest, &manifest, record)?;
@@ -207,6 +208,21 @@ fn reusable(
         retained.attempt.clone(),
         record.bytes(),
     ))
+}
+
+fn retained_manifest(
+    objects_dir: &Path,
+    retained: &Retained,
+) -> Result<FrozenManifest, ReuseFailure> {
+    let encoded = objects::read(objects_dir, &retained.manifest, objects::MANIFEST_CEILING)?;
+    FrozenManifest::decode(&encoded).map_err(ReuseFailure::from_codec)
+}
+
+fn ensure_retirable(directory: &Path, retained: &Retained) -> ReportResult<()> {
+    match retained_manifest(&objects::directory(directory), retained) {
+        Err(ReuseFailure::Preserve(error)) => Err(error),
+        Ok(_) | Err(ReuseFailure::Retire(_)) => Ok(()),
+    }
 }
 
 fn job_digest(job: &str) -> ReportResult<String> {

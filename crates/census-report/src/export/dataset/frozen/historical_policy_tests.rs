@@ -14,7 +14,7 @@ use std::path::Path;
 struct RetainedEvidence {
     marker: Vec<u8>,
     objects: BTreeMap<OsString, Vec<u8>>,
-    records: BTreeMap<String, InputRecord>,
+    records: BTreeMap<String, Option<InputRecord>>,
     leases: BTreeMap<String, Option<LeaseRecord>>,
     sequence: u64,
 }
@@ -27,10 +27,7 @@ impl RetainedEvidence {
             records: attempts
                 .iter()
                 .map(|attempt| -> TestResult<_> {
-                    Ok((
-                        (*attempt).to_string(),
-                        store.get_input_record(attempt)?.ok_or("input missing")?,
-                    ))
+                    Ok(((*attempt).to_string(), store.get_input_record(attempt)?))
                 })
                 .collect::<TestResult<_>>()?,
             leases: attempts
@@ -76,6 +73,7 @@ fn install_historical_root(
     store: &Store,
     directory: &Path,
     manifest: &FrozenManifest,
+    state: Option<InputState>,
 ) -> TestResult<Retained> {
     let encoded = serialized_bytes(manifest)?;
     check!(matches!(
@@ -90,30 +88,56 @@ fn install_historical_root(
     );
     let inventory =
         verify::inventory_of(&objects::directory(directory), &manifest_digest, manifest)?;
-    let bytes = root::payload_bytes_of(manifest)?;
     let attempt = serialized_digest(&("historical-policy-fixture", &manifest_digest))?;
-    let record = InputRecord::new(&attempt, bytes, &inventory)?;
-    store.put_input_record(&record)?;
-    let (epoch, claimed) = store.input_lease_acquire(
-        &attempt,
-        record.revision(),
-        "historical-policy-fixture",
-        "2999-12-31",
-    )?;
-    let freezing = store.input_freeze(&attempt, claimed.revision, epoch, &inventory)?;
-    store.input_frozen(&attempt, freezing.revision, epoch, bytes, &inventory)?;
-    store.lease_release(&attempt, epoch)?;
-    let frozen = store
-        .get_input_record(&attempt)?
-        .ok_or("historical input missing")?;
-    check!(eq; frozen.state(), InputState::Frozen);
-    verify::check_record(manifest, &frozen, &inventory)?;
     let retained = Retained {
         attempt,
         manifest: manifest_digest,
     };
     root::write_retained(directory, &retained)?;
+    if let Some(state) = state {
+        install_historical_record(store, &retained.attempt, manifest, &inventory, state)?;
+    }
+    check!(eq; store.get_input_record(&retained.attempt)?.map(|record| record.state()), state);
     Ok(retained)
+}
+
+fn install_historical_record(
+    store: &Store,
+    attempt: &str,
+    manifest: &FrozenManifest,
+    inventory: &[String],
+    state: InputState,
+) -> TestResult {
+    let bytes = root::payload_bytes_of(manifest)?;
+    let record = InputRecord::new(attempt, bytes, inventory)?;
+    store.put_input_record(&record)?;
+    let (epoch, claimed) = store.input_lease_acquire(
+        attempt,
+        record.revision(),
+        "historical-policy-fixture",
+        "2999-12-31",
+    )?;
+    match state {
+        InputState::Requested => {}
+        InputState::Freezing => {
+            store.input_freeze(attempt, claimed.revision, epoch, inventory)?;
+        }
+        InputState::Frozen => {
+            let freezing = store.input_freeze(attempt, claimed.revision, epoch, inventory)?;
+            store.input_frozen(attempt, freezing.revision, epoch, bytes, inventory)?;
+            store.lease_release(attempt, epoch)?;
+        }
+        InputState::Abandoned => {
+            store.input_abandon(attempt, claimed.revision, epoch)?;
+        }
+    }
+    let retained = store
+        .get_input_record(attempt)?
+        .ok_or("historical input missing")?;
+    check!(eq; retained.state(), state);
+    verify::check_record(manifest, &retained, inventory)?;
+    check!(eq; store.get_lease_record(attempt)?.is_some(), state != InputState::Frozen);
+    Ok(())
 }
 
 fn refused(store: &Store, job: &str) -> TestResult {
@@ -135,7 +159,8 @@ fn freeze_reuse_preserves_a_checksummed_prior_policy_root_across_repeated_refusa
     let current = freeze_v2(&store, job)?;
     let directory = current.directory().to_path_buf();
     let historical = historical_manifest(current.manifest())?;
-    let retained = install_historical_root(&store, &directory, &historical)?;
+    let retained =
+        install_historical_root(&store, &directory, &historical, Some(InputState::Frozen))?;
     let before =
         RetainedEvidence::capture(&store, &directory, &[current.attempt(), &retained.attempt])?;
     (0..2).try_for_each(|_| -> TestResult {
@@ -148,4 +173,44 @@ fn freeze_reuse_preserves_a_checksummed_prior_policy_root_across_repeated_refusa
     before.unchanged(&reopened, &directory)?;
     check!(eq; root::read_retained(&directory)?, Some(retained));
     Ok(())
+}
+
+#[test]
+fn freeze_refusal_preserves_prior_policy_roots_in_missing_and_unfinished_record_states(
+) -> TestResult {
+    [
+        None,
+        Some(InputState::Requested),
+        Some(InputState::Freezing),
+        Some(InputState::Abandoned),
+    ]
+    .into_iter()
+    .try_for_each(|state| -> TestResult {
+        let seeded = seeded_store()?;
+        let store = seeded.store;
+        let job = format!("freeze-recovery:prior-policy:{state:?}");
+        let current = freeze_v2(&store, &job)?;
+        let directory = current.directory().to_path_buf();
+        let historical = historical_manifest(current.manifest())?;
+        let retained = install_historical_root(&store, &directory, &historical, state)?;
+        let before = RetainedEvidence::capture(
+            &store,
+            &directory,
+            &[current.attempt(), &retained.attempt],
+        )?;
+        check!(eq; before.records.get(&retained.attempt).ok_or("historical attempt was not captured")?.as_ref().map(InputRecord::state), state);
+        if state.is_none() {
+            check!(eq; before.leases.get(&retained.attempt), Some(&None));
+        }
+        (0..2).try_for_each(|_| -> TestResult {
+            refused(&store, &job)?;
+            before.unchanged(&store, &directory)
+        })?;
+        drop(store);
+        let reopened = Store::open(seeded.directory.path())?;
+        refused(&reopened, &job)?;
+        before.unchanged(&reopened, &directory)?;
+        check!(eq; root::read_retained(&directory)?, Some(retained));
+        Ok(())
+    })
 }
