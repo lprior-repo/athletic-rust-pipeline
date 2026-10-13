@@ -59,7 +59,7 @@ impl Store {
         crate::ensure_dirs(root)?;
         let (format, already_current, rewritten) = migrate_stopped(root, cache_bytes)?;
         let store = Self::open_with(root, cache_bytes)?;
-        let integrity = store.integrity()?;
+        let integrity = store.integrity_complete()?;
         Ok(MigrationReport {
             root: root.display().to_string(),
             from_schema: format.schema_version,

@@ -303,9 +303,21 @@ python3 - "$WORK/journal-after.json" <<'PY' | tee "$WORK/journal-shape.txt"
 import json, sys
 rows = json.load(open(sys.argv[1])).get("rows", [])
 types = [r["entry_type"] for r in rows]
-want = ["Command: Input", "Command: Run", "Notification: Run", "Command: Output"]
+# The teams source child journals one Run pair per journaled step: the reservation
+# registration and the journaled ledger status. Replay must not duplicate either pair,
+# and the invocation must open and close exactly once.
+want_runs = 2
 print(f"JOURNAL: {types}")
-assert types == want, f"unexpected journal shape {types}"
+assert types.count("Command: Input") == 1, f"invocation opened {types.count('Command: Input')} times: {types}"
+assert types.count("Command: Output") == 1, f"invocation closed {types.count('Command: Output')} times: {types}"
+assert types.count("Command: Run") == want_runs, f"journaled steps changed: {types}"
+assert types.count("Notification: Run") == want_runs, f"replay duplicated a step: {types}"
+assert types[0] == "Command: Input" and types[-1] == "Command: Output", types
+assert all(
+    types[index + 1] == "Notification: Run"
+    for index, entry in enumerate(types[:-1])
+    if entry == "Command: Run"
+), types
 PY
 echo "PARENT-OBSERVED: parent $PARENT status=$(row_field "$PARENT" status) result=$(row_field "$PARENT" completion_result) journal=$(row_field "$PARENT" journal_size)"
 

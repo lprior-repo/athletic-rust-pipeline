@@ -181,3 +181,25 @@ fn selected_unarmed_meet_source_is_not_discarded() -> TestResult {
     check!(eq; slugs, vec!["athleticlive", "milesplit"]);
     Ok(())
 }
+
+#[test]
+fn meet_fragment_identities_fit_the_ingest_operation_budget() -> TestResult {
+    let digest =
+        census_domain::model::serialized_digest(&("jurisdiction:VT:2026-27:1", "milesplit"))?;
+    let base = super::meet_fragment_base(&digest).map_err(sdk_error)?;
+    check!(eq; base.len(), super::MEET_IDENTITY_DIGEST_BYTES);
+    let identity = super::meet_fragment_identity(base, 12).map_err(sdk_error)?;
+    let recorded = census_crawl::Recorded {
+        rows: vec![census_crawl::recording::RecordedBatch {
+            table: Table::SourceMeets,
+            rows: vec![serde_json::json!({"id": "identity-budget"})],
+        }],
+        ..census_crawl::Recorded::default()
+    };
+    let prepared = recorded.prepare(&census_crawl::recording::spool::fragment_key(&identity, 0))?;
+    check!(
+        prepared.operation().len() <= crate::restate_services::wire::ingest::MAX_OPERATION_ID_BYTES
+    );
+    check!(super::meet_fragment_identity(&"a".repeat(64), 0).is_err());
+    Ok(())
+}
