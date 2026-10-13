@@ -455,3 +455,44 @@ fn fingerprint_changes_with_different_inputs() -> Result<(), Box<dyn std::error:
     );
     Ok(())
 }
+
+#[test]
+fn refusal_kind_serialization_is_backwards_compatible() -> Result<(), Box<dyn std::error::Error>> {
+    for (stored, expected) in [
+        ("\"unknown\"", RefusalKind::Unknown),
+        ("\"engineering_gap\"", RefusalKind::EngineeringGap),
+        ("\"access_blocked\"", RefusalKind::AccessBlocked),
+        ("\"terms\"", RefusalKind::Terms),
+    ] {
+        let decoded: RefusalKind = serde_json::from_str(stored)?;
+        assert_eq!(decoded, expected, "stored {stored} decodes to {decoded:?}");
+    }
+    assert_eq!(
+        serde_json::to_string(&RefusalKind::EngineeringGap)?,
+        "\"engineering_gap\""
+    );
+    Ok(())
+}
+
+#[test]
+fn tfrrs_plan_refusal_is_terms_kind() -> Result<(), Box<dyn std::error::Error>> {
+    let dispositions = plan(UsJurisdiction::Indiana, BrowserLaneState::Configured);
+    let tfrrs_disposition = dispositions
+        .iter()
+        .find(|d| d.slug() == "tfrrs")
+        .ok_or("TFRRS should appear in the plan for Indiana")?;
+    let refusal = match tfrrs_disposition {
+        UnitDisposition::Refused(r) => r,
+        other => return Err(format!("TFRRS should be refused, not {other:?}").into()),
+    };
+    assert_eq!(refusal.kind, RefusalKind::Terms);
+    assert!(
+        refusal.reason.contains("terms") && refusal.reason.contains("DirectAthletics"),
+        "reason must state the terms basis: {}",
+        refusal.reason
+    );
+    assert_eq!(refusal_kind("tfrrs"), RefusalKind::Terms);
+    assert_eq!(refusal_kind("dat"), RefusalKind::Terms);
+    assert_eq!(refusal_kind("mshsl"), RefusalKind::EngineeringGap);
+    Ok(())
+}

@@ -208,9 +208,7 @@ pub(super) const TFRS_EVIDENCE: &str = "[28][18] `AUTHENTICATED-NOT (HS depth), 
                    with grade; §1b FL: TFRRS lists carry `Year` = FR/SO/JR/SR (4A Region 1: 1,469 rows); the adapter doc \
                    records the instances it reads (`indiana.tfrrs.org`, `nh.tfrrs.org`, `florida.tfrrs.org`).";
 
-pub(super) const TFRS_REFUSAL: &str = "Every other jurisdiction: high-school depth is not anonymously reachable there ([28] WI `REJECT as \
-                  result source`; index pages 0 HS-marked across MN/IA/MI/OH/MO/KS/NE/ND/SD) and the adapter refuses a \
-                  host that names no state, so a national or sport instance is not a planned path either.";
+pub(super) const TFRS_REFUSAL: &str = "Every jurisdiction: DirectAthletics terms refuse automated acquisition for any purpose without written permission (robots.txt is not published; the platform serves the homepage at /robots.txt). The existing adapter was removed as it would violate the terms; no TFRRS or DAT request may be dispatched.";
 
 pub(super) const WAYZATA_EVIDENCE: &str = "The adapter doc names the provider a Minnesota / Iowa / Wisconsin timer publishing one \
                    server-rendered schedule table per sport and season; `[synthesis/10-measured-census.md]` ranks \

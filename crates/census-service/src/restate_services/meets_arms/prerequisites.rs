@@ -59,13 +59,12 @@ async fn athletes(
     report_census("athleticlive_athletes", report)
 }
 
-async fn tfrrs(context: &AdapterContext<'_>) -> Result<MeetCensus, HandlerError> {
-    let mut report = census_crawl::tfrrs::collect(context, &Default::default())
-        .await
-        .map_err(|error| super::super::job_error(super::jobs::collect_error(error)))?;
-    report.disposition = CollectionDisposition::Blocked;
-    report.note("prerequisite missing: no configured TFRRS page-URL frontier derived from a qualified producer capture is bound to this historical-discovery stage; zero URLs do not complete discovery");
-    report_census("tfrrs", report)
+async fn tfrrs(_context: &AdapterContext<'_>) -> Result<MeetCensus, HandlerError> {
+    blocked(
+        "tfrrs",
+        "tfrrs:terms-refusal",
+        "DirectAthletics terms refuse automated acquisition for any purpose without written permission",
+    )
 }
 
 fn blocked(slug: &str, prerequisite: &str, reason: &str) -> Result<MeetCensus, HandlerError> {

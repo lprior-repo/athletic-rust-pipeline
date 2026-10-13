@@ -48,6 +48,7 @@ pub enum RefusalKind {
     Unknown,
     EngineeringGap,
     AccessBlocked,
+    Terms,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -133,7 +134,7 @@ fn classify(descriptor: &'static SourceDescriptor, lane: BrowserLaneState) -> Un
             slug: descriptor.slug,
             access: descriptor.access_class(),
             reason,
-            kind: RefusalKind::EngineeringGap,
+            kind: refusal_kind(descriptor.slug),
         });
     }
     classify_access(
@@ -142,6 +143,13 @@ fn classify(descriptor: &'static SourceDescriptor, lane: BrowserLaneState) -> Un
         Dispatch::Wired,
         lane,
     )
+}
+
+pub(super) fn refusal_kind(slug: &str) -> RefusalKind {
+    match slug {
+        "tfrrs" | "dat" => RefusalKind::Terms,
+        _ => RefusalKind::EngineeringGap,
+    }
 }
 
 pub(super) fn classify_access(
