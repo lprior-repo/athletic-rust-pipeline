@@ -96,8 +96,13 @@ pub fn seal(store: &Store, request: &SealRequest) -> Result<SealOutcome, SealWor
     let cohort = census_cohort(request.grad_year)?;
     bound_run(store, request.run)?;
     let (path, inspection) = publication(store, request, cohort)?;
-    let (evidence, stats) =
-        assemble_evidence(store, request, cohort, &inspection.dataset, inspection.check)?;
+    let (evidence, stats) = assemble_evidence(
+        store,
+        request,
+        cohort,
+        &inspection.dataset,
+        inspection.check,
+    )?;
     let recorded = recorded_seal(store)
         .map_err(|error| SealWorkflowError::SealRecording(error.to_string()))?;
     let source_fence = store.fenced_snapshot();

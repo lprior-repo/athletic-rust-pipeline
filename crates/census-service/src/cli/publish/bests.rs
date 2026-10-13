@@ -1,15 +1,15 @@
 use anyhow::{Context, Result};
-use census_report::bests;
 use census_domain::UsJurisdiction;
+use census_report::bests;
 use census_report::export::ExportDataset;
 use census_report::report;
-use census_service::restate_services::{
-    reject_offline_generation, BestsReply, ExportGeneration,
-};
+use census_service::restate_services::{reject_offline_generation, BestsReply, ExportGeneration};
 use census_store::Store;
 use clap::Args;
 
-use crate::cli::{cohort_label, live, resolve_restriction, restriction_display, school_year, Cli, Route};
+use crate::cli::{
+    cohort_label, live, resolve_restriction, restriction_display, school_year, Cli, Route,
+};
 
 #[derive(Args, Debug)]
 pub(crate) struct BestsArgs {

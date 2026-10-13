@@ -10,8 +10,8 @@ use clap::Args;
 use std::path::PathBuf;
 
 use crate::cli::{
-    contact_school_year, live, resolve_restriction, restriction_display, school_year, scope_of, Cli,
-    Route,
+    contact_school_year, live, resolve_restriction, restriction_display, school_year, scope_of,
+    Cli, Route,
 };
 
 #[derive(Args, Debug)]

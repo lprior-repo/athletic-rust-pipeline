@@ -10,7 +10,9 @@ use super::national::{JurisdictionArgs, NationalArgs, NationalReportArgs};
 use super::open_work::OpenWorkArgs;
 use super::profile::ProfileArgs;
 use super::provider::ProviderArgs;
-use super::publish::{bests::BestsArgs, index::IndexArgs, report::ReportArgs, workbook::WorkbookArgs};
+use super::publish::{
+    bests::BestsArgs, index::IndexArgs, report::ReportArgs, workbook::WorkbookArgs,
+};
 use super::qa_reports::QaReportsArgs;
 use super::review::ReviewArgs;
 use super::school_names::SchoolNamesArgs;
