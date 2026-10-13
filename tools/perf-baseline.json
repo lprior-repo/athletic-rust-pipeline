@@ -3,186 +3,186 @@
     "cpu": "AMD Ryzen 9 9950X3D 16-Core Processor",
     "cores": 32,
     "rustc": "rustc 1.97.0-nightly (ca9a134e0 2026-04-26)",
-    "sha": "2b8677e8891100611b2fe4aec35a8bd64d684b96",
-    "corpus_lines": 153873,
-    "corpus_sha256": "b974e9345d0fb1c4afaaded90e8d6e225a5a6a88ae72c972473d008b60090a7a"
+    "sha": "d4fdf76b62cc30721e0960482f80fdbe6dd731f0",
+    "corpus_lines": 154721,
+    "corpus_sha256": "c62dcf118331ea7d217bf36ea594fdbaa618f252cfd159d909d9d6dd1284b91b"
   },
   "groups": {
     "census/merge/coaches_scan": {
       "throughput": {
-        "Elements": 1806782.492089445
+        "Elements": 1771679.4275260852
       },
-      "peak_rss_kib": 12688,
+      "peak_rss_kib": 12024,
       "allocation_count": 116942,
       "allocated_bytes": 24698385,
-      "tail_time_seconds": 0.0004461397738095238,
+      "tail_time_seconds": 0.00044095999019607844,
       "timing_scope": "criterion-per-iteration/v1;memory=whole-process-single-criterion-test/gnu-time-rss-kib+dhat-heap-json-v2-tbk-tb/v1",
-      "wall_time_seconds": 0.000425065
+      "wall_time_seconds": 0.000433487
     },
     "census/merge/schools_scan": {
       "throughput": {
-        "Elements": 1393365.999420338
+        "Elements": 1325127.2070355972
       },
-      "peak_rss_kib": 12160,
+      "peak_rss_kib": 12700,
       "allocation_count": 121550,
       "allocated_bytes": 25054737,
-      "tail_time_seconds": 0.0007419061157894737,
+      "tail_time_seconds": 0.0008150619599999999,
       "timing_scope": "criterion-per-iteration/v1;memory=whole-process-single-criterion-test/gnu-time-rss-kib+dhat-heap-json-v2-tbk-tb/v1",
-      "wall_time_seconds": 0.000734911
+      "wall_time_seconds": 0.000772756
     },
     "census/parse/archive_classification": {
       "throughput": {
-        "Elements": 4350978.97026831
+        "Elements": 4325883.201153569
       },
-      "peak_rss_kib": 12496,
+      "peak_rss_kib": 12748,
       "allocation_count": 111501,
       "allocated_bytes": 24268822,
-      "tail_time_seconds": 1.4020535676023142e-6,
+      "tail_time_seconds": 1.4514801592945529e-6,
       "timing_scope": "criterion-per-iteration/v1;memory=whole-process-single-criterion-test/gnu-time-rss-kib+dhat-heap-json-v2-tbk-tb/v1",
-      "wall_time_seconds": 1.379e-6
+      "wall_time_seconds": 1.387e-6
     },
     "census/parse/hytek_html": {
       "throughput": {
-        "Elements": 94657.69972774643
+        "Elements": 94870.23107677711
       },
-      "peak_rss_kib": 12328,
+      "peak_rss_kib": 12560,
       "allocation_count": 112747,
       "allocated_bytes": 24364759,
-      "tail_time_seconds": 0.00022890202105263157,
+      "tail_time_seconds": 0.0002305334676923077,
       "timing_scope": "criterion-per-iteration/v1;memory=whole-process-single-criterion-test/gnu-time-rss-kib+dhat-heap-json-v2-tbk-tb/v1",
-      "wall_time_seconds": 0.000221852
+      "wall_time_seconds": 0.000221355
     },
     "census/parse/hytek_text": {
       "throughput": {
-        "Elements": 810331.7295517852
+        "Elements": 800901.0136403454
       },
-      "peak_rss_kib": 12664,
+      "peak_rss_kib": 12604,
       "allocation_count": 112434,
       "allocated_bytes": 24352884,
-      "tail_time_seconds": 0.00004113126736842105,
+      "tail_time_seconds": 0.00004196417,
       "timing_scope": "criterion-per-iteration/v1;memory=whole-process-single-criterion-test/gnu-time-rss-kib+dhat-heap-json-v2-tbk-tb/v1",
-      "wall_time_seconds": 0.00003949
+      "wall_time_seconds": 0.000039955
     },
     "census/parse/milesplit_roster": {
       "throughput": {
-        "Elements": 44020.672107621736
+        "Elements": 43999.598723659634
       },
-      "peak_rss_kib": 12900,
+      "peak_rss_kib": 12288,
       "allocation_count": 111854,
       "allocated_bytes": 24282183,
-      "tail_time_seconds": 0.0005727939787234042,
+      "tail_time_seconds": 0.0005764378294117647,
       "timing_scope": "criterion-per-iteration/v1;memory=whole-process-single-criterion-test/gnu-time-rss-kib+dhat-heap-json-v2-tbk-tb/v1",
-      "wall_time_seconds": 0.000567915
+      "wall_time_seconds": 0.000568187
     },
     "census/parse/nsaa_directory": {
       "throughput": {
-        "Elements": 24283.411697926498
+        "Elements": 24209.045104477158
       },
-      "peak_rss_kib": 11768,
-      "allocation_count": 115666,
-      "allocated_bytes": 24381187,
-      "tail_time_seconds": 0.00033220384210526317,
+      "peak_rss_kib": 12484,
+      "allocation_count": 115665,
+      "allocated_bytes": 24381091,
+      "tail_time_seconds": 0.0003442168154761905,
       "timing_scope": "criterion-per-iteration/v1;memory=whole-process-single-criterion-test/gnu-time-rss-kib+dhat-heap-json-v2-tbk-tb/v1",
-      "wall_time_seconds": 0.000329443
+      "wall_time_seconds": 0.000330455
     },
     "census/parse/raceday_html": {
       "throughput": {
-        "Elements": 134111.1781667002
+        "Elements": 135712.38243087358
       },
-      "peak_rss_kib": 12568,
+      "peak_rss_kib": 12440,
       "allocation_count": 117685,
       "allocated_bytes": 24490293,
-      "tail_time_seconds": 0.0006295779230769231,
+      "tail_time_seconds": 0.0006246713292682927,
       "timing_scope": "criterion-per-iteration/v1;memory=whole-process-single-criterion-test/gnu-time-rss-kib+dhat-heap-json-v2-tbk-tb/v1",
-      "wall_time_seconds": 0.000611433
+      "wall_time_seconds": 0.000604219
     },
     "census/school_index/build_index": {
       "throughput": {
-        "Elements": 8064516.129032258
+        "Elements": 8036162.732295329
       },
-      "peak_rss_kib": 12716,
+      "peak_rss_kib": 12752,
       "allocation_count": 111582,
       "allocated_bytes": 24278870,
-      "tail_time_seconds": 2.039310052623433e-6,
+      "tail_time_seconds": 2.0692452716297783e-6,
       "timing_scope": "criterion-per-iteration/v1;memory=whole-process-single-criterion-test/gnu-time-rss-kib+dhat-heap-json-v2-tbk-tb/v1",
-      "wall_time_seconds": 1.984e-6
+      "wall_time_seconds": 1.991e-6
     },
     "census/school_index/normalize_label": {
       "throughput": {
-        "Elements": 6274275.47057066
+        "Elements": 6429391.50401837
       },
-      "peak_rss_kib": 12616,
+      "peak_rss_kib": 12492,
       "allocation_count": 112506,
       "allocated_bytes": 24317316,
-      "tail_time_seconds": 0.00001359742664092664,
+      "tail_time_seconds": 0.000013764979407407407,
       "timing_scope": "criterion-per-iteration/v1;memory=whole-process-single-criterion-test/gnu-time-rss-kib+dhat-heap-json-v2-tbk-tb/v1",
-      "wall_time_seconds": 0.000013388
+      "wall_time_seconds": 0.000013065
     },
     "census/school_index/resolve_label": {
       "throughput": {
-        "Elements": 3811598.1486523277
+        "Elements": 3845625.600879
       },
-      "peak_rss_kib": 12644,
+      "peak_rss_kib": 12500,
       "allocation_count": 112918,
       "allocated_bytes": 24325931,
-      "tail_time_seconds": 0.000022718167063728413,
+      "tail_time_seconds": 0.00002390161526794742,
       "timing_scope": "criterion-per-iteration/v1;memory=whole-process-single-criterion-test/gnu-time-rss-kib+dhat-heap-json-v2-tbk-tb/v1",
-      "wall_time_seconds": 0.000022038
+      "wall_time_seconds": 0.000021843
     },
     "pipeline/capture_export/captured_live_wiaa_co2027": {
       "throughput": {
-        "Elements": 3702.771223883207
+        "Elements": 3589.9654969515054
       },
-      "peak_rss_kib": 21544,
-      "allocation_count": 1343611,
-      "allocated_bytes": 224827659,
-      "tail_time_seconds": 0.056177236,
+      "peak_rss_kib": 21960,
+      "allocation_count": 1344479,
+      "allocated_bytes": 226143811,
+      "tail_time_seconds": 0.056937944,
       "timing_scope": "capture-publication-independent-readback/v1;memory=whole-process-single-criterion-test/gnu-time-rss-kib+dhat-heap-json-v2-tbk-tb/v1",
-      "wall_time_seconds": 0.052933327
+      "wall_time_seconds": 0.054596625
     },
     "pipeline/merge/consolidate": {
       "throughput": {
-        "Elements": 599114.5446498801
+        "Elements": 565301.4307355236
       },
-      "peak_rss_kib": 54396,
+      "peak_rss_kib": 58784,
       "allocation_count": 2615666,
-      "allocated_bytes": 179477182,
-      "tail_time_seconds": 0.0377066285,
+      "allocated_bytes": 187595902,
+      "tail_time_seconds": 0.0381999165,
       "timing_scope": "criterion-per-iteration/v1;memory=whole-process-single-criterion-test/gnu-time-rss-kib+dhat-heap-json-v2-tbk-tb/v1",
-      "wall_time_seconds": 0.033382598
+      "wall_time_seconds": 0.035379355
     },
     "pipeline/merge/scan": {
       "throughput": {
-        "Elements": 669880.9115860023
+        "Elements": 654304.2851238229
       },
-      "peak_rss_kib": 71088,
+      "peak_rss_kib": 75392,
       "allocation_count": 2615722,
-      "allocated_bytes": 186036404,
-      "tail_time_seconds": 0.031109805,
+      "allocated_bytes": 196513844,
+      "tail_time_seconds": 0.0318592,
       "timing_scope": "criterion-per-iteration/v1;memory=whole-process-single-criterion-test/gnu-time-rss-kib+dhat-heap-json-v2-tbk-tb/v1",
-      "wall_time_seconds": 0.029856053
+      "wall_time_seconds": 0.030566818
     },
     "pipeline/result_file/parse": {
       "throughput": {
-        "Elements": 135914.00041623664
+        "Elements": 133640.70695933982
       },
-      "peak_rss_kib": 55056,
+      "peak_rss_kib": 60472,
       "allocation_count": 2081819,
-      "allocated_bytes": 147267700,
-      "tail_time_seconds": 0.00023983674444444446,
+      "allocated_bytes": 155386420,
+      "tail_time_seconds": 0.0002550979127272727,
       "timing_scope": "criterion-per-iteration/v1;memory=whole-process-single-criterion-test/gnu-time-rss-kib+dhat-heap-json-v2-tbk-tb/v1",
-      "wall_time_seconds": 0.000235443
+      "wall_time_seconds": 0.000239448
     },
     "pipeline/school_labels/resolve": {
       "throughput": {
-        "Elements": 4373071.923093326
+        "Elements": 4464044.567885807
       },
-      "peak_rss_kib": 56216,
+      "peak_rss_kib": 58256,
       "allocation_count": 2251866,
-      "allocated_bytes": 155050320,
-      "tail_time_seconds": 0.00257681385,
+      "allocated_bytes": 163169040,
+      "tail_time_seconds": 0.0026510425238095237,
       "timing_scope": "criterion-per-iteration/v1;memory=whole-process-single-criterion-test/gnu-time-rss-kib+dhat-heap-json-v2-tbk-tb/v1",
-      "wall_time_seconds": 0.002532316
+      "wall_time_seconds": 0.00248071
     }
   }
 }
