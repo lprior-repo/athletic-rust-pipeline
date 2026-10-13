@@ -159,3 +159,12 @@ mod failures;
 
 #[path = "capture/sync_tests.rs"]
 mod sync_failures;
+
+#[path = "capture/concurrency_tests.rs"]
+mod concurrency;
+
+#[path = "capture/interruption_tests.rs"]
+mod interruption;
+
+#[path = "capture/quarantine_change_tests.rs"]
+mod quarantine_changes;

@@ -132,6 +132,61 @@ fn preserved(store: &Store, old: &ReviewCase) -> TestResult {
     Ok(())
 }
 
+fn athlete_with(
+    school: &CanonicalSchool,
+    native_id: &str,
+    grad_year: GradYear,
+) -> CanonicalAthlete {
+    let mut athlete = CanonicalAthlete::new(
+        &school.id,
+        "Synthetic Runner",
+        grad_year,
+        Gender::Girls,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, native_id),
+    );
+    athlete.evidence.push(Evidence::parsed(
+        SourceRef::new("fixture", Some("https://example.test/results".to_owned())),
+        AT,
+    ));
+    athlete
+}
+
+fn contradicted_pair(second_native_id: &str, second_year: GradYear) -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let store = Store::open(directory.path())?;
+    let (school_a, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "School A", "school a", None);
+    let (school_b, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "School B", "school b", None);
+    let first = athlete_with(&school_a, "111", GradYear::CO2027);
+    let second = athlete_with(&school_b, second_native_id, second_year);
+    store.append(Table::Schools, &school_a)?;
+    store.append(Table::Schools, &school_b)?;
+    store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
+    let members = vec![first.id.cast(), second.id.cast()];
+    let kept = old(&store, subset(&members, &[0, 1])?)?;
+    let candidate = resolved(
+        &store,
+        subset(&members, &[0, 1])?,
+        "contradicted resolution",
+    )?;
+    check!(eq; crate::index::apply::apply_decisions(&store, AT)?, 0);
+    let year = census_domain::model::SchoolYear::new(2026).ok_or("fixture season")?;
+    let report = crate::index::derive(&store, "fixture", AT, year)?;
+    let mut retained_candidate = candidate.clone();
+    retained_candidate.state = ReviewState::Retained;
+    check!(eq; report.superseded, 0, "a contradicted cluster must not supersede");
+    check!(eq; store.snapshot().get_merged::<ReviewCase>(Table::ReviewCases, &kept.id)?, Some(kept.clone()));
+    check!(eq; store.snapshot().get_merged::<ReviewCase>(Table::ReviewCases, &candidate.id)?, Some(retained_candidate));
+    check!(store
+        .journal_payload("identity_retained_supersession_v1", &kept.id)?
+        .is_none());
+    check!(store
+        .scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?
+        .is_empty());
+    preserved(&store, &kept)
+}
+
 #[test]
 fn exact_unique_current_cluster_closes_old_fields_losslessly() -> TestResult {
     let directory = tempfile::tempdir()?;
@@ -486,6 +541,100 @@ fn refreshed_current_verdict_closes_once_without_reinterpreting_old_applications
         || store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)? != applications
     {
         return Err("refreshed identity authority did not converge on repeat".into());
+    }
+    Ok(())
+}
+
+#[test]
+fn genuine_cohort_conflict_still_blocks_supersession() -> TestResult {
+    contradicted_pair("111", GradYear::new(2028).ok_or("fixture cohort")?)
+}
+
+#[test]
+fn genuine_provider_conflict_still_blocks_supersession() -> TestResult {
+    contradicted_pair("222", GradYear::CO2027)
+}
+
+#[test]
+fn moved_evidence_between_planning_and_publication_refuses_the_supersession() -> TestResult {
+    for moved in [false, true] {
+        let directory = tempfile::tempdir()?;
+        let store = Store::open(directory.path())?;
+        let members = fixture(&store)?;
+        let old = old(&store, subset(&members, &[0, 1])?)?;
+        let successor = resolved(&store, subset(&members, &[0, 1])?, "current resolution")?;
+        check!(eq; crate::index::apply::apply_decisions(&store, AT)?, 1);
+        let mut stage = store.stage_derived()?;
+        let stored = crate::index::stored_cases(stage.view())?;
+        let (closed, provenance) = plan(stage.view(), &stored, &[], AT)?;
+        let mut expected = old.clone();
+        expected.state = ReviewState::Superseded;
+        check!(eq; closed, vec![expected.clone()]);
+        let record = provenance.first().ok_or("supersession was not planned")?;
+        if provenance.len() != 1 || record.old_id != old.id || record.new_id != successor.id {
+            return Err("the exact successor was not planned".into());
+        }
+        let base = crate::index::stage_digest(stage.view())?;
+        let year = census_domain::model::SchoolYear::new(2026).ok_or("fixture season")?;
+        let digest = publication_digest(stage.view(), &stored, &base, &provenance, year)?;
+        let operation = format!("{}:{digest}", crate::index::STAGE_RECEIPT);
+        crate::index::carry_outputs(&mut stage)?;
+        stage_findings(&mut stage, &closed, &[], provenance)?;
+        let pointer = store.derived_generation();
+        if moved {
+            let (school, _) =
+                CanonicalSchool::new(UsJurisdiction::Wisconsin, "School D", "school d", None);
+            let before = store.evidence_generation();
+            store.append(Table::Schools, &school)?;
+            check!(
+                store.evidence_generation() != before,
+                "the fixture must move the inputs"
+            );
+        }
+        let outcome = stage.publish(&operation, &digest);
+        if !moved {
+            let publication = outcome?;
+            check!(publication.application.written());
+            check!(eq; store.derived_generation(), publication.generation);
+            check!(eq; store.journal_payload("identity_retained_supersession_v1", &old.id)?,
+                Some(serde_json::json!([successor.id, SUPERSESSION_REASON])));
+            check!(store
+                .scan::<ReviewCase>(Table::ReviewCases)?
+                .contains(&expected));
+            check!(store.receipt(&operation)?.is_some());
+            continue;
+        }
+        let detail = match outcome {
+            Err(census_store::StoreError::PublicationRefused { detail }) => detail,
+            other => {
+                return Err(format!("moved evidence must refuse: {other:?}").into());
+            }
+        };
+        check!(
+            detail.contains("inputs moved"),
+            "the refusal must name the moved inputs: {detail}"
+        );
+        check!(eq; store.derived_generation(), pointer);
+        check!(eq; store.receipt_count()?, 0);
+        check!(store.receipt(&operation)?.is_none());
+        check!(store
+            .journal_payload("identity_retained_supersession_v1", &old.id)?
+            .is_none());
+        check!(
+            store
+                .scan::<ReviewCase>(Table::ReviewCases)?
+                .iter()
+                .all(|case| case.state != ReviewState::Superseded),
+            "a refused publication must publish no supersession"
+        );
+        check!(eq; store.snapshot().get_merged::<ReviewCase>(Table::ReviewCases, &old.id)?, Some(old.clone()));
+        drop(store);
+        let store = Store::open(directory.path())?;
+        check!(eq; store.derived_generation(), pointer);
+        check!(store
+            .journal_payload("identity_retained_supersession_v1", &old.id)?
+            .is_none());
+        check!(eq; store.snapshot().get_merged::<ReviewCase>(Table::ReviewCases, &old.id)?, Some(old.clone()));
     }
     Ok(())
 }
