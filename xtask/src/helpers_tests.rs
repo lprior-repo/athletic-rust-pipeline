@@ -156,6 +156,8 @@ struct GateCase {
     json: std::path::PathBuf,
     log: std::path::PathBuf,
     exit: String,
+    scan: String,
+    ratchet: String,
 }
 
 fn repo_path(relative: &str) -> std::path::PathBuf {
@@ -234,6 +236,15 @@ fn clippy_json(
 }
 
 fn gate_case(payload: &str, exit: &str) -> Result<GateCase, Box<dyn std::error::Error>> {
+    gate_case_with_exits(payload, exit, "1", "1")
+}
+
+fn gate_case_with_exits(
+    payload: &str,
+    clippy: &str,
+    scan: &str,
+    ratchet: &str,
+) -> Result<GateCase, Box<dyn std::error::Error>> {
     let root = tempfile::tempdir()?;
     let bin = root.path().join("bin");
     std::fs::create_dir(&bin)?;
@@ -245,7 +256,8 @@ fn gate_case(payload: &str, exit: &str) -> Result<GateCase, Box<dyn std::error::
             "#!/usr/bin/env bash\nprintf '%s\\n' \"$*\" >> \"$STUB_LOG\"\n\
              for a in \"$@\"; do\n\
              \x20 if [ \"$a\" = clippy ]; then cat \"$STUB_JSON\"; exit \"$STUB_EXIT\"; fi\n\
-             \x20 if [ \"$a\" = scan ]; then exit 1; fi\n\
+             \x20 if [ \"$a\" = scan ]; then exit \"${{STUB_SCAN_EXIT:-1}}\"; fi\n\
+             \x20 if [ \"$a\" = ratchet ]; then exit \"${{STUB_RATCHET_EXIT:-1}}\"; fi\n\
              done\n\
              exec {real} \"$@\"\n"
         ),
@@ -260,7 +272,9 @@ fn gate_case(payload: &str, exit: &str) -> Result<GateCase, Box<dyn std::error::
         bin,
         json,
         log,
-        exit: exit.to_string(),
+        exit: clippy.to_string(),
+        scan: scan.to_string(),
+        ratchet: ratchet.to_string(),
     })
 }
 
@@ -274,6 +288,8 @@ fn run_sourced(
         .env("GATE_SCRIPT", repo_path("../tools/gate.sh"))
         .env("STUB_JSON", &case.json)
         .env("STUB_EXIT", &case.exit)
+        .env("STUB_SCAN_EXIT", &case.scan)
+        .env("STUB_RATCHET_EXIT", &case.ratchet)
         .env("STUB_LOG", &case.log)
         .env(
             "PATH",
@@ -385,6 +401,127 @@ fn ratchet_lane_never_compares_without_a_complete_measurement() -> TestResult {
         attempted.iter().any(|line| line.contains("scan")),
         "{attempted:?}"
     );
+    Ok(())
+}
+
+#[test]
+fn ratchet_lane_refuses_a_failed_clippy_measurement_with_a_baseline_exact_tally() -> TestResult {
+    let rows = clippy_rows()?;
+    let payload = clippy_json(&rows, Some(false))?;
+    let counted: u64 = rows.values().filter_map(serde_json::Value::as_u64).sum();
+    let expected = usize::try_from(counted)?;
+    let script = "source \"$GATE_SCRIPT\"\nLANE=ratchet\nselected_main";
+    let case = gate_case_with_exits(&payload, "101", "0", "0")?;
+    let output = run_sourced(&case, script)?;
+    let stdout = String::from_utf8(output.stdout)?;
+    let stderr = String::from_utf8(output.stderr)?;
+    check!(eq; output.status.code(), Some(1), "{stdout}\n{stderr}");
+    check!(
+        stderr.contains("strict clippy exited 101"),
+        "{stdout}\n{stderr}"
+    );
+    check!(
+        eq;
+        stdout.matches("injected diagnostic").count(),
+        expected,
+        "{stdout}"
+    );
+    check!(stdout.contains("--- debt ratchet: FAIL"), "{stdout}");
+    check!(stdout.contains("gate: FAIL -> debt ratchet"), "{stdout}");
+    check!(!stdout.contains("PASS"), "{stdout}");
+    let attempted = invocations(&case)?;
+    check!(
+        !attempted.iter().any(|line| line.contains("-- scan")),
+        "{attempted:?}"
+    );
+    check!(
+        !attempted.iter().any(|line| line.contains("-- ratchet")),
+        "{attempted:?}"
+    );
+    Ok(())
+}
+
+#[test]
+fn ratchet_lane_treats_malformed_completion_records_as_an_incomplete_measurement() -> TestResult {
+    let rows = clippy_rows()?;
+    let unnamed = format!(
+        "{}\n{}",
+        clippy_json(&rows, None)?,
+        serde_json::json!({ "reason": "build-finished" })
+    );
+    let untyped = format!(
+        "{}\n{}",
+        clippy_json(&rows, None)?,
+        serde_json::json!({ "reason": "build-finished", "success": "false" })
+    );
+    let truncated = format!("{}\n{{\"reason\": \"compil", clippy_json(&rows, Some(true))?);
+    let script = "source \"$GATE_SCRIPT\"\ntmp=$(mktemp -d)\nlane_ratchet \"$tmp\"";
+    for (payload, diagnostic) in [
+        (
+            unnamed.as_str(),
+            Some("did not report a successful build-finished record"),
+        ),
+        (
+            untyped.as_str(),
+            Some("did not report a successful build-finished record"),
+        ),
+        (truncated.as_str(), None),
+    ] {
+        let case = gate_case_with_exits(payload, "0", "0", "0")?;
+        let output = run_sourced(&case, script)?;
+        let stdout = String::from_utf8(output.stdout)?;
+        let stderr = String::from_utf8(output.stderr)?;
+        check!(
+            output.status.code().is_some_and(|code| code != 0),
+            "{stdout}\n{stderr}"
+        );
+        check!(!stderr.contains("strict clippy exited"), "{stdout}\n{stderr}");
+        if let Some(diagnostic) = diagnostic {
+            check!(stderr.contains(diagnostic), "{stdout}\n{stderr}");
+        }
+        let attempted = invocations(&case)?;
+        check!(
+            !attempted.iter().any(|line| line.contains("-- scan")),
+            "{attempted:?}"
+        );
+        check!(
+            !attempted.iter().any(|line| line.contains("-- ratchet")),
+            "{attempted:?}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn ratchet_lane_reaches_the_comparison_and_reports_its_verdict() -> TestResult {
+    let rows = clippy_rows()?;
+    let payload = clippy_json(&rows, Some(true))?;
+    let script = "source \"$GATE_SCRIPT\"\nLANE=ratchet\nselected_main";
+    for (comparison, status, lane, verdict) in [
+        ("0", 0, "--- debt ratchet: PASS", "gate: PASS"),
+        ("1", 1, "--- debt ratchet: FAIL", "gate: FAIL -> debt ratchet"),
+    ] {
+        let case = gate_case_with_exits(&payload, "0", "0", comparison)?;
+        let output = run_sourced(&case, script)?;
+        let stdout = String::from_utf8(output.stdout)?;
+        let stderr = String::from_utf8(output.stderr)?;
+        check!(eq; output.status.code(), Some(status), "{stdout}\n{stderr}");
+        check!(stdout.contains(lane), "{comparison}: {stdout}");
+        check!(stdout.contains(verdict), "{comparison}: {stdout}");
+        check!(eq; stdout.contains("PASS"), status == 0, "{comparison}: {stdout}");
+        let attempted = invocations(&case)?;
+        check!(
+            attempted.iter().any(|line| line.contains("-- scan")),
+            "{attempted:?}"
+        );
+        let reached = attempted
+            .iter()
+            .find(|line| line.contains("-- ratchet"))
+            .ok_or("the lane never reached the debt comparison")?;
+        check!(reached.contains("tools/quality-baseline.json"), "{reached}");
+        check!(reached.contains("clippy.tsv"), "{reached}");
+        check!(reached.contains("scan.json"), "{reached}");
+    }
     Ok(())
 }
 
