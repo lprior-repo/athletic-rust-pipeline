@@ -182,17 +182,13 @@ fn sidecar_forgeries_are_refused(captured: &Captured) -> TestResult {
         .workbook
         .parent()
         .ok_or("publication directory missing")?;
-    for name in [
-        "census-core.json",
-        "census-all-sources.json",
-        "recruiting.csv",
-        "school-contacts.csv",
-        "contact-research.csv",
-        "audit.json",
-        CSV,
-        JSONL,
-    ] {
-        std::fs::copy(generation.join(name), scratch.path().join(name))?;
+    for entry in std::fs::read_dir(generation)? {
+        let entry = entry?;
+        let name = entry.file_name();
+        if name == std::ffi::OsStr::new("workbook.xlsx") || !entry.file_type()?.is_file() {
+            continue;
+        }
+        std::fs::copy(entry.path(), scratch.path().join(&name))?;
     }
     check_sidecar_metadata(scratch.path(), captured)?;
     let csv_path = scratch.path().join(CSV);

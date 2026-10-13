@@ -157,7 +157,6 @@ fn event(store: &Store, meet: &MeetId, kind: EventKind) -> TestResult<EventId> {
         },
         EventSpecification::default(),
     )?);
-    event.evidence = evidence("wiaa_results", None);
     let id = event.id.clone();
     store.append(Table::Events, &event)?;
     Ok(id)
