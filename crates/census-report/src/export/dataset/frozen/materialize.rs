@@ -1,4 +1,4 @@
-use super::super::Loaded;
+use super::super::{CoverageEvidence, Loaded};
 use super::manifest::FrozenManifest;
 use super::objects;
 use super::reader::ChunkReader;
@@ -7,8 +7,8 @@ use super::{codec_error, invalid};
 use crate::report::ReportResult;
 use census_domain::model::{
     AppliedAthleteIdentity, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
-    CanonicalPerformance, CanonicalSchool, CanonicalTeam, ReviewCase, ReviewVerdictRecord,
-    SourceAccessCondition,
+    CanonicalPerformance, CanonicalSchool, CanonicalTeam, CoachLaneObligation, CoverageRow,
+    ReviewCase, ReviewVerdictRecord, SourceAccessCondition,
 };
 use census_store::Entity;
 use std::path::Path;
@@ -43,6 +43,14 @@ pub(super) fn read_all(objects_dir: &Path, manifest: &FrozenManifest) -> ReportR
             StreamKind::IdentityDecisions,
             manifest,
         )?,
+        coverage_evidence: CoverageEvidence {
+            rows: collect::<CoverageRow>(objects_dir, StreamKind::CoverageRows, manifest)?,
+            coach_lanes: collect::<CoachLaneObligation>(
+                objects_dir,
+                StreamKind::CoachLanes,
+                manifest,
+            )?,
+        },
     })
 }
 
@@ -53,7 +61,7 @@ fn collect<T: Entity>(
 ) -> ReportResult<Vec<T>> {
     let reference = manifest
         .stream(kind)
-        .ok_or_else(|| invalid("a frozen manifest is missing one of the twelve streams"))?;
+        .ok_or_else(|| invalid("a frozen manifest is missing a required stream"))?;
     let page = super::verify::page(objects_dir, reference)?;
     let mut rows = Vec::new();
     for descriptor in page.chunks() {

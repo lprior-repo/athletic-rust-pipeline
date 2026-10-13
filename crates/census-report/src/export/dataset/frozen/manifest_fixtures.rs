@@ -116,6 +116,20 @@ fn streams_of(dataset: &ExportDataset) -> TestResult<Streams> {
         &mut decisions,
         &mut legacy,
     )?;
+    let mut coverage = dataset.coverage_evidence.rows.clone();
+    push_stream(
+        &mut entries,
+        StreamKind::CoverageRows,
+        &mut coverage,
+        &mut legacy,
+    )?;
+    let mut lanes = dataset.coverage_evidence.coach_lanes.clone();
+    push_stream(
+        &mut entries,
+        StreamKind::CoachLanes,
+        &mut lanes,
+        &mut legacy,
+    )?;
     let legacy = legacy.finish()?;
     Ok(Streams { entries, legacy })
 }

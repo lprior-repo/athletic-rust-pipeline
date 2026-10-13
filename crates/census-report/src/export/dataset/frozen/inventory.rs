@@ -159,7 +159,7 @@ impl StreamInventory {
     pub fn kind(&self) -> FrozenCodecResult<StreamKind> {
         StreamKind::from_wire(&self.stream).ok_or_else(|| FrozenCodecError::CorruptArtifact {
             what: "stream inventory",
-            detail: format!("{} is not one of the twelve logical streams", self.stream),
+            detail: format!("{} is not a supported logical stream", self.stream),
         })
     }
 

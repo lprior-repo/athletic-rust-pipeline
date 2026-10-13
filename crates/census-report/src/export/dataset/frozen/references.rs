@@ -29,7 +29,7 @@ impl ManifestStream {
         if StreamKind::from_wire(&self.stream).is_none() {
             return Err(corrupt(
                 "manifest stream",
-                &format!("{} is not one of the twelve logical streams", self.stream),
+                &format!("{} is not a supported logical stream", self.stream),
             ));
         }
         self.inventory.validate()?;

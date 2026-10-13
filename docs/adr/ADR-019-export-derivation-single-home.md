@@ -92,6 +92,47 @@ eligibility and recruiting publication consume that shared assessment. Policy-1/
 inputs and published generations remain historical evidence and are refused by the current
 verifier; schema revision remains 1 for the additive empty-default canonical cohort field.
 
+## Frozen coverage completeness amendment — 2026-10-13
+
+Logical export schema revision 2 makes `coverage_evidence` a required frozen input containing
+`rows` and `coach_lanes`. Both arrays are required even when empty. Coverage rows and coach-lane
+obligations come from the same store snapshot as the other dataset rows, before the input digest
+is bound. Empty evidence remains unknown/unresearched; it does not manufacture measured completion.
+JSON archives, chunked inputs, coverage reports and workbook verification use these captured bytes.
+Reopening a generation never hydrates coverage from the current store.
+
+The ordered chunk representation appends `coverage_rows` and `coach_lanes` after
+`identity_decisions`, for fourteen streams. The input fingerprint set appends `Coverage` and
+`CoachLanes`, for fifteen tables. The logical digest reconstructs the dataset's nested
+`coverage_evidence` object, including both empty arrays, rather than a flat surrogate. Either table
+changing independently makes an old input stale for a new publication. Existing chunk, row, input
+and encoded-window ceilings continue to apply.
+
+This changes the logical schema, not the physical JSONL/inventory envelope or token grammar:
+manifest/inventory codec revision and token protocol remain 2. Publication semantic policy remains
+8, whose retained-conflict context rule was introduced by the preceding integrity repair. The
+publication manifest envelope and Fjall record/key formats are unchanged.
+
+Schema-1 frozen inputs did not retain the two required collections. A snapshot sequence cannot
+reconstruct their historical bytes after the fact. Following ADR-036 gate f, conversion must refuse
+this missing provenance rather than insert empty arrays or read today's tables. Preserve all old
+archives, objects, retained pointers, durable records, leases and publication references. The
+current verifier refuses unsupported logical inputs; no current acceptance is inferred from a
+historical reader. A supported capture is a new, explicitly selected export generation, not an
+in-place repair of an old archive or silent retry under a replacement job identity.
+
+Version refusal is distinguished from current-version corruption before recovery mutation.
+Unsupported manifest, lineage, token, inventory and chunk-descriptor versions retain their typed
+classification through verification. Repeated refusal preserves a retained root whether its
+InputRecord is missing, Requested, Freezing, Frozen or Abandoned. Current-version corruption keeps
+its existing refusal/retirement behavior. This amendment does not authorize deleting historical
+artifacts or bypassing a publication fence.
+
+Implementation and qualification are separate: required regressions compare JSON/chunk input
+identity, real Coverage-sheet readback after mutation and reopen, each table's independent stale
+fence, and historical-state preservation. A source change or this record is not evidence that those
+checks or release requirements passed.
+
 ## Consequences
 
 Scope, cohort and evidence semantics are the derivation's, not each sheet's; a sheet that wants a
