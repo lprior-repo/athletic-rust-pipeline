@@ -16,6 +16,7 @@ mod classification;
 mod conflicts;
 mod exact_time;
 mod historical_affiliation;
+mod historical_parent_scope;
 mod keys;
 mod measures;
 mod reduction;

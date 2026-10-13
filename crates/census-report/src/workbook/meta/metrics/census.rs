@@ -32,12 +32,15 @@ pub(super) fn scope_counters(core: &Census, all_sources: &Census) -> ReportResul
 
 pub(super) fn method_notes(census: &Census) -> Vec<Vec<Cell>> {
     let mut cells = vec![row!("Method note", "Value")];
-    cells.extend(
-        census
-            .notes
-            .iter()
-            .filter(|note| note.starts_with("core performance publication"))
-            .map(|note| row!("Core performance publication", Cell::text(note.clone()))),
-    );
+    cells.extend(census.notes.iter().filter_map(|note| {
+        let label = if note.starts_with("core performance publication") {
+            "Core performance publication"
+        } else if note.contains("is outside the census run scope:") {
+            "Population geography and historical results"
+        } else {
+            return None;
+        };
+        Some(row!(label, Cell::text(note.clone())))
+    }));
     cells
 }
