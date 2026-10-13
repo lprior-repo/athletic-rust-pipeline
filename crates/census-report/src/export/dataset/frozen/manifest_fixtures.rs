@@ -42,7 +42,7 @@ pub(super) fn fixture() -> TestResult<Fixture> {
         let snapshot = store.snapshot();
         let dataset = ExportDataset::from_snapshot(&store, &snapshot)?;
         let streams = streams_of(&dataset)?;
-        let (manifest, encoded) = manifest_of(&store, &snapshot, &dataset, &streams)?;
+        let (manifest, encoded) = manifest_of(&snapshot, &dataset, &streams)?;
         (dataset, streams, manifest, encoded)
     };
     Ok(Fixture {
@@ -131,6 +131,8 @@ fn streams_of(dataset: &ExportDataset) -> TestResult<Streams> {
         &mut lanes,
         &mut legacy,
     )?;
+    let mut relays = dataset.relays.clone();
+    push_stream(&mut entries, StreamKind::Relays, &mut relays, &mut legacy)?;
     let legacy = legacy.finish()?;
     Ok(Streams { entries, legacy })
 }
@@ -170,12 +172,11 @@ fn write_stream<T: Entity>(
 }
 
 fn manifest_of(
-    store: &Store,
     snapshot: &StoreSnapshot<'_>,
     dataset: &ExportDataset,
     streams: &Streams,
 ) -> TestResult<(FrozenManifest, Vec<u8>)> {
-    let token = FrozenInputToken::capture(store, &dataset.lineage)?;
+    let token = FrozenInputToken::capture(snapshot, &dataset.lineage)?;
     let mut references = Vec::new();
     for (_, bundle) in &streams.entries {
         let encoded = bundle.inventory.encode()?;

@@ -21,10 +21,17 @@ pub(super) fn school_index(
         .collect()
 }
 
-pub(super) fn kind_index(events: &[CanonicalEvent]) -> BTreeMap<String, EventKind> {
+pub(super) fn kind_index(
+    events: &[CanonicalEvent],
+    admission: &crate::report::EventAdmission<'_>,
+) -> BTreeMap<String, EventKind> {
     events
         .iter()
-        .map(|event| (event.id.as_str().to_string(), event.kind.clone()))
+        .filter_map(|event| {
+            admission
+                .included_kind(&event.id)
+                .map(|kind| (event.id.as_str().to_string(), kind.clone()))
+        })
         .collect()
 }
 
@@ -58,11 +65,12 @@ fn tally_performance(
     performance: &CanonicalPerformance,
     kinds: &BTreeMap<String, EventKind>,
 ) {
+    let Some(kind) = kinds.get(performance.event.as_str()) else {
+        return;
+    };
     tally.performances = tally.performances.saturating_add(1);
     tally.meets.insert(performance.meet.as_str().to_string());
-    if let Some(kind) = kinds.get(performance.event.as_str()) {
-        tally.events.insert(kind.stable_key().into_owned());
-    }
+    tally.events.insert(kind.stable_key().into_owned());
 }
 
 pub(super) fn pr_index(prs: &[SharedSelection]) -> BTreeMap<String, Vec<usize>> {

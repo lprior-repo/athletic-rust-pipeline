@@ -78,7 +78,7 @@ fn audit<'a>(
     }
 }
 
-pub(super) fn write_json(path: &Path, value: &impl Serialize) -> ReportResult<()> {
+pub(in crate::workbook) fn write_json(path: &Path, value: &impl Serialize) -> ReportResult<()> {
     let file = std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)

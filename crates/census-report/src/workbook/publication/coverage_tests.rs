@@ -32,15 +32,15 @@ impl Witness {
         readback::assert_baseline(&captured.dataset, &captured.workbook)?;
         let verified = verify_published(&captured.workbook)?;
         check!(eq; verified.workbook.mapped_athletes, 1);
-        check!(eq; captured.dataset.lineage.schema_revision, 2);
-        check!(eq; captured.dataset.lineage.policy_revision, 13);
+        check!(eq; captured.dataset.lineage.schema_revision, 3);
+        check!(eq; captured.dataset.lineage.policy_revision, 14);
         let selection = readback::selection(&captured.workbook)?;
         check!(eq; selection, selected_options(&captured.options));
         Ok(Self {
             lineage: captured.dataset.lineage.clone(),
             evidence: serde_json::to_value(&captured.dataset.coverage_evidence)?,
             report: serde_json::to_value(coverage_report(&captured.dataset, Some(2027))?)?,
-            bests: selected_bests(&captured.dataset),
+            bests: selected_bests(&captured.dataset)?,
             cells: readback::coverage_cells(&captured.workbook)?,
             selection,
             pointer: std::fs::read_link(captured.store.out_dir().join("publication/current"))?,
@@ -54,7 +54,7 @@ impl Witness {
         check!(eq; dataset.lineage, self.lineage);
         check!(eq; serde_json::to_value(&dataset.coverage_evidence)?, self.evidence);
         check!(eq; serde_json::to_value(coverage_report(dataset, Some(2027))?)?, self.report);
-        check!(eq; selected_bests(dataset), self.bests);
+        check!(eq; selected_bests(dataset)?, self.bests);
         Ok(())
     }
 
@@ -80,7 +80,7 @@ fn selected_options(options: &Options) -> SelectedOptions {
     )
 }
 
-fn selected_bests(dataset: &ExportDataset) -> Vec<SharedSelection> {
+fn selected_bests(dataset: &ExportDataset) -> crate::report::ReportResult<Vec<SharedSelection>> {
     bests::build_from_dataset(
         dataset,
         &bests::Options {

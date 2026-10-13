@@ -43,10 +43,10 @@ fn selection_omits_best_when_every_numeric_context_is_contested() -> TestResult 
             reported(&dataset, "second_claim", second_mark),
         ];
         let original = dataset.performances.clone();
-        check!(eq; selected(&dataset), Vec::new());
+        check!(eq; selected(&dataset)?, Vec::new());
         check!(eq; dataset.performances, original);
         dataset.performances.reverse();
-        check!(eq; selected(&dataset), Vec::new());
+        check!(eq; selected(&dataset)?, Vec::new());
     }
     Ok(())
 }
@@ -60,9 +60,9 @@ fn selection_uses_clean_distance_when_farthest_context_is_contested() -> TestRes
     clean.date = "2025-03-02".into();
     dataset.performances = vec![farthest, conflicting, clean.clone()];
 
-    let forward = selected(&dataset);
+    let forward = selected(&dataset)?;
     dataset.performances.reverse();
-    check!(eq; selected(&dataset), forward);
+    check!(eq; selected(&dataset)?, forward);
     check!(eq; forward.len(), 1);
     check!(eq; forward[0].source.performance_id, clean.id);
     check!(eq; forward[0].result.value, 7_000_000);
@@ -89,9 +89,9 @@ fn selection_accepts_equivalent_numeric_reports_with_distinct_unit_text() -> Tes
     );
     dataset.performances = vec![metric, imperial];
 
-    let forward = selected(&dataset);
+    let forward = selected(&dataset)?;
     dataset.performances.reverse();
-    check!(eq; selected(&dataset), forward);
+    check!(eq; selected(&dataset)?, forward);
     check!(eq; forward.len(), 1);
     check!(eq; forward[0].result.value, 7_620_000);
     check!(eq; forward[0].population.marks, 2);
@@ -108,9 +108,9 @@ fn selection_does_not_conflict_on_identical_reports() -> TestResult {
     let expected_id = first.id.clone().min(duplicate.id.clone());
     dataset.performances = vec![first, duplicate];
 
-    let rows = selected(&dataset);
+    let rows = selected(&dataset)?;
     dataset.performances.reverse();
-    check!(eq; selected(&dataset), rows);
+    check!(eq; selected(&dataset)?, rows);
 
     check!(eq; rows.len(), 1);
     check!(eq; rows[0].result.value, 50_000_000_000);
@@ -135,7 +135,7 @@ fn selection_does_not_conflict_on_distinct_meets_with_the_same_name() -> TestRes
     dataset.events.push(other_event);
     dataset.performances = vec![slower, faster.clone()];
 
-    let rows = selected(&dataset);
+    let rows = selected(&dataset)?;
 
     check!(eq; rows.len(), 1);
     check!(eq; rows[0].source.performance_id, faster.id);
@@ -155,7 +155,7 @@ fn selection_does_not_conflict_on_known_preliminary_and_final_rounds() -> TestRe
     final_result.heat = Some("1".into());
     dataset.performances = vec![preliminary, final_result.clone()];
 
-    let rows = selected(&dataset);
+    let rows = selected(&dataset)?;
 
     check!(eq; rows.len(), 1);
     check!(eq; rows[0].source.performance_id, final_result.id);
@@ -175,7 +175,7 @@ fn selection_does_not_conflict_on_known_distinct_heats() -> TestResult {
     second_heat.heat = Some("2".into());
     dataset.performances = vec![first_heat, second_heat.clone()];
 
-    let rows = selected(&dataset);
+    let rows = selected(&dataset)?;
 
     check!(eq; rows.len(), 1);
     check!(eq; rows[0].source.performance_id, second_heat.id);
@@ -191,7 +191,7 @@ fn selection_does_not_conflict_on_distinct_dates_at_one_meet() -> TestResult {
     second_day.date = "2025-03-02".into();
     dataset.performances = vec![first_day, second_day.clone()];
 
-    let rows = selected(&dataset);
+    let rows = selected(&dataset)?;
 
     check!(eq; rows.len(), 1);
     check!(eq; rows[0].source.performance_id, second_day.id);
@@ -202,7 +202,7 @@ fn selection_does_not_conflict_on_distinct_dates_at_one_meet() -> TestResult {
 #[test]
 fn selection_does_not_conflict_on_rounds_bound_to_canonical_events() -> TestResult {
     let mut dataset = selection_dataset(EventKind::Track400m)?;
-    let prelim_event = CanonicalEvent::new(
+    let prelim_event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &dataset.meets[0].id,
             kind: EventKind::Track400m,
@@ -211,8 +211,8 @@ fn selection_does_not_conflict_on_rounds_bound_to_canonical_events() -> TestResu
             round: Some("Preliminary"),
         },
         EventSpecification::default(),
-    )?;
-    let final_event = CanonicalEvent::new(
+    )?);
+    let final_event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &dataset.meets[0].id,
             kind: EventKind::Track400m,
@@ -221,7 +221,7 @@ fn selection_does_not_conflict_on_rounds_bound_to_canonical_events() -> TestResu
             round: Some("Final"),
         },
         EventSpecification::default(),
-    )?;
+    )?);
     let mut preliminary = timed_report(&dataset, "event_preliminary", "51.00")?;
     preliminary.event = prelim_event.id.clone();
     let mut final_result = timed_report(&dataset, "event_final", "50.00")?;
@@ -229,7 +229,7 @@ fn selection_does_not_conflict_on_rounds_bound_to_canonical_events() -> TestResu
     dataset.events = vec![prelim_event, final_event];
     dataset.performances = vec![preliminary, final_result.clone()];
 
-    let rows = selected(&dataset);
+    let rows = selected(&dataset)?;
 
     check!(eq; rows.len(), 1);
     check!(eq; rows[0].source.performance_id, final_result.id);
@@ -270,10 +270,10 @@ fn selection_retains_each_contradictory_mark_once_in_deterministic_context_order
     ];
 
     let original = dataset.performances.clone();
-    let forward = selected(&dataset);
+    let forward = selected(&dataset)?;
     check!(eq; dataset.performances, original);
     dataset.performances.reverse();
-    let reverse = selected(&dataset);
+    let reverse = selected(&dataset)?;
 
     check!(eq; forward, reverse);
     check!(eq; forward.len(), 1);

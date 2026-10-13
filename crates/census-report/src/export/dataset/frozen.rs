@@ -26,6 +26,8 @@ mod lineage_tests;
 mod manifest;
 mod materialize;
 mod objects;
+#[cfg(test)]
+mod pinned_run_metadata_tests;
 mod reader;
 mod recover;
 mod references;
@@ -52,9 +54,9 @@ mod preflight_tests;
 pub use freeze::CancelOutcome;
 pub use root::FrozenRoot;
 
-const SCHEMA_REVISION: u32 = 2;
-const POLICY_REVISION: u32 = 13;
-const INPUT_TABLES: [Table; 15] = [
+const SCHEMA_REVISION: u32 = 3;
+const POLICY_REVISION: u32 = 14;
+const INPUT_TABLES: [Table; 16] = [
     Table::Schools,
     Table::Teams,
     Table::Coaches,
@@ -70,6 +72,7 @@ const INPUT_TABLES: [Table; 15] = [
     Table::SourceMeets,
     Table::Coverage,
     Table::CoachLanes,
+    Table::RelayResults,
 ];
 
 #[derive(Serialize)]
@@ -110,7 +113,7 @@ pub(super) fn to_export_dataset(root: &FrozenRoot, store: &Store) -> ReportResul
 pub(super) fn lineage(store: &Store, snapshot: &StoreSnapshot<'_>) -> ReportResult<DatasetLineage> {
     snapshot.ensure_origin(store)?;
     let store_identity = String::from(snapshot.store_identity()?);
-    let bound = store.run_manifest()?;
+    let bound = snapshot.run_manifest()?;
     if let Some(manifest) = &bound {
         if manifest.store_identity != store_identity {
             return Err(invalid(
@@ -252,4 +255,13 @@ where
     Ok(BTreeMap::<String, T>::deserialize(deserializer)?
         .into_values()
         .collect())
+}
+
+pub(super) fn ensure_semantic_policy(lineage: &DatasetLineage) -> ReportResult<()> {
+    if lineage.schema_revision != SCHEMA_REVISION || lineage.policy_revision != POLICY_REVISION {
+        return Err(invalid(
+            "retained export input uses an incompatible recruiting policy or schema",
+        ));
+    }
+    Ok(())
 }

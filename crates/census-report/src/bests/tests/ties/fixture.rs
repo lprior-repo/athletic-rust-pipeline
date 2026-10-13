@@ -112,7 +112,7 @@ impl TieFixture {
         )?;
         meet.sports = vec![Sport::OutdoorTrack];
         meet.evidence = vec![evidence.clone()];
-        let mut event = CanonicalEvent::new(
+        let mut event = crate::test_events::owned(CanonicalEvent::new(
             EventIdentity {
                 meet: &meet.id,
                 kind: case.kind.clone(),
@@ -121,7 +121,7 @@ impl TieFixture {
                 round: None,
             },
             EventSpecification::default(),
-        )?;
+        )?);
         event.source_labels = vec![SourceEventLabel {
             source,
             label: case.label.into(),
@@ -177,13 +177,13 @@ impl TieFixture {
         check!(eq; (after.tables, after.appended, after.observations), (before.tables, before.appended, before.observations));
         retained_observations(&store, observations)?;
         let before = ExportDataset::load(&store)?;
-        let winners = selected(&before);
+        let winners = selected(&before)?;
         store.flush()?;
         drop(store);
         let reopened = Store::open(root)?;
         let after = ExportDataset::load(&reopened)?;
         check!(eq; after.performances, before.performances);
-        check!(eq; selected(&after), winners);
+        check!(eq; selected(&after)?, winners);
         retained_observations(&reopened, observations)?;
         Ok(reopened)
     }

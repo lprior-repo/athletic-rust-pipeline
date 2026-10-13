@@ -147,7 +147,7 @@ fn meet(
 }
 
 fn event(store: &Store, meet: &MeetId, kind: EventKind) -> TestResult<EventId> {
-    let mut event = CanonicalEvent::new(
+    let mut event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet,
             kind,
@@ -156,7 +156,7 @@ fn event(store: &Store, meet: &MeetId, kind: EventKind) -> TestResult<EventId> {
             round: None,
         },
         EventSpecification::default(),
-    )?;
+    )?);
     event.evidence = evidence("wiaa_results", None);
     let id = event.id.clone();
     store.append(Table::Events, &event)?;
@@ -426,11 +426,13 @@ fn recruiting(store: &Store, scope: Scope, grad_year: Option<i16>) -> TestResult
             grad_year,
             limit: None,
         },
-    );
+    )?;
+    let admission = crate::report::EventAdmission::of(&dataset)?;
     Ok(Recruiting::of(
         &derivation,
         SchoolYear::new(2026).ok_or("invalid fixture season")?,
         prs,
+        &admission,
     )?)
 }
 
@@ -563,7 +565,7 @@ fn the_prs_sheet_retains_shared_winners_units_dates_and_provenance() -> TestResu
             grad_year: Some(2027),
             limit: None,
         },
-    );
+    )?;
     check!(eq; range.height() - 1,
     canonical.len(),
     "one row per core-scope athlete/event");

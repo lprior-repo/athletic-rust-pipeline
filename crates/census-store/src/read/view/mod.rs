@@ -11,6 +11,7 @@ mod object;
 mod object_read;
 mod object_wire;
 mod operations;
+mod run;
 
 pub use bounded::{ReadBudget, ReadCounts};
 pub use object::{JournalDigest, JournalEntry, JournalObject, JournalRecord, JournalRecords};
@@ -19,6 +20,7 @@ pub struct StoreSnapshot<'s> {
     snapshot: Snapshot,
     entities: &'s fjall::Keyspace,
     journal: &'s fjall::Keyspace,
+    meta: &'s fjall::Keyspace,
     root: &'s std::path::Path,
     derived_generation: u64,
     evidence_generation: u64,
@@ -36,6 +38,7 @@ impl<'s> StoreSnapshot<'s> {
             snapshot,
             entities: &store.entities,
             journal: &store.journal,
+            meta: &store.meta,
             root: &store.root,
             derived_generation,
             evidence_generation,

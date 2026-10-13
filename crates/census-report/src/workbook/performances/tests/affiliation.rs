@@ -69,7 +69,7 @@ fn performance(store: &Store, athlete: &AthleteId, team: &TeamId) -> TestResult 
     meet.evidence.push(observation());
     store.append(Table::Meets, &meet)?;
 
-    let mut event = CanonicalEvent::new(
+    let mut event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &meet_id,
             kind: EventKind::Track400m,
@@ -78,7 +78,7 @@ fn performance(store: &Store, athlete: &AthleteId, team: &TeamId) -> TestResult 
             round: Some("Finals"),
         },
         EventSpecification::default(),
-    )?;
+    )?);
     let event_id = event.id.clone();
     event.evidence.push(observation());
     store.append(Table::Events, &event)?;

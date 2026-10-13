@@ -45,7 +45,7 @@ fn report_bests_and_workbook_chain_over_synthetic_entities() -> TestResult {
             grad_year: Some(2027),
             limit: None,
         },
-    );
+    )?;
     check!(eq; bests.len(),
     corpus.athletes.len(),
     "one best mark per athlete");

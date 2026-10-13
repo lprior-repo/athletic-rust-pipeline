@@ -2,7 +2,7 @@ use crate::report::ReportResult;
 use census_domain::model::{
     AppliedAthleteIdentity, AthleteIdentityIndex, AthleteIdentityProjection, CanonicalAthlete,
     CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CanonicalTeam, CensusRun, CoachLaneObligation, CoverageRow, GradYear, ReviewCase,
+    CanonicalTeam, CensusRun, CoachLaneObligation, CoverageRow, GradYear, RelayResult, ReviewCase,
     ReviewVerdictRecord, SchoolId, SourceAccessCondition, TeamId,
 };
 use census_store::{Store, Table};
@@ -65,6 +65,7 @@ pub struct ExportDataset {
     #[serde(skip)]
     pub lineage: DatasetLineage,
     pub coverage_evidence: CoverageEvidence,
+    pub relays: Vec<RelayResult>,
     #[serde(skip)]
     identity_projection: Arc<AthleteIdentityProjection>,
 }
@@ -133,6 +134,7 @@ struct Loaded {
     verdicts: Vec<ReviewVerdictRecord>,
     identity_decisions: Vec<AppliedAthleteIdentity>,
     coverage_evidence: CoverageEvidence,
+    relays: Vec<RelayResult>,
 }
 
 fn projection_of(loaded: &Loaded) -> ReportResult<Arc<AthleteIdentityProjection>> {
@@ -240,6 +242,7 @@ impl ExportDataset {
             verdicts: loaded.verdicts,
             identity_decisions: loaded.identity_decisions,
             coverage_evidence: loaded.coverage_evidence,
+            relays: loaded.relays,
             lineage,
             identity_projection,
         };
@@ -258,6 +261,10 @@ impl ExportDataset {
 
     pub(crate) fn archive_digest(&self) -> ReportResult<String> {
         frozen::archive_digest(self)
+    }
+
+    pub fn ensure_semantic_policy(&self) -> ReportResult<()> {
+        frozen::ensure_semantic_policy(&self.lineage)
     }
 
     pub fn identities(&self) -> Arc<AthleteIdentityProjection> {

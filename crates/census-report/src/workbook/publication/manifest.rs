@@ -73,13 +73,13 @@ impl Manifest {
         options: &Options,
     ) -> ReportResult<Self> {
         let selection = Selection::of(options);
-        let names = artifact_names(options.grad_year);
+        let names = artifact_names(2, options.grad_year)?;
         let artifacts = names
             .into_iter()
             .map(|name| hash_artifact(&directory.join(&name)).map(|artifact| (name, artifact)))
             .collect::<ReportResult<BTreeMap<_, _>>>()?;
         let mut manifest = Self {
-            schema_revision: 1,
+            schema_revision: 2,
             lineage: dataset.lineage.clone(),
             selection,
             artifacts,
@@ -253,7 +253,7 @@ fn verify_against(
     crate::workbook::verify::verify_frozen(&directory.join("workbook.xlsx"), dataset, &options)
 }
 
-fn artifact_names(grad_year: Option<i16>) -> Vec<String> {
+fn artifact_names(revision: u32, grad_year: Option<i16>) -> ReportResult<Vec<String>> {
     let cohort = match grad_year.map(|year| format!("co{year}")) {
         Some(value) => value,
         None => "all".to_string(),
@@ -270,6 +270,22 @@ fn artifact_names(grad_year: Option<i16>) -> Vec<String> {
         "contact-research.csv".to_string(),
         "workbook.xlsx".to_string(),
     ];
+    match revision {
+        1 => {}
+        2 => names.extend(
+            [
+                "event-catalog.json",
+                "relay-dispositions.json",
+                "relays.jsonl",
+            ]
+            .map(str::to_string),
+        ),
+        _ => {
+            return Err(invariant(
+                "unsupported publication artifact revision".into(),
+            ))
+        }
+    }
     names.sort_unstable();
-    names
+    Ok(names)
 }

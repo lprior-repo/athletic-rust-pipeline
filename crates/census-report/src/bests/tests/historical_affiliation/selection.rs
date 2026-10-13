@@ -47,7 +47,7 @@ fn bests_affiliation_is_independent_of_current_school_name_and_state() -> TestRe
         [Scope::Core, Scope::AllSources]
             .into_iter()
             .try_for_each(|scope| -> TestResult {
-                let expected = build_from_dataset(&dataset, &options(scope));
+                let expected = build_from_dataset(&dataset, &options(scope))?;
                 check!(eq; expected.len(), 1, "{case:?}");
                 [UsJurisdiction::Illinois, UsJurisdiction::Michigan, UsJurisdiction::Ohio]
                     .into_iter()
@@ -58,7 +58,7 @@ fn bests_affiliation_is_independent_of_current_school_name_and_state() -> TestRe
                             .ok_or("missing current school mutation target")?;
                         current.name = format!("Current {} school", state.code());
                         current.state = Some(state);
-                        let actual = build_from_dataset(&dataset, &options(scope));
+                        let actual = build_from_dataset(&dataset, &options(scope))?;
                         check!(eq; actual, expected, "{case:?}, {scope:?}, current={state:?}");
                         check!(eq; dataset.performances.as_slice(), std::slice::from_ref(&fixture.performance));
                         check!(eq; dataset.athletes.as_slice(), std::slice::from_ref(&fixture.athlete));
@@ -139,14 +139,14 @@ fn mixed_historical_affiliation_order_and_limits_keep_known_and_unknown_rows_in_
         .into_iter()
         .try_for_each(|scope| -> TestResult {
             check!(eq; Derivation::of(&dataset, scope, Some(2027)).athletes().len(), 3);
-            let complete = build_from_dataset(&dataset, &options(scope));
+            let complete = build_from_dataset(&dataset, &options(scope))?;
             assert_mixed_order(&complete, &expected)?;
             [0_usize, 1, 2, 3, 4]
                 .into_iter()
                 .try_for_each(|limit| -> TestResult {
                     let mut limited_options = options(scope);
                     limited_options.limit = Some(limit);
-                    let limited = build_from_dataset(&dataset, &limited_options);
+                    let limited = build_from_dataset(&dataset, &limited_options)?;
                     let prefix = complete.iter().take(limit).cloned().collect::<Vec<_>>();
                     check!(eq; limited, prefix, "{scope:?}, limit={limit}");
                     Ok(())

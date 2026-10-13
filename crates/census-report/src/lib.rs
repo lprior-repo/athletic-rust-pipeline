@@ -12,3 +12,6 @@ mod grouping;
 pub mod report;
 pub mod school_contacts;
 pub mod workbook;
+
+#[cfg(test)]
+mod test_events;

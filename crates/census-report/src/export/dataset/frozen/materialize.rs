@@ -8,7 +8,7 @@ use crate::report::ReportResult;
 use census_domain::model::{
     AppliedAthleteIdentity, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
     CanonicalPerformance, CanonicalSchool, CanonicalTeam, CoachLaneObligation, CoverageRow,
-    ReviewCase, ReviewVerdictRecord, SourceAccessCondition,
+    RelayResult, ReviewCase, ReviewVerdictRecord, SourceAccessCondition,
 };
 use census_store::Entity;
 use std::path::Path;
@@ -43,6 +43,7 @@ pub(super) fn read_all(objects_dir: &Path, manifest: &FrozenManifest) -> ReportR
             StreamKind::IdentityDecisions,
             manifest,
         )?,
+        relays: collect::<RelayResult>(objects_dir, StreamKind::Relays, manifest)?,
         coverage_evidence: CoverageEvidence {
             rows: collect::<CoverageRow>(objects_dir, StreamKind::CoverageRows, manifest)?,
             coach_lanes: collect::<CoachLaneObligation>(

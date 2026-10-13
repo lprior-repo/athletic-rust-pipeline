@@ -1,15 +1,28 @@
 use census_domain::model::RunManifest;
-use fjall::PersistMode;
+use fjall::{Keyspace, PersistMode, Readable, Snapshot};
 
-use super::{meta, Store, StoreError, StoreResult};
+use super::{Store, StoreError, StoreResult};
+use crate::records::codec::{encode, MAX_RECORD_BYTES};
 
 const RUN_MANIFEST: &str = "run-manifest";
 
-pub(super) fn read(store: &Store) -> StoreResult<Option<RunManifest>> {
-    let Some(text) = meta::get_text(&store.meta, RUN_MANIFEST)? else {
+pub(crate) fn read(snapshot: &Snapshot, meta: &Keyspace) -> StoreResult<Option<RunManifest>> {
+    let Some(raw) = snapshot
+        .get(meta, RUN_MANIFEST)
+        .map_err(|source| StoreError::Read { source })?
+    else {
         return Ok(None);
     };
-    serde_json::from_str(&text)
+    if raw.len() > MAX_RECORD_BYTES {
+        return Err(StoreError::RowTooLarge {
+            bytes: raw.len(),
+            max: MAX_RECORD_BYTES,
+        });
+    }
+    let text = std::str::from_utf8(&raw).map_err(|_| StoreError::SchemaUnknown {
+        detail: format!("{RUN_MANIFEST} is not utf-8"),
+    })?;
+    serde_json::from_str(text)
         .map(Some)
         .map_err(|source| StoreError::Json {
             detail: format!("{RUN_MANIFEST} is not a census run manifest"),
@@ -19,7 +32,7 @@ pub(super) fn read(store: &Store) -> StoreResult<Option<RunManifest>> {
 
 pub(super) fn write(store: &Store, manifest: &RunManifest) -> StoreResult<()> {
     let _binding = store.lock_appends();
-    if let Some(retained) = read(store)? {
+    if let Some(retained) = read(&store.db.snapshot(), &store.meta)? {
         if retained == *manifest {
             return Ok(());
         }
@@ -37,14 +50,15 @@ pub(super) fn write(store: &Store, manifest: &RunManifest) -> StoreResult<()> {
             ),
         });
     }
-    let text = serde_json::to_string(manifest).map_err(|source| StoreError::Json {
-        detail: format!("encoding {RUN_MANIFEST}"),
-        source,
-    })?;
+    let bytes = encode(manifest)?;
     let mut batch = store.db.batch();
-    meta::put_text(&mut batch, &store.meta, RUN_MANIFEST, &text);
+    batch.insert(&store.meta, RUN_MANIFEST, bytes);
     batch
         .durability(Some(PersistMode::SyncData))
         .commit()
         .map_err(|source| StoreError::Write { source })
 }
+
+#[cfg(test)]
+#[path = "run/tests.rs"]
+mod tests;

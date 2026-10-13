@@ -60,7 +60,7 @@ fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() -> 
         CompetitionLevel::Invitational,
     );
     store.append(Table::Meets, &ak_meet)?;
-    let ak_event = CanonicalEvent::new(
+    let ak_event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &ak_meet.id,
             kind: EventKind::Track100m,
@@ -69,7 +69,7 @@ fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() -> 
             round: None,
         },
         EventSpecification::default(),
-    )?;
+    )?);
     store.append(Table::Events, &ak_event)?;
     let ak_result = performance(
         &ak_athlete,

@@ -4,18 +4,34 @@ use super::{artifact_names, invariant, Manifest};
 use crate::report::{io_error, ReportResult};
 use std::path::Path;
 
+#[derive(serde::Deserialize)]
+struct RevisionHead {
+    schema_revision: u32,
+}
+
 pub(in crate::workbook::publication) fn verify_directory(
     directory: &Path,
 ) -> ReportResult<Manifest> {
     let path = directory.join("manifest.json");
+    let head: RevisionHead = sidecars::read_json(&path)?;
+    match head.schema_revision {
+        1 | 2 => {}
+        _ => {
+            return Err(invariant(
+                "unsupported publication artifact revision".into(),
+            ))
+        }
+    }
     let manifest: Manifest = sidecars::read_json(&path)?;
-    if manifest.schema_revision != 1 || manifest.digest()? != manifest.generation_digest {
+    if manifest.schema_revision != head.schema_revision
+        || manifest.digest()? != manifest.generation_digest
+    {
         return Err(invariant(
             "unsupported or corrupt generation manifest".to_string(),
         ));
     }
     manifest.selection.options()?;
-    let expected = artifact_names(manifest.selection.grad_year);
+    let expected = artifact_names(manifest.schema_revision, manifest.selection.grad_year)?;
     if manifest.artifacts.keys().cloned().collect::<Vec<_>>() != expected {
         return Err(invariant(
             "generation has an invalid artifact set".to_string(),

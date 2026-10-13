@@ -45,10 +45,11 @@ fn meta_workbook(store: &Store, dir: &Path, scope: Scope) -> TestResult<std::pat
             grad_year: Some(2027),
             limit: None,
         },
-    );
+    )?;
     let population = report::Derivation::of(&dataset, scope, None);
     let recruiting = report::Derivation::of(&dataset, scope, Some(2027));
     let path = dir.join("meta.xlsx");
+    let admission = crate::report::EventAdmission::of(&dataset)?;
     let mut book = Workbook::new();
     write_meta_sheets(
         &mut book,
@@ -60,6 +61,7 @@ fn meta_workbook(store: &Store, dir: &Path, scope: Scope) -> TestResult<std::pat
             all_sources: &all_sources,
             bests: &bests,
             school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
+            admission: &admission,
         },
     )?;
     book.save(&path)?;

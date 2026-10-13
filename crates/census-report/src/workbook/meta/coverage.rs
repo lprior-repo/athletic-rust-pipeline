@@ -84,6 +84,8 @@ pub(super) fn coverage_sheet(dataset: &ExportDataset) -> ReportResult<Vec<Vec<Ce
     cells.extend(source_reach(&report)?);
     cells.push(row!());
     cells.extend(notes(&report)?);
+    cells.push(row!());
+    cells.extend(catalog_counts(&report.event_catalog)?);
     Ok(cells)
 }
 
@@ -164,4 +166,22 @@ fn notes(report: &CoverageReport) -> ReportResult<Vec<Vec<Cell>>> {
         cells.push(row!("Note", Cell::text(note.clone())));
     }
     Ok(cells)
+}
+
+fn catalog_counts(counts: &crate::report::EventCounts) -> ReportResult<Vec<Vec<Cell>>> {
+    let mut rows = vec![row!("Recruiting event disposition", "Retained events")];
+    rows.push(row!("included", Cell::number(counts.included)?));
+    for (reason, count) in &counts.excluded {
+        rows.push(row!(
+            Cell::text(format!("excluded:{reason:?}")),
+            Cell::number(*count)?
+        ));
+    }
+    for (reason, count) in &counts.unresolved {
+        rows.push(row!(
+            Cell::text(format!("unresolved:{reason:?}")),
+            Cell::number(*count)?
+        ));
+    }
+    Ok(rows)
 }

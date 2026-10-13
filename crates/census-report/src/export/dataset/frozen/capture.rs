@@ -10,7 +10,7 @@ use super::{codec_error, invalid, INPUT_TABLES};
 use crate::report::{ReportError, ReportResult};
 use census_domain::model::{
     AppliedAthleteIdentity, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam, CoachLaneObligation, CoverageRow, ReviewCase,
+    CanonicalSchool, CanonicalTeam, CoachLaneObligation, CoverageRow, RelayResult, ReviewCase,
     ReviewVerdictRecord, SourceAccessCondition,
 };
 use census_store::{Entity, Store, StoreError, StoreSnapshot, Table};
@@ -25,7 +25,7 @@ pub(super) fn capture(
     let snapshot = store.snapshot();
     let mut lineage = super::lineage(store, &snapshot)?;
     lineage.export_job = Some(job.to_string());
-    let token = FrozenInputToken::capture(store, &lineage)?;
+    let token = FrozenInputToken::capture(&snapshot, &lineage)?;
     let (streams, legacy) = streams(&snapshot, objects_dir)?;
     let fingerprints = fingerprints(&snapshot)?;
     drop(snapshot);
@@ -57,6 +57,7 @@ fn streams(
     )?;
     sink.merged::<CoverageRow>(StreamKind::CoverageRows, Table::Coverage, snapshot)?;
     sink.merged::<CoachLaneObligation>(StreamKind::CoachLanes, Table::CoachLanes, snapshot)?;
+    sink.merged::<RelayResult>(StreamKind::Relays, Table::RelayResults, snapshot)?;
     sink.finish()
 }
 

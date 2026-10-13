@@ -10,8 +10,5 @@ mod cli;
 use anyhow::Result;
 
 fn main() -> Result<()> {
-    tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()?
-        .block_on(cli::run())
+    cli::run()
 }

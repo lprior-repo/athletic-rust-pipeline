@@ -14,7 +14,7 @@ fn assert_case(case: Case) -> TestResult {
             if case.has_pr(scope) {
                 assert_selection(&dataset, &fixture, scope)?;
             } else {
-                check!(eq; build_from_dataset(&dataset, &options(scope)), Vec::new());
+                check!(eq; build_from_dataset(&dataset, &options(scope))?, Vec::new());
             }
             Ok(())
         })?;
@@ -76,7 +76,7 @@ fn alaska_current_athlete_stays_excluded_despite_wisconsin_venue() -> TestResult
             check!(eq; derivation.schools().len(), 0);
             check!(eq; derivation.coaches().len(), 0);
             check!(eq; derivation.meets(), std::slice::from_ref(&fixture.meet));
-            check!(eq; build_from_dataset(&dataset, &options(scope)), Vec::new());
+            check!(eq; build_from_dataset(&dataset, &options(scope))?, Vec::new());
             let census = build_census(&derivation, directory.path());
             check!(eq; census.totals.athletes, 0);
             check!(eq; census.totals.schools, 0);
@@ -174,7 +174,7 @@ fn mixed_histories_keep_exact_selected_identities_unknowns_and_limit_prefixes() 
         let derivation = Derivation::of(&dataset, scope, Some(2027));
         check!(eq; derivation.athletes().len(), 7);
         check!(eq; derivation.performances().len(), 7);
-        let rows = build_from_dataset(&dataset, &options(scope));
+        let rows = build_from_dataset(&dataset, &options(scope))?;
         check!(eq; rows.len(), if scope == Scope::Core { 4 } else { 6 });
         fixtures.iter().try_for_each(|fixture| -> TestResult {
             let matches: Vec<_> = rows.iter().filter(|row| row.athlete_id() == &fixture.athlete.id).collect();
@@ -185,7 +185,7 @@ fn mixed_histories_keep_exact_selected_identities_unknowns_and_limit_prefixes() 
         [0_usize, 1, 2, 4, 6, 8].into_iter().try_for_each(|limit| -> TestResult {
             let mut limited = options(scope);
             limited.limit = Some(limit);
-            check!(eq; build_from_dataset(&dataset, &limited), rows.iter().take(limit).cloned().collect::<Vec<_>>());
+            check!(eq; build_from_dataset(&dataset, &limited)?, rows.iter().take(limit).cloned().collect::<Vec<_>>());
             Ok(())
         })
     })

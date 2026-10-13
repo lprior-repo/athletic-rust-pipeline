@@ -11,7 +11,7 @@ fn rows(fixture: &Fixture) -> TestResult<(::csv::StringRecord, Vec<::csv::String
             grad_year: Some(2027),
             limit: None,
         },
-    );
+    )?;
     let (_, path) = bests::write(fixture.dir.path(), &selected, "xc-context-fixture")?;
     let mut reader = ::csv::Reader::from_path(path)?;
     let header = reader.headers()?.clone();

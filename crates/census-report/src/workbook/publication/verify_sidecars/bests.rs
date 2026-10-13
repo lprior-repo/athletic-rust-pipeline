@@ -57,7 +57,7 @@ pub(super) fn verify(directory: &Path, inputs: &Inputs<'_>) -> ReportResult<()> 
             grad_year: inputs.options.grad_year,
             limit: inputs.options.limit,
         },
-    );
+    )?;
     let cohort = cohort(inputs.options.grad_year);
     verify_csv(&directory.join(format!("best-results-{cohort}.csv")), &rows)?;
     verify_jsonl(

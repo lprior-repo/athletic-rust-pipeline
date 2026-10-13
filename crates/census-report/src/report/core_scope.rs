@@ -1,6 +1,6 @@
 use census_domain::is_core_source;
 use census_domain::model::{
-    CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, Evidence,
+    CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, Evidence, RelayResult,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -97,6 +97,16 @@ impl CoreScoped for CanonicalEvent {
 }
 
 impl CoreScoped for CanonicalPerformance {
+    fn evidence(&self) -> &[Evidence] {
+        &self.evidence
+    }
+
+    fn evidence_mut(&mut self) -> &mut Vec<Evidence> {
+        &mut self.evidence
+    }
+}
+
+impl CoreScoped for RelayResult {
     fn evidence(&self) -> &[Evidence] {
         &self.evidence
     }

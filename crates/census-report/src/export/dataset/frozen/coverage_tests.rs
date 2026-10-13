@@ -40,18 +40,20 @@ fn streamed<T: Entity>(root: &FrozenRoot, kind: StreamKind) -> TestResult<Vec<T>
 
 fn check_manifest(root: &FrozenRoot, store: &Store, dataset: &ExportDataset) -> TestResult {
     let manifest = root.manifest();
-    check!(eq; manifest.lineage.schema_revision, 2);
-    check!(eq; manifest.lineage.policy_revision, 13);
-    check!(eq; manifest.streams.len(), 14);
-    check!(eq; manifest.source_fingerprints.len(), 15);
-    check!(eq; StreamKind::ALL.len(), 14);
-    check!(eq; INPUT_TABLES.len(), 15);
+    check!(eq; manifest.lineage.schema_revision, 3);
+    check!(eq; manifest.lineage.policy_revision, 14);
+    check!(eq; manifest.streams.len(), 15);
+    check!(eq; manifest.source_fingerprints.len(), 16);
+    check!(eq; StreamKind::ALL.len(), 15);
+    check!(eq; INPUT_TABLES.len(), 16);
     check!(eq; StreamKind::CoverageRows.index(), 12);
     check!(eq; StreamKind::CoachLanes.index(), 13);
     check!(eq; StreamKind::CoverageRows.wire(), "coverage_rows");
     check!(eq; StreamKind::CoachLanes.wire(), "coach_lanes");
     check!(eq; INPUT_TABLES.get(13), Some(&Table::Coverage));
     check!(eq; INPUT_TABLES.get(14), Some(&Table::CoachLanes));
+    check!(eq; INPUT_TABLES.get(15), Some(&Table::RelayResults));
+    check!(eq; StreamKind::Relays.index(), 14);
     [Table::Coverage, Table::CoachLanes]
         .into_iter()
         .try_for_each(|table| -> TestResult {

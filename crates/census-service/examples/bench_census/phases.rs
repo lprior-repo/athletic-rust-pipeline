@@ -155,7 +155,7 @@ pub(super) fn bests_phase(
         grad_year: Some(2027),
         limit: None,
     };
-    let rows = bests::build_from_dataset(dataset, &options);
+    let rows = bests::build_from_dataset(dataset, &options)?;
     let phase = measure("bests", performances, "performances", started.elapsed())?;
     anyhow::ensure!(
         rows.len() == athletes,

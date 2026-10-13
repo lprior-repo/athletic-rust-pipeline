@@ -69,7 +69,7 @@ fn cen10_source_labels_require_parsed_binding_and_conflicts_withhold() -> TestRe
         event.resolved_specification()?.implement,
         Some(ImplementMass::try_from(4_000_000_000)?)
     );
-    let mut unbound = CanonicalEvent::new(
+    let mut unbound = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &meet.id,
             kind: EventKind::ShotPut,
@@ -78,7 +78,7 @@ fn cen10_source_labels_require_parsed_binding_and_conflicts_withhold() -> TestRe
             round: None,
         },
         EventSpecification::default(),
-    )?;
+    )?);
     unbound.source_labels = event.source_labels;
     check!(eq; unbound.resolved_specification()?.implement, None);
     Ok(())

@@ -54,7 +54,7 @@ fn frozen_codec_line_pins_ordinal_field_order_and_exact_decimal() -> TestResult 
     )?;
     let kind = EventKind::Discus;
     let specification = EventSpecification::from_published_label("Discus Throw", &kind)?;
-    let event = CanonicalEvent::new(
+    let event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &meet.id,
             kind,
@@ -63,7 +63,7 @@ fn frozen_codec_line_pins_ordinal_field_order_and_exact_decimal() -> TestResult 
             round: None,
         },
         specification,
-    )?;
+    )?);
     let team = CanonicalTeam::mint(
         &school.id,
         Sport::OutdoorTrack,

@@ -1,4 +1,4 @@
-mod codec;
+pub(crate) mod codec;
 mod inventory;
 mod lease;
 mod model;

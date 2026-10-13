@@ -39,9 +39,10 @@ impl Recruiting {
         derivation: &Derivation<'_>,
         school_year: census_domain::model::SchoolYear,
         prs: Vec<bests::SharedSelection>,
+        admission: &crate::report::EventAdmission<'_>,
     ) -> ReportResult<Self> {
         Ok(Self {
-            dataset: Dataset::of(derivation, school_year, prs)?,
+            dataset: Dataset::of(derivation, school_year, prs, admission)?,
         })
     }
 

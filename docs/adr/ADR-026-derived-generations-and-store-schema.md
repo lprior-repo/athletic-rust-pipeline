@@ -252,3 +252,37 @@ retain their historical order. A historical workflow that already recorded advic
 finding can therefore leave that finding retained. This compatibility change does not automatically
 reopen history, erase a verdict, reinterpret an old journal or certify that residual historical work
 has been repaired.
+
+## 2026-10-13: snapshot-pinned run metadata for new captures
+
+New export captures read the run manifest through `StoreSnapshot::run_manifest`, using the
+same MVCC view as identity, entity rows, fingerprints and recorded sequence. A view captured
+before first binding remains unbound; consuming that old view after binding cannot attach
+newer run metadata to its older sequence. Frozen token construction checks the view's identity,
+sequence, run and cohort against the supplied lineage before deriving the existing full-manifest
+digest. This replaces separate live reads during capture, without introducing a metadata mirror.
+
+Publication input construction likewise reads the fresh validation snapshot's manifest. Recovery
+preparation and the final append-locked publication fence still inspect current binding state.
+They must detect first binding after input capture; they must not adopt old archived metadata as
+current state. The supported binding transition remains absent to immutable manifest, with exact
+idempotent repeats and refusal of different bindings. No rebind operation is introduced.
+
+The shared run reader and first-binding encoder enforce ADR-036 gate a's 64 KiB metadata-record
+starting profile. Raw length is checked before UTF-8/JSON parsing. Encoding uses the existing
+checked measuring writer and fallible reservation before producing bytes. Oversized retained
+records are refused without alteration, and oversized new records create no binding. This is a
+resource admission limit, not a measured production optimum or a bound on Fjall's internal
+allocation. Existing UTF-8 and JSON error categories remain explicit.
+
+The persisted manifest shape, field order, jurisdiction order, identity spelling, digest recipe,
+SyncData durability, store schema, frozen schema/policy and token protocol remain unchanged.
+Existing archived tokens retain their previous reader meaning. Their old binding-at-sequence
+provenance cannot be reconstructed from today's store, so this patch does not retroactively
+certify it, hydrate missing metadata, retire a root or create a replacement job. A stronger
+historical provenance guarantee would require an explicit versioned reader/conversion decision.
+
+These changes close a new-capture consistency gap. The previously implemented publication fence
+already rejects the observed unbound-to-bound mismatch before switching the current generation;
+this change does not claim a newly discovered stale-publication bypass. Reusable production
+installation, profile enrollment and dated affiliation remain separate delivery requirements.

@@ -25,7 +25,7 @@ impl CanonicalEvent {
         Ok(resolved)
     }
 
-    fn trusted_specification_label(&self, label: &SourceEventLabel) -> bool {
+    pub(in crate::model) fn trusted_specification_label(&self, label: &SourceEventLabel) -> bool {
         self.evidence.iter().any(|evidence| {
             evidence.method == EvidenceMethod::Parsed
                 && evidence.source == label.source

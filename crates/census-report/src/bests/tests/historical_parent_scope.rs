@@ -65,7 +65,7 @@ fn assert_result(row: &SharedSelection, fixture: &Fixture) -> TestResult {
 }
 
 fn assert_selection(dataset: &ExportDataset, fixture: &Fixture, scope: Scope) -> TestResult {
-    let rows = build_from_dataset(dataset, &options(scope));
+    let rows = build_from_dataset(dataset, &options(scope))?;
     check!(eq; rows.len(), 1, "{:?}, {scope:?}", fixture.case);
     assert_result(
         rows.first().ok_or("missing retained historical PR")?,

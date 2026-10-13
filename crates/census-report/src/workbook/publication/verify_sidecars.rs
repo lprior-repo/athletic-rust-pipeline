@@ -5,6 +5,7 @@ use std::path::Path;
 
 mod audit;
 mod bests;
+mod catalog;
 mod cells;
 mod census;
 mod contacts;
@@ -23,6 +24,7 @@ pub(super) fn verify(
     options: &Options,
 ) -> ReportResult<()> {
     let inputs = input::Inputs::new(dataset, options)?;
+    catalog::verify(directory, &inputs)?;
     census::verify(directory, &inputs)?;
     recruiting::verify(directory, &inputs)?;
     contacts::verify(directory, &inputs)?;

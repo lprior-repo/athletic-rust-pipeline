@@ -4,8 +4,8 @@ use super::codec::{
     MAX_TOKEN_TEXT_BYTES, TOKEN_PROTOCOL,
 };
 use crate::report::{ReportError, ReportResult};
-use census_domain::model::serialized_digest;
-use census_store::Store;
+use census_domain::model::{serialized_digest, RunManifest};
+use census_store::StoreSnapshot;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -24,10 +24,12 @@ pub struct FrozenInputToken {
 }
 
 impl FrozenInputToken {
-    pub fn capture(store: &Store, lineage: &DatasetLineage) -> ReportResult<Self> {
-        let run_manifest_digest = store
-            .run_manifest()?
-            .map(|manifest| serialized_digest(&manifest))
+    pub fn capture(snapshot: &StoreSnapshot<'_>, lineage: &DatasetLineage) -> ReportResult<Self> {
+        let manifest = snapshot.run_manifest()?;
+        ensure_capture(snapshot, lineage, manifest.as_ref())?;
+        let run_manifest_digest = manifest
+            .as_ref()
+            .map(serialized_digest)
             .transpose()
             .map_err(|error| ReportError::Invariant {
                 detail: format!("digesting the bound run manifest: {error}"),
@@ -94,6 +96,25 @@ impl FrozenInputToken {
     pub fn digest(&self) -> FrozenCodecResult<String> {
         serialized_digest(self).map_err(encoding_error)
     }
+}
+
+fn ensure_capture(
+    snapshot: &StoreSnapshot<'_>,
+    lineage: &DatasetLineage,
+    manifest: Option<&RunManifest>,
+) -> ReportResult<()> {
+    let identity = snapshot.store_identity()?;
+    if identity.as_str() != lineage.store_identity
+        || snapshot.sequence() != lineage.snapshot_sequence
+        || manifest.map(|bound| bound.run) != lineage.run
+        || manifest.map(|bound| bound.cohort) != lineage.cohort
+        || manifest.is_some_and(|bound| bound.store_identity != identity.as_str())
+    {
+        return Err(ReportError::Invariant {
+            detail: "input token capture view differs from its lineage or run binding".to_owned(),
+        });
+    }
+    Ok(())
 }
 
 fn require_digest(what: &'static str, value: &str) -> FrozenCodecResult<()> {

@@ -80,7 +80,7 @@ fn check_adjustment(dataset: &ExportDataset) -> TestResult {
     check!(performance.retained_conflicts.is_empty());
     check!(eq; dataset.coverage_evidence.rows, vec![coverage_row(0)]);
     check!(eq; dataset.coverage_evidence.coach_lanes, vec![pending_lane()?]);
-    let rows = selected_bests(dataset);
+    let rows = selected_bests(dataset)?;
     check!(eq; rows.len(), 1);
     let selected = rows.first().ok_or("captured adjusted best missing")?;
     check!(eq; selected.result.value, 50_000_000_000);
@@ -171,7 +171,7 @@ fn check_sidecar_metadata(directory: &Path, captured: &Captured) -> TestResult {
     let text = std::fs::read_to_string(directory.join(JSONL))?;
     check!(eq; text.lines().count(), 1);
     let found: Value = serde_json::from_str(text.trim())?;
-    let rows = selected_bests(&captured.dataset);
+    let rows = selected_bests(&captured.dataset)?;
     check!(eq; found, serde_json::to_value(rows.first().ok_or("adjusted selection missing")?)?);
     verify_semantics(directory, captured)
 }
@@ -246,7 +246,7 @@ fn mutate_adjustment(store: &Store) -> TestResult {
     store.append(Table::Performances, &performance)?;
     check!(!only_performance(store)?.retained_conflicts.is_empty());
     let live = ExportDataset::load(store)?;
-    check!(selected_bests(&live).is_empty());
+    check!(selected_bests(&live)?.is_empty());
     Ok(())
 }
 
@@ -263,10 +263,10 @@ fn adjusted_bests_and_nonempty_coverage_survive_json_chunks_publication_and_live
     check!(eq; live.lineage.input_digest, captured.dataset.lineage.input_digest);
     drop(live);
     let manifest = captured.frozen.manifest();
-    check!(eq; manifest.lineage.schema_revision, 2);
-    check!(eq; manifest.lineage.policy_revision, 13);
-    check!(eq; manifest.streams.len(), 14);
-    check!(eq; manifest.source_fingerprints.len(), 15);
+    check!(eq; manifest.lineage.schema_revision, 3);
+    check!(eq; manifest.lineage.policy_revision, 14);
+    check!(eq; manifest.streams.len(), 15);
+    check!(eq; manifest.source_fingerprints.len(), 16);
     check!(eq; manifest.lineage, captured.dataset.lineage);
     check!(eq; manifest.legacy_logical_digest.as_deref(), Some(captured.dataset.lineage.input_digest.as_str()));
     same_dataset(
@@ -303,7 +303,7 @@ fn adjusted_bests_and_nonempty_coverage_survive_json_chunks_publication_and_live
     drop(store);
     let reopened = Store::open(root)?;
     readback::assert_live_changed(&reopened, Mutation::Both)?;
-    check!(selected_bests(&ExportDataset::load(&reopened)?).is_empty());
+    check!(selected_bests(&ExportDataset::load(&reopened)?)?.is_empty());
     let archived = ExportDataset::reopen_frozen(&archive)?;
     same_dataset(&archived, &expected, &witness)?;
     same_dataset(&to_export_dataset(&frozen, &reopened)?, &expected, &witness)?;

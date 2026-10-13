@@ -22,7 +22,7 @@ fn hytek_source_to_pr_xlsx_csv_keeps_faster_thousandth_despite_slower_later_date
         3,
     )?;
     let dataset = ExportDataset::load(&store)?;
-    let selected = selected(&dataset);
+    let selected = selected(&dataset)?;
     check!(eq; selected.first().ok_or("missing PR")?.meet.date.as_str(), "2026-05-01");
     check!(eq; selected.first().ok_or("missing PR")?.population.marks, 2);
     Ok(())
@@ -44,7 +44,7 @@ fn hytek_equivalent_spellings_keep_earliest_precision_and_uncontested_best_in_xl
         2,
     )?;
     let dataset = ExportDataset::load(&store)?;
-    let rows = selected(&dataset);
+    let rows = selected(&dataset)?;
     check!(eq; rows.first().ok_or("missing PR")?.meet.date.as_str(), "2026-05-01");
     check!(eq; rows.first().ok_or("missing PR")?.conflicts, Vec::new());
     Ok(())

@@ -231,7 +231,7 @@ fn competition() -> TestResult<(CanonicalMeet, CanonicalEvent)> {
     )?;
     meet.sports = vec![Sport::OutdoorTrack];
     meet.evidence = vec![evidence()];
-    let mut event = CanonicalEvent::new(
+    let mut event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &meet.id,
             kind: EventKind::Track400m,
@@ -240,7 +240,7 @@ fn competition() -> TestResult<(CanonicalMeet, CanonicalEvent)> {
             round: None,
         },
         EventSpecification::default(),
-    )?;
+    )?);
     event.evidence = vec![evidence()];
     Ok((meet, event))
 }

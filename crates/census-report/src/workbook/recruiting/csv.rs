@@ -48,6 +48,7 @@ pub fn write_recruiting_csv(
     school_year: SchoolYear,
     path: &Path,
 ) -> ReportResult<RecruitingCsvCounts> {
+    crate::report::EventAdmission::of(derivation.dataset())?;
     let projection = CsvProjection::new(derivation, school_year)?;
     let mut writer = open_writer(path)?;
     let counts = write_athletes(derivation, &projection, &mut writer, path)?;

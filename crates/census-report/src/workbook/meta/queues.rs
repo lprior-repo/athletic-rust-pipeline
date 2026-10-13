@@ -12,6 +12,7 @@ use crate::workbook::cells::{row, Cell};
 
 use super::{school_name_index, Family, QueueRow, StoreRows, SubjectIndex};
 
+mod catalog;
 mod conflicts;
 mod review;
 
@@ -163,6 +164,7 @@ pub(in crate::workbook) fn review_families(
     rows: &StoreRows,
     cohort: &[CanonicalAthlete],
     names: &HashMap<&str, &str>,
+    admission: &crate::report::EventAdmission<'_>,
 ) -> ReportResult<Vec<Family>> {
     bounded::inputs(rows)?;
     Ok(vec![
@@ -172,6 +174,7 @@ pub(in crate::workbook) fn review_families(
         unresolved_schools(rows.schools),
         school_links(rows),
         unsupported_graduation(rows),
+        catalog::unresolved_events(admission)?,
     ])
 }
 
@@ -224,13 +227,14 @@ pub fn retained_records(
     dataset: &crate::export::ExportDataset,
     school_year: census_domain::model::SchoolYear,
 ) -> ReportResult<RetainedRecords> {
+    let admission = crate::report::EventAdmission::of(dataset)?;
     let derivation = crate::report::Derivation::of(dataset, Scope::AllSources, None);
     let rows = StoreRows::of(&derivation, school_year)?;
     let cohort = cohort_of(dataset, Scope::AllSources);
     let names = school_name_index(rows.schools);
     Ok(RetainedRecords {
         conflicts: labelled(conflict_families(&rows, &cohort, &names)?),
-        reviews: labelled(review_families(&rows, &cohort, &names)?),
+        reviews: labelled(review_families(&rows, &cohort, &names, &admission)?),
     })
 }
 

@@ -143,7 +143,7 @@ fn frozen_codec_inventory_refuses_unsupported_revisions_and_index_gaps() -> Test
     let runner = athlete(&school.id, "Ada Runner", "1");
     let bundle = bundle(StreamKind::Athletes, std::slice::from_ref(&runner))?;
     let encoded = String::from_utf8(bundle.inventory.encode()?)?;
-    let stale = encoded.replacen("\"codec_revision\":2", "\"codec_revision\":3", 1);
+    let stale = encoded.replacen("\"codec_revision\":3", "\"codec_revision\":4", 1);
     check!(stale != encoded);
     let error = refusal(StreamInventory::decode(stale.as_bytes()))?;
     check!(matches!(error, FrozenCodecError::UnsupportedVersion { .. }));

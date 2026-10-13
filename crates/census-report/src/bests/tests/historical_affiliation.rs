@@ -31,7 +31,7 @@ fn assert_selection(
     fixture: &Fixture,
     scope: Scope,
 ) -> TestResult<SharedSelection> {
-    let rows = build_from_dataset(dataset, &options(scope));
+    let rows = build_from_dataset(dataset, &options(scope))?;
     check!(eq; rows.len(), 1, "{:?} under {scope:?}", fixture.case);
     let row = rows.first().ok_or("missing historical-affiliation PR")?;
     check!(eq; row.athlete.school.as_deref(), fixture.case.school());

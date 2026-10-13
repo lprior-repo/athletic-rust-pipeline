@@ -2,10 +2,10 @@ use census_domain::model::CanonicalJsonError;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 
-pub const MANIFEST_CODEC_ID: &str = "census-frozen-jsonl-v2";
-pub const INVENTORY_CODEC_ID: &str = "census-frozen-inventory-v2";
-pub const CODEC_REVISION: u32 = 2;
-pub const TOKEN_PROTOCOL: u32 = 2;
+pub const MANIFEST_CODEC_ID: &str = "census-frozen-jsonl-v3";
+pub const INVENTORY_CODEC_ID: &str = "census-frozen-inventory-v3";
+pub const CODEC_REVISION: u32 = 3;
+pub const TOKEN_PROTOCOL: u32 = 3;
 pub const MANIFEST_BYTES_LIMIT: u64 = 64 * 1024;
 pub const INVENTORY_BYTES_LIMIT: u64 = 4 * 1024 * 1024;
 pub const CHUNK_BYTES_LIMIT: u64 = 4 * 1024 * 1024;

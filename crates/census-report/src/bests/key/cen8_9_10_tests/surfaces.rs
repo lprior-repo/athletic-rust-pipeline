@@ -15,7 +15,7 @@ fn cen10_banked_flat_unknown_and_published_category_remain_distinct() -> TestRes
         let event = event(&meet, label)?;
         add(&mut data, meet, event, time)?;
     }
-    let rows = selections(&data);
+    let rows = selections(&data)?;
     check!(eq; rows.len(), 6);
     let expected_track = IndoorTrackSpecification::new(200_000_000, TrackBanking::Banked)?;
     let banked = rows
@@ -74,7 +74,7 @@ fn cen10_unknown_category_never_merges_with_published_boys() -> TestResult {
         let event = event_with_specification(&meet, label, gender, specification)?;
         add(&mut data, meet, event, time)?;
     }
-    let rows = selections(&data);
+    let rows = selections(&data)?;
     check!(eq; rows.len(), 2);
     check!(
         eq;

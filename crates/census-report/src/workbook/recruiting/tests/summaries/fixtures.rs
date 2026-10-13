@@ -34,7 +34,7 @@ pub(super) fn five_k_performance(fixture: &Fixture, sport: Sport) -> TestResult<
         qualified_event(
             fixture,
             &meet_id,
-            EventKind::Track5000m,
+            EventKind::CrossCountry,
             "fixture-five-k",
             CourseMeasurement::PublishedMeasured,
             "dry",
@@ -82,7 +82,7 @@ fn qualified_event(
     } else {
         "Boys Cross Country"
     };
-    let mut event = CanonicalEvent::new(
+    let mut event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet,
             kind,
@@ -91,7 +91,7 @@ fn qualified_event(
             round: None,
         },
         specification,
-    )?;
+    )?);
     let source = SourceRef::new(
         "wiaa_results",
         Some(format!("https://fixtures.test/xc/{course}/results")),

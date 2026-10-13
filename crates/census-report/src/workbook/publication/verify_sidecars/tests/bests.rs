@@ -53,7 +53,7 @@ fn valid_best_results_sidecars_pass_and_forgeries_fail() -> TestResult {
     meet.sports = vec![Sport::OutdoorTrack];
     store.append(Table::Meets, &meet)?;
     let kind = EventKind::Track100m;
-    let event = CanonicalEvent::new(
+    let event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &meet.id,
             kind: kind.clone(),
@@ -62,7 +62,7 @@ fn valid_best_results_sidecars_pass_and_forgeries_fail() -> TestResult {
             round: None,
         },
         EventSpecification::default(),
-    )?;
+    )?);
     store.append(Table::Events, &event)?;
 
     let slower = CanonicalPerformance {
@@ -101,7 +101,7 @@ fn valid_best_results_sidecars_pass_and_forgeries_fail() -> TestResult {
         scope: crate::report::Scope::AllSources,
         school_year: census_domain::model::SchoolYear::new(2026).ok_or("invalid fixture season")?,
     };
-    let rows = build_from_dataset(&dataset, &bests_options(&options));
+    let rows = build_from_dataset(&dataset, &bests_options(&options))?;
     check!(eq; rows.len(), 1);
     let inputs = Inputs::new(&dataset, &options)?;
 

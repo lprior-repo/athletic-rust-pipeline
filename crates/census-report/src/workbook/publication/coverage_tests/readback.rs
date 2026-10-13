@@ -41,7 +41,7 @@ pub(super) fn assert_baseline(dataset: &ExportDataset, workbook: &Path) -> TestR
     check!(eq; wisconsin.contact.pending, 1);
     check!(eq; wisconsin.contact.attempted, 0);
     check!(eq; wisconsin.with_comparable_mark, 1);
-    let bests = selected_bests(dataset);
+    let bests = selected_bests(dataset)?;
     check!(eq; bests.len(), 1);
     check!(eq; bests.first().ok_or("captured numeric PR")?.result.value, 50_000_000_000);
     let cells = coverage_cells(workbook)?;

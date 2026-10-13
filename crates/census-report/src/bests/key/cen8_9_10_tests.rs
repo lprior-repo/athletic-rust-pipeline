@@ -26,7 +26,7 @@ fn cen9_six_real_schema_indoor_labels_reduce_across_meets() -> TestResult {
             add(&mut data, meet, event, time)?;
         }
     }
-    let rows = selections(&data);
+    let rows = selections(&data)?;
     let winners: Vec<_> = rows
         .iter()
         .map(|row| {

@@ -11,7 +11,7 @@ use crate::report::ReportResult;
 use census_domain::model::{
     AppliedAthleteIdentity, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
     CanonicalPerformance, CanonicalSchool, CanonicalTeam, CoachLaneObligation, CoverageRow,
-    ReviewCase, ReviewVerdictRecord, SourceAccessCondition,
+    RelayResult, ReviewCase, ReviewVerdictRecord, SourceAccessCondition,
 };
 use census_store::{Entity, InputRecord};
 use std::path::Path;
@@ -143,6 +143,7 @@ fn dispatch_stream_read(
         }
         StreamKind::CoverageRows => read_chunks::<CoverageRow>(root, kind, page, legacy),
         StreamKind::CoachLanes => read_chunks::<CoachLaneObligation>(root, kind, page, legacy),
+        StreamKind::Relays => read_chunks::<RelayResult>(root, kind, page, legacy),
     }
 }
 

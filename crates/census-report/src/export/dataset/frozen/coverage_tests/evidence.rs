@@ -144,7 +144,7 @@ pub(super) fn interpretation(dataset: &ExportDataset) -> TestResult<Interpretati
                 grad_year: Some(2027),
                 limit: None,
             },
-        ),
+        )?,
     })
 }
 

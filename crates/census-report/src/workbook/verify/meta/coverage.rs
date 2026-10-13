@@ -77,6 +77,8 @@ pub(super) fn expected(dataset: &ExportDataset) -> ReportResult<Sheet> {
     rows.extend(source_reach(&report)?);
     rows.push(Vec::new());
     rows.extend(notes(&report)?);
+    rows.push(Vec::new());
+    rows.extend(catalog_counts(&report.event_catalog)?);
     Ok(("Coverage", rows))
 }
 
@@ -149,6 +151,27 @@ fn notes(report: &CoverageReport) -> ReportResult<Vec<Vec<Expect>>> {
     ]);
     for note in &report.notes {
         rows.push(vec![Expect::text("Note"), Expect::text(note.as_str())]);
+    }
+    Ok(rows)
+}
+
+fn catalog_counts(counts: &crate::report::EventCounts) -> ReportResult<Vec<Vec<Expect>>> {
+    let mut rows = vec![header(&["Recruiting event disposition", "Retained events"])];
+    rows.push(vec![
+        Expect::text("included"),
+        Expect::count(counts.included)?,
+    ]);
+    for (reason, count) in &counts.excluded {
+        rows.push(vec![
+            Expect::text(format!("excluded:{reason:?}")),
+            Expect::count(*count)?,
+        ]);
+    }
+    for (reason, count) in &counts.unresolved {
+        rows.push(vec![
+            Expect::text(format!("unresolved:{reason:?}")),
+            Expect::count(*count)?,
+        ]);
     }
     Ok(rows)
 }

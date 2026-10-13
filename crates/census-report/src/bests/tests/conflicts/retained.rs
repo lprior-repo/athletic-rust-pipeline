@@ -86,7 +86,7 @@ fn stored_same_id_numeric_conflict_has_no_best_and_preserves_observations() -> T
                     let dataset = reloaded_dataset(&seed, &order)?;
                     check!(eq; dataset.performances.len(), 1);
                     retained_conflict(&dataset, &pair[0].id)?;
-                    check!(eq; selected(&dataset), Vec::new());
+                    check!(eq; selected(&dataset)?, Vec::new());
                     Ok(())
                 })
         })
@@ -107,9 +107,9 @@ fn stored_same_id_numeric_conflict_uses_clean_context_fallback() -> TestResult {
                     let observations = [order[0].clone(), order[1].clone(), clean.clone()];
                     let mut dataset = reloaded_dataset(&seed, &observations)?;
                     retained_conflict(&dataset, &pair[0].id)?;
-                    let rows = selected(&dataset);
+                    let rows = selected(&dataset)?;
                     dataset.performances.reverse();
-                    check!(eq; selected(&dataset), rows);
+                    check!(eq; selected(&dataset)?, rows);
                     check!(eq; rows.len(), 1);
                     check!(eq; rows[0].source.performance_id, clean.id);
                     check!(eq; rows[0].result.value, case.expected);
@@ -139,9 +139,9 @@ fn clean_duplicate_cannot_revive_retained_conflict_context() -> TestResult {
                     let mut dataset = reloaded_dataset(&seed, &observations)?;
                     check!(eq; dataset.performances.len(), 2);
                     retained_conflict(&dataset, &pair[0].id)?;
-                    check!(eq; selected(&dataset), Vec::new());
+                    check!(eq; selected(&dataset)?, Vec::new());
                     dataset.performances.reverse();
-                    check!(eq; selected(&dataset), Vec::new());
+                    check!(eq; selected(&dataset)?, Vec::new());
                     Ok(())
                 })
         })
@@ -172,11 +172,11 @@ fn every_stored_context_contested_has_no_published_best() -> TestResult {
                     let mut dataset = reloaded_dataset(&seed, &observations)?;
                     retained_conflict(&dataset, &pair[0].id)?;
                     retained_conflict(&dataset, &other.id)?;
-                    check!(eq; selected(&dataset), Vec::new());
+                    check!(eq; selected(&dataset)?, Vec::new());
                     dataset.performances.reverse();
-                    check!(eq; selected(&dataset), Vec::new());
+                    check!(eq; selected(&dataset)?, Vec::new());
                     observations.reverse();
-                    check!(eq; selected(&reloaded_dataset(&seed, &observations)?), Vec::new());
+                    check!(eq; selected(&reloaded_dataset(&seed, &observations)?)?, Vec::new());
                     Ok(())
                 })
         })

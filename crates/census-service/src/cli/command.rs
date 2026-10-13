@@ -8,6 +8,7 @@ use super::gather::{CollectArgs, MeetsArgs, TeamsArgs};
 use super::merge_coaches::MergeCoachesArgs;
 use super::national::{JurisdictionArgs, NationalArgs, NationalReportArgs};
 use super::open_work::OpenWorkArgs;
+use super::profile::ProfileArgs;
 use super::provider::ProviderArgs;
 use super::publish::{BestsArgs, IndexArgs, ReportArgs, WorkbookArgs};
 use super::qa_reports::QaReportsArgs;
@@ -22,6 +23,10 @@ use std::path::PathBuf;
 
 #[derive(Subcommand, Debug)]
 pub(super) enum Command {
+    #[command(
+        about = "Manage immutable query-profile configuration and prepare checked selection documents; explicit --store and a stopped store owner required"
+    )]
+    Profile(ProfileArgs),
     #[command(
         about = "Fetch a single URL through the polite fetcher (paced at the registry rate, cached)"
     )]

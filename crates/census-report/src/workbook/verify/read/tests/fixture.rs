@@ -81,7 +81,7 @@ fn performance(store: &Store, athlete: &CanonicalAthlete) -> TestResult {
     meet.sports.push(Sport::OutdoorTrack);
     store.append(Table::Meets, &meet)?;
     let kind = EventKind::Track100m;
-    let event = CanonicalEvent::new(
+    let event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &meet.id,
             kind,
@@ -90,7 +90,7 @@ fn performance(store: &Store, athlete: &CanonicalAthlete) -> TestResult {
             round: None,
         },
         EventSpecification::default(),
-    )?;
+    )?);
     store.append(Table::Events, &event)?;
     let team = Id::mint("team", &["oracle-team"]);
     let mut performance = CanonicalPerformance::new(

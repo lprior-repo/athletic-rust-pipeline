@@ -160,7 +160,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
     );
     meet.sports.push(Sport::OutdoorTrack);
     store.append(Table::Meets, &meet)?;
-    let event = CanonicalEvent::new(
+    let event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &meet.id,
             kind: EventKind::Track100m,
@@ -169,7 +169,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
             round: None,
         },
         EventSpecification::default(),
-    )?;
+    )?);
     store.append(Table::Events, &event)?;
     let comparable = performance(
         &wi_core,
@@ -180,7 +180,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
     )?;
     store.append(Table::Performances, &comparable)?;
 
-    let missing_event = CanonicalEvent::new(
+    let missing_event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &meet.id,
             kind: EventKind::Track200m,
@@ -189,7 +189,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
             round: None,
         },
         EventSpecification::default(),
-    )?;
+    )?);
     let unparsed = performance(
         &wi_mirror,
         &missing_event.id,
@@ -199,7 +199,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
     )?;
     store.append(Table::Performances, &unparsed)?;
 
-    let unmapped_event = CanonicalEvent::new(
+    let unmapped_event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet: &meet.id,
             kind: EventKind::Unmapped {
@@ -213,7 +213,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
             "Coed 200m",
             &EventKind::from_source_label("Coed 200m"),
         )?,
-    )?;
+    )?);
     store.append(Table::Events, &unmapped_event)?;
     let unmapped_row = performance(
         &wi_mirror,

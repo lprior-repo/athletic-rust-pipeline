@@ -2,8 +2,8 @@ use super::Loaded;
 use crate::report::{ReportError, ReportResult};
 use census_domain::model::{
     AppliedAthleteIdentity, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
-    CanonicalPerformance, CanonicalSchool, CanonicalTeam, ReviewCase, ReviewVerdictRecord,
-    SourceAccessCondition,
+    CanonicalPerformance, CanonicalSchool, CanonicalTeam, RelayResult, ReviewCase,
+    ReviewVerdictRecord, SourceAccessCondition,
 };
 use census_store::{StoreSnapshot, Table};
 
@@ -55,6 +55,7 @@ type ReadResults = (
     ReportResult<Vec<SourceAccessCondition>>,
     ReportResult<Vec<ReviewVerdictRecord>>,
     ReportResult<Vec<AppliedAthleteIdentity>>,
+    ReportResult<Vec<RelayResult>>,
 );
 
 struct ReadTasks<'a> {
@@ -70,6 +71,7 @@ struct ReadTasks<'a> {
     source_access: ReadTask<'a, SourceAccessCondition>,
     verdicts: ReadTask<'a, ReviewVerdictRecord>,
     identity_decisions: ReadTask<'a, AppliedAthleteIdentity>,
+    relays: ReadTask<'a, RelayResult>,
 }
 
 impl<'a> ReadTasks<'a> {
@@ -90,6 +92,7 @@ impl<'a> ReadTasks<'a> {
             source_access: spawn_table(scope, snapshot, Table::SourceAccess),
             verdicts: spawn_table(scope, snapshot, Table::IdentityVerdicts),
             identity_decisions: spawn_table(scope, snapshot, Table::AthleteIdentityDecisions),
+            relays: spawn_table(scope, snapshot, Table::RelayResults),
         }
     }
 
@@ -107,6 +110,7 @@ impl<'a> ReadTasks<'a> {
             join(self.source_access, "source access"),
             join(self.verdicts, "verdicts"),
             join(self.identity_decisions, "identity decisions"),
+            join(self.relays, "relay results"),
         );
         resolve(joined, coverage)
     }
@@ -129,6 +133,7 @@ fn resolve(
         source_access: joined.9?,
         verdicts: joined.10?,
         identity_decisions: joined.11?,
+        relays: joined.12?,
         coverage_evidence,
     })
 }
