@@ -32,6 +32,7 @@ pub(super) fn check_inventory(inventory: &[String]) -> StoreResult<()> {
 }
 struct Size {
     bytes: usize,
+    limit: usize,
 }
 impl Write for Size {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
@@ -39,7 +40,7 @@ impl Write for Size {
             .bytes
             .checked_add(bytes.len())
             .ok_or_else(|| io::Error::other("record size overflow"))?;
-        if self.bytes > MAX_RECORD_BYTES {
+        if self.bytes > self.limit {
             return Err(io::Error::other("record byte ceiling"));
         }
         Ok(bytes.len())
@@ -49,7 +50,10 @@ impl Write for Size {
     }
 }
 fn encoded_size<T: Serialize + ?Sized>(record: &T) -> StoreResult<usize> {
-    let mut size = Size { bytes: 0 };
+    let mut size = Size {
+        bytes: 0,
+        limit: MAX_RECORD_BYTES,
+    };
     let result = serde_json::to_writer(&mut size, record);
     if size.bytes > MAX_RECORD_BYTES {
         return Err(StoreError::RowTooLarge {
@@ -192,12 +196,19 @@ impl Write for CanonicalBuffer {
 }
 
 pub(crate) fn encode_canonical<T: Serialize + ?Sized>(record: &T) -> StoreResult<Vec<u8>> {
-    let mut size = Size { bytes: 0 };
+    encode_canonical_bounded(record, MAX_RECORD_BYTES)
+}
+
+pub(crate) fn encode_canonical_bounded<T: Serialize + ?Sized>(
+    record: &T,
+    limit: usize,
+) -> StoreResult<Vec<u8>> {
+    let mut size = Size { bytes: 0, limit };
     let result = census_domain::model::write_serialized(&mut size, record);
-    if size.bytes > MAX_RECORD_BYTES {
+    if size.bytes > limit {
         return Err(StoreError::RowTooLarge {
             bytes: size.bytes,
-            max: MAX_RECORD_BYTES,
+            max: limit,
         });
     }
     result?;

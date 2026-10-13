@@ -11,6 +11,7 @@ mod object;
 mod object_read;
 mod object_wire;
 mod operations;
+mod region_contracts;
 mod run;
 
 pub use bounded::{ReadBudget, ReadCounts};

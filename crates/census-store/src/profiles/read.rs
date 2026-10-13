@@ -20,13 +20,7 @@ struct PayloadVersion {
 
 impl Store {
     pub fn profile(&self, id: &ProfileId) -> StoreResult<QueryProfileV1> {
-        let record_key = key(id);
-        let raw = self
-            .meta
-            .get(record_key.as_bytes())
-            .map_err(|source| StoreError::Read { source })?
-            .ok_or_else(|| ProfileRegistryError::MissingProfile { id: id.clone() })?;
-        decode(id, raw.as_ref())
+        self.snapshot().profile(id)
     }
 
     pub fn selected_profile(&self, selection: &ProfileSelectionV1) -> StoreResult<QueryProfileV1> {
@@ -42,6 +36,34 @@ impl Store {
             .map_err(ProfileRegistryError::Selection)?;
         self.profile(selection.profile_id())
     }
+}
+
+pub(crate) fn retained(
+    snapshot: &fjall::Snapshot,
+    meta: &fjall::Keyspace,
+    id: &ProfileId,
+) -> StoreResult<Option<QueryProfileV1>> {
+    use fjall::Readable;
+    let record_key = key(id);
+    let Some(length) = snapshot
+        .size_of(meta, record_key.as_bytes())
+        .map_err(|source| StoreError::Read { source })?
+    else {
+        return Ok(None);
+    };
+    let bytes = usize::try_from(length).map_err(|_| StoreError::CounterOverflow)?;
+    if bytes > MAX_PROFILE_RECORD_BYTES {
+        return Err(ProfileRegistryError::Oversized {
+            bytes,
+            max: MAX_PROFILE_RECORD_BYTES,
+        }
+        .into());
+    }
+    let raw = snapshot
+        .get(meta, record_key.as_bytes())
+        .map_err(|source| StoreError::Read { source })?
+        .ok_or_else(|| ProfileRegistryError::MissingProfile { id: id.clone() })?;
+    decode(id, raw.as_ref()).map(Some)
 }
 
 pub(crate) fn decode(id: &ProfileId, bytes: &[u8]) -> StoreResult<QueryProfileV1> {

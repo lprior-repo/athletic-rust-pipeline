@@ -50,10 +50,14 @@ impl Store {
         decode.journal_pass()?;
         decode.payload_pass()?;
         let Decode {
-            corruptions,
-            limits,
+            mut corruptions,
+            mut limits,
             ..
         } = decode;
+        let registries =
+            super::registry::check(&self.db.snapshot(), &self.meta, record_window, byte_window)?;
+        corruptions.extend(registries.corruptions);
+        limits.extend(registries.limits);
         let tables_sound = tables
             .iter()
             .all(|table| table.expected == table.actual && table.details.is_empty());

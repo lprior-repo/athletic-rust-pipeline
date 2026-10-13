@@ -35,10 +35,14 @@ impl JobError {
             | StoreError::Io { .. }
             | StoreError::PublicationRefused { .. }
             | StoreError::EvidenceMoved { .. }
-            | StoreError::RevisionMoved { .. } => Self::Transient { message },
+            | StoreError::RevisionMoved { .. }
+            | StoreError::RegionContractRegistry(
+                census_store::RegionContractRegistryError::AllocationFailed,
+            ) => Self::Transient { message },
             StoreError::Decode { .. }
             | StoreError::StoreIdentity(_)
             | StoreError::StoreLineage(_)
+            | StoreError::RegionContractRegistry(_)
             | StoreError::ProfileRegistry(_)
             | StoreError::CanonicalJson(_)
             | StoreError::Json { .. }

@@ -42,6 +42,7 @@ mod profiles;
 pub mod read;
 mod receipt;
 mod records;
+mod region_contracts;
 mod rows;
 mod run;
 mod sequences;
@@ -72,6 +73,10 @@ pub use records::publish;
 pub use records::{
     BuildRecord, BuildState, FailureKind, InputRecord, InputState, LeaseMode, LeaseRecord,
     PublishRecord, PublishState, Transitioned, UnitRecord, UnitState,
+};
+pub use region_contracts::{
+    RegionContractRegistration, RegionContractRegistryError, RegionDescriptorProblem,
+    MAX_REGION_CONTRACT_CHUNKS, MAX_REGION_CONTRACT_RECORD_BYTES,
 };
 pub use rows::TableWalk;
 pub use table::{
