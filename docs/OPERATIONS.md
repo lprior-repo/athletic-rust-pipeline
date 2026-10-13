@@ -1065,3 +1065,30 @@ Serialized canonical meet/performance records independently own their identifier
 their ownership-boundary copies are not a claim of free cloning or measured performance.
 No latency, throughput, allocation-count or memory improvement is certified by these source changes.
 
+
+## Retained capture verification
+
+The following command verifies one retained MileSplit owned acquisition:
+
+```sh
+census-service --store <existing-offline-store> verify-retained-capture \
+  --acquisition 'acquisition/<meet-id>/<metadata-sha256>/manifest' \
+  --max-body-bytes 33554432
+```
+
+ Stop the store owner first. Use an isolated copy for
+qualification; this command uses the normal store-open recovery path and is not a physically
+read-only database opener. It refuses a missing database rather than initializing one.
+
+The command performs no source acquisition and has no cache or network fallback. After opening,
+one pinned snapshot supplies the occurrence, shared content manifest and chunks. A successful
+JSON reply reports the original occurrence metadata, verified byte count, digest and snapshot
+sequence without emitting the captured body. It does not qualify parser interpretation,
+canonical identity, cohort, current affiliation, or regional coverage. Repeated verification
+does not append a new acquisition or mint a new durable store identity.
+
+A smaller `--max-body-bytes` grant can deliberately refuse a retained body. Missing, unsupported,
+corrupt, foreign and resource-refused captures are distinct failures; a refused capture remains
+retained. The snapshot sequence describes this read view and is not a durable reopenable
+checkpoint. The 32-MiB body ceiling and bounded journal envelope grants do not certify a
+whole-process memory budget or a complete recruiting workbook.

@@ -147,3 +147,33 @@ fn export_resource_cli_context_preserves_one_stable_code() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn journal_read_limits_remain_terminal_and_nonretryable_across_existing_consumers() -> TestResult {
+    for through_report in [false, true] {
+        let source = census_store::StoreError::JournalReadLimit {
+            phase: "retained_capture".into(),
+            key: "manifest".into(),
+            what: "encoded envelope",
+            needed: 65,
+            max: 64,
+        };
+        let expected = source.to_string();
+        let job = if through_report {
+            JobError::from(ReportError::Store(source))
+        } else {
+            JobError::from(source)
+        };
+        check!(matches!(&job, JobError::Terminal { message } if message == &expected));
+        check!(eq; handler_text(&job_error(job)), format!("Terminal error [500]: {expected}"));
+    }
+    let crawl = census_crawl::CrawlError::from(census_store::StoreError::JournalReadLimit {
+        phase: "retained_capture".into(),
+        key: "chunk".into(),
+        what: "physical chunk",
+        needed: 65,
+        max: 64,
+    });
+    check!(!crawl.retryable());
+    Ok(())
+}

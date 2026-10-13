@@ -1187,3 +1187,99 @@ The collision-bound scenarios must therefore be re-run after that run finishes o
   all production JobError matches, service contract tests, store classifier/migration controls,
   and private seal assembly grouping. No broad re-audit or global readiness certification is
   implied. The immutable-length finding was repaired before publication.
+
+## 2026-10-13: bounded retained acquisition readback
+
+Base: `526a1ece38e1d2d733b9db3a1a93b23aa0fe6c75`. This slice adds an offline
+MileSplit acquisition-byte verifier, not source interpretation, athlete identity, affiliation,
+cohort qualification, profile-driven workbook publication or a completed census.
+
+- Nine old-API journal regressions failed before repair (nextest
+  `40ff4888-92b7-46fe-9649-5bfe7920cfcd`). They expose foreign keys, unsupported versions and
+  oversized declarations accepted by the previous reader. Two additional reconstructed-entry
+  alias/version regressions failed before the shared entry-shape repair (nextest
+  `f3c8ebbe-cbe6-46f1-9bde-c8ee71df40b9`). Writer wire shapes and v2 object reads are unchanged.
+- The first full Store run after integration ran 480 tests: 479 passed, one failed, zero skipped
+  (nextest `b29aac9b-b279-40c3-b057-7c47c52eb473`). The existing
+  `backup_refuses_a_socket_in_the_store_tree` failed with OS error 1, PermissionDenied, creating
+  its Unix socket. This remains an unpassed native-environment obligation.
+- An initial test build failed on four root-authored macro invocations, corrected before tests.
+  An initial combined run passed 35/37: two CLI fixtures incorrectly hashed a JSON map instead
+  of the archive writer's ordered eight-field metadata representation. The fixtures were repaired;
+  production digest validation was not relaxed.
+- The integrated focused command below passed 93/93 tests, 2585 filtered, nextest
+  `0733ab4e-bc7e-4024-8dab-67c4be1da6c4`. It includes 28 new Store tests, 25 new owner-reader
+  tests, six new CLI tests and existing owned-source compatibility checks.
+
+```sh
+env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:tests-scoped -- \
+  -p census-store -p census-crawl -p census-service --lib --bin census-service \
+  -E 'test(legacy_journal_tests) + test(journal_budget_tests) + test(format::existing) + test(cli::retained_capture) + test(milesplit::owned)'
+env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:tests-scoped -- \
+  -p census-service --test export_resource_contract
+```
+
+- The second command passed 6/6 tests, zero skipped, nextest
+  `8f81b487-f923-4ad2-8955-a4f7abb19426`. The added consumer regression preserves deterministic
+  JournalReadLimit terminal/nonretryable behavior through Store, Report and Crawl consumers.
+- Changed-surface review found and repaired bare-engine initialization, reconstructed entry-shape
+  admission, misleading limit units, zero-grant wording and insufficient CLI metadata assertions.
+  Exact sharing semantics remain checked meet identity plus content digest/length, with actual
+  occurrence metadata independently verified. No open source finding remained in that review.
+- Basic format and all-target compilation passed. The initial strict source lint found manual
+  modulo-based divisibility; it was replaced with `is_multiple_of` without a lint waiver. The
+  repeated format/all-target checks passed; the interrupted lint invocation supplied no terminal
+  result and was not counted as passing.
+- The actual built diagnostic executable's help returned zero. A verification request against an
+  absent isolated `/tmp` path returned exit 1 and JSON code `store_open_failed`; the path remained
+  absent. Binary SHA256: `d59dddd2bf3e648966b513af775916847467021d68bffc6a6f649980699eb3d6`.
+  That executable preceded the equivalent divisibility spelling change. Successful capture
+  roundtrips and no-body output were exercised through the real CLI implementation in unit tests.
+- Readback uses one pinned snapshot and bounded encoded journal/body grants. It does not certify
+  decoded JSON resident allocation or whole-process RSS. `Store::open_existing` refuses missing,
+  bare and unsupported stores; admitted stores still use ordinary recovery and may perform its
+  maintenance writes. This is not a physically read-only opener. All Store executions used isolated
+  test roots; no production store, service or live census was accessed.
+- Full release, proof, performance, native fault and complete workbook acceptance remain not run
+  for this slice. The current Beads export is unavailable; historical snapshots are not treated as
+  current and no external backlog closure is inferred. Supplemental reviewer packages
+  `black-hat-reviewer`, `red-queen` and `evidence-packaging` were unavailable and not claimed run.
+
+Home verification, from this commit's checkout, retains all required gates:
+
+```sh
+env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:fmt pipeline:check pipeline:lint-src
+env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:tests
+env -u CI tools/moon-local run pipeline:gate -- --release
+```
+
+The home commands are a handoff, not recorded successful executions or full-spec completion.
+
+Final lint follow-up: the next strict lint run failed at 13 reader signatures because the inline
+`CaptureWitnessError::Store` variant was at least 136 bytes. Its exceptional StoreError source
+is now boxed, preserving its concrete error chain and lookup key. No lint suppression, persistence
+change or performance improvement is claimed. Final checks and focused regressions are rerun after
+this representation repair rather than treating the earlier test run as exact-final-source proof.
+
+After that correction, `pipeline:fmt pipeline:check pipeline:lint-src` completed all three tasks
+with observed exit 0. The source-error API explicitly exposes `Box<StoreError>` as its source node,
+with the concrete StoreError retained inside; current consumers classify the outer variant.
+A focused test additionally checks that node, its typed I/O cause, exact message/key and CLI code.
+
+Exact-final-source regression selection passed **100/100**, 2585 filtered, nextest
+`63e24bf7-211d-4c3f-addc-ed08b8384cd5` (including the additional boxed source-chain assertion):
+
+```sh
+env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:tests-scoped -- \
+  -p census-store -p census-crawl -p census-service --lib --bin census-service \
+  --test export_resource_contract \
+  -E 'test(legacy_journal_tests) + test(journal_budget_tests) + test(format::existing) + test(cli::retained_capture) + test(milesplit::owned) + binary(export_resource_contract)'
+```
+
+The actual combined invocation also requested `pipeline:fmt` before the passthrough separator;
+Moon forwarded the test `-p` argument to rustfmt, which rejected it after the 100-test task passed.
+That overall invocation returned 1; it is not recorded as an all-tasks pass. Formatting was rerun
+separately without test arguments.
+
+The separate final `env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:fmt`
+completed successfully with observed exit 0 (33 seconds overall). No formatting gate was skipped.

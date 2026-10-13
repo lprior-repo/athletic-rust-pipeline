@@ -5,12 +5,17 @@ use serde::{Deserialize, Serialize};
 mod context;
 mod effect;
 mod parse;
+mod retained;
 mod row;
 #[cfg(test)]
 mod tests;
 
 pub(crate) use effect::{acquisition_manifest_key, read_owned_meet};
 pub use parse::parse_owned_meet;
+pub use retained::{
+    read_retained_acquisition, CaptureReadBudget, CaptureWitnessError, OwnedAcquisitionRef,
+    VerifiedOwnedAcquisition,
+};
 
 pub const OWNED_MEET_PHASE: &str = "milesplit_owned_meet_v4";
 pub const OWNED_CAPTURE_PHASE: &str = "milesplit_owned_capture_v1";

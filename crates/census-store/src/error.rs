@@ -79,6 +79,14 @@ pub enum StoreError {
         bytes: usize,
         max: usize,
     },
+    #[error("journal read {what} for {phase}/{key} needs {needed} bytes, past the {max} ceiling")]
+    JournalReadLimit {
+        phase: String,
+        key: String,
+        what: &'static str,
+        needed: usize,
+        max: usize,
+    },
     #[error("sequence counter overflow")]
     CounterOverflow,
     #[error("observation log {table} is append-only; replacement is refused")]
