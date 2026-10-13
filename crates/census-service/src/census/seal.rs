@@ -4,7 +4,8 @@ use census_domain::UsJurisdiction;
 
 use census_domain::model::{AccessBlockKind, CensusRun, GradYear, SourceAccessCondition};
 
-use super::{CensusState, SealEvidence, SealedCensus};
+use super::{CensusState, SealEvidence, SealedCensus, WorkbookCheck};
+use census_report::export::ExportDataset;
 use census_report::report::{self, CoverageReport, Derivation, Scope};
 use census_store::{Store, StoreStats, Table};
 
@@ -38,7 +39,7 @@ mod ladder;
 
 use assembly::assemble;
 use ladder::{reached_phase, workbook_path};
-use workbook::inspect_workbook;
+use workbook::{inspect_workbook, Inspection};
 
 #[derive(Debug, Clone, Default)]
 pub struct JournalCounts {
@@ -94,48 +95,14 @@ fn bound_display(bound: Option<CensusRun>) -> String {
 pub fn seal(store: &Store, request: &SealRequest) -> Result<SealOutcome, SealWorkflowError> {
     let cohort = census_cohort(request.grad_year)?;
     bound_run(store, request.run)?;
-    let Some(path) = workbook_path(store, request.workbook.as_deref())
-        .map_err(|error| SealWorkflowError::Workbook(error.to_string()))?
-    else {
-        return Err(SealWorkflowError::WorkbookMissing);
-    };
-    let inspection = inspect_workbook(&path, store, cohort, request.scope, &request.jurisdictions)
-        .map_err(|error| SealWorkflowError::Workbook(error.to_string()))?;
-    let dataset = inspection.dataset;
-    let workbook = inspection.check;
-    let derivation = Derivation::of(
-        &dataset,
-        request.scope,
-        Some(cohort.get()),
-        &request.jurisdictions,
-    );
-    let selected_coverage = report::coverage_report_for_derivation(&derivation)
-        .map_err(|error| SealWorkflowError::Coverage(error.to_string()))?;
-    let retained_coverage = report::coverage_report(&dataset, Some(cohort.get()))
-        .map_err(|error| SealWorkflowError::Coverage(error.to_string()))?;
-    let census = report::build_census(&derivation, &store.out_dir());
-    let stats = store
-        .stats()
-        .map_err(|error| SealWorkflowError::Store(error.to_string()))?;
-    let cases = &dataset.review_cases;
-    let access = &dataset.source_access;
-    let evidence = assemble(
-        SealCoverage {
-            selected: &selected_coverage,
-            retained: &retained_coverage,
-        },
-        &census,
-        &stats,
-        cases,
-        access,
-        request,
-        workbook,
-    );
-
+    let (path, inspection) = publication(store, request, cohort)?;
+    let (evidence, stats) =
+        assemble_evidence(store, request, cohort, &inspection.dataset, inspection.check)?;
     let recorded = recorded_seal(store)
         .map_err(|error| SealWorkflowError::SealRecording(error.to_string()))?;
     let source_fence = store.fenced_snapshot();
-    dataset
+    inspection
+        .dataset
         .ensure_snapshot(source_fence.view())
         .map_err(|error| SealWorkflowError::Workbook(error.to_string()))?;
     let mut state = reached_phase(&stats, &path, &evidence)
@@ -159,6 +126,57 @@ pub fn seal(store: &Store, request: &SealRequest) -> Result<SealOutcome, SealWor
         refusal,
         wrote,
     })
+}
+
+fn publication(
+    store: &Store,
+    request: &SealRequest,
+    cohort: GradYear,
+) -> Result<(PathBuf, Inspection), SealWorkflowError> {
+    let Some(path) = workbook_path(store, request.workbook.as_deref())
+        .map_err(|error| SealWorkflowError::Workbook(error.to_string()))?
+    else {
+        return Err(SealWorkflowError::WorkbookMissing);
+    };
+    let inspection = inspect_workbook(&path, store, cohort, request.scope, &request.jurisdictions)
+        .map_err(|error| SealWorkflowError::Workbook(error.to_string()))?;
+    Ok((path, inspection))
+}
+
+fn assemble_evidence(
+    store: &Store,
+    request: &SealRequest,
+    cohort: GradYear,
+    dataset: &ExportDataset,
+    workbook: WorkbookCheck,
+) -> Result<(SealEvidence, StoreStats), SealWorkflowError> {
+    let derivation = Derivation::of(
+        dataset,
+        request.scope,
+        Some(cohort.get()),
+        &request.jurisdictions,
+    );
+    let selected_coverage = report::coverage_report_for_derivation(&derivation)
+        .map_err(|error| SealWorkflowError::Coverage(error.to_string()))?;
+    let retained_coverage = report::coverage_report(dataset, Some(cohort.get()))
+        .map_err(|error| SealWorkflowError::Coverage(error.to_string()))?;
+    let census = report::build_census(&derivation, &store.out_dir());
+    let stats = store
+        .stats()
+        .map_err(|error| SealWorkflowError::Store(error.to_string()))?;
+    let evidence = assemble(
+        SealCoverage {
+            selected: &selected_coverage,
+            retained: &retained_coverage,
+        },
+        &census,
+        &stats,
+        &dataset.review_cases,
+        &dataset.source_access,
+        request,
+        workbook,
+    );
+    Ok((evidence, stats))
 }
 
 fn bound_run(store: &Store, measured: Option<CensusRun>) -> Result<(), SealWorkflowError> {
