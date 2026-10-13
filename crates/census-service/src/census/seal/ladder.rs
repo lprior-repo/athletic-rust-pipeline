@@ -2,11 +2,16 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
 
-use super::{table_rows, CensusState};
+use super::{table_rows, CensusState, SealEvidence};
 use crate::census::Phase;
 use census_store::{Store, StoreStats, Table};
 
-pub(super) fn reached_phase(stats: &StoreStats, workbook: &Path) -> Result<CensusState> {
+pub(super) fn reached_phase(
+    stats: &StoreStats,
+    workbook: &Path,
+    evidence: &SealEvidence,
+) -> Result<CensusState> {
+    let acceptance_satisfied = evidence.open_items().is_empty();
     let steps = [
         (Phase::Acquiring, stats.observations > 0),
         (Phase::Reconciling, table_rows(stats, Table::Snapshots) > 0),
@@ -20,7 +25,7 @@ pub(super) fn reached_phase(stats: &StoreStats, workbook: &Path) -> Result<Censu
     ];
     let mut state = CensusState::Discovering;
     for (phase, reached) in steps {
-        if !reached {
+        if !reached && !acceptance_satisfied {
             break;
         }
         state
