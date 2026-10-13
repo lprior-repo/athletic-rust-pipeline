@@ -2,6 +2,7 @@ use super::{ExportDataset, GradYear, RunManifest, SchoolYear, UsJurisdiction};
 use census_domain::model::CensusRun;
 use census_store::Store;
 
+#[allow(clippy::duplicate_mod)]
 #[path = "../../../../../../../tools/lineage_test_process.rs"]
 mod process;
 

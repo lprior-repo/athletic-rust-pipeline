@@ -73,10 +73,7 @@ fn checked_public_key_admits_only_the_positive_event_for_one_athlete() -> TestRe
     ] {
         let event = catalog_event(kind, label, &meet.id)?;
         let performance = catalog_performance(&event, label, &athlete)?;
-        assert_eq!(
-            RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack)?,
-            expected
-        );
+        check!(eq; RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack)?, expected);
         if let Some(key) = crate::bests::PrKey::from_performance(
             &performance,
             &event,
@@ -85,14 +82,11 @@ fn checked_public_key_admits_only_the_positive_event_for_one_athlete() -> TestRe
         )? {
             keys.push(key);
         }
-        assert_eq!(performance.athlete, athlete);
+        check!(eq; performance.athlete, athlete);
     }
-    assert_eq!(keys.len(), 1);
-    assert_eq!(
-        keys.first().ok_or("positive key")?.event_kind,
-        EventKind::Track100m
-    );
-    assert_eq!(keys.first().ok_or("positive key")?.athlete_id, athlete);
+    check!(eq; keys.len(), 1);
+    check!(eq; keys.first().ok_or("positive key")?.event_kind, EventKind::Track100m);
+    check!(eq; keys.first().ok_or("positive key")?.athlete_id, athlete);
     Ok(())
 }
 
@@ -108,24 +102,12 @@ fn numeric_unmapped_missing_ownership_and_conflicting_labels_do_not_enter_pr_key
             &meet.id,
         )?;
         let performance = catalog_performance(&event, label, &athlete_id())?;
-        assert!(crate::bests::PrKey::from_performance(
-            &performance,
-            &event,
-            Some(&meet),
-            crate::bests::Measure::Time
-        )?
-        .is_none());
+        check!(crate::bests::PrKey::from_performance(&performance, &event, Some(&meet), crate::bests::Measure::Time)?.is_none());
     }
     let mut event = catalog_event(EventKind::Track100m, "100m", &meet.id)?;
     let performance = catalog_performance(&event, "missing_owner", &athlete_id())?;
     event.evidence.clear();
-    assert!(crate::bests::PrKey::from_performance(
-        &performance,
-        &event,
-        Some(&meet),
-        crate::bests::Measure::Time
-    )?
-    .is_none());
+    check!(crate::bests::PrKey::from_performance(&performance, &event, Some(&meet), crate::bests::Measure::Time)?.is_none());
     let mut event = catalog_event(EventKind::Track100m, "100m", &meet.id)?;
     let source = event
         .source_labels
@@ -138,13 +120,7 @@ fn numeric_unmapped_missing_ownership_and_conflicting_labels_do_not_enter_pr_key
         label: "100m Wheelchair".into(),
     });
     let performance = catalog_performance(&event, "mixed_labels", &athlete_id())?;
-    assert!(crate::bests::PrKey::from_performance(
-        &performance,
-        &event,
-        Some(&meet),
-        crate::bests::Measure::Time
-    )?
-    .is_none());
+    check!(crate::bests::PrKey::from_performance(&performance, &event, Some(&meet), crate::bests::Measure::Time)?.is_none());
     Ok(())
 }
 
@@ -158,15 +134,7 @@ fn catalog_input_failure_is_a_typed_public_key_error() -> TestResult {
         .first_mut()
         .ok_or("fixture label")?
         .label = "x".repeat(4097);
-    assert_eq!(
-        crate::bests::PrKey::from_performance(
-            &performance,
-            &event,
-            Some(&meet),
-            crate::bests::Measure::Time
-        ),
-        Err(CatalogError::LabelBytesExceeded)
-    );
+    check!(eq; crate::bests::PrKey::from_performance(&performance, &event, Some(&meet), crate::bests::Measure::Time), Err(CatalogError::LabelBytesExceeded));
     Ok(())
 }
 
@@ -228,8 +196,8 @@ fn append_catalog_meet(store: &Store) -> TestResult {
 }
 
 fn catalog_readback(dataset: &ExportDataset) -> TestResult {
-    assert_eq!(dataset.events.len(), 4);
-    assert_eq!(dataset.performances.len(), 4);
+    check!(eq; dataset.events.len(), 4);
+    check!(eq; dataset.performances.len(), 4);
     let mut included = 0usize;
     let mut excluded = 0usize;
     let mut unresolved = 0usize;
@@ -267,12 +235,10 @@ fn catalog_readback(dataset: &ExportDataset) -> TestResult {
             keys.push(key);
         }
     }
-    assert_eq!((included, excluded, unresolved), (1, 2, 1));
-    assert_eq!(keys.len(), 1);
-    assert_eq!(
-        keys.first().ok_or("eligible key")?.event_kind,
-        EventKind::Track100m
-    );
+    check!(eq; (included, excluded, unresolved), (1, 2, 1));
+    check!(eq; keys.len(), 1);
+    check!(eq; keys.first().ok_or("eligible key")?.event_kind, EventKind::Track100m);
+
     Ok(())
 }
 
@@ -290,9 +256,6 @@ fn whole_meet_reused_store_retains_evidence_and_rebuilds_the_same_checked_key_me
     let store = Store::open(directory.path())?;
     let reopened = ExportDataset::load(&store)?;
     catalog_readback(&reopened)?;
-    assert_eq!(
-        census_domain::model::serialized_bytes(&reopened.events)?,
-        before
-    );
+    check!(eq; census_domain::model::serialized_bytes(&reopened.events)?, before);
     Ok(())
 }

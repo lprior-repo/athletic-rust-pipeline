@@ -11,10 +11,10 @@ pub(super) fn assert_cell(path: &Path, sheet: &str, header: &str, expected: &str
     let headings = rows.next().ok_or("sheet header")?;
     let column = headings
         .iter()
-        .position(|cell| cell.to_string() == header)
+        .position(|cell| matches!(cell, Data::String(s) if s == header))
         .ok_or("column")?;
     let row = rows.next().ok_or("athlete row")?;
-    assert_eq!(row.get(column).ok_or("athlete cell")?.to_string(), expected);
+    check!(eq; row.get(column).ok_or("athlete cell")?.to_string(), expected);
     Ok(())
 }
 
@@ -64,7 +64,7 @@ fn mutate_rows(name: &str, mutation: &str, rows: &mut Vec<Vec<Data>>) -> TestRes
     match (name, mutation) {
         ("Review", "Review") => rows.retain(|row| {
             row.first()
-                .is_none_or(|cell| cell.to_string() != "Recruiting event unresolved")
+                .is_none_or(|cell| !matches!(cell, Data::String(s) if s == "Recruiting event unresolved"))
         }),
         ("Relays", "Relays") => rows.push(rows.get(1).ok_or("positive team relay")?.clone()),
         ("Relays", "relay_missing_members") => {

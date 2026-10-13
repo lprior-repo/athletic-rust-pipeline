@@ -77,22 +77,22 @@ fn reply(bytes: &[u8]) -> Result<Value, Box<dyn std::error::Error>> {
 fn retained_capture_cli_requires_explicit_existing_store_without_creating_one() -> TestResult {
     let reference = format!("acquisition/42/{}/manifest", "a".repeat(64));
     let mut output = Vec::new();
-    assert!(matches!(
+    check!(matches!(
         run_to(None, &args(&reference), &mut output),
         Err(CaptureCliError::StoreRequired)
     ));
-    assert_eq!(reply(&output)?["code"], "explicit_store_required");
+    check!(eq; reply(&output)?["code"], "explicit_store_required");
     let parent = tempfile::tempdir()?;
     let missing = parent.path().join("absent");
     output.clear();
-    assert!(run_to(Some(&missing), &args(&reference), &mut output).is_err());
-    assert!(!missing.exists());
-    assert_eq!(reply(&output)?["code"], "store_open_failed");
+    check!(run_to(Some(&missing), &args(&reference), &mut output).is_err());
+    check!(!missing.exists());
+    check!(eq; reply(&output)?["code"], "store_open_failed");
     std::fs::create_dir_all(missing.join("fjall"))?;
     output.clear();
-    assert!(run_to(Some(&missing), &args(&reference), &mut output).is_err());
-    assert!(!missing.join("fjall/version").exists());
-    assert!(!missing.join("out").exists());
+    check!(run_to(Some(&missing), &args(&reference), &mut output).is_err());
+    check!(!missing.join("fjall/version").exists());
+    check!(!missing.join("out").exists());
     Ok(())
 }
 
@@ -108,12 +108,12 @@ fn retained_capture_cli_validates_inputs_before_opening_store() -> TestResult {
         },
     ] {
         let mut output = Vec::new();
-        assert!(matches!(
+        check!(matches!(
             run_to(Some(&missing), &request, &mut output),
             Err(CaptureCliError::Witness(_))
         ));
-        assert!(!missing.exists());
-        assert_eq!(reply(&output)?["status"], "failed");
+        check!(!missing.exists());
+        check!(eq; reply(&output)?["status"], "failed");
     }
     Ok(())
 }
@@ -129,26 +129,26 @@ fn retained_capture_cli_reports_occurrence_without_body_or_population_claims() -
         let mut output = Vec::new();
         run_to(Some(root.path()), &args(&reference), &mut output)?;
         let found = reply(&output)?;
-        assert_eq!(found["status"], "verified");
-        assert_eq!(found["verified_body_bytes"], 2);
-        assert_eq!(
+        check!(eq; found["status"], "verified");
+        check!(eq; found["verified_body_bytes"], 2);
+        check!(eq;
             found["capture"]["content_digest"],
             format!("{:x}", Sha256::digest(b"{}"))
         );
-        assert_eq!(found["capture"]["fetched_at"], "2026-10-11T12:00:00Z");
-        assert_eq!(found["capture"]["method"], "GET");
-        assert_eq!(found["capture"]["status"], 200);
-        assert_eq!(found["capture"]["url"], format!("https://wi.milesplit.com/api/v1/meets/42/performances?isMeetPro=0&fields={OWNED_FIELDS}"));
-        assert_eq!(found["acquisition"], reference);
-        assert_eq!(found["snapshot_sequence"], before);
-        assert!(found["capture"].get("body").is_none());
-        assert!(found["qualification_scope"]
+        check!(eq; found["capture"]["fetched_at"], "2026-10-11T12:00:00Z");
+        check!(eq; found["capture"]["method"], "GET");
+        check!(eq; found["capture"]["status"], 200);
+        check!(eq; found["capture"]["url"], format!("https://wi.milesplit.com/api/v1/meets/42/performances?isMeetPro=0&fields={OWNED_FIELDS}"));
+        check!(eq; found["acquisition"], reference);
+        check!(eq; found["snapshot_sequence"], before);
+        check!(found["capture"].get("body").is_none());
+        check!(found["qualification_scope"]
             .as_str()
             .ok_or("scope missing")?
             .contains("remain unqualified"));
     }
     let store = Store::open(root.path())?;
-    assert_eq!(store.snapshot().sequence(), before);
+    check!(eq; store.snapshot().sequence(), before);
     Ok(())
 }
 
@@ -161,12 +161,12 @@ fn retained_capture_cli_refuses_missing_capture_and_small_grant() -> TestResult 
     let mut small = args(&reference);
     small.max_body_bytes = 1;
     let mut output = Vec::new();
-    assert!(run_to(Some(root.path()), &small, &mut output).is_err());
-    assert_eq!(reply(&output)?["code"], "capture_budget_exceeded");
+    check!(run_to(Some(root.path()), &small, &mut output).is_err());
+    check!(eq; reply(&output)?["code"], "capture_budget_exceeded");
     output.clear();
     let missing = args(&format!("acquisition/43/{}/manifest", "a".repeat(64)));
-    assert!(run_to(Some(root.path()), &missing, &mut output).is_err());
-    assert_eq!(reply(&output)?["code"], "capture_missing");
+    check!(run_to(Some(root.path()), &missing, &mut output).is_err());
+    check!(eq; reply(&output)?["code"], "capture_missing");
     Ok(())
 }
 
@@ -181,7 +181,7 @@ fn retained_capture_cli_parser_exposes_explicit_grant() -> TestResult {
         "17",
     ])?;
     match cli.command {
-        crate::cli::Command::VerifyRetainedCapture(args) => assert_eq!(args.max_body_bytes, 17),
+        crate::cli::Command::VerifyRetainedCapture(args) => check!(eq; args.max_body_bytes, 17),
         other => return Err(format!("wrong command: {other:?}").into()),
     }
     Ok(())
@@ -207,7 +207,7 @@ fn retained_capture_cli_propagates_output_failure() -> TestResult {
     let error = run_to(Some(root.path()), &args(&reference), &mut RefuseOutput)
         .err()
         .ok_or("output unexpectedly succeeded")?;
-    assert!(error.output_failed());
+    check!(error.output_failed());
     Ok(())
 }
 
@@ -222,7 +222,7 @@ fn retained_capture_cli_preserves_store_source_chain_and_code() -> TestResult {
         }),
     };
     match &witness {
-        CaptureWitnessError::Store { key: found, .. } => assert_eq!(found, key),
+        CaptureWitnessError::Store { key: found, .. } => check!(eq; found, key),
         other => return Err(format!("wrong witness: {other:?}").into()),
     }
     let source = std::error::Error::source(&witness).ok_or("store source missing")?;
@@ -232,9 +232,9 @@ fn retained_capture_cli_preserves_store_source_chain_and_code() -> TestResult {
     let store = boxed.as_ref();
     match store {
         StoreError::Io { path, source } => {
-            assert_eq!(path, std::path::Path::new("retained-fixture"));
-            assert_eq!(source.kind(), io::ErrorKind::PermissionDenied);
-            assert_eq!(source.to_string(), "capture read denied");
+            check!(eq; path, std::path::Path::new("retained-fixture"));
+            check!(eq; source.kind(), io::ErrorKind::PermissionDenied);
+            check!(eq; source.to_string(), "capture read denied");
         }
         other => return Err(format!("wrong store source: {other:?}").into()),
     }
@@ -242,13 +242,13 @@ fn retained_capture_cli_preserves_store_source_chain_and_code() -> TestResult {
         .ok_or("io source missing")?
         .downcast_ref::<io::Error>()
         .ok_or("io source cannot downcast to io::Error")?;
-    assert_eq!(io_source.kind(), io::ErrorKind::PermissionDenied);
+    check!(eq; io_source.kind(), io::ErrorKind::PermissionDenied);
     let expected = "retained capture entry retained-source could not be read: i/o failed for retained-fixture: capture read denied";
-    assert_eq!(witness.to_string(), expected);
+    check!(eq; witness.to_string(), expected);
     let cli = CaptureCliError::from(witness);
-    assert_eq!(cli.code(), "capture_store_read_failed");
-    assert_eq!(cli.to_string(), expected);
-    assert!(matches!(
+    check!(eq; cli.code(), "capture_store_read_failed");
+    check!(eq; cli.to_string(), expected);
+    check!(matches!(
         std::error::Error::source(&cli)
             .ok_or("cli store source missing")?
             .downcast_ref::<Box<StoreError>>(),

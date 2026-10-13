@@ -13,31 +13,22 @@ fn independent_relay_readback_preserves_every_column_and_rejects_omission_or_reo
         .scan::<RelayResult>(Table::RelayResults)?;
     let frozen = crate::export::freeze_v2(&fixture.store, "catalog:independent-relay-readback")?;
     let dataset = crate::export::to_export_dataset(&frozen, &fixture.store)?;
-    assert_eq!(
-        serialized_bytes(&dataset.relays)?,
-        serialized_bytes(&retained)?
-    );
+    check!(eq; serialized_bytes(&dataset.relays)?, serialized_bytes(&retained)?);
     let stream = frozen
         .manifest()
         .streams
         .iter()
         .find(|stream| stream.stream == "relays")
         .ok_or("required relay stream")?;
-    assert_eq!(stream.rows, 2);
-    assert!(stream.bytes > 0);
-    assert_eq!(stream.inventory.codec_id, "census-frozen-inventory-v3");
-    assert_eq!(stream.inventory.codec_revision, 3);
+    check!(eq; stream.rows, 2);
+    check!(stream.bytes > 0);
+    check!(eq; stream.inventory.codec_id, "census-frozen-inventory-v3");
+    check!(eq; stream.inventory.codec_revision, 3);
     let fingerprint = frozen
         .manifest()
         .fingerprint(Table::RelayResults)
         .ok_or("required relay source fingerprint")?;
-    assert_eq!(
-        fingerprint.digest,
-        fixture
-            .store
-            .snapshot()
-            .tables_digest(&[Table::RelayResults])?
-    );
+    check!(eq; fingerprint.digest, fixture.store.snapshot().tables_digest(&[Table::RelayResults])?);
     let original = publish(&fixture, &dataset)?;
     let relay = dataset
         .relays
@@ -59,7 +50,10 @@ fn independent_relay_readback_preserves_every_column_and_rejects_omission_or_reo
         ),
         (
             "Round",
-            relay.round.clone().map_or_else(String::new, |round| round),
+            match relay.round.as_deref() {
+                Some(round) => round.to_string(),
+                None => String::new(),
+            },
         ),
         ("Timing", "Fat".to_string()),
         ("Published Members", serde_json::to_string(&relay.members)?),
@@ -78,7 +72,7 @@ fn independent_relay_readback_preserves_every_column_and_rejects_omission_or_reo
         let error = workbook::verify::verify_frozen(&forged, &dataset, &options()?)
             .err()
             .ok_or("omitted or reordered relay field was accepted")?;
-        assert!(error.to_string().contains("Relays"));
+        check!(error.to_string().contains("Relays"));
     }
     Ok(())
 }

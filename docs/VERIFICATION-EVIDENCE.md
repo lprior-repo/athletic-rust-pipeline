@@ -1283,3 +1283,75 @@ separately without test arguments.
 
 The separate final `env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:fmt`
 completed successfully with observed exit 0 (33 seconds overall). No formatting gate was skipped.
+
+## 2026-10-13 — native durability lane: sixteen of eighteen wrappers executed
+
+Prerequisites were verified before the run with `env -u CI tools/moon-local run
+pipeline:native-resources`. Everything that verifier owns resolved and was hash-recorded (chromium;
+unprivileged user+mount namespace with a 64 MiB tmpfs probe; owned scratch root on btrfs;
+restate-server 1.7.10 sha `cf117add…`; QEMU 11.1.1 with `bios-256k` and eleven staged package
+checksums; guest image at the pinned digest `360f0fa4…`; guest disk parent mode 0700). It failed
+closed on exactly one input, `CENSUS_NATIVE_VM_CAPTURES`: the documented default
+`var/native-vm-captures-sol-20261006.json` is absent from this checkout, and the only surviving
+manifest (`var/native-vm-captures-sol-20261002-root08.json`, schema
+`jurisdiction/team_id/index/roster` with `body`+`metadata` paths, naming AL team 38332) points at
+`var/vm-sol-20261002-07/payload/{index.body,index.meta.json,roster.body,roster.meta.json}`, none of
+which exist. There is no in-tree producer for that artifact — `qualification_native_vm/host/payload.rs`
+only stages deployments — so scenarios 03 (reboot) and 12 (cross-midnight) were not run. The gap,
+its deliverable and the gate's hardcoded dated path (which ignores an existing
+`CENSUS_NATIVE_VM_CAPTURES`) are owned by bead `r4z1`.
+
+The sixteen non-guest wrappers were executed with the release gate's own wiring — `SERVE_BINARY` and
+`S04_V1_BINARY` from the `native-fault-injection` build, `S04_V2_BINARY` from the portable build,
+`S06_RECEIPT_ORACLE_BINARY`, `CENSUS_NATIVE_VM_HOST`, `RESTATE_SERVER_BIN` 1.7.10, `ADMIN_PORT`
+19405, `SERVICE_PORT` 9405, `SCRATCH_STORE` under the owned scratch root — via
+`env -u CI tools/moon-local run pipeline:durability -- <the sixteen non-guest scenarios>`.
+
+Result: **Total: 16 PASS, 0 FAIL, 0 SKIPPED** in 39m34s, exit 0 (log `/tmp/durability-16.log`).
+
+| wrapper | status | wrapper | status |
+|---|---|---|---|
+| scenario-01-endpoint-kill | PASS | scenario-10-disk-full-restate | PASS |
+| scenario-02-restate-kill-during-fanout | PASS | scenario-11-parent-exit | PASS |
+| scenario-04-rolling-upgrade | PASS | scenario-13-ai-review-failures | PASS |
+| scenario-05-http-error-taxonomy | PASS | scenario-14-seal-refuses | PASS |
+| scenario-06-no-duplicate-evidence | PASS | scenario-15-full-backup-restore | PASS |
+| scenario-07-domain-dedup | PASS | scenario-16-golden-census-determinism | PASS |
+| scenario-08-global-budget | PASS | scenario-17-recovery-tests | PASS |
+| scenario-09-disk-full-fjall | PASS | scenario-18-run-binding | PASS |
+
+This is not a full durability verdict and is not recorded as one. Scenarios 03 and 12 did not run;
+the catalog's phase-boundary subcases remain owed (the 01/06 source-request and acknowledgement
+points, the 01/02 independent endpoint+Restate restart, the 06/17 chunk-boundary kills, the 16
+quarantine subcase, the 14/16 export interruption, the 15 backup interruption); and the
+`tools/durability/README.md` limits stand for the wrappers that are narrower than their catalog item
+(01 runs the service restart integration tests, 14 does not exercise every unmet acceptance item, 15
+is store backup rather than Restate recovery, 16 is the fixture-store determinism regression rather
+than full frozen replay, 18 injects no crash). Those obligations are tracked on `6yj.11`.
+
+## 2026-10-13 — release gate lane status after the size, ratchet and panic work
+
+`env -u CI tools/moon-local run pipeline:gate -- --release` at `aaa11920` failed
+`panic extraction (all targets) durability perf` — down from six failing lanes. `tests`,
+`production scan`, `architectural contract`, `one-page budget` and `ratchet` pass; the ratchet lane
+now reports `gate: PASS (debt ratchet holds)` after the size burndown (`seal` split, `cli/publish.rs`
+→ five submodules, `manifest.rs` 333→248 with two submodules, `backup/integrity.rs` 672→666,
+`files_over_300_lines` 5→4, `functions_over_60_lines` 0).
+
+The durability lane's failure in that run was a missing prerequisite build
+(`target/moon-portable/…/census-serve`), not a scenario failure — `pipeline:build-portable` was run
+(exit 0) and the sixteen-scenario run above followed.
+
+The panic lane reported 50 `clippy::panic_in_result_fn` errors plus eight other all-target
+diagnostics, introduced with the merged fixture and retained-capture test files (the lane was at 0
+diagnostics when cleared earlier). All were converted to the `check!` idiom or fixed
+(`cmp_owned`, `useless_vec`, `manual_contains`, `explicit_auto_deref`, `large_enum_variant` boxed,
+`type_complexity` aliased, `duplicate_mod` annotated).
+
+The perf lane reported two regressions against the baseline recorded at `56d837ea` (same host,
+same rustc, corpus 154,721 lines): `pipeline/capture_export/captured_live_wiaa_co2027`
+allocation_count 1,344,479 → 1,427,442 (+6.2%) and `census/merge/coaches_scan` tail time
+0.000441 → 0.000710. The allocation delta sits on the store read path rewritten by `6b78d0ee`
+(`read/mod.rs`, `read/view/legacy*.rs`, `JournalReadBudget`, `format/existing.rs`); the tail-time
+number is load-contaminated (the run printed repeated `Unable to complete 100 samples in 5.0s`
+warnings). Both require a quiet re-measure before any conclusion.

@@ -80,37 +80,24 @@ fn core_relays_refuse_non_core_result_event_or_meet_without_losing_raw_rows() ->
         }
         let raw = census_domain::model::serialized_bytes(&dataset.relays)?;
         let admission = EventAdmission::of(&dataset)?;
-        assert!(admission.included_kind(&event_id).is_some());
+        check!(admission.included_kind(&event_id).is_some());
         let all = Derivation::of(&dataset, Scope::AllSources, Some(2027), &[]);
         let all_projection = RelayProjection::of(&all, &admission)?;
-        assert_eq!(all_projection.selections.len(), 1);
-        assert_eq!(
-            all_projection
-                .selections
-                .first()
-                .ok_or("all-source relay")?
-                .result
-                .id,
-            fixture.relay
-        );
+        check!(eq; all_projection.selections.len(), 1);
+        check!(eq; all_projection.selections.first().ok_or("all-source relay")?.result.id, fixture.relay);
+
         let core = Derivation::of(&dataset, Scope::Core, Some(2027), &[]);
-        assert_eq!(core.athletes().len(), 1);
+        check!(eq; core.athletes().len(), 1);
         let core_projection = RelayProjection::of(&core, &admission)?;
-        assert!(core_projection.selections.is_empty());
-        assert_eq!(core_projection.admissions.len(), dataset.relays.len());
+        check!(core_projection.selections.is_empty());
+        check!(eq; core_projection.admissions.len(), dataset.relays.len());
         let refused = core_projection
             .admissions
             .iter()
             .find(|row| row.relay == &fixture.relay)
             .ok_or("retained refusal")?;
-        assert!(matches!(
-            refused.disposition,
-            RelayDisposition::Unresolved(RelayGap::OutsideEvidenceScope)
-        ));
-        assert_eq!(
-            census_domain::model::serialized_bytes(&dataset.relays)?,
-            raw
-        );
+        check!(matches!(refused.disposition, RelayDisposition::Unresolved(RelayGap::OutsideEvidenceScope)));
+        check!(eq; census_domain::model::serialized_bytes(&dataset.relays)?, raw);
     }
     Ok(())
 }
@@ -132,7 +119,7 @@ fn core_summary_and_readback_agree_when_an_included_event_has_only_non_core_evid
         evidence.source.id = "athleticnet".into();
     }
     let admission = EventAdmission::of(&dataset)?;
-    assert!(admission.included_kind(&fixture.ordinary).is_some());
+    check!(admission.included_kind(&fixture.ordinary).is_some());
     let mut options = super::options()?;
     options.scope = Scope::Core;
     let core = render(&dataset, fixture.directory.path(), &options)?;

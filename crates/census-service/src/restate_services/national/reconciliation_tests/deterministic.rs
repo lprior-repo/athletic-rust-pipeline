@@ -11,7 +11,7 @@ enum Boundary {
     RefusedPublication,
     LostCompletion,
     CaptureRules,
-    HistoricalRules(Journal),
+    HistoricalRules(Box<Journal>),
 }
 
 #[tokio::test]
@@ -30,7 +30,7 @@ async fn committed_deterministic_publication_replays_after_its_run_completion_is
 async fn completed_historical_rules_replay_the_same_journal_without_retroactive_closure(
 ) -> TestResult {
     let journal = exercise(Boundary::CaptureRules).await?;
-    exercise(Boundary::HistoricalRules(journal))
+    exercise(Boundary::HistoricalRules(Box::new(journal)))
         .await
         .map(|_| ())
 }
@@ -94,7 +94,7 @@ async fn exercise(boundary: Boundary) -> TestResult<Journal> {
                 }
                 Boundary::CaptureRules => reach_rules(&mut journal, &client, &url).await?,
                 Boundary::HistoricalRules(recorded) => {
-                    journal = recorded;
+                    journal = *recorded;
                     let summary = historical_summary.ok_or("historical summary absent")?;
                     historical(&store, &old, &summary, &mut journal, &client, &url).await?;
                 }

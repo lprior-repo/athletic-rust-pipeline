@@ -21,12 +21,12 @@ pub(super) fn assert_cells(
     let coverage = reader.worksheet_range("Coverage")?;
     check!(coverage.rows().any(|row| row
         .first()
-        .is_some_and(|cell| cell.to_string() == "Retained global recruiting event disposition")));
+        .is_some_and(|cell| matches!(cell, Data::String(s) if s == "Retained global recruiting event disposition"))));
     let global_events = coverage
         .rows()
         .find(|row| {
             row.first()
-                .is_some_and(|cell| cell.to_string() == "included")
+                .is_some_and(|cell| matches!(cell, Data::String(s) if s == "included"))
         })
         .and_then(|row| row.get(1))
         .ok_or("global retained catalog count")?
@@ -57,7 +57,7 @@ pub(super) fn assert_cells(
     ] {
         let column = columns
             .iter()
-            .position(|cell| cell.to_string() == name)
+            .position(|cell| matches!(cell, Data::String(s) if s == name))
             .ok_or("coverage counter")?;
         let total = published
             .iter()

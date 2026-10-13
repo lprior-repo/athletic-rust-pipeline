@@ -1,6 +1,8 @@
 use super::*;
 
-fn backup_image(root: &Path) -> TestResult<Vec<(String, Option<String>, u64, String)>> {
+type ImageEntry = (String, Option<String>, u64, String);
+
+fn backup_image(root: &Path) -> TestResult<Vec<ImageEntry>> {
     let entries = crate::backup::manifest::digest_tree(root)?;
     ensure(entries.len() <= 256, "fixture file ceiling")?;
     Ok(entries

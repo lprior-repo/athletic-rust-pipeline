@@ -79,7 +79,7 @@ fn racing_writers(target: &Path, payloads: &[&[u8]]) -> TestResult<Vec<Result<()
                 let barrier = &barrier;
                 scope.spawn(move || {
                     barrier.wait();
-                    preserve(target, *payload)
+                    preserve(target, payload)
                 })
             })
             .collect::<Vec<_>>();
@@ -92,5 +92,5 @@ fn racing_writers(target: &Path, payloads: &[&[u8]]) -> TestResult<Vec<Result<()
 }
 
 fn is_known_payload(payloads: &[&[u8]], bytes: &[u8]) -> bool {
-    payloads.iter().any(|payload| *payload == bytes)
+    payloads.contains(&bytes)
 }

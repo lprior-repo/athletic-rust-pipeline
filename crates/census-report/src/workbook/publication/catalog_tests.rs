@@ -54,99 +54,47 @@ fn whole_meet_publishes_one_individual_one_team_relay_and_all_retained_dispositi
     let raw_events = census_domain::model::serialized_bytes(&dataset.events)?;
     let raw_performances = census_domain::model::serialized_bytes(&dataset.performances)?;
     let admission = EventAdmission::of(&dataset)?;
-    assert_eq!(admission.counts().included, 2);
-    assert_eq!(
-        admission
-            .counts()
-            .excluded
-            .get(&EventExclusionReason::WheelchairRace),
-        Some(&2)
-    );
-    assert_eq!(
-        admission
-            .counts()
-            .excluded
-            .get(&EventExclusionReason::CompetitiveWalking),
-        Some(&1)
-    );
-    assert_eq!(
-        admission
-            .counts()
-            .unresolved
-            .get(&EventResolutionReason::UnsupportedScholasticVariant),
-        Some(&1)
-    );
+    check!(eq; admission.counts().included, 2);
+    check!(eq; admission.counts().excluded.get(&EventExclusionReason::WheelchairRace), Some(&2));
+    check!(eq; admission.counts().excluded.get(&EventExclusionReason::CompetitiveWalking), Some(&1));
+    check!(eq; admission.counts().unresolved.get(&EventResolutionReason::UnsupportedScholasticVariant), Some(&1));
     let bests = bests::build_from_dataset(&dataset, &best_options())?;
-    assert_eq!(bests.len(), 1);
-    assert_eq!(
-        bests.first().ok_or("ordinary best")?.key.event_kind,
-        EventKind::Track100m
-    );
-    assert_eq!(
-        bests.first().ok_or("ordinary athlete")?.athlete_id(),
-        &fixture.athlete
-    );
+    check!(eq; bests.len(), 1);
+    check!(eq; bests.first().ok_or("ordinary best")?.key.event_kind, EventKind::Track100m);
+    check!(eq; bests.first().ok_or("ordinary athlete")?.athlete_id(), &fixture.athlete);
     let winner = bests.first().ok_or("ordinary winner")?;
-    assert_eq!(winner.result.value, 10_940_000_000);
-    assert_eq!(winner.mark_text(), "10.94");
-    assert_eq!(winner.source.source_key, fixture.ordinary.as_str());
-    assert_eq!(
-        winner.source.result_url,
-        "https://example.test/wiaa_results/catalog"
-    );
-    assert_eq!(winner.population.marks, 1);
-    assert_eq!(winner.population.sources, 1);
+    check!(eq; winner.result.value, 10_940_000_000);
+    check!(eq; winner.mark_text(), "10.94");
+    check!(eq; winner.source.source_key, fixture.ordinary.as_str());
+    check!(eq; winner.source.result_url, "https://example.test/wiaa_results/catalog");
+    check!(eq; winner.population.marks, 1);
+    check!(eq; winner.population.sources, 1);
     let path = publish(&fixture, &dataset)?;
     let generation = path.parent().ok_or("published generation")?;
     super::verify_sidecars::verify(generation, &dataset, &options()?)?;
     workbook::verify::verify_frozen(&path, &dataset, &options()?)?;
     mutate::assert_cell(&path, "Athletes", "Performance count", "1")?;
     let relays = lines(&generation.join("relays.jsonl"))?;
-    assert_eq!(relays.len(), 1);
+    check!(eq; relays.len(), 1);
     let relay = relays.first().ok_or("published team relay")?;
-    assert_eq!(
-        relay.pointer("/result/id").and_then(Value::as_str),
-        Some(fixture.relay.as_str())
-    );
-    assert_eq!(
-        relay
-            .pointer("/result/members/0/order")
-            .and_then(Value::as_u64),
-        Some(3)
-    );
-    assert_eq!(
-        relay
-            .pointer("/result/members/1/name_as_published")
-            .and_then(Value::as_str),
-        Some("Second published runner")
-    );
+    check!(eq; relay.pointer("/result/id").and_then(Value::as_str), Some(fixture.relay.as_str()));
+    check!(eq; relay.pointer("/result/members/0/order").and_then(Value::as_u64), Some(3));
+    check!(eq; relay.pointer("/result/members/1/name_as_published").and_then(Value::as_str), Some("Second published runner"));
     let published = dataset
         .relays
         .iter()
         .find(|result| result.id == fixture.relay)
         .ok_or("retained published membership")?;
-    assert_eq!(
-        relay.pointer("/result/members"),
-        Some(&serde_json::to_value(&published.members)?)
-    );
-    assert_eq!(
-        census_domain::model::serialized_bytes(&dataset.events)?,
-        raw_events
-    );
-    assert_eq!(
-        census_domain::model::serialized_bytes(&dataset.performances)?,
-        raw_performances
-    );
+    check!(eq; relay.pointer("/result/members"), Some(&serde_json::to_value(&published.members)?));
+    check!(eq; census_domain::model::serialized_bytes(&dataset.events)?, raw_events);
+    check!(eq; census_domain::model::serialized_bytes(&dataset.performances)?, raw_performances);
     drop(admission);
     drop(dataset);
     let reopened = ExportDataset::reopen_frozen(&generation.join("frozen-input.json"))?;
-    assert_eq!(reopened.relays.len(), 2);
-    assert_eq!(reopened.events.len(), 6);
-    assert_eq!(reopened.performances.len(), 4);
-    assert_eq!(
-        census_domain::model::serialized_bytes(&reopened.events)?,
-        raw_events
-    );
+    check!(eq; reopened.relays.len(), 2);
+    check!(eq; reopened.events.len(), 6);
+    check!(eq; reopened.performances.len(), 4);
+    check!(eq; census_domain::model::serialized_bytes(&reopened.events)?, raw_events);
     super::verify_sidecars::verify(generation, &reopened, &options()?)?;
     Ok(())
 }
@@ -202,13 +150,7 @@ fn dataset_admission_refuses_oversize_labels_before_every_candidate_skip() -> Te
         let error = bests::build_from_dataset(&dataset, &best_options())
             .err()
             .ok_or("hidden catalog error")?;
-        assert!(matches!(
-            error,
-            ReportError::Catalog {
-                source: CatalogError::LabelBytesExceeded,
-                ..
-            }
-        ));
+        check!(matches!(error, ReportError::Catalog { source: CatalogError::LabelBytesExceeded, .. }));
     }
     Ok(())
 }
@@ -271,7 +213,7 @@ fn independent_oracle_rejects_missing_catalog_family_and_extra_excluded_best_or_
             }
             _ => return Err("unknown finite mutation".into()),
         }
-        assert!(super::verify_sidecars::verify(generation, &dataset, &options()?).is_err());
+        check!(super::verify_sidecars::verify(generation, &dataset, &options()?).is_err());
     }
     Ok(())
 }
@@ -287,7 +229,7 @@ fn independent_workbook_oracle_rejects_missing_review_family_and_extra_relay_row
             .path()
             .join(format!("forged-{sheet}.xlsx"));
         mutate::workbook(&original, &forged, sheet)?;
-        assert!(workbook::verify::verify_frozen(&forged, &dataset, &options()?).is_err());
+        check!(workbook::verify::verify_frozen(&forged, &dataset, &options()?).is_err());
     }
     Ok(())
 }
@@ -321,7 +263,7 @@ fn semantic_readback_rejects_wrong_marks_missing_rows_and_same_count_excluded_re
         };
         let path = generation.join(file);
         let mut rows = lines(&path)?;
-        assert_eq!(rows.len(), 1);
+        check!(eq; rows.len(), 1);
         match mutation {
             "wrong_best_mark" => rows.first_mut().ok_or("best")?["value"] = Value::from(1),
             "missing_best" | "missing_relay" => rows.clear(),
@@ -346,7 +288,7 @@ fn semantic_readback_rejects_wrong_marks_missing_rows_and_same_count_excluded_re
         let error = super::verify_sidecars::verify(generation, &dataset, &options()?)
             .err()
             .ok_or("semantic corruption accepted")?;
-        assert!(error.to_string().contains(file));
+        check!(error.to_string().contains(file));
     }
     Ok(())
 }

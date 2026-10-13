@@ -12,6 +12,7 @@ use version_snapshot::RetainedEvidence;
 
 #[path = "coverage_tests/version_records.rs"]
 mod version_records;
+#[allow(clippy::duplicate_mod)]
 #[path = "coverage_tests/version_snapshot.rs"]
 mod version_snapshot;
 

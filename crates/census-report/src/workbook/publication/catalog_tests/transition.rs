@@ -17,54 +17,34 @@ fn reconstructed_revision_one_policy_thirteen_inventory_survives_new_atomic_swit
     let legacy = reconstructed::install(&store, &root)?;
     let historical = reconstructed::bytes(&legacy)?;
     let (selected, manifest) = super::super::manifest::current_generation(&root)?;
-    assert_eq!(selected, std::fs::canonicalize(&legacy)?);
-    assert_eq!(manifest.lineage.schema_revision, 2);
-    assert_eq!(manifest.lineage.policy_revision, 13);
-    assert_eq!(reconstructed::bytes(&legacy)?, historical);
+    check!(eq; selected, std::fs::canonicalize(&legacy)?);
+    check!(eq; manifest.lineage.schema_revision, 2);
+    check!(eq; manifest.lineage.policy_revision, 13);
+    check!(eq; reconstructed::bytes(&legacy)?, historical);
     let error = super::super::manifest::verify_published(&legacy.join("workbook.xlsx"))
         .err()
         .ok_or("legacy input must not be reinterpreted")?;
-    assert!(error
-        .to_string()
-        .contains("unsupported or malformed frozen export lineage"));
-    assert_eq!(reconstructed::bytes(&legacy)?, historical);
+    check!(error.to_string().contains("unsupported or malformed frozen export lineage"));
+    check!(eq; reconstructed::bytes(&legacy)?, historical);
     let dataset = ExportDataset::load(&store)?;
     super::super::fence(&root, &dataset)?;
     let previous = super::super::pointer::read(&root)?;
-    assert_eq!(
-        previous,
-        Root::Bundle(Digest::parse(&manifest.generation_digest)?)
-    );
+    check!(eq; previous, Root::Bundle(Digest::parse(&manifest.generation_digest)?));
     let published = workbook::build(&store, &options()?)?;
-    assert_ne!(published.parent(), Some(legacy.as_path()));
+    check!(ne; published.parent(), Some(legacy.as_path()));
     let generation = published.parent().ok_or("new generation")?;
     let current = super::super::pointer::read(&root)?;
     let current_manifest: Value =
         serde_json::from_slice(&std::fs::read(generation.join("manifest.json"))?)?;
-    assert_eq!(
-        current_manifest
-            .get("schema_revision")
-            .and_then(Value::as_u64),
-        Some(2)
-    );
+    check!(eq; current_manifest.get("schema_revision").and_then(Value::as_u64), Some(2));
     let digest = current_manifest
         .get("generation_digest")
         .and_then(Value::as_str)
         .ok_or("new digest")?;
-    assert_eq!(current, Root::Bundle(Digest::parse(digest)?));
-    assert_eq!(
-        current_manifest
-            .pointer("/lineage/schema_revision")
-            .and_then(Value::as_u64),
-        Some(3)
-    );
-    assert_eq!(
-        current_manifest
-            .pointer("/lineage/policy_revision")
-            .and_then(Value::as_u64),
-        Some(16)
-    );
-    assert_eq!(reconstructed::bytes(&legacy)?, historical);
+    check!(eq; current, Root::Bundle(Digest::parse(digest)?));
+    check!(eq; current_manifest.pointer("/lineage/schema_revision").and_then(Value::as_u64), Some(3));
+    check!(eq; current_manifest.pointer("/lineage/policy_revision").and_then(Value::as_u64), Some(16));
+    check!(eq; reconstructed::bytes(&legacy)?, historical);
     super::super::manifest::verify_directory(&legacy)?;
     super::super::manifest::verify_published(&published)?;
     Ok(())
@@ -85,12 +65,12 @@ fn corrupt_extra_or_missing_revision_one_inventory_blocks_fence_and_pointer_swit
             _ => return Err("unknown finite legacy mutation".into()),
         }
         let after_mutation = reconstructed::bytes(&legacy)?;
-        assert!(super::super::manifest::verify_directory(&legacy).is_err());
+        check!(super::super::manifest::verify_directory(&legacy).is_err());
         let dataset = ExportDataset::load(&store)?;
-        assert!(super::super::fence(&root, &dataset).is_err());
-        assert!(workbook::build(&store, &options()?).is_err());
-        assert_eq!(std::fs::read_link(root.join("current"))?, pointer);
-        assert_eq!(reconstructed::bytes(&legacy)?, after_mutation);
+        check!(super::super::fence(&root, &dataset).is_err());
+        check!(workbook::build(&store, &options()?).is_err());
+        check!(eq; std::fs::read_link(root.join("current"))?, pointer);
+        check!(eq; reconstructed::bytes(&legacy)?, after_mutation);
     }
     Ok(())
 }
@@ -104,11 +84,9 @@ fn future_manifest_revision_is_dispatched_before_its_shape_is_decoded() -> TestR
     let error = super::super::manifest::verify_directory(temporary.path())
         .err()
         .ok_or("future manifest")?;
-    assert!(error
-        .to_string()
-        .contains("unsupported publication artifact revision"));
-    assert!(!error.to_string().contains("missing field"));
-    assert_eq!(std::fs::read(path)?, retained);
+    check!(error.to_string().contains("unsupported publication artifact revision"));
+    check!(!error.to_string().contains("missing field"));
+    check!(eq; std::fs::read(path)?, retained);
     Ok(())
 }
 
@@ -131,7 +109,7 @@ fn current_frozen_shape_requires_relays_without_a_historical_default() -> TestRe
     let error = ExportDataset::reopen_frozen(&path)
         .err()
         .ok_or("missing required relays")?;
-    assert!(error.to_string().contains("missing field `relays`"));
-    assert_eq!(std::fs::read(path)?, retained);
+    check!(error.to_string().contains("missing field `relays`"));
+    check!(eq; std::fs::read(path)?, retained);
     Ok(())
 }

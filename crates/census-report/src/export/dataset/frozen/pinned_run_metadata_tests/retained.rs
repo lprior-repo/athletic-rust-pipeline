@@ -1,6 +1,7 @@
 use super::*;
 use census_store::InputRecord;
 
+#[allow(clippy::duplicate_mod)]
 #[path = "../coverage_tests/version_snapshot.rs"]
 mod retained_evidence;
 

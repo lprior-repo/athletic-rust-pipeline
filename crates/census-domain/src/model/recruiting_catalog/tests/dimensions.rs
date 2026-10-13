@@ -25,34 +25,14 @@ fn exact_published_dimension_spans_preserve_event_kind_and_specification() -> Te
     ] {
         let event = owned(EventKind::Track1000m, &[label])?;
         let before = serialized_bytes(&event)?;
-        assert_eq!(
-            RecruitingCatalogV1::new().classify(&event, Sport::IndoorTrack)?,
-            EventDisposition::Included(EventKind::Track1000m),
-            "{label}"
-        );
-        assert_eq!(
-            event.resolved_specification()?.indoor_track,
-            Some(expected),
-            "{label}"
-        );
-        assert_eq!(serialized_bytes(&event)?, before, "{label}");
+        check!(eq; RecruitingCatalogV1::new().classify(&event, Sport::IndoorTrack)?, EventDisposition::Included(EventKind::Track1000m), "{label}");
+        check!(eq; event.resolved_specification()?.indoor_track, Some(expected), "{label}");
+        check!(eq; serialized_bytes(&event)?, before, "{label}");
     }
     let event = owned(EventKind::Track1000m, &["Boys U18 1000m (200m banked)"])?;
-    assert_eq!(
-        RecruitingCatalogV1::new().classify(&event, Sport::IndoorTrack)?,
-        EventDisposition::Included(EventKind::Track1000m)
-    );
-    assert_eq!(
-        event.resolved_specification()?.category,
-        Some(CompetitionCategory::Published("boys/u18".into()))
-    );
-    assert_eq!(
-        event.resolved_specification()?.indoor_track,
-        Some(IndoorTrackSpecification::new(
-            200_000_000,
-            TrackBanking::Banked
-        )?)
-    );
+    check!(eq; RecruitingCatalogV1::new().classify(&event, Sport::IndoorTrack)?, EventDisposition::Included(EventKind::Track1000m));
+    check!(eq; event.resolved_specification()?.category, Some(CompetitionCategory::Published("boys/u18".into())));
+    check!(eq; event.resolved_specification()?.indoor_track, Some(IndoorTrackSpecification::new(200_000_000, TrackBanking::Banked)?));
     Ok(())
 }
 
@@ -82,17 +62,9 @@ fn exact_hurdle_quote_spacing_and_metric_equivalents_retain_their_dimensions() -
     ] {
         let event = owned(EventKind::Track60mHurdles, &[label])?;
         let before = serialized_bytes(&event)?;
-        assert_eq!(
-            RecruitingCatalogV1::new().classify(&event, Sport::IndoorTrack)?,
-            EventDisposition::Included(EventKind::Track60mHurdles),
-            "{label}"
-        );
-        assert_eq!(
-            event.resolved_specification()?.hurdles,
-            Some(expected),
-            "{label}"
-        );
-        assert_eq!(serialized_bytes(&event)?, before, "{label}");
+        check!(eq; RecruitingCatalogV1::new().classify(&event, Sport::IndoorTrack)?, EventDisposition::Included(EventKind::Track60mHurdles), "{label}");
+        check!(eq; event.resolved_specification()?.hurdles, Some(expected), "{label}");
+        check!(eq; serialized_bytes(&event)?, before, "{label}");
     }
     Ok(())
 }
@@ -163,12 +135,8 @@ fn typed_context_never_hides_unknown_words_extra_races_or_missing_markers() -> T
     ] {
         let event = owned(kind, &[label])?;
         let before = serialized_bytes(&event)?;
-        assert_eq!(
-            RecruitingCatalogV1::new().classify(&event, Sport::IndoorTrack)?,
-            EventDisposition::Unresolved(reason),
-            "{label}"
-        );
-        assert_eq!(serialized_bytes(&event)?, before, "{label}");
+        check!(eq; RecruitingCatalogV1::new().classify(&event, Sport::IndoorTrack)?, EventDisposition::Unresolved(reason), "{label}");
+        check!(eq; serialized_bytes(&event)?, before, "{label}");
     }
     Ok(())
 }
@@ -188,11 +156,8 @@ fn copied_typed_dimensions_never_authorize_an_unowned_source_label() -> TestResu
             .source
             .url = Some("https://example.invalid/copied".into());
         let before = serialized_bytes(&event)?;
-        assert_eq!(
-            RecruitingCatalogV1::new().classify(&event, Sport::IndoorTrack)?,
-            EventDisposition::Unresolved(EventResolutionReason::MissingSourceOwnership)
-        );
-        assert_eq!(serialized_bytes(&event)?, before);
+        check!(eq; RecruitingCatalogV1::new().classify(&event, Sport::IndoorTrack)?, EventDisposition::Unresolved(EventResolutionReason::MissingSourceOwnership));
+        check!(eq; serialized_bytes(&event)?, before);
     }
     Ok(())
 }
@@ -219,11 +184,8 @@ fn contradictory_owned_dimensions_and_subgroups_survive_label_order() -> TestRes
         let mut event = owned(kind, &labels)?;
         for _ in 0..2 {
             let before = serialized_bytes(&event)?;
-            assert_eq!(
-                RecruitingCatalogV1::new().classify(&event, Sport::IndoorTrack)?,
-                EventDisposition::Unresolved(EventResolutionReason::ContradictoryDeclarations)
-            );
-            assert_eq!(serialized_bytes(&event)?, before);
+            check!(eq; RecruitingCatalogV1::new().classify(&event, Sport::IndoorTrack)?, EventDisposition::Unresolved(EventResolutionReason::ContradictoryDeclarations));
+            check!(eq; serialized_bytes(&event)?, before);
             event.source_labels.reverse();
         }
     }
@@ -238,10 +200,7 @@ fn unsupported_ontology_distances_do_not_become_facility_only_inclusions() -> Te
         "Boys 600m banked track",
     ] {
         let event = owned(unmapped(label), &[label])?;
-        assert_eq!(
-            RecruitingCatalogV1::new().classify(&event, Sport::IndoorTrack)?,
-            EventDisposition::Unresolved(EventResolutionReason::UnsupportedScholasticVariant)
-        );
+        check!(eq; RecruitingCatalogV1::new().classify(&event, Sport::IndoorTrack)?, EventDisposition::Unresolved(EventResolutionReason::UnsupportedScholasticVariant));
     }
     Ok(())
 }

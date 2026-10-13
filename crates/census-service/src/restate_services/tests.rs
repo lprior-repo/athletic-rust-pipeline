@@ -1316,7 +1316,7 @@ fn jurisdiction_requests_canonicalize_and_refuse_out_of_scope() -> TestResult {
     if normalize_jurisdictions(&[UsJurisdiction::Alaska]).is_ok() {
         return Err("Alaska survived census-scope admission".into());
     }
-    if normalize_jurisdictions(&vec![UsJurisdiction::Ohio; MAX_REQUEST_JURISDICTIONS + 1]).is_ok() {
+    if normalize_jurisdictions(&[UsJurisdiction::Ohio; MAX_REQUEST_JURISDICTIONS + 1]).is_ok() {
         return Err("an oversized jurisdiction list survived admission".into());
     }
     Ok(())

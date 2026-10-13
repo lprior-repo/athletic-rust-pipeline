@@ -4,6 +4,7 @@ mod concurrency;
 mod pinned;
 #[path = "preservation.rs"]
 mod preservation;
+#[allow(clippy::duplicate_mod)]
 #[path = "../../../../tools/lineage_test_process.rs"]
 mod process;
 #[path = "refusal.rs"]
