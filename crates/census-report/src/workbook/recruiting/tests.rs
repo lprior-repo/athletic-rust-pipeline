@@ -1142,3 +1142,269 @@ fn every_sheet_publishes_hostile_source_text_as_literal_cells() -> TestResult {
     check!(eq; seen.len(), TOKENS.len(), "every hostile token stays literal string text");
     Ok(())
 }
+
+#[test]
+fn a_provider_adjusted_track_size_mark_retains_published_and_adjusted_distinctly() -> TestResult {
+    use census_domain::model::{Adjustment, ExactSeconds};
+
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let (mut school, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Indiana,
+        "Track Size High School",
+        normalize_name("Track Size High School"),
+        Some("Indianapolis"),
+    );
+    school.evidence = evidence("tfrrs_in", Some("https://indiana.tfrrs.org"));
+    store.append(Table::Schools, &school)?;
+
+    let mut athlete = CanonicalAthlete::new(
+        &school_id,
+        "Junior Distance Runner",
+        GradYear::CO2027,
+        Gender::Boys,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "tsr-1"),
+    );
+    athlete.observed_grades.push(ObservedGrade {
+        grade: Grade::new(11).ok_or("grade")?,
+        school_year: SchoolYear::new(2025).ok_or("season")?,
+        source: SourceRef::new("tfrrs_in", None),
+    });
+    athlete.sports = vec![Sport::OutdoorTrack];
+    store.append(Table::Athletes, &athlete)?;
+
+    let meet_id = meet(
+        &store,
+        UsJurisdiction::Indiana,
+        "Hoosier Invite",
+        "2026-05-15",
+        CompetitionLevel::Invitational,
+        Sport::OutdoorTrack,
+    )?;
+    let event_id = event(&store, &meet_id, EventKind::Track3200m)?;
+
+    let original_seconds = ExactSeconds::parse_clock("9:22.21")?;
+    let adjusted_seconds = ExactSeconds::parse_clock("9:15.75")?;
+    let adjustment = Adjustment::track_size_conversion(
+        Some(Mark::TimeSeconds(original_seconds)),
+        Mark::TimeSeconds(adjusted_seconds),
+        Some("Converted from 9:22.21 for Track Size. ".to_string()),
+        None,
+    );
+
+    let school_year = SchoolYear::from_date("2026-05-15").ok_or("season")?;
+    let team = CanonicalTeam::mint(
+        &school_id,
+        Sport::OutdoorTrack,
+        Gender::Boys,
+        school_year,
+    );
+    store.append(
+        Table::Teams,
+        &CanonicalTeam {
+            id: team.clone(),
+            school: school_id.clone(),
+            sport: Sport::OutdoorTrack,
+            gender: Gender::Boys,
+            school_year,
+            level: None,
+            source_identities: Vec::new(),
+            evidence: evidence("tfrrs_in", Some("https://indiana.tfrrs.org")),
+            retained_conflicts: Vec::new(),
+        },
+    )?;
+
+    let source_key = "tfrrs_in:2026-05-15:9:15.75";
+    store.append(
+        Table::Performances,
+        &CanonicalPerformance {
+            id: CanonicalPerformance::mint(
+                &athlete.id,
+                &meet_id,
+                &event_id,
+                "2026-05-15",
+                source_key,
+            ),
+            athlete: athlete.id.clone(),
+            team,
+            event: event_id,
+            meet: meet_id,
+            date: "2026-05-15".to_string(),
+            mark: Mark::TimeSeconds(ExactSeconds::parse_clock("9:15.75")?),
+            adjustment: Some(adjustment),
+            wind_mps: None,
+            place: None,
+            heat: None,
+            round: None,
+            timing: None,
+            observed_grade: None,
+            evidence: evidence("tfrrs_in", Some("https://indiana.tfrrs.org")),
+            source_key: source_key.to_string(),
+            source_athlete: Some(SourceIdentity::new(
+                SourceNamespace::Other("tfrrs_in".to_string()),
+                "tsr-1",
+            )),
+            retained_conflicts: Vec::new(),
+        },
+    )?;
+
+    let projection = recruiting(&store, Scope::AllSources, Some(2027))?;
+    let path = dir.path().join("track-size.xlsx");
+    let mut book = Workbook::new();
+    projection.write_prs(&mut book, &path)?;
+    book.save(&path)?;
+
+    let mut book = open_workbook(&path)?;
+    let range = sheet(&mut book, "PRs")?;
+    check!(eq; range.height() - 1, 1, "one PR row for the converted performance");
+
+    let pr_row = 1;
+    let pr_column = column_of(&range, "Calculated PR")?;
+    let mark_value_column = column_of(&range, "Mark Value")?;
+    let published_column = column_of(&range, "Published mark")?;
+    let basis_column = column_of(&range, "Conversion basis")?;
+
+    check!(eq;
+        text(&range, pr_row, pr_column),
+        "9:15.75",
+        "the adjusted mark is the calculated PR"
+    );
+    check!(eq;
+        text(&range, pr_row, mark_value_column),
+        "555.75",
+        "the adjusted normalized value"
+    );
+    check!(eq;
+        text(&range, pr_row, published_column),
+        "9:22.21",
+        "the original published mark is retained"
+    );
+    check!(eq;
+        text(&range, pr_row, basis_column),
+        "known",
+        "the conversion basis is known when the original is present"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn a_legacy_performance_without_adjustment_provenance_publishes_blank_conversion_fields() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let (mut school, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Legacy Mark High School",
+        normalize_name("Legacy Mark High School"),
+        Some("Madison"),
+    );
+    school.evidence = evidence("milesplit_results", Some("https://wi.milesplit.com"));
+    store.append(Table::Schools, &school)?;
+
+    let mut athlete = CanonicalAthlete::new(
+        &school_id,
+        "Legacy Runner",
+        GradYear::CO2027,
+        Gender::Girls,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "legacy-1"),
+    );
+    athlete.observed_grades.push(ObservedGrade {
+        grade: Grade::new(11).ok_or("grade")?,
+        school_year: SchoolYear::new(2025).ok_or("season")?,
+        source: SourceRef::new("milesplit_results", None),
+    });
+    athlete.sports = vec![Sport::OutdoorTrack];
+    store.append(Table::Athletes, &athlete)?;
+
+    let meet_id = meet(
+        &store,
+        UsJurisdiction::Wisconsin,
+        "Legacy Meet",
+        "2026-04-01",
+        CompetitionLevel::Invitational,
+        Sport::OutdoorTrack,
+    )?;
+    let event_id = event(&store, &meet_id, EventKind::Track1600m)?;
+
+    let school_year = SchoolYear::from_date("2026-04-01").ok_or("season")?;
+    let team = CanonicalTeam::mint(
+        &school_id,
+        Sport::OutdoorTrack,
+        Gender::Girls,
+        school_year,
+    );
+    store.append(
+        Table::Teams,
+        &CanonicalTeam {
+            id: team.clone(),
+            school: school_id.clone(),
+            sport: Sport::OutdoorTrack,
+            gender: Gender::Girls,
+            school_year,
+            level: None,
+            source_identities: Vec::new(),
+            evidence: evidence("milesplit_results", Some("https://wi.milesplit.com")),
+            retained_conflicts: Vec::new(),
+        },
+    )?;
+
+    store.append(
+        Table::Performances,
+        &CanonicalPerformance {
+            id: CanonicalPerformance::mint(
+                &athlete.id,
+                &meet_id,
+                &event_id,
+                "2026-04-01",
+                "milesplit:2026-04-01:time",
+            ),
+            athlete: athlete.id.clone(),
+            team,
+            event: event_id,
+            meet: meet_id,
+            date: "2026-04-01".to_string(),
+            mark: Mark::TimeSeconds(ExactSeconds::parse_clock("5:10.00")?),
+            adjustment: None,
+            wind_mps: None,
+            place: None,
+            heat: None,
+            round: None,
+            timing: None,
+            observed_grade: None,
+            evidence: evidence("milesplit_results", Some("https://wi.milesplit.com")),
+            source_key: "milesplit:2026-04-01:time".to_string(),
+            source_athlete: Some(SourceIdentity::new(
+                SourceNamespace::Other("milesplit_results".to_string()),
+                "legacy-1",
+            )),
+            retained_conflicts: Vec::new(),
+        },
+    )?;
+
+    let projection = recruiting(&store, Scope::AllSources, Some(2027))?;
+    let path = dir.path().join("legacy.xlsx");
+    let mut book = Workbook::new();
+    projection.write_prs(&mut book, &path)?;
+    book.save(&path)?;
+
+    let mut book = open_workbook(&path)?;
+    let range = sheet(&mut book, "PRs")?;
+    check!(eq; range.height() - 1, 1, "one PR row for the legacy performance");
+
+    let pr_row = 1;
+    let published_column = column_of(&range, "Published mark")?;
+    let basis_column = column_of(&range, "Conversion basis")?;
+
+    check!(eq;
+        text(&range, pr_row, published_column),
+        "",
+        "a legacy row without adjustment provenance has no separate published mark"
+    );
+    check!(eq;
+        text(&range, pr_row, basis_column),
+        "",
+        "a legacy row without adjustment provenance has no conversion basis"
+    );
+
+    Ok(())
+}
