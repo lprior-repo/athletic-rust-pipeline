@@ -10,7 +10,7 @@ fn historical_publication_policy_is_refused(revision: u32) -> TestResult {
     let temporary = tempfile::tempdir()?;
     let store = Store::open(temporary.path().join("store"))?;
     let current = ExportDataset::load(&store)?;
-    check!(eq; current.lineage.policy_revision, 11);
+    check!(eq; current.lineage.policy_revision, 13);
     let archive = temporary.path().join(format!("revision-{revision}.json"));
     current.save_frozen(&archive)?;
     let mut historical: serde_json::Value = serde_json::from_slice(&std::fs::read(&archive)?)?;
@@ -102,4 +102,9 @@ fn policy_nine_archive_is_refused_without_rewriting_retained_bytes() -> TestResu
 #[test]
 fn policy_ten_archive_is_refused_without_rewriting_retained_bytes() -> TestResult {
     historical_publication_policy_is_refused(10)
+}
+
+#[test]
+fn pushed_policy_twelve_archive_is_refused_without_rewriting_retained_bytes() -> TestResult {
+    historical_publication_policy_is_refused(12)
 }

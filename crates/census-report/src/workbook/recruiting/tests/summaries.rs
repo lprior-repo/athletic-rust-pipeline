@@ -1,5 +1,6 @@
 use super::*;
 
+mod adjustments;
 mod csv;
 mod fixtures;
 use fixtures::*;
@@ -158,6 +159,7 @@ fn frozen_readback_accepts_a_cross_country_surface_5000m_mark() -> TestResult {
 fn forged_workbook(
     source: &std::path::Path,
     target: &std::path::Path,
+    target_row: usize,
     header: &str,
     value: &str,
 ) -> TestResult {
@@ -176,7 +178,7 @@ fn forged_workbook(
             for (column, cell) in cells.iter().enumerate() {
                 let r = u32::try_from(row)?;
                 let c = u16::try_from(column)?;
-                if row == 1 && selected == Some(column) {
+                if row == target_row && selected == Some(column) {
                     sheet.write_string(r, c, value)?;
                     continue;
                 }
@@ -209,6 +211,7 @@ fn frozen_readback_rejects_a_forged_cross_country_cell() -> TestResult {
     forged_workbook(
         &published,
         &target,
+        1,
         "XC (s)",
         "5000m 30:00.00 [xc, na, unknown]",
     )?;

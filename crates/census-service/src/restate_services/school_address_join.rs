@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use restate_sdk::prelude::*;
 
-use crate::school_address::{join_generation_pinned, preflight_generation, JoinError, Overrides};
+use crate::school_address::{join_generation_pinned, preflight_generation, JoinError};
 use census_store::Store;
 
 use super::publish::Jobs;
@@ -68,9 +68,7 @@ impl SchoolAddressJoin {
         let store: Arc<Store> = Arc::clone(self.jobs.store());
         let region = Arc::clone(self.jobs.region());
         let generation = Self::generation_path(store.root(), request.generation.as_deref());
-        let overrides = Overrides {
-            acquisitions: request.acquisitions,
-        };
+        let overrides = request.overrides;
         let permit = self.jobs.permit_control().await?;
         let reply = ctx
             .run(move || async move {

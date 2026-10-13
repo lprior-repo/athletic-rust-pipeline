@@ -198,3 +198,11 @@ the current directory. Census, coverage and workbook method notes distinguish ex
 counts from retained historical metadata. Policy-10 and earlier artifacts are retained and refused for current-policy
 acceptance without rewriting. Frozen logical schema, manifest codec and token protocol remain 2.
 Configurable profiles and dated current affiliation are still separate unfinished requirements.
+
+## 2026-10-13: concurrent policy integration
+
+The PR9/PR10 lineage and independently updated main both allocated schema 2 / policy 8 to different contracts. Pushed commit `e0d062ac` allocated schema 2 / policy 12 for retained-context conflict quarantine, required frozen coverage and coach-lane evidence, and adjustment-aware comparison and publication. Policy 12 remains a distinct historical contract; its captures cannot be assumed to include later best-mark semantics.
+
+This main integration allocates **policy 13**. It combines policy 12's integrity and coverage contracts with earliest-known-date best-mark tie selection, historical performance affiliation, and retained historical result-parent geography from the independently allocated policies 9, 10, and 11. These changes can alter selected winners and their published parents, so keeping policy 12 would silently reinterpret an already issued input. Schema 2 remains: coverage arrays remain required and the adjustment field is optional with an absent default. Manifest codec 2, token protocol 2 and the physical Fjall schema remain unchanged.
+
+Generation, frozen token, and publication recipe identities bind policy 13. Prior policies, including both independent schema-2/policy-8 representations and pushed schema-2/policy-12 inputs, are refused before current decoding or recovery. Refusal preserves archived bytes, objects, root markers, retained records and leases in every historical state. There is no in-place migration, retagging, or hydration from current coverage. New acceptance requires an explicitly selected current generation. Future branch integration must reconcile semantics rather than replace this revision with a smaller independently allocated constant.

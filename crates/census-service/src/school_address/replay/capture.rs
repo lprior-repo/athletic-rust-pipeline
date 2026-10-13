@@ -17,6 +17,9 @@ pub(super) fn verify_retained(archive: &Path) -> Result<(), ReplayError> {
     }
     let manifest_path = archive.join("manifest.json");
     let bytes = load(&manifest_path, super::MAX_MANIFEST_BYTES)?;
+    if archive.file_name().and_then(|name| name.to_str()) != Some(hex(&bytes).as_str()) {
+        return Err(refused(&manifest_path, "retained manifest sha256 mismatch"));
+    }
     let manifest: super::Manifest = serde_json::from_slice(&bytes)?;
     for capture in manifest.captures {
         let path = archive.join(&capture.sha256);

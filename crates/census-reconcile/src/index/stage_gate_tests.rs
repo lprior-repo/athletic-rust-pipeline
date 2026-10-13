@@ -1,4 +1,5 @@
 use super::*;
+use census_domain::model::SourceObjectIdentity;
 use census_domain::model::{
     CanonicalAthlete, CanonicalSchool, Gender, GradYear, SourceIdentity, SourceNamespace,
 };

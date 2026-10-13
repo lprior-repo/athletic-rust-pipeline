@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use census_service::school_address::{parse_source_pairs, preflight_generation, Overrides};
+use census_service::school_address::{preflight_generation, Overrides};
 use clap::Args;
 use std::path::PathBuf;
 
@@ -26,26 +26,7 @@ pub(super) struct SchoolAddressPreflightArgs {
 }
 
 pub(super) fn run(args: &SchoolAddressPreflightArgs) -> Result<()> {
-    let url_pairs = parse_source_pairs(&args.evidence_urls)?;
-    let date_pairs = parse_source_pairs(&args.evidence_dates)?;
-    let mut acquisitions = Vec::new();
-    let mut entry: u32 = 0;
-    for (source, url) in url_pairs {
-        let (provider, path) = match source.split_once('@') {
-            Some((p, rest)) => (p.to_string(), rest.to_string()),
-            None => (source.clone(), String::new()),
-        };
-        let retrieved_at = date_pairs.get(&source).cloned();
-        acquisitions.push(census_service::school_address::Acquisition {
-            entry,
-            provider,
-            path,
-            url,
-            retrieved_at,
-        });
-        entry = entry.saturating_add(1);
-    }
-    let overrides = Overrides { acquisitions };
+    let overrides = Overrides::from_cli_pairs(&args.evidence_urls, &args.evidence_dates)?;
     let digest = preflight_generation(&args.generation, overrides)
         .context("checking the school-address input before source discovery")?;
     println!("school_address_generation_sha256\t{digest}");

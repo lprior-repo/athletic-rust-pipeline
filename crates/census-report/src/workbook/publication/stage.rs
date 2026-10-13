@@ -31,6 +31,7 @@ impl<'s> Stage<'s> {
         }
         fence(&root, dataset)?;
         let _namespace = lock_publication(&root)?;
+        recovery::reconcile(store, &root, &namespace, &prepared)?;
         let request = match store.publication_read(&identity)? {
             Some(retained) => retained,
             None => {
@@ -52,9 +53,10 @@ impl<'s> Stage<'s> {
                 &Root::Absent,
                 &prepared.run_manifest,
             )?;
-        } else {
-            recovery::reconcile(store, &root, &namespace, &prepared)?;
         }
+        let request = store
+            .publication_read(&request.request.identity)?
+            .ok_or_else(|| invariant("publication request disappeared".into()))?;
         let nonce = staging_nonce(&dataset.lineage.store_identity)?;
         let directory = root.join(format!(".staging.{nonce}"));
         std::fs::create_dir(&directory).map_err(|source| io_error(&directory, source))?;

@@ -12,6 +12,10 @@ use super::super::{
 };
 use super::reclaim::{self, Reclaimed};
 
+mod provenance;
+
+use provenance::PublicationJournals;
+
 const MAX_STAGE_ROWS: usize = 25_000;
 const MAX_STAGE_BYTES: usize = 64 * 1024 * 1024;
 const PUBLICATION_RECLAIM_BUDGET: u64 = 250_000;
@@ -33,6 +37,7 @@ pub struct DerivedStage<'s> {
     buffered: Vec<(Vec<u8>, Vec<u8>)>,
     buffered_bytes: usize,
     tables: Vec<Table>,
+    journals: PublicationJournals,
 }
 
 fn reclaim_budgeted(store: &Store) -> Reclaimed {
@@ -65,6 +70,7 @@ impl<'s> DerivedStage<'s> {
             buffered: Vec::new(),
             buffered_bytes: 0,
             tables: Vec::new(),
+            journals: PublicationJournals::default(),
         })
     }
 
@@ -119,6 +125,15 @@ impl<'s> DerivedStage<'s> {
             moved = moved.checked_add(1).ok_or(StoreError::CounterOverflow)?;
         }
         Ok(moved)
+    }
+
+    pub fn journal_done_once<T: Serialize>(
+        &mut self,
+        phase: &str,
+        key: &str,
+        payload: &T,
+    ) -> StoreResult<()> {
+        self.journals.stage(phase, key, payload)
     }
 
     pub fn publish(mut self, operation: &str, digest: &str) -> StoreResult<Publication> {
@@ -216,6 +231,7 @@ impl<'s> DerivedStage<'s> {
         for (table, held) in table_counts {
             self.store.put_row_mark(&mut batch, *table, *held);
         }
+        self.journals.write(self.store, &mut batch)?;
         let next_entities = self.store.generations.next_entities()?;
         generation::write_entities(&mut batch, &self.store.meta, next_entities);
         generation::write_derived_current(&mut batch, &self.store.meta, self.generation);

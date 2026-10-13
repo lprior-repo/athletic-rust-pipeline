@@ -142,22 +142,22 @@ fn change_manifest(manifest: &mut FrozenManifest, case: VersionCase) -> TestResu
             manifest.input_token.semantic_policy = 8;
         }
         VersionCase::HistoricalPolicy => {
-            check!(eq; manifest.lineage.policy_revision, 11);
+            check!(eq; manifest.lineage.policy_revision, 13);
             manifest.lineage.policy_revision = 7;
             manifest.input_token.semantic_policy = 7;
         }
         VersionCase::PreviousPolicy => {
-            check!(eq; manifest.lineage.policy_revision, 11);
+            check!(eq; manifest.lineage.policy_revision, 13);
             manifest.lineage.policy_revision = 8;
             manifest.input_token.semantic_policy = 8;
         }
         VersionCase::PriorAffiliationPolicy => {
-            check!(eq; manifest.lineage.policy_revision, 11);
+            check!(eq; manifest.lineage.policy_revision, 13);
             manifest.lineage.policy_revision = 9;
             manifest.input_token.semantic_policy = 9;
         }
         VersionCase::PriorParentScopePolicy => {
-            check!(eq; manifest.lineage.policy_revision, 11);
+            check!(eq; manifest.lineage.policy_revision, 13);
             manifest.lineage.policy_revision = 10;
             manifest.input_token.semantic_policy = 10;
         }

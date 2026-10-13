@@ -1,3 +1,7 @@
+mod policy_merge;
+mod requested_recovery;
+mod stage_rebind;
+
 use super::*;
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalSchool, CensusRun, CoachContactClaim,
@@ -24,7 +28,7 @@ fn changed_conflict_policy_has_a_distinct_publication_recipe() -> TestResult {
         scope: crate::report::Scope::AllSources,
         school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
     };
-    check!(eq; current.lineage.policy_revision, 11);
+    check!(eq; current.lineage.policy_revision, 13);
     check!(ne; binding::recipe(&current.lineage, &options)?, binding::recipe(&previous, &options)?);
     previous.policy_revision = 8;
     check!(ne; binding::recipe(&current.lineage, &options)?, binding::recipe(&previous, &options)?);

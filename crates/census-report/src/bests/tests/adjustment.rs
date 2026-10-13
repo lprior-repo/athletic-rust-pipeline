@@ -1,3 +1,5 @@
+mod merge;
+
 use super::*;
 use crate::bests::{ComparisonPolicy, SurfaceClass};
 use census_domain::model::{Adjustment, AdjustmentBasis, AdjustmentKind, SourceRef};

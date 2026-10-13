@@ -28,3 +28,8 @@ const OPERATION_PREFIX: &str = "school-address-join:application:v1:";
 
 #[path = "receipt_tests/partial_target.rs"]
 mod partial_target;
+
+#[path = "receipt_tests/merge_boundary.rs"]
+mod merge_boundary;
+#[path = "receipt_tests/revision_interleaving.rs"]
+mod revision_interleaving;

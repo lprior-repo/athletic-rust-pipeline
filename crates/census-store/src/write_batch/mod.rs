@@ -9,6 +9,8 @@ mod revision;
 
 pub use revision::{RevisionedApplication, StoreRevision};
 
+pub(crate) use journal::encode_publication_entry;
+
 use super::Store;
 use super::Table;
 pub use budget::{

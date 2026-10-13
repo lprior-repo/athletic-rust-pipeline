@@ -396,55 +396,38 @@ fn dry_run_links_nothing_into_the_store() -> TestResult {
 
 #[test]
 fn overrides_reject_foreign_sources_and_bad_values() -> TestResult {
-    let foreign = Overrides {
-        acquisitions: vec![Acquisition {
-            entry: 0,
-            provider: "milesplit".to_string(),
-            path: String::new(),
-            url: "https://x.test/a".to_string(),
-            retrieved_at: None,
-        }],
-    };
-    check!(matches!(
-        foreign.validated(),
-        Err(JoinError::EvidenceSource { .. })
-    ));
-    let scheme = Overrides {
-        acquisitions: vec![Acquisition {
-            entry: 0,
-            provider: "nces-ccd".to_string(),
-            path: String::new(),
-            url: "ftp://x.test/a".to_string(),
-            retrieved_at: None,
-        }],
-    };
-    check!(matches!(
-        scheme.validated(),
-        Err(JoinError::EvidenceValue { .. })
-    ));
-    let date = Overrides {
-        acquisitions: vec![Acquisition {
-            entry: 0,
-            provider: "nces-ccd".to_string(),
-            path: String::new(),
-            url: String::new(),
-            retrieved_at: Some("2026-13-40".to_string()),
-        }],
-    };
-    check!(matches!(
-        date.validated(),
-        Err(JoinError::EvidenceValue { .. })
-    ));
-    let accepted = Overrides {
-        acquisitions: vec![Acquisition {
-            entry: 0,
-            provider: "nces-ccd".to_string(),
-            path: String::new(),
-            url: "https://nces.ed.gov/ccd.zip".to_string(),
-            retrieved_at: Some("2026-08-01".to_string()),
-        }],
-    };
-    check!(accepted.validated().is_ok());
+    let foreign = Overrides::from_acquisitions(vec![Acquisition {
+        entry: 0,
+        provider: "milesplit".to_string(),
+        path: String::new(),
+        url: "https://x.test/a".to_string(),
+        retrieved_at: None,
+    }]);
+    check!(matches!(foreign, Err(JoinError::EvidenceSource { .. })));
+    let scheme = Overrides::from_acquisitions(vec![Acquisition {
+        entry: 0,
+        provider: "nces-ccd".to_string(),
+        path: String::new(),
+        url: "ftp://x.test/a".to_string(),
+        retrieved_at: None,
+    }]);
+    check!(matches!(scheme, Err(JoinError::EvidenceValue { .. })));
+    let date = Overrides::from_acquisitions(vec![Acquisition {
+        entry: 0,
+        provider: "nces-ccd".to_string(),
+        path: String::new(),
+        url: String::new(),
+        retrieved_at: Some("2026-13-40".to_string()),
+    }]);
+    check!(matches!(date, Err(JoinError::EvidenceValue { .. })));
+    let accepted = Overrides::from_acquisitions(vec![Acquisition {
+        entry: 0,
+        provider: "nces-ccd".to_string(),
+        path: String::new(),
+        url: "https://nces.ed.gov/ccd.zip".to_string(),
+        retrieved_at: Some("2026-08-01".to_string()),
+    }]);
+    check!(accepted.is_ok());
 
     let pairs = parse_source_pairs(&["nces-ccd=https://nces.ed.gov/ccd.zip".to_string()])?;
     check!(eq; pairs.get("nces-ccd").map(String::as_str), Some("https://nces.ed.gov/ccd.zip"));
@@ -516,15 +499,13 @@ fn lane_evidence_reads_the_generation_lanes_and_overrides() -> TestResult {
         outputs: Vec::new(),
         phases: None,
     };
-    let overrides = Overrides {
-        acquisitions: vec![Acquisition {
-            entry: 0,
-            provider: "nces-ccd".to_string(),
-            path: String::new(),
-            url: "https://nces.ed.gov/ccd.zip".to_string(),
-            retrieved_at: Some("2026-08-01".to_string()),
-        }],
-    };
+    let overrides = Overrides::from_acquisitions(vec![Acquisition {
+        entry: 0,
+        provider: "nces-ccd".to_string(),
+        path: String::new(),
+        url: "https://nces.ed.gov/ccd.zip".to_string(),
+        retrieved_at: Some("2026-08-01".to_string()),
+    }])?;
     let lanes = build_lane_evidence(&report, &overrides)?;
     check!(eq; lanes.tokens().count(), 3);
     check!(lanes.tokens().any(|token| token == "state-ed"));
@@ -1496,25 +1477,22 @@ fn a_capture_selector_names_one_capture_and_an_unknown_one_is_refused() -> TestR
         outputs: Vec::new(),
         phases: None,
     };
-    let overrides = Overrides {
-        acquisitions: vec![
-            Acquisition {
-                entry: 0,
-                provider: "state-ed".to_string(),
-                path: "research/sources/state-ed/raw/alpha.html".to_string(),
-                url: "https://data.nysed.gov/profile/441001".to_string(),
-                retrieved_at: Some("2026-09-01".to_string()),
-            },
-            Acquisition {
-                entry: 1,
-                provider: "state-ed".to_string(),
-                path: "research/sources/state-ed/raw/beta.html".to_string(),
-                url: "https://data.nysed.gov/profile/441002".to_string(),
-                retrieved_at: Some("2026-09-01".to_string()),
-            },
-        ],
-    }
-    .validated()?;
+    let overrides = Overrides::from_acquisitions(vec![
+        Acquisition {
+            entry: 0,
+            provider: "state-ed".to_string(),
+            path: "research/sources/state-ed/raw/alpha.html".to_string(),
+            url: "https://data.nysed.gov/profile/441001".to_string(),
+            retrieved_at: Some("2026-09-01".to_string()),
+        },
+        Acquisition {
+            entry: 1,
+            provider: "state-ed".to_string(),
+            path: "research/sources/state-ed/raw/beta.html".to_string(),
+            url: "https://data.nysed.gov/profile/441002".to_string(),
+            retrieved_at: Some("2026-09-01".to_string()),
+        },
+    ])?;
     let lanes = build_lane_evidence(&report, &overrides)?;
     let state_ed = lanes.lanes("state-ed");
     check!(eq; state_ed.len(), 2);
@@ -1530,16 +1508,13 @@ fn a_capture_selector_names_one_capture_and_an_unknown_one_is_refused() -> TestR
         .ok_or("missing beta capture")?;
     check!(eq; beta.url.as_deref(), Some("https://data.nysed.gov/profile/441002"));
 
-    let unknown = Overrides {
-        acquisitions: vec![Acquisition {
-            entry: 0,
-            provider: "state-ed".to_string(),
-            path: "research/sources/state-ed/raw/nope.html".to_string(),
-            url: "https://data.nysed.gov/profile/1".to_string(),
-            retrieved_at: None,
-        }],
-    }
-    .validated()?;
+    let unknown = Overrides::from_acquisitions(vec![Acquisition {
+        entry: 0,
+        provider: "state-ed".to_string(),
+        path: "research/sources/state-ed/raw/nope.html".to_string(),
+        url: "https://data.nysed.gov/profile/1".to_string(),
+        retrieved_at: None,
+    }])?;
     let refused = build_lane_evidence(&report, &unknown);
     check!(refused.is_err(), "an unknown capture selector is refused");
     Ok(())

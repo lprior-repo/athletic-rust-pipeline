@@ -96,3 +96,13 @@ and `cargo fmt --check` passes for the touched crates. The dated native smoke in
 the verification ledger (removed 2026-10-09) carries real captures → two corpus
 generations → `SchoolAddressJoin` via ingress → two workbooks read back → verifier OK, followed by
 restart re-applies and a final-revision dry run.
+
+## 2026-10-13: explicit address-input migration
+
+Following ADR-010, the input boundary accepts two disjoint flat JSON shapes: historical `urls`/`dates` selector maps and current `acquisitions` records. A request retains its shape when serialized into the existing child workflow. Neither retained files nor journals are rewritten. Workflow keys, call order, digest fences, retry budgets and the single join core remain unchanged.
+
+Historical URLs and dates resolve independently: the exact literal `<provider>@<report lane path>` selector overrides the provider-wide value. A missing attribute stays unknown; date-only input is retained and validated. Unmatched qualified selectors are refused, while validated unused provider defaults remain retained. Legacy selectors do not acquire filesystem-canonicalization semantics. Current acquisition records retain their original order, IDs, metadata and path matching. Distinct records are never collapsed; only completely equal projected lane evidence is deduplicated. Different provenance remains ambiguous.
+
+The parser refuses mixed shape fields even when empty, null evidence collections, duplicate fields or selectors, unknown fields, duplicate acquisition IDs and malformed values. Empty untagged evidence defaults to an empty acquisition vector. Admission is bounded to 256 acquisition records or 256 entries in each legacy map, with a combined 4 MiB UTF-8 evidence-text budget. Oversized historical inputs are explicitly refused without truncation or deletion; these are deliberate admission limits rather than a claim that all arbitrarily large historical inputs remain accepted. Raw transport buffering remains a separate server obligation.
+
+The private input variant is normalized into the existing LaneEvidence core only after the verified generation is available. It does not invent acquisition IDs, URLs or dates. The three CLI entrypoints use this same selector boundary. Removing historical support requires an explicit deprecation decision backed by unfinished-invocation and artifact-consumer evidence. Serde, fixture and local restart checks do not certify a native Restate endpoint upgrade; that qualification remains separately reported.

@@ -13,7 +13,6 @@ use super::report::{failure_exit, print_jurisdiction, print_national};
 use super::{named_season, JurisdictionArgs, NationalArgs, NationalReportArgs};
 use crate::cli::Cli;
 use census_service::ingress;
-use census_service::school_address::parse_source_pairs;
 
 mod resume;
 
@@ -66,28 +65,13 @@ fn school_address_request(args: &NationalArgs) -> Result<Option<SchoolAddressJoi
     {
         return Ok(None);
     }
-    let url_pairs = parse_source_pairs(&args.evidence_urls)?;
-    let date_pairs = parse_source_pairs(&args.evidence_dates)?;
-    let mut acquisitions = Vec::new();
-    let mut entry: u32 = 0;
-    for (source, url) in url_pairs {
-        let (provider, path) = match source.split_once('@') {
-            Some((p, rest)) => (p.to_string(), rest.to_string()),
-            None => (source.clone(), String::new()),
-        };
-        let retrieved_at = date_pairs.get(&source).cloned();
-        acquisitions.push(census_service::school_address::Acquisition {
-            entry,
-            provider,
-            path,
-            url,
-            retrieved_at,
-        });
-        entry = entry.saturating_add(1);
-    }
+    let overrides = census_service::school_address::Overrides::from_cli_pairs(
+        &args.evidence_urls,
+        &args.evidence_dates,
+    )?;
     Ok(Some(SchoolAddressJoinRequest {
         generation: args.school_directory.clone(),
-        acquisitions,
+        overrides,
         expected_digest: None,
     }))
 }

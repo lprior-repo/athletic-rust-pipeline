@@ -159,7 +159,7 @@ fn school_address_replay_accepts_in_root_capture() -> TestResult {
     let out = dir.path().join("corpus");
 
     let replayed = replay::run(&root.join("manifest.json"), &out)?;
-    check!(eq; replayed.overrides().acquisitions.len(), 3);
+    check!(eq; replayed.overrides().acquisitions().ok_or("replay must retain acquisition records")?.len(), 3);
     Ok(())
 }
 
@@ -175,7 +175,7 @@ fn school_address_replay_accepts_in_root_symlink() -> TestResult {
     let out = dir.path().join("corpus");
 
     let replayed = replay::run(&root.join("manifest.json"), &out)?;
-    check!(eq; replayed.overrides().acquisitions.len(), 3);
+    check!(eq; replayed.overrides().acquisitions().ok_or("replay must retain acquisition records")?.len(), 3);
     Ok(())
 }
 

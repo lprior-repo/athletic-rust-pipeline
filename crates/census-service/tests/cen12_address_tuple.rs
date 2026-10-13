@@ -138,15 +138,14 @@ fn cen12_nces_parser_join_and_published_workbook_keep_exact_declared_tuples() ->
     let parsed = parse_ccd(CCD)?;
     let store = Store::open(dir.path().join("store"))?;
     seed(&store, parsed.entries())?;
-    let overrides = Overrides {
-        acquisitions: vec![census_service::school_address::Acquisition {
+    let overrides =
+        Overrides::from_acquisitions(vec![census_service::school_address::Acquisition {
             entry: 0,
             provider: "nces-ccd".to_string(),
             path: String::new(),
             url: "https://nces.ed.gov/ccd/tuple-regression.csv".to_string(),
             retrieved_at: Some("2026-10-07".to_string()),
-        }],
-    };
+        }])?;
     let joined = join_generation(&store, &generation, None, overrides, Mode::Apply)?;
     check!(eq; joined.counters.linked, 0);
     check!(eq; joined.counters.already_linked, 7);

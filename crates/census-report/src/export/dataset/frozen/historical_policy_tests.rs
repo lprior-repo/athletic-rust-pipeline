@@ -1,3 +1,5 @@
+mod merge;
+
 use super::codec::FrozenCodecError;
 use super::fixtures::{seeded_store, TestResult};
 use super::manifest::FrozenManifest;
@@ -57,7 +59,7 @@ fn object_bytes(directory: &Path) -> TestResult<BTreeMap<OsString, Vec<u8>>> {
 }
 
 fn historical_manifest(current: &FrozenManifest) -> TestResult<FrozenManifest> {
-    check!(eq; current.lineage.policy_revision, 11);
+    check!(eq; current.lineage.policy_revision, 13);
     let mut historical = current.clone();
     historical.lineage.policy_revision = 7;
     historical.lineage.input_generation = super::generation(&historical.lineage)?;

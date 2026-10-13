@@ -1,3 +1,5 @@
+mod adjustment_roundtrip;
+
 use super::*;
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,

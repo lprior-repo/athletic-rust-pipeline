@@ -118,14 +118,11 @@ impl<'a> ReportGroup<'a> {
 }
 
 fn observed_value(candidate: &Candidate<'_>) -> i64 {
-    match candidate
+    candidate
         .performance
         .adjustment
         .as_ref()
         .and_then(|adjustment| adjustment.original_mark.as_ref())
         .and_then(|mark| Measure::of(mark).and_then(|measure| measure.value(mark)))
-    {
-        Some(value) => value,
-        None => candidate.value,
-    }
+        .map_or(candidate.value, core::convert::identity)
 }

@@ -28,7 +28,7 @@ fn assert_frozen(path: &Path, fixture: &Fixture, scope: Scope) -> TestResult {
         .ok_or("missing historical-parent generation")?;
     let dataset = ExportDataset::reopen_frozen(&generation.join("frozen-input.json"))?;
     check!(eq; dataset.lineage.schema_revision, 2);
-    check!(eq; dataset.lineage.policy_revision, 11);
+    check!(eq; dataset.lineage.policy_revision, 13);
     check!(eq; dataset.athletes.len(), 2);
     check!(eq; dataset.performances.len(), 2);
     check!(eq; dataset.canonical_aliases.len(), 0);

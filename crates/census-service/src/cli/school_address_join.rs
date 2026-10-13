@@ -1,8 +1,6 @@
 use super::Cli;
 use anyhow::{Context, Result};
-use census_service::school_address::{
-    join_generation, parse_source_pairs, Acquisition, Mode, Overrides,
-};
+use census_service::school_address::{join_generation, Mode, Overrides};
 use census_store::Store;
 use clap::Args;
 use std::path::PathBuf;
@@ -75,40 +73,13 @@ fn print_join_report(report: &census_service::school_address::JoinReport) {
     println!("outcomes\t{}", report.outcomes);
 }
 
-fn parse_acquisitions(
-    evidence_urls: &[String],
-    evidence_dates: &[String],
-) -> anyhow::Result<Vec<Acquisition>> {
-    let url_pairs = parse_source_pairs(evidence_urls)?;
-    let date_pairs = parse_source_pairs(evidence_dates)?;
-    let mut acquisitions = Vec::new();
-    let mut entry: u32 = 0;
-    for (source, url) in url_pairs {
-        let (provider, path) = match source.split_once('@') {
-            Some((p, rest)) => (p.to_string(), rest.to_string()),
-            None => (source.clone(), String::new()),
-        };
-        let retrieved_at = date_pairs.get(&source).cloned();
-        acquisitions.push(Acquisition {
-            entry,
-            provider,
-            path,
-            url,
-            retrieved_at,
-        });
-        entry = entry.saturating_add(1);
-    }
-    Ok(acquisitions)
-}
-
 pub(super) fn run(cli: &Cli, args: &SchoolAddressJoinArgs) -> Result<()> {
     let root = cli
         .store
         .as_deref()
         .context("school-address-join requires an explicit --store and a stopped store owner")?;
     let store = Store::open(root).context("opening the school-address store")?;
-    let acquisitions = parse_acquisitions(&args.evidence_urls, &args.evidence_dates)?;
-    let overrides = Overrides { acquisitions };
+    let overrides = Overrides::from_cli_pairs(&args.evidence_urls, &args.evidence_dates)?;
     let mode = if args.apply {
         Mode::Apply
     } else {

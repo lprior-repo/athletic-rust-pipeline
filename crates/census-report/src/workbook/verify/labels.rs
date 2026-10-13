@@ -247,6 +247,7 @@ pub(super) fn qualified_mark(pr: &SharedSelection) -> String {
         text.push_str(&context);
     }
     append_specification(&mut text, &pr.source.specification);
+    append_adjustment(&mut text, pr);
     text.push(']');
     text
 }
@@ -274,5 +275,24 @@ fn append_specification(
             ", indoor track length {} um, banking {banking}",
             track.length_micrometres
         ));
+    }
+}
+
+fn append_adjustment(text: &mut String, pr: &SharedSelection) {
+    if pr.result.adjustment_kind.is_none() {
+        return;
+    }
+    text.push_str(", conversion ");
+    match pr.result.adjustment_basis {
+        Some(basis) => text.push_str(basis.label()),
+        None => text.push_str("unknown"),
+    }
+    if let Some(original) = &pr.result.original_mark {
+        text.push_str(" from ");
+        text.push_str(&crate::bests::mark_text(original));
+    }
+    if let Some(note) = &pr.result.adjustment_note {
+        text.push_str(": ");
+        text.push_str(note);
     }
 }

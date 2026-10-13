@@ -4,6 +4,8 @@ mod fallible_checks;
 
 #[path = "school_address_replay/containment.rs"]
 mod containment;
+#[path = "school_address_replay/merge_guards.rs"]
+mod merge_guards;
 #[path = "school_address_replay/rejections.rs"]
 mod rejections;
 
@@ -58,10 +60,11 @@ fn school_address_replay_preserves_the_same_corpus_bytes_and_capture_provenance(
     ] {
         check!(eq; before.artifact(name)?, after.artifact(name)?);
     }
-    check!(eq; first.overrides().acquisitions.len(), 3);
+    check!(eq; first.overrides().acquisitions().ok_or("replay must retain acquisition records")?.len(), 3);
     let state_ed_acqs = first
         .overrides()
-        .acquisitions
+        .acquisitions()
+        .ok_or("replay must retain acquisition records")?
         .iter()
         .filter(|acq| acq.provider == "state-ed")
         .collect::<Vec<_>>();
@@ -69,7 +72,8 @@ fn school_address_replay_preserves_the_same_corpus_bytes_and_capture_provenance(
     check!(eq; state_ed_acqs[0].retrieved_at, None);
     let dated = first
         .overrides()
-        .acquisitions
+        .acquisitions()
+        .ok_or("replay must retain acquisition records")?
         .iter()
         .filter(|acq| acq.retrieved_at.as_deref() == Some("2026-09-28"))
         .count();

@@ -27,8 +27,8 @@ impl JobError {
             | StoreError::LeaseLost { .. }
             | StoreError::CurrentRootChanged { .. }
             | StoreError::PublicationDurabilityUncertain { .. }
-            | StoreError::JournalNotReady { .. } => Self::Transient { message },
-            StoreError::Open { .. }
+            | StoreError::JournalNotReady { .. }
+            | StoreError::Open { .. }
             | StoreError::Flush { .. }
             | StoreError::Read { .. }
             | StoreError::Write { .. }

@@ -78,15 +78,13 @@ fn school_address_uhsaa_retained_readback_preserves_postal_and_withholds_unseaso
         &store,
         &corpus,
         None,
-        Overrides {
-            acquisitions: vec![census_service::school_address::Acquisition {
-                entry: 0,
-                provider: "association:uhsaa".to_string(),
-                path: String::new(),
-                url: "https://uhsaa.org/school-directory-new/".to_string(),
-                retrieved_at: Some(REPLAYED_CAPTURE_TIME.to_string()),
-            }],
-        },
+        Overrides::from_acquisitions(vec![census_service::school_address::Acquisition {
+            entry: 0,
+            provider: "association:uhsaa".to_string(),
+            path: String::new(),
+            url: "https://uhsaa.org/school-directory-new/".to_string(),
+            retrieved_at: Some(REPLAYED_CAPTURE_TIME.to_string()),
+        }])?,
         Mode::Apply,
     )?;
     check!(eq; report.counters.scanned, 1);

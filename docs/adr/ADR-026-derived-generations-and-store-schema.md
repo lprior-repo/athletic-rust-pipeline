@@ -201,3 +201,54 @@ This is a prerequisite for installation/profile contracts. It does not register 
 enroll reusable production, migrate a historical corpus or relax fresh-qualification and release
 requirements. Source evidence and derived generations do not move merely because identity is
 initialized, although the global storage sequence can advance for that durable journal write.
+
+## Integration amendment: retained identity closure and atomic provenance (2026-10-13)
+
+A retained machine-generated identity finding may be superseded only by one current, admissible,
+persisted identity application for the same complete unique member set. A stale `Resolved` label,
+a subset or overlapping cluster, an unapplied verdict, and an explicit verdict on the old finding
+are insufficient authority. Ambiguous successors leave the finding retained. Historical verdicts,
+applications and receipts remain preserved.
+
+The stage owns pending supersession provenance through `journal_done_once`. Encoding is fallible
+and bounded by the existing journal key/value limits; the pending collection admits at most
+25,000 entries and 64 MiB of encoded keys, labels and values. Pending journals are committed in the
+same fenced `SyncData` batch as the derived pointer and receipt. Dropped, refused and repeated
+stages publish no pending journals. An identical pre-existing journal payload is preserved byte for
+byte; a conflicting or oversized existing entry refuses the entire publication. This operation
+introduces no new persisted journal shape and does not change generic journal chunking.
+
+The index receipt namespace is `index-stage:v2`. Its digest binds the existing source-input digest,
+supersession policy, requested school year, persisted identity-application fingerprint and a sorted
+union of planned and validated completed closure witnesses. A completed witness contributes only
+to historical replay identity; it cannot authorize a new closure. Normalizing the original finding
+state and set-valued members makes an immediate replay converge, while a newly arriving obsolete
+finding receives a distinct receipt. Old unversioned receipts remain untouched. Only a written
+publication reports superseded rows; a repeated publication reports zero.
+
+These contracts require deterministic temporary-store regression coverage. They do not certify
+native process-kill recovery, production stores, full release qualification or workload performance.
+## National deterministic rules publication and journal compatibility
+
+An uncompleted national `identity:rules` effect first records deterministic athlete reconciliation,
+then runs the existing index derivation before returning its existing rule-summary result. The index
+persists admissible identity applications and publishes obsolete retained findings, their closure
+provenance and the index receipt under the existing evidence fence and atomic publication contract.
+Advice checkpoints cannot start until this effect succeeds. The existing `identity:rules`, advice and
+final `identity:reconcile` command sequence, state-entry sequence and result shapes remain unchanged.
+No additional Restate command is inserted into existing workflows.
+
+A refused derived publication retains the prior derived pointer and historical finding. An accepted
+identity application may already be durable, as it is under the existing index contract; retries must
+reuse that application and must not repeat its receipt. Losing the rules result after successful
+publication repeats the same idempotent derivation rather than exposing a second closure witness or
+receipt. Closure still requires a current, admissible, persisted application for the complete unique
+member set and final `Verified` status for every member. An explicit verdict on the old finding still
+prevents closure.
+
+Already-completed historical `identity:rules` results remain authoritative on journal replay and do
+not execute the expanded effect body retroactively. Their following advice and reconciliation commands
+retain their historical order. A historical workflow that already recorded advice on an obsolete
+finding can therefore leave that finding retained. This compatibility change does not automatically
+reopen history, erase a verdict, reinterpret an old journal or certify that residual historical work
+has been repaired.
