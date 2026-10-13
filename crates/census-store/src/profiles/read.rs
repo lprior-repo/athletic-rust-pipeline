@@ -24,17 +24,7 @@ impl Store {
     }
 
     pub fn selected_profile(&self, selection: &ProfileSelectionV1) -> StoreResult<QueryProfileV1> {
-        let _appends = self.lock_appends();
-        let identity = match crate::lineage::read(&self.db.snapshot(), &self.journal)? {
-            crate::lineage::RetainedIdentity::Present(identity) => identity,
-            crate::lineage::RetainedIdentity::Absent => {
-                return Err(crate::StoreLineageError::Missing.into())
-            }
-        };
-        selection
-            .ensure_store(&identity)
-            .map_err(ProfileRegistryError::Selection)?;
-        self.profile(selection.profile_id())
+        self.snapshot().selected_profile(selection)
     }
 }
 
