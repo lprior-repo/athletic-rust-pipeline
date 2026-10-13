@@ -38,59 +38,79 @@ pub(super) fn excluded_coherence(
     for label in &event.source_labels {
         let mut preceding: Option<&str> = None;
         for word in aliases::tokens(&label.label) {
-            let unit = aliases::member(word, policy::UNITS)
-                && preceding.is_some_and(|previous| {
-                    previous
-                        .bytes()
-                        .all(|byte| byte.is_ascii_digit() || byte == b'.')
-                        || previous.eq_ignore_ascii_case("two")
-                });
+            let unit = is_distance_unit_word(word, preceding);
             preceding = Some(word);
             if unit {
                 continue;
             }
-            let component = aliases::excluded_component(word);
-            if let Some(component) = component {
-                if kind.as_ref().is_some_and(|old| old != &component) {
+            if let Some(component) = aliases::excluded_component(word) {
+                if !update_kind(&mut kind, component) {
                     return Ok(EventDisposition::Unresolved(
                         EventResolutionReason::ContradictoryDeclarations,
                     ));
                 }
-                kind = Some(component);
             }
         }
         let mut buffer = String::new();
         for (left, right) in
             aliases::tokens(&label.label).zip(aliases::tokens(&label.label).skip(1))
         {
-            if !(left
-                .bytes()
-                .all(|byte| byte.is_ascii_digit() || byte == b'.')
-                || left.eq_ignore_ascii_case("two"))
-                || !aliases::member(right, policy::UNITS)
-            {
+            if !is_distance_pair(left, right) {
                 continue;
             }
-            let bytes = left
-                .len()
-                .checked_add(right.len())
-                .ok_or(CatalogError::AggregateLabelBytesOverflow)?;
-            buffer.clear();
-            buffer
-                .try_reserve(bytes)
-                .map_err(|_| CatalogError::ResourceExhausted)?;
-            buffer.push_str(left);
-            buffer.push_str(right);
-            let component = EventKind::from_source_label(&buffer);
-            if kind.as_ref().is_some_and(|old| old != &component) {
+            let component = build_distance_component(&mut buffer, left, right)?;
+            if !update_kind(&mut kind, component) {
                 return Ok(EventDisposition::Unresolved(
                     EventResolutionReason::ContradictoryDeclarations,
                 ));
             }
-            kind = Some(component);
         }
     }
     Ok(EventDisposition::Excluded(reason))
+}
+
+fn update_kind(kind: &mut Option<EventKind>, new_kind: EventKind) -> bool {
+    if kind.as_ref().is_some_and(|old| old != &new_kind) {
+        return false;
+    }
+    *kind = Some(new_kind);
+    true
+}
+
+fn is_distance_unit_word(word: &str, preceding: Option<&str>) -> bool {
+    aliases::member(word, policy::UNITS)
+        && preceding.is_some_and(|previous| {
+            previous
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || byte == b'.')
+                || previous.eq_ignore_ascii_case("two")
+        })
+}
+
+fn is_distance_pair(left: &str, right: &str) -> bool {
+    (left
+        .bytes()
+        .all(|byte| byte.is_ascii_digit() || byte == b'.')
+        || left.eq_ignore_ascii_case("two"))
+        && aliases::member(right, policy::UNITS)
+}
+
+fn build_distance_component(
+    buffer: &mut String,
+    left: &str,
+    right: &str,
+) -> Result<EventKind, CatalogError> {
+    let bytes = left
+        .len()
+        .checked_add(right.len())
+        .ok_or(CatalogError::AggregateLabelBytesOverflow)?;
+    buffer.clear();
+    buffer
+        .try_reserve(bytes)
+        .map_err(|_| CatalogError::ResourceExhausted)?;
+    buffer.push_str(left);
+    buffer.push_str(right);
+    Ok(EventKind::from_source_label(buffer))
 }
 
 pub(super) fn coherent_pairs(

@@ -16,11 +16,18 @@ pub enum JobError {
 
 impl JobError {
     fn from_store_error(error: StoreError, message: String) -> Self {
-        match error {
-            StoreError::RecordConflict { .. } | StoreError::RecordState { .. } => {
-                Self::Terminal { message }
-            }
-            StoreError::RecordRevision { .. }
+        if is_transient_store_error(&error) {
+            Self::Transient { message }
+        } else {
+            Self::Terminal { message }
+        }
+    }
+}
+
+fn is_transient_store_error(error: &StoreError) -> bool {
+    matches!(
+        error,
+        StoreError::RecordRevision { .. }
             | StoreError::RecordMissing { .. }
             | StoreError::LeaseMismatch { .. }
             | StoreError::LeaseExpired { .. }
@@ -35,49 +42,8 @@ impl JobError {
             | StoreError::Io { .. }
             | StoreError::PublicationRefused { .. }
             | StoreError::EvidenceMoved { .. }
-            | StoreError::RevisionMoved { .. } => Self::Transient { message },
-            StoreError::Decode { .. }
-            | StoreError::StoreIdentity(_)
-            | StoreError::StoreLineage(_)
-            | StoreError::ProfileRegistry(_)
-            | StoreError::CanonicalJson(_)
-            | StoreError::Json { .. }
-            | StoreError::SnapshotRow { .. }
-            | StoreError::ObservationReplacement { .. }
-            | StoreError::DerivedAppend { .. }
-            | StoreError::TooManyRows { .. }
-            | StoreError::JournalTooLarge { .. }
-            | StoreError::CounterOverflow
-            | StoreError::ReferenceAccountingIncomplete
-            | StoreError::Refused { .. }
-            | StoreError::Identity(_)
-            | StoreError::FormatNewer { .. }
-            | StoreError::MigrationRequired { .. }
-            | StoreError::SchemaUnknown { .. }
-            | StoreError::NotGenerationTable { .. }
-            | StoreError::RowTooLarge { .. }
-            | StoreError::BudgetExceeded { .. }
-            | StoreError::NeedsPartition { .. }
-            | StoreError::UnsupportedUnitSize { .. }
-            | StoreError::JournalManifestMissing { .. }
-            | StoreError::JournalDescriptor { .. }
-            | StoreError::JournalIndexMissing { .. }
-            | StoreError::JournalIndexExtra { .. }
-            | StoreError::JournalChunkMissing { .. }
-            | StoreError::JournalChunkExtra { .. }
-            | StoreError::JournalChunkLength { .. }
-            | StoreError::JournalChunkDigest { .. }
-            | StoreError::JournalObjectDigest { .. }
-            | StoreError::CorruptArtifact { .. }
-            | StoreError::UnsupportedFormat { .. }
-            | StoreError::VerificationFailed { .. }
-            | StoreError::CounterExhausted
-            | StoreError::DiskBudgetExceeded { .. }
-            | StoreError::InputMoved { .. }
-            | StoreError::RevisionOriginMismatch { .. }
-            | StoreError::Invariant { .. } => Self::Terminal { message },
-        }
-    }
+            | StoreError::RevisionMoved { .. }
+    )
 }
 
 impl From<StoreError> for JobError {
