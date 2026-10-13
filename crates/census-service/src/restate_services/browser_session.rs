@@ -12,8 +12,8 @@ pub const SESSION_KEY: &str = "profile-0";
 
 fn sanitized_url(url: &url::Url) -> String {
     let mut clean = url.clone();
-    clean.set_username("").unwrap_or(());
-    clean.set_password(None).unwrap_or(());
+    let _username_cleared = clean.set_username("");
+    let _password_cleared = clean.set_password(None);
     clean.set_query(None);
     clean.set_fragment(None);
     clean.to_string()

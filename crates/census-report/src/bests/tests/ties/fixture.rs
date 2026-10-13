@@ -235,13 +235,16 @@ pub(super) fn orders(observations: &[Observation]) -> TestResult<Vec<Vec<Observa
             .into_iter()
             .flat_map(|prefix| {
                 (0..observations.len()).filter_map(move |index| {
-                    (!prefix.contains(&index)).then(|| {
+                    if prefix.contains(&index) {
+                        return None;
+                    }
+                    Some(
                         prefix
                             .iter()
                             .copied()
                             .chain(std::iter::once(index))
-                            .collect::<Vec<_>>()
-                    })
+                            .collect::<Vec<_>>(),
+                    )
                 })
             })
             .collect::<Vec<_>>()

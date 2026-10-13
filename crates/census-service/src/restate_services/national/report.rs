@@ -147,7 +147,13 @@ mod tests {
     fn partial_snapshot_is_observable_before_completion() -> TestResult {
         let first = summary(UsJurisdiction::Wisconsin, 7);
         let second = summary(UsJurisdiction::Iowa, 5);
-        let partial = assemble_partial(season()?, Revision(1), &[first.clone()], &[], &[]);
+        let partial = assemble_partial(
+            season()?,
+            Revision(1),
+            std::slice::from_ref(&first),
+            &[],
+            &[],
+        );
         check!(partial.is_partial());
         check!(eq; partial.completeness_label(), "partial");
         check!(eq; partial.jurisdictions.len(), 1);

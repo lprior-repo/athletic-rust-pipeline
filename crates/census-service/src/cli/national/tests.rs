@@ -155,8 +155,8 @@ fn missing_completeness_decodes_as_final_for_backward_compatibility(
         "rosters_total": 0, "athletes_total": 0, "class_of_2027_total": 0,
         "today": "2026-09-22"
     }))?;
-    assert!(!report.is_partial());
-    assert_eq!(report.completeness_label(), "final");
+    check!(!report.is_partial());
+    check!(eq; report.completeness_label(), "final");
     Ok(())
 }
 
@@ -174,18 +174,18 @@ fn partial_counters_are_observable_before_completion_and_converge_on_completion(
         "rosters_total": 7, "athletes_total": 14, "class_of_2027_total": 7,
         "today": "", "completeness": "partial"
     }))?;
-    assert!(partial.is_partial());
-    assert_eq!(partial.completeness_label(), "partial");
-    assert_eq!(partial.jurisdictions.len(), 1);
-    assert_eq!(partial.rosters_total, 7);
-    assert_eq!(partial.athletes_total, 14);
-    assert_eq!(partial.class_of_2027_total, 7);
+    check!(partial.is_partial());
+    check!(eq; partial.completeness_label(), "partial");
+    check!(eq; partial.jurisdictions.len(), 1);
+    check!(eq; partial.rosters_total, 7);
+    check!(eq; partial.athletes_total, 14);
+    check!(eq; partial.class_of_2027_total, 7);
     let final_report = report(Vec::new());
-    assert!(!final_report.is_partial());
-    assert_eq!(final_report.completeness_label(), "final");
-    assert_eq!(partial.rosters_total, final_report.rosters_total);
-    assert_eq!(partial.athletes_total, final_report.athletes_total);
-    assert_eq!(
+    check!(!final_report.is_partial());
+    check!(eq; final_report.completeness_label(), "final");
+    check!(eq; partial.rosters_total, final_report.rosters_total);
+    check!(eq; partial.athletes_total, final_report.athletes_total);
+    check!(eq;
         partial.class_of_2027_total,
         final_report.class_of_2027_total
     );

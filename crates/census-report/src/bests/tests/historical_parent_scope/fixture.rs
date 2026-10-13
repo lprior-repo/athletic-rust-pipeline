@@ -142,11 +142,11 @@ impl Case {
     }
 
     pub(super) const fn has_pr(self, scope: Scope) -> bool {
-        match (self, scope) {
-            (Self::MissingMeet | Self::OutsideCurrent, _) => false,
-            (Self::NonCoreMeet | Self::NonCoreEvent, Scope::Core) => false,
-            _ => true,
-        }
+        !matches!(
+            (self, scope),
+            (Self::MissingMeet | Self::OutsideCurrent, _)
+                | (Self::NonCoreMeet | Self::NonCoreEvent, Scope::Core)
+        )
     }
 }
 

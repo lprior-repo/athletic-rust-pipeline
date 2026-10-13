@@ -465,9 +465,9 @@ fn refusal_kind_serialization_is_backwards_compatible() -> Result<(), Box<dyn st
         ("\"terms\"", RefusalKind::Terms),
     ] {
         let decoded: RefusalKind = serde_json::from_str(stored)?;
-        assert_eq!(decoded, expected, "stored {stored} decodes to {decoded:?}");
+        check!(eq; decoded, expected, "stored {stored} decodes to {decoded:?}");
     }
-    assert_eq!(
+    check!(eq;
         serde_json::to_string(&RefusalKind::EngineeringGap)?,
         "\"engineering_gap\""
     );
@@ -485,14 +485,14 @@ fn tfrrs_plan_refusal_is_terms_kind() -> Result<(), Box<dyn std::error::Error>> 
         UnitDisposition::Refused(r) => r,
         other => return Err(format!("TFRRS should be refused, not {other:?}").into()),
     };
-    assert_eq!(refusal.kind, RefusalKind::Terms);
-    assert!(
+    check!(eq; refusal.kind, RefusalKind::Terms);
+    check!(
         refusal.reason.contains("terms") && refusal.reason.contains("DirectAthletics"),
         "reason must state the terms basis: {}",
         refusal.reason
     );
-    assert_eq!(refusal_kind("tfrrs"), RefusalKind::Terms);
-    assert_eq!(refusal_kind("dat"), RefusalKind::Terms);
-    assert_eq!(refusal_kind("mshsl"), RefusalKind::EngineeringGap);
+    check!(eq; refusal_kind("tfrrs"), RefusalKind::Terms);
+    check!(eq; refusal_kind("dat"), RefusalKind::Terms);
+    check!(eq; refusal_kind("mshsl"), RefusalKind::EngineeringGap);
     Ok(())
 }

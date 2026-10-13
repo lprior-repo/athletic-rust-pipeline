@@ -29,7 +29,7 @@ pub(super) fn single(store: &Store, target: &SchoolId, mutation: &str) -> TestRe
     Ok(witness)
 }
 
-pub(super) fn effect<'a>(witness: &'a Value, table: Table) -> TestResult<&'a Value> {
+pub(super) fn effect(witness: &Value, table: Table) -> TestResult<&Value> {
     witness
         .get("effects")
         .and_then(Value::as_array)
