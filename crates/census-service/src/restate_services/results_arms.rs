@@ -5,7 +5,6 @@ mod meet_pages;
 pub(in crate::restate_services) mod outcomes;
 mod rows;
 mod selection;
-mod tfrrs;
 use std::sync::Arc;
 
 use census_crawl::net::Fetcher;
@@ -26,7 +25,6 @@ pub(super) use rows::{failed_source, source_rows};
 
 const MILESPLIT: &str = "milesplit";
 const ATHLETICNET: &str = "athleticnet";
-const TFRRS: &str = "tfrrs";
 
 const ATHLETICNET_HOST: &str = "athletic.net";
 
@@ -35,7 +33,6 @@ const ATHLETICNET_HOST_SUFFIX: &str = ".athletic.net";
 pub(super) const RESULTS_ARMS: &[(&str, ResultsArm)] = &[
     (MILESPLIT, ResultsArm::MilesplitResults),
     (ATHLETICNET, ResultsArm::AthleticnetMeets),
-    (TFRRS, ResultsArm::TfrrsResults),
     ("ihsa", ResultsArm::IhsaTournament),
 ];
 
@@ -43,7 +40,6 @@ pub(super) const RESULTS_ARMS: &[(&str, ResultsArm)] = &[
 pub(super) enum ResultsArm {
     MilesplitResults,
     AthleticnetMeets,
-    TfrrsResults,
     IhsaTournament,
 }
 

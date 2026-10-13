@@ -63,7 +63,8 @@ pub(super) async fn collect_fragment(
             .map_err(|error| jobs::invariant(&format!("decoding durable meet fragment: {error}")));
     }
     let (slug, ordinal) = source;
-    let recording = Recording::spooled(store.as_ref().clone(), identity.clone());
+    let recording = Recording::spooled(store.as_ref().clone(), identity.clone())
+        .map_err(jobs::collect_error)?;
     let collected = match arm_for(&slug) {
         Some(arm) => walks::fragment(&store, &fetcher, scope, (arm, ordinal), &recording).await,
         None => walks::unarmed(&store, &fetcher, scope, &slug, &recording).await,

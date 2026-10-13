@@ -1,5 +1,6 @@
-use super::parse::{parse_gender, parse_sport_label, SchoolProfile};
+use super::parse::{parse_gender, parse_sport_label, ParsedRow, SchoolProfile};
 use super::{ASSOCIATION, HOST, SOURCE_ID, STATE};
+use crate::{CrawlError, CrawlResult};
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, SchoolId, SourceIdentity,
     SourceNamespace, SourceRef,
@@ -96,4 +97,114 @@ fn sport_coach(
     ));
 
     Some(coach)
+}
+
+pub fn qualify_owner(
+    indexed: &ParsedRow,
+    profile: &SchoolProfile,
+    capture: &crate::net::FetchOutcome,
+) -> CrawlResult<()> {
+    let expected = indexed.school_id.trim();
+    if expected.is_empty() || !expected.bytes().all(|byte| byte.is_ascii_digit()) {
+        return Err(CrawlError::Schema {
+            url: capture.url.clone(),
+            detail: "AIA profile capture differs from its indexed school owner".to_string(),
+        });
+    }
+    let seen = profile_id(&capture.url)?;
+    if seen != expected {
+        return Err(CrawlError::Schema {
+            url: capture.url.clone(),
+            detail: "AIA profile capture differs from its indexed school owner".to_string(),
+        });
+    }
+    if let Some(response_url) = capture.response_url.as_deref() {
+        let landed = profile_id(response_url)?;
+        if landed != expected {
+            return Err(CrawlError::Schema {
+                url: capture.url.clone(),
+                detail: "AIA profile redirect differs from its indexed school owner".to_string(),
+            });
+        }
+    }
+    if capture.status != 200 {
+        return Err(CrawlError::Schema {
+            url: capture.url.clone(),
+            detail: "AIA profile capture differs from its indexed school owner".to_string(),
+        });
+    }
+    if !owner_matches(indexed, profile) {
+        return Err(CrawlError::Schema {
+            url: capture.url.clone(),
+            detail: "AIA profile has no matching published school owner".to_string(),
+        });
+    }
+    Ok(())
+}
+
+fn owner_matches(indexed: &ParsedRow, profile: &SchoolProfile) -> bool {
+    let published = normalize_name(&profile.info.name);
+    if published.is_empty() {
+        return false;
+    }
+    if normalize_name(&indexed.name) == published {
+        return true;
+    }
+    indexed
+        .full_name
+        .as_deref()
+        .is_some_and(|full| normalize_name(full) == published)
+}
+
+fn profile_id(raw: &str) -> CrawlResult<String> {
+    let url = url::Url::parse(raw).map_err(|error| CrawlError::Schema {
+        url: raw.to_string(),
+        detail: error.to_string(),
+    })?;
+    if url.scheme() != "https" {
+        return Err(CrawlError::Schema {
+            url: raw.to_string(),
+            detail: "AIA profile capture differs from its indexed school owner".to_string(),
+        });
+    }
+    if url.host_str() != Some("aiaonline.org") {
+        return Err(CrawlError::Schema {
+            url: raw.to_string(),
+            detail: "AIA profile capture differs from its indexed school owner".to_string(),
+        });
+    }
+    if !url.username().is_empty()
+        || url.password().is_some()
+        || url.port().is_some()
+        || url.fragment().is_some()
+        || url.query().is_some()
+    {
+        return Err(CrawlError::Schema {
+            url: raw.to_string(),
+            detail: "AIA profile capture differs from its indexed school owner".to_string(),
+        });
+    }
+    let Some(id) = url.path().strip_prefix("/schools/") else {
+        return Err(CrawlError::Schema {
+            url: raw.to_string(),
+            detail: "AIA profile capture differs from its indexed school owner".to_string(),
+        });
+    };
+    if id.is_empty() || id.contains('/') || !id.bytes().all(|byte| byte.is_ascii_digit()) {
+        return Err(CrawlError::Schema {
+            url: raw.to_string(),
+            detail: "AIA profile capture differs from its indexed school owner".to_string(),
+        });
+    }
+    let numeric = id.parse::<u64>().map_err(|error| CrawlError::Schema {
+        url: raw.to_string(),
+        detail: error.to_string(),
+    })?;
+    if numeric == 0 || numeric.to_string() != id {
+        return Err(CrawlError::Schema {
+            url: raw.to_string(),
+            detail: "AIA profile capture differs from its indexed school owner".to_string(),
+        });
+    }
+    Ok(id.to_string())
 }

@@ -351,8 +351,8 @@ fn resolution_counter_merge_overflow_returns_invariant() -> TestResult {
 }
 
 #[test]
-fn tfrrs_is_an_armed_results_source_for_applicable_states() -> TestResult {
-    check!(matches!(arm_for("tfrrs"), Some(ResultsArm::TfrrsResults)));
+fn tfrrs_is_refused_by_terms_not_armed() -> TestResult {
+    check!(eq; arm_for("tfrrs"), None);
     Ok(())
 }
 

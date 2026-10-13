@@ -89,6 +89,32 @@ struct Combined<'a> {
 }
 
 impl Spool {
+    pub(super) fn reconstruct(&self, state: &mut RecordingState) -> CrawlResult<()> {
+        let mut ordinal = 0;
+        loop {
+            let key = fragment_key(&self.identity, ordinal);
+            let Some(manifest_payload) = self.store.journal_payload(MANIFEST_PHASE, &key)? else {
+                break;
+            };
+            let persisted: Manifest = decode(manifest_payload, &key)?;
+            let Some(fragment_payload) = self.store.journal_payload(FRAGMENT_PHASE, &key)? else {
+                return Err(invariant(format!(
+                    "meet fragment manifest present without payload: {key}"
+                )));
+            };
+            let recorded: Recorded = decode(fragment_payload, &key)?;
+            let computed = manifest(&recorded)?;
+            if computed != persisted {
+                return Err(invariant(format!(
+                    "meet fragment content mismatch at frontier: {key}"
+                )));
+            }
+            absorb_manifest(state, &persisted)?;
+            state.fragments = budget::add(state.fragments, 1)?;
+            ordinal = budget::add(ordinal, 1)?;
+        }
+        Ok(())
+    }
     pub(super) fn admit(
         &self,
         state: &mut RecordingState,

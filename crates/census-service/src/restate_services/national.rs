@@ -121,7 +121,8 @@ impl NationalCensus {
                     .call(),
             );
         }
-        let (mut jurisdictions, mut failures) = collect_outcomes(&mut in_flight, &targets).await?;
+        let (mut jurisdictions, mut failures) =
+            collect_outcomes(&ctx, &request, &mut in_flight, &targets).await?;
         let owed = redrive(&ctx, &request, &targets, &mut jurisdictions, &mut failures).await?;
 
         let join = join_addresses(&ctx, &identity, &request).await?;

@@ -62,6 +62,26 @@ pub struct NationalFailure {
     pub error: String,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum NationalCompleteness {
+    Partial,
+    #[default]
+    Final,
+}
+
+impl NationalCompleteness {
+    pub fn is_partial(self) -> bool {
+        matches!(self, Self::Partial)
+    }
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Partial => "partial",
+            Self::Final => "final",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NationalReport {
     pub season: SchoolYear,
@@ -76,6 +96,17 @@ pub struct NationalReport {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub school_address: Option<SchoolAddressJoinReply>,
     pub today: String,
+    #[serde(default)]
+    pub completeness: NationalCompleteness,
+}
+
+impl NationalReport {
+    pub fn is_partial(&self) -> bool {
+        self.completeness.is_partial()
+    }
+    pub fn completeness_label(&self) -> &'static str {
+        self.completeness.label()
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

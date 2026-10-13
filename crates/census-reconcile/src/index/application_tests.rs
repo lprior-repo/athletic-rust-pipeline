@@ -2,8 +2,9 @@ mod lineage_derive_tests;
 
 use census_domain::model::{
     AppliedAthleteIdentity, AppliedIdentityKind, CanonicalAthlete, CanonicalSchool, Evidence,
-    Gender, GradYear, IdentityStatus, ReviewCase, ReviewState, ReviewVerdictRecord, SourceIdentity,
-    SourceNamespace, SourceRef, ATHLETE_IDENTITY_FAMILY,
+    Gender, GradYear, IdentityApplication, IdentityProjectionBuilder, IdentityStatus, ReviewCase,
+    ReviewState, ReviewVerdictRecord, SourceIdentity, SourceNamespace, SourceRef,
+    ATHLETE_IDENTITY_FAMILY,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -250,5 +251,668 @@ fn reviewed_membership_permutation_preserves_application_history() -> TestResult
         IdentityStatus::Verified);
         check!(eq; projection.canonical_id(member.as_str()), canonical.as_str());
     }
+    Ok(())
+}
+
+fn publish_checked_retained_supersession(
+    store: &Store,
+    old: &ReviewCase,
+    successor: &ReviewCase,
+    observed_at: &str,
+) -> TestResult {
+    let snapshot = store.snapshot();
+    let cases: Vec<ReviewCase> = snapshot.scan(Table::ReviewCases)?;
+    let verdicts: Vec<ReviewVerdictRecord> = snapshot.scan(Table::IdentityVerdicts)?;
+    let decisions: Vec<AppliedAthleteIdentity> = snapshot.scan(Table::AthleteIdentityDecisions)?;
+    check!(eq; snapshot.get_merged::<ReviewCase>(Table::ReviewCases, &old.id)?, Some(old.clone()));
+    check!(eq; old.state, ReviewState::Retained);
+    check!(store
+        .journal_payload("identity_retained_supersession_v1", &old.id)?
+        .is_none());
+    let old_members: std::collections::BTreeSet<_> = old.member_ids.iter().collect();
+    let new_members: std::collections::BTreeSet<_> = successor.member_ids.iter().collect();
+    check!(!old_members.is_empty());
+    check!(eq; old_members.len(), old.member_ids.len());
+    check!(eq; new_members.len(), successor.member_ids.len());
+    check!(eq; old_members, new_members);
+    let mut builder =
+        IdentityProjectionBuilder::new(snapshot.athlete_identity_index()?, &cases, &verdicts)?;
+    let (_, application) = builder
+        .reviewed_applications(observed_at)
+        .find(|(case, _)| case.id == successor.id)
+        .ok_or("current successor did not produce an application")?;
+    let IdentityApplication::Accepted(expected) = application? else {
+        return Err("current successor did not have accepted authority".into());
+    };
+    check!(eq; expected.record().kind, AppliedIdentityKind::SamePerson);
+    check!(eq; expected.record().case_id.as_deref(), Some(successor.id.as_str()));
+    check!(decisions.contains(expected.record()));
+    for decision in &decisions {
+        let issue = builder.consider(decision)?;
+        if decision.id == expected.record().id {
+            check!(eq; issue, None);
+        }
+    }
+    let projection = builder.finish()?;
+    for member in &old.member_ids {
+        check!(eq; projection.status(member.as_str())?, IdentityStatus::Verified);
+    }
+    let prior = store.derived_generation();
+    let receipts = store.receipt_count()?;
+    let report = super::derive(store, "fixture", observed_at, season()?)?;
+    check!(eq; report.superseded, 1);
+    check!(eq; report.identity_applications, 0);
+    check!(store.derived_generation() != prior);
+    check!(eq; store.receipt_count()?, receipts.checked_add(1).ok_or("receipt count overflow")?);
+    let mut closed = old.clone();
+    closed.state = ReviewState::Superseded;
+    check!(eq; store.snapshot().get_merged::<ReviewCase>(Table::ReviewCases, &old.id)?, Some(closed));
+    check!(eq; store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?, decisions);
+    check!(eq; store.scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)?, verdicts);
+    let recorded = store
+        .journal_payload("identity_retained_supersession_v1", &old.id)?
+        .ok_or("published supersession witness missing")?;
+    let pair: (String, String) = serde_json::from_value(recorded)?;
+    check!(eq; pair, (successor.id.clone(),
+        "obsolete machine-generated identity finding replaced by the current-policy resolution for the same cluster".to_owned()));
+    Ok(())
+}
+
+#[test]
+fn supersede_obsolete_retained_identity_case_when_new_policy_resolves_cluster() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let store = Store::open(directory.path())?;
+    let (school_a, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "School A", "school a", None);
+    let (school_b, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "School B", "school b", None);
+    let first = athlete(&school_a, "111");
+    let second = athlete(&school_b, "111");
+    store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
+    let members = vec![first.id.cast(), second.id.cast()];
+    let subject = "Synthetic Runner";
+    let evidence =
+        store
+            .athlete_identity_index()?
+            .case_evidence(subject, "old policy detail", &members)?;
+    let old_id = format!(
+        "{}:{}:p1:{}",
+        ATHLETE_IDENTITY_FAMILY,
+        first.id,
+        evidence.digest()
+    );
+    let old_case = ReviewCase {
+        id: old_id,
+        family: ATHLETE_IDENTITY_FAMILY.to_string(),
+        subject_id: first.id.to_string(),
+        subject: subject.to_string(),
+        detail: "old policy detail".to_string(),
+        state: ReviewState::Retained,
+        member_ids: members.clone(),
+    };
+    store.replace(Table::ReviewCases, &old_case)?;
+    let new_evidence =
+        store
+            .athlete_identity_index()?
+            .case_evidence(subject, "new policy detail", &members)?;
+    let mut new_case = ReviewCase::pending_with_evidence(
+        ATHLETE_IDENTITY_FAMILY,
+        first.id.as_str(),
+        subject,
+        "new policy detail",
+        new_evidence,
+    );
+    new_case.member_ids = members.clone();
+    new_case.state = ReviewState::Resolved;
+    let verdict = ReviewVerdictRecord {
+        id: new_case.id.clone(),
+        case_id: new_case.id.clone(),
+        subject_id: new_case.subject_id.clone(),
+        family: new_case.family.clone(),
+        kind: "value_proposed".to_owned(),
+        field: "identity".to_owned(),
+        value: "same_person".to_owned(),
+        accepted: true,
+        confidence: 100,
+        rationale: "new policy resolves this cluster".to_owned(),
+        reviewer: "deterministic fixture".to_owned(),
+        observed_at: "2026-09-26".to_owned(),
+        member_ids: new_case.member_ids.clone(),
+    };
+    store.replace(Table::ReviewCases, &new_case)?;
+    store.replace(Table::IdentityVerdicts, &verdict)?;
+    let applied = super::apply::apply_decisions(&store, "2026-09-26")?;
+    check!(eq; applied, 1, "new resolved case should be applied");
+    publish_checked_retained_supersession(&store, &old_case, &new_case, "2026-09-26")?;
+
+    let old_case_state = store
+        .snapshot()
+        .get_merged::<ReviewCase>(Table::ReviewCases, &old_case.id)?
+        .ok_or("old case disappeared")?;
+    check!(
+        eq;
+        old_case_state.state,
+        ReviewState::Superseded,
+        "old retained case should be superseded"
+    );
+    let decisions = store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?;
+    check!(eq; decisions.len(), 1);
+    let decision = decisions.first().ok_or("missing decision")?;
+    check!(eq; decision.kind, AppliedIdentityKind::SamePerson);
+    check!(eq; decision.case_id.as_deref(), Some(new_case.id.as_str()));
+    let projection = store.athlete_identity_projection()?;
+    for member in &members {
+        check!(eq; projection.status(member.as_str())?, IdentityStatus::Verified);
+    }
+
+    Ok(())
+}
+
+#[test]
+fn supersession_is_idempotent_across_repeated_apply() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let store = Store::open(directory.path())?;
+
+    let (school_a, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "School A", "school a", None);
+    let (school_b, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "School B", "school b", None);
+    let first = athlete(&school_a, "111");
+    let second = athlete(&school_b, "111");
+    store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
+
+    let members = vec![first.id.cast(), second.id.cast()];
+    let subject = "Synthetic Runner";
+    let evidence =
+        store
+            .athlete_identity_index()?
+            .case_evidence(subject, "old policy detail", &members)?;
+    let old_id = format!(
+        "{}:{}:p1:{}",
+        ATHLETE_IDENTITY_FAMILY,
+        first.id,
+        evidence.digest()
+    );
+    let old_case = ReviewCase {
+        id: old_id,
+        family: ATHLETE_IDENTITY_FAMILY.to_string(),
+        subject_id: first.id.to_string(),
+        subject: subject.to_string(),
+        detail: "old policy detail".to_string(),
+        state: ReviewState::Retained,
+        member_ids: members.clone(),
+    };
+    store.replace(Table::ReviewCases, &old_case)?;
+
+    let new_evidence =
+        store
+            .athlete_identity_index()?
+            .case_evidence(subject, "new policy detail", &members)?;
+    let mut new_case = ReviewCase::pending_with_evidence(
+        ATHLETE_IDENTITY_FAMILY,
+        first.id.as_str(),
+        subject,
+        "new policy detail",
+        new_evidence,
+    );
+    new_case.member_ids = members.clone();
+    new_case.state = ReviewState::Resolved;
+    let verdict = ReviewVerdictRecord {
+        id: new_case.id.clone(),
+        case_id: new_case.id.clone(),
+        subject_id: new_case.subject_id.clone(),
+        family: new_case.family.clone(),
+        kind: "value_proposed".to_owned(),
+        field: "identity".to_owned(),
+        value: "same_person".to_owned(),
+        accepted: true,
+        confidence: 100,
+        rationale: "new policy resolves this cluster".to_owned(),
+        reviewer: "deterministic fixture".to_owned(),
+        observed_at: "2026-09-26".to_owned(),
+        member_ids: new_case.member_ids.clone(),
+    };
+    store.replace(Table::ReviewCases, &new_case)?;
+    store.replace(Table::IdentityVerdicts, &verdict)?;
+    let applied1 = super::apply::apply_decisions(&store, "2026-09-26")?;
+    check!(eq; applied1, 1);
+    let applied2 = super::apply::apply_decisions(&store, "2026-09-27")?;
+    check!(eq; applied2, 0, "second apply should be idempotent");
+    let decisions = store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?;
+    check!(eq; decisions.len(), 1);
+    publish_checked_retained_supersession(&store, &old_case, &new_case, "2026-09-26")?;
+    let pointer = store.derived_generation();
+    let receipts = store.receipt_count()?;
+    let repeated = super::derive(&store, "fixture", "2026-09-27", season()?)?;
+    check!(eq; repeated.superseded, 0);
+    check!(eq; store.derived_generation(), pointer);
+    check!(eq; store.receipt_count()?, receipts);
+    check!(eq; store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?, decisions);
+    drop(store);
+    let store = Store::open(directory.path())?;
+    let repeated = super::derive(&store, "fixture", "2026-09-28", season()?)?;
+    check!(eq; repeated.superseded, 0);
+    check!(eq; store.derived_generation(), pointer);
+    check!(eq; store.receipt_count()?, receipts);
+    check!(eq; store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?, decisions);
+    Ok(())
+}
+
+fn supersession_case_in_order(reversed: bool) -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let store = Store::open(directory.path())?;
+
+    let (school_a, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "School A", "school a", None);
+    let (school_b, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "School B", "school b", None);
+    let first = athlete(&school_a, "111");
+    let second = athlete(&school_b, "111");
+    store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
+
+    let members = vec![first.id.cast(), second.id.cast()];
+    let subject = "Synthetic Runner";
+    let evidence = store
+        .athlete_identity_index()?
+        .case_evidence(subject, "detail", &members)?;
+    let old_id = format!(
+        "{}:{}:p1:{}",
+        ATHLETE_IDENTITY_FAMILY,
+        first.id,
+        evidence.digest()
+    );
+    let retained_case = ReviewCase {
+        id: old_id,
+        family: ATHLETE_IDENTITY_FAMILY.to_string(),
+        subject_id: first.id.to_string(),
+        subject: subject.to_string(),
+        detail: "detail".to_string(),
+        state: ReviewState::Retained,
+        member_ids: members.clone(),
+    };
+
+    let new_evidence =
+        store
+            .athlete_identity_index()?
+            .case_evidence(subject, "new detail", &members)?;
+    let mut resolved_case = ReviewCase::pending_with_evidence(
+        ATHLETE_IDENTITY_FAMILY,
+        first.id.as_str(),
+        subject,
+        "new detail",
+        new_evidence,
+    );
+    resolved_case.member_ids = members.clone();
+    resolved_case.state = ReviewState::Resolved;
+    let verdict = ReviewVerdictRecord {
+        id: resolved_case.id.clone(),
+        case_id: resolved_case.id.clone(),
+        subject_id: resolved_case.subject_id.clone(),
+        family: resolved_case.family.clone(),
+        kind: "value_proposed".to_owned(),
+        field: "identity".to_owned(),
+        value: "same_person".to_owned(),
+        accepted: true,
+        confidence: 100,
+        rationale: "resolves cluster".to_owned(),
+        reviewer: "deterministic fixture".to_owned(),
+        observed_at: "2026-09-26".to_owned(),
+        member_ids: resolved_case.member_ids.clone(),
+    };
+
+    if reversed {
+        store.replace(Table::IdentityVerdicts, &verdict)?;
+        store.replace(Table::ReviewCases, &resolved_case)?;
+        store.replace(Table::ReviewCases, &retained_case)?;
+    } else {
+        store.replace(Table::ReviewCases, &retained_case)?;
+        store.replace(Table::ReviewCases, &resolved_case)?;
+    }
+    if !reversed {
+        store.replace(Table::IdentityVerdicts, &verdict)?;
+    }
+    let stored = store
+        .snapshot()
+        .get_merged::<ReviewCase>(Table::ReviewCases, &retained_case.id)?
+        .ok_or("retained case disappeared")?;
+    check!(
+        eq;
+        stored.state,
+        ReviewState::Retained,
+        "seeded retained state must survive seeding regardless of order"
+    );
+
+    let applied = super::apply::apply_decisions(&store, "2026-09-26")?;
+    check!(eq; applied, 1);
+
+    publish_checked_retained_supersession(&store, &retained_case, &resolved_case, "2026-09-26")?;
+    let old_case_state = store
+        .snapshot()
+        .get_merged::<ReviewCase>(Table::ReviewCases, &retained_case.id)?
+        .ok_or("old case disappeared")?;
+    check!(
+        eq;
+        old_case_state.state,
+        ReviewState::Superseded,
+        "retained case should be superseded regardless of row order"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn supersession_order_is_independent_of_row_order() -> TestResult {
+    supersession_case_in_order(false)
+}
+
+#[test]
+fn supersession_order_is_independent_with_the_verdict_recorded_first() -> TestResult {
+    supersession_case_in_order(true)
+}
+
+#[test]
+fn genuine_gender_conflict_still_blocks_supersession() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let store = Store::open(directory.path())?;
+
+    let (school_a, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "School A", "school a", None);
+    let (school_b, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "School B", "school b", None);
+
+    let mut first = athlete(&school_a, "111");
+    first.gender = Gender::Boys;
+    let mut second = athlete(&school_b, "111");
+    second.gender = Gender::Girls;
+    store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
+
+    let members = vec![first.id.cast(), second.id.cast()];
+    let subject = "Synthetic Runner";
+    let evidence = store.athlete_identity_index()?.case_evidence(
+        subject,
+        "gender conflict detail",
+        &members,
+    )?;
+    let mut retained_case = ReviewCase::pending_with_evidence(
+        ATHLETE_IDENTITY_FAMILY,
+        first.id.as_str(),
+        subject,
+        "gender conflict detail",
+        evidence,
+    );
+    retained_case.member_ids = members.clone();
+    retained_case.state = ReviewState::Retained;
+    let (binding, digest) = retained_case
+        .id
+        .rsplit_once(':')
+        .ok_or("case digest missing")?;
+    let (subject_binding, _) = binding.rsplit_once(":p").ok_or("case policy missing")?;
+    retained_case.id = format!("{subject_binding}:p1:{digest}");
+    store.replace(Table::ReviewCases, &retained_case)?;
+    let new_evidence = store.athlete_identity_index()?.case_evidence(
+        subject,
+        "gender conflict detail",
+        &members,
+    )?;
+    let mut resolved_case = ReviewCase::pending_with_evidence(
+        ATHLETE_IDENTITY_FAMILY,
+        first.id.as_str(),
+        subject,
+        "gender conflict detail",
+        new_evidence,
+    );
+    resolved_case.member_ids = members.clone();
+    resolved_case.state = ReviewState::Resolved;
+    let verdict = ReviewVerdictRecord {
+        id: resolved_case.id.clone(),
+        case_id: resolved_case.id.clone(),
+        subject_id: resolved_case.subject_id.clone(),
+        family: resolved_case.family.clone(),
+        kind: "value_proposed".to_owned(),
+        field: "identity".to_owned(),
+        value: "same_person".to_owned(),
+        accepted: true,
+        confidence: 100,
+        rationale: "claims to resolve".to_owned(),
+        reviewer: "deterministic fixture".to_owned(),
+        observed_at: "2026-09-26".to_owned(),
+        member_ids: resolved_case.member_ids.clone(),
+    };
+    check!(retained_case.id != resolved_case.id);
+    store.replace(Table::ReviewCases, &resolved_case)?;
+    store.replace(Table::IdentityVerdicts, &verdict)?;
+    let applied = super::apply::apply_decisions(&store, "2026-09-26")?;
+    check!(eq; applied, 0, "gender conflict should block application");
+    let resolved_state = store
+        .snapshot()
+        .get_merged::<ReviewCase>(Table::ReviewCases, &resolved_case.id)?
+        .ok_or("resolved case disappeared")?;
+    check!(
+        eq;
+        resolved_state.state,
+        ReviewState::Retained,
+        "resolved case with gender conflict should be retained"
+    );
+
+    check!(store
+        .scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?
+        .is_empty());
+    let report = super::derive(&store, "fixture", "2026-09-26", season()?)?;
+    check!(eq; report.superseded, 0);
+    check!(eq; store.snapshot().get_merged::<ReviewCase>(Table::ReviewCases, &retained_case.id)?, Some(retained_case.clone()));
+    check!(eq; store.snapshot().get_merged::<ReviewCase>(Table::ReviewCases, &resolved_case.id)?.ok_or("resolved case missing")?.state, ReviewState::Retained);
+    check!(eq; store.scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)?, vec![verdict]);
+    check!(store
+        .journal_payload("identity_retained_supersession_v1", &retained_case.id)?
+        .is_none());
+    check!(store
+        .scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?
+        .is_empty());
+    let projection = store.athlete_identity_projection()?;
+    for member in &members {
+        check!(projection.status(member.as_str())? != IdentityStatus::Verified);
+        check!(eq; projection.canonical_id(member.as_str()), member.as_str());
+    }
+    Ok(())
+}
+
+#[test]
+fn supersession_records_durable_transition_provenance() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let store = Store::open(directory.path())?;
+
+    let (school_a, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "School A", "school a", None);
+    let (school_b, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "School B", "school b", None);
+    let first = athlete(&school_a, "111");
+    let second = athlete(&school_b, "111");
+    store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
+
+    let members = vec![first.id.cast(), second.id.cast()];
+    let subject = "Synthetic Runner";
+    let evidence =
+        store
+            .athlete_identity_index()?
+            .case_evidence(subject, "old policy detail", &members)?;
+    let old_id = format!(
+        "{}:{}:p1:{}",
+        ATHLETE_IDENTITY_FAMILY,
+        first.id,
+        evidence.digest()
+    );
+    let old_case = ReviewCase {
+        id: old_id,
+        family: ATHLETE_IDENTITY_FAMILY.to_string(),
+        subject_id: first.id.to_string(),
+        subject: subject.to_string(),
+        detail: "old policy detail".to_string(),
+        state: ReviewState::Retained,
+        member_ids: members.clone(),
+    };
+    store.replace(Table::ReviewCases, &old_case)?;
+
+    let new_evidence =
+        store
+            .athlete_identity_index()?
+            .case_evidence(subject, "new detail", &members)?;
+    let mut new_case = ReviewCase::pending_with_evidence(
+        ATHLETE_IDENTITY_FAMILY,
+        first.id.as_str(),
+        subject,
+        "new detail",
+        new_evidence,
+    );
+    new_case.member_ids = members.clone();
+    new_case.state = ReviewState::Resolved;
+    let verdict = ReviewVerdictRecord {
+        id: new_case.id.clone(),
+        case_id: new_case.id.clone(),
+        subject_id: new_case.subject_id.clone(),
+        family: new_case.family.clone(),
+        kind: "value_proposed".to_owned(),
+        field: "identity".to_owned(),
+        value: "same_person".to_owned(),
+        accepted: true,
+        confidence: 100,
+        rationale: "new policy".to_owned(),
+        reviewer: "deterministic fixture".to_owned(),
+        observed_at: "2026-09-26".to_owned(),
+        member_ids: new_case.member_ids.clone(),
+    };
+    store.replace(Table::ReviewCases, &new_case)?;
+    store.replace(Table::IdentityVerdicts, &verdict)?;
+
+    check!(eq; super::apply::apply_decisions(&store, "2026-09-26")?, 1);
+    publish_checked_retained_supersession(&store, &old_case, &new_case, "2026-09-26")?;
+    drop(store);
+    let store = Store::open(directory.path())?;
+
+    let recorded = store
+        .journal_payload("identity_retained_supersession_v1", &old_case.id)?
+        .ok_or("supersession provenance should be journaled")?;
+    let pair: (String, String) = serde_json::from_value(recorded)?;
+    check!(eq; pair, (new_case.id.clone(),
+        "obsolete machine-generated identity finding replaced by the current-policy resolution for the same cluster".to_owned()));
+    let old_state = store
+        .snapshot()
+        .get_merged::<ReviewCase>(Table::ReviewCases, &old_case.id)?
+        .ok_or("published closure missing after reopen")?;
+    check!(eq; old_state.state, ReviewState::Superseded);
+
+    Ok(())
+}
+
+#[test]
+fn operator_retained_case_in_same_cluster_is_not_superseded() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let store = Store::open(directory.path())?;
+
+    let (school_a, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "School A", "school a", None);
+    let (school_b, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "School B", "school b", None);
+    let first = athlete(&school_a, "111");
+    let second = athlete(&school_b, "111");
+    store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
+
+    let members = vec![first.id.cast(), second.id.cast()];
+    let subject = "Synthetic Runner";
+    let evidence = store.athlete_identity_index()?.case_evidence(
+        subject,
+        "operator retained detail",
+        &members,
+    )?;
+    let mut operator_case = ReviewCase::pending_with_evidence(
+        ATHLETE_IDENTITY_FAMILY,
+        first.id.as_str(),
+        subject,
+        "operator retained detail",
+        evidence,
+    );
+    operator_case.member_ids = members.clone();
+    operator_case.state = ReviewState::Retained;
+    store.replace(Table::ReviewCases, &operator_case)?;
+
+    let operator_verdict = ReviewVerdictRecord {
+        id: operator_case.id.clone(),
+        case_id: operator_case.id.clone(),
+        subject_id: operator_case.subject_id.clone(),
+        family: operator_case.family.clone(),
+        kind: "insufficient_evidence".to_owned(),
+        field: "".to_owned(),
+        value: "".to_owned(),
+        accepted: true,
+        confidence: 100,
+        rationale: "operator decided to retain this case".to_owned(),
+        reviewer: "deterministic fixture".to_owned(),
+        observed_at: "2026-09-25".to_owned(),
+        member_ids: operator_case.member_ids.clone(),
+    };
+    store.replace(Table::IdentityVerdicts, &operator_verdict)?;
+    let new_evidence =
+        store
+            .athlete_identity_index()?
+            .case_evidence(subject, "new policy detail", &members)?;
+    let mut new_case = ReviewCase::pending_with_evidence(
+        ATHLETE_IDENTITY_FAMILY,
+        first.id.as_str(),
+        subject,
+        "new policy detail",
+        new_evidence,
+    );
+    new_case.member_ids = members;
+    new_case.state = ReviewState::Resolved;
+    let new_verdict = ReviewVerdictRecord {
+        id: new_case.id.clone(),
+        case_id: new_case.id.clone(),
+        subject_id: new_case.subject_id.clone(),
+        family: new_case.family.clone(),
+        kind: "value_proposed".to_owned(),
+        field: "identity".to_owned(),
+        value: "same_person".to_owned(),
+        accepted: true,
+        confidence: 100,
+        rationale: "new policy resolves this cluster".to_owned(),
+        reviewer: "deterministic fixture".to_owned(),
+        observed_at: "2026-09-26".to_owned(),
+        member_ids: new_case.member_ids.clone(),
+    };
+    store.replace(Table::ReviewCases, &new_case)?;
+    store.replace(Table::IdentityVerdicts, &new_verdict)?;
+    let applied = super::apply::apply_decisions(&store, "2026-09-26")?;
+    check!(eq; applied, 0, "operator retained case should block application");
+    let operator_state = store
+        .snapshot()
+        .get_merged::<ReviewCase>(Table::ReviewCases, &operator_case.id)?
+        .ok_or("operator case disappeared")?;
+    check!(
+        eq;
+        operator_state.state,
+        ReviewState::Retained,
+        "operator retained case should not be superseded"
+    );
+    let new_state = store
+        .snapshot()
+        .get_merged::<ReviewCase>(Table::ReviewCases, &new_case.id)?
+        .ok_or("new case disappeared")?;
+    check!(
+        eq;
+        new_state.state,
+        ReviewState::Retained,
+        "new resolved case should be retained when operator case blocks it"
+    );
+
+    let verdicts = store.scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)?;
+    let report = super::derive(&store, "fixture", "2026-09-26", season()?)?;
+    check!(eq; report.superseded, 0);
+    check!(eq; store.snapshot().get_merged::<ReviewCase>(Table::ReviewCases, &operator_case.id)?, Some(operator_case.clone()));
+    check!(store
+        .journal_payload("identity_retained_supersession_v1", &operator_case.id)?
+        .is_none());
+    check!(store
+        .scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?
+        .is_empty());
+    check!(eq; store.scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)?, verdicts);
     Ok(())
 }

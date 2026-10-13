@@ -8,7 +8,7 @@ use super::input::Inputs;
 use super::read::{self, Limits};
 use super::{cohort, defect, diff};
 
-const HEADERS: [&str; 31] = [
+const HEADERS: [&str; 33] = [
     "athlete_id",
     "name",
     "school",
@@ -40,6 +40,8 @@ const HEADERS: [&str; 31] = [
     "source_specification",
     "adjustment_kind",
     "adjustment_basis",
+    "adjustment_note",
+    "adjustment_source",
 ];
 
 const LIMITS: Limits = Limits {
@@ -178,11 +180,18 @@ fn cells(path: &Path, row: &selections::SharedSelection) -> ReportResult<Vec<Cel
         .collect())
 }
 
-fn specification_cells(path: &Path, row: &selections::SharedSelection) -> ReportResult<[Cell; 5]> {
+fn specification_cells(path: &Path, row: &selections::SharedSelection) -> ReportResult<[Cell; 7]> {
     let policy = row.key.comparison.label();
     let comparison =
         serde_json::to_string(&row.key.specification).map_err(|source| decode(path, 0, source))?;
     let source = serde_json::to_string(&row.source.specification)
+        .map_err(|source| decode(path, 0, source))?;
+    let adjustment_source = row
+        .result
+        .adjustment_source
+        .as_ref()
+        .map(serde_json::to_string)
+        .transpose()
         .map_err(|source| decode(path, 0, source))?;
     Ok([
         Cell::text(policy),
@@ -190,6 +199,8 @@ fn specification_cells(path: &Path, row: &selections::SharedSelection) -> Report
         Cell::text(source),
         Cell::optional(row.result.adjustment_kind.map(|kind| kind.label())),
         Cell::optional(row.result.adjustment_basis.map(|basis| basis.label())),
+        Cell::optional(row.result.adjustment_note.as_deref()),
+        Cell::optional(adjustment_source.as_deref()),
     ])
 }
 

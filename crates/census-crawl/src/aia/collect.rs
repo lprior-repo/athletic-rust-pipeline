@@ -1,4 +1,4 @@
-use super::map::school_entities;
+use super::map::{qualify_owner, school_entities};
 use super::parse::{parse_school_profile, parse_search_item, ParsedRow, SchoolProfile};
 use super::{Options, ASSOCIATION, HOST};
 use crate::directory::acquisition::{fail, owe, publish, publish_school, text, MAX_INPUTS};
@@ -178,7 +178,10 @@ impl Run<'_> {
             Ok(profile) => profile,
             Err(error) => return fail(&mut self.report, &url, error),
         };
-        self.project(row, profile, &capture)
+        match self.project(row, profile, &capture) {
+            Ok(()) => Ok(()),
+            Err(error) => fail(&mut self.report, &url, error),
+        }
     }
 
     fn project(
@@ -187,6 +190,7 @@ impl Run<'_> {
         profile: SchoolProfile,
         source: &crate::net::FetchOutcome,
     ) -> CrawlResult<()> {
+        qualify_owner(row, &profile, source)?;
         let owner = SchoolProfile {
             info: profile.info,
             coaches: Vec::new(),

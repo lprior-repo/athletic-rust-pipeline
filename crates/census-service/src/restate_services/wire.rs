@@ -37,8 +37,8 @@ pub use school_address_join::{SchoolAddressJoinReply, SchoolAddressJoinRequest};
 pub(super) mod national;
 
 pub use national::{
-    ContactStatus, ContactSummary, JurisdictionSummary, NationalFailure, NationalReport,
-    NationalRequest, SourceStageOutcome,
+    ContactStatus, ContactSummary, JurisdictionSummary, NationalCompleteness, NationalFailure,
+    NationalReport, NationalRequest, SourceStageOutcome,
 };
 
 mod teams;

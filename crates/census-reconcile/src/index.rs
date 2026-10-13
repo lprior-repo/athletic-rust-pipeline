@@ -1,8 +1,4 @@
-use census_domain::model::{
-    CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, CanonicalTeam,
-    CollectionSnapshot, NaturalKey, RetainedConflict, ReviewCase, SourceEntityKind, SourceIdentity,
-    SourceObjectIdentity,
-};
+use census_domain::model::{CollectionSnapshot, RetainedConflict, ReviewCase};
 use std::collections::HashMap;
 
 use census_report::report::ReportResult;
@@ -10,6 +6,7 @@ use census_store::{Entity, Store, StoreSnapshot, Table};
 
 mod apply;
 mod coverage;
+mod identity_pass;
 mod supersession;
 
 #[cfg(test)]
@@ -19,6 +16,7 @@ mod application_tests;
 mod stage_gate_tests;
 
 use coverage::coverage_rows;
+use identity_pass::canonical_pass;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct IndexReport {
@@ -118,11 +116,7 @@ pub fn derive(
     let operation = format!("{STAGE_RECEIPT}:{digest}");
     let snapshot = snapshot_row(stage.view(), phase, finished_at)?;
 
-    for table in STAGE_OUTPUTS {
-        if table.generation_partitioned() {
-            stage.carry_forward(table)?;
-        }
-    }
+    carry_outputs(&mut stage)?;
     stage.replace_many(Table::SourceIdentities, &pass.identities)?;
     stage.replace_many(Table::Conflicts, &conflicts)?;
     supersession::stage_findings(&mut stage, &closed, &reviews, provenance)?;
@@ -146,95 +140,6 @@ pub fn derive(
     })
 }
 
-trait IdentityBearing {
-    const KIND: SourceEntityKind;
-    fn canonical_id(&self) -> &str;
-    fn source_identities(&self) -> impl Iterator<Item = &SourceIdentity>;
-}
-
-macro_rules! identity_bearing {
-    ($type:ty, $kind:expr) => {
-        impl IdentityBearing for $type {
-            const KIND: SourceEntityKind = $kind;
-
-            fn canonical_id(&self) -> &str {
-                self.id.as_str()
-            }
-
-            fn source_identities(&self) -> impl Iterator<Item = &SourceIdentity> {
-                self.source_identities.iter()
-            }
-        }
-    };
-}
-
-identity_bearing!(CanonicalSchool, SourceEntityKind::Schools);
-identity_bearing!(CanonicalTeam, SourceEntityKind::Teams);
-identity_bearing!(CanonicalCoach, SourceEntityKind::Coaches);
-identity_bearing!(CanonicalMeet, SourceEntityKind::Meets);
-
-impl IdentityBearing for CanonicalAthlete {
-    const KIND: SourceEntityKind = SourceEntityKind::Athletes;
-
-    fn canonical_id(&self) -> &str {
-        self.id.as_str()
-    }
-
-    fn source_identities(&self) -> impl Iterator<Item = &SourceIdentity> {
-        self.identities()
-    }
-}
-
-#[derive(Default)]
-struct CanonicalPass {
-    identities: Vec<SourceObjectIdentity>,
-    collisions: Vec<RetainedConflict>,
-}
-
-fn canonical_pass(dataset: &census_report::export::ExportDataset) -> CanonicalPass {
-    let mut pass = CanonicalPass::default();
-    absorb(&mut pass, dataset.schools.values());
-    absorb(&mut pass, dataset.teams.values());
-    absorb(&mut pass, &dataset.coaches);
-    absorb(&mut pass, &dataset.athletes);
-    absorb(&mut pass, &dataset.meets);
-    take_collisions(&mut pass, &dataset.events);
-    take_collisions(&mut pass, &dataset.performances);
-    pass
-}
-
-fn absorb<'a, T: IdentityBearing + NaturalKey + 'a>(
-    pass: &mut CanonicalPass,
-    entities: impl IntoIterator<Item = &'a T>,
-) {
-    for entity in entities {
-        for identity in entity.source_identities() {
-            let mut row = SourceObjectIdentity::new(
-                identity.namespace.clone(),
-                T::KIND,
-                identity.id.clone(),
-                entity.canonical_id(),
-            );
-            if let Some(url) = identity.url.clone() {
-                row = row.with_url(url);
-            }
-            pass.identities.push(row);
-        }
-        pass.collisions
-            .extend(entity.retained_conflicts().iter().cloned());
-    }
-}
-
-fn take_collisions<'a, T: NaturalKey + 'a>(
-    pass: &mut CanonicalPass,
-    entities: impl IntoIterator<Item = &'a T>,
-) {
-    for entity in entities {
-        pass.collisions
-            .extend(entity.retained_conflicts().iter().cloned());
-    }
-}
-
 fn snapshot_row(
     view: &StoreSnapshot<'_>,
     phase: &str,
@@ -249,3 +154,12 @@ fn snapshot_row(
 
 #[cfg(test)]
 mod tests;
+
+fn carry_outputs(stage: &mut census_store::DerivedStage<'_>) -> ReportResult<()> {
+    for table in STAGE_OUTPUTS {
+        if table.generation_partitioned() {
+            stage.carry_forward(table)?;
+        }
+    }
+    Ok(())
+}

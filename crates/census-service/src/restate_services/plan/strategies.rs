@@ -28,6 +28,8 @@ pub(super) fn strategy(slug: &str) -> SourceStrategy {
         }
         "nces" => "qualified school corpus collector lacks durable artifact selection",
         "state_ed" => "qualified state directory lacks a durable jurisdiction acquisition stage",
+        "tfrrs" => "DirectAthletics terms refuse automated acquisition for any purpose without written permission",
+        "dat" => "DirectAthletics terms refuse automated acquisition for any purpose without written permission",
         _ => "registry family has no implemented durable execution strategy",
     })
 }

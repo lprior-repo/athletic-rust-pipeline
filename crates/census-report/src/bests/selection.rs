@@ -1,7 +1,7 @@
 use crate::bests::key::{PrKey, SurfaceClass, TimingClass, WindClass};
 use crate::bests::Measure;
 use census_domain::model::{
-    AthleteId, EventSpecification, Gender, Mark, PerformanceId, TimingMethod,
+    AthleteId, EventSpecification, Gender, Mark, PerformanceId, SourceRef, TimingMethod,
 };
 use census_domain::{JurisdictionBucket, MeetState};
 use serde::Serialize;
@@ -32,6 +32,10 @@ pub struct SelectionResult {
     pub adjustment_kind: Option<census_domain::model::AdjustmentKind>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub adjustment_basis: Option<census_domain::model::AdjustmentBasis>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub adjustment_note: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub adjustment_source: Option<SourceRef>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]

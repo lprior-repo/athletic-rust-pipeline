@@ -50,7 +50,7 @@ fn one_large_artifact_flushes_rows_before_accumulating_the_artifact() -> TestRes
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     let fetcher = fetcher(&store)?;
-    let recording = Recording::spooled(store.clone(), "large-artifact/0".into());
+    let recording = Recording::spooled(store.clone(), "large-artifact/0".into())?;
     let ctx = context(&store, &fetcher, &recording)?;
     let (school, _) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Middleton", "middleton", None);
@@ -146,7 +146,7 @@ fn wiaa_cursor_keeps_the_frozen_catalogue_when_live_catalogues_change() -> TestR
                     include_bytes!("../../tests/fixtures/wiaa_results/d1boysstateresults-dash.htm"),
                 )?;
             }
-            let first_recording = Recording::spooled(store.clone(), "frozen/0".into());
+            let first_recording = Recording::spooled(store.clone(), "frozen/0".into())?;
             let first_ctx = context(&store, &fetcher, &first_recording)?;
             let (report, more) = collect_fragment(&first_ctx, &options(), 0).await?;
             check!(eq; report.rows, 1);
@@ -159,7 +159,7 @@ fn wiaa_cursor_keeps_the_frozen_catalogue_when_live_catalogues_change() -> TestR
             for (url, _) in ARCHIVES {
                 super::tests::seed_result_cache(&fetcher, url, b"<html>catalogue replaced</html>")?;
             }
-            let second_recording = Recording::spooled(store.clone(), "frozen/1".into());
+            let second_recording = Recording::spooled(store.clone(), "frozen/1".into())?;
             let second_ctx = context(&store, &fetcher, &second_recording)?;
             let (report, more) = collect_fragment(&second_ctx, &options(), 1).await?;
             check!(eq; report.rows, 1, "the original second artifact remains reachable");

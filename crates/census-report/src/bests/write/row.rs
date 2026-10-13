@@ -88,7 +88,22 @@ fn specifications<S: SerializeStruct>(wire: &mut S, row: &SharedSelection) -> Re
         &row.result
             .adjustment_basis
             .map(|basis| Protected(basis.label())),
-    )
+    )?;
+    wire.serialize_field(
+        "adjustment_note",
+        &row.result.adjustment_note.as_deref().map(Protected),
+    )?;
+    let adjustment_source = row
+        .result
+        .adjustment_source
+        .as_ref()
+        .map(serde_json::to_string)
+        .transpose()
+        .map_err(serde::ser::Error::custom)?;
+    match adjustment_source {
+        Some(source) => text(wire, "adjustment_source", &source),
+        None => wire.serialize_field("adjustment_source", &None::<String>),
+    }
 }
 
 fn text<S: SerializeStruct>(

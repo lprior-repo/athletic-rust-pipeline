@@ -2,7 +2,12 @@ use census_domain::UsJurisdiction;
 use restate_sdk::prelude::*;
 
 use crate::restate_services::jobs;
-use crate::restate_services::wire::{JurisdictionReport, JurisdictionSummary, NationalFailure};
+use crate::restate_services::wire::{
+    JurisdictionReport, JurisdictionSummary, NationalFailure, NationalRequest,
+};
+use crate::restate_services::KEY_STATE;
+
+use super::report::assemble_partial;
 
 pub(in crate::restate_services) enum Completion {
     Answered(JurisdictionSummary),
@@ -35,6 +40,8 @@ pub(in crate::restate_services) fn classify(
 }
 
 pub(in crate::restate_services) async fn collect_outcomes(
+    ctx: &WorkflowContext<'_>,
+    request: &NationalRequest,
     in_flight: &mut DurableFuturesUnordered<impl CallFuture<Response = Json<JurisdictionReport>>>,
     targets: &[(UsJurisdiction, String)],
 ) -> Result<(Vec<JurisdictionSummary>, Vec<NationalFailure>), HandlerError> {
@@ -50,6 +57,9 @@ pub(in crate::restate_services) async fn collect_outcomes(
             Completion::Answered(summary) => summaries.push(summary),
             Completion::Unanswered(failure) => failures.push(failure),
         }
+        let partial =
+            assemble_partial(request.season, request.revision, &summaries, &failures, &[]);
+        ctx.set(KEY_STATE, Json(partial));
     }
     Ok((summaries, failures))
 }

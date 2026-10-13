@@ -108,7 +108,7 @@ pub(super) const ATHLETE_HEADERS: [&str; 64] = [
     crate::export::postal::ATHLETE_ADDRESS_HEADER,
 ];
 
-pub(super) const PR_HEADERS: [&str; 26] = [
+pub(super) const PR_HEADERS: [&str; 29] = [
     "Athlete ID",
     "Athlete",
     "Gender",
@@ -135,6 +135,9 @@ pub(super) const PR_HEADERS: [&str; 26] = [
     "Meet ID",
     "Source Key",
     "Event Context",
+    "Published mark",
+    "Conversion basis",
+    "Conversion note",
 ];
 
 pub(super) const COACH_HEADERS: [&str; 29] = [

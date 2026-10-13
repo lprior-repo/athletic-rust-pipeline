@@ -14,9 +14,8 @@ pub enum JobError {
     Terminal { message: String },
 }
 
-impl From<StoreError> for JobError {
-    fn from(error: StoreError) -> Self {
-        let message = error.to_string();
+impl JobError {
+    fn from_store_error(error: StoreError, message: String) -> Self {
         match error {
             StoreError::RecordConflict { .. } | StoreError::RecordState { .. } => {
                 Self::Terminal { message }
@@ -28,8 +27,8 @@ impl From<StoreError> for JobError {
             | StoreError::LeaseLost { .. }
             | StoreError::CurrentRootChanged { .. }
             | StoreError::PublicationDurabilityUncertain { .. }
-            | StoreError::JournalNotReady { .. } => Self::Transient { message },
-            StoreError::Open { .. }
+            | StoreError::JournalNotReady { .. }
+            | StoreError::Open { .. }
             | StoreError::Flush { .. }
             | StoreError::Read { .. }
             | StoreError::Write { .. }
@@ -76,6 +75,13 @@ impl From<StoreError> for JobError {
             | StoreError::RevisionOriginMismatch { .. }
             | StoreError::Invariant { .. } => Self::Terminal { message },
         }
+    }
+}
+
+impl From<StoreError> for JobError {
+    fn from(error: StoreError) -> Self {
+        let message = error.to_string();
+        Self::from_store_error(error, message)
     }
 }
 impl From<ReportError> for JobError {

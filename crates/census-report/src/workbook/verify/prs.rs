@@ -126,8 +126,7 @@ fn result_values(pr: &SharedSelection) -> [Value; 10] {
         conflict(&pr.conflicts),
     ]
 }
-
-fn context_values(pr: &SharedSelection) -> [Value; 7] {
+fn context_values(pr: &SharedSelection) -> [Value; 10] {
     [
         Value::text(pr.key.surface.label()),
         Value::text(pr.key.wind_class.label()),
@@ -136,6 +135,9 @@ fn context_values(pr: &SharedSelection) -> [Value; 7] {
         Value::text(pr.meet.meet_id.as_str()),
         Value::text(&pr.source.source_key),
         event_context(pr),
+        published_mark_value(pr),
+        conversion_basis_value(pr),
+        conversion_note_value(pr),
     ]
 }
 
@@ -169,6 +171,29 @@ fn conflict(conflicts: &[Conflict]) -> Value {
         }
     }
     Value::text(text)
+}
+fn published_mark_value(pr: &SharedSelection) -> Value {
+    match &pr.result.original_mark {
+        Some(original) => Value::text(crate::bests::mark_text(original)),
+        None => Value::Empty,
+    }
+}
+
+fn conversion_basis_value(pr: &SharedSelection) -> Value {
+    match &pr.result.adjustment_kind {
+        Some(_) => match pr.result.adjustment_basis {
+            Some(basis) => Value::text(basis.label()),
+            None => Value::text("unknown"),
+        },
+        None => Value::Empty,
+    }
+}
+
+fn conversion_note_value(pr: &SharedSelection) -> Value {
+    match &pr.result.adjustment_note {
+        Some(note) => Value::text(note),
+        None => Value::Empty,
+    }
 }
 
 fn report_prs_read_result(

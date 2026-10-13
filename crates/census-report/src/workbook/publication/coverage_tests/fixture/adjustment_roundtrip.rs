@@ -89,6 +89,10 @@ fn check_adjustment(dataset: &ExportDataset) -> TestResult {
     check!(eq; selected.result.original_mark, Some(seconds("52.00")?));
     check!(eq; selected.result.adjustment_kind, Some(AdjustmentKind::TrackSizeConversion));
     check!(eq; selected.result.adjustment_basis, Some(AdjustmentBasis::Known));
+    check!(eq; selected.result.adjustment_note, Some("Converted from 52.00 for Track Size.".into()));
+    check!(eq; selected.result.adjustment_source, Some(SourceRef::new(
+        "wiaa_results", Some("https://example.test/coverage".into()),
+    )));
     check!(eq; selected.source.performance_id, performance.id);
     check!(selected.conflicts.is_empty());
     Ok(())
@@ -142,7 +146,7 @@ fn rewrite_csv(path: &Path, original: &[u8], column: &str, forged: &str) -> Test
 fn check_sidecar_metadata(directory: &Path, captured: &Captured) -> TestResult {
     let mut reader = csv::Reader::from_path(directory.join(CSV))?;
     let headers = reader.headers()?.clone();
-    check!(eq; headers.len(), 31);
+    check!(eq; headers.len(), 33);
     let records = reader.records().collect::<Result<Vec<_>, _>>()?;
     check!(eq; records.len(), 1);
     let record = records.first().ok_or("CSV adjusted best missing")?;
@@ -152,6 +156,11 @@ fn check_sidecar_metadata(directory: &Path, captured: &Captured) -> TestResult {
         ("best_value", "50000000000"),
         ("adjustment_kind", "track_size_conversion"),
         ("adjustment_basis", "known"),
+        ("adjustment_note", "Converted from 52.00 for Track Size."),
+        (
+            "adjustment_source",
+            "{\"id\":\"wiaa_results\",\"url\":\"https://example.test/coverage\"}",
+        ),
     ] {
         let index = headers
             .iter()
@@ -192,6 +201,11 @@ fn sidecar_forgeries_are_refused(captured: &Captured) -> TestResult {
         ("original_mark", "53.00"),
         ("adjustment_kind", ""),
         ("adjustment_basis", "unknown"),
+        ("adjustment_note", "forged conversion note"),
+        (
+            "adjustment_source",
+            "{\"id\":\"foreign\",\"url\":\"https://example.test/foreign\"}",
+        ),
     ] {
         rewrite_csv(&csv_path, &original_csv, column, forged)?;
         metadata_refused(scratch.path(), captured, CSV)?;
@@ -203,6 +217,17 @@ fn sidecar_forgeries_are_refused(captured: &Captured) -> TestResult {
         ("original_mark", serde_json::to_value(seconds("53.00")?)?),
         ("adjustment_kind", Value::Null),
         ("adjustment_basis", serde_json::json!("unknown")),
+        (
+            "adjustment_note",
+            serde_json::json!("forged conversion note"),
+        ),
+        (
+            "adjustment_source",
+            serde_json::to_value(SourceRef::new(
+                "foreign",
+                Some("https://example.test/foreign".into()),
+            ))?,
+        ),
     ] {
         let mut found: Value = serde_json::from_str(original_jsonl.trim())?;
         *found

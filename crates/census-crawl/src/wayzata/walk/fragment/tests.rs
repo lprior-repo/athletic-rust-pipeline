@@ -57,7 +57,7 @@ fn wayzata_frozen_cursor_restores_original_body_without_rereading_mutable_schedu
                 &schedule_url(ScheduleSport::CrossCountry, 2026),
                 xc,
             )?;
-            let recording = Recording::spooled(store.clone(), "wayzata-frozen/0".into());
+            let recording = Recording::spooled(store.clone(), "wayzata-frozen/0".into())?;
             let ctx = AdapterContext {
                 fetcher: &fetcher,
                 store: &store,
@@ -83,7 +83,7 @@ fn wayzata_frozen_cursor_restores_original_body_without_rereading_mutable_schedu
                     b"<html>live catalogue replaced</html>",
                 )?;
             }
-            let resumed = Recording::spooled(store.clone(), "wayzata-frozen/1".into());
+            let resumed = Recording::spooled(store.clone(), "wayzata-frozen/1".into())?;
             let ctx = AdapterContext {
                 recording: Some(&resumed),
                 ..ctx

@@ -19,7 +19,6 @@ pub(super) async fn collect(
 ) -> Result<ResultsSourceRows, HandlerError> {
     let (selected, scope) = input;
     match arm {
-        ResultsArm::TfrrsResults => return super::tfrrs::collect(store, fetcher, scope).await,
         ResultsArm::IhsaTournament => return ihsa_tournament(slug, store, fetcher, scope).await,
         ResultsArm::MilesplitResults | ResultsArm::AthleticnetMeets => {}
     }
@@ -42,7 +41,7 @@ fn eligible(arm: ResultsArm, meet: &SourceMeetRef) -> bool {
         ResultsArm::AthleticnetMeets => {
             meet.source == super::ATHLETICNET || super::meet_id_in(&meet.results_url).is_some()
         }
-        ResultsArm::TfrrsResults | ResultsArm::IhsaTournament => false,
+        ResultsArm::IhsaTournament => false,
     }
 }
 
@@ -73,7 +72,7 @@ async fn one(
             )
             .await
         }
-        ResultsArm::TfrrsResults | ResultsArm::IhsaTournament => {
+        ResultsArm::IhsaTournament => {
             return Ok(failed_source(
                 slug,
                 1,

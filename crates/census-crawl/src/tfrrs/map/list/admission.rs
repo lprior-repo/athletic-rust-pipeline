@@ -1,4 +1,5 @@
-use super::{Absorb, ListContext, RowFacts};
+use super::row_facts::RowFacts;
+use super::{Absorb, ListContext};
 use crate::tfrrs::map::entity::athlete_source;
 use census_domain::model::{
     Gender, GradYear, Grade, ObservedGrade, SchoolYear, SourceAthleteObservation, SourceIdentity,
