@@ -11,6 +11,7 @@ use restate_sdk::prelude::*;
 use std::sync::Arc;
 use std::time::Duration;
 
+mod deterministic;
 mod fixtures;
 mod transfers;
 
@@ -144,6 +145,17 @@ async fn r2ox_supersession(reversed: bool) -> TestResult {
             .ok_or("the resolved successor case is missing")?;
         check!(eq; resolved.state, ReviewState::Resolved);
         check!(eq; resolved.member_ids.len(), 2);
+        let verdicts = store.scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)?;
+        check!(!verdicts.iter().any(|row| row.case_id == old_case_id));
+        let decisions = store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?;
+        check!(decisions.iter().any(|row| {
+            row.case_id.as_deref() == Some(new_id)
+                && row.members.len() == 2
+                && row
+                    .members
+                    .iter()
+                    .all(|member| resolved.member_ids.contains(&member.subject))
+        }));
     }
 
     Ok(())
@@ -234,7 +246,7 @@ async fn u4al_national_records_review_verdicts_without_manual_review() -> TestRe
     drive(Arc::clone(&store)).await?;
     let verdicts = store.scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)?;
     check!(eq; verdicts.iter().filter(|row| row.accepted && row.value == "same_person").count(), 1);
-    check!(eq; verdicts.iter().filter(|row| !row.accepted && row.kind == "insufficient_evidence").count(), 2);
+    check!(eq; verdicts.iter().filter(|row| !row.accepted && row.kind == "insufficient_evidence").count(), 0);
     let cases = store.scan::<ReviewCase>(Table::ReviewCases)?;
     check!(cases.iter().any(|case| case.state == ReviewState::Resolved));
     check!(eq; cases.iter().filter(|case| case.family == "Athlete identity" && case.member_ids.is_empty() && case.state == ReviewState::Superseded).count(), 2);

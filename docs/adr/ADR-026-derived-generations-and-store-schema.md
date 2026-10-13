@@ -228,3 +228,27 @@ publication reports superseded rows; a repeated publication reports zero.
 
 These contracts require deterministic temporary-store regression coverage. They do not certify
 native process-kill recovery, production stores, full release qualification or workload performance.
+## National deterministic rules publication and journal compatibility
+
+An uncompleted national `identity:rules` effect first records deterministic athlete reconciliation,
+then runs the existing index derivation before returning its existing rule-summary result. The index
+persists admissible identity applications and publishes obsolete retained findings, their closure
+provenance and the index receipt under the existing evidence fence and atomic publication contract.
+Advice checkpoints cannot start until this effect succeeds. The existing `identity:rules`, advice and
+final `identity:reconcile` command sequence, state-entry sequence and result shapes remain unchanged.
+No additional Restate command is inserted into existing workflows.
+
+A refused derived publication retains the prior derived pointer and historical finding. An accepted
+identity application may already be durable, as it is under the existing index contract; retries must
+reuse that application and must not repeat its receipt. Losing the rules result after successful
+publication repeats the same idempotent derivation rather than exposing a second closure witness or
+receipt. Closure still requires a current, admissible, persisted application for the complete unique
+member set and final `Verified` status for every member. An explicit verdict on the old finding still
+prevents closure.
+
+Already-completed historical `identity:rules` results remain authoritative on journal replay and do
+not execute the expanded effect body retroactively. Their following advice and reconciliation commands
+retain their historical order. A historical workflow that already recorded advice on an obsolete
+finding can therefore leave that finding retained. This compatibility change does not automatically
+reopen history, erase a verdict, reinterpret an old journal or certify that residual historical work
+has been repaired.

@@ -29,7 +29,7 @@ pub(super) async fn run(
     season: SchoolYear,
     observed_at: &str,
 ) -> Result<(), HandlerError> {
-    rules(national, ctx, observed_at).await?;
+    rules(national, ctx, identity, season, observed_at).await?;
     advice(national, ctx, observed_at).await?;
     derive(national, ctx, identity, season, observed_at, "reconcile").await
 }
@@ -77,18 +77,24 @@ async fn derive(
 async fn rules(
     national: &NationalCensus,
     ctx: &WorkflowContext<'_>,
+    identity: &WorkflowIdentity,
+    season: SchoolYear,
     observed_at: &str,
 ) -> Result<(), HandlerError> {
     let jobs = national.jobs.clone();
     let at = observed_at.to_owned();
+    let phase = format!("{}:identity:rules", identity.as_str());
     let reply = ctx
         .run(move || async move {
             let permit = jobs.permit_control().await?;
             let store = Arc::clone(jobs.store());
             blocking(Arc::clone(jobs.region()), move || {
                 let _permit = permit;
-                census_review::reconcile_athletes(&store, &at, false)
-                    .map(|report| Json(report.summary()))
+                let report = census_review::reconcile_athletes(&store, &at, false)
+                    .map_err(JobError::from)?;
+                census_reconcile::index::derive(&store, &phase, &at, season)
+                    .map_err(JobError::from)?;
+                Ok::<_, JobError>(Json(report.summary()))
             })
             .await
             .map_err(job_error)
