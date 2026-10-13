@@ -22,8 +22,8 @@ fn frozen_manifest_round_trips_lineage_token_and_inventory_refs() -> TestResult 
     );
     check!(eq; decoded.codec, "census-frozen-jsonl-v2");
     check!(eq; decoded.codec_revision, 2);
-    check!(eq; decoded.streams.len(), 12);
-    check!(eq; decoded.source_fingerprints.len(), 13);
+    check!(eq; decoded.streams.len(), 14);
+    check!(eq; decoded.source_fingerprints.len(), 15);
     check!(eq; decoded.input_token.protocol, 2);
     check!(eq;
         decoded.input_token.store_identity,

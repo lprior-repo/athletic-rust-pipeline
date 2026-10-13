@@ -10,7 +10,8 @@ use super::{codec_error, invalid, INPUT_TABLES};
 use crate::report::{ReportError, ReportResult};
 use census_domain::model::{
     AppliedAthleteIdentity, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam, ReviewCase, ReviewVerdictRecord, SourceAccessCondition,
+    CanonicalSchool, CanonicalTeam, CoachLaneObligation, CoverageRow, ReviewCase,
+    ReviewVerdictRecord, SourceAccessCondition,
 };
 use census_store::{Entity, Store, StoreError, StoreSnapshot, Table};
 use std::path::Path;
@@ -53,6 +54,8 @@ fn streams(
         Table::AthleteIdentityDecisions,
         snapshot,
     )?;
+    sink.merged::<CoverageRow>(StreamKind::CoverageRows, Table::Coverage, snapshot)?;
+    sink.merged::<CoachLaneObligation>(StreamKind::CoachLanes, Table::CoachLanes, snapshot)?;
     sink.finish()
 }
 

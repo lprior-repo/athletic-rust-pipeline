@@ -30,7 +30,13 @@ mod references;
 mod root;
 mod stream;
 mod token;
+mod verification_error;
 mod verify;
+
+#[cfg(test)]
+mod coverage_tests;
+#[cfg(test)]
+mod version_preservation_tests;
 
 #[cfg(test)]
 mod freeze_recovery_tests;
@@ -44,9 +50,9 @@ mod preflight_tests;
 pub use freeze::CancelOutcome;
 pub use root::FrozenRoot;
 
-const SCHEMA_REVISION: u32 = 1;
+const SCHEMA_REVISION: u32 = 2;
 const POLICY_REVISION: u32 = 8;
-const INPUT_TABLES: [Table; 13] = [
+const INPUT_TABLES: [Table; 15] = [
     Table::Schools,
     Table::Teams,
     Table::Coaches,
@@ -60,6 +66,8 @@ const INPUT_TABLES: [Table; 13] = [
     Table::AthleteIdentityDecisions,
     Table::SourceObservations,
     Table::SourceMeets,
+    Table::Coverage,
+    Table::CoachLanes,
 ];
 
 #[derive(Serialize)]
@@ -83,7 +91,7 @@ pub(super) fn to_export_dataset(root: &FrozenRoot, store: &Store) -> ReportResul
     }
     let objects_dir = objects::directory(root.directory());
     verify::verify_root(&objects_dir, root.manifest_digest(), manifest)?;
-    let mut dataset = ExportDataset::from_loaded(
+    let dataset = ExportDataset::from_loaded(
         materialize::read_all(&objects_dir, manifest)?,
         manifest.lineage.clone(),
     )?;
@@ -94,7 +102,6 @@ pub(super) fn to_export_dataset(root: &FrozenRoot, store: &Store) -> ReportResul
             "a frozen root does not reproduce the dataset input digest",
         ));
     }
-    dataset.coverage_evidence = Some(super::coverage_evidence(&store.snapshot())?);
     Ok(dataset)
 }
 

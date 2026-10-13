@@ -177,6 +177,16 @@ impl From<ReportError> for ReuseFailure {
     }
 }
 
+impl From<super::verification_error::VerificationError> for ReuseFailure {
+    fn from(error: super::verification_error::VerificationError) -> Self {
+        if error.preserves_version() {
+            Self::Preserve(error.into())
+        } else {
+            Self::Retire(error.into())
+        }
+    }
+}
+
 impl ReuseFailure {
     fn from_codec(error: FrozenCodecError) -> Self {
         match error {
@@ -219,9 +229,15 @@ fn retained_manifest(
 }
 
 fn ensure_retirable(directory: &Path, retained: &Retained) -> ReportResult<()> {
-    match retained_manifest(&objects::directory(directory), retained) {
+    let objects_dir = objects::directory(directory);
+    let checked = retained_manifest(&objects_dir, retained).and_then(|manifest| {
+        verify::verify_root(&objects_dir, &retained.manifest, &manifest)
+            .map(|_| ())
+            .map_err(ReuseFailure::from)
+    });
+    match checked {
         Err(ReuseFailure::Preserve(error)) => Err(error),
-        Ok(_) | Err(ReuseFailure::Retire(_)) => Ok(()),
+        Ok(()) | Err(ReuseFailure::Retire(_)) => Ok(()),
     }
 }
 

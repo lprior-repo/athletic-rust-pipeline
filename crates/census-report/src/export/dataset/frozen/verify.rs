@@ -5,12 +5,13 @@ use super::objects;
 use super::reader::{EncodedWindowLimit, TableCursor};
 use super::references::ManifestStream;
 use super::stream::StreamKind;
+use super::verification_error::VerificationResult;
 use super::{codec_error, invalid};
 use crate::report::ReportResult;
 use census_domain::model::{
     AppliedAthleteIdentity, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
-    CanonicalPerformance, CanonicalSchool, CanonicalTeam, ReviewCase, ReviewVerdictRecord,
-    SourceAccessCondition,
+    CanonicalPerformance, CanonicalSchool, CanonicalTeam, CoachLaneObligation, CoverageRow,
+    ReviewCase, ReviewVerdictRecord, SourceAccessCondition,
 };
 use census_store::{Entity, InputRecord};
 use std::path::Path;
@@ -38,9 +39,10 @@ pub(super) fn verify_record(
     digest: &str,
     manifest: &FrozenManifest,
     record: &InputRecord,
-) -> ReportResult<()> {
+) -> VerificationResult<()> {
     let inventory = verify_root(objects_dir, digest, manifest)?;
-    check_record(manifest, record, &inventory)
+    check_record(manifest, record, &inventory)?;
+    Ok(())
 }
 
 pub(super) fn inventory_of(
@@ -60,7 +62,7 @@ pub(super) fn verify_root(
     objects_dir: &Path,
     digest: &str,
     manifest: &FrozenManifest,
-) -> ReportResult<Vec<String>> {
+) -> VerificationResult<Vec<String>> {
     validate_manifest_consistency(manifest)?;
     let path = objects_dir.join(digest);
     verify_installed_manifest(objects_dir, digest, manifest, &path)?;
@@ -84,14 +86,15 @@ fn verify_installed_manifest(
     digest: &str,
     manifest: &FrozenManifest,
     path: &Path,
-) -> ReportResult<()> {
+) -> VerificationResult<()> {
     let encoded = objects::read(objects_dir, digest, objects::MANIFEST_CEILING)?;
-    let installed = FrozenManifest::decode(&encoded).map_err(codec_error)?;
+    let installed = FrozenManifest::decode(&encoded)?;
     if &installed != manifest {
         return Err(objects::artifact(
             path,
             "the installed manifest does not decode to the retained manifest",
-        ));
+        )
+        .into());
     }
     Ok(())
 }
@@ -100,7 +103,7 @@ fn process_streams(
     objects_dir: &Path,
     manifest: &FrozenManifest,
     mut inventory: Vec<String>,
-) -> ReportResult<(Vec<String>, LegacyLogicalDigest)> {
+) -> VerificationResult<(Vec<String>, LegacyLogicalDigest)> {
     let mut legacy = LegacyLogicalDigest::new();
     for reference in &manifest.streams {
         let kind = matched(legacy.position())?;
@@ -138,6 +141,8 @@ fn dispatch_stream_read(
         StreamKind::IdentityDecisions => {
             read_chunks::<AppliedAthleteIdentity>(root, kind, page, legacy)
         }
+        StreamKind::CoverageRows => read_chunks::<CoverageRow>(root, kind, page, legacy),
+        StreamKind::CoachLanes => read_chunks::<CoachLaneObligation>(root, kind, page, legacy),
     }
 }
 
@@ -158,18 +163,19 @@ fn verify_legacy_digest(
 pub(super) fn page(
     objects_dir: &Path,
     reference: &ManifestStream,
-) -> ReportResult<StreamInventory> {
+) -> VerificationResult<StreamInventory> {
     let encoded = objects::read(
         objects_dir,
         &reference.inventory.digest,
         objects::PAGE_CEILING,
     )?;
-    let page = StreamInventory::decode(&encoded).map_err(codec_error)?;
+    let page = StreamInventory::decode(&encoded)?;
     if page.rows() != reference.rows || page.bytes() != reference.bytes {
         return Err(objects::artifact(
             &objects_dir.join(&reference.inventory.digest),
             "the frozen inventory totals disagree with the manifest reference",
-        ));
+        )
+        .into());
     }
     Ok(page)
 }

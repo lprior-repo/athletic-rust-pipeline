@@ -24,7 +24,10 @@ pub(super) fn recover(
     let objects_dir = objects::directory(directory);
     let manifest = open_manifest(&objects_dir, &retained.manifest)?;
     if let Err(error) = verify::verify_record(&objects_dir, &retained.manifest, &manifest, record) {
-        return Err(abandoned(store, directory, retained, record, error));
+        if error.preserves_version() {
+            return Err(error.into());
+        }
+        return Err(abandoned(store, directory, retained, record, error.into()));
     }
     let Some((epoch, claimed_revision)) = lease_of(store, &retained.attempt, record)? else {
         return Err(retire_pointer(

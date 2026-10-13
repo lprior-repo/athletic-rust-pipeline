@@ -49,7 +49,12 @@ impl LegacyLogicalDigest {
         if self.position > 0 {
             self.hasher.update(b",");
         }
-        self.hasher.update(&quoted(stream.wire())?);
+        if stream == StreamKind::CoverageRows {
+            self.hasher.update(b"\"coverage_evidence\":{");
+            self.hasher.update(b"\"rows\"");
+        } else {
+            self.hasher.update(&quoted(stream.wire())?);
+        }
         self.hasher.update(b":");
         self.hasher
             .update(if stream.keyed_by_id() { b"{" } else { b"[" });
@@ -87,6 +92,9 @@ impl LegacyLogicalDigest {
         }
         self.hasher
             .update(if stream.keyed_by_id() { b"}" } else { b"]" });
+        if stream == StreamKind::CoachLanes {
+            self.hasher.update(b"}");
+        }
         self.open = None;
         let closed = checked_add("legacy stream position", count(self.position)?, 1)?;
         self.position = usize::try_from(closed).map_err(|_| {

@@ -8,7 +8,8 @@ use census_domain::model::{
 use census_store::{StoreSnapshot, Table};
 
 pub(super) fn all(snapshot: &StoreSnapshot<'_>) -> ReportResult<Loaded> {
-    std::thread::scope(|scope| ReadTasks::spawn(scope, snapshot).join())
+    let coverage = super::coverage_evidence(snapshot)?;
+    std::thread::scope(|scope| ReadTasks::spawn(scope, snapshot).join(coverage))
 }
 
 fn table<T: census_store::Entity>(
@@ -92,7 +93,7 @@ impl<'a> ReadTasks<'a> {
         }
     }
 
-    fn join(self) -> ReportResult<Loaded> {
+    fn join(self, coverage: super::CoverageEvidence) -> ReportResult<Loaded> {
         let joined = (
             join(self.athletes, "athletes"),
             join(self.schools, "schools"),
@@ -107,11 +108,14 @@ impl<'a> ReadTasks<'a> {
             join(self.verdicts, "verdicts"),
             join(self.identity_decisions, "identity decisions"),
         );
-        resolve(joined)
+        resolve(joined, coverage)
     }
 }
 
-fn resolve(joined: ReadResults) -> ReportResult<Loaded> {
+fn resolve(
+    joined: ReadResults,
+    coverage_evidence: super::CoverageEvidence,
+) -> ReportResult<Loaded> {
     Ok(Loaded {
         athletes: joined.0?,
         schools: joined.1?,
@@ -125,6 +129,7 @@ fn resolve(joined: ReadResults) -> ReportResult<Loaded> {
         source_access: joined.9?,
         verdicts: joined.10?,
         identity_decisions: joined.11?,
+        coverage_evidence,
     })
 }
 
