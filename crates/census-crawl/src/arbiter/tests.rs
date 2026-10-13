@@ -732,3 +732,95 @@ fn the_token_is_never_replayed_from_the_cache() -> TestResult {
             Ok(())
         })
 }
+
+#[test]
+fn jv_level_rows_are_not_admitted() -> TestResult {
+    let id = alvirne_id();
+    for level in ["Junior Varsity", "JV", "JV2", "Junior varsity", "boys jv"] {
+        let row = super::parse::CoachRow {
+            first_name: "Sam".to_string(),
+            last_name: "Lee".to_string(),
+            position: "Head Coach".to_string(),
+            sport: "Cross Country, Boys".to_string(),
+            level: level.to_string(),
+        };
+        check!(
+            map_coach_row(&row, &id, ALVIRNE_URL, OBSERVED_ON).is_none(),
+            "the {} level is sub-varsity and must be rejected",
+            level
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn freshman_and_middle_school_rows_are_not_admitted() -> TestResult {
+    let id = alvirne_id();
+    for level in ["Freshman", "Freshmen", "Middle School", "Junior High"] {
+        let row = super::parse::CoachRow {
+            first_name: "Sam".to_string(),
+            last_name: "Lee".to_string(),
+            position: "Head Coach".to_string(),
+            sport: "Cross Country, Boys".to_string(),
+            level: level.to_string(),
+        };
+        check!(
+            map_coach_row(&row, &id, ALVIRNE_URL, OBSERVED_ON).is_none(),
+            "the {} level is not varsity and must be rejected",
+            level
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn varsity_rows_are_admitted() -> TestResult {
+    let id = alvirne_id();
+    for level in ["Varsity", "Boys Varsity", "Girls Varsity", "- Varsity"] {
+        let row = super::parse::CoachRow {
+            first_name: "Sam".to_string(),
+            last_name: "Lee".to_string(),
+            position: "Head Coach".to_string(),
+            sport: "Cross Country, Boys".to_string(),
+            level: level.to_string(),
+        };
+        let coach = map_coach_row(&row, &id, ALVIRNE_URL, OBSERVED_ON)
+            .ok_or(format!("the {} level is varsity and must be admitted", level))?;
+        check!(eq; coach.role, CoachRole::HeadCoach);
+    }
+    Ok(())
+}
+
+#[test]
+fn absent_level_is_rejected() -> TestResult {
+    let id = alvirne_id();
+    let row = super::parse::CoachRow {
+        first_name: "Sam".to_string(),
+        last_name: "Lee".to_string(),
+        position: "Head Coach".to_string(),
+        sport: "Cross Country, Boys".to_string(),
+        level: String::new(),
+    };
+    check!(
+        map_coach_row(&row, &id, ALVIRNE_URL, OBSERVED_ON).is_none(),
+        "an absent level is unparsable and must be rejected"
+    );
+    Ok(())
+}
+
+#[test]
+fn whitespace_only_level_is_rejected() -> TestResult {
+    let id = alvirne_id();
+    let row = super::parse::CoachRow {
+        first_name: "Sam".to_string(),
+        last_name: "Lee".to_string(),
+        position: "Head Coach".to_string(),
+        sport: "Cross Country, Boys".to_string(),
+        level: "   ".to_string(),
+    };
+    check!(
+        map_coach_row(&row, &id, ALVIRNE_URL, OBSERVED_ON).is_none(),
+        "a whitespace-only level is unparsable and must be rejected"
+    );
+    Ok(())
+}
