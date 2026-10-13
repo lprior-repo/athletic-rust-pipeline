@@ -17,6 +17,9 @@ impl Retained {
         let capture = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../census-crawl/tests/fixtures/nces/ccd_sch_029_2526_head.csv");
         check!(eq; format!("{:x}", Sha256::digest(std::fs::read(&capture)?)), CCD_SHA);
+        let staged = dir.join("nces/ccd_sch_029_2526_head.csv");
+        std::fs::create_dir_all(staged.parent().ok_or("no staged parent")?)?;
+        std::fs::copy(&capture, &staged)?;
         let manifest = dir.join("replay.json");
         std::fs::write(
             &manifest,
@@ -24,7 +27,7 @@ impl Retained {
                 "schema_revision": 1,
                 "month": "2026-10",
                 "captures": [{
-                    "format": "nces-ccd", "path": capture, "url": CCD_URL,
+                    "format": "nces-ccd", "path": "nces/ccd_sch_029_2526_head.csv", "url": CCD_URL,
                     "retrieved_at": CAPTURE_DATE, "sha256": CCD_SHA,
                 }],
             }))?,

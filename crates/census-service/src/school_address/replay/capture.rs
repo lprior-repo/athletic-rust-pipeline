@@ -8,11 +8,15 @@ use super::ReplayError;
 pub(super) const MAX_CAPTURE_BYTES: u64 = 128 * 1024 * 1024;
 
 pub(super) fn verify_retained(archive: &Path) -> Result<(), ReplayError> {
+    let complete_marker = archive.join(".complete");
+    if !complete_marker.exists() {
+        return Err(refused(
+            &complete_marker,
+            "retained capture archive is incomplete (missing .complete marker)",
+        ));
+    }
     let manifest_path = archive.join("manifest.json");
     let bytes = load(&manifest_path, super::MAX_MANIFEST_BYTES)?;
-    if archive.file_name().and_then(|name| name.to_str()) != Some(hex(&bytes).as_str()) {
-        return Err(refused(&manifest_path, "retained manifest sha256 mismatch"));
-    }
     let manifest: super::Manifest = serde_json::from_slice(&bytes)?;
     for capture in manifest.captures {
         let path = archive.join(&capture.sha256);
@@ -81,6 +85,15 @@ pub(super) fn load(path: &Path, limit: u64) -> Result<Vec<u8>, ReplayError> {
 mod atomic;
 mod quarantine;
 
+pub(super) fn publish(path: &Path, bytes: &[u8]) -> Result<(), ReplayError> {
+    atomic::with_staged(path, bytes, |tmp| {
+        atomic::check_destination(path)?;
+        std::fs::rename(tmp, path).map_err(|source| io(path, source))
+    })?;
+    atomic::fsync_parent(path)?;
+    atomic::sync_regular(path)
+}
+
 pub(super) fn preserve(path: &Path, bytes: &[u8]) -> Result<(), ReplayError> {
     preserve_with_sync(path, bytes, &atomic::fsync_parent)
 }
@@ -130,14 +143,6 @@ where
         }
         Err(source) => Err(io(path, source)),
     }
-}
-
-pub(super) fn publish(path: &Path, bytes: &[u8]) -> Result<(), ReplayError> {
-    atomic::with_staged(path, bytes, |tmp| {
-        atomic::check_destination(path)?;
-        std::fs::rename(tmp, path).map_err(|source| io(path, source))
-    })?;
-    atomic::fsync_parent(path)
 }
 
 fn identical(path: &Path, bytes: &[u8]) -> Result<bool, ReplayError> {

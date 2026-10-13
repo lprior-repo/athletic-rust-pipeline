@@ -103,6 +103,9 @@ impl Replay {
     pub fn generation_digest(&self) -> &str {
         &self.digest
     }
+    pub fn archive(&self) -> &Path {
+        &self.archive
+    }
 
     pub fn overrides(&self) -> &Overrides {
         &self.overrides
@@ -119,13 +122,13 @@ impl Replay {
     }
 }
 
-fn ensure_contained(out: &Path, archive: &Path) -> Result<(), ReplayError> {
-    let root = std::fs::canonicalize(out).map_err(|source| io(out, source))?;
-    let directory = std::fs::canonicalize(archive).map_err(|source| io(archive, source))?;
-    if !directory.starts_with(&root) {
+fn ensure_source_contained(root: &Path, path: &Path) -> Result<(), ReplayError> {
+    let canonical_root = std::fs::canonicalize(root).map_err(|source| io(root, source))?;
+    let canonical_path = std::fs::canonicalize(path).map_err(|source| io(path, source))?;
+    if !canonical_path.starts_with(&canonical_root) {
         return Err(refused(
-            archive,
-            "retained capture directory escapes the output root",
+            path,
+            "capture escapes the declared source root",
         ));
     }
     Ok(())
@@ -151,12 +154,16 @@ pub fn run(manifest_path: &Path, out: &Path) -> Result<Replay, ReplayError> {
         .ok_or_else(|| refused(manifest_path, "no manifest parent"))?;
     let archive = out.join("captures").join(hex(&bytes));
     std::fs::create_dir_all(&archive).map_err(|source| io(&archive, source))?;
-    ensure_contained(out, &archive)?;
+    ensure_source_contained(out, &archive)?;
     preserve(&archive.join("manifest.json"), &bytes)?;
 
     for (i, capture) in manifest.captures.iter().enumerate() {
+        if capture.path.is_absolute() {
+            return Err(refused(&capture.path, "capture path must be relative to the source root"));
+        }
         let path = base.join(&capture.path);
         let canonical = std::fs::canonicalize(&path).map_err(|source| io(&path, source))?;
+        ensure_source_contained(base, &canonical)?;
         let tuple = (capture.url.clone(), capture.retrieved_at.clone());
         match seen.get(&canonical) {
             Some(existing) if *existing != tuple => {
@@ -173,15 +180,16 @@ pub fn run(manifest_path: &Path, out: &Path) -> Result<Replay, ReplayError> {
                     ),
                 ));
             }
-            Some(_) => {} // identical tuple, duplicate entry - accept
+            Some(_) => {}
             None => {
-                seen.insert(canonical, tuple);
+                seen.insert(canonical.clone(), tuple);
             }
         }
         let entry = u32::try_from(i)
             .map_err(|_| refused(&path, "too many captures for u32 index"))?;
-        stage_capture(capture, &path, &archive, entry, &mut args, &mut overrides)?;
+        stage_capture(capture, &canonical, &archive, entry, &mut args, &mut overrides)?;
     }
+    preserve(&archive.join(".complete"), b"")?;
 
     let overrides = overrides.validated()?;
     super::run(&args)?;
