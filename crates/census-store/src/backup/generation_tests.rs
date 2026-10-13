@@ -421,7 +421,6 @@ fn recovering_one_sibling_preserves_the_others_only_old_generation() -> TestResu
     generation_at(&to_a, "alpha-old", OLD_AT)?;
     generation_at(&to_b, "beta-old", OLD_AT)?;
     let prefix_a = destination_prefix(STAGING_PREFIX, &to_a);
-    let prefix_b = destination_prefix(STAGING_PREFIX, &to_b);
     let trash_a = displace_with_prefix(&to_a, "a-old", &prefix_a)?;
     generation_at(&to_a, "alpha-new", NEW_AT)?;
     check!(trash_a.exists());
@@ -456,6 +455,24 @@ fn recovery_preserves_an_artifact_without_a_known_owner() -> TestResult {
         "an artifact with no known owner must be preserved"
     );
     check!(orphan.join("foreign.txt").is_file());
+    Ok(())
+}
+
+#[test]
+fn recovery_with_aliased_path_spelling_finds_the_same_artifacts() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let to = dir.path().join("backup");
+    generation_at(&to, "live", OLD_AT)?;
+    let trash = displace(&to, "aliased")?;
+    check!(trash.exists());
+    let aliased_display = dir.path().join(".").join("backup").to_string_lossy().into_owned();
+    let aliased = Path::new(aliased_display.as_str());
+    check!(destination_prefix(STAGING_PREFIX, &to) == destination_prefix(STAGING_PREFIX, aliased));
+    let recovered = recover(aliased, STAGING_PREFIX)?;
+    check!(recovered.restored);
+    check!(eq; recovered.trashes_removed, 0);
+    check!(to.join(MANIFEST_PATH).is_file());
+    check!(!trash.exists());
     Ok(())
 }
 

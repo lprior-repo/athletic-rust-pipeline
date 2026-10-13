@@ -12,11 +12,51 @@ use super::files::sync_directories;
 use super::MANIFEST_PATH;
 use crate::fs::fsync_dir;
 use crate::{StoreError, StoreResult};
+pub(super) fn normalize_path(to: &Path) -> PathBuf {
+    if let Ok(canonical) = fs::canonicalize(to) {
+        return canonical;
+    }
+    let text = to.to_string_lossy();
+    let normalized = normalize_path_str(&text);
+    PathBuf::from(normalized)
+}
+
+fn normalize_path_str(path: &str) -> String {
+    let components = path.split('/').collect::<Vec<&str>>();
+    let mut result = Vec::new();
+    for comp in components {
+        if comp == "." || comp.is_empty() {
+            continue;
+        }
+        if comp == ".." {
+            if result.is_empty() || result.last() == Some(&".." as &&str) {
+                result.push("..");
+            } else {
+                result.pop();
+            }
+            continue;
+        }
+        result.push(comp);
+    }
+    if result.is_empty() {
+        return "/".to_string();
+    }
+    if path.starts_with('/') {
+        format!("/{}", result.join("/"))
+    } else {
+        result.join("/")
+    }
+}
 pub(super) fn destination_prefix(base: &str, to: &Path) -> String {
+    let normalized = normalize_path(to);
     let mut hasher = Sha256::new();
-    hasher.update(to.to_string_lossy().as_bytes());
+    let raw = normalized.as_os_str().as_encoded_bytes();
+    hasher.update(raw);
     let result = hasher.finalize();
-    let hash_hex = format!("{:02x}{:02x}{:02x}{:02x}", result[0], result[1], result[2], result[3]);
+    let hash_hex = format!(
+        "{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
+        result[0], result[1], result[2], result[3], result[4], result[5], result[6], result[7]
+    );
     format!("{base}{hash_hex}.")
 }
 
