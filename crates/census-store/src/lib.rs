@@ -75,8 +75,9 @@ pub use table::{
     MAX_ROWS_PER_TABLE,
 };
 pub use write_batch::{
-    ConditionalBatch, ObservationBudget, ObservationChunk, StoreBatch, MAX_OBSERVATION_BATCH_BYTES,
-    MAX_OBSERVATION_BATCH_ROWS, MAX_OBSERVATION_RECORD_BYTES,
+    ConditionalBatch, ObservationBudget, ObservationChunk, RevisionedApplication, StoreBatch,
+    StoreRevision, MAX_OBSERVATION_BATCH_BYTES, MAX_OBSERVATION_BATCH_ROWS,
+    MAX_OBSERVATION_RECORD_BYTES,
 };
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -192,9 +193,7 @@ impl Store {
     fn snapshot_locked(&self) -> StoreSnapshot<'_> {
         StoreSnapshot::new(
             self.db.snapshot(),
-            &self.entities,
-            &self.journal,
-            &self.root,
+            self,
             self.generations.derived_current(),
             self.generations.entities(),
         )
