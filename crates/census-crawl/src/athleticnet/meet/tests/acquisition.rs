@@ -4,6 +4,7 @@ use crate::net::cache::{content_digest, write_cache, CacheMeta};
 use crate::net::{Fetcher, RepresentationHeaders};
 use census_domain::model::{CanonicalAthlete, CanonicalMeet, CanonicalPerformance};
 use census_store::{Store, Table};
+use std::collections::HashSet;
 use std::path::Path;
 
 const MEET_CAPTURED_AT: &str = "2026-09-22T11:59:58Z";
@@ -121,6 +122,80 @@ fn cached_meet_keeps_capture_instants_and_published_school_year_on_later_replay(
             check!(eq; replay.requests, 0);
             check!(eq; replay.from_cache, 0);
             retained_evidence(&store)?;
+            Ok(())
+        })
+}
+
+#[test]
+fn old_meet_completion_is_retained_while_the_current_parser_interprets_cached_xc_labels(
+) -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let dir = tempfile::tempdir()?;
+            let store = Store::open(dir.path().join("store"))?;
+            let cache = dir.path().join("http");
+            let [meet_url, results_url] = meet_requests(634313);
+            let meet: MeetData = serde_json::from_str(MEET_DATA)?;
+            let results = serde_json::json!({
+                "teams":[{"IDSchool":3204,"SchoolName":"Middleton"}],
+                "relayLegs":[],
+                "flatEvents":[{"EventId":1,"Event":"3000m XC","EventShort":"3000m XC",
+                    "Gender":"M","Division":"Varsity","results":[{
+                        "IDResult":1,"AthleteID":28872883,"FirstName":"Captured",
+                        "LastName":"Runner","Grade":"11","TeamID":3204,
+                        "SchoolName":"Middleton","Result":"10:00.00","Place":"1"
+                    }]}]
+            }).to_string();
+            let metadata_url = crate::athleticnet::metadata_request(634313);
+            let metadata = serde_json::json!({"events":[{"ID":1,"Type":"T","isHurdle":false}]}).to_string();
+            seed_cache(&cache, &meet_url, MEET_DATA, None, MEET_CAPTURED_AT)?;
+            seed_cache(&cache, &results_url, &results, meet.token.as_deref(), RESULTS_CAPTURED_AT)?;
+            seed_cache(&cache, &metadata_url, &metadata, meet.token.as_deref(), RESULTS_CAPTURED_AT)?;
+            let old_meet = serde_json::json!({"url":meet_url,"parser":2,"parsed":true,"rows":0});
+            let old_results = serde_json::json!({"url":results_url,"parser":2,"parsed":true,"rows":1});
+            let old_metadata = serde_json::json!({"url":metadata_url,"parser":2,"parsed":true,"rows":0});
+            store.journal_done("athleticnet", &meet_url, &old_meet)?;
+            store.journal_done("athleticnet", &results_url, &old_results)?;
+            store.journal_done("athleticnet", &metadata_url, &old_metadata)?;
+            let fetcher = Fetcher::new(&cache, None, std::time::Duration::from_millis(1),
+                HashMap::new(), Vec::new())?.with_offline(true);
+            let ctx = crate::AdapterContext {
+                fetcher:&fetcher, store:&store, refresh:false,
+                school_year:SchoolYear::new(2026).ok_or("controlled school year")?,
+                observed_on:"2026-09-30".into(),
+                performance_as_of:chrono::NaiveDate::from_ymd_opt(2026,9,30).ok_or("controlled cutoff")?,
+                recording:None,
+            };
+            let options = Options { meets:vec![634313], event_metadata:true, ..Options::default() };
+            check!(eq; crate::athleticnet::PARSE_VERSION, 3);
+            check!(eq; crate::athleticnet::MEET_COMPLETION_PHASE, "athleticnet_meet_completions_v3");
+            check!(eq; crate::athleticnet::collect::journaled_urls(&ctx)?, HashSet::new());
+            let first = crate::athleticnet::collect(&ctx, &options).await?;
+            check!(eq; (first.rows,first.errors,first.requests,first.from_cache), (1,0,0,3));
+            let events:Vec<census_domain::model::CanonicalEvent> = store.snapshot().scan(Table::Events)?;
+            check!(eq; events.len(), 1);
+            let event = events.first().ok_or("XC event")?;
+            check!(eq; event.kind, census_domain::model::EventKind::CrossCountry);
+            let performances:Vec<CanonicalPerformance> = store.snapshot().scan(Table::Performances)?;
+            check!(eq; performances.len(), 1);
+            let performance = performances.first().ok_or("captured performance")?;
+            check!(eq; performance.mark, Mark::TimeSeconds(census_domain::model::ExactSeconds::parse("600")?));
+            check!(eq; performance.evidence.first().ok_or("physical evidence")?.observed_on, RESULTS_CAPTURED_AT);
+            for url in [&meet_url,&results_url,&metadata_url] {
+                let current = store.journal_payload(crate::athleticnet::MEET_COMPLETION_PHASE, url)?
+                    .ok_or("current completion")?;
+                check!(eq; current.get("parser"), Some(&serde_json::json!(3)));
+                check!(eq; current.get("parsed"), Some(&serde_json::json!(true)));
+            }
+            check!(eq; store.journal_payload("athleticnet", &meet_url)?, Some(old_meet));
+            check!(eq; store.journal_payload("athleticnet", &results_url)?, Some(old_results));
+            check!(eq; store.journal_payload("athleticnet", &metadata_url)?, Some(old_metadata));
+            let replay = crate::athleticnet::collect(&ctx, &options).await?;
+            check!(eq; (replay.rows,replay.requests,replay.from_cache), (0,0,0));
+            check!(eq; store.walk_table(Table::Events)?.rows, 1);
+            check!(eq; store.walk_table(Table::Performances)?.rows, 1);
             Ok(())
         })
 }

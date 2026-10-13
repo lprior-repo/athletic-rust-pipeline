@@ -1,4 +1,5 @@
 use super::*;
+mod dimensions;
 use crate::model::{
     serialized_bytes, EventIdentity, EventSpecification, Evidence, EvidenceMethod, Gender, Id,
     RetainedConflict, SourceRef,

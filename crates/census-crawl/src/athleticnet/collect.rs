@@ -1,5 +1,7 @@
 use super::map::{Accumulator, Stats};
-use super::{read_registry, Options, Target, BIO_ENDPOINT, PARSE_VERSION, SCHOOL_KIND};
+use super::{
+    read_registry, Options, Target, BIO_ENDPOINT, MEET_COMPLETION_PHASE, PARSE_VERSION, SCHOOL_KIND,
+};
 use crate::recording::RowBatch;
 use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_domain::model::{
@@ -17,8 +19,8 @@ mod walk;
 
 use walk::{absorb_targets, flush_batch};
 
-pub(super) const PROFILE_PARSE_VERSION: u32 = 4;
-pub(super) const PROFILE_ATTEMPT_PHASE: &str = "athleticnet_profile_attempts_v4";
+pub(super) const PROFILE_PARSE_VERSION: u32 = 5;
+pub(super) const PROFILE_ATTEMPT_PHASE: &str = "athleticnet_profile_attempts_v5";
 
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     if !options.meets.is_empty() {
@@ -112,7 +114,7 @@ pub(in crate::athleticnet) fn appended_total(
 
 pub(super) fn journaled_urls(ctx: &AdapterContext<'_>) -> CrawlResult<HashSet<String>> {
     let mut done = HashSet::new();
-    for entry in ctx.store.journal_payloads("athleticnet")? {
+    for entry in ctx.store.journal_payloads(MEET_COMPLETION_PHASE)? {
         if let Some(url) = completed_url(&entry, PARSE_VERSION) {
             if !url.starts_with(BIO_ENDPOINT) {
                 done.insert(url.to_string());

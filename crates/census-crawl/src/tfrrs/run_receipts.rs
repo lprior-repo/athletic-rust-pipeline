@@ -4,7 +4,7 @@ use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::io::Write;
 
-pub(super) const PHASE: &str = "tfrrs_projection_v3";
+pub(super) const PHASE: &str = "tfrrs_projection_v4";
 
 pub(super) fn context(
     ctx: &AdapterContext<'_>,
@@ -52,3 +52,7 @@ impl Write for HashWriter {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "run_receipts_tests.rs"]
+mod tests;

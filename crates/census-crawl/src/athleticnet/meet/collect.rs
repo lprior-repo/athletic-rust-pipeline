@@ -5,7 +5,7 @@ use crate::athleticnet::collect::{
     appended_total, journaled_urls, live_index, stats_of, store_accumulated, EntityCounts,
 };
 use crate::athleticnet::map::{Accumulator, Stats};
-use crate::athleticnet::{Options, PARSE_VERSION};
+use crate::athleticnet::{Options, MEET_COMPLETION_PHASE, PARSE_VERSION};
 use crate::{AdapterContext, AdapterReport, CrawlResult};
 use census_domain::model::{SchoolId, SourceRef};
 use serde_json::{json, Value};
@@ -75,7 +75,7 @@ impl MeetRun {
         let batch = store_accumulated(ctx, std::mem::take(&mut self.accumulated), &mut page)?;
         self.batches.push(batch);
         for (url, payload) in self.pending.drain(..) {
-            page.journal_done("athleticnet", &url, &payload)?;
+            page.journal_done(MEET_COMPLETION_PHASE, &url, &payload)?;
         }
         page.commit()?;
         Ok(())

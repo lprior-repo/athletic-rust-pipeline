@@ -64,3 +64,41 @@ fn jurisdiction_order_and_duplicates_do_not_change_the_fence_recipe() -> TestRes
     }
     Ok(())
 }
+
+#[test]
+fn implicit_and_explicit_national_selection_bind_the_same_seal_scope() -> TestResult {
+    for (published, requested) in [
+        (Vec::new(), UsJurisdiction::CENSUS_SCOPE.to_vec()),
+        (UsJurisdiction::CENSUS_SCOPE.to_vec(), Vec::new()),
+    ] {
+        let directory = tempfile::tempdir()?;
+        let store = Store::open(directory.path().join("store"))?;
+        seed(&store, "National Scope Fixture")?;
+        let options = Options {
+            grad_year: Some(2027),
+            out: None,
+            limit: None,
+            scope: crate::report::Scope::AllSources,
+            school_year: SchoolYear::new(2026).ok_or("fixture season")?,
+            jurisdictions: published,
+        };
+        let path = crate::workbook::build(&store, &options)?;
+        let lineage = crate::export::store_lineage(&store)?;
+        super::super::open_publication_for_seal(
+            &path,
+            &lineage,
+            options.scope,
+            GradYear::CO2027,
+            &requested,
+        )?;
+        check!(super::super::open_publication_for_seal(
+            &path,
+            &lineage,
+            options.scope,
+            GradYear::CO2027,
+            &[UsJurisdiction::Wisconsin]
+        )
+        .is_err());
+    }
+    Ok(())
+}

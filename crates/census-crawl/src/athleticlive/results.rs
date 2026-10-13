@@ -17,9 +17,9 @@ use run::Run;
 
 const RETIRED_PHASE: &str = "athleticlive_results_v2";
 pub(super) const CAPTURE_PHASE: &str = "athleticlive_results_capture_v1";
-pub(super) const EFFECT_PHASE: &str = "athleticlive_results_effect_v2";
-pub(super) const ROW_PHASE: &str = "athleticlive_projection_v4";
-pub(super) const PARSER: &str = "athleticlive_results_v4";
+pub(super) const EFFECT_PHASE: &str = "athleticlive_results_effect_v3";
+pub(super) const ROW_PHASE: &str = "athleticlive_projection_v5";
+pub(super) const PARSER: &str = "athleticlive_results_v5";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StandingsCapture {

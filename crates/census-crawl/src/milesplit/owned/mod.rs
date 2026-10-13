@@ -12,7 +12,7 @@ mod tests;
 pub(crate) use effect::{acquisition_manifest_key, read_owned_meet};
 pub use parse::parse_owned_meet;
 
-pub const OWNED_MEET_PHASE: &str = "milesplit_owned_meet_v3";
+pub const OWNED_MEET_PHASE: &str = "milesplit_owned_meet_v4";
 pub const OWNED_CAPTURE_PHASE: &str = "milesplit_owned_capture_v1";
 pub const OWNED_FIELDS: &str = "id,meetId,teamId,teamName,athleteId,firstName,lastName,gender,divisionId,divisionName,meetResultsId,meetResultsDivisionId,resultsDivisionId,gradYear,eventName,eventCode,eventDistance,round,roundName,heat,units,mark,place,windReading,profileUrl,statusCode";
 pub const MAX_OWNED_BODY_BYTES: usize = 32 * 1024 * 1024;

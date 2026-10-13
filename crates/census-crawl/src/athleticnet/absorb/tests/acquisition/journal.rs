@@ -1,4 +1,5 @@
 use super::*;
+use std::collections::HashSet;
 
 #[test]
 fn explicit_refresh_reopens_journaled_profiles_and_keeps_failed_refresh_owed() -> TestResult {
@@ -99,7 +100,7 @@ fn pre_admission_profile_receipts_do_not_hide_owed_owner_validation() -> TestRes
                 .next()
                 .ok_or("meet URL")?;
             store.journal_done(
-                "athleticnet",
+                crate::athleticnet::MEET_COMPLETION_PHASE,
                 &meet,
                 &serde_json::json!({
                     "url": meet,
@@ -113,6 +114,47 @@ fn pre_admission_profile_receipts_do_not_hide_owed_owner_validation() -> TestRes
             );
             Ok(())
         })
+}
+
+#[test]
+fn previous_profile_parser_receipts_remain_retained_without_current_completion_credit() -> TestResult
+{
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path().join("store"))?;
+    let fetcher = crate::net::Fetcher::new(
+        dir.path().join("http"),
+        None,
+        std::time::Duration::from_millis(1),
+        HashMap::new(),
+        Vec::new(),
+    )?
+    .with_offline(true);
+    let ctx = context(&store, &fetcher)?;
+    let url = source_urls(28872883)
+        .into_iter()
+        .next()
+        .ok_or("profile URL")?;
+    let legacy = serde_json::json!({"url":url,"parser":4,"parsed":true,"rows":7});
+    store.journal_done("athleticnet_profile_attempts_v4", &url, &legacy)?;
+    store.journal_done("athleticnet", &url, &legacy)?;
+    check!(eq; PROFILE_PARSE_VERSION, 5);
+    check!(eq; PROFILE_ATTEMPT_PHASE, "athleticnet_profile_attempts_v5");
+    check!(eq; crate::athleticnet::collect::journaled_urls(&ctx)?, HashSet::new());
+    let mismatched = serde_json::json!({"url":url,"parser":4,"parsed":true});
+    store.journal_done(PROFILE_ATTEMPT_PHASE, &url, &mismatched)?;
+    check!(eq; crate::athleticnet::collect::journaled_urls(&ctx)?, HashSet::new());
+    let incomplete = serde_json::json!({"url":url,"parser":5,"parsed":false});
+    store.journal_done(PROFILE_ATTEMPT_PHASE, &url, &incomplete)?;
+    check!(eq; crate::athleticnet::collect::journaled_urls(&ctx)?, HashSet::new());
+    let current = serde_json::json!({"url":url,"parser":5,"parsed":true});
+    store.journal_done(PROFILE_ATTEMPT_PHASE, &url, &current)?;
+    check!(eq;
+        crate::athleticnet::collect::journaled_urls(&ctx)?,
+        HashSet::from([url.clone()])
+    );
+    check!(eq; store.journal_payload("athleticnet_profile_attempts_v4", &url)?, Some(legacy.clone()));
+    check!(eq; store.journal_payload("athleticnet", &url)?, Some(legacy));
+    Ok(())
 }
 
 #[test]
