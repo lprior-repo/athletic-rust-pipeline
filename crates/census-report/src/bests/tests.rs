@@ -18,6 +18,7 @@ mod exact_time;
 mod keys;
 mod measures;
 mod reduction;
+mod ties;
 mod units;
 
 fn athlete_id() -> AthleteId {

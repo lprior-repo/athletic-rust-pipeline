@@ -6,17 +6,16 @@ use census_store::{Store, Table};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
-#[test]
-fn retained_conflict_policy_preserves_but_refuses_revision_seven_inputs() -> TestResult {
+fn historical_publication_policy_is_refused(revision: u32) -> TestResult {
     let temporary = tempfile::tempdir()?;
     let store = Store::open(temporary.path().join("store"))?;
     let current = ExportDataset::load(&store)?;
-    check!(eq; current.lineage.policy_revision, 8);
-    let archive = temporary.path().join("revision-seven.json");
+    check!(eq; current.lineage.policy_revision, 9);
+    let archive = temporary.path().join(format!("revision-{revision}.json"));
     current.save_frozen(&archive)?;
     let mut historical: serde_json::Value = serde_json::from_slice(&std::fs::read(&archive)?)?;
     let mut old_lineage = current.lineage.clone();
-    old_lineage.policy_revision = 7;
+    old_lineage.policy_revision = revision;
     old_lineage.input_generation = super::generation(&old_lineage)?;
     check!(ne; old_lineage.input_generation, current.lineage.input_generation);
     historical["lineage"] = serde_json::to_value(old_lineage)?;
@@ -83,4 +82,14 @@ fn unsupported_lineage_is_refused_before_malformed_table_rows_are_decoded() -> T
     );
     check!(eq; std::fs::read(&archive)?, retained);
     Ok(())
+}
+
+#[test]
+fn retained_conflict_policy_preserves_but_refuses_revision_seven_inputs() -> TestResult {
+    historical_publication_policy_is_refused(7)
+}
+
+#[test]
+fn tie_policy_preserves_but_refuses_revision_eight_inputs() -> TestResult {
+    historical_publication_policy_is_refused(8)
 }

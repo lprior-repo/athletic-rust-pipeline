@@ -169,3 +169,10 @@ fn supported_missing_object_still_retires_every_state_and_allows_a_fresh_capture
         .into_iter()
         .try_for_each(retired_current_corruption)
 }
+
+#[test]
+fn previous_tie_policy_preserves_every_retained_state_across_refusal_and_reopen() -> TestResult {
+    STATES
+        .into_iter()
+        .try_for_each(|state| preserved(VersionCase::PreviousPolicy, state))
+}
