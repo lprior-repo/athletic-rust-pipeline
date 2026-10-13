@@ -24,7 +24,7 @@ declare -A lane=(
   [service-capture]="pipeline:tests-scoped -- -p census-service -E test(capture)+test(replay)"
   [service-provenance]="pipeline:tests-scoped -- -p census-service -E test(provenance)"
   [coach-lane-fixtures]="pipeline:tests-scoped -- -p census-service -E test(coach_lane)"
-  [xtask-ratchet]="pipeline:tests-scoped -- -p xtask -E test(ratchet)"
+  [xtask-ratchet]="pipeline:tests-scoped -- -p xtask -E test(ratchet)+test(baseline)"
   [gate-ratchet]="pipeline:gate -- --lane ratchet"
 )
 fast=(crawl-tfrrs report-selection reconcile-identity domain-identity service-capture service-provenance coach-lane-fixtures xtask-ratchet)
