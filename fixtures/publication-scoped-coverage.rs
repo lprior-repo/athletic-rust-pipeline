@@ -199,7 +199,7 @@ pub(super) fn result(
         EventSpecification::default(),
     )?;
     event.source_labels.push(SourceEventLabel {
-        source: SourceRef::id(source),
+        source: evidence(source).source,
         label: label.into(),
     });
     event.evidence.push(evidence(source));

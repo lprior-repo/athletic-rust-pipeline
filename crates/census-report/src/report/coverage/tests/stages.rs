@@ -63,7 +63,7 @@ fn scoped_stage_totals_reject_cross_jurisdiction_and_same_jurisdiction_overflow(
         let directory = tempfile::tempdir()?;
         let store = Store::open(directory.path())?;
         for subject in subjects {
-            store.append(
+            store.replace(
                 Table::Coverage,
                 &row(
                     CoverageScope::Jurisdiction,
@@ -94,7 +94,7 @@ fn scoped_stage_totals_accept_exact_capacity_without_saturation() -> TestResult 
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path())?;
     let maximum = u64::try_from(usize::MAX)?;
-    store.append(
+    store.replace(
         Table::Coverage,
         &row(
             CoverageScope::Jurisdiction,
@@ -102,7 +102,7 @@ fn scoped_stage_totals_accept_exact_capacity_without_saturation() -> TestResult 
             &[("registered", maximum.checked_sub(1).ok_or("capacity")?)],
         ),
     )?;
-    store.append(
+    store.replace(
         Table::Coverage,
         &row(CoverageScope::Jurisdiction, "MN", &[("registered", 1)]),
     )?;
@@ -122,7 +122,7 @@ fn scoped_stage_totals_accept_exact_capacity_without_saturation() -> TestResult 
 fn scoped_stages_distinguish_measured_zero_and_partial_measurement() -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path())?;
-    store.append(
+    store.replace(
         Table::Coverage,
         &row(
             CoverageScope::Jurisdiction,
@@ -130,7 +130,7 @@ fn scoped_stages_distinguish_measured_zero_and_partial_measurement() -> TestResu
             &[("registered", 7), ("attempted", 4), ("captured", 0)],
         ),
     )?;
-    store.append(
+    store.replace(
         Table::Coverage,
         &row(
             CoverageScope::Jurisdiction,
