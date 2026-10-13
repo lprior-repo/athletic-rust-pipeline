@@ -4,9 +4,9 @@ use super::SealEvidence;
 
 pub(super) fn render(evidence: &SealEvidence) -> String {
     let counts = evidence.counts;
-    let mut gaps = evidence.retained.gaps.clone();
-    gaps.sort();
-    let tallies = gaps
+    let inputs = evidence.retained.gap_digest_inputs();
+    let tallies = inputs
+        .gaps
         .iter()
         .map(|gap| format!("{}:{}:{}", gap.class, gap.unit, gap.count))
         .collect::<Vec<_>>()
@@ -14,13 +14,8 @@ pub(super) fn render(evidence: &SealEvidence) -> String {
     let mut workbook_digests = evidence.workbook.digests.clone();
     workbook_digests.sort();
     let workbook_digests = workbook_digests.join("|");
-    let silent_sources = {
-        let mut names = evidence.retained.silent_sources.clone();
-        names.sort();
-        names.dedup();
-        names.join("|")
-    };
-    let source_failures = match evidence.retained.source_failures {
+    let silent_sources = inputs.silent_sources.join("|");
+    let source_failures = match inputs.source_failures {
         Some(count) => count.to_string(),
         None => "unmeasured".to_string(),
     };
@@ -54,4 +49,121 @@ pub(super) fn render(evidence: &SealEvidence) -> String {
         hex.push_str(&format!("{byte:02x}"));
     }
     hex
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::{GapTally, RetainedFindings, SealEvidence};
+    use super::render;
+
+    type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+    fn retained() -> RetainedFindings {
+        RetainedFindings {
+            gaps: vec![
+                GapTally {
+                    class: "missing_coach".to_string(),
+                    unit: "athletes".to_string(),
+                    count: 264_452,
+                },
+                GapTally {
+                    class: "missing_profile".to_string(),
+                    unit: "athletes".to_string(),
+                    count: 13_202,
+                },
+            ],
+            silent_sources: vec!["wayzata_mn".to_string(), "wiaa_results_wi".to_string()],
+            source_failures: Some(4),
+            ..Default::default()
+        }
+    }
+
+    fn evidence_with(retained: RetainedFindings) -> SealEvidence {
+        SealEvidence {
+            retained,
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn dropping_a_gap_changes_the_published_inputs_and_the_digest() -> TestResult {
+        let base = evidence_with(retained());
+        let mut dropped = retained();
+        dropped.gaps.truncate(1);
+        let without = evidence_with(dropped);
+        check!(ne;
+            base.retained.gap_digest_inputs(),
+            without.retained.gap_digest_inputs(),
+            "removing a gap tally must move the published gap inputs"
+        );
+        check!(ne;
+            render(&base),
+            render(&without),
+            "removing a gap tally must move the seal digest"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn dropping_a_silent_source_changes_the_published_inputs_and_the_digest() -> TestResult {
+        let base = evidence_with(retained());
+        let mut dropped = retained();
+        dropped.silent_sources.truncate(1);
+        let without = evidence_with(dropped);
+        check!(ne;
+            base.retained.gap_digest_inputs(),
+            without.retained.gap_digest_inputs(),
+            "removing a silent source must move the published gap inputs"
+        );
+        check!(ne;
+            render(&base),
+            render(&without),
+            "removing a silent source must move the seal digest"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn dropping_the_source_failure_count_changes_the_published_inputs_and_the_digest() -> TestResult
+    {
+        let base = evidence_with(retained());
+        let mut dropped = retained();
+        dropped.source_failures = None;
+        let without = evidence_with(dropped);
+        check!(ne;
+            base.retained.gap_digest_inputs(),
+            without.retained.gap_digest_inputs(),
+            "unmeasuring the failure count must move the published gap inputs"
+        );
+        check!(ne;
+            render(&base),
+            render(&without),
+            "unmeasuring the failure count must move the seal digest"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn the_published_inputs_carry_the_digest_canonical_form() -> TestResult {
+        let mut shuffled = retained();
+        shuffled.gaps.reverse();
+        shuffled.silent_sources.reverse();
+        shuffled.silent_sources.push("wayzata_mn".to_string());
+        let published = shuffled.gap_digest_inputs();
+        check!(eq; published.gaps, retained().gaps);
+        check!(eq;
+            published.silent_sources,
+            vec!["wayzata_mn".to_string(), "wiaa_results_wi".to_string()]
+        );
+        check!(eq; published.source_failures, Some(4));
+        let base = evidence_with(retained());
+        let canonical = evidence_with(RetainedFindings {
+            gaps: published.gaps,
+            silent_sources: published.silent_sources,
+            source_failures: published.source_failures,
+            ..Default::default()
+        });
+        check!(eq; render(&base), render(&canonical));
+        Ok(())
+    }
 }

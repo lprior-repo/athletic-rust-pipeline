@@ -10,12 +10,12 @@ fn complete_meet_row(slug: &str) -> Result<MeetSourceRows, Box<dyn std::error::E
     report.disposition = Disposition::Complete;
     let census =
         crate::restate_services::meets_arms::report_census(slug, report).map_err(handler_error)?;
-    let row = census
+    census
         .sources
         .into_iter()
         .next()
-        .ok_or("missing meet source row")?;
-    Ok(row)
+        .ok_or("missing meet source row")
+        .map_err(|error| error.into())
 }
 fn terminal_result_row(slug: &str) -> Result<ResultsSourceRows, Box<dyn std::error::Error>> {
     let mut report = census_crawl::AdapterReport::new(slug, "results");
@@ -182,7 +182,6 @@ fn cen05_partial_source_work_cannot_become_a_completed_jurisdiction() -> TestRes
     );
     Ok(())
 }
-
 #[test]
 fn cen05_skipped_rosters_and_engineering_gaps_cannot_publish_completion() -> TestResult {
     let state = completed_collection()?;
@@ -208,16 +207,13 @@ fn cen05_skipped_rosters_and_engineering_gaps_cannot_publish_completion() -> Tes
         .sweepable
         .pop()
         .ok_or("missing applicable source")?;
-    check!(!inventory::plan_covers(
-        UsJurisdiction::Wisconsin,
-        &no_inventory
-    ));
+    let covered = inventory::plan_covers(UsJurisdiction::Wisconsin, &no_inventory);
+    check!(!covered);
     check!(
         !collection_is_complete(UsJurisdiction::Wisconsin, &no_inventory).map_err(handler_error)?
     );
     Ok(())
 }
-
 #[test]
 fn jpx41_an_accepted_coach_refusal_settles_the_plan_but_a_recorded_one_does_not() -> TestResult {
     let jurisdiction = UsJurisdiction::Oregon;
@@ -263,7 +259,6 @@ fn jpx41_an_accepted_coach_refusal_settles_the_plan_but_a_recorded_one_does_not(
     check!(!refusals_settled(UsJurisdiction::Wisconsin, &state, &bound));
     Ok(())
 }
-
 #[test]
 fn wi_delegated_results_reach_terminal_through_the_meets_producer() -> TestResult {
     let state = completed_collection()?;

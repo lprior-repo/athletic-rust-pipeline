@@ -3,7 +3,9 @@ use serde::{Deserialize, Serialize};
 
 mod recorded;
 
-pub use recorded::{GapTally, OpenWork, RetainedFindings, SealCounts, Verification, WorkbookCheck};
+pub use recorded::{
+    GapDigestInputs, GapTally, OpenWork, RetainedFindings, SealCounts, Verification, WorkbookCheck,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]

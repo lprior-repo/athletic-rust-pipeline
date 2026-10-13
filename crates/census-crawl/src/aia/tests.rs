@@ -1,6 +1,9 @@
+use super::map::qualify_owner;
 use super::parse::{
-    parse_coach_rows, parse_gender, parse_school_info, parse_search_json, parse_sport_label,
+    parse_coach_rows, parse_gender, parse_school_info, parse_school_profile, parse_search_json,
+    parse_sport_label, ParsedRow,
 };
+use crate::net::FetchOutcome;
 use census_domain::model::{Gender, Sport};
 use std::path::{Path, PathBuf};
 
@@ -120,6 +123,76 @@ fn gender_parsing() -> anyhow::Result<()> {
     anyhow::ensure!(
         parse_gender("Polo") == Gender::Mixed,
         "mixed gender not detected"
+    );
+    Ok(())
+}
+
+fn profile_capture(url: &str, response_url: Option<&str>, body: &str) -> FetchOutcome {
+    FetchOutcome {
+        url: url.to_string(),
+        response_url: response_url.map(str::to_string),
+        method: "GET".to_string(),
+        status: 200,
+        content_digest: crate::net::cache::content_digest(body.as_bytes()),
+        bytes: body.len(),
+        fetched_at: "2026-10-04T00:00:00Z".to_string(),
+        from_cache: false,
+        content_type: Some("text/html".to_string()),
+        body: body.as_bytes().to_vec(),
+    }
+}
+
+#[test]
+fn chandler_indexed_owner_refuses_hamilton_profile() -> anyhow::Result<()> {
+    let chandler_body = std::fs::read_to_string(fixture("school_100_chandler.html"))?;
+    let hamilton_body = std::fs::read_to_string(fixture("school_116_hamilton.html"))?;
+    let chandler_profile = parse_school_profile(&chandler_body)?;
+    let hamilton_profile = parse_school_profile(&hamilton_body)?;
+    anyhow::ensure!(
+        chandler_profile.info.name == "Chandler High School",
+        "unexpected Chandler owner: {}",
+        chandler_profile.info.name
+    );
+    anyhow::ensure!(
+        hamilton_profile.info.name == "Hamilton High School",
+        "unexpected Hamilton owner: {}",
+        hamilton_profile.info.name
+    );
+    let indexed = ParsedRow {
+        school_id: "100".to_string(),
+        name: "Chandler".to_string(),
+        full_name: Some("Chandler High School".to_string()),
+        city: Some("Chandler".to_string()),
+    };
+    let matched_url = "https://aiaonline.org/schools/100";
+    let matched = profile_capture(matched_url, None, &chandler_body);
+    anyhow::ensure!(
+        qualify_owner(&indexed, &chandler_profile, &matched).is_ok(),
+        "matching Chandler owner must qualify"
+    );
+    let mismatched = profile_capture(matched_url, None, &hamilton_body);
+    let detail = match qualify_owner(&indexed, &hamilton_profile, &mismatched) {
+        Ok(()) => anyhow::bail!("Hamilton profile must not qualify as Chandler appointment"),
+        Err(crate::CrawlError::Schema { detail, .. }) => detail,
+        Err(error) => anyhow::bail!("wrong owner must be typed Schema, got: {error}"),
+    };
+    anyhow::ensure!(
+        detail.contains("matching published school owner"),
+        "unexpected wrong-owner detail: {detail}"
+    );
+    let redirected = profile_capture(
+        matched_url,
+        Some("https://aiaonline.org/schools/116"),
+        &chandler_body,
+    );
+    let redirect_detail = match qualify_owner(&indexed, &chandler_profile, &redirected) {
+        Ok(()) => anyhow::bail!("Hamilton redirect must not qualify as Chandler appointment"),
+        Err(crate::CrawlError::Schema { detail, .. }) => detail,
+        Err(error) => anyhow::bail!("wrong redirect must be typed Schema, got: {error}"),
+    };
+    anyhow::ensure!(
+        redirect_detail.contains("redirect differs"),
+        "unexpected redirect detail: {redirect_detail}"
     );
     Ok(())
 }
