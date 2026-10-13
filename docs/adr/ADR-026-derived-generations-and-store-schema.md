@@ -160,3 +160,44 @@ first-occurrence School append order; only the scope's lane-reference set is sor
 local v1 witness encoding contract, not a change to the shared `serialized_digest` helper or
 existing payload encodings. Retained-witness regression checks bind these bytes to actual receipt
 keys and fail if a field-order change silently changes that contract.
+
+## 2026-10-13: store-owned stable lineage and pinned identity reads
+
+`census-store` owns the existing `export-lineage-v1/store-identity` journal record. The domain
+`StoreIdentity` validates exactly 64 ASCII hexadecimal bytes and preserves their spelling,
+including previously accepted uppercase identities. It is not interchangeable with the
+lowercase-only publication digest. Existing publication and frozen-v2 lowercase checks remain.
+
+`Store::store_identity` serializes check/create with the owning store's append mutex and commits
+a genuinely absent identity through the existing inline `SyncData` journal operation. It retains
+the original creation digest inputs and journal envelope. Reading an existing canonical record
+performs no write and does not refresh its timestamp. Moving or reopening a store adopts that
+same identity rather than deriving a replacement from its new path. No physical schema, key
+format, receipt, run manifest or publication-policy revision changes for this ownership move.
+The old optional `.export-lineage.lock` file is left untouched and is no longer needed.
+
+Identity inspection uses one pinned view, examines at most two physical records under the phase,
+and checks the sole value against the existing journal byte ceiling before parsing. Multiple,
+foreign-key, malformed or chunk/object/alias representations refuse without replacement. The
+canonical inline interpretation intentionally closes an older reader's accidental acceptance of
+a sole payload under an unrelated key. Supported canonical historical envelopes remain unchanged;
+refusal is not permission to rewrite unsupported retained bytes.
+
+`StoreSnapshot::store_identity` reads only that snapshot and never initializes or takes the
+append mutex. Snapshot-based report derivation requires identity initialization before capturing
+the view. A snapshot predating initialization remains missing even after a live writer creates
+the record. `StoreSnapshot::ensure_origin` reuses the opaque instance capability from
+`StoreRevision`, without imposing current-generation equality: a same-origin historical view
+remains usable, while another store's view is refused before report row decoding. This also
+permits report derivation from an initialized `FencedSnapshot` without reentering its mutex.
+
+All report capture and reconciliation-stage entry points initialize outside the snapshot/fence;
+report serialization adapters no longer own identity persistence. The generic journal API is not
+a separate identity owner. Deliberate raw journal corruption remains an integrity refusal, not a
+supported identity transition. Live run-manifest metadata is still read separately by existing
+lineage/token code; this change does not claim all run metadata is snapshot-pinned.
+
+This is a prerequisite for installation/profile contracts. It does not register those contracts,
+enroll reusable production, migrate a historical corpus or relax fresh-qualification and release
+requirements. Source evidence and derived generations do not move merely because identity is
+initialized, although the global storage sequence can advance for that durable journal write.

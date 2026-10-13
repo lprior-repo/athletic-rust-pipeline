@@ -5,7 +5,6 @@ use restate_sdk::prelude::*;
 
 use crate::census::seal::{self, census_cohort};
 use census_domain::model::{CensusRun, GradYear, RunManifest, SchoolYear};
-use census_report::export::store_identity;
 use census_store::clock::Clock;
 use census_store::Store;
 
@@ -229,11 +228,11 @@ impl Census {
         let permit = self.jobs.permit_control().await?;
         let result = super::blocking(region, move || {
             let _permit = permit;
-            let identity = store_identity(&store).map_err(|error| JobError::Terminal {
+            let identity = store.store_identity().map_err(|error| JobError::Terminal {
                 message: format!("store identity check failed: {error}"),
             })?;
             let manifest = RunManifest {
-                store_identity: identity,
+                store_identity: identity.into(),
                 run,
                 cohort: GradYear::CO2027,
                 jurisdictions,

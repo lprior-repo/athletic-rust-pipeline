@@ -5,6 +5,7 @@ use fjall::{Readable, Snapshot};
 mod bounded;
 #[path = "../keyed.rs"]
 mod keyed;
+mod lineage;
 mod merge;
 mod object;
 mod object_read;

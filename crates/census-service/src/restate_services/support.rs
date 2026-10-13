@@ -38,6 +38,8 @@ impl From<StoreError> for JobError {
             | StoreError::EvidenceMoved { .. }
             | StoreError::RevisionMoved { .. } => Self::Transient { message },
             StoreError::Decode { .. }
+            | StoreError::StoreIdentity(_)
+            | StoreError::StoreLineage(_)
             | StoreError::Json { .. }
             | StoreError::SnapshotRow { .. }
             | StoreError::ObservationReplacement { .. }

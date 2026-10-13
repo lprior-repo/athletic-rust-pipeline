@@ -9,7 +9,6 @@ use census_domain::model::{
 };
 use census_domain::UsJurisdiction;
 use census_reconcile::identity::Revision;
-use census_report::export::store_identity;
 use census_store::{Store, StoreError, StoreResult, Table};
 
 pub(crate) struct StoreEvidence {
@@ -189,10 +188,10 @@ fn bound_store(store: &Store, run: CensusRun) -> Result<bool, JobError> {
     {
         return Ok(false);
     }
-    let identity = store_identity(store).map_err(|error| JobError::Terminal {
+    let identity = store.store_identity().map_err(|error| JobError::Terminal {
         message: format!("store identity check failed: {error}"),
     })?;
-    Ok(manifest.store_identity == identity
+    Ok(manifest.store_identity == identity.as_str()
         && UsJurisdiction::CENSUS_SCOPE.iter().all(|jurisdiction| {
             manifest
                 .jurisdictions

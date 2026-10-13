@@ -21,6 +21,7 @@ pub(super) fn capture(
     job: &str,
     objects_dir: &Path,
 ) -> ReportResult<FrozenManifest> {
+    store.store_identity()?;
     let snapshot = store.snapshot();
     let mut lineage = super::lineage(store, &snapshot)?;
     lineage.export_job = Some(job.to_string());

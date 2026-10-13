@@ -51,6 +51,9 @@ mod run;
 mod school;
 mod school_address;
 mod school_contact;
+mod store_identity;
+
+pub use store_identity::{StoreIdentity, StoreIdentityError};
 
 pub use athlete::{AthleteCandidateKey, CanonicalAthlete};
 pub use canonical_json::{

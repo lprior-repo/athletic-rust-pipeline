@@ -1,5 +1,9 @@
 #[derive(Debug, thiserror::Error)]
 pub enum StoreError {
+    #[error(transparent)]
+    StoreIdentity(#[from] census_domain::model::StoreIdentityError),
+    #[error(transparent)]
+    StoreLineage(#[from] crate::StoreLineageError),
     #[error("store open failed: {source}")]
     Open {
         #[source]
