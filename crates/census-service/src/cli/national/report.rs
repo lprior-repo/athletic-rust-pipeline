@@ -49,13 +49,18 @@ pub(crate) fn print_national(report: &NationalReport, json: bool) -> Result<()> 
     Ok(())
 }
 
-fn print_national_header(report: &NationalReport) {
-    println!(
-        "national {} revision {} observed {}",
+pub(crate) fn national_header(report: &NationalReport) -> String {
+    format!(
+        "national {} revision {} observed {} ({})",
         report.season.short(),
         report.revision.get(),
-        report.today
-    );
+        report.today,
+        report.completeness_label()
+    )
+}
+
+fn print_national_header(report: &NationalReport) {
+    println!("{}", national_header(report));
     println!(
         "{:>3}  {:>9}  {:>9}  {:>7}  {:>9}  {:>7}  {:>9}  {:>8}  blocked",
         "st", "rosters", "committed", "held", "remaining", "athletes", "co2027", ""
@@ -201,6 +206,36 @@ mod tests {
         }))?;
         let owed = owed_sources(&plan);
         anyhow::ensure!(owed.is_empty(), "expected no owed sources, got {owed:?}");
+        Ok(())
+    }
+
+    #[test]
+    fn report_header_shows_partial_vs_final() -> Result<()> {
+        let base = serde_json::json!({
+            "season": 2026, "revision": 1,
+            "jurisdictions": [], "failures": [],
+            "rosters_total": 0, "athletes_total": 0, "class_of_2027_total": 0,
+            "today": "2026-10-12"
+        });
+        let final_report: NationalReport = serde_json::from_value(base.clone())?;
+        anyhow::ensure!(
+            !final_report.is_partial(),
+            "missing completeness must decode as final"
+        );
+        anyhow::ensure!(
+            national_header(&final_report).contains("(final)"),
+            "final header missing marker: {}",
+            national_header(&final_report)
+        );
+        let mut partial_value = base;
+        partial_value["completeness"] = serde_json::json!("partial");
+        let partial: NationalReport = serde_json::from_value(partial_value)?;
+        anyhow::ensure!(partial.is_partial(), "explicit partial lost its marker");
+        anyhow::ensure!(
+            national_header(&partial).contains("(partial)"),
+            "partial header missing marker: {}",
+            national_header(&partial)
+        );
         Ok(())
     }
 }

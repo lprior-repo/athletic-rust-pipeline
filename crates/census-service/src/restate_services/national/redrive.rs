@@ -9,8 +9,10 @@ use crate::restate_services::wire::{
     BindRunRequest, JurisdictionOwed, JurisdictionReport, JurisdictionSummary, NationalFailure,
     NationalRequest,
 };
+use crate::restate_services::KEY_STATE;
 
 use super::classification::{classify, Completion};
+use super::report::assemble_partial;
 
 pub(super) async fn redrive(
     ctx: &WorkflowContext<'_>,
@@ -33,6 +35,14 @@ pub(super) async fn redrive(
         for classified in classify_round(ctx, request, targets, no_progress).await? {
             apply_completion(jurisdictions, failures, &mut owed, classified);
         }
+        let partial = assemble_partial(
+            request.season,
+            request.revision,
+            jurisdictions,
+            failures,
+            &owed,
+        );
+        ctx.set(KEY_STATE, Json(partial));
         pending = next;
         tracing::info!(
             round = rounds,

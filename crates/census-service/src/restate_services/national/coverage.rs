@@ -97,6 +97,7 @@ mod tests {
             class_of_2027_total: 30,
             school_address: None,
             today: "2026-10-12".to_string(),
+            completeness: Default::default(),
         })
     }
 
