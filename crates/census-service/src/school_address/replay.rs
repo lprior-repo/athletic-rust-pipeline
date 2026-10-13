@@ -148,7 +148,7 @@ pub fn run(manifest_path: &Path, out: &Path) -> Result<Replay, ReplayError> {
     }
     let mut args = arguments(out, manifest.month);
     let mut overrides = Overrides::default();
-    let mut seen: std::collections::BTreeMap<PathBuf, (String, Option<String>)> = std::collections::BTreeMap::new();
+    let mut seen: std::collections::BTreeMap<(String, String), (String, Option<String>)> = std::collections::BTreeMap::new();
     let base = manifest_path
         .parent()
         .ok_or_else(|| refused(manifest_path, "no manifest parent"))?;
@@ -164,30 +164,9 @@ pub fn run(manifest_path: &Path, out: &Path) -> Result<Replay, ReplayError> {
         let path = base.join(&capture.path);
         let canonical = std::fs::canonicalize(&path).map_err(|source| io(&path, source))?;
         ensure_source_contained(base, &canonical)?;
-        let tuple = (capture.url.clone(), capture.retrieved_at.clone());
-        match seen.get(&canonical) {
-            Some(existing) if *existing != tuple => {
-                let differs = match (existing.0 != tuple.0, existing.1 != tuple.1) {
-                    (true, true) => "url and date",
-                    (true, false) => "url",
-                    (false, true) => "date",
-                    (false, false) => "provenance",
-                };
-                return Err(refused(
-                    &path,
-                    &format!(
-                        "capture acquisition conflict: different provenance tuples for the same body ({differs} differ)"
-                    ),
-                ));
-            }
-            Some(_) => {}
-            None => {
-                seen.insert(canonical.clone(), tuple);
-            }
-        }
         let entry = u32::try_from(i)
             .map_err(|_| refused(&path, "too many captures for u32 index"))?;
-        stage_capture(capture, &canonical, &archive, entry, &mut args, &mut overrides)?;
+        stage_capture(capture, &canonical, &archive, entry, &mut args, &mut overrides, &mut seen)?;
     }
     preserve(&archive.join(".complete"), b"")?;
 
@@ -216,6 +195,7 @@ fn stage_capture(
     entry: u32,
     args: &mut SchoolAddressArgs,
     overrides: &mut Overrides,
+    seen: &mut std::collections::BTreeMap<(String, String), (String, Option<String>)>,
 ) -> Result<(), ReplayError> {
     let bytes = load(path, MAX_CAPTURE_BYTES)?;
     let digest = hex(&bytes);
@@ -228,9 +208,30 @@ fn stage_capture(
             ),
         ));
     }
-    let staged = archive.join(digest);
     let provider = capture.format.provider();
-
+    let key = (provider.to_string(), digest.clone());
+    let tuple = (capture.url.clone(), capture.retrieved_at.clone());
+    match seen.get(&key) {
+        Some(existing) if *existing != tuple => {
+            let differs = match (existing.0 != tuple.0, existing.1 != tuple.1) {
+                (true, true) => "url and date",
+                (true, false) => "url",
+                (false, true) => "date",
+                (false, false) => "provenance",
+            };
+            return Err(refused(
+                path,
+                &format!(
+                    "capture acquisition conflict: different provenance tuples for the same body ({differs} differ)"
+                ),
+            ));
+        }
+        Some(_) => {}
+        None => {
+            seen.insert(key, tuple);
+        }
+    }
+    let staged = archive.join(digest);
     overrides.acquisitions.push(super::Acquisition {
         entry,
         provider: provider.to_string(),
@@ -238,7 +239,6 @@ fn stage_capture(
         url: capture.url.clone(),
         retrieved_at: capture.retrieved_at.clone(),
     });
-
     preserve(&staged, &bytes)?;
     capture.format.add(args, staged)?;
     Ok(())
