@@ -60,9 +60,10 @@ impl Fixture {
             input,
             lease_epoch: epoch,
         })?;
-        let intent = store
-            .publication_fence(&request.request, &run_manifest)?
-            .begin(&request, &desired)?;
+        let intent = {
+            let fence = store.publication_fence(&request.request, &run_manifest)?;
+            fence.begin(fence.intent(), &desired)?
+        };
         Ok(Self {
             _temp: temp,
             store,

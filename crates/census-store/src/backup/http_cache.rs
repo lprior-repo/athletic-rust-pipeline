@@ -7,6 +7,8 @@ use std::path::Path;
 const DIGEST_BYTES: usize = 64;
 const ARCHIVE_CAPACITY_LOCK: &str = "archive-capacity.lock";
 
+mod reservations;
+
 pub(crate) fn http_cache_integrity(root: &Path) -> crate::StoreResult<Vec<String>> {
     let http = root.join("http");
     if !http.exists() {
@@ -84,6 +86,7 @@ fn check_archive(archive: &Path, issues: &mut Vec<String>) -> crate::StoreResult
         match name.as_str() {
             "bodies" if kind.is_dir() => has_bodies = true,
             "captures" if kind.is_dir() => has_captures = true,
+            "reservations" if kind.is_dir() => reservations::check(&entry.path(), issues)?,
             _ => issues.push(format!("archive: unexpected entry {name}")),
         }
     }

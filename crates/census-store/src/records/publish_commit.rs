@@ -1,10 +1,15 @@
 use super::{Digest, InputFence, Intent, Request, State};
-use crate::records::codec::{decode, encode};
+use crate::records::codec::decode;
 use crate::{Store, StoreError, StoreResult};
 use std::sync::MutexGuard;
 
+#[path = "publish_write.rs"]
+mod writes;
+use writes::{stage, write};
+
 pub struct PublicationFence<'s> {
     store: &'s Store,
+    intent: Intent,
     _writes: MutexGuard<'s, ()>,
 }
 
@@ -51,9 +56,7 @@ impl Store {
         let retained = self
             .publication_read(&request.identity)?
             .ok_or_else(|| missing(request))?;
-        if retained.request.namespace != request.namespace
-            || retained.request.input != request.input
-        {
+        if !request_matches(&retained.request, request) {
             return Err(StoreError::RecordConflict {
                 kind: "publication",
                 digest: request.identity.as_str().into(),
@@ -63,10 +66,13 @@ impl Store {
             .checked_add_signed(chrono::Duration::minutes(30))
             .ok_or(StoreError::CounterOverflow)?
             .to_rfc3339();
-        let epoch = self.lease_succeed_expired(
+        let mut batch = self.db.batch();
+        let epoch = self.lease_succeed_expired_stage(
             request.identity.as_str(),
             "workbook-publication",
             &expires,
+            request.lease_epoch,
+            &mut batch,
         )?;
         let updated = Intent {
             request: Request {
@@ -78,7 +84,11 @@ impl Store {
             },
             state: retained.state.clone(),
         };
-        write(self, &updated, Some(&updated.request.namespace))?;
+        stage(self, &updated, Some(&updated.request.namespace), &mut batch)?;
+        batch
+            .durability(Some(fjall::PersistMode::SyncData))
+            .commit()
+            .map_err(|source| StoreError::Write { source })?;
         Ok(updated)
     }
     pub fn publication_lease(&self, identity: &Digest) -> StoreResult<u64> {
@@ -99,26 +109,23 @@ impl Store {
     ) -> StoreResult<PublicationFence<'_>> {
         let writes = self.lock_appends();
         check_input(self, &request.input, run_manifest)?;
-        match self.lease_check(request.identity.as_str(), request.lease_epoch) {
-            Ok(()) => {}
-            Err(StoreError::LeaseExpired { .. }) => {
-                self.rebind_lease(request)?;
-            }
-            Err(other) => return Err(other),
-        }
         let retained = self
             .publication_read(&request.identity)?
             .ok_or_else(|| missing(request))?;
-        if retained.request.namespace != request.namespace
-            || retained.request.input != request.input
-        {
+        if !request_matches(&retained.request, request) {
             return Err(StoreError::RecordConflict {
                 kind: "publication",
                 digest: request.identity.as_str().into(),
             });
         }
+        let intent = match self.lease_check(request.identity.as_str(), request.lease_epoch) {
+            Ok(()) => retained,
+            Err(StoreError::LeaseExpired { .. }) => self.rebind_lease(request)?,
+            Err(other) => return Err(other),
+        };
         Ok(PublicationFence {
             store: self,
+            intent,
             _writes: writes,
         })
     }
@@ -129,9 +136,11 @@ impl Store {
 }
 
 impl PublicationFence<'_> {
+    pub fn intent(&self) -> &Intent {
+        &self.intent
+    }
     pub fn begin(&self, intent: &Intent, desired: &Digest) -> StoreResult<Intent> {
-        mark(
-            self.store,
+        self.mark(
             intent,
             State::Intent {
                 desired: desired.clone(),
@@ -139,15 +148,27 @@ impl PublicationFence<'_> {
         )
     }
     pub fn published(&self, intent: &Intent, desired: &Digest) -> StoreResult<Intent> {
-        mark(
-            self.store,
+        self.mark(
             intent,
             State::Published {
                 receipt: desired.clone(),
             },
         )
     }
+    fn mark(&self, intent: &Intent, state: State) -> StoreResult<Intent> {
+        if intent.request != self.intent.request {
+            return Err(StoreError::RecordConflict {
+                kind: "publication",
+                digest: intent.request.identity.as_str().into(),
+            });
+        }
+        mark(self.store, intent, state)
+    }
 }
+
+#[cfg(test)]
+#[path = "publish_rebind_tests.rs"]
+mod rebind_tests;
 
 fn check_input(
     store: &Store,
@@ -175,10 +196,7 @@ fn check_input(
     Ok(())
 }
 fn request_matches(a: &Request, b: &Request) -> bool {
-    a.namespace == b.namespace
-        && a.identity == b.identity
-        && a.expected == b.expected
-        && a.input == b.input
+    a == b
 }
 fn missing(request: &Request) -> StoreError {
     StoreError::RecordMissing {
@@ -220,7 +238,18 @@ fn mark(store: &Store, intent: &Intent, state: State) -> StoreResult<Intent> {
     }
     match (&intent.state, &state) {
         (State::Requested, State::Intent { .. }) => {}
-        (State::Intent { desired }, State::Published { receipt }) if desired == receipt => {}
+        (State::Intent { desired }, State::Published { receipt }) if desired == receipt => {
+            let actual = store
+                .lease_read(intent.request.identity.as_str())?
+                .map(|lease| lease.epoch);
+            if actual != Some(intent.request.lease_epoch) {
+                return Err(StoreError::LeaseMismatch {
+                    digest: intent.request.identity.as_str().into(),
+                    expected: intent.request.lease_epoch,
+                    actual,
+                });
+            }
+        }
         (State::Intent { desired }, State::Superseded { desired: next }) if desired == next => {}
         (old, next) if old == next => return Ok(retained),
         _ => {
@@ -238,35 +267,4 @@ fn mark(store: &Store, intent: &Intent, state: State) -> StoreResult<Intent> {
     };
     write(store, &next, Some(&next.request.namespace))?;
     Ok(next)
-}
-fn write(store: &Store, intent: &Intent, active: Option<&Digest>) -> StoreResult<()> {
-    let bytes = encode(intent)?;
-    let mut batch = store.db.batch();
-    batch.insert(
-        &store.meta,
-        record_key(&intent.request.identity).as_bytes(),
-        bytes.as_slice(),
-    );
-    if let Some(namespace) = active {
-        batch.insert(
-            &store.meta,
-            active_key(namespace).as_bytes(),
-            bytes.as_slice(),
-        );
-    }
-    if let State::Published { receipt } = &intent.state {
-        batch.insert(
-            &store.meta,
-            format!(
-                "publication/v1/receipt/{}",
-                intent.request.identity.as_str()
-            )
-            .as_bytes(),
-            receipt.as_str().as_bytes(),
-        );
-    }
-    batch
-        .durability(Some(fjall::PersistMode::SyncData))
-        .commit()
-        .map_err(|source| StoreError::Write { source })
 }

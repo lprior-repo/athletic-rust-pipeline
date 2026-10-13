@@ -148,7 +148,7 @@ fn publication_lease_rebind_acquires_fresh_epoch_on_expired_fence() -> TestResul
     check!(updated.request.lease_epoch > request.request.lease_epoch);
     check!(matches!(
         store.publication_fence(&request.request, &None),
-        Err(StoreError::LeaseMismatch { .. })
+        Err(StoreError::RecordConflict { .. })
     ));
     let mut rebound = request.clone();
     rebound.request.lease_epoch = updated.request.lease_epoch;

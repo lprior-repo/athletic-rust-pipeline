@@ -10,6 +10,25 @@ use census_store::Table;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+#[test]
+fn changed_conflict_policy_has_a_distinct_publication_recipe() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let store = Store::open(directory.path().join("store"))?;
+    let current = ExportDataset::load(&store)?;
+    let mut previous = current.lineage.clone();
+    previous.policy_revision = 7;
+    let options = Options {
+        grad_year: Some(2027),
+        out: None,
+        limit: None,
+        scope: crate::report::Scope::AllSources,
+        school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
+    };
+    check!(eq; current.lineage.policy_revision, 8);
+    check!(ne; binding::recipe(&current.lineage, &options)?, binding::recipe(&previous, &options)?);
+    Ok(())
+}
+
 fn seed(store: &Store, name: &str) -> crate::report::ReportResult<()> {
     let (mut school, id) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, name, name.to_lowercase(), None);

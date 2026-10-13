@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{ensure, Context, Result};
 use census_store::Store;
 use clap::Args;
 use std::path::{Path, PathBuf};
@@ -92,7 +92,7 @@ pub(super) fn run_restore(args: &RestoreArgs) -> Result<()> {
 pub(super) fn run_integrity(store: &Store) -> Result<()> {
     let report = store.integrity().context("checking store integrity")?;
     println!("ok\t{}", report.ok);
-    for t in &report.tables {
+    report.tables.iter().for_each(|t| {
         let status = if t.expected == t.actual && t.details.is_empty() {
             "ok"
         } else {
@@ -102,24 +102,40 @@ pub(super) fn run_integrity(store: &Store) -> Result<()> {
             "table\t{}\texpected={}\tactual={}\t{status}",
             t.table, t.expected, t.actual
         );
-        for detail in &t.details {
-            println!("detail\t{}\t{detail}", t.table);
-        }
-    }
-    for j in &report.unreadable_journals {
-        println!("unreadable_journal\t{j}");
-    }
-    for e in &report.unreadable_entity_logs {
-        println!("unreadable_entity_log\t{e}");
-    }
+        t.details
+            .iter()
+            .for_each(|detail| println!("detail\t{}\t{detail}", t.table));
+    });
+    report
+        .unreadable_journals
+        .iter()
+        .for_each(|journal| println!("unreadable_journal\t{journal}"));
+    report
+        .unreadable_entity_logs
+        .iter()
+        .for_each(|entity| println!("unreadable_entity_log\t{entity}"));
+    report.corruptions.iter().for_each(|corruption| {
+        println!(
+            "corruption\t{:?}\t{}\t{}",
+            corruption.class, corruption.subject, corruption.detail
+        );
+    });
+    report
+        .decode_limits
+        .iter()
+        .for_each(|limit| println!("decode_limit\t{limit}"));
     let cache_issues = store
         .http_cache_integrity()
         .context("checking http cache integrity")?;
-    for issue in &cache_issues {
-        println!("http_cache\t{issue}");
-    }
-    if !cache_issues.is_empty() {
-        println!("http_cache_ok\tfalse");
-    }
+    cache_issues
+        .iter()
+        .for_each(|issue| println!("http_cache\t{issue}"));
+    println!("http_cache_ok\t{}", cache_issues.is_empty());
+    ensure!(
+        report.ok && cache_issues.is_empty(),
+        "store integrity check failed: store_ok={}, http_cache_issues={}",
+        report.ok,
+        cache_issues.len()
+    );
     Ok(())
 }

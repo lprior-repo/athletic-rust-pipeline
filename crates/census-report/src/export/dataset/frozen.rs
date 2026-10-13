@@ -37,13 +37,15 @@ mod freeze_recovery_tests;
 #[cfg(test)]
 mod freeze_v2_tests;
 #[cfg(test)]
+mod historical_policy_tests;
+#[cfg(test)]
 mod preflight_tests;
 
 pub use freeze::CancelOutcome;
 pub use root::FrozenRoot;
 
 const SCHEMA_REVISION: u32 = 1;
-const POLICY_REVISION: u32 = 7;
+const POLICY_REVISION: u32 = 8;
 const INPUT_TABLES: [Table; 13] = [
     Table::Schools,
     Table::Teams,

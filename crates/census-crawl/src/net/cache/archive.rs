@@ -45,10 +45,11 @@ pub(super) fn write_preserved_cache(
     meta: &CacheMeta,
 ) -> Result<(), FetchError> {
     let root = cache_root(body_path, meta_path)?;
+    let capacity = admission::archive_capacity()?;
     let capture = Capture::from_meta(meta, meta_path)?;
     capture.verify_body(body, body_path)?;
     let archive = initialize_archive(root)?;
-    let mut admission = ArchiveAdmission::begin(root, &archive)?;
+    let mut admission = ArchiveAdmission::begin_with_capacity(root, &archive, capacity)?;
     with_stage(root, |stage| {
         let lock = match lock_cache(meta_path) {
             Ok(lock) => lock,
@@ -79,10 +80,11 @@ pub(super) fn write_preserved_capture(
     meta: &CacheMeta,
 ) -> Result<PathBuf, FetchError> {
     let root = cache_root(body_path, meta_path)?;
+    let capacity = admission::archive_capacity()?;
     let capture = Capture::from_meta(meta, meta_path)?;
     capture.verify_body(body, body_path)?;
     let archive = initialize_archive(root)?;
-    let mut admission = ArchiveAdmission::begin(root, &archive)?;
+    let mut admission = ArchiveAdmission::begin_with_capacity(root, &archive, capacity)?;
     with_stage(root, |stage| {
         preserve_capture(&archive, stage, "new", body, &capture, &mut admission)
     })
@@ -94,6 +96,7 @@ pub(super) fn replay_preserved_cache(
     expected: &CacheMeta,
 ) -> Result<Option<Vec<u8>>, FetchError> {
     let root = cache_root(body_path, meta_path)?;
+    let capacity = admission::archive_capacity()?;
     let lock = lock_cache(meta_path)?;
     let Some((meta, body)) = super::read_cache(
         body_path,
@@ -109,7 +112,7 @@ pub(super) fn replay_preserved_cache(
         return Ok(None);
     }
     let archive = initialize_archive(root)?;
-    let mut admission = ArchiveAdmission::begin(root, &archive)?;
+    let mut admission = ArchiveAdmission::begin_with_capacity(root, &archive, capacity)?;
     with_stage(root, |stage| {
         preserve_previous(&archive, stage, body_path, meta_path, &mut admission)
     })?;

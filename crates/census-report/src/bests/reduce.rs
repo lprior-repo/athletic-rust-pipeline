@@ -1,7 +1,7 @@
 mod reports;
 mod row;
 
-use reports::{CompetitionContext, ReportGroup};
+use reports::{CompetitionContext, ContextIntegrity, ReportGroup, RetainedContexts};
 
 use super::key::{should_replace, MarkOrdering, PrKey};
 use super::selection::{Population, SharedSelection};
@@ -19,13 +19,14 @@ pub fn build_from_dataset(
 ) -> Vec<SharedSelection> {
     let derivation = Derivation::of(dataset, options.scope, options.grad_year);
     let parents = Parents::of(&derivation);
+    let retained = RetainedContexts::of(derivation.performances(), &parents);
     let mut slots: HashMap<PrKey, PrSlot<'_>> = HashMap::new();
     derivation
         .performances()
         .iter()
         .copied()
         .for_each(|performance| {
-            fold(&mut slots, performance, &parents);
+            fold(&mut slots, performance, &parents, &retained);
         });
     super::selection::publish(
         slots
@@ -85,7 +86,7 @@ impl<'a> Candidate<'a> {
         ))
     }
 
-    fn record(self, entry: &mut PrSlot<'a>) {
+    fn record(self, entry: &mut PrSlot<'a>, integrity: ContextIntegrity) {
         entry.marks = entry.marks.saturating_add(1);
         if let Some(owner) = owner_of(self.performance, self.athlete) {
             if !entry.sources.contains(&owner) {
@@ -95,10 +96,10 @@ impl<'a> Candidate<'a> {
         let context = CompetitionContext::of(self.performance);
         match entry.reports.entry(context) {
             std::collections::btree_map::Entry::Vacant(vacant) => {
-                vacant.insert(ReportGroup::new(self));
+                vacant.insert(ReportGroup::new(self, integrity));
             }
             std::collections::btree_map::Entry::Occupied(mut occupied) => {
-                occupied.get_mut().record(self);
+                occupied.get_mut().record(self, integrity);
             }
         }
     }
@@ -126,16 +127,21 @@ fn fold<'a>(
     slots: &mut HashMap<PrKey, PrSlot<'a>>,
     performance: &'a CanonicalPerformance,
     parents: &Parents<'a>,
+    retained: &RetainedContexts<'a>,
 ) {
     let Some((key, candidate)) = Candidate::resolve(performance, parents) else {
         return;
     };
+    let integrity = retained.integrity(&candidate);
     let course_key = key.same_course(candidate.event);
     if let Some(course_key) = course_key {
-        candidate.record(slots.entry(course_key).or_insert_with(PrSlot::empty));
+        candidate.record(
+            slots.entry(course_key).or_insert_with(PrSlot::empty),
+            integrity,
+        );
     }
     let entry = slots.entry(key).or_insert_with(PrSlot::empty);
-    candidate.record(entry);
+    candidate.record(entry, integrity);
 }
 
 fn close(

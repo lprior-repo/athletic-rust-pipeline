@@ -64,10 +64,83 @@ fn a_healthy_cache_reports_no_issues() -> TestResult {
     let meta = archived_meta(&hex(body))?;
     write_archived_capture(&http, &hex(body), &meta)?;
     std::fs::create_dir_all(http.join("quarantine"))?;
+    std::fs::create_dir_all(http.join("archive/reservations"))?;
     std::fs::write(http.join("livekey.meta.json.lock"), b"")?;
     std::fs::write(http.join("archive-capacity.lock"), b"")?;
     let issues = http_cache_integrity(root.path())?;
     check!(issues.is_empty(), "healthy cache produced: {issues:?}");
+    Ok(())
+}
+
+fn healthy_archive(http: &Path) -> TestResult {
+    let body = b"captured bytes";
+    write_archived_body(http, body)?;
+    write_archived_capture(http, &hex(body), &archived_meta(&hex(body))?)?;
+    std::fs::create_dir_all(http.join("archive/reservations"))?;
+    Ok(())
+}
+
+#[test]
+fn every_reservation_record_is_unresolved_and_preserved() -> TestResult {
+    [b"23\n45".as_slice(), b"malformed reservation".as_slice()]
+        .into_iter()
+        .try_for_each(|bytes| -> TestResult {
+            let root = tempfile::tempdir()?;
+            let http = root.path().join("http");
+            healthy_archive(&http)?;
+            let path = http.join("archive/reservations").join(format!("{}-{}", "a".repeat(64), "b".repeat(64)));
+            std::fs::write(&path, bytes)?;
+            let issues = http_cache_integrity(root.path())?;
+            check!(eq; issues, vec!["archive/reservations: unresolved reservations remain".to_string()]);
+            check!(eq; std::fs::read(&path)?, bytes);
+            Ok(())
+        })
+}
+
+#[test]
+fn a_reservation_child_directory_is_unresolved_and_preserved() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let http = root.path().join("http");
+    healthy_archive(&http)?;
+    let child = http.join("archive/reservations/unfinished");
+    std::fs::create_dir(&child)?;
+    std::fs::write(child.join("witness"), b"retained child")?;
+    let issues = http_cache_integrity(root.path())?;
+    check!(eq; issues, vec!["archive/reservations: unresolved reservations remain".to_string()]);
+    check!(eq; std::fs::read(child.join("witness"))?, b"retained child");
+    Ok(())
+}
+
+#[test]
+fn a_reservations_file_is_refused_and_preserved() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let http = root.path().join("http");
+    healthy_archive(&http)?;
+    let path = http.join("archive/reservations");
+    std::fs::remove_dir(&path)?;
+    std::fs::write(&path, b"not a directory")?;
+    let issues = http_cache_integrity(root.path())?;
+    check!(eq; issues, vec!["archive: unexpected entry reservations".to_string()]);
+    check!(eq; std::fs::read(&path)?, b"not a directory");
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn a_reservations_symlink_is_refused_without_following_it() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let http = root.path().join("http");
+    healthy_archive(&http)?;
+    let path = http.join("archive/reservations");
+    std::fs::remove_dir(&path)?;
+    let target = root.path().join("foreign");
+    std::fs::create_dir(&target)?;
+    std::fs::write(target.join("witness"), b"foreign reservation")?;
+    std::os::unix::fs::symlink(&target, &path)?;
+    let issues = http_cache_integrity(root.path())?;
+    check!(eq; issues, vec!["archive: unexpected entry reservations".to_string()]);
+    check!(std::fs::symlink_metadata(&path)?.file_type().is_symlink());
+    check!(eq; std::fs::read(target.join("witness"))?, b"foreign reservation");
     Ok(())
 }
 

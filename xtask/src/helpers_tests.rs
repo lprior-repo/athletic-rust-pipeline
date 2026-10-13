@@ -163,14 +163,33 @@ fn repo_path(relative: &str) -> std::path::PathBuf {
 }
 
 fn real_cargo() -> Result<String, Box<dyn std::error::Error>> {
-    let path = std::env::var("PATH")?;
-    for entry in path.split(':').skip(1) {
-        let candidate = std::path::Path::new(entry).join("cargo");
-        if candidate.is_file() {
-            return Ok(candidate.display().to_string());
-        }
-    }
-    Err("no cargo outside the stub directory".into())
+    let path = std::env::var_os("PATH").ok_or("PATH is absent")?;
+    cargo_in_path(&path)
+        .map(|candidate| candidate.display().to_string())
+        .ok_or_else(|| "no cargo in the original PATH".into())
+}
+
+fn cargo_in_path(path: &std::ffi::OsStr) -> Option<std::path::PathBuf> {
+    std::env::split_paths(path)
+        .map(|entry| entry.join("cargo"))
+        .find(|candidate| candidate.is_file())
+}
+
+#[test]
+fn gate_cargo_lookup_preserves_the_first_original_path_entry(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let root = tempfile::tempdir()?;
+    let first = root.path().join("first");
+    let later = root.path().join("later");
+    std::fs::create_dir(&first)?;
+    std::fs::create_dir(&later)?;
+    std::fs::write(first.join("cargo"), b"first cargo fixture")?;
+    std::fs::write(later.join("cargo"), b"later cargo fixture")?;
+    let path = std::env::join_paths([&first, &later])?;
+    check!(eq; cargo_in_path(&path), Some(first.join("cargo")));
+    let missing = std::env::join_paths([root.path().join("missing")])?;
+    check!(eq; cargo_in_path(&missing), None);
+    Ok(())
 }
 
 fn clippy_rows() -> Result<serde_json::Map<String, serde_json::Value>, Box<dyn std::error::Error>> {
@@ -182,7 +201,10 @@ fn clippy_rows() -> Result<serde_json::Map<String, serde_json::Value>, Box<dyn s
         .clone())
 }
 
-fn clippy_json(rows: &serde_json::Map<String, serde_json::Value>, finish: Option<bool>) -> Result<String, Box<dyn std::error::Error>> {
+fn clippy_json(
+    rows: &serde_json::Map<String, serde_json::Value>,
+    finish: Option<bool>,
+) -> Result<String, Box<dyn std::error::Error>> {
     let mut lines = Vec::new();
     for (key, count) in rows {
         let (target, code) = key
@@ -253,7 +275,10 @@ fn run_sourced(
         .env("STUB_JSON", &case.json)
         .env("STUB_EXIT", &case.exit)
         .env("STUB_LOG", &case.log)
-        .env("PATH", format!("{}:{}", case.bin.display(), std::env::var("PATH")?))
+        .env(
+            "PATH",
+            format!("{}:{}", case.bin.display(), std::env::var("PATH")?),
+        )
         .output()?)
 }
 
@@ -280,8 +305,7 @@ fn ratchet_measurement_emits_a_tally_only_for_a_complete_success() -> TestResult
     let complete = gate_case(&clippy_json(&rows, Some(true))?, "0")?;
     let output = run_sourced(&complete, script)?;
     let stdout = String::from_utf8(output.stdout)?;
-    let measured: std::collections::BTreeSet<String> =
-        stdout.lines().map(str::to_string).collect();
+    let measured: std::collections::BTreeSet<String> = stdout.lines().map(str::to_string).collect();
     check!(eq; output.status.code(), Some(0), "{stdout}");
     check!(eq; measured, expected, "{stdout}");
 
@@ -312,7 +336,10 @@ fn ratchet_measurement_emits_a_tally_only_for_a_complete_success() -> TestResult
         let output = run_sourced(&case, script)?;
         let stdout = String::from_utf8(output.stdout)?;
         let stderr = String::from_utf8(output.stderr)?;
-        check!(output.status.code().is_some_and(|code| code != 0), "{stdout}\n{stderr}");
+        check!(
+            output.status.code().is_some_and(|code| code != 0),
+            "{stdout}\n{stderr}"
+        );
         check!(stderr.contains(diagnostic), "{stdout}\n{stderr}");
         check!(eq; stdout.trim(), "", "{stdout}");
     }
@@ -327,11 +354,23 @@ fn ratchet_lane_never_compares_without_a_complete_measurement() -> TestResult {
     let output = run_sourced(&broken, script)?;
     let stdout = String::from_utf8(output.stdout)?;
     let stderr = String::from_utf8(output.stderr)?;
-    check!(output.status.code().is_some_and(|code| code != 0), "{stdout}\n{stderr}");
-    check!(stderr.contains("strict clippy exited 101"), "{stdout}\n{stderr}");
+    check!(
+        output.status.code().is_some_and(|code| code != 0),
+        "{stdout}\n{stderr}"
+    );
+    check!(
+        stderr.contains("strict clippy exited 101"),
+        "{stdout}\n{stderr}"
+    );
     let attempted = invocations(&broken)?;
-    check!(!attempted.iter().any(|line| line.contains("scan")), "{attempted:?}");
-    check!(!attempted.iter().any(|line| line.contains("ratchet")), "{attempted:?}");
+    check!(
+        !attempted.iter().any(|line| line.contains("scan")),
+        "{attempted:?}"
+    );
+    check!(
+        !attempted.iter().any(|line| line.contains("ratchet")),
+        "{attempted:?}"
+    );
 
     let complete = gate_case(&clippy_json(&rows, Some(true))?, "0")?;
     let output = run_sourced(&complete, script)?;
@@ -342,7 +381,10 @@ fn ratchet_lane_never_compares_without_a_complete_measurement() -> TestResult {
         "{stderr}"
     );
     let attempted = invocations(&complete)?;
-    check!(attempted.iter().any(|line| line.contains("scan")), "{attempted:?}");
+    check!(
+        attempted.iter().any(|line| line.contains("scan")),
+        "{attempted:?}"
+    );
     Ok(())
 }
 
@@ -365,7 +407,10 @@ fn baseline_update_refuses_an_incomplete_measurement() -> TestResult {
         .env("STUB_JSON", &case.json)
         .env("STUB_EXIT", &case.exit)
         .env("STUB_LOG", &case.log)
-        .env("PATH", format!("{}:{}", case.bin.display(), std::env::var("PATH")?))
+        .env(
+            "PATH",
+            format!("{}:{}", case.bin.display(), std::env::var("PATH")?),
+        )
         .output()?;
     let stdout = String::from_utf8(output.stdout)?;
     let stderr = String::from_utf8(output.stderr)?;
@@ -378,7 +423,9 @@ fn baseline_update_refuses_an_incomplete_measurement() -> TestResult {
     check!(eq; std::fs::read(&baseline)?, before);
     let attempted = invocations(&case)?;
     check!(
-        !attempted.iter().any(|line| line.contains("quality-baseline")),
+        !attempted
+            .iter()
+            .any(|line| line.contains("quality-baseline")),
         "{attempted:?}"
     );
     Ok(())

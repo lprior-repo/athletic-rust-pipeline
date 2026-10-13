@@ -19,6 +19,12 @@ pub enum ReplayError {
         path: PathBuf,
         source: std::io::Error,
     },
+    #[error("address replay failed: {primary}; cleanup at {path} also failed: {source}")]
+    Cleanup {
+        path: PathBuf,
+        primary: Box<ReplayError>,
+        source: std::io::Error,
+    },
     #[error("address replay manifest is invalid: {0}")]
     Json(#[from] serde_json::Error),
     #[error("address replay refuses {path}: {detail}")]
@@ -144,7 +150,7 @@ pub fn run(manifest_path: &Path, out: &Path) -> Result<Replay, ReplayError> {
             .map_err(JoinError::from)?,
     )?;
     let evidence = serde_json::to_vec_pretty(&overrides)?;
-    std::fs::write(out.join("replay-evidence.json"), evidence).map_err(|source| io(out, source))?;
+    capture::publish(&out.join("replay-evidence.json"), &evidence)?;
     Ok(Replay {
         generation: out.to_path_buf(),
         digest: report.manifest_digest,

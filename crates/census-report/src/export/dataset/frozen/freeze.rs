@@ -1,11 +1,12 @@
 use super::capture;
+use super::codec::FrozenCodecError;
 use super::manifest::FrozenManifest;
 use super::objects;
 use super::recover;
 use super::root::{self, FrozenRoot, Retained};
 use super::verify;
 use super::{codec_error, invalid};
-use crate::report::{io_error, ReportResult};
+use crate::report::{io_error, ReportError, ReportResult};
 use census_store::{InputRecord, InputState, Store};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -158,7 +159,30 @@ fn reuse(
 ) -> ReportResult<FrozenRoot> {
     match reusable(store, job, directory, retained, record) {
         Ok(root) => Ok(root),
-        Err(error) => Err(recover::retire_pointer(directory, error)),
+        Err(ReuseFailure::Preserve(error)) => Err(error),
+        Err(ReuseFailure::Retire(error)) => Err(recover::retire_pointer(directory, error)),
+    }
+}
+
+enum ReuseFailure {
+    Preserve(ReportError),
+    Retire(ReportError),
+}
+
+impl From<ReportError> for ReuseFailure {
+    fn from(error: ReportError) -> Self {
+        Self::Retire(error)
+    }
+}
+
+impl ReuseFailure {
+    fn from_codec(error: FrozenCodecError) -> Self {
+        match error {
+            unsupported @ FrozenCodecError::UnsupportedVersion { .. } => {
+                Self::Preserve(codec_error(unsupported))
+            }
+            other => Self::Retire(codec_error(other)),
+        }
     }
 }
 
@@ -168,9 +192,10 @@ fn reusable(
     directory: &Path,
     retained: &Retained,
     record: &InputRecord,
-) -> ReportResult<FrozenRoot> {
+) -> Result<FrozenRoot, ReuseFailure> {
     let objects_dir = objects::directory(directory);
-    let manifest = recover::open_manifest(&objects_dir, &retained.manifest)?;
+    let encoded = objects::read(&objects_dir, &retained.manifest, objects::MANIFEST_CEILING)?;
+    let manifest = FrozenManifest::decode(&encoded).map_err(ReuseFailure::from_codec)?;
     recover::ensure_job(&manifest, job)?;
     recover::ensure_identity(store, &manifest)?;
     verify::verify_record(&objects_dir, &retained.manifest, &manifest, record)?;
