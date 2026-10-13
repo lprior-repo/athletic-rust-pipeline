@@ -1,7 +1,7 @@
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, CanonicalTeam,
     CollectionSnapshot, NaturalKey, RetainedConflict, ReviewCase, ReviewState, SourceEntityKind,
-    SourceIdentity, SourceObjectIdentity,
+    SourceIdentity, SourceObjectIdentity, ATHLETE_IDENTITY_FAMILY,
 };
 use std::collections::HashMap;
 
@@ -79,18 +79,63 @@ fn carried(stored: &HashMap<String, ReviewCase>, minted: ReviewCase) -> ReviewCa
     }
 }
 
-fn superseded(stored: &HashMap<String, ReviewCase>, current: &[ReviewCase]) -> Vec<ReviewCase> {
+fn superseded(
+    stored: &HashMap<String, ReviewCase>,
+    current: &[ReviewCase],
+) -> (Vec<ReviewCase>, Vec<SupersessionRecord>) {
     let live: std::collections::HashSet<&str> =
         current.iter().map(|case| case.id.as_str()).collect();
-    stored
-        .values()
-        .filter(|case| case.state == ReviewState::Pending && !live.contains(case.id.as_str()))
-        .cloned()
-        .map(|mut case| {
+    let mut closed = Vec::new();
+    let mut provenance = Vec::new();
+    for stored_case in stored.values() {
+        if stored_case.state == ReviewState::Pending && !live.contains(stored_case.id.as_str()) {
+            let mut case = stored_case.clone();
             case.state = ReviewState::Superseded;
-            case
-        })
-        .collect()
+            closed.push(case);
+        }
+    }
+    for stored_case in stored.values().filter(|case| {
+        case.state == ReviewState::Retained
+            && case.family == ATHLETE_IDENTITY_FAMILY
+            && !case.member_ids.is_empty()
+            && !live.contains(case.id.as_str())
+    }) {
+        let same_cluster = |case: &ReviewCase| {
+            case.family == ATHLETE_IDENTITY_FAMILY
+                && (case.subject_id == stored_case.subject_id
+                    || case
+                        .member_ids
+                        .iter()
+                        .any(|member| stored_case.member_ids.contains(member)))
+        };
+        let successor = current
+            .iter()
+            .find(|case| case.state == ReviewState::Resolved && same_cluster(case))
+            .or_else(|| {
+                stored
+                    .values()
+                    .find(|case| case.state == ReviewState::Resolved && same_cluster(case))
+            });
+        let Some(successor) = successor else {
+            continue;
+        };
+        let mut case = stored_case.clone();
+        case.state = ReviewState::Superseded;
+        closed.push(case);
+        provenance.push(SupersessionRecord {
+            old_id: stored_case.id.clone(),
+            new_id: successor.id.clone(),
+            reason: "obsolete machine-generated identity finding replaced by the current-policy resolution for the same cluster".to_string(),
+        });
+    }
+    (closed, provenance)
+}
+
+#[derive(Debug)]
+struct SupersessionRecord {
+    old_id: String,
+    new_id: String,
+    reason: String,
 }
 
 pub fn derive(
@@ -125,7 +170,7 @@ pub fn derive(
             carried(&stored, minted)
         })
         .collect();
-    let closed = superseded(&stored, &reviews);
+    let (closed, provenance) = superseded(&stored, &reviews);
     let snapshot = snapshot_row(stage.view(), phase, finished_at)?;
 
     for table in STAGE_OUTPUTS {
@@ -139,6 +184,17 @@ pub fn derive(
     stage.replace_many(Table::ReviewCases, &reviews)?;
     stage.replace_many(Table::Coverage, &coverage)?;
     stage.replace_many(Table::Snapshots, &[snapshot])?;
+
+    for record in provenance {
+        let mut batch = store.write_batch();
+        batch.journal_done(
+            "identity_retained_supersession_v1",
+            &record.old_id,
+            &(record.new_id, record.reason),
+        )?;
+        batch.commit()?;
+    }
+
     stage.publish(&operation, &digest)?;
 
     Ok(IndexReport {

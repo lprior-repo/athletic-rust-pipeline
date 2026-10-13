@@ -2,9 +2,9 @@ use super::*;
 use crate::{Store, Table};
 use census_domain::jurisdiction::UsJurisdiction;
 use census_domain::model::{
-    CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalTeam,
-    EventIdentity, EventKind, EventSpecification, ExactSeconds, Gender, GradYear, Mark, SchoolYear,
-    SourceIdentity, SourceNamespace, Sport, TimingMethod,
+    Adjustment, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
+    CanonicalTeam, EventIdentity, EventKind, EventSpecification, ExactSeconds, Gender, GradYear,
+    Mark, SchoolYear, SourceIdentity, SourceNamespace, Sport, TimingMethod,
 };
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -53,6 +53,7 @@ fn performance(source_key: &str, identity: SourceIdentity) -> TestResult<Canonic
         meet,
         date: "2026-05-01".to_string(),
         mark: Mark::TimeSeconds(ExactSeconds::parse("10.94")?),
+        adjustment: None,
         wind_mps: None,
         place: None,
         heat: None,
@@ -262,5 +263,74 @@ fn same_identity_individual_scalars_retain_conflicts_and_immutable_observations(
             check!(physical.contains(&incoming));
         }
     }
+    Ok(())
+}
+
+fn track_size_conversion(original: &str, adjusted: &Mark) -> TestResult<Adjustment> {
+    Ok(Adjustment::track_size_conversion(
+        Some(Mark::TimeSeconds(ExactSeconds::parse_clock(original)?)),
+        adjusted.clone(),
+        Some(format!("Converted from {original} for Track Size. ")),
+        None,
+    ))
+}
+
+#[test]
+fn reparsing_a_converted_row_attaches_the_conversion_facts() -> TestResult {
+    let stored = performance("track-size-conversion", identity("111"))?;
+    let mut reparsed = stored.clone();
+    reparsed.adjustment = Some(track_size_conversion("9:22.21", &reparsed.mark)?);
+    let mut merged = stored.clone();
+    merged.merge(reparsed.clone());
+    check!(eq; merged.adjustment, reparsed.adjustment);
+    check!(eq; merged.mark, stored.mark);
+    check!(eq; merged.retained_conflicts, Vec::new());
+    Ok(())
+}
+
+#[test]
+fn a_conversion_whose_adjusted_mark_disagrees_is_not_adopted() -> TestResult {
+    let stored = performance("track-size-conversion", identity("111"))?;
+    let mut reparsed = stored.clone();
+    reparsed.mark = Mark::TimeSeconds(ExactSeconds::parse_clock("9:15.75")?);
+    reparsed.adjustment = Some(track_size_conversion("9:22.21", &reparsed.mark)?);
+    let mut merged = stored.clone();
+    merged.merge(reparsed);
+    check!(eq; merged.adjustment, None);
+    check!(eq; merged.mark, stored.mark);
+    check!(eq; merged.retained_conflicts.len(), 1);
+    Ok(())
+}
+
+#[test]
+fn disagreeing_conversion_facts_are_retained_not_replaced() -> TestResult {
+    let mut first = performance("track-size-conversion", identity("111"))?;
+    first.adjustment = Some(track_size_conversion("9:22.21", &first.mark)?);
+    let mut other = first.clone();
+    other.adjustment = Some(track_size_conversion("9:24.00", &other.mark)?);
+    let mut merged = first.clone();
+    merged.merge(other);
+    check!(eq; merged.adjustment, first.adjustment);
+    check!(eq; merged.retained_conflicts.len(), 1);
+    check!(eq; merged.retained_conflicts[0].family, "Individual result scalar");
+    Ok(())
+}
+
+#[test]
+fn a_stored_row_without_conversion_facts_decodes_as_unconverted() -> TestResult {
+    let mut row = performance("track-size-conversion", identity("111"))?;
+    row.adjustment = Some(track_size_conversion("9:22.21", &row.mark)?);
+    let mut historical = serde_json::to_value(&row)?;
+    check!(
+        historical
+            .as_object_mut()
+            .ok_or("performance serializes as an object")?
+            .remove("adjustment")
+            .is_some()
+    );
+    let decoded: CanonicalPerformance = serde_json::from_value(historical)?;
+    check!(eq; decoded.adjustment, None);
+    check!(eq; decoded.mark, row.mark);
+    check!(ne; decoded, row);
     Ok(())
 }

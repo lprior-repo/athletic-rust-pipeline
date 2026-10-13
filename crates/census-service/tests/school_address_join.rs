@@ -2,7 +2,7 @@
 #[path = "../../../tools/fallible_checks.rs"]
 mod fallible_checks;
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 use census_domain::model::{normalize_name, CanonicalSchool};
@@ -127,13 +127,17 @@ fn file_sha(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
 }
 
 fn overrides(captures: &[(&Path, String)]) -> Overrides {
-    Overrides {
-        urls: captures
-            .iter()
-            .map(|(path, url)| (format!("state-ed@{}", path.display()), url.clone()))
-            .collect(),
-        dates: BTreeMap::from([("state-ed".to_string(), "2026-09-01".to_string())]),
+    let mut acquisitions = Vec::new();
+    for (i, (path, url)) in captures.iter().enumerate() {
+        acquisitions.push(census_service::school_address::Acquisition {
+            entry: i as u32,
+            provider: "state-ed".to_string(),
+            path: format!("state-ed@{}", path.display()),
+            url: url.clone(),
+            retrieved_at: Some("2026-09-01".to_string()),
+        });
     }
+    Overrides { acquisitions }
 }
 
 fn without_generation_digest(note: &str) -> &str {

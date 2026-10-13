@@ -12,6 +12,7 @@ use census_store::{Store, Table};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+mod adjustment;
 mod classification;
 mod conflicts;
 mod exact_time;
@@ -73,6 +74,7 @@ fn test_performance(
         meet: meet_id(),
         date: date.to_string(),
         mark,
+        adjustment: None,
         wind_mps,
         place: None,
         heat: None,
@@ -129,6 +131,7 @@ fn test_parent_performance(
             .map_or(meet_id(), std::convert::identity),
         date: date.to_string(),
         mark,
+        adjustment: None,
         wind_mps,
         place: None,
         heat: None,

@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use census_domain::model::{
-    person_key, AthleteCandidateId, CanonicalAthlete, CanonicalSchool, CaseEvidence, Gender,
+    person_key, AthleteCandidateId, CanonicalAthlete, CanonicalSchool, CaseEvidence,
     ReviewCase, ReviewVerdictKind, ReviewVerdictRecord, SchoolId, SourceNamespace,
     ATHLETE_IDENTITY_FAMILY, MEMBER_SET_LABEL,
 };
@@ -47,6 +47,10 @@ impl<'a> Row<'a> {
         self.athlete.canonical_name == other.athlete.canonical_name
             && self.athlete.grad_year == other.athlete.grad_year
             && !self.cohort.conflicts_with(&other.cohort)
+    }
+
+    fn gender_compatible(&self, other: &Self) -> bool {
+        census_domain::model::genders_compatible(self.athlete.gender, other.athlete.gender)
     }
 }
 
@@ -147,15 +151,12 @@ impl Span<'_> {
         {
             return Some(HardContradiction::GradYearEvidenceDiffers);
         }
-        let has_boys = self
-            .rows
-            .iter()
-            .any(|row| row.athlete.gender == Gender::Boys);
-        let has_girls = self
-            .rows
-            .iter()
-            .any(|row| row.athlete.gender == Gender::Girls);
-        (has_boys && has_girls).then_some(HardContradiction::GenderDiffers)
+        if self.rows.iter().enumerate().any(|(i, row)| {
+            self.rows.iter().skip(i + 1).any(|other| !row.gender_compatible(other))
+        }) {
+            return Some(HardContradiction::GenderDiffers);
+        }
+        None
     }
 
     pub(super) fn case(&self) -> Option<ReviewCase> {

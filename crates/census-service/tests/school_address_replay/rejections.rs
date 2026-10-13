@@ -100,13 +100,13 @@ fn school_address_replay_refuses_raw_capture_corruption_before_the_join() -> Tes
     let dir = TempDir::new()?;
     let out = dir.path().join("corpus");
     let replayed = replay::run(&fixture(), &out)?;
-    let selector = replayed
+    let ccd_acq = replayed
         .overrides()
-        .urls
-        .keys()
-        .find(|key| key.starts_with("nces-ccd@"))
-        .ok_or("no CCD selector")?;
-    let (_, path) = selector.split_once('@').ok_or("no capture selector path")?;
+        .acquisitions
+        .iter()
+        .find(|acq| acq.provider == "nces-ccd")
+        .ok_or("no CCD acquisition")?;
+    let path = &ccd_acq.path;
     std::fs::write(path, b"corrupt retained source")?;
     let store = Store::open(dir.path().join("store"))?;
     let (school, _) = CanonicalSchool::new(
@@ -134,5 +134,114 @@ fn school_address_replay_refuses_raw_capture_corruption_before_the_join() -> Tes
         }
     }
     check!(eq; store.scan::<CanonicalSchool>(Table::Schools)?.first().ok_or("no school")?.postal_addresses.len(), 0);
+    Ok(())
+}
+
+#[test]
+fn school_address_replay_acquisition_conflict_different_url_same_body() -> TestResult {
+    let dir = TempDir::new()?;
+    let mut value = manifest(dir.path())?;
+    let captures = value["captures"].as_array_mut().ok_or("no captures")?;
+
+    let mut second = captures[2].clone();
+    second["url"] =
+        serde_json::json!("https://data.nysed.gov/different-profile.php?school=kingston");
+    captures.push(second);
+
+    std::fs::write(
+        dir.path().join("manifest.json"),
+        serde_json::to_vec(&value)?,
+    )?;
+
+    let out = dir.path().join("corpus");
+    let error = match replay::run(&dir.path().join("manifest.json"), &out) {
+        Err(error) => error,
+        Ok(_) => return Err("conflicting acquisition tuples accepted".into()),
+    };
+    match error {
+        replay::ReplayError::Refused { detail, .. } => {
+            check!(detail.contains("capture acquisition conflict"));
+            check!(detail.contains("different provenance tuples"));
+        }
+        other => return Err(format!("wrong error: {other}").into()),
+    }
+    Ok(())
+}
+
+#[test]
+fn school_address_replay_acquisition_conflict_different_date_same_body() -> TestResult {
+    let dir = TempDir::new()?;
+    let mut value = manifest(dir.path())?;
+    let captures = value["captures"].as_array_mut().ok_or("no captures")?;
+
+    let mut second = captures[2].clone();
+    second["retrieved_at"] = serde_json::json!("2026-09-30");
+    captures.push(second);
+
+    std::fs::write(
+        dir.path().join("manifest.json"),
+        serde_json::to_vec(&value)?,
+    )?;
+
+    let out = dir.path().join("corpus");
+    let error = match replay::run(&dir.path().join("manifest.json"), &out) {
+        Err(error) => error,
+        Ok(_) => return Err("conflicting acquisition tuples accepted".into()),
+    };
+    match error {
+        replay::ReplayError::Refused { detail, .. } => {
+            check!(detail.contains("capture acquisition conflict"));
+            check!(detail.contains("date"));
+        }
+        other => return Err(format!("wrong error: {other}").into()),
+    }
+    Ok(())
+}
+
+#[test]
+fn school_address_replay_identical_acquisition_tuples_dedup() -> TestResult {
+    let dir = TempDir::new()?;
+    let mut value = manifest(dir.path())?;
+    let captures = value["captures"].as_array_mut().ok_or("no captures")?;
+
+    let second = captures[1].clone();
+    captures.push(second);
+
+    std::fs::write(
+        dir.path().join("manifest.json"),
+        serde_json::to_vec(&value)?,
+    )?;
+
+    let out = dir.path().join("corpus");
+    let replayed = replay::run(&dir.path().join("manifest.json"), &out)?;
+
+    check!(eq; replayed.overrides().acquisitions.len(), 4);
+    Ok(())
+}
+
+#[test]
+fn school_address_replay_null_date_stays_unknown() -> TestResult {
+    let dir = TempDir::new()?;
+    let mut value = manifest(dir.path())?;
+    let captures = value["captures"].as_array_mut().ok_or("no captures")?;
+
+    captures[1]["retrieved_at"] = serde_json::Value::Null;
+
+    std::fs::write(
+        dir.path().join("manifest.json"),
+        serde_json::to_vec(&value)?,
+    )?;
+
+    let out = dir.path().join("corpus");
+    let replayed = replay::run(&dir.path().join("manifest.json"), &out)?;
+
+    let state_ed_acqs = replayed
+        .overrides()
+        .acquisitions
+        .iter()
+        .filter(|acq| acq.provider == "state-ed")
+        .collect::<Vec<_>>();
+    check!(eq; state_ed_acqs.len(), 1);
+    check!(eq; state_ed_acqs[0].retrieved_at, None);
     Ok(())
 }

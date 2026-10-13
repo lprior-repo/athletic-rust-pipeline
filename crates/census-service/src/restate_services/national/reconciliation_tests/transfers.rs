@@ -142,6 +142,7 @@ fn historical_performance(
         meet: meet.id.clone(),
         date: meet.date.clone(),
         mark: Mark::TimeSeconds(ExactSeconds::parse("61.50")?),
+        adjustment: None,
         wind_mps: None,
         place: None,
         heat: None,

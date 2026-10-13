@@ -19,8 +19,7 @@ impl Census {
         let region = Arc::clone(self.jobs.region());
         let permit = self.jobs.permit_control().await?;
         let overrides = Overrides {
-            urls: request.urls,
-            dates: request.dates,
+            acquisitions: request.acquisitions,
         };
         Ok(ctx
             .run(move || async move {

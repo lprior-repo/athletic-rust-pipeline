@@ -23,6 +23,7 @@ fn dated_performance(
         meet: meet.clone(),
         date: date.to_string(),
         mark,
+        adjustment: None,
         wind_mps: None,
         place: None,
         heat: None,

@@ -1,13 +1,13 @@
 mod admission;
-use super::row::{admit_date, grade_for, mark_of, source_key};
+use super::row::{admit_date, grade_for, mark_with_adjustment, source_key};
 use super::state::{Absorb, AthleteFacts, ListContext, TeamFacts};
 use crate::tfrrs::parse::{
     parse_team_path, ParsedAthlete, ParsedList, ParsedMeet, ParsedRow, ParsedSection, ParsedTeam,
     PublishedDate,
 };
 use census_domain::model::{
-    AthleteId, CanonicalPerformance, EventId, Evidence, EvidenceMethod, Gender, Grade, Mark,
-    MeetId, SchoolId, SchoolYear, SourceIdentity, Sport, TeamId,
+    Adjustment, AthleteId, CanonicalPerformance, EventId, Evidence, EvidenceMethod, Gender, Grade,
+    Mark, MeetId, SchoolId, SchoolYear, SourceIdentity, Sport, TeamId,
 };
 
 struct RowMints {
@@ -25,6 +25,7 @@ struct RowFacts<'r> {
     date: &'r PublishedDate,
     meet: &'r ParsedMeet,
     mark: Mark,
+    adjustment: Option<Adjustment>,
     sport: Sport,
     ordinal: usize,
 }
@@ -107,45 +108,13 @@ impl<'a> Absorb<'a> {
         row: &'r ParsedRow,
         ordinal: usize,
     ) -> Option<RowFacts<'r>> {
-        let Some(team) = row.team.as_ref() else {
-            self.stats.rows_without_team = self.stats.rows_without_team.saturating_add(1);
-            return None;
-        };
-        let Some(sport) = context
-            .list
-            .season
-            .and_then(|season| season.sport)
-            .filter(|sport| *sport != Sport::Unknown)
-        else {
-            self.stats.rows_without_season = self.stats.rows_without_season.saturating_add(1);
-            return None;
-        };
-        let Some(athlete) = row.athlete.as_ref() else {
-            self.stats.rows_without_athlete = self.stats.rows_without_athlete.saturating_add(1);
-            return None;
-        };
-        let Some(name) = athlete.full_name() else {
-            self.stats.rows_without_athlete = self.stats.rows_without_athlete.saturating_add(1);
-            return None;
-        };
-        let Some(date) = row.date.as_ref() else {
-            self.stats.rows_without_date = self.stats.rows_without_date.saturating_add(1);
-            return None;
-        };
-        let Some(meet) = row.meet.as_ref() else {
-            self.stats.rows_without_meet = self.stats.rows_without_meet.saturating_add(1);
-            return None;
-        };
-        let Some(mark) = row.mark.as_ref().map(|mark| mark_of(mark, row.conv_metres)) else {
-            self.stats.rows_without_mark = self.stats.rows_without_mark.saturating_add(1);
-            return None;
-        };
-        if matches!(mark, Mark::Raw(_)) {
-            self.stats.marks_unconverted = self.stats.marks_unconverted.saturating_add(1);
-        }
-        if row.converted_note.is_some() {
-            self.stats.marks_converted = self.stats.marks_converted.saturating_add(1);
-        }
+        let team = self.require_team(row)?;
+        let sport = self.require_sport(context)?;
+        let (athlete, name) = self.require_athlete(row)?;
+        let date = self.require_date(row)?;
+        let meet = self.require_meet(row)?;
+        let (mark, adjustment) = self.require_mark(row)?;
+        self.count_conversion(row, &mark);
         Some(RowFacts {
             team,
             athlete,
@@ -153,9 +122,84 @@ impl<'a> Absorb<'a> {
             date,
             meet,
             mark,
+            adjustment,
             sport,
             ordinal,
         })
+    }
+
+    fn require_team<'r>(&mut self, row: &'r ParsedRow) -> Option<&'r ParsedTeam> {
+        row.team.as_ref().map_or_else(
+            || {
+                self.stats.rows_without_team = self.stats.rows_without_team.saturating_add(1);
+                None
+            },
+            Some,
+        )
+    }
+
+    fn require_sport(&mut self, context: &ListContext<'_>) -> Option<Sport> {
+        context
+            .list
+            .season
+            .and_then(|season| season.sport)
+            .filter(|sport| *sport != Sport::Unknown)
+            .map_or_else(
+                || {
+                    self.stats.rows_without_season = self.stats.rows_without_season.saturating_add(1);
+                    None
+                },
+                Some,
+            )
+    }
+
+    fn require_athlete<'r>(
+        &mut self,
+        row: &'r ParsedRow,
+    ) -> Option<(&'r ParsedAthlete, &'r str)> {
+        let athlete = row.athlete.as_ref()?;
+        let name = athlete.full_name()?;
+        Some((athlete, name))
+    }
+
+    fn require_date<'r>(&mut self, row: &'r ParsedRow) -> Option<&'r PublishedDate> {
+        row.date.as_ref().map_or_else(
+            || {
+                self.stats.rows_without_date = self.stats.rows_without_date.saturating_add(1);
+                None
+            },
+            Some,
+        )
+    }
+
+    fn require_meet<'r>(&mut self, row: &'r ParsedRow) -> Option<&'r ParsedMeet> {
+        row.meet.as_ref().map_or_else(
+            || {
+                self.stats.rows_without_meet = self.stats.rows_without_meet.saturating_add(1);
+                None
+            },
+            Some,
+        )
+    }
+
+    fn require_mark(&mut self, row: &ParsedRow) -> Option<(Mark, Option<Adjustment>)> {
+        let result = row
+            .mark
+            .as_ref()
+            .and_then(|mark| mark_with_adjustment(mark, row.conv_metres, row.converted_note.as_deref()));
+        if result.is_none() {
+            self.stats.rows_without_mark = self.stats.rows_without_mark.saturating_add(1);
+        }
+        result
+    }
+
+    fn count_conversion(&mut self, row: &ParsedRow, mark: &Mark) {
+        if matches!(mark, Mark::Raw(_)) {
+            self.stats.marks_unconverted = self.stats.marks_unconverted.saturating_add(1);
+        }
+        if row.converted_note.is_some() {
+            self.stats.marks_converted = self.stats.marks_converted.saturating_add(1);
+        }
     }
 
     fn gender_of(&mut self, team: &ParsedTeam, section: &ParsedSection) -> Gender {
@@ -203,6 +247,7 @@ impl<'a> Absorb<'a> {
             meet: mints.meet,
             date: facts.date.iso.clone(),
             mark: facts.mark.clone(),
+            adjustment: facts.adjustment.clone(),
             wind_mps: row.wind,
             place: row.place,
             heat: None,

@@ -8,7 +8,7 @@ use super::input::Inputs;
 use super::read::{self, Limits};
 use super::{cohort, defect, diff};
 
-const HEADERS: [&str; 28] = [
+const HEADERS: [&str; 31] = [
     "athlete_id",
     "name",
     "school",
@@ -21,6 +21,7 @@ const HEADERS: [&str; 28] = [
     "wind_class",
     "timing_class",
     "best_mark",
+    "original_mark",
     "best_value",
     "best_value_unit",
     "measure",
@@ -37,6 +38,8 @@ const HEADERS: [&str; 28] = [
     "comparison_policy",
     "comparison_specification",
     "source_specification",
+    "adjustment_kind",
+    "adjustment_basis",
 ];
 
 const LIMITS: Limits = Limits {
@@ -175,12 +178,8 @@ fn cells(path: &Path, row: &selections::SharedSelection) -> ReportResult<Vec<Cel
         .collect())
 }
 
-fn specification_cells(path: &Path, row: &selections::SharedSelection) -> ReportResult<[Cell; 3]> {
-    let policy = match row.key.comparison {
-        selections::ComparisonPolicy::Standard => "standard",
-        selections::ComparisonPolicy::ObservedFastest => "observed_fastest",
-        selections::ComparisonPolicy::SameCourse => "same_course",
-    };
+fn specification_cells(path: &Path, row: &selections::SharedSelection) -> ReportResult<[Cell; 5]> {
+    let policy = row.key.comparison.label();
     let comparison =
         serde_json::to_string(&row.key.specification).map_err(|source| decode(path, 0, source))?;
     let source = serde_json::to_string(&row.source.specification)
@@ -189,6 +188,8 @@ fn specification_cells(path: &Path, row: &selections::SharedSelection) -> Report
         Cell::text(policy),
         Cell::text(comparison),
         Cell::text(source),
+        Cell::optional(row.result.adjustment_kind.map(|kind| kind.label())),
+        Cell::optional(row.result.adjustment_basis.map(|basis| basis.label())),
     ])
 }
 
@@ -208,9 +209,15 @@ fn identity_cells(row: &selections::SharedSelection) -> [Cell; 11] {
     ]
 }
 
-fn result_cells(row: &selections::SharedSelection) -> [Cell; 14] {
+fn result_cells(row: &selections::SharedSelection) -> [Cell; 15] {
     [
         Cell::text(row.mark_text()),
+        Cell::optional(
+            row.result
+                .original_mark
+                .as_ref()
+                .map(selections::mark_text),
+        ),
         Cell::integer(row.result.value.to_string()),
         Cell::text(row.measure().value_unit()),
         Cell::text(row.measure().as_str()),

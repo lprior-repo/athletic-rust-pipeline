@@ -2,7 +2,7 @@ use super::identity_attestation::IdentityLineage;
 use super::identity_decision::person_key;
 use super::identity_index::{IdentityFact, PersonKey};
 use super::{
-    AppliedIdentityKind, AthleteCandidateId, AthleteIdentityIndex, CanonicalAthlete, Gender,
+    AppliedIdentityKind, AthleteCandidateId, AthleteIdentityIndex, CanonicalAthlete,
     IdentityAttestation, IdentityError,
 };
 use std::collections::btree_map::Entry;
@@ -83,9 +83,14 @@ fn same_person_evidence(facts: &[&IdentityFact]) -> bool {
     };
     let all_parsed = facts.iter().all(|fact| fact.parsed);
     let all_same_grad_year = facts.iter().all(|fact| fact.grad_year == first.grad_year);
-    let has_boys = facts.iter().any(|fact| fact.gender == Gender::Boys);
-    let has_girls = facts.iter().any(|fact| fact.gender == Gender::Girls);
-    if !all_parsed || !all_same_grad_year || (has_boys && has_girls) {
+    let gender_conflict = facts
+        .iter()
+        .any(|first| {
+            facts.iter().skip(1).any(|second| {
+                !super::genders_compatible(first.gender, second.gender)
+            })
+        });
+    if !all_parsed || !all_same_grad_year || gender_conflict {
         return false;
     }
     if facts.iter().all(|fact| first.shares_primary(fact)) {

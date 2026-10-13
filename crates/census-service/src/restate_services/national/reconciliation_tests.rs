@@ -36,6 +36,179 @@ async fn b1ui_national_applies_source_identity_before_publication() -> TestResul
 }
 
 #[tokio::test]
+async fn r2ox_obsolete_retained_case_is_superseded_when_gender_becomes_compatible() -> TestResult {
+    r2ox_supersession(false).await?;
+    r2ox_supersession(true).await
+}
+
+async fn r2ox_supersession(reversed: bool) -> TestResult {
+    use census_domain::model::{
+        Evidence, Gender, GradYear, SourceIdentity, SourceNamespace, SourceRef,
+    };
+    use census_domain::UsJurisdiction;
+
+    let directory = tempfile::tempdir()?;
+    let store = Arc::new(Store::open(directory.path())?);
+
+    let (school, _) = census_domain::model::CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Superior High",
+        "superior high",
+        Some("Superior"),
+    );
+    let shared = SourceIdentity::new(SourceNamespace::TfrrsAthlete, "551234")
+        .with_url("https://timer.test/athletes/551234");
+
+    let mut athletes = vec![
+        census_domain::model::CanonicalAthlete::new(
+            &school.id,
+            "Alex Morgan",
+            GradYear::CO2027,
+            Gender::Girls,
+            shared.clone(),
+        ),
+        census_domain::model::CanonicalAthlete::new(
+            &school.id,
+            "Alex Morgan",
+            GradYear::CO2027,
+            Gender::Unknown,
+            shared.clone(),
+        ),
+    ];
+    for athlete in &mut athletes {
+        athlete.evidence.push(Evidence::parsed(
+            SourceRef::new(
+                shared.id.clone(),
+                Some("https://timer.test/athletes/551234".to_string()),
+            ),
+            "2026-04-01",
+        ));
+    }
+    if reversed {
+        athletes.reverse();
+    }
+    let subject = athletes.first().ok_or("subject athlete missing")?.clone();
+    let other = athletes.get(1).ok_or("second athlete missing")?.clone();
+
+    store.append(Table::Schools, &school)?;
+    store.append_many(Table::Athletes, &athletes)?;
+
+    let mut old_case = ReviewCase::minted(
+        "Athlete identity",
+        subject.id.as_str(),
+        "Alex Morgan",
+        "The rows disagree on name, class or gender, so the object does not settle that they are one athlete.",
+    );
+    let (_, digest) = old_case.id.rsplit_once(':').ok_or("case id has no digest")?;
+    old_case.id = format!("Athlete identity:{}:p1:{digest}", subject.id.as_str());
+    old_case.state = ReviewState::Retained;
+    old_case.member_ids = vec![subject.id.cast(), other.id.cast()];
+    if reversed {
+        old_case.member_ids.reverse();
+    }
+    let old_case_id = old_case.id.clone();
+    store.replace_many(Table::ReviewCases, std::slice::from_ref(&old_case))?;
+
+    drive(Arc::clone(&store)).await?;
+
+    for pass in 0..2 {
+        drive(Arc::clone(&store)).await?;
+
+        let projection = store.athlete_identity_projection()?;
+        check!(eq; projection.status(subject.id.as_str())?, IdentityStatus::Verified);
+        check!(eq; projection.status(other.id.as_str())?, IdentityStatus::Verified);
+
+        let cases = store.scan::<ReviewCase>(Table::ReviewCases)?;
+        let superseded = cases
+            .iter()
+            .find(|case| case.id == old_case_id)
+            .ok_or("the obsolete retained case vanished from the published set")?;
+        check!(
+            eq; superseded.state, ReviewState::Superseded,
+            "pass {pass}: the obsolete retained case must be superseded, not left evidence-current"
+        );
+
+        let provenance = store
+            .journal_payload("identity_retained_supersession_v1", &old_case_id)?
+            .ok_or("supersession provenance missing")?;
+        let new_id = provenance
+            .get(0)
+            .and_then(serde_json::Value::as_str)
+            .ok_or("provenance must record the new case id")?;
+        let resolved = cases
+            .iter()
+            .find(|case| case.id == new_id)
+            .ok_or("the resolved successor case is missing")?;
+        check!(eq; resolved.state, ReviewState::Resolved);
+        check!(eq; resolved.member_ids.len(), 2);
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn q3pt_boys_girls_still_blocks_identity_resolution() -> TestResult {
+    use census_domain::model::{Gender, GradYear, SourceIdentity, SourceNamespace};
+    use census_domain::UsJurisdiction;
+
+    let directory = tempfile::tempdir()?;
+    let store = Arc::new(Store::open(directory.path())?);
+
+    let (school, _) = census_domain::model::CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Superior High",
+        "superior high",
+        Some("Superior"),
+    );
+    let shared = SourceIdentity::new(SourceNamespace::TfrrsAthlete, "551235")
+        .with_url("https://timer.test/athletes/551235");
+
+    let boys = census_domain::model::CanonicalAthlete::new(
+        &school.id,
+        "Alex Morgan",
+        GradYear::CO2027,
+        Gender::Boys,
+        shared.clone(),
+    );
+    let girls = census_domain::model::CanonicalAthlete::new(
+        &school.id,
+        "Alex Morgan",
+        GradYear::CO2027,
+        Gender::Girls,
+        shared.clone(),
+    );
+
+    store.append(Table::Schools, &school)?;
+    store.append_many(Table::Athletes, &[boys.clone(), girls.clone()])?;
+
+    drive(Arc::clone(&store)).await?;
+
+    let projection = store.athlete_identity_projection()?;
+    check!(
+        matches!(projection.status(boys.id.as_str())?,
+            IdentityStatus::RetainedConflict | IdentityStatus::Pending),
+        "boys vs girls must still block identity resolution"
+    );
+    let decisions = store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?;
+    let boys_girls_accepted = decisions.iter().any(|decision| {
+        decision
+            .members
+            .iter()
+            .any(|m| m.subject.as_str() == boys.id.as_str())
+            && decision
+                .members
+                .iter()
+                .any(|m| m.subject.as_str() == girls.id.as_str())
+    });
+    check!(
+        !boys_girls_accepted,
+        "boys vs girls must not be accepted as same person"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn u4al_national_records_review_verdicts_without_manual_review() -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = Arc::new(Store::open(directory.path())?);

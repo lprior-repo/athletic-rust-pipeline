@@ -69,8 +69,7 @@ impl SchoolAddressJoin {
         let region = Arc::clone(self.jobs.region());
         let generation = Self::generation_path(store.root(), request.generation.as_deref());
         let overrides = Overrides {
-            urls: request.urls,
-            dates: request.dates,
+            acquisitions: request.acquisitions,
         };
         let permit = self.jobs.permit_control().await?;
         let reply = ctx

@@ -1,5 +1,5 @@
 use super::*;
-use census_domain::model::CourseMeasurement;
+use census_domain::model::{AdjustmentBasis, CourseMeasurement};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -7,6 +7,18 @@ pub enum ComparisonPolicy {
     Standard,
     ObservedFastest,
     SameCourse,
+    UnqualifiedAdjustment,
+}
+
+impl ComparisonPolicy {
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::Standard => "standard",
+            Self::ObservedFastest => "observed_fastest",
+            Self::SameCourse => "same_course",
+            Self::UnqualifiedAdjustment => "unqualified_adjustment",
+        }
+    }
 }
 
 impl PrKey {
@@ -14,6 +26,13 @@ impl PrKey {
         self.specification = event.resolved_specification().ok()?;
         if !self.compatible_fields() {
             return None;
+        }
+        if self
+            .adjustment
+            .is_some_and(|adjustment| adjustment.basis == AdjustmentBasis::Unknown)
+            && self.comparison == ComparisonPolicy::Standard
+        {
+            self.comparison = ComparisonPolicy::UnqualifiedAdjustment;
         }
         if self.surface != SurfaceClass::CrossCountry {
             if self.specification.cross_country.is_some() {
@@ -67,6 +86,7 @@ impl PrKey {
             context: None,
             specification,
             comparison,
+            adjustment: self.adjustment,
         }
     }
 

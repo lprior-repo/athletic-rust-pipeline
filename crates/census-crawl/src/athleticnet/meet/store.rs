@@ -222,6 +222,7 @@ fn performance_row(
         meet: input.meet.id.clone(),
         date: input.date,
         mark: input.mark,
+        adjustment: None,
         wind_mps: input.wind_mps,
         place: input.place.and_then(|place| place.trim().parse().ok()),
         heat: None,

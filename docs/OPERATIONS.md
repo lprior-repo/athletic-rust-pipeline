@@ -1029,6 +1029,17 @@ precision, including trailing zeroes. XLSX `Mark Value` remains a presentation n
 with `Unit` equal to `s`; it is never the comparison authority. The JSONL mark retains exact
 nanoseconds and precision even when a floating-point presentation cannot retain all nine digits.
 
+A converted mark stays distinguishable from an actual one. `best_mark` is the mark the source
+published, `original_mark` is the source's own pre-conversion mark when it published one, and
+`adjustment_kind` (`track_size_conversion`) with `adjustment_basis` (`known` or `unknown`) name
+that derivation; a row without a conversion leaves all three empty. A conversion never shares a
+comparison key with an actual performance of the same event, so a converted result cannot occupy
+an actual mark's slot, and `comparison_policy` reports `unqualified_adjustment` for a conversion
+whose basis the source did not state. A stored observation that predates conversion evidence keeps
+its recorded mark and conflicts with a later disagreement instead of being silently rewritten,
+and the pre-conversion mark does not by itself make two otherwise disagreeing reports of one race
+agree.
+
 Bare legacy integers remain centiseconds under their historical schema, never nanoseconds.
 Only an explicit versioned migration may convert them with checked multiplication by
 10,000,000 and precision two. Legacy floating-point seconds require the named historical

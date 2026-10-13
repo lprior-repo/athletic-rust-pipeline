@@ -131,6 +131,7 @@ fn build_corpus(schools: usize) -> TestResult<Corpus> {
                 meet: meet_id.clone(),
                 date: MEET_DATE.to_string(),
                 mark: Mark::TimeSeconds(ExactSeconds::parse("12.00")?),
+                adjustment: None,
                 wind_mps: None,
                 place: Some(1),
                 heat: None,

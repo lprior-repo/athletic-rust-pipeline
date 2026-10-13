@@ -107,6 +107,7 @@ pub(super) fn add(
         census_domain::model::PerformanceResult {
             team: &Id::mint("team", &["cen"]),
             mark,
+            adjustment: None,
             wind_mps: None,
             place: None,
         },

@@ -1,17 +1,13 @@
-use std::collections::BTreeMap;
-
 use serde::{Deserialize, Serialize};
 
-use crate::school_address::{Counters, JoinReport};
+use crate::school_address::{Acquisition, Counters, JoinReport};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SchoolAddressJoinRequest {
     #[serde(default)]
     pub generation: Option<String>,
     #[serde(default)]
-    pub urls: BTreeMap<String, String>,
-    #[serde(default)]
-    pub dates: BTreeMap<String, String>,
+    pub acquisitions: Vec<Acquisition>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub expected_digest: Option<String>,
 }

@@ -118,6 +118,7 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory(
                 meet: meet_id.clone(),
                 date: performance_date,
                 mark: value,
+                adjustment: None,
                 wind_mps: None,
                 place: None,
                 heat: None,

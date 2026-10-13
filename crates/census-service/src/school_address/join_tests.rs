@@ -395,35 +395,52 @@ fn dry_run_links_nothing_into_the_store() -> TestResult {
 #[test]
 fn overrides_reject_foreign_sources_and_bad_values() -> TestResult {
     let foreign = Overrides {
-        urls: BTreeMap::from([("milesplit".to_string(), "https://x.test/a".to_string())]),
-        dates: BTreeMap::new(),
+        acquisitions: vec![Acquisition {
+            entry: 0,
+            provider: "milesplit".to_string(),
+            path: String::new(),
+            url: "https://x.test/a".to_string(),
+            retrieved_at: None,
+        }],
     };
     check!(matches!(
         foreign.validated(),
         Err(JoinError::EvidenceSource { .. })
     ));
     let scheme = Overrides {
-        urls: BTreeMap::from([("nces-ccd".to_string(), "ftp://x.test/a".to_string())]),
-        dates: BTreeMap::new(),
+        acquisitions: vec![Acquisition {
+            entry: 0,
+            provider: "nces-ccd".to_string(),
+            path: String::new(),
+            url: "ftp://x.test/a".to_string(),
+            retrieved_at: None,
+        }],
     };
     check!(matches!(
         scheme.validated(),
         Err(JoinError::EvidenceValue { .. })
     ));
     let date = Overrides {
-        urls: BTreeMap::new(),
-        dates: BTreeMap::from([("nces-ccd".to_string(), "2026-13-40".to_string())]),
+        acquisitions: vec![Acquisition {
+            entry: 0,
+            provider: "nces-ccd".to_string(),
+            path: String::new(),
+            url: String::new(),
+            retrieved_at: Some("2026-13-40".to_string()),
+        }],
     };
     check!(matches!(
         date.validated(),
         Err(JoinError::EvidenceValue { .. })
     ));
     let accepted = Overrides {
-        urls: BTreeMap::from([(
-            "nces-ccd".to_string(),
-            "https://nces.ed.gov/ccd.zip".to_string(),
-        )]),
-        dates: BTreeMap::from([("nces-ccd".to_string(), "2026-08-01".to_string())]),
+        acquisitions: vec![Acquisition {
+            entry: 0,
+            provider: "nces-ccd".to_string(),
+            path: String::new(),
+            url: "https://nces.ed.gov/ccd.zip".to_string(),
+            retrieved_at: Some("2026-08-01".to_string()),
+        }],
     };
     check!(accepted.validated().is_ok());
 
@@ -498,11 +515,13 @@ fn lane_evidence_reads_the_generation_lanes_and_overrides() -> TestResult {
         phases: None,
     };
     let overrides = Overrides {
-        urls: BTreeMap::from([(
-            "nces-ccd".to_string(),
-            "https://nces.ed.gov/ccd.zip".to_string(),
-        )]),
-        dates: BTreeMap::from([("nces-ccd".to_string(), "2026-08-01".to_string())]),
+        acquisitions: vec![Acquisition {
+            entry: 0,
+            provider: "nces-ccd".to_string(),
+            path: String::new(),
+            url: "https://nces.ed.gov/ccd.zip".to_string(),
+            retrieved_at: Some("2026-08-01".to_string()),
+        }],
     };
     let lanes = build_lane_evidence(&report, &overrides)?;
     check!(eq; lanes.tokens().count(), 3);
@@ -1476,17 +1495,22 @@ fn a_capture_selector_names_one_capture_and_an_unknown_one_is_refused() -> TestR
         phases: None,
     };
     let overrides = Overrides {
-        urls: BTreeMap::from([
-            (
-                "state-ed@research/sources/state-ed/raw/alpha.html".to_string(),
-                "https://data.nysed.gov/profile/441001".to_string(),
-            ),
-            (
-                "state-ed@research/sources/state-ed/raw/beta.html".to_string(),
-                "https://data.nysed.gov/profile/441002".to_string(),
-            ),
-        ]),
-        dates: BTreeMap::from([("state-ed".to_string(), "2026-09-01".to_string())]),
+        acquisitions: vec![
+            Acquisition {
+                entry: 0,
+                provider: "state-ed".to_string(),
+                path: "research/sources/state-ed/raw/alpha.html".to_string(),
+                url: "https://data.nysed.gov/profile/441001".to_string(),
+                retrieved_at: Some("2026-09-01".to_string()),
+            },
+            Acquisition {
+                entry: 1,
+                provider: "state-ed".to_string(),
+                path: "research/sources/state-ed/raw/beta.html".to_string(),
+                url: "https://data.nysed.gov/profile/441002".to_string(),
+                retrieved_at: Some("2026-09-01".to_string()),
+            },
+        ],
     }
     .validated()?;
     let lanes = build_lane_evidence(&report, &overrides)?;
@@ -1505,11 +1529,13 @@ fn a_capture_selector_names_one_capture_and_an_unknown_one_is_refused() -> TestR
     check!(eq; beta.url.as_deref(), Some("https://data.nysed.gov/profile/441002"));
 
     let unknown = Overrides {
-        urls: BTreeMap::from([(
-            "state-ed@research/sources/state-ed/raw/nope.html".to_string(),
-            "https://data.nysed.gov/profile/1".to_string(),
-        )]),
-        dates: BTreeMap::new(),
+        acquisitions: vec![Acquisition {
+            entry: 0,
+            provider: "state-ed".to_string(),
+            path: "research/sources/state-ed/raw/nope.html".to_string(),
+            url: "https://data.nysed.gov/profile/1".to_string(),
+            retrieved_at: None,
+        }],
     }
     .validated()?;
     let refused = build_lane_evidence(&report, &unknown);

@@ -1,4 +1,4 @@
-use crate::bests::{ComparisonPolicy, SharedSelection};
+use crate::bests::SharedSelection;
 use census_domain::model::{CourseIdentity, CourseMeasurement, DistanceUnit};
 
 pub(super) fn cross_country(row: &SharedSelection) -> Option<String> {
@@ -11,7 +11,7 @@ pub(super) fn cross_country(row: &SharedSelection) -> Option<String> {
     };
     let distance = source.distance.thousandths();
     let fields = [
-        format!("comparison {}", policy(row.key.comparison)),
+        format!("comparison {}", row.key.comparison.label()),
         format!("comparison course {}", course(compared_course, "any")),
         format!(
             "distance {}.{:03} {units}",
@@ -35,14 +35,6 @@ fn course(value: Option<&CourseIdentity>, absent: &str) -> String {
     match value {
         Some(value) => format!("{:?}@{:?}", value.id(), value.version()),
         None => absent.to_owned(),
-    }
-}
-
-fn policy(value: ComparisonPolicy) -> &'static str {
-    match value {
-        ComparisonPolicy::Standard => "standard",
-        ComparisonPolicy::ObservedFastest => "observed_fastest",
-        ComparisonPolicy::SameCourse => "same_course",
     }
 }
 

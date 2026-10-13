@@ -248,6 +248,7 @@ fn mint_performance(
         PerformanceResult {
             team: subject.1,
             mark: row.mark.clone(),
+            adjustment: None,
             wind_mps: owned::number(row, "windReading"),
             place: owned::place(row),
         },

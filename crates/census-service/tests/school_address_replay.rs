@@ -50,10 +50,22 @@ fn school_address_replay_preserves_the_same_corpus_bytes_and_capture_provenance(
     ] {
         check!(eq; before.artifact(name)?, after.artifact(name)?);
     }
-    check!(eq; first.overrides().urls.len(), 3);
-    check!(eq; first.overrides().dates.len(), 2);
-    check!(eq; first.overrides().dates.values().collect::<Vec<_>>(), vec!["2026-09-28", "2026-09-28"]);
-    check!(eq; first.overrides().urls.values().filter(|url| url.starts_with("https://data.nysed.gov/profile.php?")).count(), 1);
+    check!(eq; first.overrides().acquisitions.len(), 3);
+    let state_ed_acqs = first
+        .overrides()
+        .acquisitions
+        .iter()
+        .filter(|acq| acq.provider == "state-ed")
+        .collect::<Vec<_>>();
+    check!(eq; state_ed_acqs.len(), 1);
+    check!(eq; state_ed_acqs[0].retrieved_at, None);
+    let dated = first
+        .overrides()
+        .acquisitions
+        .iter()
+        .filter(|acq| acq.retrieved_at.as_deref() == Some("2026-09-28"))
+        .count();
+    check!(eq; dated, 2);
     let captures = std::fs::read_dir(out.join("captures"))?.collect::<Result<Vec<_>, _>>()?;
     check!(eq; captures.len(), 1);
     let archive = captures.first().ok_or("no archive")?.path();

@@ -13,6 +13,7 @@ pub struct PerformanceResult<'a> {
     pub mark: Mark,
     pub wind_mps: Option<f64>,
     pub place: Option<u16>,
+    pub adjustment: Option<super::Adjustment>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]

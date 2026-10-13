@@ -68,6 +68,7 @@ impl<'a> Mapper<'a> {
             meet: context.meet.id.clone(),
             date: row.date.to_string(),
             mark: row.mark,
+            adjustment: None,
             wind_mps: None,
             place: row.place,
             heat: None,

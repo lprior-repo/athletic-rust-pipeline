@@ -31,6 +31,31 @@ pub(super) fn conversion_note(cell: &str) -> Option<String> {
     note.starts_with("Converted").then_some(note)
 }
 
+pub fn is_track_size_conversion(note: &str) -> bool {
+    find_ascii_ci(note, "track size").is_some()
+}
+
+pub fn converted_from(note: &str) -> Option<ParsedMark> {
+    let start = find_ascii_ci(note, "converted from")? + "converted from".len();
+    let token = note.get(start..)?.split_whitespace().next()?.trim_end_matches('.');
+    if clock_seconds(token).is_some() {
+        Some(ParsedMark::Time(token.to_string()))
+    } else if feet_inches_metres(token).is_some() || metric_metres(token).is_some() {
+        Some(ParsedMark::Field(token.to_string()))
+    } else {
+        None
+    }
+}
+
+fn find_ascii_ci(haystack: &str, needle: &str) -> Option<usize> {
+    let hay = haystack.as_bytes();
+    let pat = needle.as_bytes();
+    if pat.is_empty() || pat.len() > hay.len() {
+        return None;
+    }
+    (0..=hay.len() - pat.len()).find(|&index| hay[index..index + pat.len()].eq_ignore_ascii_case(pat))
+}
+
 fn reads_as_mark(token: &str) -> bool {
     clock_seconds(token).is_some()
         || feet_inches_metres(token).is_some()

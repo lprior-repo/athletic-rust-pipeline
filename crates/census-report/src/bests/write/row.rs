@@ -38,6 +38,13 @@ fn identity<S: SerializeStruct>(wire: &mut S, row: &SharedSelection) -> Result<(
 
 fn result<S: SerializeStruct>(wire: &mut S, row: &SharedSelection) -> Result<(), S::Error> {
     text(wire, "best_mark", &row.mark_text())?;
+    wire.serialize_field(
+        "original_mark",
+        &row.result
+            .original_mark
+            .as_ref()
+            .map(crate::bests::mark_text),
+    )?;
     wire.serialize_field("best_value", &row.result.value)?;
     text(wire, "best_value_unit", row.measure().value_unit())?;
     text(wire, "measure", row.measure().as_str())?;
@@ -69,7 +76,19 @@ fn specifications<S: SerializeStruct>(wire: &mut S, row: &SharedSelection) -> Re
     let source =
         serde_json::to_string(&row.source.specification).map_err(serde::ser::Error::custom)?;
     text(wire, "comparison_specification", &comparison)?;
-    text(wire, "source_specification", &source)
+    text(wire, "source_specification", &source)?;
+    wire.serialize_field(
+        "adjustment_kind",
+        &row.result
+            .adjustment_kind
+            .map(|kind| Protected(kind.label())),
+    )?;
+    wire.serialize_field(
+        "adjustment_basis",
+        &row.result
+            .adjustment_basis
+            .map(|basis| Protected(basis.label())),
+    )
 }
 
 fn text<S: SerializeStruct>(

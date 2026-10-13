@@ -13,7 +13,6 @@ use census_report::report::Scope;
 use census_service::school_address::{self, join_generation, Mode, Overrides};
 use census_store::{Store, Table};
 use helpers::{args, seed, verify_corpus_csv, verify_retained_notes, verify_workbook};
-use std::collections::BTreeMap;
 
 const CCD: &str = include_str!("../../census-crawl/tests/fixtures/cen12/ccd_tuples.csv");
 const PSS: &str = include_str!("../../census-crawl/tests/fixtures/cen12/pss_mailing.csv");
@@ -140,11 +139,13 @@ fn cen12_nces_parser_join_and_published_workbook_keep_exact_declared_tuples() ->
     let store = Store::open(dir.path().join("store"))?;
     seed(&store, parsed.entries())?;
     let overrides = Overrides {
-        urls: BTreeMap::from([(
-            "nces-ccd".into(),
-            "https://nces.ed.gov/ccd/tuple-regression.csv".into(),
-        )]),
-        dates: BTreeMap::from([("nces-ccd".into(), "2026-10-07".into())]),
+        acquisitions: vec![census_service::school_address::Acquisition {
+            entry: 0,
+            provider: "nces-ccd".to_string(),
+            path: String::new(),
+            url: "https://nces.ed.gov/ccd/tuple-regression.csv".to_string(),
+            retrieved_at: Some("2026-10-07".to_string()),
+        }],
     };
     let joined = join_generation(&store, &generation, None, overrides, Mode::Apply)?;
     check!(eq; joined.counters.linked, 0);

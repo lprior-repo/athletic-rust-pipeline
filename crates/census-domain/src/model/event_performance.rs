@@ -118,6 +118,8 @@ pub struct CanonicalPerformance {
     pub timing: Option<TimingMethod>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub observed_grade: Option<Grade>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub adjustment: Option<super::Adjustment>,
     pub evidence: Vec<Evidence>,
     pub source_key: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -183,6 +185,7 @@ impl CanonicalPerformance {
             meet: identity.meet.clone(),
             date: identity.date.to_owned(),
             mark: result.mark,
+            adjustment: result.adjustment,
             wind_mps: result.wind_mps,
             place: result.place,
             heat: None,

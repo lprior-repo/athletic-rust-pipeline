@@ -73,6 +73,7 @@ fn valid_best_results_sidecars_pass_and_forgeries_fail() -> TestResult {
         meet: meet.id.clone(),
         date: "2026-05-02".to_string(),
         mark: Mark::TimeSeconds(ExactSeconds::parse("11.00")?),
+        adjustment: None,
         wind_mps: Some(1.0),
         place: None,
         heat: None,

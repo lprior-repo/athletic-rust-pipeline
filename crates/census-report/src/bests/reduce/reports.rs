@@ -1,5 +1,6 @@
 use super::super::mark_text;
 use super::super::selection::Conflict;
+use super::super::Measure;
 use super::Candidate;
 use census_domain::model::CanonicalPerformance;
 use std::collections::BTreeSet;
@@ -48,7 +49,7 @@ impl<'a> ReportGroup<'a> {
     pub(super) fn record(&mut self, candidate: Candidate<'a>) {
         self.marks.insert(mark_text(&candidate.performance.mark));
         if let ReportState::Uncontested(incumbent) = &mut self.state {
-            if candidate.value != incumbent.value {
+            if observed_value(&candidate) != observed_value(incumbent) {
                 self.state = ReportState::Contested;
             } else if candidate.wins_over(incumbent) {
                 *incumbent = candidate;
@@ -72,4 +73,14 @@ impl<'a> ReportGroup<'a> {
             }),
         }
     }
+}
+
+fn observed_value(candidate: &Candidate<'_>) -> i64 {
+    candidate
+        .performance
+        .adjustment
+        .as_ref()
+        .and_then(|adjustment| adjustment.original_mark.as_ref())
+        .and_then(|mark| Measure::of(mark).and_then(|measure| measure.value(mark)))
+        .unwrap_or(candidate.value)
 }

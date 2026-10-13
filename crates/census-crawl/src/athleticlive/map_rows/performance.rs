@@ -54,6 +54,7 @@ fn mint(
         PerformanceResult {
             team: &mapped.team,
             mark: facts.mark.clone(),
+            adjustment: None,
             wind_mps: facts.wind_mps,
             place: facts.place,
         },

@@ -13,7 +13,7 @@ use super::report::{failure_exit, print_jurisdiction, print_national};
 use super::{named_season, JurisdictionArgs, NationalArgs, NationalReportArgs};
 use crate::cli::Cli;
 use census_service::ingress;
-use census_service::school_address::{parse_source_pairs, Overrides};
+use census_service::school_address::parse_source_pairs;
 
 mod resume;
 
@@ -66,15 +66,27 @@ fn school_address_request(args: &NationalArgs) -> Result<Option<SchoolAddressJoi
     {
         return Ok(None);
     }
-    let overrides = Overrides {
-        urls: parse_source_pairs(&args.evidence_urls)?,
-        dates: parse_source_pairs(&args.evidence_dates)?,
+    let url_pairs = parse_source_pairs(&args.evidence_urls)?;
+    let date_pairs = parse_source_pairs(&args.evidence_dates)?;
+    let mut acquisitions = Vec::new();
+    for (source, url) in url_pairs {
+        let (provider, path) = match source.split_once('@') {
+            Some((p, rest)) => (p.to_string(), rest.to_string()),
+            None => (source.clone(), String::new()),
+        };
+        let entry = acquisitions.len() as u32;
+        let retrieved_at = date_pairs.get(&source).cloned();
+        acquisitions.push(census_service::school_address::Acquisition {
+            entry,
+            provider,
+            path,
+            url,
+            retrieved_at,
+        });
     }
-    .validated()?;
     Ok(Some(SchoolAddressJoinRequest {
         generation: args.school_directory.clone(),
-        urls: overrides.urls,
-        dates: overrides.dates,
+        acquisitions,
         expected_digest: None,
     }))
 }

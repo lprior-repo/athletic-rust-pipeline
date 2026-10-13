@@ -280,6 +280,7 @@ fn performance(
         meet: meet.clone(),
         date: "2026-05-01".to_string(),
         mark,
+        adjustment: None,
         wind_mps: None,
         place: None,
         heat: None,
