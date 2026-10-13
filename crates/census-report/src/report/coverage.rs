@@ -13,6 +13,9 @@ mod population;
 mod pr_support;
 mod reads;
 mod report_impl;
+mod retained;
+mod scan;
+mod scoped;
 mod state;
 
 pub(crate) use state::{in_requested_year, jurisdiction_of, school_state_index};
@@ -201,6 +204,12 @@ pub fn coverage_report(
     pr_support::apply_pr_support(&mut report, dataset, grad_year)?;
     report.reconcile()?;
     Ok(report)
+}
+
+pub fn coverage_report_for_derivation(
+    derivation: &super::Derivation<'_>,
+) -> ReportResult<CoverageReport> {
+    scoped::report(derivation)
 }
 
 fn state_histogram(rows: &[JurisdictionCoverage]) -> BTreeMap<String, usize> {

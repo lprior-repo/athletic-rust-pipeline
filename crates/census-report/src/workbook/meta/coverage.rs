@@ -1,6 +1,6 @@
-use crate::export::ExportDataset;
-use crate::report::{coverage_report, CoverageReport, JurisdictionCoverage, ReportResult};
-use census_domain::model::GradYear;
+use crate::report::{
+    coverage_report_for_derivation, CoverageReport, Derivation, JurisdictionCoverage, ReportResult,
+};
 use std::collections::BTreeMap;
 
 use crate::workbook::cells::{row, Cell};
@@ -75,8 +75,8 @@ const COLUMNS: [(&str, Column); 27] = [
     ("Performances", Column::Count(|row| row.performances)),
 ];
 
-pub(super) fn coverage_sheet(dataset: &ExportDataset) -> ReportResult<Vec<Vec<Cell>>> {
-    let report = coverage_report(dataset, Some(GradYear::CO2027.get()))?;
+pub(super) fn coverage_sheet(derivation: &Derivation<'_>) -> ReportResult<Vec<Vec<Cell>>> {
+    let report = coverage_report_for_derivation(derivation)?;
     let mut cells = jurisdiction_table(&report)?;
     cells.push(row!());
     cells.extend(gap_table(&report)?);
@@ -169,7 +169,10 @@ fn notes(report: &CoverageReport) -> ReportResult<Vec<Vec<Cell>>> {
 }
 
 fn catalog_counts(counts: &crate::report::EventCounts) -> ReportResult<Vec<Vec<Cell>>> {
-    let mut rows = vec![row!("Recruiting event disposition", "Retained events")];
+    let mut rows = vec![row!(
+        "Retained global recruiting event disposition",
+        "Retained global events"
+    )];
     rows.push(row!("included", Cell::number(counts.included)?));
     for (reason, count) in &counts.excluded {
         rows.push(row!(

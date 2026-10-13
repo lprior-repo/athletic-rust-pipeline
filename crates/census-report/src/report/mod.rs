@@ -25,8 +25,8 @@ mod tables;
 mod writer;
 
 pub use coverage::{
-    coverage_report, CoverageGap, CoverageReport, CoverageTotals, GapClass, JurisdictionCoverage,
-    UNKNOWN_JURISDICTION,
+    coverage_report, coverage_report_for_derivation, CoverageGap, CoverageReport, CoverageTotals,
+    GapClass, JurisdictionCoverage, UNKNOWN_JURISDICTION,
 };
 pub(crate) use derivation::cohort_candidates;
 pub use derivation::Derivation;

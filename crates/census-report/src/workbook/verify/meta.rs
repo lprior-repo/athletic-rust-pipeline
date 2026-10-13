@@ -85,7 +85,12 @@ impl Series<'_, '_> {
             schools::expected(self.population.schools())?,
             meets::expected(self.population.meets())?,
             sources::expected(self.censuses)?,
-            coverage::expected(self.dataset)?,
+            coverage::expected(&Derivation::of(
+                self.dataset,
+                self.scope,
+                Some(census_domain::model::GradYear::CO2027.get()),
+                self.population.jurisdictions(),
+            ))?,
             queues::conflicts(&conflicts, self.index),
             queues::review(&review, &self.dataset.verdicts, self.index),
             self.metrics(&conflicts)?,

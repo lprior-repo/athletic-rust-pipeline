@@ -128,7 +128,7 @@ fn distinct_namespaces(athlete: &CanonicalAthlete) -> usize {
 }
 
 pub(super) fn tally_performances<'a>(
-    performances: &'a [CanonicalPerformance],
+    performances: impl IntoIterator<Item = &'a CanonicalPerformance>,
     athlete_ids: &HashSet<&str>,
     event_ids: &HashSet<String>,
     unmapped_event_ids: &HashSet<String>,

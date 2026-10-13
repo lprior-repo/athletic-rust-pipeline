@@ -1,6 +1,6 @@
-use crate::export::ExportDataset;
-use crate::report::{coverage_report, CoverageReport, JurisdictionCoverage, ReportResult};
-use census_domain::model::GradYear;
+use crate::report::{
+    coverage_report_for_derivation, CoverageReport, Derivation, JurisdictionCoverage, ReportResult,
+};
 use std::collections::BTreeMap;
 
 use super::{header, sorted_counts, Expect, Sheet};
@@ -68,8 +68,8 @@ const COLUMNS: [(&str, Column); 27] = [
     ("Performances", Column::Count(|row| row.performances)),
 ];
 
-pub(super) fn expected(dataset: &ExportDataset) -> ReportResult<Sheet> {
-    let report = coverage_report(dataset, Some(GradYear::CO2027.get()))?;
+pub(super) fn expected(derivation: &Derivation<'_>) -> ReportResult<Sheet> {
+    let report = coverage_report_for_derivation(derivation)?;
     let mut rows = jurisdiction_table(&report)?;
     rows.push(Vec::new());
     rows.extend(gap_table(&report)?);
@@ -156,7 +156,10 @@ fn notes(report: &CoverageReport) -> ReportResult<Vec<Vec<Expect>>> {
 }
 
 fn catalog_counts(counts: &crate::report::EventCounts) -> ReportResult<Vec<Vec<Expect>>> {
-    let mut rows = vec![header(&["Recruiting event disposition", "Retained events"])];
+    let mut rows = vec![header(&[
+        "Retained global recruiting event disposition",
+        "Retained global events",
+    ])];
     rows.push(vec![
         Expect::text("included"),
         Expect::count(counts.included)?,
