@@ -29,8 +29,8 @@ fn hytek_source_to_pr_xlsx_csv_keeps_faster_thousandth_despite_slower_later_date
 }
 
 #[test]
-fn hytek_equivalent_spellings_keep_later_precision_and_uncontested_best_in_xlsx_csv() -> TestResult
-{
+fn hytek_equivalent_spellings_keep_earliest_precision_and_uncontested_best_in_xlsx_csv(
+) -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = store_with_source_reports(
         &directory.path().join("store"),
@@ -39,13 +39,13 @@ fn hytek_equivalent_spellings_keep_later_precision_and_uncontested_best_in_xlsx_
     assert_artifacts(
         &store,
         &directory.path().join("out"),
-        ("10.9400", 10.94),
+        ("10.94", 10.94),
         10_940_000_000,
-        4,
+        2,
     )?;
     let dataset = ExportDataset::load(&store)?;
     let rows = selected(&dataset);
-    check!(eq; rows.first().ok_or("missing PR")?.meet.date.as_str(), "2026-05-02");
+    check!(eq; rows.first().ok_or("missing PR")?.meet.date.as_str(), "2026-05-01");
     check!(eq; rows.first().ok_or("missing PR")?.conflicts, Vec::new());
     Ok(())
 }

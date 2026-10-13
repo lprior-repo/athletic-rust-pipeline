@@ -133,6 +133,30 @@ identity, real Coverage-sheet readback after mutation and reopen, each table's i
 fence, and historical-state preservation. A source change or this record is not evidence that those
 checks or release requirements passed.
 
+## Deterministic equal-mark amendment — 2026-10-13
+
+Publication semantic policy revision 9 selects an equal numeric mark by earliest known exact
+performance date, then ascending stable performance ID. A known date must have exactly the ASCII
+YYYY-MM-DD form and be a valid calendar date. Partial years, missing dates and malformed dates
+remain unknown and follow known dates; they are never expanded to an invented day. When both
+dates are unknown, only stable performance ID decides. Meet ID is not a tie-break key. An
+identical ordering key does not replace itself. Time, distance and score comparison directions,
+comparison classes, source scope and retained-context conflict quarantine remain unchanged.
+
+The current retained evidence model has no qualified source-authority ranking. Policy 9 therefore
+assigns equal provenance preference to all otherwise eligible candidates. Parsed/Fetched/Derived
+are evidence-processing methods, not authority tiers; provider names and capture recency do not
+establish quality. This is the documented uniform preference for current data, not a claim that
+stronger source-quality adjudication is implemented. A future quality preference requires retained
+qualification evidence and a separate semantic-policy revision.
+
+All consumers use the shared best-mark reducer. Historical policy-8 and earlier inputs and
+publication generations remain byte-preserved and are refused by the current verifier. No retry
+rewrites an old archive under the new tie rule. Logical schema remains 2 and physical codec/token
+protocol remains 2. Regression obligations include input-order/replay invariance, exact and unknown
+dates, stable-ID ties, unchanged numeric comparisons and workbook/recruiting agreement with the
+same frozen selected performance and source provenance.
+
 ## Consequences
 
 Scope, cohort and evidence semantics are the derivation's, not each sheet's; a sheet that wants a

@@ -113,6 +113,7 @@ fn old_schema_archive(dataset: &ExportDataset, store: &Store) -> TestResult<Vec<
         .collect();
     let mut lineage = dataset.lineage.clone();
     lineage.schema_revision = 1;
+    lineage.policy_revision = 8;
     let historical_tables = super::super::INPUT_TABLES
         .get(..13)
         .ok_or("historical table contract missing")?;

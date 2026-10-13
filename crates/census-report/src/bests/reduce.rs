@@ -115,11 +115,7 @@ impl<'a> Candidate<'a> {
     }
 
     fn ordering(&self) -> MarkOrdering<'_> {
-        MarkOrdering::new(
-            &self.performance.date,
-            self.performance.meet.as_str(),
-            self.performance.id.as_str(),
-        )
+        MarkOrdering::new(&self.performance.date, self.performance.id.as_str())
     }
 }
 

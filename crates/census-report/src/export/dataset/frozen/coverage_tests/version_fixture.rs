@@ -15,6 +15,7 @@ use std::path::Path;
 pub(super) enum VersionCase {
     HistoricalSchema,
     HistoricalPolicy,
+    PreviousPolicy,
     HistoricalProtocol,
     ManifestCodec,
     AdvertisedInventory,
@@ -26,7 +27,9 @@ pub(super) enum VersionCase {
 impl VersionCase {
     pub(super) fn refusal_what(self) -> &'static str {
         match self {
-            Self::HistoricalSchema | Self::HistoricalPolicy => "manifest lineage",
+            Self::HistoricalSchema | Self::HistoricalPolicy | Self::PreviousPolicy => {
+                "manifest lineage"
+            }
             Self::HistoricalProtocol => "input token",
             Self::ManifestCodec => "frozen manifest",
             Self::AdvertisedInventory => "artifact reference",
@@ -131,11 +134,18 @@ fn change_manifest(manifest: &mut FrozenManifest, case: VersionCase) -> TestResu
             check!(eq; manifest.lineage.schema_revision, 2);
             manifest.lineage.schema_revision = 1;
             manifest.input_token.logical_schema = 1;
+            manifest.lineage.policy_revision = 8;
+            manifest.input_token.semantic_policy = 8;
         }
         VersionCase::HistoricalPolicy => {
-            check!(eq; manifest.lineage.policy_revision, 8);
+            check!(eq; manifest.lineage.policy_revision, 9);
             manifest.lineage.policy_revision = 7;
             manifest.input_token.semantic_policy = 7;
+        }
+        VersionCase::PreviousPolicy => {
+            check!(eq; manifest.lineage.policy_revision, 9);
+            manifest.lineage.policy_revision = 8;
+            manifest.input_token.semantic_policy = 8;
         }
         VersionCase::HistoricalProtocol => {
             check!(eq; manifest.input_token.protocol, TOKEN_PROTOCOL);
