@@ -83,13 +83,12 @@ fn same_person_evidence(facts: &[&IdentityFact]) -> bool {
     };
     let all_parsed = facts.iter().all(|fact| fact.parsed);
     let all_same_grad_year = facts.iter().all(|fact| fact.grad_year == first.grad_year);
-    let gender_conflict = facts
-        .iter()
-        .any(|first| {
-            facts.iter().skip(1).any(|second| {
-                !super::genders_compatible(first.gender, second.gender)
-            })
-        });
+    let gender_conflict = facts.iter().any(|first| {
+        facts
+            .iter()
+            .skip(1)
+            .any(|second| !super::genders_compatible(first.gender, second.gender))
+    });
     if !all_parsed || !all_same_grad_year || gender_conflict {
         return false;
     }

@@ -1,6 +1,4 @@
-use super::{
-    CoverageTotals, JurisdictionBucket, Outcome, UNKNOWN_JURISDICTION, totals_text,
-};
+use super::{totals_text, CoverageTotals, JurisdictionBucket, Outcome, UNKNOWN_JURISDICTION};
 use crate::export::ExportDataset;
 
 pub(super) fn coverage_notes(

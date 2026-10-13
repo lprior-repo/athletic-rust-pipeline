@@ -454,7 +454,10 @@ fn ratchet_lane_treats_malformed_completion_records_as_an_incomplete_measurement
         clippy_json(&rows, None)?,
         serde_json::json!({ "reason": "build-finished", "success": "false" })
     );
-    let truncated = format!("{}\n{{\"reason\": \"compil", clippy_json(&rows, Some(true))?);
+    let truncated = format!(
+        "{}\n{{\"reason\": \"compil",
+        clippy_json(&rows, Some(true))?
+    );
     let script = "source \"$GATE_SCRIPT\"\ntmp=$(mktemp -d)\nlane_ratchet \"$tmp\"";
     for (payload, diagnostic) in [
         (
@@ -475,7 +478,10 @@ fn ratchet_lane_treats_malformed_completion_records_as_an_incomplete_measurement
             output.status.code().is_some_and(|code| code != 0),
             "{stdout}\n{stderr}"
         );
-        check!(!stderr.contains("strict clippy exited"), "{stdout}\n{stderr}");
+        check!(
+            !stderr.contains("strict clippy exited"),
+            "{stdout}\n{stderr}"
+        );
         if let Some(diagnostic) = diagnostic {
             check!(stderr.contains(diagnostic), "{stdout}\n{stderr}");
         }
@@ -499,7 +505,12 @@ fn ratchet_lane_reaches_the_comparison_and_reports_its_verdict() -> TestResult {
     let script = "source \"$GATE_SCRIPT\"\nLANE=ratchet\nselected_main";
     for (comparison, status, lane, verdict) in [
         ("0", 0, "--- debt ratchet: PASS", "gate: PASS"),
-        ("1", 1, "--- debt ratchet: FAIL", "gate: FAIL -> debt ratchet"),
+        (
+            "1",
+            1,
+            "--- debt ratchet: FAIL",
+            "gate: FAIL -> debt ratchet",
+        ),
     ] {
         let case = gate_case_with_exits(&payload, "0", "0", comparison)?;
         let output = run_sourced(&case, script)?;

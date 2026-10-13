@@ -99,7 +99,10 @@ async fn r2ox_supersession(reversed: bool) -> TestResult {
         "Alex Morgan",
         "The rows disagree on name, class or gender, so the object does not settle that they are one athlete.",
     );
-    let (_, digest) = old_case.id.rsplit_once(':').ok_or("case id has no digest")?;
+    let (_, digest) = old_case
+        .id
+        .rsplit_once(':')
+        .ok_or("case id has no digest")?;
     old_case.id = format!("Athlete identity:{}:p1:{digest}", subject.id.as_str());
     old_case.state = ReviewState::Retained;
     old_case.member_ids = vec![subject.id.cast(), other.id.cast()];
@@ -185,8 +188,10 @@ async fn q3pt_boys_girls_still_blocks_identity_resolution() -> TestResult {
 
     let projection = store.athlete_identity_projection()?;
     check!(
-        matches!(projection.status(boys.id.as_str())?,
-            IdentityStatus::RetainedConflict | IdentityStatus::Pending),
+        matches!(
+            projection.status(boys.id.as_str())?,
+            IdentityStatus::RetainedConflict | IdentityStatus::Pending
+        ),
         "boys vs girls must still block identity resolution"
     );
     let decisions = store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?;

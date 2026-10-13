@@ -157,7 +157,14 @@ fn prepare_stage<'s>(
     let operation = format!("{STAGE_RECEIPT}:{digest}");
     let dataset = census_report::export::ExportDataset::from_snapshot(store, stage.view())?;
     let pass = canonical_pass(&dataset);
-    Ok((identity_applications, stage, digest, operation, dataset, pass))
+    Ok((
+        identity_applications,
+        stage,
+        digest,
+        operation,
+        dataset,
+        pass,
+    ))
 }
 
 fn write_stage_outputs(

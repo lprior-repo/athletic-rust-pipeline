@@ -35,7 +35,9 @@ impl Store {
             .prefix(b"publication/v1/request/")
             .take(MAX_RETAINED_REQUESTS)
         {
-            let value = guard.value().map_err(|source| StoreError::Read { source })?;
+            let value = guard
+                .value()
+                .map_err(|source| StoreError::Read { source })?;
             let intent: Intent = decode("publication/v1/request", value.as_ref())?;
             if intent.request.namespace == *namespace && intent.state == State::Requested {
                 requested = Some(intent);

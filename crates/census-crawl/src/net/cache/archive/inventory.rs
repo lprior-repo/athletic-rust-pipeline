@@ -108,7 +108,8 @@ fn count_stage_contents(
     for entry in entries {
         let entry = entry.map_err(|error| io_error(path, error))?;
         let file_path = entry.path();
-        let metadata = fs::symlink_metadata(&file_path).map_err(|error| io_error(&file_path, error))?;
+        let metadata =
+            fs::symlink_metadata(&file_path).map_err(|error| io_error(&file_path, error))?;
         if metadata.is_file() {
             let inode = std::os::unix::fs::MetadataExt::ino(&metadata);
             if !counted.insert(inode) {

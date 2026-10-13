@@ -16,7 +16,8 @@ fn retained_nces_generation_replays_without_touching_the_original_store() -> Tes
                 entry: 0,
                 provider: "nces-ccd".to_string(),
                 path: String::new(),
-                url: "https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2526_w_0a_050626.zip".to_string(),
+                url: "https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2526_w_0a_050626.zip"
+                    .to_string(),
                 retrieved_at: Some("2026-10-04".to_string()),
             },
             super::Acquisition {

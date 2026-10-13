@@ -205,9 +205,18 @@ fn a_retained_stage_charges_archive_capacity_so_the_cap_still_refuses() -> TestR
     let mut admission3 =
         ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed + second_needed)?;
     let third_stage = archive_stage(root.path(), "stage-third")?;
-    let outcome = preserve_capture(&archive, &third_stage, "new", third_body, &third, &mut admission3);
+    let outcome = preserve_capture(
+        &archive,
+        &third_stage,
+        "new",
+        third_body,
+        &third,
+        &mut admission3,
+    );
     let Err(FetchError::ArchiveCapacity { .. }) = outcome else {
-        return Err("a retained stage must charge capacity and refuse the next capture at the cap".into());
+        return Err(
+            "a retained stage must charge capacity and refuse the next capture at the cap".into(),
+        );
     };
     check!(second_stage.join("new.body").exists());
     check!(second_stage.join("new.meta.json").exists());
@@ -229,7 +238,8 @@ fn a_stage_under_capacity_is_still_admitted_and_published() -> TestResult {
 }
 
 #[test]
-fn capacity_accounting_is_exact_across_repeated_cycles_without_drift_or_double_charge() -> TestResult {
+fn capacity_accounting_is_exact_across_repeated_cycles_without_drift_or_double_charge() -> TestResult
+{
     let root = tempfile::tempdir()?;
     let archive = archive_dirs(root.path())?;
     let body = b"repeated capture";
@@ -245,7 +255,14 @@ fn capacity_accounting_is_exact_across_repeated_cycles_without_drift_or_double_c
     let final_stage = archive_stage(root.path(), "stage-final")?;
     let extra_body = b"extra capture";
     let extra = capture_of(root.path(), extra_body)?;
-    let outcome = preserve_capture(&archive, &final_stage, "new", extra_body, &extra, &mut final_admission);
+    let outcome = preserve_capture(
+        &archive,
+        &final_stage,
+        "new",
+        extra_body,
+        &extra,
+        &mut final_admission,
+    );
     let Err(FetchError::ArchiveCapacity { .. }) = outcome else {
         return Err("accounting drifted: an extra capture should have been refused".into());
     };

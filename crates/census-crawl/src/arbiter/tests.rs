@@ -784,8 +784,10 @@ fn varsity_rows_are_admitted() -> TestResult {
             sport: "Cross Country, Boys".to_string(),
             level: level.to_string(),
         };
-        let coach = map_coach_row(&row, &id, ALVIRNE_URL, OBSERVED_ON)
-            .ok_or(format!("the {} level is varsity and must be admitted", level))?;
+        let coach = map_coach_row(&row, &id, ALVIRNE_URL, OBSERVED_ON).ok_or(format!(
+            "the {} level is varsity and must be admitted",
+            level
+        ))?;
         check!(eq; coach.role, CoachRole::HeadCoach);
     }
     Ok(())

@@ -1,6 +1,8 @@
 use super::Cli;
 use anyhow::{Context, Result};
-use census_service::school_address::{join_generation, parse_source_pairs, Mode, Overrides, Acquisition};
+use census_service::school_address::{
+    join_generation, parse_source_pairs, Acquisition, Mode, Overrides,
+};
 use census_store::Store;
 use clap::Args;
 use std::path::PathBuf;

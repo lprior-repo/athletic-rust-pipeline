@@ -1,7 +1,4 @@
-use super::{
-    add, totals_text, CoverageReport, CoverageTotals,
-    ReportError, ReportResult,
-};
+use super::{add, totals_text, CoverageReport, CoverageTotals, ReportError, ReportResult};
 
 impl CoverageReport {
     pub fn publish_coverage_rows(

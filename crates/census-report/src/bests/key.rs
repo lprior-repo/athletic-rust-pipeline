@@ -122,10 +122,13 @@ impl PrKey {
             context: contextual.then(|| performance.event.clone()),
             specification: EventSpecification::default(),
             comparison: ComparisonPolicy::Standard,
-            adjustment: performance.adjustment.as_ref().map(|adjustment| KeyAdjustment {
-                kind: adjustment.kind,
-                basis: adjustment.basis,
-            }),
+            adjustment: performance
+                .adjustment
+                .as_ref()
+                .map(|adjustment| KeyAdjustment {
+                    kind: adjustment.kind,
+                    basis: adjustment.basis,
+                }),
         }
     }
 }

@@ -189,7 +189,6 @@ fn apply_all_applications(
     Ok(applied)
 }
 
-
 fn separate_generic_cases(
     cases: Vec<ReviewCase>,
     verdicts: &[ReviewVerdictRecord],

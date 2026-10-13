@@ -37,7 +37,11 @@ pub fn is_track_size_conversion(note: &str) -> bool {
 
 pub fn converted_from(note: &str) -> Option<ParsedMark> {
     let start = find_ascii_ci(note, "converted from")?.saturating_add("converted from".len());
-    let token = note.get(start..)?.split_whitespace().next()?.trim_end_matches('.');
+    let token = note
+        .get(start..)?
+        .split_whitespace()
+        .next()?
+        .trim_end_matches('.');
     if clock_seconds(token).is_some() {
         Some(ParsedMark::Time(token.to_string()))
     } else if feet_inches_metres(token).is_some() || metric_metres(token).is_some() {

@@ -13,7 +13,8 @@ fn absorbed(sections: Vec<ParsedSection>) -> TestResult<Retained> {
         page: Page {
             source: &source,
             observed_on: "2026-10-12",
-            performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 10, 12).ok_or("snapshot date")?,
+            performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 10, 12)
+                .ok_or("snapshot date")?,
             jurisdiction: UsJurisdiction::Indiana,
         },
         list: &route,
@@ -70,8 +71,7 @@ fn a_track_size_conversion_keeps_the_original_and_the_adjusted_mark() -> TestRes
 fn a_fifty_five_metre_note_stays_a_published_sixty_metre_mark() -> TestResult {
     let mut row = time_row("John Doe", 9_000_003, "6.98", YearToken::Sophomore);
     row.converted_note = Some("Converted  from 6.49 (55)".to_string());
-    let (performances, converted, _) =
-        absorbed(vec![metric_section("60 Meters", 60, vec![row])])?;
+    let (performances, converted, _) = absorbed(vec![metric_section("60 Meters", 60, vec![row])])?;
     check!(eq; converted, 1, "the note is retained");
     let performance = performances.first().ok_or("the row is retained")?;
     check!(eq;

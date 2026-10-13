@@ -147,9 +147,7 @@ fn dispatch_intent_recovery(
         State::Intent { .. } => {
             reconcile_intent(store, root, intent, selected, desired, run_manifest)
         }
-        State::Requested => {
-            reconcile_requested(store, root, intent, selected, run_manifest)
-        }
+        State::Requested => reconcile_requested(store, root, intent, selected, run_manifest),
     }
 }
 fn required(root: &Path, prepared: &Prepared, detail: String) -> crate::report::ReportError {

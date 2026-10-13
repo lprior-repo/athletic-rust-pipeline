@@ -418,7 +418,8 @@ fn school_address_replay_identical_tuples_accepted() -> TestResult {
     std::fs::write(&copy_path, &body)?;
 
     let manifest_path = root.join("manifest.json");
-    let mut value: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(&manifest_path)?)?;
+    let mut value: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&manifest_path)?)?;
     let captures = value["captures"].as_array_mut().ok_or("no captures")?;
     let ccd_capture = captures[0].clone();
     let mut copy = ccd_capture;

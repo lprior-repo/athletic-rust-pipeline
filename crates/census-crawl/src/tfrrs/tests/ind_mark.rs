@@ -44,10 +44,7 @@ fn section(rows: Vec<ParsedRow>) -> ParsedSection {
     }
 }
 
-fn absorbed_pair(
-    first: ParsedRow,
-    second: ParsedRow,
-) -> TestResult<Vec<CanonicalPerformance>> {
+fn absorbed_pair(first: ParsedRow, second: ParsedRow) -> TestResult<Vec<CanonicalPerformance>> {
     let url = "https://indiana.tfrrs.org/lists/5489/HSR_All_School_Performance_List/2026/i";
     let source = SourceRef::new("tfrrs_in", Some(url.to_string()));
     let route = parse_list_path(url).ok_or("list route")?;

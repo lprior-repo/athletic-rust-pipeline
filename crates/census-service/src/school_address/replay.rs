@@ -73,14 +73,10 @@ impl Format {
 
     fn add(self, args: &mut SchoolAddressArgs, path: PathBuf) -> Result<(), ReplayError> {
         match self {
-            Self::NcesCcd
-                if args.ccd.is_none() || args.ccd.as_deref() == Some(path.as_path()) =>
-            {
+            Self::NcesCcd if args.ccd.is_none() || args.ccd.as_deref() == Some(path.as_path()) => {
                 args.ccd = Some(path)
             }
-            Self::NcesPss
-                if args.pss.is_none() || args.pss.as_deref() == Some(path.as_path()) =>
-            {
+            Self::NcesPss if args.pss.is_none() || args.pss.as_deref() == Some(path.as_path()) => {
                 args.pss = Some(path)
             }
             Self::StateEdIndex => args.state_ed_index.push(path),
@@ -126,10 +122,7 @@ fn ensure_source_contained(root: &Path, path: &Path) -> Result<(), ReplayError> 
     let canonical_root = std::fs::canonicalize(root).map_err(|source| io(root, source))?;
     let canonical_path = std::fs::canonicalize(path).map_err(|source| io(path, source))?;
     if !canonical_path.starts_with(&canonical_root) {
-        return Err(refused(
-            path,
-            "capture escapes the declared source root",
-        ));
+        return Err(refused(path, "capture escapes the declared source root"));
     }
     Ok(())
 }
@@ -148,7 +141,8 @@ pub fn run(manifest_path: &Path, out: &Path) -> Result<Replay, ReplayError> {
     }
     let mut args = arguments(out, manifest.month);
     let mut overrides = Overrides::default();
-    let mut seen: std::collections::BTreeMap<(String, String), (String, Option<String>)> = std::collections::BTreeMap::new();
+    let mut seen: std::collections::BTreeMap<(String, String), (String, Option<String>)> =
+        std::collections::BTreeMap::new();
     let base = manifest_path
         .parent()
         .ok_or_else(|| refused(manifest_path, "no manifest parent"))?;
@@ -159,14 +153,25 @@ pub fn run(manifest_path: &Path, out: &Path) -> Result<Replay, ReplayError> {
 
     for (i, capture) in manifest.captures.iter().enumerate() {
         if capture.path.is_absolute() {
-            return Err(refused(&capture.path, "capture path must be relative to the source root"));
+            return Err(refused(
+                &capture.path,
+                "capture path must be relative to the source root",
+            ));
         }
         let path = base.join(&capture.path);
         let canonical = std::fs::canonicalize(&path).map_err(|source| io(&path, source))?;
         ensure_source_contained(base, &canonical)?;
-        let entry = u32::try_from(i)
-            .map_err(|_| refused(&path, "too many captures for u32 index"))?;
-        stage_capture(capture, &canonical, &archive, entry, &mut args, &mut overrides, &mut seen)?;
+        let entry =
+            u32::try_from(i).map_err(|_| refused(&path, "too many captures for u32 index"))?;
+        stage_capture(
+            capture,
+            &canonical,
+            &archive,
+            entry,
+            &mut args,
+            &mut overrides,
+            &mut seen,
+        )?;
     }
     preserve(&archive.join(".complete"), b"")?;
 

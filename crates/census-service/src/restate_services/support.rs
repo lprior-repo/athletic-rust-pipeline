@@ -17,9 +17,13 @@ pub enum JobError {
 impl JobError {
     fn from_store_error(error: StoreError, message: String) -> Self {
         match error {
-            StoreError::RecordConflict { .. } | StoreError::RecordState { .. } => Self::Terminal { message },
-            StoreError::RecordRevision { .. } | StoreError::RecordMissing { .. }
-            | StoreError::LeaseMismatch { .. } | StoreError::LeaseExpired { .. }
+            StoreError::RecordConflict { .. } | StoreError::RecordState { .. } => {
+                Self::Terminal { message }
+            }
+            StoreError::RecordRevision { .. }
+            | StoreError::RecordMissing { .. }
+            | StoreError::LeaseMismatch { .. }
+            | StoreError::LeaseExpired { .. }
             | StoreError::LeaseLost { .. }
             | StoreError::CurrentRootChanged { .. }
             | StoreError::PublicationDurabilityUncertain { .. }

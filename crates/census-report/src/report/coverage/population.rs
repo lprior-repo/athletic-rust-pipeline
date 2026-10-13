@@ -138,4 +138,3 @@ fn writer_error(detail: impl Into<String>) -> ReportError {
 }
 #[cfg(test)]
 mod tests;
-

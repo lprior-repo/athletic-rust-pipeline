@@ -266,10 +266,12 @@ impl Store {
                 epoch,
             });
         }
-        let mut lease = self.lease_read(digest)?.ok_or_else(|| StoreError::LeaseLost {
-            digest: digest.into(),
-            epoch,
-        })?;
+        let mut lease = self
+            .lease_read(digest)?
+            .ok_or_else(|| StoreError::LeaseLost {
+                digest: digest.into(),
+                epoch,
+            })?;
         lease.expires_at = expires_at.into();
         let revision = lease
             .revision
@@ -277,11 +279,7 @@ impl Store {
             .ok_or(StoreError::CounterExhausted)?;
         lease.revision = revision;
         let mut batch = self.db.batch();
-        batch.insert(
-            &self.meta,
-            lease_key(digest).as_bytes(),
-            encode(&lease)?,
-        );
+        batch.insert(&self.meta, lease_key(digest).as_bytes(), encode(&lease)?);
         batch
             .durability(Some(fjall::PersistMode::SyncData))
             .commit()

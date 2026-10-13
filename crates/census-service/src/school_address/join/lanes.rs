@@ -9,7 +9,10 @@ const PROVIDERS: [&str; 3] = ["nces-ccd", "nces-pss", "state-ed"];
 pub(super) const ASSOCIATION_PREFIX: &str = "association:";
 pub(super) const STATE_ED: &str = "state-ed";
 
-type LaneMatches = (BTreeMap<String, Vec<LaneEvidence>>, std::collections::BTreeSet<u32>);
+type LaneMatches = (
+    BTreeMap<String, Vec<LaneEvidence>>,
+    std::collections::BTreeSet<u32>,
+);
 
 fn admitted_provider(source: &str) -> bool {
     PROVIDERS.contains(&source)

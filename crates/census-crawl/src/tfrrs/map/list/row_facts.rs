@@ -1,6 +1,8 @@
 use super::{Absorb, ListContext};
 use crate::tfrrs::map::row::mark_with_adjustment;
-use crate::tfrrs::parse::{ParsedAthlete, ParsedMeet, ParsedRow, ParsedSection, ParsedTeam, PublishedDate};
+use crate::tfrrs::parse::{
+    ParsedAthlete, ParsedMeet, ParsedRow, ParsedSection, ParsedTeam, PublishedDate,
+};
 use census_domain::model::{Adjustment, Gender, Mark, Sport};
 
 pub(super) struct RowFacts<'r> {
@@ -70,17 +72,15 @@ impl<'a> Absorb<'a> {
             .filter(|sport| *sport != Sport::Unknown)
             .map_or_else(
                 || {
-                    self.stats.rows_without_season = self.stats.rows_without_season.saturating_add(1);
+                    self.stats.rows_without_season =
+                        self.stats.rows_without_season.saturating_add(1);
                     None
                 },
                 Some,
             )
     }
 
-    fn require_athlete<'r>(
-        &mut self,
-        row: &'r ParsedRow,
-    ) -> Option<(&'r ParsedAthlete, &'r str)> {
+    fn require_athlete<'r>(&mut self, row: &'r ParsedRow) -> Option<(&'r ParsedAthlete, &'r str)> {
         let athlete = row.athlete.as_ref()?;
         let name = athlete.full_name()?;
         Some((athlete, name))
@@ -107,10 +107,9 @@ impl<'a> Absorb<'a> {
     }
 
     fn require_mark(&mut self, row: &ParsedRow) -> Option<(Mark, Option<Adjustment>)> {
-        let result = row
-            .mark
-            .as_ref()
-            .and_then(|mark| mark_with_adjustment(mark, row.conv_metres, row.converted_note.as_deref()));
+        let result = row.mark.as_ref().and_then(|mark| {
+            mark_with_adjustment(mark, row.conv_metres, row.converted_note.as_deref())
+        });
         if result.is_none() {
             self.stats.rows_without_mark = self.stats.rows_without_mark.saturating_add(1);
         }

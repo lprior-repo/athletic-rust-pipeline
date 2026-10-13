@@ -1,9 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use census_domain::model::{
-    person_key, AthleteCandidateId, CanonicalAthlete, CanonicalSchool, CaseEvidence,
-    ReviewCase, ReviewVerdictKind, ReviewVerdictRecord, SchoolId, SourceNamespace,
-    ATHLETE_IDENTITY_FAMILY, MEMBER_SET_LABEL,
+    person_key, AthleteCandidateId, CanonicalAthlete, CanonicalSchool, CaseEvidence, ReviewCase,
+    ReviewVerdictKind, ReviewVerdictRecord, SchoolId, SourceNamespace, ATHLETE_IDENTITY_FAMILY,
+    MEMBER_SET_LABEL,
 };
 use census_store::{StoreResult, StoreSnapshot, Table};
 
@@ -152,7 +152,10 @@ impl Span<'_> {
             return Some(HardContradiction::GradYearEvidenceDiffers);
         }
         if self.rows.iter().enumerate().any(|(i, row)| {
-            self.rows.iter().skip(i.saturating_add(1)).any(|other| !row.gender_compatible(other))
+            self.rows
+                .iter()
+                .skip(i.saturating_add(1))
+                .any(|other| !row.gender_compatible(other))
         }) {
             return Some(HardContradiction::GenderDiffers);
         }

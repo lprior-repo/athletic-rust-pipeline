@@ -62,7 +62,6 @@ pub(super) fn destination_prefix(base: &str, to: &Path) -> String {
     format!("{base}{hash_hex}.")
 }
 
-
 const STAGING_ATTEMPTS: usize = 4;
 
 pub(super) struct Generation {

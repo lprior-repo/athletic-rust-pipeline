@@ -270,10 +270,16 @@ fn supersede_obsolete_retained_identity_case_when_new_policy_resolves_cluster() 
     // File an old retained case (simulating the prior policy)
     let members = vec![first.id.cast(), second.id.cast()];
     let subject = "Synthetic Runner";
-    let evidence = store
-        .athlete_identity_index()?
-        .case_evidence(subject, "old policy detail", &members)?;
-    let old_id = format!("{}:{}:p1:{}", ATHLETE_IDENTITY_FAMILY, first.id, evidence.digest());
+    let evidence =
+        store
+            .athlete_identity_index()?
+            .case_evidence(subject, "old policy detail", &members)?;
+    let old_id = format!(
+        "{}:{}:p1:{}",
+        ATHLETE_IDENTITY_FAMILY,
+        first.id,
+        evidence.digest()
+    );
     let old_case = ReviewCase {
         id: old_id,
         family: ATHLETE_IDENTITY_FAMILY.to_string(),
@@ -286,9 +292,10 @@ fn supersede_obsolete_retained_identity_case_when_new_policy_resolves_cluster() 
     store.replace(Table::ReviewCases, &old_case)?;
 
     // File a new resolved case (simulating the new policy)
-    let new_evidence = store
-        .athlete_identity_index()?
-        .case_evidence(subject, "new policy detail", &members)?;
+    let new_evidence =
+        store
+            .athlete_identity_index()?
+            .case_evidence(subject, "new policy detail", &members)?;
     let mut new_case = ReviewCase::pending_with_evidence(
         ATHLETE_IDENTITY_FAMILY,
         first.id.as_str(),
@@ -363,10 +370,16 @@ fn supersession_is_idempotent_across_repeated_apply() -> TestResult {
 
     let members = vec![first.id.cast(), second.id.cast()];
     let subject = "Synthetic Runner";
-    let evidence = store
-        .athlete_identity_index()?
-        .case_evidence(subject, "old policy detail", &members)?;
-    let old_id = format!("{}:{}:p1:{}", ATHLETE_IDENTITY_FAMILY, first.id, evidence.digest());
+    let evidence =
+        store
+            .athlete_identity_index()?
+            .case_evidence(subject, "old policy detail", &members)?;
+    let old_id = format!(
+        "{}:{}:p1:{}",
+        ATHLETE_IDENTITY_FAMILY,
+        first.id,
+        evidence.digest()
+    );
     let old_case = ReviewCase {
         id: old_id,
         family: ATHLETE_IDENTITY_FAMILY.to_string(),
@@ -378,9 +391,10 @@ fn supersession_is_idempotent_across_repeated_apply() -> TestResult {
     };
     store.replace(Table::ReviewCases, &old_case)?;
 
-    let new_evidence = store
-        .athlete_identity_index()?
-        .case_evidence(subject, "new policy detail", &members)?;
+    let new_evidence =
+        store
+            .athlete_identity_index()?
+            .case_evidence(subject, "new policy detail", &members)?;
     let mut new_case = ReviewCase::pending_with_evidence(
         ATHLETE_IDENTITY_FAMILY,
         first.id.as_str(),
@@ -440,7 +454,12 @@ fn supersession_case_in_order(reversed: bool) -> TestResult {
     let evidence = store
         .athlete_identity_index()?
         .case_evidence(subject, "detail", &members)?;
-    let old_id = format!("{}:{}:p1:{}", ATHLETE_IDENTITY_FAMILY, first.id, evidence.digest());
+    let old_id = format!(
+        "{}:{}:p1:{}",
+        ATHLETE_IDENTITY_FAMILY,
+        first.id,
+        evidence.digest()
+    );
     let retained_case = ReviewCase {
         id: old_id,
         family: ATHLETE_IDENTITY_FAMILY.to_string(),
@@ -451,9 +470,10 @@ fn supersession_case_in_order(reversed: bool) -> TestResult {
         member_ids: members.clone(),
     };
 
-    let new_evidence = store
-        .athlete_identity_index()?
-        .case_evidence(subject, "new detail", &members)?;
+    let new_evidence =
+        store
+            .athlete_identity_index()?
+            .case_evidence(subject, "new detail", &members)?;
     let mut resolved_case = ReviewCase::pending_with_evidence(
         ATHLETE_IDENTITY_FAMILY,
         first.id.as_str(),
@@ -543,9 +563,11 @@ fn genuine_gender_conflict_still_blocks_supersession() -> TestResult {
 
     let members = vec![first.id.cast(), second.id.cast()];
     let subject = "Synthetic Runner";
-    let evidence = store
-        .athlete_identity_index()?
-        .case_evidence(subject, "gender conflict detail", &members)?;
+    let evidence = store.athlete_identity_index()?.case_evidence(
+        subject,
+        "gender conflict detail",
+        &members,
+    )?;
     let mut retained_case = ReviewCase::pending_with_evidence(
         ATHLETE_IDENTITY_FAMILY,
         first.id.as_str(),
@@ -558,9 +580,11 @@ fn genuine_gender_conflict_still_blocks_supersession() -> TestResult {
     store.replace(Table::ReviewCases, &retained_case)?;
 
     // File a resolved case (but the gender conflict is real)
-    let new_evidence = store
-        .athlete_identity_index()?
-        .case_evidence(subject, "gender conflict detail", &members)?;
+    let new_evidence = store.athlete_identity_index()?.case_evidence(
+        subject,
+        "gender conflict detail",
+        &members,
+    )?;
     let mut resolved_case = ReviewCase::pending_with_evidence(
         ATHLETE_IDENTITY_FAMILY,
         first.id.as_str(),
@@ -622,10 +646,16 @@ fn supersession_records_durable_transition_provenance() -> TestResult {
 
     let members = vec![first.id.cast(), second.id.cast()];
     let subject = "Synthetic Runner";
-    let evidence = store
-        .athlete_identity_index()?
-        .case_evidence(subject, "old policy detail", &members)?;
-    let old_id = format!("{}:{}:p1:{}", ATHLETE_IDENTITY_FAMILY, first.id, evidence.digest());
+    let evidence =
+        store
+            .athlete_identity_index()?
+            .case_evidence(subject, "old policy detail", &members)?;
+    let old_id = format!(
+        "{}:{}:p1:{}",
+        ATHLETE_IDENTITY_FAMILY,
+        first.id,
+        evidence.digest()
+    );
     let old_case = ReviewCase {
         id: old_id,
         family: ATHLETE_IDENTITY_FAMILY.to_string(),
@@ -637,9 +667,10 @@ fn supersession_records_durable_transition_provenance() -> TestResult {
     };
     store.replace(Table::ReviewCases, &old_case)?;
 
-    let new_evidence = store
-        .athlete_identity_index()?
-        .case_evidence(subject, "new detail", &members)?;
+    let new_evidence =
+        store
+            .athlete_identity_index()?
+            .case_evidence(subject, "new detail", &members)?;
     let mut new_case = ReviewCase::pending_with_evidence(
         ATHLETE_IDENTITY_FAMILY,
         first.id.as_str(),
@@ -676,7 +707,9 @@ fn supersession_records_durable_transition_provenance() -> TestResult {
         Some(payload) => payload,
         None => recorded.clone(),
     };
-    let pair = inner.as_array().ok_or("provenance payload is not an array")?;
+    let pair = inner
+        .as_array()
+        .ok_or("provenance payload is not an array")?;
     check!(
         eq;
         pair.first().and_then(|value| value.as_str()),
@@ -702,9 +735,11 @@ fn operator_retained_case_in_same_cluster_is_not_superseded() -> TestResult {
 
     let members = vec![first.id.cast(), second.id.cast()];
     let subject = "Synthetic Runner";
-    let evidence = store
-        .athlete_identity_index()?
-        .case_evidence(subject, "operator retained detail", &members)?;
+    let evidence = store.athlete_identity_index()?.case_evidence(
+        subject,
+        "operator retained detail",
+        &members,
+    )?;
     let mut operator_case = ReviewCase::pending_with_evidence(
         ATHLETE_IDENTITY_FAMILY,
         first.id.as_str(),
@@ -734,9 +769,10 @@ fn operator_retained_case_in_same_cluster_is_not_superseded() -> TestResult {
     store.replace(Table::IdentityVerdicts, &operator_verdict)?;
 
     // File a new resolved case for the same cluster
-    let new_evidence = store
-        .athlete_identity_index()?
-        .case_evidence(subject, "new policy detail", &members)?;
+    let new_evidence =
+        store
+            .athlete_identity_index()?
+            .case_evidence(subject, "new policy detail", &members)?;
     let mut new_case = ReviewCase::pending_with_evidence(
         ATHLETE_IDENTITY_FAMILY,
         first.id.as_str(),

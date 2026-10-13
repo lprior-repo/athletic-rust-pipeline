@@ -8,12 +8,12 @@ mod athletes;
 mod classify;
 mod contact;
 mod gaps;
-mod population;
-mod reads;
-mod state;
 mod notes;
+mod population;
 mod pr_support;
+mod reads;
 mod report_impl;
+mod state;
 
 pub(crate) use state::{in_requested_year, jurisdiction_of, school_state_index};
 
@@ -164,7 +164,6 @@ pub struct CoverageReport {
     pub accepted_cohort: usize,
 }
 
-
 pub(super) fn state_slug(state: JurisdictionCoverageState) -> &'static str {
     match state {
         JurisdictionCoverageState::Unresearched => "unresearched",
@@ -211,7 +210,6 @@ fn state_histogram(rows: &[JurisdictionCoverage]) -> BTreeMap<String, usize> {
     counts
 }
 
-
 pub(super) fn add(total: &mut usize, value: usize) {
     *total = total.saturating_add(value);
 }
@@ -222,4 +220,3 @@ pub(super) fn totals_text(totals: &CoverageTotals) -> String {
         totals.schools, totals.athletes, totals.coaches, totals.meets, totals.performances
     )
 }
-

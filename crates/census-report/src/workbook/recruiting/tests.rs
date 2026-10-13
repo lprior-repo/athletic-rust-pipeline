@@ -1193,12 +1193,7 @@ fn a_provider_adjusted_track_size_mark_retains_published_and_adjusted_distinctly
     );
 
     let school_year = SchoolYear::from_date("2026-05-15").ok_or("season")?;
-    let team = CanonicalTeam::mint(
-        &school_id,
-        Sport::OutdoorTrack,
-        Gender::Boys,
-        school_year,
-    );
+    let team = CanonicalTeam::mint(&school_id, Sport::OutdoorTrack, Gender::Boys, school_year);
     store.append(
         Table::Teams,
         &CanonicalTeam {
@@ -1289,7 +1284,8 @@ fn a_provider_adjusted_track_size_mark_retains_published_and_adjusted_distinctly
 }
 
 #[test]
-fn a_legacy_performance_without_adjustment_provenance_publishes_blank_conversion_fields() -> TestResult {
+fn a_legacy_performance_without_adjustment_provenance_publishes_blank_conversion_fields(
+) -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     let (mut school, school_id) = CanonicalSchool::new(
@@ -1327,12 +1323,7 @@ fn a_legacy_performance_without_adjustment_provenance_publishes_blank_conversion
     let event_id = event(&store, &meet_id, EventKind::Track1600m)?;
 
     let school_year = SchoolYear::from_date("2026-04-01").ok_or("season")?;
-    let team = CanonicalTeam::mint(
-        &school_id,
-        Sport::OutdoorTrack,
-        Gender::Girls,
-        school_year,
-    );
+    let team = CanonicalTeam::mint(&school_id, Sport::OutdoorTrack, Gender::Girls, school_year);
     store.append(
         Table::Teams,
         &CanonicalTeam {

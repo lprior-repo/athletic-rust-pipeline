@@ -321,13 +321,11 @@ fn a_stored_row_without_conversion_facts_decodes_as_unconverted() -> TestResult 
     let mut row = performance("track-size-conversion", identity("111"))?;
     row.adjustment = Some(track_size_conversion("9:22.21", &row.mark)?);
     let mut historical = serde_json::to_value(&row)?;
-    check!(
-        historical
-            .as_object_mut()
-            .ok_or("performance serializes as an object")?
-            .remove("adjustment")
-            .is_some()
-    );
+    check!(historical
+        .as_object_mut()
+        .ok_or("performance serializes as an object")?
+        .remove("adjustment")
+        .is_some());
     let decoded: CanonicalPerformance = serde_json::from_value(historical)?;
     check!(eq; decoded.adjustment, None);
     check!(eq; decoded.mark, row.mark);

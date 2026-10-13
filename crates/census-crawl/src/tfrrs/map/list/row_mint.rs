@@ -1,8 +1,9 @@
-use super::{Absorb, ListContext, row_facts::RowFacts, admission, TeamFacts, AthleteFacts};
 use super::super::row::source_key;
+use super::{admission, row_facts::RowFacts, Absorb, AthleteFacts, ListContext, TeamFacts};
 use crate::tfrrs::parse::{parse_team_path, ParsedRow, ParsedSection};
 use census_domain::model::{
-    AthleteId, CanonicalPerformance, EventId, Gender, Grade, MeetId, SchoolId, SchoolYear, SourceIdentity, TeamId,
+    AthleteId, CanonicalPerformance, EventId, Gender, Grade, MeetId, SchoolId, SchoolYear,
+    SourceIdentity, TeamId,
 };
 use census_store::Entity;
 

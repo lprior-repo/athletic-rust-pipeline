@@ -61,7 +61,7 @@ pub use athlete::{AthleteCandidateKey, CanonicalAthlete};
 pub use canonical_json::{
     serialized_bytes, serialized_digest, write_serialized, CanonicalJsonError,
 };
-pub use classification::{CanonicalTeam, CompetitionLevel, Gender, Sport, genders_compatible};
+pub use classification::{genders_compatible, CanonicalTeam, CompetitionLevel, Gender, Sport};
 pub use coach::{CanonicalCoach, CoachRole};
 pub use coach_lane::{
     CoachLaneAcceptance, CoachLaneError, CoachLaneEvidence, CoachLaneMailbox, CoachLaneMatrix,

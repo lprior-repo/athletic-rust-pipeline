@@ -395,11 +395,7 @@ fn publication_recovery_requested_expired_competing_workers_fenced() -> TestResu
     std::fs::create_dir_all(root.join("generations"))?;
     let namespace = binding::namespace(&root)?;
     let identity = binding::digest(&("matrix", &namespace))?;
-    let epoch = store.lease_acquire(
-        identity.as_str(),
-        "workbook-publication",
-        &expiring_at()?,
-    )?;
+    let epoch = store.lease_acquire(identity.as_str(), "workbook-publication", &expiring_at()?)?;
     let request = store.publication_request(census_store::publish::Request {
         namespace,
         identity,
@@ -433,12 +429,10 @@ fn publication_lease_renew_advances_expiry_not_epoch() -> TestResult {
     let f = Fixture::new()?;
     let identity = f.intent.request.identity.as_str();
     let epoch = f.intent.request.lease_epoch;
-    let lease_before = f
-        .store
-        .get_lease_record(identity)?
-        .ok_or("lease missing")?;
+    let lease_before = f.store.get_lease_record(identity)?.ok_or("lease missing")?;
     let expires_before = lease_before.expires_at().to_string();
-    f.store.publication_lease_renew(&f.intent.request.identity, epoch)?;
+    f.store
+        .publication_lease_renew(&f.intent.request.identity, epoch)?;
     let lease_after = f
         .store
         .get_lease_record(identity)?
@@ -457,11 +451,7 @@ fn publication_requested_same_identity_retry_after_recovery() -> TestResult {
     std::fs::create_dir_all(root.join("generations"))?;
     let namespace = binding::namespace(&root)?;
     let identity = binding::digest(&("matrix", &namespace))?;
-    let epoch = store.lease_acquire(
-        identity.as_str(),
-        "workbook-publication",
-        &expiring_at()?,
-    )?;
+    let epoch = store.lease_acquire(identity.as_str(), "workbook-publication", &expiring_at()?)?;
     let request = store.publication_request(census_store::publish::Request {
         namespace,
         identity,

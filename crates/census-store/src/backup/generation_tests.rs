@@ -4,7 +4,9 @@ use std::path::{Path, PathBuf};
 
 use super::super::manifest::write_manifest;
 use super::super::{Manifest, MANIFEST_PATH, MANIFEST_VERSION, STAGING_PREFIX};
-use super::{destination_prefix, parent_of, promote, recover, Generation, PromotionStep, Recovered};
+use super::{
+    destination_prefix, parent_of, promote, recover, Generation, PromotionStep, Recovered,
+};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -384,7 +386,6 @@ fn process_death_at_the_exchange_boundary_keeps_one_canonical_generation() -> Te
     Ok(())
 }
 
-
 #[test]
 fn sibling_destinations_share_a_parent_without_crosstalk() -> TestResult {
     let dir = tempfile::tempdir()?;
@@ -395,7 +396,8 @@ fn sibling_destinations_share_a_parent_without_crosstalk() -> TestResult {
     let prefix_a = destination_prefix(STAGING_PREFIX, &to_a);
     let prefix_b = destination_prefix(STAGING_PREFIX, &to_b);
     check!(prefix_a != prefix_b, "destination prefixes must differ");
-    let staging_a = abandoned_staging_with_prefix(&to_a, "a-stage", "alpha-new", NEW_AT, &prefix_a)?;
+    let staging_a =
+        abandoned_staging_with_prefix(&to_a, "a-stage", "alpha-new", NEW_AT, &prefix_a)?;
     let staging_b = abandoned_staging_with_prefix(&to_b, "b-stage", "beta-new", NEW_AT, &prefix_b)?;
     let recovered_a = recover(&to_a, STAGING_PREFIX)?;
     check!(eq; recovered_a.staging_removed, 1);
@@ -465,7 +467,12 @@ fn recovery_with_aliased_path_spelling_finds_the_same_artifacts() -> TestResult 
     generation_at(&to, "live", OLD_AT)?;
     let trash = displace(&to, "aliased")?;
     check!(trash.exists());
-    let aliased_display = dir.path().join(".").join("backup").to_string_lossy().into_owned();
+    let aliased_display = dir
+        .path()
+        .join(".")
+        .join("backup")
+        .to_string_lossy()
+        .into_owned();
     let aliased = Path::new(aliased_display.as_str());
     check!(destination_prefix(STAGING_PREFIX, &to) == destination_prefix(STAGING_PREFIX, aliased));
     let recovered = recover(aliased, STAGING_PREFIX)?;
