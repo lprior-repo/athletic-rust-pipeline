@@ -198,11 +198,12 @@ pub(super) fn result(
         },
         EventSpecification::default(),
     )?;
+    let captured = evidence(source);
     event.source_labels.push(SourceEventLabel {
-        source: SourceRef::id(source),
+        source: captured.source.clone(),
         label: label.into(),
     });
-    event.evidence.push(evidence(source));
+    event.evidence.push(captured);
     store.append(Table::Events, &event)?;
     let mut performance = CanonicalPerformance::new(
         PerformanceIdentity {
