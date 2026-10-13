@@ -32,16 +32,11 @@ impl Store {
         self.integrity_with_window(MAX_DECODE_RECORDS, MAX_DECODE_BYTES)
     }
 
-    #[cfg(test)]
-    pub(crate) fn integrity_with_decode_window(
-        &self,
-        records: u64,
-        bytes: u64,
-    ) -> StoreResult<IntegrityReport> {
-        self.integrity_with_window(records, bytes)
+    pub fn integrity_complete(&self) -> StoreResult<IntegrityReport> {
+        self.integrity_with_window(u64::MAX, u64::MAX)
     }
 
-    fn integrity_with_window(
+    pub(crate) fn integrity_with_window(
         &self,
         record_window: u64,
         byte_window: u64,

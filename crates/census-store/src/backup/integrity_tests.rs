@@ -51,6 +51,20 @@ fn owned_locator(digest: &str) -> String {
 }
 
 #[test]
+fn complete_integrity_decodes_past_the_profile_window() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    store.journal_done(CHUNKED_PHASE, "wi:window", &json!({"athletes": 1}))?;
+    let profiled = store.integrity_with_window(0, u64::MAX)?;
+    check!(!profiled.ok);
+    check!(!profiled.decode_limits.is_empty());
+    let complete = store.integrity_complete()?;
+    check!(complete.ok);
+    check!(eq; complete.decode_limits, Vec::<String>::new());
+    Ok(())
+}
+
+#[test]
 fn integrity_decodes_a_healthy_chunked_owned_row_without_findings() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
@@ -211,7 +225,7 @@ fn integrity_reports_a_decode_limit_instead_of_corruption_for_a_closed_window() 
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     store.journal_done(CHUNKED_PHASE, "wi:school1", &json!({"athletes": 1}))?;
-    let windowed = store.integrity_with_decode_window(1, 1)?;
+    let windowed = store.integrity_with_window(1, 1)?;
     check!(eq; windowed.corruptions, Vec::<IntegrityCorruption>::new());
     check!(
         eq;
@@ -239,7 +253,7 @@ fn integrity_refuses_to_certify_an_incomplete_decode_scope() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     store.journal_done(CHUNKED_PHASE, "row", &json!({"athletes": 1}))?;
-    let report = store.integrity_with_decode_window(1, 1)?;
+    let report = store.integrity_with_window(1, 1)?;
     check!(!report.ok, "an undecoded suffix cannot be certified sound");
     check!(eq; report.decode_limits.len(), 1);
     Ok(())

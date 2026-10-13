@@ -69,7 +69,7 @@ impl JurisdictionCensus {
     ) -> Result<MeetCensus, HandlerError> {
         use futures::{stream, TryStreamExt};
         let (slug, census) = step;
-        let base = census_domain::model::serialized_digest(&(
+        let digest = census_domain::model::serialized_digest(&(
             ctx.key(),
             slug,
             scope.year,
@@ -78,9 +78,9 @@ impl JurisdictionCensus {
             scope.refresh,
         ))
         .map_err(|error| jobs::invariant(&format!("digesting meet fragment identity: {error}")))?;
+        let base = meet_fragment_base(&digest)?;
         let source = stream::try_unfold(Some(0usize), |next| {
             let fetcher = Arc::clone(&fetcher);
-            let base = base.as_str();
             async move {
                 let Some(ordinal) = next else { return Ok(None) };
                 let outcome = self
@@ -116,7 +116,7 @@ impl JurisdictionCensus {
     ) -> Result<super::super::meets_arms::MeetsStageOutcome, HandlerError> {
         let store = Arc::clone(&self.store);
         let region = self.region();
-        let identity = format!("meet/{}/{}", step.2, step.1);
+        let identity = meet_fragment_identity(step.2, step.1)?;
         let source = (step.0.to_string(), step.1);
         let handle = tokio::runtime::Handle::current();
         let Json(outcome) = ctx
@@ -186,6 +186,50 @@ fn selected_meet_sources(
     sources
         .iter()
         .filter(|source| super::super::meets_arms::required(source))
+}
+
+const MEET_IDENTITY_PREFIX: &str = "meet/";
+const MEET_IDENTITY_DIGEST_BYTES: usize = 32;
+const MEET_OPERATION_DIGEST_BYTES: usize = 64;
+
+fn meet_fragment_base(digest: &str) -> Result<&str, HandlerError> {
+    digest.get(..MEET_IDENTITY_DIGEST_BYTES).ok_or_else(|| {
+        jobs::invariant("meet fragment identity digest is shorter than its identity budget")
+    })
+}
+
+fn meet_fragment_identity(base: &str, ordinal: usize) -> Result<String, HandlerError> {
+    let ordinal = ordinal.to_string();
+    let index_bytes = usize::try_from(census_crawl::recording::MAX_RECORDED_WORK.ilog10())
+        .ok()
+        .and_then(|value| value.checked_add(1))
+        .ok_or_else(|| jobs::invariant("meet fragment index byte budget overflow"))?;
+    let bytes = MEET_IDENTITY_PREFIX
+        .len()
+        .checked_add(base.len())
+        .and_then(|value| value.checked_add(1))
+        .and_then(|value| value.checked_add(ordinal.len()))
+        .ok_or_else(|| jobs::invariant("meet fragment identity byte budget overflow"))?;
+    let operation = bytes
+        .checked_add(1)
+        .and_then(|value| value.checked_add(index_bytes))
+        .and_then(|value| value.checked_add(1))
+        .and_then(|value| value.checked_add(MEET_OPERATION_DIGEST_BYTES))
+        .ok_or_else(|| jobs::invariant("meet fragment operation byte budget overflow"))?;
+    if operation > crate::restate_services::wire::ingest::MAX_OPERATION_ID_BYTES {
+        return Err(jobs::invariant(
+            "meet fragment identity exceeds the ingest operation byte budget",
+        ));
+    }
+    let mut identity = String::new();
+    identity.try_reserve_exact(bytes).map_err(|error| {
+        jobs::invariant(&format!("reserving meet fragment identity bytes: {error}"))
+    })?;
+    identity.push_str(MEET_IDENTITY_PREFIX);
+    identity.push_str(base);
+    identity.push('/');
+    identity.push_str(&ordinal);
+    Ok(identity)
 }
 
 #[cfg(test)]
