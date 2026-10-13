@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 mod row;
 use row::Row;
 
-const HEADER: [&str; 31] = [
+const HEADER: [&str; 33] = [
     "athlete_id",
     "name",
     "school",
@@ -38,6 +38,8 @@ const HEADER: [&str; 31] = [
     "source_specification",
     "adjustment_kind",
     "adjustment_basis",
+    "adjustment_note",
+    "adjustment_source",
 ];
 
 pub fn write(

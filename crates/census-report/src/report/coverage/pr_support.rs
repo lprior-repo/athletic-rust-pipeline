@@ -1,6 +1,4 @@
-use super::{
-    CoverageGap, CoverageReport, GapClass, JurisdictionBucket, Scope,
-};
+use super::{CoverageGap, CoverageReport, GapClass, JurisdictionBucket, Scope};
 use crate::export::ExportDataset;
 use std::collections::HashSet;
 
@@ -19,6 +17,7 @@ pub(super) fn apply_pr_support(
     );
     let supported: HashSet<&str> = bests
         .iter()
+        .filter(|selection| selection.result.adjustment_kind.is_none())
         .map(|selection| selection.athlete_id().as_str())
         .collect();
     tally_pr_support(report, dataset, grad_year, &supported);

@@ -4,7 +4,7 @@ use crate::report::{ReportError, ReportResult};
 
 pub(super) const TITLE: &str = "PRs";
 
-pub(super) const HEADERS: [&str; 26] = [
+pub(super) const HEADERS: [&str; 29] = [
     "Athlete ID",
     "Athlete",
     "Gender",
@@ -31,11 +31,14 @@ pub(super) const HEADERS: [&str; 26] = [
     "Meet ID",
     "Source Key",
     "Event Context",
+    "Published mark",
+    "Conversion basis",
+    "Conversion note",
 ];
 
-pub(super) const WIDTHS: [u16; 26] = [
+pub(super) const WIDTHS: [u16; 29] = [
     20, 26, 10, 30, 8, 16, 12, 20, 14, 18, 14, 10, 12, 14, 40, 10, 44, 13, 30, 14, 14, 14, 24, 24,
-    30, 24,
+    30, 24, 18, 16, 40,
 ];
 
 pub(super) fn rows(prs: &[SharedSelection]) -> impl Iterator<Item = ReportResult<Vec<Cell>>> + '_ {
@@ -87,7 +90,7 @@ fn result_cells(pr: &SharedSelection) -> ReportResult<[Cell; 10]> {
     ])
 }
 
-fn context_cells(pr: &SharedSelection) -> [Cell; 7] {
+fn context_cells(pr: &SharedSelection) -> [Cell; 10] {
     [
         Cell::text(pr.key.surface.label()),
         Cell::text(pr.key.wind_class.label()),
@@ -96,6 +99,9 @@ fn context_cells(pr: &SharedSelection) -> [Cell; 7] {
         Cell::text(pr.meet.meet_id.as_str()),
         Cell::text(&pr.source.source_key),
         event_context(pr),
+        published_mark_cell(pr),
+        conversion_basis_cell(pr),
+        conversion_note_cell(pr),
     ]
 }
 
@@ -129,4 +135,27 @@ fn conflict_cell(conflicts: &[Conflict]) -> Cell {
         }
     }
     Cell::text(text)
+}
+fn published_mark_cell(pr: &SharedSelection) -> Cell {
+    match &pr.result.original_mark {
+        Some(original) => Cell::text(crate::bests::mark_text(original)),
+        None => Cell::Empty,
+    }
+}
+
+fn conversion_basis_cell(pr: &SharedSelection) -> Cell {
+    match &pr.result.adjustment_kind {
+        Some(_) => match pr.result.adjustment_basis {
+            Some(basis) => Cell::text(basis.label()),
+            None => Cell::text("unknown"),
+        },
+        None => Cell::Empty,
+    }
+}
+
+fn conversion_note_cell(pr: &SharedSelection) -> Cell {
+    match &pr.result.adjustment_note {
+        Some(note) => Cell::text(note),
+        None => Cell::Empty,
+    }
 }

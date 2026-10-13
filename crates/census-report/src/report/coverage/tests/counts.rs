@@ -128,3 +128,176 @@ fn coverage_notes_include_lifecycle_information() -> TestResult {
     report.reconcile()?;
     Ok(())
 }
+
+#[test]
+fn converted_marks_carry_labels_but_never_count_as_pr_support() -> TestResult {
+    let (_dir, store, converted_id, native_id) = conversion_coverage_store()?;
+    let dataset = crate::export::ExportDataset::load(&store)?;
+    let bests = crate::bests::build_from_dataset(
+        &dataset,
+        &crate::bests::Options {
+            scope: crate::report::Scope::AllSources,
+            grad_year: Some(2027),
+            limit: None,
+        },
+    );
+    check!(eq; bests.len(), 2);
+    let converted_row = bests
+        .iter()
+        .find(|row| row.athlete_id() == &converted_id)
+        .ok_or("missing converted best")?;
+    check!(
+        converted_row.result.adjustment_kind.is_some(),
+        "converted carries kind"
+    );
+    check!(
+        eq;
+        converted_row.result.adjustment_note,
+        Some("Converted from 9:22.21 for Track Size. ".to_string())
+    );
+    let native_row = bests
+        .iter()
+        .find(|row| row.athlete_id() == &native_id)
+        .ok_or("missing native best")?;
+    check!(eq; native_row.result.adjustment_kind, None);
+    check!(eq; native_row.result.adjustment_note, None);
+    let report = coverage_of(&store, Some(2027))?;
+    let wi = row(&report, "WI")?;
+    check!(eq; wi.with_performance, 2);
+    check!(eq; wi.with_comparable_mark, 2);
+    check!(eq; wi.with_pr_support, 1, "only the native winner counts");
+    check!(eq; gap(&report, "WI", GapClass::MissingPrSupport), Some(1));
+    report.reconcile()?;
+    Ok(())
+}
+
+fn conversion_coverage_store() -> TestResult<(
+    tempfile::TempDir,
+    Store,
+    census_domain::model::AthleteId,
+    census_domain::model::AthleteId,
+)> {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let (converted_athlete, native_athlete, meet) = conversion_people(&store)?;
+    let (distance, mile) = conversion_events(&store, &meet)?;
+    conversion_performances(
+        &store,
+        &converted_athlete,
+        &native_athlete,
+        &meet,
+        &distance,
+        &mile,
+    )?;
+    Ok((dir, store, converted_athlete.id, native_athlete.id))
+}
+
+fn conversion_people(
+    store: &Store,
+) -> TestResult<(CanonicalAthlete, CanonicalAthlete, CanonicalMeet)> {
+    let (school, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Conversion High",
+        "conversion high",
+        None,
+    );
+    store.append(Table::Schools, &school)?;
+    let mut converted_athlete = CanonicalAthlete::new(
+        &school_id,
+        "Converted Runner",
+        GradYear::CO2027,
+        Gender::Boys,
+        fixture_source("converted"),
+    );
+    converted_athlete.evidence.push(evidence("wiaa_results"));
+    converted_athlete
+        .observed_grades
+        .push(observed_grade(11, 2025, "wiaa_results")?);
+    store.append(Table::Athletes, &converted_athlete)?;
+    let mut native_athlete = CanonicalAthlete::new(
+        &school_id,
+        "Native Runner",
+        GradYear::CO2027,
+        Gender::Boys,
+        fixture_source("native"),
+    );
+    native_athlete.evidence.push(evidence("wiaa_results"));
+    native_athlete
+        .observed_grades
+        .push(observed_grade(11, 2025, "wiaa_results")?);
+    store.append(Table::Athletes, &native_athlete)?;
+    let mut meet = CanonicalMeet::new(
+        Some(UsJurisdiction::Wisconsin),
+        "Conversion Invite",
+        "2026-05-01",
+        CompetitionLevel::Invitational,
+    );
+    meet.sports.push(Sport::OutdoorTrack);
+    store.append(Table::Meets, &meet)?;
+    Ok((converted_athlete, native_athlete, meet))
+}
+
+fn conversion_events(
+    store: &Store,
+    meet: &CanonicalMeet,
+) -> TestResult<(CanonicalEvent, CanonicalEvent)> {
+    let distance = CanonicalEvent::new(
+        EventIdentity {
+            meet: &meet.id,
+            kind: EventKind::Track3200m,
+            gender: Gender::Boys,
+            division: None,
+            round: None,
+        },
+        EventSpecification::default(),
+    )?;
+    store.append(Table::Events, &distance)?;
+    let mile = CanonicalEvent::new(
+        EventIdentity {
+            meet: &meet.id,
+            kind: EventKind::Track1600m,
+            gender: Gender::Boys,
+            division: None,
+            round: None,
+        },
+        EventSpecification::default(),
+    )?;
+    store.append(Table::Events, &mile)?;
+    Ok((distance, mile))
+}
+
+fn conversion_performances(
+    store: &Store,
+    converted_athlete: &CanonicalAthlete,
+    native_athlete: &CanonicalAthlete,
+    meet: &CanonicalMeet,
+    distance: &CanonicalEvent,
+    mile: &CanonicalEvent,
+) -> TestResult<()> {
+    use census_domain::model::Adjustment;
+    let mut conversion = performance(
+        converted_athlete,
+        &distance.id,
+        &meet.id,
+        Mark::TimeSeconds(ExactSeconds::parse_clock("9:15.75")?),
+        ("wiaa_results", "conversion-only"),
+    )?;
+    conversion.round = Some("1".to_string());
+    conversion.adjustment = Some(Adjustment::track_size_conversion(
+        Some(Mark::TimeSeconds(ExactSeconds::parse_clock("9:22.21")?)),
+        conversion.mark.clone(),
+        Some("Converted from 9:22.21 for Track Size. ".to_string()),
+        None,
+    ));
+    store.append(Table::Performances, &conversion)?;
+    let mut native = performance(
+        native_athlete,
+        &mile.id,
+        &meet.id,
+        Mark::TimeSeconds(ExactSeconds::parse_clock("4:30.00")?),
+        ("wiaa_results", "native-only"),
+    )?;
+    native.round = Some("1".to_string());
+    store.append(Table::Performances, &native)?;
+    Ok(())
+}

@@ -4,7 +4,7 @@ use crate::bests::{
     SelectionSource, SharedSelection, SurfaceClass, TimingClass, WindClass,
 };
 use census_domain::model::{
-    EventKind, EventSpecification, ExactSeconds, Gender, Id, Mark, TimingMethod,
+    EventKind, EventSpecification, ExactSeconds, Gender, Id, Mark, SourceRef, TimingMethod,
 };
 use census_domain::{JurisdictionBucket, MeetState, UsJurisdiction};
 
@@ -63,6 +63,8 @@ fn result(mark: Mark, wind_mps: Option<f64>) -> SelectionResult {
         original_mark: None,
         adjustment_kind: None,
         adjustment_basis: None,
+        adjustment_note: None,
+        adjustment_source: None,
     }
 }
 
@@ -171,5 +173,50 @@ fn ordinary_text_and_negative_numerics_publish_unchanged() -> TestResult {
     check!(eq; row.get(column(&header, "best_value")?), Some("10940000000"));
     check!(eq; row.get(column(&header, "best_value_unit")?), Some("ns"));
     check!(eq; row.get(column(&header, "grad_year")?), Some("2027"));
+    Ok(())
+}
+
+#[test]
+fn converted_marks_publish_note_and_source_beside_kind_and_basis() -> TestResult {
+    use census_domain::model::{AdjustmentBasis, AdjustmentKind};
+    let directory = tempfile::tempdir()?;
+    let mut converted = selection(
+        ORDINARY_NAME,
+        "Ordinary School",
+        "Ordinary Meet",
+        Mark::TimeSeconds(ExactSeconds::parse("10.94")?),
+        None,
+    );
+    converted.result.original_mark = Some(Mark::TimeSeconds(ExactSeconds::parse("11.00")?));
+    converted.result.adjustment_kind = Some(AdjustmentKind::TrackSizeConversion);
+    converted.result.adjustment_basis = Some(AdjustmentBasis::Known);
+    converted.result.adjustment_note = Some("Converted from 11.00 for Track Size. ".to_string());
+    converted.result.adjustment_source = Some(SourceRef::new(
+        "tfrrs_in",
+        Some("https://indiana.tfrrs.org".to_string()),
+    ));
+    let (jsonl, csv) = write(directory.path(), &[converted], "co2027")?;
+    let mut reader = csv::Reader::from_path(&csv)?;
+    let header = reader.headers()?.clone();
+    let row = reader.records().next().ok_or("missing CSV data row")??;
+    check!(eq; row.get(column(&header, "original_mark")?), Some("11.00"));
+    check!(eq; row.get(column(&header, "adjustment_kind")?), Some("track_size_conversion"));
+    check!(eq; row.get(column(&header, "adjustment_basis")?), Some("known"));
+    check!(
+        eq;
+        row.get(column(&header, "adjustment_note")?),
+        Some("Converted from 11.00 for Track Size. ")
+    );
+    let source = row
+        .get(column(&header, "adjustment_source")?)
+        .ok_or("missing source")?;
+    check!(source.contains("tfrrs_in"), "the source id survives");
+    check!(
+        source.contains("indiana.tfrrs.org"),
+        "the source url survives"
+    );
+    let jsonl_text = std::fs::read_to_string(&jsonl)?;
+    check!(jsonl_text.contains("Converted from 11.00 for Track Size. "));
+    check!(jsonl_text.contains("tfrrs_in"));
     Ok(())
 }

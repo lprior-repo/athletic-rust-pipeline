@@ -1,6 +1,6 @@
 use super::*;
 use crate::bests::{ComparisonPolicy, SurfaceClass};
-use census_domain::model::{Adjustment, AdjustmentBasis, AdjustmentKind};
+use census_domain::model::{Adjustment, AdjustmentBasis, AdjustmentKind, SourceRef};
 
 const TRACK_SIZE_NOTE: &str = "Converted from 9:22.21 for Track Size. ";
 
@@ -28,14 +28,16 @@ fn converted(
 fn selection_keeps_conversion_and_actual_reports_of_one_race_distinct() -> TestResult {
     let mut dataset = selection_dataset(EventKind::Track3200m)?;
     dataset.meets[0].sports = vec![Sport::IndoorTrack];
-    let actual = reported(&dataset, "actual", seconds("9:22.21")?);
+    let mut actual = reported(&dataset, "actual", seconds("9:22.21")?);
+    actual.round = Some("1".to_string());
     let adjusted_mark = seconds("9:15.75")?;
-    let conversion = converted(
+    let mut conversion = converted(
         &dataset,
         "converted",
         Some(seconds("9:22.21")?),
         adjusted_mark.clone(),
     );
+    conversion.round = Some("1".to_string());
     dataset.performances = vec![actual.clone(), conversion.clone()];
 
     let rows = selected(&dataset);
@@ -64,11 +66,19 @@ fn selection_keeps_conversion_and_actual_reports_of_one_race_distinct() -> TestR
         converted_row.result.adjustment_basis,
         Some(AdjustmentBasis::Known)
     );
+    check!(
+        eq;
+        converted_row.result.adjustment_note,
+        Some(TRACK_SIZE_NOTE.to_string())
+    );
+    check!(eq; converted_row.result.adjustment_source, None);
     check!(eq; converted_row.population.marks, 1);
     check!(eq; converted_row.conflicts, Vec::new());
     check!(eq; actual_row.result.original_mark, None);
     check!(eq; actual_row.result.adjustment_kind, None);
     check!(eq; actual_row.result.adjustment_basis, None);
+    check!(eq; actual_row.result.adjustment_note, None);
+    check!(eq; actual_row.result.adjustment_source, None);
     check!(eq; actual_row.population.marks, 1);
     check!(eq; actual_row.conflicts, Vec::new());
     Ok(())
@@ -195,5 +205,27 @@ fn a_conversion_elsewhere_stays_bound_to_its_own_meet_and_source() -> TestResult
     check!(eq; converted_row.meet.date, other_meet.date);
     check!(eq; converted_row.result.original_mark, Some(seconds("9:22.21")?));
     check!(eq; converted_row.conflicts, Vec::new());
+    Ok(())
+}
+
+#[test]
+fn conversion_source_survives_selection_beside_the_note() -> TestResult {
+    let mut dataset = selection_dataset(EventKind::Track3200m)?;
+    dataset.meets[0].sports = vec![Sport::IndoorTrack];
+    let mut performance = reported(&dataset, "sourced", seconds("9:15.75")?);
+    let source = SourceRef::new("tfrrs_in", Some("https://indiana.tfrrs.org".to_string()));
+    performance.adjustment = Some(Adjustment::track_size_conversion(
+        Some(seconds("9:22.21")?),
+        performance.mark.clone(),
+        Some(TRACK_SIZE_NOTE.to_string()),
+        Some(source.clone()),
+    ));
+    performance.round = Some("1".to_string());
+    dataset.performances = vec![performance.clone()];
+    let rows = selected(&dataset);
+    check!(eq; rows.len(), 1);
+    check!(eq; rows[0].result.adjustment_note, Some(TRACK_SIZE_NOTE.to_string()));
+    check!(eq; rows[0].result.adjustment_source, Some(source));
+    check!(eq; rows[0].result.original_mark, Some(seconds("9:22.21")?));
     Ok(())
 }
