@@ -97,7 +97,7 @@ fn specifications<S: SerializeStruct>(wire: &mut S, row: &SharedSelection) -> Re
         .result
         .adjustment_source
         .as_ref()
-        .map(|source| serde_json::to_string(source))
+        .map(serde_json::to_string)
         .transpose()
         .map_err(serde::ser::Error::custom)?;
     match adjustment_source {
