@@ -1,5 +1,7 @@
 use super::*;
-use census_domain::model::{Gender, GradYear, SourceNamespace};
+use census_domain::model::{
+    CanonicalAthlete, CanonicalSchool, Gender, GradYear, SourceIdentity, SourceNamespace,
+};
 use census_domain::UsJurisdiction;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;

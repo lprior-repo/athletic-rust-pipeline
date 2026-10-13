@@ -1,7 +1,6 @@
 use census_domain::model::{
-    CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, CanonicalTeam,
-    CollectionSnapshot, NaturalKey, RetainedConflict, ReviewCase, ReviewState, SourceEntityKind,
-    SourceIdentity, SourceObjectIdentity, ATHLETE_IDENTITY_FAMILY,
+    CollectionSnapshot, RetainedConflict, ReviewCase, ReviewState, SourceObjectIdentity,
+    ATHLETE_IDENTITY_FAMILY,
 };
 use std::collections::HashMap;
 
@@ -10,6 +9,7 @@ use census_store::{Entity, Store, StoreSnapshot, Table};
 
 mod apply;
 mod coverage;
+mod identity_pass;
 
 #[cfg(test)]
 mod application_tests;
@@ -18,6 +18,7 @@ mod application_tests;
 mod stage_gate_tests;
 
 use coverage::coverage_rows;
+use identity_pass::{canonical_pass, CanonicalPass};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct IndexReport {
@@ -138,19 +139,58 @@ struct SupersessionRecord {
     reason: String,
 }
 
+fn prepare_stage<'s>(
+    store: &'s Store,
+    finished_at: &str,
+) -> ReportResult<(
+    usize,
+    census_store::DerivedStage<'s>,
+    String,
+    String,
+    census_report::export::ExportDataset,
+    CanonicalPass,
+)> {
+    store.store_identity()?;
+    let identity_applications = apply::apply_decisions(store, finished_at)?;
+    let stage = store.stage_derived()?;
+    let digest = stage_digest(stage.view())?;
+    let operation = format!("{STAGE_RECEIPT}:{digest}");
+    let dataset = census_report::export::ExportDataset::from_snapshot(store, stage.view())?;
+    let pass = canonical_pass(&dataset);
+    Ok((identity_applications, stage, digest, operation, dataset, pass))
+}
+
+fn write_stage_outputs(
+    stage: &mut census_store::DerivedStage<'_>,
+    identities: &[SourceObjectIdentity],
+    conflicts: &[RetainedConflict],
+    closed: &[ReviewCase],
+    reviews: &[ReviewCase],
+    coverage: &[census_domain::model::CoverageRow],
+    snapshot: CollectionSnapshot,
+) -> ReportResult<()> {
+    for table in STAGE_OUTPUTS {
+        if table.generation_partitioned() {
+            stage.carry_forward(table)?;
+        }
+    }
+    stage.replace_many(Table::SourceIdentities, identities)?;
+    stage.replace_many(Table::Conflicts, conflicts)?;
+    stage.replace_many(Table::ReviewCases, closed)?;
+    stage.replace_many(Table::ReviewCases, reviews)?;
+    stage.replace_many(Table::Coverage, coverage)?;
+    stage.replace_many(Table::Snapshots, &[snapshot])?;
+    Ok(())
+}
+
 pub fn derive(
     store: &Store,
     phase: &str,
     finished_at: &str,
     school_year: census_domain::model::SchoolYear,
 ) -> ReportResult<IndexReport> {
-    store.store_identity()?;
-    let identity_applications = apply::apply_decisions(store, finished_at)?;
-    let mut stage = store.stage_derived()?;
-    let digest = stage_digest(stage.view())?;
-    let operation = format!("{STAGE_RECEIPT}:{digest}");
-    let dataset = census_report::export::ExportDataset::from_snapshot(store, stage.view())?;
-    let pass = canonical_pass(&dataset);
+    let (identity_applications, mut stage, digest, operation, dataset, pass) =
+        prepare_stage(store, finished_at)?;
     let retained = census_report::workbook::retained_records(&dataset, school_year)?;
     let coverage = coverage_rows(&dataset, &pass.identities)?;
 
@@ -174,17 +214,15 @@ pub fn derive(
     let (closed, provenance) = superseded(&stored, &reviews);
     let snapshot = snapshot_row(stage.view(), phase, finished_at)?;
 
-    for table in STAGE_OUTPUTS {
-        if table.generation_partitioned() {
-            stage.carry_forward(table)?;
-        }
-    }
-    stage.replace_many(Table::SourceIdentities, &pass.identities)?;
-    stage.replace_many(Table::Conflicts, &conflicts)?;
-    stage.replace_many(Table::ReviewCases, &closed)?;
-    stage.replace_many(Table::ReviewCases, &reviews)?;
-    stage.replace_many(Table::Coverage, &coverage)?;
-    stage.replace_many(Table::Snapshots, &[snapshot])?;
+    write_stage_outputs(
+        &mut stage,
+        &pass.identities,
+        &conflicts,
+        &closed,
+        &reviews,
+        &coverage,
+        snapshot,
+    )?;
 
     for record in provenance {
         let mut batch = store.write_batch();
@@ -207,95 +245,6 @@ pub fn derive(
         superseded: closed.len(),
         identity_applications,
     })
-}
-
-trait IdentityBearing {
-    const KIND: SourceEntityKind;
-    fn canonical_id(&self) -> &str;
-    fn source_identities(&self) -> impl Iterator<Item = &SourceIdentity>;
-}
-
-macro_rules! identity_bearing {
-    ($type:ty, $kind:expr) => {
-        impl IdentityBearing for $type {
-            const KIND: SourceEntityKind = $kind;
-
-            fn canonical_id(&self) -> &str {
-                self.id.as_str()
-            }
-
-            fn source_identities(&self) -> impl Iterator<Item = &SourceIdentity> {
-                self.source_identities.iter()
-            }
-        }
-    };
-}
-
-identity_bearing!(CanonicalSchool, SourceEntityKind::Schools);
-identity_bearing!(CanonicalTeam, SourceEntityKind::Teams);
-identity_bearing!(CanonicalCoach, SourceEntityKind::Coaches);
-identity_bearing!(CanonicalMeet, SourceEntityKind::Meets);
-
-impl IdentityBearing for CanonicalAthlete {
-    const KIND: SourceEntityKind = SourceEntityKind::Athletes;
-
-    fn canonical_id(&self) -> &str {
-        self.id.as_str()
-    }
-
-    fn source_identities(&self) -> impl Iterator<Item = &SourceIdentity> {
-        self.identities()
-    }
-}
-
-#[derive(Default)]
-struct CanonicalPass {
-    identities: Vec<SourceObjectIdentity>,
-    collisions: Vec<RetainedConflict>,
-}
-
-fn canonical_pass(dataset: &census_report::export::ExportDataset) -> CanonicalPass {
-    let mut pass = CanonicalPass::default();
-    absorb(&mut pass, dataset.schools.values());
-    absorb(&mut pass, dataset.teams.values());
-    absorb(&mut pass, &dataset.coaches);
-    absorb(&mut pass, &dataset.athletes);
-    absorb(&mut pass, &dataset.meets);
-    take_collisions(&mut pass, &dataset.events);
-    take_collisions(&mut pass, &dataset.performances);
-    pass
-}
-
-fn absorb<'a, T: IdentityBearing + NaturalKey + 'a>(
-    pass: &mut CanonicalPass,
-    entities: impl IntoIterator<Item = &'a T>,
-) {
-    for entity in entities {
-        for identity in entity.source_identities() {
-            let mut row = SourceObjectIdentity::new(
-                identity.namespace.clone(),
-                T::KIND,
-                identity.id.clone(),
-                entity.canonical_id(),
-            );
-            if let Some(url) = identity.url.clone() {
-                row = row.with_url(url);
-            }
-            pass.identities.push(row);
-        }
-        pass.collisions
-            .extend(entity.retained_conflicts().iter().cloned());
-    }
-}
-
-fn take_collisions<'a, T: NaturalKey + 'a>(
-    pass: &mut CanonicalPass,
-    entities: impl IntoIterator<Item = &'a T>,
-) {
-    for entity in entities {
-        pass.collisions
-            .extend(entity.retained_conflicts().iter().cloned());
-    }
 }
 
 fn snapshot_row(

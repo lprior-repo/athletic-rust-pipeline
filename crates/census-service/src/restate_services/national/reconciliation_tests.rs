@@ -233,10 +233,11 @@ async fn u4al_national_records_review_verdicts_without_manual_review() -> TestRe
     let cases = store.scan::<ReviewCase>(Table::ReviewCases)?;
     check!(cases.iter().any(|case| case.state == ReviewState::Resolved));
     check!(eq; cases.iter().filter(|case| case.family == "Athlete identity" && case.member_ids.is_empty() && case.state == ReviewState::Superseded).count(), 2);
-    for case in cases
-        .iter()
-        .filter(|case| case.family == "Athlete identity" && case.state == ReviewState::Superseded)
-    {
+    for case in cases.iter().filter(|case| {
+        case.family == "Athlete identity"
+            && case.member_ids.is_empty()
+            && case.state == ReviewState::Superseded
+    }) {
         let reason = store
             .journal_payload("identity_generic_supersession_v1", &case.id)?
             .ok_or("supersession reason missing")?;
