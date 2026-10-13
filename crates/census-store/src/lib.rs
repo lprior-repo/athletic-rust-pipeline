@@ -63,7 +63,7 @@ pub use lineage::StoreLineageError;
 #[cfg(feature = "native-fault-injection")]
 pub use native_effect_checkpoint::{NativeEffectCheckpoint, NativeEffectRow};
 pub use profiles::{ProfileRegistration, ProfileRegistryError, MAX_PROFILE_RECORD_BYTES};
-pub use read::{build_athlete_identity_projection, StoreSnapshot};
+pub use read::{build_athlete_identity_projection, JournalReadBudget, StoreSnapshot};
 pub use receipt::{
     Application, Credit, Pruned, Receipt, ReplayFrontier, ReplayWitness, MAX_DIGEST_BYTES,
     MAX_FRONTIER_WITNESSES, MAX_OPERATION_BYTES,
@@ -131,6 +131,10 @@ fn open_keyspaces(
         .cache_size(cache_bytes)
         .open()
         .map_err(|source| StoreError::Open { source })?;
+    keyspaces(db)
+}
+
+fn keyspaces(db: Database) -> StoreResult<(Database, Keyspace, Keyspace, Keyspace, Keyspace)> {
     let entities = db
         .keyspace(ENTITIES, KeyspaceCreateOptions::default)
         .map_err(|source| StoreError::Open { source })?;

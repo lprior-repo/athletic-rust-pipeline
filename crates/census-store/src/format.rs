@@ -5,6 +5,7 @@ use std::path::Path;
 use super::clock::{Clock, SystemClock};
 use super::{generation, meta, Store, StoreError, StoreResult};
 
+mod existing;
 mod migrate;
 
 pub use migrate::MigrationReport;
@@ -60,6 +61,10 @@ pub(super) fn open_format(
         initialize(db, meta_keyspace)?;
         return read_format(meta_keyspace);
     }
+    require_current(root, format)
+}
+
+fn require_current(root: &Path, format: StoreFormat) -> StoreResult<StoreFormat> {
     match classify(&format) {
         Verdict::Current => Ok(format),
         Verdict::Newer {
@@ -235,6 +240,17 @@ impl Store {
         let (db, entities, journal, meta_keyspace, receipts) =
             super::open_keyspaces(&root, cache_bytes)?;
         open_format(&root, &db, [&entities, &journal, &receipts], &meta_keyspace)?;
+        Self::recover_opened(root, db, entities, journal, meta_keyspace, receipts)
+    }
+
+    fn recover_opened(
+        root: std::path::PathBuf,
+        db: Database,
+        entities: Keyspace,
+        journal: Keyspace,
+        meta_keyspace: Keyspace,
+        receipts: Keyspace,
+    ) -> StoreResult<Self> {
         super::read::sweep_stale_temporaries(&root, &meta_keyspace)?;
         let generations = generation::Generations::seeded(&meta_keyspace)?;
         let sequences = super::sequences::Counters::seeded(&db, &entities, &meta_keyspace)?;

@@ -15,12 +15,11 @@ pub(super) fn encode_chunk(bytes: &[u8]) -> String {
     BASE64_STANDARD.encode(bytes)
 }
 
-pub(super) fn decode_chunk(s: &str) -> Result<Vec<u8>, StoreError> {
-    BASE64_STANDARD
-        .decode(s)
-        .map_err(|source| StoreError::Invariant {
-            detail: format!("journal chunk is not valid base64: {source}"),
-        })
+pub(super) fn decode_chunk_into(
+    data: &str,
+    output: &mut [u8],
+) -> Result<usize, base64::DecodeSliceError> {
+    BASE64_STANDARD.decode_slice(data, output)
 }
 
 pub(super) fn split_chunks(payload: &[u8]) -> Vec<Vec<u8>> {
@@ -31,15 +30,6 @@ pub(super) fn split_chunks(payload: &[u8]) -> Vec<Vec<u8>> {
         .chunks(JOURNAL_CHUNK_RAW)
         .map(|c| c.to_vec())
         .collect()
-}
-
-pub(super) fn reassemble_chunks(chunks: &[Vec<u8>]) -> Vec<u8> {
-    let total: usize = chunks.iter().map(|c| c.len()).sum();
-    let mut out = Vec::with_capacity(total);
-    for chunk in chunks {
-        out.extend_from_slice(chunk);
-    }
-    out
 }
 
 pub(super) fn chunk_key(logical_key: &[u8], index: usize) -> Result<Vec<u8>, StoreError> {
@@ -98,49 +88,6 @@ pub(super) fn chunk_value(
         detail: "serializing journal chunk".to_string(),
         source,
     })
-}
-
-pub(super) fn is_manifest(raw: &[u8]) -> bool {
-    let value: serde_json::Value = match serde_json::from_slice(raw) {
-        Ok(v) => v,
-        Err(_) => return false,
-    };
-    matches!(
-        value.get("type").and_then(|t| t.as_str()),
-        Some(MANIFEST_TYPE)
-    )
-}
-
-pub(super) fn manifest_info(raw: &[u8]) -> Result<(String, usize, usize), StoreError> {
-    let value: serde_json::Value =
-        serde_json::from_slice(raw).map_err(|source| StoreError::Decode {
-            key: "journal manifest".to_string(),
-            source,
-        })?;
-    let key = value
-        .get("key")
-        .and_then(|k| k.as_str())
-        .ok_or_else(|| StoreError::Invariant {
-            detail: "journal manifest has no key".to_string(),
-        })?
-        .to_string();
-    let chunks = value
-        .get("chunks")
-        .and_then(|c| c.as_u64())
-        .ok_or_else(|| StoreError::Invariant {
-            detail: "journal manifest has no chunks count".to_string(),
-        })?
-        .try_into()
-        .map_err(|_| StoreError::CounterOverflow)?;
-    let total_bytes = value
-        .get("total_bytes")
-        .and_then(|b| b.as_u64())
-        .ok_or_else(|| StoreError::Invariant {
-            detail: "journal manifest has no total_bytes".to_string(),
-        })?
-        .try_into()
-        .map_err(|_| StoreError::CounterOverflow)?;
-    Ok((key, chunks, total_bytes))
 }
 
 pub(super) const JOURNAL_OBJECT_VERSION: u8 = 2;

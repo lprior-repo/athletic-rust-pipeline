@@ -24,6 +24,10 @@ use std::path::PathBuf;
 #[derive(Subcommand, Debug)]
 pub(super) enum Command {
     #[command(
+        about = "Verify one retained MileSplit capture without acquisition; explicit existing --store and stopped owner required; uses normal store-open recovery"
+    )]
+    VerifyRetainedCapture(super::retained_capture::RetainedCaptureArgs),
+    #[command(
         about = "Manage immutable query-profile configuration and prepare checked selection documents; explicit --store and a stopped store owner required"
     )]
     Profile(ProfileArgs),

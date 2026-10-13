@@ -134,3 +134,23 @@ This error and preservation correction changes no store, frozen codec, token, li
 semantic-policy version. It does not establish bounded decoded allocations or whole-process
 memory, and terminal reporting does not itself implement durable resumption after an operator
 changes resource limits. Those acceptance requirements remain open.
+
+## Legacy retained-journal read admission (2026-10-13)
+
+Legacy inline and v1 chunked journal envelopes share one bounded reader. The caller grants a
+nonzero reconstructed encoded-envelope limit up to 64 MiB through `JournalReadBudget`; the
+existing `journal_payload` entrypoint uses that same reader with the 64-MiB ceiling. Physical
+journal records retain the existing 1-MiB codec ceiling. These are encoded-byte limits, not a
+claim of bounded decoded JSON allocations or whole-process memory certification.
+
+The reader validates lookup ownership, supported version, declared total length, exact chunk
+count, chunk ownership and ordinal, decoded lengths, and reconstructed entry ownership before
+returning the payload. It assembles into one fallibly reserved bounded buffer. Limit crossings
+return `JournalReadLimit` with the observed size and ceiling; refused bytes remain retained.
+The writer format and v2 object reader are unchanged. Historical values beyond the supported
+grant are refused without rewriting their representation, consistent with gate a.
+
+The MileSplit owner separately verifies retained acquisition occurrences against their exact
+stable metadata key, shared content manifest, original chunks and final body digest. This
+establishes capture-byte integrity only. Interpretation, athlete identity, affiliation, cohort
+and inventory completeness require their own evidence contracts.

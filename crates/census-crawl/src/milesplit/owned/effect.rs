@@ -8,7 +8,7 @@ use crate::{AdapterContext, CrawlError, CrawlResult};
 #[cfg(test)]
 use base64::{engine::general_purpose::STANDARD, Engine};
 
-const CAPTURE_CHUNK_BYTES: usize = 32 * 1024;
+pub(super) const CAPTURE_CHUNK_BYTES: usize = 32 * 1024;
 
 mod capture;
 mod interpretation;
@@ -168,3 +168,6 @@ mod tests;
 
 #[cfg(test)]
 mod acquisition_partial_tests;
+
+#[cfg(test)]
+mod retained_tests;
