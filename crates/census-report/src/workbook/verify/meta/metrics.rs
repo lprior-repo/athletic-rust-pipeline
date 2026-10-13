@@ -172,15 +172,15 @@ fn scope_rows(censuses: &Censuses) -> ReportResult<Vec<Vec<Expect>>> {
 
 fn note_rows(core: &Census) -> Vec<Vec<Expect>> {
     let mut rows = vec![header(&NOTE_HEADERS)];
-    for note in core
-        .notes
-        .iter()
-        .filter(|note| note.starts_with("core performance publication"))
-    {
-        rows.push(vec![
-            Expect::text("Core performance publication"),
-            Expect::text(note.as_str()),
-        ]);
+    for note in &core.notes {
+        let label = if note.starts_with("core performance publication") {
+            "Core performance publication"
+        } else if note.contains("is outside the census run scope:") {
+            "Population geography and historical results"
+        } else {
+            continue;
+        };
+        rows.push(vec![Expect::text(label), Expect::text(note.as_str())]);
     }
     rows
 }

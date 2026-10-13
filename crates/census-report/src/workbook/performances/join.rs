@@ -21,9 +21,9 @@ impl<'a> PerformanceProjection<'a> {
     pub fn of(derivation: &'a Derivation<'_>) -> Self {
         Self {
             athletes: index(derivation.athletes().iter(), |row| row.id.as_str()),
-            schools: index(derivation.schools().iter(), |row| row.id.as_str()),
+            schools: index(derivation.historical_schools(), |row| row.id.as_str()),
             teams: index(derivation.dataset().teams.values(), |row| row.id.as_str()),
-            meets: index(derivation.meets().iter(), |row| row.id.as_str()),
+            meets: index(derivation.historical_meets(), |row| row.id.as_str()),
             events: index(derivation.events().iter(), |row| row.id.as_str()),
             aliases: derivation.athlete_aliases(),
             scope: derivation.scope(),

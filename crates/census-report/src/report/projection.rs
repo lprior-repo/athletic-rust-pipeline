@@ -136,8 +136,9 @@ fn outside_scope_note(bucket: JurisdictionBucket, row: &OutsideRow) -> String {
         |state| format!("{} ({})", state.name(), state.code()),
     );
     format!(
-        "{jurisdiction} is outside the census run scope: its stored rows publish in no row and \
-         count in no total — schools={} athletes={} class_of_2027={} coaches={} meets={}",
+        "{jurisdiction} is outside the census run scope: excluded from directory/population \
+         counts; retained historical school/meet metadata may appear in selected athletes' \
+         results — schools={} athletes={} class_of_2027={} coaches={} meets={}",
         row.schools, row.athletes, row.class_of_2027, row.coaches, row.meets
     )
 }

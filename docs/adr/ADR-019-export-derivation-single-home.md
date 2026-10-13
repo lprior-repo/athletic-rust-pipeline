@@ -180,3 +180,21 @@ result. Policy-9 and earlier inputs/generations remain byte-preserved historical
 refused by the current verifier rather than relabeled or rewritten. Logical export schema 2,
 manifest codec 2 and token protocol 2 remain unchanged. Dated current-school affiliation and
 configurable profile membership remain separate, unfinished end-vision requirements.
+
+## Historical parent geography amendment — 2026-10-13
+
+Publication semantic policy revision 11 separates population geography from historical result
+parents. An admitted athlete's retained performance may name a school or meet outside the
+population geography. The shared derivation exposes borrowed historical-school and historical-meet
+views to both PR selection and performance projection; Core still requires Core-evidenced meet
+metadata. Missing parents stay unknown, and neither historical affiliation nor venue changes the
+athlete's population membership or current recruiting-directory join.
+
+This restores comparable bests whose eligible out-of-geography meet context was previously hidden,
+as well as their actual venue and historical school metadata. Directory schools, population
+jurisdiction denominators, outside-scope notes and current-school contacts retain their existing
+scope. Referenced historical parents remain in the frozen evidence even when they are absent from
+the current directory. Census, coverage and workbook method notes distinguish excluded population
+counts from retained historical metadata. Policy-10 and earlier artifacts are retained and refused for current-policy
+acceptance without rewriting. Frozen logical schema, manifest codec and token protocol remain 2.
+Configurable profiles and dated current affiliation are still separate unfinished requirements.

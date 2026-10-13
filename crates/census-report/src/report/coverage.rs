@@ -502,7 +502,8 @@ fn append_placement_notes(notes: &mut Vec<String>, outcome: &Outcome) {
     if outcome.outside_scope != CoverageTotals::default() {
         notes.push(format!(
             "stored rows outside the census run scope (the 48 continental states plus DC, ADR-009) \
-             are excluded from `coverage read` and published in no row: {}",
+             are excluded from `coverage read` and population coverage rows; retained historical \
+             school/meet metadata may appear in selected athletes' results: {}",
             totals_text(&outcome.outside_scope)
         ));
     }
