@@ -1251,3 +1251,28 @@ fn foreign_snapshot_origin_is_terminal_through_address_join() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn malformed_or_missing_store_lineage_is_terminal_without_retrying_identity_creation() -> TestResult
+{
+    let errors = [
+        StoreError::StoreIdentity(census_domain::model::StoreIdentityError::InvalidFormat),
+        StoreError::StoreLineage(census_store::StoreLineageError::Missing),
+        StoreError::StoreLineage(census_store::StoreLineageError::Multiple),
+        StoreError::StoreLineage(census_store::StoreLineageError::UnexpectedKey),
+        StoreError::StoreLineage(census_store::StoreLineageError::UnsupportedRepresentation),
+        StoreError::StoreLineage(census_store::StoreLineageError::MalformedEnvelope),
+        StoreError::StoreLineage(census_store::StoreLineageError::OversizedEnvelope {
+            bytes: 1_048_577,
+            max: 1_048_576,
+        }),
+    ];
+    for source in errors {
+        let expected = source.to_string();
+        match JobError::from(source) {
+            JobError::Terminal { message } => check!(eq; message, expected),
+            JobError::Transient { .. } => return Err("lineage refusal became retryable".into()),
+        }
+    }
+    Ok(())
+}

@@ -29,12 +29,17 @@ impl<'store> StoreRevision<'store> {
         self.derived_generation
     }
 
-    fn ensure_current(&self, store: &Store, operation: &str) -> StoreResult<()> {
+    pub(crate) fn ensure_origin(&self, store: &Store, operation: &str) -> StoreResult<()> {
         if !Arc::ptr_eq(self.origin, &store.appends) {
             return Err(StoreError::RevisionOriginMismatch {
                 operation: operation.to_string(),
             });
         }
+        Ok(())
+    }
+
+    fn ensure_current(&self, store: &Store, operation: &str) -> StoreResult<()> {
+        self.ensure_origin(store, operation)?;
         let evidence = store.evidence_generation();
         let derived = store.derived_generation();
         if self.evidence_generation != evidence || self.derived_generation != derived {

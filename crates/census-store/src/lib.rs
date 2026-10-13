@@ -32,6 +32,7 @@ mod identity;
 mod inspect;
 mod journal;
 mod keys;
+mod lineage;
 mod meta;
 #[cfg(feature = "native-fault-injection")]
 mod native_effect_checkpoint;
@@ -57,6 +58,7 @@ pub use format::{
 };
 pub use identity::MAX_IDENTITY_APPLICATION_BATCH;
 pub use inspect::StoreInspection;
+pub use lineage::StoreLineageError;
 #[cfg(feature = "native-fault-injection")]
 pub use native_effect_checkpoint::{NativeEffectCheckpoint, NativeEffectRow};
 pub use read::{build_athlete_identity_projection, StoreSnapshot};
