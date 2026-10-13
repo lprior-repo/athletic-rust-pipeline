@@ -33,7 +33,7 @@ impl Witness {
         let verified = verify_published(&captured.workbook)?;
         check!(eq; verified.workbook.mapped_athletes, 1);
         check!(eq; captured.dataset.lineage.schema_revision, 2);
-        check!(eq; captured.dataset.lineage.policy_revision, 9);
+        check!(eq; captured.dataset.lineage.policy_revision, 10);
         let selection = readback::selection(&captured.workbook)?;
         check!(eq; selection, selected_options(&captured.options));
         Ok(Self {

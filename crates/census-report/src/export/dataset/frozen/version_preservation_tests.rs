@@ -176,3 +176,10 @@ fn previous_tie_policy_preserves_every_retained_state_across_refusal_and_reopen(
         .into_iter()
         .try_for_each(|state| preserved(VersionCase::PreviousPolicy, state))
 }
+
+#[test]
+fn policy_nine_roots_are_preserved_across_all_record_states_and_reopen() -> TestResult {
+    STATES
+        .into_iter()
+        .try_for_each(|state| preserved(VersionCase::PriorAffiliationPolicy, state))
+}
