@@ -219,6 +219,7 @@ fn add_athlete(
                     + f64::from(u32::try_from(attempt)?))
                 .to_string(),
             )?),
+            adjustment: None,
             wind_mps: None,
             place: Some(u16::try_from(attempt + 1)?),
             heat: Some(format!("attempt-{}", attempt + 1)),

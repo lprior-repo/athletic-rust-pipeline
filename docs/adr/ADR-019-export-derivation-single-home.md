@@ -140,3 +140,9 @@ different cohort asks for a second, explicit derivation. Cost becomes one decode
 filter pass per derivation, measured per [xtask procedures](../../xtask/README.md#measurement-and-fixture-boundaries); the extra filter
 pass is O(rows) over borrowed rows and does not re-decode. Fixtures and tests build derivations from
 a dataset instead of asserting on store states that bypass the derivation.
+
+## 2026-10-13: concurrent policy integration
+
+The PR9/PR10 lineage and independently updated main both allocated schema 2 / policy 8 to different contracts. This integration allocates policy 12, beyond policies 9, 10, and 11 already used by other branches. It combines retained-context conflict quarantine, required frozen coverage and coach-lane evidence, and adjustment-aware comparison and publication. Schema 2 remains: coverage arrays remain required and the adjustment field is optional with an absent default.
+
+Generation, frozen token, and publication recipe identities bind the combined policy. Prior policies, including both independent schema-2/policy-8 representations, are refused before current decoding or recovery. Refusal preserves archived bytes, objects, root markers, retained records and leases in every historical state. There is no in-place migration, retagging, or hydration from current coverage. New acceptance requires an explicitly selected current generation. Future branch integration must reconcile semantics rather than replace this revision with a smaller independently allocated constant.

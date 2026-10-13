@@ -212,6 +212,7 @@ fn performance(
             meet: context.meet.clone(),
             date: context.date.to_string(),
             mark,
+            adjustment: None,
             wind_mps: None,
             place: None,
             heat: None,

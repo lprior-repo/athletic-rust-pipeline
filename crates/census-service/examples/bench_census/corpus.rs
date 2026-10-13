@@ -208,6 +208,7 @@ fn performance_of(
         meet: meet_id.clone(),
         date: MEET_DATE.to_string(),
         mark,
+        adjustment: None,
         wind_mps: None,
         place: Some(place),
         heat: None,

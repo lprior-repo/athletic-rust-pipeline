@@ -35,6 +35,7 @@ pub(super) fn record_performance(
             meet: context.meet.id.clone(),
             date: context.meet.date.clone(),
             mark: row.mark.clone(),
+            adjustment: None,
             wind_mps: row.wind_mps,
             place: row.place,
             heat: row.heat.clone(),

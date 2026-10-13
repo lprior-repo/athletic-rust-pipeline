@@ -10,22 +10,22 @@ fn retained_nces_generation_replays_without_touching_the_original_store() -> Tes
     let (root, ccd_count, pss_count) = replay_input(dir.path())?;
     let store = Store::open(dir.path().join("store"))?;
     let previously_linked = seed_replay(&store, &root)?;
-    let overrides = Overrides {
-        urls: BTreeMap::from([
-            (
-                "nces-ccd".to_string(),
-                "https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2526_w_0a_050626.zip".to_string(),
-            ),
-            (
-                "nces-pss".to_string(),
-                "https://nces.ed.gov/surveys/pss/zip/pss2324_pu_csv.zip".to_string(),
-            ),
-        ]),
-        dates: BTreeMap::from([
-            ("nces-ccd".to_string(), "2026-10-04".to_string()),
-            ("nces-pss".to_string(), "2026-10-04".to_string()),
-        ]),
-    };
+    let overrides = Overrides::from_acquisitions(vec![
+        super::Acquisition {
+            entry: 0,
+            provider: "nces-ccd".to_string(),
+            path: String::new(),
+            url: "https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2526_w_0a_050626.zip".to_string(),
+            retrieved_at: Some("2026-10-04".to_string()),
+        },
+        super::Acquisition {
+            entry: 1,
+            provider: "nces-pss".to_string(),
+            path: String::new(),
+            url: "https://nces.ed.gov/surveys/pss/zip/pss2324_pu_csv.zip".to_string(),
+            retrieved_at: Some("2026-10-04".to_string()),
+        },
+    ])?;
     let report = join_generation(
         &store,
         &root.join("school-address"),

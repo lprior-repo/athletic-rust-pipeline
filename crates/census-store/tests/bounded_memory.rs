@@ -77,6 +77,7 @@ fn performance(index: usize, version: usize) -> TestResult<CanonicalPerformance>
         meet,
         date: "2026-05-01".to_string(),
         mark: Mark::TimeSeconds(ExactSeconds::from_parts(nanoseconds, 2)?),
+        adjustment: None,
         wind_mps: None,
         place: Some(u16::try_from(place)?),
         heat: None,

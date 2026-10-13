@@ -1,3 +1,5 @@
+mod adjustment_roundtrip;
+
 use super::*;
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
@@ -140,6 +142,7 @@ fn seed_performance(
             mark: Mark::TimeSeconds(ExactSeconds::parse("50.00")?),
             wind_mps: None,
             place: Some(1),
+            adjustment: None,
         },
     )?;
     performance.timing = Some(TimingMethod::Fat);

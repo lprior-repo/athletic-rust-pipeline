@@ -106,6 +106,7 @@ impl Fixture {
             meet: self.meet.clone(),
             date: MEET_DATE.to_string(),
             mark: self.mark.clone(),
+            adjustment: None,
             wind_mps: Some(f64::from(seen) + 1.2),
             place: Some(seen.saturating_add(1)),
             heat: None,

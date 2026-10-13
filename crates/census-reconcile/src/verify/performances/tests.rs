@@ -69,6 +69,7 @@ fn fixture() -> TestResult<Fixture> {
             meet: meet.id,
             date: date.into(),
             mark: Mark::TimeSeconds(ExactSeconds::parse("10.86")?),
+            adjustment: None,
             wind_mps: Some(0.4),
             place: Some(2),
             heat: None,

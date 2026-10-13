@@ -152,7 +152,7 @@ fn valid_schema_one_archive_without_coverage_is_preserved_and_refused_after_reop
             .clone(),
     )?;
     check!(eq; lineage.schema_revision, 1);
-    check!(eq; lineage.policy_revision, 8);
+    check!(eq; lineage.policy_revision, 12);
     check!(eq; super::super::generation(&lineage)?, lineage.input_generation);
     let path = seeded.directory.path().join("schema-one.json");
     std::fs::write(&path, &retained)?;

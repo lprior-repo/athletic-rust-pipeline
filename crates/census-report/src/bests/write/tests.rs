@@ -48,6 +48,7 @@ fn key() -> PrKey {
         context: None,
         specification: EventSpecification::default(),
         comparison: ComparisonPolicy::Standard,
+        adjustment: None,
     }
 }
 
@@ -59,6 +60,9 @@ fn result(mark: Mark, wind_mps: Option<f64>) -> SelectionResult {
         place: Some(3),
         wind_mps,
         timing: Some(TimingMethod::Fat),
+        original_mark: None,
+        adjustment_kind: None,
+        adjustment_basis: None,
     }
 }
 

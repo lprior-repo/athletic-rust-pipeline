@@ -2,7 +2,7 @@
 #[path = "../../../tools/fallible_checks.rs"]
 mod fallible_checks;
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 use census_domain::model::{normalize_name, CanonicalSchool};
@@ -126,14 +126,18 @@ fn file_sha(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
     Ok(format!("{:x}", Sha256::digest(std::fs::read(path)?)))
 }
 
-fn overrides(captures: &[(&Path, String)]) -> Overrides {
-    Overrides {
-        urls: captures
-            .iter()
-            .map(|(path, url)| (format!("state-ed@{}", path.display()), url.clone()))
-            .collect(),
-        dates: BTreeMap::from([("state-ed".to_string(), "2026-09-01".to_string())]),
+fn overrides(captures: &[(&Path, String)]) -> Result<Overrides, Box<dyn std::error::Error>> {
+    let mut acquisitions = Vec::new();
+    for (i, (path, url)) in captures.iter().enumerate() {
+        acquisitions.push(census_service::school_address::Acquisition {
+            entry: u32::try_from(i)?,
+            provider: "state-ed".to_string(),
+            path: format!("state-ed@{}", path.display()),
+            url: url.clone(),
+            retrieved_at: Some("2026-09-01".to_string()),
+        });
     }
+    Ok(Overrides::from_acquisitions(acquisitions)?)
 }
 
 fn without_generation_digest(note: &str) -> &str {
@@ -170,7 +174,7 @@ fn each_profile_capture_credits_its_own_bytes_whatever_the_argument_order() -> T
             overrides(&[
                 (kingston.as_path(), kingston_url.clone()),
                 (avon.as_path(), avon_url.clone()),
-            ]),
+            ])?,
             Mode::Apply,
         )?;
         check!(eq; report.counters.linked, 2);
@@ -246,7 +250,7 @@ fn two_captures_carrying_one_school_refuse_the_link() -> TestResult {
                 kingston.as_path(),
                 format!("https://data.nysed.gov/profile.php?instid={KINGSTON_ID}"),
             ),
-        ]),
+        ])?,
         Mode::Apply,
     )?;
     check!(eq; report.counters.linked, 0);

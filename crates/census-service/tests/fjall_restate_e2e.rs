@@ -161,6 +161,7 @@ fn add_athlete(
             meet: meet_id.clone(),
             date: MEET_DATE.to_string(),
             mark: Mark::TimeSeconds(ExactSeconds::parse(&seconds.to_string())?),
+            adjustment: None,
             wind_mps: None,
             place: Some(u16::try_from(attempt + 1)?),
             heat: None,

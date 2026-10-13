@@ -11,7 +11,7 @@ fn retained_conflict_policy_preserves_but_refuses_revision_seven_inputs() -> Tes
     let temporary = tempfile::tempdir()?;
     let store = Store::open(temporary.path().join("store"))?;
     let current = ExportDataset::load(&store)?;
-    check!(eq; current.lineage.policy_revision, 8);
+    check!(eq; current.lineage.policy_revision, 12);
     let archive = temporary.path().join("revision-seven.json");
     current.save_frozen(&archive)?;
     let mut historical: serde_json::Value = serde_json::from_slice(&std::fs::read(&archive)?)?;

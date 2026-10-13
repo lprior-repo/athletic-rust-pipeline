@@ -65,6 +65,7 @@ fn performance(subject: &CanonicalAthlete, key: &str) -> TestResult<CanonicalPer
         census_domain::model::PerformanceResult {
             team: &Id::mint("team", &["fixture"]),
             mark: Mark::Raw("12.34".to_string()),
+            adjustment: None,
             wind_mps: None,
             place: None,
         },

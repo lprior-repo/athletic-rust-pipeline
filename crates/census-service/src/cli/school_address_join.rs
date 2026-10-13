@@ -1,6 +1,6 @@
 use super::Cli;
 use anyhow::{Context, Result};
-use census_service::school_address::{join_generation, parse_source_pairs, Mode, Overrides};
+use census_service::school_address::{join_generation, Mode, Overrides};
 use census_store::Store;
 use clap::Args;
 use std::path::PathBuf;
@@ -41,31 +41,8 @@ pub(super) struct SchoolAddressJoinArgs {
     pub(super) evidence_dates: Vec<String>,
 }
 
-pub(super) fn run(cli: &Cli, args: &SchoolAddressJoinArgs) -> Result<()> {
-    let root = cli
-        .store
-        .as_deref()
-        .context("school-address-join requires an explicit --store and a stopped store owner")?;
-    let store = Store::open(root).context("opening the school-address store")?;
-    let overrides = Overrides {
-        urls: parse_source_pairs(&args.evidence_urls)?,
-        dates: parse_source_pairs(&args.evidence_dates)?,
-    };
-    let mode = if args.apply {
-        Mode::Apply
-    } else {
-        Mode::DryRun
-    };
-    let report = join_generation(
-        &store,
-        &args.generation,
-        args.out.as_deref(),
-        overrides,
-        mode,
-    )
-    .context("joining school addresses")?;
-
-    println!("school-address-join\t{}", mode.as_str());
+fn print_join_report(report: &census_service::school_address::JoinReport) {
+    println!("school-address-join\t{}", report.mode);
     println!(
         "scanned\t{}\nlinked\t{}\nalready_linked\t{}\nbackfilled\t{}\nwebsites\t{}\nreview\t{}\nno_match\t{}\nrefused\t{}\nevidence_missing\t{}\nmissing_state\t{}",
         report.counters.scanned,
@@ -94,5 +71,29 @@ pub(super) fn run(cli: &Cli, args: &SchoolAddressJoinArgs) -> Result<()> {
     );
     println!("report\t{}", report.report);
     println!("outcomes\t{}", report.outcomes);
+}
+
+pub(super) fn run(cli: &Cli, args: &SchoolAddressJoinArgs) -> Result<()> {
+    let root = cli
+        .store
+        .as_deref()
+        .context("school-address-join requires an explicit --store and a stopped store owner")?;
+    let store = Store::open(root).context("opening the school-address store")?;
+    let overrides = Overrides::from_cli_pairs(&args.evidence_urls, &args.evidence_dates)?;
+    let mode = if args.apply {
+        Mode::Apply
+    } else {
+        Mode::DryRun
+    };
+    let report = join_generation(
+        &store,
+        &args.generation,
+        args.out.as_deref(),
+        overrides,
+        mode,
+    )
+    .context("joining school addresses")?;
+
+    print_join_report(&report);
     Ok(())
 }

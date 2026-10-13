@@ -1,11 +1,10 @@
 mod capture;
 
-use capture::{hex, io, load, preserve, refused, MAX_CAPTURE_BYTES};
+use capture::{hex, io, load, preserve, publish, refused, MAX_CAPTURE_BYTES};
 use std::path::{Path, PathBuf};
 
 use census_store::Store;
 use serde::Deserialize;
-use std::collections::BTreeSet;
 
 use super::{JoinError, JoinReport, Overrides, Report, SchoolAddressArgs};
 
@@ -74,8 +73,12 @@ impl Format {
 
     fn add(self, args: &mut SchoolAddressArgs, path: PathBuf) -> Result<(), ReplayError> {
         match self {
-            Self::NcesCcd if args.ccd.is_none() => args.ccd = Some(path),
-            Self::NcesPss if args.pss.is_none() => args.pss = Some(path),
+            Self::NcesCcd if args.ccd.is_none() || args.ccd.as_deref() == Some(path.as_path()) => {
+                args.ccd = Some(path)
+            }
+            Self::NcesPss if args.pss.is_none() || args.pss.as_deref() == Some(path.as_path()) => {
+                args.pss = Some(path)
+            }
             Self::StateEdIndex => args.state_ed_index.push(path),
             Self::StateEdProfile => args.state_ed_profile.push(path),
             Self::StateEdTabular => args.state_ed_tabular.push(path),
@@ -112,6 +115,18 @@ impl Replay {
     }
 }
 
+fn ensure_contained(out: &Path, archive: &Path) -> Result<(), ReplayError> {
+    let root = std::fs::canonicalize(out).map_err(|source| io(out, source))?;
+    let directory = std::fs::canonicalize(archive).map_err(|source| io(archive, source))?;
+    if !directory.starts_with(&root) {
+        return Err(refused(
+            archive,
+            "retained capture directory escapes the output root",
+        ));
+    }
+    Ok(())
+}
+
 pub fn run(manifest_path: &Path, out: &Path) -> Result<Replay, ReplayError> {
     let bytes = load(manifest_path, MAX_MANIFEST_BYTES)?;
     let manifest: Manifest = serde_json::from_slice(&bytes)?;
@@ -125,23 +140,33 @@ pub fn run(manifest_path: &Path, out: &Path) -> Result<Replay, ReplayError> {
         ));
     }
     let mut args = arguments(out, manifest.month);
-    let mut overrides = Overrides::default();
-    let mut seen = BTreeSet::new();
+    let mut acquisitions = Vec::new();
+    let mut seen: std::collections::BTreeMap<PathBuf, (String, Option<String>)> =
+        std::collections::BTreeMap::new();
     let base = manifest_path
         .parent()
         .ok_or_else(|| refused(manifest_path, "no manifest parent"))?;
     let archive = out.join("captures").join(hex(&bytes));
     std::fs::create_dir_all(&archive).map_err(|source| io(&archive, source))?;
+    ensure_contained(out, &archive)?;
     preserve(&archive.join("manifest.json"), &bytes)?;
-    manifest.captures.iter().try_for_each(|capture| {
+
+    for (i, capture) in manifest.captures.iter().enumerate() {
         let path = base.join(&capture.path);
-        let canonical = std::fs::canonicalize(&path).map_err(|source| io(&path, source))?;
-        if !seen.insert(canonical) {
-            return Err(refused(&path, "capture is listed more than once"));
-        }
-        stage_capture(capture, &path, &archive, &mut args, &mut overrides)
-    })?;
-    let overrides = overrides.validated()?;
+        retain_acquisition_provenance(&mut seen, &path, capture)?;
+        let entry =
+            u32::try_from(i).map_err(|_| refused(&path, "too many captures for u32 index"))?;
+        stage_capture(
+            capture,
+            &path,
+            &archive,
+            entry,
+            &mut args,
+            &mut acquisitions,
+        )?;
+    }
+
+    let overrides = Overrides::from_acquisitions(acquisitions)?;
     super::run(&args)?;
     let generation = super::verify_current(out).map_err(JoinError::from)?;
     let report: Report = serde_json::from_slice(
@@ -150,7 +175,7 @@ pub fn run(manifest_path: &Path, out: &Path) -> Result<Replay, ReplayError> {
             .map_err(JoinError::from)?,
     )?;
     let evidence = serde_json::to_vec_pretty(&overrides)?;
-    capture::publish(&out.join("replay-evidence.json"), &evidence)?;
+    publish(&out.join("replay-evidence.json"), &evidence)?;
     Ok(Replay {
         generation: out.to_path_buf(),
         digest: report.manifest_digest,
@@ -159,12 +184,43 @@ pub fn run(manifest_path: &Path, out: &Path) -> Result<Replay, ReplayError> {
     })
 }
 
+fn retain_acquisition_provenance(
+    seen: &mut std::collections::BTreeMap<PathBuf, (String, Option<String>)>,
+    path: &Path,
+    capture: &Capture,
+) -> Result<(), ReplayError> {
+    let canonical = std::fs::canonicalize(path).map_err(|source| io(path, source))?;
+    let tuple = (capture.url.clone(), capture.retrieved_at.clone());
+    match seen.get(&canonical) {
+        Some(existing) if *existing != tuple => {
+            let differs = match (existing.0 != tuple.0, existing.1 != tuple.1) {
+                (true, true) => "url and date",
+                (true, false) => "url",
+                (false, true) => "date",
+                (false, false) => "provenance",
+            };
+            return Err(refused(
+                path,
+                &format!(
+                    "capture acquisition conflict: different provenance tuples for the same body ({differs} differ)"
+                ),
+            ));
+        }
+        Some(_) => {}
+        None => {
+            seen.insert(canonical, tuple);
+        }
+    }
+    Ok(())
+}
+
 fn stage_capture(
     capture: &Capture,
     path: &Path,
     archive: &Path,
+    entry: u32,
     args: &mut SchoolAddressArgs,
-    overrides: &mut Overrides,
+    acquisitions: &mut Vec<super::Acquisition>,
 ) -> Result<(), ReplayError> {
     let bytes = load(path, MAX_CAPTURE_BYTES)?;
     let digest = hex(&bytes);
@@ -178,17 +234,18 @@ fn stage_capture(
         ));
     }
     let staged = archive.join(digest);
-    let selector = format!("{}@{}", capture.format.provider(), staged.display());
-    let mut evidence = Overrides::default();
-    evidence.urls.insert(selector.clone(), capture.url.clone());
-    if let Some(date) = &capture.retrieved_at {
-        evidence.dates.insert(selector.clone(), date.clone());
-    }
-    let evidence = evidence.validated()?;
+    let provider = capture.format.provider();
+
+    acquisitions.push(super::Acquisition {
+        entry,
+        provider: provider.to_string(),
+        path: staged.display().to_string(),
+        url: capture.url.clone(),
+        retrieved_at: capture.retrieved_at.clone(),
+    });
+
     preserve(&staged, &bytes)?;
     capture.format.add(args, staged)?;
-    overrides.urls.extend(evidence.urls);
-    overrides.dates.extend(evidence.dates);
     Ok(())
 }
 

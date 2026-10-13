@@ -1,9 +1,9 @@
 use super::state::Stats;
 use crate::tfrrs::parse::{
-    clock_seconds, feet_inches_metres, metric_metres, ParsedMark, ParsedMeet, ParsedRow,
-    ParsedSection, PublishedDate, YearToken,
+    clock_seconds, converted_from, feet_inches_metres, is_track_size_conversion, metric_metres,
+    ParsedMark, ParsedMeet, ParsedRow, ParsedSection, PublishedDate, YearToken,
 };
-use census_domain::model::{CentiMetres, Grade, Mark};
+use census_domain::model::{Adjustment, CentiMetres, Grade, Mark};
 
 pub(super) fn grade_for(
     row: &ParsedRow,
@@ -36,6 +36,33 @@ fn published_grade(
             None
         }
     }
+}
+
+pub(super) fn mark_with_adjustment(
+    mark: &ParsedMark,
+    conv_metres: Option<f64>,
+    conv_note: Option<&str>,
+) -> Option<(Mark, Option<Adjustment>)> {
+    let published = mark_of(mark, conv_metres);
+    if published == Mark::Raw("-".to_string())
+        || matches!(&published, Mark::Raw(token) if token.is_empty())
+    {
+        return None;
+    }
+    let adjustment = conv_note
+        .filter(|note| is_track_size_conversion(note))
+        .map(|note| {
+            let original = converted_from(note)
+                .map(|converted| mark_of(&converted, None))
+                .filter(|original| original != &published);
+            Adjustment::track_size_conversion(
+                original,
+                published.clone(),
+                Some(note.to_string()),
+                None,
+            )
+        });
+    Some((published, adjustment))
 }
 
 pub fn mark_of(mark: &ParsedMark, conv_metres: Option<f64>) -> Mark {

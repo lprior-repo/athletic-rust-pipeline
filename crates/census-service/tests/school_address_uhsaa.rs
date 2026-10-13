@@ -8,7 +8,6 @@ use census_domain::school_directory::SchoolDirectoryEntry;
 use census_service::school_address::{self, join_generation, Mode, Overrides, SchoolAddressArgs};
 use census_store::{Store, Table};
 use sha2::{Digest, Sha256};
-use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -79,16 +78,13 @@ fn school_address_uhsaa_retained_readback_preserves_postal_and_withholds_unseaso
         &store,
         &corpus,
         None,
-        Overrides {
-            urls: BTreeMap::from([(
-                "association:uhsaa".to_string(),
-                "https://uhsaa.org/school-directory-new/".to_string(),
-            )]),
-            dates: BTreeMap::from([(
-                "association:uhsaa".to_string(),
-                REPLAYED_CAPTURE_TIME.to_string(),
-            )]),
-        },
+        Overrides::from_acquisitions(vec![census_service::school_address::Acquisition {
+            entry: 0,
+            provider: "association:uhsaa".to_string(),
+            path: String::new(),
+            url: "https://uhsaa.org/school-directory-new/".to_string(),
+            retrieved_at: Some(REPLAYED_CAPTURE_TIME.to_string()),
+        }])?,
         Mode::Apply,
     )?;
     check!(eq; report.counters.scanned, 1);

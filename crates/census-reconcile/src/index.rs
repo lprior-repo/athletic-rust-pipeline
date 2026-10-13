@@ -1,7 +1,7 @@
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, CanonicalTeam,
-    CollectionSnapshot, NaturalKey, RetainedConflict, ReviewCase, ReviewState, SourceEntityKind,
-    SourceIdentity, SourceObjectIdentity,
+    CollectionSnapshot, NaturalKey, RetainedConflict, ReviewCase, SourceEntityKind, SourceIdentity,
+    SourceObjectIdentity,
 };
 use std::collections::HashMap;
 
@@ -10,6 +10,7 @@ use census_store::{Entity, Store, StoreSnapshot, Table};
 
 mod apply;
 mod coverage;
+mod supersession;
 
 #[cfg(test)]
 mod application_tests;
@@ -41,7 +42,7 @@ impl IndexReport {
     }
 }
 
-const STAGE_RECEIPT: &str = "index-stage";
+const STAGE_RECEIPT: &str = "index-stage:v2";
 
 const STAGE_OUTPUTS: [Table; 6] = [
     Table::SourceIdentities,
@@ -79,20 +80,6 @@ fn carried(stored: &HashMap<String, ReviewCase>, minted: ReviewCase) -> ReviewCa
     }
 }
 
-fn superseded(stored: &HashMap<String, ReviewCase>, current: &[ReviewCase]) -> Vec<ReviewCase> {
-    let live: std::collections::HashSet<&str> =
-        current.iter().map(|case| case.id.as_str()).collect();
-    stored
-        .values()
-        .filter(|case| case.state == ReviewState::Pending && !live.contains(case.id.as_str()))
-        .cloned()
-        .map(|mut case| {
-            case.state = ReviewState::Superseded;
-            case
-        })
-        .collect()
-}
-
 pub fn derive(
     store: &Store,
     phase: &str,
@@ -101,8 +88,7 @@ pub fn derive(
 ) -> ReportResult<IndexReport> {
     let identity_applications = apply::apply_decisions(store, finished_at)?;
     let mut stage = store.stage_derived()?;
-    let digest = stage_digest(stage.view())?;
-    let operation = format!("{STAGE_RECEIPT}:{digest}");
+    let base = stage_digest(stage.view())?;
     let dataset = census_report::export::ExportDataset::from_snapshot(store, stage.view())?;
     let pass = canonical_pass(&dataset);
     let retained = census_report::workbook::retained_records(&dataset, school_year)?;
@@ -125,7 +111,10 @@ pub fn derive(
             carried(&stored, minted)
         })
         .collect();
-    let closed = superseded(&stored, &reviews);
+    let (closed, provenance) = supersession::plan(stage.view(), &stored, &reviews, finished_at)?;
+    let digest =
+        supersession::publication_digest(stage.view(), &stored, &base, &provenance, school_year)?;
+    let operation = format!("{STAGE_RECEIPT}:{digest}");
     let snapshot = snapshot_row(stage.view(), phase, finished_at)?;
 
     for table in STAGE_OUTPUTS {
@@ -135,11 +124,11 @@ pub fn derive(
     }
     stage.replace_many(Table::SourceIdentities, &pass.identities)?;
     stage.replace_many(Table::Conflicts, &conflicts)?;
-    stage.replace_many(Table::ReviewCases, &closed)?;
-    stage.replace_many(Table::ReviewCases, &reviews)?;
+    supersession::stage_findings(&mut stage, &closed, &reviews, provenance)?;
     stage.replace_many(Table::Coverage, &coverage)?;
     stage.replace_many(Table::Snapshots, &[snapshot])?;
-    stage.publish(&operation, &digest)?;
+
+    let publication = stage.publish(&operation, &digest)?;
 
     Ok(IndexReport {
         source_identities: pass.identities.len(),
@@ -147,7 +136,11 @@ pub fn derive(
         reviews: reviews.len(),
         coverage: coverage.len(),
         snapshots: 1,
-        superseded: closed.len(),
+        superseded: if publication.application.written() {
+            closed.len()
+        } else {
+            0
+        },
         identity_applications,
     })
 }

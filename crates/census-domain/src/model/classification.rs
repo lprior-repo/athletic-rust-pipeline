@@ -28,6 +28,10 @@ impl Gender {
     }
 }
 
+pub fn genders_compatible(a: Gender, b: Gender) -> bool {
+    !(a == Gender::Boys && b == Gender::Girls) && !(a == Gender::Girls && b == Gender::Boys)
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Sport {

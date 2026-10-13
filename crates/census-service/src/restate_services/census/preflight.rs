@@ -6,7 +6,7 @@ use super::Census;
 use crate::restate_services::school_address_join::SchoolAddressJoin;
 use crate::restate_services::wire::SchoolAddressJoinRequest;
 use crate::restate_services::{blocking, job_error};
-use crate::school_address::{preflight_generation, Overrides};
+use crate::school_address::preflight_generation;
 
 impl Census {
     pub(super) async fn preflight_addresses(
@@ -18,10 +18,7 @@ impl Census {
             SchoolAddressJoin::generation_path(self.store.root(), request.generation.as_deref());
         let region = Arc::clone(self.jobs.region());
         let permit = self.jobs.permit_control().await?;
-        let overrides = Overrides {
-            urls: request.urls,
-            dates: request.dates,
-        };
+        let overrides = request.overrides;
         Ok(ctx
             .run(move || async move {
                 blocking(region, move || {

@@ -20,7 +20,8 @@ mod support;
 
 pub(crate) use generation::join_generation_pinned;
 pub use generation::{join_generation, preflight_generation};
-pub use lanes::{build_lane_evidence, parse_source_pairs, Overrides};
+pub(crate) use lanes::input::{EvidenceField, EvidenceFields};
+pub use lanes::{build_lane_evidence, parse_source_pairs, Acquisition, Overrides};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]

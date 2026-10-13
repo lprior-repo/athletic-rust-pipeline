@@ -92,6 +92,7 @@ fn performance(store: &Store, athlete: &AthleteId, team: &TeamId) -> TestResult 
         meet: meet_id,
         date: RESULT_DATE.to_string(),
         mark: Mark::TimeSeconds(ExactSeconds::parse("48.55")?),
+        adjustment: None,
         wind_mps: None,
         place: Some(1),
         heat: None,

@@ -150,3 +150,48 @@ fn unsupported_inference_survives_the_model_packet() -> TestResult {
         .contains("https://fixture.example/unsupported-grade"));
     Ok(())
 }
+
+#[test]
+fn girls_unknown_pair_carries_no_gender_differs_flag() -> TestResult {
+    let girls = athlete("Jordan Smith", Gender::Girls, GradYear::CO2027);
+    let unknown = athlete("Jordan Smith", Gender::Unknown, GradYear::CO2027);
+    let kinds: Vec<FlagKind> = flags(&girls, &unknown)
+        .into_iter()
+        .map(|flag| flag.kind)
+        .collect();
+    check!(
+        !kinds.contains(&FlagKind::GenderDiffers),
+        "girls vs unknown is compatible and should not flag gender_differs"
+    );
+    Ok(())
+}
+
+#[test]
+fn boys_girls_pair_carries_gender_differs_flag() -> TestResult {
+    let boys = athlete("Jordan Smith", Gender::Boys, GradYear::CO2027);
+    let girls = athlete("Jordan Smith", Gender::Girls, GradYear::CO2027);
+    let kinds: Vec<FlagKind> = flags(&boys, &girls)
+        .into_iter()
+        .map(|flag| flag.kind)
+        .collect();
+    check!(
+        kinds.contains(&FlagKind::GenderDiffers),
+        "boys vs girls must flag gender_differs"
+    );
+    Ok(())
+}
+
+#[test]
+fn boys_unknown_pair_carries_no_gender_differs_flag() -> TestResult {
+    let boys = athlete("Jordan Smith", Gender::Boys, GradYear::CO2027);
+    let unknown = athlete("Jordan Smith", Gender::Unknown, GradYear::CO2027);
+    let kinds: Vec<FlagKind> = flags(&boys, &unknown)
+        .into_iter()
+        .map(|flag| flag.kind)
+        .collect();
+    check!(
+        !kinds.contains(&FlagKind::GenderDiffers),
+        "boys vs unknown is compatible and should not flag gender_differs"
+    );
+    Ok(())
+}

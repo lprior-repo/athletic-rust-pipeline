@@ -13,7 +13,6 @@ use super::report::{failure_exit, print_jurisdiction, print_national};
 use super::{named_season, JurisdictionArgs, NationalArgs, NationalReportArgs};
 use crate::cli::Cli;
 use census_service::ingress;
-use census_service::school_address::{parse_source_pairs, Overrides};
 
 mod resume;
 
@@ -66,15 +65,13 @@ fn school_address_request(args: &NationalArgs) -> Result<Option<SchoolAddressJoi
     {
         return Ok(None);
     }
-    let overrides = Overrides {
-        urls: parse_source_pairs(&args.evidence_urls)?,
-        dates: parse_source_pairs(&args.evidence_dates)?,
-    }
-    .validated()?;
+    let overrides = census_service::school_address::Overrides::from_cli_pairs(
+        &args.evidence_urls,
+        &args.evidence_dates,
+    )?;
     Ok(Some(SchoolAddressJoinRequest {
         generation: args.school_directory.clone(),
-        urls: overrides.urls,
-        dates: overrides.dates,
+        overrides,
         expected_digest: None,
     }))
 }

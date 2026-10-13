@@ -1,6 +1,6 @@
 use census_domain::model::{CourseMeasurement, DistanceUnit};
 
-use super::{ComparisonPolicy, SharedSelection};
+use super::SharedSelection;
 
 pub(crate) fn cross_country(pr: &SharedSelection) -> Option<String> {
     let context = pr.source.specification.cross_country.as_ref()?;
@@ -12,7 +12,7 @@ pub(crate) fn cross_country(pr: &SharedSelection) -> Option<String> {
     let course = context.course.as_ref();
     Some(format!(
         "comparison {}, comparison course {}, distance {}.{:03} {}, course {:?}@{:?}, measurement {}, conditions {:?}",
-        policy(pr.key.comparison), comparison_course(pr),
+        pr.key.comparison.label(), comparison_course(pr),
         distance.div_euclid(1000), distance.rem_euclid(1000), unit,
         course.map_or("unknown", |course| course.id()),
         course.map_or("unknown", |course| course.version()),
@@ -31,14 +31,6 @@ fn comparison_course(pr: &SharedSelection) -> String {
     {
         Some(course) => format!("{:?}@{:?}", course.id(), course.version()),
         None => "any".into(),
-    }
-}
-
-fn policy(policy: ComparisonPolicy) -> &'static str {
-    match policy {
-        ComparisonPolicy::Standard => "standard",
-        ComparisonPolicy::ObservedFastest => "observed_fastest",
-        ComparisonPolicy::SameCourse => "same_course",
     }
 }
 

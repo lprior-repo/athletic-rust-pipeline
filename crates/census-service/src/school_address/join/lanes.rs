@@ -1,13 +1,20 @@
-use std::collections::BTreeMap;
-
-use serde::{Deserialize, Serialize};
+use std::collections::{BTreeMap, BTreeSet};
+use std::path::{Path, PathBuf};
 
 use super::{JoinError, LaneEvidence, LaneSet};
-use crate::school_address::Report;
+use crate::school_address::{LaneReport, Report};
+
+pub(super) mod input;
+mod legacy;
+
+use input::EvidenceInput;
+pub use input::{parse_source_pairs, Acquisition, Overrides};
 
 const PROVIDERS: [&str; 3] = ["nces-ccd", "nces-pss", "state-ed"];
 pub(super) const ASSOCIATION_PREFIX: &str = "association:";
 pub(super) const STATE_ED: &str = "state-ed";
+
+type LaneMatches = (BTreeMap<String, Vec<LaneEvidence>>, BTreeSet<u32>);
 
 fn admitted_provider(source: &str) -> bool {
     PROVIDERS.contains(&source)
@@ -16,151 +23,118 @@ fn admitted_provider(source: &str) -> bool {
             .is_some_and(|slug| !slug.is_empty() && slug.len() <= 64)
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct Overrides {
-    #[serde(default)]
-    pub urls: BTreeMap<String, String>,
-    #[serde(default)]
-    pub dates: BTreeMap<String, String>,
-}
-
-impl Overrides {
-    pub fn validated(self) -> Result<Self, JoinError> {
-        for (source, url) in &self.urls {
-            require_provider(source)?;
-            match url::Url::parse(url) {
-                Ok(parsed) if matches!(parsed.scheme(), "http" | "https") => {}
-                Ok(_) => {
-                    return Err(JoinError::EvidenceValue {
-                        kind: "url",
-                        pair: format!("{source}={url}"),
-                        detail: "url scheme must be http or https".to_string(),
-                    });
-                }
-                Err(error) => {
-                    return Err(JoinError::EvidenceValue {
-                        kind: "url",
-                        pair: format!("{source}={url}"),
-                        detail: error.to_string(),
-                    });
-                }
-            }
-        }
-        for (source, date) in &self.dates {
-            require_provider(source)?;
-            validate_date(source, date)?;
-        }
-        Ok(self)
-    }
-}
-
-pub fn parse_source_pairs(values: &[String]) -> Result<BTreeMap<String, String>, JoinError> {
-    let mut pairs = BTreeMap::new();
-    for value in values {
-        let Some((source, target)) = value.split_once('=') else {
-            return Err(JoinError::EvidencePair {
-                pair: value.clone(),
-            });
-        };
-        if source.is_empty() || target.is_empty() {
-            return Err(JoinError::EvidencePair {
-                pair: value.clone(),
-            });
-        }
-        pairs.insert(source.to_string(), target.to_string());
-    }
-    Ok(pairs)
-}
-
-fn require_provider(source: &str) -> Result<(), JoinError> {
-    let provider = source
-        .split_once('@')
-        .map_or(source, |(provider, _)| provider);
-    if admitted_provider(provider) {
-        return Ok(());
-    }
-    Err(JoinError::EvidenceSource {
-        provider: source.to_string(),
-    })
-}
-
-fn validate_date(source: &str, value: &str) -> Result<(), JoinError> {
-    let trimmed = value.trim();
-    let valid = if trimmed.len() == 10 {
-        chrono::NaiveDate::parse_from_str(trimmed, "%Y-%m-%d").is_ok()
-    } else {
-        chrono::DateTime::parse_from_rfc3339(trimmed).is_ok()
-    };
-    if valid {
-        return Ok(());
-    }
-    Err(JoinError::EvidenceValue {
-        kind: "date",
-        pair: format!("{source}={value}"),
-        detail: "expected a YYYY-MM-DD date or RFC3339 timestamp".to_string(),
-    })
-}
-
 pub fn build_lane_evidence(report: &Report, overrides: &Overrides) -> Result<LaneSet, JoinError> {
+    let by_provider = match &overrides.input {
+        EvidenceInput::Acquisitions(values) => acquisition_evidence(report, values)?,
+        EvidenceInput::LegacySourcePairs(values) => legacy::build(report, values)?,
+    };
+    Ok(LaneSet::of(by_provider))
+}
+
+fn acquisition_evidence(
+    report: &Report,
+    acquisitions: &[Acquisition],
+) -> Result<BTreeMap<String, Vec<LaneEvidence>>, JoinError> {
+    let (by_provider, matched_entries) = match_acquisitions_to_lanes(report, acquisitions);
+    for acquisition in acquisitions {
+        if !matched_entries.contains(&acquisition.entry) {
+            return Err(JoinError::EvidenceValue {
+                kind: "url",
+                pair: format!("{}@{}", acquisition.provider, acquisition.path),
+                detail: "acquisition matched no generation lane".to_string(),
+            });
+        }
+    }
+    Ok(by_provider)
+}
+
+fn match_acquisitions_to_lanes(report: &Report, acquisitions: &[Acquisition]) -> LaneMatches {
     let mut by_provider: BTreeMap<String, Vec<LaneEvidence>> = BTreeMap::new();
-    let mut selected: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+    let mut matched_entries = BTreeSet::new();
     for lane in &report.lanes {
         if !admitted_provider(&lane.source) {
             continue;
         }
-        let selector = capture_selector(&lane.source, &lane.path);
-        let lanes = by_provider.entry(lane.source.clone()).or_default();
-        if lanes.iter().any(|existing| existing.path == lane.path) {
-            continue;
-        }
-        if overrides.urls.contains_key(&selector) {
-            selected.insert(selector.clone());
-        }
-        if overrides.dates.contains_key(&selector) {
-            selected.insert(selector.clone());
-        }
-        lanes.push(LaneEvidence {
-            url: overrides
-                .urls
-                .get(&selector)
-                .or_else(|| overrides.urls.get(&lane.source))
-                .cloned(),
-            observed_on: overrides
-                .dates
-                .get(&selector)
-                .or_else(|| overrides.dates.get(&lane.source))
-                .cloned(),
-            path: lane.path.clone(),
-            capture_sha256: lane.sha256.clone(),
-            generation: report.manifest_digest.clone(),
-            captured: lane.captured.clone(),
-        });
-    }
-    for (kind, keys) in [
-        ("url", overrides.urls.keys()),
-        ("date", overrides.dates.keys()),
-    ] {
-        for key in keys {
-            if is_capture_selector(key) && !selected.contains(key) {
-                return Err(JoinError::EvidenceValue {
-                    kind,
-                    pair: key.clone(),
-                    detail: format!(
-                        "no capture in this generation matches {key:?}; name a capture as \
-                         <provider>@<path>, copying the path from the lane list"
-                    ),
-                });
+        let mut matched = false;
+        for acquisition in acquisitions {
+            if !matches_lane(acquisition, lane) {
+                continue;
             }
+            matched = true;
+            matched_entries.insert(acquisition.entry);
+            retain_lane(
+                by_provider.entry(lane.source.clone()).or_default(),
+                lane_evidence(
+                    report,
+                    lane,
+                    Some(acquisition.url.clone()),
+                    acquisition.retrieved_at.clone(),
+                ),
+            );
+        }
+        if !matched {
+            retain_lane(
+                by_provider.entry(lane.source.clone()).or_default(),
+                lane_evidence(report, lane, None, None),
+            );
         }
     }
-    Ok(LaneSet::of(by_provider))
+    (by_provider, matched_entries)
 }
 
-fn capture_selector(provider: &str, path: &str) -> String {
-    format!("{provider}@{path}")
+fn matches_lane(acquisition: &Acquisition, lane: &LaneReport) -> bool {
+    if acquisition.provider != lane.source {
+        return false;
+    }
+    if acquisition.path.is_empty() {
+        return true;
+    }
+    let prefix = format!("{}@", lane.source);
+    let acquisition_path = acquisition
+        .path
+        .strip_prefix(&prefix)
+        .map_or(acquisition.path.as_str(), core::convert::identity);
+    canonical_or_literal(acquisition_path) == canonical_or_literal(&lane.path)
 }
 
-fn is_capture_selector(key: &str) -> bool {
-    key.split_once('@')
-        .is_some_and(|(provider, path)| !provider.is_empty() && !path.is_empty())
+fn canonical_or_literal(value: &str) -> PathBuf {
+    match std::fs::canonicalize(Path::new(value)) {
+        Ok(path) => path,
+        Err(_) => PathBuf::from(value),
+    }
+}
+
+fn lane_evidence(
+    report: &Report,
+    lane: &LaneReport,
+    url: Option<String>,
+    observed_on: Option<String>,
+) -> LaneEvidence {
+    LaneEvidence {
+        url,
+        observed_on,
+        path: lane.path.clone(),
+        capture_sha256: lane.sha256.clone(),
+        generation: report.manifest_digest.clone(),
+        captured: lane.captured.clone(),
+    }
+}
+
+fn retain_lane(lanes: &mut Vec<LaneEvidence>, mut evidence: LaneEvidence) {
+    evidence.captured.sort();
+    if !lanes
+        .iter()
+        .any(|existing| identical_lane(existing, &evidence))
+    {
+        lanes.push(evidence);
+    }
+}
+
+fn identical_lane(left: &LaneEvidence, right: &LaneEvidence) -> bool {
+    left.url == right.url
+        && left.observed_on == right.observed_on
+        && left.path == right.path
+        && left.capture_sha256 == right.capture_sha256
+        && left.generation == right.generation
+        && left.captured == right.captured
 }

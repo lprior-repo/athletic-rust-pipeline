@@ -5,6 +5,7 @@ use std::borrow::Cow;
 use std::fmt;
 use std::marker::PhantomData;
 
+mod adjustment;
 mod athlete;
 mod canonical_json;
 mod classification;
@@ -52,11 +53,12 @@ mod school;
 mod school_address;
 mod school_contact;
 
+pub use adjustment::{Adjustment, AdjustmentBasis, AdjustmentKind};
 pub use athlete::{AthleteCandidateKey, CanonicalAthlete};
 pub use canonical_json::{
     serialized_bytes, serialized_digest, write_serialized, CanonicalJsonError,
 };
-pub use classification::{CanonicalTeam, CompetitionLevel, Gender, Sport};
+pub use classification::{genders_compatible, CanonicalTeam, CompetitionLevel, Gender, Sport};
 pub use coach::{CanonicalCoach, CoachRole};
 pub use coach_lane::{
     CoachLaneAcceptance, CoachLaneError, CoachLaneEvidence, CoachLaneMailbox, CoachLaneMatrix,

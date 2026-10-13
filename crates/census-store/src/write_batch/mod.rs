@@ -6,6 +6,8 @@ mod commit;
 mod conditional;
 mod journal;
 
+pub(crate) use journal::encode_publication_entry;
+
 use super::Store;
 use super::Table;
 pub use budget::{

@@ -26,6 +26,12 @@ pub struct SelectionResult {
     pub place: Option<u16>,
     pub wind_mps: Option<f64>,
     pub timing: Option<TimingMethod>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub original_mark: Option<Mark>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub adjustment_kind: Option<census_domain::model::AdjustmentKind>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub adjustment_basis: Option<census_domain::model::AdjustmentBasis>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]

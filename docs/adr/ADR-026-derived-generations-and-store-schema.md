@@ -120,3 +120,30 @@ and both generations, the `store-migrate` verb, and error classification treatin
 publication or a moved-evidence decision as retriable). Dated command evidence is in
 the verification ledger (removed 2026-10-09); the fault matrix remains owned by
 [NATIONAL-CENSUS-FAULTS.md](../NATIONAL-CENSUS-FAULTS.md).
+
+## Integration amendment: retained identity closure and atomic provenance (2026-10-13)
+
+A retained machine-generated identity finding may be superseded only by one current, admissible,
+persisted identity application for the same complete unique member set. A stale `Resolved` label,
+a subset or overlapping cluster, an unapplied verdict, and an explicit verdict on the old finding
+are insufficient authority. Ambiguous successors leave the finding retained. Historical verdicts,
+applications and receipts remain preserved.
+
+The stage owns pending supersession provenance through `journal_done_once`. Encoding is fallible
+and bounded by the existing journal key/value limits; the pending collection admits at most
+25,000 entries and 64 MiB of encoded keys, labels and values. Pending journals are committed in the
+same fenced `SyncData` batch as the derived pointer and receipt. Dropped, refused and repeated
+stages publish no pending journals. An identical pre-existing journal payload is preserved byte for
+byte; a conflicting or oversized existing entry refuses the entire publication. This operation
+introduces no new persisted journal shape and does not change generic journal chunking.
+
+The index receipt namespace is `index-stage:v2`. Its digest binds the existing source-input digest,
+supersession policy, requested school year, persisted identity-application fingerprint and a sorted
+union of planned and validated completed closure witnesses. A completed witness contributes only
+to historical replay identity; it cannot authorize a new closure. Normalizing the original finding
+state and set-valued members makes an immediate replay converge, while a newly arriving obsolete
+finding receives a distinct receipt. Old unversioned receipts remain untouched. Only a written
+publication reports superseded rows; a repeated publication reports zero.
+
+These contracts require deterministic temporary-store regression coverage. They do not certify
+native process-kill recovery, production stores, full release qualification or workload performance.

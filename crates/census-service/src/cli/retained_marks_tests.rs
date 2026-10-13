@@ -63,6 +63,7 @@ fn seed(
         meet,
         date: "2026-04-21".into(),
         mark: Mark::Raw(raw.into()),
+        adjustment: None,
         wind_mps: None,
         place: Some(8),
         heat: Some("2".into()),

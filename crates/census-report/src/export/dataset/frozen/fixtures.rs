@@ -179,6 +179,7 @@ pub(crate) fn seeded_store() -> TestResult<SeededStore> {
         PerformanceResult {
             team: &team.id,
             mark: Mark::DistanceMetres(CentiMetres::new(4572)),
+            adjustment: None,
             wind_mps: None,
             place: Some(1),
         },

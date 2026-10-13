@@ -104,6 +104,7 @@ fn performance(store: &Store, athlete: &CanonicalAthlete) -> TestResult {
         PerformanceResult {
             team: &team,
             mark: Mark::TimeSeconds(ExactSeconds::parse("11.00")?),
+            adjustment: None,
             wind_mps: Some(1.0),
             place: Some(1),
         },

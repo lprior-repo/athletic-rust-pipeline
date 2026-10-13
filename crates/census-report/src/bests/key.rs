@@ -50,6 +50,13 @@ pub enum TimingClass {
     NonTime,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub struct KeyAdjustment {
+    pub kind: census_domain::model::AdjustmentKind,
+    pub basis: census_domain::model::AdjustmentBasis,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize)]
 pub struct PrKey {
     pub athlete_id: census_domain::model::AthleteId,
@@ -61,6 +68,7 @@ pub struct PrKey {
     pub context: Option<EventId>,
     pub specification: EventSpecification,
     pub comparison: ComparisonPolicy,
+    pub adjustment: Option<KeyAdjustment>,
 }
 
 impl PrKey {
@@ -114,6 +122,13 @@ impl PrKey {
             context: contextual.then(|| performance.event.clone()),
             specification: EventSpecification::default(),
             comparison: ComparisonPolicy::Standard,
+            adjustment: performance
+                .adjustment
+                .as_ref()
+                .map(|adjustment| KeyAdjustment {
+                    kind: adjustment.kind,
+                    basis: adjustment.basis,
+                }),
         }
     }
 }

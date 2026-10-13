@@ -601,6 +601,7 @@ fn add_athlete(
             mark: Mark::TimeSeconds(ExactSeconds::parse(
                 &(11.5 + f64::from(u32::try_from(attempt)?) / 10.0).to_string(),
             )?),
+            adjustment: None,
             wind_mps: None,
             place: Some(u16::try_from(attempt + 1)?),
             heat: None,

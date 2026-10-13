@@ -81,6 +81,7 @@ fn frozen_codec_line_pins_ordinal_field_order_and_exact_decimal() -> TestResult 
         PerformanceResult {
             team: &team,
             mark: Mark::TimeSeconds(ExactSeconds::parse("12.34")?),
+            adjustment: None,
             wind_mps: None,
             place: Some(1),
         },

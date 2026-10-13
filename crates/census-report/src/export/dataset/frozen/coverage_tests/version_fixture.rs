@@ -133,7 +133,7 @@ fn change_manifest(manifest: &mut FrozenManifest, case: VersionCase) -> TestResu
             manifest.input_token.logical_schema = 1;
         }
         VersionCase::HistoricalPolicy => {
-            check!(eq; manifest.lineage.policy_revision, 8);
+            check!(eq; manifest.lineage.policy_revision, 12);
             manifest.lineage.policy_revision = 7;
             manifest.input_token.semantic_policy = 7;
         }

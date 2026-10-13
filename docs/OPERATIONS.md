@@ -751,7 +751,7 @@ records it: each lane in `pipeline_report.json` carries the source keys (`captur
 capture holds, and a claim is credited only to the capture holding the matched key. Give each of a
 provider's captures its own URL with `--evidence-url <provider>@<capture path>=<URL>` (the lane's
 path as recorded in the report; `<provider>` alone still applies one URL to every capture of that
-provider, and `--evidence-date` stays provider-wide). A selector naming no capture in the
+provider; dates may likewise be provider-wide or capture-specific). A selector naming no capture in the
 generation is refused before anything is written. A school whose key several captures hold is
 `refused` — the row names every candidate path, and the remedy is one capture per school — and a
 school no capture holds is `evidence_missing`; neither case names a capture that does not carry the
@@ -772,6 +772,18 @@ curl -s -X POST "http://127.0.0.1:<ingress>/SchoolAddressJoin/<key>/run" \
   -H 'content-type: application/json' \
   -d '{"generation":"var/<run>/corpus","urls":{"nces-ccd":"…","nces-pss":"…"},"dates":{"nces-ccd":"YYYY-MM-DD","nces-pss":"YYYY-MM-DD"}}'
 ```
+
+Address ingress accepts either the historical flat `urls`/`dates` maps shown above or a flat
+`acquisitions` array with `entry`, `provider`, `path`, `url`, and optional `retrieved_at` per record.
+Do not combine these shapes, even with empty fields. Historical URL and date selectors resolve
+independently: an exact report-path selector wins over its provider default. Missing values stay
+unknown, and every supplied value is validated. CLI flags use these same map semantics.
+Acquisition records retain their original IDs and order; duplicate IDs are refused. Equal projected
+lane evidence is counted once while the original records remain retained, and conflicting provenance
+still refuses an ambiguous match. Unknown fields, duplicate fields/selectors, null collections and
+unmatched capture selectors are errors. Admission permits at most 256 acquisitions or 256 entries
+per map, with a combined 4 MiB evidence-text ceiling. Original historical requests and artifacts are
+preserved; this boundary migration neither resets workflow identity nor reacquires evidence.
 
 Both lanes write `<store>/out/school-address-join/report.json` (mode, generation path, manifest
 digest, per-lane evidence, and the counters `scanned`, `linked`, `already_linked`, `backfilled`,
@@ -1028,6 +1040,17 @@ combined-event scores. `best-results-*.csv` declares these integer scales in `be
 precision, including trailing zeroes. XLSX `Mark Value` remains a presentation number in seconds,
 with `Unit` equal to `s`; it is never the comparison authority. The JSONL mark retains exact
 nanoseconds and precision even when a floating-point presentation cannot retain all nine digits.
+
+A converted mark stays distinguishable from an actual one. `best_mark` is the mark the source
+published, `original_mark` is the source's own pre-conversion mark when it published one, and
+`adjustment_kind` (`track_size_conversion`) with `adjustment_basis` (`known` or `unknown`) name
+that derivation; a row without a conversion leaves all three empty. A conversion never shares a
+comparison key with an actual performance of the same event, so a converted result cannot occupy
+an actual mark's slot, and `comparison_policy` reports `unqualified_adjustment` for a conversion
+whose basis the source did not state. A stored observation that predates conversion evidence keeps
+its recorded mark and conflicts with a later disagreement instead of being silently rewritten,
+and the pre-conversion mark does not by itself make two otherwise disagreeing reports of one race
+agree.
 
 Bare legacy integers remain centiseconds under their historical schema, never nanoseconds.
 Only an explicit versioned migration may convert them with checked multiplication by

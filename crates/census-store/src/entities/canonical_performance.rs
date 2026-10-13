@@ -33,6 +33,14 @@ impl Entity for CanonicalPerformance {
         {
             self.mark = other.mark;
         }
+        if self.adjustment.is_none()
+            && other
+                .adjustment
+                .as_ref()
+                .is_some_and(|adjustment| adjustment.adjusted_mark == self.mark)
+        {
+            self.adjustment = other.adjustment;
+        }
         if self.wind_mps.is_none() {
             self.wind_mps = other.wind_mps;
         }
@@ -75,7 +83,11 @@ fn performance_conflict(
         || left
             .observed_grade
             .zip(right.observed_grade)
-            .is_some_and(|(left, right)| left != right);
+            .is_some_and(|(left, right)| left != right)
+        || match (&left.adjustment, &right.adjustment) {
+            (Some(left), Some(right)) => left != right,
+            _ => false,
+        };
     if !contradictory {
         return None;
     }

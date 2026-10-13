@@ -6,6 +6,14 @@ use census_domain::{JurisdictionBucket, MeetState};
 impl Candidate<'_> {
     pub(super) fn result(&self) -> SelectionResult {
         let performance = self.performance;
+        let (original_mark, adjustment_kind, adjustment_basis) = match &performance.adjustment {
+            Some(adjustment) => (
+                adjustment.original_mark.clone(),
+                Some(adjustment.kind),
+                Some(adjustment.basis),
+            ),
+            None => (None, None, None),
+        };
         SelectionResult {
             value: self.value,
             normalized: self.measure.normalized_mark(&performance.mark),
@@ -13,6 +21,9 @@ impl Candidate<'_> {
             place: performance.place,
             wind_mps: performance.wind_mps,
             timing: performance.timing,
+            original_mark,
+            adjustment_kind,
+            adjustment_basis,
         }
     }
 

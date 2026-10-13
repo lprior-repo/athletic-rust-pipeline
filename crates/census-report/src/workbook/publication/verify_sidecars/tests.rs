@@ -367,6 +367,7 @@ fn seed_complete(store: &Store) -> TestResult {
         },
         PerformanceResult {
             mark: Mark::TimeSeconds(ExactSeconds::parse("10.50")?),
+            adjustment: None,
             team: &team,
             wind_mps: Some(1.0),
             place: Some(1),

@@ -440,6 +440,7 @@ fn seed_partition_store(store: &Store, fixture: &PartitionFixture) -> TestResult
         meet: meet.id.clone(),
         date: fixture.date.to_string(),
         mark: Mark::TimeSeconds(ExactSeconds::parse(fixture.seconds)?),
+        adjustment: None,
         wind_mps: None,
         place: None,
         heat: None,
