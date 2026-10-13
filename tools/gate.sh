@@ -276,7 +276,7 @@ lane_durability() {
     local plain_bin="$PWD/target/moon-portable/x86_64-unknown-linux-gnu/release/census-serve"
     local vm_host="$PWD/target/moon-build/x86_64-unknown-linux-gnu/release/examples/qualification_native_vm"
     local oracle_bin="$PWD/target/moon-build/x86_64-unknown-linux-gnu/release/examples/receipt-oracle"
-    local vm_captures="$PWD/var/native-vm-captures-sol-20261006.json"
+    local vm_captures="${CENSUS_NATIVE_VM_CAPTURES:-$PWD/var/native-vm-captures-sol-20261006.json}"
     if [ ! -x "$seam_bin" ] || [ ! -x "$vm_host" ]; then
       env -u CI tools/moon-local run pipeline:build -- --release -p census-service \
         --features native-fault-injection --bin census-serve --example qualification_native_vm || return 1

@@ -109,6 +109,31 @@ and its `qualification_native_vm` example when either is missing, builds the
 `S04_V2_BINARY`, `S06_RECEIPT_ORACLE_BINARY`, `CENSUS_NATIVE_VM_HOST` and
 `CENSUS_NATIVE_VM_CAPTURES` for the lane.
 
+## Recording live public captures
+
+The `qualification_native_vm` example ships a `record` mode that performs the two live HTTPS
+acquisitions scenarios 03 and 12 require and writes a manifest-bound capture set. It uses the
+production `census_crawl::net::Fetcher` with `refresh: true`, refuses cache-served or non-200
+outcomes, validates `CollectionDisposition::Complete` on the team index and
+`RosterVerdict::Complete` on the roster, and refuses to overwrite an existing manifest.
+
+```sh
+env -u CI tools/moon-local run pipeline:build -- --release -p census-service \
+  --example qualification_native_vm
+target/moon-build/x86_64-unknown-linux-gnu/release/examples/qualification_native_vm \
+  record \
+  --jurisdiction AL \
+  --team-id 38332 \
+  --out var/native-vm-captures-$(date -u +%Y%m%d).json \
+  --cache var/capture-cache
+```
+
+The command prints the absolute manifest path on success. Point `CENSUS_NATIVE_VM_CAPTURES` at
+that manifest for the durability lanes. Use a fresh `--out` path per recording; the recorder
+refuses to overwrite. The `--cache` directory holds the HTTP cache and payload files; one cache
+can serve multiple recording runs as long as each uses a distinct `--out` manifest. The optional
+`--source` label is written into the fetcher's source tracking.
+
 ## Current wrapper map
 
 Static implementation inventory, not observed PASS results. Files are `scenario-NN-<name>.sh` in
