@@ -102,6 +102,7 @@ fn publish(
         limit: None,
         scope: crate::report::Scope::AllSources,
         school_year: census_domain::model::SchoolYear::new(2026).ok_or("invalid fixture season")?,
+        jurisdictions: Vec::new(),
     };
     let published = crate::workbook::build(&store, &options)?;
     let generation = published
@@ -391,6 +392,7 @@ fn workbook_publishes_one_accepted_athlete_with_complete_joined_details() -> Tes
         limit: None,
         scope: crate::report::Scope::AllSources,
         school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
+        jurisdictions: Vec::new(),
     };
     crate::workbook::build(&store, &options)?;
 

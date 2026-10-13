@@ -137,6 +137,7 @@ fn frozen_publication(
         out: None,
         limit: None,
         scope: crate::report::Scope::AllSources,
+        jurisdictions: Vec::new(),
         school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
     };
     let published = crate::workbook::build(&fixture.store, &options)?;

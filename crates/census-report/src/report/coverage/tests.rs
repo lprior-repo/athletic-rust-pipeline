@@ -27,7 +27,7 @@ fn coverage_of(store: &Store, grad_year: Option<i16>) -> TestResult<CoverageRepo
 fn census_of(store: &Store, scope: crate::report::Scope) -> TestResult<crate::report::Census> {
     let dataset = crate::export::ExportDataset::load(store)?;
     Ok(crate::report::build_census(
-        &crate::report::Derivation::of(&dataset, scope, None),
+        &crate::report::Derivation::of(&dataset, scope, None, &[]),
         &store.out_dir(),
     ))
 }

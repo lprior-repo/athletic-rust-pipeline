@@ -11,11 +11,13 @@ impl<'a> Derivation<'a> {
         dataset: &'a ExportDataset,
         scope: Scope,
         grad_year: Option<i16>,
+        jurisdictions: &[census_domain::UsJurisdiction],
     ) -> Self {
         Self {
             dataset,
             scope,
             grad_year,
+            jurisdictions: jurisdictions.to_vec(),
             school_state: school_state_index(dataset.schools.values()),
             schools: dataset.schools.values().cloned().collect(),
             outside_schools: Vec::new(),
@@ -34,19 +36,31 @@ impl<'a> Derivation<'a> {
         }
     }
 
-    pub(super) fn retain_geography(&mut self) {
+    pub(super) fn retain_geography(&mut self, jurisdictions: &[census_domain::UsJurisdiction]) {
         let school_state = &self.school_state;
-        self.outside_schools =
-            exclude_out_of_scope(&mut self.schools, |school| school.state.into());
-        self.outside_meets = exclude_out_of_scope(&mut self.meets, |meet| meet.state.into());
-        self.outside_athletes = exclude_out_of_scope(&mut self.athletes, |athlete| {
-            jurisdiction_of(school_state, athlete.school.as_str())
+        self.outside_schools = exclude_out_of_scope(
+            &mut self.schools,
+            |school| school.state.into(),
+            jurisdictions,
+        );
+        self.outside_meets =
+            exclude_out_of_scope(&mut self.meets, |meet| meet.state.into(), jurisdictions);
+        self.outside_athletes = exclude_out_of_scope(
+            &mut self.athletes,
+            |athlete| jurisdiction_of(school_state, athlete.school.as_str()),
+            jurisdictions,
+        );
+        self.outside_coaches = exclude_out_of_scope(
+            &mut self.coaches,
+            |coach| jurisdiction_of(school_state, coach.school.as_str()),
+            jurisdictions,
+        );
+        self.coach_observations.retain(|coach| {
+            in_run_scope(
+                jurisdiction_of(school_state, coach.school.as_str()),
+                jurisdictions,
+            )
         });
-        self.outside_coaches = exclude_out_of_scope(&mut self.coaches, |coach| {
-            jurisdiction_of(school_state, coach.school.as_str())
-        });
-        self.coach_observations
-            .retain(|coach| in_run_scope(jurisdiction_of(school_state, coach.school.as_str())));
     }
 
     pub(super) fn retain_evidence_scope(&mut self) {

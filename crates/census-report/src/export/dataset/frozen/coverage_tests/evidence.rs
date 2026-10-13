@@ -143,6 +143,7 @@ pub(super) fn interpretation(dataset: &ExportDataset) -> TestResult<Interpretati
                 scope: Scope::AllSources,
                 grad_year: Some(2027),
                 limit: None,
+                jurisdictions: Vec::new(),
             },
         )?,
     })

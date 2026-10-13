@@ -155,7 +155,7 @@ fn sheet_fixture() -> TestResult<(tempfile::TempDir, Store, Vec<CanonicalCoach>,
     store.append(Table::Coaches, &director)?;
 
     let dataset = crate::export::ExportDataset::load(&store)?;
-    let derivation = Derivation::of(&dataset, Scope::AllSources, None);
+    let derivation = Derivation::of(&dataset, Scope::AllSources, None, &[]);
     let observations = derivation.coach_observations().to_vec();
     Ok((dir, store, observations, school_year))
 }
@@ -169,7 +169,7 @@ fn parity_grouping_streams_the_coaches_sheet_as_the_retained_vector_writer() -> 
     check!(eq; bounded.len(), 4, "four owner ids publish four claims");
 
     let dataset = crate::export::ExportDataset::load(&store)?;
-    let derivation = Derivation::of(&dataset, Scope::AllSources, None);
+    let derivation = Derivation::of(&dataset, Scope::AllSources, None, &[]);
     let admission = crate::report::EventAdmission::of(&dataset)?;
     let projection = Recruiting::of(&derivation, school_year, Vec::new(), &admission)?;
 

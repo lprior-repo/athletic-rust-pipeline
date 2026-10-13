@@ -18,7 +18,8 @@ mod sidecars;
 mod stage;
 mod verify_sidecars;
 pub use manifest::{
-    current_workbook, open_publication, verify_published, OpenedPublication, VerifiedPublication,
+    current_workbook, open_publication, open_publication_for_seal, verify_published,
+    OpenedPublication, VerifiedPublication,
 };
 pub use protocol::{PublicationError, RecoveryOutcome};
 pub use recovery::recover_publication;

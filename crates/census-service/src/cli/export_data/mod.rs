@@ -27,8 +27,8 @@ pub(super) struct ExportDataArgs {
 pub(super) fn run_export_data(store: &Store, args: &ExportDataArgs) -> Result<()> {
     let dataset = ExportDataset::load(store)?;
     let school_year = super::contact_school_year(args.school_year)?;
-    let population = Derivation::of(&dataset, Scope::AllSources, None);
-    let recruiting = Derivation::of(&dataset, Scope::AllSources, Some(2027));
+    let population = Derivation::of(&dataset, Scope::AllSources, None, &[]);
+    let recruiting = Derivation::of(&dataset, Scope::AllSources, Some(2027), &[]);
     census_store::fs::create_dir_all_synced(&args.data)
         .with_context(|| format!("creating data dir {}", args.data.display()))?;
     schools::write_canonical_schools(population.schools(), &args.data)?;

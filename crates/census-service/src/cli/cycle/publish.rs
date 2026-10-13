@@ -14,8 +14,9 @@ pub(super) fn publish_scope_with(
     dataset: &ExportDataset,
     store: &Store,
     scope: report::Scope,
+    jurisdictions: &[census_domain::UsJurisdiction],
 ) -> Result<Census> {
-    let derivation = Derivation::of(dataset, scope, None);
+    let derivation = Derivation::of(dataset, scope, None, jurisdictions);
     let census = report::build_census(&derivation, &store.out_dir());
     let (json_path, csv_path) = report::write_census(store, &census, scope)?;
     println!(
@@ -45,6 +46,7 @@ pub(super) fn publish_bests_and_workbook_with(
         out: args.out.clone(),
         limit: args.limit,
         scope,
+        jurisdictions: Vec::new(),
         school_year,
     };
     let path = workbook::build_from(dataset, store, &workbook, censuses)
@@ -56,9 +58,10 @@ pub(super) fn publish_bests_and_workbook_with(
 pub(super) async fn publish_scope_live(
     origin: &str,
     scope: report::Scope,
+    jurisdictions: &[census_domain::UsJurisdiction],
     generation: &ExportGeneration,
 ) -> Result<()> {
-    let summary = live::report(Some(origin), scope, generation).await?;
+    let summary = live::report(Some(origin), scope, jurisdictions, generation).await?;
     println!(
         "report\t{}\tscope={} schools={} athletes={} profile_url={} multisource={}",
         summary.json_path,
@@ -89,6 +92,7 @@ pub(super) async fn publish_bests_and_workbook_live(
         limit: args.limit,
         scope: Some(scope.as_str().to_string()),
         school_year: Some(school_year.get()),
+        jurisdictions: Vec::new(),
     };
     let WorkbookReply { path, .. } = live::workbook(Some(origin), workbook, generation).await?;
     println!("workbook\t{path}");

@@ -56,6 +56,7 @@ pub(super) fn verify(directory: &Path, inputs: &Inputs<'_>) -> ReportResult<()> 
             scope: inputs.options.scope,
             grad_year: inputs.options.grad_year,
             limit: inputs.options.limit,
+            jurisdictions: inputs.options.jurisdictions.clone(),
         },
     )?;
     let cohort = cohort(inputs.options.grad_year);

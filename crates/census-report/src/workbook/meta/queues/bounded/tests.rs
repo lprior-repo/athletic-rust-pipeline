@@ -24,7 +24,7 @@ fn oversized_duplicate_school_review_expansion_is_refused_whole() -> TestResult 
     }
     check!(eq; dataset.schools.len(), 600);
     let year = SchoolYear::new(2026).ok_or("season")?;
-    let result = super::super::retained_records(&dataset, year);
+    let result = super::super::retained_records(&dataset, year, &[]);
     let error = match result {
         Err(ReportError::Grouping(error)) => error,
         Err(other) => return Err(format!("unexpected refusal: {other}").into()),

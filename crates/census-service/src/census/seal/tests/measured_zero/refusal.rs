@@ -216,6 +216,7 @@ fn assert_publication_rejected(fixture: &Fixture, reason: &str) -> TestResult {
         &fixture.store,
         GradYear::CO2027,
         Scope::AllSources,
+        &[],
     )
     .err()
     .ok_or("invalid publication unexpectedly verified")?;

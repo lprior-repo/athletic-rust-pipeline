@@ -22,6 +22,7 @@ fn options() -> TestResult<Options> {
         limit: None,
         scope: Scope::AllSources,
         school_year: SchoolYear::new(2026).ok_or("fixture school year")?,
+        jurisdictions: Vec::new(),
     })
 }
 
@@ -30,12 +31,13 @@ fn best_options() -> bests::Options {
         scope: Scope::AllSources,
         grad_year: Some(2027),
         limit: None,
+        jurisdictions: Vec::new(),
     }
 }
 
 fn publish(fixture: &Fixture, dataset: &ExportDataset) -> TestResult<PathBuf> {
     let options = options()?;
-    let censuses = Censuses::of(dataset, &fixture.store.out_dir());
+    let censuses = Censuses::of(dataset, &fixture.store.out_dir(), &[]);
     Ok(workbook::build_from(
         dataset,
         &fixture.store,

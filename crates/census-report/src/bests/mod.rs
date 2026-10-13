@@ -32,6 +32,7 @@ pub struct Options {
     pub scope: Scope,
     pub grad_year: Option<i16>,
     pub limit: Option<usize>,
+    pub jurisdictions: Vec<census_domain::UsJurisdiction>,
 }
 
 impl Default for Options {
@@ -40,6 +41,7 @@ impl Default for Options {
             scope: Scope::Core,
             grad_year: Some(2027),
             limit: None,
+            jurisdictions: Vec::new(),
         }
     }
 }

@@ -1,5 +1,6 @@
 use crate::bests;
 use crate::report::{io_error, xlsx_error, Census, Derivation, ReportResult, Scope};
+use census_domain::UsJurisdiction;
 use census_store::Store;
 use rust_xlsxwriter::Workbook;
 use std::path::{Path, PathBuf};
@@ -25,6 +26,7 @@ pub struct Options {
     pub out: Option<PathBuf>,
     pub limit: Option<usize>,
     pub scope: Scope,
+    pub jurisdictions: Vec<UsJurisdiction>,
     pub school_year: census_domain::model::SchoolYear,
 }
 
@@ -34,21 +36,33 @@ pub struct Censuses {
 }
 
 impl Censuses {
-    pub fn of(dataset: &crate::export::ExportDataset, out: &Path) -> Self {
+    pub fn of(
+        dataset: &crate::export::ExportDataset,
+        out: &Path,
+        jurisdictions: &[UsJurisdiction],
+    ) -> Self {
         Self {
-            core: scope_census(dataset, Scope::Core, out),
-            all_sources: scope_census(dataset, Scope::AllSources, out),
+            core: scope_census(dataset, Scope::Core, out, jurisdictions),
+            all_sources: scope_census(dataset, Scope::AllSources, out, jurisdictions),
         }
     }
 }
 
-fn scope_census(dataset: &crate::export::ExportDataset, scope: Scope, out: &Path) -> Census {
-    crate::report::build_census(&crate::report::Derivation::of(dataset, scope, None), out)
+fn scope_census(
+    dataset: &crate::export::ExportDataset,
+    scope: Scope,
+    out: &Path,
+    jurisdictions: &[UsJurisdiction],
+) -> Census {
+    crate::report::build_census(
+        &crate::report::Derivation::of(dataset, scope, None, jurisdictions),
+        out,
+    )
 }
 
 pub fn build(store: &Store, options: &Options) -> ReportResult<PathBuf> {
     let dataset = crate::export::ExportDataset::load(store)?;
-    let censuses = Censuses::of(&dataset, &store.out_dir());
+    let censuses = Censuses::of(&dataset, &store.out_dir(), &options.jurisdictions);
     build_from(&dataset, store, options, &censuses)
 }
 
@@ -94,6 +108,7 @@ fn select_bests(
             scope: options.scope,
             grad_year: options.grad_year,
             limit: options.limit,
+            jurisdictions: options.jurisdictions.clone(),
         },
     )?;
     tracing::info!(
@@ -113,12 +128,17 @@ fn render_artifacts(
     admission: &crate::report::EventAdmission<'_>,
 ) -> ReportResult<()> {
     let path = directory.join("workbook.xlsx");
-    let derivation = Derivation::of(dataset, options.scope, options.grad_year);
+    let derivation = Derivation::of(
+        dataset,
+        options.scope,
+        options.grad_year,
+        &options.jurisdictions,
+    );
     let started = Instant::now();
     let recruiting =
         recruiting::Recruiting::of(&derivation, options.school_year, bests, admission)?;
     tracing::info!(ms = millis(started), "workbook build step: recruiting");
-    let population = Derivation::of(dataset, options.scope, None);
+    let population = Derivation::of(dataset, options.scope, None, &options.jurisdictions);
     let views = Views::of(
         censuses,
         &recruiting,

@@ -29,11 +29,11 @@ fn report_bests_and_workbook_chain_over_synthetic_entities() -> TestResult {
 
     let dataset = ExportDataset::load(&store)?;
     let core = report::build_census(
-        &Derivation::of(&dataset, Scope::Core, None),
+        &Derivation::of(&dataset, Scope::Core, None, &[]),
         &store.out_dir(),
     );
     let all_sources = report::build_census(
-        &Derivation::of(&dataset, Scope::AllSources, None),
+        &Derivation::of(&dataset, Scope::AllSources, None, &[]),
         &store.out_dir(),
     );
     assert_census_counts(&core, &all_sources, &corpus)?;
@@ -44,6 +44,7 @@ fn report_bests_and_workbook_chain_over_synthetic_entities() -> TestResult {
             scope: Scope::Core,
             grad_year: Some(2027),
             limit: None,
+            jurisdictions: Vec::new(),
         },
     )?;
     check!(eq; bests.len(),
@@ -61,6 +62,7 @@ fn report_bests_and_workbook_chain_over_synthetic_entities() -> TestResult {
             out: Some(dir.path().join("e2e-census.xlsx")),
             limit: None,
             scope: Scope::Core,
+            jurisdictions: Vec::new(),
             school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
         },
     )?;

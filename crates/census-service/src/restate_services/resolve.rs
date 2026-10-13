@@ -25,6 +25,28 @@ pub(crate) fn resolve_tables(names: &[String]) -> Result<Vec<Table>, TerminalErr
     Ok(tables)
 }
 
+pub(crate) const MAX_REQUEST_JURISDICTIONS: usize = 64;
+
+pub(crate) fn normalize_jurisdictions(
+    requested: &[census_domain::UsJurisdiction],
+) -> Result<Vec<census_domain::UsJurisdiction>, TerminalError> {
+    if requested.len() > MAX_REQUEST_JURISDICTIONS {
+        return Err(TerminalError::new(format!(
+            "jurisdiction list holds {} entries, more than {MAX_REQUEST_JURISDICTIONS}",
+            requested.len()
+        )));
+    }
+    let mut admitted = requested.to_vec();
+    admitted.sort_by_key(|jurisdiction| jurisdiction.code());
+    admitted.dedup();
+    for jurisdiction in &admitted {
+        if let Err(outside) = jurisdiction.require_census_scope() {
+            return Err(TerminalError::new(outside.to_string()));
+        }
+    }
+    Ok(admitted)
+}
+
 pub(crate) fn resolve_scope(name: Option<&str>) -> Result<Scope, TerminalError> {
     match name {
         None | Some("all_sources") => Ok(Scope::AllSources),

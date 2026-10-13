@@ -75,7 +75,7 @@ pub(super) struct Series<'a, 'd> {
 impl Series<'_, '_> {
     fn sheets(&self) -> ReportResult<Vec<Sheet>> {
         let admission = crate::report::EventAdmission::of(self.dataset)?;
-        let cohort = cohort_of(self.dataset, self.scope);
+        let cohort = cohort_of(self.dataset, self.scope, self.population.jurisdictions());
         let names = school_name_index(self.population.schools());
         let conflicts = conflict_families(self.rows, &cohort, &names)?;
         let review = review_families(self.rows, &cohort, &names, &admission)?;
@@ -102,8 +102,9 @@ impl Series<'_, '_> {
 fn expected_sheets(expectations: &Expectations<'_>) -> ReportResult<Vec<Sheet>> {
     let dataset = expectations.dataset;
     let scope = expectations.derivation.scope();
-    let population = Derivation::of(dataset, scope, None);
-    let censuses = Censuses::of(dataset, &census_out(dataset));
+    let jurisdictions = expectations.derivation.jurisdictions();
+    let population = Derivation::of(dataset, scope, None, jurisdictions);
+    let censuses = Censuses::of(dataset, &census_out(dataset), jurisdictions);
     let rows = StoreRows::of(&population, expectations.school_year)?;
     let index = queues::Lookup::of(
         population.schools(),

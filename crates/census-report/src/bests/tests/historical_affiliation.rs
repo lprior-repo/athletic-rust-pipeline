@@ -23,6 +23,7 @@ fn options(scope: Scope) -> Options {
         scope,
         grad_year: Some(2027),
         limit: None,
+        jurisdictions: Vec::new(),
     }
 }
 

@@ -270,7 +270,7 @@ async fn st7m_durable_cross_source_identity_publishes_one_athlete_with_both_keys
     let rows = fixtures::seed(&store)?;
     drive(Arc::clone(&store)).await?;
     let dataset = ExportDataset::load(&store)?;
-    let derivation = Derivation::of(&dataset, Scope::AllSources, Some(2027));
+    let derivation = Derivation::of(&dataset, Scope::AllSources, Some(2027), &[]);
     check!(eq; derivation.athletes().len(), 1);
     let athlete = derivation
         .athletes()

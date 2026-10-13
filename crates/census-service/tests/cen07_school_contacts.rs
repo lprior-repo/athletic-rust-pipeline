@@ -69,6 +69,7 @@ fn publish(store: &Store, out: PathBuf) -> TestResult<PathBuf> {
             out: Some(out),
             limit: None,
             scope: Scope::AllSources,
+            jurisdictions: Vec::new(),
             school_year: SchoolYear::new(2026).ok_or("year")?,
         },
     )?)

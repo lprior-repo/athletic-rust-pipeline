@@ -46,9 +46,23 @@ fn digest(manifest: &Value) -> TestResult<String> {
             .ok_or("invalid manifest fixture revision")?,
     )?;
     let lineage: DatasetLineage = serde_json::from_value(field(manifest, "lineage")?.clone())?;
+    let selection_value = field(manifest, "selection")?;
+    let restricted = selection_value
+        .as_object()
+        .is_some_and(|object| object.contains_key("jurisdictions"));
     let selection = OrderedFields {
-        value: field(manifest, "selection")?,
-        fields: &["scope", "grad_year", "limit", "school_year"],
+        value: selection_value,
+        fields: if restricted {
+            &[
+                "scope",
+                "grad_year",
+                "limit",
+                "school_year",
+                "jurisdictions",
+            ]
+        } else {
+            &["scope", "grad_year", "limit", "school_year"]
+        },
     };
     let artifacts = field(manifest, "artifacts")?
         .as_object()

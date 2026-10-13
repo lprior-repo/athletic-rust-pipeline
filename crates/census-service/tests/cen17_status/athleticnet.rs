@@ -117,6 +117,7 @@ async fn execute(surface: Option<Value>, status: Option<&str>, numeric_best: boo
             scope: Scope::AllSources,
             grad_year: Some(2027),
             limit: None,
+            jurisdictions: Vec::new(),
         },
     )?;
     let expected_ids = if numeric_best {
@@ -142,6 +143,7 @@ async fn execute(surface: Option<Value>, status: Option<&str>, numeric_best: boo
             out: Some(directory.path().join("publication")),
             limit: None,
             scope: Scope::AllSources,
+            jurisdictions: Vec::new(),
             school_year: year,
         },
     )?;

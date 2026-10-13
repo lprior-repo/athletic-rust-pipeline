@@ -5,6 +5,7 @@ use crate::census::seal::SealOutcome;
 use crate::census::{RetainedFindings, SealCounts, SealedCensus};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SealRequest {
     pub grad_year: i16,
     #[serde(default)]
@@ -17,6 +18,8 @@ pub struct SealRequest {
     pub revision: u32,
     #[serde(default)]
     pub source_objects: Vec<String>,
+    #[serde(default)]
+    pub jurisdictions: Vec<UsJurisdiction>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -177,6 +177,7 @@ fn cen12_nces_parser_join_and_published_workbook_keep_exact_declared_tuples() ->
             out: Some(dir.path().join("book.xlsx")),
             limit: None,
             scope: Scope::AllSources,
+            jurisdictions: Vec::new(),
             school_year: SchoolYear::new(2025).ok_or("bad fixture year")?,
         },
     )?;

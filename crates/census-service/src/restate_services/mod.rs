@@ -85,26 +85,44 @@ fn validate_key_part(part: &str) -> Result<(), ExportGenerationError> {
     Ok(())
 }
 
+pub fn jurisdictions_key_part(jurisdictions: &[census_domain::UsJurisdiction]) -> String {
+    if jurisdictions.is_empty() {
+        return "all".to_string();
+    }
+    let mut codes: Vec<&str> = jurisdictions
+        .iter()
+        .map(|jurisdiction| jurisdiction.code())
+        .collect();
+    codes.sort_unstable();
+    codes.dedup();
+    codes.join(",")
+}
+
 pub fn report_export_key(
     scope: &str,
+    jurisdictions: &[census_domain::UsJurisdiction],
     generation: &ExportGeneration,
 ) -> Result<String, ExportGenerationError> {
+    let places = jurisdictions_key_part(jurisdictions);
     validate_key_part(scope)?;
-    Ok(run_key("report", &[scope], generation))
+    validate_key_part(&places)?;
+    Ok(run_key("report", &[scope, &places], generation))
 }
 
 pub fn bests_export_key(
     scope: &str,
     year: &str,
     limit: &str,
+    jurisdictions: &[census_domain::UsJurisdiction],
     generation: &ExportGeneration,
 ) -> Result<String, ExportGenerationError> {
+    let places = jurisdictions_key_part(jurisdictions);
     validate_key_part(scope)?;
     validate_key_part(year)?;
     validate_key_part(limit)?;
-    Ok(run_key("bests", &[scope, year, limit], generation))
+    validate_key_part(&places)?;
+    Ok(run_key("bests", &[scope, year, limit, &places], generation))
 }
-
 pub fn consolidate_export_key(generation: &ExportGeneration) -> String {
     run_key("consolidate", &[], generation)
 }
@@ -120,16 +138,24 @@ pub fn workbook_request_key(
     let limit = request
         .limit
         .map_or_else(|| "all".to_string(), |limit| limit.to_string());
+    let places = jurisdictions_key_part(&request.jurisdictions);
     let out = request.out.as_deref().map_or(".", |out| out);
     let season = request
         .school_year
         .map_or_else(|| "unstated".to_string(), |season| season.to_string());
-    for part in [year.as_str(), scope, limit.as_str(), out, season.as_str()] {
+    for part in [
+        year.as_str(),
+        scope,
+        limit.as_str(),
+        places.as_str(),
+        out,
+        season.as_str(),
+    ] {
         validate_key_part(part)?;
     }
     Ok(run_key(
         "workbook",
-        &[&year, scope, &limit, out, &season],
+        &[&year, scope, &limit, &places, out, &season],
         generation,
     ))
 }
@@ -180,7 +206,11 @@ pub use plan::{
 
 #[allow(unused_imports)]
 pub(super) use jobs::collect_error;
-pub(super) use resolve::{cohort_label, resolve_scope, resolve_table, resolve_tables};
+#[cfg(test)]
+pub(super) use resolve::MAX_REQUEST_JURISDICTIONS;
+pub(super) use resolve::{
+    cohort_label, normalize_jurisdictions, resolve_scope, resolve_table, resolve_tables,
+};
 pub use support::JobError;
 pub use support::{blocking, job_error};
 

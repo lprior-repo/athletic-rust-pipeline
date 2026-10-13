@@ -129,6 +129,7 @@ pub(super) fn selections(
             scope: crate::report::Scope::AllSources,
             grad_year: Some(2027),
             limit: None,
+            jurisdictions: Vec::new(),
         },
     )
 }

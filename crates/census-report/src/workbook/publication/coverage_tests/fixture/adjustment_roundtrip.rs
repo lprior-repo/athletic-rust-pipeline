@@ -56,7 +56,7 @@ fn adjusted_capture() -> TestResult<Captured> {
         .join("export-inputs")
         .join(format!("{}.json", serialized_digest(&JOB)?));
     let options = crate::workbook::publication::fence_tests::options(None)?;
-    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir());
+    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[]);
     let workbook = crate::workbook::build_from(&dataset, &store, &options, &censuses)?;
     Ok(Captured {
         directory,

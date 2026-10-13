@@ -56,18 +56,6 @@ pub(crate) fn read(snapshot: &Snapshot, journal: &Keyspace) -> StoreResult<Retai
     if key.as_ref() != Store::journal_key(PHASE, KEY).as_slice() {
         return Err(StoreLineageError::UnexpectedKey.into());
     }
-    let length = snapshot
-        .size_of(journal, &key)
-        .map_err(|source| StoreError::Read { source })?
-        .ok_or(StoreLineageError::MalformedEnvelope)?;
-    let bytes = usize::try_from(length).map_err(|_| StoreError::CounterOverflow)?;
-    if bytes > MAX_JOURNAL_VALUE_BYTES {
-        return Err(StoreLineageError::OversizedEnvelope {
-            bytes,
-            max: MAX_JOURNAL_VALUE_BYTES,
-        }
-        .into());
-    }
     let raw = snapshot
         .get(journal, &key)
         .map_err(|source| StoreError::Read { source })?

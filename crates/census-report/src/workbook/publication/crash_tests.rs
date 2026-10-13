@@ -14,7 +14,7 @@ fn native_publication_worker() -> TestResult {
     let mut options = super::fence_tests::options(None)?;
     options.limit = Some(1);
     let dataset = ExportDataset::for_job(&store, "crash-window")?;
-    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir());
+    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[]);
     crate::workbook::build_from(&dataset, &store, &options, &censuses)?;
     Err("crash worker returned without terminating at its checkpoint".into())
 }

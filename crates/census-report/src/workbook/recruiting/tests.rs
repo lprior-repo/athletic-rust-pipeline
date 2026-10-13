@@ -418,13 +418,14 @@ fn fixture() -> TestResult<Fixture> {
 
 fn recruiting(store: &Store, scope: Scope, grad_year: Option<i16>) -> TestResult<Recruiting> {
     let dataset = crate::export::ExportDataset::load(store)?;
-    let derivation = crate::report::Derivation::of(&dataset, scope, grad_year);
+    let derivation = crate::report::Derivation::of(&dataset, scope, grad_year, &[]);
     let prs = bests::build_from_dataset(
         &dataset,
         &bests::Options {
             scope,
             grad_year,
             limit: None,
+            jurisdictions: Vec::new(),
         },
     )?;
     let admission = crate::report::EventAdmission::of(&dataset)?;
@@ -442,6 +443,7 @@ fn verified_publication(store: &Store, expected_athletes: u64) -> TestResult {
         out: None,
         limit: None,
         scope: crate::report::Scope::AllSources,
+        jurisdictions: Vec::new(),
         school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
     };
     let dataset = crate::export::ExportDataset::load(store)?;
@@ -564,6 +566,7 @@ fn the_prs_sheet_retains_shared_winners_units_dates_and_provenance() -> TestResu
             scope: Scope::Core,
             grad_year: Some(2027),
             limit: None,
+            jurisdictions: Vec::new(),
         },
     )?;
     check!(eq; range.height() - 1,
@@ -1093,6 +1096,7 @@ fn every_sheet_publishes_hostile_source_text_as_literal_cells() -> TestResult {
         out: None,
         limit: None,
         scope: Scope::AllSources,
+        jurisdictions: Vec::new(),
         school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
     };
     let published = crate::workbook::build(store, &options)?;

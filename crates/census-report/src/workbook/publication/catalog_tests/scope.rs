@@ -81,7 +81,7 @@ fn core_relays_refuse_non_core_result_event_or_meet_without_losing_raw_rows() ->
         let raw = census_domain::model::serialized_bytes(&dataset.relays)?;
         let admission = EventAdmission::of(&dataset)?;
         assert!(admission.included_kind(&event_id).is_some());
-        let all = Derivation::of(&dataset, Scope::AllSources, Some(2027));
+        let all = Derivation::of(&dataset, Scope::AllSources, Some(2027), &[]);
         let all_projection = RelayProjection::of(&all, &admission)?;
         assert_eq!(all_projection.selections.len(), 1);
         assert_eq!(
@@ -93,7 +93,7 @@ fn core_relays_refuse_non_core_result_event_or_meet_without_losing_raw_rows() ->
                 .id,
             fixture.relay
         );
-        let core = Derivation::of(&dataset, Scope::Core, Some(2027));
+        let core = Derivation::of(&dataset, Scope::Core, Some(2027), &[]);
         assert_eq!(core.athletes().len(), 1);
         let core_projection = RelayProjection::of(&core, &admission)?;
         assert!(core_projection.selections.is_empty());
@@ -154,15 +154,20 @@ fn render(
     let path = directory.join(format!("scope-{}.xlsx", options.scope.as_str()));
     let admission = EventAdmission::of(dataset)?;
     let selected = crate::workbook::select_bests(&admission, options)?;
-    let derivation = Derivation::of(dataset, options.scope, options.grad_year);
-    let population = Derivation::of(dataset, options.scope, None);
+    let derivation = Derivation::of(
+        dataset,
+        options.scope,
+        options.grad_year,
+        &options.jurisdictions,
+    );
+    let population = Derivation::of(dataset, options.scope, None, &options.jurisdictions);
     let recruiting = crate::workbook::recruiting::Recruiting::of(
         &derivation,
         options.school_year,
         selected,
         &admission,
     )?;
-    let censuses = crate::workbook::Censuses::of(dataset, directory);
+    let censuses = crate::workbook::Censuses::of(dataset, directory, &options.jurisdictions);
     let views = crate::workbook::Views::of(
         &censuses,
         &recruiting,

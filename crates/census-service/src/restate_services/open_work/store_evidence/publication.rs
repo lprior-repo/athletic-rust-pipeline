@@ -69,6 +69,7 @@ mod tests {
                 out: None,
                 limit: None,
                 scope: Scope::AllSources,
+                jurisdictions: Vec::new(),
                 school_year,
             },
         )?;

@@ -60,7 +60,7 @@ fn both_entries_key_one_workbook_generation() -> TestResult {
     let key = workbook_request_key(&request, &generation)?;
     check!(eq;
         key,
-        "workbook:2027:core:50:.:2026:2",
+        "workbook:2027:core:50:all:.:2026:2",
         "the xtask entry keys the selected generation exactly like the CLI-live entry"
     );
 
@@ -70,7 +70,7 @@ fn both_entries_key_one_workbook_generation() -> TestResult {
     let legacy_key = workbook_request_key(&legacy_request, &legacy_generation)?;
     check!(eq;
         legacy_key,
-        "workbook:2027:core:50:.:2026:1",
+        "workbook:2027:core:50:all:.:2026:1",
         "an omitted flag reuses the legacy generation 1 keys on every entry"
     );
     check!(ne;

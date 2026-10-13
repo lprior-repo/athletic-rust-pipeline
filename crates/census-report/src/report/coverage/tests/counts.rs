@@ -139,6 +139,7 @@ fn converted_marks_carry_labels_but_never_count_as_pr_support() -> TestResult {
             scope: crate::report::Scope::AllSources,
             grad_year: Some(2027),
             limit: None,
+            jurisdictions: Vec::new(),
         },
     )?;
     check!(eq; bests.len(), 2);
