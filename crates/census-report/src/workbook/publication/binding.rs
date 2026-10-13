@@ -36,7 +36,7 @@ pub(super) fn input(
     dataset.ensure_store(store).map_err(input_refused)?;
     let snapshot = store.snapshot();
     dataset.ensure_snapshot(&snapshot).map_err(input_refused)?;
-    let manifest = store.run_manifest()?;
+    let manifest = snapshot.run_manifest()?;
     if manifest.as_ref().map(|value| value.run) != dataset.lineage.run
         || manifest.as_ref().map(|value| value.cohort) != dataset.lineage.cohort
     {

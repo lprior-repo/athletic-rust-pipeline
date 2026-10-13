@@ -9,6 +9,7 @@ mod live;
 mod merge_coaches;
 mod national;
 mod open_work;
+mod profile;
 mod provider;
 mod publish;
 mod qa_reports;
@@ -135,13 +136,26 @@ pub(super) fn build_fetcher_authorizing(
     .with_origin_locks(census_service::census::DEFAULT_ORIGIN_LOCK_ROOT))
 }
 
-pub(super) async fn run() -> Result<()> {
+pub(super) fn run() -> Result<()> {
     init_tracing();
     let cli = Cli::parse();
+    if let Command::Profile(args) = &cli.command {
+        return profile::run(&cli, args);
+    }
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?
+        .block_on(run_async(cli))
+}
+
+async fn run_async(cli: Cli) -> Result<()> {
     if let Command::Review(args) = &cli.command {
         args.validate_configuration()?;
     }
     match &cli.command {
+        Command::Profile(_) => {
+            anyhow::bail!("profile commands are routed synchronously before the runtime starts")
+        }
         Command::Review(args) => {
             let prepared = args.prepare()?;
             let store = Store::open(cli.store_root())?;

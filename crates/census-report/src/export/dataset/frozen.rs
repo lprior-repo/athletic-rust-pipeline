@@ -26,6 +26,8 @@ mod lineage_tests;
 mod manifest;
 mod materialize;
 mod objects;
+#[cfg(test)]
+mod pinned_run_metadata_tests;
 mod reader;
 mod recover;
 mod references;
@@ -110,7 +112,7 @@ pub(super) fn to_export_dataset(root: &FrozenRoot, store: &Store) -> ReportResul
 pub(super) fn lineage(store: &Store, snapshot: &StoreSnapshot<'_>) -> ReportResult<DatasetLineage> {
     snapshot.ensure_origin(store)?;
     let store_identity = String::from(snapshot.store_identity()?);
-    let bound = store.run_manifest()?;
+    let bound = snapshot.run_manifest()?;
     if let Some(manifest) = &bound {
         if manifest.store_identity != store_identity {
             return Err(invalid(

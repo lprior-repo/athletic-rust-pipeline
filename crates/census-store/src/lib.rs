@@ -38,6 +38,7 @@ mod meta;
 mod native_effect_checkpoint;
 #[cfg(feature = "native-fault-injection")]
 mod native_worker_boundary;
+mod profiles;
 pub mod read;
 mod receipt;
 mod records;
@@ -61,6 +62,7 @@ pub use inspect::StoreInspection;
 pub use lineage::StoreLineageError;
 #[cfg(feature = "native-fault-injection")]
 pub use native_effect_checkpoint::{NativeEffectCheckpoint, NativeEffectRow};
+pub use profiles::{ProfileRegistration, ProfileRegistryError, MAX_PROFILE_RECORD_BYTES};
 pub use read::{build_athlete_identity_projection, StoreSnapshot};
 pub use receipt::{
     Application, Credit, Pruned, Receipt, ReplayFrontier, ReplayWitness, MAX_DIGEST_BYTES,
@@ -180,7 +182,7 @@ impl Store {
     }
 
     pub fn run_manifest(&self) -> StoreResult<Option<RunManifest>> {
-        run::read(self)
+        run::read(&self.db.snapshot(), &self.meta)
     }
 
     pub fn bind_run(&self, manifest: &RunManifest) -> StoreResult<()> {

@@ -3,7 +3,7 @@ use crate::{Store, StoreError, StoreResult};
 use serde::{de::DeserializeOwned, Serialize};
 use std::io::{self, Write};
 
-pub(super) const MAX_RECORD_BYTES: usize = 65_536;
+pub(crate) const MAX_RECORD_BYTES: usize = 65_536;
 pub(super) const MAX_INVENTORY: usize = 4096;
 
 pub(super) fn check_digest(digest: &str) -> StoreResult<()> {
@@ -63,7 +63,7 @@ fn encoded_size<T: Serialize + ?Sized>(record: &T) -> StoreResult<usize> {
     })?;
     Ok(size.bytes)
 }
-pub(super) fn encode<T: Serialize + ?Sized>(record: &T) -> StoreResult<Vec<u8>> {
+pub(crate) fn encode<T: Serialize + ?Sized>(record: &T) -> StoreResult<Vec<u8>> {
     let size = encoded_size(record)?;
     let mut bytes = Vec::new();
     bytes
@@ -163,4 +163,59 @@ impl Store {
             .commit()
             .map_err(|source| StoreError::Write { source })
     }
+}
+
+struct CanonicalBuffer {
+    bytes: Vec<u8>,
+    limit: usize,
+}
+
+impl Write for CanonicalBuffer {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        let end = self
+            .bytes
+            .len()
+            .checked_add(bytes.len())
+            .ok_or_else(|| io::Error::other("canonical record size overflow"))?;
+        if end > self.limit || end > self.bytes.capacity() {
+            return Err(io::Error::other(
+                "canonical record changed size during encoding",
+            ));
+        }
+        self.bytes.extend_from_slice(bytes);
+        Ok(bytes.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+pub(crate) fn encode_canonical<T: Serialize + ?Sized>(record: &T) -> StoreResult<Vec<u8>> {
+    let mut size = Size { bytes: 0 };
+    let result = census_domain::model::write_serialized(&mut size, record);
+    if size.bytes > MAX_RECORD_BYTES {
+        return Err(StoreError::RowTooLarge {
+            bytes: size.bytes,
+            max: MAX_RECORD_BYTES,
+        });
+    }
+    result?;
+    let mut bytes = Vec::new();
+    bytes
+        .try_reserve_exact(size.bytes)
+        .map_err(|error| StoreError::Refused {
+            detail: format!("canonical record allocation: {error}"),
+        })?;
+    let mut output = CanonicalBuffer {
+        bytes,
+        limit: size.bytes,
+    };
+    census_domain::model::write_serialized(&mut output, record)?;
+    if output.bytes.len() != size.bytes {
+        return Err(StoreError::Invariant {
+            detail: "canonical record changed size between encoding passes".to_string(),
+        });
+    }
+    Ok(output.bytes)
 }

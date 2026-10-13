@@ -17,3 +17,28 @@ impl StoreSnapshot<'_> {
         self.revision.ensure_origin(store, "read export snapshot")
     }
 }
+
+impl StoreSnapshot<'_> {
+    pub fn profile(
+        &self,
+        id: &census_domain::model::ProfileId,
+    ) -> StoreResult<census_domain::model::QueryProfileV1> {
+        use fjall::Readable;
+        let raw = self
+            .snapshot
+            .get(self.meta, crate::profiles::key(id))
+            .map_err(|source| crate::StoreError::Read { source })?
+            .ok_or_else(|| crate::ProfileRegistryError::MissingProfile { id: id.clone() })?;
+        crate::profiles::read::decode(id, raw.as_ref())
+    }
+
+    pub fn selected_profile(
+        &self,
+        selection: &census_domain::model::ProfileSelectionV1,
+    ) -> StoreResult<census_domain::model::QueryProfileV1> {
+        selection
+            .ensure_store(&self.store_identity()?)
+            .map_err(crate::ProfileRegistryError::Selection)?;
+        self.profile(selection.profile_id())
+    }
+}

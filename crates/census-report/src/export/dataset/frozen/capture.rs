@@ -25,7 +25,7 @@ pub(super) fn capture(
     let snapshot = store.snapshot();
     let mut lineage = super::lineage(store, &snapshot)?;
     lineage.export_job = Some(job.to_string());
-    let token = FrozenInputToken::capture(store, &lineage)?;
+    let token = FrozenInputToken::capture(&snapshot, &lineage)?;
     let (streams, legacy) = streams(&snapshot, objects_dir)?;
     let fingerprints = fingerprints(&snapshot)?;
     drop(snapshot);

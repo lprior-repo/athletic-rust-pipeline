@@ -39,6 +39,8 @@ impl JobError {
             StoreError::Decode { .. }
             | StoreError::StoreIdentity(_)
             | StoreError::StoreLineage(_)
+            | StoreError::ProfileRegistry(_)
+            | StoreError::CanonicalJson(_)
             | StoreError::Json { .. }
             | StoreError::SnapshotRow { .. }
             | StoreError::ObservationReplacement { .. }

@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "revision": 7,
+  "region": "synthetic:region-fixture",
+  "jurisdictions": ["MI"],
+  "effective": {"from": "2026-01-01", "through": "2027-12-31"},
+  "assertions": [
+    {
+      "subject": {"school": {"school": "sch_0000000000000001", "jurisdiction": "MI"}},
+      "context": {"sport": "cross_country", "category": "boys", "school_year": 2026},
+      "effective": {"inclusive": {"from": "2026-08-01", "through": "2027-07-31"}},
+      "statement": "member",
+      "provenance": {
+        "evidence": {"source": {"id": "synthetic-authority", "url": "https://example.invalid/region-fixture.json"}, "method": "parsed", "observed_on": "2026-10-01T12:00:00Z"},
+        "capture_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "locator": "synthetic-row:1",
+        "statement": "Synthetic positive school membership statement"
+      }
+    },
+    {
+      "subject": {"school": {"school": "sch_0000000000000002", "jurisdiction": "MI"}},
+      "context": {"sport": "cross_country", "category": "boys", "school_year": 2026},
+      "effective": {"inclusive": {"from": "2026-08-01", "through": "2027-07-31"}},
+      "statement": "explicit_non_member",
+      "provenance": {
+        "evidence": {"source": {"id": "synthetic-authority", "url": "https://example.invalid/region-fixture.json"}, "method": "parsed", "observed_on": "2026-10-01T12:00:00Z"},
+        "capture_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "locator": "synthetic-row:2",
+        "statement": "Synthetic explicit school exclusion statement"
+      }
+    },
+    {
+      "subject": {"school": {"school": "sch_0000000000000003", "jurisdiction": "MI"}},
+      "context": {"sport": "cross_country", "category": "boys", "school_year": 2026},
+      "effective": {"inclusive": {"from": "2026-08-01", "through": "2027-07-31"}},
+      "statement": "member",
+      "provenance": {
+        "evidence": {"source": {"id": "synthetic-authority", "url": "https://example.invalid/region-fixture.json"}, "method": "parsed", "observed_on": "2026-10-01T12:00:00Z"},
+        "capture_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "locator": "synthetic-row:3",
+        "statement": "Synthetic disputed positive statement"
+      }
+    },
+    {
+      "subject": {"school": {"school": "sch_0000000000000003", "jurisdiction": "MI"}},
+      "context": {"sport": "cross_country", "category": "boys", "school_year": 2026},
+      "effective": {"inclusive": {"from": "2026-08-01", "through": "2027-07-31"}},
+      "statement": "explicit_non_member",
+      "provenance": {
+        "evidence": {"source": {"id": "synthetic-second-authority", "url": "https://example.invalid/second-fixture.json"}, "method": "parsed", "observed_on": "2026-10-12T12:00:00Z"},
+        "capture_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "locator": "synthetic-row:4",
+        "statement": "Synthetic disputed explicit exclusion statement"
+      }
+    },
+    {
+      "subject": {"school": {"school": "sch_0000000000000004", "jurisdiction": "MI"}},
+      "context": {"sport": "cross_country", "category": "unknown", "school_year": 2026},
+      "effective": {"inclusive": {"from": "2026-08-01", "through": "2027-07-31"}},
+      "statement": "member",
+      "provenance": {
+        "evidence": {"source": {"id": "synthetic-authority", "url": "https://example.invalid/region-fixture.json"}, "method": "parsed", "observed_on": "2026-10-01T12:00:00Z"},
+        "capture_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "locator": "synthetic-row:5",
+        "statement": "Synthetic statement whose category is unresolved"
+      }
+    },
+    {
+      "subject": {"program": {"program": "team_0000000000000001", "composition": {"co_op": [{"school": "sch_0000000000000001", "jurisdiction": "MI"}, {"school": "sch_0000000000000002", "jurisdiction": "MI"}]}}},
+      "context": {"sport": "cross_country", "category": "boys", "school_year": 2026},
+      "effective": {"inclusive": {"from": "2026-08-01", "through": "2027-07-31"}},
+      "statement": "member",
+      "provenance": {
+        "evidence": {"source": {"id": "synthetic-authority", "url": "https://example.invalid/region-fixture.json"}, "method": "parsed", "observed_on": "2026-10-01T12:00:00Z"},
+        "capture_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "locator": "synthetic-row:6",
+        "statement": "Synthetic co-op program membership and constituents statement"
+      }
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+[
+  {"school": "sch_0000000000000001", "verdict": "member", "applied_statements": ["member"], "relevant_locators": ["synthetic-row:1"]},
+  {"school": "sch_0000000000000002", "verdict": "explicit_non_member", "applied_statements": ["explicit_non_member"], "relevant_locators": ["synthetic-row:2"]},
+  {"school": "sch_0000000000000003", "verdict": "conflicted", "applied_statements": ["member", "explicit_non_member"], "relevant_locators": ["synthetic-row:3", "synthetic-row:4"]},
+  {"school": "sch_0000000000000004", "verdict": "unknown", "applied_statements": [], "relevant_locators": ["synthetic-row:5"]},
+  {"school": "sch_0000000000000099", "verdict": "unknown", "applied_statements": [], "relevant_locators": []}
+]

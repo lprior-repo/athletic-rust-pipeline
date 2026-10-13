@@ -44,6 +44,7 @@ mod meet;
 mod natural_key;
 mod normalization;
 mod performance_identity;
+mod profile;
 mod provenance;
 mod records;
 mod relay_result;
@@ -53,6 +54,14 @@ mod school;
 mod school_address;
 mod school_contact;
 mod store_identity;
+
+pub use profile::{
+    ContractRefV1, DiscoveryPriorityV1, PerformanceWindowV1, ProfileDate, ProfileDateRangeV1,
+    ProfileError, ProfileId, ProfilePoliciesV1, ProfileSelectionError, ProfileSelectionV1,
+    ProfileSetField, ProvisionalInclusionV1, QueryProfileInputV1, QueryProfileV1,
+    RegionalMembershipV1, MAX_PROFILE_CATEGORIES, MAX_PROFILE_GRADUATION_YEARS,
+    MAX_PROFILE_JURISDICTIONS, MAX_PROFILE_SPORTS, QUERY_PROFILE_VERSION,
+};
 
 pub use store_identity::{StoreIdentity, StoreIdentityError};
 
@@ -157,3 +166,18 @@ pub use school_contact::{
 #[cfg(test)]
 #[path = "model_tests.rs"]
 mod tests;
+
+mod region_membership;
+
+pub use region_membership::{
+    admit_region_payload_bytes_v1, bind_region_contract_v1, resolve_region_membership_v1,
+    resolve_region_priority_v1, BoundRegionContractV1, RegionAssertionDispositionV1,
+    RegionAssertionInputV1, RegionAssertionTraceV1, RegionAssertionV1,
+    RegionCompositionResolutionV1, RegionCompositionV1, RegionContextV1, RegionEffectiveV1,
+    RegionEvidenceInputV1, RegionEvidenceV1, RegionKeyV1, RegionMembershipContractInputV1,
+    RegionMembershipContractV1, RegionMembershipError, RegionMembershipQueryV1,
+    RegionMembershipResolutionV1, RegionMembershipTargetV1, RegionMembershipVerdictV1,
+    RegionPriorityResolutionV1, RegionPriorityTierV1, RegionProgramV1, RegionSchoolV1,
+    RegionStatementV1, RegionSubjectV1, MAX_REGION_ASSERTIONS, MAX_REGION_CONSTITUENTS,
+    MAX_REGION_JURISDICTIONS, MAX_REGION_PAYLOAD_BYTES, REGION_MEMBERSHIP_CONTRACT_VERSION,
+};

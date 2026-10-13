@@ -122,3 +122,6 @@ mod input_tests;
 
 #[cfg(test)]
 mod coverage_tests;
+
+#[cfg(test)]
+mod pinned_run_publication_tests;
