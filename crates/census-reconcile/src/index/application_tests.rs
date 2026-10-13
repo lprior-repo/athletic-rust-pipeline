@@ -672,7 +672,10 @@ fn supersession_records_durable_transition_provenance() -> TestResult {
     let recorded = store
         .journal_payload("identity_retained_supersession_v1", &old_case.id)?
         .ok_or("supersession provenance should be journaled")?;
-    let inner = recorded.get("payload").cloned().unwrap_or(recorded);
+    let inner = match recorded.get("payload").cloned() {
+        Some(payload) => payload,
+        None => recorded.clone(),
+    };
     let pair = inner.as_array().ok_or("provenance payload is not an array")?;
     check!(
         eq;

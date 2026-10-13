@@ -124,9 +124,10 @@ fn matching_acquisitions<'a>(
             if acq.path.is_empty() {
                 return true;
             }
-            let acq_path = acq.path
-                .strip_prefix(&format!("{}@", lane.source))
-                .unwrap_or(&acq.path);
+            let acq_path = match acq.path.strip_prefix(&format!("{}@", lane.source)) {
+                Some(path) => path,
+                None => acq.path.as_str(),
+            };
             let acq_canonicalized = match std::fs::canonicalize(acq_path) {
                 Ok(p) => p,
                 Err(_) => std::path::PathBuf::from(acq_path),

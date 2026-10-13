@@ -241,7 +241,7 @@ fn missing_producer_frontiers_are_durable_typed_refusals() -> TestResult {
 
 #[tokio::test]
 async fn every_applicable_meet_family_is_armed_or_has_a_durable_named_refusal() -> TestResult {
-    use crate::restate_services::plan::{plan, BrowserLaneState, RefusalKind, UnitDisposition};
+    use crate::restate_services::plan::{plan, BrowserLaneState, UnitDisposition};
     use crate::restate_services::wire::SourcePlan;
     let root = tempfile::tempdir()?;
     let store = Arc::new(Store::open(root.path().join("store"))?);

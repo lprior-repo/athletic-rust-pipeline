@@ -80,12 +80,12 @@ fn parse_acquisitions(
     let url_pairs = parse_source_pairs(evidence_urls)?;
     let date_pairs = parse_source_pairs(evidence_dates)?;
     let mut acquisitions = Vec::new();
+    let mut entry: u32 = 0;
     for (source, url) in url_pairs {
         let (provider, path) = match source.split_once('@') {
             Some((p, rest)) => (p.to_string(), rest.to_string()),
             None => (source.clone(), String::new()),
         };
-        let entry = u32::try_from(acquisitions.len()).unwrap_or(u32::MAX);
         let retrieved_at = date_pairs.get(&source).cloned();
         acquisitions.push(Acquisition {
             entry,
@@ -94,6 +94,7 @@ fn parse_acquisitions(
             url,
             retrieved_at,
         });
+        entry = entry.saturating_add(1);
     }
     Ok(acquisitions)
 }
