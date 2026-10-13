@@ -10,6 +10,7 @@ fn inspect_populated(fixture: &Fixture) -> TestResult {
         &fixture.store,
         GradYear::CO2027,
         Scope::AllSources,
+        &[],
     )?;
     check!(eq; inspection.check.export_verified, Verification::Verified);
     check!(inspection.check.discrepancies.is_empty());

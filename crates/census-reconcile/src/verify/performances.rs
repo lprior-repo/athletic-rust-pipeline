@@ -20,7 +20,7 @@ pub fn verify_performances<T: AsRef<[String]>>(
     let dataset = ExportDataset::load(store).map_err(|source| Discrepancy {
         message: format!("reading immutable verification input: {source}"),
     })?;
-    let derivation = Derivation::of(&dataset, scope, None);
+    let derivation = Derivation::of(&dataset, scope, None, &[]);
     let lookup: HashMap<&str, _> = derivation
         .performances()
         .iter()

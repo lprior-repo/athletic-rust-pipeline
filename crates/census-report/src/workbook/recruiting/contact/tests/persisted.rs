@@ -4,7 +4,7 @@ use census_store::{Store, Table};
 fn coaches(store: &Store) -> TestResult<Vec<CanonicalCoach>> {
     let dataset = crate::export::ExportDataset::load(store)?;
     let derivation =
-        crate::report::Derivation::of(&dataset, crate::report::Scope::AllSources, None);
+        crate::report::Derivation::of(&dataset, crate::report::Scope::AllSources, None, &[]);
     Ok(derivation.coach_observations().to_vec())
 }
 

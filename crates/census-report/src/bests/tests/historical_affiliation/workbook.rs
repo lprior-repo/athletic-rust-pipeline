@@ -14,6 +14,7 @@ pub(super) fn publish(directory: &Path, fixture: &Fixture) -> TestResult<PathBuf
             out: Some(directory.join("publication")),
             limit: None,
             scope: Scope::AllSources,
+            jurisdictions: Vec::new(),
             school_year: SchoolYear::new(2026).ok_or("invalid publication season")?,
         },
     )

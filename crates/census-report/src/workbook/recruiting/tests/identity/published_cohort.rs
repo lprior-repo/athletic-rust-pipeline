@@ -51,7 +51,7 @@ fn accepted_alias_published_cohort_survives_collapse_and_publication() -> TestRe
     check!(ne; canonical, alias.id.as_str());
     check!(eq; dataset.identities().status(&canonical)?,
     IdentityStatus::Verified);
-    let derivation = crate::report::Derivation::of(&dataset, Scope::AllSources, Some(2027));
+    let derivation = crate::report::Derivation::of(&dataset, Scope::AllSources, Some(2027), &[]);
     let [collapsed] = derivation.athletes() else {
         return Err("accepted pair did not publish exactly one athlete".into());
     };
@@ -92,9 +92,10 @@ fn accepted_alias_published_cohort_survives_collapse_and_publication() -> TestRe
         out: None,
         limit: None,
         scope: crate::report::Scope::AllSources,
+        jurisdictions: Vec::new(),
         school_year: SchoolYear::new(2026).ok_or("invalid fixture school year")?,
     };
-    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir());
+    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[]);
     let path = crate::workbook::build_from(&dataset, &store, &options, &censuses)?;
     let verified = crate::workbook::verify::verify_frozen(&path, &dataset, &options)?;
     check!(eq; verified.mapped_athletes, 1);

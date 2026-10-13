@@ -48,7 +48,13 @@ fn digest(manifest: &Value) -> TestResult<String> {
     let lineage: DatasetLineage = serde_json::from_value(field(manifest, "lineage")?.clone())?;
     let selection = OrderedFields {
         value: field(manifest, "selection")?,
-        fields: &["scope", "grad_year", "limit", "school_year"],
+        fields: &[
+            "scope",
+            "grad_year",
+            "limit",
+            "school_year",
+            "jurisdictions",
+        ],
     };
     let artifacts = field(manifest, "artifacts")?
         .as_object()

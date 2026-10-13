@@ -159,6 +159,7 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory(
         out: None,
         limit: None,
         scope: Scope::Core,
+        jurisdictions: Vec::new(),
         school_year,
     };
     let path = build(&store, &options)?;
@@ -195,6 +196,7 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory(
             scope: Scope::Core,
             grad_year: Some(2027),
             limit: None,
+            jurisdictions: Vec::new(),
         },
     )?;
     let sprint = bests

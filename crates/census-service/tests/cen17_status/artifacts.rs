@@ -81,6 +81,7 @@ fn declare_controlled_indoor_context(store: &Store) -> TestResult {
                 scope: Scope::AllSources,
                 grad_year: Some(2027),
                 limit: None,
+                jurisdictions: Vec::new(),
             }
         )?
         .is_empty(),
@@ -147,7 +148,7 @@ fn assert_artifacts(
 ) -> TestResult {
     let dataset = ExportDataset::load(store)?;
     let census = report::build_census(
-        &Derivation::of(&dataset, Scope::AllSources, Some(2027)),
+        &Derivation::of(&dataset, Scope::AllSources, Some(2027), &[]),
         &store.out_dir(),
     );
     let (census_path, _) = report::write_census(store, &census, Scope::AllSources)?;
@@ -160,6 +161,7 @@ fn assert_artifacts(
             scope: Scope::AllSources,
             grad_year: Some(2027),
             limit: None,
+            jurisdictions: Vec::new(),
         },
     )?;
     check!(eq; bests.len(), 1, "valid published field control: events={:?}; meets={:?}",
@@ -190,6 +192,7 @@ fn assert_artifacts(
             out: Some(root.join("publication")),
             limit: None,
             scope: Scope::AllSources,
+            jurisdictions: Vec::new(),
             school_year: SchoolYear::new(2025).ok_or("fixture season")?,
         },
     )?;

@@ -9,6 +9,7 @@ fn full_options() -> TestResult<census_report::workbook::Options> {
         out: None,
         limit: None,
         scope: census_report::report::Scope::AllSources,
+        jurisdictions: Vec::new(),
         school_year: census_domain::model::SchoolYear::new(2026).ok_or("invalid fixture season")?,
     })
 }

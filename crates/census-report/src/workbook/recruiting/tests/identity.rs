@@ -177,7 +177,7 @@ fn accepted_aliases_publish_one_person_with_all_events_profiles_and_supported_me
         .to_owned();
     check!(eq; dataset.identities().canonical_id(second.id.as_str()),
     canonical);
-    let derivation = crate::report::Derivation::of(&dataset, Scope::AllSources, Some(2027));
+    let derivation = crate::report::Derivation::of(&dataset, Scope::AllSources, Some(2027), &[]);
     let [athlete] = derivation.athletes() else {
         return Err("one accepted identity required".into());
     };
@@ -419,7 +419,8 @@ fn conflicted_component_keeps_every_member_unmerged_in_both_orders() -> TestResu
             check!(eq; dataset.identities().status(member.id.as_str())?,
             IdentityStatus::RetainedConflict);
         }
-        let derivation = crate::report::Derivation::of(&dataset, Scope::AllSources, Some(2027));
+        let derivation =
+            crate::report::Derivation::of(&dataset, Scope::AllSources, Some(2027), &[]);
         check!(eq; derivation.athletes().len(), 3);
         let projection = recruiting(&store, Scope::AllSources, Some(2027))?;
         let path = dir.path().join("conflicted.xlsx");

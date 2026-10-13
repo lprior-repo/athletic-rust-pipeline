@@ -18,6 +18,7 @@ fn full_options() -> TestResult<census_report::workbook::Options> {
         out: None,
         limit: None,
         scope: Scope::AllSources,
+        jurisdictions: Vec::new(),
         school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
     })
 }
@@ -159,7 +160,7 @@ fn a_complete_frozen_bundle_is_the_seal_certificate() -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = populated_store(directory.path())?;
     let path = census_report::workbook::build(&store, &full_options()?)?;
-    let inspection = inspect_workbook(&path, &store, GradYear::CO2027, Scope::AllSources)?;
+    let inspection = inspect_workbook(&path, &store, GradYear::CO2027, Scope::AllSources, &[])?;
     let check = inspection.check;
     check!(eq; check.mapped_athletes, 1);
     check!(
@@ -191,7 +192,7 @@ fn a_limited_bundle_cannot_certify_the_whole_cohort() -> TestResult {
         ..full_options()?
     };
     let path = census_report::workbook::build(&store, &options)?;
-    let error = match inspect_workbook(&path, &store, GradYear::CO2027, Scope::AllSources) {
+    let error = match inspect_workbook(&path, &store, GradYear::CO2027, Scope::AllSources, &[]) {
         Err(error) => error,
         Ok(_) => return Err("limited bundle certified the whole cohort".into()),
     };
@@ -211,7 +212,7 @@ fn new_source_evidence_invalidates_the_old_seal_candidate() -> TestResult {
         None,
     );
     store.append(Table::Schools, &school)?;
-    let error = match inspect_workbook(&path, &store, GradYear::CO2027, Scope::AllSources) {
+    let error = match inspect_workbook(&path, &store, GradYear::CO2027, Scope::AllSources, &[]) {
         Err(error) => error,
         Ok(_) => return Err("stale bundle certified".into()),
     };
@@ -240,6 +241,7 @@ fn a_request_run_disagreeing_with_the_bound_run_is_a_typed_error() -> TestResult
     let request = super::SealRequest {
         grad_year: 2027,
         scope: Scope::AllSources,
+        jurisdictions: Vec::new(),
         workbook: None,
         write: false,
         journal: None,
@@ -267,6 +269,7 @@ fn an_unbound_store_carries_a_run_acceptance_item() -> TestResult {
     let request = super::SealRequest {
         grad_year: 2027,
         scope: Scope::AllSources,
+        jurisdictions: Vec::new(),
         workbook: Some(path),
         write: false,
         journal: None,
@@ -296,6 +299,7 @@ fn a_bound_run_reaches_the_evidence_and_the_seal_record() -> TestResult {
     let request = super::SealRequest {
         grad_year: 2027,
         scope: Scope::AllSources,
+        jurisdictions: Vec::new(),
         workbook: Some(path),
         write: true,
         journal: Some(super::JournalCounts {
@@ -324,6 +328,46 @@ fn a_bound_run_reaches_the_evidence_and_the_seal_record() -> TestResult {
         "the refusal names the unadvanced phase ladder: {recorded}"
     );
     check!(eq; outcome.recorded, None);
+    Ok(())
+}
+
+#[test]
+fn a_global_bundle_refuses_a_restricted_seal_scope() -> TestResult {
+    use census_domain::UsJurisdiction;
+    let directory = tempfile::tempdir()?;
+    let store = populated_store(directory.path())?;
+    let path = census_report::workbook::build(&store, &full_options()?)?;
+    let error = match inspect_workbook(
+        &path,
+        &store,
+        GradYear::CO2027,
+        Scope::AllSources,
+        &[UsJurisdiction::Wisconsin],
+    ) {
+        Err(error) => error,
+        Ok(_) => return Err("a global bundle certified a one-state seal".into()),
+    };
+    check!(format!("{error:#}").contains("jurisdictions to match"));
+    Ok(())
+}
+
+#[test]
+fn a_restricted_bundle_inspects_under_its_own_seal_scope() -> TestResult {
+    use census_domain::UsJurisdiction;
+    let directory = tempfile::tempdir()?;
+    let store = populated_store(directory.path())?;
+    let options = census_report::workbook::Options {
+        jurisdictions: vec![UsJurisdiction::Wisconsin],
+        ..full_options()?
+    };
+    let path = census_report::workbook::build(&store, &options)?;
+    inspect_workbook(
+        &path,
+        &store,
+        GradYear::CO2027,
+        Scope::AllSources,
+        &[UsJurisdiction::Wisconsin],
+    )?;
     Ok(())
 }
 

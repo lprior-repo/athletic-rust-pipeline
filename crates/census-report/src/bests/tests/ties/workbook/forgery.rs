@@ -121,6 +121,7 @@ fn publish_fixture(
         out: Some(directory.join("publication")),
         limit: None,
         scope: Scope::AllSources,
+        jurisdictions: Vec::new(),
         school_year: SchoolYear::new(2026).ok_or("forgery fixture season")?,
     };
     let path = crate::workbook::build(&store, &options)?;

@@ -14,18 +14,24 @@ mod population;
 pub(super) use aliases::collapse_athletes;
 pub(crate) use cohort::candidates as cohort_candidates;
 
-pub(crate) fn in_run_scope(bucket: JurisdictionBucket) -> bool {
-    bucket
-        .jurisdiction()
-        .is_none_or(UsJurisdiction::is_in_census_scope)
+pub(crate) fn in_run_scope(bucket: JurisdictionBucket, jurisdictions: &[UsJurisdiction]) -> bool {
+    match bucket.jurisdiction() {
+        None => true,
+        Some(jurisdiction) => {
+            jurisdiction.is_in_census_scope()
+                && (jurisdictions.is_empty() || jurisdictions.contains(&jurisdiction))
+        }
+    }
 }
 
 pub(crate) fn exclude_out_of_scope<T>(
     rows: &mut Vec<T>,
     place: impl Fn(&T) -> JurisdictionBucket,
+    jurisdictions: &[UsJurisdiction],
 ) -> Vec<T> {
-    let (kept, excluded): (Vec<T>, Vec<T>) =
-        rows.drain(..).partition(|row| in_run_scope(place(row)));
+    let (kept, excluded): (Vec<T>, Vec<T>) = rows
+        .drain(..)
+        .partition(|row| in_run_scope(place(row), jurisdictions));
     *rows = kept;
     excluded
 }
@@ -34,6 +40,7 @@ pub struct Derivation<'a> {
     dataset: &'a ExportDataset,
     scope: Scope,
     grad_year: Option<i16>,
+    jurisdictions: Vec<UsJurisdiction>,
     school_state: HashMap<&'a str, Option<UsJurisdiction>>,
     schools: Vec<CanonicalSchool>,
     outside_schools: Vec<CanonicalSchool>,
@@ -52,9 +59,14 @@ pub struct Derivation<'a> {
 }
 
 impl<'a> Derivation<'a> {
-    pub fn of(dataset: &'a ExportDataset, scope: Scope, grad_year: Option<i16>) -> Self {
-        let mut derivation = Self::population(dataset, scope, grad_year);
-        derivation.retain_geography();
+    pub fn of(
+        dataset: &'a ExportDataset,
+        scope: Scope,
+        grad_year: Option<i16>,
+        jurisdictions: &[UsJurisdiction],
+    ) -> Self {
+        let mut derivation = Self::population(dataset, scope, grad_year, jurisdictions);
+        derivation.retain_geography(jurisdictions);
         derivation.retain_evidence_scope();
         derivation.select_cohort();
         derivation
@@ -70,6 +82,9 @@ impl<'a> Derivation<'a> {
 
     pub(crate) const fn grad_year(&self) -> Option<i16> {
         self.grad_year
+    }
+    pub(crate) fn jurisdictions(&self) -> &[UsJurisdiction] {
+        &self.jurisdictions
     }
 
     pub(crate) fn school_state(&self) -> &HashMap<&'a str, Option<UsJurisdiction>> {
@@ -164,4 +179,61 @@ fn known_athletes(dataset: &ExportDataset, grad_year: Option<i16>) -> Option<Has
             .map(|athlete| athlete.id.as_str())
             .collect()
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{exclude_out_of_scope, in_run_scope};
+    use census_domain::{JurisdictionBucket, UsJurisdiction};
+
+    #[test]
+    fn a_five_state_restriction_keeps_only_the_named_state() {
+        let five = [
+            UsJurisdiction::Michigan,
+            UsJurisdiction::Minnesota,
+            UsJurisdiction::Iowa,
+            UsJurisdiction::Illinois,
+            UsJurisdiction::Colorado,
+        ];
+        assert!(in_run_scope(
+            JurisdictionBucket::from(UsJurisdiction::Michigan),
+            &five
+        ));
+        assert!(!in_run_scope(
+            JurisdictionBucket::from(UsJurisdiction::Wisconsin),
+            &five
+        ));
+        assert!(!in_run_scope(
+            JurisdictionBucket::from(UsJurisdiction::Alaska),
+            &five
+        ));
+        assert!(in_run_scope(JurisdictionBucket::Unplaced, &five));
+        assert!(in_run_scope(
+            JurisdictionBucket::from(UsJurisdiction::Michigan),
+            &[]
+        ));
+        assert!(!in_run_scope(
+            JurisdictionBucket::from(UsJurisdiction::Alaska),
+            &[]
+        ));
+    }
+
+    #[test]
+    fn exclusion_partitions_rows_on_the_named_restriction() {
+        let mut rows = vec![
+            UsJurisdiction::Michigan,
+            UsJurisdiction::Wisconsin,
+            UsJurisdiction::Alaska,
+        ];
+        let excluded = exclude_out_of_scope(
+            &mut rows,
+            |jurisdiction| JurisdictionBucket::from(*jurisdiction),
+            &[UsJurisdiction::Michigan],
+        );
+        assert_eq!(rows, vec![UsJurisdiction::Michigan]);
+        assert_eq!(
+            excluded,
+            vec![UsJurisdiction::Wisconsin, UsJurisdiction::Alaska]
+        );
+    }
 }

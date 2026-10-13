@@ -28,6 +28,7 @@ fn source_backed_postal_sidecar_rejects_a_tampered_school_address() -> TestResul
         limit: None,
         scope: crate::report::Scope::AllSources,
         school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
+        jurisdictions: Vec::new(),
     };
     let workbook = crate::workbook::build(&store, &options)?;
     let generation = workbook.parent().ok_or("missing generation directory")?;

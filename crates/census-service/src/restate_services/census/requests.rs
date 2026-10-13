@@ -37,6 +37,7 @@ pub(super) fn store_request(
     request: &SealRequest,
     journal: &OpenWorkReply,
     run: CensusRun,
+    jurisdictions: Vec<UsJurisdiction>,
 ) -> StoreSealRequest {
     StoreSealRequest {
         grad_year: request.grad_year,
@@ -45,6 +46,7 @@ pub(super) fn store_request(
         } else {
             Scope::Core
         },
+        jurisdictions,
         workbook: request.workbook.as_ref().map(PathBuf::from),
         write: request.write,
         journal: Some(JournalCounts {

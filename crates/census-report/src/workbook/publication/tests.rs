@@ -27,6 +27,7 @@ fn changed_conflict_policy_has_a_distinct_publication_recipe() -> TestResult {
         limit: None,
         scope: crate::report::Scope::AllSources,
         school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
+        jurisdictions: Vec::new(),
     };
     check!(eq; current.lineage.policy_revision, 14);
     check!(ne; binding::recipe(&current.lineage, &options)?, binding::recipe(&previous, &options)?);
@@ -105,8 +106,9 @@ fn a_stale_exporter_cannot_replace_a_newer_generation() -> TestResult {
         limit: None,
         scope: crate::report::Scope::AllSources,
         school_year: census_domain::model::SchoolYear::new(2026).ok_or("invalid fixture season")?,
+        jurisdictions: Vec::new(),
     };
-    let censuses = crate::workbook::Censuses::of(&newer, &store.out_dir());
+    let censuses = crate::workbook::Censuses::of(&newer, &store.out_dir(), &[]);
     let published = crate::workbook::build_from(&newer, &store, &options, &censuses)?;
     let error = match Stage::begin(&older, &store, &options) {
         Err(error) => error,
@@ -128,6 +130,7 @@ fn a_failed_generation_keeps_the_previous_publication() -> TestResult {
         limit: None,
         scope: crate::report::Scope::AllSources,
         school_year: census_domain::model::SchoolYear::new(2026).ok_or("invalid fixture season")?,
+        jurisdictions: Vec::new(),
     };
     let published = crate::workbook::build(&store, &options)?;
     let dataset = ExportDataset::load(&store)?;
@@ -153,6 +156,7 @@ fn a_corrupt_sidecar_invalidates_the_whole_generation() -> TestResult {
             scope: crate::report::Scope::AllSources,
             school_year: census_domain::model::SchoolYear::new(2026)
                 .ok_or("invalid fixture season")?,
+            jurisdictions: Vec::new(),
         },
     )?;
     let sidecar = published
@@ -212,10 +216,11 @@ fn source_advance_during_render_cannot_switch_the_publication_pointer() -> TestR
         limit: None,
         scope: crate::report::Scope::AllSources,
         school_year: census_domain::model::SchoolYear::new(2026).ok_or("invalid fixture season")?,
+        jurisdictions: Vec::new(),
     };
     let published = crate::workbook::build(&store, &options)?;
     let dataset = ExportDataset::load(&store)?;
-    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir());
+    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[]);
     let stage = Stage::begin(&dataset, &store, &options)?;
     let error = match stage.publish(&dataset, &options, |path| {
         crate::workbook::write_artifacts(path, &dataset, &options, &censuses)?;
@@ -382,6 +387,7 @@ fn build_for_season(store: &Store, out: &std::path::Path, season: i16) -> TestRe
             limit: None,
             scope: crate::report::Scope::AllSources,
             school_year: SchoolYear::new(season).ok_or("invalid fixture season")?,
+            jurisdictions: Vec::new(),
         },
     )?)
 }
@@ -500,6 +506,7 @@ fn a_publication_of_another_cohort_never_seals_this_census() -> TestResult {
             limit: None,
             scope: crate::report::Scope::AllSources,
             school_year: SchoolYear::new(2026).ok_or("2026 is a school year")?,
+            jurisdictions: Vec::new(),
         },
     )?;
     let lineage = crate::export::store_lineage(&store)?;
@@ -543,6 +550,7 @@ fn a_publication_assessed_in_another_school_year_cannot_seal_the_run() -> TestRe
             limit: None,
             scope: crate::report::Scope::AllSources,
             school_year: SchoolYear::new(2027).ok_or("2027 is a school year")?,
+            jurisdictions: Vec::new(),
         },
     )?;
     let lineage = crate::export::store_lineage(&store)?;
@@ -583,6 +591,7 @@ fn a_store_bound_to_another_cohort_cannot_receive_the_census_seal() -> TestResul
             limit: None,
             scope: crate::report::Scope::AllSources,
             school_year: SchoolYear::new(2026).ok_or("2026 is a school year")?,
+            jurisdictions: Vec::new(),
         },
     )?;
     let lineage = crate::export::store_lineage(&store)?;

@@ -56,6 +56,7 @@ pub(in crate::workbook::verify) fn publication(
         out: None,
         limit: None,
         scope: crate::report::Scope::AllSources,
+        jurisdictions: Vec::new(),
         school_year: SchoolYear::new(2026).ok_or("fixture season")?,
     };
     let path = crate::workbook::build(&store, &options)?;

@@ -19,6 +19,7 @@ fn options() -> TestResult<census_report::workbook::Options> {
         out: None,
         limit: None,
         scope: Scope::AllSources,
+        jurisdictions: Vec::new(),
         school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
     })
 }
@@ -62,6 +63,7 @@ fn request(path: &Path, write: bool) -> SealRequest {
     SealRequest {
         grad_year: 2027,
         scope: Scope::AllSources,
+        jurisdictions: Vec::new(),
         workbook: Some(path.to_path_buf()),
         write,
         journal: None,

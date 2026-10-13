@@ -21,7 +21,7 @@ pub(super) async fn publish(
     request: &NationalRequest,
 ) -> Result<(), HandlerError> {
     consolidate(ctx, identity).await?;
-    derive(ctx, identity).await?;
+    derive(ctx, identity, request).await?;
     let workbook = workbook(ctx, identity, request).await?;
     seal(
         ctx,
@@ -34,6 +34,7 @@ pub(super) async fn publish(
             season: request.season.get(),
             revision: request.revision.get(),
             source_objects: Vec::new(),
+            jurisdictions: request.jurisdictions.clone(),
         },
         Duration::from_secs(request.pass_delay_seconds),
     )
@@ -118,10 +119,12 @@ async fn consolidate(
 async fn derive(
     ctx: &WorkflowContext<'_>,
     identity: &WorkflowIdentity,
+    request: &NationalRequest,
 ) -> Result<(), HandlerError> {
     ctx.workflow_client::<ReportClient>(format!("{}:report", identity.as_str()))
         .run(Json(ReportRequest {
             scope: Some("all_sources".to_owned()),
+            jurisdictions: request.jurisdictions.clone(),
         }))
         .call()
         .await?;
@@ -130,6 +133,7 @@ async fn derive(
             scope: Some("all_sources".to_owned()),
             grad_year: Some(GradYear::CO2027.get()),
             limit: None,
+            jurisdictions: request.jurisdictions.clone(),
         }))
         .call()
         .await?;
@@ -150,6 +154,7 @@ async fn workbook(
             scope: Some("all_sources".to_owned()),
             out: None,
             school_year: Some(request.season.get()),
+            jurisdictions: request.jurisdictions.clone(),
         }))
         .call()
         .await?;

@@ -49,6 +49,7 @@ fn publish(store: &Store) -> TestResult<PathBuf> {
             out: None,
             limit: None,
             scope: crate::report::Scope::AllSources,
+            jurisdictions: Vec::new(),
             school_year: year()?,
         },
     )?)

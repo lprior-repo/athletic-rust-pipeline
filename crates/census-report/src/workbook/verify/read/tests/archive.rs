@@ -103,12 +103,18 @@ pub(in crate::workbook::verify) fn recapture(
         .pointer_mut("/artifacts/workbook.xlsx")
         .ok_or("workbook artifact")?;
     *artifact = json!({"bytes": bytes.len(), "sha256": format!("{:x}", Sha256::digest(&bytes))});
+    let jurisdictions: Vec<String> = options
+        .jurisdictions
+        .iter()
+        .map(|jurisdiction| jurisdiction.code().to_string())
+        .collect();
     let selection = format!(
-        "{{\"scope\":{},\"grad_year\":{},\"limit\":{},\"school_year\":{}}}",
+        "{{\"scope\":{},\"grad_year\":{},\"limit\":{},\"school_year\":{},\"jurisdictions\":{}}}",
         serde_json::to_string(options.scope.as_str())?,
         serde_json::to_string(&options.grad_year)?,
         serde_json::to_string(&options.limit)?,
-        serde_json::to_string(&Some(options.school_year))?
+        serde_json::to_string(&Some(options.school_year))?,
+        serde_json::to_string(&jurisdictions)?
     );
     let digest_input = format!(
         "[1,{},{},{}]",

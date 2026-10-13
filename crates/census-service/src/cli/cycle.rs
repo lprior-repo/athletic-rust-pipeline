@@ -156,8 +156,8 @@ fn offline_stages(
     let dataset = load_dataset(store)?;
 
     let started = std::time::Instant::now();
-    let all_sources = publish_scope_with(&dataset, store, report::Scope::AllSources)?;
-    let core = publish_scope_with(&dataset, store, report::Scope::Core)?;
+    let all_sources = publish_scope_with(&dataset, store, report::Scope::AllSources, &[])?;
+    let core = publish_scope_with(&dataset, store, report::Scope::Core, &[])?;
     stage_line("reports", "all_sources+core", started);
     let censuses = workbook::Censuses { core, all_sources };
 
@@ -231,7 +231,7 @@ async fn run_live(origin: &str, args: &RunArgs) -> Result<()> {
     println!("index\tskipped (offline stage: `index --store <dir>` with census-serve stopped)");
 
     for scope in [report::Scope::AllSources, report::Scope::Core] {
-        publish_scope_live(origin, scope, &generation).await?;
+        publish_scope_live(origin, scope, &[], &generation).await?;
     }
 
     publish_bests_and_workbook_live(origin, args, scope, grad_year, contact_season, &generation)

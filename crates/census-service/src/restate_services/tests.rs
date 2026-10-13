@@ -947,19 +947,19 @@ fn environmental_store_errors_classify_transient() {
 #[test]
 fn identical_semantic_requests_with_same_generation_attach() -> TestResult {
     let legacy = ExportGeneration::default_generation();
-    let key_a = report_export_key("core", &legacy)?;
-    let key_b = report_export_key("core", &legacy)?;
+    let key_a = report_export_key("core", &[], &legacy)?;
+    let key_b = report_export_key("core", &[], &legacy)?;
     check!(eq;
         key_a,
         key_b,
         "identical requests with same generation must share a key"
     );
-    check!(eq; key_a, "report:core:1");
+    check!(eq; key_a, "report:core:all:1");
 
-    let key_c = bests_export_key("all", "2027", "50", &legacy)?;
-    let key_d = bests_export_key("all", "2027", "50", &legacy)?;
+    let key_c = bests_export_key("all", "2027", "50", &[], &legacy)?;
+    let key_d = bests_export_key("all", "2027", "50", &[], &legacy)?;
     check!(eq; key_c, key_d);
-    check!(eq; key_c, "bests:all:2027:50:1");
+    check!(eq; key_c, "bests:all:2027:50:all:1");
 
     let key_e = consolidate_export_key(&legacy);
     let key_f = consolidate_export_key(&legacy);
@@ -972,20 +972,20 @@ fn identical_semantic_requests_with_same_generation_attach() -> TestResult {
 fn same_semantics_different_generation_produces_new_key() -> TestResult {
     let legacy = ExportGeneration::default_generation();
     let fresh = ExportGeneration::parse("2")?;
-    let key_default = report_export_key("core", &legacy)?;
-    let key_new = report_export_key("core", &fresh)?;
+    let key_default = report_export_key("core", &[], &legacy)?;
+    let key_new = report_export_key("core", &[], &fresh)?;
     check!(ne;
         key_default,
         key_new,
         "same semantic parts with different generation must produce different keys"
     );
-    check!(eq; key_default, "report:core:1");
-    check!(eq; key_new, "report:core:2");
+    check!(eq; key_default, "report:core:all:1");
+    check!(eq; key_new, "report:core:all:2");
 
-    let bests_default = bests_export_key("all", "2027", "50", &legacy)?;
-    let bests_fresh = bests_export_key("all", "2027", "50", &fresh)?;
-    check!(eq; bests_default, "bests:all:2027:50:1");
-    check!(eq; bests_fresh, "bests:all:2027:50:2");
+    let bests_default = bests_export_key("all", "2027", "50", &[], &legacy)?;
+    let bests_fresh = bests_export_key("all", "2027", "50", &[], &fresh)?;
+    check!(eq; bests_default, "bests:all:2027:50:all:1");
+    check!(eq; bests_fresh, "bests:all:2027:50:all:2");
     check!(ne; bests_default, bests_fresh);
 
     let consolidate_default = consolidate_export_key(&legacy);
@@ -1000,25 +1000,35 @@ fn same_semantics_different_generation_produces_new_key() -> TestResult {
 fn differing_semantic_parts_produce_different_keys() -> TestResult {
     let legacy = ExportGeneration::default_generation();
     check!(ne;
-        report_export_key("core", &legacy)?,
-        report_export_key("all_sources", &legacy)?,
+        report_export_key("core", &[], &legacy)?,
+        report_export_key("all_sources", &[], &legacy)?,
         "different scope must produce different keys"
+    );
+    check!(ne;
+        report_export_key("core", &[], &legacy)?,
+        report_export_key("core", &[UsJurisdiction::Michigan], &legacy)?,
+        "different jurisdictions must produce different keys"
     );
 
     check!(ne;
-        bests_export_key("all", "2027", "50", &legacy)?,
-        bests_export_key("all", "2027", "100", &legacy)?,
+        bests_export_key("all", "2027", "50", &[], &legacy)?,
+        bests_export_key("all", "2027", "100", &[], &legacy)?,
         "different limit must produce different keys"
     );
     check!(ne;
-        bests_export_key("all", "2027", "50", &legacy)?,
-        bests_export_key("core", "2027", "50", &legacy)?,
+        bests_export_key("all", "2027", "50", &[], &legacy)?,
+        bests_export_key("core", "2027", "50", &[], &legacy)?,
         "different scope must produce different keys"
     );
     check!(ne;
-        bests_export_key("all", "2027", "50", &legacy)?,
-        bests_export_key("all", "2028", "50", &legacy)?,
+        bests_export_key("all", "2027", "50", &[], &legacy)?,
+        bests_export_key("all", "2028", "50", &[], &legacy)?,
         "different year must produce different keys"
+    );
+    check!(ne;
+        bests_export_key("all", "2027", "50", &[], &legacy)?,
+        bests_export_key("all", "2027", "50", &[UsJurisdiction::Michigan], &legacy)?,
+        "different jurisdictions must produce different keys"
     );
     Ok(())
 }
@@ -1053,14 +1063,15 @@ fn a_workbook_request_key_carries_every_selection_and_destination_field() -> Tes
         scope: Some("core".to_string()),
         out: Some("/tmp/root-a".to_string()),
         school_year: Some(2026),
+        jurisdictions: Vec::new(),
     };
     let legacy = ExportGeneration::default_generation();
     let key = workbook_request_key(&request, &legacy)?;
     let segments: Vec<&str> = key.split(':').collect();
     check!(eq;
         segments,
-        vec!["workbook", "2027", "core", "50", "/tmp/root-a", "2026", "1"],
-        "the key is workbook:year:scope:limit:out:school-year:generation"
+        vec!["workbook", "2027", "core", "50", "all", "/tmp/root-a", "2026", "1"],
+        "the key is workbook:year:scope:limit:places:out:school-year:generation"
     );
     check!(eq;
         workbook_request_key(&request, &ExportGeneration::default_generation())?,
@@ -1075,6 +1086,7 @@ fn a_workbook_request_key_carries_every_selection_and_destination_field() -> Tes
             scope: request.scope.clone(),
             out: request.out.clone(),
             school_year: request.school_year,
+            jurisdictions: request.jurisdictions.clone(),
         };
         edit(&mut other);
         Ok(workbook_request_key(
@@ -1099,12 +1111,17 @@ fn a_workbook_request_key_carries_every_selection_and_destination_field() -> Tes
         key,
         "school year"
     );
+    check!(ne;
+        changed(&|r| r.jurisdictions = vec![UsJurisdiction::Michigan])?,
+        key,
+        "jurisdictions"
+    );
 
     let bare = workbook_request_key(
         &WorkbookRequest::default(),
         &ExportGeneration::default_generation(),
     )?;
-    check!(eq; bare, "workbook:all:all:all:.:unstated:1");
+    check!(eq; bare, "workbook:all:all:all:all:.:unstated:1");
 
     let mut colon = request.clone();
     colon.out = Some("/tmp/a:b".to_string());
@@ -1135,28 +1152,28 @@ fn a_workbook_request_key_carries_every_selection_and_destination_field() -> Tes
 #[test]
 fn run_key_is_independent_of_wall_clock() -> TestResult {
     let legacy = ExportGeneration::default_generation();
-    let key = report_export_key("core", &legacy)?;
+    let key = report_export_key("core", &[], &legacy)?;
     let segments: Vec<&str> = key.split(':').collect();
-    check!(eq; segments.len(), 3, "report:core:1 has exactly 3 segments");
+    check!(eq; segments.len(), 4, "report:core:all:1 has exactly 4 segments");
     check!(eq;
-        segments[2], "1",
+        segments[3], "1",
         "the last segment must be the generation, not a timestamp"
     );
     check!(eq; segments[0], "report");
     check!(eq; segments[1], "core");
+    check!(eq; segments[2], "all");
 
-    let key2 = bests_export_key("all", "2027", "50", &ExportGeneration::parse("abc")?)?;
+    let key2 = bests_export_key("all", "2027", "50", &[], &ExportGeneration::parse("abc")?)?;
     let segments2: Vec<&str> = key2.split(':').collect();
     check!(eq;
         segments2.len(),
-        5,
-        "bests:all:2027:50:abc has exactly 5 segments"
+        6,
+        "bests:all:2027:50:all:abc has exactly 6 segments"
     );
     check!(eq;
-        segments2[4], "abc",
+        segments2[5], "abc",
         "the last segment must be the generation"
     );
-
     let key3 = consolidate_export_key(&legacy);
     let segments3: Vec<&str> = key3.split(':').collect();
     check!(eq; segments3.len(), 2, "consolidate:1 has 2 segments");
@@ -1274,5 +1291,64 @@ fn malformed_or_missing_store_lineage_is_terminal_without_retrying_identity_crea
             JobError::Transient { .. } => return Err("lineage refusal became retryable".into()),
         }
     }
+    Ok(())
+}
+
+#[test]
+fn jurisdiction_requests_canonicalize_and_refuse_out_of_scope() -> TestResult {
+    check!(eq; normalize_jurisdictions(&[]).map_err(|error| format!("{error:?}"))?, Vec::new());
+    check!(
+        eq;
+        normalize_jurisdictions(&[
+            UsJurisdiction::Wisconsin,
+            UsJurisdiction::Ohio,
+            UsJurisdiction::Ohio
+        ])
+        .map_err(|error| format!("{error:?}"))?,
+        vec![UsJurisdiction::Ohio, UsJurisdiction::Wisconsin]
+    );
+    if normalize_jurisdictions(&[UsJurisdiction::Alaska]).is_ok() {
+        return Err("Alaska survived census-scope admission".into());
+    }
+    if normalize_jurisdictions(&vec![
+        UsJurisdiction::Ohio;
+        MAX_REQUEST_JURISDICTIONS + 1
+    ])
+    .is_ok()
+    {
+        return Err("an oversized jurisdiction list survived admission".into());
+    }
+    Ok(())
+}
+
+#[test]
+fn duplicate_jurisdictions_share_one_idempotency_segment() -> TestResult {
+    let generation = ExportGeneration::default_generation();
+    check!(
+        eq;
+        jurisdictions_key_part(&[UsJurisdiction::Ohio, UsJurisdiction::Ohio]),
+        "OH"
+    );
+    check!(
+        eq;
+        report_export_key(
+            "core",
+            &[UsJurisdiction::Ohio, UsJurisdiction::Ohio],
+            &generation
+        )?,
+        report_export_key("core", &[UsJurisdiction::Ohio], &generation)?
+    );
+    Ok(())
+}
+
+#[test]
+fn publication_requests_reject_unknown_fields() -> TestResult {
+    if serde_json::from_str::<ReportRequest>(r#"{"scope":"core","jurisdiction":["OH"]}"#).is_ok()
+    {
+        return Err("a mistyped jurisdiction field deserialized as unrestricted".into());
+    }
+    let request: ReportRequest =
+        serde_json::from_str(r#"{"scope":"core","jurisdictions":["OH"]}"#)?;
+    check!(eq; request.jurisdictions, vec![UsJurisdiction::Ohio]);
     Ok(())
 }

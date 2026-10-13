@@ -50,6 +50,7 @@ fn options() -> TestResult<Options> {
         limit: None,
         scope: Scope::AllSources,
         school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
+        jurisdictions: Vec::new(),
     })
 }
 
@@ -240,5 +241,19 @@ fn seal_verification_shares_one_generation_across_exact_readback() -> TestResult
     check!(eq; independent.generation_digest, digest);
     check!(eq; independent.workbook.mapped_athletes, readback.mapped_athletes);
     check!(eq; std::fs::read(&published)?, bytes);
+    Ok(())
+}
+
+#[test]
+fn selection_canonicalizes_jurisdiction_order_and_duplicates() -> TestResult {
+    let mut first = options()?;
+    first.jurisdictions = vec![UsJurisdiction::Wisconsin, UsJurisdiction::Ohio];
+    let mut second = options()?;
+    second.jurisdictions = vec![
+        UsJurisdiction::Ohio,
+        UsJurisdiction::Wisconsin,
+        UsJurisdiction::Ohio,
+    ];
+    check!(eq; super::Selection::of(&first), super::Selection::of(&second));
     Ok(())
 }

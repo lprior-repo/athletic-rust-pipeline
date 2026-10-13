@@ -13,12 +13,15 @@ pub(crate) fn candidates(
     dataset: &ExportDataset,
     scope: Scope,
     grad_year: Option<i16>,
+    jurisdictions: &[census_domain::UsJurisdiction],
 ) -> Vec<CanonicalAthlete> {
     let states = school_state_index(dataset.schools.values());
     let mut athletes = collapse_athletes(&dataset.athletes, &dataset.canonical_aliases);
     athletes.retain(|athlete| {
-        in_run_scope(jurisdiction_of(&states, athlete.school.as_str()))
-            && (scope != Scope::Core || is_core_evidenced(athlete))
+        in_run_scope(
+            jurisdiction_of(&states, athlete.school.as_str()),
+            jurisdictions,
+        ) && (scope != Scope::Core || is_core_evidenced(athlete))
             && in_requested_year(athlete, grad_year)
     });
     athletes

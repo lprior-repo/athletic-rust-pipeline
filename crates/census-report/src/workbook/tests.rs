@@ -152,6 +152,7 @@ fn build_hostile_workbook() -> TestResult<(Store, tempfile::TempDir)> {
         out: None,
         limit: None,
         scope: crate::report::Scope::AllSources,
+        jurisdictions: Vec::new(),
         school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
     };
     crate::workbook::build(&store, &options)?;
@@ -209,6 +210,7 @@ fn meta_sheets_write_formula_prefixed_text_as_literal_strings() -> TestResult {
         out: None,
         limit: None,
         scope: crate::report::Scope::AllSources,
+        jurisdictions: Vec::new(),
         school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
     };
     crate::workbook::build(&store, &options)?;
@@ -238,7 +240,7 @@ fn meta_sheets_write_formula_prefixed_text_as_literal_strings() -> TestResult {
 fn write_recruiting_csv(store: &Store, path: &Path) -> TestResult {
     let dataset = crate::export::ExportDataset::load(store)?;
     let derivation =
-        crate::report::Derivation::of(&dataset, crate::report::Scope::AllSources, Some(2027));
+        crate::report::Derivation::of(&dataset, crate::report::Scope::AllSources, Some(2027), &[]);
     crate::workbook::write_recruiting_csv(
         &derivation,
         SchoolYear::new(2026).ok_or("invalid fixture season")?,
@@ -459,7 +461,7 @@ fn seed_partition_store(store: &Store, fixture: &PartitionFixture) -> TestResult
 fn projected_partition_rows(store: &Store) -> TestResult<Vec<PerformanceRow>> {
     let dataset = crate::export::ExportDataset::load(store)?;
     let derivation =
-        crate::report::Derivation::of(&dataset, crate::report::Scope::AllSources, None);
+        crate::report::Derivation::of(&dataset, crate::report::Scope::AllSources, None, &[]);
     let projection = PerformanceProjection::of(&derivation);
     Ok(derivation
         .performances()

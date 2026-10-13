@@ -62,6 +62,7 @@ fn reduction_selects_the_faster_result_without_inventing_a_team_school() -> Test
             scope: Scope::AllSources,
             grad_year: Some(2027),
             limit: None,
+            jurisdictions: Vec::new(),
         },
     )?;
 
@@ -369,6 +370,7 @@ fn f08_transfers_retain_performance_time_affiliation() -> TestResult {
             scope: Scope::AllSources,
             grad_year: Some(2027),
             limit: None,
+            jurisdictions: Vec::new(),
         },
     )?;
 
@@ -468,6 +470,7 @@ fn f09_prelim_final_attempt_facts_are_retained() -> TestResult {
             scope: Scope::AllSources,
             grad_year: Some(2027),
             limit: None,
+            jurisdictions: Vec::new(),
         },
     )?;
 
@@ -549,6 +552,7 @@ fn canary22_no_invented_individual_pr_from_relay_membership() -> TestResult {
             scope: Scope::AllSources,
             grad_year: Some(2027),
             limit: None,
+            jurisdictions: Vec::new(),
         },
     )?;
 

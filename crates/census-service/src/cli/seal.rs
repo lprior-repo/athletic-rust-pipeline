@@ -9,7 +9,8 @@ use census_service::census::{RetainedFindings, SealCounts, SealedCensus};
 use census_service::restate_services::{CensusIngressClient, SealReply, SealRequest};
 use census_store::Store;
 
-use super::{scope_of, Cli, Route};
+use super::{resolve_restriction, restriction_display, scope_of, Cli, Route};
+use census_domain::UsJurisdiction;
 use census_service::ingress;
 
 #[derive(Debug, Args)]
@@ -24,6 +25,14 @@ pub(super) struct SealArgs {
     #[arg(help = "Certify the core scope instead of every approved source")]
     #[arg(long)]
     core: bool,
+    #[arg(
+        help = "Certify only the publication restricted to these jurisdictions (default: every census jurisdiction)"
+    )]
+    #[arg(long, value_delimiter = ',')]
+    states: Vec<UsJurisdiction>,
+    #[arg(help = "Certify the publication covering every census jurisdiction explicitly")]
+    #[arg(long)]
+    all_states: bool,
     #[arg(
         help = "Manifested workbook to certify. Defaults to out/publication/current/workbook.xlsx"
     )]
@@ -59,7 +68,7 @@ pub(super) async fn run_seal(cli: &Cli, args: &SealArgs) -> Result<()> {
     match cli.route(args.ingress.as_deref())? {
         Route::Offline(root) => {
             let store = Store::open(root)?;
-            match seal::seal(&store, &store_request(args)) {
+            match seal::seal(&store, &store_request(args)?) {
                 Ok(outcome) => present(&Ladder::of_outcome(&outcome)),
                 Err(seal::SealWorkflowError::ForeignCohort { requested }) => {
                     bail!(
@@ -74,7 +83,7 @@ pub(super) async fn run_seal(cli: &Cli, args: &SealArgs) -> Result<()> {
         }
         Route::Ingress(origin) => {
             let reply = CensusIngressClient::from_client(ingress::job_client(origin)?)
-                .seal(Json(wire_request(args)))
+                .seal(Json(wire_request(args)?))
                 .call()
                 .await
                 .map_err(ingress::error)?
@@ -86,20 +95,25 @@ pub(super) async fn run_seal(cli: &Cli, args: &SealArgs) -> Result<()> {
     }
 }
 
-fn store_request(args: &SealArgs) -> seal::SealRequest {
-    seal::SealRequest {
+fn store_request(args: &SealArgs) -> Result<seal::SealRequest> {
+    let jurisdictions = resolve_restriction(args.all_states, &args.states)?;
+    println!("jurisdictions={}", restriction_display(&jurisdictions));
+    Ok(seal::SealRequest {
         grad_year: args.grad_year,
         scope: scope_of(args.core),
+        jurisdictions,
         workbook: args.workbook.clone(),
         write: args.write,
         journal: None,
         source_failures: None,
         run: None,
-    }
+    })
 }
 
-fn wire_request(args: &SealArgs) -> SealRequest {
-    SealRequest {
+fn wire_request(args: &SealArgs) -> Result<SealRequest> {
+    let jurisdictions = resolve_restriction(args.all_states, &args.states)?;
+    println!("jurisdictions={}", restriction_display(&jurisdictions));
+    Ok(SealRequest {
         grad_year: args.grad_year,
         all_sources: !args.core,
         workbook: args
@@ -110,7 +124,8 @@ fn wire_request(args: &SealArgs) -> SealRequest {
         season: args.season,
         revision: args.revision,
         source_objects: args.source_objects.clone(),
-    }
+        jurisdictions: resolve_restriction(args.all_states, &args.states)?,
+    })
 }
 
 struct Ladder {

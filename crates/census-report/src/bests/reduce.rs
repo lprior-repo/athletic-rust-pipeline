@@ -25,7 +25,12 @@ pub(crate) fn build_admitted(
     admission: &EventAdmission<'_>,
     options: &Options,
 ) -> ReportResult<Vec<SharedSelection>> {
-    let derivation = Derivation::of(admission.dataset(), options.scope, options.grad_year);
+    let derivation = Derivation::of(
+        admission.dataset(),
+        options.scope,
+        options.grad_year,
+        &options.jurisdictions,
+    );
     let parents = Parents::of(&derivation);
     let retained = RetainedContexts::of(derivation.performances(), &parents);
     let mut slots: HashMap<PrKey, PrSlot<'_>> = HashMap::new();

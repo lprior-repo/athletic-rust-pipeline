@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use census_domain::UsJurisdiction;
+
 use census_domain::model::{AccessBlockKind, CensusRun, GradYear, SourceAccessCondition};
 
 use super::{CensusState, SealEvidence, SealedCensus};
@@ -49,6 +51,7 @@ pub struct JournalCounts {
 pub struct SealRequest {
     pub grad_year: i16,
     pub scope: Scope,
+    pub jurisdictions: Vec<UsJurisdiction>,
     pub workbook: Option<PathBuf>,
     pub write: bool,
     pub journal: Option<JournalCounts>,
@@ -91,13 +94,13 @@ pub fn seal(store: &Store, request: &SealRequest) -> Result<SealOutcome, SealWor
     else {
         return Err(SealWorkflowError::WorkbookMissing);
     };
-    let inspection = inspect_workbook(&path, store, cohort, request.scope)
+    let inspection = inspect_workbook(&path, store, cohort, request.scope, &request.jurisdictions)
         .map_err(|error| SealWorkflowError::Workbook(error.to_string()))?;
     let dataset = inspection.dataset;
     let workbook = inspection.check;
     let coverage = report::coverage_report(&dataset, Some(cohort.get()))
         .map_err(|error| SealWorkflowError::Coverage(error.to_string()))?;
-    let derivation = Derivation::of(&dataset, request.scope, Some(cohort.get()));
+    let derivation = Derivation::of(&dataset, request.scope, Some(cohort.get()), &request.jurisdictions);
     let census = report::build_census(&derivation, &store.out_dir());
     let stats = store
         .stats()

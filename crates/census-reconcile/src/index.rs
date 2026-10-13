@@ -90,7 +90,7 @@ pub fn derive(
     let base = stage_digest(stage.view())?;
     let dataset = census_report::export::ExportDataset::from_snapshot(store, stage.view())?;
     let pass = canonical_pass(&dataset);
-    let retained = census_report::workbook::retained_records(&dataset, school_year)?;
+    let retained = census_report::workbook::retained_records(&dataset, school_year, &[])?;
     let coverage = coverage_rows(&dataset, &pass.identities)?;
 
     let mut conflicts: Vec<RetainedConflict> = retained

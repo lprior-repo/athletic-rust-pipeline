@@ -84,9 +84,9 @@ fn requested_cohort_excludes_stored_year_without_typed_support() -> TestResult {
         "Class of 2027",
     ));
     let input = dataset(std::slice::from_ref(&unsupported))?;
-    let requested = Derivation::of(&input, Scope::AllSources, Some(2027));
+    let requested = Derivation::of(&input, Scope::AllSources, Some(2027), &[]);
     check!(eq; requested.athletes(), &[]);
-    let archive = Derivation::of(&input, Scope::AllSources, None);
+    let archive = Derivation::of(&input, Scope::AllSources, None, &[]);
     check!(eq; archive.athletes(), std::slice::from_ref(&unsupported));
     Ok(())
 }
@@ -99,7 +99,7 @@ fn requested_cohort_keeps_direct_year_provenance_without_results_or_invented_gra
         .published_graduations
         .push(published(GradYear::CO2027, "Direct"));
     let input = dataset(std::slice::from_ref(&supported))?;
-    let requested = Derivation::of(&input, Scope::AllSources, Some(2027));
+    let requested = Derivation::of(&input, Scope::AllSources, Some(2027), &[]);
     check!(eq; requested.athletes(), std::slice::from_ref(&supported));
     check!(requested.performances().is_empty());
     Ok(())
@@ -111,7 +111,7 @@ fn requested_cohort_keeps_compatible_grades_in_their_published_academic_year() -
         let mut supported = athlete("Grade", GradYear::CO2027);
         supported.observed_grades.push(observation);
         let input = dataset(std::slice::from_ref(&supported))?;
-        let requested = Derivation::of(&input, Scope::AllSources, Some(2027));
+        let requested = Derivation::of(&input, Scope::AllSources, Some(2027), &[]);
         check!(eq; requested.athletes(), std::slice::from_ref(&supported));
     }
     Ok(())
@@ -140,10 +140,10 @@ fn requested_cohort_excludes_direct_grade_and_uninferable_grade_contradictions()
         let mut input = dataset(std::slice::from_ref(&conflicting))?;
         let result = performance(&conflicting, "conflicting-result")?;
         input.performances.push(result.clone());
-        let requested = Derivation::of(&input, Scope::AllSources, Some(2027));
+        let requested = Derivation::of(&input, Scope::AllSources, Some(2027), &[]);
         check!(eq; requested.athletes(), &[]);
         check!(requested.performances().is_empty());
-        let archive = Derivation::of(&input, Scope::AllSources, None);
+        let archive = Derivation::of(&input, Scope::AllSources, None, &[]);
         check!(eq; archive.athletes(), std::slice::from_ref(&conflicting));
         check!(eq; archive.performances(), &[&result]);
     }
@@ -158,9 +158,9 @@ fn requested_cohort_requires_the_stored_year_to_match_supported_evidence() -> Te
         .published_graduations
         .push(published(other_year, "Other Cohort"));
     let input = dataset(std::slice::from_ref(&off_cohort))?;
-    check!(eq; Derivation::of(&input, Scope::AllSources, Some(2027)).athletes(),
+    check!(eq; Derivation::of(&input, Scope::AllSources, Some(2027), &[]).athletes(),
     &[]);
-    check!(eq; Derivation::of(&input, Scope::AllSources, Some(2028)).athletes(),
+    check!(eq; Derivation::of(&input, Scope::AllSources, Some(2028), &[]).athletes(),
     std::slice::from_ref(&off_cohort));
     Ok(())
 }
@@ -179,7 +179,7 @@ fn accepted_alias_support_admits_the_canonical_member_and_preserves_result_owner
         .insert(alias.id.to_string(), canonical.id.to_string());
     let result = performance(&alias, "alias-result")?;
     input.performances.push(result.clone());
-    let requested = Derivation::of(&input, Scope::AllSources, Some(2027));
+    let requested = Derivation::of(&input, Scope::AllSources, Some(2027), &[]);
     let retained = requested
         .athletes()
         .first()
@@ -218,10 +218,10 @@ fn aliased_conflicts_remain_archived_but_exclude_requested_members() -> TestResu
             .insert(alias.id.to_string(), canonical.id.to_string());
         let result = performance(&alias, "alias-conflict-result")?;
         input.performances.push(result.clone());
-        let requested = Derivation::of(&input, Scope::AllSources, Some(2027));
+        let requested = Derivation::of(&input, Scope::AllSources, Some(2027), &[]);
         check!(eq; requested.athletes(), &[]);
         check!(requested.performances().is_empty());
-        let archive = Derivation::of(&input, Scope::AllSources, None);
+        let archive = Derivation::of(&input, Scope::AllSources, None, &[]);
         let retained = archive
             .athletes()
             .first()
@@ -271,10 +271,10 @@ fn requested_results_exclude_unknown_joins_but_unfiltered_archive_preserves_them
         performance(&unmatched, "unmatched")?,
         performance(&dangling, "dangling")?,
     ];
-    let requested = Derivation::of(&input, Scope::AllSources, Some(2027));
+    let requested = Derivation::of(&input, Scope::AllSources, Some(2027), &[]);
     check!(eq; requested.athletes(), std::slice::from_ref(&admitted));
     check!(eq; requested.performances(), &[&admitted_result]);
-    let archive = Derivation::of(&input, Scope::AllSources, None);
+    let archive = Derivation::of(&input, Scope::AllSources, None, &[]);
     check!(eq; archive.performances(),
     input.performances.iter().collect::<Vec<_>>());
     Ok(())

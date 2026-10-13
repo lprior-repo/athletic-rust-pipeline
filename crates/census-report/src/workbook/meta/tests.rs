@@ -31,11 +31,11 @@ const SHEETS: [&str; 9] = [
 fn meta_workbook(store: &Store, dir: &Path, scope: Scope) -> TestResult<std::path::PathBuf> {
     let dataset = crate::export::ExportDataset::load(store)?;
     let core = report::build_census(
-        &report::Derivation::of(&dataset, Scope::Core, None),
+        &report::Derivation::of(&dataset, Scope::Core, None, &[]),
         &store.out_dir(),
     );
     let all_sources = report::build_census(
-        &report::Derivation::of(&dataset, Scope::AllSources, None),
+        &report::Derivation::of(&dataset, Scope::AllSources, None, &[]),
         &store.out_dir(),
     );
     let bests = bests::build_from_dataset(
@@ -44,10 +44,11 @@ fn meta_workbook(store: &Store, dir: &Path, scope: Scope) -> TestResult<std::pat
             scope,
             grad_year: Some(2027),
             limit: None,
+            jurisdictions: Vec::new(),
         },
     )?;
-    let population = report::Derivation::of(&dataset, scope, None);
-    let recruiting = report::Derivation::of(&dataset, scope, Some(2027));
+    let population = report::Derivation::of(&dataset, scope, None, &[]);
+    let recruiting = report::Derivation::of(&dataset, scope, Some(2027), &[]);
     let path = dir.join("meta.xlsx");
     let admission = crate::report::EventAdmission::of(&dataset)?;
     let mut book = Workbook::new();
@@ -394,6 +395,7 @@ fn unsupported_graduation_cases_are_retained_in_review_without_a_canonical_athle
             out: Some(dir.path().join("unsupported-cohort.xlsx")),
             limit: None,
             scope: crate::report::Scope::AllSources,
+            jurisdictions: Vec::new(),
             school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
         },
     )?;
@@ -457,6 +459,7 @@ fn school_link_cases_are_retained_in_review_until_a_verdict_answers_them() -> Te
             out: Some(dir.path().join("school-links.xlsx")),
             limit: None,
             scope: crate::report::Scope::AllSources,
+            jurisdictions: Vec::new(),
             school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
         },
     )?;

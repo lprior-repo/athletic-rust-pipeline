@@ -56,6 +56,7 @@ fn assert_xlsx(store: &Store, out: &Path, expected: &str, normalized: f64) -> Te
         out: Some(out.join("publication")),
         limit: None,
         scope: Scope::AllSources,
+        jurisdictions: Vec::new(),
         school_year: census_domain::model::SchoolYear::new(2026).ok_or("fixture season")?,
     };
     let workbook_path = crate::workbook::build(store, &options)?;

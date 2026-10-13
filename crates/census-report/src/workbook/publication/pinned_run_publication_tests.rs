@@ -122,7 +122,7 @@ fn first_binding_after_stage_begin_preserves_every_previous_bundle_byte() -> Tes
     let bytes = bundle_bytes(&old)?;
     let previous_pointer = std::fs::read_link(root.join("current"))?;
     let dataset = ExportDataset::for_job(&store, "pinned-run:stage-before-binding")?;
-    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir());
+    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[]);
     let stage = Stage::begin(&dataset, &store, &options)?;
     store.bind_run(&manifest(&store, &options)?)?;
     let result = stage.publish(&dataset, &options, |directory| {
@@ -170,7 +170,7 @@ fn normal_bound_input_publishes_and_reads_back_under_the_unchanged_fence() -> Te
     check!(eq; input.recipe, binding::recipe(&dataset.lineage, &options)?);
     check!(eq; input.evidence_generation, snapshot.evidence_generation());
     check!(eq; input.derived_generation, snapshot.derived_generation());
-    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir());
+    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[]);
     let workbook = crate::workbook::build_from(&dataset, &store, &options, &censuses)?;
     let root = store.out_dir().join("publication");
     check!(eq; current_workbook(&root)?, workbook);

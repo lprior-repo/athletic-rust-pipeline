@@ -111,7 +111,7 @@ pub(super) fn census_phases(
 ) -> Result<(Phase, Phase, workbook::Censuses)> {
     let started = Instant::now();
     let core = report::build_census(
-        &Derivation::of(dataset, Scope::Core, None),
+        &Derivation::of(dataset, Scope::Core, None, &[]),
         &store.out_dir(),
     );
     let core_phase = measure("census_core", cohort, "athletes", started.elapsed())?;
@@ -128,7 +128,7 @@ pub(super) fn census_phases(
 
     let started = Instant::now();
     let all_sources = report::build_census(
-        &Derivation::of(dataset, Scope::AllSources, None),
+        &Derivation::of(dataset, Scope::AllSources, None, &[]),
         &store.out_dir(),
     );
     let all_sources_phase = measure("census_all_sources", cohort, "athletes", started.elapsed())?;
@@ -154,6 +154,7 @@ pub(super) fn bests_phase(
         scope: Scope::AllSources,
         grad_year: Some(2027),
         limit: None,
+        jurisdictions: Vec::new(),
     };
     let rows = bests::build_from_dataset(dataset, &options)?;
     let phase = measure("bests", performances, "performances", started.elapsed())?;
@@ -191,6 +192,7 @@ pub(super) fn workbook_phase(
             out: Some(out.clone()),
             limit: None,
             scope: Scope::AllSources,
+            jurisdictions: Vec::new(),
             school_year: census_domain::model::SchoolYear::DEFAULT,
         },
         censuses,

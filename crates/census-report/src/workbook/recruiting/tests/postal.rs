@@ -40,6 +40,7 @@ fn published(store: &Store) -> TestResult<(std::path::PathBuf, ExportDataset, Op
         limit: None,
         scope: crate::report::Scope::AllSources,
         school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
+        jurisdictions: Vec::new(),
     };
     let path = crate::workbook::build(store, &options)?;
     let generation = path.parent().ok_or("missing generation directory")?;
@@ -287,7 +288,7 @@ fn accepted_alias_school_affiliations_preserve_their_source_owned_postal_claims(
     store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
     identity::accept(&store, &[first, second])?;
     let (path, dataset, _) = published(&store)?;
-    let canonical = crate::report::Derivation::of(&dataset, Scope::AllSources, Some(2027));
+    let canonical = crate::report::Derivation::of(&dataset, Scope::AllSources, Some(2027), &[]);
     let [athlete] = canonical.athletes() else {
         return Err("one accepted athlete required".into());
     };

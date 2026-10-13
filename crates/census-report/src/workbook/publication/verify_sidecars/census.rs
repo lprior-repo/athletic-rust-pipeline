@@ -9,7 +9,11 @@ use super::{defect, diff, read};
 const MAX_BYTES: u64 = 64 * 1024 * 1024;
 
 pub(super) fn verify(directory: &Path, inputs: &Inputs<'_>) -> ReportResult<()> {
-    let reports = Censuses::of(inputs.dataset, &inputs.out_root);
+    let reports = Censuses::of(
+        inputs.dataset,
+        &inputs.out_root,
+        &inputs.options.jurisdictions,
+    );
     compare(directory, "census-core.json", &reports.core)?;
     compare(directory, "census-all-sources.json", &reports.all_sources)
 }
