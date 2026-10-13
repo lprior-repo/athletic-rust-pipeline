@@ -15,6 +15,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 mod classification;
 mod conflicts;
 mod exact_time;
+mod historical_affiliation;
 mod keys;
 mod measures;
 mod reduction;

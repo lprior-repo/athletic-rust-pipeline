@@ -59,18 +59,8 @@ impl Candidate<'_> {
             grad_year: athlete.grad_year.get(),
             profile_url: athlete.public_profile_urls.first().cloned(),
             school: historical_school.clone(),
-            athlete_school: match historical_school {
-                Some(school) => school,
-                None => athlete.school.as_str().to_string(),
-            },
-            athlete_state: match historical_state {
-                Some(state) => JurisdictionBucket::from(state),
-                None => JurisdictionBucket::from(
-                    parents
-                        .school(athlete.school.as_str())
-                        .and_then(|school| school.state),
-                ),
-            },
+            athlete_school: historical_school.map_or(String::new(), core::convert::identity),
+            athlete_state: JurisdictionBucket::from(historical_state),
         }
     }
 }

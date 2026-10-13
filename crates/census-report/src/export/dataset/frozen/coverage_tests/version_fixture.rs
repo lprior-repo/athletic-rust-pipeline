@@ -16,6 +16,7 @@ pub(super) enum VersionCase {
     HistoricalSchema,
     HistoricalPolicy,
     PreviousPolicy,
+    PriorAffiliationPolicy,
     HistoricalProtocol,
     ManifestCodec,
     AdvertisedInventory,
@@ -27,9 +28,10 @@ pub(super) enum VersionCase {
 impl VersionCase {
     pub(super) fn refusal_what(self) -> &'static str {
         match self {
-            Self::HistoricalSchema | Self::HistoricalPolicy | Self::PreviousPolicy => {
-                "manifest lineage"
-            }
+            Self::HistoricalSchema
+            | Self::HistoricalPolicy
+            | Self::PreviousPolicy
+            | Self::PriorAffiliationPolicy => "manifest lineage",
             Self::HistoricalProtocol => "input token",
             Self::ManifestCodec => "frozen manifest",
             Self::AdvertisedInventory => "artifact reference",
@@ -138,14 +140,19 @@ fn change_manifest(manifest: &mut FrozenManifest, case: VersionCase) -> TestResu
             manifest.input_token.semantic_policy = 8;
         }
         VersionCase::HistoricalPolicy => {
-            check!(eq; manifest.lineage.policy_revision, 9);
+            check!(eq; manifest.lineage.policy_revision, 10);
             manifest.lineage.policy_revision = 7;
             manifest.input_token.semantic_policy = 7;
         }
         VersionCase::PreviousPolicy => {
-            check!(eq; manifest.lineage.policy_revision, 9);
+            check!(eq; manifest.lineage.policy_revision, 10);
             manifest.lineage.policy_revision = 8;
             manifest.input_token.semantic_policy = 8;
+        }
+        VersionCase::PriorAffiliationPolicy => {
+            check!(eq; manifest.lineage.policy_revision, 10);
+            manifest.lineage.policy_revision = 9;
+            manifest.input_token.semantic_policy = 9;
         }
         VersionCase::HistoricalProtocol => {
             check!(eq; manifest.input_token.protocol, TOKEN_PROTOCOL);

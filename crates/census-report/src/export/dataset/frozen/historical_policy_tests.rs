@@ -57,7 +57,7 @@ fn object_bytes(directory: &Path) -> TestResult<BTreeMap<OsString, Vec<u8>>> {
 }
 
 fn historical_manifest(current: &FrozenManifest) -> TestResult<FrozenManifest> {
-    check!(eq; current.lineage.policy_revision, 9);
+    check!(eq; current.lineage.policy_revision, 10);
     let mut historical = current.clone();
     historical.lineage.policy_revision = 7;
     historical.lineage.input_generation = super::generation(&historical.lineage)?;

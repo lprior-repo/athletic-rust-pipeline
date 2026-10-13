@@ -164,3 +164,19 @@ different cohort asks for a second, explicit derivation. Cost becomes one decode
 filter pass per derivation, measured per [xtask procedures](../../xtask/README.md#measurement-and-fixture-boundaries); the extra filter
 pass is O(rows) over borrowed rows and does not re-decode. Fixtures and tests build derivations from
 a dataset instead of asserting on store states that bypass the derivation.
+
+
+## Historical PR affiliation completeness amendment — 2026-10-13
+
+Publication semantic policy revision 10 never fills a missing performance-time school or state
+from the athlete's current school. The shared best-mark reducer follows only the performance's
+team and that team's retained school. Missing parents produce an unknown historical school/state;
+a retained historical school with unknown state keeps its name and the Unknown jurisdiction bucket.
+This does not discard a valid mark or change its athlete, team, meet, source or selected-result
+identity. Current recruiting-directory affiliation and population membership are unchanged.
+
+All PR projections, sorted selections, CSV/JSONL output and workbook readback consume that shared
+result. Policy-9 and earlier inputs/generations remain byte-preserved historical evidence and are
+refused by the current verifier rather than relabeled or rewritten. Logical export schema 2,
+manifest codec 2 and token protocol 2 remain unchanged. Dated current-school affiliation and
+configurable profile membership remain separate, unfinished end-vision requirements.
