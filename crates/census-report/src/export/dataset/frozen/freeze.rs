@@ -1,11 +1,12 @@
 use super::capture;
+use super::codec::FrozenCodecError;
 use super::manifest::FrozenManifest;
 use super::objects;
 use super::recover;
 use super::root::{self, FrozenRoot, Retained};
 use super::verify;
 use super::{codec_error, invalid};
-use crate::report::{io_error, ReportResult};
+use crate::report::{io_error, ReportError, ReportResult};
 use census_store::{InputRecord, InputState, Store};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -128,6 +129,7 @@ fn retained_root(
     retained: &Retained,
 ) -> ReportResult<FrozenRoot> {
     let Some(record) = store.get_input_record(&retained.attempt)? else {
+        ensure_retirable(directory, retained)?;
         root::remove_retained(directory)?;
         return fresh(store, job, directory);
     };
@@ -137,6 +139,7 @@ fn retained_root(
             recover::recover(store, directory, retained, &record)
         }
         InputState::Abandoned => {
+            ensure_retirable(directory, retained)?;
             root::remove_retained(directory)?;
             fresh(store, job, directory)
         }
@@ -158,7 +161,40 @@ fn reuse(
 ) -> ReportResult<FrozenRoot> {
     match reusable(store, job, directory, retained, record) {
         Ok(root) => Ok(root),
-        Err(error) => Err(recover::retire_pointer(directory, error)),
+        Err(ReuseFailure::Preserve(error)) => Err(error),
+        Err(ReuseFailure::Retire(error)) => Err(recover::retire_pointer(directory, error)),
+    }
+}
+
+enum ReuseFailure {
+    Preserve(ReportError),
+    Retire(ReportError),
+}
+
+impl From<ReportError> for ReuseFailure {
+    fn from(error: ReportError) -> Self {
+        Self::Retire(error)
+    }
+}
+
+impl From<super::verification_error::VerificationError> for ReuseFailure {
+    fn from(error: super::verification_error::VerificationError) -> Self {
+        if error.preserves_version() {
+            Self::Preserve(error.into())
+        } else {
+            Self::Retire(error.into())
+        }
+    }
+}
+
+impl ReuseFailure {
+    fn from_codec(error: FrozenCodecError) -> Self {
+        match error {
+            unsupported @ FrozenCodecError::UnsupportedVersion { .. } => {
+                Self::Preserve(codec_error(unsupported))
+            }
+            other => Self::Retire(codec_error(other)),
+        }
     }
 }
 
@@ -168,9 +204,9 @@ fn reusable(
     directory: &Path,
     retained: &Retained,
     record: &InputRecord,
-) -> ReportResult<FrozenRoot> {
+) -> Result<FrozenRoot, ReuseFailure> {
     let objects_dir = objects::directory(directory);
-    let manifest = recover::open_manifest(&objects_dir, &retained.manifest)?;
+    let manifest = retained_manifest(&objects_dir, retained)?;
     recover::ensure_job(&manifest, job)?;
     recover::ensure_identity(store, &manifest)?;
     verify::verify_record(&objects_dir, &retained.manifest, &manifest, record)?;
@@ -182,6 +218,27 @@ fn reusable(
         retained.attempt.clone(),
         record.bytes(),
     ))
+}
+
+fn retained_manifest(
+    objects_dir: &Path,
+    retained: &Retained,
+) -> Result<FrozenManifest, ReuseFailure> {
+    let encoded = objects::read(objects_dir, &retained.manifest, objects::MANIFEST_CEILING)?;
+    FrozenManifest::decode(&encoded).map_err(ReuseFailure::from_codec)
+}
+
+fn ensure_retirable(directory: &Path, retained: &Retained) -> ReportResult<()> {
+    let objects_dir = objects::directory(directory);
+    let checked = retained_manifest(&objects_dir, retained).and_then(|manifest| {
+        verify::verify_root(&objects_dir, &retained.manifest, &manifest)
+            .map(|_| ())
+            .map_err(ReuseFailure::from)
+    });
+    match checked {
+        Err(ReuseFailure::Preserve(error)) => Err(error),
+        Ok(()) | Err(ReuseFailure::Retire(_)) => Ok(()),
+    }
 }
 
 fn job_digest(job: &str) -> ReportResult<String> {

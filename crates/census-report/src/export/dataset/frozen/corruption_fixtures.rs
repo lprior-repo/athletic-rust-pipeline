@@ -105,7 +105,7 @@ pub(crate) fn refused_record(root: &FrozenRoot, record: &InputRecord) -> TestRes
         record,
     ) {
         Ok(()) => Err("a corrupted frozen root verified against its durable record".into()),
-        Err(error) => Ok(error),
+        Err(error) => Ok(error.into()),
     }
 }
 

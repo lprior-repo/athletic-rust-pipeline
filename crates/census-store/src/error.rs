@@ -1,5 +1,9 @@
 #[derive(Debug, thiserror::Error)]
 pub enum StoreError {
+    #[error(transparent)]
+    StoreIdentity(#[from] census_domain::model::StoreIdentityError),
+    #[error(transparent)]
+    StoreLineage(#[from] crate::StoreLineageError),
     #[error("store open failed: {source}")]
     Open {
         #[source]
@@ -48,6 +52,16 @@ pub enum StoreError {
         operation: String,
         expected: u64,
         actual: u64,
+    },
+    #[error("operation {operation} was staged against a different store instance")]
+    RevisionOriginMismatch { operation: String },
+    #[error("operation {operation} expected store revision ({expected_evidence}, {expected_derived}), found ({actual_evidence}, {actual_derived})")]
+    RevisionMoved {
+        operation: String,
+        expected_evidence: u64,
+        actual_evidence: u64,
+        expected_derived: u64,
+        actual_derived: u64,
     },
     #[error("identity projection failed: {0}")]
     Identity(#[from] census_domain::model::IdentityError),

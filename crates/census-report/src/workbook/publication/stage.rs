@@ -174,7 +174,7 @@ impl<'s> Stage<'s> {
             .store
             .publication_fence(&retained.request, run_manifest)
             .map_err(binding::refused)?;
-        let intent = input.begin(retained, desired)?;
+        let intent = input.begin(input.intent(), desired)?;
         checkpoint::reached("intent", &self.root)?;
         if actual != census_store::publish::Root::Bundle(desired.clone()) {
             pointer::switch(&self.root, desired)?;

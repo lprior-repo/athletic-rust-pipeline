@@ -12,7 +12,7 @@ fn quarantined(dir: &Path) -> TestResult<Vec<(PathBuf, Vec<u8>)>> {
         let name = path
             .file_name()
             .and_then(|name| name.to_str())
-            .unwrap_or_default();
+            .ok_or("quarantine filename is not UTF-8")?;
         if !name.contains("recovered-") || name.ends_with(".sidecar") {
             continue;
         }
@@ -29,7 +29,7 @@ fn temporaries(dir: &Path) -> TestResult<Vec<String>> {
             .file_name()
             .to_str()
             .map(str::to_string)
-            .unwrap_or_default();
+            .ok_or("temporary filename is not UTF-8")?;
         if name.contains(".tmp.") {
             found.push(name);
         }
@@ -62,7 +62,10 @@ fn an_occupied_destination_is_quarantined_and_the_correct_bytes_are_installed() 
         text.contains(&format!("{:x}", Sha256::digest(b"damaged"))),
         "{text}"
     );
-    check!(text.contains(&format!("{:x}", Sha256::digest(b"correct"))), "{text}");
+    check!(
+        text.contains(&format!("{:x}", Sha256::digest(b"correct"))),
+        "{text}"
+    );
     check!(eq; temporaries(dir.path())?, Vec::<String>::new());
     Ok(())
 }
@@ -142,7 +145,7 @@ fn a_report_cannot_replace_a_directory() -> TestResult {
     std::fs::create_dir(&target)?;
 
     match publish(&target, b"bytes") {
-        Err(ReplayError::Io { .. }) => {}
+        Err(ReplayError::Io { .. } | ReplayError::Refused { .. }) => {}
         other => return Err(format!("a directory occupant was not refused: {other:?}").into()),
     }
 
@@ -150,3 +153,9 @@ fn a_report_cannot_replace_a_directory() -> TestResult {
     check!(eq; temporaries(dir.path())?, Vec::<String>::new());
     Ok(())
 }
+
+#[path = "capture/failure_tests.rs"]
+mod failures;
+
+#[path = "capture/sync_tests.rs"]
+mod sync_failures;

@@ -1219,3 +1219,60 @@ fn crawl_error_survives_through_collect_error_and_job_error() {
         "Schema mismatch must become Terminal HandlerError, got {schema_h:?}"
     );
 }
+
+#[test]
+fn snapshot_revision_movement_remains_retryable_through_address_join() -> TestResult {
+    let source = StoreError::RevisionMoved {
+        operation: "fixture-address-application".to_string(),
+        expected_evidence: 4,
+        actual_evidence: 5,
+        expected_derived: 2,
+        actual_derived: 3,
+    };
+    let expected = source.to_string();
+    let error = JobError::from(crate::school_address::JoinError::Store(source));
+    match error {
+        JobError::Transient { message } => check!(eq; message, expected),
+        JobError::Terminal { .. } => return Err("revision movement became terminal".into()),
+    }
+    Ok(())
+}
+
+#[test]
+fn foreign_snapshot_origin_is_terminal_through_address_join() -> TestResult {
+    let source = StoreError::RevisionOriginMismatch {
+        operation: "fixture-address-application".to_string(),
+    };
+    let expected = source.to_string();
+    let error = JobError::from(crate::school_address::JoinError::Store(source));
+    match error {
+        JobError::Terminal { message } => check!(eq; message, expected),
+        JobError::Transient { .. } => return Err("foreign origin became retryable".into()),
+    }
+    Ok(())
+}
+
+#[test]
+fn malformed_or_missing_store_lineage_is_terminal_without_retrying_identity_creation() -> TestResult
+{
+    let errors = [
+        StoreError::StoreIdentity(census_domain::model::StoreIdentityError::InvalidFormat),
+        StoreError::StoreLineage(census_store::StoreLineageError::Missing),
+        StoreError::StoreLineage(census_store::StoreLineageError::Multiple),
+        StoreError::StoreLineage(census_store::StoreLineageError::UnexpectedKey),
+        StoreError::StoreLineage(census_store::StoreLineageError::UnsupportedRepresentation),
+        StoreError::StoreLineage(census_store::StoreLineageError::MalformedEnvelope),
+        StoreError::StoreLineage(census_store::StoreLineageError::OversizedEnvelope {
+            bytes: 1_048_577,
+            max: 1_048_576,
+        }),
+    ];
+    for source in errors {
+        let expected = source.to_string();
+        match JobError::from(source) {
+            JobError::Terminal { message } => check!(eq; message, expected),
+            JobError::Transient { .. } => return Err("lineage refusal became retryable".into()),
+        }
+    }
+    Ok(())
+}

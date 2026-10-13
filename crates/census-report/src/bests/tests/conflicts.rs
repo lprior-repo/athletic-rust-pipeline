@@ -1,6 +1,8 @@
 use super::*;
 use crate::bests::Conflict;
 
+mod retained;
+
 fn timed_report(
     dataset: &ExportDataset,
     label: &str,
@@ -103,7 +105,7 @@ fn selection_does_not_conflict_on_identical_reports() -> TestResult {
     let first = timed_report(&dataset, "first_report", "50.00")?;
     let mut duplicate = timed_report(&dataset, "duplicate_report", "50.00")?;
     duplicate.source_athlete = Some(SourceIdentity::new(SourceNamespace::TfrrsAthlete, "2001"));
-    let expected_id = first.id.clone().max(duplicate.id.clone());
+    let expected_id = first.id.clone().min(duplicate.id.clone());
     dataset.performances = vec![first, duplicate];
 
     let rows = selected(&dataset);

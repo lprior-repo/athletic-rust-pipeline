@@ -12,7 +12,7 @@ mod write;
 
 pub use events::{is_relay, sport_of};
 pub use key::{
-    classify_wind, is_wind_sensitive, resolve_timing, should_replace, tie_break_later,
+    classify_wind, is_wind_sensitive, resolve_timing, should_replace, tie_break_preferred,
     ComparisonPolicy, PrKey, SurfaceClass, TimingClass, WindClass,
 };
 pub use measure::{field_micrometres, mark_unit, Measure};

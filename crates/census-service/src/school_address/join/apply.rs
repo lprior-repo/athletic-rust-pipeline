@@ -1,84 +1,17 @@
-use std::collections::BTreeSet;
-
 use census_domain::model::{CanonicalSchool, ReviewCase};
-use census_domain::school_directory::{
-    DirectoryIndex, LinkDecision, LinkRule, ReviewReason, MAX_CO_OP_MEMBERS,
-};
+use census_domain::school_directory::{LinkDecision, LinkRule, ReviewReason, MAX_CO_OP_MEMBERS};
 use census_domain::UsJurisdiction;
-use census_store::{Store, StoreResult, Table};
+use census_store::StoreResult;
 
 use super::attest::owned_record;
-use super::lanes::ASSOCIATION_PREFIX;
 use super::support::{
     allocation, bump, bump_review_reason, parse_key_label, reason_name, row, rule_name,
 };
-use super::{Counters, Job, JoinError, LaneSet, Mode, OutcomeRow, SCHOOL_IDENTITY_FAMILY};
+use super::{Job, Mode, SCHOOL_IDENTITY_FAMILY};
 
-const OUTCOME_RESERVE: usize = 1024;
-const WRITE_CHUNK: usize = 100;
+pub(super) mod context;
 
 impl<'a> Job<'a> {
-    pub(super) fn new(
-        index: &'a DirectoryIndex,
-        lanes: &'a LaneSet,
-        mode: Mode,
-        store: &'a Store,
-    ) -> Result<Self, JoinError> {
-        let mut outcomes: Vec<OutcomeRow> = Vec::new();
-        outcomes
-            .try_reserve(OUTCOME_RESERVE)
-            .map_err(|error| allocation(error.to_string()))?;
-        let mut pending: Vec<CanonicalSchool> = Vec::new();
-        pending
-            .try_reserve_exact(WRITE_CHUNK)
-            .map_err(|error| allocation(error.to_string()))?;
-        let existing_cases: BTreeSet<String> = if mode == Mode::Apply {
-            store
-                .scan::<ReviewCase>(Table::ReviewCases)?
-                .into_iter()
-                .map(|case| case.id)
-                .collect()
-        } else {
-            BTreeSet::new()
-        };
-        let (association, association_problem) = association_lanes(lanes);
-        Ok(Self {
-            index,
-            lanes,
-            mode,
-            store,
-            counters: Counters::default(),
-            outcomes,
-            pending,
-            existing_cases,
-            pending_cases: Vec::new(),
-            association,
-            association_problem,
-            attested: Vec::new(),
-            postal_present: false,
-            postal_provider: None,
-        })
-    }
-
-    pub(super) fn finish(self) -> StoreResult<(Counters, Vec<OutcomeRow>)> {
-        if self.mode == Mode::Apply {
-            let mut wrote = false;
-            if !self.pending_cases.is_empty() {
-                self.store
-                    .replace_many(Table::ReviewCases, &self.pending_cases)?;
-                wrote = true;
-            }
-            if !self.pending.is_empty() {
-                self.store.append_many(Table::Schools, &self.pending)?;
-                wrote = true;
-            }
-            if wrote {
-                self.store.flush()?;
-            }
-        }
-        Ok((self.counters, self.outcomes))
-    }
-
     fn file_review(
         &mut self,
         school: &CanonicalSchool,
@@ -104,6 +37,9 @@ impl<'a> Job<'a> {
         if self.existing_cases.contains(&case.id) {
             return bump(&mut self.counters.review_present);
         }
+        self.pending_cases
+            .try_reserve(1)
+            .map_err(|error| allocation(error.to_string()))?;
         self.pending_cases.push(case);
         bump(&mut self.counters.review_filed)
     }
@@ -221,11 +157,10 @@ impl<'a> Job<'a> {
     pub(super) fn push_change(&mut self, clone: CanonicalSchool) -> StoreResult<()> {
         self.record_postal(&clone);
         if self.mode == Mode::Apply {
+            self.pending
+                .try_reserve(1)
+                .map_err(|error| allocation(error.to_string()))?;
             self.pending.push(clone);
-            if self.pending.len() == WRITE_CHUNK {
-                self.store.append_many(Table::Schools, &self.pending)?;
-                self.pending.clear();
-            }
         }
         Ok(())
     }
@@ -263,25 +198,4 @@ impl<'a> Job<'a> {
 
 fn member_detail(member: &str) -> String {
     format!("co-op member {member}")
-}
-
-fn association_lanes(lanes: &LaneSet) -> (Option<String>, Option<String>) {
-    let mut association: Option<String> = None;
-    let mut problem: Option<String> = None;
-    for key in lanes.tokens() {
-        let Some(slug) = key.strip_prefix(ASSOCIATION_PREFIX) else {
-            continue;
-        };
-        match &association {
-            None => association = Some(slug.to_string()),
-            Some(first) if first == slug => {}
-            Some(first) => {
-                problem = Some(format!(
-                    "the generation admits several association lanes ({first}, {slug}); \
-                     build one association lane per generation"
-                ));
-            }
-        }
-    }
-    (association, problem)
 }

@@ -1,6 +1,6 @@
 mod capture;
 
-use capture::{hex, io, load, preserve, publish, refused, MAX_CAPTURE_BYTES};
+use capture::{hex, io, load, preserve, refused, MAX_CAPTURE_BYTES};
 use std::path::{Path, PathBuf};
 
 use census_store::Store;
@@ -16,6 +16,12 @@ pub enum ReplayError {
     #[error("address replay IO at {path}: {source}")]
     Io {
         path: PathBuf,
+        source: std::io::Error,
+    },
+    #[error("address replay failed: {primary}; cleanup at {path} also failed: {source}")]
+    Cleanup {
+        path: PathBuf,
+        primary: Box<ReplayError>,
         source: std::io::Error,
     },
     #[error("address replay manifest is invalid: {0}")]
@@ -186,7 +192,7 @@ pub fn run(manifest_path: &Path, out: &Path) -> Result<Replay, ReplayError> {
             .map_err(JoinError::from)?,
     )?;
     let evidence = serde_json::to_vec_pretty(&overrides)?;
-    publish(&out.join("replay-evidence.json"), &evidence)?;
+    capture::publish(&out.join("replay-evidence.json"), &evidence)?;
     Ok(Replay {
         generation: out.to_path_buf(),
         digest: report.manifest_digest,

@@ -113,7 +113,7 @@ fn assert_complete_xlsx(path: &Path, corpus: &crate::Corpus) -> TestResult {
                 .performances
                 .iter()
                 .filter(|row| row.athlete == athlete.id)
-                .max_by_key(|row| (&row.date, row.meet.as_str(), row.id.as_str()))
+                .min_by_key(|row| row.id.as_str())
                 .ok_or("athlete carries no candidate performance")?;
             check!(corpus
                 .performances

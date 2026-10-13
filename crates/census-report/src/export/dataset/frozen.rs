@@ -21,6 +21,8 @@ mod freeze;
 mod inventory;
 mod legacy;
 mod line;
+#[cfg(test)]
+mod lineage_tests;
 mod manifest;
 mod materialize;
 mod objects;
@@ -30,12 +32,20 @@ mod references;
 mod root;
 mod stream;
 mod token;
+mod verification_error;
 mod verify;
+
+#[cfg(test)]
+mod coverage_tests;
+#[cfg(test)]
+mod version_preservation_tests;
 
 #[cfg(test)]
 mod freeze_recovery_tests;
 #[cfg(test)]
 mod freeze_v2_tests;
+#[cfg(test)]
+mod historical_policy_tests;
 #[cfg(test)]
 mod preflight_tests;
 
@@ -43,8 +53,8 @@ pub use freeze::CancelOutcome;
 pub use root::FrozenRoot;
 
 const SCHEMA_REVISION: u32 = 2;
-const POLICY_REVISION: u32 = 8;
-const INPUT_TABLES: [Table; 13] = [
+const POLICY_REVISION: u32 = 11;
+const INPUT_TABLES: [Table; 15] = [
     Table::Schools,
     Table::Teams,
     Table::Coaches,
@@ -58,6 +68,8 @@ const INPUT_TABLES: [Table; 13] = [
     Table::AthleteIdentityDecisions,
     Table::SourceObservations,
     Table::SourceMeets,
+    Table::Coverage,
+    Table::CoachLanes,
 ];
 
 #[derive(Serialize)]
@@ -81,7 +93,7 @@ pub(super) fn to_export_dataset(root: &FrozenRoot, store: &Store) -> ReportResul
     }
     let objects_dir = objects::directory(root.directory());
     verify::verify_root(&objects_dir, root.manifest_digest(), manifest)?;
-    let mut dataset = ExportDataset::from_loaded(
+    let dataset = ExportDataset::from_loaded(
         materialize::read_all(&objects_dir, manifest)?,
         manifest.lineage.clone(),
     )?;
@@ -92,12 +104,12 @@ pub(super) fn to_export_dataset(root: &FrozenRoot, store: &Store) -> ReportResul
             "a frozen root does not reproduce the dataset input digest",
         ));
     }
-    dataset.coverage_evidence = Some(super::coverage_evidence(&store.snapshot())?);
     Ok(dataset)
 }
 
 pub(super) fn lineage(store: &Store, snapshot: &StoreSnapshot<'_>) -> ReportResult<DatasetLineage> {
-    let store_identity = store_identity(store)?;
+    snapshot.ensure_origin(store)?;
+    let store_identity = String::from(snapshot.store_identity()?);
     let bound = store.run_manifest()?;
     if let Some(manifest) = &bound {
         if manifest.store_identity != store_identity {
@@ -191,45 +203,7 @@ fn digest(value: &impl Serialize) -> ReportResult<String> {
 }
 
 pub(super) fn store_identity(store: &Store) -> ReportResult<String> {
-    let path = store.root().join(".export-lineage.lock");
-    let lock = std::fs::OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .truncate(false)
-        .open(&path)
-        .map_err(|source| io_error(&path, source))?;
-    lock.lock().map_err(|source| io_error(&path, source))?;
-    let identity = retained_identity(store)?;
-    if !hex_digest(&identity) {
-        return Err(invalid("malformed persisted export store identity"));
-    }
-    Ok(identity)
-}
-
-fn retained_identity(store: &Store) -> ReportResult<String> {
-    let retained = store.journal_payloads("export-lineage-v1")?;
-    match retained.as_slice() {
-        [] => create_identity(store),
-        [value] => value
-            .as_str()
-            .ok_or_else(|| invalid("malformed durable export store identity"))
-            .map(str::to_string),
-        _ => Err(invalid("multiple durable export store identities")),
-    }
-}
-
-fn create_identity(store: &Store) -> ReportResult<String> {
-    let created = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_err(|error| invalid(&format!("creating export store identity: {error}")))?;
-    let identity = digest(&(
-        store.root().display().to_string(),
-        created.as_secs(),
-        created.subsec_nanos(),
-    ))?;
-    store.journal_done("export-lineage-v1", "store-identity", &identity)?;
-    Ok(identity)
+    Ok(store.store_identity()?.into())
 }
 
 fn hex_digest(value: &str) -> bool {

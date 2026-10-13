@@ -16,6 +16,7 @@ mod generation;
 mod lanes;
 mod link;
 mod postal;
+mod receipts;
 mod support;
 
 pub(crate) use generation::join_generation_pinned;
@@ -211,6 +212,7 @@ struct Job<'a> {
     pending: Vec<CanonicalSchool>,
     existing_cases: BTreeSet<String>,
     pending_cases: Vec<ReviewCase>,
+    application: apply::context::ApplicationContext<'a>,
     association: Option<String>,
     association_problem: Option<String>,
     attested: Vec<AttestedRecord>,
@@ -224,10 +226,12 @@ pub fn process(
     lanes: &LaneSet,
     mode: Mode,
 ) -> Result<(Counters, Vec<OutcomeRow>), JoinError> {
-    let mut job = Job::new(index, lanes, mode, store)?;
-    store
-        .snapshot()
-        .for_each_merged(Table::Schools, |school: CanonicalSchool| job.visit(&school))?;
+    let snapshot = store.snapshot();
+    let mut job = Job::new(index, lanes, mode, store, &snapshot)?;
+    snapshot.for_each_merged(Table::Schools, |school: CanonicalSchool| {
+        job.visit(&school)?;
+        job.apply_target(&school.id)
+    })?;
     Ok(job.finish()?)
 }
 

@@ -167,7 +167,8 @@ fn an_unresolved_historical_team_keeps_the_school_blank() -> TestResult {
 }
 
 #[test]
-fn an_out_of_scope_historical_school_keeps_the_school_blank() -> TestResult {
+fn an_out_of_scope_historical_school_remains_attached_to_the_selected_athletes_result() -> TestResult
+{
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     let current = school(&store, UsJurisdiction::Wisconsin, "Colby")?;
@@ -177,7 +178,8 @@ fn an_out_of_scope_historical_school_keeps_the_school_blank() -> TestResult {
     performance(&store, &athlete, &outside_team)?;
 
     check!(eq; printed_school(&store)?,
-    "",
-    "a school outside the run scope prints no name");
+    "Anchorage",
+    "historical affiliation is retained independently of current population geography");
+    check!(eq; current_school(&store)?, current.as_str());
     Ok(())
 }

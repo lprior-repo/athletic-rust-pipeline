@@ -92,6 +92,71 @@ eligibility and recruiting publication consume that shared assessment. Policy-1/
 inputs and published generations remain historical evidence and are refused by the current
 verifier; schema revision remains 1 for the additive empty-default canonical cohort field.
 
+## Frozen coverage completeness amendment — 2026-10-13
+
+Logical export schema revision 2 makes `coverage_evidence` a required frozen input containing
+`rows` and `coach_lanes`. Both arrays are required even when empty. Coverage rows and coach-lane
+obligations come from the same store snapshot as the other dataset rows, before the input digest
+is bound. Empty evidence remains unknown/unresearched; it does not manufacture measured completion.
+JSON archives, chunked inputs, coverage reports and workbook verification use these captured bytes.
+Reopening a generation never hydrates coverage from the current store.
+
+The ordered chunk representation appends `coverage_rows` and `coach_lanes` after
+`identity_decisions`, for fourteen streams. The input fingerprint set appends `Coverage` and
+`CoachLanes`, for fifteen tables. The logical digest reconstructs the dataset's nested
+`coverage_evidence` object, including both empty arrays, rather than a flat surrogate. Either table
+changing independently makes an old input stale for a new publication. Existing chunk, row, input
+and encoded-window ceilings continue to apply.
+
+This changes the logical schema, not the physical JSONL/inventory envelope or token grammar:
+manifest/inventory codec revision and token protocol remain 2. Publication semantic policy remains
+8, whose retained-conflict context rule was introduced by the preceding integrity repair. The
+publication manifest envelope and Fjall record/key formats are unchanged.
+
+Schema-1 frozen inputs did not retain the two required collections. A snapshot sequence cannot
+reconstruct their historical bytes after the fact. Following ADR-036 gate f, conversion must refuse
+this missing provenance rather than insert empty arrays or read today's tables. Preserve all old
+archives, objects, retained pointers, durable records, leases and publication references. The
+current verifier refuses unsupported logical inputs; no current acceptance is inferred from a
+historical reader. A supported capture is a new, explicitly selected export generation, not an
+in-place repair of an old archive or silent retry under a replacement job identity.
+
+Version refusal is distinguished from current-version corruption before recovery mutation.
+Unsupported manifest, lineage, token, inventory and chunk-descriptor versions retain their typed
+classification through verification. Repeated refusal preserves a retained root whether its
+InputRecord is missing, Requested, Freezing, Frozen or Abandoned. Current-version corruption keeps
+its existing refusal/retirement behavior. This amendment does not authorize deleting historical
+artifacts or bypassing a publication fence.
+
+Implementation and qualification are separate: required regressions compare JSON/chunk input
+identity, real Coverage-sheet readback after mutation and reopen, each table's independent stale
+fence, and historical-state preservation. A source change or this record is not evidence that those
+checks or release requirements passed.
+
+## Deterministic equal-mark amendment — 2026-10-13
+
+Publication semantic policy revision 9 selects an equal numeric mark by earliest known exact
+performance date, then ascending stable performance ID. A known date must have exactly the ASCII
+YYYY-MM-DD form and be a valid calendar date. Partial years, missing dates and malformed dates
+remain unknown and follow known dates; they are never expanded to an invented day. When both
+dates are unknown, only stable performance ID decides. Meet ID is not a tie-break key. An
+identical ordering key does not replace itself. Time, distance and score comparison directions,
+comparison classes, source scope and retained-context conflict quarantine remain unchanged.
+
+The current retained evidence model has no qualified source-authority ranking. Policy 9 therefore
+assigns equal provenance preference to all otherwise eligible candidates. Parsed/Fetched/Derived
+are evidence-processing methods, not authority tiers; provider names and capture recency do not
+establish quality. This is the documented uniform preference for current data, not a claim that
+stronger source-quality adjudication is implemented. A future quality preference requires retained
+qualification evidence and a separate semantic-policy revision.
+
+All consumers use the shared best-mark reducer. Historical policy-8 and earlier inputs and
+publication generations remain byte-preserved and are refused by the current verifier. No retry
+rewrites an old archive under the new tie rule. Logical schema remains 2 and physical codec/token
+protocol remains 2. Regression obligations include input-order/replay invariance, exact and unknown
+dates, stable-ID ties, unchanged numeric comparisons and workbook/recruiting agreement with the
+same frozen selected performance and source provenance.
+
 ## Consequences
 
 Scope, cohort and evidence semantics are the derivation's, not each sheet's; a sheet that wants a
@@ -99,3 +164,37 @@ different cohort asks for a second, explicit derivation. Cost becomes one decode
 filter pass per derivation, measured per [xtask procedures](../../xtask/README.md#measurement-and-fixture-boundaries); the extra filter
 pass is O(rows) over borrowed rows and does not re-decode. Fixtures and tests build derivations from
 a dataset instead of asserting on store states that bypass the derivation.
+
+
+## Historical PR affiliation completeness amendment — 2026-10-13
+
+Publication semantic policy revision 10 never fills a missing performance-time school or state
+from the athlete's current school. The shared best-mark reducer follows only the performance's
+team and that team's retained school. Missing parents produce an unknown historical school/state;
+a retained historical school with unknown state keeps its name and the Unknown jurisdiction bucket.
+This does not discard a valid mark or change its athlete, team, meet, source or selected-result
+identity. Current recruiting-directory affiliation and population membership are unchanged.
+
+All PR projections, sorted selections, CSV/JSONL output and workbook readback consume that shared
+result. Policy-9 and earlier inputs/generations remain byte-preserved historical evidence and are
+refused by the current verifier rather than relabeled or rewritten. Logical export schema 2,
+manifest codec 2 and token protocol 2 remain unchanged. Dated current-school affiliation and
+configurable profile membership remain separate, unfinished end-vision requirements.
+
+## Historical parent geography amendment — 2026-10-13
+
+Publication semantic policy revision 11 separates population geography from historical result
+parents. An admitted athlete's retained performance may name a school or meet outside the
+population geography. The shared derivation exposes borrowed historical-school and historical-meet
+views to both PR selection and performance projection; Core still requires Core-evidenced meet
+metadata. Missing parents stay unknown, and neither historical affiliation nor venue changes the
+athlete's population membership or current recruiting-directory join.
+
+This restores comparable bests whose eligible out-of-geography meet context was previously hidden,
+as well as their actual venue and historical school metadata. Directory schools, population
+jurisdiction denominators, outside-scope notes and current-school contacts retain their existing
+scope. Referenced historical parents remain in the frozen evidence even when they are absent from
+the current directory. Census, coverage and workbook method notes distinguish excluded population
+counts from retained historical metadata. Policy-10 and earlier artifacts are retained and refused for current-policy
+acceptance without rewriting. Frozen logical schema, manifest codec and token protocol remain 2.
+Configurable profiles and dated current affiliation are still separate unfinished requirements.

@@ -64,13 +64,13 @@ pub struct ExportDataset {
     pub canonical_aliases: HashMap<String, String>,
     #[serde(skip)]
     pub lineage: DatasetLineage,
-    #[serde(skip)]
-    pub coverage_evidence: Option<CoverageEvidence>,
+    pub coverage_evidence: CoverageEvidence,
     #[serde(skip)]
     identity_projection: Arc<AthleteIdentityProjection>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct CoverageEvidence {
     pub rows: Vec<CoverageRow>,
     pub coach_lanes: Vec<CoachLaneObligation>,
@@ -99,6 +99,7 @@ pub fn store_identity(store: &Store) -> ReportResult<String> {
 }
 
 pub fn store_lineage(store: &Store) -> ReportResult<DatasetLineage> {
+    store.store_identity()?;
     let snapshot = store.snapshot();
     frozen::lineage(store, &snapshot)
 }
@@ -131,6 +132,7 @@ struct Loaded {
     source_access: Vec<SourceAccessCondition>,
     verdicts: Vec<ReviewVerdictRecord>,
     identity_decisions: Vec<AppliedAthleteIdentity>,
+    coverage_evidence: CoverageEvidence,
 }
 
 fn projection_of(loaded: &Loaded) -> ReportResult<Arc<AthleteIdentityProjection>> {
@@ -190,6 +192,7 @@ impl Drop for ExportDataset {
 
 impl ExportDataset {
     pub fn load(store: &Store) -> ReportResult<Self> {
+        store.store_identity()?;
         let snapshot = store.snapshot();
         Self::from_snapshot(store, &snapshot)
     }
@@ -198,16 +201,13 @@ impl ExportDataset {
         store: &Store,
         snapshot: &census_store::StoreSnapshot<'_>,
     ) -> ReportResult<Self> {
+        snapshot.ensure_origin(store)?;
         let loaded = read::all(snapshot)?;
-        let mut dataset = Self::from_loaded(loaded, frozen::lineage(store, snapshot)?)?;
-        dataset.coverage_evidence = Some(coverage_evidence(snapshot)?);
-        Ok(dataset)
+        Self::from_loaded(loaded, frozen::lineage(store, snapshot)?)
     }
 
     pub fn for_job(store: &Store, job: &str) -> ReportResult<Self> {
-        let mut dataset = frozen::job::capture(store, job)?;
-        dataset.coverage_evidence = Some(coverage_evidence(&store.snapshot())?);
-        Ok(dataset)
+        frozen::job::capture(store, job)
     }
 
     pub fn ensure_store(&self, store: &Store) -> ReportResult<()> {
@@ -239,7 +239,7 @@ impl ExportDataset {
             source_access: loaded.source_access,
             verdicts: loaded.verdicts,
             identity_decisions: loaded.identity_decisions,
-            coverage_evidence: None,
+            coverage_evidence: loaded.coverage_evidence,
             lineage,
             identity_projection,
         };

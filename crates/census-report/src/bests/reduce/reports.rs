@@ -1,7 +1,7 @@
 use super::super::mark_text;
 use super::super::selection::Conflict;
 use super::super::Measure;
-use super::Candidate;
+use super::{Candidate, Parents};
 use census_domain::model::CanonicalPerformance;
 use std::collections::BTreeSet;
 
@@ -26,6 +26,41 @@ impl<'a> CompetitionContext<'a> {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum ContextIntegrity {
+    Clear,
+    RetainedConflict,
+}
+
+pub(super) struct RetainedContexts<'a>(BTreeSet<(&'a str, CompetitionContext<'a>)>);
+
+impl<'a> RetainedContexts<'a> {
+    pub(super) fn of(performances: &[&'a CanonicalPerformance], parents: &Parents<'a>) -> Self {
+        Self(
+            performances
+                .iter()
+                .copied()
+                .filter(|performance| !performance.retained_conflicts.is_empty())
+                .filter_map(|performance| {
+                    let athlete = parents.athlete(performance.athlete.as_str())?;
+                    Some((athlete.id.as_str(), CompetitionContext::of(performance)))
+                })
+                .collect(),
+        )
+    }
+
+    pub(super) fn integrity(&self, candidate: &Candidate<'a>) -> ContextIntegrity {
+        if self.0.contains(&(
+            candidate.athlete.id.as_str(),
+            CompetitionContext::of(candidate.performance),
+        )) {
+            ContextIntegrity::RetainedConflict
+        } else {
+            ContextIntegrity::Clear
+        }
+    }
+}
+
 pub(super) struct ReportGroup<'a> {
     meet_name: &'a str,
     marks: BTreeSet<String>,
@@ -38,16 +73,23 @@ enum ReportState<'a> {
 }
 
 impl<'a> ReportGroup<'a> {
-    pub(super) fn new(candidate: Candidate<'a>) -> Self {
+    pub(super) fn new(candidate: Candidate<'a>, integrity: ContextIntegrity) -> Self {
         Self {
             meet_name: candidate.meet.map_or("", |meet| meet.name.as_str()),
             marks: BTreeSet::from([mark_text(&candidate.performance.mark)]),
-            state: ReportState::Uncontested(candidate),
+            state: match integrity {
+                ContextIntegrity::Clear => ReportState::Uncontested(candidate),
+                ContextIntegrity::RetainedConflict => ReportState::Contested,
+            },
         }
     }
 
-    pub(super) fn record(&mut self, candidate: Candidate<'a>) {
+    pub(super) fn record(&mut self, candidate: Candidate<'a>, integrity: ContextIntegrity) {
         self.marks.insert(mark_text(&candidate.performance.mark));
+        if integrity == ContextIntegrity::RetainedConflict {
+            self.state = ReportState::Contested;
+            return;
+        }
         if let ReportState::Uncontested(incumbent) = &mut self.state {
             if observed_value(&candidate) != observed_value(incumbent) {
                 self.state = ReportState::Contested;

@@ -89,16 +89,8 @@ pub(super) fn run(dataset: &ExportDataset, grad_year: Option<i16>) -> Outcome {
     classify_schools(&scanned.schools, &sets, &mut buckets);
     classify_meets(scanned.meets, &mut buckets);
     count_core(&scanned.athletes, &school_state, grad_year, &mut buckets);
-    let rows: &[CoverageRow] = dataset
-        .coverage_evidence
-        .as_ref()
-        .map_or(&[], |evidence| evidence.rows.as_slice());
-    let mut contact_plane = ContactPlane::of(
-        dataset
-            .coverage_evidence
-            .as_ref()
-            .map_or(&[], |evidence| evidence.coach_lanes.as_slice()),
-    );
+    let rows: &[CoverageRow] = &dataset.coverage_evidence.rows;
+    let mut contact_plane = ContactPlane::of(&dataset.coverage_evidence.coach_lanes);
     contact_plane.declare_scope(UsJurisdiction::CENSUS_SCOPE.iter().copied());
     let (jurisdictions, gaps) = publish(buckets, rows, &contact_plane);
     let source_population = population::totals(rows).population(rows.len());

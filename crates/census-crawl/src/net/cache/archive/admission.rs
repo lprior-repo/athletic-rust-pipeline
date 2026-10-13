@@ -18,15 +18,12 @@ pub(in crate::net::cache) struct ArchiveAdmission {
 }
 
 impl ArchiveAdmission {
-    pub(in crate::net::cache) fn begin(root: &Path, archive: &Path) -> Result<Self, FetchError> {
-        Self::begin_with_capacity(root, archive, archive_capacity())
-    }
-
     pub(in crate::net::cache) fn begin_with_capacity(
         root: &Path,
         archive: &Path,
         capacity: u64,
     ) -> Result<Self, FetchError> {
+        let capacity = positive_capacity(capacity, archive)?;
         let lock_path = root.join(ARCHIVE_LOCK_NAME);
         let lock = OpenOptions::new()
             .create(true)
@@ -119,13 +116,41 @@ impl ArchiveAdmission {
     }
 }
 
-fn archive_capacity() -> u64 {
-    capacity_of(std::env::var(ARCHIVE_CAPACITY_ENV).ok())
+pub(in crate::net::cache) fn archive_capacity() -> Result<u64, FetchError> {
+    match std::env::var(ARCHIVE_CAPACITY_ENV) {
+        Ok(value) => capacity_of(Some(value)),
+        Err(std::env::VarError::NotPresent) => capacity_of(None),
+        Err(std::env::VarError::NotUnicode(_)) => Err(invalid(
+            Path::new(ARCHIVE_CAPACITY_ENV),
+            "CENSUS_ARCHIVE_CAPACITY_BYTES must contain a Unicode positive u64 byte count",
+        )),
+    }
 }
 
-pub(in crate::net::cache) fn capacity_of(value: Option<String>) -> u64 {
-    value
-        .and_then(|value| value.trim().parse::<u64>().ok())
-        .filter(|value| *value > 0)
-        .map_or(DEFAULT_ARCHIVE_BYTES, |value| value)
+pub(in crate::net::cache) fn capacity_of(value: Option<String>) -> Result<u64, FetchError> {
+    let Some(value) = value else {
+        return Ok(DEFAULT_ARCHIVE_BYTES);
+    };
+    let path = Path::new(ARCHIVE_CAPACITY_ENV);
+    let capacity = value.trim().parse::<u64>().map_err(|_| {
+        invalid(
+            path,
+            "CENSUS_ARCHIVE_CAPACITY_BYTES must be a positive u64 byte count",
+        )
+    })?;
+    positive_capacity(capacity, path)
 }
+
+fn positive_capacity(capacity: u64, path: &Path) -> Result<u64, FetchError> {
+    if capacity == 0 {
+        return Err(invalid(
+            path,
+            "CENSUS_ARCHIVE_CAPACITY_BYTES must be a positive u64 byte count",
+        ));
+    }
+    Ok(capacity)
+}
+
+#[cfg(test)]
+#[path = "admission/tests.rs"]
+mod tests;

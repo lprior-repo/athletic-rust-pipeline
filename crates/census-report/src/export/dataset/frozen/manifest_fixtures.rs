@@ -37,6 +37,7 @@ impl Streams {
 pub(super) fn fixture() -> TestResult<Fixture> {
     let seeded = seeded_store()?;
     let store = seeded.store;
+    store.store_identity()?;
     let (dataset, streams, manifest, encoded) = {
         let snapshot = store.snapshot();
         let dataset = ExportDataset::from_snapshot(&store, &snapshot)?;
@@ -114,6 +115,20 @@ fn streams_of(dataset: &ExportDataset) -> TestResult<Streams> {
         &mut entries,
         StreamKind::IdentityDecisions,
         &mut decisions,
+        &mut legacy,
+    )?;
+    let mut coverage = dataset.coverage_evidence.rows.clone();
+    push_stream(
+        &mut entries,
+        StreamKind::CoverageRows,
+        &mut coverage,
+        &mut legacy,
+    )?;
+    let mut lanes = dataset.coverage_evidence.coach_lanes.clone();
+    push_stream(
+        &mut entries,
+        StreamKind::CoachLanes,
+        &mut lanes,
         &mut legacy,
     )?;
     let legacy = legacy.finish()?;

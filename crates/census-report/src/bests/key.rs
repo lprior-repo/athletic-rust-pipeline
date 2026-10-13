@@ -4,7 +4,7 @@ mod tie;
 
 pub use classification::{classify_wind, is_wind_sensitive, resolve_timing};
 pub use compatibility::ComparisonPolicy;
-pub use tie::{tie_break_later, MarkOrdering};
+pub use tie::{tie_break_preferred, MarkOrdering};
 
 use census_domain::model::{
     CanonicalEvent, CanonicalMeet, CanonicalPerformance, EventId, EventKind, EventSpecification,

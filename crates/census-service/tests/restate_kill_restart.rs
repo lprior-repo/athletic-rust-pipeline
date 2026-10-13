@@ -248,19 +248,21 @@ impl Endpoint {
     fn spawn(data_dir: &Path, port: u16, environment: &[(&str, &str)]) -> TestResult<Endpoint> {
         let binary = env!("CARGO_BIN_EXE_census-serve");
         let listen = SocketAddr::from(([127, 0, 0, 1], port));
-        let log_path = data_dir.join(format!("census-serve-{port}.log"));
-        let log = std::fs::File::create(&log_path)?;
+        let log = tempfile::NamedTempFile::new_in(data_dir)?;
         let child = Command::new(binary)
             .envs(environment.iter().copied())
             .arg("--listen")
             .arg(listen.to_string())
             .arg("--data-dir")
             .arg(data_dir)
-            .stdout(Stdio::from(log.try_clone()?))
-            .stderr(Stdio::from(log))
+            .stdout(Stdio::from(log.as_file().try_clone()?))
+            .stderr(Stdio::from(log.as_file().try_clone()?))
             .spawn()?;
+        let guard = ChildGuard { child };
+        let log_path = data_dir.join(format!("census-serve-{port}-{}.log", guard.child.id()));
+        let _log = log.persist(&log_path)?;
         Ok(Endpoint {
-            guard: ChildGuard { child },
+            guard,
             listen,
             log_path,
         })
@@ -274,25 +276,37 @@ impl Endpoint {
 async fn register(
     client: &reqwest::Client,
     node: &Node,
-    endpoint: &Endpoint,
+    endpoint: &mut Endpoint,
 ) -> Result<(), String> {
     let uri = format!("http://{}/", endpoint.listen);
     let deadline = Instant::now() + READY_BUDGET;
+    endpoint_readiness::wait(endpoint, deadline).await?;
     let mut last = String::from("no attempt made");
     while Instant::now() < deadline {
+        endpoint_readiness::require_running(endpoint)?;
+        let remaining = deadline.saturating_duration_since(Instant::now());
         match client
             .post(format!("{}deployments", node.admin))
             .json(&serde_json::json!({ "uri": uri }))
+            .timeout(remaining)
             .send()
             .await
         {
-            Ok(response) if response.status().is_success() => return Ok(()),
+            Ok(response) if response.status().is_success() => {
+                endpoint_readiness::require_running(endpoint)?;
+                return Ok(());
+            }
             Ok(response) => last = format!("status {}", response.status()),
             Err(error) => last = error.to_string(),
         }
-        tokio::time::sleep(POLL_INTERVAL).await;
+        endpoint_readiness::require_running(endpoint)?;
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        tokio::time::sleep(POLL_INTERVAL.min(remaining)).await;
     }
-    Err(format!("endpoint never registered: {last}"))
+    Err(endpoint_readiness::failure(
+        endpoint,
+        &format!("endpoint never registered: {last}"),
+    ))
 }
 
 async fn wait_for_node(client: &reqwest::Client, node: &Node) -> Result<(), String> {
@@ -392,12 +406,21 @@ async fn poll_consolidate(
     ))
 }
 
-async fn resume(client: &reqwest::Client, node: &Node, invocation: &str) -> Result<(), String> {
+async fn resume(
+    client: &reqwest::Client,
+    node: &Node,
+    invocation: &str,
+    endpoint: &mut Endpoint,
+) -> Result<(), String> {
+    let deadline = Instant::now() + READY_BUDGET;
+    endpoint_readiness::wait(endpoint, deadline).await?;
     let response = client
         .patch(format!("{}invocations/{invocation}/resume", node.admin))
+        .timeout(deadline.saturating_duration_since(Instant::now()))
         .send()
         .await
         .map_err(|error| error.to_string())?;
+    endpoint_readiness::require_running(endpoint)?;
     let status = response.status();
     if status.is_success() {
         return Ok(());
@@ -683,7 +706,7 @@ fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() -> TestResul
 
             let endpoint_port = free_port()?;
             let mut endpoint = Endpoint::start(&data_dir, endpoint_port)?;
-            register(&client, &node_guard, &endpoint).await?;
+            register(&client, &node_guard, &mut endpoint).await?;
 
             let key = WorkflowIdentity::national(
                 season()?,
@@ -766,7 +789,7 @@ fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() -> TestResul
             let resumed_pid = endpoint.guard.child.id();
             check!(resumed_pid != killed_pid,
     "the resumed merge is running on the killed endpoint process {killed_pid}");
-            register(&client, &node_guard, &endpoint).await?;
+            register(&client, &node_guard, &mut endpoint).await?;
 
             let attaching = reqwest::Client::builder().build()?;
             let repeat = tokio::time::timeout(
@@ -786,7 +809,7 @@ fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() -> TestResul
             }
             eprintln!("note: the repeat was refused as an existing invocation, so nothing forked");
 
-            resume(&client, &node_guard, &invocation).await?;
+            resume(&client, &node_guard, &invocation, &mut endpoint).await?;
             eprintln!("note: the paused invocation {invocation} was resumed");
 
             let terminal = oracle::require_completed_success(
@@ -850,7 +873,7 @@ fn b_restate_server_sigkill_resumes_workflow() -> TestResult {
 
     let endpoint_port = free_port()?;
     let mut endpoint = Endpoint::start(&data_dir, endpoint_port)?;
-    register(&client, &node, &endpoint).await?;
+    register(&client, &node, &mut endpoint).await?;
 
     let key = WorkflowIdentity::national(season()?, REVISION, &UsJurisdiction::CENSUS_SCOPE);
     let path_run = format!("Consolidate/{key}/run");
@@ -922,8 +945,8 @@ fn b_restate_server_sigkill_resumes_workflow() -> TestResult {
     "the invocation ID changed after restart: expected {original_invocation}, found {resumed_invocation}");
 
     endpoint = Endpoint::start(&data_dir, endpoint_port)?;
-    register(&client, &node, &endpoint).await?;
-    resume(&client, &node, &resumed_invocation).await?;
+    register(&client, &node, &mut endpoint).await?;
+    resume(&client, &node, &resumed_invocation, &mut endpoint).await?;
 
     let terminal = oracle::require_completed_success(
         &client,
@@ -1000,7 +1023,7 @@ fn c_consolidate_boundary_crash_replays_the_committed_snapshots() -> TestResult 
                     (CONSOLIDATE_HOLD_ENVIRONMENT, CONSOLIDATE_HOLD_MILLIS),
                 ],
             )?;
-            register(&client, &node, &endpoint).await?;
+            register(&client, &node, &mut endpoint).await?;
 
             let submission = {
                 let client = client.clone();
@@ -1078,7 +1101,7 @@ fn c_consolidate_boundary_crash_replays_the_committed_snapshots() -> TestResult 
             eprintln!(
                 "note: endpoint crash/restart: killed_pid={killed_pid}, restarted_pid={restarted_pid}"
             );
-            register(&client, &node, &endpoint).await?;
+            register(&client, &node, &mut endpoint).await?;
 
             let attaching = reqwest::Client::builder().build()?;
             let repeat = tokio::time::timeout(
@@ -1098,7 +1121,7 @@ fn c_consolidate_boundary_crash_replays_the_committed_snapshots() -> TestResult 
             }
             eprintln!("note: the repeat was refused as an existing invocation, so nothing forked");
 
-            resume(&client, &node, &paused).await?;
+            resume(&client, &node, &paused, &mut endpoint).await?;
             eprintln!("note: the boundary-held invocation {paused} was resumed unarmed");
 
             let terminal = oracle::require_completed_success(
@@ -1131,6 +1154,8 @@ fn c_consolidate_boundary_crash_replays_the_committed_snapshots() -> TestResult 
         })
 }
 
+#[path = "restate_kill_restart/endpoint_readiness.rs"]
+mod endpoint_readiness;
 #[path = "restate_kill_restart/oracle.rs"]
 mod oracle;
 #[path = "restate_kill_restart/oracle_tests.rs"]

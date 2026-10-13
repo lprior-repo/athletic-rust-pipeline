@@ -6,6 +6,32 @@ use census_store::{Store, Table};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
+fn historical_publication_policy_is_refused(revision: u32) -> TestResult {
+    let temporary = tempfile::tempdir()?;
+    let store = Store::open(temporary.path().join("store"))?;
+    let current = ExportDataset::load(&store)?;
+    check!(eq; current.lineage.policy_revision, 11);
+    let archive = temporary.path().join(format!("revision-{revision}.json"));
+    current.save_frozen(&archive)?;
+    let mut historical: serde_json::Value = serde_json::from_slice(&std::fs::read(&archive)?)?;
+    let mut old_lineage = current.lineage.clone();
+    old_lineage.policy_revision = revision;
+    old_lineage.input_generation = super::generation(&old_lineage)?;
+    check!(ne; old_lineage.input_generation, current.lineage.input_generation);
+    historical["lineage"] = serde_json::to_value(old_lineage)?;
+    let retained = serde_json::to_vec(&historical)?;
+    std::fs::write(&archive, &retained)?;
+    let error = match ExportDataset::reopen_frozen(&archive) {
+        Err(error) => error,
+        Ok(_) => return Err("old conflict policy was silently reinterpreted".into()),
+    };
+    check!(
+        matches!(error, ReportError::Invariant { ref detail } if detail == "unsupported or malformed frozen export lineage")
+    );
+    check!(eq; std::fs::read(&archive)?, retained);
+    Ok(())
+}
+
 #[test]
 fn stale_job_is_refused_before_a_complete_generation_is_decoded() -> TestResult {
     let temporary = tempfile::tempdir()?;
@@ -56,4 +82,24 @@ fn unsupported_lineage_is_refused_before_malformed_table_rows_are_decoded() -> T
     );
     check!(eq; std::fs::read(&archive)?, retained);
     Ok(())
+}
+
+#[test]
+fn retained_conflict_policy_preserves_but_refuses_revision_seven_inputs() -> TestResult {
+    historical_publication_policy_is_refused(7)
+}
+
+#[test]
+fn tie_policy_preserves_but_refuses_revision_eight_inputs() -> TestResult {
+    historical_publication_policy_is_refused(8)
+}
+
+#[test]
+fn policy_nine_archive_is_refused_without_rewriting_retained_bytes() -> TestResult {
+    historical_publication_policy_is_refused(9)
+}
+
+#[test]
+fn policy_ten_archive_is_refused_without_rewriting_retained_bytes() -> TestResult {
+    historical_publication_policy_is_refused(10)
 }

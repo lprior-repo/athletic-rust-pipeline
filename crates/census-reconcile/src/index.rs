@@ -144,6 +144,7 @@ pub fn derive(
     finished_at: &str,
     school_year: census_domain::model::SchoolYear,
 ) -> ReportResult<IndexReport> {
+    store.store_identity()?;
     let identity_applications = apply::apply_decisions(store, finished_at)?;
     let mut stage = store.stage_derived()?;
     let digest = stage_digest(stage.view())?;

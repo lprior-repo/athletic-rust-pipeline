@@ -25,13 +25,13 @@ fn needed_bytes(body: &[u8], capture: &capture::Capture) -> u64 {
 }
 
 #[test]
-fn configured_capacity_of_honors_positive_integers_and_falls_back_otherwise() -> TestResult {
-    check!(eq; capacity_of(Some("2048".to_string())), 2048);
-    check!(eq; capacity_of(Some("  4096 \n".to_string())), 4096);
-    check!(eq; capacity_of(None), DEFAULT_ARCHIVE_BYTES);
-    check!(eq; capacity_of(Some("0".to_string())), DEFAULT_ARCHIVE_BYTES);
-    check!(eq; capacity_of(Some("twelve".to_string())), DEFAULT_ARCHIVE_BYTES);
-    check!(eq; capacity_of(Some("".to_string())), DEFAULT_ARCHIVE_BYTES);
+fn configured_capacity_of_honors_positive_integers_and_defaults_only_when_unset() -> TestResult {
+    check!(eq; capacity_of(Some("2048".to_string()))?, 2048);
+    check!(eq; capacity_of(Some("  4096 \n".to_string()))?, 4096);
+    check!(eq; capacity_of(None)?, DEFAULT_ARCHIVE_BYTES);
+    check!(capacity_of(Some("0".to_string())).is_err());
+    check!(capacity_of(Some("twelve".to_string())).is_err());
+    check!(capacity_of(Some("".to_string())).is_err());
     Ok(())
 }
 

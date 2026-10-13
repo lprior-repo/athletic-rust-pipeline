@@ -173,9 +173,9 @@ fn reconcile_intent(
     let fence = acquire_fence_or_supersede(store, intent, run_manifest, desired)?;
     if let Some(fence) = fence {
         pointer::switch(root, desired)?;
-        pointer::finish(root, intent, || {
+        pointer::finish(root, fence.intent(), || {
             fence
-                .published(intent, desired)
+                .published(fence.intent(), desired)
                 .map(|_| ())
                 .map_err(Into::into)
         })?;
